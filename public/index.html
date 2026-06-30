@@ -13,32 +13,92 @@
         <span class="brand-dot"></span>
         TalkLive
       </div>
-      <div class="online">
-        <span class="online-dot"></span>
-        <span id="onlineCount">0</span> online
+      <div class="header-right">
+        <span id="myProfile" class="my-profile hidden"></span>
+        <div class="online">
+          <span class="online-dot"></span>
+          <span id="onlineCount">0</span> online
+        </div>
       </div>
     </header>
 
     <main class="stage">
-      <div class="orb-wrap">
-        <div id="orb" class="orb idle">
-          <div class="orb-core"></div>
-          <div class="orb-ring r1"></div>
-          <div class="orb-ring r2"></div>
+
+      <!-- Setup panel: shown before the first call -->
+      <section id="setupPanel" class="setup-panel">
+        <h2 class="setup-title">Set up your call</h2>
+
+        <div class="field-row">
+          <label>I am</label>
+          <select id="genderSelect">
+            <option value="unspecified">Prefer not to say</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
         </div>
-      </div>
 
-      <p id="statusText" class="status-text">Tap start to talk to a random stranger</p>
-      <p id="subText" class="sub-text">Audio only · No sign up · No registration</p>
+        <div class="field-row">
+          <label>Match me with</label>
+          <select id="prefGenderSelect">
+            <option value="any">Anyone</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+        </div>
 
-      <div class="controls">
+        <div class="field-row">
+          <label>Country</label>
+          <select id="prefCountrySelect">
+            <option value="any">Any country</option>
+          </select>
+        </div>
+
+        <div class="field-row interests-row">
+          <label>Interests <span class="hint">(optional, helps matching)</span></label>
+          <div id="interestTags" class="interest-tags"></div>
+        </div>
+
         <button id="startBtn" class="btn btn-primary">Start Talking</button>
-        <button id="skipBtn" class="btn btn-secondary hidden">Next Stranger</button>
-        <button id="muteBtn" class="btn btn-icon hidden" title="Mute microphone">🎤</button>
-        <button id="stopBtn" class="btn btn-danger hidden">Stop</button>
-      </div>
+      </section>
 
-      <p id="errorText" class="error-text hidden"></p>
+      <!-- Call panel: shown during waiting/connected states -->
+      <section id="callPanel" class="call-panel hidden">
+        <div class="orb-wrap">
+          <div id="orb" class="orb idle">
+            <div class="orb-core"></div>
+            <div class="orb-ring r1"></div>
+            <div class="orb-ring r2"></div>
+          </div>
+        </div>
+
+        <p id="statusText" class="status-text">Tap start to talk to a random stranger</p>
+        <p id="subText" class="sub-text">Audio only · No sign up · No registration</p>
+
+        <div id="partnerCard" class="partner-card hidden">
+          <div class="partner-name" id="partnerName">—</div>
+          <div class="partner-meta" id="partnerMeta">—</div>
+          <div class="partner-interests" id="partnerInterests"></div>
+        </div>
+
+        <div class="controls">
+          <button id="skipBtn" class="btn btn-secondary hidden">Next Stranger</button>
+          <button id="muteBtn" class="btn btn-icon hidden" title="Mute microphone">🎤</button>
+          <button id="chatToggleBtn" class="btn btn-icon hidden" title="Toggle chat">💬</button>
+          <button id="reportBtn" class="btn btn-danger hidden" title="Report and block">Report</button>
+          <button id="stopBtn" class="btn btn-secondary hidden">Stop</button>
+        </div>
+
+        <p id="errorText" class="error-text hidden"></p>
+      </section>
+
+      <!-- Chat panel -->
+      <section id="chatPanel" class="chat-panel hidden">
+        <div id="chatMessages" class="chat-messages"></div>
+        <form id="chatForm" class="chat-form">
+          <input id="chatInput" type="text" maxlength="1000" placeholder="Type a message…" autocomplete="off" />
+          <button type="submit" class="btn btn-primary chat-send">Send</button>
+        </form>
+      </section>
     </main>
 
     <footer class="footer">
@@ -49,6 +109,7 @@
   <audio id="remoteAudio" autoplay playsinline></audio>
 
   <script src="/socket.io/socket.io.js"></script>
+  <script src="countries.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
