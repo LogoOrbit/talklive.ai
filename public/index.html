@@ -28,8 +28,10 @@
       <!-- Setup panel: shown before the first call -->
       <section id="setupPanel" class="setup-panel">
         <div id="tapToTalk" class="tap-to-talk">
-          <button id="startBtn" class="tap-orb">
-            <span class="tap-orb-core"></span>
+          <button id="startBtn" class="tap-orb call-btn-green" aria-label="Start call">
+            <svg class="phone-icon" viewBox="0 0 24 24" fill="white" aria-hidden="true">
+              <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+            </svg>
             <span class="tap-orb-label">Tap to Talk</span>
           </button>
           <p class="consent-line">
@@ -179,12 +181,20 @@
           <div class="partner-interests" id="partnerInterests"></div>
         </div>
 
-        <div class="controls">
-          <button id="skipBtn" class="btn btn-secondary hidden">Next Stranger</button>
-          <button id="muteBtn" class="btn btn-icon hidden" title="Mute microphone">🎤</button>
-          <button id="chatToggleBtn" class="btn btn-icon hidden" title="Toggle chat">💬</button>
-          <button id="reportBtn" class="btn btn-danger hidden" title="Report and block">Report</button>
-          <button id="stopBtn" class="btn btn-secondary hidden">Stop</button>
+        <div class="primary-controls hidden" id="primaryControls">
+          <button id="stopBtn" class="call-btn call-btn-red" aria-label="Hang up">
+            <svg class="phone-icon phone-icon-rotated" viewBox="0 0 24 24" fill="white" aria-hidden="true">
+              <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+            </svg>
+          </button>
+          <span class="call-btn-label">Hang Up</span>
+        </div>
+
+        <div class="controls secondary-controls">
+          <button id="skipBtn" class="btn btn-secondary hidden" title="Next stranger" aria-label="Next stranger">⏭️ <span class="btn-text">Next</span></button>
+          <button id="muteBtn" class="btn btn-icon hidden" title="Mute microphone" aria-label="Mute microphone">🎤</button>
+          <button id="chatToggleBtn" class="btn btn-icon hidden" title="Toggle chat" aria-label="Toggle text chat">💬</button>
+          <button id="reportBtn" class="btn btn-danger hidden" title="Report and block" aria-label="Report and block">🚩 <span class="btn-text">Report</span></button>
         </div>
 
         <p id="errorText" class="error-text hidden"></p>
@@ -197,6 +207,17 @@
           <input id="chatInput" type="text" maxlength="1000" placeholder="Type a message…" autocomplete="off" />
           <button type="submit" class="btn btn-primary chat-send">Send</button>
         </form>
+      </section>
+      <!-- Always-visible quick guide — key rules at a glance, no click required -->
+      <section class="quick-guide" aria-label="How to use TalkLive">
+        <ul>
+          <li><span class="qg-icon" aria-hidden="true">📞</span> Tap the <strong>green button</strong> to start an anonymous audio call with a random stranger.</li>
+          <li><span class="qg-icon" aria-hidden="true">☎️</span> Tap the <strong>red button</strong> to hang up, any time.</li>
+          <li><span class="qg-icon" aria-hidden="true">🙂</span> Be kind and respectful — treat strangers the way you want to be treated.</li>
+          <li><span class="qg-icon" aria-hidden="true">🚫</span> No sexual content, hate speech, threats, or harassment.</li>
+          <li><span class="qg-icon" aria-hidden="true">🔞</span> You must be <strong>18 or older</strong> to use this site.</li>
+          <li><span class="qg-icon" aria-hidden="true">🚩</span> Tap <strong>Report</strong> to instantly block bad behavior — repeated reports lead to a ban.</li>
+        </ul>
       </section>
     </main>
 

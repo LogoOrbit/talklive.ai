@@ -44,6 +44,7 @@ const muteBtn = document.getElementById('muteBtn');
 const chatToggleBtn = document.getElementById('chatToggleBtn');
 const reportBtn = document.getElementById('reportBtn');
 const stopBtn = document.getElementById('stopBtn');
+const primaryControls = document.getElementById('primaryControls');
 
 const chatMessages = document.getElementById('chatMessages');
 const chatForm = document.getElementById('chatForm');
@@ -370,7 +371,7 @@ function resetUI() {
   muteBtn.classList.add('hidden');
   chatToggleBtn.classList.add('hidden');
   reportBtn.classList.add('hidden');
-  stopBtn.classList.add('hidden');
+  primaryControls.classList.add('hidden');
 }
 
 async function begin() {
@@ -402,7 +403,7 @@ async function begin() {
   muteBtn.classList.remove('hidden');
   chatToggleBtn.classList.remove('hidden');
   reportBtn.classList.remove('hidden');
-  stopBtn.classList.remove('hidden');
+  primaryControls.classList.remove('hidden');
 
   socket.emit('find-partner');
 }

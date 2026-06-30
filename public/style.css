@@ -290,6 +290,41 @@ html, body {
   font-size: 13px;
 }
 
+.quick-guide {
+  width: 100%;
+  max-width: 480px;
+  margin: 32px auto 0;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+  padding: 18px 20px;
+}
+
+.quick-guide ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.quick-guide li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(242, 244, 255, 0.85);
+  text-align: left;
+}
+
+.qg-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  line-height: 1.3;
+}
+
 .footer {
   text-align: center;
   font-size: 12px;
@@ -429,8 +464,6 @@ html, body {
   border-radius: 50%;
   border: none;
   cursor: pointer;
-  background: radial-gradient(circle at 35% 30%, var(--accent-2), var(--accent) 75%);
-  box-shadow: 0 0 60px rgba(108, 92, 231, 0.5);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -440,20 +473,27 @@ html, body {
   animation: tapBreathe 3s ease-in-out infinite;
 }
 
-.tap-orb:hover {
-  box-shadow: 0 0 80px rgba(108, 92, 231, 0.7);
+.call-btn-green {
+  background: radial-gradient(circle at 35% 30%, #4ade80, #16a34a 75%);
+  box-shadow: 0 0 60px rgba(22, 163, 74, 0.55);
+}
+
+.call-btn-green:hover {
+  box-shadow: 0 0 80px rgba(22, 163, 74, 0.75);
 }
 
 .tap-orb:active {
   transform: scale(0.96);
 }
 
-.tap-orb-core {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: white;
-  opacity: 0.9;
+.phone-icon {
+  width: 44px;
+  height: 44px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));
+}
+
+.phone-icon-rotated {
+  transform: rotate(135deg);
 }
 
 .tap-orb-label {
@@ -466,6 +506,61 @@ html, body {
 @keyframes tapBreathe {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.035); }
+}
+
+/* Primary call action: big red Hang Up button, universally recognizable phone icon */
+.primary-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin: 28px 0 8px;
+}
+
+.call-btn {
+  width: 86px;
+  height: 86px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.call-btn:active {
+  transform: scale(0.94);
+}
+
+.call-btn-red {
+  background: radial-gradient(circle at 35% 30%, #ff7a8a, #e21f3e 75%);
+  box-shadow: 0 0 40px rgba(226, 31, 62, 0.6);
+}
+
+.call-btn-red:hover {
+  box-shadow: 0 0 60px rgba(226, 31, 62, 0.8);
+}
+
+.call-btn .phone-icon {
+  width: 32px;
+  height: 32px;
+}
+
+.call-btn-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--danger);
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.secondary-controls {
+  margin-top: 4px;
+}
+
+.btn-text {
+  margin-left: 2px;
 }
 
 .consent-line {
