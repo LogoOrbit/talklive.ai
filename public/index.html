@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TalkLive — Talk to Strangers</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-dot"></span>
+        TalkLive
+      </div>
+      <div class="online">
+        <span class="online-dot"></span>
+        <span id="onlineCount">0</span> online
+      </div>
+    </header>
+
+    <main class="stage">
+      <div class="orb-wrap">
+        <div id="orb" class="orb idle">
+          <div class="orb-core"></div>
+          <div class="orb-ring r1"></div>
+          <div class="orb-ring r2"></div>
+        </div>
+      </div>
+
+      <p id="statusText" class="status-text">Tap start to talk to a random stranger</p>
+      <p id="subText" class="sub-text">Audio only · No sign up · No registration</p>
+
+      <div class="controls">
+        <button id="startBtn" class="btn btn-primary">Start Talking</button>
+        <button id="skipBtn" class="btn btn-secondary hidden">Next Stranger</button>
+        <button id="muteBtn" class="btn btn-icon hidden" title="Mute microphone">🎤</button>
+        <button id="stopBtn" class="btn btn-danger hidden">Stop</button>
+      </div>
+
+      <p id="errorText" class="error-text hidden"></p>
+    </main>
+
+    <footer class="footer">
+      Be respectful. You may be paired with anyone in the world. Audio only — no video, no recording.
+    </footer>
+  </div>
+
+  <audio id="remoteAudio" autoplay playsinline></audio>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
