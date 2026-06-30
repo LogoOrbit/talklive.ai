@@ -41,6 +41,10 @@ const chatMessages = document.getElementById('chatMessages');
 const chatForm = document.getElementById('chatForm');
 const chatInput = document.getElementById('chatInput');
 
+const connectionIndicator = document.getElementById('connectionIndicator');
+const connectionDot = document.getElementById('connectionDot');
+const connectionLabel = document.getElementById('connectionLabel');
+
 const ICE_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
@@ -184,6 +188,17 @@ function setState(state) {
   orb.className = `orb ${state}`;
 }
 
+// green = connected, orange = searching/reconnecting, red = disconnected/skipped
+function setConnection(color, label) {
+  connectionIndicator.classList.remove('hidden');
+  connectionDot.className = `connection-dot ${color}`;
+  connectionLabel.textContent = label;
+}
+
+function hideConnection() {
+  connectionIndicator.classList.add('hidden');
+}
+
 function showError(msg) {
   errorText.textContent = msg;
   errorText.classList.remove('hidden');
@@ -229,6 +244,19 @@ function createPeerConnection() {
     statusText.textContent = "You're connected";
     subText.textContent = 'Say hi! Tap "Next Stranger" to skip.';
     monitorRemoteAudio(event.streams[0]);
+  };
+
+  peer.oniceconnectionstatechange = () => {
+    const iceState = peer.iceConnectionState;
+    if (iceState === 'connected' || iceState === 'completed') {
+      setConnection('green', 'Connected');
+    } else if (iceState === 'checking') {
+      setConnection('orange', 'Connecting');
+    } else if (iceState === 'disconnected') {
+      setConnection('orange', 'Reconnecting');
+    } else if (iceState === 'failed' || iceState === 'closed') {
+      setConnection('red', 'Disconnected');
+    }
   };
 
   return peer;
@@ -305,6 +333,7 @@ function resetUI() {
   chatPanel.classList.add('hidden');
   chatOpen = false;
   clearChat();
+  hideConnection();
   skipBtn.classList.add('hidden');
   muteBtn.classList.add('hidden');
   chatToggleBtn.classList.add('hidden');
@@ -333,6 +362,7 @@ async function begin() {
   setupPanel.classList.add('hidden');
   callPanel.classList.remove('hidden');
   setState('waiting');
+  setConnection('orange', 'Searching');
   statusText.textContent = 'Looking for someone to talk to…';
   subText.textContent = 'Hang tight, this only takes a moment';
 
@@ -351,9 +381,11 @@ skipBtn.addEventListener('click', () => {
   teardownPeer();
   clearChat();
   setState('waiting');
+  setConnection('red', 'Skipped');
   statusText.textContent = 'Finding a new stranger…';
   subText.textContent = 'Hang tight, this only takes a moment';
   socket.emit('skip');
+  setTimeout(() => setConnection('orange', 'Searching'), 600);
 });
 
 stopBtn.addEventListener('click', () => {
@@ -370,8 +402,10 @@ reportBtn.addEventListener('click', () => {
   teardownPeer();
   clearChat();
   setState('waiting');
+  setConnection('red', 'Reported');
   statusText.textContent = 'Reported. Finding someone new…';
   socket.emit('report');
+  setTimeout(() => setConnection('orange', 'Searching'), 600);
 });
 
 muteBtn.addEventListener('click', () => {
@@ -405,11 +439,13 @@ socket.on('online-count', (count) => {
 
 socket.on('waiting', () => {
   setState('waiting');
+  setConnection('orange', 'Searching');
   statusText.textContent = 'Looking for someone to talk to…';
 });
 
 socket.on('matched', async ({ initiator, partner }) => {
   setState('connected');
+  setConnection('orange', 'Connecting');
   statusText.textContent = 'Connecting…';
 
   partnerName.textContent = partner.username;
@@ -439,9 +475,11 @@ socket.on('partner-left', () => {
   clearChat();
   if (isSearching) {
     setState('waiting');
+    setConnection('red', 'Disconnected');
     statusText.textContent = 'Stranger disconnected. Finding someone new…';
     subText.textContent = 'Hang tight, this only takes a moment';
     socket.emit('find-partner');
+    setTimeout(() => setConnection('orange', 'Searching'), 600);
   }
 });
 
@@ -455,8 +493,10 @@ socket.on('chat-message', ({ text }) => {
 
 socket.on('disconnect', () => {
   showError('Connection lost. Reconnecting…');
+  if (isSearching) setConnection('red', 'Disconnected');
 });
 
 socket.on('connect', () => {
   clearError();
+  if (isSearching) setConnection('orange', 'Reconnecting');
 });
