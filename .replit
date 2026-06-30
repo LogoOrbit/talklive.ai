@@ -1,0 +1,8 @@
+run = "npm install && npm start"
+entrypoint = "server/index.js"
+
+[env]
+NODE_ENV = "production"
+
+[nix]
+channel = "stable-23_11"

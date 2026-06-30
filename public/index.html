@@ -13,42 +13,228 @@
         <span class="brand-dot"></span>
         TalkLive
       </div>
-      <div class="online">
-        <span class="online-dot"></span>
-        <span id="onlineCount">0</span> online
+      <div class="header-right">
+        <span id="myProfile" class="my-profile hidden"></span>
+        <div class="online">
+          <span class="online-dot"></span>
+          <span id="onlineCount">0</span> online
+        </div>
+        <button id="settingsBtn" class="settings-btn" title="Match preferences" aria-label="Match preferences">
+          <span class="settings-icon" aria-hidden="true">⚙️</span>
+          <span class="settings-text">Settings</span>
+        </button>
       </div>
     </header>
 
     <main class="stage">
-      <div class="orb-wrap">
-        <div id="orb" class="orb idle">
-          <div class="orb-core"></div>
-          <div class="orb-ring r1"></div>
-          <div class="orb-ring r2"></div>
+
+      <!-- Setup panel: shown before the first call -->
+      <section id="setupPanel" class="setup-panel">
+        <div id="tapToTalk" class="tap-to-talk">
+          <button id="startBtn" class="tap-orb call-btn-green" aria-label="Start call">
+            <svg class="phone-icon" viewBox="0 0 24 24" fill="white" aria-hidden="true">
+              <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+            </svg>
+            <span class="tap-orb-label">Tap to Talk</span>
+          </button>
+          <p class="consent-line">
+            By tapping Start you agree to our
+            <button type="button" id="openTermsLink" class="link-btn">Terms &amp; Community Guidelines</button>
+          </p>
+        </div>
+      </section>
+
+      <!-- Settings modal: match preferences, opened from the header gear icon -->
+      <div id="settingsModal" class="modal-overlay hidden">
+        <div class="modal-box">
+          <div class="modal-header">
+            <h2>Match Preferences</h2>
+            <button type="button" id="closeSettingsBtn" class="modal-close">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div class="pill-row">
+              <span class="pill-label">I am</span>
+              <div class="pill-group" id="genderGroup" data-value="unspecified">
+                <button type="button" class="pill" data-value="unspecified"><span class="pill-dot"></span>Prefer not to say</button>
+                <button type="button" class="pill" data-value="male"><span class="pill-dot"></span>Male</button>
+                <button type="button" class="pill" data-value="female"><span class="pill-dot"></span>Female</button>
+              </div>
+            </div>
+
+            <div class="pill-row">
+              <span class="pill-label">Match me with</span>
+              <div class="pill-group" id="prefGenderGroup" data-value="any">
+                <button type="button" class="pill" data-value="any"><span class="pill-dot"></span>Anyone</button>
+                <button type="button" class="pill" data-value="male"><span class="pill-dot"></span>Male</button>
+                <button type="button" class="pill" data-value="female"><span class="pill-dot"></span>Female</button>
+              </div>
+            </div>
+
+            <div class="pill-row">
+              <span class="pill-label">Country</span>
+              <div class="country-picker">
+                <button type="button" class="pill any-pill selected" id="countryAnyPill" data-value="any"><span class="pill-dot"></span>Any</button>
+                <div class="country-search-wrap">
+                  <input type="text" id="countrySearch" class="search-input" placeholder="Search country…" autocomplete="off" />
+                  <div id="countryResults" class="search-results hidden"></div>
+                </div>
+                <span id="countrySelectedPill" class="pill selected hidden"></span>
+              </div>
+            </div>
+
+            <div class="pill-row">
+              <span class="pill-label">Interests <span class="hint">(optional)</span></span>
+              <div class="interests-picker">
+                <div id="interestTags" class="interest-tags"></div>
+                <div class="interest-input-wrap">
+                  <input type="text" id="interestInput" class="search-input" placeholder="Type an interest and press Enter…" autocomplete="off" maxlength="20" />
+                </div>
+              </div>
+            </div>
+
+            <button type="button" id="saveSettingsBtn" class="btn btn-primary settings-save">Done</button>
+          </div>
         </div>
       </div>
 
-      <p id="statusText" class="status-text">Tap start to talk to a random stranger</p>
-      <p id="subText" class="sub-text">Audio only · No sign up · No registration</p>
+      <!-- Policies modal: how-to-use, community guidelines, ban policy, terms, privacy -->
+      <div id="termsModal" class="modal-overlay hidden">
+        <div class="modal-box modal-box-wide">
+          <div class="modal-header">
+            <h2>Terms &amp; Community Guidelines</h2>
+            <button type="button" id="closeTermsBtn" class="modal-close">&times;</button>
+          </div>
+          <div class="modal-body policy-body">
 
-      <div class="controls">
-        <button id="startBtn" class="btn btn-primary">Start Talking</button>
-        <button id="skipBtn" class="btn btn-secondary hidden">Next Stranger</button>
-        <button id="muteBtn" class="btn btn-icon hidden" title="Mute microphone">🎤</button>
-        <button id="stopBtn" class="btn btn-danger hidden">Stop</button>
+            <h3>How TalkLive Works</h3>
+            <p>TalkLive connects you with a random stranger for a live, audio-only conversation. There's no sign-up — tap "Start," allow microphone access, and you'll be paired with someone automatically. Tap "Next Stranger" any time to end the current call and get matched with someone new, or "Stop" to leave entirely. You can optionally set a gender preference, a country, and interest tags from the settings (⚙️) menu to help find a better match.</p>
+
+            <h3>Quick Tips</h3>
+            <ul>
+              <li>Use headphones to avoid echo/feedback for both you and your match.</li>
+              <li>You can mute your mic at any time with the microphone button.</li>
+              <li>Text chat is available alongside audio via the chat icon.</li>
+              <li>If a call feels unsafe or inappropriate, tap "Report" — this immediately ends the call and blocks that person from being matched with you again.</li>
+            </ul>
+
+            <h3>Community Guidelines — Be a Good Stranger</h3>
+            <p>TalkLive only works if people treat each other with basic respect. Please:</p>
+            <ul>
+              <li>Be kind. Treat the person on the other end the way you'd want to be treated.</li>
+              <li>Keep things audio-only and consensual — don't pressure others into topics, content, or behavior they haven't agreed to.</li>
+              <li>Respect a "no" or a hang-up. If someone ends the call or asks you to stop, let it go.</li>
+              <li>Assume you're talking to a real stranger, possibly a minor despite the age requirement below — act accordingly.</li>
+              <li>Use the Report button if something feels wrong. Reporting helps keep this usable for everyone.</li>
+            </ul>
+
+            <h3>Prohibited Conduct</h3>
+            <p>The following will get you reported and banned, and may be referred to law enforcement where applicable:</p>
+            <ul>
+              <li>Sexual content, sexual harassment, or solicitation of any kind.</li>
+              <li>Hate speech, slurs, or harassment based on race, ethnicity, religion, gender, sexual orientation, disability, or nationality.</li>
+              <li>Threats, intimidation, or incitement of violence.</li>
+              <li>Any use of TalkLive by, or directed at, anyone under 18.</li>
+              <li>Recording, screenshotting, or distributing audio from a call without the other person's consent.</li>
+              <li>Spam, advertising, bots, scripts, or automated use of the service.</li>
+              <li>Impersonation, scams, phishing, or attempts to collect personal information from other users.</li>
+              <li>Any activity that is illegal in your jurisdiction.</li>
+            </ul>
+
+            <h3>Ban Policy — Read This</h3>
+            <p><strong>Reports are taken seriously.</strong> If you're reported for prohibited conduct, the reporting user is permanently blocked from being matched with you again, and repeated or severe reports can result in your access to TalkLive being suspended or permanently banned, with no entitlement to a refund of any kind (TalkLive is free, but this applies to any future paid features). We reserve the right to ban any user, at any time, for any reason connected to abuse of the service or harm to other users, without prior notice. Attempting to evade a ban (new device, new network, new account signal) is itself a violation and may result in a permanent IP-level block.</p>
+
+            <h3>Terms &amp; Conditions</h3>
+            <p><strong>Eligibility.</strong> You must be at least 18 years old to use TalkLive. By using the service you represent that you meet this requirement.</p>
+            <p><strong>Nature of the service.</strong> TalkLive provides random, unmoderated-in-real-time audio pairing between users. We do not pre-screen who you will be matched with, cannot verify any user's identity, age, or intentions, and are not responsible for the conduct, statements, or actions of any user. You use the service, and interact with strangers through it, entirely at your own risk.</p>
+            <p><strong>No warranty.</strong> TalkLive is provided "as is" and "as available," without warranties of any kind, express or implied, including fitness for a particular purpose, uninterrupted availability, or error-free operation.</p>
+            <p><strong>Limitation of liability.</strong> To the maximum extent permitted by law, TalkLive and its operators are not liable for any indirect, incidental, special, or consequential damages, or for any conduct of any user, arising from your use of the service.</p>
+            <p><strong>Acceptable use.</strong> You agree not to engage in any of the Prohibited Conduct listed above, and not to use the service for any unlawful purpose.</p>
+            <p><strong>Termination.</strong> We may suspend or terminate your access to TalkLive at any time, with or without cause or notice, particularly in response to reports or violations of these terms.</p>
+            <p><strong>Changes to these terms.</strong> We may update these terms from time to time. Continued use of TalkLive after changes are posted constitutes acceptance of the revised terms.</p>
+            <p><strong>Governing law.</strong> These terms are governed by the laws of the jurisdiction in which TalkLive operates, without regard to conflict-of-law principles.</p>
+
+            <h3>Privacy Note</h3>
+            <p>TalkLive does not require an account, email, or phone number. Audio is transmitted peer-to-peer directly between you and your match (WebRTC) — it does not pass through or get stored on our servers. We use your IP address only transiently to estimate your country/city for display and matching, and to enforce reports/blocks between users; we do not sell or share this data with third parties. Text chat messages are relayed live and are not stored after your session ends.</p>
+
+          </div>
+        </div>
       </div>
 
-      <p id="errorText" class="error-text hidden"></p>
+      <!-- Call panel: shown during waiting/connected states -->
+      <section id="callPanel" class="call-panel hidden">
+        <div class="orb-wrap">
+          <div id="orb" class="orb idle">
+            <div class="orb-core"></div>
+            <div class="orb-ring r1"></div>
+            <div class="orb-ring r2"></div>
+          </div>
+        </div>
+
+        <div id="connectionIndicator" class="connection-indicator hidden">
+          <span id="connectionDot" class="connection-dot"></span>
+          <span id="connectionLabel" class="connection-label">Searching</span>
+        </div>
+
+        <p id="statusText" class="status-text">Tap start to talk to a random stranger</p>
+        <p id="subText" class="sub-text">Audio only · No sign up · No registration</p>
+
+        <div id="partnerCard" class="partner-card hidden">
+          <div class="partner-name" id="partnerName">—</div>
+          <div class="partner-meta" id="partnerMeta">—</div>
+          <div class="partner-interests" id="partnerInterests"></div>
+        </div>
+
+        <div class="primary-controls hidden" id="primaryControls">
+          <button id="stopBtn" class="call-btn call-btn-red" aria-label="Hang up">
+            <svg class="phone-icon phone-icon-rotated" viewBox="0 0 24 24" fill="white" aria-hidden="true">
+              <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+            </svg>
+          </button>
+          <span class="call-btn-label">Hang Up</span>
+        </div>
+
+        <div class="controls secondary-controls">
+          <button id="skipBtn" class="btn btn-secondary hidden" title="Next stranger" aria-label="Next stranger">⏭️ <span class="btn-text">Next</span></button>
+          <button id="muteBtn" class="btn btn-icon hidden" title="Mute microphone" aria-label="Mute microphone">🎤</button>
+          <button id="chatToggleBtn" class="btn btn-icon hidden" title="Toggle chat" aria-label="Toggle text chat">💬</button>
+          <button id="reportBtn" class="btn btn-danger hidden" title="Report and block" aria-label="Report and block">🚩 <span class="btn-text">Report</span></button>
+        </div>
+
+        <p id="errorText" class="error-text hidden"></p>
+      </section>
+
+      <!-- Chat panel -->
+      <section id="chatPanel" class="chat-panel hidden">
+        <div id="chatMessages" class="chat-messages"></div>
+        <form id="chatForm" class="chat-form">
+          <input id="chatInput" type="text" maxlength="1000" placeholder="Type a message…" autocomplete="off" />
+          <button type="submit" class="btn btn-primary chat-send">Send</button>
+        </form>
+      </section>
+      <!-- Always-visible quick guide — key rules at a glance, no click required -->
+      <section class="quick-guide" aria-label="How to use TalkLive">
+        <ul>
+          <li><span class="qg-icon" aria-hidden="true">🙂</span> Be respectful. Treat others the way you want to be treated.</li>
+          <li><span class="qg-icon" aria-hidden="true">🚫</span> No sexual content, hate, threats, or harassment.</li>
+          <li><span class="qg-icon" aria-hidden="true">🔞</span> You must be 18 or older to use this site.</li>
+          <li><span class="qg-icon" aria-hidden="true">🚩</span> Report anyone who breaks the rules. Reports instantly end the call, block that person, and repeated reports can lead to a ban.</li>
+          <li><span class="qg-icon" aria-hidden="true">🎧</span> Use headphones to prevent echo and improve call quality.</li>
+          <li><span class="qg-icon" aria-hidden="true">🎙️</span> You can mute your microphone anytime.</li>
+          <li><span class="qg-icon" aria-hidden="true">💬</span> Use the chat button to send text messages during a call.</li>
+        </ul>
+      </section>
     </main>
 
     <footer class="footer">
-      Be respectful. You may be paired with anyone in the world. Audio only — no video, no recording.
+      <p>Be respectful. You may be paired with anyone in the world. Audio only — no video, no recording. 18+ only.</p>
+      <button type="button" id="openTermsLinkFooter" class="link-btn">Terms &amp; Community Guidelines</button>
     </footer>
   </div>
 
   <audio id="remoteAudio" autoplay playsinline></audio>
 
   <script src="/socket.io/socket.io.js"></script>
+  <script src="countries.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
