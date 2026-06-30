@@ -55,14 +55,24 @@
 
           <div class="pill-row">
             <span class="pill-label">Country</span>
-            <div class="pill-group scrollable" id="countryGroup" data-value="any">
-              <button type="button" class="pill" data-value="any"><span class="pill-dot"></span>Any</button>
+            <div class="country-picker">
+              <button type="button" class="pill any-pill selected" id="countryAnyPill" data-value="any"><span class="pill-dot"></span>Any</button>
+              <div class="country-search-wrap">
+                <input type="text" id="countrySearch" class="search-input" placeholder="Search country…" autocomplete="off" />
+                <div id="countryResults" class="search-results hidden"></div>
+              </div>
+              <span id="countrySelectedPill" class="pill selected hidden"></span>
             </div>
           </div>
 
           <div class="pill-row">
             <span class="pill-label">Interests <span class="hint">(optional)</span></span>
-            <div id="interestTags" class="interest-tags"></div>
+            <div class="interests-picker">
+              <div id="interestTags" class="interest-tags"></div>
+              <div class="interest-input-wrap">
+                <input type="text" id="interestInput" class="search-input" placeholder="Type an interest and press Enter…" autocomplete="off" maxlength="20" />
+              </div>
+            </div>
           </div>
         </div>
       </section>
