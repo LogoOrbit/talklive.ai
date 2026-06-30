@@ -26,39 +26,45 @@
 
       <!-- Setup panel: shown before the first call -->
       <section id="setupPanel" class="setup-panel">
-        <h2 class="setup-title">Set up your call</h2>
-
-        <div class="field-row">
-          <label>I am</label>
-          <select id="genderSelect">
-            <option value="unspecified">Prefer not to say</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-          </select>
+        <div id="tapToTalk" class="tap-to-talk">
+          <button id="startBtn" class="tap-orb">
+            <span class="tap-orb-core"></span>
+            <span class="tap-orb-label">Tap to Talk</span>
+          </button>
+          <button id="customizeToggle" class="customize-link">Customize ⌄</button>
         </div>
 
-        <div class="field-row">
-          <label>Match me with</label>
-          <select id="prefGenderSelect">
-            <option value="any">Anyone</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-          </select>
-        </div>
+        <div id="filtersPanel" class="filters-panel hidden">
+          <div class="pill-row">
+            <span class="pill-label">I am</span>
+            <div class="pill-group" id="genderGroup" data-value="unspecified">
+              <button type="button" class="pill" data-value="unspecified"><span class="pill-dot"></span>Prefer not to say</button>
+              <button type="button" class="pill" data-value="male"><span class="pill-dot"></span>Male</button>
+              <button type="button" class="pill" data-value="female"><span class="pill-dot"></span>Female</button>
+            </div>
+          </div>
 
-        <div class="field-row">
-          <label>Country</label>
-          <select id="prefCountrySelect">
-            <option value="any">Any country</option>
-          </select>
-        </div>
+          <div class="pill-row">
+            <span class="pill-label">Match me with</span>
+            <div class="pill-group" id="prefGenderGroup" data-value="any">
+              <button type="button" class="pill" data-value="any"><span class="pill-dot"></span>Anyone</button>
+              <button type="button" class="pill" data-value="male"><span class="pill-dot"></span>Male</button>
+              <button type="button" class="pill" data-value="female"><span class="pill-dot"></span>Female</button>
+            </div>
+          </div>
 
-        <div class="field-row interests-row">
-          <label>Interests <span class="hint">(optional, helps matching)</span></label>
-          <div id="interestTags" class="interest-tags"></div>
-        </div>
+          <div class="pill-row">
+            <span class="pill-label">Country</span>
+            <div class="pill-group scrollable" id="countryGroup" data-value="any">
+              <button type="button" class="pill" data-value="any"><span class="pill-dot"></span>Any</button>
+            </div>
+          </div>
 
-        <button id="startBtn" class="btn btn-primary">Start Talking</button>
+          <div class="pill-row">
+            <span class="pill-label">Interests <span class="hint">(optional)</span></span>
+            <div id="interestTags" class="interest-tags"></div>
+          </div>
+        </div>
       </section>
 
       <!-- Call panel: shown during waiting/connected states -->

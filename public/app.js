@@ -13,9 +13,11 @@ const setupPanel = document.getElementById('setupPanel');
 const callPanel = document.getElementById('callPanel');
 const chatPanel = document.getElementById('chatPanel');
 
-const genderSelect = document.getElementById('genderSelect');
-const prefGenderSelect = document.getElementById('prefGenderSelect');
-const prefCountrySelect = document.getElementById('prefCountrySelect');
+const customizeToggle = document.getElementById('customizeToggle');
+const filtersPanel = document.getElementById('filtersPanel');
+const genderGroup = document.getElementById('genderGroup');
+const prefGenderGroup = document.getElementById('prefGenderGroup');
+const countryGroup = document.getElementById('countryGroup');
 const interestTagsEl = document.getElementById('interestTags');
 
 const partnerCard = document.getElementById('partnerCard');
@@ -68,14 +70,30 @@ function getClientId() {
   return id;
 }
 
+// --- Pill group (radio-style dot buttons) ---
+function initPillGroup(group) {
+  group.addEventListener('click', (e) => {
+    const pill = e.target.closest('.pill');
+    if (!pill) return;
+    group.querySelectorAll('.pill').forEach((p) => p.classList.remove('selected'));
+    pill.classList.add('selected');
+    group.dataset.value = pill.dataset.value;
+  });
+  // select the first pill by default
+  const first = group.querySelector('.pill');
+  if (first) first.classList.add('selected');
+}
+
 // --- Setup panel population ---
 function populateCountries() {
   const entries = Object.entries(COUNTRIES).sort((a, b) => a[1].localeCompare(b[1]));
   for (const [code, name] of entries) {
-    const opt = document.createElement('option');
-    opt.value = code;
-    opt.textContent = name;
-    prefCountrySelect.appendChild(opt);
+    const pill = document.createElement('button');
+    pill.type = 'button';
+    pill.className = 'pill';
+    pill.dataset.value = code;
+    pill.innerHTML = `<span class="pill-dot"></span>${name}`;
+    countryGroup.appendChild(pill);
   }
 }
 
@@ -99,6 +117,14 @@ function populateInterests() {
 
 populateCountries();
 populateInterests();
+initPillGroup(genderGroup);
+initPillGroup(prefGenderGroup);
+initPillGroup(countryGroup);
+
+customizeToggle.addEventListener('click', () => {
+  const isHidden = filtersPanel.classList.toggle('hidden');
+  customizeToggle.textContent = isHidden ? 'Customize ⌄' : 'Hide ⌃';
+});
 
 socket.emit('register', { clientId: getClientId() });
 
@@ -252,9 +278,9 @@ async function begin() {
 
   socket.emit('register', {
     clientId: getClientId(),
-    gender: genderSelect.value,
-    prefGender: prefGenderSelect.value,
-    prefCountry: prefCountrySelect.value,
+    gender: genderGroup.dataset.value,
+    prefGender: prefGenderGroup.dataset.value,
+    prefCountry: countryGroup.dataset.value,
     interests: Array.from(selectedInterests),
   });
 
