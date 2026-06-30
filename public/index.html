@@ -19,6 +19,7 @@
           <span class="online-dot"></span>
           <span id="onlineCount">0</span> online
         </div>
+        <button id="settingsBtn" class="icon-btn" title="Match preferences">⚙️</button>
       </div>
     </header>
 
@@ -31,51 +32,128 @@
             <span class="tap-orb-core"></span>
             <span class="tap-orb-label">Tap to Talk</span>
           </button>
-          <button id="customizeToggle" class="customize-link">Customize ⌄</button>
-        </div>
-
-        <div id="filtersPanel" class="filters-panel hidden">
-          <div class="pill-row">
-            <span class="pill-label">I am</span>
-            <div class="pill-group" id="genderGroup" data-value="unspecified">
-              <button type="button" class="pill" data-value="unspecified"><span class="pill-dot"></span>Prefer not to say</button>
-              <button type="button" class="pill" data-value="male"><span class="pill-dot"></span>Male</button>
-              <button type="button" class="pill" data-value="female"><span class="pill-dot"></span>Female</button>
-            </div>
-          </div>
-
-          <div class="pill-row">
-            <span class="pill-label">Match me with</span>
-            <div class="pill-group" id="prefGenderGroup" data-value="any">
-              <button type="button" class="pill" data-value="any"><span class="pill-dot"></span>Anyone</button>
-              <button type="button" class="pill" data-value="male"><span class="pill-dot"></span>Male</button>
-              <button type="button" class="pill" data-value="female"><span class="pill-dot"></span>Female</button>
-            </div>
-          </div>
-
-          <div class="pill-row">
-            <span class="pill-label">Country</span>
-            <div class="country-picker">
-              <button type="button" class="pill any-pill selected" id="countryAnyPill" data-value="any"><span class="pill-dot"></span>Any</button>
-              <div class="country-search-wrap">
-                <input type="text" id="countrySearch" class="search-input" placeholder="Search country…" autocomplete="off" />
-                <div id="countryResults" class="search-results hidden"></div>
-              </div>
-              <span id="countrySelectedPill" class="pill selected hidden"></span>
-            </div>
-          </div>
-
-          <div class="pill-row">
-            <span class="pill-label">Interests <span class="hint">(optional)</span></span>
-            <div class="interests-picker">
-              <div id="interestTags" class="interest-tags"></div>
-              <div class="interest-input-wrap">
-                <input type="text" id="interestInput" class="search-input" placeholder="Type an interest and press Enter…" autocomplete="off" maxlength="20" />
-              </div>
-            </div>
-          </div>
+          <p class="consent-line">
+            By tapping Start you agree to our
+            <button type="button" id="openTermsLink" class="link-btn">Terms &amp; Community Guidelines</button>
+          </p>
         </div>
       </section>
+
+      <!-- Settings modal: match preferences, opened from the header gear icon -->
+      <div id="settingsModal" class="modal-overlay hidden">
+        <div class="modal-box">
+          <div class="modal-header">
+            <h2>Match Preferences</h2>
+            <button type="button" id="closeSettingsBtn" class="modal-close">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div class="pill-row">
+              <span class="pill-label">I am</span>
+              <div class="pill-group" id="genderGroup" data-value="unspecified">
+                <button type="button" class="pill" data-value="unspecified"><span class="pill-dot"></span>Prefer not to say</button>
+                <button type="button" class="pill" data-value="male"><span class="pill-dot"></span>Male</button>
+                <button type="button" class="pill" data-value="female"><span class="pill-dot"></span>Female</button>
+              </div>
+            </div>
+
+            <div class="pill-row">
+              <span class="pill-label">Match me with</span>
+              <div class="pill-group" id="prefGenderGroup" data-value="any">
+                <button type="button" class="pill" data-value="any"><span class="pill-dot"></span>Anyone</button>
+                <button type="button" class="pill" data-value="male"><span class="pill-dot"></span>Male</button>
+                <button type="button" class="pill" data-value="female"><span class="pill-dot"></span>Female</button>
+              </div>
+            </div>
+
+            <div class="pill-row">
+              <span class="pill-label">Country</span>
+              <div class="country-picker">
+                <button type="button" class="pill any-pill selected" id="countryAnyPill" data-value="any"><span class="pill-dot"></span>Any</button>
+                <div class="country-search-wrap">
+                  <input type="text" id="countrySearch" class="search-input" placeholder="Search country…" autocomplete="off" />
+                  <div id="countryResults" class="search-results hidden"></div>
+                </div>
+                <span id="countrySelectedPill" class="pill selected hidden"></span>
+              </div>
+            </div>
+
+            <div class="pill-row">
+              <span class="pill-label">Interests <span class="hint">(optional)</span></span>
+              <div class="interests-picker">
+                <div id="interestTags" class="interest-tags"></div>
+                <div class="interest-input-wrap">
+                  <input type="text" id="interestInput" class="search-input" placeholder="Type an interest and press Enter…" autocomplete="off" maxlength="20" />
+                </div>
+              </div>
+            </div>
+
+            <button type="button" id="saveSettingsBtn" class="btn btn-primary settings-save">Done</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Policies modal: how-to-use, community guidelines, ban policy, terms, privacy -->
+      <div id="termsModal" class="modal-overlay hidden">
+        <div class="modal-box modal-box-wide">
+          <div class="modal-header">
+            <h2>Terms &amp; Community Guidelines</h2>
+            <button type="button" id="closeTermsBtn" class="modal-close">&times;</button>
+          </div>
+          <div class="modal-body policy-body">
+
+            <h3>How TalkLive Works</h3>
+            <p>TalkLive connects you with a random stranger for a live, audio-only conversation. There's no sign-up — tap "Start," allow microphone access, and you'll be paired with someone automatically. Tap "Next Stranger" any time to end the current call and get matched with someone new, or "Stop" to leave entirely. You can optionally set a gender preference, a country, and interest tags from the settings (⚙️) menu to help find a better match.</p>
+
+            <h3>Quick Tips</h3>
+            <ul>
+              <li>Use headphones to avoid echo/feedback for both you and your match.</li>
+              <li>You can mute your mic at any time with the microphone button.</li>
+              <li>Text chat is available alongside audio via the chat icon.</li>
+              <li>If a call feels unsafe or inappropriate, tap "Report" — this immediately ends the call and blocks that person from being matched with you again.</li>
+            </ul>
+
+            <h3>Community Guidelines — Be a Good Stranger</h3>
+            <p>TalkLive only works if people treat each other with basic respect. Please:</p>
+            <ul>
+              <li>Be kind. Treat the person on the other end the way you'd want to be treated.</li>
+              <li>Keep things audio-only and consensual — don't pressure others into topics, content, or behavior they haven't agreed to.</li>
+              <li>Respect a "no" or a hang-up. If someone ends the call or asks you to stop, let it go.</li>
+              <li>Assume you're talking to a real stranger, possibly a minor despite the age requirement below — act accordingly.</li>
+              <li>Use the Report button if something feels wrong. Reporting helps keep this usable for everyone.</li>
+            </ul>
+
+            <h3>Prohibited Conduct</h3>
+            <p>The following will get you reported and banned, and may be referred to law enforcement where applicable:</p>
+            <ul>
+              <li>Sexual content, sexual harassment, or solicitation of any kind.</li>
+              <li>Hate speech, slurs, or harassment based on race, ethnicity, religion, gender, sexual orientation, disability, or nationality.</li>
+              <li>Threats, intimidation, or incitement of violence.</li>
+              <li>Any use of TalkLive by, or directed at, anyone under 18.</li>
+              <li>Recording, screenshotting, or distributing audio from a call without the other person's consent.</li>
+              <li>Spam, advertising, bots, scripts, or automated use of the service.</li>
+              <li>Impersonation, scams, phishing, or attempts to collect personal information from other users.</li>
+              <li>Any activity that is illegal in your jurisdiction.</li>
+            </ul>
+
+            <h3>Ban Policy — Read This</h3>
+            <p><strong>Reports are taken seriously.</strong> If you're reported for prohibited conduct, the reporting user is permanently blocked from being matched with you again, and repeated or severe reports can result in your access to TalkLive being suspended or permanently banned, with no entitlement to a refund of any kind (TalkLive is free, but this applies to any future paid features). We reserve the right to ban any user, at any time, for any reason connected to abuse of the service or harm to other users, without prior notice. Attempting to evade a ban (new device, new network, new account signal) is itself a violation and may result in a permanent IP-level block.</p>
+
+            <h3>Terms &amp; Conditions</h3>
+            <p><strong>Eligibility.</strong> You must be at least 18 years old to use TalkLive. By using the service you represent that you meet this requirement.</p>
+            <p><strong>Nature of the service.</strong> TalkLive provides random, unmoderated-in-real-time audio pairing between users. We do not pre-screen who you will be matched with, cannot verify any user's identity, age, or intentions, and are not responsible for the conduct, statements, or actions of any user. You use the service, and interact with strangers through it, entirely at your own risk.</p>
+            <p><strong>No warranty.</strong> TalkLive is provided "as is" and "as available," without warranties of any kind, express or implied, including fitness for a particular purpose, uninterrupted availability, or error-free operation.</p>
+            <p><strong>Limitation of liability.</strong> To the maximum extent permitted by law, TalkLive and its operators are not liable for any indirect, incidental, special, or consequential damages, or for any conduct of any user, arising from your use of the service.</p>
+            <p><strong>Acceptable use.</strong> You agree not to engage in any of the Prohibited Conduct listed above, and not to use the service for any unlawful purpose.</p>
+            <p><strong>Termination.</strong> We may suspend or terminate your access to TalkLive at any time, with or without cause or notice, particularly in response to reports or violations of these terms.</p>
+            <p><strong>Changes to these terms.</strong> We may update these terms from time to time. Continued use of TalkLive after changes are posted constitutes acceptance of the revised terms.</p>
+            <p><strong>Governing law.</strong> These terms are governed by the laws of the jurisdiction in which TalkLive operates, without regard to conflict-of-law principles.</p>
+
+            <h3>Privacy Note</h3>
+            <p>TalkLive does not require an account, email, or phone number. Audio is transmitted peer-to-peer directly between you and your match (WebRTC) — it does not pass through or get stored on our servers. We use your IP address only transiently to estimate your country/city for display and matching, and to enforce reports/blocks between users; we do not sell or share this data with third parties. Text chat messages are relayed live and are not stored after your session ends.</p>
+
+          </div>
+        </div>
+      </div>
 
       <!-- Call panel: shown during waiting/connected states -->
       <section id="callPanel" class="call-panel hidden">
@@ -123,7 +201,8 @@
     </main>
 
     <footer class="footer">
-      Be respectful. You may be paired with anyone in the world. Audio only — no video, no recording.
+      <p>Be respectful. You may be paired with anyone in the world. Audio only — no video, no recording. 18+ only.</p>
+      <button type="button" id="openTermsLinkFooter" class="link-btn">Terms &amp; Community Guidelines</button>
     </footer>
   </div>
 

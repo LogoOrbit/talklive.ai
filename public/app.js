@@ -13,8 +13,16 @@ const setupPanel = document.getElementById('setupPanel');
 const callPanel = document.getElementById('callPanel');
 const chatPanel = document.getElementById('chatPanel');
 
-const customizeToggle = document.getElementById('customizeToggle');
-const filtersPanel = document.getElementById('filtersPanel');
+const settingsBtn = document.getElementById('settingsBtn');
+const settingsModal = document.getElementById('settingsModal');
+const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+
+const termsModal = document.getElementById('termsModal');
+const closeTermsBtn = document.getElementById('closeTermsBtn');
+const openTermsLink = document.getElementById('openTermsLink');
+const openTermsLinkFooter = document.getElementById('openTermsLinkFooter');
+
 const genderGroup = document.getElementById('genderGroup');
 const prefGenderGroup = document.getElementById('prefGenderGroup');
 const interestTagsEl = document.getElementById('interestTags');
@@ -170,9 +178,33 @@ interestInput.addEventListener('keydown', (e) => {
 initPillGroup(genderGroup);
 initPillGroup(prefGenderGroup);
 
-customizeToggle.addEventListener('click', () => {
-  const isHidden = filtersPanel.classList.toggle('hidden');
-  customizeToggle.textContent = isHidden ? 'Customize ⌄' : 'Hide ⌃';
+function openModal(modal) {
+  modal.classList.remove('hidden');
+}
+
+function closeModal(modal) {
+  modal.classList.add('hidden');
+}
+
+settingsBtn.addEventListener('click', () => openModal(settingsModal));
+closeSettingsBtn.addEventListener('click', () => closeModal(settingsModal));
+saveSettingsBtn.addEventListener('click', () => closeModal(settingsModal));
+
+openTermsLink.addEventListener('click', () => openModal(termsModal));
+openTermsLinkFooter.addEventListener('click', () => openModal(termsModal));
+closeTermsBtn.addEventListener('click', () => closeModal(termsModal));
+
+[settingsModal, termsModal].forEach((modal) => {
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal(modal);
+  });
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeModal(settingsModal);
+    closeModal(termsModal);
+  }
 });
 
 socket.emit('register', { clientId: getClientId() });
