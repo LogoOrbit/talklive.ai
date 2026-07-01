@@ -3,15 +3,18 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="TalkLive — free random voice chat. Talk to strangers around the world. Audio only, no sign up needed." />
+<meta name="theme-color" content="#0b0f1a" />
 <title>TalkLive — Talk to Strangers</title>
 <link rel="stylesheet" href="style.css" />
 <script src="/config.js"></script>
 </head>
 <body>
+  <a href="#main" class="skip-link" data-i18n="skipToContent">Skip to main content</a>
   <div class="app">
     <header class="topbar">
       <div class="topbar-left">
-        <button id="appSettingsBtn" class="icon-btn hidden" title="App settings" aria-label="Open app settings">
+        <button id="appSettingsBtn" class="icon-btn hidden" data-i18n-title="settings" data-i18n-aria="menuAria" title="Settings" aria-label="Open settings menu">
           <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
             <line x1="4" y1="7" x2="20" y2="7"/>
             <line x1="4" y1="12" x2="20" y2="12"/>
@@ -24,42 +27,46 @@
         </div>
       </div>
       <div class="header-right">
-        <div class="online" title="People online now" aria-label="People online now">
-          <span class="online-dot"></span>
-          <span class="online-label">Online</span>
+        <div class="online" data-i18n-title="onlineAria" data-i18n-aria="onlineAria" title="People online now" aria-label="Number of people online now">
+          <span class="online-dot" aria-hidden="true"></span>
+          <span class="online-label" data-i18n="online">Online</span>
           <span id="onlineCount" class="online-count">0</span>
         </div>
-        <button id="historyBtn" class="icon-btn hidden" title="Call history" aria-label="Call history">
+        <div class="lang-wrap">
+          <svg class="lang-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><ellipse cx="12" cy="12" rx="4.2" ry="9.5"/><line x1="2.5" y1="12" x2="21.5" y2="12"/></svg>
+          <select id="langSelect" class="lang-select" data-i18n-aria="language" data-i18n-title="language" aria-label="Language"></select>
+        </div>
+        <button id="historyBtn" class="icon-btn hidden" data-i18n-title="historyAria" data-i18n-aria="historyAria" title="Call history" aria-label="Call history">
           <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <circle cx="12" cy="12" r="8.5"/>
             <path d="M12 7.5V12l3.2 2"/>
           </svg>
         </button>
-        <button id="friendsBtn" class="icon-btn friends-btn hidden" title="Friends &amp; messages" aria-label="Friends and messages">
+        <button id="friendsBtn" class="icon-btn friends-btn hidden" data-i18n-title="friendsAria" data-i18n-aria="friendsAria" title="Friends &amp; messages" aria-label="Friends and messages">
           <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-          <span id="friendsMsgBadge" class="notif-badge hidden">0</span>
+          <span id="friendsMsgBadge" class="notif-badge hidden" aria-hidden="true">0</span>
         </button>
         <div class="notif-wrap">
-          <button id="notifBtn" class="icon-btn notif-btn hidden" title="Requests" aria-label="Requests">
+          <button id="notifBtn" class="icon-btn notif-btn hidden" data-i18n-title="requests" data-i18n-aria="requests" title="Requests" aria-label="Requests">
             <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M12 4a4.2 4.2 0 0 0-4.2 4.2v2.6c0 .8-.3 1.6-.9 2.2l-1.1 1.1c-.5.5-.2 1.5.6 1.5h11.2c.8 0 1.1-1 .6-1.5l-1.1-1.1a3.2 3.2 0 0 1-.9-2.2V8.2A4.2 4.2 0 0 0 12 4z"/>
               <path d="M9.7 18.5a2.4 2.4 0 0 0 4.6 0"/>
             </svg>
-            <span id="notifBadge" class="notif-badge hidden">0</span>
+            <span id="notifBadge" class="notif-badge hidden" aria-hidden="true">0</span>
           </button>
-          <div id="notifModal" class="notif-dropdown hidden">
+          <div id="notifModal" class="notif-dropdown hidden" role="dialog" data-i18n-aria="requests" aria-label="Requests">
             <div class="modal-header">
-              <h2>Requests</h2>
-              <button type="button" id="closeNotifBtn" class="modal-close">&times;</button>
+              <h2 data-i18n="requests">Requests</h2>
+              <button type="button" id="closeNotifBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
             </div>
             <div class="modal-body">
               <div id="notifList" class="notif-list">
-                <p class="history-empty">No requests yet.</p>
+                <p class="history-empty" data-i18n="noRequestsYet">No requests yet.</p>
               </div>
             </div>
           </div>
         </div>
-        <button id="filtersBtn" class="icon-btn hidden" title="Match filters" aria-label="Match filters">
+        <button id="filtersBtn" class="icon-btn hidden" data-i18n-title="filtersAria" data-i18n-aria="filtersAria" title="Match filters" aria-label="Match filters">
           <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <line x1="4" y1="6" x2="20" y2="6"/>
             <circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"/>
@@ -75,13 +82,13 @@
 
     <!-- App settings side panel: app-level preferences + your own profile fields, opened from the left menu icon -->
     <div id="appSettingsOverlay" class="side-panel-overlay hidden"></div>
-    <aside id="appSettingsPanel" class="side-panel" aria-label="App settings">
+    <aside id="appSettingsPanel" class="side-panel" role="dialog" data-i18n-aria="settings" aria-label="Settings">
       <div class="side-panel-header">
-        <h2>Settings</h2>
-        <button type="button" id="closeAppSettingsBtn" class="modal-close">&times;</button>
+        <h2 data-i18n="settings">Settings</h2>
+        <button type="button" id="closeAppSettingsBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
       </div>
       <div class="side-panel-body">
-        <button type="button" id="accountBtn" class="settings-account-row" aria-label="Account">
+        <button type="button" id="accountBtn" class="settings-account-row" data-i18n-aria="account" aria-label="Account">
           <span id="avatarIcon" class="settings-account-avatar">
             <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <circle cx="12" cy="8.5" r="3.5"/>
@@ -89,25 +96,25 @@
             </svg>
           </span>
           <span id="avatarInitial" class="avatar-initial settings-account-avatar hidden"></span>
-          <span class="settings-account-label">Account</span>
+          <span class="settings-account-label" data-i18n="account">Account</span>
           <svg class="settings-account-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>
         </button>
 
         <label class="checkbox-row" for="sfxSettingCheckbox">
           <input type="checkbox" id="sfxSettingCheckbox" checked />
-          <span>Sound effects</span>
+          <span data-i18n="soundEffects">Sound effects</span>
         </label>
         <label class="checkbox-row" for="sideAutoCallCheckbox">
           <input type="checkbox" id="sideAutoCallCheckbox" checked />
-          <span>Auto call</span>
+          <span data-i18n="autoCall">Auto call</span>
         </label>
 
         <div class="pill-row">
-          <span class="pill-label">I am</span>
-          <div class="pill-group" id="genderGroup" data-value="unspecified">
-            <button type="button" class="pill" data-value="unspecified"><span class="pill-dot pill-dot-neutral"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Prefer not to say</button>
-            <button type="button" class="pill" data-value="male"><span class="pill-dot pill-dot-male"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="14" r="6"/><line x1="14.5" y1="9.5" x2="20" y2="4"/><polyline points="14.5 4 20 4 20 9.5"/></svg>Male</button>
-            <button type="button" class="pill" data-value="female"><span class="pill-dot pill-dot-female"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="9" r="6"/><line x1="12" y1="15" x2="12" y2="21"/><line x1="9" y1="18" x2="15" y2="18"/></svg>Female</button>
+          <span class="pill-label" id="genderGroupLabel" data-i18n="iAm">I am</span>
+          <div class="pill-group" id="genderGroup" data-value="unspecified" role="group" aria-labelledby="genderGroupLabel">
+            <button type="button" class="pill" data-value="unspecified"><span class="pill-dot pill-dot-neutral" aria-hidden="true"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span data-i18n="preferNotSay">Prefer not to say</span></button>
+            <button type="button" class="pill" data-value="male"><span class="pill-dot pill-dot-male" aria-hidden="true"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="14" r="6"/><line x1="14.5" y1="9.5" x2="20" y2="4"/><polyline points="14.5 4 20 4 20 9.5"/></svg><span data-i18n="male">Male</span></button>
+            <button type="button" class="pill" data-value="female"><span class="pill-dot pill-dot-female" aria-hidden="true"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="9" r="6"/><line x1="12" y1="15" x2="12" y2="21"/><line x1="9" y1="18" x2="15" y2="18"/></svg><span data-i18n="female">Female</span></button>
           </div>
         </div>
 
@@ -116,26 +123,26 @@
 
     <!-- Filters side panel: who you get matched with, opened from the top-right filter icon -->
     <div id="filtersOverlay" class="side-panel-overlay hidden"></div>
-    <aside id="filtersPanel" class="side-panel side-panel-right" aria-label="Match filters">
+    <aside id="filtersPanel" class="side-panel side-panel-right" role="dialog" data-i18n-aria="filters" aria-label="Filters">
       <div class="side-panel-header">
-        <h2>Filters</h2>
-        <button type="button" id="closeFiltersBtn" class="modal-close">&times;</button>
+        <h2 data-i18n="filters">Filters</h2>
+        <button type="button" id="closeFiltersBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
       </div>
       <div class="side-panel-body">
         <div class="pill-row">
-          <span class="pill-label">Match me with</span>
-          <div class="pill-group" id="prefGenderGroup" data-value="any">
-            <button type="button" class="pill" data-value="any"><span class="pill-dot pill-dot-neutral"></span>Anyone</button>
-            <button type="button" class="pill" data-value="male"><span class="pill-dot pill-dot-male"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="14" r="6"/><line x1="14.5" y1="9.5" x2="20" y2="4"/><polyline points="14.5 4 20 4 20 9.5"/></svg>Male</button>
-            <button type="button" class="pill" data-value="female"><span class="pill-dot pill-dot-female"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="9" r="6"/><line x1="12" y1="15" x2="12" y2="21"/><line x1="9" y1="18" x2="15" y2="18"/></svg>Female</button>
+          <span class="pill-label" id="prefGenderGroupLabel" data-i18n="matchMeWith">Match me with</span>
+          <div class="pill-group" id="prefGenderGroup" data-value="any" role="group" aria-labelledby="prefGenderGroupLabel">
+            <button type="button" class="pill" data-value="any"><span class="pill-dot pill-dot-neutral" aria-hidden="true"></span><span data-i18n="anyone">Anyone</span></button>
+            <button type="button" class="pill" data-value="male"><span class="pill-dot pill-dot-male" aria-hidden="true"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="14" r="6"/><line x1="14.5" y1="9.5" x2="20" y2="4"/><polyline points="14.5 4 20 4 20 9.5"/></svg><span data-i18n="male">Male</span></button>
+            <button type="button" class="pill" data-value="female"><span class="pill-dot pill-dot-female" aria-hidden="true"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="9" r="6"/><line x1="12" y1="15" x2="12" y2="21"/><line x1="9" y1="18" x2="15" y2="18"/></svg><span data-i18n="female">Female</span></button>
           </div>
         </div>
 
         <div class="pill-row">
-          <span class="pill-label pill-label-strong">Interested Countries</span>
+          <span class="pill-label pill-label-strong" data-i18n="wantCountries">Countries I want to talk to</span>
           <div class="country-multiselect">
             <div class="country-search-wrap">
-              <input type="text" id="includeCountrySearch" class="search-input" placeholder="Search country…" autocomplete="off" />
+              <input type="text" id="includeCountrySearch" class="search-input" data-i18n-placeholder="searchCountry" data-i18n-aria="wantCountries" placeholder="Search country…" autocomplete="off" />
               <div id="includeCountryResults" class="search-results hidden"></div>
             </div>
             <div id="includeCountryChips" class="interest-tags"></div>
@@ -143,10 +150,10 @@
         </div>
 
         <div class="pill-row">
-          <span class="pill-label pill-label-strong">Non Interested Countries</span>
+          <span class="pill-label pill-label-strong" data-i18n="avoidCountries">Countries I don't want</span>
           <div class="country-multiselect">
             <div class="country-search-wrap">
-              <input type="text" id="excludeCountrySearch" class="search-input" placeholder="Search country…" autocomplete="off" />
+              <input type="text" id="excludeCountrySearch" class="search-input" data-i18n-placeholder="searchCountry" data-i18n-aria="avoidCountries" placeholder="Search country…" autocomplete="off" />
               <div id="excludeCountryResults" class="search-results hidden"></div>
             </div>
             <div id="excludeCountryChips" class="interest-tags"></div>
@@ -154,92 +161,93 @@
         </div>
 
         <div class="pill-row">
-          <span class="pill-label">Interests <span class="hint">(optional)</span></span>
+          <span class="pill-label"><span data-i18n="interests">Interests</span> <span class="hint" data-i18n="optional">(optional)</span></span>
           <div class="interests-picker">
             <div id="interestTags" class="interest-tags"></div>
             <div class="interest-input-wrap">
-              <input type="text" id="interestInput" class="search-input" placeholder="Type an interest and press Enter…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" maxlength="20" />
+              <input type="text" id="interestInput" class="search-input" data-i18n-placeholder="interestPlaceholder" data-i18n-aria="interests" placeholder="Type an interest…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" maxlength="20" />
+              <button type="button" id="addInterestBtn" class="btn btn-secondary interest-add-btn" data-i18n="add">Add</button>
             </div>
           </div>
         </div>
 
-        <p class="filters-hint">Filters only take effect after you tap Save.</p>
+        <p class="filters-hint" data-i18n="filtersHint">Filters only take effect after you tap Save.</p>
         <div class="filters-actions">
-          <button type="button" id="saveFiltersBtn" class="btn btn-save filters-action-btn">Save</button>
-          <button type="button" id="clearFiltersBtn" class="btn btn-secondary filters-action-btn">Clear</button>
+          <button type="button" id="saveFiltersBtn" class="btn btn-save filters-action-btn" data-i18n="save">Save</button>
+          <button type="button" id="clearFiltersBtn" class="btn btn-secondary filters-action-btn" data-i18n="clear">Clear</button>
         </div>
       </div>
     </aside>
 
-    <main class="stage">
+    <main class="stage" id="main">
 
       <!-- Setup panel: shown before the first call -->
       <section id="setupPanel" class="setup-panel">
         <div id="tapToTalk" class="tap-to-talk">
-          <button id="startBtn" class="tap-orb call-btn-green" aria-label="Start call">
+          <button id="startBtn" class="tap-orb call-btn-green" data-i18n-aria="startAria" aria-label="Start a call with a random person">
             <svg class="phone-icon" viewBox="0 0 24 24" fill="white" aria-hidden="true">
               <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
             </svg>
-            <span class="tap-orb-label">Tap to Talk</span>
+            <span class="tap-orb-label" data-i18n="tapToTalk">Tap to Talk</span>
           </button>
           <p class="consent-line">
-            By tapping Start you agree to our
-            <button type="button" id="openTermsLink" class="link-btn">Terms &amp; Community Guidelines</button>
+            <span data-i18n="consentPrefix">By tapping Start you agree to our</span>
+            <button type="button" id="openTermsLink" class="link-btn" data-i18n="termsLink">Terms &amp; Community Guidelines</button>
           </p>
-          <p id="setupErrorText" class="error-text hidden"></p>
+          <p id="setupErrorText" class="error-text hidden" role="alert"></p>
         </div>
       </section>
 
       <!-- Account modal: optional simple username/password/nickname (in-memory only for now) -->
       <div id="accountModal" class="modal-overlay hidden">
-        <div class="modal-box">
+        <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="accountModalTitle">
           <div class="modal-header">
-            <h2>Account</h2>
-            <button type="button" id="closeAccountBtn" class="modal-close">&times;</button>
+            <h2 id="accountModalTitle" data-i18n="account">Account</h2>
+            <button type="button" id="closeAccountBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
           </div>
           <div class="modal-body">
-            <p id="accountStatus" class="account-status hidden"></p>
+            <p id="accountStatus" class="account-status hidden" role="alert"></p>
 
             <div id="accountLoggedOut">
               <div id="googleSignInBtn" class="google-signin-btn"></div>
-              <div class="account-divider"><span>or</span></div>
+              <div class="account-divider"><span data-i18n="or">or</span></div>
 
               <div class="account-tabs">
-                <button type="button" class="account-tab selected" data-tab="login">Log In</button>
-                <button type="button" class="account-tab" data-tab="signup">Sign Up</button>
+                <button type="button" class="account-tab selected" data-tab="login" data-i18n="logIn">Log In</button>
+                <button type="button" class="account-tab" data-tab="signup" data-i18n="signUp">Sign Up</button>
               </div>
 
               <div id="loginTab" class="account-tab-panel">
-                <input type="text" id="loginUsername" class="search-input account-input" placeholder="Username" autocomplete="username" />
-                <input type="password" id="loginPassword" class="search-input account-input" placeholder="Password" autocomplete="current-password" />
-                <button type="button" id="loginSubmitBtn" class="btn btn-primary settings-save">Log In</button>
+                <input type="text" id="loginUsername" class="search-input account-input" data-i18n-placeholder="username" data-i18n-aria="username" placeholder="Username" autocomplete="username" />
+                <input type="password" id="loginPassword" class="search-input account-input" data-i18n-placeholder="password" data-i18n-aria="password" placeholder="Password" autocomplete="current-password" />
+                <button type="button" id="loginSubmitBtn" class="btn btn-primary settings-save" data-i18n="logIn">Log In</button>
               </div>
 
               <div id="signupTab" class="account-tab-panel hidden">
-                <input type="text" id="signupUsername" class="search-input account-input" placeholder="Choose a username" autocomplete="username" />
-                <input type="password" id="signupPassword" class="search-input account-input" placeholder="Choose a password" autocomplete="new-password" />
-                <input type="text" id="signupNickname" class="search-input account-input" placeholder="Nickname (shown to others)" maxlength="24" />
-                <button type="button" id="signupSubmitBtn" class="btn btn-primary settings-save">Create Account</button>
+                <input type="text" id="signupUsername" class="search-input account-input" data-i18n-placeholder="chooseUsername" data-i18n-aria="chooseUsername" placeholder="Choose a username" autocomplete="username" />
+                <input type="password" id="signupPassword" class="search-input account-input" data-i18n-placeholder="choosePassword" data-i18n-aria="choosePassword" placeholder="Choose a password" autocomplete="new-password" />
+                <input type="text" id="signupNickname" class="search-input account-input" data-i18n-placeholder="nicknameShown" data-i18n-aria="nicknameShown" placeholder="Nickname (shown to others)" maxlength="24" />
+                <button type="button" id="signupSubmitBtn" class="btn btn-primary settings-save" data-i18n="createAccount">Create Account</button>
               </div>
 
-              <p class="account-hint">Accounts are stored in memory for now and reset if the server restarts — this is an early version.</p>
+              <p class="account-hint" data-i18n="accountHint">Accounts are stored in memory for now and reset if the server restarts — this is an early version.</p>
             </div>
 
             <div id="accountLoggedIn" class="hidden">
-              <p class="account-welcome">Signed in as <strong id="accountNicknameDisplay"></strong></p>
+              <p class="account-welcome"><span data-i18n="signedInAs">Signed in as</span> <strong id="accountNicknameDisplay"></strong></p>
 
-              <h3 class="account-section-title">Account Settings</h3>
+              <h3 class="account-section-title" data-i18n="accountSettings">Account Settings</h3>
 
-              <label class="account-label">Nickname</label>
-              <input type="text" id="settingsNickname" class="search-input account-input" placeholder="Nickname" maxlength="24" />
-              <button type="button" id="updateNicknameBtn" class="btn btn-secondary settings-save">Update Nickname</button>
+              <label class="account-label" for="settingsNickname" data-i18n="nickname">Nickname</label>
+              <input type="text" id="settingsNickname" class="search-input account-input" data-i18n-placeholder="nickname" placeholder="Nickname" maxlength="24" />
+              <button type="button" id="updateNicknameBtn" class="btn btn-secondary settings-save" data-i18n="updateNickname">Update Nickname</button>
 
-              <label class="account-label account-label-spaced">Change Password</label>
-              <input type="password" id="currentPasswordInput" class="search-input account-input" placeholder="Current password" autocomplete="current-password" />
-              <input type="password" id="newPasswordInput" class="search-input account-input" placeholder="New password" autocomplete="new-password" />
-              <button type="button" id="changePasswordBtn" class="btn btn-secondary settings-save">Change Password</button>
+              <label class="account-label account-label-spaced" for="currentPasswordInput" data-i18n="changePassword">Change Password</label>
+              <input type="password" id="currentPasswordInput" class="search-input account-input" data-i18n-placeholder="currentPassword" data-i18n-aria="currentPassword" placeholder="Current password" autocomplete="current-password" />
+              <input type="password" id="newPasswordInput" class="search-input account-input" data-i18n-placeholder="newPassword" data-i18n-aria="newPassword" placeholder="New password" autocomplete="new-password" />
+              <button type="button" id="changePasswordBtn" class="btn btn-secondary settings-save" data-i18n="changePassword">Change Password</button>
 
-              <button type="button" id="logoutBtn" class="btn btn-danger settings-save account-logout">Log Out</button>
+              <button type="button" id="logoutBtn" class="btn btn-danger settings-save account-logout" data-i18n="logOut">Log Out</button>
             </div>
           </div>
         </div>
@@ -247,15 +255,15 @@
 
       <!-- Call history modal: session-only, no account required -->
       <div id="historyModal" class="modal-overlay hidden">
-        <div class="modal-box">
+        <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="historyModalTitle">
           <div class="modal-header">
-            <h2>Call History</h2>
-            <button type="button" id="closeHistoryBtn" class="modal-close">&times;</button>
+            <h2 id="historyModalTitle" data-i18n="callHistory">Call History</h2>
+            <button type="button" id="closeHistoryBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
           </div>
           <div class="modal-body">
-            <p class="account-hint">This session only — clears when you close or reload the page. Tap the green button to call someone back if they're online.</p>
+            <p class="account-hint" data-i18n="historyHint">This session only — it clears when you close or reload the page. Tap the green button to call someone back if they're online.</p>
             <div id="historyList" class="history-list">
-              <p class="history-empty">No calls yet.</p>
+              <p class="history-empty" data-i18n="noCallsYet">No calls yet.</p>
             </div>
           </div>
         </div>
@@ -263,24 +271,24 @@
 
       <!-- Friends modal: list of accepted friends + pending incoming requests -->
       <div id="friendsModal" class="modal-overlay hidden">
-        <div class="modal-box">
+        <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="friendsModalTitle">
           <div class="modal-header">
-            <h2>Friends</h2>
-            <button type="button" id="closeFriendsBtn" class="modal-close">&times;</button>
+            <h2 id="friendsModalTitle" data-i18n="friends">Friends</h2>
+            <button type="button" id="closeFriendsBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
           </div>
           <div class="modal-body">
             <div class="friends-tabs">
-              <button type="button" class="friends-tab selected" data-tab="list">My Friends</button>
-              <button type="button" class="friends-tab" data-tab="requests">Requests<span id="friendReqCount" class="tab-count hidden">0</span></button>
+              <button type="button" class="friends-tab selected" data-tab="list" data-i18n="myFriends">My Friends</button>
+              <button type="button" class="friends-tab" data-tab="requests"><span data-i18n="requests">Requests</span><span id="friendReqCount" class="tab-count hidden">0</span></button>
             </div>
             <div id="friendsListPanel">
               <div id="friendsList" class="friends-list">
-                <p class="history-empty">No friends yet. Tap "Add friend" during a call to send a request.</p>
+                <p class="history-empty" data-i18n="noFriendsYet">No friends yet. Tap "Add friend" during a call to send a request.</p>
               </div>
             </div>
             <div id="friendRequestsPanel" class="hidden">
               <div id="friendRequestsList" class="friends-list">
-                <p class="history-empty">No pending requests.</p>
+                <p class="history-empty" data-i18n="noPendingRequests">No pending requests.</p>
               </div>
             </div>
           </div>
@@ -289,16 +297,16 @@
 
       <!-- Friend chat modal: persistent (server-side, while it's running) chat with a friend -->
       <div id="friendChatModal" class="modal-overlay hidden">
-        <div class="modal-box">
+        <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="friendChatTitle">
           <div class="modal-header">
-            <h2 id="friendChatTitle">Chat</h2>
-            <button type="button" id="closeFriendChatBtn" class="modal-close">&times;</button>
+            <h2 id="friendChatTitle" data-i18n="chat">Chat</h2>
+            <button type="button" id="closeFriendChatBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
           </div>
           <div class="modal-body friend-chat-body">
             <div id="friendChatMessages" class="chat-messages friend-chat-messages"></div>
             <form id="friendChatForm" class="chat-form">
-              <input id="friendChatInput" type="text" maxlength="1000" placeholder="Type a message…" autocomplete="off" />
-              <button type="submit" class="btn btn-primary chat-send">Send</button>
+              <input id="friendChatInput" type="text" maxlength="1000" data-i18n-placeholder="typeMessage" data-i18n-aria="typeMessage" placeholder="Type a message…" autocomplete="off" />
+              <button type="submit" class="btn btn-primary chat-send" data-i18n="send">Send</button>
             </form>
           </div>
         </div>
@@ -306,29 +314,30 @@
 
       <!-- Age / Terms consent gate — shown before the very first call -->
       <div id="ageConsentModal" class="modal-overlay hidden">
-        <div class="modal-box">
+        <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="ageConsentTitle">
           <div class="modal-header">
-            <h2>Before You Start</h2>
+            <h2 id="ageConsentTitle" data-i18n="beforeYouStart">Before You Start</h2>
           </div>
           <div class="modal-body">
-            <p class="consent-modal-text"><svg class="age-badge-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><text x="12" y="15.5" text-anchor="middle" font-size="8" font-weight="700" fill="currentColor" stroke="none">18+</text></svg> You must be <strong>18 years or older</strong> to use TalkLive.</p>
-            <p class="consent-modal-text">By continuing, you agree to our
-              <button type="button" id="openTermsFromConsent" class="link-btn">Terms &amp; Community Guidelines</button>,
-              including the rules on respectful behavior and reporting/bans.
+            <p class="consent-modal-text"><svg class="age-badge-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><text x="12" y="15.5" text-anchor="middle" font-size="8" font-weight="700" fill="currentColor" stroke="none">18+</text></svg> <span data-i18n="mustBe18">You must be 18 years or older to use TalkLive.</span></p>
+            <p class="consent-modal-text"><span data-i18n="byContinuing">By continuing, you agree to our</span>
+              <button type="button" id="openTermsFromConsent" class="link-btn" data-i18n="termsLink">Terms &amp; Community Guidelines</button><span data-i18n="consentSuffix">, including the rules on respectful behavior and reporting/bans.</span>
             </p>
-            <button type="button" id="ageAgreeBtn" class="btn btn-primary settings-save">I AGREE</button>
+            <button type="button" id="ageAgreeBtn" class="btn btn-primary settings-save" data-i18n="iAgree">I AGREE</button>
           </div>
         </div>
       </div>
 
       <!-- Policies modal: how-to-use, community guidelines, ban policy, terms, privacy -->
       <div id="termsModal" class="modal-overlay hidden">
-        <div class="modal-box modal-box-wide">
+        <div class="modal-box modal-box-wide" role="dialog" aria-modal="true" aria-labelledby="termsModalTitle">
           <div class="modal-header">
-            <h2>Terms &amp; Community Guidelines</h2>
-            <button type="button" id="closeTermsBtn" class="modal-close">&times;</button>
+            <h2 id="termsModalTitle" data-i18n="termsLink">Terms &amp; Community Guidelines</h2>
+            <button type="button" id="closeTermsBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
           </div>
           <div class="modal-body policy-body">
+
+            <p class="account-hint" data-i18n="termsEnglishNote">The full rules below are provided in English.</p>
 
             <h3>How TalkLive Works</h3>
             <p>TalkLive connects you with a random stranger for a live, audio-only conversation. There's no sign-up — tap "Start," allow microphone access, and you'll be paired with someone automatically. Tap "Next" any time to end the current call and get matched with someone new, or "Hang Up" to leave entirely. You can optionally set a gender preference, a country, and interest tags from the settings menu to help find a better match.</p>
@@ -387,7 +396,7 @@
       <!-- Call panel: shown during waiting/connected states -->
       <section id="callPanel" class="call-panel hidden">
         <div class="orb-wrap">
-          <div id="orb" class="orb idle">
+          <div id="orb" class="orb idle" aria-hidden="true">
             <div class="orb-core"></div>
             <div class="orb-ring r1"></div>
             <div class="orb-ring r2"></div>
@@ -395,13 +404,13 @@
         </div>
 
         <div id="connectionIndicator" class="connection-indicator hidden">
-          <span id="connectionDot" class="connection-dot"></span>
+          <span id="connectionDot" class="connection-dot" aria-hidden="true"></span>
           <span id="connectionLabel" class="connection-label">Searching</span>
           <span id="callTimer" class="call-timer hidden">0:00</span>
         </div>
 
-        <p id="statusText" class="status-text">Tap start to talk to a random stranger</p>
-        <p id="subText" class="sub-text">Audio only · No sign up · No registration</p>
+        <p id="statusText" class="status-text" aria-live="polite">Tap the green button to talk to a random person</p>
+        <p id="subText" class="sub-text">Voice only · No sign up needed</p>
 
         <div id="partnerCard" class="partner-card hidden">
           <div class="partner-name" id="partnerName">—</div>
@@ -411,16 +420,16 @@
         </div>
 
         <div id="reactionBar" class="reaction-bar hidden">
-          <button type="button" class="reaction-btn" data-reaction="like" aria-label="React thumbs up">
+          <button type="button" class="reaction-btn" data-reaction="like" data-i18n-aria="reactLike" aria-label="Send a thumbs up">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
           </button>
-          <button type="button" class="reaction-btn" data-reaction="laugh" aria-label="React laughing">
+          <button type="button" class="reaction-btn" data-reaction="laugh" data-i18n-aria="reactLaugh" aria-label="Send a laugh">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
           </button>
-          <button type="button" class="reaction-btn" data-reaction="clap" aria-label="React clapping">
+          <button type="button" class="reaction-btn" data-reaction="clap" data-i18n-aria="reactClap" aria-label="Send applause">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><ellipse cx="8" cy="15" rx="3.2" ry="4.2" fill="currentColor" stroke="none" transform="rotate(-20 8 15)"/><ellipse cx="16" cy="15" rx="3.2" ry="4.2" fill="currentColor" stroke="none" transform="rotate(20 16 15)"/><line x1="12" y1="4" x2="12" y2="7"/><line x1="7.8" y1="5.6" x2="9.4" y2="8"/><line x1="16.2" y1="5.6" x2="14.6" y2="8"/></svg>
           </button>
-          <button type="button" class="reaction-btn" data-reaction="heart" aria-label="React heart">
+          <button type="button" class="reaction-btn" data-reaction="heart" data-i18n-aria="reactHeart" aria-label="Send a heart">
             <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
           </button>
         </div>
@@ -428,110 +437,122 @@
 
         <div class="primary-controls hidden" id="primaryControls">
           <div class="call-btn-wrap">
-            <button id="stopBtn" class="call-btn call-btn-red" aria-label="Hang up">
+            <button id="stopBtn" class="call-btn call-btn-red" data-i18n-aria="hangUp" aria-label="Hang Up">
               <svg class="phone-icon phone-icon-rotated" viewBox="0 0 24 24" fill="white" aria-hidden="true">
                 <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
               </svg>
             </button>
-            <span class="call-btn-label">Hang Up</span>
+            <span class="call-btn-label" data-i18n="hangUp">Hang Up</span>
           </div>
           <div class="call-btn-wrap">
-            <button id="skipBtn" class="call-btn call-btn-next" aria-label="Next stranger">
+            <button id="skipBtn" class="call-btn call-btn-next" data-i18n-aria="next" aria-label="Next">
               <svg class="skip-icon" viewBox="0 0 24 24" fill="white" aria-hidden="true">
                 <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
               </svg>
             </button>
-            <span class="call-btn-label call-btn-label-next">Next</span>
+            <span class="call-btn-label call-btn-label-next" data-i18n="next">Next</span>
           </div>
         </div>
 
         <label id="autoCallRow" class="checkbox-row auto-call-row hidden" for="autoCallCheckbox">
           <input type="checkbox" id="autoCallCheckbox" checked />
-          <span>Enable Auto Call</span>
+          <span data-i18n="enableAutoCall">Enable Auto Call</span>
         </label>
 
         <div class="controls secondary-controls">
-          <button id="muteBtn" class="btn btn-icon btn-icon-lg hidden" title="Mute microphone" aria-label="Mute microphone">
-            <svg id="muteIcon" class="simple-icon simple-icon-lg" viewBox="0 0 24 24" fill="#aab0c4" aria-hidden="true">
-              <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
-            </svg>
-            <span id="muteSlash" class="mute-slash hidden"></span>
-          </button>
-          <button id="chatToggleBtn" class="btn btn-icon btn-icon-lg hidden" title="Toggle chat" aria-label="Toggle text chat">
-            <svg class="simple-icon simple-icon-lg" viewBox="0 0 24 24" fill="white" aria-hidden="true">
-              <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
-            </svg>
-            <span id="chatBadge" class="chat-badge hidden"></span><span id="chatTypingBadge" class="chat-badge chat-badge-typing hidden"></span>
-          </button>
-          <button id="addFriendBtn" class="btn btn-icon btn-icon-lg hidden" title="Add friend" aria-label="Add friend">
-            <svg id="addFriendIcon" class="simple-icon simple-icon-lg" viewBox="0 0 24 24" fill="white" aria-hidden="true">
-              <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-            </svg>
-          </button>
-          <button id="reportBtn" class="btn btn-icon btn-icon-lg hidden" title="Report and block" aria-label="Report and block">
-            <svg class="simple-icon simple-icon-lg" viewBox="0 0 24 24" aria-hidden="true">
-              <line x1="5" y1="3" x2="5" y2="21" stroke="#ff5470" stroke-width="2" stroke-linecap="round"/>
-              <path d="M6 4h13l-3.5 4L19 12H6V4z" fill="#ff5470"/>
-            </svg>
-          </button>
+          <div class="ctl-wrap">
+            <button id="muteBtn" class="btn btn-icon btn-icon-lg hidden" data-i18n-title="mute" data-i18n-aria="mute" title="Mute" aria-label="Mute" aria-pressed="false">
+              <svg id="muteIcon" class="simple-icon simple-icon-lg" viewBox="0 0 24 24" fill="#aab0c4" aria-hidden="true">
+                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+              </svg>
+              <span id="muteSlash" class="mute-slash hidden" aria-hidden="true"></span>
+            </button>
+            <span class="ctl-label" data-i18n="mute">Mute</span>
+          </div>
+          <div class="ctl-wrap">
+            <button id="chatToggleBtn" class="btn btn-icon btn-icon-lg hidden" data-i18n-title="chat" data-i18n-aria="chat" title="Chat" aria-label="Chat">
+              <svg class="simple-icon simple-icon-lg" viewBox="0 0 24 24" fill="white" aria-hidden="true">
+                <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+              </svg>
+              <span id="chatBadge" class="chat-badge hidden" aria-hidden="true"></span><span id="chatTypingBadge" class="chat-badge chat-badge-typing hidden" aria-hidden="true"></span>
+            </button>
+            <span class="ctl-label" data-i18n="chat">Chat</span>
+          </div>
+          <div class="ctl-wrap">
+            <button id="addFriendBtn" class="btn btn-icon btn-icon-lg hidden" data-i18n-title="addFriend" data-i18n-aria="addFriend" title="Add friend" aria-label="Add friend">
+              <svg id="addFriendIcon" class="simple-icon simple-icon-lg" viewBox="0 0 24 24" fill="white" aria-hidden="true">
+                <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+              </svg>
+            </button>
+            <span class="ctl-label" data-i18n="addFriend">Add friend</span>
+          </div>
+          <div class="ctl-wrap">
+            <button id="reportBtn" class="btn btn-icon btn-icon-lg hidden" data-i18n-title="report" data-i18n-aria="report" title="Report" aria-label="Report">
+              <svg class="simple-icon simple-icon-lg" viewBox="0 0 24 24" aria-hidden="true">
+                <line x1="5" y1="3" x2="5" y2="21" stroke="#ff5470" stroke-width="2" stroke-linecap="round"/>
+                <path d="M6 4h13l-3.5 4L19 12H6V4z" fill="#ff5470"/>
+              </svg>
+            </button>
+            <span class="ctl-label" data-i18n="report">Report</span>
+          </div>
         </div>
 
-        <p id="errorText" class="error-text hidden"></p>
+        <p id="errorText" class="error-text hidden" role="alert"></p>
       </section>
 
       <!-- Chat panel -->
       <section id="chatPanel" class="chat-panel hidden">
         <div id="chatMessages" class="chat-messages"></div>
-        <p id="typingIndicator" class="typing-indicator hidden">Stranger is typing<span class="typing-dots"><span>.</span><span>.</span><span>.</span></span></p>
+        <p id="typingIndicator" class="typing-indicator hidden"><span data-i18n="strangerTyping">Stranger is typing</span><span class="typing-dots" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span></p>
         <form id="chatForm" class="chat-form">
-          <input id="chatInput" type="text" maxlength="1000" placeholder="Type a message…" autocomplete="off" />
-          <button type="submit" id="chatSendBtn" class="btn btn-primary chat-send">Send</button>
+          <input id="chatInput" type="text" maxlength="1000" data-i18n-placeholder="typeMessage" data-i18n-aria="typeMessage" placeholder="Type a message…" autocomplete="off" />
+          <button type="submit" id="chatSendBtn" class="btn btn-primary chat-send" data-i18n="send">Send</button>
         </form>
       </section>
       <!-- In-call guide — trimmed rules reachable by scrolling down during a call, so they're
            available without eating into the on-screen call controls -->
-      <section id="callGuide" class="quick-guide hidden" aria-label="Call guidelines">
+      <section id="callGuide" class="quick-guide hidden">
         <ul>
-          <li><span class="qg-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M8 14s1.5 2.2 4 2.2 4-2.2 4-2.2"/><line x1="9" y1="9.5" x2="9" y2="9.6"/><line x1="15" y1="9.5" x2="15" y2="9.6"/></svg></span> Be respectful. Treat others the way you want to be treated.</li>
-          <li><span class="qg-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="5.5" y1="18.5" x2="18.5" y2="5.5"/></svg></span> No sexual talks, hate, threats, or harassment.</li>
-          <li><span class="qg-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="3" x2="5" y2="21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M6 4h13l-3.5 4L19 12H6V4z" fill="currentColor"/></svg></span> Report anyone who breaks the rules, can lead to a ban.</li>
-          <li><span class="qg-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="13" width="4" height="6" rx="2"/><rect x="17" y="13" width="4" height="6" rx="2"/></svg></span> Use headphones to prevent echo and improve call quality.</li>
-          <li><span class="qg-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="21"/><line x1="9" y1="21" x2="15" y2="21"/></svg></span> You can mute your microphone anytime.</li>
-          <li><span class="qg-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-4 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/></svg></span> Use the chat button to send text messages during a call.</li>
+          <li><span class="qg-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M8 14s1.5 2.2 4 2.2 4-2.2 4-2.2"/><line x1="9" y1="9.5" x2="9" y2="9.6"/><line x1="15" y1="9.5" x2="15" y2="9.6"/></svg></span> <span data-i18n="guideRespect">Be respectful. Treat others the way you want to be treated.</span></li>
+          <li><span class="qg-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="5.5" y1="18.5" x2="18.5" y2="5.5"/></svg></span> <span data-i18n="guideNoSexual">No sexual content, hate, threats, or harassment.</span></li>
+          <li><span class="qg-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="3" x2="5" y2="21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M6 4h13l-3.5 4L19 12H6V4z" fill="currentColor"/></svg></span> <span data-i18n="guideReportShort">Report anyone who breaks the rules — it can lead to a ban.</span></li>
+          <li><span class="qg-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="13" width="4" height="6" rx="2"/><rect x="17" y="13" width="4" height="6" rx="2"/></svg></span> <span data-i18n="guideHeadphones">Use headphones to prevent echo and improve call quality.</span></li>
+          <li><span class="qg-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="21"/><line x1="9" y1="21" x2="15" y2="21"/></svg></span> <span data-i18n="guideMute">You can mute your microphone anytime.</span></li>
+          <li><span class="qg-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-4 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/></svg></span> <span data-i18n="guideChat">Use the chat button to send text messages during a call.</span></li>
         </ul>
       </section>
 
       <!-- Quick guide — key rules at a glance, hidden during an active call to save screen space on mobile -->
-      <section id="quickGuide" class="quick-guide" aria-label="How to use TalkLive">
+      <section id="quickGuide" class="quick-guide">
         <ul>
-          <li><span class="qg-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M8 14s1.5 2.2 4 2.2 4-2.2 4-2.2"/><line x1="9" y1="9.5" x2="9" y2="9.6"/><line x1="15" y1="9.5" x2="15" y2="9.6"/></svg></span> Be respectful. Treat others the way you want to be treated.</li>
-          <li><span class="qg-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="5.5" y1="18.5" x2="18.5" y2="5.5"/></svg></span> No sexual content, hate, threats, or harassment.</li>
-          <li><span class="qg-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><text x="12" y="15.5" text-anchor="middle" font-size="8" font-weight="700" fill="currentColor" stroke="none">18+</text></svg></span> You must be 18 or older to use this site.</li>
-          <li><span class="qg-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="3" x2="5" y2="21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M6 4h13l-3.5 4L19 12H6V4z" fill="currentColor"/></svg></span> Report anyone who breaks the rules. Reports instantly end the call, block that person, and repeated reports can lead to a ban.</li>
-          <li><span class="qg-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="13" width="4" height="6" rx="2"/><rect x="17" y="13" width="4" height="6" rx="2"/></svg></span> Use headphones to prevent echo and improve call quality.</li>
-          <li><span class="qg-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="21"/><line x1="9" y1="21" x2="15" y2="21"/></svg></span> You can mute your microphone anytime.</li>
-          <li><span class="qg-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-4 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/></svg></span> Use the chat button to send text messages during a call.</li>
+          <li><span class="qg-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M8 14s1.5 2.2 4 2.2 4-2.2 4-2.2"/><line x1="9" y1="9.5" x2="9" y2="9.6"/><line x1="15" y1="9.5" x2="15" y2="9.6"/></svg></span> <span data-i18n="guideRespect">Be respectful. Treat others the way you want to be treated.</span></li>
+          <li><span class="qg-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="5.5" y1="18.5" x2="18.5" y2="5.5"/></svg></span> <span data-i18n="guideNoSexual">No sexual content, hate, threats, or harassment.</span></li>
+          <li><span class="qg-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><text x="12" y="15.5" text-anchor="middle" font-size="8" font-weight="700" fill="currentColor" stroke="none">18+</text></svg></span> <span data-i18n="guide18">You must be 18 or older to use this site.</span></li>
+          <li><span class="qg-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="3" x2="5" y2="21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M6 4h13l-3.5 4L19 12H6V4z" fill="currentColor"/></svg></span> <span data-i18n="guideReport">Report anyone who breaks the rules. Reports instantly end the call, block that person, and repeated reports can lead to a ban.</span></li>
+          <li><span class="qg-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="13" width="4" height="6" rx="2"/><rect x="17" y="13" width="4" height="6" rx="2"/></svg></span> <span data-i18n="guideHeadphones">Use headphones to prevent echo and improve call quality.</span></li>
+          <li><span class="qg-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="21"/><line x1="9" y1="21" x2="15" y2="21"/></svg></span> <span data-i18n="guideMute">You can mute your microphone anytime.</span></li>
+          <li><span class="qg-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-4 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/></svg></span> <span data-i18n="guideChat">Use the chat button to send text messages during a call.</span></li>
         </ul>
       </section>
     </main>
 
     <footer class="footer">
-      <p>Be respectful. You may be paired with anyone in the world. Audio only — no video, no recording. 18+ only.</p>
-      <button type="button" id="openTermsLinkFooter" class="link-btn">Terms &amp; Community Guidelines</button>
-      <a href="/privacy.html" class="link-btn">Privacy Policy</a>
+      <p data-i18n="footerText">Be respectful. You may be paired with anyone in the world. Voice only — no video, no recording. 18+ only.</p>
+      <button type="button" id="openTermsLinkFooter" class="link-btn" data-i18n="termsLink">Terms &amp; Community Guidelines</button>
+      <a href="/privacy.html" class="link-btn" data-i18n="privacyPolicy">Privacy Policy</a>
     </footer>
   </div>
 
   <div id="connectFlash" class="connect-flash" aria-hidden="true"></div>
 
   <!-- Incoming "call me back" banner -->
-  <div id="callBackBanner" class="callback-banner hidden">
+  <div id="callBackBanner" class="callback-banner hidden" role="alert">
     <div class="callback-banner-text">
       <span id="callBackBannerText">Someone wants to call you back</span>
     </div>
     <div class="callback-banner-actions">
-      <button type="button" id="callBackAcceptBtn" class="btn btn-primary callback-accept">Accept</button>
-      <button type="button" id="callBackDeclineBtn" class="btn btn-secondary callback-decline">Decline</button>
+      <button type="button" id="callBackAcceptBtn" class="btn btn-primary callback-accept" data-i18n="accept">Accept</button>
+      <button type="button" id="callBackDeclineBtn" class="btn btn-secondary callback-decline" data-i18n="decline">Decline</button>
     </div>
   </div>
 
@@ -539,6 +560,7 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="countries.js"></script>
+  <script src="i18n.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

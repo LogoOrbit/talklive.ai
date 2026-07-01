@@ -174,7 +174,7 @@ function getFlagImg(code, size = 20) {
     return `<svg class="flag-icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><ellipse cx="12" cy="12" rx="4.2" ry="9.5"/><line x1="2.5" y1="12" x2="21.5" y2="12"/></svg>`;
   }
   const cc = code.toLowerCase();
-  return `<img class="flag-icon" src="https://flagcdn.com/24x18/${cc}.png" srcset="https://flagcdn.com/48x36/${cc}.png 2x" width="${size}" alt="${code.toUpperCase()}" />`;
+  return `<img class="flag-icon" src="https://flagcdn.com/24x18/${cc}.png" srcset="https://flagcdn.com/48x36/${cc}.png 2x" width="${size}" alt="${escapeHtml(getCountryName(code))}" />`;
 }
 
 const ICE_SERVERS = [
@@ -239,35 +239,52 @@ function initPillGroup(group) {
   group.addEventListener('click', (e) => {
     const pill = e.target.closest('.pill');
     if (!pill) return;
-    group.querySelectorAll('.pill').forEach((p) => p.classList.remove('selected'));
+    group.querySelectorAll('.pill').forEach((p) => {
+      p.classList.remove('selected');
+      p.setAttribute('aria-pressed', 'false');
+    });
     pill.classList.add('selected');
+    pill.setAttribute('aria-pressed', 'true');
     group.dataset.value = pill.dataset.value;
   });
   // select the first pill by default
-  const first = group.querySelector('.pill');
-  if (first) first.classList.add('selected');
+  group.querySelectorAll('.pill').forEach((p, i) => {
+    p.classList.toggle('selected', i === 0);
+    p.setAttribute('aria-pressed', i === 0 ? 'true' : 'false');
+  });
 }
 
 function setPillGroupValue(group, value) {
   group.dataset.value = value;
-  group.querySelectorAll('.pill').forEach((p) => p.classList.toggle('selected', p.dataset.value === value));
+  group.querySelectorAll('.pill').forEach((p) => {
+    const on = p.dataset.value === value;
+    p.classList.toggle('selected', on);
+    p.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
 }
 
 // --- Country multi-select (Interested / Non Interested Countries) ---
 // Clicking the search box shows every country alphabetically with a flag icon;
 // typing narrows the list. A country can only live in one of the two lists at
 // a time, so adding it to one removes it from the other.
-const ALL_COUNTRY_ENTRIES = Object.entries(COUNTRIES).sort((a, b) => a[1].localeCompare(b[1]));
+// Country names come from getCountryName() (Intl.DisplayNames), so the list is
+// shown, searched, and sorted in the user's own language; the English name from
+// countries.js still matches as a search fallback.
+function getCountryEntries() {
+  return Object.keys(COUNTRIES)
+    .map((code) => [code, getCountryName(code)])
+    .sort((a, b) => a[1].localeCompare(b[1], I18N_STATE.lang));
+}
 
 function makeCountryMultiSelect(searchInput, resultsEl, chipsEl, set, getOther) {
   function renderChips() {
     chipsEl.innerHTML = '';
     Array.from(set)
-      .sort((a, b) => (COUNTRIES[a] || a).localeCompare(COUNTRIES[b] || b))
+      .sort((a, b) => getCountryName(a).localeCompare(getCountryName(b), I18N_STATE.lang))
       .forEach((code) => {
         const chip = document.createElement('span');
         chip.className = 'tag removable';
-        chip.innerHTML = `${getFlagImg(code, 16)} ${escapeHtml(COUNTRIES[code] || code)}<span class="tag-remove">&times;</span>`;
+        chip.innerHTML = `${getFlagImg(code, 16)} ${escapeHtml(getCountryName(code))}<span class="tag-remove" role="button" tabindex="0" aria-label="${escapeHtml(t('remove'))}">&times;</span>`;
         chip.querySelector('.tag-remove').addEventListener('click', () => {
           set.delete(code);
           renderChips();
@@ -279,12 +296,15 @@ function makeCountryMultiSelect(searchInput, resultsEl, chipsEl, set, getOther) 
   function renderResults(query) {
     const q = query.trim().toLowerCase();
     resultsEl.innerHTML = '';
-    const matches = q ? ALL_COUNTRY_ENTRIES.filter(([, name]) => name.toLowerCase().includes(q)) : ALL_COUNTRY_ENTRIES;
+    const matches = q
+      ? getCountryEntries().filter(([code, name]) =>
+          name.toLowerCase().includes(q) || (COUNTRIES[code] || '').toLowerCase().includes(q))
+      : getCountryEntries();
 
     if (matches.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'search-result-empty';
-      empty.textContent = 'No matching country';
+      empty.textContent = t('noMatchingCountry');
       resultsEl.appendChild(empty);
     } else {
       matches.forEach(([code, name]) => {
@@ -337,7 +357,7 @@ function renderInterestTags() {
   selectedInterests.forEach((interest) => {
     const tag = document.createElement('span');
     tag.className = 'tag removable';
-    tag.innerHTML = `${interest}<span class="tag-remove">&times;</span>`;
+    tag.innerHTML = `${escapeHtml(interest)}<span class="tag-remove" role="button" tabindex="0" aria-label="${escapeHtml(t('remove'))}">&times;</span>`;
     tag.querySelector('.tag-remove').addEventListener('click', () => {
       selectedInterests.delete(interest);
       renderInterestTags();
@@ -346,15 +366,22 @@ function renderInterestTags() {
   });
 }
 
-interestInput.addEventListener('keydown', (e) => {
-  if (e.key !== 'Enter') return;
-  e.preventDefault();
+function addInterestFromInput() {
   const value = interestInput.value.trim();
   if (!value) return;
   selectedInterests.add(value);
   interestInput.value = '';
   renderInterestTags();
+}
+
+interestInput.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  addInterestFromInput();
 });
+
+// Explicit Add button — many mobile keyboards have no obvious Enter key.
+document.getElementById('addInterestBtn').addEventListener('click', addInterestFromInput);
 
 initPillGroup(genderGroup);
 initPillGroup(prefGenderGroup);
@@ -641,7 +668,7 @@ if (googleSignInBtn && window.GOOGLE_CLIENT_ID) {
 socket.on('google-auth-result', ({ ok, nickname, error }) => {
   if (!ok) return showAccountStatus(error, 'error');
   localStorage.setItem('talklive_nickname', nickname);
-  showAccountStatus(`Signed in as ${nickname}`, 'success');
+  showAccountStatus(t('statusSignedIn', { name: nickname }), 'success');
   setTimeout(() => location.reload(), 500);
 });
 
@@ -666,14 +693,14 @@ changePasswordBtn.addEventListener('click', () => {
 socket.on('login-result', ({ ok, nickname, error }) => {
   if (!ok) return showAccountStatus(error, 'error');
   localStorage.setItem('talklive_nickname', nickname);
-  showAccountStatus(`Logged in as ${nickname}`, 'success');
+  showAccountStatus(t('statusLoggedIn', { name: nickname }), 'success');
   setTimeout(() => location.reload(), 500);
 });
 
 socket.on('signup-result', ({ ok, nickname, error }) => {
   if (!ok) return showAccountStatus(error, 'error');
   localStorage.setItem('talklive_nickname', nickname);
-  showAccountStatus(`Account created — welcome, ${nickname}!`, 'success');
+  showAccountStatus(t('statusAccountCreated', { name: nickname }), 'success');
   setTimeout(() => location.reload(), 500);
 });
 
@@ -682,14 +709,14 @@ socket.on('update-nickname-result', ({ ok, nickname, error }) => {
   accountNickname = nickname;
   localStorage.setItem('talklive_nickname', nickname);
   renderAccountState();
-  showAccountStatus('Nickname updated.', 'success');
+  showAccountStatus(t('statusNicknameUpdated'), 'success');
 });
 
 socket.on('change-password-result', ({ ok, error }) => {
   if (!ok) return showAccountStatus(error, 'error');
   currentPasswordInput.value = '';
   newPasswordInput.value = '';
-  showAccountStatus('Password changed.', 'success');
+  showAccountStatus(t('statusPasswordChanged'), 'success');
 });
 
 // --- Friends ---
@@ -706,12 +733,12 @@ friendsTabs.forEach((tab) => {
 });
 
 function friendBadge(temporary) {
-  return `<span class="friend-badge ${temporary ? 'temp' : 'account'}">${temporary ? 'Temporary' : 'Signed in'}</span>`;
+  return `<span class="friend-badge ${temporary ? 'temp' : 'account'}">${escapeHtml(temporary ? t('temporary') : t('signedInBadge'))}</span>`;
 }
 
 function renderFriendsList() {
   if (friendsData.length === 0) {
-    friendsList.innerHTML = '<p class="history-empty">No friends yet. Tap "Add friend" during a call to send a request.</p>';
+    friendsList.innerHTML = `<p class="history-empty">${escapeHtml(t('noFriendsYet'))}</p>`;
     return;
   }
   friendsList.innerHTML = '';
@@ -721,15 +748,15 @@ function renderFriendsList() {
     item.className = 'friend-item';
     item.innerHTML = `
       <div class="friend-item-info">
-        <span class="friend-online-dot ${f.online ? 'online' : ''}" title="${f.online ? 'Online' : 'Offline'}"></span>
+        <span class="friend-online-dot ${f.online ? 'online' : ''}" title="${escapeHtml(f.online ? t('online') : t('offline'))}"></span>
         <span class="friend-item-name">${getFlagImg(f.countryCode)} ${escapeHtml(f.username)}</span>
         ${friendBadge(f.temporary)}
         ${unread > 0 ? `<span class="unread-badge">${unread}</span>` : ''}
       </div>
       <div class="friend-item-actions">
-        <button type="button" class="btn-chip friend-chat-btn" data-id="${f.clientId}" title="Chat">${ICONS.chat} Chat</button>
-        <button type="button" class="btn-chip friend-block-btn" data-id="${f.clientId}" title="Block">${ICONS.block} Block</button>
-        <button type="button" class="btn-chip friend-remove-btn" data-id="${f.clientId}" title="Remove">${ICONS.close} Remove</button>
+        <button type="button" class="btn-chip friend-chat-btn" data-id="${f.clientId}">${ICONS.chat} ${escapeHtml(t('chat'))}</button>
+        <button type="button" class="btn-chip friend-block-btn" data-id="${f.clientId}">${ICONS.block} ${escapeHtml(t('block'))}</button>
+        <button type="button" class="btn-chip friend-remove-btn" data-id="${f.clientId}">${ICONS.close} ${escapeHtml(t('remove'))}</button>
       </div>
     `;
     friendsList.appendChild(item);
@@ -741,7 +768,7 @@ function renderFriendRequests() {
   friendReqCount.classList.toggle('hidden', friendRequestsData.length === 0);
 
   if (friendRequestsData.length === 0) {
-    friendRequestsList.innerHTML = '<p class="history-empty">No pending requests.</p>';
+    friendRequestsList.innerHTML = `<p class="history-empty">${escapeHtml(t('noPendingRequests'))}</p>`;
     return;
   }
   friendRequestsList.innerHTML = '';
@@ -754,8 +781,8 @@ function renderFriendRequests() {
         ${friendBadge(r.temporary)}
       </div>
       <div class="friend-item-actions">
-        <button type="button" class="btn-chip btn-chip-accept friend-confirm-btn" data-id="${r.clientId}">${ICONS.check} Confirm</button>
-        <button type="button" class="btn-chip friend-dismiss-btn" data-id="${r.clientId}">${ICONS.close} Dismiss</button>
+        <button type="button" class="btn-chip btn-chip-accept friend-confirm-btn" data-id="${r.clientId}">${ICONS.check} ${escapeHtml(t('confirm'))}</button>
+        <button type="button" class="btn-chip friend-dismiss-btn" data-id="${r.clientId}">${ICONS.close} ${escapeHtml(t('dismiss'))}</button>
       </div>
     `;
     friendRequestsList.appendChild(item);
@@ -774,10 +801,10 @@ friendsList.addEventListener('click', (e) => {
     const id = row.querySelector('.friend-chat-btn')?.dataset.id;
     if (id) openFriendChat(id);
   } else if (blockBtn) {
-    if (!confirm('Block this friend? They will be removed and you will not be matched with them again.')) return;
+    if (!confirm(t('confirmBlockFriend'))) return;
     socket.emit('block-friend', { friendClientId: blockBtn.dataset.id });
   } else if (removeBtn) {
-    if (!confirm('Remove this friend?')) return;
+    if (!confirm(t('confirmRemoveFriend'))) return;
     socket.emit('remove-friend', { friendClientId: removeBtn.dataset.id });
   }
 });
@@ -827,21 +854,21 @@ function notifIcon(type) {
 
 function notifText(n) {
   switch (n.type) {
-    case 'friend_request': return `${escapeHtml(n.username)} wants to be friends`;
-    case 'friend_accepted': return `${escapeHtml(n.username)} accepted your friend request`;
-    case 'call_back_request': return `${escapeHtml(n.username)} wants to call you back`;
-    default: return 'Notification';
+    case 'friend_request': return t('notifWantsFriends', { name: escapeHtml(n.username) });
+    case 'friend_accepted': return t('notifAccepted', { name: escapeHtml(n.username) });
+    case 'call_back_request': return t('notifWantsCallback', { name: escapeHtml(n.username) });
+    default: return escapeHtml(t('notification'));
   }
 }
 
 function timeAgo(ts) {
   const s = Math.floor((Date.now() - ts) / 1000);
-  if (s < 60) return 'just now';
+  if (s < 60) return t('justNow');
   const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m ago`;
+  if (m < 60) return t('minAgo', { n: m });
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  return `${Math.floor(h / 24)}d ago`;
+  if (h < 24) return t('hourAgo', { n: h });
+  return t('dayAgo', { n: Math.floor(h / 24) });
 }
 
 function removeNotifLocal(id) {
@@ -873,7 +900,7 @@ function renderNotifications() {
   notifBadge.classList.toggle('hidden', visible.length === 0);
 
   if (visible.length === 0) {
-    notifList.innerHTML = '<p class="history-empty">No requests yet.</p>';
+    notifList.innerHTML = `<p class="history-empty">${escapeHtml(t('noRequestsYet'))}</p>`;
   } else {
     notifList.innerHTML = '';
     [...visible].reverse().forEach((n) => {
@@ -882,16 +909,16 @@ function renderNotifications() {
       let actions = '';
       if (n.type === 'friend_request') {
         actions = `
-          <button type="button" class="btn-chip btn-chip-accept notif-confirm-btn" data-id="${n.id}" data-from="${n.fromClientId}">${ICONS.check} Confirm</button>
-          <button type="button" class="btn-chip notif-dismiss-btn" data-id="${n.id}" data-from="${n.fromClientId}">${ICONS.close} Dismiss</button>
+          <button type="button" class="btn-chip btn-chip-accept notif-confirm-btn" data-id="${n.id}" data-from="${n.fromClientId}">${ICONS.check} ${escapeHtml(t('confirm'))}</button>
+          <button type="button" class="btn-chip notif-dismiss-btn" data-id="${n.id}" data-from="${n.fromClientId}">${ICONS.close} ${escapeHtml(t('dismiss'))}</button>
         `;
       } else if (n.type === 'call_back_request') {
         actions = `
-          <button type="button" class="btn-chip btn-chip-accept notif-callback-accept-btn" data-id="${n.id}" data-from="${n.fromClientId}">${ICONS.call} Call back</button>
-          <button type="button" class="btn-chip notif-callback-decline-btn" data-id="${n.id}" data-from="${n.fromClientId}">${ICONS.close} Dismiss</button>
+          <button type="button" class="btn-chip btn-chip-accept notif-callback-accept-btn" data-id="${n.id}" data-from="${n.fromClientId}">${ICONS.call} ${escapeHtml(t('callBack'))}</button>
+          <button type="button" class="btn-chip notif-callback-decline-btn" data-id="${n.id}" data-from="${n.fromClientId}">${ICONS.close} ${escapeHtml(t('dismiss'))}</button>
         `;
       } else {
-        actions = `<button type="button" class="btn-chip notif-clear-btn" data-id="${n.id}">${ICONS.close} Dismiss</button>`;
+        actions = `<button type="button" class="btn-chip notif-clear-btn" data-id="${n.id}">${ICONS.close} ${escapeHtml(t('dismiss'))}</button>`;
       }
       item.innerHTML = `
         <div class="notif-item-icon">${notifIcon(n.type)}</div>
@@ -949,7 +976,7 @@ function renderFriendChatMessages() {
   if (messages.length === 0) {
     const empty = document.createElement('p');
     empty.className = 'history-empty';
-    empty.textContent = 'No messages yet. Say hi!';
+    empty.textContent = t('noMessagesYet');
     friendChatMessages.appendChild(empty);
     return;
   }
@@ -965,7 +992,7 @@ function renderFriendChatMessages() {
 function openFriendChat(friendClientId) {
   activeFriendChatId = friendClientId;
   const friend = friendsData.find((f) => f.clientId === friendClientId);
-  friendChatTitle.textContent = friend ? `Chat with ${friend.username}` : 'Chat';
+  friendChatTitle.textContent = friend ? t('chatWith', { name: friend.username }) : t('chat');
   closeModal(notifModal);
   closeModal(friendsModal);
   openModal(friendChatModal);
@@ -1016,7 +1043,7 @@ socket.on('friend-chat-history', ({ friendClientId, messages }) => {
 // --- Call history (session-only, cleared on reload) ---
 function renderHistory() {
   if (callHistory.length === 0) {
-    historyList.innerHTML = '<p class="history-empty">No calls yet.</p>';
+    historyList.innerHTML = `<p class="history-empty">${escapeHtml(t('noCallsYet'))}</p>`;
     return;
   }
   historyList.innerHTML = '';
@@ -1026,7 +1053,7 @@ function renderHistory() {
     const mins = Math.floor(entry.durationSeconds / 60);
     const secs = entry.durationSeconds % 60;
     const callBackBtn = entry.clientId
-      ? `<button type="button" class="call-back-btn" data-id="${entry.clientId}" data-name="${escapeHtml(entry.username)}" title="Call ${escapeHtml(entry.username)} back" aria-label="Call back">
+      ? `<button type="button" class="call-back-btn" data-id="${entry.clientId}" data-name="${escapeHtml(entry.username)}" title="${escapeHtml(t('callBack'))}" aria-label="${escapeHtml(t('callBack'))}">
           <svg viewBox="0 0 24 24" fill="white" aria-hidden="true"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
         </button>`
       : '';
@@ -1090,11 +1117,14 @@ function setState(state) {
   orb.className = `orb ${state}`;
 }
 
-// green = connected, orange = searching/reconnecting, red = disconnected/skipped
-function setConnection(color, label) {
+// green = connected, orange = searching/reconnecting, red = disconnected/skipped.
+// The label argument is an i18n key so the indicator re-renders on language change.
+let lastConn = null;
+function setConnection(color, labelKey) {
+  lastConn = { color, labelKey };
   connectionIndicator.classList.remove('hidden');
   connectionDot.className = `connection-dot ${color}`;
-  connectionLabel.textContent = label;
+  connectionLabel.textContent = t(labelKey);
   const connected = color === 'green';
   chatToggleBtn.disabled = !connected;
   chatInput.disabled = !connected;
@@ -1148,14 +1178,14 @@ function lockSkipButton() {
     skipLabel.textContent = (remaining / 1000).toFixed(1) + 's';
     if (remaining <= 0) {
       clearInterval(skipCountdownInterval);
-      skipLabel.textContent = 'Next';
+      skipLabel.textContent = t('next');
     }
   }, 33);
 
   skipUnlockTimeout = setTimeout(() => {
     skipBtn.disabled = false;
     clearInterval(skipCountdownInterval);
-    skipLabel.textContent = 'Next';
+    skipLabel.textContent = t('next');
   }, MIN_CALL_SECONDS_BEFORE_SKIP * 1000);
 }
 
@@ -1163,7 +1193,7 @@ function unlockSkipButton() {
   clearTimeout(skipUnlockTimeout);
   clearInterval(skipCountdownInterval);
   skipBtn.disabled = false;
-  skipLabel.textContent = 'Next';
+  skipLabel.textContent = t('next');
 }
 
 function showReactionFloat(reaction) {
@@ -1199,17 +1229,28 @@ function clearError() {
 
 let subTextFadeTimer = null;
 
+// Status/sub texts take i18n keys (+ optional vars) instead of raw strings and
+// remember what they last showed, so switching language re-renders them live.
+let lastStatusMsg = null;
+let lastSubMsg = null;
+
+function setStatusText(key, vars) {
+  lastStatusMsg = key ? { key, vars } : null;
+  statusText.textContent = key ? t(key, vars) : '';
+}
+
 // Every subText update goes through here so a pending fade-out from an
 // earlier message can never fire on top of unrelated, newer text.
-function setSubText(text) {
+function setSubText(key, vars) {
   clearTimeout(subTextFadeTimer);
   subTextFadeTimer = null;
   subText.classList.remove('sub-text-fade-out');
-  subText.textContent = text;
+  lastSubMsg = key ? { key, vars } : null;
+  subText.textContent = key ? t(key, vars) : '';
 }
 
-function setSubTextFading(text, delayMs = 5000) {
-  setSubText(text);
+function setSubTextFading(key, vars, delayMs = 5000) {
+  setSubText(key, vars);
   subTextFadeTimer = setTimeout(() => {
     subText.classList.add('sub-text-fade-out');
   }, delayMs);
@@ -1264,13 +1305,13 @@ function createPeerConnection(isInitiator) {
   peer.ontrack = (event) => {
     remoteAudio.srcObject = event.streams[0];
     setState('connected');
-    statusText.textContent = "You're connected";
-    setSubTextFading('Say hi! Tap "Next" to skip, or "Hang Up" to leave.');
+    setStatusText('statusConnected');
+    setSubTextFading('subSayHi');
     monitorRemoteAudio(event.streams[0]);
     // Receiving the remote track is itself proof of a live connection, even if
     // iceConnectionState hasn't caught up yet (e.g. TURN relay finalizing) —
     // don't let the watchdog treat that lag as a failed connection.
-    setConnection('green', 'Connected');
+    setConnection('green', 'connConnected');
     clearConnectWatchdog();
   };
 
@@ -1282,7 +1323,7 @@ function createPeerConnection(isInitiator) {
   connectWatchdog = setTimeout(() => {
     const state = peer.iceConnectionState;
     if (state !== 'connected' && state !== 'completed') {
-      showError("Couldn't connect to that stranger — finding someone new…");
+      showError(t('errCouldntConnect'));
       performSkip();
     }
   }, 10000);
@@ -1290,28 +1331,28 @@ function createPeerConnection(isInitiator) {
   peer.oniceconnectionstatechange = () => {
     const iceState = peer.iceConnectionState;
     if (iceState === 'connected' || iceState === 'completed') {
-      setConnection('green', 'Connected');
+      setConnection('green', 'connConnected');
       clearConnectWatchdog();
     } else if (iceState === 'checking') {
-      setConnection('orange', 'Connecting');
+      setConnection('orange', 'connConnecting');
     } else if (iceState === 'disconnected') {
-      setConnection('orange', 'Reconnecting');
+      setConnection('orange', 'connReconnecting');
     } else if (iceState === 'failed') {
       if (isInitiator && !iceRestartAttempted) {
         iceRestartAttempted = true;
-        setConnection('orange', 'Reconnecting');
+        setConnection('orange', 'connReconnecting');
         peer.createOffer({ iceRestart: true }).then((offer) => {
           return peer.setLocalDescription(offer);
         }).then(() => {
           socket.emit('signal', { type: 'offer', sdp: peer.localDescription });
         }).catch(() => {
-          setConnection('red', 'Disconnected');
+          setConnection('red', 'connDisconnected');
         });
       } else {
-        setConnection('red', 'Disconnected');
+        setConnection('red', 'connDisconnected');
       }
     } else if (iceState === 'closed') {
-      setConnection('red', 'Disconnected');
+      setConnection('red', 'connDisconnected');
       clearConnectWatchdog();
     }
   };
@@ -1407,8 +1448,8 @@ function resetUI() {
   teardownPeer();
   isSearching = false;
   setState('idle');
-  statusText.textContent = 'Tap start to talk to a random stranger';
-  setSubText('Audio only · No sign up · No registration');
+  setStatusText('statusIdle');
+  setSubText('subIdle');
   callPanel.classList.add('hidden');
   setupPanel.classList.remove('hidden');
   startBtn.disabled = false;
@@ -1474,13 +1515,13 @@ async function begin() {
   } catch (e) {
     startBtn.disabled = false;
     if (e.name === 'NotAllowedError' || e.name === 'SecurityError') {
-      showError('Microphone access is blocked for this site. Click the padlock/camera icon in your browser\'s address bar, allow the microphone, then reload the page.');
+      showError(t('errMicBlocked'));
     } else if (e.name === 'NotFoundError') {
-      showError('No microphone was found. Please connect a microphone and try again.');
+      showError(t('errNoMic'));
     } else if (e.name === 'NotReadableError') {
-      showError('Your microphone is already in use by another app or tab. Close it and try again.');
+      showError(t('errMicBusy'));
     } else {
-      showError('Microphone access is required to use TalkLive.');
+      showError(t('errMicRequired'));
     }
     return;
   }
@@ -1490,9 +1531,9 @@ async function begin() {
   isSearching = true;
   enterCallUI();
   setState('waiting');
-  setConnection('orange', 'Searching');
-  statusText.textContent = 'Looking for someone to talk to…';
-  setSubText('Hang tight, this only takes a moment');
+  setConnection('orange', 'connSearching');
+  setStatusText('statusSearching');
+  setSubText('subHangTight');
 
   socket.emit('find-partner');
 }
@@ -1523,11 +1564,11 @@ function performSkip() {
   teardownPeer();
   clearChat();
   setState('waiting');
-  setConnection('red', 'Skipped');
-  statusText.textContent = 'Finding a new stranger…';
-  setSubText('Hang tight, this only takes a moment');
+  setConnection('red', 'connSkipped');
+  setStatusText('statusFindingNew');
+  setSubText('subHangTight');
   socket.emit('skip');
-  setTimeout(() => setConnection('orange', 'Searching'), 600);
+  setTimeout(() => setConnection('orange', 'connSearching'), 600);
 }
 
 skipBtn.addEventListener('click', performSkip);
@@ -1543,14 +1584,14 @@ stopBtn.addEventListener('click', () => {
 });
 
 reportBtn.addEventListener('click', () => {
-  if (!confirm('Report and block this stranger? You will not be matched with them again.')) return;
+  if (!confirm(t('confirmReport'))) return;
   teardownPeer();
   clearChat();
   setState('waiting');
-  setConnection('red', 'Reported');
-  statusText.textContent = 'Reported. Finding someone new…';
+  setConnection('red', 'connReported');
+  setStatusText('statusReported');
   socket.emit('report');
-  setTimeout(() => setConnection('orange', 'Searching'), 600);
+  setTimeout(() => setConnection('orange', 'connSearching'), 600);
 });
 
 muteBtn.addEventListener('click', () => {
@@ -1558,6 +1599,7 @@ muteBtn.addEventListener('click', () => {
   isMuted = !isMuted;
   localStream.getAudioTracks().forEach((t) => (t.enabled = !isMuted));
   muteBtn.classList.toggle('muted', isMuted);
+  muteBtn.setAttribute('aria-pressed', isMuted ? 'true' : 'false');
   muteSlash.classList.toggle('hidden', !isMuted);
   socket.emit('mic-state', isMuted);
 });
@@ -1609,17 +1651,16 @@ socket.on('online-count', (count) => {
 
 socket.on('waiting', ({ estimatedSeconds } = {}) => {
   setState('waiting');
-  setConnection('orange', 'Searching');
-  statusText.textContent = 'Looking for someone to talk to…';
-  setSubText(estimatedSeconds
-    ? `Usually matches in about ${estimatedSeconds}s`
-    : 'Hang tight, this only takes a moment');
+  setConnection('orange', 'connSearching');
+  setStatusText('statusSearching');
+  if (estimatedSeconds) setSubText('subUsuallyMatches', { s: estimatedSeconds });
+  else setSubText('subHangTight');
 });
 
 // Server gives up on the "Interested Countries" filter for this search after a
 // long wait and widens the pool to anyone, so the user isn't stuck waiting forever.
 socket.on('country-fallback', () => {
-  setSubText("Not many people online in your preferred countries — connecting you with anyone.");
+  setSubText('subCountryFallback');
 });
 
 socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
@@ -1633,16 +1674,18 @@ socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
   }
 
   setState('connected');
-  setConnection('orange', 'Connecting');
-  statusText.textContent = callback ? `Calling ${partner.username} back…` : `Connecting to someone in ${partner.country}…`;
-  setSubText(rematched ? "You both liked your last chat — you're reconnected!" : '');
+  setConnection('orange', 'connConnecting');
+  if (callback) setStatusText('statusCallingBack', { name: partner.username });
+  else setStatusText('statusConnectingTo', { country: getCountryName(partner.countryCode) || partner.country });
+  if (rematched) setSubText('subRematched');
+  else setSubText(null);
 
   currentPartner = partner;
   addFriendBtn.classList.remove('added');
   addFriendBtn.disabled = false;
   partnerName.textContent = partner.username;
   const rawGender = partner.gender && partner.gender !== 'unspecified' ? partner.gender : '';
-  const genderLabel = rawGender ? ` · ${escapeHtml(rawGender[0].toUpperCase() + rawGender.slice(1))}` : '';
+  const genderLabel = rawGender === 'male' || rawGender === 'female' ? ` · ${escapeHtml(t(rawGender))}` : '';
   partnerMeta.innerHTML = `${getFlagImg(partner.countryCode)}${genderLabel}`;
 
   partnerInterests.innerHTML = '';
@@ -1657,7 +1700,7 @@ socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
 
   const shared = currentPartnerInterests.filter((i) => (appliedFilters.interests || []).includes(i));
   if (shared.length > 0) {
-    sharedInterestNote.textContent = `Both of you like ${shared.join(', ')}`;
+    sharedInterestNote.textContent = t('bothLike', { list: shared.join(', ') });
     sharedInterestNote.classList.remove('hidden');
   } else {
     sharedInterestNote.classList.add('hidden');
@@ -1675,7 +1718,7 @@ socket.on('reaction', (reaction) => {
 });
 
 socket.on('banned', () => {
-  showError('You have been banned after repeated reports.');
+  showError(t('errBanned'));
   if (localStream) {
     localStream.getTracks().forEach((t) => t.stop());
     localStream = null;
@@ -1686,7 +1729,7 @@ socket.on('banned', () => {
 // --- Call back: re-connect directly with someone from Call History ---
 function showCallBackBanner(fromClientId, username) {
   pendingCallBackFrom = fromClientId;
-  callBackBannerText.innerHTML = `${ICONS.call} ${escapeHtml(username)} wants to call you back`;
+  callBackBannerText.innerHTML = `${ICONS.call} ${t('notifWantsCallback', { name: escapeHtml(username) })}`;
   callBackBanner.classList.remove('hidden');
 }
 
@@ -1697,14 +1740,14 @@ function hideCallBackBanner() {
 
 async function requestCallBack(targetClientId, targetUsername) {
   if (isSearching) {
-    showError('Hang up or finish your current call before calling someone back.');
+    showError(t('errFinishCall'));
     return;
   }
   clearError();
   try {
     await getMic();
   } catch (e) {
-    showError('Microphone access is required to call back.');
+    showError(t('errMicCallback'));
     return;
   }
 
@@ -1712,9 +1755,9 @@ async function requestCallBack(targetClientId, targetUsername) {
   isSearching = true;
   enterCallUI();
   setState('waiting');
-  setConnection('orange', 'Calling');
-  statusText.textContent = `Calling ${targetUsername}…`;
-  setSubText('Waiting for them to accept…');
+  setConnection('orange', 'connCalling');
+  setStatusText('statusCalling', { name: targetUsername });
+  setSubText('subWaitingAccept');
 
   socket.emit('call-back-request', { targetClientId });
 }
@@ -1722,7 +1765,7 @@ async function requestCallBack(targetClientId, targetUsername) {
 async function acceptCallBack(fromClientId) {
   if (isSearching) {
     socket.emit('call-back-respond', { fromClientId, accept: false });
-    showError('Finish your current call before accepting a call back.');
+    showError(t('errFinishBeforeAccept'));
     return;
   }
   clearError();
@@ -1730,7 +1773,7 @@ async function acceptCallBack(fromClientId) {
     await getMic();
   } catch (e) {
     socket.emit('call-back-respond', { fromClientId, accept: false });
-    showError('Microphone access is required to accept the call.');
+    showError(t('errMicAccept'));
     return;
   }
 
@@ -1738,9 +1781,9 @@ async function acceptCallBack(fromClientId) {
   isSearching = true;
   enterCallUI();
   setState('waiting');
-  setConnection('orange', 'Connecting');
-  statusText.textContent = 'Connecting…';
-  setSubText('');
+  setConnection('orange', 'connConnecting');
+  setStatusText('statusConnecting');
+  setSubText(null);
 
   socket.emit('call-back-respond', { fromClientId, accept: true });
 }
@@ -1774,15 +1817,15 @@ socket.on('call-back-request', ({ fromClientId, username }) => {
 socket.on('call-back-request-result', ({ ok, reason }) => {
   if (ok) return;
   abandonCallBack();
-  if (reason === 'offline') showError("That person isn't online right now. Try again later.");
-  else if (reason === 'busy') showError('That person is currently on another call.');
-  else if (reason === 'blocked') showError('You can no longer contact this person.');
-  else showError('Could not start the call back.');
+  if (reason === 'offline') showError(t('errOffline'));
+  else if (reason === 'busy') showError(t('errBusy'));
+  else if (reason === 'blocked') showError(t('errBlocked'));
+  else showError(t('errCallbackFailed'));
 });
 
 socket.on('call-back-declined', ({ username }) => {
   abandonCallBack();
-  showError(`${username} declined the call back.`);
+  showError(t('errDeclined', { name: username }));
 });
 
 socket.on('signal', (data) => {
@@ -1795,11 +1838,11 @@ socket.on('partner-left', () => {
   clearChat();
   if (isSearching && autoCallEnabled) {
     setState('waiting');
-    setConnection('red', 'Disconnected');
-    statusText.textContent = 'Stranger disconnected. Finding someone new…';
-    setSubText('Hang tight, this only takes a moment');
+    setConnection('red', 'connDisconnected');
+    setStatusText('statusStrangerLeft');
+    setSubText('subHangTight');
     socket.emit('find-partner');
-    setTimeout(() => setConnection('orange', 'Searching'), 600);
+    setTimeout(() => setConnection('orange', 'connSearching'), 600);
   } else if (isSearching) {
     socket.emit('leave');
     if (localStream) {
@@ -1807,15 +1850,15 @@ socket.on('partner-left', () => {
       localStream = null;
     }
     resetUI();
-    showError('Stranger disconnected. Auto Call is off — tap Start to find someone new.');
+    showError(t('errAutoCallOff'));
   }
 });
 
 socket.on('partner-mic-state', (muted) => {
   if (muted) {
-    setSubText('Stranger muted their mic');
+    setSubText('subStrangerMuted');
   } else {
-    setSubTextFading('Say hi! Tap "Next" to skip, or "Hang Up" to leave.');
+    setSubTextFading('subSayHi');
   }
 });
 
@@ -1828,14 +1871,42 @@ socket.on('chat-message', ({ text }) => {
 });
 
 socket.on('disconnect', () => {
-  showError('Connection lost. Reconnecting…');
-  if (isSearching) setConnection('red', 'Disconnected');
+  showError(t('errConnLost'));
+  if (isSearching) setConnection('red', 'connDisconnected');
 });
 
 socket.on('connect', () => {
   clearError();
-  if (isSearching) setConnection('orange', 'Reconnecting');
+  if (isSearching) setConnection('orange', 'connReconnecting');
   // Re-register on every (re)connect so the server always has a live socket
   // for this clientId, and so friends/notifications resync after being offline.
   if (lastRegisterPayload) socket.emit('register', lastRegisterPayload);
 });
+
+// --- Language switching: re-render every dynamic (JS-generated) piece of UI.
+// Static HTML is handled by applyI18n() in i18n.js via data-i18n attributes;
+// this covers text that was set from JS with t() and needs a fresh render.
+window.addEventListener('i18n-changed', () => {
+  if (lastStatusMsg) statusText.textContent = t(lastStatusMsg.key, lastStatusMsg.vars);
+  if (lastSubMsg) subText.textContent = t(lastSubMsg.key, lastSubMsg.vars);
+  if (lastConn) connectionLabel.textContent = t(lastConn.labelKey);
+  if (!skipBtn.disabled) skipLabel.textContent = t('next');
+
+  renderFriendRequests();
+  renderNotifications(); // also re-renders the friends list + badges
+  renderHistory();
+  includeCountryWidget.renderChips();
+  excludeCountryWidget.renderChips();
+  renderInterestTags();
+
+  if (activeFriendChatId) {
+    const friend = friendsData.find((f) => f.clientId === activeFriendChatId);
+    friendChatTitle.textContent = friend ? t('chatWith', { name: friend.username }) : t('chat');
+    renderFriendChatMessages();
+  }
+});
+
+// Initial render of the (dynamic) idle texts in the detected language —
+// the HTML fallback content is English only.
+setStatusText('statusIdle');
+setSubText('subIdle');
