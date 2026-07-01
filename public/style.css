@@ -1566,6 +1566,339 @@ html, body {
   font-variant-numeric: tabular-nums;
 }
 
+.history-item-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Small, classic green "call back" button next to a history entry */
+.call-back-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  background: #2ed47a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+  box-shadow: 0 0 6px rgba(46, 212, 122, 0.5);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.call-back-btn:hover {
+  box-shadow: 0 0 10px rgba(46, 212, 122, 0.8);
+  transform: scale(1.08);
+}
+
+.call-back-btn:active {
+  transform: scale(0.92);
+}
+
+.call-back-btn svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* Notification bell badge */
+.notif-btn {
+  position: relative;
+}
+
+.notif-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 6px var(--danger);
+}
+
+.notif-badge.hidden {
+  display: none;
+}
+
+/* Friends modal tabs */
+.friends-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.friends-tab {
+  flex: 1;
+  padding: 9px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.friends-tab.selected {
+  background: rgba(108, 92, 231, 0.18);
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.tab-count {
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tab-count.hidden {
+  display: none;
+}
+
+/* Friends / friend requests list */
+.friends-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.friend-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  padding: 10px 14px;
+  flex-wrap: wrap;
+}
+
+.friend-item-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+
+.friend-online-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4a5068;
+  flex-shrink: 0;
+}
+
+.friend-online-dot.online {
+  background: #2ed47a;
+  box-shadow: 0 0 6px #2ed47a;
+}
+
+.friend-item-name {
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.friend-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.friend-badge.temp {
+  background: rgba(255, 184, 77, 0.15);
+  color: #ffb84d;
+}
+
+.friend-badge.account {
+  background: rgba(46, 212, 122, 0.15);
+  color: #2ed47a;
+}
+
+.friend-item-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.btn-chip {
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.06);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-chip:hover {
+  background: rgba(255,255,255,0.12);
+}
+
+.btn-chip-accept {
+  background: rgba(46, 212, 122, 0.18);
+  border-color: rgba(46, 212, 122, 0.4);
+  color: #2ed47a;
+}
+
+/* Notifications list */
+.notif-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.notif-item {
+  display: flex;
+  gap: 10px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.notif-clickable {
+  cursor: pointer;
+}
+
+.notif-clickable:hover {
+  background: rgba(255,255,255,0.07);
+}
+
+.notif-item-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  line-height: 1.3;
+}
+
+.notif-item-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.notif-item-text {
+  font-size: 13px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.notif-item-time {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.notif-item-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.notif-item-actions:empty {
+  display: none;
+}
+
+/* Friend chat modal */
+.friend-chat-body {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  height: 60vh;
+  max-height: 480px;
+}
+
+.friend-chat-messages {
+  flex: 1;
+  padding: 16px;
+}
+
+/* Incoming "call me back" banner */
+.callback-banner {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 400;
+  background: #131930;
+  border: 1px solid rgba(46, 212, 122, 0.4);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 20px rgba(46, 212, 122, 0.25);
+  border-radius: 16px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  max-width: 90vw;
+  animation: callBackSlideIn 0.3s ease-out;
+}
+
+.callback-banner-text {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.callback-banner-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.callback-accept,
+.callback-decline {
+  padding: 8px 16px;
+  font-size: 13px;
+}
+
+@keyframes callBackSlideIn {
+  0% { transform: translate(-50%, -20px); opacity: 0; }
+  100% { transform: translate(-50%, 0); opacity: 1; }
+}
+
+@media (max-width: 480px) {
+  .callback-banner {
+    left: 10px;
+    right: 10px;
+    transform: none;
+    max-width: none;
+  }
+
+  @keyframes callBackSlideIn {
+    0% { transform: translateY(-20px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+}
+
 /* Tighter mobile layout so mic/chat controls don't require scrolling */
 @media (max-width: 600px) {
   .orb-wrap {

@@ -19,6 +19,10 @@
           <span id="onlineCount">0</span>
         </div>
         <button id="historyBtn" class="icon-btn" title="Call history" aria-label="Call history">🕑</button>
+        <button id="friendsBtn" class="icon-btn" title="Friends" aria-label="Friends">👥</button>
+        <button id="notifBtn" class="icon-btn notif-btn" title="Notifications" aria-label="Notifications">
+          🔔<span id="notifBadge" class="notif-badge hidden">0</span>
+        </button>
         <button id="accountBtn" class="icon-btn avatar-btn" title="Account" aria-label="Account">
           <span id="avatarIcon">👤</span>
           <span id="avatarInitial" class="avatar-initial hidden"></span>
@@ -190,10 +194,68 @@
             <button type="button" id="closeHistoryBtn" class="modal-close">&times;</button>
           </div>
           <div class="modal-body">
-            <p class="account-hint">This session only — clears when you close or reload the page.</p>
+            <p class="account-hint">This session only — clears when you close or reload the page. Tap the green button to call someone back if they're online.</p>
             <div id="historyList" class="history-list">
               <p class="history-empty">No calls yet.</p>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Friends modal: list of accepted friends + pending incoming requests -->
+      <div id="friendsModal" class="modal-overlay hidden">
+        <div class="modal-box">
+          <div class="modal-header">
+            <h2>Friends</h2>
+            <button type="button" id="closeFriendsBtn" class="modal-close">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div class="friends-tabs">
+              <button type="button" class="friends-tab selected" data-tab="list">My Friends</button>
+              <button type="button" class="friends-tab" data-tab="requests">Requests<span id="friendReqCount" class="tab-count hidden">0</span></button>
+            </div>
+            <div id="friendsListPanel">
+              <div id="friendsList" class="friends-list">
+                <p class="history-empty">No friends yet. Tap "Add friend" during a call to send a request.</p>
+              </div>
+            </div>
+            <div id="friendRequestsPanel" class="hidden">
+              <div id="friendRequestsList" class="friends-list">
+                <p class="history-empty">No pending requests.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notifications modal: friend requests, new messages, call-back requests -->
+      <div id="notifModal" class="modal-overlay hidden">
+        <div class="modal-box">
+          <div class="modal-header">
+            <h2>Notifications</h2>
+            <button type="button" id="closeNotifBtn" class="modal-close">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div id="notifList" class="notif-list">
+              <p class="history-empty">No notifications yet.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Friend chat modal: persistent (server-side, while it's running) chat with a friend -->
+      <div id="friendChatModal" class="modal-overlay hidden">
+        <div class="modal-box">
+          <div class="modal-header">
+            <h2 id="friendChatTitle">Chat</h2>
+            <button type="button" id="closeFriendChatBtn" class="modal-close">&times;</button>
+          </div>
+          <div class="modal-body friend-chat-body">
+            <div id="friendChatMessages" class="chat-messages friend-chat-messages"></div>
+            <form id="friendChatForm" class="chat-form">
+              <input id="friendChatInput" type="text" maxlength="1000" placeholder="Type a message…" autocomplete="off" />
+              <button type="submit" class="btn btn-primary chat-send">Send</button>
+            </form>
           </div>
         </div>
       </div>
@@ -400,6 +462,17 @@
   </div>
 
   <div id="connectFlash" class="connect-flash" aria-hidden="true"></div>
+
+  <!-- Incoming "call me back" banner -->
+  <div id="callBackBanner" class="callback-banner hidden">
+    <div class="callback-banner-text">
+      <span id="callBackBannerText">Someone wants to call you back</span>
+    </div>
+    <div class="callback-banner-actions">
+      <button type="button" id="callBackAcceptBtn" class="btn btn-primary callback-accept">Accept</button>
+      <button type="button" id="callBackDeclineBtn" class="btn btn-secondary callback-decline">Decline</button>
+    </div>
+  </div>
 
   <audio id="remoteAudio" autoplay playsinline></audio>
 
