@@ -616,6 +616,11 @@ function createPeerConnection(isInitiator) {
     statusText.textContent = "You're connected";
     subText.textContent = 'Say hi! Tap "Next" to skip, or "Hang Up" to leave.';
     monitorRemoteAudio(event.streams[0]);
+    // Receiving the remote track is itself proof of a live connection, even if
+    // iceConnectionState hasn't caught up yet (e.g. TURN relay finalizing) —
+    // don't let the watchdog treat that lag as a failed connection.
+    setConnection('green', 'Connected');
+    clearConnectWatchdog();
   };
 
   // If a call never fully connects (common with flaky free TURN relays across
