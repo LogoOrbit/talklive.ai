@@ -239,6 +239,6 @@ io.on('connection', (socket) => {
   });
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`TalkLive server running on port ${PORT}`);
 });
