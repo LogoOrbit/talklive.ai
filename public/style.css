@@ -329,6 +329,11 @@ html, body {
   box-shadow: 0 0 70px rgba(0, 212, 255, 0.85);
 }
 
+.orb.muted-self .orb-core,
+.orb.muted-remote .orb-core {
+  box-shadow: 0 0 0 3px var(--danger), 0 0 20px rgba(255, 84, 112, 0.6);
+}
+
 .orb.connected .orb-ring {
   transition: transform 0.12s ease-out, opacity 0.12s ease-out, border-color 0.12s ease-out;
   transform: scale(1);
@@ -1585,15 +1590,6 @@ html, body {
 
 .chat-badge.hidden {
   display: none;
-}
-
-.chat-badge-typing {
-  top: -2px;
-  left: -2px;
-  right: auto;
-  background: var(--accent-2);
-  box-shadow: 0 0 6px var(--accent-2);
-  animation: dotPulse 1s ease-in-out infinite;
 }
 
 /* Typing indicator inside the chat panel */
