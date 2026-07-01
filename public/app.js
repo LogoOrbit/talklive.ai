@@ -26,8 +26,6 @@ const openTermsLinkFooter = document.getElementById('openTermsLinkFooter');
 
 const genderGroup = document.getElementById('genderGroup');
 const prefGenderGroup = document.getElementById('prefGenderGroup');
-const languageGroup = document.getElementById('languageGroup');
-const prefLanguageGroup = document.getElementById('prefLanguageGroup');
 const interestTagsEl = document.getElementById('interestTags');
 const interestInput = document.getElementById('interestInput');
 const autoCallCheckbox = document.getElementById('autoCallCheckbox');
@@ -357,8 +355,6 @@ interestInput.addEventListener('keydown', (e) => {
 
 initPillGroup(genderGroup);
 initPillGroup(prefGenderGroup);
-initPillGroup(languageGroup);
-initPillGroup(prefLanguageGroup);
 
 autoCallCheckbox.checked = autoCallEnabled;
 sideAutoCallCheckbox.checked = autoCallEnabled;
@@ -452,7 +448,7 @@ filtersOverlay.addEventListener('click', closeFilters);
 // --- Applied filters: the panel's controls are a draft; matching only uses
 // what was last saved here (persisted so a Save survives a reload). ---
 const FILTERS_STORAGE_KEY = 'talklive_filters';
-let appliedFilters = { prefGender: 'any', prefLanguage: 'any', includeCountries: [], excludeCountries: [], interests: [] };
+let appliedFilters = { prefGender: 'any', includeCountries: [], excludeCountries: [], interests: [] };
 
 (function loadAppliedFilters() {
   try {
@@ -465,7 +461,6 @@ let appliedFilters = { prefGender: 'any', prefLanguage: 'any', includeCountries:
 
 function syncFilterDraftUiFromApplied() {
   setPillGroupValue(prefGenderGroup, appliedFilters.prefGender);
-  setPillGroupValue(prefLanguageGroup, appliedFilters.prefLanguage);
   includeCountries.clear();
   (appliedFilters.includeCountries || []).forEach((c) => includeCountries.add(c));
   excludeCountries.clear();
@@ -482,7 +477,6 @@ syncFilterDraftUiFromApplied();
 saveFiltersBtn.addEventListener('click', () => {
   appliedFilters = {
     prefGender: prefGenderGroup.dataset.value,
-    prefLanguage: prefLanguageGroup.dataset.value,
     includeCountries: Array.from(includeCountries),
     excludeCountries: Array.from(excludeCountries),
     interests: Array.from(selectedInterests),
@@ -494,7 +488,6 @@ saveFiltersBtn.addEventListener('click', () => {
 
 clearFiltersBtn.addEventListener('click', () => {
   setPillGroupValue(prefGenderGroup, 'any');
-  setPillGroupValue(prefLanguageGroup, 'any');
   includeCountries.clear();
   excludeCountries.clear();
   includeCountryWidget.renderChips();
@@ -1371,8 +1364,6 @@ function registerProfile() {
     clientId: getClientId(),
     gender: genderGroup.dataset.value,
     prefGender: appliedFilters.prefGender,
-    language: languageGroup.dataset.value,
-    prefLanguage: appliedFilters.prefLanguage,
     includeCountries: appliedFilters.includeCountries,
     excludeCountries: appliedFilters.excludeCountries,
     interests: appliedFilters.interests,

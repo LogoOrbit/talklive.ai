@@ -17,7 +17,7 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 // --- State ---
 const waitingQueue = []; // socket ids waiting for a partner
 const partners = new Map(); // socketId -> partnerSocketId
-const profiles = new Map(); // socketId -> { username, country, city, gender, prefGender, includeCountries, excludeCountries, language, prefLanguage, interests, clientId, countryFallbackActive }
+const profiles = new Map(); // socketId -> { username, country, city, gender, prefGender, includeCountries, excludeCountries, interests, clientId, countryFallbackActive }
 const blocks = new Map(); // clientId -> Set<clientId>
 const hearts = new Map(); // pairKey ("clientIdA|clientIdB" sorted) -> Set<clientId who hearted>
 const reportCounts = new Map(); // clientId -> number of times reported
@@ -191,7 +191,6 @@ function publicProfile(p) {
     countryCode: p.country,
     city: p.city,
     gender: p.gender,
-    language: p.language,
     interests: p.interests,
   };
 }
@@ -220,12 +219,6 @@ function mutuallyCompatible(seeker, candidate) {
   }
   if (!countryAllowed(seeker, candidate.country)) return false;
   if (!countryAllowed(candidate, seeker.country)) return false;
-  if (seeker.prefLanguage && seeker.prefLanguage !== 'any' && candidate.language !== seeker.prefLanguage) {
-    return false;
-  }
-  if (candidate.prefLanguage && candidate.prefLanguage !== 'any' && seeker.language !== candidate.prefLanguage) {
-    return false;
-  }
   return true;
 }
 
@@ -394,8 +387,6 @@ io.on('connection', (socket) => {
       includeCountries: sanitizeCountryList(data.includeCountries),
       excludeCountries: sanitizeCountryList(data.excludeCountries),
       countryFallbackActive: false,
-      language: data.language || 'english',
-      prefLanguage: data.prefLanguage || 'any',
       interests: Array.isArray(data.interests) ? data.interests.slice(0, 10) : [],
     });
     clientSockets.set(clientId, socket.id);
