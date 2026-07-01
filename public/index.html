@@ -21,24 +21,38 @@
           <span class="online-avatar">👥<span class="online-dot"></span></span>
           <span id="onlineCount">0</span>
         </div>
-        <button id="soundToggleBtn" class="icon-btn" title="Mute sound effects" aria-label="Mute sound effects">🔊</button>
         <button id="historyBtn" class="icon-btn" title="Call history" aria-label="Call history">🕑</button>
-        <button id="friendsBtn" class="icon-btn" title="Friends" aria-label="Friends">👥</button>
-        <button id="notifBtn" class="icon-btn notif-btn" title="Notifications" aria-label="Notifications">
-          🔔<span id="notifBadge" class="notif-badge hidden">0</span>
+        <button id="friendsBtn" class="icon-btn friends-btn" title="Friends &amp; messages" aria-label="Friends and messages">
+          <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+          <span id="friendsMsgBadge" class="notif-badge hidden">0</span>
         </button>
+        <div class="notif-wrap">
+          <button id="notifBtn" class="icon-btn notif-btn" title="Requests" aria-label="Requests">
+            🔔<span id="notifBadge" class="notif-badge hidden">0</span>
+          </button>
+          <div id="notifModal" class="notif-dropdown hidden">
+            <div class="modal-header">
+              <h2>Requests</h2>
+              <button type="button" id="closeNotifBtn" class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+              <div id="notifList" class="notif-list">
+                <p class="history-empty">No requests yet.</p>
+              </div>
+            </div>
+          </div>
+        </div>
         <button id="accountBtn" class="icon-btn avatar-btn" title="Account" aria-label="Account">
           <span id="avatarIcon">👤</span>
           <span id="avatarInitial" class="avatar-initial hidden"></span>
         </button>
-        <button id="settingsBtn" class="settings-btn" title="Match preferences" aria-label="Match preferences">
-          <span class="settings-icon" aria-hidden="true">⚙️</span>
-          <span class="settings-text">Settings</span>
+        <button id="filtersBtn" class="icon-btn" title="Match filters" aria-label="Match filters">
+          <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/></svg>
         </button>
       </div>
     </header>
 
-    <!-- App settings side panel: basic app-level preferences, opened from the left menu icon -->
+    <!-- App settings side panel: app-level preferences + your own profile fields, opened from the left menu icon -->
     <div id="appSettingsOverlay" class="side-panel-overlay hidden"></div>
     <aside id="appSettingsPanel" class="side-panel" aria-label="App settings">
       <div class="side-panel-header">
@@ -54,6 +68,84 @@
           <input type="checkbox" id="sideAutoCallCheckbox" checked />
           <span>Auto call</span>
         </label>
+
+        <div class="pill-row">
+          <span class="pill-label">I am</span>
+          <div class="pill-group" id="genderGroup" data-value="unspecified">
+            <button type="button" class="pill" data-value="unspecified"><span class="pill-dot pill-dot-neutral"></span>🤐 Prefer not to say</button>
+            <button type="button" class="pill" data-value="male"><span class="pill-dot pill-dot-male"></span>♂️ Male</button>
+            <button type="button" class="pill" data-value="female"><span class="pill-dot pill-dot-female"></span>♀️ Female</button>
+          </div>
+        </div>
+
+        <div class="pill-row">
+          <span class="pill-label">I speak</span>
+          <div class="pill-group scrollable" id="languageGroup" data-value="english">
+            <button type="button" class="pill" data-value="english"><span class="pill-dot"></span>English</button>
+            <button type="button" class="pill" data-value="spanish"><span class="pill-dot"></span>Spanish</button>
+            <button type="button" class="pill" data-value="french"><span class="pill-dot"></span>French</button>
+            <button type="button" class="pill" data-value="arabic"><span class="pill-dot"></span>Arabic</button>
+            <button type="button" class="pill" data-value="hindi"><span class="pill-dot"></span>Hindi</button>
+            <button type="button" class="pill" data-value="urdu"><span class="pill-dot"></span>Urdu</button>
+            <button type="button" class="pill" data-value="portuguese"><span class="pill-dot"></span>Portuguese</button>
+            <button type="button" class="pill" data-value="other"><span class="pill-dot"></span>Other</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Filters side panel: who you get matched with, opened from the top-right filter icon -->
+    <div id="filtersOverlay" class="side-panel-overlay hidden"></div>
+    <aside id="filtersPanel" class="side-panel side-panel-right" aria-label="Match filters">
+      <div class="side-panel-header">
+        <h2>Filters</h2>
+        <button type="button" id="closeFiltersBtn" class="modal-close">&times;</button>
+      </div>
+      <div class="side-panel-body">
+        <div class="pill-row">
+          <span class="pill-label">Match me with</span>
+          <div class="pill-group" id="prefGenderGroup" data-value="any">
+            <button type="button" class="pill" data-value="any"><span class="pill-dot pill-dot-neutral"></span>🌈 Anyone</button>
+            <button type="button" class="pill" data-value="male"><span class="pill-dot pill-dot-male"></span>♂️ Male</button>
+            <button type="button" class="pill" data-value="female"><span class="pill-dot pill-dot-female"></span>♀️ Female</button>
+          </div>
+        </div>
+
+        <div class="pill-row">
+          <span class="pill-label">Match language</span>
+          <div class="pill-group scrollable" id="prefLanguageGroup" data-value="any">
+            <button type="button" class="pill" data-value="any"><span class="pill-dot"></span>Any</button>
+            <button type="button" class="pill" data-value="english"><span class="pill-dot"></span>English</button>
+            <button type="button" class="pill" data-value="spanish"><span class="pill-dot"></span>Spanish</button>
+            <button type="button" class="pill" data-value="french"><span class="pill-dot"></span>French</button>
+            <button type="button" class="pill" data-value="arabic"><span class="pill-dot"></span>Arabic</button>
+            <button type="button" class="pill" data-value="hindi"><span class="pill-dot"></span>Hindi</button>
+            <button type="button" class="pill" data-value="urdu"><span class="pill-dot"></span>Urdu</button>
+            <button type="button" class="pill" data-value="portuguese"><span class="pill-dot"></span>Portuguese</button>
+          </div>
+        </div>
+
+        <div class="pill-row">
+          <span class="pill-label">Country</span>
+          <div class="country-picker">
+            <button type="button" class="pill any-pill selected" id="countryAnyPill" data-value="any"><span class="pill-dot"></span>Any</button>
+            <div class="country-search-wrap">
+              <input type="text" id="countrySearch" class="search-input" placeholder="Search country…" autocomplete="off" />
+              <div id="countryResults" class="search-results hidden"></div>
+            </div>
+            <span id="countrySelectedPill" class="pill selected hidden"></span>
+          </div>
+        </div>
+
+        <div class="pill-row">
+          <span class="pill-label">Interests <span class="hint">(optional)</span></span>
+          <div class="interests-picker">
+            <div id="interestTags" class="interest-tags"></div>
+            <div class="interest-input-wrap">
+              <input type="text" id="interestInput" class="search-input" placeholder="Type an interest and press Enter…" autocomplete="off" maxlength="20" />
+            </div>
+          </div>
+        </div>
       </div>
     </aside>
 
@@ -75,87 +167,6 @@
           <p id="setupErrorText" class="error-text hidden"></p>
         </div>
       </section>
-
-      <!-- Settings modal: match preferences, opened from the header gear icon -->
-      <div id="settingsModal" class="modal-overlay hidden">
-        <div class="modal-box">
-          <div class="modal-header">
-            <h2>Match Preferences</h2>
-            <button type="button" id="closeSettingsBtn" class="modal-close">&times;</button>
-          </div>
-          <div class="modal-body">
-            <div class="pill-row">
-              <span class="pill-label">I am</span>
-              <div class="pill-group" id="genderGroup" data-value="unspecified">
-                <button type="button" class="pill" data-value="unspecified"><span class="pill-dot pill-dot-neutral"></span>🤐 Prefer not to say</button>
-                <button type="button" class="pill" data-value="male"><span class="pill-dot pill-dot-male"></span>♂️ Male</button>
-                <button type="button" class="pill" data-value="female"><span class="pill-dot pill-dot-female"></span>♀️ Female</button>
-              </div>
-            </div>
-
-            <div class="pill-row">
-              <span class="pill-label">Match me with</span>
-              <div class="pill-group" id="prefGenderGroup" data-value="any">
-                <button type="button" class="pill" data-value="any"><span class="pill-dot pill-dot-neutral"></span>🌈 Anyone</button>
-                <button type="button" class="pill" data-value="male"><span class="pill-dot pill-dot-male"></span>♂️ Male</button>
-                <button type="button" class="pill" data-value="female"><span class="pill-dot pill-dot-female"></span>♀️ Female</button>
-              </div>
-            </div>
-
-            <div class="pill-row">
-              <span class="pill-label">I speak</span>
-              <div class="pill-group" id="languageGroup" data-value="english">
-                <button type="button" class="pill" data-value="english"><span class="pill-dot"></span>English</button>
-                <button type="button" class="pill" data-value="spanish"><span class="pill-dot"></span>Spanish</button>
-                <button type="button" class="pill" data-value="french"><span class="pill-dot"></span>French</button>
-                <button type="button" class="pill" data-value="arabic"><span class="pill-dot"></span>Arabic</button>
-                <button type="button" class="pill" data-value="hindi"><span class="pill-dot"></span>Hindi</button>
-                <button type="button" class="pill" data-value="urdu"><span class="pill-dot"></span>Urdu</button>
-                <button type="button" class="pill" data-value="portuguese"><span class="pill-dot"></span>Portuguese</button>
-                <button type="button" class="pill" data-value="other"><span class="pill-dot"></span>Other</button>
-              </div>
-            </div>
-
-            <div class="pill-row">
-              <span class="pill-label">Match language</span>
-              <div class="pill-group" id="prefLanguageGroup" data-value="any">
-                <button type="button" class="pill" data-value="any"><span class="pill-dot"></span>Any</button>
-                <button type="button" class="pill" data-value="english"><span class="pill-dot"></span>English</button>
-                <button type="button" class="pill" data-value="spanish"><span class="pill-dot"></span>Spanish</button>
-                <button type="button" class="pill" data-value="french"><span class="pill-dot"></span>French</button>
-                <button type="button" class="pill" data-value="arabic"><span class="pill-dot"></span>Arabic</button>
-                <button type="button" class="pill" data-value="hindi"><span class="pill-dot"></span>Hindi</button>
-                <button type="button" class="pill" data-value="urdu"><span class="pill-dot"></span>Urdu</button>
-                <button type="button" class="pill" data-value="portuguese"><span class="pill-dot"></span>Portuguese</button>
-              </div>
-            </div>
-
-            <div class="pill-row">
-              <span class="pill-label">Country</span>
-              <div class="country-picker">
-                <button type="button" class="pill any-pill selected" id="countryAnyPill" data-value="any"><span class="pill-dot"></span>Any</button>
-                <div class="country-search-wrap">
-                  <input type="text" id="countrySearch" class="search-input" placeholder="Search country…" autocomplete="off" />
-                  <div id="countryResults" class="search-results hidden"></div>
-                </div>
-                <span id="countrySelectedPill" class="pill selected hidden"></span>
-              </div>
-            </div>
-
-            <div class="pill-row">
-              <span class="pill-label">Interests <span class="hint">(optional)</span></span>
-              <div class="interests-picker">
-                <div id="interestTags" class="interest-tags"></div>
-                <div class="interest-input-wrap">
-                  <input type="text" id="interestInput" class="search-input" placeholder="Type an interest and press Enter…" autocomplete="off" maxlength="20" />
-                </div>
-              </div>
-            </div>
-
-            <button type="button" id="saveSettingsBtn" class="btn btn-primary settings-save">Done</button>
-          </div>
-        </div>
-      </div>
 
       <!-- Account modal: optional simple username/password/nickname (in-memory only for now) -->
       <div id="accountModal" class="modal-overlay hidden">
@@ -246,21 +257,6 @@
               <div id="friendRequestsList" class="friends-list">
                 <p class="history-empty">No pending requests.</p>
               </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Notifications modal: friend requests, new messages, call-back requests -->
-      <div id="notifModal" class="modal-overlay hidden">
-        <div class="modal-box">
-          <div class="modal-header">
-            <h2>Notifications</h2>
-            <button type="button" id="closeNotifBtn" class="modal-close">&times;</button>
-          </div>
-          <div class="modal-body">
-            <div id="notifList" class="notif-list">
-              <p class="history-empty">No notifications yet.</p>
             </div>
           </div>
         </div>

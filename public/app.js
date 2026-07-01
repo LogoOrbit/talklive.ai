@@ -14,10 +14,10 @@ const setupPanel = document.getElementById('setupPanel');
 const callPanel = document.getElementById('callPanel');
 const chatPanel = document.getElementById('chatPanel');
 
-const settingsBtn = document.getElementById('settingsBtn');
-const settingsModal = document.getElementById('settingsModal');
-const closeSettingsBtn = document.getElementById('closeSettingsBtn');
-const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+const filtersBtn = document.getElementById('filtersBtn');
+const filtersPanel = document.getElementById('filtersPanel');
+const filtersOverlay = document.getElementById('filtersOverlay');
+const closeFiltersBtn = document.getElementById('closeFiltersBtn');
 
 const termsModal = document.getElementById('termsModal');
 const closeTermsBtn = document.getElementById('closeTermsBtn');
@@ -80,6 +80,7 @@ const closeHistoryBtn = document.getElementById('closeHistoryBtn');
 const historyList = document.getElementById('historyList');
 
 const friendsBtn = document.getElementById('friendsBtn');
+const friendsMsgBadge = document.getElementById('friendsMsgBadge');
 const friendsModal = document.getElementById('friendsModal');
 const closeFriendsBtn = document.getElementById('closeFriendsBtn');
 const friendsList = document.getElementById('friendsList');
@@ -139,7 +140,6 @@ const appSettingsOverlay = document.getElementById('appSettingsOverlay');
 const closeAppSettingsBtn = document.getElementById('closeAppSettingsBtn');
 const sfxSettingCheckbox = document.getElementById('sfxSettingCheckbox');
 const sideAutoCallCheckbox = document.getElementById('sideAutoCallCheckbox');
-const soundToggleBtn = document.getElementById('soundToggleBtn');
 
 const MIN_CALL_SECONDS_BEFORE_SKIP = 2;
 
@@ -229,7 +229,7 @@ function selectCountry(code, name) {
     countrySelectedPill.classList.add('hidden');
     countrySearch.value = '';
   } else {
-    countrySelectedPill.innerHTML = `<span class="pill-dot"></span>${name}`;
+    countrySelectedPill.innerHTML = `${getFlagImg(code)} ${escapeHtml(name)}`;
     countrySelectedPill.classList.remove('hidden');
     countrySearch.value = '';
   }
@@ -257,7 +257,7 @@ function renderCountryResults(query) {
     matches.forEach(([code, name]) => {
       const item = document.createElement('div');
       item.className = 'search-result-item';
-      item.textContent = name;
+      item.innerHTML = `${getFlagImg(code)} ${escapeHtml(name)}`;
       item.addEventListener('click', () => selectCountry(code, name));
       countryResults.appendChild(item);
     });
@@ -351,10 +351,6 @@ function playHangupSound() { playTone(320, 0.2, 'sine', 0.18); playTone(220, 0.2
 function playMessageSound() { playTone(950, 0.08, 'triangle', 0.15); }
 
 function updateSoundToggleUi() {
-  const label = soundEnabled ? 'Mute sound effects' : 'Unmute sound effects';
-  soundToggleBtn.textContent = soundEnabled ? '🔊' : '🔇';
-  soundToggleBtn.title = label;
-  soundToggleBtn.setAttribute('aria-label', label);
   sfxSettingCheckbox.checked = soundEnabled;
 }
 
@@ -364,7 +360,6 @@ function setSoundEnabled(value) {
   updateSoundToggleUi();
 }
 
-soundToggleBtn.addEventListener('click', () => setSoundEnabled(!soundEnabled));
 sfxSettingCheckbox.addEventListener('change', () => setSoundEnabled(sfxSettingCheckbox.checked));
 updateSoundToggleUi();
 
@@ -382,6 +377,21 @@ function closeAppSettings() {
 appSettingsBtn.addEventListener('click', openAppSettings);
 closeAppSettingsBtn.addEventListener('click', closeAppSettings);
 appSettingsOverlay.addEventListener('click', closeAppSettings);
+
+// --- Filters side panel: who you get matched with ---
+function openFilters() {
+  filtersPanel.classList.add('open');
+  filtersOverlay.classList.remove('hidden');
+}
+
+function closeFilters() {
+  filtersPanel.classList.remove('open');
+  filtersOverlay.classList.add('hidden');
+}
+
+filtersBtn.addEventListener('click', openFilters);
+closeFiltersBtn.addEventListener('click', closeFilters);
+filtersOverlay.addEventListener('click', closeFilters);
 
 // --- Add Friend: sends a real friend request to the current call partner.
 // Works the same whether the partner is a temporary (guest) user or signed in —
@@ -407,15 +417,11 @@ function closeModal(modal) {
   modal.classList.add('hidden');
 }
 
-settingsBtn.addEventListener('click', () => openModal(settingsModal));
-closeSettingsBtn.addEventListener('click', () => closeModal(settingsModal));
-saveSettingsBtn.addEventListener('click', () => closeModal(settingsModal));
-
 openTermsLink.addEventListener('click', () => openModal(termsModal));
 openTermsLinkFooter.addEventListener('click', () => openModal(termsModal));
 closeTermsBtn.addEventListener('click', () => closeModal(termsModal));
 
-[settingsModal, termsModal, accountModal, historyModal, friendsModal, notifModal, friendChatModal].forEach((modal) => {
+[termsModal, accountModal, historyModal, friendsModal, friendChatModal].forEach((modal) => {
   modal.addEventListener('click', (e) => {
     if (e.target === modal) closeModal(modal);
   });
@@ -423,7 +429,6 @@ closeTermsBtn.addEventListener('click', () => closeModal(termsModal));
 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
-    closeModal(settingsModal);
     closeModal(termsModal);
     closeModal(accountModal);
     closeModal(historyModal);
@@ -431,6 +436,7 @@ document.addEventListener('keydown', (e) => {
     closeModal(notifModal);
     closeModal(friendChatModal);
     closeAppSettings();
+    closeFilters();
   }
 });
 
@@ -561,6 +567,7 @@ function renderFriendsList() {
   }
   friendsList.innerHTML = '';
   friendsData.forEach((f) => {
+    const unread = unreadCountFor(f.clientId);
     const item = document.createElement('div');
     item.className = 'friend-item';
     item.innerHTML = `
@@ -568,6 +575,7 @@ function renderFriendsList() {
         <span class="friend-online-dot ${f.online ? 'online' : ''}" title="${f.online ? 'Online' : 'Offline'}"></span>
         <span class="friend-item-name">${getFlagImg(f.countryCode)} ${escapeHtml(f.username)}</span>
         ${friendBadge(f.temporary)}
+        ${unread > 0 ? `<span class="unread-badge">${unread}</span>` : ''}
       </div>
       <div class="friend-item-actions">
         <button type="button" class="btn-chip friend-chat-btn" data-id="${f.clientId}" title="Chat">💬 Chat</button>
@@ -609,8 +617,13 @@ friendsList.addEventListener('click', (e) => {
   const chatBtn = e.target.closest('.friend-chat-btn');
   const blockBtn = e.target.closest('.friend-block-btn');
   const removeBtn = e.target.closest('.friend-remove-btn');
+  const nameArea = e.target.closest('.friend-item-info');
   if (chatBtn) {
     openFriendChat(chatBtn.dataset.id);
+  } else if (nameArea && !blockBtn && !removeBtn) {
+    const row = nameArea.closest('.friend-item');
+    const id = row.querySelector('.friend-chat-btn')?.dataset.id;
+    if (id) openFriendChat(id);
   } else if (blockBtn) {
     if (!confirm('Block this friend? They will be removed and you will not be matched with them again.')) return;
     socket.emit('block-friend', { friendClientId: blockBtn.dataset.id });
@@ -639,15 +652,21 @@ socket.on('state-sync', ({ friends: friendList, friendRequests: requestList, not
   renderNotifications();
 });
 
-// --- Notifications bell ---
-notifBtn.addEventListener('click', () => openModal(notifModal));
+// --- Notifications bell: dropdown anchored under the icon, not a floating modal ---
+notifBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (notifModal.classList.contains('hidden')) openModal(notifModal);
+  else closeModal(notifModal);
+});
 closeNotifBtn.addEventListener('click', () => closeModal(notifModal));
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.notif-wrap')) closeModal(notifModal);
+});
 
 function notifIcon(type) {
   switch (type) {
     case 'friend_request': return '👤';
     case 'friend_accepted': return '✅';
-    case 'message': return '💬';
     case 'call_back_request': return '📞';
     default: return '🔔';
   }
@@ -657,7 +676,6 @@ function notifText(n) {
   switch (n.type) {
     case 'friend_request': return `${escapeHtml(n.username)} wants to be friends`;
     case 'friend_accepted': return `${escapeHtml(n.username)} accepted your friend request`;
-    case 'message': return `${escapeHtml(n.username)}: ${escapeHtml(n.text.slice(0, 60))}`;
     case 'call_back_request': return `${escapeHtml(n.username)} wants to call you back`;
     default: return 'Notification';
   }
@@ -678,49 +696,64 @@ function removeNotifLocal(id) {
   renderNotifications();
 }
 
-function renderNotifications() {
-  notifBadge.textContent = notifData.length;
-  notifBadge.classList.toggle('hidden', notifData.length === 0);
+// --- Unread messages live on the Friends button/list instead of the requests bell ---
+function unreadCountFor(friendClientId) {
+  return notifData.filter((n) => n.type === 'message' && n.fromClientId === friendClientId).length;
+}
 
-  if (notifData.length === 0) {
-    notifList.innerHTML = '<p class="history-empty">No notifications yet.</p>';
-    return;
+function totalUnreadMessages() {
+  return notifData.filter((n) => n.type === 'message').length;
+}
+
+function updateFriendsMsgBadge() {
+  const count = totalUnreadMessages();
+  friendsMsgBadge.textContent = count;
+  friendsMsgBadge.classList.toggle('hidden', count === 0);
+}
+
+// The bell/requests dropdown only ever shows actionable requests (friend
+// requests, accepted-friend confirmations, call-back requests) — new message
+// notifications surface as unread badges on the Friends button/list instead.
+function renderNotifications() {
+  const visible = notifData.filter((n) => n.type !== 'message');
+  notifBadge.textContent = visible.length;
+  notifBadge.classList.toggle('hidden', visible.length === 0);
+
+  if (visible.length === 0) {
+    notifList.innerHTML = '<p class="history-empty">No requests yet.</p>';
+  } else {
+    notifList.innerHTML = '';
+    [...visible].reverse().forEach((n) => {
+      const item = document.createElement('div');
+      item.className = 'notif-item';
+      let actions = '';
+      if (n.type === 'friend_request') {
+        actions = `
+          <button type="button" class="btn-chip btn-chip-accept notif-confirm-btn" data-id="${n.id}" data-from="${n.fromClientId}">✓ Confirm</button>
+          <button type="button" class="btn-chip notif-dismiss-btn" data-id="${n.id}" data-from="${n.fromClientId}">✕ Dismiss</button>
+        `;
+      } else if (n.type === 'call_back_request') {
+        actions = `
+          <button type="button" class="btn-chip btn-chip-accept notif-callback-accept-btn" data-id="${n.id}" data-from="${n.fromClientId}">📞 Call back</button>
+          <button type="button" class="btn-chip notif-callback-decline-btn" data-id="${n.id}" data-from="${n.fromClientId}">✕ Dismiss</button>
+        `;
+      } else {
+        actions = `<button type="button" class="btn-chip notif-clear-btn" data-id="${n.id}">✕ Dismiss</button>`;
+      }
+      item.innerHTML = `
+        <div class="notif-item-icon">${notifIcon(n.type)}</div>
+        <div class="notif-item-body">
+          <div class="notif-item-text">${notifText(n)}</div>
+          <div class="notif-item-time">${timeAgo(n.ts)}</div>
+          <div class="notif-item-actions">${actions}</div>
+        </div>
+      `;
+      notifList.appendChild(item);
+    });
   }
-  notifList.innerHTML = '';
-  [...notifData].reverse().forEach((n) => {
-    const item = document.createElement('div');
-    item.className = 'notif-item';
-    let actions = '';
-    if (n.type === 'friend_request') {
-      actions = `
-        <button type="button" class="btn-chip btn-chip-accept notif-confirm-btn" data-id="${n.id}" data-from="${n.fromClientId}">✓ Confirm</button>
-        <button type="button" class="btn-chip notif-dismiss-btn" data-id="${n.id}" data-from="${n.fromClientId}">✕ Dismiss</button>
-      `;
-    } else if (n.type === 'call_back_request') {
-      actions = `
-        <button type="button" class="btn-chip btn-chip-accept notif-callback-accept-btn" data-id="${n.id}" data-from="${n.fromClientId}">📞 Call back</button>
-        <button type="button" class="btn-chip notif-callback-decline-btn" data-id="${n.id}" data-from="${n.fromClientId}">✕ Dismiss</button>
-      `;
-    } else {
-      actions = `<button type="button" class="btn-chip notif-clear-btn" data-id="${n.id}">✕ Dismiss</button>`;
-    }
-    item.innerHTML = `
-      <div class="notif-item-icon">${notifIcon(n.type)}</div>
-      <div class="notif-item-body">
-        <div class="notif-item-text">${notifText(n)}</div>
-        <div class="notif-item-time">${timeAgo(n.ts)}</div>
-        <div class="notif-item-actions">${actions}</div>
-      </div>
-    `;
-    if (n.type === 'message') {
-      item.classList.add('notif-clickable');
-      item.addEventListener('click', (e) => {
-        if (e.target.closest('button')) return;
-        openFriendChat(n.fromClientId);
-      });
-    }
-    notifList.appendChild(item);
-  });
+
+  updateFriendsMsgBadge();
+  renderFriendsList();
 }
 
 notifList.addEventListener('click', (e) => {
@@ -882,7 +915,18 @@ historyList.addEventListener('click', (e) => {
   requestCallBack(btn.dataset.id, btn.dataset.name);
 });
 
-socket.emit('register', { clientId: getClientId(), nickname: accountNickname || undefined });
+// Wraps 'register' so we can safely re-send the same payload after a socket
+// reconnect (mobile browsers frequently drop/re-open the socket, e.g. when
+// backgrounded, without a full page reload). Without re-registering, the
+// server's clientId -> socketId map goes stale and friend messages/notifications
+// sent to this device silently fail to arrive until the page is reloaded.
+let lastRegisterPayload = null;
+function registerClient(payload) {
+  lastRegisterPayload = payload;
+  socket.emit('register', payload);
+}
+
+registerClient({ clientId: getClientId(), nickname: accountNickname || undefined });
 renderAccountState();
 
 socket.on('profile', (profile) => {
@@ -1212,7 +1256,7 @@ function resetUI() {
 }
 
 function registerProfile() {
-  socket.emit('register', {
+  registerClient({
     clientId: getClientId(),
     gender: genderGroup.dataset.value,
     prefGender: prefGenderGroup.dataset.value,
@@ -1595,4 +1639,7 @@ socket.on('disconnect', () => {
 socket.on('connect', () => {
   clearError();
   if (isSearching) setConnection('orange', 'Reconnecting');
+  // Re-register on every (re)connect so the server always has a live socket
+  // for this clientId, and so friends/notifications resync after being offline.
+  if (lastRegisterPayload) socket.emit('register', lastRegisterPayload);
 });

@@ -107,6 +107,23 @@ html, body {
   transform: translateX(0);
 }
 
+.side-panel-right {
+  left: auto;
+  right: 0;
+  border-right: none;
+  border-left: 1px solid rgba(255,255,255,0.08);
+  transform: translateX(100%);
+  box-shadow: -20px 0 40px rgba(0,0,0,0.3);
+}
+
+.side-panel-right.open {
+  transform: translateX(0);
+}
+
+.side-panel-body {
+  overflow-y: auto;
+}
+
 .side-panel-header {
   display: flex;
   align-items: center;
@@ -179,39 +196,16 @@ html, body {
   color: #2ed47a;
 }
 
-.settings-btn {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  border: none;
-  cursor: pointer;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  color: white;
-  font-size: 13px;
-  font-weight: 700;
-  padding: 9px 16px;
-  border-radius: 999px;
-  box-shadow: 0 0 16px rgba(108, 92, 231, 0.55);
-  animation: settingsPulse 2.4s ease-in-out infinite;
-  transition: transform 0.15s ease, box-shadow 0.2s ease;
+.topbar-svg-icon {
+  width: 19px;
+  height: 19px;
 }
 
-.settings-btn:hover {
-  box-shadow: 0 0 24px rgba(108, 92, 231, 0.8);
-  animation-play-state: paused;
-}
-
-.settings-btn:active {
-  transform: scale(0.95);
-}
-
-.settings-icon {
-  font-size: 16px;
-}
-
-@keyframes settingsPulse {
-  0%, 100% { box-shadow: 0 0 16px rgba(108, 92, 231, 0.55); }
-  50% { box-shadow: 0 0 26px rgba(0, 212, 255, 0.75); }
+/* Friends icon: distinct blue tint + custom shape so it doesn't read as the
+   same grey "people" glyph as the online-count indicator. */
+.friends-btn {
+  position: relative;
+  color: #4da6ff;
 }
 
 .online-dot {
@@ -616,17 +610,6 @@ html, body {
   .btn-icon-lg {
     width: 58px;
     height: 58px;
-  }
-
-  .settings-text {
-    display: none;
-  }
-
-  .settings-btn {
-    width: 44px;
-    height: 44px;
-    padding: 0;
-    justify-content: center;
   }
 
   .chat-panel {
@@ -1646,8 +1629,51 @@ html, body {
 }
 
 /* Notification bell badge */
+.notif-wrap {
+  position: relative;
+}
+
 .notif-btn {
   position: relative;
+}
+
+/* Dropdown anchored under the bell icon, instead of a centered floating modal */
+.notif-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 320px;
+  max-width: min(90vw, 360px);
+  max-height: 70vh;
+  overflow-y: auto;
+  background: #131930;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  z-index: 100;
+}
+
+.notif-dropdown.hidden {
+  display: none;
+}
+
+.notif-dropdown .modal-header {
+  padding: 14px 16px;
+}
+
+.notif-dropdown .modal-body {
+  padding: 14px 16px;
+}
+
+@media (max-width: 480px) {
+  .notif-dropdown {
+    position: fixed;
+    top: 62px;
+    right: 10px;
+    left: 10px;
+    width: auto;
+    max-width: none;
+  }
 }
 
 .notif-badge {
@@ -1719,6 +1745,21 @@ html, body {
   display: none;
 }
 
+.unread-badge {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 6px var(--danger);
+}
+
 /* Friends / friend requests list */
 .friends-list {
   display: flex;
@@ -1744,6 +1785,7 @@ html, body {
   gap: 8px;
   font-size: 13px;
   flex-wrap: wrap;
+  cursor: pointer;
 }
 
 .friend-online-dot {
