@@ -205,6 +205,23 @@
         </div>
       </div>
 
+      <!-- Age / Terms consent gate — shown before the very first call -->
+      <div id="ageConsentModal" class="modal-overlay hidden">
+        <div class="modal-box">
+          <div class="modal-header">
+            <h2>Before You Start</h2>
+          </div>
+          <div class="modal-body">
+            <p class="consent-modal-text">🔞 You must be <strong>18 years or older</strong> to use TalkLive.</p>
+            <p class="consent-modal-text">By continuing, you agree to our
+              <button type="button" id="openTermsFromConsent" class="link-btn">Terms &amp; Community Guidelines</button>,
+              including the rules on respectful behavior and reporting/bans.
+            </p>
+            <button type="button" id="ageAgreeBtn" class="btn btn-primary settings-save">I AGREE</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Policies modal: how-to-use, community guidelines, ban policy, terms, privacy -->
       <div id="termsModal" class="modal-overlay hidden">
         <div class="modal-box modal-box-wide">

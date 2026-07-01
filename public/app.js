@@ -812,7 +812,26 @@ async function begin() {
   socket.emit('find-partner');
 }
 
-startBtn.addEventListener('click', begin);
+const ageConsentModal = document.getElementById('ageConsentModal');
+const openTermsFromConsent = document.getElementById('openTermsFromConsent');
+const ageAgreeBtn = document.getElementById('ageAgreeBtn');
+const CONSENT_KEY = 'talklive_age_consent';
+
+startBtn.addEventListener('click', () => {
+  if (localStorage.getItem(CONSENT_KEY) === 'yes') {
+    begin();
+  } else {
+    openModal(ageConsentModal);
+  }
+});
+
+openTermsFromConsent.addEventListener('click', () => openModal(termsModal));
+
+ageAgreeBtn.addEventListener('click', () => {
+  localStorage.setItem(CONSENT_KEY, 'yes');
+  closeModal(ageConsentModal);
+  begin();
+});
 
 function performSkip() {
   teardownPeer();

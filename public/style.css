@@ -1411,6 +1411,19 @@ html, body {
   margin-bottom: 14px;
 }
 
+.consent-modal-text {
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0 0 16px;
+  text-align: left;
+}
+
+#ageAgreeBtn {
+  width: 100%;
+  font-size: 16px;
+  letter-spacing: 0.5px;
+}
+
 .account-section-title {
   font-size: 13px;
   color: var(--accent-2);
