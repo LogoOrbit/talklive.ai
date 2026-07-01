@@ -23,6 +23,7 @@ const termsModal = document.getElementById('termsModal');
 const closeTermsBtn = document.getElementById('closeTermsBtn');
 const openTermsLink = document.getElementById('openTermsLink');
 const openTermsLinkFooter = document.getElementById('openTermsLinkFooter');
+const openPrivacyLinkFooter = document.getElementById('openPrivacyLinkFooter');
 
 const genderGroup = document.getElementById('genderGroup');
 const prefGenderGroup = document.getElementById('prefGenderGroup');
@@ -287,6 +288,10 @@ saveSettingsBtn.addEventListener('click', () => closeModal(settingsModal));
 
 openTermsLink.addEventListener('click', () => openModal(termsModal));
 openTermsLinkFooter.addEventListener('click', () => openModal(termsModal));
+openPrivacyLinkFooter.addEventListener('click', () => {
+  openModal(termsModal);
+  document.getElementById('privacySection').scrollIntoView();
+});
 closeTermsBtn.addEventListener('click', () => closeModal(termsModal));
 
 [settingsModal, termsModal, accountModal, historyModal].forEach((modal) => {
