@@ -189,16 +189,61 @@ html, body {
   background: rgba(255,255,255,0.08);
 }
 
-.avatar-btn.logged-in {
+.avatar-initial {
+  font-weight: 700;
+  font-size: 14px;
+  color: #2ed47a;
+}
+
+/* Account row inside the left Settings panel */
+.settings-account-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 6px 16px;
+  margin-bottom: 8px;
+  border: none;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  background: none;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+}
+
+.settings-account-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.settings-account-avatar .topbar-svg-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.settings-account-row.logged-in .settings-account-avatar {
   border: 2px solid #2ed47a;
   box-shadow: 0 0 10px rgba(46, 212, 122, 0.6);
   background: rgba(46, 212, 122, 0.08);
 }
 
-.avatar-initial {
-  font-weight: 700;
-  font-size: 14px;
-  color: #2ed47a;
+.settings-account-label {
+  flex: 1;
+}
+
+.settings-account-chevron {
+  width: 16px;
+  height: 16px;
+  opacity: 0.5;
+  flex-shrink: 0;
 }
 
 .topbar-svg-icon {

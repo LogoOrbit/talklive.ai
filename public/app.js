@@ -95,6 +95,7 @@ const friendRequestsPanel = document.getElementById('friendRequestsPanel');
 const notifBtn = document.getElementById('notifBtn');
 const notifBadge = document.getElementById('notifBadge');
 const notifModal = document.getElementById('notifModal');
+const notifWrap = document.querySelector('.notif-wrap');
 const closeNotifBtn = document.getElementById('closeNotifBtn');
 const notifList = document.getElementById('notifList');
 
@@ -501,11 +502,10 @@ clearFiltersBtn.addEventListener('click', () => {
 // friendship is keyed by their persistent clientId either way. ---
 addFriendBtn.addEventListener('click', () => {
   if (!currentPartner || !currentPartner.clientId) return;
+  if (addFriendBtn.classList.contains('added')) return; // already sent to this partner
   socket.emit('friend-request', { targetClientId: currentPartner.clientId });
   addFriendBtn.classList.add('added');
-  setTimeout(() => {
-    addFriendBtn.classList.remove('added');
-  }, 1500);
+  addFriendBtn.disabled = true;
 });
 
 socket.on('friend-request-result', ({ ok, error }) => {
@@ -572,6 +572,7 @@ function showAccountStatus(msg, kind) {
 }
 
 accountBtn.addEventListener('click', () => {
+  closeAppSettings();
   renderAccountState();
   openModal(accountModal);
 });
@@ -763,7 +764,11 @@ notifBtn.addEventListener('click', (e) => {
 });
 closeNotifBtn.addEventListener('click', () => closeModal(notifModal));
 document.addEventListener('click', (e) => {
-  if (!e.target.closest('.notif-wrap')) closeModal(notifModal);
+  // Use composedPath (captured at dispatch time) instead of e.target.closest —
+  // action buttons inside the list re-render notifList on click, which detaches
+  // the clicked button before this bubbles up, making closest() wrongly report
+  // "outside" and close the panel right after Confirm/Dismiss/etc.
+  if (!e.composedPath().includes(notifWrap)) closeModal(notifModal);
 });
 
 function notifIcon(type) {
@@ -876,7 +881,6 @@ notifList.addEventListener('click', (e) => {
     socket.emit('clear-notification', { notificationId: clearBtn.dataset.id });
     removeNotifLocal(clearBtn.dataset.id);
   } else if (cbAccept) {
-    closeModal(notifModal);
     acceptCallBack(cbAccept.dataset.from);
     removeNotifLocal(cbAccept.dataset.id);
   } else if (cbDecline) {
@@ -1569,6 +1573,8 @@ socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
   subText.textContent = rematched ? "You both liked your last chat — you're reconnected!" : '';
 
   currentPartner = partner;
+  addFriendBtn.classList.remove('added');
+  addFriendBtn.disabled = false;
   partnerName.textContent = partner.username;
   const rawGender = partner.gender && partner.gender !== 'unspecified' ? partner.gender : '';
   const genderLabel = rawGender ? ` · ${escapeHtml(rawGender[0].toUpperCase() + rawGender.slice(1))}` : '';

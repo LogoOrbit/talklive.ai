@@ -65,17 +65,12 @@
             </div>
           </div>
         </div>
-        <button id="accountBtn" class="icon-btn avatar-btn hidden" title="Account" aria-label="Account">
-          <span id="avatarIcon">
-            <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <circle cx="12" cy="8.5" r="3.5"/>
-              <path d="M4.5 20c0-4.2 3.4-7 7.5-7s7.5 2.8 7.5 7"/>
-            </svg>
-          </span>
-          <span id="avatarInitial" class="avatar-initial hidden"></span>
-        </button>
         <button id="filtersBtn" class="icon-btn hidden" title="Match filters" aria-label="Match filters">
-          <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/></svg>
+          <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+            <line x1="4" y1="7" x2="20" y2="7"/>
+            <line x1="4" y1="12" x2="20" y2="12"/>
+            <line x1="4" y1="17" x2="20" y2="17"/>
+          </svg>
         </button>
       </div>
     </header>
@@ -88,6 +83,18 @@
         <button type="button" id="closeAppSettingsBtn" class="modal-close">&times;</button>
       </div>
       <div class="side-panel-body">
+        <button type="button" id="accountBtn" class="settings-account-row" aria-label="Account">
+          <span id="avatarIcon" class="settings-account-avatar">
+            <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="8.5" r="3.5"/>
+              <path d="M4.5 20c0-4.2 3.4-7 7.5-7s7.5 2.8 7.5 7"/>
+            </svg>
+          </span>
+          <span id="avatarInitial" class="avatar-initial settings-account-avatar hidden"></span>
+          <span class="settings-account-label">Account</span>
+          <svg class="settings-account-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>
+        </button>
+
         <label class="checkbox-row" for="sfxSettingCheckbox">
           <input type="checkbox" id="sfxSettingCheckbox" checked />
           <span>Sound effects</span>
