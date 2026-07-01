@@ -71,6 +71,34 @@
             </div>
 
             <div class="pill-row">
+              <span class="pill-label">I speak</span>
+              <div class="pill-group" id="languageGroup" data-value="english">
+                <button type="button" class="pill" data-value="english"><span class="pill-dot"></span>English</button>
+                <button type="button" class="pill" data-value="spanish"><span class="pill-dot"></span>Spanish</button>
+                <button type="button" class="pill" data-value="french"><span class="pill-dot"></span>French</button>
+                <button type="button" class="pill" data-value="arabic"><span class="pill-dot"></span>Arabic</button>
+                <button type="button" class="pill" data-value="hindi"><span class="pill-dot"></span>Hindi</button>
+                <button type="button" class="pill" data-value="urdu"><span class="pill-dot"></span>Urdu</button>
+                <button type="button" class="pill" data-value="portuguese"><span class="pill-dot"></span>Portuguese</button>
+                <button type="button" class="pill" data-value="other"><span class="pill-dot"></span>Other</button>
+              </div>
+            </div>
+
+            <div class="pill-row">
+              <span class="pill-label">Match language</span>
+              <div class="pill-group" id="prefLanguageGroup" data-value="any">
+                <button type="button" class="pill" data-value="any"><span class="pill-dot"></span>Any</button>
+                <button type="button" class="pill" data-value="english"><span class="pill-dot"></span>English</button>
+                <button type="button" class="pill" data-value="spanish"><span class="pill-dot"></span>Spanish</button>
+                <button type="button" class="pill" data-value="french"><span class="pill-dot"></span>French</button>
+                <button type="button" class="pill" data-value="arabic"><span class="pill-dot"></span>Arabic</button>
+                <button type="button" class="pill" data-value="hindi"><span class="pill-dot"></span>Hindi</button>
+                <button type="button" class="pill" data-value="urdu"><span class="pill-dot"></span>Urdu</button>
+                <button type="button" class="pill" data-value="portuguese"><span class="pill-dot"></span>Portuguese</button>
+              </div>
+            </div>
+
+            <div class="pill-row">
               <span class="pill-label">Country</span>
               <div class="country-picker">
                 <button type="button" class="pill any-pill selected" id="countryAnyPill" data-value="any"><span class="pill-dot"></span>Any</button>
@@ -107,7 +135,7 @@
           <div class="modal-body policy-body">
 
             <h3>How TalkLive Works</h3>
-            <p>TalkLive connects you with a random stranger for a live, audio-only conversation. There's no sign-up — tap "Start," allow microphone access, and you'll be paired with someone automatically. Tap "Next Stranger" any time to end the current call and get matched with someone new, or "Stop" to leave entirely. You can optionally set a gender preference, a country, and interest tags from the settings (⚙️) menu to help find a better match.</p>
+            <p>TalkLive connects you with a random stranger for a live, audio-only conversation. There's no sign-up — tap "Start," allow microphone access, and you'll be paired with someone automatically. Tap "Next" any time to end the current call and get matched with someone new, or "Hang Up" to leave entirely. You can optionally set a gender preference, a country, and interest tags from the settings (⚙️) menu to help find a better match.</p>
 
             <h3>Quick Tips</h3>
             <ul>
@@ -173,6 +201,7 @@
         <div id="connectionIndicator" class="connection-indicator hidden">
           <span id="connectionDot" class="connection-dot"></span>
           <span id="connectionLabel" class="connection-label">Searching</span>
+          <span id="callTimer" class="call-timer hidden">0:00</span>
         </div>
 
         <p id="statusText" class="status-text">Tap start to talk to a random stranger</p>
@@ -182,19 +211,37 @@
           <div class="partner-name" id="partnerName">—</div>
           <div class="partner-meta" id="partnerMeta">—</div>
           <div class="partner-interests" id="partnerInterests"></div>
+          <div id="sharedInterestNote" class="shared-interest-note hidden"></div>
         </div>
 
+        <div id="reactionBar" class="reaction-bar hidden">
+          <button type="button" class="reaction-btn" data-emoji="👍" aria-label="React thumbs up">👍</button>
+          <button type="button" class="reaction-btn" data-emoji="😂" aria-label="React laughing">😂</button>
+          <button type="button" class="reaction-btn" data-emoji="👏" aria-label="React clapping">👏</button>
+          <button type="button" class="reaction-btn" data-emoji="❤️" aria-label="React heart">❤️</button>
+        </div>
+        <div id="reactionOverlay" class="reaction-overlay" aria-hidden="true"></div>
+
         <div class="primary-controls hidden" id="primaryControls">
-          <button id="stopBtn" class="call-btn call-btn-red" aria-label="Hang up">
-            <svg class="phone-icon phone-icon-rotated" viewBox="0 0 24 24" fill="white" aria-hidden="true">
-              <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
-            </svg>
-          </button>
-          <span class="call-btn-label">Hang Up</span>
+          <div class="call-btn-wrap">
+            <button id="skipBtn" class="call-btn call-btn-next" aria-label="Next stranger">
+              <svg class="skip-icon" viewBox="0 0 24 24" fill="white" aria-hidden="true">
+                <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+              </svg>
+            </button>
+            <span class="call-btn-label call-btn-label-next">Next</span>
+          </div>
+          <div class="call-btn-wrap">
+            <button id="stopBtn" class="call-btn call-btn-red call-btn-red-sm" aria-label="Hang up">
+              <svg class="phone-icon phone-icon-rotated" viewBox="0 0 24 24" fill="white" aria-hidden="true">
+                <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+              </svg>
+            </button>
+            <span class="call-btn-label">Hang Up</span>
+          </div>
         </div>
 
         <div class="controls secondary-controls">
-          <button id="skipBtn" class="btn btn-secondary hidden" title="Next stranger" aria-label="Next stranger">⏭️ <span class="btn-text">Next</span></button>
           <button id="muteBtn" class="btn btn-icon hidden" title="Mute microphone" aria-label="Mute microphone">🎤</button>
           <button id="chatToggleBtn" class="btn btn-icon hidden" title="Toggle chat" aria-label="Toggle text chat">💬</button>
           <button id="reportBtn" class="btn btn-danger hidden" title="Report and block" aria-label="Report and block">🚩 <span class="btn-text">Report</span></button>

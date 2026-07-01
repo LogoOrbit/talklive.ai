@@ -554,18 +554,26 @@ html, body {
   50% { transform: scale(1.035); }
 }
 
-/* Primary call action: big red Hang Up button, universally recognizable phone icon */
+/* Primary call actions: Next and Hang Up, equal visual weight, Next slightly larger */
 .primary-controls {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 28px;
+  margin: 24px 0 8px;
+}
+
+.call-btn-wrap {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  margin: 28px 0 8px;
 }
 
 .call-btn {
-  width: 86px;
-  height: 86px;
+  width: 84px;
+  height: 84px;
   border-radius: 50%;
   border: none;
   cursor: pointer;
@@ -579,16 +587,46 @@ html, body {
   transform: scale(0.94);
 }
 
+.call-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .call-btn-red {
   background: radial-gradient(circle at 35% 30%, #ff7a8a, #e21f3e 75%);
   box-shadow: 0 0 40px rgba(226, 31, 62, 0.6);
+}
+
+.call-btn-red-sm {
+  width: 68px;
+  height: 68px;
 }
 
 .call-btn-red:hover {
   box-shadow: 0 0 60px rgba(226, 31, 62, 0.8);
 }
 
+.call-btn-next {
+  background: radial-gradient(circle at 35% 30%, var(--accent-2), var(--accent) 75%);
+  box-shadow: 0 0 40px rgba(108, 92, 231, 0.55);
+}
+
+.call-btn-next:hover {
+  box-shadow: 0 0 60px rgba(108, 92, 231, 0.8);
+}
+
 .call-btn .phone-icon {
+  width: 30px;
+  height: 30px;
+}
+
+.call-btn-red-sm .phone-icon {
+  width: 26px;
+  height: 26px;
+}
+
+.skip-icon {
   width: 32px;
   height: 32px;
 }
@@ -601,8 +639,77 @@ html, body {
   text-transform: uppercase;
 }
 
+.call-btn-label-next {
+  color: var(--accent-2);
+}
+
 .secondary-controls {
   margin-top: 4px;
+}
+
+/* Call timer */
+.call-timer {
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* Shared interest callout */
+.shared-interest-note {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--accent-2);
+  font-weight: 600;
+}
+
+/* Quick reactions */
+.reaction-bar {
+  display: flex;
+  gap: 10px;
+  margin: 6px 0 10px;
+}
+
+.reaction-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.05);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.reaction-btn:hover {
+  background: rgba(255,255,255,0.1);
+  transform: scale(1.08);
+}
+
+.reaction-btn:active {
+  transform: scale(0.9);
+}
+
+.reaction-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 200;
+}
+
+.reaction-float {
+  position: absolute;
+  bottom: 20%;
+  font-size: 34px;
+  animation: floatUp 1.8s ease-out forwards;
+}
+
+@keyframes floatUp {
+  0% { transform: translateY(0) scale(0.6); opacity: 0; }
+  15% { transform: translateY(-20px) scale(1); opacity: 1; }
+  100% { transform: translateY(-220px) scale(1.1); opacity: 0; }
 }
 
 .btn-text {

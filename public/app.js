@@ -25,6 +25,8 @@ const openTermsLinkFooter = document.getElementById('openTermsLinkFooter');
 
 const genderGroup = document.getElementById('genderGroup');
 const prefGenderGroup = document.getElementById('prefGenderGroup');
+const languageGroup = document.getElementById('languageGroup');
+const prefLanguageGroup = document.getElementById('prefLanguageGroup');
 const interestTagsEl = document.getElementById('interestTags');
 const interestInput = document.getElementById('interestInput');
 
@@ -53,6 +55,12 @@ const chatInput = document.getElementById('chatInput');
 const connectionIndicator = document.getElementById('connectionIndicator');
 const connectionDot = document.getElementById('connectionDot');
 const connectionLabel = document.getElementById('connectionLabel');
+const callTimerEl = document.getElementById('callTimer');
+const sharedInterestNote = document.getElementById('sharedInterestNote');
+const reactionBar = document.getElementById('reactionBar');
+const reactionOverlay = document.getElementById('reactionOverlay');
+
+const MIN_CALL_SECONDS_BEFORE_SKIP = 8;
 
 const ICE_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
@@ -73,6 +81,10 @@ let isSearching = false;
 let chatOpen = false;
 let speakingCheckInterval = null;
 let myProfile = null;
+let callTimerInterval = null;
+let callStartedAt = null;
+let skipUnlockTimeout = null;
+let currentPartnerInterests = [];
 
 // --- Persistent client id so blocks survive reconnects in this browser ---
 function getClientId() {
@@ -178,6 +190,8 @@ interestInput.addEventListener('keydown', (e) => {
 
 initPillGroup(genderGroup);
 initPillGroup(prefGenderGroup);
+initPillGroup(languageGroup);
+initPillGroup(prefLanguageGroup);
 
 function openModal(modal) {
   modal.classList.remove('hidden');
@@ -232,6 +246,56 @@ function hideConnection() {
   connectionIndicator.classList.add('hidden');
 }
 
+function startCallTimer() {
+  callStartedAt = Date.now();
+  callTimerEl.classList.remove('hidden');
+  clearInterval(callTimerInterval);
+  callTimerInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - callStartedAt) / 1000);
+    const mins = Math.floor(elapsed / 60);
+    const secs = elapsed % 60;
+    callTimerEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+  }, 1000);
+}
+
+function stopCallTimer() {
+  clearInterval(callTimerInterval);
+  callTimerInterval = null;
+  callStartedAt = null;
+  callTimerEl.classList.add('hidden');
+  callTimerEl.textContent = '0:00';
+}
+
+function lockSkipButton() {
+  skipBtn.disabled = true;
+  clearTimeout(skipUnlockTimeout);
+  skipUnlockTimeout = setTimeout(() => {
+    skipBtn.disabled = false;
+  }, MIN_CALL_SECONDS_BEFORE_SKIP * 1000);
+}
+
+function unlockSkipButton() {
+  clearTimeout(skipUnlockTimeout);
+  skipBtn.disabled = false;
+}
+
+function showReactionFloat(emoji) {
+  const el = document.createElement('div');
+  el.className = 'reaction-float';
+  el.textContent = emoji;
+  el.style.left = `${40 + Math.random() * 20}%`;
+  reactionOverlay.appendChild(el);
+  setTimeout(() => el.remove(), 1800);
+}
+
+reactionBar.addEventListener('click', (e) => {
+  const btn = e.target.closest('.reaction-btn');
+  if (!btn) return;
+  const emoji = btn.dataset.emoji;
+  socket.emit('reaction', emoji);
+  showReactionFloat(emoji);
+});
+
 function showError(msg) {
   errorText.textContent = msg;
   errorText.classList.remove('hidden');
@@ -256,7 +320,14 @@ function clearChat() {
 
 async function getMic() {
   if (localStream) return localStream;
-  localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+  localStream = await navigator.mediaDevices.getUserMedia({
+    audio: {
+      echoCancellation: true,
+      noiseSuppression: true,
+      autoGainControl: true,
+    },
+    video: false,
+  });
   return localStream;
 }
 
@@ -275,7 +346,7 @@ function createPeerConnection() {
     remoteAudio.srcObject = event.streams[0];
     setState('connected');
     statusText.textContent = "You're connected";
-    subText.textContent = 'Say hi! Tap "Next Stranger" to skip.';
+    subText.textContent = 'Say hi! Tap "Next" to skip, or "Hang Up" to leave.';
     monitorRemoteAudio(event.streams[0]);
   };
 
@@ -353,6 +424,10 @@ function teardownPeer() {
   }
   remoteAudio.srcObject = null;
   partnerCard.classList.add('hidden');
+  sharedInterestNote.classList.add('hidden');
+  reactionBar.classList.add('hidden');
+  stopCallTimer();
+  lockSkipButton();
 }
 
 function resetUI() {
@@ -387,6 +462,8 @@ async function begin() {
     clientId: getClientId(),
     gender: genderGroup.dataset.value,
     prefGender: prefGenderGroup.dataset.value,
+    language: languageGroup.dataset.value,
+    prefLanguage: prefLanguageGroup.dataset.value,
     prefCountry: selectedCountry,
     interests: Array.from(selectedInterests),
   });
@@ -470,16 +547,20 @@ socket.on('online-count', (count) => {
   onlineCountEl.textContent = count;
 });
 
-socket.on('waiting', () => {
+socket.on('waiting', ({ estimatedSeconds } = {}) => {
   setState('waiting');
   setConnection('orange', 'Searching');
   statusText.textContent = 'Looking for someone to talk to…';
+  subText.textContent = estimatedSeconds
+    ? `Usually matches in about ${estimatedSeconds}s`
+    : 'Hang tight, this only takes a moment';
 });
 
-socket.on('matched', async ({ initiator, partner }) => {
+socket.on('matched', async ({ initiator, partner, rematched }) => {
   setState('connected');
   setConnection('orange', 'Connecting');
-  statusText.textContent = 'Connecting…';
+  statusText.textContent = `Connecting to someone in ${partner.country}…`;
+  subText.textContent = rematched ? "You both liked your last chat — you're reconnected!" : '';
 
   partnerName.textContent = partner.username;
   const genderLabel = partner.gender && partner.gender !== 'unspecified'
@@ -488,7 +569,8 @@ socket.on('matched', async ({ initiator, partner }) => {
   partnerMeta.textContent = `${partner.city}, ${partner.country}${genderLabel}`;
 
   partnerInterests.innerHTML = '';
-  (partner.interests || []).forEach((i) => {
+  currentPartnerInterests = partner.interests || [];
+  currentPartnerInterests.forEach((i) => {
     const tag = document.createElement('span');
     tag.className = 'tag';
     tag.textContent = i;
@@ -496,7 +578,32 @@ socket.on('matched', async ({ initiator, partner }) => {
   });
   partnerCard.classList.remove('hidden');
 
+  const shared = currentPartnerInterests.filter((i) => selectedInterests.has(i));
+  if (shared.length > 0) {
+    sharedInterestNote.textContent = `Both of you like ${shared.join(', ')}`;
+    sharedInterestNote.classList.remove('hidden');
+  } else {
+    sharedInterestNote.classList.add('hidden');
+  }
+
+  reactionBar.classList.remove('hidden');
+  startCallTimer();
+  lockSkipButton();
+
   await startCall(initiator);
+});
+
+socket.on('reaction', (emoji) => {
+  showReactionFloat(emoji);
+});
+
+socket.on('banned', () => {
+  showError('You have been banned after repeated reports.');
+  if (localStream) {
+    localStream.getTracks().forEach((t) => t.stop());
+    localStream = null;
+  }
+  resetUI();
 });
 
 socket.on('signal', (data) => {
@@ -517,7 +624,7 @@ socket.on('partner-left', () => {
 });
 
 socket.on('partner-mic-state', (muted) => {
-  subText.textContent = muted ? 'Stranger muted their mic' : 'Say hi! Tap "Next Stranger" to skip.';
+  subText.textContent = muted ? 'Stranger muted their mic' : 'Say hi! Tap "Next" to skip, or "Hang Up" to leave.';
 });
 
 socket.on('chat-message', ({ text }) => {

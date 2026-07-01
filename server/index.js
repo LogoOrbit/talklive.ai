@@ -16,8 +16,14 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 // --- State ---
 const waitingQueue = []; // socket ids waiting for a partner
 const partners = new Map(); // socketId -> partnerSocketId
-const profiles = new Map(); // socketId -> { username, country, city, gender, prefGender, prefCountry, interests, clientId }
+const profiles = new Map(); // socketId -> { username, country, city, gender, prefGender, prefCountry, language, prefLanguage, interests, clientId }
 const blocks = new Map(); // clientId -> Set<clientId>
+const hearts = new Map(); // pairKey ("clientIdA|clientIdB" sorted) -> Set<clientId who hearted>
+const reportCounts = new Map(); // clientId -> number of times reported
+
+function pairKey(a, b) {
+  return [a, b].sort().join('|');
+}
 
 function getClientIp(socket) {
   const forwarded = socket.handshake.headers['x-forwarded-for'];
@@ -76,6 +82,7 @@ function publicProfile(p) {
     countryCode: p.country,
     city: p.city,
     gender: p.gender,
+    language: p.language,
     interests: p.interests,
   };
 }
@@ -96,6 +103,12 @@ function mutuallyCompatible(seeker, candidate) {
   if (candidate.prefCountry && candidate.prefCountry !== 'any' && seeker.country !== candidate.prefCountry) {
     return false;
   }
+  if (seeker.prefLanguage && seeker.prefLanguage !== 'any' && candidate.language !== seeker.prefLanguage) {
+    return false;
+  }
+  if (candidate.prefLanguage && candidate.prefLanguage !== 'any' && seeker.language !== candidate.prefLanguage) {
+    return false;
+  }
   return true;
 }
 
@@ -107,6 +120,19 @@ function sharedInterestCount(a, b) {
 function findBestMatch(socketId) {
   const seeker = profiles.get(socketId);
   if (!seeker) return -1;
+
+  // Prioritize reconnecting with a recent match if both hearted each other last time.
+  for (let i = 0; i < waitingQueue.length; i++) {
+    const candidateId = waitingQueue[i];
+    const candidate = profiles.get(candidateId);
+    if (!candidate || !io.sockets.sockets.get(candidateId)) continue;
+    if (isBlockedPair(seeker.clientId, candidate.clientId)) continue;
+    const key = pairKey(seeker.clientId, candidate.clientId);
+    const heartSet = hearts.get(key);
+    if (heartSet && heartSet.has(seeker.clientId) && heartSet.has(candidate.clientId)) {
+      return i;
+    }
+  }
 
   let bestIdx = -1;
   let bestScore = -1;
@@ -124,6 +150,11 @@ function findBestMatch(socketId) {
     }
   }
   return bestIdx;
+}
+
+function estimatedWaitSeconds() {
+  const online = io.engine.clientsCount || 1;
+  return Math.max(2, Math.min(20, Math.round(12 / Math.sqrt(online))));
 }
 
 function tryMatch(socketId) {
@@ -145,12 +176,15 @@ function tryMatch(socketId) {
 
     const seekerProfile = profiles.get(socketId);
     const partnerProfile = profiles.get(partnerId);
+    const key = pairKey(seekerProfile.clientId, partnerProfile.clientId);
+    const rematched = hearts.has(key) && hearts.get(key).size === 2;
+    hearts.delete(key);
 
-    partnerSocket.emit('matched', { initiator: true, partner: publicProfile(seekerProfile) });
-    seekerSocket.emit('matched', { initiator: false, partner: publicProfile(partnerProfile) });
+    partnerSocket.emit('matched', { initiator: true, partner: publicProfile(seekerProfile), rematched });
+    seekerSocket.emit('matched', { initiator: false, partner: publicProfile(partnerProfile), rematched });
   } else {
     waitingQueue.push(socketId);
-    seekerSocket.emit('waiting');
+    seekerSocket.emit('waiting', { estimatedSeconds: estimatedWaitSeconds() });
   }
 }
 
@@ -169,6 +203,8 @@ io.on('connection', (socket) => {
       gender: data.gender || 'unspecified',
       prefGender: data.prefGender || 'any',
       prefCountry: data.prefCountry || 'any',
+      language: data.language || 'english',
+      prefLanguage: data.prefLanguage || 'any',
       interests: Array.isArray(data.interests) ? data.interests.slice(0, 10) : [],
     });
 
@@ -203,10 +239,34 @@ io.on('connection', (socket) => {
     const partner = partnerId ? profiles.get(partnerId) : null;
     if (seeker && partner) {
       blockPair(seeker.clientId, partner.clientId);
-      console.log(`[report] ${seeker.username} reported ${partner.username}`);
+      const count = (reportCounts.get(partner.clientId) || 0) + 1;
+      reportCounts.set(partner.clientId, count);
+      console.log(`[report] ${seeker.username} reported ${partner.username} (total reports: ${count})`);
+      if (count >= 3) {
+        console.log(`[ban] ${partner.username} auto-banned after ${count} reports`);
+        const partnerSocket = io.sockets.sockets.get(partnerId);
+        if (partnerSocket) {
+          partnerSocket.emit('banned');
+          partnerSocket.disconnect(true);
+        }
+      }
     }
     disconnectPartner(socket.id);
     tryMatch(socket.id);
+  });
+
+  socket.on('reaction', (emoji) => {
+    const partnerId = partners.get(socket.id);
+    const seeker = profiles.get(socket.id);
+    const partner = partnerId ? profiles.get(partnerId) : null;
+    if (!partnerId || !seeker || !partner || typeof emoji !== 'string') return;
+    io.to(partnerId).emit('reaction', emoji);
+
+    if (emoji === '❤️') {
+      const key = pairKey(seeker.clientId, partner.clientId);
+      if (!hearts.has(key)) hearts.set(key, new Set());
+      hearts.get(key).add(seeker.clientId);
+    }
   });
 
   // WebRTC signaling relay — only forwarded to the current partner
