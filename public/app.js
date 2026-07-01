@@ -75,6 +75,7 @@ const chatBadge = document.getElementById('chatBadge');
 const chatTypingBadge = document.getElementById('chatTypingBadge');
 const typingIndicator = document.getElementById('typingIndicator');
 const quickGuide = document.getElementById('quickGuide');
+const callGuide = document.getElementById('callGuide');
 
 const historyBtn = document.getElementById('historyBtn');
 const historyModal = document.getElementById('historyModal');
@@ -447,13 +448,14 @@ closeFiltersBtn.addEventListener('click', closeFilters);
 filtersOverlay.addEventListener('click', closeFilters);
 
 // --- Applied filters: the panel's controls are a draft; matching only uses
-// what was last saved here (persisted so a Save survives a reload). ---
+// what was last saved here. Uses sessionStorage (not localStorage) so a
+// reload keeps the saved filters, but closing the tab/browser clears them. ---
 const FILTERS_STORAGE_KEY = 'talklive_filters';
 let appliedFilters = { prefGender: 'any', includeCountries: [], excludeCountries: [], interests: [] };
 
 (function loadAppliedFilters() {
   try {
-    const raw = localStorage.getItem(FILTERS_STORAGE_KEY);
+    const raw = sessionStorage.getItem(FILTERS_STORAGE_KEY);
     if (raw) appliedFilters = Object.assign(appliedFilters, JSON.parse(raw));
   } catch (e) {
     // ignore malformed/missing storage
@@ -482,7 +484,7 @@ saveFiltersBtn.addEventListener('click', () => {
     excludeCountries: Array.from(excludeCountries),
     interests: Array.from(selectedInterests),
   };
-  localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(appliedFilters));
+  sessionStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(appliedFilters));
   registerProfile();
   closeFilters();
 });
@@ -1152,6 +1154,24 @@ function clearError() {
   setupErrorText.textContent = '';
 }
 
+let subTextFadeTimer = null;
+
+// Every subText update goes through here so a pending fade-out from an
+// earlier message can never fire on top of unrelated, newer text.
+function setSubText(text) {
+  clearTimeout(subTextFadeTimer);
+  subTextFadeTimer = null;
+  subText.classList.remove('sub-text-fade-out');
+  subText.textContent = text;
+}
+
+function setSubTextFading(text, delayMs = 5000) {
+  setSubText(text);
+  subTextFadeTimer = setTimeout(() => {
+    subText.classList.add('sub-text-fade-out');
+  }, delayMs);
+}
+
 function addChatMessage(text, kind) {
   const el = document.createElement('div');
   el.className = `chat-msg ${kind}`;
@@ -1202,7 +1222,7 @@ function createPeerConnection(isInitiator) {
     remoteAudio.srcObject = event.streams[0];
     setState('connected');
     statusText.textContent = "You're connected";
-    subText.textContent = 'Say hi! Tap "Next" to skip, or "Hang Up" to leave.';
+    setSubTextFading('Say hi! Tap "Next" to skip, or "Hang Up" to leave.');
     monitorRemoteAudio(event.streams[0]);
     // Receiving the remote track is itself proof of a live connection, even if
     // iceConnectionState hasn't caught up yet (e.g. TURN relay finalizing) —
@@ -1345,7 +1365,7 @@ function resetUI() {
   isSearching = false;
   setState('idle');
   statusText.textContent = 'Tap start to talk to a random stranger';
-  subText.textContent = 'Audio only · No sign up · No registration';
+  setSubText('Audio only · No sign up · No registration');
   callPanel.classList.add('hidden');
   setupPanel.classList.remove('hidden');
   startBtn.disabled = false;
@@ -1361,6 +1381,7 @@ function resetUI() {
   primaryControls.classList.add('hidden');
   autoCallRow.classList.add('hidden');
   quickGuide.classList.remove('hidden');
+  callGuide.classList.add('hidden');
   appSettingsBtn.classList.add('hidden');
   historyBtn.classList.add('hidden');
   friendsBtn.classList.add('hidden');
@@ -1392,6 +1413,7 @@ function enterCallUI() {
   primaryControls.classList.remove('hidden');
   autoCallRow.classList.remove('hidden');
   quickGuide.classList.add('hidden');
+  callGuide.classList.remove('hidden');
   appSettingsBtn.classList.remove('hidden');
   historyBtn.classList.remove('hidden');
   friendsBtn.classList.remove('hidden');
@@ -1427,7 +1449,7 @@ async function begin() {
   setState('waiting');
   setConnection('orange', 'Searching');
   statusText.textContent = 'Looking for someone to talk to…';
-  subText.textContent = 'Hang tight, this only takes a moment';
+  setSubText('Hang tight, this only takes a moment');
 
   socket.emit('find-partner');
 }
@@ -1460,7 +1482,7 @@ function performSkip() {
   setState('waiting');
   setConnection('red', 'Skipped');
   statusText.textContent = 'Finding a new stranger…';
-  subText.textContent = 'Hang tight, this only takes a moment';
+  setSubText('Hang tight, this only takes a moment');
   socket.emit('skip');
   setTimeout(() => setConnection('orange', 'Searching'), 600);
 }
@@ -1546,15 +1568,15 @@ socket.on('waiting', ({ estimatedSeconds } = {}) => {
   setState('waiting');
   setConnection('orange', 'Searching');
   statusText.textContent = 'Looking for someone to talk to…';
-  subText.textContent = estimatedSeconds
+  setSubText(estimatedSeconds
     ? `Usually matches in about ${estimatedSeconds}s`
-    : 'Hang tight, this only takes a moment';
+    : 'Hang tight, this only takes a moment');
 });
 
 // Server gives up on the "Interested Countries" filter for this search after a
 // long wait and widens the pool to anyone, so the user isn't stuck waiting forever.
 socket.on('country-fallback', () => {
-  subText.textContent = "Not many people online in your preferred countries — connecting you with anyone.";
+  setSubText("Not many people online in your preferred countries — connecting you with anyone.");
 });
 
 socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
@@ -1570,7 +1592,7 @@ socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
   setState('connected');
   setConnection('orange', 'Connecting');
   statusText.textContent = callback ? `Calling ${partner.username} back…` : `Connecting to someone in ${partner.country}…`;
-  subText.textContent = rematched ? "You both liked your last chat — you're reconnected!" : '';
+  setSubText(rematched ? "You both liked your last chat — you're reconnected!" : '');
 
   currentPartner = partner;
   addFriendBtn.classList.remove('added');
@@ -1649,7 +1671,7 @@ async function requestCallBack(targetClientId, targetUsername) {
   setState('waiting');
   setConnection('orange', 'Calling');
   statusText.textContent = `Calling ${targetUsername}…`;
-  subText.textContent = 'Waiting for them to accept…';
+  setSubText('Waiting for them to accept…');
 
   socket.emit('call-back-request', { targetClientId });
 }
@@ -1675,7 +1697,7 @@ async function acceptCallBack(fromClientId) {
   setState('waiting');
   setConnection('orange', 'Connecting');
   statusText.textContent = 'Connecting…';
-  subText.textContent = '';
+  setSubText('');
 
   socket.emit('call-back-respond', { fromClientId, accept: true });
 }
@@ -1732,7 +1754,7 @@ socket.on('partner-left', () => {
     setState('waiting');
     setConnection('red', 'Disconnected');
     statusText.textContent = 'Stranger disconnected. Finding someone new…';
-    subText.textContent = 'Hang tight, this only takes a moment';
+    setSubText('Hang tight, this only takes a moment');
     socket.emit('find-partner');
     setTimeout(() => setConnection('orange', 'Searching'), 600);
   } else if (isSearching) {
@@ -1747,7 +1769,11 @@ socket.on('partner-left', () => {
 });
 
 socket.on('partner-mic-state', (muted) => {
-  subText.textContent = muted ? 'Stranger muted their mic' : 'Say hi! Tap "Next" to skip, or "Hang Up" to leave.';
+  if (muted) {
+    setSubText('Stranger muted their mic');
+  } else {
+    setSubTextFading('Say hi! Tap "Next" to skip, or "Hang Up" to leave.');
+  }
 });
 
 socket.on('chat-message', ({ text }) => {

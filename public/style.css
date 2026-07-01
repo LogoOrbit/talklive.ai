@@ -398,6 +398,12 @@ html, body {
   font-size: 14px;
   color: var(--muted);
   margin: 0 0 36px;
+  opacity: 1;
+  transition: opacity 1.2s ease;
+}
+
+.sub-text-fade-out {
+  opacity: 0;
 }
 
 .controls {
@@ -1201,6 +1207,12 @@ html, body {
 .pill-label {
   font-size: 13px;
   color: var(--muted);
+}
+
+.pill-label-strong {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
 }
 
 .pill-label .hint {
