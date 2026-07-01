@@ -90,6 +90,13 @@ const signupPassword = document.getElementById('signupPassword');
 const signupNickname = document.getElementById('signupNickname');
 const signupSubmitBtn = document.getElementById('signupSubmitBtn');
 const logoutBtn = document.getElementById('logoutBtn');
+const avatarIcon = document.getElementById('avatarIcon');
+const avatarInitial = document.getElementById('avatarInitial');
+const settingsNickname = document.getElementById('settingsNickname');
+const updateNicknameBtn = document.getElementById('updateNicknameBtn');
+const currentPasswordInput = document.getElementById('currentPasswordInput');
+const newPasswordInput = document.getElementById('newPasswordInput');
+const changePasswordBtn = document.getElementById('changePasswordBtn');
 
 const MIN_CALL_SECONDS_BEFORE_SKIP = 8;
 
@@ -274,9 +281,19 @@ function renderAccountState() {
     accountLoggedOut.classList.add('hidden');
     accountLoggedIn.classList.remove('hidden');
     accountNicknameDisplay.textContent = accountNickname;
+    settingsNickname.value = accountNickname;
+
+    avatarIcon.classList.add('hidden');
+    avatarInitial.textContent = accountNickname.trim().charAt(0).toUpperCase();
+    avatarInitial.classList.remove('hidden');
+    accountBtn.classList.add('logged-in');
   } else {
     accountLoggedOut.classList.remove('hidden');
     accountLoggedIn.classList.add('hidden');
+
+    avatarIcon.classList.remove('hidden');
+    avatarInitial.classList.add('hidden');
+    accountBtn.classList.remove('logged-in');
   }
 }
 
@@ -315,25 +332,57 @@ signupSubmitBtn.addEventListener('click', () => {
 });
 
 logoutBtn.addEventListener('click', () => {
+  socket.emit('logout');
   accountNickname = null;
   localStorage.removeItem('talklive_nickname');
   renderAccountState();
+});
+
+updateNicknameBtn.addEventListener('click', () => {
+  socket.emit('update-nickname', { nickname: settingsNickname.value.trim() });
+});
+
+changePasswordBtn.addEventListener('click', () => {
+  socket.emit('change-password', {
+    currentPassword: currentPasswordInput.value,
+    newPassword: newPasswordInput.value,
+  });
 });
 
 socket.on('login-result', ({ ok, nickname, error }) => {
   if (!ok) return showAccountStatus(error, 'error');
   accountNickname = nickname;
   localStorage.setItem('talklive_nickname', nickname);
-  showAccountStatus(`Logged in as ${nickname}`, 'success');
   renderAccountState();
+  loginUsername.value = '';
+  loginPassword.value = '';
+  setTimeout(() => closeModal(accountModal), 500);
 });
 
 socket.on('signup-result', ({ ok, nickname, error }) => {
   if (!ok) return showAccountStatus(error, 'error');
   accountNickname = nickname;
   localStorage.setItem('talklive_nickname', nickname);
-  showAccountStatus(`Account created — welcome, ${nickname}!`, 'success');
   renderAccountState();
+  signupUsername.value = '';
+  signupPassword.value = '';
+  signupNickname.value = '';
+  setTimeout(() => closeModal(accountModal), 500);
+});
+
+socket.on('update-nickname-result', ({ ok, nickname, error }) => {
+  if (!ok) return showAccountStatus(error, 'error');
+  accountNickname = nickname;
+  localStorage.setItem('talklive_nickname', nickname);
+  renderAccountState();
+  showAccountStatus('Nickname updated.', 'success');
+});
+
+socket.on('change-password-result', ({ ok, error }) => {
+  if (!ok) return showAccountStatus(error, 'error');
+  currentPasswordInput.value = '';
+  newPasswordInput.value = '';
+  showAccountStatus('Password changed.', 'success');
 });
 
 // --- Call history (session-only, cleared on reload) ---
@@ -375,6 +424,7 @@ historyBtn.addEventListener('click', () => {
 closeHistoryBtn.addEventListener('click', () => closeModal(historyModal));
 
 socket.emit('register', { clientId: getClientId(), nickname: accountNickname || undefined });
+renderAccountState();
 
 socket.on('profile', (profile) => {
   myProfile = profile;

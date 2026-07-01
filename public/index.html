@@ -20,7 +20,10 @@
           <span id="onlineCount">0</span> online
         </div>
         <button id="historyBtn" class="icon-btn" title="Call history" aria-label="Call history">🕑</button>
-        <button id="accountBtn" class="icon-btn" title="Account" aria-label="Account">👤</button>
+        <button id="accountBtn" class="icon-btn avatar-btn" title="Account" aria-label="Account">
+          <span id="avatarIcon">👤</span>
+          <span id="avatarInitial" class="avatar-initial hidden"></span>
+        </button>
         <button id="settingsBtn" class="settings-btn" title="Match preferences" aria-label="Match preferences">
           <span class="settings-icon" aria-hidden="true">⚙️</span>
           <span class="settings-text">Settings</span>
@@ -161,7 +164,19 @@
 
             <div id="accountLoggedIn" class="hidden">
               <p class="account-welcome">Signed in as <strong id="accountNicknameDisplay"></strong></p>
-              <button type="button" id="logoutBtn" class="btn btn-secondary settings-save">Log Out</button>
+
+              <h3 class="account-section-title">Account Settings</h3>
+
+              <label class="account-label">Nickname</label>
+              <input type="text" id="settingsNickname" class="search-input account-input" placeholder="Nickname" maxlength="24" />
+              <button type="button" id="updateNicknameBtn" class="btn btn-secondary settings-save">Update Nickname</button>
+
+              <label class="account-label account-label-spaced">Change Password</label>
+              <input type="password" id="currentPasswordInput" class="search-input account-input" placeholder="Current password" autocomplete="current-password" />
+              <input type="password" id="newPasswordInput" class="search-input account-input" placeholder="New password" autocomplete="new-password" />
+              <button type="button" id="changePasswordBtn" class="btn btn-secondary settings-save">Change Password</button>
+
+              <button type="button" id="logoutBtn" class="btn btn-danger settings-save account-logout">Log Out</button>
             </div>
           </div>
         </div>

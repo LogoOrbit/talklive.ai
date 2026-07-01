@@ -24,6 +24,7 @@ const reportCounts = new Map(); // clientId -> number of times reported
 
 // In-memory accounts only — resets on server restart. Good enough until a real DB is added.
 const accounts = new Map(); // username (lowercase) -> { passwordHash, salt, nickname }
+const socketAuth = new Map(); // socketId -> logged-in username (lowercase)
 
 function pairKey(a, b) {
   return [a, b].sort().join('|');
@@ -225,7 +226,8 @@ io.on('connection', (socket) => {
       return socket.emit('signup-result', { ok: false, error: 'That username is already taken.' });
     }
     createAccount(username, password, nickname.slice(0, 24));
-    socket.emit('signup-result', { ok: true, nickname: nickname.slice(0, 24) });
+    socketAuth.set(socket.id, username.toLowerCase());
+    socket.emit('signup-result', { ok: true, username, nickname: nickname.slice(0, 24) });
   });
 
   socket.on('login', ({ username, password } = {}) => {
@@ -233,7 +235,41 @@ io.on('connection', (socket) => {
     if (!account) {
       return socket.emit('login-result', { ok: false, error: 'Invalid username or password.' });
     }
-    socket.emit('login-result', { ok: true, nickname: account.nickname });
+    socketAuth.set(socket.id, (username || '').toLowerCase());
+    socket.emit('login-result', { ok: true, username, nickname: account.nickname });
+  });
+
+  socket.on('logout', () => {
+    socketAuth.delete(socket.id);
+  });
+
+  socket.on('update-nickname', ({ nickname } = {}) => {
+    const authedUsername = socketAuth.get(socket.id);
+    if (!authedUsername) return socket.emit('update-nickname-result', { ok: false, error: 'Not logged in.' });
+    if (!nickname || !nickname.trim()) {
+      return socket.emit('update-nickname-result', { ok: false, error: 'Nickname cannot be empty.' });
+    }
+    const account = accounts.get(authedUsername);
+    account.nickname = nickname.trim().slice(0, 24);
+    const profile = profiles.get(socket.id);
+    if (profile) profile.username = account.nickname;
+    socket.emit('update-nickname-result', { ok: true, nickname: account.nickname });
+  });
+
+  socket.on('change-password', ({ currentPassword, newPassword } = {}) => {
+    const authedUsername = socketAuth.get(socket.id);
+    if (!authedUsername) return socket.emit('change-password-result', { ok: false, error: 'Not logged in.' });
+    if (!verifyAccount(authedUsername, currentPassword || '')) {
+      return socket.emit('change-password-result', { ok: false, error: 'Current password is incorrect.' });
+    }
+    if (!newPassword || newPassword.length < 4) {
+      return socket.emit('change-password-result', { ok: false, error: 'New password must be at least 4 characters.' });
+    }
+    const account = accounts.get(authedUsername);
+    const salt = crypto.randomBytes(16).toString('hex');
+    account.passwordHash = hashPassword(newPassword, salt);
+    account.salt = salt;
+    socket.emit('change-password-result', { ok: true });
   });
 
   socket.on('register', (data = {}) => {
@@ -339,6 +375,7 @@ io.on('connection', (socket) => {
     disconnectPartner(socket.id);
     clearFromQueue(socket.id);
     profiles.delete(socket.id);
+    socketAuth.delete(socket.id);
     broadcastOnlineCount();
   });
 });
