@@ -655,6 +655,9 @@ html, body {
 
 .call-btn-label-next {
   color: var(--accent-2);
+  font-variant-numeric: tabular-nums;
+  min-width: 34px;
+  display: inline-block;
 }
 
 .secondary-controls {

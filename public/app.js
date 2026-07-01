@@ -43,6 +43,7 @@ const partnerInterests = document.getElementById('partnerInterests');
 
 const startBtn = document.getElementById('startBtn');
 const skipBtn = document.getElementById('skipBtn');
+const skipLabel = document.querySelector('.call-btn-label-next');
 const muteBtn = document.getElementById('muteBtn');
 const chatToggleBtn = document.getElementById('chatToggleBtn');
 const reportBtn = document.getElementById('reportBtn');
@@ -99,7 +100,7 @@ const currentPasswordInput = document.getElementById('currentPasswordInput');
 const newPasswordInput = document.getElementById('newPasswordInput');
 const changePasswordBtn = document.getElementById('changePasswordBtn');
 
-const MIN_CALL_SECONDS_BEFORE_SKIP = 8;
+const MIN_CALL_SECONDS_BEFORE_SKIP = 2;
 
 // --- Country code -> flag emoji (regional indicator symbols) ---
 function getFlagEmoji(code) {
@@ -463,17 +464,36 @@ function stopCallTimer() {
   callTimerEl.textContent = '0:00';
 }
 
+let skipCountdownInterval = null;
+
 function lockSkipButton() {
   skipBtn.disabled = true;
   clearTimeout(skipUnlockTimeout);
+  clearInterval(skipCountdownInterval);
+
+  const unlockAt = Date.now() + MIN_CALL_SECONDS_BEFORE_SKIP * 1000;
+
+  skipCountdownInterval = setInterval(() => {
+    const remaining = Math.max(0, unlockAt - Date.now());
+    skipLabel.textContent = (remaining / 1000).toFixed(1) + 's';
+    if (remaining <= 0) {
+      clearInterval(skipCountdownInterval);
+      skipLabel.textContent = 'Next';
+    }
+  }, 33);
+
   skipUnlockTimeout = setTimeout(() => {
     skipBtn.disabled = false;
+    clearInterval(skipCountdownInterval);
+    skipLabel.textContent = 'Next';
   }, MIN_CALL_SECONDS_BEFORE_SKIP * 1000);
 }
 
 function unlockSkipButton() {
   clearTimeout(skipUnlockTimeout);
+  clearInterval(skipCountdownInterval);
   skipBtn.disabled = false;
+  skipLabel.textContent = 'Next';
 }
 
 function showReactionFloat(emoji) {
