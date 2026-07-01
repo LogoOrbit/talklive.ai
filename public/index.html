@@ -76,10 +76,10 @@
             </div>
 
             <div class="pill-row">
-              <span class="pill-label">Auto Call <span class="hint">(automatically find someone new after a call ends)</span></span>
-              <button type="button" id="autoCallToggle" class="toggle-switch on" aria-pressed="true" aria-label="Toggle Auto Call">
-                <span class="toggle-knob"></span>
-              </button>
+              <label class="checkbox-row" for="autoCallCheckbox">
+                <input type="checkbox" id="autoCallCheckbox" checked />
+                <span>Enable Auto Call <span class="hint">(automatically find someone new after a call ends)</span></span>
+              </label>
             </div>
 
             <div class="pill-row">
@@ -329,10 +329,25 @@
         </div>
 
         <div class="controls secondary-controls">
-          <button id="muteBtn" class="btn btn-icon hidden" title="Mute microphone" aria-label="Mute microphone">🎤</button>
-          <button id="chatToggleBtn" class="btn btn-icon hidden" title="Toggle chat" aria-label="Toggle text chat">💬<span id="chatBadge" class="chat-badge hidden"></span><span id="chatTypingBadge" class="chat-badge chat-badge-typing hidden"></span></button>
-          <button id="addFriendBtn" class="btn btn-icon hidden" title="Add friend" aria-label="Add friend">🤝</button>
-          <button id="reportBtn" class="btn btn-icon btn-icon-danger hidden" title="Report and block" aria-label="Report and block">🚩</button>
+          <button id="muteBtn" class="btn btn-icon hidden" title="Mute microphone" aria-label="Mute microphone">
+            <svg id="muteIcon" class="simple-icon" viewBox="0 0 24 24" fill="white" aria-hidden="true">
+              <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+            </svg>
+          </button>
+          <button id="chatToggleBtn" class="btn btn-icon hidden" title="Toggle chat" aria-label="Toggle text chat">
+            <svg class="simple-icon" viewBox="0 0 24 24" fill="white" aria-hidden="true">
+              <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+            </svg>
+            <span id="chatBadge" class="chat-badge hidden"></span><span id="chatTypingBadge" class="chat-badge chat-badge-typing hidden"></span>
+          </button>
+          <button id="addFriendBtn" class="btn btn-icon hidden" title="Add friend" aria-label="Add friend">
+            <span class="simple-icon-text" id="addFriendIcon">+</span>
+          </button>
+          <button id="reportBtn" class="btn btn-icon btn-icon-danger hidden" title="Report and block" aria-label="Report and block">
+            <svg class="simple-icon" viewBox="0 0 24 24" fill="white" aria-hidden="true">
+              <path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/>
+            </svg>
+          </button>
         </div>
 
         <p id="errorText" class="error-text hidden"></p>

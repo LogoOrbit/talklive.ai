@@ -353,6 +353,22 @@ html, body {
   padding: 0;
   border-radius: 50%;
   font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.simple-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.simple-icon-text {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+  color: white;
 }
 
 .btn-icon-danger {
@@ -974,36 +990,22 @@ html, body {
   box-shadow: 0 0 8px rgba(255,255,255,0.6);
 }
 
-/* Toggle switch (Auto Call) */
-.toggle-switch {
-  width: 46px;
-  height: 26px;
-  border-radius: 999px;
-  border: none;
-  background: rgba(255,255,255,0.15);
+/* Auto Call checkbox */
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   cursor: pointer;
-  position: relative;
-  transition: background 0.2s ease;
-  flex-shrink: 0;
+  font-size: 14px;
+  color: var(--text);
 }
 
-.toggle-switch.on {
-  background: #2ed47a;
-}
-
-.toggle-knob {
-  position: absolute;
-  top: 3px;
-  left: 3px;
+.checkbox-row input[type="checkbox"] {
   width: 20px;
   height: 20px;
-  border-radius: 50%;
-  background: white;
-  transition: transform 0.2s ease;
-}
-
-.toggle-switch.on .toggle-knob {
-  transform: translateX(20px);
+  accent-color: #2ed47a;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
 .interest-tags {
