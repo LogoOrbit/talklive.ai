@@ -53,6 +53,7 @@ const primaryControls = document.getElementById('primaryControls');
 const chatMessages = document.getElementById('chatMessages');
 const chatForm = document.getElementById('chatForm');
 const chatInput = document.getElementById('chatInput');
+const chatSendBtn = document.getElementById('chatSendBtn');
 
 const connectionIndicator = document.getElementById('connectionIndicator');
 const connectionDot = document.getElementById('connectionDot');
@@ -391,6 +392,10 @@ function setConnection(color, label) {
   connectionIndicator.classList.remove('hidden');
   connectionDot.className = `connection-dot ${color}`;
   connectionLabel.textContent = label;
+  const connected = color === 'green';
+  chatToggleBtn.disabled = !connected;
+  chatInput.disabled = !connected;
+  chatSendBtn.disabled = !connected;
 }
 
 function hideConnection() {
