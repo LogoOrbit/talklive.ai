@@ -30,6 +30,8 @@ const languageGroup = document.getElementById('languageGroup');
 const prefLanguageGroup = document.getElementById('prefLanguageGroup');
 const interestTagsEl = document.getElementById('interestTags');
 const interestInput = document.getElementById('interestInput');
+const autoCallToggle = document.getElementById('autoCallToggle');
+const connectFlash = document.getElementById('connectFlash');
 
 const countryAnyPill = document.getElementById('countryAnyPill');
 const countrySearch = document.getElementById('countrySearch');
@@ -47,6 +49,7 @@ const skipLabel = document.querySelector('.call-btn-label-next');
 const muteBtn = document.getElementById('muteBtn');
 const chatToggleBtn = document.getElementById('chatToggleBtn');
 const reportBtn = document.getElementById('reportBtn');
+const addFriendBtn = document.getElementById('addFriendBtn');
 const stopBtn = document.getElementById('stopBtn');
 const primaryControls = document.getElementById('primaryControls');
 
@@ -135,6 +138,8 @@ let currentPartnerInterests = [];
 let currentPartner = null;
 let callHistory = [];
 let accountNickname = localStorage.getItem('talklive_nickname') || null;
+let autoCallEnabled = localStorage.getItem('talklive_autocall') !== 'off';
+let wasConnected = false;
 
 // --- Persistent client id so blocks survive reconnects in this browser ---
 function getClientId() {
@@ -242,6 +247,30 @@ initPillGroup(genderGroup);
 initPillGroup(prefGenderGroup);
 initPillGroup(languageGroup);
 initPillGroup(prefLanguageGroup);
+
+autoCallToggle.classList.toggle('on', autoCallEnabled);
+autoCallToggle.setAttribute('aria-pressed', String(autoCallEnabled));
+autoCallToggle.addEventListener('click', () => {
+  autoCallEnabled = !autoCallEnabled;
+  localStorage.setItem('talklive_autocall', autoCallEnabled ? 'on' : 'off');
+  autoCallToggle.classList.toggle('on', autoCallEnabled);
+  autoCallToggle.setAttribute('aria-pressed', String(autoCallEnabled));
+});
+
+// --- Add Friend (stored locally in this browser only) ---
+addFriendBtn.addEventListener('click', () => {
+  if (!currentPartner) return;
+  const friends = JSON.parse(localStorage.getItem('talklive_friends') || '[]');
+  if (!friends.some((f) => f.username === currentPartner.username)) {
+    friends.push({ username: currentPartner.username, countryCode: currentPartner.countryCode });
+    localStorage.setItem('talklive_friends', JSON.stringify(friends));
+  }
+  const original = addFriendBtn.textContent;
+  addFriendBtn.textContent = '✅';
+  setTimeout(() => {
+    addFriendBtn.textContent = original;
+  }, 1500);
+});
 
 function openModal(modal) {
   modal.classList.remove('hidden');
@@ -438,6 +467,14 @@ function setConnection(color, label) {
   chatToggleBtn.disabled = !connected;
   chatInput.disabled = !connected;
   chatSendBtn.disabled = !connected;
+
+  if (connected && !wasConnected) {
+    connectFlash.classList.remove('playing');
+    // Force reflow so the animation replays every time we (re)connect.
+    void connectFlash.offsetWidth;
+    connectFlash.classList.add('playing');
+  }
+  wasConnected = connected;
 }
 
 function hideConnection() {
@@ -692,6 +729,7 @@ function resetUI() {
   muteBtn.classList.add('hidden');
   chatToggleBtn.classList.add('hidden');
   reportBtn.classList.add('hidden');
+  addFriendBtn.classList.add('hidden');
   primaryControls.classList.add('hidden');
   quickGuide.classList.remove('hidden');
 }
@@ -728,6 +766,7 @@ async function begin() {
   muteBtn.classList.remove('hidden');
   chatToggleBtn.classList.remove('hidden');
   reportBtn.classList.remove('hidden');
+  addFriendBtn.classList.remove('hidden');
   primaryControls.classList.remove('hidden');
   quickGuide.classList.add('hidden');
 
@@ -888,13 +927,21 @@ socket.on('signal', (data) => {
 socket.on('partner-left', () => {
   teardownPeer();
   clearChat();
-  if (isSearching) {
+  if (isSearching && autoCallEnabled) {
     setState('waiting');
     setConnection('red', 'Disconnected');
     statusText.textContent = 'Stranger disconnected. Finding someone new…';
     subText.textContent = 'Hang tight, this only takes a moment';
     socket.emit('find-partner');
     setTimeout(() => setConnection('orange', 'Searching'), 600);
+  } else if (isSearching) {
+    socket.emit('leave');
+    if (localStream) {
+      localStream.getTracks().forEach((t) => t.stop());
+      localStream = null;
+    }
+    resetUI();
+    showError('Stranger disconnected. Auto Call is off — tap Start to find someone new.');
   }
 });
 

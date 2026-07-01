@@ -15,9 +15,9 @@
       </div>
       <div class="header-right">
         <span id="myProfile" class="my-profile hidden"></span>
-        <div class="online">
-          <span class="online-dot"></span>
-          <span id="onlineCount">0</span> online
+        <div class="online" title="People online now" aria-label="People online now">
+          <span class="online-avatar">👥<span class="online-dot"></span></span>
+          <span id="onlineCount">0</span>
         </div>
         <button id="historyBtn" class="icon-btn" title="Call history" aria-label="Call history">🕑</button>
         <button id="accountBtn" class="icon-btn avatar-btn" title="Account" aria-label="Account">
@@ -60,19 +60,26 @@
             <div class="pill-row">
               <span class="pill-label">I am</span>
               <div class="pill-group" id="genderGroup" data-value="unspecified">
-                <button type="button" class="pill" data-value="unspecified"><span class="pill-dot"></span>Prefer not to say</button>
-                <button type="button" class="pill" data-value="male"><span class="pill-dot"></span>Male</button>
-                <button type="button" class="pill" data-value="female"><span class="pill-dot"></span>Female</button>
+                <button type="button" class="pill" data-value="unspecified"><span class="pill-dot pill-dot-neutral"></span>🤐 Prefer not to say</button>
+                <button type="button" class="pill" data-value="male"><span class="pill-dot pill-dot-male"></span>♂️ Male</button>
+                <button type="button" class="pill" data-value="female"><span class="pill-dot pill-dot-female"></span>♀️ Female</button>
               </div>
             </div>
 
             <div class="pill-row">
               <span class="pill-label">Match me with</span>
               <div class="pill-group" id="prefGenderGroup" data-value="any">
-                <button type="button" class="pill" data-value="any"><span class="pill-dot"></span>Anyone</button>
-                <button type="button" class="pill" data-value="male"><span class="pill-dot"></span>Male</button>
-                <button type="button" class="pill" data-value="female"><span class="pill-dot"></span>Female</button>
+                <button type="button" class="pill" data-value="any"><span class="pill-dot pill-dot-neutral"></span>🌈 Anyone</button>
+                <button type="button" class="pill" data-value="male"><span class="pill-dot pill-dot-male"></span>♂️ Male</button>
+                <button type="button" class="pill" data-value="female"><span class="pill-dot pill-dot-female"></span>♀️ Female</button>
               </div>
+            </div>
+
+            <div class="pill-row">
+              <span class="pill-label">Auto Call <span class="hint">(automatically find someone new after a call ends)</span></span>
+              <button type="button" id="autoCallToggle" class="toggle-switch on" aria-pressed="true" aria-label="Toggle Auto Call">
+                <span class="toggle-knob"></span>
+              </button>
             </div>
 
             <div class="pill-row">
@@ -324,7 +331,8 @@
         <div class="controls secondary-controls">
           <button id="muteBtn" class="btn btn-icon hidden" title="Mute microphone" aria-label="Mute microphone">🎤</button>
           <button id="chatToggleBtn" class="btn btn-icon hidden" title="Toggle chat" aria-label="Toggle text chat">💬<span id="chatBadge" class="chat-badge hidden"></span><span id="chatTypingBadge" class="chat-badge chat-badge-typing hidden"></span></button>
-          <button id="reportBtn" class="btn btn-danger hidden" title="Report and block" aria-label="Report and block">🚩 <span class="btn-text">Report</span></button>
+          <button id="addFriendBtn" class="btn btn-icon hidden" title="Add friend" aria-label="Add friend">🤝</button>
+          <button id="reportBtn" class="btn btn-icon btn-icon-danger hidden" title="Report and block" aria-label="Report and block">🚩</button>
         </div>
 
         <p id="errorText" class="error-text hidden"></p>
@@ -358,6 +366,8 @@
       <button type="button" id="openTermsLinkFooter" class="link-btn">Terms &amp; Community Guidelines</button>
     </footer>
   </div>
+
+  <div id="connectFlash" class="connect-flash" aria-hidden="true"></div>
 
   <audio id="remoteAudio" autoplay playsinline></audio>
 
