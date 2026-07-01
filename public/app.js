@@ -780,7 +780,15 @@ async function begin() {
   try {
     await getMic();
   } catch (e) {
-    showError('Microphone access is required to use TalkLive.');
+    if (e.name === 'NotAllowedError' || e.name === 'SecurityError') {
+      showError('Microphone access is blocked for this site. Click the padlock/camera icon in your browser\'s address bar, allow the microphone, then reload the page.');
+    } else if (e.name === 'NotFoundError') {
+      showError('No microphone was found. Please connect a microphone and try again.');
+    } else if (e.name === 'NotReadableError') {
+      showError('Your microphone is already in use by another app or tab. Close it and try again.');
+    } else {
+      showError('Microphone access is required to use TalkLive.');
+    }
     return;
   }
 
