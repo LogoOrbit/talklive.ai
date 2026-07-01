@@ -351,23 +351,16 @@ changePasswordBtn.addEventListener('click', () => {
 
 socket.on('login-result', ({ ok, nickname, error }) => {
   if (!ok) return showAccountStatus(error, 'error');
-  accountNickname = nickname;
   localStorage.setItem('talklive_nickname', nickname);
-  renderAccountState();
-  loginUsername.value = '';
-  loginPassword.value = '';
-  setTimeout(() => closeModal(accountModal), 500);
+  showAccountStatus(`Logged in as ${nickname}`, 'success');
+  setTimeout(() => location.reload(), 500);
 });
 
 socket.on('signup-result', ({ ok, nickname, error }) => {
   if (!ok) return showAccountStatus(error, 'error');
-  accountNickname = nickname;
   localStorage.setItem('talklive_nickname', nickname);
-  renderAccountState();
-  signupUsername.value = '';
-  signupPassword.value = '';
-  signupNickname.value = '';
-  setTimeout(() => closeModal(accountModal), 500);
+  showAccountStatus(`Account created — welcome, ${nickname}!`, 'success');
+  setTimeout(() => location.reload(), 500);
 });
 
 socket.on('update-nickname-result', ({ ok, nickname, error }) => {
