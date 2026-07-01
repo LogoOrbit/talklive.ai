@@ -44,7 +44,6 @@ const partnerInterests = document.getElementById('partnerInterests');
 const startBtn = document.getElementById('startBtn');
 const skipBtn = document.getElementById('skipBtn');
 const muteBtn = document.getElementById('muteBtn');
-const audioOutputBtn = document.getElementById('audioOutputBtn');
 const chatToggleBtn = document.getElementById('chatToggleBtn');
 const reportBtn = document.getElementById('reportBtn');
 const stopBtn = document.getElementById('stopBtn');
@@ -65,6 +64,8 @@ const reactionOverlay = document.getElementById('reactionOverlay');
 const audioBars = document.querySelectorAll('#audioMeter .audio-bar');
 
 const chatBadge = document.getElementById('chatBadge');
+const chatTypingBadge = document.getElementById('chatTypingBadge');
+const typingIndicator = document.getElementById('typingIndicator');
 const quickGuide = document.getElementById('quickGuide');
 
 const historyBtn = document.getElementById('historyBtn');
@@ -133,9 +134,6 @@ let currentPartnerInterests = [];
 let currentPartner = null;
 let callHistory = [];
 let accountNickname = localStorage.getItem('talklive_nickname') || null;
-let audioOutputMode = 'speaker'; // 'speaker' or 'earpiece'
-let earpieceDeviceId = null;
-const supportsSinkId = typeof remoteAudio.setSinkId === 'function';
 
 // --- Persistent client id so blocks survive reconnects in this browser ---
 function getClientId() {
@@ -515,6 +513,8 @@ function addChatMessage(text, kind) {
 
 function clearChat() {
   chatMessages.innerHTML = '';
+  typingIndicator.classList.add('hidden');
+  chatTypingBadge.classList.add('hidden');
 }
 
 async function getMic() {
@@ -527,63 +527,8 @@ async function getMic() {
     },
     video: false,
   });
-  try {
-    await detectEarpieceDevice();
-  } catch (e) {
-    // Never let output-device detection block the actual call from starting.
-  }
   return localStream;
 }
-
-// --- Speaker / earpiece output toggle ---
-// Only works where the browser supports HTMLMediaElement.setSinkId (Chrome/Edge on
-// Android and desktop). Not supported on iOS Safari — the button hides there.
-async function detectEarpieceDevice() {
-  if (!supportsSinkId) {
-    audioOutputBtn.classList.add('hidden');
-    return;
-  }
-  try {
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    const earpiece = devices.find(
-      (d) => d.kind === 'audiooutput' && /earpiece|receiver/i.test(d.label)
-    );
-    earpieceDeviceId = earpiece ? earpiece.deviceId : null;
-  } catch (e) {
-    earpieceDeviceId = null;
-  }
-}
-
-async function applyAudioOutput() {
-  if (!supportsSinkId) return;
-  try {
-    if (audioOutputMode === 'earpiece' && earpieceDeviceId) {
-      await remoteAudio.setSinkId(earpieceDeviceId);
-    } else {
-      await remoteAudio.setSinkId('');
-    }
-  } catch (e) {
-    // Some browsers reject setSinkId depending on device state; non-critical.
-  }
-}
-
-audioOutputBtn.addEventListener('click', async () => {
-  audioOutputMode = audioOutputMode === 'speaker' ? 'earpiece' : 'speaker';
-  await applyAudioOutput();
-  if (audioOutputMode === 'earpiece') {
-    audioOutputBtn.textContent = '📱';
-    audioOutputBtn.title = 'Switch to speaker';
-    if (!earpieceDeviceId) {
-      showError('Earpiece mode isn\'t available on this device/browser — staying on speaker.');
-      audioOutputMode = 'speaker';
-      audioOutputBtn.textContent = '🔊';
-      audioOutputBtn.title = 'Switch to earpiece';
-    }
-  } else {
-    audioOutputBtn.textContent = '🔊';
-    audioOutputBtn.title = 'Switch to earpiece';
-  }
-});
 
 function createPeerConnection() {
   const peer = new RTCPeerConnection({ iceServers: ICE_SERVERS });
@@ -602,7 +547,6 @@ function createPeerConnection() {
     statusText.textContent = "You're connected";
     subText.textContent = 'Say hi! Tap "Next" to skip, or "Hang Up" to leave.';
     monitorRemoteAudio(event.streams[0]);
-    applyAudioOutput();
   };
 
   peer.oniceconnectionstatechange = () => {
@@ -726,7 +670,6 @@ function resetUI() {
   hideConnection();
   skipBtn.classList.add('hidden');
   muteBtn.classList.add('hidden');
-  audioOutputBtn.classList.add('hidden');
   chatToggleBtn.classList.add('hidden');
   reportBtn.classList.add('hidden');
   primaryControls.classList.add('hidden');
@@ -763,7 +706,6 @@ async function begin() {
 
   skipBtn.classList.remove('hidden');
   muteBtn.classList.remove('hidden');
-  if (supportsSinkId) audioOutputBtn.classList.remove('hidden');
   chatToggleBtn.classList.remove('hidden');
   reportBtn.classList.remove('hidden');
   primaryControls.classList.remove('hidden');
@@ -820,6 +762,7 @@ chatToggleBtn.addEventListener('click', () => {
   if (chatOpen) {
     chatInput.focus();
     chatBadge.classList.add('hidden');
+    chatTypingBadge.classList.add('hidden');
   }
 });
 
@@ -830,6 +773,27 @@ chatForm.addEventListener('submit', (e) => {
   addChatMessage(text, 'me');
   socket.emit('chat-message', text);
   chatInput.value = '';
+});
+
+// --- Typing indicator ---
+let typingSendThrottle = null;
+chatInput.addEventListener('input', () => {
+  if (typingSendThrottle) return;
+  socket.emit('typing');
+  typingSendThrottle = setTimeout(() => {
+    typingSendThrottle = null;
+  }, 1500);
+});
+
+let typingHideTimeout = null;
+socket.on('typing', () => {
+  typingIndicator.classList.remove('hidden');
+  if (!chatOpen) chatTypingBadge.classList.remove('hidden');
+  clearTimeout(typingHideTimeout);
+  typingHideTimeout = setTimeout(() => {
+    typingIndicator.classList.add('hidden');
+    chatTypingBadge.classList.add('hidden');
+  }, 3000);
 });
 
 // --- Socket events ---

@@ -323,8 +323,7 @@
 
         <div class="controls secondary-controls">
           <button id="muteBtn" class="btn btn-icon hidden" title="Mute microphone" aria-label="Mute microphone">🎤</button>
-          <button id="audioOutputBtn" class="btn btn-icon hidden" title="Switch to earpiece" aria-label="Switch audio output">🔊</button>
-          <button id="chatToggleBtn" class="btn btn-icon hidden" title="Toggle chat" aria-label="Toggle text chat">💬<span id="chatBadge" class="chat-badge hidden"></span></button>
+          <button id="chatToggleBtn" class="btn btn-icon hidden" title="Toggle chat" aria-label="Toggle text chat">💬<span id="chatBadge" class="chat-badge hidden"></span><span id="chatTypingBadge" class="chat-badge chat-badge-typing hidden"></span></button>
           <button id="reportBtn" class="btn btn-danger hidden" title="Report and block" aria-label="Report and block">🚩 <span class="btn-text">Report</span></button>
         </div>
 
@@ -334,6 +333,7 @@
       <!-- Chat panel -->
       <section id="chatPanel" class="chat-panel hidden">
         <div id="chatMessages" class="chat-messages"></div>
+        <p id="typingIndicator" class="typing-indicator hidden">Stranger is typing<span class="typing-dots"><span>.</span><span>.</span><span>.</span></span></p>
         <form id="chatForm" class="chat-form">
           <input id="chatInput" type="text" maxlength="1000" placeholder="Type a message…" autocomplete="off" />
           <button type="submit" id="chatSendBtn" class="btn btn-primary chat-send">Send</button>

@@ -371,6 +371,13 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('typing', () => {
+    const partnerId = partners.get(socket.id);
+    if (partnerId) {
+      io.to(partnerId).emit('typing');
+    }
+  });
+
   socket.on('disconnect', () => {
     disconnectPartner(socket.id);
     clearFromQueue(socket.id);
