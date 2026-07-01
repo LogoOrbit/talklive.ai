@@ -6,6 +6,7 @@ const orbRings = document.querySelectorAll('#orb .orb-ring');
 const statusText = document.getElementById('statusText');
 const subText = document.getElementById('subText');
 const errorText = document.getElementById('errorText');
+const setupErrorText = document.getElementById('setupErrorText');
 const onlineCountEl = document.getElementById('onlineCount');
 const myProfileEl = document.getElementById('myProfile');
 const remoteAudio = document.getElementById('remoteAudio');
@@ -553,13 +554,16 @@ reactionBar.addEventListener('click', (e) => {
 });
 
 function showError(msg) {
-  errorText.textContent = msg;
-  errorText.classList.remove('hidden');
+  const target = setupPanel.classList.contains('hidden') ? errorText : setupErrorText;
+  target.textContent = msg;
+  target.classList.remove('hidden');
 }
 
 function clearError() {
   errorText.classList.add('hidden');
   errorText.textContent = '';
+  setupErrorText.classList.add('hidden');
+  setupErrorText.textContent = '';
 }
 
 function addChatMessage(text, kind) {
@@ -761,6 +765,7 @@ function resetUI() {
   subText.textContent = 'Audio only · No sign up · No registration';
   callPanel.classList.add('hidden');
   setupPanel.classList.remove('hidden');
+  startBtn.disabled = false;
   chatPanel.classList.add('hidden');
   chatOpen = false;
   clearChat();
@@ -776,10 +781,13 @@ function resetUI() {
 }
 
 async function begin() {
+  if (startBtn.disabled) return;
+  startBtn.disabled = true;
   clearError();
   try {
     await getMic();
   } catch (e) {
+    startBtn.disabled = false;
     if (e.name === 'NotAllowedError' || e.name === 'SecurityError') {
       showError('Microphone access is blocked for this site. Click the padlock/camera icon in your browser\'s address bar, allow the microphone, then reload the page.');
     } else if (e.name === 'NotFoundError') {
