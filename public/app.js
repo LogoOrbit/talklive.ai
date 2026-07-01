@@ -2,6 +2,7 @@ const socket = io();
 
 // --- DOM refs ---
 const orb = document.getElementById('orb');
+const orbRings = document.querySelectorAll('#orb .orb-ring');
 const statusText = document.getElementById('statusText');
 const subText = document.getElementById('subText');
 const errorText = document.getElementById('errorText');
@@ -478,7 +479,11 @@ async function getMic() {
     },
     video: false,
   });
-  await detectEarpieceDevice();
+  try {
+    await detectEarpieceDevice();
+  } catch (e) {
+    // Never let output-device detection block the actual call from starting.
+  }
   return localStream;
 }
 
@@ -582,7 +587,18 @@ function monitorRemoteAudio(stream) {
     speakingCheckInterval = setInterval(() => {
       analyser.getByteFrequencyData(data);
       const avg = data.reduce((a, b) => a + b, 0) / data.length;
+      const level = Math.min(1, avg / 90); // 0..1 normalized volume
       orb.classList.toggle('speaking', avg > 12);
+
+      // Drive the background rings from live audio amplitude, not a fixed loop.
+      orbRings.forEach((ring, i) => {
+        const scale = 1 + level * (0.5 + i * 0.25);
+        ring.style.transform = `scale(${scale})`;
+        ring.style.opacity = String(Math.max(0.15, 0.7 - level * 0.1 - i * 0.15) * (0.4 + level));
+        ring.style.borderColor = level > 0.15
+          ? 'rgba(0, 212, 255, 0.6)'
+          : 'rgba(108, 92, 231, 0.35)';
+      });
 
       audioBars.forEach((bar, i) => {
         const bucket = data.slice(i * bucketSize, (i + 1) * bucketSize);
@@ -591,7 +607,7 @@ function monitorRemoteAudio(stream) {
         bar.style.height = `${height}px`;
         bar.style.opacity = bucketAvg > 8 ? '1' : '0.35';
       });
-    }, 150);
+    }, 100);
   } catch (e) {
     // AudioContext may be unavailable; non-critical
   }
@@ -629,6 +645,11 @@ function teardownPeer() {
   currentPartner = null;
   clearInterval(speakingCheckInterval);
   orb.classList.remove('speaking');
+  orbRings.forEach((ring) => {
+    ring.style.transform = '';
+    ring.style.opacity = '';
+    ring.style.borderColor = '';
+  });
   if (pc) {
     pc.onicecandidate = null;
     pc.ontrack = null;

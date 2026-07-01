@@ -202,6 +202,12 @@ html, body {
   box-shadow: 0 0 70px rgba(0, 212, 255, 0.85);
 }
 
+.orb.connected .orb-ring {
+  transition: transform 0.12s ease-out, opacity 0.12s ease-out, border-color 0.12s ease-out;
+  transform: scale(1);
+  opacity: 0.4;
+}
+
 @keyframes pulse {
   0% { transform: scale(0.65); opacity: 0.8; }
   100% { transform: scale(1.6); opacity: 0; }
