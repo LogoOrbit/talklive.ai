@@ -1100,6 +1100,14 @@ html, body {
   flex-shrink: 0;
 }
 
+.auto-call-row {
+  justify-content: center;
+  margin: 4px auto 0;
+  width: fit-content;
+  max-width: 320px;
+  text-align: left;
+}
+
 .interest-tags {
   display: flex;
   flex-wrap: wrap;

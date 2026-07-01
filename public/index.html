@@ -76,13 +76,6 @@
             </div>
 
             <div class="pill-row">
-              <label class="checkbox-row" for="autoCallCheckbox">
-                <input type="checkbox" id="autoCallCheckbox" checked />
-                <span>Enable Auto Call <span class="hint">(automatically find someone new after a call ends)</span></span>
-              </label>
-            </div>
-
-            <div class="pill-row">
               <span class="pill-label">I speak</span>
               <div class="pill-group" id="languageGroup" data-value="english">
                 <button type="button" class="pill" data-value="english"><span class="pill-dot"></span>English</button>
@@ -344,6 +337,11 @@
             <span class="call-btn-label call-btn-label-next">Next</span>
           </div>
         </div>
+
+        <label id="autoCallRow" class="checkbox-row auto-call-row hidden" for="autoCallCheckbox">
+          <input type="checkbox" id="autoCallCheckbox" checked />
+          <span>Enable Auto Call <span class="hint">(automatically find someone new after a call ends)</span></span>
+        </label>
 
         <div class="controls secondary-controls">
           <button id="muteBtn" class="btn btn-icon btn-icon-lg hidden" title="Mute microphone" aria-label="Mute microphone">

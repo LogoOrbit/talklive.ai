@@ -54,6 +54,7 @@ const reportBtn = document.getElementById('reportBtn');
 const addFriendBtn = document.getElementById('addFriendBtn');
 const stopBtn = document.getElementById('stopBtn');
 const primaryControls = document.getElementById('primaryControls');
+const autoCallRow = document.getElementById('autoCallRow');
 
 const chatMessages = document.getElementById('chatMessages');
 const chatForm = document.getElementById('chatForm');
@@ -770,6 +771,7 @@ function resetUI() {
   reportBtn.classList.add('hidden');
   addFriendBtn.classList.add('hidden');
   primaryControls.classList.add('hidden');
+  autoCallRow.classList.add('hidden');
   quickGuide.classList.remove('hidden');
 }
 
@@ -807,6 +809,7 @@ async function begin() {
   reportBtn.classList.remove('hidden');
   addFriendBtn.classList.remove('hidden');
   primaryControls.classList.remove('hidden');
+  autoCallRow.classList.remove('hidden');
   quickGuide.classList.add('hidden');
 
   socket.emit('find-partner');
