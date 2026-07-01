@@ -552,6 +552,44 @@ html, body {
 
 /* Mobile responsiveness */
 @media (max-width: 600px) {
+  .topbar {
+    padding: 12px 14px;
+    gap: 8px 0;
+  }
+
+  .header-right {
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    row-gap: 8px;
+    gap: 8px;
+  }
+
+  .icon-btn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .topbar-svg-icon {
+    width: 17px;
+    height: 17px;
+  }
+
+  .online {
+    font-size: 13px;
+    padding: 4px 10px 4px 4px;
+  }
+
+  .online-avatar {
+    width: 22px;
+    height: 22px;
+  }
+
+  .online-avatar svg {
+    width: 13px;
+    height: 13px;
+  }
+
   .stage {
     padding: 16px;
   }
@@ -570,12 +608,17 @@ html, body {
   }
 
   .tap-orb {
-    width: 160px;
-    height: 160px;
+    width: 142px;
+    height: 142px;
+  }
+
+  .tap-orb .phone-icon {
+    width: 36px;
+    height: 36px;
   }
 
   .tap-orb-label {
-    font-size: 15px;
+    font-size: 14px;
   }
 
   .orb-wrap {
@@ -756,20 +799,20 @@ html, body {
 
 .call-btn-red {
   background: radial-gradient(circle at 35% 30%, #ff7a8a, #e21f3e 75%);
-  box-shadow: 0 0 40px rgba(226, 31, 62, 0.6);
+  box-shadow: 0 4px 16px rgba(226, 31, 62, 0.35);
 }
 
 .call-btn-red:hover {
-  box-shadow: 0 0 60px rgba(226, 31, 62, 0.8);
+  box-shadow: 0 4px 20px rgba(226, 31, 62, 0.5);
 }
 
 .call-btn-next {
   background: radial-gradient(circle at 35% 30%, #ffcf5c, #ff9500 75%);
-  box-shadow: 0 0 40px rgba(255, 149, 0, 0.55);
+  box-shadow: 0 4px 16px rgba(255, 149, 0, 0.3);
 }
 
 .call-btn-next:hover {
-  box-shadow: 0 0 60px rgba(255, 149, 0, 0.8);
+  box-shadow: 0 4px 20px rgba(255, 149, 0, 0.45);
 }
 
 .call-btn .phone-icon {
