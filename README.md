@@ -4,7 +4,8 @@ A random audio chat app — pairs strangers for live, audio-only conversations. 
 
 ## Features
 
-- One-tap random matchmaking (no sign up)
+- One-tap random matchmaking (no sign up required)
+- Optional account sign up/log in, including "Sign Up / Continue with Google"
 - Peer-to-peer audio over WebRTC (low latency, not routed through the server)
 - "Next Stranger" to skip and instantly requeue
 - Mute/unmute mic
@@ -19,6 +20,17 @@ npm start
 ```
 
 Then open http://localhost:5000 in two separate browser tabs/windows (or two devices) to be matched with each other.
+
+### Enabling "Sign Up with Google" (optional)
+
+The app works fully without this — the Google button just won't be shown.
+
+1. In the [Google Cloud Console](https://console.cloud.google.com/apis/credentials), create an OAuth 2.0 Client ID of type "Web application".
+2. Add your site's origin(s) (e.g. `http://localhost:5000` and your production URL) under "Authorized JavaScript origins". No redirect URI is needed — sign-in happens client-side via Google Identity Services.
+3. Set the `GOOGLE_CLIENT_ID` environment variable to that client ID before starting the server:
+   ```bash
+   GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com npm start
+   ```
 
 ## How it works
 

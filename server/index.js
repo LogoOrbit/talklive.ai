@@ -4,6 +4,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const geoip = require('geoip-lite');
+const { OAuth2Client } = require('google-auth-library');
 const { generateUsername } = require('./usernames');
 
 const app = express();
@@ -11,6 +12,15 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 const PORT = process.env.PORT || 5000;
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
+
+// Public client ID handed to the browser so it can render the Google Sign-In
+// button — safe to expose, it's not a secret.
+app.get('/config.js', (req, res) => {
+  res.type('application/javascript');
+  res.send(`window.GOOGLE_CLIENT_ID = ${JSON.stringify(GOOGLE_CLIENT_ID)};`);
+});
 
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
@@ -37,8 +47,9 @@ function clearWaitFallbackTimer(socketId) {
 }
 
 // In-memory accounts only — resets on server restart. Good enough until a real DB is added.
-const accounts = new Map(); // username (lowercase) -> { passwordHash, salt, nickname }
+const accounts = new Map(); // username (lowercase) -> { passwordHash, salt, nickname, googleId }
 const socketAuth = new Map(); // socketId -> logged-in username (lowercase)
+const googleAccounts = new Map(); // Google "sub" id -> username (lowercase)
 
 // --- Friends / notifications / call-back state — all in-memory, keyed by the
 // persistent per-browser clientId so it survives reconnects (works for both
@@ -127,10 +138,47 @@ function createAccount(username, password, nickname) {
 
 function verifyAccount(username, password) {
   const account = accounts.get(username.toLowerCase());
-  if (!account) return null;
+  if (!account || !account.passwordHash) return null;
   const hash = hashPassword(password, account.salt);
   if (hash !== account.passwordHash) return null;
   return account;
+}
+
+function uniqueUsernameFromBase(base) {
+  const cleanBase = base.replace(/[^a-zA-Z0-9]/g, '').slice(0, 16) || 'user';
+  let candidate = cleanBase;
+  let suffix = 1;
+  while (accounts.has(candidate.toLowerCase())) {
+    candidate = `${cleanBase}${suffix}`;
+    suffix += 1;
+  }
+  return candidate;
+}
+
+// Verifies a Google ID token and finds-or-creates the account it belongs to.
+async function findOrCreateGoogleAccount(idToken) {
+  const ticket = await googleClient.verifyIdToken({ idToken, audience: GOOGLE_CLIENT_ID });
+  const payload = ticket.getPayload();
+  if (!payload || !payload.sub || !payload.email_verified) {
+    throw new Error('Could not verify Google account.');
+  }
+
+  const googleId = payload.sub;
+  let username = googleAccounts.get(googleId);
+
+  if (!username) {
+    username = uniqueUsernameFromBase((payload.email || 'user').split('@')[0]);
+    const nickname = (payload.name || username).slice(0, 24);
+    accounts.set(username.toLowerCase(), {
+      passwordHash: null,
+      salt: null,
+      nickname,
+      googleId,
+    });
+    googleAccounts.set(googleId, username.toLowerCase());
+  }
+
+  return { username, account: accounts.get(username.toLowerCase()) };
 }
 
 function getClientIp(socket) {
@@ -342,6 +390,23 @@ io.on('connection', (socket) => {
 
   socket.on('logout', () => {
     socketAuth.delete(socket.id);
+  });
+
+  socket.on('google-auth', async ({ credential } = {}) => {
+    if (!GOOGLE_CLIENT_ID) {
+      return socket.emit('google-auth-result', { ok: false, error: 'Google Sign-In is not configured on this server.' });
+    }
+    if (!credential || typeof credential !== 'string') {
+      return socket.emit('google-auth-result', { ok: false, error: 'Missing Google credential.' });
+    }
+    try {
+      const { username, account } = await findOrCreateGoogleAccount(credential);
+      socketAuth.set(socket.id, username.toLowerCase());
+      socket.emit('google-auth-result', { ok: true, username, nickname: account.nickname });
+    } catch (err) {
+      console.error('[google-auth] verification failed:', err.message);
+      socket.emit('google-auth-result', { ok: false, error: 'Google sign-in failed. Please try again.' });
+    }
   });
 
   socket.on('update-nickname', ({ nickname } = {}) => {

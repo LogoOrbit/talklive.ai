@@ -10,6 +10,7 @@
   "dependencies": {
     "express": "^4.19.2",
     "geoip-lite": "^1.4.10",
+    "google-auth-library": "^9.15.1",
     "socket.io": "^4.7.5"
   },
   "engines": {

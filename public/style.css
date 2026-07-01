@@ -1621,6 +1621,29 @@ html, body {
 }
 
 /* Account modal */
+.google-signin-btn {
+  display: flex;
+  justify-content: center;
+  min-height: 40px;
+}
+
+.account-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.account-divider::before,
+.account-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(255,255,255,0.1);
+}
+
 .account-tabs {
   display: flex;
   gap: 8px;

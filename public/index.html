@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>TalkLive — Talk to Strangers</title>
 <link rel="stylesheet" href="style.css" />
+<script src="/config.js"></script>
 </head>
 <body>
   <div class="app">
@@ -200,6 +201,9 @@
             <p id="accountStatus" class="account-status hidden"></p>
 
             <div id="accountLoggedOut">
+              <div id="googleSignInBtn" class="google-signin-btn"></div>
+              <div class="account-divider"><span>or</span></div>
+
               <div class="account-tabs">
                 <button type="button" class="account-tab selected" data-tab="login">Log In</button>
                 <button type="button" class="account-tab" data-tab="signup">Sign Up</button>

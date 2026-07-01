@@ -130,6 +130,7 @@ const signupPassword = document.getElementById('signupPassword');
 const signupNickname = document.getElementById('signupNickname');
 const signupSubmitBtn = document.getElementById('signupSubmitBtn');
 const logoutBtn = document.getElementById('logoutBtn');
+const googleSignInBtn = document.getElementById('googleSignInBtn');
 const avatarIcon = document.getElementById('avatarIcon');
 const avatarInitial = document.getElementById('avatarInitial');
 const settingsNickname = document.getElementById('settingsNickname');
@@ -600,6 +601,48 @@ signupSubmitBtn.addEventListener('click', () => {
     password: signupPassword.value,
     nickname: signupNickname.value.trim(),
   });
+});
+
+// --- Sign Up / Log In with Google ---
+let googleReady = false;
+
+function handleGoogleCredential(response) {
+  socket.emit('google-auth', { credential: response.credential });
+}
+
+function initGoogleSignIn() {
+  if (googleReady || !window.GOOGLE_CLIENT_ID || !window.google || !window.google.accounts) return;
+  googleReady = true;
+  window.google.accounts.id.initialize({
+    client_id: window.GOOGLE_CLIENT_ID,
+    callback: handleGoogleCredential,
+  });
+  window.google.accounts.id.renderButton(googleSignInBtn, {
+    type: 'standard',
+    theme: 'filled_black',
+    size: 'large',
+    text: 'continue_with',
+    shape: 'pill',
+    width: 280,
+  });
+}
+
+if (googleSignInBtn && window.GOOGLE_CLIENT_ID) {
+  const gsiScript = document.createElement('script');
+  gsiScript.src = 'https://accounts.google.com/gsi/client';
+  gsiScript.async = true;
+  gsiScript.defer = true;
+  gsiScript.onload = initGoogleSignIn;
+  document.head.appendChild(gsiScript);
+} else if (googleSignInBtn) {
+  googleSignInBtn.classList.add('hidden');
+}
+
+socket.on('google-auth-result', ({ ok, nickname, error }) => {
+  if (!ok) return showAccountStatus(error, 'error');
+  localStorage.setItem('talklive_nickname', nickname);
+  showAccountStatus(`Signed in as ${nickname}`, 'success');
+  setTimeout(() => location.reload(), 500);
 });
 
 logoutBtn.addEventListener('click', () => {
