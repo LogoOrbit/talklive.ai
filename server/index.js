@@ -455,14 +455,14 @@ io.on('connection', (socket) => {
     tryMatch(socket.id);
   });
 
-  socket.on('reaction', (emoji) => {
+  socket.on('reaction', (reaction) => {
     const partnerId = partners.get(socket.id);
     const seeker = profiles.get(socket.id);
     const partner = partnerId ? profiles.get(partnerId) : null;
-    if (!partnerId || !seeker || !partner || typeof emoji !== 'string') return;
-    io.to(partnerId).emit('reaction', emoji);
+    if (!partnerId || !seeker || !partner || typeof reaction !== 'string') return;
+    io.to(partnerId).emit('reaction', reaction);
 
-    if (emoji === '❤️') {
+    if (reaction === 'heart') {
       const key = pairKey(seeker.clientId, partner.clientId);
       if (!hearts.has(key)) hearts.set(key, new Set());
       hearts.get(key).add(seeker.clientId);

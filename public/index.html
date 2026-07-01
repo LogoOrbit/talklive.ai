@@ -10,7 +10,13 @@
   <div class="app">
     <header class="topbar">
       <div class="topbar-left">
-        <button id="appSettingsBtn" class="icon-btn" title="App settings" aria-label="Open app settings">☰</button>
+        <button id="appSettingsBtn" class="icon-btn" title="App settings" aria-label="Open app settings">
+          <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+            <line x1="4" y1="7" x2="20" y2="7"/>
+            <line x1="4" y1="12" x2="20" y2="12"/>
+            <line x1="4" y1="17" x2="20" y2="17"/>
+          </svg>
+        </button>
         <div class="brand">
           <span class="brand-dot"></span>
           TalkLive
@@ -18,17 +24,34 @@
       </div>
       <div class="header-right">
         <div class="online" title="People online now" aria-label="People online now">
-          <span class="online-avatar">👥<span class="online-dot"></span></span>
+          <span class="online-avatar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="8.5" cy="8.5" r="3.2"/>
+              <path d="M2.5 19c0-3.6 2.8-6 6-6s6 2.4 6 6"/>
+              <circle cx="17" cy="9.5" r="2.3"/>
+              <path d="M14.3 13.3c2.4.2 5 2 5 5.7"/>
+            </svg>
+            <span class="online-dot"></span>
+          </span>
           <span id="onlineCount">0</span>
         </div>
-        <button id="historyBtn" class="icon-btn" title="Call history" aria-label="Call history">🕑</button>
+        <button id="historyBtn" class="icon-btn" title="Call history" aria-label="Call history">
+          <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="8.5"/>
+            <path d="M12 7.5V12l3.2 2"/>
+          </svg>
+        </button>
         <button id="friendsBtn" class="icon-btn friends-btn" title="Friends &amp; messages" aria-label="Friends and messages">
           <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
           <span id="friendsMsgBadge" class="notif-badge hidden">0</span>
         </button>
         <div class="notif-wrap">
           <button id="notifBtn" class="icon-btn notif-btn" title="Requests" aria-label="Requests">
-            🔔<span id="notifBadge" class="notif-badge hidden">0</span>
+            <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 4a4.2 4.2 0 0 0-4.2 4.2v2.6c0 .8-.3 1.6-.9 2.2l-1.1 1.1c-.5.5-.2 1.5.6 1.5h11.2c.8 0 1.1-1 .6-1.5l-1.1-1.1a3.2 3.2 0 0 1-.9-2.2V8.2A4.2 4.2 0 0 0 12 4z"/>
+              <path d="M9.7 18.5a2.4 2.4 0 0 0 4.6 0"/>
+            </svg>
+            <span id="notifBadge" class="notif-badge hidden">0</span>
           </button>
           <div id="notifModal" class="notif-dropdown hidden">
             <div class="modal-header">
@@ -43,7 +66,12 @@
           </div>
         </div>
         <button id="accountBtn" class="icon-btn avatar-btn" title="Account" aria-label="Account">
-          <span id="avatarIcon">👤</span>
+          <span id="avatarIcon">
+            <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="8.5" r="3.5"/>
+              <path d="M4.5 20c0-4.2 3.4-7 7.5-7s7.5 2.8 7.5 7"/>
+            </svg>
+          </span>
           <span id="avatarInitial" class="avatar-initial hidden"></span>
         </button>
         <button id="filtersBtn" class="icon-btn" title="Match filters" aria-label="Match filters">
@@ -72,9 +100,9 @@
         <div class="pill-row">
           <span class="pill-label">I am</span>
           <div class="pill-group" id="genderGroup" data-value="unspecified">
-            <button type="button" class="pill" data-value="unspecified"><span class="pill-dot pill-dot-neutral"></span>🤐 Prefer not to say</button>
-            <button type="button" class="pill" data-value="male"><span class="pill-dot pill-dot-male"></span>♂️ Male</button>
-            <button type="button" class="pill" data-value="female"><span class="pill-dot pill-dot-female"></span>♀️ Female</button>
+            <button type="button" class="pill" data-value="unspecified"><span class="pill-dot pill-dot-neutral"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Prefer not to say</button>
+            <button type="button" class="pill" data-value="male"><span class="pill-dot pill-dot-male"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="14" r="6"/><line x1="14.5" y1="9.5" x2="20" y2="4"/><polyline points="14.5 4 20 4 20 9.5"/></svg>Male</button>
+            <button type="button" class="pill" data-value="female"><span class="pill-dot pill-dot-female"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="9" r="6"/><line x1="12" y1="15" x2="12" y2="21"/><line x1="9" y1="18" x2="15" y2="18"/></svg>Female</button>
           </div>
         </div>
 
@@ -106,8 +134,8 @@
           <span class="pill-label">Match me with</span>
           <div class="pill-group" id="prefGenderGroup" data-value="any">
             <button type="button" class="pill" data-value="any"><span class="pill-dot pill-dot-neutral"></span>Anyone</button>
-            <button type="button" class="pill" data-value="male"><span class="pill-dot pill-dot-male"></span>♂️ Male</button>
-            <button type="button" class="pill" data-value="female"><span class="pill-dot pill-dot-female"></span>♀️ Female</button>
+            <button type="button" class="pill" data-value="male"><span class="pill-dot pill-dot-male"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="14" r="6"/><line x1="14.5" y1="9.5" x2="20" y2="4"/><polyline points="14.5 4 20 4 20 9.5"/></svg>Male</button>
+            <button type="button" class="pill" data-value="female"><span class="pill-dot pill-dot-female"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="9" r="6"/><line x1="12" y1="15" x2="12" y2="21"/><line x1="9" y1="18" x2="15" y2="18"/></svg>Female</button>
           </div>
         </div>
 
@@ -302,7 +330,7 @@
             <h2>Before You Start</h2>
           </div>
           <div class="modal-body">
-            <p class="consent-modal-text">🔞 You must be <strong>18 years or older</strong> to use TalkLive.</p>
+            <p class="consent-modal-text"><svg class="age-badge-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><text x="12" y="15.5" text-anchor="middle" font-size="8" font-weight="700" fill="currentColor" stroke="none">18+</text></svg> You must be <strong>18 years or older</strong> to use TalkLive.</p>
             <p class="consent-modal-text">By continuing, you agree to our
               <button type="button" id="openTermsFromConsent" class="link-btn">Terms &amp; Community Guidelines</button>,
               including the rules on respectful behavior and reporting/bans.
@@ -322,7 +350,7 @@
           <div class="modal-body policy-body">
 
             <h3>How TalkLive Works</h3>
-            <p>TalkLive connects you with a random stranger for a live, audio-only conversation. There's no sign-up — tap "Start," allow microphone access, and you'll be paired with someone automatically. Tap "Next" any time to end the current call and get matched with someone new, or "Hang Up" to leave entirely. You can optionally set a gender preference, a country, and interest tags from the settings (⚙️) menu to help find a better match.</p>
+            <p>TalkLive connects you with a random stranger for a live, audio-only conversation. There's no sign-up — tap "Start," allow microphone access, and you'll be paired with someone automatically. Tap "Next" any time to end the current call and get matched with someone new, or "Hang Up" to leave entirely. You can optionally set a gender preference, a country, and interest tags from the settings menu to help find a better match.</p>
 
             <h3>Quick Tips</h3>
             <ul>
@@ -402,10 +430,18 @@
         </div>
 
         <div id="reactionBar" class="reaction-bar hidden">
-          <button type="button" class="reaction-btn" data-emoji="👍" aria-label="React thumbs up">👍</button>
-          <button type="button" class="reaction-btn" data-emoji="😂" aria-label="React laughing">😂</button>
-          <button type="button" class="reaction-btn" data-emoji="👏" aria-label="React clapping">👏</button>
-          <button type="button" class="reaction-btn" data-emoji="❤️" aria-label="React heart">❤️</button>
+          <button type="button" class="reaction-btn" data-reaction="like" aria-label="React thumbs up">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+          </button>
+          <button type="button" class="reaction-btn" data-reaction="laugh" aria-label="React laughing">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+          </button>
+          <button type="button" class="reaction-btn" data-reaction="clap" aria-label="React clapping">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><ellipse cx="8" cy="15" rx="3.2" ry="4.2" fill="currentColor" stroke="none" transform="rotate(-20 8 15)"/><ellipse cx="16" cy="15" rx="3.2" ry="4.2" fill="currentColor" stroke="none" transform="rotate(20 16 15)"/><line x1="12" y1="4" x2="12" y2="7"/><line x1="7.8" y1="5.6" x2="9.4" y2="8"/><line x1="16.2" y1="5.6" x2="14.6" y2="8"/></svg>
+          </button>
+          <button type="button" class="reaction-btn" data-reaction="heart" aria-label="React heart">
+            <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </button>
         </div>
         <div id="reactionOverlay" class="reaction-overlay" aria-hidden="true"></div>
 
@@ -452,7 +488,10 @@
             </svg>
           </button>
           <button id="reportBtn" class="btn btn-icon btn-icon-lg hidden" title="Report and block" aria-label="Report and block">
-            <span class="simple-icon-emoji">🚩</span>
+            <svg class="simple-icon simple-icon-lg" viewBox="0 0 24 24" aria-hidden="true">
+              <line x1="5" y1="3" x2="5" y2="21" stroke="#ff5470" stroke-width="2" stroke-linecap="round"/>
+              <path d="M6 4h13l-3.5 4L19 12H6V4z" fill="#ff5470"/>
+            </svg>
           </button>
         </div>
 
@@ -471,13 +510,13 @@
       <!-- Quick guide — key rules at a glance, hidden during an active call to save screen space on mobile -->
       <section id="quickGuide" class="quick-guide" aria-label="How to use TalkLive">
         <ul>
-          <li><span class="qg-icon" aria-hidden="true">🙂</span> Be respectful. Treat others the way you want to be treated.</li>
-          <li><span class="qg-icon" aria-hidden="true">🚫</span> No sexual content, hate, threats, or harassment.</li>
-          <li><span class="qg-icon" aria-hidden="true">🔞</span> You must be 18 or older to use this site.</li>
-          <li><span class="qg-icon" aria-hidden="true">🚩</span> Report anyone who breaks the rules. Reports instantly end the call, block that person, and repeated reports can lead to a ban.</li>
-          <li><span class="qg-icon" aria-hidden="true">🎧</span> Use headphones to prevent echo and improve call quality.</li>
-          <li><span class="qg-icon" aria-hidden="true">🎙️</span> You can mute your microphone anytime.</li>
-          <li><span class="qg-icon" aria-hidden="true">💬</span> Use the chat button to send text messages during a call.</li>
+          <li><span class="qg-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M8 14s1.5 2.2 4 2.2 4-2.2 4-2.2"/><line x1="9" y1="9.5" x2="9" y2="9.6"/><line x1="15" y1="9.5" x2="15" y2="9.6"/></svg></span> Be respectful. Treat others the way you want to be treated.</li>
+          <li><span class="qg-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="5.5" y1="18.5" x2="18.5" y2="5.5"/></svg></span> No sexual content, hate, threats, or harassment.</li>
+          <li><span class="qg-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><text x="12" y="15.5" text-anchor="middle" font-size="8" font-weight="700" fill="currentColor" stroke="none">18+</text></svg></span> You must be 18 or older to use this site.</li>
+          <li><span class="qg-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="3" x2="5" y2="21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M6 4h13l-3.5 4L19 12H6V4z" fill="currentColor"/></svg></span> Report anyone who breaks the rules. Reports instantly end the call, block that person, and repeated reports can lead to a ban.</li>
+          <li><span class="qg-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="13" width="4" height="6" rx="2"/><rect x="17" y="13" width="4" height="6" rx="2"/></svg></span> Use headphones to prevent echo and improve call quality.</li>
+          <li><span class="qg-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="21"/><line x1="9" y1="21" x2="15" y2="21"/></svg></span> You can mute your microphone anytime.</li>
+          <li><span class="qg-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-4 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/></svg></span> Use the chat button to send text messages during a call.</li>
         </ul>
       </section>
     </main>

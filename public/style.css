@@ -165,6 +165,11 @@ html, body {
   font-size: 14px;
 }
 
+.online-avatar svg {
+  width: 15px;
+  height: 15px;
+}
+
 .icon-btn {
   width: 38px;
   height: 38px;
@@ -442,11 +447,6 @@ html, body {
   color: white;
 }
 
-.simple-icon-emoji {
-  font-size: 30px;
-  line-height: 1;
-}
-
 .btn-icon-danger {
   background: rgba(255, 84, 112, 0.15);
   color: var(--danger);
@@ -519,9 +519,16 @@ html, body {
 }
 
 .qg-icon {
-  font-size: 18px;
   flex-shrink: 0;
   line-height: 1.3;
+  display: flex;
+  padding-top: 1px;
+}
+
+.qg-icon svg {
+  width: 18px;
+  height: 18px;
+  color: var(--accent-2);
 }
 
 .footer {
@@ -822,12 +829,21 @@ html, body {
   border-radius: 50%;
   border: 1px solid rgba(255,255,255,0.1);
   background: rgba(255,255,255,0.05);
-  font-size: 20px;
+  color: var(--text);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.reaction-btn svg {
+  width: 22px;
+  height: 22px;
+}
+
+.reaction-btn[data-reaction="heart"] {
+  color: var(--danger);
 }
 
 .reaction-btn:hover {
@@ -849,8 +865,19 @@ html, body {
 .reaction-float {
   position: absolute;
   bottom: 20%;
-  font-size: 34px;
+  color: var(--text);
   animation: floatUp 1.8s ease-out forwards;
+}
+
+.reaction-float svg {
+  width: 34px;
+  height: 34px;
+  display: block;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));
+}
+
+.reaction-float[data-reaction="heart"] {
+  color: var(--danger);
 }
 
 @keyframes floatUp {
@@ -1126,6 +1153,13 @@ html, body {
   border-radius: 50%;
   border: 1.5px solid rgba(255,255,255,0.4);
   flex-shrink: 0;
+}
+
+.pill-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  opacity: 0.85;
 }
 
 .pill.selected {
@@ -1552,6 +1586,14 @@ html, body {
   text-align: left;
 }
 
+.age-badge-icon {
+  width: 26px;
+  height: 26px;
+  vertical-align: -7px;
+  color: var(--accent-2);
+  margin-right: 2px;
+}
+
 #ageAgreeBtn {
   width: 100%;
   font-size: 16px;
@@ -1873,6 +1915,13 @@ html, body {
   white-space: nowrap;
 }
 
+.btn-chip svg {
+  width: 12px;
+  height: 12px;
+  vertical-align: -1px;
+  margin-right: 4px;
+}
+
 .btn-chip:hover {
   background: rgba(255,255,255,0.12);
 }
@@ -1908,9 +1957,15 @@ html, body {
 }
 
 .notif-item-icon {
-  font-size: 20px;
   flex-shrink: 0;
   line-height: 1.3;
+  color: var(--accent-2);
+}
+
+.notif-item-icon svg {
+  width: 20px;
+  height: 20px;
+  display: block;
 }
 
 .notif-item-body {
@@ -1978,6 +2033,14 @@ html, body {
 .callback-banner-text {
   font-size: 14px;
   font-weight: 600;
+}
+
+.callback-banner-text svg {
+  width: 15px;
+  height: 15px;
+  vertical-align: -3px;
+  color: #2ed47a;
+  margin-right: 4px;
 }
 
 .callback-banner-actions {

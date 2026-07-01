@@ -147,10 +147,31 @@ const sideAutoCallCheckbox = document.getElementById('sideAutoCallCheckbox');
 
 const MIN_CALL_SECONDS_BEFORE_SKIP = 2;
 
+// --- Theme-matched inline icon set, used instead of emoji everywhere in the UI ---
+const ICONS = {
+  chat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-4 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/></svg>',
+  block: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="5.5" y1="18.5" x2="18.5" y2="5.5"/></svg>',
+  close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 12 9 17 20 6"/></svg>',
+  checkCircle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="8 12.5 11 15.5 16 9"/></svg>',
+  call: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>',
+  bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4a4.2 4.2 0 0 0-4.2 4.2v2.6c0 .8-.3 1.6-.9 2.2l-1.1 1.1c-.5.5-.2 1.5.6 1.5h11.2c.8 0 1.1-1 .6-1.5l-1.1-1.1a3.2 3.2 0 0 1-.9-2.2V8.2A4.2 4.2 0 0 0 12 4z"/><path d="M9.7 18.5a2.4 2.4 0 0 0 4.6 0"/></svg>',
+  person: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.5" r="3.5"/><path d="M4.5 20c0-4.2 3.4-7 7.5-7s7.5 2.8 7.5 7"/></svg>',
+};
+
+const REACTION_ICONS = {
+  like: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>',
+  laugh: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>',
+  clap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><ellipse cx="8" cy="15" rx="3.2" ry="4.2" fill="currentColor" stroke="none" transform="rotate(-20 8 15)"/><ellipse cx="16" cy="15" rx="3.2" ry="4.2" fill="currentColor" stroke="none" transform="rotate(20 16 15)"/><line x1="12" y1="4" x2="12" y2="7"/><line x1="7.8" y1="5.6" x2="9.4" y2="8"/><line x1="16.2" y1="5.6" x2="14.6" y2="8"/></svg>',
+  heart: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
+};
+
 // --- Country code -> flag image (works consistently across all browsers/OSes,
 // unlike emoji regional-indicator flags which many platforms, e.g. Windows, render as plain letters) ---
 function getFlagImg(code, size = 20) {
-  if (!code || code.length !== 2 || code === 'XX') return '🌐';
+  if (!code || code.length !== 2 || code === 'XX') {
+    return `<svg class="flag-icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><ellipse cx="12" cy="12" rx="4.2" ry="9.5"/><line x1="2.5" y1="12" x2="21.5" y2="12"/></svg>`;
+  }
   const cc = code.toLowerCase();
   return `<img class="flag-icon" src="https://flagcdn.com/24x18/${cc}.png" srcset="https://flagcdn.com/48x36/${cc}.png 2x" width="${size}" alt="${code.toUpperCase()}" />`;
 }
@@ -667,9 +688,9 @@ function renderFriendsList() {
         ${unread > 0 ? `<span class="unread-badge">${unread}</span>` : ''}
       </div>
       <div class="friend-item-actions">
-        <button type="button" class="btn-chip friend-chat-btn" data-id="${f.clientId}" title="Chat">💬 Chat</button>
-        <button type="button" class="btn-chip friend-block-btn" data-id="${f.clientId}" title="Block">🚫 Block</button>
-        <button type="button" class="btn-chip friend-remove-btn" data-id="${f.clientId}" title="Remove">✕ Remove</button>
+        <button type="button" class="btn-chip friend-chat-btn" data-id="${f.clientId}" title="Chat">${ICONS.chat} Chat</button>
+        <button type="button" class="btn-chip friend-block-btn" data-id="${f.clientId}" title="Block">${ICONS.block} Block</button>
+        <button type="button" class="btn-chip friend-remove-btn" data-id="${f.clientId}" title="Remove">${ICONS.close} Remove</button>
       </div>
     `;
     friendsList.appendChild(item);
@@ -694,8 +715,8 @@ function renderFriendRequests() {
         ${friendBadge(r.temporary)}
       </div>
       <div class="friend-item-actions">
-        <button type="button" class="btn-chip btn-chip-accept friend-confirm-btn" data-id="${r.clientId}">✓ Confirm</button>
-        <button type="button" class="btn-chip friend-dismiss-btn" data-id="${r.clientId}">✕ Dismiss</button>
+        <button type="button" class="btn-chip btn-chip-accept friend-confirm-btn" data-id="${r.clientId}">${ICONS.check} Confirm</button>
+        <button type="button" class="btn-chip friend-dismiss-btn" data-id="${r.clientId}">${ICONS.close} Dismiss</button>
       </div>
     `;
     friendRequestsList.appendChild(item);
@@ -754,10 +775,10 @@ document.addEventListener('click', (e) => {
 
 function notifIcon(type) {
   switch (type) {
-    case 'friend_request': return '👤';
-    case 'friend_accepted': return '✅';
-    case 'call_back_request': return '📞';
-    default: return '🔔';
+    case 'friend_request': return ICONS.person;
+    case 'friend_accepted': return ICONS.checkCircle;
+    case 'call_back_request': return ICONS.call;
+    default: return ICONS.bell;
   }
 }
 
@@ -818,16 +839,16 @@ function renderNotifications() {
       let actions = '';
       if (n.type === 'friend_request') {
         actions = `
-          <button type="button" class="btn-chip btn-chip-accept notif-confirm-btn" data-id="${n.id}" data-from="${n.fromClientId}">✓ Confirm</button>
-          <button type="button" class="btn-chip notif-dismiss-btn" data-id="${n.id}" data-from="${n.fromClientId}">✕ Dismiss</button>
+          <button type="button" class="btn-chip btn-chip-accept notif-confirm-btn" data-id="${n.id}" data-from="${n.fromClientId}">${ICONS.check} Confirm</button>
+          <button type="button" class="btn-chip notif-dismiss-btn" data-id="${n.id}" data-from="${n.fromClientId}">${ICONS.close} Dismiss</button>
         `;
       } else if (n.type === 'call_back_request') {
         actions = `
-          <button type="button" class="btn-chip btn-chip-accept notif-callback-accept-btn" data-id="${n.id}" data-from="${n.fromClientId}">📞 Call back</button>
-          <button type="button" class="btn-chip notif-callback-decline-btn" data-id="${n.id}" data-from="${n.fromClientId}">✕ Dismiss</button>
+          <button type="button" class="btn-chip btn-chip-accept notif-callback-accept-btn" data-id="${n.id}" data-from="${n.fromClientId}">${ICONS.call} Call back</button>
+          <button type="button" class="btn-chip notif-callback-decline-btn" data-id="${n.id}" data-from="${n.fromClientId}">${ICONS.close} Dismiss</button>
         `;
       } else {
-        actions = `<button type="button" class="btn-chip notif-clear-btn" data-id="${n.id}">✕ Dismiss</button>`;
+        actions = `<button type="button" class="btn-chip notif-clear-btn" data-id="${n.id}">${ICONS.close} Dismiss</button>`;
       }
       item.innerHTML = `
         <div class="notif-item-icon">${notifIcon(n.type)}</div>
@@ -1103,10 +1124,11 @@ function unlockSkipButton() {
   skipLabel.textContent = 'Next';
 }
 
-function showReactionFloat(emoji) {
+function showReactionFloat(reaction) {
   const el = document.createElement('div');
   el.className = 'reaction-float';
-  el.textContent = emoji;
+  el.dataset.reaction = reaction;
+  el.innerHTML = REACTION_ICONS[reaction] || '';
   el.style.left = `${40 + Math.random() * 20}%`;
   reactionOverlay.appendChild(el);
   setTimeout(() => el.remove(), 1800);
@@ -1115,9 +1137,9 @@ function showReactionFloat(emoji) {
 reactionBar.addEventListener('click', (e) => {
   const btn = e.target.closest('.reaction-btn');
   if (!btn) return;
-  const emoji = btn.dataset.emoji;
-  socket.emit('reaction', emoji);
-  showReactionFloat(emoji);
+  const reaction = btn.dataset.reaction;
+  socket.emit('reaction', reaction);
+  showReactionFloat(reaction);
 });
 
 function showError(msg) {
@@ -1574,8 +1596,8 @@ socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
   await startCall(initiator);
 });
 
-socket.on('reaction', (emoji) => {
-  showReactionFloat(emoji);
+socket.on('reaction', (reaction) => {
+  showReactionFloat(reaction);
 });
 
 socket.on('banned', () => {
@@ -1590,7 +1612,7 @@ socket.on('banned', () => {
 // --- Call back: re-connect directly with someone from Call History ---
 function showCallBackBanner(fromClientId, username) {
   pendingCallBackFrom = fromClientId;
-  callBackBannerText.textContent = `📞 ${username} wants to call you back`;
+  callBackBannerText.innerHTML = `${ICONS.call} ${escapeHtml(username)} wants to call you back`;
   callBackBanner.classList.remove('hidden');
 }
 
