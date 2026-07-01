@@ -26,6 +26,74 @@ const reportCounts = new Map(); // clientId -> number of times reported
 const accounts = new Map(); // username (lowercase) -> { passwordHash, salt, nickname }
 const socketAuth = new Map(); // socketId -> logged-in username (lowercase)
 
+// --- Friends / notifications / call-back state — all in-memory, keyed by the
+// persistent per-browser clientId so it survives reconnects (works for both
+// temporary/guest users and signed-in accounts). Resets on server restart.
+const clientSockets = new Map(); // clientId -> current socketId, for online lookup
+const friends = new Map(); // clientId -> Map<friendClientId, { username, countryCode, temporary }>
+const friendRequests = new Map(); // clientId -> Map<fromClientId, { username, countryCode, temporary, ts }>
+const notifications = new Map(); // clientId -> Array<notification>
+const friendChats = new Map(); // pairKey -> Array<{ from, text, ts }>
+
+function isFriend(a, b) {
+  const setA = friends.get(a);
+  return !!(setA && setA.has(b));
+}
+
+function addFriendPair(clientIdA, infoA, clientIdB, infoB) {
+  if (!friends.has(clientIdA)) friends.set(clientIdA, new Map());
+  if (!friends.has(clientIdB)) friends.set(clientIdB, new Map());
+  friends.get(clientIdA).set(clientIdB, infoB);
+  friends.get(clientIdB).set(clientIdA, infoA);
+}
+
+function removeFriendPair(clientIdA, clientIdB) {
+  const a = friends.get(clientIdA);
+  if (a) a.delete(clientIdB);
+  const b = friends.get(clientIdB);
+  if (b) b.delete(clientIdA);
+}
+
+function getSocketByClientId(clientId) {
+  const socketId = clientSockets.get(clientId);
+  return socketId ? io.sockets.sockets.get(socketId) : null;
+}
+
+function pushNotification(clientId, notif) {
+  if (!notifications.has(clientId)) notifications.set(clientId, []);
+  const list = notifications.get(clientId);
+  const full = { id: crypto.randomUUID(), ts: Date.now(), ...notif };
+  list.push(full);
+  if (list.length > 50) list.shift();
+  const targetSocket = getSocketByClientId(clientId);
+  if (targetSocket) targetSocket.emit('notification', full);
+  return full;
+}
+
+function removeNotification(clientId, notificationId) {
+  const list = notifications.get(clientId);
+  if (!list) return;
+  const idx = list.findIndex((n) => n.id === notificationId);
+  if (idx !== -1) list.splice(idx, 1);
+}
+
+function syncClientState(socket, clientId) {
+  const friendList = Array.from((friends.get(clientId) || new Map()).entries()).map(([fid, info]) => ({
+    clientId: fid,
+    ...info,
+    online: clientSockets.has(fid),
+  }));
+  const requestList = Array.from((friendRequests.get(clientId) || new Map()).entries()).map(([fid, info]) => ({
+    clientId: fid,
+    ...info,
+  }));
+  socket.emit('state-sync', {
+    friends: friendList,
+    friendRequests: requestList,
+    notifications: notifications.get(clientId) || [],
+  });
+}
+
 function pairKey(a, b) {
   return [a, b].sort().join('|');
 }
@@ -103,6 +171,7 @@ function disconnectPartner(socketId) {
 
 function publicProfile(p) {
   return {
+    clientId: p.clientId,
     username: p.username,
     country: p.countryName,
     countryCode: p.country,
@@ -287,6 +356,7 @@ io.on('connection', (socket) => {
       prefLanguage: data.prefLanguage || 'any',
       interests: Array.isArray(data.interests) ? data.interests.slice(0, 10) : [],
     });
+    clientSockets.set(clientId, socket.id);
 
     socket.emit('profile', {
       username: profiles.get(socket.id).username,
@@ -294,6 +364,8 @@ io.on('connection', (socket) => {
       countryCode: geo.country,
       city: geo.city,
     });
+
+    syncClientState(socket, clientId);
   });
 
   broadcastOnlineCount();
@@ -378,9 +450,204 @@ io.on('connection', (socket) => {
     }
   });
 
+  // --- Friends ---
+  socket.on('friend-request', ({ targetClientId } = {}) => {
+    const me = profiles.get(socket.id);
+    if (!me || !targetClientId || targetClientId === me.clientId) return;
+    if (isBlockedPair(me.clientId, targetClientId)) {
+      return socket.emit('friend-request-result', { ok: false, error: 'Unable to send friend request.' });
+    }
+    if (isFriend(me.clientId, targetClientId)) {
+      return socket.emit('friend-request-result', { ok: true, alreadyFriends: true });
+    }
+    const temporary = !socketAuth.get(socket.id);
+    const myInfo = { username: me.username, countryCode: me.country, temporary };
+
+    if (!friendRequests.has(targetClientId)) friendRequests.set(targetClientId, new Map());
+    friendRequests.get(targetClientId).set(me.clientId, { ...myInfo, ts: Date.now() });
+
+    pushNotification(targetClientId, {
+      type: 'friend_request',
+      fromClientId: me.clientId,
+      username: myInfo.username,
+      countryCode: myInfo.countryCode,
+      temporary: myInfo.temporary,
+    });
+
+    const targetSocket = getSocketByClientId(targetClientId);
+    if (targetSocket) syncClientState(targetSocket, targetClientId);
+
+    socket.emit('friend-request-result', { ok: true, sent: true });
+  });
+
+  socket.on('friend-request-respond', ({ fromClientId, accept, notificationId } = {}) => {
+    const me = profiles.get(socket.id);
+    if (!me || !fromClientId) return;
+    const reqMap = friendRequests.get(me.clientId);
+    const req = reqMap && reqMap.get(fromClientId);
+    if (!req) return;
+    reqMap.delete(fromClientId);
+    if (notificationId) removeNotification(me.clientId, notificationId);
+
+    if (accept) {
+      const temporary = !socketAuth.get(socket.id);
+      const myInfo = { username: me.username, countryCode: me.country, temporary };
+      addFriendPair(
+        me.clientId, myInfo,
+        fromClientId, { username: req.username, countryCode: req.countryCode, temporary: req.temporary }
+      );
+      pushNotification(fromClientId, {
+        type: 'friend_accepted',
+        byClientId: me.clientId,
+        username: myInfo.username,
+      });
+    }
+
+    syncClientState(socket, me.clientId);
+    const fromSocket = getSocketByClientId(fromClientId);
+    if (fromSocket) syncClientState(fromSocket, fromClientId);
+  });
+
+  socket.on('remove-friend', ({ friendClientId } = {}) => {
+    const me = profiles.get(socket.id);
+    if (!me || !friendClientId) return;
+    removeFriendPair(me.clientId, friendClientId);
+    syncClientState(socket, me.clientId);
+    const friendSocket = getSocketByClientId(friendClientId);
+    if (friendSocket) syncClientState(friendSocket, friendClientId);
+  });
+
+  socket.on('block-friend', ({ friendClientId } = {}) => {
+    const me = profiles.get(socket.id);
+    if (!me || !friendClientId) return;
+    removeFriendPair(me.clientId, friendClientId);
+    blockPair(me.clientId, friendClientId);
+    syncClientState(socket, me.clientId);
+  });
+
+  // --- Friend-to-friend chat (separate from the ephemeral in-call chat) ---
+  socket.on('friend-message', ({ toClientId, text } = {}) => {
+    const me = profiles.get(socket.id);
+    if (!me || !toClientId || typeof text !== 'string' || !text.trim()) return;
+    if (!isFriend(me.clientId, toClientId)) return;
+    const trimmed = text.trim().slice(0, 1000);
+    const key = pairKey(me.clientId, toClientId);
+    if (!friendChats.has(key)) friendChats.set(key, []);
+    const msg = { from: me.clientId, text: trimmed, ts: Date.now() };
+    const list = friendChats.get(key);
+    list.push(msg);
+    if (list.length > 200) list.shift();
+
+    const targetSocket = getSocketByClientId(toClientId);
+    if (targetSocket) targetSocket.emit('friend-message', { fromClientId: me.clientId, text: trimmed, ts: msg.ts });
+
+    pushNotification(toClientId, {
+      type: 'message',
+      fromClientId: me.clientId,
+      username: me.username,
+      text: trimmed,
+    });
+
+    socket.emit('friend-message-sent', { toClientId, text: trimmed, ts: msg.ts });
+  });
+
+  socket.on('get-friend-chat', ({ friendClientId } = {}) => {
+    const me = profiles.get(socket.id);
+    if (!me || !friendClientId) return;
+    const key = pairKey(me.clientId, friendClientId);
+    socket.emit('friend-chat-history', { friendClientId, messages: friendChats.get(key) || [] });
+  });
+
+  socket.on('mark-messages-read', ({ friendClientId } = {}) => {
+    const me = profiles.get(socket.id);
+    if (!me || !friendClientId) return;
+    const list = notifications.get(me.clientId);
+    if (!list) return;
+    notifications.set(me.clientId, list.filter((n) => !(n.type === 'message' && n.fromClientId === friendClientId)));
+  });
+
+  socket.on('clear-notification', ({ notificationId } = {}) => {
+    const me = profiles.get(socket.id);
+    if (!me || !notificationId) return;
+    removeNotification(me.clientId, notificationId);
+  });
+
+  // --- Call back: re-connect directly with someone from call history ---
+  socket.on('call-back-request', ({ targetClientId } = {}) => {
+    const me = profiles.get(socket.id);
+    if (!me || !targetClientId) return;
+    if (isBlockedPair(me.clientId, targetClientId)) {
+      return socket.emit('call-back-request-result', { ok: false, reason: 'blocked' });
+    }
+    const targetSocketId = clientSockets.get(targetClientId);
+    const targetSocket = targetSocketId ? io.sockets.sockets.get(targetSocketId) : null;
+    if (!targetSocket) {
+      return socket.emit('call-back-request-result', { ok: false, reason: 'offline' });
+    }
+    if (partners.has(targetSocketId)) {
+      return socket.emit('call-back-request-result', { ok: false, reason: 'busy' });
+    }
+
+    targetSocket.emit('call-back-request', {
+      fromClientId: me.clientId,
+      username: me.username,
+      countryCode: me.country,
+    });
+    pushNotification(targetClientId, {
+      type: 'call_back_request',
+      fromClientId: me.clientId,
+      username: me.username,
+      countryCode: me.country,
+    });
+
+    socket.emit('call-back-request-result', { ok: true, pending: true });
+  });
+
+  socket.on('call-back-respond', ({ fromClientId, accept } = {}) => {
+    const me = profiles.get(socket.id);
+    if (!me || !fromClientId) return;
+
+    const list = notifications.get(me.clientId);
+    if (list) {
+      notifications.set(me.clientId, list.filter((n) => !(n.type === 'call_back_request' && n.fromClientId === fromClientId)));
+    }
+
+    const requesterSocketId = clientSockets.get(fromClientId);
+    const requesterSocket = requesterSocketId ? io.sockets.sockets.get(requesterSocketId) : null;
+
+    if (!accept) {
+      if (requesterSocket) requesterSocket.emit('call-back-declined', { byClientId: me.clientId, username: me.username });
+      return;
+    }
+
+    if (!requesterSocket) {
+      return socket.emit('call-back-request-result', { ok: false, reason: 'offline' });
+    }
+
+    // Force-pair directly, bypassing the normal matching queue/filters.
+    disconnectPartner(socket.id);
+    disconnectPartner(requesterSocketId);
+    clearFromQueue(socket.id);
+    clearFromQueue(requesterSocketId);
+
+    partners.set(socket.id, requesterSocketId);
+    partners.set(requesterSocketId, socket.id);
+
+    const requesterProfile = profiles.get(requesterSocketId);
+    const key = pairKey(me.clientId, requesterProfile.clientId);
+    hearts.delete(key);
+
+    requesterSocket.emit('matched', { initiator: true, partner: publicProfile(me), rematched: false, callback: true });
+    socket.emit('matched', { initiator: false, partner: publicProfile(requesterProfile), rematched: false, callback: true });
+  });
+
   socket.on('disconnect', () => {
     disconnectPartner(socket.id);
     clearFromQueue(socket.id);
+    const profile = profiles.get(socket.id);
+    if (profile && clientSockets.get(profile.clientId) === socket.id) {
+      clientSockets.delete(profile.clientId);
+    }
     profiles.delete(socket.id);
     socketAuth.delete(socket.id);
     broadcastOnlineCount();

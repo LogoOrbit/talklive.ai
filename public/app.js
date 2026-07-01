@@ -79,6 +79,34 @@ const historyModal = document.getElementById('historyModal');
 const closeHistoryBtn = document.getElementById('closeHistoryBtn');
 const historyList = document.getElementById('historyList');
 
+const friendsBtn = document.getElementById('friendsBtn');
+const friendsModal = document.getElementById('friendsModal');
+const closeFriendsBtn = document.getElementById('closeFriendsBtn');
+const friendsList = document.getElementById('friendsList');
+const friendRequestsList = document.getElementById('friendRequestsList');
+const friendReqCount = document.getElementById('friendReqCount');
+const friendsTabs = document.querySelectorAll('.friends-tab');
+const friendsListPanel = document.getElementById('friendsListPanel');
+const friendRequestsPanel = document.getElementById('friendRequestsPanel');
+
+const notifBtn = document.getElementById('notifBtn');
+const notifBadge = document.getElementById('notifBadge');
+const notifModal = document.getElementById('notifModal');
+const closeNotifBtn = document.getElementById('closeNotifBtn');
+const notifList = document.getElementById('notifList');
+
+const friendChatModal = document.getElementById('friendChatModal');
+const closeFriendChatBtn = document.getElementById('closeFriendChatBtn');
+const friendChatTitle = document.getElementById('friendChatTitle');
+const friendChatMessages = document.getElementById('friendChatMessages');
+const friendChatForm = document.getElementById('friendChatForm');
+const friendChatInput = document.getElementById('friendChatInput');
+
+const callBackBanner = document.getElementById('callBackBanner');
+const callBackBannerText = document.getElementById('callBackBannerText');
+const callBackAcceptBtn = document.getElementById('callBackAcceptBtn');
+const callBackDeclineBtn = document.getElementById('callBackDeclineBtn');
+
 const accountBtn = document.getElementById('accountBtn');
 const accountModal = document.getElementById('accountModal');
 const closeAccountBtn = document.getElementById('closeAccountBtn');
@@ -154,6 +182,20 @@ let callHistory = [];
 let accountNickname = localStorage.getItem('talklive_nickname') || null;
 let autoCallEnabled = localStorage.getItem('talklive_autocall') !== 'off';
 let wasConnected = false;
+
+// --- Friends / notifications / friend chat / call-back state ---
+let friendsData = [];        // [{ clientId, username, countryCode, temporary, online }]
+let friendRequestsData = []; // [{ clientId, username, countryCode, temporary, ts }]
+let notifData = [];          // [{ id, type, ts, ... }]
+let activeFriendChatId = null;
+const friendChatCache = new Map(); // friendClientId -> [{ from, text, ts }]
+let pendingCallBackFrom = null;
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]));
+}
 
 // --- Persistent client id so blocks survive reconnects in this browser ---
 function getClientId() {
@@ -341,18 +383,20 @@ appSettingsBtn.addEventListener('click', openAppSettings);
 closeAppSettingsBtn.addEventListener('click', closeAppSettings);
 appSettingsOverlay.addEventListener('click', closeAppSettings);
 
-// --- Add Friend (stored locally in this browser only) ---
+// --- Add Friend: sends a real friend request to the current call partner.
+// Works the same whether the partner is a temporary (guest) user or signed in —
+// friendship is keyed by their persistent clientId either way. ---
 addFriendBtn.addEventListener('click', () => {
-  if (!currentPartner) return;
-  const friends = JSON.parse(localStorage.getItem('talklive_friends') || '[]');
-  if (!friends.some((f) => f.username === currentPartner.username)) {
-    friends.push({ username: currentPartner.username, countryCode: currentPartner.countryCode });
-    localStorage.setItem('talklive_friends', JSON.stringify(friends));
-  }
+  if (!currentPartner || !currentPartner.clientId) return;
+  socket.emit('friend-request', { targetClientId: currentPartner.clientId });
   addFriendBtn.classList.add('added');
   setTimeout(() => {
     addFriendBtn.classList.remove('added');
   }, 1500);
+});
+
+socket.on('friend-request-result', ({ ok, error }) => {
+  if (!ok && error) showError(error);
 });
 
 function openModal(modal) {
@@ -371,7 +415,7 @@ openTermsLink.addEventListener('click', () => openModal(termsModal));
 openTermsLinkFooter.addEventListener('click', () => openModal(termsModal));
 closeTermsBtn.addEventListener('click', () => closeModal(termsModal));
 
-[settingsModal, termsModal, accountModal, historyModal].forEach((modal) => {
+[settingsModal, termsModal, accountModal, historyModal, friendsModal, notifModal, friendChatModal].forEach((modal) => {
   modal.addEventListener('click', (e) => {
     if (e.target === modal) closeModal(modal);
   });
@@ -383,6 +427,9 @@ document.addEventListener('keydown', (e) => {
     closeModal(termsModal);
     closeModal(accountModal);
     closeModal(historyModal);
+    closeModal(friendsModal);
+    closeModal(notifModal);
+    closeModal(friendChatModal);
     closeAppSettings();
   }
 });
@@ -490,6 +537,297 @@ socket.on('change-password-result', ({ ok, error }) => {
   showAccountStatus('Password changed.', 'success');
 });
 
+// --- Friends ---
+friendsBtn.addEventListener('click', () => openModal(friendsModal));
+closeFriendsBtn.addEventListener('click', () => closeModal(friendsModal));
+
+friendsTabs.forEach((tab) => {
+  tab.addEventListener('click', () => {
+    friendsTabs.forEach((t) => t.classList.remove('selected'));
+    tab.classList.add('selected');
+    friendsListPanel.classList.toggle('hidden', tab.dataset.tab !== 'list');
+    friendRequestsPanel.classList.toggle('hidden', tab.dataset.tab !== 'requests');
+  });
+});
+
+function friendBadge(temporary) {
+  return `<span class="friend-badge ${temporary ? 'temp' : 'account'}">${temporary ? 'Temporary' : 'Signed in'}</span>`;
+}
+
+function renderFriendsList() {
+  if (friendsData.length === 0) {
+    friendsList.innerHTML = '<p class="history-empty">No friends yet. Tap "Add friend" during a call to send a request.</p>';
+    return;
+  }
+  friendsList.innerHTML = '';
+  friendsData.forEach((f) => {
+    const item = document.createElement('div');
+    item.className = 'friend-item';
+    item.innerHTML = `
+      <div class="friend-item-info">
+        <span class="friend-online-dot ${f.online ? 'online' : ''}" title="${f.online ? 'Online' : 'Offline'}"></span>
+        <span class="friend-item-name">${getFlagImg(f.countryCode)} ${escapeHtml(f.username)}</span>
+        ${friendBadge(f.temporary)}
+      </div>
+      <div class="friend-item-actions">
+        <button type="button" class="btn-chip friend-chat-btn" data-id="${f.clientId}" title="Chat">💬 Chat</button>
+        <button type="button" class="btn-chip friend-block-btn" data-id="${f.clientId}" title="Block">🚫 Block</button>
+        <button type="button" class="btn-chip friend-remove-btn" data-id="${f.clientId}" title="Remove">✕ Remove</button>
+      </div>
+    `;
+    friendsList.appendChild(item);
+  });
+}
+
+function renderFriendRequests() {
+  friendReqCount.textContent = friendRequestsData.length;
+  friendReqCount.classList.toggle('hidden', friendRequestsData.length === 0);
+
+  if (friendRequestsData.length === 0) {
+    friendRequestsList.innerHTML = '<p class="history-empty">No pending requests.</p>';
+    return;
+  }
+  friendRequestsList.innerHTML = '';
+  friendRequestsData.forEach((r) => {
+    const item = document.createElement('div');
+    item.className = 'friend-item';
+    item.innerHTML = `
+      <div class="friend-item-info">
+        <span class="friend-item-name">${getFlagImg(r.countryCode)} ${escapeHtml(r.username)}</span>
+        ${friendBadge(r.temporary)}
+      </div>
+      <div class="friend-item-actions">
+        <button type="button" class="btn-chip btn-chip-accept friend-confirm-btn" data-id="${r.clientId}">✓ Confirm</button>
+        <button type="button" class="btn-chip friend-dismiss-btn" data-id="${r.clientId}">✕ Dismiss</button>
+      </div>
+    `;
+    friendRequestsList.appendChild(item);
+  });
+}
+
+friendsList.addEventListener('click', (e) => {
+  const chatBtn = e.target.closest('.friend-chat-btn');
+  const blockBtn = e.target.closest('.friend-block-btn');
+  const removeBtn = e.target.closest('.friend-remove-btn');
+  if (chatBtn) {
+    openFriendChat(chatBtn.dataset.id);
+  } else if (blockBtn) {
+    if (!confirm('Block this friend? They will be removed and you will not be matched with them again.')) return;
+    socket.emit('block-friend', { friendClientId: blockBtn.dataset.id });
+  } else if (removeBtn) {
+    if (!confirm('Remove this friend?')) return;
+    socket.emit('remove-friend', { friendClientId: removeBtn.dataset.id });
+  }
+});
+
+friendRequestsList.addEventListener('click', (e) => {
+  const confirmBtn = e.target.closest('.friend-confirm-btn');
+  const dismissBtn = e.target.closest('.friend-dismiss-btn');
+  if (confirmBtn) {
+    socket.emit('friend-request-respond', { fromClientId: confirmBtn.dataset.id, accept: true });
+  } else if (dismissBtn) {
+    socket.emit('friend-request-respond', { fromClientId: dismissBtn.dataset.id, accept: false });
+  }
+});
+
+socket.on('state-sync', ({ friends: friendList, friendRequests: requestList, notifications: notifList } = {}) => {
+  friendsData = friendList || [];
+  friendRequestsData = requestList || [];
+  notifData = notifList || [];
+  renderFriendsList();
+  renderFriendRequests();
+  renderNotifications();
+});
+
+// --- Notifications bell ---
+notifBtn.addEventListener('click', () => openModal(notifModal));
+closeNotifBtn.addEventListener('click', () => closeModal(notifModal));
+
+function notifIcon(type) {
+  switch (type) {
+    case 'friend_request': return '👤';
+    case 'friend_accepted': return '✅';
+    case 'message': return '💬';
+    case 'call_back_request': return '📞';
+    default: return '🔔';
+  }
+}
+
+function notifText(n) {
+  switch (n.type) {
+    case 'friend_request': return `${escapeHtml(n.username)} wants to be friends`;
+    case 'friend_accepted': return `${escapeHtml(n.username)} accepted your friend request`;
+    case 'message': return `${escapeHtml(n.username)}: ${escapeHtml(n.text.slice(0, 60))}`;
+    case 'call_back_request': return `${escapeHtml(n.username)} wants to call you back`;
+    default: return 'Notification';
+  }
+}
+
+function timeAgo(ts) {
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 60) return 'just now';
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
+function removeNotifLocal(id) {
+  notifData = notifData.filter((n) => n.id !== id);
+  renderNotifications();
+}
+
+function renderNotifications() {
+  notifBadge.textContent = notifData.length;
+  notifBadge.classList.toggle('hidden', notifData.length === 0);
+
+  if (notifData.length === 0) {
+    notifList.innerHTML = '<p class="history-empty">No notifications yet.</p>';
+    return;
+  }
+  notifList.innerHTML = '';
+  [...notifData].reverse().forEach((n) => {
+    const item = document.createElement('div');
+    item.className = 'notif-item';
+    let actions = '';
+    if (n.type === 'friend_request') {
+      actions = `
+        <button type="button" class="btn-chip btn-chip-accept notif-confirm-btn" data-id="${n.id}" data-from="${n.fromClientId}">✓ Confirm</button>
+        <button type="button" class="btn-chip notif-dismiss-btn" data-id="${n.id}" data-from="${n.fromClientId}">✕ Dismiss</button>
+      `;
+    } else if (n.type === 'call_back_request') {
+      actions = `
+        <button type="button" class="btn-chip btn-chip-accept notif-callback-accept-btn" data-id="${n.id}" data-from="${n.fromClientId}">📞 Call back</button>
+        <button type="button" class="btn-chip notif-callback-decline-btn" data-id="${n.id}" data-from="${n.fromClientId}">✕ Dismiss</button>
+      `;
+    } else {
+      actions = `<button type="button" class="btn-chip notif-clear-btn" data-id="${n.id}">✕ Dismiss</button>`;
+    }
+    item.innerHTML = `
+      <div class="notif-item-icon">${notifIcon(n.type)}</div>
+      <div class="notif-item-body">
+        <div class="notif-item-text">${notifText(n)}</div>
+        <div class="notif-item-time">${timeAgo(n.ts)}</div>
+        <div class="notif-item-actions">${actions}</div>
+      </div>
+    `;
+    if (n.type === 'message') {
+      item.classList.add('notif-clickable');
+      item.addEventListener('click', (e) => {
+        if (e.target.closest('button')) return;
+        openFriendChat(n.fromClientId);
+      });
+    }
+    notifList.appendChild(item);
+  });
+}
+
+notifList.addEventListener('click', (e) => {
+  const confirmBtn = e.target.closest('.notif-confirm-btn');
+  const dismissBtn = e.target.closest('.notif-dismiss-btn');
+  const clearBtn = e.target.closest('.notif-clear-btn');
+  const cbAccept = e.target.closest('.notif-callback-accept-btn');
+  const cbDecline = e.target.closest('.notif-callback-decline-btn');
+
+  if (confirmBtn) {
+    socket.emit('friend-request-respond', { fromClientId: confirmBtn.dataset.from, accept: true, notificationId: confirmBtn.dataset.id });
+    removeNotifLocal(confirmBtn.dataset.id);
+  } else if (dismissBtn) {
+    socket.emit('friend-request-respond', { fromClientId: dismissBtn.dataset.from, accept: false, notificationId: dismissBtn.dataset.id });
+    removeNotifLocal(dismissBtn.dataset.id);
+  } else if (clearBtn) {
+    socket.emit('clear-notification', { notificationId: clearBtn.dataset.id });
+    removeNotifLocal(clearBtn.dataset.id);
+  } else if (cbAccept) {
+    closeModal(notifModal);
+    acceptCallBack(cbAccept.dataset.from);
+    removeNotifLocal(cbAccept.dataset.id);
+  } else if (cbDecline) {
+    socket.emit('call-back-respond', { fromClientId: cbDecline.dataset.from, accept: false });
+    removeNotifLocal(cbDecline.dataset.id);
+  }
+});
+
+socket.on('notification', (n) => {
+  notifData.push(n);
+  renderNotifications();
+  if (n.type === 'call_back_request') {
+    showCallBackBanner(n.fromClientId, n.username);
+  }
+});
+
+// --- Friend-to-friend chat ---
+function renderFriendChatMessages() {
+  const messages = friendChatCache.get(activeFriendChatId) || [];
+  friendChatMessages.innerHTML = '';
+  if (messages.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'history-empty';
+    empty.textContent = 'No messages yet. Say hi!';
+    friendChatMessages.appendChild(empty);
+    return;
+  }
+  messages.forEach((m) => {
+    const el = document.createElement('div');
+    el.className = `chat-msg ${m.from === getClientId() ? 'me' : 'them'}`;
+    el.textContent = m.text;
+    friendChatMessages.appendChild(el);
+  });
+  friendChatMessages.scrollTop = friendChatMessages.scrollHeight;
+}
+
+function openFriendChat(friendClientId) {
+  activeFriendChatId = friendClientId;
+  const friend = friendsData.find((f) => f.clientId === friendClientId);
+  friendChatTitle.textContent = friend ? `Chat with ${friend.username}` : 'Chat';
+  closeModal(notifModal);
+  closeModal(friendsModal);
+  openModal(friendChatModal);
+
+  socket.emit('get-friend-chat', { friendClientId });
+  socket.emit('mark-messages-read', { friendClientId });
+  notifData = notifData.filter((n) => !(n.type === 'message' && n.fromClientId === friendClientId));
+  renderNotifications();
+  renderFriendChatMessages();
+  friendChatInput.focus();
+}
+
+closeFriendChatBtn.addEventListener('click', () => {
+  closeModal(friendChatModal);
+  activeFriendChatId = null;
+});
+
+friendChatForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const text = friendChatInput.value.trim();
+  if (!text || !activeFriendChatId) return;
+  socket.emit('friend-message', { toClientId: activeFriendChatId, text });
+  friendChatInput.value = '';
+});
+
+socket.on('friend-message', ({ fromClientId, text, ts }) => {
+  const cache = friendChatCache.get(fromClientId) || [];
+  cache.push({ from: fromClientId, text, ts });
+  friendChatCache.set(fromClientId, cache);
+  if (activeFriendChatId === fromClientId && !friendChatModal.classList.contains('hidden')) {
+    renderFriendChatMessages();
+    socket.emit('mark-messages-read', { friendClientId: fromClientId });
+  }
+});
+
+socket.on('friend-message-sent', ({ toClientId, text, ts }) => {
+  const cache = friendChatCache.get(toClientId) || [];
+  cache.push({ from: getClientId(), text, ts });
+  friendChatCache.set(toClientId, cache);
+  if (activeFriendChatId === toClientId) renderFriendChatMessages();
+});
+
+socket.on('friend-chat-history', ({ friendClientId, messages }) => {
+  friendChatCache.set(friendClientId, messages || []);
+  if (activeFriendChatId === friendClientId) renderFriendChatMessages();
+});
+
 // --- Call history (session-only, cleared on reload) ---
 function renderHistory() {
   if (callHistory.length === 0) {
@@ -502,9 +840,17 @@ function renderHistory() {
     item.className = 'history-item';
     const mins = Math.floor(entry.durationSeconds / 60);
     const secs = entry.durationSeconds % 60;
+    const callBackBtn = entry.clientId
+      ? `<button type="button" class="call-back-btn" data-id="${entry.clientId}" data-name="${escapeHtml(entry.username)}" title="Call ${escapeHtml(entry.username)} back" aria-label="Call back">
+          <svg viewBox="0 0 24 24" fill="white" aria-hidden="true"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+        </button>`
+      : '';
     item.innerHTML = `
-      <span class="history-item-name">${getFlagImg(entry.countryCode)} ${entry.username}</span>
-      <span class="history-item-duration">${mins}:${secs.toString().padStart(2, '0')}</span>
+      <span class="history-item-name">${getFlagImg(entry.countryCode)} ${escapeHtml(entry.username)}</span>
+      <span class="history-item-right">
+        <span class="history-item-duration">${mins}:${secs.toString().padStart(2, '0')}</span>
+        ${callBackBtn}
+      </span>
     `;
     historyList.appendChild(item);
   });
@@ -517,6 +863,7 @@ function recordCallHistory() {
   callHistory.push({
     username: currentPartner.username,
     countryCode: currentPartner.countryCode,
+    clientId: currentPartner.clientId,
     durationSeconds,
   });
   renderHistory();
@@ -527,6 +874,13 @@ historyBtn.addEventListener('click', () => {
   openModal(historyModal);
 });
 closeHistoryBtn.addEventListener('click', () => closeModal(historyModal));
+
+historyList.addEventListener('click', (e) => {
+  const btn = e.target.closest('.call-back-btn');
+  if (!btn || !btn.dataset.id) return;
+  closeModal(historyModal);
+  requestCallBack(btn.dataset.id, btn.dataset.name);
+});
 
 socket.emit('register', { clientId: getClientId(), nickname: accountNickname || undefined });
 renderAccountState();
@@ -857,6 +1211,32 @@ function resetUI() {
   quickGuide.classList.remove('hidden');
 }
 
+function registerProfile() {
+  socket.emit('register', {
+    clientId: getClientId(),
+    gender: genderGroup.dataset.value,
+    prefGender: prefGenderGroup.dataset.value,
+    language: languageGroup.dataset.value,
+    prefLanguage: prefLanguageGroup.dataset.value,
+    prefCountry: selectedCountry,
+    interests: Array.from(selectedInterests),
+    nickname: accountNickname || undefined,
+  });
+}
+
+function enterCallUI() {
+  setupPanel.classList.add('hidden');
+  callPanel.classList.remove('hidden');
+  skipBtn.classList.remove('hidden');
+  muteBtn.classList.remove('hidden');
+  chatToggleBtn.classList.remove('hidden');
+  reportBtn.classList.remove('hidden');
+  addFriendBtn.classList.remove('hidden');
+  primaryControls.classList.remove('hidden');
+  autoCallRow.classList.remove('hidden');
+  quickGuide.classList.add('hidden');
+}
+
 async function begin() {
   if (startBtn.disabled) return;
   startBtn.disabled = true;
@@ -877,33 +1257,14 @@ async function begin() {
     return;
   }
 
-  socket.emit('register', {
-    clientId: getClientId(),
-    gender: genderGroup.dataset.value,
-    prefGender: prefGenderGroup.dataset.value,
-    language: languageGroup.dataset.value,
-    prefLanguage: prefLanguageGroup.dataset.value,
-    prefCountry: selectedCountry,
-    interests: Array.from(selectedInterests),
-    nickname: accountNickname || undefined,
-  });
+  registerProfile();
 
   isSearching = true;
-  setupPanel.classList.add('hidden');
-  callPanel.classList.remove('hidden');
+  enterCallUI();
   setState('waiting');
   setConnection('orange', 'Searching');
   statusText.textContent = 'Looking for someone to talk to…';
   subText.textContent = 'Hang tight, this only takes a moment';
-
-  skipBtn.classList.remove('hidden');
-  muteBtn.classList.remove('hidden');
-  chatToggleBtn.classList.remove('hidden');
-  reportBtn.classList.remove('hidden');
-  addFriendBtn.classList.remove('hidden');
-  primaryControls.classList.remove('hidden');
-  autoCallRow.classList.remove('hidden');
-  quickGuide.classList.add('hidden');
 
   socket.emit('find-partner');
 }
@@ -1027,7 +1388,7 @@ socket.on('waiting', ({ estimatedSeconds } = {}) => {
     : 'Hang tight, this only takes a moment';
 });
 
-socket.on('matched', async ({ initiator, partner, rematched }) => {
+socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
   // Never let a mute from a previous call silently carry into a new one.
   if (isMuted) {
     isMuted = false;
@@ -1039,14 +1400,13 @@ socket.on('matched', async ({ initiator, partner, rematched }) => {
 
   setState('connected');
   setConnection('orange', 'Connecting');
-  statusText.textContent = `Connecting to someone in ${partner.country}…`;
+  statusText.textContent = callback ? `Calling ${partner.username} back…` : `Connecting to someone in ${partner.country}…`;
   subText.textContent = rematched ? "You both liked your last chat — you're reconnected!" : '';
 
   currentPartner = partner;
   partnerName.textContent = partner.username;
-  const genderLabel = partner.gender && partner.gender !== 'unspecified'
-    ? ` · ${partner.gender[0].toUpperCase()}${partner.gender.slice(1)}`
-    : '';
+  const rawGender = partner.gender && partner.gender !== 'unspecified' ? partner.gender : '';
+  const genderLabel = rawGender ? ` · ${escapeHtml(rawGender[0].toUpperCase() + rawGender.slice(1))}` : '';
   partnerMeta.innerHTML = `${getFlagImg(partner.countryCode)}${genderLabel}`;
 
   partnerInterests.innerHTML = '';
@@ -1085,6 +1445,108 @@ socket.on('banned', () => {
     localStream = null;
   }
   resetUI();
+});
+
+// --- Call back: re-connect directly with someone from Call History ---
+function showCallBackBanner(fromClientId, username) {
+  pendingCallBackFrom = fromClientId;
+  callBackBannerText.textContent = `📞 ${username} wants to call you back`;
+  callBackBanner.classList.remove('hidden');
+}
+
+function hideCallBackBanner() {
+  callBackBanner.classList.add('hidden');
+  pendingCallBackFrom = null;
+}
+
+async function requestCallBack(targetClientId, targetUsername) {
+  if (isSearching) {
+    showError('Hang up or finish your current call before calling someone back.');
+    return;
+  }
+  clearError();
+  try {
+    await getMic();
+  } catch (e) {
+    showError('Microphone access is required to call back.');
+    return;
+  }
+
+  registerProfile();
+  isSearching = true;
+  enterCallUI();
+  setState('waiting');
+  setConnection('orange', 'Calling');
+  statusText.textContent = `Calling ${targetUsername}…`;
+  subText.textContent = 'Waiting for them to accept…';
+
+  socket.emit('call-back-request', { targetClientId });
+}
+
+async function acceptCallBack(fromClientId) {
+  if (isSearching) {
+    socket.emit('call-back-respond', { fromClientId, accept: false });
+    showError('Finish your current call before accepting a call back.');
+    return;
+  }
+  clearError();
+  try {
+    await getMic();
+  } catch (e) {
+    socket.emit('call-back-respond', { fromClientId, accept: false });
+    showError('Microphone access is required to accept the call.');
+    return;
+  }
+
+  registerProfile();
+  isSearching = true;
+  enterCallUI();
+  setState('waiting');
+  setConnection('orange', 'Connecting');
+  statusText.textContent = 'Connecting…';
+  subText.textContent = '';
+
+  socket.emit('call-back-respond', { fromClientId, accept: true });
+}
+
+function abandonCallBack() {
+  isSearching = false;
+  if (localStream) {
+    localStream.getTracks().forEach((t) => t.stop());
+    localStream = null;
+  }
+  resetUI();
+}
+
+callBackAcceptBtn.addEventListener('click', () => {
+  if (!pendingCallBackFrom) return;
+  const fromClientId = pendingCallBackFrom;
+  hideCallBackBanner();
+  acceptCallBack(fromClientId);
+});
+
+callBackDeclineBtn.addEventListener('click', () => {
+  if (!pendingCallBackFrom) return;
+  socket.emit('call-back-respond', { fromClientId: pendingCallBackFrom, accept: false });
+  hideCallBackBanner();
+});
+
+socket.on('call-back-request', ({ fromClientId, username }) => {
+  showCallBackBanner(fromClientId, username);
+});
+
+socket.on('call-back-request-result', ({ ok, reason }) => {
+  if (ok) return;
+  abandonCallBack();
+  if (reason === 'offline') showError("That person isn't online right now. Try again later.");
+  else if (reason === 'busy') showError('That person is currently on another call.');
+  else if (reason === 'blocked') showError('You can no longer contact this person.');
+  else showError('Could not start the call back.');
+});
+
+socket.on('call-back-declined', ({ username }) => {
+  abandonCallBack();
+  showError(`${username} declined the call back.`);
 });
 
 socket.on('signal', (data) => {
