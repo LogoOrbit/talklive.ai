@@ -359,9 +359,19 @@ html, body {
   position: relative;
 }
 
+.btn-icon-lg {
+  width: 64px;
+  height: 64px;
+}
+
 .simple-icon {
   width: 22px;
   height: 22px;
+}
+
+.simple-icon-lg {
+  width: 32px;
+  height: 32px;
 }
 
 .simple-icon-text {
@@ -371,9 +381,33 @@ html, body {
   color: white;
 }
 
+.simple-icon-emoji {
+  font-size: 30px;
+  line-height: 1;
+}
+
 .btn-icon-danger {
   background: rgba(255, 84, 112, 0.15);
   color: var(--danger);
+}
+
+/* Mic: grey icon, red diagonal slash overlay when muted */
+.mute-slash {
+  position: absolute;
+  width: 3px;
+  height: 40px;
+  background: var(--danger);
+  border-radius: 2px;
+  transform: rotate(45deg);
+  box-shadow: 0 0 4px rgba(255, 84, 112, 0.8);
+}
+
+.mute-slash.hidden {
+  display: none;
+}
+
+.btn-icon.added {
+  background: rgba(46, 212, 122, 0.25) !important;
 }
 
 .btn-icon.muted {
@@ -512,8 +546,13 @@ html, body {
   }
 
   .btn-icon {
-    width: 46px;
-    height: 46px;
+    width: 50px;
+    height: 50px;
+  }
+
+  .btn-icon-lg {
+    width: 58px;
+    height: 58px;
   }
 
   .my-profile {
