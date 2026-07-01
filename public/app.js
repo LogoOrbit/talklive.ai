@@ -72,7 +72,6 @@ const reactionBar = document.getElementById('reactionBar');
 const reactionOverlay = document.getElementById('reactionOverlay');
 
 const chatBadge = document.getElementById('chatBadge');
-const chatTypingBadge = document.getElementById('chatTypingBadge');
 const typingIndicator = document.getElementById('typingIndicator');
 const quickGuide = document.getElementById('quickGuide');
 const callGuide = document.getElementById('callGuide');
@@ -1226,7 +1225,6 @@ function addChatMessage(text, kind) {
 function clearChat() {
   chatMessages.innerHTML = '';
   typingIndicator.classList.add('hidden');
-  chatTypingBadge.classList.add('hidden');
 }
 
 async function getMic() {
@@ -1384,6 +1382,7 @@ function teardownPeer() {
   clearConnectWatchdog();
   clearInterval(speakingCheckInterval);
   orb.classList.remove('speaking');
+  orb.classList.remove('muted-remote');
   orbRings.forEach((ring) => {
     ring.style.transform = '';
     ring.style.opacity = '';
@@ -1559,6 +1558,7 @@ muteBtn.addEventListener('click', () => {
   localStream.getAudioTracks().forEach((t) => (t.enabled = !isMuted));
   muteBtn.classList.toggle('muted', isMuted);
   muteSlash.classList.toggle('hidden', !isMuted);
+  orb.classList.toggle('muted-self', isMuted);
   socket.emit('mic-state', isMuted);
 });
 
@@ -1568,7 +1568,6 @@ chatToggleBtn.addEventListener('click', () => {
   if (chatOpen) {
     chatInput.focus();
     chatBadge.classList.add('hidden');
-    chatTypingBadge.classList.add('hidden');
   }
 });
 
@@ -1594,11 +1593,9 @@ chatInput.addEventListener('input', () => {
 let typingHideTimeout = null;
 socket.on('typing', () => {
   typingIndicator.classList.remove('hidden');
-  if (!chatOpen) chatTypingBadge.classList.remove('hidden');
   clearTimeout(typingHideTimeout);
   typingHideTimeout = setTimeout(() => {
     typingIndicator.classList.add('hidden');
-    chatTypingBadge.classList.add('hidden');
   }, 3000);
 });
 
@@ -1629,6 +1626,7 @@ socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
     if (localStream) localStream.getAudioTracks().forEach((t) => (t.enabled = true));
     muteBtn.classList.remove('muted');
     muteSlash.classList.add('hidden');
+    orb.classList.remove('muted-self');
     socket.emit('mic-state', false);
   }
 
@@ -1812,6 +1810,7 @@ socket.on('partner-left', () => {
 });
 
 socket.on('partner-mic-state', (muted) => {
+  orb.classList.toggle('muted-remote', muted);
   if (muted) {
     setSubText('Stranger muted their mic');
   } else {
