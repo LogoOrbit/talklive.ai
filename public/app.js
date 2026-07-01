@@ -1357,6 +1357,12 @@ function resetUI() {
   primaryControls.classList.add('hidden');
   autoCallRow.classList.add('hidden');
   quickGuide.classList.remove('hidden');
+  appSettingsBtn.classList.add('hidden');
+  historyBtn.classList.add('hidden');
+  friendsBtn.classList.add('hidden');
+  notifBtn.classList.add('hidden');
+  accountBtn.classList.add('hidden');
+  filtersBtn.classList.add('hidden');
 }
 
 function registerProfile() {
@@ -1382,6 +1388,12 @@ function enterCallUI() {
   primaryControls.classList.remove('hidden');
   autoCallRow.classList.remove('hidden');
   quickGuide.classList.add('hidden');
+  appSettingsBtn.classList.remove('hidden');
+  historyBtn.classList.remove('hidden');
+  friendsBtn.classList.remove('hidden');
+  notifBtn.classList.remove('hidden');
+  accountBtn.classList.remove('hidden');
+  filtersBtn.classList.remove('hidden');
 }
 
 async function begin() {
