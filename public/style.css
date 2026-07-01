@@ -68,6 +68,11 @@ html, body {
   gap: 12px;
 }
 
+/* Forces a flex line break on mobile only (see @media block below); invisible and inert on desktop. */
+.topbar-break {
+  display: none;
+}
+
 /* App settings side panel */
 .side-panel-overlay {
   position: fixed;
@@ -599,16 +604,30 @@ html, body {
 @media (max-width: 600px) {
   .topbar {
     padding: 12px 14px;
-    gap: 8px 0;
+    row-gap: 10px;
+    column-gap: 8px;
+    justify-content: center;
   }
 
+  /* Flatten the left/right wrapper groups so every topbar item becomes a
+     direct flex item of .topbar — lets us re-order and force a line break
+     with a single flex layout instead of two independently-wrapping rows. */
+  .topbar-left,
   .header-right {
-    width: 100%;
-    justify-content: flex-end;
-    flex-wrap: wrap;
-    row-gap: 8px;
-    gap: 8px;
+    display: contents;
   }
+
+  #appSettingsBtn { order: 1; }
+  .brand { order: 2; }
+  .online { order: 3; }
+  /* margin-left: auto soaks up the rest of line 1's space, pinning the
+     filter button to the far right corner — mirroring the settings icon
+     pinned to the far left — while leaving line 2 free to be centered. */
+  #filtersBtn { order: 4; margin-left: auto; }
+  .topbar-break { display: block; order: 5; flex-basis: 100%; height: 0; }
+  #historyBtn { order: 6; }
+  #friendsBtn { order: 7; }
+  .notif-wrap { order: 8; }
 
   .icon-btn {
     width: 34px;
