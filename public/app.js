@@ -626,9 +626,9 @@ function createPeerConnection(isInitiator) {
     const state = peer.iceConnectionState;
     if (state !== 'connected' && state !== 'completed') {
       showError("Couldn't connect to that stranger — finding someone new…");
-      skipBtn.click();
+      performSkip();
     }
-  }, 15000);
+  }, 10000);
 
   peer.oniceconnectionstatechange = () => {
     const iceState = peer.iceConnectionState;
@@ -816,7 +816,7 @@ async function begin() {
 
 startBtn.addEventListener('click', begin);
 
-skipBtn.addEventListener('click', () => {
+function performSkip() {
   teardownPeer();
   clearChat();
   setState('waiting');
@@ -825,7 +825,9 @@ skipBtn.addEventListener('click', () => {
   subText.textContent = 'Hang tight, this only takes a moment';
   socket.emit('skip');
   setTimeout(() => setConnection('orange', 'Searching'), 600);
-});
+}
+
+skipBtn.addEventListener('click', performSkip);
 
 stopBtn.addEventListener('click', () => {
   socket.emit('leave');
