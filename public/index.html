@@ -9,15 +9,19 @@
 <body>
   <div class="app">
     <header class="topbar">
-      <div class="brand">
-        <span class="brand-dot"></span>
-        TalkLive
+      <div class="topbar-left">
+        <button id="appSettingsBtn" class="icon-btn" title="App settings" aria-label="Open app settings">☰</button>
+        <div class="brand">
+          <span class="brand-dot"></span>
+          TalkLive
+        </div>
       </div>
       <div class="header-right">
         <div class="online" title="People online now" aria-label="People online now">
           <span class="online-avatar">👥<span class="online-dot"></span></span>
           <span id="onlineCount">0</span>
         </div>
+        <button id="soundToggleBtn" class="icon-btn" title="Mute sound effects" aria-label="Mute sound effects">🔊</button>
         <button id="historyBtn" class="icon-btn" title="Call history" aria-label="Call history">🕑</button>
         <button id="friendsBtn" class="icon-btn" title="Friends" aria-label="Friends">👥</button>
         <button id="notifBtn" class="icon-btn notif-btn" title="Notifications" aria-label="Notifications">
@@ -33,6 +37,25 @@
         </button>
       </div>
     </header>
+
+    <!-- App settings side panel: basic app-level preferences, opened from the left menu icon -->
+    <div id="appSettingsOverlay" class="side-panel-overlay hidden"></div>
+    <aside id="appSettingsPanel" class="side-panel" aria-label="App settings">
+      <div class="side-panel-header">
+        <h2>Settings</h2>
+        <button type="button" id="closeAppSettingsBtn" class="modal-close">&times;</button>
+      </div>
+      <div class="side-panel-body">
+        <label class="checkbox-row" for="sfxSettingCheckbox">
+          <input type="checkbox" id="sfxSettingCheckbox" checked />
+          <span>Sound effects</span>
+        </label>
+        <label class="checkbox-row" for="sideAutoCallCheckbox">
+          <input type="checkbox" id="sideAutoCallCheckbox" checked />
+          <span>Auto call</span>
+        </label>
+      </div>
+    </aside>
 
     <main class="stage">
 
@@ -362,13 +385,6 @@
         <div id="partnerCard" class="partner-card hidden">
           <div class="partner-name" id="partnerName">—</div>
           <div class="partner-meta" id="partnerMeta">—</div>
-          <div id="audioMeter" class="audio-meter" aria-hidden="true">
-            <span class="audio-bar"></span>
-            <span class="audio-bar"></span>
-            <span class="audio-bar"></span>
-            <span class="audio-bar"></span>
-            <span class="audio-bar"></span>
-          </div>
           <div class="partner-interests" id="partnerInterests"></div>
           <div id="sharedInterestNote" class="shared-interest-note hidden"></div>
         </div>
@@ -402,7 +418,7 @@
 
         <label id="autoCallRow" class="checkbox-row auto-call-row hidden" for="autoCallCheckbox">
           <input type="checkbox" id="autoCallCheckbox" checked />
-          <span>Enable Auto Call <span class="hint">(automatically find someone new after a call ends)</span></span>
+          <span>Enable Auto Call</span>
         </label>
 
         <div class="controls secondary-controls">

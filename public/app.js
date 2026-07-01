@@ -68,7 +68,6 @@ const callTimerEl = document.getElementById('callTimer');
 const sharedInterestNote = document.getElementById('sharedInterestNote');
 const reactionBar = document.getElementById('reactionBar');
 const reactionOverlay = document.getElementById('reactionOverlay');
-const audioBars = document.querySelectorAll('#audioMeter .audio-bar');
 
 const chatBadge = document.getElementById('chatBadge');
 const chatTypingBadge = document.getElementById('chatTypingBadge');
@@ -133,6 +132,14 @@ const updateNicknameBtn = document.getElementById('updateNicknameBtn');
 const currentPasswordInput = document.getElementById('currentPasswordInput');
 const newPasswordInput = document.getElementById('newPasswordInput');
 const changePasswordBtn = document.getElementById('changePasswordBtn');
+
+const appSettingsBtn = document.getElementById('appSettingsBtn');
+const appSettingsPanel = document.getElementById('appSettingsPanel');
+const appSettingsOverlay = document.getElementById('appSettingsOverlay');
+const closeAppSettingsBtn = document.getElementById('closeAppSettingsBtn');
+const sfxSettingCheckbox = document.getElementById('sfxSettingCheckbox');
+const sideAutoCallCheckbox = document.getElementById('sideAutoCallCheckbox');
+const soundToggleBtn = document.getElementById('soundToggleBtn');
 
 const MIN_CALL_SECONDS_BEFORE_SKIP = 2;
 
@@ -298,10 +305,83 @@ initPillGroup(languageGroup);
 initPillGroup(prefLanguageGroup);
 
 autoCallCheckbox.checked = autoCallEnabled;
-autoCallCheckbox.addEventListener('change', () => {
-  autoCallEnabled = autoCallCheckbox.checked;
+sideAutoCallCheckbox.checked = autoCallEnabled;
+
+function setAutoCallEnabled(value) {
+  autoCallEnabled = value;
   localStorage.setItem('talklive_autocall', autoCallEnabled ? 'on' : 'off');
-});
+  autoCallCheckbox.checked = autoCallEnabled;
+  sideAutoCallCheckbox.checked = autoCallEnabled;
+}
+
+autoCallCheckbox.addEventListener('change', () => setAutoCallEnabled(autoCallCheckbox.checked));
+sideAutoCallCheckbox.addEventListener('change', () => setAutoCallEnabled(sideAutoCallCheckbox.checked));
+
+// --- Sound effects (small synthesized tones, no audio files needed) ---
+let soundEnabled = localStorage.getItem('talklive_sound') !== 'off';
+let sfxCtx = null;
+
+function getSfxCtx() {
+  if (!sfxCtx) sfxCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return sfxCtx;
+}
+
+function playTone(freq, duration, type, volume, delay = 0) {
+  if (!soundEnabled) return;
+  try {
+    const ctx = getSfxCtx();
+    const t0 = ctx.currentTime + delay;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(volume, t0);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(t0);
+    osc.stop(t0 + duration + 0.02);
+  } catch (e) {
+    // AudioContext may be unavailable; non-critical
+  }
+}
+
+function playTapSound() { playTone(520, 0.08, 'square', 0.12); }
+function playConnectSound() { playTone(660, 0.12, 'sine', 0.18); playTone(880, 0.15, 'sine', 0.18, 0.12); }
+function playHangupSound() { playTone(320, 0.2, 'sine', 0.18); playTone(220, 0.25, 'sine', 0.18, 0.15); }
+function playMessageSound() { playTone(950, 0.08, 'triangle', 0.15); }
+
+function updateSoundToggleUi() {
+  const label = soundEnabled ? 'Mute sound effects' : 'Unmute sound effects';
+  soundToggleBtn.textContent = soundEnabled ? '🔊' : '🔇';
+  soundToggleBtn.title = label;
+  soundToggleBtn.setAttribute('aria-label', label);
+  sfxSettingCheckbox.checked = soundEnabled;
+}
+
+function setSoundEnabled(value) {
+  soundEnabled = value;
+  localStorage.setItem('talklive_sound', soundEnabled ? 'on' : 'off');
+  updateSoundToggleUi();
+}
+
+soundToggleBtn.addEventListener('click', () => setSoundEnabled(!soundEnabled));
+sfxSettingCheckbox.addEventListener('change', () => setSoundEnabled(sfxSettingCheckbox.checked));
+updateSoundToggleUi();
+
+// --- App settings side panel ---
+function openAppSettings() {
+  appSettingsPanel.classList.add('open');
+  appSettingsOverlay.classList.remove('hidden');
+}
+
+function closeAppSettings() {
+  appSettingsPanel.classList.remove('open');
+  appSettingsOverlay.classList.add('hidden');
+}
+
+appSettingsBtn.addEventListener('click', openAppSettings);
+closeAppSettingsBtn.addEventListener('click', closeAppSettings);
+appSettingsOverlay.addEventListener('click', closeAppSettings);
 
 // --- Add Friend: sends a real friend request to the current call partner.
 // Works the same whether the partner is a temporary (guest) user or signed in —
@@ -350,6 +430,7 @@ document.addEventListener('keydown', (e) => {
     closeModal(friendsModal);
     closeModal(notifModal);
     closeModal(friendChatModal);
+    closeAppSettings();
   }
 });
 
@@ -828,6 +909,7 @@ function setConnection(color, label) {
     // Force reflow so the animation replays every time we (re)connect.
     void connectFlash.offsetWidth;
     connectFlash.classList.add('playing');
+    playConnectSound();
   }
   wasConnected = connected;
 }
@@ -1032,7 +1114,6 @@ function monitorRemoteAudio(stream) {
     source.connect(analyser);
     const data = new Uint8Array(analyser.frequencyBinCount);
 
-    const bucketSize = Math.floor(data.length / audioBars.length);
     speakingCheckInterval = setInterval(() => {
       analyser.getByteFrequencyData(data);
       const avg = data.reduce((a, b) => a + b, 0) / data.length;
@@ -1049,13 +1130,6 @@ function monitorRemoteAudio(stream) {
           : 'rgba(108, 92, 231, 0.35)';
       });
 
-      audioBars.forEach((bar, i) => {
-        const bucket = data.slice(i * bucketSize, (i + 1) * bucketSize);
-        const bucketAvg = bucket.reduce((a, b) => a + b, 0) / (bucket.length || 1);
-        const height = Math.max(4, Math.min(18, Math.round((bucketAvg / 255) * 18)));
-        bar.style.height = `${height}px`;
-        bar.style.opacity = bucketAvg > 8 ? '1' : '0.35';
-      });
     }, 100);
   } catch (e) {
     // AudioContext may be unavailable; non-critical
@@ -1201,6 +1275,7 @@ const ageAgreeBtn = document.getElementById('ageAgreeBtn');
 const CONSENT_KEY = 'talklive_age_consent';
 
 startBtn.addEventListener('click', () => {
+  playTapSound();
   if (localStorage.getItem(CONSENT_KEY) === 'yes') {
     begin();
   } else {
@@ -1230,6 +1305,7 @@ function performSkip() {
 skipBtn.addEventListener('click', performSkip);
 
 stopBtn.addEventListener('click', () => {
+  playHangupSound();
   socket.emit('leave');
   if (localStream) {
     localStream.getTracks().forEach((t) => t.stop());
@@ -1478,6 +1554,7 @@ socket.on('signal', (data) => {
 });
 
 socket.on('partner-left', () => {
+  playHangupSound();
   teardownPeer();
   clearChat();
   if (isSearching && autoCallEnabled) {
@@ -1504,6 +1581,7 @@ socket.on('partner-mic-state', (muted) => {
 
 socket.on('chat-message', ({ text }) => {
   addChatMessage(text, 'them');
+  playMessageSound();
   if (!chatOpen) {
     chatBadge.classList.remove('hidden');
   }
