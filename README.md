@@ -18,7 +18,7 @@ npm install
 npm start
 ```
 
-Then open http://localhost:3000 in two separate browser tabs/windows (or two devices) to be matched with each other.
+Then open http://localhost:5000 in two separate browser tabs/windows (or two devices) to be matched with each other.
 
 ## How it works
 
