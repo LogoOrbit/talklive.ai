@@ -33,10 +33,14 @@ const interestInput = document.getElementById('interestInput');
 const autoCallCheckbox = document.getElementById('autoCallCheckbox');
 const connectFlash = document.getElementById('connectFlash');
 
-const countryAnyPill = document.getElementById('countryAnyPill');
-const countrySearch = document.getElementById('countrySearch');
-const countryResults = document.getElementById('countryResults');
-const countrySelectedPill = document.getElementById('countrySelectedPill');
+const includeCountrySearch = document.getElementById('includeCountrySearch');
+const includeCountryResults = document.getElementById('includeCountryResults');
+const includeCountryChips = document.getElementById('includeCountryChips');
+const excludeCountrySearch = document.getElementById('excludeCountrySearch');
+const excludeCountryResults = document.getElementById('excludeCountryResults');
+const excludeCountryChips = document.getElementById('excludeCountryChips');
+const saveFiltersBtn = document.getElementById('saveFiltersBtn');
+const clearFiltersBtn = document.getElementById('clearFiltersBtn');
 
 const partnerCard = document.getElementById('partnerCard');
 const partnerName = document.getElementById('partnerName');
@@ -164,7 +168,8 @@ const ICE_SERVERS = [
 ];
 
 const selectedInterests = new Set();
-let selectedCountry = 'any';
+const includeCountries = new Set(); // draft "Interested Countries" — only match these, if any chosen
+const excludeCountries = new Set(); // draft "Non Interested Countries" — never match these
 
 let localStream = null;
 let pc = null;
@@ -221,58 +226,88 @@ function initPillGroup(group) {
   if (first) first.classList.add('selected');
 }
 
-// --- Country search/select ---
-function selectCountry(code, name) {
-  selectedCountry = code;
-  countryAnyPill.classList.toggle('selected', code === 'any');
-  if (code === 'any') {
-    countrySelectedPill.classList.add('hidden');
-    countrySearch.value = '';
-  } else {
-    countrySelectedPill.innerHTML = `${getFlagImg(code)} ${escapeHtml(name)}`;
-    countrySelectedPill.classList.remove('hidden');
-    countrySearch.value = '';
-  }
-  countryResults.classList.add('hidden');
+function setPillGroupValue(group, value) {
+  group.dataset.value = value;
+  group.querySelectorAll('.pill').forEach((p) => p.classList.toggle('selected', p.dataset.value === value));
 }
 
-function renderCountryResults(query) {
-  const q = query.trim().toLowerCase();
-  countryResults.innerHTML = '';
-  if (!q) {
-    countryResults.classList.add('hidden');
-    return;
-  }
-  const matches = Object.entries(COUNTRIES)
-    .filter(([, name]) => name.toLowerCase().includes(q))
-    .sort((a, b) => a[1].localeCompare(b[1]))
-    .slice(0, 8);
+// --- Country multi-select (Interested / Non Interested Countries) ---
+// Clicking the search box shows every country alphabetically with a flag icon;
+// typing narrows the list. A country can only live in one of the two lists at
+// a time, so adding it to one removes it from the other.
+const ALL_COUNTRY_ENTRIES = Object.entries(COUNTRIES).sort((a, b) => a[1].localeCompare(b[1]));
 
-  if (matches.length === 0) {
-    const empty = document.createElement('div');
-    empty.className = 'search-result-empty';
-    empty.textContent = 'No matching country';
-    countryResults.appendChild(empty);
-  } else {
-    matches.forEach(([code, name]) => {
-      const item = document.createElement('div');
-      item.className = 'search-result-item';
-      item.innerHTML = `${getFlagImg(code)} ${escapeHtml(name)}`;
-      item.addEventListener('click', () => selectCountry(code, name));
-      countryResults.appendChild(item);
-    });
+function makeCountryMultiSelect(searchInput, resultsEl, chipsEl, set, getOther) {
+  function renderChips() {
+    chipsEl.innerHTML = '';
+    Array.from(set)
+      .sort((a, b) => (COUNTRIES[a] || a).localeCompare(COUNTRIES[b] || b))
+      .forEach((code) => {
+        const chip = document.createElement('span');
+        chip.className = 'tag removable';
+        chip.innerHTML = `${getFlagImg(code, 16)} ${escapeHtml(COUNTRIES[code] || code)}<span class="tag-remove">&times;</span>`;
+        chip.querySelector('.tag-remove').addEventListener('click', () => {
+          set.delete(code);
+          renderChips();
+        });
+        chipsEl.appendChild(chip);
+      });
   }
-  countryResults.classList.remove('hidden');
+
+  function renderResults(query) {
+    const q = query.trim().toLowerCase();
+    resultsEl.innerHTML = '';
+    const matches = q ? ALL_COUNTRY_ENTRIES.filter(([, name]) => name.toLowerCase().includes(q)) : ALL_COUNTRY_ENTRIES;
+
+    if (matches.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'search-result-empty';
+      empty.textContent = 'No matching country';
+      resultsEl.appendChild(empty);
+    } else {
+      matches.forEach(([code, name]) => {
+        const item = document.createElement('div');
+        item.className = `search-result-item${set.has(code) ? ' selected' : ''}`;
+        item.innerHTML = `${set.has(code) ? '✓ ' : ''}${getFlagImg(code)} ${escapeHtml(name)}`;
+        item.addEventListener('click', () => {
+          if (set.has(code)) {
+            set.delete(code);
+          } else {
+            set.add(code);
+            const other = getOther();
+            if (other.set.delete(code)) other.renderChips();
+          }
+          renderChips();
+          renderResults(searchInput.value);
+        });
+        resultsEl.appendChild(item);
+      });
+    }
+    resultsEl.classList.remove('hidden');
+  }
+
+  searchInput.addEventListener('input', () => renderResults(searchInput.value));
+  searchInput.addEventListener('focus', () => renderResults(searchInput.value));
+  renderChips();
+
+  return { renderChips, renderResults, set };
 }
 
-countrySearch.addEventListener('input', () => renderCountryResults(countrySearch.value));
-countrySearch.addEventListener('focus', () => renderCountryResults(countrySearch.value));
+const includeCountryWidget = makeCountryMultiSelect(
+  includeCountrySearch, includeCountryResults, includeCountryChips, includeCountries,
+  () => excludeCountryWidget
+);
+const excludeCountryWidget = makeCountryMultiSelect(
+  excludeCountrySearch, excludeCountryResults, excludeCountryChips, excludeCountries,
+  () => includeCountryWidget
+);
+
 document.addEventListener('click', (e) => {
   if (!e.target.closest('.country-search-wrap')) {
-    countryResults.classList.add('hidden');
+    includeCountryResults.classList.add('hidden');
+    excludeCountryResults.classList.add('hidden');
   }
 });
-countryAnyPill.addEventListener('click', () => selectCountry('any', 'Any'));
 
 // --- Custom interest tags (free text, no suggestions) ---
 function renderInterestTags() {
@@ -392,6 +427,60 @@ function closeFilters() {
 filtersBtn.addEventListener('click', openFilters);
 closeFiltersBtn.addEventListener('click', closeFilters);
 filtersOverlay.addEventListener('click', closeFilters);
+
+// --- Applied filters: the panel's controls are a draft; matching only uses
+// what was last saved here (persisted so a Save survives a reload). ---
+const FILTERS_STORAGE_KEY = 'talklive_filters';
+let appliedFilters = { prefGender: 'any', prefLanguage: 'any', includeCountries: [], excludeCountries: [], interests: [] };
+
+(function loadAppliedFilters() {
+  try {
+    const raw = localStorage.getItem(FILTERS_STORAGE_KEY);
+    if (raw) appliedFilters = Object.assign(appliedFilters, JSON.parse(raw));
+  } catch (e) {
+    // ignore malformed/missing storage
+  }
+})();
+
+function syncFilterDraftUiFromApplied() {
+  setPillGroupValue(prefGenderGroup, appliedFilters.prefGender);
+  setPillGroupValue(prefLanguageGroup, appliedFilters.prefLanguage);
+  includeCountries.clear();
+  (appliedFilters.includeCountries || []).forEach((c) => includeCountries.add(c));
+  excludeCountries.clear();
+  (appliedFilters.excludeCountries || []).forEach((c) => excludeCountries.add(c));
+  includeCountryWidget.renderChips();
+  excludeCountryWidget.renderChips();
+  selectedInterests.clear();
+  (appliedFilters.interests || []).forEach((i) => selectedInterests.add(i));
+  renderInterestTags();
+}
+
+syncFilterDraftUiFromApplied();
+
+saveFiltersBtn.addEventListener('click', () => {
+  appliedFilters = {
+    prefGender: prefGenderGroup.dataset.value,
+    prefLanguage: prefLanguageGroup.dataset.value,
+    includeCountries: Array.from(includeCountries),
+    excludeCountries: Array.from(excludeCountries),
+    interests: Array.from(selectedInterests),
+  };
+  localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(appliedFilters));
+  registerProfile();
+  closeFilters();
+});
+
+clearFiltersBtn.addEventListener('click', () => {
+  setPillGroupValue(prefGenderGroup, 'any');
+  setPillGroupValue(prefLanguageGroup, 'any');
+  includeCountries.clear();
+  excludeCountries.clear();
+  includeCountryWidget.renderChips();
+  excludeCountryWidget.renderChips();
+  selectedInterests.clear();
+  renderInterestTags();
+});
 
 // --- Add Friend: sends a real friend request to the current call partner.
 // Works the same whether the partner is a temporary (guest) user or signed in —
@@ -1259,11 +1348,12 @@ function registerProfile() {
   registerClient({
     clientId: getClientId(),
     gender: genderGroup.dataset.value,
-    prefGender: prefGenderGroup.dataset.value,
+    prefGender: appliedFilters.prefGender,
     language: languageGroup.dataset.value,
-    prefLanguage: prefLanguageGroup.dataset.value,
-    prefCountry: selectedCountry,
-    interests: Array.from(selectedInterests),
+    prefLanguage: appliedFilters.prefLanguage,
+    includeCountries: appliedFilters.includeCountries,
+    excludeCountries: appliedFilters.excludeCountries,
+    interests: appliedFilters.interests,
     nickname: accountNickname || undefined,
   });
 }
@@ -1432,6 +1522,12 @@ socket.on('waiting', ({ estimatedSeconds } = {}) => {
     : 'Hang tight, this only takes a moment';
 });
 
+// Server gives up on the "Interested Countries" filter for this search after a
+// long wait and widens the pool to anyone, so the user isn't stuck waiting forever.
+socket.on('country-fallback', () => {
+  subText.textContent = "Not many people online in your preferred countries — connecting you with anyone.";
+});
+
 socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
   // Never let a mute from a previous call silently carry into a new one.
   if (isMuted) {
@@ -1463,7 +1559,7 @@ socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
   });
   partnerCard.classList.remove('hidden');
 
-  const shared = currentPartnerInterests.filter((i) => selectedInterests.has(i));
+  const shared = currentPartnerInterests.filter((i) => (appliedFilters.interests || []).includes(i));
   if (shared.length > 0) {
     sharedInterestNote.textContent = `Both of you like ${shared.join(', ')}`;
     sharedInterestNote.classList.remove('hidden');

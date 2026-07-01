@@ -105,7 +105,7 @@
         <div class="pill-row">
           <span class="pill-label">Match me with</span>
           <div class="pill-group" id="prefGenderGroup" data-value="any">
-            <button type="button" class="pill" data-value="any"><span class="pill-dot pill-dot-neutral"></span>🌈 Anyone</button>
+            <button type="button" class="pill" data-value="any"><span class="pill-dot pill-dot-neutral"></span>Anyone</button>
             <button type="button" class="pill" data-value="male"><span class="pill-dot pill-dot-male"></span>♂️ Male</button>
             <button type="button" class="pill" data-value="female"><span class="pill-dot pill-dot-female"></span>♀️ Female</button>
           </div>
@@ -126,14 +126,24 @@
         </div>
 
         <div class="pill-row">
-          <span class="pill-label">Country</span>
-          <div class="country-picker">
-            <button type="button" class="pill any-pill selected" id="countryAnyPill" data-value="any"><span class="pill-dot"></span>Any</button>
+          <span class="pill-label">Interested Countries <span class="hint">(only match these — optional)</span></span>
+          <div class="country-multiselect">
             <div class="country-search-wrap">
-              <input type="text" id="countrySearch" class="search-input" placeholder="Search country…" autocomplete="off" />
-              <div id="countryResults" class="search-results hidden"></div>
+              <input type="text" id="includeCountrySearch" class="search-input" placeholder="Search country…" autocomplete="off" />
+              <div id="includeCountryResults" class="search-results hidden"></div>
             </div>
-            <span id="countrySelectedPill" class="pill selected hidden"></span>
+            <div id="includeCountryChips" class="interest-tags"></div>
+          </div>
+        </div>
+
+        <div class="pill-row">
+          <span class="pill-label">Non Interested Countries <span class="hint">(never match these)</span></span>
+          <div class="country-multiselect">
+            <div class="country-search-wrap">
+              <input type="text" id="excludeCountrySearch" class="search-input" placeholder="Search country…" autocomplete="off" />
+              <div id="excludeCountryResults" class="search-results hidden"></div>
+            </div>
+            <div id="excludeCountryChips" class="interest-tags"></div>
           </div>
         </div>
 
@@ -145,6 +155,12 @@
               <input type="text" id="interestInput" class="search-input" placeholder="Type an interest and press Enter…" autocomplete="off" maxlength="20" />
             </div>
           </div>
+        </div>
+
+        <p class="filters-hint">Filters only take effect after you tap Save.</p>
+        <div class="filters-actions">
+          <button type="button" id="saveFiltersBtn" class="btn btn-save filters-action-btn">Save</button>
+          <button type="button" id="clearFiltersBtn" class="btn btn-secondary filters-action-btn">Clear</button>
         </div>
       </div>
     </aside>

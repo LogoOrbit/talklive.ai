@@ -397,6 +397,16 @@ html, body {
   color: var(--danger);
 }
 
+.btn-save {
+  background: #2ed47a;
+  color: #06210f;
+  box-shadow: 0 0 14px rgba(46, 212, 122, 0.4);
+}
+
+.btn-save:hover {
+  box-shadow: 0 0 20px rgba(46, 212, 122, 0.65);
+}
+
 .btn-icon {
   background: rgba(255,255,255,0.08);
   width: 50px;
@@ -941,6 +951,24 @@ html, body {
   margin-top: 4px;
 }
 
+.filters-hint {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 4px 0 0;
+  text-align: center;
+}
+
+.filters-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.filters-action-btn {
+  flex: 1;
+  text-align: center;
+}
+
 .policy-body h3 {
   font-size: 15px;
   font-weight: 700;
@@ -1192,17 +1220,11 @@ html, body {
   opacity: 1;
 }
 
-/* Country picker */
-.country-picker {
+/* Country multi-select (Interested / Non Interested Countries) */
+.country-multiselect {
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  position: relative;
-}
-
-.any-pill {
-  cursor: pointer;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .country-search-wrap {
@@ -1248,6 +1270,11 @@ html, body {
 .search-result-item:hover,
 .search-result-item.active {
   background: rgba(108, 92, 231, 0.2);
+}
+
+.search-result-item.selected {
+  background: rgba(46, 212, 122, 0.15);
+  font-weight: 600;
 }
 
 .search-result-empty {

@@ -17,10 +17,24 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 // --- State ---
 const waitingQueue = []; // socket ids waiting for a partner
 const partners = new Map(); // socketId -> partnerSocketId
-const profiles = new Map(); // socketId -> { username, country, city, gender, prefGender, prefCountry, language, prefLanguage, interests, clientId }
+const profiles = new Map(); // socketId -> { username, country, city, gender, prefGender, includeCountries, excludeCountries, language, prefLanguage, interests, clientId, countryFallbackActive }
 const blocks = new Map(); // clientId -> Set<clientId>
 const hearts = new Map(); // pairKey ("clientIdA|clientIdB" sorted) -> Set<clientId who hearted>
 const reportCounts = new Map(); // clientId -> number of times reported
+
+// If a seeker's "Interested Countries" filter can't find a match within this
+// long, we drop that filter for their current search and widen to anyone
+// (their "Non Interested Countries" exclusions still always apply).
+const COUNTRY_FALLBACK_MS = 15000;
+const waitFallbackTimers = new Map(); // socketId -> Timeout
+
+function clearWaitFallbackTimer(socketId) {
+  const timer = waitFallbackTimers.get(socketId);
+  if (timer) {
+    clearTimeout(timer);
+    waitFallbackTimers.delete(socketId);
+  }
+}
 
 // In-memory accounts only — resets on server restart. Good enough until a real DB is added.
 const accounts = new Map(); // username (lowercase) -> { passwordHash, salt, nickname }
@@ -182,6 +196,18 @@ function publicProfile(p) {
   };
 }
 
+// "Non Interested Countries" is a hard block that's never relaxed. "Interested
+// Countries" narrows matches to just those countries, unless this profile's
+// search has timed out and fallen back to anyone (countryFallbackActive).
+function countryAllowed(prefs, otherCountryCode) {
+  if (prefs.excludeCountries && prefs.excludeCountries.includes(otherCountryCode)) return false;
+  if (!prefs.countryFallbackActive && prefs.includeCountries && prefs.includeCountries.length
+    && !prefs.includeCountries.includes(otherCountryCode)) {
+    return false;
+  }
+  return true;
+}
+
 // Returns true if candidate's profile satisfies seeker's filters, and vice versa.
 function mutuallyCompatible(seeker, candidate) {
   if (isBlockedPair(seeker.clientId, candidate.clientId)) return false;
@@ -192,12 +218,8 @@ function mutuallyCompatible(seeker, candidate) {
   if (candidate.prefGender && candidate.prefGender !== 'any' && seeker.gender !== candidate.prefGender) {
     return false;
   }
-  if (seeker.prefCountry && seeker.prefCountry !== 'any' && candidate.country !== seeker.prefCountry) {
-    return false;
-  }
-  if (candidate.prefCountry && candidate.prefCountry !== 'any' && seeker.country !== candidate.prefCountry) {
-    return false;
-  }
+  if (!countryAllowed(seeker, candidate.country)) return false;
+  if (!countryAllowed(candidate, seeker.country)) return false;
   if (seeker.prefLanguage && seeker.prefLanguage !== 'any' && candidate.language !== seeker.prefLanguage) {
     return false;
   }
@@ -255,6 +277,7 @@ function estimatedWaitSeconds() {
 function tryMatch(socketId) {
   disconnectPartner(socketId);
   clearFromQueue(socketId);
+  clearWaitFallbackTimer(socketId);
 
   const seekerSocket = io.sockets.sockets.get(socketId);
   if (!seekerSocket) return;
@@ -263,6 +286,7 @@ function tryMatch(socketId) {
 
   if (matchIdx !== -1) {
     const partnerId = waitingQueue.splice(matchIdx, 1)[0];
+    clearWaitFallbackTimer(partnerId);
     const partnerSocket = io.sockets.sockets.get(partnerId);
     if (!partnerSocket) return tryMatch(socketId);
 
@@ -280,6 +304,21 @@ function tryMatch(socketId) {
   } else {
     waitingQueue.push(socketId);
     seekerSocket.emit('waiting', { estimatedSeconds: estimatedWaitSeconds() });
+
+    const seekerProfile = profiles.get(socketId);
+    if (seekerProfile && !seekerProfile.countryFallbackActive && seekerProfile.includeCountries
+      && seekerProfile.includeCountries.length) {
+      const timer = setTimeout(() => {
+        waitFallbackTimers.delete(socketId);
+        const p = profiles.get(socketId);
+        if (!p || !waitingQueue.includes(socketId)) return;
+        p.countryFallbackActive = true;
+        const sock = io.sockets.sockets.get(socketId);
+        if (sock) sock.emit('country-fallback');
+        tryMatch(socketId);
+      }, COUNTRY_FALLBACK_MS);
+      waitFallbackTimers.set(socketId, timer);
+    }
   }
 }
 
@@ -343,6 +382,7 @@ io.on('connection', (socket) => {
 
   socket.on('register', (data = {}) => {
     const clientId = data.clientId || socket.id;
+    const sanitizeCountryList = (list) => (Array.isArray(list) ? list.filter((c) => typeof c === 'string').slice(0, 50) : []);
     profiles.set(socket.id, {
       clientId,
       username: data.nickname ? data.nickname.slice(0, 24) : generateUsername(),
@@ -351,7 +391,9 @@ io.on('connection', (socket) => {
       city: geo.city,
       gender: data.gender || 'unspecified',
       prefGender: data.prefGender || 'any',
-      prefCountry: data.prefCountry || 'any',
+      includeCountries: sanitizeCountryList(data.includeCountries),
+      excludeCountries: sanitizeCountryList(data.excludeCountries),
+      countryFallbackActive: false,
       language: data.language || 'english',
       prefLanguage: data.prefLanguage || 'any',
       interests: Array.isArray(data.interests) ? data.interests.slice(0, 10) : [],
@@ -371,18 +413,24 @@ io.on('connection', (socket) => {
   broadcastOnlineCount();
 
   socket.on('find-partner', () => {
-    if (!profiles.has(socket.id)) return;
+    const profile = profiles.get(socket.id);
+    if (!profile) return;
+    // A fresh, explicit search starts with the full "Interested Countries" filter again.
+    profile.countryFallbackActive = false;
     tryMatch(socket.id);
   });
 
   socket.on('skip', () => {
     disconnectPartner(socket.id);
+    const profile = profiles.get(socket.id);
+    if (profile) profile.countryFallbackActive = false;
     tryMatch(socket.id);
   });
 
   socket.on('leave', () => {
     disconnectPartner(socket.id);
     clearFromQueue(socket.id);
+    clearWaitFallbackTimer(socket.id);
   });
 
   socket.on('report', () => {
@@ -629,6 +677,8 @@ io.on('connection', (socket) => {
     disconnectPartner(requesterSocketId);
     clearFromQueue(socket.id);
     clearFromQueue(requesterSocketId);
+    clearWaitFallbackTimer(socket.id);
+    clearWaitFallbackTimer(requesterSocketId);
 
     partners.set(socket.id, requesterSocketId);
     partners.set(requesterSocketId, socket.id);
@@ -644,6 +694,7 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     disconnectPartner(socket.id);
     clearFromQueue(socket.id);
+    clearWaitFallbackTimer(socket.id);
     const profile = profiles.get(socket.id);
     if (profile && clientSockets.get(profile.clientId) === socket.id) {
       clientSockets.delete(profile.clientId);
