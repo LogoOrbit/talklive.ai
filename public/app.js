@@ -115,10 +115,13 @@ function getFlagEmoji(code) {
 const ICE_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
-  // Open Relay Project — free public TURN fallback for restrictive networks
+  // Open Relay Project — free public TURN fallback for restrictive/cross-country networks.
+  // Multiple ports/transports so at least one gets through most firewalls.
   { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:80?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
   { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
   { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turns:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
 ];
 
 const selectedInterests = new Set();
@@ -587,8 +590,16 @@ async function getMic() {
   return localStream;
 }
 
-function createPeerConnection() {
-  const peer = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+let connectWatchdog = null;
+let iceRestartAttempted = false;
+
+function clearConnectWatchdog() {
+  clearTimeout(connectWatchdog);
+  connectWatchdog = null;
+}
+
+function createPeerConnection(isInitiator) {
+  const peer = new RTCPeerConnection({ iceServers: ICE_SERVERS, iceCandidatePoolSize: 10 });
 
   localStream.getTracks().forEach((track) => peer.addTrack(track, localStream));
 
@@ -606,16 +617,45 @@ function createPeerConnection() {
     monitorRemoteAudio(event.streams[0]);
   };
 
+  // If a call never fully connects (common with flaky free TURN relays across
+  // distant networks), automatically move on to a new match instead of getting
+  // stuck silently with no audio.
+  clearConnectWatchdog();
+  iceRestartAttempted = false;
+  connectWatchdog = setTimeout(() => {
+    const state = peer.iceConnectionState;
+    if (state !== 'connected' && state !== 'completed') {
+      showError("Couldn't connect to that stranger — finding someone new…");
+      skipBtn.click();
+    }
+  }, 15000);
+
   peer.oniceconnectionstatechange = () => {
     const iceState = peer.iceConnectionState;
     if (iceState === 'connected' || iceState === 'completed') {
       setConnection('green', 'Connected');
+      clearConnectWatchdog();
     } else if (iceState === 'checking') {
       setConnection('orange', 'Connecting');
     } else if (iceState === 'disconnected') {
       setConnection('orange', 'Reconnecting');
-    } else if (iceState === 'failed' || iceState === 'closed') {
+    } else if (iceState === 'failed') {
+      if (isInitiator && !iceRestartAttempted) {
+        iceRestartAttempted = true;
+        setConnection('orange', 'Reconnecting');
+        peer.createOffer({ iceRestart: true }).then((offer) => {
+          return peer.setLocalDescription(offer);
+        }).then(() => {
+          socket.emit('signal', { type: 'offer', sdp: peer.localDescription });
+        }).catch(() => {
+          setConnection('red', 'Disconnected');
+        });
+      } else {
+        setConnection('red', 'Disconnected');
+      }
+    } else if (iceState === 'closed') {
       setConnection('red', 'Disconnected');
+      clearConnectWatchdog();
     }
   };
 
@@ -663,7 +703,7 @@ function monitorRemoteAudio(stream) {
 }
 
 async function startCall(initiator) {
-  pc = createPeerConnection();
+  pc = createPeerConnection(initiator);
   if (initiator) {
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
@@ -692,6 +732,7 @@ async function handleSignal(data) {
 function teardownPeer() {
   recordCallHistory();
   currentPartner = null;
+  clearConnectWatchdog();
   clearInterval(speakingCheckInterval);
   orb.classList.remove('speaking');
   orbRings.forEach((ring) => {
@@ -870,6 +911,15 @@ socket.on('waiting', ({ estimatedSeconds } = {}) => {
 });
 
 socket.on('matched', async ({ initiator, partner, rematched }) => {
+  // Never let a mute from a previous call silently carry into a new one.
+  if (isMuted) {
+    isMuted = false;
+    if (localStream) localStream.getAudioTracks().forEach((t) => (t.enabled = true));
+    muteBtn.classList.remove('muted');
+    muteBtn.textContent = '🎤';
+    socket.emit('mic-state', false);
+  }
+
   setState('connected');
   setConnection('orange', 'Connecting');
   statusText.textContent = `Connecting to someone in ${partner.country}…`;
