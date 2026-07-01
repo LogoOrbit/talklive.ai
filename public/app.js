@@ -108,11 +108,12 @@ const changePasswordBtn = document.getElementById('changePasswordBtn');
 
 const MIN_CALL_SECONDS_BEFORE_SKIP = 2;
 
-// --- Country code -> flag emoji (regional indicator symbols) ---
-function getFlagEmoji(code) {
+// --- Country code -> flag image (works consistently across all browsers/OSes,
+// unlike emoji regional-indicator flags which many platforms, e.g. Windows, render as plain letters) ---
+function getFlagImg(code, size = 20) {
   if (!code || code.length !== 2 || code === 'XX') return '🌐';
-  const codePoints = code.toUpperCase().split('').map((c) => 127397 + c.charCodeAt(0));
-  return String.fromCodePoint(...codePoints);
+  const cc = code.toLowerCase();
+  return `<img class="flag-icon" src="https://flagcdn.com/24x18/${cc}.png" srcset="https://flagcdn.com/48x36/${cc}.png 2x" width="${size}" alt="${code.toUpperCase()}" />`;
 }
 
 const ICE_SERVERS = [
@@ -421,7 +422,7 @@ function renderHistory() {
     const mins = Math.floor(entry.durationSeconds / 60);
     const secs = entry.durationSeconds % 60;
     item.innerHTML = `
-      <span class="history-item-name">${getFlagEmoji(entry.countryCode)} ${entry.username}</span>
+      <span class="history-item-name">${getFlagImg(entry.countryCode)} ${entry.username}</span>
       <span class="history-item-duration">${mins}:${secs.toString().padStart(2, '0')}</span>
     `;
     historyList.appendChild(item);
@@ -965,7 +966,7 @@ socket.on('matched', async ({ initiator, partner, rematched }) => {
   const genderLabel = partner.gender && partner.gender !== 'unspecified'
     ? ` · ${partner.gender[0].toUpperCase()}${partner.gender.slice(1)}`
     : '';
-  partnerMeta.textContent = `${getFlagEmoji(partner.countryCode)} ${partner.city}, ${partner.country}${genderLabel}`;
+  partnerMeta.innerHTML = `${getFlagImg(partner.countryCode)}${genderLabel}`;
 
   partnerInterests.innerHTML = '';
   currentPartnerInterests = partner.interests || [];
