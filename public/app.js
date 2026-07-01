@@ -59,8 +59,43 @@ const callTimerEl = document.getElementById('callTimer');
 const sharedInterestNote = document.getElementById('sharedInterestNote');
 const reactionBar = document.getElementById('reactionBar');
 const reactionOverlay = document.getElementById('reactionOverlay');
+const audioBars = document.querySelectorAll('#audioMeter .audio-bar');
+
+const chatBadge = document.getElementById('chatBadge');
+const quickGuide = document.getElementById('quickGuide');
+
+const historyBtn = document.getElementById('historyBtn');
+const historyModal = document.getElementById('historyModal');
+const closeHistoryBtn = document.getElementById('closeHistoryBtn');
+const historyList = document.getElementById('historyList');
+
+const accountBtn = document.getElementById('accountBtn');
+const accountModal = document.getElementById('accountModal');
+const closeAccountBtn = document.getElementById('closeAccountBtn');
+const accountStatus = document.getElementById('accountStatus');
+const accountLoggedOut = document.getElementById('accountLoggedOut');
+const accountLoggedIn = document.getElementById('accountLoggedIn');
+const accountNicknameDisplay = document.getElementById('accountNicknameDisplay');
+const accountTabs = document.querySelectorAll('.account-tab');
+const loginTab = document.getElementById('loginTab');
+const signupTab = document.getElementById('signupTab');
+const loginUsername = document.getElementById('loginUsername');
+const loginPassword = document.getElementById('loginPassword');
+const loginSubmitBtn = document.getElementById('loginSubmitBtn');
+const signupUsername = document.getElementById('signupUsername');
+const signupPassword = document.getElementById('signupPassword');
+const signupNickname = document.getElementById('signupNickname');
+const signupSubmitBtn = document.getElementById('signupSubmitBtn');
+const logoutBtn = document.getElementById('logoutBtn');
 
 const MIN_CALL_SECONDS_BEFORE_SKIP = 8;
+
+// --- Country code -> flag emoji (regional indicator symbols) ---
+function getFlagEmoji(code) {
+  if (!code || code.length !== 2 || code === 'XX') return '🌐';
+  const codePoints = code.toUpperCase().split('').map((c) => 127397 + c.charCodeAt(0));
+  return String.fromCodePoint(...codePoints);
+}
 
 const ICE_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
@@ -85,6 +120,9 @@ let callTimerInterval = null;
 let callStartedAt = null;
 let skipUnlockTimeout = null;
 let currentPartnerInterests = [];
+let currentPartner = null;
+let callHistory = [];
+let accountNickname = localStorage.getItem('talklive_nickname') || null;
 
 // --- Persistent client id so blocks survive reconnects in this browser ---
 function getClientId() {
@@ -209,7 +247,7 @@ openTermsLink.addEventListener('click', () => openModal(termsModal));
 openTermsLinkFooter.addEventListener('click', () => openModal(termsModal));
 closeTermsBtn.addEventListener('click', () => closeModal(termsModal));
 
-[settingsModal, termsModal].forEach((modal) => {
+[settingsModal, termsModal, accountModal, historyModal].forEach((modal) => {
   modal.addEventListener('click', (e) => {
     if (e.target === modal) closeModal(modal);
   });
@@ -219,14 +257,122 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     closeModal(settingsModal);
     closeModal(termsModal);
+    closeModal(accountModal);
+    closeModal(historyModal);
   }
 });
 
-socket.emit('register', { clientId: getClientId() });
+// --- Account (in-memory, no DB yet) ---
+function renderAccountState() {
+  if (accountNickname) {
+    accountLoggedOut.classList.add('hidden');
+    accountLoggedIn.classList.remove('hidden');
+    accountNicknameDisplay.textContent = accountNickname;
+  } else {
+    accountLoggedOut.classList.remove('hidden');
+    accountLoggedIn.classList.add('hidden');
+  }
+}
+
+function showAccountStatus(msg, kind) {
+  accountStatus.textContent = msg;
+  accountStatus.className = `account-status ${kind}`;
+  accountStatus.classList.remove('hidden');
+}
+
+accountBtn.addEventListener('click', () => {
+  renderAccountState();
+  openModal(accountModal);
+});
+closeAccountBtn.addEventListener('click', () => closeModal(accountModal));
+
+accountTabs.forEach((tab) => {
+  tab.addEventListener('click', () => {
+    accountTabs.forEach((t) => t.classList.remove('selected'));
+    tab.classList.add('selected');
+    loginTab.classList.toggle('hidden', tab.dataset.tab !== 'login');
+    signupTab.classList.toggle('hidden', tab.dataset.tab !== 'signup');
+    accountStatus.classList.add('hidden');
+  });
+});
+
+loginSubmitBtn.addEventListener('click', () => {
+  socket.emit('login', { username: loginUsername.value.trim(), password: loginPassword.value });
+});
+
+signupSubmitBtn.addEventListener('click', () => {
+  socket.emit('signup', {
+    username: signupUsername.value.trim(),
+    password: signupPassword.value,
+    nickname: signupNickname.value.trim(),
+  });
+});
+
+logoutBtn.addEventListener('click', () => {
+  accountNickname = null;
+  localStorage.removeItem('talklive_nickname');
+  renderAccountState();
+});
+
+socket.on('login-result', ({ ok, nickname, error }) => {
+  if (!ok) return showAccountStatus(error, 'error');
+  accountNickname = nickname;
+  localStorage.setItem('talklive_nickname', nickname);
+  showAccountStatus(`Logged in as ${nickname}`, 'success');
+  renderAccountState();
+});
+
+socket.on('signup-result', ({ ok, nickname, error }) => {
+  if (!ok) return showAccountStatus(error, 'error');
+  accountNickname = nickname;
+  localStorage.setItem('talklive_nickname', nickname);
+  showAccountStatus(`Account created — welcome, ${nickname}!`, 'success');
+  renderAccountState();
+});
+
+// --- Call history (session-only, cleared on reload) ---
+function renderHistory() {
+  if (callHistory.length === 0) {
+    historyList.innerHTML = '<p class="history-empty">No calls yet.</p>';
+    return;
+  }
+  historyList.innerHTML = '';
+  [...callHistory].reverse().forEach((entry) => {
+    const item = document.createElement('div');
+    item.className = 'history-item';
+    const mins = Math.floor(entry.durationSeconds / 60);
+    const secs = entry.durationSeconds % 60;
+    item.innerHTML = `
+      <span class="history-item-name">${getFlagEmoji(entry.countryCode)} ${entry.username}</span>
+      <span class="history-item-duration">${mins}:${secs.toString().padStart(2, '0')}</span>
+    `;
+    historyList.appendChild(item);
+  });
+}
+
+function recordCallHistory() {
+  if (!currentPartner || !callStartedAt) return;
+  const durationSeconds = Math.floor((Date.now() - callStartedAt) / 1000);
+  if (durationSeconds < 1) return;
+  callHistory.push({
+    username: currentPartner.username,
+    countryCode: currentPartner.countryCode,
+    durationSeconds,
+  });
+  renderHistory();
+}
+
+historyBtn.addEventListener('click', () => {
+  renderHistory();
+  openModal(historyModal);
+});
+closeHistoryBtn.addEventListener('click', () => closeModal(historyModal));
+
+socket.emit('register', { clientId: getClientId(), nickname: accountNickname || undefined });
 
 socket.on('profile', (profile) => {
   myProfile = profile;
-  myProfileEl.textContent = `${profile.username} · ${profile.city}, ${profile.country}`;
+  myProfileEl.textContent = `${profile.username} · ${getFlagEmoji(profile.countryCode)} ${profile.city}, ${profile.country}`;
   myProfileEl.classList.remove('hidden');
 });
 
@@ -376,10 +522,19 @@ function monitorRemoteAudio(stream) {
     source.connect(analyser);
     const data = new Uint8Array(analyser.frequencyBinCount);
 
+    const bucketSize = Math.floor(data.length / audioBars.length);
     speakingCheckInterval = setInterval(() => {
       analyser.getByteFrequencyData(data);
       const avg = data.reduce((a, b) => a + b, 0) / data.length;
       orb.classList.toggle('speaking', avg > 12);
+
+      audioBars.forEach((bar, i) => {
+        const bucket = data.slice(i * bucketSize, (i + 1) * bucketSize);
+        const bucketAvg = bucket.reduce((a, b) => a + b, 0) / (bucket.length || 1);
+        const height = Math.max(4, Math.min(18, Math.round((bucketAvg / 255) * 18)));
+        bar.style.height = `${height}px`;
+        bar.style.opacity = bucketAvg > 8 ? '1' : '0.35';
+      });
     }, 150);
   } catch (e) {
     // AudioContext may be unavailable; non-critical
@@ -414,6 +569,8 @@ async function handleSignal(data) {
 }
 
 function teardownPeer() {
+  recordCallHistory();
+  currentPartner = null;
   clearInterval(speakingCheckInterval);
   orb.classList.remove('speaking');
   if (pc) {
@@ -447,6 +604,7 @@ function resetUI() {
   chatToggleBtn.classList.add('hidden');
   reportBtn.classList.add('hidden');
   primaryControls.classList.add('hidden');
+  quickGuide.classList.remove('hidden');
 }
 
 async function begin() {
@@ -466,6 +624,7 @@ async function begin() {
     prefLanguage: prefLanguageGroup.dataset.value,
     prefCountry: selectedCountry,
     interests: Array.from(selectedInterests),
+    nickname: accountNickname || undefined,
   });
 
   isSearching = true;
@@ -481,6 +640,7 @@ async function begin() {
   chatToggleBtn.classList.remove('hidden');
   reportBtn.classList.remove('hidden');
   primaryControls.classList.remove('hidden');
+  quickGuide.classList.add('hidden');
 
   socket.emit('find-partner');
 }
@@ -530,7 +690,10 @@ muteBtn.addEventListener('click', () => {
 chatToggleBtn.addEventListener('click', () => {
   chatOpen = !chatOpen;
   chatPanel.classList.toggle('hidden', !chatOpen);
-  if (chatOpen) chatInput.focus();
+  if (chatOpen) {
+    chatInput.focus();
+    chatBadge.classList.add('hidden');
+  }
 });
 
 chatForm.addEventListener('submit', (e) => {
@@ -562,11 +725,12 @@ socket.on('matched', async ({ initiator, partner, rematched }) => {
   statusText.textContent = `Connecting to someone in ${partner.country}…`;
   subText.textContent = rematched ? "You both liked your last chat — you're reconnected!" : '';
 
+  currentPartner = partner;
   partnerName.textContent = partner.username;
   const genderLabel = partner.gender && partner.gender !== 'unspecified'
     ? ` · ${partner.gender[0].toUpperCase()}${partner.gender.slice(1)}`
     : '';
-  partnerMeta.textContent = `${partner.city}, ${partner.country}${genderLabel}`;
+  partnerMeta.textContent = `${getFlagEmoji(partner.countryCode)} ${partner.city}, ${partner.country}${genderLabel}`;
 
   partnerInterests.innerHTML = '';
   currentPartnerInterests = partner.interests || [];
@@ -629,6 +793,9 @@ socket.on('partner-mic-state', (muted) => {
 
 socket.on('chat-message', ({ text }) => {
   addChatMessage(text, 'them');
+  if (!chatOpen) {
+    chatBadge.classList.remove('hidden');
+  }
 });
 
 socket.on('disconnect', () => {
