@@ -62,11 +62,6 @@ html, body {
   gap: 12px;
 }
 
-.my-profile {
-  font-size: 13px;
-  color: var(--muted);
-}
-
 .online {
   font-size: 15px;
   font-weight: 700;
@@ -559,10 +554,6 @@ html, body {
   .btn-icon-lg {
     width: 58px;
     height: 58px;
-  }
-
-  .my-profile {
-    display: none;
   }
 
   .settings-text {

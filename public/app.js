@@ -8,7 +8,6 @@ const subText = document.getElementById('subText');
 const errorText = document.getElementById('errorText');
 const setupErrorText = document.getElementById('setupErrorText');
 const onlineCountEl = document.getElementById('onlineCount');
-const myProfileEl = document.getElementById('myProfile');
 const remoteAudio = document.getElementById('remoteAudio');
 
 const setupPanel = document.getElementById('setupPanel');
@@ -452,8 +451,6 @@ renderAccountState();
 
 socket.on('profile', (profile) => {
   myProfile = profile;
-  myProfileEl.textContent = `${profile.username} · ${getFlagEmoji(profile.countryCode)} ${profile.city}, ${profile.country}`;
-  myProfileEl.classList.remove('hidden');
 });
 
 // --- State helpers ---
