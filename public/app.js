@@ -54,9 +54,15 @@ const muteSlash = document.getElementById('muteSlash');
 const chatToggleBtn = document.getElementById('chatToggleBtn');
 const reportBtn = document.getElementById('reportBtn');
 const addFriendBtn = document.getElementById('addFriendBtn');
-const stopBtn = document.getElementById('stopBtn');
+const callMainBtn = document.getElementById('callMainBtn');
+const callMainLabel = document.getElementById('callMainLabel');
 const primaryControls = document.getElementById('primaryControls');
 const autoCallRow = document.getElementById('autoCallRow');
+const reassureLine = document.getElementById('reassureLine');
+const searchTicker = document.getElementById('searchTicker');
+const searchTickerText = document.getElementById('searchTickerText');
+const qualityIndicator = document.getElementById('qualityIndicator');
+const qualityLabel = document.getElementById('qualityLabel');
 
 const chatMessages = document.getElementById('chatMessages');
 const chatForm = document.getElementById('chatForm');
@@ -83,14 +89,19 @@ const historyList = document.getElementById('historyList');
 
 const friendsBtn = document.getElementById('friendsBtn');
 const friendsMsgBadge = document.getElementById('friendsMsgBadge');
-const friendsModal = document.getElementById('friendsModal');
+const friendsWrap = document.querySelector('.friends-wrap');
+const friendsDropdown = document.getElementById('friendsDropdown');
 const closeFriendsBtn = document.getElementById('closeFriendsBtn');
 const friendsList = document.getElementById('friendsList');
-const friendRequestsList = document.getElementById('friendRequestsList');
-const friendReqCount = document.getElementById('friendReqCount');
-const friendsTabs = document.querySelectorAll('.friends-tab');
-const friendsListPanel = document.getElementById('friendsListPanel');
-const friendRequestsPanel = document.getElementById('friendRequestsPanel');
+
+const friendProfileModal = document.getElementById('friendProfileModal');
+const closeFriendProfileBtn = document.getElementById('closeFriendProfileBtn');
+const friendProfileAvatar = document.getElementById('friendProfileAvatar');
+const friendProfileName = document.getElementById('friendProfileName');
+const friendProfileStatus = document.getElementById('friendProfileStatus');
+const friendProfileChatBtn = document.getElementById('friendProfileChatBtn');
+const friendProfileRemoveBtn = document.getElementById('friendProfileRemoveBtn');
+const friendProfileBlockBtn = document.getElementById('friendProfileBlockBtn');
 
 const notifBtn = document.getElementById('notifBtn');
 const notifBadge = document.getElementById('notifBadge');
@@ -142,8 +153,16 @@ const appSettingsBtn = document.getElementById('appSettingsBtn');
 const appSettingsPanel = document.getElementById('appSettingsPanel');
 const appSettingsOverlay = document.getElementById('appSettingsOverlay');
 const closeAppSettingsBtn = document.getElementById('closeAppSettingsBtn');
-const sfxSettingCheckbox = document.getElementById('sfxSettingCheckbox');
-const sideAutoCallCheckbox = document.getElementById('sideAutoCallCheckbox');
+const darkModeToggle = document.getElementById('darkModeToggle');
+const themeGroup = document.getElementById('themeGroup');
+const soundToggle = document.getElementById('soundToggle');
+const vibrationToggle = document.getElementById('vibrationToggle');
+const statusVisibilityToggle = document.getElementById('statusVisibilityToggle');
+const sidePanelAuth = document.getElementById('sidePanelAuth');
+const sidePanelSignInBtn = document.getElementById('sidePanelSignInBtn');
+const sidePanelRegisterBtn = document.getElementById('sidePanelRegisterBtn');
+const avatarCatTabs = document.getElementById('avatarCatTabs');
+const avatarGrid = document.getElementById('avatarGrid');
 
 const MIN_CALL_SECONDS_BEFORE_SKIP = 2;
 
@@ -174,6 +193,53 @@ function getFlagImg(code, size = 20) {
   }
   const cc = code.toLowerCase();
   return `<img class="flag-icon" src="https://flagcdn.com/24x18/${cc}.png" srcset="https://flagcdn.com/48x36/${cc}.png 2x" width="${size}" alt="${escapeHtml(getCountryName(code))}" />`;
+}
+
+// --- Avatars: 5 male + 5 female inline-SVG busts. Shown only to yourself
+// (left panel) and to your friends (friends list / profile) — never to the
+// stranger during a call, so nothing about it can reveal anyone's gender. ---
+const AVATAR_IDS = { male: ['m1', 'm2', 'm3', 'm4', 'm5'], female: ['f1', 'f2', 'f3', 'f4', 'f5'] };
+const AVATAR_STYLES = {
+  m1: { bg: '#6c5ce7', skin: '#f2c9a0', hair: '#2f2a26', long: false },
+  m2: { bg: '#00a8cc', skin: '#c68642', hair: '#101010', long: false },
+  m3: { bg: '#2ed47a', skin: '#8d5524', hair: '#1b1b1b', long: false },
+  m4: { bg: '#ff9500', skin: '#ffdbac', hair: '#a55728', long: false },
+  m5: { bg: '#e21f3e', skin: '#e0ac69', hair: '#4a4a4a', long: false },
+  f1: { bg: '#ff5fa2', skin: '#f2c9a0', hair: '#5a3825', long: true },
+  f2: { bg: '#9b59b6', skin: '#c68642', hair: '#101010', long: true },
+  f3: { bg: '#00d4ff', skin: '#ffdbac', hair: '#d19a3f', long: true },
+  f4: { bg: '#ffb84d', skin: '#8d5524', hair: '#2b1b12', long: true },
+  f5: { bg: '#16a34a', skin: '#e0ac69', hair: '#8c2f39', long: true },
+};
+
+function avatarSvg(id, size = 36) {
+  const a = AVATAR_STYLES[id];
+  if (!a) return '';
+  const hair = a.long
+    ? `<path d="M32 12c-11 0-17 8-17 17v13c0 3 2 5 5 5h4V30h16v17h4c3 0 5-2 5-5V29c0-9-6-17-17-17z" fill="${a.hair}"/>`
+    : `<path d="M32 13c-9 0-15 6-15 14 0 2 1 4 2 5 1-6 5-10 13-10s12 4 13 10c1-1 2-3 2-5 0-8-6-14-15-14z" fill="${a.hair}"/>`;
+  return `<svg class="avatar-svg" width="${size}" height="${size}" viewBox="0 0 64 64" aria-hidden="true">
+    <circle cx="32" cy="32" r="32" fill="${a.bg}"/>
+    <path d="M12 56c2-10 10-15 20-15s18 5 20 15a32 32 0 0 1-40 0z" fill="#ffffff" opacity="0.9"/>
+    <circle cx="32" cy="29" r="12" fill="${a.skin}"/>
+    ${hair}
+  </svg>`;
+}
+
+let myAvatar = localStorage.getItem('talklive_avatar');
+if (myAvatar && !AVATAR_STYLES[myAvatar]) myAvatar = null;
+let avatarCat = myAvatar && myAvatar[0] === 'f' ? 'female' : 'male';
+
+// --- No links of any kind in chat. Mirrors the server-side filter. ---
+const LINK_RE = new RegExp(
+  '(?:[a-z][a-z0-9+.-]*:\\/\\/)'
+  + '|(?:\\bwww\\.)'
+  + '|(?:\\b[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.(?:[a-z]{2,})(?:\\/|\\b))'
+  + '|(?:\\b\\w+\\s*\\(?\\s*dot\\s*\\)?\\s*(?:com|net|org|io|gg|me|ly|co|xyz|site|online|app|tv|link|live)\\b)',
+  'i'
+);
+function messageHasLink(text) {
+  return LINK_RE.test(String(text || ''));
 }
 
 const ICE_SERVERS = [
@@ -384,19 +450,67 @@ document.getElementById('addInterestBtn').addEventListener('click', addInterestF
 
 initPillGroup(genderGroup);
 initPillGroup(prefGenderGroup);
+initPillGroup(themeGroup);
 
 autoCallCheckbox.checked = autoCallEnabled;
-sideAutoCallCheckbox.checked = autoCallEnabled;
 
 function setAutoCallEnabled(value) {
   autoCallEnabled = value;
   localStorage.setItem('talklive_autocall', autoCallEnabled ? 'on' : 'off');
   autoCallCheckbox.checked = autoCallEnabled;
-  sideAutoCallCheckbox.checked = autoCallEnabled;
+  syncWakeLock();
 }
 
 autoCallCheckbox.addEventListener('change', () => setAutoCallEnabled(autoCallCheckbox.checked));
-sideAutoCallCheckbox.addEventListener('change', () => setAutoCallEnabled(sideAutoCallCheckbox.checked));
+
+// --- Themes: dark (default), light, plus accent themes. The dark-mode toggle
+// flips between dark and light; picking any theme keeps both controls in sync. ---
+const THEMES = ['dark', 'light', 'ocean', 'sunset'];
+let currentTheme = localStorage.getItem('talklive_theme');
+if (!THEMES.includes(currentTheme)) currentTheme = 'dark';
+
+function applyTheme(theme) {
+  if (!THEMES.includes(theme)) theme = 'dark';
+  currentTheme = theme;
+  localStorage.setItem('talklive_theme', theme);
+  document.documentElement.setAttribute('data-theme', theme);
+  setPillGroupValue(themeGroup, theme);
+  darkModeToggle.checked = theme !== 'light';
+}
+
+darkModeToggle.addEventListener('change', () => {
+  applyTheme(darkModeToggle.checked ? 'dark' : 'light');
+});
+
+themeGroup.addEventListener('click', (e) => {
+  if (e.target.closest('.pill')) applyTheme(themeGroup.dataset.value);
+});
+
+applyTheme(currentTheme);
+
+// --- Vibration setting (used for connect/message haptics on supporting devices) ---
+let vibrationEnabled = localStorage.getItem('talklive_vibration') !== 'off';
+vibrationToggle.checked = vibrationEnabled;
+vibrationToggle.addEventListener('change', () => {
+  vibrationEnabled = vibrationToggle.checked;
+  localStorage.setItem('talklive_vibration', vibrationEnabled ? 'on' : 'off');
+});
+
+function vibrate(pattern) {
+  if (vibrationEnabled && navigator.vibrate) {
+    try { navigator.vibrate(pattern); } catch (e) { /* unsupported */ }
+  }
+}
+
+// --- Online-status visibility: hides your status from your added friends only.
+// Never affects the global online-user count. ---
+let statusVisible = localStorage.getItem('talklive_status_visible') !== 'off';
+statusVisibilityToggle.checked = statusVisible;
+statusVisibilityToggle.addEventListener('change', () => {
+  statusVisible = statusVisibilityToggle.checked;
+  localStorage.setItem('talklive_status_visible', statusVisible ? 'on' : 'off');
+  socket.emit('set-status-visibility', { hidden: !statusVisible });
+});
 
 // --- Sound effects (small synthesized tones, no audio files needed) ---
 let soundEnabled = localStorage.getItem('talklive_sound') !== 'off';
@@ -432,7 +546,7 @@ function playHangupSound() { playTone(320, 0.2, 'sine', 0.18); playTone(220, 0.2
 function playMessageSound() { playTone(950, 0.08, 'triangle', 0.15); }
 
 function updateSoundToggleUi() {
-  sfxSettingCheckbox.checked = soundEnabled;
+  soundToggle.checked = soundEnabled;
 }
 
 function setSoundEnabled(value) {
@@ -441,7 +555,7 @@ function setSoundEnabled(value) {
   updateSoundToggleUi();
 }
 
-sfxSettingCheckbox.addEventListener('change', () => setSoundEnabled(sfxSettingCheckbox.checked));
+soundToggle.addEventListener('change', () => setSoundEnabled(soundToggle.checked));
 updateSoundToggleUi();
 
 // --- App settings side panel ---
@@ -553,7 +667,7 @@ openTermsLink.addEventListener('click', () => openModal(termsModal));
 openTermsLinkFooter.addEventListener('click', () => openModal(termsModal));
 closeTermsBtn.addEventListener('click', () => closeModal(termsModal));
 
-[termsModal, accountModal, historyModal, friendsModal, friendChatModal].forEach((modal) => {
+[termsModal, accountModal, historyModal, friendProfileModal, friendChatModal].forEach((modal) => {
   modal.addEventListener('click', (e) => {
     if (e.target === modal) closeModal(modal);
   });
@@ -564,7 +678,8 @@ document.addEventListener('keydown', (e) => {
     closeModal(termsModal);
     closeModal(accountModal);
     closeModal(historyModal);
-    closeModal(friendsModal);
+    closeModal(friendsDropdown);
+    closeModal(friendProfileModal);
     closeModal(notifModal);
     closeModal(friendChatModal);
     closeAppSettings();
@@ -579,11 +694,21 @@ function renderAccountState() {
     accountLoggedIn.classList.remove('hidden');
     accountNicknameDisplay.textContent = accountNickname;
     settingsNickname.value = accountNickname;
+    updateNicknameBtn.disabled = true;
 
-    avatarIcon.classList.add('hidden');
-    avatarInitial.textContent = accountNickname.trim().charAt(0).toUpperCase();
-    avatarInitial.classList.remove('hidden');
+    // Chosen avatar replaces the default account circle in the left panel;
+    // fall back to the nickname initial until one is picked.
+    if (myAvatar) {
+      avatarIcon.classList.add('hidden');
+      avatarInitial.innerHTML = avatarSvg(myAvatar, 36);
+      avatarInitial.classList.remove('hidden');
+    } else {
+      avatarIcon.classList.add('hidden');
+      avatarInitial.textContent = accountNickname.trim().charAt(0).toUpperCase();
+      avatarInitial.classList.remove('hidden');
+    }
     accountBtn.classList.add('logged-in');
+    sidePanelAuth.classList.add('hidden');
   } else {
     accountLoggedOut.classList.remove('hidden');
     accountLoggedIn.classList.add('hidden');
@@ -591,8 +716,42 @@ function renderAccountState() {
     avatarIcon.classList.remove('hidden');
     avatarInitial.classList.add('hidden');
     accountBtn.classList.remove('logged-in');
+    sidePanelAuth.classList.remove('hidden');
   }
+  renderAvatarGrid();
 }
+
+// --- Avatar picker: male/female category, 5 avatars each ---
+function renderAvatarGrid() {
+  if (!avatarGrid) return;
+  avatarGrid.innerHTML = '';
+  AVATAR_IDS[avatarCat].forEach((id) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `avatar-option${myAvatar === id ? ' selected' : ''}`;
+    btn.dataset.avatar = id;
+    btn.setAttribute('aria-label', t('avatar'));
+    btn.innerHTML = avatarSvg(id, 52);
+    avatarGrid.appendChild(btn);
+  });
+}
+
+avatarCatTabs.addEventListener('click', (e) => {
+  const tab = e.target.closest('.avatar-cat');
+  if (!tab) return;
+  avatarCat = tab.dataset.cat;
+  avatarCatTabs.querySelectorAll('.avatar-cat').forEach((c) => c.classList.toggle('selected', c === tab));
+  renderAvatarGrid();
+});
+
+avatarGrid.addEventListener('click', (e) => {
+  const option = e.target.closest('.avatar-option');
+  if (!option) return;
+  myAvatar = option.dataset.avatar;
+  localStorage.setItem('talklive_avatar', myAvatar);
+  renderAccountState();
+  registerProfile(); // pushes the new avatar to the server so friends see it
+});
 
 function showAccountStatus(msg, kind) {
   accountStatus.textContent = msg;
@@ -607,15 +766,48 @@ accountBtn.addEventListener('click', () => {
 });
 closeAccountBtn.addEventListener('click', () => closeModal(accountModal));
 
-accountTabs.forEach((tab) => {
-  tab.addEventListener('click', () => {
-    accountTabs.forEach((t) => t.classList.remove('selected'));
-    tab.classList.add('selected');
-    loginTab.classList.toggle('hidden', tab.dataset.tab !== 'login');
-    signupTab.classList.toggle('hidden', tab.dataset.tab !== 'signup');
-    accountStatus.classList.add('hidden');
+function selectAccountTab(which) {
+  accountTabs.forEach((tab) => {
+    const on = tab.dataset.tab === which;
+    tab.classList.toggle('selected', on);
   });
+  loginTab.classList.toggle('hidden', which !== 'login');
+  signupTab.classList.toggle('hidden', which !== 'signup');
+  accountStatus.classList.add('hidden');
+}
+
+accountTabs.forEach((tab) => {
+  tab.addEventListener('click', () => selectAccountTab(tab.dataset.tab));
 });
+
+// Left side panel: Sign in / Register shortcuts at the bottom
+sidePanelSignInBtn.addEventListener('click', () => {
+  closeAppSettings();
+  renderAccountState();
+  selectAccountTab('login');
+  openModal(accountModal);
+});
+
+sidePanelRegisterBtn.addEventListener('click', () => {
+  closeAppSettings();
+  renderAccountState();
+  selectAccountTab('signup');
+  openModal(accountModal);
+});
+
+// "Update nickname" only becomes active once the nickname was actually edited.
+settingsNickname.addEventListener('input', () => {
+  const value = settingsNickname.value.trim();
+  updateNicknameBtn.disabled = !value || value === (accountNickname || '');
+});
+
+// "Update password" only becomes active once the password form is filled in.
+function syncPasswordBtnState() {
+  changePasswordBtn.disabled = !(currentPasswordInput.value && newPasswordInput.value);
+}
+currentPasswordInput.addEventListener('input', syncPasswordBtnState);
+newPasswordInput.addEventListener('input', syncPasswordBtnState);
+syncPasswordBtnState();
 
 loginSubmitBtn.addEventListener('click', () => {
   socket.emit('login', { username: loginUsername.value.trim(), password: loginPassword.value });
@@ -715,26 +907,27 @@ socket.on('change-password-result', ({ ok, error }) => {
   if (!ok) return showAccountStatus(error, 'error');
   currentPasswordInput.value = '';
   newPasswordInput.value = '';
+  syncPasswordBtnState();
   showAccountStatus(t('statusPasswordChanged'), 'success');
 });
 
-// --- Friends ---
-friendsBtn.addEventListener('click', () => openModal(friendsModal));
-closeFriendsBtn.addEventListener('click', () => closeModal(friendsModal));
-
-friendsTabs.forEach((tab) => {
-  tab.addEventListener('click', () => {
-    friendsTabs.forEach((t) => t.classList.remove('selected'));
-    tab.classList.add('selected');
-    friendsListPanel.classList.toggle('hidden', tab.dataset.tab !== 'list');
-    friendRequestsPanel.classList.toggle('hidden', tab.dataset.tab !== 'requests');
-  });
+// --- Friends: dropdown menu under the header button (not a separate page) ---
+friendsBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (friendsDropdown.classList.contains('hidden')) {
+    renderFriendsList();
+    openModal(friendsDropdown);
+  } else {
+    closeModal(friendsDropdown);
+  }
+});
+closeFriendsBtn.addEventListener('click', () => closeModal(friendsDropdown));
+document.addEventListener('click', (e) => {
+  if (!e.composedPath().includes(friendsWrap)) closeModal(friendsDropdown);
 });
 
-function friendBadge(temporary) {
-  return `<span class="friend-badge ${temporary ? 'temp' : 'account'}">${escapeHtml(temporary ? t('temporary') : t('signedInBadge'))}</span>`;
-}
-
+// Each row: online/offline dot + flag + username on the left (tap → chat box),
+// small green call button on the right. Tapping the avatar opens the profile view.
 function renderFriendsList() {
   if (friendsData.length === 0) {
     friendsList.innerHTML = `<p class="history-empty">${escapeHtml(t('noFriendsYet'))}</p>`;
@@ -746,76 +939,68 @@ function renderFriendsList() {
     const item = document.createElement('div');
     item.className = 'friend-item';
     item.innerHTML = `
-      <div class="friend-item-info">
+      <button type="button" class="friend-avatar-btn" data-id="${f.clientId}" title="${escapeHtml(t('profile'))}" aria-label="${escapeHtml(t('profile'))}">${f.avatar && AVATAR_STYLES[f.avatar] ? avatarSvg(f.avatar, 30) : ICONS.person}</button>
+      <div class="friend-item-info friend-row-main" data-id="${f.clientId}">
         <span class="friend-online-dot ${f.online ? 'online' : ''}" title="${escapeHtml(f.online ? t('online') : t('offline'))}"></span>
         <span class="friend-item-name">${getFlagImg(f.countryCode)} ${escapeHtml(f.username)}</span>
-        ${friendBadge(f.temporary)}
         ${unread > 0 ? `<span class="unread-badge">${unread}</span>` : ''}
       </div>
-      <div class="friend-item-actions">
-        <button type="button" class="btn-chip friend-chat-btn" data-id="${f.clientId}">${ICONS.chat} ${escapeHtml(t('chat'))}</button>
-        <button type="button" class="btn-chip friend-block-btn" data-id="${f.clientId}">${ICONS.block} ${escapeHtml(t('block'))}</button>
-        <button type="button" class="btn-chip friend-remove-btn" data-id="${f.clientId}">${ICONS.close} ${escapeHtml(t('remove'))}</button>
-      </div>
+      <button type="button" class="friend-call-btn" data-id="${f.clientId}" data-name="${escapeHtml(f.username)}" title="${escapeHtml(t('callBack'))}" aria-label="${escapeHtml(t('callBack'))}">
+        <svg viewBox="0 0 24 24" fill="white" aria-hidden="true"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+      </button>
     `;
     friendsList.appendChild(item);
   });
 }
 
-function renderFriendRequests() {
-  friendReqCount.textContent = friendRequestsData.length;
-  friendReqCount.classList.toggle('hidden', friendRequestsData.length === 0);
-
-  if (friendRequestsData.length === 0) {
-    friendRequestsList.innerHTML = `<p class="history-empty">${escapeHtml(t('noPendingRequests'))}</p>`;
-    return;
-  }
-  friendRequestsList.innerHTML = '';
-  friendRequestsData.forEach((r) => {
-    const item = document.createElement('div');
-    item.className = 'friend-item';
-    item.innerHTML = `
-      <div class="friend-item-info">
-        <span class="friend-item-name">${getFlagImg(r.countryCode)} ${escapeHtml(r.username)}</span>
-        ${friendBadge(r.temporary)}
-      </div>
-      <div class="friend-item-actions">
-        <button type="button" class="btn-chip btn-chip-accept friend-confirm-btn" data-id="${r.clientId}">${ICONS.check} ${escapeHtml(t('confirm'))}</button>
-        <button type="button" class="btn-chip friend-dismiss-btn" data-id="${r.clientId}">${ICONS.close} ${escapeHtml(t('dismiss'))}</button>
-      </div>
-    `;
-    friendRequestsList.appendChild(item);
-  });
-}
-
 friendsList.addEventListener('click', (e) => {
-  const chatBtn = e.target.closest('.friend-chat-btn');
-  const blockBtn = e.target.closest('.friend-block-btn');
-  const removeBtn = e.target.closest('.friend-remove-btn');
-  const nameArea = e.target.closest('.friend-item-info');
-  if (chatBtn) {
-    openFriendChat(chatBtn.dataset.id);
-  } else if (nameArea && !blockBtn && !removeBtn) {
-    const row = nameArea.closest('.friend-item');
-    const id = row.querySelector('.friend-chat-btn')?.dataset.id;
-    if (id) openFriendChat(id);
-  } else if (blockBtn) {
-    if (!confirm(t('confirmBlockFriend'))) return;
-    socket.emit('block-friend', { friendClientId: blockBtn.dataset.id });
-  } else if (removeBtn) {
-    if (!confirm(t('confirmRemoveFriend'))) return;
-    socket.emit('remove-friend', { friendClientId: removeBtn.dataset.id });
+  const avatarBtn = e.target.closest('.friend-avatar-btn');
+  const callBtn = e.target.closest('.friend-call-btn');
+  const rowMain = e.target.closest('.friend-row-main');
+  if (avatarBtn) {
+    openFriendProfile(avatarBtn.dataset.id);
+  } else if (callBtn) {
+    closeModal(friendsDropdown);
+    requestCallBack(callBtn.dataset.id, callBtn.dataset.name);
+  } else if (rowMain) {
+    openFriendChat(rowMain.dataset.id);
   }
 });
 
-friendRequestsList.addEventListener('click', (e) => {
-  const confirmBtn = e.target.closest('.friend-confirm-btn');
-  const dismissBtn = e.target.closest('.friend-dismiss-btn');
-  if (confirmBtn) {
-    socket.emit('friend-request-respond', { fromClientId: confirmBtn.dataset.id, accept: true });
-  } else if (dismissBtn) {
-    socket.emit('friend-request-respond', { fromClientId: dismissBtn.dataset.id, accept: false });
-  }
+// --- Friend profile view: avatar, name, status + Remove Friend / Block User ---
+let activeProfileFriendId = null;
+
+function openFriendProfile(friendClientId) {
+  const friend = friendsData.find((f) => f.clientId === friendClientId);
+  if (!friend) return;
+  activeProfileFriendId = friendClientId;
+  friendProfileAvatar.innerHTML = friend.avatar && AVATAR_STYLES[friend.avatar]
+    ? avatarSvg(friend.avatar, 72)
+    : ICONS.person;
+  friendProfileName.innerHTML = `${getFlagImg(friend.countryCode)} ${escapeHtml(friend.username)}`;
+  friendProfileStatus.innerHTML = `<span class="friend-online-dot ${friend.online ? 'online' : ''}"></span> ${escapeHtml(friend.online ? t('online') : t('offline'))}`;
+  closeModal(friendsDropdown);
+  openModal(friendProfileModal);
+}
+
+closeFriendProfileBtn.addEventListener('click', () => closeModal(friendProfileModal));
+
+friendProfileChatBtn.addEventListener('click', () => {
+  if (!activeProfileFriendId) return;
+  closeModal(friendProfileModal);
+  openFriendChat(activeProfileFriendId);
+});
+
+friendProfileRemoveBtn.addEventListener('click', () => {
+  if (!activeProfileFriendId || !confirm(t('confirmRemoveFriend'))) return;
+  socket.emit('remove-friend', { friendClientId: activeProfileFriendId });
+  closeModal(friendProfileModal);
+});
+
+friendProfileBlockBtn.addEventListener('click', () => {
+  if (!activeProfileFriendId || !confirm(t('confirmBlockFriend'))) return;
+  socket.emit('block-friend', { friendClientId: activeProfileFriendId });
+  closeModal(friendProfileModal);
 });
 
 socket.on('state-sync', ({ friends: friendList, friendRequests: requestList, notifications: notifList } = {}) => {
@@ -823,7 +1008,6 @@ socket.on('state-sync', ({ friends: friendList, friendRequests: requestList, not
   friendRequestsData = requestList || [];
   notifData = notifList || [];
   renderFriendsList();
-  renderFriendRequests();
   renderNotifications();
 });
 
@@ -911,6 +1095,11 @@ function renderNotifications() {
           <button type="button" class="btn-chip btn-chip-accept notif-confirm-btn" data-id="${n.id}" data-from="${n.fromClientId}">${ICONS.check} ${escapeHtml(t('confirm'))}</button>
           <button type="button" class="btn-chip notif-dismiss-btn" data-id="${n.id}" data-from="${n.fromClientId}">${ICONS.close} ${escapeHtml(t('dismiss'))}</button>
         `;
+      } else if (n.type === 'friend_accepted') {
+        actions = `
+          <button type="button" class="btn-chip btn-chip-accept notif-open-chat-btn" data-id="${n.id}" data-from="${n.byClientId}">${ICONS.chat} ${escapeHtml(t('chat'))}</button>
+          <button type="button" class="btn-chip notif-clear-btn" data-id="${n.id}">${ICONS.close} ${escapeHtml(t('dismiss'))}</button>
+        `;
       } else if (n.type === 'call_back_request') {
         actions = `
           <button type="button" class="btn-chip btn-chip-accept notif-callback-accept-btn" data-id="${n.id}" data-from="${n.fromClientId}">${ICONS.call} ${escapeHtml(t('callBack'))}</button>
@@ -939,10 +1128,16 @@ notifList.addEventListener('click', (e) => {
   const confirmBtn = e.target.closest('.notif-confirm-btn');
   const dismissBtn = e.target.closest('.notif-dismiss-btn');
   const clearBtn = e.target.closest('.notif-clear-btn');
+  const openChatBtn = e.target.closest('.notif-open-chat-btn');
   const cbAccept = e.target.closest('.notif-callback-accept-btn');
   const cbDecline = e.target.closest('.notif-callback-decline-btn');
 
-  if (confirmBtn) {
+  if (openChatBtn) {
+    socket.emit('clear-notification', { notificationId: openChatBtn.dataset.id });
+    removeNotifLocal(openChatBtn.dataset.id);
+    closeModal(notifModal);
+    openFriendChat(openChatBtn.dataset.from);
+  } else if (confirmBtn) {
     socket.emit('friend-request-respond', { fromClientId: confirmBtn.dataset.from, accept: true, notificationId: confirmBtn.dataset.id });
     removeNotifLocal(confirmBtn.dataset.id);
   } else if (dismissBtn) {
@@ -993,7 +1188,7 @@ function openFriendChat(friendClientId) {
   const friend = friendsData.find((f) => f.clientId === friendClientId);
   friendChatTitle.textContent = friend ? t('chatWith', { name: friend.username }) : t('chat');
   closeModal(notifModal);
-  closeModal(friendsModal);
+  closeModal(friendsDropdown);
   openModal(friendChatModal);
 
   socket.emit('get-friend-chat', { friendClientId });
@@ -1013,6 +1208,14 @@ friendChatForm.addEventListener('submit', (e) => {
   e.preventDefault();
   const text = friendChatInput.value.trim();
   if (!text || !activeFriendChatId) return;
+  if (messageHasLink(text)) {
+    const el = document.createElement('div');
+    el.className = 'chat-msg system';
+    el.textContent = t('errNoLinks');
+    friendChatMessages.appendChild(el);
+    friendChatMessages.scrollTop = friendChatMessages.scrollHeight;
+    return;
+  }
   socket.emit('friend-message', { toClientId: activeFriendChatId, text });
   friendChatInput.value = '';
 });
@@ -1104,7 +1307,12 @@ function registerClient(payload) {
   socket.emit('register', payload);
 }
 
-registerClient({ clientId: getClientId(), nickname: accountNickname || undefined });
+registerClient({
+  clientId: getClientId(),
+  nickname: accountNickname || undefined,
+  avatar: myAvatar || undefined,
+  hideStatus: !statusVisible,
+});
 renderAccountState();
 
 socket.on('profile', (profile) => {
@@ -1135,6 +1343,7 @@ function setConnection(color, labelKey) {
     void connectFlash.offsetWidth;
     connectFlash.classList.add('playing');
     playConnectSound();
+    vibrate([40, 60, 40]);
   }
   wasConnected = connected;
 }
@@ -1142,6 +1351,156 @@ function setConnection(color, labelKey) {
 function hideConnection() {
   connectionIndicator.classList.add('hidden');
 }
+
+// --- Call screen button states: 'idle' | 'searching' | 'connected'.
+// One main button crossfades between green "Call" and red "Hang Up" (CSS
+// handles the smooth transition); Skip is always alongside it. Report/add
+// friend only exist during an active call, never while searching. ---
+let callState = 'idle';
+
+function setCallState(state) {
+  callState = state;
+  const connected = state === 'connected';
+  callMainBtn.classList.toggle('is-hangup', connected);
+  callMainBtn.classList.toggle('is-call', !connected);
+  callMainLabel.classList.toggle('is-hangup', connected);
+  callMainLabel.textContent = connected ? t('hangUp') : t('call');
+  callMainBtn.setAttribute('aria-label', connected ? t('hangUp') : t('call'));
+
+  reportBtn.classList.toggle('hidden', !connected);
+  addFriendBtn.classList.toggle('hidden', !connected);
+  reassureLine.classList.toggle('hidden', !connected);
+
+  if (state === 'searching') startSearchTicker();
+  else stopSearchTicker();
+  if (!connected) stopQualityMonitor();
+  syncWakeLock();
+}
+
+// --- Searching entertainment ticker: rotates fun facts, icebreakers, tips and
+// a live online counter every few seconds so waiting never feels like dead air. ---
+const TICKER_KEYS = [
+  'funFact1', 'icebreaker1', 'tip1', 'funFact2', 'icebreaker2', 'tip2',
+  'funFact3', 'icebreaker3', 'tip3', 'funFact4', 'icebreaker4', 'tip4',
+  'funFact5', 'icebreaker5', 'funFact6', 'icebreaker6',
+];
+let lastOnlineCount = 0;
+let tickerInterval = null;
+let tickerIdx = 0;
+
+function renderTickerItem() {
+  // Every 4th slot shows the live "X people online now" counter.
+  const text = tickerIdx % 4 === 3
+    ? t('tickerOnlineNow', { n: lastOnlineCount })
+    : t(TICKER_KEYS[(tickerIdx - Math.floor(tickerIdx / 4)) % TICKER_KEYS.length]);
+  searchTickerText.classList.remove('ticker-fade-in');
+  void searchTickerText.offsetWidth; // restart the fade animation
+  searchTickerText.textContent = text;
+  searchTickerText.classList.add('ticker-fade-in');
+}
+
+function startSearchTicker() {
+  searchTicker.classList.remove('hidden');
+  renderTickerItem();
+  clearInterval(tickerInterval);
+  tickerInterval = setInterval(() => {
+    tickerIdx += 1;
+    renderTickerItem();
+  }, 4000);
+}
+
+function stopSearchTicker() {
+  clearInterval(tickerInterval);
+  tickerInterval = null;
+  searchTicker.classList.add('hidden');
+}
+
+// --- Live connection quality indicator (RTT + packet loss via WebRTC stats) ---
+let qualityInterval = null;
+let lastQualityStats = null;
+
+function setQualityLevel(level) {
+  qualityIndicator.dataset.level = String(level);
+  qualityLabel.textContent = level >= 4 ? t('qualityExcellent')
+    : level === 3 ? t('qualityGood')
+    : level === 2 ? t('qualityFair')
+    : t('qualityPoor');
+}
+
+function startQualityMonitor() {
+  stopQualityMonitor();
+  qualityIndicator.classList.remove('hidden');
+  setQualityLevel(3);
+  qualityInterval = setInterval(async () => {
+    if (!pc) return;
+    try {
+      const stats = await pc.getStats();
+      let rtt = null;
+      let lost = 0;
+      let received = 0;
+      stats.forEach((r) => {
+        if (r.type === 'candidate-pair' && r.state === 'succeeded' && r.currentRoundTripTime != null) {
+          rtt = r.currentRoundTripTime;
+        }
+        if (r.type === 'inbound-rtp' && r.kind === 'audio') {
+          lost = r.packetsLost || 0;
+          received = r.packetsReceived || 0;
+        }
+      });
+      let lossRate = 0;
+      if (lastQualityStats) {
+        const dLost = Math.max(0, lost - lastQualityStats.lost);
+        const dRecv = Math.max(0, received - lastQualityStats.received);
+        lossRate = dLost + dRecv > 0 ? dLost / (dLost + dRecv) : 0;
+      }
+      lastQualityStats = { lost, received };
+
+      let level = 4;
+      if (rtt != null) {
+        if (rtt > 0.5) level = 1;
+        else if (rtt > 0.3) level = Math.min(level, 2);
+        else if (rtt > 0.15) level = Math.min(level, 3);
+      }
+      if (lossRate > 0.08) level = 1;
+      else if (lossRate > 0.03) level = Math.min(level, 2);
+      else if (lossRate > 0.01) level = Math.min(level, 3);
+      setQualityLevel(level);
+    } catch (e) {
+      // getStats can fail transiently while the connection is torn down
+    }
+  }, 2000);
+}
+
+function stopQualityMonitor() {
+  clearInterval(qualityInterval);
+  qualityInterval = null;
+  lastQualityStats = null;
+  qualityIndicator.classList.add('hidden');
+}
+
+// --- Screen wake lock: while auto-connect is enabled and we're searching or
+// talking, keep the device awake so the loop never silently stops. ---
+let wakeLock = null;
+
+async function syncWakeLock() {
+  const want = autoCallEnabled && (callState === 'searching' || callState === 'connected');
+  if (want && !wakeLock && navigator.wakeLock) {
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    } catch (e) {
+      // wake lock denied (low battery, unsupported) — non-critical
+    }
+  } else if (!want && wakeLock) {
+    try { wakeLock.release(); } catch (e) { /* already released */ }
+    wakeLock = null;
+  }
+}
+
+document.addEventListener('visibilitychange', () => {
+  // The OS drops wake locks when the tab is backgrounded — re-acquire on return.
+  if (document.visibilityState === 'visible') syncWakeLock();
+});
 
 function startCallTimer() {
   callStartedAt = Date.now();
@@ -1252,6 +1611,16 @@ function setSubTextFading(key, vars, delayMs = 5000) {
   setSubText(key, vars);
   subTextFadeTimer = setTimeout(() => {
     subText.classList.add('sub-text-fade-out');
+    // Actually clear the text once the CSS fade completes. Relying on opacity
+    // alone left the message stuck on screen on mobile browsers that skip the
+    // transition while the tab/screen is inactive.
+    subTextFadeTimer = setTimeout(() => {
+      if (lastSubMsg && lastSubMsg.key === key) {
+        lastSubMsg = null;
+        subText.textContent = '';
+        subText.classList.remove('sub-text-fade-out');
+      }
+    }, 1400);
   }, delayMs);
 }
 
@@ -1439,6 +1808,7 @@ function teardownPeer() {
   partnerCard.classList.add('hidden');
   sharedInterestNote.classList.add('hidden');
   reactionBar.classList.add('hidden');
+  stopQualityMonitor();
   stopCallTimer();
   lockSkipButton();
 }
@@ -1446,6 +1816,7 @@ function teardownPeer() {
 function resetUI() {
   teardownPeer();
   isSearching = false;
+  setCallState('idle');
   setState('idle');
   setStatusText('statusIdle');
   setSubText('subIdle');
@@ -1473,6 +1844,22 @@ function resetUI() {
   filtersBtn.classList.add('hidden');
 }
 
+// Initial call-screen state: green Call + Skip only — no lingering Hang Up.
+// Used both after a manual hang-up and when the other side ends the call.
+function goIdleOnCallScreen(statusKey) {
+  isSearching = false;
+  teardownPeer();
+  clearChat();
+  chatPanel.classList.add('hidden');
+  chatOpen = false;
+  setCallState('idle');
+  setState('idle');
+  hideConnection();
+  unlockSkipButton();
+  setStatusText(statusKey || 'statusReadyToTalk');
+  setSubText('subTapCall');
+}
+
 function registerProfile() {
   registerClient({
     clientId: getClientId(),
@@ -1482,6 +1869,8 @@ function registerProfile() {
     excludeCountries: appliedFilters.excludeCountries,
     interests: appliedFilters.interests,
     nickname: accountNickname || undefined,
+    avatar: myAvatar || undefined,
+    hideStatus: !statusVisible,
   });
 }
 
@@ -1491,8 +1880,6 @@ function enterCallUI() {
   skipBtn.classList.remove('hidden');
   muteBtn.classList.remove('hidden');
   chatToggleBtn.classList.remove('hidden');
-  reportBtn.classList.remove('hidden');
-  addFriendBtn.classList.remove('hidden');
   primaryControls.classList.remove('hidden');
   autoCallRow.classList.remove('hidden');
   quickGuide.classList.add('hidden');
@@ -1529,6 +1916,7 @@ async function begin() {
 
   isSearching = true;
   enterCallUI();
+  setCallState('searching');
   setState('waiting');
   setConnection('orange', 'connSearching');
   setStatusText('statusSearching');
@@ -1562,6 +1950,8 @@ ageAgreeBtn.addEventListener('click', () => {
 function performSkip() {
   teardownPeer();
   clearChat();
+  isSearching = true;
+  setCallState('searching');
   setState('waiting');
   setConnection('red', 'connSkipped');
   setStatusText('statusFindingNew');
@@ -1572,20 +1962,36 @@ function performSkip() {
 
 skipBtn.addEventListener('click', performSkip);
 
-stopBtn.addEventListener('click', () => {
-  playHangupSound();
-  socket.emit('leave');
-  if (localStream) {
-    localStream.getTracks().forEach((t) => t.stop());
-    localStream = null;
+// The one main button: green "Call" while idle/searching, red "Hang Up" once
+// connected. Hanging up (or cancelling a search) returns to the initial
+// Call + Skip state on this screen — it never strands a dead Hang Up button.
+callMainBtn.addEventListener('click', () => {
+  if (callState === 'connected') {
+    playHangupSound();
+    socket.emit('leave');
+    goIdleOnCallScreen('statusYouLeft');
+  } else if (callState === 'searching') {
+    socket.emit('leave');
+    goIdleOnCallScreen();
+  } else {
+    playTapSound();
+    clearError();
+    isSearching = true;
+    setCallState('searching');
+    setState('waiting');
+    setConnection('orange', 'connSearching');
+    setStatusText('statusSearching');
+    setSubText('subHangTight');
+    socket.emit('find-partner');
   }
-  resetUI();
 });
 
 reportBtn.addEventListener('click', () => {
   if (!confirm(t('confirmReport'))) return;
   teardownPeer();
   clearChat();
+  isSearching = true;
+  setCallState('searching');
   setState('waiting');
   setConnection('red', 'connReported');
   setStatusText('statusReported');
@@ -1617,9 +2023,23 @@ chatForm.addEventListener('submit', (e) => {
   e.preventDefault();
   const text = chatInput.value.trim();
   if (!text) return;
+  if (messageHasLink(text)) {
+    addChatMessage(t('errNoLinks'), 'system');
+    return;
+  }
   addChatMessage(text, 'me');
   socket.emit('chat-message', text);
   chatInput.value = '';
+});
+
+// Server-side link filter rejected a message we let through — surface it.
+socket.on('chat-blocked', () => {
+  const target = friendChatModal.classList.contains('hidden') ? chatMessages : friendChatMessages;
+  const el = document.createElement('div');
+  el.className = 'chat-msg system';
+  el.textContent = t('errNoLinks');
+  target.appendChild(el);
+  target.scrollTop = target.scrollHeight;
 });
 
 // --- Typing indicator ---
@@ -1643,20 +2063,28 @@ socket.on('typing', () => {
 
 // --- Socket events ---
 socket.on('online-count', (count) => {
+  lastOnlineCount = count;
   onlineCountEl.textContent = count;
 });
 
-socket.on('waiting', ({ estimatedSeconds } = {}) => {
+socket.on('waiting', ({ estimatedSeconds, predicted } = {}) => {
   setState('waiting');
   setConnection('orange', 'connSearching');
-  setStatusText('statusSearching');
+  // Predicted match preview, e.g. "Connecting to someone in Japan…", based on
+  // who's online right now — shown before the actual connection completes.
+  if (predicted && predicted.countryCode && predicted.countryCode !== 'XX') {
+    setStatusText('statusConnectingTo', { country: getCountryName(predicted.countryCode) || predicted.country });
+  } else {
+    setStatusText('statusSearching');
+  }
   if (estimatedSeconds) setSubText('subUsuallyMatches', { s: estimatedSeconds });
   else setSubText('subHangTight');
 });
 
-// Server gives up on the "Interested Countries" filter for this search after a
-// long wait and widens the pool to anyone, so the user isn't stuck waiting forever.
-socket.on('country-fallback', () => {
+// After ~10s of waiting the server drops every filter and auto-matches with
+// any random stranger instead of leaving the user stuck.
+socket.on('random-fallback', () => {
+  setStatusText('statusConnectingRandom');
   setSubText('subCountryFallback');
 });
 
@@ -1672,6 +2100,7 @@ socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
   }
 
   setState('connected');
+  setCallState('connected');
   setConnection('orange', 'connConnecting');
   if (callback) setStatusText('statusCallingBack', { name: partner.username });
   else setStatusText('statusConnectingTo', { country: getCountryName(partner.countryCode) || partner.country });
@@ -1682,9 +2111,8 @@ socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
   addFriendBtn.classList.remove('added');
   addFriendBtn.disabled = false;
   partnerName.textContent = partner.username;
-  const rawGender = partner.gender && partner.gender !== 'unspecified' ? partner.gender : '';
-  const genderLabel = rawGender === 'male' || rawGender === 'female' ? ` · ${escapeHtml(t(rawGender))}` : '';
-  partnerMeta.innerHTML = `${getFlagImg(partner.countryCode)}${genderLabel}`;
+  // Country/flag only — never show anything gendered about the stranger.
+  partnerMeta.innerHTML = getFlagImg(partner.countryCode);
 
   partnerInterests.innerHTML = '';
   currentPartnerInterests = partner.interests || [];
@@ -1709,6 +2137,7 @@ socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
   lockSkipButton();
 
   await startCall(initiator);
+  startQualityMonitor();
 });
 
 socket.on('reaction', (reaction) => {
@@ -1752,6 +2181,7 @@ async function requestCallBack(targetClientId, targetUsername) {
   registerProfile();
   isSearching = true;
   enterCallUI();
+  setCallState('searching');
   setState('waiting');
   setConnection('orange', 'connCalling');
   setStatusText('statusCalling', { name: targetUsername });
@@ -1778,6 +2208,7 @@ async function acceptCallBack(fromClientId) {
   registerProfile();
   isSearching = true;
   enterCallUI();
+  setCallState('searching');
   setState('waiting');
   setConnection('orange', 'connConnecting');
   setStatusText('statusConnecting');
@@ -1835,6 +2266,9 @@ socket.on('partner-left', () => {
   teardownPeer();
   clearChat();
   if (isSearching && autoCallEnabled) {
+    // Auto-connect enabled: immediately keep connecting to new people, no
+    // confirmation ever — this loop only stops when the user stops it.
+    setCallState('searching');
     setState('waiting');
     setConnection('red', 'connDisconnected');
     setStatusText('statusStrangerLeft');
@@ -1842,13 +2276,10 @@ socket.on('partner-left', () => {
     socket.emit('find-partner');
     setTimeout(() => setConnection('orange', 'connSearching'), 600);
   } else if (isSearching) {
+    // Other side hung up with auto-connect off: back to the initial
+    // Call + Skip state — no lingering Hang Up button.
     socket.emit('leave');
-    if (localStream) {
-      localStream.getTracks().forEach((t) => t.stop());
-      localStream = null;
-    }
-    resetUI();
-    showError(t('errAutoCallOff'));
+    goIdleOnCallScreen('statusStrangerLeft');
   }
 });
 
@@ -1864,6 +2295,7 @@ socket.on('partner-mic-state', (muted) => {
 socket.on('chat-message', ({ text }) => {
   addChatMessage(text, 'them');
   playMessageSound();
+  vibrate(20);
   if (!chatOpen) {
     chatBadge.classList.remove('hidden');
   }
@@ -1880,6 +2312,11 @@ socket.on('connect', () => {
   // Re-register on every (re)connect so the server always has a live socket
   // for this clientId, and so friends/notifications resync after being offline.
   if (lastRegisterPayload) socket.emit('register', lastRegisterPayload);
+  // Mobile browsers drop the socket when backgrounded/screen off. With
+  // auto-connect on, silently resume the search loop instead of stalling.
+  if (isSearching && callState !== 'connected' && autoCallEnabled) {
+    socket.emit('find-partner');
+  }
 });
 
 // --- Language switching: re-render every dynamic (JS-generated) piece of UI.
@@ -1890,8 +2327,8 @@ window.addEventListener('i18n-changed', () => {
   if (lastSubMsg) subText.textContent = t(lastSubMsg.key, lastSubMsg.vars);
   if (lastConn) connectionLabel.textContent = t(lastConn.labelKey);
   if (!skipBtn.disabled) skipLabel.textContent = t('next');
+  callMainLabel.textContent = callState === 'connected' ? t('hangUp') : t('call');
 
-  renderFriendRequests();
   renderNotifications(); // also re-renders the friends list + badges
   renderHistory();
   includeCountryWidget.renderChips();

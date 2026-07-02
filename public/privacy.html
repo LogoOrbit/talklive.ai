@@ -18,65 +18,66 @@
 
     <main class="policy-page-body policy-body">
       <h1>Privacy Policy</h1>
-      <p class="policy-updated">Last updated: July 1, 2026</p>
+      <p class="policy-updated">Last updated: July 2, 2026</p>
 
-      <p>This policy explains what talklive.site ("TalkLive," "we," "us") collects when you use the service, why, and what choices you have. Using TalkLive means you agree to this policy — if you don't agree, please don't use the service.</p>
+      <p>TalkLive ("we," "us") is a live, random voice-chat service that pairs you with strangers around the world for audio conversations. This policy explains exactly what we collect, what we deliberately do not collect, how everything is used, and what rights you have. If you don't agree with it, please don't use the service.</p>
 
       <h3>1. What We Collect</h3>
-      <p>TalkLive doesn't require an account to make a call, so we collect very little by default:</p>
       <ul>
-        <li><strong>Connection info:</strong> your IP address and basic device/browser details, used briefly to match you with another user and estimate a rough location (country/city) for display.</li>
-        <li><strong>Usage data:</strong> standard technical logs (timestamps, referrers, error data) used to keep the service running and to spot abuse.</li>
-        <li><strong>Cookies &amp; local storage:</strong> small bits of data stored in your browser to remember settings like your preferences, and to support analytics/ads.</li>
-        <li><strong>Call audio:</strong> your microphone audio is streamed peer-to-peer (WebRTC) directly to the person you're matched with. It does not pass through or get stored on our servers, and we don't record calls.</li>
-        <li><strong>Chat messages:</strong> relayed live during a call and not stored once the session ends.</li>
-        <li><strong>Account info (optional):</strong> if you sign in (e.g. with Google) or subscribe to Premium, we store the identifiers needed to run your account and subscription — see Sections 6–7.</li>
+        <li><strong>Account information (optional):</strong> TalkLive works without an account. If you create one, we store your username, a nickname shown to others, and a salted hash of your password (never the password itself). If you sign in with Google, we store your Google account identifier, your verified email's username portion, and your display name to create and recognize your account.</li>
+        <li><strong>Chat metadata:</strong> when and how long calls happen, who was paired with whom (as anonymous client identifiers), skip/report events, and friend-message delivery data. We keep this to run the service and to enforce our rules.</li>
+        <li><strong>Approximate location (country/city) for matching:</strong> we look up your IP address to estimate your country and city. This is used to show your country flag to your match, to power country-based matching filters, and to display the "connecting to someone in …" preview. We do not collect precise (GPS) location.</li>
+        <li><strong>Device &amp; session information:</strong> IP address, browser type, connection timestamps, error logs, and a random client identifier stored in your browser so your settings, friends, and blocks survive reloads. Your preferences (theme, sound, vibration, avatar choice, filters) are stored locally in your browser.</li>
+        <li><strong>Friend, blocking, and report data:</strong> your friends list, pending friend requests, chat messages exchanged with friends (kept temporarily while the server is running), the list of users you have blocked or reported, and reports made about you.</li>
       </ul>
 
-      <h3 id="ai-voice-estimation">2. AI-Based Voice Gender Estimation</h3>
-      <p>To power optional features like gender-based match filtering for Premium users, TalkLive may run your live voice through an AI model that estimates gender in real time.</p>
+      <h3>2. What We Do NOT Collect or Store</h3>
       <ul>
-        <li>Your audio is analyzed in the moment and immediately discarded — we do not save recordings.</li>
-        <li>The resulting estimate may be held briefly in your browser's local storage and in server memory for the length of your session only, and is never linked to your identity or kept past that session.</li>
-        <li>It's used solely to enable the matching feature you've opted into, not for profiling, advertising, or any automated decision that affects you beyond that immediate match.</li>
-        <li>The estimate is AI-generated and won't always be accurate.</li>
+        <li><strong>Call audio is never stored.</strong> Your voice is streamed peer-to-peer (WebRTC) directly between you and your match. It does not pass through and is not recorded, analyzed, or stored on our servers.</li>
+        <li><strong>No video.</strong> TalkLive is audio-only; we never access your camera.</li>
+        <li><strong>Stranger chat messages</strong> (the text chat during a random call) are relayed live and are not stored after your session ends.</li>
+        <li><strong>No payment data, no precise location, no contact lists, no advertising identifiers.</strong> We do not sell personal data to anyone.</li>
       </ul>
 
-      <h3>3. How We Use Information</h3>
-      <p>We use the data above to operate matchmaking, run optional features (like gender filtering), maintain and improve the service, prevent abuse and enforce our rules, respond to support requests, and — where you've agreed to it — show relevant ads or send you updates. Reported audio/behavior may be reviewed by automated systems or staff to enforce our Community Guidelines.</p>
+      <h3>3. How Matching Data Is Used</h3>
+      <p>Your country, stated gender (if you choose to provide one), match preferences, and interest tags are used for one purpose: pairing you with a compatible stranger. If no compatible match is found within about ten seconds, your filters are temporarily dropped and you are matched with any available person. Your gender is never displayed to the person you are matched with. Matching data is held in server memory only and disappears when you disconnect.</p>
 
-      <h3>4. Sharing With Third Parties</h3>
-      <p>We don't sell your personal data. We share the minimum necessary information with:</p>
+      <h3>4. Friend List &amp; Blocking Data</h3>
+      <p>Friend relationships, friend requests, notifications, and friend-to-friend chat history are stored on the server (currently in memory, cleared on server restart), keyed to your anonymous client identifier. Blocks are permanent for the life of the server process: a blocked pair is never matched again. If you hide your online status, it is hidden only from your added friends; it never changes the site-wide online counter.</p>
+
+      <h3>5. Moderation &amp; No Link Sharing</h3>
       <ul>
-        <li><strong>Google</strong> — if you choose to sign in with Google, to authenticate you.</li>
-        <li><strong>Freemius</strong> — our payment processor, to handle Premium subscriptions, billing, and refunds.</li>
-        <li><strong>Analytics/ad partners</strong> — aggregated, non-identifying usage data to help us understand traffic and (where applicable) show ads.</li>
-        <li><strong>Authorities</strong> — only where required by law, to investigate fraud/abuse, or to protect the safety of users or the service.</li>
+        <li><strong>No links, ever.</strong> Chat messages containing URLs of any kind are automatically blocked, in both stranger chat and friend chat, with no exceptions. This protects users from scams, phishing, and malicious sites.</li>
+        <li><strong>Reports.</strong> Tapping Report immediately ends the call and permanently prevents that person from being matched with you again. Repeated reports lead to automatic bans. Report counts are retained to enforce this.</li>
+        <li>Calls are not monitored or listened to in real time — moderation is driven by user reports and automated rules (like the link filter), not by recording your conversations.</li>
       </ul>
 
-      <h3>5. Age Requirement</h3>
-      <p>TalkLive is for users 18 and older. We don't knowingly allow anyone under 18 to use the service, and accounts found to belong to a minor will be terminated and any associated data deleted.</p>
+      <h3>6. Data Retention</h3>
+      <ul>
+        <li><strong>Call audio:</strong> never retained (never collected).</li>
+        <li><strong>Stranger chat &amp; matching data:</strong> discarded when the call or session ends.</li>
+        <li><strong>Accounts, friends, friend chats, blocks, reports:</strong> currently held in server memory and cleared whenever the server restarts. If we move to persistent storage, data will be kept only as long as your account exists or as needed to enforce bans and legal obligations.</li>
+        <li><strong>Local data</strong> (client ID, preferences, avatar, consent) stays in your browser until you clear it.</li>
+      </ul>
 
-      <h3>6. Premium Features &amp; Billing Data</h3>
-      <p>If you subscribe to Premium, we (via Freemius) store your subscription status, billing identifiers, and login/session metadata needed to provision and support the feature. Payment card details are handled directly by Freemius, not by us.</p>
+      <h3>7. Your Rights — Delete Your Account &amp; Data</h3>
+      <p>You can, at any time and regardless of where you live:</p>
+      <ul>
+        <li>Request a copy of the data we hold about you.</li>
+        <li>Request correction or deletion of your account and all associated data (friends, messages, reports linked to your identifier).</li>
+        <li>Clear your local data instantly by clearing your browser storage for this site.</li>
+        <li>Object to or restrict any processing you believe is improper.</li>
+      </ul>
+      <p>To exercise any of these, contact us at the address in Section 10. We will verify the request and respond within the timeframe required by applicable law (e.g. GDPR, CCPA).</p>
 
-      <h3>7. Data Retention</h3>
-      <p>We keep account and billing data only as long as needed to provide the service and meet legal/tax obligations (billing records may be retained longer where required by law). You can request deletion of your data at any time — see Section 9.</p>
+      <h3>8. Age Requirement</h3>
+      <p>TalkLive is strictly for users 18 and older. We do not knowingly allow minors to use the service; any account or identifier found to belong to a minor will be removed along with its data.</p>
 
-      <h3>8. Security</h3>
-      <p>We use reasonable technical and organizational safeguards to protect your data, but no online service can guarantee absolute security. If we become aware of a breach affecting you, we'll notify you as required by law.</p>
+      <h3>9. Security &amp; Changes</h3>
+      <p>Audio is encrypted in transit by WebRTC (DTLS-SRTP), and passwords are stored only as salted hashes. No online service can guarantee absolute security, but we collect so little that the exposure is minimal by design. We may update this policy; material changes will appear here with a new date, and continued use after a change means you accept it.</p>
 
-      <h3>9. Your Rights &amp; Choices</h3>
-      <p>Depending on where you live (e.g. under GDPR or CCPA), you may have the right to access, correct, delete, or export the data we hold about you, object to certain processing, or opt out of having your data shared for advertising. To exercise any of these, contact us at the address below — we'll verify your request and respond within the timeframe required by applicable law.</p>
-
-      <h3>10. Do Not Track</h3>
-      <p>Browser "Do Not Track" signals aren't yet standardized, so we don't currently respond to them. You can still manage cookies and tracking through your browser and device settings.</p>
-
-      <h3>11. Changes to This Policy</h3>
-      <p>We may update this policy from time to time. Material changes will be reflected here with an updated date; continuing to use TalkLive after a change means you accept the revised policy.</p>
-
-      <h3>12. Contact Us</h3>
-      <p>Questions about this policy or your data? Email us at <a href="mailto:info@talklive.site">info@talklive.site</a>.</p>
+      <h3>10. Contact for Privacy Requests</h3>
+      <p>For any privacy question, data access, or deletion request, email <a href="mailto:privacy@talklive.site">privacy@talklive.site</a> or <a href="mailto:info@talklive.site">info@talklive.site</a>. Please include the username or approximate dates of use so we can locate your data.</p>
     </main>
 
     <footer class="policy-page-footer">

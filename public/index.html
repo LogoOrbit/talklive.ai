@@ -42,10 +42,23 @@
             <path d="M12 7.5V12l3.2 2"/>
           </svg>
         </button>
-        <button id="friendsBtn" class="icon-btn friends-btn hidden" data-i18n-title="friendsAria" data-i18n-aria="friendsAria" title="Friends &amp; messages" aria-label="Friends and messages">
-          <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-          <span id="friendsMsgBadge" class="notif-badge hidden" aria-hidden="true">0</span>
-        </button>
+        <div class="friends-wrap">
+          <button id="friendsBtn" class="icon-btn friends-btn hidden" data-i18n-title="friendsAria" data-i18n-aria="friendsAria" title="Friends &amp; messages" aria-label="Friends and messages">
+            <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+            <span id="friendsMsgBadge" class="notif-badge hidden" aria-hidden="true">0</span>
+          </button>
+          <div id="friendsDropdown" class="notif-dropdown friends-dropdown hidden" role="dialog" data-i18n-aria="friends" aria-label="Friends">
+            <div class="modal-header">
+              <h2 data-i18n="friends">Friends</h2>
+              <button type="button" id="closeFriendsBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+              <div id="friendsList" class="friends-list">
+                <p class="history-empty" data-i18n="noFriendsYet">No friends yet. Tap "Add friend" during a call to send a request.</p>
+              </div>
+            </div>
+          </div>
+        </div>
         <div class="notif-wrap">
           <button id="notifBtn" class="icon-btn notif-btn hidden" data-i18n-title="requests" data-i18n-aria="requests" title="Requests" aria-label="Requests">
             <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -100,15 +113,6 @@
           <svg class="settings-account-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>
         </button>
 
-        <label class="checkbox-row" for="sfxSettingCheckbox">
-          <input type="checkbox" id="sfxSettingCheckbox" checked />
-          <span data-i18n="soundEffects">Sound effects</span>
-        </label>
-        <label class="checkbox-row" for="sideAutoCallCheckbox">
-          <input type="checkbox" id="sideAutoCallCheckbox" checked />
-          <span data-i18n="autoCall">Auto call</span>
-        </label>
-
         <div class="pill-row">
           <span class="pill-label" id="genderGroupLabel" data-i18n="iAm">I am</span>
           <div class="pill-group" id="genderGroup" data-value="unspecified" role="group" aria-labelledby="genderGroupLabel">
@@ -118,6 +122,44 @@
           </div>
         </div>
 
+        <div class="app-settings-section">
+          <h3 class="side-section-title" data-i18n="appSettings">App Settings</h3>
+
+          <label class="toggle-row" for="darkModeToggle">
+            <span data-i18n="darkMode">Dark mode</span>
+            <span class="switch"><input type="checkbox" id="darkModeToggle" checked /><span class="switch-slider" aria-hidden="true"></span></span>
+          </label>
+
+          <div class="pill-row">
+            <span class="pill-label" id="themeGroupLabel" data-i18n="theme">Theme</span>
+            <div class="pill-group" id="themeGroup" data-value="dark" role="group" aria-labelledby="themeGroupLabel">
+              <button type="button" class="pill" data-value="dark"><span class="pill-dot theme-dot-dark" aria-hidden="true"></span><span data-i18n="themeDark">Dark</span></button>
+              <button type="button" class="pill" data-value="light"><span class="pill-dot theme-dot-light" aria-hidden="true"></span><span data-i18n="themeLight">Light</span></button>
+              <button type="button" class="pill" data-value="ocean"><span class="pill-dot theme-dot-ocean" aria-hidden="true"></span><span data-i18n="themeOcean">Ocean</span></button>
+              <button type="button" class="pill" data-value="sunset"><span class="pill-dot theme-dot-sunset" aria-hidden="true"></span><span data-i18n="themeSunset">Sunset</span></button>
+            </div>
+          </div>
+
+          <label class="toggle-row" for="soundToggle">
+            <span data-i18n="soundNotifications">Sound notifications</span>
+            <span class="switch"><input type="checkbox" id="soundToggle" checked /><span class="switch-slider" aria-hidden="true"></span></span>
+          </label>
+
+          <label class="toggle-row" for="vibrationToggle">
+            <span data-i18n="vibration">Vibration</span>
+            <span class="switch"><input type="checkbox" id="vibrationToggle" checked /><span class="switch-slider" aria-hidden="true"></span></span>
+          </label>
+
+          <label class="toggle-row" for="statusVisibilityToggle">
+            <span data-i18n="showOnlineStatus">Show my online status to friends</span>
+            <span class="switch"><input type="checkbox" id="statusVisibilityToggle" checked /><span class="switch-slider" aria-hidden="true"></span></span>
+          </label>
+        </div>
+
+        <div class="side-panel-auth" id="sidePanelAuth">
+          <button type="button" id="sidePanelSignInBtn" class="btn btn-secondary side-auth-btn" data-i18n="signIn">Sign in</button>
+          <button type="button" id="sidePanelRegisterBtn" class="btn btn-primary side-auth-btn" data-i18n="register">Register</button>
+        </div>
       </div>
     </aside>
 
@@ -165,7 +207,7 @@
           <div class="interests-picker">
             <div id="interestTags" class="interest-tags"></div>
             <div class="interest-input-wrap">
-              <input type="text" id="interestInput" class="search-input" data-i18n-placeholder="interestPlaceholder" data-i18n-aria="interests" placeholder="Type an interest…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" maxlength="20" />
+              <input type="text" id="interestInput" class="search-input" data-i18n-placeholder="interestPlaceholder" data-i18n-aria="interests" placeholder="Type an interest…" name="tl-interest-nofill" autocomplete="one-time-code" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" maxlength="20" />
               <button type="button" id="addInterestBtn" class="btn btn-secondary interest-add-btn" data-i18n="add">Add</button>
             </div>
           </div>
@@ -202,7 +244,7 @@
       <div id="accountModal" class="modal-overlay hidden">
         <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="accountModalTitle">
           <div class="modal-header">
-            <h2 id="accountModalTitle" data-i18n="account">Account</h2>
+            <h2 id="accountModalTitle" data-i18n="accountSettings">Account Settings</h2>
             <button type="button" id="closeAccountBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
           </div>
           <div class="modal-body">
@@ -236,16 +278,22 @@
             <div id="accountLoggedIn" class="hidden">
               <p class="account-welcome"><span data-i18n="signedInAs">Signed in as</span> <strong id="accountNicknameDisplay"></strong></p>
 
-              <h3 class="account-section-title" data-i18n="accountSettings">Account Settings</h3>
+              <h3 class="account-section-title" data-i18n="avatar">Avatar</h3>
+              <p class="account-hint" data-i18n="avatarHint">Your avatar is shown to you and your friends only — strangers never see it during a call.</p>
+              <div class="avatar-cat-tabs" id="avatarCatTabs">
+                <button type="button" class="avatar-cat selected" data-cat="male" data-i18n="male">Male</button>
+                <button type="button" class="avatar-cat" data-cat="female" data-i18n="female">Female</button>
+              </div>
+              <div id="avatarGrid" class="avatar-grid"></div>
 
-              <label class="account-label" for="settingsNickname" data-i18n="nickname">Nickname</label>
+              <label class="account-label account-label-spaced" for="settingsNickname" data-i18n="nickname">Nickname</label>
               <input type="text" id="settingsNickname" class="search-input account-input" data-i18n-placeholder="nickname" placeholder="Nickname" maxlength="24" />
-              <button type="button" id="updateNicknameBtn" class="btn btn-secondary settings-save" data-i18n="updateNickname">Update Nickname</button>
+              <button type="button" id="updateNicknameBtn" class="btn btn-secondary settings-save" data-i18n="updateNickname" disabled>Update Nickname</button>
 
               <label class="account-label account-label-spaced" for="currentPasswordInput" data-i18n="changePassword">Change Password</label>
               <input type="password" id="currentPasswordInput" class="search-input account-input" data-i18n-placeholder="currentPassword" data-i18n-aria="currentPassword" placeholder="Current password" autocomplete="current-password" />
               <input type="password" id="newPasswordInput" class="search-input account-input" data-i18n-placeholder="newPassword" data-i18n-aria="newPassword" placeholder="New password" autocomplete="new-password" />
-              <button type="button" id="changePasswordBtn" class="btn btn-secondary settings-save" data-i18n="changePassword">Change Password</button>
+              <button type="button" id="changePasswordBtn" class="btn btn-secondary settings-save" data-i18n="updatePassword" disabled>Update Password</button>
 
               <button type="button" id="logoutBtn" class="btn btn-danger settings-save account-logout" data-i18n="logOut">Log Out</button>
             </div>
@@ -269,27 +317,21 @@
         </div>
       </div>
 
-      <!-- Friends modal: list of accepted friends + pending incoming requests -->
-      <div id="friendsModal" class="modal-overlay hidden">
-        <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="friendsModalTitle">
+      <!-- Friend profile: opened from a friend entry in the Friends dropdown -->
+      <div id="friendProfileModal" class="modal-overlay hidden">
+        <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="friendProfileTitle">
           <div class="modal-header">
-            <h2 id="friendsModalTitle" data-i18n="friends">Friends</h2>
-            <button type="button" id="closeFriendsBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
+            <h2 id="friendProfileTitle" data-i18n="profile">Profile</h2>
+            <button type="button" id="closeFriendProfileBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
           </div>
-          <div class="modal-body">
-            <div class="friends-tabs">
-              <button type="button" class="friends-tab selected" data-tab="list" data-i18n="myFriends">My Friends</button>
-              <button type="button" class="friends-tab" data-tab="requests"><span data-i18n="requests">Requests</span><span id="friendReqCount" class="tab-count hidden">0</span></button>
-            </div>
-            <div id="friendsListPanel">
-              <div id="friendsList" class="friends-list">
-                <p class="history-empty" data-i18n="noFriendsYet">No friends yet. Tap "Add friend" during a call to send a request.</p>
-              </div>
-            </div>
-            <div id="friendRequestsPanel" class="hidden">
-              <div id="friendRequestsList" class="friends-list">
-                <p class="history-empty" data-i18n="noPendingRequests">No pending requests.</p>
-              </div>
+          <div class="modal-body friend-profile-body">
+            <div id="friendProfileAvatar" class="friend-profile-avatar" aria-hidden="true"></div>
+            <div id="friendProfileName" class="friend-profile-name"></div>
+            <div id="friendProfileStatus" class="friend-profile-status"></div>
+            <div class="friend-profile-actions">
+              <button type="button" id="friendProfileChatBtn" class="btn btn-primary" data-i18n="chat">Chat</button>
+              <button type="button" id="friendProfileRemoveBtn" class="btn btn-secondary" data-i18n="removeFriend">Remove Friend</button>
+              <button type="button" id="friendProfileBlockBtn" class="btn btn-danger" data-i18n="blockUser">Block User</button>
             </div>
           </div>
         </div>
@@ -406,11 +448,27 @@
         <div id="connectionIndicator" class="connection-indicator hidden">
           <span id="connectionDot" class="connection-dot" aria-hidden="true"></span>
           <span id="connectionLabel" class="connection-label">Searching</span>
+          <span id="qualityIndicator" class="quality-indicator hidden" data-i18n-title="connectionQuality" title="Connection quality">
+            <span class="quality-bar q1" aria-hidden="true"></span>
+            <span class="quality-bar q2" aria-hidden="true"></span>
+            <span class="quality-bar q3" aria-hidden="true"></span>
+            <span class="quality-bar q4" aria-hidden="true"></span>
+            <span id="qualityLabel" class="quality-label"></span>
+          </span>
           <span id="callTimer" class="call-timer hidden">0:00</span>
         </div>
 
         <p id="statusText" class="status-text" aria-live="polite">Tap the green button to talk to a random person</p>
         <p id="subText" class="sub-text">Voice only · No sign up needed</p>
+
+        <!-- Rotating content shown only while searching, so waiting never feels like dead air -->
+        <div id="searchTicker" class="search-ticker hidden" aria-live="polite">
+          <span class="search-ticker-loader" aria-hidden="true"><span></span><span></span><span></span></span>
+          <span id="searchTickerText" class="search-ticker-text"></span>
+        </div>
+
+        <!-- Short reassurance shown during an active call -->
+        <p id="reassureLine" class="reassure-line hidden" data-i18n="reassureLine">Don't feel bad if someone skips you or hangs up — it happens to everyone, just move on to the next chat.</p>
 
         <div id="partnerCard" class="partner-card hidden">
           <div class="partner-name" id="partnerName">—</div>
@@ -437,12 +495,12 @@
 
         <div class="primary-controls hidden" id="primaryControls">
           <div class="call-btn-wrap">
-            <button id="stopBtn" class="call-btn call-btn-red" data-i18n-aria="hangUp" aria-label="Hang Up">
-              <svg class="phone-icon phone-icon-rotated" viewBox="0 0 24 24" fill="white" aria-hidden="true">
+            <button id="callMainBtn" class="call-btn call-main-btn is-call" data-i18n-aria="call" aria-label="Call">
+              <svg class="phone-icon call-main-icon" viewBox="0 0 24 24" fill="white" aria-hidden="true">
                 <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
               </svg>
             </button>
-            <span class="call-btn-label" data-i18n="hangUp">Hang Up</span>
+            <span id="callMainLabel" class="call-btn-label call-main-label is-call">Call</span>
           </div>
           <div class="call-btn-wrap">
             <button id="skipBtn" class="call-btn call-btn-next" data-i18n-aria="next" aria-label="Next">
@@ -456,7 +514,7 @@
 
         <label id="autoCallRow" class="checkbox-row auto-call-row hidden" for="autoCallCheckbox">
           <input type="checkbox" id="autoCallCheckbox" checked />
-          <span data-i18n="enableAutoCall">Enable Auto Call</span>
+          <span data-i18n="enableAutoCall">Enable — keep connecting me to new people</span>
         </label>
 
         <div class="controls secondary-controls">

@@ -32,11 +32,15 @@ const blocks = new Map(); // clientId -> Set<clientId>
 const hearts = new Map(); // pairKey ("clientIdA|clientIdB" sorted) -> Set<clientId who hearted>
 const reportCounts = new Map(); // clientId -> number of times reported
 
-// If a seeker's "Interested Countries" filter can't find a match within this
-// long, we drop that filter for their current search and widen to anyone
-// (their "Non Interested Countries" exclusions still always apply).
-const COUNTRY_FALLBACK_MS = 15000;
+// If a search takes longer than this, we drop ALL matching filters for the
+// current search (gender + country preferences, everything except blocks) and
+// auto-match with any random stranger so nobody waits forever.
+const RANDOM_FALLBACK_MS = 10000;
 const waitFallbackTimers = new Map(); // socketId -> Timeout
+
+// clientId -> true when the user chose to hide their online status from their
+// added friends. Never affects the global online-user count.
+const statusHidden = new Map();
 
 function clearWaitFallbackTimer(socketId) {
   const timer = waitFallbackTimers.get(socketId);
@@ -102,11 +106,20 @@ function removeNotification(clientId, notificationId) {
   if (idx !== -1) list.splice(idx, 1);
 }
 
+function liveAvatarFor(clientId, fallback) {
+  const sock = getSocketByClientId(clientId);
+  const profile = sock ? profiles.get(sock.id) : null;
+  return (profile && profile.avatar) || fallback || null;
+}
+
 function syncClientState(socket, clientId) {
   const friendList = Array.from((friends.get(clientId) || new Map()).entries()).map(([fid, info]) => ({
     clientId: fid,
     ...info,
-    online: clientSockets.has(fid),
+    avatar: liveAvatarFor(fid, info.avatar),
+    // Friends who hid their status always appear offline to friends — this
+    // only masks the per-friend indicator, never the global online count.
+    online: clientSockets.has(fid) && !statusHidden.get(fid),
   }));
   const requestList = Array.from((friendRequests.get(clientId) || new Map()).entries()).map(([fid, info]) => ({
     clientId: fid,
@@ -121,6 +134,20 @@ function syncClientState(socket, clientId) {
 
 function pairKey(a, b) {
   return [a, b].sort().join('|');
+}
+
+// No links of any kind are allowed in chat — protocols, www-prefixed hosts,
+// bare domains with a TLD, or "example dot com" style obfuscation.
+const LINK_RE = new RegExp(
+  '(?:[a-z][a-z0-9+.-]*:\\/\\/)' // any protocol://
+  + '|(?:\\bwww\\.)'
+  + '|(?:\\b[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.(?:[a-z]{2,})(?:\\/|\\b))' // bare domain.tld
+  + '|(?:\\b\\w+\\s*\\(?\\s*dot\\s*\\)?\\s*(?:com|net|org|io|gg|me|ly|co|xyz|site|online|app|tv|link|live)\\b)',
+  'i'
+);
+
+function containsLink(text) {
+  return LINK_RE.test(String(text || ''));
 }
 
 function hashPassword(password, salt) {
@@ -231,6 +258,9 @@ function disconnectPartner(socketId) {
   return partnerId;
 }
 
+// Deliberately excludes gender (and avatar, which is gendered): nothing shown
+// during a call should reveal the stranger's gender — it should only become
+// apparent through conversation.
 function publicProfile(p) {
   return {
     clientId: p.clientId,
@@ -238,17 +268,16 @@ function publicProfile(p) {
     country: p.countryName,
     countryCode: p.country,
     city: p.city,
-    gender: p.gender,
     interests: p.interests,
   };
 }
 
-// "Non Interested Countries" is a hard block that's never relaxed. "Interested
-// Countries" narrows matches to just those countries, unless this profile's
-// search has timed out and fallen back to anyone (countryFallbackActive).
+// "Non Interested Countries" is a hard block. "Interested Countries" narrows
+// matches to just those countries. Both are dropped entirely once the
+// random-match fallback kicks in (see mutuallyCompatible).
 function countryAllowed(prefs, otherCountryCode) {
   if (prefs.excludeCountries && prefs.excludeCountries.includes(otherCountryCode)) return false;
-  if (!prefs.countryFallbackActive && prefs.includeCountries && prefs.includeCountries.length
+  if (prefs.includeCountries && prefs.includeCountries.length
     && !prefs.includeCountries.includes(otherCountryCode)) {
     return false;
   }
@@ -258,6 +287,10 @@ function countryAllowed(prefs, otherCountryCode) {
 // Returns true if candidate's profile satisfies seeker's filters, and vice versa.
 function mutuallyCompatible(seeker, candidate) {
   if (isBlockedPair(seeker.clientId, candidate.clientId)) return false;
+
+  // After a long wait either side falls back to "match me with anyone random":
+  // every preference filter is dropped, only blocks still apply.
+  if (seeker.randomFallbackActive || candidate.randomFallbackActive) return true;
 
   if (seeker.prefGender && seeker.prefGender !== 'any' && candidate.gender !== seeker.prefGender) {
     return false;
@@ -344,23 +377,41 @@ function tryMatch(socketId) {
     seekerSocket.emit('matched', { initiator: false, partner: publicProfile(partnerProfile), rematched });
   } else {
     waitingQueue.push(socketId);
-    seekerSocket.emit('waiting', { estimatedSeconds: estimatedWaitSeconds() });
-
     const seekerProfile = profiles.get(socketId);
-    if (seekerProfile && !seekerProfile.countryFallbackActive && seekerProfile.includeCountries
-      && seekerProfile.includeCountries.length) {
+    seekerSocket.emit('waiting', {
+      estimatedSeconds: estimatedWaitSeconds(),
+      predicted: predictedMatch(socketId),
+    });
+
+    if (seekerProfile && !seekerProfile.randomFallbackActive) {
       const timer = setTimeout(() => {
         waitFallbackTimers.delete(socketId);
         const p = profiles.get(socketId);
         if (!p || !waitingQueue.includes(socketId)) return;
-        p.countryFallbackActive = true;
+        p.randomFallbackActive = true;
         const sock = io.sockets.sockets.get(socketId);
-        if (sock) sock.emit('country-fallback');
+        if (sock) sock.emit('random-fallback');
         tryMatch(socketId);
-      }, COUNTRY_FALLBACK_MS);
+      }, RANDOM_FALLBACK_MS);
       waitFallbackTimers.set(socketId, timer);
     }
   }
+}
+
+// Best guess at who the seeker will get, so the client can show a live
+// "Connecting to someone in Japan…" style message before the match completes.
+function predictedMatch(socketId) {
+  const seeker = profiles.get(socketId);
+  if (!seeker) return null;
+  const candidates = [];
+  for (const [sid, p] of profiles) {
+    if (sid === socketId || p.clientId === seeker.clientId) continue;
+    if (isBlockedPair(seeker.clientId, p.clientId)) continue;
+    candidates.push(p);
+  }
+  if (candidates.length === 0) return null;
+  const pick = candidates[Math.floor(Math.random() * candidates.length)];
+  return { countryCode: pick.country, country: pick.countryName };
 }
 
 io.on('connection', (socket) => {
@@ -451,10 +502,12 @@ io.on('connection', (socket) => {
       prefGender: data.prefGender || 'any',
       includeCountries: sanitizeCountryList(data.includeCountries),
       excludeCountries: sanitizeCountryList(data.excludeCountries),
-      countryFallbackActive: false,
+      randomFallbackActive: false,
       interests: Array.isArray(data.interests) ? data.interests.slice(0, 10) : [],
+      avatar: typeof data.avatar === 'string' && /^[mf][1-5]$/.test(data.avatar) ? data.avatar : null,
     });
     clientSockets.set(clientId, socket.id);
+    if (typeof data.hideStatus === 'boolean') statusHidden.set(clientId, data.hideStatus);
 
     socket.emit('profile', {
       username: profiles.get(socket.id).username,
@@ -471,16 +524,31 @@ io.on('connection', (socket) => {
   socket.on('find-partner', () => {
     const profile = profiles.get(socket.id);
     if (!profile) return;
-    // A fresh, explicit search starts with the full "Interested Countries" filter again.
-    profile.countryFallbackActive = false;
+    // A fresh, explicit search starts with the full set of filters again.
+    profile.randomFallbackActive = false;
     tryMatch(socket.id);
   });
 
   socket.on('skip', () => {
     disconnectPartner(socket.id);
     const profile = profiles.get(socket.id);
-    if (profile) profile.countryFallbackActive = false;
+    if (profile) profile.randomFallbackActive = false;
     tryMatch(socket.id);
+  });
+
+  // Personal online-status visibility: hides this user's status only from
+  // their added friends. Never affects the global online-user count.
+  socket.on('set-status-visibility', ({ hidden } = {}) => {
+    const profile = profiles.get(socket.id);
+    if (!profile) return;
+    statusHidden.set(profile.clientId, !!hidden);
+    // Re-sync everyone who has this user as a friend so their list updates live.
+    for (const [fid, map] of friends) {
+      if (map.has(profile.clientId)) {
+        const friendSocket = getSocketByClientId(fid);
+        if (friendSocket) syncClientState(friendSocket, fid);
+      }
+    }
   });
 
   socket.on('leave', () => {
@@ -543,6 +611,9 @@ io.on('connection', (socket) => {
   socket.on('chat-message', (text) => {
     const partnerId = partners.get(socket.id);
     if (partnerId && typeof text === 'string' && text.trim()) {
+      if (containsLink(text)) {
+        return socket.emit('chat-blocked', { reason: 'link' });
+      }
       io.to(partnerId).emit('chat-message', { text: text.slice(0, 1000) });
     }
   });
@@ -565,7 +636,7 @@ io.on('connection', (socket) => {
       return socket.emit('friend-request-result', { ok: true, alreadyFriends: true });
     }
     const temporary = !socketAuth.get(socket.id);
-    const myInfo = { username: me.username, countryCode: me.country, temporary };
+    const myInfo = { username: me.username, countryCode: me.country, temporary, avatar: me.avatar };
 
     if (!friendRequests.has(targetClientId)) friendRequests.set(targetClientId, new Map());
     friendRequests.get(targetClientId).set(me.clientId, { ...myInfo, ts: Date.now() });
@@ -595,10 +666,10 @@ io.on('connection', (socket) => {
 
     if (accept) {
       const temporary = !socketAuth.get(socket.id);
-      const myInfo = { username: me.username, countryCode: me.country, temporary };
+      const myInfo = { username: me.username, countryCode: me.country, temporary, avatar: me.avatar };
       addFriendPair(
         me.clientId, myInfo,
-        fromClientId, { username: req.username, countryCode: req.countryCode, temporary: req.temporary }
+        fromClientId, { username: req.username, countryCode: req.countryCode, temporary: req.temporary, avatar: req.avatar }
       );
       pushNotification(fromClientId, {
         type: 'friend_accepted',
@@ -634,6 +705,9 @@ io.on('connection', (socket) => {
     const me = profiles.get(socket.id);
     if (!me || !toClientId || typeof text !== 'string' || !text.trim()) return;
     if (!isFriend(me.clientId, toClientId)) return;
+    if (containsLink(text)) {
+      return socket.emit('chat-blocked', { reason: 'link' });
+    }
     const trimmed = text.trim().slice(0, 1000);
     const key = pairKey(me.clientId, toClientId);
     if (!friendChats.has(key)) friendChats.set(key, []);
