@@ -80,7 +80,6 @@ const reactionOverlay = document.getElementById('reactionOverlay');
 const chatBadge = document.getElementById('chatBadge');
 const typingIndicator = document.getElementById('typingIndicator');
 const quickGuide = document.getElementById('quickGuide');
-const callGuide = document.getElementById('callGuide');
 
 const historyBtn = document.getElementById('historyBtn');
 const historyModal = document.getElementById('historyModal');
@@ -153,7 +152,6 @@ const appSettingsBtn = document.getElementById('appSettingsBtn');
 const appSettingsPanel = document.getElementById('appSettingsPanel');
 const appSettingsOverlay = document.getElementById('appSettingsOverlay');
 const closeAppSettingsBtn = document.getElementById('closeAppSettingsBtn');
-const darkModeToggle = document.getElementById('darkModeToggle');
 const themeGroup = document.getElementById('themeGroup');
 const soundToggle = document.getElementById('soundToggle');
 const vibrationToggle = document.getElementById('vibrationToggle');
@@ -463,8 +461,7 @@ function setAutoCallEnabled(value) {
 
 autoCallCheckbox.addEventListener('change', () => setAutoCallEnabled(autoCallCheckbox.checked));
 
-// --- Themes: dark (default), light, plus accent themes. The dark-mode toggle
-// flips between dark and light; picking any theme keeps both controls in sync. ---
+// --- Themes: dark (default), light, plus accent themes. ---
 const THEMES = ['dark', 'light', 'ocean', 'sunset'];
 let currentTheme = localStorage.getItem('talklive_theme');
 if (!THEMES.includes(currentTheme)) currentTheme = 'dark';
@@ -475,12 +472,7 @@ function applyTheme(theme) {
   localStorage.setItem('talklive_theme', theme);
   document.documentElement.setAttribute('data-theme', theme);
   setPillGroupValue(themeGroup, theme);
-  darkModeToggle.checked = theme !== 'light';
 }
-
-darkModeToggle.addEventListener('change', () => {
-  applyTheme(darkModeToggle.checked ? 'dark' : 'light');
-});
 
 themeGroup.addEventListener('click', (e) => {
   if (e.target.closest('.pill')) applyTheme(themeGroup.dataset.value);
@@ -1834,8 +1826,7 @@ function resetUI() {
   addFriendBtn.classList.add('hidden');
   primaryControls.classList.add('hidden');
   autoCallRow.classList.add('hidden');
-  quickGuide.classList.remove('hidden');
-  callGuide.classList.add('hidden');
+  quickGuide.classList.remove('in-call');
   appSettingsBtn.classList.add('hidden');
   historyBtn.classList.add('hidden');
   friendsBtn.classList.add('hidden');
@@ -1882,8 +1873,7 @@ function enterCallUI() {
   chatToggleBtn.classList.remove('hidden');
   primaryControls.classList.remove('hidden');
   autoCallRow.classList.remove('hidden');
-  quickGuide.classList.add('hidden');
-  callGuide.classList.remove('hidden');
+  quickGuide.classList.add('in-call');
   appSettingsBtn.classList.remove('hidden');
   historyBtn.classList.remove('hidden');
   friendsBtn.classList.remove('hidden');
