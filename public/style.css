@@ -198,22 +198,28 @@ html, body {
 }
 
 .icon-btn {
-  width: 38px;
-  height: 38px;
+  width: 46px;
+  height: 46px;
   border-radius: 50%;
-  border: 1px solid rgba(255,255,255,0.1);
-  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.09);
   color: var(--text);
   font-size: 16px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  transition: background 0.15s ease, transform 0.12s ease, box-shadow 0.15s ease;
 }
 
 .icon-btn:hover {
-  background: rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.14);
+}
+
+.icon-btn:active {
+  transform: scale(0.9);
+  background: rgba(255,255,255,0.2);
 }
 
 .avatar-initial {
@@ -278,8 +284,15 @@ html, body {
 }
 
 .topbar-svg-icon {
-  width: 19px;
-  height: 19px;
+  width: 23px;
+  height: 23px;
+}
+
+/* Keep the small chevron/avatar glyphs inside the Settings panel at their
+   intended size — the bigger topbar icon size is only for tappable buttons. */
+.settings-account-avatar .topbar-svg-icon {
+  width: 20px;
+  height: 20px;
 }
 
 .friends-btn {
@@ -376,18 +389,58 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
+  gap: 10px;
   padding: 8px 18px 14px;
   margin: 0 12px;
   border-bottom: 1px solid rgba(255,255,255,0.07);
 }
 
+/* Language pill sits on the left; the tool buttons take the middle and stay
+   centered; the live people count is pinned right. */
+.navbar > .lang-wrap { flex: 0 0 auto; }
+
 .navbar-actions {
+  flex: 1 1 auto;
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+}
+
+/* Live people-count indicator (right): pulsing dot + group icon + number. */
+.people-count {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: rgba(46, 212, 122, 0.1);
+  border: 1px solid rgba(46, 212, 122, 0.35);
+}
+
+.people-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2ed47a;
+  box-shadow: 0 0 8px #2ed47a;
+  flex-shrink: 0;
+  animation: dotPulse 1.6s ease-in-out infinite;
+}
+
+.people-icon {
+  width: 18px;
+  height: 18px;
+  color: #2ed47a;
+  flex-shrink: 0;
+}
+
+.people-count-num {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
 }
 
 .stage {
@@ -776,30 +829,31 @@ html, body {
 @media (max-width: 600px) {
   .topbar {
     padding: 12px 14px;
-    row-gap: 10px;
     column-gap: 8px;
-    justify-content: center;
-  }
-
-  .topbar {
     justify-content: space-between;
   }
 
   .navbar {
-    padding: 6px 12px 12px;
-    margin: 0 6px;
-    justify-content: center;
-    row-gap: 8px;
+    padding: 6px 8px 12px;
+    margin: 0 4px;
+    gap: 8px;
+    flex-wrap: wrap;
   }
 
   .navbar-actions {
-    gap: 8px;
+    gap: 10px;
   }
 
   .net-status {
     font-size: 12px;
     padding: 6px 10px;
   }
+
+  .people-count {
+    padding: 6px 9px;
+  }
+
+  .people-count-num { font-size: 14px; }
 
   .chat-fab {
     width: 42px;
@@ -813,13 +867,13 @@ html, body {
   }
 
   .icon-btn {
-    width: 34px;
-    height: 34px;
+    width: 44px;
+    height: 44px;
   }
 
   .topbar-svg-icon {
-    width: 17px;
-    height: 17px;
+    width: 22px;
+    height: 22px;
   }
 
   .online {
@@ -2705,9 +2759,9 @@ html, body {
    other topbar order rules in the main mobile media block above). */
 @media (max-width: 600px) {
   .lang-select {
-    max-width: 108px;
+    max-width: 96px;
     font-size: 12px;
-    padding: 7px 10px 7px 28px;
+    padding: 7px 8px 7px 26px;
   }
 
   [dir="rtl"] .lang-select {
@@ -3518,3 +3572,38 @@ html, body {
 
 /* RTL: the chat sheet slides in from the left instead (mirrors side panels). */
 [dir="rtl"] .chat-fab { order: -1; }
+
+/* =============================================================
+   Touch response: a light, quick press-in on every interactive control
+   so nothing feels dead. Deliberately subtle (no bounce/overshoot). The
+   main Call button is intentionally left to its own styling. */
+.btn,
+.icon-btn,
+.chat-fab,
+.action-btn-neutral,
+.reaction-btn,
+.pill,
+.modal-close,
+.account-tab,
+.avatar-cat,
+.friend-avatar-btn,
+.btn-chip,
+.tag.removable,
+.lang-select,
+.settings-account-row {
+  transition: transform 0.12s ease, background 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+
+.reaction-btn:active,
+.pill:active,
+.modal-close:active,
+.account-tab:active,
+.avatar-cat:active,
+.friend-avatar-btn:active,
+.btn-chip:active,
+.settings-account-row:active,
+.lang-select:active {
+  transform: scale(0.92);
+}
+
+.link-btn:active { opacity: 0.55; }
