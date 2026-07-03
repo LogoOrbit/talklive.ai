@@ -17,13 +17,16 @@ const orbRings = document.querySelectorAll('#orb .orb-ring');
 const statusText = document.getElementById('statusText');
 const subText = document.getElementById('subText');
 const errorText = document.getElementById('errorText');
-const setupErrorText = document.getElementById('setupErrorText');
 const onlineCountEl = document.getElementById('onlineCount');
 const remoteAudio = document.getElementById('remoteAudio');
+const netStatus = document.getElementById('netStatus');
+const netStatusLabel = document.getElementById('netStatusLabel');
 
-const setupPanel = document.getElementById('setupPanel');
 const callPanel = document.getElementById('callPanel');
+const stageEl = document.getElementById('main');
 const chatPanel = document.getElementById('chatPanel');
+const chatOverlay = document.getElementById('chatOverlay');
+const closeChatBtn = document.getElementById('closeChatBtn');
 
 const filtersBtn = document.getElementById('filtersBtn');
 const filtersPanel = document.getElementById('filtersPanel');
@@ -56,9 +59,6 @@ const partnerName = document.getElementById('partnerName');
 const partnerMeta = document.getElementById('partnerMeta');
 const partnerInterests = document.getElementById('partnerInterests');
 
-const startBtn = document.getElementById('startBtn');
-const skipBtn = document.getElementById('skipBtn');
-const skipLabel = document.querySelector('.call-btn-label-next');
 const muteBtn = document.getElementById('muteBtn');
 const muteIcon = document.getElementById('muteIcon');
 const muteSlash = document.getElementById('muteSlash');
@@ -67,7 +67,6 @@ const reportBtn = document.getElementById('reportBtn');
 const addFriendBtn = document.getElementById('addFriendBtn');
 const callMainBtn = document.getElementById('callMainBtn');
 const callMainLabel = document.getElementById('callMainLabel');
-const primaryControls = document.getElementById('primaryControls');
 const autoCallRow = document.getElementById('autoCallRow');
 const reassureLine = document.getElementById('reassureLine');
 const searchTicker = document.getElementById('searchTicker');
@@ -303,7 +302,8 @@ let currentPartnerInterests = [];
 let currentPartner = null;
 let callHistory = [];
 let accountNickname = localStorage.getItem('talklive_nickname') || null;
-let autoCallEnabled = localStorage.getItem('talklive_autocall') !== 'off';
+// Always starts unchecked when the app is opened, regardless of last session.
+let autoCallEnabled = false;
 let wasConnected = false;
 
 // --- Friends / notifications / friend chat / call-back state ---
@@ -1370,7 +1370,8 @@ function setConnection(color, labelKey) {
   connectionDot.className = `connection-dot ${color}`;
   connectionLabel.textContent = t(labelKey);
   const connected = color === 'green';
-  chatToggleBtn.disabled = !connected;
+  // The chat button opens the panel any time; only the input is gated on a live
+  // call so you can't type into the void before a stranger is connected.
   chatInput.disabled = !connected;
   chatSendBtn.disabled = !connected;
 
@@ -1389,30 +1390,71 @@ function hideConnection() {
   connectionIndicator.classList.add('hidden');
 }
 
-// --- Call screen button states: 'idle' | 'searching' | 'connected'.
-// One main button crossfades between green "Call" and red "Hang Up" (CSS
-// handles the smooth transition); Skip is always alongside it. Report/add
-// friend only exist during an active call, never while searching. ---
+// --- Live network status indicator (top bar): green "Online" when the
+// internet + socket are healthy, red "Offline" the moment either drops. ---
+let socketConnected = false;
+function refreshNetStatus() {
+  const online = socketConnected && (typeof navigator.onLine === 'undefined' || navigator.onLine);
+  netStatus.classList.toggle('is-online', online);
+  netStatus.classList.toggle('is-offline', !online);
+  netStatusLabel.textContent = t(online ? 'online' : 'offline');
+  netStatus.setAttribute('title', t(online ? 'netOnline' : 'netOffline'));
+}
+window.addEventListener('online', refreshNetStatus);
+window.addEventListener('offline', refreshNetStatus);
+
+// --- The single Call button and its four visual modes ---
+//   'call'    green phone   → tap to start searching
+//   'loading' spinner       → searching / connecting, tap to cancel
+//   'hangup'  red           → connected, tap to hang up
+//   'confirm' yellow        → "are you sure?", tap again to actually hang up
+let hangupConfirm = false;
+let hangupConfirmTimer = null;
+
+function clearHangupConfirm() {
+  hangupConfirm = false;
+  clearTimeout(hangupConfirmTimer);
+  hangupConfirmTimer = null;
+}
+
+function setButtonMode(mode) {
+  callMainBtn.classList.remove('is-call', 'is-loading', 'is-hangup', 'is-confirm');
+  callMainBtn.classList.add('is-' + mode);
+  callMainBtn.dataset.mode = mode;
+  const labelKey = mode === 'hangup' ? 'hangUp'
+    : mode === 'confirm' ? 'hangUpSure'
+    : mode === 'loading' ? 'connSearching'
+    : 'call';
+  callMainLabel.textContent = t(labelKey);
+  callMainLabel.className = 'action-label call-main-label is-' + mode;
+  callMainBtn.setAttribute('aria-label', t(labelKey));
+}
+
+// --- Call screen button states: idle · searching · connecting · connected ·
+// reconnecting · disconnected — each maps to one of the four button modes. ---
 let callState = 'idle';
 
-// The distinct call states — each renders its own UI, no overlap/flicker:
-//   idle · searching · connecting · connected · reconnecting · disconnected
 function setCallState(state) {
   callState = state;
   const connected = state === 'connected';
-  // Treat connecting/reconnecting as "hang up to cancel" so the main button is
-  // never a dead green Call while a match is in progress.
-  const hangupMode = connected || state === 'connecting' || state === 'reconnecting';
-  callMainBtn.classList.toggle('is-hangup', hangupMode);
-  callMainBtn.classList.toggle('is-call', !hangupMode);
-  callMainLabel.classList.toggle('is-hangup', hangupMode);
-  callMainLabel.textContent = hangupMode ? t('hangUp') : t('call');
-  callMainBtn.setAttribute('aria-label', hangupMode ? t('hangUp') : t('call'));
+  // Leaving the connected state cancels any pending "are you sure?".
+  if (!connected) clearHangupConfirm();
 
-  // Report / add-friend / reassurance only make sense once actually connected.
-  reportBtn.classList.toggle('hidden', !connected);
-  addFriendBtn.classList.toggle('hidden', !connected);
+  let mode;
+  if (connected) mode = hangupConfirm ? 'confirm' : 'hangup';
+  else if (state === 'searching' || state === 'connecting' || state === 'reconnecting') mode = 'loading';
+  else mode = 'call';
+  setButtonMode(mode);
+
+  // Mute / add-friend / report stay the same size always, but only work during
+  // a live call — dimmed and disabled otherwise.
+  muteBtn.disabled = !connected;
+  addFriendBtn.disabled = !connected || addFriendBtn.classList.contains('added');
+  reportBtn.disabled = !connected;
   reassureLine.classList.toggle('hidden', !connected);
+
+  // The compact, fits-the-viewport layout only kicks in once a call is live.
+  stageEl.classList.toggle('call-live', state !== 'idle');
 
   if (state === 'searching') startSearchTicker();
   else stopSearchTicker();
@@ -1565,37 +1607,10 @@ function stopCallTimer() {
   callTimerEl.textContent = '0:00';
 }
 
-let skipCountdownInterval = null;
-
-function lockSkipButton() {
-  skipBtn.disabled = true;
-  clearTimeout(skipUnlockTimeout);
-  clearInterval(skipCountdownInterval);
-
-  const unlockAt = Date.now() + MIN_CALL_SECONDS_BEFORE_SKIP * 1000;
-
-  skipCountdownInterval = setInterval(() => {
-    const remaining = Math.max(0, unlockAt - Date.now());
-    skipLabel.textContent = (remaining / 1000).toFixed(1) + 's';
-    if (remaining <= 0) {
-      clearInterval(skipCountdownInterval);
-      skipLabel.textContent = t('next');
-    }
-  }, 33);
-
-  skipUnlockTimeout = setTimeout(() => {
-    skipBtn.disabled = false;
-    clearInterval(skipCountdownInterval);
-    skipLabel.textContent = t('next');
-  }, MIN_CALL_SECONDS_BEFORE_SKIP * 1000);
-}
-
-function unlockSkipButton() {
-  clearTimeout(skipUnlockTimeout);
-  clearInterval(skipCountdownInterval);
-  skipBtn.disabled = false;
-  skipLabel.textContent = t('next');
-}
+// The separate Skip/Next button was removed in favour of the single Call
+// button, so these are now no-ops kept only so existing call sites still work.
+function lockSkipButton() {}
+function unlockSkipButton() {}
 
 function showReactionFloat(reaction) {
   const el = document.createElement('div');
@@ -1616,16 +1631,13 @@ reactionBar.addEventListener('click', (e) => {
 });
 
 function showError(msg) {
-  const target = setupPanel.classList.contains('hidden') ? errorText : setupErrorText;
-  target.textContent = msg;
-  target.classList.remove('hidden');
+  errorText.textContent = msg;
+  errorText.classList.remove('hidden');
 }
 
 function clearError() {
   errorText.classList.add('hidden');
   errorText.textContent = '';
-  setupErrorText.classList.add('hidden');
-  setupErrorText.textContent = '';
 }
 
 let subTextFadeTimer = null;
@@ -1923,48 +1935,31 @@ function teardownPeer() {
   lockSkipButton();
 }
 
+// Full reset to the idle landing state (used after a ban / abandoned callback).
 function resetUI() {
   teardownPeer();
   isSearching = false;
+  clearHangupConfirm();
   setCallState('idle');
   setState('idle');
-  setStatusText('statusIdle');
-  setSubText('subIdle');
-  callPanel.classList.add('hidden');
-  setupPanel.classList.remove('hidden');
-  startBtn.disabled = false;
-  chatPanel.classList.add('hidden');
-  chatOpen = false;
+  setStatusText('statusReadyToTalk');
+  setSubText('subTapCall');
+  closeChatPanel();
   clearChat();
   hideConnection();
-  skipBtn.classList.add('hidden');
-  muteBtn.classList.add('hidden');
-  chatToggleBtn.classList.add('hidden');
-  reportBtn.classList.add('hidden');
-  addFriendBtn.classList.add('hidden');
-  primaryControls.classList.add('hidden');
-  autoCallRow.classList.add('hidden');
-  quickGuide.classList.remove('in-call');
-  appSettingsBtn.classList.add('hidden');
-  historyBtn.classList.add('hidden');
-  friendsBtn.classList.add('hidden');
-  notifBtn.classList.add('hidden');
-  accountBtn.classList.add('hidden');
-  filtersBtn.classList.add('hidden');
 }
 
-// Initial call-screen state: green Call + Skip only — no lingering Hang Up.
+// Return the single button to green "Call" (idle) on the persistent call screen.
 // Used both after a manual hang-up and when the other side ends the call.
 function goIdleOnCallScreen(statusKey) {
   isSearching = false;
   teardownPeer();
   clearChat();
-  chatPanel.classList.add('hidden');
-  chatOpen = false;
+  closeChatPanel();
+  clearHangupConfirm();
   setCallState('idle');
   setState('idle');
   hideConnection();
-  unlockSkipButton();
   setStatusText(statusKey || 'statusReadyToTalk');
   setSubText('subTapCall');
 }
@@ -1983,31 +1978,23 @@ function registerProfile() {
   });
 }
 
+// The call interface is now persistent, so entering a call no longer swaps
+// panels — this only closes any open chat sheet from a previous session.
 function enterCallUI() {
-  setupPanel.classList.add('hidden');
-  callPanel.classList.remove('hidden');
-  skipBtn.classList.remove('hidden');
-  muteBtn.classList.remove('hidden');
-  chatToggleBtn.classList.remove('hidden');
-  primaryControls.classList.remove('hidden');
-  autoCallRow.classList.remove('hidden');
-  quickGuide.classList.add('in-call');
-  appSettingsBtn.classList.remove('hidden');
-  historyBtn.classList.remove('hidden');
-  friendsBtn.classList.remove('hidden');
-  notifBtn.classList.remove('hidden');
-  accountBtn.classList.remove('hidden');
-  filtersBtn.classList.remove('hidden');
+  closeChatPanel();
 }
 
+let beginInFlight = false;
 async function begin() {
-  if (startBtn.disabled) return;
-  startBtn.disabled = true;
+  if (beginInFlight) return;
+  beginInFlight = true;
   clearError();
+  setButtonMode('loading'); // immediate feedback while the mic prompt resolves
   try {
     await getMic();
   } catch (e) {
-    startBtn.disabled = false;
+    beginInFlight = false;
+    setButtonMode('call');
     if (e.name === 'NotAllowedError' || e.name === 'SecurityError') {
       showError(t('errMicBlocked'));
     } else if (e.name === 'NotFoundError') {
@@ -2019,11 +2006,11 @@ async function begin() {
     }
     return;
   }
+  beginInFlight = false;
 
   registerProfile();
 
   isSearching = true;
-  enterCallUI();
   setCallState('searching');
   setState('waiting');
   setConnection('orange', 'connSearching');
@@ -2038,14 +2025,17 @@ const openTermsFromConsent = document.getElementById('openTermsFromConsent');
 const ageAgreeBtn = document.getElementById('ageAgreeBtn');
 const CONSENT_KEY = 'talklive_age_consent';
 
-startBtn.addEventListener('click', () => {
+// Start a call from the green "Call" button — gated by the one-time age/terms
+// consent, then mic permission (handled in begin()).
+function startCallFlow() {
   playTapSound();
+  clearError();
   if (localStorage.getItem(CONSENT_KEY) === 'yes') {
     begin();
   } else {
     openModal(ageConsentModal);
   }
-});
+}
 
 openTermsFromConsent.addEventListener('click', () => openModal(termsModal));
 
@@ -2055,42 +2045,55 @@ ageAgreeBtn.addEventListener('click', () => {
   begin();
 });
 
-function performSkip() {
-  teardownPeer();
-  clearChat();
+// Keep searching for a new person (used after a hang-up when auto-call is on).
+function findNextPerson(statusKey) {
+  clearError();
   isSearching = true;
   setCallState('searching');
   setState('waiting');
-  setConnection('red', 'connSkipped');
-  setStatusText('statusFindingNew');
+  setConnection('orange', 'connSearching');
+  setStatusText(statusKey || 'statusSearching');
   setSubText('subHangTight');
-  socket.emit('skip');
-  setTimeout(() => setConnection('orange', 'connSearching'), 600);
+  socket.emit('find-partner');
 }
 
-skipBtn.addEventListener('click', performSkip);
-
-// The one main button: green "Call" while idle/searching, red "Hang Up" once
-// connected. Hanging up (or cancelling a search) returns to the initial
-// Call + Skip state on this screen — it never strands a dead Hang Up button.
+// The single Call button, four modes:
+//   call    → start searching
+//   loading → cancel the current search
+//   hangup  → ask "are you sure?" (yellow), call stays live
+//   confirm → actually hang up; then re-search if the checkbox is checked
 callMainBtn.addEventListener('click', () => {
-  if (callState === 'connected' || callState === 'connecting' || callState === 'reconnecting') {
+  const mode = callMainBtn.dataset.mode;
+
+  if (mode === 'confirm') {
+    // Second press confirms the hang-up.
+    clearHangupConfirm();
     playHangupSound();
     socket.emit('leave');
-    goIdleOnCallScreen(callState === 'connected' ? 'statusYouLeft' : undefined);
-  } else if (callState === 'searching') {
+    if (autoCallEnabled) {
+      findNextPerson('statusFindingNew');
+    } else {
+      goIdleOnCallScreen('statusYouLeft');
+    }
+  } else if (mode === 'hangup') {
+    // First press → yellow "are you sure?". The call is still live; auto-revert
+    // to red after a few seconds so a stray tap doesn't strand the button.
+    hangupConfirm = true;
+    setButtonMode('confirm');
+    clearTimeout(hangupConfirmTimer);
+    hangupConfirmTimer = setTimeout(() => {
+      if (hangupConfirm && callState === 'connected') {
+        hangupConfirm = false;
+        setButtonMode('hangup');
+      }
+    }, 4000);
+  } else if (mode === 'loading') {
+    // Cancel an in-progress search/connection.
     socket.emit('leave');
     goIdleOnCallScreen();
   } else {
-    playTapSound();
-    clearError();
-    isSearching = true;
-    setCallState('searching');
-    setState('waiting');
-    setConnection('orange', 'connSearching');
-    setStatusText('statusSearching');
-    setSubText('subHangTight');
-    socket.emit('find-partner');
+    // Green "Call" — begin a new search.
+    startCallFlow();
   }
 });
 
@@ -2118,13 +2121,53 @@ muteBtn.addEventListener('click', () => {
   socket.emit('mic-state', isMuted);
 });
 
+// --- Chat panel: slides in from the right; swipe right to close. ---
+function openChatPanel() {
+  chatOpen = true;
+  chatPanel.classList.add('open');
+  chatOverlay.classList.remove('hidden');
+  chatBadge.classList.add('hidden');
+  if (!chatInput.disabled) setTimeout(() => chatInput.focus(), 60);
+  scrollChatToBottom();
+}
+
+function closeChatPanel() {
+  chatOpen = false;
+  chatPanel.classList.remove('open');
+  chatOverlay.classList.add('hidden');
+}
+
+function scrollChatToBottom() {
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
 chatToggleBtn.addEventListener('click', () => {
-  chatOpen = !chatOpen;
-  chatPanel.classList.toggle('hidden', !chatOpen);
-  if (chatOpen) {
-    chatInput.focus();
-    chatBadge.classList.add('hidden');
+  if (chatOpen) closeChatPanel();
+  else openChatPanel();
+});
+closeChatBtn.addEventListener('click', closeChatPanel);
+chatOverlay.addEventListener('click', closeChatPanel);
+
+// Swipe right on the panel closes it (matches the slide-in direction).
+let chatTouchStartX = null;
+let chatTouchStartY = null;
+chatPanel.addEventListener('touchstart', (e) => {
+  chatTouchStartX = e.touches[0].clientX;
+  chatTouchStartY = e.touches[0].clientY;
+}, { passive: true });
+chatPanel.addEventListener('touchmove', (e) => {
+  if (chatTouchStartX === null) return;
+  const dx = e.touches[0].clientX - chatTouchStartX;
+  const dy = e.touches[0].clientY - chatTouchStartY;
+  // Mostly-horizontal rightward swipe past a threshold → close.
+  if (dx > 70 && Math.abs(dx) > Math.abs(dy)) {
+    chatTouchStartX = null;
+    closeChatPanel();
   }
+}, { passive: true });
+chatPanel.addEventListener('touchend', () => {
+  chatTouchStartX = null;
+  chatTouchStartY = null;
 });
 
 chatForm.addEventListener('submit', (e) => {
@@ -2457,15 +2500,21 @@ socket.on('chat-message', ({ text }) => {
   vibrate(20);
   if (!chatOpen) {
     chatBadge.classList.remove('hidden');
+  } else {
+    scrollChatToBottom();
   }
 });
 
 socket.on('disconnect', () => {
+  socketConnected = false;
+  refreshNetStatus();
   showError(t('errConnLost'));
   if (isSearching) setConnection('red', 'connDisconnected');
 });
 
 socket.on('connect', () => {
+  socketConnected = true;
+  refreshNetStatus();
   clearError();
   if (isSearching) setConnection('orange', 'connReconnecting');
   // Re-register on every (re)connect so the server always has a live socket
@@ -2485,8 +2534,9 @@ window.addEventListener('i18n-changed', () => {
   if (lastStatusMsg) statusText.textContent = t(lastStatusMsg.key, lastStatusMsg.vars);
   if (lastSubMsg) subText.textContent = t(lastSubMsg.key, lastSubMsg.vars);
   if (lastConn) connectionLabel.textContent = t(lastConn.labelKey);
-  if (!skipBtn.disabled) skipLabel.textContent = t('next');
-  callMainLabel.textContent = callState === 'connected' ? t('hangUp') : t('call');
+  // Re-render the single Call button's label in its current mode.
+  setButtonMode(callMainBtn.dataset.mode || 'call');
+  refreshNetStatus();
 
   renderNotifications(); // also re-renders the friends list + badges
   renderHistory();
@@ -2501,7 +2551,11 @@ window.addEventListener('i18n-changed', () => {
   }
 });
 
-// Initial render of the (dynamic) idle texts in the detected language —
-// the HTML fallback content is English only.
-setStatusText('statusIdle');
-setSubText('subIdle');
+// Initial idle render of the persistent call interface: green Call button,
+// unchecked auto-call checkbox, and a friendly prompt.
+autoCallCheckbox.checked = autoCallEnabled;
+setCallState('idle');
+setState('idle');
+setStatusText('statusReadyToTalk');
+setSubText('subTapCall');
+refreshNetStatus();

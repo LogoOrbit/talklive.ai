@@ -297,6 +297,99 @@ html, body {
   animation: dotPulse 1.6s ease-in-out infinite;
 }
 
+/* --- Live network status pill (green Online / red Offline) --- */
+.net-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.net-status .net-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.net-status.is-online {
+  color: #2ed47a;
+  background: rgba(46, 212, 122, 0.1);
+  border-color: rgba(46, 212, 122, 0.4);
+}
+
+.net-status.is-online .net-dot {
+  background: #2ed47a;
+  box-shadow: 0 0 8px #2ed47a;
+  animation: dotPulse 1.6s ease-in-out infinite;
+}
+
+.net-status.is-offline {
+  color: #ff5470;
+  background: rgba(255, 84, 112, 0.12);
+  border-color: rgba(255, 84, 112, 0.45);
+}
+
+.net-status.is-offline .net-dot {
+  background: #ff5470;
+  box-shadow: 0 0 8px #ff5470;
+  animation: dotPulse 1s ease-in-out infinite;
+}
+
+/* --- Big chat button, top-right corner --- */
+.chat-fab {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow: 0 6px 18px rgba(108, 92, 231, 0.4);
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.chat-fab:hover {
+  box-shadow: 0 8px 24px rgba(108, 92, 231, 0.6);
+}
+
+.chat-fab:active {
+  transform: scale(0.94);
+}
+
+.chat-fab-icon {
+  width: 26px;
+  height: 26px;
+}
+
+/* --- Secondary navigation bar (everything that isn't call/chat) --- */
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 8px 18px 14px;
+  margin: 0 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .stage {
   flex: 1;
   display: flex;
@@ -688,29 +781,36 @@ html, body {
     justify-content: center;
   }
 
-  /* Flatten the left/right wrapper groups so every topbar item becomes a
-     direct flex item of .topbar — lets us re-order and force a line break
-     with a single flex layout instead of two independently-wrapping rows. */
-  .topbar-left,
-  .header-right {
-    display: contents;
+  .topbar {
+    justify-content: space-between;
   }
 
-  #appSettingsBtn { order: 1; }
-  .brand { order: 2; }
-  .online { order: 3; }
-  /* margin-left: auto soaks up the rest of line 1's space, pinning the
-     filter button to the far right corner — mirroring the settings icon
-     pinned to the far left — while leaving line 2 free to be centered. */
-  #filtersBtn { order: 4; margin-left: auto; }
-  .topbar-break { display: block; order: 5; flex-basis: 100%; height: 0; }
-  /* Line 2 (centered): language picker + history/friends/requests.
-     order must go on .lang-wrap/.friends-wrap/.notif-wrap — they are the
-     flex items; their inner buttons are not direct children of .topbar. */
-  .lang-wrap { order: 6; }
-  .history-wrap { order: 7; }
-  .friends-wrap { order: 8; }
-  .notif-wrap { order: 9; }
+  .navbar {
+    padding: 6px 12px 12px;
+    margin: 0 6px;
+    justify-content: center;
+    row-gap: 8px;
+  }
+
+  .navbar-actions {
+    gap: 8px;
+  }
+
+  .net-status {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+
+  .chat-fab {
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+  }
+
+  .chat-fab-icon {
+    width: 22px;
+    height: 22px;
+  }
 
   .icon-btn {
     width: 34px;
@@ -2619,6 +2719,74 @@ html, body {
    Main Call/Hang-Up button: one button that smoothly crossfades
    between green "Call" and red "Hang Up" (gradients can't be
    transitioned, so two stacked layers swap opacity instead). */
+/* =============================================================
+   Call action row: four equal-sized buttons. First is the single
+   Call button, the other three are the in-call actions. */
+.call-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 18px;
+  margin: 20px 0 8px;
+}
+
+.call-action-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.action-btn {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.action-btn:active {
+  transform: scale(0.94);
+}
+
+/* Neutral (mute / add friend / report): translucent surface, dimmed when
+   disabled (before a call is connected) but still visible at full size. */
+.action-btn-neutral {
+  background: rgba(255,255,255,0.08);
+  color: var(--text);
+}
+
+.action-btn-neutral:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.action-btn.added {
+  background: rgba(46, 212, 122, 0.25) !important;
+}
+
+.action-btn.muted {
+  background: rgba(255, 84, 112, 0.2);
+}
+
+.action-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.2px;
+}
+
+/* --- The single Call / Loading / Hang Up / Confirm button ---
+   Three stacked gradient layers (green / red / yellow) crossfade by opacity,
+   since CSS gradients can't be transitioned directly. */
 .call-main-btn {
   position: relative;
   background: none;
@@ -2630,28 +2798,74 @@ html, body {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  transition: opacity 0.4s ease;
+  transition: opacity 0.35s ease;
 }
 
+/* green (call) base layer */
 .call-main-btn::before {
   background: radial-gradient(circle at 35% 30%, #4ade80, #16a34a 75%);
 }
 
+/* red (hang up) layer */
 .call-main-btn::after {
   background: radial-gradient(circle at 35% 30%, #ff7a8a, #e21f3e 75%);
+  opacity: 0;
 }
 
-.call-main-btn.is-call::after { opacity: 0; }
+/* yellow (are-you-sure) layer, added on top */
+.call-main-btn .call-main-confirm-layer {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffe07a, #f5a300 78%);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  z-index: 0;
+}
+
 .call-main-btn.is-hangup::before { opacity: 0; }
+.call-main-btn.is-hangup::after { opacity: 1; }
+
+/* loading: keep the green layer but overlay the spinner (icon hidden) */
+.call-main-btn.is-loading::after { opacity: 0; }
+
+.call-main-btn.is-confirm::before { opacity: 0; }
+.call-main-btn.is-confirm::after { opacity: 0; }
+.call-main-btn.is-confirm .call-main-confirm-layer { opacity: 1; }
 
 .call-main-btn .call-main-icon {
   position: relative;
   z-index: 1;
-  transition: transform 0.4s ease;
+  transition: transform 0.35s ease, opacity 0.2s ease;
 }
 
-.call-main-btn.is-hangup .call-main-icon {
+.call-main-btn.is-hangup .call-main-icon,
+.call-main-btn.is-confirm .call-main-icon {
   transform: rotate(135deg);
+}
+
+/* Spinner shown only while loading (searching / connecting) */
+.action-spinner {
+  position: absolute;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 4px solid rgba(255,255,255,0.35);
+  border-top-color: #ffffff;
+  z-index: 1;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.call-main-btn.is-loading .call-main-icon { opacity: 0; }
+.call-main-btn.is-loading .action-spinner {
+  opacity: 1;
+  animation: callSpin 0.8s linear infinite;
+}
+
+@keyframes callSpin {
+  to { transform: rotate(360deg); }
 }
 
 /* Continuous slow pulsing glow while idle (pre-connection) */
@@ -2664,18 +2878,41 @@ html, body {
   box-shadow: 0 4px 16px rgba(226, 31, 62, 0.35);
 }
 
+.call-main-btn.is-loading {
+  animation: none;
+  box-shadow: 0 0 22px rgba(46, 212, 122, 0.5);
+}
+
+.call-main-btn.is-confirm {
+  animation: confirmPulse 0.9s ease-in-out infinite;
+  box-shadow: 0 4px 18px rgba(245, 163, 0, 0.5);
+}
+
 @keyframes callPulseGlow {
   0%, 100% { box-shadow: 0 0 14px rgba(46, 212, 122, 0.35); }
   50% { box-shadow: 0 0 38px rgba(46, 212, 122, 0.85); }
 }
 
+@keyframes confirmPulse {
+  0%, 100% { box-shadow: 0 0 14px rgba(245, 163, 0, 0.45); }
+  50% { box-shadow: 0 0 34px rgba(245, 163, 0, 0.9); }
+}
+
 .call-main-label {
   color: #2ed47a;
-  transition: color 0.4s ease;
+  transition: color 0.35s ease;
 }
 
 .call-main-label.is-hangup {
   color: var(--danger);
+}
+
+.call-main-label.is-loading {
+  color: #2ed47a;
+}
+
+.call-main-label.is-confirm {
+  color: #f5a300;
 }
 
 /* Reassurance line kept visible during an active call */
@@ -3105,6 +3342,7 @@ html, body {
    controls stay visible on a light background. */
 [data-theme="light"] .btn-secondary,
 [data-theme="light"] .btn-icon,
+[data-theme="light"] .action-btn-neutral,
 [data-theme="light"] .icon-btn,
 [data-theme="light"] .reaction-btn,
 [data-theme="light"] .btn-chip,
@@ -3146,7 +3384,7 @@ html, body {
    Call screen fits the viewport with no page scroll, on every phone.
    Scoped to when the call panel is active so the setup/landing view
    is unaffected. */
-.stage:has(#callPanel:not(.hidden)) {
+.stage.call-live {
   height: 100dvh;
   max-height: 100dvh;
   overflow: hidden;
@@ -3157,7 +3395,7 @@ html, body {
 
 /* The call panel is the only visible child; it centers its contents and never
    spills over anything else (this was the source of the icon/text overlap). */
-.stage:has(#callPanel:not(.hidden)) .call-panel {
+.stage.call-live .call-panel {
   flex: 0 1 auto;
   width: 100%;
   max-height: 100%;
@@ -3171,73 +3409,112 @@ html, body {
 /* The rules list and the reassurance line are setup-screen guidance — during a
    call they only push the mic/chat controls off-screen, so hide them. Hiding
    the guide also removes the element that was overlapping the controls. */
-.stage:has(#callPanel:not(.hidden)) #quickGuide,
+.stage.call-live #quickGuide,
 #quickGuide.in-call,
-.stage:has(#callPanel:not(.hidden)) .reassure-line {
+.stage.call-live .reassure-line {
   display: none !important;
 }
 
-/* Proportionally shrink the Call / Skip / Hang Up controls. */
-.stage:has(#callPanel:not(.hidden)) .call-btn {
-  width: 66px;
-  height: 66px;
+/* Proportionally shrink the four call-action buttons. */
+.stage.call-live .action-btn {
+  width: 60px;
+  height: 60px;
 }
-.stage:has(#callPanel:not(.hidden)) .primary-controls {
-  gap: 20px;
+.stage.call-live .call-actions {
+  gap: 14px;
   margin: 10px 0 6px;
 }
-.stage:has(#callPanel:not(.hidden)) .orb-wrap {
+.stage.call-live .orb-wrap {
   width: 150px;
   height: 150px;
   margin-bottom: 8px;
 }
 /* Keep the orb within its (now smaller) wrap so rings never spill. */
-.stage:has(#callPanel:not(.hidden)) .orb { width: 110px; height: 110px; }
-.stage:has(#callPanel:not(.hidden)) .orb-core { width: 74px; height: 74px; }
+.stage.call-live .orb { width: 110px; height: 110px; }
+.stage.call-live .orb-core { width: 74px; height: 74px; }
 @media (max-height: 740px) {
-  .stage:has(#callPanel:not(.hidden)) .orb { width: 92px; height: 92px; }
-  .stage:has(#callPanel:not(.hidden)) .orb-core { width: 60px; height: 60px; }
+  .stage.call-live .orb { width: 92px; height: 92px; }
+  .stage.call-live .orb-core { width: 60px; height: 60px; }
 }
 @media (max-height: 620px) {
-  .stage:has(#callPanel:not(.hidden)) .orb { width: 72px; height: 72px; }
-  .stage:has(#callPanel:not(.hidden)) .orb-core { width: 46px; height: 46px; }
+  .stage.call-live .orb { width: 72px; height: 72px; }
+  .stage.call-live .orb-core { width: 46px; height: 46px; }
 }
 /* Tighten the vertical rhythm so everything through the mic/chat row fits. */
-.stage:has(#callPanel:not(.hidden)) .partner-card { margin: 4px 0 6px; }
-.stage:has(#callPanel:not(.hidden)) .reaction-bar { margin: 4px 0; }
-.stage:has(#callPanel:not(.hidden)) .auto-call-row { margin: 6px auto; }
-.stage:has(#callPanel:not(.hidden)) .secondary-controls { margin-top: 4px; }
+.stage.call-live .partner-card { margin: 4px 0 6px; }
+.stage.call-live .reaction-bar { margin: 4px 0; }
+.stage.call-live .auto-call-row { margin: 6px auto; }
+.stage.call-live .call-actions { margin-top: 6px; }
 
 /* Short viewports (most phones in-call): tighten everything further. */
 @media (max-height: 740px) {
-  .stage:has(#callPanel:not(.hidden)) .orb-wrap {
+  .stage.call-live .orb-wrap {
     width: 116px;
     height: 116px;
     margin-bottom: 4px;
   }
-  .stage:has(#callPanel:not(.hidden)) .call-btn {
-    width: 58px;
-    height: 58px;
+  .stage.call-live .action-btn {
+    width: 54px;
+    height: 54px;
   }
-  .stage:has(#callPanel:not(.hidden)) .primary-controls { margin: 6px 0 4px; }
-  .stage:has(#callPanel:not(.hidden)) .btn-icon-lg {
-    width: 46px;
-    height: 46px;
-  }
-  .chat-panel { height: 200px; }
+  .stage.call-live .call-actions { gap: 12px; margin: 6px 0 4px; }
 }
 
 /* Very short viewports (compact phones, landscape-ish): last squeeze. */
 @media (max-height: 620px) {
-  .stage:has(#callPanel:not(.hidden)) .orb-wrap {
+  .stage.call-live .orb-wrap {
     width: 90px;
     height: 90px;
     margin-bottom: 2px;
   }
-  .stage:has(#callPanel:not(.hidden)) .call-btn {
-    width: 52px;
-    height: 52px;
+  .stage.call-live .action-btn {
+    width: 50px;
+    height: 50px;
   }
-  .stage:has(#callPanel:not(.hidden)) .call-btn-label,
-  .stage:has(#callPanel:not(.hidden)) .call-main-label { font-size: 11px; }
+  .stage.call-live .action-label,
+  .stage.call-live .call-main-label { font-size: 11px; }
 }
+
+/* =============================================================
+   Chat panel as a right-side sliding sheet. */
+.chat-side-panel {
+  width: 380px;
+  max-width: 90vw;
+  padding: 0;
+  gap: 0;
+}
+
+.chat-side-panel .side-panel-header {
+  padding: 16px 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  flex-shrink: 0;
+}
+
+.chat-side-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-side-body .chat-messages {
+  flex: 1;
+  min-height: 0;
+}
+
+.chat-side-panel .typing-indicator {
+  padding: 0 14px 6px;
+}
+
+/* The action spinner sits centered inside the round Call button. */
+.action-btn .action-spinner { top: 50%; left: 50%; margin: -17px 0 0 -17px; }
+
+/* Consent line under the call buttons on the idle screen. */
+.consent-line {
+  margin: 6px auto 0;
+  text-align: center;
+}
+.stage.call-live .consent-line { display: none; }
+
+/* RTL: the chat sheet slides in from the left instead (mirrors side panels). */
+[dir="rtl"] .chat-fab { order: -1; }

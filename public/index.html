@@ -133,7 +133,7 @@
   <div class="app">
     <header class="topbar">
       <div class="topbar-left">
-        <button id="appSettingsBtn" class="icon-btn hidden" data-i18n-title="settings" data-i18n-aria="menuAria" title="Settings" aria-label="Open settings menu">
+        <button id="appSettingsBtn" class="icon-btn" data-i18n-title="settings" data-i18n-aria="menuAria" title="Settings" aria-label="Open settings menu">
           <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
             <line x1="4" y1="7" x2="20" y2="7"/>
             <line x1="4" y1="12" x2="20" y2="12"/>
@@ -146,17 +146,38 @@
         </div>
       </div>
       <div class="header-right">
-        <div class="online" data-i18n-title="onlineAria" data-i18n-aria="onlineAria" title="People online now" aria-label="Number of people online now">
-          <span class="online-dot" aria-hidden="true"></span>
-          <span class="online-label" data-i18n="online">Online</span>
-          <span id="onlineCount" class="online-count">0</span>
+        <!-- Live network status: green "Online" when the connection is healthy,
+             red "Offline" the moment the internet or socket drops. -->
+        <div id="netStatus" class="net-status is-online" data-i18n-title="netOnline" title="You are online">
+          <span class="net-dot" aria-hidden="true"></span>
+          <span id="netStatusLabel" class="net-label" data-i18n="online">Online</span>
         </div>
+        <!-- Big chat button, top-right. Opens the chat panel that slides in from
+             the right; usable during a call. -->
+        <button id="chatToggleBtn" class="chat-fab" data-i18n-title="chat" data-i18n-aria="chat" title="Chat" aria-label="Chat">
+          <svg class="chat-fab-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+          </svg>
+          <span id="chatBadge" class="chat-badge hidden" aria-hidden="true"></span>
+        </button>
+      </div>
+      <div class="topbar-break" aria-hidden="true"></div>
+    </header>
+
+    <!-- Secondary navigation bar: everything that isn't the call button or chat. -->
+    <nav class="navbar" aria-label="TalkLive tools">
+      <div class="online" data-i18n-title="onlineAria" data-i18n-aria="onlineAria" title="People online now" aria-label="Number of people online now">
+        <span class="online-dot" aria-hidden="true"></span>
+        <span class="online-label" data-i18n="online">Online</span>
+        <span id="onlineCount" class="online-count">0</span>
+      </div>
+      <div class="navbar-actions">
         <div class="lang-wrap">
           <svg class="lang-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><ellipse cx="12" cy="12" rx="4.2" ry="9.5"/><line x1="2.5" y1="12" x2="21.5" y2="12"/></svg>
           <select id="langSelect" class="lang-select" data-i18n-aria="language" data-i18n-title="language" aria-label="Language"></select>
         </div>
         <div class="history-wrap">
-          <button id="historyBtn" class="icon-btn hidden" data-i18n-title="historyAria" data-i18n-aria="historyAria" title="Call history" aria-label="Call history">
+          <button id="historyBtn" class="icon-btn" data-i18n-title="historyAria" data-i18n-aria="historyAria" title="Call history" aria-label="Call history">
             <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <circle cx="12" cy="12" r="8.5"/>
               <path d="M12 7.5V12l3.2 2"/>
@@ -176,7 +197,7 @@
           </div>
         </div>
         <div class="friends-wrap">
-          <button id="friendsBtn" class="icon-btn friends-btn hidden" data-i18n-title="friendsAria" data-i18n-aria="friendsAria" title="Friends &amp; messages" aria-label="Friends and messages">
+          <button id="friendsBtn" class="icon-btn friends-btn" data-i18n-title="friendsAria" data-i18n-aria="friendsAria" title="Friends &amp; messages" aria-label="Friends and messages">
             <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
             <span id="friendsMsgBadge" class="notif-badge hidden" aria-hidden="true">0</span>
           </button>
@@ -193,7 +214,7 @@
           </div>
         </div>
         <div class="notif-wrap">
-          <button id="notifBtn" class="icon-btn notif-btn hidden" data-i18n-title="requests" data-i18n-aria="requests" title="Requests" aria-label="Requests">
+          <button id="notifBtn" class="icon-btn notif-btn" data-i18n-title="requests" data-i18n-aria="requests" title="Requests" aria-label="Requests">
             <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M12 4a4.2 4.2 0 0 0-4.2 4.2v2.6c0 .8-.3 1.6-.9 2.2l-1.1 1.1c-.5.5-.2 1.5.6 1.5h11.2c.8 0 1.1-1 .6-1.5l-1.1-1.1a3.2 3.2 0 0 1-.9-2.2V8.2A4.2 4.2 0 0 0 12 4z"/>
               <path d="M9.7 18.5a2.4 2.4 0 0 0 4.6 0"/>
@@ -212,7 +233,7 @@
             </div>
           </div>
         </div>
-        <button id="filtersBtn" class="icon-btn hidden" data-i18n-title="filtersAria" data-i18n-aria="filtersAria" title="Match filters" aria-label="Match filters">
+        <button id="filtersBtn" class="icon-btn" data-i18n-title="filtersAria" data-i18n-aria="filtersAria" title="Match filters" aria-label="Match filters">
           <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <line x1="4" y1="6" x2="20" y2="6"/>
             <circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"/>
@@ -223,8 +244,7 @@
           </svg>
         </button>
       </div>
-      <div class="topbar-break" aria-hidden="true"></div>
-    </header>
+    </nav>
 
     <!-- App settings side panel: app-level preferences + your own profile fields, opened from the left menu icon -->
     <div id="appSettingsOverlay" class="side-panel-overlay hidden"></div>
@@ -353,22 +373,6 @@
 
       <h1 class="sr-only">TalkLive — free random voice chat to talk to strangers worldwide</h1>
 
-      <!-- Setup panel: shown before the first call -->
-      <section id="setupPanel" class="setup-panel">
-        <div id="tapToTalk" class="tap-to-talk">
-          <button id="startBtn" class="tap-orb call-btn-green" data-i18n-aria="startAria" aria-label="Start a call with a random person">
-            <svg class="phone-icon" viewBox="0 0 24 24" fill="white" aria-hidden="true">
-              <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
-            </svg>
-            <span class="tap-orb-label" data-i18n="tapToTalk">Tap to Talk</span>
-          </button>
-          <p class="consent-line">
-            <span data-i18n="consentPrefix">By tapping Start you agree to our</span>
-            <button type="button" id="openTermsLink" class="link-btn" data-i18n="termsLink">Terms &amp; Community Guidelines</button>
-          </p>
-          <p id="setupErrorText" class="error-text hidden" role="alert"></p>
-        </div>
-      </section>
 
       <!-- Account modal: optional simple username/password/nickname (in-memory only for now) -->
       <div id="accountModal" class="modal-overlay hidden">
@@ -550,8 +554,8 @@
         </div>
       </div>
 
-      <!-- Call panel: shown during waiting/connected states -->
-      <section id="callPanel" class="call-panel hidden">
+      <!-- Call panel: the persistent main interface (idle → searching → in call) -->
+      <section id="callPanel" class="call-panel">
         <div class="orb-wrap">
           <div id="orb" class="orb idle" aria-hidden="true">
             <div class="orb-core"></div>
@@ -608,80 +612,78 @@
         </div>
         <div id="reactionOverlay" class="reaction-overlay" aria-hidden="true"></div>
 
-        <div class="primary-controls hidden" id="primaryControls">
-          <div class="call-btn-wrap">
-            <button id="callMainBtn" class="call-btn call-main-btn is-call" data-i18n-aria="call" aria-label="Call">
+        <!-- One row, four equal-sized buttons. The first is the single
+             Call / Loading / Hang Up / Confirm button on the left; the other
+             three are the in-call actions, enabled only once connected. -->
+        <div class="call-actions" id="callActions">
+          <div class="call-action-wrap">
+            <button id="callMainBtn" class="action-btn call-main-btn is-call" data-i18n-aria="call" aria-label="Call">
+              <span class="call-main-confirm-layer" aria-hidden="true"></span>
               <svg class="phone-icon call-main-icon" viewBox="0 0 24 24" fill="white" aria-hidden="true">
                 <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
               </svg>
+              <span class="action-spinner" aria-hidden="true"></span>
             </button>
-            <span id="callMainLabel" class="call-btn-label call-main-label is-call">Call</span>
+            <span id="callMainLabel" class="action-label call-main-label is-call">Call</span>
           </div>
-          <div class="call-btn-wrap">
-            <button id="skipBtn" class="call-btn call-btn-next" data-i18n-aria="next" aria-label="Next">
-              <svg class="skip-icon" viewBox="0 0 24 24" fill="white" aria-hidden="true">
-                <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
-              </svg>
-            </button>
-            <span class="call-btn-label call-btn-label-next" data-i18n="next">Next</span>
-          </div>
-        </div>
-
-        <label id="autoCallRow" class="checkbox-row auto-call-row hidden" for="autoCallCheckbox">
-          <input type="checkbox" id="autoCallCheckbox" checked />
-          <span data-i18n="enableAutoCall">Enable — keep connecting me to new people</span>
-        </label>
-
-        <div class="controls secondary-controls">
-          <div class="ctl-wrap">
-            <button id="muteBtn" class="btn btn-icon btn-icon-lg hidden" data-i18n-title="mute" data-i18n-aria="mute" title="Mute" aria-label="Mute" aria-pressed="false">
+          <div class="call-action-wrap">
+            <button id="muteBtn" class="action-btn action-btn-neutral" data-i18n-title="mute" data-i18n-aria="mute" title="Mute" aria-label="Mute" aria-pressed="false" disabled>
               <svg id="muteIcon" class="simple-icon simple-icon-lg" viewBox="0 0 24 24" fill="#aab0c4" aria-hidden="true">
                 <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
               </svg>
               <span id="muteSlash" class="mute-slash hidden" aria-hidden="true"></span>
             </button>
-            <span class="ctl-label" data-i18n="mute">Mute</span>
+            <span class="action-label" data-i18n="mute">Mute</span>
           </div>
-          <div class="ctl-wrap">
-            <button id="chatToggleBtn" class="btn btn-icon btn-icon-lg hidden" data-i18n-title="chat" data-i18n-aria="chat" title="Chat" aria-label="Chat">
-              <svg class="simple-icon simple-icon-lg" viewBox="0 0 24 24" fill="white" aria-hidden="true">
-                <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
-              </svg>
-              <span id="chatBadge" class="chat-badge hidden" aria-hidden="true"></span>
-            </button>
-            <span class="ctl-label" data-i18n="chat">Chat</span>
-          </div>
-          <div class="ctl-wrap">
-            <button id="addFriendBtn" class="btn btn-icon btn-icon-lg hidden" data-i18n-title="addFriend" data-i18n-aria="addFriend" title="Add friend" aria-label="Add friend">
+          <div class="call-action-wrap">
+            <button id="addFriendBtn" class="action-btn action-btn-neutral" data-i18n-title="addFriend" data-i18n-aria="addFriend" title="Add friend" aria-label="Add friend" disabled>
               <svg id="addFriendIcon" class="simple-icon simple-icon-lg" viewBox="0 0 24 24" fill="white" aria-hidden="true">
                 <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
               </svg>
             </button>
-            <span class="ctl-label" data-i18n="addFriend">Add friend</span>
+            <span class="action-label" data-i18n="addFriend">Add friend</span>
           </div>
-          <div class="ctl-wrap">
-            <button id="reportBtn" class="btn btn-icon btn-icon-lg hidden" data-i18n-title="report" data-i18n-aria="report" title="Report" aria-label="Report">
+          <div class="call-action-wrap">
+            <button id="reportBtn" class="action-btn action-btn-neutral" data-i18n-title="report" data-i18n-aria="report" title="Report" aria-label="Report" disabled>
               <svg class="simple-icon simple-icon-lg" viewBox="0 0 24 24" aria-hidden="true">
                 <line x1="5" y1="3" x2="5" y2="21" stroke="#ff5470" stroke-width="2" stroke-linecap="round"/>
                 <path d="M6 4h13l-3.5 4L19 12H6V4z" fill="#ff5470"/>
               </svg>
             </button>
-            <span class="ctl-label" data-i18n="report">Report</span>
+            <span class="action-label" data-i18n="report">Report</span>
           </div>
         </div>
+
+        <label id="autoCallRow" class="checkbox-row auto-call-row" for="autoCallCheckbox">
+          <input type="checkbox" id="autoCallCheckbox" />
+          <span data-i18n="enableAutoCall">Enable — keep connecting me to new people</span>
+        </label>
+
+        <p class="consent-line" id="consentLine">
+          <span data-i18n="consentPrefix">By tapping Call you agree to our</span>
+          <button type="button" id="openTermsLink" class="link-btn" data-i18n="termsLink">Terms &amp; Community Guidelines</button>
+        </p>
 
         <p id="errorText" class="error-text hidden" role="alert"></p>
       </section>
 
-      <!-- Chat panel -->
-      <section id="chatPanel" class="chat-panel hidden">
-        <div id="chatMessages" class="chat-messages"></div>
-        <p id="typingIndicator" class="typing-indicator hidden"><span data-i18n="strangerTyping">Stranger is typing</span><span class="typing-dots" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span></p>
-        <form id="chatForm" class="chat-form">
-          <input id="chatInput" type="text" maxlength="1000" data-i18n-placeholder="typeMessage" data-i18n-aria="typeMessage" placeholder="Type a message…" autocomplete="off" />
-          <button type="submit" id="chatSendBtn" class="btn btn-primary chat-send" data-i18n="send">Send</button>
-        </form>
-      </section>
+      <!-- Chat panel: slides in from the right (big chat button, top-right).
+           Usable during a call; swipe right to close. -->
+      <div id="chatOverlay" class="side-panel-overlay hidden"></div>
+      <aside id="chatPanel" class="side-panel side-panel-right chat-side-panel" role="dialog" data-i18n-aria="chat" aria-label="Chat">
+        <div class="side-panel-header">
+          <h2 data-i18n="chat">Chat</h2>
+          <button type="button" id="closeChatBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
+        </div>
+        <div class="chat-side-body">
+          <div id="chatMessages" class="chat-messages"></div>
+          <p id="typingIndicator" class="typing-indicator hidden"><span data-i18n="strangerTyping">Stranger is typing</span><span class="typing-dots" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span></p>
+          <form id="chatForm" class="chat-form">
+            <input id="chatInput" type="text" maxlength="1000" data-i18n-placeholder="typeMessage" data-i18n-aria="typeMessage" placeholder="Type a message…" autocomplete="off" />
+            <button type="submit" id="chatSendBtn" class="btn btn-primary chat-send" data-i18n="send">Send</button>
+          </form>
+        </div>
+      </aside>
       <!-- Quick guide — key rules at a glance. One list serves both screens:
            before a call it shows the full rules (18+ line, long report line);
            during a call (.in-call, toggled from app.js) those swap for a

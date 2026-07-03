@@ -61,7 +61,7 @@ const I18N_STRINGS = {
 
     tapToTalk: 'Tap to Talk',
     startAria: 'Start a call with a random person',
-    consentPrefix: 'By tapping Start you agree to our',
+    consentPrefix: 'By tapping Call you agree to our',
     termsLink: 'Terms & Community Guidelines',
 
     or: 'or',
@@ -181,7 +181,7 @@ const I18N_STRINGS = {
     statusCallingBack: 'Calling {name} back…',
     subRematched: "You both liked your last chat — you're reconnected!",
     statusConnected: "You're connected",
-    subSayHi: 'Say hi! Tap "Next" for a new person, or "Hang Up" to leave.',
+    subSayHi: 'Say hi! Tap "Hang Up" to leave, or check Enable to auto-connect next.',
     subStrangerMuted: 'The other person muted their microphone',
     statusFindingNew: 'Finding a new person…',
     statusReconnecting: 'Connection dropped — reconnecting…',
@@ -202,6 +202,9 @@ const I18N_STRINGS = {
     connCalling: 'Calling',
 
     hangUp: 'Hang Up',
+    hangUpSure: 'Sure?',
+    netOnline: 'You are online',
+    netOffline: 'You are offline — check your internet',
     next: 'Next',
     enableAutoCall: 'Enable — keep connecting me to new people',
     mute: 'Mute',
