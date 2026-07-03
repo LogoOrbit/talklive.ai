@@ -3589,6 +3589,21 @@ html, body {
   gap: 0;
 }
 
+/* Mobile: the chat is a full-screen sheet — full width so there is no dead
+   strip on the side and the Send button can never be pushed off-screen. */
+@media (max-width: 767px) {
+  .chat-side-panel {
+    width: 100%;
+    max-width: 100%;
+  }
+  .chat-side-panel .chat-form {
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+  }
+  .chat-side-panel .chat-send {
+    padding: 13px 18px;
+  }
+}
+
 .chat-side-panel .side-panel-header {
   padding: 16px 18px;
   border-bottom: 1px solid rgba(255,255,255,0.08);
