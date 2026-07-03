@@ -1693,7 +1693,8 @@ function setSubTextFading(key, vars, delayMs = 5000) {
 // that stays on the compositor for a smooth 60fps pop with no layout jank.
 function addChatMessage(text, kind) {
   const el = document.createElement('div');
-  el.className = `chat-msg ${kind} chat-msg-enter`;
+  // Sent messages get the punchy "pop" keyframe; received/system slide in.
+  el.className = `chat-msg ${kind}` + (kind === 'me' ? ' chat-msg-pop' : ' chat-msg-enter');
   const bubble = document.createElement('span');
   bubble.className = 'chat-msg-text';
   bubble.textContent = text;
@@ -1705,10 +1706,12 @@ function addChatMessage(text, kind) {
     el.appendChild(ticks);
   }
   chatMessages.appendChild(el);
-  // Double rAF so the enter animation is guaranteed to run from its start frame.
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => el.classList.remove('chat-msg-enter'));
-  });
+  if (kind !== 'me') {
+    // Double rAF so the enter animation is guaranteed to run from its start frame.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => el.classList.remove('chat-msg-enter'));
+    });
+  }
   chatMessages.scrollTop = chatMessages.scrollHeight;
   return el;
 }
@@ -1790,8 +1793,15 @@ function attemptIceRestart(peer) {
 
 function createPeerConnection(isInitiator) {
   const peer = new RTCPeerConnection({ iceServers: ICE_SERVERS, iceCandidatePoolSize: 10 });
+  // A brand-new peer has no remote description yet, so start a fresh candidate
+  // buffer (see handleSignal). Never carry candidates across connections.
+  pendingCandidates = [];
 
   localStream.getTracks().forEach((track) => peer.addTrack(track, localStream));
+  // Force every audio transceiver to send+receive. Without this, a race where a
+  // track is briefly absent can leave a "recvonly" transceiver, which silently
+  // produces one-way audio (you hear them, they can't hear you).
+  peer.getTransceivers().forEach((tr) => { try { tr.direction = 'sendrecv'; } catch (e) {} });
 
   peer.onicecandidate = (event) => {
     if (event.candidate) {
@@ -1898,21 +1908,52 @@ async function startCall(initiator) {
   }
 }
 
+// ICE candidates that arrived before the remote description was set. Adding a
+// candidate with no remote description throws and the candidate is lost — the
+// classic cause of one-way audio across high-latency (international) links,
+// where trickled candidates routinely race ahead of the offer/answer SDP. We
+// buffer them and flush once the remote description lands.
+let pendingCandidates = [];
+
+async function flushPendingCandidates() {
+  if (!pc || !pc.remoteDescription) return;
+  const queued = pendingCandidates;
+  pendingCandidates = [];
+  for (const cand of queued) {
+    try {
+      await pc.addIceCandidate(new RTCIceCandidate(cand));
+    } catch (e) {
+      // ignore individual bad/stale candidates
+    }
+  }
+}
+
 async function handleSignal(data) {
   if (!pc) return;
-  if (data.type === 'offer') {
-    await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-    socket.emit('signal', { type: 'answer', sdp: answer });
-  } else if (data.type === 'answer') {
-    await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
-  } else if (data.type === 'ice-candidate') {
-    try {
-      await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
-    } catch (e) {
-      // ignore late candidates
+  try {
+    if (data.type === 'offer') {
+      await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+      await flushPendingCandidates();
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      socket.emit('signal', { type: 'answer', sdp: answer });
+    } else if (data.type === 'answer') {
+      // Ignore a stray/duplicate answer that arrives when we're not expecting
+      // one (e.g. after an ICE-restart glare) — applying it would throw.
+      if (pc.signalingState !== 'have-local-offer') return;
+      await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+      await flushPendingCandidates();
+    } else if (data.type === 'ice-candidate') {
+      if (!data.candidate) return;
+      if (pc.remoteDescription && pc.remoteDescription.type) {
+        await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+      } else {
+        pendingCandidates.push(data.candidate);
+      }
     }
+  } catch (e) {
+    // A single failed signal step shouldn't kill the call; the connect
+    // watchdog / 30s reconnect window will recover or advance if needed.
   }
 }
 
@@ -1921,6 +1962,7 @@ function teardownPeer() {
   currentPartner = null;
   clearConnectWatchdog();
   clearReconnectDeadline();
+  pendingCandidates = [];
   mediaConnected = false;
   clearInterval(speakingCheckInterval);
   orb.classList.remove('speaking');
@@ -2985,22 +3027,18 @@ socket.on('partner-left', () => {
   teardownPeer();
   clearChat();
   if (typeof resetLudo === 'function') resetLudo();
-  if (isSearching && autoCallEnabled) {
-    // Auto-connect enabled: immediately keep connecting to new people, no
-    // confirmation ever — this loop only stops when the user stops it.
-    setCallState('searching');
-    setState('waiting');
-    setConnection('red', 'connDisconnected');
-    setStatusText('statusStrangerLeft');
-    setSubText('subHangTight');
-    socket.emit('find-partner');
-    setTimeout(() => setConnection('orange', 'connSearching'), 600);
-  } else if (isSearching) {
-    // Other side hung up with auto-connect off: back to the initial
-    // Call + Skip state — no lingering Hang Up button.
-    socket.emit('leave');
-    goIdleOnCallScreen('statusStrangerLeft');
-  }
+  if (!isSearching) return;
+  // The partner dropped — whether they hung up, lost connection, or closed the
+  // browser. Rather than stranding the user, always roll straight on to the
+  // next person (the requested "reconnect then move on" behaviour). The single
+  // hang-up button is still there to stop whenever they want.
+  setCallState('searching');
+  setState('waiting');
+  setConnection('red', 'connDisconnected');
+  setStatusText('statusStrangerLeft');
+  setSubText('subHangTight');
+  socket.emit('find-partner');
+  setTimeout(() => { if (isSearching && callState === 'searching') setConnection('orange', 'connSearching'); }, 600);
 });
 
 socket.on('partner-mic-state', (muted) => {

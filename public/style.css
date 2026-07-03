@@ -1767,10 +1767,10 @@ html, body {
 
 .chat-msg {
   max-width: 82%;
-  padding: 9px 13px;
-  border-radius: 14px;
-  font-size: 15px;
-  line-height: 1.4;
+  padding: 10px 15px;
+  border-radius: 16px;
+  font-size: 16.5px;
+  line-height: 1.45;
   word-break: break-word;
   display: inline-flex;
   align-items: flex-end;
@@ -1778,12 +1778,24 @@ html, body {
   /* Composited entrance: no layout thrash, smooth 60fps. */
   will-change: transform, opacity;
   transition: transform 180ms cubic-bezier(.2,.8,.2,1), opacity 180ms ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.18);
 }
 
 /* Entrance start-frame — removed on the next rAF to animate into place. */
 .chat-msg.chat-msg-enter {
   opacity: 0;
   transform: translateY(8px) scale(0.96);
+}
+
+/* Sent messages land with weight — a solid WhatsApp-style "thunk" pop from the
+   bottom-right corner. Paired with the send sound + haptic in app.js. */
+@keyframes chatSendPop {
+  0%   { transform: translateY(12px) scale(0.78); opacity: 0; }
+  55%  { transform: translateY(-2px) scale(1.05); opacity: 1; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+.chat-msg.me.chat-msg-pop {
+  animation: chatSendPop 0.34s cubic-bezier(.2,.85,.25,1) both;
 }
 
 .chat-msg-text { min-width: 0; }
@@ -1847,31 +1859,13 @@ html, body {
 }
 
 .chat-send {
-  padding: 12px 20px;
-  font-size: 15px;
+  padding: 13px 22px;
+  font-size: 16px;
+  font-weight: 700;
+  border-radius: 999px;
+  flex-shrink: 0;
 }
 
-/* Desktop: Messenger-web-style chat anchored bottom-right, larger panel. */
-@media (min-width: 768px) {
-  .chat-panel {
-    position: fixed;
-    right: 24px;
-    bottom: 24px;
-    top: auto;
-    left: auto;
-    width: 380px;
-    max-width: 380px;
-    height: 520px;
-    margin: 0;
-    z-index: 60;
-    background: var(--panel, rgba(20,22,32,0.98));
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 18px;
-    box-shadow: 0 18px 50px rgba(0,0,0,0.45);
-    backdrop-filter: blur(12px);
-  }
-  .chat-panel .chat-msg { font-size: 15.5px; }
-}
 
 /* Chat notification badge */
 .chat-badge {
@@ -2158,6 +2152,20 @@ html, body {
 
 .notif-dropdown.hidden {
   display: none;
+}
+
+/* Smooth pop-in for every toolbar dropdown (history / friends / requests) so
+   the menus spring open from under their icon instead of snapping in place. */
+.notif-dropdown:not(.hidden) {
+  transform-origin: top right;
+  animation: dropdownIn 0.2s cubic-bezier(.2,.85,.25,1);
+}
+@keyframes dropdownIn {
+  from { opacity: 0; transform: translateY(-8px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .notif-dropdown:not(.hidden) { animation: none; }
 }
 
 .notif-dropdown .modal-header {
@@ -3601,6 +3609,42 @@ html, body {
 
 .chat-side-panel .typing-indicator {
   padding: 0 14px 6px;
+}
+
+/* Desktop: Facebook-Messenger-web-style chat docked at the bottom-right corner
+   — a floating rounded window that pops up (not a full-height drawer), so the
+   call stays fully visible behind it. It's non-modal: no dimming overlay, and
+   it stays open until explicitly closed. Placed after the base .chat-side-panel
+   block so these values win without needing extra specificity. */
+@media (min-width: 768px) {
+  #chatOverlay { display: none !important; }
+
+  .chat-side-panel {
+    top: auto;
+    left: auto;
+    right: 24px;
+    bottom: 24px;
+    width: 400px;
+    max-width: calc(100vw - 48px);
+    height: min(620px, calc(100vh - 120px));
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 20px;
+    box-shadow: 0 26px 70px rgba(0,0,0,0.5);
+    backdrop-filter: blur(14px);
+    /* Pop up from the corner with a slight scale; hidden state is offset +
+       faded so the transition reads as a spring, not a slide. */
+    transform: translateY(28px) scale(0.96);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.3s cubic-bezier(.2,.9,.25,1), opacity 0.22s ease;
+  }
+  .chat-side-panel.open {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .chat-side-panel .chat-msg { font-size: 16px; }
+  .chat-side-panel .chat-messages { padding: 16px; gap: 10px; }
 }
 
 /* The action spinner sits centered inside the round Call button. */
