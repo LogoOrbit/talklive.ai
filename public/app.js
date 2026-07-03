@@ -17,11 +17,14 @@ const orbRings = document.querySelectorAll('#orb .orb-ring');
 const statusText = document.getElementById('statusText');
 const subText = document.getElementById('subText');
 const errorText = document.getElementById('errorText');
+const setupErrorText = document.getElementById('setupErrorText');
 const onlineCountEl = document.getElementById('onlineCount');
 const remoteAudio = document.getElementById('remoteAudio');
 const netStatus = document.getElementById('netStatus');
 const netStatusLabel = document.getElementById('netStatusLabel');
 
+const setupPanel = document.getElementById('setupPanel');
+const startBtn = document.getElementById('startBtn');
 const callPanel = document.getElementById('callPanel');
 const stageEl = document.getElementById('main');
 const chatPanel = document.getElementById('chatPanel');
@@ -1453,9 +1456,6 @@ function setCallState(state) {
   reportBtn.disabled = !connected;
   reassureLine.classList.toggle('hidden', !connected);
 
-  // The compact, fits-the-viewport layout only kicks in once a call is live.
-  stageEl.classList.toggle('call-live', state !== 'idle');
-
   if (state === 'searching') startSearchTicker();
   else stopSearchTicker();
   if (!connected) stopQualityMonitor();
@@ -1631,13 +1631,17 @@ reactionBar.addEventListener('click', (e) => {
 });
 
 function showError(msg) {
-  errorText.textContent = msg;
-  errorText.classList.remove('hidden');
+  // On the Tap-to-Talk landing the callPanel is hidden, so surface errors there.
+  const target = setupPanel.classList.contains('hidden') ? errorText : setupErrorText;
+  target.textContent = msg;
+  target.classList.remove('hidden');
 }
 
 function clearError() {
   errorText.classList.add('hidden');
   errorText.textContent = '';
+  setupErrorText.classList.add('hidden');
+  setupErrorText.textContent = '';
 }
 
 let subTextFadeTimer = null;
@@ -1935,18 +1939,31 @@ function teardownPeer() {
   lockSkipButton();
 }
 
-// Full reset to the idle landing state (used after a ban / abandoned callback).
+// Full reset back to the Tap-to-Talk landing (used after a ban / abandoned
+// callback, and whenever the user has no live call to return to).
 function resetUI() {
   teardownPeer();
   isSearching = false;
   clearHangupConfirm();
   setCallState('idle');
   setState('idle');
-  setStatusText('statusReadyToTalk');
-  setSubText('subTapCall');
+  setStatusText('statusIdle');
+  setSubText('subIdle');
+  callPanel.classList.add('hidden');
+  setupPanel.classList.remove('hidden');
+  stageEl.classList.remove('call-live');
+  startBtn.disabled = false;
   closeChatPanel();
   clearChat();
   hideConnection();
+  // Toolbar + chat button belong to the call screen only.
+  chatToggleBtn.classList.add('hidden');
+  appSettingsBtn.classList.add('hidden');
+  historyBtn.classList.add('hidden');
+  friendsBtn.classList.add('hidden');
+  notifBtn.classList.add('hidden');
+  accountBtn.classList.add('hidden');
+  filtersBtn.classList.add('hidden');
 }
 
 // Return the single button to green "Call" (idle) on the persistent call screen.
@@ -1978,22 +1995,33 @@ function registerProfile() {
   });
 }
 
-// The call interface is now persistent, so entering a call no longer swaps
-// panels — this only closes any open chat sheet from a previous session.
+// Move from the Tap-to-Talk landing to the call screen and reveal the toolbar
+// + big chat button. Safe to call repeatedly (e.g. on each new match).
 function enterCallUI() {
   closeChatPanel();
+  setupPanel.classList.add('hidden');
+  callPanel.classList.remove('hidden');
+  stageEl.classList.add('call-live');
+  chatToggleBtn.classList.remove('hidden');
+  appSettingsBtn.classList.remove('hidden');
+  historyBtn.classList.remove('hidden');
+  friendsBtn.classList.remove('hidden');
+  notifBtn.classList.remove('hidden');
+  accountBtn.classList.remove('hidden');
+  filtersBtn.classList.remove('hidden');
 }
 
 let beginInFlight = false;
 async function begin() {
   if (beginInFlight) return;
   beginInFlight = true;
+  startBtn.disabled = true;
   clearError();
-  setButtonMode('loading'); // immediate feedback while the mic prompt resolves
   try {
     await getMic();
   } catch (e) {
     beginInFlight = false;
+    startBtn.disabled = false;
     setButtonMode('call');
     if (e.name === 'NotAllowedError' || e.name === 'SecurityError') {
       showError(t('errMicBlocked'));
@@ -2011,6 +2039,7 @@ async function begin() {
   registerProfile();
 
   isSearching = true;
+  enterCallUI();
   setCallState('searching');
   setState('waiting');
   setConnection('orange', 'connSearching');
@@ -2038,6 +2067,9 @@ function startCallFlow() {
 }
 
 openTermsFromConsent.addEventListener('click', () => openModal(termsModal));
+
+// The Tap-to-Talk landing orb: same flow as the green Call button.
+startBtn.addEventListener('click', startCallFlow);
 
 ageAgreeBtn.addEventListener('click', () => {
   localStorage.setItem(CONSENT_KEY, 'yes');
@@ -2551,11 +2583,11 @@ window.addEventListener('i18n-changed', () => {
   }
 });
 
-// Initial idle render of the persistent call interface: green Call button,
-// unchecked auto-call checkbox, and a friendly prompt.
+// Initial state: the Tap-to-Talk landing, a green idle Call button ready for
+// when the call screen opens, and an unchecked auto-call checkbox.
 autoCallCheckbox.checked = autoCallEnabled;
 setCallState('idle');
 setState('idle');
-setStatusText('statusReadyToTalk');
-setSubText('subTapCall');
+setStatusText('statusIdle');
+setSubText('subIdle');
 refreshNetStatus();
