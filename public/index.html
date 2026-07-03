@@ -125,7 +125,7 @@
 }
 </script>
 
-<link rel="stylesheet" href="style.css?v=20260703b" />
+<link rel="stylesheet" href="style.css?v=20260703c" />
 <script src="/config.js"></script>
 </head>
 <body>
@@ -141,16 +141,17 @@
           </svg>
         </button>
         <div class="brand">
-          <span class="brand-dot"></span>
+          <!-- Network status: green dot when online, red when the connection drops. -->
+          <span id="brandDot" class="brand-dot is-online" data-i18n-title="netOnline" title="You are online"></span>
           TalkLive
         </div>
       </div>
       <div class="header-right">
-        <!-- Live network status: green "Online" when the connection is healthy,
-             red "Offline" the moment the internet or socket drops. -->
-        <div id="netStatus" class="net-status is-online" data-i18n-title="netOnline" title="You are online">
-          <span class="net-dot" aria-hidden="true"></span>
-          <span id="netStatusLabel" class="net-label" data-i18n="online">Online</span>
+        <!-- Live count of people online: pulsing dot + group icon + number. -->
+        <div class="people-count" data-i18n-title="onlineAria" data-i18n-aria="onlineAria" title="People online now" aria-label="Number of people online now">
+          <span class="people-live-dot" aria-hidden="true"></span>
+          <svg class="people-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+          <span id="onlineCount" class="people-count-num">0</span>
         </div>
         <!-- Big chat button, top-right. Opens the chat panel that slides in from
              the right; usable during a call. -->
@@ -158,18 +159,14 @@
           <svg class="chat-fab-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
           </svg>
-          <span id="chatBadge" class="chat-badge hidden" aria-hidden="true"></span>
+          <span id="chatBadge" class="chat-badge hidden" aria-hidden="true">0</span>
         </button>
       </div>
       <div class="topbar-break" aria-hidden="true"></div>
     </header>
 
-    <!-- Secondary navigation bar: language (left) · tools (center) · live people count (right). -->
+    <!-- Secondary navigation bar: the tool buttons, centered. -->
     <nav class="navbar" aria-label="TalkLive tools">
-      <div class="lang-wrap">
-        <svg class="lang-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><ellipse cx="12" cy="12" rx="4.2" ry="9.5"/><line x1="2.5" y1="12" x2="21.5" y2="12"/></svg>
-        <select id="langSelect" class="lang-select" data-i18n-aria="language" data-i18n-title="language" aria-label="Language"></select>
-      </div>
       <div class="navbar-actions">
         <div class="history-wrap">
           <button id="historyBtn" class="icon-btn hidden" data-i18n-title="historyAria" data-i18n-aria="historyAria" title="Call history" aria-label="Call history">
@@ -193,7 +190,7 @@
         </div>
         <div class="friends-wrap">
           <button id="friendsBtn" class="icon-btn friends-btn hidden" data-i18n-title="friendsAria" data-i18n-aria="friendsAria" title="Friends &amp; messages" aria-label="Friends and messages">
-            <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+            <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.1"/><path d="M3.6 19a5.4 5.4 0 0 1 10.8 0"/><circle cx="17.2" cy="9" r="2.5"/><path d="M15.7 13.7A4.8 4.8 0 0 1 21 18.4"/></svg>
             <span id="friendsMsgBadge" class="notif-badge hidden" aria-hidden="true">0</span>
           </button>
           <div id="friendsDropdown" class="notif-dropdown friends-dropdown hidden" role="dialog" data-i18n-aria="friends" aria-label="Friends">
@@ -239,13 +236,6 @@
           </svg>
         </button>
       </div>
-      <!-- Live count of people online: a group icon + the number, with a pulsing
-           "live" dot. No "Online" wording so it never reads like a status label. -->
-      <div class="people-count" data-i18n-title="onlineAria" data-i18n-aria="onlineAria" title="People online now" aria-label="Number of people online now">
-        <span class="people-live-dot" aria-hidden="true"></span>
-        <svg class="people-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-        <span id="onlineCount" class="people-count-num">0</span>
-      </div>
     </nav>
 
     <!-- App settings side panel: app-level preferences + your own profile fields, opened from the left menu icon -->
@@ -279,6 +269,14 @@
 
         <div class="app-settings-section">
           <h3 class="side-section-title" data-i18n="appSettings">App Settings</h3>
+
+          <div class="pill-row">
+            <span class="pill-label" data-i18n="language">Language</span>
+            <div class="lang-wrap settings-lang-wrap">
+              <svg class="lang-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><ellipse cx="12" cy="12" rx="4.2" ry="9.5"/><line x1="2.5" y1="12" x2="21.5" y2="12"/></svg>
+              <select id="langSelect" class="lang-select" data-i18n-aria="language" data-i18n-title="language" aria-label="Language"></select>
+            </div>
+          </div>
 
           <div class="pill-row">
             <span class="pill-label" id="themeGroupLabel" data-i18n="theme">Theme</span>
@@ -684,8 +682,14 @@
            Usable during a call; swipe right to close. -->
       <div id="chatOverlay" class="side-panel-overlay hidden"></div>
       <aside id="chatPanel" class="side-panel side-panel-right chat-side-panel" role="dialog" data-i18n-aria="chat" aria-label="Chat">
-        <div class="side-panel-header">
-          <h2 data-i18n="chat">Chat</h2>
+        <div class="side-panel-header chat-side-header">
+          <div class="chat-peer" id="chatPeer">
+            <div class="chat-peer-name">
+              <span id="chatPeerName" data-i18n="chat">Chat</span>
+              <span id="chatPeerFlag" class="chat-peer-flag" aria-hidden="true"></span>
+            </div>
+            <div id="chatPeerStatus" class="chat-peer-status hidden"><span class="chat-peer-status-dot" aria-hidden="true"></span><span id="chatPeerStatusText"></span></div>
+          </div>
           <button type="button" id="closeChatBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
         </div>
         <div class="chat-side-body">
@@ -773,16 +777,16 @@
       <span id="callBackBannerText">Someone wants to call you back</span>
     </div>
     <div class="callback-banner-actions">
-      <button type="button" id="callBackAcceptBtn" class="btn btn-primary callback-accept" data-i18n="accept">Accept</button>
-      <button type="button" id="callBackDeclineBtn" class="btn btn-secondary callback-decline" data-i18n="decline">Decline</button>
+      <button type="button" id="callBackAcceptBtn" class="btn callback-accept" data-i18n="accept">Accept</button>
+      <button type="button" id="callBackDeclineBtn" class="btn callback-decline" data-i18n="decline">Decline</button>
     </div>
   </div>
 
   <audio id="remoteAudio" autoplay playsinline></audio>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="countries.js?v=20260703b"></script>
-  <script src="i18n.js?v=20260703b"></script>
-  <script src="app.js?v=20260703b"></script>
+  <script src="countries.js?v=20260703c"></script>
+  <script src="i18n.js?v=20260703c"></script>
+  <script src="app.js?v=20260703c"></script>
 </body>
 </html>

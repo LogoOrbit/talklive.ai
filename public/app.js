@@ -20,8 +20,7 @@ const errorText = document.getElementById('errorText');
 const setupErrorText = document.getElementById('setupErrorText');
 const onlineCountEl = document.getElementById('onlineCount');
 const remoteAudio = document.getElementById('remoteAudio');
-const netStatus = document.getElementById('netStatus');
-const netStatusLabel = document.getElementById('netStatusLabel');
+const brandDot = document.getElementById('brandDot');
 
 const setupPanel = document.getElementById('setupPanel');
 const startBtn = document.getElementById('startBtn');
@@ -1393,15 +1392,14 @@ function hideConnection() {
   connectionIndicator.classList.add('hidden');
 }
 
-// --- Live network status indicator (top bar): green "Online" when the
-// internet + socket are healthy, red "Offline" the moment either drops. ---
+// --- Network status: the brand dot next to "TalkLive" turns green when the
+// internet + socket are healthy, red the moment either drops. ---
 let socketConnected = false;
 function refreshNetStatus() {
   const online = socketConnected && (typeof navigator.onLine === 'undefined' || navigator.onLine);
-  netStatus.classList.toggle('is-online', online);
-  netStatus.classList.toggle('is-offline', !online);
-  netStatusLabel.textContent = t(online ? 'online' : 'offline');
-  netStatus.setAttribute('title', t(online ? 'netOnline' : 'netOffline'));
+  brandDot.classList.toggle('is-online', online);
+  brandDot.classList.toggle('is-offline', !online);
+  brandDot.setAttribute('title', t(online ? 'netOnline' : 'netOffline'));
 }
 window.addEventListener('online', refreshNetStatus);
 window.addEventListener('offline', refreshNetStatus);
@@ -1459,6 +1457,7 @@ function setCallState(state) {
   if (state === 'searching') startSearchTicker();
   else stopSearchTicker();
   if (!connected) stopQualityMonitor();
+  if (typeof syncChatHeader === 'function') syncChatHeader();
   syncWakeLock();
 }
 
@@ -1711,6 +1710,7 @@ function addChatMessage(text, kind) {
 function clearChat() {
   chatMessages.innerHTML = '';
   typingIndicator.classList.add('hidden');
+  if (typeof setChatUnread === 'function') setChatUnread(0);
 }
 
 async function getMic() {
@@ -2153,12 +2153,53 @@ muteBtn.addEventListener('click', () => {
   socket.emit('mic-state', isMuted);
 });
 
+// --- Unread message badge on the chat button ---
+let chatUnread = 0;
+function setChatUnread(n) {
+  chatUnread = n;
+  if (n > 0) {
+    chatBadge.textContent = n > 99 ? '99+' : String(n);
+    chatBadge.classList.remove('hidden');
+    // Replay the little pop each time the count changes.
+    chatBadge.style.animation = 'none';
+    void chatBadge.offsetWidth;
+    chatBadge.style.animation = '';
+  } else {
+    chatBadge.classList.add('hidden');
+  }
+}
+
+// --- Chat peer header: partner name + flag + online/offline while on a call ---
+const chatPeerName = document.getElementById('chatPeerName');
+const chatPeerFlag = document.getElementById('chatPeerFlag');
+const chatPeerStatus = document.getElementById('chatPeerStatus');
+const chatPeerStatusText = document.getElementById('chatPeerStatusText');
+function syncChatHeader() {
+  if (currentPartner && callState === 'connected') {
+    chatPeerName.textContent = currentPartner.username;
+    chatPeerFlag.innerHTML = getFlagImg(currentPartner.countryCode, 22);
+    chatPeerStatus.classList.remove('hidden', 'is-offline');
+    chatPeerStatus.classList.add('is-online');
+    chatPeerStatusText.textContent = t('online');
+  } else if (currentPartner && (callState === 'reconnecting' || callState === 'connecting')) {
+    chatPeerName.textContent = currentPartner.username;
+    chatPeerFlag.innerHTML = getFlagImg(currentPartner.countryCode, 22);
+    chatPeerStatus.classList.remove('hidden', 'is-online');
+    chatPeerStatus.classList.add('is-offline');
+    chatPeerStatusText.textContent = t('offline');
+  } else {
+    chatPeerName.textContent = t('chat');
+    chatPeerFlag.innerHTML = '';
+    chatPeerStatus.classList.add('hidden');
+  }
+}
+
 // --- Chat panel: slides in from the right; swipe right to close. ---
 function openChatPanel() {
   chatOpen = true;
   chatPanel.classList.add('open');
   chatOverlay.classList.remove('hidden');
-  chatBadge.classList.add('hidden');
+  setChatUnread(0);
   if (!chatInput.disabled) setTimeout(() => chatInput.focus(), 60);
   scrollChatToBottom();
 }
@@ -2531,7 +2572,8 @@ socket.on('chat-message', ({ text }) => {
   playMessageSound();
   vibrate(20);
   if (!chatOpen) {
-    chatBadge.classList.remove('hidden');
+    // Red numeric badge: "1" for the first unread, the running total after.
+    setChatUnread(chatUnread + 1);
   } else {
     scrollChatToBottom();
   }
@@ -2569,6 +2611,7 @@ window.addEventListener('i18n-changed', () => {
   // Re-render the single Call button's label in its current mode.
   setButtonMode(callMainBtn.dataset.mode || 'call');
   refreshNetStatus();
+  syncChatHeader();
 
   renderNotifications(); // also re-renders the friends list + badges
   renderHistory();

@@ -78,11 +78,25 @@ html, body {
 }
 
 .brand-dot {
-  width: 10px;
-  height: 10px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   display: inline-block;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* The brand dot doubles as the network indicator: green online, red offline. */
+.brand-dot.is-online {
+  background: #2ed47a;
+  box-shadow: 0 0 8px #2ed47a;
+  animation: dotPulse 1.8s ease-in-out infinite;
+}
+
+.brand-dot.is-offline {
+  background: #ff5470;
+  box-shadow: 0 0 8px #ff5470;
+  animation: dotPulse 1s ease-in-out infinite;
 }
 
 .header-right {
@@ -198,28 +212,29 @@ html, body {
 }
 
 .icon-btn {
-  width: 46px;
-  height: 46px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(255,255,255,0.09);
+  border: 1px solid rgba(255,255,255,0.16);
+  background: rgba(255,255,255,0.12);
   color: var(--text);
   font-size: 16px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.08);
   transition: background 0.15s ease, transform 0.12s ease, box-shadow 0.15s ease;
 }
 
 .icon-btn:hover {
-  background: rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.18);
 }
 
 .icon-btn:active {
-  transform: scale(0.9);
-  background: rgba(255,255,255,0.2);
+  transform: scale(0.88);
+  background: rgba(255,255,255,0.26);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
 }
 
 .avatar-initial {
@@ -384,28 +399,27 @@ html, body {
   height: 26px;
 }
 
-/* --- Secondary navigation bar (everything that isn't call/chat) --- */
+/* --- Secondary navigation bar: the tool buttons, centered. --- */
 .navbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 10px;
   padding: 8px 18px 14px;
   margin: 0 12px;
   border-bottom: 1px solid rgba(255,255,255,0.07);
 }
 
-/* Language pill sits on the left; the tool buttons take the middle and stay
-   centered; the live people count is pinned right. */
-.navbar > .lang-wrap { flex: 0 0 auto; }
-
 .navbar-actions {
-  flex: 1 1 auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 14px;
+  gap: 16px;
 }
+
+/* Language picker moved into the Settings panel: fill its row. */
+.settings-lang-wrap { width: 100%; }
+.settings-lang-wrap .lang-select { max-width: none; width: 100%; }
 
 /* Live people-count indicator (right): pulsing dot + group icon + number. */
 .people-count {
@@ -837,16 +851,10 @@ html, body {
     padding: 6px 8px 12px;
     margin: 0 4px;
     gap: 8px;
-    flex-wrap: wrap;
   }
 
   .navbar-actions {
-    gap: 10px;
-  }
-
-  .net-status {
-    font-size: 12px;
-    padding: 6px 10px;
+    gap: 14px;
   }
 
   .people-count {
@@ -856,24 +864,24 @@ html, body {
   .people-count-num { font-size: 14px; }
 
   .chat-fab {
-    width: 42px;
-    height: 42px;
+    width: 46px;
+    height: 46px;
     border-radius: 14px;
   }
 
   .chat-fab-icon {
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
   }
 
   .icon-btn {
-    width: 44px;
-    height: 44px;
+    width: 50px;
+    height: 50px;
   }
 
   .topbar-svg-icon {
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
   }
 
   .online {
@@ -1868,13 +1876,27 @@ html, body {
 /* Chat notification badge */
 .chat-badge {
   position: absolute;
-  top: -2px;
-  right: -2px;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--danger);
-  box-shadow: 0 0 6px var(--danger);
+  top: -6px;
+  right: -6px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #ff2d55;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 20px;
+  text-align: center;
+  border: 2px solid var(--bg-1);
+  box-shadow: 0 0 8px rgba(255, 45, 85, 0.8);
+  animation: badgePop 0.25s ease;
+}
+
+@keyframes badgePop {
+  0% { transform: scale(0); }
+  70% { transform: scale(1.2); }
+  100% { transform: scale(1); }
 }
 
 #chatToggleBtn {
@@ -2455,15 +2477,36 @@ html, body {
   margin-right: 4px;
 }
 
+.callback-banner {
+  flex-direction: column;
+  text-align: center;
+  justify-content: center;
+}
+
 .callback-banner-actions {
   display: flex;
-  gap: 8px;
+  gap: 10px;
+  justify-content: center;
 }
 
 .callback-accept,
 .callback-decline {
-  padding: 8px 16px;
-  font-size: 13px;
+  padding: 10px 22px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* Answer = green, Decline = red. */
+.callback-accept {
+  background: #2ed47a;
+  color: #06210f;
+  box-shadow: 0 0 14px rgba(46, 212, 122, 0.45);
+}
+
+.callback-decline {
+  background: #ff3b52;
+  color: #fff;
+  box-shadow: 0 0 14px rgba(255, 59, 82, 0.4);
 }
 
 @keyframes callBackSlideIn {
@@ -3607,3 +3650,67 @@ html, body {
 }
 
 .link-btn:active { opacity: 0.55; }
+
+/* =============================================================
+   Chat panel header: shows the partner's name, flag and status. */
+.chat-side-header {
+  align-items: center;
+  gap: 10px;
+}
+
+.chat-peer {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.chat-peer-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.chat-peer-name #chatPeerName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 220px;
+}
+
+.chat-peer-flag img,
+.chat-peer-flag .flag-img {
+  width: 22px;
+  height: auto;
+  border-radius: 3px;
+  vertical-align: middle;
+}
+
+.chat-peer-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.chat-peer-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+  flex-shrink: 0;
+}
+
+.chat-peer-status.is-online { color: #2ed47a; }
+.chat-peer-status.is-online .chat-peer-status-dot {
+  background: #2ed47a;
+  box-shadow: 0 0 6px #2ed47a;
+}
+
+.chat-peer-status.is-offline { color: #ff6b7d; }
+.chat-peer-status.is-offline .chat-peer-status-dot { background: #ff6b7d; }
