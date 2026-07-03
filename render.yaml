@@ -8,5 +8,9 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 20
+      - key: NODE_ENV
+        value: production
+      - key: CANONICAL_HOST
+        value: talklive.ai
       - key: GOOGLE_CLIENT_ID
         sync: false

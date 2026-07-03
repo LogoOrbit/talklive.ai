@@ -1,11 +1,12 @@
 {
   "name": "talklive",
   "version": "1.0.0",
-  "description": "Random live audio chat with strangers — Airtalk-style",
+  "description": "TalkLive — free random voice chat to talk to strangers worldwide",
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",
-    "dev": "node server/index.js"
+    "dev": "node server/index.js",
+    "build:seo": "node scripts/build-seo.js"
   },
   "dependencies": {
     "express": "^4.19.2",

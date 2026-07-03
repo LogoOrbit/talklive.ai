@@ -2099,6 +2099,14 @@ const I18N_STATE = {
 };
 
 function i18nDetectLang() {
+  // An explicit ?lang= / ?hl= query param wins — this is what the hreflang
+  // alternates in the sitemap and page <head> point at, so search engines and
+  // shared links land directly on the right language.
+  try {
+    const qs = new URLSearchParams(window.location.search);
+    const q = (qs.get('lang') || qs.get('hl') || '').toLowerCase().split('-')[0];
+    if (q && I18N_LANGS[q]) return q;
+  } catch (e) { /* URLSearchParams unavailable — fall through */ }
   const saved = localStorage.getItem('talklive_lang');
   if (saved && I18N_LANGS[saved]) return saved;
   const candidates = navigator.languages || [navigator.language || 'en'];

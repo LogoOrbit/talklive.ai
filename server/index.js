@@ -11,7 +11,30 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+// Behind Render/Replit's proxy, so trust X-Forwarded-* to detect the real
+// protocol and host for canonical redirects below.
+app.set('trust proxy', 1);
+app.disable('x-powered-by');
+
 const PORT = process.env.PORT || 5000;
+// Canonical origin used for host/protocol normalization. Override via env.
+const CANONICAL_HOST = process.env.CANONICAL_HOST || 'talklive.ai';
+const ENFORCE_CANONICAL = process.env.ENFORCE_CANONICAL !== 'off' && process.env.NODE_ENV === 'production';
+
+// Consolidate link equity on a single canonical origin: force HTTPS and the
+// bare apex domain (drop www) so search engines index exactly one URL per page.
+app.use((req, res, next) => {
+  if (!ENFORCE_CANONICAL) return next();
+  const host = (req.headers.host || '').toLowerCase();
+  const proto = req.headers['x-forwarded-proto'] || req.protocol;
+  const wantsWww = host.startsWith('www.');
+  const isCanonicalHost = host === CANONICAL_HOST;
+  // Only redirect for our own domain; leave preview/other hosts untouched.
+  if ((wantsWww && host.slice(4) === CANONICAL_HOST) || (isCanonicalHost && proto !== 'https')) {
+    return res.redirect(301, 'https://' + CANONICAL_HOST + req.originalUrl);
+  }
+  next();
+});
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
@@ -22,7 +45,30 @@ app.get('/config.js', (req, res) => {
   res.send(`window.GOOGLE_CLIENT_ID = ${JSON.stringify(GOOGLE_CLIENT_ID)};`);
 });
 
-app.use(express.static(path.join(__dirname, '..', 'public')));
+// Redirect the raw SEO landing files (e.g. /talk-to-strangers.html) to their
+// clean, canonical URLs (/talk-to-strangers) so only one version is indexed.
+app.get(/^\/([a-z0-9-]+)\.html$/i, (req, res, next) => {
+  const name = req.params[0];
+  if (name === 'index' || name === 'privacy') return next();
+  res.redirect(301, '/' + name);
+});
+
+app.use(
+  express.static(path.join(__dirname, '..', 'public'), {
+    // Serve clean URLs: /talk-to-strangers resolves to talk-to-strangers.html.
+    extensions: ['html'],
+    setHeaders(res, filePath) {
+      if (/\.html$/i.test(filePath)) {
+        // HTML changes with deploys — revalidate so updates show up fast.
+        res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+      } else if (/\.(css|js|svg|png|jpg|jpeg|webp|ico|woff2?)$/i.test(filePath)) {
+        res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
+      } else if (/\.(xml|txt|webmanifest)$/i.test(filePath)) {
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+      }
+    },
+  })
+);
 
 // --- State ---
 const waitingQueue = []; // socket ids waiting for a partner

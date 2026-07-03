@@ -1,0 +1,43 @@
+# robots.txt for TalkLive — https://talklive.ai
+# All well-behaved crawlers are welcome to index the public site.
+
+User-agent: *
+Allow: /
+Disallow: /config.js
+Disallow: /socket.io/
+
+# Common SEO / social crawlers — explicitly welcomed
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+User-agent: YandexBot
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: Slackbot
+Allow: /
+
+User-agent: WhatsApp
+Allow: /
+
+User-agent: TelegramBot
+Allow: /
+
+Sitemap: https://talklive.ai/sitemap.xml
