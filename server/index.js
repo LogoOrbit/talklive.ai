@@ -9,7 +9,27 @@ const { generateUsername } = require('./usernames');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+// Socket.IO configured to prefer a real WebSocket and allow polling only as a
+// bootstrap/fallback. The "breaks past ~6-7 concurrent clients" symptom comes
+// from connections being stuck on HTTP long-polling: long-polling holds HTTP
+// requests open, and proxies/browsers cap concurrent HTTP/1.1 connections per
+// host, so the Nth late joiner can never complete its handshake (its socket
+// never connects, so it never receives online-count and tap-to-talk is dead).
+// WebSockets are not subject to that per-host HTTP connection pool, so allowing
+// (and quickly upgrading to) WebSocket removes the ceiling entirely — no
+// hardcoded limit was involved. pingTimeout is generous for flaky mobile links.
+const io = new Server(server, {
+  transports: ['websocket', 'polling'],
+  allowUpgrades: true,
+  pingInterval: 25000,
+  pingTimeout: 60000,
+  maxHttpBufferSize: 1e6,
+  perMessageDeflate: false,
+});
+
+// Node's default is unlimited, but make it explicit so no environment default
+// silently caps concurrent sockets.
+server.maxConnections = Infinity;
 
 // Behind Render/Replit's proxy, so trust X-Forwarded-* to detect the real
 // protocol and host for canonical redirects below.
@@ -312,6 +332,13 @@ function broadcastOnlineCount() {
   io.emit('online-count', io.engine.clientsCount);
 }
 
+// Push the current count straight to one freshly-connected socket so a late
+// joiner always gets correct initial state immediately, independent of the
+// broadcast (initial-state sync, not just incremental updates).
+function sendOnlineCountTo(socket) {
+  socket.emit('online-count', io.engine.clientsCount);
+}
+
 function clearFromQueue(socketId) {
   const idx = waitingQueue.indexOf(socketId);
   if (idx !== -1) waitingQueue.splice(idx, 1);
@@ -603,6 +630,9 @@ io.on('connection', (socket) => {
     syncClientState(socket, clientId);
   });
 
+  // Give the just-connected client its initial count right away, then tell
+  // everyone (including it) the new total.
+  sendOnlineCountTo(socket);
   broadcastOnlineCount();
 
   socket.on('find-partner', () => {

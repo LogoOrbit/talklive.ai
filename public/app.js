@@ -1,4 +1,15 @@
-const socket = io();
+// Prefer a real WebSocket (falling back to polling only if it can't be
+// established) so we never get stuck on HTTP long-polling, which is subject to
+// per-host connection limits and breaks late joiners past a handful of
+// concurrent clients. Reconnection is enabled so a dropped socket retries.
+const socket = io({
+  transports: ['websocket', 'polling'],
+  upgrade: true,
+  reconnection: true,
+  reconnectionAttempts: Infinity,
+  reconnectionDelay: 800,
+  reconnectionDelayMax: 5000,
+});
 
 // --- DOM refs ---
 const orb = document.getElementById('orb');
