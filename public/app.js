@@ -82,7 +82,8 @@ const typingIndicator = document.getElementById('typingIndicator');
 const quickGuide = document.getElementById('quickGuide');
 
 const historyBtn = document.getElementById('historyBtn');
-const historyModal = document.getElementById('historyModal');
+const historyDropdown = document.getElementById('historyDropdown');
+const historyWrap = document.querySelector('.history-wrap');
 const closeHistoryBtn = document.getElementById('closeHistoryBtn');
 const historyList = document.getElementById('historyList');
 
@@ -682,7 +683,7 @@ openTermsLink.addEventListener('click', () => openModal(termsModal));
 openTermsLinkFooter.addEventListener('click', () => openModal(termsModal));
 closeTermsBtn.addEventListener('click', () => closeModal(termsModal));
 
-[termsModal, accountModal, historyModal, friendProfileModal, friendChatModal].forEach((modal) => {
+[termsModal, accountModal, friendProfileModal, friendChatModal].forEach((modal) => {
   modal.addEventListener('click', (e) => {
     if (e.target === modal) closeModal(modal);
   });
@@ -692,7 +693,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     closeModal(termsModal);
     closeModal(accountModal);
-    closeModal(historyModal);
+    closeModal(historyDropdown);
     closeModal(friendsDropdown);
     closeModal(friendProfileModal);
     closeModal(notifModal);
@@ -1299,16 +1300,25 @@ function recordCallHistory() {
   renderHistory();
 }
 
-historyBtn.addEventListener('click', () => {
-  renderHistory();
-  openModal(historyModal);
+historyBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const willOpen = historyDropdown.classList.contains('hidden');
+  if (willOpen) {
+    renderHistory();
+    openModal(historyDropdown);
+  } else {
+    closeModal(historyDropdown);
+  }
 });
-closeHistoryBtn.addEventListener('click', () => closeModal(historyModal));
+closeHistoryBtn.addEventListener('click', () => closeModal(historyDropdown));
+document.addEventListener('click', (e) => {
+  if (!e.composedPath().includes(historyWrap)) closeModal(historyDropdown);
+});
 
 historyList.addEventListener('click', (e) => {
   const btn = e.target.closest('.call-back-btn');
   if (!btn || !btn.dataset.id) return;
-  closeModal(historyModal);
+  closeModal(historyDropdown);
   requestCallBack(btn.dataset.id, btn.dataset.name);
 });
 

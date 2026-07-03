@@ -155,12 +155,26 @@
           <svg class="lang-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><ellipse cx="12" cy="12" rx="4.2" ry="9.5"/><line x1="2.5" y1="12" x2="21.5" y2="12"/></svg>
           <select id="langSelect" class="lang-select" data-i18n-aria="language" data-i18n-title="language" aria-label="Language"></select>
         </div>
-        <button id="historyBtn" class="icon-btn hidden" data-i18n-title="historyAria" data-i18n-aria="historyAria" title="Call history" aria-label="Call history">
-          <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="8.5"/>
-            <path d="M12 7.5V12l3.2 2"/>
-          </svg>
-        </button>
+        <div class="history-wrap">
+          <button id="historyBtn" class="icon-btn hidden" data-i18n-title="historyAria" data-i18n-aria="historyAria" title="Call history" aria-label="Call history">
+            <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="8.5"/>
+              <path d="M12 7.5V12l3.2 2"/>
+            </svg>
+          </button>
+          <div id="historyDropdown" class="notif-dropdown history-dropdown hidden" role="dialog" aria-labelledby="historyDropdownTitle">
+            <div class="modal-header">
+              <h2 id="historyDropdownTitle" data-i18n="callHistory">Call History</h2>
+              <button type="button" id="closeHistoryBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+              <p class="account-hint" data-i18n="historyHint">This session only — it clears when you close or reload the page. Tap the green button to call someone back if they're online.</p>
+              <div id="historyList" class="history-list">
+                <p class="history-empty" data-i18n="noCallsYet">No calls yet.</p>
+              </div>
+            </div>
+          </div>
+        </div>
         <div class="friends-wrap">
           <button id="friendsBtn" class="icon-btn friends-btn hidden" data-i18n-title="friendsAria" data-i18n-aria="friendsAria" title="Friends &amp; messages" aria-label="Friends and messages">
             <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
@@ -418,21 +432,6 @@
       </div>
 
       <!-- Call history modal: session-only, no account required -->
-      <div id="historyModal" class="modal-overlay hidden">
-        <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="historyModalTitle">
-          <div class="modal-header">
-            <h2 id="historyModalTitle" data-i18n="callHistory">Call History</h2>
-            <button type="button" id="closeHistoryBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
-          </div>
-          <div class="modal-body">
-            <p class="account-hint" data-i18n="historyHint">This session only — it clears when you close or reload the page. Tap the green button to call someone back if they're online.</p>
-            <div id="historyList" class="history-list">
-              <p class="history-empty" data-i18n="noCallsYet">No calls yet.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- Friend profile: opened from a friend entry in the Friends dropdown -->
       <div id="friendProfileModal" class="modal-overlay hidden">
         <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="friendProfileTitle">

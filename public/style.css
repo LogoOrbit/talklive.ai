@@ -708,7 +708,7 @@ html, body {
      order must go on .lang-wrap/.friends-wrap/.notif-wrap — they are the
      flex items; their inner buttons are not direct children of .topbar. */
   .lang-wrap { order: 6; }
-  #historyBtn { order: 7; }
+  .history-wrap { order: 7; }
   .friends-wrap { order: 8; }
   .notif-wrap { order: 9; }
 
@@ -2877,7 +2877,8 @@ html, body {
 
 /* Friends dropdown rows: avatar (tap → profile), dot + flag + name (tap →
    chat), small green call button on the right */
-.friends-wrap {
+.friends-wrap,
+.history-wrap {
   position: relative;
 }
 
