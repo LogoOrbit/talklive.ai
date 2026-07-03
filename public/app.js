@@ -574,6 +574,8 @@ function playHangupSound() { playTone(320, 0.2, 'sine', 0.18); playTone(220, 0.2
 function playMessageSound() { playTone(950, 0.08, 'triangle', 0.15); }
 // A crisp, tactile "whoosh" for sending — WhatsApp-style rising blip.
 function playSendSound() { playTone(660, 0.05, 'sine', 0.14); playTone(990, 0.07, 'sine', 0.13, 0.04); }
+// A soft two-note chime for "it's your turn" in the game.
+function playTurnSound() { playTone(784, 0.1, 'sine', 0.16); playTone(1046, 0.13, 'sine', 0.15, 0.1); }
 
 function updateSoundToggleUi() {
   soundToggle.checked = soundEnabled;
@@ -2305,6 +2307,13 @@ let ludoState = null;      // shared game state, or null when no game
 let ludoStage = 'idle';    // idle | inviting | invited | playing
 let myPlayerIndex = 0;     // 0 = red (call initiator), 1 = yellow
 let ludoBoardBuilt = false;
+let ludoWasMyTurn = false; // tracks the transition into "it's your move"
+
+// True when the game is waiting on *me* to roll or move right now.
+function ludoIsMyActionableTurn() {
+  return ludoStage === 'playing' && ludoState && ludoState.phase !== 'over'
+    && ludoState.turn === myPlayerIndex;
+}
 
 function ludoClassifyCell(r, c) {
   const cls = ['lc'];
@@ -2539,12 +2548,31 @@ function updateGameUI() {
     ludoDieFace.textContent = '🎲';
   }
   renderLudoTokens();
+
+  // Chime once when the turn passes to you; show a "🎲 your move" badge on the
+  // game button while it's your turn and you're not looking at the board.
+  const mine = ludoIsMyActionableTurn();
+  const overlayOpen = !gameOverlay.classList.contains('hidden');
+  if (mine && !ludoWasMyTurn) {
+    playTurnSound();
+    vibrate(30);
+  }
+  if (mine && !overlayOpen) {
+    gameBtnBadge.textContent = '🎲';
+    gameBtnBadge.classList.add('is-move');
+    gameBtnBadge.classList.remove('hidden');
+  } else if (overlayOpen && gameBtnBadge.classList.contains('is-move')) {
+    gameBtnBadge.classList.add('hidden');
+    gameBtnBadge.classList.remove('is-move');
+  }
+  ludoWasMyTurn = mine;
 }
 
 function openGameOverlay() {
   buildLudoBoard();
   gameOverlay.classList.remove('hidden');
   gameBtnBadge.classList.add('hidden');
+  gameBtnBadge.classList.remove('is-move');
 }
 function closeGameOverlay() {
   gameOverlay.classList.add('hidden');
@@ -2552,7 +2580,10 @@ function closeGameOverlay() {
 function resetLudo() {
   ludoStage = 'idle';
   ludoState = null;
+  ludoWasMyTurn = false;
   gameBtnBadge.classList.add('hidden');
+  gameBtnBadge.classList.remove('is-move');
+  gameBtnBadge.textContent = '!';
   closeGameOverlay();
 }
 
@@ -2634,14 +2665,19 @@ socket.on('game', (data) => {
       updateGameUI();
       gameStatus.textContent = t('ludoDeclined', { name });
       break;
-    case 'state':
+    case 'state': {
       if (!data.state) break;
       myPlayerIndex = amCallInitiator ? 0 : 1;
+      // Open the board on the first state (game start); afterwards just update —
+      // don't yank a closed board back open, so the "your move" badge can show.
+      const firstState = ludoStage !== 'playing';
       ludoStage = 'playing';
       ludoState = data.state;
-      openGameOverlay();
+      buildLudoBoard();
+      if (firstState) openGameOverlay();
       updateGameUI();
       break;
+    }
     case 'rematch':
       if (amCallInitiator) startLudoGame();
       break;
