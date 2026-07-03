@@ -224,6 +224,17 @@ function avatarSvg(id, size = 36) {
   </svg>`;
 }
 
+// Friends list shows a gender symbol instead of an avatar image: blue ♂ for
+// male, pink ♀ for female (rule 17). Gender is derived from the chosen avatar
+// id prefix (m*/f*); unknown falls back to a neutral person glyph.
+function genderIcon(avatarId, size = 30) {
+  const g = typeof avatarId === 'string' && (avatarId[0] === 'm' || avatarId[0] === 'f') ? avatarId[0] : null;
+  if (!g) return `<span class="gender-icon gender-neutral" style="font-size:${size}px">${ICONS.person}</span>`;
+  const symbol = g === 'm' ? '♂' : '♀';
+  const cls = g === 'm' ? 'gender-male' : 'gender-female';
+  return `<span class="gender-icon ${cls}" style="font-size:${Math.round(size * 0.9)}px" aria-hidden="true">${symbol}</span>`;
+}
+
 let myAvatar = localStorage.getItem('talklive_avatar');
 if (myAvatar && !AVATAR_STYLES[myAvatar]) myAvatar = null;
 let avatarCat = myAvatar && myAvatar[0] === 'f' ? 'female' : 'male';
@@ -240,17 +251,27 @@ function messageHasLink(text) {
   return LINK_RE.test(String(text || ''));
 }
 
-const ICE_SERVERS = [
+// Static fallback used until (and if) the server's /ice-servers responds.
+let ICE_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
-  // Open Relay Project — free public TURN fallback for restrictive/cross-country networks.
-  // Multiple ports/transports so at least one gets through most firewalls.
   { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
   { urls: 'turn:openrelay.metered.ca:80?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
   { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
   { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
   { urls: 'turns:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
 ];
+
+// Pull the authoritative (possibly env-configured, more reliable) TURN list from
+// the server as early as possible so the very first call already relays properly.
+fetch('/ice-servers')
+  .then((r) => (r.ok ? r.json() : null))
+  .then((data) => {
+    if (data && Array.isArray(data.iceServers) && data.iceServers.length) {
+      ICE_SERVERS = data.iceServers;
+    }
+  })
+  .catch(() => { /* keep the static fallback */ });
 
 const selectedInterests = new Set();
 const includeCountries = new Set(); // draft "Interested Countries" — only match these, if any chosen
@@ -536,6 +557,8 @@ function playTapSound() { playTone(520, 0.08, 'square', 0.12); }
 function playConnectSound() { playTone(660, 0.12, 'sine', 0.18); playTone(880, 0.15, 'sine', 0.18, 0.12); }
 function playHangupSound() { playTone(320, 0.2, 'sine', 0.18); playTone(220, 0.25, 'sine', 0.18, 0.15); }
 function playMessageSound() { playTone(950, 0.08, 'triangle', 0.15); }
+// A crisp, tactile "whoosh" for sending — WhatsApp-style rising blip.
+function playSendSound() { playTone(660, 0.05, 'sine', 0.14); playTone(990, 0.07, 'sine', 0.13, 0.04); }
 
 function updateSoundToggleUi() {
   soundToggle.checked = soundEnabled;
@@ -931,7 +954,7 @@ function renderFriendsList() {
     const item = document.createElement('div');
     item.className = 'friend-item';
     item.innerHTML = `
-      <button type="button" class="friend-avatar-btn" data-id="${f.clientId}" title="${escapeHtml(t('profile'))}" aria-label="${escapeHtml(t('profile'))}">${f.avatar && AVATAR_STYLES[f.avatar] ? avatarSvg(f.avatar, 30) : ICONS.person}</button>
+      <button type="button" class="friend-avatar-btn" data-id="${f.clientId}" title="${escapeHtml(t('profile'))}" aria-label="${escapeHtml(t('profile'))}">${genderIcon(f.avatar, 30)}</button>
       <div class="friend-item-info friend-row-main" data-id="${f.clientId}">
         <span class="friend-online-dot ${f.online ? 'online' : ''}" title="${escapeHtml(f.online ? t('online') : t('offline'))}"></span>
         <span class="friend-item-name">${getFlagImg(f.countryCode)} ${escapeHtml(f.username)}</span>
@@ -952,8 +975,11 @@ friendsList.addEventListener('click', (e) => {
   if (avatarBtn) {
     openFriendProfile(avatarBtn.dataset.id);
   } else if (callBtn) {
-    closeModal(friendsDropdown);
-    requestCallBack(callBtn.dataset.id, callBtn.dataset.name);
+    // Rule 11: don't dismiss the menu — swap the call icon into an in-place
+    // spinner and keep it there until the peer accepts (then we jump to the
+    // call screen) or the request fails (then we restore the icon).
+    startCallbackSpinner(callBtn);
+    requestCallBack(callBtn.dataset.id, callBtn.dataset.name, { deferUI: true });
   } else if (rowMain) {
     openFriendChat(rowMain.dataset.id);
   }
@@ -966,9 +992,7 @@ function openFriendProfile(friendClientId) {
   const friend = friendsData.find((f) => f.clientId === friendClientId);
   if (!friend) return;
   activeProfileFriendId = friendClientId;
-  friendProfileAvatar.innerHTML = friend.avatar && AVATAR_STYLES[friend.avatar]
-    ? avatarSvg(friend.avatar, 72)
-    : ICONS.person;
+  friendProfileAvatar.innerHTML = genderIcon(friend.avatar, 72);
   friendProfileName.innerHTML = `${getFlagImg(friend.countryCode)} ${escapeHtml(friend.username)}`;
   friendProfileStatus.innerHTML = `<span class="friend-online-dot ${friend.online ? 'online' : ''}"></span> ${escapeHtml(friend.online ? t('online') : t('offline'))}`;
   closeModal(friendsDropdown);
@@ -1350,15 +1374,21 @@ function hideConnection() {
 // friend only exist during an active call, never while searching. ---
 let callState = 'idle';
 
+// The distinct call states — each renders its own UI, no overlap/flicker:
+//   idle · searching · connecting · connected · reconnecting · disconnected
 function setCallState(state) {
   callState = state;
   const connected = state === 'connected';
-  callMainBtn.classList.toggle('is-hangup', connected);
-  callMainBtn.classList.toggle('is-call', !connected);
-  callMainLabel.classList.toggle('is-hangup', connected);
-  callMainLabel.textContent = connected ? t('hangUp') : t('call');
-  callMainBtn.setAttribute('aria-label', connected ? t('hangUp') : t('call'));
+  // Treat connecting/reconnecting as "hang up to cancel" so the main button is
+  // never a dead green Call while a match is in progress.
+  const hangupMode = connected || state === 'connecting' || state === 'reconnecting';
+  callMainBtn.classList.toggle('is-hangup', hangupMode);
+  callMainBtn.classList.toggle('is-call', !hangupMode);
+  callMainLabel.classList.toggle('is-hangup', hangupMode);
+  callMainLabel.textContent = hangupMode ? t('hangUp') : t('call');
+  callMainBtn.setAttribute('aria-label', hangupMode ? t('hangUp') : t('call'));
 
+  // Report / add-friend / reassurance only make sense once actually connected.
   reportBtn.classList.toggle('hidden', !connected);
   addFriendBtn.classList.toggle('hidden', !connected);
   reassureLine.classList.toggle('hidden', !connected);
@@ -1616,12 +1646,29 @@ function setSubTextFading(key, vars, delayMs = 5000) {
   }, delayMs);
 }
 
+// Returns the created element so the caller can transition its delivery state
+// (WhatsApp-style: sending → sent). Uses a transform/opacity entrance animation
+// that stays on the compositor for a smooth 60fps pop with no layout jank.
 function addChatMessage(text, kind) {
   const el = document.createElement('div');
-  el.className = `chat-msg ${kind}`;
-  el.textContent = text;
+  el.className = `chat-msg ${kind} chat-msg-enter`;
+  const bubble = document.createElement('span');
+  bubble.className = 'chat-msg-text';
+  bubble.textContent = text;
+  el.appendChild(bubble);
+  if (kind === 'me') {
+    const ticks = document.createElement('span');
+    ticks.className = 'chat-msg-ticks sending';
+    ticks.innerHTML = '<svg viewBox="0 0 16 11" aria-hidden="true"><path d="M11.1.6 4.9 8.4 1.9 5.4.5 6.8l4.4 4.4L12.5 2z"/><path d="M15.6.6 9.4 8.4l-.9-.9-1 1.3 1.9 1.9L17 2z"/></svg>';
+    el.appendChild(ticks);
+  }
   chatMessages.appendChild(el);
+  // Double rAF so the enter animation is guaranteed to run from its start frame.
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => el.classList.remove('chat-msg-enter'));
+  });
   chatMessages.scrollTop = chatMessages.scrollHeight;
+  return el;
 }
 
 function clearChat() {
@@ -1642,12 +1689,60 @@ async function getMic() {
   return localStream;
 }
 
-let connectWatchdog = null;
+let connectWatchdog = null;      // initial "never connected" timeout
+let reconnectDeadline = null;    // 30s window to recover a dropped call
 let iceRestartAttempted = false;
+let mediaConnected = false;      // true once we've actually received remote audio
+
+// Poor connection / dropped peer handling: give the call up to 30s to recover
+// (rules 15 & 16) before automatically moving on to the next person.
+const RECONNECT_WINDOW_MS = 30000;
 
 function clearConnectWatchdog() {
   clearTimeout(connectWatchdog);
   connectWatchdog = null;
+}
+
+function clearReconnectDeadline() {
+  clearTimeout(reconnectDeadline);
+  reconnectDeadline = null;
+}
+
+// Automatically move to the next available match. Used by skip, the initial
+// connect watchdog, and the 30s reconnect deadline.
+function autoNextMatch(statusKey) {
+  clearConnectWatchdog();
+  clearReconnectDeadline();
+  teardownPeer();
+  clearChat();
+  isSearching = true;
+  setCallState('searching');
+  setState('waiting');
+  setConnection('red', 'connDisconnected');
+  setStatusText(statusKey || 'statusFindingNew');
+  setSubText('subHangTight');
+  socket.emit('skip');
+  setTimeout(() => { if (isSearching && callState === 'searching') setConnection('orange', 'connSearching'); }, 600);
+}
+
+// Kick off (or restart) the 30s recovery window. If the connection is still not
+// healthy when it elapses, auto-advance to the next match.
+function startReconnectWindow() {
+  if (reconnectDeadline) return; // already counting down
+  reconnectDeadline = setTimeout(() => {
+    reconnectDeadline = null;
+    if (pc && (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed')) return;
+    autoNextMatch('statusReconnectFailed');
+  }, RECONNECT_WINDOW_MS);
+}
+
+function attemptIceRestart(peer) {
+  if (iceRestartAttempted) return;
+  iceRestartAttempted = true;
+  peer.createOffer({ iceRestart: true })
+    .then((offer) => peer.setLocalDescription(offer))
+    .then(() => socket.emit('signal', { type: 'offer', sdp: peer.localDescription }))
+    .catch(() => { /* the reconnect window will auto-advance if this fails */ });
 }
 
 function createPeerConnection(isInitiator) {
@@ -1663,53 +1758,53 @@ function createPeerConnection(isInitiator) {
 
   peer.ontrack = (event) => {
     remoteAudio.srcObject = event.streams[0];
+    // Some mobile browsers need an explicit play() once a user gesture primed audio.
+    remoteAudio.play && remoteAudio.play().catch(() => {});
+    mediaConnected = true;
+    revealPartner();
     setState('connected');
+    setCallState('connected');
     setStatusText('statusConnected');
     setSubTextFading('subSayHi');
     monitorRemoteAudio(event.streams[0]);
     // Receiving the remote track is itself proof of a live connection, even if
-    // iceConnectionState hasn't caught up yet (e.g. TURN relay finalizing) —
-    // don't let the watchdog treat that lag as a failed connection.
+    // iceConnectionState hasn't caught up yet (e.g. TURN relay finalizing).
     setConnection('green', 'connConnected');
     clearConnectWatchdog();
+    clearReconnectDeadline();
+    startQualityMonitor();
   };
 
   // If a call never fully connects (common with flaky free TURN relays across
-  // distant networks), automatically move on to a new match instead of getting
-  // stuck silently with no audio.
+  // distant networks), move on to a new match instead of stalling silently.
   clearConnectWatchdog();
+  clearReconnectDeadline();
   iceRestartAttempted = false;
+  mediaConnected = false;
   connectWatchdog = setTimeout(() => {
-    const state = peer.iceConnectionState;
-    if (state !== 'connected' && state !== 'completed') {
-      showError(t('errCouldntConnect'));
-      performSkip();
-    }
-  }, 10000);
+    if (!mediaConnected) autoNextMatch('statusFindingNew');
+  }, 15000);
 
   peer.oniceconnectionstatechange = () => {
     const iceState = peer.iceConnectionState;
     if (iceState === 'connected' || iceState === 'completed') {
       setConnection('green', 'connConnected');
       clearConnectWatchdog();
+      clearReconnectDeadline();
+      iceRestartAttempted = false;
     } else if (iceState === 'checking') {
-      setConnection('orange', 'connConnecting');
+      if (!mediaConnected) setConnection('orange', 'connConnecting');
     } else if (iceState === 'disconnected') {
+      // Peer degraded or (temporarily) went away — try to recover for 30s.
       setConnection('orange', 'connReconnecting');
+      if (mediaConnected) setStatusText('statusReconnecting');
+      startReconnectWindow();
+      if (isInitiator) attemptIceRestart(peer);
     } else if (iceState === 'failed') {
-      if (isInitiator && !iceRestartAttempted) {
-        iceRestartAttempted = true;
-        setConnection('orange', 'connReconnecting');
-        peer.createOffer({ iceRestart: true }).then((offer) => {
-          return peer.setLocalDescription(offer);
-        }).then(() => {
-          socket.emit('signal', { type: 'offer', sdp: peer.localDescription });
-        }).catch(() => {
-          setConnection('red', 'connDisconnected');
-        });
-      } else {
-        setConnection('red', 'connDisconnected');
-      }
+      setConnection('orange', 'connReconnecting');
+      if (mediaConnected) setStatusText('statusReconnecting');
+      startReconnectWindow();
+      if (isInitiator) attemptIceRestart(peer);
     } else if (iceState === 'closed') {
       setConnection('red', 'connDisconnected');
       clearConnectWatchdog();
@@ -1782,6 +1877,8 @@ function teardownPeer() {
   recordCallHistory();
   currentPartner = null;
   clearConnectWatchdog();
+  clearReconnectDeadline();
+  mediaConnected = false;
   clearInterval(speakingCheckInterval);
   orb.classList.remove('speaking');
   orb.classList.remove('muted-remote');
@@ -1956,10 +2053,10 @@ skipBtn.addEventListener('click', performSkip);
 // connected. Hanging up (or cancelling a search) returns to the initial
 // Call + Skip state on this screen — it never strands a dead Hang Up button.
 callMainBtn.addEventListener('click', () => {
-  if (callState === 'connected') {
+  if (callState === 'connected' || callState === 'connecting' || callState === 'reconnecting') {
     playHangupSound();
     socket.emit('leave');
-    goIdleOnCallScreen('statusYouLeft');
+    goIdleOnCallScreen(callState === 'connected' ? 'statusYouLeft' : undefined);
   } else if (callState === 'searching') {
     socket.emit('leave');
     goIdleOnCallScreen();
@@ -2017,9 +2114,16 @@ chatForm.addEventListener('submit', (e) => {
     addChatMessage(t('errNoLinks'), 'system');
     return;
   }
-  addChatMessage(text, 'me');
+  const el = addChatMessage(text, 'me');
+  playSendSound();
+  vibrate(15);
   socket.emit('chat-message', text);
+  // Optimistic WhatsApp-style delivery: mark "sent" on the next tick once the
+  // message has left the client (the relay is fire-and-forget server-side).
+  const ticks = el.querySelector('.chat-msg-ticks');
+  if (ticks) setTimeout(() => ticks.classList.replace('sending', 'sent'), 220);
   chatInput.value = '';
+  chatInput.focus();
 });
 
 // Server-side link filter rejected a message we let through — surface it.
@@ -2079,6 +2183,12 @@ socket.on('random-fallback', () => {
 });
 
 socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
+  // A deferred-UI callback (rule 11) is on the friends menu with a spinner —
+  // now that the peer accepted, restore the icon and enter the call screen.
+  restoreCallbackSpinner();
+  if (typeof friendsDropdown !== 'undefined') closeModal(friendsDropdown);
+  enterCallUI();
+
   // Never let a mute from a previous call silently carry into a new one.
   if (isMuted) {
     isMuted = false;
@@ -2089,15 +2199,33 @@ socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
     socket.emit('mic-state', false);
   }
 
-  setState('connected');
-  setCallState('connected');
+  // State: 'connecting' — a peer was found but the media path is NOT yet
+  // established. Deliberately keep "You're connected" and the stranger's
+  // username hidden until ontrack confirms a real connection (rule 3).
+  setState('waiting');
+  setCallState('connecting');
   setConnection('orange', 'connConnecting');
   if (callback) setStatusText('statusCallingBack', { name: partner.username });
   else setStatusText('statusConnectingTo', { country: getCountryName(partner.countryCode) || partner.country });
   if (rematched) setSubText('subRematched');
   else setSubText(null);
 
+  // Stash everything needed to reveal the partner once media actually flows.
   currentPartner = partner;
+  currentPartnerInterests = partner.interests || [];
+  partnerCard.classList.add('hidden');
+  sharedInterestNote.classList.add('hidden');
+  reactionBar.classList.add('hidden');
+
+  lockSkipButton();
+
+  await startCall(initiator);
+});
+
+// Populate + reveal the stranger's card only once the connection is confirmed.
+function revealPartner() {
+  const partner = currentPartner;
+  if (!partner) return;
   addFriendBtn.classList.remove('added');
   addFriendBtn.disabled = false;
   partnerName.textContent = partner.username;
@@ -2105,7 +2233,6 @@ socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
   partnerMeta.innerHTML = getFlagImg(partner.countryCode);
 
   partnerInterests.innerHTML = '';
-  currentPartnerInterests = partner.interests || [];
   currentPartnerInterests.forEach((i) => {
     const tag = document.createElement('span');
     tag.className = 'tag';
@@ -2123,12 +2250,8 @@ socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
   }
 
   reactionBar.classList.remove('hidden');
-  startCallTimer();
-  lockSkipButton();
-
-  await startCall(initiator);
-  startQualityMonitor();
-});
+  if (!callStartedAt) startCallTimer();
+}
 
 socket.on('reaction', (reaction) => {
   showReactionFloat(reaction);
@@ -2155,8 +2278,27 @@ function hideCallBackBanner() {
   pendingCallBackFrom = null;
 }
 
-async function requestCallBack(targetClientId, targetUsername) {
+// In-place spinner for the friends-list call icon (rule 11).
+let activeCallbackSpinner = null;
+function startCallbackSpinner(btn) {
+  if (activeCallbackSpinner) restoreCallbackSpinner();
+  activeCallbackSpinner = { btn, html: btn.innerHTML };
+  btn.classList.add('is-loading');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="callback-spinner" aria-label="Connecting…"></span>';
+}
+function restoreCallbackSpinner() {
+  if (!activeCallbackSpinner) return;
+  const { btn, html } = activeCallbackSpinner;
+  btn.classList.remove('is-loading');
+  btn.disabled = false;
+  btn.innerHTML = html;
+  activeCallbackSpinner = null;
+}
+
+async function requestCallBack(targetClientId, targetUsername, opts = {}) {
   if (isSearching) {
+    restoreCallbackSpinner();
     showError(t('errFinishCall'));
     return;
   }
@@ -2164,18 +2306,23 @@ async function requestCallBack(targetClientId, targetUsername) {
   try {
     await getMic();
   } catch (e) {
+    restoreCallbackSpinner();
     showError(t('errMicCallback'));
     return;
   }
 
   registerProfile();
   isSearching = true;
-  enterCallUI();
-  setCallState('searching');
-  setState('waiting');
-  setConnection('orange', 'connCalling');
-  setStatusText('statusCalling', { name: targetUsername });
-  setSubText('subWaitingAccept');
+  // deferUI keeps us on the friends menu with the spinner until the peer
+  // accepts; the call screen is entered from the 'matched' handler instead.
+  if (!opts.deferUI) {
+    enterCallUI();
+    setCallState('searching');
+    setState('waiting');
+    setConnection('orange', 'connCalling');
+    setStatusText('statusCalling', { name: targetUsername });
+    setSubText('subWaitingAccept');
+  }
 
   socket.emit('call-back-request', { targetClientId });
 }
@@ -2208,6 +2355,7 @@ async function acceptCallBack(fromClientId) {
 }
 
 function abandonCallBack() {
+  restoreCallbackSpinner();
   isSearching = false;
   if (localStream) {
     localStream.getTracks().forEach((t) => t.stop());

@@ -184,6 +184,8 @@ const I18N_STRINGS = {
     subSayHi: 'Say hi! Tap "Next" for a new person, or "Hang Up" to leave.',
     subStrangerMuted: 'The other person muted their microphone',
     statusFindingNew: 'Finding a new person…',
+    statusReconnecting: 'Connection dropped — reconnecting…',
+    statusReconnectFailed: 'Couldn’t reconnect. Finding someone new…',
     statusReported: 'Reported. Finding someone new…',
     statusStrangerLeft: 'The other person left. Finding someone new…',
     statusCalling: 'Calling {name}…',

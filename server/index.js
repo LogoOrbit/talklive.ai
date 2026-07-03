@@ -45,6 +45,44 @@ app.get('/config.js', (req, res) => {
   res.send(`window.GOOGLE_CLIENT_ID = ${JSON.stringify(GOOGLE_CLIENT_ID)};`);
 });
 
+// ICE servers handed to the browser. Operators can plug in a real, reliable
+// TURN service via env (TURN_URLS as a comma list + TURN_USERNAME/TURN_CREDENTIAL,
+// or TURN_METERED_KEY for metered.ca). Cross-country calls behind symmetric NAT
+// require a working TURN relay in BOTH directions — STUN alone silently produces
+// one-way audio — so we always ship a broad set of relay endpoints (UDP + TCP +
+// TLS/443) as a fallback and let the browser pick whichever pierces the firewall.
+function buildIceServers() {
+  const servers = [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+  ];
+  const envUrls = (process.env.TURN_URLS || '').split(',').map((s) => s.trim()).filter(Boolean);
+  if (envUrls.length && process.env.TURN_USERNAME && process.env.TURN_CREDENTIAL) {
+    servers.push({
+      urls: envUrls,
+      username: process.env.TURN_USERNAME,
+      credential: process.env.TURN_CREDENTIAL,
+    });
+  }
+  // Open Relay Project (metered.ca) free TURN — UDP/TCP/TLS across ports so at
+  // least one transport survives restrictive firewalls in either direction.
+  const relayUser = process.env.OPENRELAY_USERNAME || 'openrelayproject';
+  const relayCred = process.env.OPENRELAY_CREDENTIAL || 'openrelayproject';
+  servers.push(
+    { urls: 'turn:openrelay.metered.ca:80', username: relayUser, credential: relayCred },
+    { urls: 'turn:openrelay.metered.ca:80?transport=tcp', username: relayUser, credential: relayCred },
+    { urls: 'turn:openrelay.metered.ca:443', username: relayUser, credential: relayCred },
+    { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: relayUser, credential: relayCred },
+    { urls: 'turns:openrelay.metered.ca:443?transport=tcp', username: relayUser, credential: relayCred },
+  );
+  return servers;
+}
+
+app.get('/ice-servers', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.json({ iceServers: buildIceServers() });
+});
+
 // Redirect the raw SEO landing files (e.g. /talk-to-strangers.html) to their
 // clean, canonical URLs (/talk-to-strangers) so only one version is indexed.
 app.get(/^\/([a-z0-9-]+)\.html$/i, (req, res, next) => {

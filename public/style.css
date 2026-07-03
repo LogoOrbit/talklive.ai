@@ -1594,38 +1594,74 @@ html, body {
 .chat-messages {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 14px;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 .chat-msg {
-  max-width: 80%;
-  padding: 8px 12px;
-  border-radius: 12px;
-  font-size: 13px;
+  max-width: 82%;
+  padding: 9px 13px;
+  border-radius: 14px;
+  font-size: 15px;
   line-height: 1.4;
   word-break: break-word;
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 6px;
+  /* Composited entrance: no layout thrash, smooth 60fps. */
+  will-change: transform, opacity;
+  transition: transform 180ms cubic-bezier(.2,.8,.2,1), opacity 180ms ease;
 }
+
+/* Entrance start-frame — removed on the next rAF to animate into place. */
+.chat-msg.chat-msg-enter {
+  opacity: 0;
+  transform: translateY(8px) scale(0.96);
+}
+
+.chat-msg-text { min-width: 0; }
 
 .chat-msg.me {
   align-self: flex-end;
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   color: white;
+  transform-origin: bottom right;
 }
 
 .chat-msg.them {
   align-self: flex-start;
   background: rgba(255,255,255,0.07);
+  transform-origin: bottom left;
 }
 
 .chat-msg.system {
   align-self: center;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
   background: none;
+  display: block;
 }
+
+/* WhatsApp-style delivery ticks on sent messages. */
+.chat-msg-ticks {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  transform: translateY(2px);
+}
+.chat-msg-ticks svg {
+  width: 15px;
+  height: 11px;
+  fill: rgba(255,255,255,0.55);
+  transition: fill 200ms ease;
+}
+.chat-msg-ticks.sending svg { opacity: 0.5; }
+.chat-msg-ticks.sent svg { fill: rgba(255,255,255,0.9); opacity: 1; }
 
 .chat-form {
   display: flex;
@@ -1639,9 +1675,9 @@ html, body {
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 999px;
-  padding: 10px 16px;
+  padding: 12px 18px;
   color: var(--text);
-  font-size: 13px;
+  font-size: 16px; /* >=16px prevents iOS input zoom */
 }
 
 .chat-form input:focus {
@@ -1649,8 +1685,30 @@ html, body {
 }
 
 .chat-send {
-  padding: 10px 18px;
-  font-size: 13px;
+  padding: 12px 20px;
+  font-size: 15px;
+}
+
+/* Desktop: Messenger-web-style chat anchored bottom-right, larger panel. */
+@media (min-width: 768px) {
+  .chat-panel {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    top: auto;
+    left: auto;
+    width: 380px;
+    max-width: 380px;
+    height: 520px;
+    margin: 0;
+    z-index: 60;
+    background: var(--panel, rgba(20,22,32,0.98));
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 18px;
+    box-shadow: 0 18px 50px rgba(0,0,0,0.45);
+    backdrop-filter: blur(12px);
+  }
+  .chat-panel .chat-msg { font-size: 15.5px; }
 }
 
 /* Chat notification badge */
@@ -2853,6 +2911,33 @@ html, body {
   height: 32px;
 }
 
+/* In-place spinner that replaces the friend call icon while a callback is
+   pending (rule 11) — the menu stays open, the icon just spins. */
+.friend-call-btn.is-loading { cursor: default; opacity: 0.9; }
+.callback-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: callbackSpin 0.7s linear infinite;
+}
+@keyframes callbackSpin { to { transform: rotate(360deg); } }
+
+/* Gender symbol shown in the friends list instead of an avatar image. */
+.gender-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  font-weight: 700;
+}
+.gender-icon.gender-male { color: #2f80ff; }
+.gender-icon.gender-female { color: #ff5fa2; }
+.gender-icon.gender-neutral { color: var(--muted); }
+.gender-icon.gender-neutral svg { width: 1em; height: 1em; }
+
 .friend-row-main {
   flex: 1;
   min-width: 0;
@@ -3054,4 +3139,57 @@ html, body {
 
 [data-theme="light"] .quality-bar {
   background: rgba(20, 30, 70, 0.18);
+}
+
+/* =============================================================
+   Call screen fits the viewport with no page scroll (rules 1 & 2).
+   Scoped to when the call panel is active so the setup/landing view
+   is unaffected. */
+.stage:has(#callPanel:not(.hidden)) {
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  justify-content: flex-start;
+  padding: 12px;
+  gap: 4px;
+}
+
+.stage:has(#callPanel:not(.hidden)) .call-panel {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  justify-content: center;
+}
+
+/* Proportionally shrink the Call / Skip / Hang Up controls. */
+.stage:has(#callPanel:not(.hidden)) .call-btn {
+  width: 68px;
+  height: 68px;
+}
+.stage:has(#callPanel:not(.hidden)) .primary-controls {
+  gap: 20px;
+  margin: 14px 0 6px;
+}
+.stage:has(#callPanel:not(.hidden)) .orb-wrap {
+  width: 160px;
+  height: 160px;
+  margin-bottom: 12px;
+}
+
+/* Short viewports (most phones in-call): tighten everything further so the
+   whole thing never needs scrolling. */
+@media (max-height: 720px) {
+  .stage:has(#callPanel:not(.hidden)) .orb-wrap {
+    width: 130px;
+    height: 130px;
+    margin-bottom: 8px;
+  }
+  .stage:has(#callPanel:not(.hidden)) .call-btn {
+    width: 60px;
+    height: 60px;
+  }
+  .stage:has(#callPanel:not(.hidden)) .partner-card {
+    margin-bottom: 10px;
+  }
+  .chat-panel { height: 220px; }
 }
