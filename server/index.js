@@ -739,6 +739,14 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Mini-game (Ludo) relay — forwards game events to the current partner only.
+  socket.on('game', (data) => {
+    const partnerId = partners.get(socket.id);
+    if (partnerId && data && typeof data === 'object') {
+      io.to(partnerId).emit('game', data);
+    }
+  });
+
   // --- Friends ---
   socket.on('friend-request', ({ targetClientId } = {}) => {
     const me = profiles.get(socket.id);

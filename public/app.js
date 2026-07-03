@@ -67,6 +67,7 @@ const muteSlash = document.getElementById('muteSlash');
 const chatToggleBtn = document.getElementById('chatToggleBtn');
 const reportBtn = document.getElementById('reportBtn');
 const addFriendBtn = document.getElementById('addFriendBtn');
+const gameBtn = document.getElementById('gameBtn');
 const callMainBtn = document.getElementById('callMainBtn');
 const callMainLabel = document.getElementById('callMainLabel');
 const autoCallRow = document.getElementById('autoCallRow');
@@ -1452,6 +1453,9 @@ function setCallState(state) {
   muteBtn.disabled = !connected;
   addFriendBtn.disabled = !connected || addFriendBtn.classList.contains('added');
   reportBtn.disabled = !connected;
+  // The Ludo game needs a live partner.
+  gameBtn.disabled = !connected;
+  gameBtn.classList.toggle('nav-btn-off', !connected);
   reassureLine.classList.toggle('hidden', !connected);
 
   if (state === 'searching') startSearchTicker();
@@ -1964,6 +1968,8 @@ function resetUI() {
   notifBtn.classList.add('hidden');
   accountBtn.classList.add('hidden');
   filtersBtn.classList.add('hidden');
+  gameBtn.classList.add('hidden');
+  if (typeof resetLudo === 'function') resetLudo();
 }
 
 // Return the single button to green "Call" (idle) on the persistent call screen.
@@ -1974,6 +1980,7 @@ function goIdleOnCallScreen(statusKey) {
   clearChat();
   closeChatPanel();
   clearHangupConfirm();
+  if (typeof resetLudo === 'function') resetLudo();
   setCallState('idle');
   setState('idle');
   hideConnection();
@@ -2009,6 +2016,7 @@ function enterCallUI() {
   notifBtn.classList.remove('hidden');
   accountBtn.classList.remove('hidden');
   filtersBtn.classList.remove('hidden');
+  gameBtn.classList.remove('hidden');
 }
 
 let beginInFlight = false;
@@ -2243,6 +2251,403 @@ chatPanel.addEventListener('touchend', () => {
   chatTouchStartY = null;
 });
 
+// =====================================================================
+// Ludo mini-game — play with whoever you're connected to. 2 players on
+// the full 4-corner board (Red = the call initiator, Yellow = the other).
+// The game state is authoritative on the acting player's client and
+// broadcast in full to the partner after each action, so the two clients
+// can never desync. Relayed through the server 'game' event.
+// =====================================================================
+const gameBtnBadge = document.getElementById('gameBtnBadge');
+const gameOverlay = document.getElementById('gameOverlay');
+const closeGameBtn = document.getElementById('closeGameBtn');
+const gameStatus = document.getElementById('gameStatus');
+const ludoBoard = document.getElementById('ludoBoard');
+const ludoDie = document.getElementById('ludoDie');
+const ludoDieFace = document.getElementById('ludoDieFace');
+const gameInviteBtn = document.getElementById('gameInviteBtn');
+const gameCancelBtn = document.getElementById('gameCancelBtn');
+const gameAcceptBtn = document.getElementById('gameAcceptBtn');
+const gameDeclineBtn = document.getElementById('gameDeclineBtn');
+const ludoRematchBtn = document.getElementById('ludoRematchBtn');
+
+let amCallInitiator = false;
+
+// 52-cell main loop as [row, col] on the 15x15 board (clockwise from Red's start).
+const LUDO_MAIN = [
+  [6,1],[6,2],[6,3],[6,4],[6,5],
+  [5,6],[4,6],[3,6],[2,6],[1,6],[0,6],
+  [0,7],
+  [0,8],[1,8],[2,8],[3,8],[4,8],[5,8],
+  [6,9],[6,10],[6,11],[6,12],[6,13],[6,14],
+  [7,14],
+  [8,14],[8,13],[8,12],[8,11],[8,10],[8,9],
+  [9,8],[10,8],[11,8],[12,8],[13,8],[14,8],
+  [14,7],
+  [14,6],[13,6],[12,6],[11,6],[10,6],[9,6],
+  [8,5],[8,4],[8,3],[8,2],[8,1],[8,0],
+  [7,0],
+  [6,0],
+];
+const LUDO_START = { 0: 0, 1: 26 };
+const LUDO_HOME = {
+  0: [[7,1],[7,2],[7,3],[7,4],[7,5]],
+  1: [[7,13],[7,12],[7,11],[7,10],[7,9]],
+};
+const LUDO_YARD = {
+  0: [[1,1],[1,4],[4,1],[4,4]],
+  1: [[10,10],[10,13],[13,10],[13,13]],
+};
+const LUDO_CENTER = [7,7];
+const LUDO_SAFE = new Set([0,13,26,39,8,21,34,47]);
+
+let ludoState = null;      // shared game state, or null when no game
+let ludoStage = 'idle';    // idle | inviting | invited | playing
+let myPlayerIndex = 0;     // 0 = red (call initiator), 1 = yellow
+let ludoBoardBuilt = false;
+
+function ludoClassifyCell(r, c) {
+  const cls = ['lc'];
+  const inRed = r < 6 && c < 6;
+  const inGreen = r < 6 && c > 8;
+  const inBlue = r > 8 && c < 6;
+  const inYellow = r > 8 && c > 8;
+  const inCenter = r >= 6 && r <= 8 && c >= 6 && c <= 8;
+  if (inRed) { cls.push('lc-base-red'); if (r >= 1 && r <= 4 && c >= 1 && c <= 4) cls.push('lc-yard'); }
+  else if (inGreen) { cls.push('lc-base-green'); if (r >= 1 && r <= 4 && c >= 10 && c <= 13) cls.push('lc-yard'); }
+  else if (inBlue) { cls.push('lc-base-blue'); if (r >= 10 && r <= 13 && c >= 1 && c <= 4) cls.push('lc-yard'); }
+  else if (inYellow) { cls.push('lc-base-yellow'); if (r >= 10 && r <= 13 && c >= 10 && c <= 13) cls.push('lc-yard'); }
+  else if (inCenter) { cls.push('lc-center'); }
+  else {
+    cls.push('lc-path');
+    if (r === 7 && c >= 1 && c <= 5) cls.push('lc-home-red');
+    else if (r === 7 && c >= 9 && c <= 13) cls.push('lc-home-yellow');
+    else if (c === 7 && r >= 1 && r <= 5) cls.push('lc-home-green');
+    else if (c === 7 && r >= 9 && r <= 13) cls.push('lc-home-blue');
+    if (r === 6 && c === 1) cls.push('lc-start-red');
+    if (r === 1 && c === 8) cls.push('lc-start-green');
+    if (r === 8 && c === 13) cls.push('lc-start-yellow');
+    if (r === 13 && c === 6) cls.push('lc-start-blue');
+    if ((r === 2 && c === 6) || (r === 6 && c === 12) || (r === 12 && c === 8) || (r === 8 && c === 2)) cls.push('lc-safe');
+  }
+  return cls.join(' ');
+}
+
+function buildLudoBoard() {
+  if (ludoBoardBuilt) return;
+  const frag = document.createDocumentFragment();
+  for (let r = 0; r < 15; r++) {
+    for (let c = 0; c < 15; c++) {
+      const cell = document.createElement('div');
+      cell.className = ludoClassifyCell(r, c);
+      frag.appendChild(cell);
+    }
+  }
+  const mark = document.createElement('div');
+  mark.className = 'lc-center-mark';
+  mark.textContent = '🏆';
+  frag.appendChild(mark);
+  ludoBoard.appendChild(frag);
+  ludoBoardBuilt = true;
+}
+
+function ludoTokenCell(pidx, pos, tokenIdx) {
+  if (pos < 0) return LUDO_YARD[pidx][tokenIdx];
+  if (pos <= 50) return LUDO_MAIN[(LUDO_START[pidx] + pos) % 52];
+  if (pos <= 55) return LUDO_HOME[pidx][pos - 51];
+  return LUDO_CENTER;
+}
+
+function ludoInitialState() {
+  return {
+    players: [{ tokens: [-1, -1, -1, -1] }, { tokens: [-1, -1, -1, -1] }],
+    turn: 0, die: null, phase: 'roll', winner: null, sixes: 0,
+  };
+}
+
+function ludoLegalMoves(state, pidx) {
+  const die = state.die;
+  const res = [];
+  state.players[pidx].tokens.forEach((pos, i) => {
+    if (pos < 0) { if (die === 6) res.push(i); }
+    else if (pos < 56 && pos + die <= 56) res.push(i);
+  });
+  return res;
+}
+
+function ludoApplyMove(state, pidx, ti) {
+  const die = state.die;
+  const p = state.players[pidx];
+  const pos = p.tokens[ti];
+  const np = pos < 0 ? 0 : pos + die;
+  p.tokens[ti] = np;
+  let captured = false;
+  if (np <= 50) {
+    const abs = (LUDO_START[pidx] + np) % 52;
+    if (!LUDO_SAFE.has(abs)) {
+      const opp = state.players[1 - pidx];
+      opp.tokens.forEach((op, i) => {
+        if (op >= 0 && op <= 50 && (LUDO_START[1 - pidx] + op) % 52 === abs) {
+          opp.tokens[i] = -1;
+          captured = true;
+        }
+      });
+    }
+  }
+  return captured;
+}
+
+function ludoAfterAction(state, pidx, captured) {
+  if (state.players[pidx].tokens.every((v) => v === 56)) {
+    state.phase = 'over';
+    state.winner = pidx;
+    state.die = null;
+    return;
+  }
+  const extra = state.die === 6 || captured; // a 6 or a capture earns another roll
+  state.die = null;
+  if (extra) { state.phase = 'roll'; }
+  else { state.turn = 1 - pidx; state.phase = 'roll'; state.sixes = 0; }
+}
+
+function broadcastLudo() {
+  socket.emit('game', { type: 'state', state: ludoState });
+}
+
+function ludoRoll() {
+  if (!ludoState || ludoStage !== 'playing') return;
+  if (ludoState.turn !== myPlayerIndex || ludoState.phase !== 'roll') return;
+  const v = 1 + Math.floor(Math.random() * 6);
+  ludoState.die = v;
+  ludoState.sixes = v === 6 ? (ludoState.sixes || 0) + 1 : 0;
+  ludoDie.classList.remove('rolling');
+  void ludoDie.offsetWidth;
+  ludoDie.classList.add('rolling');
+  vibrate(15);
+  if (ludoState.sixes >= 3) {
+    // Three sixes in a row forfeits the turn.
+    ludoState.die = null; ludoState.sixes = 0;
+    ludoState.turn = 1 - myPlayerIndex; ludoState.phase = 'roll';
+    broadcastLudo(); updateGameUI(); return;
+  }
+  const moves = ludoLegalMoves(ludoState, myPlayerIndex);
+  if (moves.length === 0) {
+    ludoState.die = null; ludoState.sixes = 0;
+    ludoState.turn = 1 - myPlayerIndex; ludoState.phase = 'roll';
+    broadcastLudo(); updateGameUI(); return;
+  }
+  ludoState.phase = 'move';
+  broadcastLudo(); updateGameUI();
+  if (moves.length === 1) {
+    setTimeout(() => {
+      if (ludoState && ludoState.phase === 'move' && ludoState.turn === myPlayerIndex) ludoDoMove(moves[0]);
+    }, 550);
+  }
+}
+
+function ludoDoMove(ti) {
+  const captured = ludoApplyMove(ludoState, myPlayerIndex, ti);
+  if (captured) vibrate(40);
+  ludoAfterAction(ludoState, myPlayerIndex, captured);
+  broadcastLudo();
+  updateGameUI();
+}
+
+function ludoTapToken(ti) {
+  if (!ludoState || ludoStage !== 'playing') return;
+  if (ludoState.turn !== myPlayerIndex || ludoState.phase !== 'move') return;
+  if (!ludoLegalMoves(ludoState, myPlayerIndex).includes(ti)) return;
+  ludoDoMove(ti);
+}
+
+function renderLudoTokens() {
+  ludoBoard.querySelectorAll('.ludo-token').forEach((e) => e.remove());
+  if (!ludoState) return;
+  const myTurn = ludoState.turn === myPlayerIndex && ludoState.phase === 'move';
+  const movable = myTurn ? ludoLegalMoves(ludoState, myPlayerIndex) : [];
+  const cellTokens = {};
+  [0, 1].forEach((pidx) => {
+    ludoState.players[pidx].tokens.forEach((pos, ti) => {
+      const [r, c] = ludoTokenCell(pidx, pos, ti);
+      const k = r + '_' + c;
+      (cellTokens[k] = cellTokens[k] || []).push({ pidx, ti, r, c });
+    });
+  });
+  Object.values(cellTokens).forEach((list) => {
+    list.forEach((tk, idx) => {
+      const el = document.createElement('div');
+      el.className = 'ludo-token p' + tk.pidx;
+      el.style.left = (tk.c / 15 * 100) + '%';
+      el.style.top = (tk.r / 15 * 100) + '%';
+      el.style.width = (100 / 15) + '%';
+      el.style.height = (100 / 15) + '%';
+      if (list.length > 1) {
+        const off = idx - (list.length - 1) / 2;
+        el.style.marginLeft = (off * 26) + '%';
+        el.style.marginTop = (off * 12) + '%';
+      }
+      const dot = document.createElement('div');
+      dot.className = 'ludo-token-dot';
+      el.appendChild(dot);
+      if (tk.pidx === myPlayerIndex && movable.includes(tk.ti)) {
+        el.classList.add('movable');
+        el.addEventListener('click', () => ludoTapToken(tk.ti));
+      }
+      ludoBoard.appendChild(el);
+    });
+  });
+}
+
+function updateGameUI() {
+  const name = currentPartner ? currentPartner.username : t('chat');
+  [gameInviteBtn, gameCancelBtn, gameAcceptBtn, gameDeclineBtn, ludoRematchBtn].forEach((b) => b.classList.add('hidden'));
+  ludoDie.classList.remove('active');
+
+  if (ludoStage === 'idle') {
+    gameStatus.textContent = t('ludoIdlePrompt', { name });
+    gameInviteBtn.classList.remove('hidden');
+    ludoDieFace.textContent = '–';
+  } else if (ludoStage === 'inviting') {
+    gameStatus.textContent = t('ludoInviteSent', { name });
+    gameCancelBtn.classList.remove('hidden');
+    ludoDieFace.textContent = '–';
+  } else if (ludoStage === 'invited') {
+    gameStatus.textContent = t('ludoInvited', { name });
+    gameAcceptBtn.classList.remove('hidden');
+    gameDeclineBtn.classList.remove('hidden');
+    ludoDieFace.textContent = '–';
+  } else if (ludoStage === 'playing' && ludoState) {
+    ludoRematchBtn.classList.remove('hidden');
+    const myTurn = ludoState.turn === myPlayerIndex;
+    if (ludoState.phase === 'over') {
+      gameStatus.textContent = ludoState.winner === myPlayerIndex ? t('ludoYouWin') : t('ludoTheyWin', { name });
+      ludoDieFace.textContent = '🏆';
+    } else {
+      ludoDieFace.textContent = ludoState.die ? String(ludoState.die) : '🎲';
+      if (myTurn) {
+        if (ludoState.phase === 'roll') { gameStatus.textContent = t('ludoYourTurnRoll'); ludoDie.classList.add('active'); }
+        else { gameStatus.textContent = t('ludoYourTurnMove', { n: ludoState.die }); }
+      } else {
+        gameStatus.textContent = ludoState.phase === 'move'
+          ? t('ludoWaitingMove', { name, n: ludoState.die })
+          : t('ludoTheirTurn', { name });
+      }
+    }
+  } else if (ludoStage === 'playing') {
+    // handshake done, waiting for the host's first state broadcast
+    gameStatus.textContent = t('ludoTheirTurn', { name });
+    ludoDieFace.textContent = '🎲';
+  }
+  renderLudoTokens();
+}
+
+function openGameOverlay() {
+  buildLudoBoard();
+  gameOverlay.classList.remove('hidden');
+  gameBtnBadge.classList.add('hidden');
+}
+function closeGameOverlay() {
+  gameOverlay.classList.add('hidden');
+}
+function resetLudo() {
+  ludoStage = 'idle';
+  ludoState = null;
+  gameBtnBadge.classList.add('hidden');
+  closeGameOverlay();
+}
+
+// Host (call initiator) builds the authoritative initial state and shares it.
+function startLudoGame() {
+  ludoState = ludoInitialState();
+  myPlayerIndex = 0;
+  ludoStage = 'playing';
+  broadcastLudo();
+  openGameOverlay();
+  updateGameUI();
+}
+
+// Both sides have agreed to play — exactly one of them is the host.
+function onLudoHandshake() {
+  if (amCallInitiator) {
+    startLudoGame();
+  } else {
+    myPlayerIndex = 1;
+    ludoStage = 'playing';
+    openGameOverlay();
+    updateGameUI();
+  }
+}
+
+gameBtn.addEventListener('click', () => {
+  if (callState !== 'connected') return;
+  openGameOverlay();
+  updateGameUI();
+});
+closeGameBtn.addEventListener('click', closeGameOverlay);
+ludoDie.addEventListener('click', ludoRoll);
+
+gameInviteBtn.addEventListener('click', () => {
+  if (callState !== 'connected') return;
+  ludoStage = 'inviting';
+  socket.emit('game', { type: 'invite' });
+  updateGameUI();
+});
+gameCancelBtn.addEventListener('click', () => {
+  socket.emit('game', { type: 'decline' });
+  ludoStage = 'idle';
+  updateGameUI();
+});
+gameAcceptBtn.addEventListener('click', () => {
+  socket.emit('game', { type: 'accept' });
+  onLudoHandshake();
+});
+gameDeclineBtn.addEventListener('click', () => {
+  socket.emit('game', { type: 'decline' });
+  ludoStage = 'idle';
+  closeGameOverlay();
+});
+ludoRematchBtn.addEventListener('click', () => {
+  if (amCallInitiator) startLudoGame();
+  else socket.emit('game', { type: 'rematch' });
+});
+
+socket.on('game', (data) => {
+  if (!data || typeof data !== 'object' || callState !== 'connected') return;
+  const name = currentPartner ? currentPartner.username : t('chat');
+  switch (data.type) {
+    case 'invite':
+      if (ludoStage === 'playing') return;
+      if (ludoStage === 'inviting') { onLudoHandshake(); break; }
+      ludoStage = 'invited';
+      openGameOverlay();
+      gameBtnBadge.classList.remove('hidden');
+      playMessageSound();
+      vibrate(30);
+      updateGameUI();
+      break;
+    case 'accept':
+      if (ludoStage === 'inviting') onLudoHandshake();
+      break;
+    case 'decline':
+      ludoStage = 'idle';
+      ludoState = null;
+      updateGameUI();
+      gameStatus.textContent = t('ludoDeclined', { name });
+      break;
+    case 'state':
+      if (!data.state) break;
+      myPlayerIndex = amCallInitiator ? 0 : 1;
+      ludoStage = 'playing';
+      ludoState = data.state;
+      openGameOverlay();
+      updateGameUI();
+      break;
+    case 'rematch':
+      if (amCallInitiator) startLudoGame();
+      break;
+  }
+});
+
 chatForm.addEventListener('submit', (e) => {
   e.preventDefault();
   const text = chatInput.value.trim();
@@ -2325,6 +2730,9 @@ socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
   restoreCallbackSpinner();
   if (typeof friendsDropdown !== 'undefined') closeModal(friendsDropdown);
   enterCallUI();
+  // Ludo colour roles are fixed by who initiated the call; clear any old game.
+  amCallInitiator = !!initiator;
+  if (typeof resetLudo === 'function') resetLudo();
 
   // Never let a mute from a previous call silently carry into a new one.
   if (isMuted) {
@@ -2540,6 +2948,7 @@ socket.on('partner-left', () => {
   playHangupSound();
   teardownPeer();
   clearChat();
+  if (typeof resetLudo === 'function') resetLudo();
   if (isSearching && autoCallEnabled) {
     // Auto-connect enabled: immediately keep connecting to new people, no
     // confirmation ever — this loop only stops when the user stops it.
