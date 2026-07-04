@@ -3827,6 +3827,7 @@ body {
    the guide also removes the element that was overlapping the controls. */
 .stage.call-live #quickGuide,
 #quickGuide.in-call,
+.stage.call-live #convoGuide,
 .stage.call-live .reassure-line {
   display: none !important;
 }
