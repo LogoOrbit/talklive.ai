@@ -2708,6 +2708,25 @@ const ludoEndBtn = document.getElementById('ludoEndBtn');
 let amCallInitiator = false;
 let ludoOppActivityTimer = null;
 
+// Pip layouts on a 3x3 grid (index 0..8) so the die shows real dots, not a digit.
+const LUDO_PIPS = {
+  1: [4], 2: [0, 8], 3: [0, 4, 8],
+  4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8],
+};
+// Paint the die face: real pips for 1–6, otherwise a glyph (🎲 / 🏆 / –).
+function setLudoDieFace(val) {
+  if (typeof val === 'number' && LUDO_PIPS[val]) {
+    const pat = LUDO_PIPS[val];
+    let html = '';
+    for (let i = 0; i < 9; i++) html += '<span class="pip' + (pat.includes(i) ? ' on' : '') + '"></span>';
+    ludoDieFace.className = 'ludo-die-pips';
+    ludoDieFace.innerHTML = html;
+  } else {
+    ludoDieFace.className = 'ludo-die-glyph';
+    ludoDieFace.textContent = val == null ? '–' : String(val);
+  }
+}
+
 // 52-cell main loop as [row, col] on the 15x15 board (clockwise from Red's start).
 const LUDO_MAIN = [
   [6,1],[6,2],[6,3],[6,4],[6,5],
@@ -3000,29 +3019,29 @@ function updateGameUI() {
   if (ludoStage === 'idle') {
     gameStatus.textContent = t('ludoIdlePrompt', { name });
     gameInviteBtn.classList.remove('hidden');
-    ludoDieFace.textContent = '–';
+    setLudoDieFace('–');
   } else if (ludoStage === 'inviting') {
     gameStatus.textContent = t('ludoInviteSent', { name });
     gameCancelBtn.classList.remove('hidden');
-    ludoDieFace.textContent = '–';
+    setLudoDieFace('–');
   } else if (ludoStage === 'invited') {
     gameStatus.textContent = t('ludoInvited', { name });
     gameAcceptBtn.classList.remove('hidden');
     gameDeclineBtn.classList.remove('hidden');
-    ludoDieFace.textContent = '–';
+    setLudoDieFace('–');
   } else if (ludoStage === 'playing' && ludoState) {
     ludoRematchBtn.classList.remove('hidden');
     const myTurn = ludoState.turn === myPlayerIndex;
     if (ludoState.phase === 'over') {
       gameStatus.textContent = ludoState.winner === myPlayerIndex ? t('ludoYouWin') : t('ludoTheyWin', { name });
-      ludoDieFace.textContent = '🏆';
+      setLudoDieFace('🏆');
       if (!ludoOverAnnounced) {
         ludoOverAnnounced = true;
         if (ludoState.winner === myPlayerIndex) { playWinSound(); vibrate([40, 60, 40, 60, 80]); }
         else { playHangupSound(); }
       }
     } else {
-      ludoDieFace.textContent = ludoState.die ? String(ludoState.die) : '🎲';
+      setLudoDieFace(ludoState.die ? ludoState.die : '🎲');
       if (myTurn) {
         if (ludoState.phase === 'roll') { gameStatus.textContent = t('ludoYourTurnRoll'); ludoDie.classList.add('active'); }
         else { gameStatus.textContent = t('ludoYourTurnMove', { n: ludoState.die }); }
@@ -3035,7 +3054,7 @@ function updateGameUI() {
   } else if (ludoStage === 'playing') {
     // handshake done, waiting for the host's first state broadcast
     gameStatus.textContent = t('ludoTheirTurn', { name });
-    ludoDieFace.textContent = '🎲';
+    setLudoDieFace('🎲');
   }
   renderLudoTokens();
 
