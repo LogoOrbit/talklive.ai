@@ -540,6 +540,141 @@ html, body {
   50% { transform: scale(1.08); }
 }
 
+/* Call timer, centered inside the blue orb. Sits above the core, follows the
+   breathing scale visually but stays crisp/legible. */
+.orb-timer {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 3;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+
+/* Duration colour milestones: the orb core + glow warm up over a long call.
+   The 0.4s transition on .orb-core already makes these shifts gradual/elegant. */
+.orb.phase-purple .orb-core {
+  background: radial-gradient(circle at 35% 30%, #c8a2ff, #7c3aed 72%);
+  box-shadow: 0 0 55px rgba(124, 58, 237, 0.7);
+}
+.orb.phase-orange .orb-core {
+  background: radial-gradient(circle at 35% 30%, #ffca8a, #f97316 72%);
+  box-shadow: 0 0 55px rgba(249, 115, 22, 0.7);
+}
+.orb.phase-pink .orb-core {
+  background: radial-gradient(circle at 35% 30%, #ffb3d9, #ec4899 72%);
+  box-shadow: 0 0 60px rgba(236, 72, 153, 0.75);
+}
+.orb.phase-purple.speaking .orb-core { box-shadow: 0 0 80px rgba(124, 58, 237, 0.9); }
+.orb.phase-orange.speaking .orb-core { box-shadow: 0 0 80px rgba(249, 115, 22, 0.9); }
+.orb.phase-pink.speaking .orb-core { box-shadow: 0 0 82px rgba(236, 72, 153, 0.92); }
+
+/* Milestone emoji that briefly fades in and out over the orb. */
+.orb-emoji-flash {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.4);
+  z-index: 4;
+  font-size: 64px;
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+.orb-emoji-flash.playing {
+  animation: orbEmojiFlash 2.4s ease-in-out forwards;
+}
+@keyframes orbEmojiFlash {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
+  18% { opacity: 1; transform: translate(-50%, -95%) scale(1.15); }
+  30% { transform: translate(-50%, -110%) scale(1); }
+  75% { opacity: 1; transform: translate(-50%, -120%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -150%) scale(0.9); }
+}
+
+/* Report dialog: quick-reason chips + optional detail box */
+.report-reasons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0 6px;
+}
+.report-reason {
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.14));
+  background: var(--card, rgba(255, 255, 255, 0.04));
+  color: var(--text);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+.report-reason:hover { border-color: var(--danger); }
+.report-reason:active { transform: scale(0.96); }
+.report-reason.selected {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+.report-custom {
+  width: 100%;
+  resize: vertical;
+  min-height: 44px;
+  margin-bottom: 12px;
+  font-family: inherit;
+}
+
+/* Conversation guide — friendly tips, scrollable, below the call area. */
+.convo-guide {
+  width: min(560px, 92%);
+  margin: 8px auto 26px;
+  padding: 18px 20px 20px;
+  border-radius: 18px;
+  background: var(--card, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+}
+.convo-guide-title {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  text-align: center;
+}
+.convo-guide-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.convo-guide-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+.convo-guide-list .cg-emoji {
+  flex: 0 0 auto;
+  font-size: 20px;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--accent-soft, rgba(108, 92, 231, 0.14));
+}
+
 .connection-indicator {
   display: flex;
   align-items: center;

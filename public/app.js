@@ -85,7 +85,8 @@ const chatSendBtn = document.getElementById('chatSendBtn');
 const connectionIndicator = document.getElementById('connectionIndicator');
 const connectionDot = document.getElementById('connectionDot');
 const connectionLabel = document.getElementById('connectionLabel');
-const callTimerEl = document.getElementById('callTimer');
+const callTimerEl = document.getElementById('orbTimer');
+const orbEmojiFlash = document.getElementById('orbEmojiFlash');
 const sharedInterestNote = document.getElementById('sharedInterestNote');
 const reactionBar = document.getElementById('reactionBar');
 const reactionOverlay = document.getElementById('reactionOverlay');
@@ -1493,10 +1494,11 @@ function startSearchTicker() {
   searchTicker.classList.remove('hidden');
   renderTickerItem();
   clearInterval(tickerInterval);
+  // Longer dwell so users have time to actually read each tip (was 4s).
   tickerInterval = setInterval(() => {
     tickerIdx += 1;
     renderTickerItem();
-  }, 4000);
+  }, 9000);
 }
 
 function stopSearchTicker() {
@@ -1592,22 +1594,65 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') syncWakeLock();
 });
 
+// Colour milestones: the orb warms up the longer a call lasts, with a brief
+// emoji flash at each one so the moment feels rewarding. Ordered longest-first
+// so the highest reached milestone wins.
+const CALL_MILESTONES = [
+  { at: 3600, cls: 'phase-pink', emoji: '😍' },
+  { at: 1800, cls: 'phase-orange', emoji: '😉' },
+  { at: 600, cls: 'phase-purple', emoji: '😎' },
+];
+let lastMilestoneIdx = -1; // index into CALL_MILESTONES that's currently applied
+
+function flashOrbEmoji(emoji) {
+  if (!orbEmojiFlash) return;
+  orbEmojiFlash.textContent = emoji;
+  orbEmojiFlash.classList.remove('playing');
+  void orbEmojiFlash.offsetWidth; // restart the animation
+  orbEmojiFlash.classList.add('playing');
+}
+
+function applyCallPhase(elapsed) {
+  // Find the highest milestone we've reached (CALL_MILESTONES is longest-first).
+  let idx = CALL_MILESTONES.findIndex((m) => elapsed >= m.at);
+  if (idx === lastMilestoneIdx) return;
+  orb.classList.remove('phase-purple', 'phase-orange', 'phase-pink');
+  // Only flash + play a chime when advancing to a *new, longer* milestone.
+  const advancing = idx !== -1 && (lastMilestoneIdx === -1 || idx < lastMilestoneIdx);
+  if (idx !== -1) {
+    orb.classList.add(CALL_MILESTONES[idx].cls);
+    if (advancing) {
+      flashOrbEmoji(CALL_MILESTONES[idx].emoji);
+      playTurnSound();
+      vibrate([30, 40, 30]);
+    }
+  }
+  lastMilestoneIdx = idx;
+}
+
 function startCallTimer() {
   callStartedAt = Date.now();
+  lastMilestoneIdx = -1;
+  orb.classList.remove('phase-purple', 'phase-orange', 'phase-pink');
   callTimerEl.classList.remove('hidden');
   clearInterval(callTimerInterval);
-  callTimerInterval = setInterval(() => {
+  const tick = () => {
     const elapsed = Math.floor((Date.now() - callStartedAt) / 1000);
     const mins = Math.floor(elapsed / 60);
     const secs = elapsed % 60;
     callTimerEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
-  }, 1000);
+    applyCallPhase(elapsed);
+  };
+  tick();
+  callTimerInterval = setInterval(tick, 1000);
 }
 
 function stopCallTimer() {
   clearInterval(callTimerInterval);
   callTimerInterval = null;
   callStartedAt = null;
+  lastMilestoneIdx = -1;
+  orb.classList.remove('phase-purple', 'phase-orange', 'phase-pink');
   callTimerEl.classList.add('hidden');
   callTimerEl.textContent = '0:00';
 }
@@ -2181,8 +2226,39 @@ callMainBtn.addEventListener('click', () => {
   }
 });
 
+// --- Report dialog: quick reasons + optional custom detail ---
+const reportModal = document.getElementById('reportModal');
+const closeReportBtn = document.getElementById('closeReportBtn');
+const reportReasons = document.getElementById('reportReasons');
+const reportCustomInput = document.getElementById('reportCustomInput');
+const reportSubmitBtn = document.getElementById('reportSubmitBtn');
+let selectedReportReason = null;
+
+function openReportModal() {
+  selectedReportReason = null;
+  reportReasons.querySelectorAll('.report-reason').forEach((b) => b.classList.remove('selected'));
+  reportCustomInput.value = '';
+  openModal(reportModal);
+}
+
 reportBtn.addEventListener('click', () => {
-  if (!confirm(t('confirmReport'))) return;
+  if (callState !== 'connected') return;
+  openReportModal();
+});
+closeReportBtn.addEventListener('click', () => closeModal(reportModal));
+reportModal.addEventListener('click', (e) => { if (e.target === reportModal) closeModal(reportModal); });
+
+reportReasons.addEventListener('click', (e) => {
+  const btn = e.target.closest('.report-reason');
+  if (!btn) return;
+  reportReasons.querySelectorAll('.report-reason').forEach((b) => b.classList.toggle('selected', b === btn));
+  selectedReportReason = btn.dataset.reason;
+});
+
+reportSubmitBtn.addEventListener('click', () => {
+  if (!selectedReportReason) { showError(t('reportPickReason')); return; }
+  const detail = reportCustomInput.value.trim().slice(0, 300);
+  closeModal(reportModal);
   teardownPeer();
   clearChat();
   isSearching = true;
@@ -2190,7 +2266,7 @@ reportBtn.addEventListener('click', () => {
   setState('waiting');
   setConnection('red', 'connReported');
   setStatusText('statusReported');
-  socket.emit('report');
+  socket.emit('report', { reason: selectedReportReason, detail });
   setTimeout(() => setConnection('orange', 'connSearching'), 600);
 });
 
@@ -3024,21 +3100,34 @@ socket.on('signal', (data) => {
 
 socket.on('partner-left', () => {
   playHangupSound();
+  const wasInGame = ludoStage === 'playing' || ludoStage === 'invited' || ludoStage === 'inviting';
   teardownPeer();
   clearChat();
-  if (typeof resetLudo === 'function') resetLudo();
+  // If a game was open, surface it there too (grayscale + red banner handled by
+  // markGamePartnerGone) before resetting.
+  if (wasInGame && typeof markGamePartnerGone === 'function') markGamePartnerGone();
+  else if (typeof resetLudo === 'function') resetLudo();
   if (!isSearching) return;
-  // The partner dropped — whether they hung up, lost connection, or closed the
-  // browser. Rather than stranding the user, always roll straight on to the
-  // next person (the requested "reconnect then move on" behaviour). The single
-  // hang-up button is still there to stop whenever they want.
-  setCallState('searching');
-  setState('waiting');
-  setConnection('red', 'connDisconnected');
-  setStatusText('statusStrangerLeft');
-  setSubText('subHangTight');
-  socket.emit('find-partner');
-  setTimeout(() => { if (isSearching && callState === 'searching') setConnection('orange', 'connSearching'); }, 600);
+  // The partner ended the call. Show the single red "your friend ended the call"
+  // message. Only keep hunting for a new person if auto-connect is on; otherwise
+  // stop on the red message so the user isn't yanked into a new search.
+  if (autoCallEnabled) {
+    setCallState('searching');
+    setState('waiting');
+    setConnection('red', 'connFriendEnded');
+    setStatusText('statusFriendEnded');
+    setSubText(null);
+    socket.emit('find-partner');
+    setTimeout(() => { if (isSearching && callState === 'searching') setConnection('orange', 'connSearching'); }, 900);
+  } else {
+    isSearching = false;
+    socket.emit('leave');
+    setCallState('idle');
+    setState('idle');
+    setConnection('red', 'connFriendEnded');
+    setStatusText('statusFriendEnded');
+    setSubText(null);
+  }
 });
 
 socket.on('partner-mic-state', (muted) => {

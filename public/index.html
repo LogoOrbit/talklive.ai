@@ -500,6 +500,34 @@
         </div>
       </div>
 
+      <!-- Report dialog: quick reasons + optional custom detail -->
+      <div id="reportModal" class="modal-overlay hidden">
+        <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="reportModalTitle">
+          <div class="modal-header">
+            <h2 id="reportModalTitle" data-i18n="reportTitle">Report this person</h2>
+            <button type="button" id="closeReportBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
+          </div>
+          <div class="modal-body">
+            <p class="account-hint" data-i18n="reportSubtitle">Pick a reason. This ends the call and blocks them from matching with you again.</p>
+            <div id="reportReasons" class="report-reasons" role="group" aria-labelledby="reportModalTitle">
+              <button type="button" class="report-reason" data-reason="spam" data-i18n="reportReasonSpam">Spam</button>
+              <button type="button" class="report-reason" data-reason="abuse" data-i18n="reportReasonAbuse">Abuse</button>
+              <button type="button" class="report-reason" data-reason="harassment" data-i18n="reportReasonHarassment">Harassment</button>
+              <button type="button" class="report-reason" data-reason="fake" data-i18n="reportReasonFake">Fake Profile</button>
+              <button type="button" class="report-reason" data-reason="inappropriate" data-i18n="reportReasonInappropriate">Inappropriate Behavior</button>
+              <button type="button" class="report-reason" data-reason="nudity" data-i18n="reportReasonNudity">Nudity</button>
+              <button type="button" class="report-reason" data-reason="hate" data-i18n="reportReasonHate">Hate Speech</button>
+              <button type="button" class="report-reason" data-reason="underage" data-i18n="reportReasonUnderage">Underage</button>
+              <button type="button" class="report-reason" data-reason="scammer" data-i18n="reportReasonScammer">Scammer</button>
+              <button type="button" class="report-reason" data-reason="other" data-i18n="reportReasonOther">Other</button>
+            </div>
+            <label class="account-label account-label-spaced" for="reportCustomInput" data-i18n="reportCustomLabel">Add details (optional)</label>
+            <textarea id="reportCustomInput" class="search-input report-custom" rows="2" maxlength="300" data-i18n-placeholder="reportCustomPlaceholder" placeholder="Describe what happened…"></textarea>
+            <button type="button" id="reportSubmitBtn" class="btn btn-danger settings-save" data-i18n="reportSubmit">Report &amp; End Call</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Age / Terms consent gate — shown before the very first call -->
       <div id="ageConsentModal" class="modal-overlay hidden">
         <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="ageConsentTitle">
@@ -588,7 +616,9 @@
             <div class="orb-core"></div>
             <div class="orb-ring r1"></div>
             <div class="orb-ring r2"></div>
+            <div id="orbTimer" class="orb-timer hidden" aria-live="off">0:00</div>
           </div>
+          <div id="orbEmojiFlash" class="orb-emoji-flash" aria-hidden="true"></div>
         </div>
 
         <div id="connectionIndicator" class="connection-indicator hidden">
@@ -601,7 +631,6 @@
             <span class="quality-bar q4" aria-hidden="true"></span>
             <span id="qualityLabel" class="quality-label"></span>
           </span>
-          <span id="callTimer" class="call-timer hidden">0:00</span>
         </div>
 
         <p id="statusText" class="status-text" aria-live="polite">Tap the green button to talk to a random person</p>
@@ -726,6 +755,20 @@
           <li><span class="qg-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="13" width="4" height="6" rx="2"/><rect x="17" y="13" width="4" height="6" rx="2"/></svg></span> <span data-i18n="guideHeadphones">Use headphones to prevent echo and improve call quality.</span></li>
           <li><span class="qg-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="21"/><line x1="9" y1="21" x2="15" y2="21"/></svg></span> <span data-i18n="guideMute">You can mute your microphone anytime.</span></li>
           <li><span class="qg-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-4 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/></svg></span> <span data-i18n="guideChat">Use the chat button to send text messages during a call.</span></li>
+        </ul>
+      </section>
+
+      <!-- Conversation guide: friendly, simple tips shown below the call area.
+           A scrollable, always-available confidence booster for new users. -->
+      <section id="convoGuide" class="convo-guide">
+        <h3 class="convo-guide-title" data-i18n="convoGuideTitle">How to have a great talk</h3>
+        <ul class="convo-guide-list">
+          <li><span class="cg-emoji" aria-hidden="true">😊</span><span data-i18n="convoTip1">Smile before you start talking — it changes your voice.</span></li>
+          <li><span class="cg-emoji" aria-hidden="true">💬</span><span data-i18n="convoTip2">Ask simple questions first, like where they're from.</span></li>
+          <li><span class="cg-emoji" aria-hidden="true">🤝</span><span data-i18n="convoTip3">Be respectful and kind to everyone you meet.</span></li>
+          <li><span class="cg-emoji" aria-hidden="true">👂</span><span data-i18n="convoTip4">Listen carefully and let them finish speaking.</span></li>
+          <li><span class="cg-emoji" aria-hidden="true">🌱</span><span data-i18n="convoTip5">Don't worry if someone skips you — it's completely normal.</span></li>
+          <li><span class="cg-emoji" aria-hidden="true">🎉</span><span data-i18n="convoTip6">Relax and have fun meeting new people.</span></li>
         </ul>
       </section>
     </main>

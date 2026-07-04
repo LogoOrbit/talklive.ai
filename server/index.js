@@ -671,15 +671,17 @@ io.on('connection', (socket) => {
     clearWaitFallbackTimer(socket.id);
   });
 
-  socket.on('report', () => {
+  socket.on('report', (payload = {}) => {
     const partnerId = partners.get(socket.id);
     const seeker = profiles.get(socket.id);
     const partner = partnerId ? profiles.get(partnerId) : null;
+    const reason = typeof payload.reason === 'string' ? payload.reason.slice(0, 40) : 'unspecified';
+    const detail = typeof payload.detail === 'string' ? payload.detail.slice(0, 300) : '';
     if (seeker && partner) {
       blockPair(seeker.clientId, partner.clientId);
       const count = (reportCounts.get(partner.clientId) || 0) + 1;
       reportCounts.set(partner.clientId, count);
-      console.log(`[report] ${seeker.username} reported ${partner.username} (total reports: ${count})`);
+      console.log(`[report] ${seeker.username} reported ${partner.username} — reason: ${reason}${detail ? ` — "${detail}"` : ''} (total reports: ${count})`);
       if (count >= 3) {
         console.log(`[ban] ${partner.username} auto-banned after ${count} reports`);
         const partnerSocket = io.sockets.sockets.get(partnerId);
