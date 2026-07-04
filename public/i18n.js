@@ -92,6 +92,12 @@ const I18N_STRINGS = {
     historyHint: "This session only — it clears when you close or reload the page. Tap the green button to call someone back if they're online.",
     noCallsYet: 'No calls yet.',
     callBack: 'Call back',
+    friendOffline: 'Offline — tap to retry',
+    friendWentOffline: 'They’re offline right now.',
+    sendRequestLater: 'Send request for later',
+    requestSentLater: 'Request sent ✓',
+    errCallRequiredToChat: 'Start a call to chat — texting unlocks once your call connects.',
+    chatLockedHint: 'Call to unlock chat',
 
     friends: 'Friends',
     myFriends: 'My Friends',

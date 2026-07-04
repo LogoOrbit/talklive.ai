@@ -3624,6 +3624,56 @@ body {
   height: 16px;
 }
 
+/* Offline friend: the green call button goes grey with a small red dot so it
+   reads as "unavailable right now" without dropping off the panel. */
+.friend-call-btn.is-offline {
+  position: relative;
+  background: radial-gradient(circle at 35% 30%, #9aa3ad, #6b7280 75%);
+  box-shadow: none;
+  opacity: 0.85;
+}
+.friend-call-btn.is-offline:hover { box-shadow: 0 0 8px rgba(107, 114, 128, 0.5); }
+.friend-call-offline-dot {
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 2px solid var(--panel, #1b1e27);
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.8);
+}
+
+/* "Send request for later" chip shown next to an offline friend's call button. */
+.friend-call-later-btn {
+  flex-basis: 100%;
+  margin-top: 6px;
+  padding: 6px 10px;
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  border-radius: 999px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+.friend-call-later-btn:hover { background: rgba(239, 68, 68, 0.2); }
+.friend-call-later-btn.sent {
+  border-color: rgba(34, 197, 94, 0.5);
+  background: rgba(34, 197, 94, 0.14);
+  color: #86efac;
+  cursor: default;
+}
+
+/* Call-gated friend chat: dim the composer while texting is locked. */
+#friendChatForm.locked { opacity: 0.75; }
+#friendChatForm.locked input:disabled {
+  cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.04);
+}
+
 /* Friend profile view */
 .friend-profile-body {
   display: flex;

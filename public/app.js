@@ -1122,6 +1122,9 @@ document.addEventListener('click', (e) => {
   if (!e.composedPath().includes(friendsWrap)) closeModal(friendsDropdown);
 });
 
+// Phone glyph shared by the live call button and its offline (greyed) state.
+const FRIEND_CALL_SVG = '<svg viewBox="0 0 24 24" fill="white" aria-hidden="true"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>';
+
 // Each row: online/offline dot + flag + username on the left (tap → chat box),
 // small green call button on the right. Tapping the avatar opens the profile view.
 function renderFriendsList() {
@@ -1142,7 +1145,7 @@ function renderFriendsList() {
         ${unread > 0 ? `<span class="unread-badge">${unread}</span>` : ''}
       </div>
       <button type="button" class="friend-call-btn" data-id="${f.clientId}" data-name="${escapeHtml(f.username)}" title="${escapeHtml(t('callBack'))}" aria-label="${escapeHtml(t('callBack'))}">
-        <svg viewBox="0 0 24 24" fill="white" aria-hidden="true"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+        ${FRIEND_CALL_SVG}
       </button>
     `;
     friendsList.appendChild(item);
@@ -1152,19 +1155,52 @@ function renderFriendsList() {
 friendsList.addEventListener('click', (e) => {
   const avatarBtn = e.target.closest('.friend-avatar-btn');
   const callBtn = e.target.closest('.friend-call-btn');
+  const laterBtn = e.target.closest('.friend-call-later-btn');
   const rowMain = e.target.closest('.friend-row-main');
-  if (avatarBtn) {
+  if (laterBtn) {
+    // Queue a call-back request for the offline friend, delivered when they're
+    // back online. Reflect it inline so the user knows it went through.
+    socket.emit('call-back-request-later', { targetClientId: laterBtn.dataset.id });
+    laterBtn.textContent = t('requestSentLater');
+    laterBtn.classList.add('sent');
+    laterBtn.disabled = true;
+  } else if (avatarBtn) {
     openFriendProfile(avatarBtn.dataset.id);
   } else if (callBtn) {
     // Rule 11: don't dismiss the menu — swap the call icon into an in-place
     // spinner and keep it there until the peer accepts (then we jump to the
-    // call screen) or the request fails (then we restore the icon).
+    // call screen) or the request fails. If the peer turns out to be offline we
+    // keep the panel and grey the button (see call-back-request-result) rather
+    // than dropping back to the landing screen. Tapping a greyed button retries.
     startCallbackSpinner(callBtn);
     requestCallBack(callBtn.dataset.id, callBtn.dataset.name, { deferUI: true });
   } else if (rowMain) {
     openFriendChat(rowMain.dataset.id);
   }
 });
+
+// Turn a friend's call button into its offline (greyed, red-dotted) state and
+// surface a "send request for later" chip. Keeps the friends panel intact so an
+// offline callback never bounces the user to the "tap to talk" landing screen.
+function markFriendCallOffline(clientId) {
+  const btn = friendsList.querySelector(`.friend-call-btn[data-id="${CSS.escape(clientId)}"]`);
+  if (!btn) return;
+  btn.classList.remove('is-loading');
+  btn.classList.add('is-offline');
+  btn.disabled = false;
+  btn.title = t('friendOffline');
+  btn.setAttribute('aria-label', t('friendOffline'));
+  btn.innerHTML = `${FRIEND_CALL_SVG}<span class="friend-call-offline-dot" aria-hidden="true"></span>`;
+  const item = btn.closest('.friend-item');
+  if (item && !item.querySelector('.friend-call-later-btn')) {
+    const later = document.createElement('button');
+    later.type = 'button';
+    later.className = 'friend-call-later-btn';
+    later.dataset.id = clientId;
+    later.textContent = t('sendRequestLater');
+    item.appendChild(later);
+  }
+}
 
 // --- Friend profile view: avatar, name, status + Remove Friend / Block User ---
 let activeProfileFriendId = null;
@@ -1380,6 +1416,21 @@ function renderFriendChatMessages() {
   friendChatMessages.scrollTop = friendChatMessages.scrollHeight;
 }
 
+// Text messaging is call-gated: a DM can only be sent to someone you're in a
+// live (accepted) call with. In-call chat is unaffected — it uses its own box.
+function inCallWith(clientId) {
+  return callState === 'connected' && currentPartner && currentPartner.clientId === clientId;
+}
+
+// Enable/disable the friend-chat composer based on whether a call is live with
+// that friend, showing a "call to unlock" hint when it's locked.
+function applyFriendChatLock() {
+  const unlocked = inCallWith(activeFriendChatId);
+  friendChatInput.disabled = !unlocked;
+  friendChatInput.placeholder = unlocked ? t('typeMessage') : t('chatLockedHint');
+  friendChatForm.classList.toggle('locked', !unlocked);
+}
+
 function openFriendChat(friendClientId) {
   activeFriendChatId = friendClientId;
   const friend = friendsData.find((f) => f.clientId === friendClientId);
@@ -1393,7 +1444,8 @@ function openFriendChat(friendClientId) {
   notifData = notifData.filter((n) => !(n.type === 'message' && n.fromClientId === friendClientId));
   renderNotifications();
   renderFriendChatMessages();
-  friendChatInput.focus();
+  applyFriendChatLock();
+  if (inCallWith(friendClientId)) friendChatInput.focus();
 }
 
 closeFriendChatBtn.addEventListener('click', () => {
@@ -1405,6 +1457,15 @@ friendChatForm.addEventListener('submit', (e) => {
   e.preventDefault();
   const text = friendChatInput.value.trim();
   if (!text || !activeFriendChatId) return;
+  if (!inCallWith(activeFriendChatId)) {
+    const el = document.createElement('div');
+    el.className = 'chat-msg system';
+    el.textContent = t('errCallRequiredToChat');
+    friendChatMessages.appendChild(el);
+    friendChatMessages.scrollTop = friendChatMessages.scrollHeight;
+    applyFriendChatLock();
+    return;
+  }
   if (messageHasLink(text)) {
     const el = document.createElement('div');
     el.className = 'chat-msg system';
@@ -1607,6 +1668,8 @@ function setCallState(state) {
   const connected = state === 'connected';
   // Leaving the connected state cancels any pending "are you sure?".
   if (!connected) clearHangupConfirm();
+  // Call state gates friend-chat DMs — keep an open chat's composer in sync.
+  if (activeFriendChatId && !friendChatModal.classList.contains('hidden')) applyFriendChatLock();
 
   let mode;
   if (connected) mode = hangupConfirm ? 'confirm' : 'hangup';
@@ -3334,13 +3397,14 @@ chatForm.addEventListener('submit', (e) => {
 });
 
 // Server-side link filter rejected a message we let through — surface it.
-socket.on('chat-blocked', () => {
+socket.on('chat-blocked', ({ reason } = {}) => {
   const target = friendChatModal.classList.contains('hidden') ? chatMessages : friendChatMessages;
   const el = document.createElement('div');
   el.className = 'chat-msg system';
-  el.textContent = t('errNoLinks');
+  el.textContent = reason === 'call-required' ? t('errCallRequiredToChat') : t('errNoLinks');
   target.appendChild(el);
   target.scrollTop = target.scrollHeight;
+  if (reason === 'call-required') applyFriendChatLock();
 });
 
 // --- Typing indicator ---
@@ -3711,11 +3775,44 @@ socket.on('call-back-request', ({ fromClientId, username }) => {
 
 socket.on('call-back-request-result', ({ ok, reason }) => {
   if (ok) return;
+  // Deferred (friends-list) callback: keep the friends panel up. On "offline"
+  // we grey the button + offer "send request for later"; other failures just
+  // restore the green icon. We never resetUI() here, so the user isn't yanked
+  // back to the "tap to talk" landing screen.
+  if (activeCallbackSpinner) {
+    const clientId = activeCallbackSpinner.btn.dataset.id;
+    isSearching = false;
+    if (localStream) {
+      localStream.getTracks().forEach((tr) => tr.stop());
+      localStream = null;
+    }
+    restoreCallbackSpinner();
+    if (reason === 'offline') {
+      markFriendCallOffline(clientId);
+      showToast(t('friendWentOffline'));
+    } else if (reason === 'blocked') {
+      showError(t('errBlocked'));
+    } else {
+      showError(t('errCallbackFailed'));
+    }
+    return;
+  }
   abandonCallBack();
   if (reason === 'offline') showError(t('errOffline'));
   else if (reason === 'busy') showError(t('errBusy'));
   else if (reason === 'blocked') showError(t('errBlocked'));
   else showError(t('errCallbackFailed'));
+});
+
+socket.on('call-back-later-result', ({ ok, reason, targetClientId }) => {
+  if (ok) return;
+  const chip = targetClientId && friendsList.querySelector(`.friend-call-later-btn[data-id="${CSS.escape(targetClientId)}"]`);
+  if (chip) {
+    chip.textContent = t('sendRequestLater');
+    chip.classList.remove('sent');
+    chip.disabled = false;
+  }
+  showError(reason === 'blocked' ? t('errBlocked') : t('errCallbackFailed'));
 });
 
 socket.on('call-back-declined', ({ username }) => {

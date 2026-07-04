@@ -839,6 +839,13 @@ io.on('connection', (socket) => {
     const me = profiles.get(socket.id);
     if (!me || !toClientId || typeof text !== 'string' || !text.trim()) return;
     if (!isFriend(me.clientId, toClientId)) return;
+    // Text messaging is call-gated: you can only send a message to someone while
+    // you're in a live (accepted) call with them. Outside a call the only way to
+    // reach a friend is to call them (or queue a call-back request for later).
+    const targetSocketId = clientSockets.get(toClientId);
+    if (!targetSocketId || partners.get(socket.id) !== targetSocketId) {
+      return socket.emit('chat-blocked', { reason: 'call-required' });
+    }
     if (containsLink(text)) {
       return socket.emit('chat-blocked', { reason: 'link' });
     }
@@ -894,7 +901,10 @@ io.on('connection', (socket) => {
     const targetSocketId = clientSockets.get(targetClientId);
     const targetSocket = targetSocketId ? io.sockets.sockets.get(targetSocketId) : null;
     if (!targetSocket) {
-      return socket.emit('call-back-request-result', { ok: false, reason: 'offline' });
+      // The peer is offline: don't yank the caller off their screen. Let the
+      // client keep its calling-back panel and offer to queue the request for
+      // later (delivered as a notification when the peer comes back online).
+      return socket.emit('call-back-request-result', { ok: false, reason: 'offline', canQueue: true });
     }
     // Deliver even if the target is currently on a call: they get the banner and
     // can choose to switch (which ends their current call). No 'busy' rejection.
@@ -912,6 +922,32 @@ io.on('connection', (socket) => {
     });
 
     socket.emit('call-back-request-result', { ok: true, pending: true });
+  });
+
+  // Queue a call-back request for an offline peer ("send request for later").
+  // Stored as a notification and delivered when they next come online; if they
+  // happen to be online right now it's delivered live too.
+  socket.on('call-back-request-later', ({ targetClientId } = {}) => {
+    const me = profiles.get(socket.id);
+    if (!me || !targetClientId) return;
+    if (isBlockedPair(me.clientId, targetClientId)) {
+      return socket.emit('call-back-later-result', { ok: false, reason: 'blocked', targetClientId });
+    }
+    pushNotification(targetClientId, {
+      type: 'call_back_request',
+      fromClientId: me.clientId,
+      username: me.username,
+      countryCode: me.country,
+    });
+    const targetSocket = getSocketByClientId(targetClientId);
+    if (targetSocket) {
+      targetSocket.emit('call-back-request', {
+        fromClientId: me.clientId,
+        username: me.username,
+        countryCode: me.country,
+      });
+    }
+    socket.emit('call-back-later-result', { ok: true, targetClientId });
   });
 
   socket.on('call-back-respond', ({ fromClientId, accept } = {}) => {
