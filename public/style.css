@@ -39,13 +39,25 @@
   --accent-2: #ffa94d;
 }
 
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
 html, body {
   margin: 0;
-  height: 100%;
+  min-height: 100%;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   background: radial-gradient(circle at 50% -10%, var(--bg-glow) 0%, var(--bg-1) 55%);
   color: var(--text);
   overflow-x: hidden;
+}
+/* Scroll the whole page from anywhere; momentum on iOS; no sideways drift. */
+body {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: none;
 }
 
 .app {
@@ -1143,6 +1155,8 @@ html, body {
 }
 
 .tap-orb {
+  position: relative;
+  overflow: hidden;
   width: 190px;
   height: 190px;
   border-radius: 50%;
@@ -1155,6 +1169,46 @@ html, body {
   gap: 10px;
   transition: transform 0.15s ease, box-shadow 0.2s ease;
   animation: tapBreathe 3s ease-in-out infinite;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Ripple that expands from the tap point for instant press feedback. */
+.tap-ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.45);
+  transform: scale(0);
+  opacity: 0.6;
+  pointer-events: none;
+  animation: tapRipple 0.6s ease-out forwards;
+}
+@keyframes tapRipple {
+  to { transform: scale(2.4); opacity: 0; }
+}
+
+/* Connecting state: freeze the breathing, dim the label, and spin a ring so the
+   user sees work happening and further taps are visibly inert. */
+.tap-orb.is-connecting {
+  animation: none;
+  cursor: progress;
+  pointer-events: none;
+}
+.tap-orb.is-connecting .phone-icon,
+.tap-orb.is-connecting .tap-orb-label {
+  opacity: 0.55;
+}
+.tap-orb.is-connecting::after {
+  content: "";
+  position: absolute;
+  inset: 14px;
+  border-radius: 50%;
+  border: 4px solid rgba(255, 255, 255, 0.25);
+  border-top-color: #fff;
+  animation: tapSpin 0.85s linear infinite;
+}
+@keyframes tapSpin {
+  to { transform: rotate(360deg); }
 }
 
 .call-btn-green {

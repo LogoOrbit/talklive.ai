@@ -2046,6 +2046,7 @@ function resetUI() {
   setupPanel.classList.remove('hidden');
   stageEl.classList.remove('call-live');
   startBtn.disabled = false;
+  startBtn.classList.remove('is-connecting');
   closeChatPanel();
   clearChat();
   hideConnection();
@@ -2119,6 +2120,7 @@ async function begin() {
   } catch (e) {
     beginInFlight = false;
     startBtn.disabled = false;
+    startBtn.classList.remove('is-connecting');
     setButtonMode('call');
     if (e.name === 'NotAllowedError' || e.name === 'SecurityError') {
       showError(t('errMicBlocked'));
@@ -2165,8 +2167,30 @@ function startCallFlow() {
 
 openTermsFromConsent.addEventListener('click', () => openModal(termsModal));
 
-// The Tap-to-Talk landing orb: same flow as the green Call button.
-startBtn.addEventListener('click', startCallFlow);
+// --- Landing "Tap to Talk" feedback: ripple + press + connecting spinner so
+// the user gets instant confirmation and can't fire off repeated taps. ---
+function spawnRipple(el, ev) {
+  const rect = el.getBoundingClientRect();
+  const size = Math.max(rect.width, rect.height);
+  const x = (ev && ev.clientX != null ? ev.clientX : rect.left + rect.width / 2) - rect.left;
+  const y = (ev && ev.clientY != null ? ev.clientY : rect.top + rect.height / 2) - rect.top;
+  const ripple = document.createElement('span');
+  ripple.className = 'tap-ripple';
+  ripple.style.width = ripple.style.height = size + 'px';
+  ripple.style.left = (x - size / 2) + 'px';
+  ripple.style.top = (y - size / 2) + 'px';
+  el.appendChild(ripple);
+  setTimeout(() => ripple.remove(), 650);
+}
+
+// The Tap-to-Talk landing orb: same flow as the green Call button, with
+// immediate visual feedback and guarded against double taps.
+startBtn.addEventListener('click', (ev) => {
+  if (startBtn.disabled || startBtn.classList.contains('is-connecting')) return;
+  spawnRipple(startBtn, ev);
+  startBtn.classList.add('is-connecting');
+  startCallFlow();
+});
 
 ageAgreeBtn.addEventListener('click', () => {
   localStorage.setItem(CONSENT_KEY, 'yes');
@@ -2328,19 +2352,51 @@ function openChatPanel() {
   chatPanel.classList.add('open');
   chatOverlay.classList.remove('hidden');
   setChatUnread(0);
-  if (!chatInput.disabled) setTimeout(() => chatInput.focus(), 60);
+  // Deliberately do NOT auto-focus the input: on mobile that pops the keyboard
+  // over the messages, forcing the user to dismiss it just to read. The keyboard
+  // now opens only when they actually tap the text box.
   scrollChatToBottom();
+  if (typeof syncChatViewport === 'function') syncChatViewport();
 }
 
 function closeChatPanel() {
   chatOpen = false;
   chatPanel.classList.remove('open');
   chatOverlay.classList.add('hidden');
+  chatPanel.style.height = '';
+  chatPanel.style.top = '';
 }
 
 function scrollChatToBottom() {
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
+
+// Keep the full-screen mobile chat sheet sized to the *visual* viewport so the
+// on-screen keyboard can never cover the input or the latest messages. On iOS a
+// position:fixed panel otherwise stays at full window height behind the keyboard.
+function syncChatViewport() {
+  const vv = window.visualViewport;
+  if (!chatOpen || !vv || window.innerWidth > 767) {
+    chatPanel.style.height = '';
+    chatPanel.style.top = '';
+    return;
+  }
+  chatPanel.style.height = vv.height + 'px';
+  chatPanel.style.top = vv.offsetTop + 'px';
+  scrollChatToBottom();
+}
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', syncChatViewport);
+  window.visualViewport.addEventListener('scroll', syncChatViewport);
+}
+// When the user taps the input, wait for the keyboard, then keep the newest
+// messages in view.
+chatInput.addEventListener('focus', () => {
+  setTimeout(() => { syncChatViewport(); scrollChatToBottom(); }, 250);
+});
+chatInput.addEventListener('blur', () => {
+  setTimeout(syncChatViewport, 100);
+});
 
 chatToggleBtn.addEventListener('click', () => {
   if (chatOpen) closeChatPanel();
