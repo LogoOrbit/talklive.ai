@@ -246,7 +246,7 @@ const I18N_STRINGS = {
     feedbackSend: 'Send Feedback',
     feedbackThanks: 'Thank you! Your feedback was sent.',
     feedbackEmpty: 'Please write something first.',
-    catProfile: 'Profile',
+    catProfile: 'My Gender',
     catApp: 'App Settings',
     catPrivacy: 'Privacy & Safety',
     catAbout: 'Help & About',

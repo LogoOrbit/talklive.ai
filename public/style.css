@@ -40,11 +40,7 @@
 }
 
 html {
-  scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
-}
-@media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
 }
 html, body {
   margin: 0;
@@ -54,10 +50,11 @@ html, body {
   color: var(--text);
   overflow-x: hidden;
 }
-/* Scroll the whole page from anywhere; momentum on iOS; no sideways drift. */
+/* Scroll the whole page from anywhere, with iOS momentum. Deliberately no
+   scroll-behavior:smooth (it makes wheel/drag scrolling feel like it sticks)
+   and no overscroll lock, so vertical scrolling is never swallowed. */
 body {
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: none;
 }
 
 .app {
@@ -3401,9 +3398,10 @@ body {
 .tl-toast {
   position: fixed;
   left: 50%;
-  bottom: calc(28px + env(safe-area-inset-bottom, 0px));
-  transform: translate(-50%, 20px);
-  z-index: 200;
+  /* Top of the screen so it's visible even with a settings panel / keyboard open. */
+  top: calc(16px + env(safe-area-inset-top, 0px));
+  transform: translate(-50%, -20px);
+  z-index: 800;
   max-width: 88vw;
   padding: 12px 18px;
   border-radius: 999px;
@@ -3411,6 +3409,7 @@ body {
   color: #fff;
   font-size: 14px;
   font-weight: 600;
+  text-align: center;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.12);
   opacity: 0;
@@ -4443,4 +4442,22 @@ body {
 @keyframes ludoNudge {
   0%, 100% { transform: translateY(0) rotate(-8deg); }
   50% { transform: translateY(-2px) rotate(8deg); }
+}
+
+/* Periodic "come play Ludo" attention wiggle on the game button during a call. */
+#gameBtn.game-nudge {
+  animation: gameNudge 1.2s ease-in-out;
+  color: var(--accent-2);
+}
+@keyframes gameNudge {
+  0%   { transform: scale(1) rotate(0); box-shadow: 0 0 0 0 rgba(0,212,255,0.5); }
+  15%  { transform: scale(1.18) rotate(-12deg); box-shadow: 0 0 0 6px rgba(0,212,255,0); }
+  30%  { transform: scale(1.12) rotate(12deg); }
+  45%  { transform: scale(1.15) rotate(-9deg); box-shadow: 0 0 0 8px rgba(0,212,255,0); }
+  60%  { transform: scale(1.1) rotate(7deg); }
+  80%  { transform: scale(1.06) rotate(-3deg); }
+  100% { transform: scale(1) rotate(0); box-shadow: 0 0 0 0 rgba(0,212,255,0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #gameBtn.game-nudge { animation: none; }
 }

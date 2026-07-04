@@ -618,7 +618,7 @@ function closeAppSettings() {
 
 appSettingsBtn.addEventListener('click', openAppSettings);
 closeAppSettingsBtn.addEventListener('click', closeAppSettings);
-appSettingsOverlay.addEventListener('click', closeAppSettings);
+appSettingsOverlay.addEventListener('click', () => { if (Date.now() < swipeSuppressUntil) return; closeAppSettings(); });
 
 // --- Filters side panel: who you get matched with ---
 function openFilters() {
@@ -801,12 +801,22 @@ const feedbackSendBtn = document.getElementById('feedbackSendBtn');
 // Show the temporary name in the editor (only when not signed in — a signed-in
 // nickname is edited in the Account panel), and the permanent User ID once
 // logged in.
+// The Save Name button is only enabled when the field holds a new, non-empty
+// name different from what's already saved — so it greys out right after saving.
+function syncSaveNameBtn() {
+  if (!saveTempNameBtn || !tempUsernameInput) return;
+  const val = tempUsernameInput.value.trim();
+  const changed = val.length > 0 && val !== (tempUsername || '');
+  saveTempNameBtn.disabled = !!accountNickname || !changed;
+}
+
 function renderSettingsIdentity() {
   if (tempUsernameInput && document.activeElement !== tempUsernameInput) {
     tempUsernameInput.value = accountNickname ? '' : (tempUsername || '');
     tempUsernameInput.disabled = !!accountNickname;
     tempUsernameInput.placeholder = accountNickname ? accountNickname : t('tempUsernamePlaceholder');
   }
+  syncSaveNameBtn();
   if (userIdRow && userIdValue) {
     if (accountNickname) {
       // A permanent, stable, unique ID for the signed-in user.
@@ -818,16 +828,22 @@ function renderSettingsIdentity() {
   }
 }
 
+if (tempUsernameInput) {
+  tempUsernameInput.addEventListener('input', syncSaveNameBtn);
+}
+
 if (saveTempNameBtn) {
   saveTempNameBtn.addEventListener('click', () => {
     const val = tempUsernameInput.value.trim().slice(0, 24);
-    if (!val) return;
+    if (!val || val === tempUsername) return;
     tempUsername = val;
     localStorage.setItem('talklive_tempname', val);
     // Push it to the server for the current/next match.
     registerProfile();
     showToast(t('tempNameSaved'));
     vibrate(15);
+    // Grey the button out until the name is edited again.
+    syncSaveNameBtn();
   });
 }
 
@@ -1587,6 +1603,11 @@ function setCallState(state) {
   if (state === 'searching') startSearchTicker();
   else stopSearchTicker();
   if (!connected) stopQualityMonitor();
+  // Nudge the user toward Ludo only while a call is live.
+  if (typeof scheduleGameNudge === 'function') {
+    if (connected) scheduleGameNudge();
+    else stopGameNudge();
+  }
   if (typeof syncChatHeader === 'function') syncChatHeader();
   syncWakeLock();
 }
@@ -2552,7 +2573,7 @@ chatToggleBtn.addEventListener('click', () => {
   else openChatPanel();
 });
 closeChatBtn.addEventListener('click', closeChatPanel);
-chatOverlay.addEventListener('click', closeChatPanel);
+chatOverlay.addEventListener('click', () => { if (Date.now() < swipeSuppressUntil) return; closeChatPanel(); });
 
 // Swipe right on the panel closes it (matches the slide-in direction).
 let chatTouchStartX = null;
@@ -2575,6 +2596,80 @@ chatPanel.addEventListener('touchend', () => {
   chatTouchStartX = null;
   chatTouchStartY = null;
 });
+
+// --- Edge swipes on the call screen: swipe left → open chat (slides in from
+// the right), swipe right → open settings (slides in from the left). Decided at
+// touchend from start/end deltas with passive listeners and no preventDefault,
+// so vertical scrolling is never interfered with. ---
+let swipeStartX = null;
+let swipeStartY = null;
+let swipeStartT = 0;
+// A short window after an edge-swipe during which overlay clicks are ignored, so
+// the post-touch ghost click can't immediately re-close the panel we just opened.
+let swipeSuppressUntil = 0;
+function panelsAreClosed() {
+  return !chatOpen
+    && !appSettingsPanel.classList.contains('open')
+    && !filtersPanel.classList.contains('open')
+    && gameOverlay.classList.contains('hidden')
+    && !document.querySelector('.modal-overlay:not(.hidden)')
+    && !document.querySelector('.notif-dropdown:not(.hidden)');
+}
+document.addEventListener('touchstart', (e) => {
+  if (e.touches.length !== 1) { swipeStartX = null; return; }
+  // Only active on the call screen (where the chat/settings buttons live) and
+  // when nothing else is open, so it never fights another gesture.
+  if (!stageEl.classList.contains('call-live') || !panelsAreClosed()) { swipeStartX = null; return; }
+  swipeStartX = e.touches[0].clientX;
+  swipeStartY = e.touches[0].clientY;
+  swipeStartT = Date.now();
+}, { passive: true });
+document.addEventListener('touchend', (e) => {
+  if (swipeStartX === null) return;
+  const t = e.changedTouches[0];
+  const dx = t.clientX - swipeStartX;
+  const dy = t.clientY - swipeStartY;
+  const dt = Date.now() - swipeStartT;
+  swipeStartX = null;
+  // A deliberate, mostly-horizontal, reasonably quick flick.
+  if (dt > 700) return;
+  if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.6) return;
+  if (!panelsAreClosed()) return;
+  // Suppress the ghost click the browser fires ~300ms after touchend at the
+  // release point — without this it lands on the freshly-opened panel's overlay
+  // and immediately closes it again.
+  if (dx < 0) {
+    if (!chatToggleBtn.classList.contains('hidden')) { swipeSuppressUntil = Date.now() + 700; openChatPanel(); }
+  } else {
+    if (!appSettingsBtn.classList.contains('hidden')) { swipeSuppressUntil = Date.now() + 700; openAppSettings(); }
+  }
+}, { passive: true });
+
+// --- Periodic "come play Ludo" nudge: while on a live call and the game isn't
+// open, wiggle the game button every 20-30s to invite the user to play. ---
+let gameNudgeTimer = null;
+function scheduleGameNudge() {
+  clearTimeout(gameNudgeTimer);
+  const delay = 20000 + Math.random() * 10000; // 20–30s
+  gameNudgeTimer = setTimeout(() => {
+    const overlayOpen = !gameOverlay.classList.contains('hidden');
+    // Don't nudge if the game's open, or an "it's your move" badge already shows.
+    if (callState === 'connected' && !overlayOpen && !gameBtn.disabled
+        && !gameBtnBadge.classList.contains('is-move')) {
+      gameBtn.classList.remove('game-nudge');
+      void gameBtn.offsetWidth;
+      gameBtn.classList.add('game-nudge');
+      if (soundEnabled) playInviteSound();
+      setTimeout(() => gameBtn.classList.remove('game-nudge'), 1200);
+    }
+    scheduleGameNudge();
+  }, delay);
+}
+function stopGameNudge() {
+  clearTimeout(gameNudgeTimer);
+  gameNudgeTimer = null;
+  gameBtn.classList.remove('game-nudge');
+}
 
 // =====================================================================
 // Ludo mini-game — play with whoever you're connected to. 2 players on
@@ -3273,6 +3368,9 @@ function primeBackGuard() {
 
 let endCallConfirmOpen = false;
 window.addEventListener('popstate', async () => {
+  // An edge swipe that just opened a panel also fires the browser's back
+  // gesture; ignore that trailing popstate so it doesn't re-close the panel.
+  if (Date.now() < swipeSuppressUntil) { primeBackGuard(); return; }
   if (closeTopmostLayer()) { primeBackGuard(); return; }
   // On (or entering) a call: never exit silently — confirm ending first.
   const onCall = callState === 'connected' || callState === 'connecting'
