@@ -695,6 +695,16 @@ io.on('connection', (socket) => {
     tryMatch(socket.id);
   });
 
+  // User-submitted product feedback. Logged for the operator; kept lightweight
+  // (no storage layer yet) but rate-limited implicitly by being a manual action.
+  socket.on('feedback', (payload = {}) => {
+    const text = typeof payload.text === 'string' ? payload.text.trim().slice(0, 1000) : '';
+    if (!text) return;
+    const p = profiles.get(socket.id);
+    const who = p ? `${p.username} (${p.country})` : socket.id;
+    console.log(`[feedback] from ${who}: ${text}`);
+  });
+
   socket.on('reaction', (reaction) => {
     const partnerId = partners.get(socket.id);
     const seeker = profiles.get(socket.id);

@@ -306,6 +306,7 @@ let currentPartnerInterests = [];
 let currentPartner = null;
 let callHistory = [];
 let accountNickname = localStorage.getItem('talklive_nickname') || null;
+let tempUsername = localStorage.getItem('talklive_tempname') || null;
 // Always starts unchecked when the app is opened, regardless of last session.
 let autoCallEnabled = false;
 let wasConnected = false;
@@ -595,6 +596,7 @@ updateSoundToggleUi();
 function openAppSettings() {
   appSettingsPanel.classList.add('open');
   appSettingsOverlay.classList.remove('hidden');
+  if (typeof renderSettingsIdentity === 'function') renderSettingsIdentity();
 }
 
 function closeAppSettings() {
@@ -752,7 +754,116 @@ function renderAccountState() {
     sidePanelAuth.classList.remove('hidden');
   }
   renderAvatarGrid();
+  renderSettingsIdentity();
 }
+
+// --- Lightweight toast for brief confirmations (settings, copy, etc.) ---
+let toastTimer = null;
+function showToast(msg) {
+  let el = document.getElementById('tlToast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'tlToast';
+    el.className = 'tl-toast';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// --- Settings: temporary username, unique User ID, categories, feedback ---
+const tempUsernameInput = document.getElementById('tempUsernameInput');
+const saveTempNameBtn = document.getElementById('saveTempNameBtn');
+const userIdRow = document.getElementById('userIdRow');
+const userIdValue = document.getElementById('userIdValue');
+const settingsAccordion = document.getElementById('settingsAccordion');
+const feedbackBtn = document.getElementById('feedbackBtn');
+const settingsTermsBtn = document.getElementById('settingsTermsBtn');
+const feedbackModal = document.getElementById('feedbackModal');
+const closeFeedbackBtn = document.getElementById('closeFeedbackBtn');
+const feedbackInput = document.getElementById('feedbackInput');
+const feedbackSendBtn = document.getElementById('feedbackSendBtn');
+
+// Show the temporary name in the editor (only when not signed in — a signed-in
+// nickname is edited in the Account panel), and the permanent User ID once
+// logged in.
+function renderSettingsIdentity() {
+  if (tempUsernameInput && document.activeElement !== tempUsernameInput) {
+    tempUsernameInput.value = accountNickname ? '' : (tempUsername || '');
+    tempUsernameInput.disabled = !!accountNickname;
+    tempUsernameInput.placeholder = accountNickname ? accountNickname : t('tempUsernamePlaceholder');
+  }
+  if (userIdRow && userIdValue) {
+    if (accountNickname) {
+      // A permanent, stable, unique ID for the signed-in user.
+      userIdValue.textContent = 'TL-' + getClientId().replace(/-/g, '').slice(0, 12).toUpperCase();
+      userIdRow.classList.remove('hidden');
+    } else {
+      userIdRow.classList.add('hidden');
+    }
+  }
+}
+
+if (saveTempNameBtn) {
+  saveTempNameBtn.addEventListener('click', () => {
+    const val = tempUsernameInput.value.trim().slice(0, 24);
+    if (!val) return;
+    tempUsername = val;
+    localStorage.setItem('talklive_tempname', val);
+    // Push it to the server for the current/next match.
+    registerProfile();
+    showToast(t('tempNameSaved'));
+    vibrate(15);
+  });
+}
+
+if (userIdValue) {
+  userIdValue.addEventListener('click', () => {
+    const text = userIdValue.textContent;
+    if (navigator.clipboard) navigator.clipboard.writeText(text).catch(() => {});
+    showToast(t('userIdCopied'));
+  });
+}
+
+// One-tap expanding accordion categories. Only one open at a time keeps it tidy.
+if (settingsAccordion) {
+  settingsAccordion.addEventListener('click', (e) => {
+    const header = e.target.closest('.acc-header');
+    if (!header) return;
+    const item = header.parentElement;
+    const isOpen = header.getAttribute('aria-expanded') === 'true';
+    settingsAccordion.querySelectorAll('.acc-header').forEach((h) => {
+      h.setAttribute('aria-expanded', 'false');
+      h.parentElement.classList.remove('open');
+    });
+    if (!isOpen) {
+      header.setAttribute('aria-expanded', 'true');
+      item.classList.add('open');
+    }
+  });
+  // Reflect the initial aria-expanded state in the classes.
+  settingsAccordion.querySelectorAll('.acc-header').forEach((h) => {
+    if (h.getAttribute('aria-expanded') === 'true') h.parentElement.classList.add('open');
+  });
+}
+
+// Feedback for Improvement
+if (feedbackBtn) {
+  feedbackBtn.addEventListener('click', () => { feedbackInput.value = ''; openModal(feedbackModal); });
+  closeFeedbackBtn.addEventListener('click', () => closeModal(feedbackModal));
+  feedbackModal.addEventListener('click', (e) => { if (e.target === feedbackModal) closeModal(feedbackModal); });
+  feedbackSendBtn.addEventListener('click', () => {
+    const text = feedbackInput.value.trim().slice(0, 1000);
+    if (!text) { showToast(t('feedbackEmpty')); return; }
+    socket.emit('feedback', { text });
+    closeModal(feedbackModal);
+    showToast(t('feedbackThanks'));
+    vibrate(20);
+  });
+}
+if (settingsTermsBtn) settingsTermsBtn.addEventListener('click', () => openModal(termsModal));
 
 // --- Avatar picker: male/female category, 5 avatars each ---
 function renderAvatarGrid() {
@@ -2086,7 +2197,7 @@ function registerProfile() {
     includeCountries: appliedFilters.includeCountries,
     excludeCountries: appliedFilters.excludeCountries,
     interests: appliedFilters.interests,
-    nickname: accountNickname || undefined,
+    nickname: accountNickname || tempUsername || undefined,
     avatar: myAvatar || undefined,
     hideStatus: !statusVisible,
   });
