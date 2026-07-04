@@ -896,9 +896,8 @@ io.on('connection', (socket) => {
     if (!targetSocket) {
       return socket.emit('call-back-request-result', { ok: false, reason: 'offline' });
     }
-    if (partners.has(targetSocketId)) {
-      return socket.emit('call-back-request-result', { ok: false, reason: 'busy' });
-    }
+    // Deliver even if the target is currently on a call: they get the banner and
+    // can choose to switch (which ends their current call). No 'busy' rejection.
 
     targetSocket.emit('call-back-request', {
       fromClientId: me.clientId,

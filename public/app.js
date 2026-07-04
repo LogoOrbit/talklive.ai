@@ -578,6 +578,18 @@ function playMessageSound() { playTone(950, 0.08, 'triangle', 0.15); }
 function playSendSound() { playTone(660, 0.05, 'sine', 0.14); playTone(990, 0.07, 'sine', 0.13, 0.04); }
 // A soft two-note chime for "it's your turn" in the game.
 function playTurnSound() { playTone(784, 0.1, 'sine', 0.16); playTone(1046, 0.13, 'sine', 0.15, 0.1); }
+// Ludo effects: a rattly roll, a tick per move, a thunk on capture, a fanfare on win.
+function playDiceSound() {
+  playTone(300, 0.05, 'square', 0.1);
+  playTone(420, 0.05, 'square', 0.09, 0.05);
+  playTone(520, 0.06, 'square', 0.09, 0.1);
+}
+function playMoveSound() { playTone(660, 0.05, 'triangle', 0.13); }
+function playCaptureSound() { playTone(520, 0.1, 'sawtooth', 0.14); playTone(300, 0.16, 'sawtooth', 0.13, 0.08); }
+function playWinSound() {
+  [523, 659, 784, 1046].forEach((f, i) => playTone(f, 0.16, 'sine', 0.17, i * 0.11));
+}
+function playInviteSound() { playTone(880, 0.09, 'sine', 0.15); playTone(1174, 0.11, 'sine', 0.14, 0.09); }
 
 function updateSoundToggleUi() {
   soundToggle.checked = soundEnabled;
@@ -1938,9 +1950,13 @@ function startReconnectWindow() {
   }, RECONNECT_WINDOW_MS);
 }
 
+// ICE restart, throttled so it can retry (every 5s) without spamming offers.
+// Both peers may call this; offer glare is resolved politely in handleSignal.
+let lastIceRestartAt = 0;
 function attemptIceRestart(peer) {
-  if (iceRestartAttempted) return;
-  iceRestartAttempted = true;
+  const now = Date.now();
+  if (now - lastIceRestartAt < 5000) return;
+  lastIceRestartAt = now;
   peer.createOffer({ iceRestart: true })
     .then((offer) => peer.setLocalDescription(offer))
     .then(() => socket.emit('signal', { type: 'offer', sdp: peer.localDescription }))
@@ -2003,17 +2019,24 @@ function createPeerConnection(isInitiator) {
       iceRestartAttempted = false;
     } else if (iceState === 'checking') {
       if (!mediaConnected) setConnection('orange', 'connConnecting');
-    } else if (iceState === 'disconnected') {
+    } else if (iceState === 'disconnected' || iceState === 'failed') {
       // Peer degraded or (temporarily) went away — try to recover for 30s.
       setConnection('orange', 'connReconnecting');
       if (mediaConnected) setStatusText('statusReconnecting');
       startReconnectWindow();
-      if (isInitiator) attemptIceRestart(peer);
-    } else if (iceState === 'failed') {
-      setConnection('orange', 'connReconnecting');
-      if (mediaConnected) setStatusText('statusReconnecting');
-      startReconnectWindow();
-      if (isInitiator) attemptIceRestart(peer);
+      // The initiator (impolite peer) restarts immediately. The answerer only
+      // restarts if it's still broken a few seconds later — this covers the case
+      // where the initiator's own network dropped and its restart never sent,
+      // while glare between the two restarts is handled politely in handleSignal.
+      if (isInitiator) {
+        attemptIceRestart(peer);
+      } else {
+        setTimeout(() => {
+          if (pc === peer && (peer.iceConnectionState === 'disconnected' || peer.iceConnectionState === 'failed')) {
+            attemptIceRestart(peer);
+          }
+        }, 3000);
+      }
     } else if (iceState === 'closed') {
       setConnection('red', 'connDisconnected');
       clearConnectWatchdog();
@@ -2088,7 +2111,22 @@ async function handleSignal(data) {
   if (!pc) return;
   try {
     if (data.type === 'offer') {
-      await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+      // Glare: an offer arrived while we have our own outstanding offer (both
+      // sides fired an ICE restart). The impolite peer (call initiator) keeps
+      // its own offer and ignores theirs; the polite peer rolls back and accepts.
+      if (pc.signalingState !== 'stable') {
+        if (amCallInitiator) return;
+        try {
+          await Promise.all([
+            pc.setLocalDescription({ type: 'rollback' }),
+            pc.setRemoteDescription(new RTCSessionDescription(data.sdp)),
+          ]);
+        } catch (e) {
+          await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+        }
+      } else {
+        await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+      }
       await flushPendingCandidates();
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
@@ -2557,8 +2595,23 @@ const gameCancelBtn = document.getElementById('gameCancelBtn');
 const gameAcceptBtn = document.getElementById('gameAcceptBtn');
 const gameDeclineBtn = document.getElementById('gameDeclineBtn');
 const ludoRematchBtn = document.getElementById('ludoRematchBtn');
+const ludoPlayers = document.getElementById('ludoPlayers');
+const ludoMeAvatar = document.getElementById('ludoMeAvatar');
+const ludoMeName = document.getElementById('ludoMeName');
+const ludoMeActivity = document.getElementById('ludoMeActivity');
+const ludoOppAvatar = document.getElementById('ludoOppAvatar');
+const ludoOppName = document.getElementById('ludoOppName');
+const ludoOppActivity = document.getElementById('ludoOppActivity');
+const ludoPlayerMe = document.getElementById('ludoPlayerMe');
+const ludoPlayerOpp = document.getElementById('ludoPlayerOpp');
+const ludoBoardArea = document.getElementById('ludoBoardArea');
+const ludoDisconnectBanner = document.getElementById('ludoDisconnectBanner');
+const ludoEndConfirmModal = document.getElementById('ludoEndConfirmModal');
+const ludoContinueBtn = document.getElementById('ludoContinueBtn');
+const ludoEndBtn = document.getElementById('ludoEndBtn');
 
 let amCallInitiator = false;
+let ludoOppActivityTimer = null;
 
 // 52-cell main loop as [row, col] on the 15x15 board (clockwise from Red's start).
 const LUDO_MAIN = [
@@ -2711,6 +2764,9 @@ function broadcastLudo() {
 function ludoRoll() {
   if (!ludoState || ludoStage !== 'playing') return;
   if (ludoState.turn !== myPlayerIndex || ludoState.phase !== 'roll') return;
+  // Tell the partner I'm rolling so their status shows "rolling the dice…".
+  socket.emit('game', { type: 'rolling' });
+  playDiceSound();
   const v = 1 + Math.floor(Math.random() * 6);
   ludoState.die = v;
   ludoState.sixes = v === 6 ? (ludoState.sixes || 0) + 1 : 0;
@@ -2740,8 +2796,10 @@ function ludoRoll() {
 }
 
 function ludoDoMove(ti) {
+  socket.emit('game', { type: 'moving' });
   const captured = ludoApplyMove(ludoState, myPlayerIndex, ti);
-  if (captured) vibrate(40);
+  if (captured) { vibrate(40); playCaptureSound(); }
+  else playMoveSound();
   ludoAfterAction(ludoState, myPlayerIndex, captured);
   broadcastLudo();
   updateGameUI();
@@ -2792,10 +2850,57 @@ function renderLudoTokens() {
   });
 }
 
+// Live "opponent is rolling the dice" hint window (ms epoch until which we show
+// it, set when the partner emits a transient 'rolling'/'moving' game event).
+let ludoRollingHintUntil = 0;
+let ludoMovingHintUntil = 0;
+
+// The player status bar: avatar, name, whose turn, and what the opponent is
+// doing right now — so you never have to guess what's happening.
+function renderLudoPlayers() {
+  const playing = ludoStage === 'playing' && ludoState;
+  ludoPlayers.classList.toggle('hidden', !playing);
+  if (!playing) return;
+
+  const oppName = currentPartner ? currentPartner.username : '—';
+  ludoMeName.textContent = t('you');
+  ludoOppName.textContent = oppName;
+  // Colour each chip by that player's actual Ludo colour (0 = red, 1 = yellow).
+  ludoMeAvatar.className = 'ludo-player-avatar p' + myPlayerIndex;
+  ludoOppAvatar.className = 'ludo-player-avatar p' + (1 - myPlayerIndex);
+  ludoMeAvatar.textContent = ((myProfile && myProfile.username ? myProfile.username[0] : t('you')[0]) || 'Y').toUpperCase();
+  ludoOppAvatar.textContent = ((oppName && oppName[0]) || '?').toUpperCase();
+
+  const live = ludoState.phase !== 'over';
+  const myTurn = live && ludoState.turn === myPlayerIndex;
+  const oppTurn = live && ludoState.turn !== myPlayerIndex;
+  ludoPlayerMe.classList.toggle('active', myTurn);
+  ludoPlayerOpp.classList.toggle('active', oppTurn);
+
+  // What I should do.
+  ludoMeActivity.textContent = myTurn
+    ? (ludoState.phase === 'roll' ? t('ludoRollNow') : t('ludoTapPiece'))
+    : '';
+
+  // What the opponent is doing — transient hints win briefly, then fall back to
+  // the state-derived activity.
+  let act = '';
+  if (oppTurn) {
+    if (Date.now() < ludoRollingHintUntil) act = t('ludoActRolling');
+    else if (Date.now() < ludoMovingHintUntil) act = t('ludoActMoving');
+    else if (ludoState.phase === 'roll') act = t('ludoActThinking');
+    else act = t('ludoActMoving');
+  } else if (ludoState.phase === 'over') {
+    act = '';
+  }
+  ludoOppActivity.textContent = act;
+}
+
 function updateGameUI() {
   const name = currentPartner ? currentPartner.username : t('chat');
   [gameInviteBtn, gameCancelBtn, gameAcceptBtn, gameDeclineBtn, ludoRematchBtn].forEach((b) => b.classList.add('hidden'));
   ludoDie.classList.remove('active');
+  renderLudoPlayers();
 
   if (ludoStage === 'idle') {
     gameStatus.textContent = t('ludoIdlePrompt', { name });
@@ -2816,6 +2921,11 @@ function updateGameUI() {
     if (ludoState.phase === 'over') {
       gameStatus.textContent = ludoState.winner === myPlayerIndex ? t('ludoYouWin') : t('ludoTheyWin', { name });
       ludoDieFace.textContent = '🏆';
+      if (!ludoOverAnnounced) {
+        ludoOverAnnounced = true;
+        if (ludoState.winner === myPlayerIndex) { playWinSound(); vibrate([40, 60, 40, 60, 80]); }
+        else { playHangupSound(); }
+      }
     } else {
       ludoDieFace.textContent = ludoState.die ? String(ludoState.die) : '🎲';
       if (myTurn) {
@@ -2853,23 +2963,63 @@ function updateGameUI() {
   ludoWasMyTurn = mine;
 }
 
+let ludoOverAnnounced = false;
+
 function openGameOverlay() {
   buildLudoBoard();
+  clearGameDisconnect();
   gameOverlay.classList.remove('hidden');
   gameBtnBadge.classList.add('hidden');
   gameBtnBadge.classList.remove('is-move');
 }
 function closeGameOverlay() {
   gameOverlay.classList.add('hidden');
+  closeModal(ludoEndConfirmModal);
 }
 function resetLudo() {
   ludoStage = 'idle';
   ludoState = null;
   ludoWasMyTurn = false;
+  ludoOverAnnounced = false;
+  clearGameDisconnect();
   gameBtnBadge.classList.add('hidden');
   gameBtnBadge.classList.remove('is-move');
   gameBtnBadge.textContent = '!';
   closeGameOverlay();
+}
+
+// Grayscale the board + show a red message when the call itself drops mid-game.
+function markGamePartnerGone() {
+  if (gameOverlay.classList.contains('hidden')) { resetLudo(); return; }
+  ludoBoardArea.classList.add('is-dead');
+  ludoDie.classList.remove('active');
+  ludoDisconnectBanner.textContent = t('ludoPartnerHungUp');
+  ludoDisconnectBanner.classList.remove('hidden');
+  gameStatus.textContent = t('ludoPartnerHungUp');
+  ludoStage = 'gone';
+  playHangupSound();
+}
+function clearGameDisconnect() {
+  ludoBoardArea.classList.remove('is-dead');
+  ludoDisconnectBanner.classList.add('hidden');
+}
+
+// The partner deliberately left the game (closed their window / End Game).
+function markGamePartnerLeft() {
+  ludoDisconnectBanner.textContent = t('ludoPartnerLeft');
+  ludoDisconnectBanner.classList.remove('hidden');
+  ludoBoardArea.classList.add('is-dead');
+  gameStatus.textContent = t('ludoPartnerLeft');
+  ludoStage = 'gone';
+  playHangupSound();
+  // Auto-clear back to the invite screen after a moment so a rematch is easy.
+  setTimeout(() => {
+    if (ludoStage === 'gone' && callState === 'connected') {
+      ludoStage = 'idle'; ludoState = null; ludoOverAnnounced = false;
+      clearGameDisconnect();
+      updateGameUI();
+    }
+  }, 2600);
 }
 
 // Host (call initiator) builds the authoritative initial state and shares it.
@@ -2877,6 +3027,8 @@ function startLudoGame() {
   ludoState = ludoInitialState();
   myPlayerIndex = 0;
   ludoStage = 'playing';
+  ludoOverAnnounced = false;
+  clearGameDisconnect();
   broadcastLudo();
   openGameOverlay();
   updateGameUI();
@@ -2889,9 +3041,31 @@ function onLudoHandshake() {
   } else {
     myPlayerIndex = 1;
     ludoStage = 'playing';
+    ludoOverAnnounced = false;
+    clearGameDisconnect();
     openGameOverlay();
     updateGameUI();
   }
+}
+
+// Closing the game window mid-play asks for confirmation first (and, if the
+// user confirms, tells the partner the game ended). Any other stage just closes.
+function isGameActive() {
+  return ludoStage === 'playing' && ludoState && ludoState.phase !== 'over';
+}
+function attemptCloseGame() {
+  if (isGameActive()) {
+    openModal(ludoEndConfirmModal);
+    return false;
+  }
+  if (ludoStage === 'playing' || ludoStage === 'inviting' || ludoStage === 'invited') {
+    // A finished/over game or a pending invite — leave cleanly.
+    socket.emit('game', { type: 'left' });
+    resetLudo();
+  } else {
+    closeGameOverlay();
+  }
+  return true;
 }
 
 gameBtn.addEventListener('click', () => {
@@ -2899,12 +3073,19 @@ gameBtn.addEventListener('click', () => {
   openGameOverlay();
   updateGameUI();
 });
-closeGameBtn.addEventListener('click', closeGameOverlay);
+closeGameBtn.addEventListener('click', attemptCloseGame);
+ludoContinueBtn.addEventListener('click', () => closeModal(ludoEndConfirmModal));
+ludoEndBtn.addEventListener('click', () => {
+  closeModal(ludoEndConfirmModal);
+  socket.emit('game', { type: 'left' });
+  resetLudo();
+});
 ludoDie.addEventListener('click', ludoRoll);
 
 gameInviteBtn.addEventListener('click', () => {
   if (callState !== 'connected') return;
   ludoStage = 'inviting';
+  playInviteSound();
   socket.emit('game', { type: 'invite' });
   updateGameUI();
 });
@@ -2956,13 +3137,38 @@ socket.on('game', (data) => {
       // Open the board on the first state (game start); afterwards just update —
       // don't yank a closed board back open, so the "your move" badge can show.
       const firstState = ludoStage !== 'playing';
+      if (firstState) ludoOverAnnounced = false;
       ludoStage = 'playing';
       ludoState = data.state;
+      // A fresh state means the partner's move landed — clear transient hints.
+      ludoMovingHintUntil = 0;
       buildLudoBoard();
+      clearGameDisconnect();
       if (firstState) openGameOverlay();
       updateGameUI();
       break;
     }
+    case 'rolling':
+      // Partner tapped the die — show "rolling the dice…" briefly + rattle sound.
+      if (ludoStage === 'playing') {
+        ludoRollingHintUntil = Date.now() + 900;
+        playDiceSound();
+        updateGameUI();
+        setTimeout(updateGameUI, 950);
+      }
+      break;
+    case 'moving':
+      if (ludoStage === 'playing') {
+        ludoMovingHintUntil = Date.now() + 900;
+        updateGameUI();
+        setTimeout(updateGameUI, 950);
+      }
+      break;
+    case 'left':
+      // Partner closed their game window / chose End Game.
+      if (ludoStage === 'playing' || ludoStage === 'gone') markGamePartnerLeft();
+      else { resetLudo(); }
+      break;
     case 'rematch':
       if (amCallInitiator) startLudoGame();
       break;
@@ -3018,6 +3224,78 @@ socket.on('typing', () => {
   }, 3000);
 });
 
+// --- Reusable confirm dialog ---
+const confirmModal = document.getElementById('confirmModal');
+const confirmModalTitle = document.getElementById('confirmModalTitle');
+const confirmModalText = document.getElementById('confirmModalText');
+const confirmOkBtn = document.getElementById('confirmOkBtn');
+const confirmCancelBtn = document.getElementById('confirmCancelBtn');
+let confirmOnOk = null;
+function showConfirm({ title, text, textVars, okKey, cancelKey, okClass }) {
+  confirmModalTitle.textContent = t(title);
+  confirmModalText.textContent = t(text, textVars);
+  confirmOkBtn.textContent = t(okKey);
+  confirmCancelBtn.textContent = t(cancelKey || 'cancel');
+  confirmOkBtn.className = 'btn ' + (okClass || 'btn-danger');
+  openModal(confirmModal);
+  return new Promise((resolve) => { confirmOnOk = resolve; });
+}
+confirmOkBtn.addEventListener('click', () => { closeModal(confirmModal); if (confirmOnOk) { confirmOnOk(true); confirmOnOk = null; } });
+confirmCancelBtn.addEventListener('click', () => { closeModal(confirmModal); if (confirmOnOk) { confirmOnOk(false); confirmOnOk = null; } });
+confirmModal.addEventListener('click', (e) => {
+  if (e.target === confirmModal) { closeModal(confirmModal); if (confirmOnOk) { confirmOnOk(false); confirmOnOk = null; } }
+});
+
+// --- Mobile back button: close the topmost open layer instead of exiting the
+// app; confirm before ending a live call. Uses a single re-armed history guard
+// so every back press while something is open (or a call is live) is caught. ---
+function closeTopmostLayer() {
+  // A visible generic modal (report, feedback, account, terms, confirm, ludo-end…)
+  const openModalEl = Array.from(document.querySelectorAll('.modal-overlay:not(.hidden)')).pop();
+  if (openModalEl) {
+    if (openModalEl === confirmModal && confirmOnOk) { confirmOnOk(false); confirmOnOk = null; }
+    closeModal(openModalEl);
+    return true;
+  }
+  if (!gameOverlay.classList.contains('hidden')) { attemptCloseGame(); return true; }
+  if (chatOpen) { closeChatPanel(); return true; }
+  if (appSettingsPanel.classList.contains('open')) { closeAppSettings(); return true; }
+  if (filtersPanel.classList.contains('open')) { closeFilters(); return true; }
+  const openDropdown = document.querySelector('.notif-dropdown:not(.hidden)');
+  if (openDropdown) { openDropdown.classList.add('hidden'); return true; }
+  if (!callBackBanner.classList.contains('hidden')) { callBackDeclineBtn.click(); return true; }
+  return false;
+}
+
+function primeBackGuard() {
+  try { history.pushState({ tlGuard: true }, ''); } catch (e) { /* history unavailable */ }
+}
+
+let endCallConfirmOpen = false;
+window.addEventListener('popstate', async () => {
+  if (closeTopmostLayer()) { primeBackGuard(); return; }
+  // On (or entering) a call: never exit silently — confirm ending first.
+  const onCall = callState === 'connected' || callState === 'connecting'
+    || callState === 'reconnecting' || callState === 'searching';
+  if (onCall) {
+    primeBackGuard();
+    if (endCallConfirmOpen) return;
+    endCallConfirmOpen = true;
+    const ok = await showConfirm({
+      title: 'confirmEndCallTitle', text: 'confirmEndCallText',
+      okKey: 'hangUp', cancelKey: 'keepTalking', okClass: 'btn-danger',
+    });
+    endCallConfirmOpen = false;
+    if (ok) {
+      socket.emit('leave');
+      goIdleOnCallScreen('statusYouLeft');
+    }
+    return;
+  }
+  // Idle with nothing open — let a subsequent back actually leave the page.
+});
+primeBackGuard();
+
 // --- Socket events ---
 socket.on('online-count', (count) => {
   lastOnlineCount = count;
@@ -3049,6 +3327,10 @@ socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
   // A deferred-UI callback (rule 11) is on the friends menu with a spinner —
   // now that the peer accepted, restore the icon and enter the call screen.
   restoreCallbackSpinner();
+  hideCallBackBanner();
+  // Switching directly from a previous call (e.g. accepting a callback while
+  // already connected) — tear the old peer down first so it never leaks.
+  if (pc) teardownPeer();
   if (typeof friendsDropdown !== 'undefined') closeModal(friendsDropdown);
   enterCallUI();
   // Ludo colour roles are fixed by who initiated the call; clear any old game.
@@ -3133,8 +3415,10 @@ socket.on('banned', () => {
 });
 
 // --- Call back: re-connect directly with someone from Call History ---
+let pendingCallBackName = null;
 function showCallBackBanner(fromClientId, username) {
   pendingCallBackFrom = fromClientId;
+  pendingCallBackName = username;
   callBackBannerText.innerHTML = `${ICONS.call} ${t('notifWantsCallback', { name: escapeHtml(username) })}`;
   callBackBanner.classList.remove('hidden');
 }
@@ -3162,10 +3446,20 @@ function restoreCallbackSpinner() {
   activeCallbackSpinner = null;
 }
 
+// Anti-spam: at most one call-back attempt every 10s.
+const CALLBACK_COOLDOWN_MS = 10000;
+let lastCallbackAt = 0;
+
 async function requestCallBack(targetClientId, targetUsername, opts = {}) {
   if (isSearching) {
     restoreCallbackSpinner();
     showError(t('errFinishCall'));
+    return;
+  }
+  const waitMs = CALLBACK_COOLDOWN_MS - (Date.now() - lastCallbackAt);
+  if (waitMs > 0) {
+    restoreCallbackSpinner();
+    showToast(t('callbackCooldown', { s: Math.ceil(waitMs / 1000) }));
     return;
   }
   clearError();
@@ -3179,6 +3473,7 @@ async function requestCallBack(targetClientId, targetUsername, opts = {}) {
 
   registerProfile();
   isSearching = true;
+  lastCallbackAt = Date.now();
   // deferUI keeps us on the friends menu with the spinner until the peer
   // accepts; the call screen is entered from the 'matched' handler instead.
   if (!opts.deferUI) {
@@ -3194,18 +3489,29 @@ async function requestCallBack(targetClientId, targetUsername, opts = {}) {
 }
 
 async function acceptCallBack(fromClientId) {
-  if (isSearching) {
-    socket.emit('call-back-respond', { fromClientId, accept: false });
-    showError(t('errFinishBeforeAccept'));
-    return;
-  }
   clearError();
+  // If already on a live call, warn that accepting will end it and switch.
+  if (callState === 'connected') {
+    const name = pendingCallBackName || (currentPartner && currentPartner.username) || t('you');
+    const ok = await showConfirm({
+      title: 'callSwitchTitle', text: 'callSwitchText', textVars: { name },
+      okKey: 'callSwitchConfirm', cancelKey: 'keepTalking', okClass: 'btn-danger',
+    });
+    if (!ok) { socket.emit('call-back-respond', { fromClientId, accept: false }); return; }
+  }
   try {
     await getMic();
   } catch (e) {
     socket.emit('call-back-respond', { fromClientId, accept: false });
     showError(t('errMicAccept'));
     return;
+  }
+
+  // Drop whatever we were doing (a live call, or an in-progress search) so we
+  // can connect to the incoming caller instantly — even mid-search.
+  if (callState === 'connected' || isSearching) {
+    socket.emit('leave');
+    teardownPeer();
   }
 
   registerProfile();
