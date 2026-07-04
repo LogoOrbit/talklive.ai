@@ -620,6 +620,30 @@ appSettingsBtn.addEventListener('click', openAppSettings);
 closeAppSettingsBtn.addEventListener('click', closeAppSettings);
 appSettingsOverlay.addEventListener('click', () => { if (Date.now() < swipeSuppressUntil) return; closeAppSettings(); });
 
+// Swipe to dismiss the settings panel in its own slide-in direction: it enters
+// from the left, so a leftward swipe closes it (rightward in RTL layouts).
+let settingsTouchStartX = null;
+let settingsTouchStartY = null;
+appSettingsPanel.addEventListener('touchstart', (e) => {
+  settingsTouchStartX = e.touches[0].clientX;
+  settingsTouchStartY = e.touches[0].clientY;
+}, { passive: true });
+appSettingsPanel.addEventListener('touchmove', (e) => {
+  if (settingsTouchStartX === null) return;
+  const dx = e.touches[0].clientX - settingsTouchStartX;
+  const dy = e.touches[0].clientY - settingsTouchStartY;
+  const closeDir = document.documentElement.dir === 'rtl' ? 1 : -1;
+  // A mostly-horizontal swipe toward the panel's edge, past a threshold → close.
+  if (dx * closeDir > 70 && Math.abs(dx) > Math.abs(dy)) {
+    settingsTouchStartX = null;
+    closeAppSettings();
+  }
+}, { passive: true });
+appSettingsPanel.addEventListener('touchend', () => {
+  settingsTouchStartX = null;
+  settingsTouchStartY = null;
+});
+
 // --- Filters side panel: who you get matched with ---
 function openFilters() {
   filtersPanel.classList.add('open');
@@ -3412,6 +3436,21 @@ window.addEventListener('popstate', async () => {
   // Idle with nothing open — let a subsequent back actually leave the page.
 });
 primeBackGuard();
+
+// Guard against an *accidental* tab close, refresh, or navigation away while the
+// user is actively engaged — a live/searching call or a game in progress. The
+// browser shows its native "Leave site?" prompt; we only arm it when there's
+// something to lose, so idle browsing is never nagged.
+window.addEventListener('beforeunload', (e) => {
+  const onCall = callState === 'connected' || callState === 'connecting'
+    || callState === 'reconnecting' || callState === 'searching';
+  const inGame = typeof ludoStage !== 'undefined' && ludoStage === 'playing';
+  if (onCall || inGame) {
+    e.preventDefault();
+    e.returnValue = '';
+    return '';
+  }
+});
 
 // --- Socket events ---
 socket.on('online-count', (count) => {
