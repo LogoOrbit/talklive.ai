@@ -25,6 +25,7 @@ function defaults() {
     feedback: [], // { id, ts, username, country, text }
     errors: [], // { id, ts, source, message, stack, url, username, country, count }
     auditLog: [], // { ts, ip, action, detail }
+    transcripts: [], // { ts, pair, from, fromClientId, to, toClientId, country, text, kind }
     accountsRegistry: {}, // usernameLower -> details
     analytics: {
       totals: { visits: 0, connections: 0, matches: 0, messages: 0, reports: 0, accounts: 0 },
@@ -173,6 +174,15 @@ function recordTopics(text) {
   }
 }
 
+// Full text-chat transcripts, kept for owner moderation (disclosed in the
+// privacy policy). Voice is peer-to-peer and never passes through the server.
+const MAX_TRANSCRIPT = 5000;
+function addTranscript(entry) {
+  data.transcripts.unshift({ ts: Date.now(), ...entry });
+  if (data.transcripts.length > MAX_TRANSCRIPT) data.transcripts.pop();
+  save();
+}
+
 // --- Reports / feedback / errors ---
 
 function addReport(entry) {
@@ -294,6 +304,7 @@ module.exports = {
   recordPeakOnline,
   recordFeature,
   recordTopics,
+  addTranscript,
   addReport,
   reportCountFor,
   addFeedback,

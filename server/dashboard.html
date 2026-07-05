@@ -212,7 +212,7 @@ function hbars(el,entries,color){
 }
 
 /* ---------- dashboard shell ---------- */
-const TABS=[['overview','Overview'],['live','Live Users'],['reports','Reports'],['bans','Bans'],['accounts','Accounts'],['errors','Errors'],['feedback','Feedback'],['audit','Audit Log'],['settings','Maintenance']];
+const TABS=[['overview','Overview'],['live','Live Users'],['reports','Reports'],['bans','Bans'],['chats','Chats'],['accounts','Accounts'],['errors','Errors'],['feedback','Feedback'],['audit','Audit Log'],['settings','Maintenance']];
 let tab='overview',timer=null,counts={};
 function renderNav(){
   $('#nav').innerHTML=TABS.map(([id,label])=>{
@@ -231,6 +231,7 @@ async function load(){
     else if(tab==='live')await viewLive();
     else if(tab==='reports')await viewReports();
     else if(tab==='bans')await viewBans();
+    else if(tab==='chats')await viewChats();
     else if(tab==='accounts')await viewAccounts();
     else if(tab==='errors')await viewErrors();
     else if(tab==='feedback')await viewFeedback();
@@ -326,6 +327,26 @@ async function viewBans(){
   <td>${active?`<div class="rowbtns"><button onclick="unban('${b.id}')">Lift ban</button></div>`:''}</td></tr>`;}).join('')||'<tr><td colspan="6" class="muted">No bans on record.</td></tr>'}</table></div>`;
 }
 window.unban=async(id)=>{try{await post('unban',{banId:id});load();}catch(e){alert(e.message);}};
+
+let chatQuery='';
+async function viewChats(){
+  const r=await api('transcripts'+(chatQuery?'?q='+encodeURIComponent(chatQuery):''));
+  // Group consecutive messages of the same conversation for readability.
+  $('#main').innerHTML=`<div class="card"><h2>💬 Chat transcripts <span class="sub">${num(r.total)} messages stored · text chat only, voice is peer-to-peer and never recorded</span></h2>
+  <div style="display:flex;gap:8px;margin-bottom:12px;max-width:420px">
+    <input id="chatQ" placeholder="Search by username, ID or text…" value="${esc(chatQuery)}">
+    <button class="btn" style="width:auto;margin:0" id="chatQBtn">Search</button>
+  </div>
+  <table><tr><th>When</th><th>From → To</th><th>Type</th><th>Message</th><th></th></tr>
+  ${r.messages.map(m=>`<tr><td style="white-space:nowrap">${ago(m.ts)}<br><span class="muted">${fmtTs(m.ts)}</span></td>
+  <td><b>${esc(m.from)}</b> → ${esc(m.to)}<br><span class="muted">${esc(m.country||'')}</span></td>
+  <td>${m.kind==='friend'?'<span class="pill info">Friends</span>':'<span class="pill warn">Stranger</span>'}</td>
+  <td style="max-width:420px;overflow-wrap:anywhere">${esc(m.text)}</td>
+  <td><div class="rowbtns"><button class="danger" onclick="banUser('${esc(m.fromClientId)}','','${esc(m.from)}','${esc(m.country||'')}','')">Ban sender…</button></div></td></tr>`).join('')||'<tr><td colspan="5" class="muted">No chat messages recorded yet.</td></tr>'}</table></div>`;
+  const go=()=>{chatQuery=$('#chatQ').value.trim();load();};
+  $('#chatQBtn').onclick=go;
+  $('#chatQ').addEventListener('keydown',e=>{if(e.key==='Enter')go();});
+}
 
 async function viewAccounts(){
   const r=await api('accounts');

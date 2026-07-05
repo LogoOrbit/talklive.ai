@@ -21,12 +21,6 @@ services:
         sync: false
       - key: SMTP_PASS
         sync: false
-      - key: DATA_DIR
-        value: /var/data
-    # Persistent disk so dashboard analytics, bans and reports survive deploys.
-    # NOTE: disks require a paid Render plan; without one, data resets on each
-    # deploy but the dashboard still works.
-    disk:
-      name: talklive-data
-      mountPath: /var/data
-      sizeGB: 1
+    # Free plan: no persistent disk, so the JSON store lives on the ephemeral
+    # filesystem (./data). Data survives normal running but resets when Render
+    # redeploys or restarts the service.

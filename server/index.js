@@ -911,8 +911,21 @@ io.on('connection', (socket) => {
         return socket.emit('chat-blocked', { reason: 'link' });
       }
       store.recordFeature('chat_message');
-      // Aggregate anonymous keywords only — no transcripts, no identities.
       store.recordTopics(text);
+      const me = profiles.get(socket.id);
+      const them = profiles.get(partnerId);
+      if (me && them) {
+        store.addTranscript({
+          kind: 'stranger',
+          pair: pairKey(me.clientId, them.clientId),
+          from: me.username,
+          fromClientId: me.clientId,
+          to: them.username,
+          toClientId: them.clientId,
+          country: me.countryName,
+          text: text.trim().slice(0, 1000),
+        });
+      }
       io.to(partnerId).emit('chat-message', { text: text.slice(0, 1000) });
     }
   });
@@ -1025,6 +1038,17 @@ io.on('connection', (socket) => {
       return socket.emit('chat-blocked', { reason: 'link' });
     }
     const trimmed = text.trim().slice(0, 1000);
+    const friendInfo = (friends.get(me.clientId) || new Map()).get(toClientId);
+    store.addTranscript({
+      kind: 'friend',
+      pair: pairKey(me.clientId, toClientId),
+      from: me.username,
+      fromClientId: me.clientId,
+      to: friendInfo ? friendInfo.username : toClientId,
+      toClientId,
+      country: me.countryName,
+      text: trimmed,
+    });
     const key = pairKey(me.clientId, toClientId);
     if (!friendChats.has(key)) friendChats.set(key, []);
     const msg = { from: me.clientId, text: trimmed, ts: Date.now() };

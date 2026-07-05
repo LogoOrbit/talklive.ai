@@ -338,6 +338,20 @@ function createAdmin({ io, getRuntime, kickBanned }) {
     res.json({ accounts });
   });
 
+  // Chat transcripts, filterable by username/clientId substring, grouped into
+  // conversations client-side.
+  router.get('/api/transcripts', (req, res) => {
+    const q = String(req.query.q || '').toLowerCase();
+    let list = store.data.transcripts;
+    if (q) {
+      list = list.filter((m) => (m.from || '').toLowerCase().includes(q)
+        || (m.to || '').toLowerCase().includes(q)
+        || (m.fromClientId || '').toLowerCase().includes(q)
+        || (m.text || '').toLowerCase().includes(q));
+    }
+    res.json({ messages: list.slice(0, 500), total: store.data.transcripts.length });
+  });
+
   router.get('/api/audit', (req, res) => {
     res.json({ audit: store.data.auditLog.slice(0, 300) });
   });
