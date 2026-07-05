@@ -411,6 +411,11 @@ function makeCountryMultiSelect(searchInput, resultsEl, chipsEl, set, getOther) 
           if (set.has(code)) {
             set.delete(code);
           } else {
+            // Free tier: each country list is capped; premium is unlimited.
+            if (!isPremiumUser && set.size >= freeLimits.countries) {
+              showPremiumUpsell(t('premiumCountryLimit', { n: freeLimits.countries }));
+              return;
+            }
             set.add(code);
             const other = getOther();
             if (other.set.delete(code)) other.renderChips();
@@ -3712,3 +3717,104 @@ setState('idle');
 setStatusText('statusIdle');
 setSubText('subIdle');
 refreshNetStatus();
+
+// --- Premium (TalkLive Plus) -------------------------------------------------
+// Free-tier limits arrive from the server with every register; premium users
+// (paid via Paddle on /pricing) get everything unlocked. The server enforces
+// all limits — this state only drives the UI.
+let isPremiumUser = false;
+let freeLimits = { countries: 3, friends: 10, matchDelaySeconds: 5 };
+
+socket.on('premium-status', ({ premium, limits } = {}) => {
+  isPremiumUser = !!premium;
+  if (limits) {
+    freeLimits = {
+      countries: limits.countries || 3,
+      friends: limits.friends || 10,
+      matchDelaySeconds: Math.round((limits.matchDelayMs || 5000) / 1000),
+    };
+  }
+  updatePremiumUi();
+});
+
+function updatePremiumUi() {
+  // "👑 Premium" locks/hints show only on the free tier.
+  document.querySelectorAll('.premium-lock').forEach((el) => el.classList.toggle('hidden', isPremiumUser));
+}
+updatePremiumUi();
+
+function showPremiumUpsell(message) {
+  if (confirm(`${message}\n\n${t('premiumUpsellGo')}`)) {
+    window.location.href = '/pricing';
+  }
+}
+
+// Gender preference is premium-only. Intercept taps on Male/Female in the
+// capture phase so the pill never flips for free users.
+prefGenderGroup.addEventListener('click', (e) => {
+  const pill = e.target.closest('.pill');
+  if (!pill || isPremiumUser || pill.dataset.value === 'any') return;
+  e.stopPropagation();
+  e.preventDefault();
+  showPremiumUpsell(t('premiumGenderLocked'));
+}, true);
+
+// --- Add friend manually by username or unique ID ---------------------------
+const addFriendByIdInput = document.getElementById('addFriendByIdInput');
+const addFriendByIdBtn = document.getElementById('addFriendByIdBtn');
+
+function submitAddFriendById() {
+  const q = addFriendByIdInput.value.trim();
+  if (!q) return;
+  addFriendByIdBtn.disabled = true;
+  socket.emit('add-friend-by-id', { query: q });
+}
+addFriendByIdBtn.addEventListener('click', submitAddFriendById);
+addFriendByIdInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    submitAddFriendById();
+  }
+});
+
+socket.on('add-friend-by-id-result', ({ ok, sent, alreadyFriends, username, reason, limit } = {}) => {
+  addFriendByIdBtn.disabled = false;
+  if (ok && alreadyFriends) {
+    showToast(t('alreadyFriendsWith', { name: username }));
+    addFriendByIdInput.value = '';
+  } else if (ok && sent) {
+    showToast(t('friendRequestSentTo', { name: username }));
+    addFriendByIdInput.value = '';
+  } else if (reason === 'limit') {
+    showPremiumUpsell(t('premiumFriendLimit', { n: limit || freeLimits.friends }));
+  } else if (reason === 'blocked') {
+    showToast(t('friendAddBlocked'));
+  } else {
+    showToast(t('friendNotFound'));
+  }
+});
+
+// Friend-limit errors from the normal in-call "Add friend" flow.
+socket.on('friend-request-result', ({ ok, limitReached } = {}) => {
+  if (!ok && limitReached) {
+    addFriendBtn.classList.remove('added');
+    addFriendBtn.disabled = false;
+    showPremiumUpsell(t('premiumFriendLimit', { n: freeLimits.friends }));
+  }
+});
+
+// --- "James from UK is online" — friend came online notification -------------
+socket.on('friend-online', ({ username, countryCode, country } = {}) => {
+  const where = getCountryName(countryCode) || country || '';
+  showToast(where ? t('friendOnlineToast', { name: username, country: where }) : t('friendOnlineToastNoCountry', { name: username }));
+  vibrate([30, 40, 30]);
+});
+
+// --- Free-tier "next person" delay -------------------------------------------
+// The server holds free users ~5s before starting the next search after a skip.
+socket.on('match-delay', ({ seconds } = {}) => {
+  setState('waiting');
+  setConnection('orange', 'connSearching');
+  setStatusText('statusSearching');
+  setSubText('subFreeDelay', { s: seconds || freeLimits.matchDelaySeconds });
+});

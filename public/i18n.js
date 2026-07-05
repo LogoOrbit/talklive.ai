@@ -350,6 +350,33 @@ const I18N_STRINGS = {
 
     footerText: 'Be respectful. You may be paired with anyone in the world. Voice only — no video, no recording. 18+ only.',
     privacyPolicy: 'Privacy Policy',
+
+    // Premium / TalkLive Plus (English fallback for all languages)
+    premiumBadge: '👑 Premium',
+    pricingLink: 'Pricing & Premium',
+    aboutLink: 'About TalkLive',
+    contactLink: 'Contact Us',
+    termsPageLink: 'Terms & Conditions',
+    refundLink: 'Refund Policy',
+    upgradeLink: 'Upgrade to unlock all features',
+    freeLimitsHint: 'Free plan: up to 3 countries per list, gender filter locked.',
+    premiumUpsellGo: 'Open the pricing page to upgrade?',
+    premiumGenderLocked: 'The gender filter is a Premium feature.',
+    premiumCountryLimit: 'The free plan allows up to {n} countries per list.',
+    premiumFriendLimit: 'The free plan allows up to {n} friends.',
+    subFreeDelay: 'Free plan: matching in about {s}s — Premium matches instantly',
+
+    // Add friend by username / unique ID
+    addFriendByIdTitle: 'Add a friend by username or ID',
+    addFriendByIdPlaceholder: 'Username or unique ID…',
+    friendRequestSentTo: 'Friend request sent to {name}.',
+    alreadyFriendsWith: 'You are already friends with {name}.',
+    friendNotFound: 'No online user found with that username or ID.',
+    friendAddBlocked: 'You can’t add this user.',
+
+    // Friend online notification
+    friendOnlineToast: '{name} from {country} is online',
+    friendOnlineToastNoCountry: '{name} is online',
   },
   es: {
     appTitle: 'TalkLive — Habla con desconocidos',

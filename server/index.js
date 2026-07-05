@@ -60,11 +60,87 @@ app.use((req, res, next) => {
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
+// --- Premium (TalkLive Plus via Paddle) --------------------------------------
+// Free-tier limits; premium (paid via Paddle) removes all of them.
+const FREE_LIMITS = {
+  countries: 3, // max countries per preferred/not-preferred list
+  friends: 10, // max friends
+  matchDelayMs: 5000, // wait before matching the next person
+};
+// In-memory premium registry keyed by persistent clientId. Seedable via env
+// for testing; real activations arrive through the Paddle webhook below.
+const premiumClients = new Set(
+  (process.env.PREMIUM_CLIENT_IDS || '').split(',').map((s) => s.trim()).filter(Boolean)
+);
+function isPremium(clientId) {
+  return premiumClients.has(clientId);
+}
+
+const PADDLE_WEBHOOK_SECRET = process.env.PADDLE_WEBHOOK_SECRET || '';
+
+// Verify a Paddle webhook signature (Paddle-Signature: "ts=...;h1=...").
+function verifyPaddleSignature(rawBody, header) {
+  if (!PADDLE_WEBHOOK_SECRET) return true; // not configured yet — accept (dev)
+  try {
+    const parts = Object.fromEntries(String(header || '').split(';').map((p) => p.split('=')));
+    if (!parts.ts || !parts.h1) return false;
+    const expected = crypto.createHmac('sha256', PADDLE_WEBHOOK_SECRET)
+      .update(`${parts.ts}:${rawBody}`).digest('hex');
+    return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(parts.h1));
+  } catch (e) {
+    return false;
+  }
+}
+
+// Paddle server webhook: marks the paying browser's clientId as premium the
+// moment a transaction completes / subscription activates, and revokes it when
+// the subscription is canceled or expires.
+app.post('/paddle/webhook', express.raw({ type: '*/*', limit: '256kb' }), (req, res) => {
+  const raw = req.body ? req.body.toString('utf8') : '';
+  if (!verifyPaddleSignature(raw, req.headers['paddle-signature'])) {
+    return res.status(401).json({ ok: false });
+  }
+  let event;
+  try {
+    event = JSON.parse(raw);
+  } catch (e) {
+    return res.status(400).json({ ok: false });
+  }
+  const type = event.event_type || '';
+  const custom = (event.data && event.data.custom_data) || {};
+  const clientId = typeof custom.clientId === 'string' ? custom.clientId : null;
+  if (clientId) {
+    if (['transaction.completed', 'subscription.activated', 'subscription.created', 'subscription.resumed'].includes(type)) {
+      premiumClients.add(clientId);
+      console.log(`[paddle] premium activated for ${clientId} (${type})`);
+      const sock = getSocketByClientId(clientId);
+      if (sock) sock.emit('premium-status', { premium: true, limits: FREE_LIMITS });
+    } else if (['subscription.canceled', 'subscription.past_due', 'subscription.paused'].includes(type)) {
+      premiumClients.delete(clientId);
+      console.log(`[paddle] premium revoked for ${clientId} (${type})`);
+      const sock = getSocketByClientId(clientId);
+      if (sock) sock.emit('premium-status', { premium: false, limits: FREE_LIMITS });
+    }
+  }
+  res.json({ ok: true });
+});
+
+// Lets the pricing page (a separate static page) confirm activation.
+app.get('/premium-status', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.json({ premium: isPremium(String(req.query.clientId || '')) });
+});
+
 // Public client ID handed to the browser so it can render the Google Sign-In
 // button — safe to expose, it's not a secret.
 app.get('/config.js', (req, res) => {
   res.type('application/javascript');
-  res.send(`window.GOOGLE_CLIENT_ID = ${JSON.stringify(GOOGLE_CLIENT_ID)};`);
+  res.send(
+    `window.GOOGLE_CLIENT_ID = ${JSON.stringify(GOOGLE_CLIENT_ID)};`
+    + `window.PADDLE_CLIENT_TOKEN = ${JSON.stringify(process.env.PADDLE_CLIENT_TOKEN || '')};`
+    + `window.PADDLE_PRICE_ID = ${JSON.stringify(process.env.PADDLE_PRICE_ID || '')};`
+    + `window.PADDLE_ENV = ${JSON.stringify(process.env.PADDLE_ENV || 'production')};`
+  );
 });
 
 // ICE servers handed to the browser. Operators can plug in a real, reliable
@@ -181,6 +257,19 @@ app.use((req, res, next) => {
   next();
 });
 
+// Marketing landing page on its own subdomain (e.g. start.talklive.app or
+// www.talklive.app pointed here via LANDING_HOST). The root of that host
+// serves the landing page; the main app stays on the canonical host. The
+// page is also always reachable at /landing on any host.
+const LANDING_HOST = (process.env.LANDING_HOST || '').toLowerCase();
+app.get('/', (req, res, next) => {
+  const host = (req.headers.host || '').toLowerCase();
+  if (LANDING_HOST && host === LANDING_HOST) {
+    return res.sendFile(path.join(__dirname, '..', 'public', 'landing.html'));
+  }
+  next();
+});
+
 app.use(
   express.static(path.join(__dirname, '..', 'public'), {
     // Serve clean URLs: /talk-to-strangers resolves to talk-to-strangers.html.
@@ -211,6 +300,27 @@ const reportCounts = new Map(); // clientId -> number of times reported
 // auto-match with any random stranger so nobody waits forever.
 const RANDOM_FALLBACK_MS = 10000;
 const waitFallbackTimers = new Map(); // socketId -> Timeout
+
+// Free-tier "next person" delay: non-premium users wait ~5s before the next
+// search actually starts. Premium users match instantly.
+const matchDelayTimers = new Map(); // socketId -> Timeout
+
+function clearMatchDelayTimer(socketId) {
+  const timer = matchDelayTimers.get(socketId);
+  if (timer) {
+    clearTimeout(timer);
+    matchDelayTimers.delete(socketId);
+  }
+}
+
+function friendCount(clientId) {
+  const map = friends.get(clientId);
+  return map ? map.size : 0;
+}
+
+function atFriendLimit(clientId) {
+  return !isPremium(clientId) && friendCount(clientId) >= FREE_LIMITS.friends;
+}
 
 // clientId -> true when the user chose to hide their online status from their
 // added friends. Never affects the global online-user count.
@@ -716,7 +826,12 @@ io.on('connection', (socket) => {
       socket.disconnect(true);
       return;
     }
-    const sanitizeCountryList = (list) => (Array.isArray(list) ? list.filter((c) => typeof c === 'string').slice(0, 50) : []);
+    const premium = isPremium(clientId);
+    // Free-tier caps enforced server-side: gender preference and country lists
+    // beyond the free limit are premium-only.
+    const countryCap = premium ? 50 : FREE_LIMITS.countries;
+    const sanitizeCountryList = (list) => (Array.isArray(list) ? list.filter((c) => typeof c === 'string').slice(0, countryCap) : []);
+    const wasOffline = !clientSockets.has(clientId);
     profiles.set(socket.id, {
       clientId,
       username: data.nickname ? data.nickname.slice(0, 24) : generateUsername(),
@@ -724,7 +839,7 @@ io.on('connection', (socket) => {
       countryName: geo.countryName,
       city: geo.city,
       gender: data.gender || 'unspecified',
-      prefGender: data.prefGender || 'any',
+      prefGender: premium ? (data.prefGender || 'any') : 'any',
       includeCountries: sanitizeCountryList(data.includeCountries),
       excludeCountries: sanitizeCountryList(data.excludeCountries),
       randomFallbackActive: false,
@@ -741,7 +856,27 @@ io.on('connection', (socket) => {
       city: geo.city,
     });
 
+    socket.emit('premium-status', { premium, limits: FREE_LIMITS });
     syncClientState(socket, clientId);
+
+    // "James from UK is online": tell each online friend this user just came
+    // online (only on a genuine offline→online transition, and never when the
+    // user hides their status). Also re-sync their friend lists so the green
+    // dot flips live.
+    if (wasOffline && !statusHidden.get(clientId)) {
+      const me = profiles.get(socket.id);
+      for (const [fid] of friends.get(clientId) || new Map()) {
+        const friendSocket = getSocketByClientId(fid);
+        if (!friendSocket) continue;
+        friendSocket.emit('friend-online', {
+          clientId,
+          username: me.username,
+          countryCode: me.country,
+          country: me.countryName,
+        });
+        syncClientState(friendSocket, fid);
+      }
+    }
   });
 
   // Give the just-connected client its initial count right away, then tell
@@ -762,6 +897,7 @@ io.on('connection', (socket) => {
     store.recordFeature('search');
     // A fresh, explicit search starts with the full set of filters again.
     profile.randomFallbackActive = false;
+    clearMatchDelayTimer(socket.id);
     tryMatch(socket.id);
   });
 
@@ -769,6 +905,18 @@ io.on('connection', (socket) => {
     disconnectPartner(socket.id);
     const profile = profiles.get(socket.id);
     if (profile) profile.randomFallbackActive = false;
+    // Premium skips straight to the next stranger; the free tier waits ~5s
+    // before the next search begins.
+    clearMatchDelayTimer(socket.id);
+    if (profile && !isPremium(profile.clientId)) {
+      socket.emit('match-delay', { seconds: Math.round(FREE_LIMITS.matchDelayMs / 1000) });
+      const timer = setTimeout(() => {
+        matchDelayTimers.delete(socket.id);
+        if (io.sockets.sockets.get(socket.id)) tryMatch(socket.id);
+      }, FREE_LIMITS.matchDelayMs);
+      matchDelayTimers.set(socket.id, timer);
+      return;
+    }
     tryMatch(socket.id);
   });
 
@@ -791,6 +939,7 @@ io.on('connection', (socket) => {
     disconnectPartner(socket.id);
     clearFromQueue(socket.id);
     clearWaitFallbackTimer(socket.id);
+    clearMatchDelayTimer(socket.id);
   });
 
   socket.on('report', (payload = {}) => {
@@ -990,6 +1139,9 @@ io.on('connection', (socket) => {
     if (isFriend(me.clientId, targetClientId)) {
       return socket.emit('friend-request-result', { ok: true, alreadyFriends: true });
     }
+    if (atFriendLimit(me.clientId)) {
+      return socket.emit('friend-request-result', { ok: false, limitReached: true, error: `Free plan allows up to ${FREE_LIMITS.friends} friends. Upgrade to add unlimited friends.` });
+    }
     const temporary = !socketAuth.get(socket.id);
     const myInfo = { username: me.username, countryCode: me.country, temporary, avatar: me.avatar };
 
@@ -1010,6 +1162,54 @@ io.on('connection', (socket) => {
     socket.emit('friend-request-result', { ok: true, sent: true });
   });
 
+  // Add a friend manually by their username or unique ID (clientId). Finds the
+  // person among currently-online users and sends them a normal friend request.
+  socket.on('add-friend-by-id', ({ query } = {}) => {
+    const me = profiles.get(socket.id);
+    const q = typeof query === 'string' ? query.trim() : '';
+    if (!me || !q) return;
+    store.recordFeature('friend_add_by_id');
+
+    const qLower = q.toLowerCase();
+    let target = null;
+    for (const [sid, p] of profiles) {
+      if (sid === socket.id || p.clientId === me.clientId) continue;
+      if (p.clientId === q || p.username.toLowerCase() === qLower) {
+        target = p;
+        break;
+      }
+    }
+    if (!target) {
+      return socket.emit('add-friend-by-id-result', { ok: false, reason: 'not-found' });
+    }
+    if (isBlockedPair(me.clientId, target.clientId)) {
+      return socket.emit('add-friend-by-id-result', { ok: false, reason: 'blocked' });
+    }
+    if (isFriend(me.clientId, target.clientId)) {
+      return socket.emit('add-friend-by-id-result', { ok: true, alreadyFriends: true, username: target.username });
+    }
+    if (atFriendLimit(me.clientId)) {
+      return socket.emit('add-friend-by-id-result', { ok: false, reason: 'limit', limit: FREE_LIMITS.friends });
+    }
+
+    const temporary = !socketAuth.get(socket.id);
+    const myInfo = { username: me.username, countryCode: me.country, temporary, avatar: me.avatar };
+    if (!friendRequests.has(target.clientId)) friendRequests.set(target.clientId, new Map());
+    friendRequests.get(target.clientId).set(me.clientId, { ...myInfo, ts: Date.now() });
+
+    pushNotification(target.clientId, {
+      type: 'friend_request',
+      fromClientId: me.clientId,
+      username: myInfo.username,
+      countryCode: myInfo.countryCode,
+      temporary: myInfo.temporary,
+    });
+    const targetSocket = getSocketByClientId(target.clientId);
+    if (targetSocket) syncClientState(targetSocket, target.clientId);
+
+    socket.emit('add-friend-by-id-result', { ok: true, sent: true, username: target.username });
+  });
+
   socket.on('friend-request-respond', ({ fromClientId, accept, notificationId } = {}) => {
     const me = profiles.get(socket.id);
     if (!me || !fromClientId) return;
@@ -1019,6 +1219,10 @@ io.on('connection', (socket) => {
     reqMap.delete(fromClientId);
     if (notificationId) removeNotification(me.clientId, notificationId);
 
+    if (accept && atFriendLimit(me.clientId)) {
+      syncClientState(socket, me.clientId);
+      return socket.emit('friend-request-result', { ok: false, limitReached: true, error: `Free plan allows up to ${FREE_LIMITS.friends} friends. Upgrade to add unlimited friends.` });
+    }
     if (accept) {
       const temporary = !socketAuth.get(socket.id);
       const myInfo = { username: me.username, countryCode: me.country, temporary, avatar: me.avatar };
@@ -1227,6 +1431,7 @@ io.on('connection', (socket) => {
     disconnectPartner(socket.id);
     clearFromQueue(socket.id);
     clearWaitFallbackTimer(socket.id);
+    clearMatchDelayTimer(socket.id);
     const profile = profiles.get(socket.id);
     if (profile && clientSockets.get(profile.clientId) === socket.id) {
       clientSockets.delete(profile.clientId);

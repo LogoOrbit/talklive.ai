@@ -125,7 +125,7 @@
 }
 </script>
 
-<link rel="stylesheet" href="style.css?v=20260704e" />
+<link rel="stylesheet" href="style.css?v=20260705a" />
 <script src="/config.js"></script>
 </head>
 <body>
@@ -193,6 +193,13 @@
               <button type="button" id="closeFriendsBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
             </div>
             <div class="modal-body">
+              <div class="add-friend-by-id">
+                <label class="pill-label" for="addFriendByIdInput" data-i18n="addFriendByIdTitle">Add a friend by username or ID</label>
+                <div class="temp-name-row">
+                  <input type="text" id="addFriendByIdInput" class="search-input" maxlength="60" data-i18n-placeholder="addFriendByIdPlaceholder" placeholder="Username or unique ID…" autocomplete="off" />
+                  <button type="button" id="addFriendByIdBtn" class="btn btn-secondary temp-name-save" data-i18n="add">Add</button>
+                </div>
+              </div>
               <div id="notifList" class="notif-list">
                 <p class="history-empty" data-i18n="noRequestsYet">No requests yet.</p>
               </div>
@@ -349,7 +356,12 @@
               <div class="acc-body-inner">
                 <button type="button" id="feedbackBtn" class="btn btn-secondary settings-save" data-i18n="feedback">Feedback for Improvement</button>
                 <button type="button" id="settingsTermsBtn" class="btn btn-secondary settings-save" data-i18n="termsLink">Terms &amp; Community Guidelines</button>
+                <a href="/pricing" class="btn btn-secondary settings-save" data-i18n="pricingLink">Pricing &amp; Premium</a>
+                <a href="/about" class="btn btn-secondary settings-save" data-i18n="aboutLink">About TalkLive</a>
+                <a href="/contact" class="btn btn-secondary settings-save" data-i18n="contactLink">Contact Us</a>
+                <a href="/terms" class="btn btn-secondary settings-save" data-i18n="termsPageLink">Terms &amp; Conditions</a>
                 <a href="/privacy.html" class="btn btn-secondary settings-save" data-i18n="privacyPolicy">Privacy Policy</a>
+                <a href="/refund" class="btn btn-secondary settings-save" data-i18n="refundLink">Refund Policy</a>
               </div>
             </div>
           </section>
@@ -371,7 +383,7 @@
       </div>
       <div class="side-panel-body">
         <div class="pill-row">
-          <span class="pill-label" id="prefGenderGroupLabel" data-i18n="matchMeWith">Match me with</span>
+          <span class="pill-label" id="prefGenderGroupLabel"><span data-i18n="matchMeWith">Match me with</span> <a href="/pricing" class="premium-lock hidden" data-i18n="premiumBadge">👑 Premium</a></span>
           <div class="pill-group" id="prefGenderGroup" data-value="any" role="group" aria-labelledby="prefGenderGroupLabel">
             <button type="button" class="pill" data-value="any"><span class="pill-dot pill-dot-neutral" aria-hidden="true"></span><span data-i18n="anyone">Anyone</span></button>
             <button type="button" class="pill" data-value="male"><span class="pill-dot pill-dot-male" aria-hidden="true"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="14" r="6"/><line x1="14.5" y1="9.5" x2="20" y2="4"/><polyline points="14.5 4 20 4 20 9.5"/></svg><span data-i18n="male">Male</span></button>
@@ -412,6 +424,7 @@
           </div>
         </div>
 
+        <p class="filters-hint premium-lock hidden"><span data-i18n="freeLimitsHint">Free plan: up to 3 countries per list, gender filter locked.</span> <a href="/pricing" data-i18n="upgradeLink">Upgrade to unlock all features</a></p>
         <p class="filters-hint" data-i18n="filtersHint">Filters only take effect after you tap Save.</p>
         <div class="filters-actions">
           <button type="button" id="saveFiltersBtn" class="btn btn-save filters-action-btn" data-i18n="save">Save</button>
@@ -1005,7 +1018,12 @@
 
     <footer class="footer">
       <button type="button" id="openTermsLinkFooter" class="link-btn" data-i18n="termsLink">Terms &amp; Community Guidelines</button>
+      <a href="/about" class="link-btn" data-i18n="aboutLink">About</a>
+      <a href="/contact" class="link-btn" data-i18n="contactLink">Contact</a>
+      <a href="/pricing" class="link-btn" data-i18n="pricingLink">Pricing</a>
+      <a href="/terms" class="link-btn" data-i18n="termsPageLink">Terms &amp; Conditions</a>
       <a href="/privacy.html" class="link-btn" data-i18n="privacyPolicy">Privacy Policy</a>
+      <a href="/refund" class="link-btn" data-i18n="refundLink">Refund Policy</a>
     </footer>
   </div>
 
@@ -1134,8 +1152,8 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="countries.js?v=20260704b"></script>
-  <script src="i18n.js?v=20260704c"></script>
+  <script src="i18n.js?v=20260705a"></script>
   <script src="moderation.js?v=20260705b"></script>
-  <script src="app.js?v=20260704e"></script>
+  <script src="app.js?v=20260705a"></script>
 </body>
 </html>

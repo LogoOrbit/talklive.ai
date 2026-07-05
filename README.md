@@ -61,5 +61,15 @@ A secured owner dashboard lives at **`/owner`** (e.g. `https://talklive.ai/owner
 | `OWNER_EMAIL` | Where report/feedback/error alert emails go |
 | `SMTP_USER` / `SMTP_PASS` | Gmail address + **app password** (Google Account → Security → 2-Step Verification → App passwords) |
 | `DATA_DIR` | Directory for the JSON store (default `./data`). On Render's free plan the filesystem is ephemeral, so stored data resets on each deploy/restart; add a persistent disk if you upgrade later. |
+| `PADDLE_CLIENT_TOKEN` | Paddle client-side token used by the `/pricing` checkout (public value) |
+| `PADDLE_PRICE_ID` | Paddle price ID for the $10/month TalkLive Premium subscription |
+| `PADDLE_ENV` | `sandbox` while testing Paddle, `production` (default) when live |
+| `PADDLE_WEBHOOK_SECRET` | Secret for verifying `POST /paddle/webhook` notifications (set the webhook URL to `https://talklive.app/paddle/webhook` in Paddle) |
+| `PREMIUM_CLIENT_IDS` | Comma-separated clientIds to grant premium manually (testing) |
+| `LANDING_HOST` | Optional subdomain (e.g. `start.talklive.app`) whose root serves the marketing landing page (`/landing`) |
+
+### Premium (TalkLive Plus)
+
+Free tier limits (enforced server-side): max 3 preferred + 3 avoided countries, max 10 friends, gender filter locked, and a ~5s wait before matching the next person after a skip. Premium ($10/month via Paddle on `/pricing`) unlocks all filters, unlimited friends, instant matching, and no ads. Premium is keyed to the browser's persistent `clientId`; the Paddle webhook activates it via `custom_data.clientId`. Note: premium state is currently in-memory and resets on server restart — wire it into the store/DB before relying on it in production.
 
 Email alerts are throttled to one per topic per 10 minutes and are skipped entirely if SMTP is not configured.

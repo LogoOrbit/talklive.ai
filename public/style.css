@@ -4517,3 +4517,38 @@ body {
   .ttt-cell.win .ttt-mark { animation: none; }
   .ttt-cell { transition: none; }
 }
+
+/* --- Premium (TalkLive Plus) ------------------------------------------------ */
+.premium-lock {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #1a1302;
+  background: linear-gradient(120deg, #f6d365 0%, #ffd700 45%, #f6a800 100%);
+  border-radius: 999px;
+  padding: 2px 9px;
+  text-decoration: none;
+  vertical-align: middle;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.35);
+}
+a.premium-lock:hover { filter: brightness(1.08); }
+p.premium-lock {
+  display: block;
+  font-size: 0.8rem;
+  padding: 8px 12px;
+  border-radius: 10px;
+  line-height: 1.4;
+}
+p.premium-lock a {
+  color: #4a3400;
+  font-weight: 800;
+  text-decoration: underline;
+}
+
+/* --- Add friend by username / ID --------------------------------------------- */
+.add-friend-by-id {
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(138, 144, 168, 0.25);
+}
+.add-friend-by-id .pill-label { display: block; margin-bottom: 6px; }
