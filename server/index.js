@@ -67,13 +67,14 @@ const FREE_LIMITS = {
   friends: 10, // max friends
   matchDelayMs: 5000, // wait before matching the next person
 };
-// In-memory premium registry keyed by persistent clientId. Seedable via env
-// for testing; real activations arrive through the Paddle webhook below.
-const premiumClients = new Set(
+// Premium registry lives in the persistent store (Postgres/file) so paid
+// customers survive restarts and deploys. PREMIUM_CLIENT_IDS is an env
+// override for testing/manual grants.
+const envPremiumClients = new Set(
   (process.env.PREMIUM_CLIENT_IDS || '').split(',').map((s) => s.trim()).filter(Boolean)
 );
 function isPremium(clientId) {
-  return premiumClients.has(clientId);
+  return envPremiumClients.has(clientId) || store.isPremiumClient(clientId);
 }
 
 const PADDLE_WEBHOOK_SECRET = process.env.PADDLE_WEBHOOK_SECRET || '';
@@ -107,16 +108,18 @@ app.post('/paddle/webhook', express.raw({ type: '*/*', limit: '256kb' }), (req, 
     return res.status(400).json({ ok: false });
   }
   const type = event.event_type || '';
-  const custom = (event.data && event.data.custom_data) || {};
+  const d = event.data || {};
+  const custom = d.custom_data || {};
   const clientId = typeof custom.clientId === 'string' ? custom.clientId : null;
+  const subscriptionId = d.subscription_id || (type.startsWith('subscription.') ? d.id : null) || null;
   if (clientId) {
     if (['transaction.completed', 'subscription.activated', 'subscription.created', 'subscription.resumed'].includes(type)) {
-      premiumClients.add(clientId);
+      store.setPremium(clientId, { lastEvent: type, subscriptionId });
       console.log(`[paddle] premium activated for ${clientId} (${type})`);
       const sock = getSocketByClientId(clientId);
       if (sock) sock.emit('premium-status', { premium: true, limits: FREE_LIMITS });
     } else if (['subscription.canceled', 'subscription.past_due', 'subscription.paused'].includes(type)) {
-      premiumClients.delete(clientId);
+      store.revokePremium(clientId, { lastEvent: type, subscriptionId });
       console.log(`[paddle] premium revoked for ${clientId} (${type})`);
       const sock = getSocketByClientId(clientId);
       if (sock) sock.emit('premium-status', { premium: false, limits: FREE_LIMITS });
@@ -208,6 +211,7 @@ function getRuntime() {
       inCall: partners.has(sid),
       waiting: waitingQueue.includes(sid),
       account: socketAuth.get(sid) || null,
+      premium: isPremium(p.clientId),
       reports: store.reportCountFor(p.clientId),
     });
   }

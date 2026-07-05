@@ -70,6 +70,6 @@ A secured owner dashboard lives at **`/owner`** (e.g. `https://talklive.ai/owner
 
 ### Premium (TalkLive Plus)
 
-Free tier limits (enforced server-side): max 3 preferred + 3 avoided countries, max 10 friends, gender filter locked, and a ~5s wait before matching the next person after a skip. Premium ($10/month via Paddle on `/pricing`) unlocks all filters, unlimited friends, instant matching, and no ads. Premium is keyed to the browser's persistent `clientId`; the Paddle webhook activates it via `custom_data.clientId`. Note: premium state is currently in-memory and resets on server restart — wire it into the store/DB before relying on it in production.
+Free tier limits (enforced server-side): max 3 preferred + 3 avoided countries, max 10 friends, gender filter locked, and a ~5s wait before matching the next person after a skip. Premium ($10/month via Paddle on `/pricing`) unlocks all filters, unlimited friends, instant matching, and no ads. Premium is keyed to the browser's persistent `clientId`; the Paddle webhook activates it via `custom_data.clientId` and it is persisted in the store (Postgres via `DATABASE_URL`, or the JSON file store), so paid customers survive restarts and deploys.
 
 Email alerts are throttled to one per topic per 10 minutes and are skipped entirely if SMTP is not configured.

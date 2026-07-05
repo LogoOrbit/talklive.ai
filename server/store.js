@@ -73,6 +73,7 @@ function defaults() {
       days: {}, // 'YYYY-MM-DD' -> { visits, uniques, uniqueSet, connections, matches, messages, reports, feedback, errors, newAccounts, peakOnline, countries, cities, features }
       topics: {}, // word -> count (aggregate, anonymous)
     },
+    premium: {}, // clientId -> { activatedAt, updatedAt, lastEvent, subscriptionId, revokedAt }
     settings: {
       maintenance: { on: false, message: 'TalkLive is under maintenance. We will be back shortly!' },
       banThreshold: 3,
@@ -354,6 +355,34 @@ function upsertAccount(usernameLower, details) {
   save();
 }
 
+// --- Premium subscriptions (activated via the Paddle webhook) ---
+
+function setPremium(clientId, info = {}) {
+  const existing = data.premium[clientId];
+  data.premium[clientId] = {
+    activatedAt: existing ? existing.activatedAt : Date.now(),
+    ...existing,
+    ...info,
+    revokedAt: null,
+    updatedAt: Date.now(),
+  };
+  save();
+  return data.premium[clientId];
+}
+
+function revokePremium(clientId, info = {}) {
+  const existing = data.premium[clientId];
+  if (!existing) return null;
+  Object.assign(existing, info, { revokedAt: Date.now(), updatedAt: Date.now() });
+  save();
+  return existing;
+}
+
+function isPremiumClient(clientId) {
+  const rec = data.premium[clientId];
+  return !!(rec && !rec.revokedAt);
+}
+
 // --- Admin / sessions / audit ---
 
 function audit(action, ip, detail) {
@@ -410,5 +439,8 @@ module.exports = {
   addBan,
   liftBan,
   upsertAccount,
+  setPremium,
+  revokePremium,
+  isPremiumClient,
   audit,
 };
