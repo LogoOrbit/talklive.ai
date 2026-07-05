@@ -897,6 +897,39 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Client-side call moderation (moderation.js): keyword / sentiment /
+  // shouting triggers detected from the local mic's live transcript. Log the
+  // incident to the dashboard transcript store and email the owner (throttled
+  // per-kind inside sendAlertEmail). Rate-limited per socket so a hostile
+  // client can't spam alerts.
+  let lastModerationAlert = 0;
+  socket.on('moderation-alert', ({ type, detail, transcript } = {}) => {
+    const now = Date.now();
+    if (now - lastModerationAlert < 30000) return;
+    if (!['keyword', 'sentiment', 'shouting'].includes(type)) return;
+    lastModerationAlert = now;
+    const me = profiles.get(socket.id);
+    const partnerId = partners.get(socket.id);
+    const them = partnerId ? profiles.get(partnerId) : null;
+    const who = me ? `${me.username} (${me.countryName || '?'})` : socket.id;
+    const detailStr = String(detail || '').slice(0, 200);
+    const transcriptStr = String(transcript || '').slice(0, 500);
+    if (me) {
+      store.addTranscript({
+        kind: 'moderation',
+        pair: them ? pairKey(me.clientId, them.clientId) : me.clientId,
+        from: me.username,
+        fromClientId: me.clientId,
+        to: them ? them.username : '',
+        toClientId: them ? them.clientId : '',
+        country: me.countryName,
+        text: `[${type}] ${detailStr}${transcriptStr ? ` — "${transcriptStr}"` : ''}`,
+      });
+    }
+    admin.sendAlertEmail(`moderation-${type}`, `Moderation alert: ${type} from ${who}`,
+      `Type: ${type}\nUser: ${who}\nPartner: ${them ? them.username : 'none'}\nDetail: ${detailStr}\nTranscript: ${transcriptStr || '(n/a)'}\n\nReview at https://${CANONICAL_HOST}/owner`);
+  });
+
   socket.on('mic-state', (muted) => {
     const partnerId = partners.get(socket.id);
     if (partnerId) {
