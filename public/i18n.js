@@ -350,6 +350,18 @@ const I18N_STRINGS = {
 
     footerText: 'Be respectful. You may be paired with anyone in the world. Voice only — no video, no recording. 18+ only.',
     privacyPolicy: 'Privacy Policy',
+
+    // Manual friend add + friend-online notifications + country filter minimum
+    addBtn: 'Add',
+    addFriendByIdHint: 'Add someone by their username or unique User ID (TL-…).',
+    addFriendByIdPlaceholder: 'Username or TL-ID',
+    errUserNotFound: 'No online user found with that name or ID.',
+    alreadyFriendsWith: 'You are already friends with {name}.',
+    requestAlreadySent: 'Friend request to {name} is already pending.',
+    friendRequestSentTo: 'Friend request sent to {name}!',
+    friendOnlineToast: '{name} from {country} is online',
+    errMinCountriesInclude: 'Pick at least {n} interested countries, or leave the list empty.',
+    errMinCountriesExclude: 'Pick at least {n} non-interested countries, or leave the list empty.',
   },
   es: {
     appTitle: 'TalkLive — Habla con desconocidos',

@@ -678,7 +678,30 @@ function syncFilterDraftUiFromApplied() {
 
 syncFilterDraftUiFromApplied();
 
+// Country preference lists must hold at least 3 countries each (or be left
+// empty) — a 1–2 country filter fragments the matching pool too much.
+const MIN_COUNTRY_SELECTION = 3;
+const filtersErrorText = document.getElementById('filtersErrorText');
+
+function showFiltersError(msg) {
+  if (filtersErrorText) {
+    filtersErrorText.textContent = msg;
+    filtersErrorText.classList.remove('hidden');
+  } else {
+    showToast(msg);
+  }
+}
+
 saveFiltersBtn.addEventListener('click', () => {
+  if (includeCountries.size > 0 && includeCountries.size < MIN_COUNTRY_SELECTION) {
+    showFiltersError(t('errMinCountriesInclude', { n: MIN_COUNTRY_SELECTION }));
+    return;
+  }
+  if (excludeCountries.size > 0 && excludeCountries.size < MIN_COUNTRY_SELECTION) {
+    showFiltersError(t('errMinCountriesExclude', { n: MIN_COUNTRY_SELECTION }));
+    return;
+  }
+  if (filtersErrorText) filtersErrorText.classList.add('hidden');
   appliedFilters = {
     prefGender: prefGenderGroup.dataset.value,
     includeCountries: Array.from(includeCountries),
@@ -691,6 +714,7 @@ saveFiltersBtn.addEventListener('click', () => {
 });
 
 clearFiltersBtn.addEventListener('click', () => {
+  if (filtersErrorText) filtersErrorText.classList.add('hidden');
   setPillGroupValue(prefGenderGroup, 'any');
   includeCountries.clear();
   excludeCountries.clear();
@@ -713,6 +737,52 @@ addFriendBtn.addEventListener('click', () => {
 
 socket.on('friend-request-result', ({ ok, error }) => {
   if (!ok && error) showError(error);
+});
+
+// --- Add friend manually by username or unique User ID (TL-…) ---
+const addFriendInput = document.getElementById('addFriendInput');
+const addFriendSubmitBtn = document.getElementById('addFriendSubmitBtn');
+const addFriendStatus = document.getElementById('addFriendStatus');
+
+function setAddFriendStatus(msg, kind) {
+  addFriendStatus.textContent = msg;
+  addFriendStatus.classList.remove('hidden', 'is-ok', 'is-error');
+  addFriendStatus.classList.add(kind === 'ok' ? 'is-ok' : 'is-error');
+}
+
+function submitAddFriend() {
+  const query = addFriendInput.value.trim();
+  if (!query) return;
+  addFriendSubmitBtn.disabled = true;
+  socket.emit('add-friend', { query });
+}
+
+addFriendSubmitBtn.addEventListener('click', submitAddFriend);
+addFriendInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); submitAddFriend(); }
+});
+addFriendInput.addEventListener('input', () => addFriendStatus.classList.add('hidden'));
+
+socket.on('add-friend-result', ({ ok, reason, alreadyFriends, alreadySent, username }) => {
+  addFriendSubmitBtn.disabled = false;
+  if (!ok) {
+    setAddFriendStatus(t('errUserNotFound'), 'error');
+    return;
+  }
+  if (alreadyFriends) setAddFriendStatus(t('alreadyFriendsWith', { name: username }), 'ok');
+  else if (alreadySent) setAddFriendStatus(t('requestAlreadySent', { name: username }), 'ok');
+  else setAddFriendStatus(t('friendRequestSentTo', { name: username }), 'ok');
+  if (!alreadyFriends && !alreadySent) { addFriendInput.value = ''; vibrate(15); }
+});
+
+// --- "Friend is online" live notification, e.g. "James from UK is online" ---
+socket.on('friend-online', ({ clientId, username, country }) => {
+  const friend = friendsData.find((f) => f.clientId === clientId);
+  if (friend) friend.online = true;
+  renderFriendsList();
+  showToast(t('friendOnlineToast', { name: username, country: country || '?' }));
+  playMessageSound();
+  vibrate(20);
 });
 
 function openModal(modal) {
@@ -1130,7 +1200,7 @@ function renderFriendsList() {
       <div class="friend-item-info friend-row-main" data-id="${f.clientId}">
         <span class="friend-online-dot ${f.online ? 'online' : ''}" title="${escapeHtml(f.online ? t('online') : t('offline'))}"></span>
         <span class="friend-item-name">${getFlagImg(f.countryCode)} ${escapeHtml(f.username)}</span>
-        ${unread > 0 ? `<span class="unread-badge">${unread}</span>` : ''}
+        ${unread > 0 ? `<span class="unread-badge">${unread > 99 ? '99+' : unread}</span>` : ''}
       </div>
       <button type="button" class="friend-call-btn" data-id="${f.clientId}" data-name="${escapeHtml(f.username)}" title="${escapeHtml(t('callBack'))}" aria-label="${escapeHtml(t('callBack'))}">
         ${FRIEND_CALL_SVG}
@@ -1276,7 +1346,7 @@ function totalUnreadMessages() {
 
 function updateFriendsMsgBadge() {
   const count = totalUnreadMessages() + notifData.filter((n) => n.type !== 'message').length;
-  friendsMsgBadge.textContent = count;
+  friendsMsgBadge.textContent = count > 99 ? '99+' : String(count);
   friendsMsgBadge.classList.toggle('hidden', count === 0);
 }
 
@@ -1360,6 +1430,16 @@ notifList.addEventListener('click', (e) => {
 });
 
 socket.on('notification', (n) => {
+  // A message notification for the conversation currently open on screen is
+  // already read — don't let it inflate the unread badge; just clear it
+  // server-side too. This was the source of "ghost" unread counts.
+  if (n.type === 'message' && activeFriendChatId === n.fromClientId
+      && !friendChatModal.classList.contains('hidden')) {
+    socket.emit('mark-messages-read', { friendClientId: n.fromClientId });
+    return;
+  }
+  // De-dupe: a reconnect can replay a notification that state-sync already gave us.
+  if (notifData.some((x) => x.id === n.id)) return;
   notifData.push(n);
   renderNotifications();
   if (n.type === 'call_back_request') {
@@ -1387,19 +1467,17 @@ function renderFriendChatMessages() {
   friendChatMessages.scrollTop = friendChatMessages.scrollHeight;
 }
 
-// Text messaging is call-gated: a DM can only be sent to someone you're in a
-// live (accepted) call with. In-call chat is unaffected — it uses its own box.
 function inCallWith(clientId) {
   return callState === 'connected' && currentPartner && currentPartner.clientId === clientId;
 }
 
-// Enable/disable the friend-chat composer based on whether a call is live with
-// that friend, showing a "call to unlock" hint when it's locked.
+// Friends can message each other any time — online, offline, or mid-call. The
+// composer stays enabled; offline friends get the message in their history plus
+// an unread notification the next time they're online.
 function applyFriendChatLock() {
-  const unlocked = inCallWith(activeFriendChatId);
-  friendChatInput.disabled = !unlocked;
-  friendChatInput.placeholder = unlocked ? t('typeMessage') : t('chatLockedHint');
-  friendChatForm.classList.toggle('locked', !unlocked);
+  friendChatInput.disabled = false;
+  friendChatInput.placeholder = t('typeMessage');
+  friendChatForm.classList.remove('locked');
 }
 
 function openFriendChat(friendClientId) {
@@ -1415,7 +1493,9 @@ function openFriendChat(friendClientId) {
   renderNotifications();
   renderFriendChatMessages();
   applyFriendChatLock();
-  if (inCallWith(friendClientId)) friendChatInput.focus();
+  // Auto-focus only on desktop — on mobile it would pop the keyboard over the
+  // conversation the user is trying to read.
+  if (window.innerWidth > 767) friendChatInput.focus();
 }
 
 closeFriendChatBtn.addEventListener('click', () => {
@@ -1427,15 +1507,6 @@ friendChatForm.addEventListener('submit', (e) => {
   e.preventDefault();
   const text = friendChatInput.value.trim();
   if (!text || !activeFriendChatId) return;
-  if (!inCallWith(activeFriendChatId)) {
-    const el = document.createElement('div');
-    el.className = 'chat-msg system';
-    el.textContent = t('errCallRequiredToChat');
-    friendChatMessages.appendChild(el);
-    friendChatMessages.scrollTop = friendChatMessages.scrollHeight;
-    applyFriendChatLock();
-    return;
-  }
   if (messageHasLink(text)) {
     const el = document.createElement('div');
     el.className = 'chat-msg system';
@@ -1445,6 +1516,7 @@ friendChatForm.addEventListener('submit', (e) => {
     return;
   }
   socket.emit('friend-message', { toClientId: activeFriendChatId, text });
+  playSendSound();
   friendChatInput.value = '';
 });
 
@@ -1452,6 +1524,8 @@ socket.on('friend-message', ({ fromClientId, text, ts }) => {
   const cache = friendChatCache.get(fromClientId) || [];
   cache.push({ from: fromClientId, text, ts });
   friendChatCache.set(fromClientId, cache);
+  playMessageSound();
+  vibrate(20);
   if (activeFriendChatId === fromClientId && !friendChatModal.classList.contains('hidden')) {
     renderFriendChatMessages();
     socket.emit('mark-messages-read', { friendClientId: fromClientId });

@@ -193,6 +193,15 @@
               <button type="button" id="closeFriendsBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
             </div>
             <div class="modal-body">
+              <!-- Add a friend manually by their display name or unique User ID -->
+              <div class="friend-add-block">
+                <p class="account-hint" data-i18n="addFriendByIdHint">Add someone by their username or unique User ID (TL-…).</p>
+                <div class="friend-add-row">
+                  <input type="text" id="addFriendInput" class="search-input" maxlength="32" data-i18n-placeholder="addFriendByIdPlaceholder" placeholder="Username or TL-ID" autocomplete="off" />
+                  <button type="button" id="addFriendSubmitBtn" class="btn btn-secondary" data-i18n="addBtn">Add</button>
+                </div>
+                <p id="addFriendStatus" class="account-hint friend-add-status hidden"></p>
+              </div>
               <div id="notifList" class="notif-list">
                 <p class="history-empty" data-i18n="noRequestsYet">No requests yet.</p>
               </div>
@@ -413,6 +422,7 @@
         </div>
 
         <p class="filters-hint" data-i18n="filtersHint">Filters only take effect after you tap Save.</p>
+        <p id="filtersErrorText" class="error-text hidden" role="alert"></p>
         <div class="filters-actions">
           <button type="button" id="saveFiltersBtn" class="btn btn-save filters-action-btn" data-i18n="save">Save</button>
           <button type="button" id="clearFiltersBtn" class="btn btn-secondary filters-action-btn" data-i18n="clear">Clear</button>

@@ -181,6 +181,16 @@ app.use((req, res, next) => {
   next();
 });
 
+// Marketing landing page on its own subdomain (e.g. https://home.talklive.app):
+// any "home." subdomain root serves the landing page instead of the app.
+app.use((req, res, next) => {
+  const host = (req.headers.host || '').toLowerCase();
+  if (host.startsWith('home.') && (req.path === '/' || req.path === '/index.html')) {
+    return res.sendFile(path.join(__dirname, '..', 'public', 'home.html'));
+  }
+  next();
+});
+
 app.use(
   express.static(path.join(__dirname, '..', 'public'), {
     // Serve clean URLs: /talk-to-strangers resolves to talk-to-strangers.html.
@@ -308,6 +318,81 @@ function syncClientState(socket, clientId) {
 
 function pairKey(a, b) {
   return [a, b].sort().join('|');
+}
+
+// The stable public User ID shown in the client's settings panel — must match
+// the client's derivation exactly so "add by ID" lookups work.
+function uniqueIdFor(clientId) {
+  return 'TL-' + String(clientId).replace(/-/g, '').slice(0, 12).toUpperCase();
+}
+
+// Look up an online user by display name or unique User ID (case-insensitive).
+function findProfileByNameOrId(query) {
+  const q = String(query).trim().toLowerCase();
+  if (!q) return null;
+  for (const [sid, p] of profiles) {
+    if (!io.sockets.sockets.get(sid)) continue;
+    if (p.username.toLowerCase() === q || uniqueIdFor(p.clientId).toLowerCase() === q) return p;
+  }
+  return null;
+}
+
+// Deliver a friend request from `me` to targetClientId. Shared by the in-call
+// "Add friend" button and the manual add-by-username/ID flow.
+function deliverFriendRequest(socket, me, targetClientId, temporary) {
+  const myInfo = { username: me.username, countryCode: me.country, temporary, avatar: me.avatar };
+  if (!friendRequests.has(targetClientId)) friendRequests.set(targetClientId, new Map());
+  friendRequests.get(targetClientId).set(me.clientId, { ...myInfo, ts: Date.now() });
+  pushNotification(targetClientId, {
+    type: 'friend_request',
+    fromClientId: me.clientId,
+    username: myInfo.username,
+    countryCode: myInfo.countryCode,
+    temporary: myInfo.temporary,
+  });
+  const targetSocket = getSocketByClientId(targetClientId);
+  if (targetSocket) syncClientState(targetSocket, targetClientId);
+}
+
+// Throttle "friend came online" fan-out so quick reconnects don't spam friends.
+const lastOnlineNotice = new Map(); // clientId -> ts
+
+// Tell everyone who has this user as a friend that they just came online, and
+// refresh their friend lists so the online dot updates live.
+function notifyFriendsOnline(profile) {
+  if (statusHidden.get(profile.clientId)) return;
+  const now = Date.now();
+  const last = lastOnlineNotice.get(profile.clientId) || 0;
+  const throttled = now - last < 60000;
+  let notified = false;
+  for (const [fid, map] of friends) {
+    if (!map.has(profile.clientId)) continue;
+    const friendSocket = getSocketByClientId(fid);
+    if (!friendSocket) continue;
+    syncClientState(friendSocket, fid);
+    if (!throttled) {
+      friendSocket.emit('friend-online', {
+        clientId: profile.clientId,
+        username: profile.username,
+        countryCode: profile.country,
+        country: profile.countryName,
+      });
+      notified = true;
+    }
+  }
+  // Only start the anti-spam window when a notice actually went out, so the
+  // very first "came online" after making a friend is never swallowed.
+  if (notified) lastOnlineNotice.set(profile.clientId, now);
+}
+
+// Refresh the friend lists of everyone who has this user as a friend (used on
+// disconnect so their online dot goes grey without a reload).
+function syncFriendsOf(clientId) {
+  for (const [fid, map] of friends) {
+    if (!map.has(clientId)) continue;
+    const friendSocket = getSocketByClientId(fid);
+    if (friendSocket) syncClientState(friendSocket, fid);
+  }
 }
 
 // No links of any kind are allowed in chat — protocols, www-prefixed hosts,
@@ -716,7 +801,13 @@ io.on('connection', (socket) => {
       socket.disconnect(true);
       return;
     }
-    const sanitizeCountryList = (list) => (Array.isArray(list) ? list.filter((c) => typeof c === 'string').slice(0, 50) : []);
+    // Country preference lists need at least 3 entries each to apply (mirrors
+    // the client-side rule); shorter lists are ignored rather than rejected.
+    const sanitizeCountryList = (list) => {
+      const arr = Array.isArray(list) ? list.filter((c) => typeof c === 'string').slice(0, 50) : [];
+      return arr.length >= 3 ? arr : [];
+    };
+    const wasOnline = clientSockets.has(clientId);
     profiles.set(socket.id, {
       clientId,
       username: data.nickname ? data.nickname.slice(0, 24) : generateUsername(),
@@ -742,6 +833,10 @@ io.on('connection', (socket) => {
     });
 
     syncClientState(socket, clientId);
+
+    // Fresh appearance (not just a profile update on a live socket): tell this
+    // user's friends they came online — "James from UK is online".
+    if (!wasOnline) notifyFriendsOnline(profiles.get(socket.id));
   });
 
   // Give the just-connected client its initial count right away, then tell
@@ -990,24 +1085,32 @@ io.on('connection', (socket) => {
     if (isFriend(me.clientId, targetClientId)) {
       return socket.emit('friend-request-result', { ok: true, alreadyFriends: true });
     }
-    const temporary = !socketAuth.get(socket.id);
-    const myInfo = { username: me.username, countryCode: me.country, temporary, avatar: me.avatar };
-
-    if (!friendRequests.has(targetClientId)) friendRequests.set(targetClientId, new Map());
-    friendRequests.get(targetClientId).set(me.clientId, { ...myInfo, ts: Date.now() });
-
-    pushNotification(targetClientId, {
-      type: 'friend_request',
-      fromClientId: me.clientId,
-      username: myInfo.username,
-      countryCode: myInfo.countryCode,
-      temporary: myInfo.temporary,
-    });
-
-    const targetSocket = getSocketByClientId(targetClientId);
-    if (targetSocket) syncClientState(targetSocket, targetClientId);
-
+    deliverFriendRequest(socket, me, targetClientId, !socketAuth.get(socket.id));
     socket.emit('friend-request-result', { ok: true, sent: true });
+  });
+
+  // Manual add: find someone online by their display name or unique User ID
+  // (the TL-… code from Settings) and send them a normal friend request.
+  socket.on('add-friend', ({ query } = {}) => {
+    const me = profiles.get(socket.id);
+    if (!me || typeof query !== 'string' || !query.trim()) return;
+    store.recordFeature('friend_add_manual');
+    const target = findProfileByNameOrId(query);
+    if (!target || target.clientId === me.clientId) {
+      return socket.emit('add-friend-result', { ok: false, reason: 'not-found' });
+    }
+    if (isBlockedPair(me.clientId, target.clientId)) {
+      return socket.emit('add-friend-result', { ok: false, reason: 'not-found' });
+    }
+    if (isFriend(me.clientId, target.clientId)) {
+      return socket.emit('add-friend-result', { ok: true, alreadyFriends: true, username: target.username });
+    }
+    const pending = friendRequests.get(target.clientId);
+    if (pending && pending.has(me.clientId)) {
+      return socket.emit('add-friend-result', { ok: true, alreadySent: true, username: target.username });
+    }
+    deliverFriendRequest(socket, me, target.clientId, !socketAuth.get(socket.id));
+    socket.emit('add-friend-result', { ok: true, sent: true, username: target.username });
   });
 
   socket.on('friend-request-respond', ({ fromClientId, accept, notificationId } = {}) => {
@@ -1060,13 +1163,9 @@ io.on('connection', (socket) => {
     const me = profiles.get(socket.id);
     if (!me || !toClientId || typeof text !== 'string' || !text.trim()) return;
     if (!isFriend(me.clientId, toClientId)) return;
-    // Text messaging is call-gated: you can only send a message to someone while
-    // you're in a live (accepted) call with them. Outside a call the only way to
-    // reach a friend is to call them (or queue a call-back request for later).
-    const targetSocketId = clientSockets.get(toClientId);
-    if (!targetSocketId || partners.get(socket.id) !== targetSocketId) {
-      return socket.emit('chat-blocked', { reason: 'call-required' });
-    }
+    // Friends can message each other any time — online, offline, or mid-call.
+    // Offline messages are stored in the pair's history and surfaced as an
+    // unread notification when the friend is next online.
     if (containsLink(text)) {
       return socket.emit('chat-blocked', { reason: 'link' });
     }
@@ -1230,6 +1329,8 @@ io.on('connection', (socket) => {
     const profile = profiles.get(socket.id);
     if (profile && clientSockets.get(profile.clientId) === socket.id) {
       clientSockets.delete(profile.clientId);
+      // Flip this user's online dot to grey in their friends' lists right away.
+      syncFriendsOf(profile.clientId);
     }
     profiles.delete(socket.id);
     socketAuth.delete(socket.id);
