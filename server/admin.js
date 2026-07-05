@@ -176,7 +176,21 @@ function createAdmin({ io, getRuntime, kickBanned }) {
 
   // First-run setup: only available while no admin exists.
   router.get('/api/status', (req, res) => {
-    res.json({ setupDone: !!store.data.admin, authed: validSession(req) });
+    const b = store.backendStatus;
+    res.json({
+      setupDone: !!store.data.admin,
+      authed: validSession(req),
+      // Backend health, so a misconfigured DB is visible on the login screen
+      // without needing server logs. No secrets — host only, never the URL.
+      storage: {
+        configured: b.configured,
+        mode: b.mode,
+        host: b.host,
+        error: b.error,
+        // File mode while DATABASE_URL is set = data will be lost on restart.
+        atRisk: b.configured && b.mode !== 'postgres',
+      },
+    });
   });
 
   router.post('/api/setup', async (req, res) => {
