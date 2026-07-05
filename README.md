@@ -43,3 +43,23 @@ Audio itself flows directly between the two browsers (peer-to-peer); the server 
 
 - Uses public Google STUN servers for NAT traversal. On some restrictive networks (symmetric NAT, corporate firewalls) a TURN server would be needed for relay fallback — not included here.
 - Requires HTTPS (or localhost) in production, since browsers only allow microphone access on secure origins.
+
+## Owner Dashboard
+
+A secured owner dashboard lives at **`/owner`** (e.g. `https://talklive.ai/owner`).
+
+- **Security:** admin password (min 10 chars) + Google Authenticator (TOTP) 2FA. First visit runs a one-time setup where you scan a QR code. 5 failed logins lock the IP out for 15 minutes; every login and admin action lands in the Audit Log tab.
+- **Analytics:** live online users (with country/city/IP), visits, unique visitors, daily 24h users, matches, 30-day traffic chart, top countries/cities, feature-usage graph (most → least), anonymous "what users talk about" keyword aggregate, and a rule-based AI conclusion on how the site is doing.
+- **Moderation:** every user report is stored with reporter/reported details; one-click bans from 30 minutes up to 5 years (by clientId **and** IP — banned users cannot connect at all until the ban expires or you lift it). Users are auto-banned for 30 minutes after 3 reports.
+- **Errors:** client-side JS errors and server crashes are collected in the Errors tab (duplicates collapsed).
+- **Maintenance mode:** one button takes the site offline with a friendly message; the dashboard stays reachable.
+
+### Environment variables
+
+| Var | Purpose |
+|---|---|
+| `OWNER_EMAIL` | Where report/feedback/error alert emails go |
+| `SMTP_USER` / `SMTP_PASS` | Gmail address + **app password** (Google Account → Security → 2-Step Verification → App passwords) |
+| `DATA_DIR` | Directory for the persistent JSON store (default `./data`; on Render mount a disk at `/var/data`) |
+
+Email alerts are throttled to one per topic per 10 minutes and are skipped entirely if SMTP is not configured.

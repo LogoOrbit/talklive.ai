@@ -3625,13 +3625,43 @@ socket.on('reaction', (reaction) => {
   showReactionFloat(reaction);
 });
 
-socket.on('banned', () => {
-  showError(t('errBanned'));
+socket.on('banned', (info) => {
+  if (info && info.until) {
+    const mins = Math.max(1, Math.round((info.until - Date.now()) / 60000));
+    const human = mins >= 1440 ? `${Math.round(mins / 1440)} day(s)` : mins >= 60 ? `${Math.round(mins / 60)} hour(s)` : `${mins} minute(s)`;
+    showError(`${t('errBanned')} (${human} remaining)`);
+    socket.io.reconnection(false); // banned: stop auto-reconnect attempts
+  } else {
+    showError(t('errBanned'));
+  }
   if (localStream) {
     localStream.getTracks().forEach((t) => t.stop());
     localStream = null;
   }
   resetUI();
+});
+
+socket.on('maintenance', (info) => {
+  showError((info && info.message) || 'TalkLive is under maintenance. Please come back soon!');
+  socket.io.reconnection(false);
+  resetUI();
+});
+
+// Report client-side JS errors to the server so the owner dashboard can
+// surface the bugs real users are hitting.
+function reportClientError(message, stack) {
+  try {
+    if (socket && socket.connected) {
+      socket.emit('client-error', { message: String(message).slice(0, 400), stack: String(stack || '').slice(0, 1500), url: location.pathname });
+    }
+  } catch (_) { /* never let error reporting throw */ }
+}
+window.addEventListener('error', (e) => {
+  reportClientError(e.message || 'Unknown error', e.error && e.error.stack);
+});
+window.addEventListener('unhandledrejection', (e) => {
+  const r = e.reason || {};
+  reportClientError(r.message || String(e.reason || 'Unhandled rejection'), r.stack);
 });
 
 // --- Call back: re-connect directly with someone from Call History ---

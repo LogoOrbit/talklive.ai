@@ -14,3 +14,19 @@ services:
         value: talklive.ai
       - key: GOOGLE_CLIENT_ID
         sync: false
+      # Owner dashboard email alerts (Gmail SMTP app password) — set in Render UI.
+      - key: OWNER_EMAIL
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: DATA_DIR
+        value: /var/data
+    # Persistent disk so dashboard analytics, bans and reports survive deploys.
+    # NOTE: disks require a paid Render plan; without one, data resets on each
+    # deploy but the dashboard still works.
+    disk:
+      name: talklive-data
+      mountPath: /var/data
+      sizeGB: 1
