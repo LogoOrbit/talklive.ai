@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>TalkLive — Owner Dashboard</title>
+<style>
+:root{
+  --page:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink2:#52514e;--muted:#898781;
+  --grid:#e1e0d9;--axis:#c3c2b7;--ring:rgba(11,11,11,.10);
+  --s1:#2a78d6;--s2:#1baf7a;--s3:#eda100;--s4:#008300;--s5:#4a3aa7;--s6:#e34948;
+  --good:#0ca30c;--warn:#fab219;--serious:#ec835a;--crit:#d03b3b;--good-text:#006300;
+}
+@media (prefers-color-scheme: dark){:root{
+  --page:#0d0d0d;--surface:#1a1a19;--ink:#fff;--ink2:#c3c2b7;--muted:#898781;
+  --grid:#2c2c2a;--axis:#383835;--ring:rgba(255,255,255,.10);
+  --s1:#3987e5;--s2:#199e70;--s3:#c98500;--s5:#9085e9;--s6:#e66767;--good-text:#0ca30c;
+}}
+*{box-sizing:border-box;margin:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--page);color:var(--ink);min-height:100vh}
+button{font:inherit;cursor:pointer}
+input,textarea{font:inherit;background:var(--surface);color:var(--ink);border:1px solid var(--axis);border-radius:8px;padding:10px 12px;width:100%}
+.hidden{display:none!important}
+/* Auth screens */
+.auth{max-width:380px;margin:10vh auto;padding:28px;background:var(--surface);border:1px solid var(--ring);border-radius:16px}
+.auth h1{font-size:1.3rem;margin-bottom:4px}.auth p{color:var(--ink2);font-size:.9rem;margin-bottom:16px;line-height:1.45}
+.auth label{display:block;font-size:.8rem;color:var(--ink2);margin:12px 0 4px}
+.auth .err{color:var(--crit);font-size:.85rem;margin-top:10px;min-height:1.2em}
+.btn{background:var(--s1);color:#fff;border:0;border-radius:8px;padding:11px 16px;width:100%;font-weight:600;margin-top:16px}
+.btn.ghost{background:transparent;color:var(--ink2);border:1px solid var(--axis);width:auto;padding:7px 14px;margin:0}
+.qrbox{text-align:center;margin:14px 0}.qrbox img{border-radius:8px;background:#fff;padding:6px}
+.secret{font-family:ui-monospace,monospace;font-size:.75rem;word-break:break-all;color:var(--ink2);background:var(--page);padding:8px;border-radius:6px;margin-top:6px}
+/* Shell */
+header{display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--grid);position:sticky;top:0;background:var(--page);z-index:5;flex-wrap:wrap}
+header h1{font-size:1.05rem}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--good);display:inline-block;margin-right:6px;animation:pulse 2s infinite}
+@keyframes pulse{50%{opacity:.45}}
+nav{display:flex;gap:4px;flex-wrap:wrap}
+nav button{background:transparent;border:0;color:var(--ink2);padding:8px 12px;border-radius:8px;font-size:.88rem}
+nav button.on{background:var(--surface);color:var(--ink);font-weight:600;box-shadow:0 0 0 1px var(--ring)}
+nav button .badge{background:var(--crit);color:#fff;border-radius:9px;font-size:.68rem;padding:1px 6px;margin-left:4px;font-weight:700}
+main{padding:20px;max-width:1200px;margin:0 auto}
+.grid{display:grid;gap:14px}
+.tiles{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
+.tile{background:var(--surface);border:1px solid var(--ring);border-radius:14px;padding:14px 16px}
+.tile .k{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.tile .v{font-size:1.7rem;font-weight:700;margin-top:4px}
+.tile .s{font-size:.78rem;color:var(--ink2);margin-top:2px}
+.card{background:var(--surface);border:1px solid var(--ring);border-radius:14px;padding:16px;margin-top:14px;overflow-x:auto}
+.card h2{font-size:.95rem;margin-bottom:10px}
+.card h2 .sub{font-weight:400;color:var(--muted);font-size:.8rem;margin-left:8px}
+.legend{display:flex;gap:14px;font-size:.78rem;color:var(--ink2);margin-bottom:8px;flex-wrap:wrap}
+.legend i{width:10px;height:10px;border-radius:3px;display:inline-block;margin-right:5px;vertical-align:-1px}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th{text-align:left;color:var(--muted);font-weight:600;font-size:.75rem;text-transform:uppercase;letter-spacing:.03em;padding:8px;border-bottom:1px solid var(--grid)}
+td{padding:9px 8px;border-bottom:1px solid var(--grid);vertical-align:top}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.pill{display:inline-block;font-size:.72rem;padding:2px 9px;border-radius:10px;font-weight:600}
+.pill.good{background:color-mix(in srgb,var(--good) 15%,transparent);color:var(--good-text)}
+.pill.warn{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--ink)}
+.pill.crit{background:color-mix(in srgb,var(--crit) 15%,transparent);color:var(--crit)}
+.pill.info{background:color-mix(in srgb,var(--s1) 14%,transparent);color:var(--s1)}
+.hbar{height:22px;border-radius:4px;background:var(--s1);min-width:2px}
+.hrow{display:grid;grid-template-columns:150px 1fr 60px;align-items:center;gap:10px;margin:6px 0;font-size:.84rem}
+.hrow .n{text-align:right;color:var(--ink2);font-variant-numeric:tabular-nums}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:var(--page);border:1px solid var(--grid);border-radius:14px;padding:4px 12px;font-size:.83rem;color:var(--ink2)}
+.concl{border-left:4px solid var(--good);padding-left:14px}
+.concl.warning{border-color:var(--warn)}.concl.serious{border-color:var(--serious)}
+.concl li{margin:7px 0 7px 16px;line-height:1.5;color:var(--ink2)}
+.rowbtns{display:flex;gap:6px;flex-wrap:wrap}
+.rowbtns button{border:1px solid var(--axis);background:transparent;color:var(--ink);border-radius:7px;padding:4px 10px;font-size:.78rem}
+.rowbtns button.danger{border-color:var(--crit);color:var(--crit)}
+.switch{display:flex;align-items:center;gap:12px}
+.tooltip{position:fixed;pointer-events:none;background:var(--ink);color:var(--page);font-size:.75rem;padding:6px 9px;border-radius:7px;z-index:20;white-space:nowrap;transform:translate(-50%,-130%)}
+select{font:inherit;background:var(--surface);color:var(--ink);border:1px solid var(--axis);border-radius:8px;padding:8px 10px}
+.muted{color:var(--muted);font-size:.83rem}
+@media(max-width:640px){main{padding:12px}.hrow{grid-template-columns:100px 1fr 48px}}
+</style>
+</head>
+<body>
+
+<div id="setupView" class="auth hidden">
+  <h1>🔐 Dashboard Setup</h1>
+  <p>First-time setup. Create your admin password, then scan the QR code with <strong>Google Authenticator</strong>.</p>
+  <div id="setupStep1">
+    <label>Admin password (min 10 characters)</label>
+    <input id="setupPass" type="password" autocomplete="new-password">
+    <label>Repeat password</label>
+    <input id="setupPass2" type="password" autocomplete="new-password">
+    <button class="btn" id="setupBtn">Continue</button>
+  </div>
+  <div id="setupStep2" class="hidden">
+    <div class="qrbox"><img id="qrImg" alt="Scan with Google Authenticator"></div>
+    <p>Scan with Google Authenticator, or enter this secret manually:</p>
+    <div class="secret" id="secretText"></div>
+    <label>Enter the 6-digit code to confirm</label>
+    <input id="setupCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
+    <button class="btn" id="setupConfirmBtn">Activate dashboard</button>
+  </div>
+  <div class="err" id="setupErr"></div>
+</div>
+
+<div id="loginView" class="auth hidden">
+  <h1>🔐 Owner Login</h1>
+  <p>TalkLive owner dashboard. Password + Google Authenticator code required.</p>
+  <label>Password</label>
+  <input id="loginPass" type="password" autocomplete="current-password">
+  <label>Authenticator code</label>
+  <input id="loginCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
+  <button class="btn" id="loginBtn">Sign in</button>
+  <div class="err" id="loginErr"></div>
+</div>
+
+<div id="dash" class="hidden">
+<header>
+  <h1><span class="dot"></span>TalkLive Owner</h1>
+  <nav id="nav"></nav>
+  <span style="flex:1"></span>
+  <button class="btn ghost" id="logoutBtn">Log out</button>
+</header>
+<main id="main"></main>
+</div>
+
+<script>
+'use strict';
+const $=(s)=>document.querySelector(s);
+const api=async(p,opt)=>{const r=await fetch('/owner/api/'+p,{headers:{'Content-Type':'application/json'},...opt});if(r.status===401&&p!=='login'){show('login');throw new Error('auth');}const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'Request failed');return j;};
+const post=(p,body)=>api(p,{method:'POST',body:JSON.stringify(body||{})});
+const esc=(s)=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtTs=(ts)=>new Date(ts).toLocaleString();
+const ago=(ts)=>{const m=Math.round((Date.now()-ts)/60000);if(m<1)return'just now';if(m<60)return m+'m ago';if(m<1440)return Math.round(m/60)+'h ago';return Math.round(m/1440)+'d ago';};
+const num=(n)=>Number(n||0).toLocaleString();
+
+function show(view){
+  $('#setupView').classList.toggle('hidden',view!=='setup');
+  $('#loginView').classList.toggle('hidden',view!=='login');
+  $('#dash').classList.toggle('hidden',view!=='dash');
+}
+
+/* ---------- auth flow ---------- */
+async function boot(){
+  try{
+    const st=await api('status');
+    if(!st.setupDone)show('setup');
+    else if(st.authed){show('dash');startDash();}
+    else show('login');
+  }catch(e){show('login');}
+}
+$('#setupBtn').onclick=async()=>{
+  const p=$('#setupPass').value,p2=$('#setupPass2').value;
+  $('#setupErr').textContent='';
+  if(p.length<10)return $('#setupErr').textContent='Password must be at least 10 characters.';
+  if(p!==p2)return $('#setupErr').textContent='Passwords do not match.';
+  try{
+    const r=await post('setup',{password:p});
+    $('#setupStep1').classList.add('hidden');$('#setupStep2').classList.remove('hidden');
+    if(r.qr)$('#qrImg').src=r.qr;else $('#qrImg').remove();
+    $('#secretText').textContent=r.secret;
+  }catch(e){$('#setupErr').textContent=e.message;}
+};
+$('#setupConfirmBtn').onclick=async()=>{
+  $('#setupErr').textContent='';
+  try{await post('setup-confirm',{code:$('#setupCode').value});show('dash');startDash();}
+  catch(e){$('#setupErr').textContent=e.message;}
+};
+$('#loginBtn').onclick=async()=>{
+  $('#loginErr').textContent='';
+  try{await post('login',{password:$('#loginPass').value,code:$('#loginCode').value});$('#loginPass').value='';$('#loginCode').value='';show('dash');startDash();}
+  catch(e){$('#loginErr').textContent=e.message;}
+};
+$('#loginCode').addEventListener('keydown',e=>{if(e.key==='Enter')$('#loginBtn').click();});
+$('#logoutBtn').onclick=async()=>{await post('logout');location.reload();};
+
+/* ---------- charts (inline SVG) ---------- */
+let tipEl=null;
+function tip(show,x,y,html){
+  if(!tipEl){tipEl=document.createElement('div');tipEl.className='tooltip hidden';document.body.appendChild(tipEl);}
+  tipEl.classList.toggle('hidden',!show);
+  if(show){tipEl.innerHTML=html;tipEl.style.left=x+'px';tipEl.style.top=y+'px';}
+}
+function lineChart(el,series,keys,colors,labels){
+  const W=el.clientWidth||800,H=240,P={l:42,r:12,t:12,b:26};
+  const max=Math.max(1,...series.flatMap(d=>keys.map(k=>d[k]||0)));
+  const x=(i)=>P.l+(series.length<2?0:(i/(series.length-1))*(W-P.l-P.r));
+  const y=(v)=>H-P.b-(v/max)*(H-P.t-P.b);
+  const ticks=4;let g='';
+  for(let t=0;t<=ticks;t++){const v=Math.round(max*t/ticks),yy=y(v);
+    g+=`<line x1="${P.l}" x2="${W-P.r}" y1="${yy}" y2="${yy}" stroke="var(--grid)" stroke-width="1"/><text x="${P.l-6}" y="${yy+4}" text-anchor="end" font-size="10" fill="var(--muted)">${v}</text>`;}
+  let paths='';
+  keys.forEach((k,ki)=>{
+    const pts=series.map((d,i)=>`${x(i)},${y(d[k]||0)}`).join(' ');
+    paths+=`<polyline points="${pts}" fill="none" stroke="${colors[ki]}" stroke-width="2" stroke-linejoin="round"/>`;
+  });
+  let lbls='';
+  series.forEach((d,i)=>{if(i%Math.ceil(series.length/6)===0||i===series.length-1)lbls+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="10" fill="var(--muted)">${d.day.slice(5)}</text>`;});
+  el.innerHTML=`<svg width="100%" viewBox="0 0 ${W} ${H}" style="display:block">${g}${paths}${lbls}<rect id="hover" x="${P.l}" y="${P.t}" width="${W-P.l-P.r}" height="${H-P.t-P.b}" fill="transparent"/></svg>`;
+  const svg=el.querySelector('svg');
+  svg.addEventListener('mousemove',(e)=>{
+    const r=svg.getBoundingClientRect();
+    const relX=(e.clientX-r.left)/r.width*W;
+    const i=Math.max(0,Math.min(series.length-1,Math.round((relX-P.l)/((W-P.l-P.r)/Math.max(1,series.length-1)))));
+    const d=series[i];
+    tip(true,e.clientX,e.clientY,`<b>${d.day}</b><br>`+keys.map((k,ki)=>`${labels[ki]}: ${num(d[k])}`).join('<br>'));
+  });
+  svg.addEventListener('mouseleave',()=>tip(false));
+}
+function hbars(el,entries,color){
+  const max=Math.max(1,...entries.map(e=>e[1]));
+  el.innerHTML=entries.map(([name,v])=>`<div class="hrow"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(name)}">${esc(name)}</div><div><div class="hbar" style="width:${Math.max(1,v/max*100)}%;background:${color}"></div></div><div class="n">${num(v)}</div></div>`).join('')||'<div class="muted">No data yet.</div>';
+}
+
+/* ---------- dashboard shell ---------- */
+const TABS=[['overview','Overview'],['live','Live Users'],['reports','Reports'],['bans','Bans'],['chats','Chats'],['accounts','Accounts'],['errors','Errors'],['feedback','Feedback'],['audit','Audit Log'],['settings','Maintenance']];
+let tab='overview',timer=null,counts={};
+function renderNav(){
+  $('#nav').innerHTML=TABS.map(([id,label])=>{
+    let badge='';
+    if(id==='reports'&&counts.unhandledReports)badge=`<span class="badge">${counts.unhandledReports}</span>`;
+    if(id==='errors'&&counts.errors)badge=`<span class="badge" style="background:var(--serious)">${counts.errors}</span>`;
+    return `<button data-t="${id}" class="${tab===id?'on':''}">${label}${badge}</button>`;
+  }).join('');
+  $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;renderNav();load();});
+}
+function startDash(){renderNav();load();clearInterval(timer);timer=setInterval(load,tab==='live'?5000:12000);}
+async function load(){
+  clearInterval(timer);timer=setInterval(load,tab==='live'?5000:12000);
+  try{
+    if(tab==='overview')await viewOverview();
+    else if(tab==='live')await viewLive();
+    else if(tab==='reports')await viewReports();
+    else if(tab==='bans')await viewBans();
+    else if(tab==='chats')await viewChats();
+    else if(tab==='accounts')await viewAccounts();
+    else if(tab==='errors')await viewErrors();
+    else if(tab==='feedback')await viewFeedback();
+    else if(tab==='audit')await viewAudit();
+    else if(tab==='settings')await viewSettings();
+  }catch(e){if(e.message!=='auth')$('#main').innerHTML=`<div class="card">Failed to load: ${esc(e.message)}</div>`;}
+}
+
+/* ---------- views ---------- */
+async function viewOverview(){
+  const o=await api('overview');
+  counts=o.counts;renderNav();
+  const c=o.conclusion;
+  $('#main').innerHTML=`
+  <div class="grid tiles">
+    <div class="tile"><div class="k">Online now</div><div class="v" style="color:var(--good-text)">${num(o.runtime.online)}</div><div class="s">${num(o.runtime.inCall/2|0)} calls · ${num(o.runtime.waiting)} waiting</div></div>
+    <div class="tile"><div class="k">Visits today</div><div class="v">${num(o.today.visits)}</div><div class="s">${num(o.today.uniques)} unique visitors</div></div>
+    <div class="tile"><div class="k">Users today (24h)</div><div class="v">${num(o.today.connections)}</div><div class="s">peak online ${num(o.today.peakOnline)}</div></div>
+    <div class="tile"><div class="k">Matches today</div><div class="v">${num(o.today.matches)}</div><div class="s">${num(o.totals.matches)} all-time</div></div>
+    <div class="tile"><div class="k">Total visits</div><div class="v">${num(o.totals.visits)}</div><div class="s">all-time</div></div>
+    <div class="tile"><div class="k">Accounts</div><div class="v">${num(o.counts.accounts)}</div><div class="s">registered users</div></div>
+    <div class="tile"><div class="k">Active bans</div><div class="v" style="color:${o.counts.activeBans?'var(--crit)':'inherit'}">${num(o.counts.activeBans)}</div><div class="s">${num(o.counts.unhandledReports)} new reports</div></div>
+    <div class="tile"><div class="k">Server</div><div class="v">${Math.floor(o.runtime.uptimeSeconds/3600)}h</div><div class="s">uptime · ${o.runtime.memoryMB} MB RAM ${o.maintenance.on?'· <b style="color:var(--crit)">MAINTENANCE</b>':''}</div></div>
+  </div>
+  <div class="card concl ${c.health}"><h2>🤖 AI Conclusion <span class="sub">rule-based analysis of the last 7 days</span> <span class="pill ${c.health==='good'?'good':c.health==='warning'?'warn':'crit'}">${c.health.toUpperCase()}</span></h2>
+    <ul>${c.summary.map(l=>`<li>${esc(l)}</li>`).join('')}</ul></div>
+  <div class="card"><h2>Traffic — last 30 days</h2>
+    <div class="legend"><span><i style="background:var(--s1)"></i>Visits</span><span><i style="background:var(--s2)"></i>Unique visitors</span><span><i style="background:var(--s3)"></i>Matches</span></div>
+    <div id="trafficChart"></div></div>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
+    <div class="card"><h2>Feature usage <span class="sub">most → least, last 30 days</span></h2><div id="featBars"></div></div>
+    <div class="card"><h2>Top countries <span class="sub">visits, last 30 days</span></h2><div id="countryBars"></div></div>
+    <div class="card"><h2>Top cities <span class="sub">visits, last 30 days</span></h2><div id="cityBars"></div></div>
+    <div class="card"><h2>What users talk about <span class="sub">anonymous keyword aggregate</span></h2>
+      <div class="chips">${o.topics.map(([w,n])=>`<span class="chip">${esc(w)} · ${num(n)}</span>`).join('')||'<span class="muted">No chat data yet.</span>'}</div></div>
+  </div>`;
+  lineChart($('#trafficChart'),o.series,['visits','uniques','matches'],['var(--s1)','var(--s2)','var(--s3)'],['Visits','Uniques','Matches']);
+  hbars($('#featBars'),o.features,'var(--s5)');
+  hbars($('#countryBars'),o.countries,'var(--s1)');
+  hbars($('#cityBars'),o.cities,'var(--s2)');
+}
+
+const DUR=[['30','30 minutes'],['60','1 hour'],['360','6 hours'],['1440','1 day'],['4320','3 days'],['10080','7 days'],['43200','30 days'],['129600','90 days'],['525600','1 year'],['2628000','5 years']];
+const durSelect=(id)=>`<select id="${id}">${DUR.map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select>`;
+function banButtons(u){
+  return `<div class="rowbtns"><button class="danger" onclick="banUser('${esc(u.clientId)}','${esc(u.ip||'')}','${esc(u.username)}','${esc(u.country||'')}','${esc(u.city||'')}')">Ban…</button></div>`;
+}
+window.banUser=async(clientId,ip,username,country,city)=>{
+  const choice=prompt(`Ban ${username}?\nEnter duration:\n30 = 30 min, 60 = 1 hour, 1440 = 1 day, 10080 = 7 days, 43200 = 30 days, 525600 = 1 year\n(minutes)`,'30');
+  if(!choice)return;
+  const reason=prompt('Reason for the ban (shown in your audit log):','Owner ban')||'Owner ban';
+  try{await post('ban',{clientId,ip,username,country,city,minutes:Number(choice),reason});load();}
+  catch(e){alert(e.message);}
+};
+
+async function viewLive(){
+  const r=await api('online');
+  $('#main').innerHTML=`<div class="card"><h2>Live users <span class="sub">${r.users.length} connected · refreshes every 5s</span></h2>
+  <table><tr><th>User</th><th>Location</th><th>Status</th><th>Account</th><th class="num">Reports</th><th>IP</th><th></th></tr>
+  ${r.users.map(u=>`<tr><td><b>${esc(u.username)}</b><br><span class="muted">${esc(u.clientId.slice(0,12))}…</span></td>
+  <td>${esc(u.country)}${u.city&&u.city!=='Unknown'?', '+esc(u.city):''}</td>
+  <td>${u.inCall?'<span class="pill good">In call</span>':u.waiting?'<span class="pill warn">Waiting</span>':'<span class="pill info">Idle</span>'}</td>
+  <td>${u.account?esc(u.account):'<span class="muted">guest</span>'}</td>
+  <td class="num">${u.reports?`<span class="pill crit">${u.reports}</span>`:'0'}</td>
+  <td class="muted">${esc(u.ip)}</td><td>${banButtons(u)}</td></tr>`).join('')||'<tr><td colspan="7" class="muted">Nobody online right now.</td></tr>'}</table></div>`;
+}
+
+async function viewReports(){
+  const r=await api('reports');
+  $('#main').innerHTML=`<div class="card"><h2>User reports <span class="sub">${r.reports.length} shown · one-click ban with duration</span></h2>
+  <table><tr><th>When</th><th>Reported user</th><th>Reason</th><th>Reporter</th><th class="num">Total reports</th><th>Actions</th></tr>
+  ${r.reports.map(rep=>`<tr style="${rep.handled?'opacity:.55':''}">
+  <td>${ago(rep.ts)}<br><span class="muted">${fmtTs(rep.ts)}</span></td>
+  <td><b>${esc(rep.reported.username)}</b><br><span class="muted">${esc(rep.reported.country)}${rep.reported.city&&rep.reported.city!=='Unknown'?', '+esc(rep.reported.city):''}</span>${rep.activeBan?'<br><span class="pill crit">BANNED</span>':''}</td>
+  <td>${esc(rep.reason)}${rep.detail?`<br><span class="muted">“${esc(rep.detail)}”</span>`:''}</td>
+  <td>${esc(rep.reporter.username)}<br><span class="muted">${esc(rep.reporter.country)}</span></td>
+  <td class="num"><span class="pill ${rep.totalReportsOnUser>=3?'crit':rep.totalReportsOnUser>=2?'warn':'info'}">${rep.totalReportsOnUser}</span></td>
+  <td><div class="rowbtns">
+    ${rep.activeBan?'':`<button class="danger" onclick="banUser('${esc(rep.reported.clientId)}','${esc(rep.reported.ip||'')}','${esc(rep.reported.username)}','${esc(rep.reported.country||'')}','${esc(rep.reported.city||'')}')">Ban…</button>`}
+    ${rep.handled?'':`<button onclick="markHandled('${rep.id}')">Mark handled</button>`}
+  </div></td></tr>`).join('')||'<tr><td colspan="6" class="muted">No reports yet — good sign!</td></tr>'}</table></div>`;
+}
+window.markHandled=async(id)=>{await post('reports/'+id+'/handled');load();};
+
+async function viewBans(){
+  const r=await api('bans');
+  $('#main').innerHTML=`<div class="card"><h2>Bans <span class="sub">banned users cannot connect to anyone until the ban expires or you lift it</span></h2>
+  <table><tr><th>User</th><th>Reason</th><th>Banned</th><th>Expires</th><th>Status</th><th></th></tr>
+  ${r.bans.map(b=>{const active=!b.liftedAt&&b.expiresAt>r.now;
+  return `<tr style="${active?'':'opacity:.55'}"><td><b>${esc(b.username)}</b><br><span class="muted">${esc(b.country)}${b.city?', '+esc(b.city):''} · ${esc((b.ip||''))}</span></td>
+  <td>${esc(b.reason)}</td><td>${fmtTs(b.createdAt)}</td><td>${fmtTs(b.expiresAt)}</td>
+  <td>${b.liftedAt?'<span class="pill info">Lifted</span>':active?'<span class="pill crit">Active</span>':'<span class="pill good">Expired</span>'}</td>
+  <td>${active?`<div class="rowbtns"><button onclick="unban('${b.id}')">Lift ban</button></div>`:''}</td></tr>`;}).join('')||'<tr><td colspan="6" class="muted">No bans on record.</td></tr>'}</table></div>`;
+}
+window.unban=async(id)=>{try{await post('unban',{banId:id});load();}catch(e){alert(e.message);}};
+
+let chatQuery='';
+async function viewChats(){
+  const r=await api('transcripts'+(chatQuery?'?q='+encodeURIComponent(chatQuery):''));
+  // Group consecutive messages of the same conversation for readability.
+  $('#main').innerHTML=`<div class="card"><h2>💬 Chat transcripts <span class="sub">${num(r.total)} messages stored · text chat only, voice is peer-to-peer and never recorded</span></h2>
+  <div style="display:flex;gap:8px;margin-bottom:12px;max-width:420px">
+    <input id="chatQ" placeholder="Search by username, ID or text…" value="${esc(chatQuery)}">
+    <button class="btn" style="width:auto;margin:0" id="chatQBtn">Search</button>
+  </div>
+  <table><tr><th>When</th><th>From → To</th><th>Type</th><th>Message</th><th></th></tr>
+  ${r.messages.map(m=>`<tr><td style="white-space:nowrap">${ago(m.ts)}<br><span class="muted">${fmtTs(m.ts)}</span></td>
+  <td><b>${esc(m.from)}</b> → ${esc(m.to)}<br><span class="muted">${esc(m.country||'')}</span></td>
+  <td>${m.kind==='friend'?'<span class="pill info">Friends</span>':'<span class="pill warn">Stranger</span>'}</td>
+  <td style="max-width:420px;overflow-wrap:anywhere">${esc(m.text)}</td>
+  <td><div class="rowbtns"><button class="danger" onclick="banUser('${esc(m.fromClientId)}','','${esc(m.from)}','${esc(m.country||'')}','')">Ban sender…</button></div></td></tr>`).join('')||'<tr><td colspan="5" class="muted">No chat messages recorded yet.</td></tr>'}</table></div>`;
+  const go=()=>{chatQuery=$('#chatQ').value.trim();load();};
+  $('#chatQBtn').onclick=go;
+  $('#chatQ').addEventListener('keydown',e=>{if(e.key==='Enter')go();});
+}
+
+async function viewAccounts(){
+  const r=await api('accounts');
+  $('#main').innerHTML=`<div class="card"><h2>Registered accounts <span class="sub">${r.accounts.length} total</span></h2>
+  <table><tr><th>Username</th><th>Nickname</th><th>Sign-up method</th><th>Location</th><th>Created</th><th>Last seen</th><th>IP</th></tr>
+  ${r.accounts.map(a=>`<tr><td><b>${esc(a.username||a.key)}</b></td><td>${esc(a.nickname||'')}</td>
+  <td>${a.method==='google'?'<span class="pill info">Google</span>':'<span class="pill good">Password</span>'}</td>
+  <td>${esc(a.country||'')}${a.city&&a.city!=='Unknown'?', '+esc(a.city):''}</td>
+  <td>${a.createdAt?fmtTs(a.createdAt):'—'}</td><td>${a.lastSeen?ago(a.lastSeen):'—'}</td><td class="muted">${esc(a.ip||'')}</td></tr>`).join('')||'<tr><td colspan="7" class="muted">No accounts registered yet.</td></tr>'}</table></div>`;
+}
+
+async function viewErrors(){
+  const r=await api('errors');
+  $('#main').innerHTML=`<div class="card"><h2>Bugs &amp; errors <span class="sub">client + server, duplicates collapsed</span></h2>
+  <table><tr><th>Last seen</th><th>Source</th><th>Error</th><th class="num">Count</th><th>User</th></tr>
+  ${r.errors.map(e=>`<tr><td>${ago(e.ts)}</td><td><span class="pill ${e.source==='server'?'crit':'warn'}">${esc(e.source)}</span></td>
+  <td><b>${esc(e.message)}</b>${e.url?`<br><span class="muted">${esc(e.url)}</span>`:''}${e.stack?`<details><summary class="muted" style="cursor:pointer">stack</summary><pre style="font-size:.7rem;white-space:pre-wrap;color:var(--ink2)">${esc(e.stack)}</pre></details>`:''}</td>
+  <td class="num">${num(e.count)}</td><td>${esc(e.username||'')}${e.country?`<br><span class="muted">${esc(e.country)}</span>`:''}</td></tr>`).join('')||'<tr><td colspan="5" class="muted">No errors logged. 🎉</td></tr>'}</table></div>`;
+}
+
+async function viewFeedback(){
+  const r=await api('feedback');
+  $('#main').innerHTML=`<div class="card"><h2>User feedback <span class="sub">${r.feedback.length} total</span></h2>
+  <table><tr><th>When</th><th>From</th><th>Feedback</th></tr>
+  ${r.feedback.map(f=>`<tr><td>${ago(f.ts)}<br><span class="muted">${fmtTs(f.ts)}</span></td>
+  <td>${esc(f.username)}<br><span class="muted">${esc(f.country||'')}</span></td><td>${esc(f.text)}</td></tr>`).join('')||'<tr><td colspan="3" class="muted">No feedback yet.</td></tr>'}</table></div>`;
+}
+
+async function viewAudit(){
+  const r=await api('audit');
+  $('#main').innerHTML=`<div class="card"><h2>Security audit log <span class="sub">every login, ban and admin action</span></h2>
+  <table><tr><th>When</th><th>Action</th><th>IP</th><th>Detail</th></tr>
+  ${r.audit.map(a=>`<tr><td>${fmtTs(a.ts)}</td><td><span class="pill ${/fail|lockout/.test(a.action)?'crit':'info'}">${esc(a.action)}</span></td><td class="muted">${esc(a.ip)}</td><td>${esc(a.detail)}</td></tr>`).join('')||'<tr><td colspan="4" class="muted">Empty.</td></tr>'}</table></div>`;
+}
+
+async function viewSettings(){
+  const o=await api('overview');
+  const m=o.maintenance;
+  $('#main').innerHTML=`<div class="card"><h2>🛠 Maintenance mode</h2>
+  <p class="muted" style="margin-bottom:12px">When on, visitors see a friendly maintenance page and nobody can connect. Your dashboard stays available.</p>
+  <div class="switch"><b>Status:</b> ${m.on?'<span class="pill crit">MAINTENANCE ON — site is down for users</span>':'<span class="pill good">Site is LIVE</span>'}</div>
+  <label style="display:block;margin:14px 0 6px;font-size:.85rem;color:var(--ink2)">Message shown to users</label>
+  <textarea id="maintMsg" rows="3">${esc(m.message)}</textarea>
+  <div class="rowbtns" style="margin-top:12px">
+    <button class="${m.on?'':'danger'}" id="maintBtn">${m.on?'✅ Bring site back online':'⛔ Take site into maintenance'}</button>
+  </div></div>`;
+  $('#maintBtn').onclick=async()=>{
+    if(!m.on&&!confirm('Take TalkLive OFFLINE for all users?'))return;
+    await post('maintenance',{on:!m.on,message:$('#maintMsg').value});load();
+  };
+}
+
+boot();
+</script>
+</body>
+</html>

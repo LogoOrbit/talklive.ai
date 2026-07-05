@@ -6,6 +6,8 @@ const { Server } = require('socket.io');
 const geoip = require('geoip-lite');
 const { OAuth2Client } = require('google-auth-library');
 const { generateUsername } = require('./usernames');
+const store = require('./store');
+const { createAdmin } = require('./admin');
 
 const app = express();
 const server = http.createServer(app);
@@ -109,6 +111,74 @@ app.get(/^\/([a-z0-9-]+)\.html$/i, (req, res, next) => {
   const name = req.params[0];
   if (name === 'index' || name === 'privacy') return next();
   res.redirect(301, '/' + name);
+});
+
+// --- Owner dashboard, analytics & maintenance mode ---------------------------
+
+// Runtime snapshot handed to the dashboard: everything live, straight from memory.
+function getRuntime() {
+  const users = [];
+  for (const [sid, p] of profiles) {
+    const sock = io.sockets.sockets.get(sid);
+    if (!sock) continue;
+    users.push({
+      clientId: p.clientId,
+      username: p.username,
+      country: p.countryName,
+      countryCode: p.country,
+      city: p.city,
+      gender: p.gender,
+      ip: getClientIp(sock),
+      inCall: partners.has(sid),
+      waiting: waitingQueue.includes(sid),
+      account: socketAuth.get(sid) || null,
+      reports: store.reportCountFor(p.clientId),
+    });
+  }
+  return {
+    online: io.engine.clientsCount,
+    inCall: partners.size,
+    waiting: waitingQueue.length,
+    users,
+    uptimeSeconds: Math.round(process.uptime()),
+    memoryMB: Math.round(process.memoryUsage().rss / 1048576),
+  };
+}
+
+// Force-disconnect a freshly banned user so a ban takes effect instantly.
+function kickBanned(clientId, ip, ban) {
+  for (const [sid, p] of profiles) {
+    const sock = io.sockets.sockets.get(sid);
+    if (!sock) continue;
+    if ((clientId && p.clientId === clientId) || (ip && getClientIp(sock) === ip)) {
+      sock.emit('banned', { until: ban.expiresAt, reason: ban.reason });
+      sock.disconnect(true);
+    }
+  }
+}
+
+const admin = createAdmin({ io, getRuntime, kickBanned });
+app.use('/owner', admin.router);
+
+// Maintenance mode: when on, every non-dashboard page gets a friendly 503.
+app.use((req, res, next) => {
+  if (!store.data.settings.maintenance.on) return next();
+  if (req.path.startsWith('/owner')) return next();
+  if (/\.(css|js|svg|png|ico|webmanifest|xml|txt)$/i.test(req.path)) return next();
+  res.status(503).type('html').send(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TalkLive — Maintenance</title><style>body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#0d0d0d;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:24px}h1{font-size:2rem;margin:.4em 0}.orb{width:72px;height:72px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#6da7ec,#184f95);margin:0 auto 18px;animation:p 2s ease-in-out infinite}@keyframes p{50%{transform:scale(1.08);opacity:.85}}p{color:#c3c2b7;max-width:420px;margin:0 auto;line-height:1.5}</style></head><body><div><div class="orb"></div><h1>We&rsquo;ll be right back</h1><p>${store.data.settings.maintenance.message.replace(/</g, '&lt;')}</p></div></body></html>`);
+});
+
+// Count page visits (HTML navigations only, not assets) with geo attribution.
+app.use((req, res, next) => {
+  if (req.method === 'GET' && !req.path.startsWith('/owner')
+    && (req.path === '/' || /^\/[a-z0-9-]+$/i.test(req.path))
+    && String(req.headers.accept || '').includes('text/html')) {
+    const fwd = req.headers['x-forwarded-for'];
+    const ip = ((fwd ? String(fwd).split(',')[0].trim() : req.socket.remoteAddress) || '').replace('::ffff:', '');
+    const geo = lookupGeo(ip);
+    store.recordVisit(ip, geo.countryName, geo.city);
+  }
+  next();
 });
 
 app.use(
@@ -484,6 +554,7 @@ function tryMatch(socketId) {
     const rematched = hearts.has(key) && hearts.get(key).size === 2;
     hearts.delete(key);
 
+    store.recordFeature('match');
     partnerSocket.emit('matched', { initiator: true, partner: publicProfile(seekerProfile), rematched });
     seekerSocket.emit('matched', { initiator: false, partner: publicProfile(partnerProfile), rematched });
   } else {
@@ -529,6 +600,24 @@ io.on('connection', (socket) => {
   const ip = getClientIp(socket);
   const geo = lookupGeo(ip);
 
+  // Maintenance mode: only the owner dashboard stays live.
+  if (store.data.settings.maintenance.on) {
+    socket.emit('maintenance', { message: store.data.settings.maintenance.message });
+    socket.disconnect(true);
+    return;
+  }
+
+  // Banned by IP: refuse service entirely until the ban expires or is lifted.
+  const ipBan = store.findActiveBan(null, ip);
+  if (ipBan) {
+    socket.emit('banned', { until: ipBan.expiresAt, reason: ipBan.reason });
+    socket.disconnect(true);
+    return;
+  }
+
+  store.recordConnection();
+  store.recordPeakOnline(io.engine.clientsCount);
+
   socket.on('signup', ({ username, password, nickname } = {}) => {
     if (!username || !password || !nickname || username.length < 3 || password.length < 4) {
       return socket.emit('signup-result', { ok: false, error: 'Username/password too short (min 3/4 chars).' });
@@ -538,6 +627,16 @@ io.on('connection', (socket) => {
     }
     createAccount(username, password, nickname.slice(0, 24));
     socketAuth.set(socket.id, username.toLowerCase());
+    store.recordFeature('signup');
+    store.upsertAccount(username.toLowerCase(), {
+      username,
+      nickname: nickname.slice(0, 24),
+      method: 'password',
+      country: geo.countryName,
+      city: geo.city,
+      ip,
+      lastSeen: Date.now(),
+    });
     socket.emit('signup-result', { ok: true, username, nickname: nickname.slice(0, 24) });
   });
 
@@ -547,6 +646,10 @@ io.on('connection', (socket) => {
       return socket.emit('login-result', { ok: false, error: 'Invalid username or password.' });
     }
     socketAuth.set(socket.id, (username || '').toLowerCase());
+    store.recordFeature('login');
+    store.upsertAccount((username || '').toLowerCase(), {
+      username, nickname: account.nickname, country: geo.countryName, city: geo.city, ip, lastSeen: Date.now(),
+    });
     socket.emit('login-result', { ok: true, username, nickname: account.nickname });
   });
 
@@ -564,6 +667,10 @@ io.on('connection', (socket) => {
     try {
       const { username, account } = await findOrCreateGoogleAccount(credential);
       socketAuth.set(socket.id, username.toLowerCase());
+      store.recordFeature('google_signin');
+      store.upsertAccount(username.toLowerCase(), {
+        username, nickname: account.nickname, method: 'google', country: geo.countryName, city: geo.city, ip, lastSeen: Date.now(),
+      });
       socket.emit('google-auth-result', { ok: true, username, nickname: account.nickname });
     } catch (err) {
       console.error('[google-auth] verification failed:', err.message);
@@ -602,6 +709,13 @@ io.on('connection', (socket) => {
 
   socket.on('register', (data = {}) => {
     const clientId = data.clientId || socket.id;
+    // Banned by persistent clientId: refuse until the ban expires or is lifted.
+    const ban = store.findActiveBan(clientId, ip);
+    if (ban) {
+      socket.emit('banned', { until: ban.expiresAt, reason: ban.reason });
+      socket.disconnect(true);
+      return;
+    }
     const sanitizeCountryList = (list) => (Array.isArray(list) ? list.filter((c) => typeof c === 'string').slice(0, 50) : []);
     profiles.set(socket.id, {
       clientId,
@@ -638,6 +752,14 @@ io.on('connection', (socket) => {
   socket.on('find-partner', () => {
     const profile = profiles.get(socket.id);
     if (!profile) return;
+    // Banned users can never connect to anyone until the ban is lifted.
+    const ban = store.findActiveBan(profile.clientId, ip);
+    if (ban) {
+      socket.emit('banned', { until: ban.expiresAt, reason: ban.reason });
+      socket.disconnect(true);
+      return;
+    }
+    store.recordFeature('search');
     // A fresh, explicit search starts with the full set of filters again.
     profile.randomFallbackActive = false;
     tryMatch(socket.id);
@@ -681,12 +803,36 @@ io.on('connection', (socket) => {
       blockPair(seeker.clientId, partner.clientId);
       const count = (reportCounts.get(partner.clientId) || 0) + 1;
       reportCounts.set(partner.clientId, count);
-      console.log(`[report] ${seeker.username} reported ${partner.username} — reason: ${reason}${detail ? ` — "${detail}"` : ''} (total reports: ${count})`);
-      if (count >= 3) {
-        console.log(`[ban] ${partner.username} auto-banned after ${count} reports`);
-        const partnerSocket = io.sockets.sockets.get(partnerId);
+      const partnerSocket = io.sockets.sockets.get(partnerId);
+      const reportedIp = partnerSocket ? getClientIp(partnerSocket) : null;
+      store.recordFeature('report');
+      store.addReport({
+        reporter: { clientId: seeker.clientId, username: seeker.username, country: seeker.countryName, city: seeker.city },
+        reported: { clientId: partner.clientId, username: partner.username, country: partner.countryName, city: partner.city, ip: reportedIp },
+        reason,
+        detail,
+      });
+      const totalReports = store.reportCountFor(partner.clientId);
+      console.log(`[report] ${seeker.username} reported ${partner.username} — reason: ${reason}${detail ? ` — "${detail}"` : ''} (total reports: ${totalReports})`);
+      admin.sendAlertEmail('report', `New user report against ${partner.username}`,
+        `${seeker.username} (${seeker.countryName}) reported ${partner.username} (${partner.countryName}, ${partner.city}).\nReason: ${reason}${detail ? `\nDetail: ${detail}` : ''}\nTotal reports on this user: ${totalReports}\n\nReview at https://${CANONICAL_HOST}/owner`);
+      // Auto-ban after the configured threshold — a real persisted ban (default
+      // 30 minutes) so they can't reconnect by refreshing. The owner can extend
+      // or lift it from the dashboard.
+      if (totalReports >= (store.data.settings.banThreshold || 3)
+        && !store.findActiveBan(partner.clientId, reportedIp)) {
+        const ban = store.addBan({
+          clientId: partner.clientId,
+          ip: reportedIp,
+          username: partner.username,
+          country: partner.countryName,
+          city: partner.city,
+          reason: `Auto-ban after ${totalReports} reports`,
+          minutes: store.data.settings.autoBanMinutes || 30,
+        });
+        console.log(`[ban] ${partner.username} auto-banned after ${totalReports} reports`);
         if (partnerSocket) {
-          partnerSocket.emit('banned');
+          partnerSocket.emit('banned', { until: ban.expiresAt, reason: ban.reason });
           partnerSocket.disconnect(true);
         }
       }
@@ -703,6 +849,29 @@ io.on('connection', (socket) => {
     const p = profiles.get(socket.id);
     const who = p ? `${p.username} (${p.country})` : socket.id;
     console.log(`[feedback] from ${who}: ${text}`);
+    store.recordFeature('feedback');
+    store.addFeedback({ username: p ? p.username : 'Unknown', country: p ? p.countryName : '', city: p ? p.city : '', text });
+    admin.sendAlertEmail('feedback', 'New user feedback',
+      `From: ${who}\n\n${text}\n\nReview at https://${CANONICAL_HOST}/owner`);
+  });
+
+  // Client-side JS errors reported by the browser for the Errors dashboard tab.
+  socket.on('client-error', (payload = {}) => {
+    const message = typeof payload.message === 'string' ? payload.message.slice(0, 400) : '';
+    if (!message) return;
+    const p = profiles.get(socket.id);
+    const rec = store.addError({
+      source: 'client',
+      message,
+      stack: typeof payload.stack === 'string' ? payload.stack.slice(0, 1500) : '',
+      url: typeof payload.url === 'string' ? payload.url.slice(0, 200) : '',
+      username: p ? p.username : 'Unknown',
+      country: p ? p.countryName : '',
+    });
+    if (rec.count >= 10) {
+      admin.sendAlertEmail('error', 'Recurring client error on TalkLive',
+        `"${message}" has now occurred ${rec.count} times.\nURL: ${rec.url}\n\nReview at https://${CANONICAL_HOST}/owner`);
+    }
   });
 
   socket.on('reaction', (reaction) => {
@@ -710,6 +879,7 @@ io.on('connection', (socket) => {
     const seeker = profiles.get(socket.id);
     const partner = partnerId ? profiles.get(partnerId) : null;
     if (!partnerId || !seeker || !partner || typeof reaction !== 'string') return;
+    store.recordFeature(reaction === 'heart' ? 'heart_reaction' : 'reaction');
     io.to(partnerId).emit('reaction', reaction);
 
     if (reaction === 'heart') {
@@ -740,6 +910,22 @@ io.on('connection', (socket) => {
       if (containsLink(text)) {
         return socket.emit('chat-blocked', { reason: 'link' });
       }
+      store.recordFeature('chat_message');
+      store.recordTopics(text);
+      const me = profiles.get(socket.id);
+      const them = profiles.get(partnerId);
+      if (me && them) {
+        store.addTranscript({
+          kind: 'stranger',
+          pair: pairKey(me.clientId, them.clientId),
+          from: me.username,
+          fromClientId: me.clientId,
+          to: them.username,
+          toClientId: them.clientId,
+          country: me.countryName,
+          text: text.trim().slice(0, 1000),
+        });
+      }
       io.to(partnerId).emit('chat-message', { text: text.slice(0, 1000) });
     }
   });
@@ -755,6 +941,7 @@ io.on('connection', (socket) => {
   socket.on('game', (data) => {
     const partnerId = partners.get(socket.id);
     if (partnerId && data && typeof data === 'object') {
+      if (data.type === 'invite') store.recordFeature('mini_game');
       io.to(partnerId).emit('game', data);
     }
   });
@@ -763,6 +950,7 @@ io.on('connection', (socket) => {
   socket.on('friend-request', ({ targetClientId } = {}) => {
     const me = profiles.get(socket.id);
     if (!me || !targetClientId || targetClientId === me.clientId) return;
+    store.recordFeature('friend_request');
     if (isBlockedPair(me.clientId, targetClientId)) {
       return socket.emit('friend-request-result', { ok: false, error: 'Unable to send friend request.' });
     }
@@ -850,6 +1038,17 @@ io.on('connection', (socket) => {
       return socket.emit('chat-blocked', { reason: 'link' });
     }
     const trimmed = text.trim().slice(0, 1000);
+    const friendInfo = (friends.get(me.clientId) || new Map()).get(toClientId);
+    store.addTranscript({
+      kind: 'friend',
+      pair: pairKey(me.clientId, toClientId),
+      from: me.username,
+      fromClientId: me.clientId,
+      to: friendInfo ? friendInfo.username : toClientId,
+      toClientId,
+      country: me.countryName,
+      text: trimmed,
+    });
     const key = pairKey(me.clientId, toClientId);
     if (!friendChats.has(key)) friendChats.set(key, []);
     const msg = { from: me.clientId, text: trimmed, ts: Date.now() };
@@ -895,6 +1094,7 @@ io.on('connection', (socket) => {
   socket.on('call-back-request', ({ targetClientId } = {}) => {
     const me = profiles.get(socket.id);
     if (!me || !targetClientId) return;
+    store.recordFeature('call_back');
     if (isBlockedPair(me.clientId, targetClientId)) {
       return socket.emit('call-back-request-result', { ok: false, reason: 'blocked' });
     }
@@ -1002,6 +1202,22 @@ io.on('connection', (socket) => {
     socketAuth.delete(socket.id);
     broadcastOnlineCount();
   });
+});
+
+// Capture server-side crashes/rejections for the Errors dashboard tab. The
+// uncaughtException handler logs + persists, then exits so the process manager
+// restarts us in a clean state.
+process.on('unhandledRejection', (err) => {
+  console.error('[unhandledRejection]', err);
+  store.addError({ source: 'server', message: String((err && err.message) || err).slice(0, 400), stack: String((err && err.stack) || '').slice(0, 1500), url: '', username: '', country: '' });
+  admin.sendAlertEmail('server-error', 'Server error on TalkLive', `Unhandled rejection: ${String((err && err.message) || err)}\n\nReview at https://${CANONICAL_HOST}/owner`);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[uncaughtException]', err);
+  store.addError({ source: 'server', message: String(err.message || err).slice(0, 400), stack: String(err.stack || '').slice(0, 1500), url: '', username: '', country: '' });
+  admin.sendAlertEmail('server-error', 'CRITICAL: server crash on TalkLive', `Uncaught exception: ${String(err.message || err)}\n${String(err.stack || '')}\n\nThe server is restarting. Review at https://${CANONICAL_HOST}/owner`);
+  store.persistNow();
+  process.exit(1);
 });
 
 server.listen(PORT, '0.0.0.0', () => {

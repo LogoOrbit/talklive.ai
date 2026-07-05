@@ -14,3 +14,13 @@ services:
         value: talklive.ai
       - key: GOOGLE_CLIENT_ID
         sync: false
+      # Owner dashboard email alerts (Gmail SMTP app password) — set in Render UI.
+      - key: OWNER_EMAIL
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+    # Free plan: no persistent disk, so the JSON store lives on the ephemeral
+    # filesystem (./data). Data survives normal running but resets when Render
+    # redeploys or restarts the service.

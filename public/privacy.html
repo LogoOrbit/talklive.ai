@@ -29,13 +29,14 @@
         <li><strong>Approximate location (country/city) for matching:</strong> we look up your IP address to estimate your country and city. This is used to show your country flag to your match, to power country-based matching filters, and to display the "connecting to someone in …" preview. We do not collect precise (GPS) location.</li>
         <li><strong>Device &amp; session information:</strong> IP address, browser type, connection timestamps, error logs, and a random client identifier stored in your browser so your settings, friends, and blocks survive reloads. Your preferences (theme, sound, vibration, avatar choice, filters) are stored locally in your browser.</li>
         <li><strong>Friend, blocking, and report data:</strong> your friends list, pending friend requests, chat messages exchanged with friends (kept temporarily while the server is running), the list of users you have blocked or reported, and reports made about you.</li>
+        <li><strong>Text chat messages:</strong> text messages you type (in stranger chat and friend chat) are stored for a limited period and may be reviewed by the site operator for safety and moderation — for example to act on reports of abuse, spam, or scams. Voice audio is never stored or monitored.</li>
       </ul>
 
       <h3>2. What We Do NOT Collect or Store</h3>
       <ul>
         <li><strong>Call audio is never stored.</strong> Your voice is streamed peer-to-peer (WebRTC) directly between you and your match. It does not pass through and is not recorded, analyzed, or stored on our servers.</li>
         <li><strong>No video.</strong> TalkLive is audio-only; we never access your camera.</li>
-        <li><strong>Stranger chat messages</strong> (the text chat during a random call) are relayed live and are not stored after your session ends.</li>
+        <li><strong>Call audio is never monitored</strong> — safety review applies only to typed text chat (see sections 1 and 5), never to your voice.</li>
         <li><strong>No payment data, no precise location, no contact lists, no advertising identifiers.</strong> We do not sell personal data to anyone.</li>
       </ul>
 
@@ -49,13 +50,14 @@
       <ul>
         <li><strong>No links, ever.</strong> Chat messages containing URLs of any kind are automatically blocked, in both stranger chat and friend chat, with no exceptions. This protects users from scams, phishing, and malicious sites.</li>
         <li><strong>Reports.</strong> Tapping Report immediately ends the call and permanently prevents that person from being matched with you again. Repeated reports lead to automatic bans. Report counts are retained to enforce this.</li>
-        <li>Calls are not monitored or listened to in real time — moderation is driven by user reports and automated rules (like the link filter), not by recording your conversations.</li>
+        <li>Voice calls are never monitored, listened to, or recorded. Typed text-chat messages are retained for a limited period and may be reviewed by the site operator to investigate reports and keep the platform safe.</li>
       </ul>
 
       <h3>6. Data Retention</h3>
       <ul>
         <li><strong>Call audio:</strong> never retained (never collected).</li>
-        <li><strong>Stranger chat &amp; matching data:</strong> discarded when the call or session ends.</li>
+        <li><strong>Text chat messages:</strong> kept on a rolling basis for moderation — older messages are automatically deleted as new ones arrive, and sooner if server storage rotates or restarts.</li>
+        <li><strong>Matching data:</strong> discarded when the call or session ends.</li>
         <li><strong>Accounts, friends, friend chats, blocks, reports:</strong> currently held in server memory and cleared whenever the server restarts. If we move to persistent storage, data will be kept only as long as your account exists or as needed to enforce bans and legal obligations.</li>
         <li><strong>Local data</strong> (client ID, preferences, avatar, consent) stays in your browser until you clear it.</li>
       </ul>
