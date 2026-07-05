@@ -235,7 +235,7 @@
             <circle cx="11" cy="18" r="2" fill="currentColor" stroke="none"/>
           </svg>
         </button>
-        <button id="gameBtn" class="icon-btn hidden" data-i18n-title="playLudo" data-i18n-aria="playLudo" title="Play Ludo" aria-label="Play Ludo">
+        <button id="gameBtn" class="icon-btn hidden" data-i18n-title="playTtt" data-i18n-aria="playTtt" title="Play Tic Tac Toe" aria-label="Play Tic Tac Toe">
           <span id="gameBtnBadge" class="notif-badge hidden" aria-hidden="true">!</span>
           <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <rect x="4" y="4" width="16" height="16" rx="3.5"/>
@@ -924,66 +924,65 @@
     </div>
   </div>
 
-  <!-- Ludo mini-game overlay: play with whoever you're connected to -->
+  <!-- Tic Tac Toe mini-game overlay: play with whoever you're connected to -->
   <div id="gameOverlay" class="game-overlay hidden">
-    <div class="game-modal" role="dialog" aria-label="Ludo">
+    <div class="game-modal" role="dialog" aria-label="Tic Tac Toe">
       <div class="game-modal-header">
-        <h2 class="game-title">Ludo</h2>
+        <h2 class="game-title">Tic Tac Toe</h2>
         <button type="button" id="closeGameBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
       </div>
 
       <!-- Player status bar: avatar, name, whose turn, and live activity -->
-      <div id="ludoPlayers" class="ludo-players">
-        <div class="ludo-player" id="ludoPlayerMe" data-side="me">
-          <span class="ludo-player-avatar p0" id="ludoMeAvatar"></span>
-          <span class="ludo-player-info">
-            <span class="ludo-player-name" id="ludoMeName" data-i18n="you">You</span>
-            <span class="ludo-player-activity" id="ludoMeActivity"></span>
+      <div id="tttPlayers" class="ttt-players">
+        <div class="ttt-player" id="tttPlayerMe" data-side="me">
+          <span class="ttt-player-avatar p0" id="tttMeAvatar"></span>
+          <span class="ttt-player-info">
+            <span class="ttt-player-name" id="tttMeName" data-i18n="you">You</span>
+            <span class="ttt-player-activity" id="tttMeActivity"></span>
           </span>
         </div>
-        <span class="ludo-vs">VS</span>
-        <div class="ludo-player" id="ludoPlayerOpp" data-side="opp">
-          <span class="ludo-player-avatar p1" id="ludoOppAvatar"></span>
-          <span class="ludo-player-info">
-            <span class="ludo-player-name" id="ludoOppName">—</span>
-            <span class="ludo-player-activity" id="ludoOppActivity"></span>
+        <span class="ttt-vs">VS</span>
+        <div class="ttt-player" id="tttPlayerOpp" data-side="opp">
+          <span class="ttt-player-avatar p1" id="tttOppAvatar"></span>
+          <span class="ttt-player-info">
+            <span class="ttt-player-name" id="tttOppName">—</span>
+            <span class="ttt-player-activity" id="tttOppActivity"></span>
           </span>
         </div>
       </div>
 
       <p id="gameStatus" class="game-status"></p>
 
-      <div class="ludo-board-area" id="ludoBoardArea">
-        <div class="ludo-board-wrap">
-          <div id="ludoBoard" class="ludo-board" aria-hidden="true"></div>
+      <div class="ttt-board-area" id="tttBoardArea">
+        <div class="ttt-board-wrap">
+          <div id="tttBoard" class="ttt-board" aria-hidden="true"></div>
         </div>
-        <div id="ludoDisconnectBanner" class="ludo-disconnect-banner hidden" role="alert"></div>
+        <div id="tttDisconnectBanner" class="ttt-disconnect-banner hidden" role="alert"></div>
       </div>
 
       <div class="game-controls">
-        <button type="button" id="ludoDie" class="ludo-die" aria-label="Roll the die"><span id="ludoDieFace">–</span></button>
         <div class="game-buttons">
           <button type="button" id="gameInviteBtn" class="btn btn-primary hidden" data-i18n="invitePartnerToPlay">Invite your partner to play</button>
           <button type="button" id="gameCancelBtn" class="btn btn-secondary hidden" data-i18n="cancel">Cancel</button>
           <button type="button" id="gameAcceptBtn" class="btn game-accept hidden" data-i18n="acceptAndPlay">Accept &amp; Play</button>
           <button type="button" id="gameDeclineBtn" class="btn game-decline hidden" data-i18n="decline">Decline</button>
-          <button type="button" id="ludoRematchBtn" class="btn btn-secondary hidden" data-i18n="rematch">Rematch</button>
+          <button type="button" id="tttRematchBtn" class="btn btn-secondary hidden" data-i18n="rematch">Rematch</button>
         </div>
       </div>
     </div>
   </div>
 
   <!-- End-game confirmation (also used for back-button while a game is open) -->
-  <div id="ludoEndConfirmModal" class="modal-overlay hidden">
-    <div class="modal-box modal-box-narrow" role="dialog" aria-modal="true" aria-labelledby="ludoEndConfirmTitle">
+  <div id="tttEndConfirmModal" class="modal-overlay hidden">
+    <div class="modal-box modal-box-narrow" role="dialog" aria-modal="true" aria-labelledby="tttEndConfirmTitle">
       <div class="modal-header">
-        <h2 id="ludoEndConfirmTitle" data-i18n="ludoEndConfirmTitle">End this game?</h2>
+        <h2 id="tttEndConfirmTitle" data-i18n="tttEndConfirmTitle">End this game?</h2>
       </div>
       <div class="modal-body">
-        <p class="consent-modal-text" data-i18n="ludoEndConfirmText">Are you sure you want to end this game?</p>
+        <p class="consent-modal-text" data-i18n="tttEndConfirmText">Are you sure you want to end this game?</p>
         <div class="confirm-actions">
-          <button type="button" id="ludoContinueBtn" class="btn btn-secondary" data-i18n="continuePlaying">Continue Playing</button>
-          <button type="button" id="ludoEndBtn" class="btn btn-danger" data-i18n="endGame">End Game</button>
+          <button type="button" id="tttContinueBtn" class="btn btn-secondary" data-i18n="continuePlaying">Continue Playing</button>
+          <button type="button" id="tttEndBtn" class="btn btn-danger" data-i18n="endGame">End Game</button>
         </div>
       </div>
     </div>

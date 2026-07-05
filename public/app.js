@@ -578,14 +578,8 @@ function playMessageSound() { playTone(950, 0.08, 'triangle', 0.15); }
 function playSendSound() { playTone(660, 0.05, 'sine', 0.14); playTone(990, 0.07, 'sine', 0.13, 0.04); }
 // A soft two-note chime for "it's your turn" in the game.
 function playTurnSound() { playTone(784, 0.1, 'sine', 0.16); playTone(1046, 0.13, 'sine', 0.15, 0.1); }
-// Ludo effects: a rattly roll, a tick per move, a thunk on capture, a fanfare on win.
-function playDiceSound() {
-  playTone(300, 0.05, 'square', 0.1);
-  playTone(420, 0.05, 'square', 0.09, 0.05);
-  playTone(520, 0.06, 'square', 0.09, 0.1);
-}
+// Tic Tac Toe effects: a tick per move, a fanfare on win.
 function playMoveSound() { playTone(660, 0.05, 'triangle', 0.13); }
-function playCaptureSound() { playTone(520, 0.1, 'sawtooth', 0.14); playTone(300, 0.16, 'sawtooth', 0.13, 0.08); }
 function playWinSound() {
   [523, 659, 784, 1046].forEach((f, i) => playTone(f, 0.16, 'sine', 0.17, i * 0.11));
 }
@@ -1682,7 +1676,7 @@ function setCallState(state) {
   muteBtn.disabled = !connected;
   addFriendBtn.disabled = !connected || addFriendBtn.classList.contains('added');
   reportBtn.disabled = !connected;
-  // The Ludo game needs a live partner.
+  // The Tic Tac Toe game needs a live partner.
   gameBtn.disabled = !connected;
   gameBtn.classList.toggle('nav-btn-off', !connected);
   reassureLine.classList.toggle('hidden', !connected);
@@ -1690,7 +1684,7 @@ function setCallState(state) {
   if (state === 'searching') startSearchTicker();
   else stopSearchTicker();
   if (!connected) stopQualityMonitor();
-  // Nudge the user toward Ludo only while a call is live.
+  // Nudge the user toward the game only while a call is live.
   if (typeof scheduleGameNudge === 'function') {
     if (connected) scheduleGameNudge();
     else stopGameNudge();
@@ -2316,7 +2310,7 @@ function resetUI() {
   accountBtn.classList.add('hidden');
   filtersBtn.classList.add('hidden');
   gameBtn.classList.add('hidden');
-  if (typeof resetLudo === 'function') resetLudo();
+  if (typeof resetGame === 'function') resetGame();
 }
 
 // Return the single button to green "Call" (idle) on the persistent call screen.
@@ -2327,7 +2321,7 @@ function goIdleOnCallScreen(statusKey) {
   clearChat();
   closeChatPanel();
   clearHangupConfirm();
-  if (typeof resetLudo === 'function') resetLudo();
+  if (typeof resetGame === 'function') resetGame();
   setCallState('idle');
   setState('idle');
   hideConnection();
@@ -2732,7 +2726,7 @@ document.addEventListener('touchend', (e) => {
   }
 }, { passive: true });
 
-// --- Periodic "come play Ludo" nudge: while on a live call and the game isn't
+// --- Periodic "come play" nudge: while on a live call and the game isn't
 // open, wiggle the game button every 20-30s to invite the user to play. ---
 let gameNudgeTimer = null;
 function scheduleGameNudge() {
@@ -2759,415 +2753,210 @@ function stopGameNudge() {
 }
 
 // =====================================================================
-// Ludo mini-game — play with whoever you're connected to. 2 players on
-// the full 4-corner board (Red = the call initiator, Yellow = the other).
-// The game state is authoritative on the acting player's client and
-// broadcast in full to the partner after each action, so the two clients
-// can never desync. Relayed through the server 'game' event.
+// Tic Tac Toe mini-game — play with whoever you're connected to. 2 players,
+// a classic 3x3 board (X = the call initiator, O = the other). The game
+// state is authoritative on the acting player's client and broadcast in
+// full to the partner after each move, so the two clients can never
+// desync. Relayed through the server 'game' event.
 // =====================================================================
 const gameBtnBadge = document.getElementById('gameBtnBadge');
 const gameOverlay = document.getElementById('gameOverlay');
 const closeGameBtn = document.getElementById('closeGameBtn');
 const gameStatus = document.getElementById('gameStatus');
-const ludoBoard = document.getElementById('ludoBoard');
-const ludoDie = document.getElementById('ludoDie');
-const ludoDieFace = document.getElementById('ludoDieFace');
+const tttBoard = document.getElementById('tttBoard');
 const gameInviteBtn = document.getElementById('gameInviteBtn');
 const gameCancelBtn = document.getElementById('gameCancelBtn');
 const gameAcceptBtn = document.getElementById('gameAcceptBtn');
 const gameDeclineBtn = document.getElementById('gameDeclineBtn');
-const ludoRematchBtn = document.getElementById('ludoRematchBtn');
-const ludoPlayers = document.getElementById('ludoPlayers');
-const ludoMeAvatar = document.getElementById('ludoMeAvatar');
-const ludoMeName = document.getElementById('ludoMeName');
-const ludoMeActivity = document.getElementById('ludoMeActivity');
-const ludoOppAvatar = document.getElementById('ludoOppAvatar');
-const ludoOppName = document.getElementById('ludoOppName');
-const ludoOppActivity = document.getElementById('ludoOppActivity');
-const ludoPlayerMe = document.getElementById('ludoPlayerMe');
-const ludoPlayerOpp = document.getElementById('ludoPlayerOpp');
-const ludoBoardArea = document.getElementById('ludoBoardArea');
-const ludoDisconnectBanner = document.getElementById('ludoDisconnectBanner');
-const ludoEndConfirmModal = document.getElementById('ludoEndConfirmModal');
-const ludoContinueBtn = document.getElementById('ludoContinueBtn');
-const ludoEndBtn = document.getElementById('ludoEndBtn');
+const tttRematchBtn = document.getElementById('tttRematchBtn');
+const tttPlayers = document.getElementById('tttPlayers');
+const tttMeAvatar = document.getElementById('tttMeAvatar');
+const tttMeName = document.getElementById('tttMeName');
+const tttMeActivity = document.getElementById('tttMeActivity');
+const tttOppAvatar = document.getElementById('tttOppAvatar');
+const tttOppName = document.getElementById('tttOppName');
+const tttOppActivity = document.getElementById('tttOppActivity');
+const tttPlayerMe = document.getElementById('tttPlayerMe');
+const tttPlayerOpp = document.getElementById('tttPlayerOpp');
+const tttBoardArea = document.getElementById('tttBoardArea');
+const tttDisconnectBanner = document.getElementById('tttDisconnectBanner');
+const tttEndConfirmModal = document.getElementById('tttEndConfirmModal');
+const tttContinueBtn = document.getElementById('tttContinueBtn');
+const tttEndBtn = document.getElementById('tttEndBtn');
 
 let amCallInitiator = false;
-let ludoOppActivityTimer = null;
 
-// Pip layouts on a 3x3 grid (index 0..8) so the die shows real dots, not a digit.
-const LUDO_PIPS = {
-  1: [4], 2: [0, 8], 3: [0, 4, 8],
-  4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8],
-};
-// Paint the die face: real pips for 1–6, otherwise a glyph (🎲 / 🏆 / –).
-function setLudoDieFace(val) {
-  if (typeof val === 'number' && LUDO_PIPS[val]) {
-    const pat = LUDO_PIPS[val];
-    let html = '';
-    for (let i = 0; i < 9; i++) html += '<span class="pip' + (pat.includes(i) ? ' on' : '') + '"></span>';
-    ludoDieFace.className = 'ludo-die-pips';
-    ludoDieFace.innerHTML = html;
-  } else {
-    ludoDieFace.className = 'ludo-die-glyph';
-    ludoDieFace.textContent = val == null ? '–' : String(val);
-  }
-}
-
-// 52-cell main loop as [row, col] on the 15x15 board (clockwise from Red's start).
-const LUDO_MAIN = [
-  [6,1],[6,2],[6,3],[6,4],[6,5],
-  [5,6],[4,6],[3,6],[2,6],[1,6],[0,6],
-  [0,7],
-  [0,8],[1,8],[2,8],[3,8],[4,8],[5,8],
-  [6,9],[6,10],[6,11],[6,12],[6,13],[6,14],
-  [7,14],
-  [8,14],[8,13],[8,12],[8,11],[8,10],[8,9],
-  [9,8],[10,8],[11,8],[12,8],[13,8],[14,8],
-  [14,7],
-  [14,6],[13,6],[12,6],[11,6],[10,6],[9,6],
-  [8,5],[8,4],[8,3],[8,2],[8,1],[8,0],
-  [7,0],
-  [6,0],
+// All 8 ways to win on a 3x3 board.
+const TTT_LINES = [
+  [0,1,2],[3,4,5],[6,7,8],
+  [0,3,6],[1,4,7],[2,5,8],
+  [0,4,8],[2,4,6],
 ];
-const LUDO_START = { 0: 0, 1: 26 };
-const LUDO_HOME = {
-  0: [[7,1],[7,2],[7,3],[7,4],[7,5]],
-  1: [[7,13],[7,12],[7,11],[7,10],[7,9]],
-};
-const LUDO_YARD = {
-  0: [[1,1],[1,4],[4,1],[4,4]],
-  1: [[10,10],[10,13],[13,10],[13,13]],
-};
-const LUDO_CENTER = [7,7];
-const LUDO_SAFE = new Set([0,13,26,39,8,21,34,47]);
 
-let ludoState = null;      // shared game state, or null when no game
-let ludoStage = 'idle';    // idle | inviting | invited | playing
-let myPlayerIndex = 0;     // 0 = red (call initiator), 1 = yellow
-let ludoBoardBuilt = false;
-let ludoWasMyTurn = false; // tracks the transition into "it's your move"
+let tttState = null;      // shared game state, or null when no game
+let tttStage = 'idle';    // idle | inviting | invited | playing
+let myPlayerIndex = 0;    // 0 = X (call initiator), 1 = O
+let tttBoardBuilt = false;
+let tttWasMyTurn = false; // tracks the transition into "it's your move"
 
-// True when the game is waiting on *me* to roll or move right now.
-function ludoIsMyActionableTurn() {
-  return ludoStage === 'playing' && ludoState && ludoState.phase !== 'over'
-    && ludoState.turn === myPlayerIndex;
+// True when the game is waiting on *me* to move right now.
+function tttIsMyActionableTurn() {
+  return tttStage === 'playing' && tttState && tttState.phase !== 'over'
+    && tttState.turn === myPlayerIndex;
 }
 
-function ludoClassifyCell(r, c) {
-  const cls = ['lc'];
-  const inRed = r < 6 && c < 6;
-  const inGreen = r < 6 && c > 8;
-  const inBlue = r > 8 && c < 6;
-  const inYellow = r > 8 && c > 8;
-  const inCenter = r >= 6 && r <= 8 && c >= 6 && c <= 8;
-  if (inRed) { cls.push('lc-base-red'); if (r >= 1 && r <= 4 && c >= 1 && c <= 4) cls.push('lc-yard'); }
-  else if (inGreen) { cls.push('lc-base-green'); if (r >= 1 && r <= 4 && c >= 10 && c <= 13) cls.push('lc-yard'); }
-  else if (inBlue) { cls.push('lc-base-blue'); if (r >= 10 && r <= 13 && c >= 1 && c <= 4) cls.push('lc-yard'); }
-  else if (inYellow) { cls.push('lc-base-yellow'); if (r >= 10 && r <= 13 && c >= 10 && c <= 13) cls.push('lc-yard'); }
-  else if (inCenter) { cls.push('lc-center'); }
-  else {
-    cls.push('lc-path');
-    if (r === 7 && c >= 1 && c <= 5) cls.push('lc-home-red');
-    else if (r === 7 && c >= 9 && c <= 13) cls.push('lc-home-yellow');
-    else if (c === 7 && r >= 1 && r <= 5) cls.push('lc-home-green');
-    else if (c === 7 && r >= 9 && r <= 13) cls.push('lc-home-blue');
-    if (r === 6 && c === 1) cls.push('lc-start-red');
-    if (r === 1 && c === 8) cls.push('lc-start-green');
-    if (r === 8 && c === 13) cls.push('lc-start-yellow');
-    if (r === 13 && c === 6) cls.push('lc-start-blue');
-    if ((r === 2 && c === 6) || (r === 6 && c === 12) || (r === 12 && c === 8) || (r === 8 && c === 2)) cls.push('lc-safe');
-  }
-  return cls.join(' ');
-}
-
-function buildLudoBoard() {
-  if (ludoBoardBuilt) return;
+function buildTttBoard() {
+  if (tttBoardBuilt) return;
   const frag = document.createDocumentFragment();
-  for (let r = 0; r < 15; r++) {
-    for (let c = 0; c < 15; c++) {
-      const cell = document.createElement('div');
-      cell.className = ludoClassifyCell(r, c);
-      frag.appendChild(cell);
-    }
+  for (let i = 0; i < 9; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'ttt-cell empty';
+    cell.dataset.i = String(i);
+    cell.addEventListener('click', () => tttTapCell(i));
+    frag.appendChild(cell);
   }
-  const mark = document.createElement('div');
-  mark.className = 'lc-center-mark';
-  mark.textContent = '🏆';
-  frag.appendChild(mark);
-  ludoBoard.appendChild(frag);
-  ludoBoardBuilt = true;
+  tttBoard.appendChild(frag);
+  tttBoardBuilt = true;
 }
 
-function ludoTokenCell(pidx, pos, tokenIdx) {
-  if (pos < 0) return LUDO_YARD[pidx][tokenIdx];
-  if (pos <= 50) return LUDO_MAIN[(LUDO_START[pidx] + pos) % 52];
-  if (pos <= 55) return LUDO_HOME[pidx][pos - 51];
-  return LUDO_CENTER;
+function tttInitialState() {
+  return { board: Array(9).fill(null), turn: 0, phase: 'move', winner: null, line: null };
 }
 
-function ludoInitialState() {
-  return {
-    players: [{ tokens: [-1, -1, -1, -1] }, { tokens: [-1, -1, -1, -1] }],
-    turn: 0, die: null, phase: 'roll', winner: null, sixes: 0,
-  };
+function tttWinningLine(board, pidx) {
+  return TTT_LINES.find((line) => line.every((i) => board[i] === pidx)) || null;
 }
 
-function ludoLegalMoves(state, pidx) {
-  const die = state.die;
-  const res = [];
-  state.players[pidx].tokens.forEach((pos, i) => {
-    if (pos < 0) { if (die === 6) res.push(i); }
-    else if (pos < 56 && pos + die <= 56) res.push(i);
-  });
-  return res;
-}
-
-function ludoApplyMove(state, pidx, ti) {
-  const die = state.die;
-  const p = state.players[pidx];
-  const pos = p.tokens[ti];
-  const np = pos < 0 ? 0 : pos + die;
-  p.tokens[ti] = np;
-  let captured = false;
-  if (np <= 50) {
-    const abs = (LUDO_START[pidx] + np) % 52;
-    if (!LUDO_SAFE.has(abs)) {
-      const opp = state.players[1 - pidx];
-      opp.tokens.forEach((op, i) => {
-        if (op >= 0 && op <= 50 && (LUDO_START[1 - pidx] + op) % 52 === abs) {
-          opp.tokens[i] = -1;
-          captured = true;
-        }
-      });
-    }
-  }
-  return captured;
-}
-
-function ludoAfterAction(state, pidx, captured) {
-  if (state.players[pidx].tokens.every((v) => v === 56)) {
+function tttApplyMove(state, pidx, i) {
+  state.board[i] = pidx;
+  const line = tttWinningLine(state.board, pidx);
+  if (line) {
     state.phase = 'over';
     state.winner = pidx;
-    state.die = null;
-    return;
+    state.line = line;
+  } else if (state.board.every((v) => v !== null)) {
+    state.phase = 'over';
+    state.winner = 'draw';
+  } else {
+    state.turn = 1 - pidx;
   }
-  const extra = state.die === 6 || captured; // a 6 or a capture earns another roll
-  state.die = null;
-  if (extra) { state.phase = 'roll'; }
-  else { state.turn = 1 - pidx; state.phase = 'roll'; state.sixes = 0; }
 }
 
-function broadcastLudo() {
-  socket.emit('game', { type: 'state', state: ludoState });
+function broadcastTtt() {
+  socket.emit('game', { type: 'state', state: tttState });
 }
 
-function ludoRoll() {
-  if (!ludoState || ludoStage !== 'playing') return;
-  if (ludoState.turn !== myPlayerIndex || ludoState.phase !== 'roll') return;
-  // Tell the partner I'm rolling so their status shows "rolling the dice…".
-  socket.emit('game', { type: 'rolling' });
-  playDiceSound();
-  const v = 1 + Math.floor(Math.random() * 6);
-  ludoState.die = v;
-  ludoState.sixes = v === 6 ? (ludoState.sixes || 0) + 1 : 0;
-  ludoDie.classList.remove('rolling');
-  void ludoDie.offsetWidth;
-  ludoDie.classList.add('rolling');
+function tttTapCell(i) {
+  if (!tttState || tttStage !== 'playing') return;
+  if (tttState.turn !== myPlayerIndex || tttState.phase !== 'move') return;
+  if (tttState.board[i] !== null) return;
+  tttApplyMove(tttState, myPlayerIndex, i);
+  playMoveSound();
   vibrate(15);
-  if (ludoState.sixes >= 3) {
-    // Three sixes in a row forfeits the turn.
-    ludoState.die = null; ludoState.sixes = 0;
-    ludoState.turn = 1 - myPlayerIndex; ludoState.phase = 'roll';
-    broadcastLudo(); updateGameUI(); return;
-  }
-  const moves = ludoLegalMoves(ludoState, myPlayerIndex);
-  if (moves.length === 0) {
-    ludoState.die = null; ludoState.sixes = 0;
-    ludoState.turn = 1 - myPlayerIndex; ludoState.phase = 'roll';
-    broadcastLudo(); updateGameUI(); return;
-  }
-  ludoState.phase = 'move';
-  broadcastLudo(); updateGameUI();
-  if (moves.length === 1) {
-    setTimeout(() => {
-      if (ludoState && ludoState.phase === 'move' && ludoState.turn === myPlayerIndex) ludoDoMove(moves[0]);
-    }, 550);
-  }
-}
-
-function ludoDoMove(ti) {
-  socket.emit('game', { type: 'moving' });
-  const captured = ludoApplyMove(ludoState, myPlayerIndex, ti);
-  if (captured) { vibrate(40); playCaptureSound(); }
-  else playMoveSound();
-  ludoAfterAction(ludoState, myPlayerIndex, captured);
-  broadcastLudo();
+  broadcastTtt();
   updateGameUI();
 }
 
-function ludoTapToken(ti) {
-  if (!ludoState || ludoStage !== 'playing') return;
-  if (ludoState.turn !== myPlayerIndex || ludoState.phase !== 'move') return;
-  if (!ludoLegalMoves(ludoState, myPlayerIndex).includes(ti)) return;
-  ludoDoMove(ti);
-}
-
-function renderLudoTokens() {
-  ludoBoard.querySelectorAll('.ludo-token').forEach((e) => e.remove());
-  if (!ludoState) return;
-  const myTurn = ludoState.turn === myPlayerIndex && ludoState.phase === 'move';
-  const movable = myTurn ? ludoLegalMoves(ludoState, myPlayerIndex) : [];
-  const cellTokens = {};
-  [0, 1].forEach((pidx) => {
-    ludoState.players[pidx].tokens.forEach((pos, ti) => {
-      const [r, c] = ludoTokenCell(pidx, pos, ti);
-      const k = r + '_' + c;
-      (cellTokens[k] = cellTokens[k] || []).push({ pidx, ti, r, c });
-    });
-  });
-  Object.values(cellTokens).forEach((list) => {
-    list.forEach((tk, idx) => {
-      const el = document.createElement('div');
-      el.className = 'ludo-token p' + tk.pidx;
-      el.style.left = (tk.c / 15 * 100) + '%';
-      el.style.top = (tk.r / 15 * 100) + '%';
-      el.style.width = (100 / 15) + '%';
-      el.style.height = (100 / 15) + '%';
-      if (list.length > 1) {
-        const off = idx - (list.length - 1) / 2;
-        el.style.marginLeft = (off * 26) + '%';
-        el.style.marginTop = (off * 12) + '%';
-      }
-      const dot = document.createElement('div');
-      dot.className = 'ludo-token-dot';
-      el.appendChild(dot);
-      if (tk.pidx === myPlayerIndex && movable.includes(tk.ti)) {
-        el.classList.add('movable');
-        el.addEventListener('click', () => ludoTapToken(tk.ti));
-      }
-      ludoBoard.appendChild(el);
-    });
+function renderTttBoard() {
+  buildTttBoard();
+  const cells = tttBoard.querySelectorAll('.ttt-cell');
+  const myTurn = tttState && tttState.turn === myPlayerIndex && tttState.phase === 'move';
+  cells.forEach((cell, i) => {
+    const val = tttState ? tttState.board[i] : null;
+    cell.classList.toggle('empty', val === null);
+    cell.classList.toggle('p0', val === 0);
+    cell.classList.toggle('p1', val === 1);
+    cell.classList.toggle('movable', myTurn && val === null);
+    cell.classList.toggle('win', !!(tttState && tttState.line && tttState.line.includes(i)));
+    cell.innerHTML = val === null ? '' : `<span class="ttt-mark">${val === 0 ? '✕' : '◯'}</span>`;
   });
 }
-
-// Live "opponent is rolling the dice" hint window (ms epoch until which we show
-// it, set when the partner emits a transient 'rolling'/'moving' game event).
-let ludoRollingHintUntil = 0;
-let ludoMovingHintUntil = 0;
 
 // The player status bar: avatar, name, whose turn, and what the opponent is
 // doing right now — so you never have to guess what's happening.
-function renderLudoPlayers() {
-  const playing = ludoStage === 'playing' && ludoState;
-  ludoPlayers.classList.toggle('hidden', !playing);
+function renderTttPlayers() {
+  const playing = tttStage === 'playing' && tttState;
+  tttPlayers.classList.toggle('hidden', !playing);
   if (!playing) return;
 
   const oppName = currentPartner ? currentPartner.username : '—';
-  ludoMeName.textContent = t('you');
-  ludoOppName.textContent = oppName;
-  // Colour each chip by that player's actual Ludo colour (0 = red, 1 = yellow).
-  ludoMeAvatar.className = 'ludo-player-avatar p' + myPlayerIndex;
-  ludoOppAvatar.className = 'ludo-player-avatar p' + (1 - myPlayerIndex);
-  ludoMeAvatar.textContent = ((myProfile && myProfile.username ? myProfile.username[0] : t('you')[0]) || 'Y').toUpperCase();
-  ludoOppAvatar.textContent = ((oppName && oppName[0]) || '?').toUpperCase();
+  tttMeName.textContent = t('you');
+  tttOppName.textContent = oppName;
+  // Colour each chip by that player's actual mark (0 = X, 1 = O).
+  tttMeAvatar.className = 'ttt-player-avatar p' + myPlayerIndex;
+  tttOppAvatar.className = 'ttt-player-avatar p' + (1 - myPlayerIndex);
+  tttMeAvatar.textContent = ((myProfile && myProfile.username ? myProfile.username[0] : t('you')[0]) || 'Y').toUpperCase();
+  tttOppAvatar.textContent = ((oppName && oppName[0]) || '?').toUpperCase();
 
-  const live = ludoState.phase !== 'over';
-  const myTurn = live && ludoState.turn === myPlayerIndex;
-  const oppTurn = live && ludoState.turn !== myPlayerIndex;
-  ludoPlayerMe.classList.toggle('active', myTurn);
-  ludoPlayerOpp.classList.toggle('active', oppTurn);
+  const live = tttState.phase !== 'over';
+  const myTurn = live && tttState.turn === myPlayerIndex;
+  const oppTurn = live && tttState.turn !== myPlayerIndex;
+  tttPlayerMe.classList.toggle('active', myTurn);
+  tttPlayerOpp.classList.toggle('active', oppTurn);
 
-  // What I should do.
-  ludoMeActivity.textContent = myTurn
-    ? (ludoState.phase === 'roll' ? t('ludoRollNow') : t('ludoTapPiece'))
-    : '';
-
-  // What the opponent is doing — transient hints win briefly, then fall back to
-  // the state-derived activity.
-  let act = '';
-  if (oppTurn) {
-    if (Date.now() < ludoRollingHintUntil) act = t('ludoActRolling');
-    else if (Date.now() < ludoMovingHintUntil) act = t('ludoActMoving');
-    else if (ludoState.phase === 'roll') act = t('ludoActThinking');
-    else act = t('ludoActMoving');
-  } else if (ludoState.phase === 'over') {
-    act = '';
-  }
-  ludoOppActivity.textContent = act;
+  tttMeActivity.textContent = myTurn ? t('tttYourTurn') : '';
+  tttOppActivity.textContent = oppTurn ? t('tttActThinking') : '';
 }
 
 function updateGameUI() {
   const name = currentPartner ? currentPartner.username : t('chat');
-  [gameInviteBtn, gameCancelBtn, gameAcceptBtn, gameDeclineBtn, ludoRematchBtn].forEach((b) => b.classList.add('hidden'));
-  ludoDie.classList.remove('active');
-  renderLudoPlayers();
+  [gameInviteBtn, gameCancelBtn, gameAcceptBtn, gameDeclineBtn, tttRematchBtn].forEach((b) => b.classList.add('hidden'));
+  renderTttPlayers();
 
-  if (ludoStage === 'idle') {
-    gameStatus.textContent = t('ludoIdlePrompt', { name });
+  if (tttStage === 'idle') {
+    gameStatus.textContent = t('tttIdlePrompt', { name });
     gameInviteBtn.classList.remove('hidden');
-    setLudoDieFace('–');
-  } else if (ludoStage === 'inviting') {
-    gameStatus.textContent = t('ludoInviteSent', { name });
+  } else if (tttStage === 'inviting') {
+    gameStatus.textContent = t('tttInviteSent', { name });
     gameCancelBtn.classList.remove('hidden');
-    setLudoDieFace('–');
-  } else if (ludoStage === 'invited') {
-    gameStatus.textContent = t('ludoInvited', { name });
+  } else if (tttStage === 'invited') {
+    gameStatus.textContent = t('tttInvited', { name });
     gameAcceptBtn.classList.remove('hidden');
     gameDeclineBtn.classList.remove('hidden');
-    setLudoDieFace('–');
-  } else if (ludoStage === 'playing' && ludoState) {
-    ludoRematchBtn.classList.remove('hidden');
-    const myTurn = ludoState.turn === myPlayerIndex;
-    if (ludoState.phase === 'over') {
-      gameStatus.textContent = ludoState.winner === myPlayerIndex ? t('ludoYouWin') : t('ludoTheyWin', { name });
-      setLudoDieFace('🏆');
-      if (!ludoOverAnnounced) {
-        ludoOverAnnounced = true;
-        if (ludoState.winner === myPlayerIndex) { playWinSound(); vibrate([40, 60, 40, 60, 80]); }
-        else { playHangupSound(); }
+  } else if (tttStage === 'playing' && tttState) {
+    tttRematchBtn.classList.remove('hidden');
+    const myTurn = tttState.turn === myPlayerIndex;
+    if (tttState.phase === 'over') {
+      gameStatus.textContent = tttState.winner === 'draw'
+        ? t('tttDraw')
+        : (tttState.winner === myPlayerIndex ? t('tttYouWin') : t('tttTheyWin', { name }));
+      if (!tttOverAnnounced) {
+        tttOverAnnounced = true;
+        if (tttState.winner === myPlayerIndex) { playWinSound(); vibrate([40, 60, 40, 60, 80]); }
+        else if (tttState.winner !== 'draw') { playHangupSound(); }
       }
     } else {
-      setLudoDieFace(ludoState.die ? ludoState.die : '🎲');
-      if (myTurn) {
-        if (ludoState.phase === 'roll') { gameStatus.textContent = t('ludoYourTurnRoll'); ludoDie.classList.add('active'); }
-        else { gameStatus.textContent = t('ludoYourTurnMove', { n: ludoState.die }); }
-      } else {
-        gameStatus.textContent = ludoState.phase === 'move'
-          ? t('ludoWaitingMove', { name, n: ludoState.die })
-          : t('ludoTheirTurn', { name });
-      }
+      gameStatus.textContent = myTurn ? t('tttYourTurn') : t('tttTheirTurn', { name });
     }
-  } else if (ludoStage === 'playing') {
+  } else if (tttStage === 'playing') {
     // handshake done, waiting for the host's first state broadcast
-    gameStatus.textContent = t('ludoTheirTurn', { name });
-    setLudoDieFace('🎲');
+    gameStatus.textContent = t('tttTheirTurn', { name });
   }
-  renderLudoTokens();
+  renderTttBoard();
 
-  // Chime once when the turn passes to you; show a "🎲 your move" badge on the
+  // Chime once when the turn passes to you; show a "your move" badge on the
   // game button while it's your turn and you're not looking at the board.
-  const mine = ludoIsMyActionableTurn();
+  const mine = tttIsMyActionableTurn();
   const overlayOpen = !gameOverlay.classList.contains('hidden');
-  if (mine && !ludoWasMyTurn) {
+  if (mine && !tttWasMyTurn) {
     playTurnSound();
     vibrate(30);
   }
   if (mine && !overlayOpen) {
-    gameBtnBadge.textContent = '🎲';
+    gameBtnBadge.textContent = myPlayerIndex === 0 ? '✕' : '◯';
     gameBtnBadge.classList.add('is-move');
     gameBtnBadge.classList.remove('hidden');
   } else if (overlayOpen && gameBtnBadge.classList.contains('is-move')) {
     gameBtnBadge.classList.add('hidden');
     gameBtnBadge.classList.remove('is-move');
   }
-  ludoWasMyTurn = mine;
+  tttWasMyTurn = mine;
 }
 
-let ludoOverAnnounced = false;
+let tttOverAnnounced = false;
 
 function openGameOverlay() {
-  buildLudoBoard();
+  buildTttBoard();
   clearGameDisconnect();
   gameOverlay.classList.remove('hidden');
   gameBtnBadge.classList.add('hidden');
@@ -3175,13 +2964,13 @@ function openGameOverlay() {
 }
 function closeGameOverlay() {
   gameOverlay.classList.add('hidden');
-  closeModal(ludoEndConfirmModal);
+  closeModal(tttEndConfirmModal);
 }
-function resetLudo() {
-  ludoStage = 'idle';
-  ludoState = null;
-  ludoWasMyTurn = false;
-  ludoOverAnnounced = false;
+function resetGame() {
+  tttStage = 'idle';
+  tttState = null;
+  tttWasMyTurn = false;
+  tttOverAnnounced = false;
   clearGameDisconnect();
   gameBtnBadge.classList.add('hidden');
   gameBtnBadge.classList.remove('is-move');
@@ -3191,32 +2980,31 @@ function resetLudo() {
 
 // Grayscale the board + show a red message when the call itself drops mid-game.
 function markGamePartnerGone() {
-  if (gameOverlay.classList.contains('hidden')) { resetLudo(); return; }
-  ludoBoardArea.classList.add('is-dead');
-  ludoDie.classList.remove('active');
-  ludoDisconnectBanner.textContent = t('ludoPartnerHungUp');
-  ludoDisconnectBanner.classList.remove('hidden');
-  gameStatus.textContent = t('ludoPartnerHungUp');
-  ludoStage = 'gone';
+  if (gameOverlay.classList.contains('hidden')) { resetGame(); return; }
+  tttBoardArea.classList.add('is-dead');
+  tttDisconnectBanner.textContent = t('tttPartnerHungUp');
+  tttDisconnectBanner.classList.remove('hidden');
+  gameStatus.textContent = t('tttPartnerHungUp');
+  tttStage = 'gone';
   playHangupSound();
 }
 function clearGameDisconnect() {
-  ludoBoardArea.classList.remove('is-dead');
-  ludoDisconnectBanner.classList.add('hidden');
+  tttBoardArea.classList.remove('is-dead');
+  tttDisconnectBanner.classList.add('hidden');
 }
 
 // The partner deliberately left the game (closed their window / End Game).
 function markGamePartnerLeft() {
-  ludoDisconnectBanner.textContent = t('ludoPartnerLeft');
-  ludoDisconnectBanner.classList.remove('hidden');
-  ludoBoardArea.classList.add('is-dead');
-  gameStatus.textContent = t('ludoPartnerLeft');
-  ludoStage = 'gone';
+  tttDisconnectBanner.textContent = t('tttPartnerLeft');
+  tttDisconnectBanner.classList.remove('hidden');
+  tttBoardArea.classList.add('is-dead');
+  gameStatus.textContent = t('tttPartnerLeft');
+  tttStage = 'gone';
   playHangupSound();
   // Auto-clear back to the invite screen after a moment so a rematch is easy.
   setTimeout(() => {
-    if (ludoStage === 'gone' && callState === 'connected') {
-      ludoStage = 'idle'; ludoState = null; ludoOverAnnounced = false;
+    if (tttStage === 'gone' && callState === 'connected') {
+      tttStage = 'idle'; tttState = null; tttOverAnnounced = false;
       clearGameDisconnect();
       updateGameUI();
     }
@@ -3224,25 +3012,25 @@ function markGamePartnerLeft() {
 }
 
 // Host (call initiator) builds the authoritative initial state and shares it.
-function startLudoGame() {
-  ludoState = ludoInitialState();
+function startTttGame() {
+  tttState = tttInitialState();
   myPlayerIndex = 0;
-  ludoStage = 'playing';
-  ludoOverAnnounced = false;
+  tttStage = 'playing';
+  tttOverAnnounced = false;
   clearGameDisconnect();
-  broadcastLudo();
+  broadcastTtt();
   openGameOverlay();
   updateGameUI();
 }
 
 // Both sides have agreed to play — exactly one of them is the host.
-function onLudoHandshake() {
+function onGameHandshake() {
   if (amCallInitiator) {
-    startLudoGame();
+    startTttGame();
   } else {
     myPlayerIndex = 1;
-    ludoStage = 'playing';
-    ludoOverAnnounced = false;
+    tttStage = 'playing';
+    tttOverAnnounced = false;
     clearGameDisconnect();
     openGameOverlay();
     updateGameUI();
@@ -3252,17 +3040,17 @@ function onLudoHandshake() {
 // Closing the game window mid-play asks for confirmation first (and, if the
 // user confirms, tells the partner the game ended). Any other stage just closes.
 function isGameActive() {
-  return ludoStage === 'playing' && ludoState && ludoState.phase !== 'over';
+  return tttStage === 'playing' && tttState && tttState.phase !== 'over';
 }
 function attemptCloseGame() {
   if (isGameActive()) {
-    openModal(ludoEndConfirmModal);
+    openModal(tttEndConfirmModal);
     return false;
   }
-  if (ludoStage === 'playing' || ludoStage === 'inviting' || ludoStage === 'invited') {
+  if (tttStage === 'playing' || tttStage === 'inviting' || tttStage === 'invited') {
     // A finished/over game or a pending invite — leave cleanly.
     socket.emit('game', { type: 'left' });
-    resetLudo();
+    resetGame();
   } else {
     closeGameOverlay();
   }
@@ -3275,37 +3063,36 @@ gameBtn.addEventListener('click', () => {
   updateGameUI();
 });
 closeGameBtn.addEventListener('click', attemptCloseGame);
-ludoContinueBtn.addEventListener('click', () => closeModal(ludoEndConfirmModal));
-ludoEndBtn.addEventListener('click', () => {
-  closeModal(ludoEndConfirmModal);
+tttContinueBtn.addEventListener('click', () => closeModal(tttEndConfirmModal));
+tttEndBtn.addEventListener('click', () => {
+  closeModal(tttEndConfirmModal);
   socket.emit('game', { type: 'left' });
-  resetLudo();
+  resetGame();
 });
-ludoDie.addEventListener('click', ludoRoll);
 
 gameInviteBtn.addEventListener('click', () => {
   if (callState !== 'connected') return;
-  ludoStage = 'inviting';
+  tttStage = 'inviting';
   playInviteSound();
   socket.emit('game', { type: 'invite' });
   updateGameUI();
 });
 gameCancelBtn.addEventListener('click', () => {
   socket.emit('game', { type: 'decline' });
-  ludoStage = 'idle';
+  tttStage = 'idle';
   updateGameUI();
 });
 gameAcceptBtn.addEventListener('click', () => {
   socket.emit('game', { type: 'accept' });
-  onLudoHandshake();
+  onGameHandshake();
 });
 gameDeclineBtn.addEventListener('click', () => {
   socket.emit('game', { type: 'decline' });
-  ludoStage = 'idle';
+  tttStage = 'idle';
   closeGameOverlay();
 });
-ludoRematchBtn.addEventListener('click', () => {
-  if (amCallInitiator) startLudoGame();
+tttRematchBtn.addEventListener('click', () => {
+  if (amCallInitiator) startTttGame();
   else socket.emit('game', { type: 'rematch' });
 });
 
@@ -3314,9 +3101,9 @@ socket.on('game', (data) => {
   const name = currentPartner ? currentPartner.username : t('chat');
   switch (data.type) {
     case 'invite':
-      if (ludoStage === 'playing') return;
-      if (ludoStage === 'inviting') { onLudoHandshake(); break; }
-      ludoStage = 'invited';
+      if (tttStage === 'playing') return;
+      if (tttStage === 'inviting') { onGameHandshake(); break; }
+      tttStage = 'invited';
       openGameOverlay();
       gameBtnBadge.classList.remove('hidden');
       playMessageSound();
@@ -3324,57 +3111,40 @@ socket.on('game', (data) => {
       updateGameUI();
       break;
     case 'accept':
-      if (ludoStage === 'inviting') onLudoHandshake();
+      if (tttStage === 'inviting') onGameHandshake();
       break;
     case 'decline':
-      ludoStage = 'idle';
-      ludoState = null;
+      tttStage = 'idle';
+      tttState = null;
       updateGameUI();
-      gameStatus.textContent = t('ludoDeclined', { name });
+      gameStatus.textContent = t('tttDeclined', { name });
       break;
     case 'state': {
       if (!data.state) break;
       myPlayerIndex = amCallInitiator ? 0 : 1;
       // Open the board on the first state (game start); afterwards just update —
       // don't yank a closed board back open, so the "your move" badge can show.
-      const firstState = ludoStage !== 'playing';
-      if (firstState) ludoOverAnnounced = false;
-      ludoStage = 'playing';
-      ludoState = data.state;
-      // A fresh state means the partner's move landed — clear transient hints.
-      ludoMovingHintUntil = 0;
-      buildLudoBoard();
+      const firstState = tttStage !== 'playing';
+      if (firstState) tttOverAnnounced = false;
+      tttStage = 'playing';
+      tttState = data.state;
+      buildTttBoard();
       clearGameDisconnect();
       if (firstState) openGameOverlay();
       updateGameUI();
       break;
     }
-    case 'rolling':
-      // Partner tapped the die — show "rolling the dice…" briefly + rattle sound.
-      if (ludoStage === 'playing') {
-        ludoRollingHintUntil = Date.now() + 900;
-        playDiceSound();
-        updateGameUI();
-        setTimeout(updateGameUI, 950);
-      }
-      break;
-    case 'moving':
-      if (ludoStage === 'playing') {
-        ludoMovingHintUntil = Date.now() + 900;
-        updateGameUI();
-        setTimeout(updateGameUI, 950);
-      }
-      break;
     case 'left':
       // Partner closed their game window / chose End Game.
-      if (ludoStage === 'playing' || ludoStage === 'gone') markGamePartnerLeft();
-      else { resetLudo(); }
+      if (tttStage === 'playing' || tttStage === 'gone') markGamePartnerLeft();
+      else { resetGame(); }
       break;
     case 'rematch':
-      if (amCallInitiator) startLudoGame();
+      if (amCallInitiator) startTttGame();
       break;
   }
 });
+
 
 chatForm.addEventListener('submit', (e) => {
   e.preventDefault();
@@ -3452,7 +3222,7 @@ confirmModal.addEventListener('click', (e) => {
 // app; confirm before ending a live call. Uses a single re-armed history guard
 // so every back press while something is open (or a call is live) is caught. ---
 function closeTopmostLayer() {
-  // A visible generic modal (report, feedback, account, terms, confirm, ludo-end…)
+  // A visible generic modal (report, feedback, account, terms, confirm, game-end…)
   const openModalEl = Array.from(document.querySelectorAll('.modal-overlay:not(.hidden)')).pop();
   if (openModalEl) {
     if (openModalEl === confirmModal && confirmOnOk) { confirmOnOk(false); confirmOnOk = null; }
@@ -3508,7 +3278,7 @@ primeBackGuard();
 window.addEventListener('beforeunload', (e) => {
   const onCall = callState === 'connected' || callState === 'connecting'
     || callState === 'reconnecting' || callState === 'searching';
-  const inGame = typeof ludoStage !== 'undefined' && ludoStage === 'playing';
+  const inGame = typeof tttStage !== 'undefined' && tttStage === 'playing';
   if (onCall || inGame) {
     e.preventDefault();
     e.returnValue = '';
@@ -3553,9 +3323,9 @@ socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
   if (pc) teardownPeer();
   if (typeof friendsDropdown !== 'undefined') closeModal(friendsDropdown);
   enterCallUI();
-  // Ludo colour roles are fixed by who initiated the call; clear any old game.
+  // Game mark (X/O) roles are fixed by who initiated the call; clear any old game.
   amCallInitiator = !!initiator;
-  if (typeof resetLudo === 'function') resetLudo();
+  if (typeof resetGame === 'function') resetGame();
 
   // Never let a mute from a previous call silently carry into a new one.
   if (isMuted) {
@@ -3826,13 +3596,13 @@ socket.on('signal', (data) => {
 
 socket.on('partner-left', () => {
   playHangupSound();
-  const wasInGame = ludoStage === 'playing' || ludoStage === 'invited' || ludoStage === 'inviting';
+  const wasInGame = tttStage === 'playing' || tttStage === 'invited' || tttStage === 'inviting';
   teardownPeer();
   clearChat();
   // If a game was open, surface it there too (grayscale + red banner handled by
   // markGamePartnerGone) before resetting.
   if (wasInGame && typeof markGamePartnerGone === 'function') markGamePartnerGone();
-  else if (typeof resetLudo === 'function') resetLudo();
+  else if (typeof resetGame === 'function') resetGame();
   if (!isSearching) return;
   // The partner ended the call. Show the single red "your friend ended the call"
   // message. Only keep hunting for a new person if auto-connect is on; otherwise

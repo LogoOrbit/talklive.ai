@@ -751,7 +751,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Mini-game (Ludo) relay — forwards game events to the current partner only.
+  // Mini-game (Tic Tac Toe) relay — forwards game events to the current partner only.
   socket.on('game', (data) => {
     const partnerId = partners.get(socket.id);
     if (partnerId && data && typeof data === 'object') {
