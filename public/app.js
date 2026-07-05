@@ -2158,7 +2158,7 @@ function monitorRemoteAudio(stream) {
 
 async function startCall(initiator) {
   pc = createPeerConnection(initiator);
-  if (window.Moderation) window.Moderation.start(localStream, socket);
+  try { if (window.Moderation) window.Moderation.start(localStream, socket); } catch (_) { /* never break the call */ }
   if (initiator) {
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
@@ -2231,7 +2231,7 @@ async function handleSignal(data) {
 }
 
 function teardownPeer() {
-  if (window.Moderation) window.Moderation.stop();
+  try { if (window.Moderation) window.Moderation.stop(); } catch (_) { /* never break teardown */ }
   recordCallHistory();
   currentPartner = null;
   clearConnectWatchdog();

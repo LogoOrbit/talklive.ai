@@ -35,6 +35,18 @@
   const SHOUT_SUSTAIN_MS = 1500;   // must stay loud this long to trigger
   const ALERT_COOLDOWN_MS = 60000; // per-type client-side throttle
 
+  // CRITICAL: on mobile (and some desktop setups) SpeechRecognition takes
+  // EXCLUSIVE mic access — starting it silences the getUserMedia track, which
+  // kills the WebRTC call in both directions. Never run recognition on
+  // mobile. On desktop, watch the local track: if it goes muted right after
+  // recognition starts, the OS stole the mic — abort recognition for good and
+  // let the call keep the mic. Shouting detection runs everywhere; it only
+  // reads the existing stream and never touches mic ownership.
+  const IS_MOBILE = /Android|iPhone|iPad|iPod|Mobi/i.test(navigator.userAgent);
+  let recognitionBlocked = IS_MOBILE;
+  let watchedTrack = null;
+  let onTrackMute = null;
+
   let recognition = null;
   let running = false;
   let socketRef = null;
@@ -97,7 +109,32 @@
     }
   }
 
+  function stopRecognition() {
+    if (!recognition) return;
+    recognition.onend = null;
+    try { recognition.stop(); } catch (_) { /* ignore */ }
+    recognition = null;
+  }
+
+  // If the call's mic track gets muted while recognition is running, the OS
+  // handed the mic to the recognizer. Kill recognition permanently so the
+  // track recovers and the call keeps its audio.
+  function watchTrackConflict(stream) {
+    const track = stream && stream.getAudioTracks()[0];
+    if (!track) return;
+    watchedTrack = track;
+    onTrackMute = () => {
+      if (recognition) {
+        recognitionBlocked = true;
+        stopRecognition();
+      }
+    };
+    track.addEventListener('mute', onTrackMute);
+    if (track.muted) onTrackMute();
+  }
+
   function startRecognition() {
+    if (recognitionBlocked) return;
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) return; // unsupported browser — shouting detection still runs
     recognition = new SR();
@@ -158,15 +195,22 @@
       socketRef = socket;
       sentimentEvents = [];
       loudSince = 0;
-      startRecognition();
-      if (stream) startLoudnessMonitor(stream);
+      if (stream) {
+        watchTrackConflict(stream);
+        startLoudnessMonitor(stream);
+      }
+      // Give the call's media a head start before recognition asks for the
+      // mic, so an ownership conflict is detected (and recognition dropped)
+      // instead of silently breaking the connection mid-negotiation.
+      setTimeout(() => { if (running) startRecognition(); }, 3000);
     },
     stop() {
       running = false;
-      if (recognition) {
-        recognition.onend = null;
-        try { recognition.stop(); } catch (_) { /* ignore */ }
-        recognition = null;
+      stopRecognition();
+      if (watchedTrack && onTrackMute) {
+        watchedTrack.removeEventListener('mute', onTrackMute);
+        watchedTrack = null;
+        onTrackMute = null;
       }
       clearInterval(analyserTimer);
       analyserTimer = null;
