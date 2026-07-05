@@ -13,6 +13,7 @@
     "geoip-lite": "^1.4.10",
     "google-auth-library": "^9.15.1",
     "nodemailer": "^9.0.3",
+    "pg": "^8.22.0",
     "qrcode": "^1.5.4",
     "socket.io": "^4.7.5"
   },

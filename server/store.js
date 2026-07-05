@@ -1,13 +1,34 @@
-// Persistent JSON store for the owner dashboard: analytics, reports, bans,
-// feedback, errors, accounts registry and admin credentials. Data lives in a
-// single JSON file (DATA_DIR env, defaults to <repo>/data) and is written with
-// a debounce so hot paths never block on disk I/O.
+// Persistent store for the owner dashboard: analytics, reports, bans,
+// feedback, errors, accounts registry and admin credentials.
+//
+// Two backends, picked automatically:
+//  - DATABASE_URL set (e.g. Supabase Postgres): the whole document lives in a
+//    single jsonb row and survives Render free-tier deploys/restarts.
+//  - otherwise: a JSON file under DATA_DIR (defaults to <repo>/data) — zero
+//    setup locally, ephemeral on Render's free plan.
+// Writes are debounced either way so hot paths never block on I/O.
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
 const DATA_FILE = path.join(DATA_DIR, 'owner-data.json');
+const DATABASE_URL = process.env.DATABASE_URL || '';
+
+let pgPool = null;
+if (DATABASE_URL) {
+  const { Pool } = require('pg');
+  pgPool = new Pool({
+    connectionString: DATABASE_URL,
+    max: 3,
+    // Hosted Postgres (Supabase etc.) requires TLS but presents a cert Node
+    // can't always chain; local/dev databases usually have no TLS at all.
+    ssl: /localhost|127\.0\.0\.1|sslmode=disable/.test(DATABASE_URL)
+      ? false
+      : { rejectUnauthorized: false },
+  });
+  pgPool.on('error', (err) => console.error('[store] pg pool error:', err.message));
+}
 
 const MAX_REPORTS = 2000;
 const MAX_FEEDBACK = 1000;
@@ -43,21 +64,50 @@ function defaults() {
 let data = defaults();
 let saveTimer = null;
 
-function load() {
+function applyParsed(parsed) {
+  data = { ...defaults(), ...parsed };
+  data.analytics = { ...defaults().analytics, ...(parsed.analytics || {}) };
+  data.settings = { ...defaults().settings, ...(parsed.settings || {}) };
+}
+
+function loadFile() {
   try {
     if (fs.existsSync(DATA_FILE)) {
-      const parsed = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-      data = { ...defaults(), ...parsed };
-      data.analytics = { ...defaults().analytics, ...(parsed.analytics || {}) };
-      data.settings = { ...defaults().settings, ...(parsed.settings || {}) };
+      applyParsed(JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')));
     }
   } catch (err) {
-    console.error('[store] failed to load, starting fresh:', err.message);
+    console.error('[store] failed to load file, starting fresh:', err.message);
     data = defaults();
   }
 }
 
+async function loadPg() {
+  await pgPool.query(
+    'CREATE TABLE IF NOT EXISTS owner_store (id int PRIMARY KEY, doc jsonb NOT NULL, updated_at timestamptz NOT NULL DEFAULT now())'
+  );
+  const res = await pgPool.query('SELECT doc FROM owner_store WHERE id = 1');
+  if (res.rows.length) applyParsed(res.rows[0].doc);
+  console.log('[store] using Postgres backend (DATABASE_URL)');
+}
+
+let pgWriting = false;
+let pgDirty = false;
+function persistPg() {
+  // Serialize writes: if one is in flight, mark dirty and rewrite after.
+  if (pgWriting) { pgDirty = true; return; }
+  pgWriting = true;
+  pgPool.query(
+    'INSERT INTO owner_store (id, doc, updated_at) VALUES (1, $1, now()) ON CONFLICT (id) DO UPDATE SET doc = $1, updated_at = now()',
+    [JSON.stringify(data)]
+  ).catch((err) => console.error('[store] pg save failed:', err.message))
+    .finally(() => {
+      pgWriting = false;
+      if (pgDirty) { pgDirty = false; persistPg(); }
+    });
+}
+
 function persistNow() {
+  if (pgPool) return persistPg();
   try {
     fs.mkdirSync(DATA_DIR, { recursive: true });
     const tmp = DATA_FILE + '.tmp';
@@ -290,11 +340,27 @@ function audit(action, ip, detail) {
   save();
 }
 
-load();
-process.on('exit', persistNow);
+// Resolves once data is loaded; the server waits on this before listening so
+// requests never see a half-initialized store.
+const ready = (async () => {
+  if (pgPool) {
+    try {
+      await loadPg();
+    } catch (err) {
+      console.error('[store] Postgres unavailable, falling back to file store:', err.message);
+      pgPool = null;
+      loadFile();
+    }
+  } else {
+    loadFile();
+  }
+})();
+
+process.on('exit', () => { if (!pgPool) persistNow(); });
 
 module.exports = {
   get data() { return data; },
+  ready,
   save,
   persistNow,
   dayKey,
