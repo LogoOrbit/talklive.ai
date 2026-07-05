@@ -1220,6 +1220,10 @@ process.on('uncaughtException', (err) => {
   process.exit(1);
 });
 
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`TalkLive server running on port ${PORT}`);
+// Wait for the store (Postgres or file) to load before accepting traffic so
+// bans, maintenance mode and admin credentials apply from the first request.
+store.ready.then(() => {
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log(`TalkLive server running on port ${PORT}`);
+  });
 });
