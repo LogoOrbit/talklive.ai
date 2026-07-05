@@ -117,11 +117,6 @@ const friendProfileChatBtn = document.getElementById('friendProfileChatBtn');
 const friendProfileRemoveBtn = document.getElementById('friendProfileRemoveBtn');
 const friendProfileBlockBtn = document.getElementById('friendProfileBlockBtn');
 
-const notifBtn = document.getElementById('notifBtn');
-const notifBadge = document.getElementById('notifBadge');
-const notifModal = document.getElementById('notifModal');
-const notifWrap = document.querySelector('.notif-wrap');
-const closeNotifBtn = document.getElementById('closeNotifBtn');
 const notifList = document.getElementById('notifList');
 
 const friendChatModal = document.getElementById('friendChatModal');
@@ -745,7 +740,6 @@ document.addEventListener('keydown', (e) => {
     closeModal(historyDropdown);
     closeModal(friendsDropdown);
     closeModal(friendProfileModal);
-    closeModal(notifModal);
     closeModal(friendChatModal);
     closeAppSettings();
     closeFilters();
@@ -1238,21 +1232,6 @@ socket.on('state-sync', ({ friends: friendList, friendRequests: requestList, not
   renderNotifications();
 });
 
-// --- Notifications bell: dropdown anchored under the icon, not a floating modal ---
-notifBtn.addEventListener('click', (e) => {
-  e.stopPropagation();
-  if (notifModal.classList.contains('hidden')) openModal(notifModal);
-  else closeModal(notifModal);
-});
-closeNotifBtn.addEventListener('click', () => closeModal(notifModal));
-document.addEventListener('click', (e) => {
-  // Use composedPath (captured at dispatch time) instead of e.target.closest —
-  // action buttons inside the list re-render notifList on click, which detaches
-  // the clicked button before this bubbles up, making closest() wrongly report
-  // "outside" and close the panel right after Confirm/Dismiss/etc.
-  if (!e.composedPath().includes(notifWrap)) closeModal(notifModal);
-});
-
 function notifIcon(type) {
   switch (type) {
     case 'friend_request': return ICONS.person;
@@ -1296,21 +1275,20 @@ function totalUnreadMessages() {
 }
 
 function updateFriendsMsgBadge() {
-  const count = totalUnreadMessages();
+  const count = totalUnreadMessages() + notifData.filter((n) => n.type !== 'message').length;
   friendsMsgBadge.textContent = count;
   friendsMsgBadge.classList.toggle('hidden', count === 0);
 }
 
-// The bell/requests dropdown only ever shows actionable requests (friend
-// requests, accepted-friend confirmations, call-back requests) — new message
-// notifications surface as unread badges on the Friends button/list instead.
+// The requests list (friend requests, accepted-friend confirmations, call-back
+// requests) lives at the top of the Friends dropdown; new message notifications
+// surface as unread badges on the Friends button/list instead.
 function renderNotifications() {
   const visible = notifData.filter((n) => n.type !== 'message');
-  notifBadge.textContent = visible.length;
-  notifBadge.classList.toggle('hidden', visible.length === 0);
+  notifList.classList.toggle('no-requests', visible.length === 0);
 
   if (visible.length === 0) {
-    notifList.innerHTML = `<p class="history-empty">${escapeHtml(t('noRequestsYet'))}</p>`;
+    notifList.innerHTML = '';
   } else {
     notifList.innerHTML = '';
     [...visible].reverse().forEach((n) => {
@@ -1362,7 +1340,6 @@ notifList.addEventListener('click', (e) => {
   if (openChatBtn) {
     socket.emit('clear-notification', { notificationId: openChatBtn.dataset.id });
     removeNotifLocal(openChatBtn.dataset.id);
-    closeModal(notifModal);
     openFriendChat(openChatBtn.dataset.from);
   } else if (confirmBtn) {
     socket.emit('friend-request-respond', { fromClientId: confirmBtn.dataset.from, accept: true, notificationId: confirmBtn.dataset.id });
@@ -1429,7 +1406,6 @@ function openFriendChat(friendClientId) {
   activeFriendChatId = friendClientId;
   const friend = friendsData.find((f) => f.clientId === friendClientId);
   friendChatTitle.textContent = friend ? t('chatWith', { name: friend.username }) : t('chat');
-  closeModal(notifModal);
   closeModal(friendsDropdown);
   openModal(friendChatModal);
 
@@ -2306,7 +2282,6 @@ function resetUI() {
   appSettingsBtn.classList.add('hidden');
   historyBtn.classList.add('hidden');
   friendsBtn.classList.add('hidden');
-  notifBtn.classList.add('hidden');
   accountBtn.classList.add('hidden');
   filtersBtn.classList.add('hidden');
   gameBtn.classList.add('hidden');
@@ -2354,7 +2329,6 @@ function enterCallUI() {
   appSettingsBtn.classList.remove('hidden');
   historyBtn.classList.remove('hidden');
   friendsBtn.classList.remove('hidden');
-  notifBtn.classList.remove('hidden');
   accountBtn.classList.remove('hidden');
   filtersBtn.classList.remove('hidden');
   gameBtn.classList.remove('hidden');
@@ -2400,8 +2374,8 @@ async function begin() {
 }
 
 const ageConsentModal = document.getElementById('ageConsentModal');
-const openTermsFromConsent = document.getElementById('openTermsFromConsent');
 const ageAgreeBtn = document.getElementById('ageAgreeBtn');
+const ageAgreeCheckbox = document.getElementById('ageAgreeCheckbox');
 const CONSENT_KEY = 'talklive_age_consent';
 
 // Start a call from the green "Call" button — gated by the one-time age/terms
@@ -2412,11 +2386,15 @@ function startCallFlow() {
   if (localStorage.getItem(CONSENT_KEY) === 'yes') {
     begin();
   } else {
+    ageAgreeCheckbox.checked = false;
+    ageAgreeBtn.disabled = true;
     openModal(ageConsentModal);
   }
 }
 
-openTermsFromConsent.addEventListener('click', () => openModal(termsModal));
+ageAgreeCheckbox.addEventListener('change', () => {
+  ageAgreeBtn.disabled = !ageAgreeCheckbox.checked;
+});
 
 // --- Landing "Tap to Talk" feedback: ripple + press + connecting spinner so
 // the user gets instant confirmation and can't fire off repeated taps. ---
