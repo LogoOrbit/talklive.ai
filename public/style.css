@@ -2219,6 +2219,44 @@ body {
   letter-spacing: 0.5px;
 }
 
+#ageAgreeBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: grayscale(0.4);
+}
+
+/* Scrollable full Terms & Conditions body inside the consent gate */
+.consent-terms-body {
+  max-height: 46vh;
+}
+
+.consent-modal-footer {
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding: 16px 22px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.consent-checkbox-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.consent-checkbox-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  flex-shrink: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
 .account-section-title {
   font-size: 13px;
   color: var(--accent-2);
@@ -2500,7 +2538,6 @@ body {
 
 .friend-online-dot.online {
   background: #2ed47a;
-  box-shadow: 0 0 6px #2ed47a;
 }
 
 .friend-item-name {
@@ -2565,12 +2602,15 @@ body {
   color: #2ed47a;
 }
 
-/* Notifications list */
+/* Notifications list — sits above the friends list in the same dropdown */
 .notif-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  margin-bottom: 14px;
 }
+.notif-list:empty,
+.notif-list.no-requests { display: none; }
 
 .notif-item {
   display: flex;

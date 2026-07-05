@@ -175,6 +175,7 @@ const I18N_STRINGS = {
     byContinuing: 'By continuing, you agree to our',
     consentSuffix: ', including the rules on respectful behavior and reporting/bans.',
     iAgree: 'I AGREE',
+    agreeToTerms: 'I have read and agree to the Terms & Conditions.',
     termsEnglishNote: 'The full rules below are provided in English.',
 
     statusIdle: 'Tap the green button to talk to a random person',
