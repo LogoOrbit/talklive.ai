@@ -15,12 +15,32 @@ const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
 const DATA_FILE = path.join(DATA_DIR, 'owner-data.json');
 const DATABASE_URL = process.env.DATABASE_URL || '';
 
+// Backend status, surfaced (without secrets) on the /owner login screen so a
+// misconfigured database is diagnosable without reading server logs.
+const backendStatus = {
+  configured: !!DATABASE_URL,   // DATABASE_URL is present
+  mode: 'file',                 // 'postgres' once connected, else 'file'
+  error: null,                  // last connection error message (no secrets)
+  host: null,                   // host:port from the URL, for the operator
+};
+
+if (DATABASE_URL) {
+  try {
+    const u = new URL(DATABASE_URL);
+    backendStatus.host = `${u.hostname}:${u.port || '5432'}`;
+  } catch (_) { backendStatus.host = 'unparseable'; }
+}
+
 let pgPool = null;
 if (DATABASE_URL) {
   const { Pool } = require('pg');
   pgPool = new Pool({
     connectionString: DATABASE_URL,
     max: 3,
+    // Fail fast instead of hanging the whole boot when the host is unreachable.
+    connectionTimeoutMillis: 12000,
+    idleTimeoutMillis: 30000,
+    keepAlive: true,
     // Hosted Postgres (Supabase etc.) requires TLS but presents a cert Node
     // can't always chain; local/dev databases usually have no TLS at all.
     ssl: /localhost|127\.0\.0\.1|sslmode=disable/.test(DATABASE_URL)
@@ -87,7 +107,9 @@ async function loadPg() {
   );
   const res = await pgPool.query('SELECT doc FROM owner_store WHERE id = 1');
   if (res.rows.length) applyParsed(res.rows[0].doc);
-  console.log('[store] using Postgres backend (DATABASE_URL)');
+  backendStatus.mode = 'postgres';
+  backendStatus.error = null;
+  console.log('[store] using Postgres backend (DATABASE_URL) —', backendStatus.host);
 }
 
 let pgWriting = false;
@@ -347,7 +369,14 @@ const ready = (async () => {
     try {
       await loadPg();
     } catch (err) {
-      console.error('[store] Postgres unavailable, falling back to file store:', err.message);
+      backendStatus.mode = 'file';
+      backendStatus.error = String(err.message || err);
+      console.error('[store] ============================================================');
+      console.error('[store] DATABASE_URL is set but the connection FAILED. Falling back');
+      console.error('[store] to the ephemeral file store — data will NOT survive restarts');
+      console.error('[store] until this is fixed. Host:', backendStatus.host);
+      console.error('[store] Reason:', backendStatus.error);
+      console.error('[store] ============================================================');
       pgPool = null;
       loadFile();
     }
@@ -360,6 +389,7 @@ process.on('exit', () => { if (!pgPool) persistNow(); });
 
 module.exports = {
   get data() { return data; },
+  get backendStatus() { return backendStatus; },
   ready,
   save,
   persistNow,

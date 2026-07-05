@@ -27,6 +27,11 @@ input,textarea{font:inherit;background:var(--surface);color:var(--ink);border:1p
 .auth h1{font-size:1.3rem;margin-bottom:4px}.auth p{color:var(--ink2);font-size:.9rem;margin-bottom:16px;line-height:1.45}
 .auth label{display:block;font-size:.8rem;color:var(--ink2);margin:12px 0 4px}
 .auth .err{color:var(--crit);font-size:.85rem;margin-top:10px;min-height:1.2em}
+.stbox{font-size:.82rem;border-radius:10px;padding:11px 13px;margin:12px 0;line-height:1.5}
+.stbox.bad{background:color-mix(in srgb,var(--crit) 15%,transparent);border:1px solid var(--crit);color:var(--ink)}
+.stbox.ok{background:color-mix(in srgb,var(--good) 14%,transparent);border:1px solid var(--good);color:var(--ink)}
+.stbox b{display:block;margin-bottom:4px}
+.stbox code{font-family:ui-monospace,monospace;font-size:.76rem;background:var(--page);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
 .btn{background:var(--s1);color:#fff;border:0;border-radius:8px;padding:11px 16px;width:100%;font-weight:600;margin-top:16px}
 .btn.ghost{background:transparent;color:var(--ink2);border:1px solid var(--axis);width:auto;padding:7px 14px;margin:0}
 .qrbox{text-align:center;margin:14px 0}.qrbox img{border-radius:8px;background:#fff;padding:6px}
@@ -83,6 +88,7 @@ select{font:inherit;background:var(--surface);color:var(--ink);border:1px solid 
 
 <div id="setupView" class="auth hidden">
   <h1>🔐 Dashboard Setup</h1>
+  <div id="setupStorage"></div>
   <p>First-time setup. Create your admin password, then scan the QR code with <strong>Google Authenticator</strong>.</p>
   <div id="setupStep1">
     <label>Admin password (min 10 characters)</label>
@@ -104,6 +110,7 @@ select{font:inherit;background:var(--surface);color:var(--ink);border:1px solid 
 
 <div id="loginView" class="auth hidden">
   <h1>🔐 Owner Login</h1>
+  <div id="loginStorage"></div>
   <p>TalkLive owner dashboard. Password + Google Authenticator code required.</p>
   <label>Password</label>
   <input id="loginPass" type="password" autocomplete="current-password">
@@ -140,9 +147,26 @@ function show(view){
 }
 
 /* ---------- auth flow ---------- */
+function renderStorage(storage){
+  const s=storage||{};
+  let html='';
+  if(s.atRisk){
+    html=`<div class="stbox bad"><b>⚠️ Database not connected — data will be lost on restart</b>
+      Your <code>DATABASE_URL</code> is set but the server could not connect to it, so it fell back to temporary storage. That is why your login keeps resetting. Fix the connection string in Render and redeploy.<br><br>
+      Host tried: <code>${esc(s.host||'?')}</code><br>
+      Error: <code>${esc(s.error||'unknown')}</code></div>`;
+  } else if(s.configured && s.mode==='postgres'){
+    html=`<div class="stbox ok"><b>✅ Database connected</b>Persistent storage active (<code>${esc(s.host||'')}</code>). Your setup and data will survive restarts.</div>`;
+  } else if(!s.configured){
+    html=`<div class="stbox bad"><b>⚠️ No database configured</b>Running on temporary storage — your login and all data reset on every deploy/restart. Add a <code>DATABASE_URL</code> environment variable in Render to make it permanent.</div>`;
+  }
+  const a=document.getElementById('setupStorage'),b=document.getElementById('loginStorage');
+  if(a)a.innerHTML=html; if(b)b.innerHTML=html;
+}
 async function boot(){
   try{
     const st=await api('status');
+    renderStorage(st.storage);
     if(!st.setupDone)show('setup');
     else if(st.authed){show('dash');startDash();}
     else show('login');
