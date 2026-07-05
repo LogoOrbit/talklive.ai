@@ -1,4 +1,4 @@
-# robots.txt for TalkLive — https://talklive.ai
+# robots.txt for TalkLive — https://talklive.app
 # All well-behaved crawlers are welcome to index the public site.
 
 User-agent: *
@@ -40,4 +40,4 @@ Allow: /
 User-agent: TelegramBot
 Allow: /
 
-Sitemap: https://talklive.ai/sitemap.xml
+Sitemap: https://talklive.app/sitemap.xml

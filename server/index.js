@@ -40,7 +40,7 @@ app.disable('x-powered-by');
 
 const PORT = process.env.PORT || 5000;
 // Canonical origin used for host/protocol normalization. Override via env.
-const CANONICAL_HOST = process.env.CANONICAL_HOST || 'talklive.ai';
+const CANONICAL_HOST = process.env.CANONICAL_HOST || 'talklive.app';
 const ENFORCE_CANONICAL = process.env.ENFORCE_CANONICAL !== 'off' && process.env.NODE_ENV === 'production';
 
 // Consolidate link equity on a single canonical origin: force HTTPS and the
