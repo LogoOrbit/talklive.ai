@@ -383,8 +383,21 @@
         <button type="button" id="closeFiltersBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
       </div>
       <div class="side-panel-body">
+        <!-- Premium explainer: free users see exactly what's locked and why,
+             with one clear way to unlock it. Hidden for premium users. -->
+        <div class="filters-premium-banner premium-lock hidden">
+          <div class="fpb-head">
+            <span class="fpb-diamond" aria-hidden="true">💎</span>
+            <span class="fpb-title" data-i18n="filtersPremiumTitle">Filters are a Premium feature</span>
+          </div>
+          <p class="fpb-text" data-i18n="filtersPremiumText">Free plan: up to 3 countries per list. Gender filter locked.</p>
+          <button type="button" id="filtersUpgradeBtn" class="upgrade-cta-btn">
+            <span class="upgrade-diamond" aria-hidden="true">💎</span><span data-i18n="upgradeCta">UPGRADE</span>
+          </button>
+        </div>
+
         <div class="pill-row">
-          <span class="pill-label" id="prefGenderGroupLabel"><span data-i18n="matchMeWith">Match me with</span> <a href="/pricing" class="premium-lock hidden" data-i18n="premiumBadge">👑 Premium</a></span>
+          <span class="pill-label" id="prefGenderGroupLabel"><span data-i18n="matchMeWith">Match me with</span> <a href="/pricing" class="premium-lock hidden" data-i18n="premiumBadge">💎 Premium</a></span>
           <div class="pill-group" id="prefGenderGroup" data-value="any" role="group" aria-labelledby="prefGenderGroupLabel">
             <button type="button" class="pill" data-value="any"><span class="pill-dot pill-dot-neutral" aria-hidden="true"></span><span data-i18n="anyone">Anyone</span></button>
             <button type="button" class="pill" data-value="male"><span class="pill-dot pill-dot-male" aria-hidden="true"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="14" r="6"/><line x1="14.5" y1="9.5" x2="20" y2="4"/><polyline points="14.5 4 20 4 20 9.5"/></svg><span data-i18n="male">Male</span></button>
@@ -425,9 +438,6 @@
           </div>
         </div>
 
-        <button type="button" id="filtersUpgradeBtn" class="upgrade-cta-btn premium-lock hidden">
-          <span class="upgrade-diamond" aria-hidden="true">💎</span><span data-i18n="upgradeCta">UPGRADE</span>
-        </button>
         <p class="filters-hint" data-i18n="filtersHint">Filters only take effect after you tap Save.</p>
       </div>
       <div class="side-panel-footer">
@@ -973,6 +983,16 @@
             <li><span class="cg-emoji" aria-hidden="true">🌱</span><span data-i18n="convoTip5">Don't worry if someone skips you — it's completely normal.</span></li>
             <li><span class="cg-emoji" aria-hidden="true">🎉</span><span data-i18n="convoTip6">Relax and have fun meeting new people.</span></li>
           </ul>
+        </section>
+
+        <!-- A warm, simple note at the bottom of the call screen: why TalkLive
+             is free and the care that goes into it. Plain English on purpose. -->
+        <section id="madeForYou" class="made-for-you">
+          <h3 class="made-for-you-title">💜 Made free, just for you</h3>
+          <p>TalkLive is <strong>100% free</strong>. No payment needed to talk. No time limits. No tricks.</p>
+          <p>We work hard every single day to make this the smoothest, cleanest, and most beautiful way to talk to new people anywhere in the world.</p>
+          <p>Fast connections. A simple design. An experience we believe is second to none — built with love, for you.</p>
+          <p class="made-for-you-sign">Enjoy your talks. — The TalkLive team</p>
         </section>
       </section>
 

@@ -695,6 +695,36 @@ body {
   background: var(--accent-soft, rgba(108, 92, 231, 0.14));
 }
 
+/* "Made free for you" note at the bottom of the call screen. */
+.made-for-you {
+  width: min(560px, 92%);
+  margin: 10px auto 30px;
+  padding: 22px 24px;
+  border-radius: 18px;
+  text-align: center;
+  background: linear-gradient(160deg, rgba(108, 92, 231, 0.10), rgba(0, 212, 255, 0.05));
+  border: 1px solid rgba(108, 92, 231, 0.25);
+}
+.made-for-you-title {
+  margin: 0 0 12px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+.made-for-you p {
+  margin: 0 0 10px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+.made-for-you p strong { color: var(--text); }
+.made-for-you-sign {
+  margin-bottom: 0 !important;
+  font-style: italic;
+  color: var(--text) !important;
+  opacity: 0.85;
+}
+
 .connection-indicator {
   display: flex;
   align-items: center;
@@ -3874,36 +3904,24 @@ body {
 }
 
 /* =============================================================
-   Call screen fits the viewport with no page scroll, on every phone.
+   Call screen. The call controls aim to fit one viewport, but the page
+   scrolls naturally like any other page — no inner scroll containers, no
+   viewport lock — so wheel/touch scrolling works from anywhere on screen.
    Scoped to when the call panel is active so the setup/landing view
    is unaffected. */
 .stage.call-live {
-  height: 100dvh;
-  max-height: 100dvh;
-  overflow: hidden;
+  min-height: calc(100dvh - 90px);  /* controls fill the first screen, extras flow below */
   justify-content: center;
-  /* justify-content: center clips the start of overflowing content and makes
-     it unreachable by scroll — "safe" falls back to start alignment once the
-     content no longer fits, which is what lets touch/wheel scrolling reach
-     every part of a taller-than-viewport call screen. Browsers that don't
-     support "safe" simply keep the center rule above. */
-  justify-content: safe center;
   padding: 8px 12px;
   gap: 0;
 }
 
-/* The call panel is the only visible child; it centers its contents and never
-   spills over anything else (this was the source of the icon/text overlap). */
+/* The call panel centers its contents; anything that doesn't fit (guide,
+   about section) simply extends the page downward and scrolls with it. */
 .stage.call-live .call-panel {
   flex: 0 1 auto;
   width: 100%;
-  max-height: 100%;
-  min-height: 0;
-  overflow-y: auto;           /* contained safety net; layout below fits without it */
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
   justify-content: center;
-  justify-content: safe center;
   gap: 2px;
 }
 
@@ -4514,30 +4532,65 @@ body {
 }
 
 /* --- Premium (TalkLive Plus) ------------------------------------------------ */
+/* Small, calm "Premium" chip — professional, not shouty. */
 .premium-lock {
   display: inline-block;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 700;
-  color: #1a1302;
-  background: linear-gradient(120deg, #f6d365 0%, #ffd700 45%, #f6a800 100%);
+  color: var(--accent-2);
+  background: rgba(108, 92, 231, 0.12);
+  border: 1px solid rgba(108, 92, 231, 0.4);
   border-radius: 999px;
   padding: 2px 9px;
   text-decoration: none;
   vertical-align: middle;
-  box-shadow: 0 0 10px rgba(255, 215, 0, 0.35);
+  letter-spacing: 0.02em;
 }
-a.premium-lock:hover { filter: brightness(1.08); }
-p.premium-lock {
-  display: block;
-  font-size: 0.8rem;
-  padding: 8px 12px;
-  border-radius: 10px;
-  line-height: 1.4;
+a.premium-lock:hover { background: rgba(108, 92, 231, 0.22); }
+
+/* Premium explainer banner at the top of the Filters panel. */
+.filters-premium-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(108, 92, 231, 0.35);
+  background: linear-gradient(160deg, rgba(108, 92, 231, 0.14), rgba(0, 212, 255, 0.06));
+  /* Override the chip styling inherited from .premium-lock — this is a card. */
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+  letter-spacing: normal;
+  vertical-align: baseline;
 }
-p.premium-lock a {
-  color: #4a3400;
-  font-weight: 800;
-  text-decoration: underline;
+.fpb-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.fpb-diamond { font-size: 18px; }
+.fpb-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text);
+}
+.fpb-text {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+/* Clear visual sections inside the Filters panel. */
+#filtersPanel .pill-row {
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+#filtersPanel .filters-premium-banner + .pill-row,
+#filtersPanel .side-panel-body > .pill-row:first-child {
+  border-top: none;
+  padding-top: 0;
 }
 
 /* Compact, professional upgrade CTA (replaces the old yellow hint text). */

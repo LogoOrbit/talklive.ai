@@ -352,7 +352,9 @@ const I18N_STRINGS = {
     privacyPolicy: 'Privacy Policy',
 
     // Premium / TalkLive Plus (English fallback for all languages)
-    premiumBadge: '👑 Premium',
+    premiumBadge: '💎 Premium',
+    filtersPremiumTitle: 'Filters are a Premium feature',
+    filtersPremiumText: 'Free plan: up to 3 countries per list. Gender filter locked.',
     pricingLink: 'Pricing & Premium',
     aboutLink: 'About TalkLive',
     contactLink: 'Contact Us',
