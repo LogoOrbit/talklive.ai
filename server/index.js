@@ -38,6 +38,51 @@ server.maxConnections = Infinity;
 app.set('trust proxy', 1);
 app.disable('x-powered-by');
 
+// Security headers on every response. The CSP allowlists exactly the external
+// origins the app legitimately uses (Google Sign-In, Paddle checkout, flag
+// images) and blocks everything else, so an injected <script src> or exfil
+// request to an attacker's host is refused by the browser. frame-ancestors and
+// X-Frame-Options stop the site being embedded for clickjacking; nosniff stops
+// MIME-confusion attacks. 'unsafe-inline' is required by the existing inline
+// scripts/handlers and styles, so the CSP is defense-in-depth on top of the
+// output-escaping fixes rather than the sole XSS barrier.
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' https://accounts.google.com https://cdn.paddle.com",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: https://flagcdn.com https://*.paddle.com",
+  "font-src 'self' data:",
+  "connect-src 'self' ws: wss: https://accounts.google.com https://flagcdn.com https://*.paddle.com https://*.paddle.net",
+  "frame-src https://accounts.google.com https://*.paddle.com https://*.paddle.net",
+  "media-src 'self' blob:",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+].join('; ');
+app.use((req, res, next) => {
+  res.setHeader('Content-Security-Policy', CSP);
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'microphone=(self), camera=(), geolocation=(), payment=(self)');
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+  next();
+});
+
+// Tiny health check for uptime pingers (cron-job.org / UptimeRobot). Returns a
+// few bytes instead of the full homepage, so the pinger doesn't abort with
+// "output too large", yet the request still hits the server every few minutes —
+// which is what keeps the Render dyno and the Supabase database from sleeping.
+// Placed before maintenance mode and analytics so it always answers cheaply and
+// never inflates visit counts.
+app.get(['/healthz', '/ping'], (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.type('text/plain').send('ok');
+});
+
 const PORT = process.env.PORT || 5000;
 // Canonical origin used for host/protocol normalization. Override via env.
 const CANONICAL_HOST = process.env.CANONICAL_HOST || 'talklive.app';
@@ -81,7 +126,12 @@ const PADDLE_WEBHOOK_SECRET = process.env.PADDLE_WEBHOOK_SECRET || '';
 
 // Verify a Paddle webhook signature (Paddle-Signature: "ts=...;h1=...").
 function verifyPaddleSignature(rawBody, header) {
-  if (!PADDLE_WEBHOOK_SECRET) return true; // not configured yet — accept (dev)
+  if (!PADDLE_WEBHOOK_SECRET) {
+    // Without a secret we can't authenticate the sender. Accept only outside
+    // production (local dev); in production an unsigned webhook would let
+    // anyone grant themselves premium with a single curl request.
+    return process.env.NODE_ENV !== 'production';
+  }
   try {
     const parts = Object.fromEntries(String(header || '').split(';').map((p) => p.split('=')));
     if (!parts.ts || !parts.h1) return false;
@@ -304,7 +354,6 @@ const partners = new Map(); // socketId -> partnerSocketId
 const profiles = new Map(); // socketId -> { username, country, city, gender, prefGender, includeCountries, excludeCountries, interests, clientId, countryFallbackActive }
 const blocks = new Map(); // clientId -> Set<clientId>
 const hearts = new Map(); // pairKey ("clientIdA|clientIdB" sorted) -> Set<clientId who hearted>
-const reportCounts = new Map(); // clientId -> number of times reported
 
 // If a search takes longer than this, we drop ALL matching filters for the
 // current search (gender + country preferences, everything except blocks) and
@@ -345,10 +394,18 @@ function clearWaitFallbackTimer(socketId) {
   }
 }
 
-// In-memory accounts only — resets on server restart. Good enough until a real DB is added.
+// Accounts are held in memory for fast access but are also written through to
+// the persistent store (Postgres/file), so a signed-in user keeps their account
+// across restarts and deploys. socketAuth stays in-memory (per-connection).
 const accounts = new Map(); // username (lowercase) -> { passwordHash, salt, nickname, googleId }
 const socketAuth = new Map(); // socketId -> logged-in username (lowercase)
 const googleAccounts = new Map(); // Google "sub" id -> username (lowercase)
+
+// Persist the live accounts Map back to the durable store.
+function persistAccount(usernameLower) {
+  const acc = accounts.get(usernameLower);
+  if (acc) store.saveAccount(usernameLower, acc);
+}
 
 // --- Friends / notifications / call-back state — all in-memory, keyed by the
 // persistent per-browser clientId so it survives reconnects (works for both
@@ -358,6 +415,51 @@ const friends = new Map(); // clientId -> Map<friendClientId, { username, countr
 const friendRequests = new Map(); // clientId -> Map<fromClientId, { username, countryCode, temporary, ts }>
 const notifications = new Map(); // clientId -> Array<notification>
 const friendChats = new Map(); // pairKey -> Array<{ from, text, ts }>
+
+// Serialize the live social Maps back to plain JSON and persist them, so users'
+// friends and their chat history ("memories") survive restarts. Debounced by
+// the store, so calling it on each mutation is cheap.
+function persistSocial() {
+  const friendsObj = {};
+  for (const [cid, m] of friends) {
+    if (m.size) friendsObj[cid] = Object.fromEntries(m);
+  }
+  const chatsObj = {};
+  for (const [key, list] of friendChats) {
+    if (list.length) chatsObj[key] = list;
+  }
+  const blocksObj = {};
+  for (const [cid, set] of blocks) {
+    if (set.size) blocksObj[cid] = Array.from(set);
+  }
+  store.saveSocial({ friends: friendsObj, friendChats: chatsObj, blocks: blocksObj });
+}
+
+// Load durable accounts + social graph from the store into the in-memory Maps
+// on boot, before the server starts accepting connections.
+function hydrateFromStore() {
+  for (const [usernameLower, acc] of Object.entries(store.data.accounts || {})) {
+    accounts.set(usernameLower, {
+      passwordHash: acc.passwordHash || null,
+      salt: acc.salt || null,
+      nickname: acc.nickname || '',
+      googleId: acc.googleId || null,
+    });
+  }
+  for (const [googleId, usernameLower] of Object.entries(store.data.googleIndex || {})) {
+    googleAccounts.set(googleId, usernameLower);
+  }
+  const social = store.data.social || {};
+  for (const [cid, m] of Object.entries(social.friends || {})) {
+    friends.set(cid, new Map(Object.entries(m)));
+  }
+  for (const [key, list] of Object.entries(social.friendChats || {})) {
+    friendChats.set(key, Array.isArray(list) ? list : []);
+  }
+  for (const [cid, arr] of Object.entries(social.blocks || {})) {
+    blocks.set(cid, new Set(arr));
+  }
+}
 
 function isFriend(a, b) {
   const setA = friends.get(a);
@@ -369,6 +471,7 @@ function addFriendPair(clientIdA, infoA, clientIdB, infoB) {
   if (!friends.has(clientIdB)) friends.set(clientIdB, new Map());
   friends.get(clientIdA).set(clientIdB, infoB);
   friends.get(clientIdB).set(clientIdA, infoA);
+  persistSocial();
 }
 
 function removeFriendPair(clientIdA, clientIdB) {
@@ -376,6 +479,7 @@ function removeFriendPair(clientIdA, clientIdB) {
   if (a) a.delete(clientIdB);
   const b = friends.get(clientIdB);
   if (b) b.delete(clientIdA);
+  persistSocial();
 }
 
 function getSocketByClientId(clientId) {
@@ -456,6 +560,24 @@ function createAccount(username, password, nickname) {
     salt,
     nickname,
   });
+  persistAccount(username.toLowerCase());
+}
+
+// Per-IP signup throttle: at most a handful of new accounts per IP per hour so
+// a script can't mass-create accounts to flood storage or evade bans.
+const SIGNUP_LIMIT = 5;
+const SIGNUP_WINDOW_MS = 60 * 60000;
+const signupAttempts = new Map(); // ip -> { first, count }
+function signupThrottled(ip) {
+  const rec = signupAttempts.get(ip);
+  if (!rec) return false;
+  if (Date.now() - rec.first > SIGNUP_WINDOW_MS) { signupAttempts.delete(ip); return false; }
+  return rec.count >= SIGNUP_LIMIT;
+}
+function noteSignup(ip) {
+  const rec = signupAttempts.get(ip) || { first: Date.now(), count: 0 };
+  rec.count += 1;
+  signupAttempts.set(ip, rec);
 }
 
 function verifyAccount(username, password) {
@@ -498,6 +620,7 @@ async function findOrCreateGoogleAccount(idToken) {
       googleId,
     });
     googleAccounts.set(googleId, username.toLowerCase());
+    persistAccount(username.toLowerCase());
   }
 
   return { username, account: accounts.get(username.toLowerCase()) };
@@ -546,6 +669,7 @@ function isBlockedPair(clientIdA, clientIdB) {
 function blockPair(clientIdA, clientIdB) {
   if (!blocks.has(clientIdA)) blocks.set(clientIdA, new Set());
   blocks.get(clientIdA).add(clientIdB);
+  persistSocial();
 }
 
 function disconnectPartner(socketId) {
@@ -588,6 +712,8 @@ function countryAllowed(prefs, otherCountryCode) {
 
 // Returns true if candidate's profile satisfies seeker's filters, and vice versa.
 function mutuallyCompatible(seeker, candidate) {
+  // Never match a user with themselves (e.g. two tabs of the same browser).
+  if (seeker.clientId === candidate.clientId) return false;
   if (isBlockedPair(seeker.clientId, candidate.clientId)) return false;
 
   // After a long wait either side falls back to "match me with anyone random":
@@ -721,6 +847,30 @@ io.on('connection', (socket) => {
   const ip = getClientIp(socket);
   const geo = lookupGeo(ip);
 
+  // Per-socket event rate limiter (token bucket): a hostile or buggy client
+  // can otherwise emit unlimited events and flood the server, spam friend
+  // requests/notifications, or drown real traffic. High-frequency signalling
+  // events (WebRTC 'signal', 'typing', 'game') are exempt from the strict cap
+  // but still bounded generously so normal calls are never throttled.
+  const RATE = { tokens: 40, last: Date.now() };
+  const REFILL_PER_SEC = 25;
+  const BURST_EXEMPT = new Set(['signal', 'typing', 'game', 'mic-state', 'reaction']);
+  socket.use((packet, next) => {
+    const now = Date.now();
+    RATE.tokens = Math.min(120, RATE.tokens + ((now - RATE.last) / 1000) * REFILL_PER_SEC);
+    RATE.last = now;
+    const event = Array.isArray(packet) ? packet[0] : '';
+    const cost = BURST_EXEMPT.has(event) ? 0.2 : 1;
+    if (RATE.tokens < cost) {
+      return next(new Error('rate-limited'));
+    }
+    RATE.tokens -= cost;
+    next();
+  });
+  // Swallow rate-limit errors quietly instead of disconnecting on the first
+  // over-limit event, so a brief burst just drops packets rather than the call.
+  socket.on('error', () => { /* rate-limited or malformed packet — ignore */ });
+
   // Maintenance mode: only the owner dashboard stays live.
   if (store.data.settings.maintenance.on) {
     socket.emit('maintenance', { message: store.data.settings.maintenance.message });
@@ -743,9 +893,16 @@ io.on('connection', (socket) => {
     if (!username || !password || !nickname || username.length < 3 || password.length < 4) {
       return socket.emit('signup-result', { ok: false, error: 'Username/password too short (min 3/4 chars).' });
     }
+    if (typeof username !== 'string' || !/^[A-Za-z0-9_.-]{3,24}$/.test(username)) {
+      return socket.emit('signup-result', { ok: false, error: 'Username may only contain letters, numbers, dot, dash or underscore (3–24 chars).' });
+    }
+    if (signupThrottled(ip)) {
+      return socket.emit('signup-result', { ok: false, error: 'Too many accounts created from this network. Please try again later.' });
+    }
     if (accounts.has(username.toLowerCase())) {
       return socket.emit('signup-result', { ok: false, error: 'That username is already taken.' });
     }
+    noteSignup(ip);
     createAccount(username, password, nickname.slice(0, 24));
     socketAuth.set(socket.id, username.toLowerCase());
     store.recordFeature('signup');
@@ -807,6 +964,7 @@ io.on('connection', (socket) => {
     }
     const account = accounts.get(authedUsername);
     account.nickname = nickname.trim().slice(0, 24);
+    persistAccount(authedUsername);
     const profile = profiles.get(socket.id);
     if (profile) profile.username = account.nickname;
     socket.emit('update-nickname-result', { ok: true, nickname: account.nickname });
@@ -825,11 +983,16 @@ io.on('connection', (socket) => {
     const salt = crypto.randomBytes(16).toString('hex');
     account.passwordHash = hashPassword(newPassword, salt);
     account.salt = salt;
+    persistAccount(authedUsername);
     socket.emit('change-password-result', { ok: true });
   });
 
   socket.on('register', (data = {}) => {
-    const clientId = data.clientId || socket.id;
+    // Only accept well-formed client IDs: they are echoed back to other users'
+    // browsers inside HTML attributes (friends list, notifications), so an
+    // arbitrary string here would be a stored-XSS vector.
+    const rawClientId = typeof data.clientId === 'string' ? data.clientId : '';
+    const clientId = /^[A-Za-z0-9_-]{8,64}$/.test(rawClientId) ? rawClientId : socket.id;
     // Banned by persistent clientId: refuse until the ban expires or is lifted.
     const ban = store.findActiveBan(clientId, ip);
     if (ban) {
@@ -961,8 +1124,6 @@ io.on('connection', (socket) => {
     const detail = typeof payload.detail === 'string' ? payload.detail.slice(0, 300) : '';
     if (seeker && partner) {
       blockPair(seeker.clientId, partner.clientId);
-      const count = (reportCounts.get(partner.clientId) || 0) + 1;
-      reportCounts.set(partner.clientId, count);
       const partnerSocket = io.sockets.sockets.get(partnerId);
       const reportedIp = partnerSocket ? getClientIp(partnerSocket) : null;
       store.recordFeature('report');
@@ -1103,8 +1264,9 @@ io.on('connection', (socket) => {
       if (containsLink(text)) {
         return socket.emit('chat-blocked', { reason: 'link' });
       }
+      const clean = text.trim().slice(0, 1000);
       store.recordFeature('chat_message');
-      store.recordTopics(text);
+      store.recordTopics(clean);
       const me = profiles.get(socket.id);
       const them = profiles.get(partnerId);
       if (me && them) {
@@ -1116,10 +1278,10 @@ io.on('connection', (socket) => {
           to: them.username,
           toClientId: them.clientId,
           country: me.countryName,
-          text: text.trim().slice(0, 1000),
+          text: clean,
         });
       }
-      io.to(partnerId).emit('chat-message', { text: text.slice(0, 1000) });
+      io.to(partnerId).emit('chat-message', { text: clean });
     }
   });
 
@@ -1234,6 +1396,11 @@ io.on('connection', (socket) => {
       syncClientState(socket, me.clientId);
       return socket.emit('friend-request-result', { ok: false, limitReached: true, error: `Free plan allows up to ${FREE_LIMITS.friends} friends. Upgrade to add unlimited friends.` });
     }
+    // The requester may have filled up their own list since sending the request.
+    if (accept && atFriendLimit(fromClientId)) {
+      syncClientState(socket, me.clientId);
+      return socket.emit('friend-request-result', { ok: false, error: 'Their friend list is full.' });
+    }
     if (accept) {
       const temporary = !socketAuth.get(socket.id);
       const myInfo = { username: me.username, countryCode: me.country, temporary, avatar: me.avatar };
@@ -1303,6 +1470,7 @@ io.on('connection', (socket) => {
     const list = friendChats.get(key);
     list.push(msg);
     if (list.length > 200) list.shift();
+    persistSocial();
 
     const targetSocket = getSocketByClientId(toClientId);
     if (targetSocket) targetSocket.emit('friend-message', { fromClientId: me.clientId, text: trimmed, ts: msg.ts });
@@ -1446,6 +1614,11 @@ io.on('connection', (socket) => {
     const profile = profiles.get(socket.id);
     if (profile && clientSockets.get(profile.clientId) === socket.id) {
       clientSockets.delete(profile.clientId);
+      // Flip this user's green dot off in their friends' lists right away.
+      for (const [fid] of friends.get(profile.clientId) || new Map()) {
+        const friendSocket = getSocketByClientId(fid);
+        if (friendSocket) syncClientState(friendSocket, fid);
+      }
     }
     profiles.delete(socket.id);
     socketAuth.delete(socket.id);
@@ -1472,6 +1645,10 @@ process.on('uncaughtException', (err) => {
 // Wait for the store (Postgres or file) to load before accepting traffic so
 // bans, maintenance mode and admin credentials apply from the first request.
 store.ready.then(() => {
+  // Restore durable accounts + social graph before accepting traffic so
+  // returning users can log in and see their friends/chats immediately.
+  hydrateFromStore();
+  console.log(`[accounts] restored ${accounts.size} account(s) from the store`);
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`TalkLive server running on port ${PORT}`);
   });

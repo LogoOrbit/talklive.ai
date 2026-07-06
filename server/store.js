@@ -67,7 +67,16 @@ function defaults() {
     errors: [], // { id, ts, source, message, stack, url, username, country, count }
     auditLog: [], // { ts, ip, action, detail }
     transcripts: [], // { ts, pair, from, fromClientId, to, toClientId, country, text, kind }
-    accountsRegistry: {}, // usernameLower -> details
+    accountsRegistry: {}, // usernameLower -> details (analytics metadata)
+    // Durable account credentials so signed-in users keep their account across
+    // restarts/deploys. usernameLower -> { passwordHash, salt, nickname,
+    // googleId, createdAt }. googleIndex maps a Google "sub" -> usernameLower.
+    accounts: {},
+    googleIndex: {},
+    // Durable social graph — users' "memories": who they added and what they
+    // said. friends: clientId -> { friendClientId -> info }. friendChats:
+    // pairKey -> [{ from, text, ts }]. blocks: clientId -> [clientId,...].
+    social: { friends: {}, friendChats: {}, blocks: {} },
     analytics: {
       totals: { visits: 0, connections: 0, matches: 0, messages: 0, reports: 0, accounts: 0 },
       days: {}, // 'YYYY-MM-DD' -> { visits, uniques, uniqueSet, connections, matches, messages, reports, feedback, errors, newAccounts, peakOnline, countries, cities, features }
@@ -89,6 +98,9 @@ function applyParsed(parsed) {
   data = { ...defaults(), ...parsed };
   data.analytics = { ...defaults().analytics, ...(parsed.analytics || {}) };
   data.settings = { ...defaults().settings, ...(parsed.settings || {}) };
+  data.social = { ...defaults().social, ...(parsed.social || {}) };
+  data.accounts = parsed.accounts || {};
+  data.googleIndex = parsed.googleIndex || {};
 }
 
 function loadFile() {
@@ -383,6 +395,35 @@ function isPremiumClient(clientId) {
   return !!(rec && !rec.revokedAt);
 }
 
+// --- Durable accounts (credentials) ---
+
+// Persist (or update) an account's credentials. Called on signup, Google
+// account creation, nickname change and password change so a signed-in user's
+// login keeps working after a restart or deploy.
+function saveAccount(usernameLower, account) {
+  data.accounts[usernameLower] = {
+    passwordHash: account.passwordHash || null,
+    salt: account.salt || null,
+    nickname: account.nickname || '',
+    googleId: account.googleId || null,
+    createdAt: (data.accounts[usernameLower] && data.accounts[usernameLower].createdAt) || Date.now(),
+  };
+  if (account.googleId) data.googleIndex[account.googleId] = usernameLower;
+  save();
+}
+
+// --- Durable social graph ("memories": friends + friend chats + blocks) ---
+// index.js holds the live Maps; these take the already-serialized plain objects
+// and persist them (debounced), keeping the store the single source of truth.
+function saveSocial(social) {
+  data.social = {
+    friends: social.friends || {},
+    friendChats: social.friendChats || {},
+    blocks: social.blocks || {},
+  };
+  save();
+}
+
 // --- Admin / sessions / audit ---
 
 function audit(action, ip, detail) {
@@ -439,6 +480,8 @@ module.exports = {
   addBan,
   liftBan,
   upsertAccount,
+  saveAccount,
+  saveSocial,
   setPremium,
   revokePremium,
   isPremiumClient,

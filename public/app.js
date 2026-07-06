@@ -1088,13 +1088,13 @@ function renderFriendsList() {
     const item = document.createElement('div');
     item.className = 'friend-item';
     item.innerHTML = `
-      <button type="button" class="friend-avatar-btn" data-id="${f.clientId}" title="${escapeHtml(t('profile'))}" aria-label="${escapeHtml(t('profile'))}">${genderIcon(f.avatar, 30)}</button>
-      <div class="friend-item-info friend-row-main" data-id="${f.clientId}">
+      <button type="button" class="friend-avatar-btn" data-id="${escapeHtml(f.clientId)}" title="${escapeHtml(t('profile'))}" aria-label="${escapeHtml(t('profile'))}">${genderIcon(f.avatar, 30)}</button>
+      <div class="friend-item-info friend-row-main" data-id="${escapeHtml(f.clientId)}">
         <span class="friend-online-dot ${f.online ? 'online' : ''}" title="${escapeHtml(f.online ? t('online') : t('offline'))}"></span>
         <span class="friend-item-name">${getFlagImg(f.countryCode)} ${escapeHtml(f.username)}</span>
         ${unread > 0 ? `<span class="unread-badge">${unread}</span>` : ''}
       </div>
-      <button type="button" class="friend-call-btn" data-id="${f.clientId}" data-name="${escapeHtml(f.username)}" title="${escapeHtml(t('callBack'))}" aria-label="${escapeHtml(t('callBack'))}">
+      <button type="button" class="friend-call-btn" data-id="${escapeHtml(f.clientId)}" data-name="${escapeHtml(f.username)}" title="${escapeHtml(t('callBack'))}" aria-label="${escapeHtml(t('callBack'))}">
         ${FRIEND_CALL_SVG}
       </button>
     `;
@@ -1259,18 +1259,18 @@ function renderNotifications() {
       let actions = '';
       if (n.type === 'friend_request') {
         actions = `
-          <button type="button" class="btn-chip btn-chip-accept notif-confirm-btn" data-id="${n.id}" data-from="${n.fromClientId}">${ICONS.check} ${escapeHtml(t('confirm'))}</button>
-          <button type="button" class="btn-chip notif-dismiss-btn" data-id="${n.id}" data-from="${n.fromClientId}">${ICONS.close} ${escapeHtml(t('dismiss'))}</button>
+          <button type="button" class="btn-chip btn-chip-accept notif-confirm-btn" data-id="${n.id}" data-from="${escapeHtml(n.fromClientId)}">${ICONS.check} ${escapeHtml(t('confirm'))}</button>
+          <button type="button" class="btn-chip notif-dismiss-btn" data-id="${n.id}" data-from="${escapeHtml(n.fromClientId)}">${ICONS.close} ${escapeHtml(t('dismiss'))}</button>
         `;
       } else if (n.type === 'friend_accepted') {
         actions = `
-          <button type="button" class="btn-chip btn-chip-accept notif-open-chat-btn" data-id="${n.id}" data-from="${n.byClientId}">${ICONS.chat} ${escapeHtml(t('chat'))}</button>
+          <button type="button" class="btn-chip btn-chip-accept notif-open-chat-btn" data-id="${n.id}" data-from="${escapeHtml(n.byClientId)}">${ICONS.chat} ${escapeHtml(t('chat'))}</button>
           <button type="button" class="btn-chip notif-clear-btn" data-id="${n.id}">${ICONS.close} ${escapeHtml(t('dismiss'))}</button>
         `;
       } else if (n.type === 'call_back_request') {
         actions = `
-          <button type="button" class="btn-chip btn-chip-accept notif-callback-accept-btn" data-id="${n.id}" data-from="${n.fromClientId}">${ICONS.call} ${escapeHtml(t('callBack'))}</button>
-          <button type="button" class="btn-chip notif-callback-decline-btn" data-id="${n.id}" data-from="${n.fromClientId}">${ICONS.close} ${escapeHtml(t('dismiss'))}</button>
+          <button type="button" class="btn-chip btn-chip-accept notif-callback-accept-btn" data-id="${n.id}" data-from="${escapeHtml(n.fromClientId)}">${ICONS.call} ${escapeHtml(t('callBack'))}</button>
+          <button type="button" class="btn-chip notif-callback-decline-btn" data-id="${n.id}" data-from="${escapeHtml(n.fromClientId)}">${ICONS.close} ${escapeHtml(t('dismiss'))}</button>
         `;
       } else {
         actions = `<button type="button" class="btn-chip notif-clear-btn" data-id="${n.id}">${ICONS.close} ${escapeHtml(t('dismiss'))}</button>`;
@@ -1445,7 +1445,7 @@ function renderHistory() {
     const mins = Math.floor(entry.durationSeconds / 60);
     const secs = entry.durationSeconds % 60;
     const callBackBtn = entry.clientId
-      ? `<button type="button" class="call-back-btn" data-id="${entry.clientId}" data-name="${escapeHtml(entry.username)}" title="${escapeHtml(t('callBack'))}" aria-label="${escapeHtml(t('callBack'))}">
+      ? `<button type="button" class="call-back-btn" data-id="${escapeHtml(entry.clientId)}" data-name="${escapeHtml(entry.username)}" title="${escapeHtml(t('callBack'))}" aria-label="${escapeHtml(t('callBack'))}">
           <svg viewBox="0 0 24 24" fill="white" aria-hidden="true"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
         </button>`
       : '';
