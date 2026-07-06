@@ -184,6 +184,13 @@ app.get('/ice-servers', (req, res) => {
   res.json({ iceServers: buildIceServers() });
 });
 
+// The call screen is its own URL (reached via history.replaceState once the
+// user taps to talk), but it's still the same single-page app — serve the
+// same shell so a direct hit/refresh on /call works.
+app.get('/call', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+});
+
 // Redirect the raw SEO landing files (e.g. /talk-to-strangers.html) to their
 // clean, canonical URLs (/talk-to-strangers) so only one version is indexed.
 app.get(/^\/([a-z0-9-]+)\.html$/i, (req, res, next) => {

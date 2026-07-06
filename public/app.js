@@ -2276,6 +2276,10 @@ function resetUI() {
   setState('idle');
   setStatusText('statusIdle');
   setSubText('subIdle');
+  // Back to the Tap-to-Talk landing URL, without adding a history entry.
+  if (location.pathname === '/call') {
+    history.replaceState(history.state, '', '/');
+  }
   callPanel.classList.add('hidden');
   setupPanel.classList.remove('hidden');
   stageEl.classList.remove('call-live');
@@ -2329,6 +2333,11 @@ function registerProfile() {
 // + big chat button. Safe to call repeatedly (e.g. on each new match).
 function enterCallUI() {
   closeChatPanel();
+  // Reflect the call screen as its own URL (/call) without adding a history
+  // entry, so the existing back-button guard stack is untouched.
+  if (location.pathname !== '/call') {
+    history.replaceState(history.state, '', '/call');
+  }
   setupPanel.classList.add('hidden');
   callPanel.classList.remove('hidden');
   stageEl.classList.add('call-live');
@@ -3708,6 +3717,13 @@ window.addEventListener('i18n-changed', () => {
     renderFriendChatMessages();
   }
 });
+
+// A direct load of /call (bookmark, refresh, share) has no live call to
+// resume — send the URL back to the landing page without adding a history
+// entry, so the back button still behaves normally.
+if (location.pathname === '/call') {
+  history.replaceState(history.state, '', '/');
+}
 
 // Initial state: the Tap-to-Talk landing, a green idle Call button ready for
 // when the call screen opens, and an unchecked auto-call checkbox.

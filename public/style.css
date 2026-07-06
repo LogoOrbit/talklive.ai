@@ -3894,6 +3894,12 @@ body {
   max-height: 100dvh;
   overflow: hidden;
   justify-content: center;
+  /* justify-content: center clips the start of overflowing content and makes
+     it unreachable by scroll — "safe" falls back to start alignment once the
+     content no longer fits, which is what lets touch/wheel scrolling reach
+     every part of a taller-than-viewport call screen. Browsers that don't
+     support "safe" simply keep the center rule above. */
+  justify-content: safe center;
   padding: 8px 12px;
   gap: 0;
 }
@@ -3907,7 +3913,9 @@ body {
   min-height: 0;
   overflow-y: auto;           /* contained safety net; layout below fits without it */
   overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   justify-content: center;
+  justify-content: safe center;
   gap: 2px;
 }
 
@@ -3916,7 +3924,6 @@ body {
    the guide also removes the element that was overlapping the controls. */
 .stage.call-live #quickGuide,
 #quickGuide.in-call,
-.stage.call-live #convoGuide,
 .stage.call-live .reassure-line {
   display: none !important;
 }
