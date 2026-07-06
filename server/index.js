@@ -72,6 +72,17 @@ app.use((req, res, next) => {
   next();
 });
 
+// Tiny health check for uptime pingers (cron-job.org / UptimeRobot). Returns a
+// few bytes instead of the full homepage, so the pinger doesn't abort with
+// "output too large", yet the request still hits the server every few minutes —
+// which is what keeps the Render dyno and the Supabase database from sleeping.
+// Placed before maintenance mode and analytics so it always answers cheaply and
+// never inflates visit counts.
+app.get(['/healthz', '/ping'], (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.type('text/plain').send('ok');
+});
+
 const PORT = process.env.PORT || 5000;
 // Canonical origin used for host/protocol normalization. Override via env.
 const CANONICAL_HOST = process.env.CANONICAL_HOST || 'talklive.app';
