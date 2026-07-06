@@ -376,10 +376,18 @@ function clearWaitFallbackTimer(socketId) {
   }
 }
 
-// In-memory accounts only — resets on server restart. Good enough until a real DB is added.
+// Accounts are held in memory for fast access but are also written through to
+// the persistent store (Postgres/file), so a signed-in user keeps their account
+// across restarts and deploys. socketAuth stays in-memory (per-connection).
 const accounts = new Map(); // username (lowercase) -> { passwordHash, salt, nickname, googleId }
 const socketAuth = new Map(); // socketId -> logged-in username (lowercase)
 const googleAccounts = new Map(); // Google "sub" id -> username (lowercase)
+
+// Persist the live accounts Map back to the durable store.
+function persistAccount(usernameLower) {
+  const acc = accounts.get(usernameLower);
+  if (acc) store.saveAccount(usernameLower, acc);
+}
 
 // --- Friends / notifications / call-back state — all in-memory, keyed by the
 // persistent per-browser clientId so it survives reconnects (works for both
@@ -389,6 +397,51 @@ const friends = new Map(); // clientId -> Map<friendClientId, { username, countr
 const friendRequests = new Map(); // clientId -> Map<fromClientId, { username, countryCode, temporary, ts }>
 const notifications = new Map(); // clientId -> Array<notification>
 const friendChats = new Map(); // pairKey -> Array<{ from, text, ts }>
+
+// Serialize the live social Maps back to plain JSON and persist them, so users'
+// friends and their chat history ("memories") survive restarts. Debounced by
+// the store, so calling it on each mutation is cheap.
+function persistSocial() {
+  const friendsObj = {};
+  for (const [cid, m] of friends) {
+    if (m.size) friendsObj[cid] = Object.fromEntries(m);
+  }
+  const chatsObj = {};
+  for (const [key, list] of friendChats) {
+    if (list.length) chatsObj[key] = list;
+  }
+  const blocksObj = {};
+  for (const [cid, set] of blocks) {
+    if (set.size) blocksObj[cid] = Array.from(set);
+  }
+  store.saveSocial({ friends: friendsObj, friendChats: chatsObj, blocks: blocksObj });
+}
+
+// Load durable accounts + social graph from the store into the in-memory Maps
+// on boot, before the server starts accepting connections.
+function hydrateFromStore() {
+  for (const [usernameLower, acc] of Object.entries(store.data.accounts || {})) {
+    accounts.set(usernameLower, {
+      passwordHash: acc.passwordHash || null,
+      salt: acc.salt || null,
+      nickname: acc.nickname || '',
+      googleId: acc.googleId || null,
+    });
+  }
+  for (const [googleId, usernameLower] of Object.entries(store.data.googleIndex || {})) {
+    googleAccounts.set(googleId, usernameLower);
+  }
+  const social = store.data.social || {};
+  for (const [cid, m] of Object.entries(social.friends || {})) {
+    friends.set(cid, new Map(Object.entries(m)));
+  }
+  for (const [key, list] of Object.entries(social.friendChats || {})) {
+    friendChats.set(key, Array.isArray(list) ? list : []);
+  }
+  for (const [cid, arr] of Object.entries(social.blocks || {})) {
+    blocks.set(cid, new Set(arr));
+  }
+}
 
 function isFriend(a, b) {
   const setA = friends.get(a);
@@ -400,6 +453,7 @@ function addFriendPair(clientIdA, infoA, clientIdB, infoB) {
   if (!friends.has(clientIdB)) friends.set(clientIdB, new Map());
   friends.get(clientIdA).set(clientIdB, infoB);
   friends.get(clientIdB).set(clientIdA, infoA);
+  persistSocial();
 }
 
 function removeFriendPair(clientIdA, clientIdB) {
@@ -407,6 +461,7 @@ function removeFriendPair(clientIdA, clientIdB) {
   if (a) a.delete(clientIdB);
   const b = friends.get(clientIdB);
   if (b) b.delete(clientIdA);
+  persistSocial();
 }
 
 function getSocketByClientId(clientId) {
@@ -487,6 +542,24 @@ function createAccount(username, password, nickname) {
     salt,
     nickname,
   });
+  persistAccount(username.toLowerCase());
+}
+
+// Per-IP signup throttle: at most a handful of new accounts per IP per hour so
+// a script can't mass-create accounts to flood storage or evade bans.
+const SIGNUP_LIMIT = 5;
+const SIGNUP_WINDOW_MS = 60 * 60000;
+const signupAttempts = new Map(); // ip -> { first, count }
+function signupThrottled(ip) {
+  const rec = signupAttempts.get(ip);
+  if (!rec) return false;
+  if (Date.now() - rec.first > SIGNUP_WINDOW_MS) { signupAttempts.delete(ip); return false; }
+  return rec.count >= SIGNUP_LIMIT;
+}
+function noteSignup(ip) {
+  const rec = signupAttempts.get(ip) || { first: Date.now(), count: 0 };
+  rec.count += 1;
+  signupAttempts.set(ip, rec);
 }
 
 function verifyAccount(username, password) {
@@ -529,6 +602,7 @@ async function findOrCreateGoogleAccount(idToken) {
       googleId,
     });
     googleAccounts.set(googleId, username.toLowerCase());
+    persistAccount(username.toLowerCase());
   }
 
   return { username, account: accounts.get(username.toLowerCase()) };
@@ -577,6 +651,7 @@ function isBlockedPair(clientIdA, clientIdB) {
 function blockPair(clientIdA, clientIdB) {
   if (!blocks.has(clientIdA)) blocks.set(clientIdA, new Set());
   blocks.get(clientIdA).add(clientIdB);
+  persistSocial();
 }
 
 function disconnectPartner(socketId) {
@@ -800,9 +875,16 @@ io.on('connection', (socket) => {
     if (!username || !password || !nickname || username.length < 3 || password.length < 4) {
       return socket.emit('signup-result', { ok: false, error: 'Username/password too short (min 3/4 chars).' });
     }
+    if (typeof username !== 'string' || !/^[A-Za-z0-9_.-]{3,24}$/.test(username)) {
+      return socket.emit('signup-result', { ok: false, error: 'Username may only contain letters, numbers, dot, dash or underscore (3–24 chars).' });
+    }
+    if (signupThrottled(ip)) {
+      return socket.emit('signup-result', { ok: false, error: 'Too many accounts created from this network. Please try again later.' });
+    }
     if (accounts.has(username.toLowerCase())) {
       return socket.emit('signup-result', { ok: false, error: 'That username is already taken.' });
     }
+    noteSignup(ip);
     createAccount(username, password, nickname.slice(0, 24));
     socketAuth.set(socket.id, username.toLowerCase());
     store.recordFeature('signup');
@@ -864,6 +946,7 @@ io.on('connection', (socket) => {
     }
     const account = accounts.get(authedUsername);
     account.nickname = nickname.trim().slice(0, 24);
+    persistAccount(authedUsername);
     const profile = profiles.get(socket.id);
     if (profile) profile.username = account.nickname;
     socket.emit('update-nickname-result', { ok: true, nickname: account.nickname });
@@ -882,6 +965,7 @@ io.on('connection', (socket) => {
     const salt = crypto.randomBytes(16).toString('hex');
     account.passwordHash = hashPassword(newPassword, salt);
     account.salt = salt;
+    persistAccount(authedUsername);
     socket.emit('change-password-result', { ok: true });
   });
 
@@ -1368,6 +1452,7 @@ io.on('connection', (socket) => {
     const list = friendChats.get(key);
     list.push(msg);
     if (list.length > 200) list.shift();
+    persistSocial();
 
     const targetSocket = getSocketByClientId(toClientId);
     if (targetSocket) targetSocket.emit('friend-message', { fromClientId: me.clientId, text: trimmed, ts: msg.ts });
@@ -1542,6 +1627,10 @@ process.on('uncaughtException', (err) => {
 // Wait for the store (Postgres or file) to load before accepting traffic so
 // bans, maintenance mode and admin credentials apply from the first request.
 store.ready.then(() => {
+  // Restore durable accounts + social graph before accepting traffic so
+  // returning users can log in and see their friends/chats immediately.
+  hydrateFromStore();
+  console.log(`[accounts] restored ${accounts.size} account(s) from the store`);
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`TalkLive server running on port ${PORT}`);
   });
