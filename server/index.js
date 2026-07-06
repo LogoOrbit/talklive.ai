@@ -38,6 +38,40 @@ server.maxConnections = Infinity;
 app.set('trust proxy', 1);
 app.disable('x-powered-by');
 
+// Security headers on every response. The CSP allowlists exactly the external
+// origins the app legitimately uses (Google Sign-In, Paddle checkout, flag
+// images) and blocks everything else, so an injected <script src> or exfil
+// request to an attacker's host is refused by the browser. frame-ancestors and
+// X-Frame-Options stop the site being embedded for clickjacking; nosniff stops
+// MIME-confusion attacks. 'unsafe-inline' is required by the existing inline
+// scripts/handlers and styles, so the CSP is defense-in-depth on top of the
+// output-escaping fixes rather than the sole XSS barrier.
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' https://accounts.google.com https://cdn.paddle.com",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: https://flagcdn.com https://*.paddle.com",
+  "font-src 'self' data:",
+  "connect-src 'self' ws: wss: https://accounts.google.com https://flagcdn.com https://*.paddle.com https://*.paddle.net",
+  "frame-src https://accounts.google.com https://*.paddle.com https://*.paddle.net",
+  "media-src 'self' blob:",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+].join('; ');
+app.use((req, res, next) => {
+  res.setHeader('Content-Security-Policy', CSP);
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'microphone=(self), camera=(), geolocation=(), payment=(self)');
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+  next();
+});
+
 const PORT = process.env.PORT || 5000;
 // Canonical origin used for host/protocol normalization. Override via env.
 const CANONICAL_HOST = process.env.CANONICAL_HOST || 'talklive.app';
@@ -719,6 +753,30 @@ function predictedMatch(socketId) {
 io.on('connection', (socket) => {
   const ip = getClientIp(socket);
   const geo = lookupGeo(ip);
+
+  // Per-socket event rate limiter (token bucket): a hostile or buggy client
+  // can otherwise emit unlimited events and flood the server, spam friend
+  // requests/notifications, or drown real traffic. High-frequency signalling
+  // events (WebRTC 'signal', 'typing', 'game') are exempt from the strict cap
+  // but still bounded generously so normal calls are never throttled.
+  const RATE = { tokens: 40, last: Date.now() };
+  const REFILL_PER_SEC = 25;
+  const BURST_EXEMPT = new Set(['signal', 'typing', 'game', 'mic-state', 'reaction']);
+  socket.use((packet, next) => {
+    const now = Date.now();
+    RATE.tokens = Math.min(120, RATE.tokens + ((now - RATE.last) / 1000) * REFILL_PER_SEC);
+    RATE.last = now;
+    const event = Array.isArray(packet) ? packet[0] : '';
+    const cost = BURST_EXEMPT.has(event) ? 0.2 : 1;
+    if (RATE.tokens < cost) {
+      return next(new Error('rate-limited'));
+    }
+    RATE.tokens -= cost;
+    next();
+  });
+  // Swallow rate-limit errors quietly instead of disconnecting on the first
+  // over-limit event, so a brief burst just drops packets rather than the call.
+  socket.on('error', () => { /* rate-limited or malformed packet — ignore */ });
 
   // Maintenance mode: only the owner dashboard stays live.
   if (store.data.settings.maintenance.on) {

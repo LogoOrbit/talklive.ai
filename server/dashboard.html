@@ -136,6 +136,12 @@ const $=(s)=>document.querySelector(s);
 const api=async(p,opt)=>{const r=await fetch('/owner/api/'+p,{headers:{'Content-Type':'application/json'},...opt});if(r.status===401&&p!=='login'){show('login');throw new Error('auth');}const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'Request failed');return j;};
 const post=(p,body)=>api(p,{method:'POST',body:JSON.stringify(body||{})});
 const esc=(s)=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+/* For values placed inside a single-quoted JS string within an inline onclick=
+   attribute. HTML-escaping alone is NOT enough there: the browser HTML-decodes
+   the attribute before the JS parser runs, so an escaped quote turns back into a
+   real quote and breaks out. Unicode-escaping every non-alphanumeric character
+   survives HTML decoding intact and can never terminate the string or attribute. */
+const jsq=(s)=>String(s==null?'':s).replace(/[^A-Za-z0-9]/g,c=>{const h=c.charCodeAt(0);return h<256?'\\x'+h.toString(16).padStart(2,'0'):'\\u'+h.toString(16).padStart(4,'0');});
 const fmtTs=(ts)=>new Date(ts).toLocaleString();
 const ago=(ts)=>{const m=Math.round((Date.now()-ts)/60000);if(m<1)return'just now';if(m<60)return m+'m ago';if(m<1440)return Math.round(m/60)+'h ago';return Math.round(m/1440)+'d ago';};
 const num=(n)=>Number(n||0).toLocaleString();
@@ -299,7 +305,7 @@ async function viewOverview(){
 const DUR=[['30','30 minutes'],['60','1 hour'],['360','6 hours'],['1440','1 day'],['4320','3 days'],['10080','7 days'],['43200','30 days'],['129600','90 days'],['525600','1 year'],['2628000','5 years']];
 const durSelect=(id)=>`<select id="${id}">${DUR.map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select>`;
 function banButtons(u){
-  return `<div class="rowbtns"><button class="danger" onclick="banUser('${esc(u.clientId)}','${esc(u.ip||'')}','${esc(u.username)}','${esc(u.country||'')}','${esc(u.city||'')}')">Ban…</button></div>`;
+  return `<div class="rowbtns"><button class="danger" onclick="banUser('${jsq(u.clientId)}','${jsq(u.ip||'')}','${jsq(u.username)}','${jsq(u.country||'')}','${jsq(u.city||'')}')">Ban…</button></div>`;
 }
 window.banUser=async(clientId,ip,username,country,city)=>{
   const choice=prompt(`Ban ${username}?\nEnter duration:\n30 = 30 min, 60 = 1 hour, 1440 = 1 day, 10080 = 7 days, 43200 = 30 days, 525600 = 1 year\n(minutes)`,'30');
@@ -332,8 +338,8 @@ async function viewReports(){
   <td>${esc(rep.reporter.username)}<br><span class="muted">${esc(rep.reporter.country)}</span></td>
   <td class="num"><span class="pill ${rep.totalReportsOnUser>=3?'crit':rep.totalReportsOnUser>=2?'warn':'info'}">${rep.totalReportsOnUser}</span></td>
   <td><div class="rowbtns">
-    ${rep.activeBan?'':`<button class="danger" onclick="banUser('${esc(rep.reported.clientId)}','${esc(rep.reported.ip||'')}','${esc(rep.reported.username)}','${esc(rep.reported.country||'')}','${esc(rep.reported.city||'')}')">Ban…</button>`}
-    ${rep.handled?'':`<button onclick="markHandled('${rep.id}')">Mark handled</button>`}
+    ${rep.activeBan?'':`<button class="danger" onclick="banUser('${jsq(rep.reported.clientId)}','${jsq(rep.reported.ip||'')}','${jsq(rep.reported.username)}','${jsq(rep.reported.country||'')}','${jsq(rep.reported.city||'')}')">Ban…</button>`}
+    ${rep.handled?'':`<button onclick="markHandled('${jsq(rep.id)}')">Mark handled</button>`}
   </div></td></tr>`).join('')||'<tr><td colspan="6" class="muted">No reports yet — good sign!</td></tr>'}</table></div>`;
 }
 window.markHandled=async(id)=>{await post('reports/'+id+'/handled');load();};
@@ -346,7 +352,7 @@ async function viewBans(){
   return `<tr style="${active?'':'opacity:.55'}"><td><b>${esc(b.username)}</b><br><span class="muted">${esc(b.country)}${b.city?', '+esc(b.city):''} · ${esc((b.ip||''))}</span></td>
   <td>${esc(b.reason)}</td><td>${fmtTs(b.createdAt)}</td><td>${fmtTs(b.expiresAt)}</td>
   <td>${b.liftedAt?'<span class="pill info">Lifted</span>':active?'<span class="pill crit">Active</span>':'<span class="pill good">Expired</span>'}</td>
-  <td>${active?`<div class="rowbtns"><button onclick="unban('${b.id}')">Lift ban</button></div>`:''}</td></tr>`;}).join('')||'<tr><td colspan="6" class="muted">No bans on record.</td></tr>'}</table></div>`;
+  <td>${active?`<div class="rowbtns"><button onclick="unban('${jsq(b.id)}')">Lift ban</button></div>`:''}</td></tr>`;}).join('')||'<tr><td colspan="6" class="muted">No bans on record.</td></tr>'}</table></div>`;
 }
 window.unban=async(id)=>{try{await post('unban',{banId:id});load();}catch(e){alert(e.message);}};
 
@@ -364,7 +370,7 @@ async function viewChats(){
   <td><b>${esc(m.from)}</b> → ${esc(m.to)}<br><span class="muted">${esc(m.country||'')}</span></td>
   <td>${m.kind==='friend'?'<span class="pill info">Friends</span>':'<span class="pill warn">Stranger</span>'}</td>
   <td style="max-width:420px;overflow-wrap:anywhere">${esc(m.text)}</td>
-  <td><div class="rowbtns"><button class="danger" onclick="banUser('${esc(m.fromClientId)}','','${esc(m.from)}','${esc(m.country||'')}','')">Ban sender…</button></div></td></tr>`).join('')||'<tr><td colspan="5" class="muted">No chat messages recorded yet.</td></tr>'}</table></div>`;
+  <td><div class="rowbtns"><button class="danger" onclick="banUser('${jsq(m.fromClientId)}','','${jsq(m.from)}','${jsq(m.country||'')}','')">Ban sender…</button></div></td></tr>`).join('')||'<tr><td colspan="5" class="muted">No chat messages recorded yet.</td></tr>'}</table></div>`;
   const go=()=>{chatQuery=$('#chatQ').value.trim();load();};
   $('#chatQBtn').onclick=go;
   $('#chatQ').addEventListener('keydown',e=>{if(e.key==='Enter')go();});
