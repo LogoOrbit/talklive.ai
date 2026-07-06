@@ -715,8 +715,9 @@ addFriendBtn.addEventListener('click', () => {
   addFriendBtn.disabled = true;
 });
 
-socket.on('friend-request-result', ({ ok, error }) => {
-  if (!ok && error) showError(error);
+socket.on('friend-request-result', ({ ok, error, limitReached }) => {
+  // limitReached is handled by the premium-upsell listener further down.
+  if (!ok && error && !limitReached) showError(error);
 });
 
 function openModal(modal) {

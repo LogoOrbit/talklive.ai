@@ -843,6 +843,13 @@ function predictedMatch(socketId) {
   return { countryCode: pick.country, country: pick.countryName };
 }
 
+
+// Reject non-string / malformed ids coming off the wire before they're used as
+// Map keys or echoed to other clients.
+function validId(id) {
+  return typeof id === 'string' && id.length >= 1 && id.length <= 64 ? id : null;
+}
+
 io.on('connection', (socket) => {
   const ip = getClientIp(socket);
   const geo = lookupGeo(ip);
@@ -890,10 +897,11 @@ io.on('connection', (socket) => {
   store.recordPeakOnline(io.engine.clientsCount);
 
   socket.on('signup', ({ username, password, nickname } = {}) => {
-    if (!username || !password || !nickname || username.length < 3 || password.length < 4) {
+    if (typeof username !== 'string' || typeof password !== 'string' || typeof nickname !== 'string'
+      || !username || !password || !nickname.trim() || username.length < 3 || password.length < 4) {
       return socket.emit('signup-result', { ok: false, error: 'Username/password too short (min 3/4 chars).' });
     }
-    if (typeof username !== 'string' || !/^[A-Za-z0-9_.-]{3,24}$/.test(username)) {
+    if (!/^[A-Za-z0-9_.-]{3,24}$/.test(username)) {
       return socket.emit('signup-result', { ok: false, error: 'Username may only contain letters, numbers, dot, dash or underscore (3–24 chars).' });
     }
     if (signupThrottled(ip)) {
@@ -919,7 +927,9 @@ io.on('connection', (socket) => {
   });
 
   socket.on('login', ({ username, password } = {}) => {
-    const account = verifyAccount(username || '', password || '');
+    if (typeof username !== 'string') username = '';
+    if (typeof password !== 'string') password = '';
+    const account = verifyAccount(username, password);
     if (!account) {
       return socket.emit('login-result', { ok: false, error: 'Invalid username or password.' });
     }
@@ -959,7 +969,7 @@ io.on('connection', (socket) => {
   socket.on('update-nickname', ({ nickname } = {}) => {
     const authedUsername = socketAuth.get(socket.id);
     if (!authedUsername) return socket.emit('update-nickname-result', { ok: false, error: 'Not logged in.' });
-    if (!nickname || !nickname.trim()) {
+    if (typeof nickname !== 'string' || !nickname.trim()) {
       return socket.emit('update-nickname-result', { ok: false, error: 'Nickname cannot be empty.' });
     }
     const account = accounts.get(authedUsername);
@@ -973,10 +983,11 @@ io.on('connection', (socket) => {
   socket.on('change-password', ({ currentPassword, newPassword } = {}) => {
     const authedUsername = socketAuth.get(socket.id);
     if (!authedUsername) return socket.emit('change-password-result', { ok: false, error: 'Not logged in.' });
-    if (!verifyAccount(authedUsername, currentPassword || '')) {
+    if (typeof currentPassword !== 'string') currentPassword = '';
+    if (!verifyAccount(authedUsername, currentPassword)) {
       return socket.emit('change-password-result', { ok: false, error: 'Current password is incorrect.' });
     }
-    if (!newPassword || newPassword.length < 4) {
+    if (typeof newPassword !== 'string' || newPassword.length < 4) {
       return socket.emit('change-password-result', { ok: false, error: 'New password must be at least 4 characters.' });
     }
     const account = accounts.get(authedUsername);
@@ -1008,7 +1019,9 @@ io.on('connection', (socket) => {
     const wasOffline = !clientSockets.has(clientId);
     profiles.set(socket.id, {
       clientId,
-      username: data.nickname ? data.nickname.slice(0, 24) : generateUsername(),
+      username: (typeof data.nickname === 'string' && data.nickname.trim())
+        ? data.nickname.trim().slice(0, 24)
+        : generateUsername(),
       country: geo.country,
       countryName: geo.countryName,
       city: geo.city,
@@ -1017,7 +1030,9 @@ io.on('connection', (socket) => {
       includeCountries: sanitizeCountryList(data.includeCountries),
       excludeCountries: sanitizeCountryList(data.excludeCountries),
       randomFallbackActive: false,
-      interests: Array.isArray(data.interests) ? data.interests.slice(0, 10) : [],
+      interests: Array.isArray(data.interests)
+        ? data.interests.filter((i) => typeof i === 'string').map((i) => i.slice(0, 40)).slice(0, 10)
+        : [],
       avatar: typeof data.avatar === 'string' && /^[mf][1-5]$/.test(data.avatar) ? data.avatar : null,
     });
     clientSockets.set(clientId, socket.id);
@@ -1304,6 +1319,7 @@ io.on('connection', (socket) => {
   // --- Friends ---
   socket.on('friend-request', ({ targetClientId } = {}) => {
     const me = profiles.get(socket.id);
+    targetClientId = validId(targetClientId);
     if (!me || !targetClientId || targetClientId === me.clientId) return;
     store.recordFeature('friend_request');
     if (isBlockedPair(me.clientId, targetClientId)) {
@@ -1385,6 +1401,7 @@ io.on('connection', (socket) => {
 
   socket.on('friend-request-respond', ({ fromClientId, accept, notificationId } = {}) => {
     const me = profiles.get(socket.id);
+    fromClientId = validId(fromClientId);
     if (!me || !fromClientId) return;
     const reqMap = friendRequests.get(me.clientId);
     const req = reqMap && reqMap.get(fromClientId);
@@ -1422,6 +1439,7 @@ io.on('connection', (socket) => {
 
   socket.on('remove-friend', ({ friendClientId } = {}) => {
     const me = profiles.get(socket.id);
+    friendClientId = validId(friendClientId);
     if (!me || !friendClientId) return;
     removeFriendPair(me.clientId, friendClientId);
     syncClientState(socket, me.clientId);
@@ -1431,6 +1449,7 @@ io.on('connection', (socket) => {
 
   socket.on('block-friend', ({ friendClientId } = {}) => {
     const me = profiles.get(socket.id);
+    friendClientId = validId(friendClientId);
     if (!me || !friendClientId) return;
     removeFriendPair(me.clientId, friendClientId);
     blockPair(me.clientId, friendClientId);
@@ -1440,6 +1459,7 @@ io.on('connection', (socket) => {
   // --- Friend-to-friend chat (separate from the ephemeral in-call chat) ---
   socket.on('friend-message', ({ toClientId, text } = {}) => {
     const me = profiles.get(socket.id);
+    toClientId = validId(toClientId);
     if (!me || !toClientId || typeof text !== 'string' || !text.trim()) return;
     if (!isFriend(me.clientId, toClientId)) return;
     // Text messaging is call-gated: you can only send a message to someone while
@@ -1487,6 +1507,7 @@ io.on('connection', (socket) => {
 
   socket.on('get-friend-chat', ({ friendClientId } = {}) => {
     const me = profiles.get(socket.id);
+    friendClientId = validId(friendClientId);
     if (!me || !friendClientId) return;
     const key = pairKey(me.clientId, friendClientId);
     socket.emit('friend-chat-history', { friendClientId, messages: friendChats.get(key) || [] });
@@ -1509,6 +1530,7 @@ io.on('connection', (socket) => {
   // --- Call back: re-connect directly with someone from call history ---
   socket.on('call-back-request', ({ targetClientId } = {}) => {
     const me = profiles.get(socket.id);
+    targetClientId = validId(targetClientId);
     if (!me || !targetClientId) return;
     store.recordFeature('call_back');
     if (isBlockedPair(me.clientId, targetClientId)) {
@@ -1545,6 +1567,7 @@ io.on('connection', (socket) => {
   // happen to be online right now it's delivered live too.
   socket.on('call-back-request-later', ({ targetClientId } = {}) => {
     const me = profiles.get(socket.id);
+    targetClientId = validId(targetClientId);
     if (!me || !targetClientId) return;
     if (isBlockedPair(me.clientId, targetClientId)) {
       return socket.emit('call-back-later-result', { ok: false, reason: 'blocked', targetClientId });
@@ -1568,6 +1591,7 @@ io.on('connection', (socket) => {
 
   socket.on('call-back-respond', ({ fromClientId, accept } = {}) => {
     const me = profiles.get(socket.id);
+    fromClientId = validId(fromClientId);
     if (!me || !fromClientId) return;
 
     const list = notifications.get(me.clientId);
