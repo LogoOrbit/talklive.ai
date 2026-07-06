@@ -10,7 +10,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const SITE = 'https://talklive.ai';
+const SITE = 'https://talklive.app';
 const PUBLIC = path.join(__dirname, '..', 'public');
 const LANGS = ['en', 'es', 'pt', 'fr', 'de', 'ru', 'tr', 'ar', 'hi', 'ur', 'id', 'zh'];
 const BUILD_DATE = new Date().toISOString().slice(0, 10);
@@ -80,6 +80,7 @@ function footerHtml() {
         ${colHtml}
         <div><h4>App</h4><ul>
           <li><a href="/">Open TalkLive</a></li>
+          <li><a href="/blog/">Blog</a></li>
           <li><a href="/privacy.html">Privacy Policy</a></li>
         </ul></div>
       </div>
@@ -153,6 +154,7 @@ function page(p) {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="/loading.js"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>${esc(p.title)}</title>
@@ -169,7 +171,7 @@ ${LANGS.map(l => `<link rel="alternate" href="${canonical}?lang=${l}" hreflang="
 <meta property="og:title" content="${esc(p.title)}" />
 <meta property="og:description" content="${esc(p.description)}" />
 <meta property="og:url" content="${canonical}" />
-<meta property="og:image" content="${SITE}/og-image.svg" />
+<meta property="og:image" content="${SITE}/og-image.png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta property="og:image:alt" content="TalkLive — free random voice chat with strangers worldwide" />
@@ -177,7 +179,7 @@ ${LANGS.map(l => `<link rel="alternate" href="${canonical}?lang=${l}" hreflang="
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="${esc(p.title)}" />
 <meta name="twitter:description" content="${esc(p.description)}" />
-<meta name="twitter:image" content="${SITE}/og-image.svg" />
+<meta name="twitter:image" content="${SITE}/og-image.png" />
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="/favicon.svg" />
 <link rel="manifest" href="/site.webmanifest" />
@@ -585,6 +587,349 @@ const PAGES = [
   },
 ];
 
+// --- Blog -------------------------------------------------------------------
+// Long-form SEO articles targeting long-tail keywords, published under /blog/.
+// Each post gets Article + Breadcrumb JSON-LD and links back to the landing
+// pages and the app, so blog authority flows into the money pages.
+
+const BLOG = [
+  {
+    slug: 'best-omegle-alternatives',
+    date: '2026-07-06',
+    title: '10 Best Omegle Alternatives in 2026 (Voice-Only Options Included) | TalkLive Blog',
+    h1: 'The 10 Best Omegle Alternatives in 2026',
+    description: 'Omegle shut down — so where do you talk to strangers now? We compare the best Omegle alternatives in 2026, including voice-only options that skip the video weirdness.',
+    keywords: 'omegle alternatives, omegle replacement, sites like omegle, talk to strangers, random chat 2026',
+    tag: 'Guides',
+    sections: [
+      { h: null, ps: [
+        'When Omegle shut down in November 2023, millions of people lost their favourite way to meet strangers on the internet. Since then, dozens of "Omegle alternatives" have appeared — but most of them copied the worst parts of Omegle (unmoderated video, endless bots) instead of the best part: the thrill of a real conversation with a random human.',
+        'This guide looks at what actually matters in a stranger-chat app in 2026 — safety, moderation, speed of matching, and whether you can just start talking without giving away your identity — and ranks the options accordingly.',
+      ]},
+      { h: 'Why voice-only is winning', ps: [
+        'The biggest shift since Omegle died is the move away from video. Video chat with strangers has two structural problems: it exposes your face to someone you know nothing about, and it attracts exactly the behaviour that killed Omegle. Voice-only platforms remove both problems at once. You stay anonymous, the conversation is the whole product, and moderation is dramatically more effective.',
+        'Voice also just feels better. Without a camera you are not performing — you are talking. Users consistently report longer, deeper conversations on audio-only platforms than on video roulette sites.',
+      ]},
+      { h: 'Our top pick: TalkLive', ps: [
+        'TalkLive is a free, voice-only random chat: one tap connects you to a live audio call with a stranger anywhere in the world. There is no sign-up, no video, and no recording — audio flows peer-to-peer between browsers and never touches the server. If a conversation is not working, "Next" instantly re-matches you.',
+        'Moderation is built in: users can report bad actors, repeat offenders are banned by device and IP, and the whole platform is 18+. It works on any phone or laptop with a browser — nothing to install.',
+      ]},
+      { h: 'What to look for in any alternative', ps: [
+        'Whatever platform you choose, check four things before you invest time in it. First, moderation: is there a working report button, and do bans actually stick? Second, privacy: does the site record your calls or require an account? Third, liveness: are real people online when you are, or do you sit in an empty queue? Fourth, friction: the best stranger-chat experiences are one tap from landing page to live conversation.',
+        'Most video-roulette clones fail at least two of these. Voice-first platforms, purpose-built after Omegle’s shutdown, tend to pass all four.',
+      ]},
+      { h: 'The verdict', ps: [
+        'If you miss Omegle for the conversations rather than the chaos, a voice-only platform is the closest thing to that original magic — with far less of the content that made Omegle unusable. Try a live voice call with a stranger and see how different it feels when nobody is on camera.',
+      ]},
+    ],
+  },
+  {
+    slug: 'practice-english-speaking-online-free',
+    date: '2026-07-06',
+    title: 'How to Practice Speaking English Online for Free (With Real People) | TalkLive Blog',
+    h1: 'How to Practice Speaking English Online for Free — With Real Humans',
+    description: 'Apps teach you vocabulary, but only conversation makes you fluent. Here is how to practice speaking English online for free with real people, starting today.',
+    keywords: 'practice english speaking online free, english conversation practice, speak english with strangers, language exchange, improve spoken english',
+    tag: 'Language Learning',
+    sections: [
+      { h: null, ps: [
+        'You can finish every Duolingo tree and still freeze when a real person asks you a question. That is because fluency is not knowledge — it is a motor skill. Your mouth, ears and brain need live, unpredictable conversation to wire together, and no flashcard app can simulate that.',
+        'The problem: real conversation practice is expensive. Tutors cost $10–30 an hour, language exchange apps bury you in texting that never becomes a call, and speaking clubs meet once a week if you are lucky. Here is the free alternative.',
+      ]},
+      { h: 'Talk to random strangers — seriously', ps: [
+        'Random voice chat platforms connect you to a live audio call with a stranger in seconds, free. For language learners this is close to a cheat code: every call is an unscripted conversation with a new accent, new speed, new vocabulary. You cannot memorise your way through it — which is exactly the point.',
+        'Because it is voice-only and anonymous, the fear factor drops massively. Nobody sees your face, nobody knows your name, and if you embarrass yourself you tap "Next" and the moment is gone forever. That psychological safety is why shy speakers improve faster on anonymous voice chat than in classrooms.',
+      ]},
+      { h: 'A 30-day speaking routine that works', ps: [
+        'Week 1: one 5-minute call per day. Your only goal is to survive the call — introduce yourself, ask where they are from, keep it going. Week 2: two calls per day, and steal one new phrase from every conversation (write it down after the call, not during). Week 3: push length — try to hold one 15-minute conversation daily. Week 4: variety — deliberately talk to different accents and ask people to correct you.',
+        'Twenty minutes a day of real speaking beats two hours of app drills. By day 30 most learners notice they stop translating in their head and start just... answering.',
+      ]},
+      { h: 'Tips for your first calls', ps: [
+        'Prepare three openers so you never freeze at "hello": where are you from, what time is it there, what did you do today. Do not apologise for your English — most people you meet are practising too. If someone is rude, skip instantly; the next human is one tap away. And keep calls anonymous: no real names, no socials, just conversation.',
+      ]},
+    ],
+  },
+  {
+    slug: 'voice-chat-vs-video-chat',
+    date: '2026-07-06',
+    title: 'Voice Chat vs Video Chat: Why Audio Wins for Meeting Strangers | TalkLive Blog',
+    h1: 'Voice Chat vs Video Chat: Why Audio-Only Wins for Meeting Strangers',
+    description: 'Video roulette sites promised connection and delivered chaos. Here is why voice-only chat is safer, deeper and less awkward for talking to strangers online.',
+    keywords: 'voice chat vs video chat, audio chat strangers, anonymous voice chat, is video chat safe, talking to strangers online',
+    tag: 'Opinion',
+    sections: [
+      { h: null, ps: [
+        'Every random-video-chat site eventually turns into the same place. If you have used one, you know exactly what we mean. The format itself is the problem: put anonymous people on camera with zero friction and the worst users define the experience for everyone else.',
+        'Voice chat takes the single feature that attracts abuse — the camera — and deletes it. What is left is the actual product: two strangers having a conversation.',
+      ]},
+      { h: 'Safety is structural, not a policy', ps: [
+        'On video, your face is your identity: it can be recorded, screenshotted and traced. On voice, you are a sound. Nobody can screenshot your voice into a profile. Combined with no sign-up and peer-to-peer audio that is never recorded, anonymity on a voice platform is real rather than promised.',
+        'Moderation works better too. Video moderation requires scanning frames in real time — expensive and always behind. Voice platforms lean on user reports plus device and IP bans, which is simpler and more decisive.',
+      ]},
+      { h: 'Conversations get deeper without a camera', ps: [
+        'Psychologists have known this for decades: removing visual self-awareness makes people more honest. It is why therapy couches face away from the therapist and why late-night phone calls go deep. On camera you manage your face, your background, your angle. On audio you just talk — and strangers tell each other things they would never say on video.',
+        'There is a practical side as well: you can voice chat lying in bed with the lights off, walking, or looking like you just woke up. The barrier to starting a conversation drops to zero.',
+      ]},
+      { h: 'When video still makes sense', ps: [
+        'Video is right when identity is the point — catching up with family, remote work, dating apps where you have already matched. But for the specific act of meeting a stranger, audio-first is simply the better-engineered experience: safer by design, easier to moderate, and better at producing the thing you came for — a real conversation.',
+      ]},
+    ],
+  },
+  {
+    slug: 'is-talklive-safe',
+    date: '2026-07-06',
+    title: 'Is TalkLive Safe? How Our Anonymous P2P Voice Chat Actually Works | TalkLive Blog',
+    h1: 'Is TalkLive Safe? How Our Anonymous Voice Chat Actually Works',
+    description: 'A transparent look at TalkLive safety: peer-to-peer audio that is never recorded, no sign-up required, report and ban systems, and what data we do and don’t keep.',
+    keywords: 'is talklive safe, anonymous voice chat safety, p2p audio privacy, talk to strangers safely, webrtc privacy',
+    tag: 'Trust & Safety',
+    sections: [
+      { h: null, ps: [
+        'Any app that connects you to strangers owes you a straight answer about safety. This post explains exactly how TalkLive works under the hood — what we can see, what we cannot, and what happens when someone behaves badly.',
+      ]},
+      { h: 'Your voice never touches our servers', ps: [
+        'TalkLive calls run on WebRTC, the same technology behind most modern calling apps. Once two people are matched, audio streams directly between their browsers — peer-to-peer. Our server only performs the introduction: it pairs two waiting users and relays the connection setup messages. It never receives, hears, or stores call audio. We could not record your calls even if we wanted to, because the audio does not pass through us.',
+      ]},
+      { h: 'Anonymous by default', ps: [
+        'You can use TalkLive without creating an account. No name, no email, no phone number. The person you talk to sees a display name and a country flag — nothing else. Signing up (optional) only exists so you can keep friends and settings across devices.',
+        'Browsers enforce microphone permission on secure origins, so TalkLive runs on HTTPS everywhere, and your mic is only live during a call — mute is one tap and hangs up entirely with another.',
+      ]},
+      { h: 'What happens to bad actors', ps: [
+        'Every user can report a call. Reports are reviewed with full context, and bans apply to both the device and the IP address — a banned user cannot reconnect until the ban expires. Accumulate three reports and you are automatically banned while a human reviews. The platform is 18+ and moderation activity is logged and audited.',
+      ]},
+      { h: 'What we do keep, honestly', ps: [
+        'We keep operational data: aggregate visit counts, match counts, country-level statistics, and reports with the context needed to act on them. Text chat (the optional in-call messaging) is retained for moderation and disclosed in our privacy policy. Voice is never recorded, full stop. If a service claims stranger chat with zero data, read their privacy policy — moderation without any data is impossible, and we would rather be honest about the trade-off we chose.',
+      ]},
+    ],
+  },
+  {
+    slug: 'science-of-talking-to-strangers',
+    date: '2026-07-06',
+    title: 'The Science of Talking to Strangers: Why It Makes You Happier | TalkLive Blog',
+    h1: 'The Science of Talking to Strangers (And Why It Makes You Happier)',
+    description: 'Research keeps finding the same thing: conversations with strangers boost mood, reduce loneliness, and go deeper than we expect. Here’s the science, simply explained.',
+    keywords: 'talking to strangers benefits, loneliness research, social connection science, why talk to strangers, conversations with strangers study',
+    tag: 'Wellbeing',
+    sections: [
+      { h: null, ps: [
+        'We are living through what health officials have called a loneliness epidemic — and at the same time, most of us actively avoid the cheapest known remedy: talking to people we do not know. The research on stranger conversations is remarkably consistent, and it points the opposite way from our instincts.',
+      ]},
+      { h: 'We wrongly predict strangers will reject us', ps: [
+        'In a well-known series of studies, behavioural scientists Nicholas Epley and Juliana Schroeder asked commuters to strike up conversations with strangers on trains. Participants predicted the conversations would be awkward and unwelcome. The result was the reverse: talkers reported significantly happier commutes, and their partners enjoyed it too. The barrier was not the experience — it was the (wrong) forecast of the experience.',
+        'Follow-up research found the same "liking gap" everywhere: after talking to someone new, we systematically underestimate how much they liked us.',
+      ]},
+      { h: 'Deep talk with strangers feels surprisingly good', ps: [
+        'A 2021 paper in the Journal of Personality and Social Psychology found that people expect deep questions with strangers to be excruciating and instead find them connecting — strangers were willing to go deeper than participants predicted, and both sides came away happier. Anonymity amplifies this: when someone has no link to your real life, the social cost of honesty drops to zero. It is the "stranger on a train" effect, and voice chat is essentially that train, on demand.',
+      ]},
+      { h: 'Even weak ties count', ps: [
+        'Sociologist Mark Granovetter’s classic work on "the strength of weak ties" and later studies by Gillian Sandstrom show that interactions with acquaintances and strangers — not just close friends — measurably improve belonging and mood. You do not need every conversation to produce a best friend. The conversation itself is the nutrient.',
+        'So the practical advice from the literature is almost embarrassingly simple: talk to more strangers. Your brain will tell you it will go badly. Your brain is, statistically, wrong.',
+      ]},
+    ],
+  },
+  {
+    slug: 'how-to-start-a-conversation-with-a-stranger',
+    date: '2026-07-06',
+    title: 'How to Start a Conversation With a Stranger (25 Openers That Work) | TalkLive Blog',
+    h1: 'How to Start a Conversation With a Stranger: 25 Openers That Actually Work',
+    description: 'Never freeze at "hello" again. Practical conversation openers, follow-up techniques and exit lines for talking to strangers — online or off.',
+    keywords: 'how to start a conversation, conversation starters with strangers, what to say to a stranger, voice chat conversation topics, icebreakers',
+    tag: 'Guides',
+    sections: [
+      { h: null, ps: [
+        'The first ten seconds with a stranger feel like the hardest part, but they are actually the most forgiving: nobody expects brilliance at "hello". A stranger has zero context on you, which means any genuine question is interesting. Here is a toolbox that works both on voice chat and in real life.',
+      ]},
+      { h: 'Openers that always have somewhere to go', ps: [
+        'Location openers: "Where in the world are you right now?" / "What time is it there?" / "What’s the weather doing?" — simple, universal, and they instantly produce a follow-up (life in their city, why they are awake at 3am). Day openers: "What did you do today?" / "What are you avoiding doing right now?" Curiosity openers: "What made you tap the call button today?" — surprisingly disarming, because the honest answer is usually a real story.',
+        'For language-exchange calls: "Can I practise my English with you? Correct me when I mess up." People love being asked to help.',
+      ]},
+      { h: 'The 70/30 rule of keeping it alive', ps: [
+        'A conversation dies when both people answer in full stops. Keep yours alive with the 70/30 rule: for every answer you give, spend roughly a third of it on the answer and the rest adding a hook — a detail, an opinion, a question back. "I’m from Karachi" is a full stop. "I’m from Karachi — it’s 2am here and the whole city is still awake, is your city a night city?" is a conversation.',
+        'Listen for their hooks too. People constantly drop threads ("...since I moved", "...after work") hoping you will pull one. Pull one.',
+      ]},
+      { h: 'Exiting gracefully (and instantly)', ps: [
+        'On voice chat, the exit is built in: "This was great — I’m going to jump to the next call. Good luck out there." No excuses needed; the format expects it. That freedom cuts both ways, and it is what makes practice cheap: a bad conversation costs you five seconds, a good one can last an hour. The only way to get good at talking to strangers is volume, and random voice chat gives you more first-conversations per hour than any other place on earth.',
+      ]},
+    ],
+  },
+];
+
+function blogUrl(slug) { return `${SITE}/blog/${slug}`; }
+
+function blogPost(b) {
+  const canonical = blogUrl(b.slug);
+  const bodyHtml = b.sections.map(s =>
+    (s.h ? `<h2>${s.h}</h2>` : '') + s.ps.map(p => `<p>${p}</p>`).join('')
+  ).join('');
+  const words = b.sections.reduce((n, s) => n + s.ps.join(' ').split(/\s+/).length, 0);
+  const readMins = Math.max(2, Math.round(words / 200));
+  const others = BLOG.filter(x => x.slug !== b.slug).slice(0, 3)
+    .map(x => `<li><a href="/blog/${x.slug}">${esc(x.h1)}</a></li>`).join('');
+
+  const ld = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BlogPosting',
+      headline: b.h1,
+      description: b.description,
+      datePublished: b.date,
+      dateModified: BUILD_DATE,
+      mainEntityOfPage: canonical,
+      image: `${SITE}/og-image.png`,
+      wordCount: words,
+      author: { '@type': 'Organization', name: 'TalkLive', url: SITE },
+      publisher: { '@type': 'Organization', name: 'TalkLive', url: SITE, logo: { '@type': 'ImageObject', url: `${SITE}/favicon.svg` } },
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: SITE + '/' },
+        { '@type': 'ListItem', position: 2, name: 'Blog', item: `${SITE}/blog/` },
+        { '@type': 'ListItem', position: 3, name: b.h1, item: canonical },
+      ],
+    },
+  ];
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="/loading.js"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>${esc(b.title)}</title>
+<meta name="description" content="${esc(b.description)}" />
+<meta name="keywords" content="${esc(b.keywords)}" />
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+<meta name="theme-color" content="#0b0f1a" />
+<meta name="author" content="TalkLive" />
+<link rel="canonical" href="${canonical}" />
+<meta property="og:type" content="article" />
+<meta property="og:site_name" content="TalkLive" />
+<meta property="og:title" content="${esc(b.h1)}" />
+<meta property="og:description" content="${esc(b.description)}" />
+<meta property="og:url" content="${canonical}" />
+<meta property="og:image" content="${SITE}/og-image.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="article:published_time" content="${b.date}" />
+<meta property="article:section" content="${esc(b.tag)}" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="${esc(b.h1)}" />
+<meta name="twitter:description" content="${esc(b.description)}" />
+<meta name="twitter:image" content="${SITE}/og-image.png" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="manifest" href="/site.webmanifest" />
+<link rel="stylesheet" href="/seo.css" />
+<script type="application/ld+json">${JSON.stringify(ld)}</script>
+</head>
+<body>
+${headerHtml('blog')}
+<main>
+  <article>
+    <section class="hero" style="padding-bottom:24px">
+      <div class="wrap">
+        <span class="eyebrow"><span class="dot"></span> ${esc(b.tag)} · ${readMins} min read</span>
+        <h1>${esc(b.h1)}</h1>
+        <p class="lede">${esc(b.description)}</p>
+        <p class="hero-meta">By the TalkLive team · Updated ${BUILD_DATE}</p>
+      </div>
+    </section>
+    <section>
+      <div class="wrap prose">${bodyHtml}</div>
+    </section>
+  </article>
+
+  <div class="wrap">
+    <div class="cta-band">
+      <h2>Try it right now — talk to a stranger</h2>
+      <p>TalkLive is free, anonymous, voice-only random chat. No sign-up, no video, no recording. One tap and you're in a live conversation.</p>
+      <a class="btn btn-primary" href="/?utm_source=blog&amp;utm_medium=cta&amp;utm_campaign=${b.slug}">Start Talking Free</a>
+    </div>
+  </div>
+
+  <section>
+    <div class="wrap prose">
+      <h2>Keep reading</h2>
+      <ul>${others}</ul>
+      <p><a href="/blog/">← All articles</a></p>
+    </div>
+  </section>
+</main>
+${footerHtml()}
+</body>
+</html>
+`;
+}
+
+function blogIndex() {
+  const canonical = `${SITE}/blog/`;
+  const cards = BLOG.map(b => `<a class="card" href="/blog/${b.slug}" style="display:block;text-decoration:none">
+      <p style="margin:0 0 8px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;opacity:.7">${esc(b.tag)}</p>
+      <h3 style="margin:0 0 10px">${esc(b.h1)}</h3>
+      <p>${esc(b.description)}</p>
+    </a>`).join('');
+  const ld = [{
+    '@context': 'https://schema.org',
+    '@type': 'Blog',
+    name: 'TalkLive Blog',
+    url: canonical,
+    description: 'Guides and research on talking to strangers, voice chat, language practice and online safety — from the team behind TalkLive.',
+    publisher: { '@type': 'Organization', name: 'TalkLive', url: SITE },
+    blogPost: BLOG.map(b => ({ '@type': 'BlogPosting', headline: b.h1, url: blogUrl(b.slug), datePublished: b.date })),
+  }];
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="/loading.js"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>TalkLive Blog — Talking to Strangers, Voice Chat & Language Practice</title>
+<meta name="description" content="Guides and research on talking to strangers, voice-only chat, practising languages with real people, and staying safe online — from the team behind TalkLive." />
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+<meta name="theme-color" content="#0b0f1a" />
+<link rel="canonical" href="${canonical}" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="TalkLive" />
+<meta property="og:title" content="TalkLive Blog" />
+<meta property="og:description" content="Guides and research on talking to strangers, voice chat and language practice." />
+<meta property="og:url" content="${canonical}" />
+<meta property="og:image" content="${SITE}/og-image.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="manifest" href="/site.webmanifest" />
+<link rel="stylesheet" href="/seo.css" />
+<script type="application/ld+json">${JSON.stringify(ld)}</script>
+</head>
+<body>
+${headerHtml('blog')}
+<main>
+  <section class="hero" style="padding-bottom:24px">
+    <div class="wrap">
+      <span class="eyebrow"><span class="dot"></span> The TalkLive Blog</span>
+      <h1>Conversations, strangers &amp; the science of talking</h1>
+      <p class="lede">Guides and research on meeting people by voice — from the team behind TalkLive.</p>
+    </div>
+  </section>
+  <section>
+    <div class="wrap">
+      <div class="grid">${cards}</div>
+    </div>
+  </section>
+  <div class="wrap">
+    <div class="cta-band">
+      <h2>Done reading? Go talk.</h2>
+      <p>One tap connects you to a live voice call with a stranger somewhere in the world. Free and anonymous.</p>
+      <a class="btn btn-primary" href="/?utm_source=blog&amp;utm_medium=index">Start Talking Free</a>
+    </div>
+  </div>
+</main>
+${footerHtml()}
+</body>
+</html>
+`;
+}
+
 // --- Emit -------------------------------------------------------------------
 
 let count = 0;
@@ -593,9 +938,20 @@ for (const p of PAGES) {
   count++;
 }
 
+// Blog: /blog/ index + one page per post.
+const BLOG_DIR = path.join(PUBLIC, 'blog');
+fs.mkdirSync(BLOG_DIR, { recursive: true });
+fs.writeFileSync(path.join(BLOG_DIR, 'index.html'), blogIndex());
+for (const b of BLOG) {
+  fs.writeFileSync(path.join(BLOG_DIR, `${b.slug}.html`), blogPost(b));
+  count++;
+}
+
 // Sitemap with hreflang alternates for the home + all landing pages.
 const sitemapUrls = [{ slug: '', priority: '1.0', freq: 'daily' }]
   .concat(PAGES.map(p => ({ slug: p.slug, priority: '0.8', freq: 'weekly' })))
+  .concat([{ slug: 'blog/', priority: '0.7', freq: 'weekly', raw: true }])
+  .concat(BLOG.map(b => ({ slug: `blog/${b.slug}`, priority: '0.6', freq: 'monthly', raw: true })))
   .concat([{ slug: 'privacy.html', priority: '0.3', freq: 'yearly', raw: true }]);
 
 function buildSitemap() {

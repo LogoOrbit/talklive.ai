@@ -1471,6 +1471,60 @@ function recordCallHistory() {
     durationSeconds,
   });
   renderHistory();
+  maybeShowSharePrompt(durationSeconds);
+}
+
+// --- Post-call share prompt -------------------------------------------------
+// After a good call (2+ minutes) nudge the user to invite friends. Shown at
+// most once per 24h so it never becomes nagging.
+const SHARE_PROMPT_KEY = 'tl_share_prompt_at';
+const SHARE_URL = 'https://talklive.app/?utm_source=share&utm_medium=app&utm_campaign=post_call';
+
+function maybeShowSharePrompt(durationSeconds) {
+  if (durationSeconds < 120) return;
+  try {
+    const last = Number(localStorage.getItem(SHARE_PROMPT_KEY) || 0);
+    if (Date.now() - last < 24 * 60 * 60 * 1000) return;
+    localStorage.setItem(SHARE_PROMPT_KEY, String(Date.now()));
+  } catch (_) { return; }
+  showSharePrompt();
+}
+
+function showSharePrompt() {
+  let card = document.getElementById('sharePromptCard');
+  if (card) card.remove();
+  card = document.createElement('div');
+  card.id = 'sharePromptCard';
+  card.className = 'share-prompt';
+  card.innerHTML = `
+    <h3></h3><p></p>
+    <div class="share-prompt-actions">
+      <button type="button" class="share-prompt-yes"></button>
+      <button type="button" class="share-prompt-no"></button>
+    </div>`;
+  card.querySelector('h3').textContent = t('sharePromptTitle');
+  card.querySelector('p').textContent = t('sharePromptBody');
+  const yes = card.querySelector('.share-prompt-yes');
+  const no = card.querySelector('.share-prompt-no');
+  yes.textContent = t('sharePromptBtn');
+  no.textContent = t('sharePromptLater');
+  const dismiss = () => { card.classList.remove('show'); setTimeout(() => card.remove(), 300); };
+  no.addEventListener('click', dismiss);
+  yes.addEventListener('click', async () => {
+    dismiss();
+    const payload = { title: 'TalkLive', text: t('shareText'), url: SHARE_URL };
+    if (navigator.share) {
+      try { await navigator.share(payload); } catch (_) { /* user cancelled */ }
+    } else {
+      try {
+        await navigator.clipboard.writeText(`${payload.text} ${payload.url}`);
+        showToast(t('shareLinkCopied'));
+      } catch (_) {}
+    }
+  });
+  document.body.appendChild(card);
+  requestAnimationFrame(() => card.classList.add('show'));
+  setTimeout(() => { if (card.isConnected) dismiss(); }, 15000);
 }
 
 historyBtn.addEventListener('click', (e) => {

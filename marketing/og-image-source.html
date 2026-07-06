@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { width:1200px; height:630px; background:#0b0f1a; overflow:hidden;
+    font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:#fff; position:relative; }
+  .glow1 { position:absolute; width:700px; height:700px; border-radius:50%; filter:blur(120px);
+    background:radial-gradient(circle,#7c3aed55,transparent 70%); top:-260px; right:-160px; }
+  .glow2 { position:absolute; width:600px; height:600px; border-radius:50%; filter:blur(120px);
+    background:radial-gradient(circle,#22d3ee44,transparent 70%); bottom:-260px; left:-140px; }
+  .inner { position:relative; z-index:2; padding:70px 80px; height:100%; display:flex; flex-direction:column; justify-content:space-between; }
+  .brand { display:flex; align-items:center; gap:18px; font-size:40px; font-weight:800; letter-spacing:-0.5px; }
+  .dot { width:16px; height:16px; border-radius:50%; background:#34d399; box-shadow:0 0 20px #34d399; }
+  h1 { font-size:88px; font-weight:900; line-height:1.04; letter-spacing:-2.5px; max-width:950px; }
+  h1 .grad { background:linear-gradient(90deg,#a78bfa,#22d3ee); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .sub { font-size:34px; color:#aab3c8; font-weight:500; }
+  .bottom { display:flex; align-items:center; justify-content:space-between; }
+  .pills { display:flex; gap:16px; }
+  .pill { border:2px solid #ffffff2e; border-radius:999px; padding:12px 26px; font-size:24px; font-weight:600; color:#dbe2f0; background:#ffffff0a; }
+  .wave { display:flex; align-items:center; gap:7px; height:80px; }
+  .wave i { width:9px; border-radius:6px; background:linear-gradient(180deg,#a78bfa,#22d3ee); display:block; }
+</style></head>
+<body>
+  <div class="glow1"></div><div class="glow2"></div>
+  <div class="inner">
+    <div class="brand"><span class="dot"></span> TalkLive <span style="font-weight:500;color:#8b93a7;font-size:28px">talklive.app</span></div>
+    <div>
+      <h1>Talk to a stranger.<br><span class="grad">Right now.</span></h1>
+      <div class="sub" style="margin-top:26px">Free random voice chat · No video · No sign-up · Anonymous</div>
+    </div>
+    <div class="bottom">
+      <div class="pills"><span class="pill">🌍 Worldwide</span><span class="pill">🎙 Voice only</span><span class="pill">🔒 Never recorded</span></div>
+      <div class="wave">
+        <i style="height:22px"></i><i style="height:44px"></i><i style="height:70px"></i><i style="height:36px"></i>
+        <i style="height:58px"></i><i style="height:80px"></i><i style="height:48px"></i><i style="height:26px"></i>
+        <i style="height:54px"></i><i style="height:34px"></i><i style="height:16px"></i>
+      </div>
+    </div>
+  </div>
+</body></html>

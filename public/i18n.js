@@ -23,6 +23,12 @@ const I18N_LANGS = {
 
 const I18N_STRINGS = {
   en: {
+    sharePromptTitle: 'Enjoyed that call?',
+    sharePromptBody: 'TalkLive gets better with more people online. Invite a friend to join the conversation.',
+    sharePromptBtn: 'Share TalkLive',
+    sharePromptLater: 'Not now',
+    shareText: 'Talk to a stranger, right now — free anonymous voice chat, no video, no sign-up.',
+    shareLinkCopied: 'Link copied — send it to a friend!',
     appTitle: 'TalkLive — Talk to Strangers',
     skipToContent: 'Skip to main content',
     menuAria: 'Open settings menu',

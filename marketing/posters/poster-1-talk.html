@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { width:1080px; height:1350px; background:#0b0f1a; overflow:hidden; position:relative;
+    font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:#fff; }
+  .glow1 { position:absolute; width:900px; height:900px; border-radius:50%; filter:blur(150px);
+    background:radial-gradient(circle,#7c3aed50,transparent 70%); top:-320px; right:-260px; }
+  .glow2 { position:absolute; width:800px; height:800px; border-radius:50%; filter:blur(150px);
+    background:radial-gradient(circle,#22d3ee40,transparent 70%); bottom:-300px; left:-240px; }
+  .inner { position:relative; z-index:2; height:100%; padding:90px 84px; display:flex; flex-direction:column; }
+  .brand { display:flex; align-items:center; gap:18px; font-size:44px; font-weight:800; }
+  .dot { width:18px; height:18px; border-radius:50%; background:#34d399; box-shadow:0 0 24px #34d399; }
+  .wave { display:flex; align-items:center; gap:12px; height:180px; margin:110px 0 90px; }
+  .wave i { width:16px; border-radius:10px; background:linear-gradient(180deg,#a78bfa,#22d3ee); display:block; }
+  h1 { font-size:128px; font-weight:900; line-height:1.02; letter-spacing:-4px; }
+  h1 .grad { background:linear-gradient(90deg,#a78bfa,#22d3ee); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .sub { font-size:42px; color:#aab3c8; margin-top:44px; line-height:1.4; font-weight:500; }
+  .footer { margin-top:auto; display:flex; align-items:flex-end; justify-content:space-between; }
+  .url { font-size:52px; font-weight:800; }
+  .url span { color:#22d3ee; }
+  .qr { width:190px; height:190px; background:#fff; border-radius:20px; display:flex; align-items:center; justify-content:center; color:#0b0f1a; font-size:22px; font-weight:700; text-align:center; }
+</style></head>
+<body>
+  <div class="glow1"></div><div class="glow2"></div>
+  <div class="inner">
+    <div class="brand"><span class="dot"></span> TalkLive</div>
+    <div class="wave">
+      <i style="height:50px"></i><i style="height:100px"></i><i style="height:160px"></i><i style="height:80px"></i>
+      <i style="height:130px"></i><i style="height:180px"></i><i style="height:110px"></i><i style="height:60px"></i>
+      <i style="height:140px"></i><i style="height:90px"></i><i style="height:40px"></i><i style="height:120px"></i>
+      <i style="height:70px"></i><i style="height:30px"></i>
+    </div>
+    <h1>TALK TO A<br>STRANGER.<br><span class="grad">RIGHT NOW.</span></h1>
+    <p class="sub">Free random voice chat with the world.<br>No video. No sign-up. Just real conversation.</p>
+    <div class="footer">
+      <div class="url">talklive<span>.app</span></div>
+      <div class="qr"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAZAAAAGQCAYAAACAvzbMAAAAAklEQVR4AewaftIAAAhNSURBVO3BQbYciY0EsCBf3f/KHK1nIztaXan0BzD3SwDgv7QBgMIGAAobAChsAKCwAYDCBgAKGwAobACgsAGAwgYAChsAKGwAoLABgMIGAAqf/AMzE/5ed5cnzEy+7e7C781MWneX1syEv9fdpbEBgMIGAAobAChsAKCwAYDCBgAKGwAobACgsAGAwgYAChsAKGwAoLABgMIGAAqfPOTuwu/NTH6Ku0trZvKEu8sTZiaNu8vb3F34vZnJt20AoLABgMIGAAobAChsAKCwAYDCBgAKGwAobACgsAGAwgYAChsAKGwAoLABgMInLzQzeZO7y9vMTFp3l8bMpHV3eZuZSevu0piZtO4ubzMzeZO7y5tsAKCwAYDCBgAKGwAobACgsAGAwgYAChsAKGwAoLABgMIGAAobAChsAKCwAYDCJ/CHzUwad5e3mZm8yd0F/pQNABQ2AFDYAEBhAwCFDQAUNgBQ2ABAYQMAhQ0AFDYAUNgAQGEDAIUNABQ2AFD4BP6wu0tjZtK6uzzh7tKamcCbbQCgsAGAwgYAChsAKGwAoLABgMIGAAobAChsAKCwAYDCBgAKGwAobACg8MkL3V34e81M3mRm0rq7tO4urZnJt91d3ubuwr9nAwCFDQAUNgBQ2ABAYQMAhQ0AFDYAUNgAQGEDAIUNABQ2AFDYAEBhAwCFDQAUPnnIzIT/TXeXxszkJ5mZtO4ujZnJ28xM+DttAKCwAYDCBgAKGwAobACgsAGAwgYAChsAKGwAoLABgMIGAAobAChsAKCwAYDCJ//A3QX+lLtLa2byNneX1szkTe4u/O/ZAEBhAwCFDQAUNgBQ2ABAYQMAhQ0AFDYAUNgAQGEDAIUNABQ2AFDYAEBhAwCFuV9Smpm07i6tmQm/d3d5wszk2+4urZnJT3F3ecLMhN+7u7zJBgAKGwAobACgsAGAwgYAChsAKGwAoLABgMIGAAobAChsAKCwAYDCBgAKGwAozP2S0szkCXcX/l0zk9bdhd+bmbTuLo2ZSevu8oSZSevu8iYzk9bd5ds2AFDYAEBhAwCFDQAUNgBQ2ABAYQMAhQ0AFDYAUNgAQGEDAIUNABQ2AFCY+yU/yMzkp7i7PGFm0ri7tGYmT7i7PGFm0ri7PGFm0rq7fNvMpHV3ac1MnnB3aWwAoLABgMIGAAobAChsAKCwAYDCBgAKGwAobACgsAGAwgYAChsAKGwAoLABgMIn/8DM5Al3l9bdpTUzadxdnjAzad1dfoq7y9vcXRozk7eZmbTuLo27yxPuLq2ZybdtAKCwAYDCBgAKGwAobACgsAGAwgYAChsAKGwAoLABgMIGAAobAChsAKCwAYDCJw+5uzxhZvImM5PW3aU1M2ndXfh3zUz4vZlJ4+7Smpn8FBsAKGwAoLABgMIGAAobAChsAKCwAYDCBgAKGwAobACgsAGAwgYAChsAKGwAoPAJ/7G7S2Nm0rq7tGYmrbtLa2bSuLu07i6tmckT7i6tu0tjZtK6uzxhZtK6uzRmJq27S2tm0rq7fNsGAAobAChsAKCwAYDCBgAKGwAobACgsAGAwgYAChsAKGwAoLABgMIGAAobACh88kIzk9bd5U1mJm9zd2nMTFp3l9bdpTUzac1M3mRm0rq7PGFm8lPMTFp3l8YGAAobAChsAKCwAYDCBgAKGwAobACgsAGAwgYAChsAKGwAoLABgMIGAAobACh8wl/t7vKEmclPMTN5wt2lNTNp3F2eMDN5k7vLE+4urZnJt20AoLABgMIGAAobAChsAKCwAYDCBgAKGwAobACgsAGAwgYAChsAKGwAoPDJC91dnjAzadxdWjOTJ9xdvm1m8jZ3l9bMpHV3acxM+HfNTFp3l9bd5ds2AFDYAEBhAwCFDQAUNgBQ2ABAYQMAhQ0AFDYAUNgAQGEDAIUNABQ2AFDYAEBh7pfA/zMz+ba7C/+Zmcm33V3eZmbybXeXn2IDAIUNABQ2AFDYAEBhAwCFDQAUNgBQ2ABAYQMAhQ0AFDYAUNgAQGEDAIUNABQ++QdmJvy97i6tu0trZtKYmbzN3eUJd5fGzOQJM5PW3eXb7i6tmcnb3F0aGwAobACgsAGAwgYAChsAKGwAoLABgMIGAAobAChsAKCwAYDCBgAKGwAobACg8MlD7i783szkCTOT1t3l22YmrbvLE2YmrbvLm9xd3mRm0rq7PGFm8m0bAChsAKCwAYDCBgAKGwAobACgsAGAwgYAChsAKGwAoLABgMIGAAobAChsAKDwyQvNTN7k7sLvzUx+krtLa2bybTOTn+Lu0pqZ/BQbAChsAKCwAYDCBgAKGwAobACgsAGAwgYAChsAKGwAoLABgMIGAAobACh8An/YzKRxd3nCzOSnuLu0ZiZPuLu0ZiaNmQm/twGAwgYAChsAKGwAoLABgMIGAAobAChsAKCwAYDCBgAKGwAobACgsAGAwgYACp/AH3Z3acxMWneX1t2lNTN5wt2lMTNp3V3e5u7SmJk84e7Smpl82wYAChsAKGwAoLABgMIGAAobAChsAKCwAYDCBgAKGwAobACgsAGAwgYAChsAKHzyQncX/l13l2+7uzxhZvKEu0trZvJTzEze5O7yU2wAoLABgMIGAAobAChsAKCwAYDCBgAKGwAobACgsAGAwgYAChsAKGwAoLABgMInD5mZ8PeambzJ3eUJd5fWzKR1d/m2mUnr7vJTzEx+ig0AFDYAUNgAQGEDAIUNABQ2AFDYAEBhAwCFDQAUNgBQ2ABAYQMAhQ0AFDYAUJj7JQDwX9oAQGEDAIUNABQ2AFDYAEBhAwCFDQAUNgBQ2ABAYQMAhQ0AFDYAUNgAQOH/AKo7nip9HN6AAAAAAElFTkSuQmCC" style="width:170px;height:170px"></div>
+    </div>
+  </div>
+</body></html>
