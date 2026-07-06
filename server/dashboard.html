@@ -155,8 +155,6 @@ function renderStorage(storage){
       Your <code>DATABASE_URL</code> is set but the server could not connect to it, so it fell back to temporary storage. That is why your login keeps resetting. Fix the connection string in Render and redeploy.<br><br>
       Host tried: <code>${esc(s.host||'?')}</code><br>
       Error: <code>${esc(s.error||'unknown')}</code></div>`;
-  } else if(s.configured && s.mode==='postgres'){
-    html=`<div class="stbox ok"><b>✅ Database connected</b>Persistent storage active (<code>${esc(s.host||'')}</code>). Your setup and data will survive restarts.</div>`;
   } else if(!s.configured){
     html=`<div class="stbox bad"><b>⚠️ No database configured</b>Running on temporary storage — your login and all data reset on every deploy/restart. Add a <code>DATABASE_URL</code> environment variable in Render to make it permanent.</div>`;
   }
