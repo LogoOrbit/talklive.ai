@@ -5,7 +5,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pricing — TalkLive Premium</title>
-<meta name="description" content="TalkLive is free forever. Upgrade to TalkLive Premium for $10/month to unlock all filters, unlimited friends, instant matching and an ad-free experience." />
+<meta name="description" content="TalkLive is free forever. Upgrade to TalkLive Premium — now 50% off at $5/month — to unlock all filters, unlimited friends, instant matching and an ad-free experience." />
 <link rel="canonical" href="https://talklive.app/pricing" />
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="stylesheet" href="/pages.css" />
@@ -39,6 +39,28 @@
   box-shadow: 0 8px 32px rgba(108, 92, 231, 0.16);
 }
 .plan.premium h2 { color: var(--accent-2, #0086b3); }
+.discount-flag {
+  display: inline-block;
+  align-self: flex-start;
+  margin-bottom: 6px;
+  background: rgba(255, 84, 112, 0.14);
+  color: #ff5470;
+  border: 1px solid rgba(255, 84, 112, 0.35);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+}
+.price-discounted { display: flex; align-items: baseline; gap: 12px; }
+.price-old {
+  color: var(--muted);
+  font-size: 1.5rem;
+  font-weight: 600;
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+}
+.price-new { color: #17c964; }
 .badge-popular {
   position: absolute;
   top: 0;
@@ -116,8 +138,12 @@
 
     <div class="card plan premium">
       <span class="badge-popular">BEST VALUE</span>
+      <span class="discount-flag">🔥 Limited offer · 50% OFF</span>
       <h2>TalkLive Premium</h2>
-      <div class="price">$10</div>
+      <div class="price price-discounted">
+        <span class="price-old">$10</span>
+        <span class="price-new">$5</span>
+      </div>
       <span class="per">per month · cancel anytime</span>
       <ul>
         <li><strong>All filters unlocked</strong> — gender preference &amp; unlimited country lists</li>
@@ -125,7 +151,7 @@
         <li><strong>Fast matching</strong> — no wait between calls</li>
         <li><strong>No ads</strong> — ever</li>
       </ul>
-      <button type="button" id="upgradeBtn" class="upgrade-btn">Upgrade to Premium</button>
+      <button type="button" id="upgradeBtn" class="upgrade-btn">Get 50% off — Upgrade now</button>
     </div>
   </section>
 
@@ -134,7 +160,7 @@
   <section class="faq">
     <h2>Frequently asked questions</h2>
     <h3>How does billing work?</h3>
-    <p>Your subscription renews monthly at $10 until you cancel. Checkout is handled securely — TalkLive never sees your card details.</p>
+    <p>With the current 50% offer your subscription renews monthly at $5 (normally $10) until you cancel. Checkout is handled securely — TalkLive never sees your card details.</p>
     <h3>How do I cancel?</h3>
     <p>Use the management link in the receipt email you get at purchase, or email <a href="mailto:info@talklive.app">info@talklive.app</a>. Premium stays active until the end of your paid month.</p>
     <h3>Can I get a refund?</h3>
@@ -156,7 +182,6 @@
 </footer>
 
 <script src="/config.js"></script>
-<script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
 <script>
 (function () {
   // The same persistent per-browser ID the app uses — premium is keyed to it.
@@ -169,6 +194,7 @@
     return id;
   }
 
+  var PATREON_URL = 'https://www.patreon.com/16358676/join';
   var upgradeBtn = document.getElementById('upgradeBtn');
   var activeNote = document.getElementById('premiumActiveNote');
 
@@ -184,36 +210,9 @@
     .then(function (d) { if (d && d.premium) markActive(); })
     .catch(function () {});
 
-  var paddleReady = false;
-  if (window.Paddle && window.PADDLE_CLIENT_TOKEN) {
-    try {
-      if (window.PADDLE_ENV === 'sandbox') Paddle.Environment.set('sandbox');
-      Paddle.Initialize({
-        token: window.PADDLE_CLIENT_TOKEN,
-        eventCallback: function (event) {
-          if (event && event.name === 'checkout.completed') {
-            // The server webhook activates premium; reflect it here right away.
-            markActive();
-            setTimeout(function () { window.location.href = '/?upgraded=1'; }, 2500);
-          }
-        },
-      });
-      paddleReady = true;
-    } catch (e) {
-      console.error('Paddle init failed:', e);
-    }
-  }
-
+  // Buying the plan sends the user to the TalkLive Patreon join page.
   upgradeBtn.addEventListener('click', function () {
-    if (!paddleReady || !window.PADDLE_PRICE_ID) {
-      alert('Checkout is being set up and will be available very soon. Please check back shortly!');
-      return;
-    }
-    Paddle.Checkout.open({
-      items: [{ priceId: window.PADDLE_PRICE_ID, quantity: 1 }],
-      customData: { clientId: getClientId() },
-      settings: { displayMode: 'overlay', theme: 'dark' },
-    });
+    window.open(PATREON_URL, '_blank', 'noopener');
   });
 })();
 </script>
