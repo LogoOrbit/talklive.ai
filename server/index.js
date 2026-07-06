@@ -245,7 +245,7 @@ app.get('/call', (req, res) => {
 // clean, canonical URLs (/talk-to-strangers) so only one version is indexed.
 app.get(/^\/([a-z0-9-]+)\.html$/i, (req, res, next) => {
   const name = req.params[0];
-  if (name === 'index' || name === 'privacy') return next();
+  if (name === 'index') return next();
   res.redirect(301, '/' + name);
 });
 
@@ -347,6 +347,12 @@ app.use(
     },
   })
 );
+
+// Friendly 404 for unknown pages: correct status code (so search engines drop
+// dead URLs) plus links back into the site instead of Express's plain text.
+app.use((req, res) => {
+  res.status(404).type('html').send(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Page not found — TalkLive</title><meta name="robots" content="noindex"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><style>body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#0b0f1a;color:#eef1f9;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:24px}h1{font-size:2rem;margin:.4em 0}p{color:#9aa3b8;max-width:420px;margin:0 auto 20px;line-height:1.5}a.btn{display:inline-block;background:#4f7cff;color:#fff;text-decoration:none;padding:12px 26px;border-radius:999px;font-weight:600}a{color:#8fb0ff}nav{margin-top:18px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap;font-size:14px}</style></head><body><div><h1>404 — page not found</h1><p>That page doesn't exist, but thousands of people are online talking right now.</p><a class="btn" href="/">Start Talking Free</a><nav><a href="/talk-to-strangers">Talk to Strangers</a><a href="/random-voice-chat">Random Voice Chat</a><a href="/blog/">Blog</a><a href="/contact">Contact</a></nav></div></body></html>`);
+});
 
 // --- State ---
 const waitingQueue = []; // socket ids waiting for a partner

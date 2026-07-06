@@ -153,6 +153,25 @@
     <xhtml:link rel="alternate" hreflang="zh" href="https://talklive.app/pakistani-chat?lang=zh"/>
   </url>
   <url>
+    <loc>https://talklive.app/omegle-alternative</loc>
+    <lastmod>2026-07-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://talklive.app/omegle-alternative"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://talklive.app/omegle-alternative?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://talklive.app/omegle-alternative?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://talklive.app/omegle-alternative?lang=pt"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://talklive.app/omegle-alternative?lang=fr"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://talklive.app/omegle-alternative?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://talklive.app/omegle-alternative?lang=ru"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://talklive.app/omegle-alternative?lang=tr"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://talklive.app/omegle-alternative?lang=ar"/>
+    <xhtml:link rel="alternate" hreflang="hi" href="https://talklive.app/omegle-alternative?lang=hi"/>
+    <xhtml:link rel="alternate" hreflang="ur" href="https://talklive.app/omegle-alternative?lang=ur"/>
+    <xhtml:link rel="alternate" hreflang="id" href="https://talklive.app/omegle-alternative?lang=id"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://talklive.app/omegle-alternative?lang=zh"/>
+  </url>
+  <url>
     <loc>https://talklive.app/blog/</loc>
     <lastmod>2026-07-06</lastmod>
     <changefreq>weekly</changefreq>
@@ -195,7 +214,37 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://talklive.app/privacy.html</loc>
+    <loc>https://talklive.app/pricing</loc>
+    <lastmod>2026-07-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://talklive.app/about</loc>
+    <lastmod>2026-07-06</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://talklive.app/contact</loc>
+    <lastmod>2026-07-06</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://talklive.app/privacy</loc>
+    <lastmod>2026-07-06</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://talklive.app/terms</loc>
+    <lastmod>2026-07-06</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://talklive.app/refund</loc>
     <lastmod>2026-07-06</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>

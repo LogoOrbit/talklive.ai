@@ -31,6 +31,7 @@ const NAV = [
   { slug: 'meet-new-people', label: 'Meet New People' },
   { slug: 'international-calls', label: 'International Calls' },
   { slug: 'pakistani-chat', label: 'Pakistani Chat' },
+  { slug: 'omegle-alternative', label: 'Omegle Alternative' },
 ];
 
 function url(slug) { return slug ? `${SITE}/${slug}` : `${SITE}/`; }
@@ -81,7 +82,11 @@ function footerHtml() {
         <div><h4>App</h4><ul>
           <li><a href="/">Open TalkLive</a></li>
           <li><a href="/blog/">Blog</a></li>
-          <li><a href="/privacy.html">Privacy Policy</a></li>
+          <li><a href="/pricing">Pricing</a></li>
+          <li><a href="/about">About</a></li>
+          <li><a href="/contact">Contact</a></li>
+          <li><a href="/privacy">Privacy Policy</a></li>
+          <li><a href="/terms">Terms</a></li>
         </ul></div>
       </div>
       <div class="legal">
@@ -585,6 +590,54 @@ const PAGES = [
     ctaBandH: 'Ab baat karein — start talking now',
     ctaBandP: 'Join free Pakistani voice chat and meet someone new in seconds.',
   },
+  {
+    slug: 'omegle-alternative',
+    crumb: 'Omegle Alternative',
+    eyebrow: 'Voice, not video',
+    title: 'Best Omegle Alternative — Free Random Voice Chat | TalkLive',
+    description: 'Looking for an Omegle alternative? TalkLive is free random chat with strangers — voice-only, anonymous, no sign-up, with real moderation. Talk to a stranger in one tap.',
+    keywords: 'omegle alternative, omegle alternatives, sites like omegle, apps like omegle, omegle replacement, random chat like omegle, omegle without video',
+    h1: 'The Omegle Alternative That Fixes What Omegle Got Wrong',
+    lede: 'Omegle shut down because unmoderated random video went wrong. TalkLive keeps the magic — one tap, one random stranger, a live conversation — and drops the problems: it is voice-only, 18+, moderated, and completely free.',
+    cta: 'Try the Alternative',
+    featuresH: 'Why TalkLive is the Omegle alternative people stay on',
+    featuresIntro: 'Everything you liked about random chat, rebuilt around voice and safety.',
+    features: [
+      { icon: 'mic', h: 'Voice instead of video', p: 'No camera means no explicit content problem and no pressure about how you look. Just talk.' },
+      { icon: 'bolt', h: 'Instant random matching', p: 'One tap and you are live with a stranger — the same thrill Omegle had, without the wait.' },
+      { icon: 'shield', h: 'Actually moderated', p: 'Instant block and report tools plus automatic bans for repeat offenders keep chats clean.' },
+      { icon: 'lock', h: 'Anonymous by default', p: 'No account, email, or phone number required. You appear as a temporary display name only.' },
+      { icon: 'globe', h: 'Worldwide or filtered', p: 'Meet strangers everywhere, or use country and gender filters to shape who you match.' },
+      { icon: 'heart', h: 'Keep the good ones', p: 'Great conversation? Add each other as friends and call back later — no numbers exchanged.' },
+    ],
+    stepsH: 'From Omegle to TalkLive in ten seconds',
+    stepsIntro: 'No download, no registration — it works exactly the way random chat should.',
+    steps: [
+      { h: 'Open TalkLive', p: 'Load it in any browser on your phone or computer. Nothing to install.' },
+      { h: 'Tap to Talk', p: 'Allow your microphone and press the button to join the live queue.' },
+      { h: 'Meet a random stranger', p: 'You are paired instantly with a real person who wants to talk right now.' },
+      { h: 'Next or befriend', p: 'Skip to a new stranger any time, or add a friend to talk again later.' },
+    ],
+    prose: [
+      { h: 'Why people are searching for an Omegle alternative', body: [
+        'Omegle defined random chat for over a decade, then closed in late 2023 under the weight of its own moderation problems. Millions of people did not stop wanting spontaneous conversations with strangers — they just lost the place to have them. Most replacements copied the video format and inherited the same issues.',
+        'TalkLive takes a different bet: the best part of Omegle was never the camera. It was the moment a random stranger said hello. Voice keeps that moment — the tone, the laughter, the accents — while removing the single biggest source of abuse on video chat platforms.' ] },
+      { h: 'How TalkLive compares to other Omegle alternatives', body: [
+        'Most sites like Omegle are video-first, ad-heavy, and lightly moderated. TalkLive is audio-only and free, with no camera anxiety, low data use, and calls that run peer-to-peer so your voice is never recorded on a server. Blocking and reporting takes one tap and ends the call immediately.',
+        'It also works everywhere a browser works — no app store, no download, no sign-up wall. That is closer to the original Omegle spirit than most of its imitators.' ] },
+      { h: 'Safer by design, not by promise', body: [
+        'TalkLive is strictly 18+. There are no video streams to moderate, every user can be reported in one tap, and repeated reports lead to bans. Safety here is structural: remove the camera, and you remove the way random chat most often goes wrong.' ] },
+    ],
+    faq: [
+      { q: 'Is TalkLive really a free Omegle alternative?', a: 'Yes. Matching and talking are completely free with no time limits and no credit card. Optional Premium only adds extras like advanced filters.' },
+      { q: 'Does TalkLive have video like Omegle?', a: 'No, and that is deliberate. TalkLive is voice-only, which keeps chats private, low-pressure, and far safer than random video.' },
+      { q: 'Do I need an account?', a: 'No. Tap once and you are talking. An optional free account lets you keep friends and history.' },
+      { q: 'Why did Omegle shut down?', a: 'Omegle closed in November 2023, citing the cost and difficulty of fighting misuse of its unmoderated video chat. TalkLive avoids that failure mode by being voice-only, 18+, and moderated.' },
+      { q: 'Can I choose who I get matched with?', a: 'Yes. Optional country and gender filters shape your matches, and if no filtered match is found quickly you are connected to any available stranger.' },
+    ],
+    ctaBandH: 'Ready for random chat done right?',
+    ctaBandP: 'Thousands of strangers are online now. One tap and you are in a live conversation.',
+  },
 ];
 
 // --- Blog -------------------------------------------------------------------
@@ -952,7 +1005,14 @@ const sitemapUrls = [{ slug: '', priority: '1.0', freq: 'daily' }]
   .concat(PAGES.map(p => ({ slug: p.slug, priority: '0.8', freq: 'weekly' })))
   .concat([{ slug: 'blog/', priority: '0.7', freq: 'weekly', raw: true }])
   .concat(BLOG.map(b => ({ slug: `blog/${b.slug}`, priority: '0.6', freq: 'monthly', raw: true })))
-  .concat([{ slug: 'privacy.html', priority: '0.3', freq: 'yearly', raw: true }]);
+  .concat([
+    { slug: 'pricing', priority: '0.5', freq: 'monthly', raw: true },
+    { slug: 'about', priority: '0.4', freq: 'yearly', raw: true },
+    { slug: 'contact', priority: '0.4', freq: 'yearly', raw: true },
+    { slug: 'privacy', priority: '0.3', freq: 'yearly', raw: true },
+    { slug: 'terms', priority: '0.3', freq: 'yearly', raw: true },
+    { slug: 'refund', priority: '0.3', freq: 'yearly', raw: true },
+  ]);
 
 function buildSitemap() {
   const head = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">';
