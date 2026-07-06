@@ -146,8 +146,8 @@ body {
   top: 0;
   left: 0;
   height: 100%;
-  width: 280px;
-  max-width: 85vw;
+  width: 308px;
+  max-width: 88vw;
   background: var(--bg-2);
   border-right: 1px solid rgba(255,255,255,0.08);
   z-index: 60;
@@ -1553,22 +1553,24 @@ body {
 }
 
 .filters-hint {
-  font-size: 11px;
+  font-size: 11.5px;
   color: var(--muted);
-  margin: 4px 0 0;
+  margin: 0 0 10px;
   text-align: center;
 }
 
 .filters-actions {
   display: flex;
   gap: 10px;
-  margin-top: 8px;
 }
 
 .filters-action-btn {
   flex: 1;
   text-align: center;
 }
+
+/* Save is the primary action — give it more visual weight than Clear. */
+#saveFiltersBtn { flex: 1.6; }
 
 .policy-body h3 {
   font-size: 15px;
@@ -3484,8 +3486,14 @@ body {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
+  padding: 12px 14px 14px;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.02);
+}
+.temp-name-block > .pill-label {
+  font-weight: 700;
+  color: var(--text);
 }
 .temp-name-hint { margin: 0; }
 .temp-name-row {
@@ -4582,16 +4590,33 @@ a.premium-lock:hover { background: rgba(108, 92, 231, 0.22); }
   color: var(--muted);
 }
 
-/* Clear visual sections inside the Filters panel. */
+/* Each filter group is its own card, matching the Settings accordion look,
+   so the panel reads as a short list of clear sections. */
 #filtersPanel .pill-row {
-  padding-top: 14px;
-  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  margin-bottom: 0;
+  padding: 12px 14px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
 }
-#filtersPanel .filters-premium-banner + .pill-row,
-#filtersPanel .side-panel-body > .pill-row:first-child {
-  border-top: none;
-  padding-top: 0;
+#filtersPanel .side-panel-body { gap: 10px; }
+#filtersPanel .pill-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
 }
+#filtersPanel .pill-label .hint {
+  font-weight: 400;
+  color: var(--muted);
+}
+[data-theme="light"] #filtersPanel .pill-row,
+[data-theme="light"] .acc-item,
+[data-theme="light"] .temp-name-block,
+[data-theme="light"] .filters-premium-banner {
+  border-color: rgba(20, 30, 70, 0.12);
+  background: rgba(20, 30, 70, 0.04);
+}
+[data-theme="light"] .acc-header:hover { background: rgba(20, 30, 70, 0.06); }
 
 /* Compact, professional upgrade CTA (replaces the old yellow hint text). */
 .upgrade-cta-btn {
