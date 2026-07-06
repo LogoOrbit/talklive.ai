@@ -81,7 +81,12 @@ const PADDLE_WEBHOOK_SECRET = process.env.PADDLE_WEBHOOK_SECRET || '';
 
 // Verify a Paddle webhook signature (Paddle-Signature: "ts=...;h1=...").
 function verifyPaddleSignature(rawBody, header) {
-  if (!PADDLE_WEBHOOK_SECRET) return true; // not configured yet — accept (dev)
+  if (!PADDLE_WEBHOOK_SECRET) {
+    // Without a secret we can't authenticate the sender. Accept only outside
+    // production (local dev); in production an unsigned webhook would let
+    // anyone grant themselves premium with a single curl request.
+    return process.env.NODE_ENV !== 'production';
+  }
   try {
     const parts = Object.fromEntries(String(header || '').split(';').map((p) => p.split('=')));
     if (!parts.ts || !parts.h1) return false;
@@ -297,7 +302,6 @@ const partners = new Map(); // socketId -> partnerSocketId
 const profiles = new Map(); // socketId -> { username, country, city, gender, prefGender, includeCountries, excludeCountries, interests, clientId, countryFallbackActive }
 const blocks = new Map(); // clientId -> Set<clientId>
 const hearts = new Map(); // pairKey ("clientIdA|clientIdB" sorted) -> Set<clientId who hearted>
-const reportCounts = new Map(); // clientId -> number of times reported
 
 // If a search takes longer than this, we drop ALL matching filters for the
 // current search (gender + country preferences, everything except blocks) and
@@ -581,6 +585,8 @@ function countryAllowed(prefs, otherCountryCode) {
 
 // Returns true if candidate's profile satisfies seeker's filters, and vice versa.
 function mutuallyCompatible(seeker, candidate) {
+  // Never match a user with themselves (e.g. two tabs of the same browser).
+  if (seeker.clientId === candidate.clientId) return false;
   if (isBlockedPair(seeker.clientId, candidate.clientId)) return false;
 
   // After a long wait either side falls back to "match me with anyone random":
@@ -822,7 +828,11 @@ io.on('connection', (socket) => {
   });
 
   socket.on('register', (data = {}) => {
-    const clientId = data.clientId || socket.id;
+    // Only accept well-formed client IDs: they are echoed back to other users'
+    // browsers inside HTML attributes (friends list, notifications), so an
+    // arbitrary string here would be a stored-XSS vector.
+    const rawClientId = typeof data.clientId === 'string' ? data.clientId : '';
+    const clientId = /^[A-Za-z0-9_-]{8,64}$/.test(rawClientId) ? rawClientId : socket.id;
     // Banned by persistent clientId: refuse until the ban expires or is lifted.
     const ban = store.findActiveBan(clientId, ip);
     if (ban) {
@@ -954,8 +964,6 @@ io.on('connection', (socket) => {
     const detail = typeof payload.detail === 'string' ? payload.detail.slice(0, 300) : '';
     if (seeker && partner) {
       blockPair(seeker.clientId, partner.clientId);
-      const count = (reportCounts.get(partner.clientId) || 0) + 1;
-      reportCounts.set(partner.clientId, count);
       const partnerSocket = io.sockets.sockets.get(partnerId);
       const reportedIp = partnerSocket ? getClientIp(partnerSocket) : null;
       store.recordFeature('report');
@@ -1096,8 +1104,9 @@ io.on('connection', (socket) => {
       if (containsLink(text)) {
         return socket.emit('chat-blocked', { reason: 'link' });
       }
+      const clean = text.trim().slice(0, 1000);
       store.recordFeature('chat_message');
-      store.recordTopics(text);
+      store.recordTopics(clean);
       const me = profiles.get(socket.id);
       const them = profiles.get(partnerId);
       if (me && them) {
@@ -1109,10 +1118,10 @@ io.on('connection', (socket) => {
           to: them.username,
           toClientId: them.clientId,
           country: me.countryName,
-          text: text.trim().slice(0, 1000),
+          text: clean,
         });
       }
-      io.to(partnerId).emit('chat-message', { text: text.slice(0, 1000) });
+      io.to(partnerId).emit('chat-message', { text: clean });
     }
   });
 
@@ -1226,6 +1235,11 @@ io.on('connection', (socket) => {
     if (accept && atFriendLimit(me.clientId)) {
       syncClientState(socket, me.clientId);
       return socket.emit('friend-request-result', { ok: false, limitReached: true, error: `Free plan allows up to ${FREE_LIMITS.friends} friends. Upgrade to add unlimited friends.` });
+    }
+    // The requester may have filled up their own list since sending the request.
+    if (accept && atFriendLimit(fromClientId)) {
+      syncClientState(socket, me.clientId);
+      return socket.emit('friend-request-result', { ok: false, error: 'Their friend list is full.' });
     }
     if (accept) {
       const temporary = !socketAuth.get(socket.id);
@@ -1439,6 +1453,11 @@ io.on('connection', (socket) => {
     const profile = profiles.get(socket.id);
     if (profile && clientSockets.get(profile.clientId) === socket.id) {
       clientSockets.delete(profile.clientId);
+      // Flip this user's green dot off in their friends' lists right away.
+      for (const [fid] of friends.get(profile.clientId) || new Map()) {
+        const friendSocket = getSocketByClientId(fid);
+        if (friendSocket) syncClientState(friendSocket, fid);
+      }
     }
     profiles.delete(socket.id);
     socketAuth.delete(socket.id);
