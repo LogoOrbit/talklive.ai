@@ -424,8 +424,12 @@
           </div>
         </div>
 
-        <p class="filters-hint premium-lock hidden"><span data-i18n="freeLimitsHint">Free plan: up to 3 countries per list, gender filter locked.</span> <a href="/pricing" data-i18n="upgradeLink">Upgrade to unlock all features</a></p>
+        <button type="button" id="filtersUpgradeBtn" class="upgrade-cta-btn premium-lock hidden">
+          <span class="upgrade-diamond" aria-hidden="true">💎</span><span data-i18n="upgradeCta">UPGRADE</span>
+        </button>
         <p class="filters-hint" data-i18n="filtersHint">Filters only take effect after you tap Save.</p>
+      </div>
+      <div class="side-panel-footer">
         <div class="filters-actions">
           <button type="button" id="saveFiltersBtn" class="btn btn-save filters-action-btn" data-i18n="save">Save</button>
           <button type="button" id="clearFiltersBtn" class="btn btn-secondary filters-action-btn" data-i18n="clear">Clear</button>
@@ -465,9 +469,6 @@
             <p id="accountStatus" class="account-status hidden" role="alert"></p>
 
             <div id="accountLoggedOut">
-              <div id="googleSignInBtn" class="google-signin-btn"></div>
-              <div class="account-divider"><span data-i18n="or">or</span></div>
-
               <div class="account-tabs">
                 <button type="button" class="account-tab selected" data-tab="login" data-i18n="logIn">Log In</button>
                 <button type="button" class="account-tab" data-tab="signup" data-i18n="signUp">Sign Up</button>

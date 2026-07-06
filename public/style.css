@@ -191,8 +191,19 @@ body {
 .side-panel-body {
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
   gap: 16px;
   overflow-y: auto;
+}
+
+/* Action buttons live outside the scrolling body so glows/shadows on them
+   (e.g. the Save button) are never clipped by the scroll container. */
+.side-panel-footer {
+  flex: 0 0 auto;
+  padding-top: 14px;
+  margin-top: 4px;
+  border-top: 1px solid rgba(255,255,255,0.08);
 }
 
 /* Plain-language, high-contrast status pill: a big bright dot + the word
@@ -2117,29 +2128,6 @@ body {
 }
 
 /* Account modal */
-.google-signin-btn {
-  display: flex;
-  justify-content: center;
-  min-height: 40px;
-}
-
-.account-divider {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 14px 0;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.account-divider::before,
-.account-divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: rgba(255,255,255,0.1);
-}
-
 .account-tabs {
   display: flex;
   gap: 8px;
@@ -4550,6 +4538,34 @@ p.premium-lock a {
   color: #4a3400;
   font-weight: 800;
   text-decoration: underline;
+}
+
+/* Compact, professional upgrade CTA (replaces the old yellow hint text). */
+.upgrade-cta-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  border: 1px solid rgba(108, 92, 231, 0.4);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text);
+  background: linear-gradient(135deg, rgba(108, 92, 231, 0.18), rgba(0, 212, 255, 0.12));
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease;
+}
+.upgrade-cta-btn:hover {
+  transform: translateY(-1px);
+  border-color: rgba(108, 92, 231, 0.7);
+  background: linear-gradient(135deg, rgba(108, 92, 231, 0.28), rgba(0, 212, 255, 0.18));
+}
+.upgrade-diamond {
+  font-size: 1rem;
+  line-height: 1;
 }
 
 /* --- Add friend by username / ID --------------------------------------------- */
