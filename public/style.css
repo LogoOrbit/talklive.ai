@@ -750,6 +750,44 @@ body {
   .video-banner__video { transition: none; }
 }
 
+/* Music toggle button, top-right of the banner. Plays MusicForTalkLive.mp3. */
+.video-banner__music {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #fff;
+  background: rgba(8, 11, 22, 0.55);
+  border: 1px solid rgba(0, 212, 255, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow: 0 0 14px rgba(0, 212, 255, 0.28);
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+.video-banner__music:hover {
+  background: rgba(0, 212, 255, 0.22);
+  transform: scale(1.06);
+}
+.video-banner__music:focus-visible {
+  outline: 2px solid rgba(0, 212, 255, 0.9);
+  outline-offset: 2px;
+}
+.video-banner__music .vb-music-pause { display: none; }
+.video-banner__music.is-playing .vb-music-play { display: none; }
+.video-banner__music.is-playing .vb-music-pause { display: inline; }
+.video-banner__music.is-playing {
+  background: rgba(0, 212, 255, 0.24);
+  box-shadow: 0 0 18px rgba(0, 212, 255, 0.5);
+}
+
 /* Short viewports: keep the banner compact so it stays on-screen without
    scrolling, in step with the other call-screen shrink rules. */
 @media (max-height: 740px) {
