@@ -258,10 +258,6 @@
             <input type="text" id="tempUsernameInput" class="search-input" maxlength="24" data-i18n-placeholder="tempUsernamePlaceholder" placeholder="Your display name" autocomplete="off" />
             <button type="button" id="saveTempNameBtn" class="btn btn-secondary temp-name-save" data-i18n="saveName">Save name</button>
           </div>
-          <div id="userIdRow" class="user-id-row hidden">
-            <span class="pill-label" data-i18n="userIdLabel">Your unique User ID</span>
-            <button type="button" id="userIdValue" class="user-id-value" data-i18n-title="userIdHint" title="Tap to copy"></button>
-          </div>
         </div>
 
         <!-- One-tap expanding categories keep the panel uncluttered -->
@@ -499,6 +495,11 @@
 
             <div id="accountLoggedIn" class="hidden">
               <p class="account-welcome"><span data-i18n="signedInAs">Signed in as</span> <strong id="accountNicknameDisplay"></strong></p>
+
+              <div id="userIdRow" class="user-id-row hidden">
+                <span class="pill-label" data-i18n="userIdLabel">Your unique User ID</span>
+                <button type="button" id="userIdValue" class="user-id-value" data-i18n-title="userIdHint" title="Tap to copy"></button>
+              </div>
 
               <h3 class="account-section-title" data-i18n="avatar">Avatar</h3>
               <p class="account-hint" data-i18n="avatarHint">Your avatar is shown to you and your friends only — strangers never see it during a call.</p>
