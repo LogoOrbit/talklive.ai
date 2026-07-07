@@ -131,7 +131,7 @@ const callBackBannerText = document.getElementById('callBackBannerText');
 const callBackAcceptBtn = document.getElementById('callBackAcceptBtn');
 const callBackDeclineBtn = document.getElementById('callBackDeclineBtn');
 
-const accountBtn = document.getElementById('accountBtn');
+const myAccountBtn = document.getElementById('myAccountBtn');
 const accountModal = document.getElementById('accountModal');
 const closeAccountBtn = document.getElementById('closeAccountBtn');
 const accountStatus = document.getElementById('accountStatus');
@@ -149,8 +149,6 @@ const signupPassword = document.getElementById('signupPassword');
 const signupNickname = document.getElementById('signupNickname');
 const signupSubmitBtn = document.getElementById('signupSubmitBtn');
 const logoutBtn = document.getElementById('logoutBtn');
-const avatarIcon = document.getElementById('avatarIcon');
-const avatarInitial = document.getElementById('avatarInitial');
 const settingsNickname = document.getElementById('settingsNickname');
 const updateNicknameBtn = document.getElementById('updateNicknameBtn');
 const currentPasswordInput = document.getElementById('currentPasswordInput');
@@ -811,27 +809,17 @@ function renderAccountState() {
     settingsNickname.value = accountNickname;
     updateNicknameBtn.disabled = true;
 
-    // Chosen avatar replaces the default account circle in the left panel;
-    // fall back to the nickname initial until one is picked.
-    if (myAvatar) {
-      avatarIcon.classList.add('hidden');
-      avatarInitial.innerHTML = avatarSvg(myAvatar, 36);
-      avatarInitial.classList.remove('hidden');
-    } else {
-      avatarIcon.classList.add('hidden');
-      avatarInitial.textContent = accountNickname.trim().charAt(0).toUpperCase();
-      avatarInitial.classList.remove('hidden');
-    }
-    accountBtn.classList.add('logged-in');
-    sidePanelAuth.classList.add('hidden');
+    // Logged in: swap the Sign in / Register pair for a single My Account button.
+    sidePanelSignInBtn.classList.add('hidden');
+    sidePanelRegisterBtn.classList.add('hidden');
+    myAccountBtn.classList.remove('hidden');
   } else {
     accountLoggedOut.classList.remove('hidden');
     accountLoggedIn.classList.add('hidden');
 
-    avatarIcon.classList.remove('hidden');
-    avatarInitial.classList.add('hidden');
-    accountBtn.classList.remove('logged-in');
-    sidePanelAuth.classList.remove('hidden');
+    sidePanelSignInBtn.classList.remove('hidden');
+    sidePanelRegisterBtn.classList.remove('hidden');
+    myAccountBtn.classList.add('hidden');
   }
   renderAvatarGrid();
   renderSettingsIdentity();
@@ -999,7 +987,7 @@ function showAccountStatus(msg, kind) {
   accountStatus.classList.remove('hidden');
 }
 
-accountBtn.addEventListener('click', () => {
+myAccountBtn.addEventListener('click', () => {
   closeAppSettings();
   renderAccountState();
   openModal(accountModal);
@@ -2388,7 +2376,6 @@ function resetUI() {
   appSettingsBtn.classList.add('hidden');
   historyBtn.classList.add('hidden');
   friendsBtn.classList.add('hidden');
-  accountBtn.classList.add('hidden');
   filtersBtn.classList.add('hidden');
   gameBtn.classList.add('hidden');
   if (typeof resetGame === 'function') resetGame();
@@ -2440,7 +2427,6 @@ function enterCallUI() {
   appSettingsBtn.classList.remove('hidden');
   historyBtn.classList.remove('hidden');
   friendsBtn.classList.remove('hidden');
-  accountBtn.classList.remove('hidden');
   filtersBtn.classList.remove('hidden');
   gameBtn.classList.remove('hidden');
 }
