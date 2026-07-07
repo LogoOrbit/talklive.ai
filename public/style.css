@@ -3947,7 +3947,6 @@ body.panel-open .side-panel {
 
 /* Sign in / Register at the bottom of the left side panel */
 .side-panel-auth {
-  margin-top: auto;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -3967,7 +3966,7 @@ body.panel-open .side-panel {
 }
 
 .friends-dropdown .friend-item {
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
 }
 
 .friend-avatar-btn {
