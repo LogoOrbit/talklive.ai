@@ -646,16 +646,26 @@ if (chatSeenToggleBtn) {
 }
 syncMessageSeenUi();
 
+// Lock the main screen's scroll whenever a side panel (settings or chat) is
+// open, so scrolling only happens inside the open panel — never the page behind.
+function updateScrollLock() {
+  const anyOpen = appSettingsPanel.classList.contains('open')
+    || (typeof chatPanel !== 'undefined' && chatPanel && chatPanel.classList.contains('open'));
+  document.body.classList.toggle('panel-open', anyOpen);
+}
+
 // --- App settings side panel ---
 function openAppSettings() {
   appSettingsPanel.classList.add('open');
   appSettingsOverlay.classList.remove('hidden');
   if (typeof renderSettingsIdentity === 'function') renderSettingsIdentity();
+  updateScrollLock();
 }
 
 function closeAppSettings() {
   appSettingsPanel.classList.remove('open');
   appSettingsOverlay.classList.add('hidden');
+  updateScrollLock();
 }
 
 appSettingsBtn.addEventListener('click', openAppSettings);
@@ -1053,7 +1063,7 @@ logoutBtn.addEventListener('click', () => {
   socket.emit('logout');
   accountNickname = null;
   localStorage.removeItem('talklive_nickname');
-  renderAccountState();
+  reloadPage();
 });
 
 updateNicknameBtn.addEventListener('click', () => {
@@ -1071,14 +1081,14 @@ socket.on('login-result', ({ ok, nickname, error }) => {
   if (!ok) return showAccountStatus(error, 'error');
   localStorage.setItem('talklive_nickname', nickname);
   showAccountStatus(t('statusLoggedIn', { name: nickname }), 'success');
-  setTimeout(() => location.reload(), 500);
+  setTimeout(reloadPage, 500);
 });
 
 socket.on('signup-result', ({ ok, nickname, error }) => {
   if (!ok) return showAccountStatus(error, 'error');
   localStorage.setItem('talklive_nickname', nickname);
   showAccountStatus(t('statusAccountCreated', { name: nickname }), 'success');
-  setTimeout(() => location.reload(), 500);
+  setTimeout(reloadPage, 500);
 });
 
 socket.on('update-nickname-result', ({ ok, nickname, error }) => {
@@ -2683,6 +2693,7 @@ function openChatPanel() {
   // now opens only when they actually tap the text box.
   scrollChatToBottom();
   if (typeof syncChatViewport === 'function') syncChatViewport();
+  updateScrollLock();
 }
 
 function closeChatPanel() {
@@ -2691,6 +2702,7 @@ function closeChatPanel() {
   chatOverlay.classList.add('hidden');
   chatPanel.style.height = '';
   chatPanel.style.top = '';
+  updateScrollLock();
 }
 
 function scrollChatToBottom() {
@@ -3349,7 +3361,13 @@ primeBackGuard();
 // user is actively engaged — a live/searching call or a game in progress. The
 // browser shows its native "Leave site?" prompt; we only arm it when there's
 // something to lose, so idle browsing is never nagged.
+let suppressUnloadWarning = false;
+function reloadPage() {
+  suppressUnloadWarning = true;
+  location.reload();
+}
 window.addEventListener('beforeunload', (e) => {
+  if (suppressUnloadWarning) return;
   const onCall = callState === 'connected' || callState === 'connecting'
     || callState === 'reconnecting' || callState === 'searching';
   const inGame = typeof tttStage !== 'undefined' && tttStage === 'playing';

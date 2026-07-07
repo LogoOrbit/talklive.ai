@@ -57,6 +57,16 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
+/* While a side panel (settings or chat) is open, freeze the page behind it so
+   only the panel scrolls. Scrolling inside the panel still works normally. */
+body.panel-open {
+  overflow: hidden;
+  touch-action: none;
+}
+body.panel-open .side-panel {
+  touch-action: auto;
+}
+
 .app {
   min-height: 100vh;
   min-height: 100dvh;
