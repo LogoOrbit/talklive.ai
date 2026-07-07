@@ -651,6 +651,114 @@ body {
   font-family: inherit;
 }
 
+/* Ambient video banner — an optimized looping background video (see
+   video-banner.js) with an overlaid title, a readability scrim and the app's
+   blue accent glow. Full width of the call column, responsive via aspect-ratio
+   so it needs no separate mobile markup. */
+.video-banner {
+  position: relative;
+  width: min(560px, 92%);
+  margin: 4px auto 14px;
+  aspect-ratio: 3 / 1;
+  max-height: 30vh;               /* never eats the screen on tall/zoomed layouts */
+  border-radius: 16px;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--bg-2);        /* dark navy shows while the video loads */
+  border: 1px solid rgba(0, 212, 255, 0.28);
+  /* Soft blue accent glow, matching the orb's purple + cyan halo. */
+  box-shadow:
+    0 6px 22px rgba(0, 0, 0, 0.38),
+    0 0 22px rgba(0, 212, 255, 0.28),
+    0 0 48px rgba(108, 92, 231, 0.20);
+}
+
+.video-banner__poster,
+.video-banner__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Still poster: placeholder while loading and the fallback when the video can't
+   autoplay/render. Kept crisp and cover-cropped to match the video framing. */
+.video-banner__poster {
+  z-index: 0;
+  background-color: var(--bg-2);
+  background-size: cover;
+  background-position: center;
+}
+
+/* Video covers the banner; the man + phone glow sit centered, so a cover crop
+   keeps them in frame. Fades in over the poster once it starts playing. */
+.video-banner__video {
+  z-index: 1;
+  object-fit: cover;
+  object-position: center;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+.video-banner.is-playing .video-banner__video { opacity: 1; }
+/* Fallback (reduced motion, blocked autoplay, load error): show poster only. */
+.video-banner.is-static .video-banner__video { display: none; }
+
+/* Left-weighted scrim so the overlaid text stays readable over the darker side
+   of the scene, away from the man's face. */
+.video-banner__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: linear-gradient(
+    90deg,
+    rgba(8, 11, 22, 0.82) 0%,
+    rgba(8, 11, 22, 0.45) 42%,
+    rgba(8, 11, 22, 0.06) 72%,
+    rgba(8, 11, 22, 0) 100%
+  );
+}
+
+.video-banner__content {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 clamp(14px, 5%, 26px);
+  text-align: left;
+  pointer-events: none;
+}
+.video-banner__title {
+  max-width: 64%;
+  font-size: clamp(15px, 4.6vw, 22px);
+  font-weight: 700;
+  line-height: 1.15;
+  color: #fff;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
+}
+.video-banner__subtitle {
+  max-width: 62%;
+  font-size: clamp(11px, 3vw, 13.5px);
+  line-height: 1.3;
+  color: rgba(228, 233, 255, 0.9);
+  text-shadow: 0 1px 5px rgba(0, 0, 0, 0.65);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .video-banner__video { transition: none; }
+}
+
+/* Short viewports: keep the banner compact so it stays on-screen without
+   scrolling, in step with the other call-screen shrink rules. */
+@media (max-height: 740px) {
+  .video-banner { margin: 2px auto 10px; max-height: 24vh; }
+}
+@media (max-height: 620px) {
+  .video-banner { margin: 2px auto 8px; max-height: 20vh; }
+}
+
 /* Conversation guide — friendly tips, scrollable, below the call area. */
 .convo-guide {
   width: min(560px, 92%);

@@ -231,6 +231,9 @@ const I18N_STRINGS = {
     convoTip5: "Don't worry if someone skips you — it's completely normal.",
     convoTip6: 'Relax and have fun meeting new people.',
 
+    bannerTitle: 'Someone new is always waiting',
+    bannerSubtitle: 'Free, friendly voice chats with real people worldwide.',
+
     reportTitle: 'Report this person',
     reportSubtitle: 'Pick a reason. This ends the call and blocks them from matching with you again.',
     reportReasonSpam: 'Spam',

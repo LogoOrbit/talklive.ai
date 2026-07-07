@@ -991,6 +991,27 @@
 
         <p id="errorText" class="error-text hidden" role="alert"></p>
 
+        <!-- Ambient looping banner: optimized WebM/MP4 video, lazy-loaded with a
+             still-poster fallback (see video-banner.js). The <source>s carry
+             data-src so nothing downloads until it scrolls into view; the lighter
+             320px tier is chosen automatically on small screens / slow networks. -->
+        <figure class="video-banner" data-video-banner>
+          <div class="video-banner__poster" aria-hidden="true"></div>
+          <video class="video-banner__video" muted loop playsinline autoplay
+                 preload="none" poster="/media/loop-man-poster.jpg"
+                 aria-hidden="true" tabindex="-1">
+            <source data-src="/media/loop-man-480.webm" type="video/webm" data-tier="high" media="(min-width: 600px)">
+            <source data-src="/media/loop-man-320.webm" type="video/webm" data-tier="low"  media="(max-width: 599px)">
+            <source data-src="/media/loop-man-480.mp4"  type="video/mp4"  data-tier="high" media="(min-width: 600px)">
+            <source data-src="/media/loop-man-320.mp4"  type="video/mp4"  data-tier="low"  media="(max-width: 599px)">
+          </video>
+          <div class="video-banner__scrim" aria-hidden="true"></div>
+          <figcaption class="video-banner__content">
+            <span class="video-banner__title" data-i18n="bannerTitle">Someone new is always waiting</span>
+            <span class="video-banner__subtitle" data-i18n="bannerSubtitle">Free, friendly voice chats with real people worldwide.</span>
+          </figcaption>
+        </figure>
+
         <!-- Conversation guide: friendly, simple tips shown on the call screen
              so they're readable without leaving the call. -->
         <section id="convoGuide" class="convo-guide">
@@ -1209,6 +1230,7 @@
   <script src="countries.js?v=20260704b"></script>
   <script src="i18n.js?v=20260705a"></script>
   <script src="moderation.js?v=20260705b"></script>
+  <script src="video-banner.js?v=20260707a"></script>
   <script src="app.js?v=20260705a"></script>
 </body>
 </html>
