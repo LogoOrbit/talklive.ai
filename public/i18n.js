@@ -178,6 +178,8 @@ const I18N_STRINGS = {
     seen: 'Seen',
     messageSeen: 'Read receipts (Seen)',
     readOurBlog: '📖 Read our blog',
+    blogCtaText: 'Want a lighter read?',
+    blogCtaSub: 'Tips and stories about meeting new people are on our blog.',
 
     beforeYouStart: 'Before You Start',
     mustBe18: 'You must be 18 years or older to use TalkLive.',

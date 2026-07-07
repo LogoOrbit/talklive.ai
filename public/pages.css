@@ -23,6 +23,10 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  /* Crisper glyph edges so long legal copy reads smoothly, not "weird". */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 a { color: var(--accent-2); }
 .page-header {
@@ -65,11 +69,36 @@ main.page-main {
   padding: clamp(24px, 5vw, 56px) clamp(16px, 5vw, 32px);
 }
 main.page-main.wide { max-width: 1080px; }
-.page-main h1 { font-size: clamp(1.7rem, 4vw, 2.4rem); line-height: 1.2; margin: 0 0 0.5em; }
-.page-main h2 { font-size: 1.35rem; margin-top: 2em; }
-.page-main h3 { font-size: 1.08rem; margin-top: 1.6em; }
-.page-main p, .page-main li { color: #c9cee2; }
+.page-main h1 { font-size: clamp(1.7rem, 4vw, 2.4rem); line-height: 1.2; margin: 0 0 0.5em; letter-spacing: -0.01em; }
+.page-main h2 { font-size: 1.35rem; margin: 2em 0 0.55em; letter-spacing: -0.005em; }
+.page-main h3 { font-size: 1.12rem; margin: 1.8em 0 0.5em; font-weight: 700; letter-spacing: -0.005em; color: var(--text); }
+/* Comfortable measure + open line-height so paragraphs of legal copy feel
+   smooth and easy to scan rather than cramped. */
+.page-main p, .page-main li { color: #c9cee2; line-height: 1.75; }
+.page-main p { margin: 0 0 1.05em; }
+.page-main ul { margin: 0 0 1.15em; padding-left: 1.25em; }
+.page-main li { margin-bottom: 0.5em; }
+.page-main li::marker { color: var(--accent-2); }
 .policy-updated { color: var(--muted); font-size: 0.88rem; }
+
+/* "Read our blog" call-to-action shown inside standalone policy pages. */
+.blog-cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin: 8px 0 28px;
+  padding: 16px 20px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(108,92,231,0.16), rgba(0,212,255,0.10));
+  border: 1px solid rgba(138,144,168,0.22);
+}
+.blog-cta-text { color: var(--text); font-size: 0.95rem; font-weight: 600; margin: 0; }
+.blog-cta-text span { display: block; color: var(--muted); font-size: 0.82rem; font-weight: 400; margin-top: 2px; }
+.blog-cta .btn { margin-left: auto; padding: 10px 22px; font-size: 0.92rem; }
+@media (max-width: 480px) {
+  .blog-cta .btn { margin-left: 0; width: 100%; }
+}
 .btn {
   display: inline-block;
   border: none;

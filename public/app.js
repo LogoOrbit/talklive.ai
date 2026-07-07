@@ -574,7 +574,13 @@ function playTone(freq, duration, type, volume, delay = 0) {
 function playTapSound() { playTone(520, 0.08, 'square', 0.12); }
 function playConnectSound() { playTone(660, 0.12, 'sine', 0.18); playTone(880, 0.15, 'sine', 0.18, 0.12); }
 function playHangupSound() { playTone(320, 0.2, 'sine', 0.18); playTone(220, 0.25, 'sine', 0.18, 0.15); }
-function playMessageSound() { playTone(950, 0.08, 'triangle', 0.15); }
+// A bright, instantly recognizable two-note message chime: a quick high "ti"
+// that resolves up a fourth into a longer bell "ding". Deliberately crisp and
+// high-pitched so it is never confused with the warm, lower friend chime.
+function playMessageSound() {
+  playTone(1245, 0.06, 'triangle', 0.15);
+  playTone(1661, 0.20, 'sine', 0.15, 0.06);
+}
 // A crisp, tactile "whoosh" for sending — WhatsApp-style rising blip.
 function playSendSound() { playTone(660, 0.05, 'sine', 0.14); playTone(990, 0.07, 'sine', 0.13, 0.04); }
 // A soft two-note chime for "it's your turn" in the game.
@@ -585,9 +591,14 @@ function playWinSound() {
   [523, 659, 784, 1046].forEach((f, i) => playTone(f, 0.16, 'sine', 0.17, i * 0.11));
 }
 function playInviteSound() { playTone(880, 0.09, 'sine', 0.15); playTone(1174, 0.11, 'sine', 0.14, 0.09); }
-// A distinct upward three-note chime for "friend added", clearly different
-// from the single-blip message sound so the two are never confused by ear.
-function playFriendAddedSound() { playTone(700, 0.09, 'sine', 0.16); playTone(1050, 0.09, 'sine', 0.15, 0.08); playTone(1400, 0.13, 'sine', 0.14, 0.16); }
+// A warm, celebratory three-note rising arpeggio (D5 -> G5 -> D6) in a
+// rounder, lower register than the message chime. It "feels" like a reward,
+// so a new friend never sounds like an incoming message.
+function playFriendAddedSound() {
+  playTone(587, 0.11, 'sine', 0.17);
+  playTone(784, 0.11, 'sine', 0.16, 0.10);
+  playTone(1175, 0.26, 'triangle', 0.15, 0.20);
+}
 
 function updateSoundToggleUi() {
   soundToggle.checked = soundEnabled;
@@ -1345,7 +1356,9 @@ socket.on('notification', (n) => {
   if (n.type === 'message') {
     playMessageSound();
     vibrate(20);
-  } else if (n.type === 'friend_request') {
+  } else if (n.type === 'friend_request' || n.type === 'friend_accepted') {
+    // Both a new friend request and a request being accepted mean a friend
+    // event — play the distinct friend chime, never the message chime.
     playFriendAddedSound();
     vibrate([20, 40, 20]);
   }
