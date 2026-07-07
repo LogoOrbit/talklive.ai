@@ -614,13 +614,39 @@ soundToggle.addEventListener('change', () => setSoundEnabled(soundToggle.checked
 updateSoundToggleUi();
 
 // --- Message "Seen" read receipts: opt-in, so turning it off stops both
-// sending your own read receipts and showing "Seen" on messages you sent. ---
+// sending your own read receipts and showing "Seen" on messages you sent.
+// Controlled from two places, kept in sync: the Settings toggle and a small
+// button in the chat's top bar. ---
 let messageSeenEnabled = localStorage.getItem('talklive_message_seen') !== 'off';
-messageSeenToggle.checked = messageSeenEnabled;
-messageSeenToggle.addEventListener('change', () => {
-  messageSeenEnabled = messageSeenToggle.checked;
+const chatSeenToggleBtn = document.getElementById('chatSeenToggleBtn');
+
+function syncMessageSeenUi() {
+  if (messageSeenToggle) messageSeenToggle.checked = messageSeenEnabled;
+  if (chatSeenToggleBtn) {
+    chatSeenToggleBtn.classList.toggle('is-off', !messageSeenEnabled);
+    chatSeenToggleBtn.setAttribute('aria-pressed', messageSeenEnabled ? 'true' : 'false');
+  }
+}
+
+function setMessageSeenEnabled(value) {
+  messageSeenEnabled = value;
   localStorage.setItem('talklive_message_seen', messageSeenEnabled ? 'on' : 'off');
-});
+  syncMessageSeenUi();
+  // Turning it back on while a chat is open should immediately send a receipt
+  // for what I'm looking at, and refresh whether "Seen" shows on my messages.
+  if (activeFriendChatId != null) {
+    if (messageSeenEnabled && !friendChatModal.classList.contains('hidden')) {
+      socket.emit('chat-seen', { friendClientId: activeFriendChatId });
+    }
+    renderFriendChatMessages();
+  }
+}
+
+messageSeenToggle.addEventListener('change', () => setMessageSeenEnabled(messageSeenToggle.checked));
+if (chatSeenToggleBtn) {
+  chatSeenToggleBtn.addEventListener('click', () => setMessageSeenEnabled(!messageSeenEnabled));
+}
+syncMessageSeenUi();
 
 // --- App settings side panel ---
 function openAppSettings() {
@@ -3168,7 +3194,7 @@ socket.on('game', (data) => {
       tttStage = 'invited';
       openGameOverlay();
       gameBtnBadge.classList.remove('hidden');
-      playMessageSound();
+      // No sound when the game invite pops up — haptic nudge only.
       vibrate(30);
       updateGameUI();
       break;

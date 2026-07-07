@@ -560,7 +560,12 @@
         <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="friendChatTitle">
           <div class="modal-header">
             <h2 id="friendChatTitle" data-i18n="chat">Chat</h2>
-            <button type="button" id="closeFriendChatBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
+            <div class="chat-header-actions">
+              <button type="button" id="chatSeenToggleBtn" class="chat-header-toggle" aria-pressed="true" data-i18n-title="messageSeen" title="Read receipts (Seen)" aria-label="Read receipts (Seen)">
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M1.5 12.5l4 4 7-8"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M11 15.5l1.5 1.5 7-8"/></svg>
+              </button>
+              <button type="button" id="closeFriendChatBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
+            </div>
           </div>
           <div class="modal-body friend-chat-body">
             <div id="friendChatMessages" class="chat-messages friend-chat-messages"></div>

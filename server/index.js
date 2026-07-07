@@ -1527,12 +1527,22 @@ io.on('connection', (socket) => {
     notifications.set(me.clientId, list.filter((n) => !(n.type === 'message' && n.fromClientId === friendClientId)));
   });
 
-  // Read receipts: purely a live signal (not persisted), forwarded only if
-  // the viewer is currently online and the sender opted into read receipts.
+  // Read receipts: when I (the viewer) open a chat, mark every message the
+  // friend sent me as seen and persist it, so the sender still sees "Seen"
+  // after reopening the chat or reconnecting — not just while both are live.
   socket.on('chat-seen', ({ friendClientId } = {}) => {
     const me = profiles.get(socket.id);
     friendClientId = validId(friendClientId);
     if (!me || !friendClientId || !isFriend(me.clientId, friendClientId)) return;
+    const key = pairKey(me.clientId, friendClientId);
+    const list = friendChats.get(key);
+    let changed = false;
+    if (list) {
+      for (const m of list) {
+        if (m.from === friendClientId && !m.seen) { m.seen = true; changed = true; }
+      }
+      if (changed) persistSocial();
+    }
     const targetSocket = getSocketByClientId(friendClientId);
     if (targetSocket) targetSocket.emit('chat-seen', { byClientId: me.clientId, ts: Date.now() });
   });

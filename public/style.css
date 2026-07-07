@@ -2221,6 +2221,46 @@ body {
   padding: 0 4px;
 }
 
+/* Chat top-bar controls: the read-receipts toggle sits next to the close X. */
+.chat-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Small "Seen" (double-tick) toggle in the chat header. Accent when on,
+   dimmed with a strike-through when read receipts are off. */
+.chat-header-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(0, 212, 255, 0.14);
+  color: var(--accent-2);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+}
+.chat-header-toggle:hover { background: rgba(0, 212, 255, 0.24); }
+.chat-header-toggle.is-off {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+  position: relative;
+}
+.chat-header-toggle.is-off::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  top: 50%;
+  height: 2px;
+  background: currentColor;
+  transform: rotate(-45deg);
+  border-radius: 2px;
+}
+
 .chat-form {
   display: flex;
   gap: 8px;
