@@ -346,6 +346,11 @@
                   <span data-i18n="showOnlineStatus">Show my online status to friends</span>
                   <span class="switch"><input type="checkbox" id="statusVisibilityToggle" checked /><span class="switch-slider" aria-hidden="true"></span></span>
                 </label>
+
+                <label class="toggle-row" for="messageSeenToggle">
+                  <span data-i18n="messageSeen">Read receipts (Seen)</span>
+                  <span class="switch"><input type="checkbox" id="messageSeenToggle" checked /><span class="switch-slider" aria-hidden="true"></span></span>
+                </label>
               </div>
             </div>
           </section>
@@ -1041,13 +1046,16 @@
     </main>
 
     <footer class="footer">
-      <button type="button" id="openTermsLinkFooter" class="link-btn" data-i18n="termsLink">Terms &amp; Community Guidelines</button>
-      <a href="/about" class="link-btn" data-i18n="aboutLink">About</a>
-      <a href="/contact" class="link-btn" data-i18n="contactLink">Contact</a>
-      <a href="/pricing" class="link-btn" data-i18n="pricingLink">Pricing</a>
-      <a href="/terms" class="link-btn" data-i18n="termsPageLink">Terms &amp; Conditions</a>
-      <a href="/privacy.html" class="link-btn" data-i18n="privacyPolicy">Privacy Policy</a>
-      <a href="/refund" class="link-btn" data-i18n="refundLink">Refund Policy</a>
+      <a href="/blog/" class="footer-blog-btn" data-i18n="readOurBlog">📖 Read our blog</a>
+      <div class="footer-links">
+        <button type="button" id="openTermsLinkFooter" class="link-btn" data-i18n="termsLink">Terms &amp; Community Guidelines</button>
+        <a href="/about" class="link-btn" data-i18n="aboutLink">About</a>
+        <a href="/contact" class="link-btn" data-i18n="contactLink">Contact</a>
+        <a href="/pricing" class="link-btn" data-i18n="pricingLink">Pricing</a>
+        <a href="/terms" class="link-btn" data-i18n="termsPageLink">Terms &amp; Conditions</a>
+        <a href="/privacy.html" class="link-btn" data-i18n="privacyPolicy">Privacy Policy</a>
+        <a href="/refund" class="link-btn" data-i18n="refundLink">Refund Policy</a>
+      </div>
     </footer>
   </div>
 
@@ -1082,6 +1090,14 @@
         <a href="/omegle-alternative">Omegle alternative</a>
         <a href="/blog/">Blog &amp; guides</a>
       </nav>
+
+      <h3>Today's featured read</h3>
+      <a id="dailyArticleCard" class="daily-article-card" href="/blog/">
+        <span class="daily-article-badge">✨ New today</span>
+        <span id="dailyArticleTitle" class="daily-article-title">Loading today's article…</span>
+        <span id="dailyArticleBlurb" class="daily-article-blurb"></span>
+        <span class="daily-article-cta">Read now →</span>
+      </a>
 
       <h3>How TalkLive works</h3>
       <p>TalkLive uses peer-to-peer WebRTC audio, so your voice travels directly between you and the person you are matched with — it is never routed through or stored on a central server. Our servers only introduce two strangers and then step out of the way. That means lower latency, better call quality, and a design that keeps your conversation private. Add someone as a friend when you click, and you can call each other back later without ever exchanging phone numbers.</p>

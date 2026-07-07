@@ -175,6 +175,9 @@ const I18N_STRINGS = {
     send: 'Send',
     noMessagesYet: 'No messages yet. Say hi!',
     strangerTyping: 'Stranger is typing',
+    seen: 'Seen',
+    messageSeen: 'Read receipts (Seen)',
+    readOurBlog: '📖 Read our blog',
 
     beforeYouStart: 'Before You Start',
     mustBe18: 'You must be 18 years or older to use TalkLive.',

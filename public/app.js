@@ -165,6 +165,7 @@ const themeGroup = document.getElementById('themeGroup');
 const soundToggle = document.getElementById('soundToggle');
 const vibrationToggle = document.getElementById('vibrationToggle');
 const statusVisibilityToggle = document.getElementById('statusVisibilityToggle');
+const messageSeenToggle = document.getElementById('messageSeenToggle');
 const sidePanelAuth = document.getElementById('sidePanelAuth');
 const sidePanelSignInBtn = document.getElementById('sidePanelSignInBtn');
 const sidePanelRegisterBtn = document.getElementById('sidePanelRegisterBtn');
@@ -554,6 +555,7 @@ function playTone(freq, duration, type, volume, delay = 0) {
   if (!soundEnabled) return;
   try {
     const ctx = getSfxCtx();
+    if (ctx.state === 'suspended') ctx.resume();
     const t0 = ctx.currentTime + delay;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -583,6 +585,9 @@ function playWinSound() {
   [523, 659, 784, 1046].forEach((f, i) => playTone(f, 0.16, 'sine', 0.17, i * 0.11));
 }
 function playInviteSound() { playTone(880, 0.09, 'sine', 0.15); playTone(1174, 0.11, 'sine', 0.14, 0.09); }
+// A distinct upward three-note chime for "friend added", clearly different
+// from the single-blip message sound so the two are never confused by ear.
+function playFriendAddedSound() { playTone(700, 0.09, 'sine', 0.16); playTone(1050, 0.09, 'sine', 0.15, 0.08); playTone(1400, 0.13, 'sine', 0.14, 0.16); }
 
 function updateSoundToggleUi() {
   soundToggle.checked = soundEnabled;
@@ -596,6 +601,15 @@ function setSoundEnabled(value) {
 
 soundToggle.addEventListener('change', () => setSoundEnabled(soundToggle.checked));
 updateSoundToggleUi();
+
+// --- Message "Seen" read receipts: opt-in, so turning it off stops both
+// sending your own read receipts and showing "Seen" on messages you sent. ---
+let messageSeenEnabled = localStorage.getItem('talklive_message_seen') !== 'off';
+messageSeenToggle.checked = messageSeenEnabled;
+messageSeenToggle.addEventListener('change', () => {
+  messageSeenEnabled = messageSeenToggle.checked;
+  localStorage.setItem('talklive_message_seen', messageSeenEnabled ? 'on' : 'off');
+});
 
 // --- App settings side panel ---
 function openAppSettings() {
@@ -1328,6 +1342,13 @@ socket.on('notification', (n) => {
   if (n.type === 'call_back_request') {
     showCallBackBanner(n.fromClientId, n.username);
   }
+  if (n.type === 'message') {
+    playMessageSound();
+    vibrate(20);
+  } else if (n.type === 'friend_request') {
+    playFriendAddedSound();
+    vibrate([20, 40, 20]);
+  }
 });
 
 // --- Friend-to-friend chat ---
@@ -1347,6 +1368,17 @@ function renderFriendChatMessages() {
     el.textContent = m.text;
     friendChatMessages.appendChild(el);
   });
+  // "Seen" label under the most recent message I sent, once the recipient
+  // has viewed the conversation (and only if I've opted into read receipts).
+  if (messageSeenEnabled) {
+    const lastMine = [...messages].reverse().find((m) => m.from === getClientId());
+    if (lastMine && lastMine.seen) {
+      const seenEl = document.createElement('div');
+      seenEl.className = 'chat-seen-label';
+      seenEl.textContent = t('seen');
+      friendChatMessages.appendChild(seenEl);
+    }
+  }
   friendChatMessages.scrollTop = friendChatMessages.scrollHeight;
 }
 
@@ -1374,6 +1406,7 @@ function openFriendChat(friendClientId) {
 
   socket.emit('get-friend-chat', { friendClientId });
   socket.emit('mark-messages-read', { friendClientId });
+  if (messageSeenEnabled) socket.emit('chat-seen', { friendClientId });
   notifData = notifData.filter((n) => !(n.type === 'message' && n.fromClientId === friendClientId));
   renderNotifications();
   renderFriendChatMessages();
@@ -1418,7 +1451,18 @@ socket.on('friend-message', ({ fromClientId, text, ts }) => {
   if (activeFriendChatId === fromClientId && !friendChatModal.classList.contains('hidden')) {
     renderFriendChatMessages();
     socket.emit('mark-messages-read', { friendClientId: fromClientId });
+    if (messageSeenEnabled) socket.emit('chat-seen', { friendClientId: fromClientId });
   }
+});
+
+socket.on('chat-seen', ({ byClientId, ts } = {}) => {
+  const cache = friendChatCache.get(byClientId);
+  if (!cache) return;
+  const myId = getClientId();
+  cache.forEach((m) => {
+    if (m.from === myId && (!m.ts || m.ts <= ts)) m.seen = true;
+  });
+  if (activeFriendChatId === byClientId) renderFriendChatMessages();
 });
 
 socket.on('friend-message-sent', ({ toClientId, text, ts }) => {
@@ -2746,7 +2790,6 @@ function scheduleGameNudge() {
       gameBtn.classList.remove('game-nudge');
       void gameBtn.offsetWidth;
       gameBtn.classList.add('game-nudge');
-      if (soundEnabled) playInviteSound();
       setTimeout(() => gameBtn.classList.remove('game-nudge'), 1200);
     }
     scheduleGameNudge();
@@ -3784,11 +3827,10 @@ async function showPremiumUpsell(message) {
   if (ok) window.location.href = '/pricing';
 }
 
-const PATREON_URL = 'https://www.patreon.com/16358676/join';
 const filtersUpgradeBtn = document.getElementById('filtersUpgradeBtn');
 if (filtersUpgradeBtn) {
   filtersUpgradeBtn.addEventListener('click', () => {
-    window.open(PATREON_URL, '_blank', 'noopener');
+    window.location.href = '/pricing';
   });
 }
 
@@ -3861,3 +3903,30 @@ socket.on('match-delay', ({ seconds } = {}) => {
   setStatusText('statusSearching');
   setSubText('subFreeDelay', { s: seconds || freeLimits.matchDelaySeconds });
 });
+
+// --- Daily featured blog article: rotates once every 24 hours so the SEO
+// section below the app always has a fresh, highlighted read. Deterministic
+// on the day-of-year so it's the same pick for everyone on a given day. ---
+(function initDailyArticle() {
+  const card = document.getElementById('dailyArticleCard');
+  const titleEl = document.getElementById('dailyArticleTitle');
+  const blurbEl = document.getElementById('dailyArticleBlurb');
+  if (!card || !titleEl || !blurbEl) return;
+
+  const ARTICLES = [
+    { slug: 'science-of-talking-to-strangers', title: 'The Science of Talking to Strangers (And Why It Makes You Happier)', blurb: 'Research keeps finding the same thing: conversations with strangers boost mood and reduce loneliness.' },
+    { slug: 'psychological-benefits-of-talking-to-strangers', title: 'The Psychological Benefits of Talking to Strangers Every Day', blurb: 'How a daily voice chat can lift your mood, ease loneliness, and build real confidence over time.' },
+    { slug: 'how-to-start-a-conversation-with-a-stranger', title: 'How to Start a Conversation With a Stranger: 25 Openers That Actually Work', blurb: 'Never freeze at "hello" again — openers, follow-ups and graceful exits that work.' },
+    { slug: 'is-talklive-safe', title: 'Is TalkLive Safe? How Our Anonymous Voice Chat Actually Works', blurb: 'A transparent look at what we can see, what we cannot, and how bad actors are handled.' },
+    { slug: 'voice-chat-vs-video-chat', title: 'Voice Chat vs Video Chat: Why Audio-Only Wins for Meeting Strangers', blurb: 'Why removing the camera makes stranger chat safer, deeper and less awkward.' },
+    { slug: 'practice-english-speaking-online-free', title: 'How to Practice Speaking English Online for Free — With Real Humans', blurb: 'A free 30-day speaking routine using live conversation instead of flashcards.' },
+    { slug: 'best-omegle-alternatives', title: 'The 10 Best Omegle Alternatives in 2026', blurb: 'What actually matters in a stranger-chat app in 2026, and how the options compare.' },
+  ];
+
+  const dayNumber = Math.floor(Date.now() / 86400000); // whole days since epoch, changes every 24h UTC
+  const pick = ARTICLES[dayNumber % ARTICLES.length];
+
+  card.href = `/blog/${pick.slug}`;
+  titleEl.textContent = pick.title;
+  blurbEl.textContent = pick.blurb;
+})();

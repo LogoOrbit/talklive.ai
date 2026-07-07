@@ -802,6 +802,12 @@ body {
   padding: 14px 28px;
   border-radius: 999px;
   transition: transform 0.15s ease, opacity 0.15s ease;
+  /* Several settings/footer links are <a class="btn ...">, not <button>s —
+     without this they'd fall back to the browser's default blue underline. */
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn:active {
@@ -936,6 +942,49 @@ body {
 .seo-links a:hover { border-color: var(--accent-2); color: var(--accent-2); }
 .seo-faq p { margin: 0 0 10px; }
 
+/* Daily featured blog card: a new pick every 24 hours, highlighted so it
+   draws the eye against the muted SEO copy around it. */
+.daily-article-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-decoration: none;
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(108,92,231,0.16), rgba(0,212,255,0.1));
+  border: 1px solid rgba(255,255,255,0.14);
+  margin: 4px 0 8px;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+.daily-article-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-2);
+}
+.daily-article-badge {
+  align-self: flex-start;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent-2);
+}
+.daily-article-title {
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 700;
+}
+.daily-article-blurb {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.daily-article-cta {
+  color: var(--accent-2);
+  font-size: 13.5px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
 .error-text {
   margin-top: 22px;
   padding: 12px 16px;
@@ -1009,19 +1058,61 @@ body {
   text-align: center;
   font-size: 12px;
   color: var(--muted);
-  padding: 16px;
+  padding: 20px 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 14px;
 }
 
 .footer p {
   margin: 0;
 }
 
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  row-gap: 8px;
+  column-gap: 0;
+  max-width: 520px;
+}
+
 .footer .link-btn {
-  font-size: 12px;
+  font-size: 12.5px;
+  color: var(--muted);
+  padding: 0 10px;
+  letter-spacing: 0.1px;
+}
+
+.footer .link-btn:not(:last-child) {
+  border-right: 1px solid rgba(255,255,255,0.14);
+}
+
+.footer .link-btn:hover {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.footer-blog-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.14);
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.footer-blog-btn:hover {
+  background: rgba(255,255,255,0.12);
+  transform: translateY(-1px);
 }
 
 /* Mobile responsiveness */
@@ -1471,14 +1562,16 @@ body {
   border: none;
   color: var(--accent-2);
   font-size: inherit;
+  font-family: inherit;
   cursor: pointer;
   padding: 0;
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  text-decoration: none;
 }
 
 .link-btn:hover {
   color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 /* Modals */
@@ -2070,6 +2163,15 @@ body {
 }
 .chat-msg-ticks.sending svg { opacity: 0.5; }
 .chat-msg-ticks.sent svg { fill: rgba(255,255,255,0.9); opacity: 1; }
+
+/* "Seen" label under the last message I sent, once the friend has viewed it. */
+.chat-seen-label {
+  align-self: flex-end;
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-top: -4px;
+  padding: 0 4px;
+}
 
 .chat-form {
   display: flex;
@@ -2942,6 +3044,17 @@ body {
 
 .lang-select:hover {
   background: rgba(255,255,255,0.1);
+}
+
+/* <select> only reliably honors background/color on the element and its
+   <option>s, not the native dropdown chrome. Without this, options render
+   with the OS default (usually light), which is unreadable against light
+   themes' own light text-on-white expectations reversed, or plain
+   mismatched against dark/ocean/sunset accents. Set both explicitly so the
+   popup list matches the active theme. */
+.lang-select option {
+  background: var(--bg-2);
+  color: var(--text);
 }
 
 [dir="rtl"] .lang-icon {

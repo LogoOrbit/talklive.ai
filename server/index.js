@@ -1527,6 +1527,16 @@ io.on('connection', (socket) => {
     notifications.set(me.clientId, list.filter((n) => !(n.type === 'message' && n.fromClientId === friendClientId)));
   });
 
+  // Read receipts: purely a live signal (not persisted), forwarded only if
+  // the viewer is currently online and the sender opted into read receipts.
+  socket.on('chat-seen', ({ friendClientId } = {}) => {
+    const me = profiles.get(socket.id);
+    friendClientId = validId(friendClientId);
+    if (!me || !friendClientId || !isFriend(me.clientId, friendClientId)) return;
+    const targetSocket = getSocketByClientId(friendClientId);
+    if (targetSocket) targetSocket.emit('chat-seen', { byClientId: me.clientId, ts: Date.now() });
+  });
+
   socket.on('clear-notification', ({ notificationId } = {}) => {
     const me = profiles.get(socket.id);
     if (!me || !notificationId) return;
