@@ -759,6 +759,15 @@ body {
   .video-banner { margin: 2px auto 8px; max-height: 20vh; }
 }
 
+/* Phones: unlike the wide desktop banner, the narrow phone banner has no room
+   for text beside the scene, so the overlaid title/subtitle look cramped and
+   the left-weighted scrim leaves the image looking half-lit. Drop the caption
+   and scrim here so the looping scene reads as one clean, calm image. */
+@media (max-width: 600px) {
+  .video-banner__content,
+  .video-banner__scrim { display: none; }
+}
+
 /* Conversation guide — friendly tips, scrollable, below the call area. */
 .convo-guide {
   width: min(560px, 92%);
