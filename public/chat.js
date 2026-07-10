@@ -46,6 +46,8 @@
   var addFriendBtn = $('addFriendBtn');
   var typingEl = $('typing');
   var onlineCount = $('onlineCount');
+  var autoNextRow = $('autoNextRow');
+  var autoNextCheckbox = $('autoNextCheckbox');
 
   function escapeHtml(str) {
     return String(str).replace(/[&<>"']/g, function (c) {
@@ -68,6 +70,17 @@
   var searching = false;
   var partnerHere = false;
 
+  // Auto-next: keep searching automatically when a partner disconnects. Shares
+  // the same storage key as the voice app's "keep connecting me" checkbox, so
+  // the preference is consistent across both sub-apps.
+  var AUTO_NEXT_KEY = 'talklive_autocall';
+  var autoNext = localStorage.getItem(AUTO_NEXT_KEY) === 'on';
+  autoNextCheckbox.checked = autoNext;
+  autoNextCheckbox.addEventListener('change', function () {
+    autoNext = autoNextCheckbox.checked;
+    localStorage.setItem(AUTO_NEXT_KEY, autoNext ? 'on' : 'off');
+  });
+
   // ---------------------------------------------------------------------------
   // Views: start → search → live. Only one is visible at a time.
   // ---------------------------------------------------------------------------
@@ -79,6 +92,7 @@
     var connected = name === 'live' && partnerHere;
     reportBtn.classList.toggle('hidden', !connected);
     addFriendBtn.classList.toggle('hidden', !connected);
+    autoNextRow.classList.toggle('hidden', name === 'start');
     if (name !== 'search') stopSearchLines();
   }
 
@@ -356,7 +370,14 @@
     reportBtn.classList.add('hidden');
     addFriendBtn.classList.add('hidden');
     input.disabled = true;
-    addMessage(t('chatStageLeft'), 'system');
+    if (autoNext) {
+      // Keep going straight into a new search — no need to wait for a tap on Next.
+      clearMessages();
+      clearNextConfirm();
+      goSearch(false);
+    } else {
+      addMessage(t('chatStageLeft'), 'system');
+    }
   });
   // re-enable the input on the next match
   socket.on('matched', function () { input.disabled = false; });

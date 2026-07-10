@@ -95,17 +95,10 @@ const reactionOverlay = document.getElementById('reactionOverlay');
 const chatBadge = document.getElementById('chatBadge');
 const typingIndicator = document.getElementById('typingIndicator');
 
-// --- Tap to Chat: text-only mode. When on, searches join the 'chat' pool
-// (never mixed with voice callers), no microphone or WebRTC is used at all —
-// which is also what keeps this mode smooth on very low-end devices. ---
-let chatMode = false;
-function setChatMode(on) {
-  chatMode = !!on;
-  document.body.classList.toggle('chat-mode', chatMode);
-}
-// Every partner search declares which pool it joins.
+// Every partner search declares which pool it joins. The main app is voice
+// only now — text chat lives on its own dedicated page at /chat.
 function findPartnerPayload() {
-  return { mode: chatMode ? 'chat' : 'talk' };
+  return { mode: 'talk' };
 }
 
 const historyBtn = document.getElementById('historyBtn');
@@ -1820,10 +1813,6 @@ function setConnection(color, labelKey) {
   // call so you can't type into the void before a stranger is connected.
   chatInput.disabled = !connected;
   chatSendBtn.disabled = !connected;
-  const stageInput = document.getElementById('chatStageInput');
-  const stageSend = document.getElementById('chatStageSendBtn');
-  if (stageInput) stageInput.disabled = !connected;
-  if (stageSend) stageSend.disabled = !connected;
 
   if (connected && !wasConnected) {
     connectFlash.classList.remove('playing');
@@ -1873,7 +1862,7 @@ function setButtonMode(mode) {
   const labelKey = mode === 'hangup' ? 'hangUp'
     : mode === 'confirm' ? 'hangUpSure'
     : mode === 'loading' ? 'connSearching'
-    : (chatMode ? 'chat' : 'call');
+    : 'call';
   callMainLabel.textContent = t(labelKey);
   callMainLabel.className = 'action-label call-main-label is-' + mode;
   callMainBtn.setAttribute('aria-label', t(labelKey));
@@ -2201,25 +2190,19 @@ function addChatMessage(text, kind) {
     ticks.innerHTML = '<svg viewBox="0 0 16 11" aria-hidden="true"><path d="M11.1.6 4.9 8.4 1.9 5.4.5 6.8l4.4 4.4L12.5 2z"/><path d="M15.6.6 9.4 8.4l-.9-.9-1 1.3 1.9 1.9L17 2z"/></svg>';
     el.appendChild(ticks);
   }
-  // On the dedicated /chat page messages land in the full-screen chatbox;
-  // during a voice call they land in the slide-in side panel as before.
-  const stageList = chatMode ? document.getElementById('chatStageMsgs') : null;
-  const target = stageList || chatMessages;
-  target.appendChild(el);
+  chatMessages.appendChild(el);
   if (kind !== 'me') {
     // Double rAF so the enter animation is guaranteed to run from its start frame.
     requestAnimationFrame(() => {
       requestAnimationFrame(() => el.classList.remove('chat-msg-enter'));
     });
   }
-  target.scrollTop = target.scrollHeight;
+  chatMessages.scrollTop = chatMessages.scrollHeight;
   return el;
 }
 
 function clearChat() {
   chatMessages.innerHTML = '';
-  const stageMsgs = document.getElementById('chatStageMsgs');
-  if (stageMsgs) stageMsgs.innerHTML = '';
   typingIndicator.classList.add('hidden');
   if (typeof setChatUnread === 'function') setChatUnread(0);
 }
@@ -2531,17 +2514,11 @@ function resetUI() {
   if (location.pathname === '/call' || location.pathname === '/chat') {
     history.replaceState(history.state, '', '/');
   }
-  setChatMode(false);
-  chatStageExit();
   callPanel.classList.add('hidden');
   setupPanel.classList.remove('hidden');
   stageEl.classList.remove('call-live');
   startBtn.disabled = false;
   startBtn.classList.remove('is-connecting');
-  if (startChatBtn) {
-    startChatBtn.disabled = false;
-    startChatBtn.classList.remove('is-connecting');
-  }
   closeChatPanel();
   clearChat();
   hideConnection();
@@ -2564,13 +2541,8 @@ function goIdleOnCallScreen(statusKey) {
   setCallState('idle');
   setState('idle');
   hideConnection();
-  if (chatMode) {
-    setStatusText(statusKey === 'statusYouLeft' ? 'statusYouLeftChat' : (statusKey || 'statusReadyToChat'));
-    setSubText('subTapChat');
-  } else {
-    setStatusText(statusKey || 'statusReadyToTalk');
-    setSubText('subTapCall');
-  }
+  setStatusText(statusKey || 'statusReadyToTalk');
+  setSubText('subTapCall');
 }
 
 function registerProfile() {
@@ -2591,17 +2563,15 @@ function registerProfile() {
 // + big chat button. Safe to call repeatedly (e.g. on each new match).
 function enterCallUI() {
   closeChatPanel();
-  // Reflect the live screen as its own URL (/call or /chat) without adding a
-  // history entry, so the existing back-button guard stack is untouched.
-  const livePath = chatMode ? '/chat' : '/call';
-  if (location.pathname !== livePath) {
-    history.replaceState(history.state, '', livePath);
+  // Reflect the live screen as its own URL without adding a history entry, so
+  // the existing back-button guard stack is untouched.
+  if (location.pathname !== '/call') {
+    history.replaceState(history.state, '', '/call');
   }
   setupPanel.classList.add('hidden');
   callPanel.classList.remove('hidden');
   stageEl.classList.add('call-live');
-  // The /chat page IS the chatbox — no chat toggle needed there.
-  chatToggleBtn.classList.toggle('hidden', chatMode);
+  chatToggleBtn.classList.remove('hidden');
   appSettingsBtn.classList.remove('hidden');
   historyBtn.classList.remove('hidden');
   friendsBtn.classList.remove('hidden');
@@ -2614,7 +2584,6 @@ const MIC_EXPLAINED_KEY = 'talklive_mic_explained';
 async function begin() {
   if (beginInFlight) return;
   beginInFlight = true;
-  setChatMode(false);
   startBtn.disabled = true;
   clearError();
   // One-time explainer before the browser's mic prompt so the permission
@@ -2666,46 +2635,18 @@ async function begin() {
   socket.emit('find-partner', findPartnerPayload());
 }
 
-// Tap to Chat: same entry as begin(), minus everything audio. No mic prompt,
-// no WebRTC — nothing heavy ever starts, so it flies on 1GB phones too.
-function beginChat() {
-  setChatMode(true);
-  clearError();
-
-  registerProfile();
-
-  isSearching = true;
-  enterCallUI();
-  setCallState('searching');
-  setState('waiting');
-  setConnection('orange', 'connSearching');
-  setStatusText('statusChatSearching');
-  setSubText('subHangTight');
-  chatStageShowSearch();
-
-  socket.emit('find-partner', findPartnerPayload());
-}
-
 const ageConsentModal = document.getElementById('ageConsentModal');
 const ageAgreeBtn = document.getElementById('ageAgreeBtn');
 const ageAgreeCheckbox = document.getElementById('ageAgreeCheckbox');
 const CONSENT_KEY = 'talklive_age_consent';
 
-// Which flow the age/terms gate should continue into once accepted.
-let pendingStartMode = 'talk';
-function runPendingStart() {
-  if (pendingStartMode === 'chat') beginChat();
-  else begin();
-}
-
-// Start a call or chat from the big buttons — gated by the one-time age/terms
-// consent, then (voice only) mic permission handled in begin().
-function startCallFlow(mode) {
-  pendingStartMode = mode || (chatMode ? 'chat' : 'talk');
+// Start a call from the big button — gated by the one-time age/terms consent,
+// then mic permission handled in begin().
+function startCallFlow() {
   playTapSound();
   clearError();
   if (localStorage.getItem(CONSENT_KEY) === 'yes') {
-    runPendingStart();
+    begin();
   } else {
     ageAgreeCheckbox.checked = false;
     ageAgreeBtn.disabled = true;
@@ -2739,23 +2680,13 @@ startBtn.addEventListener('click', (ev) => {
   if (startBtn.disabled || startBtn.classList.contains('is-connecting')) return;
   spawnRipple(startBtn, ev);
   startBtn.classList.add('is-connecting');
-  startCallFlow('talk');
+  startCallFlow();
 });
-
-// The Tap-to-Chat landing orb: text-only twin of the talk orb.
-if (startChatBtn) {
-  startChatBtn.addEventListener('click', (ev) => {
-    if (startChatBtn.disabled || startChatBtn.classList.contains('is-connecting')) return;
-    spawnRipple(startChatBtn, ev);
-    startChatBtn.classList.add('is-connecting');
-    startCallFlow('chat');
-  });
-}
 
 ageAgreeBtn.addEventListener('click', () => {
   localStorage.setItem(CONSENT_KEY, 'yes');
   closeModal(ageConsentModal);
-  runPendingStart();
+  begin();
 });
 
 // Keep searching for a new person (used after a hang-up when auto-call is on).
@@ -3807,8 +3738,7 @@ chatForm.addEventListener('submit', (e) => {
 
 // Server-side link filter rejected a message we let through — surface it.
 socket.on('chat-blocked', ({ reason } = {}) => {
-  const target = friendChatModal.classList.contains('open') ? friendChatMessages
-    : (chatMode && document.getElementById('chatStageMsgs')) || chatMessages;
+  const target = friendChatModal.classList.contains('open') ? friendChatMessages : chatMessages;
   const el = document.createElement('div');
   el.className = 'chat-msg system';
   el.textContent = reason === 'call-required' ? t('errCallRequiredToChat')
@@ -3830,12 +3760,10 @@ chatInput.addEventListener('input', () => {
 
 let typingHideTimeout = null;
 socket.on('typing', () => {
-  const stageTyping = chatMode ? document.getElementById('chatStageTyping') : null;
-  const ind = stageTyping || typingIndicator;
-  ind.classList.remove('hidden');
+  typingIndicator.classList.remove('hidden');
   clearTimeout(typingHideTimeout);
   typingHideTimeout = setTimeout(() => {
-    ind.classList.add('hidden');
+    typingIndicator.classList.add('hidden');
   }, 3000);
 });
 
@@ -3965,7 +3893,7 @@ socket.on('random-fallback', () => {
   setSubText('subCountryFallback');
 });
 
-socket.on('matched', async ({ initiator, partner, rematched, callback, mode }) => {
+socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
   // A deferred-UI callback (rule 11) is on the friends menu with a spinner —
   // now that the peer accepted, restore the icon and enter the call screen.
   restoreCallbackSpinner();
@@ -3974,36 +3902,10 @@ socket.on('matched', async ({ initiator, partner, rematched, callback, mode }) =
   // already connected) — tear the old peer down first so it never leaks.
   if (pc) teardownPeer();
   if (typeof friendsDropdown !== 'undefined') closeSidePanel(friendsDropdown, friendsOverlay);
-  // The server is authoritative about which pool this match came from — keep
-  // the client in the same mode (e.g. a voice call-back accepted mid-chat).
-  setChatMode(mode === 'chat');
   enterCallUI();
   // Game mark (X/O) roles are fixed by who initiated the call; clear any old game.
   amCallInitiator = !!initiator;
   if (typeof resetGame === 'function') resetGame();
-
-  if (mode === 'chat') {
-    // Text-only match: no mic, no WebRTC, no media wait — connected the moment
-    // the pair exists. The chat panel opens itself so the first thing the user
-    // sees is the conversation.
-    currentPartner = partner;
-    currentPartnerInterests = partner.interests || [];
-    clearChat();
-    revealPartner();
-    setState('connected');
-    setCallState('connected');
-    muteBtn.disabled = true; // no microphone in text chat
-    setConnection('green', 'connConnected');
-    setStatusText('statusChatConnected', { name: partner.username });
-    setSubTextFading('subChatSayHi');
-    chatStageShowLive(partner);
-    addChatMessage(t('chatSystemMatched', {
-      name: partner.username,
-      country: getCountryName(partner.countryCode) || partner.country || '',
-    }), 'system');
-    maybeShowVoicePromo();
-    return;
-  }
 
   // Never let a mute from a previous call silently carry into a new one.
   if (isMuted) {
@@ -4205,9 +4107,6 @@ async function acceptCallBack(fromClientId) {
     return;
   }
 
-  // Call-backs are always voice calls — leave text-chat mode if we were in it.
-  setChatMode(false);
-
   // Drop whatever we were doing (a live call, or an in-progress search) so we
   // can connect to the incoming caller instantly — even mid-search.
   if (callState === 'connected' || isSearching) {
@@ -4318,14 +4217,12 @@ socket.on('partner-left', () => {
   // The partner ended the call. Show the single red "your friend ended the call"
   // message. Only keep hunting for a new person if auto-connect is on; otherwise
   // stop on the red message so the user isn't yanked into a new search.
-  const endedKey = chatMode ? 'statusChatEnded' : 'statusFriendEnded';
   if (autoCallEnabled) {
     setCallState('searching');
     setState('waiting');
     setConnection('red', 'connFriendEnded');
-    setStatusText(endedKey);
+    setStatusText('statusFriendEnded');
     setSubText(null);
-    if (chatMode) chatStageShowSearch();
     socket.emit('find-partner', findPartnerPayload());
     setTimeout(() => { if (isSearching && callState === 'searching') setConnection('orange', 'connSearching'); }, 900);
   } else {
@@ -4334,14 +4231,8 @@ socket.on('partner-left', () => {
     setCallState('idle');
     setState('idle');
     setConnection('red', 'connFriendEnded');
-    setStatusText(endedKey);
-    setSubText(chatMode ? 'subTapChat' : null);
-    // In chat mode the user may still be looking at the (now empty) chat panel —
-    // say what happened right there too.
-    if (chatMode) {
-      addChatMessage(t('chatStageLeft'), 'system');
-      chatStagePartnerGone();
-    }
+    setStatusText('statusFriendEnded');
+    setSubText(null);
   }
 });
 
@@ -4356,7 +4247,6 @@ socket.on('partner-mic-state', (muted) => {
 
 socket.on('chat-message', ({ text }) => {
   addChatMessage(text, 'them');
-  if (chatMode) checkIncomingForBot(text);
   playMessageSound();
   vibrate(20);
   if (!chatOpen) {
@@ -4419,23 +4309,16 @@ window.addEventListener('i18n-changed', () => {
 
 // A direct load of /call (bookmark, refresh, share) has no live session to
 // resume — send the URL back to the landing page without adding a history
-// entry, so the back button still behaves normally. /chat is different: the
-// chat page stands on its own, so a direct visit lands straight on it with
-// its single "Start chatting" button — no call to be on, no redirect.
+// entry, so the back button still behaves normally.
 if (location.pathname === '/call') {
   history.replaceState(history.state, '', '/');
 }
 
-// Deep link from the SEO landing pages: /?mode=chat drops the visitor straight
-// into the Tap-to-Chat flow (consent gate still applies on first visit).
+// Deep link from the SEO landing pages: /?mode=chat sends the visitor straight
+// to the dedicated text-chat app.
 try {
   if (new URLSearchParams(location.search).get('mode') === 'chat') {
-    setTimeout(() => {
-      if (startChatBtn && !startChatBtn.disabled) {
-        startChatBtn.classList.add('is-connecting');
-        startCallFlow('chat');
-      }
-    }, 350);
+    location.replace('/chat');
   }
 } catch (e) { /* very old browser without URLSearchParams — ignore */ }
 
@@ -4555,258 +4438,3 @@ socket.on('match-delay', ({ seconds } = {}) => {
   blurbEl.textContent = pick.blurb;
 })();
 
-// ============================================================================
-// Chat page (/chat) — dedicated chat-first screen controller.
-// The page has three views (start → searching → live chatbox) plus its own
-// composer with Next (two-tap confirm) and Send. Everything reuses the
-// existing socket flow (find-partner / matched / skip / chat-message); this
-// block only drives the new UI.
-// ============================================================================
-const chatStageEl = document.getElementById('chatStage');
-const chatStageStart = document.getElementById('chatStageStart');
-const chatStageSearch = document.getElementById('chatStageSearch');
-const chatStageLive = document.getElementById('chatStageLive');
-const chatStageForm = document.getElementById('chatStageForm');
-const chatStageInput = document.getElementById('chatStageInput');
-const chatStartBtn = document.getElementById('chatStartBtn');
-const chatSearchCancelBtn = document.getElementById('chatSearchCancelBtn');
-const chatSearchLine = document.getElementById('chatSearchLine');
-const chatNextBtn = document.getElementById('chatNextBtn');
-const chatConnectedFrom = document.getElementById('chatConnectedFrom');
-const chatStageMyName = document.getElementById('chatStageMyName');
-const chatStageMyFlag = document.getElementById('chatStageMyFlag');
-const chatStageReportBtn = document.getElementById('chatStageReportBtn');
-const chatStageAddFriendBtn = document.getElementById('chatStageAddFriendBtn');
-const chatStageTypingEl = document.getElementById('chatStageTyping');
-
-// Keep the stage flush under the (variable-height) sticky topbar.
-function syncChatStageTop() {
-  const topbar = document.querySelector('.topbar');
-  if (topbar && !chatStageEl.classList.contains('hidden')) {
-    chatStageEl.style.top = topbar.offsetHeight + 'px';
-  }
-}
-window.addEventListener('resize', syncChatStageTop);
-
-function syncChatStageMe() {
-  const name = accountNickname || tempUsername || (myProfile && myProfile.username) || t('you');
-  chatStageMyName.textContent = name;
-  chatStageMyFlag.innerHTML = myProfile && myProfile.countryCode ? getFlagImg(myProfile.countryCode, 18) : '';
-}
-
-function chatStageShowView(view) {
-  chatStageEl.classList.remove('hidden');
-  document.body.classList.add('chat-stage-open');
-  syncChatStageTop();
-  syncChatStageMe();
-  chatStageStart.classList.toggle('hidden', view !== 'start');
-  chatStageSearch.classList.toggle('hidden', view !== 'search');
-  chatStageSearch.setAttribute('aria-hidden', view === 'search' ? 'false' : 'true');
-  chatStageLive.classList.toggle('hidden', view !== 'live');
-  chatStageForm.classList.toggle('hidden', view !== 'live');
-  const connected = view === 'live' && callState === 'connected';
-  chatStageReportBtn.classList.toggle('hidden', !connected);
-  chatStageAddFriendBtn.classList.toggle('hidden', !connected);
-  if (view !== 'search') stopChatSearchLines();
-}
-
-function chatStageShowStart() {
-  // The chat landing owns its URL so a refresh comes straight back here.
-  if (location.pathname !== '/chat') history.replaceState(history.state, '', '/chat');
-  chatStageShowView('start');
-}
-
-// Rotating one-liners under the searching animation so the wait has life.
-const CHAT_SEARCH_LINE_KEYS = ['chatSearch1', 'chatSearch2', 'chatSearch3', 'chatSearch4'];
-let chatSearchLineTimer = null;
-let chatSearchLineIdx = 0;
-function stopChatSearchLines() {
-  clearInterval(chatSearchLineTimer);
-  chatSearchLineTimer = null;
-}
-function chatStageShowSearch() {
-  chatStageShowView('search');
-  chatSearchLineIdx = 0;
-  chatSearchLine.textContent = t(CHAT_SEARCH_LINE_KEYS[0]);
-  stopChatSearchLines();
-  chatSearchLineTimer = setInterval(() => {
-    chatSearchLineIdx = (chatSearchLineIdx + 1) % CHAT_SEARCH_LINE_KEYS.length;
-    chatSearchLine.textContent = t(CHAT_SEARCH_LINE_KEYS[chatSearchLineIdx]);
-  }, 2600);
-}
-
-function chatStageShowLive(partner) {
-  clearChatNextConfirm();
-  chatStageAddFriendBtn.disabled = false;
-  chatStageAddFriendBtn.classList.remove('sent');
-  chatConnectedFrom.innerHTML = `${escapeHtml(t('chatPartnerFrom', {
-    country: getCountryName(partner.countryCode) || partner.country || t('somewhere'),
-  }))} ${getFlagImg(partner.countryCode, 20)}`;
-  chatStageShowView('live');
-  countChatForPromo();
-}
-
-// The partner left but the conversation stays readable; the composer locks
-// (setConnection red already disables it) and Next moves on.
-function chatStagePartnerGone() {
-  chatStageReportBtn.classList.add('hidden');
-  chatStageAddFriendBtn.classList.add('hidden');
-  if (chatStageTypingEl) chatStageTypingEl.classList.add('hidden');
-}
-
-function chatStageExit() {
-  stopChatSearchLines();
-  chatStageEl.classList.add('hidden');
-  document.body.classList.remove('chat-stage-open');
-}
-
-// --- Start / cancel ---
-chatStartBtn.addEventListener('click', () => {
-  playTapSound();
-  startCallFlow('chat');
-});
-
-chatSearchCancelBtn.addEventListener('click', () => {
-  isSearching = false;
-  socket.emit('leave');
-  setCallState('idle');
-  setState('idle');
-  chatStageShowStart();
-});
-
-// --- Next: first tap arms a yellow "Sure?", second tap skips. ---
-let chatNextArmed = false;
-let chatNextTimer = null;
-function clearChatNextConfirm() {
-  chatNextArmed = false;
-  clearTimeout(chatNextTimer);
-  chatNextTimer = null;
-  chatNextBtn.classList.remove('confirm');
-  chatNextBtn.querySelector('span').textContent = t('chatNext');
-}
-chatNextBtn.addEventListener('click', () => {
-  vibrate(15);
-  if (!chatNextArmed) {
-    chatNextArmed = true;
-    chatNextBtn.classList.add('confirm');
-    chatNextBtn.querySelector('span').textContent = t('chatNextSure');
-    clearTimeout(chatNextTimer);
-    chatNextTimer = setTimeout(clearChatNextConfirm, 3500);
-    return;
-  }
-  clearChatNextConfirm();
-  chatStageShowSearch();
-  autoNextMatch('statusChatSearching');
-});
-
-// --- Composer ---
-chatStageForm.addEventListener('submit', (e) => {
-  e.preventDefault();
-  if (sendStrangerChat(chatStageInput.value.trim())) {
-    chatStageInput.value = '';
-    chatStageInput.focus();
-  }
-});
-chatStageInput.addEventListener('input', () => {
-  if (typingSendThrottle) return;
-  socket.emit('typing');
-  typingSendThrottle = setTimeout(() => { typingSendThrottle = null; }, 1500);
-});
-
-// --- Report (reuses the shared report modal + server flow) ---
-chatStageReportBtn.addEventListener('click', () => {
-  openReportModal();
-});
-
-// --- Add friend: dialog with the partner's username + an optional intro
-// message so they know who you are if they forget. ---
-const friendReqModal = document.getElementById('friendReqModal');
-const friendReqUsername = document.getElementById('friendReqUsername');
-const friendReqMessage = document.getElementById('friendReqMessage');
-chatStageAddFriendBtn.addEventListener('click', () => {
-  if (!currentPartner || !currentPartner.clientId) return;
-  if (chatStageAddFriendBtn.classList.contains('sent')) return;
-  friendReqUsername.textContent = currentPartner.username;
-  friendReqMessage.value = '';
-  openModal(friendReqModal);
-});
-document.getElementById('friendReqSendBtn').addEventListener('click', () => {
-  if (!currentPartner || !currentPartner.clientId) return;
-  const message = friendReqMessage.value.trim().slice(0, 200);
-  socket.emit('friend-request', {
-    targetClientId: currentPartner.clientId,
-    message: message || undefined,
-  });
-  chatStageAddFriendBtn.classList.add('sent');
-  chatStageAddFriendBtn.disabled = true;
-  closeModal(friendReqModal);
-  addChatMessage(t('friendReqSentMsg', { name: currentPartner.username }), 'system');
-});
-document.getElementById('friendReqCancelBtn').addEventListener('click', () => closeModal(friendReqModal));
-document.getElementById('friendReqCloseBtn').addEventListener('click', () => closeModal(friendReqModal));
-friendReqModal.addEventListener('click', (e) => { if (e.target === friendReqModal) closeModal(friendReqModal); });
-
-// --- Client-side safety net (mirrored server-side): block clearly illegal /
-// scam content before it leaves the device. Links are blocked separately. ---
-const UNSAFE_RE = /\b(child\s*porn|cp\s*trade|loli(?:con)?|jailbait|sell(?:ing)?\s+(?:drugs|guns|weapons)|buy\s+(?:drugs|cocaine|heroin|meth|fentanyl)|hire\s*(?:a\s*)?hitman|credit\s*card\s*numbers?|send\s+nudes|onlyfans|escort\s*service|invest\s+in\s+(?:crypto|bitcoin)|gift\s*cards?\s+for)\b/i;
-function messageIsUnsafe(text) {
-  return UNSAFE_RE.test(String(text || ''));
-}
-
-// Bot heuristic on incoming messages: the same message repeated back-to-back
-// is the classic spam-bot signature — warn once so the user just taps Next.
-let lastIncomingMsg = '';
-let lastIncomingRepeat = 0;
-let botWarned = false;
-function checkIncomingForBot(text) {
-  if (text === lastIncomingMsg) lastIncomingRepeat++;
-  else { lastIncomingMsg = text; lastIncomingRepeat = 0; }
-  if (!botWarned && (lastIncomingRepeat >= 2 || messageIsUnsafe(text))) {
-    botWarned = true;
-    addChatMessage(t('chatBotWarning'), 'system');
-  }
-}
-
-// --- Voice-call promo: shown rarely — only once the user has finished 10+
-// chats, and even then only sometimes, so it never becomes noise. ---
-const CHAT_COUNT_KEY = 'talklive_chats_done';
-let promoShownThisSession = false;
-function countChatForPromo() {
-  botWarned = false;
-  lastIncomingMsg = '';
-  lastIncomingRepeat = 0;
-  const n = (parseInt(localStorage.getItem(CHAT_COUNT_KEY), 10) || 0) + 1;
-  localStorage.setItem(CHAT_COUNT_KEY, String(n));
-}
-function maybeShowVoicePromo() {
-  const n = parseInt(localStorage.getItem(CHAT_COUNT_KEY), 10) || 0;
-  if (promoShownThisSession || n < 10 || Math.random() > 0.25) return;
-  promoShownThisSession = true;
-  setTimeout(() => {
-    if (callState !== 'connected' || !chatMode) return;
-    const list = document.getElementById('chatStageMsgs');
-    if (!list) return;
-    const card = document.createElement('div');
-    card.className = 'chat-msg promo';
-    card.innerHTML = `${escapeHtml(t('voicePromoText'))}<br><button type="button" class="promo-cta">${escapeHtml(t('voicePromoCta'))}</button>`;
-    card.querySelector('.promo-cta').addEventListener('click', () => {
-      socket.emit('leave');
-      resetUI();
-      startCallFlow('talk');
-    });
-    list.appendChild(card);
-    list.scrollTop = list.scrollHeight;
-  }, 4000);
-}
-
-// Keep the sub-nav identity fresh once the server confirms who we are.
-socket.on('profile', () => {
-  if (!chatStageEl.classList.contains('hidden')) syncChatStageMe();
-});
-
-// Direct load of /chat (bookmark, refresh, share): the chat page stands on
-// its own — land straight on its single "Start chatting" button.
-if (location.pathname === '/chat') {
-  setChatMode(true);
-  chatStageShowStart();
-}

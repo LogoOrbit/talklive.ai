@@ -94,6 +94,13 @@
         </div>
       </div>
 
+      <!-- Auto-next: when on, a partner disconnecting goes straight into a new
+           search instead of waiting for a tap on Next. Persisted across visits. -->
+      <label id="autoNextRow" class="checkbox-row auto-next-row hidden" for="autoNextCheckbox">
+        <input type="checkbox" id="autoNextCheckbox" />
+        <span data-i18n="enableAutoCall">Enable — keep connecting me to new people</span>
+      </label>
+
       <!-- Composer -->
       <form id="composer" class="composer hidden">
         <button type="button" id="nextBtn" class="next-btn" aria-label="Next stranger"><span data-i18n="chatNext">Next</span></button>

@@ -492,12 +492,12 @@
             </div>
             <div class="tap-choice-divider" aria-hidden="true"><span data-i18n="or">or</span></div>
             <div class="tap-choice">
-              <button id="startChatBtn" class="tap-orb chat-btn-blue" data-i18n-aria="startChatAria" aria-label="Start a text chat with a random person">
+              <a id="startChatBtn" href="/chat" class="tap-orb chat-btn-blue" data-i18n-aria="startChatAria" aria-label="Start a text chat with a random person">
                 <svg class="phone-icon" viewBox="0 0 24 24" fill="white" aria-hidden="true">
                   <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM7 9.5h10a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2zm0-3.5h10a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2zm0 7h6a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2z"/>
                 </svg>
                 <span class="tap-orb-label" data-i18n="tapToChat">Tap to Chat</span>
-              </button>
+              </a>
               <span class="tap-choice-caption" data-i18n="tapChatCaption">Anonymous text chat · no mic</span>
             </div>
           </div>
@@ -888,16 +888,6 @@
           <div id="orbEmojiFlash" class="orb-emoji-flash" aria-hidden="true"></div>
         </div>
 
-        <!-- Text-chat hero: replaces the audio orb while in Tap-to-Chat mode
-             (pure CSS swap via body.chat-mode — nothing extra is loaded). -->
-        <div class="chat-mode-hero" aria-hidden="true">
-          <span class="chat-hero-bubble b1"></span>
-          <span class="chat-hero-bubble b2"></span>
-          <svg class="chat-hero-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM7 9.5h10a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2zm0-3.5h10a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2zm0 7h6a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2z"/>
-          </svg>
-        </div>
-
         <div id="connectionIndicator" class="connection-indicator hidden">
           <span id="connectionDot" class="connection-dot" aria-hidden="true"></span>
           <span id="connectionLabel" class="connection-label">Searching</span>
@@ -1044,106 +1034,6 @@
           <p class="made-for-you-sign">Enjoy your talks. — The TalkLive team</p>
         </section>
       </section>
-
-      <!-- ============================================================
-           Chat page (/chat): a dedicated, chat-first screen. Nothing here
-           relates to calling — the page IS the chatbox. Pure CSS visuals,
-           transform/opacity animations only, so it stays light on low-end
-           phones and slow networks.
-           ============================================================ -->
-      <section id="chatStage" class="chat-stage hidden" aria-label="Random text chat">
-
-        <!-- Chat sub-nav: my identity (left) · report (center) · add friend (right) -->
-        <div class="chat-subnav">
-          <div class="chat-subnav-me" id="chatStageMe">
-            <span id="chatStageMyFlag" class="chat-me-flag" aria-hidden="true"></span>
-            <span id="chatStageMyName" class="chat-me-name">You</span>
-          </div>
-          <button type="button" id="chatStageReportBtn" class="chat-subnav-report hidden" data-i18n-aria="report" aria-label="Report">
-            <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
-              <line x1="5" y1="3" x2="5" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              <path d="M6 4h13l-3.5 4L19 12H6V4z" fill="currentColor"/>
-            </svg>
-            <span data-i18n="report">Report</span>
-          </button>
-          <button type="button" id="chatStageAddFriendBtn" class="chat-subnav-add hidden" data-i18n-aria="addFriend" aria-label="Add friend">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
-              <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-            </svg>
-            <span data-i18n="addFriend">Add friend</span>
-          </button>
-        </div>
-
-        <div class="chat-stage-body" id="chatStageBody">
-
-          <!-- IDLE: one button, nothing else -->
-          <div id="chatStageStart" class="chat-view chat-view-start">
-            <h1 class="chat-start-title" data-i18n="chatStartTitle">Chat with a stranger</h1>
-            <p class="chat-start-sub" data-i18n="chatStartSub">Anonymous · worldwide · free</p>
-            <button type="button" id="chatStartBtn" class="chat-start-btn" data-i18n-aria="startChatAria" aria-label="Start a text chat with a random person">
-              <span data-i18n="chatStartBtn">Start chatting</span>
-            </button>
-          </div>
-
-          <!-- SEARCHING: "signal constellation" — a beacon bubble pulses while
-               orbiting sparks sweep the globe for a match. CSS transforms only. -->
-          <div id="chatStageSearch" class="chat-view chat-view-search hidden" aria-hidden="true">
-            <div class="chat-search-scene">
-              <span class="cs-halo h1"></span>
-              <span class="cs-halo h2"></span>
-              <div class="cs-orbit o1"><span class="cs-spark"></span></div>
-              <div class="cs-orbit o2"><span class="cs-spark s2"></span></div>
-              <div class="cs-orbit o3"><span class="cs-spark s3"></span></div>
-              <div class="cs-beacon">
-                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                  <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
-                </svg>
-                <span class="cs-dots"><span></span><span></span><span></span></span>
-              </div>
-            </div>
-            <p id="chatSearchLine" class="chat-search-line" aria-live="polite">Scanning the globe…</p>
-            <button type="button" id="chatSearchCancelBtn" class="chat-search-cancel" data-i18n="cancel">Cancel</button>
-          </div>
-
-          <!-- CONNECTED: banner + the conversation itself -->
-          <div id="chatStageLive" class="chat-view chat-view-live hidden">
-            <div class="chat-connected-banner" id="chatConnectedBanner">
-              <span class="chat-connected-word" data-i18n="chatConnectedWord">Connected</span>
-              <span class="chat-connected-from" id="chatConnectedFrom"></span>
-            </div>
-            <div id="chatStageMsgs" class="chat-stage-msgs" aria-live="polite"></div>
-            <p id="chatStageTyping" class="chat-stage-typing hidden"><span data-i18n="strangerTyping">Stranger is typing</span><span class="typing-dots" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span></p>
-          </div>
-        </div>
-
-        <!-- Composer: Next (bottom-left, two-tap confirm) · input · Send (bottom-right) -->
-        <form id="chatStageForm" class="chat-stage-composer hidden">
-          <button type="button" id="chatNextBtn" class="chat-next-btn" aria-label="Next stranger">
-            <span data-i18n="chatNext">Next</span>
-          </button>
-          <input id="chatStageInput" type="text" maxlength="1000" data-i18n-placeholder="typeMessage" data-i18n-aria="typeMessage" placeholder="Type a message…" autocomplete="off" />
-          <button type="submit" id="chatStageSendBtn" class="chat-send-btn" data-i18n-aria="send" aria-label="Send">
-            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.4 20.4 22 12 3.4 3.6 3.4 10l13 2-13 2z"/></svg>
-          </button>
-        </form>
-      </section>
-
-      <!-- Friend request dialog: shows who you're adding + an optional intro
-           message so they remember you later. -->
-      <div id="friendReqModal" class="modal-overlay hidden">
-        <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="friendReqTitle">
-          <div class="modal-header">
-            <h2 id="friendReqTitle" data-i18n="friendReqTitle">Add friend</h2>
-            <button type="button" id="friendReqCloseBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
-          </div>
-          <p class="friend-req-user"><span data-i18n="friendReqTo">Send a friend request to</span> <strong id="friendReqUsername">—</strong></p>
-          <textarea id="friendReqMessage" class="friend-req-message" maxlength="200" rows="3" data-i18n-placeholder="friendReqMsgPh" placeholder="Optional message — remind them who you are…"></textarea>
-          <div class="modal-actions">
-            <button type="button" id="friendReqCancelBtn" class="btn" data-i18n="cancel">Cancel</button>
-            <button type="button" id="friendReqSendBtn" class="btn btn-primary" data-i18n="friendReqSend">Send request</button>
-          </div>
-        </div>
-      </div>
 
       <!-- Chat panel: slides in from the right (big chat button, top-right).
            Usable during a call; swipe right to close. -->

@@ -205,6 +205,16 @@ img { max-width: 100%; }
 .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
 @keyframes typingDot { 0%, 60%, 100% { opacity: 0.3; } 30% { opacity: 1; } }
 
+/* Auto-next checkbox: keep searching automatically after a disconnect */
+.checkbox-row {
+  display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 13px; color: var(--text);
+}
+.checkbox-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: #2ed47a; cursor: pointer; flex-shrink: 0; }
+.auto-next-row {
+  flex: 0 0 auto; justify-content: center; margin: 0 auto; padding: 8px 10px 0;
+  width: fit-content; max-width: 90%; text-align: left;
+}
+
 /* Composer */
 .composer {
   flex: 0 0 auto; display: flex; align-items: center; gap: 8px;
