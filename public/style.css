@@ -48,7 +48,10 @@ html, body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   background: radial-gradient(circle at 50% -10%, var(--bg-glow) 0%, var(--bg-1) 55%);
   color: var(--text);
+  /* clip (not hidden) so the sticky navbar works: overflow-x:hidden turns
+     body into a scroll container and silently disables position:sticky. */
   overflow-x: hidden;
+  overflow-x: clip;
 }
 /* Scroll the whole page from anywhere, with iOS momentum. Deliberately no
    scroll-behavior:smooth (it makes wheel/drag scrolling feel like it sticks)
@@ -429,15 +432,27 @@ body.panel-open .side-panel {
   height: 26px;
 }
 
-/* --- Secondary navigation bar: the tool buttons, centered. --- */
+/* --- Secondary navigation bar: the tool buttons, centered. ---
+   Sticky: it pins to the top of the viewport while the page scrolls so the
+   tool menus (history, friends, filters, game, chat) are always reachable. */
 .navbar {
+  position: sticky;
+  top: 0;
+  z-index: 55;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  padding: 8px 18px 14px;
-  margin: 0 12px;
+  padding: 8px 18px 10px;
+  padding-top: calc(8px + env(safe-area-inset-top));
+  margin: 0;
+  background: var(--bg-1);
   border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+
+/* A soft shadow only once the bar is actually stuck (class set from app.js). */
+.navbar.is-stuck {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
 }
 
 .navbar-actions {
@@ -1289,8 +1304,9 @@ body.panel-open .side-panel {
   }
 
   .navbar {
-    padding: 6px 8px 12px;
-    margin: 0 4px;
+    padding: 6px 8px 8px;
+    padding-top: calc(6px + env(safe-area-inset-top));
+    margin: 0;
     gap: 8px;
   }
 
@@ -2782,12 +2798,15 @@ body.panel-open .side-panel {
 
 @media (max-width: 480px) {
   .notif-dropdown {
+    /* Anchored under its button by app.js (sets style.top), so it works
+       whether the sticky navbar is at the top of the page or mid-scroll. */
     position: fixed;
-    top: 62px;
+    top: 120px;
     right: 10px;
     left: 10px;
     width: auto;
     max-width: none;
+    max-height: min(70vh, calc(100dvh - 140px));
   }
 }
 
@@ -4982,6 +5001,7 @@ a.premium-lock:hover { background: rgba(108, 92, 231, 0.22); }
   background: rgba(20, 30, 70, 0.04);
 }
 [data-theme="light"] .acc-header:hover { background: rgba(20, 30, 70, 0.06); }
+[data-theme="light"] .navbar { border-bottom-color: rgba(20, 30, 70, 0.1); }
 
 /* Compact, professional upgrade CTA (replaces the old yellow hint text). */
 .upgrade-cta-btn {
@@ -5050,3 +5070,42 @@ a.premium-lock:hover { background: rgba(108, 92, 231, 0.22); }
 }
 .share-prompt-yes { background: linear-gradient(90deg, #7c3aed, #22d3ee); color: #fff; flex: 1; }
 .share-prompt-no { background: rgba(255, 255, 255, 0.08); color: #aab3c8; }
+
+/* =============================================================
+   Smoothness on low-spec devices.
+   1) System-level "reduce motion" wins everywhere: every animation and
+      transition collapses to (near) instant so nothing janks or flashes.
+   2) app.js adds .perf-lite to <html> on weak hardware (low memory / few
+      cores / data-saver): decorative animation, blur and the looping video
+      are dropped, keeping the app light while everything still works. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+html.perf-lite *, html.perf-lite *::before, html.perf-lite *::after {
+  animation: none !important;
+  transition: none !important;
+}
+/* Keep meaningful feedback animated even in lite mode: the call-button
+   spinner, searching loader and typing dots are status, not decoration. */
+html.perf-lite .action-spinner,
+html.perf-lite .search-ticker-loader span,
+html.perf-lite .typing-dots span { animation: revert !important; }
+html.perf-lite .game-overlay { backdrop-filter: none; }
+html.perf-lite .video-banner { display: none; }
+html.perf-lite .orb-ring { display: none; }
+html.perf-lite .navbar.is-stuck,
+html.perf-lite .notif-dropdown,
+html.perf-lite .modal-box,
+html.perf-lite .side-panel { box-shadow: none; }
+
+/* Comfortable minimum touch targets on coarse pointers (old phones too). */
+@media (pointer: coarse) {
+  .btn-chip { padding: 8px 12px; min-height: 34px; }
+  .modal-close { min-width: 40px; min-height: 40px; }
+}

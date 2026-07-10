@@ -96,6 +96,30 @@ const typingIndicator = document.getElementById('typingIndicator');
 const quickGuide = document.getElementById('quickGuide');
 
 const historyBtn = document.getElementById('historyBtn');
+// Lite mode for weak hardware: fewer decorative effects, same features.
+try {
+  const conn = navigator.connection || {};
+  if ((navigator.deviceMemory && navigator.deviceMemory <= 2) ||
+      (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2) ||
+      conn.saveData === true ||
+      /(^|-)2g$/.test(conn.effectiveType || '')) {
+    document.documentElement.classList.add('perf-lite');
+  }
+} catch (e) {}
+
+// Shadow under the sticky navbar only once the page has actually scrolled.
+(() => {
+  const nav = document.querySelector('.navbar');
+  if (!nav) return;
+  let stuck = false;
+  const onScroll = () => {
+    const s = window.scrollY > 4;
+    if (s !== stuck) { stuck = s; nav.classList.toggle('is-stuck', s); }
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+})();
+
 const historyDropdown = document.getElementById('historyDropdown');
 const historyWrap = document.querySelector('.history-wrap');
 const closeHistoryBtn = document.getElementById('closeHistoryBtn');
@@ -781,6 +805,21 @@ socket.on('friend-request-result', ({ ok, error, limitReached }) => {
 
 function openModal(modal) {
   modal.classList.remove('hidden');
+  // On small screens the toolbar dropdowns are position:fixed — anchor them
+  // just under their own button so they open correctly at any scroll position
+  // now that the navbar is sticky.
+  if (modal.classList.contains('notif-dropdown') && window.matchMedia('(max-width: 480px)').matches) {
+    const btn = modal.parentElement ? modal.parentElement.querySelector('button.icon-btn') : null;
+    if (btn) {
+      const r = btn.getBoundingClientRect();
+      const top = Math.round(r.bottom + 8);
+      modal.style.top = top + 'px';
+      modal.style.maxHeight = Math.max(180, window.innerHeight - top - 16) + 'px';
+    }
+  } else if (modal.classList.contains('notif-dropdown')) {
+    modal.style.top = '';
+    modal.style.maxHeight = '';
+  }
 }
 
 function closeModal(modal) {
@@ -2381,12 +2420,9 @@ function resetUI() {
   closeChatPanel();
   clearChat();
   hideConnection();
-  // Toolbar + chat button belong to the call screen only.
+  // Game + chat need a live partner; the rest of the toolbar (settings,
+  // history, friends, filters) stays available on every screen.
   chatToggleBtn.classList.add('hidden');
-  appSettingsBtn.classList.add('hidden');
-  historyBtn.classList.add('hidden');
-  friendsBtn.classList.add('hidden');
-  filtersBtn.classList.add('hidden');
   gameBtn.classList.add('hidden');
   if (typeof resetGame === 'function') resetGame();
 }
