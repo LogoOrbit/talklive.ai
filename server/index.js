@@ -1473,13 +1473,9 @@ io.on('connection', (socket) => {
     toClientId = validId(toClientId);
     if (!me || !toClientId || typeof text !== 'string' || !text.trim()) return;
     if (!isFriend(me.clientId, toClientId)) return;
-    // Text messaging is call-gated: you can only send a message to someone while
-    // you're in a live (accepted) call with them. Outside a call the only way to
-    // reach a friend is to call them (or queue a call-back request for later).
-    const targetSocketId = clientSockets.get(toClientId);
-    if (!targetSocketId || partners.get(socket.id) !== targetSocketId) {
-      return socket.emit('chat-blocked', { reason: 'call-required' });
-    }
+    // Friends can message each other any time — no call required. If the friend
+    // is offline the message is still stored and a notification is queued, so it
+    // reaches them the next time they come online.
     if (containsLink(text)) {
       return socket.emit('chat-blocked', { reason: 'link' });
     }
