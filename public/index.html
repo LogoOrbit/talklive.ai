@@ -189,29 +189,6 @@
             <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.1"/><path d="M3.6 19a5.4 5.4 0 0 1 10.8 0"/><circle cx="17.2" cy="9" r="2.5"/><path d="M15.7 13.7A4.8 4.8 0 0 1 21 18.4"/></svg>
             <span id="friendsMsgBadge" class="notif-badge hidden" aria-hidden="true">0</span>
           </button>
-          <div id="friendsDropdown" class="notif-dropdown friends-dropdown hidden" role="dialog" data-i18n-aria="friends" aria-label="Friends">
-            <div class="modal-header">
-              <h2 data-i18n="friends">Friends</h2>
-              <button type="button" id="closeFriendsBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
-            </div>
-            <div class="modal-body">
-              <div class="add-friend-by-id">
-                <label class="pill-label" for="addFriendByIdInput" data-i18n="addFriendByIdTitle">Add a friend by username or ID</label>
-                <div class="temp-name-row">
-                  <input type="text" id="addFriendByIdInput" class="search-input" maxlength="60" data-i18n-placeholder="addFriendByIdPlaceholder" placeholder="Username or unique ID…" autocomplete="off" />
-                  <button type="button" id="addFriendByIdBtn" class="btn btn-secondary temp-name-save" data-i18n="add">Add</button>
-                </div>
-              </div>
-              <div id="notifList" class="notif-list">
-                <p class="history-empty" data-i18n="noRequestsYet">No requests yet.</p>
-              </div>
-              <div id="friendsList" class="friends-list">
-                <!-- Skeleton rows shown until the first friends sync from the server. -->
-                <div class="skeleton-row" aria-hidden="true"><span class="skeleton skeleton-avatar"></span><span class="skeleton skeleton-line"></span></div>
-                <div class="skeleton-row" aria-hidden="true"><span class="skeleton skeleton-avatar"></span><span class="skeleton skeleton-line short"></span></div>
-              </div>
-            </div>
-          </div>
         </div>
         <button id="filtersBtn" class="icon-btn" data-i18n-title="filtersAria" data-i18n-aria="filtersAria" title="Match filters" aria-label="Match filters">
           <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -242,6 +219,72 @@
         </button>
       </div>
     </nav>
+
+    <!-- Friends side panel: friend list, requests, add-by-username, opened from the header friends icon -->
+    <div id="friendsOverlay" class="side-panel-overlay hidden"></div>
+    <aside id="friendsDropdown" class="side-panel side-panel-right friends-dropdown" role="dialog" data-i18n-aria="friends" aria-label="Friends">
+      <div class="side-panel-header">
+        <h2 data-i18n="friends">Friends</h2>
+        <button type="button" id="closeFriendsBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
+      </div>
+      <div class="side-panel-body">
+        <div class="add-friend-by-id">
+          <label class="pill-label" for="addFriendByIdInput" data-i18n="addFriendByIdTitle">Add a friend by username</label>
+          <div class="temp-name-row">
+            <input type="text" id="addFriendByIdInput" class="search-input" maxlength="60" data-i18n-placeholder="addFriendByIdPlaceholder" placeholder="Username…" autocomplete="off" />
+            <button type="button" id="addFriendByIdBtn" class="btn btn-secondary temp-name-save" data-i18n="add">Add</button>
+          </div>
+        </div>
+        <div id="notifList" class="notif-list">
+          <p class="history-empty" data-i18n="noRequestsYet">No requests yet.</p>
+        </div>
+        <div id="friendsList" class="friends-list">
+          <!-- Skeleton rows shown until the first friends sync from the server. -->
+          <div class="skeleton-row" aria-hidden="true"><span class="skeleton skeleton-avatar"></span><span class="skeleton skeleton-line"></span></div>
+          <div class="skeleton-row" aria-hidden="true"><span class="skeleton skeleton-avatar"></span><span class="skeleton skeleton-line short"></span></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Friend profile side panel: opened from a friend entry in the Friends panel -->
+    <div id="friendProfileOverlay" class="side-panel-overlay hidden"></div>
+    <aside id="friendProfileModal" class="side-panel side-panel-right" role="dialog" aria-labelledby="friendProfileTitle">
+      <div class="side-panel-header">
+        <h2 id="friendProfileTitle" data-i18n="profile">Profile</h2>
+        <button type="button" id="closeFriendProfileBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
+      </div>
+      <div class="side-panel-body friend-profile-body">
+        <div id="friendProfileAvatar" class="friend-profile-avatar" aria-hidden="true"></div>
+        <div id="friendProfileName" class="friend-profile-name"></div>
+        <div id="friendProfileStatus" class="friend-profile-status"></div>
+        <div class="friend-profile-actions">
+          <button type="button" id="friendProfileChatBtn" class="btn btn-primary" data-i18n="chat">Chat</button>
+          <button type="button" id="friendProfileRemoveBtn" class="btn btn-secondary" data-i18n="removeFriend">Remove Friend</button>
+          <button type="button" id="friendProfileBlockBtn" class="btn btn-danger" data-i18n="blockUser">Block User</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Friend chat side panel: persistent (server-side, while it's running) chat with a friend -->
+    <div id="friendChatOverlay" class="side-panel-overlay hidden"></div>
+    <aside id="friendChatModal" class="side-panel side-panel-right chat-side-panel" role="dialog" aria-labelledby="friendChatTitle">
+      <div class="side-panel-header">
+        <h2 id="friendChatTitle" data-i18n="chat">Chat</h2>
+        <div class="chat-header-actions">
+          <button type="button" id="chatSeenToggleBtn" class="chat-header-toggle" aria-pressed="true" data-i18n-title="messageSeen" title="Read receipts (Seen)" aria-label="Read receipts (Seen)">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M1.5 12.5l4 4 7-8"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M11 15.5l1.5 1.5 7-8"/></svg>
+          </button>
+          <button type="button" id="closeFriendChatBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
+        </div>
+      </div>
+      <div class="chat-side-body">
+        <div id="friendChatMessages" class="chat-messages friend-chat-messages"></div>
+        <form id="friendChatForm" class="chat-form">
+          <input id="friendChatInput" type="text" maxlength="1000" data-i18n-placeholder="typeMessage" data-i18n-aria="typeMessage" placeholder="Type a message…" autocomplete="off" />
+          <button type="submit" class="btn btn-primary chat-send" data-i18n="send">Send</button>
+        </form>
+      </div>
+    </aside>
 
     <!-- App settings side panel: app-level preferences + your own profile fields, opened from the left menu icon -->
     <div id="appSettingsOverlay" class="side-panel-overlay hidden"></div>
@@ -497,11 +540,6 @@
             <div id="accountLoggedIn" class="hidden">
               <p class="account-welcome"><span data-i18n="signedInAs">Signed in as</span> <strong id="accountNicknameDisplay"></strong></p>
 
-              <div id="userIdRow" class="user-id-row hidden">
-                <span class="pill-label" data-i18n="userIdLabel">Your unique User ID</span>
-                <button type="button" id="userIdValue" class="user-id-value" data-i18n-title="userIdHint" title="Tap to copy"></button>
-              </div>
-
               <h3 class="account-section-title" data-i18n="avatar">Avatar</h3>
               <p class="account-hint" data-i18n="avatarHint">Your avatar is shown to you and your friends only — strangers never see it during a call.</p>
               <div class="avatar-cat-tabs" id="avatarCatTabs">
@@ -526,47 +564,6 @@
       </div>
 
       <!-- Call history modal: session-only, no account required -->
-      <!-- Friend profile: opened from a friend entry in the Friends dropdown -->
-      <div id="friendProfileModal" class="modal-overlay hidden">
-        <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="friendProfileTitle">
-          <div class="modal-header">
-            <h2 id="friendProfileTitle" data-i18n="profile">Profile</h2>
-            <button type="button" id="closeFriendProfileBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
-          </div>
-          <div class="modal-body friend-profile-body">
-            <div id="friendProfileAvatar" class="friend-profile-avatar" aria-hidden="true"></div>
-            <div id="friendProfileName" class="friend-profile-name"></div>
-            <div id="friendProfileStatus" class="friend-profile-status"></div>
-            <div class="friend-profile-actions">
-              <button type="button" id="friendProfileChatBtn" class="btn btn-primary" data-i18n="chat">Chat</button>
-              <button type="button" id="friendProfileRemoveBtn" class="btn btn-secondary" data-i18n="removeFriend">Remove Friend</button>
-              <button type="button" id="friendProfileBlockBtn" class="btn btn-danger" data-i18n="blockUser">Block User</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Friend chat modal: persistent (server-side, while it's running) chat with a friend -->
-      <div id="friendChatModal" class="modal-overlay hidden">
-        <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="friendChatTitle">
-          <div class="modal-header">
-            <h2 id="friendChatTitle" data-i18n="chat">Chat</h2>
-            <div class="chat-header-actions">
-              <button type="button" id="chatSeenToggleBtn" class="chat-header-toggle" aria-pressed="true" data-i18n-title="messageSeen" title="Read receipts (Seen)" aria-label="Read receipts (Seen)">
-                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M1.5 12.5l4 4 7-8"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M11 15.5l1.5 1.5 7-8"/></svg>
-              </button>
-              <button type="button" id="closeFriendChatBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
-            </div>
-          </div>
-          <div class="modal-body friend-chat-body">
-            <div id="friendChatMessages" class="chat-messages friend-chat-messages"></div>
-            <form id="friendChatForm" class="chat-form">
-              <input id="friendChatInput" type="text" maxlength="1000" data-i18n-placeholder="typeMessage" data-i18n-aria="typeMessage" placeholder="Type a message…" autocomplete="off" />
-              <button type="submit" class="btn btn-primary chat-send" data-i18n="send">Send</button>
-            </form>
-          </div>
-        </div>
-      </div>
 
       <!-- Reusable confirm dialog (end call, switch call, back-button, etc.) -->
       <div id="confirmModal" class="modal-overlay hidden">

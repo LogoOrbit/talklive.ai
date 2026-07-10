@@ -3111,15 +3111,6 @@ body.panel-open .side-panel {
   display: none;
 }
 
-/* Friend chat modal */
-.friend-chat-body {
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  height: 60vh;
-  max-height: 480px;
-}
-
 .friend-chat-messages {
   flex: 1;
   padding: 16px;
@@ -3936,28 +3927,6 @@ body.panel-open .side-panel {
 }
 .temp-name-row .search-input { flex: 1; min-width: 0; }
 .temp-name-save { white-space: nowrap; flex: 0 0 auto; }
-.user-id-row {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-top: 4px;
-}
-.user-id-value {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  color: var(--accent-2);
-  background: var(--accent-soft, rgba(108, 92, 231, 0.14));
-  border: 1px solid var(--border, rgba(255,255,255,0.12));
-  border-radius: 10px;
-  padding: 8px 12px;
-  cursor: pointer;
-  text-align: left;
-  transition: background 0.15s ease;
-}
-.user-id-value:hover { background: rgba(108, 92, 231, 0.22); }
-
 /* One-tap expanding settings categories (accordion) */
 .settings-accordion {
   display: flex;
@@ -4486,7 +4455,8 @@ body.panel-open .side-panel {
    it stays open until explicitly closed. Placed after the base .chat-side-panel
    block so these values win without needing extra specificity. */
 @media (min-width: 768px) {
-  #chatOverlay { display: none !important; }
+  #chatOverlay,
+  #friendChatOverlay { display: none !important; }
 
   .chat-side-panel {
     top: auto;

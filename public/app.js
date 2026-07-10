@@ -127,12 +127,13 @@ const historyList = document.getElementById('historyList');
 
 const friendsBtn = document.getElementById('friendsBtn');
 const friendsMsgBadge = document.getElementById('friendsMsgBadge');
-const friendsWrap = document.querySelector('.friends-wrap');
 const friendsDropdown = document.getElementById('friendsDropdown');
+const friendsOverlay = document.getElementById('friendsOverlay');
 const closeFriendsBtn = document.getElementById('closeFriendsBtn');
 const friendsList = document.getElementById('friendsList');
 
 const friendProfileModal = document.getElementById('friendProfileModal');
+const friendProfileOverlay = document.getElementById('friendProfileOverlay');
 const closeFriendProfileBtn = document.getElementById('closeFriendProfileBtn');
 const friendProfileAvatar = document.getElementById('friendProfileAvatar');
 const friendProfileName = document.getElementById('friendProfileName');
@@ -144,11 +145,22 @@ const friendProfileBlockBtn = document.getElementById('friendProfileBlockBtn');
 const notifList = document.getElementById('notifList');
 
 const friendChatModal = document.getElementById('friendChatModal');
+const friendChatOverlay = document.getElementById('friendChatOverlay');
 const closeFriendChatBtn = document.getElementById('closeFriendChatBtn');
 const friendChatTitle = document.getElementById('friendChatTitle');
 const friendChatMessages = document.getElementById('friendChatMessages');
 const friendChatForm = document.getElementById('friendChatForm');
 const friendChatInput = document.getElementById('friendChatInput');
+
+// --- Side-panel helpers shared by the Friends / Friend-profile / Friend-chat panels ---
+function openSidePanel(panel, overlay) {
+  panel.classList.add('open');
+  overlay.classList.remove('hidden');
+}
+function closeSidePanel(panel, overlay) {
+  panel.classList.remove('open');
+  overlay.classList.add('hidden');
+}
 
 const callBackBanner = document.getElementById('callBackBanner');
 const callBackBannerText = document.getElementById('callBackBannerText');
@@ -657,7 +669,7 @@ function setMessageSeenEnabled(value) {
   // Turning it back on while a chat is open should immediately send a receipt
   // for what I'm looking at, and refresh whether "Seen" shows on my messages.
   if (activeFriendChatId != null) {
-    if (messageSeenEnabled && !friendChatModal.classList.contains('hidden')) {
+    if (messageSeenEnabled && friendChatModal.classList.contains('open')) {
       socket.emit('chat-seen', { friendClientId: activeFriendChatId });
     }
     renderFriendChatMessages();
@@ -674,7 +686,10 @@ syncMessageSeenUi();
 // open, so scrolling only happens inside the open panel — never the page behind.
 function updateScrollLock() {
   const anyOpen = appSettingsPanel.classList.contains('open')
-    || (typeof chatPanel !== 'undefined' && chatPanel && chatPanel.classList.contains('open'));
+    || (typeof chatPanel !== 'undefined' && chatPanel && chatPanel.classList.contains('open'))
+    || friendsDropdown.classList.contains('open')
+    || friendProfileModal.classList.contains('open')
+    || friendChatModal.classList.contains('open');
   document.body.classList.toggle('panel-open', anyOpen);
 }
 
@@ -843,10 +858,17 @@ openTermsLink.addEventListener('click', () => openModal(termsModal));
 openTermsLinkFooter.addEventListener('click', () => openModal(termsModal));
 closeTermsBtn.addEventListener('click', () => closeModal(termsModal));
 
-[termsModal, accountModal, friendProfileModal, friendChatModal].forEach((modal) => {
+[termsModal, accountModal].forEach((modal) => {
   modal.addEventListener('click', (e) => {
     if (e.target === modal) closeModal(modal);
   });
+});
+
+friendsOverlay.addEventListener('click', () => closeSidePanel(friendsDropdown, friendsOverlay));
+friendProfileOverlay.addEventListener('click', () => closeSidePanel(friendProfileModal, friendProfileOverlay));
+friendChatOverlay.addEventListener('click', () => {
+  closeSidePanel(friendChatModal, friendChatOverlay);
+  activeFriendChatId = null;
 });
 
 document.addEventListener('keydown', (e) => {
@@ -854,9 +876,9 @@ document.addEventListener('keydown', (e) => {
     closeModal(termsModal);
     closeModal(accountModal);
     closeModal(historyDropdown);
-    closeModal(friendsDropdown);
-    closeModal(friendProfileModal);
-    closeModal(friendChatModal);
+    closeSidePanel(friendsDropdown, friendsOverlay);
+    closeSidePanel(friendProfileModal, friendProfileOverlay);
+    closeSidePanel(friendChatModal, friendChatOverlay);
     closeAppSettings();
     closeFilters();
   }
@@ -903,11 +925,9 @@ function showToast(msg) {
   toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
 }
 
-// --- Settings: temporary username, unique User ID, categories, feedback ---
+// --- Settings: temporary username, categories, feedback ---
 const tempUsernameInput = document.getElementById('tempUsernameInput');
 const saveTempNameBtn = document.getElementById('saveTempNameBtn');
-const userIdRow = document.getElementById('userIdRow');
-const userIdValue = document.getElementById('userIdValue');
 const settingsAccordion = document.getElementById('settingsAccordion');
 const feedbackBtn = document.getElementById('feedbackBtn');
 const settingsTermsBtn = document.getElementById('settingsTermsBtn');
@@ -917,8 +937,7 @@ const feedbackInput = document.getElementById('feedbackInput');
 const feedbackSendBtn = document.getElementById('feedbackSendBtn');
 
 // Show the temporary name in the editor (only when not signed in — a signed-in
-// nickname is edited in the Account panel), and the permanent User ID once
-// logged in.
+// nickname is edited in the Account panel).
 // The Save Name button is only enabled when the field holds a new, non-empty
 // name different from what's already saved — so it greys out right after saving.
 function syncSaveNameBtn() {
@@ -935,15 +954,6 @@ function renderSettingsIdentity() {
     tempUsernameInput.placeholder = accountNickname ? accountNickname : t('tempUsernamePlaceholder');
   }
   syncSaveNameBtn();
-  if (userIdRow && userIdValue) {
-    if (accountNickname) {
-      // A permanent, stable, unique ID for the signed-in user.
-      userIdValue.textContent = 'TL-' + getClientId().replace(/-/g, '').slice(0, 12).toUpperCase();
-      userIdRow.classList.remove('hidden');
-    } else {
-      userIdRow.classList.add('hidden');
-    }
-  }
 }
 
 if (tempUsernameInput) {
@@ -962,14 +972,6 @@ if (saveTempNameBtn) {
     vibrate(15);
     // Grey the button out until the name is edited again.
     syncSaveNameBtn();
-  });
-}
-
-if (userIdValue) {
-  userIdValue.addEventListener('click', () => {
-    const text = userIdValue.textContent;
-    if (navigator.clipboard) navigator.clipboard.writeText(text).catch(() => {});
-    showToast(t('userIdCopied'));
   });
 }
 
@@ -1162,17 +1164,14 @@ socket.on('change-password-result', ({ ok, error }) => {
 // --- Friends: dropdown menu under the header button (not a separate page) ---
 friendsBtn.addEventListener('click', (e) => {
   e.stopPropagation();
-  if (friendsDropdown.classList.contains('hidden')) {
+  if (!friendsDropdown.classList.contains('open')) {
     renderFriendsList();
-    openModal(friendsDropdown);
+    openSidePanel(friendsDropdown, friendsOverlay);
   } else {
-    closeModal(friendsDropdown);
+    closeSidePanel(friendsDropdown, friendsOverlay);
   }
 });
-closeFriendsBtn.addEventListener('click', () => closeModal(friendsDropdown));
-document.addEventListener('click', (e) => {
-  if (!e.composedPath().includes(friendsWrap)) closeModal(friendsDropdown);
-});
+closeFriendsBtn.addEventListener('click', () => closeSidePanel(friendsDropdown, friendsOverlay));
 
 // Phone glyph shared by the live call button and its offline (greyed) state.
 const FRIEND_CALL_SVG = '<svg viewBox="0 0 24 24" fill="white" aria-hidden="true"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>';
@@ -1264,15 +1263,15 @@ function openFriendProfile(friendClientId) {
   friendProfileAvatar.innerHTML = genderIcon(friend.avatar, 72);
   friendProfileName.innerHTML = `${getFlagImg(friend.countryCode)} ${escapeHtml(friend.username)}`;
   friendProfileStatus.innerHTML = `<span class="friend-online-dot ${friend.online ? 'online' : ''}"></span> ${escapeHtml(friend.online ? t('online') : t('offline'))}`;
-  closeModal(friendsDropdown);
-  openModal(friendProfileModal);
+  closeSidePanel(friendsDropdown, friendsOverlay);
+  openSidePanel(friendProfileModal, friendProfileOverlay);
 }
 
-closeFriendProfileBtn.addEventListener('click', () => closeModal(friendProfileModal));
+closeFriendProfileBtn.addEventListener('click', () => closeSidePanel(friendProfileModal, friendProfileOverlay));
 
 friendProfileChatBtn.addEventListener('click', () => {
   if (!activeProfileFriendId) return;
-  closeModal(friendProfileModal);
+  closeSidePanel(friendProfileModal, friendProfileOverlay);
   openFriendChat(activeProfileFriendId);
 });
 
@@ -1281,7 +1280,7 @@ friendProfileRemoveBtn.addEventListener('click', async () => {
   const ok = await showConfirm({ title: 'removeFriend', text: 'confirmRemoveFriend', okKey: 'remove' });
   if (!ok || !activeProfileFriendId) return;
   socket.emit('remove-friend', { friendClientId: activeProfileFriendId });
-  closeModal(friendProfileModal);
+  closeSidePanel(friendProfileModal, friendProfileOverlay);
 });
 
 friendProfileBlockBtn.addEventListener('click', async () => {
@@ -1289,7 +1288,7 @@ friendProfileBlockBtn.addEventListener('click', async () => {
   const ok = await showConfirm({ title: 'block', text: 'confirmBlockFriend', okKey: 'block' });
   if (!ok || !activeProfileFriendId) return;
   socket.emit('block-friend', { friendClientId: activeProfileFriendId });
-  closeModal(friendProfileModal);
+  closeSidePanel(friendProfileModal, friendProfileOverlay);
 });
 
 // The friends list starts as skeleton rows (index.html); the first state-sync
@@ -1501,8 +1500,9 @@ function openFriendChat(friendClientId) {
   activeFriendChatId = friendClientId;
   const friend = friendsData.find((f) => f.clientId === friendClientId);
   friendChatTitle.textContent = friend ? t('chatWith', { name: friend.username }) : t('chat');
-  closeModal(friendsDropdown);
-  openModal(friendChatModal);
+  closeSidePanel(friendsDropdown, friendsOverlay);
+  closeSidePanel(friendProfileModal, friendProfileOverlay);
+  openSidePanel(friendChatModal, friendChatOverlay);
 
   socket.emit('get-friend-chat', { friendClientId });
   socket.emit('mark-messages-read', { friendClientId });
@@ -1515,7 +1515,7 @@ function openFriendChat(friendClientId) {
 }
 
 closeFriendChatBtn.addEventListener('click', () => {
-  closeModal(friendChatModal);
+  closeSidePanel(friendChatModal, friendChatOverlay);
   activeFriendChatId = null;
 });
 
@@ -1548,7 +1548,7 @@ socket.on('friend-message', ({ fromClientId, text, ts }) => {
   const cache = friendChatCache.get(fromClientId) || [];
   cache.push({ from: fromClientId, text, ts });
   friendChatCache.set(fromClientId, cache);
-  if (activeFriendChatId === fromClientId && !friendChatModal.classList.contains('hidden')) {
+  if (activeFriendChatId === fromClientId && friendChatModal.classList.contains('open')) {
     renderFriendChatMessages();
     socket.emit('mark-messages-read', { friendClientId: fromClientId });
     if (messageSeenEnabled) socket.emit('chat-seen', { friendClientId: fromClientId });
@@ -1800,7 +1800,7 @@ function setCallState(state) {
   // Leaving the connected state cancels any pending "are you sure?".
   if (!connected) clearHangupConfirm();
   // Call state gates friend-chat DMs — keep an open chat's composer in sync.
-  if (activeFriendChatId && !friendChatModal.classList.contains('hidden')) applyFriendChatLock();
+  if (activeFriendChatId && friendChatModal.classList.contains('open')) applyFriendChatLock();
 
   let mode;
   if (connected) mode = hangupConfirm ? 'confirm' : 'hangup';
@@ -2856,6 +2856,9 @@ function panelsAreClosed() {
   return !chatOpen
     && !appSettingsPanel.classList.contains('open')
     && !filtersPanel.classList.contains('open')
+    && !friendsDropdown.classList.contains('open')
+    && !friendProfileModal.classList.contains('open')
+    && !friendChatModal.classList.contains('open')
     && gameOverlay.classList.contains('hidden')
     && !document.querySelector('.modal-overlay:not(.hidden)')
     && !document.querySelector('.notif-dropdown:not(.hidden)');
@@ -3331,7 +3334,7 @@ chatForm.addEventListener('submit', (e) => {
 
 // Server-side link filter rejected a message we let through — surface it.
 socket.on('chat-blocked', ({ reason } = {}) => {
-  const target = friendChatModal.classList.contains('hidden') ? chatMessages : friendChatMessages;
+  const target = friendChatModal.classList.contains('open') ? friendChatMessages : chatMessages;
   const el = document.createElement('div');
   el.className = 'chat-msg system';
   el.textContent = reason === 'call-required' ? t('errCallRequiredToChat') : t('errNoLinks');
@@ -3396,6 +3399,9 @@ function closeTopmostLayer() {
   if (chatOpen) { closeChatPanel(); return true; }
   if (appSettingsPanel.classList.contains('open')) { closeAppSettings(); return true; }
   if (filtersPanel.classList.contains('open')) { closeFilters(); return true; }
+  if (friendChatModal.classList.contains('open')) { closeSidePanel(friendChatModal, friendChatOverlay); activeFriendChatId = null; return true; }
+  if (friendProfileModal.classList.contains('open')) { closeSidePanel(friendProfileModal, friendProfileOverlay); return true; }
+  if (friendsDropdown.classList.contains('open')) { closeSidePanel(friendsDropdown, friendsOverlay); return true; }
   const openDropdown = document.querySelector('.notif-dropdown:not(.hidden)');
   if (openDropdown) { openDropdown.classList.add('hidden'); return true; }
   if (!callBackBanner.classList.contains('hidden')) { callBackDeclineBtn.click(); return true; }
@@ -3490,7 +3496,7 @@ socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
   // Switching directly from a previous call (e.g. accepting a callback while
   // already connected) — tear the old peer down first so it never leaks.
   if (pc) teardownPeer();
-  if (typeof friendsDropdown !== 'undefined') closeModal(friendsDropdown);
+  if (typeof friendsDropdown !== 'undefined') closeSidePanel(friendsDropdown, friendsOverlay);
   enterCallUI();
   // Game mark (X/O) roles are fixed by who initiated the call; clear any old game.
   amCallInitiator = !!initiator;

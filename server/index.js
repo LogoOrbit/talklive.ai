@@ -1357,8 +1357,8 @@ io.on('connection', (socket) => {
     socket.emit('friend-request-result', { ok: true, sent: true });
   });
 
-  // Add a friend manually by their username or unique ID (clientId). Finds the
-  // person among currently-online users and sends them a normal friend request.
+  // Add a friend manually by their username. Finds the person among
+  // currently-online users and sends them a normal friend request.
   socket.on('add-friend-by-id', ({ query } = {}) => {
     const me = profiles.get(socket.id);
     const q = typeof query === 'string' ? query.trim() : '';
@@ -1369,7 +1369,7 @@ io.on('connection', (socket) => {
     let target = null;
     for (const [sid, p] of profiles) {
       if (sid === socket.id || p.clientId === me.clientId) continue;
-      if (p.clientId === q || p.username.toLowerCase() === qLower) {
+      if (p.username.toLowerCase() === qLower) {
         target = p;
         break;
       }
