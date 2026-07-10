@@ -168,6 +168,20 @@ window.I18N_STRINGS.es = {
   "privacyPolicy": "Política de privacidad",
   "micPromptTitle": "Permitir acceso al micrófono",
   "micPromptBody": "TalkLive necesita tu micrófono para conectar la llamada de voz. Tu navegador pedirá permiso a continuación — el audio es solo en vivo y nunca se graba.",
-  "micPromptOk": "Entendido"
+  "micPromptOk": "Entendido",
+  "tapToChat": "Toca para Chatear",
+  "startChatAria": "Iniciar un chat de texto con una persona al azar",
+  "chooseYourVibe": "¿Cómo quieres conocer a alguien?",
+  "tapTalkCaption": "Llamada de voz en vivo · con micro",
+  "tapChatCaption": "Chat de texto anónimo · sin micro",
+  "statusChatSearching": "Buscando a alguien para chatear…",
+  "statusChatConnected": "Estás chateando con {name}",
+  "subChatSayHi": "¡Di hola! Los mensajes son en vivo y nunca se guardan.",
+  "statusChatEnded": "El desconocido dejó el chat",
+  "statusYouLeftChat": "Saliste del chat",
+  "statusReadyToChat": "Listo para chatear — toca el botón para conocer a alguien nuevo",
+  "subTapChat": "Toca el botón cuando quieras chatear",
+  "chatSystemMatched": "Ahora estás chateando con {name} de {country} — ¡saluda! 👋",
+  "chatSystemLeft": "El desconocido dejó el chat. Toca el botón verde para alguien nuevo.",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("es");

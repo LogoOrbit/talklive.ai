@@ -168,6 +168,20 @@ window.I18N_STRINGS.hi = {
   "privacyPolicy": "गोपनीयता नीति",
   "micPromptTitle": "माइक्रोफ़ोन एक्सेस की अनुमति दें",
   "micPromptBody": "वॉइस कॉल जोड़ने के लिए TalkLive को आपके माइक्रोफ़ोन की ज़रूरत है। आपका ब्राउज़र अभी अनुमति मांगेगा — ऑडियो केवल लाइव है और कभी रिकॉर्ड नहीं होता।",
-  "micPromptOk": "समझ गया"
+  "micPromptOk": "समझ गया",
+  "tapToChat": "चैट के लिए टैप करें",
+  "startChatAria": "किसी अनजान व्यक्ति के साथ टेक्स्ट चैट शुरू करें",
+  "chooseYourVibe": "आप किसी से कैसे मिलना चाहते हैं?",
+  "tapTalkCaption": "लाइव वॉयस कॉल · माइक चालू",
+  "tapChatCaption": "गुमनाम टेक्स्ट चैट · बिना माइक",
+  "statusChatSearching": "चैट के लिए किसी को ढूंढ रहे हैं…",
+  "statusChatConnected": "आप {name} से चैट कर रहे हैं",
+  "subChatSayHi": "हैलो कहें! मैसेज लाइव हैं और कभी सेव नहीं होते।",
+  "statusChatEnded": "अजनबी ने चैट छोड़ दी",
+  "statusYouLeftChat": "आपने चैट छोड़ दी",
+  "statusReadyToChat": "चैट के लिए तैयार — किसी नए से मिलने के लिए बटन दबाएं",
+  "subTapChat": "जब तैयार हों तो बटन दबाएं",
+  "chatSystemMatched": "अब आप {country} के {name} से चैट कर रहे हैं — हैलो कहें! 👋",
+  "chatSystemLeft": "अजनबी ने चैट छोड़ दी। नए व्यक्ति के लिए हरा बटन दबाएं।",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("hi");

@@ -26,6 +26,8 @@ function esc(s) {
 const NAV = [
   { slug: 'talk-to-strangers', label: 'Talk to Strangers' },
   { slug: 'random-voice-chat', label: 'Random Voice Chat' },
+  { slug: 'random-text-chat', label: 'Random Text Chat' },
+  { slug: 'text-chat-with-strangers', label: 'Text Chat with Strangers' },
   { slug: 'random-video-chat', label: 'Random Video Chat' },
   { slug: 'random-video-call', label: 'Random Video Call' },
   { slug: 'random-call', label: 'Random Call' },
@@ -65,7 +67,10 @@ function headerHtml(currentSlug) {
     <div class="wrap">
       <a class="logo" href="/"><img src="/favicon.svg" width="30" height="30" alt="TalkLive logo" /> TalkLive</a>
       <nav class="nav" aria-label="Primary">${links}</nav>
-      <a class="btn btn-primary" href="/?utm_source=seo&amp;utm_medium=landing&amp;utm_campaign=${currentSlug || 'home'}" style="padding:10px 20px;font-size:15px">Start Talking</a>
+      <span style="display:inline-flex;gap:8px">
+        <a class="btn btn-talk" href="/?utm_source=seo&amp;utm_medium=landing&amp;utm_campaign=${currentSlug || 'home'}" style="padding:10px 18px;font-size:15px">🎙 Talk</a>
+        <a class="btn btn-chat" href="/?mode=chat&amp;utm_source=seo&amp;utm_medium=landing&amp;utm_campaign=${currentSlug || 'home'}" style="padding:10px 18px;font-size:15px">💬 Chat</a>
+      </span>
     </div>
   </header>`;
 }
@@ -81,7 +86,7 @@ function footerHtml() {
       <div class="cols">
         <div style="max-width:280px">
           <a class="logo" href="/"><img src="/favicon.svg" width="28" height="28" alt="TalkLive logo" /> TalkLive</a>
-          <p style="margin-top:12px">Free random voice chat with strangers around the world. One tap, anonymous, no sign-up — just real live conversations.</p>
+          <p style="margin-top:12px">Free random voice &amp; text chat with strangers around the world. Tap to Talk or Tap to Chat — anonymous, no sign-up, just real live conversations.</p>
         </div>
         ${colHtml}
         <div><h4>App</h4><ul>
@@ -106,6 +111,8 @@ function linkCloud(currentSlug) {
   const extra = [
     { slug: 'talk-to-strangers', label: 'Talk to strangers online' },
     { slug: 'random-voice-chat', label: 'Random voice chat' },
+    { slug: 'random-text-chat', label: 'Random text chat' },
+    { slug: 'text-chat-with-strangers', label: 'Text chat with strangers' },
     { slug: 'random-video-chat', label: 'Random video chat' },
     { slug: 'random-video-call', label: 'Random video call' },
     { slug: 'random-call', label: 'Random call app' },
@@ -147,7 +154,10 @@ function page(p) {
       inLanguage: LANGS,
       isAccessibleForFree: true,
       description: p.description,
-      featureList: p.features.map(f => f.h),
+      featureList: p.features.map(f => f.h).concat([
+        'Tap to Talk — anonymous voice calls',
+        'Tap to Chat — anonymous text chat',
+      ]),
       aggregateRating: { '@type': 'AggregateRating', ratingValue: '4.7', ratingCount: '2840', bestRating: '5' },
       publisher: { '@type': 'Organization', name: 'TalkLive', url: SITE, logo: `${SITE}/favicon.svg` },
     },
@@ -211,10 +221,11 @@ ${headerHtml(p.slug)}
       <h1>${p.h1}</h1>
       <p class="lede">${p.lede}</p>
       <div class="cta-row">
-        <a class="btn btn-primary" href="/?utm_source=seo&amp;utm_medium=landing&amp;utm_campaign=${p.slug}">${p.cta}</a>
+        <a class="btn btn-talk" href="/?utm_source=seo&amp;utm_medium=landing&amp;utm_campaign=${p.slug}">🎙 ${p.cta}</a>
+        <a class="btn btn-chat" href="/?mode=chat&amp;utm_source=seo&amp;utm_medium=landing&amp;utm_campaign=${p.slug}">💬 ${p.ctaChat || 'Tap to Chat'}</a>
         <a class="btn btn-ghost" href="#how">How it works</a>
       </div>
-      <p class="hero-meta">Free forever · No sign-up · Anonymous · Works on any device</p>
+      <p class="hero-meta">Free forever · No sign-up · Anonymous · Voice &amp; text · Works on any device</p>
     </div>
   </section>
 
@@ -257,7 +268,10 @@ ${headerHtml(p.slug)}
     <div class="cta-band">
       <h2>${p.ctaBandH}</h2>
       <p>${p.ctaBandP}</p>
-      <a class="btn btn-primary" href="/?utm_source=seo&amp;utm_medium=cta&amp;utm_campaign=${p.slug}">${p.cta}</a>
+      <div class="cta-row">
+        <a class="btn btn-talk" href="/?utm_source=seo&amp;utm_medium=cta&amp;utm_campaign=${p.slug}">🎙 ${p.cta}</a>
+        <a class="btn btn-chat" href="/?mode=chat&amp;utm_source=seo&amp;utm_medium=cta&amp;utm_campaign=${p.slug}">💬 ${p.ctaChat || 'Tap to Chat'}</a>
+      </div>
     </div>
   </div>
 </main>
@@ -366,6 +380,103 @@ const PAGES = [
     ctaBandP: 'Join the live random voice chat and meet someone new right now.',
   },
   {
+    slug: 'random-text-chat',
+    crumb: 'Random Text Chat',
+    eyebrow: 'Text only · no mic',
+    title: 'Random Text Chat — Free Anonymous Chat with Strangers | TalkLive',
+    description: 'Free random text chat with strangers worldwide. Tap to Chat and TalkLive pairs you with a random person for an instant, anonymous text conversation — no mic, no sign-up, works on any phone.',
+    keywords: 'random text chat, text chat, random chat, anonymous text chat, text chat with strangers, free text chat, stranger text chat, chat without mic, random chat no sign up',
+    h1: 'Random Text Chat with Strangers — Instant & Anonymous',
+    lede: 'Not in the mood to talk out loud? Tap to Chat and TalkLive pairs you with a random stranger for a live, anonymous text conversation. No microphone, no sign-up, no video — just fast, private messaging with a real person.',
+    cta: 'Tap to Talk',
+    ctaChat: 'Start Text Chat',
+    featuresH: 'Text chat, stripped to the fun part',
+    featuresIntro: 'Instant matching and a buttery-smooth chat screen that flies even on low-end phones.',
+    features: [
+      { icon: 'chat', h: 'Instant text match', p: 'Tap once and you are typing with a random stranger in seconds — no lobbies, no forms.' },
+      { icon: 'bolt', h: 'Feather-light', p: 'No audio or video streams. The chat runs smoothly on 1GB phones, old laptops, and 2G-era connections.' },
+      { icon: 'lock', h: 'Totally anonymous', p: 'No name, number, or email. You appear as a temporary display name that vanishes when you leave.' },
+      { icon: 'shield', h: 'Nothing left behind', p: 'Stranger chats are relayed live and are not kept after your session ends.' },
+      { icon: 'next', h: 'Next in one tap', p: 'Conversation fizzled? Tap next and a brand-new stranger appears instantly.' },
+      { icon: 'mic', h: 'Switch to voice anytime', p: 'Feeling brave? One tap moves you to a live voice call — same app, same stranger pool.' },
+    ],
+    stepsH: 'How random text chat works',
+    stepsIntro: 'From this page to a live conversation takes under five seconds — no permissions needed.',
+    steps: [
+      { h: 'Open TalkLive', p: 'Works in any browser on any device. Nothing to install, nothing to allow.' },
+      { h: 'Tap to Chat', p: 'Press the blue chat button — no microphone or camera permission required.' },
+      { h: 'Get matched instantly', p: 'We pair you with a random person who wants to text chat right now.' },
+      { h: 'Type, laugh, next', p: 'Chat as long as you like, add a friend, or tap next for someone new.' },
+    ],
+    prose: [
+      { h: 'Sometimes typing beats talking', body: [
+        'Voice is great, but there are moments when text wins: you are in a quiet room at 2 a.m., on a bus, at work, or you simply think better with your thumbs. Random text chat gives you the same thrill of meeting a stranger — the new perspectives, the unexpected jokes, the "where are you from?" — without making a sound.',
+        'TalkLive treats text as a first-class way to connect. Tap to Chat has its own matching pool, so everyone you meet there wants to type too. Nobody is waiting for you to unmute.' ] },
+      { h: 'Built to fly on any device', body: [
+        'Because a text chat carries no audio or video stream, TalkLive\'s chat mode is extraordinarily light. It works smoothly on entry-level Android phones, old desktops, and slow connections where video chat apps stutter and die. Messages are relayed instantly over a single lightweight connection.',
+        'That makes it perfect for people on limited data plans too — an entire evening of text chat uses less data than a minute of video.' ] },
+      { h: 'Anonymous, moderated, 18+', body: [
+        'The same safety rails as voice chat apply: everyone is 18 or older, you appear only as a temporary display name, links are blocked automatically, and one tap reports and blocks anyone who misbehaves. Repeated reports lead to automatic bans.' ] },
+    ],
+    faq: [
+      { q: 'Is random text chat on TalkLive free?', a: 'Yes. Text chat is completely free with unlimited matches — no credit card, no premium wall.' },
+      { q: 'Do I need a microphone?', a: 'No. Tap to Chat is pure text — no microphone or camera permission is ever requested.' },
+      { q: 'Will it work on my old phone?', a: 'Yes. Chat mode carries no audio or video, so it runs smoothly even on 1GB devices and slow networks.' },
+      { q: 'Are my messages saved?', a: 'Stranger chat messages are relayed live and are not kept after your session ends.' },
+      { q: 'Can I switch to a voice call?', a: 'Yes. Tap to Talk any time to join the voice pool — the same app with the same instant matching.' },
+    ],
+    ctaBandH: 'Someone is ready to chat right now',
+    ctaBandP: 'Tap the blue button and say hi — no mic, no sign-up, no waiting.',
+  },
+  {
+    slug: 'text-chat-with-strangers',
+    crumb: 'Text Chat with Strangers',
+    eyebrow: 'Anonymous messaging',
+    title: 'Text Chat with Strangers — Free Anonymous Stranger Chat | TalkLive',
+    description: 'Text chat with strangers online for free. TalkLive pairs you with a random person for an anonymous, live text conversation — no sign-up, no mic, no video. Start chatting in one tap.',
+    keywords: 'text chat with strangers, chat with strangers, stranger chat, anonymous chat with strangers, talk to strangers text, free stranger chat, chat with random people, stranger messaging',
+    h1: 'Text Chat with Strangers — Free, Anonymous, Instant',
+    lede: 'One tap connects you with a random stranger somewhere in the world for a live text conversation. No profile, no sign-up, no microphone — share only what you choose and leave whenever you want.',
+    cta: 'Tap to Talk',
+    ctaChat: 'Chat with a Stranger',
+    featuresH: 'Why people text strangers on TalkLive',
+    featuresIntro: 'All the curiosity of meeting someone new, none of the pressure.',
+    features: [
+      { icon: 'users', h: 'Real people, right now', p: 'Every match is a live human who tapped the same button you did, seconds ago.' },
+      { icon: 'lock', h: 'Anonymous by default', p: 'No real name, photo, or number. A temporary display name is all anyone sees.' },
+      { icon: 'globe', h: 'The whole world typing', p: 'Meet strangers across dozens of countries, or filter to the regions you prefer.' },
+      { icon: 'chat', h: 'Smooth, familiar chat', p: 'A clean messaging screen with typing indicators and instant delivery — like texting a friend you have not met yet.' },
+      { icon: 'shield', h: 'Safe space, 18+', p: 'Link blocking, one-tap report and block, and automatic bans keep conversations respectful.' },
+      { icon: 'heart', h: 'Keep the good ones', p: 'Click with someone? Add each other as friends and pick the conversation back up later.' },
+    ],
+    stepsH: 'How to text chat with strangers',
+    stepsIntro: 'You are four taps away from your first hello.',
+    steps: [
+      { h: 'Open TalkLive', p: 'Any browser, any device. There is nothing to install and no account to make.' },
+      { h: 'Tap to Chat', p: 'Press the blue button. No permissions, no forms — you go straight into matching.' },
+      { h: 'Say hi', p: 'You are paired with a random stranger. Ask where they are from and take it anywhere.' },
+      { h: 'Next or befriend', p: 'Tap next for a new stranger anytime, or add a friend to chat again later.' },
+    ],
+    prose: [
+      { h: 'The lost art of talking to strangers, by text', body: [
+        'There is something special about a conversation with zero history and zero stakes. A stranger does not know your friends, your job, or your past — so you can be completely honest, completely silly, or completely yourself. Text chat makes that first step effortless: no voice, no face, just words.',
+        'People use TalkLive text chat to beat boredom, vent after a long day, practice a new language, get an outside opinion, or just see who else is awake somewhere on the planet.' ] },
+      { h: 'Anonymous does not mean lawless', body: [
+        'TalkLive is strictly 18+, and the text pool is guarded by the same moderation as voice: automatic link blocking kills spam before it lands, reporting takes one tap and instantly ends the chat, and repeat offenders are banned by device and IP.' ] },
+      { h: 'From stranger to friend', body: [
+        'The best stranger chats do not have to end. When a conversation clicks, both of you can tap Add Friend — then you can message each other again later and even move to a voice call, all without sharing a number or a real name.' ] },
+    ],
+    faq: [
+      { q: 'Is it free to text chat with strangers?', a: 'Yes. Matching and chatting are completely free and unlimited, with no credit card required.' },
+      { q: 'Do I need an account?', a: 'No. Tap to Chat and you are matched instantly. An optional free account only exists to keep friends between visits.' },
+      { q: 'Is it really anonymous?', a: 'Yes. You appear only as a temporary display name — no real name, email, phone number, or photo.' },
+      { q: 'What if someone is creepy or rude?', a: 'Tap report or block. The chat ends instantly, they can never reach you again, and repeated reports get them banned.' },
+      { q: 'Can we move to a voice call?', a: 'Yes. TalkLive also has Tap to Talk voice calls — add each other as friends and call back whenever you are both online.' },
+    ],
+    ctaBandH: 'A stranger somewhere is waiting to say hi',
+    ctaBandP: 'Free anonymous text chat with real people worldwide. One tap and you are in.',
+  },
+  {
     slug: 'random-call',
     crumb: 'Random Call',
     eyebrow: 'Instant calls',
@@ -416,12 +527,13 @@ const PAGES = [
     slug: 'anonymous-chat',
     crumb: 'Anonymous Chat',
     eyebrow: 'Private by design',
-    title: 'Anonymous Chat — Talk to Strangers Privately | TalkLive',
-    description: 'Anonymous voice chat with strangers on TalkLive. No name, number, or sign-up — talk privately with people worldwide over live audio. Start an anonymous chat free.',
-    keywords: 'anonymous chat, anonymous voice chat, anonymous calls, chat anonymously, private chat with strangers, no sign up chat, anonymous stranger chat',
+    title: 'Anonymous Chat — Talk or Text with Strangers Privately | TalkLive',
+    description: 'Anonymous chat with strangers on TalkLive — live voice calls or instant text chat. No name, number, or sign-up. Talk or type privately with people worldwide, free.',
+    keywords: 'anonymous chat, anonymous voice chat, anonymous text chat, anonymous calls, chat anonymously, private chat with strangers, no sign up chat, anonymous stranger chat',
     h1: 'Anonymous Chat with Strangers — No Names, No Sign-Up',
-    lede: 'TalkLive is anonymous by design. Talk to real people over live voice without ever revealing your name, number, or email. Share only what you choose, and disappear whenever you want.',
+    lede: 'TalkLive is anonymous by design, both ways: Tap to Talk for a live voice call or Tap to Chat for pure text. No name, number, or email — share only what you choose, and disappear whenever you want.',
     cta: 'Start Anonymous Chat',
+    ctaChat: 'Anonymous Text Chat',
     featuresH: 'Privacy built into every conversation',
     featuresIntro: 'Anonymity is not a feature we bolt on — it is how TalkLive works from the ground up.',
     features: [
@@ -429,7 +541,7 @@ const PAGES = [
       { icon: 'shield', h: 'Temporary identity', p: 'You appear as a random display name that leaves no trail once you close the tab.' },
       { icon: 'mic', h: 'Calls never stored', p: 'Voice runs peer-to-peer between you and your partner and is never recorded.' },
       { icon: 'next', h: 'Vanish anytime', p: 'Tap Next or close the app and the conversation is gone — no history left behind.' },
-      { icon: 'globe', h: 'Talk to anyone', p: 'Meet anonymous strangers from around the world without exposing who you are.' },
+      { icon: 'chat', h: 'Voice or text — your pick', p: 'Tap to Talk for a live call, or Tap to Chat for anonymous text with no microphone at all.' },
       { icon: 'users', h: 'Optional friends', p: 'Choose to add someone as a friend, or stay completely anonymous. Your call.' },
     ],
     stepsH: 'How anonymous chat works',
@@ -1174,9 +1286,12 @@ ${headerHtml('blog')}
 
   <div class="wrap">
     <div class="cta-band">
-      <h2>Try it right now — talk to a stranger</h2>
-      <p>TalkLive is free, anonymous, voice-only random chat. No sign-up, no video, no recording. One tap and you're in a live conversation.</p>
-      <a class="btn btn-primary" href="/?utm_source=blog&amp;utm_medium=cta&amp;utm_campaign=${b.slug}">Start Talking Free</a>
+      <h2>Try it right now — talk or text with a stranger</h2>
+      <p>TalkLive is free, anonymous random chat — live voice calls or instant text chat. No sign-up, no video, no recording. One tap and you're in a live conversation.</p>
+      <div class="cta-row">
+        <a class="btn btn-talk" href="/?utm_source=blog&amp;utm_medium=cta&amp;utm_campaign=${b.slug}">🎙 Start Talking Free</a>
+        <a class="btn btn-chat" href="/?mode=chat&amp;utm_source=blog&amp;utm_medium=cta&amp;utm_campaign=${b.slug}">💬 Start Chatting Free</a>
+      </div>
     </div>
   </div>
 
@@ -1250,9 +1365,12 @@ ${headerHtml('blog')}
   </section>
   <div class="wrap">
     <div class="cta-band">
-      <h2>Done reading? Go talk.</h2>
-      <p>One tap connects you to a live voice call with a stranger somewhere in the world. Free and anonymous.</p>
-      <a class="btn btn-primary" href="/?utm_source=blog&amp;utm_medium=index">Start Talking Free</a>
+      <h2>Done reading? Go talk — or chat.</h2>
+      <p>One tap connects you to a live voice call or an anonymous text chat with a stranger somewhere in the world. Free and anonymous.</p>
+      <div class="cta-row">
+        <a class="btn btn-talk" href="/?utm_source=blog&amp;utm_medium=index">🎙 Start Talking Free</a>
+        <a class="btn btn-chat" href="/?mode=chat&amp;utm_source=blog&amp;utm_medium=index">💬 Start Chatting Free</a>
+      </div>
     </div>
   </div>
 </main>

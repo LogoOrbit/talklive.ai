@@ -69,6 +69,17 @@ img { max-width: 100%; height: auto; }
 .btn-primary:hover { transform: translateY(-2px); text-decoration: none; }
 .btn-ghost { background: var(--card); color: var(--text); border-color: var(--border); }
 .btn-ghost:hover { text-decoration: none; border-color: var(--accent); }
+/* Voice CTA (green) and text-chat CTA (blue) — the two ways into the app. */
+.btn-talk {
+  background: linear-gradient(135deg, #4ade80, #16a34a);
+  color: #fff; box-shadow: 0 10px 30px -10px #16a34a;
+}
+.btn-talk:hover { transform: translateY(-2px); text-decoration: none; }
+.btn-chat {
+  background: linear-gradient(135deg, #7cb3ff, #2f66f4);
+  color: #fff; box-shadow: 0 10px 30px -10px #2f66f4;
+}
+.btn-chat:hover { transform: translateY(-2px); text-decoration: none; }
 
 /* Hero */
 .hero { padding: 72px 0 48px; text-align: center; }

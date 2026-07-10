@@ -168,6 +168,20 @@ window.I18N_STRINGS.tr = {
   "privacyPolicy": "Gizlilik Politikası",
   "micPromptTitle": "Mikrofon erişimine izin ver",
   "micPromptBody": "TalkLive sesli aramayı bağlamak için mikrofonunuza ihtiyaç duyar. Tarayıcınız birazdan izin isteyecek — ses yalnızca canlıdır ve asla kaydedilmez.",
-  "micPromptOk": "Anladım"
+  "micPromptOk": "Anladım",
+  "tapToChat": "Sohbet için Dokun",
+  "startChatAria": "Rastgele biriyle yazılı sohbet başlat",
+  "chooseYourVibe": "Biriyle nasıl tanışmak istersin?",
+  "tapTalkCaption": "Canlı sesli arama · mikrofon açık",
+  "tapChatCaption": "Anonim yazılı sohbet · mikrofonsuz",
+  "statusChatSearching": "Sohbet edecek biri aranıyor…",
+  "statusChatConnected": "{name} ile sohbet ediyorsun",
+  "subChatSayHi": "Merhaba de! Mesajlar canlıdır ve asla saklanmaz.",
+  "statusChatEnded": "Yabancı sohbetten ayrıldı",
+  "statusYouLeftChat": "Sohbetten ayrıldın",
+  "statusReadyToChat": "Sohbete hazır — biriyle tanışmak için butona dokun",
+  "subTapChat": "Hazır olduğunda butona dokun",
+  "chatSystemMatched": "Artık {country} ülkesinden {name} ile sohbet ediyorsun — merhaba de! 👋",
+  "chatSystemLeft": "Yabancı sohbetten ayrıldı. Yeni biri için yeşil butona dokun.",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("tr");

@@ -168,6 +168,20 @@ window.I18N_STRINGS.zh = {
   "privacyPolicy": "隐私政策",
   "micPromptTitle": "允许使用麦克风",
   "micPromptBody": "TalkLive 需要使用你的麦克风来接通语音通话。浏览器接下来会请求权限——音频仅为实时通话，绝不会被录制。",
-  "micPromptOk": "知道了"
+  "micPromptOk": "知道了",
+  "tapToChat": "点击文字聊天",
+  "startChatAria": "与随机的人开始文字聊天",
+  "chooseYourVibe": "你想怎样认识新朋友？",
+  "tapTalkCaption": "实时语音通话 · 开麦",
+  "tapChatCaption": "匿名文字聊天 · 无需麦克风",
+  "statusChatSearching": "正在寻找聊天对象…",
+  "statusChatConnected": "你正在与 {name} 聊天",
+  "subChatSayHi": "打个招呼吧！消息实时传送，聊天结束后不会保存。",
+  "statusChatEnded": "对方离开了聊天",
+  "statusYouLeftChat": "你离开了聊天",
+  "statusReadyToChat": "准备好聊天了 — 点击按钮认识新朋友",
+  "subTapChat": "准备好了就点击按钮",
+  "chatSystemMatched": "你现在正在与来自{country}的 {name} 聊天 — 打个招呼吧！👋",
+  "chatSystemLeft": "对方离开了聊天。点击绿色按钮认识新朋友。",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("zh");

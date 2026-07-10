@@ -24,6 +24,7 @@ const brandDot = document.getElementById('brandDot');
 
 const setupPanel = document.getElementById('setupPanel');
 const startBtn = document.getElementById('startBtn');
+const startChatBtn = document.getElementById('startChatBtn');
 const callPanel = document.getElementById('callPanel');
 const stageEl = document.getElementById('main');
 const chatPanel = document.getElementById('chatPanel');
@@ -93,6 +94,19 @@ const reactionOverlay = document.getElementById('reactionOverlay');
 
 const chatBadge = document.getElementById('chatBadge');
 const typingIndicator = document.getElementById('typingIndicator');
+
+// --- Tap to Chat: text-only mode. When on, searches join the 'chat' pool
+// (never mixed with voice callers), no microphone or WebRTC is used at all —
+// which is also what keeps this mode smooth on very low-end devices. ---
+let chatMode = false;
+function setChatMode(on) {
+  chatMode = !!on;
+  document.body.classList.toggle('chat-mode', chatMode);
+}
+// Every partner search declares which pool it joins.
+function findPartnerPayload() {
+  return { mode: chatMode ? 'chat' : 'talk' };
+}
 
 const historyBtn = document.getElementById('historyBtn');
 // Lite mode for weak hardware: fewer decorative effects, same features.
@@ -1814,7 +1828,7 @@ function setButtonMode(mode) {
   const labelKey = mode === 'hangup' ? 'hangUp'
     : mode === 'confirm' ? 'hangUpSure'
     : mode === 'loading' ? 'connSearching'
-    : 'call';
+    : (chatMode ? 'chat' : 'call');
   callMainLabel.textContent = t(labelKey);
   callMainLabel.className = 'action-label call-main-label is-' + mode;
   callMainBtn.setAttribute('aria-label', t(labelKey));
@@ -2463,14 +2477,19 @@ function resetUI() {
   setStatusText('statusIdle');
   setSubText('subIdle');
   // Back to the Tap-to-Talk landing URL, without adding a history entry.
-  if (location.pathname === '/call') {
+  if (location.pathname === '/call' || location.pathname === '/chat') {
     history.replaceState(history.state, '', '/');
   }
+  setChatMode(false);
   callPanel.classList.add('hidden');
   setupPanel.classList.remove('hidden');
   stageEl.classList.remove('call-live');
   startBtn.disabled = false;
   startBtn.classList.remove('is-connecting');
+  if (startChatBtn) {
+    startChatBtn.disabled = false;
+    startChatBtn.classList.remove('is-connecting');
+  }
   closeChatPanel();
   clearChat();
   hideConnection();
@@ -2493,8 +2512,13 @@ function goIdleOnCallScreen(statusKey) {
   setCallState('idle');
   setState('idle');
   hideConnection();
-  setStatusText(statusKey || 'statusReadyToTalk');
-  setSubText('subTapCall');
+  if (chatMode) {
+    setStatusText(statusKey === 'statusYouLeft' ? 'statusYouLeftChat' : (statusKey || 'statusReadyToChat'));
+    setSubText('subTapChat');
+  } else {
+    setStatusText(statusKey || 'statusReadyToTalk');
+    setSubText('subTapCall');
+  }
 }
 
 function registerProfile() {
@@ -2515,10 +2539,11 @@ function registerProfile() {
 // + big chat button. Safe to call repeatedly (e.g. on each new match).
 function enterCallUI() {
   closeChatPanel();
-  // Reflect the call screen as its own URL (/call) without adding a history
-  // entry, so the existing back-button guard stack is untouched.
-  if (location.pathname !== '/call') {
-    history.replaceState(history.state, '', '/call');
+  // Reflect the live screen as its own URL (/call or /chat) without adding a
+  // history entry, so the existing back-button guard stack is untouched.
+  const livePath = chatMode ? '/chat' : '/call';
+  if (location.pathname !== livePath) {
+    history.replaceState(history.state, '', livePath);
   }
   setupPanel.classList.add('hidden');
   callPanel.classList.remove('hidden');
@@ -2536,6 +2561,7 @@ const MIC_EXPLAINED_KEY = 'talklive_mic_explained';
 async function begin() {
   if (beginInFlight) return;
   beginInFlight = true;
+  setChatMode(false);
   startBtn.disabled = true;
   clearError();
   // One-time explainer before the browser's mic prompt so the permission
@@ -2584,7 +2610,26 @@ async function begin() {
   setStatusText('statusSearching');
   setSubText('subHangTight');
 
-  socket.emit('find-partner');
+  socket.emit('find-partner', findPartnerPayload());
+}
+
+// Tap to Chat: same entry as begin(), minus everything audio. No mic prompt,
+// no WebRTC — nothing heavy ever starts, so it flies on 1GB phones too.
+function beginChat() {
+  setChatMode(true);
+  clearError();
+
+  registerProfile();
+
+  isSearching = true;
+  enterCallUI();
+  setCallState('searching');
+  setState('waiting');
+  setConnection('orange', 'connSearching');
+  setStatusText('statusChatSearching');
+  setSubText('subHangTight');
+
+  socket.emit('find-partner', findPartnerPayload());
 }
 
 const ageConsentModal = document.getElementById('ageConsentModal');
@@ -2592,13 +2637,21 @@ const ageAgreeBtn = document.getElementById('ageAgreeBtn');
 const ageAgreeCheckbox = document.getElementById('ageAgreeCheckbox');
 const CONSENT_KEY = 'talklive_age_consent';
 
-// Start a call from the green "Call" button — gated by the one-time age/terms
-// consent, then mic permission (handled in begin()).
-function startCallFlow() {
+// Which flow the age/terms gate should continue into once accepted.
+let pendingStartMode = 'talk';
+function runPendingStart() {
+  if (pendingStartMode === 'chat') beginChat();
+  else begin();
+}
+
+// Start a call or chat from the big buttons — gated by the one-time age/terms
+// consent, then (voice only) mic permission handled in begin().
+function startCallFlow(mode) {
+  pendingStartMode = mode || (chatMode ? 'chat' : 'talk');
   playTapSound();
   clearError();
   if (localStorage.getItem(CONSENT_KEY) === 'yes') {
-    begin();
+    runPendingStart();
   } else {
     ageAgreeCheckbox.checked = false;
     ageAgreeBtn.disabled = true;
@@ -2632,13 +2685,23 @@ startBtn.addEventListener('click', (ev) => {
   if (startBtn.disabled || startBtn.classList.contains('is-connecting')) return;
   spawnRipple(startBtn, ev);
   startBtn.classList.add('is-connecting');
-  startCallFlow();
+  startCallFlow('talk');
 });
+
+// The Tap-to-Chat landing orb: text-only twin of the talk orb.
+if (startChatBtn) {
+  startChatBtn.addEventListener('click', (ev) => {
+    if (startChatBtn.disabled || startChatBtn.classList.contains('is-connecting')) return;
+    spawnRipple(startChatBtn, ev);
+    startChatBtn.classList.add('is-connecting');
+    startCallFlow('chat');
+  });
+}
 
 ageAgreeBtn.addEventListener('click', () => {
   localStorage.setItem(CONSENT_KEY, 'yes');
   closeModal(ageConsentModal);
-  begin();
+  runPendingStart();
 });
 
 // Keep searching for a new person (used after a hang-up when auto-call is on).
@@ -2650,7 +2713,7 @@ function findNextPerson(statusKey) {
   setConnection('orange', 'connSearching');
   setStatusText(statusKey || 'statusSearching');
   setSubText('subHangTight');
-  socket.emit('find-partner');
+  socket.emit('find-partner', findPartnerPayload());
 }
 
 // The single Call button, four modes:
@@ -3832,7 +3895,7 @@ socket.on('random-fallback', () => {
   setSubText('subCountryFallback');
 });
 
-socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
+socket.on('matched', async ({ initiator, partner, rematched, callback, mode }) => {
   // A deferred-UI callback (rule 11) is on the friends menu with a spinner —
   // now that the peer accepted, restore the icon and enter the call screen.
   restoreCallbackSpinner();
@@ -3841,10 +3904,35 @@ socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
   // already connected) — tear the old peer down first so it never leaks.
   if (pc) teardownPeer();
   if (typeof friendsDropdown !== 'undefined') closeSidePanel(friendsDropdown, friendsOverlay);
+  // The server is authoritative about which pool this match came from — keep
+  // the client in the same mode (e.g. a voice call-back accepted mid-chat).
+  setChatMode(mode === 'chat');
   enterCallUI();
   // Game mark (X/O) roles are fixed by who initiated the call; clear any old game.
   amCallInitiator = !!initiator;
   if (typeof resetGame === 'function') resetGame();
+
+  if (mode === 'chat') {
+    // Text-only match: no mic, no WebRTC, no media wait — connected the moment
+    // the pair exists. The chat panel opens itself so the first thing the user
+    // sees is the conversation.
+    currentPartner = partner;
+    currentPartnerInterests = partner.interests || [];
+    clearChat();
+    revealPartner();
+    setState('connected');
+    setCallState('connected');
+    muteBtn.disabled = true; // no microphone in text chat
+    setConnection('green', 'connConnected');
+    setStatusText('statusChatConnected', { name: partner.username });
+    setSubTextFading('subChatSayHi');
+    addChatMessage(t('chatSystemMatched', {
+      name: partner.username,
+      country: getCountryName(partner.countryCode) || partner.country || '',
+    }), 'system');
+    openChatPanel();
+    return;
+  }
 
   // Never let a mute from a previous call silently carry into a new one.
   if (isMuted) {
@@ -4046,6 +4134,9 @@ async function acceptCallBack(fromClientId) {
     return;
   }
 
+  // Call-backs are always voice calls — leave text-chat mode if we were in it.
+  setChatMode(false);
+
   // Drop whatever we were doing (a live call, or an in-progress search) so we
   // can connect to the incoming caller instantly — even mid-search.
   if (callState === 'connected' || isSearching) {
@@ -4156,13 +4247,14 @@ socket.on('partner-left', () => {
   // The partner ended the call. Show the single red "your friend ended the call"
   // message. Only keep hunting for a new person if auto-connect is on; otherwise
   // stop on the red message so the user isn't yanked into a new search.
+  const endedKey = chatMode ? 'statusChatEnded' : 'statusFriendEnded';
   if (autoCallEnabled) {
     setCallState('searching');
     setState('waiting');
     setConnection('red', 'connFriendEnded');
-    setStatusText('statusFriendEnded');
+    setStatusText(endedKey);
     setSubText(null);
-    socket.emit('find-partner');
+    socket.emit('find-partner', findPartnerPayload());
     setTimeout(() => { if (isSearching && callState === 'searching') setConnection('orange', 'connSearching'); }, 900);
   } else {
     isSearching = false;
@@ -4170,8 +4262,11 @@ socket.on('partner-left', () => {
     setCallState('idle');
     setState('idle');
     setConnection('red', 'connFriendEnded');
-    setStatusText('statusFriendEnded');
-    setSubText(null);
+    setStatusText(endedKey);
+    setSubText(chatMode ? 'subTapChat' : null);
+    // In chat mode the user may still be looking at the (now empty) chat panel —
+    // say what happened right there too.
+    if (chatMode) addChatMessage(t('chatSystemLeft'), 'system');
   }
 });
 
@@ -4214,7 +4309,7 @@ socket.on('connect', () => {
   // Mobile browsers drop the socket when backgrounded/screen off. With
   // auto-connect on, silently resume the search loop instead of stalling.
   if (isSearching && callState !== 'connected' && autoCallEnabled) {
-    socket.emit('find-partner');
+    socket.emit('find-partner', findPartnerPayload());
   }
 });
 
@@ -4243,12 +4338,25 @@ window.addEventListener('i18n-changed', () => {
   }
 });
 
-// A direct load of /call (bookmark, refresh, share) has no live call to
-// resume — send the URL back to the landing page without adding a history
-// entry, so the back button still behaves normally.
-if (location.pathname === '/call') {
+// A direct load of /call or /chat (bookmark, refresh, share) has no live
+// session to resume — send the URL back to the landing page without adding a
+// history entry, so the back button still behaves normally.
+if (location.pathname === '/call' || location.pathname === '/chat') {
   history.replaceState(history.state, '', '/');
 }
+
+// Deep link from the SEO landing pages: /?mode=chat drops the visitor straight
+// into the Tap-to-Chat flow (consent gate still applies on first visit).
+try {
+  if (new URLSearchParams(location.search).get('mode') === 'chat') {
+    setTimeout(() => {
+      if (startChatBtn && !startChatBtn.disabled) {
+        startChatBtn.classList.add('is-connecting');
+        startCallFlow('chat');
+      }
+    }, 350);
+  }
+} catch (e) { /* very old browser without URLSearchParams — ignore */ }
 
 // Initial state: the Tap-to-Talk landing, a green idle Call button ready for
 // when the call screen opens, and an unchecked auto-call checkbox.

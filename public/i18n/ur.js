@@ -168,6 +168,20 @@ window.I18N_STRINGS.ur = {
   "privacyPolicy": "رازداری کی پالیسی",
   "micPromptTitle": "مائیکروفون تک رسائی کی اجازت دیں",
   "micPromptBody": "وائس کال جوڑنے کے لیے TalkLive کو آپ کے مائیکروفون کی ضرورت ہے۔ آپ کا براؤزر ابھی اجازت مانگے گا — آڈیو صرف لائیو ہے اور کبھی ریکارڈ نہیں ہوتی۔",
-  "micPromptOk": "سمجھ گیا"
+  "micPromptOk": "سمجھ گیا",
+  "tapToChat": "چیٹ کے لیے ٹیپ کریں",
+  "startChatAria": "کسی اجنبی کے ساتھ ٹیکسٹ چیٹ شروع کریں",
+  "chooseYourVibe": "آپ کسی سے کیسے ملنا چاہتے ہیں؟",
+  "tapTalkCaption": "لائیو وائس کال · مائیک آن",
+  "tapChatCaption": "گمنام ٹیکسٹ چیٹ · بغیر مائیک",
+  "statusChatSearching": "چیٹ کے لیے کسی کو تلاش کر رہے ہیں…",
+  "statusChatConnected": "آپ {name} سے چیٹ کر رہے ہیں",
+  "subChatSayHi": "ہیلو کہیں! پیغامات لائیو ہیں اور کبھی محفوظ نہیں ہوتے۔",
+  "statusChatEnded": "اجنبی چیٹ چھوڑ گیا",
+  "statusYouLeftChat": "آپ نے چیٹ چھوڑ دی",
+  "statusReadyToChat": "چیٹ کے لیے تیار — کسی نئے سے ملنے کے لیے بٹن دبائیں",
+  "subTapChat": "جب تیار ہوں تو بٹن دبائیں",
+  "chatSystemMatched": "اب آپ {country} کے {name} سے چیٹ کر رہے ہیں — ہیلو کہیں! 👋",
+  "chatSystemLeft": "اجنبی چیٹ چھوڑ گیا۔ نئے شخص کے لیے سبز بٹن دبائیں۔",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("ur");

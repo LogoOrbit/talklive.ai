@@ -234,10 +234,10 @@ app.get('/ice-servers', (req, res) => {
   res.json({ iceServers: buildIceServers() });
 });
 
-// The call screen is its own URL (reached via history.replaceState once the
-// user taps to talk), but it's still the same single-page app — serve the
-// same shell so a direct hit/refresh on /call works.
-app.get('/call', (req, res) => {
+// The call and chat screens are their own URLs (reached via
+// history.replaceState once the user taps Talk or Chat), but they're still the
+// same single-page app — serve the same shell so a direct hit/refresh works.
+app.get(['/call', '/chat'], (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
 
@@ -722,6 +722,11 @@ function mutuallyCompatible(seeker, candidate) {
   if (seeker.clientId === candidate.clientId) return false;
   if (isBlockedPair(seeker.clientId, candidate.clientId)) return false;
 
+  // Tap to Talk and Tap to Chat are separate pools: a voice caller must never
+  // land in a text chat and vice versa. Mode is a hard gate that survives the
+  // random fallback below — dropping it would put a mic-less chatter in a call.
+  if ((seeker.mode || 'talk') !== (candidate.mode || 'talk')) return false;
+
   // After a long wait either side falls back to "match me with anyone random":
   // every preference filter is dropped, only blocks still apply.
   if (seeker.randomFallbackActive || candidate.randomFallbackActive) return true;
@@ -807,9 +812,10 @@ function tryMatch(socketId) {
     const rematched = hearts.has(key) && hearts.get(key).size === 2;
     hearts.delete(key);
 
-    store.recordFeature('match');
-    partnerSocket.emit('matched', { initiator: true, partner: publicProfile(seekerProfile), rematched });
-    seekerSocket.emit('matched', { initiator: false, partner: publicProfile(partnerProfile), rematched });
+    const mode = seekerProfile.mode || 'talk';
+    store.recordFeature(mode === 'chat' ? 'chat_match' : 'match');
+    partnerSocket.emit('matched', { initiator: true, partner: publicProfile(seekerProfile), rematched, mode });
+    seekerSocket.emit('matched', { initiator: false, partner: publicProfile(partnerProfile), rematched, mode });
   } else {
     waitingQueue.push(socketId);
     const seekerProfile = profiles.get(socketId);
@@ -842,6 +848,7 @@ function predictedMatch(socketId) {
   for (const [sid, p] of profiles) {
     if (sid === socketId || p.clientId === seeker.clientId) continue;
     if (isBlockedPair(seeker.clientId, p.clientId)) continue;
+    if ((seeker.mode || 'talk') !== (p.mode || 'talk')) continue;
     candidates.push(p);
   }
   if (candidates.length === 0) return null;
@@ -1036,6 +1043,7 @@ io.on('connection', (socket) => {
       includeCountries: sanitizeCountryList(data.includeCountries),
       excludeCountries: sanitizeCountryList(data.excludeCountries),
       randomFallbackActive: false,
+      mode: 'talk',
       interests: Array.isArray(data.interests)
         ? data.interests.filter((i) => typeof i === 'string').map((i) => i.slice(0, 40)).slice(0, 10)
         : [],
@@ -1079,7 +1087,7 @@ io.on('connection', (socket) => {
   sendOnlineCountTo(socket);
   broadcastOnlineCount();
 
-  socket.on('find-partner', () => {
+  socket.on('find-partner', (opts = {}) => {
     const profile = profiles.get(socket.id);
     if (!profile) return;
     // Banned users can never connect to anyone until the ban is lifted.
@@ -1089,7 +1097,10 @@ io.on('connection', (socket) => {
       socket.disconnect(true);
       return;
     }
-    store.recordFeature('search');
+    // Which pool this search joins: 'talk' (voice call) or 'chat' (text only).
+    // Sticky on the profile so skip/auto-next re-searches stay in the same pool.
+    profile.mode = (opts && opts.mode === 'chat') ? 'chat' : 'talk';
+    store.recordFeature(profile.mode === 'chat' ? 'chat_search' : 'search');
     // A fresh, explicit search starts with the full set of filters again.
     profile.randomFallbackActive = false;
     clearMatchDelayTimer(socket.id);
@@ -1604,8 +1615,11 @@ io.on('connection', (socket) => {
     const key = pairKey(me.clientId, requesterProfile.clientId);
     hearts.delete(key);
 
-    requesterSocket.emit('matched', { initiator: true, partner: publicProfile(me), rematched: false, callback: true });
-    socket.emit('matched', { initiator: false, partner: publicProfile(requesterProfile), rematched: false, callback: true });
+    // Call-backs are always voice calls, whatever pool either side was in.
+    me.mode = 'talk';
+    requesterProfile.mode = 'talk';
+    requesterSocket.emit('matched', { initiator: true, partner: publicProfile(me), rematched: false, callback: true, mode: 'talk' });
+    socket.emit('matched', { initiator: false, partner: publicProfile(requesterProfile), rematched: false, callback: true, mode: 'talk' });
   });
 
   socket.on('disconnect', () => {

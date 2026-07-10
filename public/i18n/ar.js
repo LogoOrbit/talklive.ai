@@ -168,6 +168,20 @@ window.I18N_STRINGS.ar = {
   "privacyPolicy": "سياسة الخصوصية",
   "micPromptTitle": "السماح بالوصول إلى الميكروفون",
   "micPromptBody": "يحتاج TalkLive إلى الميكروفون لتوصيل المكالمة الصوتية. سيطلب متصفحك الإذن الآن — الصوت مباشر فقط ولا يُسجَّل أبدًا.",
-  "micPromptOk": "فهمت"
+  "micPromptOk": "فهمت",
+  "tapToChat": "اضغط للدردشة",
+  "startChatAria": "ابدأ دردشة نصية مع شخص عشوائي",
+  "chooseYourVibe": "كيف تريد التعرف على شخص جديد؟",
+  "tapTalkCaption": "مكالمة صوتية مباشرة · بالمايك",
+  "tapChatCaption": "دردشة نصية مجهولة · بدون مايك",
+  "statusChatSearching": "نبحث عن شخص للدردشة معه…",
+  "statusChatConnected": "أنت تدردش مع {name}",
+  "subChatSayHi": "قل مرحباً! الرسائل مباشرة ولا يتم حفظها أبداً.",
+  "statusChatEnded": "غادر الغريب الدردشة",
+  "statusYouLeftChat": "غادرت الدردشة",
+  "statusReadyToChat": "جاهز للدردشة — اضغط الزر للتعرف على شخص جديد",
+  "subTapChat": "اضغط الزر عندما تكون جاهزاً",
+  "chatSystemMatched": "أنت الآن تدردش مع {name} من {country} — قل مرحباً! 👋",
+  "chatSystemLeft": "غادر الغريب الدردشة. اضغط الزر الأخضر لشخص جديد.",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("ar");

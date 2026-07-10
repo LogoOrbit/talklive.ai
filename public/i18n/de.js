@@ -168,6 +168,20 @@ window.I18N_STRINGS.de = {
   "privacyPolicy": "Datenschutzerklärung",
   "micPromptTitle": "Mikrofonzugriff erlauben",
   "micPromptBody": "TalkLive benötigt dein Mikrofon, um den Sprachanruf zu verbinden. Dein Browser fragt gleich nach der Berechtigung — Audio ist nur live und wird nie aufgezeichnet.",
-  "micPromptOk": "Verstanden"
+  "micPromptOk": "Verstanden",
+  "tapToChat": "Tippen zum Chatten",
+  "startChatAria": "Einen Text-Chat mit einer zufälligen Person starten",
+  "chooseYourVibe": "Wie möchtest du jemanden kennenlernen?",
+  "tapTalkCaption": "Live-Sprachanruf · Mikro an",
+  "tapChatCaption": "Anonymer Text-Chat · ohne Mikro",
+  "statusChatSearching": "Suche jemanden zum Chatten…",
+  "statusChatConnected": "Du chattest mit {name}",
+  "subChatSayHi": "Sag hallo! Nachrichten sind live und werden nie gespeichert.",
+  "statusChatEnded": "Der Fremde hat den Chat verlassen",
+  "statusYouLeftChat": "Du hast den Chat verlassen",
+  "statusReadyToChat": "Bereit zum Chatten — tippe auf den Button, um jemand Neues zu treffen",
+  "subTapChat": "Tippe auf den Button, wenn du chatten möchtest",
+  "chatSystemMatched": "Du chattest jetzt mit {name} aus {country} — sag hallo! 👋",
+  "chatSystemLeft": "Der Fremde hat den Chat verlassen. Tippe auf den grünen Button für jemand Neues.",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("de");

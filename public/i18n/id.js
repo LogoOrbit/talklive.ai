@@ -168,6 +168,20 @@ window.I18N_STRINGS.id = {
   "privacyPolicy": "Kebijakan Privasi",
   "micPromptTitle": "Izinkan akses mikrofon",
   "micPromptBody": "TalkLive memerlukan mikrofon Anda untuk menghubungkan panggilan suara. Browser Anda akan meminta izin — audio hanya langsung dan tidak pernah direkam.",
-  "micPromptOk": "Mengerti"
+  "micPromptOk": "Mengerti",
+  "tapToChat": "Ketuk untuk Chat",
+  "startChatAria": "Mulai chat teks dengan orang acak",
+  "chooseYourVibe": "Bagaimana kamu ingin bertemu seseorang?",
+  "tapTalkCaption": "Panggilan suara langsung · mik aktif",
+  "tapChatCaption": "Chat teks anonim · tanpa mik",
+  "statusChatSearching": "Mencari seseorang untuk diajak chat…",
+  "statusChatConnected": "Kamu sedang chat dengan {name}",
+  "subChatSayHi": "Sapa dia! Pesan berlangsung live dan tidak pernah disimpan.",
+  "statusChatEnded": "Orang asing meninggalkan chat",
+  "statusYouLeftChat": "Kamu keluar dari chat",
+  "statusReadyToChat": "Siap chat — ketuk tombol untuk bertemu orang baru",
+  "subTapChat": "Ketuk tombol kapan pun kamu siap",
+  "chatSystemMatched": "Kamu sekarang chat dengan {name} dari {country} — sapa dia! 👋",
+  "chatSystemLeft": "Orang asing meninggalkan chat. Ketuk tombol hijau untuk orang baru.",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("id");

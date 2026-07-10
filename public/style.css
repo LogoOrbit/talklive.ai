@@ -1509,6 +1509,139 @@ body.panel-open .side-panel {
   50% { transform: scale(1.035); }
 }
 
+/* --- Dual landing choice: Tap to Talk (voice) and Tap to Chat (text) --------
+   Two irresistible orbs side by side. Both breathe (transform-only, so it
+   stays on the compositor even on weak phones), out of phase with each other
+   so the hero always has gentle life in it. */
+.tap-choice-heading {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--muted, #9aa3b8);
+  letter-spacing: 0.2px;
+}
+
+.tap-choice-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.tap-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.tap-choice-caption {
+  font-size: 12.5px;
+  color: var(--muted, #9aa3b8);
+  letter-spacing: 0.2px;
+}
+
+.tap-choice-divider {
+  align-self: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--muted, #9aa3b8);
+  border: 1px solid rgba(154, 163, 184, 0.35);
+  background: rgba(154, 163, 184, 0.08);
+  margin-bottom: 26px; /* optically centers against orb + caption column */
+}
+
+/* Slightly smaller orbs than the old single one so the pair fits phones. */
+.tap-choice .tap-orb {
+  width: 158px;
+  height: 158px;
+}
+.tap-choice .phone-icon {
+  width: 38px;
+  height: 38px;
+}
+.tap-choice .tap-orb-label {
+  font-size: 15.5px;
+}
+
+/* The chat orb breathes on the opposite phase of the talk orb. */
+.chat-btn-blue {
+  background: radial-gradient(circle at 35% 30%, #7cb3ff, #2f66f4 75%);
+  box-shadow: 0 0 60px rgba(63, 118, 244, 0.5);
+  animation-delay: 1.5s;
+}
+
+.chat-btn-blue:hover {
+  box-shadow: 0 0 80px rgba(63, 118, 244, 0.7);
+}
+
+@media (max-width: 400px) {
+  .tap-choice-row { gap: 10px; }
+  .tap-choice .tap-orb { width: 134px; height: 134px; }
+  .tap-choice .phone-icon { width: 32px; height: 32px; }
+  .tap-choice .tap-orb-label { font-size: 13.5px; }
+  .tap-choice-divider { width: 28px; height: 28px; font-size: 11px; }
+}
+
+/* --- Chat mode (Tap to Chat): text-only session ------------------------------
+   The audio orb, mute button and heavy ambience are swapped out; a light
+   chat-bubble hero takes the orb's place. Everything here is display toggles
+   or transform/opacity animation — nothing that can jank a 1GB device. */
+.chat-mode-hero {
+  display: none;
+  position: relative;
+  width: 150px;
+  height: 120px;
+  margin-bottom: 20px;
+  color: #4f7cff;
+}
+body.chat-mode .chat-mode-hero { display: block; }
+body.chat-mode .orb-wrap { display: none; }
+body.chat-mode #muteActionWrap { display: none; }
+body.chat-mode .video-banner { display: none; }
+
+.chat-hero-icon {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 84px;
+  height: 84px;
+  filter: drop-shadow(0 6px 24px rgba(79, 124, 255, 0.45));
+  animation: chatHeroFloat 3.2s ease-in-out infinite;
+}
+
+.chat-hero-bubble {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(79, 124, 255, 0.22);
+}
+.chat-hero-bubble.b1 {
+  width: 16px; height: 16px;
+  left: 18px; top: 12px;
+  animation: chatHeroFloat 3.2s ease-in-out infinite reverse;
+}
+.chat-hero-bubble.b2 {
+  width: 10px; height: 10px;
+  right: 16px; bottom: 8px;
+  animation: chatHeroFloat 4.1s ease-in-out infinite;
+}
+
+@keyframes chatHeroFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+html.perf-lite .chat-hero-icon,
+html.perf-lite .chat-hero-bubble { animation: none; }
+
 /* Primary call actions: Next and Hang Up, equal visual weight, Next slightly larger */
 .primary-controls {
   display: flex;

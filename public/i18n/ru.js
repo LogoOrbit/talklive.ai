@@ -168,6 +168,20 @@ window.I18N_STRINGS.ru = {
   "privacyPolicy": "Политика конфиденциальности",
   "micPromptTitle": "Разрешите доступ к микрофону",
   "micPromptBody": "TalkLive нужен ваш микрофон для голосового звонка. Браузер сейчас запросит разрешение — звук передаётся только в прямом эфире и никогда не записывается.",
-  "micPromptOk": "Понятно"
+  "micPromptOk": "Понятно",
+  "tapToChat": "Нажми для чата",
+  "startChatAria": "Начать текстовый чат со случайным человеком",
+  "chooseYourVibe": "Как ты хочешь познакомиться?",
+  "tapTalkCaption": "Живой голосовой звонок · с микрофоном",
+  "tapChatCaption": "Анонимный текстовый чат · без микрофона",
+  "statusChatSearching": "Ищем собеседника для чата…",
+  "statusChatConnected": "Вы общаетесь с {name}",
+  "subChatSayHi": "Скажите привет! Сообщения не сохраняются после чата.",
+  "statusChatEnded": "Собеседник покинул чат",
+  "statusYouLeftChat": "Вы вышли из чата",
+  "statusReadyToChat": "Готовы к чату — нажмите кнопку, чтобы найти собеседника",
+  "subTapChat": "Нажмите кнопку, когда будете готовы",
+  "chatSystemMatched": "Вы общаетесь с {name} из {country} — поздоровайтесь! 👋",
+  "chatSystemLeft": "Собеседник покинул чат. Нажмите зелёную кнопку, чтобы найти нового.",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("ru");

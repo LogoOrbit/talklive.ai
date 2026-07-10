@@ -168,6 +168,20 @@ window.I18N_STRINGS.fr = {
   "privacyPolicy": "Politique de confidentialité",
   "micPromptTitle": "Autoriser l'accès au micro",
   "micPromptBody": "TalkLive a besoin de votre micro pour établir l'appel vocal. Votre navigateur va demander l'autorisation — l'audio est en direct uniquement et jamais enregistré.",
-  "micPromptOk": "Compris"
+  "micPromptOk": "Compris",
+  "tapToChat": "Appuyez pour Chatter",
+  "startChatAria": "Démarrer un chat écrit avec une personne au hasard",
+  "chooseYourVibe": "Comment veux-tu rencontrer quelqu’un ?",
+  "tapTalkCaption": "Appel vocal en direct · micro activé",
+  "tapChatCaption": "Chat écrit anonyme · sans micro",
+  "statusChatSearching": "Recherche de quelqu’un avec qui chatter…",
+  "statusChatConnected": "Vous discutez avec {name}",
+  "subChatSayHi": "Dites bonjour ! Les messages sont en direct et jamais conservés.",
+  "statusChatEnded": "L’inconnu a quitté le chat",
+  "statusYouLeftChat": "Vous avez quitté le chat",
+  "statusReadyToChat": "Prêt à chatter — appuyez sur le bouton pour rencontrer quelqu’un",
+  "subTapChat": "Appuyez sur le bouton quand vous êtes prêt à chatter",
+  "chatSystemMatched": "Vous discutez maintenant avec {name} de {country} — dites bonjour ! 👋",
+  "chatSystemLeft": "L’inconnu a quitté le chat. Appuyez sur le bouton vert pour quelqu’un de nouveau.",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("fr");
