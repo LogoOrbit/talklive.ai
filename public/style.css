@@ -277,9 +277,9 @@ body.panel-open .side-panel {
 /* Flat, quiet header buttons: no heavy shadows or bright fills — they read as
    part of the header, only lighting up on hover/press. */
 .icon-btn {
-  width: 50px;
-  height: 50px;
-  border-radius: 14px;
+  width: 58px;
+  height: 58px;
+  border-radius: 16px;
   border: 1px solid transparent;
   background: transparent;
   color: var(--text);
@@ -365,8 +365,8 @@ body.panel-open .side-panel {
 }
 
 .topbar-svg-icon {
-  width: 26px;
-  height: 26px;
+  width: 32px;
+  height: 32px;
 }
 
 /* Keep the small chevron/avatar glyphs inside the Settings panel at their
@@ -1284,14 +1284,14 @@ body.panel-open .side-panel {
   }
 
   .icon-btn {
-    width: 46px;
-    height: 46px;
-    border-radius: 13px;
+    width: 54px;
+    height: 54px;
+    border-radius: 15px;
   }
 
   .topbar-svg-icon {
-    width: 24px;
-    height: 24px;
+    width: 30px;
+    height: 30px;
   }
 
   .online {
@@ -2557,16 +2557,20 @@ html.perf-lite .chat-hero-bubble { animation: none; }
   color: var(--muted);
   position: relative;
 }
-.chat-header-toggle.is-off::after {
-  content: "";
-  position: absolute;
-  left: 6px;
-  right: 6px;
-  top: 50%;
-  height: 2px;
-  background: currentColor;
-  transform: rotate(-45deg);
-  border-radius: 2px;
+
+/* Text variant of the read-receipts toggle: a labelled pill ("Read Receipts")
+   instead of the old double-tick glyph, so it's obvious what it does. */
+.chat-header-toggle-text {
+  width: auto;
+  height: auto;
+  padding: 7px 12px;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.chat-header-toggle-text.is-off {
+  text-decoration: line-through;
 }
 
 .chat-form {
@@ -4196,9 +4200,20 @@ html.perf-lite .chat-hero-bubble { animation: none; }
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.friend-call-btn:hover,
-.friend-msg-btn:hover {
+/* The message button is whitish (not green) so it reads distinctly from the
+   green call button beside it — light face, dark glyph, its own hover glow. */
+.friend-msg-btn {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: radial-gradient(circle at 35% 30%, #ffffff, #e6eaf0 80%);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.25);
+}
+
+.friend-call-btn:hover {
   box-shadow: 0 0 16px rgba(22, 163, 74, 0.7);
+}
+
+.friend-msg-btn:hover {
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.45);
 }
 
 .friend-call-btn:active,
@@ -4212,8 +4227,16 @@ html.perf-lite .chat-hero-bubble { animation: none; }
   height: 16px;
 }
 
-.friend-msg-btn { color: #fff; }
-.friend-msg-btn svg { stroke: #fff; }
+.friend-msg-btn { color: #1f2937; }
+.friend-msg-btn svg { stroke: #1f2937; }
+
+/* On a light background the near-white face needs a firmer edge so it still
+   reads as a distinct button. */
+[data-theme="light"] .friend-msg-btn {
+  background: radial-gradient(circle at 35% 30%, #ffffff, #eef1f6 80%);
+  border-color: rgba(20, 30, 70, 0.22);
+  box-shadow: 0 1px 4px rgba(20, 30, 70, 0.12);
+}
 
 /* Offline friend: the green call button goes grey with a small red dot so it
    reads as "unavailable right now" without dropping off the panel. */
@@ -5202,12 +5225,31 @@ a.premium-lock:hover { background: rgba(108, 92, 231, 0.22); }
    so the panel reads as a short list of clear sections. */
 #filtersPanel .pill-row {
   margin-bottom: 0;
-  padding: 12px 14px 14px;
+  padding: 9px 12px 10px;
+  gap: 6px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.02);
 }
-#filtersPanel .side-panel-body { gap: 10px; }
+#filtersPanel .side-panel-body { gap: 7px; }
+
+/* Compact the whole filter panel so every group — gender, both country lists
+   and interests — fits on screen at once without scrolling to reach the
+   Interests section. */
+#filtersPanel .country-multiselect { gap: 6px; }
+#filtersPanel .search-input { padding: 6px 12px; }
+#filtersPanel .pill { padding: 6px 12px; }
+#filtersPanel .pill-group { gap: 6px; }
+#filtersPanel .interest-tags:not(:empty) { margin-bottom: 6px; }
+#filtersPanel .filters-premium-banner {
+  padding: 9px 12px;
+  gap: 5px;
+}
+#filtersPanel .side-panel-header { padding-bottom: 8px; }
+#filtersPanel .side-panel-footer { padding-top: 10px; margin-top: 0; }
+/* Tighten the gap between header / body / footer (default 18px) so the three
+   stack closer and the body has more room for the filter cards. */
+#filtersPanel { gap: 10px; padding-top: 14px; padding-bottom: 14px; }
 #filtersPanel .pill-label {
   font-size: 13px;
   font-weight: 700;
