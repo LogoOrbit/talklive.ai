@@ -39,14 +39,17 @@
   var cancelBtn = $('cancelBtn');
   var nextBtn = $('nextBtn');
   var searchLine = $('searchLine');
-  var connectedFrom = $('connectedFrom');
-  var meName = $('meName');
-  var meFlag = $('meFlag');
   var reportBtn = $('reportBtn');
   var addFriendBtn = $('addFriendBtn');
   var typingEl = $('typing');
   var onlineCount = $('onlineCount');
-  var autoNextRow = $('autoNextRow');
+  var autoBtn = $('autoBtn');
+  var topDefault = $('topDefault');
+  var topPeer = $('topPeer');
+  var peerName = $('peerName');
+  var peerFlag = $('peerFlag');
+  var peerFrom = $('peerFrom');
+  var voiceCallBtn = $('voiceCallBtn');
 
   function escapeHtml(str) {
     return String(str).replace(/[&<>"']/g, function (c) {
@@ -69,19 +72,20 @@
   var searching = false;
   var partnerHere = false;
 
-  // Auto-next: keep searching automatically when a partner disconnects. Shares
-  // the same storage key as the voice app's "keep connecting me" checkbox, so
-  // the preference is consistent across both sub-apps.
+  // Auto: keep searching automatically when a partner disconnects. Shares the
+  // same storage key as the voice app's "keep connecting me" checkbox, so the
+  // preference is consistent across both sub-apps.
   var AUTO_NEXT_KEY = 'talklive_autocall';
   var autoNext = localStorage.getItem(AUTO_NEXT_KEY) === 'on';
-  function setAutoNext(on) {
+  function setAutoNext(on, announce) {
     autoNext = on;
     localStorage.setItem(AUTO_NEXT_KEY, autoNext ? 'on' : 'off');
-    autoNextRow.classList.toggle('active', autoNext);
-    autoNextRow.setAttribute('aria-pressed', autoNext ? 'true' : 'false');
+    autoBtn.classList.toggle('active', autoNext);
+    autoBtn.setAttribute('aria-pressed', autoNext ? 'true' : 'false');
+    if (announce && partnerHere) addMessage(t(autoNext ? 'chatAutoOn' : 'chatAutoOff'), 'system');
   }
   setAutoNext(autoNext);
-  autoNextRow.addEventListener('click', function () { vibrate(10); setAutoNext(!autoNext); });
+  autoBtn.addEventListener('click', function () { vibrate(10); setAutoNext(!autoNext, true); });
 
   // ---------------------------------------------------------------------------
   // Views: start → search → live. Only one is visible at a time.
@@ -94,14 +98,20 @@
     var connected = name === 'live' && partnerHere;
     reportBtn.classList.toggle('hidden', !connected);
     addFriendBtn.classList.toggle('hidden', !connected);
-    autoNextRow.classList.toggle('hidden', name === 'start');
+    autoBtn.classList.toggle('hidden', name === 'start');
+    // The single top bar shows the partner while connected, the brand otherwise.
+    topPeer.classList.toggle('hidden', !connected);
+    topDefault.classList.toggle('hidden', connected);
     if (name !== 'search') stopSearchLines();
   }
 
-  function syncMe() {
-    var name = accountNickname || tempUsername || (myProfile && myProfile.username) || t('you');
-    meName.textContent = name;
-    meFlag.innerHTML = myProfile && myProfile.countryCode ? getFlagImg(myProfile.countryCode, 18) : '';
+  function syncPeer() {
+    if (!currentPartner) return;
+    peerName.textContent = currentPartner.username || '';
+    peerFlag.innerHTML = getFlagImg(currentPartner.countryCode, 18);
+    peerFrom.textContent = t('chatPartnerFrom', {
+      country: getCountryName(currentPartner.countryCode) || currentPartner.country || t('somewhere'),
+    });
   }
 
   // Rotating one-liners under the searching animation.
@@ -318,6 +328,23 @@
   $('friendCloseBtn').addEventListener('click', function () { closeModal(friendModal); });
   friendModal.addEventListener('click', function (e) { if (e.target === friendModal) closeModal(friendModal); });
 
+  // ---------------------------------------------------------------------------
+  // Voice call: the phone icon never navigates away silently. It opens a small
+  // confirmation popup first; only "Start voice call" leaves for the voice app.
+  // ---------------------------------------------------------------------------
+  var callModal = $('callModal');
+  voiceCallBtn.addEventListener('click', function () {
+    vibrate(10);
+    openModal(callModal);
+  });
+  $('callGoBtn').addEventListener('click', function () {
+    socket.emit('leave');
+    location.href = '/call';
+  });
+  $('callCancelBtn').addEventListener('click', function () { closeModal(callModal); });
+  $('callCloseBtn').addEventListener('click', function () { closeModal(callModal); });
+  callModal.addEventListener('click', function (e) { if (e.target === callModal) closeModal(callModal); });
+
   // Tiny toast under the search line for transient errors.
   function flashSearchNote(text) {
     var note = $('reportNote');
@@ -339,7 +366,6 @@
 
   socket.on('profile', function (p) {
     myProfile = { username: p.username, country: p.country, countryCode: p.countryCode };
-    syncMe();
   });
 
   socket.on('online-count', function (n) {
@@ -354,9 +380,7 @@
     addFriendBtn.classList.remove('sent');
     addFriendBtn.disabled = false;
     clearMessages();
-    connectedFrom.innerHTML = escapeHtml(t('chatPartnerFrom', {
-      country: getCountryName(data.partner.countryCode) || data.partner.country || t('somewhere'),
-    })) + ' ' + getFlagImg(data.partner.countryCode, 20);
+    syncPeer();
     showView('live');
     addMessage(t('chatSystemMatched', {
       name: data.partner.username,
@@ -394,6 +418,8 @@
     typingEl.classList.add('hidden');
     reportBtn.classList.add('hidden');
     addFriendBtn.classList.add('hidden');
+    topPeer.classList.add('hidden');
+    topDefault.classList.remove('hidden');
     input.disabled = true;
     if (autoNext) {
       // Keep going straight into a new search — no need to wait for a tap on Next.
@@ -414,13 +440,12 @@
     stage.innerHTML = '<div class="chat-blocked-full"><h1>' + escapeHtml(t('maintenanceTitle')) + '</h1><p>' + escapeHtml((data && data.message) || t('maintenanceBody')) + '</p></div>';
   });
 
-  // Keep the identity fresh whenever i18n re-renders (e.g. language change).
+  // Keep translated bits fresh whenever i18n re-renders (e.g. language change).
   window.addEventListener('i18n-changed', function () {
-    syncMe();
+    syncPeer();
     if (!nextArmed) nextBtn.querySelector('span').textContent = t('chatNext');
   });
 
   // --- Boot: land straight on the single "Start chatting" button. ---
-  syncMe();
   goStart();
 })();
