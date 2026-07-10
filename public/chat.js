@@ -47,7 +47,6 @@
   var typingEl = $('typing');
   var onlineCount = $('onlineCount');
   var autoNextRow = $('autoNextRow');
-  var autoNextCheckbox = $('autoNextCheckbox');
 
   function escapeHtml(str) {
     return String(str).replace(/[&<>"']/g, function (c) {
@@ -75,11 +74,14 @@
   // the preference is consistent across both sub-apps.
   var AUTO_NEXT_KEY = 'talklive_autocall';
   var autoNext = localStorage.getItem(AUTO_NEXT_KEY) === 'on';
-  autoNextCheckbox.checked = autoNext;
-  autoNextCheckbox.addEventListener('change', function () {
-    autoNext = autoNextCheckbox.checked;
+  function setAutoNext(on) {
+    autoNext = on;
     localStorage.setItem(AUTO_NEXT_KEY, autoNext ? 'on' : 'off');
-  });
+    autoNextRow.classList.toggle('active', autoNext);
+    autoNextRow.setAttribute('aria-pressed', autoNext ? 'true' : 'false');
+  }
+  setAutoNext(autoNext);
+  autoNextRow.addEventListener('click', function () { vibrate(10); setAutoNext(!autoNext); });
 
   // ---------------------------------------------------------------------------
   // Views: start → search → live. Only one is visible at a time.
@@ -217,6 +219,17 @@
     socket.emit('skip');
   });
 
+  // Desktop: Esc taps Next (or closes whatever modal is open, standard behavior).
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape' && e.key !== 'Esc') return;
+    var openModalEl = document.querySelector('.modal-overlay:not(.hidden)');
+    if (openModalEl) { closeModal(openModalEl); return; }
+    if (!composer.classList.contains('hidden')) {
+      e.preventDefault();
+      nextBtn.click();
+    }
+  });
+
   // Composer
   var typingThrottle = null;
   composer.addEventListener('submit', function (e) {
@@ -235,6 +248,18 @@
     socket.emit('typing');
     typingThrottle = setTimeout(function () { typingThrottle = null; }, 1500);
   });
+
+  // Mobile: when the on-screen keyboard opens/closes the visual viewport
+  // resizes; keep the page pinned to the top and the latest message in view
+  // instead of relying on the browser's own (unreliable) scroll-into-view.
+  function pinToLatest() {
+    window.scrollTo(0, 0);
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', pinToLatest);
+  }
+  input.addEventListener('focus', function () { setTimeout(pinToLatest, 60); });
 
   // ---------------------------------------------------------------------------
   // Report (reuses the shared server report flow, which auto-rematches).

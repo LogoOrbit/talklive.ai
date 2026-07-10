@@ -3,7 +3,7 @@
 <head>
 <script src="/loading.js"></script>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
 <title>TalkLive — Anonymous Text Chat with Strangers</title>
 <meta name="description" content="Anonymous text chat with a random stranger anywhere in the world. Free, instant, no sign-up." />
 <meta name="robots" content="noindex, follow" />
@@ -96,10 +96,10 @@
 
       <!-- Auto-next: when on, a partner disconnecting goes straight into a new
            search instead of waiting for a tap on Next. Persisted across visits. -->
-      <label id="autoNextRow" class="checkbox-row auto-next-row hidden" for="autoNextCheckbox">
-        <input type="checkbox" id="autoNextCheckbox" />
+      <button type="button" id="autoNextRow" class="auto-next-row hidden" aria-pressed="false">
+        <span class="auto-next-dot" aria-hidden="true"></span>
         <span data-i18n="enableAutoCall">Enable — keep connecting me to new people</span>
-      </label>
+      </button>
 
       <!-- Composer -->
       <form id="composer" class="composer hidden">

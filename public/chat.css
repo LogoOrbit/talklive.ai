@@ -44,8 +44,10 @@ img { max-width: 100%; }
 .app {
   display: flex;
   flex-direction: column;
-  height: 100dvh;
   height: 100vh;
+  height: 100dvh; /* wins where supported; keeps the layout pinned to the real
+                     visible viewport instead of the pre-keyboard/URL-bar one,
+                     so the topbar never ends up scrolled off-screen */
 }
 
 /* --- Topbar --- */
@@ -188,7 +190,7 @@ img { max-width: 100%; }
   display: block; font-size: 13px; font-weight: 800; letter-spacing: 5px; text-transform: uppercase;
   background: linear-gradient(90deg, #00d4ff, #6c5ce7, #ff7ab8); -webkit-background-clip: text; background-clip: text; color: transparent;
 }
-.connected-from { display: inline-flex; align-items: center; gap: 7px; margin-top: 5px; font-size: 16px; font-weight: 700; }
+.connected-from { display: inline-flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 7px; margin-top: 5px; font-size: 16px; font-weight: 700; width: 100%; text-align: center; }
 .connected-from .flag-icon { border-radius: 3px; }
 .connected-from::before, .connected-from::after { content: ""; width: 26px; height: 1px; background: rgba(138, 144, 168, 0.4); }
 .msgs {
@@ -205,15 +207,21 @@ img { max-width: 100%; }
 .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
 @keyframes typingDot { 0%, 60%, 100% { opacity: 0.3; } 30% { opacity: 1; } }
 
-/* Auto-next checkbox: keep searching automatically after a disconnect */
-.checkbox-row {
-  display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 13px; color: var(--text);
-}
-.checkbox-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: #2ed47a; cursor: pointer; flex-shrink: 0; }
+/* Auto-next toggle: keep searching automatically after a disconnect */
 .auto-next-row {
-  flex: 0 0 auto; justify-content: center; margin: 0 auto; padding: 8px 10px 0;
-  width: fit-content; max-width: 90%; text-align: left;
+  flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+  margin: 8px auto 0; padding: 8px 16px; width: fit-content; max-width: 90%; text-align: left;
+  border: 1px solid rgba(138, 144, 168, 0.3); border-radius: 999px; background: transparent;
+  color: var(--muted); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
+.auto-next-row:active { transform: scale(0.97); }
+.auto-next-dot {
+  width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0;
+  border: 2px solid rgba(138, 144, 168, 0.5); transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.auto-next-row.active { color: var(--text); border-color: rgba(46, 212, 122, 0.5); background: rgba(46, 212, 122, 0.1); }
+.auto-next-row.active .auto-next-dot { background: #2ed47a; border-color: #2ed47a; box-shadow: 0 0 8px rgba(46, 212, 122, 0.6); }
 
 /* Composer */
 .composer {
