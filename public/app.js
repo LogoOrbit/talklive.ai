@@ -3969,7 +3969,7 @@ prefGenderGroup.addEventListener('click', (e) => {
   showPremiumUpsell(t('premiumGenderLocked'));
 }, true);
 
-// --- Add friend manually by username or unique ID ---------------------------
+// --- Add friend manually by username -----------------------------------------
 const addFriendByIdInput = document.getElementById('addFriendByIdInput');
 const addFriendByIdBtn = document.getElementById('addFriendByIdBtn');
 
