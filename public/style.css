@@ -5420,9 +5420,16 @@ html.perf-lite .side-panel { box-shadow: none; }
   z-index: 40;
 }
 body.chat-stage-open { overflow: hidden; }
+/* The chat page is its own sub-app. While it's open, the entire voice-call
+   sub-app (setup landing + live call panel, including its searching ticker and
+   fun-fact banner) must not render behind it — otherwise its content bleeds
+   into the top strip and scrolls in the background. Hide it outright so the two
+   never mix. */
+body.chat-stage-open #setupPanel,
+body.chat-stage-open #callPanel,
 body.chat-stage-open .footer,
 body.chat-stage-open .seo-section,
-body.chat-stage-open .seo-links { display: none; }
+body.chat-stage-open .seo-links { display: none !important; }
 
 /* --- Sub-nav: me (left) · report (center) · add friend (right) --- */
 .chat-subnav {
