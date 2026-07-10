@@ -128,7 +128,7 @@
 }
 </script>
 
-<link rel="stylesheet" href="style.css?v=20260710d" />
+<link rel="stylesheet" href="style.css?v=20260710e" />
 <script src="/config.js"></script>
 </head>
 <body>
@@ -185,7 +185,7 @@
             <circle cx="11" cy="18" r="2" fill="currentColor" stroke="none"/>
           </svg>
         </button>
-        <button id="gameBtn" class="icon-btn hidden" data-i18n-title="playTtt" data-i18n-aria="playTtt" title="Play Tic Tac Toe" aria-label="Play Tic Tac Toe">
+        <button id="gameBtn" class="icon-btn hidden" data-i18n-title="playGames" data-i18n-aria="playGames" title="Play a game" aria-label="Play a game">
           <span id="gameBtnBadge" class="notif-badge hidden" aria-hidden="true">!</span>
           <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <line x1="9" y1="3.5" x2="9" y2="20.5"/>
@@ -1121,12 +1121,30 @@
     </div>
   </div>
 
-  <!-- Tic Tac Toe mini-game overlay: play with whoever you're connected to -->
+  <!-- Mini-games overlay: Tic Tac Toe & Dots and Boxes, played with whoever you're connected to -->
   <div id="gameOverlay" class="game-overlay hidden">
-    <div class="game-modal" role="dialog" aria-label="Tic Tac Toe">
+    <div class="game-modal" role="dialog" aria-label="Games">
       <div class="game-modal-header">
-        <h2 class="game-title">Tic Tac Toe</h2>
+        <h2 class="game-title" id="gameTitle">Games</h2>
         <button type="button" id="closeGameBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
+      </div>
+
+      <!-- Game picker: shown when no game is running so you choose what to invite to -->
+      <div id="gamePicker" class="game-picker hidden">
+        <button type="button" class="game-pick-card" data-game="ttt">
+          <span class="game-pick-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="9" y1="3.5" x2="9" y2="20.5"/><line x1="15" y1="3.5" x2="15" y2="20.5"/><line x1="3.5" y1="9" x2="20.5" y2="9"/><line x1="3.5" y1="15" x2="20.5" y2="15"/></svg>
+          </span>
+          <span class="game-pick-name" data-i18n="gameTtt">Tic Tac Toe</span>
+          <span class="game-pick-desc" data-i18n="gameTttDesc">Classic 3×3 — three in a row wins</span>
+        </button>
+        <button type="button" class="game-pick-card" data-game="dab">
+          <span class="game-pick-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="5" cy="5" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="5" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="5" r="1.6" fill="currentColor" stroke="none"/><circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="5" cy="19" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="19" r="1.6" fill="currentColor" stroke="none"/><line x1="5" y1="5" x2="12" y2="5"/><line x1="5" y1="5" x2="5" y2="12"/><line x1="12" y1="5" x2="12" y2="12"/><line x1="5" y1="12" x2="12" y2="12"/></svg>
+          </span>
+          <span class="game-pick-name" data-i18n="gameDab">Dots &amp; Boxes</span>
+          <span class="game-pick-desc" data-i18n="gameDabDesc">Draw lines, close boxes, score points</span>
+        </button>
       </div>
 
       <!-- Player status bar: avatar, name, whose turn, and live activity -->
@@ -1151,15 +1169,17 @@
       <p id="gameStatus" class="game-status"></p>
 
       <div class="ttt-board-area" id="tttBoardArea">
-        <div class="ttt-board-wrap">
+        <div class="ttt-board-wrap" id="tttBoardWrap">
           <div id="tttBoard" class="ttt-board" aria-hidden="true"></div>
+        </div>
+        <div class="dab-board-wrap hidden" id="dabBoardWrap">
+          <canvas id="dabCanvas" class="dab-canvas" aria-hidden="true"></canvas>
         </div>
         <div id="tttDisconnectBanner" class="ttt-disconnect-banner hidden" role="alert"></div>
       </div>
 
       <div class="game-controls">
         <div class="game-buttons">
-          <button type="button" id="gameInviteBtn" class="btn btn-primary hidden" data-i18n="invitePartnerToPlay">Invite your partner to play</button>
           <button type="button" id="gameCancelBtn" class="btn btn-secondary hidden" data-i18n="cancel">Cancel</button>
           <button type="button" id="gameAcceptBtn" class="btn game-accept hidden" data-i18n="acceptAndPlay">Accept &amp; Play</button>
           <button type="button" id="gameDeclineBtn" class="btn game-decline hidden" data-i18n="decline">Decline</button>
@@ -1189,7 +1209,7 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="countries.js?v=20260704b"></script>
-  <script src="i18n.js?v=20260710d"></script>
+  <script src="i18n.js?v=20260710e"></script>
   <script src="moderation.js?v=20260705b"></script>
   <script src="video-banner.js?v=20260707a"></script>
   <script>
@@ -1237,6 +1257,6 @@
       audio.addEventListener('play', function () { setState(true); });
     })();
   </script>
-  <script src="app.js?v=20260710c"></script>
+  <script src="app.js?v=20260710e"></script>
 </body>
 </html>

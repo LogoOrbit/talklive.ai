@@ -2928,6 +2928,16 @@ body.panel-open .side-panel {
   background: #2ed47a;
 }
 
+/* Plain-text online/offline status shown next to a friend's name. */
+.friend-status-text {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: capitalize;
+  flex-shrink: 0;
+}
+.friend-status-text.is-online { color: #2ed47a; }
+.friend-status-text.is-offline { color: #ff5470; }
+
 .friend-item-name {
   font-weight: 700;
   display: flex;
@@ -2961,15 +2971,15 @@ body.panel-open .side-panel {
 }
 
 .btn-chip {
-  border: 1px solid rgba(255,255,255,0.1);
-  background: rgba(255,255,255,0.06);
-  color: var(--text);
+  border: none;
+  background: #3a4258;
+  color: #fff;
   font-size: 12px;
-  font-weight: 600;
-  padding: 6px 10px;
+  font-weight: 700;
+  padding: 6px 12px;
   border-radius: 999px;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, transform 0.1s ease;
   white-space: nowrap;
 }
 
@@ -2981,14 +2991,15 @@ body.panel-open .side-panel {
 }
 
 .btn-chip:hover {
-  background: rgba(255,255,255,0.12);
+  background: #465070;
 }
+.btn-chip:active { transform: scale(0.96); }
 
 .btn-chip-accept {
-  background: rgba(46, 212, 122, 0.18);
-  border-color: rgba(46, 212, 122, 0.4);
-  color: #2ed47a;
+  background: #16a34a;
+  color: #fff;
 }
+.btn-chip-accept:hover { background: #1db456; }
 
 /* Notifications list — sits above the friends list in the same dropdown */
 .notif-list {
@@ -4018,25 +4029,26 @@ body.panel-open .side-panel {
 }
 @keyframes callbackSpin { to { transform: rotate(360deg); } }
 
-/* Gender symbol shown in the friends list instead of an avatar image. */
+/* Gendered person avatar shown in the friends list instead of an avatar image:
+   blue man / pink woman / grey person when gender is unknown. */
 .gender-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   line-height: 1;
-  font-weight: 700;
 }
+.gender-icon svg { width: 100%; height: 100%; }
 .gender-icon.gender-male { color: #2f80ff; }
 .gender-icon.gender-female { color: #ff5fa2; }
 .gender-icon.gender-neutral { color: var(--muted); }
-.gender-icon.gender-neutral svg { width: 1em; height: 1em; }
 
 .friend-row-main {
   flex: 1;
   min-width: 0;
 }
 
-.friend-call-btn {
+.friend-call-btn,
+.friend-msg-btn {
   width: 34px;
   height: 34px;
   border-radius: 50%;
@@ -4051,18 +4063,24 @@ body.panel-open .side-panel {
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.friend-call-btn:hover {
+.friend-call-btn:hover,
+.friend-msg-btn:hover {
   box-shadow: 0 0 16px rgba(22, 163, 74, 0.7);
 }
 
-.friend-call-btn:active {
+.friend-call-btn:active,
+.friend-msg-btn:active {
   transform: scale(0.92);
 }
 
-.friend-call-btn svg {
+.friend-call-btn svg,
+.friend-msg-btn svg {
   width: 16px;
   height: 16px;
 }
+
+.friend-msg-btn { color: #fff; }
+.friend-msg-btn svg { stroke: #fff; }
 
 /* Offline friend: the green call button goes grey with a small red dot so it
    reads as "unavailable right now" without dropping off the panel. */
@@ -4250,7 +4268,6 @@ body.panel-open .side-panel {
 [data-theme="light"] .action-btn-neutral,
 [data-theme="light"] .icon-btn,
 [data-theme="light"] .reaction-btn,
-[data-theme="light"] .btn-chip,
 [data-theme="light"] .friend-item,
 [data-theme="light"] .notif-item,
 [data-theme="light"] .history-item,
@@ -4636,6 +4653,81 @@ body.panel-open .side-panel {
   min-height: 20px;
 }
 
+/* --- Game picker: pick which game to invite the partner to --- */
+.game-picker {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.game-picker.hidden { display: none; }
+.game-pick-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 18px 12px 14px;
+  border-radius: 16px;
+  border: 1.5px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.05);
+  color: var(--text);
+  cursor: pointer;
+  text-align: center;
+  transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+.game-pick-card:hover,
+.game-pick-card:focus-visible {
+  border-color: var(--accent-2);
+  background: var(--accent-soft, rgba(108, 92, 231, 0.14));
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(0,0,0,0.35);
+}
+.game-pick-card:active { transform: scale(0.97); }
+.game-pick-icon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 13px;
+  color: var(--accent-2);
+  background: rgba(255,255,255,0.06);
+}
+.game-pick-icon svg { width: 28px; height: 28px; }
+.game-pick-name { font-size: 14px; font-weight: 800; }
+.game-pick-desc { font-size: 11px; color: var(--muted); line-height: 1.35; }
+
+/* --- Dots & Boxes canvas board --- */
+.dab-board-wrap {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+.dab-board-wrap.hidden { display: none; }
+.dab-canvas {
+  display: block;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: 0 10px 26px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(0,0,0,0.1);
+  touch-action: manipulation;
+  cursor: pointer;
+}
+.ttt-board-area.is-dead .dab-canvas {
+  filter: grayscale(1) brightness(0.7);
+  pointer-events: none;
+}
+
+/* Red "you've been invited" badge on the game button — quiet but noticeable. */
+#gameBtn .notif-badge.is-invite {
+  background: var(--danger);
+  box-shadow: 0 0 8px var(--danger);
+  animation: gameInvitePulse 1.4s ease-in-out infinite;
+}
+@keyframes gameInvitePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.25); }
+}
+
 /* --- Player status bar: avatar · name · turn · live activity --- */
 .ttt-players {
   display: flex;
@@ -4914,6 +5006,7 @@ body.panel-open .side-panel {
 }
 @media (prefers-reduced-motion: reduce) {
   #gameBtn.game-nudge { animation: none; }
+  #gameBtn .notif-badge.is-invite { animation: none; }
   .ttt-player.active .ttt-player-avatar,
   .ttt-cell.empty.movable,
   .ttt-mark,
