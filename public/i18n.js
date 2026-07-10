@@ -169,6 +169,7 @@ const I18N_STRINGS = {
     "strangerTyping": "Stranger is typing",
     "seen": "Seen",
     "messageSeen": "Read receipts (Seen)",
+    "readReceipts": "Read Receipts",
     "readOurBlog": "📖 Read our blog",
     "blogCtaText": "Want a lighter read?",
     "blogCtaSub": "Tips and stories about meeting new people are on our blog.",

@@ -1511,19 +1511,19 @@ function renderFriendChatMessages() {
   friendChatMessages.scrollTop = friendChatMessages.scrollHeight;
 }
 
-// Text messaging is call-gated: a DM can only be sent to someone you're in a
-// live (accepted) call with. In-call chat is unaffected — it uses its own box.
+// Whether a live (accepted) call is in progress with this friend. Kept so the
+// composer can auto-focus during a call — but chatting no longer requires it.
 function inCallWith(clientId) {
   return callState === 'connected' && currentPartner && currentPartner.clientId === clientId;
 }
 
-// Enable/disable the friend-chat composer based on whether a call is live with
-// that friend, showing a "call to unlock" hint when it's locked.
+// Friend chat is always open now: you can message an added friend any time,
+// whether or not you're on a call with them. Offline messages are stored and
+// delivered (with a notification) when they come back.
 function applyFriendChatLock() {
-  const unlocked = inCallWith(activeFriendChatId);
-  friendChatInput.disabled = !unlocked;
-  friendChatInput.placeholder = unlocked ? t('typeMessage') : t('chatLockedHint');
-  friendChatForm.classList.toggle('locked', !unlocked);
+  friendChatInput.disabled = false;
+  friendChatInput.placeholder = t('typeMessage');
+  friendChatForm.classList.remove('locked');
 }
 
 function openFriendChat(friendClientId) {
@@ -1541,7 +1541,7 @@ function openFriendChat(friendClientId) {
   renderNotifications();
   renderFriendChatMessages();
   applyFriendChatLock();
-  if (inCallWith(friendClientId)) friendChatInput.focus();
+  friendChatInput.focus();
 }
 
 closeFriendChatBtn.addEventListener('click', () => {
@@ -1553,15 +1553,6 @@ friendChatForm.addEventListener('submit', (e) => {
   e.preventDefault();
   const text = friendChatInput.value.trim();
   if (!text || !activeFriendChatId) return;
-  if (!inCallWith(activeFriendChatId)) {
-    const el = document.createElement('div');
-    el.className = 'chat-msg system';
-    el.textContent = t('errCallRequiredToChat');
-    friendChatMessages.appendChild(el);
-    friendChatMessages.scrollTop = friendChatMessages.scrollHeight;
-    applyFriendChatLock();
-    return;
-  }
   if (messageHasLink(text)) {
     const el = document.createElement('div');
     el.className = 'chat-msg system';
