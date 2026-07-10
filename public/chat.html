@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="/loading.js"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>TalkLive — Anonymous Text Chat with Strangers</title>
+<meta name="description" content="Anonymous text chat with a random stranger anywhere in the world. Free, instant, no sign-up." />
+<meta name="robots" content="noindex, follow" />
+<meta name="application-name" content="TalkLive" />
+<meta name="apple-mobile-web-app-title" content="TalkLive" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="theme-color" content="#0b0f1a" media="(prefers-color-scheme: dark)" />
+<meta name="theme-color" content="#eef1f9" media="(prefers-color-scheme: light)" />
+<link rel="canonical" href="https://talklive.app/chat" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="icon" href="/favicon-48.png" sizes="48x48" type="image/png" />
+<link rel="apple-touch-icon" href="/favicon-192.png" />
+<link rel="manifest" href="/site.webmanifest" />
+<link rel="stylesheet" href="/chat.css" />
+</head>
+<body>
+  <div class="app">
+
+    <!-- Topbar: brand · online count · link back to the voice-call app -->
+    <header class="topbar">
+      <a class="brand" href="/chat">
+        <span class="brand-logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+        </span>
+        TalkLive
+      </a>
+      <div class="topbar-right">
+        <span class="online-pill"><span class="online-dot" aria-hidden="true"></span><span id="onlineCount">—</span> <span data-i18n="online">Online</span></span>
+        <a class="call-link" href="/call" data-i18n="voiceCall">Voice call</a>
+      </div>
+    </header>
+
+    <!-- The chat sub-app -->
+    <section id="chatStage" class="chat-stage" aria-label="Random text chat">
+
+      <div class="chat-subnav">
+        <div class="chat-subnav-me">
+          <span id="meFlag" class="chat-me-flag" aria-hidden="true"></span>
+          <span id="meName" class="chat-me-name">You</span>
+        </div>
+        <button type="button" id="reportBtn" class="chat-subnav-report hidden" data-i18n-aria="report" aria-label="Report">
+          <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><line x1="5" y1="3" x2="5" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M6 4h13l-3.5 4L19 12H6V4z" fill="currentColor"/></svg>
+          <span data-i18n="report">Report</span>
+        </button>
+        <button type="button" id="addFriendBtn" class="chat-subnav-add hidden" data-i18n-aria="addFriend" aria-label="Add friend">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+          <span data-i18n="addFriend">Add friend</span>
+        </button>
+      </div>
+
+      <div class="chat-body">
+
+        <!-- START -->
+        <div id="viewStart" class="chat-view">
+          <h1 class="chat-start-title" data-i18n="chatStartTitle">Chat with a stranger</h1>
+          <p class="chat-start-sub" data-i18n="chatStartSub">Anonymous · worldwide · free</p>
+          <button type="button" id="startBtn" class="chat-start-btn" data-i18n-aria="startChatAria" aria-label="Start a text chat with a random person">
+            <span data-i18n="chatStartBtn">Start chatting</span>
+          </button>
+        </div>
+
+        <!-- SEARCHING -->
+        <div id="viewSearch" class="chat-view hidden" aria-hidden="true">
+          <div class="search-scene">
+            <span class="cs-halo h1"></span>
+            <span class="cs-halo h2"></span>
+            <div class="cs-orbit o1"><span class="cs-spark"></span></div>
+            <div class="cs-orbit o2"><span class="cs-spark s2"></span></div>
+            <div class="cs-orbit o3"><span class="cs-spark s3"></span></div>
+            <div class="cs-beacon">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+              <span class="cs-dots"><span></span><span></span><span></span></span>
+            </div>
+          </div>
+          <p id="searchLine" class="search-line" aria-live="polite">Scanning the globe…</p>
+          <button type="button" id="cancelBtn" class="search-cancel" data-i18n="cancel">Cancel</button>
+        </div>
+
+        <!-- LIVE -->
+        <div id="viewLive" class="chat-view chat-view-live hidden">
+          <div class="connected-banner">
+            <span class="connected-word" data-i18n="chatConnectedWord">Connected</span>
+            <span class="connected-from" id="connectedFrom"></span>
+          </div>
+          <div id="msgs" class="msgs" aria-live="polite"></div>
+          <p id="typing" class="typing hidden"><span data-i18n="strangerTyping">Stranger is typing</span><span class="typing-dots" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span></p>
+        </div>
+      </div>
+
+      <!-- Composer -->
+      <form id="composer" class="composer hidden">
+        <button type="button" id="nextBtn" class="next-btn" aria-label="Next stranger"><span data-i18n="chatNext">Next</span></button>
+        <input id="msgInput" type="text" maxlength="1000" data-i18n-placeholder="typeMessage" data-i18n-aria="typeMessage" placeholder="Type a message…" autocomplete="off" />
+        <button type="submit" class="send-btn" data-i18n-aria="send" aria-label="Send">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.4 20.4 22 12 3.4 3.6 3.4 10l13 2-13 2z"/></svg>
+        </button>
+      </form>
+    </section>
+  </div>
+
+  <!-- Report dialog -->
+  <div id="reportModal" class="modal-overlay hidden">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="reportTitle">
+      <div class="modal-header">
+        <h2 id="reportTitle" data-i18n="reportTitle">Report this person</h2>
+        <button type="button" id="reportCloseBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="hint" data-i18n="reportSubtitle">Pick a reason. This ends the chat and blocks them from matching with you again.</p>
+        <div id="reportReasons" class="report-reasons" role="group" aria-labelledby="reportTitle">
+          <button type="button" class="report-reason" data-reason="spam" data-i18n="reportReasonSpam">Spam</button>
+          <button type="button" class="report-reason" data-reason="abuse" data-i18n="reportReasonAbuse">Abuse</button>
+          <button type="button" class="report-reason" data-reason="harassment" data-i18n="reportReasonHarassment">Harassment</button>
+          <button type="button" class="report-reason" data-reason="fake" data-i18n="reportReasonFake">Fake Profile</button>
+          <button type="button" class="report-reason" data-reason="inappropriate" data-i18n="reportReasonInappropriate">Inappropriate Behavior</button>
+          <button type="button" class="report-reason" data-reason="nudity" data-i18n="reportReasonNudity">Nudity</button>
+          <button type="button" class="report-reason" data-reason="hate" data-i18n="reportReasonHate">Hate Speech</button>
+          <button type="button" class="report-reason" data-reason="underage" data-i18n="reportReasonUnderage">Underage</button>
+          <button type="button" class="report-reason" data-reason="scammer" data-i18n="reportReasonScammer">Scammer</button>
+          <button type="button" class="report-reason" data-reason="other" data-i18n="reportReasonOther">Other</button>
+        </div>
+        <label class="field-label" for="reportDetail" data-i18n="reportCustomLabel">Add details (optional)</label>
+        <textarea id="reportDetail" class="textarea" rows="2" maxlength="300" data-i18n-placeholder="reportCustomPlaceholder" placeholder="Describe what happened…"></textarea>
+        <p id="reportNote" class="search-note hidden" aria-live="polite"></p>
+        <button type="button" id="reportSubmitBtn" class="btn btn-danger btn-block" data-i18n="reportSubmit">Report &amp; End Chat</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add-friend dialog -->
+  <div id="friendModal" class="modal-overlay hidden">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="friendTitle">
+      <div class="modal-header">
+        <h2 id="friendTitle" data-i18n="friendReqTitle">Add friend</h2>
+        <button type="button" id="friendCloseBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="friend-to"><span data-i18n="friendReqTo">Send a friend request to</span> <strong id="friendUsername">—</strong></p>
+        <textarea id="friendMessage" class="textarea" maxlength="200" rows="3" data-i18n-placeholder="friendReqMsgPh" placeholder="Optional message — remind them who you are…"></textarea>
+        <div class="modal-actions">
+          <button type="button" id="friendCancelBtn" class="btn btn-secondary" data-i18n="cancel">Cancel</button>
+          <button type="button" id="friendSendBtn" class="btn btn-primary" data-i18n="friendReqSend">Send request</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Age / terms gate (once per browser, before the first chat) -->
+  <div id="consentModal" class="modal-overlay hidden">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="consentTitle">
+      <div class="modal-header">
+        <h2 id="consentTitle" data-i18n="beforeYouStart">Before You Start</h2>
+      </div>
+      <div class="modal-body">
+        <p class="hint" data-i18n="mustBe18">You must be 18 years or older to use TalkLive.</p>
+        <label class="consent-check" for="consentCheckbox">
+          <input type="checkbox" id="consentCheckbox" />
+          <span class="consent-links" data-i18n="agreeToTerms">I have read and agree to the Terms &amp; Conditions.</span>
+        </label>
+        <button type="button" id="consentAgreeBtn" class="btn btn-primary btn-block" data-i18n="iAgree" disabled>I AGREE</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/countries.js"></script>
+  <script src="/i18n.js"></script>
+  <script src="/chat.js"></script>
+</body>
+</html>

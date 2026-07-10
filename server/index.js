@@ -234,11 +234,17 @@ app.get('/ice-servers', (req, res) => {
   res.json({ iceServers: buildIceServers() });
 });
 
-// The call and chat screens are their own URLs (reached via
-// history.replaceState once the user taps Talk or Chat), but they're still the
-// same single-page app — serve the same shell so a direct hit/refresh works.
-app.get(['/call', '/chat'], (req, res) => {
+// The voice-call screen is its own URL (reached via history.replaceState once
+// the user taps Talk) but shares the main single-page shell.
+app.get('/call', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+});
+
+// The text-chat app is a genuinely separate, lightweight page — no voice/WebRTC
+// code is loaded here at all, so the two sub-apps can never bleed into each
+// other and it stays fast on weak phones.
+app.get('/chat', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'chat.html'));
 });
 
 // Redirect the raw SEO landing files (e.g. /talk-to-strangers.html) to their
