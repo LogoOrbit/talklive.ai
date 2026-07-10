@@ -1810,10 +1810,58 @@ body.panel-open .side-panel {
   line-height: 1;
   cursor: pointer;
   padding: 4px;
+  /* Comfortable 44px touch target without growing the header visually. */
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: -10px;
 }
 
 .modal-close:hover {
   color: var(--text);
+}
+
+/* Loading skeletons (friends list while waiting for the first server sync). */
+.skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 4px;
+}
+
+.skeleton {
+  display: block;
+  border-radius: 8px;
+  background: linear-gradient(90deg, rgba(128, 140, 170, 0.14) 25%, rgba(128, 140, 170, 0.28) 50%, rgba(128, 140, 170, 0.14) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+.skeleton-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.skeleton-line {
+  height: 12px;
+  flex: 1;
+}
+
+.skeleton-line.short {
+  flex: 0 0 55%;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
 }
 
 .modal-body {

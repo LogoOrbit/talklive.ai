@@ -128,7 +128,7 @@
 }
 </script>
 
-<link rel="stylesheet" href="style.css?v=20260710a" />
+<link rel="stylesheet" href="style.css?v=20260710b" />
 <script src="/config.js"></script>
 </head>
 <body>
@@ -137,10 +137,9 @@
     <header class="topbar">
       <div class="topbar-left">
         <button id="appSettingsBtn" class="icon-btn" data-i18n-title="settings" data-i18n-aria="menuAria" title="Settings" aria-label="Open settings menu">
-          <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
-            <line x1="4" y1="7" x2="20" y2="7"/>
-            <line x1="4" y1="12" x2="20" y2="12"/>
-            <line x1="4" y1="17" x2="20" y2="17"/>
+          <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3.2"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
           </svg>
         </button>
         <div class="brand">
@@ -207,7 +206,9 @@
                 <p class="history-empty" data-i18n="noRequestsYet">No requests yet.</p>
               </div>
               <div id="friendsList" class="friends-list">
-                <p class="history-empty" data-i18n="noFriendsYet">No friends yet. Tap "Add friend" during a call to send a request.</p>
+                <!-- Skeleton rows shown until the first friends sync from the server. -->
+                <div class="skeleton-row" aria-hidden="true"><span class="skeleton skeleton-avatar"></span><span class="skeleton skeleton-line"></span></div>
+                <div class="skeleton-row" aria-hidden="true"><span class="skeleton skeleton-avatar"></span><span class="skeleton skeleton-line short"></span></div>
               </div>
             </div>
           </div>
@@ -1223,7 +1224,7 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="countries.js?v=20260704b"></script>
-  <script src="i18n.js?v=20260707a"></script>
+  <script src="i18n.js?v=20260710b"></script>
   <script src="moderation.js?v=20260705b"></script>
   <script src="video-banner.js?v=20260707a"></script>
   <script>
@@ -1271,6 +1272,6 @@
       audio.addEventListener('play', function () { setState(true); });
     })();
   </script>
-  <script src="app.js?v=20260710a"></script>
+  <script src="app.js?v=20260710b"></script>
 </body>
 </html>

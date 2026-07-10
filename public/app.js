@@ -803,8 +803,16 @@ socket.on('friend-request-result', ({ ok, error, limitReached }) => {
   if (!ok && error && !limitReached) showError(error);
 });
 
+let lastFocusedBeforeModal = null;
 function openModal(modal) {
   modal.classList.remove('hidden');
+  // Move focus into dialogs so keyboard/screen-reader users land inside them,
+  // and remember where to return focus on close.
+  if (modal.classList.contains('modal-overlay')) {
+    lastFocusedBeforeModal = document.activeElement;
+    const focusTarget = modal.querySelector('input:not([type="hidden"]):not(:disabled), .btn, button');
+    if (focusTarget) focusTarget.focus();
+  }
   // On small screens the toolbar dropdowns are position:fixed — anchor them
   // just under their own button so they open correctly at any scroll position
   // now that the navbar is sticky.
@@ -823,7 +831,12 @@ function openModal(modal) {
 }
 
 function closeModal(modal) {
+  const wasOpen = !modal.classList.contains('hidden');
   modal.classList.add('hidden');
+  if (wasOpen && modal.classList.contains('modal-overlay') && lastFocusedBeforeModal && document.body.contains(lastFocusedBeforeModal)) {
+    lastFocusedBeforeModal.focus();
+    lastFocusedBeforeModal = null;
+  }
 }
 
 openTermsLink.addEventListener('click', () => openModal(termsModal));
@@ -1263,19 +1276,30 @@ friendProfileChatBtn.addEventListener('click', () => {
   openFriendChat(activeProfileFriendId);
 });
 
-friendProfileRemoveBtn.addEventListener('click', () => {
-  if (!activeProfileFriendId || !confirm(t('confirmRemoveFriend'))) return;
+friendProfileRemoveBtn.addEventListener('click', async () => {
+  if (!activeProfileFriendId) return;
+  const ok = await showConfirm({ title: 'removeFriend', text: 'confirmRemoveFriend', okKey: 'remove' });
+  if (!ok || !activeProfileFriendId) return;
   socket.emit('remove-friend', { friendClientId: activeProfileFriendId });
   closeModal(friendProfileModal);
 });
 
-friendProfileBlockBtn.addEventListener('click', () => {
-  if (!activeProfileFriendId || !confirm(t('confirmBlockFriend'))) return;
+friendProfileBlockBtn.addEventListener('click', async () => {
+  if (!activeProfileFriendId) return;
+  const ok = await showConfirm({ title: 'block', text: 'confirmBlockFriend', okKey: 'block' });
+  if (!ok || !activeProfileFriendId) return;
   socket.emit('block-friend', { friendClientId: activeProfileFriendId });
   closeModal(friendProfileModal);
 });
 
+// The friends list starts as skeleton rows (index.html); the first state-sync
+// replaces them. If no sync arrives (server hiccup, logged-out edge case),
+// fall back to the normal empty state so the shimmer can't sit there forever.
+let friendsSynced = false;
+setTimeout(() => { if (!friendsSynced) renderFriendsList(); }, 5000);
+
 socket.on('state-sync', ({ friends: friendList, friendRequests: requestList, notifications: notifList } = {}) => {
+  friendsSynced = true;
   friendsData = friendList || [];
   friendRequestsData = requestList || [];
   notifData = notifList || [];
@@ -2478,11 +2502,28 @@ function enterCallUI() {
 }
 
 let beginInFlight = false;
+const MIC_EXPLAINED_KEY = 'talklive_mic_explained';
 async function begin() {
   if (beginInFlight) return;
   beginInFlight = true;
   startBtn.disabled = true;
   clearError();
+  // One-time explainer before the browser's mic prompt so the permission
+  // request doesn't come out of nowhere (biggest drop-off point on first use).
+  if (!localStream && !localStorage.getItem(MIC_EXPLAINED_KEY)) {
+    const proceed = await showConfirm({
+      title: 'micPromptTitle', text: 'micPromptBody',
+      okKey: 'micPromptOk', okClass: 'btn-primary',
+    });
+    if (!proceed) {
+      beginInFlight = false;
+      startBtn.disabled = false;
+      startBtn.classList.remove('is-connecting');
+      setButtonMode('call');
+      return;
+    }
+    localStorage.setItem(MIC_EXPLAINED_KEY, 'yes');
+  }
   try {
     await getMic();
   } catch (e) {
