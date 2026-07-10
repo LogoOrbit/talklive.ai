@@ -10,6 +10,18 @@ const store = require('./store');
 const { createAdmin } = require('./admin');
 
 const app = express();
+// Client IDs are browser-visible, so they are not an identity proof.  Bind
+// them to an HMAC token issued by the server; without this an attacker can
+// copy a peer's clientId and hijack social routing/premium state.
+const IDENTITY_SECRET = process.env.IDENTITY_SECRET || crypto.randomBytes(32).toString('hex');
+const identityTokens = new Map(); // clientId -> signed token for this process
+function signIdentity(clientId) {
+  return crypto.createHmac('sha256', IDENTITY_SECRET).update(clientId).digest('hex');
+}
+function validIdentityToken(clientId, token) {
+  return typeof token === 'string' && /^[a-f0-9]{64}$/.test(token)
+    && crypto.timingSafeEqual(Buffer.from(token), Buffer.from(signIdentity(clientId)));
+}
 const server = http.createServer(app);
 // Socket.IO configured to prefer a real WebSocket and allow polling only as a
 // bootstrap/fallback. The "breaks past ~6-7 concurrent clients" symptom comes
@@ -235,36 +247,26 @@ app.get('/config.js', (req, res) => {
   );
 });
 
-// ICE servers handed to the browser. Operators can plug in a real, reliable
-// TURN service via env (TURN_URLS as a comma list + TURN_USERNAME/TURN_CREDENTIAL,
-// or TURN_METERED_KEY for metered.ca). Cross-country calls behind symmetric NAT
-// require a working TURN relay in BOTH directions — STUN alone silently produces
-// one-way audio — so we always ship a broad set of relay endpoints (UDP + TCP +
-// TLS/443) as a fallback and let the browser pick whichever pierces the firewall.
+// ICE servers handed to the browser. Operators must configure TURN_URLS and
+// TURN_SHARED_SECRET; credentials are short-lived and relay-only to prevent
+// peer IP disclosure. STUN and shared/default TURN credentials are intentionally
+// not published.
 function buildIceServers() {
-  const servers = [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-  ];
+  // Do not publish STUN candidates: they expose each peer's public IP.
+  // Configure a TURN service with short-lived credentials in production.
+  const servers = [];
   const envUrls = (process.env.TURN_URLS || '').split(',').map((s) => s.trim()).filter(Boolean);
-  if (envUrls.length && process.env.TURN_USERNAME && process.env.TURN_CREDENTIAL) {
+  const turnSharedSecret = process.env.TURN_SHARED_SECRET || '';
+  if (envUrls.length && turnSharedSecret) {
+    const expiry = Math.floor(Date.now() / 1000) + 3600;
+    const username = `${expiry}:${crypto.randomBytes(8).toString('hex')}`;
+    const credential = crypto.createHmac('sha1', turnSharedSecret).update(username).digest('base64');
     servers.push({
       urls: envUrls,
-      username: process.env.TURN_USERNAME,
-      credential: process.env.TURN_CREDENTIAL,
+      username,
+      credential,
     });
   }
-  // Open Relay Project (metered.ca) free TURN — UDP/TCP/TLS across ports so at
-  // least one transport survives restrictive firewalls in either direction.
-  const relayUser = process.env.OPENRELAY_USERNAME || 'openrelayproject';
-  const relayCred = process.env.OPENRELAY_CREDENTIAL || 'openrelayproject';
-  servers.push(
-    { urls: 'turn:openrelay.metered.ca:80', username: relayUser, credential: relayCred },
-    { urls: 'turn:openrelay.metered.ca:80?transport=tcp', username: relayUser, credential: relayCred },
-    { urls: 'turn:openrelay.metered.ca:443', username: relayUser, credential: relayCred },
-    { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: relayUser, credential: relayCred },
-    { urls: 'turns:openrelay.metered.ca:443?transport=tcp', username: relayUser, credential: relayCred },
-  );
   return servers;
 }
 
@@ -421,6 +423,7 @@ const partners = new Map(); // socketId -> partnerSocketId
 const profiles = new Map(); // socketId -> { username, country, city, gender, prefGender, includeCountries, excludeCountries, interests, clientId, countryFallbackActive }
 const blocks = new Map(); // clientId -> Set<clientId>
 const hearts = new Map(); // pairKey ("clientIdA|clientIdB" sorted) -> Set<clientId who hearted>
+const reportCooldowns = new Map(); // reporter|target -> last report timestamp
 
 // In-chat voice-call invites: a /chat user invites their current text partner
 // to a voice call. On accept the server mints a one-time token; both browsers
@@ -1209,6 +1212,21 @@ io.on('connection', (socket) => {
     // arbitrary string here would be a stored-XSS vector.
     const rawClientId = typeof data.clientId === 'string' ? data.clientId : '';
     const clientId = /^[A-Za-z0-9_-]{8,64}$/.test(rawClientId) ? rawClientId : socket.id;
+    const identityToken = typeof data.identityToken === 'string' ? data.identityToken : '';
+    if (identityToken && !validIdentityToken(clientId, identityToken)) {
+      return socket.emit('register-result', { ok: false, error: 'Invalid client identity.' });
+    }
+    const knownToken = identityTokens.get(clientId);
+    if (knownToken && identityToken !== knownToken) {
+      return socket.emit('register-result', { ok: false, error: 'Client identity is already claimed.' });
+    }
+    const existingSocketId = clientSockets.get(clientId);
+    if (existingSocketId && existingSocketId !== socket.id
+      && io.sockets.sockets.has(existingSocketId)) {
+      return socket.emit('register-result', { ok: false, error: 'Client identity is already active.' });
+    }
+    const issuedIdentityToken = signIdentity(clientId);
+    identityTokens.set(clientId, issuedIdentityToken);
     // Banned by persistent clientId: refuse until the ban expires or is lifted.
     const ban = store.findActiveBan(clientId, ip);
     if (ban) {
@@ -1256,6 +1274,7 @@ io.on('connection', (socket) => {
       limits: FREE_LIMITS,
       adPassUntil: hasAdPass(clientId) ? adPasses.get(clientId) : null,
     });
+    socket.emit('identity-token', { clientId, token: issuedIdentityToken });
     syncClientState(socket, clientId);
 
     // "James from UK is online": tell each online friend this user just came
@@ -1399,6 +1418,13 @@ io.on('connection', (socket) => {
     const reason = typeof payload.reason === 'string' ? payload.reason.slice(0, 40) : 'unspecified';
     const detail = typeof payload.detail === 'string' ? payload.detail.slice(0, 300) : '';
     if (seeker && partner) {
+      const reportKey = `${seeker.clientId}|${partner.clientId}`;
+      const now = Date.now();
+      if (now - (reportCooldowns.get(reportKey) || 0) < 24 * 60 * 60 * 1000) {
+        disconnectPartner(socket.id);
+        return tryMatch(socket.id);
+      }
+      reportCooldowns.set(reportKey, now);
       blockPair(seeker.clientId, partner.clientId);
       const partnerSocket = io.sockets.sockets.get(partnerId);
       const reportedIp = partnerSocket ? getClientIp(partnerSocket) : null;
@@ -1416,7 +1442,12 @@ io.on('connection', (socket) => {
       // Auto-ban after the configured threshold — a real persisted ban (default
       // 30 minutes) so they can't reconnect by refreshing. The owner can extend
       // or lift it from the dashboard.
+      const distinctReporters = new Set((store.data.reports || [])
+        .filter((r) => r.reported && r.reported.clientId === partner.clientId)
+        .map((r) => r.reporter && r.reporter.clientId)
+        .filter(Boolean));
       if (totalReports >= (store.data.settings.banThreshold || 3)
+        && distinctReporters.size >= (store.data.settings.banThreshold || 3)
         && !store.findActiveBan(partner.clientId, reportedIp)) {
         const ban = store.addBan({
           clientId: partner.clientId,
@@ -1494,9 +1525,18 @@ io.on('connection', (socket) => {
   // WebRTC signaling relay — only forwarded to the current partner
   socket.on('signal', (data) => {
     const partnerId = partners.get(socket.id);
-    if (partnerId) {
-      io.to(partnerId).emit('signal', data);
-    }
+    if (!partnerId || partners.get(partnerId) !== socket.id) return;
+    if (!data || typeof data !== 'object') return;
+    if (data.type === 'offer' || data.type === 'answer') {
+      if (!data.sdp || typeof data.sdp !== 'object'
+        || data.sdp.type !== data.type || typeof data.sdp.sdp !== 'string'
+        || data.sdp.sdp.length > 32768) return;
+    } else if (data.type === 'ice-candidate') {
+      if (!data.candidate || typeof data.candidate !== 'object'
+        || typeof data.candidate.candidate !== 'string'
+        || data.candidate.candidate.length > 8192) return;
+    } else return;
+    io.to(partnerId).emit('signal', data);
   });
 
   // Client-side call moderation (moderation.js): keyword / sentiment /
@@ -1702,6 +1742,9 @@ io.on('connection', (socket) => {
     if (containsLink(text)) {
       return socket.emit('chat-blocked', { reason: 'link' });
     }
+    if (UNSAFE_RE.test(text)) {
+      return socket.emit('chat-blocked', { reason: 'unsafe' });
+    }
     const trimmed = text.trim().slice(0, 1000);
     const friendInfo = (friends.get(me.clientId) || new Map()).get(toClientId);
     store.addTranscript({
@@ -1738,14 +1781,15 @@ io.on('connection', (socket) => {
   socket.on('get-friend-chat', ({ friendClientId } = {}) => {
     const me = profiles.get(socket.id);
     friendClientId = validId(friendClientId);
-    if (!me || !friendClientId) return;
+    if (!me || !friendClientId || !isFriend(me.clientId, friendClientId)) return;
     const key = pairKey(me.clientId, friendClientId);
     socket.emit('friend-chat-history', { friendClientId, messages: friendChats.get(key) || [] });
   });
 
   socket.on('mark-messages-read', ({ friendClientId } = {}) => {
     const me = profiles.get(socket.id);
-    if (!me || !friendClientId) return;
+    friendClientId = validId(friendClientId);
+    if (!me || !friendClientId || !isFriend(me.clientId, friendClientId)) return;
     const list = notifications.get(me.clientId);
     if (!list) return;
     notifications.set(me.clientId, list.filter((n) => !(n.type === 'message' && n.fromClientId === friendClientId)));

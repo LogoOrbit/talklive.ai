@@ -392,6 +392,10 @@ function getClientId() {
   return id;
 }
 
+function getIdentityToken() {
+  return localStorage.getItem('talklive_identity_token') || '';
+}
+
 // --- Pill group (radio-style dot buttons) ---
 function initPillGroup(group) {
   group.addEventListener('click', (e) => {
@@ -1801,6 +1805,7 @@ function registerClient(payload) {
 
 registerClient({
   clientId: getClientId(),
+  identityToken: getIdentityToken(),
   nickname: accountNickname || undefined,
   avatar: myAvatar || undefined,
   hideStatus: !statusVisible,
@@ -1809,6 +1814,26 @@ renderAccountState();
 
 socket.on('profile', (profile) => {
   myProfile = profile;
+});
+
+socket.on('identity-token', ({ clientId, token } = {}) => {
+  if (clientId === getClientId() && typeof token === 'string' && /^[a-f0-9]{64}$/.test(token)) {
+    localStorage.setItem('talklive_identity_token', token);
+    if (lastRegisterPayload) lastRegisterPayload.identityToken = token;
+  }
+});
+
+socket.on('register-result', ({ ok } = {}) => {
+  if (ok !== false) return;
+  // A stolen/invalid identity must not leave the client permanently unable to
+  // connect. Rotate the local opaque identity and register afresh.
+  localStorage.removeItem('talklive_client_id');
+  localStorage.removeItem('talklive_identity_token');
+  if (lastRegisterPayload) {
+    lastRegisterPayload.clientId = getClientId();
+    lastRegisterPayload.identityToken = '';
+    socket.emit('register', lastRegisterPayload);
+  }
 });
 
 // --- State helpers ---
@@ -2302,7 +2327,13 @@ function attemptIceRestart(peer) {
 }
 
 function createPeerConnection(isInitiator) {
-  const peer = new RTCPeerConnection({ iceServers: ICE_SERVERS, iceCandidatePoolSize: 10 });
+  // Relay-only prevents host/server-reflexive ICE candidates from exposing
+  // either caller's IP address to the other peer.
+  const peer = new RTCPeerConnection({
+    iceServers: ICE_SERVERS,
+    iceTransportPolicy: 'relay',
+    iceCandidatePoolSize: 0,
+  });
   // A brand-new peer has no remote description yet, so start a fresh candidate
   // buffer (see handleSignal). Never carry candidates across connections.
   pendingCandidates = [];
@@ -2580,6 +2611,7 @@ function goIdleOnCallScreen(statusKey) {
 function registerProfile() {
   registerClient({
     clientId: getClientId(),
+    identityToken: getIdentityToken(),
     gender: genderGroup.dataset.value,
     prefGender: appliedFilters.prefGender,
     includeCountries: appliedFilters.includeCountries,
