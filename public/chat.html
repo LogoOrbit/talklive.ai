@@ -97,13 +97,16 @@
       <!-- Auto-next: when on, a partner disconnecting goes straight into a new
            search instead of waiting for a tap on Next. Persisted across visits. -->
       <button type="button" id="autoNextRow" class="auto-next-row hidden" aria-pressed="false">
-        <span class="auto-next-dot" aria-hidden="true"></span>
-        <span data-i18n="enableAutoCall">Enable — keep connecting me to new people</span>
+        <span class="auto-next-switch" aria-hidden="true"><span class="auto-next-knob"></span></span>
+        <span class="auto-next-label" data-i18n="enableAutoCall">Enable — keep connecting me to new people</span>
       </button>
 
       <!-- Composer -->
       <form id="composer" class="composer hidden">
-        <button type="button" id="nextBtn" class="next-btn" aria-label="Next stranger"><span data-i18n="chatNext">Next</span></button>
+        <button type="button" id="nextBtn" class="next-btn" aria-label="Next stranger">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5.5 18.5 13 12 5.5 5.5v13zM15 5.5h3v13h-3z"/></svg>
+          <span data-i18n="chatNext">Next</span>
+        </button>
         <input id="msgInput" type="text" maxlength="1000" data-i18n-placeholder="typeMessage" data-i18n-aria="typeMessage" placeholder="Type a message…" autocomplete="off" />
         <button type="submit" class="send-btn" data-i18n-aria="send" aria-label="Send">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.4 20.4 22 12 3.4 3.6 3.4 10l13 2-13 2z"/></svg>

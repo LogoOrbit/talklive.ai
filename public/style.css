@@ -2485,41 +2485,60 @@ body.panel-open .side-panel {
   gap: 6px;
 }
 
-/* Small "Seen" (double-tick) toggle in the chat header. Accent when on,
-   dimmed with a strike-through when read receipts are off. */
-.chat-header-toggle {
+/* Read-receipts toggle in the chat header: double-tick icon, label, and a
+   mini switch that slides, so the on/off state is obvious at a glance. */
+.seen-toggle {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border: none;
-  border-radius: 10px;
-  background: rgba(0, 212, 255, 0.14);
+  gap: 8px;
+  padding: 6px 8px 6px 12px;
+  border: 1px solid rgba(0, 212, 255, 0.35);
+  border-radius: 999px;
+  background: rgba(0, 212, 255, 0.1);
   color: var(--accent-2);
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, opacity 0.15s ease;
-}
-.chat-header-toggle:hover { background: rgba(0, 212, 255, 0.24); }
-.chat-header-toggle.is-off {
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--muted);
-  position: relative;
-}
-
-/* Text variant of the read-receipts toggle: a labelled pill ("Read Receipts")
-   instead of the old double-tick glyph, so it's obvious what it does. */
-.chat-header-toggle-text {
-  width: auto;
-  height: auto;
-  padding: 7px 12px;
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.01em;
   white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
-.chat-header-toggle-text.is-off {
-  text-decoration: line-through;
+.seen-toggle:hover { background: rgba(0, 212, 255, 0.18); }
+.seen-toggle:active { transform: scale(0.97); }
+.seen-toggle-ticks { width: 17px; height: 17px; flex-shrink: 0; transition: color 0.2s ease; }
+.seen-toggle-switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 30px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--accent-2);
+  transition: background 0.2s ease;
+}
+.seen-toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  transform: translateX(12px);
+  transition: transform 0.2s ease;
+}
+.seen-toggle.is-off {
+  border-color: rgba(138, 144, 168, 0.35);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--muted);
+}
+.seen-toggle.is-off .seen-toggle-switch { background: rgba(138, 144, 168, 0.4); }
+.seen-toggle.is-off .seen-toggle-knob { transform: translateX(0); }
+
+/* Very narrow screens: drop the label, keep ticks + switch. */
+@media (max-width: 380px) {
+  .seen-toggle-label { display: none; }
+  .seen-toggle { padding: 6px 8px; }
 }
 
 .chat-form {
@@ -4533,7 +4552,17 @@ body.panel-open .side-panel {
   padding: 16px 18px;
   border-bottom: 1px solid rgba(255,255,255,0.08);
   flex-shrink: 0;
+  gap: 10px;
 }
+/* Long friend names truncate instead of crowding the read-receipts toggle. */
+.chat-side-panel .side-panel-header h2 {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chat-header-actions { flex-shrink: 0; }
 
 .chat-side-body {
   flex: 1;

@@ -260,8 +260,10 @@
       <div class="side-panel-header">
         <h2 id="friendChatTitle" data-i18n="chat">Chat</h2>
         <div class="chat-header-actions">
-          <button type="button" id="chatSeenToggleBtn" class="chat-header-toggle chat-header-toggle-text" aria-pressed="true" data-i18n-title="messageSeen" title="Read receipts (Seen)" data-i18n-aria="readReceipts" aria-label="Read Receipts">
-            <span data-i18n="readReceipts">Read Receipts</span>
+          <button type="button" id="chatSeenToggleBtn" class="seen-toggle" aria-pressed="true" data-i18n-title="messageSeen" title="Read receipts (Seen)" data-i18n-aria="readReceipts" aria-label="Read Receipts">
+            <svg class="seen-toggle-ticks" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1.5 12.5 5.5 16.5 13 8"/><polyline points="10.5 14.5 12.5 16.5 22 6"/></svg>
+            <span class="seen-toggle-label" data-i18n="readReceipts">Read Receipts</span>
+            <span class="seen-toggle-switch" aria-hidden="true"><span class="seen-toggle-knob"></span></span>
           </button>
           <button type="button" id="closeFriendChatBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
         </div>
