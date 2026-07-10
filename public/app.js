@@ -1484,7 +1484,7 @@ function renderNotifications() {
       item.innerHTML = `
         <div class="notif-item-icon">${notifIcon(n.type)}</div>
         <div class="notif-item-body">
-          <div class="notif-item-text">${notifText(n)}</div>
+          <div class="notif-item-text">${notifText(n)}${n.message ? `<span class="notif-req-message">“${escapeHtml(n.message)}”</span>` : ''}</div>
           <div class="notif-item-time">${timeAgo(n.ts)}</div>
           <div class="notif-item-actions">${actions}</div>
         </div>
@@ -1820,6 +1820,10 @@ function setConnection(color, labelKey) {
   // call so you can't type into the void before a stranger is connected.
   chatInput.disabled = !connected;
   chatSendBtn.disabled = !connected;
+  const stageInput = document.getElementById('chatStageInput');
+  const stageSend = document.getElementById('chatStageSendBtn');
+  if (stageInput) stageInput.disabled = !connected;
+  if (stageSend) stageSend.disabled = !connected;
 
   if (connected && !wasConnected) {
     connectFlash.classList.remove('playing');
@@ -2197,19 +2201,25 @@ function addChatMessage(text, kind) {
     ticks.innerHTML = '<svg viewBox="0 0 16 11" aria-hidden="true"><path d="M11.1.6 4.9 8.4 1.9 5.4.5 6.8l4.4 4.4L12.5 2z"/><path d="M15.6.6 9.4 8.4l-.9-.9-1 1.3 1.9 1.9L17 2z"/></svg>';
     el.appendChild(ticks);
   }
-  chatMessages.appendChild(el);
+  // On the dedicated /chat page messages land in the full-screen chatbox;
+  // during a voice call they land in the slide-in side panel as before.
+  const stageList = chatMode ? document.getElementById('chatStageMsgs') : null;
+  const target = stageList || chatMessages;
+  target.appendChild(el);
   if (kind !== 'me') {
     // Double rAF so the enter animation is guaranteed to run from its start frame.
     requestAnimationFrame(() => {
       requestAnimationFrame(() => el.classList.remove('chat-msg-enter'));
     });
   }
-  chatMessages.scrollTop = chatMessages.scrollHeight;
+  target.scrollTop = target.scrollHeight;
   return el;
 }
 
 function clearChat() {
   chatMessages.innerHTML = '';
+  const stageMsgs = document.getElementById('chatStageMsgs');
+  if (stageMsgs) stageMsgs.innerHTML = '';
   typingIndicator.classList.add('hidden');
   if (typeof setChatUnread === 'function') setChatUnread(0);
 }
@@ -2522,6 +2532,7 @@ function resetUI() {
     history.replaceState(history.state, '', '/');
   }
   setChatMode(false);
+  chatStageExit();
   callPanel.classList.add('hidden');
   setupPanel.classList.remove('hidden');
   stageEl.classList.remove('call-live');
@@ -2589,7 +2600,8 @@ function enterCallUI() {
   setupPanel.classList.add('hidden');
   callPanel.classList.remove('hidden');
   stageEl.classList.add('call-live');
-  chatToggleBtn.classList.remove('hidden');
+  // The /chat page IS the chatbox — no chat toggle needed there.
+  chatToggleBtn.classList.toggle('hidden', chatMode);
   appSettingsBtn.classList.remove('hidden');
   historyBtn.classList.remove('hidden');
   friendsBtn.classList.remove('hidden');
@@ -2669,6 +2681,7 @@ function beginChat() {
   setConnection('orange', 'connSearching');
   setStatusText('statusChatSearching');
   setSubText('subHangTight');
+  chatStageShowSearch();
 
   socket.emit('find-partner', findPartnerPayload());
 }
@@ -3760,13 +3773,18 @@ socket.on('game', (data) => {
 });
 
 
-chatForm.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const text = chatInput.value.trim();
-  if (!text) return;
+// Shared send path for both the in-call side panel and the /chat page.
+// Blocks links (mirrors the server) and clearly unsafe content before it
+// ever leaves the device.
+function sendStrangerChat(text) {
+  if (!text) return false;
   if (messageHasLink(text)) {
     addChatMessage(t('errNoLinks'), 'system');
-    return;
+    return false;
+  }
+  if (messageIsUnsafe(text)) {
+    addChatMessage(t('errUnsafeMessage'), 'system');
+    return false;
   }
   const el = addChatMessage(text, 'me');
   playSendSound();
@@ -3776,16 +3794,25 @@ chatForm.addEventListener('submit', (e) => {
   // message has left the client (the relay is fire-and-forget server-side).
   const ticks = el.querySelector('.chat-msg-ticks');
   if (ticks) setTimeout(() => ticks.classList.replace('sending', 'sent'), 220);
-  chatInput.value = '';
-  chatInput.focus();
+  return true;
+}
+
+chatForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  if (sendStrangerChat(chatInput.value.trim())) {
+    chatInput.value = '';
+    chatInput.focus();
+  }
 });
 
 // Server-side link filter rejected a message we let through — surface it.
 socket.on('chat-blocked', ({ reason } = {}) => {
-  const target = friendChatModal.classList.contains('open') ? friendChatMessages : chatMessages;
+  const target = friendChatModal.classList.contains('open') ? friendChatMessages
+    : (chatMode && document.getElementById('chatStageMsgs')) || chatMessages;
   const el = document.createElement('div');
   el.className = 'chat-msg system';
-  el.textContent = reason === 'call-required' ? t('errCallRequiredToChat') : t('errNoLinks');
+  el.textContent = reason === 'call-required' ? t('errCallRequiredToChat')
+    : reason === 'unsafe' ? t('errUnsafeMessage') : t('errNoLinks');
   target.appendChild(el);
   target.scrollTop = target.scrollHeight;
   if (reason === 'call-required') applyFriendChatLock();
@@ -3803,10 +3830,12 @@ chatInput.addEventListener('input', () => {
 
 let typingHideTimeout = null;
 socket.on('typing', () => {
-  typingIndicator.classList.remove('hidden');
+  const stageTyping = chatMode ? document.getElementById('chatStageTyping') : null;
+  const ind = stageTyping || typingIndicator;
+  ind.classList.remove('hidden');
   clearTimeout(typingHideTimeout);
   typingHideTimeout = setTimeout(() => {
-    typingIndicator.classList.add('hidden');
+    ind.classList.add('hidden');
   }, 3000);
 });
 
@@ -3967,11 +3996,12 @@ socket.on('matched', async ({ initiator, partner, rematched, callback, mode }) =
     setConnection('green', 'connConnected');
     setStatusText('statusChatConnected', { name: partner.username });
     setSubTextFading('subChatSayHi');
+    chatStageShowLive(partner);
     addChatMessage(t('chatSystemMatched', {
       name: partner.username,
       country: getCountryName(partner.countryCode) || partner.country || '',
     }), 'system');
-    openChatPanel();
+    maybeShowVoicePromo();
     return;
   }
 
@@ -4295,6 +4325,7 @@ socket.on('partner-left', () => {
     setConnection('red', 'connFriendEnded');
     setStatusText(endedKey);
     setSubText(null);
+    if (chatMode) chatStageShowSearch();
     socket.emit('find-partner', findPartnerPayload());
     setTimeout(() => { if (isSearching && callState === 'searching') setConnection('orange', 'connSearching'); }, 900);
   } else {
@@ -4307,7 +4338,10 @@ socket.on('partner-left', () => {
     setSubText(chatMode ? 'subTapChat' : null);
     // In chat mode the user may still be looking at the (now empty) chat panel —
     // say what happened right there too.
-    if (chatMode) addChatMessage(t('chatSystemLeft'), 'system');
+    if (chatMode) {
+      addChatMessage(t('chatStageLeft'), 'system');
+      chatStagePartnerGone();
+    }
   }
 });
 
@@ -4322,6 +4356,7 @@ socket.on('partner-mic-state', (muted) => {
 
 socket.on('chat-message', ({ text }) => {
   addChatMessage(text, 'them');
+  if (chatMode) checkIncomingForBot(text);
   playMessageSound();
   vibrate(20);
   if (!chatOpen) {
@@ -4382,10 +4417,12 @@ window.addEventListener('i18n-changed', () => {
   }
 });
 
-// A direct load of /call or /chat (bookmark, refresh, share) has no live
-// session to resume — send the URL back to the landing page without adding a
-// history entry, so the back button still behaves normally.
-if (location.pathname === '/call' || location.pathname === '/chat') {
+// A direct load of /call (bookmark, refresh, share) has no live session to
+// resume — send the URL back to the landing page without adding a history
+// entry, so the back button still behaves normally. /chat is different: the
+// chat page stands on its own, so a direct visit lands straight on it with
+// its single "Start chatting" button — no call to be on, no redirect.
+if (location.pathname === '/call') {
   history.replaceState(history.state, '', '/');
 }
 
@@ -4517,3 +4554,259 @@ socket.on('match-delay', ({ seconds } = {}) => {
   titleEl.textContent = pick.title;
   blurbEl.textContent = pick.blurb;
 })();
+
+// ============================================================================
+// Chat page (/chat) — dedicated chat-first screen controller.
+// The page has three views (start → searching → live chatbox) plus its own
+// composer with Next (two-tap confirm) and Send. Everything reuses the
+// existing socket flow (find-partner / matched / skip / chat-message); this
+// block only drives the new UI.
+// ============================================================================
+const chatStageEl = document.getElementById('chatStage');
+const chatStageStart = document.getElementById('chatStageStart');
+const chatStageSearch = document.getElementById('chatStageSearch');
+const chatStageLive = document.getElementById('chatStageLive');
+const chatStageForm = document.getElementById('chatStageForm');
+const chatStageInput = document.getElementById('chatStageInput');
+const chatStartBtn = document.getElementById('chatStartBtn');
+const chatSearchCancelBtn = document.getElementById('chatSearchCancelBtn');
+const chatSearchLine = document.getElementById('chatSearchLine');
+const chatNextBtn = document.getElementById('chatNextBtn');
+const chatConnectedFrom = document.getElementById('chatConnectedFrom');
+const chatStageMyName = document.getElementById('chatStageMyName');
+const chatStageMyFlag = document.getElementById('chatStageMyFlag');
+const chatStageReportBtn = document.getElementById('chatStageReportBtn');
+const chatStageAddFriendBtn = document.getElementById('chatStageAddFriendBtn');
+const chatStageTypingEl = document.getElementById('chatStageTyping');
+
+// Keep the stage flush under the (variable-height) sticky topbar.
+function syncChatStageTop() {
+  const topbar = document.querySelector('.topbar');
+  if (topbar && !chatStageEl.classList.contains('hidden')) {
+    chatStageEl.style.top = topbar.offsetHeight + 'px';
+  }
+}
+window.addEventListener('resize', syncChatStageTop);
+
+function syncChatStageMe() {
+  const name = accountNickname || tempUsername || (myProfile && myProfile.username) || t('you');
+  chatStageMyName.textContent = name;
+  chatStageMyFlag.innerHTML = myProfile && myProfile.countryCode ? getFlagImg(myProfile.countryCode, 18) : '';
+}
+
+function chatStageShowView(view) {
+  chatStageEl.classList.remove('hidden');
+  document.body.classList.add('chat-stage-open');
+  syncChatStageTop();
+  syncChatStageMe();
+  chatStageStart.classList.toggle('hidden', view !== 'start');
+  chatStageSearch.classList.toggle('hidden', view !== 'search');
+  chatStageSearch.setAttribute('aria-hidden', view === 'search' ? 'false' : 'true');
+  chatStageLive.classList.toggle('hidden', view !== 'live');
+  chatStageForm.classList.toggle('hidden', view !== 'live');
+  const connected = view === 'live' && callState === 'connected';
+  chatStageReportBtn.classList.toggle('hidden', !connected);
+  chatStageAddFriendBtn.classList.toggle('hidden', !connected);
+  if (view !== 'search') stopChatSearchLines();
+}
+
+function chatStageShowStart() {
+  // The chat landing owns its URL so a refresh comes straight back here.
+  if (location.pathname !== '/chat') history.replaceState(history.state, '', '/chat');
+  chatStageShowView('start');
+}
+
+// Rotating one-liners under the searching animation so the wait has life.
+const CHAT_SEARCH_LINE_KEYS = ['chatSearch1', 'chatSearch2', 'chatSearch3', 'chatSearch4'];
+let chatSearchLineTimer = null;
+let chatSearchLineIdx = 0;
+function stopChatSearchLines() {
+  clearInterval(chatSearchLineTimer);
+  chatSearchLineTimer = null;
+}
+function chatStageShowSearch() {
+  chatStageShowView('search');
+  chatSearchLineIdx = 0;
+  chatSearchLine.textContent = t(CHAT_SEARCH_LINE_KEYS[0]);
+  stopChatSearchLines();
+  chatSearchLineTimer = setInterval(() => {
+    chatSearchLineIdx = (chatSearchLineIdx + 1) % CHAT_SEARCH_LINE_KEYS.length;
+    chatSearchLine.textContent = t(CHAT_SEARCH_LINE_KEYS[chatSearchLineIdx]);
+  }, 2600);
+}
+
+function chatStageShowLive(partner) {
+  clearChatNextConfirm();
+  chatStageAddFriendBtn.disabled = false;
+  chatStageAddFriendBtn.classList.remove('sent');
+  chatConnectedFrom.innerHTML = `${escapeHtml(t('chatPartnerFrom', {
+    country: getCountryName(partner.countryCode) || partner.country || t('somewhere'),
+  }))} ${getFlagImg(partner.countryCode, 20)}`;
+  chatStageShowView('live');
+  countChatForPromo();
+}
+
+// The partner left but the conversation stays readable; the composer locks
+// (setConnection red already disables it) and Next moves on.
+function chatStagePartnerGone() {
+  chatStageReportBtn.classList.add('hidden');
+  chatStageAddFriendBtn.classList.add('hidden');
+  if (chatStageTypingEl) chatStageTypingEl.classList.add('hidden');
+}
+
+function chatStageExit() {
+  stopChatSearchLines();
+  chatStageEl.classList.add('hidden');
+  document.body.classList.remove('chat-stage-open');
+}
+
+// --- Start / cancel ---
+chatStartBtn.addEventListener('click', () => {
+  playTapSound();
+  startCallFlow('chat');
+});
+
+chatSearchCancelBtn.addEventListener('click', () => {
+  isSearching = false;
+  socket.emit('leave');
+  setCallState('idle');
+  setState('idle');
+  chatStageShowStart();
+});
+
+// --- Next: first tap arms a yellow "Sure?", second tap skips. ---
+let chatNextArmed = false;
+let chatNextTimer = null;
+function clearChatNextConfirm() {
+  chatNextArmed = false;
+  clearTimeout(chatNextTimer);
+  chatNextTimer = null;
+  chatNextBtn.classList.remove('confirm');
+  chatNextBtn.querySelector('span').textContent = t('chatNext');
+}
+chatNextBtn.addEventListener('click', () => {
+  vibrate(15);
+  if (!chatNextArmed) {
+    chatNextArmed = true;
+    chatNextBtn.classList.add('confirm');
+    chatNextBtn.querySelector('span').textContent = t('chatNextSure');
+    clearTimeout(chatNextTimer);
+    chatNextTimer = setTimeout(clearChatNextConfirm, 3500);
+    return;
+  }
+  clearChatNextConfirm();
+  chatStageShowSearch();
+  autoNextMatch('statusChatSearching');
+});
+
+// --- Composer ---
+chatStageForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  if (sendStrangerChat(chatStageInput.value.trim())) {
+    chatStageInput.value = '';
+    chatStageInput.focus();
+  }
+});
+chatStageInput.addEventListener('input', () => {
+  if (typingSendThrottle) return;
+  socket.emit('typing');
+  typingSendThrottle = setTimeout(() => { typingSendThrottle = null; }, 1500);
+});
+
+// --- Report (reuses the shared report modal + server flow) ---
+chatStageReportBtn.addEventListener('click', () => {
+  openReportModal();
+});
+
+// --- Add friend: dialog with the partner's username + an optional intro
+// message so they know who you are if they forget. ---
+const friendReqModal = document.getElementById('friendReqModal');
+const friendReqUsername = document.getElementById('friendReqUsername');
+const friendReqMessage = document.getElementById('friendReqMessage');
+chatStageAddFriendBtn.addEventListener('click', () => {
+  if (!currentPartner || !currentPartner.clientId) return;
+  if (chatStageAddFriendBtn.classList.contains('sent')) return;
+  friendReqUsername.textContent = currentPartner.username;
+  friendReqMessage.value = '';
+  openModal(friendReqModal);
+});
+document.getElementById('friendReqSendBtn').addEventListener('click', () => {
+  if (!currentPartner || !currentPartner.clientId) return;
+  const message = friendReqMessage.value.trim().slice(0, 200);
+  socket.emit('friend-request', {
+    targetClientId: currentPartner.clientId,
+    message: message || undefined,
+  });
+  chatStageAddFriendBtn.classList.add('sent');
+  chatStageAddFriendBtn.disabled = true;
+  closeModal(friendReqModal);
+  addChatMessage(t('friendReqSentMsg', { name: currentPartner.username }), 'system');
+});
+document.getElementById('friendReqCancelBtn').addEventListener('click', () => closeModal(friendReqModal));
+document.getElementById('friendReqCloseBtn').addEventListener('click', () => closeModal(friendReqModal));
+friendReqModal.addEventListener('click', (e) => { if (e.target === friendReqModal) closeModal(friendReqModal); });
+
+// --- Client-side safety net (mirrored server-side): block clearly illegal /
+// scam content before it leaves the device. Links are blocked separately. ---
+const UNSAFE_RE = /\b(child\s*porn|cp\s*trade|loli(?:con)?|jailbait|sell(?:ing)?\s+(?:drugs|guns|weapons)|buy\s+(?:drugs|cocaine|heroin|meth|fentanyl)|hire\s*(?:a\s*)?hitman|credit\s*card\s*numbers?|send\s+nudes|onlyfans|escort\s*service|invest\s+in\s+(?:crypto|bitcoin)|gift\s*cards?\s+for)\b/i;
+function messageIsUnsafe(text) {
+  return UNSAFE_RE.test(String(text || ''));
+}
+
+// Bot heuristic on incoming messages: the same message repeated back-to-back
+// is the classic spam-bot signature — warn once so the user just taps Next.
+let lastIncomingMsg = '';
+let lastIncomingRepeat = 0;
+let botWarned = false;
+function checkIncomingForBot(text) {
+  if (text === lastIncomingMsg) lastIncomingRepeat++;
+  else { lastIncomingMsg = text; lastIncomingRepeat = 0; }
+  if (!botWarned && (lastIncomingRepeat >= 2 || messageIsUnsafe(text))) {
+    botWarned = true;
+    addChatMessage(t('chatBotWarning'), 'system');
+  }
+}
+
+// --- Voice-call promo: shown rarely — only once the user has finished 10+
+// chats, and even then only sometimes, so it never becomes noise. ---
+const CHAT_COUNT_KEY = 'talklive_chats_done';
+let promoShownThisSession = false;
+function countChatForPromo() {
+  botWarned = false;
+  lastIncomingMsg = '';
+  lastIncomingRepeat = 0;
+  const n = (parseInt(localStorage.getItem(CHAT_COUNT_KEY), 10) || 0) + 1;
+  localStorage.setItem(CHAT_COUNT_KEY, String(n));
+}
+function maybeShowVoicePromo() {
+  const n = parseInt(localStorage.getItem(CHAT_COUNT_KEY), 10) || 0;
+  if (promoShownThisSession || n < 10 || Math.random() > 0.25) return;
+  promoShownThisSession = true;
+  setTimeout(() => {
+    if (callState !== 'connected' || !chatMode) return;
+    const list = document.getElementById('chatStageMsgs');
+    if (!list) return;
+    const card = document.createElement('div');
+    card.className = 'chat-msg promo';
+    card.innerHTML = `${escapeHtml(t('voicePromoText'))}<br><button type="button" class="promo-cta">${escapeHtml(t('voicePromoCta'))}</button>`;
+    card.querySelector('.promo-cta').addEventListener('click', () => {
+      socket.emit('leave');
+      resetUI();
+      startCallFlow('talk');
+    });
+    list.appendChild(card);
+    list.scrollTop = list.scrollHeight;
+  }, 4000);
+}
+
+// Keep the sub-nav identity fresh once the server confirms who we are.
+socket.on('profile', () => {
+  if (!chatStageEl.classList.contains('hidden')) syncChatStageMe();
+});
+
+// Direct load of /chat (bookmark, refresh, share): the chat page stands on
+// its own — land straight on its single "Start chatting" button.
+if (location.pathname === '/chat') {
+  setChatMode(true);
+  chatStageShowStart();
+}

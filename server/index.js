@@ -555,6 +555,12 @@ function containsLink(text) {
   return LINK_RE.test(String(text || ''));
 }
 
+// Clearly illegal / scam content is blocked in stranger chat (mirrors the
+// client-side filter) so the text pool stays legally safe.
+const UNSAFE_RE = /\b(child\s*porn|cp\s*trade|loli(?:con)?|jailbait|sell(?:ing)?\s+(?:drugs|guns|weapons)|buy\s+(?:drugs|cocaine|heroin|meth|fentanyl)|hire\s*(?:a\s*)?hitman|credit\s*card\s*numbers?|send\s+nudes|onlyfans|escort\s*service|invest\s+in\s+(?:crypto|bitcoin)|gift\s*cards?\s+for)\b/i;
+// socket.id -> { start, n } sliding 5s window for the chat bot-flood guard.
+const chatRate = new Map();
+
 function hashPassword(password, salt) {
   return crypto.scryptSync(password, salt, 64).toString('hex');
 }
@@ -1338,6 +1344,14 @@ io.on('connection', (socket) => {
       if (containsLink(text)) {
         return socket.emit('chat-blocked', { reason: 'link' });
       }
+      if (UNSAFE_RE.test(text)) {
+        return socket.emit('chat-blocked', { reason: 'unsafe' });
+      }
+      // Bot-flood guard: humans don't send 8+ messages in 5 seconds.
+      const now = Date.now();
+      let rl = chatRate.get(socket.id);
+      if (!rl || now - rl.start > 5000) { rl = { start: now, n: 0 }; chatRate.set(socket.id, rl); }
+      if (++rl.n > 8) return;
       const clean = text.trim().slice(0, 1000);
       store.recordFeature('chat_message');
       store.recordTopics(clean);
@@ -1376,7 +1390,7 @@ io.on('connection', (socket) => {
   });
 
   // --- Friends ---
-  socket.on('friend-request', ({ targetClientId } = {}) => {
+  socket.on('friend-request', ({ targetClientId, message } = {}) => {
     const me = profiles.get(socket.id);
     targetClientId = validId(targetClientId);
     if (!me || !targetClientId || targetClientId === me.clientId) return;
@@ -1396,12 +1410,17 @@ io.on('connection', (socket) => {
     if (!friendRequests.has(targetClientId)) friendRequests.set(targetClientId, new Map());
     friendRequests.get(targetClientId).set(me.clientId, { ...myInfo, ts: Date.now() });
 
+    // Optional intro message ("remind them who you are") — links stripped,
+    // capped, and only ever shown inside the recipient's notification.
+    const intro = (typeof message === 'string' && !containsLink(message) && !UNSAFE_RE.test(message))
+      ? message.trim().slice(0, 200) : '';
     pushNotification(targetClientId, {
       type: 'friend_request',
       fromClientId: me.clientId,
       username: myInfo.username,
       countryCode: myInfo.countryCode,
       temporary: myInfo.temporary,
+      message: intro || undefined,
     });
 
     const targetSocket = getSocketByClientId(targetClientId);
