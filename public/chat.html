@@ -23,37 +23,44 @@
 <body>
   <div class="app">
 
-    <!-- Topbar: brand · online count · link back to the voice-call app -->
+    <!-- The one and only top bar. Idle: brand + online count. Connected: the
+         partner's flag/name take the middle, and the action icons light up. -->
     <header class="topbar">
-      <a class="brand" href="/chat">
+      <a class="brand" href="/chat" aria-label="TalkLive">
         <span class="brand-logo" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
         </span>
-        TalkLive
       </a>
-      <div class="topbar-right">
-        <span class="online-pill"><span class="online-dot" aria-hidden="true"></span><span id="onlineCount">—</span> <span data-i18n="online">Online</span></span>
-        <a class="call-link" href="/call" data-i18n="voiceCall">Voice call</a>
+
+      <div class="top-info">
+        <div id="topDefault" class="top-id">
+          <span class="top-name">TalkLive</span>
+          <span class="top-sub"><span class="online-dot" aria-hidden="true"></span><span id="onlineCount">—</span>&nbsp;<span data-i18n="online">Online</span></span>
+        </div>
+        <div id="topPeer" class="top-id hidden">
+          <span class="top-name"><span id="peerFlag" class="peer-flag" aria-hidden="true"></span><span id="peerName"></span></span>
+          <span class="top-sub" id="peerFrom"></span>
+        </div>
+      </div>
+
+      <div class="top-actions">
+        <button type="button" id="autoBtn" class="icon-btn auto-btn hidden" aria-pressed="false" data-i18n-title="chatAutoHint" data-i18n-aria="chatAutoHint" aria-label="Auto-connect me to a new person when a chat ends">
+          <span data-i18n="chatAuto">Auto</span>
+        </button>
+        <button type="button" id="reportBtn" class="icon-btn report-btn hidden" data-i18n-aria="report" data-i18n-title="report" aria-label="Report">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><line x1="5" y1="3" x2="5" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M6 4h13l-3.5 4L19 12H6V4z" fill="currentColor"/></svg>
+        </button>
+        <button type="button" id="addFriendBtn" class="icon-btn friend-btn hidden" data-i18n-aria="addFriend" data-i18n-title="addFriend" aria-label="Add friend">
+          <svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor" aria-hidden="true"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+        </button>
+        <button type="button" id="voiceCallBtn" class="icon-btn call-btn" data-i18n-aria="voiceCall" data-i18n-title="voiceCall" aria-label="Voice call">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+        </button>
       </div>
     </header>
 
     <!-- The chat sub-app -->
     <section id="chatStage" class="chat-stage" aria-label="Random text chat">
-
-      <div class="chat-subnav">
-        <div class="chat-subnav-me">
-          <span id="meFlag" class="chat-me-flag" aria-hidden="true"></span>
-          <span id="meName" class="chat-me-name">You</span>
-        </div>
-        <button type="button" id="reportBtn" class="chat-subnav-report hidden" data-i18n-aria="report" aria-label="Report">
-          <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><line x1="5" y1="3" x2="5" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M6 4h13l-3.5 4L19 12H6V4z" fill="currentColor"/></svg>
-          <span data-i18n="report">Report</span>
-        </button>
-        <button type="button" id="addFriendBtn" class="chat-subnav-add hidden" data-i18n-aria="addFriend" aria-label="Add friend">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-          <span data-i18n="addFriend">Add friend</span>
-        </button>
-      </div>
 
       <div class="chat-body">
 
@@ -85,21 +92,10 @@
 
         <!-- LIVE -->
         <div id="viewLive" class="chat-view chat-view-live hidden">
-          <div class="connected-banner">
-            <span class="connected-word" data-i18n="chatConnectedWord">Connected</span>
-            <span class="connected-from" id="connectedFrom"></span>
-          </div>
           <div id="msgs" class="msgs" aria-live="polite"></div>
           <p id="typing" class="typing hidden"><span data-i18n="strangerTyping">Stranger is typing</span><span class="typing-dots" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span></p>
         </div>
       </div>
-
-      <!-- Auto-next: when on, a partner disconnecting goes straight into a new
-           search instead of waiting for a tap on Next. Persisted across visits. -->
-      <button type="button" id="autoNextRow" class="auto-next-row hidden" aria-pressed="false">
-        <span class="auto-next-switch" aria-hidden="true"><span class="auto-next-knob"></span></span>
-        <span class="auto-next-label" data-i18n="enableAutoCall">Enable — keep connecting me to new people</span>
-      </button>
 
       <!-- Composer -->
       <form id="composer" class="composer hidden">
@@ -157,6 +153,24 @@
         <div class="modal-actions">
           <button type="button" id="friendCancelBtn" class="btn btn-secondary" data-i18n="cancel">Cancel</button>
           <button type="button" id="friendSendBtn" class="btn btn-primary" data-i18n="friendReqSend">Send request</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Voice-call confirmation: tapping the phone icon never navigates away
+       silently — it asks first, then goes to the voice app. -->
+  <div id="callModal" class="modal-overlay hidden">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="callTitle">
+      <div class="modal-header">
+        <h2 id="callTitle" data-i18n="callConfirmTitle">Start a voice call?</h2>
+        <button type="button" id="callCloseBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="hint" data-i18n="callConfirmBody">This leaves your current text chat and matches you with someone for a live voice call.</p>
+        <div class="modal-actions">
+          <button type="button" id="callCancelBtn" class="btn btn-secondary" data-i18n="cancel">Cancel</button>
+          <button type="button" id="callGoBtn" class="btn btn-primary" data-i18n="callConfirmGo">Start voice call</button>
         </div>
       </div>
     </div>
