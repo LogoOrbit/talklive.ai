@@ -93,7 +93,6 @@ const reactionOverlay = document.getElementById('reactionOverlay');
 
 const chatBadge = document.getElementById('chatBadge');
 const typingIndicator = document.getElementById('typingIndicator');
-const quickGuide = document.getElementById('quickGuide');
 
 const historyBtn = document.getElementById('historyBtn');
 // Lite mode for weak hardware: fewer decorative effects, same features.
