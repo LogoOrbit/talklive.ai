@@ -46,7 +46,7 @@ window.I18N_STRINGS.tr = {
   "choosePassword": "Bir şifre seç",
   "nicknameShown": "Takma ad (başkalarına görünür)",
   "createAccount": "Hesap Oluştur",
-  "accountHint": "Hesaplar şimdilik bellekte tutuluyor ve sunucu yeniden başlarsa sıfırlanıyor — bu erken bir sürümdür.",
+  "accountHint": "Hesabın kalıcı olarak saklanır — bu cihazda oturumun açık kalır ve her yerden giriş yapabilirsin.",
   "signedInAs": "Giriş yapıldı:",
   "accountSettings": "Hesap Ayarları",
   "myAccount": "Hesabım",

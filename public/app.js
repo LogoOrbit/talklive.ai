@@ -195,7 +195,6 @@ const loginPassword = document.getElementById('loginPassword');
 const loginSubmitBtn = document.getElementById('loginSubmitBtn');
 const signupUsername = document.getElementById('signupUsername');
 const signupPassword = document.getElementById('signupPassword');
-const signupNickname = document.getElementById('signupNickname');
 const signupSubmitBtn = document.getElementById('signupSubmitBtn');
 const logoutBtn = document.getElementById('logoutBtn');
 const settingsNickname = document.getElementById('settingsNickname');
@@ -352,6 +351,9 @@ let currentPartnerInterests = [];
 let currentPartner = null;
 let callHistory = [];
 let accountNickname = localStorage.getItem('talklive_nickname') || null;
+// Durable session token: proves the login to the server after every page
+// reload / reconnect, so an account is never lost to a refresh or a deploy.
+let sessionToken = localStorage.getItem('talklive_session') || null;
 let tempUsername = localStorage.getItem('talklive_tempname') || null;
 // Always starts unchecked when the app is opened, regardless of last session.
 let autoCallEnabled = false;
@@ -901,7 +903,8 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// --- Account (in-memory, no DB yet) ---
+// --- Account (persisted server-side; a durable session token in localStorage
+// keeps the user signed in across reloads, restarts and deploys) ---
 function renderAccountState() {
   if (accountNickname) {
     accountLoggedOut.classList.add('hidden');
@@ -1122,19 +1125,31 @@ loginSubmitBtn.addEventListener('click', () => {
   socket.emit('login', { username: loginUsername.value.trim(), password: loginPassword.value });
 });
 
+// Creating an account is just username + password — the display name defaults
+// to the username and can be changed later in My Account.
 signupSubmitBtn.addEventListener('click', () => {
   socket.emit('signup', {
     username: signupUsername.value.trim(),
     password: signupPassword.value,
-    nickname: signupNickname.value.trim(),
   });
 });
 
+// Pressing Enter in any login/signup field submits that form.
+[loginUsername, loginPassword].forEach((el) => el.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') loginSubmitBtn.click();
+}));
+[signupUsername, signupPassword].forEach((el) => el.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') signupSubmitBtn.click();
+}));
+
 logoutBtn.addEventListener('click', () => {
-  socket.emit('logout');
+  socket.emit('logout', { token: sessionToken });
+  sessionToken = null;
   accountNickname = null;
+  localStorage.removeItem('talklive_session');
   localStorage.removeItem('talklive_nickname');
-  reloadPage();
+  // Give the logout packet a moment to flush before the page reloads.
+  setTimeout(reloadPage, 150);
 });
 
 updateNicknameBtn.addEventListener('click', () => {
@@ -1148,18 +1163,48 @@ changePasswordBtn.addEventListener('click', () => {
   });
 });
 
-socket.on('login-result', ({ ok, nickname, error }) => {
-  if (!ok) return showAccountStatus(error, 'error');
+// Persist the login locally (nickname for instant UI, token for the server-side
+// session), then reload — the token signs the reloaded page straight back in.
+function storeLogin(nickname, token) {
   localStorage.setItem('talklive_nickname', nickname);
+  if (token) {
+    sessionToken = token;
+    localStorage.setItem('talklive_session', token);
+  }
+}
+
+socket.on('login-result', ({ ok, nickname, error, sessionToken: token }) => {
+  if (!ok) return showAccountStatus(error, 'error');
+  storeLogin(nickname, token);
   showAccountStatus(t('statusLoggedIn', { name: nickname }), 'success');
   setTimeout(reloadPage, 500);
 });
 
-socket.on('signup-result', ({ ok, nickname, error }) => {
+socket.on('signup-result', ({ ok, nickname, error, sessionToken: token }) => {
   if (!ok) return showAccountStatus(error, 'error');
-  localStorage.setItem('talklive_nickname', nickname);
+  storeLogin(nickname, token);
   showAccountStatus(t('statusAccountCreated', { name: nickname }), 'success');
   setTimeout(reloadPage, 500);
+});
+
+// Answer to the silent re-login sent on every (re)connect. Success refreshes
+// the signed-in UI; failure (expired/revoked token) cleans up so the app never
+// pretends to be signed in when the server disagrees.
+socket.on('resume-session-result', ({ ok, nickname }) => {
+  if (ok) {
+    if (nickname && nickname !== accountNickname) {
+      accountNickname = nickname;
+      localStorage.setItem('talklive_nickname', nickname);
+      renderAccountState();
+      registerProfile();
+    }
+  } else {
+    sessionToken = null;
+    accountNickname = null;
+    localStorage.removeItem('talklive_session');
+    localStorage.removeItem('talklive_nickname');
+    renderAccountState();
+  }
 });
 
 socket.on('update-nickname-result', ({ ok, nickname, error }) => {
@@ -1170,8 +1215,13 @@ socket.on('update-nickname-result', ({ ok, nickname, error }) => {
   showAccountStatus(t('statusNicknameUpdated'), 'success');
 });
 
-socket.on('change-password-result', ({ ok, error }) => {
+socket.on('change-password-result', ({ ok, error, sessionToken: token }) => {
   if (!ok) return showAccountStatus(error, 'error');
+  // Other devices were signed out by the change; this one got a fresh token.
+  if (token) {
+    sessionToken = token;
+    localStorage.setItem('talklive_session', token);
+  }
   currentPasswordInput.value = '';
   newPasswordInput.value = '';
   syncPasswordBtnState();
@@ -4306,6 +4356,9 @@ socket.on('connect', () => {
   // Re-register on every (re)connect so the server always has a live socket
   // for this clientId, and so friends/notifications resync after being offline.
   if (lastRegisterPayload) socket.emit('register', lastRegisterPayload);
+  // Silently re-authenticate with the durable session token so the account
+  // survives page reloads, dropped sockets and server deploys.
+  if (sessionToken) socket.emit('resume-session', { token: sessionToken });
   // Mobile browsers drop the socket when backgrounded/screen off. With
   // auto-connect on, silently resume the search loop instead of stalling.
   if (isSearching && callState !== 'connected' && autoCallEnabled) {

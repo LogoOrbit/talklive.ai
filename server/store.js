@@ -73,6 +73,10 @@ function defaults() {
     // googleId, createdAt }. googleIndex maps a Google "sub" -> usernameLower.
     accounts: {},
     googleIndex: {},
+    // Durable login sessions: token -> { u: usernameLower, createdAt, lastSeen }.
+    // Lets a signed-in user stay signed in across page reloads, server restarts
+    // and deploys (sliding expiry, see SESSION_TTL_MS).
+    authSessions: {},
     // Durable social graph — users' "memories": who they added and what they
     // said. friends: clientId -> { friendClientId -> info }. friendChats:
     // pairKey -> [{ from, text, ts }]. blocks: clientId -> [clientId,...].
@@ -101,6 +105,7 @@ function applyParsed(parsed) {
   data.social = { ...defaults().social, ...(parsed.social || {}) };
   data.accounts = parsed.accounts || {};
   data.googleIndex = parsed.googleIndex || {};
+  data.authSessions = parsed.authSessions || {};
 }
 
 function loadFile() {
@@ -412,6 +417,71 @@ function saveAccount(usernameLower, account) {
   save();
 }
 
+// --- Durable login sessions ------------------------------------------------
+// Sliding one-year expiry: any resume refreshes lastSeen, so active users are
+// never logged out; only tokens untouched for a year are pruned.
+const SESSION_TTL_MS = 365 * 24 * 60 * 60000;
+const MAX_SESSIONS_PER_USER = 20;
+
+function pruneAuthSessions() {
+  const now = Date.now();
+  for (const [token, s] of Object.entries(data.authSessions)) {
+    if (!s || now - (s.lastSeen || s.createdAt || 0) > SESSION_TTL_MS) {
+      delete data.authSessions[token];
+    }
+  }
+}
+
+function createAuthSession(usernameLower) {
+  pruneAuthSessions();
+  // Cap sessions per user (oldest first) so one account can't grow unbounded.
+  const mine = Object.entries(data.authSessions)
+    .filter(([, s]) => s.u === usernameLower)
+    .sort((a, b) => (a[1].lastSeen || 0) - (b[1].lastSeen || 0));
+  while (mine.length >= MAX_SESSIONS_PER_USER) {
+    delete data.authSessions[mine.shift()[0]];
+  }
+  const token = crypto.randomBytes(32).toString('hex');
+  data.authSessions[token] = { u: usernameLower, createdAt: Date.now(), lastSeen: Date.now() };
+  save();
+  return token;
+}
+
+// Returns the usernameLower for a valid token (refreshing its expiry), or null.
+function getAuthSessionUser(token) {
+  if (typeof token !== 'string' || !/^[a-f0-9]{64}$/.test(token)) return null;
+  const s = data.authSessions[token];
+  if (!s) return null;
+  if (Date.now() - (s.lastSeen || s.createdAt || 0) > SESSION_TTL_MS) {
+    delete data.authSessions[token];
+    save();
+    return null;
+  }
+  s.lastSeen = Date.now();
+  save();
+  return s.u;
+}
+
+function deleteAuthSession(token) {
+  if (typeof token === 'string' && data.authSessions[token]) {
+    delete data.authSessions[token];
+    save();
+  }
+}
+
+// Invalidate every session of a user (e.g. after a password change), optionally
+// keeping one token (the device that made the change) signed in.
+function deleteAuthSessionsForUser(usernameLower, exceptToken) {
+  let changed = false;
+  for (const [token, s] of Object.entries(data.authSessions)) {
+    if (s.u === usernameLower && token !== exceptToken) {
+      delete data.authSessions[token];
+      changed = true;
+    }
+  }
+  if (changed) save();
+}
+
 // --- Durable social graph ("memories": friends + friend chats + blocks) ---
 // index.js holds the live Maps; these take the already-serialized plain objects
 // and persist them (debounced), keeping the store the single source of truth.
@@ -457,6 +527,31 @@ const ready = (async () => {
 
 process.on('exit', () => { if (!pgPool) persistNow(); });
 
+// 'exit' never fires for SIGTERM/SIGINT — and SIGTERM is exactly what Render
+// sends on every deploy/restart. Flush any debounced write before going down
+// so a signup seconds before a deploy is never lost.
+let shuttingDown = false;
+async function flushAndExit(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+  try {
+    if (pgPool) {
+      await pgPool.query(
+        'INSERT INTO owner_store (id, doc, updated_at) VALUES (1, $1, now()) ON CONFLICT (id) DO UPDATE SET doc = $1, updated_at = now()',
+        [JSON.stringify(data)]
+      );
+    } else {
+      persistNow();
+    }
+  } catch (err) {
+    console.error(`[store] final save on ${signal} failed:`, err.message);
+  }
+  process.exit(0);
+}
+process.on('SIGTERM', () => flushAndExit('SIGTERM'));
+process.on('SIGINT', () => flushAndExit('SIGINT'));
+
 module.exports = {
   get data() { return data; },
   get backendStatus() { return backendStatus; },
@@ -481,6 +576,10 @@ module.exports = {
   liftBan,
   upsertAccount,
   saveAccount,
+  createAuthSession,
+  getAuthSessionUser,
+  deleteAuthSession,
+  deleteAuthSessionsForUser,
   saveSocial,
   setPremium,
   revokePremium,

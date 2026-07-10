@@ -46,7 +46,7 @@ window.I18N_STRINGS.es = {
   "choosePassword": "Elige una contraseña",
   "nicknameShown": "Apodo (visible para otros)",
   "createAccount": "Crear cuenta",
-  "accountHint": "Por ahora las cuentas se guardan en memoria y se pierden si el servidor se reinicia — esta es una versión inicial.",
+  "accountHint": "Tu cuenta se guarda de forma permanente — sigues con la sesión iniciada en este dispositivo y puedes entrar desde cualquier lugar.",
   "signedInAs": "Sesión iniciada como",
   "accountSettings": "Ajustes de la cuenta",
   "myAccount": "Mi cuenta",

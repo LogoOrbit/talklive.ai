@@ -46,7 +46,7 @@ window.I18N_STRINGS.fr = {
   "choosePassword": "Choisissez un mot de passe",
   "nicknameShown": "Pseudo (visible par les autres)",
   "createAccount": "Créer un compte",
-  "accountHint": "Pour le moment, les comptes sont stockés en mémoire et sont perdus si le serveur redémarre — ceci est une première version.",
+  "accountHint": "Ton compte est enregistré de façon permanente — tu restes connecté sur cet appareil et tu peux te connecter depuis n'importe où.",
   "signedInAs": "Connecté en tant que",
   "accountSettings": "Réglages du compte",
   "myAccount": "Mon compte",

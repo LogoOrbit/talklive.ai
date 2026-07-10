@@ -46,7 +46,7 @@ window.I18N_STRINGS.id = {
   "choosePassword": "Pilih kata sandi",
   "nicknameShown": "Nama panggilan (terlihat oleh orang lain)",
   "createAccount": "Buat Akun",
-  "accountHint": "Untuk saat ini akun disimpan di memori dan terhapus jika server dimulai ulang — ini versi awal.",
+  "accountHint": "Akunmu disimpan secara permanen — kamu tetap masuk di perangkat ini dan bisa login dari mana saja.",
   "signedInAs": "Masuk sebagai",
   "accountSettings": "Pengaturan Akun",
   "myAccount": "Akun Saya",

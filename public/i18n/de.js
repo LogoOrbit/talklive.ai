@@ -46,7 +46,7 @@ window.I18N_STRINGS.de = {
   "choosePassword": "Passwort wählen",
   "nicknameShown": "Spitzname (für andere sichtbar)",
   "createAccount": "Konto erstellen",
-  "accountHint": "Konten werden vorerst im Speicher gehalten und gehen bei einem Server-Neustart verloren — dies ist eine frühe Version.",
+  "accountHint": "Dein Konto wird dauerhaft gespeichert — du bleibst auf diesem Gerät angemeldet und kannst dich von überall anmelden.",
   "signedInAs": "Angemeldet als",
   "accountSettings": "Kontoeinstellungen",
   "myAccount": "Mein Konto",

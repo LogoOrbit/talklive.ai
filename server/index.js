@@ -910,10 +910,13 @@ io.on('connection', (socket) => {
   store.recordPeakOnline(io.engine.clientsCount);
 
   socket.on('signup', ({ username, password, nickname } = {}) => {
-    if (typeof username !== 'string' || typeof password !== 'string' || typeof nickname !== 'string'
-      || !username || !password || !nickname.trim() || username.length < 3 || password.length < 4) {
+    if (typeof username !== 'string' || typeof password !== 'string'
+      || !username || !password || username.length < 3 || password.length < 4) {
       return socket.emit('signup-result', { ok: false, error: 'Username/password too short (min 3/4 chars).' });
     }
+    // Nickname is optional — creating an account is just username + password,
+    // and the display name defaults to the username (changeable later).
+    nickname = (typeof nickname === 'string' && nickname.trim()) ? nickname.trim() : username;
     if (!/^[A-Za-z0-9_.-]{3,24}$/.test(username)) {
       return socket.emit('signup-result', { ok: false, error: 'Username may only contain letters, numbers, dot, dash or underscore (3–24 chars).' });
     }
@@ -936,7 +939,14 @@ io.on('connection', (socket) => {
       ip,
       lastSeen: Date.now(),
     });
-    socket.emit('signup-result', { ok: true, username, nickname: nickname.slice(0, 24) });
+    socket.emit('signup-result', {
+      ok: true,
+      username,
+      nickname: nickname.slice(0, 24),
+      // Durable session token: the browser stores it and stays signed in
+      // across page reloads, server restarts and deploys.
+      sessionToken: store.createAuthSession(username.toLowerCase()),
+    });
   });
 
   socket.on('login', ({ username, password } = {}) => {
@@ -951,11 +961,35 @@ io.on('connection', (socket) => {
     store.upsertAccount((username || '').toLowerCase(), {
       username, nickname: account.nickname, country: geo.countryName, city: geo.city, ip, lastSeen: Date.now(),
     });
-    socket.emit('login-result', { ok: true, username, nickname: account.nickname });
+    socket.emit('login-result', {
+      ok: true,
+      username,
+      nickname: account.nickname,
+      sessionToken: store.createAuthSession((username || '').toLowerCase()),
+    });
   });
 
-  socket.on('logout', () => {
+  // Silent re-login with the durable session token the browser saved. Runs on
+  // every page load / reconnect so an account is never "lost" to a reload,
+  // server restart or deploy.
+  socket.on('resume-session', ({ token } = {}) => {
+    const usernameLower = store.getAuthSessionUser(token);
+    const account = usernameLower ? accounts.get(usernameLower) : null;
+    if (!account) {
+      return socket.emit('resume-session-result', { ok: false });
+    }
+    socketAuth.set(socket.id, usernameLower);
+    store.upsertAccount(usernameLower, {
+      nickname: account.nickname, country: geo.countryName, city: geo.city, ip, lastSeen: Date.now(),
+    });
+    socket.emit('resume-session-result', { ok: true, username: usernameLower, nickname: account.nickname });
+  });
+
+  socket.on('logout', ({ token } = {}) => {
     socketAuth.delete(socket.id);
+    // Kill the durable session too, so the token in localStorage (or a stolen
+    // copy of it) can't silently sign back in.
+    store.deleteAuthSession(token);
   });
 
   socket.on('google-auth', async ({ credential } = {}) => {
@@ -972,7 +1006,12 @@ io.on('connection', (socket) => {
       store.upsertAccount(username.toLowerCase(), {
         username, nickname: account.nickname, method: 'google', country: geo.countryName, city: geo.city, ip, lastSeen: Date.now(),
       });
-      socket.emit('google-auth-result', { ok: true, username, nickname: account.nickname });
+      socket.emit('google-auth-result', {
+        ok: true,
+        username,
+        nickname: account.nickname,
+        sessionToken: store.createAuthSession(username.toLowerCase()),
+      });
     } catch (err) {
       console.error('[google-auth] verification failed:', err.message);
       socket.emit('google-auth-result', { ok: false, error: 'Google sign-in failed. Please try again.' });
@@ -1008,7 +1047,10 @@ io.on('connection', (socket) => {
     account.passwordHash = hashPassword(newPassword, salt);
     account.salt = salt;
     persistAccount(authedUsername);
-    socket.emit('change-password-result', { ok: true });
+    // A password change signs out every other device; this one gets a fresh
+    // durable token so it stays logged in.
+    store.deleteAuthSessionsForUser(authedUsername, null);
+    socket.emit('change-password-result', { ok: true, sessionToken: store.createAuthSession(authedUsername) });
   });
 
   socket.on('register', (data = {}) => {

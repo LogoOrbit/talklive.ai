@@ -90,7 +90,7 @@ const I18N_STRINGS = {
     "choosePassword": "Choose a password",
     "nicknameShown": "Nickname (shown to others)",
     "createAccount": "Create Account",
-    "accountHint": "Accounts are stored in memory for now and reset if the server restarts — this is an early version.",
+    "accountHint": "Your account is saved permanently — you stay signed in on this device and can log in from anywhere.",
     "signedInAs": "Signed in as",
     "accountSettings": "Account Settings",
     "myAccount": "My Account",

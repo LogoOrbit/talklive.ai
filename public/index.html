@@ -509,7 +509,9 @@
         </div>
       </section>
 
-      <!-- Account modal: optional simple username/password/nickname (in-memory only for now) -->
+      <!-- Account modal: optional account — just a username + password. Stored
+           permanently (Postgres/file store) with a durable session token so a
+           user never loses their account to a reload, restart or deploy. -->
       <div id="accountModal" class="modal-overlay hidden">
         <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="accountModalTitle">
           <div class="modal-header">
@@ -534,11 +536,10 @@
               <div id="signupTab" class="account-tab-panel hidden">
                 <input type="text" id="signupUsername" class="search-input account-input" data-i18n-placeholder="chooseUsername" data-i18n-aria="chooseUsername" placeholder="Choose a username" autocomplete="username" />
                 <input type="password" id="signupPassword" class="search-input account-input" data-i18n-placeholder="choosePassword" data-i18n-aria="choosePassword" placeholder="Choose a password" autocomplete="new-password" />
-                <input type="text" id="signupNickname" class="search-input account-input" data-i18n-placeholder="nicknameShown" data-i18n-aria="nicknameShown" placeholder="Nickname (shown to others)" maxlength="24" />
                 <button type="button" id="signupSubmitBtn" class="btn btn-primary settings-save" data-i18n="createAccount">Create Account</button>
               </div>
 
-              <p class="account-hint" data-i18n="accountHint">Accounts are stored in memory for now and reset if the server restarts — this is an early version.</p>
+              <p class="account-hint" data-i18n="accountHint">Your account is saved permanently — you stay signed in on this device and can log in from anywhere.</p>
             </div>
 
             <div id="accountLoggedIn" class="hidden">

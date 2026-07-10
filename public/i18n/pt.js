@@ -46,7 +46,7 @@ window.I18N_STRINGS.pt = {
   "choosePassword": "Escolha uma senha",
   "nicknameShown": "Apelido (visível para os outros)",
   "createAccount": "Criar conta",
-  "accountHint": "Por enquanto as contas ficam na memória e são apagadas se o servidor reiniciar — esta é uma versão inicial.",
+  "accountHint": "A sua conta é guardada permanentemente — você continua conectado neste dispositivo e pode entrar de qualquer lugar.",
   "signedInAs": "Conectado como",
   "accountSettings": "Configurações da conta",
   "myAccount": "Minha conta",

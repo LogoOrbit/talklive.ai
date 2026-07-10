@@ -46,7 +46,7 @@ window.I18N_STRINGS.zh = {
   "choosePassword": "设置密码",
   "nicknameShown": "昵称（对他人可见）",
   "createAccount": "创建账号",
-  "accountHint": "账号目前存储在内存中，服务器重启后会被清除——这是早期版本。",
+  "accountHint": "您的账号会被永久保存——在此设备上保持登录，也可以随时随地登录。",
   "signedInAs": "已登录为",
   "accountSettings": "账号设置",
   "myAccount": "我的账号",
