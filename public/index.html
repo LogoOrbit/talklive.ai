@@ -128,7 +128,7 @@
 }
 </script>
 
-<link rel="stylesheet" href="style.css?v=20260710b" />
+<link rel="stylesheet" href="style.css?v=20260710c" />
 <script src="/config.js"></script>
 </head>
 <body>
@@ -148,22 +148,7 @@
           TalkLive
         </div>
       </div>
-      <div class="header-right">
-        <!-- Live count of people online: pulsing dot + group icon + number. -->
-        <div class="people-count" data-i18n-title="onlineAria" data-i18n-aria="onlineAria" title="People online now" aria-label="Number of people online now">
-          <span class="people-live-dot" aria-hidden="true"></span>
-          <svg class="people-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-          <span id="onlineCount" class="people-count-num">0</span>
-        </div>
-        <!-- Big chat button, top-right. Opens the chat panel that slides in from
-             the right; usable during a call. -->
-      </div>
-      <div class="topbar-break" aria-hidden="true"></div>
-    </header>
-
-    <!-- Secondary navigation bar: the tool buttons, centered. -->
-    <nav class="navbar" aria-label="TalkLive tools">
-      <div class="navbar-actions">
+      <nav class="header-right" aria-label="TalkLive tools">
         <div class="history-wrap">
           <button id="historyBtn" class="icon-btn" data-i18n-title="historyAria" data-i18n-aria="historyAria" title="Call history" aria-label="Call history">
             <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -217,10 +202,16 @@
           </svg>
           <span id="chatBadge" class="chat-badge hidden" aria-hidden="true">0</span>
         </button>
-      </div>
-    </nav>
+        <!-- Live count of people online: pulsing dot + group icon + number. -->
+        <div class="people-count" data-i18n-title="onlineAria" data-i18n-aria="onlineAria" title="People online now" aria-label="Number of people online now">
+          <span class="people-live-dot" aria-hidden="true"></span>
+          <svg class="people-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+          <span id="onlineCount" class="people-count-num">0</span>
+        </div>
+      </nav>
+    </header>
 
-    <!-- Friends side panel: friend list, requests, add-by-username, opened from the header friends icon -->
+    <!-- Friends side panel: friend list and requests, opened from the header friends icon -->
     <div id="friendsOverlay" class="side-panel-overlay hidden"></div>
     <aside id="friendsDropdown" class="side-panel side-panel-right friends-dropdown" role="dialog" data-i18n-aria="friends" aria-label="Friends">
       <div class="side-panel-header">
@@ -228,13 +219,6 @@
         <button type="button" id="closeFriendsBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
       </div>
       <div class="side-panel-body">
-        <div class="add-friend-by-id">
-          <label class="pill-label" for="addFriendByIdInput" data-i18n="addFriendByIdTitle">Add a friend by username</label>
-          <div class="temp-name-row">
-            <input type="text" id="addFriendByIdInput" class="search-input" maxlength="60" data-i18n-placeholder="addFriendByIdPlaceholder" placeholder="Username…" autocomplete="off" />
-            <button type="button" id="addFriendByIdBtn" class="btn btn-secondary temp-name-save" data-i18n="add">Add</button>
-          </div>
-        </div>
         <div id="notifList" class="notif-list">
           <p class="history-empty" data-i18n="noRequestsYet">No requests yet.</p>
         </div>
@@ -1205,7 +1189,7 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="countries.js?v=20260704b"></script>
-  <script src="i18n.js?v=20260710b"></script>
+  <script src="i18n.js?v=20260710c"></script>
   <script src="moderation.js?v=20260705b"></script>
   <script src="video-banner.js?v=20260707a"></script>
   <script>
@@ -1253,6 +1237,6 @@
       audio.addEventListener('play', function () { setState(true); });
     })();
   </script>
-  <script src="app.js?v=20260710b"></script>
+  <script src="app.js?v=20260710c"></script>
 </body>
 </html>

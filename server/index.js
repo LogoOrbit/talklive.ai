@@ -1357,54 +1357,6 @@ io.on('connection', (socket) => {
     socket.emit('friend-request-result', { ok: true, sent: true });
   });
 
-  // Add a friend manually by their username. Finds the person among
-  // currently-online users and sends them a normal friend request.
-  socket.on('add-friend-by-id', ({ query } = {}) => {
-    const me = profiles.get(socket.id);
-    const q = typeof query === 'string' ? query.trim() : '';
-    if (!me || !q) return;
-    store.recordFeature('friend_add_by_id');
-
-    const qLower = q.toLowerCase();
-    let target = null;
-    for (const [sid, p] of profiles) {
-      if (sid === socket.id || p.clientId === me.clientId) continue;
-      if (p.username.toLowerCase() === qLower) {
-        target = p;
-        break;
-      }
-    }
-    if (!target) {
-      return socket.emit('add-friend-by-id-result', { ok: false, reason: 'not-found' });
-    }
-    if (isBlockedPair(me.clientId, target.clientId)) {
-      return socket.emit('add-friend-by-id-result', { ok: false, reason: 'blocked' });
-    }
-    if (isFriend(me.clientId, target.clientId)) {
-      return socket.emit('add-friend-by-id-result', { ok: true, alreadyFriends: true, username: target.username });
-    }
-    if (atFriendLimit(me.clientId)) {
-      return socket.emit('add-friend-by-id-result', { ok: false, reason: 'limit', limit: FREE_LIMITS.friends });
-    }
-
-    const temporary = !socketAuth.get(socket.id);
-    const myInfo = { username: me.username, countryCode: me.country, temporary, avatar: me.avatar };
-    if (!friendRequests.has(target.clientId)) friendRequests.set(target.clientId, new Map());
-    friendRequests.get(target.clientId).set(me.clientId, { ...myInfo, ts: Date.now() });
-
-    pushNotification(target.clientId, {
-      type: 'friend_request',
-      fromClientId: me.clientId,
-      username: myInfo.username,
-      countryCode: myInfo.countryCode,
-      temporary: myInfo.temporary,
-    });
-    const targetSocket = getSocketByClientId(target.clientId);
-    if (targetSocket) syncClientState(targetSocket, target.clientId);
-
-    socket.emit('add-friend-by-id-result', { ok: true, sent: true, username: target.username });
-  });
-
   socket.on('friend-request-respond', ({ fromClientId, accept, notificationId } = {}) => {
     const me = profiles.get(socket.id);
     fromClientId = validId(fromClientId);

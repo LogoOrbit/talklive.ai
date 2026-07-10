@@ -106,9 +106,9 @@ try {
   }
 } catch (e) {}
 
-// Shadow under the sticky navbar only once the page has actually scrolled.
+// Shadow under the sticky header only once the page has actually scrolled.
 (() => {
-  const nav = document.querySelector('.navbar');
+  const nav = document.querySelector('.topbar');
   if (!nav) return;
   let stuck = false;
   const onScroll = () => {
@@ -829,7 +829,7 @@ function openModal(modal) {
   }
   // On small screens the toolbar dropdowns are position:fixed — anchor them
   // just under their own button so they open correctly at any scroll position
-  // now that the navbar is sticky.
+  // now that the header is sticky.
   if (modal.classList.contains('notif-dropdown') && window.matchMedia('(max-width: 480px)').matches) {
     const btn = modal.parentElement ? modal.parentElement.querySelector('button.icon-btn') : null;
     if (btn) {
@@ -3968,41 +3968,6 @@ prefGenderGroup.addEventListener('click', (e) => {
   e.preventDefault();
   showPremiumUpsell(t('premiumGenderLocked'));
 }, true);
-
-// --- Add friend manually by username -----------------------------------------
-const addFriendByIdInput = document.getElementById('addFriendByIdInput');
-const addFriendByIdBtn = document.getElementById('addFriendByIdBtn');
-
-function submitAddFriendById() {
-  const q = addFriendByIdInput.value.trim();
-  if (!q) return;
-  addFriendByIdBtn.disabled = true;
-  socket.emit('add-friend-by-id', { query: q });
-}
-addFriendByIdBtn.addEventListener('click', submitAddFriendById);
-addFriendByIdInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    submitAddFriendById();
-  }
-});
-
-socket.on('add-friend-by-id-result', ({ ok, sent, alreadyFriends, username, reason, limit } = {}) => {
-  addFriendByIdBtn.disabled = false;
-  if (ok && alreadyFriends) {
-    showToast(t('alreadyFriendsWith', { name: username }));
-    addFriendByIdInput.value = '';
-  } else if (ok && sent) {
-    showToast(t('friendRequestSentTo', { name: username }));
-    addFriendByIdInput.value = '';
-  } else if (reason === 'limit') {
-    showPremiumUpsell(t('premiumFriendLimit', { n: limit || freeLimits.friends }));
-  } else if (reason === 'blocked') {
-    showToast(t('friendAddBlocked'));
-  } else {
-    showToast(t('friendNotFound'));
-  }
-});
 
 // Friend-limit errors from the normal in-call "Add friend" flow.
 socket.on('friend-request-result', ({ ok, limitReached } = {}) => {

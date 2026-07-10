@@ -48,7 +48,7 @@ html, body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   background: radial-gradient(circle at 50% -10%, var(--bg-glow) 0%, var(--bg-1) 55%);
   color: var(--text);
-  /* clip (not hidden) so the sticky navbar works: overflow-x:hidden turns
+  /* clip (not hidden) so the sticky header works: overflow-x:hidden turns
      body into a scroll container and silently disables position:sticky. */
   overflow-x: hidden;
   overflow-x: clip;
@@ -81,13 +81,31 @@ body.panel-open .side-panel {
   padding-right: env(safe-area-inset-right);
 }
 
+/* Single sticky header: brand on the left, tools + live count on the right.
+   Sticky so the tool menus (history, friends, filters, game, chat) stay
+   reachable while the page scrolls — no separate nav band needed. */
 .topbar {
+  position: sticky;
+  top: 0;
+  z-index: 55;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 18px;
+  padding: 10px 18px;
+  padding-top: calc(10px + env(safe-area-inset-top));
   gap: 10px;
   flex-wrap: wrap;
+  background: var(--bg-1);
+  background: color-mix(in srgb, var(--bg-1) 82%, transparent);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  transition: box-shadow 0.25s ease;
+}
+
+/* A soft shadow only once the bar is actually stuck (class set from app.js). */
+.topbar.is-stuck {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
 }
 
 .brand {
@@ -124,18 +142,13 @@ body.panel-open .side-panel {
 .header-right {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .topbar-left {
   display: flex;
   align-items: center;
   gap: 12px;
-}
-
-/* Forces a flex line break on mobile only (see @media block below); invisible and inert on desktop. */
-.topbar-break {
-  display: none;
 }
 
 /* App settings side panel */
@@ -244,33 +257,33 @@ body.panel-open .side-panel {
   font-weight: 800;
 }
 
+/* Flat, quiet header buttons: no heavy shadows or bright fills — they read as
+   part of the header, only lighting up on hover/press. */
 .icon-btn {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  border: 1px solid rgba(255,255,255,0.16);
-  background: rgba(255,255,255,0.12);
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: transparent;
   color: var(--text);
   font-size: 16px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.08);
-  transition: background 0.18s cubic-bezier(.2,.8,.2,1), transform 0.18s cubic-bezier(.2,.8,.2,1), box-shadow 0.18s cubic-bezier(.2,.8,.2,1), border-color 0.18s ease;
+  opacity: 0.85;
+  transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease, transform 0.15s ease;
 }
 
 .icon-btn:hover {
-  background: rgba(255,255,255,0.19);
-  border-color: rgba(255,255,255,0.26);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.1);
+  opacity: 1;
 }
 
 .icon-btn:active {
-  transform: scale(0.9);
-  background: rgba(255,255,255,0.26);
-  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  transform: scale(0.94);
+  background: rgba(255,255,255,0.14);
 }
 
 .avatar-initial {
@@ -435,36 +448,6 @@ body.panel-open .side-panel {
   height: 26px;
 }
 
-/* --- Secondary navigation bar: the tool buttons, centered. ---
-   Sticky: it pins to the top of the viewport while the page scrolls so the
-   tool menus (history, friends, filters, game, chat) are always reachable. */
-.navbar {
-  position: sticky;
-  top: 0;
-  z-index: 55;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 8px 18px 10px;
-  padding-top: calc(8px + env(safe-area-inset-top));
-  margin: 0;
-  background: var(--bg-1);
-  border-bottom: 1px solid rgba(255,255,255,0.07);
-  transition: box-shadow 0.25s ease;
-}
-
-/* A soft shadow only once the bar is actually stuck (class set from app.js). */
-.navbar.is-stuck {
-  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
-}
-
-.navbar-actions {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-}
 
 /* Language picker moved into the Settings panel: fill its row. */
 .settings-lang-wrap { width: 100%; }
@@ -1245,24 +1228,30 @@ body.panel-open .side-panel {
 /* Mobile responsiveness */
 @media (max-width: 600px) {
   .topbar {
-    padding: 12px 14px;
-    column-gap: 8px;
+    padding: 8px 10px;
+    padding-top: calc(8px + env(safe-area-inset-top));
+    column-gap: 6px;
     justify-content: space-between;
   }
 
-  .navbar {
-    padding: 6px 8px 8px;
-    padding-top: calc(6px + env(safe-area-inset-top));
-    margin: 0;
+  .topbar-left {
     gap: 8px;
   }
 
-  .navbar-actions {
-    gap: 14px;
+  .header-right {
+    gap: 2px;
+    margin-left: auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .brand {
+    font-size: 17px;
   }
 
   .people-count {
-    padding: 6px 9px;
+    padding: 6px 8px;
+    margin-left: 4px;
   }
 
   .people-count-num { font-size: 14px; }
@@ -1279,13 +1268,14 @@ body.panel-open .side-panel {
   }
 
   .icon-btn {
-    width: 50px;
-    height: 50px;
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
   }
 
   .topbar-svg-icon {
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
   }
 
   .online {
@@ -2794,7 +2784,7 @@ body.panel-open .side-panel {
 @media (max-width: 480px) {
   .notif-dropdown {
     /* Anchored under its button by app.js (sets style.top), so it works
-       whether the sticky navbar is at the top of the page or mid-scroll. */
+       whether the sticky header is at the top of the page or mid-scroll. */
     position: fixed;
     top: 120px;
     right: 10px;
@@ -4246,9 +4236,19 @@ body.panel-open .side-panel {
   border-color: rgba(20, 30, 70, 0.12);
 }
 
+/* Header icon buttons stay flat/transparent in light theme too. */
+[data-theme="light"] .icon-btn {
+  background: transparent;
+  border-color: transparent;
+}
+
 [data-theme="light"] .icon-btn:hover,
 [data-theme="light"] .modal-close:hover {
-  background: rgba(20, 30, 70, 0.12);
+  background: rgba(20, 30, 70, 0.1);
+}
+
+[data-theme="light"] .icon-btn:hover {
+  border-color: rgba(20, 30, 70, 0.12);
 }
 
 [data-theme="light"] .quality-bar {
@@ -4960,7 +4960,7 @@ a.premium-lock:hover { background: rgba(108, 92, 231, 0.22); }
   background: rgba(20, 30, 70, 0.04);
 }
 [data-theme="light"] .acc-header:hover { background: rgba(20, 30, 70, 0.06); }
-[data-theme="light"] .navbar { border-bottom-color: rgba(20, 30, 70, 0.1); }
+[data-theme="light"] .topbar { border-bottom-color: rgba(20, 30, 70, 0.1); }
 
 /* Compact, professional upgrade CTA (replaces the old yellow hint text). */
 .upgrade-cta-btn {
@@ -4989,14 +4989,6 @@ a.premium-lock:hover { background: rgba(108, 92, 231, 0.22); }
   font-size: 1rem;
   line-height: 1;
 }
-
-/* --- Add friend by username / ID --------------------------------------------- */
-.add-friend-by-id {
-  margin-bottom: 14px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid rgba(138, 144, 168, 0.25);
-}
-.add-friend-by-id .pill-label { display: block; margin-bottom: 6px; }
 
 /* --- Post-call share prompt --- */
 .share-prompt {
@@ -5056,9 +5048,14 @@ html.perf-lite .action-spinner,
 html.perf-lite .search-ticker-loader span,
 html.perf-lite .typing-dots span { animation: revert !important; }
 html.perf-lite .game-overlay { backdrop-filter: none; }
+html.perf-lite .topbar {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: var(--bg-1);
+}
 html.perf-lite .video-banner { display: none; }
 html.perf-lite .orb-ring { display: none; }
-html.perf-lite .navbar.is-stuck,
+html.perf-lite .topbar.is-stuck,
 html.perf-lite .notif-dropdown,
 html.perf-lite .modal-box,
 html.perf-lite .side-panel { box-shadow: none; }
