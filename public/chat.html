@@ -26,20 +26,31 @@
     <!-- The one and only top bar. Idle: brand + online count. Connected: the
          partner's flag/name take the middle, and the action icons light up. -->
     <header class="topbar">
+      <button type="button" id="chatSettingsBtn" class="icon-btn settings-btn" data-i18n-title="settings" data-i18n-aria="settings" aria-label="Settings">
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="3.2"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
       <a class="brand" href="/chat" aria-label="TalkLive">
-        <span class="brand-logo" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
-        </span>
+        <span class="brand-text">TalkLive</span>
       </a>
 
       <div class="top-info">
         <div id="topDefault" class="top-id">
-          <span class="top-name">TalkLive</span>
           <span class="top-sub"><span class="online-dot" aria-hidden="true"></span><span id="onlineCount">—</span>&nbsp;<span data-i18n="online">Online</span></span>
+        </div>
+        <div id="topPartner" class="top-id hidden">
+          <span class="top-name"><span id="topPartnerName"></span></span>
+          <span class="top-sub"><span id="topPartnerFlag" class="peer-flag" aria-hidden="true"></span><span id="topPartnerCountry"></span></span>
         </div>
       </div>
 
       <div class="top-actions">
+        <button type="button" id="friendsBtn" class="icon-btn friends-btn" data-i18n-title="friends" data-i18n-aria="friends" aria-label="Friends">
+          <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.1"/><path d="M3.6 19a5.4 5.4 0 0 1 10.8 0"/><circle cx="17.2" cy="9" r="2.5"/><path d="M15.7 13.7A4.8 4.8 0 0 1 21 18.4"/></svg>
+          <span id="friendsBadge" class="notif-badge hidden" aria-hidden="true">0</span>
+        </button>
         <button type="button" id="autoBtn" class="icon-btn auto-btn hidden" aria-pressed="false" data-i18n-title="chatAutoHint" data-i18n-aria="chatAutoHint" aria-label="Auto-connect me to a new person when a chat ends">
           <span data-i18n="chatAuto">Auto</span>
         </button>
@@ -202,6 +213,82 @@
       </div>
     </div>
   </div>
+
+  <!-- Settings side panel (left): name, gender, theme, language, sounds — the
+       same core preferences the call app exposes from its gear icon. -->
+  <div id="settingsOverlay" class="side-overlay hidden"></div>
+  <aside id="settingsPanel" class="side-panel side-left" role="dialog" data-i18n-aria="settings" aria-label="Settings">
+    <div class="side-header">
+      <h2 data-i18n="settings">Settings</h2>
+      <button type="button" id="settingsCloseBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
+    </div>
+    <div class="side-body">
+      <label class="field-label" for="tempNameInput" data-i18n="tempUsername">Your name</label>
+      <div class="name-row">
+        <input type="text" id="tempNameInput" class="text-input" maxlength="24" data-i18n-placeholder="tempUsernamePlaceholder" placeholder="Your display name" autocomplete="off" />
+        <button type="button" id="tempNameSaveBtn" class="btn btn-secondary" data-i18n="saveName">Save name</button>
+      </div>
+
+      <p class="field-label" data-i18n="iAm">I am</p>
+      <div id="genderGroup" class="pill-group" role="group" data-i18n-aria="iAm" aria-label="I am">
+        <button type="button" class="pill" data-value="male" data-i18n="male">Male</button>
+        <button type="button" class="pill" data-value="female" data-i18n="female">Female</button>
+      </div>
+
+      <p class="field-label" data-i18n="theme">Theme</p>
+      <div id="themeGroup" class="pill-group" role="group" data-i18n-aria="theme" aria-label="Theme">
+        <button type="button" class="pill" data-value="dark" data-i18n="themeDark">Dark</button>
+        <button type="button" class="pill" data-value="light" data-i18n="themeLight">Light</button>
+        <button type="button" class="pill" data-value="ocean" data-i18n="themeOcean">Ocean</button>
+        <button type="button" class="pill" data-value="sunset" data-i18n="themeSunset">Sunset</button>
+      </div>
+
+      <label class="field-label" for="langSelect" data-i18n="language">Language</label>
+      <select id="langSelect" class="text-input select-input"></select>
+
+      <label class="toggle-row" for="soundToggle">
+        <span data-i18n="soundEffects">Sound effects</span>
+        <input type="checkbox" id="soundToggle" />
+      </label>
+      <label class="toggle-row" for="vibrationToggle">
+        <span data-i18n="vibration">Vibration</span>
+        <input type="checkbox" id="vibrationToggle" />
+      </label>
+    </div>
+  </aside>
+
+  <!-- Friends side panel (right): requests + friend list, same as the call app. -->
+  <div id="friendsOverlay" class="side-overlay hidden"></div>
+  <aside id="friendsPanel" class="side-panel side-right" role="dialog" data-i18n-aria="friends" aria-label="Friends">
+    <div class="side-header">
+      <h2 data-i18n="friends">Friends</h2>
+      <button type="button" id="friendsCloseBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
+    </div>
+    <div class="side-body">
+      <div id="requestsList" class="requests-list"></div>
+      <div id="friendsList" class="friends-list">
+        <p class="list-empty" data-i18n="noFriendsYet">No friends yet.</p>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Friend chat side panel (right): persistent chat with a friend. -->
+  <div id="friendChatOverlay" class="side-overlay hidden"></div>
+  <aside id="friendChatPanel" class="side-panel side-right" role="dialog" aria-labelledby="friendChatTitle">
+    <div class="side-header">
+      <h2 id="friendChatTitle" data-i18n="chat">Chat</h2>
+      <button type="button" id="friendChatCloseBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
+    </div>
+    <div class="friend-chat-body">
+      <div id="friendChatMsgs" class="msgs friend-chat-msgs"></div>
+      <form id="friendChatForm" class="composer friend-chat-composer">
+        <input id="friendChatInput" type="text" maxlength="1000" data-i18n-placeholder="typeMessage" data-i18n-aria="typeMessage" placeholder="Type a message…" autocomplete="off" />
+        <button type="submit" class="send-btn" data-i18n-aria="send" aria-label="Send">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.4 20.4 22 12 3.4 3.6 3.4 10l13 2-13 2z"/></svg>
+        </button>
+      </form>
+    </div>
+  </aside>
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="/countries.js"></script>

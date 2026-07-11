@@ -45,7 +45,18 @@
   var onlineCount = $('onlineCount');
   var autoBtn = $('autoBtn');
   var topDefault = $('topDefault');
+  var topPartner = $('topPartner');
   var voiceCallBtn = $('voiceCallBtn');
+
+  // --- Shared preferences (same localStorage keys as the call app, so the
+  // theme/name/sound choices follow the user between both sub-apps). ---
+  var THEMES = ['dark', 'light', 'ocean', 'sunset'];
+  var currentTheme = localStorage.getItem('talklive_theme');
+  if (THEMES.indexOf(currentTheme) === -1) currentTheme = 'dark';
+  document.documentElement.setAttribute('data-theme', currentTheme);
+  var soundEnabled = localStorage.getItem('talklive_sound') !== 'off';
+  var vibrationEnabled = localStorage.getItem('talklive_vibration') !== 'off';
+  var myGender = localStorage.getItem('talklive_gender') || '';
 
   function escapeHtml(str) {
     return String(str).replace(/[&<>"']/g, function (c) {
@@ -60,7 +71,7 @@
     var cc = code.toLowerCase();
     return '<img class="flag-icon" src="https://flagcdn.com/24x18/' + cc + '.png" srcset="https://flagcdn.com/48x36/' + cc + '.png 2x" width="' + size + '" alt="' + escapeHtml(getCountryName(code)) + '" />';
   }
-  function vibrate(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
+  function vibrate(ms) { try { if (vibrationEnabled && navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
 
   // --- Sound effects: tiny synthesized blips (no audio files, CSP-safe, work
   // offline). Built with the Web Audio API. The context can only start after a
@@ -77,7 +88,7 @@
   }
   // A short two-note blip. freqs = [start, end] Hz; type = wave; vol = 0..1.
   function playBlip(freqs, dur, vol) {
-    if (!audioCtx) return;
+    if (!audioCtx || !soundEnabled) return;
     try {
       var now = audioCtx.currentTime;
       var osc = audioCtx.createOscillator();
@@ -131,10 +142,11 @@
     reportBtn.classList.toggle('hidden', !connected);
     addFriendBtn.classList.toggle('hidden', !connected);
     autoBtn.classList.toggle('hidden', name === 'start');
-    // While connected the header is just the logo + actions — the partner's
-    // name already appears in the "you're now chatting with…" system line, so
-    // we hide the brand text to keep the bar clean. Idle shows brand + online.
+    // While connected the header shows who you're talking to (name + country
+    // + flag); idle shows the online counter next to the TalkLive brand.
     topDefault.classList.toggle('hidden', connected);
+    topPartner.classList.toggle('hidden', !connected);
+    document.querySelector('.topbar').classList.toggle('connected', connected);
     if (name !== 'search') stopSearchLines();
   }
 
@@ -185,6 +197,7 @@
     socket.emit('register', {
       clientId: getClientId(),
       nickname: accountNickname || tempUsername || undefined,
+      gender: myGender || undefined,
     });
   }
 
@@ -258,6 +271,8 @@
     if (e.key !== 'Escape' && e.key !== 'Esc') return;
     var openModalEl = document.querySelector('.modal-overlay:not(.hidden)');
     if (openModalEl) { closeModal(openModalEl); return; }
+    var openPanelEl = document.querySelector('.side-panel.open');
+    if (openPanelEl) { closeAllPanels(); return; }
     if (!composer.classList.contains('hidden')) {
       e.preventDefault();
       nextBtn.click();
@@ -426,6 +441,254 @@
   function closeModal(m) { m.classList.add('hidden'); if (!document.querySelector('.modal-overlay:not(.hidden)')) document.body.classList.remove('modal-open'); }
 
   // ---------------------------------------------------------------------------
+  // Side panels (settings / friends / friend chat) — the nav features shared
+  // with the call app. Each panel slides in over its own overlay.
+  // ---------------------------------------------------------------------------
+  function openPanel(panel, overlay) { panel.classList.add('open'); overlay.classList.remove('hidden'); }
+  function closePanel(panel, overlay) { panel.classList.remove('open'); overlay.classList.add('hidden'); }
+  function closeAllPanels() {
+    closePanel(settingsPanel, settingsOverlay);
+    closePanel(friendsPanel, friendsOverlay);
+    closePanel(friendChatPanel, friendChatOverlay);
+  }
+
+  // --- Settings ---
+  var settingsPanel = $('settingsPanel');
+  var settingsOverlay = $('settingsOverlay');
+  var tempNameInput = $('tempNameInput');
+  var genderGroup = $('genderGroup');
+  var themeGroup = $('themeGroup');
+  var langSelect = $('langSelect');
+  var soundToggle = $('soundToggle');
+  var vibrationToggle = $('vibrationToggle');
+
+  $('chatSettingsBtn').addEventListener('click', function () {
+    vibrate(10);
+    closeAllPanels();
+    tempNameInput.value = tempUsername || (myProfile && myProfile.username) || '';
+    openPanel(settingsPanel, settingsOverlay);
+  });
+  $('settingsCloseBtn').addEventListener('click', function () { closePanel(settingsPanel, settingsOverlay); });
+  settingsOverlay.addEventListener('click', function () { closePanel(settingsPanel, settingsOverlay); });
+
+  $('tempNameSaveBtn').addEventListener('click', function () {
+    var name = tempNameInput.value.trim().slice(0, 24);
+    if (!name) return;
+    tempUsername = name;
+    localStorage.setItem('talklive_tempname', name);
+    register(); // re-register so the server picks up the new display name
+  });
+
+  function setPillValue(group, value) {
+    group.querySelectorAll('.pill').forEach(function (p) {
+      p.classList.toggle('selected', p.dataset.value === value);
+    });
+  }
+  genderGroup.addEventListener('click', function (e) {
+    var pill = e.target.closest('.pill');
+    if (!pill) return;
+    myGender = pill.dataset.value === myGender ? '' : pill.dataset.value; // tap again to clear
+    localStorage.setItem('talklive_gender', myGender);
+    setPillValue(genderGroup, myGender);
+    register();
+  });
+  setPillValue(genderGroup, myGender);
+
+  themeGroup.addEventListener('click', function (e) {
+    var pill = e.target.closest('.pill');
+    if (!pill) return;
+    currentTheme = THEMES.indexOf(pill.dataset.value) !== -1 ? pill.dataset.value : 'dark';
+    localStorage.setItem('talklive_theme', currentTheme);
+    document.documentElement.setAttribute('data-theme', currentTheme);
+    setPillValue(themeGroup, currentTheme);
+  });
+  setPillValue(themeGroup, currentTheme);
+
+  // Language dropdown, built from the shared i18n language table.
+  (function buildLangSelect() {
+    if (typeof I18N_LANGS === 'undefined') { langSelect.parentNode.removeChild(langSelect); return; }
+    Object.keys(I18N_LANGS).forEach(function (code) {
+      var opt = document.createElement('option');
+      opt.value = code;
+      opt.textContent = I18N_LANGS[code].name;
+      langSelect.appendChild(opt);
+    });
+    langSelect.value = (typeof I18N_STATE !== 'undefined' && I18N_STATE.lang) || 'en';
+    langSelect.addEventListener('change', function () { setLanguage(langSelect.value); });
+  })();
+
+  soundToggle.checked = soundEnabled;
+  soundToggle.addEventListener('change', function () {
+    soundEnabled = soundToggle.checked;
+    localStorage.setItem('talklive_sound', soundEnabled ? 'on' : 'off');
+  });
+  vibrationToggle.checked = vibrationEnabled;
+  vibrationToggle.addEventListener('change', function () {
+    vibrationEnabled = vibrationToggle.checked;
+    localStorage.setItem('talklive_vibration', vibrationEnabled ? 'on' : 'off');
+  });
+
+  // --- Friends panel: requests + friend list, kept in sync by 'state-sync'. ---
+  var friendsPanel = $('friendsPanel');
+  var friendsOverlay = $('friendsOverlay');
+  var friendsBadge = $('friendsBadge');
+  var requestsList = $('requestsList');
+  var friendsList = $('friendsList');
+  var friendsState = { friends: [], requests: [], notifications: [] };
+
+  $('friendsBtn').addEventListener('click', function () {
+    vibrate(10);
+    closeAllPanels();
+    openPanel(friendsPanel, friendsOverlay);
+  });
+  $('friendsCloseBtn').addEventListener('click', function () { closePanel(friendsPanel, friendsOverlay); });
+  friendsOverlay.addEventListener('click', function () { closePanel(friendsPanel, friendsOverlay); });
+
+  function unreadCountFor(clientId) {
+    var n = 0;
+    friendsState.notifications.forEach(function (notif) {
+      if (notif.type === 'message' && notif.fromClientId === clientId) n++;
+    });
+    return n;
+  }
+
+  function renderFriends() {
+    // Header badge: pending requests + unread friend messages.
+    var unread = friendsState.notifications.filter(function (n) { return n.type === 'message'; }).length;
+    var badgeCount = friendsState.requests.length + unread;
+    friendsBadge.textContent = String(badgeCount);
+    friendsBadge.classList.toggle('hidden', badgeCount === 0);
+
+    requestsList.innerHTML = '';
+    friendsState.requests.forEach(function (r) {
+      var row = document.createElement('div');
+      row.className = 'request-row';
+      row.innerHTML =
+        '<span class="friend-avatar" aria-hidden="true">' + escapeHtml((r.username || '?').charAt(0)) + '</span>' +
+        '<span class="friend-main"><span class="friend-name">' + escapeHtml(r.username || '—') + ' ' + getFlagImg(r.countryCode, 14) + '</span>' +
+        (r.message ? '<span class="request-note">' + escapeHtml(r.message) + '</span>' : '') + '</span>' +
+        '<span class="friend-actions">' +
+        '<button type="button" class="mini-btn accept" data-accept="1" title="' + escapeHtml(t('accept')) + '" aria-label="' + escapeHtml(t('accept')) + '"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12.5 10 18.5 20 6.5"/></svg></button>' +
+        '<button type="button" class="mini-btn danger" data-accept="0" title="' + escapeHtml(t('decline')) + '" aria-label="' + escapeHtml(t('decline')) + '"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>' +
+        '</span>';
+      row.querySelectorAll('.mini-btn').forEach(function (b) {
+        b.addEventListener('click', function () {
+          socket.emit('friend-request-respond', { fromClientId: r.clientId, accept: b.dataset.accept === '1' });
+        });
+      });
+      requestsList.appendChild(row);
+    });
+
+    friendsList.innerHTML = '';
+    if (!friendsState.friends.length) {
+      friendsList.innerHTML = '<p class="list-empty">' + escapeHtml(t('noFriendsYet')) + '</p>';
+      return;
+    }
+    friendsState.friends.forEach(function (f) {
+      var row = document.createElement('div');
+      row.className = 'friend-row';
+      var unreadN = unreadCountFor(f.clientId);
+      row.innerHTML =
+        '<span class="friend-avatar" aria-hidden="true">' + escapeHtml((f.username || '?').charAt(0)) + '</span>' +
+        '<span class="friend-main"><span class="friend-name">' + escapeHtml(f.username || '—') + ' ' + getFlagImg(f.countryCode, 14) + '</span>' +
+        '<span class="friend-status' + (f.online ? '' : ' is-offline') + '"><span class="online-dot"></span>' + escapeHtml(t(f.online ? 'online' : 'offline')) + '</span></span>' +
+        '<span class="friend-actions">' +
+        '<button type="button" class="mini-btn" data-act="chat" title="' + escapeHtml(t('chat')) + '" aria-label="' + escapeHtml(t('chat')) + '"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>' +
+        (unreadN ? '<span class="notif-badge">' + unreadN + '</span>' : '') + '</button>' +
+        '<button type="button" class="mini-btn danger" data-act="remove" title="' + escapeHtml(t('removeFriend')) + '" aria-label="' + escapeHtml(t('removeFriend')) + '"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>' +
+        '</span>';
+      row.querySelector('[data-act="chat"]').addEventListener('click', function () { openFriendChat(f); });
+      row.querySelector('[data-act="remove"]').addEventListener('click', function () {
+        socket.emit('remove-friend', { friendClientId: f.clientId });
+      });
+      friendsList.appendChild(row);
+    });
+  }
+
+  socket.on('state-sync', function (data) {
+    data = data || {};
+    friendsState.friends = data.friends || [];
+    friendsState.requests = data.friendRequests || [];
+    friendsState.notifications = data.notifications || [];
+    renderFriends();
+  });
+  // Live badge updates: message notifications arrive alone (friend-request
+  // ones come with a full state-sync), so track them locally too.
+  socket.on('notification', function (n) {
+    if (!n) return;
+    if (n.type === 'message' && n.fromClientId === activeFriendChatId) return; // already reading it
+    friendsState.notifications.push(n);
+    renderFriends();
+  });
+
+  // --- Friend chat: persistent one-to-one chat, same protocol as the call app. ---
+  var friendChatPanel = $('friendChatPanel');
+  var friendChatOverlay = $('friendChatOverlay');
+  var friendChatMsgs = $('friendChatMsgs');
+  var friendChatForm = $('friendChatForm');
+  var friendChatInput = $('friendChatInput');
+  var activeFriendChatId = null;
+
+  function appendFriendMsg(text, who) {
+    var el = document.createElement('div');
+    el.className = 'msg ' + who;
+    el.textContent = text;
+    friendChatMsgs.appendChild(el);
+    friendChatMsgs.scrollTop = friendChatMsgs.scrollHeight;
+  }
+
+  function openFriendChat(friend) {
+    activeFriendChatId = friend.clientId;
+    $('friendChatTitle').textContent = friend.username || t('chat');
+    friendChatMsgs.innerHTML = '';
+    closePanel(friendsPanel, friendsOverlay);
+    openPanel(friendChatPanel, friendChatOverlay);
+    socket.emit('get-friend-chat', { friendClientId: friend.clientId });
+    socket.emit('mark-messages-read', { friendClientId: friend.clientId });
+    // Clear this friend's unread notifications locally so badges update now.
+    friendsState.notifications = friendsState.notifications.filter(function (n) {
+      return !(n.type === 'message' && n.fromClientId === friend.clientId);
+    });
+    renderFriends();
+    friendChatInput.focus();
+  }
+  function closeFriendChat() {
+    activeFriendChatId = null;
+    closePanel(friendChatPanel, friendChatOverlay);
+  }
+  $('friendChatCloseBtn').addEventListener('click', closeFriendChat);
+  friendChatOverlay.addEventListener('click', closeFriendChat);
+
+  friendChatForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var text = friendChatInput.value.trim();
+    if (!text || !activeFriendChatId) return;
+    socket.emit('friend-message', { toClientId: activeFriendChatId, text: text.slice(0, 1000) });
+    friendChatInput.value = '';
+    friendChatInput.focus();
+  });
+
+  socket.on('friend-chat-history', function (data) {
+    if (!data || data.friendClientId !== activeFriendChatId) return;
+    friendChatMsgs.innerHTML = '';
+    (data.messages || []).forEach(function (m) {
+      appendFriendMsg(m.text, m.from === activeFriendChatId ? 'them' : 'me');
+    });
+  });
+  socket.on('friend-message-sent', function (data) {
+    if (data && data.toClientId === activeFriendChatId) appendFriendMsg(data.text, 'me');
+  });
+  socket.on('friend-message', function (data) {
+    if (!data) return;
+    if (data.fromClientId === activeFriendChatId) {
+      appendFriendMsg(data.text, 'them');
+      soundReceive();
+      socket.emit('mark-messages-read', { friendClientId: data.fromClientId });
+    }
+    // Badges refresh via the state-sync the server sends with the notification.
+  });
+
+  // ---------------------------------------------------------------------------
   // Socket events
   // ---------------------------------------------------------------------------
   socket.on('connect', register);
@@ -446,12 +709,24 @@
     addFriendBtn.classList.remove('sent');
     addFriendBtn.disabled = false;
     clearMessages();
+    // Top bar: partner name + country with its flag.
+    var countryName = getCountryName(data.partner.countryCode) || data.partner.country || '';
+    $('topPartnerName').textContent = data.partner.username;
+    $('topPartnerCountry').textContent = countryName;
+    $('topPartnerFlag').innerHTML = getFlagImg(data.partner.countryCode, 16);
     showView('live');
     soundConnect();
-    addMessage(t('chatSystemMatched', {
+    // "You're now chatting with X from Pakistan 🇵🇰" — the flag image goes right
+    // after the country name inside the system line, so it's built as DOM.
+    var line = addMessage(t('chatSystemMatched', {
       name: data.partner.username,
-      country: getCountryName(data.partner.countryCode) || data.partner.country || '',
+      country: countryName,
     }), 'system');
+    var html = escapeHtml(line.textContent);
+    if (countryName && data.partner.countryCode && data.partner.countryCode !== 'XX') {
+      html = html.replace(escapeHtml(countryName), escapeHtml(countryName) + ' ' + getFlagImg(data.partner.countryCode, 15));
+    }
+    line.innerHTML = html;
     input.focus();
   });
 
@@ -486,6 +761,8 @@
     reportBtn.classList.add('hidden');
     addFriendBtn.classList.add('hidden');
     topDefault.classList.remove('hidden');
+    topPartner.classList.add('hidden');
+    document.querySelector('.topbar').classList.remove('connected');
     input.disabled = true;
     clearOutgoingInvite();
     closeModal(callIncomingModal);
