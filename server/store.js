@@ -83,7 +83,10 @@ function defaults() {
     // chatHistory: clientId -> [{ clientId, username, countryCode, ts }] — the
     // last few random chat partners, so a user can message someone back after
     // accidentally losing them (kept to the newest 10 per user).
-    social: { friends: {}, friendChats: {}, blocks: {}, chatHistory: {} },
+    // friendRequests: clientId -> { fromClientId -> info } (pending, not yet
+    // accepted/declined). notifications: clientId -> [notification,...] so
+    // unread notifications also survive restarts.
+    social: { friends: {}, friendChats: {}, blocks: {}, chatHistory: {}, friendRequests: {}, notifications: {} },
     analytics: {
       totals: { visits: 0, connections: 0, matches: 0, messages: 0, reports: 0, accounts: 0 },
       days: {}, // 'YYYY-MM-DD' -> { visits, uniques, uniqueSet, connections, matches, messages, reports, feedback, errors, newAccounts, peakOnline, countries, cities, features }
@@ -494,6 +497,8 @@ function saveSocial(social) {
     friendChats: social.friendChats || {},
     blocks: social.blocks || {},
     chatHistory: social.chatHistory || {},
+    friendRequests: social.friendRequests || {},
+    notifications: social.notifications || {},
   };
   save();
 }

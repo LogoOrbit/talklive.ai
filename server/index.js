@@ -426,9 +426,11 @@ function persistAccount(usernameLower) {
   if (acc) store.saveAccount(usernameLower, acc);
 }
 
-// --- Friends / notifications / call-back state — all in-memory, keyed by the
+// --- Friends / notifications / call-back state — held in memory, keyed by the
 // persistent per-browser clientId so it survives reconnects (works for both
-// temporary/guest users and signed-in accounts). Resets on server restart.
+// temporary/guest users and signed-in accounts). Everything except the live
+// clientId -> socket lookup is also written through to the durable store (see
+// persistSocial), so it survives server restarts and deploys too.
 const clientSockets = new Map(); // clientId -> current socketId, for online lookup
 const friends = new Map(); // clientId -> Map<friendClientId, { username, countryCode, temporary }>
 const friendRequests = new Map(); // clientId -> Map<fromClientId, { username, countryCode, temporary, ts }>
@@ -458,7 +460,22 @@ function persistSocial() {
   for (const [cid, list] of chatHistory) {
     if (list.length) historyObj[cid] = list;
   }
-  store.saveSocial({ friends: friendsObj, friendChats: chatsObj, blocks: blocksObj, chatHistory: historyObj });
+  const requestsObj = {};
+  for (const [cid, m] of friendRequests) {
+    if (m.size) requestsObj[cid] = Object.fromEntries(m);
+  }
+  const notifsObj = {};
+  for (const [cid, list] of notifications) {
+    if (list.length) notifsObj[cid] = list;
+  }
+  store.saveSocial({
+    friends: friendsObj,
+    friendChats: chatsObj,
+    blocks: blocksObj,
+    chatHistory: historyObj,
+    friendRequests: requestsObj,
+    notifications: notifsObj,
+  });
 }
 
 // Load durable accounts + social graph from the store into the in-memory Maps
@@ -487,6 +504,12 @@ function hydrateFromStore() {
   }
   for (const [cid, list] of Object.entries(social.chatHistory || {})) {
     chatHistory.set(cid, Array.isArray(list) ? list.slice(-MAX_CHAT_HISTORY) : []);
+  }
+  for (const [cid, m] of Object.entries(social.friendRequests || {})) {
+    friendRequests.set(cid, new Map(Object.entries(m)));
+  }
+  for (const [cid, list] of Object.entries(social.notifications || {})) {
+    notifications.set(cid, Array.isArray(list) ? list : []);
   }
 }
 
@@ -548,6 +571,7 @@ function pushNotification(clientId, notif) {
   const full = { id: crypto.randomUUID(), ts: Date.now(), ...notif };
   list.push(full);
   if (list.length > 50) list.shift();
+  persistSocial();
   const targetSocket = getSocketByClientId(clientId);
   if (targetSocket) targetSocket.emit('notification', full);
   return full;
@@ -557,7 +581,10 @@ function removeNotification(clientId, notificationId) {
   const list = notifications.get(clientId);
   if (!list) return;
   const idx = list.findIndex((n) => n.id === notificationId);
-  if (idx !== -1) list.splice(idx, 1);
+  if (idx !== -1) {
+    list.splice(idx, 1);
+    persistSocial();
+  }
 }
 
 function liveAvatarFor(clientId, fallback) {
@@ -1488,6 +1515,7 @@ io.on('connection', (socket) => {
 
     if (!friendRequests.has(targetClientId)) friendRequests.set(targetClientId, new Map());
     friendRequests.get(targetClientId).set(me.clientId, { ...myInfo, ts: Date.now() });
+    persistSocial();
 
     // Optional intro message ("remind them who you are") — links stripped,
     // capped, and only ever shown inside the recipient's notification.
@@ -1516,6 +1544,7 @@ io.on('connection', (socket) => {
     const req = reqMap && reqMap.get(fromClientId);
     if (!req) return;
     reqMap.delete(fromClientId);
+    persistSocial();
     if (notificationId) removeNotification(me.clientId, notificationId);
 
     if (accept && atFriendLimit(me.clientId)) {
@@ -1627,6 +1656,7 @@ io.on('connection', (socket) => {
     const list = notifications.get(me.clientId);
     if (!list) return;
     notifications.set(me.clientId, list.filter((n) => !(n.type === 'message' && n.fromClientId === friendClientId)));
+    persistSocial();
   });
 
   // Read receipts: when I (the viewer) open a chat, mark every message the
@@ -1725,6 +1755,7 @@ io.on('connection', (socket) => {
     const list = notifications.get(me.clientId);
     if (list) {
       notifications.set(me.clientId, list.filter((n) => !(n.type === 'call_back_request' && n.fromClientId === fromClientId)));
+      persistSocial();
     }
 
     const requesterSocketId = clientSockets.get(fromClientId);
