@@ -434,6 +434,9 @@ const friends = new Map(); // clientId -> Map<friendClientId, { username, countr
 const friendRequests = new Map(); // clientId -> Map<fromClientId, { username, countryCode, temporary, ts }>
 const notifications = new Map(); // clientId -> Array<notification>
 const friendChats = new Map(); // pairKey -> Array<{ from, text, ts }>
+const chatHistory = new Map(); // clientId -> Array<{ clientId, username, countryCode, ts }> (newest last, max 10)
+
+const MAX_CHAT_HISTORY = 10;
 
 // Serialize the live social Maps back to plain JSON and persist them, so users'
 // friends and their chat history ("memories") survive restarts. Debounced by
@@ -451,7 +454,11 @@ function persistSocial() {
   for (const [cid, set] of blocks) {
     if (set.size) blocksObj[cid] = Array.from(set);
   }
-  store.saveSocial({ friends: friendsObj, friendChats: chatsObj, blocks: blocksObj });
+  const historyObj = {};
+  for (const [cid, list] of chatHistory) {
+    if (list.length) historyObj[cid] = list;
+  }
+  store.saveSocial({ friends: friendsObj, friendChats: chatsObj, blocks: blocksObj, chatHistory: historyObj });
 }
 
 // Load durable accounts + social graph from the store into the in-memory Maps
@@ -478,11 +485,40 @@ function hydrateFromStore() {
   for (const [cid, arr] of Object.entries(social.blocks || {})) {
     blocks.set(cid, new Set(arr));
   }
+  for (const [cid, list] of Object.entries(social.chatHistory || {})) {
+    chatHistory.set(cid, Array.isArray(list) ? list.slice(-MAX_CHAT_HISTORY) : []);
+  }
 }
 
 function isFriend(a, b) {
   const setA = friends.get(a);
   return !!(setA && setA.has(b));
+}
+
+// Record that `owner` just chatted with `partner`, keeping only the newest
+// MAX_CHAT_HISTORY unique partners (most recent moved to the end).
+function recordChatHistory(ownerClientId, partner) {
+  if (!ownerClientId || !partner || !partner.clientId || partner.clientId === ownerClientId) return;
+  let list = chatHistory.get(ownerClientId);
+  if (!list) { list = []; chatHistory.set(ownerClientId, list); }
+  const idx = list.findIndex((e) => e.clientId === partner.clientId);
+  if (idx !== -1) list.splice(idx, 1);
+  list.push({
+    clientId: partner.clientId,
+    username: partner.username,
+    countryCode: partner.country,
+    ts: Date.now(),
+  });
+  while (list.length > MAX_CHAT_HISTORY) list.shift();
+}
+
+// True if `b` appears in `a`'s recent chat history (either direction) — used to
+// let someone message a past partner back even though they never became friends.
+function hasChatHistory(a, b) {
+  const la = chatHistory.get(a);
+  if (la && la.some((e) => e.clientId === b)) return true;
+  const lb = chatHistory.get(b);
+  return !!(lb && lb.some((e) => e.clientId === a));
 }
 
 function addFriendPair(clientIdA, infoA, clientIdB, infoB) {
@@ -543,10 +579,23 @@ function syncClientState(socket, clientId) {
     clientId: fid,
     ...info,
   }));
+  // Recent random-chat partners (newest first), each carrying a live online
+  // flag so the history panel can show who's around to message back right now.
+  const historyList = Array.from(chatHistory.get(clientId) || [])
+    .slice()
+    .reverse()
+    .map((e) => ({
+      clientId: e.clientId,
+      username: e.username,
+      countryCode: e.countryCode,
+      ts: e.ts,
+      online: clientSockets.has(e.clientId) && !statusHidden.get(e.clientId),
+    }));
   socket.emit('state-sync', {
     friends: friendList,
     friendRequests: requestList,
     notifications: notifications.get(clientId) || [],
+    chatHistory: historyList,
   });
 }
 
@@ -835,6 +884,16 @@ function tryMatch(socketId) {
     store.recordFeature(mode === 'chat' ? 'chat_match' : 'match');
     partnerSocket.emit('matched', { initiator: true, partner: publicProfile(seekerProfile), rematched, mode });
     seekerSocket.emit('matched', { initiator: false, partner: publicProfile(partnerProfile), rematched, mode });
+
+    // Remember each other in the text-chat history so either side can message
+    // back later if the conversation ends abruptly.
+    if (mode === 'chat') {
+      recordChatHistory(seekerProfile.clientId, partnerProfile);
+      recordChatHistory(partnerProfile.clientId, seekerProfile);
+      persistSocial();
+      syncClientState(seekerSocket, seekerProfile.clientId);
+      syncClientState(partnerSocket, partnerProfile.clientId);
+    }
   } else {
     waitingQueue.push(socketId);
     const seekerProfile = profiles.get(socketId);
@@ -1139,6 +1198,13 @@ io.on('connection', (socket) => {
           country: me.countryName,
         });
         syncClientState(friendSocket, fid);
+      }
+      // Also flip this user's dot on for anyone who has them in their chat
+      // history (they may not be friends), so "message back" shows them online.
+      for (const [otherId, list] of chatHistory) {
+        if (otherId === clientId || !list.some((e) => e.clientId === clientId)) continue;
+        const otherSocket = getSocketByClientId(otherId);
+        if (otherSocket) syncClientState(otherSocket, otherId);
       }
     }
   });
@@ -1504,7 +1570,10 @@ io.on('connection', (socket) => {
     const me = profiles.get(socket.id);
     toClientId = validId(toClientId);
     if (!me || !toClientId || typeof text !== 'string' || !text.trim()) return;
-    if (!isFriend(me.clientId, toClientId)) return;
+    // Friends can always message; so can two people who recently chatted at
+    // random (the "message back from history" path), even without a friendship.
+    if (!isFriend(me.clientId, toClientId) && !hasChatHistory(me.clientId, toClientId)) return;
+    if (isBlockedPair(me.clientId, toClientId)) return;
     // Friends can message each other any time — no call required. If the friend
     // is offline the message is still stored and a notification is queued, so it
     // reaches them the next time they come online.
@@ -1778,6 +1847,12 @@ io.on('connection', (socket) => {
       for (const [fid] of friends.get(profile.clientId) || new Map()) {
         const friendSocket = getSocketByClientId(fid);
         if (friendSocket) syncClientState(friendSocket, fid);
+      }
+      // And grey this user out in anyone's chat-history "message back" panel.
+      for (const [otherId, list] of chatHistory) {
+        if (otherId === profile.clientId || !list.some((e) => e.clientId === profile.clientId)) continue;
+        const otherSocket = getSocketByClientId(otherId);
+        if (otherSocket) syncClientState(otherSocket, otherId);
       }
     }
     profiles.delete(socket.id);

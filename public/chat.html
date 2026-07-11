@@ -47,6 +47,9 @@
       </div>
 
       <div class="top-actions">
+        <button type="button" id="historyBtn" class="icon-btn history-btn" data-i18n-title="history" data-i18n-aria="history" aria-label="History">
+          <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l3 2"/></svg>
+        </button>
         <button type="button" id="friendsBtn" class="icon-btn friends-btn" data-i18n-title="friends" data-i18n-aria="friends" aria-label="Friends">
           <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.1"/><path d="M3.6 19a5.4 5.4 0 0 1 10.8 0"/><circle cx="17.2" cy="9" r="2.5"/><path d="M15.7 13.7A4.8 4.8 0 0 1 21 18.4"/></svg>
           <span id="friendsBadge" class="notif-badge hidden" aria-hidden="true">0</span>
@@ -269,6 +272,22 @@
       <div id="requestsList" class="requests-list"></div>
       <div id="friendsList" class="friends-list">
         <p class="list-empty" data-i18n="noFriendsYet">No friends yet.</p>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Chat history side panel (right): the last 10 people you chatted with, so
+       you can message back someone you lost. No call-back here — text only. -->
+  <div id="historyOverlay" class="side-overlay hidden"></div>
+  <aside id="historyPanel" class="side-panel side-right" role="dialog" data-i18n-aria="history" aria-label="History">
+    <div class="side-header">
+      <h2 data-i18n="history">History</h2>
+      <button type="button" id="historyCloseBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
+    </div>
+    <div class="side-body">
+      <p class="side-hint" data-i18n="historyHint">The last 10 people you chatted with. Message someone back if you lost them.</p>
+      <div id="historyList" class="friends-list">
+        <p class="list-empty" data-i18n="noHistoryYet">No chats yet.</p>
       </div>
     </div>
   </aside>

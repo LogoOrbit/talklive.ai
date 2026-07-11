@@ -80,7 +80,10 @@ function defaults() {
     // Durable social graph — users' "memories": who they added and what they
     // said. friends: clientId -> { friendClientId -> info }. friendChats:
     // pairKey -> [{ from, text, ts }]. blocks: clientId -> [clientId,...].
-    social: { friends: {}, friendChats: {}, blocks: {} },
+    // chatHistory: clientId -> [{ clientId, username, countryCode, ts }] — the
+    // last few random chat partners, so a user can message someone back after
+    // accidentally losing them (kept to the newest 10 per user).
+    social: { friends: {}, friendChats: {}, blocks: {}, chatHistory: {} },
     analytics: {
       totals: { visits: 0, connections: 0, matches: 0, messages: 0, reports: 0, accounts: 0 },
       days: {}, // 'YYYY-MM-DD' -> { visits, uniques, uniqueSet, connections, matches, messages, reports, feedback, errors, newAccounts, peakOnline, countries, cities, features }
@@ -490,6 +493,7 @@ function saveSocial(social) {
     friends: social.friends || {},
     friendChats: social.friendChats || {},
     blocks: social.blocks || {},
+    chatHistory: social.chatHistory || {},
   };
   save();
 }

@@ -450,6 +450,7 @@
     closePanel(settingsPanel, settingsOverlay);
     closePanel(friendsPanel, friendsOverlay);
     closePanel(friendChatPanel, friendChatOverlay);
+    closePanel(historyPanel, historyOverlay);
   }
 
   // --- Settings ---
@@ -535,6 +536,7 @@
   var requestsList = $('requestsList');
   var friendsList = $('friendsList');
   var friendsState = { friends: [], requests: [], notifications: [] };
+  var historyState = []; // [{ clientId, username, countryCode, online, ts }]
 
   $('friendsBtn').addEventListener('click', function () {
     vibrate(10);
@@ -610,7 +612,9 @@
     friendsState.friends = data.friends || [];
     friendsState.requests = data.friendRequests || [];
     friendsState.notifications = data.notifications || [];
+    historyState = data.chatHistory || [];
     renderFriends();
+    renderHistory();
   });
   // Live badge updates: message notifications arrive alone (friend-request
   // ones come with a full state-sync), so track them locally too.
@@ -619,7 +623,49 @@
     if (n.type === 'message' && n.fromClientId === activeFriendChatId) return; // already reading it
     friendsState.notifications.push(n);
     renderFriends();
+    renderHistory();
   });
+
+  // --- Chat history: the last people you talked to at random, so you can
+  // message back someone you lost. Populated by 'state-sync'. Text only —
+  // deliberately no call-back button here. ---
+  var historyPanel = $('historyPanel');
+  var historyOverlay = $('historyOverlay');
+  var historyList = $('historyList');
+
+  $('historyBtn').addEventListener('click', function () {
+    vibrate(10);
+    closeAllPanels();
+    renderHistory();
+    openPanel(historyPanel, historyOverlay);
+  });
+  $('historyCloseBtn').addEventListener('click', function () { closePanel(historyPanel, historyOverlay); });
+  historyOverlay.addEventListener('click', function () { closePanel(historyPanel, historyOverlay); });
+
+  function renderHistory() {
+    historyList.innerHTML = '';
+    if (!historyState.length) {
+      historyList.innerHTML = '<p class="list-empty">' + escapeHtml(t('noHistoryYet')) + '</p>';
+      return;
+    }
+    historyState.forEach(function (h) {
+      var row = document.createElement('div');
+      row.className = 'friend-row';
+      var unreadN = unreadCountFor(h.clientId);
+      row.innerHTML =
+        '<span class="friend-avatar" aria-hidden="true">' + escapeHtml((h.username || '?').charAt(0)) + '</span>' +
+        '<span class="friend-main"><span class="friend-name">' + escapeHtml(h.username || '—') + ' ' + getFlagImg(h.countryCode, 14) + '</span>' +
+        '<span class="friend-status' + (h.online ? '' : ' is-offline') + '"><span class="online-dot"></span>' + escapeHtml(t(h.online ? 'online' : 'offline')) + '</span></span>' +
+        '<span class="friend-actions">' +
+        '<button type="button" class="mini-btn" data-act="chat" title="' + escapeHtml(t('messageBack')) + '" aria-label="' + escapeHtml(t('messageBack')) + '"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>' +
+        (unreadN ? '<span class="notif-badge">' + unreadN + '</span>' : '') + '</button>' +
+        '</span>';
+      row.querySelector('[data-act="chat"]').addEventListener('click', function () {
+        openFriendChat({ clientId: h.clientId, username: h.username });
+      });
+      historyList.appendChild(row);
+    });
+  }
 
   // --- Friend chat: persistent one-to-one chat, same protocol as the call app. ---
   var friendChatPanel = $('friendChatPanel');
@@ -650,6 +696,7 @@
       return !(n.type === 'message' && n.fromClientId === friend.clientId);
     });
     renderFriends();
+    renderHistory();
     friendChatInput.focus();
   }
   function closeFriendChat() {
