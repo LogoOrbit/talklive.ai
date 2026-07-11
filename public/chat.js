@@ -354,21 +354,62 @@
   friendModal.addEventListener('click', function (e) { if (e.target === friendModal) closeModal(friendModal); });
 
   // ---------------------------------------------------------------------------
-  // Voice call: the phone icon never navigates away silently. It opens a small
-  // confirmation popup first; only "Start voice call" leaves for the voice app.
+  // Voice call: the phone icon never navigates away silently. Tapping it sends
+  // your current partner a "wants to call you" popup; only once THEY accept
+  // does either browser leave for the voice app — and both land there
+  // together, paired up automatically via a one-time invite token.
   // ---------------------------------------------------------------------------
-  var callModal = $('callModal');
+  var callModal = $('callModal');       // "Calling… waiting for them to accept"
+  var callIncomingModal = $('callIncomingModal'); // shown to the invited side
+
+  var inviteOutTimer = null;
+  function clearOutgoingInvite() {
+    clearTimeout(inviteOutTimer);
+    inviteOutTimer = null;
+    closeModal(callModal);
+  }
   voiceCallBtn.addEventListener('click', function () {
+    if (!partnerHere) return;
     vibrate(10);
+    socket.emit('voice-invite');
     openModal(callModal);
+    // No response within 20s (e.g. they never notice the popup) — stop waiting.
+    clearTimeout(inviteOutTimer);
+    inviteOutTimer = setTimeout(function () {
+      closeModal(callModal);
+      addMessage(t('callInviteNoAnswer'), 'system');
+    }, 20000);
   });
-  $('callGoBtn').addEventListener('click', function () {
-    socket.emit('leave');
-    location.href = '/call';
+  $('callCancelBtn').addEventListener('click', function () { clearOutgoingInvite(); });
+  $('callCloseBtn').addEventListener('click', function () { clearOutgoingInvite(); });
+  callModal.addEventListener('click', function (e) { if (e.target === callModal) clearOutgoingInvite(); });
+
+  socket.on('voice-invite', function (data) {
+    if (!partnerHere) return; // stray/late event from a chat we already left
+    vibrate([0, 40, 60, 40]);
+    $('callIncomingName').textContent = (data && data.username) || t('somewhere');
+    openModal(callIncomingModal);
   });
-  $('callCancelBtn').addEventListener('click', function () { closeModal(callModal); });
-  $('callCloseBtn').addEventListener('click', function () { closeModal(callModal); });
-  callModal.addEventListener('click', function (e) { if (e.target === callModal) closeModal(callModal); });
+  $('callDeclineBtn').addEventListener('click', function () {
+    socket.emit('voice-invite-respond', { accept: false });
+    closeModal(callIncomingModal);
+  });
+  $('callAcceptBtn').addEventListener('click', function () {
+    socket.emit('voice-invite-respond', { accept: true });
+    closeModal(callIncomingModal);
+    $('callAcceptBtn').disabled = true;
+  });
+
+  socket.on('voice-invite-declined', function () {
+    clearOutgoingInvite();
+    addMessage(t('callInviteDeclined'), 'system');
+  });
+  socket.on('voice-invite-accepted', function (data) {
+    clearOutgoingInvite();
+    var token = data && data.token;
+    if (!token) return;
+    location.href = '/call?invite=' + encodeURIComponent(token);
+  });
 
   // Tiny toast under the search line for transient errors.
   function flashSearchNote(text) {
@@ -446,6 +487,8 @@
     addFriendBtn.classList.add('hidden');
     topDefault.classList.remove('hidden');
     input.disabled = true;
+    clearOutgoingInvite();
+    closeModal(callIncomingModal);
     if (autoNext) {
       // Keep going straight into a new search — no need to wait for a tap on Next.
       clearMessages();

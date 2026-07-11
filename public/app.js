@@ -367,6 +367,15 @@ function escapeHtml(str) {
 }
 
 // --- Persistent client id so blocks survive reconnects in this browser ---
+// Voice-call invite deep link: /call?invite=<token>, followed after a partner
+// on /chat accepted a call request. Both sides land here with fresh sockets;
+// 'voice-invite-join' tells the server who arrived, and it force-pairs the
+// two token holders the moment both are present (see joinVoiceInvite below).
+let pendingInviteToken = null;
+try {
+  pendingInviteToken = new URLSearchParams(location.search).get('invite');
+} catch (e) { /* very old browser without URLSearchParams — ignore */ }
+
 function getClientId() {
   let id = localStorage.getItem('talklive_client_id');
   if (!id) {
@@ -2691,8 +2700,55 @@ startBtn.addEventListener('click', (ev) => {
 ageAgreeBtn.addEventListener('click', () => {
   localStorage.setItem(CONSENT_KEY, 'yes');
   closeModal(ageConsentModal);
-  begin();
+  if (pendingInviteToken) joinVoiceInvite();
+  else begin();
 });
+
+// Accepting a voice-call invite from /chat: same consent + mic setup as a
+// normal call, but instead of joining the random-match queue we hand the
+// invite token to the server, which pairs us with whoever holds the other
+// half the moment they arrive too.
+let joinInviteInFlight = false;
+async function joinVoiceInvite() {
+  if (joinInviteInFlight || !pendingInviteToken) return;
+  joinInviteInFlight = true;
+  clearError();
+  try {
+    await getMic();
+  } catch (e) {
+    joinInviteInFlight = false;
+    if (e.name === 'NotAllowedError' || e.name === 'SecurityError') showError(t('errMicBlocked'));
+    else if (e.name === 'NotFoundError') showError(t('errNoMic'));
+    else if (e.name === 'NotReadableError') showError(t('errMicBusy'));
+    else showError(t('errMicRequired'));
+    return;
+  }
+  joinInviteInFlight = false;
+
+  registerProfile();
+  isSearching = true;
+  enterCallUI();
+  setCallState('searching');
+  setState('waiting');
+  setConnection('orange', 'connConnecting');
+  setStatusText('statusConnecting');
+  setSubText(null);
+
+  socket.emit('voice-invite-join', { token: pendingInviteToken });
+}
+
+// Kick off the invite flow as soon as we can — same one-time age gate as any
+// other call, otherwise straight in (a mic prompt on load needs no fresh
+// user gesture, unlike autoplay).
+if (pendingInviteToken) {
+  if (localStorage.getItem(CONSENT_KEY) === 'yes') {
+    joinVoiceInvite();
+  } else {
+    ageAgreeCheckbox.checked = false;
+    ageAgreeBtn.disabled = true;
+    openModal(ageConsentModal);
+  }
+}
 
 // Keep searching for a new person (used after a hang-up when auto-call is on).
 function findNextPerson(statusKey) {
@@ -4314,9 +4370,12 @@ window.addEventListener('i18n-changed', () => {
 
 // A direct load of /call (bookmark, refresh, share) has no live session to
 // resume — send the URL back to the landing page without adding a history
-// entry, so the back button still behaves normally.
-if (location.pathname === '/call') {
+// entry, so the back button still behaves normally. An invite link is the one
+// exception: it's a legitimate fresh entry point, so keep it on /call.
+if (location.pathname === '/call' && !pendingInviteToken) {
   history.replaceState(history.state, '', '/');
+} else if (pendingInviteToken) {
+  history.replaceState(history.state, '', '/call');
 }
 
 // Deep link from the SEO landing pages: /?mode=chat sends the visitor straight
