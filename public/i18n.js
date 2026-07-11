@@ -98,6 +98,7 @@ const I18N_STRINGS = {
     "maintenanceTitle": "Back in a moment",
     "maintenanceBody": "TalkLive is under quick maintenance. Please check back shortly.",
     "voiceCall": "Voice call",
+    "reloadHome": "Reload TalkLive",
     "chatAuto": "Auto",
     "chatAutoHint": "Auto-connect me to a new person when a chat ends",
     "chatAutoOn": "Auto-connect is ON — you'll be matched again automatically",
