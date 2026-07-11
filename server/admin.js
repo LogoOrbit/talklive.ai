@@ -293,6 +293,8 @@ function createAdmin({ io, getRuntime, kickBanned }) {
         feedback: store.data.feedback.length,
         activeBans: store.activeBans().length,
         accounts: Object.keys(store.data.accountsRegistry).length,
+        flaggedAccounts: Object.values(store.data.moderationState).filter((s) => s.flagged).length,
+        moderationEvents: store.data.moderationLog.length,
       },
     });
   });
@@ -364,6 +366,75 @@ function createAdmin({ io, getRuntime, kickBanned }) {
         || (m.text || '').toLowerCase().includes(q));
     }
     res.json({ messages: list.slice(0, 500), total: store.data.transcripts.length });
+  });
+
+  // Moderation: flagged-message log, per-account escalation state and the
+  // operator-editable filter config, all for the dashboard's Moderation tab.
+  router.get('/api/moderation', (req, res) => {
+    const q = String(req.query.q || '').toLowerCase();
+    let log = store.data.moderationLog;
+    if (q) {
+      log = log.filter((m) => (m.username || '').toLowerCase().includes(q)
+        || (m.clientId || '').toLowerCase().includes(q)
+        || (m.text || '').toLowerCase().includes(q)
+        || (m.category || '').toLowerCase().includes(q));
+    }
+    const now = Date.now();
+    const flagged = Object.entries(store.data.moderationState)
+      .filter(([, s]) => s.flagged || (s.mutedUntil && s.mutedUntil > now))
+      .map(([clientId, s]) => ({
+        clientId,
+        flagged: !!s.flagged,
+        flaggedAt: s.flaggedAt || 0,
+        mutedUntil: s.mutedUntil > now ? s.mutedUntil : 0,
+        warns: s.warns || 0,
+        recentPoints: (s.events || []).reduce((sum, e) => sum + (e.severity || 0), 0),
+        username: (store.data.moderationLog.find((m) => m.clientId === clientId) || {}).username || 'Unknown',
+      }))
+      .sort((a, b) => (b.flaggedAt || b.mutedUntil) - (a.flaggedAt || a.mutedUntil));
+    res.json({
+      log: log.slice(0, 300),
+      total: store.data.moderationLog.length,
+      flagged,
+      config: store.data.settings.moderation,
+      now,
+    });
+  });
+
+  router.post('/api/moderation/config', (req, res) => {
+    const { customBlocklist, customRegex, stripLinks, escalation } = req.body || {};
+    const cfg = store.data.settings.moderation;
+    if (Array.isArray(customBlocklist)) {
+      cfg.customBlocklist = customBlocklist.map((s) => String(s).trim().slice(0, 80)).filter(Boolean).slice(0, 200);
+    }
+    if (Array.isArray(customRegex)) {
+      const valid = [];
+      for (const src of customRegex.map((s) => String(s).trim().slice(0, 200)).filter(Boolean).slice(0, 50)) {
+        try { new RegExp(src, 'i'); valid.push(src); }
+        catch (_) { return res.status(400).json({ error: `Invalid regex: ${src}` }); }
+      }
+      cfg.customRegex = valid;
+    }
+    if (typeof stripLinks === 'boolean') cfg.stripLinks = stripLinks;
+    if (escalation && typeof escalation === 'object') {
+      for (const k of ['windowHours', 'warnAt', 'muteAt', 'banAt', 'muteMinutes', 'banMinutes']) {
+        const n = Number(escalation[k]);
+        if (Number.isFinite(n) && n > 0) cfg.escalation[k] = Math.round(n);
+      }
+    }
+    store.audit('moderation_config', reqIp(req), 'Updated moderation filter config');
+    store.persistNow();
+    res.json({ ok: true, config: cfg });
+  });
+
+  // Mark a flagged account as reviewed (does not lift mutes or bans).
+  router.post('/api/moderation/clear-flag', (req, res) => {
+    const clientId = String((req.body || {}).clientId || '');
+    if (!clientId) return res.status(400).json({ error: 'clientId required.' });
+    const st = store.data.moderationState[clientId];
+    if (st) { st.flagged = false; store.save(); }
+    store.audit('moderation_clear_flag', reqIp(req), `Cleared flag on ${clientId}`);
+    res.json({ ok: true });
   });
 
   router.get('/api/audit', (req, res) => {

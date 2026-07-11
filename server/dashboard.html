@@ -358,7 +358,7 @@ function rankedBars(el,entries){
 /* ---------- dashboard shell ---------- */
 const TABS=[
   ['overview','Overview','📊'],['ai','AI Bot','🤖'],['live','Live','🟢'],['chats','Chats','💬'],
-  ['reports','Reports','🚩'],['bans','Bans','⛔'],['accounts','Accounts','👤'],
+  ['reports','Reports','🚩'],['moderation','Moderation','🛡️'],['bans','Bans','⛔'],['accounts','Accounts','👤'],
   ['errors','Errors','🐛'],['feedback','Feedback','⭐'],['audit','Audit','🧾'],['settings','Settings','🛠️']
 ];
 const MOBILE_TABS=['overview','ai','live','chats','reports','settings'];
@@ -366,6 +366,7 @@ let tab='overview',timer=null,counts={};
 function navBtn(id,label,icon,mobile){
   let badge='';
   if(id==='reports'&&counts.unhandledReports)badge=`<span class="badge">${counts.unhandledReports}</span>`;
+  if(id==='moderation'&&counts.flaggedAccounts)badge=`<span class="badge">${counts.flaggedAccounts}</span>`;
   if(id==='errors'&&counts.errors)badge=`<span class="badge" style="background:var(--serious)">${counts.errors}</span>`;
   if(mobile)return `<button data-t="${id}" class="${tab===id?'on':''}"><span class="ic">${icon}</span>${label}${badge}</button>`;
   return `<button data-t="${id}" class="${tab===id?'on':''}">${icon} ${label}${badge}</button>`;
@@ -383,6 +384,7 @@ async function load(){
     else if(tab==='ai')await viewBot();
     else if(tab==='live')await viewLive();
     else if(tab==='reports')await viewReports();
+    else if(tab==='moderation')await viewModeration();
     else if(tab==='bans')await viewBans();
     else if(tab==='chats')await viewChats();
     else if(tab==='accounts')await viewAccounts();
@@ -529,6 +531,63 @@ async function viewReports(){
   </div></td></tr>`).join('')||'<tr><td colspan="6" class="muted">No reports yet — good sign!</td></tr>'}</table></div>`;
 }
 window.markHandled=async(id)=>{await post('reports/'+id+'/handled');load();};
+
+/* ---------- moderation: blocked messages, flagged accounts, filter config ---------- */
+let modQuery='';
+async function viewModeration(){
+  const r=await api('moderation'+(modQuery?'?q='+encodeURIComponent(modQuery):''));
+  const CAT={illegal:'crit',scam:'crit',spam:'warn',link:'info',muted:'warn'};
+  const LVL={ban:'crit',mute:'warn',warn:'info',none:'good'};
+  const e=r.config.escalation;
+  $('#main').innerHTML=`
+  <div class="grid tiles">
+    <div class="tile anim"><div class="k">🚩 Flagged accounts</div><div class="v" style="color:${r.flagged.filter(f=>f.flagged).length?'var(--crit)':'inherit'}">${num(r.flagged.filter(f=>f.flagged).length)}</div><div class="s">need review</div></div>
+    <div class="tile anim"><div class="k">🔇 Muted now</div><div class="v">${num(r.flagged.filter(f=>f.mutedUntil).length)}</div><div class="s">temporary mutes</div></div>
+    <div class="tile anim"><div class="k">🛡️ Blocked messages</div><div class="v" data-count="${r.total}">0</div><div class="s">all-time log</div></div>
+  </div>
+  ${r.flagged.length?`<div class="card anim"><h2>🚨 Flagged & muted accounts <span class="sub">illegal-content flags need manual review</span></h2>
+  <table><tr><th>User</th><th>Status</th><th class="num">Points (24h)</th><th class="num">Warns</th><th>Actions</th></tr>
+  ${r.flagged.map(f=>`<tr><td><b>${esc(f.username)}</b><br><span class="muted">${esc(f.clientId.slice(0,16))}…</span></td>
+  <td>${f.flagged?'<span class="pill crit">FLAGGED</span> ':''}${f.mutedUntil?`<span class="pill warn">Muted until ${fmtTs(f.mutedUntil)}</span>`:''}</td>
+  <td class="num">${f.recentPoints}</td><td class="num">${f.warns}</td>
+  <td><div class="rowbtns">
+    <button class="danger" onclick="banUser('${jsq(f.clientId)}','','${jsq(f.username)}','','')">Ban…</button>
+    ${f.flagged?`<button onclick="clearFlag('${jsq(f.clientId)}')">Mark reviewed</button>`:''}
+  </div></td></tr>`).join('')}</table></div>`:''}
+  <div class="card anim"><h2>🛡️ Blocked messages <span class="sub">${num(r.total)} total · newest first · nothing here was ever delivered</span></h2>
+  <div class="searchbar"><input id="modQ" placeholder="Search by user, ID, text or category…" value="${esc(modQuery)}"><button class="btn" id="modQBtn">Search</button></div>
+  <div class="feed">
+  ${r.log.map(m=>`<div class="fmsg">
+    <div class="top"><span><b>${esc(m.username)}</b>${m.country?` · ${esc(m.country)}`:''} <span class="pill ${CAT[m.category]||'info'}">${esc(m.category)}</span> <span class="pill ${LVL[m.level]||'info'}">${m.level==='none'?'blocked':esc(m.level)}</span> <span class="muted">${esc(m.reason)} · ${m.points||0} pts · ${m.kind==='friend'?'friend chat':'stranger chat'}</span></span>
+    <span>${ago(m.ts)} · ${fmtTs(m.ts)}</span></div>
+    <div class="txt">${esc(m.text)}</div>
+    <div class="rowbtns" style="margin-top:7px"><button class="danger" onclick="banUser('${jsq(m.clientId)}','','${jsq(m.username)}','${jsq(m.country||'')}','')">Ban sender…</button></div>
+  </div>`).join('')||'<div class="muted">No blocked messages yet — the filters haven’t caught anything.</div>'}
+  </div></div>
+  <div class="card anim"><h2>⚙️ Filter configuration <span class="sub">applies instantly, server-side, to all messages</span></h2>
+    <label style="display:block;margin:10px 0 5px;font-size:.82rem;color:var(--ink2)">Extra blocked words/phrases (one per line, matched inside messages)</label>
+    <textarea id="modWords" rows="4" placeholder="one phrase per line">${esc((r.config.customBlocklist||[]).join('\n'))}</textarea>
+    <label style="display:block;margin:12px 0 5px;font-size:.82rem;color:var(--ink2)">Extra blocked regex patterns (one per line, case-insensitive)</label>
+    <textarea id="modRegex" rows="3" placeholder="one regex per line">${esc((r.config.customRegex||[]).join('\n'))}</textarea>
+    <label style="display:flex;align-items:center;gap:8px;margin:14px 0;font-size:.88rem"><input type="checkbox" id="modStrip" style="width:auto" ${r.config.stripLinks?'checked':''}> Strip links and deliver the rest of the message (instead of blocking it entirely)</label>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
+      ${[['warnAt','Warn at (points)'],['muteAt','Mute at (points)'],['banAt','Ban at (points)'],['windowHours','Window (hours)'],['muteMinutes','Mute length (min)'],['banMinutes','Ban length (min)']].map(([k,l])=>`<div><label style="display:block;margin-bottom:4px;font-size:.75rem;color:var(--muted)">${l}</label><input id="esc_${k}" type="number" min="1" value="${e[k]}"></div>`).join('')}
+    </div>
+    <p class="muted" style="margin-top:10px">Violations add points (illegal 4 · scam 2 · spam/link 1) in the rolling window. Crossing a threshold warns, mutes or bans automatically.</p>
+    <div class="rowbtns" style="margin-top:12px"><button id="modSaveBtn">💾 Save configuration</button></div>
+  </div>`;
+  animateCounters();
+  const go=()=>{modQuery=$('#modQ').value.trim();load();};
+  $('#modQBtn').onclick=go;
+  $('#modQ').addEventListener('keydown',ev=>{if(ev.key==='Enter')go();});
+  $('#modSaveBtn').onclick=async()=>{
+    const lines=(el)=>$(el).value.split('\n').map(s=>s.trim()).filter(Boolean);
+    const escalation={};for(const k of ['warnAt','muteAt','banAt','windowHours','muteMinutes','banMinutes'])escalation[k]=Number($('#esc_'+k).value);
+    try{await post('moderation/config',{customBlocklist:lines('#modWords'),customRegex:lines('#modRegex'),stripLinks:$('#modStrip').checked,escalation});load();}
+    catch(err){alert(err.message);}
+  };
+}
+window.clearFlag=async(clientId)=>{try{await post('moderation/clear-flag',{clientId});load();}catch(e){alert(e.message);}};
 
 async function viewBans(){
   const r=await api('bans');

@@ -87,10 +87,21 @@ function defaults() {
       topics: {}, // word -> count (aggregate, anonymous)
     },
     premium: {}, // clientId -> { activatedAt, updatedAt, lastEvent, subscriptionId, revokedAt }
+    // Flagged/blocked message log for the dashboard's Moderation tab.
+    moderationLog: [], // { id, ts, clientId, username, country, kind, category, reason, level, points, text }
+    // Per-user escalation state: clientId -> { events: [{ts,severity,category}], warns, mutedUntil, flagged, flaggedAt }
+    moderationState: {},
     settings: {
       maintenance: { on: false, message: 'TalkLive is under maintenance. We will be back shortly!' },
       banThreshold: 3,
       autoBanMinutes: 30,
+      // Operator-tunable moderation config (edited from the dashboard).
+      moderation: {
+        customBlocklist: [], // extra blocked substrings (checked on normalized text)
+        customRegex: [],     // extra blocked regex sources (case-insensitive)
+        stripLinks: false,   // true: deliver messages with links removed instead of blocking
+        escalation: { windowHours: 24, warnAt: 2, muteAt: 4, banAt: 8, muteMinutes: 10, banMinutes: 60 },
+      },
     },
   };
 }
@@ -102,6 +113,17 @@ function applyParsed(parsed) {
   data = { ...defaults(), ...parsed };
   data.analytics = { ...defaults().analytics, ...(parsed.analytics || {}) };
   data.settings = { ...defaults().settings, ...(parsed.settings || {}) };
+  // Nested settings objects need their own merge so a saved doc from before a
+  // feature existed still gets that feature's defaults.
+  const modDefaults = defaults().settings.moderation;
+  const parsedMod = (parsed.settings && parsed.settings.moderation) || {};
+  data.settings.moderation = {
+    ...modDefaults,
+    ...parsedMod,
+    escalation: { ...modDefaults.escalation, ...(parsedMod.escalation || {}) },
+  };
+  data.moderationLog = parsed.moderationLog || [];
+  data.moderationState = parsed.moderationState || {};
   data.social = { ...defaults().social, ...(parsed.social || {}) };
   data.accounts = parsed.accounts || {};
   data.googleIndex = parsed.googleIndex || {};
@@ -271,6 +293,17 @@ function addTranscript(entry) {
   data.transcripts.unshift({ ts: Date.now(), ...entry });
   if (data.transcripts.length > MAX_TRANSCRIPT) data.transcripts.pop();
   save();
+}
+
+// --- Moderation (flagged/blocked messages) ---
+
+const MAX_MODERATION = 2000;
+function addModerationEvent(entry) {
+  const rec = { id: crypto.randomUUID(), ts: Date.now(), ...entry };
+  data.moderationLog.unshift(rec);
+  if (data.moderationLog.length > MAX_MODERATION) data.moderationLog.pop();
+  save();
+  return rec;
 }
 
 // --- Reports / feedback / errors ---
@@ -566,6 +599,7 @@ module.exports = {
   recordFeature,
   recordTopics,
   addTranscript,
+  addModerationEvent,
   addReport,
   reportCountFor,
   addFeedback,

@@ -753,6 +753,14 @@
   socket.on('chat-blocked', function (data) {
     var reason = data && data.reason;
     addMessage(reason === 'link' ? t('chatLinkBlocked') : t('errUnsafeMessage'), 'system');
+    // Server-side escalation feedback — the server enforces this; the local
+    // filters above are only instant UX.
+    if (data && data.level === 'mute' && data.mutedUntil) {
+      var mins = Math.max(1, Math.ceil((data.mutedUntil - Date.now()) / 60000));
+      addMessage('You have been temporarily muted for ' + mins + ' minute' + (mins === 1 ? '' : 's') + ' due to repeated violations.', 'system');
+    } else if (data && data.level === 'warn') {
+      addMessage('Warning: further violations will result in a temporary mute or ban.', 'system');
+    }
   });
 
   socket.on('partner-left', function () {

@@ -7,6 +7,7 @@ const geoip = require('geoip-lite');
 const { OAuth2Client } = require('google-auth-library');
 const { generateUsername } = require('./usernames');
 const store = require('./store');
+const moderation = require('./moderation');
 const { createAdmin } = require('./admin');
 
 const app = express();
@@ -276,6 +277,8 @@ function getRuntime() {
       account: socketAuth.get(sid) || null,
       premium: isPremium(p.clientId),
       reports: store.reportCountFor(p.clientId),
+      flagged: !!(store.data.moderationState[p.clientId] || {}).flagged,
+      muted: moderation.isMuted(p.clientId),
     });
   }
   return {
@@ -554,25 +557,40 @@ function pairKey(a, b) {
   return [a, b].sort().join('|');
 }
 
-// No links of any kind are allowed in chat — protocols, www-prefixed hosts,
-// bare domains with a TLD, or "example dot com" style obfuscation.
-const LINK_RE = new RegExp(
-  '(?:[a-z][a-z0-9+.-]*:\\/\\/)' // any protocol://
-  + '|(?:\\bwww\\.)'
-  + '|(?:\\b[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.(?:[a-z]{2,})(?:\\/|\\b))' // bare domain.tld
-  + '|(?:\\b\\w+\\s*\\(?\\s*dot\\s*\\)?\\s*(?:com|net|org|io|gg|me|ly|co|xyz|site|online|app|tv|link|live)\\b)',
-  'i'
-);
+// All message filtering (illegal content, spam, links/shorteners, scam
+// precursors) plus the warn → mute → ban escalation lives in moderation.js.
+// The checks here are server-authoritative; client-side filters are UX only.
+//
+// Runs the moderation verdict for one outgoing message. Returns the clean
+// text to deliver, or null if the message was rejected (the sender has
+// already been told, and any mute/ban consequence applied).
+function moderateOutgoing(socket, profile, text, kind) {
+  const verdict = moderation.checkMessage(
+    { ...profile, country: profile.countryName, ip: getClientIp(socket) },
+    text,
+    kind
+  );
+  if (verdict.ok) return verdict.text;
 
-function containsLink(text) {
-  return LINK_RE.test(String(text || ''));
+  const esc = verdict.escalation || { level: 'none' };
+  socket.emit('chat-blocked', {
+    reason: verdict.category === 'link' ? 'link' : 'unsafe',
+    category: verdict.category,
+    level: esc.level,
+    mutedUntil: esc.mutedUntil || undefined,
+  });
+  if (esc.level === 'ban' && esc.ban) {
+    socket.emit('banned', { until: esc.ban.expiresAt, reason: esc.ban.reason });
+    socket.disconnect(true);
+  }
+  // First illegal-content hit on an account: flag it for review and tell the
+  // owner immediately (throttled inside sendAlertEmail).
+  if (verdict.flagged) {
+    admin.sendAlertEmail('moderation-flag', `Account flagged: ${profile.username}`,
+      `${profile.username} (${profile.countryName || '?'}) was flagged for illegal content solicitation.\nReason: ${verdict.reason}\nMessage: "${String(text).slice(0, 300)}"\n\nReview at https://${CANONICAL_HOST}/owner`);
+  }
+  return null;
 }
-
-// Clearly illegal / scam content is blocked in stranger chat (mirrors the
-// client-side filter) so the text pool stays legally safe.
-const UNSAFE_RE = /\b(child\s*porn|cp\s*trade|loli(?:con)?|jailbait|sell(?:ing)?\s+(?:drugs|guns|weapons)|buy\s+(?:drugs|cocaine|heroin|meth|fentanyl)|hire\s*(?:a\s*)?hitman|credit\s*card\s*numbers?|send\s+nudes|onlyfans|escort\s*service|invest\s+in\s+(?:crypto|bitcoin)|gift\s*cards?\s+for)\b/i;
-// socket.id -> { start, n } sliding 5s window for the chat bot-flood guard.
-const chatRate = new Map();
 
 function hashPassword(password, salt) {
   return crypto.scryptSync(password, salt, 64).toString('hex');
@@ -1354,18 +1372,10 @@ io.on('connection', (socket) => {
   socket.on('chat-message', (text) => {
     const partnerId = partners.get(socket.id);
     if (partnerId && typeof text === 'string' && text.trim()) {
-      if (containsLink(text)) {
-        return socket.emit('chat-blocked', { reason: 'link' });
-      }
-      if (UNSAFE_RE.test(text)) {
-        return socket.emit('chat-blocked', { reason: 'unsafe' });
-      }
-      // Bot-flood guard: humans don't send 8+ messages in 5 seconds.
-      const now = Date.now();
-      let rl = chatRate.get(socket.id);
-      if (!rl || now - rl.start > 5000) { rl = { start: now, n: 0 }; chatRate.set(socket.id, rl); }
-      if (++rl.n > 8) return;
-      const clean = text.trim().slice(0, 1000);
+      const profile = profiles.get(socket.id);
+      if (!profile) return;
+      const clean = moderateOutgoing(socket, profile, text, 'stranger');
+      if (clean === null) return;
       store.recordFeature('chat_message');
       store.recordTopics(clean);
       const me = profiles.get(socket.id);
@@ -1425,7 +1435,7 @@ io.on('connection', (socket) => {
 
     // Optional intro message ("remind them who you are") — links stripped,
     // capped, and only ever shown inside the recipient's notification.
-    const intro = (typeof message === 'string' && !containsLink(message) && !UNSAFE_RE.test(message))
+    const intro = (typeof message === 'string' && moderation.quickScreen(message))
       ? message.trim().slice(0, 200) : '';
     pushNotification(targetClientId, {
       type: 'friend_request',
@@ -1507,11 +1517,10 @@ io.on('connection', (socket) => {
     if (!isFriend(me.clientId, toClientId)) return;
     // Friends can message each other any time — no call required. If the friend
     // is offline the message is still stored and a notification is queued, so it
-    // reaches them the next time they come online.
-    if (containsLink(text)) {
-      return socket.emit('chat-blocked', { reason: 'link' });
-    }
-    const trimmed = text.trim().slice(0, 1000);
+    // reaches them the next time they come online. The same server-side
+    // moderation gate as stranger chat applies.
+    const trimmed = moderateOutgoing(socket, me, text, 'friend');
+    if (trimmed === null) return;
     const friendInfo = (friends.get(me.clientId) || new Map()).get(toClientId);
     store.addTranscript({
       kind: 'friend',
