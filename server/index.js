@@ -367,6 +367,13 @@ const profiles = new Map(); // socketId -> { username, country, city, gender, pr
 const blocks = new Map(); // clientId -> Set<clientId>
 const hearts = new Map(); // pairKey ("clientIdA|clientIdB" sorted) -> Set<clientId who hearted>
 
+// In-chat voice-call invites: a /chat user invites their current text partner
+// to a voice call. On accept the server mints a one-time token; both browsers
+// navigate to /call?invite=<token> (which creates brand-new sockets) and
+// 'voice-invite-join' pairs the two token holders there in talk mode.
+const voiceInvites = new Map(); // token -> { clients: [clientIdA, clientIdB], joined: Map<clientId, socketId>, timer }
+const VOICE_INVITE_TTL_MS = 2 * 60 * 1000; // plenty for two page loads; then it's dead
+
 // If a search takes longer than this, we drop ALL matching filters for the
 // current search (gender + country preferences, everything except blocks) and
 // auto-match with any random stranger so nobody waits forever.
@@ -1683,6 +1690,80 @@ io.on('connection', (socket) => {
     requesterProfile.mode = 'talk';
     requesterSocket.emit('matched', { initiator: true, partner: publicProfile(me), rematched: false, callback: true, mode: 'talk' });
     socket.emit('matched', { initiator: false, partner: publicProfile(requesterProfile), rematched: false, callback: true, mode: 'talk' });
+  });
+
+  // --- In-chat voice-call invites ------------------------------------------
+  // 1) Inviter (on /chat, mid-conversation) taps the phone icon → the current
+  //    partner gets a popup.
+  socket.on('voice-invite', () => {
+    const me = profiles.get(socket.id);
+    const partnerId = partners.get(socket.id);
+    if (!me || !partnerId) return;
+    // Throttle: one invite per 5s per socket so the popup can't be spammed.
+    const now = Date.now();
+    if (me.lastVoiceInviteAt && now - me.lastVoiceInviteAt < 5000) return;
+    me.lastVoiceInviteAt = now;
+    const partnerSocket = io.sockets.sockets.get(partnerId);
+    if (!partnerSocket) return;
+    partnerSocket.emit('voice-invite', { username: me.username, countryCode: me.country });
+  });
+
+  // 2) Invitee answers the popup. Decline → tell the inviter. Accept → mint a
+  //    one-time rendezvous token and send it to BOTH sides; each browser then
+  //    navigates to /call?invite=<token>.
+  socket.on('voice-invite-respond', ({ accept } = {}) => {
+    const me = profiles.get(socket.id);
+    const partnerId = partners.get(socket.id);
+    if (!me || !partnerId) return;
+    const partnerSocket = io.sockets.sockets.get(partnerId);
+    const partnerProfile = profiles.get(partnerId);
+    if (!partnerSocket || !partnerProfile) return;
+    if (!accept) {
+      partnerSocket.emit('voice-invite-declined', { username: me.username });
+      return;
+    }
+    const token = 'vi_' + crypto.randomBytes(12).toString('hex');
+    const invite = { clients: [me.clientId, partnerProfile.clientId], joined: new Map() };
+    invite.timer = setTimeout(() => voiceInvites.delete(token), VOICE_INVITE_TTL_MS);
+    voiceInvites.set(token, invite);
+    store.recordFeature('voice_invite');
+    socket.emit('voice-invite-accepted', { token });
+    partnerSocket.emit('voice-invite-accepted', { token });
+  });
+
+  // 3) Both land on /call with the token (fresh sockets). First arrival waits;
+  //    the second one triggers a force-pair in talk mode, exactly like an
+  //    accepted call-back.
+  socket.on('voice-invite-join', ({ token } = {}) => {
+    const me = profiles.get(socket.id);
+    if (!me || typeof token !== 'string' || !/^vi_[a-f0-9]{24}$/.test(token)) return;
+    const invite = voiceInvites.get(token);
+    if (!invite || !invite.clients.includes(me.clientId)) return;
+    invite.joined.set(me.clientId, socket.id);
+
+    const otherClientId = invite.clients.find((c) => c !== me.clientId);
+    const otherSocketId = invite.joined.get(otherClientId);
+    const otherSocket = otherSocketId ? io.sockets.sockets.get(otherSocketId) : null;
+    if (!otherSocket) return; // first one here — wait for the partner
+
+    clearTimeout(invite.timer);
+    voiceInvites.delete(token);
+
+    for (const id of [socket.id, otherSocketId]) {
+      disconnectPartner(id);
+      clearFromQueue(id);
+      clearWaitFallbackTimer(id);
+      clearMatchDelayTimer(id);
+    }
+    partners.set(socket.id, otherSocketId);
+    partners.set(otherSocketId, socket.id);
+
+    const otherProfile = profiles.get(otherSocketId);
+    hearts.delete(pairKey(me.clientId, otherProfile.clientId));
+    me.mode = 'talk';
+    otherProfile.mode = 'talk';
+    otherSocket.emit('matched', { initiator: true, partner: publicProfile(me), rematched: false, callback: true, mode: 'talk' });
+    socket.emit('matched', { initiator: false, partner: publicProfile(otherProfile), rematched: false, callback: true, mode: 'talk' });
   });
 
   socket.on('disconnect', () => {
