@@ -772,7 +772,7 @@
       clearNextConfirm();
       goSearch(false);
     } else {
-      addMessage(t('chatStageLeft'), 'system');
+      addMessage(t('chatStageLeft'), 'system system-warn');
     }
   });
   // re-enable the input on the next match

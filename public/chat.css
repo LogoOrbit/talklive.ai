@@ -176,6 +176,7 @@ img { max-width: 100%; }
 .msg.me { align-self: flex-end; background: var(--accent); color: #fff; border-bottom-right-radius: 5px; }
 .msg.them { align-self: flex-start; background: var(--bubble-them); color: var(--text); border-bottom-left-radius: 5px; }
 .msg.system { align-self: center; margin: 4px auto; max-width: 92%; background: none; color: var(--muted); font-size: 12.5px; text-align: center; padding: 0 8px; }
+.msg.system.system-warn { color: var(--danger); font-weight: 600; }
 .typing { flex: 0 0 auto; margin: 0; padding: 2px 16px 6px; font-size: 12.5px; color: var(--muted); }
 .typing-dots span { animation: typingDot 1.2s infinite; }
 .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
