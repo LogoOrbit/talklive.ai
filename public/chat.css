@@ -198,6 +198,7 @@ img { max-width: 100%; }
 }
 .next-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
 .next-btn:active { transform: scale(0.94); }
+.next-kbd { display: none; } /* touch/phone: no keyboard, so no Esc hint */
 .next-btn.confirm { background: var(--danger); border-color: var(--danger); color: #fff; }
 #msgInput, #friendChatInput {
   flex: 1 1 auto; min-width: 0; min-height: 44px; border-radius: 999px; border: 1px solid var(--line);
@@ -466,6 +467,16 @@ img { max-width: 100%; }
   #msgInput { min-height: 48px; font-size: 15px; padding: 0 18px; transition: border-color 0.15s ease, box-shadow 0.2s ease; }
   #msgInput:focus { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
   .next-btn { min-height: 48px; }
+  /* Desktop-only hint that Esc jumps to the next stranger. */
+  .next-kbd {
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: inherit; font-size: 10px; font-weight: 700; line-height: 1;
+    letter-spacing: 0.03em; color: var(--muted); padding: 3px 5px; margin-left: 1px;
+    border: 1px solid var(--line); border-radius: 5px; background: var(--bg-1);
+    transition: color 0.15s ease, border-color 0.15s ease;
+  }
+  .next-btn:hover .next-kbd { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+  .next-btn.confirm .next-kbd { display: none; }
   .next-btn:hover { color: var(--text); border-color: var(--accent); background: var(--accent-soft); }
   .next-btn.confirm:hover { background: var(--danger); border-color: var(--danger); color: #fff; }
   .send-btn { width: 48px; height: 48px; transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.15s ease, box-shadow 0.2s ease; }
