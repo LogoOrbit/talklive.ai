@@ -115,7 +115,16 @@ body.panel-open .side-panel {
   display: flex;
   align-items: center;
   gap: 8px;
+  /* Rendered as a <button> so tapping it reloads the app — reset native chrome. */
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  font-family: inherit;
+  cursor: pointer;
 }
+.brand:active { transform: scale(0.97); }
 
 .brand-dot {
   width: 11px;

@@ -1841,6 +1841,11 @@ function refreshNetStatus() {
 window.addEventListener('online', refreshNetStatus);
 window.addEventListener('offline', refreshNetStatus);
 
+// Tapping the "TalkLive" brand reloads the app (a clean way back to a fresh
+// start from anywhere — search, an active call, or a game).
+const brandHome = document.getElementById('brandHome');
+if (brandHome) brandHome.addEventListener('click', reloadPage);
+
 // --- The single Call button and its four visual modes ---
 //   'call'    green phone   → tap to start searching
 //   'loading' spinner       → searching / connecting, tap to cancel

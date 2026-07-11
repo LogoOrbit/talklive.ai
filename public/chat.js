@@ -45,10 +45,6 @@
   var onlineCount = $('onlineCount');
   var autoBtn = $('autoBtn');
   var topDefault = $('topDefault');
-  var topPeer = $('topPeer');
-  var peerName = $('peerName');
-  var peerFlag = $('peerFlag');
-  var peerFrom = $('peerFrom');
   var voiceCallBtn = $('voiceCallBtn');
 
   function escapeHtml(str) {
@@ -65,6 +61,42 @@
     return '<img class="flag-icon" src="https://flagcdn.com/24x18/' + cc + '.png" srcset="https://flagcdn.com/48x36/' + cc + '.png 2x" width="' + size + '" alt="' + escapeHtml(getCountryName(code)) + '" />';
   }
   function vibrate(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
+
+  // --- Sound effects: tiny synthesized blips (no audio files, CSP-safe, work
+  // offline). Built with the Web Audio API. The context can only start after a
+  // user gesture, so we lazily create/resume it on the first tap. ---
+  var audioCtx = null;
+  function initAudio() {
+    try {
+      if (!audioCtx) {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (AC) audioCtx = new AC();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    } catch (e) { audioCtx = null; }
+  }
+  // A short two-note blip. freqs = [start, end] Hz; type = wave; vol = 0..1.
+  function playBlip(freqs, dur, vol) {
+    if (!audioCtx) return;
+    try {
+      var now = audioCtx.currentTime;
+      var osc = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freqs[0], now);
+      osc.frequency.exponentialRampToValueAtTime(freqs[1], now + dur);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(vol, now + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(now); osc.stop(now + dur + 0.02);
+    } catch (e) {}
+  }
+  // Outgoing: a light upward tick. Incoming: a soft lower "pop". Connect: a
+  // friendly two-step chime.
+  function soundSend() { playBlip([520, 880], 0.09, 0.05); }
+  function soundReceive() { playBlip([680, 440], 0.12, 0.06); }
+  function soundConnect() { playBlip([440, 660], 0.1, 0.05); setTimeout(function () { playBlip([660, 880], 0.12, 0.05); }, 90); }
 
   // --- State ---
   var myProfile = null;
@@ -99,19 +131,11 @@
     reportBtn.classList.toggle('hidden', !connected);
     addFriendBtn.classList.toggle('hidden', !connected);
     autoBtn.classList.toggle('hidden', name === 'start');
-    // The single top bar shows the partner while connected, the brand otherwise.
-    topPeer.classList.toggle('hidden', !connected);
+    // While connected the header is just the logo + actions — the partner's
+    // name already appears in the "you're now chatting with…" system line, so
+    // we hide the brand text to keep the bar clean. Idle shows brand + online.
     topDefault.classList.toggle('hidden', connected);
     if (name !== 'search') stopSearchLines();
-  }
-
-  function syncPeer() {
-    if (!currentPartner) return;
-    peerName.textContent = currentPartner.username || '';
-    peerFlag.innerHTML = getFlagImg(currentPartner.countryCode, 18);
-    peerFrom.textContent = t('chatPartnerFrom', {
-      country: getCountryName(currentPartner.countryCode) || currentPartner.country || t('somewhere'),
-    });
   }
 
   // Rotating one-liners under the searching animation.
@@ -199,7 +223,7 @@
     goSearch(true);
   });
 
-  startBtn.addEventListener('click', function () { vibrate(10); requestStart(); });
+  startBtn.addEventListener('click', function () { vibrate(10); initAudio(); requestStart(); });
   cancelBtn.addEventListener('click', function () {
     socket.emit('leave');
     goStart();
@@ -250,6 +274,7 @@
     if (UNSAFE_RE.test(text)) { addMessage(t('chatBotWarning'), 'system'); return; }
     socket.emit('chat-message', text.slice(0, 1000));
     addMessage(text, 'me');
+    soundSend();
     input.value = '';
     input.focus();
   });
@@ -380,8 +405,8 @@
     addFriendBtn.classList.remove('sent');
     addFriendBtn.disabled = false;
     clearMessages();
-    syncPeer();
     showView('live');
+    soundConnect();
     addMessage(t('chatSystemMatched', {
       name: data.partner.username,
       country: getCountryName(data.partner.countryCode) || data.partner.country || '',
@@ -397,6 +422,7 @@
     var text = data && data.text ? String(data.text) : '';
     if (!text) return;
     addMessage(text, 'them');
+    soundReceive();
     checkIncoming(text);
   });
 
@@ -418,7 +444,6 @@
     typingEl.classList.add('hidden');
     reportBtn.classList.add('hidden');
     addFriendBtn.classList.add('hidden');
-    topPeer.classList.add('hidden');
     topDefault.classList.remove('hidden');
     input.disabled = true;
     if (autoNext) {
@@ -442,7 +467,6 @@
 
   // Keep translated bits fresh whenever i18n re-renders (e.g. language change).
   window.addEventListener('i18n-changed', function () {
-    syncPeer();
     if (!nextArmed) nextBtn.querySelector('span').textContent = t('chatNext');
   });
 
