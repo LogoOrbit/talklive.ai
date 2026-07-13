@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server/index.js",
     "dev": "node server/index.js",
-    "build:seo": "node scripts/build-seo.js"
+    "build:seo": "node scripts/build-seo.js",
+    "seo:ping": "node scripts/ping-indexnow.js"
   },
   "dependencies": {
     "express": "^4.19.2",

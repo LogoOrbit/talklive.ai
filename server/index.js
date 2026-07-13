@@ -1886,5 +1886,11 @@ store.ready.then(() => {
   console.log(`[accounts] restored ${accounts.size} account(s) from the store`);
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`TalkLive server running on port ${PORT}`);
+    // Tell the IndexNow network (Bing/Yandex/Seznam/Naver) about every URL in
+    // the sitemap shortly after each production boot, so fresh deploys get
+    // crawled within minutes. Local dev skips it to avoid noise.
+    if (process.env.NODE_ENV === 'production' || process.env.RENDER) {
+      setTimeout(() => { try { require('./indexnow').ping(); } catch (e) { console.warn('[indexnow]', e.message); } }, 60000);
+    }
   });
 });

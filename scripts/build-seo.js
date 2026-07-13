@@ -43,6 +43,9 @@ const NAV = [
   { slug: 'talk-to-someone', label: 'Talk to Someone' },
   { slug: 'free-online-calls', label: 'Free Online Calls' },
   { slug: 'practice-english-speaking', label: 'Practice English Speaking' },
+  { slug: 'emerald-chat-alternative', label: 'Emerald Chat Alternative' },
+  { slug: 'make-friends-online', label: 'Make Friends Online' },
+  { slug: 'late-night-chat', label: 'Late Night Chat' },
 ];
 
 function url(slug) { return slug ? `${SITE}/${slug}` : `${SITE}/`; }
@@ -132,6 +135,9 @@ function linkCloud(currentSlug) {
     { slug: 'free-online-calls', label: 'Free online calls' },
     { slug: 'practice-english-speaking', label: 'Practice English speaking' },
     { slug: 'pakistani-chat', label: 'Pakistani voice chat' },
+    { slug: 'emerald-chat-alternative', label: 'Emerald Chat alternative' },
+    { slug: 'make-friends-online', label: 'Make friends online' },
+    { slug: 'late-night-chat', label: 'Late night chat' },
     { slug: '', label: 'Live voice chat rooms' },
     { slug: '', label: 'Free calls with strangers' },
   ];
@@ -1202,6 +1208,150 @@ const PAGES = [
     ctaBandH: 'Spin a better roulette',
     ctaBandP: 'Random strangers, instant Next, zero camera risk. Tap to talk or chat now.',
   },
+  {
+    slug: 'emerald-chat-alternative',
+    crumb: 'Emerald Chat Alternative',
+    eyebrow: 'Better than Emerald',
+    title: 'Emerald Chat Alternative — Free Voice & Text Chat, No Sign-Up | TalkLive',
+    description: 'Looking for an Emerald Chat alternative without bots, karma grinding or paywalls? TalkLive is free random voice & text chat with strangers — anonymous, instant, no sign-up.',
+    keywords: 'emerald chat alternative, sites like emerald chat, emerald chat replacement, apps like emerald chat, emerald chat without bots, free stranger chat',
+    h1: 'The Emerald Chat Alternative Without Bots or Paywalls',
+    lede: 'Tired of bots, karma systems and premium walls? TalkLive gives you what Emerald Chat promised: instant, anonymous conversations with real people — by live voice or pure text, completely free.',
+    cta: 'Try TalkLive Free',
+    featuresH: 'Why people switch from Emerald Chat',
+    featuresIntro: 'No karma to grind, no gender-filter paywall for matching, no bot armies. Just humans.',
+    features: [
+      { icon: 'users', h: 'Real people, not bots', p: 'Aggressive moderation and device + IP bans keep the pool human — report once and bad actors are gone.' },
+      { icon: 'bolt', h: 'Zero friction', p: 'No account, no karma level, no captcha marathon. One tap and you are live with a stranger.' },
+      { icon: 'mic', h: 'Voice as well as text', p: 'Emerald is typing-first. TalkLive adds live voice calls — hear a real human, stay anonymous.' },
+      { icon: 'lock', h: 'Actually anonymous', p: 'No email or profile needed. A temporary display name is all anyone ever sees.' },
+      { icon: 'next', h: 'Instant Next', p: 'Skip any conversation and land with a brand-new stranger immediately.' },
+      { icon: 'shield', h: '18+ and moderated', p: 'One-tap report and block, automatic bans for repeat offenders, adults only.' },
+    ],
+    stepsH: 'Switching takes ten seconds',
+    stepsIntro: 'There is nothing to migrate — no account on their side, no account on ours.',
+    steps: [
+      { h: 'Open TalkLive', p: 'Works in any browser on any phone or computer. Nothing to install.' },
+      { h: 'Pick voice or text', p: 'Tap to Talk for a live call, or Tap to Chat if you would rather type.' },
+      { h: 'Meet someone real', p: 'You are matched with a live human in seconds — no bots, no dead queue.' },
+      { h: 'Next or befriend', p: 'Skip anytime, or add a friend to talk again later. Your call.' },
+    ],
+    prose: [
+      { h: 'What Emerald Chat got right — and where it lost people', body: [
+        'Emerald Chat grew by promising "Omegle without the bots", and its interest matching was genuinely clever. But many users describe the same frustrations: bot spam that never quite dies, a karma system that punishes new users, and core filters locked behind a subscription. When the tool you use to escape bots fills with bots, it is time for an alternative.',
+        'TalkLive approaches the same problem from the opposite direction: instead of gamifying trust, it removes the incentives that attract spam in the first place. There are no profiles to farm, no links allowed in chat, and bans stick to both the device and the IP.' ] },
+      { h: 'Voice changes everything', body: [
+        'The biggest difference is voice. A live audio call is nearly impossible to bot and instantly reveals a real human on the other end. It is also warmer: tone, laughter and accents carry the conversation in a way text never quite manages. If you have only ever typed to strangers, your first voice call will feel like switching from black-and-white to color.',
+        'Prefer typing anyway? TalkLive\'s text mode is there too — same instant matching, same anonymity, no mic permission requested at all.' ] },
+      { h: 'Free means free', body: [
+        'Matching, filters within the free tier, unlimited skips and unlimited conversations cost nothing on TalkLive. There is an optional premium for power features, but nothing you need for great conversations sits behind a paywall.' ] },
+    ],
+    faq: [
+      { q: 'Is TalkLive really free compared to Emerald Chat?', a: 'Yes. Matching, voice calls, text chat and skipping are all free and unlimited. No karma requirement, no credit card.' },
+      { q: 'Does TalkLive have bots like Emerald?', a: 'The voice-first design makes bots impractical, links are blocked in text chat, and report-based device + IP bans remove spammers quickly.' },
+      { q: 'Do I need an account to use TalkLive?', a: 'No. Tap to Talk or Tap to Chat and you are matched instantly. An optional free account exists only to keep friends between visits.' },
+      { q: 'Can I text chat instead of talking?', a: 'Yes. Tap to Chat is a full anonymous text mode with its own matching pool — no microphone needed.' },
+      { q: 'Is TalkLive safe?', a: 'TalkLive is 18+, anonymous by default, and has one-tap report and block with automatic bans for repeat offenders. Voice is peer-to-peer and never recorded.' },
+    ],
+    ctaBandH: 'Ready for stranger chat without the grind?',
+    ctaBandP: 'Real people, live voice or text, zero sign-up. See the difference in one tap.',
+  },
+  {
+    slug: 'make-friends-online',
+    crumb: 'Make Friends Online',
+    eyebrow: 'Real friendships',
+    title: 'Make Friends Online — Free App to Find New Friends by Voice | TalkLive',
+    description: 'Make friends online through real conversations, not profiles. TalkLive matches you with people worldwide for live voice or text chat — free, anonymous, no sign-up.',
+    keywords: 'make friends online, how to make friends online, find friends online, online friends app, make new friends, friend finder, apps to make friends, make friends as an adult',
+    h1: 'Make Friends Online — Through Real Conversations',
+    lede: 'Friendship starts with a conversation, not a profile picture. TalkLive drops you straight into live voice or text chats with people around the world — and when you click with someone, one tap keeps them as a friend.',
+    cta: 'Find a New Friend',
+    featuresH: 'Why friendships actually form here',
+    featuresIntro: 'No swiping, no follower counts, no small-talk graveyards — just live conversation, which is where friendship has always started.',
+    features: [
+      { icon: 'heart', h: 'Click, then keep', p: 'Great conversation? Both tap Add Friend and you can message and call each other again — no numbers shared.' },
+      { icon: 'mic', h: 'Voice builds bonds', p: 'Ten minutes of hearing someone laugh beats ten days of texting. Voice makes friends faster.' },
+      { icon: 'globe', h: 'Friends worldwide', p: 'Meet people from dozens of countries — or filter to your region for friends in your timezone.' },
+      { icon: 'users', h: 'Shared interests', p: 'Add interests so you get matched with people you already have something to talk about with.' },
+      { icon: 'chat', h: 'Message anytime', p: 'Built-in messaging keeps your new friendships alive between calls.' },
+      { icon: 'lock', h: 'Private by default', p: 'No phone number, real name or photos required — share personal details only when you are ready.' },
+    ],
+    stepsH: 'How to make friends on TalkLive',
+    stepsIntro: 'From stranger to friend in four steps — usually in a single evening.',
+    steps: [
+      { h: 'Tap to Talk or Chat', p: 'Join by voice or text. You are matched with a real person in seconds.' },
+      { h: 'Let it flow', p: 'Ask where they are from, what their day was like. Real conversations wander — let them.' },
+      { h: 'Add as friend', p: 'When it clicks, both of you tap Add Friend. That is the whole ceremony.' },
+      { h: 'Stay in touch', p: 'Message and call your friends whenever you are both online. Friendships grow one talk at a time.' },
+    ],
+    prose: [
+      { h: 'Making friends as an adult is hard — online fixes the hardest part', body: [
+        'After school and university, the machinery that made friendship easy disappears: no shared classes, no daily proximity, no built-in reasons to talk. Sociologists call the ingredients of friendship proximity, repetition and vulnerability — and adult life quietly removes all three. That is why the average adult finds it genuinely difficult to name a new friend made in the last year.',
+        'Online voice chat restores all three ingredients at once. Proximity becomes irrelevant when the whole world is one tap away. Repetition is built in — your friends list means you can talk again tomorrow. And vulnerability comes easier with a voice and no camera: people open up faster when nobody is judging their face, their room, or their outfit.' ] },
+      { h: 'Why conversations beat profiles', body: [
+        'Friend-finder apps copied dating apps: photos, bios, swiping. But friendship does not work like attraction — you cannot swipe your way into it. You discover a friend by talking, laughing at the same dumb thing, and losing track of time. TalkLive skips the catalogue and starts you at the part that matters: the conversation itself.',
+        'It also removes the awkward cold-start. On profile apps, someone has to send the risky first message. Here, you are already mid-conversation the moment you connect.' ] },
+      { h: 'From one hello to a circle of friends', body: [
+        'Most people\'s first session goes the same way: a few quick skips, one surprisingly good conversation, one Add Friend. Do that a few evenings in a row and you have a small circle of voices from around the world — people to practice languages with, vent to after work, or just share a laugh with at midnight. All without sharing your number or real name until you choose to.' ] },
+    ],
+    faq: [
+      { q: 'Can you genuinely make friends online?', a: 'Yes — research on online friendships shows they can be as meaningful as offline ones. The key is real-time conversation rather than passive scrolling, which is exactly what TalkLive is built around.' },
+      { q: 'Is TalkLive a dating app?', a: 'No. TalkLive is for conversation and friendship. There are no dating profiles, photos or swiping — people come here to talk.' },
+      { q: 'How do I keep in touch with someone I met?', a: 'Both of you tap Add Friend. After that you can message each other and start voice calls whenever you are both online — no phone numbers needed.' },
+      { q: 'Is it free to make friends here?', a: 'Yes. Matching, talking, chatting and adding friends are completely free.' },
+      { q: 'What if I am shy?', a: 'Start with text chat — no mic needed. When you are comfortable, try a voice call. Anonymity means there is genuinely nothing to lose; a skip erases any awkward moment forever.' },
+    ],
+    ctaBandH: 'Your next friend is online right now',
+    ctaBandP: 'One tap starts the conversation. The friendship part happens on its own.',
+  },
+  {
+    slug: 'late-night-chat',
+    crumb: 'Late Night Chat',
+    eyebrow: 'Open all night',
+    title: 'Late Night Chat — Talk to Someone Right Now, Any Hour | TalkLive',
+    description: 'Can\'t sleep and need someone to talk to? TalkLive is late night chat with real people worldwide — live voice or text, anonymous and free, at 1am, 3am or any hour.',
+    keywords: 'late night chat, talk to someone at night, 3am chat, can\'t sleep need to talk, night chat with strangers, someone to talk to at 2am, midnight chat, night owls chat',
+    h1: 'Late Night Chat — There Is Always Someone Awake',
+    lede: 'It is 2am, your friends are asleep, and your brain will not switch off. Somewhere on the other side of the planet it is the middle of the afternoon — and TalkLive connects you to that person in one tap, by voice or text.',
+    cta: 'Talk to Someone Now',
+    featuresH: 'Built for the 3am crowd',
+    featuresIntro: 'Because the world is round, TalkLive never has an empty queue — someone is always awake.',
+    features: [
+      { icon: 'world', h: 'Always someone online', p: 'Your midnight is someone else\'s midday. Global matching means the queue never sleeps.' },
+      { icon: 'mic', h: 'Quiet-friendly', p: 'Whisper-level voice works fine — or switch to silent text chat without waking anyone.' },
+      { icon: 'lock', h: 'Anonymous venting', p: 'Say what is actually on your mind to someone with zero connection to your real life.' },
+      { icon: 'heart', h: 'Real human comfort', p: 'A live voice at night beats scrolling alone. Loneliness drops the moment someone answers.' },
+      { icon: 'next', h: 'No pressure', p: 'Conversation not helping? Next. The right stranger for tonight is one tap away.' },
+      { icon: 'shield', h: 'Safe space, 18+', p: 'Moderated, reportable, adults only — late night does not mean lawless.' },
+    ],
+    stepsH: 'How late night chat works',
+    stepsIntro: 'From lying awake to mid-conversation in under thirty seconds.',
+    steps: [
+      { h: 'Open TalkLive in bed', p: 'Any phone browser works. No install, no account, no lights on.' },
+      { h: 'Choose voice or text', p: 'Tap to Talk if you can speak, Tap to Chat if the house is asleep.' },
+      { h: 'Meet a fellow night owl', p: 'Get matched with someone awake right now — next door or nine timezones away.' },
+      { h: 'Talk until you are tired', p: 'Deep talk, dumb jokes, or background company. End whenever sleep finally shows up.' },
+    ],
+    prose: [
+      { h: 'Why late-night conversations hit different', body: [
+        'There is a reason the best conversations of your life happened after midnight. Late at night the social filters drop: nobody performs, nobody rushes, and honesty comes easier. Psychologists note that darkness and anonymity both lower self-consciousness — which is why a 3am talk with a stranger can go deeper in twenty minutes than weeks of daytime small talk.',
+        'TalkLive is built for exactly that register. No cameras, no profiles, no history — just a voice in the dark that happens to belong to a real person.' ] },
+      { h: 'When you need to talk and everyone is asleep', body: [
+        'Sometimes night thoughts are heavy: stress, a breakup, homesickness, or plain loneliness. Talking genuinely helps — saying a worry out loud to another human shrinks it in a way journaling and scrolling never do. A stranger can be the perfect listener precisely because they are outside your life: no judgment, no consequences, no "are you okay?" texts tomorrow.',
+        'TalkLive is not a crisis service — if you are in real distress, please reach a professional helpline in your country. But for the ordinary weight of a sleepless night, a friendly voice makes an enormous difference.' ] },
+      { h: 'Night owls of the world, united', body: [
+        'Shift workers on break, students pulling all-nighters, new parents up with a baby, insomniacs, and people for whom it is simply daytime — the late-night pool on TalkLive is a genuinely interesting crowd. Regulars keep a friends list spread across timezones so that somebody is always awake to talk.' ] },
+    ],
+    faq: [
+      { q: 'Is anyone actually online at 3am?', a: 'Yes. TalkLive matches globally, so your 3am is midday somewhere else. Night owls plus the other hemisphere keep the queue alive around the clock.' },
+      { q: 'Can I chat silently without waking anyone?', a: 'Yes. Tap to Chat is pure text — no microphone, no sound, works perfectly in a dark quiet room.' },
+      { q: 'Is late night chat free?', a: 'Completely. Voice and text chat are free and unlimited at every hour.' },
+      { q: 'I just want to vent. Is that okay?', a: 'Absolutely — anonymous venting is one of the most common reasons people open TalkLive at night. Strangers are often the best listeners.' },
+      { q: 'What if I am really struggling?', a: 'TalkLive is friendly company, not a crisis line. If you are in distress or having thoughts of self-harm, please contact a professional helpline in your country right away.' },
+    ],
+    ctaBandH: 'Can\'t sleep? Say hello instead',
+    ctaBandP: 'Somewhere in the world, someone is wide awake and happy to talk. Right now.',
+  },
 ];
 
 // --- Blog -------------------------------------------------------------------
@@ -1398,6 +1548,93 @@ const BLOG = [
       ]},
     ],
   },
+  {
+    slug: 'what-happened-to-omegle',
+    date: '2026-07-13',
+    title: 'What Happened to Omegle? Why It Shut Down and What Replaced It | TalkLive Blog',
+    h1: 'What Happened to Omegle? Why It Shut Down — and What Replaced It',
+    description: 'Omegle shut down in November 2023 after 14 years. Here is exactly why it closed, what founder Leif K-Brooks said, and where its millions of users actually went.',
+    keywords: 'what happened to omegle, why did omegle shut down, omegle shut down, is omegle coming back, omegle closed, omegle replacement 2026',
+    tag: 'Guides',
+    sections: [
+      { h: null, ps: [
+        'On 8 November 2023, visitors to omegle.com found a tombstone instead of a chat button. After fourteen years and hundreds of millions of users, one of the internet\'s most famous websites was gone overnight. Years later, "what happened to Omegle" is still searched tens of thousands of times a month — so here is the full story, and what actually replaced it.',
+      ]},
+      { h: 'Why Omegle really shut down', ps: [
+        'Founder Leif K-Brooks was unusually honest in his farewell letter: running Omegle was "no longer sustainable, financially nor psychologically." The site faced a wave of lawsuits over abuse that happened on the platform — most notably a case brought by a woman who had been matched with a predator as a minor — and the cost of fighting them, combined with the burden of moderating unfiltered video from millions of strangers, finally outweighed the site\'s ad revenue.',
+        'The deeper problem was structural. Omegle\'s magic — instant, anonymous, unmoderated video with anyone on Earth — was also the exact mechanism that attracted its worst users. You could not fix Omegle without deleting the thing that made it Omegle. So K-Brooks deleted all of it.',
+      ]},
+      { h: 'Is Omegle ever coming back?', ps: [
+        'No. The shutdown was permanent, the founder has moved on, and the domain now redirects to an unrelated buyer. Every "new Omegle" or "Omegle 2.0" you see is an unaffiliated clone trading on the name — usually with worse moderation than the original, which is saying something. If a site claims to literally be Omegle back from the dead, close the tab.',
+      ]},
+      { h: 'Where the users went', ps: [
+        'Omegle\'s millions scattered in three directions. Some went to the big video-roulette survivors, which inherited Omegle\'s audience and, predictably, Omegle\'s problems. Some drifted to interest-based communities like Discord, trading spontaneity for safety. And a growing third group went voice-only — platforms that keep the one-tap, random, anonymous thrill but drop the camera entirely.',
+        'That third path is the interesting one, because it fixes the structural flaw rather than re-running the experiment. Voice-only random chat like TalkLive keeps what people actually loved about Omegle — a real, live, unscripted human — while removing the surface that abuse depended on. No camera means nothing to flash, nothing to record, and a community that self-selects for people who want to talk.',
+      ]},
+      { h: 'The lesson Omegle taught the internet', ps: [
+        'Omegle proved the demand: humans deeply want serendipitous conversation with strangers, and fourteen years of traffic showed it never gets old. It also proved the constraint: that experience only survives if safety is designed in, not moderated in afterwards. The next generation of stranger chat — anonymous, voice-first, aggressively moderated, 18+ — exists because of both lessons. The talk was the point. The camera was the bug.',
+      ]},
+    ],
+  },
+  {
+    slug: 'how-to-make-friends-online',
+    date: '2026-07-13',
+    title: 'How to Make Friends Online as an Adult: A Practical Guide (2026) | TalkLive Blog',
+    h1: 'How to Make Friends Online as an Adult — a Practical Guide',
+    description: 'Making friends as an adult is genuinely hard. Here is a practical, research-backed guide to making real friends online — where to go, what to say, and what actually works.',
+    keywords: 'how to make friends online, make friends as an adult, online friends, making friends after college, apps to make friends, no friends what to do',
+    tag: 'Guides',
+    sections: [
+      { h: null, ps: [
+        'If you find it hard to make friends as an adult, you are not broken — you are typical. Surveys keep finding the same trend: adults today report fewer close friendships than any generation on record, and most say the hardest part is simply "where do I even meet people?" School handed us proximity and repetition for free; adult life hands us commutes and group chats that die.',
+        'The internet can genuinely fix this — but not the way most people use it. Here is what actually works.',
+      ]},
+      { h: 'Rule 1: conversation beats content', ps: [
+        'Following, liking and commenting feel social but build nothing — researchers call it parasocial snacking. Friendship formation needs real-time interaction: the back-and-forth where you react to each other, joke, and occasionally go off-script. That means the best online venues for making friends are the ones built around live conversation — voice chats, game lobbies, language exchanges — not feeds.',
+        'One study famously estimated it takes dozens of hours of shared time to turn an acquaintance into a friend. Live conversation compresses those hours; passive scrolling never starts the clock.',
+      ]},
+      { h: 'Rule 2: voice is a shortcut', ps: [
+        'Text friendships grow slowly because text is thin — no tone, no timing, no laughter. Voice carries all three, which is why a twenty-minute call does more bonding than a week of messaging. If you are shy, that sounds backwards, but anonymity fixes it: talking to a stranger who cannot see you and does not know your name is the lowest-stakes social interaction that exists. It is a flight simulator for friendship.',
+        'This is exactly the niche random voice chat fills. On TalkLive you are in a live conversation within seconds, and when one clicks, both of you tap Add Friend and can talk again tomorrow. Repetition — the missing ingredient of adult friendship — is built into the product.',
+      ]},
+      { h: 'Rule 3: lower the bar for the first message', ps: [
+        'The costliest moment in any new friendship is the cold open. Communities where messaging first feels weird (or thirsty) kill most friendships before they start. Prefer places where conversation is already happening and you just join it. And keep openers boringly simple: "where are you from?", "what time is it there?", "what did you do today?" Depth comes later; friction kills now.',
+      ]},
+      { h: 'Rule 4: show up on a schedule', ps: [
+        'Friendship is a repeated game. Whatever venue you pick, go at the same time of day for a week or two. You will start recognising people, and — more importantly — being recognised. That "oh hey, you again" moment is the actual birth of a friendship. One good conversation a day, most days, beats a six-hour binge once a month.',
+        'A realistic 30-day outcome for someone starting from zero: a handful of good conversations in week one, two or three repeat contacts by week two, and one or two people you would honestly call friends by day 30. That is life-changing arithmetic for the cost of a few evenings.',
+      ]},
+    ],
+  },
+  {
+    slug: 'someone-to-talk-to-at-3am',
+    date: '2026-07-13',
+    title: 'Need Someone to Talk to at 3AM? Here Are Your Real Options | TalkLive Blog',
+    h1: 'Need Someone to Talk to at 3AM? Here Are Your Real Options',
+    description: 'It\'s the middle of the night, your mind won\'t stop, and everyone you know is asleep. Here are the real options when you need someone to talk to at 3am — free, right now.',
+    keywords: 'someone to talk to at 3am, need someone to talk to, talk to someone at night, cant sleep need to talk, late night talk, lonely at night',
+    tag: 'Wellbeing',
+    sections: [
+      { h: null, ps: [
+        'Three in the morning has a special kind of loneliness. The group chat is dead, tomorrow\'s worries are loud, and the one thing that would actually help — another human voice — feels impossible to find. Except it is not. Roughly a third of the planet is wide awake right now; it is simply afternoon where they live.',
+        'Here are the real options for a 3am conversation, from lightest to heaviest, and when each one fits.',
+      ]},
+      { h: 'Option 1: a stranger on the other side of the world', ps: [
+        'For the ordinary weight of a sleepless night — overthinking, restlessness, plain boredom-loneliness — the best medicine is often a low-stakes conversation with someone new. Random voice chat connects you to a live person in seconds at any hour, because global matching means the queue literally cannot sleep: your 3am is someone\'s 3pm.',
+        'A stranger has real advantages at that hour. They carry none of your history, so you can say the true version of things without managing anyone\'s feelings. Research on the "stranger on a train" effect confirms what night owls already know: people disclose more honestly, and feel better afterwards, with someone outside their life. And if the conversation is not helping, Next — no apology required.',
+      ]},
+      { h: 'Option 2: night-owl communities', ps: [
+        'Discord servers, subreddits like r/CasualConversation, and hobby forums always have a nocturnal contingent. These work well when you want ambient company rather than a one-on-one talk. The trade-off is pace — text threads move slowly at night, and you may be typing into a quiet room for a while before anyone responds. Fine for winding down, frustrating when you actually need to be heard.',
+      ]},
+      { h: 'Option 3: when it\'s heavier than loneliness', ps: [
+        'Be honest with yourself about what kind of night it is. If what is keeping you up is distress rather than restlessness — panic, grief, hopelessness, or thoughts of self-harm — a stranger chat is the wrong tool, and the right one is a crisis line staffed by trained listeners. In the US you can call or text 988 any hour; most countries have an equivalent, and findahelpline.com lists them all. There is no threshold you need to meet; "I can\'t stop crying and it\'s 3am" is reason enough.',
+      ]},
+      { h: 'Make 3am work for you', ps: [
+        'A few habits turn rough nights into decent ones. Keep the lights low and your voice quiet — a whispered call works fine on TalkLive, and text mode works in total silence. Set a soft limit ("one good conversation, then bed") so the night does not run away. And if you are a regular night owl, build a friends list across timezones: a few taps on Add Friend and there is always somebody awake who already knows you.',
+        'The 3am feeling lies to you: it says you are the only one awake and nobody wants to hear it. Wrong on both counts. The world is round, the queue is live, and somebody genuinely enjoys 3am conversations — that is why they are online too.',
+      ]},
+    ],
+  },
 ];
 
 function blogUrl(slug) { return `${SITE}/blog/${slug}`; }
@@ -1451,6 +1688,7 @@ function blogPost(b) {
 <meta name="theme-color" content="#0b0f1a" />
 <meta name="author" content="TalkLive" />
 <link rel="canonical" href="${canonical}" />
+<link rel="alternate" type="application/rss+xml" title="TalkLive Blog" href="${SITE}/blog/feed.xml" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="TalkLive" />
 <meta property="og:title" content="${esc(b.h1)}" />
@@ -1540,6 +1778,7 @@ function blogIndex() {
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
 <meta name="theme-color" content="#0b0f1a" />
 <link rel="canonical" href="${canonical}" />
+<link rel="alternate" type="application/rss+xml" title="TalkLive Blog" href="${SITE}/blog/feed.xml" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="TalkLive" />
 <meta property="og:title" content="TalkLive Blog" />
@@ -1627,4 +1866,64 @@ function buildSitemap() {
 }
 fs.writeFileSync(path.join(PUBLIC, 'sitemap.xml'), buildSitemap());
 
-console.log(`Built ${count} landing pages + sitemap.xml (${sitemapUrls.length} urls).`);
+// RSS feed for the blog — enables autodiscovery, feed readers and syndication.
+function buildRss() {
+  const items = [...BLOG].sort((a, b) => b.date.localeCompare(a.date)).map(b => `  <item>
+    <title>${esc(b.h1)}</title>
+    <link>${blogUrl(b.slug)}</link>
+    <guid isPermaLink="true">${blogUrl(b.slug)}</guid>
+    <pubDate>${new Date(b.date + 'T12:00:00Z').toUTCString()}</pubDate>
+    <category>${esc(b.tag)}</category>
+    <description>${esc(b.description)}</description>
+  </item>`).join('\n');
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<channel>
+  <title>TalkLive Blog</title>
+  <link>${SITE}/blog/</link>
+  <atom:link href="${SITE}/blog/feed.xml" rel="self" type="application/rss+xml"/>
+  <description>Guides and research on talking to strangers, voice chat, language practice and online safety — from the team behind TalkLive.</description>
+  <language>en</language>
+  <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
+${items}
+</channel>
+</rss>
+`;
+}
+fs.writeFileSync(path.join(BLOG_DIR, 'feed.xml'), buildRss());
+
+// llms.txt — a curated site map for AI assistants and answer engines
+// (ChatGPT, Perplexity, Claude, Gemini), which increasingly send users to
+// sites they can summarize accurately. https://llmstxt.org
+function buildLlmsTxt() {
+  const landing = PAGES.map(p => `- [${p.crumb}](${url(p.slug)}): ${p.description}`).join('\n');
+  const posts = BLOG.map(b => `- [${b.h1}](${blogUrl(b.slug)}): ${b.description}`).join('\n');
+  return `# TalkLive
+
+> TalkLive (${SITE}) is a free random chat app that connects strangers worldwide for live conversations — one-tap anonymous voice calls (peer-to-peer WebRTC audio, never recorded) or instant text chat. No sign-up required, works in any browser on any device, strictly 18+, with one-tap report/block moderation. It is a popular voice-first alternative to Omegle, OmeTV, Emerald Chat, Monkey and Chatroulette.
+
+Key facts: free and unlimited; anonymous (temporary display names, no phone/email needed); voice-only or text-only modes; optional country and interest filters; friends system to reconnect; premium tier ($10/mo) for advanced filters; safety via device+IP bans and 18+ policy.
+
+## Main pages
+- [TalkLive app](${SITE}/): Start a random voice or text chat instantly.
+${landing}
+
+## Blog
+${posts}
+
+## Policies
+- [About](${SITE}/about)
+- [Pricing](${SITE}/pricing)
+- [Privacy](${SITE}/privacy)
+- [Terms](${SITE}/terms)
+- [Contact](${SITE}/contact)
+`;
+}
+fs.writeFileSync(path.join(PUBLIC, 'llms.txt'), buildLlmsTxt());
+
+// IndexNow ownership key file (served at /<key>.txt) — lets us push URL
+// updates straight to Bing/Yandex/Seznam/Naver. See server/indexnow.js.
+const { KEY: INDEXNOW_KEY } = require('../server/indexnow');
+fs.writeFileSync(path.join(PUBLIC, `${INDEXNOW_KEY}.txt`), INDEXNOW_KEY + '\n');
+
+console.log(`Built ${count} landing pages + sitemap.xml (${sitemapUrls.length} urls) + blog/feed.xml + llms.txt + indexnow key.`);

@@ -1,0 +1,49 @@
+# TalkLive
+
+> TalkLive (https://talklive.app) is a free random chat app that connects strangers worldwide for live conversations — one-tap anonymous voice calls (peer-to-peer WebRTC audio, never recorded) or instant text chat. No sign-up required, works in any browser on any device, strictly 18+, with one-tap report/block moderation. It is a popular voice-first alternative to Omegle, OmeTV, Emerald Chat, Monkey and Chatroulette.
+
+Key facts: free and unlimited; anonymous (temporary display names, no phone/email needed); voice-only or text-only modes; optional country and interest filters; friends system to reconnect; premium tier ($10/mo) for advanced filters; safety via device+IP bans and 18+ policy.
+
+## Main pages
+- [TalkLive app](https://talklive.app/): Start a random voice or text chat instantly.
+- [Talk to Strangers](https://talklive.app/talk-to-strangers): Talk to strangers online for free with TalkLive. One tap connects you to a random person for a live, anonymous voice conversation. No sign-up, audio only, worldwide.
+- [Random Voice Chat](https://talklive.app/random-voice-chat): Free random voice chat with strangers worldwide. TalkLive connects you to a real voice in seconds — anonymous, audio-only, no sign-up. Start a random voice chat now.
+- [Random Text Chat](https://talklive.app/random-text-chat): Free random text chat with strangers worldwide. Tap to Chat and TalkLive pairs you with a random person for an instant, anonymous text conversation — no mic, no sign-up, works on any phone.
+- [Text Chat with Strangers](https://talklive.app/text-chat-with-strangers): Text chat with strangers online for free. TalkLive pairs you with a random person for an anonymous, live text conversation — no sign-up, no mic, no video. Start chatting in one tap.
+- [Random Call](https://talklive.app/random-call): Make a random call to a stranger for free with TalkLive. Instant live calls, anonymous and audio-only, no number or sign-up needed. Start a random call in seconds.
+- [Anonymous Chat](https://talklive.app/anonymous-chat): Anonymous chat with strangers on TalkLive — live voice calls or instant text chat. No name, number, or sign-up. Talk or type privately with people worldwide, free.
+- [Meet New People](https://talklive.app/meet-new-people): Meet new people from around the world on TalkLive. Make online friends through live voice chat — anonymous, free, no sign-up. Start meeting new people today.
+- [International Calls](https://talklive.app/international-calls): Make free international calls and join a global voice chat with strangers on TalkLive. Talk to people in other countries instantly — anonymous, audio-only, no sign-up.
+- [Pakistani Chat](https://talklive.app/pakistani-chat): Free Pakistani voice chat on TalkLive. Talk to strangers from Pakistan and around the world over live audio — anonymous, no sign-up. Start Pakistani chat now.
+- [Omegle Alternative](https://talklive.app/omegle-alternative): Looking for an Omegle alternative? TalkLive is free random chat with strangers — voice-only, anonymous, no sign-up, with real moderation. Talk to a stranger in one tap.
+- [Random Video Chat](https://talklive.app/random-video-chat): Want random video chat with strangers but not the camera pressure? TalkLive is the voice-first alternative: one tap, a random stranger, live and anonymous. Free, no sign-up.
+- [Random Video Call](https://talklive.app/random-video-call): Looking for a random video call with strangers? TalkLive is the free, voice-first alternative — one tap places a live call to a random person. Anonymous, no number, no sign-up.
+- [OmeTV Alternative](https://talklive.app/ometv-alternative): Looking for an OmeTV alternative? TalkLive is free random chat with strangers — voice-only, anonymous, moderated, no sign-up. Meet a random stranger in one tap.
+- [Stranger Video Call](https://talklive.app/stranger-video-call): Want a stranger video call but not the camera? TalkLive lets you call and talk to strangers live — voice-first, anonymous, no number, no sign-up. Free random calls worldwide.
+- [Monkey App Alternative](https://talklive.app/monkey-app-alternative): Looking for a Monkey app alternative? TalkLive is free random chat with strangers — voice-only, anonymous, 18+, moderated, no sign-up. Meet a random stranger in one tap.
+- [Talk to Someone](https://talklive.app/talk-to-someone): Need someone to talk to right now? TalkLive connects you with a real, friendly person in seconds — free voice call or text chat, anonymous, no sign-up, day or night.
+- [Free Online Calls](https://talklive.app/free-online-calls): Make free online calls straight from your browser. TalkLive gives you unlimited voice calls with people worldwide — no phone number, no app, no sign-up. Start a free call now.
+- [Practice English Speaking](https://talklive.app/practice-english-speaking): Practice English speaking online for free with real people. TalkLive connects you to live voice conversations in seconds — no classes, no fees, no sign-up. Start speaking English today.
+- [Chatroulette Alternative](https://talklive.app/chatroulette-alternative): Looking for a Chatroulette alternative? TalkLive keeps the random-roulette thrill but swaps risky video for anonymous voice and text chat. Free, 18+, moderated, no sign-up.
+- [Emerald Chat Alternative](https://talklive.app/emerald-chat-alternative): Looking for an Emerald Chat alternative without bots, karma grinding or paywalls? TalkLive is free random voice & text chat with strangers — anonymous, instant, no sign-up.
+- [Make Friends Online](https://talklive.app/make-friends-online): Make friends online through real conversations, not profiles. TalkLive matches you with people worldwide for live voice or text chat — free, anonymous, no sign-up.
+- [Late Night Chat](https://talklive.app/late-night-chat): Can't sleep and need someone to talk to? TalkLive is late night chat with real people worldwide — live voice or text, anonymous and free, at 1am, 3am or any hour.
+
+## Blog
+- [The 10 Best Omegle Alternatives in 2026](https://talklive.app/blog/best-omegle-alternatives): Omegle shut down — so where do you talk to strangers now? We compare the best Omegle alternatives in 2026, including voice-only options that skip the video weirdness.
+- [How to Practice Speaking English Online for Free — With Real Humans](https://talklive.app/blog/practice-english-speaking-online-free): Apps teach you vocabulary, but only conversation makes you fluent. Here is how to practice speaking English online for free with real people, starting today.
+- [Voice Chat vs Video Chat: Why Audio-Only Wins for Meeting Strangers](https://talklive.app/blog/voice-chat-vs-video-chat): Video roulette sites promised connection and delivered chaos. Here is why voice-only chat is safer, deeper and less awkward for talking to strangers online.
+- [Is TalkLive Safe? How Our Anonymous Voice Chat Actually Works](https://talklive.app/blog/is-talklive-safe): A transparent look at TalkLive safety: peer-to-peer audio that is never recorded, no sign-up required, report and ban systems, and what data we do and don’t keep.
+- [The Science of Talking to Strangers (And Why It Makes You Happier)](https://talklive.app/blog/science-of-talking-to-strangers): Research keeps finding the same thing: conversations with strangers boost mood, reduce loneliness, and go deeper than we expect. Here’s the science, simply explained.
+- [How to Start a Conversation With a Stranger: 25 Openers That Actually Work](https://talklive.app/blog/how-to-start-a-conversation-with-a-stranger): Never freeze at "hello" again. Practical conversation openers, follow-up techniques and exit lines for talking to strangers — online or off.
+- [The Psychological Benefits of Talking to Strangers Every Day](https://talklive.app/blog/psychological-benefits-of-talking-to-strangers): A short, simple look at how a daily voice chat with a stranger can lift your mood, ease loneliness, and build real confidence over time.
+- [What Happened to Omegle? Why It Shut Down — and What Replaced It](https://talklive.app/blog/what-happened-to-omegle): Omegle shut down in November 2023 after 14 years. Here is exactly why it closed, what founder Leif K-Brooks said, and where its millions of users actually went.
+- [How to Make Friends Online as an Adult — a Practical Guide](https://talklive.app/blog/how-to-make-friends-online): Making friends as an adult is genuinely hard. Here is a practical, research-backed guide to making real friends online — where to go, what to say, and what actually works.
+- [Need Someone to Talk to at 3AM? Here Are Your Real Options](https://talklive.app/blog/someone-to-talk-to-at-3am): It's the middle of the night, your mind won't stop, and everyone you know is asleep. Here are the real options when you need someone to talk to at 3am — free, right now.
+
+## Policies
+- [About](https://talklive.app/about)
+- [Pricing](https://talklive.app/pricing)
+- [Privacy](https://talklive.app/privacy)
+- [Terms](https://talklive.app/terms)
+- [Contact](https://talklive.app/contact)
