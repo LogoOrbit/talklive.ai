@@ -183,5 +183,22 @@ window.I18N_STRINGS.id = {
   "subTapChat": "Ketuk tombol kapan pun kamu siap",
   "chatSystemMatched": "Kamu sekarang chat dengan {name} dari {country} — sapa dia! 👋",
   "chatSystemLeft": "Orang asing meninggalkan chat. Ketuk tombol hijau untuk orang baru.",
+  "cancel": "Batal",
+  "premiumBadge": "💎 Premium",
+  "filtersPremiumTitle": "Filter adalah fitur Premium",
+  "premiumUpsellTitle": "TalkLive Premium",
+  "premiumGenderLocked": "Filter gender adalah fitur Premium.",
+  "premiumCountryLimit": "Paket gratis memungkinkan hingga {n} negara per daftar.",
+  "premiumFriendLimit": "Paket gratis memungkinkan hingga {n} teman.",
+  "adUnlockCta": "🎁 Tonton iklan untuk membuka",
+  "adUnlockExplain": "Tonton iklan singkat untuk membuka semua fitur Premium gratis selama {m} menit.",
+  "adUnlockBtn": "TONTON IKLAN UNTUK MEMBUKA",
+  "adUnlockCounting": "Biarkan tab iklan tetap terbuka… {s}d",
+  "adUnlockSuccess": "🎉 Premium terbuka selama {m} menit!",
+  "adUnlockTooSoon": "Terlalu cepat — biarkan iklan terbuka sedikit lebih lama lalu coba lagi.",
+  "adUnlockFailed": "Tidak dapat memverifikasi tayangan iklan. Silakan coba lagi.",
+  "adPassExpired": "Waktu Premium gratismu telah habis. Tonton iklan lagi untuk membukanya kembali!",
+  "adPassBadge": "⭐ Premium · {time}",
+  "filtersAdUnlockText": "Paket gratis: hingga 3 negara per daftar, filter gender terkunci. Tonton iklan singkat untuk membuka semuanya selama 5 menit — gratis."
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("id");

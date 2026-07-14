@@ -183,5 +183,22 @@ window.I18N_STRINGS.de = {
   "subTapChat": "Tippe auf den Button, wenn du chatten möchtest",
   "chatSystemMatched": "Du chattest jetzt mit {name} aus {country} — sag hallo! 👋",
   "chatSystemLeft": "Der Fremde hat den Chat verlassen. Tippe auf den grünen Button für jemand Neues.",
+  "cancel": "Abbrechen",
+  "premiumBadge": "💎 Premium",
+  "filtersPremiumTitle": "Filter sind eine Premium-Funktion",
+  "premiumUpsellTitle": "TalkLive Premium",
+  "premiumGenderLocked": "Der Geschlechtsfilter ist eine Premium-Funktion.",
+  "premiumCountryLimit": "Der Gratis-Plan erlaubt bis zu {n} Länder pro Liste.",
+  "premiumFriendLimit": "Der Gratis-Plan erlaubt bis zu {n} Freunde.",
+  "adUnlockCta": "🎁 Werbung ansehen und freischalten",
+  "adUnlockExplain": "Sieh dir eine kurze Werbung an und schalte alle Premium-Funktionen für {m} Minuten kostenlos frei.",
+  "adUnlockBtn": "WERBUNG ANSEHEN ZUM FREISCHALTEN",
+  "adUnlockCounting": "Lass den Werbe-Tab geöffnet… {s}s",
+  "adUnlockSuccess": "🎉 Premium für {m} Minuten freigeschaltet!",
+  "adUnlockTooSoon": "Das war zu schnell — lass die Werbung etwas länger geöffnet und versuche es erneut.",
+  "adUnlockFailed": "Die Werbeanzeige konnte nicht bestätigt werden. Bitte versuche es erneut.",
+  "adPassExpired": "Deine kostenlose Premium-Zeit ist abgelaufen. Sieh dir eine weitere Werbung an, um erneut freizuschalten!",
+  "adPassBadge": "⭐ Premium · {time}",
+  "filtersAdUnlockText": "Gratis-Plan: bis zu 3 Länder pro Liste, Geschlechtsfilter gesperrt. Sieh dir eine kurze Werbung an und schalte alles für 5 Minuten frei — kostenlos."
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("de");

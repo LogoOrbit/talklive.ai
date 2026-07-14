@@ -183,5 +183,22 @@ window.I18N_STRINGS.fr = {
   "subTapChat": "Appuyez sur le bouton quand vous êtes prêt à chatter",
   "chatSystemMatched": "Vous discutez maintenant avec {name} de {country} — dites bonjour ! 👋",
   "chatSystemLeft": "L’inconnu a quitté le chat. Appuyez sur le bouton vert pour quelqu’un de nouveau.",
+  "cancel": "Annuler",
+  "premiumBadge": "💎 Premium",
+  "filtersPremiumTitle": "Les filtres sont une fonctionnalité Premium",
+  "premiumUpsellTitle": "TalkLive Premium",
+  "premiumGenderLocked": "Le filtre de genre est une fonctionnalité Premium.",
+  "premiumCountryLimit": "Le plan gratuit autorise jusqu'à {n} pays par liste.",
+  "premiumFriendLimit": "Le plan gratuit autorise jusqu'à {n} amis.",
+  "adUnlockCta": "🎁 Regarder une pub pour débloquer",
+  "adUnlockExplain": "Regardez une courte publicité pour débloquer gratuitement toutes les fonctionnalités Premium pendant {m} minutes.",
+  "adUnlockBtn": "REGARDER UNE PUB POUR DÉBLOQUER",
+  "adUnlockCounting": "Gardez l'onglet de la pub ouvert… {s}s",
+  "adUnlockSuccess": "🎉 Premium débloqué pendant {m} minutes !",
+  "adUnlockTooSoon": "C'était trop rapide — gardez la pub ouverte un peu plus longtemps et réessayez.",
+  "adUnlockFailed": "Impossible de vérifier la publicité. Veuillez réessayer.",
+  "adPassExpired": "Votre temps Premium gratuit est terminé. Regardez une autre pub pour le débloquer à nouveau !",
+  "adPassBadge": "⭐ Premium · {time}",
+  "filtersAdUnlockText": "Plan gratuit : jusqu'à 3 pays par liste, filtre de genre verrouillé. Regardez une courte pub pour tout débloquer pendant 5 minutes — gratuitement."
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("fr");

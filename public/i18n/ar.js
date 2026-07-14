@@ -183,5 +183,22 @@ window.I18N_STRINGS.ar = {
   "subTapChat": "اضغط الزر عندما تكون جاهزاً",
   "chatSystemMatched": "أنت الآن تدردش مع {name} من {country} — قل مرحباً! 👋",
   "chatSystemLeft": "غادر الغريب الدردشة. اضغط الزر الأخضر لشخص جديد.",
+  "cancel": "إلغاء",
+  "premiumBadge": "💎 بريميوم",
+  "filtersPremiumTitle": "الفلاتر ميزة بريميوم",
+  "premiumUpsellTitle": "TalkLive بريميوم",
+  "premiumGenderLocked": "فلتر الجنس ميزة بريميوم.",
+  "premiumCountryLimit": "الخطة المجانية تسمح بحد أقصى {n} دول لكل قائمة.",
+  "premiumFriendLimit": "الخطة المجانية تسمح بحد أقصى {n} أصدقاء.",
+  "adUnlockCta": "🎁 شاهد إعلانًا لفتح الميزات",
+  "adUnlockExplain": "شاهد إعلانًا قصيرًا لفتح جميع ميزات بريميوم مجانًا لمدة {m} دقائق.",
+  "adUnlockBtn": "شاهد إعلانًا لفتح الميزات",
+  "adUnlockCounting": "أبقِ تبويب الإعلان مفتوحًا… {s} ث",
+  "adUnlockSuccess": "🎉 تم فتح بريميوم لمدة {m} دقائق!",
+  "adUnlockTooSoon": "كان ذلك سريعًا جدًا — أبقِ الإعلان مفتوحًا لفترة أطول ثم حاول مرة أخرى.",
+  "adUnlockFailed": "تعذّر التحقق من مشاهدة الإعلان. حاول مرة أخرى.",
+  "adPassExpired": "انتهى وقت بريميوم المجاني. شاهد إعلانًا آخر لفتحه من جديد!",
+  "adPassBadge": "⭐ بريميوم · {time}",
+  "filtersAdUnlockText": "الخطة المجانية: حتى 3 دول لكل قائمة، وفلتر الجنس مقفل. شاهد إعلانًا قصيرًا لفتح كل شيء لمدة 5 دقائق — مجانًا."
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("ar");

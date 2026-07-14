@@ -183,5 +183,22 @@ window.I18N_STRINGS.tr = {
   "subTapChat": "Hazır olduğunda butona dokun",
   "chatSystemMatched": "Artık {country} ülkesinden {name} ile sohbet ediyorsun — merhaba de! 👋",
   "chatSystemLeft": "Yabancı sohbetten ayrıldı. Yeni biri için yeşil butona dokun.",
+  "cancel": "İptal",
+  "premiumBadge": "💎 Premium",
+  "filtersPremiumTitle": "Filtreler bir Premium özelliğidir",
+  "premiumUpsellTitle": "TalkLive Premium",
+  "premiumGenderLocked": "Cinsiyet filtresi bir Premium özelliğidir.",
+  "premiumCountryLimit": "Ücretsiz plan liste başına en fazla {n} ülkeye izin verir.",
+  "premiumFriendLimit": "Ücretsiz plan en fazla {n} arkadaşa izin verir.",
+  "adUnlockCta": "🎁 Kilidi açmak için reklam izle",
+  "adUnlockExplain": "Kısa bir reklam izleyerek tüm Premium özellikleri {m} dakika boyunca ücretsiz aç.",
+  "adUnlockBtn": "KİLİDİ AÇMAK İÇİN REKLAM İZLE",
+  "adUnlockCounting": "Reklam sekmesini açık tut… {s}sn",
+  "adUnlockSuccess": "🎉 Premium {m} dakikalığına açıldı!",
+  "adUnlockTooSoon": "Çok hızlıydı — reklamı biraz daha açık tut ve tekrar dene.",
+  "adUnlockFailed": "Reklam görüntüleme doğrulanamadı. Lütfen tekrar dene.",
+  "adPassExpired": "Ücretsiz Premium süren doldu. Tekrar açmak için bir reklam daha izle!",
+  "adPassBadge": "⭐ Premium · {time}",
+  "filtersAdUnlockText": "Ücretsiz plan: liste başına en fazla 3 ülke, cinsiyet filtresi kilitli. Kısa bir reklam izleyerek her şeyi 5 dakikalığına aç — ücretsiz."
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("tr");

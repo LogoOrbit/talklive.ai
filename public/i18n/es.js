@@ -183,5 +183,22 @@ window.I18N_STRINGS.es = {
   "subTapChat": "Toca el botón cuando quieras chatear",
   "chatSystemMatched": "Ahora estás chateando con {name} de {country} — ¡saluda! 👋",
   "chatSystemLeft": "El desconocido dejó el chat. Toca el botón verde para alguien nuevo.",
+  "cancel": "Cancelar",
+  "premiumBadge": "💎 Premium",
+  "filtersPremiumTitle": "Los filtros son una función Premium",
+  "premiumUpsellTitle": "TalkLive Premium",
+  "premiumGenderLocked": "El filtro de género es una función Premium.",
+  "premiumCountryLimit": "El plan gratuito permite hasta {n} países por lista.",
+  "premiumFriendLimit": "El plan gratuito permite hasta {n} amigos.",
+  "adUnlockCta": "🎁 Ver un anuncio para desbloquear",
+  "adUnlockExplain": "Mira un anuncio corto para desbloquear todas las funciones Premium gratis durante {m} minutos.",
+  "adUnlockBtn": "VER ANUNCIO PARA DESBLOQUEAR",
+  "adUnlockCounting": "Mantén abierta la pestaña del anuncio… {s}s",
+  "adUnlockSuccess": "🎉 ¡Premium desbloqueado durante {m} minutos!",
+  "adUnlockTooSoon": "Fue demasiado rápido: mantén el anuncio abierto un poco más e inténtalo de nuevo.",
+  "adUnlockFailed": "No se pudo verificar el anuncio. Inténtalo de nuevo.",
+  "adPassExpired": "Tu tiempo Premium gratis terminó. ¡Mira otro anuncio para desbloquearlo de nuevo!",
+  "adPassBadge": "⭐ Premium · {time}",
+  "filtersAdUnlockText": "Plan gratuito: hasta 3 países por lista, filtro de género bloqueado. Mira un anuncio corto para desbloquear todo durante 5 minutos, gratis."
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("es");

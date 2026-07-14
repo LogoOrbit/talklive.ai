@@ -15,9 +15,14 @@ const I18N_LANGS = {
   ru: { name: 'Русский', dir: 'ltr' },
   tr: { name: 'Türkçe', dir: 'ltr' },
   ar: { name: 'العربية', dir: 'rtl' },
+  fa: { name: 'فارسی', dir: 'rtl' },
   hi: { name: 'हिन्दी', dir: 'ltr' },
+  bn: { name: 'বাংলা', dir: 'ltr' },
   ur: { name: 'اردو', dir: 'rtl' },
   id: { name: 'Bahasa Indonesia', dir: 'ltr' },
+  it: { name: 'Italiano', dir: 'ltr' },
+  ja: { name: '日本語', dir: 'ltr' },
+  ko: { name: '한국어', dir: 'ltr' },
   zh: { name: '中文', dir: 'ltr' },
 };
 
@@ -513,7 +518,7 @@ function applyI18n() {
 
 // Non-English dictionaries load on demand from /i18n/<lang>.js. Until the file
 // arrives t() falls back to English, then the UI re-translates once it lands.
-const I18N_VERSION = '20260710b';
+const I18N_VERSION = '20260714a';
 const i18nLoading = {};
 window.__i18nLangLoaded = function (lang) {
   delete i18nLoading[lang];

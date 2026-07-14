@@ -183,5 +183,22 @@ window.I18N_STRINGS.zh = {
   "subTapChat": "准备好了就点击按钮",
   "chatSystemMatched": "你现在正在与来自{country}的 {name} 聊天 — 打个招呼吧！👋",
   "chatSystemLeft": "对方离开了聊天。点击绿色按钮认识新朋友。",
+  "cancel": "取消",
+  "premiumBadge": "💎 高级版",
+  "filtersPremiumTitle": "筛选是高级版功能",
+  "premiumUpsellTitle": "TalkLive 高级版",
+  "premiumGenderLocked": "性别筛选是高级版功能。",
+  "premiumCountryLimit": "免费版每个列表最多可选 {n} 个国家。",
+  "premiumFriendLimit": "免费版最多可添加 {n} 位好友。",
+  "adUnlockCta": "🎁 观看广告解锁",
+  "adUnlockExplain": "观看一段短广告，即可免费解锁全部高级版功能 {m} 分钟。",
+  "adUnlockBtn": "观看广告解锁",
+  "adUnlockCounting": "请保持广告标签页打开… {s}秒",
+  "adUnlockSuccess": "🎉 高级版已解锁 {m} 分钟！",
+  "adUnlockTooSoon": "太快了——请让广告多打开一会儿，然后重试。",
+  "adUnlockFailed": "无法验证广告观看，请重试。",
+  "adPassExpired": "你的免费高级版时间已结束。再看一个广告即可重新解锁！",
+  "adPassBadge": "⭐ 高级版 · {time}",
+  "filtersAdUnlockText": "免费版：每个列表最多 3 个国家，性别筛选已锁定。观看一段短广告即可免费解锁全部功能 5 分钟。"
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("zh");
