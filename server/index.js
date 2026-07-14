@@ -39,7 +39,7 @@ app.set('trust proxy', 1);
 app.disable('x-powered-by');
 
 // Security headers on every response. The CSP allowlists exactly the external
-// origins the app legitimately uses (Google Sign-In, Paddle checkout, flag
+// origins the app legitimately uses (Google Sign-In, flag
 // images) and blocks everything else, so an injected <script src> or exfil
 // request to an attacker's host is refused by the browser. frame-ancestors and
 // X-Frame-Options stop the site being embedded for clickjacking; nosniff stops
@@ -48,12 +48,12 @@ app.disable('x-powered-by');
 // output-escaping fixes rather than the sole XSS barrier.
 const CSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://accounts.google.com https://cdn.paddle.com",
+  "script-src 'self' 'unsafe-inline' https://accounts.google.com",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: https://flagcdn.com https://*.paddle.com",
+  "img-src 'self' data: https://flagcdn.com",
   "font-src 'self' data:",
-  "connect-src 'self' ws: wss: https://accounts.google.com https://flagcdn.com https://*.paddle.com https://*.paddle.net",
-  "frame-src https://accounts.google.com https://*.paddle.com https://*.paddle.net",
+  "connect-src 'self' ws: wss: https://accounts.google.com https://flagcdn.com",
+  "frame-src https://accounts.google.com",
   "media-src 'self' blob:",
   "object-src 'none'",
   "base-uri 'self'",
@@ -65,7 +65,7 @@ app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('Permissions-Policy', 'microphone=(self), camera=(), geolocation=(), payment=(self)');
+  res.setHeader('Permissions-Policy', 'microphone=(self), camera=(), geolocation=(), payment=()');
   if (process.env.NODE_ENV === 'production') {
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   }
@@ -105,78 +105,23 @@ app.use((req, res, next) => {
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
-// --- Premium (TalkLive Plus via Paddle) --------------------------------------
-// Free-tier limits; premium (paid via Paddle) removes all of them.
+// --- Premium (TalkLive Plus via Patreon) -------------------------------------
+// Free-tier limits; premium (paid via Patreon) removes all of them.
 const FREE_LIMITS = {
   countries: 3, // max countries per preferred/not-preferred list
   friends: 10, // max friends
   matchDelayMs: 5000, // wait before matching the next person
 };
 // Premium registry lives in the persistent store (Postgres/file) so paid
-// customers survive restarts and deploys. PREMIUM_CLIENT_IDS is an env
-// override for testing/manual grants.
+// customers survive restarts and deploys. Patreon has no per-browser webhook
+// hook-up, so activation is manual: grant supporters via PREMIUM_CLIENT_IDS
+// or by writing to the store.
 const envPremiumClients = new Set(
   (process.env.PREMIUM_CLIENT_IDS || '').split(',').map((s) => s.trim()).filter(Boolean)
 );
 function isPremium(clientId) {
   return envPremiumClients.has(clientId) || store.isPremiumClient(clientId);
 }
-
-const PADDLE_WEBHOOK_SECRET = process.env.PADDLE_WEBHOOK_SECRET || '';
-
-// Verify a Paddle webhook signature (Paddle-Signature: "ts=...;h1=...").
-function verifyPaddleSignature(rawBody, header) {
-  if (!PADDLE_WEBHOOK_SECRET) {
-    // Without a secret we can't authenticate the sender. Accept only outside
-    // production (local dev); in production an unsigned webhook would let
-    // anyone grant themselves premium with a single curl request.
-    return process.env.NODE_ENV !== 'production';
-  }
-  try {
-    const parts = Object.fromEntries(String(header || '').split(';').map((p) => p.split('=')));
-    if (!parts.ts || !parts.h1) return false;
-    const expected = crypto.createHmac('sha256', PADDLE_WEBHOOK_SECRET)
-      .update(`${parts.ts}:${rawBody}`).digest('hex');
-    return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(parts.h1));
-  } catch (e) {
-    return false;
-  }
-}
-
-// Paddle server webhook: marks the paying browser's clientId as premium the
-// moment a transaction completes / subscription activates, and revokes it when
-// the subscription is canceled or expires.
-app.post('/paddle/webhook', express.raw({ type: '*/*', limit: '256kb' }), (req, res) => {
-  const raw = req.body ? req.body.toString('utf8') : '';
-  if (!verifyPaddleSignature(raw, req.headers['paddle-signature'])) {
-    return res.status(401).json({ ok: false });
-  }
-  let event;
-  try {
-    event = JSON.parse(raw);
-  } catch (e) {
-    return res.status(400).json({ ok: false });
-  }
-  const type = event.event_type || '';
-  const d = event.data || {};
-  const custom = d.custom_data || {};
-  const clientId = typeof custom.clientId === 'string' ? custom.clientId : null;
-  const subscriptionId = d.subscription_id || (type.startsWith('subscription.') ? d.id : null) || null;
-  if (clientId) {
-    if (['transaction.completed', 'subscription.activated', 'subscription.created', 'subscription.resumed'].includes(type)) {
-      store.setPremium(clientId, { lastEvent: type, subscriptionId });
-      console.log(`[paddle] premium activated for ${clientId} (${type})`);
-      const sock = getSocketByClientId(clientId);
-      if (sock) sock.emit('premium-status', { premium: true, limits: FREE_LIMITS });
-    } else if (['subscription.canceled', 'subscription.past_due', 'subscription.paused'].includes(type)) {
-      store.revokePremium(clientId, { lastEvent: type, subscriptionId });
-      console.log(`[paddle] premium revoked for ${clientId} (${type})`);
-      const sock = getSocketByClientId(clientId);
-      if (sock) sock.emit('premium-status', { premium: false, limits: FREE_LIMITS });
-    }
-  }
-  res.json({ ok: true });
-});
 
 // Lets the pricing page (a separate static page) confirm activation.
 app.get('/premium-status', (req, res) => {
@@ -190,9 +135,6 @@ app.get('/config.js', (req, res) => {
   res.type('application/javascript');
   res.send(
     `window.GOOGLE_CLIENT_ID = ${JSON.stringify(GOOGLE_CLIENT_ID)};`
-    + `window.PADDLE_CLIENT_TOKEN = ${JSON.stringify(process.env.PADDLE_CLIENT_TOKEN || '')};`
-    + `window.PADDLE_PRICE_ID = ${JSON.stringify(process.env.PADDLE_PRICE_ID || '')};`
-    + `window.PADDLE_ENV = ${JSON.stringify(process.env.PADDLE_ENV || 'production')};`
   );
 });
 

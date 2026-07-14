@@ -4397,7 +4397,7 @@ refreshNetStatus();
 
 // --- Premium (TalkLive Plus) -------------------------------------------------
 // Free-tier limits arrive from the server with every register; premium users
-// (paid via Paddle on /pricing) get everything unlocked. The server enforces
+// (paid via Patreon on /pricing) get everything unlocked. The server enforces
 // all limits — this state only drives the UI.
 let isPremiumUser = false;
 let freeLimits = { countries: 3, friends: 10, matchDelaySeconds: 5 };

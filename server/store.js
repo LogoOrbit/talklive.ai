@@ -375,7 +375,7 @@ function upsertAccount(usernameLower, details) {
   save();
 }
 
-// --- Premium subscriptions (activated via the Paddle webhook) ---
+// --- Premium subscriptions (granted manually for Patreon supporters) ---
 
 function setPremium(clientId, info = {}) {
   const existing = data.premium[clientId];
