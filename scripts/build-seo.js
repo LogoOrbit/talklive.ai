@@ -147,6 +147,12 @@ function linkCloud(currentSlug) {
 
 // --- Page template ----------------------------------------------------------
 
+// Non-intrusive ad slot filled lazily by /ads.js (native banner or
+// responsive display banner). Kept out of the live chat app on purpose.
+function adSlot(type) {
+  return `<div class="wrap" style="margin:28px auto;text-align:center"><div data-ad="${type}"></div></div>`;
+}
+
 function page(p) {
   const canonical = url(p.slug);
   const features = p.features.map(f => `<div class="card"><div class="ico">${icon(f.icon)}</div><h3>${f.h}</h3><p>${f.p}</p></div>`).join('');
@@ -195,6 +201,7 @@ function page(p) {
 <head>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978" crossorigin="anonymous"></script>
 <script src="/loading.js"></script>
+<script defer src="/ads.js"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>${esc(p.title)}</title>
@@ -264,12 +271,16 @@ ${headerHtml(p.slug)}
     <div class="wrap prose">${proseHtml}</div>
   </section>
 
+  ${adSlot('native')}
+
   <section class="faq">
     <div class="wrap">
       <h2>Frequently asked questions</h2>
       ${faqHtml}
     </div>
   </section>
+
+  ${adSlot('leaderboard')}
 
   <section>
     <div class="wrap">
@@ -1679,6 +1690,7 @@ function blogPost(b) {
 <head>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978" crossorigin="anonymous"></script>
 <script src="/loading.js"></script>
+<script defer src="/ads.js"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>${esc(b.title)}</title>
@@ -1725,6 +1737,8 @@ ${headerHtml('blog')}
     </section>
   </article>
 
+  ${adSlot('native')}
+
   <div class="wrap">
     <div class="cta-band">
       <h2>Try it right now — talk or text with a stranger</h2>
@@ -1743,6 +1757,8 @@ ${headerHtml('blog')}
       <p><a href="/blog/">← All articles</a></p>
     </div>
   </section>
+
+  ${adSlot('leaderboard')}
 </main>
 ${footerHtml()}
 </body>
@@ -1771,6 +1787,7 @@ function blogIndex() {
 <head>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978" crossorigin="anonymous"></script>
 <script src="/loading.js"></script>
+<script defer src="/ads.js"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>TalkLive Blog — Talking to Strangers, Voice Chat & Language Practice</title>
