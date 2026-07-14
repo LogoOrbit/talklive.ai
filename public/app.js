@@ -4402,7 +4402,7 @@ refreshNetStatus();
 let isPremiumUser = false;
 let freeLimits = { countries: 3, friends: 10, matchDelaySeconds: 5 };
 
-socket.on('premium-status', ({ premium, limits } = {}) => {
+socket.on('premium-status', ({ premium, limits, adPassUntil, adPassExpired } = {}) => {
   isPremiumUser = !!premium;
   if (limits) {
     freeLimits = {
@@ -4410,6 +4410,11 @@ socket.on('premium-status', ({ premium, limits } = {}) => {
       friends: limits.friends || 10,
       matchDelaySeconds: Math.round((limits.matchDelayMs || 5000) / 1000),
     };
+  }
+  setAdPassUntil(premium && adPassUntil ? adPassUntil : null);
+  if (adPassExpired) {
+    resetFiltersToFree();
+    showToast(t('adPassExpired'));
   }
   updatePremiumUi();
 });
@@ -4424,20 +4429,134 @@ updatePremiumUi();
 // browser's native confirm() popup.
 async function showPremiumUpsell(message) {
   confirmModalTitle.textContent = t('premiumUpsellTitle');
-  confirmModalText.textContent = message;
-  confirmOkBtn.textContent = t('premiumUpsellGo');
+  confirmModalText.textContent = message + ' ' + t('adUnlockExplain', { m: adUnlockConfig().durationMinutes });
+  confirmOkBtn.textContent = t('adUnlockCta');
   confirmCancelBtn.textContent = t('cancel');
   confirmOkBtn.className = 'btn btn-save';
   openModal(confirmModal);
   const ok = await new Promise((resolve) => { confirmOnOk = resolve; });
-  if (ok) window.location.href = '/pricing';
+  if (ok) startAdUnlock();
 }
 
 const filtersUpgradeBtn = document.getElementById('filtersUpgradeBtn');
 if (filtersUpgradeBtn) {
   filtersUpgradeBtn.addEventListener('click', () => {
-    window.location.href = '/pricing';
+    startAdUnlock();
   });
+}
+
+// --- Ad-unlock: watch an ad (Adsterra Direct Link) → Premium for 5 minutes ----
+// Flow: open the ad tab synchronously on the click (popup blockers), ask the
+// server for a view token, count down the required watch time in a floating
+// badge, then claim. The server verifies the elapsed time itself, so the
+// countdown here is purely informational.
+function adUnlockConfig() {
+  const cfg = window.AD_UNLOCK || {};
+  return {
+    url: cfg.url || '',
+    minWatchSeconds: cfg.minWatchSeconds || 15,
+    durationMinutes: cfg.durationMinutes || 5,
+  };
+}
+
+let adUnlockWaiting = false; // a start was requested, waiting for the token
+let adUnlockTimer = null; // countdown → claim timer
+let adPassUntil = null; // expiry ts of the active pass (null = none)
+let adPassTicker = null; // 1s interval updating the badge
+
+const adPassBadge = document.createElement('div');
+adPassBadge.id = 'adPassBadge';
+adPassBadge.className = 'hidden';
+adPassBadge.setAttribute('role', 'status');
+document.body.appendChild(adPassBadge);
+
+function setAdPassBadge(text) {
+  adPassBadge.textContent = text || '';
+  adPassBadge.classList.toggle('hidden', !text);
+}
+
+function startAdUnlock() {
+  if (isPremiumUser || adUnlockWaiting || adUnlockTimer) return;
+  const cfg = adUnlockConfig();
+  if (!cfg.url) return;
+  // Must be synchronous with the user's click, or popup blockers eat it.
+  window.open(cfg.url, '_blank', 'noopener');
+  adUnlockWaiting = true;
+  socket.emit('ad-unlock-start');
+  // If the server never answers (e.g. reconnecting), allow another attempt.
+  setTimeout(() => { adUnlockWaiting = false; }, 5000);
+}
+
+socket.on('ad-unlock-started', ({ token, minWatchSeconds } = {}) => {
+  if (!adUnlockWaiting || !token) return;
+  adUnlockWaiting = false;
+  // +1s of slack over the server minimum so honest clients never claim early.
+  let remaining = (minWatchSeconds || adUnlockConfig().minWatchSeconds) + 1;
+  clearInterval(adUnlockTimer);
+  const tick = () => {
+    if (remaining <= 0) {
+      clearInterval(adUnlockTimer);
+      adUnlockTimer = null;
+      setAdPassBadge('');
+      socket.emit('ad-unlock-claim', { token });
+      return;
+    }
+    setAdPassBadge(t('adUnlockCounting', { s: remaining }));
+    remaining -= 1;
+  };
+  tick();
+  adUnlockTimer = setInterval(tick, 1000);
+});
+
+socket.on('ad-unlock-result', ({ ok, reason, expiresAt, waitSeconds } = {}) => {
+  if (ok) {
+    showToast(t('adUnlockSuccess', { m: adUnlockConfig().durationMinutes }));
+    // premium-status (sent alongside) flips the UI; registerProfile re-sends
+    // the saved filters so the server now accepts gender + full country lists.
+    setTimeout(() => registerProfile(), 50);
+    return;
+  }
+  setAdPassBadge('');
+  if (reason === 'too-soon' && waitSeconds) {
+    showToast(t('adUnlockTooSoon'));
+  } else {
+    showToast(t('adUnlockFailed'));
+  }
+});
+
+function setAdPassUntil(until) {
+  adPassUntil = until || null;
+  clearInterval(adPassTicker);
+  adPassTicker = null;
+  if (!adPassUntil) {
+    if (!adUnlockTimer) setAdPassBadge('');
+    return;
+  }
+  const tick = () => {
+    const left = Math.max(0, Math.round((adPassUntil - Date.now()) / 1000));
+    if (left <= 0) {
+      // Server sends the authoritative premium-status downgrade; just stop.
+      clearInterval(adPassTicker);
+      adPassTicker = null;
+      setAdPassBadge('');
+      return;
+    }
+    const mm = Math.floor(left / 60);
+    const ss = String(left % 60).padStart(2, '0');
+    setAdPassBadge(t('adPassBadge', { time: mm + ':' + ss }));
+  };
+  tick();
+  adPassTicker = setInterval(tick, 1000);
+}
+
+// When the temporary pass ends, snap the saved filters back to what the free
+// tier allows so the panel doesn't show selections that no longer apply.
+function resetFiltersToFree() {
+  appliedFilters.prefGender = 'any';
+  appliedFilters.includeCountries = (appliedFilters.includeCountries || []).slice(0, freeLimits.countries);
+  appliedFilters.excludeCountries = (appliedFilters.excludeCountries || []).slice(0, freeLimits.countries);
+  try { sessionStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(appliedFilters)); } catch (e) { /* ignore */ }
+  syncFilterDraftUiFromApplied();
 }
 
 // Gender preference is premium-only. Intercept taps on Male/Female in the
