@@ -153,6 +153,61 @@ function adSlot(type) {
   return `<div class="wrap" style="margin:28px auto;text-align:center"><div data-ad="${type}"></div></div>`;
 }
 
+// --- Affiliate blocks --------------------------------------------------------
+// Sponsored recommendation cards shown near the bottom of relevant landing
+// pages. Replace each `url` with your own affiliate/referral deep link (sign
+// up free at the merchant's affiliate program) — until then these are plain
+// links and earn nothing. Links are rel="sponsored nofollow" per Google
+// guidelines. Set `url: ''` to hide an offer.
+const AFFILIATES = {
+  vpn: {
+    heading: 'Chat privately',
+    offers: [
+      { name: 'NordVPN', desc: 'Hide your IP while you chat with strangers — fast servers in 60+ countries.', url: 'https://nordvpn.com/' },
+      { name: 'Surfshark', desc: 'Budget VPN with unlimited devices, great for anonymous chatting.', url: 'https://surfshark.com/' },
+    ],
+  },
+  language: {
+    heading: 'Level up your English faster',
+    offers: [
+      { name: 'italki', desc: '1-on-1 lessons with native English tutors from $5/hour.', url: 'https://www.italki.com/' },
+      { name: 'Preply', desc: 'Personalized English tutoring with a free trial lesson.', url: 'https://preply.com/' },
+    ],
+  },
+};
+
+// Which affiliate category fits which landing page.
+const AFFILIATE_BY_SLUG = {
+  'anonymous-chat': 'vpn',
+  'omegle-alternative': 'vpn',
+  'ometv-alternative': 'vpn',
+  'chatroulette-alternative': 'vpn',
+  'emerald-chat-alternative': 'vpn',
+  'monkey-app-alternative': 'vpn',
+  'talk-to-strangers': 'vpn',
+  'text-chat-with-strangers': 'vpn',
+  'stranger-video-call': 'vpn',
+  'late-night-chat': 'vpn',
+  'practice-english-speaking': 'language',
+  'international-calls': 'language',
+};
+
+function affiliateHtml(slug) {
+  const cat = AFFILIATES[AFFILIATE_BY_SLUG[slug]];
+  if (!cat) return '';
+  const cards = cat.offers.filter(o => o.url).map(o =>
+    `<a class="card" rel="sponsored nofollow noopener" target="_blank" href="${esc(o.url)}" style="display:block;text-decoration:none;color:inherit">
+      <h3>${esc(o.name)} ↗</h3><p>${esc(o.desc)}</p></a>`).join('');
+  if (!cards) return '';
+  return `<section aria-label="Sponsored recommendations">
+    <div class="wrap">
+      <h2>${esc(cat.heading)}</h2>
+      <p class="section-intro" style="opacity:.7;font-size:13px">Sponsored — we may earn a commission, at no cost to you.</p>
+      <div class="grid">${cards}</div>
+    </div>
+  </section>`;
+}
+
 function page(p) {
   const canonical = url(p.slug);
   const features = p.features.map(f => `<div class="card"><div class="ico">${icon(f.icon)}</div><h3>${f.h}</h3><p>${f.p}</p></div>`).join('');
@@ -281,6 +336,8 @@ ${headerHtml(p.slug)}
   </section>
 
   ${adSlot('leaderboard')}
+
+  ${affiliateHtml(p.slug)}
 
   <section>
     <div class="wrap">

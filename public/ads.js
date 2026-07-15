@@ -16,6 +16,11 @@
     container: 'container-b6c7c32837efbcc9a34a0986523c06c5',
   };
 
+  // A-Ads (a-ads.com) fallback for banner slots Adsterra leaves unfilled.
+  // Create a free ad unit at https://a-ads.com (no approval needed) and put
+  // its numeric ID here; leave '' to simply hide unfilled slots instead.
+  var AADS_ID = '';
+
   var BANNERS = {
     '320x50':  { key: '2cb8019064140640529e87ba7bfea884', w: 320, h: 50 },
     '300x250': { key: 'd12fcb01cfece74010f3fd29781e3ce4', w: 300, h: 250 },
@@ -49,15 +54,21 @@
     doc.close();
 
     // If the network returns nothing (no inventory, ad blocker, domain not
-    // approved), collapse the slot after a grace period so no empty box shows.
+    // approved), fall back to an A-Ads unit (100% fill) when configured, or
+    // collapse the slot after a grace period so no empty box shows.
     setTimeout(function () {
+      var filled = true;
       try {
         var body = frame.contentWindow.document.body;
-        if (!body || body.childElementCount <= 2 && !body.querySelector('iframe,img,ins')) {
-          el.style.display = 'none';
-        }
+        filled = !!(body && (body.childElementCount > 2 || body.querySelector('iframe,img,ins')));
       } catch (err) { /* cross-origin fill: leave the slot as-is */ }
-    }, 4000);
+      if (filled) return;
+      if (AADS_ID) {
+        frame.src = 'https://ad.a-ads.com/' + AADS_ID + '?size=' + b.w + 'x' + b.h;
+      } else {
+        el.style.display = 'none';
+      }
+    }, 6000);
   }
 
   function native(el) {
