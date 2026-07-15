@@ -48,12 +48,21 @@ app.disable('x-powered-by');
 // output-escaping fixes rather than the sole XSS barrier.
 const CSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://accounts.google.com https://cdn.paddle.com",
+  // Ad-network origins (Adsterra + Google ads/analytics) must be allowlisted
+  // explicitly or the browser silently drops the ad scripts and the slots stay
+  // empty. Ad creatives render inside cross-origin iframes, and their tracking
+  // pixels/beacons go to arbitrary ad-exchange hosts, so frame-src/img-src/
+  // connect-src need broad https: — script execution on the page itself is
+  // still restricted to the named script-src hosts.
+  "script-src 'self' 'unsafe-inline' https://accounts.google.com https://cdn.paddle.com"
+    + ' https://delvefencescrewdriver.com https://www.highperformanceformat.com'
+    + ' https://*.effectivecpmnetwork.com https://www.googletagmanager.com'
+    + ' https://pagead2.googlesyndication.com',
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: https://flagcdn.com https://*.paddle.com",
+  "img-src 'self' data: https:",
   "font-src 'self' data:",
-  "connect-src 'self' ws: wss: https://accounts.google.com https://flagcdn.com https://*.paddle.com https://*.paddle.net",
-  "frame-src https://accounts.google.com https://*.paddle.com https://*.paddle.net",
+  "connect-src 'self' ws: wss: https:",
+  "frame-src https:",
   "media-src 'self' blob:",
   "object-src 'none'",
   "base-uri 'self'",
