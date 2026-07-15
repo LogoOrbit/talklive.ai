@@ -29,21 +29,35 @@
     var frame = document.createElement('iframe');
     frame.width = b.w;
     frame.height = b.h;
-    frame.style.cssText = 'border:0;display:block;margin:0 auto;max-width:100%;overflow:hidden';
+    // Transparent background so an unfilled slot shows the page behind it
+    // instead of an ugly white block.
+    frame.style.cssText = 'border:0;display:block;margin:0 auto;max-width:100%;overflow:hidden;background:transparent;color-scheme:light';
     frame.setAttribute('scrolling', 'no');
     frame.setAttribute('loading', 'lazy');
+    frame.setAttribute('allowtransparency', 'true');
     frame.title = 'Advertisement';
     el.appendChild(frame);
     var doc = frame.contentWindow.document;
     doc.open();
     doc.write(
       '<!DOCTYPE html><html><head><base target="_top"></head>' +
-      '<body style="margin:0;padding:0;overflow:hidden">' +
+      '<body style="margin:0;padding:0;overflow:hidden;background:transparent">' +
       '<script>atOptions={key:"' + b.key + '",format:"iframe",height:' + b.h + ',width:' + b.w + ',params:{}};<\/script>' +
       '<script src="https://www.highperformanceformat.com/' + b.key + '/invoke.js"><\/script>' +
       '</body></html>'
     );
     doc.close();
+
+    // If the network returns nothing (no inventory, ad blocker, domain not
+    // approved), collapse the slot after a grace period so no empty box shows.
+    setTimeout(function () {
+      try {
+        var body = frame.contentWindow.document.body;
+        if (!body || body.childElementCount <= 2 && !body.querySelector('iframe,img,ins')) {
+          el.style.display = 'none';
+        }
+      } catch (err) { /* cross-origin fill: leave the slot as-is */ }
+    }, 4000);
   }
 
   function native(el) {
@@ -55,6 +69,11 @@
     s.setAttribute('data-cfasync', 'false');
     s.src = NATIVE.script;
     el.appendChild(s);
+
+    // Collapse if the native container never gets populated.
+    setTimeout(function () {
+      if (!container.childElementCount) el.style.display = 'none';
+    }, 4000);
   }
 
   function fill(el) {
