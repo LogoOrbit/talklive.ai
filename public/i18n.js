@@ -431,6 +431,7 @@ const I18N_STRINGS = {
     "adUnlockExplain": "Watch a short ad to unlock all Premium features free for {m} minutes.",
     "adUnlockBtn": "WATCH AN AD TO UNLOCK",
     "adUnlockCounting": "Keep the ad tab open… {s}s",
+    "adUnlockSwitchTab": "Open the ad tab to continue — {s}s of viewing left",
     "adUnlockSuccess": "🎉 Premium unlocked for {m} minutes!",
     "adUnlockTooSoon": "That was too quick — keep the ad open a little longer and try again.",
     "adUnlockFailed": "Couldn't verify the ad view. Please try again.",

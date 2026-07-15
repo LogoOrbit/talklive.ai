@@ -12,7 +12,7 @@
   'use strict';
 
   var NATIVE = {
-    script: 'https://pl30360217.effectivecpmnetwork.com/b6c7c32837efbcc9a34a0986523c06c5/invoke.js',
+    script: 'https://delvefencescrewdriver.com/b6c7c32837efbcc9a34a0986523c06c5/invoke.js',
     container: 'container-b6c7c32837efbcc9a34a0986523c06c5',
   };
 
@@ -43,7 +43,7 @@
       '<!DOCTYPE html><html><head><base target="_top"></head>' +
       '<body style="margin:0;padding:0;overflow:hidden;background:transparent">' +
       '<script>atOptions={key:"' + b.key + '",format:"iframe",height:' + b.h + ',width:' + b.w + ',params:{}};<\/script>' +
-      '<script src="https://www.highperformanceformat.com/' + b.key + '/invoke.js"><\/script>' +
+      '<script src="https://delvefencescrewdriver.com/' + b.key + '/invoke.js"><\/script>' +
       '</body></html>'
     );
     doc.close();

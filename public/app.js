@@ -4494,6 +4494,13 @@ socket.on('ad-unlock-started', ({ token, minWatchSeconds } = {}) => {
   let remaining = (minWatchSeconds || adUnlockConfig().minWatchSeconds) + 1;
   clearInterval(adUnlockTimer);
   const tick = () => {
+    // Only count seconds while this tab is hidden — i.e. the user is actually
+    // over on the ad tab. Closing the ad right away just pauses the countdown,
+    // so the reward isn't granted without real viewing time.
+    if (!document.hidden) {
+      setAdPassBadge(t('adUnlockSwitchTab', { s: remaining }));
+      return;
+    }
     if (remaining <= 0) {
       clearInterval(adUnlockTimer);
       adUnlockTimer = null;
