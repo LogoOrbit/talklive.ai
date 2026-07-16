@@ -13,6 +13,16 @@ const path = require('path');
 const SITE = 'https://talklive.app';
 const PUBLIC = path.join(__dirname, '..', 'public');
 const LANGS = ['en', 'es', 'pt', 'fr', 'de', 'ru', 'tr', 'ar', 'hi', 'ur', 'id', 'zh'];
+// Real localized homepages (public/<code>/index.html) — see scripts/locales.js.
+const LOCALES = require('./locales');
+// hreflang cluster for the homepage: x-default + en point at /, every other
+// language at its own statically rendered path. Path-based alternates are
+// indexable; ?lang= URLs serve identical English HTML and are not.
+function homeAlternates(tag) {
+  const a = (href, lang) => tag(href, lang);
+  return [a(`${SITE}/`, 'x-default'), a(`${SITE}/`, 'en')]
+    .concat(LOCALES.map(l => a(`${SITE}/${l.code}/`, l.code)));
+}
 const BUILD_DATE = new Date().toISOString().slice(0, 10);
 
 function esc(s) {
@@ -266,8 +276,6 @@ function page(p) {
 <meta name="theme-color" content="#0b0f1a" />
 <meta name="author" content="TalkLive" />
 <link rel="canonical" href="${canonical}" />
-<link rel="alternate" href="${canonical}" hreflang="x-default" />
-${LANGS.map(l => `<link rel="alternate" href="${canonical}?lang=${l}" hreflang="${l}" />`).join('\n')}
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="TalkLive" />
 <meta property="og:title" content="${esc(p.title)}" />
@@ -1897,11 +1905,157 @@ ${footerHtml()}
 `;
 }
 
+// --- Localized homepages ------------------------------------------------------
+// One statically rendered page per language at /<code>/ so search engines in
+// each market index native-language content. The app itself still translates
+// client-side via ?lang=, which these pages link into.
+
+function languageSwitcher(current) {
+  const links = [{ code: '', name: 'English' }].concat(LOCALES)
+    .map(l => l.code === current
+      ? `<strong>${l.name || 'English'}</strong>`
+      : `<a href="/${l.code ? l.code + '/' : ''}" hreflang="${l.code || 'en'}">${l.name || 'English'}</a>`)
+    .join(' · ');
+  return `<nav class="lang-switcher" aria-label="Languages" style="padding:28px 0;text-align:center;font-size:14px;line-height:2">${links}</nav>`;
+}
+
+function localeHome(loc) {
+  const canonical = `${SITE}/${loc.code}/`;
+  const app = `/?lang=${loc.code}&amp;utm_source=seo&amp;utm_medium=locale&amp;utm_campaign=home-${loc.code}`;
+  const alternates = homeAlternates((href, lang) => `<link rel="alternate" href="${href}" hreflang="${lang}" />`).join('\n');
+  const features = loc.features.map(f => `<div class="card"><div class="ico">${icon(f.icon)}</div><h3>${f.h}</h3><p>${f.p}</p></div>`).join('');
+  const steps = loc.steps.map(s => `<div class="step"><h3>${s.h}</h3><p>${s.p}</p></div>`).join('');
+  const faqHtml = loc.faq.map(f => `<details><summary>${f.q}</summary><p>${f.a}</p></details>`).join('');
+  const ld = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'WebApplication',
+      name: 'TalkLive',
+      url: canonical,
+      applicationCategory: 'CommunicationApplication',
+      operatingSystem: 'Web, Android, iOS',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+      inLanguage: loc.code,
+      isAccessibleForFree: true,
+      description: loc.description,
+      publisher: { '@type': 'Organization', name: 'TalkLive', url: SITE, logo: `${SITE}/favicon.svg` },
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      inLanguage: loc.code,
+      mainEntity: loc.faq.map(f => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+    },
+  ];
+  return `<!DOCTYPE html>
+<html lang="${loc.code}" dir="${loc.dir}">
+<head>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978" crossorigin="anonymous"></script>
+<script src="/loading.js"></script>
+<script defer src="/ads.js"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>${esc(loc.title)}</title>
+<meta name="description" content="${esc(loc.description)}" />
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+<meta name="theme-color" content="#0b0f1a" />
+<meta name="author" content="TalkLive" />
+<link rel="canonical" href="${canonical}" />
+${alternates}
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="TalkLive" />
+<meta property="og:title" content="${esc(loc.title)}" />
+<meta property="og:description" content="${esc(loc.description)}" />
+<meta property="og:url" content="${canonical}" />
+<meta property="og:image" content="${SITE}/og-image.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:locale" content="${loc.ogLocale}" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="${esc(loc.title)}" />
+<meta name="twitter:description" content="${esc(loc.description)}" />
+<meta name="twitter:image" content="${SITE}/og-image.png" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="/favicon.svg" />
+<link rel="manifest" href="/site.webmanifest" />
+<link rel="stylesheet" href="/seo.css" />
+<script type="application/ld+json">${JSON.stringify(ld)}</script>
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="/${loc.code}/"><img src="/favicon.svg" width="30" height="30" alt="TalkLive logo" /> TalkLive</a>
+    <span style="display:inline-flex;gap:8px">
+      <a class="btn btn-talk" href="${app}" style="padding:10px 18px;font-size:15px">🎙 ${loc.ctaTalk}</a>
+      <a class="btn btn-chat" href="${app}&amp;mode=chat" style="padding:10px 18px;font-size:15px">💬 ${loc.ctaChat}</a>
+    </span>
+  </div>
+</header>
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <h1>${loc.h1}</h1>
+      <p class="lede">${loc.lede}</p>
+      <div class="cta-row">
+        <a class="btn btn-talk" href="${app}">🎙 ${loc.ctaTalk}</a>
+        <a class="btn btn-chat" href="${app}&amp;mode=chat">💬 ${loc.ctaChat}</a>
+      </div>
+      <p class="hero-meta">${loc.heroMeta}</p>
+    </div>
+  </section>
+  <section id="features">
+    <div class="wrap center">
+      <h2>${loc.featuresH}</h2>
+      <div class="grid">${features}</div>
+    </div>
+  </section>
+  <section id="how">
+    <div class="wrap">
+      <h2>${loc.stepsH}</h2>
+      <div class="steps">${steps}</div>
+    </div>
+  </section>
+  ${adSlot('native')}
+  <section class="faq">
+    <div class="wrap">
+      <h2>${loc.faqH}</h2>
+      ${faqHtml}
+    </div>
+  </section>
+  <div class="wrap">
+    <div class="cta-band">
+      <h2>${loc.ctaH}</h2>
+      <p>${loc.ctaP}</p>
+      <div class="cta-row">
+        <a class="btn btn-talk" href="${app}">🎙 ${loc.ctaTalk}</a>
+        <a class="btn btn-chat" href="${app}&amp;mode=chat">💬 ${loc.ctaChat}</a>
+      </div>
+    </div>
+  </div>
+  <div class="wrap">${languageSwitcher(loc.code)}</div>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="fine">© ${new Date().getFullYear()} TalkLive · <a href="/about">About</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/contact">Contact</a></div>
+  </div>
+</footer>
+</body>
+</html>
+`;
+}
+
 // --- Emit -------------------------------------------------------------------
 
 let count = 0;
 for (const p of PAGES) {
   fs.writeFileSync(path.join(PUBLIC, `${p.slug}.html`), page(p));
+  count++;
+}
+
+for (const loc of LOCALES) {
+  const dir = path.join(PUBLIC, loc.code);
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, 'index.html'), localeHome(loc));
   count++;
 }
 
@@ -1915,7 +2069,8 @@ for (const b of BLOG) {
 }
 
 // Sitemap with hreflang alternates for the home + all landing pages.
-const sitemapUrls = [{ slug: '', priority: '1.0', freq: 'daily' }]
+const sitemapUrls = [{ slug: '', priority: '1.0', freq: 'daily', home: true }]
+  .concat(LOCALES.map(l => ({ slug: `${l.code}/`, priority: '0.9', freq: 'weekly', raw: true, home: true })))
   .concat(PAGES.map(p => ({ slug: p.slug, priority: '0.8', freq: 'weekly' })))
   .concat([{ slug: 'blog/', priority: '0.7', freq: 'weekly', raw: true }])
   .concat(BLOG.map(b => ({ slug: `blog/${b.slug}`, priority: '0.6', freq: 'monthly', raw: true })))
@@ -1932,8 +2087,11 @@ function buildSitemap() {
   const head = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">';
   const body = sitemapUrls.map(u => {
     const loc = u.raw ? `${SITE}/${u.slug}` : url(u.slug);
-    const alts = u.raw ? '' : ['\n    <xhtml:link rel="alternate" hreflang="x-default" href="' + loc + '"/>']
-      .concat(LANGS.map(l => `\n    <xhtml:link rel="alternate" hreflang="${l}" href="${loc}${loc.includes('?') ? '&' : '?'}lang=${l}"/>`)).join('');
+    // Only the homepage cluster carries hreflang alternates — every member of
+    // the cluster (/, /es/, /ru/, …) lists the full set, as Google requires.
+    const alts = u.home
+      ? homeAlternates((href, lang) => `\n    <xhtml:link rel="alternate" hreflang="${lang}" href="${href}"/>`).join('')
+      : '';
     return `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${BUILD_DATE}</lastmod>\n    <changefreq>${u.freq}</changefreq>\n    <priority>${u.priority}</priority>${alts}\n  </url>`;
   }).join('\n');
   return `${head}\n${body}\n</urlset>\n`;
@@ -1981,6 +2139,9 @@ Key facts: free and unlimited; anonymous (temporary display names, no phone/emai
 ## Main pages
 - [TalkLive app](${SITE}/): Start a random voice or text chat instantly.
 ${landing}
+
+## Languages
+The app UI and a localized homepage are available in: English plus ${LOCALES.map(l => `[${l.name}](${SITE}/${l.code}/)`).join(', ')}.
 
 ## Blog
 ${posts}

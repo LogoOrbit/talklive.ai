@@ -29,6 +29,9 @@ Key facts: free and unlimited; anonymous (temporary display names, no phone/emai
 - [Make Friends Online](https://talklive.app/make-friends-online): Make friends online through real conversations, not profiles. TalkLive matches you with people worldwide for live voice or text chat — free, anonymous, no sign-up.
 - [Late Night Chat](https://talklive.app/late-night-chat): Can't sleep and need someone to talk to? TalkLive is late night chat with real people worldwide — live voice or text, anonymous and free, at 1am, 3am or any hour.
 
+## Languages
+The app UI and a localized homepage are available in: English plus [Español](https://talklive.app/es/), [Português](https://talklive.app/pt/), [Français](https://talklive.app/fr/), [Deutsch](https://talklive.app/de/), [Русский](https://talklive.app/ru/), [Türkçe](https://talklive.app/tr/), [العربية](https://talklive.app/ar/), [हिन्दी](https://talklive.app/hi/), [اردو](https://talklive.app/ur/), [Bahasa Indonesia](https://talklive.app/id/), [中文](https://talklive.app/zh/), [日本語](https://talklive.app/ja/), [한국어](https://talklive.app/ko/), [Italiano](https://talklive.app/it/), [فارسی](https://talklive.app/fa/), [বাংলা](https://talklive.app/bn/).
+
 ## Blog
 - [The 10 Best Omegle Alternatives in 2026](https://talklive.app/blog/best-omegle-alternatives): Omegle shut down — so where do you talk to strangers now? We compare the best Omegle alternatives in 2026, including voice-only options that skip the video weirdness.
 - [How to Practice Speaking English Online for Free — With Real Humans](https://talklive.app/blog/practice-english-speaking-online-free): Apps teach you vocabulary, but only conversation makes you fluent. Here is how to practice speaking English online for free with real people, starting today.
