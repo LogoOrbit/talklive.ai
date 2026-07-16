@@ -46,7 +46,7 @@ Audio itself flows directly between the two browsers (peer-to-peer); the server 
 
 ## Owner Dashboard
 
-A secured owner dashboard lives at **`/owner`** (e.g. `https://talklive.ai/owner`).
+A secured owner dashboard lives at **`/owner`** (e.g. `https://talklive.app/owner`).
 
 - **Security:** admin password (min 10 chars) + Google Authenticator (TOTP) 2FA. First visit runs a one-time setup where you scan a QR code. 5 failed logins lock the IP out for 15 minutes; every login and admin action lands in the Audit Log tab.
 - **Analytics:** live online users (with country/city/IP), visits, unique visitors, daily 24h users, matches, 30-day traffic chart, top countries/cities, feature-usage graph (most → least), anonymous "what users talk about" keyword aggregate, searchable text-chat transcripts (Chats tab; disclosed in the privacy policy — voice is never recorded), and a rule-based AI conclusion on how the site is doing.

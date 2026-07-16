@@ -30,6 +30,7 @@ window.I18N_STRINGS.bn = {
   "optional": "(ঐচ্ছিক)",
   "interestPlaceholder": "একটি আগ্রহ লিখুন…",
   "add": "যোগ করুন",
+  "filtersHint": "ফিল্টার শুধুমাত্র সেভ চাপার পরে প্রযোজ্য হয়।",
   "save": "সংরক্ষণ",
   "clear": "মুছুন",
   "tapToTalk": "কথা বলতে ট্যাপ করুন",

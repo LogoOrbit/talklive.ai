@@ -30,6 +30,7 @@ window.I18N_STRINGS.fa = {
   "optional": "(اختیاری)",
   "interestPlaceholder": "یک علاقه‌مندی بنویسید…",
   "add": "افزودن",
+  "filtersHint": "فیلترها فقط پس از زدن ذخیره اعمال می‌شوند.",
   "save": "ذخیره",
   "clear": "پاک کردن",
   "tapToTalk": "برای صحبت ضربه بزنید",

@@ -30,6 +30,7 @@ window.I18N_STRINGS.it = {
   "optional": "(facoltativo)",
   "interestPlaceholder": "Scrivi un interesse…",
   "add": "Aggiungi",
+  "filtersHint": "I filtri si applicano solo dopo aver toccato Salva.",
   "save": "Salva",
   "clear": "Cancella",
   "tapToTalk": "Tocca per parlare",

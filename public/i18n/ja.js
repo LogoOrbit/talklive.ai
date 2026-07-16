@@ -30,6 +30,7 @@ window.I18N_STRINGS.ja = {
   "optional": "（任意）",
   "interestPlaceholder": "興味を入力…",
   "add": "追加",
+  "filtersHint": "フィルターは「保存」をタップした後にのみ適用されます。",
   "save": "保存",
   "clear": "クリア",
   "tapToTalk": "タップして話す",

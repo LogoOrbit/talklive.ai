@@ -30,6 +30,7 @@ window.I18N_STRINGS.ko = {
   "optional": "(선택)",
   "interestPlaceholder": "관심사 입력…",
   "add": "추가",
+  "filtersHint": "필터는 저장을 누른 후에만 적용됩니다.",
   "save": "저장",
   "clear": "지우기",
   "tapToTalk": "탭하여 대화하기",
