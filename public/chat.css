@@ -157,7 +157,7 @@ img { max-width: 100%; }
 /* --- Action buttons ---
    One shape, one size, one resting weight. Colour is reserved for meaning:
    the call button is the only filled control, report turns red only on
-   contact, and Auto fills green solely when it is switched on. --- */
+   contact, and Auto goes green — tonally — solely when switched on. --- */
 .top-actions { justify-self: end; display: inline-flex; align-items: center; gap: 7px; }
 .icon-btn {
   display: inline-flex; align-items: center; justify-content: center;
@@ -196,16 +196,77 @@ img { max-width: 100%; }
   width: auto; min-width: 0; border-radius: 999px; padding: 0 14px; height: 38px;
   font: inherit; font-size: 12.5px; font-weight: 700; letter-spacing: 0.02em;
 }
+/* On reads as green, but tonal rather than filled: a solid swatch here sat
+   beside the call button as a second primary action and the eye had to pick.
+   Filled is reserved for the one control that starts something. */
 .auto-btn.active {
-  color: #fff; background: var(--green); border-color: transparent;
-  box-shadow: 0 4px 14px color-mix(in srgb, var(--green) 32%, transparent);
+  color: var(--green);
+  background: color-mix(in srgb, var(--green) 16%, transparent);
+  border-color: color-mix(in srgb, var(--green) 42%, transparent);
 }
-.auto-btn.active:hover { background: color-mix(in srgb, var(--green) 88%, #fff); color: #fff; }
+.auto-btn.active:hover {
+  color: var(--green);
+  background: color-mix(in srgb, var(--green) 24%, transparent);
+}
 
 /* --- Responsive ---
    Connected, the bar can carry six controls. Below 560px the wordmark drops
    to its waveform and the controls tighten, so the centre zone keeps room
    for the partner's name instead of the row overflowing. --- */
+/* --- Overflow menu ---
+   The bar carries Auto and Call and nothing else; every other action lives
+   here with its name spelled out beside it. Three controls fit any phone
+   without shrinking, and no secondary action depends on decoding a glyph. */
+.top-more { position: relative; display: inline-flex; }
+.more-btn { position: relative; }
+/* Unread messages are inside the closed menu, so the count is mirrored out
+   here as a dot — otherwise folding Friends away would hide notifications. */
+.more-dot {
+  position: absolute; top: 6px; inset-inline-end: 6px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--danger); box-shadow: 0 0 0 2px var(--bg-2);
+}
+.top-menu {
+  position: absolute; top: calc(100% + 10px); inset-inline-end: 0; z-index: 60;
+  min-width: 210px; padding: 6px;
+  display: flex; flex-direction: column; gap: 2px;
+  background: var(--bg-2);
+  border: 1px solid var(--line); border-radius: 16px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.34);
+  animation: menuIn 0.16s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes menuIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to   { opacity: 1; transform: none; }
+}
+.menu-item {
+  display: flex; align-items: center; gap: 11px; width: 100%;
+  padding: 10px 12px; border: 0; border-radius: 11px;
+  background: transparent; color: var(--text);
+  font: inherit; font-size: 14.5px; font-weight: 600; text-align: start;
+  cursor: pointer; white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.menu-item svg { flex: none; color: var(--muted); transition: color 0.15s ease; }
+.menu-item:hover { background: color-mix(in srgb, var(--text) 8%, transparent); }
+.menu-item:hover svg { color: var(--text); }
+.menu-item:active { background: color-mix(in srgb, var(--text) 13%, transparent); }
+.menu-item:focus-visible {
+  outline: none; background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+.menu-item:disabled { opacity: 0.45; cursor: default; }
+.menu-item:disabled:hover { background: transparent; }
+.menu-item .notif-badge { position: static; margin-inline-start: auto; }
+/* Report is the one destructive action, so it is coloured and set apart. */
+.menu-item-danger, .menu-item-danger svg { color: var(--danger); }
+.menu-item-danger:hover { background: color-mix(in srgb, var(--danger) 14%, transparent); }
+.menu-item-danger:hover svg { color: var(--danger); }
+.menu-item-danger:not(.hidden) {
+  margin-top: 5px; padding-top: 13px; border-top: 1px solid var(--line);
+  border-radius: 0 0 11px 11px;
+}
+
 /* Responsive rules for the bar live together further down, in one block, so
    there is a single place that decides how it degrades. */
 
@@ -317,43 +378,24 @@ img { max-width: 100%; }
    run to "ElectricPanther45". Rather than shrink everything at once, it sheds
    in stages: first the wordmark, then the label text, then size. --- */
 @media (max-width: 700px) {
-  /* Connected, the partner needs the room the wordmark was using. */
+  /* Connected, the partner's name takes the room the wordmark was using. */
   .topbar.connected .brand { display: none; }
 }
-@media (max-width: 560px) {
-  .topbar { gap: 8px; padding-left: 10px; padding-right: 10px; min-height: 56px; }
+@media (max-width: 480px) {
+  .topbar { gap: 8px; padding-left: 10px; padding-right: 10px; }
   .brand-text { display: none; }
   .top-lead { gap: 6px; }
-  .top-actions { gap: 5px; }
-  .icon-btn { width: 35px; height: 35px; }
-  .icon-btn svg { width: 18px; height: 18px; }
-  .auto-btn { padding: 0 11px; height: 35px; font-size: 12px; }
-  /* With the wordmark gone, the partner reads better hard-left against the
-     settings button — the arrangement every messaging app uses — instead of
-     floating in a centre column it is too wide for. The zone itself keeps
-     stretching to its grid track; sizing it to its content would let a long
-     name spill over the buttons rather than clip. */
-  .topbar.connected .top-id { align-items: flex-start; }
-  .topbar.connected .top-name { font-size: 14.5px; }
   .top-sub { font-size: 11.5px; }
-  #topDefault .top-sub { padding: 5px 11px; }
-}
-@media (max-width: 400px) {
-  .topbar { gap: 6px; min-height: 54px; }
-  .top-actions { gap: 3px; }
-  .icon-btn { width: 33px; height: 33px; }
-  .icon-btn svg { width: 17px; height: 17px; }
-  .auto-btn { padding: 0 9px; height: 33px; font-size: 11.5px; }
-  .topbar.connected .top-name { font-size: 14px; }
+  /* Controls keep their full size here on purpose. With three of them in the
+     bar there is room, and shrinking tap targets on the smallest screens is
+     backwards — that is where they need to be easiest to hit. */
 }
 
-/* Very narrow phones: tighten the composer so all three controls fit, and
-   drop the "Online" word — the green dot + count say it on their own. */
+/* Very narrow phones: tighten the composer so all three controls fit. The
+   top bar needs nothing here — it carries three controls at any width. */
 @media (max-width: 360px) {
   .next-btn { padding: 0 12px; }
   .next-btn span { display: none; } /* icon-only Next */
-  .auto-btn { padding: 0 11px; }
-  #topDefault .top-sub [data-i18n="online"] { display: none; }
 }
 
 /* Blocked / maintenance full screen */
@@ -563,7 +605,7 @@ img { max-width: 100%; }
      jump between two different shapes. */
   .icon-btn:hover { background: var(--accent-soft); color: var(--accent); }
   .report-btn:hover { background: color-mix(in srgb, var(--danger) 14%, transparent); color: var(--danger); }
-  .call-btn:hover, .auto-btn.active:hover { color: #fff; }
+  .call-btn:hover { color: #fff; }
   .icon-btn, .pill, .btn, .next-btn, .send-btn, .chat-start-btn { will-change: transform; }
 
   /* START view: a real desktop hero */

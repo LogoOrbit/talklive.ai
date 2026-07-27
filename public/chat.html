@@ -75,25 +75,38 @@
       </div>
 
       <div class="top-actions">
-        <button type="button" id="historyBtn" class="icon-btn history-btn" data-i18n-title="history" data-i18n-aria="history" aria-label="History">
-          <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l3 2"/></svg>
-        </button>
-        <button type="button" id="friendsBtn" class="icon-btn friends-btn" data-i18n-title="friends" data-i18n-aria="friends" aria-label="Friends">
-          <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.1"/><path d="M3.6 19a5.4 5.4 0 0 1 10.8 0"/><circle cx="17.2" cy="9" r="2.5"/><path d="M15.7 13.7A4.8 4.8 0 0 1 21 18.4"/></svg>
-          <span id="friendsBadge" class="notif-badge hidden" aria-hidden="true">0</span>
-        </button>
         <button type="button" id="autoBtn" class="icon-btn auto-btn hidden" aria-pressed="false" data-i18n-title="chatAutoHint" data-i18n-aria="chatAutoHint" aria-label="Auto-connect me to a new person when a chat ends">
           <span data-i18n="chatAuto">Auto</span>
-        </button>
-        <button type="button" id="reportBtn" class="icon-btn report-btn hidden" data-i18n-aria="report" data-i18n-title="report" aria-label="Report">
-          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><line x1="5" y1="3" x2="5" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M6 4h13l-3.5 4L19 12H6V4z" fill="currentColor"/></svg>
-        </button>
-        <button type="button" id="addFriendBtn" class="icon-btn friend-btn hidden" data-i18n-aria="addFriend" data-i18n-title="addFriend" aria-label="Add friend">
-          <svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor" aria-hidden="true"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
         </button>
         <button type="button" id="voiceCallBtn" class="icon-btn call-btn" data-i18n-aria="voiceCall" data-i18n-title="voiceCall" aria-label="Voice call">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
         </button>
+
+        <!-- Everything that is not Auto or Call sits behind one menu, so the
+             bar never carries more than three controls and every secondary
+             action gets a word next to its icon instead of standing alone as
+             a glyph you have to decode. -->
+        <div class="top-more">
+          <button type="button" id="moreBtn" class="icon-btn more-btn" aria-haspopup="true" aria-expanded="false" aria-controls="topMenu" data-i18n-title="more" data-i18n-aria="more" aria-label="More">
+            <svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>
+            <span id="moreDot" class="more-dot hidden" aria-hidden="true"></span>
+          </button>
+          <div id="topMenu" class="top-menu hidden" role="menu" aria-labelledby="moreBtn">
+            <button type="button" id="addFriendBtn" class="menu-item hidden" role="menuitem" data-i18n-aria="addFriend" aria-label="Add friend">
+              <svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor" aria-hidden="true"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg><span data-i18n="addFriend">Add friend</span>
+            </button>
+            <button type="button" id="historyBtn" class="menu-item" role="menuitem" data-i18n-aria="history" aria-label="History">
+              <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l3 2"/></svg><span data-i18n="history">History</span>
+            </button>
+            <button type="button" id="friendsBtn" class="menu-item" role="menuitem" data-i18n-aria="friends" aria-label="Friends">
+              <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.1"/><path d="M3.6 19a5.4 5.4 0 0 1 10.8 0"/><circle cx="17.2" cy="9" r="2.5"/><path d="M15.7 13.7A4.8 4.8 0 0 1 21 18.4"/></svg><span data-i18n="friends">Friends</span>
+              <span id="friendsBadge" class="notif-badge hidden" aria-hidden="true">0</span>
+            </button>
+            <button type="button" id="reportBtn" class="menu-item menu-item-danger hidden" role="menuitem" data-i18n-aria="report" aria-label="Report">
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><line x1="5" y1="3" x2="5" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M6 4h13l-3.5 4L19 12H6V4z" fill="currentColor"/></svg><span data-i18n="report">Report</span>
+            </button>
+          </div>
+        </div>
       </div>
     </header>
 

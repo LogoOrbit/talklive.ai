@@ -837,6 +837,48 @@
     if (!nextArmed) nextBtn.querySelector('span').textContent = t('chatNext');
   });
 
+  // --- Overflow menu -------------------------------------------------------
+  // Auto and Call stay in the bar; History, Friends, Add friend and Report
+  // live in here with their names spelled out. Report and Add friend are
+  // still shown/hidden by setStage(), which just makes them appear or
+  // disappear as rows.
+  var moreBtn = $('moreBtn'), topMenu = $('topMenu'), moreDot = $('moreDot');
+
+  function closeMenu() {
+    if (topMenu.classList.contains('hidden')) return;
+    topMenu.classList.add('hidden');
+    moreBtn.setAttribute('aria-expanded', 'false');
+  }
+  function openMenu() {
+    topMenu.classList.remove('hidden');
+    moreBtn.setAttribute('aria-expanded', 'true');
+  }
+
+  moreBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    vibrate(10);
+    if (topMenu.classList.contains('hidden')) openMenu(); else closeMenu();
+  });
+  // Any choice dismisses the menu; each item keeps its own click handler.
+  topMenu.addEventListener('click', closeMenu);
+  document.addEventListener('click', function (e) {
+    if (!topMenu.contains(e.target) && !moreBtn.contains(e.target)) closeMenu();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' || e.key === 'Esc') closeMenu();
+  });
+
+  // Unread messages sit on the Friends row inside the closed menu, so mirror
+  // that state onto the button as a dot — otherwise folding Friends away
+  // would silently hide notifications.
+  function syncMoreDot() {
+    moreDot.classList.toggle('hidden', friendsBadge.classList.contains('hidden'));
+  }
+  new MutationObserver(syncMoreDot).observe(friendsBadge, {
+    attributes: true, attributeFilter: ['class'],
+  });
+  syncMoreDot();
+
   // --- Boot: land straight on the single "Start chatting" button. ---
   goStart();
 })();
