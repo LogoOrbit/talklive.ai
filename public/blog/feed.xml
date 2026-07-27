@@ -6,7 +6,39 @@
   <atom:link href="https://talklive.app/blog/feed.xml" rel="self" type="application/rss+xml"/>
   <description>Guides and research on talking to strangers, voice chat, language practice and online safety — from the team behind TalkLive.</description>
   <language>en</language>
-  <lastBuildDate>Thu, 16 Jul 2026 00:38:13 GMT</lastBuildDate>
+  <lastBuildDate>Mon, 27 Jul 2026 22:36:31 GMT</lastBuildDate>
+  <item>
+    <title>How to End a Conversation Without Being Rude</title>
+    <link>https://talklive.app/blog/how-to-end-a-conversation-politely</link>
+    <guid isPermaLink="true">https://talklive.app/blog/how-to-end-a-conversation-politely</guid>
+    <pubDate>Sat, 25 Jul 2026 12:00:00 GMT</pubDate>
+    <category>Conversation</category>
+    <description>Most people stay in conversations far longer than either party wants. Research on when conversations should end, why we get it wrong, and exit lines that work.</description>
+  </item>
+  <item>
+    <title>The Best Random Chat Apps in 2026</title>
+    <link>https://talklive.app/blog/best-random-chat-apps-2026</link>
+    <guid isPermaLink="true">https://talklive.app/blog/best-random-chat-apps-2026</guid>
+    <pubDate>Thu, 23 Jul 2026 12:00:00 GMT</pubDate>
+    <category>Guides</category>
+    <description>Video roulette, voice, text and topic-based apps compared on what matters: moderation, privacy, cost, and whether anyone is actually in the queue.</description>
+  </item>
+  <item>
+    <title>How Anonymous Voice Chat Actually Works</title>
+    <link>https://talklive.app/blog/how-anonymous-voice-chat-works</link>
+    <guid isPermaLink="true">https://talklive.app/blog/how-anonymous-voice-chat-works</guid>
+    <pubDate>Mon, 20 Jul 2026 12:00:00 GMT</pubDate>
+    <category>Technology</category>
+    <description>What really happens when you tap to talk to a stranger: WebRTC, peer-to-peer audio, and what a signalling server can and cannot see.</description>
+  </item>
+  <item>
+    <title>Loneliness: What Actually Helps (and What Does Not)</title>
+    <link>https://talklive.app/blog/loneliness-what-actually-helps</link>
+    <guid isPermaLink="true">https://talklive.app/blog/loneliness-what-actually-helps</guid>
+    <pubDate>Thu, 16 Jul 2026 12:00:00 GMT</pubDate>
+    <category>Psychology</category>
+    <description>Loneliness is not a shortage of people but of connection. What research says actually reduces it, why social media does not, and where small talk fits.</description>
+  </item>
   <item>
     <title>What Happened to Omegle? Why It Shut Down — and What Replaced It</title>
     <link>https://talklive.app/blog/what-happened-to-omegle</link>
@@ -21,7 +53,7 @@
     <guid isPermaLink="true">https://talklive.app/blog/how-to-make-friends-online</guid>
     <pubDate>Mon, 13 Jul 2026 12:00:00 GMT</pubDate>
     <category>Guides</category>
-    <description>Making friends as an adult is genuinely hard. Here is a practical, research-backed guide to making real friends online — where to go, what to say, and what actually works.</description>
+    <description>Making friends as an adult is genuinely hard. A practical, research-backed guide to making real friends online — where to go and what to say.</description>
   </item>
   <item>
     <title>Need Someone to Talk to at 3AM? Here Are Your Real Options</title>
@@ -29,7 +61,23 @@
     <guid isPermaLink="true">https://talklive.app/blog/someone-to-talk-to-at-3am</guid>
     <pubDate>Mon, 13 Jul 2026 12:00:00 GMT</pubDate>
     <category>Wellbeing</category>
-    <description>It's the middle of the night, your mind won't stop, and everyone you know is asleep. Here are the real options when you need someone to talk to at 3am — free, right now.</description>
+    <description>It's the middle of the night, your mind won't stop, and everyone is asleep. The real options when you need someone to talk to at 3am, free.</description>
+  </item>
+  <item>
+    <title>Phone Anxiety Is Real — Here Is How to Get Past It</title>
+    <link>https://talklive.app/blog/phone-anxiety-how-to-get-comfortable-talking</link>
+    <guid isPermaLink="true">https://talklive.app/blog/phone-anxiety-how-to-get-comfortable-talking</guid>
+    <pubDate>Mon, 13 Jul 2026 12:00:00 GMT</pubDate>
+    <category>Psychology</category>
+    <description>Dread making calls? Phone anxiety is common, learnable and reversible. Why it happens, why texting makes it worse, and a graded practice plan that actually works.</description>
+  </item>
+  <item>
+    <title>Random Chat Safety: 12 Rules That Actually Matter</title>
+    <link>https://talklive.app/blog/random-chat-safety-tips</link>
+    <guid isPermaLink="true">https://talklive.app/blog/random-chat-safety-tips</guid>
+    <pubDate>Fri, 10 Jul 2026 12:00:00 GMT</pubDate>
+    <category>Safety</category>
+    <description>Talking to strangers online is fine — being careless is not. Twelve practical rules for random chat safety, and the warning signs worth leaving over.</description>
   </item>
   <item>
     <title>The Psychological Benefits of Talking to Strangers Every Day</title>

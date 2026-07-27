@@ -164,3 +164,27 @@ h3 { font-size: 1.15rem; margin: 0 0 6px; }
 .site-footer a { color: var(--muted); }
 .site-footer a:hover { color: var(--text); }
 .site-footer .legal { border-top: 1px solid var(--border); padding-top: 20px; display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; align-items: center; }
+
+/* Comparison table (competitor "X vs TalkLive" pages) */
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 8px; }
+table.compare {
+  width: 100%; min-width: 560px; border-collapse: collapse; font-size: 15px;
+  border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
+}
+table.compare th, table.compare td { padding: 14px 16px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); }
+table.compare thead th { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); background: color-mix(in srgb, var(--border) 35%, transparent); }
+table.compare thead th:last-child { color: var(--accent-2); }
+table.compare tbody th { font-weight: 600; color: var(--text); width: 26%; }
+table.compare td { color: var(--muted); }
+table.compare td.us { color: var(--text); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+table.compare tbody tr:last-child th, table.compare tbody tr:last-child td { border-bottom: 0; }
+/* Narrow screens: the TalkLive column is the point of the table, so shrink
+   everything enough that part of it is visible without scrolling, and say
+   out loud that the table scrolls. */
+.table-hint { display: none; font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+@media (max-width: 760px) {
+  .table-hint { display: block; }
+  table.compare { font-size: 14px; min-width: 480px; }
+  table.compare th, table.compare td { padding: 11px 10px; }
+  table.compare tbody th { width: 30%; }
+}

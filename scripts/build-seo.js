@@ -56,6 +56,12 @@ const NAV = [
   { slug: 'emerald-chat-alternative', label: 'Emerald Chat Alternative' },
   { slug: 'make-friends-online', label: 'Make Friends Online' },
   { slug: 'late-night-chat', label: 'Late Night Chat' },
+  { slug: 'random-chat', label: 'Random Chat' },
+  { slug: 'free-voice-chat', label: 'Free Voice Chat' },
+  { slug: 'voice-chat-rooms', label: 'Voice Chat Rooms' },
+  { slug: 'online-chat-rooms', label: 'Online Chat Rooms' },
+  { slug: 'call-random-people', label: 'Call Random People' },
+  { slug: 'language-exchange', label: 'Language Exchange' },
 ];
 
 function url(slug) { return slug ? `${SITE}/${slug}` : `${SITE}/`; }
@@ -151,7 +157,12 @@ function linkCloud(currentSlug) {
     { slug: '', label: 'Live voice chat rooms' },
     { slug: '', label: 'Free calls with strangers' },
   ];
-  return `<div class="link-cloud">${extra.filter(e => e.slug !== currentSlug)
+  // Any landing page not given a hand-written label above still needs inbound
+  // links, so it is appended automatically under its breadcrumb name. Without
+  // this, every page added to PAGES would be orphaned from the link cloud.
+  const labelled = new Set(extra.map(e => e.slug));
+  const rest = PAGES.filter(p => !labelled.has(p.slug)).map(p => ({ slug: p.slug, label: p.crumb }));
+  return `<div class="link-cloud">${extra.concat(rest).filter(e => e.slug !== currentSlug)
     .map(e => `<a href="${e.slug ? '/' + e.slug : '/'}">${e.label}</a>`).join('')}</div>`;
 }
 
@@ -218,7 +229,54 @@ function affiliateHtml(slug) {
   </section>`;
 }
 
-function page(p) {
+// Side-by-side comparison table for "X alternative" pages. Tables like this
+// are the format Google most often lifts into a featured snippet for
+// "<competitor> vs" and "<competitor> alternative" queries, and they give the
+// page something genuinely useful that the competitor's own site will not say.
+function compareHtml(c) {
+  if (!c) return '';
+  const rows = c.rows.map(r =>
+    `<tr><th scope="row">${r.label}</th><td>${r.them}</td><td class="us">${r.us}</td></tr>`).join('');
+  return `<section id="compare">
+    <div class="wrap">
+      <h2>${esc(c.h)}</h2>
+      <p class="section-intro">${c.intro}</p>
+      <div class="table-scroll">
+        <table class="compare">
+          <thead><tr><th scope="col">&nbsp;</th><th scope="col">${esc(c.them)}</th><th scope="col">TalkLive</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <p class="table-hint">Swipe the table sideways to see the TalkLive column →</p>
+    </div>
+  </section>`;
+}
+
+// Blog posts surfaced on a landing page. An explicit `posts` list wins;
+// otherwise posts are dealt out round-robin from the page's position in
+// PAGES, so every article picks up inbound links instead of the first three
+// hogging them all.
+function relatedPostsHtml(p, index) {
+  const picked = (p.posts || []).map(s => BLOG.find(b => b.slug === s)).filter(Boolean);
+  const auto = [];
+  for (let k = 0; picked.length + auto.length < 3 && k < BLOG.length; k++) {
+    const b = BLOG[(index * 3 + k) % BLOG.length];
+    if (!picked.includes(b) && !auto.includes(b)) auto.push(b);
+  }
+  const items = picked.concat(auto).slice(0, 3).map(b =>
+    `<a class="card" href="/blog/${b.slug}" style="display:block;text-decoration:none;color:inherit">
+      <p style="margin:0 0 8px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;opacity:.7">${esc(b.tag)}</p>
+      <h3 style="margin:0 0 10px">${esc(b.h1)}</h3><p>${esc(b.description)}</p></a>`).join('');
+  return `<section>
+    <div class="wrap">
+      <h2>Read more from the TalkLive blog</h2>
+      <div class="grid">${items}</div>
+      <p style="margin-top:18px"><a href="/blog/">Browse all articles →</a></p>
+    </div>
+  </section>`;
+}
+
+function page(p, index) {
   const canonical = url(p.slug);
   const features = p.features.map(f => `<div class="card"><div class="ico">${icon(f.icon)}</div><h3>${f.h}</h3><p>${f.p}</p></div>`).join('');
   const steps = p.steps.map(s => `<div class="step"><h3>${s.h}</h3><p>${s.p}</p></div>`).join('');
@@ -258,6 +316,20 @@ function page(p) {
       '@context': 'https://schema.org',
       '@type': 'FAQPage',
       mainEntity: p.faq.map(f => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+    },
+    // The "how it works" steps are already modelled as data, so describing
+    // them as a HowTo costs nothing and makes the page eligible for the
+    // step-by-step treatment in search results.
+    {
+      '@context': 'https://schema.org',
+      '@type': 'HowTo',
+      name: p.stepsH,
+      description: p.stepsIntro,
+      totalTime: 'PT10S',
+      estimatedCost: { '@type': 'MonetaryAmount', currency: 'USD', value: '0' },
+      step: p.steps.map((s, i) => ({
+        '@type': 'HowToStep', position: i + 1, name: s.h, text: s.p, url: `${canonical}#how`,
+      })),
     },
   ];
 
@@ -330,6 +402,8 @@ ${headerHtml(p.slug)}
     </div>
   </section>
 
+  ${compareHtml(p.compare)}
+
   <section>
     <div class="wrap prose">${proseHtml}</div>
   </section>
@@ -346,6 +420,8 @@ ${headerHtml(p.slug)}
   ${adSlot('leaderboard')}
 
   ${affiliateHtml(p.slug)}
+
+  ${relatedPostsHtml(p, index)}
 
   <section>
     <div class="wrap">
@@ -374,7 +450,7 @@ ${footerHtml()}
 
 // --- Content model ----------------------------------------------------------
 
-const PAGES = [
+const CORE_PAGES = [
   {
     slug: 'talk-to-strangers',
     crumb: 'Talk to Strangers',
@@ -422,12 +498,13 @@ const PAGES = [
     ],
     ctaBandH: 'Ready to talk to a stranger?',
     ctaBandP: 'Thousands of people are online right now, waiting to say hello.',
+    posts: ['what-happened-to-omegle', 'how-to-start-a-conversation-with-a-stranger', 'science-of-talking-to-strangers'],
   },
   {
     slug: 'random-voice-chat',
     crumb: 'Random Voice Chat',
     eyebrow: 'Audio only',
-    title: 'Random Voice Chat — Free Live Audio Chat with Strangers | TalkLive',
+    title: 'Random Voice Chat — Free Live Audio Chat | TalkLive',
     description: 'Free random voice chat with strangers worldwide. TalkLive connects you to a real voice in seconds — anonymous, audio-only, no sign-up. Start a random voice chat now.',
     keywords: 'random voice chat, voice chat, random audio chat, live voice chat, voice chat with strangers, free voice chat, random voice call, anonymous voice chat',
     h1: 'Random Voice Chat with Strangers — Free & Instant',
@@ -474,8 +551,8 @@ const PAGES = [
     slug: 'random-text-chat',
     crumb: 'Random Text Chat',
     eyebrow: 'Text only · no mic',
-    title: 'Random Text Chat — Free Anonymous Chat with Strangers | TalkLive',
-    description: 'Free random text chat with strangers worldwide. Tap to Chat and TalkLive pairs you with a random person for an instant, anonymous text conversation — no mic, no sign-up, works on any phone.',
+    title: 'Random Text Chat — Free Anonymous Chat | TalkLive',
+    description: 'Free random text chat with strangers worldwide. Tap to Chat and get paired with a random person instantly — anonymous, no mic, no sign-up.',
     keywords: 'random text chat, text chat, random chat, anonymous text chat, text chat with strangers, free text chat, stranger text chat, chat without mic, random chat no sign up',
     h1: 'Random Text Chat with Strangers — Instant & Anonymous',
     lede: 'Not in the mood to talk out loud? Tap to Chat and TalkLive pairs you with a random stranger for a live, anonymous text conversation. No microphone, no sign-up, no video — just fast, private messaging with a real person.',
@@ -523,8 +600,8 @@ const PAGES = [
     slug: 'text-chat-with-strangers',
     crumb: 'Text Chat with Strangers',
     eyebrow: 'Anonymous messaging',
-    title: 'Text Chat with Strangers — Free Anonymous Stranger Chat | TalkLive',
-    description: 'Text chat with strangers online for free. TalkLive pairs you with a random person for an anonymous, live text conversation — no sign-up, no mic, no video. Start chatting in one tap.',
+    title: 'Text Chat with Strangers — Free & Anonymous | TalkLive',
+    description: 'Text chat with strangers online free. TalkLive pairs you with a random person for anonymous live text — no sign-up, no mic, no video.',
     keywords: 'text chat with strangers, chat with strangers, stranger chat, anonymous chat with strangers, talk to strangers text, free stranger chat, chat with random people, stranger messaging',
     h1: 'Text Chat with Strangers — Free, Anonymous, Instant',
     lede: 'One tap connects you with a random stranger somewhere in the world for a live text conversation. No profile, no sign-up, no microphone — share only what you choose and leave whenever you want.',
@@ -618,7 +695,7 @@ const PAGES = [
     slug: 'anonymous-chat',
     crumb: 'Anonymous Chat',
     eyebrow: 'Private by design',
-    title: 'Anonymous Chat — Talk or Text with Strangers Privately | TalkLive',
+    title: 'Anonymous Chat with Strangers — Free & Private | TalkLive',
     description: 'Anonymous chat with strangers on TalkLive — live voice calls or instant text chat. No name, number, or sign-up. Talk or type privately with people worldwide, free.',
     keywords: 'anonymous chat, anonymous voice chat, anonymous text chat, anonymous calls, chat anonymously, private chat with strangers, no sign up chat, anonymous stranger chat',
     h1: 'Anonymous Chat with Strangers — No Names, No Sign-Up',
@@ -713,7 +790,7 @@ const PAGES = [
     slug: 'international-calls',
     crumb: 'International Calls',
     eyebrow: 'Global chat',
-    title: 'Free International Calls to Strangers — Global Voice Chat | TalkLive',
+    title: 'Free International Calls to Strangers | TalkLive',
     description: 'Make free international calls and join a global voice chat with strangers on TalkLive. Talk to people in other countries instantly — anonymous, audio-only, no sign-up.',
     keywords: 'international calls, free international calls, global chat, international voice chat, call other countries, talk to people worldwide, global voice chat, international random chat',
     h1: 'Free International Calls & Global Voice Chat',
@@ -760,7 +837,7 @@ const PAGES = [
     slug: 'pakistani-chat',
     crumb: 'Pakistani Chat',
     eyebrow: 'Pakistan · پاکستان',
-    title: 'Pakistani Chat — Free Pakistani Voice Chat with Strangers | TalkLive',
+    title: 'Pakistani Chat — Free Voice Chat with Strangers | TalkLive',
     description: 'Free Pakistani voice chat on TalkLive. Talk to strangers from Pakistan and around the world over live audio — anonymous, no sign-up. Start Pakistani chat now.',
     keywords: 'pakistani chat, pakistani voice chat, pakistan chat room, chat with pakistani, pakistani random chat, urdu voice chat, pakistani call, desi chat',
     h1: 'Pakistani Voice Chat — Talk to Strangers in Pakistan',
@@ -855,8 +932,8 @@ const PAGES = [
     slug: 'random-video-chat',
     crumb: 'Random Video Chat',
     eyebrow: 'Voice-first alternative',
-    title: 'Random Video Chat Alternative — Free Live Chat with Strangers | TalkLive',
-    description: 'Want random video chat with strangers but not the camera pressure? TalkLive is the voice-first alternative: one tap, a random stranger, live and anonymous. Free, no sign-up.',
+    title: 'Random Video Chat Alternative — Free & Live | TalkLive',
+    description: 'Want random video chat but not the camera pressure? TalkLive is the voice-first alternative: one tap, a random stranger, live and anonymous.',
     keywords: 'random video chat, video chat, video chat with strangers, random video chat with strangers, chat video, random chat video, video chat app, live video chat',
     h1: 'Random Video Chat, Reimagined as Voice-First',
     lede: 'Random video chat gave the world instant conversations with strangers — and a pile of privacy and safety problems. TalkLive keeps the instant, random, worldwide part and swaps the camera for crystal-clear voice. One tap connects you live to a random person, anonymously.',
@@ -903,8 +980,8 @@ const PAGES = [
     slug: 'random-video-call',
     crumb: 'Random Video Call',
     eyebrow: 'Voice-first calling',
-    title: 'Random Video Call Alternative — Free Live Calls with Strangers | TalkLive',
-    description: 'Looking for a random video call with strangers? TalkLive is the free, voice-first alternative — one tap places a live call to a random person. Anonymous, no number, no sign-up.',
+    title: 'Random Video Call Alternative — Free Calls | TalkLive',
+    description: 'Looking for a random video call with strangers? TalkLive is the free voice-first alternative — one tap, a live call, anonymous, no number needed.',
     keywords: 'random video call, video call, random video call app, free video call, video call with strangers, video call random, random call with strangers, live video call',
     h1: 'Random Video Call — the Free, Voice-First Way to Call Strangers',
     lede: 'Random video call apps connect you to strangers, but they cost your privacy and your data. TalkLive gives you the same instant thrill — one tap places a live call to a random person anywhere — as pure voice. No number, no camera, no sign-up.',
@@ -951,7 +1028,7 @@ const PAGES = [
     slug: 'ometv-alternative',
     crumb: 'OmeTV Alternative',
     eyebrow: 'Voice, not video',
-    title: 'Best OmeTV Alternative — Free Random Voice Chat with Strangers | TalkLive',
+    title: 'OmeTV Alternative — Free Random Voice Chat | TalkLive',
     description: 'Looking for an OmeTV alternative? TalkLive is free random chat with strangers — voice-only, anonymous, moderated, no sign-up. Meet a random stranger in one tap.',
     keywords: 'ometv alternative, ome tv alternative, sites like ometv, apps like ome tv, ometv replacement, random chat like ometv, ome tv without video, ometv chat',
     h1: 'The OmeTV Alternative Built Around Voice and Safety',
@@ -999,8 +1076,8 @@ const PAGES = [
     slug: 'stranger-video-call',
     crumb: 'Stranger Video Call',
     eyebrow: 'Voice-first alternative',
-    title: 'Stranger Video Call Alternative — Talk to Strangers Live & Free | TalkLive',
-    description: 'Want a stranger video call but not the camera? TalkLive lets you call and talk to strangers live — voice-first, anonymous, no number, no sign-up. Free random calls worldwide.',
+    title: 'Stranger Video Call Alternative — Free & Live | TalkLive',
+    description: 'Want a stranger video call but not the camera? Call and talk to strangers live — voice-first, anonymous, no number needed, free worldwide.',
     keywords: 'stranger video call, video call with stranger, talk to strangers video call, video call stranger, stranger call, random stranger video call, call strangers, stranger video call app',
     h1: 'Stranger Video Call — the Voice-First Way to Talk to Strangers',
     lede: 'A stranger video call is exciting because you never know who is on the other end. TalkLive keeps that surprise and makes it safe: one tap places a live call to a random stranger, voice-to-voice. No camera, no number, no sign-up.',
@@ -1047,8 +1124,8 @@ const PAGES = [
     slug: 'monkey-app-alternative',
     crumb: 'Monkey App Alternative',
     eyebrow: 'Voice, not video',
-    title: 'Monkey App Alternative — Free Random Voice Chat with Strangers | TalkLive',
-    description: 'Looking for a Monkey app alternative? TalkLive is free random chat with strangers — voice-only, anonymous, 18+, moderated, no sign-up. Meet a random stranger in one tap.',
+    title: 'Monkey App Alternative — Free Voice Chat | TalkLive',
+    description: 'Looking for a Monkey app alternative? TalkLive is free random chat with strangers — voice-only, anonymous, 18+, moderated, and no sign-up.',
     keywords: 'monkey app alternative, monkey alternative, apps like monkey, sites like monkey app, monkey app replacement, random chat like monkey, monkey video chat alternative',
     h1: 'The Monkey App Alternative for Grown-Up Random Chat',
     lede: 'The Monkey app made quick random video chats popular, but the camera brings real privacy and safety concerns. TalkLive keeps the fast, random, worldwide matching and rebuilds it around voice — anonymous, strictly 18+, moderated, and completely free.',
@@ -1095,7 +1172,7 @@ const PAGES = [
     slug: 'talk-to-someone',
     crumb: 'Talk to Someone',
     eyebrow: 'Someone is always awake',
-    title: 'Need Someone to Talk To? Talk or Text with a Real Person Now | TalkLive',
+    title: 'Need Someone to Talk To? Talk Now, Free | TalkLive',
     description: 'Need someone to talk to right now? TalkLive connects you with a real, friendly person in seconds — free voice call or text chat, anonymous, no sign-up, day or night.',
     keywords: 'someone to talk to, i need someone to talk to, talk to someone, need to talk to someone, talk to someone online free, someone to talk to online, talk to someone right now, free someone to talk to',
     h1: 'Need Someone to Talk To? Someone Is Here Right Now',
@@ -1144,8 +1221,8 @@ const PAGES = [
     slug: 'free-online-calls',
     crumb: 'Free Online Calls',
     eyebrow: 'Call from your browser',
-    title: 'Free Online Calls — Voice Call People Without a Number | TalkLive',
-    description: 'Make free online calls straight from your browser. TalkLive gives you unlimited voice calls with people worldwide — no phone number, no app, no sign-up. Start a free call now.',
+    title: 'Free Online Calls — No Phone Number Needed | TalkLive',
+    description: 'Make free online calls from your browser. Unlimited voice calls with people worldwide — no phone number, no app, no sign-up. Start calling now.',
     keywords: 'free online calls, free voice call online, online call free, make free calls online, voice call online, free calling website, call online without number, free internet calls, browser voice call',
     h1: 'Free Online Calls — No Number, No App, No Cost',
     lede: 'TalkLive turns any browser into a free calling app. One tap starts a live voice call with a real person anywhere on Earth — no phone number, no downloads, no minutes to count. Meet someone new, or add friends and call them back free, forever.',
@@ -1191,8 +1268,8 @@ const PAGES = [
     slug: 'practice-english-speaking',
     crumb: 'Practice English Speaking',
     eyebrow: 'Language practice',
-    title: 'Practice English Speaking Online Free — Talk with Real People | TalkLive',
-    description: 'Practice English speaking online for free with real people. TalkLive connects you to live voice conversations in seconds — no classes, no fees, no sign-up. Start speaking English today.',
+    title: 'Practice English Speaking Online — Free | TalkLive',
+    description: 'Practice English speaking online free with real people. TalkLive starts live voice conversations in seconds — no classes, no fees, no sign-up.',
     keywords: 'practice english speaking, english speaking practice, practice english online free, speak english with strangers, english conversation practice, improve spoken english, talk in english online, free english speaking practice app',
     h1: 'Practice English Speaking with Real People — Free',
     lede: 'Fluency comes from speaking, not studying. TalkLive gives you unlimited live voice conversations with real people around the world — the fastest, most natural way to practice English, completely free and one tap away.',
@@ -1240,8 +1317,8 @@ const PAGES = [
     slug: 'chatroulette-alternative',
     crumb: 'Chatroulette Alternative',
     eyebrow: 'Roulette, minus the camera',
-    title: 'Chatroulette Alternative — Random Chat Without the Camera | TalkLive',
-    description: 'Looking for a Chatroulette alternative? TalkLive keeps the random-roulette thrill but swaps risky video for anonymous voice and text chat. Free, 18+, moderated, no sign-up.',
+    title: 'Chatroulette Alternative — No Camera Needed | TalkLive',
+    description: 'Looking for a Chatroulette alternative? TalkLive keeps the random thrill but swaps video for anonymous voice and text chat. Free, 18+, no sign-up.',
     keywords: 'chatroulette alternative, sites like chatroulette, chatroulette without video, apps like chatroulette, random roulette chat, chat roulette alternative, chatroulette replacement, voice roulette',
     h1: 'The Chatroulette Alternative Without the Camera Problem',
     lede: 'Chatroulette invented the random-chat roulette — and its camera invented the problems everyone knows about. TalkLive keeps the spin: one tap, a random stranger, next whenever you like — but over anonymous voice or text instead of video. Free, strictly 18+, and moderated.',
@@ -1288,8 +1365,8 @@ const PAGES = [
     slug: 'emerald-chat-alternative',
     crumb: 'Emerald Chat Alternative',
     eyebrow: 'Better than Emerald',
-    title: 'Emerald Chat Alternative — Free Voice & Text Chat, No Sign-Up | TalkLive',
-    description: 'Looking for an Emerald Chat alternative without bots, karma grinding or paywalls? TalkLive is free random voice & text chat with strangers — anonymous, instant, no sign-up.',
+    title: 'Emerald Chat Alternative — Free Voice Chat | TalkLive',
+    description: 'An Emerald Chat alternative without bots, karma grinding or paywalls: TalkLive is free anonymous voice and text chat with random strangers.',
     keywords: 'emerald chat alternative, sites like emerald chat, emerald chat replacement, apps like emerald chat, emerald chat without bots, free stranger chat',
     h1: 'The Emerald Chat Alternative Without Bots or Paywalls',
     lede: 'Tired of bots, karma systems and premium walls? TalkLive gives you what Emerald Chat promised: instant, anonymous conversations with real people — by live voice or pure text, completely free.',
@@ -1336,7 +1413,7 @@ const PAGES = [
     slug: 'make-friends-online',
     crumb: 'Make Friends Online',
     eyebrow: 'Real friendships',
-    title: 'Make Friends Online — Free App to Find New Friends by Voice | TalkLive',
+    title: 'Make Friends Online — Find Friends by Voice | TalkLive',
     description: 'Make friends online through real conversations, not profiles. TalkLive matches you with people worldwide for live voice or text chat — free, anonymous, no sign-up.',
     keywords: 'make friends online, how to make friends online, find friends online, online friends app, make new friends, friend finder, apps to make friends, make friends as an adult',
     h1: 'Make Friends Online — Through Real Conversations',
@@ -1384,7 +1461,7 @@ const PAGES = [
     slug: 'late-night-chat',
     crumb: 'Late Night Chat',
     eyebrow: 'Open all night',
-    title: 'Late Night Chat — Talk to Someone Right Now, Any Hour | TalkLive',
+    title: 'Late Night Chat — Talk to Someone Any Hour | TalkLive',
     description: 'Can\'t sleep and need someone to talk to? TalkLive is late night chat with real people worldwide — live voice or text, anonymous and free, at 1am, 3am or any hour.',
     keywords: 'late night chat, talk to someone at night, 3am chat, can\'t sleep need to talk, night chat with strangers, someone to talk to at 2am, midnight chat, night owls chat',
     h1: 'Late Night Chat — There Is Always Someone Awake',
@@ -1430,16 +1507,20 @@ const PAGES = [
   },
 ];
 
+// Additional landing pages live in their own module so this file stays
+// navigable as the SEO surface grows. Same shape as CORE_PAGES.
+const PAGES = CORE_PAGES.concat(require("./pages-extra"));
+
 // --- Blog -------------------------------------------------------------------
 // Long-form SEO articles targeting long-tail keywords, published under /blog/.
 // Each post gets Article + Breadcrumb JSON-LD and links back to the landing
 // pages and the app, so blog authority flows into the money pages.
 
-const BLOG = [
+const CORE_BLOG = [
   {
     slug: 'best-omegle-alternatives',
     date: '2026-07-06',
-    title: '10 Best Omegle Alternatives in 2026 (Voice-Only Options Included) | TalkLive Blog',
+    title: '10 Best Omegle Alternatives in 2026 | TalkLive',
     h1: 'The 10 Best Omegle Alternatives in 2026',
     description: 'Omegle shut down — so where do you talk to strangers now? We compare the best Omegle alternatives in 2026, including voice-only options that skip the video weirdness.',
     keywords: 'omegle alternatives, omegle replacement, sites like omegle, talk to strangers, random chat 2026',
@@ -1469,7 +1550,7 @@ const BLOG = [
   {
     slug: 'practice-english-speaking-online-free',
     date: '2026-07-06',
-    title: 'How to Practice Speaking English Online for Free (With Real People) | TalkLive Blog',
+    title: 'How to Practice Speaking English Online Free | TalkLive',
     h1: 'How to Practice Speaking English Online for Free — With Real Humans',
     description: 'Apps teach you vocabulary, but only conversation makes you fluent. Here is how to practice speaking English online for free with real people, starting today.',
     keywords: 'practice english speaking online free, english conversation practice, speak english with strangers, language exchange, improve spoken english',
@@ -1495,7 +1576,7 @@ const BLOG = [
   {
     slug: 'voice-chat-vs-video-chat',
     date: '2026-07-06',
-    title: 'Voice Chat vs Video Chat: Why Audio Wins for Meeting Strangers | TalkLive Blog',
+    title: 'Voice Chat vs Video Chat: Why Audio Wins | TalkLive',
     h1: 'Voice Chat vs Video Chat: Why Audio-Only Wins for Meeting Strangers',
     description: 'Video roulette sites promised connection and delivered chaos. Here is why voice-only chat is safer, deeper and less awkward for talking to strangers online.',
     keywords: 'voice chat vs video chat, audio chat strangers, anonymous voice chat, is video chat safe, talking to strangers online',
@@ -1521,7 +1602,7 @@ const BLOG = [
   {
     slug: 'is-talklive-safe',
     date: '2026-07-06',
-    title: 'Is TalkLive Safe? How Our Anonymous P2P Voice Chat Actually Works | TalkLive Blog',
+    title: 'Is TalkLive Safe? Privacy & Moderation Explained',
     h1: 'Is TalkLive Safe? How Our Anonymous Voice Chat Actually Works',
     description: 'A transparent look at TalkLive safety: peer-to-peer audio that is never recorded, no sign-up required, report and ban systems, and what data we do and don’t keep.',
     keywords: 'is talklive safe, anonymous voice chat safety, p2p audio privacy, talk to strangers safely, webrtc privacy',
@@ -1548,7 +1629,7 @@ const BLOG = [
   {
     slug: 'science-of-talking-to-strangers',
     date: '2026-07-06',
-    title: 'The Science of Talking to Strangers: Why It Makes You Happier | TalkLive Blog',
+    title: 'The Science of Talking to Strangers | TalkLive',
     h1: 'The Science of Talking to Strangers (And Why It Makes You Happier)',
     description: 'Research keeps finding the same thing: conversations with strangers boost mood, reduce loneliness, and go deeper than we expect. Here’s the science, simply explained.',
     keywords: 'talking to strangers benefits, loneliness research, social connection science, why talk to strangers, conversations with strangers study',
@@ -1573,7 +1654,7 @@ const BLOG = [
   {
     slug: 'how-to-start-a-conversation-with-a-stranger',
     date: '2026-07-06',
-    title: 'How to Start a Conversation With a Stranger (25 Openers That Work) | TalkLive Blog',
+    title: 'How to Start a Conversation With a Stranger | TalkLive',
     h1: 'How to Start a Conversation With a Stranger: 25 Openers That Actually Work',
     description: 'Never freeze at "hello" again. Practical conversation openers, follow-up techniques and exit lines for talking to strangers — online or off.',
     keywords: 'how to start a conversation, conversation starters with strangers, what to say to a stranger, voice chat conversation topics, icebreakers',
@@ -1598,7 +1679,7 @@ const BLOG = [
   {
     slug: 'psychological-benefits-of-talking-to-strangers',
     date: '2026-07-07',
-    title: 'The Psychological Benefits of Talking to Strangers Every Day | TalkLive Blog',
+    title: 'Psychological Benefits of Talking to Strangers | TalkLive',
     h1: 'The Psychological Benefits of Talking to Strangers Every Day',
     description: 'A short, simple look at how a daily voice chat with a stranger can lift your mood, ease loneliness, and build real confidence over time.',
     keywords: 'psychological benefits of talking to strangers, mental health benefits of voice chat, loneliness, mood boost, social confidence',
@@ -1627,7 +1708,7 @@ const BLOG = [
   {
     slug: 'what-happened-to-omegle',
     date: '2026-07-13',
-    title: 'What Happened to Omegle? Why It Shut Down and What Replaced It | TalkLive Blog',
+    title: 'What Happened to Omegle? Why It Shut Down | TalkLive',
     h1: 'What Happened to Omegle? Why It Shut Down — and What Replaced It',
     description: 'Omegle shut down in November 2023 after 14 years. Here is exactly why it closed, what founder Leif K-Brooks said, and where its millions of users actually went.',
     keywords: 'what happened to omegle, why did omegle shut down, omegle shut down, is omegle coming back, omegle closed, omegle replacement 2026',
@@ -1655,9 +1736,9 @@ const BLOG = [
   {
     slug: 'how-to-make-friends-online',
     date: '2026-07-13',
-    title: 'How to Make Friends Online as an Adult: A Practical Guide (2026) | TalkLive Blog',
+    title: 'How to Make Friends Online as an Adult | TalkLive',
     h1: 'How to Make Friends Online as an Adult — a Practical Guide',
-    description: 'Making friends as an adult is genuinely hard. Here is a practical, research-backed guide to making real friends online — where to go, what to say, and what actually works.',
+    description: 'Making friends as an adult is genuinely hard. A practical, research-backed guide to making real friends online — where to go and what to say.',
     keywords: 'how to make friends online, make friends as an adult, online friends, making friends after college, apps to make friends, no friends what to do',
     tag: 'Guides',
     sections: [
@@ -1685,9 +1766,9 @@ const BLOG = [
   {
     slug: 'someone-to-talk-to-at-3am',
     date: '2026-07-13',
-    title: 'Need Someone to Talk to at 3AM? Here Are Your Real Options | TalkLive Blog',
+    title: 'Need Someone to Talk to at 3AM? Your Options | TalkLive',
     h1: 'Need Someone to Talk to at 3AM? Here Are Your Real Options',
-    description: 'It\'s the middle of the night, your mind won\'t stop, and everyone you know is asleep. Here are the real options when you need someone to talk to at 3am — free, right now.',
+    description: 'It\'s the middle of the night, your mind won\'t stop, and everyone is asleep. The real options when you need someone to talk to at 3am, free.',
     keywords: 'someone to talk to at 3am, need someone to talk to, talk to someone at night, cant sleep need to talk, late night talk, lonely at night',
     tag: 'Wellbeing',
     sections: [
@@ -1713,6 +1794,9 @@ const BLOG = [
   },
 ];
 
+// Later articles live in ./blog-extra for the same reason.
+const BLOG = CORE_BLOG.concat(require("./blog-extra"));
+
 function blogUrl(slug) { return `${SITE}/blog/${slug}`; }
 
 function blogPost(b) {
@@ -1722,7 +1806,17 @@ function blogPost(b) {
   ).join('');
   const words = b.sections.reduce((n, s) => n + s.ps.join(' ').split(/\s+/).length, 0);
   const readMins = Math.max(2, Math.round(words / 200));
-  const others = BLOG.filter(x => x.slug !== b.slug).slice(0, 3)
+  // Walk forward from this post's own position rather than always taking the
+  // first three in BLOG — otherwise every article links to the same three and
+  // the rest of the blog is orphaned behind a single link from the index.
+  const self = BLOG.findIndex(x => x.slug === b.slug);
+  const explicit = (b.related || []).map(s => BLOG.find(x => x.slug === s)).filter(Boolean);
+  const ring = [];
+  for (let k = 1; ring.length + explicit.length < 3 && k < BLOG.length; k++) {
+    const x = BLOG[(self + k) % BLOG.length];
+    if (x.slug !== b.slug && !explicit.includes(x)) ring.push(x);
+  }
+  const others = explicit.concat(ring).slice(0, 3)
     .map(x => `<li><a href="/blog/${x.slug}">${esc(x.h1)}</a></li>`).join('');
 
   const ld = [
@@ -1855,7 +1949,7 @@ function blogIndex() {
 <script defer src="/ads.js"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>TalkLive Blog — Talking to Strangers, Voice Chat & Language Practice</title>
+<title>TalkLive Blog — Voice Chat & Talking to Strangers</title>
 <meta name="description" content="Guides and research on talking to strangers, voice-only chat, practising languages with real people, and staying safe online — from the team behind TalkLive." />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
 <meta name="theme-color" content="#0b0f1a" />
@@ -2047,10 +2141,10 @@ ${alternates}
 // --- Emit -------------------------------------------------------------------
 
 let count = 0;
-for (const p of PAGES) {
-  fs.writeFileSync(path.join(PUBLIC, `${p.slug}.html`), page(p));
+PAGES.forEach((p, i) => {
+  fs.writeFileSync(path.join(PUBLIC, `${p.slug}.html`), page(p, i));
   count++;
-}
+});
 
 for (const loc of LOCALES) {
   const dir = path.join(PUBLIC, loc.code);

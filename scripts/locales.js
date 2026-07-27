@@ -9,8 +9,8 @@
 module.exports = [
   {
     code: 'es', name: 'Español', dir: 'ltr', ogLocale: 'es_ES',
-    title: 'TalkLive — Chat de voz y texto gratis con desconocidos de todo el mundo',
-    description: 'TalkLive es un chat aleatorio gratuito de voz y texto con desconocidos. Toca para hablar en una llamada anónima en vivo o chatea por texto con una persona al azar en cualquier parte del mundo. Sin registro.',
+    title: 'TalkLive — Chat de voz y texto gratis con desconocidos',
+    description: 'TalkLive es un chat aleatorio gratuito de voz y texto con desconocidos. Toca para hablar en una llamada anónima en vivo o chatea por texto. Sin registro.',
     h1: 'Habla con desconocidos de todo el mundo',
     lede: 'Toca para Hablar y empieza una llamada de voz anónima en vivo, o toca para Chatear y escribe con una persona al azar en cualquier lugar del mundo. Gratis y sin registro.',
     ctaTalk: 'Toca para Hablar', ctaChat: 'Toca para Chatear',
@@ -38,8 +38,8 @@ module.exports = [
   },
   {
     code: 'pt', name: 'Português', dir: 'ltr', ogLocale: 'pt_BR',
-    title: 'TalkLive — Chat de voz e texto grátis com desconhecidos do mundo todo',
-    description: 'TalkLive é um chat aleatório gratuito de voz e texto com desconhecidos. Toque para falar numa chamada anônima ao vivo ou converse por texto com uma pessoa aleatória em qualquer lugar do mundo. Sem cadastro.',
+    title: 'TalkLive — Chat de voz e texto grátis com desconhecidos',
+    description: 'TalkLive é um chat aleatório gratuito de voz e texto com desconhecidos. Toque para falar numa chamada anônima ao vivo ou converse por texto. Sem cadastro.',
     h1: 'Converse com desconhecidos do mundo todo',
     lede: 'Toque para Falar e entre numa chamada de voz anônima ao vivo, ou toque para Conversar e troque mensagens com uma pessoa aleatória em qualquer lugar do mundo. Grátis e sem cadastro.',
     ctaTalk: 'Toque para Falar', ctaChat: 'Toque para Conversar',
@@ -67,8 +67,8 @@ module.exports = [
   },
   {
     code: 'fr', name: 'Français', dir: 'ltr', ogLocale: 'fr_FR',
-    title: 'TalkLive — Chat vocal et textuel gratuit avec des inconnus du monde entier',
-    description: 'TalkLive est un chat aléatoire gratuit, vocal et textuel, avec des inconnus. Appuyez pour parler dans un appel anonyme en direct ou discutez par texto avec une personne au hasard partout dans le monde. Sans inscription.',
+    title: 'TalkLive — Chat vocal et textuel gratuit avec des inconnus',
+    description: 'TalkLive est un chat aléatoire gratuit avec des inconnus. Appuyez pour parler dans un appel anonyme en direct ou discutez par texto. Sans inscription.',
     h1: 'Parlez avec des inconnus du monde entier',
     lede: 'Appuyez sur Parler pour lancer un appel vocal anonyme en direct, ou sur Discuter pour échanger par texto avec une personne au hasard, où qu’elle soit dans le monde. Gratuit, sans inscription.',
     ctaTalk: 'Appuyer pour Parler', ctaChat: 'Appuyer pour Discuter',
@@ -96,8 +96,8 @@ module.exports = [
   },
   {
     code: 'de', name: 'Deutsch', dir: 'ltr', ogLocale: 'de_DE',
-    title: 'TalkLive — Kostenloser Sprach- und Text-Chat mit Fremden weltweit',
-    description: 'TalkLive ist ein kostenloser Zufalls-Chat per Sprache und Text mit Fremden. Tippe zum Sprechen für einen anonymen Live-Anruf oder chatte per Text mit einer zufälligen Person irgendwo auf der Welt. Ohne Anmeldung.',
+    title: 'TalkLive — Kostenloser Sprach- & Text-Chat mit Fremden',
+    description: 'TalkLive ist ein kostenloser Zufalls-Chat per Sprache und Text mit Fremden. Tippe zum Sprechen für einen anonymen Live-Anruf oder chatte per Text. Ohne Anmeldung.',
     h1: 'Sprich mit Fremden auf der ganzen Welt',
     lede: 'Tippe auf Sprechen für einen anonymen Live-Sprachanruf oder auf Chatten für sofortigen Text-Chat mit einer zufälligen Person irgendwo auf der Welt. Kostenlos, ohne Anmeldung.',
     ctaTalk: 'Tippen zum Sprechen', ctaChat: 'Tippen zum Chatten',
@@ -125,8 +125,8 @@ module.exports = [
   },
   {
     code: 'ru', name: 'Русский', dir: 'ltr', ogLocale: 'ru_RU',
-    title: 'TalkLive — бесплатный голосовой и текстовый чат с незнакомцами со всего мира',
-    description: 'TalkLive — бесплатный случайный чат с незнакомцами: голос и текст. Нажмите, чтобы говорить в анонимном живом звонке, или переписывайтесь со случайным человеком из любой точки мира. Без регистрации.',
+    title: 'TalkLive — бесплатный голосовой и текстовый чат',
+    description: 'TalkLive — бесплатный случайный чат с незнакомцами: голос и текст. Нажмите, чтобы говорить в анонимном живом звонке или переписываться. Без регистрации.',
     h1: 'Общайтесь с незнакомцами со всего мира',
     lede: 'Нажмите «Говорить», чтобы начать анонимный голосовой звонок, или «Чат», чтобы мгновенно переписываться со случайным человеком из любой точки мира. Бесплатно и без регистрации.',
     ctaTalk: 'Нажми и говори', ctaChat: 'Нажми и пиши',
@@ -154,8 +154,8 @@ module.exports = [
   },
   {
     code: 'tr', name: 'Türkçe', dir: 'ltr', ogLocale: 'tr_TR',
-    title: 'TalkLive — Dünyanın her yerinden yabancılarla ücretsiz sesli ve yazılı sohbet',
-    description: 'TalkLive, yabancılarla ücretsiz rastgele sesli ve yazılı sohbettir. Konuşmak için dokunun ve anonim canlı bir aramaya katılın veya dünyanın herhangi bir yerindeki rastgele biriyle yazışın. Kayıt gerekmez.',
+    title: 'TalkLive — Yabancılarla ücretsiz sesli ve yazılı sohbet',
+    description: 'TalkLive, yabancılarla ücretsiz rastgele sesli ve yazılı sohbettir. Konuşmak için dokunun ve anonim canlı bir aramaya katılın veya yazışın. Kayıt gerekmez.',
     h1: 'Dünyanın her yerinden yabancılarla konuş',
     lede: 'Konuş’a dokunarak anonim canlı bir sesli arama başlat, ya da Sohbet’e dokunarak dünyanın herhangi bir yerindeki rastgele biriyle anında yazış. Ücretsiz, kayıt yok.',
     ctaTalk: 'Dokun ve Konuş', ctaChat: 'Dokun ve Yaz',
@@ -183,7 +183,7 @@ module.exports = [
   },
   {
     code: 'ar', name: 'العربية', dir: 'rtl', ogLocale: 'ar_AR',
-    title: 'TalkLive — دردشة صوتية ونصية مجانية مع غرباء من جميع أنحاء العالم',
+    title: 'TalkLive — دردشة صوتية ونصية مجانية مع غرباء',
     description: 'TalkLive دردشة عشوائية مجانية بالصوت والنص مع غرباء. اضغط للتحدث في مكالمة صوتية مباشرة مجهولة، أو دردش نصيًا مع شخص عشوائي في أي مكان في العالم. بدون تسجيل.',
     h1: 'تحدث مع غرباء من جميع أنحاء العالم',
     lede: 'اضغط «تحدث» لبدء مكالمة صوتية مباشرة مجهولة، أو اضغط «دردش» للمراسلة الفورية مع شخص عشوائي في أي مكان في العالم. مجاني وبدون تسجيل.',
@@ -213,7 +213,7 @@ module.exports = [
   {
     code: 'hi', name: 'हिन्दी', dir: 'ltr', ogLocale: 'hi_IN',
     title: 'TalkLive — दुनिया भर के अजनबियों से मुफ़्त वॉयस और टेक्स्ट चैट',
-    description: 'TalkLive अजनबियों के साथ मुफ़्त रैंडम वॉयस और टेक्स्ट चैट है। टैप करें और गुमनाम लाइव कॉल पर बात करें, या दुनिया में कहीं भी किसी रैंडम व्यक्ति से टेक्स्ट चैट करें। बिना साइन-अप।',
+    description: 'TalkLive अजनबियों के साथ मुफ़्त रैंडम वॉयस और टेक्स्ट चैट है। टैप करें और गुमनाम लाइव कॉल पर बात करें, या किसी रैंडम व्यक्ति से टेक्स्ट चैट करें। बिना साइन-अप।',
     h1: 'दुनिया भर के अजनबियों से बात करें',
     lede: '“टॉक” पर टैप करके गुमनाम लाइव वॉयस कॉल शुरू करें, या “चैट” पर टैप करके दुनिया में कहीं भी किसी रैंडम व्यक्ति से तुरंत टेक्स्ट चैट करें। मुफ़्त, बिना साइन-अप।',
     ctaTalk: 'टैप करके बोलें', ctaChat: 'टैप करके चैट करें',
@@ -270,8 +270,8 @@ module.exports = [
   },
   {
     code: 'id', name: 'Bahasa Indonesia', dir: 'ltr', ogLocale: 'id_ID',
-    title: 'TalkLive — Obrolan suara & teks gratis dengan orang asing di seluruh dunia',
-    description: 'TalkLive adalah obrolan acak gratis lewat suara dan teks dengan orang asing. Ketuk untuk bicara dalam panggilan langsung anonim, atau chat teks dengan orang acak di mana pun di dunia. Tanpa daftar.',
+    title: 'TalkLive — Obrolan suara & teks gratis dengan orang asing',
+    description: 'TalkLive adalah obrolan acak gratis lewat suara dan teks dengan orang asing. Ketuk untuk bicara dalam panggilan langsung anonim, atau chat teks. Tanpa daftar.',
     h1: 'Ngobrol dengan orang asing di seluruh dunia',
     lede: 'Ketuk Bicara untuk memulai panggilan suara langsung yang anonim, atau ketuk Chat untuk mengobrol teks instan dengan orang acak di mana pun di dunia. Gratis, tanpa daftar.',
     ctaTalk: 'Ketuk untuk Bicara', ctaChat: 'Ketuk untuk Chat',
@@ -386,8 +386,8 @@ module.exports = [
   },
   {
     code: 'it', name: 'Italiano', dir: 'ltr', ogLocale: 'it_IT',
-    title: 'TalkLive — Chat vocale e testuale gratis con sconosciuti di tutto il mondo',
-    description: 'TalkLive è una chat casuale gratuita, vocale e testuale, con sconosciuti. Tocca per parlare in una chiamata anonima dal vivo o chatta per iscritto con una persona a caso ovunque nel mondo. Senza registrazione.',
+    title: 'TalkLive — Chat vocale e testuale gratis con sconosciuti',
+    description: 'TalkLive è una chat casuale gratuita con sconosciuti. Tocca per parlare in una chiamata anonima dal vivo o chatta per iscritto. Senza registrazione.',
     h1: 'Parla con sconosciuti di tutto il mondo',
     lede: 'Tocca Parla per avviare una chiamata vocale anonima dal vivo, o tocca Chatta per scrivere subito a una persona a caso ovunque nel mondo. Gratis, senza registrazione.',
     ctaTalk: 'Tocca per Parlare', ctaChat: 'Tocca per Chattare',
@@ -444,8 +444,8 @@ module.exports = [
   },
   {
     code: 'bn', name: 'বাংলা', dir: 'ltr', ogLocale: 'bn_BD',
-    title: 'TalkLive — বিশ্বজুড়ে অপরিচিতদের সাথে ফ্রি ভয়েস ও টেক্সট চ্যাট',
-    description: 'TalkLive হলো অপরিচিতদের সাথে ফ্রি র্যান্ডম ভয়েস ও টেক্সট চ্যাট। ট্যাপ করে বেনামি লাইভ কলে কথা বলুন, অথবা বিশ্বের যেকোনো জায়গার র্যান্ডম কারও সাথে টেক্সট চ্যাট করুন। সাইন-আপ লাগে না।',
+    title: 'TalkLive — অপরিচিতদের সাথে ফ্রি ভয়েস ও টেক্সট চ্যাট',
+    description: 'TalkLive হলো অপরিচিতদের সাথে ফ্রি র্যান্ডম ভয়েস ও টেক্সট চ্যাট। ট্যাপ করে বেনামি লাইভ কলে কথা বলুন, অথবা র্যান্ডম কারও সাথে টেক্সট চ্যাট করুন। সাইন-আপ লাগে না।',
     h1: 'বিশ্বজুড়ে অপরিচিতদের সাথে কথা বলুন',
     lede: '“টক”-এ ট্যাপ করে বেনামি লাইভ ভয়েস কল শুরু করুন, অথবা “চ্যাট”-এ ট্যাপ করে বিশ্বের যেকোনো জায়গার র্যান্ডম কারও সাথে সাথে সাথে টেক্সট চ্যাট করুন। ফ্রি, সাইন-আপ ছাড়াই।',
     ctaTalk: 'ট্যাপ করে কথা বলুন', ctaChat: 'ট্যাপ করে চ্যাট করুন',
