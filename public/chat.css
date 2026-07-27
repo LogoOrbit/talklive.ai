@@ -60,71 +60,159 @@ img { max-width: 100%; }
   .app { border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
 }
 
-/* --- The one top bar: brand · info (brand name+online, or partner) · actions --- */
+/* --- The one top bar ------------------------------------------------------
+   Three balanced zones on a symmetric grid: lead (settings + wordmark) ·
+   status (online count, or the partner once connected) · actions.
+   The lead and actions take exactly the width they need and the status
+   column absorbs everything left over, so the middle is centred in the bar
+   instead of being shoved against the brand by a greedy flex child — and it
+   truncates rather than sliding under the buttons when space runs out. Every control shares one shape language
+   (fully rounded) and one weight scale, with a single saturated element —
+   the call button — so the primary action is never in competition. --- */
 .topbar {
   flex: 0 0 auto;
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
-  padding: 8px 12px;
-  padding-top: calc(8px + env(safe-area-inset-top, 0px));
-  border-bottom: 1px solid var(--line);
+  padding: 9px 12px;
+  padding-top: calc(9px + env(safe-area-inset-top, 0px));
+  min-height: 60px;
+  position: relative;
+  z-index: 20;
+  /* Opaque on purpose: the stage sits directly behind this bar, so a
+     translucent surface leaves the page heading legible through it — and
+     backdrop-filter is the most expensive thing this stylesheet could ask a
+     weak phone to composite every frame. */
   background: var(--bg-2);
-  min-height: 56px;
+  border-bottom: 1px solid var(--line);
 }
-.brand { flex: 0 0 auto; display: inline-flex; align-items: center; text-decoration: none; color: var(--text); }
+/* A whisper of accent along the base edge so the bar reads as a deliberate
+   surface rather than a plain divider. */
+.topbar::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 40%, transparent), transparent);
+  pointer-events: none;
+}
+
+.top-lead { display: inline-flex; align-items: center; gap: 9px; min-width: 0; }
+.brand {
+  display: inline-flex; align-items: center; gap: 8px; min-width: 0;
+  text-decoration: none; color: var(--text); border-radius: 12px;
+  transition: opacity 0.18s ease;
+}
+.brand:hover { opacity: 0.78; }
+/* Four bars that idle as a static waveform and animate while the app is
+   live — a small sign that the product is about voice. */
+.brand-mark { display: inline-flex; align-items: flex-end; gap: 2px; height: 18px; flex: none; }
+.brand-mark i {
+  display: block; width: 3px; border-radius: 2px;
+  background: linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--green)));
+  animation: brandWave 1.5s ease-in-out infinite;
+}
+.brand-mark i:nth-child(1) { height: 8px;  animation-delay: 0s; }
+.brand-mark i:nth-child(2) { height: 15px; animation-delay: 0.18s; }
+.brand-mark i:nth-child(3) { height: 11px; animation-delay: 0.36s; }
+.brand-mark i:nth-child(4) { height: 6px;  animation-delay: 0.54s; }
+@keyframes brandWave { 0%, 100% { transform: scaleY(0.55); } 50% { transform: scaleY(1); } }
 .brand-text {
-  font-size: 17px; font-weight: 800; letter-spacing: -0.4px;
+  font-size: 17px; font-weight: 800; letter-spacing: -0.4px; white-space: nowrap;
   background: linear-gradient(120deg, var(--text) 30%, var(--accent) 100%);
   -webkit-background-clip: text; background-clip: text;
   -webkit-text-fill-color: transparent; color: transparent;
 }
 
-.top-info { flex: 1 1 auto; min-width: 0; }
-.top-id { display: flex; flex-direction: column; min-width: 0; }
+/* Centre zone. Idle it holds the online pill; connected it holds the partner. */
+.top-info { justify-self: stretch; min-width: 0; overflow: hidden; }
+.top-id { display: flex; flex-direction: column; align-items: center; min-width: 0; }
 .top-name {
-  display: inline-flex; align-items: center; gap: 7px;
+  display: inline-flex; align-items: center; gap: 7px; max-width: 100%;
   font-weight: 700; font-size: 15.5px; letter-spacing: -0.2px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .top-name > span:last-child { overflow: hidden; text-overflow: ellipsis; }
 .top-sub {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-size: 12px; font-weight: 500; color: var(--muted); margin-top: 1px;
+  display: inline-flex; align-items: center; gap: 6px; max-width: 100%;
+  font-size: 12px; font-weight: 500; color: var(--muted); margin-top: 2px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .online-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); flex: none; }
-/* Idle state: the online count reads as one compact status pill instead of a
-   loose line of text that gets clipped mid-word on narrow phones. */
+
+/* Idle: the online count is one compact status pill, centred in the bar. */
 #topDefault .top-sub {
-  margin-top: 0; padding: 5px 11px; border-radius: 999px; width: fit-content; max-width: 100%;
-  background: color-mix(in srgb, var(--green) 11%, transparent);
-  color: var(--text); font-weight: 600;
+  margin-top: 0; padding: 6px 13px; border-radius: 999px; width: fit-content;
+  background: color-mix(in srgb, var(--green) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--green) 22%, transparent);
+  color: var(--text); font-weight: 600; letter-spacing: 0.01em;
 }
-#topDefault .top-sub .online-dot { box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 22%, transparent); }
+/* The live dot breathes, so the count reads as a real-time number. */
+#topDefault .top-sub .online-dot { animation: livePulse 2.4s ease-in-out infinite; }
+@keyframes livePulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--green) 55%, transparent); }
+  70%      { box-shadow: 0 0 0 6px color-mix(in srgb, var(--green) 0%, transparent); }
+}
 .peer-flag { display: inline-flex; flex: none; }
 .peer-flag .flag-icon { border-radius: 3px; display: block; }
 
-/* Action buttons: quiet round icons, all in the same bar. */
-.top-actions { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; }
+/* --- Action buttons ---
+   One shape, one size, one resting weight. Colour is reserved for meaning:
+   the call button is the only filled control, report turns red only on
+   contact, and Auto fills green solely when it is switched on. --- */
+.top-actions { justify-self: end; display: inline-flex; align-items: center; gap: 7px; }
 .icon-btn {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 40px; height: 40px; border-radius: 50%;
-  border: 1px solid var(--line); background: transparent; color: var(--muted);
-  cursor: pointer; padding: 0;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  width: 38px; height: 38px; border-radius: 50%; flex: none;
+  border: 1px solid transparent;
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  color: var(--muted); cursor: pointer; padding: 0;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease,
+              transform 0.2s cubic-bezier(0.34, 1.4, 0.64, 1), box-shadow 0.2s ease;
 }
-.icon-btn:active { transform: scale(0.92); }
-.report-btn { color: var(--danger); }
-.call-btn { color: var(--accent); }
+.icon-btn:hover {
+  background: color-mix(in srgb, var(--text) 11%, transparent);
+  color: var(--text); transform: translateY(-1px);
+}
+.icon-btn:active { transform: translateY(0) scale(0.93); }
+.icon-btn:focus-visible {
+  outline: none; color: var(--text);
+  box-shadow: 0 0 0 2px var(--bg-2), 0 0 0 4px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+.report-btn:hover { color: var(--danger); background: color-mix(in srgb, var(--danger) 14%, transparent); }
+.friend-btn:hover { color: var(--green); background: color-mix(in srgb, var(--green) 14%, transparent); }
 
-/* "Auto" — the auto-reconnect toggle, a small labeled pill. */
+/* The one saturated control in the bar: the primary action. */
+.call-btn {
+  background: var(--accent); color: #fff;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 34%, transparent);
+}
+.call-btn:hover {
+  background: color-mix(in srgb, var(--accent) 88%, #fff); color: #fff;
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 44%, transparent);
+}
+
+/* "Auto" — the auto-reconnect toggle. Same height as its neighbours, tonal
+   when off so it stops shouting over the call button, filled when on. */
 .auto-btn {
-  width: auto; border-radius: 999px; padding: 0 14px;
+  width: auto; min-width: 0; border-radius: 999px; padding: 0 14px; height: 38px;
   font: inherit; font-size: 12.5px; font-weight: 700; letter-spacing: 0.02em;
 }
 .auto-btn.active {
-  color: #fff; background: var(--green); border-color: var(--green);
+  color: #fff; background: var(--green); border-color: transparent;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--green) 32%, transparent);
+}
+.auto-btn.active:hover { background: color-mix(in srgb, var(--green) 88%, #fff); color: #fff; }
+
+/* --- Responsive ---
+   Connected, the bar can carry six controls. Below 560px the wordmark drops
+   to its waveform and the controls tighten, so the centre zone keeps room
+   for the partner's name instead of the row overflowing. --- */
+/* Responsive rules for the bar live together further down, in one block, so
+   there is a single place that decides how it degrades. */
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-mark i, #topDefault .top-sub .online-dot { animation: none; }
+  .icon-btn { transition: background 0.2s ease, color 0.2s ease; }
+  .icon-btn:hover, .icon-btn:active { transform: none; }
 }
 
 /* --- Stage --- */
@@ -224,27 +312,39 @@ img { max-width: 100%; }
 .send-btn:hover { opacity: 0.92; }
 .send-btn:active { transform: scale(0.9); }
 
-/* Phones: while connected the partner's name takes the middle of the bar, so
-   the brand text steps aside to make room for it and the action icons. */
+/* --- The top bar on smaller screens --------------------------------------
+   Connected, the bar carries up to six controls plus a partner name that can
+   run to "ElectricPanther45". Rather than shrink everything at once, it sheds
+   in stages: first the wordmark, then the label text, then size. --- */
 @media (max-width: 700px) {
+  /* Connected, the partner needs the room the wordmark was using. */
   .topbar.connected .brand { display: none; }
 }
-
-/* Phones: the topbar packs 7 controls into one row. Outlined circles read as
-   heavy clutter at this size, so the icons go borderless (ghost) and only the
-   Auto toggle and call button keep a visible shape. */
-@media (max-width: 480px) {
-  .topbar { padding: 6px 10px; padding-top: calc(6px + env(safe-area-inset-top, 0px)); gap: 8px; min-height: 52px; }
-  .top-actions { gap: 2px; }
-  .icon-btn { width: 36px; height: 36px; border-color: transparent; }
-  .icon-btn:active { background: var(--accent-soft); transform: scale(0.92); }
-  .icon-btn svg { width: 19px; height: 19px; }
-  .auto-btn { width: auto; height: 30px; padding: 0 10px; margin: 0 3px; font-size: 11px; border-color: var(--line); }
-  .call-btn { background: var(--accent-soft); }
-  .brand-text { font-size: 16px; }
-  .top-name { font-size: 14px; }
-  .top-sub { font-size: 11px; }
-  #topDefault .top-sub { padding: 4px 10px; }
+@media (max-width: 560px) {
+  .topbar { gap: 8px; padding-left: 10px; padding-right: 10px; min-height: 56px; }
+  .brand-text { display: none; }
+  .top-lead { gap: 6px; }
+  .top-actions { gap: 5px; }
+  .icon-btn { width: 35px; height: 35px; }
+  .icon-btn svg { width: 18px; height: 18px; }
+  .auto-btn { padding: 0 11px; height: 35px; font-size: 12px; }
+  /* With the wordmark gone, the partner reads better hard-left against the
+     settings button — the arrangement every messaging app uses — instead of
+     floating in a centre column it is too wide for. The zone itself keeps
+     stretching to its grid track; sizing it to its content would let a long
+     name spill over the buttons rather than clip. */
+  .topbar.connected .top-id { align-items: flex-start; }
+  .topbar.connected .top-name { font-size: 14.5px; }
+  .top-sub { font-size: 11.5px; }
+  #topDefault .top-sub { padding: 5px 11px; }
+}
+@media (max-width: 400px) {
+  .topbar { gap: 6px; min-height: 54px; }
+  .top-actions { gap: 3px; }
+  .icon-btn { width: 33px; height: 33px; }
+  .icon-btn svg { width: 17px; height: 17px; }
+  .auto-btn { padding: 0 9px; height: 33px; font-size: 11.5px; }
+  .topbar.connected .top-name { font-size: 14px; }
 }
 
 /* Very narrow phones: tighten the composer so all three controls fit, and
@@ -458,8 +558,12 @@ img { max-width: 100%; }
 
   .topbar { min-height: 64px; padding: 10px 18px; gap: 14px; background: color-mix(in srgb, var(--bg-2) 80%, transparent); }
   .brand-text { font-size: 19px; }
-  .icon-btn:hover { background: var(--accent-soft); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
-  .report-btn:hover { background: color-mix(in srgb, var(--danger) 14%, transparent); color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, var(--line)); }
+  /* Hover stays borderless here — the base rules already carry the tint and
+     the lift, and re-introducing outlines on hover alone made the controls
+     jump between two different shapes. */
+  .icon-btn:hover { background: var(--accent-soft); color: var(--accent); }
+  .report-btn:hover { background: color-mix(in srgb, var(--danger) 14%, transparent); color: var(--danger); }
+  .call-btn:hover, .auto-btn.active:hover { color: #fff; }
   .icon-btn, .pill, .btn, .next-btn, .send-btn, .chat-start-btn { will-change: transform; }
 
   /* START view: a real desktop hero */

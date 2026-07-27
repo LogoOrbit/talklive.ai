@@ -51,6 +51,7 @@
     <!-- The one and only top bar. Idle: brand + online count. Connected: the
          partner's flag/name take the middle, and the action icons light up. -->
     <header class="topbar">
+      <div class="top-lead">
       <button type="button" id="chatSettingsBtn" class="icon-btn settings-btn" data-i18n-title="settings" data-i18n-aria="settings" aria-label="Settings">
         <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle cx="12" cy="12" r="3.2"/>
@@ -58,12 +59,14 @@
         </svg>
       </button>
       <a class="brand" href="/chat" aria-label="TalkLive">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
         <span class="brand-text">TalkLive</span>
       </a>
+      </div>
 
       <div class="top-info">
         <div id="topDefault" class="top-id">
-          <span class="top-sub"><span class="online-dot" aria-hidden="true"></span><span id="onlineCount">—</span>&nbsp;<span data-i18n="online">Online</span></span>
+          <span class="top-sub"><span class="online-dot" aria-hidden="true"></span><span id="onlineCount">—</span><span data-i18n="online">Online</span></span>
         </div>
         <div id="topPartner" class="top-id hidden">
           <span class="top-name"><span id="topPartnerName"></span></span>
