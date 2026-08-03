@@ -1,20 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-713E3C1RH1"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-713E3C1RH1');
-</script>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978" crossorigin="anonymous"></script>
-<script src="/loading.js"></script>
-<script defer src="/ads.js"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="stylesheet" href="style.css" />
+<script src="/loading.js"></script>
+<script defer src="/ads.js"></script>
+<link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
+<link rel="preconnect" href="https://pagead2.googlesyndication.com" crossorigin />
 <title>Privacy Policy — TalkLive</title>
 <meta name="description" content="How TalkLive handles your data: what we collect, what we never record (your voice), and your privacy rights on our free random voice chat platform." />
 <meta name="robots" content="index, follow" />
@@ -33,7 +26,6 @@
 <meta name="twitter:description" content="How TalkLive handles your data: what we collect, what we never record (your voice), and your privacy rights on our free random voice chat platform." />
 <meta name="twitter:image" content="https://talklive.app/og-image.png" />
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-<link rel="stylesheet" href="style.css" />
 <script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebPage","name":"Privacy Policy","url":"https://talklive.app/privacy","publisher":{"@type":"Organization","name":"TalkLive","url":"https://talklive.app","logo":"https://talklive.app/favicon.svg"},"description":"How TalkLive handles your data: what is collected, what is never recorded, and your privacy rights.","about":{"@type":"Thing","name":"Privacy policy"},"inLanguage":"en"},{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://talklive.app/"},{"@type":"ListItem","position":2,"name":"Privacy Policy","item":"https://talklive.app/privacy"}]}]</script>
 </head>
 <body>
@@ -132,5 +124,19 @@
       <a href="/" class="link-btn">&larr; Back to TalkLive</a>
     </footer>
   </div>
+
+<!-- Analytics + ad tags, deliberately last: they are async, so their position
+     does not change whether they run, only when they start competing with the
+     page's own assets for bandwidth on a slow mobile connection. -->
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-713E3C1RH1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-713E3C1RH1');
+</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978" crossorigin="anonymous"></script>
 </body>
 </html>

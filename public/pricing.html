@@ -1,20 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-713E3C1RH1"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-713E3C1RH1');
-</script>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978" crossorigin="anonymous"></script>
-<script src="/loading.js"></script>
-<script defer src="/ads.js"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="stylesheet" href="/pages.css" />
+<script src="/loading.js"></script>
+<script defer src="/ads.js"></script>
+<link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
+<link rel="preconnect" href="https://pagead2.googlesyndication.com" crossorigin />
 <title>Pricing — TalkLive Premium</title>
 <meta name="description" content="TalkLive is free forever. Upgrade to TalkLive Premium — now 50% off at $5/month — to unlock all filters, unlimited friends, instant matching and an ad-free experience." />
 <link rel="canonical" href="https://talklive.app/pricing" />
@@ -32,7 +25,6 @@
 <meta name="twitter:description" content="TalkLive is free forever. Upgrade to TalkLive Premium — now 50% off at $5/month — to unlock all filters, unlimited friends, instant matching and an ad-free experience." />
 <meta name="twitter:image" content="https://talklive.app/og-image.png" />
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-<link rel="stylesheet" href="/pages.css" />
 <style>
 .pricing-hero { text-align: center; padding: clamp(20px, 4vw, 40px) 10px 8px; }
 .pricing-hero h1 { margin-bottom: 0.3em; }
@@ -243,5 +235,19 @@
   });
 })();
 </script>
+
+<!-- Analytics + ad tags, deliberately last: they are async, so their position
+     does not change whether they run, only when they start competing with the
+     page's own assets for bandwidth on a slow mobile connection. -->
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-713E3C1RH1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-713E3C1RH1');
+</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978" crossorigin="anonymous"></script>
 </body>
 </html>

@@ -1,20 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-713E3C1RH1"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-713E3C1RH1');
-</script>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978" crossorigin="anonymous"></script>
-<script src="/loading.js"></script>
-<script defer src="/ads.js"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+<link rel="stylesheet" href="/chat.css" />
+<script src="/loading.js"></script>
+<script defer src="/ads.js"></script>
+<link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
+<link rel="preconnect" href="https://pagead2.googlesyndication.com" crossorigin />
 <title>TalkLive — Anonymous Text Chat with Strangers</title>
 <meta name="description" content="Anonymous text chat with a random stranger anywhere in the world. Free, instant, no sign-up." />
 <meta name="robots" content="noindex, follow" />
@@ -42,7 +35,6 @@
 <link rel="icon" href="/favicon-48.png" sizes="48x48" type="image/png" />
 <link rel="apple-touch-icon" href="/favicon-192.png" />
 <link rel="manifest" href="/site.webmanifest" />
-<link rel="stylesheet" href="/chat.css" />
 <script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebApplication","name":"TalkLive Chat","url":"https://talklive.app/chat","applicationCategory":"CommunicationApplication","operatingSystem":"Web, Android, iOS","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"isAccessibleForFree":true,"publisher":{"@type":"Organization","name":"TalkLive","url":"https://talklive.app","logo":"https://talklive.app/favicon.svg"},"description":"The live TalkLive chat room — anonymous random voice and text conversations with strangers."}]</script>
 </head>
 <body>
@@ -353,9 +345,26 @@
     </div>
   </aside>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="/countries.js"></script>
-  <script src="/i18n.js"></script>
-  <script src="/chat.js"></script>
+  <!-- Deferred, not blocking: `defer` keeps them running in document order (so
+       socket.io, the country data and i18n are all in place before chat.js)
+       while letting the browser finish parsing and paint the page first. -->
+  <script defer src="/socket.io/socket.io.js"></script>
+  <script defer src="/countries.js"></script>
+  <script defer src="/i18n.js"></script>
+  <script defer src="/chat.js"></script>
+
+<!-- Analytics + ad tags, deliberately last: they are async, so their position
+     does not change whether they run, only when they start competing with the
+     page's own assets for bandwidth on a slow mobile connection. -->
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-713E3C1RH1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-713E3C1RH1');
+</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978" crossorigin="anonymous"></script>
 </body>
 </html>

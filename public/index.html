@@ -1,21 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name='impact-site-verification' value='c12db422-3008-4ecd-a5c6-679fa382c00e'>
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-713E3C1RH1"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-713E3C1RH1');
-</script>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978" crossorigin="anonymous"></script>
-<script src="/loading.js"></script>
-<script defer src="/ads.js"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+<!-- The stylesheet is the one render-blocking resource we actually want, so it
+     is requested before the (much larger) block of meta tags and JSON-LD below
+     rather than after it — the sooner it lands, the sooner the hero paints.
+     Analytics and ad tags are loaded at the end of <body> instead of here so
+     they stop competing for mobile bandwidth during Largest Contentful Paint. -->
+<link rel="stylesheet" href="style.css?v=20260710f" />
+<script src="/loading.js"></script>
+<script defer src="/config.js"></script>
+<script defer src="/ads.js"></script>
+
+<link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
+<link rel="preconnect" href="https://pagead2.googlesyndication.com" crossorigin />
+<link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+<link rel="dns-prefetch" href="https://pagead2.googlesyndication.com" />
+
+<meta name='impact-site-verification' value='c12db422-3008-4ecd-a5c6-679fa382c00e'>
 <title>TalkLive — Free Random Voice & Text Chat with Strangers</title>
 <meta name="description" content="TalkLive is free random voice and text chat with strangers. Tap to Talk for a live anonymous call, or Tap to Chat for instant text — no sign-up needed." />
 <meta name="keywords" content="talk to strangers, random voice chat, random text chat, text chat with strangers, random call, live call, voice chat, anonymous chat, anonymous text chat, chat with strangers, meet new people, online friends, global chat, international calls, social discovery, live conversations" />
@@ -148,8 +152,6 @@
 }
 </script>
 
-<link rel="stylesheet" href="style.css?v=20260710f" />
-<script src="/config.js"></script>
 </head>
 <body>
   <a href="#main" class="skip-link" data-i18n="skipToContent">Skip to main content</a>
@@ -1294,11 +1296,15 @@
 
   <audio id="remoteAudio" autoplay playsinline></audio>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="countries.js?v=20260704b"></script>
-  <script src="i18n.js?v=20260710f"></script>
-  <script src="moderation.js?v=20260705b"></script>
-  <script src="video-banner.js?v=20260707a"></script>
+  <!-- Deferred, not blocking: none of these touch the DOM before it is parsed,
+       and `defer` keeps them running in document order (so socket.io, the data
+       modules and i18n are all in place before app.js), while letting the
+       browser finish parsing and paint the page first. -->
+  <script defer src="/socket.io/socket.io.js"></script>
+  <script defer src="countries.js?v=20260704b"></script>
+  <script defer src="i18n.js?v=20260710f"></script>
+  <script defer src="moderation.js?v=20260705b"></script>
+  <script defer src="video-banner.js?v=20260707a"></script>
   <script>
     /* Banner music button — optimized for instant playback: the <audio> preloads
        and we warm the buffer on the first user gesture so the first click plays
@@ -1344,15 +1350,28 @@
       audio.addEventListener('play', function () { setState(true); });
     })();
   </script>
-  <script src="app.js?v=20260710f"></script>
+  <script defer src="app.js?v=20260710f"></script>
 
 <!-- BEGIN AADS AD UNIT 2448073 -->
 
 <div id="frame" style="width: 100%;margin: auto;position: relative; z-index: 99998;">
-          <iframe data-aa='2448073' src='//acceptable.a-ads.com/2448073/?size=Adaptive'
+          <iframe data-aa='2448073' src='//acceptable.a-ads.com/2448073/?size=Adaptive' loading="lazy"
                             style='border:0; padding:0; width:70%; height:auto; overflow:hidden;display: block;margin: auto'></iframe>
         </div>
 
 <!-- END AADS AD UNIT 2448073 -->
+
+<!-- Analytics + ad tags, deliberately last: they are async, so their position
+     does not change whether they run, only when they start competing with the
+     page's own assets for bandwidth on a slow mobile connection. -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-713E3C1RH1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-713E3C1RH1');
+</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978" crossorigin="anonymous"></script>
 </body>
 </html>

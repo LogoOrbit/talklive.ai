@@ -248,6 +248,10 @@ app.get('/premium-status', (req, res) => {
 // button — safe to expose, it's not a secret.
 app.get('/config.js', (req, res) => {
   res.type('application/javascript');
+  // Only changes when the deployment's env changes, so let browsers keep it for
+  // an hour (and serve it stale for a day while revalidating) instead of
+  // re-fetching it on the critical path of every single page view.
+  res.setHeader('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400');
   res.send(
     `window.GOOGLE_CLIENT_ID = ${JSON.stringify(GOOGLE_CLIENT_ID)};`
     + `window.PADDLE_CLIENT_TOKEN = ${JSON.stringify(process.env.PADDLE_CLIENT_TOKEN || '')};`
@@ -299,17 +303,24 @@ app.get('/ice-servers', (req, res) => {
   res.json({ iceServers: buildIceServers() });
 });
 
+// sendFile bypasses the static middleware, so page shells served this way need
+// the same revalidate-always policy it applies to every other HTML file.
+function sendPage(res, file) {
+  res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+  res.sendFile(path.join(__dirname, '..', 'public', file));
+}
+
 // The voice-call screen is its own URL (reached via history.replaceState once
 // the user taps Talk) but shares the main single-page shell.
 app.get('/call', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+  sendPage(res, 'index.html');
 });
 
 // The text-chat app is a genuinely separate, lightweight page — no voice/WebRTC
 // code is loaded here at all, so the two sub-apps can never bleed into each
 // other and it stays fast on weak phones.
 app.get('/chat', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'chat.html'));
+  sendPage(res, 'chat.html');
 });
 
 // Redirect the raw SEO landing files (e.g. /talk-to-strangers.html) to their
@@ -410,8 +421,17 @@ app.use(
       if (/\.html$/i.test(filePath)) {
         // HTML changes with deploys — revalidate so updates show up fast.
         res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
-      } else if (/\.(css|js|svg|png|jpg|jpeg|webp|ico|woff2?)$/i.test(filePath)) {
-        res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
+      } else if (/\.(css|js|svg|png|jpg|jpeg|webp|ico|woff2?|mp4|webm|m4a|mp3)$/i.test(filePath)) {
+        // Assets requested with a ?v= cache buster get a brand new URL on every
+        // deploy, so the bytes behind a given URL never change — cache them for
+        // a year. Everything else keeps the conservative one-day window.
+        const versioned = /[?&]v=/.test(res.req && res.req.url ? res.req.url : '');
+        res.setHeader(
+          'Cache-Control',
+          versioned
+            ? 'public, max-age=31536000, immutable'
+            : 'public, max-age=86400, stale-while-revalidate=604800'
+        );
       } else if (/\.(xml|txt|webmanifest)$/i.test(filePath)) {
         res.setHeader('Cache-Control', 'public, max-age=3600');
       }

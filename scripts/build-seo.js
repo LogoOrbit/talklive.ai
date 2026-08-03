@@ -336,11 +336,12 @@ function page(p, index) {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978" crossorigin="anonymous"></script>
-<script src="/loading.js"></script>
-<script defer src="/ads.js"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="stylesheet" href="/seo.css" />
+<script src="/loading.js"></script>
+<script defer src="/ads.js"></script>
+<link rel="preconnect" href="https://pagead2.googlesyndication.com" crossorigin />
 <title>${esc(p.title)}</title>
 <meta name="description" content="${esc(p.description)}" />
 <meta name="keywords" content="${esc(p.keywords)}" />
@@ -366,7 +367,6 @@ function page(p, index) {
 <link rel="apple-touch-icon" href="/favicon.svg" />
 <link rel="manifest" href="/site.webmanifest" />
 <link rel="preconnect" href="https://flagcdn.com" crossorigin />
-<link rel="stylesheet" href="/seo.css" />
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
 </head>
 <body>
@@ -443,6 +443,7 @@ ${headerHtml(p.slug)}
   </div>
 </main>
 ${footerHtml()}
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978" crossorigin="anonymous"></script>
 </body>
 </html>
 `;
@@ -1847,11 +1848,12 @@ function blogPost(b) {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978" crossorigin="anonymous"></script>
-<script src="/loading.js"></script>
-<script defer src="/ads.js"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="stylesheet" href="/seo.css" />
+<script src="/loading.js"></script>
+<script defer src="/ads.js"></script>
+<link rel="preconnect" href="https://pagead2.googlesyndication.com" crossorigin />
 <title>${esc(b.title)}</title>
 <meta name="description" content="${esc(b.description)}" />
 <meta name="keywords" content="${esc(b.keywords)}" />
@@ -1876,7 +1878,6 @@ function blogPost(b) {
 <meta name="twitter:image" content="${SITE}/og-image.png" />
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="manifest" href="/site.webmanifest" />
-<link rel="stylesheet" href="/seo.css" />
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
 </head>
 <body>
@@ -1920,6 +1921,7 @@ ${headerHtml('blog')}
   ${adSlot('leaderboard')}
 </main>
 ${footerHtml()}
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978" crossorigin="anonymous"></script>
 </body>
 </html>
 `;
@@ -1944,11 +1946,12 @@ function blogIndex() {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978" crossorigin="anonymous"></script>
-<script src="/loading.js"></script>
-<script defer src="/ads.js"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="stylesheet" href="/seo.css" />
+<script src="/loading.js"></script>
+<script defer src="/ads.js"></script>
+<link rel="preconnect" href="https://pagead2.googlesyndication.com" crossorigin />
 <title>TalkLive Blog — Voice Chat & Talking to Strangers</title>
 <meta name="description" content="Guides and research on talking to strangers, voice-only chat, practising languages with real people, and staying safe online — from the team behind TalkLive." />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
@@ -1964,7 +1967,6 @@ function blogIndex() {
 <meta name="twitter:card" content="summary_large_image" />
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="manifest" href="/site.webmanifest" />
-<link rel="stylesheet" href="/seo.css" />
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
 </head>
 <body>
@@ -1994,6 +1996,7 @@ ${headerHtml('blog')}
   </div>
 </main>
 ${footerHtml()}
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978" crossorigin="anonymous"></script>
 </body>
 </html>
 `;
@@ -2044,11 +2047,12 @@ function localeHome(loc) {
   return `<!DOCTYPE html>
 <html lang="${loc.code}" dir="${loc.dir}">
 <head>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978" crossorigin="anonymous"></script>
-<script src="/loading.js"></script>
-<script defer src="/ads.js"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="stylesheet" href="/seo.css" />
+<script src="/loading.js"></script>
+<script defer src="/ads.js"></script>
+<link rel="preconnect" href="https://pagead2.googlesyndication.com" crossorigin />
 <title>${esc(loc.title)}</title>
 <meta name="description" content="${esc(loc.description)}" />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
@@ -2072,7 +2076,6 @@ ${alternates}
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="/favicon.svg" />
 <link rel="manifest" href="/site.webmanifest" />
-<link rel="stylesheet" href="/seo.css" />
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
 </head>
 <body>
@@ -2133,6 +2136,7 @@ ${alternates}
     <div class="fine">© ${new Date().getFullYear()} TalkLive · <a href="/about">About</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/contact">Contact</a></div>
   </div>
 </footer>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978" crossorigin="anonymous"></script>
 </body>
 </html>
 `;

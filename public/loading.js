@@ -1,10 +1,23 @@
+/* TalkLive page loader.
+
+   A full-screen curtain that hides the flash of unstyled content on first paint
+   and gives instant feedback while navigating between pages.
+
+   Timing matters a lot here: the curtain is opaque and covers the whole
+   viewport, so every millisecond it stays up is a millisecond of blank screen
+   in Largest Contentful Paint and Speed Index. It is therefore torn down as
+   soon as the page's own stylesheets have applied — the only thing it exists to
+   hide — rather than waiting for `load` (which trails behind analytics, ad
+   iframes and the socket.io client) or for the app scripts to finish parsing. */
 (function () {
+  var HARD_CAP_MS = 1500; // never let the curtain gate the paint for longer
+
   var css =
     '#tl-page-loader{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;' +
-    'background:#0b0f1a;opacity:1;transition:opacity .35s ease;pointer-events:all}' +
+    'background:#0b0f1a;opacity:1;transition:opacity .2s ease;pointer-events:all}' +
     '#tl-page-loader.tl-hide{opacity:0;pointer-events:none}' +
     '#tl-page-loader .tl-spinner{width:44px;height:44px;border-radius:50%;border:3px solid rgba(23,201,100,.25);' +
-    'border-top-color:#17c964;animation:tl-spin .8s linear infinite}' +
+    'border-top-color:#17c964;animation:tl-spin .8s linear infinite;will-change:transform}' +
     '@keyframes tl-spin{to{transform:rotate(360deg)}}' +
     '@media (prefers-reduced-motion: reduce){#tl-page-loader .tl-spinner{animation:none;border-top-color:rgba(23,201,100,.7)}}';
 
@@ -22,12 +35,43 @@
     overlay.classList.add('tl-hide');
   }
 
-  window.addEventListener('load', function () {
-    setTimeout(hide, 150);
-  });
-  document.addEventListener('DOMContentLoaded', function () {
-    setTimeout(hide, 700);
-  });
+  // True once every non-disabled stylesheet in the document has applied. A
+  // cross-origin sheet still exposes `.sheet` when it loads (only `cssRules` is
+  // walled off), so testing for existence is enough.
+  function stylesReady() {
+    var links = document.querySelectorAll('link[rel~="stylesheet"]');
+    for (var i = 0; i < links.length; i++) {
+      if (links[i].disabled) continue;
+      try {
+        if (!links[i].sheet) return false;
+      } catch (e) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  // Poll per frame rather than per timer: the check is trivial, and this lands
+  // on the first frame where the real UI is able to paint correctly styled.
+  var raf = window.requestAnimationFrame
+    ? window.requestAnimationFrame.bind(window)
+    : function (fn) { return setTimeout(fn, 16); };
+
+  function tick() {
+    if (!document.body || !stylesReady()) {
+      raf(tick);
+      return;
+    }
+    // Give the styled markup one frame to paint underneath before fading out,
+    // so the curtain never lifts on a half-painted page.
+    raf(hide);
+  }
+  raf(tick);
+
+  // Backstops, in case a stylesheet never resolves (blocked request, offline).
+  setTimeout(hide, HARD_CAP_MS);
+  document.addEventListener('DOMContentLoaded', hide);
+  window.addEventListener('load', hide);
 
   document.addEventListener(
     'click',
