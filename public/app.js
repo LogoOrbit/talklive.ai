@@ -304,6 +304,13 @@ function messageHasLink(text) {
   return LINK_RE.test(String(text || ''));
 }
 
+// --- Clearly unsafe / illegal solicitations. Mirrors the server's UNSAFE_RE so
+// the sender is told locally instead of the message being dropped silently. ---
+const UNSAFE_RE = /\b(child\s*porn|cp\s*trade|loli(?:con)?|jailbait|sell(?:ing)?\s+(?:drugs|guns|weapons)|buy\s+(?:drugs|cocaine|heroin|meth|fentanyl)|hire\s*(?:a\s*)?hitman|credit\s*card\s*numbers?|send\s+nudes|onlyfans|escort\s*service|invest\s+in\s+(?:crypto|bitcoin)|gift\s*cards?\s+for)\b/i;
+function messageIsUnsafe(text) {
+  return UNSAFE_RE.test(String(text || ''));
+}
+
 // Static fallback used until (and if) the server's /ice-servers responds.
 let ICE_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
