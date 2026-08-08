@@ -705,6 +705,23 @@ function containsLink(text) {
 // Clearly illegal / scam content is blocked in stranger chat (mirrors the
 // client-side filter) so the text pool stays legally safe.
 const UNSAFE_RE = /\b(child\s*porn|cp\s*trade|loli(?:con)?|jailbait|sell(?:ing)?\s+(?:drugs|guns|weapons)|buy\s+(?:drugs|cocaine|heroin|meth|fentanyl)|hire\s*(?:a\s*)?hitman|credit\s*card\s*numbers?|send\s+nudes|onlyfans|escort\s*service|invest\s+in\s+(?:crypto|bitcoin)|gift\s*cards?\s+for)\b/i;
+// Reported client errors that are not our code and not actionable: browser
+// extensions injecting into the page, in-app webviews tearing down their JS
+// bridge, opaque cross-origin script errors and autoplay-policy rejections.
+// Keep in sync with NOISE in public/error-reporter.js.
+const ERROR_NOISE = [
+  /metamask/i,
+  /ethereum|web3|solana|phantom|coinbase.?wallet/i,
+  /Java object is gone/i,
+  /webkit\.messageHandlers/i,
+  /^Script error\.?$/i,
+  /ResizeObserver loop/i,
+  /The (play method|request) is not allowed by the user agent/i,
+  /The fetching process for the media resource was aborted/i,
+  /play\(\) request was interrupted/i,
+  /extension:\/\//i,
+];
+
 // socket.id -> { start, n } sliding 5s window for the chat bot-flood guard.
 const chatRate = new Map();
 
@@ -1469,6 +1486,11 @@ io.on('connection', (socket) => {
   socket.on('client-error', (payload = {}) => {
     const message = typeof payload.message === 'string' ? payload.message.slice(0, 400) : '';
     if (!message) return;
+    // Same filter as public/error-reporter.js. Repeated here because app.js is
+    // served immutable for a year: browsers still running a cached copy from
+    // before that filter existed would otherwise keep filling the Errors tab
+    // with browser-extension and in-app-webview noise.
+    if (ERROR_NOISE.some((re) => re.test(message))) return;
     const p = profiles.get(socket.id);
     const rec = store.addError({
       source: 'client',

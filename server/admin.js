@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const express = require('express');
 const store = require('./store');
 const totp = require('./totp');
+const analytics = require('./analytics');
 
 let nodemailer = null;
 try { nodemailer = require('nodemailer'); } catch (_) { /* optional */ }
@@ -94,21 +95,33 @@ function reqIp(req) {
   return ((fwd ? String(fwd).split(',')[0].trim() : req.socket.remoteAddress) || '').replace('::ffff:', '');
 }
 
+// The timezone the dashboard cuts its days on. Owner-configurable; everything
+// is still *stored* in UTC hour buckets (see analytics.js).
+function reportTimezone(req) {
+  const asked = req && req.query ? req.query.tz : null;
+  return analytics.normalizeTimezone(asked, store.data.settings.timezone || 'UTC');
+}
+
+function activityReport(req) {
+  return analytics.buildReport(store.data.analytics.days, reportTimezone(req));
+}
+
 // --- Rule-based "AI" conclusion over the last 7 days of real metrics ---
-function generateConclusion(runtime) {
+// `report` is an analytics.buildReport() result, so "the last 7 days" means
+// seven of the owner's local days — not seven UTC days.
+function generateConclusion(runtime, report) {
   const days = store.data.analytics.days;
   const keys = Object.keys(days).sort();
-  const last7 = keys.slice(-7).map((k) => days[k]);
-  const prev7 = keys.slice(-14, -7).map((k) => days[k]);
-  const sum = (list, f) => list.reduce((acc, d) => acc + (d[f] || 0), 0);
+  const last7Days = report.daily.slice(-7);
 
-  const visits = sum(last7, 'visits');
-  const prevVisits = sum(prev7, 'visits');
-  const matches = sum(last7, 'matches');
-  const connections = sum(last7, 'connections');
-  const reports = sum(last7, 'reports');
-  const errors = sum(last7, 'errors');
-  const today = store.day();
+  const visits = report.last7.visits;
+  const prevVisits = report.prev7.visits;
+  const matches = report.last7.matches;
+  const connections = report.last7.connections;
+  const reports = report.last7.reports;
+  const errors = report.last7.errors;
+  const today = report.today;
+  const last7 = keys.slice(-7).map((k) => days[k]); // country/feature maps are per UTC day
 
   const lines = [];
   let health = 'good';
@@ -151,7 +164,23 @@ function generateConclusion(runtime) {
     lines.push(`Most used feature: "${sorted[0][0]}" (${sorted[0][1]}×). Least used: "${sorted[sorted.length - 1][0]}" (${sorted[sorted.length - 1][1]}×).`);
   }
 
-  lines.push(`Right now: ${runtime.online} user(s) online, today's peak was ${today.peakOnline}.`);
+  // Yesterday vs. the same slice of today, so a "we're down" reading is never
+  // just an artefact of the day being half over.
+  const y = report.yesterdaySoFar;
+  lines.push(`Yesterday (${report.yesterdayWindow}): ${report.yesterday.visits} visits, ${report.yesterday.uniques} unique visitors, peak of ${report.yesterday.peakOnline} online at once.`);
+  if (y.visits || today.visits) {
+    const delta = today.visits - y.visits;
+    const dir = delta > 0 ? `ahead by ${delta}` : delta < 0 ? `behind by ${Math.abs(delta)}` : 'exactly level';
+    lines.push(`So far today (${y.hoursElapsed}h in) you're ${dir} versus the same point yesterday (${today.visits} vs ${y.visits} visits).`);
+  }
+
+  const busiest = last7Days.reduce((best, d) => (d.peakOnline > (best ? best.peakOnline : -1) ? d : best), null);
+  if (busiest && busiest.peakOnline) lines.push(`Busiest day of the week: ${busiest.day}, peaking at ${busiest.peakOnline} users online at once.`);
+  if (report.changeVsLastWeek.uniques !== null) {
+    lines.push(`Unique visitors are ${report.changeVsLastWeek.uniques >= 0 ? 'up' : 'down'} ${Math.abs(report.changeVsLastWeek.uniques)}% week-over-week (${report.last7.uniques} vs ${report.prev7.uniques}).`);
+  }
+
+  lines.push(`Right now: ${runtime.online} user(s) online, today's peak was ${today.peakOnline} (day measured in ${report.timezone}, ${report.offset}).`);
 
   return { health, summary: lines };
 }
@@ -265,11 +294,14 @@ function createAdmin({ io, getRuntime, kickBanned }) {
     const runtime = getRuntime();
     const days = store.data.analytics.days;
     const keys = Object.keys(days).sort().slice(-30);
-    const series = keys.map((k) => {
-      const d = days[k];
-      return { day: k, visits: d.visits, uniques: d.uniques, connections: d.connections, matches: d.matches, messages: d.messages, reports: d.reports, errors: d.errors, peakOnline: d.peakOnline, newAccounts: d.newAccounts };
-    });
-    const today = store.day();
+    // The traffic chart and the tiles are cut on the owner's local day, so
+    // "today" on the dashboard is the same day the owner is living in.
+    const report = activityReport(req);
+    const series = report.daily.map((d) => ({
+      day: d.day, visits: d.visits, uniques: d.uniques, connections: d.connections, matches: d.matches,
+      messages: d.messages, reports: d.reports, errors: d.errors, peakOnline: d.peakOnline, newAccounts: d.newAccounts,
+    }));
+    const today = report.today;
     const agg = (field) => keys.reduce((acc, k) => {
       for (const [name, n] of Object.entries(days[k][field] || {})) acc[name] = (acc[name] || 0) + n;
       return acc;
@@ -277,14 +309,21 @@ function createAdmin({ io, getRuntime, kickBanned }) {
     const topics = Object.entries(store.data.analytics.topics).sort((a, b) => b[1] - a[1]).slice(0, 30);
     res.json({
       runtime,
-      today: { visits: today.visits, uniques: today.uniques, connections: today.connections, matches: today.matches, peakOnline: today.peakOnline },
+      timezone: report.timezone,
+      offset: report.offset,
+      todayWindow: report.todayWindow,
+      yesterdayWindow: report.yesterdayWindow,
+      today: { day: today.day, visits: today.visits, uniques: today.uniques, connections: today.connections, matches: today.matches, peakOnline: today.peakOnline },
+      yesterday: { day: report.yesterday.day, visits: report.yesterday.visits, uniques: report.yesterday.uniques, connections: report.yesterday.connections, matches: report.yesterday.matches, peakOnline: report.yesterday.peakOnline },
+      yesterdaySoFar: report.yesterdaySoFar,
+      changeVsYesterday: report.changeVsYesterday,
       totals: store.data.analytics.totals,
       series,
       countries: Object.entries(agg('countries')).sort((a, b) => b[1] - a[1]).slice(0, 15),
       cities: Object.entries(agg('cities')).sort((a, b) => b[1] - a[1]).slice(0, 15),
       features: Object.entries(agg('features')).sort((a, b) => b[1] - a[1]),
       topics,
-      conclusion: generateConclusion(runtime),
+      conclusion: generateConclusion(runtime, report),
       maintenance: store.data.settings.maintenance,
       counts: {
         reports: store.data.reports.length,
@@ -299,6 +338,29 @@ function createAdmin({ io, getRuntime, kickBanned }) {
 
   router.get('/api/online', (req, res) => {
     res.json({ users: getRuntime().users });
+  });
+
+  // Activity reports: today (hour by hour), yesterday, the last 30 days and the
+  // last 8 weeks — all cut on the owner's timezone rather than on UTC.
+  router.get('/api/activity', (req, res) => {
+    const report = activityReport(req);
+    res.json({
+      ...report,
+      runtime: getRuntime(),
+      savedTimezone: store.data.settings.timezone || 'UTC',
+      // Flagged so the UI can say which days predate hourly recording and
+      // therefore couldn't be re-cut precisely on the local day boundary.
+      estimatedDays: report.daily.filter((d) => d.estimated).map((d) => d.day),
+    });
+  });
+
+  router.post('/api/timezone', (req, res) => {
+    const tz = (req.body || {}).timezone;
+    if (!analytics.isValidTimezone(tz)) return res.status(400).json({ error: 'Unknown timezone.' });
+    store.data.settings.timezone = tz;
+    store.audit('timezone', reqIp(req), `Report timezone set to ${tz}`);
+    store.persistNow();
+    res.json({ ok: true, timezone: tz });
   });
 
   router.get('/api/reports', (req, res) => {
@@ -339,6 +401,24 @@ function createAdmin({ io, getRuntime, kickBanned }) {
 
   router.get('/api/errors', (req, res) => {
     res.json({ errors: store.data.errors.slice(0, 300) });
+  });
+
+  // Errors are collapsed by message and never expire on their own, so a bug
+  // fixed weeks ago keeps sitting at the top of the tab. Let the owner clear
+  // one (or all) and see whether it comes back.
+  router.post('/api/errors/dismiss', (req, res) => {
+    const { id, all } = req.body || {};
+    if (all) {
+      const n = store.data.errors.length;
+      store.data.errors = [];
+      store.audit('errors_cleared', reqIp(req), `Cleared ${n} error record(s)`);
+    } else {
+      const before = store.data.errors.length;
+      store.data.errors = store.data.errors.filter((e) => e.id !== id);
+      if (store.data.errors.length === before) return res.status(404).json({ error: 'Error not found.' });
+    }
+    store.persistNow();
+    res.json({ ok: true, remaining: store.data.errors.length });
   });
 
   router.get('/api/feedback', (req, res) => {

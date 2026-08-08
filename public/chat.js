@@ -12,6 +12,11 @@
 
   var socket = io();
 
+  // Forward uncaught errors on this page to the owner dashboard. /chat is a
+  // separate sub-app from the main one, and until this was added it reported
+  // nothing at all — bugs here were simply invisible in the Errors tab.
+  if (window.TalkLiveErrors) window.TalkLiveErrors.install(function () { return socket; });
+
   // --- Persistent identity (matches the main app's keys so a returning user
   // keeps the same client id / chosen name across both pages). ---
   function getClientId() {
@@ -28,6 +33,9 @@
 
   // --- DOM ---
   var $ = function (id) { return document.getElementById(id); };
+  // Resolved once. Every caller used to re-query it and dereference the result
+  // blind, so a markup change turned into a TypeError mid-conversation.
+  var topbar = document.querySelector('.topbar');
   var stage = $('chatStage');
   var viewStart = $('viewStart');
   var viewSearch = $('viewSearch');
@@ -146,7 +154,7 @@
     // + flag); idle shows the online counter next to the TalkLive brand.
     topDefault.classList.toggle('hidden', connected);
     topPartner.classList.toggle('hidden', !connected);
-    document.querySelector('.topbar').classList.toggle('connected', connected);
+    if (topbar) topbar.classList.toggle('connected', connected);
     if (name !== 'search') stopSearchLines();
   }
 
@@ -809,7 +817,7 @@
     addFriendBtn.classList.add('hidden');
     topDefault.classList.remove('hidden');
     topPartner.classList.add('hidden');
-    document.querySelector('.topbar').classList.remove('connected');
+    if (topbar) topbar.classList.remove('connected');
     input.disabled = true;
     clearOutgoingInvite();
     closeModal(callIncomingModal);

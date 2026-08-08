@@ -86,7 +86,11 @@ function defaults() {
     social: { friends: {}, friendChats: {}, blocks: {}, chatHistory: {} },
     analytics: {
       totals: { visits: 0, connections: 0, matches: 0, messages: 0, reports: 0, accounts: 0 },
-      days: {}, // 'YYYY-MM-DD' -> { visits, uniques, uniqueSet, connections, matches, messages, reports, feedback, errors, newAccounts, peakOnline, countries, cities, features }
+      // 'YYYY-MM-DD' (UTC) -> { visits, uniques, uniqueSet, connections, matches,
+      // messages, reports, feedback, errors, newAccounts, peakOnline, countries,
+      // cities, features, hours }. `hours` is '0'..'23' (UTC hour) -> counters,
+      // which is what lets the dashboard re-cut a day into any timezone.
+      days: {},
       topics: {}, // word -> count (aggregate, anonymous)
     },
     premium: {}, // clientId -> { activatedAt, updatedAt, lastEvent, subscriptionId, revokedAt }
@@ -94,6 +98,10 @@ function defaults() {
       maintenance: { on: false, message: 'TalkLive is under maintenance. We will be back shortly!' },
       banThreshold: 3,
       autoBanMinutes: 30,
+      // IANA zone the owner dashboard reports "today"/"yesterday" in. Analytics
+      // are always *stored* in UTC hour buckets; this only decides where the
+      // day boundary is drawn when they are read back.
+      timezone: process.env.REPORT_TZ || 'UTC',
     },
   };
 }
@@ -173,6 +181,15 @@ function dayKey(ts = Date.now()) {
   return new Date(ts).toISOString().slice(0, 10);
 }
 
+// Per-visitor hashes are only needed to dedupe *today's* uniques; keeping them
+// for every retained day is what made the document large. Days older than this
+// keep their `uniques` count and drop the set behind it.
+const UNIQUE_SET_DAYS = 2;
+
+function newHour() {
+  return { visits: 0, uniques: 0, connections: 0, matches: 0, messages: 0, peakOnline: 0 };
+}
+
 function day(ts = Date.now()) {
   const key = dayKey(ts);
   if (!data.analytics.days[key]) {
@@ -191,14 +208,30 @@ function day(ts = Date.now()) {
       countries: {},
       cities: {},
       features: {},
+      hours: {},
     };
     // Trim old days so the file never grows unbounded.
     const keys = Object.keys(data.analytics.days).sort();
     while (keys.length > MAX_DAYS) {
       delete data.analytics.days[keys.shift()];
     }
+    // Drop the visitor-hash sets of days we'll never dedupe against again.
+    for (const k of keys.slice(0, Math.max(0, keys.length - UNIQUE_SET_DAYS))) {
+      const d = data.analytics.days[k];
+      if (d && d.uniqueSet && Object.keys(d.uniqueSet).length) d.uniqueSet = {};
+    }
   }
-  return data.analytics.days[key];
+  const d = data.analytics.days[key];
+  if (!d.hours) d.hours = {}; // day record written before hourly buckets existed
+  return d;
+}
+
+// The hour bucket (UTC) a timestamp belongs to, inside its day record.
+function hour(ts = Date.now()) {
+  const d = day(ts);
+  const h = String(new Date(ts).getUTCHours());
+  if (!d.hours[h]) d.hours[h] = newHour();
+  return d.hours[h];
 }
 
 function hashIp(ip) {
@@ -209,12 +242,17 @@ function hashIp(ip) {
 
 function recordVisit(ip, countryName, city) {
   const d = day();
+  const hr = hour();
   d.visits += 1;
+  hr.visits += 1;
   data.analytics.totals.visits += 1;
   const h = hashIp(ip || 'unknown');
   if (!d.uniqueSet[h]) {
     d.uniqueSet[h] = 1;
     d.uniques += 1;
+    // Per-hour uniques = visitors first seen in that hour, so the hours of a
+    // day sum back to the day's unique count.
+    hr.uniques += 1;
   }
   if (countryName) d.countries[countryName] = (d.countries[countryName] || 0) + 1;
   if (city && city !== 'Unknown') d.cities[city] = (d.cities[city] || 0) + 1;
@@ -223,23 +261,25 @@ function recordVisit(ip, countryName, city) {
 
 function recordConnection() {
   day().connections += 1;
+  hour().connections += 1;
   data.analytics.totals.connections += 1;
   save();
 }
 
 function recordPeakOnline(count) {
   const d = day();
-  if (count > d.peakOnline) {
-    d.peakOnline = count;
-    save();
-  }
+  const hr = hour();
+  let changed = false;
+  if (count > d.peakOnline) { d.peakOnline = count; changed = true; }
+  if (count > hr.peakOnline) { hr.peakOnline = count; changed = true; }
+  if (changed) save();
 }
 
 function recordFeature(name) {
   const d = day();
   d.features[name] = (d.features[name] || 0) + 1;
-  if (name === 'match') { d.matches += 1; data.analytics.totals.matches += 1; }
-  if (name === 'chat_message') { d.messages += 1; data.analytics.totals.messages += 1; }
+  if (name === 'match') { d.matches += 1; hour().matches += 1; data.analytics.totals.matches += 1; }
+  if (name === 'chat_message') { d.messages += 1; hour().messages += 1; data.analytics.totals.messages += 1; }
   save();
 }
 
@@ -564,6 +604,7 @@ module.exports = {
   persistNow,
   dayKey,
   day,
+  hour,
   recordVisit,
   recordConnection,
   recordPeakOnline,

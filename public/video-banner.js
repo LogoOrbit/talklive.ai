@@ -88,10 +88,17 @@
     video.load();
 
     function tryPlay() {
-      var p = video.play();
+      var p;
+      try { p = video.play(); } catch (e) { showPosterOnly(); return; }
       if (p && typeof p.catch === 'function') {
-        // Autoplay blocked or unsupported — leave the poster showing.
-        p.catch(showPosterOnly);
+        p.catch(function (err) {
+          // AbortError just means a pause()/load() interrupted this play() —
+          // scrolling the banner off-screen does exactly that. Falling back to
+          // the poster there would permanently freeze a video that is fine.
+          if (err && err.name === 'AbortError') return;
+          // Anything else (autoplay policy, unsupported codec): keep the poster.
+          showPosterOnly();
+        });
       }
     }
     tryPlay();

@@ -150,6 +150,27 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .hrow .n{text-align:right;color:var(--ink2);font-variant-numeric:tabular-nums}
 .hrow div:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
+/* activity report */
+.tzbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:.83rem;color:var(--ink2)}
+.tzbar select{width:auto;min-width:200px;padding:7px 10px}
+.tzbar button{border:1px solid var(--ring);background:var(--surface-2);color:var(--text);border-radius:9px;padding:7px 13px;font-size:.8rem}
+.tzbar button:hover{border-color:var(--accent)}
+.window{font-size:.78rem;color:var(--muted);margin-top:2px}
+.delta{font-weight:700;font-size:.76rem}
+.delta.up{color:var(--good)}.delta.down{color:var(--crit)}.delta.flat{color:var(--muted)}
+/* 24-hour columns: one bar per local hour of the day */
+.hours{display:grid;grid-template-columns:repeat(24,1fr);gap:3px;align-items:end;height:150px;margin-top:6px}
+.hours .hcol{position:relative;height:100%;display:flex;align-items:flex-end}
+.hours .hfill{width:100%;border-radius:4px 4px 0 0;background:var(--grad);min-height:2px;transition:height .6s cubic-bezier(.2,.7,.3,1)}
+.hours .hcol.future .hfill{background:var(--surface-2)}
+.hours .hcol.now .hfill{background:linear-gradient(180deg,var(--s2),var(--good))}
+.hourlbl{display:grid;grid-template-columns:repeat(24,1fr);gap:3px;font-size:.6rem;color:var(--muted);text-align:center;margin-top:5px}
+.cmp{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.cmp .box{background:var(--surface-2);border:1px solid var(--ring);border-radius:14px;padding:11px 13px}
+.cmp .box .k{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.cmp .box .v{font-size:1.35rem;font-weight:800;margin-top:4px;font-variant-numeric:tabular-nums}
+.cmp .box .s{font-size:.74rem;color:var(--ink2);margin-top:2px}
+
 /* AI bot */
 .bot{display:flex;flex-direction:column;gap:12px;max-width:760px;margin:0 auto}
 .botlog{display:flex;flex-direction:column;gap:10px}
@@ -248,6 +269,10 @@ const jsq=(s)=>String(s==null?'':s).replace(/[^A-Za-z0-9]/g,c=>{const h=c.charCo
 const fmtTs=(ts)=>new Date(ts).toLocaleString();
 const ago=(ts)=>{const m=Math.round((Date.now()-ts)/60000);if(m<1)return'just now';if(m<60)return m+'m ago';if(m<1440)return Math.round(m/60)+'h ago';return Math.round(m/1440)+'d ago';};
 const num=(n)=>Number(n||0).toLocaleString();
+/* Percent change vs a baseline. null means "no baseline" (the comparison
+   period was empty), which is not the same as 0% and must not read as flat. */
+const deltaHtml=(pct)=>pct===null||pct===undefined?'<span class="delta flat">no baseline</span>'
+  :`<span class="delta ${pct>0?'up':pct<0?'down':'flat'}">${pct>0?'▲':pct<0?'▼':'▬'} ${Math.abs(pct)}%</span>`;
 
 function show(view){
   $('#setupView').classList.toggle('hidden',view!=='setup');
@@ -366,11 +391,13 @@ function rankedBars(el,entries){
 
 /* ---------- dashboard shell ---------- */
 const TABS=[
-  ['overview','Overview','📊'],['ai','AI Bot','🤖'],['live','Live','🟢'],['chats','Chats','💬'],
+  ['overview','Overview','📊'],['activity','Activity','📅'],['ai','AI Bot','🤖'],['live','Live','🟢'],['chats','Chats','💬'],
   ['reports','Reports','🚩'],['bans','Bans','⛔'],['accounts','Accounts','👤'],
   ['errors','Errors','🐛'],['feedback','Feedback','⭐'],['audit','Audit','🧾'],['settings','Settings','🛠️']
 ];
-const MOBILE_TABS=['overview','ai','live','chats','reports','settings'];
+/* Six fit the bottom bar on a small phone. The AI bot is reachable from the
+   Overview summary card, so it gives up its slot to Activity. */
+const MOBILE_TABS=['overview','activity','live','chats','reports','settings'];
 let tab='overview',timer=null,counts={};
 function navBtn(id,label,icon,mobile){
   let badge='';
@@ -389,6 +416,7 @@ async function load(){
   clearInterval(timer);timer=setInterval(load,tab==='live'?5000:tab==='ai'?60000:12000);
   try{
     if(tab==='overview')await viewOverview();
+    else if(tab==='activity')await viewActivity();
     else if(tab==='ai')await viewBot();
     else if(tab==='live')await viewLive();
     else if(tab==='reports')await viewReports();
@@ -404,15 +432,18 @@ async function load(){
 
 /* ---------- overview ---------- */
 async function viewOverview(){
-  const o=await api('overview');
+  // Same timezone the Activity tab is showing, so the two never disagree.
+  const o=await api('overview?tz='+encodeURIComponent(actTz||browserTz()));
   lastOverview=o;
   counts=o.counts;renderNav();
   const c=o.conclusion;
   $('#main').innerHTML=`
+  <div class="muted anim" style="margin-bottom:6px">📅 “Today” = <b>${esc(o.todayWindow)}</b> · <a href="#" onclick="tab='activity';renderNav();load();return false" style="color:var(--accent-2)">change timezone / see full reports →</a></div>
   <div class="grid tiles">
     <div class="tile anim"><div class="k">🟢 Online now</div><div class="v grad" data-count="${o.runtime.online}">0</div><div class="s">${num(o.runtime.inCall/2|0)} calls · ${num(o.runtime.waiting)} waiting</div></div>
-    <div class="tile anim"><div class="k">Visits today</div><div class="v" data-count="${o.today.visits}">0</div><div class="s">${num(o.today.uniques)} unique visitors</div></div>
-    <div class="tile anim"><div class="k">Users today</div><div class="v" data-count="${o.today.connections}">0</div><div class="s">peak online ${num(o.today.peakOnline)}</div></div>
+    <div class="tile anim"><div class="k">Visitors today</div><div class="v" data-count="${o.today.uniques}">0</div><div class="s">${num(o.today.visits)} visits · ${deltaHtml(o.changeVsYesterday.uniques)} vs same time yesterday</div></div>
+    <div class="tile anim"><div class="k">Peak online today</div><div class="v" data-count="${o.today.peakOnline}">0</div><div class="s">most at once so far · yesterday ${num(o.yesterday.peakOnline)}</div></div>
+    <div class="tile anim"><div class="k">Visitors yesterday</div><div class="v" data-count="${o.yesterday.uniques}">0</div><div class="s">${num(o.yesterday.visits)} visits · full day</div></div>
     <div class="tile anim"><div class="k">Matches today</div><div class="v" data-count="${o.today.matches}">0</div><div class="s">${num(o.totals.matches)} all-time</div></div>
     <div class="tile anim"><div class="k">Total visits</div><div class="v" data-count="${o.totals.visits}">0</div><div class="s">all-time</div></div>
     <div class="tile anim"><div class="k">Accounts</div><div class="v" data-count="${o.counts.accounts}">0</div><div class="s">registered users</div></div>
@@ -439,16 +470,137 @@ async function viewOverview(){
   hbars($('#cityBars'),o.cities,'var(--s2)');
 }
 
+/* ---------- activity: hour-by-hour, daily and weekly reports ---------- */
+let actTz=null,actMetric='uniques';
+const ACT_METRICS=[['uniques','Unique visitors'],['visits','Visits'],['connections','Connections'],['matches','Matches'],['messages','Messages']];
+
+/* Timezone list from the browser (falls back to a short list on old engines).
+   The owner's own zone is preselected, so "today" matches the day they are
+   actually living in rather than UTC. */
+function tzOptions(selected){
+  let zones=[];
+  try{zones=Intl.supportedValuesOf('timeZone');}catch(e){zones=[];}
+  if(!zones.length)zones=['UTC','Europe/London','Europe/Berlin','Europe/Istanbul','Asia/Dubai','Asia/Karachi','Asia/Kolkata','Asia/Dhaka','Asia/Jakarta','Asia/Shanghai','Asia/Tokyo','Australia/Sydney','America/New_York','America/Chicago','America/Denver','America/Los_Angeles','America/Sao_Paulo','Africa/Lagos','Africa/Cairo'];
+  if(!zones.includes('UTC'))zones.unshift('UTC');
+  if(selected&&!zones.includes(selected))zones.unshift(selected);
+  return zones.map(z=>`<option value="${esc(z)}"${z===selected?' selected':''}>${esc(z)}</option>`).join('');
+}
+function browserTz(){try{return Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';}catch(e){return 'UTC';}}
+
+/* One bar per local hour. Hours that haven't happened yet today are greyed so a
+   half-empty afternoon never looks like a traffic collapse. */
+function hourBars(el,hours,metric,upToHour){
+  const vals=hours.map(h=>h[metric]||0);
+  const max=Math.max(1,...vals);
+  el.innerHTML=`<div class="hours">${hours.map((h,i)=>{
+    const v=h[metric]||0;
+    const cls=upToHour!=null&&i>upToHour?'future':(i===upToHour?'now':'');
+    return `<div class="hcol ${cls}" title="${String(i).padStart(2,'0')}:00 — ${num(v)}"><div class="hfill" style="height:${Math.max(1,v/max*100)}%"></div></div>`;
+  }).join('')}</div>
+  <div class="hourlbl">${hours.map((h,i)=>`<span>${i%3===0?String(i).padStart(2,'0'):''}</span>`).join('')}</div>`;
+}
+
+async function viewActivity(){
+  if(!actTz)actTz=browserTz();
+  const r=await api('activity?tz='+encodeURIComponent(actTz));
+  actTz=r.timezone;
+  const t=r.today,y=r.yesterday,ysf=r.yesterdaySoFar;
+  const metricLabel=(ACT_METRICS.find(m=>m[0]===actMetric)||ACT_METRICS[0])[1];
+  const estNote=r.estimatedDays.length
+    ? `<div class="muted" style="margin-top:8px">ℹ️ ${r.estimatedDays.length} older day(s) were recorded before hour-level tracking existed, so they are shown on their UTC day and can't be re-cut to ${esc(r.timezone)}: ${esc(r.estimatedDays.join(', '))}.</div>`
+    : '';
+
+  $('#main').innerHTML=`
+  <div class="card anim" style="margin-top:0"><h2>📅 Activity reports <span class="sub">days are cut in your timezone, not UTC</span></h2>
+    <div class="tzbar">
+      <span>Timezone</span>
+      <select id="tzSel">${tzOptions(r.timezone)}</select>
+      <span class="pill info">${esc(r.offset)}</span>
+      <button id="tzSave">Save as default</button>
+      <span class="muted" id="tzMsg">Saved default: ${esc(r.savedTimezone)}</span>
+    </div>
+    <div class="window">Local time now: <b>${esc(r.now.day)} ${String(r.now.hour).padStart(2,'0')}:${String(r.now.minute).padStart(2,'0')}</b> · today covers ${esc(r.todayWindow)}</div>
+  </div>
+
+  <div class="card anim"><h2>☀️ Today vs yesterday <span class="sub">like-for-like: yesterday cut at the same hour</span></h2>
+    <div class="cmp">
+      <div class="box"><div class="k">Unique visitors today</div><div class="v">${num(t.uniques)}</div><div class="s">${deltaHtml(r.changeVsYesterday.uniques)} · ${num(ysf.uniques)} by this hour yesterday</div></div>
+      <div class="box"><div class="k">Visits today</div><div class="v">${num(t.visits)}</div><div class="s">${deltaHtml(r.changeVsYesterday.visits)} · ${num(ysf.visits)} by this hour yesterday</div></div>
+      <div class="box"><div class="k">Peak online today</div><div class="v">${num(t.peakOnline)}</div><div class="s">yesterday peaked at ${num(y.peakOnline)}</div></div>
+      <div class="box"><div class="k">Matches today</div><div class="v">${num(t.matches)}</div><div class="s">${deltaHtml(r.changeVsYesterday.matches)} · ${num(ysf.matches)} by this hour yesterday</div></div>
+    </div>
+    <div class="window" style="margin-top:10px">Today so far covers ${ysf.hoursElapsed} hour(s). Yesterday's full-day totals: ${num(y.uniques)} unique visitors, ${num(y.visits)} visits, ${num(y.connections)} connections, ${num(y.matches)} matches.</div>
+  </div>
+
+  <div class="card anim"><h2>🕐 Hour by hour <span class="sub">${esc(r.timezone)}</span>
+    <select id="metricSel" style="width:auto;margin-left:auto;padding:6px 10px;font-size:.8rem">${ACT_METRICS.map(([k,l])=>`<option value="${k}"${k===actMetric?' selected':''}>${l}</option>`).join('')}</select></h2>
+    <div class="legend"><span><i style="background:var(--accent)"></i>Today — ${esc(metricLabel)}</span><span><i style="background:var(--surface-2)"></i>Not happened yet</span></div>
+    <div id="hoursToday"></div>
+    <div class="legend" style="margin-top:16px"><span><i style="background:var(--accent)"></i>Yesterday — ${esc(metricLabel)} (full 24h)</span></div>
+    <div id="hoursYesterday"></div>
+  </div>
+
+  <div class="card anim"><h2>🗓️ Weekly report <span class="sub">Mon–Sun, last 8 weeks</span></h2>
+    <table><tr><th>Week</th><th class="num">Unique visitors</th><th class="num">Visits</th><th class="num">Connections</th><th class="num">Matches</th><th class="num">Messages</th><th class="num">Peak online</th><th>Best day</th></tr>
+    ${r.weekly.slice().reverse().map(w=>`<tr>
+      <td><b>${esc(w.weekStart)} → ${esc(w.weekEnd)}</b>${w.current?` <span class="pill info">this week · ${w.daysElapsed}/7 days</span>`:''}</td>
+      <td class="num">${num(w.uniques)}</td><td class="num">${num(w.visits)}</td><td class="num">${num(w.connections)}</td>
+      <td class="num">${num(w.matches)}</td><td class="num">${num(w.messages)}</td><td class="num">${num(w.peakOnline)}</td>
+      <td>${w.bestDay&&w.bestDay.visits?esc(w.bestDay.day)+' ('+num(w.bestDay.visits)+')':'<span class="muted">—</span>'}</td></tr>`).join('')}</table>
+  </div>
+
+  <div class="card anim"><h2>📆 Daily report <span class="sub">last 30 days, newest first</span></h2>
+    <table><tr><th>Day</th><th class="num">Unique visitors</th><th class="num">Visits</th><th class="num">Connections</th><th class="num">Matches</th><th class="num">Messages</th><th class="num">Peak online</th><th class="num">New accounts</th></tr>
+    ${r.daily.slice().reverse().map(d=>`<tr>
+      <td><b>${esc(d.day)}</b>${d.day===r.now.day?' <span class="pill info">today</span>':d.day===y.day?' <span class="pill warn">yesterday</span>':''}${d.estimated?' <span class="pill warn" title="Recorded before hour-level tracking; shown on its UTC day.">approx</span>':''}</td>
+      <td class="num">${num(d.uniques)}</td><td class="num">${num(d.visits)}</td><td class="num">${num(d.connections)}</td>
+      <td class="num">${num(d.matches)}</td><td class="num">${num(d.messages)}</td><td class="num">${num(d.peakOnline)}</td><td class="num">${num(d.newAccounts)}</td></tr>`).join('')}</table>
+    ${estNote}
+  </div>`;
+
+  hourBars($('#hoursToday'),t.hours,actMetric,r.now.hour);
+  hourBars($('#hoursYesterday'),y.hours,actMetric,null);
+  $('#tzSel').onchange=(e)=>{actTz=e.target.value;viewActivity();};
+  $('#metricSel').onchange=(e)=>{actMetric=e.target.value;viewActivity();};
+  $('#tzSave').onclick=async()=>{
+    try{await post('timezone',{timezone:actTz});$('#tzMsg').textContent='Saved default: '+actTz;}
+    catch(e){$('#tzMsg').textContent='Could not save: '+e.message;}
+  };
+}
+
 /* ---------- AI bot ---------- */
 let lastOverview=null,botLog=[];
 const BOT_QS=[
-  ['summary','📋 Full summary'],['features','🏆 Rank features'],['feedback','⭐ User feedback'],
+  ['summary','📋 Full summary'],['yesterday','🌙 How was yesterday?'],['week','🗓️ Weekly report'],
+  ['features','🏆 Rank features'],['feedback','⭐ User feedback'],
   ['problems','🚨 Any problems?'],['audience','🌍 My audience'],['now','🟢 What’s happening now?']
 ];
 async function botAnswer(kind){
-  const o=lastOverview||await api('overview');lastOverview=o;
+  const o=lastOverview||await api('overview?tz='+encodeURIComponent(actTz||browserTz()));lastOverview=o;
   const sum7=(f)=>o.series.slice(-7).reduce((a,d)=>a+(d[f]||0),0);
   if(kind==='summary')return o.conclusion.summary.join('\n• ').replace(/^/,'• ')+`\n\nOverall health: ${o.conclusion.health.toUpperCase()}.`;
+  if(kind==='yesterday'){
+    const y=o.yesterday,s=o.yesterdaySoFar;
+    return `Yesterday — ${o.yesterdayWindow}\n\n`
+      +`• ${num(y.uniques)} unique visitors (${num(y.visits)} visits)\n`
+      +`• ${num(y.connections)} connections, ${num(y.matches)} matches\n`
+      +`• Peak of ${num(y.peakOnline)} users online at the same moment\n\n`
+      +`Today is ${s.hoursElapsed}h old so far: ${num(o.today.uniques)} unique visitors vs ${num(s.uniques)} by the same hour yesterday.\n\n`
+      +`Every number above is measured in ${o.timezone} (${o.offset}), not UTC. Full hour-by-hour breakdown is in the Activity tab.`;
+  }
+  if(kind==='week'){
+    const r=await api('activity?tz='+encodeURIComponent(actTz||browserTz()));
+    const cur=r.weekly[r.weekly.length-1],prev=r.weekly[r.weekly.length-2];
+    const best=r.daily.reduce((b,d)=>d.visits>(b?b.visits:-1)?d:b,null);
+    return `Weekly report (weeks run Mon–Sun, ${r.timezone})\n\n`
+      +`This week so far (${cur.weekStart} → ${cur.weekEnd}, ${cur.daysElapsed}/7 days):\n`
+      +`• ${num(cur.uniques)} unique visitors, ${num(cur.visits)} visits\n`
+      +`• ${num(cur.connections)} connections, ${num(cur.matches)} matches, ${num(cur.messages)} messages\n`
+      +`• Peak of ${num(cur.peakOnline)} online at once\n\n`
+      +`Last full week (${prev.weekStart} → ${prev.weekEnd}):\n`
+      +`• ${num(prev.uniques)} unique visitors, ${num(prev.visits)} visits, peak ${num(prev.peakOnline)}\n\n`
+      +(best&&best.visits?`Best day in the last 30: ${best.day} with ${num(best.visits)} visits and a peak of ${num(best.peakOnline)} online.`:'Not enough traffic yet to pick a best day.');
+  }
   if(kind==='features'){
     if(!o.features.length)return 'No feature usage recorded yet. Once users start using filters, friends, text chat etc., I’ll rank them here.';
     return 'Feature ranking over the last 30 days:\n\n'+o.features.map(([f,n],i)=>`${i<3?['🥇','🥈','🥉'][i]:(i+1)+'.'} ${f} — ${num(n)} uses`).join('\n')+`\n\nMost loved: ${o.features[0][0]}. Least used: ${o.features[o.features.length-1][0]} — consider improving or promoting it.`;
@@ -472,7 +624,7 @@ async function botAnswer(kind){
     const top=o.countries.slice(0,5).map(([c,n],i)=>`${i+1}. ${c} — ${num(n)} visits`).join('\n');
     return o.countries.length?`Your top countries (last 30 days):\n\n${top}\n\nTop city: ${o.cities[0]?o.cities[0][0]+' ('+num(o.cities[0][1])+' visits)':'n/a'}.`:'No geo data yet.';
   }
-  return `Right now: ${num(o.runtime.online)} user(s) online — ${num(o.runtime.inCall/2|0)} in calls, ${num(o.runtime.waiting)} waiting for a match.\nToday: ${num(o.today.visits)} visits, ${num(o.today.matches)} matches, peak of ${num(o.today.peakOnline)} online.\nServer: up ${Math.floor(o.runtime.uptimeSeconds/3600)}h, ${o.runtime.memoryMB} MB RAM.`;
+  return `Right now: ${num(o.runtime.online)} user(s) online — ${num(o.runtime.inCall/2|0)} in calls, ${num(o.runtime.waiting)} waiting for a match.\nToday (${o.todayWindow}): ${num(o.today.uniques)} unique visitors, ${num(o.today.visits)} visits, ${num(o.today.matches)} matches, peak of ${num(o.today.peakOnline)} online.\nYesterday: ${num(o.yesterday.uniques)} unique visitors, peak of ${num(o.yesterday.peakOnline)} online.\nServer: up ${Math.floor(o.runtime.uptimeSeconds/3600)}h, ${o.runtime.memoryMB} MB RAM.`;
 }
 window.askBot=async(kind,label)=>{
   botLog.push({me:true,text:label});
@@ -585,12 +737,18 @@ async function viewAccounts(){
 
 async function viewErrors(){
   const r=await api('errors');
-  $('#main').innerHTML=`<div class="card anim" style="margin-top:0"><h2>🐛 Bugs &amp; errors <span class="sub">client + server, duplicates collapsed</span></h2>
-  <table><tr><th>Last seen</th><th>Source</th><th>Error</th><th class="num">Count</th><th>User</th></tr>
+  $('#main').innerHTML=`<div class="card anim" style="margin-top:0"><h2>🐛 Bugs &amp; errors <span class="sub">client + server, duplicates collapsed</span>
+  ${r.errors.length?`<button id="clearErrs" style="margin-left:auto;border:1px solid color-mix(in srgb,var(--crit) 45%,transparent);background:var(--surface-2);color:var(--crit);border-radius:9px;padding:6px 12px;font-size:.78rem">Clear all</button>`:''}</h2>
+  <div class="muted" style="margin-bottom:10px">Records never expire on their own. Dismiss one after shipping a fix — if it comes back, it wasn't fixed.</div>
+  <table><tr><th>Last seen</th><th>Source</th><th>Error</th><th class="num">Count</th><th>User</th><th></th></tr>
   ${r.errors.map(e=>`<tr><td>${ago(e.ts)}</td><td><span class="pill ${e.source==='server'?'crit':'warn'}">${esc(e.source)}</span></td>
   <td><b>${esc(e.message)}</b>${e.url?`<br><span class="muted">${esc(e.url)}</span>`:''}${e.stack?`<details><summary class="muted" style="cursor:pointer">stack</summary><pre style="font-size:.7rem;white-space:pre-wrap;color:var(--ink2)">${esc(e.stack)}</pre></details>`:''}</td>
-  <td class="num">${num(e.count)}</td><td>${esc(e.username||'')}${e.country?`<br><span class="muted">${esc(e.country)}</span>`:''}</td></tr>`).join('')||'<tr><td colspan="5" class="muted">No errors logged. 🎉</td></tr>'}</table></div>`;
+  <td class="num">${num(e.count)}</td><td>${esc(e.username||'')}${e.country?`<br><span class="muted">${esc(e.country)}</span>`:''}</td>
+  <td class="rowbtns"><button onclick="dismissError('${jsq(e.id)}')">Dismiss</button></td></tr>`).join('')||'<tr><td colspan="6" class="muted">No errors logged. 🎉</td></tr>'}</table></div>`;
+  const cb=$('#clearErrs');
+  if(cb)cb.onclick=async()=>{if(confirm('Clear every error record?')){await post('errors/dismiss',{all:true});load();}};
 }
+window.dismissError=async(id)=>{await post('errors/dismiss',{id});load();};
 
 async function viewFeedback(){
   const r=await api('feedback');

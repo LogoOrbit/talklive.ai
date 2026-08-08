@@ -2307,7 +2307,13 @@ function createPeerConnection(isInitiator) {
   // buffer (see handleSignal). Never carry candidates across connections.
   pendingCandidates = [];
 
-  localStream.getTracks().forEach((track) => peer.addTrack(track, localStream));
+  // startCall() guarantees a stream, but a teardown (ban, maintenance, an
+  // abandoned call-back) can null it out between the match and this call. A
+  // peer with no tracks is still better than a TypeError that kills the whole
+  // handler and leaves the UI stuck on "connecting".
+  if (localStream) {
+    localStream.getTracks().forEach((track) => peer.addTrack(track, localStream));
+  }
   // Force every audio transceiver to send+receive. Without this, a race where a
   // track is briefly absent can leave a "recvonly" transceiver, which silently
   // produces one-way audio (you hear them, they can't hear you).
@@ -2417,6 +2423,11 @@ function monitorRemoteAudio(stream) {
 }
 
 async function startCall(initiator) {
+  // Re-acquire the mic if a teardown released it while we were being matched,
+  // so the call starts with audio instead of silently connecting muted.
+  if (!localStream) {
+    try { await getMic(); } catch (_) { /* fall through: peer is created without tracks */ }
+  }
   pc = createPeerConnection(initiator);
   try { if (window.Moderation) window.Moderation.start(localStream, socket); } catch (_) { /* never break the call */ }
   if (initiator) {
@@ -4066,21 +4077,9 @@ socket.on('maintenance', (info) => {
 });
 
 // Report client-side JS errors to the server so the owner dashboard can
-// surface the bugs real users are hitting.
-function reportClientError(message, stack) {
-  try {
-    if (socket && socket.connected) {
-      socket.emit('client-error', { message: String(message).slice(0, 400), stack: String(stack || '').slice(0, 1500), url: location.pathname });
-    }
-  } catch (_) { /* never let error reporting throw */ }
-}
-window.addEventListener('error', (e) => {
-  reportClientError(e.message || 'Unknown error', e.error && e.error.stack);
-});
-window.addEventListener('unhandledrejection', (e) => {
-  const r = e.reason || {};
-  reportClientError(r.message || String(e.reason || 'Unhandled rejection'), r.stack);
-});
+// surface the bugs real users are hitting. Shared with /chat — see
+// error-reporter.js for what is filtered out and why.
+if (window.TalkLiveErrors) window.TalkLiveErrors.install(() => socket);
 
 // --- Call back: re-connect directly with someone from Call History ---
 let pendingCallBackName = null;
