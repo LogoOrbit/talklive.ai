@@ -19,16 +19,21 @@
     container: 'container-b6c7c32837efbcc9a34a0986523c06c5',
   };
 
-  // Page-level Adsterra tags. These position themselves and need no container,
-  // so they are loaded once per page rather than per slot. Deliberately
-  // deferred until after load so they never compete with first render or with
-  // getUserMedia when a call starts.
-  var GLOBAL = [
-    // SocialBar_1
-    'https://delvefencescrewdriver.com/6c/cc/ce/6cccce7190388ac7a53bb4b9de9f8dc8.js',
-    // Popunder_1
-    'https://delvefencescrewdriver.com/fa/38/fb/fa38fb28ffa2c8d07cad01e1dd8c3f1c.js',
-  ];
+  // Page-level Adsterra tags, loaded once per page (they position themselves
+  // and need no container). Deliberately EMPTY — see below before adding any.
+  //
+  // Every page on this site also serves Google AdSense
+  // (ca-pub-5162304231095978, see the adsbygoogle tag in the page templates).
+  // AdSense prohibits pop-unders and interstitial/overlay formats on pages
+  // running its ads, and enforcement is against the AdSense account rather
+  // than the offending page — so these two units are not worth the exposure
+  // while AdSense is live. The banner and native units below are conventional
+  // formats and are fine to run alongside AdSense.
+  //
+  // Only re-enable these if AdSense is first removed site-wide:
+  //   SocialBar_1  /6c/cc/ce/6cccce7190388ac7a53bb4b9de9f8dc8.js
+  //   Popunder_1   /fa/38/fb/fa38fb28ffa2c8d07cad01e1dd8c3f1c.js
+  var GLOBAL = [];
 
   // A-Ads (a-ads.com) fallback for banner slots Adsterra leaves unfilled.
   // Create a free ad unit at https://a-ads.com (no approval needed) and put
@@ -127,8 +132,10 @@
   function init() {
     // Before the slot check below — page-level tags run on every page,
     // including ones that carry no slot markup at all.
-    if (document.readyState === 'complete') loadGlobal();
-    else window.addEventListener('load', loadGlobal);
+    if (GLOBAL.length) {
+      if (document.readyState === 'complete') loadGlobal();
+      else window.addEventListener('load', loadGlobal);
+    }
 
     var slots = document.querySelectorAll('[data-ad]');
     if (!slots.length) return;
