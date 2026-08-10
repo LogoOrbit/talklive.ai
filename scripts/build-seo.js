@@ -188,6 +188,17 @@ function adsenseSlot() {
 </div>`;
 }
 
+// AdSense Multiplex unit (slot 8131758533, format "autorelaxed"). This one
+// renders a grid of recommendation-style cards, so it belongs at the end of
+// the content rather than mid-page. Same rule as above: <ins> and push only,
+// never a second copy of the loader.
+function adsenseMultiplex() {
+  return `<div class="wrap" style="margin:28px auto">
+<ins class="adsbygoogle" style="display:block" data-ad-format="autorelaxed" data-ad-client="ca-pub-5162304231095978" data-ad-slot="8131758533"></ins>
+<script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+</div>`;
+}
+
 // --- Affiliate blocks --------------------------------------------------------
 // Sponsored recommendation cards shown near the bottom of relevant landing
 // pages. Replace each `url` with your own affiliate/referral deep link (sign
@@ -457,6 +468,8 @@ ${headerHtml(p.slug)}
       </div>
     </div>
   </div>
+
+  ${adsenseMultiplex()}
 </main>
 ${footerHtml()}
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978" crossorigin="anonymous"></script>
@@ -1937,6 +1950,8 @@ ${headerHtml('blog')}
   ${adsenseSlot()}
 
   ${adSlot('leaderboard')}
+
+  ${adsenseMultiplex()}
 </main>
 ${footerHtml()}
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978" crossorigin="anonymous"></script>
@@ -2014,6 +2029,8 @@ ${headerHtml('blog')}
   </div>
 
   ${adsenseSlot()}
+
+  ${adsenseMultiplex()}
 </main>
 ${footerHtml()}
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978" crossorigin="anonymous"></script>
@@ -2151,6 +2168,8 @@ ${alternates}
     </div>
   </div>
   <div class="wrap">${languageSwitcher(loc.code)}</div>
+
+  ${adsenseMultiplex()}
 </main>
 <footer class="site-footer">
   <div class="wrap">

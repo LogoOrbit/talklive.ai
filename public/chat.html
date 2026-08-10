@@ -102,6 +102,13 @@
       </div>
     </header>
 
+    <!-- Desktop-only ad rail. Fixed rather than a flex child so it cannot
+         affect the chat stage layout; hidden below 1024px where the app card
+         leaves no room beside it. -->
+    <aside class="chat-rail" aria-label="Advertisement">
+      <div data-ad="skyscraper"></div>
+    </aside>
+
     <!-- The chat sub-app -->
     <section id="chatStage" class="chat-stage" aria-label="Random text chat">
 
@@ -115,6 +122,15 @@
             <span data-i18n="chatStartBtn">Start chatting</span>
           </button>
           <div data-ad="leaderboard" style="margin:24px auto 0;text-align:center"></div>
+          <div data-ad="box" style="margin:16px auto 0;text-align:center"></div>
+
+          <!-- AdSense display unit (Unit_1). On the start view only: it has a
+               heading, subtitle and CTA around it, unlike the searching view
+               which is a bare loading state. Loader is already at end of body. -->
+          <div style="margin:16px auto 0;text-align:center;width:100%;max-width:728px">
+            <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-5162304231095978" data-ad-slot="7074541749" data-ad-format="auto" data-full-width-responsive="true"></ins>
+            <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+          </div>
         </div>
 
         <!-- SEARCHING -->
@@ -135,6 +151,9 @@
         <div id="viewLive" class="chat-view chat-view-live hidden">
           <div id="msgs" class="msgs" aria-live="polite"></div>
           <p id="typing" class="typing hidden"><span data-i18n="strangerTyping">Stranger is typing</span><span class="typing-dots" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span></p>
+          <!-- Slim strip above the composer: 468x60 on desktop, 320x50 on
+               mobile, so the live conversation keeps as much height as possible. -->
+          <div data-ad="banner" class="chat-live-ad"></div>
         </div>
       </div>
 

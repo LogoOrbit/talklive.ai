@@ -672,3 +672,36 @@ img { max-width: 100%; }
   .app, .msg, .modal-box, .chat-start-title, .chat-start-sub, .chat-start-btn { animation: none; }
   .side-panel { transition: none; }
 }
+
+/* --- Ad placements ------------------------------------------------------- */
+
+/* Slim strip between the message list and the composer on the live view. */
+.chat-live-ad {
+  flex: 0 0 auto;
+  margin: 8px auto 0;
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* Desktop-only skyscraper rail. Fixed so it sits beside the app card without
+   participating in the chat stage's flex layout. Hidden on narrower screens,
+   where ads.js would fall back to 160x300 but there is still no room for it. */
+.chat-rail { display: none; }
+
+@media (min-width: 1024px) {
+  .chat-rail {
+    display: block;
+    position: fixed;
+    top: 50%;
+    right: 16px;
+    transform: translateY(-50%);
+    z-index: 5;
+  }
+}
+
+/* Below the breakpoint the live strip is the only in-app slot, so keep it
+   from ever eating more than a sliver of a short viewport. */
+@media (max-height: 620px) {
+  .chat-live-ad { display: none; }
+}
