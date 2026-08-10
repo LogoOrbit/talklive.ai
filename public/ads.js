@@ -7,6 +7,11 @@
  *   <div data-ad="native"></div>       Native banner (blends with content)
  *   <div data-ad="box"></div>          300x250 medium rectangle
  *   <div data-ad="leaderboard"></div>  728x90 on desktop, 320x50 on mobile
+ *   <div data-ad="banner"></div>       468x60 on desktop, 320x50 on mobile
+ *   <div data-ad="skyscraper"></div>   160x600 on desktop, 160x300 below 1024px
+ *
+ * Any exact size in BANNERS also works as a slot name, e.g.
+ *   <div data-ad="160x600"></div>
  *
  * Page-level units (no slot markup — see GLOBAL below) attach themselves to
  * the document and render on every page that loads this file.
@@ -42,8 +47,11 @@
 
   var BANNERS = {
     '320x50':  { key: '2cb8019064140640529e87ba7bfea884', w: 320, h: 50 },
+    '468x60':  { key: '890009febc64ee8cc3ed37e40c0664ea', w: 468, h: 60 },
     '300x250': { key: 'd12fcb01cfece74010f3fd29781e3ce4', w: 300, h: 250 },
     '728x90':  { key: 'bc52532dc8d29f62e8bd95a442953b14', w: 728, h: 90 },
+    '160x300': { key: '07074e4c3772083d48e650ea40b449e6', w: 160, h: 300 },
+    '160x600': { key: '20e9abfee215ecab6c128da50698bb01', w: 160, h: 600 },
   };
 
   // Adsterra banner tags use document.write, so each one is sandboxed in
@@ -124,9 +132,14 @@
     if (el.dataset.adLoaded) return;
     el.dataset.adLoaded = '1';
     var type = el.dataset.ad;
+    var wide = window.innerWidth;
     if (type === 'native') native(el);
     else if (type === 'box') banner(el, '300x250');
-    else if (type === 'leaderboard') banner(el, window.innerWidth >= 768 ? '728x90' : '320x50');
+    else if (type === 'leaderboard') banner(el, wide >= 768 ? '728x90' : '320x50');
+    else if (type === 'banner') banner(el, wide >= 520 ? '468x60' : '320x50');
+    else if (type === 'skyscraper') banner(el, wide >= 1024 ? '160x600' : '160x300');
+    // Any exact size from BANNERS also works, e.g. <div data-ad="160x600">.
+    else if (BANNERS[type]) banner(el, type);
   }
 
   function init() {
