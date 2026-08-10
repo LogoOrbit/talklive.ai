@@ -125,6 +125,7 @@ function footerHtml() {
       <div class="legal">
         <span>&copy; ${new Date().getFullYear()} TalkLive. All rights reserved.</span>
         <span>Made for people who love to talk. 18+ only.</span>
+        <span><a href="https://delvefencescrewdriver.com/n6dy8qkgu?key=2dca64def8b9c5816b49ccf6e1119aff" target="_blank" rel="sponsored nofollow noopener">Sponsored</a></span>
       </div>
     </div>
   </footer>`;
@@ -2133,7 +2134,7 @@ ${alternates}
 </main>
 <footer class="site-footer">
   <div class="wrap">
-    <div class="fine">© ${new Date().getFullYear()} TalkLive · <a href="/about">About</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/contact">Contact</a></div>
+    <div class="fine">© ${new Date().getFullYear()} TalkLive · <a href="/about">About</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/contact">Contact</a> · <a href="https://delvefencescrewdriver.com/n6dy8qkgu?key=2dca64def8b9c5816b49ccf6e1119aff" target="_blank" rel="sponsored nofollow noopener">Sponsored</a></div>
   </div>
 </footer>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978" crossorigin="anonymous"></script>

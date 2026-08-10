@@ -7,6 +7,9 @@
  *   <div data-ad="native"></div>       Native banner (blends with content)
  *   <div data-ad="box"></div>          300x250 medium rectangle
  *   <div data-ad="leaderboard"></div>  728x90 on desktop, 320x50 on mobile
+ *
+ * Page-level units (no slot markup — see GLOBAL below) attach themselves to
+ * the document and render on every page that loads this file.
  */
 (function () {
   'use strict';
@@ -15,6 +18,15 @@
     script: 'https://delvefencescrewdriver.com/b6c7c32837efbcc9a34a0986523c06c5/invoke.js',
     container: 'container-b6c7c32837efbcc9a34a0986523c06c5',
   };
+
+  // Page-level Adsterra tags (Social Bar / In-Page Push). These position
+  // themselves and need no container, so they are loaded once per page rather
+  // than per slot. Deliberately deferred until after load so they never
+  // compete with first render or with getUserMedia when a call starts.
+  var GLOBAL = [
+    'https://delvefencescrewdriver.com/6c/cc/ce/6cccce7190388ac7a53bb4b9de9f8dc8.js',
+    'https://delvefencescrewdriver.com/fa/38/fb/fa38fb28ffa2c8d07cad01e1dd8c3f1c.js',
+  ];
 
   // A-Ads (a-ads.com) fallback for banner slots Adsterra leaves unfilled.
   // Create a free ad unit at https://a-ads.com (no approval needed) and put
@@ -88,6 +100,19 @@
     }, 4000);
   }
 
+  // Loads the page-level tags exactly once, after the page has settled.
+  function loadGlobal() {
+    if (window.__talkliveGlobalAds) return;
+    window.__talkliveGlobalAds = true;
+    GLOBAL.forEach(function (src) {
+      var s = document.createElement('script');
+      s.async = true;
+      s.setAttribute('data-cfasync', 'false');
+      s.src = src;
+      (document.body || document.documentElement).appendChild(s);
+    });
+  }
+
   function fill(el) {
     if (el.dataset.adLoaded) return;
     el.dataset.adLoaded = '1';
@@ -98,6 +123,11 @@
   }
 
   function init() {
+    // Before the slot check below — page-level tags run on every page,
+    // including ones that carry no slot markup at all.
+    if (document.readyState === 'complete') loadGlobal();
+    else window.addEventListener('load', loadGlobal);
+
     var slots = document.querySelectorAll('[data-ad]');
     if (!slots.length) return;
     if ('IntersectionObserver' in window) {
