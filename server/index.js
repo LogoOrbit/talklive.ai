@@ -54,10 +54,15 @@ const CSP = [
   // pixels/beacons go to arbitrary ad-exchange hosts, so frame-src/img-src/
   // connect-src need broad https: — script execution on the page itself is
   // still restricted to the named script-src hosts.
+  // AdSense pulls its ad-serving and traffic-quality scripts from several
+  // Google origins beyond the pagead2 loader itself; with only pagead2
+  // allowlisted the loader runs but the units never fill.
   "script-src 'self' 'unsafe-inline' https://accounts.google.com https://cdn.paddle.com"
     + ' https://delvefencescrewdriver.com https://www.highperformanceformat.com'
     + ' https://*.effectivecpmnetwork.com https://www.googletagmanager.com'
-    + ' https://pagead2.googlesyndication.com',
+    + ' https://*.googlesyndication.com https://*.doubleclick.net'
+    + ' https://*.adtrafficquality.google https://*.gstatic.com'
+    + ' https://www.google.com',
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: https:",
   "font-src 'self' data:",

@@ -175,6 +175,19 @@ function adSlot(type) {
   return `<div class="wrap" style="margin:28px auto;text-align:center"><div data-ad="${type}"></div></div>`;
 }
 
+// Google AdSense display unit (Unit_1, slot 7074541749).
+// Only the <ins> and its push are emitted: the adsbygoogle loader already sits
+// at the end of <body> on every page (kept there deliberately — see de49ff7,
+// which moved it out of <head> to cut mobile LCP), and loading the library
+// twice on one page breaks fill reporting. Pushes queue on the
+// window.adsbygoogle array, so running this before the loader arrives is fine.
+function adsenseSlot() {
+  return `<div class="wrap" style="margin:28px auto;text-align:center">
+<ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-5162304231095978" data-ad-slot="7074541749" data-ad-format="auto" data-full-width-responsive="true"></ins>
+<script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+</div>`;
+}
+
 // --- Affiliate blocks --------------------------------------------------------
 // Sponsored recommendation cards shown near the bottom of relevant landing
 // pages. Replace each `url` with your own affiliate/referral deep link (sign
@@ -417,6 +430,8 @@ ${headerHtml(p.slug)}
       ${faqHtml}
     </div>
   </section>
+
+  ${adsenseSlot()}
 
   ${adSlot('leaderboard')}
 
@@ -1919,6 +1934,8 @@ ${headerHtml('blog')}
     </div>
   </section>
 
+  ${adsenseSlot()}
+
   ${adSlot('leaderboard')}
 </main>
 ${footerHtml()}
@@ -1995,6 +2012,8 @@ ${headerHtml('blog')}
       </div>
     </div>
   </div>
+
+  ${adsenseSlot()}
 </main>
 ${footerHtml()}
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978" crossorigin="anonymous"></script>
@@ -2114,6 +2133,7 @@ ${alternates}
     </div>
   </section>
   ${adSlot('native')}
+  ${adsenseSlot()}
   <section class="faq">
     <div class="wrap">
       <h2>${loc.faqH}</h2>
