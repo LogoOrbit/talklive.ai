@@ -19,12 +19,14 @@
     container: 'container-b6c7c32837efbcc9a34a0986523c06c5',
   };
 
-  // Page-level Adsterra tags (Social Bar / In-Page Push). These position
-  // themselves and need no container, so they are loaded once per page rather
-  // than per slot. Deliberately deferred until after load so they never
-  // compete with first render or with getUserMedia when a call starts.
+  // Page-level Adsterra tags. These position themselves and need no container,
+  // so they are loaded once per page rather than per slot. Deliberately
+  // deferred until after load so they never compete with first render or with
+  // getUserMedia when a call starts.
   var GLOBAL = [
+    // SocialBar_1
     'https://delvefencescrewdriver.com/6c/cc/ce/6cccce7190388ac7a53bb4b9de9f8dc8.js',
+    // Popunder_1
     'https://delvefencescrewdriver.com/fa/38/fb/fa38fb28ffa2c8d07cad01e1dd8c3f1c.js',
   ];
 
