@@ -174,6 +174,8 @@ fly scale vm shared-cpu-1x --memory 1024
 
 | Symptom | Cause |
 |---|---|
+| Machine restart loop, `exit 137` / "Out of memory" | The machine is too small. `geoip-lite` loads a 154MB database at require time; the server idles at ~218MB, so anything under 512MB gets OOM-killed. Check `[[vm]] memory` and `fly scale show` |
+| "Proxy not finding machines to route requests" | Usually a symptom of the OOM loop above — no machine stays up long enough to serve. Fix the memory first |
 | Health checks fail on deploy | `/healthz` must answer within the 20s `grace_period`; check `fly logs` for a crash at boot |
 | `EACCES` writing `owner-data.json` | `docker-entrypoint.sh` should chown `/data`; confirm the volume is mounted with `fly ssh console -C "ls -la /data"` |
 | Everything 301s to `talklive.ai` | `CANONICAL_HOST` in `fly.toml` does not match the host you are testing; set `ENFORCE_CANONICAL=off` to debug |

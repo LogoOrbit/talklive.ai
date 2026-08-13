@@ -47,6 +47,16 @@ primary_region = 'iad'
   source = 'talklive_data'
   destination = '/data'
 
+# Sized against measured usage, not guesswork: geoip-lite eagerly loads a 154MB
+# database into memory at require time, which alone costs ~143MB of RSS. The
+# server idles at ~218MB and sits at ~225MB under light HTTP load, so the 256MB
+# the generated config asked for left ~30MB of headroom and the machine was
+# OOM-killed (exit 137) in a restart loop. 512MB gives roughly 2x headroom for
+# V8 growth and websocket buffers.
+#
+# Do not set both `memory` and `memory_mb` here — the generated config set
+# memory = '1gb' and memory_mb = 256, and the smaller value won.
 [[vm]]
-  size = 'shared-cpu-1x'
+  cpu_kind = 'shared'
+  cpus = 1
   memory = '512mb'
