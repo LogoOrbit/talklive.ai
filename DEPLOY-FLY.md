@@ -28,14 +28,21 @@ better than `iad`. Full list: `fly platform regions`.
 
 ## 3. Create the app and the volume
 
+The app `talklive-ai` already exists (created by `fly launch`), so this step is
+just the volume — it is what makes the JSON store survive deploys, and
+`fly launch` did not create one:
+
 ```sh
-fly launch --no-deploy --copy-config --name talklive
-fly volumes create talklive_data --region <your-region> --size 1
+fly volumes create talklive_data --region <your-region> --size 1 --app talklive-ai
 ```
 
-`--copy-config` makes flyctl use the committed `fly.toml` instead of
-regenerating one. The volume name must stay `talklive_data` to match the
-`[[mounts]]` block.
+The volume name must stay `talklive_data` to match the `[[mounts]]` block in
+`fly.toml`.
+
+If you ever re-run `fly launch`, pass `--copy-config --no-deploy` so it uses
+the committed `fly.toml` instead of regenerating one. The generated config sets
+`auto_stop_machines = 'stop'` and `min_machines_running = 0`, which puts the
+machine back to sleep and undoes the reason for this migration.
 
 ## 4. Set secrets
 
@@ -95,7 +102,7 @@ nothing worth moving. If there is:
 fly ssh console -C "mkdir -p /data"
 fly sftp shell
   put data/owner-data.json /data/owner-data.json
-fly apps restart talklive
+fly apps restart talklive-ai
 ```
 
 ## 7. Cut over DNS

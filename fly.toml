@@ -1,4 +1,5 @@
-app = 'talklive'
+# Must match the app created by `fly launch` — see `fly apps list`.
+app = 'talklive-ai'
 
 # Change this to the region nearest your largest audience before first deploy —
 # it is baked in at `fly launch` time. Candidates: 'iad' (US East),
