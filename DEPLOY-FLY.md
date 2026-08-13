@@ -1,11 +1,15 @@
 # Deploying TalkLive to Fly.io
 
-Migration off Render. Fly runs an always-on machine (no sleep, no cold starts)
-with a persistent volume, so `server/store.js` stops losing `owner-data.json`
-on every deploy.
+Migration off Render. Fly runs an always-on machine, so the app no longer
+sleeps after 15 minutes idle or takes 30-60s to answer the first request.
+
+The canonical domain is **talklive.app** (`CANONICAL_HOST` in `fly.toml`).
+Every other host, including `talklive-ai.fly.dev`, is served
+`X-Robots-Tag: noindex` — so that value must stay correct or the live site
+drops out of Google.
 
 **Cost:** Fly has no free tier as of 2024. A `shared-cpu-1x` / 512MB machine
-plus a 1GB volume runs roughly **$2–4/month**, billed per second.
+runs roughly **$2-4/month**, billed per second.
 
 ---
 
@@ -96,8 +100,8 @@ Expect `TalkLive server running on port 8080` and
 Smoke-test before touching DNS:
 
 ```sh
-curl -I https://talklive.fly.dev/healthz          # 200
-curl -sI https://talklive.fly.dev/ | grep -i robots   # noindex, nofollow
+curl -I https://talklive-ai.fly.dev/healthz          # 200
+curl -sI https://talklive-ai.fly.dev/ | grep -i robots   # noindex, nofollow
 ```
 
 The `noindex` on `*.fly.dev` is deliberate — see "SEO notes" below.
@@ -120,8 +124,8 @@ fly apps restart talklive-ai
 Do this only once step 5 passes.
 
 ```sh
-fly certs add talklive.ai
-fly certs add www.talklive.ai
+fly certs add talklive.app
+fly certs add www.talklive.app
 fly ips list          # note the v4 and v6 addresses
 ```
 
@@ -130,10 +134,10 @@ At your DNS provider:
 1. **Lower the TTL on the existing records to 300s and wait for the old TTL to
    expire** — do this a day ahead if you can. Skipping it is what makes
    cutovers drag on.
-2. Point `talklive.ai` A → the Fly v4 IP, AAAA → the Fly v6 IP.
-3. Point `www.talklive.ai` the same way (the app 301s www → apex itself).
-4. Wait for `fly certs show talklive.ai` to report the cert as issued.
-5. Verify: `curl -I https://talklive.ai/` returns 200 with no `X-Robots-Tag`.
+2. Point `talklive.app` A → the Fly v4 IP, AAAA → the Fly v6 IP.
+3. Point `www.talklive.app` the same way (the app 301s www → apex itself).
+4. Wait for `fly certs show talklive.app` to report the cert as issued.
+5. Verify: `curl -I https://talklive.app/` returns 200 with no `X-Robots-Tag`.
 6. Raise the TTL back to 3600s.
 
 Leave the Render service running until this is confirmed — it is your rollback.
@@ -147,7 +151,7 @@ rollback, recover it from git history:
 git show b4d9926:render.yaml > render.yaml
 ```
 
-Delete the Render service itself from the Render dashboard once `talklive.ai`
+Delete the Render service itself from the Render dashboard once `talklive.app`
 has served from Fly for a day or two with no errors.
 
 ---
@@ -188,6 +192,6 @@ fly scale vm shared-cpu-1x --memory 1024
 | "Proxy not finding machines to route requests" | Usually a symptom of the OOM loop above — no machine stays up long enough to serve. Fix the memory first |
 | Health checks fail on deploy | `/healthz` must answer within the 20s `grace_period`; check `fly logs` for a crash at boot |
 | `EACCES` writing `owner-data.json` | `docker-entrypoint.sh` should chown `/data`; confirm the volume is mounted with `fly ssh console -C "ls -la /data"` |
-| Everything 301s to `talklive.ai` | `CANONICAL_HOST` in `fly.toml` does not match the host you are testing; set `ENFORCE_CANONICAL=off` to debug |
+| Everything 301s to `talklive.app` | `CANONICAL_HOST` in `fly.toml` does not match the host you are testing; set `ENFORCE_CANONICAL=off` to debug |
 | WebSockets disconnect | Raise the `hard_limit` in `[http_service.concurrency]` |
 | Data gone after deploy | The volume is not mounted — `fly volumes list` should show `talklive_data` attached |

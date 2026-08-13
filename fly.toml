@@ -12,7 +12,11 @@ primary_region = 'iad'
   NODE_ENV = 'production'
   PORT = '8080'
   DATA_DIR = '/data'
-  CANONICAL_HOST = 'talklive.ai'
+  # Must match the domain the site actually canonicalises to. Every canonical
+  # tag, the sitemap and robots.txt in public/ point at talklive.app, and any
+  # host that is not this one is served X-Robots-Tag: noindex — so a wrong
+  # value here deindexes the live site.
+  CANONICAL_HOST = 'talklive.app'
 
 [http_service]
   internal_port = 8080
