@@ -1,0 +1,51 @@
+app = 'talklive'
+
+# Change this to the region nearest your largest audience before first deploy —
+# it is baked in at `fly launch` time. Candidates: 'iad' (US East),
+# 'fra' (Frankfurt), 'bom' (Mumbai), 'sin' (Singapore).
+primary_region = 'iad'
+
+[build]
+
+[env]
+  NODE_ENV = 'production'
+  PORT = '8080'
+  DATA_DIR = '/data'
+  CANONICAL_HOST = 'talklive.ai'
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+
+  # The whole point of the move off Render's free tier: never sleep. Leaving
+  # auto_stop_machines on would reintroduce the cold starts that cost crawl
+  # budget and first-time visitors.
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ['app']
+
+  [http_service.concurrency]
+    type = 'connections'
+    hard_limit = 500
+    soft_limit = 400
+
+# Socket.IO holds long-lived connections, so the health check must hit a plain
+# HTTP route rather than the websocket upgrade path.
+[[http_service.checks]]
+  interval = '30s'
+  timeout = '5s'
+  grace_period = '20s'
+  method = 'GET'
+  path = '/healthz'
+
+# Persists server/store.js's owner-data.json across deploys — the thing the
+# Render free plan could not do. Single machine only while this is a volume
+# (see DEPLOY-FLY.md before scaling out).
+[[mounts]]
+  source = 'talklive_data'
+  destination = '/data'
+
+[[vm]]
+  size = 'shared-cpu-1x'
+  memory = '512mb'

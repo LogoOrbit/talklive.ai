@@ -33,7 +33,7 @@ const io = new Server(server, {
 // silently caps concurrent sockets.
 server.maxConnections = Infinity;
 
-// Behind Render/Replit's proxy, so trust X-Forwarded-* to detect the real
+// Behind Fly's edge proxy, so trust X-Forwarded-* to detect the real
 // protocol and host for canonical redirects below.
 app.set('trust proxy', 1);
 app.disable('x-powered-by');
@@ -89,7 +89,9 @@ app.use((req, res, next) => {
 // Tiny health check for uptime pingers (cron-job.org / UptimeRobot). Returns a
 // few bytes instead of the full homepage, so the pinger doesn't abort with
 // "output too large", yet the request still hits the server every few minutes —
-// which is what keeps the Render dyno and the Supabase database from sleeping.
+// which is what keeps the Supabase database from sleeping. The Fly machine
+// itself no longer sleeps (auto_stop_machines is off in fly.toml), so this
+// only matters for the database now.
 // Placed before maintenance mode and analytics so it always answers cheaply and
 // never inflates visit counts.
 app.get(['/healthz', '/ping'], (req, res) => {
@@ -113,6 +115,13 @@ app.use((req, res, next) => {
   // Only redirect for our own domain; leave preview/other hosts untouched.
   if ((wantsWww && host.slice(4) === CANONICAL_HOST) || (isCanonicalHost && proto !== 'https')) {
     return res.redirect(301, 'https://' + CANONICAL_HOST + req.originalUrl);
+  }
+  // Platform hostnames (talklive.fly.dev, *.onrender.com) serve the same pages
+  // as the canonical domain, so they are duplicate content if crawled. Keep
+  // them reachable for previews and health checks, but keep them out of the
+  // index.
+  if (!isCanonicalHost && !(wantsWww && host.slice(4) === CANONICAL_HOST)) {
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
   }
   next();
 });
@@ -2046,7 +2055,7 @@ store.ready.then(() => {
     // Tell the IndexNow network (Bing/Yandex/Seznam/Naver) about every URL in
     // the sitemap shortly after each production boot, so fresh deploys get
     // crawled within minutes. Local dev skips it to avoid noise.
-    if (process.env.NODE_ENV === 'production' || process.env.RENDER) {
+    if (process.env.NODE_ENV === 'production') {
       setTimeout(() => { try { require('./indexnow').ping(); } catch (e) { console.warn('[indexnow]', e.message); } }, 60000);
     }
   });
