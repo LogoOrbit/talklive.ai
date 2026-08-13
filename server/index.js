@@ -114,6 +114,13 @@ app.use((req, res, next) => {
   if ((wantsWww && host.slice(4) === CANONICAL_HOST) || (isCanonicalHost && proto !== 'https')) {
     return res.redirect(301, 'https://' + CANONICAL_HOST + req.originalUrl);
   }
+  // Platform hostnames (talklive.fly.dev, *.onrender.com) serve the same pages
+  // as the canonical domain, so they are duplicate content if crawled. Keep
+  // them reachable for previews and health checks, but keep them out of the
+  // index.
+  if (!isCanonicalHost && !(wantsWww && host.slice(4) === CANONICAL_HOST)) {
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+  }
   next();
 });
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
