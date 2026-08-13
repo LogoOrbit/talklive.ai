@@ -76,7 +76,6 @@ Optional, only if you already use them on Render:
 ```sh
 fly secrets set \
   DATABASE_URL=... \
-  PADDLE_CLIENT_TOKEN=... PADDLE_PRICE_ID=... PADDLE_WEBHOOK_SECRET=... \
   PREMIUM_CLIENT_IDS=... \
   TURN_URLS=... TURN_USERNAME=... TURN_CREDENTIAL=... \
   AD_DIRECT_LINK=...
@@ -84,7 +83,7 @@ fly secrets set \
 
 Full list of variables the code reads: `GOOGLE_CLIENT_ID`, `OWNER_EMAIL`,
 `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `DATABASE_URL`,
-`PADDLE_*`, `PREMIUM_CLIENT_IDS`, `TURN_*`, `OPENRELAY_*`, `AD_*`,
+`PREMIUM_CLIENT_IDS`, `TURN_*`, `OPENRELAY_*`, `AD_*`,
 `LANDING_HOST`, `REPORT_TZ`, `ENFORCE_CANONICAL`.
 
 ## 5. Deploy

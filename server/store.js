@@ -417,7 +417,7 @@ function upsertAccount(usernameLower, details) {
   save();
 }
 
-// --- Premium subscriptions (activated via the Paddle webhook) ---
+// --- Premium subscriptions (granted manually; see server/index.js) ---
 
 function setPremium(clientId, info = {}) {
   const existing = data.premium[clientId];
