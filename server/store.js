@@ -3,9 +3,11 @@
 //
 // Two backends, picked automatically:
 //  - DATABASE_URL set (e.g. Supabase Postgres): the whole document lives in a
-//    single jsonb row and survives Render free-tier deploys/restarts.
+//    single jsonb row, and is the only option if the app ever runs on more
+//    than one machine.
 //  - otherwise: a JSON file under DATA_DIR (defaults to <repo>/data) — zero
-//    setup locally, ephemeral on Render's free plan.
+//    setup locally. In production this sits on the Fly volume mounted at
+//    /data, so it survives deploys and restarts.
 // Writes are debounced either way so hot paths never block on I/O.
 const fs = require('fs');
 const path = require('path');
@@ -571,7 +573,7 @@ const ready = (async () => {
 
 process.on('exit', () => { if (!pgPool) persistNow(); });
 
-// 'exit' never fires for SIGTERM/SIGINT — and SIGTERM is exactly what Render
+// 'exit' never fires for SIGTERM/SIGINT — and SIGTERM is exactly what Fly
 // sends on every deploy/restart. Flush any debounced write before going down
 // so a signup seconds before a deploy is never lost.
 let shuttingDown = false;

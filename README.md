@@ -60,7 +60,7 @@ A secured owner dashboard lives at **`/owner`** (e.g. `https://talklive.app/owne
 |---|---|
 | `OWNER_EMAIL` | Where report/feedback/error alert emails go |
 | `SMTP_USER` / `SMTP_PASS` | Gmail address + **app password** (Google Account → Security → 2-Step Verification → App passwords) |
-| `DATA_DIR` | Directory for the JSON store (default `./data`). On Render's free plan the filesystem is ephemeral, so stored data resets on each deploy/restart; add a persistent disk if you upgrade later. |
+| `DATA_DIR` | Directory for the JSON store (default `./data`). In production this is `/data`, a persistent Fly volume, so stored data survives deploys and restarts. See `DEPLOY-FLY.md`. |
 | `PADDLE_CLIENT_TOKEN` | Paddle client-side token used by the `/pricing` checkout (public value) |
 | `PADDLE_PRICE_ID` | Paddle price ID for the $10/month TalkLive Premium subscription |
 | `PADDLE_ENV` | `sandbox` while testing Paddle, `production` (default) when live |

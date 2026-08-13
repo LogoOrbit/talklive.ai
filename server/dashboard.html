@@ -64,6 +64,7 @@ input:focus,textarea:focus{border-color:var(--accent)}
 .mark{width:34px;height:34px;border-radius:10px;background:var(--grad);display:grid;place-items:center;font-size:1.05rem;flex:none;box-shadow:0 4px 18px rgba(108,92,231,.45)}
 .stbox{font-size:.82rem;border-radius:12px;padding:11px 13px;margin:12px 0;line-height:1.5}
 .stbox.bad{background:color-mix(in srgb,var(--crit) 14%,transparent);border:1px solid var(--crit)}
+.stbox.warn{background:color-mix(in srgb,var(--warn) 14%,transparent);border:1px solid var(--warn)}
 .stbox b{display:block;margin-bottom:4px}
 .stbox code{font-family:ui-monospace,monospace;font-size:.76rem;background:var(--surface-2);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
 .btn{background:var(--grad);color:#fff;border:0;border-radius:12px;padding:12px 16px;width:100%;font-weight:700;margin-top:16px;transition:transform .15s,box-shadow .15s;box-shadow:0 4px 16px rgba(108,92,231,.35)}
@@ -296,11 +297,11 @@ function renderStorage(storage){
   let html='';
   if(s.atRisk){
     html=`<div class="stbox bad"><b>⚠️ Database not connected — data will be lost on restart</b>
-      Your <code>DATABASE_URL</code> is set but the server could not connect to it, so it fell back to temporary storage. That is why your login keeps resetting. Fix the connection string in Render and redeploy.<br><br>
+      Your <code>DATABASE_URL</code> is set but the server could not connect to it, so it fell back to temporary storage. That is why your login keeps resetting. Fix the connection string with <code>fly secrets set DATABASE_URL=...</code> and redeploy.<br><br>
       Host tried: <code>${esc(s.host||'?')}</code><br>
       Error: <code>${esc(s.error||'unknown')}</code></div>`;
   } else if(!s.configured){
-    html=`<div class="stbox bad"><b>⚠️ No database configured</b>Running on temporary storage — your login and all data reset on every deploy/restart. Add a <code>DATABASE_URL</code> environment variable in Render to make it permanent.</div>`;
+    html=`<div class="stbox warn"><b>ℹ️ No database configured</b>Running on the file store, which lives on the Fly volume at <code>/data</code> and survives deploys and restarts. It is tied to this one machine and is not backed up, so set a <code>DATABASE_URL</code> (<code>fly secrets set DATABASE_URL=...</code>) if you want managed backups or plan to run more than one machine.</div>`;
   }
   const a=document.getElementById('setupStorage'),b=document.getElementById('loginStorage');
   if(a)a.innerHTML=html; if(b)b.innerHTML=html;

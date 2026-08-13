@@ -123,9 +123,15 @@ Leave the Render service running until this is confirmed — it is your rollback
 
 ## 8. Decommission Render
 
-Once `talklive.ai` has served from Fly for a day or two with no errors, delete
-the Render service and remove `render.yaml`. It is kept in the repo until then
-deliberately.
+`render.yaml` has been removed from the repo. If you need it back as a
+rollback, recover it from git history:
+
+```sh
+git show b4d9926:render.yaml > render.yaml
+```
+
+Delete the Render service itself from the Render dashboard once `talklive.ai`
+has served from Fly for a day or two with no errors.
 
 ---
 
