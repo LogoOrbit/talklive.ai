@@ -40,12 +40,17 @@ primary_region = 'iad'
   method = 'GET'
   path = '/healthz'
 
-# Persists server/store.js's owner-data.json across deploys — the thing the
-# Render free plan could not do. Single machine only while this is a volume
-# (see DEPLOY-FLY.md before scaling out).
-[[mounts]]
-  source = 'talklive_data'
-  destination = '/data'
+# NOTE: no volume is mounted, so DATA_DIR falls back to the container
+# filesystem and server/store.js's owner-data.json resets on every deploy —
+# the same behaviour as Render's free plan.
+#
+# Volumes cannot be created from the Fly dashboard, only the CLI, so mounting
+# one here blocks any deploy until `fly volumes create` has been run. Keeping
+# the mount out means the app deploys from the web UI alone.
+#
+# The durable fix is DATABASE_URL (Postgres) rather than a volume: it survives
+# deploys, is backed up, and does not pin the app to a single machine.
+# server/store.js already supports it. See DEPLOY-FLY.md.
 
 # Sized against measured usage, not guesswork: geoip-lite eagerly loads a 154MB
 # database into memory at require time, which alone costs ~143MB of RSS. The

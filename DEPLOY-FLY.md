@@ -26,18 +26,28 @@ in `public/` (ur, hi, bn, fa, ar, id), a large share of traffic is South Asia
 and the Middle East, so `bom` (Mumbai) or `sin` (Singapore) may serve users
 better than `iad`. Full list: `fly platform regions`.
 
-## 3. Create the app and the volume
+## 3. Persistence
 
-The app `talklive-ai` already exists (created by `fly launch`), so this step is
-just the volume — it is what makes the JSON store survive deploys, and
-`fly launch` did not create one:
+The app `talklive-ai` already exists (created by `fly launch`).
+
+`fly.toml` deliberately mounts **no volume**. Volumes cannot be created from
+the Fly dashboard — only via `fly volumes create` — so a `[[mounts]]` block
+makes every deploy fail until the CLI has been run. Without one, `DATA_DIR`
+lands on the container filesystem and the JSON store resets on each deploy,
+which is the same behaviour Render's free plan had.
+
+**The recommended fix is Postgres, not a volume.** It survives deploys, gets
+backed up, and does not pin the app to one machine. `server/store.js` already
+supports it — set `DATABASE_URL` (Supabase and Neon both have free tiers) and
+it switches backends automatically. See step 4.
+
+If you would rather use a volume, it is CLI-only, and you must re-add the
+`[[mounts]]` block to `fly.toml`:
 
 ```sh
-fly volumes create talklive_data --region <your-region> --size 1 --app talklive-ai
+fly scale count 1 --app talklive-ai   # a volume attaches to exactly one machine
+fly volumes create talklive_data --region iad --size 1 --app talklive-ai
 ```
-
-The volume name must stay `talklive_data` to match the `[[mounts]]` block in
-`fly.toml`.
 
 If you ever re-run `fly launch`, pass `--copy-config --no-deploy` so it uses
 the committed `fly.toml` instead of regenerating one. The generated config sets
