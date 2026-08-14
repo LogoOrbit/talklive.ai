@@ -39,6 +39,22 @@ The app works fully without this — the Google button just won't be shown.
 
 Audio itself flows directly between the two browsers (peer-to-peer); the server only handles matchmaking and connection setup signaling, so it never sees or stores call audio.
 
+## SEO
+
+The public marketing surface — ~260 landing pages, country/city/language
+directories, the blog, all sitemaps, `llms.txt` and the IndexNow key — is
+**generated**, not hand-written:
+
+```bash
+npm run build:seo   # regenerates everything into ./public
+npm run seo:ping    # pushes the sitemap to the IndexNow network
+```
+
+Edit the sources under `scripts/`, never the generated files in `public/`.
+Full details — including the three-domain redirect strategy, what the schema
+graph contains, how `lastmod` stays accurate, and the short list of tasks that
+still need credentials — are in **[SEO.md](SEO.md)**.
+
 ## Notes
 
 - Uses public Google STUN servers for NAT traversal. On some restrictive networks (symmetric NAT, corporate firewalls) a TURN server would be needed for relay fallback — not included here.

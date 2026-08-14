@@ -9,10 +9,10 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const SITE = 'https://talklive.app';
 const PUBLIC = path.join(__dirname, '..', 'public');
-const LANGS = ['en', 'es', 'pt', 'fr', 'de', 'ru', 'tr', 'ar', 'hi', 'ur', 'id', 'zh'];
 // Real localized homepages (public/<code>/index.html) — see scripts/locales.js.
 const LOCALES = require('./locales');
 // hreflang cluster for the homepage: x-default + en point at /, every other
@@ -27,6 +27,58 @@ const BUILD_DATE = new Date().toISOString().slice(0, 10);
 
 function esc(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+/* --- SERP length normalisation ---------------------------------------------
+ * Google truncates titles at roughly 60 characters and descriptions at roughly
+ * 155, and what it cuts is the end — which on a page titled
+ * "… — Free Voice & Text Chat | TalkLive" is the brand, and sometimes the
+ * keyword with it. Rather than trusting every hand-written string across four
+ * content files to stay inside the budget, both are normalised here, once, on
+ * the way into the template.
+ *
+ * Trimming happens at meaningful boundaries — the brand suffix, then a dash
+ * separator, then a sentence, then a word — so a shortened string still reads
+ * as a finished sentence rather than a truncation. No ellipsis is added:
+ * Google appends its own when it truncates further, and two of them look
+ * broken.
+ */
+const TITLE_MAX = 60;
+const DESC_MAX = 158;
+
+function fitTitle(t) {
+  t = String(t).trim();
+  if (t.length <= TITLE_MAX) return t;
+
+  const hadBrand = /\s*[|·]\s*TalkLive\s*$/.test(t);
+  const body = t.replace(/\s*[|·]\s*TalkLive\s*$/, '').trim();
+  const brand = hadBrand ? ' | TalkLive' : '';
+
+  // Drop trailing dash-separated clauses one at a time, keeping the brand —
+  // the brand is only 11 characters and is what makes a result recognisable in
+  // a crowded SERP, so sacrificing it to save a subtitle is the wrong trade.
+  const parts = body.split(/\s+[—–]\s+/);
+  while (parts.length > 1) {
+    parts.pop();
+    const candidate = parts.join(' — ') + brand;
+    if (candidate.length <= TITLE_MAX) return candidate;
+  }
+
+  // A single clause that is still too long: keep the brand if it fits after a
+  // word-boundary trim, otherwise give the clause the whole budget.
+  const head = parts[0];
+  if (head.length + brand.length <= TITLE_MAX) return head + brand;
+  const trimmed = head.slice(0, TITLE_MAX).replace(/\s+\S*$/, '').replace(/[,;:—–-]\s*$/, '');
+  return trimmed;
+}
+
+function fitDescription(d) {
+  d = String(d).trim();
+  if (d.length <= DESC_MAX) return d;
+  // Prefer cutting at a sentence end so the result is still a whole thought.
+  const sentenceEnd = d.slice(0, DESC_MAX + 1).lastIndexOf('. ');
+  if (sentenceEnd > 80) return d.slice(0, sentenceEnd + 1);
+  return d.slice(0, DESC_MAX).replace(/\s+\S*$/, '').replace(/[,;:—–-]\s*$/, '');
 }
 
 // --- Shared building blocks -------------------------------------------------
@@ -66,6 +118,114 @@ const NAV = [
 
 function url(slug) { return slug ? `${SITE}/${slug}` : `${SITE}/`; }
 
+/* --- Entity graph ----------------------------------------------------------
+ * One Organization and one WebSite node, declared identically on every page
+ * and referenced by @id from the page-specific nodes. Repeating the same
+ * entity with a stable @id across the whole site is what lets a search engine
+ * consolidate it into a single thing it knows about, rather than treating each
+ * page's publisher block as an unrelated mention — the difference between
+ * having an entity in the Knowledge Graph and not.
+ *
+ * Deliberately absent: `sameAs`. It is the strongest entity signal available,
+ * but it has to point at profiles that genuinely belong to us. There are no
+ * verified TalkLive social profiles to link, and inventing plausible URLs
+ * would assert ownership of accounts we do not control. See SEO.md — this is
+ * the highest-value item left on the list once those profiles exist.
+ */
+const ORG_ID = `${SITE}/#organization`;
+const SITE_ID = `${SITE}/#website`;
+const LOGO_ID = `${SITE}/#logo`;
+const CONTACT_EMAIL = 'info@talklive.app';
+
+function entityGraph() {
+  return [
+    {
+      '@type': 'Organization',
+      '@id': ORG_ID,
+      name: 'TalkLive',
+      alternateName: 'TalkLive Random Chat',
+      url: `${SITE}/`,
+      logo: { '@type': 'ImageObject', '@id': LOGO_ID, url: `${SITE}/favicon-192.png`, contentUrl: `${SITE}/favicon-192.png`, width: 192, height: 192, caption: 'TalkLive logo' },
+      image: { '@id': LOGO_ID },
+      description: 'TalkLive connects strangers worldwide for free, anonymous, live voice and text conversations. Audio is peer-to-peer and never recorded.',
+      foundingDate: '2025',
+      email: CONTACT_EMAIL,
+      knowsAbout: [
+        'random voice chat', 'anonymous online chat', 'talking to strangers',
+        'language exchange', 'online safety', 'WebRTC audio calls',
+      ],
+      contactPoint: {
+        '@type': 'ContactPoint',
+        contactType: 'customer support',
+        email: CONTACT_EMAIL,
+        url: `${SITE}/contact`,
+        availableLanguage: LOCALES.map(l => l.code).concat(['en']),
+      },
+    },
+    {
+      '@type': 'WebSite',
+      '@id': SITE_ID,
+      url: `${SITE}/`,
+      name: 'TalkLive',
+      description: 'Free random voice and text chat with strangers worldwide.',
+      publisher: { '@id': ORG_ID },
+      inLanguage: LOCALES.map(l => l.code).concat(['en']),
+    },
+  ];
+}
+
+// The one shared social image, described once so every page can reference it
+// by @id instead of repeating an untyped URL string.
+const OG_IMAGE_ID = `${SITE}/#primaryimage`;
+function ogImageNode() {
+  return {
+    '@type': 'ImageObject',
+    '@id': OG_IMAGE_ID,
+    url: `${SITE}/og-image.png`,
+    contentUrl: `${SITE}/og-image.png`,
+    width: 1200,
+    height: 630,
+    caption: 'TalkLive — free random voice and text chat with strangers worldwide',
+  };
+}
+
+/* --- Breadcrumbs -----------------------------------------------------------
+ * A page may sit one or two levels deep (/countries/india under /countries/),
+ * so the trail is built from an optional `parent` rather than assumed to be
+ * Home → page. The same trail is emitted twice: once as BreadcrumbList for
+ * search engines, once as visible markup, because a breadcrumb a user cannot
+ * see is a breadcrumb Google is entitled to distrust.
+ */
+function crumbTrail(p) {
+  const trail = [{ name: 'Home', href: '/' }];
+  if (p.parent) trail.push({ name: p.parent.label, href: `/${p.parent.slug}/` });
+  trail.push({ name: p.crumb, href: `/${p.slug}` });
+  return trail;
+}
+
+// Returns a bare node (no @context) — it is always nested inside a @graph
+// that carries the context for the whole document.
+function breadcrumbLd(p, id) {
+  return {
+    '@type': 'BreadcrumbList',
+    '@id': id,
+    itemListElement: crumbTrail(p).map((c, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: c.name,
+      item: c.href === '/' ? `${SITE}/` : `${SITE}${c.href}`,
+    })),
+  };
+}
+
+function breadcrumbHtml(p) {
+  const trail = crumbTrail(p);
+  const items = trail.map((c, i) => (i === trail.length - 1
+    ? `<span aria-current="page">${esc(c.name)}</span>`
+    : `<a href="${c.href}">${esc(c.name)}</a>`)).join('<span class="sep" aria-hidden="true">›</span>');
+  return `<nav class="breadcrumb wrap" aria-label="Breadcrumb">${items}</nav>`;
+}
+
 function icon(name) {
   const p = {
     bolt: '<path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/>',
@@ -102,8 +262,18 @@ function footerHtml() {
   const cols = [
     { h: 'Talk', items: NAV.slice(0, 4) },
     { h: 'Discover', items: NAV.slice(4) },
+    // The hubs are the only sitewide link into the country/city/language
+    // cluster, so they belong in the footer of every page rather than only in
+    // the link cloud further up.
+    { h: 'Browse', items: [
+      { slug: 'countries/', label: 'Chat by Country' },
+      { slug: 'cities/', label: 'Chat by City' },
+      { slug: 'languages/', label: 'Practise a Language' },
+      { slug: 'guides/', label: 'Guides & Resources' },
+      { slug: 'blog/', label: 'Blog' },
+    ] },
   ];
-  const colHtml = cols.map(c => `<div><h4>${c.h}</h4><ul>${c.items.map(i => `<li><a href="/${i.slug}">${i.label}</a></li>`).join('')}</ul></div>`).join('');
+  const colHtml = cols.map(c => `<div><h2>${c.h}</h2><ul>${c.items.map(i => `<li><a href="/${i.slug}">${i.label}</a></li>`).join('')}</ul></div>`).join('');
   return `<footer class="site-footer">
     <div class="wrap">
       <div class="cols">
@@ -112,7 +282,7 @@ function footerHtml() {
           <p style="margin-top:12px">Free random voice &amp; text chat with strangers around the world. Tap to Talk or Tap to Chat — anonymous, no sign-up, just real live conversations.</p>
         </div>
         ${colHtml}
-        <div><h4>App</h4><ul>
+        <div><h2>App</h2><ul>
           <li><a href="/">Open TalkLive</a></li>
           <li><a href="/blog/">Blog</a></li>
           <li><a href="/pricing">Pricing</a></li>
@@ -122,6 +292,7 @@ function footerHtml() {
           <li><a href="/terms">Terms</a></li>
         </ul></div>
       </div>
+      ${localeFooterNav()}
       <div class="legal">
         <span>&copy; ${new Date().getFullYear()} TalkLive. All rights reserved.</span>
         <span>Made for people who love to talk. 18+ only.</span>
@@ -131,7 +302,31 @@ function footerHtml() {
   </footer>`;
 }
 
-function linkCloud(currentSlug) {
+/*
+ * Crawlable links to the 16 localized homepages.
+ *
+ * Before this they were reachable only through hreflang annotations and the
+ * sitemap. Neither is a link: hreflang tells a crawler that two URLs are
+ * translations of each other, it does not tell it the second URL exists or
+ * pass it any authority. The result was sixteen orphaned pages — the single
+ * worst thing you can do to a multilingual setup, because the localized pages
+ * are exactly the ones that need discovery help in markets where the English
+ * site has no presence.
+ *
+ * Putting them in the shared footer means every one of the ~260 English pages
+ * links to every locale, with a real hreflang on each anchor.
+ */
+function localeFooterNav() {
+  const links = LOCALES.map(l =>
+    `<a href="/${l.code}/" hreflang="${l.code}" lang="${l.code}"${l.dir === 'rtl' ? ' dir="rtl"' : ''}>${esc(l.name)}</a>`
+  ).join('');
+  return `<nav class="locale-nav" aria-label="Languages">
+        <h2>TalkLive in your language</h2>
+        <div class="locale-links"><a href="/" hreflang="en" lang="en">English</a>${links}</div>
+      </nav>`;
+}
+
+function linkCloud(currentSlug, index = 0) {
   const extra = [
     { slug: 'talk-to-strangers', label: 'Talk to strangers online' },
     { slug: 'random-voice-chat', label: 'Random voice chat' },
@@ -158,12 +353,34 @@ function linkCloud(currentSlug) {
     { slug: '', label: 'Live voice chat rooms' },
     { slug: '', label: 'Free calls with strangers' },
   ];
+  // Hubs first: they are the entry point to the ~180 country, city and
+  // language pages, so linking them from every page is what keeps that whole
+  // cluster two clicks from anywhere.
+  const hubs = [
+    { slug: 'countries/', label: 'Chat by country' },
+    { slug: 'cities/', label: 'Chat by city' },
+    { slug: 'languages/', label: 'Practise a language' },
+    { slug: 'guides/', label: 'Guides & resources' },
+  ];
+
   // Any landing page not given a hand-written label above still needs inbound
-  // links, so it is appended automatically under its breadcrumb name. Without
-  // this, every page added to PAGES would be orphaned from the link cloud.
-  const labelled = new Set(extra.map(e => e.slug));
-  const rest = PAGES.filter(p => !labelled.has(p.slug)).map(p => ({ slug: p.slug, label: p.crumb }));
-  return `<div class="link-cloud">${extra.concat(rest).filter(e => e.slug !== currentSlug)
+  // links, so the remainder is appended under its breadcrumb name. But dumping
+  // all ~250 of them on every page would put a quarter of a megabyte of
+  // navigation on each one and split link equity 250 ways — which helps
+  // nothing and reads as a link farm. Instead each page shows a deterministic
+  // window into that list, offset by its own position. Every page still ends
+  // up with inbound links from across the site, no page carries more than a
+  // couple of dozen outbound ones, and the result is stable between builds
+  // rather than reshuffling the whole internal link graph on every deploy.
+  const labelled = new Set(extra.map(e => e.slug).concat(hubs.map(h => h.slug)));
+  const rest = PAGES.filter(p => !labelled.has(p.slug) && !p.isHub).map(p => ({ slug: p.slug, label: p.crumb }));
+  const WINDOW = 24;
+  const start = rest.length ? (index * WINDOW) % rest.length : 0;
+  const window = rest.length
+    ? Array.from({ length: Math.min(WINDOW, rest.length) }, (_, k) => rest[(start + k) % rest.length])
+    : [];
+
+  return `<div class="link-cloud">${hubs.concat(extra, window).filter(e => e.slug !== currentSlug)
     .map(e => `<a href="${e.slug ? '/' + e.slug : '/'}">${e.label}</a>`).join('')}</div>`;
 }
 
@@ -291,7 +508,7 @@ function relatedPostsHtml(p, index) {
   const items = picked.concat(auto).slice(0, 3).map(b =>
     `<a class="card" href="/blog/${b.slug}" style="display:block;text-decoration:none;color:inherit">
       <p style="margin:0 0 8px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;opacity:.7">${esc(b.tag)}</p>
-      <h3 style="margin:0 0 10px">${esc(b.h1)}</h3><p>${esc(b.description)}</p></a>`).join('');
+      <h3 style="margin:0 0 10px">${esc(b.h1)}</h3><p>${esc(fitDescription(b.description))}</p></a>`).join('');
   return `<section>
     <div class="wrap">
       <h2>Read more from the TalkLive blog</h2>
@@ -303,60 +520,101 @@ function relatedPostsHtml(p, index) {
 
 function page(p, index) {
   const canonical = url(p.slug);
+  const title = fitTitle(p.title);
+  const description = fitDescription(p.description);
   const features = p.features.map(f => `<div class="card"><div class="ico">${icon(f.icon)}</div><h3>${f.h}</h3><p>${f.p}</p></div>`).join('');
   const steps = p.steps.map(s => `<div class="step"><h3>${s.h}</h3><p>${s.p}</p></div>`).join('');
   const proseHtml = p.prose.map(b => b.h ? `<h2>${b.h}</h2>${b.body.map(x => `<p>${x}</p>`).join('')}` : b.body.map(x => `<p>${x}</p>`).join('')).join('');
   const faqHtml = p.faq.map(f => `<details><summary>${f.q}</summary><p>${f.a}</p></details>`).join('');
 
-  const ld = [
-    {
-      '@context': 'https://schema.org',
-      '@type': 'WebApplication',
-      name: 'TalkLive',
-      alternateName: p.h1,
-      url: canonical,
-      applicationCategory: 'CommunicationApplication',
-      operatingSystem: 'Web, Android, iOS',
-      browserRequirements: 'Requires a modern browser with microphone access',
-      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
-      inLanguage: LANGS,
-      isAccessibleForFree: true,
-      description: p.description,
-      featureList: p.features.map(f => f.h).concat([
-        'Tap to Talk — anonymous voice calls',
-        'Tap to Chat — anonymous text chat',
-      ]),
-      aggregateRating: { '@type': 'AggregateRating', ratingValue: '4.7', ratingCount: '2840', bestRating: '5' },
-      publisher: { '@type': 'Organization', name: 'TalkLive', url: SITE, logo: `${SITE}/favicon.svg` },
-    },
-    {
-      '@context': 'https://schema.org',
-      '@type': 'BreadcrumbList',
-      itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Home', item: SITE + '/' },
-        { '@type': 'ListItem', position: 2, name: p.crumb, item: canonical },
-      ],
-    },
-    {
-      '@context': 'https://schema.org',
-      '@type': 'FAQPage',
-      mainEntity: p.faq.map(f => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
-    },
-    // The "how it works" steps are already modelled as data, so describing
-    // them as a HowTo costs nothing and makes the page eligible for the
-    // step-by-step treatment in search results.
-    {
-      '@context': 'https://schema.org',
-      '@type': 'HowTo',
-      name: p.stepsH,
-      description: p.stepsIntro,
-      totalTime: 'PT10S',
-      estimatedCost: { '@type': 'MonetaryAmount', currency: 'USD', value: '0' },
-      step: p.steps.map((s, i) => ({
-        '@type': 'HowToStep', position: i + 1, name: s.h, text: s.p, url: `${canonical}#how`,
-      })),
-    },
-  ];
+  // One @graph rather than a pile of disconnected objects: the WebPage points
+  // at the site, the site at the organisation, and the app node is the same
+  // entity on every page instead of 200 unrelated WebApplications.
+  //
+  // Note what is NOT here: aggregateRating. Every one of these pages used to
+  // claim "4.7 from 2,840 ratings", a number no review system ever produced.
+  // Fabricated review markup is a direct violation of Google's structured data
+  // policies, risks a manual action against the whole domain, and is exactly
+  // the kind of thing that gets rich results pulled site-wide. It is gone. If
+  // real ratings are ever collected, they can go back — sourced from real
+  // reviews, on the page, visible to the user.
+  const ld = [{
+    '@context': 'https://schema.org',
+    '@graph': entityGraph().concat([
+      ogImageNode(),
+      {
+        '@type': 'WebPage',
+        '@id': `${canonical}#webpage`,
+        url: canonical,
+        name: title,
+        description: description,
+        isPartOf: { '@id': SITE_ID },
+        about: { '@id': `${SITE}/#app` },
+        primaryImageOfPage: { '@id': OG_IMAGE_ID },
+        inLanguage: 'en',
+        datePublished: p.datePublished || '2026-01-15',
+        dateModified: BUILD_DATE,
+        breadcrumb: { '@id': `${canonical}#breadcrumb` },
+        // Voice assistants and "read this page aloud" surfaces need to be told
+        // which part of the page is the answer rather than the navigation.
+        speakable: { '@type': 'SpeakableSpecification', cssSelector: ['h1', '.lede', '.section-intro'] },
+      },
+      {
+        '@type': 'WebApplication',
+        '@id': `${SITE}/#app`,
+        name: 'TalkLive',
+        url: `${SITE}/`,
+        applicationCategory: 'CommunicationApplication',
+        applicationSubCategory: 'Random voice and text chat',
+        operatingSystem: 'Web, Android, iOS',
+        browserRequirements: 'Requires a modern browser; microphone only needed for voice calls',
+        offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD', availability: 'https://schema.org/InStock' },
+        inLanguage: LOCALES.map(l => l.code).concat(['en']),
+        isAccessibleForFree: true,
+        isFamilyFriendly: false,
+        typicalAgeRange: '18-',
+        description: 'Free random voice and text chat that pairs strangers worldwide for live, anonymous conversations. Peer-to-peer audio, never recorded.',
+        featureList: [
+          'Tap to Talk — one-tap anonymous voice calls',
+          'Tap to Chat — instant anonymous text chat, no microphone needed',
+          'Next Stranger to instantly requeue',
+          'Free country and interest match filters',
+          'Add friends and call back',
+          'One-tap report and block with device and IP bans',
+        ],
+        publisher: { '@id': ORG_ID },
+        screenshot: { '@id': OG_IMAGE_ID },
+      },
+      breadcrumbLd(p, `${canonical}#breadcrumb`),
+      {
+        '@type': 'FAQPage',
+        '@id': `${canonical}#faq`,
+        isPartOf: { '@id': `${canonical}#webpage` },
+        mainEntity: p.faq.map((f, i) => ({
+          '@type': 'Question',
+          '@id': `${canonical}#faq-${i + 1}`,
+          name: f.q,
+          acceptedAnswer: { '@type': 'Answer', text: f.a },
+        })),
+      },
+      // The "how it works" steps are already modelled as data, so describing
+      // them as a HowTo costs nothing and makes the page eligible for the
+      // step-by-step treatment in search results.
+      {
+        '@type': 'HowTo',
+        '@id': `${canonical}#howto`,
+        name: p.stepsH,
+        description: p.stepsIntro,
+        totalTime: 'PT10S',
+        estimatedCost: { '@type': 'MonetaryAmount', currency: 'USD', value: '0' },
+        supply: { '@type': 'HowToSupply', name: 'A web browser' },
+        tool: { '@type': 'HowToTool', name: 'A microphone (voice mode only)' },
+        step: p.steps.map((s, i) => ({
+          '@type': 'HowToStep', position: i + 1, name: s.h, text: s.p, url: `${canonical}#how`,
+        })),
+      },
+    ]),
+  }];
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -364,11 +622,11 @@ function page(p, index) {
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <link rel="stylesheet" href="/seo.css" />
-<script src="/loading.js"></script>
+<script defer src="/loading.js" data-mode="nav-only"></script>
 <script defer src="/ads.js"></script>
 <link rel="preconnect" href="https://pagead2.googlesyndication.com" crossorigin />
-<title>${esc(p.title)}</title>
-<meta name="description" content="${esc(p.description)}" />
+<title>${esc(title)}</title>
+<meta name="description" content="${esc(description)}" />
 <meta name="keywords" content="${esc(p.keywords)}" />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
 <meta name="theme-color" content="#0b0f1a" />
@@ -376,27 +634,32 @@ function page(p, index) {
 <link rel="canonical" href="${canonical}" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="TalkLive" />
-<meta property="og:title" content="${esc(p.title)}" />
-<meta property="og:description" content="${esc(p.description)}" />
+<meta property="og:title" content="${esc(title)}" />
+<meta property="og:description" content="${esc(description)}" />
 <meta property="og:url" content="${canonical}" />
 <meta property="og:image" content="${SITE}/og-image.png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="TalkLive — free random voice chat with strangers worldwide" />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:image:alt" content="${esc(p.imageAlt || `${p.h1} — TalkLive free random voice and text chat`)}" />
 <meta property="og:locale" content="en_US" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="${esc(p.title)}" />
-<meta name="twitter:description" content="${esc(p.description)}" />
+<meta name="twitter:title" content="${esc(title)}" />
+<meta name="twitter:description" content="${esc(description)}" />
 <meta name="twitter:image" content="${SITE}/og-image.png" />
+<meta name="twitter:image:alt" content="${esc(p.imageAlt || `${p.h1} — TalkLive free random voice and text chat`)}" />
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-<link rel="apple-touch-icon" href="/favicon.svg" />
+<link rel="icon" href="/favicon-48.png" type="image/png" sizes="48x48" />
+<link rel="apple-touch-icon" href="/favicon-192.png" />
 <link rel="manifest" href="/site.webmanifest" />
-<link rel="preconnect" href="https://flagcdn.com" crossorigin />
+<link rel="alternate" type="application/rss+xml" title="TalkLive Blog" href="${SITE}/blog/feed.xml" />
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
 </head>
 <body>
+<a class="skip-link" href="#main">Skip to main content</a>
 ${headerHtml(p.slug)}
-<main>
+<main id="main">
+  ${breadcrumbHtml(p)}
   <section class="hero">
     <div class="wrap">
       <span class="eyebrow"><span class="dot"></span> ${p.eyebrow}</span>
@@ -454,7 +717,7 @@ ${headerHtml(p.slug)}
     <div class="wrap">
       <h2>Explore more ways to connect</h2>
       <p class="section-intro">TalkLive is one app with many ways to meet people. Jump into whichever fits your mood.</p>
-      ${linkCloud(p.slug)}
+      ${linkCloud(p.slug, index)}
     </div>
   </section>
 
@@ -1539,7 +1802,13 @@ const CORE_PAGES = [
 
 // Additional landing pages live in their own module so this file stays
 // navigable as the SEO surface grows. Same shape as CORE_PAGES.
-const PAGES = CORE_PAGES.concat(require("./pages-extra"));
+// Landing pages come from three places: the hand-written core set, the
+// hand-written extras (competitor comparisons and secondary keywords), and the
+// data-driven country/city/language cluster. All three share one object shape,
+// so everything downstream — the template, the link cloud, the sitemap, the
+// llms.txt index — treats them identically.
+const { GEO_PAGES } = require('./geo-pages');
+const PAGES = CORE_PAGES.concat(require('./pages-extra'), require('./pages-extra2'), GEO_PAGES);
 
 // --- Blog -------------------------------------------------------------------
 // Long-form SEO articles targeting long-tail keywords, published under /blog/.
@@ -1825,12 +2094,111 @@ const CORE_BLOG = [
 ];
 
 // Later articles live in ./blog-extra for the same reason.
-const BLOG = CORE_BLOG.concat(require("./blog-extra"));
+const BLOG = CORE_BLOG.concat(require('./blog-extra'), require('./blog-extra2'));
+
+// Appended rather than declared with the others because it is built from BLOG,
+// which is defined above but after PAGES. Everything that reads PAGES does so
+// at emit time, well after this point.
+PAGES.push(guidesHub());
 
 function blogUrl(slug) { return `${SITE}/blog/${slug}`; }
 
+/* --- Resource hub ----------------------------------------------------------
+ * /guides/ is the topical hub: it groups every article and landing page by the
+ * question it answers, rather than by the keyword it targets. That gives the
+ * blog a second, thematic entry point besides the reverse-chronological index
+ * — which is how readers actually look for this material, and how a crawler
+ * works out that fifteen scattered articles are one subject area.
+ *
+ * Built here rather than in pages-extra2.js because it needs BLOG, which is
+ * defined in this file.
+ */
+function guidesHub() {
+  const post = (slug) => {
+    const b = BLOG.find(x => x.slug === slug);
+    return b ? `<a href="/blog/${b.slug}">${esc(b.h1)}</a> — ${esc(fitDescription(b.description))}` : '';
+  };
+  const group = (h, intro, slugs, pages) => ({
+    h,
+    body: [intro, slugs.map(post).filter(Boolean).join('<br />')]
+      .concat(pages ? [`Related pages: ${pages.map(([href, label]) => `<a href="${href}">${label}</a>`).join(' · ')}.`] : []),
+  });
+
+  return {
+    slug: 'guides/',
+    isHub: true,
+    crumb: 'Guides',
+    eyebrow: 'Resource hub',
+    title: 'Guides & Resources — Talking to Strangers, Safely and Well | TalkLive',
+    description: 'Every TalkLive guide in one place: how to start and end conversations, staying safe in random chat, practising a language out loud, phone anxiety, loneliness, and how anonymous voice chat works.',
+    keywords: 'random chat guides, how to talk to strangers, online chat safety guide, conversation tips, language practice guide, anonymous chat explained',
+    h1: 'Guides & Resources',
+    lede: 'Everything we have written about talking to people you have never met — grouped by the question it answers rather than by the date it was published.',
+    cta: 'Skip the Reading, Start Talking',
+    ctaChat: 'Tap to Chat',
+    featuresH: 'Where to start',
+    featuresIntro: 'Four honest entry points depending on what is actually stopping you.',
+    features: [
+      { icon: 'chat', h: 'You do not know what to say', p: 'Openers that work on someone who did not expect to be talking to you — and how to leave without it being awkward.' },
+      { icon: 'shield', h: 'You are not sure it is safe', p: 'What to share, what never to share, the scam patterns that turn up on every chat platform, and what report and block actually do.' },
+      { icon: 'mic', h: 'You want to practise a language', p: 'How to run an exchange that both people get something out of, and why speaking beats every app.' },
+      { icon: 'heart', h: 'It is heavier than boredom', p: 'Phone anxiety, 3am, and an honest look at what a conversation with a stranger does and does not fix.' },
+      { icon: 'lock', h: 'You want the technical version', p: 'How peer-to-peer audio works, what "anonymous" means precisely, and what data exists.' },
+      { icon: 'world', h: 'You want to browse', p: 'Countries, cities and languages each have their own directory with local detail.' },
+    ],
+    stepsH: 'How to use this hub',
+    stepsIntro: 'Read one thing, then go and use it. That order matters more than it sounds.',
+    steps: [
+      { h: 'Pick the group that matches your blocker', p: 'Not the one that looks most interesting. The one describing the reason you have not started.' },
+      { h: 'Read one article', p: 'One is enough. Reading five is a way of not making the call.' },
+      { h: 'Make a short call', p: 'Five minutes. The first one is the only genuinely hard one.' },
+      { h: 'Come back for the specifics', p: 'The safety and language material makes far more sense once you have had a couple of conversations.' },
+    ],
+    prose: [
+      group('Starting and ending conversations',
+        'The two halves people worry about most, and the second one more than the first.',
+        ['how-to-start-a-conversation-with-a-stranger', 'how-to-end-a-conversation-politely', 'phone-anxiety-how-to-get-comfortable-talking'],
+        [['/talk-to-strangers', 'Talk to strangers'], ['/im-bored', "I'm bored"], ['/meet-new-people', 'Meet new people']]),
+      group('Safety and privacy',
+        'Read this one before your first call rather than after your first bad one.',
+        ['random-chat-safety-tips', 'is-talklive-safe', 'how-anonymous-voice-chat-works'],
+        [['/anonymous-chat', 'Anonymous chat'], ['/chat-without-registration', 'Chat without registration'], ['/privacy', 'Privacy policy']]),
+      group('Language practice',
+        'The conversational half of language learning, which is the half no app provides.',
+        ['practice-english-speaking-online-free'],
+        [['/languages/', 'All languages'], ['/language-exchange', 'Language exchange'], ['/practice-english-speaking', 'Practise English speaking']]),
+      group('Loneliness, late nights and why this works',
+        'The research on talking to strangers is more interesting than the self-help version of it.',
+        ['loneliness-what-actually-helps', 'someone-to-talk-to-at-3am', 'science-of-talking-to-strangers', 'psychological-benefits-of-talking-to-strangers'],
+        [['/cant-sleep', "Can't sleep"], ['/someone-to-talk-to', 'Someone to talk to'], ['/late-night-chat', 'Late night chat']]),
+      group('The random chat category',
+        'What happened to the platforms that defined this, and what actually replaced them.',
+        ['what-happened-to-omegle', 'best-omegle-alternatives', 'best-random-chat-apps-2026', 'voice-chat-vs-video-chat'],
+        [['/omegle-vs-chatroulette', 'Omegle vs Chatroulette'], ['/voice-chat-vs-video-chat', 'Voice vs video chat'], ['/omegle-alternative', 'Omegle alternative']]),
+      group('Making it stick',
+        'Turning one good conversation into more than one.',
+        ['how-to-make-friends-online'],
+        [['/make-friends-online', 'Make friends online'], ['/countries/', 'Chat by country'], ['/cities/', 'Chat by city']]),
+      { h: 'Everything else', body: [
+        `The full article list in date order is on the <a href="/blog/">blog index</a>, and there is an <a href="/blog/feed.xml">RSS feed</a> if you would rather follow it that way.`,
+      ] },
+    ],
+    faq: [
+      { q: 'Which guide should I read first?', a: 'If you have never done this: the conversation-starter guide. If you are hesitant about safety: the safety tips. If you are here to practise a language: the English speaking guide, which applies to any language. One is enough before your first call.' },
+      { q: 'Are these guides free?', a: 'Yes, all of them, with no email wall and no account. So is the app they are about.' },
+      { q: 'Do I need to read anything before I start?', a: 'No. The only genuinely worth-reading-first item is the safety guide, and even that is mostly one rule: share nothing that identifies where you live, work or bank.' },
+      { q: 'How often is this updated?', a: 'New articles are added as they are written and existing ones are revised when something changes — the RSS feed on the blog index carries updates.' },
+    ],
+    ctaBandH: 'Reading about it is not the same as doing it',
+    ctaBandP: 'One tap, one stranger, five minutes. That is the whole exercise.',
+    posts: ['how-to-start-a-conversation-with-a-stranger', 'random-chat-safety-tips', 'science-of-talking-to-strangers'],
+  };
+}
+
 function blogPost(b) {
   const canonical = blogUrl(b.slug);
+  const title = fitTitle(b.title);
+  const description = fitDescription(b.description);
   const bodyHtml = b.sections.map(s =>
     (s.h ? `<h2>${s.h}</h2>` : '') + s.ps.map(p => `<p>${p}</p>`).join('')
   ).join('');
@@ -1854,7 +2222,7 @@ function blogPost(b) {
       '@context': 'https://schema.org',
       '@type': 'BlogPosting',
       headline: b.h1,
-      description: b.description,
+      description: description,
       datePublished: b.date,
       dateModified: BUILD_DATE,
       mainEntityOfPage: canonical,
@@ -1880,11 +2248,11 @@ function blogPost(b) {
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <link rel="stylesheet" href="/seo.css" />
-<script src="/loading.js"></script>
+<script defer src="/loading.js" data-mode="nav-only"></script>
 <script defer src="/ads.js"></script>
 <link rel="preconnect" href="https://pagead2.googlesyndication.com" crossorigin />
-<title>${esc(b.title)}</title>
-<meta name="description" content="${esc(b.description)}" />
+<title>${esc(title)}</title>
+<meta name="description" content="${esc(description)}" />
 <meta name="keywords" content="${esc(b.keywords)}" />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
 <meta name="theme-color" content="#0b0f1a" />
@@ -1894,7 +2262,7 @@ function blogPost(b) {
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="TalkLive" />
 <meta property="og:title" content="${esc(b.h1)}" />
-<meta property="og:description" content="${esc(b.description)}" />
+<meta property="og:description" content="${esc(description)}" />
 <meta property="og:url" content="${canonical}" />
 <meta property="og:image" content="${SITE}/og-image.png" />
 <meta property="og:image:width" content="1200" />
@@ -1903,21 +2271,22 @@ function blogPost(b) {
 <meta property="article:section" content="${esc(b.tag)}" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="${esc(b.h1)}" />
-<meta name="twitter:description" content="${esc(b.description)}" />
+<meta name="twitter:description" content="${esc(description)}" />
 <meta name="twitter:image" content="${SITE}/og-image.png" />
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="manifest" href="/site.webmanifest" />
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
 </head>
 <body>
+<a class="skip-link" href="#main">Skip to main content</a>
 ${headerHtml('blog')}
-<main>
+<main id="main">
   <article>
     <section class="hero" style="padding-bottom:24px">
       <div class="wrap">
         <span class="eyebrow"><span class="dot"></span> ${esc(b.tag)} · ${readMins} min read</span>
         <h1>${esc(b.h1)}</h1>
-        <p class="lede">${esc(b.description)}</p>
+        <p class="lede">${esc(description)}</p>
         <p class="hero-meta">By the TalkLive team · Updated ${BUILD_DATE}</p>
       </div>
     </section>
@@ -1965,7 +2334,7 @@ function blogIndex() {
   const cards = BLOG.map(b => `<a class="card" href="/blog/${b.slug}" style="display:block;text-decoration:none">
       <p style="margin:0 0 8px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;opacity:.7">${esc(b.tag)}</p>
       <h3 style="margin:0 0 10px">${esc(b.h1)}</h3>
-      <p>${esc(b.description)}</p>
+      <p>${esc(fitDescription(b.description))}</p>
     </a>`).join('');
   const ld = [{
     '@context': 'https://schema.org',
@@ -1982,7 +2351,7 @@ function blogIndex() {
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <link rel="stylesheet" href="/seo.css" />
-<script src="/loading.js"></script>
+<script defer src="/loading.js" data-mode="nav-only"></script>
 <script defer src="/ads.js"></script>
 <link rel="preconnect" href="https://pagead2.googlesyndication.com" crossorigin />
 <title>TalkLive Blog — Voice Chat & Talking to Strangers</title>
@@ -2003,8 +2372,9 @@ function blogIndex() {
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
 </head>
 <body>
+<a class="skip-link" href="#main">Skip to main content</a>
 ${headerHtml('blog')}
-<main>
+<main id="main">
   <section class="hero" style="padding-bottom:24px">
     <div class="wrap">
       <span class="eyebrow"><span class="dot"></span> The TalkLive Blog</span>
@@ -2053,45 +2423,108 @@ function languageSwitcher(current) {
   return `<nav class="lang-switcher" aria-label="Languages" style="padding:28px 0;text-align:center;font-size:14px;line-height:2">${links}</nav>`;
 }
 
+/*
+ * Outbound links from a localized homepage into the rest of the site.
+ *
+ * Without these each /<lang>/ page was a dead end: it linked to the other
+ * locales and to the policy pages and nowhere else, so it passed no authority
+ * to the ~260 pages that make up the actual site and gave a crawler arriving
+ * from a non-English market no route inward.
+ *
+ * The targets are English, and the surrounding heading says so in the page's
+ * own language — a link labelled honestly is better than no link at all, and
+ * far better than pretending a translation exists where it does not.
+ */
+function localeExploreLinks() {
+  const targets = [
+    ['/countries/', 'Chat by country'],
+    ['/languages/', 'Practise a language'],
+    ['/cities/', 'Chat by city'],
+    ['/talk-to-strangers', 'Talk to strangers'],
+    ['/random-voice-chat', 'Random voice chat'],
+    ['/random-text-chat', 'Random text chat'],
+    ['/anonymous-chat', 'Anonymous chat'],
+    ['/omegle-alternative', 'Omegle alternative'],
+    ['/language-exchange', 'Language exchange'],
+    ['/guides/', 'Guides & resources'],
+    ['/blog/', 'Blog'],
+  ];
+  return `<div class="link-cloud">${targets
+    .map(([href, label]) => `<a href="${href}" hreflang="en" lang="en">${label}</a>`).join('')}</div>`;
+}
+
 function localeHome(loc) {
   const canonical = `${SITE}/${loc.code}/`;
+  const title = fitTitle(loc.title);
+  const description = fitDescription(loc.description);
   const app = `/?lang=${loc.code}&amp;utm_source=seo&amp;utm_medium=locale&amp;utm_campaign=home-${loc.code}`;
   const alternates = homeAlternates((href, lang) => `<link rel="alternate" href="${href}" hreflang="${lang}" />`).join('\n');
   const features = loc.features.map(f => `<div class="card"><div class="ico">${icon(f.icon)}</div><h3>${f.h}</h3><p>${f.p}</p></div>`).join('');
   const steps = loc.steps.map(s => `<div class="step"><h3>${s.h}</h3><p>${s.p}</p></div>`).join('');
   const faqHtml = loc.faq.map(f => `<details><summary>${f.q}</summary><p>${f.a}</p></details>`).join('');
-  const ld = [
-    {
-      '@context': 'https://schema.org',
-      '@type': 'WebApplication',
-      name: 'TalkLive',
-      url: canonical,
-      applicationCategory: 'CommunicationApplication',
-      operatingSystem: 'Web, Android, iOS',
-      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
-      inLanguage: loc.code,
-      isAccessibleForFree: true,
-      description: loc.description,
-      publisher: { '@type': 'Organization', name: 'TalkLive', url: SITE, logo: `${SITE}/favicon.svg` },
-    },
-    {
-      '@context': 'https://schema.org',
-      '@type': 'FAQPage',
-      inLanguage: loc.code,
-      mainEntity: loc.faq.map(f => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
-    },
-  ];
+  // Same @graph and the same entity @ids as the English pages, so a localized
+  // homepage is understood as another page of one site rather than a separate
+  // organisation that happens to share a name.
+  const ld = [{
+    '@context': 'https://schema.org',
+    '@graph': entityGraph().concat([
+      ogImageNode(),
+      {
+        '@type': 'WebPage',
+        '@id': `${canonical}#webpage`,
+        url: canonical,
+        name: title,
+        description: description,
+        isPartOf: { '@id': SITE_ID },
+        about: { '@id': `${SITE}/#app` },
+        primaryImageOfPage: { '@id': OG_IMAGE_ID },
+        inLanguage: loc.code,
+        dateModified: BUILD_DATE,
+        // Names the English original explicitly. hreflang says these URLs are
+        // alternates of each other; this says which one the others came from.
+        translationOfWork: { '@id': `${SITE}/#webpage` },
+        speakable: { '@type': 'SpeakableSpecification', cssSelector: ['h1', '.lede'] },
+      },
+      {
+        '@type': 'WebApplication',
+        '@id': `${SITE}/#app`,
+        name: 'TalkLive',
+        url: `${SITE}/`,
+        applicationCategory: 'CommunicationApplication',
+        operatingSystem: 'Web, Android, iOS',
+        offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+        inLanguage: LOCALES.map(l => l.code).concat(['en']),
+        isAccessibleForFree: true,
+        isFamilyFriendly: false,
+        typicalAgeRange: '18-',
+        description: loc.description,
+        publisher: { '@id': ORG_ID },
+      },
+      {
+        '@type': 'FAQPage',
+        '@id': `${canonical}#faq`,
+        inLanguage: loc.code,
+        isPartOf: { '@id': `${canonical}#webpage` },
+        mainEntity: loc.faq.map((f, i) => ({
+          '@type': 'Question',
+          '@id': `${canonical}#faq-${i + 1}`,
+          name: f.q,
+          acceptedAnswer: { '@type': 'Answer', text: f.a },
+        })),
+      },
+    ]),
+  }];
   return `<!DOCTYPE html>
 <html lang="${loc.code}" dir="${loc.dir}">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <link rel="stylesheet" href="/seo.css" />
-<script src="/loading.js"></script>
+<script defer src="/loading.js" data-mode="nav-only"></script>
 <script defer src="/ads.js"></script>
 <link rel="preconnect" href="https://pagead2.googlesyndication.com" crossorigin />
-<title>${esc(loc.title)}</title>
-<meta name="description" content="${esc(loc.description)}" />
+<title>${esc(title)}</title>
+<meta name="description" content="${esc(description)}" />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
 <meta name="theme-color" content="#0b0f1a" />
 <meta name="author" content="TalkLive" />
@@ -2099,16 +2532,16 @@ function localeHome(loc) {
 ${alternates}
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="TalkLive" />
-<meta property="og:title" content="${esc(loc.title)}" />
-<meta property="og:description" content="${esc(loc.description)}" />
+<meta property="og:title" content="${esc(title)}" />
+<meta property="og:description" content="${esc(description)}" />
 <meta property="og:url" content="${canonical}" />
 <meta property="og:image" content="${SITE}/og-image.png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta property="og:locale" content="${loc.ogLocale}" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="${esc(loc.title)}" />
-<meta name="twitter:description" content="${esc(loc.description)}" />
+<meta name="twitter:title" content="${esc(title)}" />
+<meta name="twitter:description" content="${esc(description)}" />
 <meta name="twitter:image" content="${SITE}/og-image.png" />
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="/favicon.svg" />
@@ -2116,6 +2549,7 @@ ${alternates}
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
 </head>
 <body>
+<a class="skip-link" href="#main">${esc(loc.skipToContent || 'Skip to main content')}</a>
 <header class="site-header">
   <div class="wrap">
     <a class="logo" href="/${loc.code}/"><img src="/favicon.svg" width="30" height="30" alt="TalkLive logo" /> TalkLive</a>
@@ -2125,7 +2559,7 @@ ${alternates}
     </span>
   </div>
 </header>
-<main>
+<main id="main">
   <section class="hero">
     <div class="wrap">
       <h1>${loc.h1}</h1>
@@ -2167,6 +2601,14 @@ ${alternates}
       </div>
     </div>
   </div>
+  <section>
+    <div class="wrap">
+      <h2>${esc(loc.exploreH || 'Explore TalkLive')}</h2>
+      <p class="section-intro">${esc(loc.exploreP || 'These pages are in English.')}</p>
+      ${localeExploreLinks()}
+    </div>
+  </section>
+
   <div class="wrap">${languageSwitcher(loc.code)}</div>
 
   ${adsenseMultiplex()}
@@ -2185,8 +2627,18 @@ ${alternates}
 // --- Emit -------------------------------------------------------------------
 
 let count = 0;
+// A slug may now contain a directory (`countries/india`) or be a directory
+// itself (`countries/`), so the destination is resolved rather than assumed to
+// be a flat file at the root of public/.
+function pageFile(slug) {
+  return slug.endsWith('/')
+    ? path.join(PUBLIC, slug, 'index.html')
+    : path.join(PUBLIC, `${slug}.html`);
+}
 PAGES.forEach((p, i) => {
-  fs.writeFileSync(path.join(PUBLIC, `${p.slug}.html`), page(p, i));
+  const file = pageFile(p.slug);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, page(p, i));
   count++;
 });
 
@@ -2206,35 +2658,143 @@ for (const b of BLOG) {
   count++;
 }
 
-// Sitemap with hreflang alternates for the home + all landing pages.
-const sitemapUrls = [{ slug: '', priority: '1.0', freq: 'daily', home: true }]
-  .concat(LOCALES.map(l => ({ slug: `${l.code}/`, priority: '0.9', freq: 'weekly', raw: true, home: true })))
-  .concat(PAGES.map(p => ({ slug: p.slug, priority: '0.8', freq: 'weekly' })))
-  .concat([{ slug: 'blog/', priority: '0.7', freq: 'weekly', raw: true }])
-  .concat(BLOG.map(b => ({ slug: `blog/${b.slug}`, priority: '0.6', freq: 'monthly', raw: true })))
-  .concat([
-    { slug: 'pricing', priority: '0.5', freq: 'monthly', raw: true },
-    { slug: 'about', priority: '0.4', freq: 'yearly', raw: true },
-    { slug: 'contact', priority: '0.4', freq: 'yearly', raw: true },
-    { slug: 'privacy', priority: '0.3', freq: 'yearly', raw: true },
-    { slug: 'terms', priority: '0.3', freq: 'yearly', raw: true },
-    { slug: 'refund', priority: '0.3', freq: 'yearly', raw: true },
-  ]);
+/* --- Sitemaps --------------------------------------------------------------
+ *
+ * Two changes from the single flat file this replaces.
+ *
+ * First, honest `lastmod`. Every URL used to be stamped with the build date,
+ * so a deploy that changed one page told Google that all several hundred had
+ * changed. Google's own guidance is that it will start ignoring lastmod
+ * entirely from a site that does that — and it is the signal that gets a
+ * genuinely updated page recrawled quickly, so it is worth keeping accurate.
+ * Dates now come from a committed manifest keyed by a hash of the page's
+ * source data, so a page's lastmod only moves when its content actually moves.
+ *
+ * Second, a sitemap index with one child per cluster. Search Console reports
+ * indexing coverage per submitted sitemap, so splitting them is the difference
+ * between "612 of 700 indexed" and knowing that the city pages are the ones
+ * being dropped.
+ */
+const LASTMOD_FILE = path.join(__dirname, 'seo-lastmod.json');
 
-function buildSitemap() {
-  const head = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">';
-  const body = sitemapUrls.map(u => {
-    const loc = u.raw ? `${SITE}/${u.slug}` : url(u.slug);
-    // Only the homepage cluster carries hreflang alternates — every member of
-    // the cluster (/, /es/, /ru/, …) lists the full set, as Google requires.
-    const alts = u.home
-      ? homeAlternates((href, lang) => `\n    <xhtml:link rel="alternate" hreflang="${lang}" href="${href}"/>`).join('')
-      : '';
-    return `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${BUILD_DATE}</lastmod>\n    <changefreq>${u.freq}</changefreq>\n    <priority>${u.priority}</priority>${alts}\n  </url>`;
-  }).join('\n');
-  return `${head}\n${body}\n</urlset>\n`;
+function loadLastmod() {
+  try { return JSON.parse(fs.readFileSync(LASTMOD_FILE, 'utf8')); } catch (e) { return {}; }
 }
-fs.writeFileSync(path.join(PUBLIC, 'sitemap.xml'), buildSitemap());
+const lastmodStore = loadLastmod();
+const lastmodNext = {};
+
+// Hash the page's source data rather than its rendered HTML: the rendered
+// output embeds BUILD_DATE, so hashing it would mark every page as changed on
+// every build and defeat the entire point.
+function lastmodFor(key, sourceData) {
+  const hash = crypto.createHash('sha1').update(JSON.stringify(sourceData)).digest('hex').slice(0, 16);
+  const prev = lastmodStore[key];
+  const date = prev && prev.hash === hash ? prev.date : BUILD_DATE;
+  lastmodNext[key] = { hash, date };
+  return date;
+}
+
+function urlEntry(u) {
+  const loc = u.raw ? `${SITE}/${u.slug}` : url(u.slug);
+  // Only the homepage cluster carries hreflang alternates — every member of
+  // the cluster (/, /es/, /ru/, …) lists the full set, as Google requires.
+  const alts = u.home
+    ? homeAlternates((href, lang) => `\n    <xhtml:link rel="alternate" hreflang="${lang}" href="${href}"/>`).join('')
+    : '';
+  const images = (u.images || []).map(img =>
+    `\n    <image:image>\n      <image:loc>${img.loc}</image:loc>\n      <image:title>${esc(img.title)}</image:title>\n      <image:caption>${esc(img.caption)}</image:caption>\n    </image:image>`).join('');
+  return `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${u.lastmod}</lastmod>\n    <changefreq>${u.freq}</changefreq>\n    <priority>${u.priority}</priority>${alts}${images}\n  </url>`;
+}
+
+function urlset(urls) {
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+${urls.map(urlEntry).join('\n')}
+</urlset>
+`;
+}
+
+// The site's one social/preview image. Declaring it in the sitemap is what
+// gets it into Google Images at all — an <img> that only ever appears as an
+// og:image meta tag is invisible to image search.
+const SITE_IMAGES = [{
+  loc: `${SITE}/og-image.png`,
+  title: 'TalkLive — free random voice and text chat',
+  caption: 'TalkLive pairs strangers worldwide for live, anonymous voice calls and text chat.',
+}];
+
+const homeUrls = [{
+  slug: '', priority: '1.0', freq: 'daily', home: true, images: SITE_IMAGES,
+  lastmod: lastmodFor('/', { v: 2, home: true }),
+}].concat(LOCALES.map(l => ({
+  slug: `${l.code}/`, priority: '0.9', freq: 'weekly', raw: true, home: true,
+  lastmod: lastmodFor(`/${l.code}/`, l),
+})));
+
+// Landing pages split by cluster so Search Console reports coverage per group.
+const pageGroups = {
+  pages: PAGES.filter(p => !p.cluster),
+  countries: PAGES.filter(p => p.cluster === 'countries'),
+  cities: PAGES.filter(p => p.cluster === 'cities'),
+  languages: PAGES.filter(p => p.cluster === 'languages'),
+};
+
+function pageUrls(group) {
+  return group.map(p => ({
+    slug: p.slug,
+    raw: p.slug.endsWith('/'),
+    // Hubs outrank the pages beneath them; everything else sits at 0.8.
+    priority: p.isHub ? '0.9' : '0.8',
+    freq: p.isHub ? 'weekly' : 'monthly',
+    lastmod: lastmodFor(`/${p.slug}`, p),
+  }));
+}
+
+const blogUrls = [{ slug: 'blog/', priority: '0.7', freq: 'weekly', raw: true, lastmod: lastmodFor('/blog/', BLOG.map(b => b.slug)) }]
+  .concat(BLOG.map(b => ({ slug: `blog/${b.slug}`, priority: '0.6', freq: 'monthly', raw: true, lastmod: lastmodFor(`/blog/${b.slug}`, b) })));
+
+const staticUrls = [
+  { slug: 'pricing', priority: '0.5', freq: 'monthly', raw: true },
+  { slug: 'about', priority: '0.4', freq: 'yearly', raw: true },
+  { slug: 'contact', priority: '0.4', freq: 'yearly', raw: true },
+  { slug: 'privacy', priority: '0.3', freq: 'yearly', raw: true },
+  { slug: 'terms', priority: '0.3', freq: 'yearly', raw: true },
+  { slug: 'refund', priority: '0.3', freq: 'yearly', raw: true },
+].map(u => Object.assign(u, { lastmod: lastmodFor(`/${u.slug}`, u.slug) }));
+
+const SITEMAPS = {
+  'sitemap-main.xml': homeUrls.concat(staticUrls),
+  'sitemap-pages.xml': pageUrls(pageGroups.pages),
+  'sitemap-countries.xml': pageUrls(pageGroups.countries),
+  'sitemap-cities.xml': pageUrls(pageGroups.cities),
+  'sitemap-languages.xml': pageUrls(pageGroups.languages),
+  'sitemap-blog.xml': blogUrls,
+};
+
+let sitemapUrlCount = 0;
+for (const [name, urls] of Object.entries(SITEMAPS)) {
+  fs.writeFileSync(path.join(PUBLIC, name), urlset(urls));
+  sitemapUrlCount += urls.length;
+}
+
+// /sitemap.xml stays the entry point — it is what robots.txt advertises and
+// what is already submitted in Search Console — but it is now an index.
+fs.writeFileSync(path.join(PUBLIC, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${Object.entries(SITEMAPS).map(([name, urls]) => {
+  // The index's lastmod for a child is the newest lastmod inside it, so a
+  // crawler can skip an entire unchanged cluster without fetching it.
+  const newest = urls.reduce((max, u) => (u.lastmod > max ? u.lastmod : max), '1970-01-01');
+  return `  <sitemap>\n    <loc>${SITE}/${name}</loc>\n    <lastmod>${newest}</lastmod>\n  </sitemap>`;
+}).join('\n')}
+</sitemapindex>
+`);
+
+// Sorted so the committed manifest produces a readable diff — an unsorted
+// object would reorder on every build and bury the one line that changed.
+const sortedLastmod = {};
+for (const k of Object.keys(lastmodNext).sort()) sortedLastmod[k] = lastmodNext[k];
+fs.writeFileSync(LASTMOD_FILE, JSON.stringify(sortedLastmod, null, 2) + '\n');
 
 // RSS feed for the blog — enables autodiscovery, feed readers and syndication.
 function buildRss() {
@@ -2244,7 +2804,7 @@ function buildRss() {
     <guid isPermaLink="true">${blogUrl(b.slug)}</guid>
     <pubDate>${new Date(b.date + 'T12:00:00Z').toUTCString()}</pubDate>
     <category>${esc(b.tag)}</category>
-    <description>${esc(b.description)}</description>
+    <description>${esc(fitDescription(b.description))}</description>
   </item>`).join('\n');
   return `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
@@ -2299,4 +2859,4 @@ fs.writeFileSync(path.join(PUBLIC, 'llms.txt'), buildLlmsTxt());
 const { KEY: INDEXNOW_KEY } = require('../server/indexnow');
 fs.writeFileSync(path.join(PUBLIC, `${INDEXNOW_KEY}.txt`), INDEXNOW_KEY + '\n');
 
-console.log(`Built ${count} landing pages + sitemap.xml (${sitemapUrls.length} urls) + blog/feed.xml + llms.txt + indexnow key.`);
+console.log(`Built ${count} landing pages + sitemap index (${sitemapUrlCount} urls across ${Object.keys(SITEMAPS).length} sitemaps) + blog/feed.xml + llms.txt + indexnow key.`);

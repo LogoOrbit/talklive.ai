@@ -15,9 +15,29 @@ const https = require('https');
 const KEY = 'ce0b57a2d6e929d7055a36f1185a7ded';
 const HOST = 'talklive.app';
 
+// /sitemap.xml is a <sitemapindex>, so its own <loc> entries are child sitemap
+// files rather than pages. Reading it alone would submit six sitemap URLs and
+// none of the ~266 pages, which is a silent no-op — so the index is followed
+// one level down into the children that actually list pages.
 function sitemapUrls() {
-  const xml = fs.readFileSync(path.join(__dirname, '..', 'public', 'sitemap.xml'), 'utf8');
-  return [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m => m[1]);
+  const dir = path.join(__dirname, '..', 'public');
+  const root = fs.readFileSync(path.join(dir, 'sitemap.xml'), 'utf8');
+  const locs = xml => [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m => m[1]);
+
+  if (!/<sitemapindex/i.test(root)) return locs(root);
+
+  const urls = new Set();
+  for (const child of locs(root)) {
+    const file = path.join(dir, path.basename(new URL(child).pathname));
+    // A child listed in the index but missing on disk is a build bug, not a
+    // reason to abandon the whole submission.
+    try {
+      for (const u of locs(fs.readFileSync(file, 'utf8'))) urls.add(u);
+    } catch (err) {
+      console.warn('[indexnow] skipping child sitemap', child, '-', err.message);
+    }
+  }
+  return [...urls];
 }
 
 // Submits the full URL list in one POST. Errors are logged and swallowed —

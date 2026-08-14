@@ -9,6 +9,9 @@
 module.exports = [
   {
     code: 'es', name: 'Español', dir: 'ltr', ogLocale: 'es_ES',
+    skipToContent: "Saltar al contenido principal",
+    exploreH: "Explora TalkLive",
+    exploreP: "Estas páginas están en inglés.",
     title: 'TalkLive — Chat de voz y texto gratis con desconocidos',
     description: 'TalkLive es un chat aleatorio gratuito de voz y texto con desconocidos. Toca para hablar en una llamada anónima en vivo o chatea por texto. Sin registro.',
     h1: 'Habla con desconocidos de todo el mundo',
@@ -38,6 +41,9 @@ module.exports = [
   },
   {
     code: 'pt', name: 'Português', dir: 'ltr', ogLocale: 'pt_BR',
+    skipToContent: "Ir para o conteúdo principal",
+    exploreH: "Explore o TalkLive",
+    exploreP: "Estas páginas estão em inglês.",
     title: 'TalkLive — Chat de voz e texto grátis com desconhecidos',
     description: 'TalkLive é um chat aleatório gratuito de voz e texto com desconhecidos. Toque para falar numa chamada anônima ao vivo ou converse por texto. Sem cadastro.',
     h1: 'Converse com desconhecidos do mundo todo',
@@ -67,6 +73,9 @@ module.exports = [
   },
   {
     code: 'fr', name: 'Français', dir: 'ltr', ogLocale: 'fr_FR',
+    skipToContent: "Aller au contenu principal",
+    exploreH: "Explorer TalkLive",
+    exploreP: "Ces pages sont en anglais.",
     title: 'TalkLive — Chat vocal et textuel gratuit avec des inconnus',
     description: 'TalkLive est un chat aléatoire gratuit avec des inconnus. Appuyez pour parler dans un appel anonyme en direct ou discutez par texto. Sans inscription.',
     h1: 'Parlez avec des inconnus du monde entier',
@@ -96,6 +105,9 @@ module.exports = [
   },
   {
     code: 'de', name: 'Deutsch', dir: 'ltr', ogLocale: 'de_DE',
+    skipToContent: "Zum Hauptinhalt springen",
+    exploreH: "TalkLive entdecken",
+    exploreP: "Diese Seiten sind auf Englisch.",
     title: 'TalkLive — Kostenloser Sprach- & Text-Chat mit Fremden',
     description: 'TalkLive ist ein kostenloser Zufalls-Chat per Sprache und Text mit Fremden. Tippe zum Sprechen für einen anonymen Live-Anruf oder chatte per Text. Ohne Anmeldung.',
     h1: 'Sprich mit Fremden auf der ganzen Welt',
@@ -125,6 +137,9 @@ module.exports = [
   },
   {
     code: 'ru', name: 'Русский', dir: 'ltr', ogLocale: 'ru_RU',
+    skipToContent: "Перейти к основному содержанию",
+    exploreH: "Больше о TalkLive",
+    exploreP: "Эти страницы на английском языке.",
     title: 'TalkLive — бесплатный голосовой и текстовый чат',
     description: 'TalkLive — бесплатный случайный чат с незнакомцами: голос и текст. Нажмите, чтобы говорить в анонимном живом звонке или переписываться. Без регистрации.',
     h1: 'Общайтесь с незнакомцами со всего мира',
@@ -154,6 +169,9 @@ module.exports = [
   },
   {
     code: 'tr', name: 'Türkçe', dir: 'ltr', ogLocale: 'tr_TR',
+    skipToContent: "Ana içeriğe geç",
+    exploreH: "TalkLive'ı keşfedin",
+    exploreP: "Bu sayfalar İngilizcedir.",
     title: 'TalkLive — Yabancılarla ücretsiz sesli ve yazılı sohbet',
     description: 'TalkLive, yabancılarla ücretsiz rastgele sesli ve yazılı sohbettir. Konuşmak için dokunun ve anonim canlı bir aramaya katılın veya yazışın. Kayıt gerekmez.',
     h1: 'Dünyanın her yerinden yabancılarla konuş',
@@ -183,6 +201,9 @@ module.exports = [
   },
   {
     code: 'ar', name: 'العربية', dir: 'rtl', ogLocale: 'ar_AR',
+    skipToContent: "تخطي إلى المحتوى الرئيسي",
+    exploreH: "استكشف TalkLive",
+    exploreP: "هذه الصفحات باللغة الإنجليزية.",
     title: 'TalkLive — دردشة صوتية ونصية مجانية مع غرباء',
     description: 'TalkLive دردشة عشوائية مجانية بالصوت والنص مع غرباء. اضغط للتحدث في مكالمة صوتية مباشرة مجهولة، أو دردش نصيًا مع شخص عشوائي في أي مكان في العالم. بدون تسجيل.',
     h1: 'تحدث مع غرباء من جميع أنحاء العالم',
@@ -212,6 +233,9 @@ module.exports = [
   },
   {
     code: 'hi', name: 'हिन्दी', dir: 'ltr', ogLocale: 'hi_IN',
+    skipToContent: "मुख्य सामग्री पर जाएँ",
+    exploreH: "TalkLive एक्सप्लोर करें",
+    exploreP: "ये पेज अंग्रेज़ी में हैं।",
     title: 'TalkLive — दुनिया भर के अजनबियों से मुफ़्त वॉयस और टेक्स्ट चैट',
     description: 'TalkLive अजनबियों के साथ मुफ़्त रैंडम वॉयस और टेक्स्ट चैट है। टैप करें और गुमनाम लाइव कॉल पर बात करें, या किसी रैंडम व्यक्ति से टेक्स्ट चैट करें। बिना साइन-अप।',
     h1: 'दुनिया भर के अजनबियों से बात करें',
@@ -241,6 +265,9 @@ module.exports = [
   },
   {
     code: 'ur', name: 'اردو', dir: 'rtl', ogLocale: 'ur_PK',
+    skipToContent: "مرکزی مواد پر جائیں",
+    exploreH: "TalkLive دریافت کریں",
+    exploreP: "یہ صفحات انگریزی میں ہیں۔",
     title: 'TalkLive — دنیا بھر کے اجنبیوں سے مفت وائس اور ٹیکسٹ چیٹ',
     description: 'TalkLive اجنبیوں کے ساتھ مفت رینڈم وائس اور ٹیکسٹ چیٹ ہے۔ ٹیپ کریں اور گمنام لائیو کال پر بات کریں، یا دنیا میں کہیں بھی کسی رینڈم شخص سے ٹیکسٹ چیٹ کریں۔ بغیر سائن اپ۔',
     h1: 'دنیا بھر کے اجنبیوں سے بات کریں',
@@ -270,6 +297,9 @@ module.exports = [
   },
   {
     code: 'id', name: 'Bahasa Indonesia', dir: 'ltr', ogLocale: 'id_ID',
+    skipToContent: "Lompat ke konten utama",
+    exploreH: "Jelajahi TalkLive",
+    exploreP: "Halaman-halaman ini berbahasa Inggris.",
     title: 'TalkLive — Obrolan suara & teks gratis dengan orang asing',
     description: 'TalkLive adalah obrolan acak gratis lewat suara dan teks dengan orang asing. Ketuk untuk bicara dalam panggilan langsung anonim, atau chat teks. Tanpa daftar.',
     h1: 'Ngobrol dengan orang asing di seluruh dunia',
@@ -299,6 +329,9 @@ module.exports = [
   },
   {
     code: 'zh', name: '中文', dir: 'ltr', ogLocale: 'zh_CN',
+    skipToContent: "跳转到主要内容",
+    exploreH: "探索 TalkLive",
+    exploreP: "这些页面为英文。",
     title: 'TalkLive — 与全球陌生人免费语音和文字聊天',
     description: 'TalkLive 是与陌生人进行的免费随机语音和文字聊天。轻点即可进入匿名实时语音通话，或与世界任何地方的随机陌生人即时文字聊天。无需注册。',
     h1: '与世界各地的陌生人聊天',
@@ -328,6 +361,9 @@ module.exports = [
   },
   {
     code: 'ja', name: '日本語', dir: 'ltr', ogLocale: 'ja_JP',
+    skipToContent: "メインコンテンツへスキップ",
+    exploreH: "TalkLive をもっと見る",
+    exploreP: "これらのページは英語です。",
     title: 'TalkLive — 世界中の見知らぬ人と無料で音声・テキストチャット',
     description: 'TalkLiveは見知らぬ人とつながる無料のランダム音声・テキストチャットです。タップして匿名のライブ通話を始めるか、世界のどこかのランダムな相手とテキストチャット。登録不要。',
     h1: '世界中の見知らぬ人と話そう',
@@ -357,6 +393,9 @@ module.exports = [
   },
   {
     code: 'ko', name: '한국어', dir: 'ltr', ogLocale: 'ko_KR',
+    skipToContent: "본문으로 건너뛰기",
+    exploreH: "TalkLive 둘러보기",
+    exploreP: "이 페이지들은 영어로 제공됩니다.",
     title: 'TalkLive — 전 세계 낯선 사람과 무료 음성·텍스트 채팅',
     description: 'TalkLive는 낯선 사람과 즐기는 무료 랜덤 음성·텍스트 채팅입니다. 탭 한 번으로 익명 라이브 통화를 시작하거나, 세계 어디든 랜덤한 상대와 텍스트로 대화하세요. 가입 불필요.',
     h1: '전 세계 낯선 사람과 대화하세요',
@@ -386,6 +425,9 @@ module.exports = [
   },
   {
     code: 'it', name: 'Italiano', dir: 'ltr', ogLocale: 'it_IT',
+    skipToContent: "Vai al contenuto principale",
+    exploreH: "Esplora TalkLive",
+    exploreP: "Queste pagine sono in inglese.",
     title: 'TalkLive — Chat vocale e testuale gratis con sconosciuti',
     description: 'TalkLive è una chat casuale gratuita con sconosciuti. Tocca per parlare in una chiamata anonima dal vivo o chatta per iscritto. Senza registrazione.',
     h1: 'Parla con sconosciuti di tutto il mondo',
@@ -415,6 +457,9 @@ module.exports = [
   },
   {
     code: 'fa', name: 'فارسی', dir: 'rtl', ogLocale: 'fa_IR',
+    skipToContent: "پرش به محتوای اصلی",
+    exploreH: "کاوش در TalkLive",
+    exploreP: "این صفحات به زبان انگلیسی هستند.",
     title: 'TalkLive — چت صوتی و متنی رایگان با غریبه‌ها از سراسر جهان',
     description: 'TalkLive یک چت تصادفی رایگان صوتی و متنی با غریبه‌هاست. ضربه بزنید و در یک تماس زندهٔ ناشناس صحبت کنید، یا با فردی تصادفی در هر جای دنیا چت متنی کنید. بدون ثبت‌نام.',
     h1: 'با غریبه‌ها از سراسر جهان صحبت کنید',
@@ -444,6 +489,9 @@ module.exports = [
   },
   {
     code: 'bn', name: 'বাংলা', dir: 'ltr', ogLocale: 'bn_BD',
+    skipToContent: "মূল বিষয়বস্তুতে যান",
+    exploreH: "TalkLive ঘুরে দেখুন",
+    exploreP: "এই পেজগুলি ইংরেজিতে।",
     title: 'TalkLive — অপরিচিতদের সাথে ফ্রি ভয়েস ও টেক্সট চ্যাট',
     description: 'TalkLive হলো অপরিচিতদের সাথে ফ্রি র্যান্ডম ভয়েস ও টেক্সট চ্যাট। ট্যাপ করে বেনামি লাইভ কলে কথা বলুন, অথবা র্যান্ডম কারও সাথে টেক্সট চ্যাট করুন। সাইন-আপ লাগে না।',
     h1: 'বিশ্বজুড়ে অপরিচিতদের সাথে কথা বলুন',

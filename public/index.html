@@ -75,6 +75,11 @@
 <meta property="og:locale:alternate" content="ur_PK" />
 <meta property="og:locale:alternate" content="id_ID" />
 <meta property="og:locale:alternate" content="zh_CN" />
+<meta property="og:locale:alternate" content="ja_JP" />
+<meta property="og:locale:alternate" content="ko_KR" />
+<meta property="og:locale:alternate" content="it_IT" />
+<meta property="og:locale:alternate" content="fa_IR" />
+<meta property="og:locale:alternate" content="bn_BD" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="TalkLive — Free Random Voice & Text Chat with Strangers" />
 <meta name="twitter:description" content="Tap to Talk for a live anonymous voice call, or Tap to Chat for instant anonymous text chat with a random stranger anywhere in the world. Free, no sign-up." />
@@ -97,9 +102,38 @@
       "@type": "Organization",
       "@id": "https://talklive.app/#organization",
       "name": "TalkLive",
+      "alternateName": "TalkLive Random Chat",
       "url": "https://talklive.app/",
-      "logo": "https://talklive.app/favicon.svg",
-      "description": "Free random voice and text chat that connects strangers worldwide for live, anonymous conversations — by call or by message."
+      "logo": {
+        "@type": "ImageObject",
+        "@id": "https://talklive.app/#logo",
+        "url": "https://talklive.app/favicon-192.png",
+        "contentUrl": "https://talklive.app/favicon-192.png",
+        "width": 192,
+        "height": 192,
+        "caption": "TalkLive logo"
+      },
+      "image": { "@id": "https://talklive.app/#logo" },
+      "description": "Free random voice and text chat that connects strangers worldwide for live, anonymous conversations — by call or by message.",
+      "foundingDate": "2025",
+      "email": "info@talklive.app",
+      "knowsAbout": ["random voice chat","anonymous online chat","talking to strangers","language exchange","online safety","WebRTC audio calls"],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer support",
+        "email": "info@talklive.app",
+        "url": "https://talklive.app/contact",
+        "availableLanguage": ["en","es","pt","fr","de","ru","tr","ar","hi","ur","id","zh","ja","ko","it","fa","bn"]
+      }
+    },
+    {
+      "@type": "ImageObject",
+      "@id": "https://talklive.app/#primaryimage",
+      "url": "https://talklive.app/og-image.png",
+      "contentUrl": "https://talklive.app/og-image.png",
+      "width": 1200,
+      "height": 630,
+      "caption": "TalkLive — free random voice and text chat with strangers worldwide"
     },
     {
       "@type": "WebSite",
@@ -108,7 +142,19 @@
       "name": "TalkLive",
       "description": "Free random voice and text chat with strangers worldwide.",
       "publisher": { "@id": "https://talklive.app/#organization" },
-      "inLanguage": ["en","es","pt","fr","de","ru","tr","ar","hi","ur","id","zh"]
+      "inLanguage": ["en","es","pt","fr","de","ru","tr","ar","hi","ur","id","zh","ja","ko","it","fa","bn"]
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://talklive.app/#webpage",
+      "url": "https://talklive.app/",
+      "name": "TalkLive — Free Random Voice & Text Chat with Strangers",
+      "description": "Tap to Talk for a live anonymous voice call, or Tap to Chat for instant anonymous text chat with a random stranger anywhere in the world. Free, no sign-up.",
+      "isPartOf": { "@id": "https://talklive.app/#website" },
+      "about": { "@id": "https://talklive.app/#app" },
+      "primaryImageOfPage": { "@id": "https://talklive.app/#primaryimage" },
+      "inLanguage": "en",
+      "speakable": { "@type": "SpeakableSpecification", "cssSelector": ["h1", ".lede"] }
     },
     {
       "@type": "WebApplication",
@@ -120,7 +166,7 @@
       "browserRequirements": "Requires a modern browser; microphone only needed for voice calls",
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
       "isAccessibleForFree": true,
-      "inLanguage": ["en","es","pt","fr","de","ru","tr","ar","hi","ur","id","zh"],
+      "inLanguage": ["en","es","pt","fr","de","ru","tr","ar","hi","ur","id","zh","ja","ko","it","fa","bn"],
       "description": "Tap to Talk for a live, anonymous voice call, or Tap to Chat for instant anonymous text chat with a random stranger anywhere in the world. Free, no sign-up.",
       "featureList": [
         "Tap to Talk — one-tap anonymous voice calls",
@@ -130,9 +176,11 @@
         "Country and gender match filters",
         "Add friends and call back",
         "Works smoothly on low-end phones and slow networks",
-        "12-language interface with RTL support"
+        "17-language interface with RTL support"
       ],
-      "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.7", "ratingCount": "2840", "bestRating": "5" },
+      "isFamilyFriendly": false,
+      "typicalAgeRange": "18-",
+      "screenshot": { "@id": "https://talklive.app/#primaryimage" },
       "publisher": { "@id": "https://talklive.app/#organization" }
     },
     {
@@ -145,7 +193,7 @@
         { "@type": "Question", "name": "Can I chat by text instead of calling?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Tap to Chat starts an instant anonymous text chat with a random stranger — no microphone needed, and it runs smoothly even on low-end phones and slow connections." } },
         { "@type": "Question", "name": "Does TalkLive use video?", "acceptedAnswer": { "@type": "Answer", "text": "No. TalkLive is voice and text only, which keeps it private, low-bandwidth, and pressure-free. You connect through conversation, not appearance." } },
         { "@type": "Question", "name": "Can I choose who I talk to?", "acceptedAnswer": { "@type": "Answer", "text": "You can apply optional gender and country filters. If no match is found quickly, TalkLive connects you with any available stranger so you never wait long." } },
-        { "@type": "Question", "name": "What languages does TalkLive support?", "acceptedAnswer": { "@type": "Answer", "text": "The interface is available in 12 languages including English, Spanish, Portuguese, French, German, Russian, Turkish, Arabic, Hindi, Urdu, Indonesian and Chinese, with full right-to-left support." } }
+        { "@type": "Question", "name": "What languages does TalkLive support?", "acceptedAnswer": { "@type": "Answer", "text": "The interface is available in 17 languages including English, Spanish, Portuguese, French, German, Russian, Turkish, Arabic, Hindi, Urdu, Indonesian, Chinese, Japanese, Korean, Italian, Persian and Bengali, with full right-to-left support." } }
       ]
     }
   ]

@@ -8,6 +8,7 @@ const { OAuth2Client } = require('google-auth-library');
 const { generateUsername } = require('./usernames');
 const store = require('./store');
 const { createAdmin } = require('./admin');
+const compress = require('./compress');
 
 const app = express();
 // Client IDs are browser-visible, so they are not an identity proof.  Bind
@@ -49,6 +50,12 @@ server.maxConnections = Infinity;
 // protocol and host for canonical redirects below.
 app.set('trust proxy', 1);
 app.disable('x-powered-by');
+
+// Brotli/gzip every text response. Registered first so it wraps everything
+// downstream — static assets, sendFile'd page shells and inline HTML alike.
+// Socket.IO handles its own upgrade path on the bare HTTP server and never
+// reaches Express middleware, so long-polling frames are unaffected.
+app.use(compress());
 
 // Security headers on every response. The CSP allowlists exactly the external
 // origins the app legitimately uses (Google Sign-In, flag images) and blocks
@@ -297,10 +304,17 @@ app.get('/chat', (req, res) => {
 
 // Redirect the raw SEO landing files (e.g. /talk-to-strangers.html) to their
 // clean, canonical URLs (/talk-to-strangers) so only one version is indexed.
-app.get(/^\/([a-z0-9-]+)\.html$/i, (req, res, next) => {
-  const name = req.params[0];
-  if (name === 'index') return next();
-  res.redirect(301, '/' + name);
+// The path may now be nested (/countries/india.html), and a directory's
+// index.html collapses to the directory itself (/countries/index.html ->
+// /countries/) rather than to a /countries/index URL that does not exist.
+app.get(/^\/((?:[a-z0-9-]+\/)*)([a-z0-9-]+)\.html$/i, (req, res, next) => {
+  const dir = req.params[0] || '';
+  const name = req.params[1];
+  if (name === 'index') {
+    if (!dir) return next(); // "/index.html" is the app shell, served as "/"
+    return res.redirect(301, '/' + dir);
+  }
+  res.redirect(301, '/' + dir + name);
 });
 
 // --- Owner dashboard, analytics & maintenance mode ---------------------------
@@ -361,8 +375,12 @@ app.use((req, res, next) => {
 
 // Count page visits (HTML navigations only, not assets) with geo attribution.
 app.use((req, res, next) => {
+  // Nested landing pages (/countries/india, /languages/spanish) are real page
+  // views and were silently uncounted while the pattern only matched a single
+  // path segment. Depth is capped so this stays a page-view counter rather
+  // than a request logger.
   if (req.method === 'GET' && !req.path.startsWith('/owner')
-    && (req.path === '/' || /^\/[a-z0-9-]+$/i.test(req.path))
+    && (req.path === '/' || /^\/[a-z0-9-]+(?:\/[a-z0-9-]+)?\/?$/i.test(req.path))
     && String(req.headers.accept || '').includes('text/html')) {
     const fwd = req.headers['x-forwarded-for'];
     const ip = ((fwd ? String(fwd).split(',')[0].trim() : req.socket.remoteAddress) || '').replace('::ffff:', '');

@@ -1,13 +1,36 @@
 # robots.txt for TalkLive — https://talklive.app
+#
+# talklive.app is the canonical origin. talklive.xyz and talklive.site are
+# owned by us and 301 every request here, so they never serve a crawlable copy
+# of this file — there is deliberately no separate robots.txt for them.
+#
 # All well-behaved crawlers are welcome to index the public site.
 
 User-agent: *
 Allow: /
 Disallow: /config.js
 Disallow: /socket.io/
+Disallow: /owner
+Disallow: /owner/
+
+# Deliberately NOT disallowed:
+#
+#   /call and /chat  — the live app shells. Both serve <meta name="robots"
+#     content="noindex">, which is the correct tool for keeping a page out of
+#     the index. Adding a Disallow on top would be counterproductive: a blocked
+#     URL is a URL Google cannot fetch, so it never reads the noindex, and an
+#     externally-linked blocked URL can still be indexed with no content at all.
+#
+#   ?utm_ tagged URLs — every CTA on the landing pages carries campaign
+#     parameters. They all canonicalise to the clean URL, and blocking them
+#     would stop crawlers reading that canonical tag, which is what actually
+#     consolidates them. Let them be crawled and discarded.
 
 # Common SEO / social crawlers — explicitly welcomed
 User-agent: Googlebot
+Allow: /
+
+User-agent: Googlebot-Image
 Allow: /
 
 User-agent: Bingbot
@@ -40,4 +63,65 @@ Allow: /
 User-agent: TelegramBot
 Allow: /
 
+# Answer engines and AI assistants.
+#
+# These are allowed deliberately. A growing share of "what should I use instead
+# of Omegle" style questions are now answered inside an assistant rather than
+# on a results page, and a site these crawlers cannot read is a site they
+# cannot recommend. /llms.txt is a curated index written for exactly this
+# audience.
+#
+# Note the distinction: OAI-SearchBot, PerplexityBot and Applebot-Extended
+# power retrieval and citation, which is the traffic-bearing part. GPTBot and
+# ClaudeBot are also allowed here because being summarised accurately is worth
+# more to a free product than withholding the text would be.
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: Amazonbot
+Allow: /
+
+User-agent: Bytespider
+Allow: /
+
+# Sitemap index — Search Console reports indexing coverage per sitemap, so the
+# clusters are split rather than pooled into one file. The children are listed
+# individually as well because Bing and Yandex historically handle a plain
+# index less reliably than Google does.
 Sitemap: https://talklive.app/sitemap.xml
+Sitemap: https://talklive.app/sitemap-main.xml
+Sitemap: https://talklive.app/sitemap-pages.xml
+Sitemap: https://talklive.app/sitemap-countries.xml
+Sitemap: https://talklive.app/sitemap-cities.xml
+Sitemap: https://talklive.app/sitemap-languages.xml
+Sitemap: https://talklive.app/sitemap-blog.xml
