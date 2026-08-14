@@ -1,0 +1,40 @@
+name: Deploy to Fly.io
+
+# Every push to main ships. The alternative — deploying by hand from a laptop —
+# is what let main drift a commit ahead of the running app more than once.
+on:
+  push:
+    branches:
+      - main
+  # Lets a deploy be re-run from the Actions tab without an empty commit, e.g.
+  # after rotating a secret or when a build failed on a transient Fly error.
+  workflow_dispatch:
+
+# One deploy at a time. Two concurrent `flyctl deploy` runs against a single
+# machine race each other, and cancel-in-progress would abort a release
+# mid-rollout, so later pushes queue instead.
+concurrency:
+  group: fly-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build and deploy
+    runs-on: ubuntu-latest
+    # A stuck build should not burn an hour of Actions time; the app's own
+    # deploys take a few minutes.
+    timeout-minutes: 20
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+
+      - name: Install flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      # --remote-only builds on Fly's builder rather than this runner, so the
+      # image is assembled in the same place whether the deploy is triggered
+      # from CI or a workstation.
+      - name: Deploy
+        run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

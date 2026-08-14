@@ -88,6 +88,22 @@ Full list of variables the code reads: `GOOGLE_CLIENT_ID`, `OWNER_EMAIL`,
 
 ## 5. Deploy
 
+Pushing to `main` deploys automatically via
+`.github/workflows/fly-deploy.yml` — that is the normal path, and it is what
+keeps the running app from drifting behind `main`. It needs one repository
+secret:
+
+1. Mint a deploy token: `fly tokens create deploy -a talklive-ai` (or
+   **Fly dashboard → talklive-ai → Tokens**).
+2. Add it at **GitHub → repo → Settings → Secrets and variables → Actions →
+   New repository secret**, named exactly `FLY_API_TOKEN`.
+
+Without that secret the workflow fails at the deploy step with `unauthorized`.
+Re-run a deploy without a new commit from the **Actions** tab
+(*Deploy to Fly.io → Run workflow*).
+
+To deploy by hand instead:
+
 ```sh
 fly deploy
 fly logs
@@ -95,6 +111,11 @@ fly logs
 
 Expect `TalkLive server running on port 8080` and
 `[accounts] restored N account(s) from the store`.
+
+A deploy token scoped to the app is enough for `fly certs`, `fly secrets` and
+`fly logs`, but **not** for `fly deploy --depot=false`, which needs to create
+the org's builder app and fails with `unauthorized`. Use an org-scoped token
+if you deploy that way.
 
 Smoke-test before touching DNS:
 
