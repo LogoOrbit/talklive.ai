@@ -17,6 +17,13 @@ primary_region = 'iad'
   # host that is not this one is served X-Robots-Tag: noindex — so a wrong
   # value here deindexes the live site.
   CANONICAL_HOST = 'talklive.app'
+  # Domains we own that are not the canonical one. They 301 to CANONICAL_HOST
+  # (with or without www, preserving path) so visitors land on the app and
+  # search engines credit one origin instead of splitting rankings across three
+  # copies of the same site. Certificates for each must exist on Fly —
+  # `fly certs add talklive.xyz www.talklive.xyz` etc. — or HTTPS on the alias
+  # fails before the redirect can run.
+  ALIAS_HOSTS = 'talklive.xyz,talklive.site'
 
 [http_service]
   internal_port = 8080

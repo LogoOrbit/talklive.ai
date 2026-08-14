@@ -103,6 +103,14 @@ const PORT = process.env.PORT || 5000;
 // Canonical origin used for host/protocol normalization. Override via env.
 const CANONICAL_HOST = process.env.CANONICAL_HOST || 'talklive.app';
 const ENFORCE_CANONICAL = process.env.ENFORCE_CANONICAL !== 'off' && process.env.NODE_ENV === 'production';
+// Other domains we own (talklive.xyz, talklive.site) that must funnel into the
+// canonical origin. Serving the site on them would be duplicate content
+// competing with talklive.app, so they are redirected rather than rendered.
+// Platform hostnames (*.fly.dev) deliberately do NOT belong here: Fly's health
+// check needs a 200 from /healthz, and a 301 would fail it.
+const ALIAS_HOSTS = new Set(
+  (process.env.ALIAS_HOSTS || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean)
+);
 
 // Consolidate link equity on a single canonical origin: force HTTPS and the
 // bare apex domain (drop www) so search engines index exactly one URL per page.
@@ -111,9 +119,15 @@ app.use((req, res, next) => {
   const host = (req.headers.host || '').toLowerCase();
   const proto = req.headers['x-forwarded-proto'] || req.protocol;
   const wantsWww = host.startsWith('www.');
+  const rootHost = wantsWww ? host.slice(4) : host;
   const isCanonicalHost = host === CANONICAL_HOST;
-  // Only redirect for our own domain; leave preview/other hosts untouched.
-  if ((wantsWww && host.slice(4) === CANONICAL_HOST) || (isCanonicalHost && proto !== 'https')) {
+  // Only redirect for our own domains; leave preview/other hosts untouched.
+  // An alias domain redirects with or without www, preserving path and query,
+  // so a visitor typing talklive.xyz/pricing lands on talklive.app/pricing and
+  // every link to an alias credits the canonical origin.
+  if (ALIAS_HOSTS.has(rootHost)
+    || (wantsWww && rootHost === CANONICAL_HOST)
+    || (isCanonicalHost && proto !== 'https')) {
     return res.redirect(301, 'https://' + CANONICAL_HOST + req.originalUrl);
   }
   // Platform hostnames (talklive.fly.dev, *.onrender.com) serve the same pages

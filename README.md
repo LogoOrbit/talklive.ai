@@ -63,6 +63,7 @@ A secured owner dashboard lives at **`/owner`** (e.g. `https://talklive.app/owne
 | `DATA_DIR` | Directory for the JSON store (default `./data`). In production this is `/data`, a persistent Fly volume, so stored data survives deploys and restarts. See `DEPLOY-FLY.md`. |
 | `PREMIUM_CLIENT_IDS` | Comma-separated clientIds to grant premium manually (testing) |
 | `LANDING_HOST` | Optional subdomain (e.g. `start.talklive.app`) whose root serves the marketing landing page (`/landing`) |
+| `ALIAS_HOSTS` | Comma-separated domains we own that 301 to `CANONICAL_HOST` (e.g. `talklive.xyz,talklive.site`). Each needs its own Fly certificate |
 
 ### Premium (TalkLive Plus)
 
