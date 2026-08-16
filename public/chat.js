@@ -142,10 +142,14 @@
   // Views: start → search → live. Only one is visible at a time.
   // ---------------------------------------------------------------------------
   function showView(name) {
-    viewStart.classList.toggle('hidden', name !== 'start');
-    viewSearch.classList.toggle('hidden', name !== 'search');
-    viewLive.classList.toggle('hidden', name !== 'live');
-    composer.classList.toggle('hidden', name !== 'live');
+    [[viewStart, 'start'], [viewSearch, 'search'], [viewLive, 'live']].forEach(function (entry) {
+      var active = name === entry[1];
+      entry[0].classList.toggle('hidden', !active);
+      entry[0].setAttribute('aria-hidden', active ? 'false' : 'true');
+    });
+    var live = name === 'live';
+    composer.classList.toggle('hidden', !live);
+    composer.setAttribute('aria-hidden', live ? 'false' : 'true');
     var connected = name === 'live' && partnerHere;
     reportBtn.classList.toggle('hidden', !connected);
     addFriendBtn.classList.toggle('hidden', !connected);
@@ -452,8 +456,18 @@
   // Side panels (settings / friends / friend chat) — the nav features shared
   // with the call app. Each panel slides in over its own overlay.
   // ---------------------------------------------------------------------------
-  function openPanel(panel, overlay) { panel.classList.add('open'); overlay.classList.remove('hidden'); }
-  function closePanel(panel, overlay) { panel.classList.remove('open'); overlay.classList.add('hidden'); }
+  function openPanel(panel, overlay) {
+    panel.inert = false;
+    panel.setAttribute('aria-hidden', 'false');
+    panel.classList.add('open');
+    overlay.classList.remove('hidden');
+  }
+  function closePanel(panel, overlay) {
+    panel.classList.remove('open');
+    panel.setAttribute('aria-hidden', 'true');
+    panel.inert = true;
+    overlay.classList.add('hidden');
+  }
   function closeAllPanels() {
     closePanel(settingsPanel, settingsOverlay);
     closePanel(friendsPanel, friendsOverlay);

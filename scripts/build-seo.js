@@ -9,12 +9,18 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
-const crypto = require('crypto');
 
 const SITE = 'https://talklive.app';
 const PUBLIC = path.join(__dirname, '..', 'public');
 // Real localized homepages (public/<code>/index.html) — see scripts/locales.js.
 const LOCALES = require('./locales');
+const LANGS = ['en'].concat(LOCALES.map((locale) => locale.code));
+const CONTENT_UPDATED = '2026-08-14';
+const ORGANIZATION_ID = `${SITE}/#organization`;
+const WEBSITE_ID = `${SITE}/#website`;
+const APP_ID = `${SITE}/#app`;
+const OG_IMAGE = `${SITE}/og-image.png`;
+const LOGO_IMAGE = `${SITE}/favicon-192.png`;
 // hreflang cluster for the homepage: x-default + en point at /, every other
 // language at its own statically rendered path. Path-based alternates are
 // indexable; ?lang= URLs serve identical English HTML and are not.
@@ -23,62 +29,8 @@ function homeAlternates(tag) {
   return [a(`${SITE}/`, 'x-default'), a(`${SITE}/`, 'en')]
     .concat(LOCALES.map(l => a(`${SITE}/${l.code}/`, l.code)));
 }
-const BUILD_DATE = new Date().toISOString().slice(0, 10);
-
 function esc(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-/* --- SERP length normalisation ---------------------------------------------
- * Google truncates titles at roughly 60 characters and descriptions at roughly
- * 155, and what it cuts is the end — which on a page titled
- * "… — Free Voice & Text Chat | TalkLive" is the brand, and sometimes the
- * keyword with it. Rather than trusting every hand-written string across four
- * content files to stay inside the budget, both are normalised here, once, on
- * the way into the template.
- *
- * Trimming happens at meaningful boundaries — the brand suffix, then a dash
- * separator, then a sentence, then a word — so a shortened string still reads
- * as a finished sentence rather than a truncation. No ellipsis is added:
- * Google appends its own when it truncates further, and two of them look
- * broken.
- */
-const TITLE_MAX = 60;
-const DESC_MAX = 158;
-
-function fitTitle(t) {
-  t = String(t).trim();
-  if (t.length <= TITLE_MAX) return t;
-
-  const hadBrand = /\s*[|·]\s*TalkLive\s*$/.test(t);
-  const body = t.replace(/\s*[|·]\s*TalkLive\s*$/, '').trim();
-  const brand = hadBrand ? ' | TalkLive' : '';
-
-  // Drop trailing dash-separated clauses one at a time, keeping the brand —
-  // the brand is only 11 characters and is what makes a result recognisable in
-  // a crowded SERP, so sacrificing it to save a subtitle is the wrong trade.
-  const parts = body.split(/\s+[—–]\s+/);
-  while (parts.length > 1) {
-    parts.pop();
-    const candidate = parts.join(' — ') + brand;
-    if (candidate.length <= TITLE_MAX) return candidate;
-  }
-
-  // A single clause that is still too long: keep the brand if it fits after a
-  // word-boundary trim, otherwise give the clause the whole budget.
-  const head = parts[0];
-  if (head.length + brand.length <= TITLE_MAX) return head + brand;
-  const trimmed = head.slice(0, TITLE_MAX).replace(/\s+\S*$/, '').replace(/[,;:—–-]\s*$/, '');
-  return trimmed;
-}
-
-function fitDescription(d) {
-  d = String(d).trim();
-  if (d.length <= DESC_MAX) return d;
-  // Prefer cutting at a sentence end so the result is still a whole thought.
-  const sentenceEnd = d.slice(0, DESC_MAX + 1).lastIndexOf('. ');
-  if (sentenceEnd > 80) return d.slice(0, sentenceEnd + 1);
-  return d.slice(0, DESC_MAX).replace(/\s+\S*$/, '').replace(/[,;:—–-]\s*$/, '');
 }
 
 // --- Shared building blocks -------------------------------------------------
@@ -118,112 +70,14 @@ const NAV = [
 
 function url(slug) { return slug ? `${SITE}/${slug}` : `${SITE}/`; }
 
-/* --- Entity graph ----------------------------------------------------------
- * One Organization and one WebSite node, declared identically on every page
- * and referenced by @id from the page-specific nodes. Repeating the same
- * entity with a stable @id across the whole site is what lets a search engine
- * consolidate it into a single thing it knows about, rather than treating each
- * page's publisher block as an unrelated mention — the difference between
- * having an entity in the Knowledge Graph and not.
- *
- * Deliberately absent: `sameAs`. It is the strongest entity signal available,
- * but it has to point at profiles that genuinely belong to us. There are no
- * verified TalkLive social profiles to link, and inventing plausible URLs
- * would assert ownership of accounts we do not control. See SEO.md — this is
- * the highest-value item left on the list once those profiles exist.
- */
-const ORG_ID = `${SITE}/#organization`;
-const SITE_ID = `${SITE}/#website`;
-const LOGO_ID = `${SITE}/#logo`;
-const CONTACT_EMAIL = 'info@talklive.app';
-
-function entityGraph() {
-  return [
-    {
-      '@type': 'Organization',
-      '@id': ORG_ID,
-      name: 'TalkLive',
-      alternateName: 'TalkLive Random Chat',
-      url: `${SITE}/`,
-      logo: { '@type': 'ImageObject', '@id': LOGO_ID, url: `${SITE}/favicon-192.png`, contentUrl: `${SITE}/favicon-192.png`, width: 192, height: 192, caption: 'TalkLive logo' },
-      image: { '@id': LOGO_ID },
-      description: 'TalkLive connects strangers worldwide for free, anonymous, live voice and text conversations. Audio is peer-to-peer and never recorded.',
-      foundingDate: '2025',
-      email: CONTACT_EMAIL,
-      knowsAbout: [
-        'random voice chat', 'anonymous online chat', 'talking to strangers',
-        'language exchange', 'online safety', 'WebRTC audio calls',
-      ],
-      contactPoint: {
-        '@type': 'ContactPoint',
-        contactType: 'customer support',
-        email: CONTACT_EMAIL,
-        url: `${SITE}/contact`,
-        availableLanguage: LOCALES.map(l => l.code).concat(['en']),
-      },
-    },
-    {
-      '@type': 'WebSite',
-      '@id': SITE_ID,
-      url: `${SITE}/`,
-      name: 'TalkLive',
-      description: 'Free random voice and text chat with strangers worldwide.',
-      publisher: { '@id': ORG_ID },
-      inLanguage: LOCALES.map(l => l.code).concat(['en']),
-    },
-  ];
-}
-
-// The one shared social image, described once so every page can reference it
-// by @id instead of repeating an untyped URL string.
-const OG_IMAGE_ID = `${SITE}/#primaryimage`;
-function ogImageNode() {
-  return {
-    '@type': 'ImageObject',
-    '@id': OG_IMAGE_ID,
-    url: `${SITE}/og-image.png`,
-    contentUrl: `${SITE}/og-image.png`,
-    width: 1200,
-    height: 630,
-    caption: 'TalkLive — free random voice and text chat with strangers worldwide',
-  };
-}
-
-/* --- Breadcrumbs -----------------------------------------------------------
- * A page may sit one or two levels deep (/countries/india under /countries/),
- * so the trail is built from an optional `parent` rather than assumed to be
- * Home → page. The same trail is emitted twice: once as BreadcrumbList for
- * search engines, once as visible markup, because a breadcrumb a user cannot
- * see is a breadcrumb Google is entitled to distrust.
- */
-function crumbTrail(p) {
-  const trail = [{ name: 'Home', href: '/' }];
-  if (p.parent) trail.push({ name: p.parent.label, href: `/${p.parent.slug}/` });
-  trail.push({ name: p.crumb, href: `/${p.slug}` });
-  return trail;
-}
-
-// Returns a bare node (no @context) — it is always nested inside a @graph
-// that carries the context for the whole document.
-function breadcrumbLd(p, id) {
-  return {
-    '@type': 'BreadcrumbList',
-    '@id': id,
-    itemListElement: crumbTrail(p).map((c, i) => ({
-      '@type': 'ListItem',
-      position: i + 1,
-      name: c.name,
-      item: c.href === '/' ? `${SITE}/` : `${SITE}${c.href}`,
-    })),
-  };
-}
-
-function breadcrumbHtml(p) {
-  const trail = crumbTrail(p);
-  const items = trail.map((c, i) => (i === trail.length - 1
-    ? `<span aria-current="page">${esc(c.name)}</span>`
-    : `<a href="${c.href}">${esc(c.name)}</a>`)).join('<span class="sep" aria-hidden="true">›</span>');
-  return `<nav class="breadcrumb wrap" aria-label="Breadcrumb">${items}</nav>`;
+function trackedHref(pathname, source, medium, campaign, extra) {
+  const params = [
+    ['utm_source', source],
+    ['utm_medium', medium],
+    ['utm_campaign', campaign],
+  ].concat(extra || []).filter((entry) => entry[1]);
+  const query = params.map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`).join('&amp;');
+  return `${pathname}?${query}`;
 }
 
 function icon(name) {
@@ -244,15 +98,22 @@ function icon(name) {
 }
 
 function headerHtml(currentSlug) {
-  const links = NAV.filter(n => n.slug !== currentSlug).slice(0, 5)
+  const primary = [
+    { slug: 'random-call', label: 'Random Call' },
+    { slug: 'random-voice-chat', label: 'Voice Chat' },
+    { slug: 'random-text-chat', label: 'Text Chat' },
+    { slug: 'safety', label: 'Safety' },
+    { slug: 'resources', label: 'Resources' },
+  ];
+  const links = primary.filter(n => n.slug !== currentSlug).slice(0, 5)
     .map(n => `<a href="/${n.slug}">${n.label}</a>`).join('');
   return `<header class="site-header">
     <div class="wrap">
       <a class="logo" href="/"><img src="/favicon.svg" width="30" height="30" alt="TalkLive logo" /> TalkLive</a>
       <nav class="nav" aria-label="Primary">${links}</nav>
       <span style="display:inline-flex;gap:8px">
-        <a class="btn btn-talk" href="/?utm_source=seo&amp;utm_medium=landing&amp;utm_campaign=${currentSlug || 'home'}" style="padding:10px 18px;font-size:15px">🎙 Talk</a>
-        <a class="btn btn-chat" href="/?mode=chat&amp;utm_source=seo&amp;utm_medium=landing&amp;utm_campaign=${currentSlug || 'home'}" style="padding:10px 18px;font-size:15px">💬 Chat</a>
+        <a class="btn btn-talk" href="${trackedHref('/', 'seo', 'header', currentSlug || 'home')}" style="padding:10px 18px;font-size:15px">🎙 Talk</a>
+        <a class="btn btn-chat" href="${trackedHref('/chat', 'seo', 'header', currentSlug || 'home')}" style="padding:10px 18px;font-size:15px">💬 Chat</a>
       </span>
     </div>
   </header>`;
@@ -261,19 +122,16 @@ function headerHtml(currentSlug) {
 function footerHtml() {
   const cols = [
     { h: 'Talk', items: NAV.slice(0, 4) },
-    { h: 'Discover', items: NAV.slice(4) },
-    // The hubs are the only sitewide link into the country/city/language
-    // cluster, so they belong in the footer of every page rather than only in
-    // the link cloud further up.
-    { h: 'Browse', items: [
-      { slug: 'countries/', label: 'Chat by Country' },
-      { slug: 'cities/', label: 'Chat by City' },
-      { slug: 'languages/', label: 'Practise a Language' },
-      { slug: 'guides/', label: 'Guides & Resources' },
-      { slug: 'blog/', label: 'Blog' },
+    { h: 'Discover', items: [
+      { slug: 'resources', label: 'Resource Hub' },
+      { slug: 'alternatives', label: 'Alternatives' },
+      { slug: 'languages', label: 'Languages' },
+      { slug: 'countries', label: 'Countries' },
+      { slug: 'how-it-works', label: 'How It Works' },
+      { slug: 'safety', label: 'Safety Center' },
     ] },
   ];
-  const colHtml = cols.map(c => `<div><h2>${c.h}</h2><ul>${c.items.map(i => `<li><a href="/${i.slug}">${i.label}</a></li>`).join('')}</ul></div>`).join('');
+  const colHtml = cols.map(c => `<div><h4>${c.h}</h4><ul>${c.items.map(i => `<li><a href="/${i.slug}">${i.label}</a></li>`).join('')}</ul></div>`).join('');
   return `<footer class="site-footer">
     <div class="wrap">
       <div class="cols">
@@ -282,7 +140,7 @@ function footerHtml() {
           <p style="margin-top:12px">Free random voice &amp; text chat with strangers around the world. Tap to Talk or Tap to Chat — anonymous, no sign-up, just real live conversations.</p>
         </div>
         ${colHtml}
-        <div><h2>App</h2><ul>
+        <div><h4>App</h4><ul>
           <li><a href="/">Open TalkLive</a></li>
           <li><a href="/blog/">Blog</a></li>
           <li><a href="/pricing">Pricing</a></li>
@@ -290,107 +148,59 @@ function footerHtml() {
           <li><a href="/contact">Contact</a></li>
           <li><a href="/privacy">Privacy Policy</a></li>
           <li><a href="/terms">Terms</a></li>
+          <li><a href="/refund">Refund Policy</a></li>
         </ul></div>
       </div>
-      ${localeFooterNav()}
       <div class="legal">
         <span>&copy; ${new Date().getFullYear()} TalkLive. All rights reserved.</span>
         <span>Made for people who love to talk. 18+ only.</span>
-        <span><a href="https://delvefencescrewdriver.com/n6dy8qkgu?key=2dca64def8b9c5816b49ccf6e1119aff" target="_blank" rel="sponsored nofollow noopener">Sponsored</a></span>
+        <span><a href="/contact">Support</a></span>
       </div>
     </div>
   </footer>`;
 }
 
-/*
- * Crawlable links to the 16 localized homepages.
- *
- * Before this they were reachable only through hreflang annotations and the
- * sitemap. Neither is a link: hreflang tells a crawler that two URLs are
- * translations of each other, it does not tell it the second URL exists or
- * pass it any authority. The result was sixteen orphaned pages — the single
- * worst thing you can do to a multilingual setup, because the localized pages
- * are exactly the ones that need discovery help in markets where the English
- * site has no presence.
- *
- * Putting them in the shared footer means every one of the ~260 English pages
- * links to every locale, with a real hreflang on each anchor.
- */
-function localeFooterNav() {
-  const links = LOCALES.map(l =>
-    `<a href="/${l.code}/" hreflang="${l.code}" lang="${l.code}"${l.dir === 'rtl' ? ' dir="rtl"' : ''}>${esc(l.name)}</a>`
-  ).join('');
-  return `<nav class="locale-nav" aria-label="Languages">
-        <h2>TalkLive in your language</h2>
-        <div class="locale-links"><a href="/" hreflang="en" lang="en">English</a>${links}</div>
-      </nav>`;
+const PAGE_CLUSTERS = {
+  voice: ['random-call', 'random-voice-chat', 'free-voice-chat', 'voice-chat-rooms', 'call-random-people', 'free-online-calls', 'international-calls', 'random-video-chat', 'random-video-call', 'stranger-video-call'],
+  text: ['random-text-chat', 'text-chat-with-strangers', 'online-chat-rooms'],
+  discovery: ['talk-to-strangers', 'random-chat', 'anonymous-chat', 'meet-new-people', 'make-friends-online', 'late-night-chat', 'talk-to-someone', 'pakistani-chat'],
+  language: ['practice-english-speaking', 'language-exchange', 'languages', 'countries'],
+  alternatives: ['omegle-alternative', 'ometv-alternative', 'chatroulette-alternative', 'emerald-chat-alternative', 'monkey-app-alternative', 'chatspin-alternative', 'shagle-alternative', 'camsurf-alternative', 'chathub-alternative', 'azar-alternative', 'holla-alternative', 'tinychat-alternative', 'wakie-alternative', 'alternatives'],
+  trust: ['safety', 'how-it-works', 'resources'],
+};
+
+function pageCluster(pageModel) {
+  if (pageModel && pageModel.cluster) return pageModel.cluster;
+  const hit = Object.entries(PAGE_CLUSTERS).find(([, slugs]) => slugs.includes(pageModel && pageModel.slug));
+  return hit ? hit[0] : 'discovery';
 }
 
-function linkCloud(currentSlug, index = 0) {
-  const extra = [
-    { slug: 'talk-to-strangers', label: 'Talk to strangers online' },
-    { slug: 'random-voice-chat', label: 'Random voice chat' },
-    { slug: 'random-text-chat', label: 'Random text chat' },
-    { slug: 'text-chat-with-strangers', label: 'Text chat with strangers' },
-    { slug: 'random-video-chat', label: 'Random video chat' },
-    { slug: 'random-video-call', label: 'Random video call' },
-    { slug: 'random-call', label: 'Random call app' },
-    { slug: 'anonymous-chat', label: 'Anonymous chat' },
-    { slug: 'meet-new-people', label: 'Meet new people' },
-    { slug: 'international-calls', label: 'International calls' },
-    { slug: 'stranger-video-call', label: 'Stranger video call' },
-    { slug: 'omegle-alternative', label: 'Omegle alternative' },
-    { slug: 'ometv-alternative', label: 'OmeTV alternative' },
-    { slug: 'monkey-app-alternative', label: 'Monkey app alternative' },
-    { slug: 'chatroulette-alternative', label: 'Chatroulette alternative' },
-    { slug: 'talk-to-someone', label: 'Someone to talk to' },
-    { slug: 'free-online-calls', label: 'Free online calls' },
-    { slug: 'practice-english-speaking', label: 'Practice English speaking' },
-    { slug: 'pakistani-chat', label: 'Pakistani voice chat' },
-    { slug: 'emerald-chat-alternative', label: 'Emerald Chat alternative' },
-    { slug: 'make-friends-online', label: 'Make friends online' },
-    { slug: 'late-night-chat', label: 'Late night chat' },
-    { slug: '', label: 'Live voice chat rooms' },
-    { slug: '', label: 'Free calls with strangers' },
-  ];
-  // Hubs first: they are the entry point to the ~180 country, city and
-  // language pages, so linking them from every page is what keeps that whole
-  // cluster two clicks from anywhere.
-  const hubs = [
-    { slug: 'countries/', label: 'Chat by country' },
-    { slug: 'cities/', label: 'Chat by city' },
-    { slug: 'languages/', label: 'Practise a language' },
-    { slug: 'guides/', label: 'Guides & resources' },
-  ];
-
-  // Any landing page not given a hand-written label above still needs inbound
-  // links, so the remainder is appended under its breadcrumb name. But dumping
-  // all ~250 of them on every page would put a quarter of a megabyte of
-  // navigation on each one and split link equity 250 ways — which helps
-  // nothing and reads as a link farm. Instead each page shows a deterministic
-  // window into that list, offset by its own position. Every page still ends
-  // up with inbound links from across the site, no page carries more than a
-  // couple of dozen outbound ones, and the result is stable between builds
-  // rather than reshuffling the whole internal link graph on every deploy.
-  const labelled = new Set(extra.map(e => e.slug).concat(hubs.map(h => h.slug)));
-  const rest = PAGES.filter(p => !labelled.has(p.slug) && !p.isHub).map(p => ({ slug: p.slug, label: p.crumb }));
-  const WINDOW = 24;
-  const start = rest.length ? (index * WINDOW) % rest.length : 0;
-  const window = rest.length
-    ? Array.from({ length: Math.min(WINDOW, rest.length) }, (_, k) => rest[(start + k) % rest.length])
-    : [];
-
-  return `<div class="link-cloud">${hubs.concat(extra, window).filter(e => e.slug !== currentSlug)
-    .map(e => `<a href="${e.slug ? '/' + e.slug : '/'}">${e.label}</a>`).join('')}</div>`;
+function linkCloud(currentSlug) {
+  const current = PAGES.find((pageModel) => pageModel.slug === currentSlug);
+  const explicit = current && Array.isArray(current.relatedPages) ? current.relatedPages : [];
+  const sameCluster = PAGES
+    .filter((pageModel) => pageModel.slug !== currentSlug && pageCluster(pageModel) === pageCluster(current))
+    .map((pageModel) => pageModel.slug);
+  const fallback = ['resources', 'safety', 'how-it-works', 'random-call', 'random-voice-chat', 'random-text-chat', 'talk-to-strangers'];
+  const slugs = [];
+  for (const slug of explicit.concat(sameCluster, fallback)) {
+    if (!slug || slug === currentSlug || slugs.includes(slug)) continue;
+    if (!PAGES.some((pageModel) => pageModel.slug === slug)) continue;
+    slugs.push(slug);
+    if (slugs.length === 10) break;
+  }
+  const links = slugs.map((slug) => {
+    const model = PAGES.find((pageModel) => pageModel.slug === slug);
+    return `<a href="/${slug}">${esc(model.crumb)}</a>`;
+  }).join('');
+  return `<nav class="link-cloud" aria-label="Related TalkLive guides">${links}</nav>`;
 }
 
 // --- Page template ----------------------------------------------------------
 
-// Non-intrusive ad slot filled lazily by /ads.js (native banner or
-// responsive display banner). Kept out of the live chat app on purpose.
-function adSlot(type) {
-  return `<div class="wrap" style="margin:28px auto;text-align:center"><div data-ad="${type}"></div></div>`;
-}
+// Legacy third-party ad slots are disabled. AdSense units below remain the
+// single passive ad system, avoiding duplicate auctions and opaque scripts.
+function adSlot() { return ''; }
 
 // Google AdSense display unit (Unit_1, slot 7074541749).
 // Only the <ins> and its push are emitted: the adsbygoogle loader already sits
@@ -500,15 +310,20 @@ function compareHtml(c) {
 // hogging them all.
 function relatedPostsHtml(p, index) {
   const picked = (p.posts || []).map(s => BLOG.find(b => b.slug === s)).filter(Boolean);
-  const auto = [];
-  for (let k = 0; picked.length + auto.length < 3 && k < BLOG.length; k++) {
-    const b = BLOG[(index * 3 + k) % BLOG.length];
-    if (!picked.includes(b) && !auto.includes(b)) auto.push(b);
-  }
+  const stopWords = new Set(['about', 'after', 'anonymous', 'best', 'chat', 'free', 'from', 'have', 'into', 'online', 'random', 'talklive', 'that', 'their', 'this', 'voice', 'with', 'your']);
+  const terms = (p.title + ' ' + p.description + ' ' + p.h1 + ' ' + pageCluster(p))
+    .toLowerCase().match(/[a-z]{4,}/g) || [];
+  const wanted = new Set(terms.filter((term) => !stopWords.has(term)));
+  const auto = BLOG.filter((post) => !picked.includes(post)).map((post) => {
+    const haystack = `${post.h1} ${post.description} ${post.tag}`.toLowerCase();
+    const score = [...wanted].reduce((total, term) => total + (haystack.includes(term) ? 1 : 0), 0);
+    return { post, score };
+  }).sort((a, b) => b.score - a.score || b.post.date.localeCompare(a.post.date))
+    .map((entry) => entry.post);
   const items = picked.concat(auto).slice(0, 3).map(b =>
     `<a class="card" href="/blog/${b.slug}" style="display:block;text-decoration:none;color:inherit">
       <p style="margin:0 0 8px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;opacity:.7">${esc(b.tag)}</p>
-      <h3 style="margin:0 0 10px">${esc(b.h1)}</h3><p>${esc(fitDescription(b.description))}</p></a>`).join('');
+      <h3 style="margin:0 0 10px">${esc(b.h1)}</h3><p>${esc(b.description)}</p></a>`).join('');
   return `<section>
     <div class="wrap">
       <h2>Read more from the TalkLive blog</h2>
@@ -520,101 +335,82 @@ function relatedPostsHtml(p, index) {
 
 function page(p, index) {
   const canonical = url(p.slug);
-  const title = fitTitle(p.title);
-  const description = fitDescription(p.description);
   const features = p.features.map(f => `<div class="card"><div class="ico">${icon(f.icon)}</div><h3>${f.h}</h3><p>${f.p}</p></div>`).join('');
   const steps = p.steps.map(s => `<div class="step"><h3>${s.h}</h3><p>${s.p}</p></div>`).join('');
   const proseHtml = p.prose.map(b => b.h ? `<h2>${b.h}</h2>${b.body.map(x => `<p>${x}</p>`).join('')}` : b.body.map(x => `<p>${x}</p>`).join('')).join('');
   const faqHtml = p.faq.map(f => `<details><summary>${f.q}</summary><p>${f.a}</p></details>`).join('');
 
-  // One @graph rather than a pile of disconnected objects: the WebPage points
-  // at the site, the site at the organisation, and the app node is the same
-  // entity on every page instead of 200 unrelated WebApplications.
-  //
-  // Note what is NOT here: aggregateRating. Every one of these pages used to
-  // claim "4.7 from 2,840 ratings", a number no review system ever produced.
-  // Fabricated review markup is a direct violation of Google's structured data
-  // policies, risks a manual action against the whole domain, and is exactly
-  // the kind of thing that gets rich results pulled site-wide. It is gone. If
-  // real ratings are ever collected, they can go back — sourced from real
-  // reviews, on the page, visible to the user.
-  const ld = [{
+  const ld = {
     '@context': 'https://schema.org',
-    '@graph': entityGraph().concat([
-      ogImageNode(),
+    '@graph': [
+      {
+        '@type': 'Organization',
+        '@id': ORGANIZATION_ID,
+        name: 'TalkLive',
+        alternateName: ['Talk Live', 'TalkLive App'],
+        url: `${SITE}/`,
+        logo: { '@type': 'ImageObject', url: LOGO_IMAGE, width: 192, height: 192 },
+        email: 'info@talklive.app',
+      },
+      {
+        '@type': 'WebSite',
+        '@id': WEBSITE_ID,
+        name: 'TalkLive',
+        alternateName: ['Talk Live', 'TalkLive App'],
+        url: `${SITE}/`,
+        inLanguage: LANGS,
+        publisher: { '@id': ORGANIZATION_ID },
+      },
+      {
+        '@type': 'WebApplication',
+        '@id': APP_ID,
+        name: 'TalkLive',
+        url: `${SITE}/`,
+        applicationCategory: 'CommunicationApplication',
+        operatingSystem: 'Any device with a modern web browser',
+        browserRequirements: 'JavaScript; microphone permission is required only for voice calls',
+        isAccessibleForFree: true,
+        offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD', description: 'Core random voice and text matching' },
+        inLanguage: LANGS,
+        audience: { '@type': 'PeopleAudience', suggestedMinAge: 18 },
+        publisher: { '@id': ORGANIZATION_ID },
+      },
       {
         '@type': 'WebPage',
         '@id': `${canonical}#webpage`,
         url: canonical,
-        name: title,
-        description: description,
-        isPartOf: { '@id': SITE_ID },
-        about: { '@id': `${SITE}/#app` },
-        primaryImageOfPage: { '@id': OG_IMAGE_ID },
+        name: p.title,
+        description: p.description,
+        dateModified: p.updated || CONTENT_UPDATED,
         inLanguage: 'en',
-        datePublished: p.datePublished || '2026-01-15',
-        dateModified: BUILD_DATE,
-        breadcrumb: { '@id': `${canonical}#breadcrumb` },
-        // Voice assistants and "read this page aloud" surfaces need to be told
-        // which part of the page is the answer rather than the navigation.
-        speakable: { '@type': 'SpeakableSpecification', cssSelector: ['h1', '.lede', '.section-intro'] },
+        isPartOf: { '@id': WEBSITE_ID },
+        about: { '@id': APP_ID },
+        primaryImageOfPage: { '@type': 'ImageObject', url: OG_IMAGE, width: 1200, height: 630 },
       },
       {
-        '@type': 'WebApplication',
-        '@id': `${SITE}/#app`,
-        name: 'TalkLive',
-        url: `${SITE}/`,
-        applicationCategory: 'CommunicationApplication',
-        applicationSubCategory: 'Random voice and text chat',
-        operatingSystem: 'Web, Android, iOS',
-        browserRequirements: 'Requires a modern browser; microphone only needed for voice calls',
-        offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD', availability: 'https://schema.org/InStock' },
-        inLanguage: LOCALES.map(l => l.code).concat(['en']),
-        isAccessibleForFree: true,
-        isFamilyFriendly: false,
-        typicalAgeRange: '18-',
-        description: 'Free random voice and text chat that pairs strangers worldwide for live, anonymous conversations. Peer-to-peer audio, never recorded.',
-        featureList: [
-          'Tap to Talk — one-tap anonymous voice calls',
-          'Tap to Chat — instant anonymous text chat, no microphone needed',
-          'Next Stranger to instantly requeue',
-          'Free country and interest match filters',
-          'Add friends and call back',
-          'One-tap report and block with device and IP bans',
+        '@type': 'BreadcrumbList',
+        '@id': `${canonical}#breadcrumb`,
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE}/` },
+          { '@type': 'ListItem', position: 2, name: p.crumb, item: canonical },
         ],
-        publisher: { '@id': ORG_ID },
-        screenshot: { '@id': OG_IMAGE_ID },
       },
-      breadcrumbLd(p, `${canonical}#breadcrumb`),
       {
         '@type': 'FAQPage',
         '@id': `${canonical}#faq`,
-        isPartOf: { '@id': `${canonical}#webpage` },
-        mainEntity: p.faq.map((f, i) => ({
-          '@type': 'Question',
-          '@id': `${canonical}#faq-${i + 1}`,
-          name: f.q,
-          acceptedAnswer: { '@type': 'Answer', text: f.a },
-        })),
+        mainEntity: p.faq.map(f => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
       },
-      // The "how it works" steps are already modelled as data, so describing
-      // them as a HowTo costs nothing and makes the page eligible for the
-      // step-by-step treatment in search results.
       {
         '@type': 'HowTo',
-        '@id': `${canonical}#howto`,
+        '@id': `${canonical}#how`,
         name: p.stepsH,
         description: p.stepsIntro,
-        totalTime: 'PT10S',
-        estimatedCost: { '@type': 'MonetaryAmount', currency: 'USD', value: '0' },
-        supply: { '@type': 'HowToSupply', name: 'A web browser' },
-        tool: { '@type': 'HowToTool', name: 'A microphone (voice mode only)' },
         step: p.steps.map((s, i) => ({
           '@type': 'HowToStep', position: i + 1, name: s.h, text: s.p, url: `${canonical}#how`,
         })),
       },
-    ]),
-  }];
+    ],
+  };
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -622,55 +418,49 @@ function page(p, index) {
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <link rel="stylesheet" href="/seo.css" />
-<script defer src="/loading.js" data-mode="nav-only"></script>
-<script defer src="/ads.js"></script>
-<link rel="preconnect" href="https://pagead2.googlesyndication.com" crossorigin />
-<title>${esc(title)}</title>
-<meta name="description" content="${esc(description)}" />
-<meta name="keywords" content="${esc(p.keywords)}" />
+<title>${esc(p.title)}</title>
+<meta name="description" content="${esc(p.description)}" />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
 <meta name="theme-color" content="#0b0f1a" />
 <meta name="author" content="TalkLive" />
 <link rel="canonical" href="${canonical}" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="TalkLive" />
-<meta property="og:title" content="${esc(title)}" />
-<meta property="og:description" content="${esc(description)}" />
+<meta property="og:title" content="${esc(p.title)}" />
+<meta property="og:description" content="${esc(p.description)}" />
 <meta property="og:url" content="${canonical}" />
-<meta property="og:image" content="${SITE}/og-image.png" />
+<meta property="og:image" content="${OG_IMAGE}" />
+<meta property="og:image:secure_url" content="${OG_IMAGE}" />
+<meta property="og:image:type" content="image/png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:image:type" content="image/png" />
-<meta property="og:image:alt" content="${esc(p.imageAlt || `${p.h1} — TalkLive free random voice and text chat`)}" />
+<meta property="og:image:alt" content="TalkLive — free random voice chat with strangers worldwide" />
 <meta property="og:locale" content="en_US" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="${esc(title)}" />
-<meta name="twitter:description" content="${esc(description)}" />
-<meta name="twitter:image" content="${SITE}/og-image.png" />
-<meta name="twitter:image:alt" content="${esc(p.imageAlt || `${p.h1} — TalkLive free random voice and text chat`)}" />
+<meta name="twitter:title" content="${esc(p.title)}" />
+<meta name="twitter:description" content="${esc(p.description)}" />
+<meta name="twitter:image" content="${OG_IMAGE}" />
+<meta name="twitter:image:alt" content="TalkLive random voice and text chat" />
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-<link rel="icon" href="/favicon-48.png" type="image/png" sizes="48x48" />
 <link rel="apple-touch-icon" href="/favicon-192.png" />
 <link rel="manifest" href="/site.webmanifest" />
-<link rel="alternate" type="application/rss+xml" title="TalkLive Blog" href="${SITE}/blog/feed.xml" />
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
 </head>
 <body>
-<a class="skip-link" href="#main">Skip to main content</a>
+<a class="skip-link" href="#main-content">Skip to main content</a>
 ${headerHtml(p.slug)}
-<main id="main">
-  ${breadcrumbHtml(p)}
+<main id="main-content">
   <section class="hero">
     <div class="wrap">
       <span class="eyebrow"><span class="dot"></span> ${p.eyebrow}</span>
       <h1>${p.h1}</h1>
       <p class="lede">${p.lede}</p>
       <div class="cta-row">
-        <a class="btn btn-talk" href="/?utm_source=seo&amp;utm_medium=landing&amp;utm_campaign=${p.slug}">🎙 ${p.cta}</a>
-        <a class="btn btn-chat" href="/?mode=chat&amp;utm_source=seo&amp;utm_medium=landing&amp;utm_campaign=${p.slug}">💬 ${p.ctaChat || 'Tap to Chat'}</a>
+        <a class="btn btn-talk" href="${trackedHref('/', 'seo', 'landing', p.slug)}">🎙 ${p.cta}</a>
+        <a class="btn btn-chat" href="${trackedHref('/chat', 'seo', 'landing', p.slug)}">💬 ${p.ctaChat || 'Tap to Chat'}</a>
         <a class="btn btn-ghost" href="#how">How it works</a>
       </div>
-      <p class="hero-meta">Free forever · No sign-up · Anonymous · Voice &amp; text · Works on any device</p>
+      <p class="hero-meta">Core matching is free · No sign-up required · Voice &amp; text · Adults 18+ · Leave any time</p>
     </div>
   </section>
 
@@ -717,7 +507,7 @@ ${headerHtml(p.slug)}
     <div class="wrap">
       <h2>Explore more ways to connect</h2>
       <p class="section-intro">TalkLive is one app with many ways to meet people. Jump into whichever fits your mood.</p>
-      ${linkCloud(p.slug, index)}
+      ${linkCloud(p.slug)}
     </div>
   </section>
 
@@ -726,8 +516,8 @@ ${headerHtml(p.slug)}
       <h2>${p.ctaBandH}</h2>
       <p>${p.ctaBandP}</p>
       <div class="cta-row">
-        <a class="btn btn-talk" href="/?utm_source=seo&amp;utm_medium=cta&amp;utm_campaign=${p.slug}">🎙 ${p.cta}</a>
-        <a class="btn btn-chat" href="/?mode=chat&amp;utm_source=seo&amp;utm_medium=cta&amp;utm_campaign=${p.slug}">💬 ${p.ctaChat || 'Tap to Chat'}</a>
+        <a class="btn btn-talk" href="${trackedHref('/', 'seo', 'cta', p.slug)}">🎙 ${p.cta}</a>
+        <a class="btn btn-chat" href="${trackedHref('/chat', 'seo', 'cta', p.slug)}">💬 ${p.ctaChat || 'Tap to Chat'}</a>
       </div>
     </div>
   </div>
@@ -783,14 +573,14 @@ const CORE_PAGES = [
         'Great conversations need to feel safe. Every user must be 18 or older, and one tap lets you block or report anyone who breaks the rules — which ends the call immediately. Repeated reports lead to bans, so the community stays friendly.' ] },
     ],
     faq: [
-      { q: 'Is talking to strangers on TalkLive really free?', a: 'Yes. TalkLive is completely free to use with no hidden charges, no premium paywall for matching, and no credit card required.' },
+      { q: 'Is talking to strangers on TalkLive free?', a: 'Core random voice and text matching is free and needs no credit card. Free users wait about five seconds between calls; optional Premium adds advanced filters and removes that wait.' },
       { q: 'Do I need to create an account?', a: 'No. You can start talking to strangers instantly without signing up. An optional free account lets you keep friends and history, but it is never required.' },
       { q: 'Is it anonymous?', a: 'Yes. You are identified only by a temporary display name. No phone number, email, or real name is needed to talk.' },
       { q: 'Can I choose who I talk to?', a: 'You can apply optional filters such as gender and country preferences. If no match is found quickly, TalkLive connects you with any available stranger so you never wait long.' },
       { q: 'What if someone is rude?', a: 'Tap report or block. The call ends instantly, that person can no longer reach you, and repeated reports can get them banned.' },
     ],
     ctaBandH: 'Ready to talk to a stranger?',
-    ctaBandP: 'Thousands of people are online right now, waiting to say hello.',
+    ctaBandP: 'Open the live queue and see who is available for a voice or text conversation.',
     posts: ['what-happened-to-omegle', 'how-to-start-a-conversation-with-a-stranger', 'science-of-talking-to-strangers'],
   },
   {
@@ -804,11 +594,11 @@ const CORE_PAGES = [
     lede: 'TalkLive is pure random voice chat: press one button and you are live with a random stranger, voice to voice. No video, no typing required, no accounts — just clear audio and real conversation.',
     cta: 'Start Random Voice Chat',
     featuresH: 'Random voice chat, done right',
-    featuresIntro: 'Low-latency peer-to-peer audio and instant matching make every chat feel effortless.',
+    featuresIntro: 'Encrypted WebRTC audio and simple matching make it easy to start a conversation.',
     features: [
-      { icon: 'mic', h: 'Crystal-clear audio', p: 'Peer-to-peer WebRTC audio keeps latency low so voices sound natural and in sync.' },
+      { icon: 'mic', h: 'Real-time audio', p: 'WebRTC carries encrypted voice audio in real time through TalkLive\'s production relay.' },
       { icon: 'bolt', h: 'Instant random match', p: 'No lobbies to browse — one tap drops you straight into a live voice chat.' },
-      { icon: 'shield', h: 'Anonymous & private', p: 'Audio flows directly between you and your partner; the server never records your call.' },
+      { icon: 'shield', h: 'Private by default', p: 'TalkLive does not record or store voice audio. Other participants can still record on their own devices, so share carefully.' },
       { icon: 'next', h: 'Skip anytime', p: 'Tap Next to leave one voice chat and land in a fresh random one immediately.' },
       { icon: 'globe', h: 'Global voices', p: 'Talk with random people across the world or narrow it to your favorite regions.' },
       { icon: 'chat', h: 'Text alongside voice', p: 'Share a name, link, or word using in-call chat without interrupting the audio.' },
@@ -825,16 +615,16 @@ const CORE_PAGES = [
       { h: 'Why voice beats video and text', body: [
         'Random voice chat hits a sweet spot. Text feels slow and easy to fake; video can feel exposing and puts pressure on appearance. Voice keeps things human and warm while protecting your privacy — people relax, open up, and actually enjoy the conversation.',
         'Because TalkLive is audio-only, it also works great on slow connections and older phones. There is no camera to worry about and far less data to burn.' ] },
-      { h: 'Built on real-time peer-to-peer audio', body: [
-        'TalkLive uses WebRTC to send audio directly between the two people in a call. That means lower latency, better quality, and a design where your voice is never routed through or stored on a central server. The only thing our servers do is introduce two strangers and then get out of the way.' ] },
+      { h: 'Built on encrypted real-time audio', body: [
+        'TalkLive uses WebRTC for encrypted live audio. Production calls use a TURN relay for reliable connectivity, but TalkLive does not record or store voice audio. A participant can still record what they hear on their own device, so avoid sharing sensitive information.' ] },
       { h: 'Great for language practice', body: [
         'Learners use random voice chat to practice speaking with native and fluent speakers from around the world. A few minutes of real conversation does more for your accent and confidence than an hour of drills.' ] },
     ],
     faq: [
-      { q: 'Is TalkLive voice chat free?', a: 'Yes, random voice chat on TalkLive is 100% free with unlimited matches and no premium wall.' },
+      { q: 'Is TalkLive voice chat free?', a: 'Core random voice matching is free. Free users wait about five seconds between calls; optional Premium removes the wait and adds advanced filters.' },
       { q: 'Do I need headphones?', a: 'Headphones are recommended because they prevent echo and improve call quality, but they are not required.' },
       { q: 'Is there video?', a: 'No. TalkLive is intentionally audio-only, which keeps it private, low-bandwidth, and pressure-free.' },
-      { q: 'Are my calls recorded?', a: 'No. Audio flows peer-to-peer between you and the other person and is never recorded or stored by TalkLive.' },
+      { q: 'Are my calls recorded?', a: 'TalkLive does not record or store voice audio. Another participant can still record on their own device, so do not share sensitive information.' },
       { q: 'Can I use it on mobile data?', a: 'Yes. Voice-only chat uses very little data, so it works well on mobile networks and slower connections.' },
     ],
     ctaBandH: 'Your next great conversation is one tap away',
@@ -857,7 +647,7 @@ const CORE_PAGES = [
       { icon: 'chat', h: 'Instant text match', p: 'Tap once and you are typing with a random stranger in seconds — no lobbies, no forms.' },
       { icon: 'bolt', h: 'Feather-light', p: 'No audio or video streams. The chat runs smoothly on 1GB phones, old laptops, and 2G-era connections.' },
       { icon: 'lock', h: 'Totally anonymous', p: 'No name, number, or email. You appear as a temporary display name that vanishes when you leave.' },
-      { icon: 'shield', h: 'Nothing left behind', p: 'Stranger chats are relayed live and are not kept after your session ends.' },
+      { icon: 'shield', h: 'Moderated text', p: 'Typed messages and related context may be retained for a limited rolling period for delivery, safety and moderation.' },
       { icon: 'next', h: 'Next in one tap', p: 'Conversation fizzled? Tap next and a brand-new stranger appears instantly.' },
       { icon: 'mic', h: 'Switch to voice anytime', p: 'Feeling brave? One tap moves you to a live voice call — same app, same stranger pool.' },
     ],
@@ -880,10 +670,10 @@ const CORE_PAGES = [
         'The same safety rails as voice chat apply: everyone is 18 or older, you appear only as a temporary display name, links are blocked automatically, and one tap reports and blocks anyone who misbehaves. Repeated reports lead to automatic bans.' ] },
     ],
     faq: [
-      { q: 'Is random text chat on TalkLive free?', a: 'Yes. Text chat is completely free with unlimited matches — no credit card, no premium wall.' },
+      { q: 'Is random text chat on TalkLive free?', a: 'Core random text matching is free and needs no credit card. Optional Premium features are described on the Pricing page.' },
       { q: 'Do I need a microphone?', a: 'No. Tap to Chat is pure text — no microphone or camera permission is ever requested.' },
       { q: 'Will it work on my old phone?', a: 'Yes. Chat mode carries no audio or video, so it runs smoothly even on 1GB devices and slow networks.' },
-      { q: 'Are my messages saved?', a: 'Stranger chat messages are relayed live and are not kept after your session ends.' },
+      { q: 'Are my messages saved?', a: 'Typed messages and related context may be retained for a limited rolling period for delivery, safety and moderation. See the Privacy Policy for current details.' },
       { q: 'Can I switch to a voice call?', a: 'Yes. Tap to Talk any time to join the voice pool — the same app with the same instant matching.' },
     ],
     ctaBandH: 'Someone is ready to chat right now',
@@ -928,7 +718,7 @@ const CORE_PAGES = [
         'The best stranger chats do not have to end. When a conversation clicks, both of you can tap Add Friend — then you can message each other again later and even move to a voice call, all without sharing a number or a real name.' ] },
     ],
     faq: [
-      { q: 'Is it free to text chat with strangers?', a: 'Yes. Matching and chatting are completely free and unlimited, with no credit card required.' },
+      { q: 'Is it free to text chat with strangers?', a: 'Core random text matching is free and no credit card is required. Optional Premium features are described on the Pricing page.' },
       { q: 'Do I need an account?', a: 'No. Tap to Chat and you are matched instantly. An optional free account only exists to keep friends between visits.' },
       { q: 'Is it really anonymous?', a: 'Yes. You appear only as a temporary display name — no real name, email, phone number, or photo.' },
       { q: 'What if someone is creepy or rude?', a: 'Tap report or block. The chat ends instantly, they can never reach you again, and repeated reports get them banned.' },
@@ -970,12 +760,12 @@ const CORE_PAGES = [
         'There is something exciting about a call when you have no idea who will pick up. TalkLive brings back that spontaneity in a safe, modern way. Every random call is a tiny adventure — a new accent, a new story, a new person who happened to tap the button at the same moment you did.',
         'Because it is browser-based, there is no app store detour and no phone number to hand out. You are one tap from a live call and one tap from ending it.' ] },
       { h: 'Random calls without the risks', body: [
-        'Traditional calling means sharing your number and hoping for the best. TalkLive keeps your identity private: you appear only as a temporary display name, and calls run over encrypted peer-to-peer audio. If a call goes sideways, blocking or reporting ends it instantly.' ] },
+        'Traditional calling means sharing your number and hoping for the best. TalkLive uses temporary display names and encrypted WebRTC audio relayed through TURN in production. If a call goes sideways, blocking or reporting ends it immediately.' ] },
       { h: 'Perfect for quick connections', body: [
         'Waiting for a bus, taking a break, or winding down at night — a random call is the perfect length of company. Talk for two minutes or two hours, then move on whenever you like.' ] },
     ],
     faq: [
-      { q: 'Does a random call cost anything?', a: 'No. Random calls on TalkLive are free and unlimited. It uses your internet connection, not your phone plan.' },
+      { q: 'Does a random call cost anything?', a: 'Core random calls have no per-minute TalkLive charge. They use your internet connection, so provider data charges may apply; optional Premium features are separate.' },
       { q: 'Do I have to share my phone number?', a: 'Never. Random calls happen inside the app using a temporary display name, so your real number stays private.' },
       { q: 'Can I call the same person again?', a: 'Yes, if you both add each other as friends you can call each other back later — still without sharing numbers.' },
       { q: 'What devices work?', a: 'Any device with a modern browser and a microphone: phones, tablets, laptops, and desktops.' },
@@ -1000,7 +790,7 @@ const CORE_PAGES = [
     features: [
       { icon: 'lock', h: 'No personal details', p: 'No email, phone number, or real name required to start chatting anonymously.' },
       { icon: 'shield', h: 'Temporary identity', p: 'You appear as a random display name that leaves no trail once you close the tab.' },
-      { icon: 'mic', h: 'Calls never stored', p: 'Voice runs peer-to-peer between you and your partner and is never recorded.' },
+      { icon: 'mic', h: 'Voice is not stored', p: 'TalkLive does not record or store voice audio. Calls use encrypted WebRTC over a production TURN relay.' },
       { icon: 'next', h: 'Vanish anytime', p: 'Tap Next or close the app and the conversation is gone — no history left behind.' },
       { icon: 'chat', h: 'Voice or text — your pick', p: 'Tap to Talk for a live call, or Tap to Chat for anonymous text with no microphone at all.' },
       { icon: 'users', h: 'Optional friends', p: 'Choose to add someone as a friend, or stay completely anonymous. Your call.' },
@@ -1020,12 +810,12 @@ const CORE_PAGES = [
       { h: 'Anonymous does not mean unsafe', body: [
         'Anonymity and safety go together here. Everyone is 18 or older, and powerful block and report tools mean you are always in control. Reporting someone ends the call instantly and can trigger an automatic ban, so being anonymous never means being unprotected.' ] },
       { h: 'How your privacy is protected', body: [
-        'TalkLive does not ask for or need your identity. Voice audio travels directly between you and the other person using peer-to-peer WebRTC, so your conversation is not routed through or stored on a central server. When you leave, your temporary identity leaves with you.' ] },
+        'A basic match does not require a real name or phone number. Voice audio uses encrypted WebRTC over a production TURN relay, and TalkLive does not record or store it. Your IP address and operational information may still be processed as the Privacy Policy explains.' ] },
     ],
     faq: [
       { q: 'Is TalkLive really anonymous?', a: 'Yes. You do not provide a name, email, or phone number. You are identified only by a temporary display name that disappears when you leave.' },
       { q: 'Can people find out who I am?', a: 'No. TalkLive never collects your identity, so there is nothing to reveal. You share personal details only if you choose to.' },
-      { q: 'Are anonymous calls recorded?', a: 'No. Voice flows peer-to-peer and is never recorded or stored by TalkLive.' },
+      { q: 'Are anonymous calls recorded?', a: 'TalkLive does not record or store voice audio. Another participant can still record on their own device.' },
       { q: 'Do I need an account for anonymous chat?', a: 'No account is needed. An optional free account only exists if you want to keep friends between visits.' },
       { q: 'Is anonymous chat safe?', a: 'Yes. Everyone must be 18+, and instant block and report tools plus automatic bans keep conversations respectful.' },
     ],
@@ -1072,7 +862,7 @@ const CORE_PAGES = [
     faq: [
       { q: 'How do I meet new people on TalkLive?', a: 'Just tap to talk. TalkLive instantly matches you with a new person for a live voice conversation — no profiles or swiping needed.' },
       { q: 'Can I make lasting friends?', a: 'Yes. When you enjoy talking with someone, add them as a friend so you can message and call them again later.' },
-      { q: 'Is it free to meet people here?', a: 'Completely. TalkLive is free with unlimited matches and no premium tier.' },
+      { q: 'Is it free to meet people here?', a: 'Core random matching is free. Free users wait about five seconds between calls, and optional Premium adds advanced filters and removes that wait.' },
       { q: 'Can I meet people from specific countries?', a: 'Yes. Optional filters let you focus on particular regions, or leave them off to meet people from everywhere.' },
       { q: 'Do I need to show my face?', a: 'No. TalkLive is voice-only, so you meet people through conversation, not appearance.' },
     ],
@@ -1109,7 +899,7 @@ const CORE_PAGES = [
     ],
     prose: [
       { h: 'The world in your headphones', body: [
-        'International calling used to mean expensive rates and clunky calling cards. TalkLive replaces all of that with a single button. Because calls travel over the internet as peer-to-peer audio, reaching someone thousands of miles away costs exactly the same as reaching your neighbor: nothing.',
+        'Traditional international calling can involve per-minute charges. TalkLive voice calls use your internet connection, so TalkLive does not charge a per-minute international rate. Your mobile or internet provider may still charge for data.',
         'Every match is a window into another culture. One tap you are chatting with a student in Jakarta, the next a night-owl in São Paulo or Istanbul. Global voice chat turns curiosity about the world into real conversations.' ] },
       { h: 'Practice languages with native speakers', body: [
         'International voice chat is a language learner\'s dream. Instead of textbooks, you get spontaneous conversations with people who actually speak the language. TalkLive supports twelve interface languages, so learners and locals alike feel at home.' ] },
@@ -1117,7 +907,7 @@ const CORE_PAGES = [
         'TalkLive is designed for a worldwide audience, with full right-to-left support for Arabic and Urdu and a clean, low-bandwidth experience that works even on slower international connections.' ] },
     ],
     faq: [
-      { q: 'Are international calls on TalkLive free?', a: 'Yes. All calls use your internet connection, so talking to someone in another country is completely free.' },
+      { q: 'Are international calls on TalkLive free?', a: 'Core matching has no TalkLive per-minute charge. Calls use your internet connection, so your provider\'s normal data charges can still apply.' },
       { q: 'Can I choose which countries to talk to?', a: 'Yes. Optional country filters let you include or exclude specific countries so you connect with the regions you want.' },
       { q: 'What languages does TalkLive support?', a: 'The interface is available in twelve languages including English, Spanish, Portuguese, Arabic, Hindi, Urdu, Chinese and more, with full right-to-left support.' },
       { q: 'Do I need a phone number to call internationally?', a: 'No. International calls happen inside the app with no number required, keeping your identity private.' },
@@ -1164,7 +954,7 @@ const CORE_PAGES = [
         'Community matters. TalkLive is strictly for adults, and one tap lets you block or report anyone who is disrespectful — which ends the call immediately. Repeated reports lead to bans, keeping the space friendly for everyone.' ] },
     ],
     faq: [
-      { q: 'Is Pakistani voice chat on TalkLive free?', a: 'Yes, it is completely free with unlimited calls and no sign-up required.' },
+      { q: 'Is Pakistani voice chat on TalkLive free?', a: 'Core random voice matching is free and needs no sign-up. A Pakistan preference does not guarantee availability, identity, residence or nationality.' },
       { q: 'Is the app available in Urdu?', a: 'Yes. TalkLive is fully translated into Urdu with proper right-to-left layout, alongside eleven other languages.' },
       { q: 'Can I talk to Pakistanis living abroad?', a: 'Yes. You can connect with people across Pakistan and with the Pakistani community worldwide.' },
       { q: 'Do I need to share my phone number?', a: 'No. Conversations happen inside the app with a temporary display name, so your number stays private.' },
@@ -1181,7 +971,7 @@ const CORE_PAGES = [
     description: 'Looking for an Omegle alternative? TalkLive is free random chat with strangers — voice-only, anonymous, no sign-up, with real moderation. Talk to a stranger in one tap.',
     keywords: 'omegle alternative, omegle alternatives, sites like omegle, apps like omegle, omegle replacement, random chat like omegle, omegle without video',
     h1: 'The Omegle Alternative That Fixes What Omegle Got Wrong',
-    lede: 'Omegle shut down because unmoderated random video went wrong. TalkLive keeps the magic — one tap, one random stranger, a live conversation — and drops the problems: it is voice-only, 18+, moderated, and completely free.',
+    lede: 'TalkLive offers a different format from Omegle: random voice and text conversations for adults, without camera access. Core matching is free, with clear report, block and exit controls.',
     cta: 'Try the Alternative',
     featuresH: 'Why TalkLive is the Omegle alternative people stay on',
     featuresIntro: 'Everything you liked about random chat, rebuilt around voice and safety.',
@@ -1203,23 +993,23 @@ const CORE_PAGES = [
     ],
     prose: [
       { h: 'Why people are searching for an Omegle alternative', body: [
-        'Omegle defined random chat for over a decade, then closed in late 2023 under the weight of its own moderation problems. Millions of people did not stop wanting spontaneous conversations with strangers — they just lost the place to have them. Most replacements copied the video format and inherited the same issues.',
+        'Omegle defined random chat for over a decade and closed in late 2023. People still look for spontaneous conversations with strangers, while many replacements continue to use a camera-first format.',
         'TalkLive takes a different bet: the best part of Omegle was never the camera. It was the moment a random stranger said hello. Voice keeps that moment — the tone, the laughter, the accents — while removing the single biggest source of abuse on video chat platforms.' ] },
       { h: 'How TalkLive compares to other Omegle alternatives', body: [
-        'Most sites like Omegle are video-first, ad-heavy, and lightly moderated. TalkLive is audio-only and free, with no camera anxiety, low data use, and calls that run peer-to-peer so your voice is never recorded on a server. Blocking and reporting takes one tap and ends the call immediately.',
+        'Many Omegle-style services are video-first. TalkLive is voice- and text-only: it never requests camera access, uses encrypted WebRTC audio over a production TURN relay, and does not record or store voice audio. Blocking or reporting ends the interaction immediately.',
         'It also works everywhere a browser works — no app store, no download, no sign-up wall. That is closer to the original Omegle spirit than most of its imitators.' ] },
       { h: 'Safer by design, not by promise', body: [
         'TalkLive is strictly 18+. There are no video streams to moderate, every user can be reported in one tap, and repeated reports lead to bans. Safety here is structural: remove the camera, and you remove the way random chat most often goes wrong.' ] },
     ],
     faq: [
-      { q: 'Is TalkLive really a free Omegle alternative?', a: 'Yes. Matching and talking are completely free with no time limits and no credit card. Optional Premium only adds extras like advanced filters.' },
+      { q: 'Is TalkLive a free Omegle alternative?', a: 'Core random voice and text matching is free and requires no credit card. Free users wait about five seconds between calls; optional Premium adds filters and removes that wait.' },
       { q: 'Does TalkLive have video like Omegle?', a: 'No, and that is deliberate. TalkLive is voice-only, which keeps chats private, low-pressure, and far safer than random video.' },
       { q: 'Do I need an account?', a: 'No. Tap once and you are talking. An optional free account lets you keep friends and history.' },
       { q: 'Why did Omegle shut down?', a: 'Omegle closed in November 2023, citing the cost and difficulty of fighting misuse of its unmoderated video chat. TalkLive avoids that failure mode by being voice-only, 18+, and moderated.' },
       { q: 'Can I choose who I get matched with?', a: 'Yes. Optional country and gender filters shape your matches, and if no filtered match is found quickly you are connected to any available stranger.' },
     ],
     ctaBandH: 'Ready for random chat done right?',
-    ctaBandP: 'Thousands of strangers are online now. One tap and you are in a live conversation.',
+    ctaBandP: 'Open the live queue and choose a voice or text match. Availability changes throughout the day.',
   },
   {
     slug: 'random-video-chat',
@@ -1239,7 +1029,7 @@ const CORE_PAGES = [
       { icon: 'globe', h: 'Strangers worldwide', p: 'Get randomly matched with people across dozens of countries, or filter to the regions you prefer.' },
       { icon: 'next', h: 'Skip in one tap', p: 'Not clicking? Hit Next and you are instantly in a fresh random chat with someone new.' },
       { icon: 'shield', h: 'Moderated and safe', p: 'One-tap block and report tools plus automatic bans for repeat offenders keep the community clean.' },
-      { icon: 'lock', h: 'Anonymous by design', p: 'No real name, photo, or number. Audio runs peer-to-peer and is never recorded on a server.' },
+      { icon: 'lock', h: 'Private by default', p: 'No real name, photo or phone number is required for a basic match. TalkLive does not record or store voice audio.' },
     ],
     stepsH: 'How random chat works on TalkLive',
     stepsIntro: 'From this page to talking with a random stranger takes under ten seconds.',
@@ -1255,19 +1045,19 @@ const CORE_PAGES = [
         'TalkLive keeps the unpredictable magic and removes the camera. You get the same one-tap, random, worldwide matching, but the conversation is voice-to-voice. People relax faster, open up more, and there is far less that can go wrong.' ] },
       { h: 'Random chat that works on any device', body: [
         'Because there is no video stream, TalkLive works smoothly on slow connections, older phones, and mobile data. There is no camera permission to grant and no bandwidth-heavy stream to hold. Just tap, talk, and skip whenever you want.',
-        'Audio flows directly between you and the other person over WebRTC, so latency is low and your voice is never routed through or stored on a central server.' ] },
+        'Voice calls use encrypted WebRTC over a production TURN relay. TalkLive does not record or store voice audio, but the other participant can record on their own device.' ] },
       { h: 'Great for meeting people and practicing languages', body: [
         'People use random chat to beat boredom, make friends across the world, and practice speaking a new language with native speakers. A few minutes of real voice conversation does more for confidence and fluency than an hour of solo drills — and it is a lot more fun.' ] },
     ],
     faq: [
       { q: 'Does TalkLive have video chat?', a: 'No, and that is intentional. TalkLive is a voice-first alternative to random video chat, which keeps conversations private, low-pressure, low-data, and much safer.' },
-      { q: 'Is random chat on TalkLive free?', a: 'Yes. Random matching and talking are completely free and unlimited, with no credit card and no premium wall for matching.' },
+      { q: 'Is random chat on TalkLive free?', a: 'Core random voice and text matching is free. Free users wait about five seconds between calls, and optional Premium adds advanced filters.' },
       { q: 'Do I need to sign up?', a: 'No. Tap once and you are chatting with a random stranger. An optional free account lets you keep friends and history.' },
       { q: 'Is it anonymous?', a: 'Yes. You appear only as a temporary display name — no real name, photo, phone number, or email required.' },
       { q: 'What if someone is inappropriate?', a: 'Tap report or block. The chat ends instantly, that person can no longer reach you, and repeated reports lead to a ban.' },
     ],
     ctaBandH: 'Ready for random chat without the camera?',
-    ctaBandP: 'Thousands of strangers are online right now, ready for a live voice conversation.',
+    ctaBandP: 'Open the live queue to see whether a voice or text match is available now.',
   },
   {
     slug: 'random-video-call',
@@ -1284,7 +1074,7 @@ const CORE_PAGES = [
     features: [
       { icon: 'phone', h: 'Call in one tap', p: 'No dialing, no numbers, no lobby. Tap to Talk places a live call to a random stranger instantly.' },
       { icon: 'lock', h: 'No number needed', p: 'Your phone number and identity stay private. Random calls happen entirely inside the app.' },
-      { icon: 'mic', h: 'Voice, not video', p: 'Skip the camera pressure and the data drain. Clear peer-to-peer audio keeps it personal and private.' },
+      { icon: 'mic', h: 'Voice, not video', p: 'Skip camera access and use encrypted WebRTC audio over TalkLive\'s production relay.' },
       { icon: 'next', h: 'Redial the world', p: 'Not feeling this call? Hang up and place a new random call to someone new with one tap.' },
       { icon: 'globe', h: 'Reach any country', p: 'Random calls connect you across borders, or filter to specific regions if you prefer.' },
       { icon: 'shield', h: 'Safe and reportable', p: 'One-tap block and report tools end bad calls instantly and keep the community clean.' },
@@ -1300,7 +1090,7 @@ const CORE_PAGES = [
     prose: [
       { h: 'Why voice beats a random video call', body: [
         'A random video call sounds fun until you think about what the camera exposes: your face, your room, your surroundings — to a complete stranger you have never met. It also eats data and makes many people self-conscious.',
-        'TalkLive keeps the excitement of calling a random stranger and drops the camera. You appear only as a temporary display name, calls run over encrypted peer-to-peer audio, and nothing is recorded. It is the spontaneity of a random video call with your privacy intact.' ] },
+        'TalkLive keeps random matching and drops the camera. You appear under a temporary display name, calls use encrypted WebRTC over a production TURN relay, and TalkLive does not record or store voice audio. The other participant can still record on their device.' ] },
       { h: 'Random calls without sharing your number', body: [
         'Traditional calling means handing out your phone number and hoping for the best. TalkLive places every random call inside the app, so your real number is never shared. If a call goes sideways, blocking or reporting ends it instantly.',
         'Because it is browser-based, there is no app-store detour — you are one tap from a live call and one tap from ending it.' ] },
@@ -1309,7 +1099,7 @@ const CORE_PAGES = [
     ],
     faq: [
       { q: 'Does a random call on TalkLive use video?', a: 'No. TalkLive is a voice-first alternative to random video call apps — audio only, which keeps it private, low-data, and far safer.' },
-      { q: 'Does it cost anything?', a: 'No. Random calls are free and unlimited. It uses your internet connection, not your phone plan.' },
+      { q: 'Does it cost anything?', a: 'Core random calls have no per-minute TalkLive charge. Your provider may charge for data, and optional Premium features are listed on the Pricing page.' },
       { q: 'Do I have to share my phone number?', a: 'Never. Random calls happen inside the app using a temporary display name, so your real number stays private.' },
       { q: 'Can I call the same person again?', a: 'Yes. If you both add each other as friends, you can call each other back later — still without sharing numbers.' },
       { q: 'What devices work?', a: 'Any device with a modern browser and a microphone: phones, tablets, laptops, and desktops.' },
@@ -1325,7 +1115,7 @@ const CORE_PAGES = [
     description: 'Looking for an OmeTV alternative? TalkLive is free random chat with strangers — voice-only, anonymous, moderated, no sign-up. Meet a random stranger in one tap.',
     keywords: 'ometv alternative, ome tv alternative, sites like ometv, apps like ome tv, ometv replacement, random chat like ometv, ome tv without video, ometv chat',
     h1: 'The OmeTV Alternative Built Around Voice and Safety',
-    lede: 'OmeTV made random video chat huge — and inherited every problem that comes with an unmoderated camera. TalkLive keeps the one-tap, random, worldwide experience and rebuilds it around voice: anonymous, 18+, moderated, and completely free.',
+    lede: 'TalkLive is a camera-free alternative for adults who prefer random voice or text conversations. Core matching is free, with report, block and exit controls.',
     cta: 'Try the Alternative',
     featuresH: 'Why TalkLive is the OmeTV alternative people stay on',
     featuresIntro: 'Everything you liked about OmeTV, rebuilt around voice and real moderation.',
@@ -1350,20 +1140,20 @@ const CORE_PAGES = [
         'OmeTV is one of the most popular random video chat apps, but the same things that make random video exciting also make it risky: explicit content, appearance pressure, heavy data use, and moderation that is always a step behind. Many people want the spontaneous stranger conversation without the camera baggage.',
         'TalkLive is that alternative. It keeps the moment a random stranger says hello — the tone, the accent, the laughter — while removing the single biggest source of abuse on video chat platforms: the camera.' ] },
       { h: 'How TalkLive compares to OmeTV', body: [
-        'OmeTV is video-first, ad-supported, and lightly moderated. TalkLive is audio-only and free, with no camera anxiety, low data use, and calls that run peer-to-peer so your voice is never recorded on a server. Blocking and reporting takes one tap and ends the chat immediately.',
+        'OmeTV is video-first. TalkLive is voice- and text-only, never requests camera access, uses encrypted WebRTC audio over a production TURN relay, and does not record or store voice audio. Blocking or reporting ends the interaction immediately.',
         'It also runs anywhere a browser works — no app store, no download, no sign-up wall.' ] },
       { h: 'Safer by structure, not by promise', body: [
         'TalkLive is strictly 18+. There are no video streams to police, every user can be reported in one tap, and repeated reports lead to bans. Safety here is built into the design: remove the camera, and you remove the way random chat most often goes wrong.' ] },
     ],
     faq: [
-      { q: 'Is TalkLive a free OmeTV alternative?', a: 'Yes. Matching and talking are completely free with no time limits and no credit card. Optional Premium only adds extras like advanced filters.' },
+      { q: 'Is TalkLive a free OmeTV alternative?', a: 'Core random voice and text matching is free. Free users wait about five seconds between calls; optional Premium adds filters and removes that wait.' },
       { q: 'Does TalkLive have video like OmeTV?', a: 'No, and that is deliberate. TalkLive is voice-only, which keeps chats private, low-pressure, and far safer than random video.' },
       { q: 'Do I need an account?', a: 'No. Tap once and you are talking. An optional free account lets you keep friends and history.' },
       { q: 'Is it moderated?', a: 'Yes. Every user can be blocked or reported in one tap, the chat ends instantly, and repeated reports lead to automatic bans.' },
       { q: 'Can I choose who I match with?', a: 'Yes. Optional country and gender filters shape your matches, and if no filtered match is found quickly you are connected to any available stranger.' },
     ],
     ctaBandH: 'Ready for random chat done right?',
-    ctaBandP: 'Thousands of strangers are online now. One tap and you are in a live conversation.',
+    ctaBandP: 'Open the live queue and choose voice or text. Match availability changes throughout the day.',
   },
   {
     slug: 'stranger-video-call',
@@ -1379,7 +1169,7 @@ const CORE_PAGES = [
     featuresIntro: 'The thrill of calling a stranger, with your privacy fully protected.',
     features: [
       { icon: 'phone', h: 'Call a stranger in one tap', p: 'No dialing, no lobby. Tap to Talk places a live call to a random stranger instantly.' },
-      { icon: 'mic', h: 'Voice, not video', p: 'Skip the camera and the awkwardness. Clear peer-to-peer audio keeps the call personal and private.' },
+      { icon: 'mic', h: 'Voice, not video', p: 'Skip camera access and use encrypted WebRTC audio over TalkLive\'s production relay.' },
       { icon: 'lock', h: 'Stay anonymous', p: 'No real name, photo, or phone number. You appear only as a temporary display name.' },
       { icon: 'next', h: 'New stranger anytime', p: 'Not feeling this one? Hang up and tap again to reach a completely new stranger.' },
       { icon: 'globe', h: 'Strangers worldwide', p: 'Call people across dozens of countries, or filter to the regions you prefer.' },
@@ -1396,7 +1186,7 @@ const CORE_PAGES = [
     prose: [
       { h: 'Why a voice-first stranger call is better', body: [
         'A stranger video call exposes your face, your room, and your surroundings to someone you have never met. That is a lot to give away for a conversation that might last two minutes. It also makes many people self-conscious and burns through mobile data.',
-        'TalkLive keeps the excitement of calling a random stranger and removes the camera. You are just a voice and a temporary display name, calls run over encrypted peer-to-peer audio, and nothing is recorded. It is the surprise of a stranger video call with none of the exposure.' ] },
+        'TalkLive keeps random matching and removes the camera. You use a temporary display name, calls use encrypted WebRTC over a production TURN relay, and TalkLive does not record or store voice audio. A participant can still record on their own device.' ] },
       { h: 'Talk to strangers without sharing anything personal', body: [
         'There is no number to hand out, no profile to build, and no account required. You tap, you talk to a stranger, and if it is not a fit you tap again. Blocking or reporting ends a call instantly and can get a rule-breaker banned.',
         'Because everything runs in the browser, it works on any phone, tablet, or computer with a microphone — no app store, no download.' ] },
@@ -1405,13 +1195,13 @@ const CORE_PAGES = [
     ],
     faq: [
       { q: 'Is this a real stranger video call?', a: 'TalkLive is a voice-first alternative to a stranger video call — you call and talk to random strangers live, but audio-only, which is more private and much safer than random video.' },
-      { q: 'Is it free to call strangers?', a: 'Yes. Calling and talking to strangers is completely free and unlimited, with no credit card required.' },
+      { q: 'Is it free to call strangers?', a: 'Core random voice matching is free and requires no credit card. Free users wait about five seconds between calls; optional Premium removes that wait.' },
       { q: 'Do I need to share my phone number?', a: 'No. Calls happen inside the app using a temporary display name, so your real number and identity stay private.' },
       { q: 'Is it safe to call strangers here?', a: 'TalkLive is 18+, anonymous, and includes instant block and report tools plus automatic bans for repeat offenders.' },
       { q: 'What devices can I use?', a: 'Any device with a modern browser and a microphone — phones, tablets, laptops, and desktops. Nothing to install.' },
     ],
     ctaBandH: 'Ready to call a stranger?',
-    ctaBandP: 'Thousands of strangers are online right now, waiting for a live conversation.',
+    ctaBandP: 'Open the live queue to see whether a voice or text match is available now.',
   },
   {
     slug: 'monkey-app-alternative',
@@ -1421,7 +1211,7 @@ const CORE_PAGES = [
     description: 'Looking for a Monkey app alternative? TalkLive is free random chat with strangers — voice-only, anonymous, 18+, moderated, and no sign-up.',
     keywords: 'monkey app alternative, monkey alternative, apps like monkey, sites like monkey app, monkey app replacement, random chat like monkey, monkey video chat alternative',
     h1: 'The Monkey App Alternative for Grown-Up Random Chat',
-    lede: 'The Monkey app made quick random video chats popular, but the camera brings real privacy and safety concerns. TalkLive keeps the fast, random, worldwide matching and rebuilds it around voice — anonymous, strictly 18+, moderated, and completely free.',
+    lede: 'TalkLive is a camera-free alternative for adults who prefer random voice or text conversations. Core matching is free, with report, block and exit controls.',
     cta: 'Try the Alternative',
     featuresH: 'Why TalkLive is the Monkey app alternative that feels safer',
     featuresIntro: 'Fast random matching with strangers, rebuilt around voice and real moderation.',
@@ -1446,20 +1236,20 @@ const CORE_PAGES = [
         'The Monkey app popularized fast, random video chats, but random video comes with well-known downsides: exposure of your face and surroundings, appearance pressure, heavy data use, and moderation that struggles to keep up. Plenty of people want the quick random-stranger experience without the camera risk.',
         'TalkLive is that alternative. It keeps the fast, spontaneous match with a random stranger and swaps the camera for clear voice — so conversations feel human while staying private.' ] },
       { h: 'How TalkLive compares to the Monkey app', body: [
-        'The Monkey app is video-first and skews young. TalkLive is audio-only, strictly 18+, and free, with no camera anxiety, low data use, and calls that run peer-to-peer so your voice is never recorded on a server. Blocking and reporting takes one tap and ends the chat immediately.',
+        'The Monkey app is video-first. TalkLive is voice- and text-only, intended for adults, never requests camera access, and uses encrypted WebRTC audio over a production TURN relay. TalkLive does not record or store voice audio. Blocking or reporting ends the interaction immediately.',
         'It runs anywhere a browser works — no app store, no download, no sign-up wall.' ] },
       { h: 'Safer by design', body: [
         'TalkLive is built for adults and moderated by design. There are no video streams to exploit, every user can be reported in one tap, and repeated reports lead to bans. Remove the camera, and you remove the way random chat most often goes wrong.' ] },
     ],
     faq: [
-      { q: 'Is TalkLive a free Monkey app alternative?', a: 'Yes. Matching and talking are completely free with no time limits and no credit card. Optional Premium only adds extras like advanced filters.' },
+      { q: 'Is TalkLive a free Monkey app alternative?', a: 'Core random voice and text matching is free. Free users wait about five seconds between calls; optional Premium adds filters and removes that wait.' },
       { q: 'Does TalkLive have video like the Monkey app?', a: 'No, and that is deliberate. TalkLive is voice-only, which keeps chats private, low-pressure, and far safer than random video.' },
       { q: 'Is there an age requirement?', a: 'Yes. TalkLive is strictly for users 18 and older, and it is moderated with one-tap reporting and automatic bans.' },
       { q: 'Do I need an account?', a: 'No. Tap once and you are talking. An optional free account lets you keep friends and history.' },
       { q: 'Can I choose who I match with?', a: 'Yes. Optional country and gender filters shape your matches, and if no filtered match is found quickly you are connected to any available stranger.' },
     ],
     ctaBandH: 'Ready for random chat done right?',
-    ctaBandP: 'Thousands of strangers are online now. One tap and you are in a live conversation.',
+    ctaBandP: 'Open the live queue and choose voice or text. Match availability changes throughout the day.',
   },
   {
     slug: 'talk-to-someone',
@@ -1475,7 +1265,7 @@ const CORE_PAGES = [
     featuresH: 'A real person, whenever you need one',
     featuresIntro: 'Not a bot, not a feed — a live human who also felt like talking right now.',
     features: [
-      { icon: 'users', h: 'Always someone awake', p: 'TalkLive is worldwide, so whatever time it is for you, it is evening for someone who wants to talk.' },
+      { icon: 'users', h: 'Worldwide queue', p: 'People may join from different time zones, but a match is never guaranteed at a particular moment.' },
       { icon: 'heart', h: 'Judgment-free', p: 'A stranger has no history with you. Say what is really on your mind — vent, ramble, or just chat.' },
       { icon: 'lock', h: 'Completely anonymous', p: 'No name, number, or email. Share only what you choose and leave whenever you want.' },
       { icon: 'chat', h: 'Voice or text — your mood', p: 'Tap to Talk when you want to hear a voice, Tap to Chat when typing feels easier.' },
@@ -1501,8 +1291,8 @@ const CORE_PAGES = [
         'TalkLive is real people keeping each other company — it is not a counseling service, and strangers are not a substitute for professional support. If you are in crisis or having thoughts of harming yourself, please reach out to a local crisis line or emergency services right away (in the US, call or text 988; in the UK and Ireland, Samaritans at 116 123). For everyday loneliness, boredom, and the simple need to be heard — we are here, and it is free.' ] },
     ],
     faq: [
-      { q: 'Is there really someone to talk to right now?', a: 'Yes. TalkLive matches people worldwide around the clock, so there is almost always someone online. Tap to Talk and you are usually connected within seconds.' },
-      { q: 'Is it free to talk to someone?', a: 'Completely free — voice calls and text chat, unlimited, with no credit card and no sign-up.' },
+      { q: 'Is there someone to talk to right now?', a: 'Availability depends on the live queue and selected preferences. Open TalkLive to check; a particular wait time or match is not guaranteed.' },
+      { q: 'Is it free to talk to someone?', a: 'Core random voice and text matching is free and needs no credit card. Free users wait about five seconds between calls; optional Premium adds controls.' },
       { q: 'Do I have to use my voice?', a: 'No. Tap to Chat pairs you with someone for a pure text conversation — no microphone or camera needed.' },
       { q: 'Will anyone know who I am?', a: 'No. You appear as a temporary display name. No phone number, email, or real name is ever required.' },
       { q: 'Is this a counseling or therapy service?', a: 'No. TalkLive is friendly strangers keeping each other company, not professional help. If you are in crisis, please contact a local crisis line (988 in the US, 116 123 in the UK/Ireland) or emergency services.' },
@@ -1515,7 +1305,7 @@ const CORE_PAGES = [
     crumb: 'Free Online Calls',
     eyebrow: 'Call from your browser',
     title: 'Free Online Calls — No Phone Number Needed | TalkLive',
-    description: 'Make free online calls from your browser. Unlimited voice calls with people worldwide — no phone number, no app, no sign-up. Start calling now.',
+    description: 'Make random online voice calls from your browser with free core matching, no phone number or install required. Data charges and live availability may vary.',
     keywords: 'free online calls, free voice call online, online call free, make free calls online, voice call online, free calling website, call online without number, free internet calls, browser voice call',
     h1: 'Free Online Calls — No Number, No App, No Cost',
     lede: 'TalkLive turns any browser into a free calling app. One tap starts a live voice call with a real person anywhere on Earth — no phone number, no downloads, no minutes to count. Meet someone new, or add friends and call them back free, forever.',
@@ -1526,7 +1316,7 @@ const CORE_PAGES = [
       { icon: 'phone', h: 'Truly free calls', p: 'Calls travel over your internet connection, so talking costs nothing — across town or across the planet.' },
       { icon: 'lock', h: 'No phone number needed', p: 'Call and get called without ever revealing a number. Your identity stays yours.' },
       { icon: 'bolt', h: 'No app to install', p: 'Everything runs in the browser on any phone, tablet, or computer. Open the page and call.' },
-      { icon: 'mic', h: 'Crystal-clear audio', p: 'Peer-to-peer WebRTC keeps latency low, so voices sound natural — often better than a phone line.' },
+      { icon: 'mic', h: 'Real-time audio', p: 'Encrypted WebRTC carries voice in real time through TalkLive\'s production TURN relay.' },
       { icon: 'users', h: 'Call friends back free', p: 'Add people you like and call each other again any time — your own free calling circle, no SIM required.' },
       { icon: 'world', h: 'Worldwide reach', p: 'International calls cost exactly the same as local ones here: nothing.' },
     ],
@@ -1535,12 +1325,12 @@ const CORE_PAGES = [
     steps: [
       { h: 'Open TalkLive', p: 'Load the site in any modern browser. There is nothing to download or configure.' },
       { h: 'Tap to Talk', p: 'Allow microphone access and press the green button to start a free voice call.' },
-      { h: 'Talk to a real person', p: 'You are connected live with someone who wants to talk right now. Free, unlimited.' },
+      { h: 'Join a live match', p: 'TalkLive attempts to connect two available adults in the live queue. Availability, identity and intent are not guaranteed.' },
       { h: 'Build your circle', p: 'Add great people as friends and call each other back later — always free.' },
     ],
     prose: [
       { h: 'Free calling, actually free', body: [
-        '"Free calls" usually comes with an asterisk: free for ten minutes, free if the other person installs the same app, free until the trial ends. TalkLive has no asterisk. Calls run peer-to-peer over your internet connection, so there is nothing to meter and nothing to bill — talk for five minutes or five hours.',
+        'TalkLive does not charge a per-minute rate for core random voice calls. Calls use your internet connection, so your mobile or broadband provider may charge for data. Optional Premium features and current pricing are listed transparently on the Pricing page.',
         'There is also nothing to install and nobody to invite. Where other calling apps are useless until your contacts join, TalkLive is full of people to talk to the moment you arrive.' ] },
       { h: 'Calls without a phone number', body: [
         'Your phone number is one of the most personal identifiers you own — and traditional calling forces you to hand it out. On TalkLive, calls happen entirely inside the browser under a temporary display name. You can meet someone, become friends, and call each other for years without either of you ever knowing the other\'s number.' ] },
@@ -1548,7 +1338,7 @@ const CORE_PAGES = [
         'Voice-only calling uses a fraction of the data of a video call, so free online calls work fine on mobile data, hotel Wi-Fi, and older devices. If you can load a web page, you can make a call.' ] },
     ],
     faq: [
-      { q: 'Are online calls on TalkLive really free?', a: 'Yes — unlimited voice calls at no cost. Calls use your internet connection, so there are no per-minute charges, trials, or hidden fees.' },
+      { q: 'Are online calls on TalkLive free?', a: 'Core random voice matching has no per-minute TalkLive charge. Calls use your internet connection, provider data charges may apply, and optional Premium features are separate.' },
       { q: 'Do I need a phone number or SIM?', a: 'No. Calls run entirely in the browser under a temporary display name. No number, SIM, or email is required.' },
       { q: 'Can I call a specific person for free?', a: 'Yes. Meet someone on TalkLive, add each other as friends, and you can call each other back free whenever you are both online.' },
       { q: 'Do international calls cost more?', a: 'No. Distance is irrelevant on the internet — a call to another continent is as free as a call next door.' },
@@ -1565,7 +1355,7 @@ const CORE_PAGES = [
     description: 'Practice English speaking online free with real people. TalkLive starts live voice conversations in seconds — no classes, no fees, no sign-up.',
     keywords: 'practice english speaking, english speaking practice, practice english online free, speak english with strangers, english conversation practice, improve spoken english, talk in english online, free english speaking practice app',
     h1: 'Practice English Speaking with Real People — Free',
-    lede: 'Fluency comes from speaking, not studying. TalkLive gives you unlimited live voice conversations with real people around the world — the fastest, most natural way to practice English, completely free and one tap away.',
+    lede: 'Speaking with different people can complement structured language study. TalkLive offers free random voice matching, but it does not guarantee a fluent speaker, teacher, language, country or availability.',
     cta: 'Practice Speaking Now',
     ctaChat: 'Practice by Text First',
     featuresH: 'Why learners practice English on TalkLive',
@@ -1574,9 +1364,9 @@ const CORE_PAGES = [
       { icon: 'mic', h: 'Real conversation, instantly', p: 'One tap puts you in a live English conversation. No lesson plans, no scheduling, no tutors to book.' },
       { icon: 'globe', h: 'Every accent on Earth', p: 'Talk with speakers from the US, UK, India, the Philippines and beyond — train your ear on real-world English.' },
       { icon: 'shield', h: 'Mistake-friendly', p: 'Strangers are anonymous and judgment-free. Fumble a sentence, laugh, try again — nobody knows you.' },
-      { icon: 'next', h: 'Unlimited partners', p: 'Every tap is a new person and a fresh conversation. That variety is exactly what builds fluency.' },
+      { icon: 'next', h: 'Different conversation partners', p: 'A new match can expose you to different speaking styles, but language level and availability are not guaranteed.' },
       { icon: 'chat', h: 'Warm up by text', p: 'Nervous? Start in Tap to Chat to practice written English, then switch to voice when you are ready.' },
-      { icon: 'heart', h: 'Free forever', p: 'Tutors charge by the hour. TalkLive gives you unlimited speaking practice for exactly nothing.' },
+      { icon: 'heart', h: 'Free core matching', p: 'Core random voice matching is free; optional Premium changes filters and the between-call wait, not the need to buy lessons.' },
     ],
     stepsH: 'How to practice English speaking here',
     stepsIntro: 'The method is simple: speak every day, with different people, about real things.',
@@ -1597,7 +1387,7 @@ const CORE_PAGES = [
         'Set a tiny daily habit — one call a day, even five minutes. Ask questions: people love talking about their city and food, and questions keep you listening actively. Do not translate in your head; describe around missing words instead ("the machine for cold food" will get you to "fridge"). And when you meet a great conversation partner, add them as a friend and make it a regular exchange.' ] },
     ],
     faq: [
-      { q: 'Is this really free English speaking practice?', a: 'Yes. Unlimited voice conversations at no cost — no lesson fees, subscriptions, or trial limits.' },
+      { q: 'Is this free English speaking practice?', a: 'Core random voice matching is free, but TalkLive is not a tutoring service and does not guarantee an English speaker, teacher, fluency level or correction.' },
       { q: 'Will I talk to native English speakers?', a: 'You will meet a global mix — native speakers and learners from many countries. Both improve your fluency, and country filters let you steer who you meet.' },
       { q: 'My English is basic. Is that okay?', a: 'Absolutely. Simple conversations are perfect practice, and partners are anonymous strangers — there is no embarrassment. You can also start with text chat to warm up.' },
       { q: 'How often should I practice?', a: 'Short and daily beats long and rare. Ten minutes of real conversation every day produces visible progress within weeks.' },
@@ -1645,7 +1435,7 @@ const CORE_PAGES = [
         'TalkLive is strictly 18+, blocks links automatically, and gives every user a one-tap report that ends the conversation instantly. Repeat offenders are banned by device and IP. A roulette is only fun when the next spin is safe — that is the whole design here.' ] },
     ],
     faq: [
-      { q: 'Is TalkLive a free Chatroulette alternative?', a: 'Yes. Random voice and text matching are completely free and unlimited — no credit card, no trial.' },
+      { q: 'Is TalkLive a free Chatroulette alternative?', a: 'Core random voice and text matching is free. Free users wait about five seconds between calls; optional Premium adds filters and removes that wait.' },
       { q: 'Does TalkLive have video like Chatroulette?', a: 'No, on purpose. Voice and text keep the random-roulette fun while removing the explicit-content problem that plagues video roulette sites.' },
       { q: 'Can I skip people like on Chatroulette?', a: 'Yes — Next is one tap away at all times and instantly matches you with a new random stranger.' },
       { q: 'Do I need to sign up?', a: 'No. Open the site and tap once. An optional free account exists only to keep friends between visits.' },
@@ -1662,7 +1452,7 @@ const CORE_PAGES = [
     description: 'An Emerald Chat alternative without bots, karma grinding or paywalls: TalkLive is free anonymous voice and text chat with random strangers.',
     keywords: 'emerald chat alternative, sites like emerald chat, emerald chat replacement, apps like emerald chat, emerald chat without bots, free stranger chat',
     h1: 'The Emerald Chat Alternative Without Bots or Paywalls',
-    lede: 'Tired of bots, karma systems and premium walls? TalkLive gives you what Emerald Chat promised: instant, anonymous conversations with real people — by live voice or pure text, completely free.',
+    lede: 'TalkLive is a voice- and text-first alternative for adults. Core random matching is free, while optional Premium adds advanced filters and removes the between-call wait.',
     cta: 'Try TalkLive Free',
     featuresH: 'Why people switch from Emerald Chat',
     featuresIntro: 'No karma to grind, no gender-filter paywall for matching, no bot armies. Just humans.',
@@ -1690,14 +1480,14 @@ const CORE_PAGES = [
         'The biggest difference is voice. A live audio call is nearly impossible to bot and instantly reveals a real human on the other end. It is also warmer: tone, laughter and accents carry the conversation in a way text never quite manages. If you have only ever typed to strangers, your first voice call will feel like switching from black-and-white to color.',
         'Prefer typing anyway? TalkLive\'s text mode is there too — same instant matching, same anonymity, no mic permission requested at all.' ] },
       { h: 'Free means free', body: [
-        'Matching, filters within the free tier, unlimited skips and unlimited conversations cost nothing on TalkLive. There is an optional premium for power features, but nothing you need for great conversations sits behind a paywall.' ] },
+        'Core random voice and text matching is free. The free tier includes a limited set of preferences and about a five-second wait between calls; optional Premium adds advanced filters and removes that wait. Check Pricing for current details.' ] },
     ],
     faq: [
-      { q: 'Is TalkLive really free compared to Emerald Chat?', a: 'Yes. Matching, voice calls, text chat and skipping are all free and unlimited. No karma requirement, no credit card.' },
+      { q: 'Is TalkLive free compared with Emerald Chat?', a: 'Core random voice and text matching is free and needs no credit card. Optional Premium adds filters and removes the free tier\'s between-call wait.' },
       { q: 'Does TalkLive have bots like Emerald?', a: 'The voice-first design makes bots impractical, links are blocked in text chat, and report-based device + IP bans remove spammers quickly.' },
       { q: 'Do I need an account to use TalkLive?', a: 'No. Tap to Talk or Tap to Chat and you are matched instantly. An optional free account exists only to keep friends between visits.' },
       { q: 'Can I text chat instead of talking?', a: 'Yes. Tap to Chat is a full anonymous text mode with its own matching pool — no microphone needed.' },
-      { q: 'Is TalkLive safe?', a: 'TalkLive is 18+, anonymous by default, and has one-tap report and block with automatic bans for repeat offenders. Voice is peer-to-peer and never recorded.' },
+      { q: 'Is TalkLive safe?', a: 'No stranger-chat service can guarantee safety. TalkLive is intended for adults and provides exit, report and block controls. It does not record or store voice audio, but another participant can record on their device.' },
     ],
     ctaBandH: 'Ready for stranger chat without the grind?',
     ctaBandP: 'Real people, live voice or text, zero sign-up. See the difference in one tap.',
@@ -1744,7 +1534,7 @@ const CORE_PAGES = [
       { q: 'Can you genuinely make friends online?', a: 'Yes — research on online friendships shows they can be as meaningful as offline ones. The key is real-time conversation rather than passive scrolling, which is exactly what TalkLive is built around.' },
       { q: 'Is TalkLive a dating app?', a: 'No. TalkLive is for conversation and friendship. There are no dating profiles, photos or swiping — people come here to talk.' },
       { q: 'How do I keep in touch with someone I met?', a: 'Both of you tap Add Friend. After that you can message each other and start voice calls whenever you are both online — no phone numbers needed.' },
-      { q: 'Is it free to make friends here?', a: 'Yes. Matching, talking, chatting and adding friends are completely free.' },
+      { q: 'Is it free to make friends here?', a: 'Core random matching and the optional friends feature are free. Premium controls are separate; friendship and identity are never guaranteed.' },
       { q: 'What if I am shy?', a: 'Start with text chat — no mic needed. When you are comfortable, try a voice call. Anonymity means there is genuinely nothing to lose; a skip erases any awkward moment forever.' },
     ],
     ctaBandH: 'Your next friend is online right now',
@@ -1757,13 +1547,13 @@ const CORE_PAGES = [
     title: 'Late Night Chat — Talk to Someone Any Hour | TalkLive',
     description: 'Can\'t sleep and need someone to talk to? TalkLive is late night chat with real people worldwide — live voice or text, anonymous and free, at 1am, 3am or any hour.',
     keywords: 'late night chat, talk to someone at night, 3am chat, can\'t sleep need to talk, night chat with strangers, someone to talk to at 2am, midnight chat, night owls chat',
-    h1: 'Late Night Chat — There Is Always Someone Awake',
+    h1: 'Late Night Chat — Check the Live Worldwide Queue',
     lede: 'It is 2am, your friends are asleep, and your brain will not switch off. Somewhere on the other side of the planet it is the middle of the afternoon — and TalkLive connects you to that person in one tap, by voice or text.',
     cta: 'Talk to Someone Now',
     featuresH: 'Built for the 3am crowd',
     featuresIntro: 'Because the world is round, TalkLive never has an empty queue — someone is always awake.',
     features: [
-      { icon: 'world', h: 'Always someone online', p: 'Your midnight is someone else\'s midday. Global matching means the queue never sleeps.' },
+      { icon: 'world', h: 'Worldwide time zones', p: 'Your midnight is someone else\'s midday, but the current queue and a successful match are never guaranteed.' },
       { icon: 'mic', h: 'Quiet-friendly', p: 'Whisper-level voice works fine — or switch to silent text chat without waking anyone.' },
       { icon: 'lock', h: 'Anonymous venting', p: 'Say what is actually on your mind to someone with zero connection to your real life.' },
       { icon: 'heart', h: 'Real human comfort', p: 'A live voice at night beats scrolling alone. Loneliness drops the moment someone answers.' },
@@ -1784,31 +1574,25 @@ const CORE_PAGES = [
         'TalkLive is built for exactly that register. No cameras, no profiles, no history — just a voice in the dark that happens to belong to a real person.' ] },
       { h: 'When you need to talk and everyone is asleep', body: [
         'Sometimes night thoughts are heavy: stress, a breakup, homesickness, or plain loneliness. Talking genuinely helps — saying a worry out loud to another human shrinks it in a way journaling and scrolling never do. A stranger can be the perfect listener precisely because they are outside your life: no judgment, no consequences, no "are you okay?" texts tomorrow.',
-        'TalkLive is not a crisis service — if you are in real distress, please reach a professional helpline in your country. But for the ordinary weight of a sleepless night, a friendly voice makes an enormous difference.' ] },
+        'TalkLive is not a crisis service or a substitute for professional support. If you may be in immediate danger or are considering self-harm, contact local emergency services or a qualified crisis resource in your country instead of relying on a random match.' ] },
       { h: 'Night owls of the world, united', body: [
-        'Shift workers on break, students pulling all-nighters, new parents up with a baby, insomniacs, and people for whom it is simply daytime — the late-night pool on TalkLive is a genuinely interesting crowd. Regulars keep a friends list spread across timezones so that somebody is always awake to talk.' ] },
+        'Shift workers, students, new parents and people in other time zones may join late-night queues. Availability changes from moment to moment, and no particular type of participant or match is guaranteed.' ] },
     ],
     faq: [
-      { q: 'Is anyone actually online at 3am?', a: 'Yes. TalkLive matches globally, so your 3am is midday somewhere else. Night owls plus the other hemisphere keep the queue alive around the clock.' },
+      { q: 'Is anyone online at 3am?', a: 'People can join from different time zones, but availability depends on the live queue and selected preferences. Open TalkLive to check.' },
       { q: 'Can I chat silently without waking anyone?', a: 'Yes. Tap to Chat is pure text — no microphone, no sound, works perfectly in a dark quiet room.' },
-      { q: 'Is late night chat free?', a: 'Completely. Voice and text chat are free and unlimited at every hour.' },
-      { q: 'I just want to vent. Is that okay?', a: 'Absolutely — anonymous venting is one of the most common reasons people open TalkLive at night. Strangers are often the best listeners.' },
+      { q: 'Is late night chat free?', a: 'Core random voice and text matching is free at any hour. Free users have about a five-second between-call wait.' },
+      { q: 'Can I use a match to vent?', a: 'You can ask whether the other person is willing to listen, but respect a no and avoid treating a stranger as a counsellor. Do not share identifying or highly sensitive information.' },
       { q: 'What if I am really struggling?', a: 'TalkLive is friendly company, not a crisis line. If you are in distress or having thoughts of self-harm, please contact a professional helpline in your country right away.' },
     ],
     ctaBandH: 'Can\'t sleep? Say hello instead',
-    ctaBandP: 'Somewhere in the world, someone is wide awake and happy to talk. Right now.',
+    ctaBandP: 'Open the worldwide queue and see whether a suitable voice or text match is available.',
   },
 ];
 
 // Additional landing pages live in their own module so this file stays
 // navigable as the SEO surface grows. Same shape as CORE_PAGES.
-// Landing pages come from three places: the hand-written core set, the
-// hand-written extras (competitor comparisons and secondary keywords), and the
-// data-driven country/city/language cluster. All three share one object shape,
-// so everything downstream — the template, the link cloud, the sitemap, the
-// llms.txt index — treats them identically.
-const { GEO_PAGES } = require('./geo-pages');
-const PAGES = CORE_PAGES.concat(require('./pages-extra'), require('./pages-extra2'), GEO_PAGES);
+const PAGES = CORE_PAGES.concat(require('./pages-extra'), require('./search-hubs'));
 
 // --- Blog -------------------------------------------------------------------
 // Long-form SEO articles targeting long-tail keywords, published under /blog/.
@@ -1819,30 +1603,30 @@ const CORE_BLOG = [
   {
     slug: 'best-omegle-alternatives',
     date: '2026-07-06',
-    title: '10 Best Omegle Alternatives in 2026 | TalkLive',
-    h1: 'The 10 Best Omegle Alternatives in 2026',
-    description: 'Omegle shut down — so where do you talk to strangers now? We compare the best Omegle alternatives in 2026, including voice-only options that skip the video weirdness.',
+    title: 'How to Choose an Omegle Alternative in 2026 | TalkLive',
+    h1: 'How to Choose an Omegle Alternative in 2026',
+    description: 'Compare voice, text, video and room-based Omegle alternatives by privacy, bandwidth, controls, account requirements and current pricing.',
     keywords: 'omegle alternatives, omegle replacement, sites like omegle, talk to strangers, random chat 2026',
     tag: 'Guides',
     sections: [
       { h: null, ps: [
-        'When Omegle shut down in November 2023, millions of people lost their favourite way to meet strangers on the internet. Since then, dozens of "Omegle alternatives" have appeared — but most of them copied the worst parts of Omegle (unmoderated video, endless bots) instead of the best part: the thrill of a real conversation with a random human.',
-        'This guide looks at what actually matters in a stranger-chat app in 2026 — safety, moderation, speed of matching, and whether you can just start talking without giving away your identity — and ranks the options accordingly.',
+        'When Omegle shut down in November 2023, people began comparing a wide range of random-chat formats. Some are video-first, some focus on text, some use public rooms, and others prioritize voice.',
+        'This guide focuses on durable comparison criteria: what the service exposes, the controls it provides, how much data it uses, whether an account is required, and what the current policies and pricing actually say.',
       ]},
-      { h: 'Why voice-only is winning', ps: [
-        'The biggest shift since Omegle died is the move away from video. Video chat with strangers has two structural problems: it exposes your face to someone you know nothing about, and it attracts exactly the behaviour that killed Omegle. Voice-only platforms remove both problems at once. You stay anonymous, the conversation is the whole product, and moderation is dramatically more effective.',
-        'Voice also just feels better. Without a camera you are not performing — you are talking. Users consistently report longer, deeper conversations on audio-only platforms than on video roulette sites.',
+      { h: 'When voice is a better fit than video', ps: [
+        'Video exposes a face and surroundings immediately. Voice avoids camera exposure and usually uses less data, though a voice can still identify someone and another participant can record it. Text exposes even less in the moment but can make tone harder to judge.',
+        'Choose the medium that fits the situation: voice for real-time conversation without a camera, text when you need silence or more time to respond, and video only when visual presence is worth the added exposure.',
       ]},
-      { h: 'Our top pick: TalkLive', ps: [
-        'TalkLive is a free, voice-only random chat: one tap connects you to a live audio call with a stranger anywhere in the world. There is no sign-up, no video, and no recording — audio flows peer-to-peer between browsers and never touches the server. If a conversation is not working, "Next" instantly re-matches you.',
+      { h: 'TalkLive\'s format', ps: [
+        'TalkLive provides random voice and text matching for adults. Core matching is free and requires no account. Voice uses encrypted WebRTC over a production TURN relay and is not recorded or stored by TalkLive. Match availability and rematch time vary by the live queue and account tier.',
         'Moderation is built in: users can report bad actors, repeat offenders are banned by device and IP, and the whole platform is 18+. It works on any phone or laptop with a browser — nothing to install.',
       ]},
       { h: 'What to look for in any alternative', ps: [
-        'Whatever platform you choose, check four things before you invest time in it. First, moderation: is there a working report button, and do bans actually stick? Second, privacy: does the site record your calls or require an account? Third, liveness: are real people online when you are, or do you sit in an empty queue? Fourth, friction: the best stranger-chat experiences are one tap from landing page to live conversation.',
-        'Most video-roulette clones fail at least two of these. Voice-first platforms, purpose-built after Omegle’s shutdown, tend to pass all four.',
+        'Whatever platform you choose, check its current first-party information. Look for clear report and exit controls, age rules, account requirements, retention terms, pricing and what the service exposes by default. Then test a short session without sharing personal information.',
+        'Competitor features and prices change. Treat comparison pages as a starting point and verify important details on each service\'s official pages before deciding.',
       ]},
       { h: 'The verdict', ps: [
-        'If you miss Omegle for the conversations rather than the chaos, a voice-only platform is the closest thing to that original magic — with far less of the content that made Omegle unusable. Try a live voice call with a stranger and see how different it feels when nobody is on camera.',
+        'If you want conversation without camera exposure, a voice-first service may fit. If you need silence, use text; if visual presence is essential, a video-first service is the honest choice. No format eliminates stranger-chat risk.',
       ]},
     ],
   },
@@ -1856,16 +1640,16 @@ const CORE_BLOG = [
     tag: 'Language Learning',
     sections: [
       { h: null, ps: [
-        'You can finish every Duolingo tree and still freeze when a real person asks you a question. That is because fluency is not knowledge — it is a motor skill. Your mouth, ears and brain need live, unpredictable conversation to wire together, and no flashcard app can simulate that.',
-        'The problem: real conversation practice is expensive. Tutors cost $10–30 an hour, language exchange apps bury you in texting that never becomes a call, and speaking clubs meet once a week if you are lucky. Here is the free alternative.',
+        'Structured courses can teach vocabulary and grammar, while live conversation gives you a different kind of practice: listening and responding without a script. Random chat can supplement study, but it does not replace teaching or guarantee a suitable language partner.',
+        'TalkLive\'s core random voice matching is free. Participants are not vetted tutors, language ability is not verified, and a country preference does not guarantee a native speaker.',
       ]},
       { h: 'Talk to random strangers — seriously', ps: [
-        'Random voice chat platforms connect you to a live audio call with a stranger in seconds, free. For language learners this is close to a cheat code: every call is an unscripted conversation with a new accent, new speed, new vocabulary. You cannot memorise your way through it — which is exactly the point.',
-        'Because it is voice-only and anonymous, the fear factor drops massively. Nobody sees your face, nobody knows your name, and if you embarrass yourself you tap "Next" and the moment is gone forever. That psychological safety is why shy speakers improve faster on anonymous voice chat than in classrooms.',
+        'Random voice chat can provide unscripted conversations with different speaking styles when a suitable participant is available. Start by confirming which language both people want to use and whether correction is welcome.',
+        'Voice mode does not use a camera and a basic match needs no real name. It is not fully risk-free or identity-proof: a voice can identify someone, and the other participant can record on their own device.',
       ]},
-      { h: 'A 30-day speaking routine that works', ps: [
+      { h: 'A 30-day routine to try', ps: [
         'Week 1: one 5-minute call per day. Your only goal is to survive the call — introduce yourself, ask where they are from, keep it going. Week 2: two calls per day, and steal one new phrase from every conversation (write it down after the call, not during). Week 3: push length — try to hold one 15-minute conversation daily. Week 4: variety — deliberately talk to different accents and ask people to correct you.',
-        'Twenty minutes a day of real speaking beats two hours of app drills. By day 30 most learners notice they stop translating in their head and start just... answering.',
+        'Track what you actually practised rather than promising a result by day 30. Combine conversation with structured study, and stop any match that becomes uncomfortable or unhelpful.',
       ]},
       { h: 'Tips for your first calls', ps: [
         'Prepare three openers so you never freeze at "hello": where are you from, what time is it there, what did you do today. Do not apologise for your English — most people you meet are practising too. If someone is rude, skip instantly; the next human is one tap away. And keep calls anonymous: no real names, no socials, just conversation.',
@@ -1886,7 +1670,7 @@ const CORE_BLOG = [
         'Voice chat takes the single feature that attracts abuse — the camera — and deletes it. What is left is the actual product: two strangers having a conversation.',
       ]},
       { h: 'Safety is structural, not a policy', ps: [
-        'On video, your face is your identity: it can be recorded, screenshotted and traced. On voice, you are a sound. Nobody can screenshot your voice into a profile. Combined with no sign-up and peer-to-peer audio that is never recorded, anonymity on a voice platform is real rather than promised.',
+        'Video immediately exposes your face and surroundings and can be recorded or screenshotted. Voice avoids camera exposure, but a voice can still identify someone and another participant can record it. A basic TalkLive match needs no real name or phone number, yet normal stranger-chat precautions still apply.',
         'Moderation works better too. Video moderation requires scanning frames in real time — expensive and always behind. Voice platforms lean on user reports plus device and IP bans, which is simpler and more decisive.',
       ]},
       { h: 'Conversations get deeper without a camera', ps: [
@@ -1903,15 +1687,15 @@ const CORE_BLOG = [
     date: '2026-07-06',
     title: 'Is TalkLive Safe? Privacy & Moderation Explained',
     h1: 'Is TalkLive Safe? How Our Anonymous Voice Chat Actually Works',
-    description: 'A transparent look at TalkLive safety: peer-to-peer audio that is never recorded, no sign-up required, report and ban systems, and what data we do and don’t keep.',
+    description: 'A transparent look at TalkLive safety, encrypted relayed voice calls, text retention, report and block controls, and the risks every stranger-chat user should understand.',
     keywords: 'is talklive safe, anonymous voice chat safety, p2p audio privacy, talk to strangers safely, webrtc privacy',
     tag: 'Trust & Safety',
     sections: [
       { h: null, ps: [
         'Any app that connects you to strangers owes you a straight answer about safety. This post explains exactly how TalkLive works under the hood — what we can see, what we cannot, and what happens when someone behaves badly.',
       ]},
-      { h: 'Your voice never touches our servers', ps: [
-        'TalkLive calls run on WebRTC, the same technology behind most modern calling apps. Once two people are matched, audio streams directly between their browsers — peer-to-peer. Our server only performs the introduction: it pairs two waiting users and relays the connection setup messages. It never receives, hears, or stores call audio. We could not record your calls even if we wanted to, because the audio does not pass through us.',
+      { h: 'How TalkLive handles voice traffic', ps: [
+        'TalkLive calls use encrypted WebRTC and a production TURN relay for connectivity. TalkLive does not record, listen to or store voice audio. The other participant still controls their own device and can record what they hear, so do not share secrets or identifying details.',
       ]},
       { h: 'Anonymous by default', ps: [
         'You can use TalkLive without creating an account. No name, no email, no phone number. The person you talk to sees a display name and a country flag — nothing else. Signing up (optional) only exists so you can keep friends and settings across devices.',
@@ -1921,7 +1705,7 @@ const CORE_BLOG = [
         'Every user can report a call. Reports are reviewed with full context, and bans apply to both the device and the IP address — a banned user cannot reconnect until the ban expires. Accumulate three reports and you are automatically banned while a human reviews. The platform is 18+ and moderation activity is logged and audited.',
       ]},
       { h: 'What we do keep, honestly', ps: [
-        'We keep operational data: aggregate visit counts, match counts, country-level statistics, and reports with the context needed to act on them. Text chat (the optional in-call messaging) is retained for moderation and disclosed in our privacy policy. Voice is never recorded, full stop. If a service claims stranger chat with zero data, read their privacy policy — moderation without any data is impossible, and we would rather be honest about the trade-off we chose.',
+        'TalkLive processes operational data such as aggregate usage, connection diagnostics, country-level statistics and reports with context needed to respond. Typed chats and related context may be retained for a limited rolling period as disclosed in the Privacy Policy. TalkLive does not record or store voice audio.',
       ]},
     ],
   },
@@ -2014,7 +1798,7 @@ const CORE_BLOG = [
     tag: 'Guides',
     sections: [
       { h: null, ps: [
-        'On 8 November 2023, visitors to omegle.com found a tombstone instead of a chat button. After fourteen years and hundreds of millions of users, one of the internet\'s most famous websites was gone overnight. Years later, "what happened to Omegle" is still searched tens of thousands of times a month — so here is the full story, and what actually replaced it.',
+        'On 8 November 2023, Omegle closed after fourteen years. People still ask what happened and how today\'s voice, text, video and room-based alternatives differ, so this guide focuses on that history and those format choices.',
       ]},
       { h: 'Why Omegle really shut down', ps: [
         'Founder Leif K-Brooks was unusually honest in his farewell letter: running Omegle was "no longer sustainable, financially nor psychologically." The site faced a wave of lawsuits over abuse that happened on the platform — most notably a case brought by a woman who had been matched with a predator as a minor — and the cost of fighting them, combined with the burden of moderating unfiltered video from millions of strangers, finally outweighed the site\'s ad revenue.',
@@ -2086,7 +1870,7 @@ const CORE_BLOG = [
         'Be honest with yourself about what kind of night it is. If what is keeping you up is distress rather than restlessness — panic, grief, hopelessness, or thoughts of self-harm — a stranger chat is the wrong tool, and the right one is a crisis line staffed by trained listeners. In the US you can call or text 988 any hour; most countries have an equivalent, and findahelpline.com lists them all. There is no threshold you need to meet; "I can\'t stop crying and it\'s 3am" is reason enough.',
       ]},
       { h: 'Make 3am work for you', ps: [
-        'A few habits turn rough nights into decent ones. Keep the lights low and your voice quiet — a whispered call works fine on TalkLive, and text mode works in total silence. Set a soft limit ("one good conversation, then bed") so the night does not run away. And if you are a regular night owl, build a friends list across timezones: a few taps on Add Friend and there is always somebody awake who already knows you.',
+        'A few habits can make a late session more deliberate. Keep the lights low and use text mode if you cannot speak aloud. Set a limit such as one short conversation, then stop. If no suitable person is available in the live queue, leave rather than sharing more than you intended just to keep a match.',
         'The 3am feeling lies to you: it says you are the only one awake and nobody wants to hear it. Wrong on both counts. The world is round, the queue is live, and somebody genuinely enjoys 3am conversations — that is why they are online too.',
       ]},
     ],
@@ -2094,111 +1878,13 @@ const CORE_BLOG = [
 ];
 
 // Later articles live in ./blog-extra for the same reason.
-const BLOG = CORE_BLOG.concat(require('./blog-extra'), require('./blog-extra2'));
-
-// Appended rather than declared with the others because it is built from BLOG,
-// which is defined above but after PAGES. Everything that reads PAGES does so
-// at emit time, well after this point.
-PAGES.push(guidesHub());
+const BLOG = CORE_BLOG.concat(require("./blog-extra"));
 
 function blogUrl(slug) { return `${SITE}/blog/${slug}`; }
 
-/* --- Resource hub ----------------------------------------------------------
- * /guides/ is the topical hub: it groups every article and landing page by the
- * question it answers, rather than by the keyword it targets. That gives the
- * blog a second, thematic entry point besides the reverse-chronological index
- * — which is how readers actually look for this material, and how a crawler
- * works out that fifteen scattered articles are one subject area.
- *
- * Built here rather than in pages-extra2.js because it needs BLOG, which is
- * defined in this file.
- */
-function guidesHub() {
-  const post = (slug) => {
-    const b = BLOG.find(x => x.slug === slug);
-    return b ? `<a href="/blog/${b.slug}">${esc(b.h1)}</a> — ${esc(fitDescription(b.description))}` : '';
-  };
-  const group = (h, intro, slugs, pages) => ({
-    h,
-    body: [intro, slugs.map(post).filter(Boolean).join('<br />')]
-      .concat(pages ? [`Related pages: ${pages.map(([href, label]) => `<a href="${href}">${label}</a>`).join(' · ')}.`] : []),
-  });
-
-  return {
-    slug: 'guides/',
-    isHub: true,
-    crumb: 'Guides',
-    eyebrow: 'Resource hub',
-    title: 'Guides & Resources — Talking to Strangers, Safely and Well | TalkLive',
-    description: 'Every TalkLive guide in one place: how to start and end conversations, staying safe in random chat, practising a language out loud, phone anxiety, loneliness, and how anonymous voice chat works.',
-    keywords: 'random chat guides, how to talk to strangers, online chat safety guide, conversation tips, language practice guide, anonymous chat explained',
-    h1: 'Guides & Resources',
-    lede: 'Everything we have written about talking to people you have never met — grouped by the question it answers rather than by the date it was published.',
-    cta: 'Skip the Reading, Start Talking',
-    ctaChat: 'Tap to Chat',
-    featuresH: 'Where to start',
-    featuresIntro: 'Four honest entry points depending on what is actually stopping you.',
-    features: [
-      { icon: 'chat', h: 'You do not know what to say', p: 'Openers that work on someone who did not expect to be talking to you — and how to leave without it being awkward.' },
-      { icon: 'shield', h: 'You are not sure it is safe', p: 'What to share, what never to share, the scam patterns that turn up on every chat platform, and what report and block actually do.' },
-      { icon: 'mic', h: 'You want to practise a language', p: 'How to run an exchange that both people get something out of, and why speaking beats every app.' },
-      { icon: 'heart', h: 'It is heavier than boredom', p: 'Phone anxiety, 3am, and an honest look at what a conversation with a stranger does and does not fix.' },
-      { icon: 'lock', h: 'You want the technical version', p: 'How peer-to-peer audio works, what "anonymous" means precisely, and what data exists.' },
-      { icon: 'world', h: 'You want to browse', p: 'Countries, cities and languages each have their own directory with local detail.' },
-    ],
-    stepsH: 'How to use this hub',
-    stepsIntro: 'Read one thing, then go and use it. That order matters more than it sounds.',
-    steps: [
-      { h: 'Pick the group that matches your blocker', p: 'Not the one that looks most interesting. The one describing the reason you have not started.' },
-      { h: 'Read one article', p: 'One is enough. Reading five is a way of not making the call.' },
-      { h: 'Make a short call', p: 'Five minutes. The first one is the only genuinely hard one.' },
-      { h: 'Come back for the specifics', p: 'The safety and language material makes far more sense once you have had a couple of conversations.' },
-    ],
-    prose: [
-      group('Starting and ending conversations',
-        'The two halves people worry about most, and the second one more than the first.',
-        ['how-to-start-a-conversation-with-a-stranger', 'how-to-end-a-conversation-politely', 'phone-anxiety-how-to-get-comfortable-talking'],
-        [['/talk-to-strangers', 'Talk to strangers'], ['/im-bored', "I'm bored"], ['/meet-new-people', 'Meet new people']]),
-      group('Safety and privacy',
-        'Read this one before your first call rather than after your first bad one.',
-        ['random-chat-safety-tips', 'is-talklive-safe', 'how-anonymous-voice-chat-works'],
-        [['/anonymous-chat', 'Anonymous chat'], ['/chat-without-registration', 'Chat without registration'], ['/privacy', 'Privacy policy']]),
-      group('Language practice',
-        'The conversational half of language learning, which is the half no app provides.',
-        ['practice-english-speaking-online-free'],
-        [['/languages/', 'All languages'], ['/language-exchange', 'Language exchange'], ['/practice-english-speaking', 'Practise English speaking']]),
-      group('Loneliness, late nights and why this works',
-        'The research on talking to strangers is more interesting than the self-help version of it.',
-        ['loneliness-what-actually-helps', 'someone-to-talk-to-at-3am', 'science-of-talking-to-strangers', 'psychological-benefits-of-talking-to-strangers'],
-        [['/cant-sleep', "Can't sleep"], ['/someone-to-talk-to', 'Someone to talk to'], ['/late-night-chat', 'Late night chat']]),
-      group('The random chat category',
-        'What happened to the platforms that defined this, and what actually replaced them.',
-        ['what-happened-to-omegle', 'best-omegle-alternatives', 'best-random-chat-apps-2026', 'voice-chat-vs-video-chat'],
-        [['/omegle-vs-chatroulette', 'Omegle vs Chatroulette'], ['/voice-chat-vs-video-chat', 'Voice vs video chat'], ['/omegle-alternative', 'Omegle alternative']]),
-      group('Making it stick',
-        'Turning one good conversation into more than one.',
-        ['how-to-make-friends-online'],
-        [['/make-friends-online', 'Make friends online'], ['/countries/', 'Chat by country'], ['/cities/', 'Chat by city']]),
-      { h: 'Everything else', body: [
-        `The full article list in date order is on the <a href="/blog/">blog index</a>, and there is an <a href="/blog/feed.xml">RSS feed</a> if you would rather follow it that way.`,
-      ] },
-    ],
-    faq: [
-      { q: 'Which guide should I read first?', a: 'If you have never done this: the conversation-starter guide. If you are hesitant about safety: the safety tips. If you are here to practise a language: the English speaking guide, which applies to any language. One is enough before your first call.' },
-      { q: 'Are these guides free?', a: 'Yes, all of them, with no email wall and no account. So is the app they are about.' },
-      { q: 'Do I need to read anything before I start?', a: 'No. The only genuinely worth-reading-first item is the safety guide, and even that is mostly one rule: share nothing that identifies where you live, work or bank.' },
-      { q: 'How often is this updated?', a: 'New articles are added as they are written and existing ones are revised when something changes — the RSS feed on the blog index carries updates.' },
-    ],
-    ctaBandH: 'Reading about it is not the same as doing it',
-    ctaBandP: 'One tap, one stranger, five minutes. That is the whole exercise.',
-    posts: ['how-to-start-a-conversation-with-a-stranger', 'random-chat-safety-tips', 'science-of-talking-to-strangers'],
-  };
-}
-
 function blogPost(b) {
   const canonical = blogUrl(b.slug);
-  const title = fitTitle(b.title);
-  const description = fitDescription(b.description);
+  const modified = b.updated || CONTENT_UPDATED;
   const bodyHtml = b.sections.map(s =>
     (s.h ? `<h2>${s.h}</h2>` : '') + s.ps.map(p => `<p>${p}</p>`).join('')
   ).join('');
@@ -2217,30 +1903,46 @@ function blogPost(b) {
   const others = explicit.concat(ring).slice(0, 3)
     .map(x => `<li><a href="/blog/${x.slug}">${esc(x.h1)}</a></li>`).join('');
 
-  const ld = [
+  const ld = {
+    '@context': 'https://schema.org',
+    '@graph': [
     {
-      '@context': 'https://schema.org',
       '@type': 'BlogPosting',
+      '@id': `${canonical}#article`,
       headline: b.h1,
-      description: description,
+      description: b.description,
       datePublished: b.date,
-      dateModified: BUILD_DATE,
-      mainEntityOfPage: canonical,
-      image: `${SITE}/og-image.png`,
+      dateModified: modified,
+      mainEntityOfPage: { '@id': `${canonical}#webpage` },
+      image: { '@type': 'ImageObject', url: OG_IMAGE, width: 1200, height: 630 },
       wordCount: words,
-      author: { '@type': 'Organization', name: 'TalkLive', url: SITE },
-      publisher: { '@type': 'Organization', name: 'TalkLive', url: SITE, logo: { '@type': 'ImageObject', url: `${SITE}/favicon.svg` } },
+      author: { '@id': ORGANIZATION_ID },
+      publisher: { '@id': ORGANIZATION_ID },
     },
     {
-      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      '@id': `${canonical}#webpage`,
+      url: canonical,
+      name: b.title,
+      description: b.description,
+      datePublished: b.date,
+      dateModified: modified,
+      inLanguage: 'en',
+      isPartOf: { '@id': WEBSITE_ID },
+      primaryImageOfPage: { '@type': 'ImageObject', url: OG_IMAGE, width: 1200, height: 630 },
+    },
+    {
       '@type': 'BreadcrumbList',
+      '@id': `${canonical}#breadcrumb`,
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: 'Home', item: SITE + '/' },
         { '@type': 'ListItem', position: 2, name: 'Blog', item: `${SITE}/blog/` },
         { '@type': 'ListItem', position: 3, name: b.h1, item: canonical },
       ],
     },
-  ];
+    { '@type': 'Organization', '@id': ORGANIZATION_ID, name: 'TalkLive', alternateName: ['Talk Live', 'TalkLive App'], url: `${SITE}/`, logo: { '@type': 'ImageObject', url: LOGO_IMAGE, width: 192, height: 192 } },
+    { '@type': 'WebSite', '@id': WEBSITE_ID, name: 'TalkLive', alternateName: ['Talk Live', 'TalkLive App'], url: `${SITE}/`, publisher: { '@id': ORGANIZATION_ID } },
+  ] };
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -2248,12 +1950,8 @@ function blogPost(b) {
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <link rel="stylesheet" href="/seo.css" />
-<script defer src="/loading.js" data-mode="nav-only"></script>
-<script defer src="/ads.js"></script>
-<link rel="preconnect" href="https://pagead2.googlesyndication.com" crossorigin />
-<title>${esc(title)}</title>
-<meta name="description" content="${esc(description)}" />
-<meta name="keywords" content="${esc(b.keywords)}" />
+<title>${esc(b.title)}</title>
+<meta name="description" content="${esc(b.description)}" />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
 <meta name="theme-color" content="#0b0f1a" />
 <meta name="author" content="TalkLive" />
@@ -2262,32 +1960,38 @@ function blogPost(b) {
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="TalkLive" />
 <meta property="og:title" content="${esc(b.h1)}" />
-<meta property="og:description" content="${esc(description)}" />
+<meta property="og:description" content="${esc(b.description)}" />
 <meta property="og:url" content="${canonical}" />
-<meta property="og:image" content="${SITE}/og-image.png" />
+<meta property="og:image" content="${OG_IMAGE}" />
+<meta property="og:image:secure_url" content="${OG_IMAGE}" />
+<meta property="og:image:type" content="image/png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="${esc(b.h1)} — TalkLive guide" />
 <meta property="article:published_time" content="${b.date}" />
+<meta property="article:modified_time" content="${modified}" />
 <meta property="article:section" content="${esc(b.tag)}" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="${esc(b.h1)}" />
-<meta name="twitter:description" content="${esc(description)}" />
-<meta name="twitter:image" content="${SITE}/og-image.png" />
+<meta name="twitter:description" content="${esc(b.description)}" />
+<meta name="twitter:image" content="${OG_IMAGE}" />
+<meta name="twitter:image:alt" content="${esc(b.h1)} — TalkLive guide" />
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="/favicon-192.png" />
 <link rel="manifest" href="/site.webmanifest" />
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
 </head>
 <body>
-<a class="skip-link" href="#main">Skip to main content</a>
+<a class="skip-link" href="#main-content">Skip to main content</a>
 ${headerHtml('blog')}
-<main id="main">
+<main id="main-content">
   <article>
     <section class="hero" style="padding-bottom:24px">
       <div class="wrap">
         <span class="eyebrow"><span class="dot"></span> ${esc(b.tag)} · ${readMins} min read</span>
         <h1>${esc(b.h1)}</h1>
-        <p class="lede">${esc(description)}</p>
-        <p class="hero-meta">By the TalkLive team · Updated ${BUILD_DATE}</p>
+        <p class="lede">${esc(b.description)}</p>
+        <p class="hero-meta">By the TalkLive team · Updated ${modified}</p>
       </div>
     </section>
     <section>
@@ -2300,10 +2004,10 @@ ${headerHtml('blog')}
   <div class="wrap">
     <div class="cta-band">
       <h2>Try it right now — talk or text with a stranger</h2>
-      <p>TalkLive is free, anonymous random chat — live voice calls or instant text chat. No sign-up, no video, no recording. One tap and you're in a live conversation.</p>
+      <p>TalkLive offers free random voice and text matching for adults. Voice calls use encrypted WebRTC and are not recorded or stored by TalkLive; typed chats follow the retention terms in our Privacy Policy.</p>
       <div class="cta-row">
-        <a class="btn btn-talk" href="/?utm_source=blog&amp;utm_medium=cta&amp;utm_campaign=${b.slug}">🎙 Start Talking Free</a>
-        <a class="btn btn-chat" href="/?mode=chat&amp;utm_source=blog&amp;utm_medium=cta&amp;utm_campaign=${b.slug}">💬 Start Chatting Free</a>
+        <a class="btn btn-talk" href="${trackedHref('/', 'blog', 'cta', b.slug)}">🎙 Start Talking Free</a>
+        <a class="btn btn-chat" href="${trackedHref('/chat', 'blog', 'cta', b.slug)}">💬 Start Chatting Free</a>
       </div>
     </div>
   </div>
@@ -2334,26 +2038,31 @@ function blogIndex() {
   const cards = BLOG.map(b => `<a class="card" href="/blog/${b.slug}" style="display:block;text-decoration:none">
       <p style="margin:0 0 8px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;opacity:.7">${esc(b.tag)}</p>
       <h3 style="margin:0 0 10px">${esc(b.h1)}</h3>
-      <p>${esc(fitDescription(b.description))}</p>
+      <p>${esc(b.description)}</p>
     </a>`).join('');
-  const ld = [{
+  const ld = {
     '@context': 'https://schema.org',
-    '@type': 'Blog',
-    name: 'TalkLive Blog',
-    url: canonical,
-    description: 'Guides and research on talking to strangers, voice chat, language practice and online safety — from the team behind TalkLive.',
-    publisher: { '@type': 'Organization', name: 'TalkLive', url: SITE },
-    blogPost: BLOG.map(b => ({ '@type': 'BlogPosting', headline: b.h1, url: blogUrl(b.slug), datePublished: b.date })),
-  }];
+    '@graph': [
+      { '@type': 'Organization', '@id': ORGANIZATION_ID, name: 'TalkLive', alternateName: ['Talk Live', 'TalkLive App'], url: `${SITE}/`, logo: { '@type': 'ImageObject', url: LOGO_IMAGE, width: 192, height: 192 } },
+      { '@type': 'WebSite', '@id': WEBSITE_ID, name: 'TalkLive', alternateName: ['Talk Live', 'TalkLive App'], url: `${SITE}/`, publisher: { '@id': ORGANIZATION_ID } },
+      {
+        '@type': 'Blog',
+        '@id': `${canonical}#blog`,
+        name: 'TalkLive Blog',
+        url: canonical,
+        description: 'Guides on talking to strangers, voice chat, language practice and online safety from the team behind TalkLive.',
+        publisher: { '@id': ORGANIZATION_ID },
+        blogPost: BLOG.map(b => ({ '@type': 'BlogPosting', headline: b.h1, url: blogUrl(b.slug), datePublished: b.date, dateModified: b.updated || CONTENT_UPDATED })),
+      },
+      { '@type': 'CollectionPage', '@id': `${canonical}#webpage`, name: 'TalkLive Blog', url: canonical, isPartOf: { '@id': WEBSITE_ID }, inLanguage: 'en' },
+    ],
+  };
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <link rel="stylesheet" href="/seo.css" />
-<script defer src="/loading.js" data-mode="nav-only"></script>
-<script defer src="/ads.js"></script>
-<link rel="preconnect" href="https://pagead2.googlesyndication.com" crossorigin />
 <title>TalkLive Blog — Voice Chat & Talking to Strangers</title>
 <meta name="description" content="Guides and research on talking to strangers, voice-only chat, practising languages with real people, and staying safe online — from the team behind TalkLive." />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
@@ -2365,16 +2074,26 @@ function blogIndex() {
 <meta property="og:title" content="TalkLive Blog" />
 <meta property="og:description" content="Guides and research on talking to strangers, voice chat and language practice." />
 <meta property="og:url" content="${canonical}" />
-<meta property="og:image" content="${SITE}/og-image.png" />
+<meta property="og:image" content="${OG_IMAGE}" />
+<meta property="og:image:secure_url" content="${OG_IMAGE}" />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="TalkLive Blog — conversation, safety and language guides" />
 <meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="TalkLive Blog" />
+<meta name="twitter:description" content="Guides on random chat, online safety and language practice." />
+<meta name="twitter:image" content="${OG_IMAGE}" />
+<meta name="twitter:image:alt" content="TalkLive Blog — conversation, safety and language guides" />
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="/favicon-192.png" />
 <link rel="manifest" href="/site.webmanifest" />
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
 </head>
 <body>
-<a class="skip-link" href="#main">Skip to main content</a>
+<a class="skip-link" href="#main-content">Skip to main content</a>
 ${headerHtml('blog')}
-<main id="main">
+<main id="main-content">
   <section class="hero" style="padding-bottom:24px">
     <div class="wrap">
       <span class="eyebrow"><span class="dot"></span> The TalkLive Blog</span>
@@ -2390,10 +2109,10 @@ ${headerHtml('blog')}
   <div class="wrap">
     <div class="cta-band">
       <h2>Done reading? Go talk — or chat.</h2>
-      <p>One tap connects you to a live voice call or an anonymous text chat with a stranger somewhere in the world. Free and anonymous.</p>
+      <p>Choose a free random voice or text match. No account is required for the core experience; availability varies with the live queue.</p>
       <div class="cta-row">
-        <a class="btn btn-talk" href="/?utm_source=blog&amp;utm_medium=index">🎙 Start Talking Free</a>
-        <a class="btn btn-chat" href="/?mode=chat&amp;utm_source=blog&amp;utm_medium=index">💬 Start Chatting Free</a>
+        <a class="btn btn-talk" href="${trackedHref('/', 'blog', 'index', 'blog-home')}">🎙 Start Talking Free</a>
+        <a class="btn btn-chat" href="${trackedHref('/chat', 'blog', 'index', 'blog-home')}">💬 Start Chatting Free</a>
       </div>
     </div>
   </div>
@@ -2423,108 +2142,48 @@ function languageSwitcher(current) {
   return `<nav class="lang-switcher" aria-label="Languages" style="padding:28px 0;text-align:center;font-size:14px;line-height:2">${links}</nav>`;
 }
 
-/*
- * Outbound links from a localized homepage into the rest of the site.
- *
- * Without these each /<lang>/ page was a dead end: it linked to the other
- * locales and to the policy pages and nowhere else, so it passed no authority
- * to the ~260 pages that make up the actual site and gave a crawler arriving
- * from a non-English market no route inward.
- *
- * The targets are English, and the surrounding heading says so in the page's
- * own language — a link labelled honestly is better than no link at all, and
- * far better than pretending a translation exists where it does not.
- */
-function localeExploreLinks() {
-  const targets = [
-    ['/countries/', 'Chat by country'],
-    ['/languages/', 'Practise a language'],
-    ['/cities/', 'Chat by city'],
-    ['/talk-to-strangers', 'Talk to strangers'],
-    ['/random-voice-chat', 'Random voice chat'],
-    ['/random-text-chat', 'Random text chat'],
-    ['/anonymous-chat', 'Anonymous chat'],
-    ['/omegle-alternative', 'Omegle alternative'],
-    ['/language-exchange', 'Language exchange'],
-    ['/guides/', 'Guides & resources'],
-    ['/blog/', 'Blog'],
-  ];
-  return `<div class="link-cloud">${targets
-    .map(([href, label]) => `<a href="${href}" hreflang="en" lang="en">${label}</a>`).join('')}</div>`;
-}
-
 function localeHome(loc) {
   const canonical = `${SITE}/${loc.code}/`;
-  const title = fitTitle(loc.title);
-  const description = fitDescription(loc.description);
-  const app = `/?lang=${loc.code}&amp;utm_source=seo&amp;utm_medium=locale&amp;utm_campaign=home-${loc.code}`;
+  const appVoice = trackedHref('/', 'seo', 'locale', `home-${loc.code}`, [['lang', loc.code]]);
+  const appChat = trackedHref('/chat', 'seo', 'locale', `home-${loc.code}`, [['lang', loc.code]]);
   const alternates = homeAlternates((href, lang) => `<link rel="alternate" href="${href}" hreflang="${lang}" />`).join('\n');
   const features = loc.features.map(f => `<div class="card"><div class="ico">${icon(f.icon)}</div><h3>${f.h}</h3><p>${f.p}</p></div>`).join('');
   const steps = loc.steps.map(s => `<div class="step"><h3>${s.h}</h3><p>${s.p}</p></div>`).join('');
   const faqHtml = loc.faq.map(f => `<details><summary>${f.q}</summary><p>${f.a}</p></details>`).join('');
-  // Same @graph and the same entity @ids as the English pages, so a localized
-  // homepage is understood as another page of one site rather than a separate
-  // organisation that happens to share a name.
-  const ld = [{
+  const ld = {
     '@context': 'https://schema.org',
-    '@graph': entityGraph().concat([
-      ogImageNode(),
+    '@graph': [
+      { '@type': 'Organization', '@id': ORGANIZATION_ID, name: 'TalkLive', alternateName: ['Talk Live', 'TalkLive App'], url: `${SITE}/`, logo: { '@type': 'ImageObject', url: LOGO_IMAGE, width: 192, height: 192 } },
+      { '@type': 'WebSite', '@id': WEBSITE_ID, name: 'TalkLive', alternateName: ['Talk Live', 'TalkLive App'], url: `${SITE}/`, inLanguage: LANGS, publisher: { '@id': ORGANIZATION_ID } },
+      { '@type': 'WebApplication', '@id': APP_ID, name: 'TalkLive', url: `${SITE}/`, applicationCategory: 'CommunicationApplication', operatingSystem: 'Any device with a modern web browser', isAccessibleForFree: true, offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD', description: 'Core random voice and text matching' }, audience: { '@type': 'PeopleAudience', suggestedMinAge: 18 }, publisher: { '@id': ORGANIZATION_ID } },
       {
         '@type': 'WebPage',
         '@id': `${canonical}#webpage`,
+        name: loc.title,
         url: canonical,
-        name: title,
-        description: description,
-        isPartOf: { '@id': SITE_ID },
-        about: { '@id': `${SITE}/#app` },
-        primaryImageOfPage: { '@id': OG_IMAGE_ID },
-        inLanguage: loc.code,
-        dateModified: BUILD_DATE,
-        // Names the English original explicitly. hreflang says these URLs are
-        // alternates of each other; this says which one the others came from.
-        translationOfWork: { '@id': `${SITE}/#webpage` },
-        speakable: { '@type': 'SpeakableSpecification', cssSelector: ['h1', '.lede'] },
-      },
-      {
-        '@type': 'WebApplication',
-        '@id': `${SITE}/#app`,
-        name: 'TalkLive',
-        url: `${SITE}/`,
-        applicationCategory: 'CommunicationApplication',
-        operatingSystem: 'Web, Android, iOS',
-        offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
-        inLanguage: LOCALES.map(l => l.code).concat(['en']),
-        isAccessibleForFree: true,
-        isFamilyFriendly: false,
-        typicalAgeRange: '18-',
         description: loc.description,
-        publisher: { '@id': ORG_ID },
+        dateModified: loc.updated || CONTENT_UPDATED,
+        inLanguage: loc.code,
+        isPartOf: { '@id': WEBSITE_ID },
+        about: { '@id': APP_ID },
+        primaryImageOfPage: { '@type': 'ImageObject', url: OG_IMAGE, width: 1200, height: 630 },
       },
       {
         '@type': 'FAQPage',
         '@id': `${canonical}#faq`,
         inLanguage: loc.code,
-        isPartOf: { '@id': `${canonical}#webpage` },
-        mainEntity: loc.faq.map((f, i) => ({
-          '@type': 'Question',
-          '@id': `${canonical}#faq-${i + 1}`,
-          name: f.q,
-          acceptedAnswer: { '@type': 'Answer', text: f.a },
-        })),
+        mainEntity: loc.faq.map(f => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
       },
-    ]),
-  }];
+    ],
+  };
   return `<!DOCTYPE html>
 <html lang="${loc.code}" dir="${loc.dir}">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <link rel="stylesheet" href="/seo.css" />
-<script defer src="/loading.js" data-mode="nav-only"></script>
-<script defer src="/ads.js"></script>
-<link rel="preconnect" href="https://pagead2.googlesyndication.com" crossorigin />
-<title>${esc(title)}</title>
-<meta name="description" content="${esc(description)}" />
+<title>${esc(loc.title)}</title>
+<meta name="description" content="${esc(loc.description)}" />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
 <meta name="theme-color" content="#0b0f1a" />
 <meta name="author" content="TalkLive" />
@@ -2532,41 +2191,45 @@ function localeHome(loc) {
 ${alternates}
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="TalkLive" />
-<meta property="og:title" content="${esc(title)}" />
-<meta property="og:description" content="${esc(description)}" />
+<meta property="og:title" content="${esc(loc.title)}" />
+<meta property="og:description" content="${esc(loc.description)}" />
 <meta property="og:url" content="${canonical}" />
-<meta property="og:image" content="${SITE}/og-image.png" />
+<meta property="og:image" content="${OG_IMAGE}" />
+<meta property="og:image:secure_url" content="${OG_IMAGE}" />
+<meta property="og:image:type" content="image/png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="TalkLive random voice and text chat" />
 <meta property="og:locale" content="${loc.ogLocale}" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="${esc(title)}" />
-<meta name="twitter:description" content="${esc(description)}" />
-<meta name="twitter:image" content="${SITE}/og-image.png" />
+<meta name="twitter:title" content="${esc(loc.title)}" />
+<meta name="twitter:description" content="${esc(loc.description)}" />
+<meta name="twitter:image" content="${OG_IMAGE}" />
+<meta name="twitter:image:alt" content="TalkLive random voice and text chat" />
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-<link rel="apple-touch-icon" href="/favicon.svg" />
+<link rel="apple-touch-icon" href="/favicon-192.png" />
 <link rel="manifest" href="/site.webmanifest" />
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
 </head>
 <body>
-<a class="skip-link" href="#main">${esc(loc.skipToContent || 'Skip to main content')}</a>
+<a class="skip-link" href="#main-content">Skip to main content</a>
 <header class="site-header">
   <div class="wrap">
     <a class="logo" href="/${loc.code}/"><img src="/favicon.svg" width="30" height="30" alt="TalkLive logo" /> TalkLive</a>
     <span style="display:inline-flex;gap:8px">
-      <a class="btn btn-talk" href="${app}" style="padding:10px 18px;font-size:15px">🎙 ${loc.ctaTalk}</a>
-      <a class="btn btn-chat" href="${app}&amp;mode=chat" style="padding:10px 18px;font-size:15px">💬 ${loc.ctaChat}</a>
+      <a class="btn btn-talk" href="${appVoice}" style="padding:10px 18px;font-size:15px">🎙 ${loc.ctaTalk}</a>
+      <a class="btn btn-chat" href="${appChat}" style="padding:10px 18px;font-size:15px">💬 ${loc.ctaChat}</a>
     </span>
   </div>
 </header>
-<main id="main">
+<main id="main-content">
   <section class="hero">
     <div class="wrap">
       <h1>${loc.h1}</h1>
       <p class="lede">${loc.lede}</p>
       <div class="cta-row">
-        <a class="btn btn-talk" href="${app}">🎙 ${loc.ctaTalk}</a>
-        <a class="btn btn-chat" href="${app}&amp;mode=chat">💬 ${loc.ctaChat}</a>
+        <a class="btn btn-talk" href="${appVoice}">🎙 ${loc.ctaTalk}</a>
+        <a class="btn btn-chat" href="${appChat}">💬 ${loc.ctaChat}</a>
       </div>
       <p class="hero-meta">${loc.heroMeta}</p>
     </div>
@@ -2596,26 +2259,18 @@ ${alternates}
       <h2>${loc.ctaH}</h2>
       <p>${loc.ctaP}</p>
       <div class="cta-row">
-        <a class="btn btn-talk" href="${app}">🎙 ${loc.ctaTalk}</a>
-        <a class="btn btn-chat" href="${app}&amp;mode=chat">💬 ${loc.ctaChat}</a>
+        <a class="btn btn-talk" href="${appVoice}">🎙 ${loc.ctaTalk}</a>
+        <a class="btn btn-chat" href="${appChat}">💬 ${loc.ctaChat}</a>
       </div>
     </div>
   </div>
-  <section>
-    <div class="wrap">
-      <h2>${esc(loc.exploreH || 'Explore TalkLive')}</h2>
-      <p class="section-intro">${esc(loc.exploreP || 'These pages are in English.')}</p>
-      ${localeExploreLinks()}
-    </div>
-  </section>
-
   <div class="wrap">${languageSwitcher(loc.code)}</div>
 
   ${adsenseMultiplex()}
 </main>
 <footer class="site-footer">
   <div class="wrap">
-    <div class="fine">© ${new Date().getFullYear()} TalkLive · <a href="/about">About</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/contact">Contact</a> · <a href="https://delvefencescrewdriver.com/n6dy8qkgu?key=2dca64def8b9c5816b49ccf6e1119aff" target="_blank" rel="sponsored nofollow noopener">Sponsored</a></div>
+    <div class="fine">© ${new Date().getFullYear()} TalkLive · <a href="/about">About</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/contact">Contact</a> · <a href="/safety">Safety</a></div>
   </div>
 </footer>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978" crossorigin="anonymous"></script>
@@ -2627,18 +2282,8 @@ ${alternates}
 // --- Emit -------------------------------------------------------------------
 
 let count = 0;
-// A slug may now contain a directory (`countries/india`) or be a directory
-// itself (`countries/`), so the destination is resolved rather than assumed to
-// be a flat file at the root of public/.
-function pageFile(slug) {
-  return slug.endsWith('/')
-    ? path.join(PUBLIC, slug, 'index.html')
-    : path.join(PUBLIC, `${slug}.html`);
-}
 PAGES.forEach((p, i) => {
-  const file = pageFile(p.slug);
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, page(p, i));
+  fs.writeFileSync(path.join(PUBLIC, `${p.slug}.html`), page(p, i));
   count++;
 });
 
@@ -2658,143 +2303,39 @@ for (const b of BLOG) {
   count++;
 }
 
-/* --- Sitemaps --------------------------------------------------------------
- *
- * Two changes from the single flat file this replaces.
- *
- * First, honest `lastmod`. Every URL used to be stamped with the build date,
- * so a deploy that changed one page told Google that all several hundred had
- * changed. Google's own guidance is that it will start ignoring lastmod
- * entirely from a site that does that — and it is the signal that gets a
- * genuinely updated page recrawled quickly, so it is worth keeping accurate.
- * Dates now come from a committed manifest keyed by a hash of the page's
- * source data, so a page's lastmod only moves when its content actually moves.
- *
- * Second, a sitemap index with one child per cluster. Search Console reports
- * indexing coverage per submitted sitemap, so splitting them is the difference
- * between "612 of 700 indexed" and knowing that the city pages are the ones
- * being dropped.
- */
-const LASTMOD_FILE = path.join(__dirname, 'seo-lastmod.json');
+// Sitemap with hreflang alternates for the home + all landing pages.
+const latestBlogUpdate = BLOG.reduce((latest, post) => {
+  const updated = post.updated || post.date;
+  return updated > latest ? updated : latest;
+}, CONTENT_UPDATED);
+const sitemapUrls = [{ slug: '', priority: '1.0', freq: 'daily', home: true, lastmod: CONTENT_UPDATED }]
+  .concat(LOCALES.map(l => ({ slug: `${l.code}/`, priority: '0.9', freq: 'weekly', raw: true, home: true, lastmod: l.updated || CONTENT_UPDATED })))
+  .concat(PAGES.map(p => ({ slug: p.slug, priority: '0.8', freq: 'weekly', lastmod: p.updated || CONTENT_UPDATED })))
+  .concat([{ slug: 'blog/', priority: '0.7', freq: 'weekly', raw: true, lastmod: latestBlogUpdate }])
+  .concat(BLOG.map(b => ({ slug: `blog/${b.slug}`, priority: '0.6', freq: 'monthly', raw: true, lastmod: b.updated || b.date })))
+  .concat([
+    { slug: 'pricing', priority: '0.5', freq: 'monthly', raw: true, lastmod: CONTENT_UPDATED },
+    { slug: 'about', priority: '0.4', freq: 'yearly', raw: true, lastmod: CONTENT_UPDATED },
+    { slug: 'contact', priority: '0.4', freq: 'yearly', raw: true, lastmod: CONTENT_UPDATED },
+    { slug: 'privacy', priority: '0.3', freq: 'yearly', raw: true, lastmod: CONTENT_UPDATED },
+    { slug: 'terms', priority: '0.3', freq: 'yearly', raw: true, lastmod: CONTENT_UPDATED },
+    { slug: 'refund', priority: '0.3', freq: 'yearly', raw: true, lastmod: CONTENT_UPDATED },
+  ]);
 
-function loadLastmod() {
-  try { return JSON.parse(fs.readFileSync(LASTMOD_FILE, 'utf8')); } catch (e) { return {}; }
+function buildSitemap() {
+  const head = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">';
+  const body = sitemapUrls.map(u => {
+    const loc = u.raw ? `${SITE}/${u.slug}` : url(u.slug);
+    // Only the homepage cluster carries hreflang alternates — every member of
+    // the cluster (/, /es/, /ru/, …) lists the full set, as Google requires.
+    const alts = u.home
+      ? homeAlternates((href, lang) => `\n    <xhtml:link rel="alternate" hreflang="${lang}" href="${href}"/>`).join('')
+      : '';
+    return `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${u.lastmod}</lastmod>\n    <changefreq>${u.freq}</changefreq>\n    <priority>${u.priority}</priority>${alts}\n  </url>`;
+  }).join('\n');
+  return `${head}\n${body}\n</urlset>\n`;
 }
-const lastmodStore = loadLastmod();
-const lastmodNext = {};
-
-// Hash the page's source data rather than its rendered HTML: the rendered
-// output embeds BUILD_DATE, so hashing it would mark every page as changed on
-// every build and defeat the entire point.
-function lastmodFor(key, sourceData) {
-  const hash = crypto.createHash('sha1').update(JSON.stringify(sourceData)).digest('hex').slice(0, 16);
-  const prev = lastmodStore[key];
-  const date = prev && prev.hash === hash ? prev.date : BUILD_DATE;
-  lastmodNext[key] = { hash, date };
-  return date;
-}
-
-function urlEntry(u) {
-  const loc = u.raw ? `${SITE}/${u.slug}` : url(u.slug);
-  // Only the homepage cluster carries hreflang alternates — every member of
-  // the cluster (/, /es/, /ru/, …) lists the full set, as Google requires.
-  const alts = u.home
-    ? homeAlternates((href, lang) => `\n    <xhtml:link rel="alternate" hreflang="${lang}" href="${href}"/>`).join('')
-    : '';
-  const images = (u.images || []).map(img =>
-    `\n    <image:image>\n      <image:loc>${img.loc}</image:loc>\n      <image:title>${esc(img.title)}</image:title>\n      <image:caption>${esc(img.caption)}</image:caption>\n    </image:image>`).join('');
-  return `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${u.lastmod}</lastmod>\n    <changefreq>${u.freq}</changefreq>\n    <priority>${u.priority}</priority>${alts}${images}\n  </url>`;
-}
-
-function urlset(urls) {
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
-${urls.map(urlEntry).join('\n')}
-</urlset>
-`;
-}
-
-// The site's one social/preview image. Declaring it in the sitemap is what
-// gets it into Google Images at all — an <img> that only ever appears as an
-// og:image meta tag is invisible to image search.
-const SITE_IMAGES = [{
-  loc: `${SITE}/og-image.png`,
-  title: 'TalkLive — free random voice and text chat',
-  caption: 'TalkLive pairs strangers worldwide for live, anonymous voice calls and text chat.',
-}];
-
-const homeUrls = [{
-  slug: '', priority: '1.0', freq: 'daily', home: true, images: SITE_IMAGES,
-  lastmod: lastmodFor('/', { v: 2, home: true }),
-}].concat(LOCALES.map(l => ({
-  slug: `${l.code}/`, priority: '0.9', freq: 'weekly', raw: true, home: true,
-  lastmod: lastmodFor(`/${l.code}/`, l),
-})));
-
-// Landing pages split by cluster so Search Console reports coverage per group.
-const pageGroups = {
-  pages: PAGES.filter(p => !p.cluster),
-  countries: PAGES.filter(p => p.cluster === 'countries'),
-  cities: PAGES.filter(p => p.cluster === 'cities'),
-  languages: PAGES.filter(p => p.cluster === 'languages'),
-};
-
-function pageUrls(group) {
-  return group.map(p => ({
-    slug: p.slug,
-    raw: p.slug.endsWith('/'),
-    // Hubs outrank the pages beneath them; everything else sits at 0.8.
-    priority: p.isHub ? '0.9' : '0.8',
-    freq: p.isHub ? 'weekly' : 'monthly',
-    lastmod: lastmodFor(`/${p.slug}`, p),
-  }));
-}
-
-const blogUrls = [{ slug: 'blog/', priority: '0.7', freq: 'weekly', raw: true, lastmod: lastmodFor('/blog/', BLOG.map(b => b.slug)) }]
-  .concat(BLOG.map(b => ({ slug: `blog/${b.slug}`, priority: '0.6', freq: 'monthly', raw: true, lastmod: lastmodFor(`/blog/${b.slug}`, b) })));
-
-const staticUrls = [
-  { slug: 'pricing', priority: '0.5', freq: 'monthly', raw: true },
-  { slug: 'about', priority: '0.4', freq: 'yearly', raw: true },
-  { slug: 'contact', priority: '0.4', freq: 'yearly', raw: true },
-  { slug: 'privacy', priority: '0.3', freq: 'yearly', raw: true },
-  { slug: 'terms', priority: '0.3', freq: 'yearly', raw: true },
-  { slug: 'refund', priority: '0.3', freq: 'yearly', raw: true },
-].map(u => Object.assign(u, { lastmod: lastmodFor(`/${u.slug}`, u.slug) }));
-
-const SITEMAPS = {
-  'sitemap-main.xml': homeUrls.concat(staticUrls),
-  'sitemap-pages.xml': pageUrls(pageGroups.pages),
-  'sitemap-countries.xml': pageUrls(pageGroups.countries),
-  'sitemap-cities.xml': pageUrls(pageGroups.cities),
-  'sitemap-languages.xml': pageUrls(pageGroups.languages),
-  'sitemap-blog.xml': blogUrls,
-};
-
-let sitemapUrlCount = 0;
-for (const [name, urls] of Object.entries(SITEMAPS)) {
-  fs.writeFileSync(path.join(PUBLIC, name), urlset(urls));
-  sitemapUrlCount += urls.length;
-}
-
-// /sitemap.xml stays the entry point — it is what robots.txt advertises and
-// what is already submitted in Search Console — but it is now an index.
-fs.writeFileSync(path.join(PUBLIC, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>
-<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${Object.entries(SITEMAPS).map(([name, urls]) => {
-  // The index's lastmod for a child is the newest lastmod inside it, so a
-  // crawler can skip an entire unchanged cluster without fetching it.
-  const newest = urls.reduce((max, u) => (u.lastmod > max ? u.lastmod : max), '1970-01-01');
-  return `  <sitemap>\n    <loc>${SITE}/${name}</loc>\n    <lastmod>${newest}</lastmod>\n  </sitemap>`;
-}).join('\n')}
-</sitemapindex>
-`);
-
-// Sorted so the committed manifest produces a readable diff — an unsorted
-// object would reorder on every build and bury the one line that changed.
-const sortedLastmod = {};
-for (const k of Object.keys(lastmodNext).sort()) sortedLastmod[k] = lastmodNext[k];
-fs.writeFileSync(LASTMOD_FILE, JSON.stringify(sortedLastmod, null, 2) + '\n');
+fs.writeFileSync(path.join(PUBLIC, 'sitemap.xml'), buildSitemap());
 
 // RSS feed for the blog — enables autodiscovery, feed readers and syndication.
 function buildRss() {
@@ -2804,7 +2345,7 @@ function buildRss() {
     <guid isPermaLink="true">${blogUrl(b.slug)}</guid>
     <pubDate>${new Date(b.date + 'T12:00:00Z').toUTCString()}</pubDate>
     <category>${esc(b.tag)}</category>
-    <description>${esc(fitDescription(b.description))}</description>
+    <description>${esc(b.description)}</description>
   </item>`).join('\n');
   return `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
@@ -2814,7 +2355,7 @@ function buildRss() {
   <atom:link href="${SITE}/blog/feed.xml" rel="self" type="application/rss+xml"/>
   <description>Guides and research on talking to strangers, voice chat, language practice and online safety — from the team behind TalkLive.</description>
   <language>en</language>
-  <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
+  <lastBuildDate>${new Date(latestBlogUpdate + 'T12:00:00Z').toUTCString()}</lastBuildDate>
 ${items}
 </channel>
 </rss>
@@ -2830,9 +2371,9 @@ function buildLlmsTxt() {
   const posts = BLOG.map(b => `- [${b.h1}](${blogUrl(b.slug)}): ${b.description}`).join('\n');
   return `# TalkLive
 
-> TalkLive (${SITE}) is a free random chat app that connects strangers worldwide for live conversations — one-tap anonymous voice calls (peer-to-peer WebRTC audio, never recorded) or instant text chat. No sign-up required, works in any browser on any device, strictly 18+, with one-tap report/block moderation. It is a popular voice-first alternative to Omegle, OmeTV, Emerald Chat, Monkey and Chatroulette.
+> TalkLive (${SITE}) is a browser-based random chat service for adults, offering one-to-one voice calls and text chat. Core matching is free and does not require an account. Voice uses encrypted WebRTC over a TURN relay in production and is not recorded or stored by TalkLive. Typed messages and related context may be retained for a limited rolling period as described in the Privacy Policy.
 
-Key facts: free and unlimited; anonymous (temporary display names, no phone/email needed); voice-only or text-only modes; optional country and interest filters; friends system to reconnect; premium tier ($10/mo) for advanced filters; safety via device+IP bans and 18+ policy.
+Key facts: voice-only or text-only modes; optional country and interest preferences do not guarantee a specific match; free users wait about five seconds between calls; optional Premium is currently promoted at $5/month (standard price $10/month); no video chat; 18+ policy; leave, block and report controls. Participant identity, age, location and intent are not verified.
 
 ## Main pages
 - [TalkLive app](${SITE}/): Start a random voice or text chat instantly.
@@ -2859,4 +2400,4 @@ fs.writeFileSync(path.join(PUBLIC, 'llms.txt'), buildLlmsTxt());
 const { KEY: INDEXNOW_KEY } = require('../server/indexnow');
 fs.writeFileSync(path.join(PUBLIC, `${INDEXNOW_KEY}.txt`), INDEXNOW_KEY + '\n');
 
-console.log(`Built ${count} landing pages + sitemap index (${sitemapUrlCount} urls across ${Object.keys(SITEMAPS).length} sitemaps) + blog/feed.xml + llms.txt + indexnow key.`);
+console.log(`Built ${count} landing pages + sitemap.xml (${sitemapUrls.length} urls) + blog/feed.xml + llms.txt + indexnow key.`);

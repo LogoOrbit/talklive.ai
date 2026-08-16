@@ -1419,6 +1419,14 @@ body.panel-open .side-panel {
   text-align: center;
 }
 
+.setup-title {
+  margin: 0 auto 18px;
+  font-size: clamp(1.75rem, 5vw, 2.5rem);
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+
 .tap-to-talk {
   display: flex;
   flex-direction: column;
@@ -1484,12 +1492,12 @@ body.panel-open .side-panel {
 }
 
 .call-btn-green {
-  background: radial-gradient(circle at 35% 30%, #4ade80, #16a34a 75%);
-  box-shadow: 0 0 60px rgba(22, 163, 74, 0.55);
+  background: radial-gradient(circle at 35% 30%, #15803d, #166534 75%);
+  box-shadow: 0 0 60px rgba(21, 128, 61, 0.55);
 }
 
 .call-btn-green:hover {
-  box-shadow: 0 0 80px rgba(22, 163, 74, 0.75);
+  box-shadow: 0 0 80px rgba(21, 128, 61, 0.75);
 }
 
 .tap-orb:active {
@@ -1583,13 +1591,13 @@ body.panel-open .side-panel {
 
 /* The chat orb breathes on the opposite phase of the talk orb. */
 .chat-btn-blue {
-  background: radial-gradient(circle at 35% 30%, #7cb3ff, #2f66f4 75%);
-  box-shadow: 0 0 60px rgba(63, 118, 244, 0.5);
+  background: radial-gradient(circle at 35% 30%, #2563eb, #1e40af 75%);
+  box-shadow: 0 0 60px rgba(37, 99, 235, 0.5);
   animation-delay: 1.5s;
 }
 
 .chat-btn-blue:hover {
-  box-shadow: 0 0 80px rgba(63, 118, 244, 0.7);
+  box-shadow: 0 0 80px rgba(37, 99, 235, 0.7);
 }
 
 @media (max-width: 400px) {
@@ -3110,10 +3118,10 @@ body.panel-open .side-panel {
 .btn-chip:active { transform: scale(0.96); }
 
 .btn-chip-accept {
-  background: #16a34a;
+  background: #15803d;
   color: #fff;
 }
-.btn-chip-accept:hover { background: #1db456; }
+.btn-chip-accept:hover { background: #166534; }
 
 /* Notifications list — sits above the friends list in the same dropdown */
 .notif-list {
@@ -3651,7 +3659,7 @@ body.panel-open .side-panel {
 
 /* green (call) base layer */
 .call-main-btn::before {
-  background: radial-gradient(circle at 35% 30%, #4ade80, #16a34a 75%);
+  background: radial-gradient(circle at 35% 30%, #15803d, #166534 75%);
 }
 
 /* red (hang up) layer */
@@ -4191,8 +4199,8 @@ body.panel-open .side-panel {
   height: 34px;
   border-radius: 50%;
   border: none;
-  background: radial-gradient(circle at 35% 30%, #4ade80, #16a34a 75%);
-  box-shadow: 0 0 10px rgba(22, 163, 74, 0.45);
+  background: radial-gradient(circle at 35% 30%, #15803d, #166534 75%);
+  box-shadow: 0 0 10px rgba(21, 128, 61, 0.45);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -5411,6 +5419,15 @@ html.perf-lite .side-panel { box-shadow: none; }
 .tap-choice-heading { margin-bottom: 8px; }
 @media (max-width: 400px) {
   .tap-choice { width: 142px; }
+}
+@media (max-width: 360px) {
+  .tap-choice-row {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 12px;
+  }
+  .tap-choice { width: 100%; }
+  .tap-choice-divider { margin: 0; }
 }
 
 .notif-req-message {

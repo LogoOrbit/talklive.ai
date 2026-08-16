@@ -1,4 +1,5 @@
 const path = require('path');
+const fs = require('fs');
 const crypto = require('crypto');
 const express = require('express');
 const http = require('http');
@@ -8,9 +9,9 @@ const { OAuth2Client } = require('google-auth-library');
 const { generateUsername } = require('./usernames');
 const store = require('./store');
 const { createAdmin } = require('./admin');
-const compress = require('./compress');
 
 const app = express();
+const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 // Client IDs are browser-visible, so they are not an identity proof.  Bind
 // them to an HMAC token issued by the server; without this an attacker can
 // copy a peer's clientId and hijack social routing/premium state.
@@ -50,12 +51,6 @@ server.maxConnections = Infinity;
 // protocol and host for canonical redirects below.
 app.set('trust proxy', 1);
 app.disable('x-powered-by');
-
-// Brotli/gzip every text response. Registered first so it wraps everything
-// downstream — static assets, sendFile'd page shells and inline HTML alike.
-// Socket.IO handles its own upgrade path on the bare HTTP server and never
-// reaches Express middleware, so long-polling frames are unaffected.
-app.use(compress());
 
 // Security headers on every response. The CSP allowlists exactly the external
 // origins the app legitimately uses (Google Sign-In, flag images) and blocks
@@ -156,6 +151,71 @@ app.use((req, res, next) => {
   if (!isCanonicalHost && !(wantsWww && host.slice(4) === CANONICAL_HOST)) {
     res.setHeader('X-Robots-Tag', 'noindex, nofollow');
   }
+  next();
+});
+
+// Keep one crawlable URL for every static HTML page. Express's `extensions`
+// option serves both `/guide` and `/guide.html`, while directory indexes also
+// make `/blog/index.html` and `/blog/` equivalent. Redirect only paths that map
+// to a real public HTML file, preserve the query string, and reject protocol-
+// relative/backslash paths so user input can never turn this into an open
+// redirect. Real index directories such as /blog/ and /es/ keep their slash.
+function publicFileExists(urlPath) {
+  if (typeof urlPath !== 'string' || !urlPath.startsWith('/')
+    || urlPath.startsWith('//') || urlPath.includes('\\') || urlPath.includes('\0')) {
+    return false;
+  }
+  let decoded;
+  try {
+    decoded = decodeURIComponent(urlPath);
+  } catch (_) {
+    return false;
+  }
+  if (!decoded.startsWith('/') || decoded.startsWith('//')
+    || decoded.includes('\\') || decoded.includes('\0') || decoded.split('/').includes('..')) {
+    return false;
+  }
+  const filePath = path.resolve(PUBLIC_DIR, '.' + decoded);
+  const relative = path.relative(PUBLIC_DIR, filePath);
+  if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) return false;
+  try {
+    return fs.statSync(filePath).isFile();
+  } catch (_) {
+    return false;
+  }
+}
+
+function originalQuery(req) {
+  const i = req.originalUrl.indexOf('?');
+  return i === -1 ? '' : req.originalUrl.slice(i);
+}
+
+app.use((req, res, next) => {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+  const pathname = req.path;
+  if (!pathname.startsWith('/') || pathname.startsWith('//') || pathname.includes('\\')) return next();
+
+  const host = (req.headers.host || '').toLowerCase();
+  if (host === CANONICAL_HOST
+    && (pathname === '/landing' || pathname === '/landing/' || pathname === '/landing.html')) {
+    return res.redirect(301, '/' + originalQuery(req));
+  }
+
+  if (/\/index\.html$/i.test(pathname) && publicFileExists(pathname)) {
+    return res.redirect(301, pathname.slice(0, -'index.html'.length) + originalQuery(req));
+  }
+
+  if (/\.html$/i.test(pathname) && publicFileExists(pathname)) {
+    return res.redirect(301, pathname.slice(0, -'.html'.length) + originalQuery(req));
+  }
+
+  if (pathname.length > 1 && pathname.endsWith('/')) {
+    const cleanPath = pathname.slice(0, -1);
+    if (publicFileExists(cleanPath + '.html')) {
+      return res.redirect(301, cleanPath + originalQuery(req));
+    }
+  }
+
   next();
 });
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
@@ -302,21 +362,6 @@ app.get('/chat', (req, res) => {
   sendPage(res, 'chat.html');
 });
 
-// Redirect the raw SEO landing files (e.g. /talk-to-strangers.html) to their
-// clean, canonical URLs (/talk-to-strangers) so only one version is indexed.
-// The path may now be nested (/countries/india.html), and a directory's
-// index.html collapses to the directory itself (/countries/index.html ->
-// /countries/) rather than to a /countries/index URL that does not exist.
-app.get(/^\/((?:[a-z0-9-]+\/)*)([a-z0-9-]+)\.html$/i, (req, res, next) => {
-  const dir = req.params[0] || '';
-  const name = req.params[1];
-  if (name === 'index') {
-    if (!dir) return next(); // "/index.html" is the app shell, served as "/"
-    return res.redirect(301, '/' + dir);
-  }
-  res.redirect(301, '/' + dir + name);
-});
-
 // --- Owner dashboard, analytics & maintenance mode ---------------------------
 
 // Runtime snapshot handed to the dashboard: everything live, straight from memory.
@@ -370,17 +415,14 @@ app.use((req, res, next) => {
   if (!store.data.settings.maintenance.on) return next();
   if (req.path.startsWith('/owner')) return next();
   if (/\.(css|js|svg|png|ico|webmanifest|xml|txt)$/i.test(req.path)) return next();
+  res.setHeader('Retry-After', '3600');
   res.status(503).type('html').send(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TalkLive — Maintenance</title><style>body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#0d0d0d;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:24px}h1{font-size:2rem;margin:.4em 0}.orb{width:72px;height:72px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#6da7ec,#184f95);margin:0 auto 18px;animation:p 2s ease-in-out infinite}@keyframes p{50%{transform:scale(1.08);opacity:.85}}p{color:#c3c2b7;max-width:420px;margin:0 auto;line-height:1.5}</style></head><body><div><div class="orb"></div><h1>We&rsquo;ll be right back</h1><p>${store.data.settings.maintenance.message.replace(/</g, '&lt;')}</p></div></body></html>`);
 });
 
 // Count page visits (HTML navigations only, not assets) with geo attribution.
 app.use((req, res, next) => {
-  // Nested landing pages (/countries/india, /languages/spanish) are real page
-  // views and were silently uncounted while the pattern only matched a single
-  // path segment. Depth is capped so this stays a page-view counter rather
-  // than a request logger.
   if (req.method === 'GET' && !req.path.startsWith('/owner')
-    && (req.path === '/' || /^\/[a-z0-9-]+(?:\/[a-z0-9-]+)?\/?$/i.test(req.path))
+    && (req.path === '/' || /^\/[a-z0-9-]+$/i.test(req.path))
     && String(req.headers.accept || '').includes('text/html')) {
     const fwd = req.headers['x-forwarded-for'];
     const ip = ((fwd ? String(fwd).split(',')[0].trim() : req.socket.remoteAddress) || '').replace('::ffff:', '');
@@ -404,7 +446,7 @@ app.get('/', (req, res, next) => {
 });
 
 app.use(
-  express.static(path.join(__dirname, '..', 'public'), {
+  express.static(PUBLIC_DIR, {
     // Serve clean URLs: /talk-to-strangers resolves to talk-to-strangers.html.
     extensions: ['html'],
     setHeaders(res, filePath) {

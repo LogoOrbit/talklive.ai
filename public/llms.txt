@@ -1,8 +1,8 @@
 # TalkLive
 
-> TalkLive (https://talklive.app) is a free random chat app that connects strangers worldwide for live conversations — one-tap anonymous voice calls (peer-to-peer WebRTC audio, never recorded) or instant text chat. No sign-up required, works in any browser on any device, strictly 18+, with one-tap report/block moderation. It is a popular voice-first alternative to Omegle, OmeTV, Emerald Chat, Monkey and Chatroulette.
+> TalkLive (https://talklive.app) is a browser-based random chat service for adults, offering one-to-one voice calls and text chat. Core matching is free and does not require an account. Voice uses encrypted WebRTC over a TURN relay in production and is not recorded or stored by TalkLive. Typed messages and related context may be retained for a limited rolling period as described in the Privacy Policy.
 
-Key facts: free and unlimited; anonymous (temporary display names, no phone/email needed); voice-only or text-only modes; optional country and interest filters; friends system to reconnect; premium tier ($10/mo) for advanced filters; safety via device+IP bans and 18+ policy.
+Key facts: voice-only or text-only modes; optional country and interest preferences do not guarantee a specific match; free users wait about five seconds between calls; optional Premium is currently promoted at $5/month (standard price $10/month); no video chat; 18+ policy; leave, block and report controls. Participant identity, age, location and intent are not verified.
 
 ## Main pages
 - [TalkLive app](https://talklive.app/): Start a random voice or text chat instantly.
@@ -22,219 +22,41 @@ Key facts: free and unlimited; anonymous (temporary display names, no phone/emai
 - [Stranger Video Call](https://talklive.app/stranger-video-call): Want a stranger video call but not the camera? Call and talk to strangers live — voice-first, anonymous, no number needed, free worldwide.
 - [Monkey App Alternative](https://talklive.app/monkey-app-alternative): Looking for a Monkey app alternative? TalkLive is free random chat with strangers — voice-only, anonymous, 18+, moderated, and no sign-up.
 - [Talk to Someone](https://talklive.app/talk-to-someone): Need someone to talk to right now? TalkLive connects you with a real, friendly person in seconds — free voice call or text chat, anonymous, no sign-up, day or night.
-- [Free Online Calls](https://talklive.app/free-online-calls): Make free online calls from your browser. Unlimited voice calls with people worldwide — no phone number, no app, no sign-up. Start calling now.
+- [Free Online Calls](https://talklive.app/free-online-calls): Make random online voice calls from your browser with free core matching, no phone number or install required. Data charges and live availability may vary.
 - [Practice English Speaking](https://talklive.app/practice-english-speaking): Practice English speaking online free with real people. TalkLive starts live voice conversations in seconds — no classes, no fees, no sign-up.
 - [Chatroulette Alternative](https://talklive.app/chatroulette-alternative): Looking for a Chatroulette alternative? TalkLive keeps the random thrill but swaps video for anonymous voice and text chat. Free, 18+, no sign-up.
 - [Emerald Chat Alternative](https://talklive.app/emerald-chat-alternative): An Emerald Chat alternative without bots, karma grinding or paywalls: TalkLive is free anonymous voice and text chat with random strangers.
 - [Make Friends Online](https://talklive.app/make-friends-online): Make friends online through real conversations, not profiles. TalkLive matches you with people worldwide for live voice or text chat — free, anonymous, no sign-up.
 - [Late Night Chat](https://talklive.app/late-night-chat): Can't sleep and need someone to talk to? TalkLive is late night chat with real people worldwide — live voice or text, anonymous and free, at 1am, 3am or any hour.
-- [Chatspin Alternative](https://talklive.app/chatspin-alternative): Want a Chatspin alternative without the camera or the paid filters? TalkLive is free anonymous voice chat with random strangers — one tap, no sign-up, no video.
-- [Shagle Alternative](https://talklive.app/shagle-alternative): Looking for a Shagle alternative with free filters and no camera? TalkLive is anonymous voice chat with random strangers worldwide — instant, free, no sign-up.
-- [Camsurf Alternative](https://talklive.app/camsurf-alternative): A Camsurf alternative without the webcam: TalkLive is free anonymous voice chat with random strangers worldwide. One tap, no sign-up, nothing recorded.
+- [Chatspin Alternative](https://talklive.app/chatspin-alternative): Want a Chatspin alternative without a camera? TalkLive offers free core voice matching with random strangers — one tap to search, no sign-up, no video.
+- [Shagle Alternative](https://talklive.app/shagle-alternative): Looking for a Shagle alternative without a camera? TalkLive offers free core voice matching with random strangers worldwide, no sign-up required.
+- [Camsurf Alternative](https://talklive.app/camsurf-alternative): A Camsurf alternative without the webcam: TalkLive offers free core voice matching with random strangers worldwide. No sign-up; voice is not recorded by TalkLive.
 - [ChatHub Alternative](https://talklive.app/chathub-alternative): Want a ChatHub alternative that is audio-only and genuinely free? TalkLive pairs you with a random stranger for anonymous live voice chat. No sign-up, no video.
 - [Azar Alternative](https://talklive.app/azar-alternative): An Azar alternative with no app install, no gems and no purchases: TalkLive is free anonymous voice chat with random strangers worldwide, straight in your browser.
-- [Holla Alternative](https://talklive.app/holla-alternative): Looking for a Holla alternative without the app or the paid matching? TalkLive is free anonymous voice chat with random strangers — browser-based, instant, no sign-up.
-- [Tinychat Alternative](https://talklive.app/tinychat-alternative): A Tinychat alternative for real one-to-one conversation: TalkLive pairs you with one random stranger for live anonymous voice chat. Free, instant, no sign-up.
-- [Wakie Alternative](https://talklive.app/wakie-alternative): A Wakie alternative with instant matching and no topic queue: TalkLive connects you to a random stranger for live anonymous voice chat in one tap. Free, no sign-up.
-- [Free Voice Chat](https://talklive.app/free-voice-chat): Genuinely free voice chat with strangers worldwide. No credits, no minutes, no paywall on matching — one tap connects you to a live anonymous call. No sign-up needed.
+- [Holla Alternative](https://talklive.app/holla-alternative): Looking for a Holla alternative without an app install? TalkLive offers free core voice matching with random strangers in a browser, no sign-up required.
+- [Tinychat Alternative](https://talklive.app/tinychat-alternative): A Tinychat alternative for one-to-one conversation: TalkLive offers free core voice matching with a random stranger. No sign-up; availability varies.
+- [Wakie Alternative](https://talklive.app/wakie-alternative): A Wakie alternative without a topic queue: TalkLive lets you search for a random live voice conversation in one tap. Core matching is free; no sign-up.
+- [Free Voice Chat](https://talklive.app/free-voice-chat): Free core voice matching with strangers worldwide. No per-call credits or sign-up; free users wait about five seconds between calls and Premium is optional.
 - [Voice Chat Rooms](https://talklive.app/voice-chat-rooms): Looking for live voice chat rooms? TalkLive drops you straight into a one-to-one audio conversation with a random stranger — no room lists, no lurking, no sign-up.
-- [Random Chat](https://talklive.app/random-chat): Free random chat with strangers worldwide. Tap to Talk for a live anonymous voice call or Tap to Chat for instant text — no sign-up, no video, matched in seconds.
-- [Language Exchange](https://talklive.app/language-exchange): Free language exchange by voice: TalkLive connects you to native and fluent speakers worldwide for live conversation practice. No tutors, no fees, no sign-up.
-- [Call Random People](https://talklive.app/call-random-people): Call random people around the world for free, without giving out a phone number. TalkLive places live anonymous voice calls to strangers in one tap. No sign-up.
+- [Random Chat](https://talklive.app/random-chat): Free core random matching with strangers worldwide. Choose voice or text with no sign-up or video; availability and wait time vary.
+- [Language Exchange](https://talklive.app/language-exchange): Free core voice matching for language practice with people worldwide. No sign-up; language, fluency, availability and learning outcomes are not guaranteed.
+- [Call Random People](https://talklive.app/call-random-people): Search for random voice conversations worldwide without giving TalkLive a phone number. Core matching is free; availability varies and no sign-up is required.
 - [Online Chat Rooms](https://talklive.app/online-chat-rooms): Free online chat rooms with no registration. TalkLive matches you one-to-one with a random stranger for anonymous text or voice chat — instant, and no account needed.
-- [Omegle vs Chatroulette](https://talklive.app/omegle-vs-chatroulette): Omegle vs Chatroulette, compared honestly: what each one was, why Omegle shut down, and what actually replaced them in 2026.
-- [Voice vs Video Chat](https://talklive.app/voice-chat-vs-video-chat): Voice chat vs video chat compared: privacy, bandwidth, safety, and which one actually produces better conversations with strangers. An honest look at both.
-- [I'm Bored](https://talklive.app/im-bored): Bored right now? One tap connects you to a live conversation with a random stranger anywhere in the world. Free and anonymous.
-- [Can't Sleep](https://talklive.app/cant-sleep): Awake at 3am? Somewhere in the world it is the middle of the afternoon. One tap connects you to a live, anonymous conversation.
-- [Someone to Talk To](https://talklive.app/someone-to-talk-to): Free, anonymous voice or text conversation with a real person — no sign-up, no account, no cost. Plus where to go if it is more serious.
-- [Chat Without Registration](https://talklive.app/chat-without-registration): Random chat with no registration at all. No email, no phone number, no password, no app. Open the page and you are in a conversation in about ten seconds.
-- [Countries](https://talklive.app/countries/): Pick a country and talk to strangers there by voice or text. 45 countries with local languages, peak hours and real context. Free and anonymous.
-- [Cities](https://talklive.app/cities/): Talk to strangers in 113 cities worldwide by voice or text. What each city is like to chat with, and when it is busiest.
-- [Languages](https://talklive.app/languages/): Free speaking practice in 16 languages with real native speakers. Random voice chat — no tutor fees, no scheduling, no sign-up.
-- [India](https://talklive.app/countries/india): Free voice and text chat with people in India. Hindi, English, Bengali and Tamil speakers, anonymous, no sign-up. Busiest around 9pm – 2am IST.
-- [Pakistan](https://talklive.app/countries/pakistan): Free voice and text chat with people in Pakistan. Urdu, Punjabi, English and Pashto speakers, anonymous, no sign-up. Busiest around 9pm – 3am PKT.
-- [United States](https://talklive.app/countries/united-states): Free voice and text chat with people in the United States. English and Spanish speakers, anonymous, no sign-up.
-- [United Kingdom](https://talklive.app/countries/united-kingdom): Free voice and text chat with people in the United Kingdom. English speakers, anonymous, no sign-up. Busiest around 8pm – midnight GMT.
-- [Canada](https://talklive.app/countries/canada): Free voice and text chat with people in Canada. English and French speakers, anonymous, no sign-up. Busiest around 8pm – 1am local.
-- [Brazil](https://talklive.app/countries/brazil): Free voice and text chat with people in Brazil. Portuguese speakers, anonymous, no sign-up. Busiest around 9pm – 2am BRT.
-- [Mexico](https://talklive.app/countries/mexico): Free voice and text chat with people in Mexico. Spanish speakers, anonymous, no sign-up. Busiest around 9pm – 1am CST.
-- [Indonesia](https://talklive.app/countries/indonesia): Free voice and text chat with people in Indonesia. Indonesian and Javanese speakers, anonymous, no sign-up. Busiest around 8pm – 1am WIB.
-- [Philippines](https://talklive.app/countries/philippines): Free voice and text chat with people in the Philippines. Filipino, English and Cebuano speakers, anonymous, no sign-up. Busiest around 9pm – 2am PHT.
-- [Germany](https://talklive.app/countries/germany): Free voice and text chat with people in Germany. German and Turkish speakers, anonymous, no sign-up. Busiest around 8pm – midnight CET.
-- [France](https://talklive.app/countries/france): Free voice and text chat with people in France. French and Arabic speakers, anonymous, no sign-up. Busiest around 9pm – 1am CET.
-- [Spain](https://talklive.app/countries/spain): Free voice and text chat with people in Spain. Spanish and Catalan speakers, anonymous, no sign-up. Busiest around 10pm – 2am CET.
-- [Italy](https://talklive.app/countries/italy): Free voice and text chat with people in Italy. Italian speakers, anonymous, no sign-up. Busiest around 9pm – 1am CET.
-- [Turkey](https://talklive.app/countries/turkey): Free voice and text chat with people in Turkey. Turkish speakers, anonymous, no sign-up. Busiest around 10pm – 3am TRT.
-- [Russia](https://talklive.app/countries/russia): Free voice and text chat with people in Russia. Russian speakers, anonymous, no sign-up. Busiest around 9pm – 2am MSK.
-- [Saudi Arabia](https://talklive.app/countries/saudi-arabia): Free voice and text chat with people in Saudi Arabia. Arabic and English speakers, anonymous, no sign-up. Busiest around 10pm – 3am AST.
-- [United Arab Emirates](https://talklive.app/countries/united-arab-emirates): Free voice and text chat with people in the United Arab Emirates. Arabic, English, Hindi and Urdu speakers, anonymous, no sign-up.
-- [Egypt](https://talklive.app/countries/egypt): Free voice and text chat with people in Egypt. Arabic speakers, anonymous, no sign-up. Busiest around 10pm – 2am EET.
-- [Nigeria](https://talklive.app/countries/nigeria): Free voice and text chat with people in Nigeria. English, Yoruba, Igbo and Hausa speakers, anonymous, no sign-up. Busiest around 8pm – 1am WAT.
-- [South Africa](https://talklive.app/countries/south-africa): Free voice and text chat with people in South Africa. English, Zulu and Afrikaans speakers, anonymous, no sign-up. Busiest around 8pm – midnight SAST.
-- [Japan](https://talklive.app/countries/japan): Free voice and text chat with people in Japan. Japanese speakers, anonymous, no sign-up. Busiest around 10pm – 1am JST.
-- [South Korea](https://talklive.app/countries/south-korea): Free voice and text chat with people in South Korea. Korean speakers, anonymous, no sign-up. Busiest around 10pm – 2am KST.
-- [China](https://talklive.app/countries/china): Free voice and text chat with people in China. Mandarin and Cantonese speakers, anonymous, no sign-up. Busiest around 9pm – 1am CST.
-- [Vietnam](https://talklive.app/countries/vietnam): Free voice and text chat with people in Vietnam. Vietnamese speakers, anonymous, no sign-up. Busiest around 9pm – 1am ICT.
-- [Thailand](https://talklive.app/countries/thailand): Free voice and text chat with people in Thailand. Thai speakers, anonymous, no sign-up. Busiest around 9pm – 1am ICT.
-- [Bangladesh](https://talklive.app/countries/bangladesh): Free voice and text chat with people in Bangladesh. Bengali and English speakers, anonymous, no sign-up. Busiest around 9pm – 2am BST.
-- [Australia](https://talklive.app/countries/australia): Free voice and text chat with people in Australia. English speakers, anonymous, no sign-up. Busiest around 8pm – midnight AEST.
-- [Poland](https://talklive.app/countries/poland): Free voice and text chat with people in Poland. Polish speakers, anonymous, no sign-up. Busiest around 8pm – 1am CET.
-- [Ukraine](https://talklive.app/countries/ukraine): Free voice and text chat with people in Ukraine. Ukrainian and Russian speakers, anonymous, no sign-up. Busiest around 8pm – 1am EET.
-- [Netherlands](https://talklive.app/countries/netherlands): Free voice and text chat with people in the Netherlands. Dutch and English speakers, anonymous, no sign-up. Busiest around 8pm – midnight CET.
-- [Colombia](https://talklive.app/countries/colombia): Free voice and text chat with people in Colombia. Spanish speakers, anonymous, no sign-up. Busiest around 9pm – 1am COT.
-- [Argentina](https://talklive.app/countries/argentina): Free voice and text chat with people in Argentina. Spanish speakers, anonymous, no sign-up. Busiest around 10pm – 3am ART.
-- [Malaysia](https://talklive.app/countries/malaysia): Free voice and text chat with people in Malaysia. Malay, English, Mandarin and Tamil speakers, anonymous, no sign-up. Busiest around 9pm – 1am MYT.
-- [Singapore](https://talklive.app/countries/singapore): Free voice and text chat with people in Singapore. English, Mandarin, Malay and Tamil speakers, anonymous, no sign-up. Busiest around 9pm – 1am SGT.
-- [Iran](https://talklive.app/countries/iran): Free voice and text chat with people in Iran. Persian speakers, anonymous, no sign-up. Busiest around 10pm – 2am IRST.
-- [Morocco](https://talklive.app/countries/morocco): Free voice and text chat with people in Morocco. Arabic, French and Amazigh speakers, anonymous, no sign-up. Busiest around 9pm – 2am.
-- [Kenya](https://talklive.app/countries/kenya): Free voice and text chat with people in Kenya. Swahili and English speakers, anonymous, no sign-up. Busiest around 8pm – midnight EAT.
-- [Portugal](https://talklive.app/countries/portugal): Free voice and text chat with people in Portugal. Portuguese speakers, anonymous, no sign-up. Busiest around 9pm – 1am WET.
-- [Ireland](https://talklive.app/countries/ireland): Free voice and text chat with people in Ireland. English and Irish speakers, anonymous, no sign-up. Busiest around 8pm – 1am GMT.
-- [Romania](https://talklive.app/countries/romania): Free voice and text chat with people in Romania. Romanian speakers, anonymous, no sign-up. Busiest around 9pm – 1am EET.
-- [Greece](https://talklive.app/countries/greece): Free voice and text chat with people in Greece. Greek speakers, anonymous, no sign-up. Busiest around 10pm – 2am EET.
-- [Israel](https://talklive.app/countries/israel): Free voice and text chat with people in Israel. Hebrew, Arabic, Russian and English speakers, anonymous, no sign-up. Busiest around 9pm – 1am IST.
-- [New Zealand](https://talklive.app/countries/new-zealand): Free voice and text chat with people in New Zealand. English and Māori speakers, anonymous, no sign-up. Busiest around 8pm – midnight NZST.
-- [Sweden](https://talklive.app/countries/sweden): Free voice and text chat with people in Sweden. Swedish and English speakers, anonymous, no sign-up. Busiest around 8pm – midnight CET.
-- [Norway](https://talklive.app/countries/norway): Free voice and text chat with people in Norway. Norwegian and English speakers, anonymous, no sign-up. Busiest around 8pm – midnight CET.
-- [Mumbai](https://talklive.app/cities/mumbai): Free voice and text chat with people in Mumbai, India. Anonymous, no sign-up. Hindi, English, Bengali and Tamil spoken; busiest around 9pm – 2am IST.
-- [Delhi](https://talklive.app/cities/delhi): Free voice and text chat with people in Delhi, India. Anonymous, no sign-up. Hindi, English, Bengali and Tamil spoken; busiest around 9pm – 2am IST.
-- [Bangalore](https://talklive.app/cities/bangalore): Free voice and text chat with people in Bangalore, India. Anonymous, no sign-up. Hindi, English, Bengali and Tamil spoken; busiest around 9pm – 2am IST.
-- [Hyderabad](https://talklive.app/cities/hyderabad): Free voice and text chat with people in Hyderabad, India. Anonymous, no sign-up. Hindi, English, Bengali and Tamil spoken; busiest around 9pm – 2am IST.
-- [Chennai](https://talklive.app/cities/chennai): Free voice and text chat with people in Chennai, India. Anonymous, no sign-up. Hindi, English, Bengali and Tamil spoken; busiest around 9pm – 2am IST.
-- [Kolkata](https://talklive.app/cities/kolkata): Free voice and text chat with people in Kolkata, India. Anonymous, no sign-up. Hindi, English, Bengali and Tamil spoken; busiest around 9pm – 2am IST.
-- [Karachi](https://talklive.app/cities/karachi): Free voice and text chat with people in Karachi, Pakistan. Anonymous, no sign-up. Urdu, Punjabi, English and Pashto spoken; busiest around 9pm – 3am PKT.
-- [Lahore](https://talklive.app/cities/lahore): Free voice and text chat with people in Lahore, Pakistan. Anonymous, no sign-up. Urdu, Punjabi, English and Pashto spoken; busiest around 9pm – 3am PKT.
-- [Islamabad](https://talklive.app/cities/islamabad): Free voice and text chat with people in Islamabad, Pakistan. Anonymous, no sign-up. Urdu, Punjabi, English and Pashto spoken; busiest around 9pm – 3am PKT.
-- [Faisalabad](https://talklive.app/cities/faisalabad): Free voice and text chat with people in Faisalabad, Pakistan. Anonymous, no sign-up.
-- [New York](https://talklive.app/cities/new-york): Free voice and text chat with people in New York, the United States. Anonymous, no sign-up.
-- [Los Angeles](https://talklive.app/cities/los-angeles): Free voice and text chat with people in Los Angeles, the United States. Anonymous, no sign-up.
-- [Chicago](https://talklive.app/cities/chicago): Free voice and text chat with people in Chicago, the United States. Anonymous, no sign-up.
-- [Houston](https://talklive.app/cities/houston): Free voice and text chat with people in Houston, the United States. Anonymous, no sign-up.
-- [Miami](https://talklive.app/cities/miami): Free voice and text chat with people in Miami, the United States. Anonymous, no sign-up.
-- [London](https://talklive.app/cities/london): Free voice and text chat with people in London, the United Kingdom. Anonymous, no sign-up. English spoken; busiest around 8pm – midnight GMT.
-- [Manchester](https://talklive.app/cities/manchester): Free voice and text chat with people in Manchester, the United Kingdom. Anonymous, no sign-up. English spoken; busiest around 8pm – midnight GMT.
-- [Birmingham](https://talklive.app/cities/birmingham): Free voice and text chat with people in Birmingham, the United Kingdom. Anonymous, no sign-up. English spoken; busiest around 8pm – midnight GMT.
-- [Glasgow](https://talklive.app/cities/glasgow): Free voice and text chat with people in Glasgow, the United Kingdom. Anonymous, no sign-up. English spoken; busiest around 8pm – midnight GMT.
-- [Toronto](https://talklive.app/cities/toronto): Free voice and text chat with people in Toronto, Canada. Anonymous, no sign-up. English and French spoken; busiest around 8pm – 1am local.
-- [Montreal](https://talklive.app/cities/montreal): Free voice and text chat with people in Montreal, Canada. Anonymous, no sign-up. English and French spoken; busiest around 8pm – 1am local.
-- [Vancouver](https://talklive.app/cities/vancouver): Free voice and text chat with people in Vancouver, Canada. Anonymous, no sign-up. English and French spoken; busiest around 8pm – 1am local.
-- [São Paulo](https://talklive.app/cities/sao-paulo): Free voice and text chat with people in São Paulo, Brazil. Anonymous, no sign-up. Portuguese spoken; busiest around 9pm – 2am BRT.
-- [Rio de Janeiro](https://talklive.app/cities/rio-de-janeiro): Free voice and text chat with people in Rio de Janeiro, Brazil. Anonymous, no sign-up. Portuguese spoken; busiest around 9pm – 2am BRT.
-- [Belo Horizonte](https://talklive.app/cities/belo-horizonte): Free voice and text chat with people in Belo Horizonte, Brazil. Anonymous, no sign-up. Portuguese spoken; busiest around 9pm – 2am BRT.
-- [Mexico City](https://talklive.app/cities/mexico-city): Free voice and text chat with people in Mexico City, Mexico. Anonymous, no sign-up. Spanish spoken; busiest around 9pm – 1am CST.
-- [Guadalajara](https://talklive.app/cities/guadalajara): Free voice and text chat with people in Guadalajara, Mexico. Anonymous, no sign-up. Spanish spoken; busiest around 9pm – 1am CST.
-- [Monterrey](https://talklive.app/cities/monterrey): Free voice and text chat with people in Monterrey, Mexico. Anonymous, no sign-up. Spanish spoken; busiest around 9pm – 1am CST.
-- [Jakarta](https://talklive.app/cities/jakarta): Free voice and text chat with people in Jakarta, Indonesia. Anonymous, no sign-up. Indonesian and Javanese spoken; busiest around 8pm – 1am WIB.
-- [Surabaya](https://talklive.app/cities/surabaya): Free voice and text chat with people in Surabaya, Indonesia. Anonymous, no sign-up. Indonesian and Javanese spoken; busiest around 8pm – 1am WIB.
-- [Bandung](https://talklive.app/cities/bandung): Free voice and text chat with people in Bandung, Indonesia. Anonymous, no sign-up. Indonesian and Javanese spoken; busiest around 8pm – 1am WIB.
-- [Manila](https://talklive.app/cities/manila): Free voice and text chat with people in Manila, the Philippines. Anonymous, no sign-up. Filipino, English and Cebuano spoken; busiest around 9pm – 2am PHT.
-- [Cebu City](https://talklive.app/cities/cebu-city): Free voice and text chat with people in Cebu City, the Philippines. Anonymous, no sign-up.
-- [Davao](https://talklive.app/cities/davao): Free voice and text chat with people in Davao, the Philippines. Anonymous, no sign-up. Filipino, English and Cebuano spoken; busiest around 9pm – 2am PHT.
-- [Berlin](https://talklive.app/cities/berlin): Free voice and text chat with people in Berlin, Germany. Anonymous, no sign-up. German and Turkish spoken; busiest around 8pm – midnight CET.
-- [Munich](https://talklive.app/cities/munich): Free voice and text chat with people in Munich, Germany. Anonymous, no sign-up. German and Turkish spoken; busiest around 8pm – midnight CET.
-- [Hamburg](https://talklive.app/cities/hamburg): Free voice and text chat with people in Hamburg, Germany. Anonymous, no sign-up. German and Turkish spoken; busiest around 8pm – midnight CET.
-- [Cologne](https://talklive.app/cities/cologne): Free voice and text chat with people in Cologne, Germany. Anonymous, no sign-up. German and Turkish spoken; busiest around 8pm – midnight CET.
-- [Paris](https://talklive.app/cities/paris): Free voice and text chat with people in Paris, France. Anonymous, no sign-up. French and Arabic spoken; busiest around 9pm – 1am CET.
-- [Marseille](https://talklive.app/cities/marseille): Free voice and text chat with people in Marseille, France. Anonymous, no sign-up. French and Arabic spoken; busiest around 9pm – 1am CET.
-- [Lyon](https://talklive.app/cities/lyon): Free voice and text chat with people in Lyon, France. Anonymous, no sign-up. French and Arabic spoken; busiest around 9pm – 1am CET.
-- [Madrid](https://talklive.app/cities/madrid): Free voice and text chat with people in Madrid, Spain. Anonymous, no sign-up. Spanish and Catalan spoken; busiest around 10pm – 2am CET.
-- [Barcelona](https://talklive.app/cities/barcelona): Free voice and text chat with people in Barcelona, Spain. Anonymous, no sign-up. Spanish and Catalan spoken; busiest around 10pm – 2am CET.
-- [Valencia](https://talklive.app/cities/valencia): Free voice and text chat with people in Valencia, Spain. Anonymous, no sign-up. Spanish and Catalan spoken; busiest around 10pm – 2am CET.
-- [Rome](https://talklive.app/cities/rome): Free voice and text chat with people in Rome, Italy. Anonymous, no sign-up. Italian spoken; busiest around 9pm – 1am CET.
-- [Milan](https://talklive.app/cities/milan): Free voice and text chat with people in Milan, Italy. Anonymous, no sign-up. Italian spoken; busiest around 9pm – 1am CET.
-- [Naples](https://talklive.app/cities/naples): Free voice and text chat with people in Naples, Italy. Anonymous, no sign-up. Italian spoken; busiest around 9pm – 1am CET.
-- [Istanbul](https://talklive.app/cities/istanbul): Free voice and text chat with people in Istanbul, Turkey. Anonymous, no sign-up. Turkish spoken; busiest around 10pm – 3am TRT.
-- [Ankara](https://talklive.app/cities/ankara): Free voice and text chat with people in Ankara, Turkey. Anonymous, no sign-up. Turkish spoken; busiest around 10pm – 3am TRT.
-- [Izmir](https://talklive.app/cities/izmir): Free voice and text chat with people in Izmir, Turkey. Anonymous, no sign-up. Turkish spoken; busiest around 10pm – 3am TRT.
-- [Moscow](https://talklive.app/cities/moscow): Free voice and text chat with people in Moscow, Russia. Anonymous, no sign-up. Russian spoken; busiest around 9pm – 2am MSK.
-- [Saint Petersburg](https://talklive.app/cities/saint-petersburg): Free voice and text chat with people in Saint Petersburg, Russia. Anonymous, no sign-up. Russian spoken; busiest around 9pm – 2am MSK.
-- [Novosibirsk](https://talklive.app/cities/novosibirsk): Free voice and text chat with people in Novosibirsk, Russia. Anonymous, no sign-up. Russian spoken; busiest around 9pm – 2am MSK.
-- [Riyadh](https://talklive.app/cities/riyadh): Free voice and text chat with people in Riyadh, Saudi Arabia. Anonymous, no sign-up. Arabic and English spoken; busiest around 10pm – 3am AST.
-- [Jeddah](https://talklive.app/cities/jeddah): Free voice and text chat with people in Jeddah, Saudi Arabia. Anonymous, no sign-up. Arabic and English spoken; busiest around 10pm – 3am AST.
-- [Dubai](https://talklive.app/cities/dubai): Free voice and text chat with people in Dubai, the United Arab Emirates. Anonymous, no sign-up.
-- [Abu Dhabi](https://talklive.app/cities/abu-dhabi): Free voice and text chat with people in Abu Dhabi, the United Arab Emirates. Anonymous, no sign-up.
-- [Cairo](https://talklive.app/cities/cairo): Free voice and text chat with people in Cairo, Egypt. Anonymous, no sign-up. Arabic spoken; busiest around 10pm – 2am EET.
-- [Alexandria](https://talklive.app/cities/alexandria): Free voice and text chat with people in Alexandria, Egypt. Anonymous, no sign-up. Arabic spoken; busiest around 10pm – 2am EET.
-- [Lagos](https://talklive.app/cities/lagos): Free voice and text chat with people in Lagos, Nigeria. Anonymous, no sign-up. English, Yoruba, Igbo and Hausa spoken; busiest around 8pm – 1am WAT.
-- [Abuja](https://talklive.app/cities/abuja): Free voice and text chat with people in Abuja, Nigeria. Anonymous, no sign-up. English, Yoruba, Igbo and Hausa spoken; busiest around 8pm – 1am WAT.
-- [Johannesburg](https://talklive.app/cities/johannesburg): Free voice and text chat with people in Johannesburg, South Africa. Anonymous, no sign-up.
-- [Cape Town](https://talklive.app/cities/cape-town): Free voice and text chat with people in Cape Town, South Africa. Anonymous, no sign-up.
-- [Tokyo](https://talklive.app/cities/tokyo): Free voice and text chat with people in Tokyo, Japan. Anonymous, no sign-up. Japanese spoken; busiest around 10pm – 1am JST.
-- [Osaka](https://talklive.app/cities/osaka): Free voice and text chat with people in Osaka, Japan. Anonymous, no sign-up. Japanese spoken; busiest around 10pm – 1am JST.
-- [Seoul](https://talklive.app/cities/seoul): Free voice and text chat with people in Seoul, South Korea. Anonymous, no sign-up. Korean spoken; busiest around 10pm – 2am KST.
-- [Busan](https://talklive.app/cities/busan): Free voice and text chat with people in Busan, South Korea. Anonymous, no sign-up. Korean spoken; busiest around 10pm – 2am KST.
-- [Shanghai](https://talklive.app/cities/shanghai): Free voice and text chat with people in Shanghai, China. Anonymous, no sign-up. Mandarin and Cantonese spoken; busiest around 9pm – 1am CST.
-- [Beijing](https://talklive.app/cities/beijing): Free voice and text chat with people in Beijing, China. Anonymous, no sign-up. Mandarin and Cantonese spoken; busiest around 9pm – 1am CST.
-- [Ho Chi Minh City](https://talklive.app/cities/ho-chi-minh-city): Free voice and text chat with people in Ho Chi Minh City, Vietnam. Anonymous, no sign-up. Vietnamese spoken; busiest around 9pm – 1am ICT.
-- [Hanoi](https://talklive.app/cities/hanoi): Free voice and text chat with people in Hanoi, Vietnam. Anonymous, no sign-up. Vietnamese spoken; busiest around 9pm – 1am ICT.
-- [Bangkok](https://talklive.app/cities/bangkok): Free voice and text chat with people in Bangkok, Thailand. Anonymous, no sign-up. Thai spoken; busiest around 9pm – 1am ICT.
-- [Chiang Mai](https://talklive.app/cities/chiang-mai): Free voice and text chat with people in Chiang Mai, Thailand. Anonymous, no sign-up. Thai spoken; busiest around 9pm – 1am ICT.
-- [Dhaka](https://talklive.app/cities/dhaka): Free voice and text chat with people in Dhaka, Bangladesh. Anonymous, no sign-up. Bengali and English spoken; busiest around 9pm – 2am BST.
-- [Chittagong](https://talklive.app/cities/chittagong): Free voice and text chat with people in Chittagong, Bangladesh. Anonymous, no sign-up. Bengali and English spoken; busiest around 9pm – 2am BST.
-- [Sydney](https://talklive.app/cities/sydney): Free voice and text chat with people in Sydney, Australia. Anonymous, no sign-up. English spoken; busiest around 8pm – midnight AEST.
-- [Melbourne](https://talklive.app/cities/melbourne): Free voice and text chat with people in Melbourne, Australia. Anonymous, no sign-up. English spoken; busiest around 8pm – midnight AEST.
-- [Perth](https://talklive.app/cities/perth): Free voice and text chat with people in Perth, Australia. Anonymous, no sign-up. English spoken; busiest around 8pm – midnight AEST.
-- [Warsaw](https://talklive.app/cities/warsaw): Free voice and text chat with people in Warsaw, Poland. Anonymous, no sign-up. Polish spoken; busiest around 8pm – 1am CET.
-- [Kraków](https://talklive.app/cities/krakow): Free voice and text chat with people in Kraków, Poland. Anonymous, no sign-up. Polish spoken; busiest around 8pm – 1am CET.
-- [Kyiv](https://talklive.app/cities/kyiv): Free voice and text chat with people in Kyiv, Ukraine. Anonymous, no sign-up. Ukrainian and Russian spoken; busiest around 8pm – 1am EET.
-- [Lviv](https://talklive.app/cities/lviv): Free voice and text chat with people in Lviv, Ukraine. Anonymous, no sign-up. Ukrainian and Russian spoken; busiest around 8pm – 1am EET.
-- [Amsterdam](https://talklive.app/cities/amsterdam): Free voice and text chat with people in Amsterdam, the Netherlands. Anonymous, no sign-up. Dutch and English spoken; busiest around 8pm – midnight CET.
-- [Rotterdam](https://talklive.app/cities/rotterdam): Free voice and text chat with people in Rotterdam, the Netherlands. Anonymous, no sign-up. Dutch and English spoken; busiest around 8pm – midnight CET.
-- [Bogotá](https://talklive.app/cities/bogota): Free voice and text chat with people in Bogotá, Colombia. Anonymous, no sign-up. Spanish spoken; busiest around 9pm – 1am COT.
-- [Medellín](https://talklive.app/cities/medellin): Free voice and text chat with people in Medellín, Colombia. Anonymous, no sign-up. Spanish spoken; busiest around 9pm – 1am COT.
-- [Buenos Aires](https://talklive.app/cities/buenos-aires): Free voice and text chat with people in Buenos Aires, Argentina. Anonymous, no sign-up. Spanish spoken; busiest around 10pm – 3am ART.
-- [Córdoba](https://talklive.app/cities/cordoba): Free voice and text chat with people in Córdoba, Argentina. Anonymous, no sign-up. Spanish spoken; busiest around 10pm – 3am ART.
-- [Kuala Lumpur](https://talklive.app/cities/kuala-lumpur): Free voice and text chat with people in Kuala Lumpur, Malaysia. Anonymous, no sign-up.
-- [Penang](https://talklive.app/cities/penang): Free voice and text chat with people in Penang, Malaysia. Anonymous, no sign-up. Malay, English, Mandarin and Tamil spoken; busiest around 9pm – 1am MYT.
-- [Singapore](https://talklive.app/cities/singapore-city): Free voice and text chat with people in Singapore, Singapore. Anonymous, no sign-up.
-- [Tehran](https://talklive.app/cities/tehran): Free voice and text chat with people in Tehran, Iran. Anonymous, no sign-up. Persian spoken; busiest around 10pm – 2am IRST.
-- [Mashhad](https://talklive.app/cities/mashhad): Free voice and text chat with people in Mashhad, Iran. Anonymous, no sign-up. Persian spoken; busiest around 10pm – 2am IRST.
-- [Casablanca](https://talklive.app/cities/casablanca): Free voice and text chat with people in Casablanca, Morocco. Anonymous, no sign-up. Arabic, French and Amazigh spoken; busiest around 9pm – 2am.
-- [Marrakesh](https://talklive.app/cities/marrakesh): Free voice and text chat with people in Marrakesh, Morocco. Anonymous, no sign-up. Arabic, French and Amazigh spoken; busiest around 9pm – 2am.
-- [Nairobi](https://talklive.app/cities/nairobi): Free voice and text chat with people in Nairobi, Kenya. Anonymous, no sign-up. Swahili and English spoken; busiest around 8pm – midnight EAT.
-- [Mombasa](https://talklive.app/cities/mombasa): Free voice and text chat with people in Mombasa, Kenya. Anonymous, no sign-up. Swahili and English spoken; busiest around 8pm – midnight EAT.
-- [Lisbon](https://talklive.app/cities/lisbon): Free voice and text chat with people in Lisbon, Portugal. Anonymous, no sign-up. Portuguese spoken; busiest around 9pm – 1am WET.
-- [Porto](https://talklive.app/cities/porto): Free voice and text chat with people in Porto, Portugal. Anonymous, no sign-up. Portuguese spoken; busiest around 9pm – 1am WET.
-- [Dublin](https://talklive.app/cities/dublin): Free voice and text chat with people in Dublin, Ireland. Anonymous, no sign-up. English and Irish spoken; busiest around 8pm – 1am GMT.
-- [Cork](https://talklive.app/cities/cork): Free voice and text chat with people in Cork, Ireland. Anonymous, no sign-up. English and Irish spoken; busiest around 8pm – 1am GMT.
-- [Bucharest](https://talklive.app/cities/bucharest): Free voice and text chat with people in Bucharest, Romania. Anonymous, no sign-up. Romanian spoken; busiest around 9pm – 1am EET.
-- [Cluj-Napoca](https://talklive.app/cities/cluj-napoca): Free voice and text chat with people in Cluj-Napoca, Romania. Anonymous, no sign-up. Romanian spoken; busiest around 9pm – 1am EET.
-- [Athens](https://talklive.app/cities/athens): Free voice and text chat with people in Athens, Greece. Anonymous, no sign-up. Greek spoken; busiest around 10pm – 2am EET.
-- [Thessaloniki](https://talklive.app/cities/thessaloniki): Free voice and text chat with people in Thessaloniki, Greece. Anonymous, no sign-up. Greek spoken; busiest around 10pm – 2am EET.
-- [Tel Aviv](https://talklive.app/cities/tel-aviv): Free voice and text chat with people in Tel Aviv, Israel. Anonymous, no sign-up. Hebrew, Arabic, Russian and English spoken; busiest around 9pm – 1am IST.
-- [Haifa](https://talklive.app/cities/haifa): Free voice and text chat with people in Haifa, Israel. Anonymous, no sign-up. Hebrew, Arabic, Russian and English spoken; busiest around 9pm – 1am IST.
-- [Auckland](https://talklive.app/cities/auckland): Free voice and text chat with people in Auckland, New Zealand. Anonymous, no sign-up. English and Māori spoken; busiest around 8pm – midnight NZST.
-- [Wellington](https://talklive.app/cities/wellington): Free voice and text chat with people in Wellington, New Zealand. Anonymous, no sign-up. English and Māori spoken; busiest around 8pm – midnight NZST.
-- [Stockholm](https://talklive.app/cities/stockholm): Free voice and text chat with people in Stockholm, Sweden. Anonymous, no sign-up. Swedish and English spoken; busiest around 8pm – midnight CET.
-- [Gothenburg](https://talklive.app/cities/gothenburg): Free voice and text chat with people in Gothenburg, Sweden. Anonymous, no sign-up. Swedish and English spoken; busiest around 8pm – midnight CET.
-- [Oslo](https://talklive.app/cities/oslo): Free voice and text chat with people in Oslo, Norway. Anonymous, no sign-up. Norwegian and English spoken; busiest around 8pm – midnight CET.
-- [Bergen](https://talklive.app/cities/bergen): Free voice and text chat with people in Bergen, Norway. Anonymous, no sign-up. Norwegian and English spoken; busiest around 8pm – midnight CET.
-- [English](https://talklive.app/languages/english): Practise speaking English with real people, free. Random voice chat with native speakers — anonymous, no sign-up, no tutor fees.
-- [Spanish](https://talklive.app/languages/spanish): Practise speaking Spanish with real people, free. Random voice chat with native speakers — anonymous, no sign-up, no tutor fees.
-- [French](https://talklive.app/languages/french): Practise speaking French with real people, free. Random voice chat with native speakers — anonymous, no sign-up, no tutor fees.
-- [German](https://talklive.app/languages/german): Practise speaking German with real people, free. Random voice chat with native speakers — anonymous, no sign-up, no tutor fees.
-- [Portuguese](https://talklive.app/languages/portuguese): Practise speaking Portuguese with real people, free. Random voice chat with native speakers — anonymous, no sign-up, no tutor fees.
-- [Arabic](https://talklive.app/languages/arabic): Practise speaking Arabic with real people, free. Random voice chat with native speakers — anonymous, no sign-up, no tutor fees.
-- [Hindi](https://talklive.app/languages/hindi): Practise speaking Hindi with real people, free. Random voice chat with native speakers — anonymous, no sign-up, no tutor fees.
-- [Urdu](https://talklive.app/languages/urdu): Practise speaking Urdu with real people, free. Random voice chat with native speakers — anonymous, no sign-up, no tutor fees.
-- [Russian](https://talklive.app/languages/russian): Practise speaking Russian with real people, free. Random voice chat with native speakers — anonymous, no sign-up, no tutor fees.
-- [Japanese](https://talklive.app/languages/japanese): Practise speaking Japanese with real people, free. Random voice chat with native speakers — anonymous, no sign-up, no tutor fees.
-- [Chinese (Mandarin)](https://talklive.app/languages/chinese): Practise speaking Chinese (Mandarin) with real people, free. Random voice chat with native speakers — anonymous, no sign-up, no tutor fees.
-- [Korean](https://talklive.app/languages/korean): Practise speaking Korean with real people, free. Random voice chat with native speakers — anonymous, no sign-up, no tutor fees.
-- [Italian](https://talklive.app/languages/italian): Practise speaking Italian with real people, free. Random voice chat with native speakers — anonymous, no sign-up, no tutor fees.
-- [Turkish](https://talklive.app/languages/turkish): Practise speaking Turkish with real people, free. Random voice chat with native speakers — anonymous, no sign-up, no tutor fees.
-- [Indonesian](https://talklive.app/languages/indonesian): Practise speaking Indonesian with real people, free. Random voice chat with native speakers — anonymous, no sign-up, no tutor fees.
-- [Bengali](https://talklive.app/languages/bengali): Practise speaking Bengali with real people, free. Random voice chat with native speakers — anonymous, no sign-up, no tutor fees.
-- [Guides](https://talklive.app/guides/): Every TalkLive guide in one place: how to start and end conversations, staying safe in random chat, practising a language out loud, phone anxiety, loneliness, and how anonymous voice chat works.
+- [Resources](https://talklive.app/resources): Explore practical TalkLive resources for safer stranger chat, better conversations, language practice, privacy, country preferences and choosing the right chat format.
+- [Safety Center](https://talklive.app/safety): Understand TalkLive voice privacy, encrypted WebRTC and TURN relay use, text retention, reporting, blocking, identity boundaries and practical stranger-chat safety.
+- [Chat Alternatives](https://talklive.app/alternatives): Compare random voice chat, text chat, video roulette, public rooms and app-based alternatives by privacy, bandwidth, pace, controls, cost and the experience you want.
+- [Languages](https://talklive.app/languages): Open TalkLive in a supported language, practise real conversation responsibly, understand matching limits and find language-learning guides for anonymous voice or text chat.
+- [Countries](https://talklive.app/countries): Learn how TalkLive country preferences work, why a specific country match cannot be guaranteed, and how to chat respectfully with people across regions and languages.
+- [How It Works](https://talklive.app/how-it-works): See how TalkLive matches strangers, establishes encrypted WebRTC voice calls over its production TURN relay, delivers text chat and handles privacy and moderation data.
 
 ## Languages
 The app UI and a localized homepage are available in: English plus [Español](https://talklive.app/es/), [Português](https://talklive.app/pt/), [Français](https://talklive.app/fr/), [Deutsch](https://talklive.app/de/), [Русский](https://talklive.app/ru/), [Türkçe](https://talklive.app/tr/), [العربية](https://talklive.app/ar/), [हिन्दी](https://talklive.app/hi/), [اردو](https://talklive.app/ur/), [Bahasa Indonesia](https://talklive.app/id/), [中文](https://talklive.app/zh/), [日本語](https://talklive.app/ja/), [한국어](https://talklive.app/ko/), [Italiano](https://talklive.app/it/), [فارسی](https://talklive.app/fa/), [বাংলা](https://talklive.app/bn/).
 
 ## Blog
-- [The 10 Best Omegle Alternatives in 2026](https://talklive.app/blog/best-omegle-alternatives): Omegle shut down — so where do you talk to strangers now? We compare the best Omegle alternatives in 2026, including voice-only options that skip the video weirdness.
+- [How to Choose an Omegle Alternative in 2026](https://talklive.app/blog/best-omegle-alternatives): Compare voice, text, video and room-based Omegle alternatives by privacy, bandwidth, controls, account requirements and current pricing.
 - [How to Practice Speaking English Online for Free — With Real Humans](https://talklive.app/blog/practice-english-speaking-online-free): Apps teach you vocabulary, but only conversation makes you fluent. Here is how to practice speaking English online for free with real people, starting today.
 - [Voice Chat vs Video Chat: Why Audio-Only Wins for Meeting Strangers](https://talklive.app/blog/voice-chat-vs-video-chat): Video roulette sites promised connection and delivered chaos. Here is why voice-only chat is safer, deeper and less awkward for talking to strangers online.
-- [Is TalkLive Safe? How Our Anonymous Voice Chat Actually Works](https://talklive.app/blog/is-talklive-safe): A transparent look at TalkLive safety: peer-to-peer audio that is never recorded, no sign-up required, report and ban systems, and what data we do and don’t keep.
+- [Is TalkLive Safe? How Our Anonymous Voice Chat Actually Works](https://talklive.app/blog/is-talklive-safe): A transparent look at TalkLive safety, encrypted relayed voice calls, text retention, report and block controls, and the risks every stranger-chat user should understand.
 - [The Science of Talking to Strangers (And Why It Makes You Happier)](https://talklive.app/blog/science-of-talking-to-strangers): Research keeps finding the same thing: conversations with strangers boost mood, reduce loneliness, and go deeper than we expect. Here’s the science, simply explained.
 - [How to Start a Conversation With a Stranger: 25 Openers That Actually Work](https://talklive.app/blog/how-to-start-a-conversation-with-a-stranger): Never freeze at "hello" again. Practical conversation openers, follow-up techniques and exit lines for talking to strangers — online or off.
 - [The Psychological Benefits of Talking to Strangers Every Day](https://talklive.app/blog/psychological-benefits-of-talking-to-strangers): A short, simple look at how a daily voice chat with a stranger can lift your mood, ease loneliness, and build real confidence over time.
@@ -247,12 +69,6 @@ The app UI and a localized homepage are available in: English plus [Español](ht
 - [How Anonymous Voice Chat Actually Works](https://talklive.app/blog/how-anonymous-voice-chat-works): What really happens when you tap to talk to a stranger: WebRTC, peer-to-peer audio, and what a signalling server can and cannot see.
 - [The Best Random Chat Apps in 2026](https://talklive.app/blog/best-random-chat-apps-2026): Video roulette, voice, text and topic-based apps compared on what matters: moderation, privacy, cost, and whether anyone is actually in the queue.
 - [How to End a Conversation Without Being Rude](https://talklive.app/blog/how-to-end-a-conversation-politely): Most people stay in conversations far longer than either party wants. Research on when conversations should end, why we get it wrong, and exit lines that work.
-- [Why It’s Easier to Tell a Stranger the Truth](https://talklive.app/blog/why-talking-to-strangers-feels-easier): People tell strangers things they never tell friends, for a structural reason rather than an emotional one. The stranger-on-a-train effect, explained.
-- [How to Practise Speaking a Language Without Paying for Lessons](https://talklive.app/blog/how-to-practise-a-language-by-speaking): You can read it and still not speak it. A practical method for building spoken fluency through conversation with strangers, free.
-- [How Random Chat Matchmaking Actually Works](https://talklive.app/blog/how-random-matchmaking-works): What happens between tapping the button and hearing a voice: queues, filters, WebRTC signalling, and why "random" is never quite random.
-- [Seven Mistakes That Kill a Conversation With a Stranger](https://talklive.app/blog/first-conversation-mistakes): Most random chats die in the first thirty seconds, almost always for the same handful of reasons. What they are and what to do instead.
-- [Is Random Chat Legal — and What Are the Actual Risks?](https://talklive.app/blog/is-random-chat-legal-and-safe-for-adults): A straight answer on the legality of random chat apps, why they are 18+, what platforms are required to do, and which risks are real versus overstated.
-- [The Best Time to Use Random Chat, by Where You Are](https://talklive.app/blog/best-time-to-use-random-chat): Random chat is a timezone problem. When each region is online, why 3am is busier than you think, and how to aim at a country that is awake.
 
 ## Policies
 - [About](https://talklive.app/about)

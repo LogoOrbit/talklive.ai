@@ -4,8 +4,31 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
 <link rel="stylesheet" href="/chat.css" />
-<script src="/loading.js"></script>
-<script defer src="/ads.js"></script>
+<style>
+  .skip-link {
+    position: fixed;
+    inset-block-start: 8px;
+    inset-inline-start: 8px;
+    z-index: 10000;
+    transform: translateY(-160%);
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: var(--accent);
+    color: #fff;
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .skip-link:focus { transform: translateY(0); }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+</style>
 <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
 <link rel="preconnect" href="https://pagead2.googlesyndication.com" crossorigin />
 <title>TalkLive — Anonymous Text Chat with Strangers</title>
@@ -38,6 +61,7 @@
 <script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebApplication","name":"TalkLive Chat","url":"https://talklive.app/chat","applicationCategory":"CommunicationApplication","operatingSystem":"Web, Android, iOS","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"isAccessibleForFree":true,"publisher":{"@type":"Organization","name":"TalkLive","url":"https://talklive.app","logo":"https://talklive.app/favicon.svg"},"description":"The live TalkLive chat room — anonymous random voice and text conversations with strangers."}]</script>
 </head>
 <body>
+  <a href="#chatStage" class="skip-link" data-i18n="skipToContent">Skip to main content</a>
   <div class="app">
 
     <!-- The one and only top bar. Idle: brand + online count. Connected: the
@@ -106,23 +130,20 @@
          affect the chat stage layout; hidden below 1024px where the app card
          leaves no room beside it. -->
     <aside class="chat-rail" aria-label="Advertisement">
-      <div data-ad="skyscraper"></div>
     </aside>
 
     <!-- The chat sub-app -->
-    <section id="chatStage" class="chat-stage" aria-label="Random text chat">
+    <section id="chatStage" class="chat-stage" aria-label="Random text chat" tabindex="-1">
 
       <div class="chat-body">
 
         <!-- START -->
-        <div id="viewStart" class="chat-view">
+        <div id="viewStart" class="chat-view" aria-hidden="false">
           <h1 class="chat-start-title" data-i18n="chatStartTitle">Chat with a stranger</h1>
           <p class="chat-start-sub" data-i18n="chatStartSub">Anonymous · worldwide · free</p>
           <button type="button" id="startBtn" class="chat-start-btn" data-i18n-aria="startChatAria" aria-label="Start a text chat with a random person">
             <span data-i18n="chatStartBtn">Start chatting</span>
           </button>
-          <div data-ad="leaderboard" style="margin:24px auto 0;text-align:center"></div>
-          <div data-ad="box" style="margin:16px auto 0;text-align:center"></div>
 
           <!-- AdSense display unit (Unit_1). On the start view only: it has a
                heading, subtitle and CTA around it, unlike the searching view
@@ -144,21 +165,19 @@
           </div>
           <p id="searchLine" class="search-line" aria-live="polite">Scanning the globe…</p>
           <button type="button" id="cancelBtn" class="search-cancel" data-i18n="cancel">Cancel</button>
-          <div data-ad="box" style="margin:24px auto 0;text-align:center"></div>
         </div>
 
         <!-- LIVE -->
-        <div id="viewLive" class="chat-view chat-view-live hidden">
+        <div id="viewLive" class="chat-view chat-view-live hidden" aria-hidden="true">
           <div id="msgs" class="msgs" aria-live="polite"></div>
           <p id="typing" class="typing hidden"><span data-i18n="strangerTyping">Stranger is typing</span><span class="typing-dots" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span></p>
           <!-- Slim strip above the composer: 468x60 on desktop, 320x50 on
                mobile, so the live conversation keeps as much height as possible. -->
-          <div data-ad="banner" class="chat-live-ad"></div>
         </div>
       </div>
 
       <!-- Composer -->
-      <form id="composer" class="composer hidden">
+      <form id="composer" class="composer hidden" aria-hidden="true">
         <button type="button" id="nextBtn" class="next-btn" aria-label="Next stranger">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5.5 18.5 13 12 5.5 5.5v13zM15 5.5h3v13h-3z"/></svg>
           <span data-i18n="chatNext">Next</span>
@@ -275,7 +294,7 @@
   <!-- Settings side panel (left): name, gender, theme, language, sounds — the
        same core preferences the call app exposes from its gear icon. -->
   <div id="settingsOverlay" class="side-overlay hidden"></div>
-  <aside id="settingsPanel" class="side-panel side-left" role="dialog" data-i18n-aria="settings" aria-label="Settings">
+  <aside id="settingsPanel" class="side-panel side-left" role="dialog" data-i18n-aria="settings" aria-label="Settings" aria-hidden="true" inert>
     <div class="side-header">
       <h2 data-i18n="settings">Settings</h2>
       <button type="button" id="settingsCloseBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
@@ -317,7 +336,7 @@
 
   <!-- Friends side panel (right): requests + friend list, same as the call app. -->
   <div id="friendsOverlay" class="side-overlay hidden"></div>
-  <aside id="friendsPanel" class="side-panel side-right" role="dialog" data-i18n-aria="friends" aria-label="Friends">
+  <aside id="friendsPanel" class="side-panel side-right" role="dialog" data-i18n-aria="friends" aria-label="Friends" aria-hidden="true" inert>
     <div class="side-header">
       <h2 data-i18n="friends">Friends</h2>
       <button type="button" id="friendsCloseBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
@@ -333,7 +352,7 @@
   <!-- Chat history side panel (right): the last 10 people you chatted with, so
        you can message back someone you lost. No call-back here — text only. -->
   <div id="historyOverlay" class="side-overlay hidden"></div>
-  <aside id="historyPanel" class="side-panel side-right" role="dialog" data-i18n-aria="history" aria-label="History">
+  <aside id="historyPanel" class="side-panel side-right" role="dialog" data-i18n-aria="history" aria-label="History" aria-hidden="true" inert>
     <div class="side-header">
       <h2 data-i18n="history">History</h2>
       <button type="button" id="historyCloseBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
@@ -348,7 +367,7 @@
 
   <!-- Friend chat side panel (right): persistent chat with a friend. -->
   <div id="friendChatOverlay" class="side-overlay hidden"></div>
-  <aside id="friendChatPanel" class="side-panel side-right" role="dialog" aria-labelledby="friendChatTitle">
+  <aside id="friendChatPanel" class="side-panel side-right" role="dialog" aria-labelledby="friendChatTitle" aria-hidden="true" inert>
     <div class="side-header">
       <h2 id="friendChatTitle" data-i18n="chat">Chat</h2>
       <button type="button" id="friendChatCloseBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
@@ -369,9 +388,9 @@
        while letting the browser finish parsing and paint the page first. -->
   <script defer src="/socket.io/socket.io.js"></script>
   <script defer src="/countries.js"></script>
-  <script defer src="/i18n.js"></script>
+  <script defer src="/i18n.js?v=20260816seo"></script>
   <script defer src="/error-reporter.js?v=20260808a"></script>
-  <script defer src="/chat.js?v=20260808a"></script>
+  <script defer src="/chat.js?v=20260816seo"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the
