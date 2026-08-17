@@ -62,20 +62,16 @@ app.disable('x-powered-by');
 // output-escaping fixes rather than the sole XSS barrier.
 const CSP = [
   "default-src 'self'",
-  // Ad-network origins (Adsterra + Google ads/analytics) must be allowlisted
+  // Adsterra and analytics origins must be allowlisted
   // explicitly or the browser silently drops the ad scripts and the slots stay
   // empty. Ad creatives render inside cross-origin iframes, and their tracking
   // pixels/beacons go to arbitrary ad-exchange hosts, so frame-src/img-src/
   // connect-src need broad https: — script execution on the page itself is
   // still restricted to the named script-src hosts.
-  // AdSense pulls its ad-serving and traffic-quality scripts from several
-  // Google origins beyond the pagead2 loader itself; with only pagead2
-  // allowlisted the loader runs but the units never fill.
   "script-src 'self' 'unsafe-inline' https://accounts.google.com"
     + ' https://delvefencescrewdriver.com https://www.highperformanceformat.com'
     + ' https://*.effectivecpmnetwork.com https://www.googletagmanager.com'
-    + ' https://*.googlesyndication.com https://*.doubleclick.net'
-    + ' https://*.adtrafficquality.google https://*.gstatic.com'
+    + ' https://*.gstatic.com'
     + ' https://www.google.com',
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: https:",
@@ -242,7 +238,7 @@ const envPremiumClients = new Set(
 // open/close or a bare socket message.
 const AD_UNLOCK = {
   url: process.env.AD_DIRECT_LINK
-    || 'https://delvefencescrewdriver.com/ujjjee0j3w?key=511d27e3f52876c586fda045c574cbb9',
+    || 'https://delvefencescrewdriver.com/n6dy8qkgu?key=2dca64def8b9c5816b49ccf6e1119aff',
   minWatchMs: (Number(process.env.AD_MIN_WATCH_SECONDS) || 15) * 1000,
   durationMs: (Number(process.env.AD_UNLOCK_MINUTES) || 5) * 60 * 1000,
 };

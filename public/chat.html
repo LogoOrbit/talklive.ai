@@ -30,7 +30,6 @@
   }
 </style>
 <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
-<link rel="preconnect" href="https://pagead2.googlesyndication.com" crossorigin />
 <title>TalkLive — Anonymous Text Chat with Strangers</title>
 <meta name="description" content="Anonymous text chat with a random stranger anywhere in the world. Free, instant, no sign-up." />
 <meta name="robots" content="noindex, follow" />
@@ -59,6 +58,7 @@
 <link rel="apple-touch-icon" href="/favicon-192.png" />
 <link rel="manifest" href="/site.webmanifest" />
 <script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebApplication","name":"TalkLive Chat","url":"https://talklive.app/chat","applicationCategory":"CommunicationApplication","operatingSystem":"Web, Android, iOS","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"isAccessibleForFree":true,"publisher":{"@type":"Organization","name":"TalkLive","url":"https://talklive.app","logo":"https://talklive.app/favicon.svg"},"description":"The live TalkLive chat room — anonymous random voice and text conversations with strangers."}]</script>
+<script defer src="/ads.js"></script>
 </head>
 <body>
   <a href="#chatStage" class="skip-link" data-i18n="skipToContent">Skip to main content</a>
@@ -130,6 +130,7 @@
          affect the chat stage layout; hidden below 1024px where the app card
          leaves no room beside it. -->
     <aside class="chat-rail" aria-label="Advertisement">
+      <div data-ad="skyscraper"></div>
     </aside>
 
     <!-- The chat sub-app -->
@@ -145,12 +146,9 @@
             <span data-i18n="chatStartBtn">Start chatting</span>
           </button>
 
-          <!-- AdSense display unit (Unit_1). On the start view only: it has a
-               heading, subtitle and CTA around it, unlike the searching view
-               which is a bare loading state. Loader is already at end of body. -->
+
           <div style="margin:16px auto 0;text-align:center;width:100%;max-width:728px">
-            <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-5162304231095978" data-ad-slot="7074541749" data-ad-format="auto" data-full-width-responsive="true"></ins>
-            <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+            <div data-ad="box"></div>
           </div>
         </div>
 
@@ -173,6 +171,7 @@
           <p id="typing" class="typing hidden"><span data-i18n="strangerTyping">Stranger is typing</span><span class="typing-dots" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span></p>
           <!-- Slim strip above the composer: 468x60 on desktop, 320x50 on
                mobile, so the live conversation keeps as much height as possible. -->
+          <div class="chat-live-ad" data-ad="banner"></div>
         </div>
       </div>
 
@@ -404,6 +403,5 @@
 
   gtag('config', 'G-713E3C1RH1');
 </script>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978" crossorigin="anonymous"></script>
 </body>
 </html>

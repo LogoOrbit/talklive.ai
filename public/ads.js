@@ -24,26 +24,11 @@
     container: 'container-b6c7c32837efbcc9a34a0986523c06c5',
   };
 
-  // Page-level Adsterra tags, loaded once per page (they position themselves
-  // and need no container). Deliberately EMPTY — see below before adding any.
-  //
-  // Every page on this site also serves Google AdSense
-  // (ca-pub-5162304231095978, see the adsbygoogle tag in the page templates).
-  // AdSense prohibits pop-unders and interstitial/overlay formats on pages
-  // running its ads, and enforcement is against the AdSense account rather
-  // than the offending page — so these two units are not worth the exposure
-  // while AdSense is live. The banner and native units below are conventional
-  // formats and are fine to run alongside AdSense.
-  //
-  // Only re-enable these if AdSense is first removed site-wide:
-  //   SocialBar_1  /6c/cc/ce/6cccce7190388ac7a53bb4b9de9f8dc8.js
-  //   Popunder_1   /fa/38/fb/fa38fb28ffa2c8d07cad01e1dd8c3f1c.js
-  var GLOBAL = [];
-
-  // A-Ads (a-ads.com) fallback for banner slots Adsterra leaves unfilled.
-  // Create a free ad unit at https://a-ads.com (no approval needed) and put
-  // its numeric ID here; leave '' to simply hide unfilled slots instead.
-  var AADS_ID = '2448073';
+  // High-yield page-level Adsterra units, loaded once per page.
+  var GLOBAL = [
+    'https://delvefencescrewdriver.com/6c/cc/ce/6cccce7190388ac7a53bb4b9de9f8dc8.js',
+    'https://delvefencescrewdriver.com/fa/38/fb/fa38fb28ffa2c8d07cad01e1dd8c3f1c.js',
+  ];
 
   var BANNERS = {
     '320x50':  { key: '2cb8019064140640529e87ba7bfea884', w: 320, h: 50 },
@@ -81,8 +66,7 @@
     doc.close();
 
     // If the network returns nothing (no inventory, ad blocker, domain not
-    // approved), fall back to an A-Ads unit (100% fill) when configured, or
-    // collapse the slot after a grace period so no empty box shows.
+    // approved), collapse the slot after a grace period so no empty box shows.
     setTimeout(function () {
       var filled = true;
       try {
@@ -90,12 +74,7 @@
         filled = !!(body && (body.childElementCount > 2 || body.querySelector('iframe,img,ins')));
       } catch (err) { /* cross-origin fill: leave the slot as-is */ }
       if (filled) return;
-      if (AADS_ID) {
-        frame.src = 'https://acceptable.a-ads.com/' + AADS_ID + '/?size=' + b.w + 'x' + b.h;
-        frame.setAttribute('data-aa', AADS_ID);
-      } else {
-        el.style.display = 'none';
-      }
+      el.style.display = 'none';
     }, 6000);
   }
 

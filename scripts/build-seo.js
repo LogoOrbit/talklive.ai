@@ -198,33 +198,16 @@ function linkCloud(currentSlug) {
 
 // --- Page template ----------------------------------------------------------
 
-// Legacy third-party ad slots are disabled. AdSense units below remain the
-// single passive ad system, avoiding duplicate auctions and opaque scripts.
-function adSlot() { return ''; }
-
-// Google AdSense display unit (Unit_1, slot 7074541749).
-// Only the <ins> and its push are emitted: the adsbygoogle loader already sits
-// at the end of <body> on every page (kept there deliberately — see de49ff7,
-// which moved it out of <head> to cut mobile LCP), and loading the library
-// twice on one page breaks fill reporting. Pushes queue on the
-// window.adsbygoogle array, so running this before the loader arrives is fine.
-function adsenseSlot() {
-  return `<div class="wrap" style="margin:28px auto;text-align:center">
-<ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-5162304231095978" data-ad-slot="7074541749" data-ad-format="auto" data-full-width-responsive="true"></ins>
-<script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-</div>`;
+// Adsterra-only slots used throughout generated pages.
+function adSlot(type) {
+  return `<div class="wrap" style="margin:28px auto;text-align:center"><div data-ad="${type}"></div></div>`;
 }
 
-// AdSense Multiplex unit (slot 8131758533, format "autorelaxed"). This one
-// renders a grid of recommendation-style cards, so it belongs at the end of
-// the content rather than mid-page. Same rule as above: <ins> and push only,
-// never a second copy of the loader.
-function adsenseMultiplex() {
-  return `<div class="wrap" style="margin:28px auto">
-<ins class="adsbygoogle" style="display:block" data-ad-format="autorelaxed" data-ad-client="ca-pub-5162304231095978" data-ad-slot="8131758533"></ins>
-<script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-</div>`;
-}
+// Responsive leaderboard: 728x90 on desktop, 320x50 on mobile.
+function leaderboardAd() { return adSlot('leaderboard'); }
+
+// Native recommendation-style unit near the end of long-form content.
+function nativeAd() { return adSlot('native'); }
 
 // --- Affiliate blocks --------------------------------------------------------
 // Sponsored recommendation cards shown near the bottom of relevant landing
@@ -495,7 +478,7 @@ ${headerHtml(p.slug)}
     </div>
   </section>
 
-  ${adsenseSlot()}
+  ${leaderboardAd()}
 
   ${adSlot('leaderboard')}
 
@@ -522,10 +505,9 @@ ${headerHtml(p.slug)}
     </div>
   </div>
 
-  ${adsenseMultiplex()}
+  ${nativeAd()}
 </main>
 ${footerHtml()}
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978" crossorigin="anonymous"></script>
 </body>
 </html>
 `;
@@ -2020,14 +2002,13 @@ ${headerHtml('blog')}
     </div>
   </section>
 
-  ${adsenseSlot()}
+  ${leaderboardAd()}
 
   ${adSlot('leaderboard')}
 
-  ${adsenseMultiplex()}
+  ${nativeAd()}
 </main>
 ${footerHtml()}
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978" crossorigin="anonymous"></script>
 </body>
 </html>
 `;
@@ -2117,12 +2098,11 @@ ${headerHtml('blog')}
     </div>
   </div>
 
-  ${adsenseSlot()}
+  ${leaderboardAd()}
 
-  ${adsenseMultiplex()}
+  ${nativeAd()}
 </main>
 ${footerHtml()}
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978" crossorigin="anonymous"></script>
 </body>
 </html>
 `;
@@ -2247,7 +2227,7 @@ ${alternates}
     </div>
   </section>
   ${adSlot('native')}
-  ${adsenseSlot()}
+  ${leaderboardAd()}
   <section class="faq">
     <div class="wrap">
       <h2>${loc.faqH}</h2>
@@ -2266,14 +2246,13 @@ ${alternates}
   </div>
   <div class="wrap">${languageSwitcher(loc.code)}</div>
 
-  ${adsenseMultiplex()}
+  ${nativeAd()}
 </main>
 <footer class="site-footer">
   <div class="wrap">
     <div class="fine">© ${new Date().getFullYear()} TalkLive · <a href="/about">About</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/contact">Contact</a> · <a href="/safety">Safety</a></div>
   </div>
 </footer>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978" crossorigin="anonymous"></script>
 </body>
 </html>
 `;
