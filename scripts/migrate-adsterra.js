@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const publicDir = path.join(__dirname, '..', 'public');
+const adsVersion = '20260817calm';
 
 function htmlFiles(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -26,8 +27,13 @@ for (const file of htmlFiles(publicDir)) {
   html = html.replace(/^.*pagead2\.googlesyndication\.com.*\r?\n?/gim, '');
   html = html.replace(/^[ \t]+$/gm, '');
 
-  if (!/src=["']\/ads\.js["']/.test(html)) {
-    html = html.replace('</head>', '<script defer src="/ads.js"></script>\n</head>');
+  html = html.replace(
+    /src=(["'])\/ads\.js(?:\?v=[^"']*)?\1/g,
+    `src="/ads.js?v=${adsVersion}"`
+  );
+
+  if (!/src=["']\/ads\.js\?v=/.test(html)) {
+    html = html.replace('</head>', `<script defer src="/ads.js?v=${adsVersion}"></script>\n</head>`);
   }
 
   if (html !== before) {

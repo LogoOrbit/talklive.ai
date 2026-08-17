@@ -12,9 +12,6 @@
  *
  * Any exact size in BANNERS also works as a slot name, e.g.
  *   <div data-ad="160x600"></div>
- *
- * Page-level units (no slot markup - see GLOBAL below) attach themselves to
- * the document and render on every page that loads this file.
  */
 (function () {
   'use strict';
@@ -23,12 +20,6 @@
     script: 'https://delvefencescrewdriver.com/b6c7c32837efbcc9a34a0986523c06c5/invoke.js',
     container: 'container-b6c7c32837efbcc9a34a0986523c06c5',
   };
-
-  // High-yield page-level Adsterra units, loaded once per page.
-  var GLOBAL = [
-    'https://delvefencescrewdriver.com/6c/cc/ce/6cccce7190388ac7a53bb4b9de9f8dc8.js',
-    'https://delvefencescrewdriver.com/fa/38/fb/fa38fb28ffa2c8d07cad01e1dd8c3f1c.js',
-  ];
 
   var BANNERS = {
     '320x50':  { key: '2cb8019064140640529e87ba7bfea884', w: 320, h: 50 },
@@ -94,19 +85,6 @@
     }, 4000);
   }
 
-  // Loads the page-level tags exactly once, after the page has settled.
-  function loadGlobal() {
-    if (window.__talkliveGlobalAds) return;
-    window.__talkliveGlobalAds = true;
-    GLOBAL.forEach(function (src) {
-      var s = document.createElement('script');
-      s.async = true;
-      s.setAttribute('data-cfasync', 'false');
-      s.src = src;
-      (document.body || document.documentElement).appendChild(s);
-    });
-  }
-
   function fill(el) {
     if (el.dataset.adLoaded) return;
     el.dataset.adLoaded = '1';
@@ -122,13 +100,6 @@
   }
 
   function init() {
-    // Before the slot check below - page-level tags run on every page,
-    // including ones that carry no slot markup at all.
-    if (GLOBAL.length) {
-      if (document.readyState === 'complete') loadGlobal();
-      else window.addEventListener('load', loadGlobal);
-    }
-
     var slots = document.querySelectorAll('[data-ad]');
     if (!slots.length) return;
     if ('IntersectionObserver' in window) {
