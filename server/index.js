@@ -58,8 +58,10 @@ app.disable('x-powered-by');
 // request to an attacker's host is refused by the browser. frame-ancestors and
 // X-Frame-Options stop the site being embedded for clickjacking; nosniff stops
 // MIME-confusion attacks. 'unsafe-inline' is required by the existing inline
-// scripts/handlers and styles, so the CSP is defense-in-depth on top of the
-// output-escaping fixes rather than the sole XSS barrier.
+// scripts/handlers and styles. Adsterra's banner runtime also uses evaluated
+// JavaScript, so 'unsafe-eval' is limited to this host-restricted script list.
+// The CSP remains defense-in-depth on top of the output-escaping fixes rather
+// than the sole XSS barrier.
 const CSP = [
   "default-src 'self'",
   // Adsterra and analytics origins must be allowlisted
@@ -68,7 +70,7 @@ const CSP = [
   // pixels/beacons go to arbitrary ad-exchange hosts, so frame-src/img-src/
   // connect-src need broad https: - script execution on the page itself is
   // still restricted to the named script-src hosts.
-  "script-src 'self' 'unsafe-inline' https://accounts.google.com"
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com"
     + ' https://delvefencescrewdriver.com https://www.highperformanceformat.com'
     + ' https://*.effectivecpmnetwork.com https://www.googletagmanager.com'
     + ' https://*.gstatic.com'
