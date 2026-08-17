@@ -1,5 +1,5 @@
 // ============================================================================
-// TalkLive — shared client error reporting.
+// TalkLive - shared client error reporting.
 //
 // Forwards uncaught JS errors to the server so the owner dashboard's Errors tab
 // shows the bugs real users are actually hitting. Loaded by every page that has
@@ -42,7 +42,7 @@
   }
 
   // Turn whatever was thrown into something readable. A rejection reason is
-  // often a DOMException, a plain string or an object — reporting a bare
+  // often a DOMException, a plain string or an object - reporting a bare
   // "Unhandled rejection" is what produced the blank, unfixable dashboard rows.
   function describeReason(reason) {
     if (!reason) return '';

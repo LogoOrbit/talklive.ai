@@ -13,7 +13,7 @@
  * Any exact size in BANNERS also works as a slot name, e.g.
  *   <div data-ad="160x600"></div>
  *
- * Page-level units (no slot markup — see GLOBAL below) attach themselves to
+ * Page-level units (no slot markup - see GLOBAL below) attach themselves to
  * the document and render on every page that loads this file.
  */
 (function () {
@@ -122,7 +122,7 @@
   }
 
   function init() {
-    // Before the slot check below — page-level tags run on every page,
+    // Before the slot check below - page-level tags run on every page,
     // including ones that carry no slot markup at all.
     if (GLOBAL.length) {
       if (document.readyState === 'complete') loadGlobal();

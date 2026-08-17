@@ -5,7 +5,7 @@ things that still need a human with credentials.
 
 Everything in `public/` that is a landing page, a blog post, a localized
 homepage, a sitemap, `llms.txt` or the IndexNow key file is **generated**. Do
-not hand-edit those files — run `npm run build:seo` and edit the source:
+not hand-edit those files - run `npm run build:seo` and edit the source:
 
 | Source | Produces |
 |---|---|
@@ -28,7 +28,7 @@ Hand-maintained pages that the builder does **not** touch: `index.html`,
 We own `talklive.app`, `talklive.xyz` and `talklive.site`.
 
 **Only `talklive.app` is a website.** The other two 301 to it, preserving path
-and query, with or without `www`. That is not a limitation — it is the correct
+and query, with or without `www`. That is not a limitation - it is the correct
 configuration, and the alternative is actively harmful. Three domains serving
 the same pages is three sites competing with each other for the same queries,
 splitting inbound links three ways and giving Google a duplicate-content
@@ -58,7 +58,7 @@ www.talklive.app/pricing  301 -> https://talklive.app/pricing
 not change `CANONICAL_HOST`. Both would deindex or fragment the site.
 
 **Do** add all three domains to Google Search Console and Bing Webmaster Tools
-as separate properties even though two of them only redirect — that is how you
+as separate properties even though two of them only redirect - that is how you
 see whether anyone still links to the old domains and whether the redirects are
 being followed.
 
@@ -84,7 +84,7 @@ turns "612 of 700 indexed" into knowing *which cluster* is being dropped.
 ### On programmatic pages
 
 The country, city and language pages are generated from data, which is the
-format Google is most suspicious of — the usual version is one template with a
+format Google is most suspicious of - the usual version is one template with a
 name swapped in, which is a doorway page. The defence is in `scripts/data/geo.js`:
 every entry carries facts true of exactly one place (languages actually spoken,
 local timezone and peak hours, cities searched alongside it, a paragraph of
@@ -100,13 +100,13 @@ be pasted onto another city should not get a page.
 
 Every generated page emits one JSON-LD `@graph` with stable `@id`s:
 
-- `#organization` and `#website` — identical on every page, so search engines
+- `#organization` and `#website` - identical on every page, so search engines
   consolidate them into one entity instead of 260 unrelated publisher blocks.
-- `#app` — one `WebApplication` for the whole site, not one per page.
-- `#primaryimage` — the shared `ImageObject`, referenced by `@id`.
+- `#app` - one `WebApplication` for the whole site, not one per page.
+- `#primaryimage` - the shared `ImageObject`, referenced by `@id`.
 - Per page: `WebPage` (with `speakable`), `BreadcrumbList`, `FAQPage`, `HowTo`.
 
-Breadcrumbs are emitted **twice** — as `BreadcrumbList` and as visible markup —
+Breadcrumbs are emitted **twice** - as `BreadcrumbList` and as visible markup -
 because structured data describing navigation the user cannot see is the exact
 mismatch Google's guidelines warn about.
 
@@ -118,7 +118,7 @@ Google's structured data policies, risks a manual action against the whole
 domain, and gets rich results pulled site-wide. It has been removed from all 37
 pages that carried it.
 
-If real ratings are ever collected, they can go back — sourced from real
+If real ratings are ever collected, they can go back - sourced from real
 reviews, displayed on the page, visible to the user. Do not reintroduce them
 otherwise.
 
@@ -132,7 +132,7 @@ page's `lastmod` when its content actually changed.
 
 This matters: previously every deploy stamped all ~700 URLs with the build date,
 telling Google the whole site had changed every time. Google's guidance is that
-it starts ignoring `lastmod` entirely from sites that do that — and `lastmod` is
+it starts ignoring `lastmod` entirely from sites that do that - and `lastmod` is
 the signal that gets a genuinely updated page recrawled quickly.
 
 The hash is taken over the page's source object, not its rendered HTML, because
@@ -148,7 +148,7 @@ and reciprocity is verified by the checks below.
 
 The localized pages are also linked from the footer of every English page, with
 `hreflang` on each anchor. Before that they were reachable only through hreflang
-annotations and the sitemap — neither of which is a link — so all 16 were
+annotations and the sitemap - neither of which is a link - so all 16 were
 orphans. That is the worst thing you can do to a multilingual setup, because
 those pages are exactly the ones with no other discovery path in their market.
 
@@ -185,7 +185,7 @@ static bodies are cached by ETag so a repeat hit costs a map lookup.
 
 `loading.js` also no longer runs on the ~260 server-rendered pages as a
 render-blocking script painting an opaque full-viewport curtain. Those pages
-arrive fully rendered with one stylesheet — there is no flash to hide, so the
+arrive fully rendered with one stylesheet - there is no flash to hide, so the
 curtain could only ever delay the paint it was covering. It now loads with
 `defer` and `data-mode="nav-only"` there, keeping the click-to-navigate feedback.
 The app shells at `/` and `/chat` are unchanged; they build their UI in
@@ -205,20 +205,20 @@ npm run build:seo
 node server/index.js            # then, against it:
 ```
 
-- **Broken links / orphans** — crawl from `/` and compare against files on disk.
+- **Broken links / orphans** - crawl from `/` and compare against files on disk.
   Current state: 0 broken, 0 orphans across 268 pages.
-- **Canonicals** — every page self-canonical except `/landing`, which
+- **Canonicals** - every page self-canonical except `/landing`, which
   deliberately canonicalises to `/` (it is an alternate rendering of the
   homepage served on `LANDING_HOST`).
-- **hreflang reciprocity** — if A lists B, B must list A.
-- **Sitemap parity** — every indexable page in exactly one sitemap, and no
+- **hreflang reciprocity** - if A lists B, B must list A.
+- **Sitemap parity** - every indexable page in exactly one sitemap, and no
   `noindex` page in any of them. `/chat` is `noindex` and correctly excluded.
-- **SERP budgets** — titles ≤ 60 chars, descriptions ≤ 158. `fitTitle` and
+- **SERP budgets** - titles ≤ 60 chars, descriptions ≤ 158. `fitTitle` and
   `fitDescription` in `build-seo.js` enforce this at emit time, trimming at the
   brand suffix, then a dash clause, then a sentence, then a word.
-- **Accessibility** — skip link, one `h1`, no heading-level jumps, `<main>`
+- **Accessibility** - skip link, one `h1`, no heading-level jumps, `<main>`
   landmark, accessible names on all links and buttons, no duplicate ids.
-- **JSON-LD** — all blocks must parse. Paste a page into
+- **JSON-LD** - all blocks must parse. Paste a page into
   <https://validator.schema.org/> and Google's Rich Results Test.
 
 ---
@@ -236,19 +236,19 @@ Then watch the per-sitemap coverage: the country and city clusters are the ones
 worth monitoring, because if Google decides they are thin it will show up there
 first as "Crawled – currently not indexed".
 
-### 2. `sameAs` — social profiles
+### 2. `sameAs` - social profiles
 
 The single strongest entity signal available, and it is deliberately **absent**
 from the schema. `sameAs` must point at profiles that genuinely belong to us,
 and inventing plausible URLs would assert ownership of accounts we do not
 control.
 
-Create real profiles (X, Instagram, TikTok, YouTube, Reddit, LinkedIn — the
+Create real profiles (X, Instagram, TikTok, YouTube, Reddit, LinkedIn - the
 first three are where this category's audience actually is; see
 `marketing/GLOBAL-GROWTH.md`), then add them to `entityGraph()` in
 `scripts/build-seo.js` and to the `Organization` block in `public/index.html`.
 
-### 3. Google Business Profile — not applicable, and that is the right answer
+### 3. Google Business Profile - not applicable, and that is the right answer
 
 GBP requires either a physical storefront customers visit or a defined
 service area where staff travel to customers. TalkLive is a global digital
@@ -258,16 +258,16 @@ place of business is a policy violation and gets the listing suspended.
 The genuine equivalents for a product like this are already built: a strong
 `Organization` entity with a stable `@id`, and geographic relevance through the
 country and city pages rather than through a map pin. If a registered business
-address ever exists and customers can visit it, revisit this — otherwise the
+address ever exists and customers can visit it, revisit this - otherwise the
 correct action is to not create one.
 
 ### 4. Backlinks
 
 Nothing in this repo affects off-site authority, and it is the largest remaining
 lever. `marketing/LAUNCH-PLAN.md` and `marketing/POST-KIT.md` cover the
-channels. The pages most likely to earn links on merit are the researched ones —
+channels. The pages most likely to earn links on merit are the researched ones -
 `/blog/what-happened-to-omegle`, `/omegle-vs-chatroulette`,
-`/blog/how-random-matchmaking-works`, `/blog/science-of-talking-to-strangers` —
+`/blog/how-random-matchmaking-works`, `/blog/science-of-talking-to-strangers` -
 rather than the commercial landing pages.
 
 ### 5. Real ratings
@@ -284,6 +284,6 @@ about a minute after boot, so every deploy re-submits automatically. Manual run:
 `npm run seo:ping`.
 
 It follows the sitemap **index** one level down into the child sitemaps. Reading
-`/sitemap.xml` alone would submit six sitemap URLs and zero pages — a silent
+`/sitemap.xml` alone would submit six sitemap URLs and zero pages - a silent
 no-op. If you change the sitemap structure, check this still resolves to page
 URLs.

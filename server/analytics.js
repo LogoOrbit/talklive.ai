@@ -2,7 +2,7 @@
 //
 // Why this exists: analytics are recorded against `new Date().toISOString()`,
 // i.e. UTC days. For an owner in, say, Karachi that means "today" on the
-// dashboard silently started at 5am local and runs to 5am tomorrow — so a
+// dashboard silently started at 5am local and runs to 5am tomorrow - so a
 // number like "67 today" can't be trusted without knowing where the day was
 // cut. Every visit/connection/match is also stamped into an hour bucket, so
 // here we re-fold those hours into whatever local day the owner asked for and
@@ -48,7 +48,7 @@ function localParts(ts, tz) {
   };
 }
 
-// UTC offset of a zone at an instant, as "UTC+05:30" — shown so the owner can
+// UTC offset of a zone at an instant, as "UTC+05:30" - shown so the owner can
 // verify the day boundary is where they expect it.
 function offsetLabel(ts, tz) {
   const p = localParts(ts, tz);
@@ -63,7 +63,7 @@ function offsetLabel(ts, tz) {
 }
 
 // Shift a 'YYYY-MM-DD' local day key by n days. Pure calendar arithmetic (no
-// timezone involved) — the key is already local.
+// timezone involved) - the key is already local.
 function addDays(dayKey, n) {
   const t = Date.UTC(Number(dayKey.slice(0, 4)), Number(dayKey.slice(5, 7)) - 1, Number(dayKey.slice(8, 10)));
   return new Date(t + n * 86400000).toISOString().slice(0, 10);
@@ -156,7 +156,7 @@ function sumDays(buckets) {
   return total;
 }
 
-// null means "there is no baseline to compare against" — which is genuinely
+// null means "there is no baseline to compare against" - which is genuinely
 // different from 0%, and must not be rendered as "flat".
 function pctChange(now, before) {
   if (!before) return null;

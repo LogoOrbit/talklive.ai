@@ -14,7 +14,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#0b0f1a">
-<title>TalkLive — Owner Dashboard</title>
+<title>TalkLive - Owner Dashboard</title>
 <style>
 :root{
   --bg-1:#0b0f1a;--bg-2:#111729;--bg-glow:#1c2240;
@@ -296,7 +296,7 @@ function renderStorage(storage){
   const s=storage||{};
   let html='';
   if(s.atRisk){
-    html=`<div class="stbox bad"><b>⚠️ Database not connected — data will be lost on restart</b>
+    html=`<div class="stbox bad"><b>⚠️ Database not connected - data will be lost on restart</b>
       Your <code>DATABASE_URL</code> is set but the server could not connect to it, so it fell back to temporary storage. That is why your login keeps resetting. Fix the connection string with <code>fly secrets set DATABASE_URL=...</code> and redeploy.<br><br>
       Host tried: <code>${esc(s.host||'?')}</code><br>
       Error: <code>${esc(s.error||'unknown')}</code></div>`;
@@ -454,7 +454,7 @@ async function viewOverview(){
   <div class="card concl anim"><h2>🤖 TalkLive AI Summary <span class="sub">analysis of the last 7 days</span> <span class="pill ${c.health==='good'?'good':c.health==='warning'?'warn':'crit'}">${c.health.toUpperCase()}</span></h2>
     <ul>${c.summary.map(l=>`<li>${esc(l)}</li>`).join('')}</ul>
     <div class="quickq" style="margin-top:10px"><button onclick="tab='ai';renderNav();load()">💬 Ask the AI bot →</button></div></div>
-  <div class="card anim"><h2>📈 Traffic — last 30 days</h2>
+  <div class="card anim"><h2>📈 Traffic - last 30 days</h2>
     <div class="legend"><span><i style="background:var(--s1)"></i>Visits</span><span><i style="background:var(--s2)"></i>Unique visitors</span><span><i style="background:var(--s3)"></i>Matches</span></div>
     <div id="trafficChart"></div></div>
   <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
@@ -496,7 +496,7 @@ function hourBars(el,hours,metric,upToHour){
   el.innerHTML=`<div class="hours">${hours.map((h,i)=>{
     const v=h[metric]||0;
     const cls=upToHour!=null&&i>upToHour?'future':(i===upToHour?'now':'');
-    return `<div class="hcol ${cls}" title="${String(i).padStart(2,'0')}:00 — ${num(v)}"><div class="hfill" style="height:${Math.max(1,v/max*100)}%"></div></div>`;
+    return `<div class="hcol ${cls}" title="${String(i).padStart(2,'0')}:00 - ${num(v)}"><div class="hfill" style="height:${Math.max(1,v/max*100)}%"></div></div>`;
   }).join('')}</div>
   <div class="hourlbl">${hours.map((h,i)=>`<span>${i%3===0?String(i).padStart(2,'0'):''}</span>`).join('')}</div>`;
 }
@@ -535,9 +535,9 @@ async function viewActivity(){
 
   <div class="card anim"><h2>🕐 Hour by hour <span class="sub">${esc(r.timezone)}</span>
     <select id="metricSel" style="width:auto;margin-left:auto;padding:6px 10px;font-size:.8rem">${ACT_METRICS.map(([k,l])=>`<option value="${k}"${k===actMetric?' selected':''}>${l}</option>`).join('')}</select></h2>
-    <div class="legend"><span><i style="background:var(--accent)"></i>Today — ${esc(metricLabel)}</span><span><i style="background:var(--surface-2)"></i>Not happened yet</span></div>
+    <div class="legend"><span><i style="background:var(--accent)"></i>Today - ${esc(metricLabel)}</span><span><i style="background:var(--surface-2)"></i>Not happened yet</span></div>
     <div id="hoursToday"></div>
-    <div class="legend" style="margin-top:16px"><span><i style="background:var(--accent)"></i>Yesterday — ${esc(metricLabel)} (full 24h)</span></div>
+    <div class="legend" style="margin-top:16px"><span><i style="background:var(--accent)"></i>Yesterday - ${esc(metricLabel)} (full 24h)</span></div>
     <div id="hoursYesterday"></div>
   </div>
 
@@ -547,7 +547,7 @@ async function viewActivity(){
       <td><b>${esc(w.weekStart)} → ${esc(w.weekEnd)}</b>${w.current?` <span class="pill info">this week · ${w.daysElapsed}/7 days</span>`:''}</td>
       <td class="num">${num(w.uniques)}</td><td class="num">${num(w.visits)}</td><td class="num">${num(w.connections)}</td>
       <td class="num">${num(w.matches)}</td><td class="num">${num(w.messages)}</td><td class="num">${num(w.peakOnline)}</td>
-      <td>${w.bestDay&&w.bestDay.visits?esc(w.bestDay.day)+' ('+num(w.bestDay.visits)+')':'<span class="muted">—</span>'}</td></tr>`).join('')}</table>
+      <td>${w.bestDay&&w.bestDay.visits?esc(w.bestDay.day)+' ('+num(w.bestDay.visits)+')':'<span class="muted">-</span>'}</td></tr>`).join('')}</table>
   </div>
 
   <div class="card anim"><h2>📆 Daily report <span class="sub">last 30 days, newest first</span></h2>
@@ -582,7 +582,7 @@ async function botAnswer(kind){
   if(kind==='summary')return o.conclusion.summary.join('\n• ').replace(/^/,'• ')+`\n\nOverall health: ${o.conclusion.health.toUpperCase()}.`;
   if(kind==='yesterday'){
     const y=o.yesterday,s=o.yesterdaySoFar;
-    return `Yesterday — ${o.yesterdayWindow}\n\n`
+    return `Yesterday - ${o.yesterdayWindow}\n\n`
       +`• ${num(y.uniques)} unique visitors (${num(y.visits)} visits)\n`
       +`• ${num(y.connections)} connections, ${num(y.matches)} matches\n`
       +`• Peak of ${num(y.peakOnline)} users online at the same moment\n\n`
@@ -604,7 +604,7 @@ async function botAnswer(kind){
   }
   if(kind==='features'){
     if(!o.features.length)return 'No feature usage recorded yet. Once users start using filters, friends, text chat etc., I’ll rank them here.';
-    return 'Feature ranking over the last 30 days:\n\n'+o.features.map(([f,n],i)=>`${i<3?['🥇','🥈','🥉'][i]:(i+1)+'.'} ${f} — ${num(n)} uses`).join('\n')+`\n\nMost loved: ${o.features[0][0]}. Least used: ${o.features[o.features.length-1][0]} — consider improving or promoting it.`;
+    return 'Feature ranking over the last 30 days:\n\n'+o.features.map(([f,n],i)=>`${i<3?['🥇','🥈','🥉'][i]:(i+1)+'.'} ${f} - ${num(n)} uses`).join('\n')+`\n\nMost loved: ${o.features[0][0]}. Least used: ${o.features[o.features.length-1][0]} - consider improving or promoting it.`;
   }
   if(kind==='feedback'){
     const r=await api('feedback');
@@ -614,18 +614,18 @@ async function botAnswer(kind){
   }
   if(kind==='problems'){
     const lines=[];
-    if(o.counts.unhandledReports)lines.push(`🚩 ${o.counts.unhandledReports} unhandled user report(s) — check the Reports tab.`);
-    if(o.counts.errors)lines.push(`🐛 ${o.counts.errors} error record(s) logged — check the Errors tab.`);
+    if(o.counts.unhandledReports)lines.push(`🚩 ${o.counts.unhandledReports} unhandled user report(s) - check the Reports tab.`);
+    if(o.counts.errors)lines.push(`🐛 ${o.counts.errors} error record(s) logged - check the Errors tab.`);
     if(o.counts.activeBans)lines.push(`⛔ ${o.counts.activeBans} active ban(s).`);
     if(sum7('errors')>5)lines.push(`⚠️ ${sum7('errors')} error events this week is high.`);
-    if(o.maintenance.on)lines.push('🛠️ Maintenance mode is ON — users cannot use the site right now!');
-    return lines.length?lines.join('\n'):'✅ All clear — no unhandled reports, no logged errors, no active bans. TalkLive is running smoothly.';
+    if(o.maintenance.on)lines.push('🛠️ Maintenance mode is ON - users cannot use the site right now!');
+    return lines.length?lines.join('\n'):'✅ All clear - no unhandled reports, no logged errors, no active bans. TalkLive is running smoothly.';
   }
   if(kind==='audience'){
-    const top=o.countries.slice(0,5).map(([c,n],i)=>`${i+1}. ${c} — ${num(n)} visits`).join('\n');
+    const top=o.countries.slice(0,5).map(([c,n],i)=>`${i+1}. ${c} - ${num(n)} visits`).join('\n');
     return o.countries.length?`Your top countries (last 30 days):\n\n${top}\n\nTop city: ${o.cities[0]?o.cities[0][0]+' ('+num(o.cities[0][1])+' visits)':'n/a'}.`:'No geo data yet.';
   }
-  return `Right now: ${num(o.runtime.online)} user(s) online — ${num(o.runtime.inCall/2|0)} in calls, ${num(o.runtime.waiting)} waiting for a match.\nToday (${o.todayWindow}): ${num(o.today.uniques)} unique visitors, ${num(o.today.visits)} visits, ${num(o.today.matches)} matches, peak of ${num(o.today.peakOnline)} online.\nYesterday: ${num(o.yesterday.uniques)} unique visitors, peak of ${num(o.yesterday.peakOnline)} online.\nServer: up ${Math.floor(o.runtime.uptimeSeconds/3600)}h, ${o.runtime.memoryMB} MB RAM.`;
+  return `Right now: ${num(o.runtime.online)} user(s) online - ${num(o.runtime.inCall/2|0)} in calls, ${num(o.runtime.waiting)} waiting for a match.\nToday (${o.todayWindow}): ${num(o.today.uniques)} unique visitors, ${num(o.today.visits)} visits, ${num(o.today.matches)} matches, peak of ${num(o.today.peakOnline)} online.\nYesterday: ${num(o.yesterday.uniques)} unique visitors, peak of ${num(o.yesterday.peakOnline)} online.\nServer: up ${Math.floor(o.runtime.uptimeSeconds/3600)}h, ${o.runtime.memoryMB} MB RAM.`;
 }
 window.askBot=async(kind,label)=>{
   botLog.push({me:true,text:label});
@@ -641,7 +641,7 @@ function renderBot(typing){
 }
 async function viewBot(){
   if(!lastOverview)lastOverview=await api('overview');
-  if(!botLog.length)botLog.push({me:false,text:'Hey! 👋 I’m your TalkLive AI assistant. I watch everything happening on the app — traffic, matches, chats, reports, errors — and turn it into plain answers. Tap a question below.'});
+  if(!botLog.length)botLog.push({me:false,text:'Hey! 👋 I’m your TalkLive AI assistant. I watch everything happening on the app - traffic, matches, chats, reports, errors - and turn it into plain answers. Tap a question below.'});
   $('#main').innerHTML=`<div class="bot">
     <div class="card anim" style="margin-top:0"><h2>🤖 TalkLive AI Bot <span class="sub">answers from live app data · refreshes every minute</span></h2>
       <div class="botlog" id="botlog"></div>
@@ -688,7 +688,7 @@ async function viewReports(){
   <td><div class="rowbtns">
     ${rep.activeBan?'':`<button class="danger" onclick="banUser('${jsq(rep.reported.clientId)}','${jsq(rep.reported.ip||'')}','${jsq(rep.reported.username)}','${jsq(rep.reported.country||'')}','${jsq(rep.reported.city||'')}')">Ban…</button>`}
     ${rep.handled?'':`<button onclick="markHandled('${jsq(rep.id)}')">Mark handled</button>`}
-  </div></td></tr>`).join('')||'<tr><td colspan="6" class="muted">No reports yet — good sign!</td></tr>'}</table></div>`;
+  </div></td></tr>`).join('')||'<tr><td colspan="6" class="muted">No reports yet - good sign!</td></tr>'}</table></div>`;
 }
 window.markHandled=async(id)=>{await post('reports/'+id+'/handled');load();};
 
@@ -733,14 +733,14 @@ async function viewAccounts(){
   ${r.accounts.map(a=>`<tr><td><b>${esc(a.username||a.key)}</b></td><td>${esc(a.nickname||'')}</td>
   <td>${a.method==='google'?'<span class="pill info">Google</span>':'<span class="pill good">Password</span>'}</td>
   <td>${esc(a.country||'')}${a.city&&a.city!=='Unknown'?', '+esc(a.city):''}</td>
-  <td>${a.createdAt?fmtTs(a.createdAt):'—'}</td><td>${a.lastSeen?ago(a.lastSeen):'—'}</td><td class="muted">${esc(a.ip||'')}</td></tr>`).join('')||'<tr><td colspan="7" class="muted">No accounts registered yet.</td></tr>'}</table></div>`;
+  <td>${a.createdAt?fmtTs(a.createdAt):'-'}</td><td>${a.lastSeen?ago(a.lastSeen):'-'}</td><td class="muted">${esc(a.ip||'')}</td></tr>`).join('')||'<tr><td colspan="7" class="muted">No accounts registered yet.</td></tr>'}</table></div>`;
 }
 
 async function viewErrors(){
   const r=await api('errors');
   $('#main').innerHTML=`<div class="card anim" style="margin-top:0"><h2>🐛 Bugs &amp; errors <span class="sub">client + server, duplicates collapsed</span>
   ${r.errors.length?`<button id="clearErrs" style="margin-left:auto;border:1px solid color-mix(in srgb,var(--crit) 45%,transparent);background:var(--surface-2);color:var(--crit);border-radius:9px;padding:6px 12px;font-size:.78rem">Clear all</button>`:''}</h2>
-  <div class="muted" style="margin-bottom:10px">Records never expire on their own. Dismiss one after shipping a fix — if it comes back, it wasn't fixed.</div>
+  <div class="muted" style="margin-bottom:10px">Records never expire on their own. Dismiss one after shipping a fix - if it comes back, it wasn't fixed.</div>
   <table><tr><th>Last seen</th><th>Source</th><th>Error</th><th class="num">Count</th><th>User</th><th></th></tr>
   ${r.errors.map(e=>`<tr><td>${ago(e.ts)}</td><td><span class="pill ${e.source==='server'?'crit':'warn'}">${esc(e.source)}</span></td>
   <td><b>${esc(e.message)}</b>${e.url?`<br><span class="muted">${esc(e.url)}</span>`:''}${e.stack?`<details><summary class="muted" style="cursor:pointer">stack</summary><pre style="font-size:.7rem;white-space:pre-wrap;color:var(--ink2)">${esc(e.stack)}</pre></details>`:''}</td>
@@ -772,7 +772,7 @@ async function viewSettings(){
   const m=o.maintenance;
   $('#main').innerHTML=`<div class="card anim" style="margin-top:0"><h2>🛠️ Maintenance mode</h2>
   <p class="muted" style="margin-bottom:12px">When on, visitors see a friendly maintenance page and nobody can connect. Your dashboard stays available.</p>
-  <div class="switch"><b>Status:</b> ${m.on?'<span class="pill crit">MAINTENANCE ON — site is down for users</span>':'<span class="pill good">Site is LIVE</span>'}</div>
+  <div class="switch"><b>Status:</b> ${m.on?'<span class="pill crit">MAINTENANCE ON - site is down for users</span>':'<span class="pill good">Site is LIVE</span>'}</div>
   <label style="display:block;margin:14px 0 6px;font-size:.85rem;color:var(--ink2)">Message shown to users</label>
   <textarea id="maintMsg" rows="3">${esc(m.message)}</textarea>
   <div class="rowbtns" style="margin-top:12px">

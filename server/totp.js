@@ -1,5 +1,5 @@
 // RFC 6238 TOTP (Google Authenticator compatible), implemented with Node's
-// crypto only — 30s period, 6 digits, HMAC-SHA1.
+// crypto only - 30s period, 6 digits, HMAC-SHA1.
 const crypto = require('crypto');
 
 const B32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';

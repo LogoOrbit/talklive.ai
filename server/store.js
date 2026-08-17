@@ -5,7 +5,7 @@
 //  - DATABASE_URL set (e.g. Supabase Postgres): the whole document lives in a
 //    single jsonb row, and is the only option if the app ever runs on more
 //    than one machine.
-//  - otherwise: a JSON file under DATA_DIR (defaults to <repo>/data) — zero
+//  - otherwise: a JSON file under DATA_DIR (defaults to <repo>/data) - zero
 //    setup locally. In production this sits on the Fly volume mounted at
 //    /data, so it survives deploys and restarts.
 // Writes are debounced either way so hot paths never block on I/O.
@@ -79,10 +79,10 @@ function defaults() {
     // Lets a signed-in user stay signed in across page reloads, server restarts
     // and deploys (sliding expiry, see SESSION_TTL_MS).
     authSessions: {},
-    // Durable social graph — users' "memories": who they added and what they
+    // Durable social graph - users' "memories": who they added and what they
     // said. friends: clientId -> { friendClientId -> info }. friendChats:
     // pairKey -> [{ from, text, ts }]. blocks: clientId -> [clientId,...].
-    // chatHistory: clientId -> [{ clientId, username, countryCode, ts }] — the
+    // chatHistory: clientId -> [{ clientId, username, countryCode, ts }] - the
     // last few random chat partners, so a user can message someone back after
     // accidentally losing them (kept to the newest 10 per user).
     social: { friends: {}, friendChats: {}, blocks: {}, chatHistory: {} },
@@ -140,7 +140,7 @@ async function loadPg() {
   if (res.rows.length) applyParsed(res.rows[0].doc);
   backendStatus.mode = 'postgres';
   backendStatus.error = null;
-  console.log('[store] using Postgres backend (DATABASE_URL) —', backendStatus.host);
+  console.log('[store] using Postgres backend (DATABASE_URL) -', backendStatus.host);
 }
 
 let pgWriting = false;
@@ -288,7 +288,7 @@ function recordFeature(name) {
 const STOPWORDS = new Set(('the and you your for that this with have from what like just are was but not they them then when where will can could would there here how who whom about into over under again very really much many some any all been being were is it its our out off did does doing had has more most other only own same than too she he his her hers him himself herself they their theirs myself yourself hello okay yeah yes no nope maybe dont cant wont didnt doesnt im ive ill youre youve thats whats going want know think good time talk talking say said tell')
   .split(/\s+/));
 
-// Aggregate, anonymous topic keywords — never stores who said what or full text.
+// Aggregate, anonymous topic keywords - never stores who said what or full text.
 function recordTopics(text) {
   const words = String(text || '').toLowerCase().replace(/[^a-z\s]/g, ' ').split(/\s+/);
   const topics = data.analytics.topics;
@@ -559,7 +559,7 @@ const ready = (async () => {
       backendStatus.error = String(err.message || err);
       console.error('[store] ============================================================');
       console.error('[store] DATABASE_URL is set but the connection FAILED. Falling back');
-      console.error('[store] to the ephemeral file store — data will NOT survive restarts');
+      console.error('[store] to the ephemeral file store - data will NOT survive restarts');
       console.error('[store] until this is fixed. Host:', backendStatus.host);
       console.error('[store] Reason:', backendStatus.error);
       console.error('[store] ============================================================');
@@ -573,7 +573,7 @@ const ready = (async () => {
 
 process.on('exit', () => { if (!pgPool) persistNow(); });
 
-// 'exit' never fires for SIGTERM/SIGINT — and SIGTERM is exactly what Fly
+// 'exit' never fires for SIGTERM/SIGINT - and SIGTERM is exactly what Fly
 // sends on every deploy/restart. Flush any debounced write before going down
 // so a signup seconds before a deploy is never lost.
 let shuttingDown = false;

@@ -1,7 +1,7 @@
 {
   "name": "talklive",
   "version": "1.0.0",
-  "description": "TalkLive — free random voice chat to talk to strangers worldwide",
+  "description": "TalkLive - free random voice chat to talk to strangers worldwide",
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",

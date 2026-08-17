@@ -1,7 +1,7 @@
-# Must match the app created by `fly launch` — see `fly apps list`.
+# Must match the app created by `fly launch` - see `fly apps list`.
 app = 'talklive-ai'
 
-# Change this to the region nearest your largest audience before first deploy —
+# Change this to the region nearest your largest audience before first deploy -
 # it is baked in at `fly launch` time. Candidates: 'iad' (US East),
 # 'fra' (Frankfurt), 'bom' (Mumbai), 'sin' (Singapore).
 primary_region = 'iad'
@@ -14,14 +14,14 @@ primary_region = 'iad'
   DATA_DIR = '/data'
   # Must match the domain the site actually canonicalises to. Every canonical
   # tag, the sitemap and robots.txt in public/ point at talklive.app, and any
-  # host that is not this one is served X-Robots-Tag: noindex — so a wrong
+  # host that is not this one is served X-Robots-Tag: noindex - so a wrong
   # value here deindexes the live site.
   CANONICAL_HOST = 'talklive.app'
   # Domains we own that are not the canonical one. They 301 to CANONICAL_HOST
   # (with or without www, preserving path) so visitors land on the app and
   # search engines credit one origin instead of splitting rankings across three
-  # copies of the same site. Certificates for each must exist on Fly —
-  # `fly certs add talklive.xyz www.talklive.xyz` etc. — or HTTPS on the alias
+  # copies of the same site. Certificates for each must exist on Fly -
+  # `fly certs add talklive.xyz www.talklive.xyz` etc. - or HTTPS on the alias
   # fails before the redirect can run.
   ALIAS_HOSTS = 'talklive.xyz,talklive.site'
 
@@ -52,7 +52,7 @@ primary_region = 'iad'
   path = '/healthz'
 
 # NOTE: no volume is mounted, so DATA_DIR falls back to the container
-# filesystem and server/store.js's owner-data.json resets on every deploy —
+# filesystem and server/store.js's owner-data.json resets on every deploy -
 # the same behaviour as Render's free plan.
 #
 # Volumes cannot be created from the Fly dashboard, only the CLI, so mounting
@@ -70,7 +70,7 @@ primary_region = 'iad'
 # OOM-killed (exit 137) in a restart loop. 512MB gives roughly 2x headroom for
 # V8 growth and websocket buffers.
 #
-# Do not set both `memory` and `memory_mb` here — the generated config set
+# Do not set both `memory` and `memory_mb` here - the generated config set
 # memory = '1gb' and memory_mb = 256, and the smaller value won.
 [[vm]]
   cpu_kind = 'shared'

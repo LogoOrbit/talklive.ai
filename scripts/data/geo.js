@@ -5,7 +5,7 @@
  * The whole point of this file is that the generated pages are NOT
  * interchangeable. A country page built from a template with only the name
  * swapped is doorway-page spam and Google treats it as such. So every entry
- * here carries facts that only apply to that place — the languages actually
+ * here carries facts that only apply to that place - the languages actually
  * spoken, the local clock, when its users are awake, the cities people
  * search alongside it, and a paragraph of genuine context about how people
  * there use random chat. The generator has enough material to write a page
@@ -15,14 +15,14 @@
  * Fields:
  *   slug      URL segment under /countries/
  *   name      display name, matching public/countries.js where they overlap
- *   demonym   adjective form ("Indian") — used for "<demonym> chat" phrasing
+ *   demonym   adjective form ("Indian") - used for "<demonym> chat" phrasing
  *   code      ISO-3166 alpha-2, ties the page to the app's country filter
  *   region    used to group the hub page and to cross-link neighbours
  *   langs     [{ name, hello }] real languages, with a real greeting
  *   capital   used in prose and in the city cross-links
  *   tz        human-readable timezone label
  *   peak      when the local user base is actually online
- *   cities    [{ name, slug, note }] — `note` must be true of that city alone
+ *   cities    [{ name, slug, note }] - `note` must be true of that city alone
  *   context   2-3 sentences that could not be copied to another country
  *   topics    what people there actually end up talking about
  */
@@ -38,9 +38,9 @@ const COUNTRIES = [
       { name: 'Bangalore', slug: 'bangalore', note: 'a tech workforce that keeps US hours, so its late-night users overlap with American afternoons' },
       { name: 'Hyderabad', slug: 'hyderabad', note: 'Telugu and Urdu speakers in the same city, often in the same chat' },
       { name: 'Chennai', slug: 'chennai', note: 'Tamil-first, with English used freely for anything technical' },
-      { name: 'Kolkata', slug: 'kolkata', note: 'Bengali conversation culture — long, unhurried, argumentative in the friendliest way' },
+      { name: 'Kolkata', slug: 'kolkata', note: 'Bengali conversation culture - long, unhurried, argumentative in the friendliest way' },
     ],
-    context: 'India is one of the largest sources of random-chat traffic in the world, and it is overwhelmingly mobile: cheap data, a phone per person, and a strong preference for voice over typing because switching keyboards between scripts is a nuisance. That is why voice-first matching lands well here — you speak Hindi, Tamil or English without fighting an input method. Evening is when the country comes online, after work and dinner, and it stays busy well past midnight.',
+    context: 'India is one of the largest sources of random-chat traffic in the world, and it is overwhelmingly mobile: cheap data, a phone per person, and a strong preference for voice over typing because switching keyboards between scripts is a nuisance. That is why voice-first matching lands well here - you speak Hindi, Tamil or English without fighting an input method. Evening is when the country comes online, after work and dinner, and it stays busy well past midnight.',
     topics: ['cricket', 'films and music across four or five industries', 'exam and job prep', 'moving abroad'],
   },
   {
@@ -51,9 +51,9 @@ const COUNTRIES = [
       { name: 'Karachi', slug: 'karachi', note: 'the country\'s largest city and the most linguistically mixed room you will land in' },
       { name: 'Lahore', slug: 'lahore', note: 'Punjabi and Urdu switch mid-sentence and nobody comments on it' },
       { name: 'Islamabad', slug: 'islamabad', note: 'a student-heavy population that skews toward English practice' },
-      { name: 'Faisalabad', slug: 'faisalabad', note: 'a working city where late-night is genuinely late — 1am is not unusual' },
+      { name: 'Faisalabad', slug: 'faisalabad', note: 'a working city where late-night is genuinely late - 1am is not unusual' },
     ],
-    context: 'Pakistan has an unusually active late-night chat culture — traffic here peaks later than almost anywhere else, often past 1am. Urdu is the shared language across provinces even where it is nobody\'s mother tongue, so a random match usually finds common ground immediately. Voice matters more than text here for the same reason it does across South Asia: typing Urdu on a phone is slower than simply saying it.',
+    context: 'Pakistan has an unusually active late-night chat culture - traffic here peaks later than almost anywhere else, often past 1am. Urdu is the shared language across provinces even where it is nobody\'s mother tongue, so a random match usually finds common ground immediately. Voice matters more than text here for the same reason it does across South Asia: typing Urdu on a phone is slower than simply saying it.',
     topics: ['cricket', 'university admissions', 'freelancing and remote work', 'food, endlessly'],
   },
   {
@@ -64,10 +64,10 @@ const COUNTRIES = [
       { name: 'New York', slug: 'new-york', note: 'the only US city where 2am chat traffic is as heavy as 10pm' },
       { name: 'Los Angeles', slug: 'los-angeles', note: 'three hours behind the east coast, so it keeps the country online after midnight ET' },
       { name: 'Chicago', slug: 'chicago', note: 'central time makes it the bridge between the two coastal peaks' },
-      { name: 'Houston', slug: 'houston', note: 'genuinely bilingual — English and Spanish matches are equally likely' },
+      { name: 'Houston', slug: 'houston', note: 'genuinely bilingual - English and Spanish matches are equally likely' },
       { name: 'Miami', slug: 'miami', note: 'the busiest Spanish-language chat city in the country' },
     ],
-    context: 'The United States spans six time zones, which means it never has a single quiet hour — the east coast winds down as the west coast is just getting started. It is also the largest single source of English-practice partners on the platform, which is why learners from Brazil, Japan, Turkey and India filter for it. Random chat here carries a long cultural memory of Omegle and Chatroulette, so newcomers arrive already knowing how the format works.',
+    context: 'The United States spans six time zones, which means it never has a single quiet hour - the east coast winds down as the west coast is just getting started. It is also the largest single source of English-practice partners on the platform, which is why learners from Brazil, Japan, Turkey and India filter for it. Random chat here carries a long cultural memory of Omegle and Chatroulette, so newcomers arrive already knowing how the format works.',
     topics: ['music and sport', 'work and burnout', 'travel plans', 'whatever is happening online that week'],
   },
   {
@@ -92,7 +92,7 @@ const COUNTRIES = [
       { name: 'Montreal', slug: 'montreal', note: 'the best place on the platform to practise French with someone who also speaks English' },
       { name: 'Vancouver', slug: 'vancouver', note: 'Pacific time, heavy overlap with East Asian mornings' },
     ],
-    context: 'Canada is officially bilingual and practically multilingual, which makes it unusually good for language exchange — a Montreal match will often happily run half the call in French and half in English. Winters are long and dark, and it shows in the traffic: Canadian chat volume climbs noticeably between November and March.',
+    context: 'Canada is officially bilingual and practically multilingual, which makes it unusually good for language exchange - a Montreal match will often happily run half the call in French and half in English. Winters are long and dark, and it shows in the traffic: Canadian chat volume climbs noticeably between November and March.',
     topics: ['hockey', 'immigration and settling in', 'the cold', 'US politics from a safe distance'],
   },
   {
@@ -104,7 +104,7 @@ const COUNTRIES = [
       { name: 'Rio de Janeiro', slug: 'rio-de-janeiro', note: 'a noticeably more talkative match on average, which regulars will tell you unprompted' },
       { name: 'Belo Horizonte', slug: 'belo-horizonte', note: 'a strong student population and the accent people say is easiest to understand' },
     ],
-    context: 'Brazil is the single largest Portuguese-speaking country in the world and its users are famously willing to keep a conversation going with a total stranger — the drop-off rate in the first thirty seconds is measurably lower here than the platform average. Brazilians also make up a large share of the people practising English on TalkLive, usually by looking for a US or UK match late in their evening.',
+    context: 'Brazil is the single largest Portuguese-speaking country in the world and its users are famously willing to keep a conversation going with a total stranger - the drop-off rate in the first thirty seconds is measurably lower here than the platform average. Brazilians also make up a large share of the people practising English on TalkLive, usually by looking for a US or UK match late in their evening.',
     topics: ['football', 'music, especially anything you can dance to', 'learning English', 'travel'],
   },
   {
@@ -128,7 +128,7 @@ const COUNTRIES = [
       { name: 'Surabaya', slug: 'surabaya', note: 'a port city with a blunter, faster conversational style than the capital' },
       { name: 'Bandung', slug: 'bandung', note: 'a university city, so the median match is a student' },
     ],
-    context: 'Indonesia is one of the most mobile-first countries in the world — for a large share of users the phone is the only computer they have ever owned, which is why a browser-based chat with nothing to install matters more here than almost anywhere. Bahasa Indonesia is deliberately easy to learn and widely shared across a thousand islands, so strangers from opposite ends of the country still match cleanly.',
+    context: 'Indonesia is one of the most mobile-first countries in the world - for a large share of users the phone is the only computer they have ever owned, which is why a browser-based chat with nothing to install matters more here than almost anywhere. Bahasa Indonesia is deliberately easy to learn and widely shared across a thousand islands, so strangers from opposite ends of the country still match cleanly.',
     topics: ['football and badminton', 'music', 'studying abroad', 'religion and family, handled respectfully'],
   },
   {
@@ -140,7 +140,7 @@ const COUNTRIES = [
       { name: 'Cebu City', slug: 'cebu-city', note: 'Cebuano rather than Tagalog is the first language for most matches here' },
       { name: 'Davao', slug: 'davao', note: 'a slower, friendlier pace that regulars notice immediately' },
     ],
-    context: 'The Philippines has one of the highest rates of comfortable, conversational English in Asia, which makes Filipino users some of the most sought-after language-practice partners on the platform — and unusually patient ones. A very large night-shift workforce serving American business hours also means the country has real chat traffic at 4am local time, when almost everywhere else is silent.',
+    context: 'The Philippines has one of the highest rates of comfortable, conversational English in Asia, which makes Filipino users some of the most sought-after language-practice partners on the platform - and unusually patient ones. A very large night-shift workforce serving American business hours also means the country has real chat traffic at 4am local time, when almost everywhere else is silent.',
     topics: ['basketball', 'karaoke and music', 'working abroad', 'family'],
   },
   {
@@ -153,7 +153,7 @@ const COUNTRIES = [
       { name: 'Hamburg', slug: 'hamburg', note: 'a port city with a reputation for being direct even by German standards' },
       { name: 'Cologne', slug: 'cologne', note: 'the friendliest small talk in the country, by local consensus' },
     ],
-    context: 'German users tend to arrive with a purpose — language practice, a specific topic, or simply wanting a real conversation instead of small talk — and directness is a feature rather than rudeness. Germany also has one of Europe\'s largest Turkish-speaking populations, so Turkish matches inside Germany are common and often bilingual.',
+    context: 'German users tend to arrive with a purpose - language practice, a specific topic, or simply wanting a real conversation instead of small talk - and directness is a feature rather than rudeness. Germany also has one of Europe\'s largest Turkish-speaking populations, so Turkish matches inside Germany are common and often bilingual.',
     topics: ['football', 'travel', 'work and study', 'genuinely opinionated debate'],
   },
   {
@@ -165,7 +165,7 @@ const COUNTRIES = [
       { name: 'Marseille', slug: 'marseille', note: 'a Mediterranean city where French, Arabic and Italian all turn up in the same evening' },
       { name: 'Lyon', slug: 'lyon', note: 'a student city with a strong appetite for language exchange' },
     ],
-    context: 'France is where the largest share of French-language matches come from, but the language reaches far past it — a French speaker on TalkLive is roughly as likely to be matched with someone in Montreal, Brussels, Abidjan or Casablanca. French users are also among the most likely to want a proper conversation rather than a two-minute exchange, and call lengths here run above the platform average.',
+    context: 'France is where the largest share of French-language matches come from, but the language reaches far past it - a French speaker on TalkLive is roughly as likely to be matched with someone in Montreal, Brussels, Abidjan or Casablanca. French users are also among the most likely to want a proper conversation rather than a two-minute exchange, and call lengths here run above the platform average.',
     topics: ['film and books', 'food and wine', 'politics', 'arguing about language itself'],
   },
   {
@@ -177,7 +177,7 @@ const COUNTRIES = [
       { name: 'Barcelona', slug: 'barcelona', note: 'Catalan and Spanish in the same city, and often the same call' },
       { name: 'Valencia', slug: 'valencia', note: 'a growing remote-work population, so daytime traffic is unusually healthy' },
     ],
-    context: 'Spain runs late by European standards — dinner at ten means chat traffic peaks around midnight, hours after Germany has gone quiet. That late peak lines up neatly with the Latin American evening, so Spain is the natural bridge between European and American Spanish speakers on the platform.',
+    context: 'Spain runs late by European standards - dinner at ten means chat traffic peaks around midnight, hours after Germany has gone quiet. That late peak lines up neatly with the Latin American evening, so Spain is the natural bridge between European and American Spanish speakers on the platform.',
     topics: ['football', 'travel within Europe', 'music', 'the difference between Spanish accents'],
   },
   {
@@ -189,7 +189,7 @@ const COUNTRIES = [
       { name: 'Milan', slug: 'milan', note: 'the most internationally-minded matches in the country' },
       { name: 'Naples', slug: 'naples', note: 'a dialect distinct enough that other Italians occasionally ask for a repeat' },
     ],
-    context: 'Italian is one of the most-requested languages relative to how many people speak it — learners love it and there are far fewer native speakers online than for Spanish or French, which makes an Italian match something people actively hunt for. Italians themselves are among the most expressive users on a voice-only platform, where tone carries everything.',
+    context: 'Italian is one of the most-requested languages relative to how many people speak it - learners love it and there are far fewer native speakers online than for Spanish or French, which makes an Italian match something people actively hunt for. Italians themselves are among the most expressive users on a voice-only platform, where tone carries everything.',
     topics: ['food, at length and with strong opinions', 'football', 'travel', 'family'],
   },
   {
@@ -201,7 +201,7 @@ const COUNTRIES = [
       { name: 'Ankara', slug: 'ankara', note: 'a government and university city, so the median match is studying something' },
       { name: 'Izmir', slug: 'izmir', note: 'a coastal city with a markedly more relaxed conversational style' },
     ],
-    context: 'Turkey has an extremely active late-night internet culture and chat volume here holds up past 2am when most of Europe has gone quiet. Turkish users are also heavy users of language filters — English and German practice are both common goals, the latter because of the enormous Turkish community in Germany.',
+    context: 'Turkey has an extremely active late-night internet culture and chat volume here holds up past 2am when most of Europe has gone quiet. Turkish users are also heavy users of language filters - English and German practice are both common goals, the latter because of the enormous Turkish community in Germany.',
     topics: ['football', 'music', 'learning English or German', 'food'],
   },
   {
@@ -224,7 +224,7 @@ const COUNTRIES = [
       { name: 'Riyadh', slug: 'riyadh', note: 'the largest source of Gulf Arabic matches on the platform' },
       { name: 'Jeddah', slug: 'jeddah', note: 'a coastal city with a more international mix than the interior' },
     ],
-    context: 'Saudi Arabia has one of the highest per-person rates of social app usage anywhere, and a very late night-time peak — traffic here is still climbing at 1am. Voice-only chat suits the market particularly well: it is private by construction, requires no camera, and does not expose anything about who you are or where you are sitting.',
+    context: 'Saudi Arabia has one of the highest per-person rates of social app usage anywhere, and a very late night-time peak - traffic here is still climbing at 1am. Voice-only chat suits the market particularly well: it is private by construction, requires no camera, and does not expose anything about who you are or where you are sitting.',
     topics: ['football', 'travel', 'business and side projects', 'practising English'],
   },
   {
@@ -232,10 +232,10 @@ const COUNTRIES = [
     langs: [{ name: 'Arabic', hello: 'مرحبا' }, { name: 'English', hello: 'Hello' }, { name: 'Hindi', hello: 'Namaste' }, { name: 'Urdu', hello: 'Assalam-o-Alaikum' }],
     capital: 'Abu Dhabi', tz: 'UTC+4 (GST)', peak: '10pm – 2am GST',
     cities: [
-      { name: 'Dubai', slug: 'dubai', note: 'roughly nine in ten residents were born abroad — no other city on this list matches strangers across so many first languages' },
+      { name: 'Dubai', slug: 'dubai', note: 'roughly nine in ten residents were born abroad - no other city on this list matches strangers across so many first languages' },
       { name: 'Abu Dhabi', slug: 'abu-dhabi', note: 'a slightly older, more settled population than Dubai and longer average calls' },
     ],
-    context: 'The UAE is the most linguistically mixed country on the platform relative to its size: an Emirati match might open in Arabic, English, Hindi, Urdu, Malayalam or Tagalog. It is also a country of people living far from home, which shows up in what conversations are about — a large share of calls here are with someone in the country the speaker left.',
+    context: 'The UAE is the most linguistically mixed country on the platform relative to its size: an Emirati match might open in Arabic, English, Hindi, Urdu, Malayalam or Tagalog. It is also a country of people living far from home, which shows up in what conversations are about - a large share of calls here are with someone in the country the speaker left.',
     topics: ['work and money', 'home, and missing it', 'travel', 'cricket and football in equal measure'],
   },
   {
@@ -246,7 +246,7 @@ const COUNTRIES = [
       { name: 'Cairo', slug: 'cairo', note: 'the largest Arabic-speaking city in the world and the accent most of the Arab world already understands' },
       { name: 'Alexandria', slug: 'alexandria', note: 'a Mediterranean city with a distinctly different pace from the capital' },
     ],
-    context: 'Egyptian Arabic is the dialect the rest of the Arab world grew up hearing in films and television, which makes Egyptian users unusually easy to match across the whole region — a Cairo speaker is understood in Morocco and Iraq alike, which is not true in reverse. Egypt is also a young country, and its chat traffic skews heavily toward students.',
+    context: 'Egyptian Arabic is the dialect the rest of the Arab world grew up hearing in films and television, which makes Egyptian users unusually easy to match across the whole region - a Cairo speaker is understood in Morocco and Iraq alike, which is not true in reverse. Egypt is also a young country, and its chat traffic skews heavily toward students.',
     topics: ['football', 'film and comedy', 'studying and exams', 'jokes, constantly'],
   },
   {
@@ -279,7 +279,7 @@ const COUNTRIES = [
       { name: 'Tokyo', slug: 'tokyo', note: 'the largest metro area on earth and the most active Japanese chat city' },
       { name: 'Osaka', slug: 'osaka', note: 'a dialect and a comic sensibility that other Japanese speakers immediately recognise' },
     ],
-    context: 'Japanese is one of the most-requested and least-supplied languages on any language-exchange platform — demand from learners vastly outstrips the number of native speakers who show up. Japanese users who do come are typically here to practise English and are noticeably more comfortable with voice than video, which is exactly the format on offer.',
+    context: 'Japanese is one of the most-requested and least-supplied languages on any language-exchange platform - demand from learners vastly outstrips the number of native speakers who show up. Japanese users who do come are typically here to practise English and are noticeably more comfortable with voice than video, which is exactly the format on offer.',
     topics: ['travel', 'games, anime and music', 'work culture', 'practising English'],
   },
   {
@@ -301,7 +301,7 @@ const COUNTRIES = [
       { name: 'Shanghai', slug: 'shanghai', note: 'the most internationally connected matches in the country' },
       { name: 'Beijing', slug: 'beijing', note: 'the standard Mandarin accent that learners are taught' },
     ],
-    context: 'Mandarin has more first-language speakers than any other language on earth, and demand from learners is enormous — a Mandarin match is one of the most valuable things a language learner can get. Chinese users on international platforms are typically here specifically for English practice and arrive better prepared than almost anyone, often with topics ready.',
+    context: 'Mandarin has more first-language speakers than any other language on earth, and demand from learners is enormous - a Mandarin match is one of the most valuable things a language learner can get. Chinese users on international platforms are typically here specifically for English practice and arrive better prepared than almost anyone, often with topics ready.',
     topics: ['study and work', 'travel', 'food', 'trading language practice both ways'],
   },
   {
@@ -379,7 +379,7 @@ const COUNTRIES = [
       { name: 'Amsterdam', slug: 'amsterdam', note: 'so comfortably bilingual that most matches will simply switch to English if you ask' },
       { name: 'Rotterdam', slug: 'rotterdam', note: 'a port city with a blunter register than the capital' },
     ],
-    context: 'The Netherlands has among the highest English proficiency of any non-native country, which makes Dutch users easy matches for almost anyone — and makes Dutch itself hard to practise, because your partner will politely switch to English the moment you struggle. Ask them not to and most will happily play along.',
+    context: 'The Netherlands has among the highest English proficiency of any non-native country, which makes Dutch users easy matches for almost anyone - and makes Dutch itself hard to practise, because your partner will politely switch to English the moment you struggle. Ask them not to and most will happily play along.',
     topics: ['cycling and football', 'travel', 'work-life balance', 'direct opinions, cheerfully given'],
   },
   {
@@ -390,7 +390,7 @@ const COUNTRIES = [
       { name: 'Bogotá', slug: 'bogota', note: 'widely considered the clearest Spanish accent in the Americas, which is why learners ask for it' },
       { name: 'Medellín', slug: 'medellin', note: 'a distinctive paisa accent and a large remote-working population' },
     ],
-    context: 'Colombian Spanish — Bogotá\'s in particular — has a reputation among learners as the clearest and most neutral in the Americas, which makes Colombia one of the most-filtered-for countries by Spanish students. Colombians are also, by a comfortable margin, among the most patient partners for a learner who is still slow.',
+    context: 'Colombian Spanish - Bogotá\'s in particular - has a reputation among learners as the clearest and most neutral in the Americas, which makes Colombia one of the most-filtered-for countries by Spanish students. Colombians are also, by a comfortable margin, among the most patient partners for a learner who is still slow.',
     topics: ['music and dancing', 'football', 'helping people with Spanish', 'travel'],
   },
   {
@@ -398,10 +398,10 @@ const COUNTRIES = [
     langs: [{ name: 'Spanish', hello: '¿Cómo andás?' }],
     capital: 'Buenos Aires', tz: 'UTC−3 (ART)', peak: '10pm – 3am ART',
     cities: [
-      { name: 'Buenos Aires', slug: 'buenos-aires', note: 'a Spanish so distinctive — sh sounds, vos instead of tú — that learners treat it as its own dialect' },
+      { name: 'Buenos Aires', slug: 'buenos-aires', note: 'a Spanish so distinctive - sh sounds, vos instead of tú - that learners treat it as its own dialect' },
       { name: 'Córdoba', slug: 'cordoba', note: 'a student city with a sing-song accent Argentines can spot in one sentence' },
     ],
-    context: 'Argentina runs the latest clock in the Americas — dinner at ten, chat traffic peaking near midnight — and its Spanish is different enough from the rest of the continent that learners either seek it out specifically or avoid it entirely. Long calls are the norm here; the average Argentine conversation on the platform runs well past the median.',
+    context: 'Argentina runs the latest clock in the Americas - dinner at ten, chat traffic peaking near midnight - and its Spanish is different enough from the rest of the continent that learners either seek it out specifically or avoid it entirely. Long calls are the norm here; the average Argentine conversation on the platform runs well past the median.',
     topics: ['football, seriously', 'music', 'travel', 'long philosophical conversations at 2am'],
   },
   {
@@ -412,7 +412,7 @@ const COUNTRIES = [
       { name: 'Kuala Lumpur', slug: 'kuala-lumpur', note: 'four languages in routine daily use, and matches here reflect all four' },
       { name: 'Penang', slug: 'penang', note: 'a smaller, food-obsessed city with a distinct Hokkien-inflected English' },
     ],
-    context: 'Malaysia is one of the few countries where a single person will comfortably switch between Malay, English, Mandarin and Tamil in one conversation, and Malaysian English has enough of its own grammar to be its own thing. That makes Malaysian matches unusually adaptable — they will find a shared language with almost anyone.',
+    context: 'Malaysia is one of the few countries where a single person will comfortably switch between Malay, English, Mandarin and Tamil in one conversation, and Malaysian English has enough of its own grammar to be its own thing. That makes Malaysian matches unusually adaptable - they will find a shared language with almost anyone.',
     topics: ['food, above all else', 'football and badminton', 'work and study', 'travel around the region'],
   },
   {
@@ -431,7 +431,7 @@ const COUNTRIES = [
       { name: 'Tehran', slug: 'tehran', note: 'the overwhelming majority of Persian-language chat traffic starts here' },
       { name: 'Mashhad', slug: 'mashhad', note: 'a large city with a noticeably different accent from the capital' },
     ],
-    context: 'Persian speakers are spread far beyond Iran — Afghanistan, Tajikistan, and very large communities in Los Angeles, Toronto and Europe — so a Persian match frequently crosses continents. Iranian users are among the most enthusiastic language-exchange partners on the platform and the most likely to want a long conversation rather than a quick one.',
+    context: 'Persian speakers are spread far beyond Iran - Afghanistan, Tajikistan, and very large communities in Los Angeles, Toronto and Europe - so a Persian match frequently crosses continents. Iranian users are among the most enthusiastic language-exchange partners on the platform and the most likely to want a long conversation rather than a quick one.',
     topics: ['poetry and music', 'film', 'study and emigration', 'food'],
   },
   {
@@ -442,7 +442,7 @@ const COUNTRIES = [
       { name: 'Casablanca', slug: 'casablanca', note: 'the country\'s commercial centre and the busiest source of Moroccan matches' },
       { name: 'Marrakesh', slug: 'marrakesh', note: 'a tourist city where French and English turn up in Moroccan matches constantly' },
     ],
-    context: 'Moroccans routinely hold a conversation in Darija, French and a little English at once, which makes them some of the most flexible matches anywhere — and Moroccan Arabic is distinct enough from Gulf and Egyptian Arabic that other Arabic speakers occasionally need a moment. France is the other end of a large share of Moroccan calls.',
+    context: 'Moroccans routinely hold a conversation in Darija, French and a little English at once, which makes them some of the most flexible matches anywhere - and Moroccan Arabic is distinct enough from Gulf and Egyptian Arabic that other Arabic speakers occasionally need a moment. France is the other end of a large share of Moroccan calls.',
     topics: ['football', 'music', 'France and family there', 'food'],
   },
   {
@@ -453,7 +453,7 @@ const COUNTRIES = [
       { name: 'Nairobi', slug: 'nairobi', note: 'East Africa\'s tech centre, with the strongest mobile-first internet culture on the continent' },
       { name: 'Mombasa', slug: 'mombasa', note: 'a coastal city where Swahili dominates over English far more than inland' },
     ],
-    context: 'Kenya has one of Africa\'s most developed mobile internet cultures — people have been doing everything from a phone here for longer than most of the world — so a browser chat with nothing to install fits naturally. Swahili is the shared language of East Africa, so Kenyan matches connect easily into Tanzania and Uganda.',
+    context: 'Kenya has one of Africa\'s most developed mobile internet cultures - people have been doing everything from a phone here for longer than most of the world - so a browser chat with nothing to install fits naturally. Swahili is the shared language of East Africa, so Kenyan matches connect easily into Tanzania and Uganda.',
     topics: ['football', 'music', 'business and tech', 'politics, energetically'],
   },
   {
@@ -464,7 +464,7 @@ const COUNTRIES = [
       { name: 'Lisbon', slug: 'lisbon', note: 'a large international remote-working population alongside the local one' },
       { name: 'Porto', slug: 'porto', note: 'a northern accent that Brazilians will tell you is harder to follow than Lisbon\'s' },
     ],
-    context: 'European Portuguese and Brazilian Portuguese are different enough that speakers of each occasionally have to slow down for the other, and the platform matches them constantly — for learners that is a feature, not a problem. Portugal\'s timezone also sits an hour behind the rest of Western Europe, extending the evening.',
+    context: 'European Portuguese and Brazilian Portuguese are different enough that speakers of each occasionally have to slow down for the other, and the platform matches them constantly - for learners that is a feature, not a problem. Portugal\'s timezone also sits an hour behind the rest of Western Europe, extending the evening.',
     topics: ['football', 'music', 'travel', 'the differences with Brazilian Portuguese'],
   },
   {
@@ -472,10 +472,10 @@ const COUNTRIES = [
     langs: [{ name: 'English', hello: 'How\'s it going?' }, { name: 'Irish', hello: 'Dia dhuit' }],
     capital: 'Dublin', tz: 'UTC+0 / UTC+1 (GMT/IST)', peak: '8pm – 1am GMT',
     cities: [
-      { name: 'Dublin', slug: 'dublin', note: 'a young, heavily international city — a Dublin match is often not Irish at all' },
+      { name: 'Dublin', slug: 'dublin', note: 'a young, heavily international city - a Dublin match is often not Irish at all' },
       { name: 'Cork', slug: 'cork', note: 'an accent that other Irish people enjoy imitating and foreigners rarely place' },
     ],
-    context: 'Ireland punches far above its population in chat traffic, partly because it is young and partly because conversation is genuinely a national pastime — the average call length from Ireland is among the highest on the platform. It is also home to large Polish, Brazilian and Indian communities, so an Irish match is frequently a bilingual one.',
+    context: 'Ireland punches far above its population in chat traffic, partly because it is young and partly because conversation is genuinely a national pastime - the average call length from Ireland is among the highest on the platform. It is also home to large Polish, Brazilian and Indian communities, so an Irish match is frequently a bilingual one.',
     topics: ['music and stories', 'football and hurling', 'travel', 'slagging, affectionately'],
   },
   {
@@ -486,7 +486,7 @@ const COUNTRIES = [
       { name: 'Bucharest', slug: 'bucharest', note: 'the largest source of Romanian-language matches' },
       { name: 'Cluj-Napoca', slug: 'cluj-napoca', note: 'a university and tech city with very strong English' },
     ],
-    context: 'Romanian is a Romance language surrounded by Slavic ones, which surprises people mid-call more often than you would expect — Spanish and Italian speakers frequently find they can follow more than they thought. Romania also has one of Europe\'s strongest tech workforces and correspondingly confident English.',
+    context: 'Romanian is a Romance language surrounded by Slavic ones, which surprises people mid-call more often than you would expect - Spanish and Italian speakers frequently find they can follow more than they thought. Romania also has one of Europe\'s strongest tech workforces and correspondingly confident English.',
     topics: ['gaming and tech', 'football', 'travel and working abroad', 'language similarities'],
   },
   {
@@ -497,7 +497,7 @@ const COUNTRIES = [
       { name: 'Athens', slug: 'athens', note: 'roughly a third of the country lives in its metro area' },
       { name: 'Thessaloniki', slug: 'thessaloniki', note: 'a student city with a reputation for staying out later than the capital' },
     ],
-    context: 'Greece keeps Mediterranean hours — the peak is close to midnight — and Greek is spoken by few enough people that Greek-to-Greek matches feel disproportionately like running into a neighbour. That makes the diaspora, particularly in Australia, the US and Germany, a big part of Greek-language traffic.',
+    context: 'Greece keeps Mediterranean hours - the peak is close to midnight - and Greek is spoken by few enough people that Greek-to-Greek matches feel disproportionately like running into a neighbour. That makes the diaspora, particularly in Australia, the US and Germany, a big part of Greek-language traffic.',
     topics: ['football and basketball', 'food', 'travel', 'politics, loudly and warmly'],
   },
   {
@@ -508,7 +508,7 @@ const COUNTRIES = [
       { name: 'Tel Aviv', slug: 'tel-aviv', note: 'the busiest and most international source of matches in the country' },
       { name: 'Haifa', slug: 'haifa', note: 'a genuinely mixed city where Hebrew and Arabic matches are equally likely' },
     ],
-    context: 'Israel is a country of immigrants and it shows in the languages on a random match — Hebrew, Russian, Arabic, English and French all appear regularly, often from the same person. English proficiency is high, which makes Israeli users easy matches for almost anyone on the platform.',
+    context: 'Israel is a country of immigrants and it shows in the languages on a random match - Hebrew, Russian, Arabic, English and French all appear regularly, often from the same person. English proficiency is high, which makes Israeli users easy matches for almost anyone on the platform.',
     topics: ['tech and startups', 'travel', 'music', 'argument as a form of affection'],
   },
   {
@@ -530,7 +530,7 @@ const COUNTRIES = [
       { name: 'Stockholm', slug: 'stockholm', note: 'the busiest Nordic chat city and among the most English-fluent anywhere' },
       { name: 'Gothenburg', slug: 'gothenburg', note: 'a west-coast accent Swedes describe as friendlier than the capital\'s' },
     ],
-    context: 'Sweden has near-universal English fluency, so Swedish users match easily with anyone — and Swedish itself is hard to practise for the same reason the Dutch problem exists. Winter darkness is long here and chat traffic climbs measurably through it, which is not a coincidence anyone in Sweden would dispute.',
+    context: 'Sweden has near-universal English fluency, so Swedish users match easily with anyone - and Swedish itself is hard to practise for the same reason the Dutch problem exists. Winter darkness is long here and chat traffic climbs measurably through it, which is not a coincidence anyone in Sweden would dispute.',
     topics: ['music', 'gaming', 'the weather and the dark', 'travel somewhere warm'],
   },
   {
@@ -541,7 +541,7 @@ const COUNTRIES = [
       { name: 'Oslo', slug: 'oslo', note: 'the largest source of Norwegian matches and the most international city in the country' },
       { name: 'Bergen', slug: 'bergen', note: 'a dialect distinct enough that other Norwegians comment on it immediately' },
     ],
-    context: 'Norway has an unusual relationship with its own language — dialects vary enormously and everyone writes in one of two official written standards — so Norwegians are used to adapting mid-conversation, which makes them patient matches. English fluency is near-universal.',
+    context: 'Norway has an unusual relationship with its own language - dialects vary enormously and everyone writes in one of two official written standards - so Norwegians are used to adapting mid-conversation, which makes them patient matches. English fluency is near-universal.',
     topics: ['the outdoors', 'music', 'travel', 'winter, at length'],
   },
 ];
@@ -551,7 +551,7 @@ const COUNTRIES = [
  *
  * Distinct from countries on purpose: "practise Spanish" and "chat with people
  * in Spain" are different searches with different intent, and a language is
- * not a country — Spanish belongs to twenty of them. These pages target the
+ * not a country - Spanish belongs to twenty of them. These pages target the
  * language-learning intent specifically.
  * ------------------------------------------------------------------------ */
 const LANGUAGES = [
@@ -559,9 +559,9 @@ const LANGUAGES = [
     slug: 'english', name: 'English', native: 'English', hello: 'Hello',
     speakers: '1.5 billion including second-language speakers',
     countries: ['united-states', 'united-kingdom', 'india', 'nigeria', 'philippines', 'canada', 'australia', 'ireland'],
-    why: 'English is the language people most often want to practise out loud and least often get to. Classrooms teach grammar; what is missing is the unrehearsed half — being asked something you did not prepare for and answering it before you have translated it in your head.',
+    why: 'English is the language people most often want to practise out loud and least often get to. Classrooms teach grammar; what is missing is the unrehearsed half - being asked something you did not prepare for and answering it before you have translated it in your head.',
     hard: 'The hard part of English is almost never vocabulary. It is speed, contractions and the fact that native speakers do not pronounce half of what they write. Fifteen minutes of live conversation does more for that than an hour of exercises.',
-    tip: 'Say up front that you are practising. Almost nobody minds, most people slow down, and a surprising number will offer to swap — their language for yours.',
+    tip: 'Say up front that you are practising. Almost nobody minds, most people slow down, and a surprising number will offer to swap - their language for yours.',
   },
   {
     slug: 'spanish', name: 'Spanish', native: 'Español', hello: 'Hola',
@@ -576,14 +576,14 @@ const LANGUAGES = [
     speakers: 'about 300 million across five continents',
     countries: ['france', 'canada', 'morocco'],
     why: 'French is spoken natively across Europe, West and North Africa, and Canada, and those varieties differ enough that learners trained only on Parisian French get stuck the first time they meet a Québécois or Ivorian speaker.',
-    hard: 'Listening. French written down and French spoken aloud are nearly different languages — liaison, elision and a lot of silent letters. Reading well tells you nothing about whether you can follow a conversation.',
+    hard: 'Listening. French written down and French spoken aloud are nearly different languages - liaison, elision and a lot of silent letters. Reading well tells you nothing about whether you can follow a conversation.',
     tip: 'Ask your match to repeat things rather than switching to English. Most French speakers would far rather slow down than give up on the language.',
   },
   {
     slug: 'german', name: 'German', native: 'Deutsch', hello: 'Hallo',
     speakers: 'about 95 million first-language speakers',
     countries: ['germany'],
-    why: 'German rewards conversation practice more than most languages because so much of the difficulty is structural — where the verb lands, which case a preposition takes — and structure only becomes automatic through use.',
+    why: 'German rewards conversation practice more than most languages because so much of the difficulty is structural - where the verb lands, which case a preposition takes - and structure only becomes automatic through use.',
     hard: 'Cases and word order under time pressure. You can conjugate perfectly on paper and still freeze when a sentence has to come out in real time.',
     tip: 'Germans are famously direct about corrections and this is genuinely a gift. Ask to be corrected and you will get exactly what you asked for.',
   },
@@ -599,7 +599,7 @@ const LANGUAGES = [
     slug: 'arabic', name: 'Arabic', native: 'العربية', hello: 'مرحبا',
     speakers: 'about 400 million across more than twenty countries',
     countries: ['egypt', 'saudi-arabia', 'morocco', 'united-arab-emirates'],
-    why: 'Arabic is really a family of spoken dialects sitting under one written standard, and no course can prepare you for all of them. Talking to actual speakers from different countries is not optional here — it is the only way the language becomes usable.',
+    why: 'Arabic is really a family of spoken dialects sitting under one written standard, and no course can prepare you for all of them. Talking to actual speakers from different countries is not optional here - it is the only way the language becomes usable.',
     hard: 'The distance between Modern Standard Arabic, which is what gets taught, and the dialect anyone actually speaks. A learner with three years of MSA can still be lost in a Cairo conversation.',
     tip: 'Pick a dialect and use the country filter to stay near it. Egyptian is the most widely understood across the region; Gulf and Levantine are the next most useful.',
   },
@@ -633,7 +633,7 @@ const LANGUAGES = [
     countries: ['japan'],
     why: 'Japanese has enormous learner demand and comparatively few native speakers on international platforms, which makes every real conversation valuable. It is also a language where politeness level changes the grammar, so context matters more than vocabulary.',
     hard: 'Choosing a register in real time, plus listening speed. Reading kanji is a separate skill that voice chat lets you set aside completely.',
-    tip: 'Offer an exchange explicitly — most Japanese users on the platform are here to practise English, so a straight swap is an easy sell.',
+    tip: 'Offer an exchange explicitly - most Japanese users on the platform are here to practise English, so a straight swap is an easy sell.',
   },
   {
     slug: 'chinese', name: 'Chinese (Mandarin)', native: '中文', hello: '你好',
@@ -648,14 +648,14 @@ const LANGUAGES = [
     speakers: 'about 80 million',
     countries: ['south-korea'],
     why: 'Korean has one of the fastest-growing learner populations in the world and a native-speaker base that is very active online late at night, which makes matching straightforward if your hours line up.',
-    hard: 'Speech levels and honorifics — the same sentence has several forms depending on who you are talking to, and getting it wrong is more noticeable than a grammar slip.',
+    hard: 'Speech levels and honorifics - the same sentence has several forms depending on who you are talking to, and getting it wrong is more noticeable than a grammar slip.',
     tip: 'Say you are learning at the start. Korean speakers will usually pick a comfortable register and stay in it rather than switching around you.',
   },
   {
     slug: 'italian', name: 'Italian', native: 'Italiano', hello: 'Ciao',
     speakers: 'about 65 million',
     countries: ['italy'],
-    why: 'Italian has far more learners than it has native speakers online, so finding a real conversation partner is genuinely competitive — and Italians are among the most expressive speakers you will be matched with, which makes listening practice enjoyable rather than a chore.',
+    why: 'Italian has far more learners than it has native speakers online, so finding a real conversation partner is genuinely competitive - and Italians are among the most expressive speakers you will be matched with, which makes listening practice enjoyable rather than a chore.',
     hard: 'Speed and regional variation. Standard Italian is taught; what you meet is Roman, Neapolitan or Milanese Italian at full pace.',
     tip: 'Italian rewards attempting it badly. Speakers respond warmly to effort in a way that makes the first stumbling conversations much easier than they should be.',
   },
@@ -663,7 +663,7 @@ const LANGUAGES = [
     slug: 'turkish', name: 'Turkish', native: 'Türkçe', hello: 'Merhaba',
     speakers: 'about 85 million',
     countries: ['turkey', 'germany'],
-    why: 'Turkish is agglutinative — meaning gets stacked onto the end of a word — which is unlike anything most learners have seen and only becomes intuitive with live use.',
+    why: 'Turkish is agglutinative - meaning gets stacked onto the end of a word - which is unlike anything most learners have seen and only becomes intuitive with live use.',
     hard: 'Building and parsing long suffixed words at speed, and vowel harmony, which native speakers do without thinking and learners have to compute.',
     tip: 'Turkey\'s very late peak means European and Middle Eastern learners can find partners well past midnight.',
   },
@@ -671,7 +671,7 @@ const LANGUAGES = [
     slug: 'indonesian', name: 'Indonesian', native: 'Bahasa Indonesia', hello: 'Halo',
     speakers: 'about 200 million including second-language speakers',
     countries: ['indonesia'],
-    why: 'Indonesian is widely considered one of the easiest major languages for an English speaker to start speaking — no tones, no cases, no verb conjugation — which makes it unusually rewarding to practise conversationally from week one.',
+    why: 'Indonesian is widely considered one of the easiest major languages for an English speaker to start speaking - no tones, no cases, no verb conjugation - which makes it unusually rewarding to practise conversationally from week one.',
     hard: 'The gap between formal Indonesian and the casual, slang-heavy version people actually speak, which no textbook covers well.',
     tip: 'Because the grammar is simple, you can hold a real conversation far earlier than in most languages. Start talking sooner than feels comfortable.',
   },
@@ -680,7 +680,7 @@ const LANGUAGES = [
     speakers: 'about 235 million',
     countries: ['bangladesh', 'india'],
     why: 'Bengali is the sixth most-spoken language in the world and badly under-served by chat platforms, so both learners and native speakers looking for a conversation in it find the supply thin everywhere else.',
-    hard: 'Two distinct registers — the literary form and the spoken one — plus regional variation between Bangladesh and West Bengal that surprises learners.',
+    hard: 'Two distinct registers - the literary form and the spoken one - plus regional variation between Bangladesh and West Bengal that surprises learners.',
     tip: 'Bengali speakers are concentrated in Dhaka and Kolkata but the diaspora in the UK and the Gulf is large, so matches come from further afield than you would guess.',
   },
 ];

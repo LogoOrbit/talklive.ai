@@ -5,7 +5,7 @@ sleeps after 15 minutes idle or takes 30-60s to answer the first request.
 
 The canonical domain is **talklive.app** (`CANONICAL_HOST` in `fly.toml`).
 Every other host, including `talklive-ai.fly.dev`, is served
-`X-Robots-Tag: noindex` — so that value must stay correct or the live site
+`X-Robots-Tag: noindex` - so that value must stay correct or the live site
 drops out of Google.
 
 **Cost:** Fly has no free tier as of 2024. A `shared-cpu-1x` / 512MB machine
@@ -25,7 +25,7 @@ You will need a card on file before the first deploy.
 ## 2. Pick your region
 
 `fly.toml` ships with `primary_region = 'iad'` (US East). Change it **before**
-the first deploy — it is baked in at launch. Judging by the locale directories
+the first deploy - it is baked in at launch. Judging by the locale directories
 in `public/` (ur, hi, bn, fa, ar, id), a large share of traffic is South Asia
 and the Middle East, so `bom` (Mumbai) or `sin` (Singapore) may serve users
 better than `iad`. Full list: `fly platform regions`.
@@ -35,14 +35,14 @@ better than `iad`. Full list: `fly platform regions`.
 The app `talklive-ai` already exists (created by `fly launch`).
 
 `fly.toml` deliberately mounts **no volume**. Volumes cannot be created from
-the Fly dashboard — only via `fly volumes create` — so a `[[mounts]]` block
+the Fly dashboard - only via `fly volumes create` - so a `[[mounts]]` block
 makes every deploy fail until the CLI has been run. Without one, `DATA_DIR`
 lands on the container filesystem and the JSON store resets on each deploy,
 which is the same behaviour Render's free plan had.
 
 **The recommended fix is Postgres, not a volume.** It survives deploys, gets
 backed up, and does not pin the app to one machine. `server/store.js` already
-supports it — set `DATABASE_URL` (Supabase and Neon both have free tiers) and
+supports it - set `DATABASE_URL` (Supabase and Neon both have free tiers) and
 it switches backends automatically. See step 4.
 
 If you would rather use a volume, it is CLI-only, and you must re-add the
@@ -89,7 +89,7 @@ Full list of variables the code reads: `GOOGLE_CLIENT_ID`, `OWNER_EMAIL`,
 ## 5. Deploy
 
 Pushing to `main` deploys automatically via
-`.github/workflows/fly-deploy.yml` — that is the normal path, and it is what
+`.github/workflows/fly-deploy.yml` - that is the normal path, and it is what
 keeps the running app from drifting behind `main`. It needs one repository
 secret:
 
@@ -124,7 +124,7 @@ curl -I https://talklive-ai.fly.dev/healthz          # 200
 curl -sI https://talklive-ai.fly.dev/ | grep -i robots   # noindex, nofollow
 ```
 
-The `noindex` on `*.fly.dev` is deliberate — see "SEO notes" below.
+The `noindex` on `*.fly.dev` is deliberate - see "SEO notes" below.
 
 ## 6. Carry over the existing data
 
@@ -152,7 +152,7 @@ fly ips list          # note the v4 and v6 addresses
 At your DNS provider:
 
 1. **Lower the TTL on the existing records to 300s and wait for the old TTL to
-   expire** — do this a day ahead if you can. Skipping it is what makes
+   expire** - do this a day ahead if you can. Skipping it is what makes
    cutovers drag on.
 2. Point `talklive.app` A → the Fly v4 IP, AAAA → the Fly v6 IP.
 3. Point `www.talklive.app` the same way (the app 301s www → apex itself).
@@ -160,7 +160,7 @@ At your DNS provider:
 5. Verify: `curl -I https://talklive.app/` returns 200 with no `X-Robots-Tag`.
 6. Raise the TTL back to 3600s.
 
-Leave the Render service running until this is confirmed — it is your rollback.
+Leave the Render service running until this is confirmed - it is your rollback.
 
 ## 8. Decommission Render
 
@@ -184,7 +184,7 @@ has served from Fly for a day or two with no errors.
   they are duplicate content. Previews and health checks still work.
 - **No cold starts.** `auto_stop_machines = false` and
   `min_machines_running = 1` in `fly.toml`. Do not switch these on to save
-  money — sleeping through Googlebot's crawl is what this migration is fixing.
+  money - sleeping through Googlebot's crawl is what this migration is fixing.
 - **IndexNow** pings 60s after boot whenever `NODE_ENV=production`, which
   `fly.toml` sets. No change needed.
 
@@ -209,9 +209,9 @@ fly scale vm shared-cpu-1x --memory 1024
 | Symptom | Cause |
 |---|---|
 | Machine restart loop, `exit 137` / "Out of memory" | The machine is too small. `geoip-lite` loads a 154MB database at require time; the server idles at ~218MB, so anything under 512MB gets OOM-killed. Check `[[vm]] memory` and `fly scale show` |
-| "Proxy not finding machines to route requests" | Usually a symptom of the OOM loop above — no machine stays up long enough to serve. Fix the memory first |
+| "Proxy not finding machines to route requests" | Usually a symptom of the OOM loop above - no machine stays up long enough to serve. Fix the memory first |
 | Health checks fail on deploy | `/healthz` must answer within the 20s `grace_period`; check `fly logs` for a crash at boot |
 | `EACCES` writing `owner-data.json` | `docker-entrypoint.sh` should chown `/data`; confirm the volume is mounted with `fly ssh console -C "ls -la /data"` |
 | Everything 301s to `talklive.app` | `CANONICAL_HOST` in `fly.toml` does not match the host you are testing; set `ENFORCE_CANONICAL=off` to debug |
 | WebSockets disconnect | Raise the `hard_limit` in `[http_service.concurrency]` |
-| Data gone after deploy | The volume is not mounted — `fly volumes list` should show `talklive_data` attached |
+| Data gone after deploy | The volume is not mounted - `fly volumes list` should show `talklive_data` attached |

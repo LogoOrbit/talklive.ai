@@ -1,4 +1,4 @@
-# TalkLive — remaining setup tasks
+# TalkLive - remaining setup tasks
 
 Handoff for a fresh agent. Everything here is blocked on credentials that
 cannot be read from a sandbox; the code and infrastructure work is done.
@@ -19,14 +19,14 @@ cannot be read from a sandbox; the code and infrastructure work is done.
 - **Auto-deploy**: `.github/workflows/fly-deploy.yml` deploys on push to `main`.
 - **Migrated off Render.** The Render service is deleted. Do not look for it.
 
-## Task 1 — Make auto-deploy work (blocked: GitHub secret)
+## Task 1 - Make auto-deploy work (blocked: GitHub secret)
 
 The workflow exists but its first run **failed**: the `FLY_API_TOKEN`
 repository secret does not exist, so `flyctl deploy` exits `unauthorized`.
 
 1. Mint a token: `fly tokens create deploy -a talklive-ai`
    (an **org-scoped** token is required if you ever run
-   `fly deploy --depot=false` — an app-scoped deploy token cannot create the
+   `fly deploy --depot=false` - an app-scoped deploy token cannot create the
    org's builder app and fails with `unauthorized`).
 2. GitHub -> repo -> Settings -> Secrets and variables -> Actions ->
    New repository secret, named exactly `FLY_API_TOKEN`.
@@ -35,12 +35,12 @@ repository secret does not exist, so `flyctl deploy` exits `unauthorized`.
 Verify: the run goes green and `fly releases -a talklive-ai` shows a new
 version.
 
-## Task 2 — Reconnect the database (blocked: DB password) — HIGHEST VALUE
+## Task 2 - Reconnect the database (blocked: DB password) - HIGHEST VALUE
 
 The app currently boots with `[accounts] restored 0 account(s) from the store`
 because `DATABASE_URL` is unset, so it falls back to a JSON file on the
 container filesystem. **There is no volume mounted**, so that file is destroyed
-on every deploy — and deploys are automatic now.
+on every deploy - and deploys are automatic now.
 
 The real data already exists and is intact in Supabase:
 
@@ -51,7 +51,7 @@ The real data already exists and is intact in Supabase:
 - Last written `2026-08-13 02:20 UTC` (the final Render write)
 
 `server/store.js:139` reads exactly `SELECT doc FROM owner_store WHERE id = 1`,
-so **setting `DATABASE_URL` restores all of it — no migration, no schema work.**
+so **setting `DATABASE_URL` restores all of it - no migration, no schema work.**
 
 Get the URI from Supabase -> TalkLive -> Settings -> Database ->
 Connection string -> **URI**. If the password is unknown, use *Reset database
@@ -63,10 +63,10 @@ fly secrets set DATABASE_URL='postgresql://postgres.kcamfetippgrawhgiabo:PASSWOR
 
 Verify: `fly logs -a talklive-ai` must show
 `[accounts] restored 10 account(s) from the store`. **If it still says 0, stop
-and diagnose — do not proceed.** The `/owner` login page surfaces backend
+and diagnose - do not proceed.** The `/owner` login page surfaces backend
 status (`mode: postgres` vs `file`) without leaking secrets.
 
-## Task 3 — Restore Google Sign-In (blocked: client ID)
+## Task 3 - Restore Google Sign-In (blocked: client ID)
 
 `GOOGLE_CLIENT_ID` is empty, so `server/index.js:1146` rejects every attempt
 with *"Google Sign-In is not configured on this server."*
@@ -87,7 +87,7 @@ fly secrets set GOOGLE_CLIENT_ID='...apps.googleusercontent.com' -a talklive-ai
 Verify: `curl -s https://talklive.app/config.js` shows a non-empty
 `window.GOOGLE_CLIENT_ID`, then complete a real sign-in in a browser.
 
-## Task 4 — Email alerts (optional, blocked: Gmail app password)
+## Task 4 - Email alerts (optional, blocked: Gmail app password)
 
 `server/admin.js:22` only builds a mailer when both SMTP values are present,
 and `:33` drops every send when `OWNER_EMAIL` is empty. Currently there is **no
@@ -107,7 +107,7 @@ fly secrets set OWNER_EMAIL='...' SMTP_USER='...' SMTP_PASS='...' -a talklive-ai
 `geoip-lite` loads a 154MB database at require time. **Set every secret in one
 command** to incur a single restart rather than four.
 
-## Guardrails — these will break production
+## Guardrails - these will break production
 
 - **Never commit a secret.** Use `fly secrets` and GitHub Actions secrets only.
 - **Do not change `CANONICAL_HOST`** in `fly.toml`. Any host that is not

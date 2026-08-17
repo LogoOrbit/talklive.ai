@@ -1,7 +1,7 @@
 node_modules/
 # Root-anchored on purpose. A bare `data/` matches a directory of that name at
-# any depth, which silently swallowed scripts/data/ — the SEO builder's source
-# dataset — and would have shipped a deploy whose build could not run. This
+# any depth, which silently swallowed scripts/data/ - the SEO builder's source
+# dataset - and would have shipped a deploy whose build could not run. This
 # rule is only meant for the runtime store directory at the repo root (see
 # DATA_DIR in fly.toml).
 /data/

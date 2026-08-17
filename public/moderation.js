@@ -5,7 +5,7 @@
 // owner dashboard and emails the owner (existing free SMTP setup).
 //
 // Web Speech API is Chrome/Edge/Safari only; on unsupported browsers only the
-// shouting detector runs. Everything degrades silently — moderation must
+// shouting detector runs. Everything degrades silently - moderation must
 // never break the call itself.
 (function () {
   'use strict';
@@ -36,10 +36,10 @@
   const ALERT_COOLDOWN_MS = 60000; // per-type client-side throttle
 
   // CRITICAL: on mobile (and some desktop setups) SpeechRecognition takes
-  // EXCLUSIVE mic access — starting it silences the getUserMedia track, which
+  // EXCLUSIVE mic access - starting it silences the getUserMedia track, which
   // kills the WebRTC call in both directions. Never run recognition on
   // mobile. On desktop, watch the local track: if it goes muted right after
-  // recognition starts, the OS stole the mic — abort recognition for good and
+  // recognition starts, the OS stole the mic - abort recognition for good and
   // let the call keep the mic. Shouting detection runs everywhere; it only
   // reads the existing stream and never touches mic ownership.
   const IS_MOBILE = /Android|iPhone|iPad|iPod|Mobi/i.test(navigator.userAgent);
@@ -83,7 +83,7 @@
     const norm = normalize(text);
     if (!norm) return;
 
-    // 1) Keyword filter — exact word/phrase match on the normalized text.
+    // 1) Keyword filter - exact word/phrase match on the normalized text.
     const padded = ` ${norm} `;
     for (const word of OFFENSIVE_WORDS) {
       if (padded.includes(` ${word} `) || padded.includes(` ${word}s `)) {
@@ -92,7 +92,7 @@
       }
     }
 
-    // 2) Sentiment — score words against the negative lexicon and keep a
+    // 2) Sentiment - score words against the negative lexicon and keep a
     // rolling 30s window so persistent hostility triggers even if each
     // individual sentence looks mild.
     let score = 0;
@@ -136,7 +136,7 @@
   function startRecognition() {
     if (recognitionBlocked) return;
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) return; // unsupported browser — shouting detection still runs
+    if (!SR) return; // unsupported browser - shouting detection still runs
     recognition = new SR();
     recognition.continuous = true;
     recognition.interimResults = false;
@@ -147,7 +147,7 @@
       }
     };
     // The API stops itself after silence/errors; keep restarting while a call
-    // is live. 'not-allowed' means the user denied it — don't fight that.
+    // is live. 'not-allowed' means the user denied it - don't fight that.
     recognition.onend = () => {
       if (running && recognition) {
         try { recognition.start(); } catch (_) { /* already started */ }
@@ -185,7 +185,7 @@
           loudSince = 0;
         }
       }, 200);
-    } catch (_) { /* Web Audio unavailable — skip */ }
+    } catch (_) { /* Web Audio unavailable - skip */ }
   }
 
   window.Moderation = {

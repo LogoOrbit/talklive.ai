@@ -1,6 +1,6 @@
 # TalkLive
 
-A random audio chat app — pairs strangers for live, audio-only conversations. Built with WebRTC for peer-to-peer audio and Socket.IO for signaling/matchmaking.
+A random audio chat app - pairs strangers for live, audio-only conversations. Built with WebRTC for peer-to-peer audio and Socket.IO for signaling/matchmaking.
 
 ## Features
 
@@ -23,10 +23,10 @@ Then open http://localhost:5000 in two separate browser tabs/windows (or two dev
 
 ### Enabling "Sign Up with Google" (optional)
 
-The app works fully without this — the Google button just won't be shown.
+The app works fully without this - the Google button just won't be shown.
 
 1. In the [Google Cloud Console](https://console.cloud.google.com/apis/credentials), create an OAuth 2.0 Client ID of type "Web application".
-2. Add your site's origin(s) (e.g. `http://localhost:5000` and your production URL) under "Authorized JavaScript origins". No redirect URI is needed — sign-in happens client-side via Google Identity Services.
+2. Add your site's origin(s) (e.g. `http://localhost:5000` and your production URL) under "Authorized JavaScript origins". No redirect URI is needed - sign-in happens client-side via Google Identity Services.
 3. Set the `GOOGLE_CLIENT_ID` environment variable to that client ID before starting the server:
    ```bash
    GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com npm start
@@ -34,15 +34,15 @@ The app works fully without this — the Google button just won't be shown.
 
 ## How it works
 
-- `server/index.js` — Express static server + Socket.IO signaling. Maintains a waiting queue and pairs the first two waiting sockets together. Relays WebRTC offer/answer/ICE candidates between matched peers only.
-- `public/app.js` — Client logic: requests mic access, manages the `RTCPeerConnection`, and drives the UI state machine (idle → waiting → connected).
+- `server/index.js` - Express static server + Socket.IO signaling. Maintains a waiting queue and pairs the first two waiting sockets together. Relays WebRTC offer/answer/ICE candidates between matched peers only.
+- `public/app.js` - Client logic: requests mic access, manages the `RTCPeerConnection`, and drives the UI state machine (idle → waiting → connected).
 
 Audio itself flows directly between the two browsers (peer-to-peer); the server only handles matchmaking and connection setup signaling, so it never sees or stores call audio.
 
 ## SEO
 
-The public marketing surface — ~260 landing pages, country/city/language
-directories, the blog, all sitemaps, `llms.txt` and the IndexNow key — is
+The public marketing surface - ~260 landing pages, country/city/language
+directories, the blog, all sitemaps, `llms.txt` and the IndexNow key - is
 **generated**, not hand-written:
 
 ```bash
@@ -51,13 +51,13 @@ npm run seo:ping    # pushes the sitemap to the IndexNow network
 ```
 
 Edit the sources under `scripts/`, never the generated files in `public/`.
-Full details — including the three-domain redirect strategy, what the schema
+Full details - including the three-domain redirect strategy, what the schema
 graph contains, how `lastmod` stays accurate, and the short list of tasks that
-still need credentials — are in **[SEO.md](SEO.md)**.
+still need credentials - are in **[SEO.md](SEO.md)**.
 
 ## Notes
 
-- Uses public Google STUN servers for NAT traversal. On some restrictive networks (symmetric NAT, corporate firewalls) a TURN server would be needed for relay fallback — not included here.
+- Uses public Google STUN servers for NAT traversal. On some restrictive networks (symmetric NAT, corporate firewalls) a TURN server would be needed for relay fallback - not included here.
 - Requires HTTPS (or localhost) in production, since browsers only allow microphone access on secure origins.
 
 ## Owner Dashboard
@@ -65,8 +65,8 @@ still need credentials — are in **[SEO.md](SEO.md)**.
 A secured owner dashboard lives at **`/owner`** (e.g. `https://talklive.app/owner`).
 
 - **Security:** admin password (min 10 chars) + Google Authenticator (TOTP) 2FA. First visit runs a one-time setup where you scan a QR code. 5 failed logins lock the IP out for 15 minutes; every login and admin action lands in the Audit Log tab.
-- **Analytics:** live online users (with country/city/IP), visits, unique visitors, daily 24h users, matches, 30-day traffic chart, top countries/cities, feature-usage graph (most → least), anonymous "what users talk about" keyword aggregate, searchable text-chat transcripts (Chats tab; disclosed in the privacy policy — voice is never recorded), and a rule-based AI conclusion on how the site is doing.
-- **Moderation:** every user report is stored with reporter/reported details; one-click bans from 30 minutes up to 5 years (by clientId **and** IP — banned users cannot connect at all until the ban expires or you lift it). Users are auto-banned for 30 minutes after 3 reports.
+- **Analytics:** live online users (with country/city/IP), visits, unique visitors, daily 24h users, matches, 30-day traffic chart, top countries/cities, feature-usage graph (most → least), anonymous "what users talk about" keyword aggregate, searchable text-chat transcripts (Chats tab; disclosed in the privacy policy - voice is never recorded), and a rule-based AI conclusion on how the site is doing.
+- **Moderation:** every user report is stored with reporter/reported details; one-click bans from 30 minutes up to 5 years (by clientId **and** IP - banned users cannot connect at all until the ban expires or you lift it). Users are auto-banned for 30 minutes after 3 reports.
 - **Errors:** client-side JS errors and server crashes are collected in the Errors tab (duplicates collapsed).
 - **Maintenance mode:** one button takes the site offline with a friendly message; the dashboard stays reachable.
 
@@ -85,6 +85,6 @@ A secured owner dashboard lives at **`/owner`** (e.g. `https://talklive.app/owne
 
 Free tier limits (enforced server-side): max 3 preferred + 3 avoided countries, max 10 friends, gender filter locked, and a ~5s wait before matching the next person after a skip. Premium unlocks all filters, unlimited friends, instant matching, and no ads. The `/pricing` upgrade button sends buyers to the TalkLive Patreon join page.
 
-Premium is keyed to the browser's persistent `clientId` and is persisted in the store (Postgres via `DATABASE_URL`, or the JSON file store), so it survives restarts and deploys. There is **no payment webhook** — Patreon does not notify the server — so persistent grants are manual: set `PREMIUM_CLIENT_IDS`, or call `store.setPremium(clientId)`. Users can also earn a temporary pass by watching an ad (`AD_*` vars).
+Premium is keyed to the browser's persistent `clientId` and is persisted in the store (Postgres via `DATABASE_URL`, or the JSON file store), so it survives restarts and deploys. There is **no payment webhook** - Patreon does not notify the server - so persistent grants are manual: set `PREMIUM_CLIENT_IDS`, or call `store.setPremium(clientId)`. Users can also earn a temporary pass by watching an ad (`AD_*` vars).
 
 Email alerts are throttled to one per topic per 10 minutes and are skipped entirely if SMTP is not configured.

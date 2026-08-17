@@ -1,7 +1,7 @@
 {
-  "name": "TalkLive — Random Voice Chat with Strangers",
+  "name": "TalkLive - Random Voice Chat with Strangers",
   "short_name": "TalkLive",
-  "description": "Free random voice chat. Talk to strangers worldwide with one tap — anonymous, audio-only, no sign-up needed.",
+  "description": "Free random voice chat. Talk to strangers worldwide with one tap - anonymous, audio-only, no sign-up needed.",
   "start_url": "/?utm_source=pwa",
   "scope": "/",
   "display": "standalone",

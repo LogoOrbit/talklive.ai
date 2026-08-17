@@ -83,7 +83,7 @@ body.panel-open .side-panel {
 
 /* Single sticky header: brand on the left, tools + live count on the right.
    Sticky so the tool menus (history, friends, filters, game, chat) stay
-   reachable while the page scrolls — no separate nav band needed. */
+   reachable while the page scrolls - no separate nav band needed. */
 .topbar {
   position: sticky;
   top: 0;
@@ -115,7 +115,7 @@ body.panel-open .side-panel {
   display: flex;
   align-items: center;
   gap: 8px;
-  /* Rendered as a <button> so tapping it reloads the app — reset native chrome. */
+  /* Rendered as a <button> so tapping it reloads the app - reset native chrome. */
   background: none;
   border: none;
   padding: 0;
@@ -259,7 +259,7 @@ body.panel-open .side-panel {
 }
 
 /* Plain-language, high-contrast status pill: a big bright dot + the word
-   "Online" + a count, rather than a small icon glyph — reads clearly on
+   "Online" + a count, rather than a small icon glyph - reads clearly on
    low-res/old screens without requiring the viewer to parse an icon. */
 .online {
   font-size: 16px;
@@ -283,7 +283,7 @@ body.panel-open .side-panel {
   font-weight: 800;
 }
 
-/* Flat, quiet header buttons: no heavy shadows or bright fills — they read as
+/* Flat, quiet header buttons: no heavy shadows or bright fills - they read as
    part of the header, only lighting up on hover/press. */
 .icon-btn {
   width: 58px;
@@ -379,7 +379,7 @@ body.panel-open .side-panel {
 }
 
 /* Keep the small chevron/avatar glyphs inside the Settings panel at their
-   intended size — the bigger topbar icon size is only for tappable buttons. */
+   intended size - the bigger topbar icon size is only for tappable buttons. */
 .settings-account-avatar .topbar-svg-icon {
   width: 20px;
   height: 20px;
@@ -689,7 +689,7 @@ body.panel-open .side-panel {
   font-family: inherit;
 }
 
-/* Ambient video banner — an optimized looping background video (see
+/* Ambient video banner - an optimized looping background video (see
    video-banner.js) with an overlaid title, a readability scrim and the app's
    blue accent glow. Full width of the call column, responsive via aspect-ratio
    so it needs no separate mobile markup. */
@@ -844,7 +844,7 @@ body.panel-open .side-panel {
   .video-banner__scrim { display: none; }
 }
 
-/* Conversation guide — friendly tips, scrollable, below the call area. */
+/* Conversation guide - friendly tips, scrollable, below the call area. */
 .convo-guide {
   width: min(560px, 92%);
   margin: 8px auto 26px;
@@ -995,7 +995,7 @@ body.panel-open .side-panel {
   padding: 14px 28px;
   border-radius: 999px;
   transition: transform 0.15s ease, opacity 0.15s ease;
-  /* Several settings/footer links are <a class="btn ...">, not <button>s —
+  /* Several settings/footer links are <a class="btn ...">, not <button>s -
      without this they'd fall back to the browser's default blue underline. */
   text-decoration: none;
   display: inline-flex;
@@ -1936,7 +1936,7 @@ body.panel-open .side-panel {
   text-align: center;
 }
 
-/* Save is the primary action — give it more visual weight than Clear. */
+/* Save is the primary action - give it more visual weight than Clear. */
 #saveFiltersBtn { flex: 1.6; }
 
 /* Crisper glyph edges + left alignment so the long policy copy reads as a
@@ -2430,13 +2430,13 @@ body.panel-open .side-panel {
   box-shadow: 0 1px 2px rgba(0,0,0,0.18);
 }
 
-/* Entrance start-frame — removed on the next rAF to animate into place. */
+/* Entrance start-frame - removed on the next rAF to animate into place. */
 .chat-msg.chat-msg-enter {
   opacity: 0;
   transform: translateY(8px) scale(0.96);
 }
 
-/* Sent messages land with weight — a solid WhatsApp-style "thunk" pop from the
+/* Sent messages land with weight - a solid WhatsApp-style "thunk" pop from the
    bottom-right corner. Paired with the send sound + haptic in app.js. */
 @keyframes chatSendPop {
   0%   { transform: translateY(12px) scale(0.78); opacity: 0; }
@@ -3123,7 +3123,7 @@ body.panel-open .side-panel {
 }
 .btn-chip-accept:hover { background: #166534; }
 
-/* Notifications list — sits above the friends list in the same dropdown */
+/* Notifications list - sits above the friends list in the same dropdown */
 .notif-list {
   display: flex;
   flex-direction: column;
@@ -3397,7 +3397,7 @@ body.panel-open .side-panel {
 }
 
 /* Language picker: globe icon + native select, styled as a topbar pill.
-   A native <select> is used on purpose — it's the most accessible and most
+   A native <select> is used on purpose - it's the most accessible and most
    familiar picker on every device, and each option shows the language's own
    native name so non-English speakers can find theirs. */
 .lang-wrap {
@@ -3473,7 +3473,7 @@ body.panel-open .side-panel {
   display: none;
 }
 
-/* Add button next to the interest input — on many mobile keyboards there is
+/* Add button next to the interest input - on many mobile keyboards there is
    no obvious Enter key, so typing-then-Enter alone was a dead end. */
 .interest-input-wrap {
   display: flex;
@@ -4081,7 +4081,7 @@ body.panel-open .side-panel {
 .acc-item.open .acc-body-inner { padding: 2px 14px 14px; }
 
 /* Help & About: a quiet two-column grid of small links instead of a stack of
-   full-width buttons — same tap targets, half the visual noise. */
+   full-width buttons - same tap targets, half the visual noise. */
 .settings-links {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -4162,7 +4162,7 @@ body.panel-open .side-panel {
 }
 
 /* In-place spinner that replaces the friend call icon while a callback is
-   pending (rule 11) — the menu stays open, the icon just spins. */
+   pending (rule 11) - the menu stays open, the icon just spins. */
 .friend-call-btn.is-loading { cursor: default; opacity: 0.9; }
 .callback-spinner {
   display: inline-block;
@@ -4210,7 +4210,7 @@ body.panel-open .side-panel {
 }
 
 /* The message button is whitish (not green) so it reads distinctly from the
-   green call button beside it — light face, dark glyph, its own hover glow. */
+   green call button beside it - light face, dark glyph, its own hover glow. */
 .friend-msg-btn {
   border: 1px solid rgba(0, 0, 0, 0.08);
   background: radial-gradient(circle at 35% 30%, #ffffff, #e6eaf0 80%);
@@ -4478,8 +4478,8 @@ body.panel-open .side-panel {
 
 /* =============================================================
    Call screen. The call controls aim to fit one viewport, but the page
-   scrolls naturally like any other page — no inner scroll containers, no
-   viewport lock — so wheel/touch scrolling works from anywhere on screen.
+   scrolls naturally like any other page - no inner scroll containers, no
+   viewport lock - so wheel/touch scrolling works from anywhere on screen.
    Scoped to when the call panel is active so the setup/landing view
    is unaffected. */
 .stage.call-live {
@@ -4498,7 +4498,7 @@ body.panel-open .side-panel {
   gap: 2px;
 }
 
-/* The rules list and the reassurance line are setup-screen guidance — during a
+/* The rules list and the reassurance line are setup-screen guidance - during a
    call they only push the mic/chat controls off-screen, so hide them. Hiding
    the guide also removes the element that was overlapping the controls. */
 .stage.call-live .reassure-line {
@@ -4574,7 +4574,7 @@ body.panel-open .side-panel {
   gap: 0;
 }
 
-/* Mobile: the chat is a full-screen sheet — full width so there is no dead
+/* Mobile: the chat is a full-screen sheet - full width so there is no dead
    strip on the side and the Send button can never be pushed off-screen. */
 @media (max-width: 767px) {
   .chat-side-panel {
@@ -4622,7 +4622,7 @@ body.panel-open .side-panel {
 }
 
 /* Desktop: Facebook-Messenger-web-style chat docked at the bottom-right corner
-   — a floating rounded window that pops up (not a full-height drawer), so the
+   - a floating rounded window that pops up (not a full-height drawer), so the
    call stays fully visible behind it. It's non-modal: no dimming overlay, and
    it stays open until explicitly closed. Placed after the base .chat-side-panel
    block so these values win without needing extra specificity. */
@@ -4892,7 +4892,7 @@ body.panel-open .side-panel {
   pointer-events: none;
 }
 
-/* Red "you've been invited" badge on the game button — quiet but noticeable. */
+/* Red "you've been invited" badge on the game button - quiet but noticeable. */
 #gameBtn .notif-badge.is-invite {
   background: var(--danger);
   box-shadow: 0 0 8px var(--danger);
@@ -5190,7 +5190,7 @@ body.panel-open .side-panel {
 }
 
 /* --- Premium (TalkLive Plus) ------------------------------------------------ */
-/* Small, calm "Premium" chip — professional, not shouty. */
+/* Small, calm "Premium" chip - professional, not shouty. */
 .premium-lock {
   display: inline-block;
   font-size: 0.7rem;
@@ -5215,7 +5215,7 @@ a.premium-lock:hover { background: rgba(108, 92, 231, 0.22); }
   border-radius: 14px;
   border: 1px solid rgba(108, 92, 231, 0.35);
   background: linear-gradient(160deg, rgba(108, 92, 231, 0.14), rgba(0, 212, 255, 0.06));
-  /* Override the chip styling inherited from .premium-lock — this is a card. */
+  /* Override the chip styling inherited from .premium-lock - this is a card. */
   font-size: inherit;
   font-weight: inherit;
   color: inherit;
@@ -5252,8 +5252,8 @@ a.premium-lock:hover { background: rgba(108, 92, 231, 0.22); }
 }
 #filtersPanel .side-panel-body { gap: 7px; }
 
-/* Compact the whole filter panel so every group — gender, both country lists
-   and interests — fits on screen at once without scrolling to reach the
+/* Compact the whole filter panel so every group - gender, both country lists
+   and interests - fits on screen at once without scrolling to reach the
    Interests section. */
 #filtersPanel .country-multiselect { gap: 6px; }
 #filtersPanel .search-input { padding: 6px 12px; }
@@ -5394,7 +5394,7 @@ html.perf-lite .side-panel { box-shadow: none; }
 
 /* ============================================================
    Landing balance: the two hero choices sit as one even, centered
-   composition — equal columns, aligned captions, true optical center.
+   composition - equal columns, aligned captions, true optical center.
    ============================================================ */
 .tap-choice-row {
   gap: 18px;

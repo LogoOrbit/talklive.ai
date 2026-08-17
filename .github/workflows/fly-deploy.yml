@@ -1,6 +1,6 @@
 name: Deploy to Fly.io
 
-# Every push to main ships. The alternative — deploying by hand from a laptop —
+# Every push to main ships. The alternative - deploying by hand from a laptop -
 # is what let main drift a commit ahead of the running app more than once.
 on:
   push:

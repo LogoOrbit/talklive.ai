@@ -6,8 +6,8 @@
    Timing matters a lot here: the curtain is opaque and covers the whole
    viewport, so every millisecond it stays up is a millisecond of blank screen
    in Largest Contentful Paint and Speed Index. It is therefore torn down as
-   soon as the page's own stylesheets have applied — the only thing it exists to
-   hide — rather than waiting for `load` (which trails behind analytics, ad
+   soon as the page's own stylesheets have applied - the only thing it exists to
+   hide - rather than waiting for `load` (which trails behind analytics, ad
    iframes and the socket.io client) or for the app scripts to finish parsing. */
 (function () {
   var HARD_CAP_MS = 1500; // never let the curtain gate the paint for longer
@@ -21,7 +21,7 @@
    * nav-only (every SEO landing page, blog post and localized homepage): do
    * not show a curtain on load at all, and keep the click handler that shows
    * one while navigating away. Those pages arrive fully rendered from the
-   * server with a single stylesheet, so there is no flash to hide — an opaque
+   * server with a single stylesheet, so there is no flash to hide - an opaque
    * full-viewport overlay could only ever delay the paint it was covering.
    * Combined with `defer` on the tag, this takes the script off the critical
    * rendering path for ~260 pages while keeping the navigation feedback.

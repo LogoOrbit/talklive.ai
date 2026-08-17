@@ -4,7 +4,7 @@ node_modules
 data
 
 # Marketing collateral (~8MB of audio/GIF/posters) is never served by the
-# server — public/ is the only static root — so keep it out of the image.
+# server - public/ is the only static root - so keep it out of the image.
 marketing
 
 .replit

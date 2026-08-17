@@ -30,7 +30,7 @@
   }
 </style>
 <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
-<title>TalkLive — Anonymous Text Chat with Strangers</title>
+<title>TalkLive - Anonymous Text Chat with Strangers</title>
 <meta name="description" content="Anonymous text chat with a random stranger anywhere in the world. Free, instant, no sign-up." />
 <meta name="robots" content="noindex, follow" />
 <meta name="application-name" content="TalkLive" />
@@ -42,22 +42,22 @@
 <link rel="canonical" href="https://talklive.app/chat" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="TalkLive" />
-<meta property="og:title" content="TalkLive — Anonymous Text Chat with Strangers" />
+<meta property="og:title" content="TalkLive - Anonymous Text Chat with Strangers" />
 <meta property="og:description" content="Anonymous text chat with a random stranger anywhere in the world. Free, instant, no sign-up." />
 <meta property="og:url" content="https://talklive.app/chat" />
 <meta property="og:image" content="https://talklive.app/og-image.png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="TalkLive — free random voice chat with strangers worldwide" />
+<meta property="og:image:alt" content="TalkLive - free random voice chat with strangers worldwide" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="TalkLive — Anonymous Text Chat with Strangers" />
+<meta name="twitter:title" content="TalkLive - Anonymous Text Chat with Strangers" />
 <meta name="twitter:description" content="Anonymous text chat with a random stranger anywhere in the world. Free, instant, no sign-up." />
 <meta name="twitter:image" content="https://talklive.app/og-image.png" />
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="icon" href="/favicon-48.png" sizes="48x48" type="image/png" />
 <link rel="apple-touch-icon" href="/favicon-192.png" />
 <link rel="manifest" href="/site.webmanifest" />
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebApplication","name":"TalkLive Chat","url":"https://talklive.app/chat","applicationCategory":"CommunicationApplication","operatingSystem":"Web, Android, iOS","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"isAccessibleForFree":true,"publisher":{"@type":"Organization","name":"TalkLive","url":"https://talklive.app","logo":"https://talklive.app/favicon.svg"},"description":"The live TalkLive chat room — anonymous random voice and text conversations with strangers."}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebApplication","name":"TalkLive Chat","url":"https://talklive.app/chat","applicationCategory":"CommunicationApplication","operatingSystem":"Web, Android, iOS","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"isAccessibleForFree":true,"publisher":{"@type":"Organization","name":"TalkLive","url":"https://talklive.app","logo":"https://talklive.app/favicon.svg"},"description":"The live TalkLive chat room - anonymous random voice and text conversations with strangers."}]</script>
 <script defer src="/ads.js"></script>
 </head>
 <body>
@@ -82,7 +82,7 @@
 
       <div class="top-info">
         <div id="topDefault" class="top-id">
-          <span class="top-sub"><span class="online-dot" aria-hidden="true"></span><span id="onlineCount">—</span><span data-i18n="online">Online</span></span>
+          <span class="top-sub"><span class="online-dot" aria-hidden="true"></span><span id="onlineCount">-</span><span data-i18n="online">Online</span></span>
         </div>
         <div id="topPartner" class="top-id hidden">
           <span class="top-name"><span id="topPartnerName"></span></span>
@@ -227,8 +227,8 @@
         <button type="button" id="friendCloseBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
       </div>
       <div class="modal-body">
-        <p class="friend-to"><span data-i18n="friendReqTo">Send a friend request to</span> <strong id="friendUsername">—</strong></p>
-        <textarea id="friendMessage" class="textarea" maxlength="200" rows="3" data-i18n-placeholder="friendReqMsgPh" placeholder="Optional message — remind them who you are…"></textarea>
+        <p class="friend-to"><span data-i18n="friendReqTo">Send a friend request to</span> <strong id="friendUsername">-</strong></p>
+        <textarea id="friendMessage" class="textarea" maxlength="200" rows="3" data-i18n-placeholder="friendReqMsgPh" placeholder="Optional message - remind them who you are…"></textarea>
         <div class="modal-actions">
           <button type="button" id="friendCancelBtn" class="btn btn-secondary" data-i18n="cancel">Cancel</button>
           <button type="button" id="friendSendBtn" class="btn btn-primary" data-i18n="friendReqSend">Send request</button>
@@ -238,7 +238,7 @@
   </div>
 
   <!-- Outgoing voice-call invite: tapping the phone icon never leaves the page
-       by itself — it sends your partner a request and waits for them to
+       by itself - it sends your partner a request and waits for them to
        accept before either of you goes to the voice app. -->
   <div id="callModal" class="modal-overlay hidden">
     <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="callTitle">
@@ -264,7 +264,7 @@
         <h2 id="callIncomingTitle" data-i18n="callInviteIncomingTitle">Incoming voice call</h2>
       </div>
       <div class="modal-body">
-        <p class="hint"><strong id="callIncomingName">—</strong> <span data-i18n="callInviteIncomingBody">wants to start a voice call with you.</span></p>
+        <p class="hint"><strong id="callIncomingName">-</strong> <span data-i18n="callInviteIncomingBody">wants to start a voice call with you.</span></p>
         <div class="modal-actions">
           <button type="button" id="callDeclineBtn" class="btn btn-secondary" data-i18n="callInviteDecline">Decline</button>
           <button type="button" id="callAcceptBtn" class="btn btn-primary" data-i18n="callInviteAccept">Accept</button>
@@ -290,7 +290,7 @@
     </div>
   </div>
 
-  <!-- Settings side panel (left): name, gender, theme, language, sounds — the
+  <!-- Settings side panel (left): name, gender, theme, language, sounds - the
        same core preferences the call app exposes from its gear icon. -->
   <div id="settingsOverlay" class="side-overlay hidden"></div>
   <aside id="settingsPanel" class="side-panel side-left" role="dialog" data-i18n-aria="settings" aria-label="Settings" aria-hidden="true" inert>
@@ -349,7 +349,7 @@
   </aside>
 
   <!-- Chat history side panel (right): the last 10 people you chatted with, so
-       you can message back someone you lost. No call-back here — text only. -->
+       you can message back someone you lost. No call-back here - text only. -->
   <div id="historyOverlay" class="side-overlay hidden"></div>
   <aside id="historyPanel" class="side-panel side-right" role="dialog" data-i18n-aria="history" aria-label="History" aria-hidden="true" inert>
     <div class="side-header">

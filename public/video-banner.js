@@ -1,4 +1,4 @@
-/* Ambient video banner — a small, reusable, dependency-free component that turns
+/* Ambient video banner - a small, reusable, dependency-free component that turns
    any element carrying the [data-video-banner] attribute into a lazy-loaded,
    seamlessly looping background video with a still-poster placeholder and
    graceful fallbacks.
@@ -50,7 +50,7 @@
 
     paintPoster(fig, video);
 
-    // Reduced motion: never load or play — the still poster is the whole banner.
+    // Reduced motion: never load or play - the still poster is the whole banner.
     if (reducedMotion) {
       video.removeAttribute('autoplay');
       fig.classList.add('is-static');
@@ -70,7 +70,7 @@
     });
 
     // The poster layer covers the loading state, so the <video>'s own poster can
-    // go — that lets the video simply fade in over the placeholder when it plays.
+    // go - that lets the video simply fade in over the placeholder when it plays.
     video.removeAttribute('poster');
 
     function showVideo() {
@@ -92,7 +92,7 @@
       try { p = video.play(); } catch (e) { showPosterOnly(); return; }
       if (p && typeof p.catch === 'function') {
         p.catch(function (err) {
-          // AbortError just means a pause()/load() interrupted this play() —
+          // AbortError just means a pause()/load() interrupted this play() -
           // scrolling the banner off-screen does exactly that. Falling back to
           // the poster there would permanently freeze a video that is fine.
           if (err && err.name === 'AbortError') return;

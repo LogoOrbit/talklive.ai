@@ -1,5 +1,5 @@
 // ============================================================================
-// TalkLive — dedicated text-chat app (/chat).
+// TalkLive - dedicated text-chat app (/chat).
 //
 // This page is its OWN sub-app: no voice, no WebRTC, no call code. It speaks
 // the same Socket.IO matchmaking protocol as the main app but only the small
@@ -14,7 +14,7 @@
 
   // Forward uncaught errors on this page to the owner dashboard. /chat is a
   // separate sub-app from the main one, and until this was added it reported
-  // nothing at all — bugs here were simply invisible in the Errors tab.
+  // nothing at all - bugs here were simply invisible in the Errors tab.
   if (window.TalkLiveErrors) window.TalkLiveErrors.install(function () { return socket; });
 
   // --- Persistent identity (matches the main app's keys so a returning user
@@ -190,7 +190,7 @@
   function clearMessages() { msgs.innerHTML = ''; }
 
   // Bot heuristic: the same line repeated back-to-back is the classic spam
-  // signature — warn once so the user just taps Next.
+  // signature - warn once so the user just taps Next.
   var UNSAFE_RE = /\b(child\s*porn|cp\s*trade|loli(?:con)?|jailbait|sell(?:ing)?\s+(?:drugs|guns|weapons)|buy\s+(?:drugs|cocaine|heroin|meth|fentanyl)|hire\s*(?:a\s*)?hitman|credit\s*card\s*numbers?|send\s+nudes|onlyfans|escort\s*service)\b/i;
   var LINK_RE = /(https?:\/\/|www\.|\b[a-z0-9-]+\.(?:com|net|org|io|xyz|ru|link|gg)\b)/i;
   var lastIn = '', repeat = 0, botWarned = false;
@@ -383,7 +383,7 @@
   // ---------------------------------------------------------------------------
   // Voice call: the phone icon never navigates away silently. Tapping it sends
   // your current partner a "wants to call you" popup; only once THEY accept
-  // does either browser leave for the voice app — and both land there
+  // does either browser leave for the voice app - and both land there
   // together, paired up automatically via a one-time invite token.
   // ---------------------------------------------------------------------------
   var callModal = $('callModal');       // "Calling… waiting for them to accept"
@@ -400,7 +400,7 @@
     vibrate(10);
     socket.emit('voice-invite');
     openModal(callModal);
-    // No response within 20s (e.g. they never notice the popup) — stop waiting.
+    // No response within 20s (e.g. they never notice the popup) - stop waiting.
     clearTimeout(inviteOutTimer);
     inviteOutTimer = setTimeout(function () {
       closeModal(callModal);
@@ -453,7 +453,7 @@
   function closeModal(m) { m.classList.add('hidden'); if (!document.querySelector('.modal-overlay:not(.hidden)')) document.body.classList.remove('modal-open'); }
 
   // ---------------------------------------------------------------------------
-  // Side panels (settings / friends / friend chat) — the nav features shared
+  // Side panels (settings / friends / friend chat) - the nav features shared
   // with the call app. Each panel slides in over its own overlay.
   // ---------------------------------------------------------------------------
   function openPanel(panel, overlay) {
@@ -589,7 +589,7 @@
       row.className = 'request-row';
       row.innerHTML =
         '<span class="friend-avatar" aria-hidden="true">' + escapeHtml((r.username || '?').charAt(0)) + '</span>' +
-        '<span class="friend-main"><span class="friend-name">' + escapeHtml(r.username || '—') + ' ' + getFlagImg(r.countryCode, 14) + '</span>' +
+        '<span class="friend-main"><span class="friend-name">' + escapeHtml(r.username || '-') + ' ' + getFlagImg(r.countryCode, 14) + '</span>' +
         (r.message ? '<span class="request-note">' + escapeHtml(r.message) + '</span>' : '') + '</span>' +
         '<span class="friend-actions">' +
         '<button type="button" class="mini-btn accept" data-accept="1" title="' + escapeHtml(t('accept')) + '" aria-label="' + escapeHtml(t('accept')) + '"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12.5 10 18.5 20 6.5"/></svg></button>' +
@@ -614,7 +614,7 @@
       var unreadN = unreadCountFor(f.clientId);
       row.innerHTML =
         '<span class="friend-avatar" aria-hidden="true">' + escapeHtml((f.username || '?').charAt(0)) + '</span>' +
-        '<span class="friend-main"><span class="friend-name">' + escapeHtml(f.username || '—') + ' ' + getFlagImg(f.countryCode, 14) + '</span>' +
+        '<span class="friend-main"><span class="friend-name">' + escapeHtml(f.username || '-') + ' ' + getFlagImg(f.countryCode, 14) + '</span>' +
         '<span class="friend-status' + (f.online ? '' : ' is-offline') + '"><span class="online-dot"></span>' + escapeHtml(t(f.online ? 'online' : 'offline')) + '</span></span>' +
         '<span class="friend-actions">' +
         '<button type="button" class="mini-btn" data-act="chat" title="' + escapeHtml(t('chat')) + '" aria-label="' + escapeHtml(t('chat')) + '"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>' +
@@ -649,7 +649,7 @@
   });
 
   // --- Chat history: the last people you talked to at random, so you can
-  // message back someone you lost. Populated by 'state-sync'. Text only —
+  // message back someone you lost. Populated by 'state-sync'. Text only -
   // deliberately no call-back button here. ---
   var historyPanel = $('historyPanel');
   var historyOverlay = $('historyOverlay');
@@ -676,7 +676,7 @@
       var unreadN = unreadCountFor(h.clientId);
       row.innerHTML =
         '<span class="friend-avatar" aria-hidden="true">' + escapeHtml((h.username || '?').charAt(0)) + '</span>' +
-        '<span class="friend-main"><span class="friend-name">' + escapeHtml(h.username || '—') + ' ' + getFlagImg(h.countryCode, 14) + '</span>' +
+        '<span class="friend-main"><span class="friend-name">' + escapeHtml(h.username || '-') + ' ' + getFlagImg(h.countryCode, 14) + '</span>' +
         '<span class="friend-status' + (h.online ? '' : ' is-offline') + '"><span class="online-dot"></span>' + escapeHtml(t(h.online ? 'online' : 'offline')) + '</span></span>' +
         '<span class="friend-actions">' +
         '<button type="button" class="mini-btn" data-act="chat" title="' + escapeHtml(t('messageBack')) + '" aria-label="' + escapeHtml(t('messageBack')) + '"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>' +
@@ -785,7 +785,7 @@
     $('topPartnerFlag').innerHTML = getFlagImg(data.partner.countryCode, 16);
     showView('live');
     soundConnect();
-    // "You're now chatting with X from Pakistan 🇵🇰" — the flag image goes right
+    // "You're now chatting with X from Pakistan 🇵🇰" - the flag image goes right
     // after the country name inside the system line, so it's built as DOM.
     var line = addMessage(t('chatSystemMatched', {
       name: data.partner.username,
@@ -799,8 +799,8 @@
     input.focus();
   });
 
-  socket.on('waiting', function () { /* still searching — keep the search view */ });
-  socket.on('match-delay', function () { /* brief free-tier pause — search view stays */ });
+  socket.on('waiting', function () { /* still searching - keep the search view */ });
+  socket.on('match-delay', function () { /* brief free-tier pause - search view stays */ });
   socket.on('random-fallback', function () { /* server widened the net; nothing to do */ });
 
   socket.on('chat-message', function (data) {
@@ -836,7 +836,7 @@
     clearOutgoingInvite();
     closeModal(callIncomingModal);
     if (autoNext) {
-      // Keep going straight into a new search — no need to wait for a tap on Next.
+      // Keep going straight into a new search - no need to wait for a tap on Next.
       clearMessages();
       clearNextConfirm();
       goSearch(false);
@@ -891,7 +891,7 @@
   });
 
   // Unread messages sit on the Friends row inside the closed menu, so mirror
-  // that state onto the button as a dot — otherwise folding Friends away
+  // that state onto the button as a dot - otherwise folding Friends away
   // would silently hide notifications.
   function syncMoreDot() {
     moreDot.classList.toggle('hidden', friendsBadge.classList.contains('hidden'));

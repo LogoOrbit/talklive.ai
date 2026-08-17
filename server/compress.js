@@ -1,12 +1,12 @@
 'use strict';
 /*
- * Response compression — Brotli with a gzip fallback.
+ * Response compression - Brotli with a gzip fallback.
  *
  * Fly's edge proxy passes bodies through untouched, and Express ships no
  * compression of its own, so before this middleware existed every byte went
  * out raw: 122 kB of style.css, 189 kB of app.js and a 112 kB homepage on
  * every cold visit. That is the single largest Core Web Vitals cost on the
- * site and it is pure transfer waste — the same bytes compress to roughly a
+ * site and it is pure transfer waste - the same bytes compress to roughly a
  * fifth of that.
  *
  * Implemented on `zlib` rather than the `compression` package on purpose:
@@ -48,7 +48,7 @@ const BROTLI_OPTS = (size) => ({
  * strong-ish validator are cached, which in practice means files on disk and
  * never per-user dynamic output.
  *
- * Bounded by total bytes rather than entry count — one 200 kB bundle should
+ * Bounded by total bytes rather than entry count - one 200 kB bundle should
  * not be worth the same as a 2 kB fragment. On overflow the whole map is
  * dropped rather than evicted one by one; the working set here is a few dozen
  * files, so a full rebuild is rare and costs a handful of compressions.
@@ -97,7 +97,7 @@ module.exports = function compress() {
     if (!encoding || req.method === 'HEAD' || req.headers.range) return next();
 
     // Tell caches and the CDN that the body varies by encoding even on the
-    // paths we end up not compressing — otherwise a proxy can serve a Brotli
+    // paths we end up not compressing - otherwise a proxy can serve a Brotli
     // body to a client that never asked for one.
     res.setHeader('Vary', 'Accept-Encoding');
 

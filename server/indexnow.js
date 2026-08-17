@@ -1,5 +1,5 @@
 /*
- * IndexNow integration — pushes every URL in sitemap.xml to search engines
+ * IndexNow integration - pushes every URL in sitemap.xml to search engines
  * (Bing, Yandex, Seznam, Naver and everyone else on the IndexNow network)
  * so new/updated pages get crawled within minutes instead of weeks.
  *
@@ -17,7 +17,7 @@ const HOST = 'talklive.app';
 
 // /sitemap.xml is a <sitemapindex>, so its own <loc> entries are child sitemap
 // files rather than pages. Reading it alone would submit six sitemap URLs and
-// none of the ~266 pages, which is a silent no-op — so the index is followed
+// none of the ~266 pages, which is a silent no-op - so the index is followed
 // one level down into the children that actually list pages.
 function sitemapUrls() {
   const dir = path.join(__dirname, '..', 'public');
@@ -40,7 +40,7 @@ function sitemapUrls() {
   return [...urls];
 }
 
-// Submits the full URL list in one POST. Errors are logged and swallowed —
+// Submits the full URL list in one POST. Errors are logged and swallowed -
 // indexing pings must never take the app down.
 function ping(cb) {
   let urlList;
@@ -64,7 +64,7 @@ function ping(cb) {
     timeout: 15000,
   }, res => {
     res.resume();
-    console.log(`[indexnow] submitted ${urlList.length} urls — HTTP ${res.statusCode}`);
+    console.log(`[indexnow] submitted ${urlList.length} urls - HTTP ${res.statusCode}`);
     cb && cb(null, res.statusCode);
   });
   req.on('error', err => {

@@ -32,7 +32,7 @@ const server = http.createServer(app);
 // host, so the Nth late joiner can never complete its handshake (its socket
 // never connects, so it never receives online-count and tap-to-talk is dead).
 // WebSockets are not subject to that per-host HTTP connection pool, so allowing
-// (and quickly upgrading to) WebSocket removes the ceiling entirely — no
+// (and quickly upgrading to) WebSocket removes the ceiling entirely - no
 // hardcoded limit was involved. pingTimeout is generous for flaky mobile links.
 const io = new Server(server, {
   transports: ['websocket', 'polling'],
@@ -66,7 +66,7 @@ const CSP = [
   // explicitly or the browser silently drops the ad scripts and the slots stay
   // empty. Ad creatives render inside cross-origin iframes, and their tracking
   // pixels/beacons go to arbitrary ad-exchange hosts, so frame-src/img-src/
-  // connect-src need broad https: — script execution on the page itself is
+  // connect-src need broad https: - script execution on the page itself is
   // still restricted to the named script-src hosts.
   "script-src 'self' 'unsafe-inline' https://accounts.google.com"
     + ' https://delvefencescrewdriver.com https://www.highperformanceformat.com'
@@ -98,7 +98,7 @@ app.use((req, res, next) => {
 
 // Tiny health check for uptime pingers (cron-job.org / UptimeRobot). Returns a
 // few bytes instead of the full homepage, so the pinger doesn't abort with
-// "output too large", yet the request still hits the server every few minutes —
+// "output too large", yet the request still hits the server every few minutes -
 // which is what keeps the Supabase database from sleeping. The Fly machine
 // itself no longer sleeps (auto_stop_machines is off in fly.toml), so this
 // only matters for the database now.
@@ -227,7 +227,7 @@ const FREE_LIMITS = {
 // Premium registry lives in the persistent store (Postgres/file) so paid
 // customers survive restarts and deploys. Nothing writes to it automatically:
 // /pricing sends buyers to Patreon, which has no webhook wired up here, so
-// grants are manual — PREMIUM_CLIENT_IDS (env) or store.setPremium().
+// grants are manual - PREMIUM_CLIENT_IDS (env) or store.setPremium().
 const envPremiumClients = new Set(
   (process.env.PREMIUM_CLIENT_IDS || '').split(',').map((s) => s.trim()).filter(Boolean)
 );
@@ -293,7 +293,7 @@ app.get('/premium-status', (req, res) => {
 });
 
 // Public client ID handed to the browser so it can render the Google Sign-In
-// button — safe to expose, it's not a secret.
+// button - safe to expose, it's not a secret.
 app.get('/config.js', (req, res) => {
   res.type('application/javascript');
   // Only changes when the deployment's env changes, so let browsers keep it for
@@ -351,7 +351,7 @@ app.get('/call', (req, res) => {
   sendPage(res, 'index.html');
 });
 
-// The text-chat app is a genuinely separate, lightweight page — no voice/WebRTC
+// The text-chat app is a genuinely separate, lightweight page - no voice/WebRTC
 // code is loaded here at all, so the two sub-apps can never bleed into each
 // other and it stays fast on weak phones.
 app.get('/chat', (req, res) => {
@@ -412,7 +412,7 @@ app.use((req, res, next) => {
   if (req.path.startsWith('/owner')) return next();
   if (/\.(css|js|svg|png|ico|webmanifest|xml|txt)$/i.test(req.path)) return next();
   res.setHeader('Retry-After', '3600');
-  res.status(503).type('html').send(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TalkLive — Maintenance</title><style>body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#0d0d0d;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:24px}h1{font-size:2rem;margin:.4em 0}.orb{width:72px;height:72px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#6da7ec,#184f95);margin:0 auto 18px;animation:p 2s ease-in-out infinite}@keyframes p{50%{transform:scale(1.08);opacity:.85}}p{color:#c3c2b7;max-width:420px;margin:0 auto;line-height:1.5}</style></head><body><div><div class="orb"></div><h1>We&rsquo;ll be right back</h1><p>${store.data.settings.maintenance.message.replace(/</g, '&lt;')}</p></div></body></html>`);
+  res.status(503).type('html').send(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TalkLive - Maintenance</title><style>body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#0d0d0d;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:24px}h1{font-size:2rem;margin:.4em 0}.orb{width:72px;height:72px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#6da7ec,#184f95);margin:0 auto 18px;animation:p 2s ease-in-out infinite}@keyframes p{50%{transform:scale(1.08);opacity:.85}}p{color:#c3c2b7;max-width:420px;margin:0 auto;line-height:1.5}</style></head><body><div><div class="orb"></div><h1>We&rsquo;ll be right back</h1><p>${store.data.settings.maintenance.message.replace(/</g, '&lt;')}</p></div></body></html>`);
 });
 
 // Count page visits (HTML navigations only, not assets) with geo attribution.
@@ -447,11 +447,11 @@ app.use(
     extensions: ['html'],
     setHeaders(res, filePath) {
       if (/\.html$/i.test(filePath)) {
-        // HTML changes with deploys — revalidate so updates show up fast.
+        // HTML changes with deploys - revalidate so updates show up fast.
         res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
       } else if (/\.(css|js|svg|png|jpg|jpeg|webp|ico|woff2?|mp4|webm|m4a|mp3)$/i.test(filePath)) {
         // Assets requested with a ?v= cache buster get a brand new URL on every
-        // deploy, so the bytes behind a given URL never change — cache them for
+        // deploy, so the bytes behind a given URL never change - cache them for
         // a year. Everything else keeps the conservative one-day window.
         const versioned = /[?&]v=/.test(res.req && res.req.url ? res.req.url : '');
         res.setHeader(
@@ -470,7 +470,7 @@ app.use(
 // Friendly 404 for unknown pages: correct status code (so search engines drop
 // dead URLs) plus links back into the site instead of Express's plain text.
 app.use((req, res) => {
-  res.status(404).type('html').send(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Page not found — TalkLive</title><meta name="robots" content="noindex"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><style>body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#0b0f1a;color:#eef1f9;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:24px}h1{font-size:2rem;margin:.4em 0}p{color:#9aa3b8;max-width:420px;margin:0 auto 20px;line-height:1.5}a.btn{display:inline-block;background:#4f7cff;color:#fff;text-decoration:none;padding:12px 26px;border-radius:999px;font-weight:600}a{color:#8fb0ff}nav{margin-top:18px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap;font-size:14px}</style></head><body><div><h1>404 — page not found</h1><p>That page doesn't exist, but thousands of people are online talking right now.</p><a class="btn" href="/">Start Talking Free</a><nav><a href="/talk-to-strangers">Talk to Strangers</a><a href="/random-voice-chat">Random Voice Chat</a><a href="/blog/">Blog</a><a href="/contact">Contact</a></nav></div></body></html>`);
+  res.status(404).type('html').send(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Page not found - TalkLive</title><meta name="robots" content="noindex"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><style>body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#0b0f1a;color:#eef1f9;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:24px}h1{font-size:2rem;margin:.4em 0}p{color:#9aa3b8;max-width:420px;margin:0 auto 20px;line-height:1.5}a.btn{display:inline-block;background:#4f7cff;color:#fff;text-decoration:none;padding:12px 26px;border-radius:999px;font-weight:600}a{color:#8fb0ff}nav{margin-top:18px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap;font-size:14px}</style></head><body><div><h1>404 - page not found</h1><p>That page doesn't exist, but thousands of people are online talking right now.</p><a class="btn" href="/">Start Talking Free</a><nav><a href="/talk-to-strangers">Talk to Strangers</a><a href="/random-voice-chat">Random Voice Chat</a><a href="/blog/">Blog</a><a href="/contact">Contact</a></nav></div></body></html>`);
 });
 
 // --- State ---
@@ -540,7 +540,7 @@ function persistAccount(usernameLower) {
   if (acc) store.saveAccount(usernameLower, acc);
 }
 
-// --- Friends / notifications / call-back state — all in-memory, keyed by the
+// --- Friends / notifications / call-back state - all in-memory, keyed by the
 // persistent per-browser clientId so it survives reconnects (works for both
 // temporary/guest users and signed-in accounts). Resets on server restart.
 const clientSockets = new Map(); // clientId -> current socketId, for online lookup
@@ -626,7 +626,7 @@ function recordChatHistory(ownerClientId, partner) {
   while (list.length > MAX_CHAT_HISTORY) list.shift();
 }
 
-// True if `b` appears in `a`'s recent chat history (either direction) — used to
+// True if `b` appears in `a`'s recent chat history (either direction) - used to
 // let someone message a past partner back even though they never became friends.
 function hasChatHistory(a, b) {
   const la = chatHistory.get(a);
@@ -685,7 +685,7 @@ function syncClientState(socket, clientId) {
     clientId: fid,
     ...info,
     avatar: liveAvatarFor(fid, info.avatar),
-    // Friends who hid their status always appear offline to friends — this
+    // Friends who hid their status always appear offline to friends - this
     // only masks the per-friend indicator, never the global online count.
     online: clientSockets.has(fid) && !statusHidden.get(fid),
   }));
@@ -717,7 +717,7 @@ function pairKey(a, b) {
   return [a, b].sort().join('|');
 }
 
-// No links of any kind are allowed in chat — protocols, www-prefixed hosts,
+// No links of any kind are allowed in chat - protocols, www-prefixed hosts,
 // bare domains with a TLD, or "example dot com" style obfuscation.
 const LINK_RE = new RegExp(
   '(?:[a-z][a-z0-9+.-]*:\\/\\/)' // any protocol://
@@ -890,7 +890,7 @@ function disconnectPartner(socketId) {
 }
 
 // Deliberately excludes gender (and avatar, which is gendered): nothing shown
-// during a call should reveal the stranger's gender — it should only become
+// during a call should reveal the stranger's gender - it should only become
 // apparent through conversation.
 function publicProfile(p) {
   return {
@@ -923,7 +923,7 @@ function mutuallyCompatible(seeker, candidate) {
 
   // Tap to Talk and Tap to Chat are separate pools: a voice caller must never
   // land in a text chat and vice versa. Mode is a hard gate that survives the
-  // random fallback below — dropping it would put a mic-less chatter in a call.
+  // random fallback below - dropping it would put a mic-less chatter in a call.
   if ((seeker.mode || 'talk') !== (candidate.mode || 'talk')) return false;
 
   // After a long wait either side falls back to "match me with anyone random":
@@ -1098,7 +1098,7 @@ io.on('connection', (socket) => {
   });
   // Swallow rate-limit errors quietly instead of disconnecting on the first
   // over-limit event, so a brief burst just drops packets rather than the call.
-  socket.on('error', () => { /* rate-limited or malformed packet — ignore */ });
+  socket.on('error', () => { /* rate-limited or malformed packet - ignore */ });
 
   // Maintenance mode: only the owner dashboard stays live.
   if (store.data.settings.maintenance.on) {
@@ -1123,7 +1123,7 @@ io.on('connection', (socket) => {
       || !username || !password || username.length < 3 || password.length < 4) {
       return socket.emit('signup-result', { ok: false, error: 'Username/password too short (min 3/4 chars).' });
     }
-    // Nickname is optional — creating an account is just username + password,
+    // Nickname is optional - creating an account is just username + password,
     // and the display name defaults to the username (changeable later).
     nickname = (typeof nickname === 'string' && nickname.trim()) ? nickname.trim() : username;
     if (!/^[A-Za-z0-9_.-]{3,24}$/.test(username)) {
@@ -1492,10 +1492,10 @@ io.on('connection', (socket) => {
         detail,
       });
       const totalReports = store.reportCountFor(partner.clientId);
-      console.log(`[report] ${seeker.username} reported ${partner.username} — reason: ${reason}${detail ? ` — "${detail}"` : ''} (total reports: ${totalReports})`);
+      console.log(`[report] ${seeker.username} reported ${partner.username} - reason: ${reason}${detail ? ` - "${detail}"` : ''} (total reports: ${totalReports})`);
       admin.sendAlertEmail('report', `New user report against ${partner.username}`,
         `${seeker.username} (${seeker.countryName}) reported ${partner.username} (${partner.countryName}, ${partner.city}).\nReason: ${reason}${detail ? `\nDetail: ${detail}` : ''}\nTotal reports on this user: ${totalReports}\n\nReview at https://${CANONICAL_HOST}/owner`);
-      // Auto-ban after the configured threshold — a real persisted ban (default
+      // Auto-ban after the configured threshold - a real persisted ban (default
       // 30 minutes) so they can't reconnect by refreshing. The owner can extend
       // or lift it from the dashboard.
       const distinctReporters = new Set((store.data.reports || [])
@@ -1578,7 +1578,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  // WebRTC signaling relay — only forwarded to the current partner
+  // WebRTC signaling relay - only forwarded to the current partner
   socket.on('signal', (data) => {
     const partnerId = partners.get(socket.id);
     if (!partnerId || partners.get(partnerId) !== socket.id) return;
@@ -1621,7 +1621,7 @@ io.on('connection', (socket) => {
         to: them ? them.username : '',
         toClientId: them ? them.clientId : '',
         country: me.countryName,
-        text: `[${type}] ${detailStr}${transcriptStr ? ` — "${transcriptStr}"` : ''}`,
+        text: `[${type}] ${detailStr}${transcriptStr ? ` - "${transcriptStr}"` : ''}`,
       });
     }
     admin.sendAlertEmail(`moderation-${type}`, `Moderation alert: ${type} from ${who}`,
@@ -1677,7 +1677,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Mini-game (Tic Tac Toe) relay — forwards game events to the current partner only.
+  // Mini-game (Tic Tac Toe) relay - forwards game events to the current partner only.
   socket.on('game', (data) => {
     const partnerId = partners.get(socket.id);
     if (partnerId && data && typeof data === 'object') {
@@ -1707,7 +1707,7 @@ io.on('connection', (socket) => {
     if (!friendRequests.has(targetClientId)) friendRequests.set(targetClientId, new Map());
     friendRequests.get(targetClientId).set(me.clientId, { ...myInfo, ts: Date.now() });
 
-    // Optional intro message ("remind them who you are") — links stripped,
+    // Optional intro message ("remind them who you are") - links stripped,
     // capped, and only ever shown inside the recipient's notification.
     const intro = (typeof message === 'string' && !containsLink(message) && !UNSAFE_RE.test(message))
       ? message.trim().slice(0, 200) : '';
@@ -1792,7 +1792,7 @@ io.on('connection', (socket) => {
     // random (the "message back from history" path), even without a friendship.
     if (!isFriend(me.clientId, toClientId) && !hasChatHistory(me.clientId, toClientId)) return;
     if (isBlockedPair(me.clientId, toClientId)) return;
-    // Friends can message each other any time — no call required. If the friend
+    // Friends can message each other any time - no call required. If the friend
     // is offline the message is still stored and a notification is queued, so it
     // reaches them the next time they come online.
     if (containsLink(text)) {
@@ -1853,7 +1853,7 @@ io.on('connection', (socket) => {
 
   // Read receipts: when I (the viewer) open a chat, mark every message the
   // friend sent me as seen and persist it, so the sender still sees "Seen"
-  // after reopening the chat or reconnecting — not just while both are live.
+  // after reopening the chat or reconnecting - not just while both are live.
   socket.on('chat-seen', ({ friendClientId } = {}) => {
     const me = profiles.get(socket.id);
     friendClientId = validId(friendClientId);
@@ -2035,7 +2035,7 @@ io.on('connection', (socket) => {
     const otherClientId = invite.clients.find((c) => c !== me.clientId);
     const otherSocketId = invite.joined.get(otherClientId);
     const otherSocket = otherSocketId ? io.sockets.sockets.get(otherSocketId) : null;
-    if (!otherSocket) return; // first one here — wait for the partner
+    if (!otherSocket) return; // first one here - wait for the partner
 
     clearTimeout(invite.timer);
     voiceInvites.delete(token);

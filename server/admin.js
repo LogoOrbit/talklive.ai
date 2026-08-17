@@ -108,7 +108,7 @@ function activityReport(req) {
 
 // --- Rule-based "AI" conclusion over the last 7 days of real metrics ---
 // `report` is an analytics.buildReport() result, so "the last 7 days" means
-// seven of the owner's local days — not seven UTC days.
+// seven of the owner's local days - not seven UTC days.
 function generateConclusion(runtime, report) {
   const days = store.data.analytics.days;
   const keys = Object.keys(days).sort();
@@ -137,8 +137,8 @@ function generateConclusion(runtime, report) {
 
   if (connections > 0) {
     const matchRate = Math.round((matches / Math.max(1, connections)) * 100);
-    if (matchRate < 30) { lines.push(`Only ${matchRate}% of connected users end up in a call — users may be waiting too long for a match. More concurrent users or looser default filters would help.`); health = 'warning'; }
-    else lines.push(`${matchRate}% of connected users get matched into a call — matchmaking is working well.`);
+    if (matchRate < 30) { lines.push(`Only ${matchRate}% of connected users end up in a call - users may be waiting too long for a match. More concurrent users or looser default filters would help.`); health = 'warning'; }
+    else lines.push(`${matchRate}% of connected users get matched into a call - matchmaking is working well.`);
   }
 
   const topCountry = Object.entries(last7.reduce((acc, d) => {
@@ -147,13 +147,13 @@ function generateConclusion(runtime, report) {
   }, {})).sort((a, b) => b[1] - a[1])[0];
   if (topCountry) lines.push(`Your biggest audience this week is ${topCountry[0]}.`);
 
-  if (reports > 10) { lines.push(`${reports} user reports this week is high — review the Reports tab and consider bans.`); health = health === 'good' ? 'warning' : health; }
-  else if (reports > 0) lines.push(`${reports} user report(s) this week — normal levels, but worth a look.`);
-  else lines.push('No user reports this week — the community is behaving well.');
+  if (reports > 10) { lines.push(`${reports} user reports this week is high - review the Reports tab and consider bans.`); health = health === 'good' ? 'warning' : health; }
+  else if (reports > 0) lines.push(`${reports} user report(s) this week - normal levels, but worth a look.`);
+  else lines.push('No user reports this week - the community is behaving well.');
 
-  if (errors > 5) { lines.push(`${errors} distinct error events were logged this week. Check the Errors tab — recurring errors hurt user experience.`); health = 'serious'; }
-  else if (errors > 0) lines.push(`${errors} error event(s) logged this week — low, but keep an eye on the Errors tab.`);
-  else lines.push('No errors logged this week — the app is running cleanly.');
+  if (errors > 5) { lines.push(`${errors} distinct error events were logged this week. Check the Errors tab - recurring errors hurt user experience.`); health = 'serious'; }
+  else if (errors > 0) lines.push(`${errors} error event(s) logged this week - low, but keep an eye on the Errors tab.`);
+  else lines.push('No errors logged this week - the app is running cleanly.');
 
   const features = last7.reduce((acc, d) => {
     for (const [f, n] of Object.entries(d.features || {})) acc[f] = (acc[f] || 0) + n;
@@ -210,7 +210,7 @@ function createAdmin({ io, getRuntime, kickBanned }) {
       setupDone: !!store.data.admin,
       authed: validSession(req),
       // Backend health, so a misconfigured DB is visible on the login screen
-      // without needing server logs. No secrets — host only, never the URL.
+      // without needing server logs. No secrets - host only, never the URL.
       storage: {
         configured: b.configured,
         mode: b.mode,
@@ -341,7 +341,7 @@ function createAdmin({ io, getRuntime, kickBanned }) {
   });
 
   // Activity reports: today (hour by hour), yesterday, the last 30 days and the
-  // last 8 weeks — all cut on the owner's timezone rather than on UTC.
+  // last 8 weeks - all cut on the owner's timezone rather than on UTC.
   router.get('/api/activity', (req, res) => {
     const report = activityReport(req);
     res.json({
@@ -387,7 +387,7 @@ function createAdmin({ io, getRuntime, kickBanned }) {
     if (!clientId && !ip) return res.status(400).json({ error: 'clientId or ip required.' });
     const mins = Math.min(Math.max(Number(minutes) || 30, 30), 5 * 365 * 24 * 60); // 30 min .. 5 years
     const ban = store.addBan({ clientId, ip, username, country, city, reason, minutes: mins });
-    store.audit('ban', reqIp(req), `Banned ${username || clientId || ip} for ${mins} min — ${reason || 'no reason'}`);
+    store.audit('ban', reqIp(req), `Banned ${username || clientId || ip} for ${mins} min - ${reason || 'no reason'}`);
     kickBanned(clientId, ip, ban);
     res.json({ ok: true, ban });
   });

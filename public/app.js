@@ -96,7 +96,7 @@ const chatBadge = document.getElementById('chatBadge');
 const typingIndicator = document.getElementById('typingIndicator');
 
 // Every partner search declares which pool it joins. The main app is voice
-// only now — text chat lives on its own dedicated page at /chat.
+// only now - text chat lives on its own dedicated page at /chat.
 function findPartnerPayload() {
   return { mode: 'talk' };
 }
@@ -243,7 +243,7 @@ function getFlagImg(code, size = 20) {
 }
 
 // --- Avatars: 5 male + 5 female inline-SVG busts. Shown only to yourself
-// (left panel) and to your friends (friends list / profile) — never to the
+// (left panel) and to your friends (friends list / profile) - never to the
 // stranger during a call, so nothing about it can reveal anyone's gender. ---
 const AVATAR_IDS = { male: ['m1', 'm2', 'm3', 'm4', 'm5'], female: ['f1', 'f2', 'f3', 'f4', 'f5'] };
 const AVATAR_STYLES = {
@@ -334,8 +334,8 @@ fetch('/ice-servers')
   .catch(() => { /* keep the static fallback */ });
 
 const selectedInterests = new Set();
-const includeCountries = new Set(); // draft "Interested Countries" — only match these, if any chosen
-const excludeCountries = new Set(); // draft "Non Interested Countries" — never match these
+const includeCountries = new Set(); // draft "Interested Countries" - only match these, if any chosen
+const excludeCountries = new Set(); // draft "Non Interested Countries" - never match these
 
 let localStream = null;
 let pc = null;
@@ -381,7 +381,7 @@ function escapeHtml(str) {
 let pendingInviteToken = null;
 try {
   pendingInviteToken = new URLSearchParams(location.search).get('invite');
-} catch (e) { /* very old browser without URLSearchParams — ignore */ }
+} catch (e) { /* very old browser without URLSearchParams - ignore */ }
 
 function getClientId() {
   let id = localStorage.getItem('talklive_client_id');
@@ -547,7 +547,7 @@ interestInput.addEventListener('keydown', (e) => {
   addInterestFromInput();
 });
 
-// Explicit Add button — many mobile keyboards have no obvious Enter key.
+// Explicit Add button - many mobile keyboards have no obvious Enter key.
 document.getElementById('addInterestBtn').addEventListener('click', addInterestFromInput);
 
 initPillGroup(genderGroup);
@@ -647,7 +647,7 @@ function playMessageSound() {
   playTone(1245, 0.06, 'triangle', 0.15);
   playTone(1661, 0.20, 'sine', 0.15, 0.06);
 }
-// A crisp, tactile "whoosh" for sending — WhatsApp-style rising blip.
+// A crisp, tactile "whoosh" for sending - WhatsApp-style rising blip.
 function playSendSound() { playTone(660, 0.05, 'sine', 0.14); playTone(990, 0.07, 'sine', 0.13, 0.04); }
 // A soft two-note chime for "it's your turn" in the game.
 function playTurnSound() { playTone(784, 0.1, 'sine', 0.16); playTone(1046, 0.13, 'sine', 0.15, 0.1); }
@@ -715,7 +715,7 @@ if (chatSeenToggleBtn) {
 syncMessageSeenUi();
 
 // Lock the main screen's scroll whenever a side panel (settings or chat) is
-// open, so scrolling only happens inside the open panel — never the page behind.
+// open, so scrolling only happens inside the open panel - never the page behind.
 function updateScrollLock() {
   const anyOpen = appSettingsPanel.classList.contains('open')
     || (typeof chatPanel !== 'undefined' && chatPanel && chatPanel.classList.contains('open'))
@@ -835,7 +835,7 @@ clearFiltersBtn.addEventListener('click', () => {
 });
 
 // --- Add Friend: sends a real friend request to the current call partner.
-// Works the same whether the partner is a temporary (guest) user or signed in —
+// Works the same whether the partner is a temporary (guest) user or signed in -
 // friendship is keyed by their persistent clientId either way. ---
 addFriendBtn.addEventListener('click', () => {
   if (!currentPartner || !currentPartner.clientId) return;
@@ -860,7 +860,7 @@ function openModal(modal) {
     const focusTarget = modal.querySelector('input:not([type="hidden"]):not(:disabled), .btn, button');
     if (focusTarget) focusTarget.focus();
   }
-  // On small screens the toolbar dropdowns are position:fixed — anchor them
+  // On small screens the toolbar dropdowns are position:fixed - anchor them
   // just under their own button so they open correctly at any scroll position
   // now that the header is sticky.
   if (modal.classList.contains('notif-dropdown') && window.matchMedia('(max-width: 480px)').matches) {
@@ -969,10 +969,10 @@ const closeFeedbackBtn = document.getElementById('closeFeedbackBtn');
 const feedbackInput = document.getElementById('feedbackInput');
 const feedbackSendBtn = document.getElementById('feedbackSendBtn');
 
-// Show the temporary name in the editor (only when not signed in — a signed-in
+// Show the temporary name in the editor (only when not signed in - a signed-in
 // nickname is edited in the Account panel).
 // The Save Name button is only enabled when the field holds a new, non-empty
-// name different from what's already saved — so it greys out right after saving.
+// name different from what's already saved - so it greys out right after saving.
 function syncSaveNameBtn() {
   if (!saveTempNameBtn || !tempUsernameInput) return;
   const val = tempUsernameInput.value.trim();
@@ -1138,7 +1138,7 @@ loginSubmitBtn.addEventListener('click', () => {
   socket.emit('login', { username: loginUsername.value.trim(), password: loginPassword.value });
 });
 
-// Creating an account is just username + password — the display name defaults
+// Creating an account is just username + password - the display name defaults
 // to the username and can be changed later in My Account.
 signupSubmitBtn.addEventListener('click', () => {
   socket.emit('signup', {
@@ -1177,7 +1177,7 @@ changePasswordBtn.addEventListener('click', () => {
 });
 
 // Persist the login locally (nickname for instant UI, token for the server-side
-// session), then reload — the token signs the reloaded page straight back in.
+// session), then reload - the token signs the reloaded page straight back in.
 function storeLogin(nickname, token) {
   localStorage.setItem('talklive_nickname', nickname);
   if (token) {
@@ -1325,7 +1325,7 @@ friendsList.addEventListener('click', (e) => {
   } else if (msgBtn) {
     openFriendChat(msgBtn.dataset.id);
   } else if (callBtn) {
-    // Rule 11: don't dismiss the menu — swap the call icon into an in-place
+    // Rule 11: don't dismiss the menu - swap the call icon into an in-place
     // spinner and keep it there until the peer accepts (then we jump to the
     // call screen) or the request fails. If the peer turns out to be offline we
     // keep the panel and grey the button (see call-back-request-result) rather
@@ -1551,7 +1551,7 @@ socket.on('notification', (n) => {
     vibrate(20);
   } else if (n.type === 'friend_request' || n.type === 'friend_accepted') {
     // Both a new friend request and a request being accepted mean a friend
-    // event — play the distinct friend chime, never the message chime.
+    // event - play the distinct friend chime, never the message chime.
     playFriendAddedSound();
     vibrate([20, 40, 20]);
   }
@@ -1589,7 +1589,7 @@ function renderFriendChatMessages() {
 }
 
 // Whether a live (accepted) call is in progress with this friend. Kept so the
-// composer can auto-focus during a call — but chatting no longer requires it.
+// composer can auto-focus during a call - but chatting no longer requires it.
 function inCallWith(clientId) {
   return callState === 'connected' && currentPartner && currentPartner.clientId === clientId;
 }
@@ -1883,7 +1883,7 @@ window.addEventListener('online', refreshNetStatus);
 window.addEventListener('offline', refreshNetStatus);
 
 // Tapping the "TalkLive" brand reloads the app (a clean way back to a fresh
-// start from anywhere — search, an active call, or a game).
+// start from anywhere - search, an active call, or a game).
 const brandHome = document.getElementById('brandHome');
 if (brandHome) brandHome.addEventListener('click', reloadPage);
 
@@ -1915,7 +1915,7 @@ function setButtonMode(mode) {
 }
 
 // --- Call screen button states: idle · searching · connecting · connected ·
-// reconnecting · disconnected — each maps to one of the four button modes. ---
+// reconnecting · disconnected - each maps to one of the four button modes. ---
 let callState = 'idle';
 
 function setCallState(state) {
@@ -1923,7 +1923,7 @@ function setCallState(state) {
   const connected = state === 'connected';
   // Leaving the connected state cancels any pending "are you sure?".
   if (!connected) clearHangupConfirm();
-  // Call state gates friend-chat DMs — keep an open chat's composer in sync.
+  // Call state gates friend-chat DMs - keep an open chat's composer in sync.
   if (activeFriendChatId && friendChatModal.classList.contains('open')) applyFriendChatLock();
 
   let mode;
@@ -1933,7 +1933,7 @@ function setCallState(state) {
   setButtonMode(mode);
 
   // Mute / add-friend / report stay the same size always, but only work during
-  // a live call — dimmed and disabled otherwise.
+  // a live call - dimmed and disabled otherwise.
   muteBtn.disabled = !connected;
   addFriendBtn.disabled = !connected || addFriendBtn.classList.contains('added');
   reportBtn.disabled = !connected;
@@ -2067,7 +2067,7 @@ async function syncWakeLock() {
       wakeLock = await navigator.wakeLock.request('screen');
       wakeLock.addEventListener('release', () => { wakeLock = null; });
     } catch (e) {
-      // wake lock denied (low battery, unsupported) — non-critical
+      // wake lock denied (low battery, unsupported) - non-critical
     }
   } else if (!want && wakeLock) {
     try { wakeLock.release(); } catch (e) { /* already released */ }
@@ -2076,7 +2076,7 @@ async function syncWakeLock() {
 }
 
 document.addEventListener('visibilitychange', () => {
-  // The OS drops wake locks when the tab is backgrounded — re-acquire on return.
+  // The OS drops wake locks when the tab is backgrounded - re-acquire on return.
   if (document.visibilityState === 'visible') syncWakeLock();
 });
 
@@ -2395,12 +2395,12 @@ function createPeerConnection(isInitiator) {
     } else if (iceState === 'checking') {
       if (!mediaConnected) setConnection('orange', 'connConnecting');
     } else if (iceState === 'disconnected' || iceState === 'failed') {
-      // Peer degraded or (temporarily) went away — try to recover for 30s.
+      // Peer degraded or (temporarily) went away - try to recover for 30s.
       setConnection('orange', 'connReconnecting');
       if (mediaConnected) setStatusText('statusReconnecting');
       startReconnectWindow();
       // The initiator (impolite peer) restarts immediately. The answerer only
-      // restarts if it's still broken a few seconds later — this covers the case
+      // restarts if it's still broken a few seconds later - this covers the case
       // where the initiator's own network dropped and its restart never sent,
       // while glare between the two restarts is handled politely in handleSignal.
       if (isInitiator) {
@@ -2469,7 +2469,7 @@ async function startCall(initiator) {
 }
 
 // ICE candidates that arrived before the remote description was set. Adding a
-// candidate with no remote description throws and the candidate is lost — the
+// candidate with no remote description throws and the candidate is lost - the
 // classic cause of one-way audio across high-latency (international) links,
 // where trickled candidates routinely race ahead of the offer/answer SDP. We
 // buffer them and flush once the remote description lands.
@@ -2514,7 +2514,7 @@ async function handleSignal(data) {
       socket.emit('signal', { type: 'answer', sdp: answer });
     } else if (data.type === 'answer') {
       // Ignore a stray/duplicate answer that arrives when we're not expecting
-      // one (e.g. after an ICE-restart glare) — applying it would throw.
+      // one (e.g. after an ICE-restart glare) - applying it would throw.
       if (pc.signalingState !== 'have-local-offer') return;
       await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
       await flushPendingCandidates();
@@ -2704,7 +2704,7 @@ const ageAgreeBtn = document.getElementById('ageAgreeBtn');
 const ageAgreeCheckbox = document.getElementById('ageAgreeCheckbox');
 const CONSENT_KEY = 'talklive_age_consent';
 
-// Start a call from the big button — gated by the one-time age/terms consent,
+// Start a call from the big button - gated by the one-time age/terms consent,
 // then mic permission handled in begin().
 function startCallFlow() {
   playTapSound();
@@ -2787,7 +2787,7 @@ async function joinVoiceInvite() {
   socket.emit('voice-invite-join', { token: pendingInviteToken });
 }
 
-// Kick off the invite flow as soon as we can — same one-time age gate as any
+// Kick off the invite flow as soon as we can - same one-time age gate as any
 // other call, otherwise straight in (a mic prompt on load needs no fresh
 // user gesture, unlike autoplay).
 if (pendingInviteToken) {
@@ -2847,7 +2847,7 @@ callMainBtn.addEventListener('click', () => {
     socket.emit('leave');
     goIdleOnCallScreen();
   } else {
-    // Green "Call" — begin a new search.
+    // Green "Call" - begin a new search.
     startCallFlow();
   }
 });
@@ -3073,7 +3073,7 @@ document.addEventListener('touchend', (e) => {
   if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.6) return;
   if (!panelsAreClosed()) return;
   // Suppress the ghost click the browser fires ~300ms after touchend at the
-  // release point — without this it lands on the freshly-opened panel's overlay
+  // release point - without this it lands on the freshly-opened panel's overlay
   // and immediately closes it again.
   if (dx < 0) {
     if (!chatToggleBtn.classList.contains('hidden')) { swipeSuppressUntil = Date.now() + 700; openChatPanel(); }
@@ -3108,7 +3108,7 @@ function stopGameNudge() {
 }
 
 // =====================================================================
-// Tic Tac Toe mini-game — play with whoever you're connected to. 2 players,
+// Tic Tac Toe mini-game - play with whoever you're connected to. 2 players,
 // a classic 3x3 board (X = the call initiator, O = the other). The game
 // state is authoritative on the acting player's client and broadcast in
 // full to the partner after each move, so the two clients can never
@@ -3224,7 +3224,7 @@ function tttTapCell(i) {
 }
 
 // =====================================================================
-// Dots and Boxes — 5×5 dots (4×4 boxes), canvas-rendered at 60fps.
+// Dots and Boxes - 5×5 dots (4×4 boxes), canvas-rendered at 60fps.
 // Same authority model as Tic Tac Toe: the mover applies locally and
 // broadcasts the full state. Closing a box scores a point and grants
 // another turn; most boxes when the grid is full wins.
@@ -3490,13 +3490,13 @@ function renderTttBoard() {
 }
 
 // The player status bar: avatar, name, whose turn, and what the opponent is
-// doing right now — so you never have to guess what's happening.
+// doing right now - so you never have to guess what's happening.
 function renderTttPlayers() {
   const playing = tttStage === 'playing' && tttState;
   tttPlayers.classList.toggle('hidden', !playing);
   if (!playing) return;
 
-  const oppName = currentPartner ? currentPartner.username : '—';
+  const oppName = currentPartner ? currentPartner.username : '-';
   tttMeName.textContent = t('you');
   tttOppName.textContent = oppName;
   // Colour each chip by that player's actual mark/colour (0 = host, 1 = guest).
@@ -3670,7 +3670,7 @@ function startGame(game) {
   updateGameUI();
 }
 
-// Both sides have agreed to play — exactly one of them is the host.
+// Both sides have agreed to play - exactly one of them is the host.
 function onGameHandshake(game) {
   if (amCallInitiator) {
     startGame(game);
@@ -3698,7 +3698,7 @@ function attemptCloseGame() {
     return false;
   }
   if (tttStage === 'playing' || tttStage === 'inviting' || tttStage === 'invited') {
-    // A finished/over game or a pending invite — leave cleanly.
+    // A finished/over game or a pending invite - leave cleanly.
     socket.emit('game', { type: 'left' });
     resetGame();
   } else {
@@ -3759,12 +3759,12 @@ socket.on('game', (data) => {
     case 'invite': {
       if (tttStage === 'playing') return;
       const invitedTo = data.game === 'dab' ? 'dab' : 'ttt';
-      // Both invited each other at once — just start the host's pick.
+      // Both invited each other at once - just start the host's pick.
       if (tttStage === 'inviting') { onGameHandshake(amCallInitiator ? inviteGame : invitedTo); break; }
       tttStage = 'invited';
       pendingInviteGame = invitedTo;
       if (!gameOverlay.classList.contains('hidden')) {
-        // They're already looking at the games screen — show the accept UI.
+        // They're already looking at the games screen - show the accept UI.
         updateGameUI();
       } else {
         // Don't interrupt with a big dialog: a red badge + a chime on the game
@@ -3790,7 +3790,7 @@ socket.on('game', (data) => {
     case 'state': {
       if (!data.state) break;
       myPlayerIndex = amCallInitiator ? 0 : 1;
-      // Open the board on the first state (game start); afterwards just update —
+      // Open the board on the first state (game start); afterwards just update -
       // don't yank a closed board back open, so the "your move" badge can show.
       const firstState = tttStage !== 'playing';
       if (firstState) tttOverAnnounced = false;
@@ -3847,7 +3847,7 @@ chatForm.addEventListener('submit', (e) => {
   }
 });
 
-// Server-side link filter rejected a message we let through — surface it.
+// Server-side link filter rejected a message we let through - surface it.
 socket.on('chat-blocked', ({ reason } = {}) => {
   const target = friendChatModal.classList.contains('open') ? friendChatMessages : chatMessages;
   const el = document.createElement('div');
@@ -3934,7 +3934,7 @@ window.addEventListener('popstate', async () => {
   // gesture; ignore that trailing popstate so it doesn't re-close the panel.
   if (Date.now() < swipeSuppressUntil) { primeBackGuard(); return; }
   if (closeTopmostLayer()) { primeBackGuard(); return; }
-  // On (or entering) a call: never exit silently — confirm ending first.
+  // On (or entering) a call: never exit silently - confirm ending first.
   const onCall = callState === 'connected' || callState === 'connecting'
     || callState === 'reconnecting' || callState === 'searching';
   if (onCall) {
@@ -3952,12 +3952,12 @@ window.addEventListener('popstate', async () => {
     }
     return;
   }
-  // Idle with nothing open — let a subsequent back actually leave the page.
+  // Idle with nothing open - let a subsequent back actually leave the page.
 });
 primeBackGuard();
 
 // Guard against an *accidental* tab close, refresh, or navigation away while the
-// user is actively engaged — a live/searching call or a game in progress. The
+// user is actively engaged - a live/searching call or a game in progress. The
 // browser shows its native "Leave site?" prompt; we only arm it when there's
 // something to lose, so idle browsing is never nagged.
 let suppressUnloadWarning = false;
@@ -3987,7 +3987,7 @@ socket.on('waiting', ({ estimatedSeconds, predicted } = {}) => {
   setState('waiting');
   setConnection('orange', 'connSearching');
   // Predicted match preview, e.g. "Connecting to someone in Japan…", based on
-  // who's online right now — shown before the actual connection completes.
+  // who's online right now - shown before the actual connection completes.
   if (predicted && predicted.countryCode && predicted.countryCode !== 'XX') {
     setStatusText('statusConnectingTo', { country: getCountryName(predicted.countryCode) || predicted.country });
   } else {
@@ -4005,12 +4005,12 @@ socket.on('random-fallback', () => {
 });
 
 socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
-  // A deferred-UI callback (rule 11) is on the friends menu with a spinner —
+  // A deferred-UI callback (rule 11) is on the friends menu with a spinner -
   // now that the peer accepted, restore the icon and enter the call screen.
   restoreCallbackSpinner();
   hideCallBackBanner();
   // Switching directly from a previous call (e.g. accepting a callback while
-  // already connected) — tear the old peer down first so it never leaks.
+  // already connected) - tear the old peer down first so it never leaks.
   if (pc) teardownPeer();
   if (typeof friendsDropdown !== 'undefined') closeSidePanel(friendsDropdown, friendsOverlay);
   enterCallUI();
@@ -4028,7 +4028,7 @@ socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
     socket.emit('mic-state', false);
   }
 
-  // State: 'connecting' — a peer was found but the media path is NOT yet
+  // State: 'connecting' - a peer was found but the media path is NOT yet
   // established. Deliberately keep "You're connected" and the stranger's
   // username hidden until ontrack confirms a real connection (rule 3).
   setState('waiting');
@@ -4058,7 +4058,7 @@ function revealPartner() {
   addFriendBtn.classList.remove('added');
   addFriendBtn.disabled = false;
   partnerName.textContent = partner.username;
-  // Country/flag only — never show anything gendered about the stranger.
+  // Country/flag only - never show anything gendered about the stranger.
   partnerMeta.innerHTML = getFlagImg(partner.countryCode);
 
   partnerInterests.innerHTML = '';
@@ -4109,7 +4109,7 @@ socket.on('maintenance', (info) => {
 });
 
 // Report client-side JS errors to the server so the owner dashboard can
-// surface the bugs real users are hitting. Shared with /chat — see
+// surface the bugs real users are hitting. Shared with /chat - see
 // error-reporter.js for what is filtered out and why.
 if (window.TalkLiveErrors) window.TalkLiveErrors.install(() => socket);
 
@@ -4207,7 +4207,7 @@ async function acceptCallBack(fromClientId) {
   }
 
   // Drop whatever we were doing (a live call, or an in-progress search) so we
-  // can connect to the incoming caller instantly — even mid-search.
+  // can connect to the incoming caller instantly - even mid-search.
   if (callState === 'connected' || isSearching) {
     socket.emit('leave');
     teardownPeer();
@@ -4407,7 +4407,7 @@ window.addEventListener('i18n-changed', () => {
 });
 
 // A direct load of /call (bookmark, refresh, share) has no live session to
-// resume — send the URL back to the landing page without adding a history
+// resume - send the URL back to the landing page without adding a history
 // entry, so the back button still behaves normally. An invite link is the one
 // exception: it's a legitimate fresh entry point, so keep it on /call.
 if (location.pathname === '/call' && !pendingInviteToken) {
@@ -4422,7 +4422,7 @@ try {
   if (new URLSearchParams(location.search).get('mode') === 'chat') {
     location.replace('/chat');
   }
-} catch (e) { /* very old browser without URLSearchParams — ignore */ }
+} catch (e) { /* very old browser without URLSearchParams - ignore */ }
 
 // Initial state: the Tap-to-Talk landing, a green idle Call button ready for
 // when the call screen opens, and an unchecked auto-call checkbox.
@@ -4436,7 +4436,7 @@ refreshNetStatus();
 // --- Premium (TalkLive Plus) -------------------------------------------------
 // Free-tier limits arrive from the server with every register; premium users
 // (who upgrade via /pricing) get everything unlocked. The server enforces
-// all limits — this state only drives the UI.
+// all limits - this state only drives the UI.
 let isPremiumUser = false;
 let freeLimits = { countries: 3, friends: 10, matchDelaySeconds: 5 };
 
@@ -4532,7 +4532,7 @@ socket.on('ad-unlock-started', ({ token, minWatchSeconds } = {}) => {
   let remaining = (minWatchSeconds || adUnlockConfig().minWatchSeconds) + 1;
   clearInterval(adUnlockTimer);
   const tick = () => {
-    // Only count seconds while this tab is hidden — i.e. the user is actually
+    // Only count seconds while this tab is hidden - i.e. the user is actually
     // over on the ad tab. Closing the ad right away just pauses the countdown,
     // so the reward isn't granted without real viewing time.
     if (!document.hidden) {
@@ -4623,7 +4623,7 @@ socket.on('friend-request-result', ({ ok, limitReached } = {}) => {
   }
 });
 
-// --- "James from UK is online" — friend came online notification -------------
+// --- "James from UK is online" - friend came online notification -------------
 socket.on('friend-online', ({ username, countryCode, country } = {}) => {
   const where = getCountryName(countryCode) || country || '';
   showToast(where ? t('friendOnlineToast', { name: username, country: where }) : t('friendOnlineToastNoCountry', { name: username }));
@@ -4651,10 +4651,10 @@ socket.on('match-delay', ({ seconds } = {}) => {
   const ARTICLES = [
     { slug: 'science-of-talking-to-strangers', title: 'The Science of Talking to Strangers (And Why It Makes You Happier)', blurb: 'Research keeps finding the same thing: conversations with strangers boost mood and reduce loneliness.' },
     { slug: 'psychological-benefits-of-talking-to-strangers', title: 'The Psychological Benefits of Talking to Strangers Every Day', blurb: 'How a daily voice chat can lift your mood, ease loneliness, and build real confidence over time.' },
-    { slug: 'how-to-start-a-conversation-with-a-stranger', title: 'How to Start a Conversation With a Stranger: 25 Openers That Actually Work', blurb: 'Never freeze at "hello" again — openers, follow-ups and graceful exits that work.' },
+    { slug: 'how-to-start-a-conversation-with-a-stranger', title: 'How to Start a Conversation With a Stranger: 25 Openers That Actually Work', blurb: 'Never freeze at "hello" again - openers, follow-ups and graceful exits that work.' },
     { slug: 'is-talklive-safe', title: 'Is TalkLive Safe? How Our Anonymous Voice Chat Actually Works', blurb: 'A transparent look at what we can see, what we cannot, and how bad actors are handled.' },
     { slug: 'voice-chat-vs-video-chat', title: 'Voice Chat vs Video Chat: Why Audio-Only Wins for Meeting Strangers', blurb: 'Why removing the camera makes stranger chat safer, deeper and less awkward.' },
-    { slug: 'practice-english-speaking-online-free', title: 'How to Practice Speaking English Online for Free — With Real Humans', blurb: 'A free 30-day speaking routine using live conversation instead of flashcards.' },
+    { slug: 'practice-english-speaking-online-free', title: 'How to Practice Speaking English Online for Free - With Real Humans', blurb: 'A free 30-day speaking routine using live conversation instead of flashcards.' },
     { slug: 'best-omegle-alternatives', title: 'The 10 Best Omegle Alternatives in 2026', blurb: 'What actually matters in a stranger-chat app in 2026, and how the options compare.' },
   ];
 
