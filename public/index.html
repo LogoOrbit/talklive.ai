@@ -549,6 +549,7 @@
         </div>
         <!-- Ad shown only on this pre-call screen; hidden with the whole
              panel once a call or chat starts. -->
+        <div data-ad="leaderboard" style="margin:24px auto 0;text-align:center"></div>
       </section>
 
       <!-- Account modal: optional account - just a username + password. Stored
@@ -930,8 +931,6 @@
           <div id="orbEmojiFlash" class="orb-emoji-flash" aria-hidden="true"></div>
         </div>
 
-        <!-- Banner directly under the orb animation -->
-
         <div id="connectionIndicator" class="connection-indicator hidden">
           <span id="connectionDot" class="connection-dot" aria-hidden="true"></span>
           <span id="connectionLabel" class="connection-label">Searching</span>
@@ -955,6 +954,9 @@
 
         <!-- Short reassurance shown during an active call -->
         <p id="reassureLine" class="reassure-line hidden" data-i18n="reassureLine">Don't feel bad if someone skips you or hangs up - it happens to everyone, just move on to the next chat.</p>
+
+        <!-- Slim revenue slot between call status and the action controls. -->
+        <div data-ad="banner" style="margin:16px auto;text-align:center"></div>
 
         <div id="partnerCard" class="partner-card hidden">
           <div class="partner-name" id="partnerName">-</div>
@@ -1054,9 +1056,8 @@
           </figcaption>
         </figure>
 
-        <!-- Native banner (blends with content) shown inline during the call -->
-
-        <!-- Banner ad directly beneath the video banner -->
+        <!-- Wide responsive revenue slot directly beneath the video banner. -->
+        <div data-ad="leaderboard" style="margin:20px auto;text-align:center"></div>
 
         <!-- Conversation guide: friendly, simple tips shown on the call screen
              so they're readable without leaving the call. -->
@@ -1071,6 +1072,9 @@
             <li><span class="cg-emoji" aria-hidden="true">🎉</span><span data-i18n="convoTip6">Relax and have fun meeting new people.</span></li>
           </ul>
         </section>
+
+        <!-- High-value rectangle between the guide and the free-service note. -->
+        <div data-ad="box" style="margin:24px auto;text-align:center"></div>
 
         <!-- A warm, simple note at the bottom of the call screen: why TalkLive
              is free and the care that goes into it. Plain English on purpose. -->
