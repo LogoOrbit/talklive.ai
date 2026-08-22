@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const publicDir = path.join(__dirname, '..', 'public');
-const adsVersion = '20260817calm';
+const adsVersion = '20260822fill';
 // Keep the purchase decision page clean. Showing network ads beside the paid
 // plan distracts from the higher-value conversion and undermines "ad-free".
 const adFreePages = new Set(['pricing.html']);

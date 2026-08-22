@@ -37,7 +37,7 @@ const I18N_STRINGS = {
     "shareText": "Talk to a stranger, right now - free anonymous voice chat, no video, no sign-up.",
     "shareLinkCopied": "Link copied - send it to a friend!",
     "appTitle": "TalkLive - Free Random Voice & Text Chat with Strangers",
-    "heroTitle": "Meet someone new by voice or text - free core matching, no camera.",
+    "heroTitle": "Meet someone new by voice or text",
     "skipToContent": "Skip to main content",
     "menuAria": "Open settings menu",
     "online": "Online",
