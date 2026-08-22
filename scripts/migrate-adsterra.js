@@ -3,6 +3,9 @@ const path = require('path');
 
 const publicDir = path.join(__dirname, '..', 'public');
 const adsVersion = '20260817calm';
+// Keep the purchase decision page clean. Showing network ads beside the paid
+// plan distracts from the higher-value conversion and undermines "ad-free".
+const adFreePages = new Set(['pricing.html']);
 
 function htmlFiles(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -32,7 +35,7 @@ for (const file of htmlFiles(publicDir)) {
     `src="/ads.js?v=${adsVersion}"`
   );
 
-  if (!/src=["']\/ads\.js\?v=/.test(html)) {
+  if (!adFreePages.has(path.basename(file)) && !/src=["']\/ads\.js\?v=/.test(html)) {
     html = html.replace('</head>', `<script defer src="/ads.js?v=${adsVersion}"></script>\n</head>`);
   }
 

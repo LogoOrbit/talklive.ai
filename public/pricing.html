@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <link rel="stylesheet" href="/pages.css" />
 <script src="/loading.js"></script>
-<script defer src="/ads.js?v=20260817calm"></script>
 <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
 <title>Pricing - TalkLive Premium</title>
 <meta name="description" content="TalkLive is free forever. TalkLive Premium unlocks all filters, unlimited friends, instant matching and an ad-free experience." />
@@ -168,7 +167,7 @@
         <li><strong>Fast matching</strong> - no wait between calls</li>
         <li><strong>No ads</strong> - ever</li>
       </ul>
-      <button type="button" id="upgradeBtn" class="upgrade-btn">Get 50% off - Upgrade now</button>
+      <button type="button" id="upgradeBtn" class="upgrade-btn">Join on Patreon - $5/month</button>
     </div>
   </section>
 
@@ -185,18 +184,6 @@
     <h3>Does Premium work without an account?</h3>
     <p>Yes. Premium is tied to your unique TalkLive ID in this browser (shown in Settings). Upgrade from the same browser/device you use to talk.</p>
   </section>
-<div class="wrap" style="margin:28px auto;text-align:center"><div data-ad="native"></div></div>
-<div class="wrap" style="margin:20px auto;text-align:center"><div data-ad="leaderboard"></div></div>
-
-
-  <div style="margin:28px auto;text-align:center">
-    <div data-ad="leaderboard"></div>
-  </div>
-
-
-  <div style="margin:28px auto">
-    <div data-ad="native"></div>
-  </div>
 </main>
 
 <footer class="page-footer">
@@ -210,9 +197,18 @@
   <span class="footer-copy">&copy; 2026 TalkLive &middot; info@talklive.app &middot; 18+ only</span>
 </footer>
 
-<script src="/config.js"></script>
 <script>
 (function () {
+  function track(event) {
+    fetch('/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event: event }),
+      keepalive: true
+    }).catch(function () {});
+  }
+  track('pricing_view');
+
   // The same persistent per-browser ID the app uses - premium is keyed to it.
   function getClientId() {
     var id = localStorage.getItem('talklive_client_id');
@@ -241,6 +237,7 @@
 
   // Buying the plan sends the user to the TalkLive Patreon join page.
   upgradeBtn.addEventListener('click', function () {
+    track('premium_checkout_click');
     window.open(PATREON_URL, '_blank', 'noopener');
   });
 })();

@@ -3981,30 +3981,6 @@ body.panel-open .side-panel {
   transform: translate(-50%, 0);
 }
 
-/* Ad-unlock pass badge: floating pill showing the watch-countdown, then the
-   remaining Premium time. Sits just below where toasts appear. */
-#adPassBadge {
-  position: fixed;
-  left: 50%;
-  top: calc(64px + env(safe-area-inset-top, 0px));
-  transform: translateX(-50%);
-  z-index: 790;
-  max-width: 88vw;
-  padding: 8px 16px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  color: #fff;
-  font-size: 13px;
-  font-weight: 700;
-  text-align: center;
-  white-space: nowrap;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-  pointer-events: none;
-}
-#adPassBadge.hidden {
-  display: none;
-}
-
 /* Temporary username editor + permanent User ID at the top of Settings */
 .temp-name-block {
   display: flex;
@@ -5304,6 +5280,7 @@ a.premium-lock:hover { background: rgba(108, 92, 231, 0.22); }
   color: var(--text);
   background: linear-gradient(135deg, rgba(108, 92, 231, 0.18), rgba(0, 212, 255, 0.12));
   cursor: pointer;
+  text-decoration: none;
   transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease;
 }
 .upgrade-cta-btn:hover {
@@ -5314,6 +5291,57 @@ a.premium-lock:hover { background: rgba(108, 92, 231, 0.22); }
 .upgrade-diamond {
   font-size: 1rem;
   line-height: 1;
+}
+
+/* Revenue and referral actions sit below Talk / Chat so they can grow the
+   service without competing with the visitor's primary first action. */
+.setup-growth {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  width: min(100%, 620px);
+  margin: 18px auto 0;
+}
+.setup-growth-card {
+  min-width: 0;
+  min-height: 66px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.045);
+  color: inherit;
+  text-align: left;
+  text-decoration: none;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+.setup-growth-card:hover {
+  border-color: rgba(108, 92, 231, 0.55);
+  background: rgba(108, 92, 231, 0.1);
+  transform: translateY(-1px);
+}
+.setup-growth-card:focus-visible { outline: 3px solid rgba(108, 92, 231, 0.45); outline-offset: 2px; }
+.setup-growth-icon {
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: rgba(108, 92, 231, 0.16);
+  font-size: 18px;
+  font-weight: 800;
+}
+.setup-growth-card span:last-child { display: grid; gap: 2px; min-width: 0; }
+.setup-growth-card strong { font-size: 0.88rem; line-height: 1.2; }
+.setup-growth-card small { color: var(--muted); font-size: 0.72rem; line-height: 1.25; }
+@media (max-width: 560px) {
+  .setup-growth { grid-template-columns: 1fr; max-width: 340px; }
+  .setup-growth-card { min-height: 58px; }
 }
 
 /* --- Post-call share prompt --- */

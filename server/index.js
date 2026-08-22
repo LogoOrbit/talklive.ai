@@ -233,59 +233,8 @@ const FREE_LIMITS = {
 const envPremiumClients = new Set(
   (process.env.PREMIUM_CLIENT_IDS || '').split(',').map((s) => s.trim()).filter(Boolean)
 );
-// --- Ad-unlock: "watch an ad, get Premium for 5 minutes" ----------------------
-// The client opens the Adsterra Direct Link in a new tab; the server only
-// grants the pass if at least minWatchMs elapsed between issuing the token
-// (at click time) and the claim, so the reward can't be spoofed by a quick
-// open/close or a bare socket message.
-const AD_UNLOCK = {
-  url: process.env.AD_DIRECT_LINK
-    || 'https://delvefencescrewdriver.com/n6dy8qkgu?key=2dca64def8b9c5816b49ccf6e1119aff',
-  minWatchMs: (Number(process.env.AD_MIN_WATCH_SECONDS) || 15) * 1000,
-  durationMs: (Number(process.env.AD_UNLOCK_MINUTES) || 5) * 60 * 1000,
-};
-const adPasses = new Map(); // clientId -> expiry timestamp (ms)
-const adPassTimers = new Map(); // clientId -> expiry timeout
-const pendingAdViews = new Map(); // token -> { clientId, ts }
-
-function hasAdPass(clientId) {
-  const exp = adPasses.get(clientId);
-  if (!exp) return false;
-  if (exp <= Date.now()) {
-    adPasses.delete(clientId);
-    return false;
-  }
-  return true;
-}
-
-function grantAdPass(clientId) {
-  const expiresAt = Date.now() + AD_UNLOCK.durationMs;
-  adPasses.set(clientId, expiresAt);
-  clearTimeout(adPassTimers.get(clientId));
-  adPassTimers.set(clientId, setTimeout(() => expireAdPass(clientId), AD_UNLOCK.durationMs + 250));
-  return expiresAt;
-}
-
-function expireAdPass(clientId) {
-  adPassTimers.delete(clientId);
-  const exp = adPasses.get(clientId);
-  if (!exp || exp > Date.now()) return; // renewed meanwhile
-  adPasses.delete(clientId);
-  if (isPremium(clientId)) return; // became a real premium user meanwhile
-  // Re-clamp the live profile to free-tier limits so premium filters chosen
-  // during the pass stop applying to matchmaking the moment it expires.
-  const sock = getSocketByClientId(clientId);
-  const p = sock ? profiles.get(sock.id) : null;
-  if (p) {
-    p.prefGender = 'any';
-    p.includeCountries = (p.includeCountries || []).slice(0, FREE_LIMITS.countries);
-    p.excludeCountries = (p.excludeCountries || []).slice(0, FREE_LIMITS.countries);
-  }
-  if (sock) sock.emit('premium-status', { premium: false, limits: FREE_LIMITS, adPassExpired: true });
-}
-
 function isPremium(clientId) {
-  return envPremiumClients.has(clientId) || store.isPremiumClient(clientId) || hasAdPass(clientId);
+  return envPremiumClients.has(clientId) || store.isPremiumClient(clientId);
 }
 
 // Lets the pricing page (a separate static page) confirm activation.
@@ -302,14 +251,28 @@ app.get('/config.js', (req, res) => {
   // an hour (and serve it stale for a day while revalidating) instead of
   // re-fetching it on the critical path of every single page view.
   res.setHeader('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400');
-  res.send(
-    `window.GOOGLE_CLIENT_ID = ${JSON.stringify(GOOGLE_CLIENT_ID)};`
-    + `window.AD_UNLOCK = ${JSON.stringify({
-      url: AD_UNLOCK.url,
-      minWatchSeconds: Math.round(AD_UNLOCK.minWatchMs / 1000),
-      durationMinutes: Math.round(AD_UNLOCK.durationMs / 60000),
-    })};`
-  );
+  res.send(`window.GOOGLE_CLIENT_ID = ${JSON.stringify(GOOGLE_CLIENT_ID)};`);
+});
+
+// Small same-origin conversion endpoint. Only a fixed vocabulary is accepted,
+// so public traffic cannot create unbounded dashboard keys. These counters are
+// deliberately aggregate and contain no message text or personal data.
+const GROWTH_EVENTS = new Set([
+  'pricing_view',
+  'premium_checkout_click',
+  'premium_upsell_click',
+  'quality_call',
+  'share_prompt',
+  'share_open',
+  'share_success',
+]);
+app.post('/events', express.json({ limit: '2kb' }), (req, res) => {
+  const event = req.body && req.body.event;
+  if (!GROWTH_EVENTS.has(event)) return res.status(400).json({ error: 'Unknown event.' });
+  const fetchSite = String(req.headers['sec-fetch-site'] || 'same-origin');
+  if (fetchSite !== 'same-origin' && fetchSite !== 'none') return res.status(403).json({ error: 'Cross-site event rejected.' });
+  store.recordFeature(event);
+  res.status(204).end();
 });
 
 // ICE servers handed to the browser. Operators must configure TURN_URLS and
@@ -418,6 +381,10 @@ app.use((req, res, next) => {
 });
 
 // Count page visits (HTML navigations only, not assets) with geo attribution.
+const ACQUISITION_SOURCES = new Set([
+  'member_share', 'seo', 'blog', 'google', 'bing', 'reddit', 'youtube',
+  'tiktok', 'instagram', 'facebook', 'x', 'producthunt', 'app',
+]);
 app.use((req, res, next) => {
   if (req.method === 'GET' && !req.path.startsWith('/owner')
     && (req.path === '/' || /^\/[a-z0-9-]+$/i.test(req.path))
@@ -426,6 +393,9 @@ app.use((req, res, next) => {
     const ip = ((fwd ? String(fwd).split(',')[0].trim() : req.socket.remoteAddress) || '').replace('::ffff:', '');
     const geo = lookupGeo(ip);
     store.recordVisit(ip, geo.countryName, geo.city);
+    const source = String(req.query.utm_source || '').toLowerCase();
+    if (ACQUISITION_SOURCES.has(source)) store.recordFeature(`acq_${source}`);
+    if (req.query.ref === 'invite') store.recordFeature('invite_arrival');
   }
   next();
 });
@@ -1330,7 +1300,6 @@ io.on('connection', (socket) => {
     socket.emit('premium-status', {
       premium,
       limits: FREE_LIMITS,
-      adPassUntil: hasAdPass(clientId) ? adPasses.get(clientId) : null,
     });
     socket.emit('identity-token', { clientId, token: issuedIdentityToken });
     syncClientState(socket, clientId);
@@ -1360,47 +1329,6 @@ io.on('connection', (socket) => {
         if (otherSocket) syncClientState(otherSocket, otherId);
       }
     }
-  });
-
-  // Ad-unlock flow: the client asks for a view token at the moment it opens
-  // the Direct Link tab, then claims the reward once it has kept the ad open
-  // long enough. Timing is measured server-side from token issue to claim.
-  socket.on('ad-unlock-start', () => {
-    const profile = profiles.get(socket.id);
-    if (!profile) return;
-    const now = Date.now();
-    // Prune abandoned views so the map can't grow unbounded.
-    for (const [t, v] of pendingAdViews) {
-      if (now - v.ts > 10 * 60 * 1000) pendingAdViews.delete(t);
-    }
-    const token = crypto.randomUUID();
-    pendingAdViews.set(token, { clientId: profile.clientId, ts: now });
-    socket.emit('ad-unlock-started', {
-      token,
-      minWatchSeconds: Math.round(AD_UNLOCK.minWatchMs / 1000),
-    });
-  });
-
-  socket.on('ad-unlock-claim', ({ token } = {}) => {
-    const profile = profiles.get(socket.id);
-    const pending = typeof token === 'string' ? pendingAdViews.get(token) : null;
-    if (!profile || !pending || pending.clientId !== profile.clientId) {
-      return socket.emit('ad-unlock-result', { ok: false, reason: 'invalid' });
-    }
-    const elapsed = Date.now() - pending.ts;
-    // Small slack so honest clients aren't rejected over timer jitter.
-    if (elapsed < AD_UNLOCK.minWatchMs - 1500) {
-      return socket.emit('ad-unlock-result', {
-        ok: false,
-        reason: 'too-soon',
-        waitSeconds: Math.ceil((AD_UNLOCK.minWatchMs - elapsed) / 1000),
-      });
-    }
-    pendingAdViews.delete(token);
-    const expiresAt = grantAdPass(profile.clientId);
-    store.recordFeature('ad_unlock');
-    socket.emit('ad-unlock-result', { ok: true, expiresAt });
-    socket.emit('premium-status', { premium: true, limits: FREE_LIMITS, adPassUntil: expiresAt });
   });
 
   // Give the just-connected client its initial count right away, then tell
