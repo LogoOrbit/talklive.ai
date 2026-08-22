@@ -1415,14 +1415,16 @@ body.panel-open .side-panel {
 /* Setup panel */
 .setup-panel {
   width: 100%;
-  max-width: 420px;
+  /* Wide enough for the headline to break in two even lines and for a 728x90
+     leaderboard to render at its real width instead of being squeezed. */
+  max-width: 560px;
   text-align: center;
 }
 
 .setup-title {
-  margin: 0 auto 18px;
-  font-size: clamp(1.75rem, 5vw, 2.5rem);
-  line-height: 1.08;
+  margin: 0 auto 22px;
+  font-size: clamp(1.75rem, 5.4vw, 2.6rem);
+  line-height: 1.1;
   letter-spacing: -0.025em;
   text-wrap: balance;
 }
@@ -1451,6 +1453,10 @@ body.panel-open .side-panel {
   animation: tapBreathe 3s ease-in-out infinite;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+  /* Tap to Chat is an <a>, so without this its label came out underlined
+     while the identical Tap to Talk button's label did not. */
+  text-decoration: none;
+  color: inherit;
 }
 
 /* Ripple that expands from the tap point for instant press feedback. */
@@ -1492,12 +1498,37 @@ body.panel-open .side-panel {
 }
 
 .call-btn-green {
-  background: radial-gradient(circle at 35% 30%, #15803d, #166534 75%);
-  box-shadow: 0 0 60px rgba(21, 128, 61, 0.55);
+  background: radial-gradient(circle at 35% 30%, #4ade80, #16a34a 75%);
+  box-shadow:
+    inset 0 2px 14px rgba(255, 255, 255, 0.3),
+    0 0 34px rgba(34, 197, 94, 0.6),
+    0 0 84px rgba(22, 163, 74, 0.45);
+  animation: tapBreathe 3s ease-in-out infinite, glowGreen 3s ease-in-out infinite;
 }
 
 .call-btn-green:hover {
-  box-shadow: 0 0 80px rgba(21, 128, 61, 0.75);
+  box-shadow:
+    inset 0 2px 14px rgba(255, 255, 255, 0.34),
+    0 0 46px rgba(34, 197, 94, 0.85),
+    0 0 110px rgba(22, 163, 74, 0.6);
+}
+
+/* The halo swells with the breathe animation instead of sitting flat, so the
+   orb reads as lit rather than just tinted. Colours are inlined per keyframe
+   because custom properties can't be interpolated inside box-shadow. */
+@keyframes glowGreen {
+  0%, 100% {
+    box-shadow:
+      inset 0 2px 14px rgba(255, 255, 255, 0.3),
+      0 0 34px rgba(34, 197, 94, 0.6),
+      0 0 84px rgba(22, 163, 74, 0.45);
+  }
+  50% {
+    box-shadow:
+      inset 0 2px 14px rgba(255, 255, 255, 0.3),
+      0 0 52px rgba(34, 197, 94, 0.8),
+      0 0 116px rgba(22, 163, 74, 0.58);
+  }
 }
 
 .tap-orb:active {
@@ -1519,6 +1550,9 @@ body.panel-open .side-panel {
   font-weight: 700;
   color: white;
   letter-spacing: 0.2px;
+  /* The orb faces are bright again, so the label carries its own shadow to
+     stay legible against the light top-left of the gradient. */
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
 }
 
 @keyframes tapBreathe {
@@ -1591,13 +1625,35 @@ body.panel-open .side-panel {
 
 /* The chat orb breathes on the opposite phase of the talk orb. */
 .chat-btn-blue {
-  background: radial-gradient(circle at 35% 30%, #2563eb, #1e40af 75%);
-  box-shadow: 0 0 60px rgba(37, 99, 235, 0.5);
+  background: radial-gradient(circle at 35% 30%, #7cb3ff, #2f66f4 75%);
+  box-shadow:
+    inset 0 2px 14px rgba(255, 255, 255, 0.3),
+    0 0 34px rgba(63, 118, 244, 0.55),
+    0 0 84px rgba(37, 99, 235, 0.42);
+  animation: tapBreathe 3s ease-in-out infinite, glowBlue 3s ease-in-out infinite;
   animation-delay: 1.5s;
 }
 
 .chat-btn-blue:hover {
-  box-shadow: 0 0 80px rgba(37, 99, 235, 0.7);
+  box-shadow:
+    inset 0 2px 14px rgba(255, 255, 255, 0.34),
+    0 0 46px rgba(63, 118, 244, 0.8),
+    0 0 110px rgba(37, 99, 235, 0.56);
+}
+
+@keyframes glowBlue {
+  0%, 100% {
+    box-shadow:
+      inset 0 2px 14px rgba(255, 255, 255, 0.3),
+      0 0 34px rgba(63, 118, 244, 0.55),
+      0 0 84px rgba(37, 99, 235, 0.42);
+  }
+  50% {
+    box-shadow:
+      inset 0 2px 14px rgba(255, 255, 255, 0.3),
+      0 0 52px rgba(63, 118, 244, 0.78),
+      0 0 116px rgba(37, 99, 235, 0.55);
+  }
 }
 
 @media (max-width: 400px) {
@@ -2208,12 +2264,55 @@ body.panel-open .side-panel {
   color: var(--text);
 }
 
+/* Drawn rather than native: the UA checkbox came out as a flat grey square
+   next to the call button, which read as broken against everything else. */
 .checkbox-row input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
   width: 20px;
   height: 20px;
-  accent-color: #2ed47a;
+  margin: 0;
+  border: 1.5px solid rgba(255, 255, 255, 0.28);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
   cursor: pointer;
   flex-shrink: 0;
+  display: grid;
+  place-content: center;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.checkbox-row input[type="checkbox"]::before {
+  content: "";
+  width: 10px;
+  height: 6px;
+  border: 2px solid #fff;
+  border-top: 0;
+  border-right: 0;
+  border-radius: 1px;
+  transform: rotate(-45deg) translate(1px, -1px) scale(0.6);
+  opacity: 0;
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.checkbox-row input[type="checkbox"]:hover {
+  border-color: rgba(46, 212, 122, 0.6);
+}
+
+.checkbox-row input[type="checkbox"]:checked {
+  background: #2ed47a;
+  border-color: #2ed47a;
+  box-shadow: 0 0 12px rgba(46, 212, 122, 0.45);
+}
+
+.checkbox-row input[type="checkbox"]:checked::before {
+  opacity: 1;
+  transform: rotate(-45deg) translate(1px, -1px) scale(1);
+}
+
+[data-theme="light"] .checkbox-row input[type="checkbox"] {
+  border-color: rgba(26, 32, 51, 0.28);
+  background: rgba(26, 32, 51, 0.05);
 }
 
 .auto-call-row {
@@ -3118,10 +3217,10 @@ body.panel-open .side-panel {
 .btn-chip:active { transform: scale(0.96); }
 
 .btn-chip-accept {
-  background: #15803d;
+  background: #16a34a;
   color: #fff;
 }
-.btn-chip-accept:hover { background: #166534; }
+.btn-chip-accept:hover { background: #1db456; }
 
 /* Notifications list - sits above the friends list in the same dropdown */
 .notif-list {
@@ -3367,6 +3466,10 @@ body.panel-open .side-panel {
    in dark mode so their popups aren't blinding white on the dark theme. */
 :root {
   color-scheme: dark;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
 }
 
 /* Strong, consistent keyboard-focus indicator on every interactive element. */
@@ -3659,8 +3762,13 @@ body.panel-open .side-panel {
 
 /* green (call) base layer */
 .call-main-btn::before {
-  background: radial-gradient(circle at 35% 30%, #15803d, #166534 75%);
+  background: radial-gradient(circle at 35% 30%, #4ade80, #16a34a 75%);
+  box-shadow:
+    inset 0 2px 12px rgba(255, 255, 255, 0.28),
+    0 0 26px rgba(34, 197, 94, 0.5),
+    0 0 60px rgba(22, 163, 74, 0.35);
 }
+
 
 /* red (hang up) layer */
 .call-main-btn::after {
@@ -4199,8 +4307,8 @@ body.panel-open .side-panel {
   height: 34px;
   border-radius: 50%;
   border: none;
-  background: radial-gradient(circle at 35% 30%, #15803d, #166534 75%);
-  box-shadow: 0 0 10px rgba(21, 128, 61, 0.45);
+  background: radial-gradient(circle at 35% 30%, #4ade80, #16a34a 75%);
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.5);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -5402,7 +5510,7 @@ html.perf-lite .side-panel { box-shadow: none; }
 }
 .tap-choice {
   flex: 0 0 auto;
-  width: 168px;
+  width: 190px;
   justify-content: flex-start;
   gap: 10px;
 }
@@ -5417,6 +5525,9 @@ html.perf-lite .side-panel { box-shadow: none; }
 }
 .tap-choice-divider { align-self: center; margin-bottom: 0; }
 .tap-choice-heading { margin-bottom: 8px; }
+@media (max-width: 520px) {
+  .tap-choice { width: 158px; }
+}
 @media (max-width: 400px) {
   .tap-choice { width: 142px; }
 }

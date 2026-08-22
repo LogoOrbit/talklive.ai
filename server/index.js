@@ -79,7 +79,9 @@ const CSP = [
   "img-src 'self' data: https:",
   "font-src 'self' data:",
   "connect-src 'self' ws: wss: https:",
-  "frame-src https:",
+  // 'self' covers the srcless about:blank iframes ads.js sandboxes each
+  // Adsterra banner tag in; https: covers the creative frames they load.
+  "frame-src 'self' https:",
   "media-src 'self' blob:",
   "object-src 'none'",
   "base-uri 'self'",
@@ -441,6 +443,22 @@ app.get('/', (req, res, next) => {
     return res.sendFile(path.join(__dirname, '..', 'public', 'landing.html'));
   }
   next();
+});
+
+// ads.txt. An ads.txt that exists but lists nobody is the worst of both
+// worlds: crawlers read it as "no seller is authorised to sell this
+// inventory", so programmatic demand stops bidding and the CPM collapses.
+// public/ads.txt was emptied during the AdSense -> Adsterra switch and never
+// refilled, so it is served from ADS_TXT (the lines Adsterra shows under
+// Websites -> ads.txt, newline or "|" separated) and 404s while that is unset,
+// which demand partners treat as "no ads.txt" rather than "nobody authorised".
+const ADS_TXT = (process.env.ADS_TXT || '').split(/[|\n]/)
+  .map((line) => line.trim())
+  .filter(Boolean)
+  .join('\n');
+app.get('/ads.txt', (req, res) => {
+  if (!ADS_TXT) return res.status(404).type('text').send('Not found');
+  res.type('text').set('Cache-Control', 'public, max-age=3600').send(ADS_TXT + '\n');
 });
 
 app.use(
