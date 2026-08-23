@@ -267,6 +267,13 @@ const GROWTH_EVENTS = new Set([
   'share_prompt',
   'share_open',
   'share_success',
+  // Call reachability. media_ok vs media_failed is the ratio that says whether
+  // a TURN relay is urgently needed: media_failed counts matches that
+  // negotiated fine and then carried no audio, which is what happens to users
+  // whose network has no direct path. See DEPLOY-TURN.md.
+  'call_media_ok',
+  'call_media_failed',
+  'call_media_blocked_notice',
 ]);
 app.post('/events', express.json({ limit: '2kb' }), (req, res) => {
   const event = req.body && req.body.event;

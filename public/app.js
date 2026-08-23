@@ -2381,6 +2381,29 @@ function playRemoteAudio() {
   });
 }
 
+// A match that negotiates fine and then carries no audio means this user has no
+// working network path to the other side. One is bad luck; a run of them is a
+// network that needs a TURN relay to get through (see DEPLOY-TURN.md). Counting
+// them tells the operator how big that population actually is, and tells the
+// user why skipping forever is not helping them.
+let consecutiveMediaFailures = 0;
+// Two, not three: each failure costs the user a full 20s watchdog before we
+// move on, and one failure really can just be the other person's network. Two
+// in a row is a strong enough signal to be worth explaining after ~40s rather
+// than leaving them cycling through strangers in silence.
+const MEDIA_FAILURES_BEFORE_NOTICE = 2;
+
+function noteMediaFailure() {
+  consecutiveMediaFailures += 1;
+  trackGrowthEvent('call_media_failed');
+  if (consecutiveMediaFailures === MEDIA_FAILURES_BEFORE_NOTICE) {
+    // Say it once per run of failures, not on every subsequent match.
+    showError(t('errNetworkBlocksCalls'));
+    trackGrowthEvent('call_media_blocked_notice');
+  }
+  autoNextMatch('statusFindingNew');
+}
+
 // --- Real media confirmation -------------------------------------------------
 // The only trustworthy proof that a call works is inbound audio bytes actually
 // arriving. Everything the UI calls "connected" hangs off this.
@@ -2397,6 +2420,11 @@ function stopMediaFlowWatch() {
 function confirmMediaFlowing() {
   if (mediaConnected) return;
   mediaConnected = true;
+  // A working call disproves the "your network blocks calls" notice, so retract
+  // it rather than leaving a stale warning over a live conversation.
+  if (consecutiveMediaFailures >= MEDIA_FAILURES_BEFORE_NOTICE) clearError();
+  consecutiveMediaFailures = 0;
+  trackGrowthEvent('call_media_ok');
   stopMediaFlowWatch();
   revealPartner();
   setState('connected');
@@ -2504,7 +2532,7 @@ function createPeerConnection(isInitiator) {
   iceRestartAttempted = false;
   mediaConnected = false;
   connectWatchdog = setTimeout(() => {
-    if (!mediaConnected) autoNextMatch('statusFindingNew');
+    if (!mediaConnected) noteMediaFailure();
   }, 20000);
 
   peer.oniceconnectionstatechange = () => {

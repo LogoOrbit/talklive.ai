@@ -165,11 +165,15 @@ function parseTurnUri(uri) {
 function udpTransport(endpoint) {
   const sock = dgram.createSocket(net.isIPv6(endpoint.host) ? 'udp6' : 'udp4');
   let handler = () => {};
+  let onFail = () => {};
   sock.on('message', (msg) => handler(msg));
-  sock.on('error', () => {});
+  sock.on('error', (e) => onFail(`socket error: ${e.code || e.message}`));
   return {
-    send: (buf) => sock.send(buf, endpoint.port, endpoint.host, () => {}),
+    send: (buf) => sock.send(buf, endpoint.port, endpoint.host, (e) => {
+      if (e) onFail(`send failed: ${e.code || e.message}`);
+    }),
     onMessage: (cb) => { handler = cb; },
+    onError: (cb) => { onFail = cb; },
     close: () => { try { sock.close(); } catch (_) { /* already closed */ } },
   };
 }
@@ -177,11 +181,17 @@ function udpTransport(endpoint) {
 function streamTransport(endpoint) {
   let buffer = Buffer.alloc(0);
   let handler = () => {};
+  let onFail = () => {};
   const opts = { host: endpoint.host, port: endpoint.port };
   const sock = endpoint.secure
     ? tls.connect({ ...opts, servername: endpoint.host, rejectUnauthorized: false })
     : net.connect(opts);
-  sock.on('error', () => {});
+  // Surfacing the real socket error matters: a refused connection, a DNS
+  // failure and a TLS handshake rejection are each a different fix, and
+  // collapsing them all into "timed out" sends whoever runs this hunting in the
+  // wrong direction.
+  sock.on('error', (e) => onFail(`connection failed: ${e.code || e.message}`));
+  sock.on('close', () => onFail('connection closed by peer before any TURN response'));
   sock.on('data', (chunk) => {
     buffer = Buffer.concat([buffer, chunk]);
     // Drain every complete message currently in the stream.
@@ -197,6 +207,7 @@ function streamTransport(endpoint) {
   return {
     send: (buf) => sock.write(buf),
     onMessage: (cb) => { handler = cb; },
+    onError: (cb) => { onFail = cb; },
     close: () => { try { sock.destroy(); } catch (_) { /* already gone */ } },
   };
 }
@@ -217,6 +228,7 @@ function allocate(endpoint, creds, timeoutMs) {
       transport.close();
       resolve(result);
     };
+    transport.onError((reason) => finish({ ok: false, error: reason }));
     const timer = setTimeout(
       () => finish({ ok: false, error: `no response within ${timeoutMs}ms (blocked, wrong port, or host unreachable)` }),
       timeoutMs
