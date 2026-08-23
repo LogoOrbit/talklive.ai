@@ -57,7 +57,8 @@ still need credentials - are in **[SEO.md](SEO.md)**.
 
 ## Notes
 
-- Uses public Google STUN servers for NAT traversal, plus a TURN relay when one is configured (see below). On restrictive networks (symmetric NAT, corporate firewalls) STUN alone cannot get media through, so a TURN server is strongly recommended in production.
+- Uses public Google STUN servers for NAT traversal, plus a TURN relay when one is configured. On restrictive networks (symmetric NAT, corporate firewalls) STUN alone cannot get media through, so a TURN server is strongly recommended in production. Setup and verification: **[DEPLOY-TURN.md](DEPLOY-TURN.md)**.
+- Verify a relay actually works with `npm run check:turn -- --from-url https://talklive.app/ice-servers`. A relay that is misconfigured or gone looks identical to a working one until users cannot hear each other, so check it rather than assuming.
 - Requires HTTPS (or localhost) in production, since browsers only allow microphone access on secure origins.
 
 ## Owner Dashboard
@@ -83,7 +84,7 @@ A secured owner dashboard lives at **`/owner`** (e.g. `https://talklive.app/owne
 | `TURN_URLS` | Comma-separated TURN endpoints (e.g. `turn:turn.example.com:3478,turns:turn.example.com:5349?transport=tcp`). Served to browsers by `/ice-servers` |
 | `TURN_SHARED_SECRET` | coturn `use-auth-secret` value. The server mints a short-lived HMAC credential per request - preferred over static credentials |
 | `TURN_USERNAME` / `TURN_CREDENTIAL` | Static TURN credentials, used only when `TURN_SHARED_SECRET` is unset |
-| `TURN_FORCE_RELAY` | `1` forces browsers to use relay candidates only, so neither peer learns the other's IP. **Ignored unless a TURN relay is actually configured** - forcing relay with no relay leaves the browser with zero candidates and every call connects with no audio |
+| `TURN_FORCE_RELAY` | `1` forces browsers to use relay candidates only, so neither peer learns the other's IP. **Ignored unless a TURN relay is actually configured** - forcing relay with no relay leaves the browser with zero candidates and every call connects with no audio. Run `npm run check:turn` before setting it |
 
 ### Premium (TalkLive Plus)
 

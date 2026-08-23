@@ -10,6 +10,7 @@
     "ads:adsterra": "node scripts/migrate-adsterra.js",
     "audit:seo": "node scripts/audit-seo.js",
     "check:seo": "npm run build:seo && npm run audit:seo",
+    "check:turn": "node scripts/check-turn.js",
     "seo:ping": "node scripts/ping-indexnow.js"
   },
   "dependencies": {
