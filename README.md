@@ -57,7 +57,7 @@ still need credentials - are in **[SEO.md](SEO.md)**.
 
 ## Notes
 
-- Uses public Google STUN servers for NAT traversal. On some restrictive networks (symmetric NAT, corporate firewalls) a TURN server would be needed for relay fallback - not included here.
+- Uses public Google STUN servers for NAT traversal, plus a TURN relay when one is configured (see below). On restrictive networks (symmetric NAT, corporate firewalls) STUN alone cannot get media through, so a TURN server is strongly recommended in production.
 - Requires HTTPS (or localhost) in production, since browsers only allow microphone access on secure origins.
 
 ## Owner Dashboard
@@ -80,6 +80,10 @@ A secured owner dashboard lives at **`/owner`** (e.g. `https://talklive.app/owne
 | `PREMIUM_CLIENT_IDS` | Comma-separated clientIds to grant premium manually (testing) |
 | `LANDING_HOST` | Optional subdomain (e.g. `start.talklive.app`) whose root serves the marketing landing page (`/landing`) |
 | `ALIAS_HOSTS` | Comma-separated domains we own that 301 to `CANONICAL_HOST` (e.g. `talklive.xyz,talklive.site`). Each needs its own Fly certificate |
+| `TURN_URLS` | Comma-separated TURN endpoints (e.g. `turn:turn.example.com:3478,turns:turn.example.com:5349?transport=tcp`). Served to browsers by `/ice-servers` |
+| `TURN_SHARED_SECRET` | coturn `use-auth-secret` value. The server mints a short-lived HMAC credential per request - preferred over static credentials |
+| `TURN_USERNAME` / `TURN_CREDENTIAL` | Static TURN credentials, used only when `TURN_SHARED_SECRET` is unset |
+| `TURN_FORCE_RELAY` | `1` forces browsers to use relay candidates only, so neither peer learns the other's IP. **Ignored unless a TURN relay is actually configured** - forcing relay with no relay leaves the browser with zero candidates and every call connects with no audio |
 
 ### Premium (TalkLive Plus)
 

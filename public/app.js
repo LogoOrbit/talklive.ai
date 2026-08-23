@@ -313,26 +313,39 @@ function messageIsUnsafe(text) {
 }
 
 // Static fallback used until (and if) the server's /ice-servers responds.
+// STUN only: public "free TURN" endpoints are unreliable and the ones that used
+// to sit here no longer exist, so relying on them just produced silent calls.
 let ICE_SERVERS = [
-  { urls: 'stun:stun.l.google.com:19302' },
-  { urls: 'stun:stun1.l.google.com:19302' },
-  { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
-  { urls: 'turn:openrelay.metered.ca:80?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
-  { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
-  { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
-  { urls: 'turns:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
 ];
+
+// 'relay' hides both peers' IPs but requires a working TURN server. Forcing it
+// without one leaves the browser with zero candidates: the SDP still completes,
+// so the UI looked "connected" while no audio could ever flow. Only the server
+// may turn it on, and only when it actually publishes a TURN relay.
+let ICE_TRANSPORT_POLICY = 'all';
 
 // Pull the authoritative (possibly env-configured, more reliable) TURN list from
 // the server as early as possible so the very first call already relays properly.
-fetch('/ice-servers')
+// startCall() awaits this so the first match never races the fetch and gets
+// built with the bare STUN fallback.
+const iceConfigReady = fetch('/ice-servers')
   .then((r) => (r.ok ? r.json() : null))
   .then((data) => {
     if (data && Array.isArray(data.iceServers) && data.iceServers.length) {
       ICE_SERVERS = data.iceServers;
     }
+    if (data && data.iceTransportPolicy === 'relay' && iceListHasRelay(ICE_SERVERS)) {
+      ICE_TRANSPORT_POLICY = 'relay';
+    }
   })
   .catch(() => { /* keep the static fallback */ });
+
+function iceListHasRelay(list) {
+  return (list || []).some((s) => []
+    .concat(s && s.urls ? s.urls : [])
+    .some((u) => /^turns?:/i.test(String(u))));
+}
 
 const selectedInterests = new Set();
 const includeCountries = new Set(); // draft "Interested Countries" - only match these, if any chosen
@@ -2273,7 +2286,14 @@ function clearChat() {
 }
 
 async function getMic() {
-  if (localStream) return localStream;
+  if (localStream) {
+    // A track can end while the stream object stays alive (device unplugged, an
+    // incoming phone call, a mobile tab suspended). Reusing it sends silence for
+    // the rest of the session - the classic "they can't hear me" report.
+    if (localStream.getAudioTracks().some((t) => t.readyState === 'live')) return localStream;
+    localStream.getTracks().forEach((t) => { try { t.stop(); } catch (_) { /* already gone */ } });
+    localStream = null;
+  }
   localStream = await navigator.mediaDevices.getUserMedia({
     audio: {
       echoCancellation: true,
@@ -2345,12 +2365,94 @@ function attemptIceRestart(peer) {
     .catch(() => { /* the reconnect window will auto-advance if this fails */ });
 }
 
+// Playback can be refused if the tab lost its autoplay permission (a rejected
+// play() is silent, not an error the user sees). Retry once on the next tap.
+function playRemoteAudio() {
+  if (!remoteAudio || !remoteAudio.play) return;
+  remoteAudio.muted = false;
+  const attempt = remoteAudio.play();
+  if (!attempt || !attempt.catch) return;
+  attempt.catch(() => {
+    const retry = () => {
+      document.removeEventListener('pointerdown', retry);
+      if (remoteAudio.srcObject) remoteAudio.play().catch(() => {});
+    };
+    document.addEventListener('pointerdown', retry, { once: true });
+  });
+}
+
+// --- Real media confirmation -------------------------------------------------
+// The only trustworthy proof that a call works is inbound audio bytes actually
+// arriving. Everything the UI calls "connected" hangs off this.
+let mediaFlowInterval = null;
+let mediaFlowStartedAt = 0;
+let lastInboundBytes = 0;
+let sawInboundReport = false;
+
+function stopMediaFlowWatch() {
+  clearInterval(mediaFlowInterval);
+  mediaFlowInterval = null;
+}
+
+function confirmMediaFlowing() {
+  if (mediaConnected) return;
+  mediaConnected = true;
+  stopMediaFlowWatch();
+  revealPartner();
+  setState('connected');
+  setCallState('connected');
+  setStatusText('statusConnected');
+  setSubTextFading('subSayHi');
+  setConnection('green', 'connConnected');
+  clearConnectWatchdog();
+  clearReconnectDeadline();
+  startQualityMonitor();
+}
+
+function watchMediaFlow(peer) {
+  stopMediaFlowWatch();
+  mediaFlowStartedAt = Date.now();
+  lastInboundBytes = 0;
+  sawInboundReport = false;
+  mediaFlowInterval = setInterval(async () => {
+    if (pc !== peer) return stopMediaFlowWatch();
+    if (mediaConnected) return stopMediaFlowWatch();
+    let stats;
+    try {
+      stats = await peer.getStats();
+    } catch (e) {
+      return; // transient; the connect watchdog still guards the call
+    }
+    if (pc !== peer || mediaConnected) return stopMediaFlowWatch();
+
+    let bytes = null;
+    stats.forEach((r) => {
+      if (r.type === 'inbound-rtp' && (r.kind === 'audio' || r.mediaType === 'audio')) {
+        bytes = Math.max(bytes || 0, r.bytesReceived || 0);
+      }
+    });
+    if (bytes !== null) sawInboundReport = true;
+    if (bytes !== null && bytes > 0 && bytes > lastInboundBytes) return confirmMediaFlowing();
+    if (bytes !== null) lastInboundBytes = bytes;
+
+    const iceUp = peer.iceConnectionState === 'connected' || peer.iceConnectionState === 'completed';
+    const elapsed = Date.now() - mediaFlowStartedAt;
+    // Fallback for browsers that never expose inbound-rtp audio stats: once ICE
+    // is up and has stayed up, take that as connected rather than hanging.
+    if (iceUp && !sawInboundReport && elapsed > 5000) return confirmMediaFlowing();
+    // ICE agreed a path but nothing is arriving on it - a stale/half-open relay
+    // pair. Re-gather instead of waiting out the watchdog in silence.
+    if (iceUp && sawInboundReport && elapsed > 8000) attemptIceRestart(peer);
+  }, 500);
+}
+
 function createPeerConnection(isInitiator) {
-  // Relay-only prevents host/server-reflexive ICE candidates from exposing
-  // either caller's IP address to the other peer.
+  // ICE_TRANSPORT_POLICY is 'relay' only when the server published a real TURN
+  // relay (relay-only hides both peers' IPs); otherwise 'all', so host/STUN
+  // candidates can still form a working path instead of none at all.
   const peer = new RTCPeerConnection({
     iceServers: ICE_SERVERS,
-    iceTransportPolicy: 'relay',
+    iceTransportPolicy: ICE_TRANSPORT_POLICY,
     iceCandidatePoolSize: 0,
   });
   // A brand-new peer has no remote description yet, so start a fresh candidate
@@ -2363,11 +2465,19 @@ function createPeerConnection(isInitiator) {
   // handler and leaves the UI stuck on "connecting".
   if (localStream) {
     localStream.getTracks().forEach((track) => peer.addTrack(track, localStream));
+  } else {
+    // No mic: still negotiate an audio m-line. Without one the offer carries no
+    // media at all and the call is silent in BOTH directions; with it we can at
+    // least hear the other side.
+    try { peer.addTransceiver('audio', { direction: 'recvonly' }); } catch (e) { /* older browsers */ }
   }
-  // Force every audio transceiver to send+receive. Without this, a race where a
-  // track is briefly absent can leave a "recvonly" transceiver, which silently
-  // produces one-way audio (you hear them, they can't hear you).
-  peer.getTransceivers().forEach((tr) => { try { tr.direction = 'sendrecv'; } catch (e) {} });
+  // Force every audio transceiver that has a local track to send+receive.
+  // Without this, a race where a track is briefly absent can leave a "recvonly"
+  // transceiver, which silently produces one-way audio.
+  peer.getTransceivers().forEach((tr) => {
+    if (!tr.sender || !tr.sender.track) return;
+    try { tr.direction = 'sendrecv'; } catch (e) { /* direction is read-only pre-negotiation on old builds */ }
+  });
 
   peer.onicecandidate = (event) => {
     if (event.candidate) {
@@ -2376,41 +2486,37 @@ function createPeerConnection(isInitiator) {
   };
 
   peer.ontrack = (event) => {
+    // ontrack fires as soon as the remote SDP is applied - long before ICE has
+    // agreed a candidate pair and any audio actually flows. Treating it as
+    // "connected" was what left calls sitting on a green indicator in silence,
+    // with the connect watchdog cancelled so they never even moved on. Attach
+    // the stream here, but wait for real inbound audio before saying connected.
     remoteAudio.srcObject = event.streams[0];
-    // Some mobile browsers need an explicit play() once a user gesture primed audio.
-    remoteAudio.play && remoteAudio.play().catch(() => {});
-    mediaConnected = true;
-    revealPartner();
-    setState('connected');
-    setCallState('connected');
-    setStatusText('statusConnected');
-    setSubTextFading('subSayHi');
+    playRemoteAudio();
     monitorRemoteAudio(event.streams[0]);
-    // Receiving the remote track is itself proof of a live connection, even if
-    // iceConnectionState hasn't caught up yet (e.g. TURN relay finalizing).
-    setConnection('green', 'connConnected');
-    clearConnectWatchdog();
-    clearReconnectDeadline();
-    startQualityMonitor();
+    watchMediaFlow(peer);
   };
 
-  // If a call never fully connects (common with flaky free TURN relays across
-  // distant networks), move on to a new match instead of stalling silently.
+  // If a call never fully connects (common with flaky TURN relays across distant
+  // networks), move on to a new match instead of stalling silently.
   clearConnectWatchdog();
   clearReconnectDeadline();
   iceRestartAttempted = false;
   mediaConnected = false;
   connectWatchdog = setTimeout(() => {
     if (!mediaConnected) autoNextMatch('statusFindingNew');
-  }, 15000);
+  }, 20000);
 
   peer.oniceconnectionstatechange = () => {
     const iceState = peer.iceConnectionState;
     if (iceState === 'connected' || iceState === 'completed') {
-      setConnection('green', 'connConnected');
-      clearConnectWatchdog();
       clearReconnectDeadline();
       iceRestartAttempted = false;
+      // A live transport is not yet a working call: keep the connect watchdog
+      // armed until watchMediaFlow() sees audio actually arriving. Restarting
+      // the watcher also covers a recovery where ontrack never fires again.
+      if (mediaConnected) setConnection('green', 'connConnected');
+      else if (!mediaFlowInterval) watchMediaFlow(peer);
     } else if (iceState === 'checking') {
       if (!mediaConnected) setConnection('orange', 'connConnecting');
     } else if (iceState === 'disconnected' || iceState === 'failed') {
@@ -2440,11 +2546,27 @@ function createPeerConnection(isInitiator) {
   return peer;
 }
 
+let visualizerCtx = null;
+let visualizerSource = null;
+
 function monitorRemoteAudio(stream) {
   clearInterval(speakingCheckInterval);
   try {
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    // One context for the whole session. Browsers cap concurrent AudioContexts
+    // (~6 in Chrome), and creating a fresh one per match used to hit that cap
+    // after a handful of skips, which broke audio handling from then on.
+    if (!visualizerCtx || visualizerCtx.state === 'closed') {
+      visualizerCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    const audioCtx = visualizerCtx;
+    if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+    // Release the previous match's graph so nodes don't pile up on the shared context.
+    if (visualizerSource) {
+      try { visualizerSource.disconnect(); } catch (_) { /* already detached */ }
+      visualizerSource = null;
+    }
     const source = audioCtx.createMediaStreamSource(stream);
+    visualizerSource = source;
     const analyser = audioCtx.createAnalyser();
     analyser.fftSize = 256;
     source.connect(analyser);
@@ -2473,11 +2595,12 @@ function monitorRemoteAudio(stream) {
 }
 
 async function startCall(initiator) {
-  // Re-acquire the mic if a teardown released it while we were being matched,
-  // so the call starts with audio instead of silently connecting muted.
-  if (!localStream) {
-    try { await getMic(); } catch (_) { /* fall through: peer is created without tracks */ }
-  }
+  // Re-acquire the mic if a teardown released it (or its track died) while we
+  // were being matched, so the call starts with audio instead of silence.
+  try { await getMic(); } catch (_) { /* fall through: peer negotiates recvonly */ }
+  // Never build a peer before the server's TURN list has landed - the static
+  // fallback is STUN-only and cannot cross a symmetric NAT.
+  try { await iceConfigReady; } catch (_) { /* fallback list stands */ }
   pc = createPeerConnection(initiator);
   try { if (window.Moderation) window.Moderation.start(localStream, socket); } catch (_) { /* never break the call */ }
   if (initiator) {
@@ -2485,6 +2608,19 @@ async function startCall(initiator) {
     await pc.setLocalDescription(offer);
     socket.emit('signal', { type: 'offer', sdp: offer });
   }
+  await flushPendingSignals();
+}
+
+// Signals that arrived before this side finished building its peer connection.
+// The other peer starts offering the moment the server matches us, which can be
+// before our getUserMedia / ICE-config await resolves; dropping that offer left
+// the call negotiating forever with no audio.
+let pendingSignals = [];
+
+async function flushPendingSignals() {
+  const queued = pendingSignals;
+  pendingSignals = [];
+  for (const data of queued) await handleSignal(data);
 }
 
 // ICE candidates that arrived before the remote description was set. Adding a
@@ -2508,7 +2644,13 @@ async function flushPendingCandidates() {
 }
 
 async function handleSignal(data) {
-  if (!pc) return;
+  if (!pc) {
+    // Only buffer while a match is actually being set up (currentPartner is set
+    // by 'matched' and cleared by teardownPeer), so a straggler from the last
+    // call can never be replayed into the next one.
+    if (data && currentPartner && pendingSignals.length < 64) pendingSignals.push(data);
+    return;
+  }
   try {
     if (data.type === 'offer') {
       // Glare: an offer arrived while we have our own outstanding offer (both
@@ -2558,7 +2700,9 @@ function teardownPeer() {
   clearConnectWatchdog();
   clearReconnectDeadline();
   pendingCandidates = [];
+  pendingSignals = [];
   mediaConnected = false;
+  stopMediaFlowWatch();
   clearInterval(speakingCheckInterval);
   orb.classList.remove('speaking');
   orb.classList.remove('muted-remote');

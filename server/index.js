@@ -277,32 +277,47 @@ app.post('/events', express.json({ limit: '2kb' }), (req, res) => {
   res.status(204).end();
 });
 
-// ICE servers handed to the browser. Operators must configure TURN_URLS and
-// TURN_SHARED_SECRET; credentials are short-lived and relay-only to prevent
-// peer IP disclosure. STUN and shared/default TURN credentials are intentionally
-// not published.
+// ICE servers handed to the browser.
+//
+// STUN is always published. Withholding it (to avoid revealing each peer's
+// public IP) only works if a TURN relay is configured to carry the media
+// instead; with neither, the browser gathers no usable candidates, the SDP
+// handshake still completes, and every call connects in name only - no audio in
+// either direction. Operators who need IP privacy configure TURN_URLS with
+// either TURN_SHARED_SECRET (short-lived HMAC credentials, coturn's
+// `use-auth-secret`) or a static TURN_USERNAME / TURN_CREDENTIAL pair, and set
+// TURN_FORCE_RELAY=1 to make the browser use relay candidates exclusively.
 function buildIceServers() {
-  // Do not publish STUN candidates: they expose each peer's public IP.
-  // Configure a TURN service with short-lived credentials in production.
-  const servers = [];
+  const servers = [
+    { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
+  ];
   const envUrls = (process.env.TURN_URLS || '').split(',').map((s) => s.trim()).filter(Boolean);
   const turnSharedSecret = process.env.TURN_SHARED_SECRET || '';
   if (envUrls.length && turnSharedSecret) {
     const expiry = Math.floor(Date.now() / 1000) + 3600;
     const username = `${expiry}:${crypto.randomBytes(8).toString('hex')}`;
     const credential = crypto.createHmac('sha1', turnSharedSecret).update(username).digest('base64');
+    servers.push({ urls: envUrls, username, credential });
+  } else if (envUrls.length && process.env.TURN_USERNAME && process.env.TURN_CREDENTIAL) {
     servers.push({
       urls: envUrls,
-      username,
-      credential,
+      username: process.env.TURN_USERNAME,
+      credential: process.env.TURN_CREDENTIAL,
     });
   }
   return servers;
 }
 
+function hasRelay(servers) {
+  return servers.some((s) => [].concat(s.urls || []).some((u) => /^turns?:/i.test(String(u))));
+}
+
 app.get('/ice-servers', (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
-  res.json({ iceServers: buildIceServers() });
+  const iceServers = buildIceServers();
+  // Relay-only is only ever safe to ask for when a relay actually exists.
+  const relayOnly = process.env.TURN_FORCE_RELAY === '1' && hasRelay(iceServers);
+  res.json({ iceServers, iceTransportPolicy: relayOnly ? 'relay' : 'all' });
 });
 
 // sendFile bypasses the static middleware, so page shells served this way need
