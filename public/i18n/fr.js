@@ -190,13 +190,6 @@ window.I18N_STRINGS.fr = {
   "premiumGenderLocked": "Le filtre de genre est une fonctionnalité Premium.",
   "premiumCountryLimit": "Le plan gratuit autorise jusqu'à {n} pays par liste.",
   "premiumFriendLimit": "Le plan gratuit autorise jusqu'à {n} amis.",
-  "adUnlockCta": "🎁 Regarder une pub pour débloquer",
-  "adUnlockExplain": "Regardez une courte publicité pour débloquer gratuitement toutes les fonctionnalités Premium pendant {m} minutes.",
-  "adUnlockBtn": "REGARDER UNE PUB POUR DÉBLOQUER",
-  "adUnlockCounting": "Gardez l'onglet de la pub ouvert… {s}s",
-  "adUnlockSuccess": "🎉 Premium débloqué pendant {m} minutes !",
-  "adUnlockTooSoon": "C'était trop rapide - gardez la pub ouverte un peu plus longtemps et réessayez.",
-  "adUnlockFailed": "Impossible de vérifier la publicité. Veuillez réessayer.",
   "adPassExpired": "Votre temps Premium gratuit est terminé. Regardez une autre pub pour le débloquer à nouveau !",
   "adPassBadge": "⭐ Premium · {time}",
   "filtersAdUnlockText": "Plan gratuit : jusqu'à 3 pays par liste, filtre de genre verrouillé. Regardez une courte pub pour tout débloquer pendant 5 minutes - gratuitement."

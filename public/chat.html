@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
-<link rel="stylesheet" href="/chat.css" />
+<link rel="stylesheet" href="/chat.css?v=20260823ui" />
 <style>
   .skip-link {
     position: fixed;
@@ -58,7 +58,7 @@
 <link rel="apple-touch-icon" href="/favicon-192.png" />
 <link rel="manifest" href="/site.webmanifest" />
 <script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebApplication","name":"TalkLive Chat","url":"https://talklive.app/chat","applicationCategory":"CommunicationApplication","operatingSystem":"Web, Android, iOS","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"isAccessibleForFree":true,"publisher":{"@type":"Organization","name":"TalkLive","url":"https://talklive.app","logo":"https://talklive.app/favicon.svg"},"description":"The live TalkLive chat room - anonymous random voice and text conversations with strangers."}]</script>
-<script defer src="/ads.js?v=20260822fill"></script>
+<script defer src="/ads.js?v=20260823ui"></script>
 </head>
 <body>
   <a href="#chatStage" class="skip-link" data-i18n="skipToContent">Skip to main content</a>
@@ -74,7 +74,7 @@
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
         </svg>
       </button>
-      <a class="brand" href="/chat" aria-label="TalkLive">
+      <a class="brand" id="brandHome" href="/chat" aria-label="TalkLive" title="Reload TalkLive">
         <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
         <span class="brand-text">TalkLive</span>
       </a>
@@ -126,13 +126,6 @@
       </div>
     </header>
 
-    <!-- Desktop-only ad rail. Fixed rather than a flex child so it cannot
-         affect the chat stage layout; hidden below 1024px where the app card
-         leaves no room beside it. -->
-    <aside class="chat-rail" aria-label="Advertisement">
-      <div data-ad="skyscraper"></div>
-    </aside>
-
     <!-- The chat sub-app -->
     <section id="chatStage" class="chat-stage" aria-label="Random text chat" tabindex="-1">
 
@@ -147,7 +140,8 @@
           </button>
 
 
-          <div style="margin:16px auto 0;text-align:center;width:100%;max-width:728px">
+          <div class="ad-card">
+            <span class="ad-card-label" data-i18n="sponsored">Sponsored</span>
             <div data-ad="box"></div>
           </div>
         </div>
@@ -163,6 +157,14 @@
           </div>
           <p id="searchLine" class="search-line" aria-live="polite">Scanning the globe…</p>
           <button type="button" id="cancelBtn" class="search-cancel" data-i18n="cancel">Cancel</button>
+
+          <!-- Waiting is the one moment an ad costs the user nothing, so the
+               single in-app slot lives here - framed like the rest of the UI
+               instead of a bare creative floating at the edge of the screen. -->
+          <div class="ad-card">
+            <span class="ad-card-label" data-i18n="sponsored">Sponsored</span>
+            <div data-ad="box"></div>
+          </div>
         </div>
 
         <!-- LIVE -->
@@ -387,9 +389,9 @@
        while letting the browser finish parsing and paint the page first. -->
   <script defer src="/socket.io/socket.io.js"></script>
   <script defer src="/countries.js"></script>
-  <script defer src="/i18n.js?v=20260822ui"></script>
-  <script defer src="/error-reporter.js?v=20260808a"></script>
-  <script defer src="/chat.js?v=20260822ui"></script>
+  <script defer src="/i18n.js?v=20260823ui"></script>
+  <script defer src="/error-reporter.js?v=20260823ui"></script>
+  <script defer src="/chat.js?v=20260823ui"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

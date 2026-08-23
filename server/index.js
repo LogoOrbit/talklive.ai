@@ -228,10 +228,10 @@ const FREE_LIMITS = {
   friends: 10, // max friends
   matchDelayMs: 5000, // wait before matching the next person
 };
-// Premium registry lives in the persistent store (Postgres/file) so paid
-// customers survive restarts and deploys. Nothing writes to it automatically:
-// /pricing sends buyers to Patreon, which has no webhook wired up here, so
-// grants are manual - PREMIUM_CLIENT_IDS (env) or store.setPremium().
+// Premium registry lives in the persistent store (Postgres/file) so grants
+// survive restarts and deploys. Premium is not on sale yet - /pricing shows a
+// "coming soon" card and no checkout exists - so every grant is manual:
+// PREMIUM_CLIENT_IDS (env) or store.setPremium().
 const envPremiumClients = new Set(
   (process.env.PREMIUM_CLIENT_IDS || '').split(',').map((s) => s.trim()).filter(Boolean)
 );

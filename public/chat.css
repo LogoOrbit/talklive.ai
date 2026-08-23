@@ -684,20 +684,33 @@ img { max-width: 100%; }
   overflow: hidden;
 }
 
-/* Desktop-only skyscraper rail. Fixed so it sits beside the app card without
-   participating in the chat stage's flex layout. Hidden on narrower screens,
-   where ads.js would fall back to 160x300 but there is still no room for it. */
-.chat-rail { display: none; }
-
-@media (min-width: 1024px) {
-  .chat-rail {
-    display: block;
-    position: fixed;
-    top: 50%;
-    right: 16px;
-    transform: translateY(-50%);
-    z-index: 5;
-  }
+/* Ads sit inside a framed card that matches the rest of the UI: a labelled,
+   rounded panel in the page flow. The old version was a bare creative pinned
+   to the right edge of the viewport, which read as a pop-up rather than as
+   part of the product. The card collapses on its own when ads.js hides an
+   unfilled slot, so no empty frame is ever left behind. */
+.ad-card {
+  width: fit-content;
+  max-width: 100%;
+  margin: 22px auto 0;
+  padding: 8px 8px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.028);
+  text-align: center;
+}
+.ad-card-label {
+  display: block;
+  margin: 0 0 7px;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted, #8b93a7);
+  opacity: 0.75;
+}
+@media (max-height: 760px) {
+  #viewSearch .ad-card { display: none; }
 }
 
 /* Below the breakpoint the live strip is the only in-app slot, so keep it

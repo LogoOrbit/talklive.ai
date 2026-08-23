@@ -4481,8 +4481,8 @@ updatePremiumUi();
 // browser's native confirm() popup.
 async function showPremiumUpsell(message) {
   confirmModalTitle.textContent = t('premiumUpsellTitle');
-  confirmModalText.textContent = message + ' Premium unlocks every filter, unlimited friends, instant rematching and an ad-free experience.';
-  confirmOkBtn.textContent = t('upgradeCta');
+  confirmModalText.textContent = message + ' ' + t('premiumComingSoon');
+  confirmOkBtn.textContent = t('premiumUpsellGo');
   confirmCancelBtn.textContent = t('cancel');
   confirmOkBtn.className = 'btn btn-save';
   openModal(confirmModal);

@@ -5452,6 +5452,30 @@ a.premium-lock:hover { background: rgba(108, 92, 231, 0.22); }
   .setup-growth-card { min-height: 58px; }
 }
 
+/* Ads inside the app sit in a framed, labelled card that matches the rest of
+   the UI rather than dropping a bare creative onto the page. ads.js hides the
+   whole card when a slot goes unfilled, so no empty frame is left behind. */
+.ad-card {
+  width: fit-content;
+  max-width: 100%;
+  margin: 22px auto 0;
+  padding: 8px 8px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.028);
+  text-align: center;
+}
+.ad-card-label {
+  display: block;
+  margin: 0 0 7px;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted, #8b93a7);
+  opacity: 0.75;
+}
+
 /* --- Post-call share prompt --- */
 .share-prompt {
   position: fixed;

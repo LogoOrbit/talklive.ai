@@ -190,13 +190,6 @@ window.I18N_STRINGS.pt = {
   "premiumGenderLocked": "O filtro de gênero é um recurso Premium.",
   "premiumCountryLimit": "O plano gratuito permite até {n} países por lista.",
   "premiumFriendLimit": "O plano gratuito permite até {n} amigos.",
-  "adUnlockCta": "🎁 Assistir a um anúncio para desbloquear",
-  "adUnlockExplain": "Assista a um anúncio curto para desbloquear todos os recursos Premium grátis por {m} minutos.",
-  "adUnlockBtn": "ASSISTA A UM ANÚNCIO PARA DESBLOQUEAR",
-  "adUnlockCounting": "Mantenha a aba do anúncio aberta… {s}s",
-  "adUnlockSuccess": "🎉 Premium desbloqueado por {m} minutos!",
-  "adUnlockTooSoon": "Foi rápido demais - mantenha o anúncio aberto um pouco mais e tente novamente.",
-  "adUnlockFailed": "Não foi possível verificar o anúncio. Tente novamente.",
   "adPassExpired": "Seu tempo Premium grátis acabou. Assista a outro anúncio para desbloquear de novo!",
   "adPassBadge": "⭐ Premium · {time}",
   "filtersAdUnlockText": "Plano gratuito: até 3 países por lista, filtro de gênero bloqueado. Assista a um anúncio curto para desbloquear tudo por 5 minutos - grátis."

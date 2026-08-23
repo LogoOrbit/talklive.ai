@@ -9,7 +9,7 @@
      rather than after it - the sooner it lands, the sooner the hero paints.
      Analytics and ad tags are loaded at the end of <body> instead of here so
      they stop competing for mobile bandwidth during Largest Contentful Paint. -->
-<link rel="stylesheet" href="style.css?v=20260822ui" />
+<link rel="stylesheet" href="style.css?v=20260823ui" />
 <script defer src="/config.js"></script>
 
 <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
@@ -171,7 +171,7 @@
 }
 </script>
 
-<script defer src="/ads.js?v=20260822fill"></script>
+<script defer src="/ads.js?v=20260823ui"></script>
 </head>
 <body>
   <a href="#main" class="skip-link" data-i18n="skipToContent">Skip to main content</a>
@@ -455,9 +455,9 @@
             <span class="fpb-diamond" aria-hidden="true">💎</span>
             <span class="fpb-title" data-i18n="filtersPremiumTitle">Filters are a Premium feature</span>
           </div>
-          <p class="fpb-text">Free includes up to 3 countries per list. Premium unlocks gender filters, unlimited country lists, unlimited friends, instant rematching and no ads.</p>
+          <p class="fpb-text">Free includes up to 3 countries per list. Premium will unlock gender filters, unlimited country lists, unlimited friends, instant rematching and no ads - it is coming soon.</p>
           <a id="filtersUpgradeBtn" class="upgrade-cta-btn" href="/pricing?utm_source=app&amp;utm_medium=filters&amp;utm_campaign=premium">
-            <span class="upgrade-diamond" aria-hidden="true">💎</span><span>SEE PREMIUM - $5/MONTH</span>
+            <span class="upgrade-diamond" aria-hidden="true">💎</span><span data-i18n="premiumSeeSoon">SEE PREMIUM - COMING SOON</span>
           </a>
         </div>
 
@@ -548,7 +548,7 @@
           <div class="setup-growth" aria-label="TalkLive membership and sharing">
             <a class="setup-growth-card setup-growth-premium" href="/pricing?utm_source=app&amp;utm_medium=home&amp;utm_campaign=premium">
               <span class="setup-growth-icon" aria-hidden="true">💎</span>
-              <span><strong>Premium - $5/month</strong><small>All filters, instant rematching and no ads</small></span>
+              <span><strong data-i18n="growthPremiumTitle">Premium - coming soon</strong><small data-i18n="growthPremiumSub">All filters, instant rematching and no ads</small></span>
             </a>
             <button type="button" id="shareTalkLiveBtn" class="setup-growth-card setup-growth-share">
               <span class="setup-growth-icon" aria-hidden="true">↗</span>
@@ -558,8 +558,12 @@
           <p id="setupErrorText" class="error-text hidden" role="alert"></p>
         </div>
         <!-- Ad shown only on this pre-call screen; hidden with the whole
-             panel once a call or chat starts. -->
-        <div data-ad="leaderboard" style="margin:24px auto 0;text-align:center"></div>
+             panel once a call or chat starts. Framed like the rest of the UI
+             so a creative never reads as a pop-up over the app. -->
+        <div class="ad-card">
+          <span class="ad-card-label" data-i18n="sponsored">Sponsored</span>
+          <div data-ad="leaderboard"></div>
+        </div>
       </section>
 
       <!-- Account modal: optional account - just a username + password. Stored
@@ -1341,9 +1345,9 @@
        browser finish parsing and paint the page first. -->
   <script defer src="/socket.io/socket.io.js"></script>
   <script defer src="countries.js?v=20260704b"></script>
-  <script defer src="i18n.js?v=20260822ui"></script>
+  <script defer src="i18n.js?v=20260823ui"></script>
   <script defer src="moderation.js?v=20260705b"></script>
-  <script defer src="error-reporter.js?v=20260808a"></script>
+  <script defer src="error-reporter.js?v=20260823ui"></script>
   <script defer src="video-banner.js?v=20260808a"></script>
   <script>
     /* Banner music is fetched only after the visitor explicitly presses play. */
@@ -1376,7 +1380,7 @@
       audio.addEventListener('play', function () { setState(true); });
     })();
   </script>
-  <script defer src="app.js?v=20260808a"></script>
+  <script defer src="app.js?v=20260823ui"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

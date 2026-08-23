@@ -190,13 +190,6 @@ window.I18N_STRINGS.ko = {
   "premiumGenderLocked": "성별 필터는 프리미엄 기능입니다.",
   "premiumCountryLimit": "무료 플랜은 목록당 최대 {n}개 국가까지 가능합니다.",
   "premiumFriendLimit": "무료 플랜은 친구를 최대 {n}명까지 추가할 수 있습니다.",
-  "adUnlockCta": "🎁 광고 보고 잠금 해제",
-  "adUnlockExplain": "짧은 광고를 보면 모든 프리미엄 기능을 {m}분 동안 무료로 사용할 수 있습니다.",
-  "adUnlockBtn": "광고 보고 잠금 해제",
-  "adUnlockCounting": "광고 탭을 열어 두세요… {s}초",
-  "adUnlockSuccess": "🎉 프리미엄이 {m}분 동안 잠금 해제되었습니다!",
-  "adUnlockTooSoon": "너무 빨랐어요 - 광고를 조금 더 열어 둔 뒤 다시 시도하세요.",
-  "adUnlockFailed": "광고 시청을 확인할 수 없습니다. 다시 시도해 주세요.",
   "adPassExpired": "무료 프리미엄 시간이 끝났습니다. 광고를 한 번 더 보고 다시 잠금 해제하세요!",
   "adPassBadge": "⭐ 프리미엄 · {time}",
   "filtersAdUnlockText": "무료 플랜: 목록당 최대 3개 국가, 성별 필터 잠김. 짧은 광고 한 편이면 모든 기능이 5분간 무료로 열립니다."

@@ -7,12 +7,12 @@
 <script src="/loading.js"></script>
 <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
 <title>Pricing - TalkLive Premium</title>
-<meta name="description" content="TalkLive is free forever. TalkLive Premium unlocks all filters, unlimited friends, instant matching and an ad-free experience." />
+<meta name="description" content="TalkLive is free forever. TalkLive Premium - all filters, unlimited friends, instant matching and an ad-free experience - is coming soon." />
 <link rel="canonical" href="https://talklive.app/pricing" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="TalkLive" />
 <meta property="og:title" content="Pricing - TalkLive Premium" />
-<meta property="og:description" content="TalkLive is free forever. Upgrade to TalkLive Premium - now 50% off at $5/month - to unlock all filters, unlimited friends, instant matching and an ad-free experience." />
+<meta property="og:description" content="TalkLive is free forever. TalkLive Premium - all filters, unlimited friends, instant matching and an ad-free experience - is coming soon." />
 <meta property="og:url" content="https://talklive.app/pricing" />
 <meta property="og:image" content="https://talklive.app/og-image.png" />
 <meta property="og:image:width" content="1200" />
@@ -20,7 +20,7 @@
 <meta property="og:image:alt" content="TalkLive - free random voice chat with strangers worldwide" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Pricing - TalkLive Premium" />
-<meta name="twitter:description" content="TalkLive is free forever. Upgrade to TalkLive Premium - now 50% off at $5/month - to unlock all filters, unlimited friends, instant matching and an ad-free experience." />
+<meta name="twitter:description" content="TalkLive is free forever. TalkLive Premium - all filters, unlimited friends, instant matching and an ad-free experience - is coming soon." />
 <meta name="twitter:image" content="https://talklive.app/og-image.png" />
 <meta name="twitter:image:alt" content="TalkLive Premium pricing" />
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -54,28 +54,20 @@
   box-shadow: 0 8px 32px rgba(108, 92, 231, 0.16);
 }
 .plan.premium h2 { color: var(--accent-2, #0086b3); }
-.discount-flag {
+.soon-flag {
   display: inline-block;
   align-self: flex-start;
   margin-bottom: 6px;
-  background: rgba(255, 84, 112, 0.14);
-  color: #ff5470;
-  border: 1px solid rgba(255, 84, 112, 0.35);
+  background: rgba(108, 92, 231, 0.14);
+  color: #9b8cff;
+  border: 1px solid rgba(108, 92, 231, 0.35);
   font-size: 0.72rem;
   font-weight: 700;
   padding: 3px 10px;
   border-radius: 999px;
   letter-spacing: 0.02em;
 }
-.price-discounted { display: flex; align-items: baseline; gap: 12px; }
-.price-old {
-  color: var(--muted);
-  font-size: 1.5rem;
-  font-weight: 600;
-  text-decoration: line-through;
-  text-decoration-thickness: 2px;
-}
-.price-new { color: #17c964; }
+.price-soon { font-size: 1.7rem; color: #9b8cff; }
 .badge-popular {
   position: absolute;
   top: 0;
@@ -113,7 +105,7 @@
 .guarantee-note { text-align: center; color: var(--muted); font-size: 0.86rem; margin: -8px auto 30px; }
 .guarantee-note a { color: inherit; text-decoration: underline; }
 </style>
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebPage","name":"TalkLive Pricing","url":"https://talklive.app/pricing","description":"Current pricing and limits for free core matching and optional TalkLive Premium.","mainEntity":{"@type":"WebApplication","name":"TalkLive","url":"https://talklive.app/","applicationCategory":"CommunicationApplication","operatingSystem":"Any device with a modern web browser","offers":[{"@type":"Offer","name":"TalkLive Free","price":"0","priceCurrency":"USD","url":"https://talklive.app/","description":"Core random voice and text matching; free users wait about five seconds between calls."},{"@type":"Offer","name":"TalkLive Premium","price":"5","priceCurrency":"USD","url":"https://talklive.app/pricing","description":"Current promotional monthly price; standard price $10. Advanced filters, more friend capacity, no between-call wait and ad-free use."}]}},{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://talklive.app/"},{"@type":"ListItem","position":2,"name":"Pricing","item":"https://talklive.app/pricing"}]}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebPage","name":"TalkLive Pricing","url":"https://talklive.app/pricing","description":"Current limits for free core matching. TalkLive Premium is not yet available for purchase.","mainEntity":{"@type":"WebApplication","name":"TalkLive","url":"https://talklive.app/","applicationCategory":"CommunicationApplication","operatingSystem":"Any device with a modern web browser","offers":[{"@type":"Offer","name":"TalkLive Free","price":"0","priceCurrency":"USD","url":"https://talklive.app/","description":"Core random voice and text matching; free users wait about five seconds between calls."}]}},{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://talklive.app/"},{"@type":"ListItem","position":2,"name":"Pricing","item":"https://talklive.app/pricing"}]}]</script>
 </head>
 <body>
 <header class="page-header">
@@ -130,7 +122,7 @@
 <main class="page-main wide">
   <section class="pricing-hero">
     <h1>Simple, honest pricing</h1>
-    <p>Core matching is free. Subscribe to Premium for advanced filters, no between-call wait and an ad-free experience; cancel anytime under the Refund Policy.</p>
+    <p>Core matching is free, and it stays free. TalkLive Premium - advanced filters, no between-call wait and an ad-free experience - is still being built and is not on sale yet.</p>
   </section>
 
   <div id="premiumActiveNote" class="status-note ok" hidden>You already have TalkLive Premium - everything is unlocked. Enjoy!</div>
@@ -153,36 +145,33 @@
     </div>
 
     <div class="card plan premium">
-      <span class="badge-popular">BEST VALUE</span>
-      <span class="discount-flag">🔥 Limited offer · 50% OFF</span>
+      <span class="badge-popular">COMING SOON</span>
+      <span class="soon-flag">🚧 Not on sale yet</span>
       <h2>TalkLive Premium</h2>
-      <div class="price price-discounted">
-        <span class="price-old">$10</span>
-        <span class="price-new">$5</span>
-      </div>
-      <span class="per">per month · cancel anytime</span>
+      <div class="price price-soon">Coming soon</div>
+      <span class="per">pricing announced at launch</span>
       <ul>
         <li><strong>All filters unlocked</strong> - gender preference &amp; unlimited country lists</li>
         <li><strong>Unlimited friends</strong></li>
         <li><strong>Fast matching</strong> - no wait between calls</li>
         <li><strong>No ads</strong> - ever</li>
       </ul>
-      <button type="button" id="upgradeBtn" class="upgrade-btn">Join on Patreon - $5/month</button>
+      <button type="button" id="upgradeBtn" class="upgrade-btn" disabled>Coming soon</button>
     </div>
   </section>
 
-  <p class="guarantee-note">14-day money-back guarantee · Cancel anytime · See our <a href="/refund">Refund Policy</a></p>
+  <p class="guarantee-note">Premium is not available for purchase yet - nothing is being charged. Everything on TalkLive is free in the meantime.</p>
 
   <section class="faq">
     <h2>Frequently asked questions</h2>
-    <h3>How does billing work?</h3>
-    <p>With the current 50% offer your subscription renews monthly at $5 (normally $10) until you cancel. Checkout is handled by Patreon; TalkLive does not see your card details. Premium activation is manually confirmed after purchase, so use the same email address and contact support if it is not active within one business day.</p>
-    <h3>How do I cancel?</h3>
-    <p>Use the management link in the receipt email you get at purchase, or email <a href="mailto:info@talklive.app">info@talklive.app</a>. Premium stays active until the end of your paid month.</p>
-    <h3>Can I get a refund?</h3>
-    <p>Yes - your first payment is fully refundable within 14 days, no questions asked. See the full <a href="/refund">Refund Policy</a>.</p>
-    <h3>Does Premium work without an account?</h3>
-    <p>Yes. Premium is tied to your unique TalkLive ID in this browser (shown in Settings). Upgrade from the same browser/device you use to talk.</p>
+    <h3>When can I buy Premium?</h3>
+    <p>There is no date yet. Premium is not on sale, no payment method is connected, and nothing on TalkLive charges you today.</p>
+    <h3>What will it cost?</h3>
+    <p>Pricing will be published on this page before Premium goes on sale. Anything you may have seen earlier was a placeholder.</p>
+    <h3>Is the free plan changing?</h3>
+    <p>No. Free random voice and text matching stays free, with the limits listed above.</p>
+    <h3>Will Premium need an account?</h3>
+    <p>No. It will be tied to the unique TalkLive ID stored in your browser (shown in Settings), the same as everything else on the site.</p>
   </section>
 </main>
 
@@ -219,27 +208,20 @@
     return id;
   }
 
-  var PATREON_URL = 'https://www.patreon.com/16358676/join';
   var upgradeBtn = document.getElementById('upgradeBtn');
   var activeNote = document.getElementById('premiumActiveNote');
 
   function markActive() {
     activeNote.hidden = false;
     upgradeBtn.textContent = 'Premium active';
-    upgradeBtn.disabled = true;
   }
 
-  // Already premium? (Server is the source of truth.)
+  // Premium is not on sale yet, but manually granted accounts still exist,
+  // so the server stays the source of truth for who already has it.
   fetch('/premium-status?clientId=' + encodeURIComponent(getClientId()))
     .then(function (r) { return r.json(); })
     .then(function (d) { if (d && d.premium) markActive(); })
     .catch(function () {});
-
-  // Buying the plan sends the user to the TalkLive Patreon join page.
-  upgradeBtn.addEventListener('click', function () {
-    track('premium_checkout_click');
-    window.open(PATREON_URL, '_blank', 'noopener');
-  });
 })();
 </script>
 

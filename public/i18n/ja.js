@@ -190,13 +190,6 @@ window.I18N_STRINGS.ja = {
   "premiumGenderLocked": "性別フィルターはプレミアム機能です。",
   "premiumCountryLimit": "無料プランでは各リストに最大{n}か国まで登録できます。",
   "premiumFriendLimit": "無料プランでは友達は最大{n}人までです。",
-  "adUnlockCta": "🎁 広告を見てアンロック",
-  "adUnlockExplain": "短い広告を見ると、すべてのプレミアム機能を{m}分間無料でアンロックできます。",
-  "adUnlockBtn": "広告を見てアンロック",
-  "adUnlockCounting": "広告のタブを開いたままにしてください… {s}秒",
-  "adUnlockSuccess": "🎉 プレミアムを{m}分間アンロックしました！",
-  "adUnlockTooSoon": "早すぎました - 広告をもう少し長く開いたままにして、もう一度お試しください。",
-  "adUnlockFailed": "広告の視聴を確認できませんでした。もう一度お試しください。",
   "adPassExpired": "無料プレミアム時間が終了しました。もう一度広告を見てアンロックしましょう！",
   "adPassBadge": "⭐ プレミアム · {time}",
   "filtersAdUnlockText": "無料プラン：各リスト最大3か国、性別フィルターはロック中。短い広告を見るだけで、すべてを5分間無料でアンロックできます。"

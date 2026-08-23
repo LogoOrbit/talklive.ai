@@ -2352,7 +2352,7 @@ function buildLlmsTxt() {
 
 > TalkLive (${SITE}) is a browser-based random chat service for adults, offering one-to-one voice calls and text chat. Core matching is free and does not require an account. Voice uses encrypted WebRTC over a TURN relay in production and is not recorded or stored by TalkLive. Typed messages and related context may be retained for a limited rolling period as described in the Privacy Policy.
 
-Key facts: voice-only or text-only modes; optional country and interest preferences do not guarantee a specific match; free users wait about five seconds between calls; optional Premium is currently promoted at $5/month (standard price $10/month); no video chat; 18+ policy; leave, block and report controls. Participant identity, age, location and intent are not verified.
+Key facts: voice-only or text-only modes; optional country and interest preferences do not guarantee a specific match; free users wait about five seconds between calls; optional Premium is announced but not yet available for purchase; no video chat; 18+ policy; leave, block and report controls. Participant identity, age, location and intent are not verified.
 
 ## Main pages
 - [TalkLive app](${SITE}/): Start a random voice or text chat instantly.

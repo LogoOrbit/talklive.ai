@@ -40,6 +40,14 @@
     '160x600': { key: '20e9abfee215ecab6c128da50698bb01', w: 160, h: 600 },
   };
 
+  // An unfilled slot is hidden along with the card that frames it, so a
+  // "Sponsored" label is never left sitting above an empty box.
+  function hideSlot(el) {
+    el.style.display = 'none';
+    var card = el.closest && el.closest('.ad-card');
+    if (card) card.style.display = 'none';
+  }
+
   // True once the tag has put something in the frame. A cross-origin document
   // means a creative already took the frame over, which also counts as filled.
   function isFilled(frame) {
@@ -68,7 +76,7 @@
     frame.title = 'Advertisement';
     el.appendChild(frame);
     var doc = frame.contentWindow && frame.contentWindow.document;
-    if (!doc) { el.style.display = 'none'; return; }
+    if (!doc) { hideSlot(el); return; }
     doc.open();
     doc.write(
       '<!DOCTYPE html><html><head><base target="_top"></head>' +
@@ -92,7 +100,7 @@
       el.removeChild(frame);
       var next = (hostIndex || 0) + 1;
       if (next < HOSTS.length) banner(el, size, next);
-      else el.style.display = 'none';
+      else hideSlot(el);
     }, 1500);
   }
 
@@ -119,7 +127,7 @@
         el.removeChild(s);
         native(el, next);
       } else {
-        el.style.display = 'none';
+        hideSlot(el);
       }
     }, 1500);
   }

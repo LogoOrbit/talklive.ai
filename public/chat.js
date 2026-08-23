@@ -248,6 +248,16 @@
     goSearch(true);
   });
 
+  // Tapping the brand restarts the page. The href alone is a same-URL
+  // navigation, which some browsers turn into a no-op once a chat is running.
+  var brandHome = document.getElementById('brandHome');
+  if (brandHome) {
+    brandHome.addEventListener('click', function (e) {
+      e.preventDefault();
+      location.reload();
+    });
+  }
+
   startBtn.addEventListener('click', function () { vibrate(10); initAudio(); requestStart(); });
   cancelBtn.addEventListener('click', function () {
     socket.emit('leave');
