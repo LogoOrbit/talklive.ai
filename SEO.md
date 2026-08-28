@@ -136,8 +136,34 @@ regenerate their output any more, though the pages ship and Google crawls them.
 `scripts/migrate-schema.js` therefore runs as part of `build:seo` and completes
 the offer fields in every `public/**/*.html`, filling only what is missing and
 rewriting only files that changed. It is idempotent: on a correct site it
-reports `0 HTML files`. Reviving those three generators is the real fix and is
-still open work.
+reports `0 HTML files`.
+
+### Do not "fix" the orphaned generators by wiring them back in
+
+The obvious next move - `PAGES.concat(require('./geo-pages').GEO_PAGES, ...)` -
+looks right and is destructive. It was tried and measured, and the output was
+thrown away:
+
+- The renderer that produced the geo pages is **not** the current `pageHtml`.
+  Regenerating `countries/india.html` drops it from 32,282 to 25,068 bytes and
+  loses 14% of its visible text; city and language pages lose ~18%.
+- What disappears is the site furniture, not filler: the **visible breadcrumb
+  trail**, the entire **footer link graph** (chat-by-country, chat-by-city, the
+  40-odd landing page links, the 17-language switcher) and the city
+  cross-links. Losing the visible breadcrumbs while keeping `BreadcrumbList` in
+  the JSON-LD creates exactly the markup/no-markup mismatch the section above
+  says we emit breadcrumbs twice to avoid, and `audit-seo.js` counts 18,590
+  internal links that this would gut across 177 pages.
+- The hub entries also write to `public/countries/.html` rather than
+  `countries/index.html`, so the slug convention has drifted too.
+
+So the page descriptors in `geo-pages.js` and the HTML on disk are a
+generation apart. Reviving them means first bringing `pageHtml` up to the
+template those pages were actually built with - a real piece of work with 177
+pages of regression surface, not a one-line `concat`. Until someone does that,
+the files on disk are the source of truth for the geo cluster and
+`migrate-schema.js` is how sitewide schema changes reach them. `pages-extra2.js`
+and `blog-extra2.js` are the same situation and were not measured separately.
 
 ### Removed: fabricated review ratings
 

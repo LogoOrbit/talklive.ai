@@ -12,11 +12,18 @@
  * (index.html, pricing.html) carry the same app node and are outside the
  * builder by design.
  *
- * Rather than reviving three dead generators or hand-patching 246 files, this
- * sweeps the built output the way scripts/migrate-adsterra.js does: parse each
- * ld+json block, fill in only what is missing, and rewrite the file only if
- * something actually changed. It is idempotent, so it stays quiet once the
- * site is correct and catches any page that regresses later.
+ * Rather than hand-patching 246 files, this sweeps the built output the way
+ * scripts/migrate-adsterra.js does: parse each ld+json block, fill in only
+ * what is missing, and rewrite the file only if something actually changed. It
+ * is idempotent, so it stays quiet once the site is correct and catches any
+ * page that regresses later.
+ *
+ * Wiring those three generators back into build-seo.js is NOT the shortcut it
+ * looks like. It was tried and measured: the current pageHtml is a generation
+ * behind the template those pages were built with, and regenerating strips the
+ * visible breadcrumbs, the whole footer link graph and the city cross-links
+ * from 177 pages. See "Do not 'fix' the orphaned generators" in SEO.md before
+ * touching it.
  *
  * What gets added, and why those values are honest rather than invented, is
  * documented in scripts/data/commerce.js.
