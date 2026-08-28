@@ -1,1066 +1,1362 @@
 {
   "/": {
-    "hash": "630548f2776dda2e",
-    "date": "2026-08-14"
+    "hash": "55a867360ebf445f",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/about": {
-    "hash": "9fb0748fc8db83f8",
-    "date": "2026-08-14"
+    "hash": "529adcc36c14ce0e",
+    "date": "2026-08-14",
+    "v": 2
+  },
+  "/alternatives": {
+    "hash": "251a86578dcce568",
+    "date": "2026-08-28",
+    "v": 2
   },
   "/anonymous-chat": {
-    "hash": "accc94f484f525b2",
-    "date": "2026-08-14"
+    "hash": "e869e42d37ca8415",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/ar/": {
-    "hash": "651b88208904a2f0",
-    "date": "2026-08-14"
+    "hash": "5b831c8ffdb28008",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/azar-alternative": {
-    "hash": "6e50f7b730357291",
-    "date": "2026-08-14"
+    "hash": "662648bc9d1df9e5",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/blog/": {
-    "hash": "fc2ea59f6ea93c21",
-    "date": "2026-08-14"
+    "hash": "a595879b380e1f92",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/blog/best-omegle-alternatives": {
-    "hash": "0e0872777c3ae2c2",
-    "date": "2026-08-14"
+    "hash": "0b185e6acf663a96",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/blog/best-random-chat-apps-2026": {
-    "hash": "a6173b3492ba11c2",
-    "date": "2026-08-14"
+    "hash": "c9e3f5f4b14a1d69",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/blog/best-time-to-use-random-chat": {
-    "hash": "99b96924f7c71044",
-    "date": "2026-08-14"
+    "hash": "81056ea0a55a6bfd",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/blog/first-conversation-mistakes": {
-    "hash": "5709d3f99ee1c688",
-    "date": "2026-08-14"
+    "hash": "f5fb7ffd322f0f8a",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/blog/how-anonymous-voice-chat-works": {
-    "hash": "fcaffd21e7c09fef",
-    "date": "2026-08-14"
+    "hash": "e9b7aeaafbf2a75c",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/blog/how-random-matchmaking-works": {
-    "hash": "4b940184c17ec57b",
-    "date": "2026-08-14"
+    "hash": "e05ccb9a12d6fad4",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/blog/how-to-end-a-conversation-politely": {
-    "hash": "dad72b88009cea35",
-    "date": "2026-08-14"
+    "hash": "bc113b76bec76383",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/blog/how-to-make-friends-online": {
-    "hash": "cc2089fcc1e6c862",
-    "date": "2026-08-14"
+    "hash": "0bc01cfff65c911a",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/blog/how-to-practise-a-language-by-speaking": {
-    "hash": "8431a2e7774dbe2a",
-    "date": "2026-08-14"
+    "hash": "404a9f5b2ad00ee0",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/blog/how-to-start-a-conversation-with-a-stranger": {
-    "hash": "0eeccbd0f01d5635",
-    "date": "2026-08-14"
+    "hash": "e9433bebeb9a4bd3",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/blog/is-random-chat-legal-and-safe-for-adults": {
-    "hash": "a718f77561354be1",
-    "date": "2026-08-14"
+    "hash": "94289255241ec41f",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/blog/is-talklive-safe": {
-    "hash": "43bd84f26f96f984",
-    "date": "2026-08-14"
+    "hash": "ae8e822d3e8a3223",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/blog/loneliness-what-actually-helps": {
-    "hash": "b0ea16069bb91fdf",
-    "date": "2026-08-14"
+    "hash": "bfe26d719bcd53fd",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/blog/phone-anxiety-how-to-get-comfortable-talking": {
-    "hash": "931c949e08ed198c",
-    "date": "2026-08-14"
+    "hash": "c875872250fd8c4e",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/blog/practice-english-speaking-online-free": {
-    "hash": "5aaf597cf8341140",
-    "date": "2026-08-14"
+    "hash": "2a7ad4d88639b45a",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/blog/psychological-benefits-of-talking-to-strangers": {
-    "hash": "c8150cda64fad70b",
-    "date": "2026-08-14"
+    "hash": "0999a7d44b01f221",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/blog/random-chat-safety-tips": {
-    "hash": "8e22ea4b95d62ecb",
-    "date": "2026-08-14"
+    "hash": "67f94d3d6d1d8d05",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/blog/science-of-talking-to-strangers": {
-    "hash": "79d8a2c68669b890",
-    "date": "2026-08-14"
+    "hash": "98b0c936ef8a299f",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/blog/someone-to-talk-to-at-3am": {
-    "hash": "48438848ef804e00",
-    "date": "2026-08-14"
+    "hash": "05c8e1ffdfaafb5b",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/blog/voice-chat-vs-video-chat": {
-    "hash": "3f5f80574b40dffc",
-    "date": "2026-08-14"
+    "hash": "fe9eb6872630f623",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/blog/what-happened-to-omegle": {
-    "hash": "8931b35e52857551",
-    "date": "2026-08-14"
+    "hash": "2663083bf365a652",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/blog/why-talking-to-strangers-feels-easier": {
-    "hash": "11f2c317e5607736",
-    "date": "2026-08-14"
+    "hash": "c367a99b391d9a58",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/bn/": {
-    "hash": "d429690c2db0571b",
-    "date": "2026-08-14"
+    "hash": "37d73c57b9693083",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/call-random-people": {
-    "hash": "6ddd6d30c58b0428",
-    "date": "2026-08-14"
+    "hash": "a0367954a910bd16",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/camsurf-alternative": {
-    "hash": "80c8dc7b14460526",
-    "date": "2026-08-14"
+    "hash": "62c5c768dc781860",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cant-sleep": {
-    "hash": "1cf118e50419cab9",
-    "date": "2026-08-14"
+    "hash": "6ed65319ac3a8a16",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/chat-without-registration": {
-    "hash": "3c529bf36ccf114b",
-    "date": "2026-08-14"
+    "hash": "9892b1a3f8a0a1c5",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/chathub-alternative": {
-    "hash": "86b090eecd1aee48",
-    "date": "2026-08-14"
+    "hash": "790cc7e7e5b86b2c",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/chatroulette-alternative": {
-    "hash": "170d4700e4cd2436",
-    "date": "2026-08-14"
+    "hash": "dd1bdb10a4ea18f1",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/chatspin-alternative": {
-    "hash": "46dafce5a6dc2080",
-    "date": "2026-08-14"
+    "hash": "5604ec0d7bd038a6",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/": {
-    "hash": "85f296b189bf5557",
-    "date": "2026-08-14"
+    "hash": "bfc316e4e5a55608",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/abu-dhabi": {
-    "hash": "5196d01aeb64ffa3",
-    "date": "2026-08-14"
+    "hash": "66650a021f8a6077",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/abuja": {
-    "hash": "939fe776b3f18565",
-    "date": "2026-08-14"
+    "hash": "431fed973d751f91",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/alexandria": {
-    "hash": "49474d0849f58e41",
-    "date": "2026-08-14"
+    "hash": "0e41cd1ad34418d5",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/amsterdam": {
-    "hash": "b50740bdcda459aa",
-    "date": "2026-08-14"
+    "hash": "f90ec17af2aec4ac",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/ankara": {
-    "hash": "a529dca05b4a792a",
-    "date": "2026-08-14"
+    "hash": "34316f96843258d0",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/athens": {
-    "hash": "b40845e0a92d3160",
-    "date": "2026-08-14"
+    "hash": "6d90672592107a28",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/auckland": {
-    "hash": "1279dafa3cb90168",
-    "date": "2026-08-14"
+    "hash": "c361237dba5179e9",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/bandung": {
-    "hash": "3bebfa470d9e7d69",
-    "date": "2026-08-14"
+    "hash": "6c3c1a701d3d4b74",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/bangalore": {
-    "hash": "c381e8732cb7d3a9",
-    "date": "2026-08-14"
+    "hash": "12393e394ba530b1",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/bangkok": {
-    "hash": "16a5925982beec9a",
-    "date": "2026-08-14"
+    "hash": "d4f422bc08bd1fbc",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/barcelona": {
-    "hash": "c8f5e69bd69d6d22",
-    "date": "2026-08-14"
+    "hash": "7e12d93da9dc234a",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/beijing": {
-    "hash": "3efda8b9ab08a208",
-    "date": "2026-08-14"
+    "hash": "8a01757a71c3f9fb",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/belo-horizonte": {
-    "hash": "3e406dab6796b773",
-    "date": "2026-08-14"
+    "hash": "de40eaa6e889161d",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/bergen": {
-    "hash": "5e01923d5dd3007f",
-    "date": "2026-08-14"
+    "hash": "0888977cadae33d5",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/berlin": {
-    "hash": "51f6b32a112882e6",
-    "date": "2026-08-14"
+    "hash": "f0d806593074a085",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/birmingham": {
-    "hash": "7cea34ccee8c91c5",
-    "date": "2026-08-14"
+    "hash": "479b20f3d3657631",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/bogota": {
-    "hash": "bb5878dd5cc2be18",
-    "date": "2026-08-14"
+    "hash": "b2be3d9a2bd4a233",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/bucharest": {
-    "hash": "3fca699de6aa003c",
-    "date": "2026-08-14"
+    "hash": "54631927dfc4a0a2",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/buenos-aires": {
-    "hash": "219d029d0ba9c6a5",
-    "date": "2026-08-14"
+    "hash": "6e2faad42f1d510e",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/busan": {
-    "hash": "ce16375521a0c935",
-    "date": "2026-08-14"
+    "hash": "b586c97266090383",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/cairo": {
-    "hash": "9c4ccae39602936f",
-    "date": "2026-08-14"
+    "hash": "48d1f584bab5a72d",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/cape-town": {
-    "hash": "63fb7ba2d379befc",
-    "date": "2026-08-14"
+    "hash": "a22ff2d7571b7141",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/casablanca": {
-    "hash": "0844a0f7dc088a09",
-    "date": "2026-08-14"
+    "hash": "04658da4bbbf37f4",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/cebu-city": {
-    "hash": "1331864450e0b359",
-    "date": "2026-08-14"
+    "hash": "4ad999a513226416",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/chennai": {
-    "hash": "eaa091baf88369e3",
-    "date": "2026-08-14"
+    "hash": "35738ffb9febd0de",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/chiang-mai": {
-    "hash": "47e77e57f4987231",
-    "date": "2026-08-14"
+    "hash": "5ec5072f98c0bf11",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/chicago": {
-    "hash": "ddd47c66b16a41d2",
-    "date": "2026-08-14"
+    "hash": "81b72966f348dab7",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/chittagong": {
-    "hash": "34ec9a248844ade6",
-    "date": "2026-08-14"
+    "hash": "f8cb98d3ba27acfc",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/cluj-napoca": {
-    "hash": "2b2ddf81bb03cf48",
-    "date": "2026-08-14"
+    "hash": "273d34352a426224",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/cologne": {
-    "hash": "42fd2c856bcacfe9",
-    "date": "2026-08-14"
+    "hash": "f7a3104ce855c6cf",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/cordoba": {
-    "hash": "02b8b876aef73007",
-    "date": "2026-08-14"
+    "hash": "165350d4d495f943",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/cork": {
-    "hash": "b1150da521f83681",
-    "date": "2026-08-14"
+    "hash": "e7743372c81cf811",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/davao": {
-    "hash": "c536d867c20d5a78",
-    "date": "2026-08-14"
+    "hash": "c66235c4dd60a46a",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/delhi": {
-    "hash": "f6f899b8855a9d13",
-    "date": "2026-08-14"
+    "hash": "1cdad52e5fcf06c3",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/dhaka": {
-    "hash": "b366418b818ec999",
-    "date": "2026-08-14"
+    "hash": "ab0a8c55e85895b2",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/dubai": {
-    "hash": "d6189ceded009bd8",
-    "date": "2026-08-14"
+    "hash": "22187249a5beb846",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/dublin": {
-    "hash": "d37e3c8d73c036e5",
-    "date": "2026-08-14"
+    "hash": "e1eeb9f0ee856ec6",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/faisalabad": {
-    "hash": "75da35df358506a8",
-    "date": "2026-08-14"
+    "hash": "cb4020544d76cad6",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/glasgow": {
-    "hash": "76ba422ce06392d8",
-    "date": "2026-08-14"
+    "hash": "2bef94d6326dbfc4",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/gothenburg": {
-    "hash": "c49fee0a0bdf548e",
-    "date": "2026-08-14"
+    "hash": "a3d896bf1da65b1d",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/guadalajara": {
-    "hash": "f641780c31630fe6",
-    "date": "2026-08-14"
+    "hash": "fee20f9ec79e8a9c",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/haifa": {
-    "hash": "45140d4044ee2e5c",
-    "date": "2026-08-14"
+    "hash": "9c5d52882b533deb",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/hamburg": {
-    "hash": "14f48a95361c0100",
-    "date": "2026-08-14"
+    "hash": "ab0106bacfaea6e1",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/hanoi": {
-    "hash": "91891b99860fee8c",
-    "date": "2026-08-14"
+    "hash": "1352cd73aa4522e4",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/ho-chi-minh-city": {
-    "hash": "1f4778961ae35111",
-    "date": "2026-08-14"
+    "hash": "2c2890d396c436d2",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/houston": {
-    "hash": "ababf2bd01598ad5",
-    "date": "2026-08-14"
+    "hash": "7c4b581f3993d01b",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/hyderabad": {
-    "hash": "0b5525acd420a4cf",
-    "date": "2026-08-14"
+    "hash": "7905fa6a5094c1fb",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/islamabad": {
-    "hash": "8d1c4145c33eaecf",
-    "date": "2026-08-14"
+    "hash": "926beaae3fdd6c5e",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/istanbul": {
-    "hash": "1918345b4a453ed4",
-    "date": "2026-08-14"
+    "hash": "bf21ad52e9cbc475",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/izmir": {
-    "hash": "fe8f236ee5592a01",
-    "date": "2026-08-14"
+    "hash": "592342d98e5febbe",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/jakarta": {
-    "hash": "d7fe107d97cef212",
-    "date": "2026-08-14"
+    "hash": "03e75f8728b6a579",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/jeddah": {
-    "hash": "05613faa0cfba382",
-    "date": "2026-08-14"
+    "hash": "825db726fb845335",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/johannesburg": {
-    "hash": "b6eb542743b08bb2",
-    "date": "2026-08-14"
+    "hash": "978e93929bab6a82",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/karachi": {
-    "hash": "d710500bf3012c17",
-    "date": "2026-08-14"
+    "hash": "378360ec6d315712",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/kolkata": {
-    "hash": "ff28476439c75b62",
-    "date": "2026-08-14"
+    "hash": "ac969bdfe1fc7c54",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/krakow": {
-    "hash": "d0637aa8a3a24f49",
-    "date": "2026-08-14"
+    "hash": "29633fa42bcb8e93",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/kuala-lumpur": {
-    "hash": "0fa9bf5c564527cc",
-    "date": "2026-08-14"
+    "hash": "b991fe2277202a30",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/kyiv": {
-    "hash": "cb4881fb00591ff6",
-    "date": "2026-08-14"
+    "hash": "36740f597c893484",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/lagos": {
-    "hash": "57b24db37011b180",
-    "date": "2026-08-14"
+    "hash": "b106632154853066",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/lahore": {
-    "hash": "a774eac53935775f",
-    "date": "2026-08-14"
+    "hash": "15da10f33d09c4a9",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/lisbon": {
-    "hash": "405f32ae63e7dd0e",
-    "date": "2026-08-14"
+    "hash": "1a9c7adfe5df9bfa",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/london": {
-    "hash": "b8d836e04439c7fb",
-    "date": "2026-08-14"
+    "hash": "45dda9c4f5ab8797",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/los-angeles": {
-    "hash": "ecc104ec40ddc9ed",
-    "date": "2026-08-14"
+    "hash": "a4ad5e214502dca9",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/lviv": {
-    "hash": "7ee76b772c4e015d",
-    "date": "2026-08-14"
+    "hash": "ac69141a10c1f49f",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/lyon": {
-    "hash": "534d349b20eadadf",
-    "date": "2026-08-14"
+    "hash": "0788eb2af75d39f5",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/madrid": {
-    "hash": "c29f759c980185ba",
-    "date": "2026-08-14"
+    "hash": "80ad082a55cc62f4",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/manchester": {
-    "hash": "b5de237167644d5f",
-    "date": "2026-08-14"
+    "hash": "b20973f34c383103",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/manila": {
-    "hash": "abc954e07a732438",
-    "date": "2026-08-14"
+    "hash": "29671aef5cbb0ebe",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/marrakesh": {
-    "hash": "674c448ad31e0e92",
-    "date": "2026-08-14"
+    "hash": "a7e67b0df58f0d4d",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/marseille": {
-    "hash": "8126b6844b42936e",
-    "date": "2026-08-14"
+    "hash": "40689a8838ce063e",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/mashhad": {
-    "hash": "23922261b27e53e2",
-    "date": "2026-08-14"
+    "hash": "1b7668f91c75c609",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/medellin": {
-    "hash": "b9ac20d6bcd85822",
-    "date": "2026-08-14"
+    "hash": "4a2caaf302a3119c",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/melbourne": {
-    "hash": "0874ea46d6d36e49",
-    "date": "2026-08-14"
+    "hash": "f2a44600d4e121f2",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/mexico-city": {
-    "hash": "2333589d80499d28",
-    "date": "2026-08-14"
+    "hash": "23596400034afd3a",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/miami": {
-    "hash": "44f71bd7d809d151",
-    "date": "2026-08-14"
+    "hash": "b475e18d9eae5d77",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/milan": {
-    "hash": "b0120b24ccf31d3c",
-    "date": "2026-08-14"
+    "hash": "0a316f1a7582f617",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/mombasa": {
-    "hash": "0069b591b36e7ef1",
-    "date": "2026-08-14"
+    "hash": "80c8550d3a9178c9",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/monterrey": {
-    "hash": "213073714bdbf181",
-    "date": "2026-08-14"
+    "hash": "c1d47d214327bf04",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/montreal": {
-    "hash": "28fc91e495394dc9",
-    "date": "2026-08-14"
+    "hash": "7d742adf08cc9add",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/moscow": {
-    "hash": "9052ce5f4cbae2c5",
-    "date": "2026-08-14"
+    "hash": "1670a07cc75a52a8",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/mumbai": {
-    "hash": "c15c9f42881b3dee",
-    "date": "2026-08-14"
+    "hash": "e0c47db9b41e37f7",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/munich": {
-    "hash": "12b4077866888287",
-    "date": "2026-08-14"
+    "hash": "541f49c43d4ffc23",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/nairobi": {
-    "hash": "1b3bcd5e436101da",
-    "date": "2026-08-14"
+    "hash": "b2e86b41e06b3460",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/naples": {
-    "hash": "904f2e21b11160f9",
-    "date": "2026-08-14"
+    "hash": "4f53e14fd01fab7d",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/new-york": {
-    "hash": "b8ee0b4040ef5240",
-    "date": "2026-08-14"
+    "hash": "610a76caaf716a98",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/novosibirsk": {
-    "hash": "bb9c5f52c527aa28",
-    "date": "2026-08-14"
+    "hash": "171ca860e63bc365",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/osaka": {
-    "hash": "9e33871add01e668",
-    "date": "2026-08-14"
+    "hash": "c864c36cec93266a",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/oslo": {
-    "hash": "fa7e1676494ee8b3",
-    "date": "2026-08-14"
+    "hash": "7b5f1155e9edd5e8",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/paris": {
-    "hash": "016ef4fc80874b79",
-    "date": "2026-08-14"
+    "hash": "542c383e3cfb91a4",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/penang": {
-    "hash": "a00316e95266d1fc",
-    "date": "2026-08-14"
+    "hash": "7167787ab441b4cf",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/perth": {
-    "hash": "67be309ee306aa98",
-    "date": "2026-08-14"
+    "hash": "d161510cae7c730a",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/porto": {
-    "hash": "216051a4c8ede04f",
-    "date": "2026-08-14"
+    "hash": "ad60aa91147859bb",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/rio-de-janeiro": {
-    "hash": "240f3294ce64a0b4",
-    "date": "2026-08-14"
+    "hash": "d04f8c6a59578bb6",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/riyadh": {
-    "hash": "bbc6200102dd2899",
-    "date": "2026-08-14"
+    "hash": "8060b6b4db6a0ed1",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/rome": {
-    "hash": "46a4e30af8acea4f",
-    "date": "2026-08-14"
+    "hash": "5c256a4830d38c81",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/rotterdam": {
-    "hash": "7c6fcda07e647adf",
-    "date": "2026-08-14"
+    "hash": "9efadc64f6e91450",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/saint-petersburg": {
-    "hash": "db312bb5433490fa",
-    "date": "2026-08-14"
+    "hash": "4275191d757d7bf1",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/sao-paulo": {
-    "hash": "b7775702ea6d7ed1",
-    "date": "2026-08-14"
+    "hash": "a49e7596fa5a053e",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/seoul": {
-    "hash": "dacfc928672be5e6",
-    "date": "2026-08-14"
+    "hash": "45fa6f97d7903acc",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/shanghai": {
-    "hash": "4d113dfce269f860",
-    "date": "2026-08-14"
+    "hash": "5131fddcb3746deb",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/singapore-city": {
-    "hash": "44c46acaec00f39e",
-    "date": "2026-08-14"
+    "hash": "12b34a7190ebd82c",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/stockholm": {
-    "hash": "3d450f4b07aaaeaa",
-    "date": "2026-08-14"
+    "hash": "101db5b9bc8647e8",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/surabaya": {
-    "hash": "b5d2cd61f7772363",
-    "date": "2026-08-14"
+    "hash": "21683ee8c70d0e05",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/sydney": {
-    "hash": "0ee417eb56dad781",
-    "date": "2026-08-14"
+    "hash": "10c526d25b7a4277",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/tehran": {
-    "hash": "5772deba57c73fce",
-    "date": "2026-08-14"
+    "hash": "6acdbfa48403dc3e",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/tel-aviv": {
-    "hash": "c471e2efe4e0e025",
-    "date": "2026-08-14"
+    "hash": "1a2d7ac4f102dac4",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/thessaloniki": {
-    "hash": "fc1b793f3f58c194",
-    "date": "2026-08-14"
+    "hash": "174b6d5f70175c53",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/tokyo": {
-    "hash": "1ea98ea8ddabd15d",
-    "date": "2026-08-14"
+    "hash": "10108ed14f45ab1e",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/toronto": {
-    "hash": "b97514c2e82872f9",
-    "date": "2026-08-14"
+    "hash": "c1e5efaf5e9f83af",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/valencia": {
-    "hash": "bb43b63d548d9e7e",
-    "date": "2026-08-14"
+    "hash": "28109c714bc85b49",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/vancouver": {
-    "hash": "26ee96233a2b3376",
-    "date": "2026-08-14"
+    "hash": "bbb92fb6e2bd1dc5",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/warsaw": {
-    "hash": "48cd0822398ebaa6",
-    "date": "2026-08-14"
+    "hash": "bfcbc2ac8c6e8a18",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/cities/wellington": {
-    "hash": "ea9904bb2774e50a",
-    "date": "2026-08-14"
+    "hash": "cb8a434cd1a8f89c",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/contact": {
-    "hash": "d38686489a8920d4",
-    "date": "2026-08-14"
+    "hash": "1adc10dfd146b013",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/": {
-    "hash": "e68a0d7516639f17",
-    "date": "2026-08-14"
+    "hash": "8a298cdb28dcc9bc",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/argentina": {
-    "hash": "6f8424de84d47198",
-    "date": "2026-08-14"
+    "hash": "ee3f46850d01809b",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/australia": {
-    "hash": "ecdf7205b23b28e4",
-    "date": "2026-08-14"
+    "hash": "0e843582a23b2456",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/bangladesh": {
-    "hash": "1925087c2a877acb",
-    "date": "2026-08-14"
+    "hash": "e3b056b967bd637f",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/brazil": {
-    "hash": "02c00337aaf41191",
-    "date": "2026-08-14"
+    "hash": "b1971a4dea6d35cd",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/canada": {
-    "hash": "6cdf32d12f5e83d1",
-    "date": "2026-08-14"
+    "hash": "1dfd81fe1f2e6997",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/china": {
-    "hash": "ea14d11c8110a15c",
-    "date": "2026-08-14"
+    "hash": "929fc54f047faff2",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/colombia": {
-    "hash": "5996a042a6dd1c12",
-    "date": "2026-08-14"
+    "hash": "b909cb8fbdda2c69",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/egypt": {
-    "hash": "ebf913954fd283fe",
-    "date": "2026-08-14"
+    "hash": "d85be1e0882805f5",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/france": {
-    "hash": "a7a7319d89ce967d",
-    "date": "2026-08-14"
+    "hash": "27b0b5aaaff2c0ff",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/germany": {
-    "hash": "7142bbbcea9a33d2",
-    "date": "2026-08-14"
+    "hash": "73a687f673480c6f",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/greece": {
-    "hash": "ddfdefc587da9c93",
-    "date": "2026-08-14"
+    "hash": "bdbd9dd175c0375b",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/india": {
-    "hash": "904bae3c15233024",
-    "date": "2026-08-14"
+    "hash": "95e6350debd4310a",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/indonesia": {
-    "hash": "f2171bdaeb1cf8f8",
-    "date": "2026-08-14"
+    "hash": "f529af1ed1b032f8",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/iran": {
-    "hash": "3672e45295e9ca4e",
-    "date": "2026-08-14"
+    "hash": "9ae958998c66a07c",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/ireland": {
-    "hash": "b32803bd71cb983e",
-    "date": "2026-08-14"
+    "hash": "c1948b0e29d2610b",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/israel": {
-    "hash": "944a580126be1e34",
-    "date": "2026-08-14"
+    "hash": "8e08cb7ce315aaa1",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/italy": {
-    "hash": "9a48e271ea5dade7",
-    "date": "2026-08-14"
+    "hash": "8835f1f0939e26f2",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/japan": {
-    "hash": "87e298a19f79640f",
-    "date": "2026-08-14"
+    "hash": "4d4289e76a6a5e60",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/kenya": {
-    "hash": "08a81af2a51089da",
-    "date": "2026-08-14"
+    "hash": "4b0e800e1af4e5d6",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/malaysia": {
-    "hash": "d97ff05de57cb7e4",
-    "date": "2026-08-14"
+    "hash": "70bd531fee572abe",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/mexico": {
-    "hash": "945f3a50abeb81d8",
-    "date": "2026-08-14"
+    "hash": "86a10286658e3b66",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/morocco": {
-    "hash": "bd3801e4ef5f9763",
-    "date": "2026-08-14"
+    "hash": "a45f4d656bee3d63",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/netherlands": {
-    "hash": "63a8ac9d05f0d090",
-    "date": "2026-08-14"
+    "hash": "b814b6171d01ddf1",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/new-zealand": {
-    "hash": "3ed109d09c5d3a18",
-    "date": "2026-08-14"
+    "hash": "72b3923890862e33",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/nigeria": {
-    "hash": "28319b906f179d1b",
-    "date": "2026-08-14"
+    "hash": "7228e9d9973eed5e",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/norway": {
-    "hash": "2e1964bca3650a17",
-    "date": "2026-08-14"
+    "hash": "ca1aa706e41496cb",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/pakistan": {
-    "hash": "ad80a8b92dcf3700",
-    "date": "2026-08-14"
+    "hash": "00b523360f91ea5a",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/philippines": {
-    "hash": "85c62c7e4713ec67",
-    "date": "2026-08-14"
+    "hash": "b77e581f3d3bda9a",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/poland": {
-    "hash": "f613c93d3fad3e69",
-    "date": "2026-08-14"
+    "hash": "7268fffab4895992",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/portugal": {
-    "hash": "b326e4a2302a8bbc",
-    "date": "2026-08-14"
+    "hash": "3843238cafb833b4",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/romania": {
-    "hash": "65eac7c977ef8644",
-    "date": "2026-08-14"
+    "hash": "26b3b202274b22d0",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/russia": {
-    "hash": "93ee3e4f7f947d18",
-    "date": "2026-08-14"
+    "hash": "e5f0874001cd2985",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/saudi-arabia": {
-    "hash": "b9a2cf5c48074c1e",
-    "date": "2026-08-14"
+    "hash": "7b581fc9013dfd4c",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/singapore": {
-    "hash": "f45cc4c1e6569cd0",
-    "date": "2026-08-14"
+    "hash": "20b21703513fff04",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/south-africa": {
-    "hash": "b336aae36446534a",
-    "date": "2026-08-14"
+    "hash": "3ac0b8a84548e3e3",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/south-korea": {
-    "hash": "0a0ad52f6abae618",
-    "date": "2026-08-14"
+    "hash": "666fcda2cee241fa",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/spain": {
-    "hash": "3aa10a0c7ac1324e",
-    "date": "2026-08-14"
+    "hash": "c6e14a29b3345443",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/sweden": {
-    "hash": "36857fbf31037179",
-    "date": "2026-08-14"
+    "hash": "0ff08c00c4b6fd06",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/thailand": {
-    "hash": "6150e0b1e1863e75",
-    "date": "2026-08-14"
+    "hash": "297d273ebfddd7d5",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/turkey": {
-    "hash": "33fd08f9d28f5cf1",
-    "date": "2026-08-14"
+    "hash": "ecd62fd683e1cf92",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/ukraine": {
-    "hash": "ea078fae6bb7d9cd",
-    "date": "2026-08-14"
+    "hash": "b69435c2c6b0f477",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/united-arab-emirates": {
-    "hash": "b5586606d723305a",
-    "date": "2026-08-14"
+    "hash": "605a14db02dad2be",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/united-kingdom": {
-    "hash": "9705353f7f1579bf",
-    "date": "2026-08-14"
+    "hash": "240ab1a34277e706",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/united-states": {
-    "hash": "333f44169e550b64",
-    "date": "2026-08-14"
+    "hash": "f8b8a1118b9fbb21",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/countries/vietnam": {
-    "hash": "19dc8b36f468cac3",
-    "date": "2026-08-14"
+    "hash": "bd34e92773d2928c",
+    "date": "2026-08-14",
+    "v": 2
+  },
+  "/country-chat-guide": {
+    "hash": "71368d6730b854b6",
+    "date": "2026-08-28",
+    "v": 2
   },
   "/de/": {
-    "hash": "62805ba48c76b316",
-    "date": "2026-08-14"
+    "hash": "ab860b60737f0e16",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/emerald-chat-alternative": {
-    "hash": "0a8964176875b30d",
-    "date": "2026-08-14"
+    "hash": "b40b845d47e62db5",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/es/": {
-    "hash": "65276c0a38a6b2ef",
-    "date": "2026-08-14"
+    "hash": "1aeade67e2218365",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/fa/": {
-    "hash": "f3b4aec0c7a3b424",
-    "date": "2026-08-14"
+    "hash": "0558e885b5fc8e7a",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/fr/": {
-    "hash": "6898d75489ba130d",
-    "date": "2026-08-14"
+    "hash": "8d935d0f2be55333",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/free-online-calls": {
-    "hash": "f35876e145fd56dc",
-    "date": "2026-08-14"
+    "hash": "cddb41558f666c13",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/free-voice-chat": {
-    "hash": "88ffa9a93900ec7c",
-    "date": "2026-08-14"
+    "hash": "4b968b574b15dda0",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/guides/": {
-    "hash": "11a070292f76b523",
-    "date": "2026-08-14"
+    "hash": "d7c03572b0d6613e",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/hi/": {
-    "hash": "c934956c18d57a1b",
-    "date": "2026-08-14"
+    "hash": "5c94f7c9e04ea8b6",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/holla-alternative": {
-    "hash": "35e41546d8f2aed6",
-    "date": "2026-08-14"
+    "hash": "056c1cfde79f069d",
+    "date": "2026-08-14",
+    "v": 2
+  },
+  "/how-it-works": {
+    "hash": "49c829141152317d",
+    "date": "2026-08-28",
+    "v": 2
   },
   "/id/": {
-    "hash": "f8d85b696c63e829",
-    "date": "2026-08-14"
+    "hash": "64c2daa797c40346",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/im-bored": {
-    "hash": "2673f02ed9861930",
-    "date": "2026-08-14"
+    "hash": "9feda78b4da2b74d",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/international-calls": {
-    "hash": "167e24c05d92d7d4",
-    "date": "2026-08-14"
+    "hash": "775deed02a2ddc32",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/it/": {
-    "hash": "cb7f4f108603c6c6",
-    "date": "2026-08-14"
+    "hash": "7189b163afedd4cb",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/ja/": {
-    "hash": "2a9f88c53fe00d52",
-    "date": "2026-08-14"
+    "hash": "d07c59de3ba1b31c",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/ko/": {
-    "hash": "9136aa5eeb922236",
-    "date": "2026-08-14"
+    "hash": "d13538ce53e2af31",
+    "date": "2026-08-14",
+    "v": 2
+  },
+  "/language-chat-guide": {
+    "hash": "952e4076e3ea0dab",
+    "date": "2026-08-28",
+    "v": 2
   },
   "/language-exchange": {
-    "hash": "b66b509abc68621e",
-    "date": "2026-08-14"
+    "hash": "4d5cd0bd547cb4aa",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/languages/": {
-    "hash": "387fa2b7c4b5b2d3",
-    "date": "2026-08-14"
+    "hash": "33996873a0bcd836",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/languages/arabic": {
-    "hash": "3a56a9184bfad6d1",
-    "date": "2026-08-14"
+    "hash": "ca92fb89dac8ea87",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/languages/bengali": {
-    "hash": "695dd9a3e9ae9f32",
-    "date": "2026-08-14"
+    "hash": "b6bc853c2750b80e",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/languages/chinese": {
-    "hash": "4cbd05fe5be953ad",
-    "date": "2026-08-14"
+    "hash": "be689c23ee9acc8a",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/languages/english": {
-    "hash": "85fbfcf34dfe727c",
-    "date": "2026-08-14"
+    "hash": "6249dda9285ca5a0",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/languages/french": {
-    "hash": "212a338400d72fa7",
-    "date": "2026-08-14"
+    "hash": "62d5e7661dd8a6c5",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/languages/german": {
-    "hash": "3a02394af2f1c769",
-    "date": "2026-08-14"
+    "hash": "04ff2a08fbd3fe8c",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/languages/hindi": {
-    "hash": "36affe4eb6b9cb45",
-    "date": "2026-08-14"
+    "hash": "ab9c91751ee6c79c",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/languages/indonesian": {
-    "hash": "cfa4e50bae71a6e8",
-    "date": "2026-08-14"
+    "hash": "b0be369b5efa7f71",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/languages/italian": {
-    "hash": "fc6beefadbc05332",
-    "date": "2026-08-14"
+    "hash": "a2c965e7fa8bc82a",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/languages/japanese": {
-    "hash": "b88a1f2a71c71d24",
-    "date": "2026-08-14"
+    "hash": "8cfc3a1b8ee4de51",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/languages/korean": {
-    "hash": "dd8ee8d347dd782b",
-    "date": "2026-08-14"
+    "hash": "cca9ce49d78474a0",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/languages/portuguese": {
-    "hash": "d11f59f0846dd9aa",
-    "date": "2026-08-14"
+    "hash": "bc9d72e0a7d28661",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/languages/russian": {
-    "hash": "b96a7dd0c1be827b",
-    "date": "2026-08-14"
+    "hash": "29a0a6f3e33ec629",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/languages/spanish": {
-    "hash": "0a76ce24a1689d35",
-    "date": "2026-08-14"
+    "hash": "aebd511cd8ea8357",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/languages/turkish": {
-    "hash": "7a1b9747079764bd",
-    "date": "2026-08-14"
+    "hash": "f651cb43c62e3ba5",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/languages/urdu": {
-    "hash": "87f7d39c1468a563",
-    "date": "2026-08-14"
+    "hash": "aa25e75f494aa624",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/late-night-chat": {
-    "hash": "a4983731ddeaa5bf",
-    "date": "2026-08-14"
+    "hash": "9eee46acc0b3fba7",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/make-friends-online": {
-    "hash": "84de39039e4b3549",
-    "date": "2026-08-14"
+    "hash": "17ac8a28cad55356",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/meet-new-people": {
-    "hash": "c7b69d9e1cd1de5c",
-    "date": "2026-08-14"
+    "hash": "fda65bf886ca9b18",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/monkey-app-alternative": {
-    "hash": "fafa34acd327577f",
-    "date": "2026-08-14"
+    "hash": "11bd92fd8349f009",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/omegle-alternative": {
-    "hash": "4e97e2d4a4caa492",
-    "date": "2026-08-14"
+    "hash": "f3ebeeb74738dab8",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/omegle-vs-chatroulette": {
-    "hash": "8730b2f00e8bfdf8",
-    "date": "2026-08-14"
+    "hash": "fe95b00a160d1005",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/ometv-alternative": {
-    "hash": "addf34705d109347",
-    "date": "2026-08-14"
+    "hash": "bf49e73fecaa9011",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/online-chat-rooms": {
-    "hash": "170d371b25791e2f",
-    "date": "2026-08-14"
+    "hash": "2d23bd91931765df",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/pakistani-chat": {
-    "hash": "68290f561f4d3f3c",
-    "date": "2026-08-14"
+    "hash": "86bc863b461852c9",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/practice-english-speaking": {
-    "hash": "f16f791c3f603903",
-    "date": "2026-08-14"
+    "hash": "adfb9d35cccf7557",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/pricing": {
-    "hash": "e2541a5ef03b2ba4",
-    "date": "2026-08-14"
+    "hash": "1352f2882c646a19",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/privacy": {
-    "hash": "9c203f5979460c9f",
-    "date": "2026-08-14"
+    "hash": "5e87a2654ebc977e",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/pt/": {
-    "hash": "ee98e90ab3991b53",
-    "date": "2026-08-14"
+    "hash": "0dc7754923128e63",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/random-call": {
-    "hash": "ddf1e447bc9a48af",
-    "date": "2026-08-14"
+    "hash": "e5350cedbc049846",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/random-chat": {
-    "hash": "48421edb887c5bd2",
-    "date": "2026-08-14"
+    "hash": "606e0278f43eec49",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/random-text-chat": {
-    "hash": "22a2993cc0236181",
-    "date": "2026-08-14"
+    "hash": "7e891f4454c5d281",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/random-video-call": {
-    "hash": "2280f1ca388d936d",
-    "date": "2026-08-14"
+    "hash": "e5fd0e92a5799196",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/random-video-chat": {
-    "hash": "3e30b4292367827e",
-    "date": "2026-08-14"
+    "hash": "87d21bc4bc5ef744",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/random-voice-chat": {
-    "hash": "c8f547fc3125bfef",
-    "date": "2026-08-14"
+    "hash": "7d93d378a8c16442",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/refund": {
-    "hash": "5bcec4a9f38e1d52",
-    "date": "2026-08-14"
+    "hash": "16bb37258c9b05c8",
+    "date": "2026-08-14",
+    "v": 2
+  },
+  "/resources": {
+    "hash": "5b8c3f45a6df9ec9",
+    "date": "2026-08-28",
+    "v": 2
   },
   "/ru/": {
-    "hash": "c8c36535f0c9bb60",
-    "date": "2026-08-14"
+    "hash": "6a8bc22b2ca65310",
+    "date": "2026-08-14",
+    "v": 2
+  },
+  "/safety": {
+    "hash": "7ec270121dc50979",
+    "date": "2026-08-28",
+    "v": 2
   },
   "/shagle-alternative": {
-    "hash": "764f81ea33e2fb1b",
-    "date": "2026-08-14"
+    "hash": "f38b0f412207236e",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/someone-to-talk-to": {
-    "hash": "78c469e135171764",
-    "date": "2026-08-14"
+    "hash": "21d761a6347ad956",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/stranger-video-call": {
-    "hash": "41fef599c83deefa",
-    "date": "2026-08-14"
+    "hash": "6f1df28c4680f30d",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/talk-to-someone": {
-    "hash": "d5d0bcf39d5eef7f",
-    "date": "2026-08-14"
+    "hash": "83e1a3283f404076",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/talk-to-strangers": {
-    "hash": "5ca446957270c58f",
-    "date": "2026-08-14"
+    "hash": "8570c2bb26ca0a26",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/terms": {
-    "hash": "b1de9e3abe5c1d45",
-    "date": "2026-08-14"
+    "hash": "7262faafa5ddb0ea",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/text-chat-with-strangers": {
-    "hash": "f5b644f02597b731",
-    "date": "2026-08-14"
+    "hash": "8aa790d0e07efeae",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/tinychat-alternative": {
-    "hash": "74b4898fb5c3591b",
-    "date": "2026-08-14"
+    "hash": "d74bf12a2c12d2b9",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/tr/": {
-    "hash": "2ee3337971a16ae8",
-    "date": "2026-08-14"
+    "hash": "237cfce355cf4469",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/ur/": {
-    "hash": "0106f67444897c84",
-    "date": "2026-08-14"
+    "hash": "5bc8c799db238b2c",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/voice-chat-rooms": {
-    "hash": "5a31354338fbb1d9",
-    "date": "2026-08-14"
+    "hash": "1c34b17b2b9cb69b",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/voice-chat-vs-video-chat": {
-    "hash": "d6550f376eeb5e5f",
-    "date": "2026-08-14"
+    "hash": "2c74f310db15b3a9",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/wakie-alternative": {
-    "hash": "a0bd3a9a0ce517e6",
-    "date": "2026-08-14"
+    "hash": "1c1a8198a71c0725",
+    "date": "2026-08-14",
+    "v": 2
   },
   "/zh/": {
-    "hash": "d40b301165588db8",
-    "date": "2026-08-14"
+    "hash": "db623bc9d903e512",
+    "date": "2026-08-14",
+    "v": 2
   }
 }

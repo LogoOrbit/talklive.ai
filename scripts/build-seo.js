@@ -9,6 +9,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const SITE = 'https://talklive.app';
 const PUBLIC = path.join(__dirname, '..', 'public');
@@ -2353,15 +2354,94 @@ function walkHtml(dir, out = []) {
   return out;
 }
 
-// scripts/seo-lastmod.json is a content-hash ledger recording when each URL
-// last actually changed. Nothing had been reading it, so it is loaded here
-// defensively - a missing or malformed ledger just means every page falls back
-// to the site-wide content date.
+/*
+ * lastmod ledger.
+ *
+ * scripts/seo-lastmod.json records, per URL, a hash of the page's meaningful
+ * content and the date that content last changed. Nothing read it and nothing
+ * ever wrote it, so every entry was frozen at one date and the sitemap
+ * declared 256 of 272 pages last modified on the same day - including pages
+ * untouched for months. Crawlers use lastmod to decide what to revisit and
+ * discount a signal that is provably wrong, so a stale ledger is worse than
+ * none: it spends the site's credibility on nothing.
+ *
+ * The hash deliberately ignores the parts of a page that change on every
+ * build without the content changing - asset cache-buster versions and the
+ * ad markup scripts/migrate-adsterra.js rewrites afterwards. Without that,
+ * every page would look modified on every deploy, which is the same lie in
+ * the opposite direction.
+ */
+const LEDGER_PATH = path.join(__dirname, 'seo-lastmod.json');
+// Bumped when the hashing rules change. An entry written by an older version
+// is re-hashed but keeps its recorded date, so changing the algorithm never
+// backdates or forward-dates a page it cannot actually vouch for.
+const LEDGER_VERSION = 2;
+const TODAY = new Date().toISOString().slice(0, 10);
+
 let LASTMOD = {};
 try {
-  LASTMOD = JSON.parse(fs.readFileSync(path.join(__dirname, 'seo-lastmod.json'), 'utf8'));
+  LASTMOD = JSON.parse(fs.readFileSync(LEDGER_PATH, 'utf8'));
 } catch (_) {
   LASTMOD = {};
+}
+
+function contentFingerprint(html) {
+  const normalized = html
+    // The ads.js tag and its version, rewritten on every build.
+    .replace(/<script\b[^>]*\bsrc=["'][^"']*ads\.js[^"']*["'][^>]*><\/script>/gi, '')
+    // Empty ad slots, inserted and moved by the adsterra migration.
+    .replace(/<div\b[^>]*\bdata-ad=[^>]*>\s*<\/div>/gi, '')
+    // Cache-buster query strings: ?v=20260828fix is not a content change.
+    .replace(/([?&])v=[^"'&\s>]*/g, '$1v=')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return crypto.createHash('sha256').update(normalized).digest('hex').slice(0, 16);
+}
+
+// Re-hash every indexable page and advance only the dates that earned it.
+function refreshLastmodLedger() {
+  const seen = new Set();
+  for (const file of walkHtml(PUBLIC)) {
+    const rel = path.relative(PUBLIC, file).split(path.sep).join('/');
+    if (SITEMAP_EXCLUDE.has(rel)) continue;
+    const html = fs.readFileSync(file, 'utf8');
+    if (/<meta[^>]+name=["']robots["'][^>]*noindex/i.test(html)) continue;
+    const loc = canonicalUrlForFile(file);
+    if (!loc) continue;
+    const key = loc.slice(SITE.length) || '/';
+    seen.add(key);
+
+    const hash = contentFingerprint(html);
+    const prev = LASTMOD[key];
+    if (!prev) {
+      // Genuinely new page.
+      LASTMOD[key] = { hash, date: TODAY, v: LEDGER_VERSION };
+    } else if (prev.v !== LEDGER_VERSION) {
+      // Written by an older hashing scheme. Its hash cannot be compared with
+      // ours, so adopt the new hash but keep the recorded date rather than
+      // claiming the whole site changed the day the algorithm did.
+      LASTMOD[key] = { hash, date: prev.date, v: LEDGER_VERSION };
+    } else if (prev.hash !== hash) {
+      LASTMOD[key] = { hash, date: TODAY, v: LEDGER_VERSION };
+    }
+  }
+  // Retire URLs that no longer exist, so the ledger cannot grow forever or
+  // resurrect a date for a page that has been deleted.
+  for (const key of Object.keys(LASTMOD)) {
+    if (!seen.has(key)) delete LASTMOD[key];
+  }
+  const sorted = {};
+  for (const key of Object.keys(LASTMOD).sort()) sorted[key] = LASTMOD[key];
+  LASTMOD = sorted;
+  fs.writeFileSync(LEDGER_PATH, JSON.stringify(sorted, null, 2) + '\n');
+  return sorted;
+}
+
+// The date to publish for a URL: what the ledger can actually vouch for,
+// falling back to the page's declared date only when it is not tracked.
+function lastmodFor(loc, declared) {
+  const key = loc.slice(SITE.length) || '/';
+  return (LASTMOD[key] && LASTMOD[key].date) || declared || CONTENT_UPDATED;
 }
 
 function extraSitemapEntries(existingLocs) {
@@ -2400,14 +2480,17 @@ function buildFullSitemap() {
     const alts = u.home
       ? homeAlternates((href, lang) => `\n    <xhtml:link rel="alternate" hreflang="${lang}" href="${href}"/>`).join('')
       : '';
-    return `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${u.lastmod}</lastmod>\n    <changefreq>${u.freq}</changefreq>\n    <priority>${u.priority}</priority>${alts}\n  </url>`;
+    return `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${lastmodFor(loc, u.lastmod)}</lastmod>\n    <changefreq>${u.freq}</changefreq>\n    <priority>${u.priority}</priority>${alts}\n  </url>`;
   });
   const extra = extraSitemapEntries(seen).map(u =>
-    `  <url>\n    <loc>${u.loc}</loc>\n    <lastmod>${u.lastmod}</lastmod>\n    <changefreq>${u.freq}</changefreq>\n    <priority>${u.priority}</priority>\n  </url>`);
+    `  <url>\n    <loc>${u.loc}</loc>\n    <lastmod>${lastmodFor(u.loc, u.lastmod)}</lastmod>\n    <changefreq>${u.freq}</changefreq>\n    <priority>${u.priority}</priority>\n  </url>`);
   sitemapTotal = known.length + extra.length;
   return `${head}\n${known.concat(extra).join('\n')}\n</urlset>\n`;
 }
 let sitemapTotal = 0;
+// Re-hash the pages before the sitemap is written, so every lastmod it
+// publishes is one the ledger can actually account for.
+refreshLastmodLedger();
 fs.writeFileSync(path.join(PUBLIC, 'sitemap.xml'), buildFullSitemap());
 
 // The per-cluster sitemap-*.xml files are a leftover from an earlier layout.
