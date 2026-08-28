@@ -2273,6 +2273,72 @@ process.on('uncaughtException', (err) => {
   process.exit(1);
 });
 
+/*
+ * Say plainly, at every boot, when nothing being stored will survive a deploy.
+ *
+ * With no DATABASE_URL the store falls back to a JSON file under DATA_DIR.
+ * fly.toml points that at /data but mounts no volume there, so on the live app
+ * it is an ordinary directory inside the container: every account, ban, report
+ * and the owner dashboard's own password hash is destroyed by the next deploy -
+ * and deploys are automatic on push. Until now the only trace was a cheerful
+ * "[accounts] restored 0 account(s) from the store", which reads like a fresh
+ * install rather than the third time this month the users were deleted.
+ *
+ * This warns; it does not refuse to boot. Halting would convert a durability
+ * problem into an outage, and the file backend is entirely correct in local
+ * development - which is why the warning is limited to production.
+ */
+function warnIfStorageIsEphemeral() {
+  if (process.env.NODE_ENV !== 'production') return;
+  const status = store.backendStatus;
+  if (status.mode === 'postgres') return;
+
+  // Warn only when the data is genuinely at risk: either the configured
+  // database is unreachable, or the file store is on disposable storage. A
+  // file backend on a properly mounted volume is a supported setup and must
+  // not be shouted about - a warning that fires when nothing is wrong is one
+  // nobody reads the day something is.
+  const dbBroken = status.configured && status.mode !== 'postgres';
+  if (!dbBroken && status.ephemeral !== true) {
+    if (status.ephemeral === null) {
+      console.warn(`[storage] could not confirm whether ${status.dataDir} is a mounted volume; assuming it is.`);
+    }
+    return;
+  }
+
+  const detail = status.ephemeral === true
+    ? `DATA_DIR (${status.dataDir}) is not a mounted volume - it lives inside the container image.`
+    : `DATA_DIR (${status.dataDir}) is the fallback while the database is unreachable.`;
+  const configured = status.configured
+    ? `DATABASE_URL is set but the connection failed${status.error ? ` (${status.error})` : ''}, so the file backend is in use.`
+    : 'DATABASE_URL is not set, so the file backend is in use.';
+
+  console.error(
+    '\n[storage] ****  STORED DATA WILL NOT SURVIVE THE NEXT DEPLOY  ****\n'
+    + `[storage] ${configured}\n`
+    + `[storage] ${detail}\n`
+    + `[storage] Currently holding ${accounts.size} account(s), `
+    + `${store.data.reports.length} report(s), ${store.activeBans().length} active ban(s).\n`
+    + '[storage] Fix: set DATABASE_URL (see CODEX-HANDOFF.md) or mount a Fly volume at that path.\n'
+  );
+
+  // One email, so this is visible to the owner without reading boot logs.
+  // sendAlertEmail is throttled per topic and is a no-op when SMTP is unset.
+  admin.sendAlertEmail(
+    'ephemeral-storage',
+    'TalkLive: stored data is being lost on every deploy',
+    `${configured}\n${detail}\n\n`
+    + `The server is running normally, but everything it stores - accounts, bans, `
+    + `reports, feedback and the dashboard's own password - is discarded the next `
+    + `time the app deploys, which happens automatically on every push to main.\n\n`
+    + `Currently holding ${accounts.size} account(s), ${store.data.reports.length} report(s), `
+    + `${store.activeBans().length} active ban(s).\n\n`
+    + `Fix: set DATABASE_URL to the Supabase connection string (see CODEX-HANDOFF.md, `
+    + `task 2) so the data lives in Postgres instead.\n\n`
+    + `Dashboard: https://${CANONICAL_HOST}/owner`
+  );
+}
+
 // Wait for the store (Postgres or file) to load before accepting traffic so
 // bans, maintenance mode and admin credentials apply from the first request.
 store.ready.then(() => {
@@ -2280,6 +2346,7 @@ store.ready.then(() => {
   // returning users can log in and see their friends/chats immediately.
   hydrateFromStore();
   console.log(`[accounts] restored ${accounts.size} account(s) from the store`);
+  warnIfStorageIsEphemeral();
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`TalkLive server running on port ${PORT}`);
     // Tell the IndexNow network (Bing/Yandex/Seznam/Naver) about every URL in

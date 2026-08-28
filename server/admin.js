@@ -223,8 +223,17 @@ function createAdmin({ io, getRuntime, kickBanned }) {
         mode: b.mode,
         host: b.host,
         error: b.error,
-        // File mode while DATABASE_URL is set = data will be lost on restart.
-        atRisk: b.configured && b.mode !== 'postgres',
+        dataDir: b.dataDir,
+        // File backend on storage that is not a mounted volume: everything
+        // stored is discarded by the next deploy. This is the case that has
+        // actually been losing data, and atRisk below used to miss it
+        // entirely - it only fired when DATABASE_URL was set and broken, never
+        // when it was simply absent.
+        ephemeral: b.mode !== 'postgres' && b.ephemeral === true,
+        // Data will not survive: either the configured database is unreachable,
+        // or the fallback file store is sitting on disposable storage.
+        atRisk: (b.configured && b.mode !== 'postgres')
+          || (b.mode !== 'postgres' && b.ephemeral === true),
       },
     });
   });

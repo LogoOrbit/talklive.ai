@@ -6,8 +6,15 @@
 //    single jsonb row, and is the only option if the app ever runs on more
 //    than one machine.
 //  - otherwise: a JSON file under DATA_DIR (defaults to <repo>/data) - zero
-//    setup locally. In production this sits on the Fly volume mounted at
-//    /data, so it survives deploys and restarts.
+//    setup locally. In production this is only durable if DATA_DIR is a real
+//    mount. fly.toml sets DATA_DIR=/data but deliberately declares no
+//    [mounts] block (a mount that does not exist blocks every deploy until
+//    someone runs `fly volumes create` from the CLI), so on the live app /data
+//    is an ordinary directory inside the container and every deploy discards
+//    it. ephemeralStorage() below detects exactly that and the app says so
+//    loudly at boot, because the failure is otherwise completely silent: the
+//    server starts, serves users, accepts sign-ups, and destroys them all on
+//    the next push.
 // Writes are debounced either way so hot paths never block on I/O.
 const fs = require('fs');
 const path = require('path');
@@ -24,13 +31,41 @@ const backendStatus = {
   mode: 'file',                 // 'postgres' once connected, else 'file'
   error: null,                  // last connection error message (no secrets)
   host: null,                   // host:port from the URL, for the operator
+  // true when the file backend is writing to storage that does not survive a
+  // deploy. Null when the backend is Postgres or the check could not run.
+  ephemeral: null,
+  dataDir: DATA_DIR,
 };
+
+// Is DATA_DIR a real mount, or just a directory inside the container image?
+//
+// A mounted volume is a different filesystem, so it reports a different device
+// id from the root filesystem. Same device means the directory ships and dies
+// with the container - every account, ban, report and the owner's own password
+// hash is discarded on the next deploy, and deploys are automatic here.
+//
+// Reported rather than enforced: refusing to boot would turn a data-durability
+// problem into an outage, and the file backend is exactly right in local
+// development, where this check is expected to say "ephemeral" and mean
+// nothing.
+function ephemeralStorage() {
+  try {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+    return fs.statSync(DATA_DIR).dev === fs.statSync('/').dev;
+  } catch (_) {
+    return null; // cannot tell; do not claim either way
+  }
+}
 
 if (DATABASE_URL) {
   try {
     const u = new URL(DATABASE_URL);
     backendStatus.host = `${u.hostname}:${u.port || '5432'}`;
   } catch (_) { backendStatus.host = 'unparseable'; }
+} else {
+  // Only meaningful for the file backend; Postgres does not care where
+  // DATA_DIR points.
+  backendStatus.ephemeral = ephemeralStorage();
 }
 
 let pgPool = null;

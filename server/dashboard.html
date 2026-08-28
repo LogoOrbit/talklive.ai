@@ -295,13 +295,21 @@ function animateCounters(){document.querySelectorAll('[data-count]').forEach(el=
 function renderStorage(storage){
   const s=storage||{};
   let html='';
-  if(s.atRisk){
+  if(s.configured && s.atRisk){
     html=`<div class="stbox bad"><b>⚠️ Database not connected - data will be lost on restart</b>
       Your <code>DATABASE_URL</code> is set but the server could not connect to it, so it fell back to temporary storage. That is why your login keeps resetting. Fix the connection string with <code>fly secrets set DATABASE_URL=...</code> and redeploy.<br><br>
       Host tried: <code>${esc(s.host||'?')}</code><br>
       Error: <code>${esc(s.error||'unknown')}</code></div>`;
+  } else if(s.ephemeral){
+    // This box used to say the file store "lives on the Fly volume at /data and
+    // survives deploys and restarts". No volume is mounted, so that was exactly
+    // backwards: it reassured the owner while every account was being destroyed
+    // on each push.
+    html=`<div class="stbox bad"><b>⚠️ Stored data is deleted on every deploy</b>
+      No <code>DATABASE_URL</code> is set, so the server is using its file store - and <code>${esc(s.dataDir||'/data')}</code> is not a mounted volume, just a directory inside the container. Accounts, bans, reports and this dashboard's own password are discarded every time the app deploys, which happens automatically on every push.<br><br>
+      Fix: <code>fly secrets set DATABASE_URL=...</code> (the Supabase connection string) so the data lives in Postgres instead.</div>`;
   } else if(!s.configured){
-    html=`<div class="stbox warn"><b>ℹ️ No database configured</b>Running on the file store, which lives on the Fly volume at <code>/data</code> and survives deploys and restarts. It is tied to this one machine and is not backed up, so set a <code>DATABASE_URL</code> (<code>fly secrets set DATABASE_URL=...</code>) if you want managed backups or plan to run more than one machine.</div>`;
+    html=`<div class="stbox warn"><b>ℹ️ No database configured</b>Running on the file store at <code>${esc(s.dataDir||'/data')}</code>, which is a mounted volume and survives deploys and restarts. It is tied to this one machine and is not backed up, so set a <code>DATABASE_URL</code> (<code>fly secrets set DATABASE_URL=...</code>) if you want managed backups or plan to run more than one machine.</div>`;
   }
   const a=document.getElementById('setupStorage'),b=document.getElementById('loginStorage');
   if(a)a.innerHTML=html; if(b)b.innerHTML=html;
