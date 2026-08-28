@@ -129,7 +129,27 @@
       "applicationCategory": "CommunicationApplication",
       "operatingSystem": "Any device with a modern web browser",
       "browserRequirements": "Requires a modern browser; microphone only needed for voice calls",
-      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD", "description": "Core random voice and text matching" },
+      "brand": { "@type": "Brand", "name": "TalkLive" },
+      "offers": {
+        "@type": "Offer", "price": "0", "priceCurrency": "USD", "description": "Core random voice and text matching",
+        "availability": "https://schema.org/InStock", "url": "https://talklive.app/",
+        "hasMerchantReturnPolicy": {
+          "@type": "MerchantReturnPolicy",
+          "applicableCountry": ["AE","AR","AU","BD","BR","CA","CN","CO","DE","EG","ES","FR","GB","GR","ID","IE","IL","IN","IR","IT","JP","KE","KR","MA","MX","MY","NG","NL","NO","NZ","PH","PK","PL","PT","RO","RU","SA","SE","SG","TH","TR","UA","US","VN","ZA"],
+          "returnPolicyCategory": "https://schema.org/MerchantReturnNotPermitted",
+          "merchantReturnLink": "https://talklive.app/refund"
+        },
+        "shippingDetails": {
+          "@type": "OfferShippingDetails",
+          "shippingRate": { "@type": "MonetaryAmount", "value": "0", "currency": "USD" },
+          "shippingDestination": { "@type": "DefinedRegion", "addressCountry": ["AE","AR","AU","BD","BR","CA","CN","CO","DE","EG","ES","FR","GB","GR","ID","IE","IL","IN","IR","IT","JP","KE","KR","MA","MX","MY","NG","NL","NO","NZ","PH","PK","PL","PT","RO","RU","SA","SE","SG","TH","TR","UA","US","VN","ZA"] },
+          "deliveryTime": {
+            "@type": "ShippingDeliveryTime",
+            "handlingTime": { "@type": "QuantitativeValue", "minValue": 0, "maxValue": 0, "unitCode": "DAY" },
+            "transitTime": { "@type": "QuantitativeValue", "minValue": 0, "maxValue": 0, "unitCode": "DAY" }
+          }
+        }
+      },
       "isAccessibleForFree": true,
       "inLanguage": ["en","es","pt","fr","de","it","ru","tr","ar","fa","hi","ur","bn","id","zh","ja","ko"],
       "audience": { "@type": "PeopleAudience", "suggestedMinAge": 18 },

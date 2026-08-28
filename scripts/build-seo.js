@@ -15,6 +15,9 @@ const SITE = 'https://talklive.app';
 const PUBLIC = path.join(__dirname, '..', 'public');
 // Real localized homepages (public/<code>/index.html) - see scripts/locales.js.
 const LOCALES = require('./locales');
+// Brand + Offer shape for the app node. See scripts/data/commerce.js for why
+// a free web app needs return and shipping fields at all.
+const { BRAND, freeOffer } = require('./data/commerce');
 const LANGS = ['en'].concat(LOCALES.map((locale) => locale.code));
 const CONTENT_UPDATED = '2026-08-14';
 const ORGANIZATION_ID = `${SITE}/#organization`;
@@ -354,7 +357,8 @@ function page(p, index) {
         operatingSystem: 'Any device with a modern web browser',
         browserRequirements: 'JavaScript; microphone permission is required only for voice calls',
         isAccessibleForFree: true,
-        offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD', description: 'Core random voice and text matching' },
+        brand: BRAND,
+        offers: freeOffer(),
         inLanguage: LANGS,
         audience: { '@type': 'PeopleAudience', suggestedMinAge: 18 },
         publisher: { '@id': ORGANIZATION_ID },
@@ -2136,7 +2140,7 @@ function localeHome(loc) {
     '@graph': [
       { '@type': 'Organization', '@id': ORGANIZATION_ID, name: 'TalkLive', alternateName: ['Talk Live', 'TalkLive App'], url: `${SITE}/`, logo: { '@type': 'ImageObject', url: LOGO_IMAGE, width: 192, height: 192 } },
       { '@type': 'WebSite', '@id': WEBSITE_ID, name: 'TalkLive', alternateName: ['Talk Live', 'TalkLive App'], url: `${SITE}/`, inLanguage: LANGS, publisher: { '@id': ORGANIZATION_ID } },
-      { '@type': 'WebApplication', '@id': APP_ID, name: 'TalkLive', url: `${SITE}/`, applicationCategory: 'CommunicationApplication', operatingSystem: 'Any device with a modern web browser', isAccessibleForFree: true, offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD', description: 'Core random voice and text matching' }, audience: { '@type': 'PeopleAudience', suggestedMinAge: 18 }, publisher: { '@id': ORGANIZATION_ID } },
+      { '@type': 'WebApplication', '@id': APP_ID, name: 'TalkLive', url: `${SITE}/`, applicationCategory: 'CommunicationApplication', operatingSystem: 'Any device with a modern web browser', isAccessibleForFree: true, brand: BRAND, offers: freeOffer(), audience: { '@type': 'PeopleAudience', suggestedMinAge: 18 }, publisher: { '@id': ORGANIZATION_ID } },
       {
         '@type': 'WebPage',
         '@id': `${canonical}#webpage`,

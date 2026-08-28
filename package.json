@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server/index.js",
     "dev": "node server/index.js",
-    "build:seo": "node scripts/build-seo.js && node scripts/migrate-adsterra.js",
+    "build:seo": "node scripts/build-seo.js && node scripts/migrate-schema.js && node scripts/migrate-adsterra.js",
     "ads:adsterra": "node scripts/migrate-adsterra.js",
     "audit:seo": "node scripts/audit-seo.js",
     "check:seo": "npm run build:seo && npm run audit:seo",

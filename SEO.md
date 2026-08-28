@@ -110,6 +110,35 @@ Breadcrumbs are emitted **twice** - as `BreadcrumbList` and as visible markup -
 because structured data describing navigation the user cannot see is the exact
 mismatch Google's guidelines warn about.
 
+### Merchant listings: why a free app carries shipping and return fields
+
+The `#app` node advertises the free tier as an `Offer` at $0. Google reads any
+price-bearing offer as a **merchant listing** and validates it against the
+Product/Offer rules, so Search Console filed three warnings against a site that
+sells nothing:
+
+| Search Console warning | Cause | Fix |
+|---|---|---|
+| Invalid object type for field `brand` | `brand` fell back to `publisher`, a bare `{"@id": ...}` reference Google declines to resolve across the graph | explicit `{"@type": "Brand", "name": "TalkLive"}` |
+| Missing `hasMerchantReturnPolicy` (in `offers`) | never emitted | `MerchantReturnNotPermitted`, linked to `/refund` - nothing is charged for the free tier, so there is nothing to return |
+| Missing `shippingDetails` (in `offers`) | never emitted | $0 rate, zero handling and transit days - literally true of a page you open in a browser |
+
+None of those values are invented retail facts; the reasoning per field is in
+`scripts/data/commerce.js`, which is the single source for both the builder and
+the sweep below. `applicableCountry` / `shippingDestination` reuse the country
+codes from `scripts/data/geo.js` - schema.org has no "worldwide" value, so the
+served-country list is the honest stand-in and cannot drift.
+
+**The sweep exists because three page sets are orphaned.** `scripts/geo-pages.js`
+(177 country/city/language pages), `scripts/pages-extra2.js` and
+`scripts/blog-extra2.js` are required by nothing - `npm run build:seo` does not
+regenerate their output any more, though the pages ship and Google crawls them.
+`scripts/migrate-schema.js` therefore runs as part of `build:seo` and completes
+the offer fields in every `public/**/*.html`, filling only what is missing and
+rewriting only files that changed. It is idempotent: on a correct site it
+reports `0 HTML files`. Reviving those three generators is the real fix and is
+still open work.
+
 ### Removed: fabricated review ratings
 
 Every landing page previously claimed `aggregateRating: 4.7 from 2,840 ratings`.
@@ -121,6 +150,26 @@ pages that carried it.
 If real ratings are ever collected, they can go back - sourced from real
 reviews, displayed on the page, visible to the user. Do not reintroduce them
 otherwise.
+
+Search Console lists `aggregateRating` and `review` under **Improve item
+appearance** for exactly this reason, and those two warnings are expected to
+stay open. They are non-critical suggestions, not errors: the pages remain
+valid and eligible without them. The site collects free-text feedback only
+(`server/index.js`, the `feedback` socket event) - there is no rating data
+anywhere in this codebase to source stars from. Closing those two warnings
+means building a review system, not writing numbers into JSON-LD.
+
+### Excluded by 'noindex' tag - intentional
+
+Search Console's page indexing report lists `Excluded by 'noindex' tag`. That is
+`/chat` and only `/chat`: it is the app shell, it carries
+`<meta name="robots" content="noindex, follow">`, and it is deliberately absent
+from `sitemap.xml` (`SITEMAP_EXCLUDE` in `scripts/build-seo.js`, plus the
+robots-tag check in `extraSitemapEntries`). It stays crawlable on purpose -
+`noindex` only works if Google can fetch the page - and `follow` passes link
+equity onward. `scripts/audit-seo.js` fails the build if a sitemap page ever
+becomes `noindex`, so a real regression here would be caught rather than
+reported by Google. Nothing to fix.
 
 ---
 
