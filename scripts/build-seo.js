@@ -2479,7 +2479,18 @@ fs.writeFileSync(path.join(PUBLIC, 'llms.txt'), buildLlmsTxt());
 
 // IndexNow ownership key file (served at /<key>.txt) - lets us push URL
 // updates straight to Bing/Yandex/Seznam/Naver. See server/indexnow.js.
-const { KEY: INDEXNOW_KEY } = require('../server/indexnow');
+const { KEY: INDEXNOW_KEY, RETIRED_KEYS } = require('../server/indexnow');
+// Remove only the keys explicitly listed as retired in server/indexnow.js.
+// An earlier version of this deleted every hex-named .txt at the root that
+// was not the current key, which would have silently destroyed a second key
+// file added on purpose - IndexNow allows many keys per host, which is how
+// you delegate submission to an agency or a second tool without sharing your
+// own. Retiring a key is a deliberate edit to that list, never a side effect
+// of running a build.
+for (const retired of RETIRED_KEYS) {
+  const stale = path.join(PUBLIC, `${retired}.txt`);
+  if (retired !== INDEXNOW_KEY && fs.existsSync(stale)) fs.unlinkSync(stale);
+}
 fs.writeFileSync(path.join(PUBLIC, `${INDEXNOW_KEY}.txt`), INDEXNOW_KEY + '\n');
 
 console.log(`Built ${count} landing pages + sitemap.xml (${sitemapTotal} urls) + blog/feed.xml + llms.txt + indexnow key.`);
