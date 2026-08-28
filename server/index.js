@@ -7,7 +7,11 @@ const { Server } = require('socket.io');
 const geoip = require('geoip-lite');
 const { OAuth2Client } = require('google-auth-library');
 const { generateUsername } = require('./usernames');
+// Shared with the browser: public/countries.js exports for Node and defines a
+// global when loaded as a plain <script>, so there is one country list, not two.
+const { COUNTRIES } = require('../public/countries.js');
 const store = require('./store');
+const compress = require('./compress');
 const { createAdmin } = require('./admin');
 
 const app = express();
@@ -17,6 +21,7 @@ const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 // copy a peer's clientId and hijack social routing/premium state.
 const IDENTITY_SECRET = process.env.IDENTITY_SECRET || crypto.randomBytes(32).toString('hex');
 const identityTokens = new Map(); // clientId -> signed token for this process
+const identityTokenSeen = new Map(); // clientId -> last registration, for the sweeper below
 function signIdentity(clientId) {
   return crypto.createHmac('sha256', IDENTITY_SECRET).update(clientId).digest('hex');
 }
@@ -99,6 +104,19 @@ app.use((req, res, next) => {
   }
   next();
 });
+
+// Brotli/gzip every text response. Fly's edge proxy forwards bodies untouched
+// and Express compresses nothing on its own, so without this the homepage costs
+// a cold visitor ~430 kB of raw transfer (112 kB index.html + 127 kB style.css
+// + 192 kB app.js) - by far the largest Core Web Vitals cost on the site, and
+// pure waste, since those files compress to roughly a fifth of that. Mounted
+// after the security headers (so they are set regardless) but ahead of every
+// route and the static middleware, because it works by wrapping res.write /
+// res.end and can only capture handlers that run after it.
+//
+// Socket.IO is unaffected: engine.io handles /socket.io/ at the HTTP server
+// level, before Express ever sees the request.
+app.use(compress());
 
 // Tiny health check for uptime pingers (cron-job.org / UptimeRobot). Returns a
 // few bytes instead of the full homepage, so the pinger doesn't abort with
@@ -294,9 +312,38 @@ app.post('/events', express.json({ limit: '2kb' }), (req, res) => {
 // either TURN_SHARED_SECRET (short-lived HMAC credentials, coturn's
 // `use-auth-secret`) or a static TURN_USERNAME / TURN_CREDENTIAL pair, and set
 // TURN_FORCE_RELAY=1 to make the browser use relay candidates exclusively.
+//
+// STUN reachability is not uniform across the world, and a user whose only STUN
+// server is unreachable gathers no server-reflexive candidate at all - which
+// looks exactly like a call that connects and then carries no audio.
+//
+//  - Google's STUN hosts resolve to Google infrastructure, which is blocked
+//    outright in mainland China and unreliable in Iran and (increasingly)
+//    Russia. Those users previously had no working STUN server whatsoever.
+//  - UDP 19302 is a non-standard high port that plenty of corporate, school and
+//    mobile-carrier firewalls drop while allowing 80/443.
+//
+// So the list spans several independent operators and deliberately includes
+// endpoints on 3478, 80 and 443. Browsers query them in parallel and use
+// whichever answers, so an unreachable entry costs nothing but a timeout on a
+// gathering pass that is already happening. This is not a substitute for TURN
+// (see DEPLOY-TURN.md) - symmetric NAT still needs a relay - but it removes a
+// whole class of "nobody in my country can call" failures.
+const PUBLIC_STUN_URLS = [
+  'stun:stun.l.google.com:19302',
+  'stun:stun1.l.google.com:19302',
+  // Non-Google operators, for networks where Google itself is unreachable.
+  'stun:stun.cloudflare.com:3478',
+  'stun:stun.cloudflare.com:53',
+  'stun:global.stun.twilio.com:3478',
+  // Ports 80/443 punch through firewalls that only allow "web" traffic.
+  'stun:stun.relay.metered.ca:80',
+  'stun:stun.nextcloud.com:443',
+];
+
 function buildIceServers() {
   const servers = [
-    { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
+    { urls: PUBLIC_STUN_URLS.slice() },
   ];
   const envUrls = (process.env.TURN_URLS || '').split(',').map((s) => s.trim()).filter(Boolean);
   const turnSharedSecret = process.env.TURN_SHARED_SECRET || '';
@@ -401,7 +448,7 @@ app.use((req, res, next) => {
   if (req.path.startsWith('/owner')) return next();
   if (/\.(css|js|svg|png|ico|webmanifest|xml|txt)$/i.test(req.path)) return next();
   res.setHeader('Retry-After', '3600');
-  res.status(503).type('html').send(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TalkLive - Maintenance</title><style>body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#0d0d0d;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:24px}h1{font-size:2rem;margin:.4em 0}.orb{width:72px;height:72px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#6da7ec,#184f95);margin:0 auto 18px;animation:p 2s ease-in-out infinite}@keyframes p{50%{transform:scale(1.08);opacity:.85}}p{color:#c3c2b7;max-width:420px;margin:0 auto;line-height:1.5}</style></head><body><div><div class="orb"></div><h1>We&rsquo;ll be right back</h1><p>${store.data.settings.maintenance.message.replace(/</g, '&lt;')}</p></div></body></html>`);
+  res.status(503).type('html').send(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>TalkLive - Maintenance</title><meta name="robots" content="noindex"><style>body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#0d0d0d;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;min-height:100dvh;text-align:center;padding:24px;padding-left:calc(24px + env(safe-area-inset-left));padding-right:calc(24px + env(safe-area-inset-right))}h1{font-size:2rem;margin:.4em 0}.orb{width:72px;height:72px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#6da7ec,#184f95);margin:0 auto 18px;animation:p 2s ease-in-out infinite}@keyframes p{50%{transform:scale(1.08);opacity:.85}}p{color:#c3c2b7;max-width:420px;margin:0 auto;line-height:1.5}</style></head><body><div><div class="orb"></div><h1>We&rsquo;ll be right back</h1><p>${store.data.settings.maintenance.message.replace(/</g, '&lt;')}</p></div></body></html>`);
 });
 
 // Count page visits (HTML navigations only, not assets) with geo attribution.
@@ -482,7 +529,7 @@ app.use(
 // Friendly 404 for unknown pages: correct status code (so search engines drop
 // dead URLs) plus links back into the site instead of Express's plain text.
 app.use((req, res) => {
-  res.status(404).type('html').send(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Page not found - TalkLive</title><meta name="robots" content="noindex"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><style>body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#0b0f1a;color:#eef1f9;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:24px}h1{font-size:2rem;margin:.4em 0}p{color:#9aa3b8;max-width:420px;margin:0 auto 20px;line-height:1.5}a.btn{display:inline-block;background:#4f7cff;color:#fff;text-decoration:none;padding:12px 26px;border-radius:999px;font-weight:600}a{color:#8fb0ff}nav{margin-top:18px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap;font-size:14px}</style></head><body><div><h1>404 - page not found</h1><p>That page doesn't exist, but thousands of people are online talking right now.</p><a class="btn" href="/">Start Talking Free</a><nav><a href="/talk-to-strangers">Talk to Strangers</a><a href="/random-voice-chat">Random Voice Chat</a><a href="/blog/">Blog</a><a href="/contact">Contact</a></nav></div></body></html>`);
+  res.status(404).type('html').send(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Page not found - TalkLive</title><meta name="robots" content="noindex"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><style>body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#0b0f1a;color:#eef1f9;display:flex;align-items:center;justify-content:center;min-height:100vh;min-height:100dvh;text-align:center;padding:24px;padding-left:calc(24px + env(safe-area-inset-left));padding-right:calc(24px + env(safe-area-inset-right))}h1{font-size:2rem;margin:.4em 0}p{color:#9aa3b8;max-width:420px;margin:0 auto 20px;line-height:1.5}a.btn{display:inline-block;background:#4f7cff;color:#fff;text-decoration:none;padding:12px 26px;border-radius:999px;font-weight:600}a{color:#8fb0ff}nav{margin-top:18px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap;font-size:14px}</style></head><body><div><h1>404 - page not found</h1><p>That page doesn't exist, but thousands of people are online talking right now.</p><a class="btn" href="/">Start Talking Free</a><nav><a href="/talk-to-strangers">Talk to Strangers</a><a href="/random-voice-chat">Random Voice Chat</a><a href="/blog/">Blog</a><a href="/contact">Contact</a></nav></div></body></html>`);
 });
 
 // --- State ---
@@ -766,14 +813,24 @@ const ERROR_NOISE = [
 // socket.id -> { start, n } sliding 5s window for the chat bot-flood guard.
 const chatRate = new Map();
 
+// scrypt is deliberately expensive (~80-100ms here). The synchronous form runs
+// that on the event loop, which this process shares with every live call's
+// signalling - so a burst of logins froze matchmaking, chat and ICE relaying for
+// everyone. The async form hands the work to libuv's thread pool instead, so
+// hashing costs one worker thread rather than the whole server.
 function hashPassword(password, salt) {
-  return crypto.scryptSync(password, salt, 64).toString('hex');
+  return new Promise((resolve, reject) => {
+    crypto.scrypt(password, salt, 64, (err, derived) => {
+      if (err) reject(err);
+      else resolve(derived.toString('hex'));
+    });
+  });
 }
 
-function createAccount(username, password, nickname) {
+async function createAccount(username, password, nickname) {
   const salt = crypto.randomBytes(16).toString('hex');
   accounts.set(username.toLowerCase(), {
-    passwordHash: hashPassword(password, salt),
+    passwordHash: await hashPassword(password, salt),
     salt,
     nickname,
   });
@@ -785,6 +842,9 @@ function createAccount(username, password, nickname) {
 const SIGNUP_LIMIT = 5;
 const SIGNUP_WINDOW_MS = 60 * 60000;
 const signupAttempts = new Map(); // ip -> { first, count }
+// Usernames whose account is mid-creation (password still hashing). Held only
+// for the duration of one scrypt call so a racing signup cannot claim the name.
+const pendingSignups = new Set();
 function signupThrottled(ip) {
   const rec = signupAttempts.get(ip);
   if (!rec) return false;
@@ -797,11 +857,61 @@ function noteSignup(ip) {
   signupAttempts.set(ip, rec);
 }
 
-function verifyAccount(username, password) {
+// Per-username and per-IP login throttle. Signup was already rate limited but
+// login was not, and the socket token bucket still allows ~25 events/second -
+// roughly 1,500 password guesses a minute per socket, with no cap on sockets.
+// That is enough to brute-force a 4-character password, which is the minimum
+// this app accepts.
+//
+// The two thresholds are deliberately very different. A per-account limit can
+// be strict, because 8 wrong passwords for one username is already abnormal.
+// A per-IP limit cannot: a large share of this app's users share one public
+// address behind a university, office or mobile-carrier CGNAT, so a strict IP
+// rule would let any one person's fumbled logins lock every other user on that
+// network out of their account. The IP ceiling is therefore set high enough to
+// be invisible to shared networks while still stopping one host from spraying
+// thousands of guesses across many accounts.
+const LOGIN_LIMIT_USER = 8;
+const LOGIN_LIMIT_IP = 60;
+const LOGIN_WINDOW_MS = 15 * 60000;
+const LOGIN_LOCKOUT_MS = 15 * 60000;
+const loginAttempts = new Map(); // "ip:<ip>" | "user:<name>" -> { first, count, until }
+
+function loginLockedOut(ip, usernameLower) {
+  const now = Date.now();
+  for (const key of [`ip:${ip}`, `user:${usernameLower}`]) {
+    const rec = loginAttempts.get(key);
+    if (rec && rec.until && rec.until > now) return true;
+  }
+  return false;
+}
+
+function noteLoginFailure(ip, usernameLower) {
+  const now = Date.now();
+  for (const [key, limit] of [[`ip:${ip}`, LOGIN_LIMIT_IP], [`user:${usernameLower}`, LOGIN_LIMIT_USER]]) {
+    let rec = loginAttempts.get(key);
+    if (!rec || now - rec.first > LOGIN_WINDOW_MS) rec = { first: now, count: 0, until: 0 };
+    rec.count += 1;
+    if (rec.count >= limit) rec.until = now + LOGIN_LOCKOUT_MS;
+    loginAttempts.set(key, rec);
+  }
+}
+
+function noteLoginSuccess(ip, usernameLower) {
+  loginAttempts.delete(`ip:${ip}`);
+  loginAttempts.delete(`user:${usernameLower}`);
+}
+
+async function verifyAccount(username, password) {
   const account = accounts.get(username.toLowerCase());
   if (!account || !account.passwordHash) return null;
-  const hash = hashPassword(password, account.salt);
-  if (hash !== account.passwordHash) return null;
+  const hash = await hashPassword(password, account.salt);
+  // Compare in constant time. A plain !== short-circuits at the first differing
+  // byte, so response latency leaks how much of the hash an attacker has
+  // matched. Both sides are fixed-length hex here, so the lengths always agree.
+  const a = Buffer.from(hash, 'hex');
+  const b = Buffer.from(account.passwordHash, 'hex');
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
   return account;
 }
 
@@ -852,9 +962,15 @@ function getClientIp(socket) {
 function lookupGeo(ip) {
   const geo = geoip.lookup(ip);
   if (!geo) return { country: 'XX', countryName: 'Unknown', city: 'Unknown' };
+  const code = geo.country || 'XX';
   return {
-    country: geo.country || 'XX',
-    countryName: geo.country || 'Unknown',
+    country: code,
+    // geoip-lite only returns the two-letter code. This used to be stored as
+    // the country *name* verbatim, so the owner dashboard, the analytics
+    // "top countries" table and every report/feedback alert email read "NP"
+    // instead of "Nepal". Resolve it through the shared list, and keep the code
+    // as the last resort for anything ISO has assigned since.
+    countryName: COUNTRIES[code] || code || 'Unknown',
     city: geo.city || 'Unknown',
   };
 }
@@ -968,6 +1084,15 @@ function findBestMatch(socketId) {
     const candidate = profiles.get(candidateId);
     if (!candidate || !io.sockets.sockets.get(candidateId)) continue;
     if (isBlockedPair(seeker.clientId, candidate.clientId)) continue;
+    // A mutual heart may override the preference filters, but never the two
+    // hard gates. Mode is one of them: this path used to skip it entirely, so a
+    // pair who hearted each other on a voice call and later queued for text
+    // chat (or the reverse) could be matched across pools - dropping a mic-less
+    // chatter into a call, which is precisely what mutuallyCompatible() calls
+    // out as something that must not happen. Self-matching (the same browser in
+    // two tabs) is the other.
+    if (candidate.clientId === seeker.clientId) continue;
+    if ((seeker.mode || 'talk') !== (candidate.mode || 'talk')) continue;
     const key = pairKey(seeker.clientId, candidate.clientId);
     const heartSet = hearts.get(key);
     if (heartSet && heartSet.has(seeker.clientId) && heartSet.has(candidate.clientId)) {
@@ -1130,7 +1255,7 @@ io.on('connection', (socket) => {
   store.recordConnection();
   store.recordPeakOnline(io.engine.clientsCount);
 
-  socket.on('signup', ({ username, password, nickname } = {}) => {
+  socket.on('signup', async ({ username, password, nickname } = {}) => {
     if (typeof username !== 'string' || typeof password !== 'string'
       || !username || !password || username.length < 3 || password.length < 4) {
       return socket.emit('signup-result', { ok: false, error: 'Username/password too short (min 3/4 chars).' });
@@ -1144,11 +1269,22 @@ io.on('connection', (socket) => {
     if (signupThrottled(ip)) {
       return socket.emit('signup-result', { ok: false, error: 'Too many accounts created from this network. Please try again later.' });
     }
-    if (accounts.has(username.toLowerCase())) {
+    if (accounts.has(username.toLowerCase()) || pendingSignups.has(username.toLowerCase())) {
       return socket.emit('signup-result', { ok: false, error: 'That username is already taken.' });
     }
     noteSignup(ip);
-    createAccount(username, password, nickname.slice(0, 24));
+    // Hashing yields the event loop, so two racing signups for the same name
+    // would both pass the check above and the second would overwrite the first.
+    // Reserve the name synchronously, before the first await.
+    pendingSignups.add(username.toLowerCase());
+    try {
+      await createAccount(username, password, nickname.slice(0, 24));
+    } finally {
+      pendingSignups.delete(username.toLowerCase());
+    }
+    // The socket can go away while scrypt runs on the thread pool; emitting to a
+    // dead socket is harmless but persisting a session for it is pointless work.
+    if (!io.sockets.sockets.has(socket.id)) return;
     socketAuth.set(socket.id, username.toLowerCase());
     store.recordFeature('signup');
     store.upsertAccount(username.toLowerCase(), {
@@ -1170,13 +1306,20 @@ io.on('connection', (socket) => {
     });
   });
 
-  socket.on('login', ({ username, password } = {}) => {
+  socket.on('login', async ({ username, password } = {}) => {
     if (typeof username !== 'string') username = '';
     if (typeof password !== 'string') password = '';
-    const account = verifyAccount(username, password);
+    const usernameLower = username.toLowerCase();
+    if (loginLockedOut(ip, usernameLower)) {
+      return socket.emit('login-result', { ok: false, error: 'Too many failed attempts. Please try again in 15 minutes.' });
+    }
+    const account = await verifyAccount(username, password);
     if (!account) {
+      noteLoginFailure(ip, usernameLower);
       return socket.emit('login-result', { ok: false, error: 'Invalid username or password.' });
     }
+    noteLoginSuccess(ip, usernameLower);
+    if (!io.sockets.sockets.has(socket.id)) return;
     socketAuth.set(socket.id, (username || '').toLowerCase());
     store.recordFeature('login');
     store.upsertAccount((username || '').toLowerCase(), {
@@ -1253,19 +1396,28 @@ io.on('connection', (socket) => {
     socket.emit('update-nickname-result', { ok: true, nickname: account.nickname });
   });
 
-  socket.on('change-password', ({ currentPassword, newPassword } = {}) => {
+  socket.on('change-password', async ({ currentPassword, newPassword } = {}) => {
     const authedUsername = socketAuth.get(socket.id);
     if (!authedUsername) return socket.emit('change-password-result', { ok: false, error: 'Not logged in.' });
     if (typeof currentPassword !== 'string') currentPassword = '';
-    if (!verifyAccount(authedUsername, currentPassword)) {
-      return socket.emit('change-password-result', { ok: false, error: 'Current password is incorrect.' });
+    // Guessing the current password is a login by another name, so it is bound
+    // by the same lockout - otherwise a hijacked session becomes an unmetered
+    // oracle for the account's password.
+    if (loginLockedOut(ip, authedUsername)) {
+      return socket.emit('change-password-result', { ok: false, error: 'Too many failed attempts. Please try again in 15 minutes.' });
     }
     if (typeof newPassword !== 'string' || newPassword.length < 4) {
       return socket.emit('change-password-result', { ok: false, error: 'New password must be at least 4 characters.' });
     }
+    if (!(await verifyAccount(authedUsername, currentPassword))) {
+      noteLoginFailure(ip, authedUsername);
+      return socket.emit('change-password-result', { ok: false, error: 'Current password is incorrect.' });
+    }
+    noteLoginSuccess(ip, authedUsername);
     const account = accounts.get(authedUsername);
+    if (!account) return socket.emit('change-password-result', { ok: false, error: 'Not logged in.' });
     const salt = crypto.randomBytes(16).toString('hex');
-    account.passwordHash = hashPassword(newPassword, salt);
+    account.passwordHash = await hashPassword(newPassword, salt);
     account.salt = salt;
     persistAccount(authedUsername);
     // A password change signs out every other device; this one gets a fresh
@@ -1295,6 +1447,7 @@ io.on('connection', (socket) => {
     }
     const issuedIdentityToken = signIdentity(clientId);
     identityTokens.set(clientId, issuedIdentityToken);
+    identityTokenSeen.set(clientId, Date.now());
     // Banned by persistent clientId: refuse until the ban expires or is lifted.
     const ban = store.findActiveBan(clientId, ip);
     if (ban) {
@@ -1544,7 +1697,12 @@ io.on('connection', (socket) => {
     if (reaction === 'heart') {
       const key = pairKey(seeker.clientId, partner.clientId);
       if (!hearts.has(key)) hearts.set(key, new Set());
-      hearts.get(key).add(seeker.clientId);
+      const set = hearts.get(key);
+      set.add(seeker.clientId);
+      // Stamped so the sweeper can retire it. A heart is only consumed if the
+      // pair actually meets again; without an expiry, every one-sided heart
+      // that never got reciprocated stayed in memory for the process's life.
+      set.ts = Date.now();
     }
   });
 
@@ -2049,9 +2207,70 @@ io.on('connection', (socket) => {
     }
     profiles.delete(socket.id);
     socketAuth.delete(socket.id);
+    // Keyed by socket.id, which is never reused - without this the chat-flood
+    // counter accumulates one entry per socket that ever sent a message and is
+    // never reclaimed.
+    chatRate.delete(socket.id);
     broadcastOnlineCount();
   });
 });
+
+// --- Periodic sweep of short-lived bookkeeping ----------------------------
+//
+// These maps are keyed by clientId, IP or pair - none of which have a
+// disconnect hook that can retire them - and every one of them only ever grew.
+// On a single 512MB machine that is a slow leak with a hard ending: the app
+// already idles around 218MB and OOM-restarted in a loop when it was given
+// 256MB, so an unbounded map is a crash, not just untidiness.
+//
+// Each entry below is either time-stamped or tied to a live socket, so a sweep
+// every 10 minutes reclaims them safely. Unref'd so it never holds the process
+// open on shutdown.
+const IDENTITY_TOKEN_TTL_MS = 7 * 24 * 60 * 60000; // a returning browser re-registers well inside a week
+const HEART_TTL_MS = 60 * 60000;                   // a "talk again" wish is stale after an hour
+const REPORT_COOLDOWN_TTL_MS = 24 * 60 * 60000;    // matches the cooldown the report handler enforces
+
+function sweepEphemeralState() {
+  const now = Date.now();
+
+  // Identity tokens: drop any whose browser has neither registered recently nor
+  // has a live socket. A returning user simply gets a freshly signed token.
+  for (const [clientId, seenAt] of identityTokenSeen) {
+    if (now - seenAt < IDENTITY_TOKEN_TTL_MS || clientSockets.has(clientId)) continue;
+    identityTokenSeen.delete(clientId);
+    identityTokens.delete(clientId);
+  }
+  // Any token with no seen-at record at all predates this bookkeeping.
+  for (const clientId of identityTokens.keys()) {
+    if (!identityTokenSeen.has(clientId) && !clientSockets.has(clientId)) identityTokens.delete(clientId);
+  }
+
+  for (const [key, rec] of signupAttempts) {
+    if (now - rec.first > SIGNUP_WINDOW_MS) signupAttempts.delete(key);
+  }
+  for (const [key, rec] of loginAttempts) {
+    if (now - rec.first > LOGIN_WINDOW_MS && (!rec.until || rec.until < now)) loginAttempts.delete(key);
+  }
+  for (const [key, rec] of hearts) {
+    if (now - (rec.ts || 0) > HEART_TTL_MS) hearts.delete(key);
+  }
+  for (const [key, ts] of reportCooldowns) {
+    if (now - ts > REPORT_COOLDOWN_TTL_MS) reportCooldowns.delete(key);
+  }
+  // Status visibility is a per-client preference with no expiry, but it only
+  // matters while the client is online or is somebody's friend.
+  for (const clientId of statusHidden.keys()) {
+    if (clientSockets.has(clientId) || friends.has(clientId)) continue;
+    statusHidden.delete(clientId);
+  }
+  // Rate-limit records for sockets that are already gone.
+  for (const socketId of chatRate.keys()) {
+    if (!io.sockets.sockets.has(socketId)) chatRate.delete(socketId);
+  }
+}
+
+const sweepTimer = setInterval(sweepEphemeralState, 10 * 60000);
+if (sweepTimer.unref) sweepTimer.unref();
 
 // Capture server-side crashes/rejections for the Errors dashboard tab. The
 // uncaughtException handler logs + persists, then exits so the process manager

@@ -34,6 +34,27 @@ body {
   color: var(--text);
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
+  /* Every page on this stylesheet declares viewport-fit=cover, which extends
+     the layout under the notch and home indicator. Without the insets the
+     sticky header, nav and body copy render underneath them, which in
+     landscape on a notched phone clips the first characters of every line.
+     The fixed background gradient still covers the full screen. */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Users who ask their OS to reduce motion get no smooth scrolling, no reveal
+   transitions and no hover translation. This stylesheet backs ~250 pages and
+   had no reduced-motion handling at all. */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 a { color: var(--accent-2); text-decoration: none; }
 a:hover { text-decoration: underline; }

@@ -315,8 +315,25 @@ function messageIsUnsafe(text) {
 // Static fallback used until (and if) the server's /ice-servers responds.
 // STUN only: public "free TURN" endpoints are unreliable and the ones that used
 // to sit here no longer exist, so relying on them just produced silent calls.
+//
+// Spread across independent operators and across ports 3478/80/443 on purpose -
+// Google's STUN hosts are blocked outright in mainland China and unreliable in
+// Iran and Russia, and UDP 19302 is dropped by many corporate, school and
+// carrier firewalls that still pass 80/443. With a single provider those users
+// gather no reflexive candidate at all, which presents as a call that connects
+// and then stays silent. Mirrors PUBLIC_STUN_URLS in server/index.js.
 let ICE_SERVERS = [
-  { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
+  {
+    urls: [
+      'stun:stun.l.google.com:19302',
+      'stun:stun1.l.google.com:19302',
+      'stun:stun.cloudflare.com:3478',
+      'stun:stun.cloudflare.com:53',
+      'stun:global.stun.twilio.com:3478',
+      'stun:stun.relay.metered.ca:80',
+      'stun:stun.nextcloud.com:443',
+    ],
+  },
 ];
 
 // 'relay' hides both peers' IPs but requires a working TURN server. Forcing it
@@ -329,17 +346,53 @@ let ICE_TRANSPORT_POLICY = 'all';
 // the server as early as possible so the very first call already relays properly.
 // startCall() awaits this so the first match never races the fetch and gets
 // built with the bare STUN fallback.
-const iceConfigReady = fetch('/ice-servers')
-  .then((r) => (r.ok ? r.json() : null))
-  .then((data) => {
-    if (data && Array.isArray(data.iceServers) && data.iceServers.length) {
-      ICE_SERVERS = data.iceServers;
-    }
-    if (data && data.iceTransportPolicy === 'relay' && iceListHasRelay(ICE_SERVERS)) {
-      ICE_TRANSPORT_POLICY = 'relay';
-    }
-  })
-  .catch(() => { /* keep the static fallback */ });
+// TURN credentials minted by /ice-servers are HMACs that expire after one hour.
+// Fetching the list once at page load meant a tab left open longer than that
+// started its next call with credentials the relay rejects (TURN 401): the
+// relay candidates are gathered, none of them authenticate, and the call
+// negotiates and then carries no audio - the exact failure TURN exists to
+// prevent, hitting the users who need it most. So the config is refetched
+// whenever it is older than the refresh window below.
+const ICE_CONFIG_MAX_AGE_MS = 45 * 60 * 1000; // comfortably inside the 1h credential TTL
+// A hung request must not block the call forever - startCall() awaits this.
+const ICE_FETCH_TIMEOUT_MS = 6000;
+let iceConfigFetchedAt = 0;
+
+function applyIceConfig(data) {
+  if (data && Array.isArray(data.iceServers) && data.iceServers.length) {
+    ICE_SERVERS = data.iceServers;
+    iceConfigFetchedAt = Date.now();
+  }
+  // Re-evaluated on every refresh: a relay that has been removed from the
+  // server's config must also drop relay-only, or the browser is left gathering
+  // nothing at all.
+  ICE_TRANSPORT_POLICY = (data && data.iceTransportPolicy === 'relay' && iceListHasRelay(ICE_SERVERS))
+    ? 'relay'
+    : 'all';
+}
+
+function fetchIceConfig() {
+  // AbortSignal.timeout is not everywhere yet; fall back to a plain race.
+  const timeout = new Promise((resolve) => setTimeout(() => resolve(null), ICE_FETCH_TIMEOUT_MS));
+  return Promise.race([
+    fetch('/ice-servers', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)),
+    timeout,
+  ])
+    .then(applyIceConfig)
+    .catch(() => { /* keep whatever list we already have */ });
+}
+
+let iceConfigReady = fetchIceConfig();
+
+// Called just before a call is set up. Cheap no-op while the cached config is
+// still fresh; a refetch once its credentials are near expiry.
+function refreshIceConfigIfStale() {
+  if (iceConfigFetchedAt && Date.now() - iceConfigFetchedAt < ICE_CONFIG_MAX_AGE_MS) {
+    return iceConfigReady;
+  }
+  iceConfigReady = fetchIceConfig();
+  return iceConfigReady;
+}
 
 function iceListHasRelay(list) {
   return (list || []).some((s) => []
@@ -2531,6 +2584,11 @@ function createPeerConnection(isInitiator) {
   clearReconnectDeadline();
   iceRestartAttempted = false;
   mediaConnected = false;
+  // The 5s ICE-restart throttle is per-call, not global. Left carrying over, a
+  // restart late in one call silently suppressed the first restart of the next
+  // one - so a brand-new call that stalled had to wait out the full watchdog
+  // instead of re-gathering straight away.
+  lastIceRestartAt = 0;
   connectWatchdog = setTimeout(() => {
     if (!mediaConnected) noteMediaFailure();
   }, 20000);
@@ -2627,8 +2685,9 @@ async function startCall(initiator) {
   // were being matched, so the call starts with audio instead of silence.
   try { await getMic(); } catch (_) { /* fall through: peer negotiates recvonly */ }
   // Never build a peer before the server's TURN list has landed - the static
-  // fallback is STUN-only and cannot cross a symmetric NAT.
-  try { await iceConfigReady; } catch (_) { /* fallback list stands */ }
+  // fallback is STUN-only and cannot cross a symmetric NAT. Also refreshes the
+  // list if its TURN credentials are close to expiring.
+  try { await refreshIceConfigIfStale(); } catch (_) { /* fallback list stands */ }
   pc = createPeerConnection(initiator);
   try { if (window.Moderation) window.Moderation.start(localStream, socket); } catch (_) { /* never break the call */ }
   if (initiator) {
@@ -2740,8 +2799,20 @@ function teardownPeer() {
     ring.style.borderColor = '';
   });
   if (pc) {
+    // Detach every handler, not just two of them. close() itself fires no
+    // events, so this is not what caused a stale indicator - but each handler
+    // is a closure over this connection (and, via `peer`, its transceivers and
+    // stats), so leaving four of them attached kept the whole closed
+    // RTCPeerConnection reachable from the DOM-adjacent event machinery for as
+    // long as the object lived. Over a long session of skipping, that is one
+    // retained peer connection per stranger.
     pc.onicecandidate = null;
     pc.ontrack = null;
+    pc.oniceconnectionstatechange = null;
+    pc.onconnectionstatechange = null;
+    pc.onicegatheringstatechange = null;
+    pc.onsignalingstatechange = null;
+    pc.onnegotiationneeded = null;
     pc.close();
     pc = null;
   }

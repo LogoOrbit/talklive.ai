@@ -44,8 +44,15 @@ function sendAlertEmail(kind, subject, text) {
 }
 
 // --- Auth helpers ---
+// Async so the ~100ms key derivation runs on libuv's thread pool instead of the
+// event loop this process shares with every live call's WebRTC signalling.
 function hashPassword(password, salt) {
-  return crypto.scryptSync(password, salt, 64).toString('hex');
+  return new Promise((resolve, reject) => {
+    crypto.scrypt(password, salt, 64, (err, derived) => {
+      if (err) reject(err);
+      else resolve(derived.toString('hex'));
+    });
+  });
 }
 
 function safeEqual(a, b) {
@@ -231,7 +238,7 @@ function createAdmin({ io, getRuntime, kickBanned }) {
     const salt = crypto.randomBytes(16).toString('hex');
     const secret = totp.generateSecret();
     // Held pending until the first correct code confirms the authenticator scan.
-    pendingSetup = { passwordHash: hashPassword(password, salt), salt, totpSecret: secret };
+    pendingSetup = { passwordHash: await hashPassword(password, salt), salt, totpSecret: secret };
     const url = totp.otpauthURL(secret, OWNER_EMAIL || 'owner', 'TalkLive Dashboard');
     let qr = null;
     if (QRCode) qr = await QRCode.toDataURL(url, { margin: 1, width: 220 });
@@ -255,13 +262,14 @@ function createAdmin({ io, getRuntime, kickBanned }) {
     res.json({ ok: true });
   });
 
-  router.post('/api/login', (req, res) => {
+  router.post('/api/login', async (req, res) => {
     const ip = reqIp(req);
     if (rateLimited(ip)) return res.status(429).json({ error: 'Too many attempts. Try again in 15 minutes.' });
     const admin = store.data.admin;
     if (!admin) return res.status(400).json({ error: 'Dashboard not set up yet.' });
     const { password, code } = req.body || {};
-    const passOk = password && safeEqual(hashPassword(password, admin.salt), admin.passwordHash);
+    const passOk = typeof password === 'string' && !!password
+      && safeEqual(await hashPassword(password, admin.salt), admin.passwordHash);
     const codeOk = totp.verifyCode(admin.totpSecret, code);
     if (!passOk || !codeOk) {
       noteFailedLogin(ip);

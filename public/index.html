@@ -9,7 +9,7 @@
      rather than after it - the sooner it lands, the sooner the hero paints.
      Analytics and ad tags are loaded at the end of <body> instead of here so
      they stop competing for mobile bandwidth during Largest Contentful Paint. -->
-<link rel="stylesheet" href="style.css?v=20260823ui" />
+<link rel="stylesheet" href="style.css?v=20260828fix" />
 <script defer src="/config.js"></script>
 
 <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
@@ -171,7 +171,7 @@
 }
 </script>
 
-<script defer src="/ads.js?v=20260823ui"></script>
+<script defer src="/ads.js?v=20260828fix"></script>
 </head>
 <body>
   <a href="#main" class="skip-link" data-i18n="skipToContent">Skip to main content</a>
@@ -584,17 +584,26 @@
                 <button type="button" class="account-tab" data-tab="signup" data-i18n="signUp">Sign Up</button>
               </div>
 
-              <div id="loginTab" class="account-tab-panel">
+              <!-- Wrapped in real <form> elements so browser and third-party
+                   password managers recognise these as credential fields and
+                   offer to save/fill them. Loose inputs with correct
+                   autocomplete attributes are not enough - Chrome logs
+                   "Password field is not contained in a form" and declines to
+                   offer saving, so returning users had to retype their password
+                   every time. Submission is handled by the existing button and
+                   Enter-key listeners in app.js, so the form itself must never
+                   navigate. -->
+              <form id="loginTab" class="account-tab-panel" autocomplete="on" onsubmit="return false;">
                 <input type="text" id="loginUsername" class="search-input account-input" data-i18n-placeholder="username" data-i18n-aria="username" placeholder="Username" autocomplete="username" />
                 <input type="password" id="loginPassword" class="search-input account-input" data-i18n-placeholder="password" data-i18n-aria="password" placeholder="Password" autocomplete="current-password" />
                 <button type="button" id="loginSubmitBtn" class="btn btn-primary settings-save" data-i18n="logIn">Log In</button>
-              </div>
+              </form>
 
-              <div id="signupTab" class="account-tab-panel hidden">
+              <form id="signupTab" class="account-tab-panel hidden" autocomplete="on" onsubmit="return false;">
                 <input type="text" id="signupUsername" class="search-input account-input" data-i18n-placeholder="chooseUsername" data-i18n-aria="chooseUsername" placeholder="Choose a username" autocomplete="username" />
                 <input type="password" id="signupPassword" class="search-input account-input" data-i18n-placeholder="choosePassword" data-i18n-aria="choosePassword" placeholder="Choose a password" autocomplete="new-password" />
                 <button type="button" id="signupSubmitBtn" class="btn btn-primary settings-save" data-i18n="createAccount">Create Account</button>
-              </div>
+              </form>
 
               <p class="account-hint" data-i18n="accountHint">Your account is saved permanently - you stay signed in on this device and can log in from anywhere.</p>
             </div>
@@ -614,10 +623,16 @@
               <input type="text" id="settingsNickname" class="search-input account-input" data-i18n-placeholder="nickname" placeholder="Nickname" maxlength="24" />
               <button type="button" id="updateNicknameBtn" class="btn btn-secondary settings-save" data-i18n="updateNickname" disabled>Update Nickname</button>
 
-              <label class="account-label account-label-spaced" for="currentPasswordInput" data-i18n="changePassword">Change Password</label>
-              <input type="password" id="currentPasswordInput" class="search-input account-input" data-i18n-placeholder="currentPassword" data-i18n-aria="currentPassword" placeholder="Current password" autocomplete="current-password" />
-              <input type="password" id="newPasswordInput" class="search-input account-input" data-i18n-placeholder="newPassword" data-i18n-aria="newPassword" placeholder="New password" autocomplete="new-password" />
-              <button type="button" id="changePasswordBtn" class="btn btn-secondary settings-save" data-i18n="updatePassword" disabled>Update Password</button>
+              <!-- Also a real form, for the same reason as login/signup: a
+                   password manager can only offer to update a stored password
+                   when the change fields live in a form. Submission stays with
+                   the button handler in app.js. -->
+              <form class="account-tab-panel" autocomplete="on" onsubmit="return false;">
+                <label class="account-label account-label-spaced" for="currentPasswordInput" data-i18n="changePassword">Change Password</label>
+                <input type="password" id="currentPasswordInput" class="search-input account-input" data-i18n-placeholder="currentPassword" data-i18n-aria="currentPassword" placeholder="Current password" autocomplete="current-password" />
+                <input type="password" id="newPasswordInput" class="search-input account-input" data-i18n-placeholder="newPassword" data-i18n-aria="newPassword" placeholder="New password" autocomplete="new-password" />
+                <button type="button" id="changePasswordBtn" class="btn btn-secondary settings-save" data-i18n="updatePassword" disabled>Update Password</button>
+              </form>
 
               <button type="button" id="logoutBtn" class="btn btn-danger settings-save account-logout" data-i18n="logOut">Log Out</button>
             </div>
@@ -1344,7 +1359,7 @@
        modules and i18n are all in place before app.js), while letting the
        browser finish parsing and paint the page first. -->
   <script defer src="/socket.io/socket.io.js"></script>
-  <script defer src="countries.js?v=20260704b"></script>
+  <script defer src="countries.js?v=20260828fix"></script>
   <script defer src="i18n.js?v=20260823rtc2"></script>
   <script defer src="moderation.js?v=20260705b"></script>
   <script defer src="error-reporter.js?v=20260823ui"></script>
@@ -1380,7 +1395,7 @@
       audio.addEventListener('play', function () { setState(true); });
     })();
   </script>
-  <script defer src="app.js?v=20260823rtc2"></script>
+  <script defer src="app.js?v=20260828fix"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

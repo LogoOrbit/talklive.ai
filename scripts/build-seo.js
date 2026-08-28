@@ -400,7 +400,7 @@ function page(p, index) {
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<link rel="stylesheet" href="/seo.css" />
+<link rel="stylesheet" href="/seo.css?v=20260828fix" />
 <title>${esc(p.title)}</title>
 <meta name="description" content="${esc(p.description)}" />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
@@ -1931,7 +1931,7 @@ function blogPost(b) {
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<link rel="stylesheet" href="/seo.css" />
+<link rel="stylesheet" href="/seo.css?v=20260828fix" />
 <title>${esc(b.title)}</title>
 <meta name="description" content="${esc(b.description)}" />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
@@ -2043,7 +2043,7 @@ function blogIndex() {
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<link rel="stylesheet" href="/seo.css" />
+<link rel="stylesheet" href="/seo.css?v=20260828fix" />
 <title>TalkLive Blog - Voice Chat & Talking to Strangers</title>
 <meta name="description" content="Guides and research on talking to strangers, voice-only chat, practising languages with real people, and staying safe online - from the team behind TalkLive." />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
@@ -2161,7 +2161,7 @@ function localeHome(loc) {
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<link rel="stylesheet" href="/seo.css" />
+<link rel="stylesheet" href="/seo.css?v=20260828fix" />
 <title>${esc(loc.title)}</title>
 <meta name="description" content="${esc(loc.description)}" />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />

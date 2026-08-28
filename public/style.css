@@ -1972,6 +1972,11 @@ body.panel-open .side-panel {
   .skeleton { animation: none; }
 }
 
+/* The login and sign-up panels are <form> elements so password managers treat
+   them as credential forms. A form carries a default user-agent margin that a
+   <div> does not, which would otherwise open a gap under the tab strip. */
+.account-tab-panel { margin: 0; }
+
 .modal-body {
   padding: 22px;
   overflow-y: auto;
