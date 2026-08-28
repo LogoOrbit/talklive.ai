@@ -244,7 +244,6 @@ const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 const FREE_LIMITS = {
   countries: 3, // max countries per preferred/not-preferred list
   friends: 10, // max friends
-  matchDelayMs: 5000, // wait before matching the next person
 };
 // Premium registry lives in the persistent store (Postgres/file) so grants
 // survive restarts and deploys. Premium is not on sale yet - /pricing shows a
@@ -552,18 +551,6 @@ const VOICE_INVITE_TTL_MS = 2 * 60 * 1000; // plenty for two page loads; then it
 // auto-match with any random stranger so nobody waits forever.
 const RANDOM_FALLBACK_MS = 10000;
 const waitFallbackTimers = new Map(); // socketId -> Timeout
-
-// Free-tier "next person" delay: non-premium users wait ~5s before the next
-// search actually starts. Premium users match instantly.
-const matchDelayTimers = new Map(); // socketId -> Timeout
-
-function clearMatchDelayTimer(socketId) {
-  const timer = matchDelayTimers.get(socketId);
-  if (timer) {
-    clearTimeout(timer);
-    matchDelayTimers.delete(socketId);
-  }
-}
 
 function friendCount(clientId) {
   const map = friends.get(clientId);
@@ -1545,7 +1532,6 @@ io.on('connection', (socket) => {
     store.recordFeature(profile.mode === 'chat' ? 'chat_search' : 'search');
     // A fresh, explicit search starts with the full set of filters again.
     profile.randomFallbackActive = false;
-    clearMatchDelayTimer(socket.id);
     tryMatch(socket.id);
   });
 
@@ -1553,18 +1539,12 @@ io.on('connection', (socket) => {
     disconnectPartner(socket.id);
     const profile = profiles.get(socket.id);
     if (profile) profile.randomFallbackActive = false;
-    // Premium skips straight to the next stranger; the free tier waits ~5s
-    // before the next search begins.
-    clearMatchDelayTimer(socket.id);
-    if (profile && !isPremium(profile.clientId)) {
-      socket.emit('match-delay', { seconds: Math.round(FREE_LIMITS.matchDelayMs / 1000) });
-      const timer = setTimeout(() => {
-        matchDelayTimers.delete(socket.id);
-        if (io.sockets.sockets.get(socket.id)) tryMatch(socket.id);
-      }, FREE_LIMITS.matchDelayMs);
-      matchDelayTimers.set(socket.id, timer);
-      return;
-    }
+    // Everyone skips straight to the next stranger. The free tier used to be
+    // held back ~5s here, which cost far more than it earned: the client also
+    // emits 'skip' for involuntary advances (a call whose media never arrived,
+    // a failed reconnect), so the people the delay punished hardest were the
+    // ones whose calls were already failing - a 20s watchdog and then another
+    // 5s of dead air before they could even try again.
     tryMatch(socket.id);
   });
 
@@ -1587,7 +1567,6 @@ io.on('connection', (socket) => {
     disconnectPartner(socket.id);
     clearFromQueue(socket.id);
     clearWaitFallbackTimer(socket.id);
-    clearMatchDelayTimer(socket.id);
   });
 
   socket.on('report', (payload = {}) => {
@@ -2172,7 +2151,6 @@ io.on('connection', (socket) => {
       disconnectPartner(id);
       clearFromQueue(id);
       clearWaitFallbackTimer(id);
-      clearMatchDelayTimer(id);
     }
     partners.set(socket.id, otherSocketId);
     partners.set(otherSocketId, socket.id);
@@ -2189,7 +2167,6 @@ io.on('connection', (socket) => {
     disconnectPartner(socket.id);
     clearFromQueue(socket.id);
     clearWaitFallbackTimer(socket.id);
-    clearMatchDelayTimer(socket.id);
     const profile = profiles.get(socket.id);
     if (profile && clientSockets.get(profile.clientId) === socket.id) {
       clientSockets.delete(profile.clientId);

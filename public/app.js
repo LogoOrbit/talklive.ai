@@ -4700,7 +4700,7 @@ refreshNetStatus();
 // (who upgrade via /pricing) get everything unlocked. The server enforces
 // all limits - this state only drives the UI.
 let isPremiumUser = false;
-let freeLimits = { countries: 3, friends: 10, matchDelaySeconds: 5 };
+let freeLimits = { countries: 3, friends: 10 };
 
 socket.on('premium-status', ({ premium, limits } = {}) => {
   isPremiumUser = !!premium;
@@ -4708,7 +4708,6 @@ socket.on('premium-status', ({ premium, limits } = {}) => {
     freeLimits = {
       countries: limits.countries || 3,
       friends: limits.friends || 10,
-      matchDelaySeconds: Math.round((limits.matchDelayMs || 5000) / 1000),
     };
   }
   updatePremiumUi();
@@ -4760,15 +4759,6 @@ socket.on('friend-online', ({ username, countryCode, country } = {}) => {
   const where = getCountryName(countryCode) || country || '';
   showToast(where ? t('friendOnlineToast', { name: username, country: where }) : t('friendOnlineToastNoCountry', { name: username }));
   vibrate([30, 40, 30]);
-});
-
-// --- Free-tier "next person" delay -------------------------------------------
-// The server holds free users ~5s before starting the next search after a skip.
-socket.on('match-delay', ({ seconds } = {}) => {
-  setState('waiting');
-  setConnection('orange', 'connSearching');
-  setStatusText('statusSearching');
-  setSubText('subFreeDelay', { s: seconds || freeLimits.matchDelaySeconds });
 });
 
 // --- Daily featured blog article: rotates once every 24 hours so the SEO

@@ -810,7 +810,6 @@
   });
 
   socket.on('waiting', function () { /* still searching - keep the search view */ });
-  socket.on('match-delay', function () { /* brief free-tier pause - search view stays */ });
   socket.on('random-fallback', function () { /* server widened the net; nothing to do */ });
 
   socket.on('chat-message', function (data) {

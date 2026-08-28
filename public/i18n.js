@@ -435,7 +435,6 @@ const I18N_STRINGS = {
     "premiumGenderLocked": "The gender filter is a Premium feature.",
     "premiumCountryLimit": "The free plan allows up to {n} countries per list.",
     "premiumFriendLimit": "The free plan allows up to {n} friends.",
-    "subFreeDelay": "Free plan: matching in about {s}s - Premium matches instantly",
     "friendOnlineToast": "{name} from {country} is online",
     "friendOnlineToastNoCountry": "{name} is online",
     "micPromptTitle": "Allow microphone access",
