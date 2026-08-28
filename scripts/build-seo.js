@@ -2197,7 +2197,11 @@ ${alternates}
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
 </head>
 <body>
-<a class="skip-link" href="#main-content">Skip to main content</a>
+<!-- Every locale already carries a translated skip link in scripts/locales.js;
+     this template was the one place still hardcoding the English string, so
+     screen-reader users on all 16 translated homepages got an English
+     instruction as the first thing they heard. -->
+<a class="skip-link" href="#main-content">${loc.skipToContent}</a>
 <header class="site-header">
   <div class="wrap">
     <a class="logo" href="/${loc.code}/"><img src="/favicon.svg" width="30" height="30" alt="TalkLive logo" /> TalkLive</a>
