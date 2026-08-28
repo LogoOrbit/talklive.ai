@@ -125,8 +125,8 @@ function footerHtml() {
     { h: 'Discover', items: [
       { slug: 'resources', label: 'Resource Hub' },
       { slug: 'alternatives', label: 'Alternatives' },
-      { slug: 'languages', label: 'Languages' },
-      { slug: 'countries', label: 'Countries' },
+      { slug: 'languages/', label: 'Languages' },
+      { slug: 'countries/', label: 'Countries' },
       { slug: 'how-it-works', label: 'How It Works' },
       { slug: 'safety', label: 'Safety Center' },
     ] },
@@ -164,7 +164,7 @@ const PAGE_CLUSTERS = {
   voice: ['random-call', 'random-voice-chat', 'free-voice-chat', 'voice-chat-rooms', 'call-random-people', 'free-online-calls', 'international-calls', 'random-video-chat', 'random-video-call', 'stranger-video-call'],
   text: ['random-text-chat', 'text-chat-with-strangers', 'online-chat-rooms'],
   discovery: ['talk-to-strangers', 'random-chat', 'anonymous-chat', 'meet-new-people', 'make-friends-online', 'late-night-chat', 'talk-to-someone', 'pakistani-chat'],
-  language: ['practice-english-speaking', 'language-exchange', 'languages', 'countries'],
+  language: ['practice-english-speaking', 'language-exchange', 'language-chat-guide', 'country-chat-guide'],
   alternatives: ['omegle-alternative', 'ometv-alternative', 'chatroulette-alternative', 'emerald-chat-alternative', 'monkey-app-alternative', 'chatspin-alternative', 'shagle-alternative', 'camsurf-alternative', 'chathub-alternative', 'azar-alternative', 'holla-alternative', 'tinychat-alternative', 'wakie-alternative', 'alternatives'],
   trust: ['safety', 'how-it-works', 'resources'],
 };
@@ -555,7 +555,7 @@ const CORE_PAGES = [
         'Great conversations need to feel safe. Every user must be 18 or older, and one tap lets you block or report anyone who breaks the rules - which ends the call immediately. Repeated reports lead to bans, so the community stays friendly.' ] },
     ],
     faq: [
-      { q: 'Is talking to strangers on TalkLive free?', a: 'Core random voice and text matching is free and needs no credit card. Free users wait about five seconds between calls; optional Premium adds advanced filters and removes that wait.' },
+      { q: 'Is talking to strangers on TalkLive free?', a: 'Core random voice and text matching is free and needs no credit card. Matching is instant for everyone; optional Premium adds advanced filters.' },
       { q: 'Do I need to create an account?', a: 'No. You can start talking to strangers instantly without signing up. An optional free account lets you keep friends and history, but it is never required.' },
       { q: 'Is it anonymous?', a: 'Yes. You are identified only by a temporary display name. No phone number, email, or real name is needed to talk.' },
       { q: 'Can I choose who I talk to?', a: 'You can apply optional filters such as gender and country preferences. If no match is found quickly, TalkLive connects you with any available stranger so you never wait long.' },
@@ -603,7 +603,7 @@ const CORE_PAGES = [
         'Learners use random voice chat to practice speaking with native and fluent speakers from around the world. A few minutes of real conversation does more for your accent and confidence than an hour of drills.' ] },
     ],
     faq: [
-      { q: 'Is TalkLive voice chat free?', a: 'Core random voice matching is free. Free users wait about five seconds between calls; optional Premium removes the wait and adds advanced filters.' },
+      { q: 'Is TalkLive voice chat free?', a: 'Core random voice matching is free. Matching is instant for everyone; optional Premium adds advanced filters.' },
       { q: 'Do I need headphones?', a: 'Headphones are recommended because they prevent echo and improve call quality, but they are not required.' },
       { q: 'Is there video?', a: 'No. TalkLive is intentionally audio-only, which keeps it private, low-bandwidth, and pressure-free.' },
       { q: 'Are my calls recorded?', a: 'TalkLive does not record or store voice audio. Another participant can still record on their own device, so do not share sensitive information.' },
@@ -844,7 +844,7 @@ const CORE_PAGES = [
     faq: [
       { q: 'How do I meet new people on TalkLive?', a: 'Just tap to talk. TalkLive instantly matches you with a new person for a live voice conversation - no profiles or swiping needed.' },
       { q: 'Can I make lasting friends?', a: 'Yes. When you enjoy talking with someone, add them as a friend so you can message and call them again later.' },
-      { q: 'Is it free to meet people here?', a: 'Core random matching is free. Free users wait about five seconds between calls, and optional Premium adds advanced filters and removes that wait.' },
+      { q: 'Is it free to meet people here?', a: 'Core random matching is free. Matching is instant for everyone; optional Premium adds advanced filters.' },
       { q: 'Can I meet people from specific countries?', a: 'Yes. Optional filters let you focus on particular regions, or leave them off to meet people from everywhere.' },
       { q: 'Do I need to show my face?', a: 'No. TalkLive is voice-only, so you meet people through conversation, not appearance.' },
     ],
@@ -984,7 +984,7 @@ const CORE_PAGES = [
         'TalkLive is strictly 18+. There are no video streams to moderate, every user can be reported in one tap, and repeated reports lead to bans. Safety here is structural: remove the camera, and you remove the way random chat most often goes wrong.' ] },
     ],
     faq: [
-      { q: 'Is TalkLive a free Omegle alternative?', a: 'Core random voice and text matching is free and requires no credit card. Free users wait about five seconds between calls; optional Premium adds filters and removes that wait.' },
+      { q: 'Is TalkLive a free Omegle alternative?', a: 'Core random voice and text matching is free and requires no credit card. Matching is instant for everyone; optional Premium adds advanced filters.' },
       { q: 'Does TalkLive have video like Omegle?', a: 'No, and that is deliberate. TalkLive is voice-only, which keeps chats private, low-pressure, and far safer than random video.' },
       { q: 'Do I need an account?', a: 'No. Tap once and you are talking. An optional free account lets you keep friends and history.' },
       { q: 'Why did Omegle shut down?', a: 'Omegle closed in November 2023, citing the cost and difficulty of fighting misuse of its unmoderated video chat. TalkLive avoids that failure mode by being voice-only, 18+, and moderated.' },
@@ -1033,7 +1033,7 @@ const CORE_PAGES = [
     ],
     faq: [
       { q: 'Does TalkLive have video chat?', a: 'No, and that is intentional. TalkLive is a voice-first alternative to random video chat, which keeps conversations private, low-pressure, low-data, and much safer.' },
-      { q: 'Is random chat on TalkLive free?', a: 'Core random voice and text matching is free. Free users wait about five seconds between calls, and optional Premium adds advanced filters.' },
+      { q: 'Is random chat on TalkLive free?', a: 'Core random voice and text matching is free. Matching is instant for everyone; optional Premium adds advanced filters.' },
       { q: 'Do I need to sign up?', a: 'No. Tap once and you are chatting with a random stranger. An optional free account lets you keep friends and history.' },
       { q: 'Is it anonymous?', a: 'Yes. You appear only as a temporary display name - no real name, photo, phone number, or email required.' },
       { q: 'What if someone is inappropriate?', a: 'Tap report or block. The chat ends instantly, that person can no longer reach you, and repeated reports lead to a ban.' },
@@ -1128,7 +1128,7 @@ const CORE_PAGES = [
         'TalkLive is strictly 18+. There are no video streams to police, every user can be reported in one tap, and repeated reports lead to bans. Safety here is built into the design: remove the camera, and you remove the way random chat most often goes wrong.' ] },
     ],
     faq: [
-      { q: 'Is TalkLive a free OmeTV alternative?', a: 'Core random voice and text matching is free. Free users wait about five seconds between calls; optional Premium adds filters and removes that wait.' },
+      { q: 'Is TalkLive a free OmeTV alternative?', a: 'Core random voice and text matching is free. Matching is instant for everyone; optional Premium adds advanced filters.' },
       { q: 'Does TalkLive have video like OmeTV?', a: 'No, and that is deliberate. TalkLive is voice-only, which keeps chats private, low-pressure, and far safer than random video.' },
       { q: 'Do I need an account?', a: 'No. Tap once and you are talking. An optional free account lets you keep friends and history.' },
       { q: 'Is it moderated?', a: 'Yes. Every user can be blocked or reported in one tap, the chat ends instantly, and repeated reports lead to automatic bans.' },
@@ -1177,7 +1177,7 @@ const CORE_PAGES = [
     ],
     faq: [
       { q: 'Is this a real stranger video call?', a: 'TalkLive is a voice-first alternative to a stranger video call - you call and talk to random strangers live, but audio-only, which is more private and much safer than random video.' },
-      { q: 'Is it free to call strangers?', a: 'Core random voice matching is free and requires no credit card. Free users wait about five seconds between calls; optional Premium removes that wait.' },
+      { q: 'Is it free to call strangers?', a: 'Core random voice matching is free and requires no credit card. Matching is instant for everyone.' },
       { q: 'Do I need to share my phone number?', a: 'No. Calls happen inside the app using a temporary display name, so your real number and identity stay private.' },
       { q: 'Is it safe to call strangers here?', a: 'TalkLive is 18+, anonymous, and includes instant block and report tools plus automatic bans for repeat offenders.' },
       { q: 'What devices can I use?', a: 'Any device with a modern browser and a microphone - phones, tablets, laptops, and desktops. Nothing to install.' },
@@ -1224,7 +1224,7 @@ const CORE_PAGES = [
         'TalkLive is built for adults and moderated by design. There are no video streams to exploit, every user can be reported in one tap, and repeated reports lead to bans. Remove the camera, and you remove the way random chat most often goes wrong.' ] },
     ],
     faq: [
-      { q: 'Is TalkLive a free Monkey app alternative?', a: 'Core random voice and text matching is free. Free users wait about five seconds between calls; optional Premium adds filters and removes that wait.' },
+      { q: 'Is TalkLive a free Monkey app alternative?', a: 'Core random voice and text matching is free. Matching is instant for everyone; optional Premium adds advanced filters.' },
       { q: 'Does TalkLive have video like the Monkey app?', a: 'No, and that is deliberate. TalkLive is voice-only, which keeps chats private, low-pressure, and far safer than random video.' },
       { q: 'Is there an age requirement?', a: 'Yes. TalkLive is strictly for users 18 and older, and it is moderated with one-tap reporting and automatic bans.' },
       { q: 'Do I need an account?', a: 'No. Tap once and you are talking. An optional free account lets you keep friends and history.' },
@@ -1274,7 +1274,7 @@ const CORE_PAGES = [
     ],
     faq: [
       { q: 'Is there someone to talk to right now?', a: 'Availability depends on the live queue and selected preferences. Open TalkLive to check; a particular wait time or match is not guaranteed.' },
-      { q: 'Is it free to talk to someone?', a: 'Core random voice and text matching is free and needs no credit card. Free users wait about five seconds between calls; optional Premium adds controls.' },
+      { q: 'Is it free to talk to someone?', a: 'Core random voice and text matching is free and needs no credit card. Matching is instant for everyone; optional Premium adds extra controls.' },
       { q: 'Do I have to use my voice?', a: 'No. Tap to Chat pairs you with someone for a pure text conversation - no microphone or camera needed.' },
       { q: 'Will anyone know who I am?', a: 'No. You appear as a temporary display name. No phone number, email, or real name is ever required.' },
       { q: 'Is this a counseling or therapy service?', a: 'No. TalkLive is friendly strangers keeping each other company, not professional help. If you are in crisis, please contact a local crisis line (988 in the US, 116 123 in the UK/Ireland) or emergency services.' },
@@ -1417,7 +1417,7 @@ const CORE_PAGES = [
         'TalkLive is strictly 18+, blocks links automatically, and gives every user a one-tap report that ends the conversation instantly. Repeat offenders are banned by device and IP. A roulette is only fun when the next spin is safe - that is the whole design here.' ] },
     ],
     faq: [
-      { q: 'Is TalkLive a free Chatroulette alternative?', a: 'Core random voice and text matching is free. Free users wait about five seconds between calls; optional Premium adds filters and removes that wait.' },
+      { q: 'Is TalkLive a free Chatroulette alternative?', a: 'Core random voice and text matching is free. Matching is instant for everyone; optional Premium adds advanced filters.' },
       { q: 'Does TalkLive have video like Chatroulette?', a: 'No, on purpose. Voice and text keep the random-roulette fun while removing the explicit-content problem that plagues video roulette sites.' },
       { q: 'Can I skip people like on Chatroulette?', a: 'Yes - Next is one tap away at all times and instantly matches you with a new random stranger.' },
       { q: 'Do I need to sign up?', a: 'No. Open the site and tap once. An optional free account exists only to keep friends between visits.' },
@@ -2314,7 +2314,110 @@ function buildSitemap() {
   }).join('\n');
   return `${head}\n${body}\n</urlset>\n`;
 }
-fs.writeFileSync(path.join(PUBLIC, 'sitemap.xml'), buildSitemap());
+/*
+ * Sweep every indexable page actually present in ./public into the sitemap.
+ *
+ * sitemapUrls above only knows about the page sets this file builds. The
+ * country/city/language cluster (scripts/geo-pages.js, 177 pages) and two
+ * later page/blog batches are generated elsewhere and were never added to it,
+ * so 189 of the site's 274 pages - every city and country page among them -
+ * appeared in no sitemap that anything submitted. The stale sitemap-*.xml
+ * files that did list them are referenced by nothing at all: robots.txt points
+ * only at sitemap.xml. Those pages were left to be found by internal links or
+ * not at all.
+ *
+ * Deriving the list from disk rather than from a hand-maintained array is the
+ * point: it is the drift itself that caused this, so any page that ships is
+ * now submitted whether or not this script was the thing that wrote it.
+ */
+function canonicalUrlForFile(absFile) {
+  let rel = path.relative(PUBLIC, absFile).split(path.sep).join('/');
+  if (!rel.endsWith('.html')) return null;
+  rel = rel.slice(0, -'.html'.length);
+  // Directory indexes keep their trailing slash; everything else is extensionless.
+  if (rel === 'index') return `${SITE}/`;
+  if (rel.endsWith('/index')) return `${SITE}/${rel.slice(0, -'index'.length)}`;
+  return `${SITE}/${rel}`;
+}
+
+// Pages that must never be submitted. chat.html carries a noindex robots tag,
+// and landing.html is only ever served on the marketing subdomain.
+const SITEMAP_EXCLUDE = new Set(['chat.html', 'landing.html']);
+
+function walkHtml(dir, out = []) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) walkHtml(full, out);
+    else if (entry.isFile() && entry.name.endsWith('.html')) out.push(full);
+  }
+  return out;
+}
+
+// scripts/seo-lastmod.json is a content-hash ledger recording when each URL
+// last actually changed. Nothing had been reading it, so it is loaded here
+// defensively - a missing or malformed ledger just means every page falls back
+// to the site-wide content date.
+let LASTMOD = {};
+try {
+  LASTMOD = JSON.parse(fs.readFileSync(path.join(__dirname, 'seo-lastmod.json'), 'utf8'));
+} catch (_) {
+  LASTMOD = {};
+}
+
+function extraSitemapEntries(existingLocs) {
+  const entries = [];
+  for (const file of walkHtml(PUBLIC)) {
+    const rel = path.relative(PUBLIC, file).split(path.sep).join('/');
+    if (SITEMAP_EXCLUDE.has(rel)) continue;
+    // A page that opts out of indexing must not be advertised in the sitemap.
+    const html = fs.readFileSync(file, 'utf8');
+    if (/<meta[^>]+name=["']robots["'][^>]*noindex/i.test(html)) continue;
+    const loc = canonicalUrlForFile(file);
+    if (!loc || existingLocs.has(loc)) continue;
+    existingLocs.add(loc);
+    // lastmod comes from the content-hash ledger when the page is tracked
+    // there, so an untouched page keeps an honest date instead of claiming to
+    // change on every build.
+    const key = loc.slice(SITE.length) || '/';
+    const tracked = LASTMOD[key] && LASTMOD[key].date;
+    entries.push({
+      loc,
+      lastmod: tracked || CONTENT_UPDATED,
+      freq: 'weekly',
+      // Hubs outrank their members; blog posts sit below both.
+      priority: loc.endsWith('/') ? '0.7' : '0.6',
+    });
+  }
+  return entries.sort((a, b) => a.loc.localeCompare(b.loc));
+}
+
+function buildFullSitemap() {
+  const head = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">';
+  const seen = new Set();
+  const known = sitemapUrls.map(u => {
+    const loc = u.raw ? `${SITE}/${u.slug}` : url(u.slug);
+    seen.add(loc);
+    const alts = u.home
+      ? homeAlternates((href, lang) => `\n    <xhtml:link rel="alternate" hreflang="${lang}" href="${href}"/>`).join('')
+      : '';
+    return `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${u.lastmod}</lastmod>\n    <changefreq>${u.freq}</changefreq>\n    <priority>${u.priority}</priority>${alts}\n  </url>`;
+  });
+  const extra = extraSitemapEntries(seen).map(u =>
+    `  <url>\n    <loc>${u.loc}</loc>\n    <lastmod>${u.lastmod}</lastmod>\n    <changefreq>${u.freq}</changefreq>\n    <priority>${u.priority}</priority>\n  </url>`);
+  sitemapTotal = known.length + extra.length;
+  return `${head}\n${known.concat(extra).join('\n')}\n</urlset>\n`;
+}
+let sitemapTotal = 0;
+fs.writeFileSync(path.join(PUBLIC, 'sitemap.xml'), buildFullSitemap());
+
+// The per-cluster sitemap-*.xml files are a leftover from an earlier layout.
+// Nothing references them, they list URLs that now 301, and a stale sitemap
+// that disagrees with the live one is worse than no sitemap: it teaches the
+// crawler that this site's sitemaps are unreliable. sitemap.xml is complete,
+// so remove them rather than maintain two sources of truth.
+for (const stale of fs.readdirSync(PUBLIC)) {
+  if (/^sitemap-.+\.xml$/.test(stale)) fs.unlinkSync(path.join(PUBLIC, stale));
+}
 
 // RSS feed for the blog - enables autodiscovery, feed readers and syndication.
 function buildRss() {
@@ -2352,7 +2455,7 @@ function buildLlmsTxt() {
 
 > TalkLive (${SITE}) is a browser-based random chat service for adults, offering one-to-one voice calls and text chat. Core matching is free and does not require an account. Voice uses encrypted WebRTC over a TURN relay in production and is not recorded or stored by TalkLive. Typed messages and related context may be retained for a limited rolling period as described in the Privacy Policy.
 
-Key facts: voice-only or text-only modes; optional country and interest preferences do not guarantee a specific match; free users wait about five seconds between calls; optional Premium is announced but not yet available for purchase; no video chat; 18+ policy; leave, block and report controls. Participant identity, age, location and intent are not verified.
+Key facts: voice-only or text-only modes; optional country and interest preferences do not guarantee a specific match; matching is instant for everyone; optional Premium is announced but not yet available for purchase; no video chat; 18+ policy; leave, block and report controls. Participant identity, age, location and intent are not verified.
 
 ## Main pages
 - [TalkLive app](${SITE}/): Start a random voice or text chat instantly.
@@ -2379,4 +2482,4 @@ fs.writeFileSync(path.join(PUBLIC, 'llms.txt'), buildLlmsTxt());
 const { KEY: INDEXNOW_KEY } = require('../server/indexnow');
 fs.writeFileSync(path.join(PUBLIC, `${INDEXNOW_KEY}.txt`), INDEXNOW_KEY + '\n');
 
-console.log(`Built ${count} landing pages + sitemap.xml (${sitemapUrls.length} urls) + blog/feed.xml + llms.txt + indexnow key.`);
+console.log(`Built ${count} landing pages + sitemap.xml (${sitemapTotal} urls) + blog/feed.xml + llms.txt + indexnow key.`);

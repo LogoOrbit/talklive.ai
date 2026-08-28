@@ -28,6 +28,23 @@ for (const file of htmlFiles(publicDir)) {
     (unit) => `<div data-ad="${/8131758533/.test(unit) ? 'native' : 'leaderboard'}"></div>`
   );
   html = html.replace(/^.*pagead2\.googlesyndication\.com.*\r?\n?/gim, '');
+
+  // Strip the opaque Adsterra "direct link" that still sat in the footer of
+  // every country, city and language page. The intrusive Adsterra formats were
+  // removed from the rest of the site a while ago and scripts/audit-seo.js
+  // bans this host outright, but nothing ever swept the geo cluster - those
+  // pages were outside the sitemap, so the audit never looked at them.
+  //
+  // It is worth removing on its own merits: a sitewide footer link into an
+  // opaque smartlink that redirects wherever the network currently pays best
+  // is exactly the pattern that earns a manual action or a Safe Browsing
+  // interstitial, and one Safe Browsing flag costs more traffic than this link
+  // could ever earn.
+  html = html.replace(
+    /\s*<span><a href="https?:\/\/delvefencescrewdriver\.com\/[^"]*"[^>]*>Sponsored<\/a><\/span>/gi,
+    ''
+  );
+
   html = html.replace(/^[ \t]+$/gm, '');
 
   html = html.replace(

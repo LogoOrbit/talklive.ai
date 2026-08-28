@@ -15,10 +15,10 @@ const https = require('https');
 const KEY = 'ce0b57a2d6e929d7055a36f1185a7ded';
 const HOST = 'talklive.app';
 
-// /sitemap.xml is a <sitemapindex>, so its own <loc> entries are child sitemap
-// files rather than pages. Reading it alone would submit six sitemap URLs and
-// none of the ~266 pages, which is a silent no-op - so the index is followed
-// one level down into the children that actually list pages.
+// /sitemap.xml is now a single flat <urlset> listing every indexable page, so
+// its <loc> entries are submitted directly. The <sitemapindex> branch below is
+// kept because it costs nothing and a future split into child sitemaps would
+// otherwise silently submit a handful of sitemap URLs and no pages at all.
 function sitemapUrls() {
   const dir = path.join(__dirname, '..', 'public');
   const root = fs.readFileSync(path.join(dir, 'sitemap.xml'), 'utf8');

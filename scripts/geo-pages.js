@@ -194,7 +194,14 @@ function cityPage(city) {
     parent: { slug: 'cities', label: 'Cities' },
     crumb: city.name,
     eyebrow: `${nm(c)} · ${c.tz}`,
-    title: title(`Talk to Strangers in ${city.name}`, ['Free Voice & Text Chat', 'Free Chat']),
+    // A city-state (Singapore) produces a city page and a country page whose
+    // names are identical, so both used to carry the title "Talk to Strangers
+    // in Singapore" - two of our own URLs competing for one query, which is
+    // how you get neither of them ranked. Give the city page the local angle
+    // and leave the plain phrase to the country page.
+    title: city.name === c.name
+      ? title(`${city.name} City Chat`, ['Talk to Locals'])
+      : title(`Talk to Strangers in ${city.name}`, ['Free Voice & Text Chat', 'Free Chat']),
     description: description([`Free voice and text chat with people in ${city.name}, ${nm(c)}.`, `Anonymous, no sign-up.`, `${list(langs)} spoken; busiest around ${c.peak}.`]),
     keywords: `${city.name.toLowerCase()} chat, chat with people in ${city.name.toLowerCase()}, random chat ${city.name.toLowerCase()}, talk to strangers ${city.name.toLowerCase()}, ${city.name.toLowerCase()} voice chat, ${city.name.toLowerCase()} chat room`,
     h1: `Talk to Strangers in ${city.name}`,

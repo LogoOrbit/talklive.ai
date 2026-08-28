@@ -229,7 +229,15 @@ app.use((req, res, next) => {
 
   if (pathname.length > 1 && pathname.endsWith('/')) {
     const cleanPath = pathname.slice(0, -1);
-    if (publicFileExists(cleanPath + '.html')) {
+    // Strip the slash only when nothing else claims the directory form. If BOTH
+    // `foo.html` and `foo/index.html` exist, this rule sends /foo/ -> /foo while
+    // express.static sends /foo -> /foo/ (a real directory is there), and the
+    // two redirects chase each other forever: /countries and /languages were
+    // both wholly unreachable, browsers reporting ERR_TOO_MANY_REDIRECTS and
+    // crawlers dropping them along with the country and language pages they
+    // link to. The directory index is the canonical form when both exist, so
+    // leave the slashed URL alone rather than start a loop.
+    if (publicFileExists(cleanPath + '.html') && !publicFileExists(pathname + 'index.html')) {
       return res.redirect(301, cleanPath + originalQuery(req));
     }
   }

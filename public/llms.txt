@@ -2,7 +2,7 @@
 
 > TalkLive (https://talklive.app) is a browser-based random chat service for adults, offering one-to-one voice calls and text chat. Core matching is free and does not require an account. Voice uses encrypted WebRTC over a TURN relay in production and is not recorded or stored by TalkLive. Typed messages and related context may be retained for a limited rolling period as described in the Privacy Policy.
 
-Key facts: voice-only or text-only modes; optional country and interest preferences do not guarantee a specific match; free users wait about five seconds between calls; optional Premium is announced but not yet available for purchase; no video chat; 18+ policy; leave, block and report controls. Participant identity, age, location and intent are not verified.
+Key facts: voice-only or text-only modes; optional country and interest preferences do not guarantee a specific match; matching is instant for everyone; optional Premium is announced but not yet available for purchase; no video chat; 18+ policy; leave, block and report controls. Participant identity, age, location and intent are not verified.
 
 ## Main pages
 - [TalkLive app](https://talklive.app/): Start a random voice or text chat instantly.
@@ -36,7 +36,7 @@ Key facts: voice-only or text-only modes; optional country and interest preferen
 - [Holla Alternative](https://talklive.app/holla-alternative): Looking for a Holla alternative without an app install? TalkLive offers free core voice matching with random strangers in a browser, no sign-up required.
 - [Tinychat Alternative](https://talklive.app/tinychat-alternative): A Tinychat alternative for one-to-one conversation: TalkLive offers free core voice matching with a random stranger. No sign-up; availability varies.
 - [Wakie Alternative](https://talklive.app/wakie-alternative): A Wakie alternative without a topic queue: TalkLive lets you search for a random live voice conversation in one tap. Core matching is free; no sign-up.
-- [Free Voice Chat](https://talklive.app/free-voice-chat): Free core voice matching with strangers worldwide. No per-call credits or sign-up; free users wait about five seconds between calls and Premium is optional.
+- [Free Voice Chat](https://talklive.app/free-voice-chat): Free core voice matching with strangers worldwide. No per-call credits or sign-up; matching is instant for everyone and Premium is optional.
 - [Voice Chat Rooms](https://talklive.app/voice-chat-rooms): Looking for live voice chat rooms? TalkLive drops you straight into a one-to-one audio conversation with a random stranger - no room lists, no lurking, no sign-up.
 - [Random Chat](https://talklive.app/random-chat): Free core random matching with strangers worldwide. Choose voice or text with no sign-up or video; availability and wait time vary.
 - [Language Exchange](https://talklive.app/language-exchange): Free core voice matching for language practice with people worldwide. No sign-up; language, fluency, availability and learning outcomes are not guaranteed.
@@ -45,8 +45,8 @@ Key facts: voice-only or text-only modes; optional country and interest preferen
 - [Resources](https://talklive.app/resources): Explore practical TalkLive resources for safer stranger chat, better conversations, language practice, privacy, country preferences and choosing the right chat format.
 - [Safety Center](https://talklive.app/safety): Understand TalkLive voice privacy, encrypted WebRTC and TURN relay use, text retention, reporting, blocking, identity boundaries and practical stranger-chat safety.
 - [Chat Alternatives](https://talklive.app/alternatives): Compare random voice chat, text chat, video roulette, public rooms and app-based alternatives by privacy, bandwidth, pace, controls, cost and the experience you want.
-- [Languages](https://talklive.app/languages): Open TalkLive in a supported language, practise real conversation responsibly, understand matching limits and find language-learning guides for anonymous voice or text chat.
-- [Countries](https://talklive.app/countries): Learn how TalkLive country preferences work, why a specific country match cannot be guaranteed, and how to chat respectfully with people across regions and languages.
+- [Languages](https://talklive.app/language-chat-guide): Open TalkLive in a supported language, practise real conversation responsibly, understand matching limits and find language-learning guides for anonymous voice or text chat.
+- [Countries](https://talklive.app/country-chat-guide): Learn how TalkLive country preferences work, why a specific country match cannot be guaranteed, and how to chat respectfully with people across regions and languages.
 - [How It Works](https://talklive.app/how-it-works): See how TalkLive matches strangers, establishes encrypted WebRTC voice calls over its production TURN relay, delivers text chat and handles privacy and moderation data.
 
 ## Languages

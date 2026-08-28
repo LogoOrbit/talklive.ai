@@ -22,7 +22,7 @@ const VIDEO_ROULETTE_ROWS = (them) => [
   { label: 'Filters', them: 'Check the current official feature and pricing pages', us: 'Some country and interest preferences are free; advanced filters require optional Premium' },
   { label: 'Data on the wire', them: `Check ${them}'s current privacy and technical documentation`, us: 'Encrypted WebRTC audio uses TalkLive\'s production TURN relay and is not recorded or stored by TalkLive' },
   { label: 'Bandwidth', them: 'Heavy - video eats mobile data', us: 'Light - audio works on a weak connection' },
-  { label: 'Cost', them: 'Check current pricing and limits', us: 'Core matching is free; free users wait about five seconds between calls; Premium is optional' },
+  { label: 'Cost', them: 'Check current pricing and limits', us: 'Core matching is free with instant matching for everyone; Premium is optional' },
 ];
 
 // A competitor page is mostly boilerplate around a handful of genuinely
@@ -47,7 +47,7 @@ function altPage(o) {
       { icon: 'shield', h: 'Anonymous by default', p: 'A temporary display name is the whole identity. No email, no phone number, no photo.' },
       { icon: 'lock', h: 'Voice is not recorded', p: 'Voice uses encrypted WebRTC over TalkLive\'s production TURN relay and is not recorded or stored by TalkLive.' },
       { icon: 'globe', h: 'Useful free preferences', p: 'Some country and interest preferences are free. Optional Premium adds advanced filters.' },
-      { icon: 'next', h: 'Next is simple', p: 'Not clicking? End the call and search again. Free users wait about five seconds between calls.' },
+      { icon: 'next', h: 'Next is simple', p: 'Not clicking? End the call and search again. Matching is instant for everyone..' },
     ],
     stepsH: `Trying TalkLive after ${o.name}`,
     stepsIntro: 'There is nothing to download, migrate, or sign up for.',
@@ -55,7 +55,7 @@ function altPage(o) {
       { h: 'Open TalkLive', p: 'Any browser, any device. No app store, no install, no account screen.' },
       { h: 'Allow your mic', p: 'Only the microphone - TalkLive never asks for camera access, because it never uses one.' },
       { h: 'Tap to Talk', p: 'You join the live queue. A match depends on another compatible participant being available.' },
-      { h: 'Talk, or tap Next', p: 'Enjoy it and add them as a friend, or end the call and search again. Free users wait about five seconds between calls.' },
+      { h: 'Talk, or tap Next', p: 'Enjoy it and add them as a friend, or end the call and search again. Matching is instant for everyone..' },
     ],
     compare: {
       h: `${o.name} vs TalkLive`,
@@ -67,7 +67,7 @@ function altPage(o) {
     faq: [
       { q: `Is TalkLive a good ${o.name} alternative?`, a: `If what you liked about ${o.name} was meeting strangers at random, yes - TalkLive does that in one tap and for free. If what you specifically wanted was video, no: TalkLive is deliberately audio-only, and that is the whole design.` },
       { q: 'Do I need to download anything?', a: 'No. TalkLive runs in your browser on any phone, tablet or computer. There is no app to install and no app-store account involved.' },
-      { q: 'Is core matching free?', a: 'Yes. Core voice and text matching is free. Free users wait about five seconds between calls, while optional Premium adds advanced filters and removes that rematch delay.' },
+      { q: 'Is core matching free?', a: 'Yes. Core voice and text matching is free. Matching is instant for everyone; optional Premium adds advanced filters.' },
       { q: 'Do I have to make an account?', a: 'No. You can be in a live conversation without typing an email address. An optional free account exists only if you want to keep friends between sessions.' },
       { q: 'Is my voice conversation recorded?', a: 'TalkLive does not record or store voice audio. Calls use encrypted WebRTC over TalkLive\'s production TURN relay; another participant could still record on their own device.' },
       { q: 'What controls are available if someone behaves badly?', a: 'Report or block ends the interaction and supplies a moderation signal. TalkLive is restricted to adults, but no platform can guarantee another person\'s identity, behaviour or safety.' },
@@ -92,7 +92,7 @@ module.exports = [
         'The camera problem is simple. On a video-first platform, the first thing a stranger receives from you is your face and whatever is behind it. You cannot un-send that. For a lot of people the calculation is not "is this site good" but "do I want my face in a random stranger\'s browser at all", and once you ask that question, video roulette stops being appealing regardless of how well built it is.',
       ]},
       { h: 'The paywall problem', body: [
-        'Pricing and filter limits vary across random-chat services and should be checked on their current official pages. TalkLive keeps core voice and text matching free; free users wait about five seconds between calls, while optional Premium adds advanced filters and removes that delay.',
+        'Pricing and filter limits vary across random-chat services and should be checked on their current official pages. TalkLive keeps core voice and text matching free; matching is instant for everyone, and optional Premium adds advanced filters.',
         'TalkLive voice calls use encrypted WebRTC over its production TURN relay and are not recorded or stored by TalkLive. That technical design should not be confused with a promise that another participant cannot record on their own device.',
       ]},
       { h: 'What you lose, honestly', body: [
@@ -119,7 +119,7 @@ module.exports = [
         'That makes voice usable on some connections where video struggles. It does not guarantee that a compatible person from a chosen country or language will be available in the live queue.',
       ]},
       { h: 'What TalkLive does differently', body: [
-        'Core matching is free, and some country and interest preferences are available on the free tier. Free users wait about five seconds between calls; optional Premium adds advanced filters, removes that delay and provides an ad-free experience.',
+        'Core matching is free, and some country and interest preferences are available on the free tier. Matching is instant for everyone; optional Premium adds advanced filters and an ad-free experience.',
         'Voice uses encrypted WebRTC over TalkLive\'s production TURN relay. TalkLive does not record or store voice audio, though another participant may record on their own device.',
       ]},
     ],
@@ -182,7 +182,7 @@ module.exports = [
     prose: [
       { h: 'The in-app currency problem', body: [
         'Mobile random-chat apps tend to converge on the same model: a virtual currency you buy, which you then spend on the things you actually wanted - matching with a particular region, seeing who liked you, skipping a limit. It works commercially, but it changes what the product is. You stop being someone having conversations and start being someone managing a balance.',
-        'TalkLive has no virtual currency or per-call credits. Core matching is free; free users wait about five seconds between calls, and optional Premium adds advanced filters, removes that delay and provides an ad-free experience.',
+        'TalkLive has no virtual currency or per-call credits. Core matching is free and instant for everyone, and optional Premium adds advanced filters and an ad-free experience.',
       ]},
       { h: 'No install, no store account', body: [
         'Because TalkLive is a web app, there is no download, no app-store account, no OS-level permission bundle and no icon on your home screen for anyone to notice. You open a URL. If you want it to feel like an app, add it to your home screen - it is installable as a PWA - but that is your choice, not a precondition.',
@@ -190,7 +190,7 @@ module.exports = [
       ]},
       { h: 'Good for language practice specifically', body: [
         'A lot of Azar\'s draw is cross-border conversation, and language learners are a large share of that. Voice is arguably better for this than video: without a camera, the self-consciousness that stops learners from speaking drops sharply, and the entire bandwidth of the call goes to listening and talking.',
-        'A compatible match can provide unscripted speech and exposure to different accents, although language, fluency and availability are not guaranteed. If a call is not useful, Next ends it; free users wait about five seconds before searching again.',
+        'A compatible match can provide unscripted speech and exposure to different accents, although language, fluency and availability are not guaranteed. If a call is not useful, Next ends it and the search starts again immediately.',
       ]},
     ],
   }),
@@ -274,7 +274,7 @@ module.exports = [
     crumb: 'Free Voice Chat',
     eyebrow: 'Free core matching',
     title: 'Free Voice Chat With Strangers - No Sign-Up | TalkLive',
-    description: 'Free core voice matching with strangers worldwide. No per-call credits or sign-up; free users wait about five seconds between calls and Premium is optional.',
+    description: 'Free core voice matching with strangers worldwide. No per-call credits or sign-up; matching is instant for everyone and Premium is optional.',
     keywords: 'free voice chat, free voice chat online, free voice chat with strangers, free voice call, free anonymous voice chat, free audio chat, no sign up voice chat',
     h1: 'Free Voice Chat With Strangers - Actually Free',
     lede: 'No credits to buy, no minutes to run out, no premium tier standing between you and a conversation. Tap once and you are on a live voice call with a real person somewhere in the world.',
@@ -282,7 +282,7 @@ module.exports = [
     featuresH: 'What "free" means here',
     featuresIntro: 'A lot of chat apps say free and mean trial. This is the unabridged version.',
     features: [
-      { icon: 'bolt', h: 'Free core matching', p: 'Start voice matches without per-call credits. Free users wait about five seconds between calls.' },
+      { icon: 'bolt', h: 'Free core matching', p: 'Start voice matches without per-call credits. Matching is instant for everyone..' },
       { icon: 'phone', h: 'No per-minute fee', p: 'TalkLive does not sell voice minutes, although your internet or mobile-data provider may charge for connectivity.' },
       { icon: 'globe', h: 'Free basic preferences', p: 'Some country and interest preferences are free; optional Premium adds advanced filters.' },
       { icon: 'shield', h: 'No card, no email', p: 'Nothing to enter before you talk. Not a free trial - there is no trial to convert.' },
@@ -295,7 +295,7 @@ module.exports = [
       { h: 'Open TalkLive', p: 'Any browser on any device. There is nothing to download and no account screen.' },
       { h: 'Press Tap to Talk', p: 'Your browser asks for microphone access. Allow it - that is the only permission needed.' },
       { h: 'Search for a match', p: 'You join the live queue. A call begins only when another compatible participant is available.' },
-      { h: 'Talk or search again', p: 'There is no per-minute fee. Tap Next to end the call; free users wait about five seconds before searching again.' },
+      { h: 'Talk or search again', p: 'There is no per-minute fee. Tap Next to end the call and the search starts again immediately.' },
     ],
     prose: [
       { h: 'Why so many "free" chat apps are not', body: [
@@ -304,7 +304,7 @@ module.exports = [
       ]},
       { h: 'Encrypted voice without a minute meter', body: [
         'TalkLive uses encrypted WebRTC voice through its production TURN relay. TalkLive does not record or store voice audio, though another participant may record on their own device and network providers still handle connection data.',
-        'Core matching does not use credits or per-minute billing. Free users wait about five seconds between calls and have basic preferences; optional Premium adds advanced filters, removes that rematch delay and provides an ad-free experience.',
+        'Core matching does not use credits or per-minute billing. Matching is instant for everyone; optional Premium adds advanced filters and an ad-free experience.',
       ]},
       { h: 'So how is it funded?', body: [
         'The free experience is supported by advertising, including placements in parts of the app, and by an optional Premium subscription. Premium adds advanced filters, removes the roughly five-second rematch delay and provides an ad-free experience.',
@@ -316,10 +316,10 @@ module.exports = [
       ]},
     ],
     faq: [
-      { q: 'What is free on TalkLive?', a: 'Core voice and text matching is free and does not use per-call credits. Free users wait about five seconds between calls; optional Premium adds advanced filters, removes that delay and provides an ad-free experience.' },
+      { q: 'What is free on TalkLive?', a: 'Core voice and text matching is free and does not use per-call credits. Matching is instant for everyone; optional Premium adds advanced filters and an ad-free experience.' },
       { q: 'Are there hidden limits on how long I can talk?', a: 'No. There is no per-call timer, no daily minute allowance and no cap on how many people you talk to in a session.' },
       { q: 'Do I need to give an email address or phone number?', a: 'No. You can start a live voice chat without entering any personal information at all. An optional free account exists only if you want to keep a friends list between sessions.' },
-      { q: 'Do free users wait between calls?', a: 'Yes. Free users wait about five seconds between calls. Optional Premium removes that rematch delay and adds advanced filters.' },
+      { q: 'Do free users wait between calls?', a: 'Yes. Matching is instant for everyone; optional Premium adds advanced filters.' },
       { q: 'How is the free experience funded?', a: 'Through advertising, including placements in parts of the app, and an optional Premium subscription. Voice is not recorded or stored by TalkLive; typed messages and context may be retained on a rolling basis under the Privacy Policy.' },
       { q: 'Is free voice chat guaranteed to be safe?', a: 'No stranger-chat service can guarantee safety, identity or behaviour. TalkLive is restricted to adults and provides report and block controls, but users should still protect personal information and leave uncomfortable calls.' },
     ],
@@ -354,7 +354,7 @@ module.exports = [
       { h: 'Open the app', p: 'One page in your browser. No install, no room registry, no account.' },
       { h: 'Tap to Talk', p: 'You join a global live queue instead of picking a room off a list.' },
       { h: 'Wait for a compatible call', p: 'You are paired one-to-one only when another suitable participant is available.' },
-      { h: 'Stay or search again', p: 'Good conversation? Add them as a friend. Otherwise use Next; free users wait about five seconds between calls.' },
+      { h: 'Stay or search again', p: 'Good conversation? Add them as a friend. Otherwise use Next - the search starts again immediately.' },
     ],
     prose: [
       { h: 'The problem with room-based voice chat', body: [
@@ -379,7 +379,7 @@ module.exports = [
       { q: 'Is there a limit on how long a conversation can run?', a: 'No. There is no timer and no minute allowance. Calls end when one of you leaves.' },
       { q: 'Can I come back to the same person later?', a: 'Yes, if you both add each other as friends. That works without either of you sharing a real name, phone number or social handle.' },
       { q: 'Do I need a microphone?', a: 'For voice chat, yes - any phone or laptop mic works. If you would rather not talk out loud, Tap to Chat gives you anonymous text matching with no microphone needed.' },
-      { q: 'What is free?', a: 'Core matching is free without an account. Free users wait about five seconds between calls; optional Premium adds advanced filters and removes that rematch delay.' },
+      { q: 'What is free?', a: 'Core matching is free without an account. Matching is instant for everyone; optional Premium adds advanced filters.' },
     ],
     ctaBandH: 'Skip the room list - start talking',
     ctaBandP: 'One tap puts you in a live audio conversation with someone who wants one too.',
@@ -402,7 +402,7 @@ module.exports = [
       { icon: 'bolt', h: 'A live queue', p: 'Global matching searches across time zones, but it cannot guarantee someone compatible is waiting at every hour.' },
       { icon: 'chat', h: 'Two modes', p: 'Voice when you want warmth, text when you need quiet. Switch whenever you like.' },
       { icon: 'shield', h: 'Real anonymity', p: 'A temporary name and nothing else. No email, no phone, no profile, no photo.' },
-      { icon: 'next', h: 'Simple exit', p: 'Next ends the match. Free users wait about five seconds before searching for another call.' },
+      { icon: 'next', h: 'Simple exit', p: 'Next ends the match and the search for another call starts immediately.' },
       { icon: 'lock', h: 'Voice is not recorded', p: 'Encrypted WebRTC voice uses TalkLive\'s production TURN relay and is not recorded or stored by TalkLive.' },
       { icon: 'heart', h: 'Keep the good ones', p: 'Add a friend to reconnect later - still without exchanging personal details.' },
     ],
@@ -434,7 +434,7 @@ module.exports = [
     ],
     faq: [
       { q: 'What is random chat?', a: 'Random chat pairs you with a stranger chosen at random rather than one selected by an algorithm or a profile match. On TalkLive that pairing takes one tap and produces either a live voice call or an anonymous text conversation.' },
-      { q: 'Is random chat on TalkLive free?', a: 'Core voice and text matching is free without an account. Free users wait about five seconds between calls; optional Premium adds advanced filters and removes that delay.' },
+      { q: 'Is random chat on TalkLive free?', a: 'Core voice and text matching is free without an account. Matching is instant for everyone; optional Premium adds advanced filters.' },
       { q: 'Is there video?', a: 'No. TalkLive is deliberately voice and text only. Removing video removes the category of abuse that made older random-video sites unusable.' },
       { q: 'How long does matching take?', a: 'It varies with compatible live availability and applied preferences. Global matching can help across time zones but cannot guarantee a match.' },
       { q: 'Can I choose who I get matched with?', a: 'You can apply optional country and interest filters. If no filtered match appears quickly, TalkLive connects you to an available stranger rather than leaving you waiting.' },
@@ -496,12 +496,12 @@ module.exports = [
       ]},
     ],
     faq: [
-      { q: 'Is core matching free for language practice?', a: 'Yes. Core voice matching is free without lesson fees or per-call credits. Free users wait about five seconds between calls; optional Premium adds advanced filters and removes that delay.' },
+      { q: 'Is core matching free for language practice?', a: 'Yes. Core voice matching is free without lesson fees or per-call credits. Matching is instant for everyone; optional Premium adds advanced filters.' },
       { q: 'Can I choose which language I practise?', a: 'You can use country and interest filters to steer matching toward speakers of a given language. Matching is not guaranteed to a specific language, so many learners flag language practice in their opener instead.' },
       { q: 'Is this a substitute for a tutor?', a: 'No, and it is not trying to be. A tutor gives structure, correction and a curriculum. TalkLive gives volume - the unscripted speaking hours that tutoring is usually too expensive to cover. They work best together.' },
       { q: 'I am a beginner. Will this be too hard?', a: 'Difficulty varies. Start with a short goal, prepare a few openers and explain that you are learning. The other participant is not a tutor and may not want to practise or provide corrections.' },
-      { q: 'What if I want to end the practice?', a: 'Tap Next to end the match. Free users wait about five seconds before searching again. TalkLive does not record voice, but another participant could record on their own device.' },
-      { q: 'Will people help me practise?', a: 'Some may, but willingness, language and skill are not guaranteed. Ask first; if goals differ, end the match respectfully. Free users wait about five seconds before another call search.' },
+      { q: 'What if I want to end the practice?', a: 'Tap Next to end the match; the search starts again immediately. TalkLive does not record voice, but another participant could record on their own device.' },
+      { q: 'Will people help me practise?', a: 'Some may, but willingness, language and skill are not guaranteed. Ask first; if goals differ, end the match respectfully - the next search starts immediately.' },
     ],
     ctaBandH: 'Start speaking today, not next week',
     ctaBandP: 'Search for a live speaking partner with free core matching. Availability and language are not guaranteed.',
@@ -555,7 +555,7 @@ module.exports = [
       ]},
     ],
     faq: [
-      { q: 'Can I search for random voice calls for free?', a: 'Core matching is free and has no per-call credits. Free users wait about five seconds between calls; optional Premium removes that delay and adds advanced filters. Network data charges may apply.' },
+      { q: 'Can I search for random voice calls for free?', a: 'Core matching is free and has no per-call credits. Matching is instant for everyone; optional Premium adds advanced filters. Network data charges may apply.' },
       { q: 'Do I need to give out my phone number?', a: 'No. No phone number is involved at any point - not yours, not theirs. There is nothing to exchange and nothing to leak.' },
       { q: 'Is calling random people legal?', a: 'Laws vary. Dialling arbitrary phone numbers may be intrusive or unlawful. TalkLive matches active sessions that requested a conversation, but this is not legal advice and users must follow applicable law.' },
       { q: 'Are the calls recorded?', a: 'TalkLive does not record or store voice audio. Calls use encrypted WebRTC through TalkLive\'s production TURN relay; another participant may record on their own device.' },
