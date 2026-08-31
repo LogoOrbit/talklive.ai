@@ -2594,6 +2594,11 @@ function createPeerConnection(isInitiator) {
   }, 20000);
 
   peer.oniceconnectionstatechange = () => {
+    // Only the live call may drive the call UI. A connection we have already
+    // moved on from - or one whose events land after the user hung up and
+    // started searching again - must not repaint the search screen as
+    // "reconnecting" or arm a recovery window for a call that is over.
+    if (pc !== peer || callState === 'idle' || callState === 'searching') return;
     const iceState = peer.iceConnectionState;
     if (iceState === 'connected' || iceState === 'completed') {
       clearReconnectDeadline();
@@ -3063,8 +3068,18 @@ if (pendingInviteToken) {
 }
 
 // Keep searching for a new person (used after a hang-up when auto-call is on).
+// The old call has to be torn down before the new search starts. Leaving it up
+// left the ex-partner's card, running timer and reaction bar on screen, and its
+// still-attached ICE handler then saw the peer go away a moment later and
+// painted "Connection dropped - reconnecting…" (plus a pointless 30s recovery
+// window and ICE restart) over a search that was already under way.
 function findNextPerson(statusKey) {
   clearError();
+  teardownPeer();
+  clearChat();
+  closeChatPanel();
+  clearHangupConfirm();
+  if (typeof resetGame === 'function') resetGame();
   isSearching = true;
   setCallState('searching');
   setState('waiting');
