@@ -400,3 +400,328 @@ things:
 4. **Ad density cannot be tuned** without a code change and a redeploy (§5.6).
 
 Phases 2–6 are scoped against that.
+
+---
+---
+
+# Phase 2 — Competitor research
+
+## Method, and what could not be measured
+
+Research was done from this session's sandbox. Two limits shaped it, and both
+change what the findings below can claim:
+
+* **The egress proxy blocks direct fetches of competitor domains.** `curl` and
+  `WebFetch` against `airtalk.live`, `heresay.live`, `strangerline.io`,
+  `yapping.me`, `talkwithstranger.com` and the rest all return
+  `connect_rejected` / `EGRESS_BLOCKED`. So no competitor's DOM, `<head>`,
+  script tags or ad markup was inspected.
+* **The PageSpeed Insights API daily quota is exhausted** for the shared
+  anonymous project (`429 Quota exceeded`), and the CrUX API needs a key this
+  environment does not have. So no Core Web Vitals — lab or field — were
+  measured, for competitors or for us.
+
+Everything below therefore comes from search-result data: titles, meta
+descriptions, URL paths, SERP composition across a dozen queries, and
+third-party writing about these sites. That is enough for keyword targeting,
+URL-structure and on-page benchmarking, and a backlink map. It is **not**
+enough to state any competitor's ad network, formats, placements or density —
+so this document does not state them. §Ad benchmarks below gives the vertical's
+published rate card and density rules instead, which is what the Phase 5 and 6
+decisions actually need, and §Unfinished says exactly what to run to close the
+gap.
+
+Being explicit: any table here claiming "airtalk.live serves Adsterra
+popunders at 3 units per page" would have been invented. There isn't one.
+
+## The competitive set
+
+Eight sites, chosen because they surfaced repeatedly across the queries our
+pages target — not from a published list.
+
+### 1. `airtalk.live` — the closest analogue
+
+The single most direct competitor: voice-first, no camera, no sign-up, 1-to-1
+random matching, country and interest filters, AI moderation, 150+ countries.
+It is TalkLive's proposition almost feature for feature, and it surfaced in
+**every** voice-chat query run, including as a competing result on our own
+brand query.
+
+* **URL structure**: `www.airtalk.live` on `www`, with `/about-us/`,
+  `/blog/<slug>/` — trailing slashes throughout.
+* **On-page**: homepage title `Talk to Strangers Online | Voice & Text Random
+  Chat - AirTALK` — pipe-separated, head term first, brand last. Same shape as
+  ours.
+* **Content**: a real blog carrying dated, keyword-led guides —
+  `/blog/random-audio-call/`, `/blog/complete-guide-to-random-chat-and-voice-calling-2026/`.
+  The year-stamped title is the notable move: it wins "…in 2026" queries and
+  signals freshness.
+* **Backlinks**: earns third-party review coverage — `geniusfirms.com`,
+  `randomvoicechat.live/blog/airtalk-voice-chat/` — and, importantly, has
+  **dedicated pages on competitors' domains** (`strangercam.com/airtalk/`,
+  `chatib.chat/airtalk/`). Other sites building pages *about* you is the
+  strongest signal in this set.
+
+### 2. `talkwithstranger.com` — the programmatic-URL play
+
+The most SEO-aggressive site in the vertical, and the one worth studying.
+
+It runs a **large keyword-to-URL matrix** and repeatedly takes three or four
+slots in a single SERP. Observed paths:
+
+```
+/talk-strangers                              /voice-call
+/call-strangers                              /international-chatrooms
+/free-chat-rooms/talk                        /free-chat-rooms/voice-call
+/free-chat-rooms/lonely-chat                 /free-chat-rooms/international-chat-rooms
+/free-chat-rooms/talk-to-strangers-voice-call
+/chatsites/emerald-chat
+```
+
+Three things to take from it:
+
+1. **Two competing patterns for the same intent** — `/voice-call` *and*
+   `/free-chat-rooms/voice-call` *and*
+   `/free-chat-rooms/talk-to-strangers-voice-call` all exist. That is
+   deliberate SERP-slot farming, and it is also textbook keyword cannibalisation.
+   It works for them at their authority level; it is not a pattern to copy.
+2. **The `/chatsites/<competitor>` cluster** — a page per rival. This is where
+   their "X alternative" traffic comes from, and it is exactly the pattern our
+   own `*-alternative.html` pages already implement.
+3. **Emotional-intent pages** — `/free-chat-rooms/lonely-chat` targets
+   loneliness queries directly.
+
+### 3. `strangerline.io` — the multi-mode generalist
+
+Text + voice + video + voice notes, no registration, plus retention features
+the pure-random sites lack: message after disconnect, save favourite chats,
+friend requests. Surfaced across nearly every query run — voice, text, and
+"talk to strangers" head terms alike. Flat root-level URLs. Title:
+`Talk to Strangers Online - Free Anonymous Random Chat | StrangerLine`.
+
+### 4. `wakiee.live` — voice on a dedicated path
+
+`wakiee.live/voice` titled `Random Voice Call – Free Voice Chat with Strangers
+Online`, with `wakiee.live/` covering `Talk to Strangers for Free | Video Chat &
+Voice Chat`. A clean split: one URL per modality, each with its own head term.
+Markets one-click connect, no login, AI moderation.
+
+### 5. `heresay.live` — the pure-play, plus content marketing
+
+Positions as "the most stripped-down, voice-first random chat platform" — no
+sign-up, no profile, no app, no camera. Notably it also **publishes the
+category roundup that ranks for our head terms**
+(`/blog/random-voice-chat-app`), listing itself alongside AirTALK and others.
+Owning the comparison page for your own category is a strong, cheap play.
+
+### 6. `chatsansar.com` — the "chat room" framing
+
+`/voice-chat-room/` and `/international-chat-room/`, titled `Free Voice Chat
+Room | Random Voice Calls with Strangers (No Sign-Up)` and `Free International
+Chat Room 2025 – Video & Voice with Strangers`. Targets "chat room" rather than
+"random chat" — an older but still-searched framing, and a distinct keyword
+pocket. The stale `2025` in a live title is a small, real ranking cost on
+"…2026" queries.
+
+### 7. `voicerandom.com` — localised path structure
+
+`voicerandom.com/en/stranger` — a language-segmented path (`/en/`) with a topic
+leaf. Title: `Random Voice Chat with Strangers | Anonymous 1-on-1 Calls | Voice
+Random`. The `/en/` prefix is the alternative to our `/` + `/<code>/` layout;
+ours is better for an English-primary site because the strongest URL stays at
+the root.
+
+### 8. The video incumbents — `ome.tv`, `emeraldchat`, `monkey.app`, `chathub`
+
+Different product (video), same queries. They own "omegle alternative"
+outright: `ome.tv/`, `monkey.app/omegle/`, `omegleapp.me/`. Emerald Chat is
+consistently described as "the most popular free Omegle alternative".
+
+**This is the SERP we cannot win head-on, and should not try to.** Our
+`/omegle-alternative` page competes against sites with app stores, years of
+authority and video parity with what searchers remember Omegle being. The
+winnable framing is the one AirTALK and HereSay use — *voice-first, no camera* —
+which is a genuine product difference, not a positioning trick.
+
+### Adjacent sets worth knowing about
+
+Two clusters our pages already reach into, with entirely different competitors:
+
+* **Language practice** — `englishbooth.com`, `englishtalky.com`,
+  `hilokal.com/en/speak/english`, `free4talk.com`, `strangr.club/practice/english`.
+  Note `strangr.club/practice/<language>` — a per-language path matrix,
+  the same shape as our `/languages/<language>`.
+* **Loneliness / late-night** — `7cups.com` (with `/loneliness-chat-room/`,
+  `/insomnia-chat-room/`, `/bored-lonely-chat-room/`), `supportiv.com`,
+  `buddyhelp.org`, `findahelpline.com`, `anonchat.co.in/late-night-talk`,
+  `strangr.live/blog/lonely-at-night-chat/`.
+
+  **This second cluster is a trap and needs saying plainly.** It is dense with
+  mental-health services staffed by trained listeners and helpline directories.
+  Google treats it as YMYL, and a random-stranger chat product positioning
+  itself as loneliness support would be both a ranking failure and a genuinely
+  bad thing to do. Our `/cant-sleep`, `/im-bored`, `/late-night-chat` and
+  `/someone-to-talk-to` pages should target *company and conversation*, never
+  *support*, and should not chase `7cups` on its own terms.
+
+## Ad benchmarks for this vertical
+
+What could be established, with sources, since no competitor's ad stack was
+inspectable:
+
+**Adsterra's own published rate card**, by format:
+
+| Format | CPM range | Tier-1 / US |
+|---|---|---|
+| Popunder | $2 – $10 | $2.80 US cited by one source; $6 – $12 US by another |
+| Social Bar | $1 – $5 | ~$2.80 US |
+| Native | $0.50 – $3 | — |
+| Banner | $0.10 – $1 | — |
+
+The US popunder spread ($2.80 vs $6–$12) is a genuine disagreement between two
+sources, not a number to average. Phase 6 uses the conservative end and says so.
+
+**The order of magnitude is the finding.** Banners — which are 1 073 of our
+1 075 slots — are the *lowest*-paying format Adsterra sells, at $0.10–$1 CPM.
+Native pays up to 3× that, Social Bar up to 5×, popunder up to 10×.
+
+**Density rules that constrain what we may do with that:**
+
+* Google's Publisher Ads Audits flags any page where ads exceed **30 % of
+  viewport height** — the figure originates with the Coalition for Better Ads,
+  whose research also drives Chrome's built-in ad filter.
+* Chrome can block **all** ads on a site that repeatedly breaks the Better Ads
+  Standards.
+* Google's page layout algorithm demotes pages that are ad-heavy above the fold.
+* The commonly-cited "15–30 % ideal ad density" is a myth carried over from old
+  AdSense guidance; the operative limits are the viewport rule above and a
+  recommended ceiling around 40/60 ads-to-content.
+
+**Popunders and interstitials are the highest-CPM formats in the table and are
+excluded from every recommendation in Phase 5.** They breach the brief's "no
+intrusive interstitials" rule, they are what the roundup articles mean when they
+complain that Omegle alternatives are "overwhelmed by bots, aggressive
+monetization, or weak safety controls", and on a site whose entire acquisition
+strategy is organic search, a Chrome ad-filter flag would cost more than the
+format could earn. The realistic upgrade path is **banner → native and
+in-content**, not banner → popunder.
+
+## Gap analysis against this repository
+
+| Dimension | Competitive set | TalkLive | Verdict |
+|---|---|---|---|
+| Static, crawlable HTML | Assumed across the set | 272 pages | **At parity or ahead** |
+| Page count | TalkWithStranger's matrix is the only one clearly larger | 272 indexable | **Competitive** |
+| Programmatic geo pages | Not visible on any competitor | 177 country/city/language pages with genuinely per-place facts | **Ahead — our clearest structural advantage** |
+| Per-language paths | `strangr.club/practice/<lang>`, `voicerandom.com/en/` | `/languages/<language>` + 16 localized homepages | **Ahead** |
+| "X alternative" cluster | TalkWithStranger `/chatsites/*`; rivals host pages about AirTALK | 13 `*-alternative` pages | **At parity** |
+| Blog | AirTALK and HereSay both publish, year-stamped | 22 posts | **At parity on volume** |
+| `Article` schema on posts | Unknown | **Absent** — posts emit `WebPage`, no author/date nodes | **Behind** |
+| Year-stamped titles | AirTALK `…2026`, Chatsansar `…2025` | None | **Behind — cheap to fix** |
+| Comparison content | HereSay ranks with its own category roundup | One `/omegle-vs-chatroulette` | **Behind** |
+| Mobile app | OmeTV, Monkey, EnglishTalky all ship one and rank with it | None | **Behind — out of scope** |
+| Brand SERP | — | Contested: an unrelated `TalkLive - Live Video Chat` on Google Play, plus `randomvoicechat.com` | **Risk** |
+| Third-party review coverage | AirTALK has several, plus pages on rivals' domains | None found | **Behind — the largest real gap** |
+| Analytics coverage | Unknown | 9 of 274 pages | **Behind, and self-inflicted** |
+| Ad format mix | Not inspectable | 1 073 of 1 075 slots are banners, the lowest-CPM format | **Behind on revenue per session** |
+
+### Backlinks: where this vertical's links actually come from
+
+Visible in the SERPs, and the honest split matters:
+
+**Legitimately earnable:**
+
+* **WebRTC / CPaaS vendor blogs** — `zegocloud.com/blog/omegle-alternatives`,
+  `trtc.io/blog/details/omegle-alternatives`. These companies publish
+  alternatives roundups as content marketing. A voice-only WebRTC product with
+  a real technical story is a natural inclusion, and outreach here is ordinary
+  PR.
+* **`alternativeto.net`** — free, user-submitted, permanently indexed.
+* **Independent review sites** — `geniusfirms.com`, `coherentlab.com`,
+  `easeus` voice-changer blog, `randomvoicechat.live`. These found AirTALK; they
+  can find us.
+* **Our own researched posts.** `SEO.md` already identifies
+  `/blog/what-happened-to-omegle`, `/omegle-vs-chatroulette`,
+  `/blog/how-random-matchmaking-works` and
+  `/blog/science-of-talking-to-strangers` as the link-worthy pages. That
+  judgement is correct and matches what the roundup authors cite.
+
+**Not to be pursued:** `clevescene.com/partner-corner/omegle-alternatives/` and
+`villagevoice.com/sites-like-omegle/`. Alt-weekly "partner corner" sections are
+paid placements. Buying links that pass PageRank is a direct violation of
+Google's link spam policy, and the brief rules out black-hat tactics. If we ever
+appear in one, the link must carry `rel="sponsored"`.
+
+## Target keywords
+
+Chosen from the SERPs actually run, and scored on whether we already have a page
+and whether the SERP is winnable.
+
+### Tier 1 — primary, defend and strengthen
+
+Head terms where we have a page and the SERP is voice-inclusive.
+
+| Keyword | Our page | Competing for it |
+|---|---|---|
+| `random voice chat` | `/random-voice-chat` | airtalk, voicerandom, wakiee, heresay |
+| `talk to strangers` | `/talk-to-strangers` | strangerline, talkwithstranger, airtalk |
+| `talk to strangers online free` | `/talk-to-strangers` | strangerline, yapping, talkwithstranger |
+| `random voice chat with strangers free no sign up` | `/random-voice-chat` | voicerandom, chatsansar, airtalk |
+| `talk to strangers voice call` | `/random-call` | talkwithstranger (3 URLs), wakiee |
+| `anonymous chat` | `/anonymous-chat` | chatix, anonchat, strangerline |
+| `voice chat with strangers` | `/free-voice-chat` | airtalk, wakiee, chatsansar |
+| `free voice chat rooms` | `/voice-chat-rooms` | chatsansar, all4masti, talkwithstranger |
+
+### Tier 2 — where we already rank or can
+
+| Keyword | Our page | Note |
+|---|---|---|
+| `international chat rooms` / `talk to people from other countries` | `/international-calls` | **Already surfacing high** — our strongest confirmed position |
+| `voice chat rooms online free` | `/voice-chat-rooms` | Chatsansar's stale `2025` title is an opening |
+| `random call app` | `/random-call` | Already indexed and surfacing |
+| `chat without registration` | `/chat-without-registration` | "No sign-up" is in nearly every competitor title |
+| `practice english speaking online free` | `/practice-english-speaking` | Different SERP: englishbooth, hilokal, free4talk. High intent, less saturated |
+| `language exchange voice chat` | `/language-exchange` | Same set. Our `/languages/*` cluster supports it |
+
+### Tier 3 — long tail, where the geo cluster is the moat
+
+`chat with strangers in <city>` × 113, `talk to people in <country>` × 45,
+`<language> speaking practice` × 16. No competitor in this set has an
+equivalent. Individually tiny, collectively 177 pages of genuinely
+differentiated content that nobody is contesting.
+
+### Tier 4 — approach with care
+
+`someone to talk to`, `late night chat`, `can't sleep`, `i'm bored`, `lonely
+chat`. Real volume, and we have pages. But the SERP is owned by 7 Cups,
+Supportiv, BuddyHelp and helpline directories. Target *conversation and
+company*; never imply counselling or crisis support. See the note above.
+
+### Explicitly deprioritised
+
+`omegle alternative` as a head term. Keep `/omegle-alternative` — it is a real
+page with real intent behind it — but the SERP belongs to video products with
+apps and years of authority, and effort spent there is better spent on the
+voice-first terms in Tier 1, where the product genuinely wins.
+
+## What Phase 2 changes about the plan
+
+1. **The banner-heavy mix is the revenue finding.** 1 073 of 1 075 slots are the
+   lowest-CPM format Adsterra sells. Phase 5's job is format mix, not slot count.
+2. **The geo cluster is the moat.** No competitor has one. It deserves better
+   analytics (§5.4) and better internal linking, not more pages.
+3. **Year-stamped and comparison content is a real, cheap gap.** AirTALK and
+   HereSay both rank with content shapes we don't have. Phase 4 targets that.
+4. **Third-party coverage is the biggest gap and no commit fixes it.** It goes
+   in `docs/action-plan.md` as an owner task with named, non-paid targets.
+5. **`Article` schema on 22 blog posts is missing** and is a Phase 3 fix.
+
+## Unfinished — needs a network or credentials this session lacks
+
+* **Competitor ad stacks.** Open each competitor with DevTools, or run
+  `publicwww.com` / `builtwith.com` lookups, and record network, formats,
+  placements and units per page. Until then Phase 5 and 6 are calibrated on
+  Adsterra's published rate card, not on what rivals actually run.
+* **Core Web Vitals.** Run PageSpeed Insights with an API key against
+  `talklive.app` and each competitor, and pull 28-day field data from the CrUX
+  API. This session could measure neither — including our own.
