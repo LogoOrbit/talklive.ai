@@ -789,6 +789,48 @@ body.panel-open .side-panel {
 }
 
 /* Music toggle button, top-right of the banner. Plays MusicForTalkLive.mp3. */
+/* --- Call-screen wide ad card ---------------------------------------------
+ *
+ * Occupies the footprint the ambient video banner used to have, so the call
+ * panel's vertical rhythm is unchanged. Same width as the old banner -
+ * min(560px, 92%) - which is also why the slot inside it is native: at 560px
+ * ads.js would size a "leaderboard" down to a 468x60 and waste the box.
+ *
+ * min-height is set here rather than relying on the generic [data-ad="native"]
+ * reservation because this card is wider than a content-page slot and its unit
+ * renders in fewer, taller rows. It reserves the space before anything loads,
+ * so the creative arriving does not move the call controls above it.
+ */
+.ad-card-wide {
+  width: min(560px, 92%);
+  max-width: 100%;
+  margin: 4px auto 14px;
+  padding: 10px 10px 12px;
+}
+.ad-card-wide [data-ad] { min-height: 200px; }
+
+/* Short viewports: the whole call screen shrinks, and an ad is the first thing
+   that should give up height rather than the call controls. */
+@media (max-height: 760px) {
+  .ad-card-wide [data-ad] { min-height: 160px; }
+}
+
+/* The ambient-music control, kept when the banner it used to sit inside was
+   replaced. Same button, same id, same inline script - it is simply no longer
+   absolutely positioned over a video. Deliberately outside the ad card: site
+   controls must never sit on top of an advertisement, or a user cannot tell
+   which is which. */
+.call-music-row {
+  display: flex;
+  justify-content: center;
+  margin: 6px auto 0;
+}
+.call-music-btn {
+  position: static;
+  top: auto;
+  right: auto;
+}
+
 .video-banner__music {
   position: absolute;
   top: 10px;
