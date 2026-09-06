@@ -81,6 +81,8 @@ A secured owner dashboard lives at **`/owner`** (e.g. `https://talklive.app/owne
 | `PREMIUM_CLIENT_IDS` | Comma-separated clientIds to grant premium manually (testing) |
 | `LANDING_HOST` | Optional subdomain (e.g. `start.talklive.app`) whose root serves the marketing landing page (`/landing`) |
 | `ALIAS_HOSTS` | Comma-separated domains we own that 301 to `CANONICAL_HOST` (e.g. `talklive.xyz,talklive.site`). Each needs its own Fly certificate |
+| `TURN_KEY_ID` / `TURN_KEY_API_TOKEN` | Cloudflare Realtime TURN key. The server mints short-lived credentials from it and publishes Cloudflare's global relay - the quickest way to make calls work on carrier/office/school networks with no relay to operate. See `DEPLOY-TURN.md` |
+| `METERED_SUBDOMAIN` / `METERED_API_KEY` | Metered TURN account. Same purpose as the Cloudflare pair; both can be set, and their relays are published together |
 | `TURN_URLS` | Comma-separated TURN endpoints (e.g. `turn:turn.example.com:3478,turns:turn.example.com:5349?transport=tcp`). Served to browsers by `/ice-servers` |
 | `TURN_SHARED_SECRET` | coturn `use-auth-secret` value. The server mints a short-lived HMAC credential per request - preferred over static credentials |
 | `TURN_USERNAME` / `TURN_CREDENTIAL` | Static TURN credentials, used only when `TURN_SHARED_SECRET` is unset |

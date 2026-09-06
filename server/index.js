@@ -369,16 +369,177 @@ function buildIceServers() {
   return servers;
 }
 
+// --- Managed TURN providers --------------------------------------------------
+//
+// TURN_URLS above assumes the operator runs (or rents) a relay and knows its
+// hostnames. That is the flexible path, not the fast one, and until a relay
+// exists *somewhere* the app simply does not work for the large share of users
+// behind symmetric NAT - most mobile carriers, and effectively every corporate,
+// school and campus network. Those users see a call negotiate and then stay
+// silent, which is the single biggest "the app is broken in my country" report.
+//
+// So the two managed providers with a free tier and a global anycast footprint
+// are supported directly: set two secrets, get a relay everywhere, no host to
+// operate. Credentials from both are short-lived and minted server-side, so
+// they are never long-lived shared passwords sitting in the page.
+//
+//  - Cloudflare Realtime TURN: TURN_KEY_ID + TURN_KEY_API_TOKEN
+//  - Metered:                  METERED_SUBDOMAIN + METERED_API_KEY
+//
+// Both are additive: whatever TURN_URLS provides is still published alongside,
+// so a self-hosted relay and a managed one can back each other up.
+const PROVIDER_TTL_SECONDS = 3600;
+// Refresh before the credentials actually expire. A client that fetched at the
+// last second still has to survive a whole call on them.
+const PROVIDER_REFRESH_MARGIN_MS = 10 * 60 * 1000;
+// /ice-servers is on the critical path of starting a call - the browser awaits
+// it. A provider having a bad day must cost a moment, never the call.
+const PROVIDER_TIMEOUT_MS = 4000;
+
+let providerCache = null; // { servers, expiresAt }
+let providerInFlight = null;
+
+function normaliseIceEntries(raw) {
+  // Cloudflare answers with a single object, Metered with an array. Keep only
+  // entries that carry a usable urls field, and only the three keys the
+  // RTCPeerConnection constructor reads - a provider echoing anything else back
+  // must not end up in the page.
+  const list = Array.isArray(raw) ? raw : [raw];
+  const out = [];
+  for (const entry of list) {
+    if (!entry || typeof entry !== 'object') continue;
+    const urls = [].concat(entry.urls || entry.url || [])
+      .map((u) => String(u).trim())
+      .filter((u) => /^(stun|stuns|turn|turns):/i.test(u));
+    if (!urls.length) continue;
+    const server = { urls };
+    if (entry.username) server.username = String(entry.username);
+    if (entry.credential) server.credential = String(entry.credential);
+    out.push(server);
+  }
+  return out;
+}
+
+async function fetchJson(url, options) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), PROVIDER_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, Object.assign({ signal: controller.signal }, options));
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function fetchCloudflareTurn() {
+  const keyId = process.env.TURN_KEY_ID || process.env.CLOUDFLARE_TURN_KEY_ID || '';
+  const token = process.env.TURN_KEY_API_TOKEN || process.env.CLOUDFLARE_TURN_API_TOKEN || '';
+  if (!keyId || !token) return [];
+  const data = await fetchJson(
+    `https://rtc.live.cloudflare.com/v1/turn/keys/${encodeURIComponent(keyId)}/credentials/generate-ice-servers`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ttl: PROVIDER_TTL_SECONDS }),
+    },
+  );
+  return normaliseIceEntries(data && data.iceServers);
+}
+
+async function fetchMeteredTurn() {
+  const subdomain = process.env.METERED_SUBDOMAIN || '';
+  const apiKey = process.env.METERED_API_KEY || '';
+  if (!subdomain || !apiKey) return [];
+  const data = await fetchJson(
+    `https://${encodeURIComponent(subdomain)}.metered.live/api/v1/turn/credentials?apiKey=${encodeURIComponent(apiKey)}`,
+  );
+  return normaliseIceEntries(data);
+}
+
+function managedTurnConfigured() {
+  return Boolean(
+    (process.env.TURN_KEY_ID || process.env.CLOUDFLARE_TURN_KEY_ID)
+    || (process.env.METERED_SUBDOMAIN && process.env.METERED_API_KEY),
+  );
+}
+
+// Credentials are per-deployment, not per-user, so one set is fetched and shared
+// until it nears expiry. Without this every page load would hit the provider's
+// API, which is both rate-limited and slower than the call can afford.
+function getManagedTurnServers() {
+  if (!managedTurnConfigured()) return Promise.resolve([]);
+  const now = Date.now();
+  if (providerCache && providerCache.expiresAt - PROVIDER_REFRESH_MARGIN_MS > now) {
+    return Promise.resolve(providerCache.servers);
+  }
+  if (providerInFlight) return providerInFlight;
+
+  providerInFlight = Promise.all([
+    fetchCloudflareTurn().catch((err) => {
+      console.warn('[turn] Cloudflare TURN credentials unavailable:', err.message);
+      return [];
+    }),
+    fetchMeteredTurn().catch((err) => {
+      console.warn('[turn] Metered TURN credentials unavailable:', err.message);
+      return [];
+    }),
+  ]).then(([cloudflare, metered]) => {
+    const servers = cloudflare.concat(metered);
+    if (servers.length) {
+      providerCache = { servers, expiresAt: Date.now() + PROVIDER_TTL_SECONDS * 1000 };
+      return servers;
+    }
+    // Every provider failed. Stale-but-unexpired credentials still relay media,
+    // and a relay that might work beats no relay at all; only once they are
+    // genuinely expired is it honest to drop them.
+    if (providerCache && providerCache.expiresAt > Date.now()) return providerCache.servers;
+    providerCache = null;
+    return [];
+  }).finally(() => {
+    providerInFlight = null;
+  });
+
+  return providerInFlight;
+}
+
 function hasRelay(servers) {
   return servers.some((s) => [].concat(s.urls || []).some((u) => /^turns?:/i.test(String(u))));
 }
 
-app.get('/ice-servers', (req, res) => {
+// Said at boot, not on failure, because the operator is looking at the logs
+// then. A deployment with no relay works fine for the developer testing it at
+// home and fails for a large share of real users - the gap this warning closes.
+function warnIfNoRelay() {
+  if (hasRelay(buildIceServers()) || managedTurnConfigured()) {
+    getManagedTurnServers().then((servers) => {
+      if (managedTurnConfigured() && !servers.length) {
+        console.warn('[turn] managed TURN is configured but returned no relay - check the credentials.');
+      }
+    }).catch(() => { /* already logged */ });
+    return;
+  }
+  console.warn(
+    '[turn] No TURN relay configured. Calls will fail for users behind symmetric NAT '
+    + '(most mobile carriers, corporate/school networks). See DEPLOY-TURN.md.',
+  );
+}
+
+app.get('/ice-servers', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   const iceServers = buildIceServers();
+  // A provider outage must degrade to STUN + any static TURN, never to an error
+  // page: the browser treats a failed fetch as "keep the bare STUN fallback".
+  let managed = [];
+  try {
+    managed = await getManagedTurnServers();
+  } catch (err) {
+    console.warn('[turn] managed TURN lookup failed:', err.message);
+  }
+  const all = iceServers.concat(managed);
   // Relay-only is only ever safe to ask for when a relay actually exists.
-  const relayOnly = process.env.TURN_FORCE_RELAY === '1' && hasRelay(iceServers);
-  res.json({ iceServers, iceTransportPolicy: relayOnly ? 'relay' : 'all' });
+  const relayOnly = process.env.TURN_FORCE_RELAY === '1' && hasRelay(all);
+  res.json({ iceServers: all, iceTransportPolicy: relayOnly ? 'relay' : 'all' });
 });
 
 // sendFile bypasses the static middleware, so page shells served this way need
@@ -2402,6 +2563,7 @@ store.ready.then(() => {
   warnIfStorageIsEphemeral();
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`TalkLive server running on port ${PORT}`);
+    warnIfNoRelay();
     // Tell the IndexNow network (Bing/Yandex/Seznam/Naver) about every URL in
     // the sitemap shortly after each production boot, so fresh deploys get
     // crawled within minutes. Local dev skips it to avoid noise.

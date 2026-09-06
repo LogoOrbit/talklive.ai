@@ -26,9 +26,47 @@ Exit code 0 means at least one relay handed out a real allocation.
 
 ### Option A: managed TURN (fastest)
 
+Two providers are wired into the server directly, so there is nothing to run and
+no hostnames to keep in sync - set two secrets and every restrictive network
+gets a relay. The server mints short-lived credentials from the provider's API,
+caches them for the hour they are valid, and publishes them from `/ice-servers`
+alongside STUN. If the provider's API is down the app falls back to STUN plus
+whatever `TURN_URLS` provides, never to an error.
+
+**Cloudflare Realtime TURN** (recommended - global anycast, free monthly tier):
+
+1. Cloudflare dashboard → **Realtime** → **TURN Keys** → *Create*.
+2. Copy the key ID and API token.
+
+```sh
+fly secrets set \
+  TURN_KEY_ID='<key id>' \
+  TURN_KEY_API_TOKEN='<api token>' \
+  -a talklive-ai
+```
+
+**Metered** (alternative, also has a free tier):
+
+```sh
+fly secrets set \
+  METERED_SUBDOMAIN='<your subdomain>' \
+  METERED_API_KEY='<api key>' \
+  -a talklive-ai
+```
+
+Both may be set at once; their relays are published together and the browser
+uses whichever answers first. Then verify against the live app:
+
+```bash
+npm run check:turn -- --from-url https://talklive.app/ice-servers
+```
+
+### Option A2: any other managed provider
+
 Any provider that supports the standard coturn "shared secret" scheme works
-(Cloudflare Realtime, Twilio Network Traversal, Metered, Xirsys). You need
-either a shared secret or a static username/password pair.
+(Twilio Network Traversal, Xirsys, and Metered's coturn-compatible endpoints).
+You need either a shared secret or a static username/password pair, configured
+through `TURN_URLS` as in step 3 below.
 
 Prefer a provider with a point of presence near your users. Relay adds a hop, so
 a relay in the wrong region shows up directly as call latency.

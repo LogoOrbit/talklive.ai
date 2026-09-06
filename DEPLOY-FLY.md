@@ -83,7 +83,7 @@ fly secrets set \
 
 Full list of variables the code reads: `GOOGLE_CLIENT_ID`, `OWNER_EMAIL`,
 `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `DATABASE_URL`,
-`PREMIUM_CLIENT_IDS`, `TURN_*`, `OPENRELAY_*`, `AD_*`,
+`PREMIUM_CLIENT_IDS`, `TURN_*`, `METERED_*`, `AD_*`,
 `LANDING_HOST`, `REPORT_TZ`, `ENFORCE_CANONICAL`.
 
 ## 5. Deploy
