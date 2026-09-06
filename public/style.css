@@ -1293,32 +1293,135 @@ body.panel-open .side-panel {
   transform: translateY(-1px);
 }
 
+/* Narrow phones: the header sheds decoration, never a control.
+ *
+ * In a call the tools row carries five buttons instead of three - the game and
+ * chat icons unhide - and that is the width the header has to survive. The
+ * order things are given up in is deliberate: the wordmark first (it is
+ * branding, and the URL bar above it already says talklive.app), then the
+ * group glyph inside the live-count pill (the pulsing dot and the number
+ * already say what it is), and only then a few pixels off the buttons. Every
+ * control stays present, labelled and tappable at every width. */
+@media (max-width: 520px) {
+  /* The wordmark yields only when the header actually needs the room.
+   *
+   * Idle, the tools group is three buttons and "TalkLive" fits comfortably. In
+   * a call the game and chat buttons unhide and it does not, so :has() drops
+   * the wordmark for exactly that state and brings it back when the call ends.
+   * The brand keeps its dot, its tap target and its reload behaviour either
+   * way - only the lettering goes, and only while it would cost a control its
+   * space.
+   *
+   * Where :has() is unsupported the wordmark simply stays, and the tools group
+   * scrolls instead. Both outcomes keep every control reachable, which is why
+   * this is safe to lean on. */
+  .topbar:has(#gameBtn:not(.hidden)) .brand-name,
+  .topbar:has(#chatToggleBtn:not(.hidden)) .brand-name {
+    display: none;
+  }
+  .topbar:has(#gameBtn:not(.hidden)) .brand,
+  .topbar:has(#chatToggleBtn:not(.hidden)) .brand {
+    width: 40px;
+    justify-content: center;
+    gap: 0;
+    padding: 0;
+  }
+}
+
+/* Genuinely tiny screens: the wordmark goes regardless of call state. */
+@media (max-width: 359px) {
+  .brand-name { display: none; }
+  .brand {
+    width: 40px;
+    justify-content: center;
+    gap: 0;
+    padding: 0;
+  }
+}
+
+@media (max-width: 420px) {
+  .topbar .icon-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+  }
+  .topbar .topbar-svg-icon {
+    width: 22px;
+    height: 22px;
+  }
+  /* Dot and number carry the meaning; the group glyph is the decoration. */
+  .people-count .people-icon { display: none; }
+  .people-count { padding: 5px 9px; }
+}
+
 /* Mobile responsiveness */
 @media (max-width: 600px) {
+  /* One row on phones.
+   *
+   * The tools used to wrap onto a second centred row (order:3 + flex-basis:100%)
+   * and the buttons stayed 54px square, so the header alone cost about 130px of
+   * a 640px-tall phone screen before the call UI got any. Everything below
+   * exists to fit the same controls - settings, brand, history, friends,
+   * filters, game, chat, live count - on one line, losing no feature and no
+   * tap target below 40px.
+   *
+   * nowrap is the load-bearing declaration: it makes overflow impossible to
+   * ignore during development rather than silently pushing a second row. */
   .topbar {
-    padding: 8px 10px 6px;
-    padding-top: calc(8px + env(safe-area-inset-top));
+    padding: 6px 10px;
+    padding-top: calc(6px + env(safe-area-inset-top));
     column-gap: 6px;
     justify-content: space-between;
+    flex-wrap: nowrap;
   }
 
   .topbar-left {
-    gap: 8px;
+    gap: 6px;
+    flex: 0 1 auto;
   }
 
-  /* Tools drop to their own centered row inside the same header. */
+  /* Below about 340px the five in-call tools genuinely cannot fit beside the
+     brand and the live count at a legal tap size. Rather than let flex squash
+     them - which produced 18px targets on a 320px screen - the group scrolls
+     horizontally. Every control stays full size and reachable; the partially
+     visible icon at the edge is its own affordance. Above that width nothing
+     scrolls, because nothing overflows. */
   .header-tools {
-    order: 3;
-    flex-basis: 100%;
-    gap: 8px;
+    order: 0;
+    flex: 0 1 auto;
+    flex-basis: auto;
+    gap: 2px;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .header-tools::-webkit-scrollbar { display: none; }
+
+  .header-right {
+    flex: 0 0 auto;
+  }
+
+  /* Nothing with a tap target is allowed to shrink. */
+  .topbar .icon-btn,
+  .topbar .brand,
+  .header-tools > * {
+    flex-shrink: 0;
   }
 
   .brand {
-    font-size: 17px;
+    font-size: 15px;
+    /* Rendered as a button that reloads the app, so it needs a real target
+       height - as a bare text run it was 17px tall. */
+    min-height: 40px;
+    padding: 0 4px;
+    border-radius: 12px;
+    white-space: nowrap;
   }
 
   .people-count {
-    padding: 6px 8px;
+    padding: 5px 8px;
+    gap: 4px;
   }
 
   .people-count-num { font-size: 14px; }
@@ -1330,6 +1433,20 @@ body.panel-open .side-panel {
   }
 
   .chat-fab-icon {
+    width: 24px;
+    height: 24px;
+  }
+
+  /* 44px is Apple's minimum recommended tap target and comfortably above
+     Google's 40px, so the buttons get smaller without getting harder to hit.
+     Only the header buttons shrink - .icon-btn is used elsewhere in the app. */
+  .topbar .icon-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 13px;
+  }
+
+  .topbar .topbar-svg-icon {
     width: 24px;
     height: 24px;
   }
