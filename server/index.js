@@ -507,6 +507,59 @@ app.get('/ads.txt', (req, res) => {
   res.type('text').set('Cache-Control', 'public, max-age=3600').send(ADS_TXT + '\n');
 });
 
+// --- Ad density config -------------------------------------------------------
+//
+// public/ads.js reads its density and behaviour from here rather than having
+// them compiled into 282 pages of markup. The committed defaults live in
+// public/ads-config.json; ADS_CONFIG (a JSON object) is merged over the top.
+//
+// The point of the env layer is that ad density is the setting most likely to
+// need changing on evidence, and changing it should not mean editing a
+// generator, rebuilding every page, and waiting on a deploy. `fly secrets set
+// ADS_CONFIG='{"maxSlotsPerPage":2}'` restarts the machine with the new value
+// and touches no code. Setting {"enabled":false} is the kill switch if a
+// creative ever misbehaves.
+//
+// Defaults are read once at boot and the env is parsed once. A malformed
+// ADS_CONFIG is logged and ignored rather than thrown: bad JSON in an
+// environment variable must not take the site down, and falling back to the
+// committed defaults is always safe.
+const ADS_CONFIG_DEFAULTS = (() => {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(PUBLIC_DIR, 'ads-config.json'), 'utf8'));
+  } catch (err) {
+    console.warn('[ads-config] public/ads-config.json is missing or invalid:', err.message);
+    return {};
+  }
+})();
+
+const ADS_CONFIG = (() => {
+  const merged = { ...ADS_CONFIG_DEFAULTS };
+  if (!process.env.ADS_CONFIG) return merged;
+  try {
+    const override = JSON.parse(process.env.ADS_CONFIG);
+    if (!override || typeof override !== 'object' || Array.isArray(override)) {
+      throw new Error('ADS_CONFIG must be a JSON object');
+    }
+    // One level deep, so {"types":{"native":false}} replaces the whole types
+    // object rather than merging into it. Shallow is the predictable choice
+    // here: a partial types object would silently leave formats enabled that
+    // the operator thought they had listed exhaustively.
+    Object.assign(merged, override);
+  } catch (err) {
+    console.warn('[ads-config] ignoring malformed ADS_CONFIG:', err.message);
+  }
+  return merged;
+})();
+
+app.get('/ads-config.json', (req, res) => {
+  // Short cache: this is the one file an operator changes to react to a bad
+  // day's revenue or a misbehaving creative, and a long TTL would leave stale
+  // densities in browser caches for hours after the fix.
+  res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=3600');
+  res.json(ADS_CONFIG);
+});
+
 app.use(
   express.static(PUBLIC_DIR, {
     // Serve clean URLs: /talk-to-strangers resolves to talk-to-strangers.html.

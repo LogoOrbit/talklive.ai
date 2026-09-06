@@ -485,8 +485,6 @@ ${headerHtml(p.slug)}
 
   ${leaderboardAd()}
 
-  ${adSlot('leaderboard')}
-
   ${affiliateHtml(p.slug)}
 
   ${relatedPostsHtml(p, index)}
@@ -2008,10 +2006,6 @@ ${headerHtml('blog')}
   </section>
 
   ${leaderboardAd()}
-
-  ${adSlot('leaderboard')}
-
-  ${nativeAd()}
 </main>
 ${footerHtml()}
 </body>
@@ -2104,8 +2098,6 @@ ${headerHtml('blog')}
   </div>
 
   ${leaderboardAd()}
-
-  ${nativeAd()}
 </main>
 ${footerHtml()}
 </body>
@@ -2236,13 +2228,13 @@ ${alternates}
     </div>
   </section>
   ${adSlot('native')}
-  ${leaderboardAd()}
   <section class="faq">
     <div class="wrap">
       <h2>${loc.faqH}</h2>
       ${faqHtml}
     </div>
   </section>
+  ${leaderboardAd()}
   <div class="wrap">
     <div class="cta-band">
       <h2>${loc.ctaH}</h2>

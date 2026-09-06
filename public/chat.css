@@ -718,3 +718,74 @@ img { max-width: 100%; }
 @media (max-height: 620px) {
   .chat-live-ad { display: none; }
 }
+
+/* --- Ad slot dimension reservation ---------------------------------------
+ *
+ * Every [data-ad] slot reserves the height its creative will occupy BEFORE
+ * public/ads.js loads anything into it. Without this the slot is 0px tall
+ * until the iframe lands, and everything below it jumps down by 50-250px -
+ * which is Cumulative Layout Shift, and it was happening on all 1,000+ slots
+ * on this site.
+ *
+ * The breakpoints below mirror sizeFor() in public/ads.js exactly. Keep them
+ * in step: if the two disagree, the page shifts by the difference.
+ *
+ * One deliberate asymmetry. ads.js picks a size from the SLOT's width; CSS can
+ * only ask about the VIEWPORT, which is always the larger of the two. Because
+ * the sizes are monotonic in width (320x50 -> 468x60 -> 728x90), reserving on
+ * viewport width always reserves at least as much as ads.js will use. The cost
+ * is a few pixels of whitespace near a breakpoint. The alternative -
+ * under-reserving - is a visible jump, so the trade is the right way round.
+ *
+ * This block is duplicated verbatim in seo.css, style.css and chat.css. It is
+ * not extracted into its own stylesheet on purpose: the 265 generated pages
+ * load exactly one render-blocking stylesheet, and a second request to save
+ * 30 lines of CSS would be a bad trade.
+ */
+[data-ad] {
+  display: block;
+  /* Fallback for a slot type with no rule below. */
+  min-height: 50px;
+}
+
+/* 300x250 medium rectangle - one size at every width. */
+[data-ad="box"], [data-ad="300x250"] { min-height: 250px; }
+
+/* Responsive banners: 320x50 -> 468x60 -> 728x90. */
+[data-ad="leaderboard"], [data-ad="banner"], [data-ad="320x50"] { min-height: 50px; }
+[data-ad="468x60"] { min-height: 60px; }
+[data-ad="728x90"] { min-height: 90px; }
+@media (min-width: 484px) {
+  [data-ad="leaderboard"], [data-ad="banner"] { min-height: 60px; }
+}
+@media (min-width: 744px) {
+  [data-ad="leaderboard"] { min-height: 90px; }
+}
+
+/* Skyscrapers switch on viewport width in ads.js, so these agree exactly. */
+[data-ad="skyscraper"], [data-ad="160x300"] { min-height: 300px; }
+[data-ad="160x600"] { min-height: 600px; }
+@media (min-width: 1024px) {
+  [data-ad="skyscraper"] { min-height: 600px; }
+}
+
+/* The one approximate reservation. A native banner's height depends on how
+ * many recommendation cards the network returns and how they wrap, so it
+ * cannot be derived the way a fixed banner size can. These values are a
+ * deliberate over-estimate: too much reserved space is whitespace, too little
+ * is a jump. Tune once real field CLS data exists - see docs/action-plan.md. */
+[data-ad="native"] { min-height: 250px; }
+@media (min-width: 744px) {
+  [data-ad="native"] { min-height: 180px; }
+}
+
+/* A slot that never filled while the user was looking at it keeps its
+ * reserved space - collapsing it would move the page just as surely as
+ * expanding it did. It only loses the frame and the "Sponsored" label, so it
+ * reads as spacing rather than as a hole. ads.js still collapses slots that
+ * are off screen, where nothing visible can move. */
+.ad-card[data-ad-unfilled] {
+  border-color: transparent;
+  background: transparent;
+}
+.ad-card[data-ad-unfilled] .ad-card-label { visibility: hidden; }

@@ -197,7 +197,7 @@
 }
 </script>
 
-<script defer src="/ads.js?v=20260828fix"></script>
+<script defer src="/ads.js?v=20260906ads"></script>
 </head>
 <body>
   <a href="#main" class="skip-link" data-i18n="skipToContent">Skip to main content</a>
@@ -1010,8 +1010,17 @@
         <!-- Short reassurance shown during an active call -->
         <p id="reassureLine" class="reassure-line hidden" data-i18n="reassureLine">Don't feel bad if someone skips you or hangs up - it happens to everyone, just move on to the next chat.</p>
 
-        <!-- Slim revenue slot between call status and the action controls. -->
-        <div data-ad="banner" style="margin:16px auto;text-align:center"></div>
+        <!-- No ad slot here, deliberately.
+             A banner used to sit between the call status and the Call /
+             Hang-up / Mute / Report row. Three things were wrong with it: it
+             was inside the live call UI, which is the one place nothing should
+             ever move or compete for attention; a creative directly above a
+             hang-up button is an accidental-click layout, and invalid-traffic
+             ratios are what get publisher accounts closed; and it was a
+             468x60 / 320x50, the lowest-CPM shape Adsterra sells, spending the
+             highest-attention moment on the site for the least money.
+             The slots further down this panel stay, and public/ads.js will not
+             let them load or change while a call is live. -->
 
         <div id="partnerCard" class="partner-card hidden">
           <div class="partner-name" id="partnerName">-</div>

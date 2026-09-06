@@ -58,7 +58,7 @@
 <link rel="apple-touch-icon" href="/favicon-192.png" />
 <link rel="manifest" href="/site.webmanifest" />
 <script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebApplication","name":"TalkLive Chat","url":"https://talklive.app/chat","applicationCategory":"CommunicationApplication","operatingSystem":"Web, Android, iOS","offers":{"@type":"Offer","price":"0","priceCurrency":"USD","availability":"https://schema.org/InStock","url":"https://talklive.app/","hasMerchantReturnPolicy":{"@type":"MerchantReturnPolicy","applicableCountry":["AE","AR","AU","BD","BR","CA","CN","CO","DE","EG","ES","FR","GB","GR","ID","IE","IL","IN","IR","IT","JP","KE","KR","MA","MX","MY","NG","NL","NO","NZ","PH","PK","PL","PT","RO","RU","SA","SE","SG","TH","TR","UA","US","VN","ZA"],"returnPolicyCategory":"https://schema.org/MerchantReturnNotPermitted","merchantReturnLink":"https://talklive.app/refund"},"shippingDetails":{"@type":"OfferShippingDetails","shippingRate":{"@type":"MonetaryAmount","value":"0","currency":"USD"},"shippingDestination":{"@type":"DefinedRegion","addressCountry":["AE","AR","AU","BD","BR","CA","CN","CO","DE","EG","ES","FR","GB","GR","ID","IE","IL","IN","IR","IT","JP","KE","KR","MA","MX","MY","NG","NL","NO","NZ","PH","PK","PL","PT","RO","RU","SA","SE","SG","TH","TR","UA","US","VN","ZA"]},"deliveryTime":{"@type":"ShippingDeliveryTime","handlingTime":{"@type":"QuantitativeValue","minValue":0,"maxValue":0,"unitCode":"DAY"},"transitTime":{"@type":"QuantitativeValue","minValue":0,"maxValue":0,"unitCode":"DAY"}}}},"isAccessibleForFree":true,"publisher":{"@type":"Organization","name":"TalkLive","url":"https://talklive.app","logo":"https://talklive.app/favicon.svg"},"description":"The live TalkLive chat room - anonymous random voice and text conversations with strangers.","brand":{"@type":"Brand","name":"TalkLive"}}]</script>
-<script defer src="/ads.js?v=20260828fix"></script>
+<script defer src="/ads.js?v=20260906ads"></script>
 </head>
 <body>
   <a href="#chatStage" class="skip-link" data-i18n="skipToContent">Skip to main content</a>
@@ -171,9 +171,16 @@
         <div id="viewLive" class="chat-view chat-view-live hidden" aria-hidden="true">
           <div id="msgs" class="msgs" aria-live="polite"></div>
           <p id="typing" class="typing hidden"><span data-i18n="strangerTyping">Stranger is typing</span><span class="typing-dots" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span></p>
-          <!-- Slim strip above the composer: 468x60 on desktop, 320x50 on
-               mobile, so the live conversation keeps as much height as possible. -->
-          <div class="chat-live-ad" data-ad="banner"></div>
+          <!-- No ad slot here, deliberately.
+               A 468x60 / 320x50 strip used to sit between the messages and the
+               composer during a live text chat. It was the lowest-CPM shape in
+               the inventory occupying the one screen where the user is
+               mid-conversation, and it ate height from the message list on
+               exactly the small phones where height is scarcest - chat.css was
+               already hiding it below 620px for that reason.
+               The two 300x250 slots on the start and searching views cover the
+               same session at a higher rate, in the moments where an ad costs
+               the user nothing. -->
         </div>
       </div>
 

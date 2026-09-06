@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const publicDir = path.join(__dirname, '..', 'public');
-const adsVersion = '20260828fix';
+const adsVersion = '20260906ads';
 // Keep the purchase decision page clean. Showing network ads beside the paid
 // plan distracts from the higher-value conversion and undermines "ad-free".
 const adFreePages = new Set(['pricing.html']);
@@ -44,6 +44,45 @@ for (const file of htmlFiles(publicDir)) {
     /\s*<span><a href="https?:\/\/delvefencescrewdriver\.com\/[^"]*"[^>]*>Sponsored<\/a><\/span>/gi,
     ''
   );
+
+  // Collapse a run of ad slots that sit back to back with no content between
+  // them into the first one.
+  //
+  // The landing, blog and locale templates in build-seo.js each emitted two
+  // slots in a row - in the landing template's case two byte-identical
+  // leaderboards, because leaderboardAd() and adSlot('leaderboard') are the
+  // same function. Measured before the fix: 271 of 274 pages carried a pair
+  // with fewer than 30 characters of visible text between them.
+  //
+  // Two 728x90s in a row do not earn twice. The network fills the second at a
+  // lower rate, the pair reads as an ad wall, and stacking is what Google's
+  // page-layout guidance and the Coalition for Better Ads single out - and a
+  // Chrome ad-filter flag on a site that lives on organic search would cost
+  // far more than the second unit could ever return.
+  //
+  // The templates are fixed at source, but scripts/geo-pages.js,
+  // pages-extra2.js and blog-extra2.js are orphaned (see SEO.md), so 177
+  // country/city/language pages plus two later batches ship from disk and no
+  // template change reaches them. This sweep is how the fix gets there, and it
+  // is why it matches on rendered HTML rather than on a template.
+  //
+  // Deliberately conservative: it only collapses slots separated by markup and
+  // whitespace alone. Any real text between two slots and both are kept.
+  //
+  // Looped to a fixed point rather than run once. A single global replace
+  // consumes both members of a pair and resumes scanning after them, so a run
+  // of three slots - which the blog template emitted: leaderboard, leaderboard,
+  // native - collapses to two and stops. Repeating until the string stops
+  // changing is what makes the result independent of how many slots happened to
+  // be stacked. The guard is a safety net against a pattern that could somehow
+  // oscillate; in practice this settles in two passes.
+  const ADJACENT_SLOTS = /(<div\b[^>]*\bdata-ad="[^"]*"[^>]*>\s*<\/div>(?:\s*<\/div>)*)((?:\s*<div\b[^>]*>)*\s*<div\b[^>]*\bdata-ad="[^"]*"[^>]*>\s*<\/div>(?:\s*<\/div>)*)/gi;
+  for (let pass = 0; pass < 10; pass += 1) {
+    const collapsed = html.replace(ADJACENT_SLOTS,
+      (match, first, second) => (/>[^<>]*[A-Za-z0-9][^<>]*</.test(second) ? match : first));
+    if (collapsed === html) break;
+    html = collapsed;
+  }
 
   html = html.replace(/^[ \t]+$/gm, '');
 

@@ -1,0 +1,29 @@
+{
+  "_comment": "Ad density and behaviour, read at runtime by public/ads.js. This file is the committed default; server/index.js serves GET /ads-config.json and merges the ADS_CONFIG environment variable over the top, so densities can be retuned by setting one Fly secret without rebuilding or redeploying the app. See docs/action-plan.md for the tuning procedure and docs/revenue-model.md for what each setting is worth.",
+
+  "enabled": true,
+
+  "_maxSlotsPerPage": "Hard ceiling on how many slots fill on one page, counted in document order; the rest are dropped. 0 disables ads without touching markup. The markup sets the intended density (three on content pages); this is the ceiling and the live tuning lever. Set it below the number of slots in the HTML to thin every page at once.",
+  "maxSlotsPerPage": 4,
+
+  "_types": "Per-format kill switch. A disabled format never loads and its slot collapses. Use this to pull one unit that is underperforming without editing 282 pages.",
+  "types": {
+    "native": true,
+    "leaderboard": true,
+    "banner": true,
+    "box": true,
+    "skyscraper": true
+  },
+
+  "_pauseDuringCall": "While a voice call or text chat is live, no slot starts loading, retries a host, or collapses. Ads already on screen stay exactly as they are. This is what keeps a long call free of movement while still earning from impressions placed before it started.",
+  "pauseDuringCall": true,
+
+  "_lazyRootMargin": "How far ahead of the viewport a slot begins loading. Larger fills sooner and wastes more impressions on users who never scroll that far; smaller risks an empty slot when the user arrives.",
+  "lazyRootMargin": "400px",
+
+  "_fillTimeoutMs": "How long one serving host is given to put something in the frame before the next host is tried.",
+  "fillTimeoutMs": 15000,
+
+  "_minViewportHeight": "Below this viewport height, in-app slots inside the call and chat UI are skipped entirely, so a short phone screen is not mostly advertisement.",
+  "minViewportHeight": 620
+}
