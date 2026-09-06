@@ -70,6 +70,10 @@
     fillTimeoutMs: 15000,
     visibleFillTimeoutMs: 6000,
     minViewportHeight: 620,
+    // Overwritten by /ads-config.json. Empty here so that if the config never
+    // arrives an unfilled slot collapses quietly rather than showing a promo
+    // this file had to hard-code.
+    fallback: { enabled: false, promos: [] },
   };
 
   function loadConfig(done) {
@@ -184,6 +188,7 @@
     el.setAttribute('data-ad-filled', '1');
     var card = el.closest && el.closest('.ad-card');
     if (card) card.setAttribute('data-ad-filled', '1');
+    reportFill(el, true);
   }
 
   /*
@@ -197,11 +202,133 @@
    * hole in the page, so the slot now always collapses. The fill deadline in
    * pollFill is short while the slot is visible precisely so this happens
    * before the user has settled on it.
+   *
+   * Before collapsing, though, houseAd gets a chance at the space.
    */
   function hideSlot(el) {
+    reportFill(el, false);
+    if (houseAd(el)) return;
     el.style.display = 'none';
     var card = el.closest && el.closest('.ad-card');
     if (card) card.style.display = 'none';
+  }
+
+  // --- House promos ---------------------------------------------------------
+
+  /*
+   * What goes in a slot the ad network never filled.
+   *
+   * There is no way to make a third-party ad unblockable. Proxying the network
+   * through this domain would work for a few weeks until the filter lists catch
+   * up, and it is the pattern browsers treat as tracking evasion, so it is not
+   * worth the ban risk or the EU exposure. What IS possible is to stop losing
+   * the space: a visitor with an ad blocker still reads the page, and one of
+   * our own promos in that slot costs nothing and can still convert.
+   *
+   * These are plain first-party HTML built from strings already in the page's
+   * JavaScript. No image, font, script, iframe or beacon of any kind is
+   * requested, so there is no network call for a blocker to intercept and no
+   * selector a cosmetic filter would target without also hiding real content.
+   * That is what makes it durable - not cleverness, just having nothing to
+   * block.
+   *
+   * They are deliberately NOT labelled "Sponsored". These are our own pages;
+   * calling them sponsored would be a false disclosure, and the .ad-card
+   * chrome stays off so a promo never impersonates a paid placement.
+   */
+  function promoFor(el) {
+    var fb = config.fallback;
+    if (!fb || !fb.enabled || !fb.promos || !fb.promos.length) return null;
+    // The call and chat screens are "app"; everything else is "content".
+    var surface = document.getElementById('callMainBtn') || document.getElementById('viewLive')
+      ? 'app' : 'content';
+    var pool = fb.promos.filter(function (p) {
+      return p && p.href && (!p.where || p.where === 'any' || p.where === surface);
+    });
+    if (!pool.length) return null;
+    // Rotate by slot position so two slots on one page do not show the same
+    // promo, and different visits do not always open on the same one.
+    var slots = [].slice.call(document.querySelectorAll('[data-ad]'));
+    var seed = Math.max(0, slots.indexOf(el)) + Math.floor(Date.now() / 3600000);
+    return pool[seed % pool.length];
+  }
+
+  function houseAd(el) {
+    var promo = promoFor(el);
+    if (!promo || el.dataset.adHouse) return false;
+    el.dataset.adHouse = '1';
+
+    var external = /^https?:/i.test(promo.href);
+    // Built as a string and assigned once. Reading back el.href would return
+    // the resolved absolute URL, so appending to it baked the current origin
+    // into every internal link.
+    var href = promo.href;
+    if (!external) {
+      // Tagged so the click shows up in analytics as a house promo rather than
+      // as ordinary internal navigation.
+      href += (href.indexOf('?') === -1 ? '?' : '&')
+        + 'utm_source=house&utm_medium=slot&utm_campaign=' + encodeURIComponent(promo.id || 'promo');
+    }
+
+    var a = document.createElement('a');
+    a.className = 'house-ad';
+    a.setAttribute('href', href);
+    if (external) {
+      // Any off-site promo is a commercial placement whether or not money has
+      // changed hands yet, so it carries the disclosure Google asks for.
+      a.rel = 'sponsored nofollow noopener';
+      a.target = '_blank';
+    }
+
+    var icon = document.createElement('span');
+    icon.className = 'house-ad-icon';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.textContent = promo.icon || '✨';
+
+    var text = document.createElement('span');
+    text.className = 'house-ad-text';
+    var title = document.createElement('strong');
+    title.className = 'house-ad-title';
+    title.textContent = promo.title || '';
+    var body = document.createElement('span');
+    body.className = 'house-ad-body';
+    body.textContent = promo.body || '';
+    var cta = document.createElement('span');
+    cta.className = 'house-ad-cta';
+    cta.textContent = promo.cta || '';
+    text.appendChild(title);
+    text.appendChild(body);
+    text.appendChild(cta);
+
+    a.appendChild(icon);
+    a.appendChild(text);
+    // textContent everywhere above, never innerHTML: the promos come from a
+    // config file that an operator edits, and it should not be able to inject
+    // markup into every page on the site by accident.
+    el.appendChild(a);
+
+    var card = el.closest && el.closest('.ad-card');
+    if (card) card.setAttribute('data-ad-house', '1');
+    return true;
+  }
+
+  /*
+   * Report that a slot never filled.
+   *
+   * There is currently no first-party number for how much of this audience
+   * blocks ads, which makes every revenue projection guesswork at the top. One
+   * GA4 event per unfilled slot turns that into a measurement: compare
+   * ad_slot_unfilled against ad_slot_filled and the block rate falls out.
+   */
+  function reportFill(el, filled) {
+    if (typeof window.gtag !== 'function') return;
+    try {
+      window.gtag('event', filled ? 'ad_slot_filled' : 'ad_slot_unfilled', {
+        ad_format: el.dataset.ad,
+        ad_surface: document.getElementById('callMainBtn') || document.getElementById('viewLive')
+          ? 'app' : 'content',
+      });
+    } catch (err) { /* analytics must never break the page */ }
   }
 
   /*

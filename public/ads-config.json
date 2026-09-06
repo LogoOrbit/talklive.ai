@@ -27,6 +27,58 @@
   "_visibleFillTimeoutMs": "The same deadline while the slot IS on screen. Much shorter, because every extra second is a second of blank space someone is staring at. An ad blocker or a filtering resolver means the slot will never fill, and this is how fast the page takes that space back.",
   "visibleFillTimeoutMs": 6000,
 
+  "_fallback": "What to put in a slot when the ad network never fills it - most often because the visitor runs an ad blocker or a filtering DNS resolver, which is a large share of this audience. Rather than collapsing to nothing, the slot shows one of our own promos. These are plain first-party HTML with no external request of any kind, so nothing exists for a blocker to block. Never labelled Sponsored, because they are our own content and calling them sponsored would be a lie. Set enabled:false to go back to collapsing.",
+  "fallback": {
+    "enabled": true,
+    "promos": [
+      {
+        "id": "premium",
+        "where": "any",
+        "icon": "\u2728",
+        "title": "TalkLive Plus",
+        "body": "Every match filter, unlimited friends, no ads. Announced - not on sale yet.",
+        "cta": "See what is coming",
+        "href": "/pricing"
+      },
+      {
+        "id": "chat",
+        "where": "content",
+        "icon": "\ud83d\udcac",
+        "title": "Prefer to type?",
+        "body": "Random text chat with a stranger. No mic, no camera, no sign-up.",
+        "cta": "Start chatting free",
+        "href": "/chat"
+      },
+      {
+        "id": "voice",
+        "where": "content",
+        "icon": "\ud83c\udf99",
+        "title": "Talk to someone now",
+        "body": "One tap and you are in a live voice call with a random person.",
+        "cta": "Start talking free",
+        "href": "/"
+      },
+      {
+        "id": "language",
+        "where": "any",
+        "icon": "\ud83c\udf0d",
+        "title": "Practise a language",
+        "body": "Real conversations with real people, in the language you are learning.",
+        "cta": "How it works",
+        "href": "/practice-english-speaking"
+      },
+      {
+        "id": "safety",
+        "where": "app",
+        "icon": "\ud83d\udee1",
+        "title": "Staying safe here",
+        "body": "What we protect, what we cannot, and the controls worth knowing.",
+        "cta": "Read the safety guide",
+        "href": "/safety"
+      }
+    ]
+  },
+
   "_minViewportHeight": "Below this viewport height, in-app slots inside the call and chat UI are skipped entirely, so a short phone screen is not mostly advertisement.",
   "minViewportHeight": 620
 }

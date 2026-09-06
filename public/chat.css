@@ -807,3 +807,36 @@ img { max-width: 100%; }
   background: rgba(255, 255, 255, 0.028);
 }
 .ad-card[data-ad-filled] .ad-card-label { visibility: visible; }
+
+/* --- House promo ----------------------------------------------------------
+ *
+ * What fills a slot the ad network never served - almost always because the
+ * visitor blocks ads. Built entirely from markup and CSS already on the page:
+ * no image, font, script or beacon is fetched, so there is no request for a
+ * blocker to stop.
+ *
+ * Styled as one of our own cards and deliberately NOT as an advertisement. The
+ * .ad-card chrome and its "Sponsored" label stay off (they only switch on for
+ * data-ad-filled), because these link to our own pages and labelling them
+ * sponsored would be a false disclosure.
+ */
+.house-ad {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  text-align: left;
+  text-decoration: none;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.house-ad:hover { border-color: var(--accent-2); transform: translateY(-1px); }
+.house-ad-icon { font-size: 1.6rem; line-height: 1; flex: 0 0 auto; }
+.house-ad-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.house-ad-title { font-size: 0.95rem; font-weight: 700; }
+.house-ad-body { font-size: 0.82rem; color: var(--muted, #8b93a7); line-height: 1.45; }
+.house-ad-cta { font-size: 0.8rem; font-weight: 600; color: var(--accent-2, #00d4ff); margin-top: 4px; }
