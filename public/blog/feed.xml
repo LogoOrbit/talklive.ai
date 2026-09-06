@@ -6,7 +6,79 @@
   <atom:link href="https://talklive.app/blog/feed.xml" rel="self" type="application/rss+xml"/>
   <description>Guides and research on talking to strangers, voice chat, language practice and online safety - from the team behind TalkLive.</description>
   <language>en</language>
-  <lastBuildDate>Fri, 14 Aug 2026 12:00:00 GMT</lastBuildDate>
+  <lastBuildDate>Sun, 06 Sep 2026 12:00:00 GMT</lastBuildDate>
+  <item>
+    <title>What to Talk About With a Stranger When Your Mind Goes Blank</title>
+    <link>https://talklive.app/blog/what-to-talk-about-with-a-stranger</link>
+    <guid isPermaLink="true">https://talklive.app/blog/what-to-talk-about-with-a-stranger</guid>
+    <pubDate>Sun, 06 Sep 2026 12:00:00 GMT</pubDate>
+    <category>Conversation</category>
+    <description>Questions and topics that actually work with someone you have never met, why the usual small talk stalls, and what to do when a conversation dies mid-call.</description>
+  </item>
+  <item>
+    <title>Voice Chat vs Text Chat: Which One Should You Actually Use?</title>
+    <link>https://talklive.app/blog/voice-chat-vs-text-chat</link>
+    <guid isPermaLink="true">https://talklive.app/blog/voice-chat-vs-text-chat</guid>
+    <pubDate>Sun, 06 Sep 2026 12:00:00 GMT</pubDate>
+    <category>Guides</category>
+    <description>An honest comparison of voice and text for talking to strangers - what each exposes, what each costs in data, and which one fits the situation you are in right now.</description>
+  </item>
+  <item>
+    <title>Random Chat Without a Camera - and Why People Prefer It</title>
+    <link>https://talklive.app/blog/random-chat-without-a-camera</link>
+    <guid isPermaLink="true">https://talklive.app/blog/random-chat-without-a-camera</guid>
+    <pubDate>Sun, 06 Sep 2026 12:00:00 GMT</pubDate>
+    <category>Guides</category>
+    <description>Camera-free random chat explained: what voice-only and text-only platforms expose, why the category moved away from video after Omegle, and how to check a site never asks for your camera.</description>
+  </item>
+  <item>
+    <title>How to Spot a Bot or a Scam in Random Chat</title>
+    <link>https://talklive.app/blog/how-to-spot-a-bot-or-scam-in-random-chat</link>
+    <guid isPermaLink="true">https://talklive.app/blog/how-to-spot-a-bot-or-scam-in-random-chat</guid>
+    <pubDate>Sun, 06 Sep 2026 12:00:00 GMT</pubDate>
+    <category>Safety</category>
+    <description>The patterns behind bots, romance scams and crypto pitches on random chat sites, the questions that expose them fast, and what to do when you meet one.</description>
+  </item>
+  <item>
+    <title>Is Random Voice Chat Safe for Women? An Honest Answer</title>
+    <link>https://talklive.app/blog/is-random-voice-chat-safe-for-women</link>
+    <guid isPermaLink="true">https://talklive.app/blog/is-random-voice-chat-safe-for-women</guid>
+    <pubDate>Sun, 06 Sep 2026 12:00:00 GMT</pubDate>
+    <category>Safety</category>
+    <description>What random voice chat actually exposes, the harassment patterns women report on stranger platforms, the controls worth using, and where the honest limits of any platform are.</description>
+  </item>
+  <item>
+    <title>Talking to Strangers in a Language You Are Still Learning</title>
+    <link>https://talklive.app/blog/talking-to-strangers-in-another-language</link>
+    <guid isPermaLink="true">https://talklive.app/blog/talking-to-strangers-in-another-language</guid>
+    <pubDate>Sun, 06 Sep 2026 12:00:00 GMT</pubDate>
+    <category>Language Learning</category>
+    <description>How to hold a real conversation in a language you are learning: what to say in the first thirty seconds, how to ask for corrections, and what random voice chat is and is not good for.</description>
+  </item>
+  <item>
+    <title>Why Chat Sites Ask for Microphone Access - and What They Get</title>
+    <link>https://talklive.app/blog/why-chat-sites-ask-for-microphone-access</link>
+    <guid isPermaLink="true">https://talklive.app/blog/why-chat-sites-ask-for-microphone-access</guid>
+    <pubDate>Sun, 06 Sep 2026 12:00:00 GMT</pubDate>
+    <category>Privacy</category>
+    <description>What granting microphone permission to a website actually allows, what the browser will not let a site do, how to verify nothing is listening, and how to revoke it.</description>
+  </item>
+  <item>
+    <title>What Happened to Chatroulette?</title>
+    <link>https://talklive.app/blog/what-happened-to-chatroulette</link>
+    <guid isPermaLink="true">https://talklive.app/blog/what-happened-to-chatroulette</guid>
+    <pubDate>Sun, 06 Sep 2026 12:00:00 GMT</pubDate>
+    <category>Guides</category>
+    <description>Chatroulette went from viral phenomenon to cautionary tale in under a year. What actually happened, what its founder tried, and what the whole episode taught the category.</description>
+  </item>
+  <item>
+    <title>How Much Data Does Voice Chat Actually Use?</title>
+    <link>https://talklive.app/blog/how-much-data-does-voice-chat-use</link>
+    <guid isPermaLink="true">https://talklive.app/blog/how-much-data-does-voice-chat-use</guid>
+    <pubDate>Sun, 06 Sep 2026 12:00:00 GMT</pubDate>
+    <category>Guides</category>
+    <description>Real numbers for WebRTC voice against video and streaming, what a relay adds, and how long you can talk on a small mobile data plan.</description>
+  </item>
   <item>
     <title>How to End a Conversation Without Being Rude</title>
     <link>https://talklive.app/blog/how-to-end-a-conversation-politely</link>

@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://talklive.app/blog/</loc>
-    <lastmod>2026-08-14</lastmod>
+    <lastmod>2026-09-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -98,7 +98,61 @@
   </url>
   <url>
     <loc>https://talklive.app/blog/how-to-end-a-conversation-politely</loc>
-    <lastmod>2026-08-14</lastmod>
+    <lastmod>2026-09-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://talklive.app/blog/what-to-talk-about-with-a-stranger</loc>
+    <lastmod>2026-09-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://talklive.app/blog/voice-chat-vs-text-chat</loc>
+    <lastmod>2026-09-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://talklive.app/blog/random-chat-without-a-camera</loc>
+    <lastmod>2026-09-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://talklive.app/blog/how-to-spot-a-bot-or-scam-in-random-chat</loc>
+    <lastmod>2026-09-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://talklive.app/blog/is-random-voice-chat-safe-for-women</loc>
+    <lastmod>2026-09-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://talklive.app/blog/talking-to-strangers-in-another-language</loc>
+    <lastmod>2026-09-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://talklive.app/blog/why-chat-sites-ask-for-microphone-access</loc>
+    <lastmod>2026-09-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://talklive.app/blog/what-happened-to-chatroulette</loc>
+    <lastmod>2026-09-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://talklive.app/blog/how-much-data-does-voice-chat-use</loc>
+    <lastmod>2026-09-06</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>

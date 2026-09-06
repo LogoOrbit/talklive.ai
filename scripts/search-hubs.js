@@ -174,7 +174,7 @@ module.exports = [
         `Voice mode asks for microphone permission; text mode does not need a microphone. TalkLive does not record voice calls, although another participant may record on their own device. Typed messages and report context may be retained as explained in the <a href="/privacy">Privacy Policy</a>.`,
       ]},
       { h: 'Use competitor pages as fit guides', body: [
-        `People arriving from Omegle-style products can start with the <a href="/omegle-alternative">Omegle alternative guide</a>. There are also focused pages for people comparing <a href="/ometv-alternative">OmeTV and TalkLive</a> or <a href="/chatroulette-alternative">Chatroulette and TalkLive</a>. These pages should be read as format comparisons, not promises that TalkLive reproduces every competitor feature.`,
+        `People arriving from Omegle-style products can start with the <a href="/omegle-alternative">Omegle alternative guide</a>. There are also focused pages for people comparing <a href="/ometv-alternative">OmeTV and TalkLive</a> or <a href="/chatroulette-alternative">Chatroulette and TalkLive</a>. If you arrived from a language-practice service built around public group rooms rather than video, the <a href="/free4talk-alternative">group rooms versus one-to-one calls</a> comparison is the relevant one. These pages should be read as format comparisons, not promises that TalkLive reproduces every competitor feature.`,
         `Features and prices change. Before making a decision, verify a competitor's current details on its official pages and verify TalkLive limits on <a href="/pricing">Pricing</a>. A useful comparison says who should not choose TalkLive as clearly as who may prefer it.`,
       ]},
       { h: 'A practical format checklist', body: [
@@ -198,7 +198,7 @@ module.exports = [
     ctaBandP: 'Try one short voice or text match and decide from the experience, not a ranking.',
     cluster: 'comparisons',
     primaryIntent: 'random chat alternatives and voice versus video chat comparison',
-    relatedPages: ['omegle-alternative', 'ometv-alternative', 'chatroulette-alternative', 'safety', 'language-chat-guide', 'country-chat-guide'],
+    relatedPages: ['omegle-alternative', 'ometv-alternative', 'chatroulette-alternative', 'free4talk-alternative', 'safety', 'language-chat-guide', 'country-chat-guide'],
     updated: '2026-08-14',
     posts: ['best-random-chat-apps-2026', 'voice-chat-vs-video-chat', 'best-omegle-alternatives'],
   },

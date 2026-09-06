@@ -168,7 +168,7 @@ const PAGE_CLUSTERS = {
   voice: ['random-call', 'random-voice-chat', 'free-voice-chat', 'voice-chat-rooms', 'call-random-people', 'free-online-calls', 'international-calls', 'random-video-chat', 'random-video-call', 'stranger-video-call'],
   text: ['random-text-chat', 'text-chat-with-strangers', 'online-chat-rooms'],
   discovery: ['talk-to-strangers', 'random-chat', 'anonymous-chat', 'meet-new-people', 'make-friends-online', 'late-night-chat', 'talk-to-someone', 'pakistani-chat'],
-  language: ['practice-english-speaking', 'language-exchange', 'language-chat-guide', 'country-chat-guide'],
+  language: ['practice-english-speaking', 'language-exchange', 'language-chat-guide', 'country-chat-guide', 'free4talk-alternative'],
   alternatives: ['omegle-alternative', 'ometv-alternative', 'chatroulette-alternative', 'emerald-chat-alternative', 'monkey-app-alternative', 'chatspin-alternative', 'shagle-alternative', 'camsurf-alternative', 'chathub-alternative', 'azar-alternative', 'holla-alternative', 'tinychat-alternative', 'wakie-alternative', 'alternatives'],
   trust: ['safety', 'how-it-works', 'resources'],
 };
@@ -1579,7 +1579,7 @@ const CORE_PAGES = [
 
 // Additional landing pages live in their own module so this file stays
 // navigable as the SEO surface grows. Same shape as CORE_PAGES.
-const PAGES = CORE_PAGES.concat(require('./pages-extra'), require('./search-hubs'));
+const PAGES = CORE_PAGES.concat(require('./pages-extra'), require('./pages-extra3'), require('./search-hubs'));
 
 // --- Blog -------------------------------------------------------------------
 // Long-form SEO articles targeting long-tail keywords, published under /blog/.
@@ -1865,7 +1865,7 @@ const CORE_BLOG = [
 ];
 
 // Later articles live in ./blog-extra for the same reason.
-const BLOG = CORE_BLOG.concat(require("./blog-extra"));
+const BLOG = CORE_BLOG.concat(require("./blog-extra"), require("./blog-extra3"));
 
 function blogUrl(slug) { return `${SITE}/blog/${slug}`; }
 

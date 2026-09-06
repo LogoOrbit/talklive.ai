@@ -10,13 +10,13 @@
     "v": 2
   },
   "/alternatives": {
-    "hash": "8c8eb58e26c3c79e",
-    "date": "2026-08-28",
+    "hash": "7998e372bc0eeef3",
+    "date": "2026-09-06",
     "v": 2
   },
   "/anonymous-chat": {
-    "hash": "bc3907112090bd1c",
-    "date": "2026-08-28",
+    "hash": "f53d86f7ead39a94",
+    "date": "2026-09-06",
     "v": 2
   },
   "/ar/": {
@@ -30,8 +30,8 @@
     "v": 2
   },
   "/blog/": {
-    "hash": "a595879b380e1f92",
-    "date": "2026-08-14",
+    "hash": "ba250b41ca1300d7",
+    "date": "2026-09-06",
     "v": 2
   },
   "/blog/best-omegle-alternatives": {
@@ -59,14 +59,19 @@
     "date": "2026-08-14",
     "v": 2
   },
+  "/blog/how-much-data-does-voice-chat-use": {
+    "hash": "79c2a1c38a7ce9fa",
+    "date": "2026-09-06",
+    "v": 2
+  },
   "/blog/how-random-matchmaking-works": {
     "hash": "6004199c9557c094",
     "date": "2026-09-06",
     "v": 2
   },
   "/blog/how-to-end-a-conversation-politely": {
-    "hash": "bc113b76bec76383",
-    "date": "2026-08-14",
+    "hash": "75a71950bc86f3df",
+    "date": "2026-09-06",
     "v": 2
   },
   "/blog/how-to-make-friends-online": {
@@ -79,6 +84,11 @@
     "date": "2026-09-06",
     "v": 2
   },
+  "/blog/how-to-spot-a-bot-or-scam-in-random-chat": {
+    "hash": "1bba8d6816d18d61",
+    "date": "2026-09-06",
+    "v": 2
+  },
   "/blog/how-to-start-a-conversation-with-a-stranger": {
     "hash": "e9433bebeb9a4bd3",
     "date": "2026-08-14",
@@ -86,6 +96,11 @@
   },
   "/blog/is-random-chat-legal-and-safe-for-adults": {
     "hash": "b45edc784e1f7136",
+    "date": "2026-09-06",
+    "v": 2
+  },
+  "/blog/is-random-voice-chat-safe-for-women": {
+    "hash": "285bcc0f15f69c75",
     "date": "2026-09-06",
     "v": 2
   },
@@ -119,6 +134,11 @@
     "date": "2026-08-14",
     "v": 2
   },
+  "/blog/random-chat-without-a-camera": {
+    "hash": "e3a9d8c68d063ac6",
+    "date": "2026-09-06",
+    "v": 2
+  },
   "/blog/science-of-talking-to-strangers": {
     "hash": "98b0c936ef8a299f",
     "date": "2026-08-14",
@@ -129,14 +149,39 @@
     "date": "2026-08-14",
     "v": 2
   },
+  "/blog/talking-to-strangers-in-another-language": {
+    "hash": "f503d0e945311f54",
+    "date": "2026-09-06",
+    "v": 2
+  },
+  "/blog/voice-chat-vs-text-chat": {
+    "hash": "004086be416a95b1",
+    "date": "2026-09-06",
+    "v": 2
+  },
   "/blog/voice-chat-vs-video-chat": {
     "hash": "fe9eb6872630f623",
     "date": "2026-08-14",
     "v": 2
   },
+  "/blog/what-happened-to-chatroulette": {
+    "hash": "5b1b2c76b886e39c",
+    "date": "2026-09-06",
+    "v": 2
+  },
   "/blog/what-happened-to-omegle": {
     "hash": "2663083bf365a652",
     "date": "2026-08-14",
+    "v": 2
+  },
+  "/blog/what-to-talk-about-with-a-stranger": {
+    "hash": "211124a30c9796af",
+    "date": "2026-09-06",
+    "v": 2
+  },
+  "/blog/why-chat-sites-ask-for-microphone-access": {
+    "hash": "c6e3e6c5377da3df",
+    "date": "2026-09-06",
     "v": 2
   },
   "/blog/why-talking-to-strangers-feels-easier": {
@@ -175,8 +220,8 @@
     "v": 2
   },
   "/chatroulette-alternative": {
-    "hash": "c01262b6200aee9d",
-    "date": "2026-08-28",
+    "hash": "690d98ad10a26a08",
+    "date": "2026-09-06",
     "v": 2
   },
   "/chatspin-alternative": {
@@ -1000,8 +1045,8 @@
     "v": 2
   },
   "/emerald-chat-alternative": {
-    "hash": "92a0cced8607d25c",
-    "date": "2026-08-28",
+    "hash": "53f7d0167f4f7154",
+    "date": "2026-09-06",
     "v": 2
   },
   "/es/": {
@@ -1020,13 +1065,18 @@
     "v": 2
   },
   "/free-online-calls": {
-    "hash": "2f6078d05aa73246",
-    "date": "2026-08-28",
+    "hash": "cb8c18d1eeeaf401",
+    "date": "2026-09-06",
     "v": 2
   },
   "/free-voice-chat": {
     "hash": "eb2539c0de4baf9d",
     "date": "2026-08-28",
+    "v": 2
+  },
+  "/free4talk-alternative": {
+    "hash": "4e8af42f159b5578",
+    "date": "2026-09-06",
     "v": 2
   },
   "/guides/": {
@@ -1085,8 +1135,8 @@
     "v": 2
   },
   "/language-exchange": {
-    "hash": "fa6da9a6262745a7",
-    "date": "2026-08-28",
+    "hash": "d1cf72f4b3b5afc9",
+    "date": "2026-09-06",
     "v": 2
   },
   "/languages/": {
@@ -1175,18 +1225,18 @@
     "v": 2
   },
   "/late-night-chat": {
-    "hash": "e2a946c19f6db69a",
-    "date": "2026-08-28",
+    "hash": "56d5781f9ba37029",
+    "date": "2026-09-06",
     "v": 2
   },
   "/make-friends-online": {
     "hash": "52c5e20edb02def2",
-    "date": "2026-08-28",
+    "date": "2026-09-06",
     "v": 2
   },
   "/meet-new-people": {
     "hash": "225460007025f757",
-    "date": "2026-08-28",
+    "date": "2026-09-06",
     "v": 2
   },
   "/monkey-app-alternative": {
@@ -1195,8 +1245,8 @@
     "v": 2
   },
   "/omegle-alternative": {
-    "hash": "13bd91497d845e19",
-    "date": "2026-08-28",
+    "hash": "677ca62e544fd424",
+    "date": "2026-09-06",
     "v": 2
   },
   "/omegle-vs-chatroulette": {
@@ -1205,8 +1255,8 @@
     "v": 2
   },
   "/ometv-alternative": {
-    "hash": "22db467f7f27513d",
-    "date": "2026-08-28",
+    "hash": "9cc3c80b22c4c8da",
+    "date": "2026-09-06",
     "v": 2
   },
   "/online-chat-rooms": {
@@ -1216,12 +1266,12 @@
   },
   "/pakistani-chat": {
     "hash": "f52aafd5912843cc",
-    "date": "2026-08-28",
+    "date": "2026-09-06",
     "v": 2
   },
   "/practice-english-speaking": {
-    "hash": "2b14d8b7b8d66472",
-    "date": "2026-08-28",
+    "hash": "2d974b1bf62cf2de",
+    "date": "2026-09-06",
     "v": 2
   },
   "/pricing": {
@@ -1240,33 +1290,33 @@
     "v": 2
   },
   "/random-call": {
-    "hash": "1d51c41fe23235fd",
-    "date": "2026-08-28",
+    "hash": "a01f7ce9b48d8cdd",
+    "date": "2026-09-06",
     "v": 2
   },
   "/random-chat": {
     "hash": "4083002a4734729b",
-    "date": "2026-08-28",
+    "date": "2026-09-06",
     "v": 2
   },
   "/random-text-chat": {
-    "hash": "82b074cb29de081f",
-    "date": "2026-08-28",
+    "hash": "acc734499d2906cc",
+    "date": "2026-09-06",
     "v": 2
   },
   "/random-video-call": {
-    "hash": "ee4b84edf19b6c62",
-    "date": "2026-08-28",
+    "hash": "96b9a1b04a97af91",
+    "date": "2026-09-06",
     "v": 2
   },
   "/random-video-chat": {
-    "hash": "9b3b5e79ce9595ee",
-    "date": "2026-08-28",
+    "hash": "3c4356e197f2e667",
+    "date": "2026-09-06",
     "v": 2
   },
   "/random-voice-chat": {
-    "hash": "125fc46110164b37",
-    "date": "2026-08-28",
+    "hash": "d9188a9727733a08",
+    "date": "2026-09-06",
     "v": 2
   },
   "/refund": {
@@ -1300,18 +1350,18 @@
     "v": 2
   },
   "/stranger-video-call": {
-    "hash": "99a27e944d7a02ab",
-    "date": "2026-08-28",
+    "hash": "a0ac142c6de5bfc5",
+    "date": "2026-09-06",
     "v": 2
   },
   "/talk-to-someone": {
-    "hash": "d51fbc5215dd11b8",
-    "date": "2026-08-28",
+    "hash": "c389c0987f88bb53",
+    "date": "2026-09-06",
     "v": 2
   },
   "/talk-to-strangers": {
     "hash": "aff675093c267930",
-    "date": "2026-08-28",
+    "date": "2026-09-06",
     "v": 2
   },
   "/terms": {
@@ -1320,8 +1370,8 @@
     "v": 2
   },
   "/text-chat-with-strangers": {
-    "hash": "42ee5ad93fd976b4",
-    "date": "2026-08-28",
+    "hash": "8219d56fa0858645",
+    "date": "2026-09-06",
     "v": 2
   },
   "/tinychat-alternative": {
