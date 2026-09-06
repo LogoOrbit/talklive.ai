@@ -732,3 +732,92 @@ voice-first terms in Tier 1, where the product genuinely wins.
 * **Core Web Vitals.** Run PageSpeed Insights with an API key against
   `talklive.app` and each competitor, and pull 28-day field data from the CrUX
   API. This session could measure neither — including our own.
+
+---
+---
+
+# Phase 3 — Technical SEO (implemented)
+
+Scoped against the Phase 1 findings rather than against a generic checklist,
+because most of the generic checklist was already done.
+
+## Not needed, with the reason
+
+| Brief item | Status |
+|---|---|
+| Per-route metadata (title, description, canonical, OG, Twitter) | **Already complete** on all 272 pages, budget-enforced at emit time by `fitTitle`/`fitDescription` |
+| JSON-LD `WebApplication`, `Organization`, `FAQPage`, `BreadcrumbList` | **Already complete**, one `@graph` per page with stable `@id`s |
+| `robots.txt` | **Already correct** |
+| SSR / prerendering for crawlable routes | **No-op** — every crawlable URL is already static HTML on disk (Phase 1 §1) |
+| `Article` schema on blog posts | **Already present** — the Phase 1 claim that it was missing was wrong; see §4 |
+| Image formats | **Nothing to convert** — no on-page rasters. `og-image.png` is fetched only by social scrapers, where PNG/JPEG is the compatible choice |
+| Font loading | **Nothing to fix** — system font stack, no webfont, no FOIT/FOUT |
+
+## Implemented
+
+### Sitemap: flat `<urlset>` → `<sitemapindex>` over six children
+
+Done ahead of the phase because it gates Search Console reporting. 272 URLs
+across `main` 23, `pages` 49, `countries` 46, `cities` 114, `languages` 17,
+`blog` 23. Generated from one URL list so it cannot drift; `audit-seo.js`
+follows the index and fails on a child that is listed but missing, or present
+but unlisted.
+
+Note on "dynamic sitemap.xml": these are written at build time, not per
+request. For a site whose pages are themselves static files that is strictly
+better — the sitemap is a cacheable static asset, and a request-time generator
+would walk 274 files on every crawler hit for an identical result.
+
+### Analytics on the whole organic surface
+
+`scripts/migrate-analytics.js`, wired into `build:seo`. 9 of 274 pages → 274 of
+274. This was Phase 1's §5.4 and it gates the value of everything else.
+
+### `ItemList` on the three geo hubs
+
+`scripts/migrate-hub-schema.js`. 45, 113 and 16 members, derived from each
+page's own visible anchors so the schema cannot claim a link the page does not
+have.
+
+## Page speed — measured, not assumed
+
+Served locally through the real Express stack, with Brotli negotiated:
+
+| URL | HTML raw | HTML (br) |
+|---|---|---|
+| `/talk-to-strangers` | 22 370 B | **5 920 B** |
+| `/blog/is-talklive-safe` | 12 128 B | **3 340 B** |
+| `/cities/london` | 30 205 B | **7 536 B** |
+| `/countries/india` | 32 604 B | **8 430 B** |
+| `/` (app shell) | 119 905 B | 28 035 B |
+
+Critical path on a landing page, in full:
+
+```
+<link rel="stylesheet" href="/seo.css">        4 034 B br   <- the only blocking resource
+<script defer src="/ads.js">                   2 648 B br
+<script async src=".../gtag/js">               third-party
+```
+
+**A landing page is ~10 kB over the wire before it can paint, with exactly one
+render-blocking resource.** There is no page-speed defect to fix on the organic
+surface. The items the brief lists — bundle splitting, image formats, font
+loading, render-blocking resources — are either already right or do not apply.
+
+Two things are deliberately left alone:
+
+* **`app.js` (196 kB raw / ~48 kB br) is not split.** It is hand-written
+  monolithic browser JS containing the WebRTC call logic, and the brief puts
+  WebRTC signalling off limits. Splitting it is a real project with real
+  regression risk on the one screen that must never break, and it affects two
+  URLs — `/` and `/call` — not the 272 that carry organic traffic.
+* **`style.css` (127 kB raw / ~26 kB br) is not split** for the same reason:
+  it serves the app shell only. The 265 generated pages load `seo.css` instead.
+
+**The one real Core Web Vitals defect is CLS from ad slots that reserve no
+space** (Phase 1 §5.1), and it is fixed in Phase 5 where the rest of the ad
+work lives.
+
+Caveat repeated from Phase 2: no field data was available. These are local
+measurements of transfer size and critical-path shape, not lab or field Core
+Web Vitals. Real LCP/INP/CLS still needs a PageSpeed or CrUX API key.
