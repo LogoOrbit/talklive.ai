@@ -183,11 +183,17 @@ npm run audit:seo   → passed: 272 sitemap pages, 18 590 unique internal links
 * **Real ratings** — `aggregateRating` was removed sitewide after being found
   fabricated. Correct call. Two non-critical Search Console suggestions stay
   open as a result.
-* **`Article` / `BlogPosting` schema on blog posts** — the 22 articles emit
-  `WebPage`, not `Article`. No `author`, `datePublished`, or `dateModified`
-  node.
-* **`ItemList` on the hub pages** — `/countries/`, `/cities/`, `/languages/`,
-  `/blog/` and `/resources` are pure link lists with no list schema.
+* ~~**`Article` / `BlogPosting` schema on blog posts**~~ — **wrong, corrected in
+  Phase 3.** The 22 articles do emit `BlogPosting` with `headline`,
+  `description`, `datePublished`, `dateModified`, `author` → `#organization`
+  and `mainEntityOfPage`. The original claim came from a schema census that
+  scanned only `public/*.html` and never descended into `public/blog/`.
+  Nothing to do here.
+* **`ItemList` on the geo hub pages** — `/countries/`, `/cities/` and
+  `/languages/` list 45, 113 and 16 links respectively and declare no list
+  schema at all; their `@graph` carries only `WebPage` and a two-item
+  `BreadcrumbList`. `/blog/` is fine — it emits `Blog` + `blogPost[]` +
+  `CollectionPage`.
 * **Translated landing pages** — only the 16 homepages are localized, on the
   stated and defensible grounds that machine-translating 260 pages produces the
   thin content that gets sites demoted.
@@ -616,7 +622,7 @@ in-content**, not banner → popunder.
 | Per-language paths | `strangr.club/practice/<lang>`, `voicerandom.com/en/` | `/languages/<language>` + 16 localized homepages | **Ahead** |
 | "X alternative" cluster | TalkWithStranger `/chatsites/*`; rivals host pages about AirTALK | 13 `*-alternative` pages | **At parity** |
 | Blog | AirTALK and HereSay both publish, year-stamped | 22 posts | **At parity on volume** |
-| `Article` schema on posts | Unknown | **Absent** — posts emit `WebPage`, no author/date nodes | **Behind** |
+| `Article` schema on posts | Unknown | Present — `BlogPosting` with author and both dates | **At parity** |
 | Year-stamped titles | AirTALK `…2026`, Chatsansar `…2025` | None | **Behind — cheap to fix** |
 | Comparison content | HereSay ranks with its own category roundup | One `/omegle-vs-chatroulette` | **Behind** |
 | Mobile app | OmeTV, Monkey, EnglishTalky all ship one and rank with it | None | **Behind — out of scope** |
@@ -714,7 +720,8 @@ voice-first terms in Tier 1, where the product genuinely wins.
    HereSay both rank with content shapes we don't have. Phase 4 targets that.
 4. **Third-party coverage is the biggest gap and no commit fixes it.** It goes
    in `docs/action-plan.md` as an owner task with named, non-paid targets.
-5. **`Article` schema on 22 blog posts is missing** and is a Phase 3 fix.
+5. **`ItemList` on the three geo hubs is missing** and is a Phase 3 fix. (The
+   `Article`-schema gap listed in Phase 1 turned out not to exist — see §4.)
 
 ## Unfinished — needs a network or credentials this session lacks
 
