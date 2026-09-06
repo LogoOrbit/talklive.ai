@@ -217,13 +217,61 @@ function normalizedAbsoluteUrl(value) {
   }
 }
 
+function locsIn(xml) {
+  return [...xml.matchAll(/<loc>\s*([\s\S]*?)\s*<\/loc>/gi)]
+    .map(match => decodeEntities(match[1]).trim())
+    .filter(Boolean);
+}
+
+/*
+ * Page URLs from /sitemap.xml, following a <sitemapindex> into its children.
+ *
+ * Without this the audit reads six sitemap URLs off the index, finds no HTML
+ * behind them, and either fails on every one or - worse, if the file checks
+ * were ever loosened - passes while checking nothing at all. Everything below
+ * treats this list as the set of pages the site claims are indexable, so it
+ * has to be pages.
+ */
+function sitemapPageUrls() {
+  const root = fs.readFileSync(SITEMAP, 'utf8');
+  if (!/<sitemapindex/i.test(root)) return locsIn(root);
+
+  const urls = [];
+  const children = locsIn(root);
+  if (children.length === 0) report('sitemap', 'is a sitemap index listing no child sitemaps');
+  for (const child of children) {
+    let childPath;
+    try {
+      childPath = path.join(PUBLIC, path.basename(new URL(child).pathname));
+    } catch (err) {
+      report('sitemap', `child sitemap URL is not a valid URL: ${child}`);
+      continue;
+    }
+    if (!fs.existsSync(childPath)) {
+      report('sitemap', `child sitemap ${child} is listed in the index but missing from public/`);
+      continue;
+    }
+    const found = locsIn(fs.readFileSync(childPath, 'utf8'));
+    if (found.length === 0) report('sitemap', `child sitemap ${child} contains no <loc> URLs`);
+    urls.push(...found);
+  }
+
+  // A child sitemap on disk that the index does not list is submitted by
+  // nothing and drifts silently - exactly the failure the previous
+  // hand-maintained sitemap-*.xml files had.
+  const listed = new Set(children.map(c => path.basename(c)));
+  for (const file of fs.readdirSync(PUBLIC)) {
+    if (/^sitemap-.+\.xml$/.test(file) && !listed.has(file)) {
+      report('sitemap', `public/${file} exists but is not listed in the sitemap index`);
+    }
+  }
+  return urls;
+}
+
 if (!fs.existsSync(SITEMAP)) {
   report('sitemap', 'public/sitemap.xml is missing; run npm run build:seo first');
 } else {
-  const xml = fs.readFileSync(SITEMAP, 'utf8');
-  const locations = [...xml.matchAll(/<loc>\s*([\s\S]*?)\s*<\/loc>/gi)]
-    .map(match => decodeEntities(match[1]).trim())
-    .filter(Boolean);
+  const locations = sitemapPageUrls();
 
   if (locations.length === 0) report('sitemap', 'contains no <loc> URLs');
 

@@ -139,7 +139,7 @@ Healthy, and considerably further along than a greenfield audit would assume.
 | Asset | State |
 |---|---|
 | `robots.txt` | Present. `Allow: /`, disallows `/config.js` and `/socket.io/`, declares the sitemap |
-| `sitemap.xml` | Present. **A single flat `<urlset>` with 272 `<url>` entries**, each carrying the full 18-entry `xhtml:link` hreflang set |
+| `sitemap.xml` | Present. Was a single flat `<urlset>` with 272 `<url>` entries; **split into a `<sitemapindex>` over six child sitemaps in Phase 1** (see [Doc drift](#doc-drift)) |
 | Canonicals | Every page self-canonical except `/landing` → `/`. Verified by `audit-seo.js` |
 | hreflang | 17 locales + `x-default`, reciprocal, on every cluster member |
 | Titles / descriptions | Enforced at emit time by `fitTitle` (≤ 60 chars) and `fitDescription` (≤ 158) |
@@ -330,13 +330,36 @@ code task.
 
 ### Doc drift
 
-`SEO.md` states `/sitemap.xml` is a **sitemap index** pointing at six child
-sitemaps (`sitemap-main.xml`, `-pages`, `-countries`, `-cities`, `-languages`,
-`-blog`) and that this is what makes per-cluster coverage visible in Search
-Console. On disk there is one file, `public/sitemap.xml`, a flat `<urlset>` of
-272 URLs, and no child sitemaps exist. Either the split was reverted or never
-landed. The per-cluster reporting benefit described in that document is
-currently not available.
+`SEO.md` stated `/sitemap.xml` was a **sitemap index** pointing at six child
+sitemaps and that this is what makes per-cluster coverage visible in Search
+Console. On disk there was one file, `public/sitemap.xml`, a flat `<urlset>` of
+272 URLs, and no child sitemaps existed. Reading the git history, the split had
+existed and was deleted on purpose: the old `sitemap-*.xml` files were
+hand-maintained, drifted until they listed URLs that 301'd, and a stale sitemap
+is worse than none.
+
+**Resolved.** `writeSitemaps()` in `scripts/build-seo.js` now generates all
+seven files from the single list of URLs the flat sitemap was built from, so
+the split cannot drift by construction. `scripts/audit-seo.js` follows the
+index into its children — without that change the audit would have read six
+sitemap URLs off the index and checked no pages at all — and fails the build if
+a child is listed but missing, or present but unlisted. Verified: 272 pages
+audited, and `server/indexnow.js` (which already handled an index) resolves to
+272 page URLs rather than six sitemap URLs.
+
+| Child sitemap | URLs |
+|---|---|
+| `sitemap-main.xml` | 23 |
+| `sitemap-pages.xml` | 49 |
+| `sitemap-countries.xml` | 46 |
+| `sitemap-cities.xml` | 114 |
+| `sitemap-languages.xml` | 17 |
+| `sitemap-blog.xml` | 23 |
+
+The country and city clusters are now watchable on their own in Search Console,
+which is what matters — they are the programmatic pages most likely to be
+judged thin, and in a flat sitemap their coverage was averaged in with the
+hand-written pages.
 
 ---
 

@@ -69,17 +69,32 @@ being followed.
 | Cluster | URLs | Sitemap |
 |---|---|---|
 | Homepage, 16 localized homepages, policy pages | 23 | `sitemap-main.xml` |
-| Hand-written landing pages + guides hub | 43 | `sitemap-pages.xml` |
+| Hand-written landing pages + hubs | 49 | `sitemap-pages.xml` |
 | 45 country pages + hub | 46 | `sitemap-countries.xml` |
 | 113 city pages + hub | 114 | `sitemap-cities.xml` |
 | 16 language pages + hub | 17 | `sitemap-languages.xml` |
 | 22 blog posts + index | 23 | `sitemap-blog.xml` |
 
-**266 indexable URLs**, up from 76.
+**272 indexable URLs**, up from 76.
 
 `/sitemap.xml` is a **sitemap index** pointing at those six. Search Console
 reports indexing coverage per submitted sitemap, so splitting them is what
 turns "612 of 700 indexed" into knowing *which cluster* is being dropped.
+
+All seven files are written by `writeSitemaps()` in `scripts/build-seo.js` from
+one list of URLs, and a page is assigned to a child by its URL path rather than
+by which generator produced it - so the 177 geo pages that ship from disk with
+no live generator are classified correctly too. The build then deletes any
+`sitemap-*.xml` it did not just write, and `scripts/audit-seo.js` fails if a
+child on disk is missing from the index or a child in the index is missing from
+disk. That is deliberate: the previous per-cluster sitemaps were hand-maintained,
+drifted until they listed URLs that 301'd, and had to be deleted wholesale.
+Nothing here is hand-maintained, so it cannot drift the same way.
+
+Only the index is submitted - `robots.txt` points at `/sitemap.xml` alone, and
+crawlers discover the six children from it. `server/indexnow.js` follows the
+index one level down before submitting, so IndexNow still pushes 272 page URLs
+rather than six sitemap URLs.
 
 ### On programmatic pages
 

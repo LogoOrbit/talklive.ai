@@ -2479,36 +2479,123 @@ function extraSitemapEntries(existingLocs) {
   return entries.sort((a, b) => a.loc.localeCompare(b.loc));
 }
 
-function buildFullSitemap() {
-  const head = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">';
+/*
+ * Which child sitemap a URL belongs in.
+ *
+ * Search Console reports index coverage per submitted sitemap and nothing
+ * else, so one flat sitemap can only ever answer "266 of 272 indexed" - never
+ * which cluster is being dropped. That distinction is the whole reason to
+ * split: the programmatic country and city pages are the ones Google is most
+ * likely to judge thin, and they need to be watchable on their own rather
+ * than averaged in with the hand-written landing pages.
+ *
+ * Classification is by URL path, not by which generator produced the page, so
+ * the 177 geo pages that ship from disk without a live generator (see
+ * SEO.md, "Do not fix the orphaned generators") land in the right cluster too.
+ */
+const LOCALE_HOMES = new Set(LOCALES.map(l => `/${l.code}/`));
+const MAIN_PATHS = new Set(['/', '/pricing', '/about', '/contact', '/privacy', '/terms', '/refund']);
+
+function sitemapCluster(loc) {
+  const p = loc.slice(SITE.length) || '/';
+  if (p.startsWith('/countries')) return 'countries';
+  if (p.startsWith('/cities')) return 'cities';
+  if (p.startsWith('/languages')) return 'languages';
+  if (p.startsWith('/blog')) return 'blog';
+  if (MAIN_PATHS.has(p) || LOCALE_HOMES.has(p)) return 'main';
+  return 'pages';
+}
+
+// Declaration order in the index, most important cluster first.
+const SITEMAP_CLUSTERS = ['main', 'pages', 'countries', 'cities', 'languages', 'blog'];
+
+/*
+ * Every indexable URL as a {loc, lastmod, xml} record, from both sources: the
+ * page sets this script builds and the sweep of everything else on disk.
+ */
+function collectSitemapEntries() {
   const seen = new Set();
-  const known = sitemapUrls.map(u => {
+  const entries = sitemapUrls.map(u => {
     const loc = u.raw ? `${SITE}/${u.slug}` : url(u.slug);
     seen.add(loc);
+    const lastmod = lastmodFor(loc, u.lastmod);
     const alts = u.home
       ? homeAlternates((href, lang) => `\n    <xhtml:link rel="alternate" hreflang="${lang}" href="${href}"/>`).join('')
       : '';
-    return `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${lastmodFor(loc, u.lastmod)}</lastmod>\n    <changefreq>${u.freq}</changefreq>\n    <priority>${u.priority}</priority>${alts}\n  </url>`;
+    return {
+      loc,
+      lastmod,
+      xml: `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>${u.freq}</changefreq>\n    <priority>${u.priority}</priority>${alts}\n  </url>`,
+    };
   });
-  const extra = extraSitemapEntries(seen).map(u =>
-    `  <url>\n    <loc>${u.loc}</loc>\n    <lastmod>${lastmodFor(u.loc, u.lastmod)}</lastmod>\n    <changefreq>${u.freq}</changefreq>\n    <priority>${u.priority}</priority>\n  </url>`);
-  sitemapTotal = known.length + extra.length;
-  return `${head}\n${known.concat(extra).join('\n')}\n</urlset>\n`;
+  for (const u of extraSitemapEntries(seen)) {
+    const lastmod = lastmodFor(u.loc, u.lastmod);
+    entries.push({
+      loc: u.loc,
+      lastmod,
+      xml: `  <url>\n    <loc>${u.loc}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>${u.freq}</changefreq>\n    <priority>${u.priority}</priority>\n  </url>`,
+    });
+  }
+  return entries;
 }
-let sitemapTotal = 0;
-// Re-hash the pages before the sitemap is written, so every lastmod it
-// publishes is one the ledger can actually account for.
-refreshLastmodLedger();
-fs.writeFileSync(path.join(PUBLIC, 'sitemap.xml'), buildFullSitemap());
 
-// The per-cluster sitemap-*.xml files are a leftover from an earlier layout.
-// Nothing references them, they list URLs that now 301, and a stale sitemap
-// that disagrees with the live one is worse than no sitemap: it teaches the
-// crawler that this site's sitemaps are unreliable. sitemap.xml is complete,
-// so remove them rather than maintain two sources of truth.
-for (const stale of fs.readdirSync(PUBLIC)) {
-  if (/^sitemap-.+\.xml$/.test(stale)) fs.unlinkSync(path.join(PUBLIC, stale));
+const URLSET_HEAD = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">';
+
+/*
+ * Writes the six child sitemaps and the <sitemapindex> at /sitemap.xml, and
+ * deletes any sitemap-*.xml this build did not just write.
+ *
+ * That last part matters: a stale child sitemap listing URLs that now 301 is
+ * worse than no sitemap, because it teaches the crawler that this site's
+ * sitemaps cannot be trusted. Deriving the file list from the URLs and then
+ * sweeping whatever is left means the split cannot drift the way the previous
+ * hand-maintained sitemap-*.xml files did.
+ *
+ * robots.txt keeps pointing at /sitemap.xml alone - submitting the index is
+ * how a crawler discovers all six. server/indexnow.js already follows an index
+ * one level down into its children before submitting, so IndexNow keeps
+ * pushing page URLs rather than six sitemap URLs.
+ */
+function writeSitemaps() {
+  const entries = collectSitemapEntries();
+  const byCluster = new Map(SITEMAP_CLUSTERS.map(name => [name, []]));
+  for (const entry of entries) byCluster.get(sitemapCluster(entry.loc)).push(entry);
+
+  const written = new Set();
+  const indexed = [];
+  for (const name of SITEMAP_CLUSTERS) {
+    const group = byCluster.get(name);
+    // An empty cluster is not listed at all. Submitting a sitemap with zero
+    // URLs is reported as an error in Search Console.
+    if (!group.length) continue;
+    const file = `sitemap-${name}.xml`;
+    fs.writeFileSync(
+      path.join(PUBLIC, file),
+      `${URLSET_HEAD}\n${group.map(e => e.xml).join('\n')}\n</urlset>\n`
+    );
+    written.add(file);
+    // The index's lastmod for a child is the newest lastmod inside it, so a
+    // single changed page marks exactly one child as worth refetching.
+    indexed.push({ file, lastmod: group.reduce((a, e) => (e.lastmod > a ? e.lastmod : a), group[0].lastmod) });
+  }
+
+  fs.writeFileSync(path.join(PUBLIC, 'sitemap.xml'),
+    '<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    + indexed.map(s => `  <sitemap>\n    <loc>${SITE}/${s.file}</loc>\n    <lastmod>${s.lastmod}</lastmod>\n  </sitemap>`).join('\n')
+    + '\n</sitemapindex>\n');
+
+  for (const stale of fs.readdirSync(PUBLIC)) {
+    if (/^sitemap-.+\.xml$/.test(stale) && !written.has(stale)) {
+      fs.unlinkSync(path.join(PUBLIC, stale));
+    }
+  }
+  return { total: entries.length, children: indexed.length };
 }
+
+// Re-hash the pages before the sitemaps are written, so every lastmod they
+// publish is one the ledger can actually account for.
+refreshLastmodLedger();
+const { total: sitemapTotal, children: sitemapChildren } = writeSitemaps();
 
 // RSS feed for the blog - enables autodiscovery, feed readers and syndication.
 function buildRss() {
@@ -2584,4 +2671,4 @@ for (const retired of RETIRED_KEYS) {
 }
 fs.writeFileSync(path.join(PUBLIC, `${INDEXNOW_KEY}.txt`), INDEXNOW_KEY + '\n');
 
-console.log(`Built ${count} landing pages + sitemap.xml (${sitemapTotal} urls) + blog/feed.xml + llms.txt + indexnow key.`);
+console.log(`Built ${count} landing pages + sitemap.xml (index of ${sitemapChildren} sitemaps, ${sitemapTotal} urls) + blog/feed.xml + llms.txt + indexnow key.`);
