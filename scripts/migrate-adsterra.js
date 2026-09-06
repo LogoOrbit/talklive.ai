@@ -84,6 +84,32 @@ for (const file of htmlFiles(publicDir)) {
     html = collapsed;
   }
 
+  // Put every remaining bare slot inside the labelled .ad-card frame.
+  //
+  // The generator emits the frame itself now, but the geo cluster (177 pages)
+  // and the hand-maintained pages ship from disk and no template change reaches
+  // them - so this is the only thing that gets the frame onto most of the site.
+  //
+  // Two reasons it is worth doing everywhere rather than only where it looks
+  // nicest. An unlabelled creative sitting in the page flow is indistinguishable
+  // from our own content, which is the thing ad disclosure rules exist to
+  // prevent; and ads.js keys its unfilled-slot handling off .ad-card, so a slot
+  // without one cannot hide its label or collapse cleanly.
+  //
+  // Idempotent: a slot already inside a card is left alone. The check looks
+  // backwards from the slot rather than parsing, because these files are
+  // generated HTML with a known shape and a real parser is not worth a
+  // dependency here.
+  html = html.replace(
+    /<div\b(?![^>]*\bclass="[^"]*ad-card)[^>]*\bdata-ad="([^"]+)"[^>]*>\s*<\/div>/gi,
+    (match, type, offset, whole) => {
+      const before = whole.slice(Math.max(0, offset - 300), offset);
+      // Already framed - the card opens somewhere just above this slot.
+      if (/class="[^"]*\bad-card\b/.test(before)) return match;
+      return `<div class="ad-card"><span class="ad-card-label">Sponsored</span>${match}</div>`;
+    }
+  );
+
   html = html.replace(/^[ \t]+$/gm, '');
 
   html = html.replace(

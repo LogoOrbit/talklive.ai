@@ -586,7 +586,7 @@
         <!-- Ad shown only on this pre-call screen; hidden with the whole
              panel once a call or chat starts. Framed like the rest of the UI
              so a creative never reads as a pop-up over the app. -->
-        <div class="ad-card">
+        <div class="ad-card ad-card-app">
           <span class="ad-card-label" data-i18n="sponsored">Sponsored</span>
           <div data-ad="leaderboard"></div>
         </div>
@@ -1121,7 +1121,7 @@
           <audio id="bannerMusic" data-src="/media/music-for-talklive.mp3?v=20260707b" preload="none" loop></audio>
         </div>
 
-        <div class="ad-card ad-card-wide">
+        <div class="ad-card ad-card-app ad-card-wide">
           <span class="ad-card-label" data-i18n="sponsored">Sponsored</span>
           <div data-ad="native"></div>
         </div>
@@ -1141,7 +1141,7 @@
         </section>
 
         <!-- High-value rectangle between the guide and the free-service note. -->
-        <div data-ad="box" style="margin:24px auto;text-align:center"></div>
+        <div class="ad-card ad-card-app"><span class="ad-card-label">Sponsored</span><div data-ad="box" style="margin:24px auto;text-align:center"></div></div>
 
         <!-- A warm, simple note at the bottom of the call screen: why TalkLive
              is free and the care that goes into it. Plain English on purpose. -->
@@ -1181,7 +1181,7 @@
 
 
   <div style="margin:28px auto">
-    <div data-ad="native"></div>
+    <div class="ad-card"><span class="ad-card-label">Sponsored</span><div data-ad="native"></div></div>
   </div>
 </main>
 
@@ -1373,7 +1373,7 @@
 
 
       <div style="margin:28px auto;text-align:center">
-        <div data-ad="leaderboard"></div>
+        <div class="ad-card"><span class="ad-card-label">Sponsored</span><div data-ad="leaderboard"></div></div>
       </div>
     </div>
   </section>

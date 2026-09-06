@@ -347,7 +347,13 @@
       if (!typeEnabled(el.dataset.ad)) { hideSlot(el); continue; }
       // In-app slots on a short screen would leave the call or chat UI mostly
       // advertisement, so they are dropped before anything loads.
-      if (shortViewport && el.closest && el.closest('.ad-card, .chat-live-ad')) { hideSlot(el); continue; }
+      //
+      // Keyed on .ad-card-app, not .ad-card. Every ad on the site now ships in
+      // an .ad-card frame, so matching that would have silently dropped every
+      // slot on every landing page whenever the viewport was under 620px tall -
+      // which is any phone held in landscape. Only the cards inside the call
+      // and chat UI carry the -app modifier.
+      if (shortViewport && el.closest && el.closest('.ad-card-app')) { hideSlot(el); continue; }
       if (kept.length >= (config.maxSlotsPerPage || 0)) { hideSlot(el); continue; }
       kept.push(el);
     }

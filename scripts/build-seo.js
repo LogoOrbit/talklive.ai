@@ -203,8 +203,17 @@ function linkCloud(currentSlug) {
 // --- Page template ----------------------------------------------------------
 
 // Adsterra-only slots used throughout generated pages.
+//
+// Every slot ships inside the labelled .ad-card frame the app screens use, so
+// an ad reads as part of the product rather than as something dropped onto it,
+// and it is always marked as advertising rather than left to look like our own
+// recommendation. ads.js hides the whole card when a slot goes unfilled off
+// screen, so a "Sponsored" label is never stranded above an empty box.
+//
+// The label text is plain rather than data-i18n: these pages do not load
+// i18n.js, so an i18n key here would never be substituted.
 function adSlot(type) {
-  return `<div class="wrap" style="margin:28px auto;text-align:center"><div data-ad="${type}"></div></div>`;
+  return `<div class="wrap"><div class="ad-card"><span class="ad-card-label">Sponsored</span><div data-ad="${type}"></div></div></div>`;
 }
 
 // Responsive leaderboard: 728x90 on desktop, 320x50 on mobile.

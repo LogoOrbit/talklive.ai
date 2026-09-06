@@ -5620,8 +5620,12 @@ a.premium-lock:hover { background: rgba(108, 92, 231, 0.22); }
    the UI rather than dropping a bare creative onto the page. ads.js hides the
    whole card when a slot goes unfilled, so no empty frame is left behind. */
 .ad-card {
-  width: fit-content;
-  max-width: 100%;
+  /* width:100%, not fit-content: ads.js sizes a banner from the slot's measured
+     width, and a shrink-to-fit card reported ~300px and downgraded every
+     leaderboard to a 320x50. The 780px cap keeps the slot above the
+     744px threshold ads.js uses to pick a 728x90. */
+  width: 100%;
+  max-width: 780px;
   margin: 22px auto 0;
   padding: 8px 8px 10px;
   border: 1px solid rgba(255, 255, 255, 0.08);

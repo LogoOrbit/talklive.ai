@@ -267,6 +267,42 @@ table.compare tbody tr:last-child th, table.compare tbody tr:last-child td { bor
 .locale-links a { color: var(--muted); }
 .locale-links a:hover { color: var(--accent-2); }
 
+/* --- Sponsored frame ------------------------------------------------------
+ *
+ * Every ad on the site sits in this card: a labelled, rounded panel that
+ * matches the surrounding UI instead of a bare creative dropped into the page.
+ * It is the same frame the call screen uses, so an ad looks like part of the
+ * product everywhere rather than like something that landed on it.
+ *
+ * width:100% rather than fit-content is load-bearing, not cosmetic. ads.js
+ * picks a banner size from the slot's measured width, so a shrink-to-fit card
+ * would report ~300px on a desktop page and every leaderboard would resolve to
+ * the smallest 320x50 instead of a 728x90 - the lowest-paying shape in the
+ * inventory, on the widest screens. The 780px cap leaves the slot itself
+ * wider than the 744px threshold ads.js uses to choose a 728x90, with the
+ * creative centred inside it.
+ */
+.ad-card {
+  width: 100%;
+  max-width: 780px;
+  margin: 28px auto;
+  padding: 8px 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--card);
+  text-align: center;
+}
+.ad-card-label {
+  display: block;
+  margin: 0 0 7px;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+  opacity: 0.75;
+}
+
 /* --- Ad slot dimension reservation ---------------------------------------
  *
  * Every [data-ad] slot reserves the height its creative will occupy BEFORE

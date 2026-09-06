@@ -144,3 +144,69 @@ main.page-main.wide { max-width: 1080px; }
 .page-footer a { color: var(--muted); text-decoration: none; font-size: 0.86rem; }
 .page-footer a:hover { color: var(--text); }
 .footer-copy { width: 100%; text-align: center; color: var(--muted); font-size: 0.8rem; margin-top: 6px; }
+
+/* --- Sponsored frame ------------------------------------------------------
+ *
+ * The same labelled panel the app screens and the SEO pages use, so an ad is
+ * framed and disclosed identically everywhere on the site. pages.css is
+ * dark-only, so the border and fill are literal rather than tokens - it has no
+ * --border or --card variable to reference.
+ *
+ * width:100% rather than fit-content is load-bearing: ads.js picks a banner
+ * size from the slot's measured width, so a shrink-to-fit card would report a
+ * few hundred pixels and downgrade every leaderboard to the smallest 320x50.
+ * The 780px cap keeps the slot above the 744px threshold for a 728x90.
+ */
+.ad-card {
+  width: 100%;
+  max-width: 780px;
+  margin: 28px auto;
+  padding: 8px 8px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.028);
+  text-align: center;
+}
+.ad-card-label {
+  display: block;
+  margin: 0 0 7px;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+  opacity: 0.75;
+}
+
+/* Slot dimensions are reserved before anything loads, so a creative arriving
+   never pushes the page. Breakpoints mirror sizeFor() in public/ads.js; see the
+   fuller note on the matching block in seo.css. */
+[data-ad] { display: block; min-height: 50px; }
+[data-ad="box"], [data-ad="300x250"] { min-height: 250px; }
+[data-ad="leaderboard"], [data-ad="banner"], [data-ad="320x50"] { min-height: 50px; }
+[data-ad="468x60"] { min-height: 60px; }
+[data-ad="728x90"] { min-height: 90px; }
+@media (min-width: 484px) {
+  [data-ad="leaderboard"], [data-ad="banner"] { min-height: 60px; }
+}
+@media (min-width: 744px) {
+  [data-ad="leaderboard"] { min-height: 90px; }
+}
+[data-ad="skyscraper"], [data-ad="160x300"] { min-height: 300px; }
+[data-ad="160x600"] { min-height: 600px; }
+@media (min-width: 1024px) {
+  [data-ad="skyscraper"] { min-height: 600px; }
+}
+[data-ad="native"] { min-height: 250px; }
+@media (min-width: 744px) {
+  [data-ad="native"] { min-height: 180px; }
+}
+
+/* An on-screen slot that never filled keeps its reserved space - collapsing it
+   would move the page as surely as expanding it did - and loses only the frame
+   and the label. */
+.ad-card[data-ad-unfilled] {
+  border-color: transparent;
+  background: transparent;
+}
+.ad-card[data-ad-unfilled] .ad-card-label { visibility: hidden; }
