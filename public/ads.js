@@ -68,6 +68,7 @@
     pauseDuringCall: true,
     lazyRootMargin: '400px',
     fillTimeoutMs: 15000,
+    visibleFillTimeoutMs: 6000,
     minViewportHeight: 620,
   };
 
@@ -159,32 +160,77 @@
 
   // --- Slot lifecycle -------------------------------------------------------
 
-  /*
-   * Collapse an unfilled slot - but only when doing so cannot move anything the
-   * user is looking at.
-   *
-   * The old version always hid the slot. With dimensions now reserved in CSS
-   * that would be a layout shift in its own right: a 250px box vanishing under
-   * someone's cursor moves every element below it, which is exactly the CLS the
-   * reservation exists to prevent. So a slot that is on screen keeps its
-   * reserved space and only loses the "Sponsored" label; a slot still off
-   * screen collapses as before, because nothing visible moves.
-   */
-  function hideSlot(el) {
-    var visible = false;
+  // Is any part of the slot on screen right now?
+  function isOnScreen(el) {
     try {
       var rect = el.getBoundingClientRect();
-      visible = rect.bottom > 0 && rect.top < (window.innerHeight || 0);
-    } catch (err) { /* treat as off screen */ }
-
-    var card = el.closest && el.closest('.ad-card');
-    if (visible) {
-      el.setAttribute('data-ad-unfilled', '1');
-      if (card) card.setAttribute('data-ad-unfilled', '1');
-      return;
+      return rect.bottom > 0 && rect.top < (window.innerHeight || 0);
+    } catch (err) {
+      return false;
     }
+  }
+
+  /*
+   * A slot has actually put a creative on the page.
+   *
+   * This is what reveals the card's border, background and "Sponsored" label -
+   * see the .ad-card rules in the stylesheets. Until it fires the frame is
+   * completely invisible, which is the whole point: an empty labelled panel
+   * announcing an advertisement that does not exist is worse than no frame at
+   * all, and on a blocked or filtered connection that is what every slot on the
+   * page would otherwise be.
+   */
+  function markFilled(el) {
+    el.setAttribute('data-ad-filled', '1');
+    var card = el.closest && el.closest('.ad-card');
+    if (card) card.setAttribute('data-ad-filled', '1');
+  }
+
+  /*
+   * Give up on a slot and take its space back.
+   *
+   * This used to keep the reserved space when the slot was on screen, on the
+   * grounds that collapsing it is itself a layout shift. That was the wrong
+   * trade and it showed: with an ad blocker or a filtered DNS - which is a lot
+   * of this audience - the call screen held a 200px empty box under a
+   * "Sponsored" label for thirty seconds. A one-off shift is cheaper than a
+   * hole in the page, so the slot now always collapses. The fill deadline in
+   * pollFill is short while the slot is visible precisely so this happens
+   * before the user has settled on it.
+   */
+  function hideSlot(el) {
     el.style.display = 'none';
+    var card = el.closest && el.closest('.ad-card');
     if (card) card.style.display = 'none';
+  }
+
+  /*
+   * Run `check` until it reports a fill or the deadline passes.
+   *
+   * Two deadlines, chosen by whether the user can see the slot. Off screen
+   * there is nothing to be annoyed by, so a slow mobile connection gets the
+   * full budget - an earlier single short deadline threw away real fills, and a
+   * hidden slot earns nothing. On screen the budget is much shorter, because
+   * every extra second is a second of blank space someone is looking at.
+   * Visibility is re-tested each tick, so scrolling a slot into view shortens
+   * its deadline immediately.
+   */
+  function pollFill(el, check, onFill, onGiveUp) {
+    var interval = 500;
+    var waited = 0;
+    var poll = setInterval(function () {
+      if (check()) { clearInterval(poll); onFill(); return; }
+      waited += interval;
+      var budget = isOnScreen(el)
+        ? (config.visibleFillTimeoutMs || 6000)
+        : (config.fillTimeoutMs || 15000);
+      if (waited < budget) return;
+      // Swapping a frame out mid-call would move the page under a live
+      // conversation, so wait the call out instead.
+      if (callIsLive()) return;
+      clearInterval(poll);
+      onGiveUp();
+    }, interval);
   }
 
   // True once the tag has put something in the frame. A cross-origin document
@@ -226,26 +272,15 @@
     );
     doc.close();
 
-    // Poll rather than judge once: a single short deadline threw away real
-    // fills on slow mobile connections, and a hidden slot earns nothing. Only
-    // after every host has had its full budget does the slot give up, so no
-    // empty box is left behind when there is genuinely no inventory.
-    var interval = 1500;
-    var limit = Math.max(2, Math.round((config.fillTimeoutMs || 15000) / interval));
-    var checks = 0;
-    var poll = setInterval(function () {
-      checks += 1;
-      if (isFilled(frame)) { clearInterval(poll); return; }
-      if (checks < limit) return;
-      // Swapping the frame out mid-call would move the page. Wait it out; the
-      // observer calls back through here once the conversation ends.
-      if (callIsLive()) return;
-      clearInterval(poll);
-      el.removeChild(frame);
-      var next = (hostIndex || 0) + 1;
-      if (next < HOSTS.length) banner(el, size, next);
-      else hideSlot(el);
-    }, interval);
+    pollFill(el,
+      function () { return isFilled(frame); },
+      function () { markFilled(el); },
+      function () {
+        el.removeChild(frame);
+        var next = (hostIndex || 0) + 1;
+        if (next < HOSTS.length) banner(el, size, next);
+        else hideSlot(el);
+      });
   }
 
   function native(el, hostIndex) {
@@ -259,24 +294,19 @@
     s.src = host + NATIVE.path;
     el.appendChild(s);
 
-    var interval = 1500;
-    var limit = Math.max(2, Math.round((config.fillTimeoutMs || 15000) / interval / 1.25));
-    var checks = 0;
-    var poll = setInterval(function () {
-      checks += 1;
-      if (container.childElementCount) { clearInterval(poll); return; }
-      if (checks < limit) return;
-      if (callIsLive()) return;
-      clearInterval(poll);
-      var next = (hostIndex || 0) + 1;
-      if (next < HOSTS.length) {
-        el.removeChild(container);
-        el.removeChild(s);
-        native(el, next);
-      } else {
-        hideSlot(el);
-      }
-    }, interval);
+    pollFill(el,
+      function () { return !!container.childElementCount; },
+      function () { markFilled(el); },
+      function () {
+        var next = (hostIndex || 0) + 1;
+        if (next < HOSTS.length) {
+          el.removeChild(container);
+          el.removeChild(s);
+          native(el, next);
+        } else {
+          hideSlot(el);
+        }
+      });
   }
 
   // The width the slot can really give an ad. Sizing off window.innerWidth

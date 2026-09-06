@@ -788,8 +788,22 @@ img { max-width: 100%; }
  * expanding it did. It only loses the frame and the "Sponsored" label, so it
  * reads as spacing rather than as a hole. ads.js still collapses slots that
  * are off screen, where nothing visible can move. */
-.ad-card[data-ad-unfilled] {
+/* The frame and its label only appear once a creative is actually on the page.
+ *
+ * ads.js sets data-ad-filled when a tag has put something in the slot. Until
+ * then the card is invisible: reserved space and nothing else. An empty
+ * labelled panel announcing an advertisement that does not exist is worse than
+ * no frame at all, and on a connection with an ad blocker or a filtering
+ * resolver - a lot of this audience - that is what every slot would otherwise
+ * be. Only colour and visibility change here, never size, so revealing the
+ * frame cannot shift the page. */
+.ad-card {
   border-color: transparent;
   background: transparent;
 }
-.ad-card[data-ad-unfilled] .ad-card-label { visibility: hidden; }
+.ad-card .ad-card-label { visibility: hidden; }
+.ad-card[data-ad-filled] {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.028);
+}
+.ad-card[data-ad-filled] .ad-card-label { visibility: visible; }

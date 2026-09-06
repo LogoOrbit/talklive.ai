@@ -21,8 +21,11 @@
   "_lazyRootMargin": "How far ahead of the viewport a slot begins loading. Larger fills sooner and wastes more impressions on users who never scroll that far; smaller risks an empty slot when the user arrives.",
   "lazyRootMargin": "400px",
 
-  "_fillTimeoutMs": "How long one serving host is given to put something in the frame before the next host is tried.",
+  "_fillTimeoutMs": "How long one serving host is given to put something in the frame before the next host is tried, while the slot is still off screen. Generous on purpose: nobody is looking at it, and a short deadline throws away real fills on slow mobile connections.",
   "fillTimeoutMs": 15000,
+
+  "_visibleFillTimeoutMs": "The same deadline while the slot IS on screen. Much shorter, because every extra second is a second of blank space someone is staring at. An ad blocker or a filtering resolver means the slot will never fill, and this is how fast the page takes that space back.",
+  "visibleFillTimeoutMs": 6000,
 
   "_minViewportHeight": "Below this viewport height, in-app slots inside the call and chat UI are skipped entirely, so a short phone screen is not mostly advertisement.",
   "minViewportHeight": 620

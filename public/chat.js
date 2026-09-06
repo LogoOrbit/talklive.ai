@@ -142,6 +142,25 @@
   // Views: start → search → live. Only one is visible at a time.
   // ---------------------------------------------------------------------------
   function showView(name) {
+    // Move focus out of whatever is about to be hidden.
+    //
+    // Pressing "Start chatting" hides #viewStart while the button that was
+    // clicked still has focus, and marking an element aria-hidden while a
+    // descendant is focused hides a focused control from assistive technology.
+    // Chrome refuses to apply the attribute at all in that case and logs
+    // "Blocked aria-hidden on an element because its descendant retained
+    // focus", so without this the hidden views are never actually hidden from
+    // a screen reader.
+    var focused = document.activeElement;
+    if (focused && focused !== document.body) {
+      var leaving = [viewStart, viewSearch, viewLive, composer].some(function (view) {
+        return view && view.contains(focused) && !(name === 'start' && view === viewStart)
+          && !(name === 'search' && view === viewSearch)
+          && !(name === 'live' && (view === viewLive || view === composer));
+      });
+      if (leaving) focused.blur();
+    }
+
     [[viewStart, 'start'], [viewSearch, 'search'], [viewLive, 'live']].forEach(function (entry) {
       var active = name === entry[1];
       entry[0].classList.toggle('hidden', !active);
