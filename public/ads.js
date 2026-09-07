@@ -66,7 +66,7 @@
     maxSlotsPerPage: 3,
     types: { native: true, leaderboard: true, banner: true, box: true, skyscraper: true },
     pauseDuringCall: true,
-    lazyRootMargin: '400px',
+    lazyRootMargin: '100px',
     fillTimeoutMs: 15000,
     visibleFillTimeoutMs: 6000,
     minViewportHeight: 620,
@@ -121,11 +121,11 @@
    * there is no conversation to interrupt and this is always false.
    */
   function callIsLive() {
-    if (!config.pauseDuringCall) return false;
+    // Never allow remote density settings to disable conversation protection.
     var btn = document.getElementById('callMainBtn');
     if (btn) {
       var mode = btn.dataset ? btn.dataset.mode : btn.getAttribute('data-mode');
-      if (mode === 'hangup' || mode === 'confirm') return true;
+      if (mode === 'hangup' || mode === 'confirm' || mode === 'loading') return true;
     }
     var live = document.getElementById('viewLive');
     if (live && !live.classList.contains('hidden')) return true;
@@ -138,7 +138,7 @@
   var deferred = [];
 
   function releaseDeferred() {
-    if (callIsLive() || !deferred.length) return;
+    if (document.hidden || callIsLive() || !deferred.length) return;
     var pending = deferred;
     deferred = [];
     pending.forEach(fill);
@@ -152,6 +152,7 @@
    * nothing changes, and needs no cooperation from app.js.
    */
   function watchCallState() {
+    document.addEventListener('visibilitychange', releaseDeferred);
     if (!window.MutationObserver) return;
     var targets = [document.getElementById('callMainBtn'), document.getElementById('viewLive')]
       .filter(Boolean);
@@ -346,6 +347,7 @@
     var interval = 500;
     var waited = 0;
     var poll = setInterval(function () {
+      if (document.hidden || callIsLive()) return;
       if (check()) { clearInterval(poll); onFill(); return; }
       waited += interval;
       var budget = isOnScreen(el)
@@ -372,7 +374,7 @@
     }
   }
 
-  // Adsterra banner tags use document.write, so each one is sandboxed in
+  // Adsterra banner tags use document.write, so each one is rendered in
   // its own same-origin iframe instead of being injected into the page.
   function banner(el, size, hostIndex) {
     var b = BANNERS[size];
@@ -391,7 +393,7 @@
     if (!doc) { hideSlot(el); return; }
     doc.open();
     doc.write(
-      '<!DOCTYPE html><html><head><base target="_top"></head>' +
+      '<!DOCTYPE html><html><head><base target="_blank"></head>' +
       '<body style="margin:0;padding:0;overflow:hidden;background:transparent">' +
       '<script>atOptions={key:"' + b.key + '",format:"iframe",height:' + b.h + ',width:' + b.w + ',params:{}};<\/script>' +
       '<script src="' + host + '/' + b.key + '/invoke.js"><\/script>' +
@@ -471,7 +473,7 @@
     var type = el.dataset.ad;
 
     // Held back rather than dropped: the slot fills the moment the call ends.
-    if (callIsLive()) {
+    if (document.hidden || callIsLive()) {
       if (deferred.indexOf(el) === -1) deferred.push(el);
       return;
     }
@@ -499,8 +501,12 @@
 
     var shortViewport = (window.innerHeight || 0) < (config.minViewportHeight || 0);
     var kept = [];
+    var nativeKept = false;
     for (var i = 0; i < slots.length; i++) {
       var el = slots[i];
+      // The supplied native tag has one fixed container ID. Loading it twice
+      // makes the tag target the wrong slot. A second unit requires its own ID.
+      if (el.dataset.ad === 'native' && nativeKept) { hideSlot(el); continue; }
       if (!typeEnabled(el.dataset.ad)) { hideSlot(el); continue; }
       // In-app slots on a short screen would leave the call or chat UI mostly
       // advertisement, so they are dropped before anything loads.
@@ -513,6 +519,7 @@
       if (shortViewport && el.closest && el.closest('.ad-card-app')) { hideSlot(el); continue; }
       if (kept.length >= (config.maxSlotsPerPage || 0)) { hideSlot(el); continue; }
       kept.push(el);
+      if (el.dataset.ad === 'native') nativeKept = true;
     }
     return kept;
   }

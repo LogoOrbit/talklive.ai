@@ -20,6 +20,7 @@
  * so a repeat hit on a static file costs a map lookup instead of a Brotli run.
  */
 const zlib = require('zlib');
+const { createHash } = require('crypto');
 
 // Only text-shaped bodies benefit. Images, audio, video and fonts are already
 // compressed formats; running them through Brotli burns CPU to add bytes.
@@ -42,11 +43,11 @@ const BROTLI_OPTS = (size) => ({
 /*
  * Compressed-body cache for static assets.
  *
- * Keyed by ETag + encoding, so it is automatically correct across deploys: the
- * static middleware derives ETags from size and mtime, so a changed file gets a
- * new key and the stale entry simply ages out. Only responses that carry a
- * strong-ish validator are cached, which in practice means files on disk and
- * never per-user dynamic output.
+ * Keyed by body digest + encoding. Static ETags use size and mtime, which can
+ * collide across different files emitted during one build. An ETag-only cache
+ * served the Japan page at /languages/urdu in production. Hashing the actual
+ * body also prevents collisions across routes and dynamic representations.
+ * Only responses with validators participate in this bounded cache.
  *
  * Bounded by total bytes rather than entry count - one 200 kB bundle should
  * not be worth the same as a 2 kB fragment. On overflow the whole map is
@@ -163,12 +164,14 @@ module.exports = function compress() {
       }
 
       const etag = res.getHeader('ETag');
-      const key = etag ? `${encoding}:${etag}` : null;
+      const body = Buffer.concat(chunks, length);
+      const digest = etag ? createHash('sha256').update(body).digest('hex') : null;
+      const key = digest ? `${encoding}:${digest}` : null;
 
       let out = cacheGet(key);
       if (!out) {
         try {
-          out = compressSync(encoding, Buffer.concat(chunks, length));
+          out = compressSync(encoding, body);
         } catch (err) {
           // A compression failure must never cost the user the response.
           passthrough = true;
@@ -184,8 +187,7 @@ module.exports = function compress() {
       // representation, so its validator must differ too, or a cache can serve
       // the compressed body to a client that revalidated the raw one.
       if (etag) {
-        const tag = String(etag);
-        res.setHeader('ETag', tag.startsWith('W/') ? `W/${tag.slice(2, -1)}-${encoding}"` : `${tag.slice(0, -1)}-${encoding}"`);
+        res.setHeader('ETag', `W/"${digest}-${encoding}"`);
       }
       // Byte ranges no longer line up with the identity body.
       res.removeHeader('Content-Range');

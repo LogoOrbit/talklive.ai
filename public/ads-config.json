@@ -4,7 +4,7 @@
   "enabled": true,
 
   "_maxSlotsPerPage": "Hard ceiling on how many slots fill on one page, counted in document order; the rest are dropped. 0 disables ads without touching markup. The markup sets the intended density (three on content pages); this is the ceiling and the live tuning lever. Set it below the number of slots in the HTML to thin every page at once.",
-  "maxSlotsPerPage": 4,
+  "maxSlotsPerPage": 3,
 
   "_types": "Per-format kill switch. A disabled format never loads and its slot collapses. Use this to pull one unit that is underperforming without editing 282 pages.",
   "types": {
@@ -19,7 +19,7 @@
   "pauseDuringCall": true,
 
   "_lazyRootMargin": "How far ahead of the viewport a slot begins loading. Larger fills sooner and wastes more impressions on users who never scroll that far; smaller risks an empty slot when the user arrives.",
-  "lazyRootMargin": "400px",
+  "lazyRootMargin": "100px",
 
   "_fillTimeoutMs": "How long one serving host is given to put something in the frame before the next host is tried, while the slot is still off screen. Generous on purpose: nobody is looking at it, and a short deadline throws away real fills on slow mobile connections.",
   "fillTimeoutMs": 15000,

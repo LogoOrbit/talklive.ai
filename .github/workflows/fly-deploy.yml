@@ -40,6 +40,9 @@ jobs:
       - name: Build SEO pages
         run: npm run build:seo
 
+      - name: Test compression and call-safe ads
+        run: node --test scripts/test-compression.js scripts/test-ad-lifecycle.js
+
       - name: Audit generated SEO
         run: npm run audit:seo
 
