@@ -1283,9 +1283,23 @@ function sharedInterestCount(a, b) {
   return (a.interests || []).filter((i) => setB.has(i)).length;
 }
 
+// Drop queue entries whose socket is gone or whose profile was cleared. These
+// used to be skipped on every scan but never removed, so a queue could fill up
+// with corpses that made the waiting list look busy while nobody was matchable.
+function pruneQueue() {
+  for (let i = waitingQueue.length - 1; i >= 0; i--) {
+    const id = waitingQueue[i];
+    if (!profiles.get(id) || !io.sockets.sockets.get(id)) {
+      waitingQueue.splice(i, 1);
+      clearWaitFallbackTimer(id);
+    }
+  }
+}
+
 function findBestMatch(socketId) {
   const seeker = profiles.get(socketId);
   if (!seeker) return -1;
+  pruneQueue();
 
   // Prioritize reconnecting with a recent match if both hearted each other last time.
   for (let i = 0; i < waitingQueue.length; i++) {
@@ -1374,6 +1388,7 @@ function tryMatch(socketId) {
   } else {
     waitingQueue.push(socketId);
     const seekerProfile = profiles.get(socketId);
+    if (seekerProfile) seekerProfile.queuedAt = Date.now();
     seekerSocket.emit('waiting', {
       estimatedSeconds: estimatedWaitSeconds(),
       predicted: predictedMatch(socketId),
@@ -1393,6 +1408,33 @@ function tryMatch(socketId) {
     }
   }
 }
+
+// Matching used to be driven purely by two events: somebody new arriving, and a
+// per-socket fallback timer firing. Miss both - a timer lost because the socket
+// re-entered the queue by another path, two waiters queued a moment apart who
+// only became compatible once one of them hit the fallback - and a pair could
+// sit in the same short queue indefinitely while the site showed people online.
+// This pass costs nothing on a queue of a few dozen and makes the queue
+// self-healing: prune the dead, apply any overdue fallback, and re-run matching
+// for everyone still waiting.
+const QUEUE_SWEEP_MS = 3000;
+function sweepQueue() {
+  pruneQueue();
+  for (const socketId of [...waitingQueue]) {
+    // Matched by an earlier iteration of this same pass.
+    if (!waitingQueue.includes(socketId)) continue;
+    const p = profiles.get(socketId);
+    if (!p) continue;
+    if (!p.randomFallbackActive && p.queuedAt && Date.now() - p.queuedAt >= RANDOM_FALLBACK_MS) {
+      clearWaitFallbackTimer(socketId);
+      p.randomFallbackActive = true;
+      const sock = io.sockets.sockets.get(socketId);
+      if (sock) sock.emit('random-fallback');
+    }
+    if (findBestMatch(socketId) !== -1) tryMatch(socketId);
+  }
+}
+setInterval(sweepQueue, QUEUE_SWEEP_MS).unref?.();
 
 // Best guess at who the seeker will get, so the client can show a live
 // "Connecting to someone in Japan…" style message before the match completes.
@@ -1649,10 +1691,39 @@ io.on('connection', (socket) => {
     if (knownToken && identityToken !== knownToken) {
       return socket.emit('register-result', { ok: false, error: 'Client identity is already claimed.' });
     }
+    // Captured before the identity takeover below, which clears the old entry:
+    // otherwise every reconnect looked like a fresh login and re-fired the
+    // "James is online" notification to all of this user's friends.
+    const wasOffline = !clientSockets.has(clientId);
     const existingSocketId = clientSockets.get(clientId);
     if (existingSocketId && existingSocketId !== socket.id
       && io.sockets.sockets.has(existingSocketId)) {
-      return socket.emit('register-result', { ok: false, error: 'Client identity is already active.' });
+      // A dropped socket is not noticed until the ping timeout expires - up to
+      // pingInterval + pingTimeout (85s) later - so a phone that backgrounded
+      // for a moment, switched networks, or rode out a deploy reconnects while
+      // the server still believes the dead socket is live. Refusing that
+      // registration was the single biggest cause of "searching forever":
+      // profiles.set() below never ran, so the new socket had no profile, and
+      // every 'find-partner' it sent afterwards silently no-opped. The user sat
+      // in the search UI indefinitely while the online count still counted them.
+      //
+      // Anyone presenting the signed identity token is the same user (an invalid
+      // or mismatched token was already rejected above), so hand the identity to
+      // the live socket and drop the stale one instead of turning the newcomer
+      // away.
+      if (identityToken) {
+        const stale = io.sockets.sockets.get(existingSocketId);
+        if (stale) {
+          disconnectPartner(existingSocketId);
+          clearFromQueue(existingSocketId);
+          clearWaitFallbackTimer(existingSocketId);
+          profiles.delete(existingSocketId);
+          stale.disconnect(true);
+        }
+        clientSockets.delete(clientId);
+      } else {
+        return socket.emit('register-result', { ok: false, error: 'Client identity is already active.' });
+      }
     }
     const issuedIdentityToken = signIdentity(clientId);
     identityTokens.set(clientId, issuedIdentityToken);
@@ -1669,7 +1740,6 @@ io.on('connection', (socket) => {
     // beyond the free limit are premium-only.
     const countryCap = premium ? 50 : FREE_LIMITS.countries;
     const sanitizeCountryList = (list) => (Array.isArray(list) ? list.filter((c) => typeof c === 'string').slice(0, countryCap) : []);
-    const wasOffline = !clientSockets.has(clientId);
     profiles.set(socket.id, {
       clientId,
       username: (typeof data.nickname === 'string' && data.nickname.trim())
@@ -1704,6 +1774,10 @@ io.on('connection', (socket) => {
       limits: FREE_LIMITS,
     });
     socket.emit('identity-token', { clientId, token: issuedIdentityToken });
+    // Positive acknowledgement, not just the failure case: a client that was
+    // mid-search when its socket dropped needs to know the new socket carries a
+    // profile again before it re-enters the queue.
+    socket.emit('register-result', { ok: true });
     syncClientState(socket, clientId);
 
     // "James from UK is online": tell each online friend this user just came
@@ -1740,7 +1814,15 @@ io.on('connection', (socket) => {
 
   socket.on('find-partner', (opts = {}) => {
     const profile = profiles.get(socket.id);
-    if (!profile) return;
+    if (!profile) {
+      // No profile means registration never completed on this socket (it raced
+      // ahead of 'register', or an identity clash refused it). Dropping the
+      // search on the floor left the user watching the search animation with
+      // nothing happening on the server. Tell them to register again so the
+      // client can retry instead of hanging.
+      socket.emit('needs-register');
+      return;
+    }
     // Banned users can never connect to anyone until the ban is lifted.
     const ban = store.findActiveBan(profile.clientId, ip);
     if (ban) {
@@ -1748,9 +1830,25 @@ io.on('connection', (socket) => {
       socket.disconnect(true);
       return;
     }
+    const mode = (opts && opts.mode === 'chat') ? 'chat' : 'talk';
+
+    // The client re-sends its search when one goes unanswered (a socket that
+    // reconnected, a registration that had not landed). If this socket is
+    // already queued in the same pool, that request is a duplicate: re-running
+    // tryMatch() for it would pull it out of the queue, push it to the back and
+    // reset the random-match fallback clock, so a client re-asserting a healthy
+    // search would keep starving itself. Just re-send the waiting state.
+    if (waitingQueue.includes(socket.id) && (profile.mode || 'talk') === mode) {
+      socket.emit('waiting', {
+        estimatedSeconds: estimatedWaitSeconds(),
+        predicted: predictedMatch(socket.id),
+      });
+      return;
+    }
+
     // Which pool this search joins: 'talk' (voice call) or 'chat' (text only).
     // Sticky on the profile so skip/auto-next re-searches stay in the same pool.
-    profile.mode = (opts && opts.mode === 'chat') ? 'chat' : 'talk';
+    profile.mode = mode;
     store.recordFeature(profile.mode === 'chat' ? 'chat_search' : 'search');
     // A fresh, explicit search starts with the full set of filters again.
     profile.randomFallbackActive = false;

@@ -102,6 +102,19 @@ function findPartnerPayload() {
   return { mode: 'talk' };
 }
 
+// Every search goes through here so one watchdog can tell an acknowledged
+// search from a lost one. The server answers 'find-partner' with 'waiting' (or
+// 'matched') straight away, so a search with no answer means the request never
+// took effect - a socket that reconnected under a new id, a registration that
+// had not landed yet - and the UI would otherwise spin forever.
+let searchAcked = false;
+function emitFindPartner() {
+  searchAcked = false;
+  socket.emit('find-partner', findPartnerPayload());
+}
+function markSearchAcked() {
+  searchAcked = true;
+}
 const historyBtn = document.getElementById('historyBtn');
 // Lite mode for weak hardware: fewer decorative effects, same features.
 try {
@@ -1908,6 +1921,12 @@ socket.on('identity-token', ({ clientId, token } = {}) => {
   }
 });
 
+// The server drops a search request from a socket that has no profile yet, so
+// re-register and let the search watchdog re-enter the queue once it lands.
+socket.on('needs-register', () => {
+  if (lastRegisterPayload) socket.emit('register', lastRegisterPayload);
+});
+
 socket.on('register-result', ({ ok } = {}) => {
   if (ok !== false) return;
   // A stolen/invalid identity must not leave the client permanently unable to
@@ -2963,7 +2982,7 @@ async function begin() {
   setStatusText('statusSearching');
   setSubText('subHangTight');
 
-  socket.emit('find-partner', findPartnerPayload());
+  emitFindPartner();
 }
 
 const ageConsentModal = document.getElementById('ageConsentModal');
@@ -3086,7 +3105,7 @@ function findNextPerson(statusKey) {
   setConnection('orange', 'connSearching');
   setStatusText(statusKey || 'statusSearching');
   setSubText('subHangTight');
-  socket.emit('find-partner', findPartnerPayload());
+  emitFindPartner();
 }
 
 // The single Call button, four modes:
@@ -4261,6 +4280,7 @@ socket.on('online-count', (count) => {
 });
 
 socket.on('waiting', ({ estimatedSeconds, predicted } = {}) => {
+  markSearchAcked();
   setState('waiting');
   setConnection('orange', 'connSearching');
   // Predicted match preview, e.g. "Connecting to someone in Japan…", based on
@@ -4282,6 +4302,7 @@ socket.on('random-fallback', () => {
 });
 
 socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
+  markSearchAcked();
   // A deferred-UI callback (rule 11) is on the friends menu with a spinner -
   // now that the peer accepted, restore the icon and enter the call screen.
   restoreCallbackSpinner();
@@ -4599,7 +4620,7 @@ socket.on('partner-left', () => {
     setConnection('red', 'connFriendEnded');
     setStatusText('statusFriendEnded');
     setSubText(null);
-    socket.emit('find-partner', findPartnerPayload());
+    emitFindPartner();
     setTimeout(() => { if (isSearching && callState === 'searching') setConnection('orange', 'connSearching'); }, 900);
   } else {
     isSearching = false;
@@ -4640,6 +4661,16 @@ socket.on('disconnect', () => {
   if (isSearching) setConnection('red', 'connDisconnected');
 });
 
+// Search watchdog. Deliberately does NOT re-send an acknowledged search:
+// 'find-partner' resets the server's random-match fallback, so re-asserting a
+// healthy search would keep pushing the fallback out of reach and make matching
+// worse, not better. It only fires for a search the server never answered.
+setInterval(() => {
+  if (!searchAcked && isSearching && callState === 'searching' && socket.connected) {
+    emitFindPartner();
+  }
+}, 4000);
+
 socket.on('connect', () => {
   socketConnected = true;
   refreshNetStatus();
@@ -4651,11 +4682,19 @@ socket.on('connect', () => {
   // Silently re-authenticate with the durable session token so the account
   // survives page reloads, dropped sockets and server deploys.
   if (sessionToken) socket.emit('resume-session', { token: sessionToken });
-  // Mobile browsers drop the socket when backgrounded/screen off. With
-  // auto-connect on, silently resume the search loop instead of stalling.
-  if (isSearching && callState !== 'connected' && autoCallEnabled) {
-    socket.emit('find-partner', findPartnerPayload());
-  }
+  // Mobile browsers drop the socket when backgrounded or when the screen goes
+  // off, and a deploy drops every socket at once. The server queue is keyed by
+  // socket id, so the old search died with the old socket: without re-entering
+  // the queue here the user waits forever on a search the server has never
+  // heard of. This used to be gated on auto-connect being on, which is off by
+  // default - so most people who lost a socket mid-search simply never matched
+  // again. It is not an auto-connect feature: it resumes a search the user
+  // started themselves and has not cancelled.
+  //
+  // Clearing the ack is what actually restarts the search: the watchdog above
+  // re-sends 'find-partner' a moment later, by which time the 'register' just
+  // emitted has landed and the new socket has a profile to search with.
+  if (isSearching && callState !== 'connected') searchAcked = false;
 });
 
 // --- Language switching: re-render every dynamic (JS-generated) piece of UI.

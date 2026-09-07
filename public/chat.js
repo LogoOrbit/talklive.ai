@@ -227,9 +227,27 @@
   function register() {
     socket.emit('register', {
       clientId: getClientId(),
+      // Both pages share one client id, and the server binds that id to a
+      // signed token the first time it sees it. Registering without the token
+      // was rejected as an identity clash, which left this socket with no
+      // profile at all - so /chat searched forever for anyone who had already
+      // used the voice page in the same browser, and again on every reconnect.
+      identityToken: localStorage.getItem('talklive_identity_token') || '',
       nickname: accountNickname || tempUsername || undefined,
       gender: myGender || undefined,
     });
+  }
+
+  // Every search goes through here so the watchdog below can tell an
+  // acknowledged search from one the server never received. 'find-partner' is
+  // answered immediately with 'waiting' or 'matched'; silence means the request
+  // did not take effect (a socket that reconnected under a new id, a
+  // registration that had not landed yet) and the search view would spin
+  // forever.
+  var searchAcked = false;
+  function emitFindPartner() {
+    searchAcked = false;
+    socket.emit('find-partner', { mode: 'chat' });
   }
 
   function goSearch(firstTime) {
@@ -238,8 +256,15 @@
     showView('search');
     startSearchLines();
     if (firstTime) register();
-    socket.emit('find-partner', { mode: 'chat' });
+    emitFindPartner();
   }
+
+  // Deliberately does not re-send an acknowledged search: 'find-partner' resets
+  // the server's random-match fallback, so re-asserting a healthy search would
+  // keep pushing the fallback out of reach.
+  setInterval(function () {
+    if (!searchAcked && searching && !partnerHere && socket.connected) emitFindPartner();
+  }, 4000);
 
   function goStart() {
     searching = false;
@@ -789,7 +814,38 @@
   // ---------------------------------------------------------------------------
   // Socket events
   // ---------------------------------------------------------------------------
-  socket.on('connect', register);
+  // The server queue is keyed by socket id, so a dropped socket takes the
+  // search with it. Re-register, then re-enter the queue once the server
+  // confirms this socket carries a profile again - without that, anyone whose
+  // socket blipped mid-search (phone backgrounded, network switch, a deploy)
+  // sat in the search view forever on a search the server had never heard of.
+  socket.on('connect', function () {
+    register();
+    // Clearing the ack is what restarts the search: the watchdog re-sends
+    // 'find-partner' a moment later, once the register above has landed and the
+    // new socket has a profile to search with.
+    if (searching && !partnerHere) searchAcked = false;
+  });
+
+  socket.on('needs-register', register);
+
+  socket.on('identity-token', function (data) {
+    if (data && data.clientId === getClientId() && typeof data.token === 'string'
+      && /^[a-f0-9]{64}$/.test(data.token)) {
+      localStorage.setItem('talklive_identity_token', data.token);
+    }
+  });
+
+  socket.on('register-result', function (res) {
+    if (res && res.ok === false) {
+      // A refused identity must never leave this page unable to chat. Rotate to
+      // a fresh local identity and register again.
+      localStorage.removeItem('talklive_client_id');
+      localStorage.removeItem('talklive_identity_token');
+      register();
+      return;
+    }
+  });
 
   socket.on('profile', function (p) {
     myProfile = { username: p.username, country: p.country, countryCode: p.countryCode };
@@ -801,6 +857,7 @@
 
   socket.on('matched', function (data) {
     if (data.mode && data.mode !== 'chat') return; // safety: ignore stray voice matches
+    searchAcked = true;
     currentPartner = data.partner;
     partnerHere = true;
     botWarned = false; lastIn = ''; repeat = 0;
@@ -828,7 +885,7 @@
     input.focus();
   });
 
-  socket.on('waiting', function () { /* still searching - keep the search view */ });
+  socket.on('waiting', function () { searchAcked = true; });
   socket.on('random-fallback', function () { /* server widened the net; nothing to do */ });
 
   socket.on('chat-message', function (data) {
