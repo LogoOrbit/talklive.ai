@@ -412,10 +412,28 @@ function normaliseIceEntries(raw) {
       .map((u) => String(u).trim())
       .filter((u) => /^(stun|stuns|turn|turns):/i.test(u));
     if (!urls.length) continue;
-    const server = { urls };
-    if (entry.username) server.username = String(entry.username);
-    if (entry.credential) server.credential = String(entry.credential);
-    out.push(server);
+    const username = entry.username ? String(entry.username) : '';
+    const credential = entry.credential ? String(entry.credential) : '';
+    // RTCPeerConnection's constructor is strict about credentials, and it throws
+    // *synchronously* on a bad entry - which kills the whole call setup before a
+    // single candidate is gathered and before the connect watchdog is armed, so
+    // the caller sits on "Connecting…" forever. Two rules the browser enforces:
+    //
+    //  - a turn:/turns: URL with no username or credential  -> InvalidAccessError
+    //  - a stun:/stuns: URL that carries a username/credential -> SyntaxError
+    //
+    // A provider whose key is wrong, whose free quota is exhausted, or that is
+    // mid-incident can answer 200 with exactly the first shape (empty-string
+    // credentials on real turn URLs), so this is not hypothetical: one bad entry
+    // from an upstream API breaks every call for every user on the site. Split
+    // the entry by scheme and drop what the browser would reject.
+    const relayUrls = urls.filter((u) => /^turns?:/i.test(u));
+    const stunUrls = urls.filter((u) => !/^turns?:/i.test(u));
+    if (stunUrls.length) out.push({ urls: stunUrls });
+    if (relayUrls.length) {
+      if (username && credential) out.push({ urls: relayUrls, username, credential });
+      else console.warn('[turn] dropping relay entry with no credentials:', relayUrls.join(','));
+    }
   }
   return out;
 }

@@ -335,19 +335,16 @@ function messageIsUnsafe(text) {
 // carrier firewalls that still pass 80/443. With a single provider those users
 // gather no reflexive candidate at all, which presents as a call that connects
 // and then stays silent. Mirrors PUBLIC_STUN_URLS in server/index.js.
-let ICE_SERVERS = [
-  {
-    urls: [
-      'stun:stun.l.google.com:19302',
-      'stun:stun1.l.google.com:19302',
-      'stun:stun.cloudflare.com:3478',
-      'stun:stun.cloudflare.com:53',
-      'stun:global.stun.twilio.com:3478',
-      'stun:stun.relay.metered.ca:80',
-      'stun:stun.nextcloud.com:443',
-    ],
-  },
+const FALLBACK_STUN_URLS = [
+  'stun:stun.l.google.com:19302',
+  'stun:stun1.l.google.com:19302',
+  'stun:stun.cloudflare.com:3478',
+  'stun:stun.cloudflare.com:53',
+  'stun:global.stun.twilio.com:3478',
+  'stun:stun.relay.metered.ca:80',
+  'stun:stun.nextcloud.com:443',
 ];
+let ICE_SERVERS = [{ urls: FALLBACK_STUN_URLS.slice() }];
 
 // 'relay' hides both peers' IPs but requires a working TURN server. Forcing it
 // without one leaves the browser with zero candidates: the SDP still completes,
@@ -371,9 +368,37 @@ const ICE_CONFIG_MAX_AGE_MS = 45 * 60 * 1000; // comfortably inside the 1h crede
 const ICE_FETCH_TIMEOUT_MS = 6000;
 let iceConfigFetchedAt = 0;
 
+// The RTCPeerConnection constructor validates every ICE entry and throws
+// *synchronously* if one is malformed - a turn: URL with no username/credential
+// raises InvalidAccessError, a stun: URL that carries credentials raises
+// SyntaxError. That exception aborts call setup before any candidate is
+// gathered and before the connect watchdog exists, so the user is left on
+// "Connecting…" indefinitely with nothing to recover them. The server already
+// filters its own list, but this list arrives over the network from a
+// third-party TURN provider, so re-check it here rather than trusting it: one
+// bad entry from an upstream API would otherwise break every call on the site.
+function sanitiseIceServers(list) {
+  const out = [];
+  for (const entry of Array.isArray(list) ? list : []) {
+    if (!entry || typeof entry !== 'object') continue;
+    const urls = [].concat(entry.urls || entry.url || [])
+      .map((u) => String(u).trim())
+      .filter((u) => /^(stun|stuns|turn|turns):/i.test(u));
+    if (!urls.length) continue;
+    const relay = urls.filter((u) => /^turns?:/i.test(u));
+    const stun = urls.filter((u) => !/^turns?:/i.test(u));
+    if (stun.length) out.push({ urls: stun });
+    if (relay.length && entry.username && entry.credential) {
+      out.push({ urls: relay, username: String(entry.username), credential: String(entry.credential) });
+    }
+  }
+  return out;
+}
+
 function applyIceConfig(data) {
-  if (data && Array.isArray(data.iceServers) && data.iceServers.length) {
-    ICE_SERVERS = data.iceServers;
+  const clean = data && sanitiseIceServers(data.iceServers);
+  if (clean && clean.length) {
+    ICE_SERVERS = clean;
     iceConfigFetchedAt = Date.now();
   }
   // Re-evaluated on every refresh: a relay that has been removed from the
@@ -2391,6 +2416,36 @@ function clearConnectWatchdog() {
   connectWatchdog = null;
 }
 
+// How long a match may sit on "Connecting…" before we give up and find someone
+// else. Armed at match time rather than at peer-creation time: everything
+// between the two - re-acquiring the mic, refreshing the TURN credentials,
+// constructing the RTCPeerConnection, building the offer - can reject or simply
+// never settle, and until this timer exists nothing recovers the user from that.
+// It used to be armed inside createPeerConnection(), i.e. only once the risky
+// part had already succeeded, so a failure there left the call screen frozen on
+// "Connecting to someone in …" with no watchdog, no error and no way forward
+// short of a reload.
+const CONNECT_WATCHDOG_MS = 20000;
+
+// An exception we catch never reaches the global handler, so route it to the
+// same reporter by hand rather than losing it.
+function reportClientError(where, err) {
+  try {
+    console.error('[talklive]', where, err);
+    if (typeof reportError === 'function') {
+      reportError(`${where}: ${(err && err.message) || err}`, err && err.stack);
+    }
+  } catch (_) { /* never let reporting break the call */ }
+}
+
+function armConnectWatchdog() {
+  clearConnectWatchdog();
+  connectWatchdog = setTimeout(() => {
+    connectWatchdog = null;
+    if (!mediaConnected) noteMediaFailure();
+  }, CONNECT_WATCHDOG_MS);
+}
+
 function clearReconnectDeadline() {
   clearTimeout(reconnectDeadline);
   reconnectDeadline = null;
@@ -2550,11 +2605,24 @@ function createPeerConnection(isInitiator) {
   // ICE_TRANSPORT_POLICY is 'relay' only when the server published a real TURN
   // relay (relay-only hides both peers' IPs); otherwise 'all', so host/STUN
   // candidates can still form a working path instead of none at all.
-  const peer = new RTCPeerConnection({
-    iceServers: ICE_SERVERS,
-    iceTransportPolicy: ICE_TRANSPORT_POLICY,
-    iceCandidatePoolSize: 0,
-  });
+  // Last line of defence behind sanitiseIceServers(): if the constructor still
+  // rejects the list, fall back to bare STUN instead of throwing out of the
+  // whole call setup. A STUN-only call fails for some networks; a thrown
+  // constructor failed for everyone, silently.
+  let peer;
+  try {
+    peer = new RTCPeerConnection({
+      iceServers: ICE_SERVERS,
+      iceTransportPolicy: ICE_TRANSPORT_POLICY,
+      iceCandidatePoolSize: 0,
+    });
+  } catch (e) {
+    peer = new RTCPeerConnection({
+      iceServers: [{ urls: FALLBACK_STUN_URLS.slice() }],
+      iceTransportPolicy: 'all',
+      iceCandidatePoolSize: 0,
+    });
+  }
   // A brand-new peer has no remote description yet, so start a fresh candidate
   // buffer (see handleSignal). Never carry candidates across connections.
   pendingCandidates = [];
@@ -2598,8 +2666,9 @@ function createPeerConnection(isInitiator) {
   };
 
   // If a call never fully connects (common with flaky TURN relays across distant
-  // networks), move on to a new match instead of stalling silently.
-  clearConnectWatchdog();
+  // networks), move on to a new match instead of stalling silently. The timer is
+  // already running from match time; restart it here so the peer gets the full
+  // window rather than whatever the mic/TURN setup left of it.
   clearReconnectDeadline();
   iceRestartAttempted = false;
   mediaConnected = false;
@@ -2608,9 +2677,7 @@ function createPeerConnection(isInitiator) {
   // one - so a brand-new call that stalled had to wait out the full watchdog
   // instead of re-gathering straight away.
   lastIceRestartAt = 0;
-  connectWatchdog = setTimeout(() => {
-    if (!mediaConnected) noteMediaFailure();
-  }, 20000);
+  armConnectWatchdog();
 
   peer.oniceconnectionstatechange = () => {
     // Only the live call may drive the call UI. A connection we have already
@@ -2704,19 +2771,32 @@ function monitorRemoteAudio(stream) {
   }
 }
 
-async function startCall(initiator) {
+// Bumped for every match and every teardown. startCall() awaits the mic and the
+// TURN list, and either await can outlive the match that started it (a mic
+// permission prompt nobody answers, a hung fetch). Without this check the late
+// continuation would build a peer connection for a call the user has already
+// been moved on from, quietly hijacking the next match's `pc`.
+let callGeneration = 0;
+
+async function startCall(initiator, generation) {
+  const stale = () => generation !== undefined && generation !== callGeneration;
   // Re-acquire the mic if a teardown released it (or its track died) while we
   // were being matched, so the call starts with audio instead of silence.
   try { await getMic(); } catch (_) { /* fall through: peer negotiates recvonly */ }
+  if (stale()) return;
   // Never build a peer before the server's TURN list has landed - the static
   // fallback is STUN-only and cannot cross a symmetric NAT. Also refreshes the
   // list if its TURN credentials are close to expiring.
   try { await refreshIceConfigIfStale(); } catch (_) { /* fallback list stands */ }
+  if (stale()) return;
   pc = createPeerConnection(initiator);
   try { if (window.Moderation) window.Moderation.start(localStream, socket); } catch (_) { /* never break the call */ }
   if (initiator) {
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
+    const peer = pc;
+    const offer = await peer.createOffer();
+    if (stale() || pc !== peer) return;
+    await peer.setLocalDescription(offer);
+    if (stale() || pc !== peer) return;
     socket.emit('signal', { type: 'offer', sdp: offer });
   }
   await flushPendingSignals();
@@ -2807,6 +2887,9 @@ async function handleSignal(data) {
 function teardownPeer() {
   try { if (window.Moderation) window.Moderation.stop(); } catch (_) { /* never break teardown */ }
   recordCallHistory();
+  // Invalidate any startCall() still sitting on an await for this call, so it
+  // cannot finish building a peer after the call it belongs to is gone.
+  callGeneration += 1;
   currentPartner = null;
   clearConnectWatchdog();
   clearReconnectDeadline();
@@ -4346,7 +4429,21 @@ socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
 
   lockSkipButton();
 
-  await startCall(initiator);
+  // Armed before the setup, not after it - see armConnectWatchdog(). Everything
+  // below can hang or throw, and this is what guarantees the user moves on.
+  armConnectWatchdog();
+  const generation = ++callGeneration;
+  try {
+    await startCall(initiator, generation);
+  } catch (e) {
+    // Call setup itself failed (a mic that never came back, an ICE list the
+    // browser refused, an offer that could not be built). Nothing here is
+    // recoverable for this match, and leaving it to the watchdog would cost the
+    // user 20s of a frozen screen, so advance now - unless they already moved
+    // on themselves, in which case skipping again would jump a match.
+    reportClientError('startCall', e);
+    if (generation === callGeneration) noteMediaFailure();
+  }
 });
 
 // Populate + reveal the stranger's card only once the connection is confirmed.
@@ -4409,7 +4506,10 @@ socket.on('maintenance', (info) => {
 // Report client-side JS errors to the server so the owner dashboard can
 // surface the bugs real users are hitting. Shared with /chat - see
 // error-reporter.js for what is filtered out and why.
-if (window.TalkLiveErrors) window.TalkLiveErrors.install(() => socket);
+// install() returns its reporter so failures we catch ourselves can still reach
+// the dashboard. A swallowed exception in call setup is exactly the kind of bug
+// that is invisible without this: the user just sees a call that never starts.
+const reportError = window.TalkLiveErrors ? window.TalkLiveErrors.install(() => socket) : null;
 
 // --- Call back: re-connect directly with someone from Call History ---
 let pendingCallBackName = null;
