@@ -190,6 +190,11 @@ function cityPage(city) {
 
   return {
     slug: `cities/${city.slug}`,
+    // TalkLive can filter by country, not city. Keep these legacy URLs useful
+    // and crawlable, but do not ask search engines to rank a capability the
+    // product cannot provide. Remove this only after genuine city matching or
+    // first-party city-level content exists.
+    noindex: true,
     cluster: 'cities',
     parent: { slug: 'cities', label: 'Cities' },
     crumb: city.name,
@@ -202,10 +207,10 @@ function cityPage(city) {
     title: city.name === c.name
       ? title(`${city.name} City Chat`, ['Talk to Locals'])
       : title(`Talk to Strangers in ${city.name}`, ['Free Voice & Text Chat', 'Free Chat']),
-    description: description([`Free voice and text chat with people in ${city.name}, ${nm(c)}.`, `Anonymous, no sign-up.`, `${list(langs)} spoken; busiest around ${c.peak}.`]),
+    description: description([`Learn how to use TalkLive's ${nm(c)} country filter when looking for people from ${city.name}.`, `City matches are not guaranteed.`]),
     keywords: `${city.name.toLowerCase()} chat, chat with people in ${city.name.toLowerCase()}, random chat ${city.name.toLowerCase()}, talk to strangers ${city.name.toLowerCase()}, ${city.name.toLowerCase()} voice chat, ${city.name.toLowerCase()} chat room`,
     h1: `Talk to Strangers in ${city.name}`,
-    lede: `Match with someone in ${city.name} for a live anonymous voice call or an instant text chat. Free, no account, nothing to install.`,
+    lede: `TalkLive cannot target a city. You can filter to ${nm(c)}, then ask a match whether they are from ${city.name}. Location and availability are never guaranteed.`,
     cta: `Talk to Someone in ${city.name}`,
     ctaChat: 'Tap to Chat',
 

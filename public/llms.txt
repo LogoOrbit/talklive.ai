@@ -7,7 +7,7 @@ Key facts: voice-only or text-only modes; optional country and interest preferen
 ## Main pages
 - [TalkLive app](https://talklive.app/): Start a random voice or text chat instantly.
 - [Talk to Strangers](https://talklive.app/talk-to-strangers): Talk to strangers online for free with TalkLive. One tap connects you to a random person for a live, anonymous voice conversation. No sign-up, audio only, worldwide.
-- [Random Voice Chat](https://talklive.app/random-voice-chat): Free random voice chat with strangers worldwide. TalkLive connects you to a real voice in seconds - anonymous, audio-only, no sign-up. Start a random voice chat now.
+- [Random Voice Chat](https://talklive.app/random-voice-chat): Free random voice chat for adults. TalkLive uses audio only—no camera or account required. Match availability varies with the live queue.
 - [Random Text Chat](https://talklive.app/random-text-chat): Free random text chat with strangers worldwide. Tap to Chat and get paired with a random person instantly - anonymous, no mic, no sign-up.
 - [Text Chat with Strangers](https://talklive.app/text-chat-with-strangers): Text chat with strangers online free. TalkLive pairs you with a random person for anonymous live text - no sign-up, no mic, no video.
 - [Random Call](https://talklive.app/random-call): Make a random call to a stranger for free with TalkLive. Instant live calls, anonymous and audio-only, no number or sign-up needed. Start a random call in seconds.

@@ -3038,6 +3038,7 @@ async function begin() {
   try {
     await getMic();
   } catch (e) {
+    trackGrowthEvent('call_mic_denied');
     beginInFlight = false;
     startBtn.disabled = false;
     startBtn.classList.remove('is-connecting');
@@ -3078,6 +3079,7 @@ const CONSENT_KEY = 'talklive_age_consent';
 function startCallFlow() {
   playTapSound();
   clearError();
+  trackGrowthEvent('call_start_intent');
   if (localStorage.getItem(CONSENT_KEY) === 'yes') {
     begin();
   } else {
@@ -4414,6 +4416,7 @@ socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
   // username hidden until ontrack confirms a real connection (rule 3).
   setState('waiting');
   setCallState('connecting');
+  trackGrowthEvent('call_partner_found');
   setConnection('orange', 'connConnecting');
   if (callback) setStatusText('statusCallingBack', { name: partner.username });
   else setStatusText('statusConnectingTo', { country: getCountryName(partner.countryCode) || partner.country });

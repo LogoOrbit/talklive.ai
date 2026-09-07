@@ -299,6 +299,11 @@ const GROWTH_EVENTS = new Set([
   'call_media_ok',
   'call_media_failed',
   'call_media_blocked_notice',
+  // Voice funnel counters. These expose where users drop without recording
+  // identity, country, message content or microphone data.
+  'call_start_intent',
+  'call_mic_denied',
+  'call_partner_found',
 ]);
 app.post('/events', express.json({ limit: '2kb' }), (req, res) => {
   const event = req.body && req.body.event;

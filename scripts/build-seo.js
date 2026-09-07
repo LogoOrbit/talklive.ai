@@ -417,7 +417,7 @@ function page(p, index) {
 <link rel="stylesheet" href="/seo.css?v=20260828fix" />
 <title>${esc(p.title)}</title>
 <meta name="description" content="${esc(p.description)}" />
-<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+<meta name="robots" content="${p.noindex ? 'noindex, follow' : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1'}" />
 <meta name="theme-color" content="#0b0f1a" />
 <meta name="author" content="TalkLive" />
 <link rel="canonical" href="${canonical}" />
@@ -581,19 +581,19 @@ const CORE_PAGES = [
     slug: 'random-voice-chat',
     crumb: 'Random Voice Chat',
     eyebrow: 'Audio only',
-    title: 'Random Voice Chat - Free Live Audio Chat | TalkLive',
-    description: 'Free random voice chat with strangers worldwide. TalkLive connects you to a real voice in seconds - anonymous, audio-only, no sign-up. Start a random voice chat now.',
+    title: 'Random Voice Chat with Strangers — Free, No Camera | TalkLive',
+    description: 'Free random voice chat for adults. TalkLive uses audio only—no camera or account required. Match availability varies with the live queue.',
     keywords: 'random voice chat, voice chat, random audio chat, live voice chat, voice chat with strangers, free voice chat, random voice call, anonymous voice chat',
     h1: 'Random Voice Chat with Strangers - Free & Instant',
-    lede: 'TalkLive is pure random voice chat: press one button and you are live with a random stranger, voice to voice. No video, no typing required, no accounts - just clear audio and real conversation.',
+    lede: 'Press one button to join the live voice queue and, when another adult is available, talk voice to voice. No video, typing or account is required. Identity, age and location are not verified.',
     cta: 'Start Random Voice Chat',
     featuresH: 'Random voice chat, done right',
     featuresIntro: 'Encrypted WebRTC audio and simple matching make it easy to start a conversation.',
     features: [
       { icon: 'mic', h: 'Real-time audio', p: 'WebRTC carries encrypted voice audio in real time through TalkLive\'s production relay.' },
-      { icon: 'bolt', h: 'Instant random match', p: 'No lobbies to browse - one tap drops you straight into a live voice chat.' },
+      { icon: 'bolt', h: 'Simple random matching', p: 'No lobbies to browse. One tap joins the queue; wait time depends on who is online and any filters you set.' },
       { icon: 'shield', h: 'Private by default', p: 'TalkLive does not record or store voice audio. Other participants can still record on their own devices, so share carefully.' },
-      { icon: 'next', h: 'Skip anytime', p: 'Tap Next to leave one voice chat and land in a fresh random one immediately.' },
+      { icon: 'next', h: 'Skip anytime', p: 'Tap Next to leave one voice chat and return to the queue for another available match.' },
       { icon: 'globe', h: 'Global voices', p: 'Talk with random people across the world or narrow it to your favorite regions.' },
       { icon: 'chat', h: 'Text alongside voice', p: 'Share a name, link, or word using in-call chat without interrupting the audio.' },
     ],
@@ -615,7 +615,7 @@ const CORE_PAGES = [
         'Learners use random voice chat to practice speaking with native and fluent speakers from around the world. A few minutes of real conversation does more for your accent and confidence than an hour of drills.' ] },
     ],
     faq: [
-      { q: 'Is TalkLive voice chat free?', a: 'Core random voice matching is free. Matching is instant for everyone; optional Premium adds advanced filters.' },
+      { q: 'Is TalkLive voice chat free?', a: 'Core random voice matching is free. Wait time and match availability depend on the live queue and any selected filters.' },
       { q: 'Do I need headphones?', a: 'Headphones are recommended because they prevent echo and improve call quality, but they are not required.' },
       { q: 'Is there video?', a: 'No. TalkLive is intentionally audio-only, which keeps it private, low-bandwidth, and pressure-free.' },
       { q: 'Are my calls recorded?', a: 'TalkLive does not record or store voice audio. Another participant can still record on their own device, so do not share sensitive information.' },
@@ -2407,6 +2407,34 @@ function contentFingerprint(html) {
   return crypto.createHash('sha256').update(normalized).digest('hex').slice(0, 16);
 }
 
+/*
+ * The checked-in city pages predate this generator and promise city-level
+ * matching even though the product only filters by country. Keep the URLs
+ * available (and their links followable) while preventing a doorway-page
+ * footprint from being submitted for indexing. This build-time migration is
+ * intentionally idempotent and can be removed when city matching or verified
+ * first-party city data makes the pages genuinely useful search destinations.
+ */
+function noindexUnsupportedCityPages() {
+  const cityDir = path.join(PUBLIC, 'cities');
+  if (!fs.existsSync(cityDir)) return 0;
+  let changed = 0;
+  for (const entry of fs.readdirSync(cityDir, { withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith('.html') || entry.name === 'index.html') continue;
+    const file = path.join(cityDir, entry.name);
+    const before = fs.readFileSync(file, 'utf8');
+    const after = before.replace(
+      /<meta name="robots" content="[^"]*" \/>/i,
+      '<meta name="robots" content="noindex, follow" />'
+    );
+    if (after !== before) {
+      fs.writeFileSync(file, after);
+      changed++;
+    }
+  }
+  return changed;
+}
+
 // Re-hash every indexable page and advance only the dates that earned it.
 function refreshLastmodLedger() {
   const seen = new Set();
@@ -2595,6 +2623,7 @@ function writeSitemaps() {
 
 // Re-hash the pages before the sitemaps are written, so every lastmod they
 // publish is one the ledger can actually account for.
+const noindexedCities = noindexUnsupportedCityPages();
 refreshLastmodLedger();
 const { total: sitemapTotal, children: sitemapChildren } = writeSitemaps();
 
@@ -2672,4 +2701,4 @@ for (const retired of RETIRED_KEYS) {
 }
 fs.writeFileSync(path.join(PUBLIC, `${INDEXNOW_KEY}.txt`), INDEXNOW_KEY + '\n');
 
-console.log(`Built ${count} landing pages + sitemap.xml (index of ${sitemapChildren} sitemaps, ${sitemapTotal} urls) + blog/feed.xml + llms.txt + indexnow key.`);
+console.log(`Built ${count} landing pages + sitemap.xml (index of ${sitemapChildren} sitemaps, ${sitemapTotal} urls) + blog/feed.xml + llms.txt + indexnow key; ${noindexedCities} unsupported city pages set to noindex.`);
