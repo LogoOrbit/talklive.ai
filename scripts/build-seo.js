@@ -584,7 +584,7 @@ const CORE_PAGES = [
     title: 'Random Voice Chat with Strangers — Free, No Camera | TalkLive',
     description: 'Free random voice chat for adults. TalkLive uses audio only—no camera or account required. Match availability varies with the live queue.',
     keywords: 'random voice chat, voice chat, random audio chat, live voice chat, voice chat with strangers, free voice chat, random voice call, anonymous voice chat',
-    h1: 'Random Voice Chat with Strangers - Free & Instant',
+    h1: 'Random Voice Chat with Strangers - Free & No Camera',
     lede: 'Press one button to join the live voice queue and, when another adult is available, talk voice to voice. No video, typing or account is required. Identity, age and location are not verified.',
     cta: 'Start Random Voice Chat',
     featuresH: 'Random voice chat, done right',
@@ -601,7 +601,7 @@ const CORE_PAGES = [
     stepsIntro: 'Voice-only means you focus on the conversation, not on how you look.',
     steps: [
       { h: 'Press Tap to Talk', p: 'Allow your microphone and join the live queue with a single tap.' },
-      { h: 'Get matched at random', p: 'TalkLive pairs you with another person who is ready for a voice chat right now.' },
+      { h: 'Get matched at random', p: 'TalkLive pairs you with another available person from the live queue.' },
       { h: 'Chat voice to voice', p: 'Speak freely. Mute when you need to, use in-call text for anything you want to type.' },
       { h: 'Next or make a friend', p: 'Loved the chat? Add them as a friend. Otherwise, tap Next for a new voice.' },
     ],
@@ -621,8 +621,8 @@ const CORE_PAGES = [
       { q: 'Are my calls recorded?', a: 'TalkLive does not record or store voice audio. Another participant can still record on their own device, so do not share sensitive information.' },
       { q: 'Can I use it on mobile data?', a: 'Yes. Voice-only chat uses very little data, so it works well on mobile networks and slower connections.' },
     ],
-    ctaBandH: 'Your next great conversation is one tap away',
-    ctaBandP: 'Join the live random voice chat and meet someone new right now.',
+    ctaBandH: 'Join the live voice queue in one tap',
+    ctaBandP: 'Start searching for an available random voice match. Wait time varies with the live queue.',
   },
   {
     slug: 'random-text-chat',
