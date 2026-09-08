@@ -6,11 +6,13 @@
   "scripts": {
     "start": "node server/index.js",
     "dev": "node server/index.js",
-    "build:seo": "node scripts/build-seo.js && node scripts/migrate-schema.js && node scripts/migrate-hub-schema.js && node scripts/migrate-adsterra.js && node scripts/migrate-analytics.js",
+    "build:seo": "node scripts/build-seo.js && node scripts/migrate-schema.js && node scripts/migrate-hub-schema.js && node scripts/migrate-pwa.js && node scripts/migrate-adsterra.js && node scripts/migrate-analytics.js",
     "ads:adsterra": "node scripts/migrate-adsterra.js",
     "audit:seo": "node scripts/audit-seo.js",
     "check:seo": "npm run build:seo && npm run audit:seo",
     "check:turn": "node scripts/check-turn.js",
+    "test:billing": "node scripts/test-billing.js",
+    "test:referral": "node scripts/test-referral.js",
     "seo:ping": "node scripts/ping-indexnow.js"
   },
   "dependencies": {
@@ -20,9 +22,13 @@
     "nodemailer": "^9.0.3",
     "pg": "^8.22.0",
     "qrcode": "^1.5.4",
-    "socket.io": "^4.7.5"
+    "socket.io": "^4.7.5",
+    "web-push": "^3.6.7"
   },
   "engines": {
     "node": ">=18"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.3"
   }
 }

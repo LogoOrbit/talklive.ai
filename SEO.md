@@ -180,6 +180,22 @@ the files on disk are the source of truth for the geo cluster and
 `migrate-schema.js` is how sitewide schema changes reach them. `pages-extra2.js`
 and `blog-extra2.js` are the same situation and were not measured separately.
 
+**This is why sitewide `<head>` changes go in a sweep, not a template.** Editing
+the templates in `build-seo.js` reaches only the page sets that file rebuilds -
+which excludes all 177 geo pages and the later page/blog batches, i.e. most of
+the long tail. `scripts/migrate-pwa.js` is the sweep for the PWA bootstrap
+(`public/pwa.js`), which must load everywhere because it captures the `?ref=`
+referral code - shared invite links usually land on a city or marketing page,
+not on the app - and because installability is judged on whichever page the
+visitor is actually on. Like the other `migrate-*` scripts it is idempotent and
+runs as part of `build:seo`.
+
+One thing a sweep like this must not do is restamp `lastmod`. Adding a script
+tag to 284 pages is not 284 content updates, and telling search engines it was
+is exactly the signal a site should not send - so `contentFingerprint()` in
+`build-seo.js` strips the `ads.js` and `pwa.js` tags before hashing, the same
+way it strips cache-buster query strings.
+
 ### Removed: fabricated review ratings
 
 Every landing page previously claimed `aggregateRating: 4.7 from 2,840 ratings`.

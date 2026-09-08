@@ -1660,6 +1660,13 @@ socket.on('notification', (n) => {
     playFriendAddedSound();
     vibrate([20, 40, 20]);
   }
+  // The one moment notifications are self-evidently useful: this user now has
+  // someone who can reach them, and every message after this one arrives while
+  // the tab is closed unless they say yes. Asking here rather than on page load
+  // is the difference between an opt-in and a permanent denial.
+  if ((n.type === 'friend_accepted' || n.type === 'message') && window.TalkLivePWA) {
+    window.TalkLivePWA.askForPush(n.type);
+  }
 });
 
 // --- Friend-to-friend chat ---
@@ -1827,7 +1834,17 @@ function recordCallHistory() {
 // After a real call (30+ seconds) nudge the user to invite friends. Shown at
 // most once per 24h so it never becomes nagging.
 const SHARE_PROMPT_KEY = 'tl_share_prompt_at';
-const SHARE_URL = 'https://talklive.app/?ref=invite&utm_source=member_share&utm_medium=referral&utm_campaign=invite';
+// Personalised when the server has issued this user a referral code, so the
+// invite is attributable and can pay both sides. Falls back to the plain
+// tracked link when it has not (the code is minted on demand, and the first
+// open of the share sheet can win the race with the round trip).
+function shareUrl() {
+  if (myReferral.code) {
+    return `https://talklive.app/?ref=${encodeURIComponent(myReferral.code)}`
+      + '&utm_source=member_share&utm_medium=referral&utm_campaign=invite';
+  }
+  return 'https://talklive.app/?ref=invite&utm_source=member_share&utm_medium=referral&utm_campaign=invite';
+}
 
 function trackGrowthEvent(event) {
   fetch('/events', {
@@ -1850,19 +1867,25 @@ function maybeShowSharePrompt(durationSeconds) {
 
 function showSharePrompt() {
   trackGrowthEvent('share_prompt');
+  // Mint this user's code (a no-op after the first time) so the link they are
+  // about to share is attributable. Asking only here keeps the store free of a
+  // code for every visitor who never opens the share sheet.
+  socket.emit('get-referral-link');
   let card = document.getElementById('sharePromptCard');
   if (card) card.remove();
   card = document.createElement('div');
   card.id = 'sharePromptCard';
   card.className = 'share-prompt';
   card.innerHTML = `
-    <h3></h3><p></p>
+    <h3></h3><p></p><p class="share-prompt-reward" id="referralStats"></p>
     <div class="share-prompt-actions">
       <button type="button" class="share-prompt-yes"></button>
       <button type="button" class="share-prompt-no"></button>
     </div>`;
   card.querySelector('h3').textContent = t('sharePromptTitle');
-  card.querySelector('p').textContent = t('sharePromptBody');
+  card.querySelector('p').textContent = t('sharePromptBody')
+    + ' ' + t('referralIncentive').replace('{days}', String(myReferral.rewardDays || 7));
+  renderReferralStats();
   const yes = card.querySelector('.share-prompt-yes');
   const no = card.querySelector('.share-prompt-no');
   yes.textContent = t('sharePromptBtn');
@@ -1872,7 +1895,7 @@ function showSharePrompt() {
   yes.addEventListener('click', async () => {
     dismiss();
     trackGrowthEvent('share_open');
-    const payload = { title: 'TalkLive', text: t('shareText'), url: SHARE_URL };
+    const payload = { title: 'TalkLive', text: t('shareText'), url: shareUrl() };
     if (navigator.share) {
       try {
         await navigator.share(payload);
@@ -1926,14 +1949,60 @@ function registerClient(payload) {
   socket.emit('register', payload);
 }
 
+// --- Referrals ---------------------------------------------------------------
+//
+// The invite code arrives in ?ref= on the landing URL, but the person who
+// clicked has no clientId until they register - and they may land on a
+// marketing page and click through to the app first. So the code is parked in
+// localStorage on arrival (public/pwa.js does that, since it loads on every
+// page) and handed to the server at registration. The server pays nothing at
+// that point: the reward is settled only after the invited person has had a
+// real conversation.
+const REFERRAL_PENDING_KEY = 'tl_ref_code';
+let myReferral = { code: '', joined: 0, qualified: 0, rewardDays: 7 };
+
+function takePendingReferralCode() {
+  try {
+    return localStorage.getItem(REFERRAL_PENDING_KEY) || '';
+  } catch (_) {
+    return '';
+  }
+}
+
 registerClient({
   clientId: getClientId(),
   identityToken: getIdentityToken(),
   nickname: accountNickname || undefined,
   avatar: myAvatar || undefined,
   hideStatus: !statusVisible,
+  referralCode: takePendingReferralCode() || undefined,
 });
 renderAccountState();
+
+socket.on('referral-status', (info = {}) => {
+  myReferral = { ...myReferral, ...info };
+  // The code has been handed over and either counted or rejected; keeping it
+  // would re-send it on every reconnect for the life of this browser.
+  if (myReferral.code) { try { localStorage.removeItem(REFERRAL_PENDING_KEY); } catch (_) {} }
+  renderReferralStats();
+});
+
+socket.on('referral-reward', (info = {}) => {
+  myReferral = { ...myReferral, ...info };
+  renderReferralStats();
+  showToast(t('referralRewardToast').replace('{days}', String(info.days || 7)));
+});
+
+// Shown on the invite card so the loop is visible: people share far more when
+// they can see the invite actually landed.
+function renderReferralStats() {
+  const el = document.getElementById('referralStats');
+  if (!el) return;
+  if (!myReferral.joined) { el.textContent = ''; return; }
+  el.textContent = t('referralStats')
+    .replace('{joined}', String(myReferral.joined))
+    .replace('{qualified}', String(myReferral.qualified || 0));
+}
 
 socket.on('profile', (profile) => {
   myProfile = profile;
@@ -1945,6 +2014,14 @@ socket.on('identity-token', ({ clientId, token } = {}) => {
     if (lastRegisterPayload) lastRegisterPayload.identityToken = token;
   }
 });
+
+// public/pwa.js loads on every page and has no socket of its own, so it reads
+// the signed identity through here rather than duplicating the storage keys.
+// Both values are needed: the server refuses a push subscription or a checkout
+// for a clientId whose token does not verify.
+window.TalkLiveIdentity = function () {
+  return { clientId: getClientId(), identityToken: getIdentityToken() };
+};
 
 // The server drops a search request from a socket that has no profile yet, so
 // re-register and let the search watchdog re-enter the queue once it lands.
@@ -4838,8 +4915,16 @@ if (location.pathname === '/call' && !pendingInviteToken) {
 // Deep link from the SEO landing pages: /?mode=chat sends the visitor straight
 // to the dedicated text-chat app.
 try {
-  if (new URLSearchParams(location.search).get('mode') === 'chat') {
+  const params = new URLSearchParams(location.search);
+  if (params.get('mode') === 'chat') {
     location.replace('/chat');
+  }
+  // Where a push notification and the manifest's Friends shortcut both land.
+  // Without this the notification opens the app but not the message that
+  // prompted it, which is the whole reason the person tapped.
+  if (params.get('open') === 'friends') {
+    openSidePanel(friendsDropdown, friendsOverlay);
+    history.replaceState(history.state, '', '/');
   }
 } catch (e) { /* very old browser without URLSearchParams - ignore */ }
 

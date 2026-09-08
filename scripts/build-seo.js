@@ -414,7 +414,7 @@ function page(p, index) {
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<link rel="stylesheet" href="/seo.css?v=20260828fix" />
+<link rel="stylesheet" href="/seo.css?v=20260908growth" />
 <title>${esc(p.title)}</title>
 <meta name="description" content="${esc(p.description)}" />
 <meta name="robots" content="${p.noindex ? 'noindex, follow' : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1'}" />
@@ -441,6 +441,7 @@ function page(p, index) {
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="/favicon-192.png" />
 <link rel="manifest" href="/site.webmanifest" />
+<script defer src="/pwa.js?v=20260908pwa"></script>
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
 </head>
 <body>
@@ -1943,7 +1944,7 @@ function blogPost(b) {
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<link rel="stylesheet" href="/seo.css?v=20260828fix" />
+<link rel="stylesheet" href="/seo.css?v=20260908growth" />
 <title>${esc(b.title)}</title>
 <meta name="description" content="${esc(b.description)}" />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
@@ -1973,6 +1974,7 @@ function blogPost(b) {
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="/favicon-192.png" />
 <link rel="manifest" href="/site.webmanifest" />
+<script defer src="/pwa.js?v=20260908pwa"></script>
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
 </head>
 <body>
@@ -2051,7 +2053,7 @@ function blogIndex() {
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<link rel="stylesheet" href="/seo.css?v=20260828fix" />
+<link rel="stylesheet" href="/seo.css?v=20260908growth" />
 <title>TalkLive Blog - Voice Chat & Talking to Strangers</title>
 <meta name="description" content="Guides and research on talking to strangers, voice-only chat, practising languages with real people, and staying safe online - from the team behind TalkLive." />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
@@ -2077,6 +2079,7 @@ function blogIndex() {
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="/favicon-192.png" />
 <link rel="manifest" href="/site.webmanifest" />
+<script defer src="/pwa.js?v=20260908pwa"></script>
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
 </head>
 <body>
@@ -2167,7 +2170,7 @@ function localeHome(loc) {
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<link rel="stylesheet" href="/seo.css?v=20260828fix" />
+<link rel="stylesheet" href="/seo.css?v=20260908growth" />
 <title>${esc(loc.title)}</title>
 <meta name="description" content="${esc(loc.description)}" />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
@@ -2195,6 +2198,7 @@ ${alternates}
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="/favicon-192.png" />
 <link rel="manifest" href="/site.webmanifest" />
+<script defer src="/pwa.js?v=20260908pwa"></script>
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
 </head>
 <body>
@@ -2396,8 +2400,12 @@ try {
 
 function contentFingerprint(html) {
   const normalized = html
-    // The ads.js tag and its version, rewritten on every build.
-    .replace(/<script\b[^>]*\bsrc=["'][^"']*ads\.js[^"']*["'][^>]*><\/script>/gi, '')
+    // Infrastructure script tags: the ad loader and the PWA/service-worker
+    // registration. Neither is page content, and adding or reversioning one
+    // must not restamp `lastmod` on all 169 pages the same day - that tells
+    // search engines everything was rewritten when nothing was, which is the
+    // exact signal a site should not send.
+    .replace(/<script\b[^>]*\bsrc=["'][^"']*(?:ads|pwa)\.js[^"']*["'][^>]*><\/script>/gi, '')
     // Empty ad slots, inserted and moved by the adsterra migration.
     .replace(/<div\b[^>]*\bdata-ad=[^>]*>\s*<\/div>/gi, '')
     // Cache-buster query strings: ?v=20260828fix is not a content change.

@@ -5675,6 +5675,49 @@ a.premium-lock:hover { background: rgba(108, 92, 231, 0.22); }
 }
 .share-prompt-yes { background: linear-gradient(90deg, #7c3aed, #22d3ee); color: #fff; flex: 1; }
 .share-prompt-no { background: rgba(255, 255, 255, 0.08); color: #aab3c8; }
+/* Referral progress under the share copy. Empty until someone has actually
+   joined through the link, so it never shows a discouraging "0 joined". */
+.share-prompt-reward:empty { display: none; }
+.share-prompt-reward {
+  margin: -8px 0 14px !important;
+  font-size: 12.5px !important;
+  color: #22d3ee !important;
+  font-weight: 600;
+}
+
+/* Install / notification prompts (public/pwa.js). Same visual language as the
+   share prompt, but stacked above it: the two can in principle coincide, and
+   overlapping cards read as a broken page. */
+.pwa-prompt {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translate(-50%, 20px);
+  z-index: 1250;
+  width: min(420px, calc(100vw - 32px));
+  background: rgba(20, 26, 42, 0.97);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  padding: 18px 20px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.pwa-prompt.show { opacity: 1; transform: translate(-50%, 0); }
+.pwa-prompt h3 { margin: 0 0 6px; font-size: 16px; color: #fff; }
+.pwa-prompt p { margin: 0 0 14px; font-size: 13.5px; line-height: 1.45; color: #aab3c8; }
+.pwa-prompt-actions { display: flex; gap: 10px; }
+.pwa-prompt-yes,
+.pwa-prompt-no {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.pwa-prompt-yes { background: linear-gradient(90deg, #7c3aed, #22d3ee); color: #fff; flex: 1; }
+.pwa-prompt-no { background: rgba(255, 255, 255, 0.08); color: #aab3c8; }
 
 /* =============================================================
    Smoothness on low-spec devices.

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<link rel="stylesheet" href="/pages.css?v=20260828fix" />
+<link rel="stylesheet" href="/pages.css?v=20260908growth" />
 <script src="/loading.js"></script>
 <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
 <title>Pricing - TalkLive Premium</title>
@@ -106,6 +106,7 @@
 .guarantee-note a { color: inherit; text-decoration: underline; }
 </style>
 <script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebPage","name":"TalkLive Pricing","url":"https://talklive.app/pricing","description":"Current limits for free core matching. TalkLive Premium is not yet available for purchase.","mainEntity":{"@type":"WebApplication","name":"TalkLive","url":"https://talklive.app/","applicationCategory":"CommunicationApplication","operatingSystem":"Any device with a modern web browser","offers":[{"@type":"Offer","name":"TalkLive Free","price":"0","priceCurrency":"USD","url":"https://talklive.app/","description":"Core random voice and text matching, with instant matching for everyone.","availability":"https://schema.org/InStock","hasMerchantReturnPolicy":{"@type":"MerchantReturnPolicy","applicableCountry":["AE","AR","AU","BD","BR","CA","CN","CO","DE","EG","ES","FR","GB","GR","ID","IE","IL","IN","IR","IT","JP","KE","KR","MA","MX","MY","NG","NL","NO","NZ","PH","PK","PL","PT","RO","RU","SA","SE","SG","TH","TR","UA","US","VN","ZA"],"returnPolicyCategory":"https://schema.org/MerchantReturnNotPermitted","merchantReturnLink":"https://talklive.app/refund"},"shippingDetails":{"@type":"OfferShippingDetails","shippingRate":{"@type":"MonetaryAmount","value":"0","currency":"USD"},"shippingDestination":{"@type":"DefinedRegion","addressCountry":["AE","AR","AU","BD","BR","CA","CN","CO","DE","EG","ES","FR","GB","GR","ID","IE","IL","IN","IR","IT","JP","KE","KR","MA","MX","MY","NG","NL","NO","NZ","PH","PK","PL","PT","RO","RU","SA","SE","SG","TH","TR","UA","US","VN","ZA"]},"deliveryTime":{"@type":"ShippingDeliveryTime","handlingTime":{"@type":"QuantitativeValue","minValue":0,"maxValue":0,"unitCode":"DAY"},"transitTime":{"@type":"QuantitativeValue","minValue":0,"maxValue":0,"unitCode":"DAY"}}}}],"brand":{"@type":"Brand","name":"TalkLive"}}},{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://talklive.app/"},{"@type":"ListItem","position":2,"name":"Pricing","item":"https://talklive.app/pricing"}]}]</script>
+<script defer src="/pwa.js?v=20260908pwa"></script>
 </head>
 <body>
 <header class="page-header">
@@ -210,17 +211,80 @@
   var upgradeBtn = document.getElementById('upgradeBtn');
   var activeNote = document.getElementById('premiumActiveNote');
 
-  function markActive() {
+  function markActive(expiresAt) {
     activeNote.hidden = false;
     upgradeBtn.textContent = 'Premium active';
+    upgradeBtn.disabled = true;
+    if (expiresAt) {
+      var when = new Date(expiresAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+      activeNote.textContent = 'TalkLive Plus is active until ' + when + '. Everything is unlocked.';
+    }
   }
 
-  // Premium is not on sale yet, but manually granted accounts still exist,
-  // so the server stays the source of truth for who already has it.
+  // Turn the disabled "Coming soon" button into a real checkout, but only when
+  // the server says a payment processor is actually configured. A button that
+  // cannot charge anyone is worse than an honest "not on sale yet".
+  function enableCheckout(plans) {
+    upgradeBtn.disabled = false;
+    upgradeBtn.textContent = 'Get TalkLive Plus';
+    upgradeBtn.addEventListener('click', function () {
+      track('premium_checkout_click');
+      upgradeBtn.disabled = true;
+      upgradeBtn.textContent = 'Opening checkout...';
+      // The clientId premium is keyed to is browser-visible, so the server
+      // will not start a checkout for one without the signed token the app
+      // issues. Someone who has never opened the app has no token yet, which
+      // is why this falls back to sending them there rather than failing.
+      var token = localStorage.getItem('talklive_identity_token');
+      if (!token) { location.href = '/?upgrade=1'; return; }
+      fetch('/billing/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientId: getClientId(),
+          identityToken: token,
+          plan: plans.indexOf('monthly') !== -1 ? 'monthly' : plans[0],
+        }),
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (d && d.url) { location.href = d.url; return; }
+          throw new Error('no url');
+        })
+        .catch(function () {
+          upgradeBtn.disabled = false;
+          upgradeBtn.textContent = 'Could not open checkout - try again';
+        });
+    });
+  }
+
+  // The server is the source of truth for both who already has premium and
+  // whether it can be bought at all.
   fetch('/premium-status?clientId=' + encodeURIComponent(getClientId()))
     .then(function (r) { return r.json(); })
-    .then(function (d) { if (d && d.premium) markActive(); })
+    .then(function (d) {
+      if (!d) return;
+      if (d.premium) { markActive(d.expiresAt); return; }
+      if (d.checkout && d.plans && d.plans.length) enableCheckout(d.plans);
+    })
     .catch(function () {});
+
+  // Coming back from Stripe: the webhook that grants premium can land a moment
+  // after the redirect, so poll briefly rather than telling a paying customer
+  // they are not premium.
+  if (/[?&]checkout=success/.test(location.search)) {
+    var tries = 0;
+    var poll = setInterval(function () {
+      tries += 1;
+      fetch('/premium-status?clientId=' + encodeURIComponent(getClientId()))
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (d && d.premium) { clearInterval(poll); markActive(d.expiresAt); }
+          else if (tries >= 10) clearInterval(poll);
+        })
+        .catch(function () { if (tries >= 10) clearInterval(poll); });
+    }, 1500);
+  }
 })();
 </script>
 

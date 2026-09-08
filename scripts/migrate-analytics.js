@@ -74,9 +74,17 @@ function htmlFiles(dir) {
   });
 }
 
+// The service worker serves this page only when there is no network, so a
+// third-party analytics tag on it can never load. It has to stay self-contained.
+const untaggedPages = new Set(['offline.html']);
+
 let updated = 0;
 let skipped = 0;
 for (const file of htmlFiles(publicDir)) {
+  if (untaggedPages.has(path.basename(file))) {
+    skipped += 1;
+    continue;
+  }
   const before = fs.readFileSync(file, 'utf8');
 
   // Already tagged - by this sweep or by hand. Matching on the host rather than

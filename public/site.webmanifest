@@ -2,9 +2,11 @@
   "name": "TalkLive - Random Voice Chat with Strangers",
   "short_name": "TalkLive",
   "description": "Free random voice chat. Talk to strangers worldwide with one tap - anonymous, audio-only, no sign-up needed.",
+  "id": "/",
   "start_url": "/?utm_source=pwa",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait",
   "background_color": "#0b0f1a",
   "theme_color": "#0b0f1a",
@@ -22,13 +24,64 @@
       "src": "/favicon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/app-narrow.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Tap to Talk or Tap to Chat - one tap to meet a stranger"
+    },
+    {
+      "src": "/screenshots/app-wide.png",
+      "sizes": "1280x800",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "TalkLive on desktop - anonymous random voice and text chat"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Start a voice call",
+      "short_name": "Talk",
+      "description": "Get matched with a stranger for a live voice call",
+      "url": "/?utm_source=pwa&action=talk",
+      "icons": [{ "src": "/favicon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Text chat",
+      "short_name": "Chat",
+      "description": "Random text chat with a stranger",
+      "url": "/chat?utm_source=pwa",
+      "icons": [{ "src": "/favicon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Friends",
+      "short_name": "Friends",
+      "description": "Message and call the people you added",
+      "url": "/?utm_source=pwa&open=friends",
+      "icons": [{ "src": "/favicon-192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ]
 }

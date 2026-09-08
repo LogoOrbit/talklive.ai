@@ -5,7 +5,11 @@ const publicDir = path.join(__dirname, '..', 'public');
 const adsVersion = '20260907safe';
 // Keep the purchase decision page clean. Showing network ads beside the paid
 // plan distracts from the higher-value conversion and undermines "ad-free".
-const adFreePages = new Set(['pricing.html']);
+//
+// offline.html is here for a different reason: the service worker serves it
+// precisely when there is no network, so an ad tag on it can only fail, and it
+// must stay self-contained.
+const adFreePages = new Set(['pricing.html', 'offline.html']);
 
 function htmlFiles(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {

@@ -130,7 +130,14 @@ function defaults() {
       days: {},
       topics: {}, // word -> count (aggregate, anonymous)
     },
-    premium: {}, // clientId -> { activatedAt, updatedAt, lastEvent, subscriptionId, revokedAt }
+    premium: {}, // clientId -> { activatedAt, updatedAt, expiresAt, lastEvent, subscriptionId, revokedAt }
+    // Referral graph. `codes` maps a short public code -> the clientId that owns
+    // it; `owners` is that owner's running tally; `claims` records who arrived
+    // through whose code so a reward is paid exactly once per referred person.
+    referrals: { codes: {}, owners: {}, claims: {} },
+    // Web push subscriptions: clientId -> [{ endpoint, keys, ua, createdAt,
+    // failures }]. Endpoints that a push service rejects as gone are dropped.
+    push: {},
     settings: {
       maintenance: { on: false, message: 'TalkLive is under maintenance. We will be back shortly!' },
       banThreshold: 3,
@@ -151,6 +158,8 @@ function applyParsed(parsed) {
   data.analytics = { ...defaults().analytics, ...(parsed.analytics || {}) };
   data.settings = { ...defaults().settings, ...(parsed.settings || {}) };
   data.social = { ...defaults().social, ...(parsed.social || {}) };
+  data.referrals = { ...defaults().referrals, ...(parsed.referrals || {}) };
+  data.push = parsed.push || {};
   data.accounts = parsed.accounts || {};
   data.googleIndex = parsed.googleIndex || {};
   data.authSessions = parsed.authSessions || {};
@@ -452,7 +461,14 @@ function upsertAccount(usernameLower, details) {
   save();
 }
 
-// --- Premium subscriptions (granted manually; see server/index.js) ---
+// --- Premium subscriptions ---
+//
+// A grant carries an optional `expiresAt` (epoch ms). Without one it is
+// permanent, which is what every grant made before billing existed looks like -
+// so old records keep working untouched. With one it lapses on its own, which
+// is what a cancelled Stripe subscription, a referral reward and an
+// ad-for-a-pass grant all need: nothing has to run a sweeper for a user to stop
+// being premium, because the check is evaluated at read time.
 
 function setPremium(clientId, info = {}) {
   const existing = data.premium[clientId];
@@ -467,6 +483,22 @@ function setPremium(clientId, info = {}) {
   return data.premium[clientId];
 }
 
+// Extend a grant by `days` from whichever is later: now, or the time it would
+// otherwise have lapsed. Stacking rewards must never *shorten* an existing
+// subscription, and a reward earned two weeks after the last one expired must
+// not be backdated into the past.
+function extendPremium(clientId, days, info = {}) {
+  const ms = Math.max(0, Number(days) || 0) * 24 * 60 * 60000;
+  if (!ms) return data.premium[clientId] || null;
+  const existing = data.premium[clientId];
+  const active = existing && !existing.revokedAt;
+  // A permanent grant (no expiresAt) must stay permanent - adding days to it
+  // would silently convert it into one that lapses.
+  if (active && !existing.expiresAt) return existing;
+  const base = active && existing.expiresAt > Date.now() ? existing.expiresAt : Date.now();
+  return setPremium(clientId, { ...info, expiresAt: base + ms });
+}
+
 function revokePremium(clientId, info = {}) {
   const existing = data.premium[clientId];
   if (!existing) return null;
@@ -477,7 +509,18 @@ function revokePremium(clientId, info = {}) {
 
 function isPremiumClient(clientId) {
   const rec = data.premium[clientId];
-  return !!(rec && !rec.revokedAt);
+  if (!rec || rec.revokedAt) return false;
+  if (rec.expiresAt && rec.expiresAt <= Date.now()) return false;
+  return true;
+}
+
+// null = premium is permanent or absent; a number = epoch ms it lapses at.
+// The client uses this to show "Plus until 4 March" and to stop asking the
+// server for status until then.
+function premiumExpiry(clientId) {
+  const rec = data.premium[clientId];
+  if (!rec || rec.revokedAt || !rec.expiresAt) return null;
+  return rec.expiresAt;
 }
 
 // --- Durable accounts (credentials) ---
@@ -560,6 +603,122 @@ function deleteAuthSessionsForUser(usernameLower, exceptToken) {
     }
   }
   if (changed) save();
+}
+
+// --- Referrals ---------------------------------------------------------------
+//
+// A referral is only worth paying for once the invited person has actually had
+// a conversation, so a claim starts unqualified and is settled later by
+// qualifyReferral(). That ordering is the whole anti-abuse design: opening the
+// link, or opening it in fifty incognito windows, earns nothing.
+
+// Ambiguous glyphs are left out so a code read aloud on a call, or typed from a
+// screenshot, cannot land on the wrong one.
+const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+function referralCodeFor(clientId) {
+  if (!clientId) return '';
+  const owner = data.referrals.owners[clientId];
+  if (owner && owner.code) return owner.code;
+  let code = '';
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const bytes = crypto.randomBytes(7);
+    code = Array.from(bytes, (b) => CODE_ALPHABET[b % CODE_ALPHABET.length]).join('');
+    if (!data.referrals.codes[code]) break;
+    code = '';
+  }
+  if (!code) return '';
+  data.referrals.codes[code] = clientId;
+  data.referrals.owners[clientId] = { code, joined: 0, qualified: 0, rewardedDays: 0, createdAt: Date.now() };
+  save();
+  return code;
+}
+
+function referralStats(clientId) {
+  const owner = data.referrals.owners[clientId];
+  return {
+    code: (owner && owner.code) || '',
+    joined: (owner && owner.joined) || 0,
+    qualified: (owner && owner.qualified) || 0,
+    rewardedDays: (owner && owner.rewardedDays) || 0,
+  };
+}
+
+// Record that `clientId` arrived through `code`. Returns the owner's clientId
+// when the claim is new and legitimate, else null.
+function claimReferral(clientId, code) {
+  if (!clientId || !code) return null;
+  const owner = data.referrals.codes[String(code).toUpperCase()];
+  // Self-referral is the obvious exploit: share your own link, open it, repeat.
+  if (!owner || owner === clientId) return null;
+  // First claim wins. Re-attributing an existing user to whoever last sent them
+  // a link would let anyone farm rewards off people who already use the site.
+  if (data.referrals.claims[clientId]) return null;
+  data.referrals.claims[clientId] = { code: String(code).toUpperCase(), owner, ts: Date.now(), qualified: false };
+  const rec = data.referrals.owners[owner];
+  if (rec) rec.joined += 1;
+  save();
+  return owner;
+}
+
+// Settle a claim once the invited person has had a real conversation. Returns
+// { owner, referred } the first time, null afterwards, so the caller pays each
+// reward exactly once.
+function qualifyReferral(clientId) {
+  const claim = data.referrals.claims[clientId];
+  if (!claim || claim.qualified) return null;
+  claim.qualified = true;
+  claim.qualifiedAt = Date.now();
+  const rec = data.referrals.owners[claim.owner];
+  if (rec) rec.qualified += 1;
+  save();
+  return { owner: claim.owner, referred: clientId };
+}
+
+function noteReferralReward(clientId, days) {
+  const rec = data.referrals.owners[clientId];
+  if (!rec) return;
+  rec.rewardedDays = (rec.rewardedDays || 0) + days;
+  save();
+}
+
+// --- Web push subscriptions --------------------------------------------------
+
+const MAX_PUSH_PER_CLIENT = 5;
+
+function savePushSubscription(clientId, sub, ua) {
+  if (!clientId || !sub || !sub.endpoint) return;
+  const list = data.push[clientId] || (data.push[clientId] = []);
+  const existing = list.find((s) => s.endpoint === sub.endpoint);
+  if (existing) {
+    existing.keys = sub.keys;
+    existing.failures = 0;
+    existing.lastSeen = Date.now();
+  } else {
+    list.push({ endpoint: sub.endpoint, keys: sub.keys, ua: String(ua || '').slice(0, 120), createdAt: Date.now(), failures: 0 });
+    // One person can legitimately have a phone, a laptop and a tablet
+    // subscribed. Past that, the oldest is almost certainly a device they no
+    // longer use, and an unbounded list would be pushed to forever.
+    if (list.length > MAX_PUSH_PER_CLIENT) list.splice(0, list.length - MAX_PUSH_PER_CLIENT);
+  }
+  save();
+}
+
+function pushSubscriptions(clientId) {
+  return (data.push[clientId] || []).slice();
+}
+
+function removePushSubscription(clientId, endpoint) {
+  const list = data.push[clientId];
+  if (!list) return;
+  const next = list.filter((s) => s.endpoint !== endpoint);
+  if (next.length) data.push[clientId] = next;
+  else delete data.push[clientId];
+  save();
+}
+
+function pushSubscriberCount() {
+  return Object.keys(data.push).length;
 }
 
 // --- Durable social graph ("memories": friends + friend chats + blocks) ---
@@ -664,7 +823,18 @@ module.exports = {
   deleteAuthSessionsForUser,
   saveSocial,
   setPremium,
+  extendPremium,
   revokePremium,
   isPremiumClient,
+  premiumExpiry,
+  referralCodeFor,
+  referralStats,
+  claimReferral,
+  qualifyReferral,
+  noteReferralReward,
+  savePushSubscription,
+  pushSubscriptions,
+  removePushSubscription,
+  pushSubscriberCount,
   audit,
 };

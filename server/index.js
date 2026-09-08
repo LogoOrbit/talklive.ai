@@ -12,6 +12,8 @@ const { generateUsername } = require('./usernames');
 const { COUNTRIES } = require('../public/countries.js');
 const store = require('./store');
 const compress = require('./compress');
+const billing = require('./billing');
+const push = require('./push');
 const { createAdmin } = require('./admin');
 
 const app = express();
@@ -88,6 +90,11 @@ const CSP = [
   // Adsterra banner tag in; https: covers the creative frames they load.
   "frame-src 'self' https:",
   "media-src 'self' blob:",
+  // Both would fall back to default-src 'self' anyway, but stated explicitly so
+  // that widening default-src later cannot silently widen where the service
+  // worker or the manifest may come from.
+  "worker-src 'self'",
+  "manifest-src 'self'",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -254,9 +261,9 @@ const FREE_LIMITS = {
   friends: 10, // max friends
 };
 // Premium registry lives in the persistent store (Postgres/file) so grants
-// survive restarts and deploys. Premium is not on sale yet - /pricing shows a
-// "coming soon" card and no checkout exists - so every grant is manual:
-// PREMIUM_CLIENT_IDS (env) or store.setPremium().
+// survive restarts and deploys. Grants come from three places now: a Stripe
+// subscription (server/billing.js), a referral reward, or a manual grant
+// (PREMIUM_CLIENT_IDS / store.setPremium) for testing and support.
 const envPremiumClients = new Set(
   (process.env.PREMIUM_CLIENT_IDS || '').split(',').map((s) => s.trim()).filter(Boolean)
 );
@@ -267,7 +274,144 @@ function isPremium(clientId) {
 // Lets the pricing page (a separate static page) confirm activation.
 app.get('/premium-status', (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
-  res.json({ premium: isPremium(String(req.query.clientId || '')) });
+  const clientId = String(req.query.clientId || '');
+  res.json({
+    premium: isPremium(clientId),
+    // null when the grant is permanent (manual/env) - the client renders
+    // "Plus is active" rather than a renewal date.
+    expiresAt: envPremiumClients.has(clientId) ? null : store.premiumExpiry(clientId),
+    // The pricing page swaps its "coming soon" card for real buttons based on
+    // this, so a deployment with no Stripe keys keeps the honest copy it has
+    // today instead of showing a button that cannot charge anyone.
+    checkout: billing.configured(),
+    plans: billing.plans(),
+  });
+});
+
+// --- Billing -----------------------------------------------------------------
+
+// Fly terminates TLS at its edge and forwards the real client address in
+// X-Forwarded-For, so req.socket.remoteAddress is the proxy on every production
+// request. The first entry is the closest thing to the origin address we have.
+function clientIp(req) {
+  const fwd = req.headers['x-forwarded-for'];
+  return ((fwd ? String(fwd).split(',')[0].trim() : req.socket.remoteAddress) || '').replace('::ffff:', '');
+}
+
+// A crude fixed-window limiter for the handful of unauthenticated POST routes
+// added below. Socket.IO traffic has its own per-socket token bucket (see the
+// connection handler); these are plain HTTP and had nothing.
+const httpHits = new Map(); // `${route}:${ip}` -> { count, resetAt }
+function httpRateLimit(route, max, windowMs) {
+  return (req, res, next) => {
+    const key = `${route}:${clientIp(req)}`;
+    const now = Date.now();
+    const rec = httpHits.get(key);
+    if (!rec || rec.resetAt <= now) {
+      httpHits.set(key, { count: 1, resetAt: now + windowMs });
+      return next();
+    }
+    if (rec.count >= max) return res.status(429).json({ error: 'Too many requests.' });
+    rec.count += 1;
+    next();
+  };
+}
+// Unbounded growth would be a slow leak on a long-lived process; expired
+// windows are dead weight, so sweep them rather than keeping a key per IP
+// forever.
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, rec] of httpHits) if (rec.resetAt <= now) httpHits.delete(key);
+}, 10 * 60000).unref();
+
+billing.warnIfHalfConfigured();
+
+app.post('/billing/checkout', httpRateLimit('checkout', 10, 60000), express.json({ limit: '2kb' }), async (req, res) => {
+  if (!billing.configured()) return res.status(503).json({ error: 'Checkout is not available yet.' });
+  const clientId = String((req.body && req.body.clientId) || '');
+  const token = String((req.body && req.body.identityToken) || '');
+  // The clientId decides who gets premium, so an unproven one would let anyone
+  // buy a subscription onto someone else's browser id - or, more usefully to an
+  // attacker, discover which ids exist. Same HMAC the socket layer uses.
+  if (!clientId || !validIdentityToken(clientId, token)) {
+    return res.status(403).json({ error: 'Unrecognised client.' });
+  }
+  try {
+    const url = await billing.createCheckout({
+      clientId,
+      plan: String((req.body && req.body.plan) || 'monthly'),
+      origin: `https://${CANONICAL_HOST}`,
+    });
+    store.recordFeature('premium_checkout_start');
+    res.json({ url });
+  } catch (err) {
+    console.error('[billing] checkout failed:', err.message);
+    res.status(err.status === 400 ? 400 : 502).json({ error: 'Could not start checkout.' });
+  }
+});
+
+// Stripe signs the exact bytes it sent, so this route must see the raw body -
+// hence express.raw here rather than the express.json used everywhere else.
+app.post('/billing/webhook', express.raw({ type: 'application/json', limit: '1mb' }), (req, res) => {
+  const event = billing.verifyWebhook(req.body && req.body.toString('utf8'), req.headers['stripe-signature']);
+  // A bad signature is either a misconfigured secret or a forgery. Either way
+  // Stripe should retry rather than believe it was accepted.
+  if (!event) return res.status(400).send('invalid signature');
+
+  const decision = billing.decide(event);
+  if (decision.action === 'grant') {
+    store.setPremium(decision.clientId, {
+      // No period end on the checkout event itself; a day covers the gap until
+      // the first invoice arrives (usually seconds later) so a paying customer
+      // is never left without what they just bought.
+      expiresAt: decision.until || Date.now() + 24 * 60 * 60000,
+      lastEvent: decision.reason,
+      subscriptionId: decision.subscriptionId || undefined,
+      source: 'stripe',
+    });
+    store.recordFeature('premium_activated');
+  } else if (decision.action === 'revoke') {
+    store.revokePremium(decision.clientId, { lastEvent: decision.reason });
+    store.recordFeature('premium_cancelled');
+  }
+  // Anything unhandled is still a 200: replying non-2xx makes Stripe retry an
+  // event we have deliberately ignored, forever.
+  res.json({ received: true });
+});
+
+// --- Web push ----------------------------------------------------------------
+
+// Handed to the service worker registration so the browser can build a
+// subscription. Public half of the VAPID pair, safe to expose.
+app.get('/push/key', (req, res) => {
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  res.json({ key: push.publicKey(), enabled: push.configured() });
+});
+
+app.post('/push/subscribe', httpRateLimit('push', 20, 60000), express.json({ limit: '4kb' }), (req, res) => {
+  if (!push.configured()) return res.status(503).json({ error: 'Push is not available.' });
+  const { clientId, identityToken, subscription } = req.body || {};
+  if (!clientId || !validIdentityToken(String(clientId), String(identityToken || ''))) {
+    return res.status(403).json({ error: 'Unrecognised client.' });
+  }
+  if (!subscription || typeof subscription.endpoint !== 'string' || !/^https:\/\//.test(subscription.endpoint)) {
+    return res.status(400).json({ error: 'Invalid subscription.' });
+  }
+  store.savePushSubscription(String(clientId), {
+    endpoint: subscription.endpoint,
+    keys: subscription.keys || {},
+  }, req.headers['user-agent']);
+  store.recordFeature('push_subscribed');
+  res.status(204).end();
+});
+
+app.post('/push/unsubscribe', httpRateLimit('push', 20, 60000), express.json({ limit: '4kb' }), (req, res) => {
+  const { clientId, identityToken, endpoint } = req.body || {};
+  if (!clientId || !validIdentityToken(String(clientId), String(identityToken || ''))) {
+    return res.status(403).json({ error: 'Unrecognised client.' });
+  }
+  store.removePushSubscription(String(clientId), String(endpoint || ''));
+  res.status(204).end();
 });
 
 // Public client ID handed to the browser so it can render the Google Sign-In
@@ -304,6 +448,12 @@ const GROWTH_EVENTS = new Set([
   'call_start_intent',
   'call_mic_denied',
   'call_partner_found',
+  // Install and notification funnels. Installed users and push opt-ins are the
+  // only two things that bring an anonymous visitor back without an email
+  // address, so both are worth measuring separately from the ratio of the two.
+  'pwa_install_click',
+  'pwa_installed',
+  'push_optin',
 ]);
 app.post('/events', express.json({ limit: '2kb' }), (req, res) => {
   const event = req.body && req.body.event;
@@ -651,8 +801,7 @@ app.use((req, res, next) => {
   if (req.method === 'GET' && !req.path.startsWith('/owner')
     && (req.path === '/' || /^\/[a-z0-9-]+$/i.test(req.path))
     && String(req.headers.accept || '').includes('text/html')) {
-    const fwd = req.headers['x-forwarded-for'];
-    const ip = ((fwd ? String(fwd).split(',')[0].trim() : req.socket.remoteAddress) || '').replace('::ffff:', '');
+    const ip = clientIp(req);
     const geo = lookupGeo(ip);
     store.recordVisit(ip, geo.countryName, geo.city);
     const source = String(req.query.utm_source || '').toLowerCase();
@@ -947,6 +1096,25 @@ function getSocketByClientId(clientId) {
   return socketId ? io.sockets.sockets.get(socketId) : null;
 }
 
+// What a web push says for each in-app notification type. Deliberately no
+// message text: an anonymous chat product's notifications land on lock screens
+// in front of other people, and "Ana: <the actual message>" is not something to
+// put there. Returning null means "worth queueing in-app, not worth waking a
+// phone for".
+function pushCopyFor(notif) {
+  switch (notif.type) {
+    case 'message':
+      return { topic: `msg:${notif.fromClientId}`, title: `${notif.username} messaged you`, body: 'Open TalkLive to read it.', url: '/?open=friends' };
+    case 'friend-request':
+      return { topic: `req:${notif.fromClientId}`, title: `${notif.username} wants to be friends`, body: 'Tap to accept or decline.', url: '/?open=friends' };
+    case 'call-back':
+    case 'call-back-later':
+      return { topic: `call:${notif.fromClientId}`, title: `${notif.username} wants to talk`, body: 'They asked you to call back.', url: '/?open=friends' };
+    default:
+      return null;
+  }
+}
+
 function pushNotification(clientId, notif) {
   if (!notifications.has(clientId)) notifications.set(clientId, []);
   const list = notifications.get(clientId);
@@ -954,7 +1122,17 @@ function pushNotification(clientId, notif) {
   list.push(full);
   if (list.length > 50) list.shift();
   const targetSocket = getSocketByClientId(clientId);
-  if (targetSocket) targetSocket.emit('notification', full);
+  if (targetSocket) {
+    targetSocket.emit('notification', full);
+    // Someone with the tab open has already been told. Sending a system
+    // notification on top of the in-app one is the fastest way to get push
+    // permission revoked.
+    return full;
+  }
+  const copy = pushCopyFor(full);
+  // Fire and forget: a slow push service must never hold up the sender's
+  // socket handler. Failures are logged inside push.send.
+  if (copy) push.send(clientId, copy).catch(() => {});
   return full;
 }
 
@@ -1237,11 +1415,90 @@ function blockPair(clientIdA, clientIdB) {
   persistSocial();
 }
 
+// A conversation this long is one both people chose to stay in - long enough to
+// separate a real chat from the rapid-fire skipping that fills the first minute
+// of most sessions. It is the bar a referral has to clear to pay out, and the
+// bar for counting a "real" conversation in analytics.
+// Overridable so an end-to-end test does not have to hold a call open for a
+// full minute; production never sets it.
+const REAL_CONVERSATION_MS = Number(process.env.REAL_CONVERSATION_MS) || 60000;
+// Days of Plus each side gets when an invited person has their first real
+// conversation. Both sides on purpose: rewarding only the inviter makes the
+// link feel like spam to the person receiving it.
+const REFERRAL_REWARD_DAYS = 7;
+
+// Pay out a referral once - and only once - for the person who was invited.
+// Called at the end of their first real conversation, never when they merely
+// open the link, so opening it in fifty tabs earns nothing.
+function settleReferral(clientId) {
+  if (!clientId) return;
+  const settled = store.qualifyReferral(clientId);
+  if (!settled) return;
+  store.extendPremium(settled.owner, REFERRAL_REWARD_DAYS, { source: 'referral', lastEvent: 'referred a user' });
+  store.noteReferralReward(settled.owner, REFERRAL_REWARD_DAYS);
+  store.extendPremium(settled.referred, REFERRAL_REWARD_DAYS, { source: 'referral', lastEvent: 'joined via invite' });
+  store.recordFeature('referral_qualified');
+  // The inviter is usually not the person on the call that just ended, so tell
+  // whichever of their sockets is connected rather than replying to this one.
+  for (const [sid, profile] of profiles) {
+    if (profile.clientId !== settled.owner) continue;
+    const sock = io.sockets.sockets.get(sid);
+    if (sock) sock.emit('referral-reward', { days: REFERRAL_REWARD_DAYS, ...store.referralStats(settled.owner) });
+  }
+  // Premium was only read at registration, so without this both sides stay on a
+  // stale `premium: false` - the filters they were just given stay locked until
+  // they happen to reload. Push the new state to every socket either of them
+  // has open.
+  emitPremiumStatus(settled.owner);
+  emitPremiumStatus(settled.referred);
+}
+
+// Re-send premium state to every live socket belonging to a clientId. Used
+// whenever a grant changes outside registration (a referral reward now; a
+// Stripe webhook is the same shape of event, though that user is usually on the
+// Stripe-hosted page rather than connected at the time).
+function emitPremiumStatus(clientId) {
+  for (const [sid, profile] of profiles) {
+    if (profile.clientId !== clientId) continue;
+    const sock = io.sockets.sockets.get(sid);
+    if (!sock) continue;
+    sock.emit('premium-status', {
+      premium: isPremium(clientId),
+      expiresAt: envPremiumClients.has(clientId) ? null : store.premiumExpiry(clientId),
+      limits: FREE_LIMITS,
+      checkout: billing.configured(),
+      plans: billing.plans(),
+    });
+  }
+}
+
+// Close out a live pairing, recording how long it actually lasted.
+//
+// Duration was not tracked before, so "did anyone have a real conversation" was
+// invisible: the dashboard counted matches, and a match that both sides skipped
+// in two seconds counted the same as a twenty-minute call. It is also what
+// makes a referral payable, so it has to be measured server-side - a client
+// could otherwise just claim it.
 function disconnectPartner(socketId) {
   const partnerId = partners.get(socketId);
   if (!partnerId) return null;
   partners.delete(socketId);
   partners.delete(partnerId);
+
+  const profile = profiles.get(socketId);
+  const partnerProfile = profiles.get(partnerId);
+  const startedAt = (profile && profile.matchedAt) || (partnerProfile && partnerProfile.matchedAt) || 0;
+  if (startedAt) {
+    const ms = Date.now() - startedAt;
+    store.recordFeature(ms >= REAL_CONVERSATION_MS ? 'conversation_real' : 'conversation_brief');
+    if (ms >= REAL_CONVERSATION_MS) {
+      if (profile) settleReferral(profile.clientId);
+      if (partnerProfile) settleReferral(partnerProfile.clientId);
+    }
+  }
+  if (profile) profile.matchedAt = 0;
+  if (partnerProfile) partnerProfile.matchedAt = 0;
+
   const partnerSocket = io.sockets.sockets.get(partnerId);
   if (partnerSocket) {
     partnerSocket.emit('partner-left');
@@ -1393,6 +1650,11 @@ function tryMatch(socketId) {
     const key = pairKey(seekerProfile.clientId, partnerProfile.clientId);
     const rematched = hearts.has(key) && hearts.get(key).size === 2;
     hearts.delete(key);
+
+    // Stamped on both sides so disconnectPartner can measure how long the
+    // conversation actually lasted, whichever side ends it.
+    seekerProfile.matchedAt = Date.now();
+    partnerProfile.matchedAt = seekerProfile.matchedAt;
 
     const mode = seekerProfile.mode || 'talk';
     store.recordFeature(mode === 'chat' ? 'chat_match' : 'match');
@@ -1794,9 +2056,26 @@ io.on('connection', (socket) => {
 
     socket.emit('premium-status', {
       premium,
+      expiresAt: envPremiumClients.has(clientId) ? null : store.premiumExpiry(clientId),
       limits: FREE_LIMITS,
+      checkout: billing.configured(),
+      plans: billing.plans(),
     });
     socket.emit('identity-token', { clientId, token: issuedIdentityToken });
+
+    // Referrals. The code travels in ?ref= on the landing URL and is held in the
+    // browser until registration, because the person clicking the link has no
+    // clientId until then. Claiming only records the attribution - the reward is
+    // paid later, once they have had a real conversation (see settleReferral).
+    const inviteCode = typeof data.referralCode === 'string' ? data.referralCode.slice(0, 16) : '';
+    if (inviteCode) {
+      const owner = store.claimReferral(clientId, inviteCode);
+      if (owner) store.recordFeature('referral_claimed');
+    }
+    socket.emit('referral-status', {
+      ...store.referralStats(clientId),
+      rewardDays: REFERRAL_REWARD_DAYS,
+    });
     // Positive acknowledgement, not just the failure case: a client that was
     // mid-search when its socket dropped needs to know the new socket carries a
     // profile again before it re-enters the queue.
@@ -1828,6 +2107,20 @@ io.on('connection', (socket) => {
         if (otherSocket) syncClientState(otherSocket, otherId);
       }
     }
+  });
+
+  // Codes are minted on demand rather than for every visitor: the overwhelming
+  // majority of people never open the share panel, and a code per anonymous
+  // visit would grow the store without ever being used.
+  socket.on('get-referral-link', () => {
+    const profile = profiles.get(socket.id);
+    if (!profile) return;
+    const code = store.referralCodeFor(profile.clientId);
+    if (!code) return;
+    socket.emit('referral-status', {
+      ...store.referralStats(profile.clientId),
+      rewardDays: REFERRAL_REWARD_DAYS,
+    });
   });
 
   // Give the just-connected client its initial count right away, then tell
@@ -2425,6 +2718,8 @@ io.on('connection', (socket) => {
     const requesterProfile = profiles.get(requesterSocketId);
     const key = pairKey(me.clientId, requesterProfile.clientId);
     hearts.delete(key);
+    me.matchedAt = Date.now();
+    requesterProfile.matchedAt = me.matchedAt;
 
     // Call-backs are always voice calls, whatever pool either side was in.
     me.mode = 'talk';
@@ -2500,6 +2795,8 @@ io.on('connection', (socket) => {
 
     const otherProfile = profiles.get(otherSocketId);
     hearts.delete(pairKey(me.clientId, otherProfile.clientId));
+    me.matchedAt = Date.now();
+    otherProfile.matchedAt = me.matchedAt;
     me.mode = 'talk';
     otherProfile.mode = 'talk';
     otherSocket.emit('matched', { initiator: true, partner: publicProfile(me), rematched: false, callback: true, mode: 'talk' });

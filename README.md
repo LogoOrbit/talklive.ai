@@ -11,6 +11,14 @@ A random audio chat app - pairs strangers for live, audio-only conversations. Bu
 - Mute/unmute mic
 - Live online user count
 - Speaking indicator (visualizes remote audio activity)
+- Installable as an app (service worker + manifest), with an offline page
+- Web push for friend messages and call-backs, so a friendship survives the tab
+  being closed
+- Referral links that pay both sides once the invited person actually talks
+- Stripe subscriptions for TalkLive Plus
+
+The growth and monetisation model - how the category makes money, what is built,
+and what to do next - is in **[GROWTH.md](GROWTH.md)**.
 
 ## Running locally
 
@@ -87,6 +95,8 @@ A secured owner dashboard lives at **`/owner`** (e.g. `https://talklive.app/owne
 | `TURN_SHARED_SECRET` | coturn `use-auth-secret` value. The server mints a short-lived HMAC credential per request - preferred over static credentials |
 | `TURN_USERNAME` / `TURN_CREDENTIAL` | Static TURN credentials, used only when `TURN_SHARED_SECRET` is unset |
 | `TURN_FORCE_RELAY` | `1` forces browsers to use relay candidates only, so neither peer learns the other's IP. **Ignored unless a TURN relay is actually configured** - forcing relay with no relay leaves the browser with zero candidates and every call connects with no audio. Run `npm run check:turn` before setting it |
+| `STRIPE_SECRET_KEY`, `STRIPE_PRICE_MONTHLY`, `STRIPE_PRICE_YEARLY`, `STRIPE_WEBHOOK_SECRET` | Stripe Checkout for TalkLive Plus. All optional: with none set, `/pricing` keeps its "coming soon" card and no checkout exists. See [GROWTH.md](GROWTH.md) |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_CONTACT` | Web push keypair. Optional; without it the browser is never asked for notification permission. **Never rotate** - it silently invalidates every existing subscription |
 
 ### Premium (TalkLive Plus)
 
@@ -97,6 +107,12 @@ next search after a skip; that was removed because the client also emits `skip`
 for involuntary advances (a call whose media never arrived, a failed reconnect),
 so the delay fell hardest on users whose calls were already failing.
 
-Premium is keyed to the browser's persistent `clientId` and is persisted in the store (Postgres via `DATABASE_URL`, or the JSON file store), so it survives restarts and deploys. There is **no payment webhook** - Patreon does not notify the server - so persistent grants are manual: set `PREMIUM_CLIENT_IDS`, or call `store.setPremium(clientId)`. Users can also earn a temporary pass by watching an ad (`AD_*` vars).
+Premium is keyed to the browser's persistent `clientId` and is persisted in the store (Postgres via `DATABASE_URL`, or the JSON file store), so it survives restarts and deploys. Because the key is the browser id rather than an account, **someone can subscribe without ever signing up** - which the "no sign-up" promise requires.
+
+Grants come from three places:
+
+- **Stripe** (`server/billing.js`), when the Stripe env vars are set. The webhook grants and extends premium to Stripe's own `current_period_end`; a cancelled subscription lapses on its own with no cron, because grants now carry an `expiresAt`.
+- **Referrals**, 7 days to each side once an invited user has had a real conversation.
+- **Manual**, for testing and support: `PREMIUM_CLIENT_IDS`, or `store.setPremium(clientId)`. A manual grant has no `expiresAt`, so it is permanent - and `extendPremium` deliberately refuses to turn one into an expiring grant.
 
 Email alerts are throttled to one per topic per 10 minutes and are skipped entirely if SMTP is not configured.

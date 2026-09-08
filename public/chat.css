@@ -840,3 +840,37 @@ img { max-width: 100%; }
 .house-ad-title { font-size: 0.95rem; font-weight: 700; }
 .house-ad-body { font-size: 0.82rem; color: var(--muted, #8b93a7); line-height: 1.45; }
 .house-ad-cta { font-size: 0.8rem; font-weight: 600; color: var(--accent-2, #00d4ff); margin-top: 4px; }
+
+/* Install / notification prompts (public/pwa.js). Kept identical across every
+   stylesheet the site loads, because pwa.js runs on every page and the card
+   must not be unstyled anywhere. Mirrors the block in style.css. */
+.pwa-prompt {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translate(-50%, 20px);
+  z-index: 1250;
+  width: min(420px, calc(100vw - 32px));
+  background: rgba(20, 26, 42, 0.97);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  padding: 18px 20px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.pwa-prompt.show { opacity: 1; transform: translate(-50%, 0); }
+.pwa-prompt h3 { margin: 0 0 6px; font-size: 16px; color: #fff; }
+.pwa-prompt p { margin: 0 0 14px; font-size: 13.5px; line-height: 1.45; color: #aab3c8; }
+.pwa-prompt-actions { display: flex; gap: 10px; }
+.pwa-prompt-yes,
+.pwa-prompt-no {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.pwa-prompt-yes { background: linear-gradient(90deg, #7c3aed, #22d3ee); color: #fff; flex: 1; }
+.pwa-prompt-no { background: rgba(255, 255, 255, 0.08); color: #aab3c8; }

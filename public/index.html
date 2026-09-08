@@ -15,7 +15,7 @@
      rather than after it - the sooner it lands, the sooner the hero paints.
      Analytics and ad tags are loaded at the end of <body> instead of here so
      they stop competing for mobile bandwidth during Largest Contentful Paint. -->
-<link rel="stylesheet" href="style.css?v=20260828fix" />
+<link rel="stylesheet" href="style.css?v=20260908growth" />
 <script defer src="/config.js"></script>
 
 <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
@@ -94,6 +94,7 @@
 <link rel="icon" href="/favicon-16.png" type="image/png" sizes="16x16" />
 <link rel="apple-touch-icon" href="/favicon-192.png" />
 <link rel="manifest" href="/site.webmanifest" />
+<script defer src="/pwa.js?v=20260908pwa"></script>
 <link rel="preconnect" href="https://flagcdn.com" crossorigin />
 <link rel="dns-prefetch" href="https://flagcdn.com" />
 
@@ -1484,7 +1485,7 @@
        browser finish parsing and paint the page first. -->
   <script defer src="/socket.io/socket.io.js"></script>
   <script defer src="countries.js?v=20260828fix"></script>
-  <script defer src="i18n.js?v=20260828fast"></script>
+  <script defer src="i18n.js?v=20260908growth"></script>
   <script defer src="moderation.js?v=20260705b"></script>
   <script defer src="error-reporter.js?v=20260823ui"></script>
   <script>
@@ -1518,7 +1519,7 @@
       audio.addEventListener('play', function () { setState(true); });
     })();
   </script>
-  <script defer src="app.js?v=20260828fast"></script>
+  <script defer src="app.js?v=20260908growth"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the
