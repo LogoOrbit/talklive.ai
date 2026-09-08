@@ -56,3 +56,17 @@ jobs:
         run: flyctl deploy --remote-only
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      # A healthy HTTP deploy is not enough for a WebRTC app: malformed or
+      # revoked TURN credentials still leave restrictive networks unable to
+      # carry audio. Verify a real relay allocation after every release.
+      - name: Verify production TURN relay
+        run: |
+          for attempt in 1 2 3 4 5 6; do
+            if npm run check:turn -- --from-url https://talklive.app/ice-servers; then
+              exit 0
+            fi
+            echo "TURN not ready yet (attempt $attempt/6); retrying in 10s"
+            sleep 10
+          done
+          exit 1

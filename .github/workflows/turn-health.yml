@@ -1,0 +1,33 @@
+name: Production TURN health
+
+on:
+  schedule:
+    # Avoid the top of the hour, when scheduled Actions are commonly delayed.
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-turn-health
+  cancel-in-progress: true
+
+jobs:
+  relay-allocation:
+    name: Allocate through production relay
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out verifier
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # check-turn performs a real TURN Allocate exchange against every URL
+      # published by production. It exits non-zero if none can relay traffic.
+      - name: Verify Cloudflare TURN
+        run: npm run check:turn -- --from-url https://talklive.app/ice-servers
