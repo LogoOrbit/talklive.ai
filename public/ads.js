@@ -115,7 +115,15 @@
    *
    *   /  and /call : #callMainBtn carries data-mode, set by setButtonMode() in
    *                  app.js. "hangup" and "confirm" both mean a call is up;
-   *                  "loading" is searching and "call" is idle.
+   *                  "call" is idle. "loading" covers three different states,
+   *                  so data-call-state (set by setCallState) is read to tell
+   *                  them apart: "searching" is NOT a live conversation - the
+   *                  screen is static and the user is waiting, which is the
+   *                  best moment on the whole app to fill a slot, and it is
+   *                  what the call screen's markup already assumes. Connecting
+   *                  and reconnecting are part of the call and do pause ads.
+   *                  If the attribute is missing, "loading" is treated as live,
+   *                  so older markup still errs on the safe side.
    *   /chat        : #viewLive loses its .hidden class while a text chat runs.
    *
    * If neither element exists - every landing page, blog post and geo page -
@@ -126,7 +134,11 @@
     var btn = document.getElementById('callMainBtn');
     if (btn) {
       var mode = btn.dataset ? btn.dataset.mode : btn.getAttribute('data-mode');
-      if (mode === 'hangup' || mode === 'confirm' || mode === 'loading') return true;
+      if (mode === 'hangup' || mode === 'confirm') return true;
+      if (mode === 'loading') {
+        var state = btn.dataset ? btn.dataset.callState : btn.getAttribute('data-call-state');
+        return state !== 'searching';
+      }
     }
     var live = document.getElementById('viewLive');
     if (live && !live.classList.contains('hidden')) return true;
@@ -160,7 +172,7 @@
     if (!targets.length) return;
     var observer = new MutationObserver(releaseDeferred);
     targets.forEach(function (el) {
-      observer.observe(el, { attributes: true, attributeFilter: ['class', 'data-mode'] });
+      observer.observe(el, { attributes: true, attributeFilter: ['class', 'data-mode', 'data-call-state'] });
     });
   }
 

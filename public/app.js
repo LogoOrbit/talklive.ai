@@ -2132,6 +2132,11 @@ function setCallState(state) {
   // Call state gates friend-chat DMs - keep an open chat's composer in sync.
   if (activeFriendChatId && friendChatModal.classList.contains('open')) applyFriendChatLock();
 
+  // Published on the button so ads.js can tell searching apart from the other
+  // states that share the 'loading' button mode. Searching is a still screen
+  // with a waiting user; connecting and reconnecting belong to the call.
+  callMainBtn.dataset.callState = state;
+
   let mode;
   if (connected) mode = hangupConfirm ? 'confirm' : 'hangup';
   else if (state === 'searching' || state === 'connecting' || state === 'reconnecting') mode = 'loading';
