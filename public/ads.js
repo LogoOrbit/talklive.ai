@@ -66,6 +66,9 @@
     maxSlotsPerPage: 3,
     types: { native: true, leaderboard: true, banner: true, box: true, skyscraper: true, socialBar: true },
     socialBar: { enabled: true, contentOnly: true, minDelayMs: 12000, minScrollRatio: 0.25 },
+    // Opt-in through ads-config.json so a config-fetch failure cannot create a
+    // floating unit unexpectedly.
+    searchAnchor: { enabled: false, minViewportHeight: 700, dismissHours: 24 },
     pauseDuringCall: true,
     lazyRootMargin: '100px',
     fillTimeoutMs: 15000,
@@ -425,6 +428,83 @@
       });
   }
 
+  // A conservative version of the high-viewability bottom banner used by
+  // larger random-chat apps. It is owned by our page (unlike Social Bar), has
+  // a permanent close control, and exists only during the matchmaking wait.
+  // The instant the state changes to connecting, reconnecting or connected it
+  // is hidden; it never refreshes during the same page view.
+  function initSearchAnchor() {
+    var opts = config.searchAnchor || {};
+    var btn = document.getElementById('callMainBtn');
+    if (!btn || opts.enabled !== true || (config.types && config.types.banner === false)) return;
+    if ((window.innerHeight || 0) < (Number(opts.minViewportHeight) || 700)) return;
+
+    var dismissKey = 'talklive_search_ad_dismissed_until';
+    try {
+      if (Number(localStorage.getItem(dismissKey) || 0) > Date.now()) return;
+    } catch (_) { /* storage may be unavailable; the close button still works */ }
+
+    var shell = document.createElement('aside');
+    shell.className = 'tl-search-anchor ad-card';
+    shell.setAttribute('aria-label', 'Sponsored advertisement');
+    shell.style.display = 'none';
+
+    var label = document.createElement('span');
+    label.className = 'tl-search-anchor__label';
+    label.textContent = 'Sponsored';
+    var slot = document.createElement('div');
+    // Created after eligible() has counted normal page slots, so the anchor is
+    // an explicit, independently controlled unit rather than silently pushing
+    // a higher-value native/rectangle placement out of the page limit.
+    slot.dataset.ad = '320x50';
+    slot.className = 'tl-search-anchor__slot';
+    var close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'tl-search-anchor__close';
+    close.setAttribute('aria-label', 'Hide advertisement for 24 hours');
+    close.textContent = '\u00d7';
+    shell.appendChild(label);
+    shell.appendChild(slot);
+    shell.appendChild(close);
+    document.body.appendChild(shell);
+
+    var started = false;
+    var dismissed = false;
+    function state() {
+      return btn.dataset ? btn.dataset.callState : btn.getAttribute('data-call-state');
+    }
+    function sync() {
+      var searching = !dismissed && state() === 'searching' && !document.hidden;
+      shell.style.display = searching ? 'flex' : 'none';
+      if (searching && !started) {
+        started = true;
+        banner(slot, '320x50', 0);
+        if (typeof window.gtag === 'function') {
+          try { window.gtag('event', 'ad_search_anchor_requested', { ad_surface: 'search' }); } catch (_) {}
+        }
+      }
+    }
+    close.addEventListener('click', function () {
+      dismissed = true;
+      shell.style.display = 'none';
+      try {
+        var hours = Math.max(1, Number(opts.dismissHours) || 24);
+        localStorage.setItem(dismissKey, String(Date.now() + hours * 3600000));
+      } catch (_) {}
+      if (typeof window.gtag === 'function') {
+        try { window.gtag('event', 'ad_search_anchor_dismissed', { ad_surface: 'search' }); } catch (_) {}
+      }
+    });
+    document.addEventListener('visibilitychange', sync);
+    if (window.MutationObserver) {
+      new MutationObserver(sync).observe(btn, {
+        attributes: true,
+        attributeFilter: ['data-call-state', 'data-mode'],
+      });
+    }
+    sync();
+  }
+
   function native(el, hostIndex) {
     var host = HOSTS[hostIndex || 0];
     var container = document.createElement('div');
@@ -583,6 +663,7 @@
   function init() {
     var slots = eligible();
     initSocialBar();
+    initSearchAnchor();
     if (slots.length) {
       watchCallState();
       if ('IntersectionObserver' in window) {

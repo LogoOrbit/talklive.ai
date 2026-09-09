@@ -24,6 +24,13 @@
     "minScrollRatio": 0.25
   },
 
+  "_searchAnchor": "A controlled 320x50 adhesive shown only while the voice matcher is actively searching. It disappears before connecting and stays absent for the full call. The visitor can dismiss it for 24 hours.",
+  "searchAnchor": {
+    "enabled": true,
+    "minViewportHeight": 700,
+    "dismissHours": 24
+  },
+
   "_pauseDuringCall": "While a voice call or text chat is live, no slot starts loading, retries a host, or collapses. Ads already on screen stay exactly as they are. This is what keeps a long call free of movement while still earning from impressions placed before it started. Searching for a match is deliberately NOT counted as live: the screen is static and the user is waiting, so that is when the call screen's slots fill.",
   "pauseDuringCall": true,
 

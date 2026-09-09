@@ -11,6 +11,13 @@ test('Social Bar stays off conversation surfaces and is engagement gated', () =>
   assert.match(source, /6cccce7190388ac7a53bb4b9de9f8dc8\.js/);
 });
 
+test('search adhesive is controlled, dismissible, and restricted to matchmaking', () => {
+  assert.match(source, /state\(\) === 'searching'/);
+  assert.match(source, /talklive_search_ad_dismissed_until/);
+  assert.match(source, /banner\(slot, '320x50', 0\)/);
+  assert.match(source, /attributeFilter: \['data-call-state', 'data-mode'\]/);
+});
+
 function harness(mode, hidden = false, callState) {
   const events = {}, mutations = [], intervals = [], written = [];
   const button = { dataset: { mode, callState } };

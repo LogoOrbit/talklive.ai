@@ -5879,6 +5879,58 @@ html.perf-lite .side-panel { box-shadow: none; }
   [data-ad="native"] { min-height: 180px; }
 }
 
+/* Search-only adhesive: one small, page-controlled banner. It is never shown
+   during connecting or a live call; ads.js owns that state transition. */
+.tl-search-anchor {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  z-index: 45;
+  width: min(100%, 360px);
+  min-height: calc(50px + env(safe-area-inset-bottom, 0px));
+  padding: 0 20px env(safe-area-inset-bottom, 0px);
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 12, 26, .97);
+  border: 1px solid rgba(255, 255, 255, .16);
+  border-bottom: 0;
+  border-radius: 12px 12px 0 0;
+  box-shadow: 0 -6px 24px rgba(0, 0, 0, .3);
+  visibility: hidden;
+}
+.ad-card.tl-search-anchor[data-ad-filled] {
+  visibility: visible;
+  background: rgba(10, 12, 26, .97);
+  border-color: rgba(255, 255, 255, .16);
+}
+.tl-search-anchor__slot { width: 320px; height: 50px; max-width: 100%; }
+.tl-search-anchor__label {
+  position: absolute;
+  left: 4px;
+  top: 2px;
+  color: #aab0c4;
+  font-size: 8px;
+  line-height: 1;
+  writing-mode: vertical-rl;
+}
+.tl-search-anchor__close {
+  position: absolute;
+  right: 2px;
+  top: 2px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  color: #101326;
+  font: 700 16px/18px system-ui, sans-serif;
+  cursor: pointer;
+}
+@media (max-height: 699px) { .tl-search-anchor { display: none !important; } }
+
 /* A slot that never filled while the user was looking at it keeps its
  * reserved space - collapsing it would move the page just as surely as
  * expanding it did. It only loses the frame and the "Sponsored" label, so it
