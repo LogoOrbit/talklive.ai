@@ -12,7 +12,16 @@
     "leaderboard": true,
     "banner": true,
     "box": true,
-    "skyscraper": true
+    "skyscraper": true,
+    "socialBar": true
+  },
+
+  "_socialBar": "Adsterra's dismissible floating Social Bar. It is restricted to editorial/SEO pages and waits for both time-on-page and meaningful scrolling. It never loads in the voice or text app, so a remote creative cannot cover controls or appear during a conversation.",
+  "socialBar": {
+    "enabled": true,
+    "contentOnly": true,
+    "minDelayMs": 12000,
+    "minScrollRatio": 0.25
   },
 
   "_pauseDuringCall": "While a voice call or text chat is live, no slot starts loading, retries a host, or collapses. Ads already on screen stay exactly as they are. This is what keeps a long call free of movement while still earning from impressions placed before it started.",

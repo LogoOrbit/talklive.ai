@@ -5,6 +5,12 @@ const vm = require('node:vm');
 const fs = require('node:fs');
 const source = fs.readFileSync(require('node:path').join(__dirname, '../public/ads.js'), 'utf8');
 
+test('Social Bar stays off conversation surfaces and is engagement gated', () => {
+  assert.match(source, /document\.getElementById\('callMainBtn'\) \|\| document\.getElementById\('viewLive'\)/);
+  assert.match(source, /Date\.now\(\) < readyAt \|\| scrollRatio\(\) < minScroll/);
+  assert.match(source, /6cccce7190388ac7a53bb4b9de9f8dc8\.js/);
+});
+
 function harness(mode, hidden = false) {
   const events = {}, mutations = [], intervals = [], written = [];
   const button = { dataset: { mode } };

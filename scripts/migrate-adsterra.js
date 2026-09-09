@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const publicDir = path.join(__dirname, '..', 'public');
-const adsVersion = '20260907safe';
+const adsVersion = '20260908social';
 // Keep the purchase decision page clean. Showing network ads beside the paid
 // plan distracts from the higher-value conversion and undermines "ad-free".
 //
@@ -48,6 +48,18 @@ for (const file of htmlFiles(publicDir)) {
     /\s*<span><a href="https?:\/\/delvefencescrewdriver\.com\/[^"]*"[^>]*>Sponsored<\/a><\/span>/gi,
     ''
   );
+
+  // Never turn queue availability into a marketing promise. A random-chat
+  // marketplace can only match immediately when a compatible person is
+  // actually waiting, and repeating an absolute claim across FAQ schema makes
+  // the mismatch especially visible to both users and search engines.
+  html = html
+    .replace(/Matching is instant for everyone; optional Premium adds advanced filters\.?/gi,
+      'Wait time depends on compatible people in the live queue; optional Premium adds advanced filters.')
+    .replace(/Matching is instant for everyone; optional Premium adds extra controls\.?/gi,
+      'Wait time depends on compatible people in the live queue; optional Premium adds extra controls.')
+    .replace(/Matching is instant for everyone\.\.?/gi,
+      'Wait time depends on compatible people in the live queue.');
 
   // Collapse a run of ad slots that sit back to back with no content between
   // them into the first one.

@@ -64,7 +64,8 @@
   var config = {
     enabled: true,
     maxSlotsPerPage: 3,
-    types: { native: true, leaderboard: true, banner: true, box: true, skyscraper: true },
+    types: { native: true, leaderboard: true, banner: true, box: true, skyscraper: true, socialBar: true },
+    socialBar: { enabled: true, contentOnly: true, minDelayMs: 12000, minScrollRatio: 0.25 },
     pauseDuringCall: true,
     lazyRootMargin: '100px',
     fillTimeoutMs: 15000,
@@ -524,19 +525,64 @@
     return kept;
   }
 
+  // Adsterra Social Bar is the account's dismissible floating unit. It can
+  // earn more than a fixed banner because it stays viewable, but its rendering
+  // is controlled remotely, so it is never allowed into either conversation
+  // app. On editorial pages it also waits until the visitor has spent time on
+  // the page AND scrolled through a meaningful portion of it. That keeps it
+  // away from the search landing experience and prevents an overlay from
+  // competing with the first screen of content.
+  function initSocialBar() {
+    var opts = config.socialBar || {};
+    if (opts.enabled === false || (config.types && config.types.socialBar === false)) return;
+    if (opts.contentOnly !== false
+      && (document.getElementById('callMainBtn') || document.getElementById('viewLive'))) return;
+
+    var readyAt = Date.now() + Math.max(0, Number(opts.minDelayMs) || 0);
+    var minScroll = Math.max(0, Math.min(1, Number(opts.minScrollRatio) || 0));
+    var loaded = false;
+    function scrollRatio() {
+      var root = document.documentElement;
+      var body = document.body;
+      var height = Math.max(root ? root.scrollHeight : 0, body ? body.scrollHeight : 0);
+      var travel = Math.max(1, height - (window.innerHeight || 0));
+      return Math.max(0, window.scrollY || window.pageYOffset || 0) / travel;
+    }
+    function maybeLoad() {
+      if (loaded || document.hidden || Date.now() < readyAt || scrollRatio() < minScroll) return;
+      loaded = true;
+      document.removeEventListener('scroll', maybeLoad);
+      document.removeEventListener('visibilitychange', maybeLoad);
+      var script = document.createElement('script');
+      script.async = true;
+      script.setAttribute('data-cfasync', 'false');
+      script.setAttribute('data-talklive-social-bar', '1');
+      script.src = 'https://delvefencescrewdriver.com/6c/cc/ce/6cccce7190388ac7a53bb4b9de9f8dc8.js';
+      document.body.appendChild(script);
+      if (typeof window.gtag === 'function') {
+        try { window.gtag('event', 'ad_social_bar_loaded', { ad_surface: 'content' }); } catch (_) {}
+      }
+    }
+    document.addEventListener('scroll', maybeLoad, { passive: true });
+    document.addEventListener('visibilitychange', maybeLoad);
+    setTimeout(maybeLoad, Math.max(0, readyAt - Date.now()));
+  }
+
   function init() {
     var slots = eligible();
-    if (!slots.length) return;
-    watchCallState();
-    if ('IntersectionObserver' in window) {
-      var io = new IntersectionObserver(function (entries) {
-        entries.forEach(function (e) {
-          if (e.isIntersecting) { io.unobserve(e.target); fill(e.target); }
-        });
-      }, { rootMargin: config.lazyRootMargin || '400px' });
-      slots.forEach(function (el) { io.observe(el); });
-    } else {
-      slots.forEach(fill);
+    initSocialBar();
+    if (slots.length) {
+      watchCallState();
+      if ('IntersectionObserver' in window) {
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (e) {
+            if (e.isIntersecting) { io.unobserve(e.target); fill(e.target); }
+          });
+        }, { rootMargin: config.lazyRootMargin || '400px' });
+        slots.forEach(function (el) { io.observe(el); });
+      } else {
+        slots.forEach(fill);
+      }
     }
   }
 
