@@ -99,3 +99,37 @@ test('hidden tabs do not load ads until visible', () => {
   h.events.visibilitychange();
   assert.equal(h.written.length, 1);
 });
+
+/*
+ * A slot whose tag was already loading when the match connected used to be
+ * stranded: pollFill returned early for the whole call, so the give-up path
+ * never ran and the reserved space stayed blank until the user hung up. The
+ * search screen only gives a slot about six seconds before a match arrives, so
+ * this was the normal outcome on the call screen rather than an edge case.
+ *
+ * It must now resolve mid-call, but without taking its space back - collapsing
+ * would move the page under a live conversation. The collapse waits for idle.
+ */
+test('a slot that times out mid-call resolves but keeps its space until idle', () => {
+  const h = harness('loading', false, 'searching');
+  const slot = h.slots[2];
+  assert.equal(h.written.length, 1, 'the banner started loading during the search');
+
+  h.change('hangup', 'connected');
+  for (let i = 0; i < 40; i++) h.tick();
+  assert.equal(h.written.length, 1, 'no host failover mid-call');
+  assert.notEqual(slot.style.display, 'none', 'space is held while the call is live');
+
+  h.change('call', 'idle');
+  assert.equal(slot.style.display, 'none', 'the space is given up once the call ends');
+});
+
+// The density ceiling and the native tag's single-container claim must both be
+// spent at load time, not at DOMContentLoaded. index.html's first three slots
+// sit inside #callPanel/.hidden - display:none - so counting them up front let
+// invisible slots consume the entire page budget and starve every visible one.
+test('density and the native claim are spent when a slot actually loads', () => {
+  assert.match(source, /if \(loaded >= \(config\.maxSlotsPerPage \|\| 0\)\) \{ hideSlot\(el\); return; \}/);
+  assert.match(source, /if \(type === 'native' && nativeClaimed\) \{ hideSlot\(el\); return; \}/);
+  assert.doesNotMatch(source, /kept\.length >= \(config\.maxSlotsPerPage/);
+});

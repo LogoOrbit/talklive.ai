@@ -154,7 +154,9 @@
   var deferred = [];
 
   function releaseDeferred() {
-    if (document.hidden || callIsLive() || !deferred.length) return;
+    if (document.hidden || callIsLive()) return;
+    collapsePending();
+    if (!deferred.length) return;
     var pending = deferred;
     deferred = [];
     pending.forEach(fill);
@@ -222,12 +224,34 @@
    *
    * Before collapsing, though, houseAd gets a chance at the space.
    */
-  function hideSlot(el) {
+  function hideSlot(el, keepSpace) {
+    if (el.dataset.adDone) return;
+    el.dataset.adDone = '1';
     reportFill(el, false);
     if (houseAd(el)) return;
+    // A slot that ran out of time while a call was live must not collapse: that
+    // would move the page under a conversation, which is the one thing this
+    // file is not allowed to do. It gives its space up when the call ends
+    // instead - see collapsePending, called from releaseDeferred.
+    if (keepSpace) { pendingCollapse.push(el); return; }
+    collapse(el);
+  }
+
+  function collapse(el) {
     el.style.display = 'none';
     var card = el.closest && el.closest('.ad-card');
     if (card) card.style.display = 'none';
+  }
+
+  // Slots that ran out of time mid-call and are holding their reserved space
+  // until the conversation ends.
+  var pendingCollapse = [];
+
+  function collapsePending() {
+    if (!pendingCollapse.length) return;
+    var pending = pendingCollapse;
+    pendingCollapse = [];
+    pending.forEach(collapse);
   }
 
   // --- House promos ---------------------------------------------------------
@@ -363,18 +387,27 @@
     var interval = 500;
     var waited = 0;
     var poll = setInterval(function () {
-      if (document.hidden || callIsLive()) return;
+      // A backgrounded tab is nobody looking at anything, so the clock stops.
+      // A live call does NOT stop it: this slot's tag is already loading, and
+      // pausing here used to strand it as a permanently blank reserved box for
+      // the whole call - the search screen only ever gives a slot about six
+      // seconds before a match connects, so that was most of them. Resolving is
+      // safe mid-call because neither outcome changes the slot's size: a house
+      // promo fills the space that was already reserved, and an actual collapse
+      // is deferred to the end of the call by hideSlot's keepSpace.
+      if (document.hidden) return;
       if (check()) { clearInterval(poll); onFill(); return; }
       waited += interval;
       var budget = isOnScreen(el)
         ? (config.visibleFillTimeoutMs || 6000)
         : (config.fillTimeoutMs || 15000);
       if (waited < budget) return;
-      // Swapping a frame out mid-call would move the page under a live
-      // conversation, so wait the call out instead.
-      if (callIsLive()) return;
       clearInterval(poll);
-      onGiveUp();
+      // Whether a conversation is live is passed on rather than acted on here:
+      // the caller uses it to skip host failover, which would swap one frame
+      // for another mid-call, and to resolve into the reserved space instead of
+      // collapsing it.
+      onGiveUp(callIsLive());
     }, interval);
   }
 
@@ -420,11 +453,14 @@
     pollFill(el,
       function () { return isFilled(frame); },
       function () { markFilled(el); },
-      function () {
-        el.removeChild(frame);
+      function (live) {
         var next = (hostIndex || 0) + 1;
+        // Mid-call the frame stays exactly where it is and the slot resolves
+        // into the space already reserved for it, so nothing on screen moves.
+        if (live) { hideSlot(el, true); return; }
+        el.removeChild(frame);
         if (next < HOSTS.length) banner(el, size, next);
-        else hideSlot(el);
+        else hideSlot(el, false);
       });
   }
 
@@ -519,14 +555,14 @@
     pollFill(el,
       function () { return !!container.childElementCount; },
       function () { markFilled(el); },
-      function () {
+      function (live) {
         var next = (hostIndex || 0) + 1;
-        if (next < HOSTS.length) {
+        if (!live && next < HOSTS.length) {
           el.removeChild(container);
           el.removeChild(s);
           native(el, next);
         } else {
-          hideSlot(el);
+          hideSlot(el, live);
         }
       });
   }
@@ -561,18 +597,35 @@
     return BANNERS[type] ? type : null;
   }
 
+  // How many slots have actually started loading on this page view. This, not
+  // a count taken at DOMContentLoaded, is what maxSlotsPerPage caps - see the
+  // comment on eligible().
+  var loaded = 0;
+  var nativeClaimed = false;
+
   function fill(el) {
-    if (el.dataset.adLoaded) return;
+    if (el.dataset.adLoaded || el.dataset.adDone) return;
     var type = el.dataset.ad;
 
     // Held back rather than dropped: the slot fills the moment the call ends.
+    // Checked before the ceiling so a deferred slot does not spend budget it
+    // may never use.
     if (document.hidden || callIsLive()) {
       if (deferred.indexOf(el) === -1) deferred.push(el);
       return;
     }
 
+    // The supplied native tag has one fixed container ID, so loading it twice
+    // makes the tag target the wrong slot. Claimed on first load rather than in
+    // eligible(), for the same reason the ceiling moved: in document order the
+    // first native on index.html is inside the hidden #callPanel, so it used to
+    // claim the container while invisible and starve the content native that
+    // the visitor could actually see.
+    if (type === 'native' && nativeClaimed) { hideSlot(el); return; }
+    if (loaded >= (config.maxSlotsPerPage || 0)) { hideSlot(el); return; }
+    loaded++;
     el.dataset.adLoaded = '1';
-    if (type === 'native') { native(el, 0); return; }
+    if (type === 'native') { nativeClaimed = true; native(el, 0); return; }
     var size = sizeFor(type, el);
     if (size) banner(el, size, 0);
   }
@@ -582,11 +635,25 @@
   /*
    * Which slots are allowed to load on this page.
    *
-   * Density is enforced here, in document order, rather than by removing slots
-   * from the HTML. That keeps one lever - maxSlotsPerPage in the config - able
-   * to thin every page on the site at once, and it means the slots that survive
-   * are the ones highest up the document, which are also the ones most likely
-   * to be seen.
+   * This applies only the checks that are decided once and never change: the
+   * native tag's single-container limit, the per-format kill switches, and the
+   * short-viewport rule for in-app cards.
+   *
+   * maxSlotsPerPage is deliberately NOT applied here. It used to be, counted in
+   * document order at DOMContentLoaded, and that quietly cost most of the
+   * inventory on the busiest page on the site. index.html carries three
+   * .ad-card-app slots before any content slot, and two of them live inside
+   * #callPanel, which is .hidden - display:none - until a call starts. They
+   * therefore came first in document order, consumed the entire ceiling of
+   * three while occupying zero pixels and loading nothing, and every visible
+   * slot below them was collapsed before it had a chance. A visitor who
+   * scrolled the home page saw one ad; a visitor who never started a call saw
+   * one ad and two invisible reservations.
+   *
+   * The ceiling now applies in fill(), where a slot consumes budget only when
+   * it actually starts loading. Because IntersectionObserver reports in
+   * document order, the slots that win the budget are still the highest ones
+   * the user genuinely reaches, which is what the ceiling was always for.
    */
   function eligible() {
     var slots = [].slice.call(document.querySelectorAll('[data-ad]'));
@@ -594,12 +661,8 @@
 
     var shortViewport = (window.innerHeight || 0) < (config.minViewportHeight || 0);
     var kept = [];
-    var nativeKept = false;
     for (var i = 0; i < slots.length; i++) {
       var el = slots[i];
-      // The supplied native tag has one fixed container ID. Loading it twice
-      // makes the tag target the wrong slot. A second unit requires its own ID.
-      if (el.dataset.ad === 'native' && nativeKept) { hideSlot(el); continue; }
       if (!typeEnabled(el.dataset.ad)) { hideSlot(el); continue; }
       // In-app slots on a short screen would leave the call or chat UI mostly
       // advertisement, so they are dropped before anything loads.
@@ -610,9 +673,7 @@
       // which is any phone held in landscape. Only the cards inside the call
       // and chat UI carry the -app modifier.
       if (shortViewport && el.closest && el.closest('.ad-card-app')) { hideSlot(el); continue; }
-      if (kept.length >= (config.maxSlotsPerPage || 0)) { hideSlot(el); continue; }
       kept.push(el);
-      if (el.dataset.ad === 'native') nativeKept = true;
     }
     return kept;
   }
