@@ -295,6 +295,10 @@
   }
 
   function houseAd(el) {
+    // The adhesive is a 50px strip pinned over the app. A promo card does not
+    // fit in it and an unsold one has no business staying on screen at all, so
+    // that slot opts out and collapses instead - see initSearchAnchor.
+    if (el.dataset.adNoHouse) return false;
     var promo = promoFor(el);
     if (!promo || el.dataset.adHouse) return false;
     el.dataset.adHouse = '1';
@@ -383,7 +387,7 @@
    * Visibility is re-tested each tick, so scrolling a slot into view shortens
    * its deadline immediately.
    */
-  function pollFill(el, check, onFill, onGiveUp) {
+  function pollFill(el, check, onFill, onGiveUp, failed) {
     var interval = 500;
     var waited = 0;
     var poll = setInterval(function () {
@@ -397,6 +401,16 @@
       // is deferred to the end of the call by hideSlot's keepSpace.
       if (document.hidden) return;
       if (check()) { clearInterval(poll); onFill(); return; }
+      // A host the browser could not load - a filter list, a DNS resolver that
+      // answers with nothing, a network that cannot reach it - is never going
+      // to fill this slot, and the deadline above is the wrong thing to wait
+      // for: it is six seconds of blank space on a screen someone is looking
+      // at, then six more on the second host. The search screen lasts about as
+      // long as one of those, so on the call screen the whole visible window
+      // was spent waiting for a request that had already failed - a reserved
+      // box that never became anything. Acting on the error instead takes the
+      // slot to its other host, or to a house promo, inside half a second.
+      if (failed && failed()) { clearInterval(poll); onGiveUp(callIsLive()); return; }
       waited += interval;
       var budget = isOnScreen(el)
         ? (config.visibleFillTimeoutMs || 6000)
@@ -423,6 +437,20 @@
     }
   }
 
+  // The banner tag lives inside the frame, so the error that says "this host is
+  // not reachable" is raised in there too. The inline onerror written with the
+  // document sets this flag; reading it from out here costs nothing on the poll
+  // that is already running. A cross-origin frame throws, and that is a
+  // creative that took the document over - the opposite of a failure - so it
+  // reports false and isFilled has the final word.
+  function frameFailed(frame) {
+    try {
+      return !!(frame.contentWindow && frame.contentWindow.__tlAdFailed);
+    } catch (err) {
+      return false;
+    }
+  }
+
   // Adsterra banner tags use document.write, so each one is rendered in
   // its own same-origin iframe instead of being injected into the page.
   function banner(el, size, hostIndex) {
@@ -445,7 +473,7 @@
       '<!DOCTYPE html><html><head><base target="_blank"></head>' +
       '<body style="margin:0;padding:0;overflow:hidden;background:transparent">' +
       '<script>atOptions={key:"' + b.key + '",format:"iframe",height:' + b.h + ',width:' + b.w + ',params:{}};<\/script>' +
-      '<script src="' + host + '/' + b.key + '/invoke.js"><\/script>' +
+      '<script src="' + host + '/' + b.key + '/invoke.js" onerror="window.__tlAdFailed=1"><\/script>' +
       '</body></html>'
     );
     doc.close();
@@ -461,7 +489,8 @@
         el.removeChild(frame);
         if (next < HOSTS.length) banner(el, size, next);
         else hideSlot(el, false);
-      });
+      },
+      function () { return frameFailed(frame); });
   }
 
   // A conservative version of the high-viewability bottom banner used by
@@ -493,6 +522,7 @@
     // an explicit, independently controlled unit rather than silently pushing
     // a higher-value native/rectangle placement out of the page limit.
     slot.dataset.ad = '320x50';
+    slot.dataset.adNoHouse = '1';
     slot.className = 'tl-search-anchor__slot';
     var close = document.createElement('button');
     close.type = 'button';
@@ -510,7 +540,11 @@
       return btn.dataset ? btn.dataset.callState : btn.getAttribute('data-call-state');
     }
     function sync() {
-      var searching = !dismissed && state() === 'searching' && !document.hidden;
+      // adDone is set once the slot has given up on every host. sync() runs
+      // again on the next state change, so without this the collapsed shell
+      // would be shown back to the user as an empty bar pinned over the app.
+      var searching = !dismissed && !slot.dataset.adDone
+        && state() === 'searching' && !document.hidden;
       shell.style.display = searching ? 'flex' : 'none';
       if (searching && !started) {
         started = true;
@@ -549,6 +583,8 @@
     var s = document.createElement('script');
     s.async = true;
     s.setAttribute('data-cfasync', 'false');
+    var failed = false;
+    s.onerror = function () { failed = true; };
     s.src = host + NATIVE.path;
     el.appendChild(s);
 
@@ -564,7 +600,8 @@
         } else {
           hideSlot(el, live);
         }
-      });
+      },
+      function () { return failed; });
   }
 
   // The width the slot can really give an ad. Sizing off window.innerWidth
