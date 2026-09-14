@@ -55,6 +55,9 @@
   var topDefault = $('topDefault');
   var topPartner = $('topPartner');
   var voiceCallBtn = $('voiceCallBtn');
+  var animalGrid = $('animalGrid');
+  var animalChosenText = $('animalChosen');
+  var topPartnerAnimal = $('topPartnerAnimal');
 
   // --- Shared preferences (same localStorage keys as the call app, so the
   // theme/name/sound choices follow the user between both sub-apps). ---
@@ -207,6 +210,14 @@
     return el;
   }
   function clearMessages() { msgs.innerHTML = ''; }
+  // Turns a markup string into a single node without an innerHTML assignment on
+  // a live element (used for the inline animal glyph in a system line).
+  function htmlToNode(html) {
+    var box = document.createElement('span');
+    box.className = 'msg-animal-glyph';
+    box.innerHTML = html;
+    return box;
+  }
 
   // Bot heuristic: the same line repeated back-to-back is the classic spam
   // signature - warn once so the user just taps Next.
@@ -219,6 +230,99 @@
       botWarned = true;
       addMessage(t('chatBotWarning'), 'system');
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Spirit animal
+  //
+  // The same twelve animals, the same localStorage key and the same SVG sprite
+  // as the voice app - pick one here and the call page already knows it. The
+  // grid is built once; selecting is two class toggles, so tapping through the
+  // row costs no rebuild and no reflow of the page behind it.
+  // ---------------------------------------------------------------------------
+  var Animals = window.TalkLiveAnimals;
+  var myAnimal = Animals ? Animals.stored() : null;
+
+  function renderAnimalChoiceLine() {
+    if (!animalChosenText) return;
+    if (!myAnimal) {
+      animalChosenText.textContent = t('animalNoneChosen');
+      animalChosenText.classList.remove('is-chosen');
+      return;
+    }
+    animalChosenText.textContent = t('animalChosen', {
+      animal: Animals.name(myAnimal),
+      trait: Animals.trait(myAnimal),
+    });
+    animalChosenText.classList.add('is-chosen');
+  }
+
+  function renderAnimalPicker() {
+    if (!animalGrid || !Animals) return;
+    Animals.installSprite();
+    var frag = document.createDocumentFragment();
+    Animals.list.forEach(function (animal) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'animal-option' + (myAnimal === animal.id ? ' selected' : '');
+      btn.dataset.animal = animal.id;
+      btn.style.setProperty('--animal-color', animal.color);
+      btn.setAttribute('role', 'radio');
+      btn.setAttribute('aria-checked', myAnimal === animal.id ? 'true' : 'false');
+      btn.innerHTML = Animals.icon(animal.id, 44)
+        + '<span class="animal-option-name">' + escapeHtml(Animals.name(animal.id)) + '</span>';
+      frag.appendChild(btn);
+    });
+    animalGrid.appendChild(frag);
+    renderAnimalChoiceLine();
+  }
+
+  function refreshAnimalLabels() {
+    if (!animalGrid || !Animals) return;
+    var names = animalGrid.querySelectorAll('.animal-option');
+    for (var i = 0; i < names.length; i++) {
+      var label = names[i].querySelector('.animal-option-name');
+      if (label) label.textContent = Animals.name(names[i].dataset.animal);
+    }
+    renderAnimalChoiceLine();
+  }
+
+  function setMyAnimal(id) {
+    var next = myAnimal === id ? null : id; // tapping the chosen one clears it
+    myAnimal = next;
+    Animals.store(next);
+    var options = animalGrid.querySelectorAll('.animal-option');
+    for (var i = 0; i < options.length; i++) {
+      var on = options[i].dataset.animal === next;
+      options[i].classList.toggle('selected', on);
+      options[i].setAttribute('aria-checked', on ? 'true' : 'false');
+    }
+    renderAnimalChoiceLine();
+    register(); // so the server has it even before the next search goes out
+  }
+
+  if (animalGrid) {
+    animalGrid.addEventListener('click', function (ev) {
+      var option = ev.target.closest('.animal-option');
+      if (!option) return;
+      vibrate(8);
+      setMyAnimal(option.dataset.animal);
+    });
+    renderAnimalPicker();
+  }
+
+  // The stranger's animal, next to their name in the top bar.
+  function renderTopPartnerAnimal(animalId) {
+    if (!topPartnerAnimal) return;
+    if (!animalId || !Animals || !Animals.has(animalId)) {
+      topPartnerAnimal.classList.add('hidden');
+      topPartnerAnimal.innerHTML = '';
+      return;
+    }
+    Animals.installSprite();
+    topPartnerAnimal.innerHTML = Animals.icon(animalId, 22);
+    topPartnerAnimal.title = Animals.name(animalId) + ' - ' + Animals.trait(animalId);
+    topPartnerAnimal.classList.remove('hidden');
   }
 
   // ---------------------------------------------------------------------------
@@ -235,6 +339,7 @@
       identityToken: localStorage.getItem('talklive_identity_token') || '',
       nickname: accountNickname || tempUsername || undefined,
       gender: myGender || undefined,
+      animal: myAnimal || undefined,
     });
   }
 
@@ -247,7 +352,9 @@
   var searchAcked = false;
   function emitFindPartner() {
     searchAcked = false;
-    socket.emit('find-partner', { mode: 'chat' });
+    // The animal travels with the search, so switching it between two chats
+    // applies to the very next match without a re-register round trip.
+    socket.emit('find-partner', { mode: 'chat', animal: myAnimal });
   }
 
   function goSearch(firstTime) {
@@ -882,6 +989,24 @@
       html = html.replace(escapeHtml(countryName), escapeHtml(countryName) + ' ' + getFlagImg(data.partner.countryCode, 15));
     }
     line.innerHTML = html;
+    renderTopPartnerAnimal(data.partner.animal);
+    // A ready-made opener: their animal, what it says about them, and a nudge
+    // to ask about it. Both picking the same one is worth its own line.
+    if (data.partner.animal && Animals && Animals.has(data.partner.animal)) {
+      var animalLine = addMessage(t('chatAnimalLine', {
+        name: data.partner.username,
+        animal: Animals.name(data.partner.animal),
+        trait: Animals.trait(data.partner.animal),
+      }), 'system system-animal');
+      animalLine.insertBefore(
+        htmlToNode(Animals.icon(data.partner.animal, 20)),
+        animalLine.firstChild
+      );
+      if (myAnimal === data.partner.animal) {
+        addMessage(t('animalSameMatch', { animal: Animals.name(myAnimal) }), 'system system-animal-match');
+      }
+      msgs.scrollTop = msgs.scrollHeight;
+    }
     input.focus();
   });
 
@@ -916,6 +1041,7 @@
     addFriendBtn.classList.add('hidden');
     topDefault.classList.remove('hidden');
     topPartner.classList.add('hidden');
+    renderTopPartnerAnimal(null); // never let the last stranger's animal linger
     if (topbar) topbar.classList.remove('connected');
     input.disabled = true;
     clearOutgoingInvite();
@@ -942,6 +1068,8 @@
   // Keep translated bits fresh whenever i18n re-renders (e.g. language change).
   window.addEventListener('i18n-changed', function () {
     if (!nextArmed) nextBtn.querySelector('span').textContent = t('chatNext');
+    refreshAnimalLabels();
+    if (currentPartner) renderTopPartnerAnimal(currentPartner.animal);
   });
 
   // --- Overflow menu -------------------------------------------------------

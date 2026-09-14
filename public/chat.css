@@ -874,3 +874,73 @@ img { max-width: 100%; }
 }
 .pwa-prompt-yes { background: linear-gradient(90deg, #7c3aed, #22d3ee); color: #fff; flex: 1; }
 .pwa-prompt-no { background: rgba(255, 255, 255, 0.08); color: #aab3c8; }
+
+/* --- Spirit animals ---------------------------------------------------------
+   Same markup and class names as the voice app (style.css), re-styled for this
+   page's palette. Icons come from the shared SVG sprite in /animals.js, so
+   every one of them is a <use> reference rather than its own copy. */
+.tl-animal-icon { display: block; flex: none; pointer-events: none; }
+
+.animal-picker { width: min(460px, 100%); margin: 26px auto 0; text-align: center; }
+.animal-picker-title { margin: 0; font-size: 15px; font-weight: 700; }
+.animal-picker-hint { margin: 4px 0 12px; font-size: 12px; color: var(--muted); }
+
+.animal-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+
+.animal-option {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 8px 2px 6px;
+  border: 1px solid var(--line); border-radius: 14px;
+  background: var(--bg-2); color: var(--muted);
+  font: inherit; cursor: pointer;
+  /* Transform and colour only - tapping through the row never reflows. */
+  transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
+}
+.animal-option .tl-animal-icon { transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.animal-option:hover { border-color: var(--animal-color, var(--accent)); }
+.animal-option:hover .tl-animal-icon { transform: translateY(-2px) scale(1.06); }
+.animal-option:active { transform: scale(0.95); }
+.animal-option.selected {
+  color: var(--text);
+  border-color: var(--animal-color, var(--accent));
+  background: var(--accent-soft);
+  background: color-mix(in srgb, var(--animal-color, #5b6cf0) 18%, transparent);
+  box-shadow: 0 0 0 1px var(--animal-color, var(--accent)) inset;
+}
+.animal-option.selected .tl-animal-icon { transform: scale(1.1); }
+.animal-option-name {
+  font-size: 10px; font-weight: 600; line-height: 1.1;
+  max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.animal-chosen { margin: 10px 0 0; min-height: 16px; font-size: 12px; color: var(--muted); }
+.animal-chosen.is-chosen { color: var(--text); font-weight: 600; }
+
+/* The stranger's animal: a small glyph in front of their name in the top bar,
+   and the opener line in the transcript. */
+.top-animal { display: inline-flex; align-items: center; margin-inline-end: 5px; }
+.top-animal.hidden { display: none; }
+
+.msg.system.system-animal {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  color: var(--text); font-weight: 600;
+  animation: animalLineIn 0.3s ease both;
+}
+.msg-animal-glyph { display: inline-flex; flex: none; }
+.msg.system.system-animal-match { color: var(--accent); font-weight: 700; }
+
+@keyframes animalLineIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (max-width: 520px) {
+  .animal-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }
+  .animal-picker { margin-top: 20px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animal-option, .animal-option .tl-animal-icon, .msg.system.system-animal {
+    transition: none; animation: none;
+  }
+}

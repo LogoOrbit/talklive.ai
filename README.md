@@ -10,6 +10,9 @@ A random audio chat app - pairs strangers for live, audio-only conversations. Bu
 - "Next Stranger" to skip and instantly requeue
 - Mute/unmute mic
 - Live online user count
+- Pick a "spirit animal" (hand-drawn vector icons, never emoji) that the
+  stranger sees the moment you connect - on voice calls and text chats alike,
+  so two people who have never spoken already have something to open with
 - Speaking indicator (visualizes remote audio activity)
 - Installable as an app (service worker + manifest), with an offline page
 - Web push for friend messages and call-backs, so a friendship survives the tab

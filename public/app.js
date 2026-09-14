@@ -99,7 +99,10 @@ const typingIndicator = document.getElementById('typingIndicator');
 // Every partner search declares which pool it joins. The main app is voice
 // only now - text chat lives on its own dedicated page at /chat.
 function findPartnerPayload() {
-  return { mode: 'talk' };
+  // The animal rides along with the search itself, so switching it between two
+  // calls takes effect on the very next match without waiting for a
+  // re-register round trip.
+  return { mode: 'talk', animal: myAnimal };
 }
 
 // Every search goes through here so one watchdog can tell an acknowledged
@@ -305,6 +308,17 @@ function genderIcon(avatarId, size = 30) {
 let myAvatar = localStorage.getItem('talklive_avatar');
 if (myAvatar && !AVATAR_STYLES[myAvatar]) myAvatar = null;
 let avatarCat = myAvatar && myAvatar[0] === 'f' ? 'female' : 'male';
+
+// --- Spirit animal -----------------------------------------------------------
+// Unlike the avatar (private, gendered, friends-only) this is the one thing the
+// stranger DOES see: it is self-chosen, says nothing about who you are, and
+// exists purely so two people who have never spoken have something to open
+// with. Artwork and storage live in animals.js, shared with /chat.
+const Animals = window.TalkLiveAnimals;
+const animalGrid = document.getElementById('animalGrid');
+const animalChosenText = document.getElementById('animalChosen');
+const partnerAnimalEl = document.getElementById('partnerAnimal');
+let myAnimal = Animals ? Animals.stored() : null;
 
 // --- No links of any kind in chat. Mirrors the server-side filter. ---
 const LINK_RE = new RegExp(
@@ -1182,6 +1196,100 @@ avatarGrid.addEventListener('click', (e) => {
   renderAccountState();
   registerProfile(); // pushes the new avatar to the server so friends see it
 });
+
+// --- Spirit animal picker ----------------------------------------------------
+// Built once on load, then never rebuilt: selection is a class toggle on two
+// buttons (the old one and the new one), so tapping through the row costs no
+// layout of the grid and nothing to garbage-collect. One delegated listener
+// handles all twelve.
+function renderAnimalPicker() {
+  if (!animalGrid || !Animals) return;
+  Animals.installSprite();
+  const frag = document.createDocumentFragment();
+  Animals.list.forEach((animal) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `animal-option${myAnimal === animal.id ? ' selected' : ''}`;
+    btn.dataset.animal = animal.id;
+    btn.style.setProperty('--animal-color', animal.color);
+    btn.setAttribute('role', 'radio');
+    btn.setAttribute('aria-checked', myAnimal === animal.id ? 'true' : 'false');
+    btn.innerHTML = `${Animals.icon(animal.id, 44)}<span class="animal-option-name">${escapeHtml(Animals.name(animal.id))}</span>`;
+    frag.appendChild(btn);
+  });
+  animalGrid.appendChild(frag);
+  renderAnimalChoiceLine();
+}
+
+// Re-labels the existing buttons (language switch) without touching the icons.
+function refreshAnimalLabels() {
+  if (!animalGrid) return;
+  animalGrid.querySelectorAll('.animal-option').forEach((btn) => {
+    const label = btn.querySelector('.animal-option-name');
+    if (label) label.textContent = Animals.name(btn.dataset.animal);
+  });
+  renderAnimalChoiceLine();
+}
+
+function renderAnimalChoiceLine() {
+  if (!animalChosenText) return;
+  if (!myAnimal) {
+    animalChosenText.textContent = t('animalNoneChosen');
+    animalChosenText.classList.remove('is-chosen');
+    return;
+  }
+  animalChosenText.textContent = t('animalChosen', {
+    animal: Animals.name(myAnimal),
+    trait: Animals.trait(myAnimal),
+  });
+  animalChosenText.classList.add('is-chosen');
+}
+
+function setMyAnimal(id) {
+  const next = myAnimal === id ? null : id; // tapping the chosen one clears it
+  myAnimal = next;
+  Animals.store(next);
+  animalGrid.querySelectorAll('.animal-option').forEach((btn) => {
+    const on = btn.dataset.animal === next;
+    btn.classList.toggle('selected', on);
+    btn.setAttribute('aria-checked', on ? 'true' : 'false');
+  });
+  renderAnimalChoiceLine();
+  registerProfile(); // so a search already queued picks the new animal up
+}
+
+if (animalGrid) {
+  animalGrid.addEventListener('click', (e) => {
+    const option = e.target.closest('.animal-option');
+    if (!option) return;
+    vibrate(8);
+    setMyAnimal(option.dataset.animal);
+  });
+  renderAnimalPicker();
+}
+
+// The stranger's animal, shown on their card once the call is actually
+// connected (same moment as their name - never before, see revealPartner).
+function renderPartnerAnimal(animalId) {
+  if (!partnerAnimalEl) return;
+  if (!animalId || !Animals || !Animals.has(animalId)) {
+    partnerAnimalEl.classList.add('hidden');
+    partnerAnimalEl.innerHTML = '';
+    return;
+  }
+  Animals.installSprite();
+  const same = myAnimal === animalId;
+  partnerAnimalEl.style.setProperty('--animal-color', Animals.color(animalId));
+  partnerAnimalEl.innerHTML = `
+    <span class="partner-animal-art">${Animals.icon(animalId, 46)}</span>
+    <span class="partner-animal-text">
+      <span class="partner-animal-label">${escapeHtml(t('partnerAnimalLabel'))}</span>
+      <strong class="partner-animal-name">${escapeHtml(Animals.name(animalId))}</strong>
+      <span class="partner-animal-trait">${escapeHtml(Animals.trait(animalId))}</span>
+      ${same ? `<span class="partner-animal-same">${escapeHtml(t('animalSameMatch', { animal: Animals.name(animalId) }))}</span>` : ''}
+    </span>`;
+  partnerAnimalEl.classList.remove('hidden');
+}
 
 function showAccountStatus(msg, kind) {
   accountStatus.textContent = msg;
@@ -3070,6 +3178,7 @@ function registerProfile() {
     interests: appliedFilters.interests,
     nickname: accountNickname || tempUsername || undefined,
     avatar: myAvatar || undefined,
+    animal: myAnimal || undefined,
     hideStatus: !statusVisible,
   });
 }
@@ -4509,6 +4618,7 @@ socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
   currentPartner = partner;
   currentPartnerInterests = partner.interests || [];
   partnerCard.classList.add('hidden');
+  renderPartnerAnimal(null); // never let the last stranger's animal linger
   sharedInterestNote.classList.add('hidden');
   reactionBar.classList.add('hidden');
 
@@ -4540,6 +4650,7 @@ function revealPartner() {
   partnerName.textContent = partner.username;
   // Country/flag only - never show anything gendered about the stranger.
   partnerMeta.innerHTML = getFlagImg(partner.countryCode);
+  renderPartnerAnimal(partner.animal);
 
   partnerInterests.innerHTML = '';
   currentPartnerInterests.forEach((i) => {
@@ -4899,6 +5010,8 @@ window.addEventListener('i18n-changed', () => {
   includeCountryWidget.renderChips();
   excludeCountryWidget.renderChips();
   renderInterestTags();
+  refreshAnimalLabels();
+  if (currentPartner && !partnerCard.classList.contains('hidden')) renderPartnerAnimal(currentPartner.animal);
 
   if (activeFriendChatId) {
     const friend = friendsData.find((f) => f.clientId === activeFriendChatId);

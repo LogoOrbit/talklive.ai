@@ -5996,3 +5996,169 @@ html.perf-lite .side-panel { box-shadow: none; }
 .house-ad-title { font-size: 0.95rem; font-weight: 700; }
 .house-ad-body { font-size: 0.82rem; color: var(--muted, #8b93a7); line-height: 1.45; }
 .house-ad-cta { font-size: 0.8rem; font-weight: 600; color: var(--accent-2, #00d4ff); margin-top: 4px; }
+
+/* --- Spirit animals ---------------------------------------------------------
+   The picker on the landing screen and the stranger's animal on the in-call
+   card. Icons are a shared SVG sprite (public/animals.js), so every one of
+   these is a <use> reference rather than its own copy of the artwork. */
+.tl-animal-icon {
+  display: block;
+  flex: none;
+  pointer-events: none; /* clicks belong to the button, not the glyph */
+}
+
+.animal-picker {
+  width: 100%;
+  max-width: 520px;
+  margin: 22px auto 4px;
+  text-align: center;
+}
+
+.animal-picker-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.animal-picker-hint {
+  margin: 4px 0 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.animal-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.animal-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 2px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+  /* Transform + colour only: nothing here changes layout, so tapping through
+     the row never reflows the page behind it. */
+  transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
+}
+
+.animal-option .tl-animal-icon {
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.animal-option:hover { border-color: var(--animal-color, var(--accent)); }
+.animal-option:hover .tl-animal-icon { transform: translateY(-2px) scale(1.06); }
+.animal-option:active { transform: scale(0.95); }
+
+.animal-option.selected {
+  border-color: var(--animal-color, var(--accent));
+  /* Fallback first: color-mix is dropped wholesale on older engines, and the
+     selected state must still read as selected there. */
+  background: rgba(255, 255, 255, 0.12);
+  background: color-mix(in srgb, var(--animal-color, #6c5ce7) 18%, transparent);
+  color: var(--text);
+  box-shadow: 0 0 0 1px var(--animal-color, var(--accent)) inset;
+}
+
+.animal-option.selected .tl-animal-icon { transform: scale(1.1); }
+
+.animal-option-name {
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.animal-chosen {
+  margin: 10px 0 0;
+  min-height: 16px;
+  font-size: 12px;
+  color: var(--muted);
+  transition: color 0.16s ease;
+}
+
+.animal-chosen.is-chosen {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* The stranger's animal, revealed with their name once the call connects. */
+.partner-animal {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+  margin: 0 auto 10px;
+  padding: 8px 14px 8px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid color-mix(in srgb, var(--animal-color, #6c5ce7) 45%, transparent);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.07);
+  background: color-mix(in srgb, var(--animal-color, #6c5ce7) 14%, transparent);
+  text-align: start;
+  animation: animalPop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes animalPop {
+  from { opacity: 0; transform: translateY(6px) scale(0.94); }
+  to { opacity: 1; transform: none; }
+}
+
+.partner-animal-art {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  flex: none;
+}
+
+.partner-animal-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  min-width: 0;
+}
+
+.partner-animal-label {
+  font-size: 10px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.partner-animal-name { font-size: 14px; }
+
+.partner-animal-trait {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.partner-animal-same {
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--animal-color, var(--accent));
+}
+
+@media (max-width: 520px) {
+  .animal-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }
+  .animal-picker { margin-top: 18px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animal-option,
+  .animal-option .tl-animal-icon,
+  .partner-animal { transition: none; animation: none; }
+}

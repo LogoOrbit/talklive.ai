@@ -1526,9 +1526,23 @@ function disconnectPartner(socketId) {
   return partnerId;
 }
 
+// The 12 spirit animals a user can pick (public/animals.js holds the artwork).
+// Validated as an allowlist rather than a length check: the id is echoed to the
+// other user's browser and used to build a DOM id, so only these values ever
+// leave the server.
+const ANIMAL_IDS = new Set([
+  'lion', 'tiger', 'wolf', 'fox', 'cat', 'dog',
+  'bear', 'panda', 'rabbit', 'owl', 'penguin', 'dolphin',
+]);
+function sanitizeAnimal(value) {
+  return typeof value === 'string' && ANIMAL_IDS.has(value) ? value : null;
+}
+
 // Deliberately excludes gender (and avatar, which is gendered): nothing shown
 // during a call should reveal the stranger's gender - it should only become
-// apparent through conversation.
+// apparent through conversation. The spirit animal is safe to include: it is
+// self-chosen, says nothing about who you are, and exists purely to give two
+// strangers something to open with.
 function publicProfile(p) {
   return {
     clientId: p.clientId,
@@ -1537,6 +1551,7 @@ function publicProfile(p) {
     countryCode: p.country,
     city: p.city,
     interests: p.interests,
+    animal: p.animal || null,
   };
 }
 
@@ -2063,6 +2078,7 @@ io.on('connection', (socket) => {
         ? data.interests.filter((i) => typeof i === 'string').map((i) => i.slice(0, 40)).slice(0, 10)
         : [],
       avatar: typeof data.avatar === 'string' && /^[mf][1-5]$/.test(data.avatar) ? data.avatar : null,
+      animal: sanitizeAnimal(data.animal),
     });
     clientSockets.set(clientId, socket.id);
     if (typeof data.hideStatus === 'boolean') statusHidden.set(clientId, data.hideStatus);
@@ -2185,6 +2201,17 @@ io.on('connection', (socket) => {
     // Which pool this search joins: 'talk' (voice call) or 'chat' (text only).
     // Sticky on the profile so skip/auto-next re-searches stay in the same pool.
     profile.mode = mode;
+    // The spirit animal rides along with every search, so picking a different
+    // one mid-session applies to the very next match without a re-register
+    // round trip. `null` (nothing picked) is a valid value, hence the
+    // property check rather than a truthiness one.
+    if (Object.prototype.hasOwnProperty.call(opts, 'animal')) {
+      const animal = sanitizeAnimal(opts.animal);
+      if (animal !== profile.animal) {
+        profile.animal = animal;
+        if (animal) store.recordFeature('animal_picked');
+      }
+    }
     store.recordFeature(profile.mode === 'chat' ? 'chat_search' : 'search');
     // A fresh, explicit search starts with the full set of filters again.
     profile.randomFallbackActive = false;
