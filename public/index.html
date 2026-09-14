@@ -198,7 +198,7 @@
 }
 </script>
 
-<script defer src="/ads.js?v=20260913failfast"></script>
+<script defer src="/ads.js?v=20260914density"></script>
 </head>
 <body>
   <a href="#main" class="skip-link" data-i18n="skipToContent">Skip to main content</a>
@@ -1122,9 +1122,14 @@
           <audio id="bannerMusic" data-src="/media/music-for-talklive.mp3?v=20260707b" preload="none" loop></audio>
         </div>
 
+        <!-- A 300x250 rather than the native unit. Adsterra's native tag has a
+             single fixed container ID, so only one native slot per page can
+             ever serve; this one and the content native below were competing
+             for it, and whichever lost fell back to a house promo that earns
+             nothing. The rectangle has its own key, so both now serve. -->
         <div class="ad-card ad-card-app ad-card-wide">
           <span class="ad-card-label" data-i18n="sponsored">Sponsored</span>
-          <div data-ad="native"></div>
+          <div data-ad="box"></div>
         </div>
 
         <!-- Conversation guide: friendly, simple tips shown on the call screen

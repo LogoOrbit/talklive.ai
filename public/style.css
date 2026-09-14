@@ -809,10 +809,18 @@ body.panel-open .side-panel {
 }
 .ad-card-wide [data-ad] { min-height: 200px; }
 
+/* A fixed-size unit reserves exactly its own height - the wide card's generic
+   reservation would otherwise win on specificity and under-reserve, which is
+   the one thing these rules exist to prevent. */
+.ad-card-wide [data-ad="box"] { min-height: 250px; }
+
 /* Short viewports: the whole call screen shrinks, and an ad is the first thing
    that should give up height rather than the call controls. */
 @media (max-height: 760px) {
   .ad-card-wide [data-ad] { min-height: 160px; }
+  /* Restated: this rule and the fixed-size one above have equal specificity, so
+     without it the later one would win here and under-reserve by 90px. */
+  .ad-card-wide [data-ad="box"] { min-height: 250px; }
 }
 
 /* The ambient-music control, kept when the banner it used to sit inside was

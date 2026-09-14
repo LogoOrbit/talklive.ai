@@ -148,6 +148,16 @@
     return false;
   }
 
+  // Matchmaking. Deliberately not part of callIsLive - a slot inside the page
+  // SHOULD fill while the user waits - but a floating overlay is different: it
+  // would land on the one screen the user is staring at waiting for a match,
+  // right as the call controls become live.
+  function isSearching() {
+    var btn = document.getElementById('callMainBtn');
+    if (!btn) return false;
+    return (btn.dataset ? btn.dataset.callState : btn.getAttribute('data-call-state')) === 'searching';
+  }
+
   // Slots that were ready to fill when a conversation started. They wait here
   // rather than being dropped, so the impression is served the moment the call
   // ends instead of being lost.
@@ -740,6 +750,12 @@
     }
     function maybeLoad() {
       if (loaded || document.hidden || Date.now() < readyAt || scrollRatio() < minScroll) return;
+      // Social Bar is a remotely controlled floating unit, so it is never
+      // allowed to appear over a live conversation or over the matchmaking
+      // screen, whatever contentOnly says. Checked here rather than only at
+      // init because the user may well start a call during the delay above.
+      // It gets another chance when the call ends - the listeners stay armed.
+      if (callIsLive() || isSearching()) return;
       loaded = true;
       document.removeEventListener('scroll', maybeLoad);
       document.removeEventListener('visibilitychange', maybeLoad);
@@ -755,6 +771,14 @@
     }
     document.addEventListener('scroll', maybeLoad, { passive: true });
     document.addEventListener('visibilitychange', maybeLoad);
+    // On the app surfaces the state the guard above cares about changes without
+    // a scroll or a tab switch, so the end of a call is what re-offers the unit.
+    var btn = document.getElementById('callMainBtn');
+    if (btn && window.MutationObserver) {
+      new MutationObserver(maybeLoad).observe(btn, {
+        attributes: true, attributeFilter: ['data-call-state', 'data-mode'],
+      });
+    }
     setTimeout(maybeLoad, Math.max(0, readyAt - Date.now()));
   }
 

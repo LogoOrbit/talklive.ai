@@ -9,6 +9,12 @@ test('Social Bar stays off conversation surfaces and is engagement gated', () =>
   assert.match(source, /document\.getElementById\('callMainBtn'\) \|\| document\.getElementById\('viewLive'\)/);
   assert.match(source, /Date\.now\(\) < readyAt \|\| scrollRatio\(\) < minScroll/);
   assert.match(source, /6cccce7190388ac7a53bb4b9de9f8dc8\.js/);
+  // contentOnly is now off, so the unit is allowed to earn on the app
+  // surfaces - but a remotely controlled overlay must still never appear over
+  // a live conversation or over the matchmaking screen the user is watching.
+  // That guard is re-checked at load time, not just at init, because the call
+  // usually starts during the delay.
+  assert.match(source, /if \(callIsLive\(\) \|\| isSearching\(\)\) return;/);
 });
 
 test('search adhesive is controlled, dismissible, and restricted to matchmaking', () => {
