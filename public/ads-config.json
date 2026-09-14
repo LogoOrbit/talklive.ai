@@ -95,6 +95,17 @@
     ]
   },
 
+  "_backfill": "A second ad network, tried in a slot only after Adsterra has failed on every host, and before the slot falls back to a house promo. An unsold Adsterra impression earns nothing and a house promo earns less, so this turns the remainder into revenue without putting a second tag on inventory Adsterra did sell. Set enabled:true and fill in the zone IDs from the network dashboard. render is 'script' for a tag that writes beside itself (Monetag and PropellerAds MultiTag) or 'iframe' for a document.write tag that needs its own frame (HilltopAds and classic direct tags). zones maps a slot size - or 'native' - to that network's zone ID; a size with no zone simply has no backfill, so a half-configured account is safe. IMPORTANT: the src origin must also be added to script-src, via the ADS_SCRIPT_HOSTS environment variable, or the browser drops the tag silently and the slot looks unsold.",
+  "backfill": {
+    "enabled": false,
+    "id": "",
+    "render": "script",
+    "src": "",
+    "zoneAttr": "data-zone",
+    "attrs": { "data-cfasync": "false" },
+    "zones": {}
+  },
+
   "_minViewportHeight": "Below this viewport height, in-app slots inside the call and chat UI are skipped entirely, so a short phone screen is not mostly advertisement.",
   "minViewportHeight": 620
 }

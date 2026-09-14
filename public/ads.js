@@ -78,6 +78,9 @@
     // arrives an unfilled slot collapses quietly rather than showing a promo
     // this file had to hard-code.
     fallback: { enabled: false, promos: [] },
+    // Second demand source, tried only after Adsterra has failed on every host.
+    // Off until ads-config.json supplies zone IDs - see the backfill section.
+    backfill: { enabled: false, zones: {} },
   };
 
   function loadConfig(done) {
@@ -461,20 +464,27 @@
     }
   }
 
-  // Adsterra banner tags use document.write, so each one is rendered in
-  // its own same-origin iframe instead of being injected into the page.
-  function banner(el, size, hostIndex) {
-    var b = BANNERS[size];
-    var host = HOSTS[hostIndex || 0];
+  // The frame a document.write tag is given. Shared by the Adsterra banners and
+  // by an "iframe" backfill network, which need an identical container.
+  function adFrame(w, h) {
     var frame = document.createElement('iframe');
-    frame.width = b.w;
-    frame.height = b.h;
+    frame.width = w;
+    frame.height = h;
     // Transparent background so an unfilled slot shows the page behind it
     // instead of an ugly white block.
     frame.style.cssText = 'border:0;display:block;margin:0 auto;max-width:100%;overflow:hidden;background:transparent;color-scheme:light';
     frame.setAttribute('scrolling', 'no');
     frame.setAttribute('allowtransparency', 'true');
     frame.title = 'Advertisement';
+    return frame;
+  }
+
+  // Adsterra banner tags use document.write, so each one is rendered in
+  // its own same-origin iframe instead of being injected into the page.
+  function banner(el, size, hostIndex) {
+    var b = BANNERS[size];
+    var host = HOSTS[hostIndex || 0];
+    var frame = adFrame(b.w, b.h);
     el.appendChild(frame);
     var doc = frame.contentWindow && frame.contentWindow.document;
     if (!doc) { hideSlot(el); return; }
@@ -497,10 +507,121 @@
         // into the space already reserved for it, so nothing on screen moves.
         if (live) { hideSlot(el, true); return; }
         el.removeChild(frame);
-        if (next < HOSTS.length) banner(el, size, next);
-        else hideSlot(el, false);
+        if (next < HOSTS.length) { banner(el, size, next); return; }
+        // Adsterra has no more hosts to try. The impression is unsold rather
+        // than blocked, so offer it to the backfill network before giving the
+        // space to a promo that earns nothing.
+        if (backfill(el, size, false)) return;
+        hideSlot(el, false);
       },
       function () { return frameFailed(frame); });
+  }
+
+  // --- Backfill network ------------------------------------------------------
+
+  /*
+   * A second ad network, tried in the same slot after Adsterra has failed on
+   * every host and before the slot falls back to a house promo.
+   *
+   * An unsold Adsterra impression is worth exactly nothing, and until now that
+   * space went to one of our own promos, which is worth slightly less than
+   * nothing per impression. A backfill network turns that inventory into
+   * revenue without adding a second tag to slots Adsterra did sell - it only
+   * ever runs on the remainder.
+   *
+   * Deliberately described by config rather than coded per network. Monetag,
+   * PropellerAds and HilltopAds all deliver a banner one of exactly two ways,
+   * and which one a network uses is the only thing that differs:
+   *
+   *   render: "script" - an in-page <script> carrying the zone in an attribute,
+   *                      which writes the creative into a container next to it.
+   *                      This is Monetag/PropellerAds' MultiTag shape.
+   *   render: "iframe" - a tag that uses document.write, so it gets its own
+   *                      same-origin frame exactly like the Adsterra banners.
+   *                      This is the classic HilltopAds//direct-link shape.
+   *
+   * So switching networks, or running a different one per size, is an edit to
+   * ads-config.json (or the ADS_CONFIG secret) and a CSP host, not a code
+   * change. The script host must be in script-src in server/index.js or the
+   * browser drops the tag silently and this looks like an unsold slot.
+   *
+   * zones maps a slot size - or "native" - to that network's zone ID. A size
+   * with no zone has no backfill and goes straight to the house promo, so a
+   * partially configured account is safe.
+   */
+  function backfillFor(size) {
+    var bf = config.backfill;
+    if (!bf || !bf.enabled || !bf.src || !bf.zones) return null;
+    var zone = bf.zones[size];
+    if (!zone) return null;
+    return { src: bf.src, zone: String(zone), render: bf.render === 'iframe' ? 'iframe' : 'script',
+      zoneAttr: bf.zoneAttr || 'data-zone', attrs: bf.attrs || {}, id: bf.id || 'backfill' };
+  }
+
+  function reportBackfill(el, size) {
+    if (typeof window.gtag !== 'function') return;
+    try {
+      window.gtag('event', 'ad_backfill_requested', { ad_format: size, ad_network: (config.backfill || {}).id || 'backfill' });
+    } catch (err) { /* analytics must never break the page */ }
+  }
+
+  /*
+   * Try the backfill network in this slot. Returns false when there is nothing
+   * configured for this size, so the caller falls through to the house promo.
+   *
+   * `live` is threaded through rather than re-read: mid-call this must not swap
+   * the failed frame out for a new one, so the backfill attempt is skipped
+   * entirely and the slot resolves into its reserved space instead.
+   */
+  function backfill(el, size, live) {
+    if (live || el.dataset.adBackfilled) return false;
+    var net = backfillFor(size);
+    if (!net) return false;
+    el.dataset.adBackfilled = '1';
+    reportBackfill(el, size);
+
+    var b = BANNERS[size];
+    if (net.render === 'iframe' && b) {
+      var frame = adFrame(b.w, b.h);
+      el.appendChild(frame);
+      var doc = frame.contentWindow && frame.contentWindow.document;
+      if (!doc) return false;
+      doc.open();
+      doc.write(
+        '<!DOCTYPE html><html><head><base target="_blank"></head>' +
+        '<body style="margin:0;padding:0;overflow:hidden;background:transparent">' +
+        '<script src="' + encodeURI(net.src) + '" ' + net.zoneAttr + '="'
+          + encodeURIComponent(net.zone) + '" onerror="window.__tlAdFailed=1"><\/script>' +
+        '</body></html>'
+      );
+      doc.close();
+      pollFill(el,
+        function () { return isFilled(frame); },
+        function () { markFilled(el); },
+        function (nowLive) { hideSlot(el, nowLive); },
+        function () { return frameFailed(frame); });
+      return true;
+    }
+
+    // render: "script" - the tag goes in the page and writes beside itself, so
+    // what counts as filled is the slot gaining a child the tag put there.
+    var before = el.childElementCount;
+    var s = document.createElement('script');
+    s.async = true;
+    var failed = false;
+    s.onerror = function () { failed = true; };
+    for (var k in net.attrs) {
+      if (Object.prototype.hasOwnProperty.call(net.attrs, k)) s.setAttribute(k, net.attrs[k]);
+    }
+    s.setAttribute(net.zoneAttr, net.zone);
+    s.src = net.src;
+    el.appendChild(s);
+    pollFill(el,
+      function () { return el.childElementCount > before + 1; },
+      function () { markFilled(el); },
+      function (nowLive) { hideSlot(el, nowLive); },
+      function () { return failed; });
+    return true;
   }
 
   // A conservative version of the high-viewability bottom banner used by
@@ -607,9 +728,10 @@
           el.removeChild(container);
           el.removeChild(s);
           native(el, next);
-        } else {
-          hideSlot(el, live);
+          return;
         }
+        if (backfill(el, 'native', live)) return;
+        hideSlot(el, live);
       },
       function () { return failed; });
   }

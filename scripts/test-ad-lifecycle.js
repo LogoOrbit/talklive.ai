@@ -139,3 +139,27 @@ test('density and the native claim are spent when a slot actually loads', () => 
   assert.match(source, /if \(type === 'native' && nativeClaimed\) \{ hideSlot\(el\); return; \}/);
   assert.doesNotMatch(source, /kept\.length >= \(config\.maxSlotsPerPage/);
 });
+
+/*
+ * The backfill network is the second demand source for a slot Adsterra could
+ * not sell. It must sit between the last Adsterra host and the house promo -
+ * never in front of a live Adsterra attempt, and never in place of one.
+ */
+test('backfill is tried after Adsterra and before the house promo', () => {
+  assert.match(source, /if \(next < HOSTS\.length\) \{ banner\(el, size, next\); return; \}\s*\n(?:\s*\/\/[^\n]*\n)*\s*if \(backfill\(el, size, false\)\) return;\s*\n\s*hideSlot\(el, false\);/);
+  assert.match(source, /if \(backfill\(el, 'native', live\)\) return;\s*\n\s*hideSlot\(el, live\);/);
+  // Never swaps a frame out mid-call, and never runs twice in one slot.
+  assert.match(source, /if \(live \|\| el\.dataset\.adBackfilled\) return false;/);
+  // An unconfigured size has no backfill at all, so a half-filled zone map is
+  // safe rather than a slot that loads an empty tag.
+  assert.match(source, /if \(!zone\) return null;/);
+});
+
+test('backfill stays off until a network is configured', () => {
+  const config = require('../public/ads-config.json');
+  assert.equal(config.backfill.enabled, false, 'ships disabled - needs real zone IDs');
+  assert.deepEqual(config.backfill.zones, {});
+  // The default in ads.js must agree, so a failed config fetch cannot turn on
+  // a network that was never set up.
+  assert.match(source, /backfill: \{ enabled: false, zones: \{\} \}/);
+});

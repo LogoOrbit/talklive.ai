@@ -69,6 +69,25 @@ app.disable('x-powered-by');
 // JavaScript, so 'unsafe-eval' is limited to this host-restricted script list.
 // The CSP remains defense-in-depth on top of the output-escaping fixes rather
 // than the sole XSS barrier.
+/*
+ * Extra script origins for the backfill ad network, space-separated, e.g.
+ *   fly secrets set ADS_SCRIPT_HOSTS='https://fpyf8.com https://*.monetag.com'
+ *
+ * A network's tag is dropped silently by the browser when its origin is not in
+ * script-src, and an unsold slot and a blocked one look identical from the
+ * page, so this is the first thing to check when a newly configured backfill
+ * earns nothing. It lives in an environment variable because the zone IDs that
+ * go with it already do (ADS_CONFIG), so a network can be added or swapped
+ * without a deploy. Entries are restricted to https origins - anything else is
+ * dropped rather than widening the policy by accident.
+ */
+const ADS_SCRIPT_HOSTS = String(process.env.ADS_SCRIPT_HOSTS || '')
+  .split(/\s+/)
+  .filter((h) => /^https:\/\/[A-Za-z0-9*.:-]+$/.test(h));
+if (process.env.ADS_SCRIPT_HOSTS && !ADS_SCRIPT_HOSTS.length) {
+  console.warn('[ads-config] ADS_SCRIPT_HOSTS set but no valid https origin found; ignoring');
+}
+
 const CSP = [
   "default-src 'self'",
   // Adsterra and analytics origins must be allowlisted
@@ -81,7 +100,8 @@ const CSP = [
     + ' https://delvefencescrewdriver.com https://www.highperformanceformat.com'
     + ' https://*.effectivecpmnetwork.com https://www.googletagmanager.com'
     + ' https://*.gstatic.com'
-    + ' https://www.google.com',
+    + ' https://www.google.com'
+    + (ADS_SCRIPT_HOSTS.length ? ' ' + ADS_SCRIPT_HOSTS.join(' ') : ''),
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: https:",
   "font-src 'self' data:",
