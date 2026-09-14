@@ -150,6 +150,14 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .hrow .hbar{height:18px;border-radius:99px;min-width:3px;transition:width .8s cubic-bezier(.2,.7,.3,1)}
 .hrow .n{text-align:right;color:var(--ink2);font-variant-numeric:tabular-nums}
 .hrow div:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* country breakdown (accounts tab) */
+.crow{display:grid;grid-template-columns:26px minmax(100px,180px) 1fr 96px;align-items:center;gap:10px;margin:8px 0;font-size:.85rem}
+.crow .rk{color:var(--muted);font-size:.72rem;text-align:right;font-variant-numeric:tabular-nums}
+.crow .cname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.crow .cbar{height:20px;border-radius:99px;min-width:3px;transition:width .8s cubic-bezier(.2,.7,.3,1)}
+.crow .cn{text-align:right;color:var(--ink2);font-variant-numeric:tabular-nums;font-size:.8rem}
+.crow .cn b{color:var(--text)}
+@media(max-width:640px){.crow{grid-template-columns:22px minmax(72px,110px) 1fr 80px;gap:7px;font-size:.8rem}}
 
 /* activity report */
 .tzbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:.83rem;color:var(--ink2)}
@@ -270,6 +278,8 @@ const jsq=(s)=>String(s==null?'':s).replace(/[^A-Za-z0-9]/g,c=>{const h=c.charCo
 const fmtTs=(ts)=>new Date(ts).toLocaleString();
 const ago=(ts)=>{const m=Math.round((Date.now()-ts)/60000);if(m<1)return'just now';if(m<60)return m+'m ago';if(m<1440)return Math.round(m/60)+'h ago';return Math.round(m/1440)+'d ago';};
 const num=(n)=>Number(n||0).toLocaleString();
+/* Share of a total, rounded to one decimal below 10% so small countries don't all read as 0%. */
+const pctOf=(v,t)=>{if(!t)return'0%';const p=v/t*100;return(p<10?p.toFixed(1):Math.round(p))+'%';};
 /* Percent change vs a baseline. null means "no baseline" (the comparison
    period was empty), which is not the same as 0% and must not read as flat. */
 const deltaHtml=(pct)=>pct===null||pct===undefined?'<span class="delta flat">no baseline</span>'
@@ -734,14 +744,45 @@ async function viewChats(){
   $('#chatQ').addEventListener('keydown',e=>{if(e.key==='Enter')go();});
 }
 
+let accCountryAll=false;
 async function viewAccounts(){
   const r=await api('accounts');
-  $('#main').innerHTML=`<div class="card anim" style="margin-top:0"><h2>👤 Registered accounts <span class="sub">${r.accounts.length} total</span></h2>
+  const accounts=r.accounts||[];
+  const byCountry={};
+  for(const a of accounts){
+    const c=String(a.country||'').trim()||'Unknown';
+    byCountry[c]=(byCountry[c]||0)+1;
+  }
+  const ranked=Object.entries(byCountry).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
+  const total=accounts.length;
+  const shown=accCountryAll?ranked:ranked.slice(0,12);
+  const max=Math.max(1,...ranked.map(e=>e[1]));
+  const palette=['var(--s1)','var(--s2)','var(--s3)','var(--s5)','var(--accent)','var(--serious)'];
+  const google=accounts.filter(a=>a.method==='google').length;
+  $('#main').innerHTML=`<div class="grid tiles anim" style="margin-top:0">
+    <div class="tile"><div class="k">Accounts</div><div class="v grad" data-count="${total}">0</div><div class="s">registered users</div></div>
+    <div class="tile"><div class="k">Countries</div><div class="v" data-count="${ranked.filter(([c])=>c!=='Unknown').length}">0</div><div class="s">distinct countries</div></div>
+    <div class="tile"><div class="k">Top country</div><div class="v" style="font-size:1.15rem">${ranked.length?esc(ranked[0][0]):'-'}</div><div class="s">${ranked.length?num(ranked[0][1])+' accounts · '+pctOf(ranked[0][1],total):'no data'}</div></div>
+    <div class="tile"><div class="k">Sign-up method</div><div class="v" style="font-size:1.15rem">${num(google)} / ${num(total-google)}</div><div class="s">Google / password</div></div>
+  </div>
+  <div class="card anim"><h2>\u{1F30D} Accounts by country <span class="sub">${ranked.length} ${ranked.length===1?'country':'countries'} · ${num(total)} accounts</span>
+  ${ranked.length>12?`<button id="accCountryToggle" style="margin-left:auto;border:1px solid var(--ring);background:var(--surface-2);color:var(--text);border-radius:9px;padding:6px 12px;font-size:.78rem">${accCountryAll?'Show top 12':'Show all '+ranked.length}</button>`:''}</h2>
+  ${shown.map(([c,v],i)=>`<div class="crow">
+    <div class="rk">${i+1}</div>
+    <div class="cname" title="${esc(c)}">${esc(c)}</div>
+    <div><div class="cbar" style="width:${Math.max(2,v/max*100)}%;background:${palette[i%palette.length]}"></div></div>
+    <div class="cn"><b>${num(v)}</b> <span class="muted">${pctOf(v,total)}</span></div>
+  </div>`).join('')||'<div class="muted">No accounts registered yet.</div>'}
+  </div>
+  <div class="card anim"><h2>\u{1F464} Registered accounts <span class="sub">${num(total)} total</span></h2>
   <table><tr><th>Username</th><th>Nickname</th><th>Sign-up method</th><th>Location</th><th>Created</th><th>Last seen</th><th>IP</th></tr>
-  ${r.accounts.map(a=>`<tr><td><b>${esc(a.username||a.key)}</b></td><td>${esc(a.nickname||'')}</td>
+  ${accounts.map(a=>`<tr><td><b>${esc(a.username||a.key)}</b></td><td>${esc(a.nickname||'')}</td>
   <td>${a.method==='google'?'<span class="pill info">Google</span>':'<span class="pill good">Password</span>'}</td>
   <td>${esc(a.country||'')}${a.city&&a.city!=='Unknown'?', '+esc(a.city):''}</td>
   <td>${a.createdAt?fmtTs(a.createdAt):'-'}</td><td>${a.lastSeen?ago(a.lastSeen):'-'}</td><td class="muted">${esc(a.ip||'')}</td></tr>`).join('')||'<tr><td colspan="7" class="muted">No accounts registered yet.</td></tr>'}</table></div>`;
+  animateCounters();
+  const tg=$('#accCountryToggle');
+  if(tg)tg.onclick=()=>{accCountryAll=!accCountryAll;viewAccounts();};
 }
 
 async function viewErrors(){
