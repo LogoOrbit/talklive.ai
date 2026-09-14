@@ -148,18 +148,27 @@ test('density and the native claim are spent when a slot actually loads', () => 
 test('backfill is tried after Adsterra and before the house promo', () => {
   assert.match(source, /if \(next < HOSTS\.length\) \{ banner\(el, size, next\); return; \}\s*\n(?:\s*\/\/[^\n]*\n)*\s*if \(backfill\(el, size, false\)\) return;\s*\n\s*hideSlot\(el, false\);/);
   assert.match(source, /if \(backfill\(el, 'native', live\)\) return;\s*\n\s*hideSlot\(el, live\);/);
-  // Never swaps a frame out mid-call, and never runs twice in one slot.
-  assert.match(source, /if \(live \|\| el\.dataset\.adBackfilled\) return false;/);
+  // Never swaps a tag into a frame the user is looking at mid-call.
+  assert.match(source, /function backfill\(el, size, live, i\) \{\s*\n\s*if \(live\) return false;/);
   // An unconfigured size has no backfill at all, so a half-filled zone map is
   // safe rather than a slot that loads an empty tag.
   assert.match(source, /if \(!zone\) return null;/);
+  // Each network that declines hands the slot to the next one, and the slot is
+  // cleared first so dead tags do not stack up in it.
+  assert.match(source, /if \(backfill\(el, size, false, nextIndex\)\) return;/);
+  assert.match(source, /function next\(nowLive\) \{\s*\n\s*if \(nowLive\) \{ hideSlot\(el, true\); return; \}\s*\n\s*clear\(\);/);
 });
 
 test('backfill stays off until a network is configured', () => {
   const config = require('../public/ads-config.json');
   assert.equal(config.backfill.enabled, false, 'ships disabled - needs real zone IDs');
-  assert.deepEqual(config.backfill.zones, {});
+  // Every network is a placeholder until its dashboard values are pasted in, so
+  // none of them can load: no src and no zones means each is skipped.
+  for (const net of config.backfill.networks) {
+    assert.equal(net.src, '', `${net.id} must ship without a src`);
+    assert.deepEqual(net.zones, {}, `${net.id} must ship without zones`);
+  }
   // The default in ads.js must agree, so a failed config fetch cannot turn on
   // a network that was never set up.
-  assert.match(source, /backfill: \{ enabled: false, zones: \{\} \}/);
+  assert.match(source, /backfill: \{ enabled: false, networks: \[\] \}/);
 });

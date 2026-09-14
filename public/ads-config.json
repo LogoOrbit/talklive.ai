@@ -95,15 +95,35 @@
     ]
   },
 
-  "_backfill": "A second ad network, tried in a slot only after Adsterra has failed on every host, and before the slot falls back to a house promo. An unsold Adsterra impression earns nothing and a house promo earns less, so this turns the remainder into revenue without putting a second tag on inventory Adsterra did sell. Set enabled:true and fill in the zone IDs from the network dashboard. render is 'script' for a tag that writes beside itself (Monetag and PropellerAds MultiTag) or 'iframe' for a document.write tag that needs its own frame (HilltopAds and classic direct tags). zones maps a slot size - or 'native' - to that network's zone ID; a size with no zone simply has no backfill, so a half-configured account is safe. IMPORTANT: the src origin must also be added to script-src, via the ADS_SCRIPT_HOSTS environment variable, or the browser drops the tag silently and the slot looks unsold.",
+  "_backfill": "The demand waterfall for a slot Adsterra could not fill. An unsold Adsterra impression earns nothing and the house promo that currently takes that space earns nothing either, so each network below is offered the slot in turn and the promo only takes what they all decline. Order matters: put the highest paying network first, the rest see only what it declined. This never runs on a slot Adsterra did sell, so no slot carries two competing tags. TO ENABLE: set enabled:true, fill in each network's src and zones from its dashboard, and add every src origin to the ADS_SCRIPT_HOSTS environment variable (e.g. fly secrets set ADS_SCRIPT_HOSTS='https://a.com https://b.com') - a host missing from script-src is dropped silently by the browser and looks exactly like an unsold slot. render is 'script' for a tag that writes beside itself (Monetag, PropellerAds MultiTag) or 'iframe' for a document.write tag needing its own frame (HilltopAds, classic direct tags). zones maps a slot size - or 'native' - to that network's zone ID; a network with no zone for a size is skipped rather than loaded empty, so a partially filled map is safe and a network can run for one format only.",
   "backfill": {
     "enabled": false,
-    "id": "",
-    "render": "script",
-    "src": "",
-    "zoneAttr": "data-zone",
-    "attrs": { "data-cfasync": "false" },
-    "zones": {}
+    "networks": [
+      {
+        "id": "monetag",
+        "render": "script",
+        "src": "",
+        "zoneAttr": "data-zone",
+        "attrs": { "data-cfasync": "false" },
+        "zones": {}
+      },
+      {
+        "id": "propellerads",
+        "render": "script",
+        "src": "",
+        "zoneAttr": "data-zone",
+        "attrs": { "data-cfasync": "false" },
+        "zones": {}
+      },
+      {
+        "id": "hilltopads",
+        "render": "iframe",
+        "src": "",
+        "zoneAttr": "data-zone",
+        "attrs": {},
+        "zones": {}
+      }
+    ]
   },
 
   "_minViewportHeight": "Below this viewport height, in-app slots inside the call and chat UI are skipped entirely, so a short phone screen is not mostly advertisement.",

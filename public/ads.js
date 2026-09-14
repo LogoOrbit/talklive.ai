@@ -78,9 +78,11 @@
     // arrives an unfilled slot collapses quietly rather than showing a promo
     // this file had to hard-code.
     fallback: { enabled: false, promos: [] },
-    // Second demand source, tried only after Adsterra has failed on every host.
-    // Off until ads-config.json supplies zone IDs - see the backfill section.
-    backfill: { enabled: false, zones: {} },
+    // Further demand, tried in order only after Adsterra has failed on every
+    // host. Off until ads-config.json supplies zone IDs - see the backfill
+    // section. Empty here so a failed config fetch cannot load a network that
+    // was never set up.
+    backfill: { enabled: false, networks: [] },
   };
 
   function loadConfig(done) {
@@ -517,75 +519,105 @@
       function () { return frameFailed(frame); });
   }
 
-  // --- Backfill network ------------------------------------------------------
+  // --- Backfill networks -----------------------------------------------------
 
   /*
-   * A second ad network, tried in the same slot after Adsterra has failed on
-   * every host and before the slot falls back to a house promo.
+   * The demand waterfall for a slot Adsterra could not fill.
    *
-   * An unsold Adsterra impression is worth exactly nothing, and until now that
-   * space went to one of our own promos, which is worth slightly less than
-   * nothing per impression. A backfill network turns that inventory into
-   * revenue without adding a second tag to slots Adsterra did sell - it only
-   * ever runs on the remainder.
+   * An unsold Adsterra impression is worth nothing, and until now that space
+   * went to one of our own promos, which is worth nothing per impression too.
+   * Each configured network is offered the slot in turn, and only when they
+   * have all passed does the promo take it. Nothing changes for a slot Adsterra
+   * does sell: this runs strictly after every Adsterra host has failed, so no
+   * slot ever carries two tags competing for one impression.
+   *
+   * Order is the order in ads-config.json, so the highest paying network goes
+   * first and the rest see only what it declined.
    *
    * Deliberately described by config rather than coded per network. Monetag,
    * PropellerAds and HilltopAds all deliver a banner one of exactly two ways,
-   * and which one a network uses is the only thing that differs:
+   * and which one is the only thing that differs between them:
    *
    *   render: "script" - an in-page <script> carrying the zone in an attribute,
-   *                      which writes the creative into a container next to it.
-   *                      This is Monetag/PropellerAds' MultiTag shape.
-   *   render: "iframe" - a tag that uses document.write, so it gets its own
-   *                      same-origin frame exactly like the Adsterra banners.
-   *                      This is the classic HilltopAds//direct-link shape.
+   *                      which writes the creative in beside itself. This is
+   *                      the Monetag/PropellerAds MultiTag shape.
+   *   render: "iframe" - a tag that uses document.write, so it needs its own
+   *                      same-origin frame, exactly like the Adsterra banners.
+   *                      This is the HilltopAds and classic direct-tag shape.
    *
-   * So switching networks, or running a different one per size, is an edit to
-   * ads-config.json (or the ADS_CONFIG secret) and a CSP host, not a code
-   * change. The script host must be in script-src in server/index.js or the
-   * browser drops the tag silently and this looks like an unsold slot.
+   * So adding, reordering or dropping a network is an edit to ads-config.json -
+   * or to the ADS_CONFIG secret, with no deploy - plus one CSP origin. That
+   * origin must be in ADS_SCRIPT_HOSTS or the browser drops the tag silently,
+   * and a blocked slot is indistinguishable from an unsold one from the page.
    *
-   * zones maps a slot size - or "native" - to that network's zone ID. A size
-   * with no zone has no backfill and goes straight to the house promo, so a
-   * partially configured account is safe.
+   * zones maps a slot size - or "native" - to that network's zone ID. A network
+   * with no zone for this size is skipped rather than loaded empty, so a
+   * partially configured account is safe and a network can be run for one
+   * format only.
    */
-  function backfillFor(size) {
+  function backfillNetworks() {
     var bf = config.backfill;
-    if (!bf || !bf.enabled || !bf.src || !bf.zones) return null;
-    var zone = bf.zones[size];
-    if (!zone) return null;
-    return { src: bf.src, zone: String(zone), render: bf.render === 'iframe' ? 'iframe' : 'script',
-      zoneAttr: bf.zoneAttr || 'data-zone', attrs: bf.attrs || {}, id: bf.id || 'backfill' };
+    if (!bf || !bf.enabled) return [];
+    var nets = bf.networks;
+    return Object.prototype.toString.call(nets) === '[object Array]' ? nets : [];
   }
 
-  function reportBackfill(el, size) {
+  function zoneFor(net, size) {
+    if (!net || !net.src || !net.zones) return null;
+    var zone = net.zones[size];
+    if (!zone) return null;
+    return { src: net.src, zone: String(zone), render: net.render === 'iframe' ? 'iframe' : 'script',
+      zoneAttr: net.zoneAttr || 'data-zone', attrs: net.attrs || {}, id: net.id || 'backfill' };
+  }
+
+  function reportBackfill(size, id) {
     if (typeof window.gtag !== 'function') return;
     try {
-      window.gtag('event', 'ad_backfill_requested', { ad_format: size, ad_network: (config.backfill || {}).id || 'backfill' });
+      window.gtag('event', 'ad_backfill_requested', { ad_format: size, ad_network: id });
     } catch (err) { /* analytics must never break the page */ }
   }
 
   /*
-   * Try the backfill network in this slot. Returns false when there is nothing
-   * configured for this size, so the caller falls through to the house promo.
+   * Offer the slot to the networks from `i` onward. Returns false when none of
+   * them wants it, so the caller falls through to the house promo.
    *
-   * `live` is threaded through rather than re-read: mid-call this must not swap
-   * the failed frame out for a new one, so the backfill attempt is skipped
-   * entirely and the slot resolves into its reserved space instead.
+   * `live` is threaded through rather than re-read: mid-call a new tag must not
+   * be swapped into a frame the user is looking at, so the whole waterfall is
+   * skipped and the slot resolves into its reserved space instead.
    */
-  function backfill(el, size, live) {
-    if (live || el.dataset.adBackfilled) return false;
-    var net = backfillFor(size);
+  function backfill(el, size, live, i) {
+    if (live) return false;
+    var nets = backfillNetworks();
+    var net = null;
+    for (i = i || 0; i < nets.length; i++) {
+      net = zoneFor(nets[i], size);
+      if (net) break;
+    }
     if (!net) return false;
-    el.dataset.adBackfilled = '1';
-    reportBackfill(el, size);
+    var nextIndex = i + 1;
+    el.dataset.adBackfill = net.id;
+    reportBackfill(size, net.id);
+
+    // Whatever this attempt puts in the slot, so the next network in the chain
+    // starts from an empty one rather than stacking dead tags.
+    var placed = [];
+    function clear() {
+      placed.forEach(function (node) { if (node.parentNode === el) el.removeChild(node); });
+    }
+    function next(nowLive) {
+      if (nowLive) { hideSlot(el, true); return; }
+      clear();
+      if (backfill(el, size, false, nextIndex)) return;
+      hideSlot(el, false);
+    }
 
     var b = BANNERS[size];
     if (net.render === 'iframe' && b) {
       var frame = adFrame(b.w, b.h);
       el.appendChild(frame);
+      placed.push(frame);
       var doc = frame.contentWindow && frame.contentWindow.document;
-      if (!doc) return false;
+      if (!doc) { clear(); return backfill(el, size, false, nextIndex); }
       doc.open();
       doc.write(
         '<!DOCTYPE html><html><head><base target="_blank"></head>' +
@@ -598,13 +630,13 @@
       pollFill(el,
         function () { return isFilled(frame); },
         function () { markFilled(el); },
-        function (nowLive) { hideSlot(el, nowLive); },
+        next,
         function () { return frameFailed(frame); });
       return true;
     }
 
     // render: "script" - the tag goes in the page and writes beside itself, so
-    // what counts as filled is the slot gaining a child the tag put there.
+    // a filled slot is one that gained a child the tag put there.
     var before = el.childElementCount;
     var s = document.createElement('script');
     s.async = true;
@@ -616,13 +648,15 @@
     s.setAttribute(net.zoneAttr, net.zone);
     s.src = net.src;
     el.appendChild(s);
+    placed.push(s);
     pollFill(el,
       function () { return el.childElementCount > before + 1; },
       function () { markFilled(el); },
-      function (nowLive) { hideSlot(el, nowLive); },
+      next,
       function () { return failed; });
     return true;
   }
+
 
   // A conservative version of the high-viewability bottom banner used by
   // larger random-chat apps. It is owned by our page (unlike Social Bar), has
