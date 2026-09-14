@@ -113,6 +113,47 @@ function activityReport(req) {
   return analytics.buildReport(store.data.analytics.days, reportTimezone(req));
 }
 
+// --- Subscription rows -------------------------------------------------------
+// Read-only projection of store.data.premium. A grant with no expiresAt is
+// permanent (that is what every grant made before billing existed looks like),
+// a revoked one is dead, and everything else lives or lapses on its own clock -
+// the same rules store.isPremiumClient() applies, spelled out for display.
+function premiumRows() {
+  const now = Date.now();
+  return Object.entries(store.data.premium || {}).map(([clientId, p]) => {
+    const status = p.revokedAt ? 'revoked'
+      : (p.expiresAt && p.expiresAt <= now) ? 'expired'
+        : 'active';
+    return {
+      clientId,
+      status,
+      permanent: status === 'active' && !p.expiresAt,
+      source: p.source || (p.subscriptionId ? 'stripe' : 'unknown'),
+      activatedAt: p.activatedAt || null,
+      updatedAt: p.updatedAt || null,
+      expiresAt: p.expiresAt || null,
+      revokedAt: p.revokedAt || null,
+      lastEvent: p.lastEvent || '',
+      paying: !!p.subscriptionId,
+    };
+  }).sort((a, b) => (b.updatedAt || b.activatedAt || 0) - (a.updatedAt || a.activatedAt || 0));
+}
+
+// --- CSV ---------------------------------------------------------------------
+// A leading =, +, - or @ makes a spreadsheet treat the cell as a formula, so a
+// username like "=cmd()" would execute on open. Prefixing with an apostrophe
+// keeps the text visible and inert.
+function csvCell(v) {
+  if (v === null || v === undefined) return '';
+  let out = String(v);
+  if (/^[=+\-@]/.test(out)) out = "'" + out;
+  return /[",\n\r]/.test(out) ? '"' + out.replace(/"/g, '""') + '"' : out;
+}
+function toCsv(headers, rows) {
+  return [headers.join(','), ...rows.map((r) => r.map(csvCell).join(','))].join('\r\n') + '\r\n';
+}
+const isoOr = (ts) => (ts ? new Date(ts).toISOString() : '');
+
 // --- Rule-based "AI" conclusion over the last 7 days of real metrics ---
 // `report` is an analytics.buildReport() result, so "the last 7 days" means
 // seven of the owner's local days - not seven UTC days.
@@ -349,6 +390,7 @@ function createAdmin({ io, getRuntime, kickBanned }) {
         feedback: store.data.feedback.length,
         activeBans: store.activeBans().length,
         accounts: Object.keys(store.data.accountsRegistry).length,
+        premium: premiumRows().filter((r) => r.status === 'active').length,
       },
     });
   });
@@ -461,6 +503,160 @@ function createAdmin({ io, getRuntime, kickBanned }) {
         || (m.text || '').toLowerCase().includes(q));
     }
     res.json({ messages: list.slice(0, 500), total: store.data.transcripts.length });
+  });
+
+  // Subscriptions, referrals and push reach - all read from existing records,
+  // nothing here writes or removes anything.
+  router.get('/api/premium', (req, res) => {
+    const rows = premiumRows();
+    const now = Date.now();
+    const active = rows.filter((r) => r.status === 'active');
+    const bySource = {};
+    for (const r of active) bySource[r.source] = (bySource[r.source] || 0) + 1;
+    const owners = Object.entries(store.data.referrals.owners || {}).map(([clientId, o]) => ({
+      clientId, code: o.code, joined: o.joined || 0, qualified: o.qualified || 0,
+      rewardedDays: o.rewardedDays || 0, createdAt: o.createdAt || null,
+    }));
+    const claims = Object.values(store.data.referrals.claims || {});
+    const days = store.data.analytics.days;
+    const dayKeys = Object.keys(days).sort().slice(-30);
+    res.json({
+      rows: rows.slice(0, 500),
+      totals: {
+        all: rows.length,
+        active: active.length,
+        permanent: active.filter((r) => r.permanent).length,
+        paying: active.filter((r) => r.paying).length,
+        expired: rows.filter((r) => r.status === 'expired').length,
+        revoked: rows.filter((r) => r.status === 'revoked').length,
+        expiringIn7Days: active.filter((r) => r.expiresAt && r.expiresAt - now < 7 * 86400000).length,
+      },
+      bySource: Object.entries(bySource).sort((a, b) => b[1] - a[1]),
+      activations: dayKeys.map((k) => ({
+        day: k,
+        activated: (days[k].features || {}).premium_activated || 0,
+        cancelled: (days[k].features || {}).premium_cancelled || 0,
+      })),
+      referrals: {
+        codes: Object.keys(store.data.referrals.codes || {}).length,
+        joined: owners.reduce((a, o) => a + o.joined, 0),
+        qualified: owners.reduce((a, o) => a + o.qualified, 0),
+        rewardedDays: owners.reduce((a, o) => a + o.rewardedDays, 0),
+        pendingClaims: claims.filter((c) => !c.qualified).length,
+        top: owners.filter((o) => o.joined).sort((a, b) => b.qualified - a.qualified || b.joined - a.joined).slice(0, 15),
+      },
+      accounts: Object.keys(store.data.accountsRegistry).length,
+      push: {
+        subscribers: store.pushSubscriberCount(),
+        endpoints: Object.values(store.data.push || {}).reduce((a, l) => a + (l ? l.length : 0), 0),
+      },
+    });
+  });
+
+  // One box that looks everywhere: accounts, live users, bans, reports,
+  // feedback and chat messages. Purely a read.
+  router.get('/api/search', (req, res) => {
+    const q = String(req.query.q || '').trim().toLowerCase();
+    if (q.length < 2) return res.json({ q, groups: [] });
+    const hit = (...vals) => vals.some((v) => String(v || '').toLowerCase().includes(q));
+    const groups = [];
+    const push = (kind, label, items) => { if (items.length) groups.push({ kind, label, items }); };
+
+    push('accounts', 'Accounts', Object.entries(store.data.accountsRegistry)
+      .filter(([key, a]) => hit(key, a.username, a.nickname, a.country, a.city, a.ip))
+      .slice(0, 12)
+      .map(([key, a]) => ({
+        title: a.username || key,
+        sub: [a.nickname, a.country, a.method === 'google' ? 'Google' : 'Password'].filter(Boolean).join(' · '),
+        ts: a.createdAt || null,
+      })));
+
+    const runtime = getRuntime();
+    push('live', 'Online now', runtime.users
+      .filter((u) => hit(u.username, u.account, u.clientId, u.country, u.city, u.ip))
+      .slice(0, 12)
+      .map((u) => ({
+        title: u.username,
+        sub: [u.country, u.inCall ? 'in call' : u.waiting ? 'waiting' : 'idle'].filter(Boolean).join(' · '),
+        ts: null,
+      })));
+
+    push('bans', 'Bans', store.data.bans
+      .filter((b) => hit(b.username, b.clientId, b.ip, b.reason, b.country))
+      .slice(0, 12)
+      .map((b) => ({
+        title: b.username || b.clientId || b.ip,
+        sub: `${b.reason || 'no reason'} · ${b.liftedAt ? 'lifted' : b.expiresAt > Date.now() ? 'active' : 'expired'}`,
+        ts: b.createdAt || null,
+      })));
+
+    push('reports', 'Reports', store.data.reports
+      .filter((r) => hit(r.reported && r.reported.username, r.reporter && r.reporter.username, r.reason, r.detail))
+      .slice(0, 12)
+      .map((r) => ({
+        title: (r.reported && r.reported.username) || 'unknown',
+        sub: `${r.reason || ''}${r.handled ? ' · handled' : ' · NEW'}`,
+        ts: r.ts || null,
+      })));
+
+    push('feedback', 'Feedback', store.data.feedback
+      .filter((f) => hit(f.username, f.text, f.country))
+      .slice(0, 8)
+      .map((f) => ({ title: f.username || 'anonymous', sub: String(f.text || '').slice(0, 90), ts: f.ts || null })));
+
+    push('chats', 'Chat messages', store.data.transcripts
+      .filter((m) => hit(m.from, m.to, m.text, m.fromClientId))
+      .slice(0, 12)
+      .map((m) => ({ title: `${m.from} → ${m.to}`, sub: String(m.text || '').slice(0, 90), ts: m.ts || null })));
+
+    res.json({ q, groups });
+  });
+
+  // CSV downloads. Every one is a projection of records that stay exactly where
+  // they are - exporting never mutates or clears anything.
+  router.get('/api/export/:kind', (req, res) => {
+    const kind = String(req.params.kind).replace(/\.csv$/i, '');
+    let csv = null;
+    if (kind === 'accounts') {
+      csv = toCsv(['username', 'nickname', 'method', 'country', 'city', 'ip', 'created', 'last_seen'],
+        Object.entries(store.data.accountsRegistry)
+          .sort((a, b) => (b[1].createdAt || 0) - (a[1].createdAt || 0))
+          .map(([key, a]) => [a.username || key, a.nickname || '', a.method || '', a.country || '', a.city || '', a.ip || '', isoOr(a.createdAt), isoOr(a.lastSeen)]));
+    } else if (kind === 'daily') {
+      const report = activityReport(req);
+      csv = toCsv(['day', 'unique_visitors', 'visits', 'connections', 'matches', 'messages', 'peak_online', 'new_accounts', 'reports', 'errors'],
+        report.daily.map((d) => [d.day, d.uniques, d.visits, d.connections, d.matches, d.messages, d.peakOnline, d.newAccounts, d.reports, d.errors]));
+    } else if (kind === 'countries') {
+      const days = store.data.analytics.days;
+      const keys = Object.keys(days).sort().slice(-30);
+      const agg = {};
+      for (const k of keys) for (const [c, n] of Object.entries(days[k].countries || {})) agg[c] = (agg[c] || 0) + n;
+      const accByCountry = {};
+      for (const a of Object.values(store.data.accountsRegistry)) {
+        const c = (a.country || '').trim() || 'Unknown';
+        accByCountry[c] = (accByCountry[c] || 0) + 1;
+      }
+      const names = Array.from(new Set([...Object.keys(agg), ...Object.keys(accByCountry)]));
+      csv = toCsv(['country', 'visits_30d', 'accounts'],
+        names.sort((a, b) => (agg[b] || 0) - (agg[a] || 0)).map((c) => [c, agg[c] || 0, accByCountry[c] || 0]));
+    } else if (kind === 'bans') {
+      csv = toCsv(['username', 'client_id', 'ip', 'country', 'city', 'reason', 'created', 'expires', 'lifted'],
+        store.data.bans.map((b) => [b.username || '', b.clientId || '', b.ip || '', b.country || '', b.city || '', b.reason || '', isoOr(b.createdAt), isoOr(b.expiresAt), isoOr(b.liftedAt)]));
+    } else if (kind === 'reports') {
+      csv = toCsv(['when', 'reported', 'reported_country', 'reason', 'detail', 'reporter', 'handled'],
+        store.data.reports.map((r) => [isoOr(r.ts), (r.reported || {}).username || '', (r.reported || {}).country || '', r.reason || '', r.detail || '', (r.reporter || {}).username || '', r.handled ? 'yes' : 'no']));
+    } else if (kind === 'feedback') {
+      csv = toCsv(['when', 'username', 'country', 'text'],
+        store.data.feedback.map((f) => [isoOr(f.ts), f.username || '', f.country || '', f.text || '']));
+    } else if (kind === 'premium') {
+      csv = toCsv(['client_id', 'status', 'source', 'paying', 'permanent', 'activated', 'expires', 'revoked', 'last_event'],
+        premiumRows().map((r) => [r.clientId, r.status, r.source, r.paying ? 'yes' : 'no', r.permanent ? 'yes' : 'no', isoOr(r.activatedAt), isoOr(r.expiresAt), isoOr(r.revokedAt), r.lastEvent]));
+    }
+    if (csv === null) return res.status(404).json({ error: 'Unknown export.' });
+    store.audit('export', reqIp(req), `Exported ${kind}.csv`);
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="talklive-${kind}-${new Date().toISOString().slice(0, 10)}.csv"`);
+    res.send('\ufeff' + csv);
   });
 
   router.get('/api/audit', (req, res) => {

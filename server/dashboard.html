@@ -14,6 +14,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#0b0f1a">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <title>TalkLive - Owner Dashboard</title>
 <style>
 :root{
@@ -26,13 +27,22 @@
   --s1:#00d4ff;--s2:#2ee6a8;--s3:#ffc555;--s5:#a29bfe;
   --grad:linear-gradient(135deg,var(--accent),var(--accent-2));
 }
-@media (prefers-color-scheme: light){:root{
+/* Light palette, defined once and applied from two places: the OS setting
+   (unless the owner explicitly picked dark) and an explicit light choice. */
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
   --bg-1:#eef1f9;--bg-2:#ffffff;--bg-glow:#dde4f5;
   --text:#1a2033;--muted:#5a617a;--ink2:#3c4360;
   --surface:rgba(255,255,255,.72);--surface-2:rgba(26,32,51,.05);
   --ring:rgba(26,32,51,.10);--grid:rgba(26,32,51,.09);
   --accent-2:#0086b3;--s1:#0086b3;--s2:#0e9e6e;--s3:#b57f00;--good:#0e9e6e;--warn:#b57f00;
 }}
+:root[data-theme="light"]{
+  --bg-1:#eef1f9;--bg-2:#ffffff;--bg-glow:#dde4f5;
+  --text:#1a2033;--muted:#5a617a;--ink2:#3c4360;
+  --surface:rgba(255,255,255,.72);--surface-2:rgba(26,32,51,.05);
+  --ring:rgba(26,32,51,.10);--grid:rgba(26,32,51,.09);
+  --accent-2:#0086b3;--s1:#0086b3;--s2:#0e9e6e;--s3:#b57f00;--good:#0e9e6e;--warn:#b57f00;
+}
 *{box-sizing:border-box;margin:0}
 html{scroll-behavior:smooth}
 body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--text);min-height:100vh;min-height:100dvh;
@@ -75,14 +85,14 @@ input:focus,textarea:focus{border-color:var(--accent)}
 .secret{font-family:ui-monospace,monospace;font-size:.75rem;word-break:break-all;color:var(--ink2);background:var(--surface-2);padding:8px;border-radius:8px;margin-top:6px}
 
 /* shell */
-header{display:flex;align-items:center;gap:12px;padding:12px 18px;padding-top:calc(12px + env(safe-area-inset-top));border-bottom:1px solid var(--grid);position:sticky;top:0;z-index:10;
+header{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 18px;padding-top:calc(12px + env(safe-area-inset-top));border-bottom:1px solid var(--grid);position:sticky;top:0;z-index:10;
   background:color-mix(in srgb,var(--bg-1) 78%,transparent);backdrop-filter:blur(16px)}
 header h1{font-size:1rem;display:flex;align-items:center;gap:9px;white-space:nowrap}
 header h1 .grad-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:800}
 .dot{width:9px;height:9px;border-radius:50%;background:var(--good);display:inline-block;animation:pulse 2s infinite;box-shadow:0 0 10px var(--good)}
-nav.top{display:flex;gap:4px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;flex:1}
+nav.top{display:flex;gap:3px;flex-wrap:wrap;flex:1;min-width:0}
 nav.top::-webkit-scrollbar{display:none}
-nav.top button{background:transparent;border:0;color:var(--muted);padding:8px 13px;border-radius:10px;font-size:.87rem;white-space:nowrap;transition:color .15s,background .15s}
+nav.top button{background:transparent;border:0;color:var(--muted);padding:7px 10px;border-radius:10px;font-size:.84rem;white-space:nowrap;transition:color .15s,background .15s}
 nav.top button:hover{color:var(--text)}
 nav.top button.on{background:var(--surface-2);color:var(--text);font-weight:700}
 .badge{background:var(--crit);color:#fff;border-radius:9px;font-size:.66rem;padding:1px 6px;margin-left:5px;font-weight:700;vertical-align:1px}
@@ -93,6 +103,10 @@ main{padding:18px;max-width:1200px;margin:0 auto;padding-bottom:calc(84px + env(
 .tabbar{display:none}
 @media(max-width:760px){
   header nav.top{display:none}
+  header{gap:6px}
+  #helpBtn{display:none}
+  #searchBtn{margin-left:auto}
+  header .btn.ghost{padding:7px 10px;font-size:.8rem}
   .tabbar{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:10;justify-content:space-around;
     background:color-mix(in srgb,var(--bg-1) 82%,transparent);backdrop-filter:blur(18px);border-top:1px solid var(--grid);
     padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
@@ -150,14 +164,6 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .hrow .hbar{height:18px;border-radius:99px;min-width:3px;transition:width .8s cubic-bezier(.2,.7,.3,1)}
 .hrow .n{text-align:right;color:var(--ink2);font-variant-numeric:tabular-nums}
 .hrow div:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* country breakdown (accounts tab) */
-.crow{display:grid;grid-template-columns:26px minmax(100px,180px) 1fr 96px;align-items:center;gap:10px;margin:8px 0;font-size:.85rem}
-.crow .rk{color:var(--muted);font-size:.72rem;text-align:right;font-variant-numeric:tabular-nums}
-.crow .cname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
-.crow .cbar{height:20px;border-radius:99px;min-width:3px;transition:width .8s cubic-bezier(.2,.7,.3,1)}
-.crow .cn{text-align:right;color:var(--ink2);font-variant-numeric:tabular-nums;font-size:.8rem}
-.crow .cn b{color:var(--text)}
-@media(max-width:640px){.crow{grid-template-columns:22px minmax(72px,110px) 1fr 80px;gap:7px;font-size:.8rem}}
 
 /* activity report */
 .tzbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:.83rem;color:var(--ink2)}
@@ -208,6 +214,64 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .concl::before{content:"";position:absolute;inset:0 0 auto;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent-2),var(--accent));background-size:200% 100%;animation:glowmove 4s linear infinite}
 .concl li{margin:7px 0 7px 16px;line-height:1.6;color:var(--ink2)}
 .switch{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+
+/* header controls */
+.hbtn{background:transparent;border:1px solid var(--ring);color:var(--ink2);border-radius:10px;padding:7px 10px;font-size:.82rem;line-height:1;transition:border-color .15s,color .15s}
+.hbtn:hover{border-color:var(--accent);color:var(--text)}
+.hbtn.live{color:var(--good);border-color:color-mix(in srgb,var(--good) 40%,transparent)}
+.hbtn.paused{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 45%,transparent)}
+.searchbtn{flex:none;display:flex;align-items:center;gap:7px;color:var(--muted)}
+.searchbtn kbd{border:1px solid var(--ring);border-radius:5px;padding:1px 5px;font-size:.68rem;font-family:inherit;background:var(--surface-2)}
+@media(max-width:900px){.searchbtn span.lbl,.hbtn span.lbl{display:none}.searchbtn kbd{display:none}}
+
+/* toasts */
+.toasts{position:fixed;right:14px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:60;display:flex;flex-direction:column;gap:8px;max-width:min(340px,calc(100vw - 28px))}
+@media(min-width:761px){.toasts{bottom:18px}}
+.toast{background:var(--bg-2);border:1px solid var(--ring);border-left:3px solid var(--accent);border-radius:12px;padding:10px 13px;font-size:.84rem;color:var(--text);box-shadow:0 8px 26px rgba(0,0,0,.35);animation:pop .25s ease both}
+.toast.good{border-left-color:var(--good)}.toast.bad{border-left-color:var(--crit)}.toast.warn{border-left-color:var(--warn)}
+.toast b{display:block;margin-bottom:2px;font-size:.8rem}
+.toast .tx{color:var(--ink2);font-size:.79rem}
+
+/* modal / command palette */
+.overlay{position:fixed;inset:0;z-index:50;background:rgba(4,7,16,.62);backdrop-filter:blur(4px);display:flex;align-items:flex-start;justify-content:center;padding:10vh 14px 14px}
+.overlay.mid{align-items:center;padding:14px}
+.sheet{background:var(--bg-2);border:1px solid var(--ring);border-radius:18px;width:100%;max-width:560px;max-height:78vh;overflow:auto;box-shadow:0 18px 50px rgba(0,0,0,.5);animation:pop .2s ease both}
+.sheet .shead{padding:14px 16px;border-bottom:1px solid var(--grid);display:flex;align-items:center;gap:10px;font-size:.95rem;font-weight:700}
+.sheet .shead .x{margin-left:auto;background:transparent;border:0;color:var(--muted);font-size:1.1rem;padding:2px 6px;border-radius:8px}
+.sheet .shead .x:hover{color:var(--text);background:var(--surface-2)}
+.sheet .sbody{padding:14px 16px}
+.sheet label{display:block;font-size:.76rem;color:var(--muted);margin:12px 0 5px;text-transform:uppercase;letter-spacing:.05em}
+.sheet label:first-child{margin-top:0}
+.sres{padding:6px 0}
+.sgroup{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:10px 16px 4px}
+.sitem{display:block;width:100%;text-align:left;background:transparent;border:0;color:var(--text);padding:8px 16px;font-size:.85rem;border-left:2px solid transparent}
+.sitem:hover,.sitem.sel{background:var(--surface-2);border-left-color:var(--accent)}
+.sitem .s2{display:block;color:var(--muted);font-size:.76rem;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kbdlist{display:grid;grid-template-columns:auto 1fr;gap:8px 14px;font-size:.84rem;align-items:center}
+.kbdlist kbd{border:1px solid var(--ring);background:var(--surface-2);border-radius:6px;padding:2px 7px;font-family:inherit;font-size:.76rem;justify-self:start}
+
+/* toolbar above tables */
+.tbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.tbar input,.tbar select{width:auto;min-width:170px;padding:8px 11px;font-size:.84rem}
+.tbar .grow{flex:1;min-width:170px}
+.seg{display:flex;gap:0;border:1px solid var(--ring);border-radius:10px;overflow:hidden}
+.seg button{background:transparent;border:0;color:var(--muted);padding:7px 12px;font-size:.8rem}
+.seg button.on{background:var(--surface-2);color:var(--text);font-weight:700}
+.lnk{color:var(--accent-2);text-decoration:none;font-size:.8rem;border:1px solid var(--ring);border-radius:10px;padding:7px 12px;white-space:nowrap}
+.lnk:hover{border-color:var(--accent)}
+th.sortable{cursor:pointer;user-select:none}
+th.sortable:hover{color:var(--text)}
+th.sortable .ar{opacity:.5;font-size:.7rem}
+
+/* country breakdown (accounts tab) */
+.crow{display:grid;grid-template-columns:26px minmax(100px,180px) 1fr 96px;align-items:center;gap:10px;margin:8px 0;font-size:.85rem}
+.crow .rk{color:var(--muted);font-size:.72rem;text-align:right;font-variant-numeric:tabular-nums}
+.crow .cname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.crow .cbar{height:20px;border-radius:99px;min-width:3px;transition:width .8s cubic-bezier(.2,.7,.3,1)}
+.crow .cn{text-align:right;color:var(--ink2);font-variant-numeric:tabular-nums;font-size:.8rem}
+.crow .cn b{color:var(--text)}
+@media(max-width:640px){.crow{grid-template-columns:22px minmax(72px,110px) 1fr 80px;gap:7px;font-size:.8rem}}
+
 @media(max-width:640px){
   main{padding:12px;padding-bottom:calc(84px + env(safe-area-inset-bottom))}
   .tile .v{font-size:1.45rem}
@@ -257,11 +321,16 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 <header>
   <h1><span class="mark" style="width:28px;height:28px;font-size:.85rem">🎙️</span><span class="grad-text">TalkLive</span>&nbsp;<span class="dot"></span></h1>
   <nav class="top" id="nav"></nav>
+  <button class="hbtn searchbtn" id="searchBtn" title="Search everything (press /)">🔍<span class="lbl">Search</span><kbd>/</kbd></button>
+  <button class="hbtn" id="refreshBtn" title="Pause or resume auto-refresh">⏸<span class="lbl" id="refreshLbl"> live</span></button>
+  <button class="hbtn" id="themeBtn" title="Switch theme">🌗</button>
+  <button class="hbtn" id="helpBtn" title="Keyboard shortcuts">⌨️</button>
   <button class="btn ghost" id="logoutBtn">Log out</button>
 </header>
 <main id="main"></main>
 <nav class="tabbar" id="tabbar"></nav>
 </div>
+<div class="toasts" id="toasts"></div>
 
 <script>
 'use strict';
@@ -284,6 +353,46 @@ const pctOf=(v,t)=>{if(!t)return'0%';const p=v/t*100;return(p<10?p.toFixed(1):Ma
    period was empty), which is not the same as 0% and must not read as flat. */
 const deltaHtml=(pct)=>pct===null||pct===undefined?'<span class="delta flat">no baseline</span>'
   :`<span class="delta ${pct>0?'up':pct<0?'down':'flat'}">${pct>0?'▲':pct<0?'▼':'▬'} ${Math.abs(pct)}%</span>`;
+
+/* ---------- toasts, modal, theme ---------- */
+function toast(title,text,kind){
+  const box=$('#toasts');if(!box)return;
+  const el=document.createElement('div');
+  el.className='toast '+(kind||'');
+  el.innerHTML=`<b>${esc(title)}</b>${text?`<span class="tx">${esc(text)}</span>`:''}`;
+  box.appendChild(el);
+  setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),320);},kind==='bad'?6000:3600);
+}
+/* One overlay at a time. `onOpen` receives the sheet so a caller can wire its
+   own inputs; Escape and a click on the backdrop always close it. */
+let overlayEl=null;
+function closeModal(){if(overlayEl){overlayEl.remove();overlayEl=null;}}
+function modal(title,bodyHtml,onOpen,opts){
+  closeModal();
+  const o=document.createElement('div');
+  o.className='overlay'+((opts&&opts.mid)?' mid':'');
+  o.innerHTML=`<div class="sheet" role="dialog" aria-modal="true"><div class="shead">${title}<button class="x" aria-label="Close">✕</button></div><div class="sbody">${bodyHtml}</div></div>`;
+  o.addEventListener('mousedown',(e)=>{if(e.target===o)closeModal();});
+  o.querySelector('.x').onclick=closeModal;
+  document.body.appendChild(o);
+  overlayEl=o;
+  if(onOpen)onOpen(o.querySelector('.sheet'));
+  return o;
+}
+const THEMES=['auto','dark','light'];
+function applyTheme(t){
+  if(t==='auto')document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme',t);
+  const b=$('#themeBtn');if(b)b.textContent=t==='dark'?'🌙':t==='light'?'☀️':'🌗';
+}
+function currentTheme(){try{return localStorage.getItem('tl_theme')||'auto';}catch(e){return 'auto';}}
+function cycleTheme(){
+  const next=THEMES[(THEMES.indexOf(currentTheme())+1)%THEMES.length];
+  try{localStorage.setItem('tl_theme',next);}catch(e){}
+  applyTheme(next);
+  toast('Theme: '+next,next==='auto'?'Follows your system setting.':'');
+}
+applyTheme(currentTheme());
 
 function show(view){
   $('#setupView').classList.toggle('hidden',view!=='setup');
@@ -357,6 +466,10 @@ $('#loginBtn').onclick=async()=>{
 };
 $('#loginCode').addEventListener('keydown',e=>{if(e.key==='Enter')$('#loginBtn').click();});
 $('#logoutBtn').onclick=async()=>{await post('logout');location.reload();};
+$('#themeBtn').onclick=cycleTheme;
+$('#helpBtn').onclick=openHelp;
+$('#searchBtn').onclick=openSearch;
+$('#refreshBtn').onclick=togglePause;
 
 /* ---------- charts (inline SVG) ---------- */
 let tipEl=null;
@@ -411,13 +524,16 @@ function rankedBars(el,entries){
 /* ---------- dashboard shell ---------- */
 const TABS=[
   ['overview','Overview','📊'],['activity','Activity','📅'],['ai','AI Bot','🤖'],['live','Live','🟢'],['chats','Chats','💬'],
-  ['reports','Reports','🚩'],['bans','Bans','⛔'],['accounts','Accounts','👤'],
+  ['reports','Reports','🚩'],['bans','Bans','⛔'],['accounts','Accounts','👤'],['revenue','Revenue','💎'],
   ['errors','Errors','🐛'],['feedback','Feedback','⭐'],['audit','Audit','🧾'],['settings','Settings','🛠️']
 ];
-/* Six fit the bottom bar on a small phone. The AI bot is reachable from the
-   Overview summary card, so it gives up its slot to Activity. */
-const MOBILE_TABS=['overview','activity','live','chats','reports','settings'];
-let tab='overview',timer=null,counts={};
+const TAB_IDS=TABS.map(t=>t[0]);
+/* Five fit the bottom bar on a small phone; the sixth slot is a "More" sheet so
+   every tab stays reachable from a phone instead of only these five. */
+const MOBILE_TABS=['overview','activity','live','chats','reports'];
+let tab='overview',timer=null,counts={},paused=false,lastLoadTs=0,loadFailures=0;
+const REFRESH_MS=()=>tab==='live'?5000:tab==='ai'?60000:12000;
+
 function navBtn(id,label,icon,mobile){
   let badge='';
   if(id==='reports'&&counts.unhandledReports)badge=`<span class="badge">${counts.unhandledReports}</span>`;
@@ -427,12 +543,62 @@ function navBtn(id,label,icon,mobile){
 }
 function renderNav(){
   $('#nav').innerHTML=TABS.map(([id,l,ic])=>navBtn(id,l,ic,false)).join('');
-  $('#tabbar').innerHTML=MOBILE_TABS.map(id=>{const t=TABS.find(x=>x[0]===id);return navBtn(t[0],t[1],t[2],true);}).join('');
-  document.querySelectorAll('#nav button,#tabbar button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;renderNav();load();window.scrollTo({top:0});});
+  const onMore=!MOBILE_TABS.includes(tab);
+  const pending=(counts.unhandledReports||0)+(counts.errors||0);
+  $('#tabbar').innerHTML=MOBILE_TABS.map(id=>{const t=TABS.find(x=>x[0]===id);return navBtn(t[0],t[1],t[2],true);}).join('')
+    +`<button data-more="1" class="${onMore?'on':''}"><span class="ic">⋯</span>More${!onMore&&pending?`<span class="badge">${pending}</span>`:''}</button>`;
+  document.querySelectorAll('#nav button,#tabbar button[data-t]').forEach(b=>b.onclick=()=>go(b.dataset.t));
+  const more=document.querySelector('#tabbar button[data-more]');
+  if(more)more.onclick=openMore;
 }
-function startDash(){renderNav();load();clearInterval(timer);timer=setInterval(load,tab==='live'?5000:12000);}
-async function load(){
-  clearInterval(timer);timer=setInterval(load,tab==='live'?5000:tab==='ai'?60000:12000);
+function openMore(){
+  modal('⋯ All sections',
+    `<div class="sres">${TABS.map(([id,l,ic])=>`<button class="sitem" data-go="${id}">${ic} ${l}${id===tab?' <span class="pill info">current</span>':''}</button>`).join('')}</div>`,
+    (sheet)=>{sheet.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{closeModal();go(b.dataset.go);});});
+}
+/* Tabs live in the URL hash, so a refresh, a bookmark or the browser Back
+   button all land on the section the owner was actually looking at. */
+function go(id){
+  if(!TAB_IDS.includes(id))id='overview';
+  tab=id;
+  if(location.hash.slice(1)!==id)location.hash=id;
+  renderNav();load();window.scrollTo({top:0});
+}
+window.addEventListener('hashchange',()=>{
+  const id=location.hash.slice(1);
+  if(TAB_IDS.includes(id)&&id!==tab){tab=id;renderNav();load();}
+});
+
+function scheduleRefresh(){
+  clearInterval(timer);
+  if(!paused)timer=setInterval(()=>load(false),REFRESH_MS());
+  const b=$('#refreshBtn');
+  if(b){
+    b.className='hbtn '+(paused?'paused':'live');
+    b.innerHTML=(paused?'▶':'⏸')+`<span class="lbl" id="refreshLbl"> ${paused?'paused':'live'}</span>`;
+    b.title=paused?'Auto-refresh paused - click to resume':`Auto-refreshing every ${REFRESH_MS()/1000}s - click to pause`;
+  }
+}
+function togglePause(){
+  paused=!paused;
+  scheduleRefresh();
+  if(!paused)load();
+  toast(paused?'Auto-refresh paused':'Auto-refresh on',paused?'Numbers stay frozen until you resume.':`Refreshing every ${REFRESH_MS()/1000}s.`,paused?'warn':'good');
+}
+function startDash(){
+  const hash=location.hash.slice(1);
+  if(TAB_IDS.includes(hash))tab=hash;
+  renderNav();load();scheduleRefresh();
+}
+/* `force` defaults to true so every click and keypress repaints immediately;
+   the poll timer passes false, because typing into a filter box or having a
+   dialog open must not be interrupted by a repaint underneath. */
+async function load(force){
+  scheduleRefresh();
+  if(force===false){
+    const busy=overlayEl||(document.activeElement&&/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName));
+    if(busy&&Date.now()-lastLoadTs<60000)return;
+  }
   try{
     if(tab==='overview')await viewOverview();
     else if(tab==='activity')await viewActivity();
@@ -442,11 +608,105 @@ async function load(){
     else if(tab==='bans')await viewBans();
     else if(tab==='chats')await viewChats();
     else if(tab==='accounts')await viewAccounts();
+    else if(tab==='revenue')await viewRevenue();
     else if(tab==='errors')await viewErrors();
     else if(tab==='feedback')await viewFeedback();
     else if(tab==='audit')await viewAudit();
     else if(tab==='settings')await viewSettings();
-  }catch(e){if(e.message!=='auth')$('#main').innerHTML=`<div class="card">Failed to load: ${esc(e.message)}</div>`;}
+    lastLoadTs=Date.now();loadFailures=0;
+    stampUpdated();
+  }catch(e){
+    if(e.message==='auth')return;
+    loadFailures++;
+    /* A blip while polling shouldn't wipe a screenful of data - only replace the
+       view if nothing was ever drawn, or the failure is persistent. */
+    if(!lastLoadTs||loadFailures>2)$('#main').innerHTML=`<div class="card"><h2>⚠️ Could not load this section</h2><div class="muted">${esc(e.message)}</div><div class="rowbtns" style="margin-top:12px"><button onclick="load()">Try again</button></div></div>`;
+    else toast('Refresh failed',e.message+' - showing the last good data.','warn');
+  }
+}
+/* A quiet "as of" line, so a number that hasn't moved in ten minutes is
+   obviously stale rather than silently wrong. */
+function stampUpdated(){
+  const host=$('#main');if(!host)return;
+  let el=$('#updStamp');
+  if(!el){
+    el=document.createElement('div');
+    el.id='updStamp';el.className='muted';
+    el.style.cssText='margin-top:14px;text-align:right;font-size:.74rem';
+    host.appendChild(el);
+  }else host.appendChild(el);
+  const t=new Date();
+  el.innerHTML=`Updated ${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}:${String(t.getSeconds()).padStart(2,'0')} · ${paused?'auto-refresh paused':'auto-refresh every '+REFRESH_MS()/1000+'s'}`;
+}
+
+/* Re-rendering a whole view steals focus from the filter box that triggered
+   it, so put the caret back where the owner left it. */
+function keepFocus(sel){
+  const el=$(sel);if(!el)return;
+  el.focus();
+  const n=el.value.length;
+  try{el.setSelectionRange(n,n);}catch(e){}
+}
+let filterTimer=null;
+function onFilterInput(inp,set,render){
+  inp.oninput=()=>{set(inp.value);clearTimeout(filterTimer);filterTimer=setTimeout(render,220);};
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter'){clearTimeout(filterTimer);render();}});
+}
+
+/* ---------- global search ---------- */
+let searchTimer=null;
+function openSearch(){
+  modal('🔍 Search everything',
+    `<input id="gq" placeholder="Username, country, IP, ban reason, message text…" autocomplete="off">
+     <div class="muted" style="margin-top:8px;font-size:.78rem">Looks across accounts, live users, bans, reports, feedback and chat messages.</div>
+     <div id="gres" class="sres" style="margin:8px -16px 0"></div>`,
+    (sheet)=>{
+      const inp=sheet.querySelector('#gq'),out=sheet.querySelector('#gres');
+      inp.focus();
+      const run=async()=>{
+        const q=inp.value.trim();
+        if(q.length<2){out.innerHTML='<div class="sgroup">Type at least 2 characters</div>';return;}
+        out.innerHTML='<div class="sgroup">Searching…</div>';
+        try{
+          const r=await api('search?q='+encodeURIComponent(q));
+          out.innerHTML=r.groups.map(g=>`<div class="sgroup">${esc(g.label)} · ${g.items.length}</div>`
+            +g.items.map(it=>`<button class="sitem" data-go="${esc(g.kind)}"><b>${esc(it.title)}</b><span class="s2">${esc(it.sub||'')}${it.ts?' · '+ago(it.ts):''}</span></button>`).join('')).join('')
+            ||'<div class="sgroup">Nothing found</div>';
+          out.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{closeModal();go(b.dataset.go);});
+        }catch(e){out.innerHTML=`<div class="sgroup">Search failed: ${esc(e.message)}</div>`;}
+      };
+      inp.addEventListener('input',()=>{clearTimeout(searchTimer);searchTimer=setTimeout(run,220);});
+      inp.addEventListener('keydown',e=>{if(e.key==='Enter'){clearTimeout(searchTimer);run();}});
+    });
+}
+
+/* ---------- keyboard shortcuts ---------- */
+const SHORTCUTS=[['/ or Ctrl K','Search everything'],['1 – 9','Jump to a section'],['r','Refresh now'],['p','Pause / resume auto-refresh'],['t','Switch theme'],['e','Export the current tab as CSV'],['?','This help'],['Esc','Close a dialog']];
+function openHelp(){
+  modal('⌨️ Keyboard shortcuts',
+    `<div class="kbdlist">${SHORTCUTS.map(([k,d])=>`<kbd>${esc(k)}</kbd><span>${esc(d)}</span>`).join('')}</div>`,
+    null,{mid:true});
+}
+document.addEventListener('keydown',(e)=>{
+  if(e.key==='Escape'){closeModal();return;}
+  const t=e.target;
+  const typing=t&&(/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)||t.isContentEditable);
+  if((e.key==='k'||e.key==='K')&&(e.metaKey||e.ctrlKey)){e.preventDefault();if(!$('#dash').classList.contains('hidden'))openSearch();return;}
+  if(typing||e.metaKey||e.ctrlKey||e.altKey)return;
+  if($('#dash').classList.contains('hidden'))return;
+  if(e.key==='/'){e.preventDefault();openSearch();}
+  else if(e.key==='?')openHelp();
+  else if(e.key==='r')load();
+  else if(e.key==='p')togglePause();
+  else if(e.key==='t')cycleTheme();
+  else if(e.key==='e'){const l=document.querySelector('#main a[data-export]');if(l)l.click();else toast('Nothing to export','This section has no CSV export.','warn');}
+  else if(/^[1-9]$/.test(e.key)){const t2=TABS[Number(e.key)-1];if(t2)go(t2[0]);}
+});
+
+/* A download link rather than a fetch: the dashboard cookie is already scoped
+   to /owner, so the browser can stream the file straight to disk. */
+function exportLink(kind,label){
+  return `<a class="lnk" data-export="${esc(kind)}" href="/owner/api/export/${esc(kind)}.csv" download>⬇ ${esc(label||'Export CSV')}</a>`;
 }
 
 /* ---------- overview ---------- */
@@ -457,7 +717,7 @@ async function viewOverview(){
   counts=o.counts;renderNav();
   const c=o.conclusion;
   $('#main').innerHTML=`
-  <div class="muted anim" style="margin-bottom:6px">📅 “Today” = <b>${esc(o.todayWindow)}</b> · <a href="#" onclick="tab='activity';renderNav();load();return false" style="color:var(--accent-2)">change timezone / see full reports →</a></div>
+  <div class="muted anim" style="margin-bottom:6px">📅 “Today” = <b>${esc(o.todayWindow)}</b> · <a href="#" onclick="go('activity');return false" style="color:var(--accent-2)">change timezone / see full reports →</a></div>
   <div class="grid tiles">
     <div class="tile anim"><div class="k">🟢 Online now</div><div class="v grad" data-count="${o.runtime.online}">0</div><div class="s">${num(o.runtime.inCall/2|0)} calls · ${num(o.runtime.waiting)} waiting</div></div>
     <div class="tile anim"><div class="k">Visitors today</div><div class="v" data-count="${o.today.uniques}">0</div><div class="s">${num(o.today.visits)} visits · ${deltaHtml(o.changeVsYesterday.uniques)} vs same time yesterday</div></div>
@@ -466,18 +726,26 @@ async function viewOverview(){
     <div class="tile anim"><div class="k">Matches today</div><div class="v" data-count="${o.today.matches}">0</div><div class="s">${num(o.totals.matches)} all-time</div></div>
     <div class="tile anim"><div class="k">Total visits</div><div class="v" data-count="${o.totals.visits}">0</div><div class="s">all-time</div></div>
     <div class="tile anim"><div class="k">Accounts</div><div class="v" data-count="${o.counts.accounts}">0</div><div class="s">registered users</div></div>
+    <div class="tile anim"><div class="k">💎 Plus members</div><div class="v" data-count="${o.counts.premium||0}">0</div><div class="s">${pctOf(o.counts.premium||0,o.counts.accounts)} of accounts · <a href="#revenue" style="color:var(--accent-2)">details</a></div></div>
     <div class="tile anim"><div class="k">Active bans</div><div class="v" style="color:${o.counts.activeBans?'var(--crit)':'inherit'}" data-count="${o.counts.activeBans}">0</div><div class="s">${num(o.counts.unhandledReports)} new reports</div></div>
     <div class="tile anim"><div class="k">Server</div><div class="v">${Math.floor(o.runtime.uptimeSeconds/3600)}h</div><div class="s">uptime · ${o.runtime.memoryMB} MB ${o.maintenance.on?'· <b style="color:var(--crit)">MAINTENANCE</b>':''}</div></div>
   </div>
+  ${(o.counts.unhandledReports||o.maintenance.on||o.counts.errors)?`<div class="card anim" style="border-color:color-mix(in srgb,var(--warn) 40%,transparent)"><h2>🔔 Needs your attention</h2>
+    <div class="rowbtns">
+    ${o.maintenance.on?`<button class="danger" onclick="go('settings')">🛠️ Site is in MAINTENANCE - bring it back</button>`:''}
+    ${o.counts.unhandledReports?`<button class="danger" onclick="go('reports')">🚩 ${num(o.counts.unhandledReports)} unhandled report(s)</button>`:''}
+    ${o.counts.errors?`<button onclick="go('errors')">🐛 ${num(o.counts.errors)} logged error(s)</button>`:''}
+    ${o.counts.activeBans?`<button onclick="go('bans')">⛔ ${num(o.counts.activeBans)} active ban(s)</button>`:''}
+    </div></div>`:''}
   <div class="card concl anim"><h2>🤖 TalkLive AI Summary <span class="sub">analysis of the last 7 days</span> <span class="pill ${c.health==='good'?'good':c.health==='warning'?'warn':'crit'}">${c.health.toUpperCase()}</span></h2>
     <ul>${c.summary.map(l=>`<li>${esc(l)}</li>`).join('')}</ul>
-    <div class="quickq" style="margin-top:10px"><button onclick="tab='ai';renderNav();load()">💬 Ask the AI bot →</button></div></div>
-  <div class="card anim"><h2>📈 Traffic - last 30 days</h2>
+    <div class="quickq" style="margin-top:10px"><button onclick="go('ai')">💬 Ask the AI bot →</button></div></div>
+  <div class="card anim"><h2>📈 Traffic - last 30 days <span style="margin-left:auto">${exportLink('daily','Export daily CSV')}</span></h2>
     <div class="legend"><span><i style="background:var(--s1)"></i>Visits</span><span><i style="background:var(--s2)"></i>Unique visitors</span><span><i style="background:var(--s3)"></i>Matches</span></div>
     <div id="trafficChart"></div></div>
   <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
     <div class="card anim"><h2>🏆 Feature ranking <span class="sub">most used → least, last 30 days</span></h2><div id="featBars"></div></div>
-    <div class="card anim"><h2>🌍 Top countries <span class="sub">visits, last 30 days</span></h2><div id="countryBars"></div></div>
+    <div class="card anim"><h2>🌍 Top countries <span class="sub">visits, last 30 days</span> <span style="margin-left:auto">${exportLink('countries','CSV')}</span></h2><div id="countryBars"></div></div>
     <div class="card anim"><h2>🏙️ Top cities <span class="sub">visits, last 30 days</span></h2><div id="cityBars"></div></div>
     <div class="card anim"><h2>💭 What users talk about <span class="sub">anonymous keyword aggregate</span></h2>
       <div class="chips">${o.topics.map(([w,n])=>`<span class="chip">${esc(w)} · ${num(n)}</span>`).join('')||'<span class="muted">No chat data yet.</span>'}</div></div>
@@ -670,34 +938,86 @@ async function viewBot(){
 
 /* ---------- ban helpers ---------- */
 const DUR=[['30','30 minutes'],['60','1 hour'],['360','6 hours'],['1440','1 day'],['4320','3 days'],['10080','7 days'],['43200','30 days'],['129600','90 days'],['525600','1 year'],['2628000','5 years']];
+const BAN_REASONS=['Nudity or sexual content','Harassment or abuse','Underage user','Spam or advertising','Scam or phishing','Hate speech','Repeated user reports','Owner ban'];
 function banButtons(u){
   return `<div class="rowbtns"><button class="danger" onclick="banUser('${jsq(u.clientId)}','${jsq(u.ip||'')}','${jsq(u.username)}','${jsq(u.country||'')}','${jsq(u.city||'')}')">Ban…</button></div>`;
 }
-window.banUser=async(clientId,ip,username,country,city)=>{
-  const choice=prompt(`Ban ${username}?\nEnter duration:\n30 = 30 min, 60 = 1 hour, 1440 = 1 day, 10080 = 7 days, 43200 = 30 days, 525600 = 1 year\n(minutes)`,'30');
-  if(!choice)return;
-  const reason=prompt('Reason for the ban (shown in your audit log):','Owner ban')||'Owner ban';
-  try{await post('ban',{clientId,ip,username,country,city,minutes:Number(choice),reason});load();}
-  catch(e){alert(e.message);}
+/* Replaces the old prompt()/prompt() pair, which asked for a raw number of
+   minutes and gave no way back once the first box was answered. */
+window.banUser=(clientId,ip,username,country,city)=>{
+  modal(`⛔ Ban ${esc(username||clientId||ip)}`,
+    `<div class="muted" style="font-size:.82rem">${esc([country,city&&city!=='Unknown'?city:''].filter(Boolean).join(', ')||'Location unknown')}${ip?` · IP ${esc(ip)}`:''}</div>
+     <label>Duration</label>
+     <select id="banDur">${DUR.map(([v,l],i)=>`<option value="${v}"${i===0?' selected':''}>${l}</option>`).join('')}</select>
+     <label>Reason <span style="text-transform:none;letter-spacing:0">(saved to the audit log)</span></label>
+     <select id="banReasonSel">${BAN_REASONS.map(r=>`<option>${r}</option>`).join('')}<option value="__custom">Write my own…</option></select>
+     <input id="banReason" class="hidden" style="margin-top:8px" placeholder="Reason">
+     <div class="rowbtns" style="margin-top:16px">
+       <button class="danger" id="banGo" style="padding:9px 16px">Ban user</button>
+       <button id="banCancel" style="padding:9px 16px">Cancel</button>
+     </div>`,
+    (sheet)=>{
+      const sel=sheet.querySelector('#banReasonSel'),free=sheet.querySelector('#banReason');
+      sel.onchange=()=>{free.classList.toggle('hidden',sel.value!=='__custom');if(sel.value==='__custom')free.focus();};
+      sheet.querySelector('#banCancel').onclick=closeModal;
+      sheet.querySelector('#banGo').onclick=async()=>{
+        const minutes=Number(sheet.querySelector('#banDur').value);
+        const reason=(sel.value==='__custom'?free.value.trim():sel.value)||'Owner ban';
+        const label=(DUR.find(d=>d[0]===String(minutes))||['','?'])[1];
+        try{
+          await post('ban',{clientId,ip,username,country,city,minutes,reason});
+          closeModal();
+          toast('Banned '+(username||clientId),`${label} · ${reason}`,'good');
+          load();
+        }catch(e){toast('Ban failed',e.message,'bad');}
+      };
+    },{mid:true});
 };
 
+let liveQ='';
 async function viewLive(){
   const r=await api('online');
-  $('#main').innerHTML=`<div class="card anim" style="margin-top:0"><h2>🟢 Live users <span class="sub">${r.users.length} connected · refreshes every 5s</span></h2>
+  const q=liveQ.toLowerCase();
+  const users=q?r.users.filter(u=>[u.username,u.account,u.country,u.city,u.ip,u.clientId].some(v=>String(v||'').toLowerCase().includes(q))):r.users;
+  const inCall=r.users.filter(u=>u.inCall).length,waiting=r.users.filter(u=>u.waiting).length;
+  $('#main').innerHTML=`<div class="grid tiles anim" style="margin-top:0">
+    <div class="tile"><div class="k">🟢 Online</div><div class="v grad">${num(r.users.length)}</div><div class="s">connected right now</div></div>
+    <div class="tile"><div class="k">In a call</div><div class="v">${num(inCall)}</div><div class="s">${num(inCall/2|0)} conversations</div></div>
+    <div class="tile"><div class="k">Waiting</div><div class="v" style="color:${waiting>inCall&&waiting>2?'var(--warn)':'inherit'}">${num(waiting)}</div><div class="s">looking for a match</div></div>
+    <div class="tile"><div class="k">Signed in</div><div class="v">${num(r.users.filter(u=>u.account).length)}</div><div class="s">rest are guests</div></div>
+  </div>
+  <div class="card anim"><h2>🟢 Live users <span class="sub">${users.length===r.users.length?r.users.length+' connected':users.length+' of '+r.users.length+' shown'} · refreshes every 5s</span></h2>
+  <div class="tbar"><input id="liveQ" class="grow" placeholder="Filter by name, country, IP…" value="${esc(liveQ)}">${liveQ?'<button class="lnk" id="liveClear">Clear</button>':''}</div>
   <table><tr><th>User</th><th>Location</th><th>Status</th><th>Account</th><th class="num">Reports</th><th>IP</th><th></th></tr>
-  ${r.users.map(u=>`<tr><td><b>${esc(u.username)}</b><br><span class="muted">${esc(u.clientId.slice(0,12))}…</span></td>
+  ${users.map(u=>`<tr><td><b>${esc(u.username)}</b><br><span class="muted">${esc(u.clientId.slice(0,12))}…</span></td>
   <td>${esc(u.country)}${u.city&&u.city!=='Unknown'?', '+esc(u.city):''}</td>
   <td>${u.inCall?'<span class="pill good">In call</span>':u.waiting?'<span class="pill warn">Waiting</span>':'<span class="pill info">Idle</span>'}</td>
   <td>${u.account?esc(u.account):'<span class="muted">guest</span>'}</td>
   <td class="num">${u.reports?`<span class="pill crit">${u.reports}</span>`:'0'}</td>
-  <td class="muted">${esc(u.ip)}</td><td>${banButtons(u)}</td></tr>`).join('')||'<tr><td colspan="7" class="muted">Nobody online right now.</td></tr>'}</table></div>`;
+  <td class="muted">${esc(u.ip)}</td><td>${banButtons(u)}</td></tr>`).join('')||`<tr><td colspan="7" class="muted">${liveQ?'No live user matches that filter.':'Nobody online right now.'}</td></tr>`}</table></div>`;
+  const inp=$('#liveQ');
+  onFilterInput(inp,(v)=>{liveQ=v;},()=>viewLive().then(()=>keepFocus('#liveQ')));
+  const cl=$('#liveClear');if(cl)cl.onclick=()=>{liveQ='';viewLive();};
 }
 
+let repFilter='open';
 async function viewReports(){
   const r=await api('reports');
-  $('#main').innerHTML=`<div class="card anim" style="margin-top:0"><h2>🚩 User reports <span class="sub">${r.reports.length} shown · one-click ban with duration</span></h2>
+  const open=r.reports.filter(x=>!x.handled);
+  const list=repFilter==='open'?open:r.reports;
+  const repeat=r.reports.filter(x=>x.totalReportsOnUser>=3&&!x.activeBan);
+  $('#main').innerHTML=`<div class="grid tiles anim" style="margin-top:0">
+    <div class="tile"><div class="k">Unhandled</div><div class="v" style="color:${open.length?'var(--crit)':'inherit'}">${num(open.length)}</div><div class="s">need a decision</div></div>
+    <div class="tile"><div class="k">All reports</div><div class="v">${num(r.reports.length)}</div><div class="s">stored on record</div></div>
+    <div class="tile"><div class="k">Repeat offenders</div><div class="v" style="color:${repeat.length?'var(--warn)':'inherit'}">${num(repeat.length)}</div><div class="s">3+ reports, not banned</div></div>
+  </div>
+  <div class="card anim"><h2>🚩 User reports <span class="sub">${list.length} shown · one-click ban with duration</span></h2>
+  <div class="tbar">
+    <div class="seg"><button data-f="open" class="${repFilter==='open'?'on':''}">Unhandled (${open.length})</button><button data-f="all" class="${repFilter==='all'?'on':''}">All (${r.reports.length})</button></div>
+    ${exportLink('reports','Export reports')}
+  </div>
   <table><tr><th>When</th><th>Reported user</th><th>Reason</th><th>Reporter</th><th class="num">Total reports</th><th>Actions</th></tr>
-  ${r.reports.map(rep=>`<tr style="${rep.handled?'opacity:.55':''}">
+  ${list.map(rep=>`<tr style="${rep.handled?'opacity:.55':''}">
   <td>${ago(rep.ts)}<br><span class="muted">${fmtTs(rep.ts)}</span></td>
   <td><b>${esc(rep.reported.username)}</b><br><span class="muted">${esc(rep.reported.country)}${rep.reported.city&&rep.reported.city!=='Unknown'?', '+esc(rep.reported.city):''}</span>${rep.activeBan?'<br><span class="pill crit">BANNED</span>':''}</td>
   <td>${esc(rep.reason)}${rep.detail?`<br><span class="muted">“${esc(rep.detail)}”</span>`:''}</td>
@@ -706,21 +1026,31 @@ async function viewReports(){
   <td><div class="rowbtns">
     ${rep.activeBan?'':`<button class="danger" onclick="banUser('${jsq(rep.reported.clientId)}','${jsq(rep.reported.ip||'')}','${jsq(rep.reported.username)}','${jsq(rep.reported.country||'')}','${jsq(rep.reported.city||'')}')">Ban…</button>`}
     ${rep.handled?'':`<button onclick="markHandled('${jsq(rep.id)}')">Mark handled</button>`}
-  </div></td></tr>`).join('')||'<tr><td colspan="6" class="muted">No reports yet - good sign!</td></tr>'}</table></div>`;
+  </div></td></tr>`).join('')||`<tr><td colspan="6" class="muted">${repFilter==='open'?'Nothing waiting - every report has been handled. 🎉':'No reports yet - good sign!'}</td></tr>`}</table></div>`;
+  document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{repFilter=b.dataset.f;load();});
 }
-window.markHandled=async(id)=>{await post('reports/'+id+'/handled');load();};
+window.markHandled=async(id)=>{try{await post('reports/'+id+'/handled');toast('Report marked handled','It stays on record, just greyed out.','good');load();}catch(e){toast('Could not update report',e.message,'bad');}};
 
+let banFilter='active';
 async function viewBans(){
   const r=await api('bans');
+  const state=(b)=>b.liftedAt?'lifted':b.expiresAt>r.now?'active':'expired';
+  const active=r.bans.filter(b=>state(b)==='active');
+  const list=banFilter==='active'?active:r.bans;
   $('#main').innerHTML=`<div class="card anim" style="margin-top:0"><h2>⛔ Bans <span class="sub">banned users cannot connect until the ban expires or you lift it</span></h2>
+  <div class="tbar">
+    <div class="seg"><button data-bf="active" class="${banFilter==='active'?'on':''}">Active (${active.length})</button><button data-bf="all" class="${banFilter==='all'?'on':''}">All (${r.bans.length})</button></div>
+    ${exportLink('bans','Export bans')}
+  </div>
   <table><tr><th>User</th><th>Reason</th><th>Banned</th><th>Expires</th><th>Status</th><th></th></tr>
-  ${r.bans.map(b=>{const active=!b.liftedAt&&b.expiresAt>r.now;
-  return `<tr style="${active?'':'opacity:.55'}"><td><b>${esc(b.username)}</b><br><span class="muted">${esc(b.country)}${b.city?', '+esc(b.city):''} · ${esc((b.ip||''))}</span></td>
-  <td>${esc(b.reason)}</td><td>${fmtTs(b.createdAt)}</td><td>${fmtTs(b.expiresAt)}</td>
-  <td>${b.liftedAt?'<span class="pill info">Lifted</span>':active?'<span class="pill crit">Active</span>':'<span class="pill good">Expired</span>'}</td>
-  <td>${active?`<div class="rowbtns"><button onclick="unban('${jsq(b.id)}')">Lift ban</button></div>`:''}</td></tr>`;}).join('')||'<tr><td colspan="6" class="muted">No bans on record.</td></tr>'}</table></div>`;
+  ${list.map(b=>{const st=state(b);
+  return `<tr style="${st==='active'?'':'opacity:.55'}"><td><b>${esc(b.username)}</b><br><span class="muted">${esc(b.country)}${b.city?', '+esc(b.city):''} · ${esc((b.ip||''))}</span></td>
+  <td>${esc(b.reason)}</td><td>${fmtTs(b.createdAt)}</td><td>${fmtTs(b.expiresAt)}${st==='active'?`<br><span class="muted">${ago(b.expiresAt).replace(' ago',' from now').replace('just now','any moment')}</span>`:''}</td>
+  <td>${st==='lifted'?'<span class="pill info">Lifted</span>':st==='active'?'<span class="pill crit">Active</span>':'<span class="pill good">Expired</span>'}</td>
+  <td>${st==='active'?`<div class="rowbtns"><button onclick="unban('${jsq(b.id)}')">Lift ban</button></div>`:''}</td></tr>`;}).join('')||`<tr><td colspan="6" class="muted">${banFilter==='active'?'No active bans right now.':'No bans on record.'}</td></tr>`}</table></div>`;
+  document.querySelectorAll('[data-bf]').forEach(b=>b.onclick=()=>{banFilter=b.dataset.bf;load();});
 }
-window.unban=async(id)=>{try{await post('unban',{banId:id});load();}catch(e){alert(e.message);}};
+window.unban=async(id)=>{try{await post('unban',{banId:id});toast('Ban lifted','The user can connect again.','good');load();}catch(e){toast('Could not lift ban',e.message,'bad');}};
 
 /* ---------- chats: live bubble feed ---------- */
 let chatQuery='';
@@ -744,29 +1074,51 @@ async function viewChats(){
   $('#chatQ').addEventListener('keydown',e=>{if(e.key==='Enter')go();});
 }
 
-let accCountryAll=false;
+let accCountryAll=false,accQ='',accSort='createdAt',accDir=-1;
+const ACC_COLS=[['username','Username'],['nickname','Nickname'],['method','Sign-up method'],['country','Location'],['createdAt','Created'],['lastSeen','Last seen'],['ip','IP']];
+function accSortTh(){
+  return ACC_COLS.map(([k,l])=>`<th class="sortable" data-s="${k}">${l} <span class="ar">${accSort===k?(accDir<0?'▼':'▲'):'↕'}</span></th>`).join('');
+}
 async function viewAccounts(){
   const r=await api('accounts');
-  const accounts=r.accounts||[];
+  const all=r.accounts||[];
+
+  /* Country split is computed over every account, not just the filtered rows -
+     the chart is about the whole audience. */
   const byCountry={};
-  for(const a of accounts){
+  for(const a of all){
     const c=String(a.country||'').trim()||'Unknown';
     byCountry[c]=(byCountry[c]||0)+1;
   }
   const ranked=Object.entries(byCountry).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
-  const total=accounts.length;
+  const total=all.length;
   const shown=accCountryAll?ranked:ranked.slice(0,12);
   const max=Math.max(1,...ranked.map(e=>e[1]));
   const palette=['var(--s1)','var(--s2)','var(--s3)','var(--s5)','var(--accent)','var(--serious)'];
-  const google=accounts.filter(a=>a.method==='google').length;
+  const google=all.filter(a=>a.method==='google').length;
+  const DAY=86400000,now=Date.now();
+  const newWeek=all.filter(a=>a.createdAt&&now-a.createdAt<7*DAY).length;
+  const active7=all.filter(a=>a.lastSeen&&now-a.lastSeen<7*DAY).length;
+
+  const q=accQ.trim().toLowerCase();
+  let rows=q?all.filter(a=>[a.username,a.key,a.nickname,a.country,a.city,a.ip].some(v=>String(v||'').toLowerCase().includes(q))):all.slice();
+  rows.sort((a,b)=>{
+    const va=a[accSort],vb=b[accSort];
+    if(typeof va==='number'||typeof vb==='number')return ((va||0)-(vb||0))*accDir;
+    return String(va||'').localeCompare(String(vb||''))*accDir;
+  });
+
   $('#main').innerHTML=`<div class="grid tiles anim" style="margin-top:0">
     <div class="tile"><div class="k">Accounts</div><div class="v grad" data-count="${total}">0</div><div class="s">registered users</div></div>
     <div class="tile"><div class="k">Countries</div><div class="v" data-count="${ranked.filter(([c])=>c!=='Unknown').length}">0</div><div class="s">distinct countries</div></div>
+    <div class="tile"><div class="k">New this week</div><div class="v" data-count="${newWeek}">0</div><div class="s">signed up in 7 days</div></div>
+    <div class="tile"><div class="k">Active this week</div><div class="v" data-count="${active7}">0</div><div class="s">${pctOf(active7,total)} of all accounts</div></div>
     <div class="tile"><div class="k">Top country</div><div class="v" style="font-size:1.15rem">${ranked.length?esc(ranked[0][0]):'-'}</div><div class="s">${ranked.length?num(ranked[0][1])+' accounts · '+pctOf(ranked[0][1],total):'no data'}</div></div>
     <div class="tile"><div class="k">Sign-up method</div><div class="v" style="font-size:1.15rem">${num(google)} / ${num(total-google)}</div><div class="s">Google / password</div></div>
   </div>
   <div class="card anim"><h2>\u{1F30D} Accounts by country <span class="sub">${ranked.length} ${ranked.length===1?'country':'countries'} · ${num(total)} accounts</span>
-  ${ranked.length>12?`<button id="accCountryToggle" style="margin-left:auto;border:1px solid var(--ring);background:var(--surface-2);color:var(--text);border-radius:9px;padding:6px 12px;font-size:.78rem">${accCountryAll?'Show top 12':'Show all '+ranked.length}</button>`:''}</h2>
+  <span style="margin-left:auto;display:flex;gap:8px">${exportLink('countries','Country CSV')}
+  ${ranked.length>12?`<button class="lnk" id="accCountryToggle">${accCountryAll?'Show top 12':'Show all '+ranked.length}</button>`:''}</span></h2>
   ${shown.map(([c,v],i)=>`<div class="crow">
     <div class="rk">${i+1}</div>
     <div class="cname" title="${esc(c)}">${esc(c)}</div>
@@ -774,15 +1126,82 @@ async function viewAccounts(){
     <div class="cn"><b>${num(v)}</b> <span class="muted">${pctOf(v,total)}</span></div>
   </div>`).join('')||'<div class="muted">No accounts registered yet.</div>'}
   </div>
-  <div class="card anim"><h2>\u{1F464} Registered accounts <span class="sub">${num(total)} total</span></h2>
-  <table><tr><th>Username</th><th>Nickname</th><th>Sign-up method</th><th>Location</th><th>Created</th><th>Last seen</th><th>IP</th></tr>
-  ${accounts.map(a=>`<tr><td><b>${esc(a.username||a.key)}</b></td><td>${esc(a.nickname||'')}</td>
+  <div class="card anim"><h2>\u{1F464} Registered accounts <span class="sub">${q?rows.length+' of '+total+' shown':num(total)+' total'} · click a heading to sort</span></h2>
+  <div class="tbar">
+    <input id="accQ" class="grow" placeholder="Search username, nickname, country, IP…" value="${esc(accQ)}">
+    ${accQ?'<button class="lnk" id="accClear">Clear</button>':''}
+    ${exportLink('accounts','Export accounts')}
+  </div>
+  <table><tr>${accSortTh()}</tr>
+  ${rows.map(a=>`<tr><td><b>${esc(a.username||a.key)}</b></td><td>${esc(a.nickname||'')}</td>
   <td>${a.method==='google'?'<span class="pill info">Google</span>':'<span class="pill good">Password</span>'}</td>
   <td>${esc(a.country||'')}${a.city&&a.city!=='Unknown'?', '+esc(a.city):''}</td>
-  <td>${a.createdAt?fmtTs(a.createdAt):'-'}</td><td>${a.lastSeen?ago(a.lastSeen):'-'}</td><td class="muted">${esc(a.ip||'')}</td></tr>`).join('')||'<tr><td colspan="7" class="muted">No accounts registered yet.</td></tr>'}</table></div>`;
+  <td>${a.createdAt?fmtTs(a.createdAt):'-'}</td><td>${a.lastSeen?ago(a.lastSeen):'-'}</td><td class="muted">${esc(a.ip||'')}</td></tr>`).join('')||`<tr><td colspan="7" class="muted">${q?'No account matches that search.':'No accounts registered yet.'}</td></tr>`}</table></div>`;
   animateCounters();
   const tg=$('#accCountryToggle');
   if(tg)tg.onclick=()=>{accCountryAll=!accCountryAll;viewAccounts();};
+  const inp=$('#accQ');
+  onFilterInput(inp,(v)=>{accQ=v;},()=>viewAccounts().then(()=>keepFocus('#accQ')));
+  const cl=$('#accClear');if(cl)cl.onclick=()=>{accQ='';viewAccounts();};
+  document.querySelectorAll('th[data-s]').forEach(th=>th.onclick=()=>{
+    const k=th.dataset.s;
+    if(accSort===k)accDir=-accDir; else {accSort=k;accDir=(k==='createdAt'||k==='lastSeen')?-1:1;}
+    viewAccounts();
+  });
+}
+
+/* ---------- revenue: subscriptions, referrals, push reach ---------- */
+async function viewRevenue(){
+  const r=await api('premium');
+  const t=r.totals,ref=r.referrals;
+  const act=r.activations.slice(-14);
+  const actMax=Math.max(1,...act.map(d=>Math.max(d.activated,d.cancelled)));
+  const srcColor={stripe:'var(--good)',referral:'var(--s1)',client:'var(--s3)',unknown:'var(--muted)'};
+  const expiringSoon=r.rows.filter(x=>x.status==='active'&&x.expiresAt&&x.expiresAt-Date.now()<7*86400000);
+  $('#main').innerHTML=`<div class="grid tiles anim" style="margin-top:0">
+    <div class="tile"><div class="k">💎 Active Plus</div><div class="v grad" data-count="${t.active}">0</div><div class="s">${num(t.paying)} paying · ${num(t.permanent)} permanent</div></div>
+    <div class="tile"><div class="k">Expiring in 7 days</div><div class="v" style="color:${t.expiringIn7Days?'var(--warn)':'inherit'}" data-count="${t.expiringIn7Days}">0</div><div class="s">renew or lapse</div></div>
+    <div class="tile"><div class="k">Lapsed</div><div class="v" data-count="${t.expired}">0</div><div class="s">${num(t.revoked)} cancelled</div></div>
+    <div class="tile"><div class="k">Conversion</div><div class="v">${pctOf(t.active,r.accounts||0)}</div><div class="s">of ${num(r.accounts||0)} accounts</div></div>
+    <div class="tile"><div class="k">Referral signups</div><div class="v" data-count="${ref.joined}">0</div><div class="s">${num(ref.qualified)} qualified · ${num(ref.pendingClaims)} pending</div></div>
+    <div class="tile"><div class="k">Push reach</div><div class="v" data-count="${r.push.subscribers}">0</div><div class="s">${num(r.push.endpoints)} devices subscribed</div></div>
+  </div>
+
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
+    <div class="card anim"><h2>📈 Plus activity <span class="sub">last 14 days</span></h2>
+      <div class="legend"><span><i style="background:var(--good)"></i>Activated</span><span><i style="background:var(--crit)"></i>Cancelled</span></div>
+      ${act.map(d=>`<div class="hrow"><div>${esc(d.day.slice(5))}</div>
+        <div style="display:flex;gap:3px;flex-direction:column">
+          <div class="hbar" style="width:${d.activated?Math.max(3,d.activated/actMax*100):0}%;background:var(--good);height:9px"></div>
+          <div class="hbar" style="width:${d.cancelled?Math.max(3,d.cancelled/actMax*100):0}%;background:var(--crit);height:9px"></div>
+        </div><div class="n">+${num(d.activated)} / -${num(d.cancelled)}</div></div>`).join('')||'<div class="muted">No subscription events recorded yet.</div>'}
+    </div>
+    <div class="card anim"><h2>🏷️ Where Plus comes from <span class="sub">active grants by source</span></h2>
+      ${r.bySource.map(([src,n])=>`<div class="hrow"><div>${esc(src)}</div><div><div class="hbar" style="width:${Math.max(2,n/Math.max(1,t.active)*100)}%;background:${srcColor[src]||'var(--s5)'}"></div></div><div class="n">${num(n)}</div></div>`).join('')||'<div class="muted">Nobody is on Plus yet.</div>'}
+      <div class="muted" style="margin-top:10px">stripe = paid · referral = invite reward · client = granted for testing or support</div>
+    </div>
+  </div>
+
+  ${expiringSoon.length?`<div class="card anim"><h2>⏳ Lapsing within 7 days <span class="sub">${expiringSoon.length} subscriber(s)</span></h2>
+  <table><tr><th>Client</th><th>Source</th><th>Expires</th><th>Last event</th></tr>
+  ${expiringSoon.slice(0,25).map(x=>`<tr><td class="muted">${esc(x.clientId.slice(0,16))}…</td><td>${esc(x.source)}</td><td>${fmtTs(x.expiresAt)}</td><td class="muted">${esc(x.lastEvent||'')}</td></tr>`).join('')}</table></div>`:''}
+
+  <div class="card anim"><h2>🎁 Top referrers <span class="sub">${num(ref.codes)} codes issued · ${num(ref.rewardedDays)} reward days paid out</span></h2>
+  <table><tr><th>Code</th><th>Client</th><th class="num">Invited</th><th class="num">Qualified</th><th class="num">Reward days</th><th>Since</th></tr>
+  ${ref.top.map(o=>`<tr><td><b>${esc(o.code)}</b></td><td class="muted">${esc(o.clientId.slice(0,14))}…</td>
+  <td class="num">${num(o.joined)}</td><td class="num">${num(o.qualified)}</td><td class="num">${num(o.rewardedDays)}</td>
+  <td>${o.createdAt?fmtTs(o.createdAt):'-'}</td></tr>`).join('')||'<tr><td colspan="6" class="muted">No referral codes used yet.</td></tr>'}</table></div>
+
+  <div class="card anim"><h2>💎 All subscriptions <span class="sub">${num(t.all)} on record · newest change first</span>
+  <span style="margin-left:auto">${exportLink('premium','Export subscriptions')}</span></h2>
+  <table><tr><th>Client</th><th>Status</th><th>Source</th><th>Started</th><th>Expires</th><th>Last event</th></tr>
+  ${r.rows.slice(0,200).map(x=>`<tr style="${x.status==='active'?'':'opacity:.6'}"><td class="muted">${esc(x.clientId.slice(0,16))}…</td>
+  <td>${x.status==='active'?`<span class="pill good">Active${x.permanent?' · permanent':''}</span>`:x.status==='expired'?'<span class="pill warn">Lapsed</span>':'<span class="pill crit">Cancelled</span>'}</td>
+  <td>${esc(x.source)}${x.paying?' <span class="pill info">paid</span>':''}</td>
+  <td>${x.activatedAt?fmtTs(x.activatedAt):'-'}</td>
+  <td>${x.expiresAt?fmtTs(x.expiresAt):x.status==='active'?'<span class="muted">never</span>':'-'}</td>
+  <td class="muted">${esc(x.lastEvent||'')}</td></tr>`).join('')||'<tr><td colspan="6" class="muted">No subscriptions yet. Once Stripe checkout or a referral reward runs, it shows up here.</td></tr>'}</table></div>`;
+  animateCounters();
 }
 
 async function viewErrors(){
@@ -798,27 +1217,37 @@ async function viewErrors(){
   const cb=$('#clearErrs');
   if(cb)cb.onclick=async()=>{if(confirm('Clear every error record?')){await post('errors/dismiss',{all:true});load();}};
 }
-window.dismissError=async(id)=>{await post('errors/dismiss',{id});load();};
+window.dismissError=async(id)=>{try{await post('errors/dismiss',{id});toast('Error dismissed','If it happens again it comes straight back.');load();}catch(e){toast('Could not dismiss',e.message,'bad');}};
 
+let fbQ='';
 async function viewFeedback(){
   const r=await api('feedback');
-  $('#main').innerHTML=`<div class="card anim" style="margin-top:0"><h2>⭐ User feedback <span class="sub">${r.feedback.length} total</span></h2>
+  const q=fbQ.trim().toLowerCase();
+  const list=q?r.feedback.filter(f=>[f.username,f.text,f.country].some(v=>String(v||'').toLowerCase().includes(q))):r.feedback;
+  const week=r.feedback.filter(f=>Date.now()-f.ts<7*86400000).length;
+  $('#main').innerHTML=`<div class="card anim" style="margin-top:0"><h2>⭐ User feedback <span class="sub">${q?list.length+' of '+r.feedback.length+' shown':r.feedback.length+' total'} · ${num(week)} this week</span></h2>
+  <div class="tbar"><input id="fbQ" class="grow" placeholder="Search feedback…" value="${esc(fbQ)}">${fbQ?'<button class="lnk" id="fbClear">Clear</button>':''}${exportLink('feedback','Export feedback')}</div>
   <div class="feed">
-  ${r.feedback.map(f=>`<div class="fmsg"><div class="top"><span><b>${esc(f.username)}</b>${f.country?` · ${esc(f.country)}`:''}</span><span>${ago(f.ts)} · ${fmtTs(f.ts)}</span></div>
-  <div class="txt">${esc(f.text)}</div></div>`).join('')||'<div class="muted">No feedback yet.</div>'}
+  ${list.map(f=>`<div class="fmsg"><div class="top"><span><b>${esc(f.username)}</b>${f.country?` · ${esc(f.country)}`:''}</span><span>${ago(f.ts)} · ${fmtTs(f.ts)}</span></div>
+  <div class="txt">${esc(f.text)}</div></div>`).join('')||`<div class="muted">${q?'No feedback matches that search.':'No feedback yet.'}</div>`}
   </div></div>`;
+  const inp=$('#fbQ');
+  onFilterInput(inp,(v)=>{fbQ=v;},()=>viewFeedback().then(()=>keepFocus('#fbQ')));
+  const cl=$('#fbClear');if(cl)cl.onclick=()=>{fbQ='';viewFeedback();};
 }
 
 async function viewAudit(){
   const r=await api('audit');
-  $('#main').innerHTML=`<div class="card anim" style="margin-top:0"><h2>🧾 Security audit log <span class="sub">every login, ban and admin action</span></h2>
+  const fails=r.audit.filter(a=>/fail|lockout/.test(a.action)).length;
+  $('#main').innerHTML=`<div class="card anim" style="margin-top:0"><h2>🧾 Security audit log <span class="sub">every login, ban and admin action · ${r.audit.length} entries${fails?` · <b style="color:var(--crit)">${fails} failed sign-in event(s)</b>`:''}</span></h2>
   <table><tr><th>When</th><th>Action</th><th>IP</th><th>Detail</th></tr>
-  ${r.audit.map(a=>`<tr><td>${fmtTs(a.ts)}</td><td><span class="pill ${/fail|lockout/.test(a.action)?'crit':'info'}">${esc(a.action)}</span></td><td class="muted">${esc(a.ip)}</td><td>${esc(a.detail)}</td></tr>`).join('')||'<tr><td colspan="4" class="muted">Empty.</td></tr>'}</table></div>`;
+  ${r.audit.map(a=>`<tr><td>${fmtTs(a.ts)}<br><span class="muted">${ago(a.ts)}</span></td><td><span class="pill ${/fail|lockout/.test(a.action)?'crit':'info'}">${esc(a.action)}</span></td><td class="muted">${esc(a.ip)}</td><td>${esc(a.detail)}</td></tr>`).join('')||'<tr><td colspan="4" class="muted">Empty.</td></tr>'}</table></div>`;
 }
 
 async function viewSettings(){
   const o=await api('overview');
   const m=o.maintenance;
+  const theme=currentTheme();
   $('#main').innerHTML=`<div class="card anim" style="margin-top:0"><h2>🛠️ Maintenance mode</h2>
   <p class="muted" style="margin-bottom:12px">When on, visitors see a friendly maintenance page and nobody can connect. Your dashboard stays available.</p>
   <div class="switch"><b>Status:</b> ${m.on?'<span class="pill crit">MAINTENANCE ON - site is down for users</span>':'<span class="pill good">Site is LIVE</span>'}</div>
@@ -826,13 +1255,38 @@ async function viewSettings(){
   <textarea id="maintMsg" rows="3">${esc(m.message)}</textarea>
   <div class="rowbtns" style="margin-top:12px">
     <button class="${m.on?'':'danger'}" id="maintBtn">${m.on?'✅ Bring site back online':'⛔ Take site into maintenance'}</button>
-  </div></div>`;
+  </div></div>
+
+  <div class="card anim"><h2>🎨 Appearance</h2>
+  <p class="muted" style="margin-bottom:12px">Stored in this browser only. Press <b>t</b> anywhere to cycle it.</p>
+  <div class="seg">${THEMES.map(t=>`<button data-theme-set="${t}" class="${theme===t?'on':''}">${t==='auto'?'🌗 Auto':t==='dark'?'🌙 Dark':'☀️ Light'}</button>`).join('')}</div></div>
+
+  <div class="card anim"><h2>⬇️ Export your data <span class="sub">downloads a copy · nothing is removed from the server</span></h2>
+  <div class="tbar" style="margin:0">
+    ${exportLink('accounts','Accounts')}${exportLink('daily','Daily traffic')}${exportLink('countries','Countries')}
+    ${exportLink('premium','Subscriptions')}${exportLink('bans','Bans')}${exportLink('reports','Reports')}${exportLink('feedback','Feedback')}
+  </div></div>
+
+  <div class="card anim"><h2>⌨️ Shortcuts &amp; tips</h2>
+  <div class="kbdlist">${SHORTCUTS.map(([k,d])=>`<kbd>${esc(k)}</kbd><span>${esc(d)}</span>`).join('')}</div>
+  <p class="muted" style="margin-top:12px">Report timezone is set in the Activity tab and is used everywhere “today” appears.</p></div>`;
   $('#maintBtn').onclick=async()=>{
     if(!m.on&&!confirm('Take TalkLive OFFLINE for all users?'))return;
-    await post('maintenance',{on:!m.on,message:$('#maintMsg').value});load();
+    try{
+      await post('maintenance',{on:!m.on,message:$('#maintMsg').value});
+      toast(m.on?'Site is live again':'Maintenance mode ON',m.on?'Users can connect.':'Visitors now see your maintenance message.',m.on?'good':'warn');
+      load();
+    }catch(e){toast('Could not change maintenance mode',e.message,'bad');}
   };
+  document.querySelectorAll('[data-theme-set]').forEach(b=>b.onclick=()=>{
+    const t=b.dataset.themeSet;
+    try{localStorage.setItem('tl_theme',t);}catch(e){}
+    applyTheme(t);viewSettings();
+  });
 }
 
+window.go=go;
+window.load=load;
 boot();
 </script>
 </body>
