@@ -277,8 +277,8 @@ const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 // --- Premium (TalkLive Plus) -------------------------------------------------
 // Free-tier limits; premium removes all of them.
 const FREE_LIMITS = {
-  countries: 3, // max countries per preferred/not-preferred list
-  friends: 10, // max friends
+  countries: 2, // max countries per preferred/not-preferred list
+  friends: 5, // max friends
 };
 // Premium registry lives in the persistent store (Postgres/file) so grants
 // survive restarts and deploys. Grants come from three places now: a Stripe

@@ -4947,14 +4947,14 @@ refreshNetStatus();
 // (who upgrade via /pricing) get everything unlocked. The server enforces
 // all limits - this state only drives the UI.
 let isPremiumUser = false;
-let freeLimits = { countries: 3, friends: 10 };
+let freeLimits = { countries: 2, friends: 5 };
 
 socket.on('premium-status', ({ premium, limits } = {}) => {
   isPremiumUser = !!premium;
   if (limits) {
     freeLimits = {
-      countries: limits.countries || 3,
-      friends: limits.friends || 10,
+      countries: limits.countries || 2,
+      friends: limits.friends || 5,
     };
   }
   updatePremiumUi();

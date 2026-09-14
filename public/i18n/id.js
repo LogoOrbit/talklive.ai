@@ -192,6 +192,6 @@ window.I18N_STRINGS.id = {
   "premiumFriendLimit": "Paket gratis memungkinkan hingga {n} teman.",
   "adPassExpired": "Waktu Premium gratismu telah habis. Tonton iklan lagi untuk membukanya kembali!",
   "adPassBadge": "⭐ Premium · {time}",
-  "filtersAdUnlockText": "Paket gratis: hingga 3 negara per daftar, filter gender terkunci. Tonton iklan singkat untuk membuka semuanya selama 5 menit - gratis."
+  "filtersAdUnlockText": "Paket gratis: hingga 2 negara per daftar, filter gender terkunci. Tonton iklan singkat untuk membuka semuanya selama 5 menit - gratis."
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("id");

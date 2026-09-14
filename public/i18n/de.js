@@ -192,6 +192,6 @@ window.I18N_STRINGS.de = {
   "premiumFriendLimit": "Der Gratis-Plan erlaubt bis zu {n} Freunde.",
   "adPassExpired": "Deine kostenlose Premium-Zeit ist abgelaufen. Sieh dir eine weitere Werbung an, um erneut freizuschalten!",
   "adPassBadge": "⭐ Premium · {time}",
-  "filtersAdUnlockText": "Gratis-Plan: bis zu 3 Länder pro Liste, Geschlechtsfilter gesperrt. Sieh dir eine kurze Werbung an und schalte alles für 5 Minuten frei - kostenlos."
+  "filtersAdUnlockText": "Gratis-Plan: bis zu 2 Länder pro Liste, Geschlechtsfilter gesperrt. Sieh dir eine kurze Werbung an und schalte alles für 5 Minuten frei - kostenlos."
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("de");

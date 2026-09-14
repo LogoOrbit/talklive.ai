@@ -192,6 +192,6 @@ window.I18N_STRINGS.ko = {
   "premiumFriendLimit": "무료 플랜은 친구를 최대 {n}명까지 추가할 수 있습니다.",
   "adPassExpired": "무료 프리미엄 시간이 끝났습니다. 광고를 한 번 더 보고 다시 잠금 해제하세요!",
   "adPassBadge": "⭐ 프리미엄 · {time}",
-  "filtersAdUnlockText": "무료 플랜: 목록당 최대 3개 국가, 성별 필터 잠김. 짧은 광고 한 편이면 모든 기능이 5분간 무료로 열립니다."
+  "filtersAdUnlockText": "무료 플랜: 목록당 최대 2개 국가, 성별 필터 잠김. 짧은 광고 한 편이면 모든 기능이 5분간 무료로 열립니다."
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("ko");

@@ -97,7 +97,7 @@ A flat monthly fee removes ads and unlocks all filters.
   MRR, and it is honest - which matters for a product whose whole promise is
   "we are the safe one".
 - *Why it fits TalkLive:* the free tier is already designed as a subscription
-  free tier (3 countries, 10 friends, gender locked). The plumbing was the only
+  free tier (2 countries, 5 friends, gender locked). The plumbing was the only
   thing missing.
 
 **The recommendation: Model B as the core, with one borrowed mechanic from A.**

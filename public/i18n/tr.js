@@ -192,6 +192,6 @@ window.I18N_STRINGS.tr = {
   "premiumFriendLimit": "Ücretsiz plan en fazla {n} arkadaşa izin verir.",
   "adPassExpired": "Ücretsiz Premium süren doldu. Tekrar açmak için bir reklam daha izle!",
   "adPassBadge": "⭐ Premium · {time}",
-  "filtersAdUnlockText": "Ücretsiz plan: liste başına en fazla 3 ülke, cinsiyet filtresi kilitli. Kısa bir reklam izleyerek her şeyi 5 dakikalığına aç - ücretsiz."
+  "filtersAdUnlockText": "Ücretsiz plan: liste başına en fazla 2 ülke, cinsiyet filtresi kilitli. Kısa bir reklam izleyerek her şeyi 5 dakikalığına aç - ücretsiz."
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("tr");

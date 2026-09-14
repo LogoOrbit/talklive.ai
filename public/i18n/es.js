@@ -192,6 +192,6 @@ window.I18N_STRINGS.es = {
   "premiumFriendLimit": "El plan gratuito permite hasta {n} amigos.",
   "adPassExpired": "Tu tiempo Premium gratis terminó. ¡Mira otro anuncio para desbloquearlo de nuevo!",
   "adPassBadge": "⭐ Premium · {time}",
-  "filtersAdUnlockText": "Plan gratuito: hasta 3 países por lista, filtro de género bloqueado. Mira un anuncio corto para desbloquear todo durante 5 minutos, gratis."
+  "filtersAdUnlockText": "Plan gratuito: hasta 2 países por lista, filtro de género bloqueado. Mira un anuncio corto para desbloquear todo durante 5 minutos, gratis."
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("es");

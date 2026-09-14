@@ -100,7 +100,7 @@ A secured owner dashboard lives at **`/owner`** (e.g. `https://talklive.app/owne
 
 ### Premium (TalkLive Plus)
 
-Free tier limits (enforced server-side): max 3 preferred + 3 avoided countries, max 10 friends, and the gender filter locked. Premium unlocks all filters, unlimited friends, and no ads. The `/pricing` upgrade button sends buyers to the TalkLive Patreon join page.
+Free tier limits (enforced server-side): max 2 preferred + 2 avoided countries, max 5 friends, and the gender filter locked. Premium unlocks all filters, unlimited friends, and no ads. The `/pricing` upgrade button sends buyers to the TalkLive Patreon join page.
 
 Matching is instant for everyone. The free tier used to be held ~5s before the
 next search after a skip; that was removed because the client also emits `skip`

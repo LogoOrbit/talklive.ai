@@ -192,6 +192,6 @@ window.I18N_STRINGS.ja = {
   "premiumFriendLimit": "無料プランでは友達は最大{n}人までです。",
   "adPassExpired": "無料プレミアム時間が終了しました。もう一度広告を見てアンロックしましょう！",
   "adPassBadge": "⭐ プレミアム · {time}",
-  "filtersAdUnlockText": "無料プラン：各リスト最大3か国、性別フィルターはロック中。短い広告を見るだけで、すべてを5分間無料でアンロックできます。"
+  "filtersAdUnlockText": "無料プラン：各リスト最大2か国、性別フィルターはロック中。短い広告を見るだけで、すべてを5分間無料でアンロックできます。"
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("ja");

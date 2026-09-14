@@ -192,6 +192,6 @@ window.I18N_STRINGS.zh = {
   "premiumFriendLimit": "免费版最多可添加 {n} 位好友。",
   "adPassExpired": "你的免费高级版时间已结束。再看一个广告即可重新解锁！",
   "adPassBadge": "⭐ 高级版 · {time}",
-  "filtersAdUnlockText": "免费版：每个列表最多 3 个国家，性别筛选已锁定。观看一段短广告即可免费解锁全部功能 5 分钟。"
+  "filtersAdUnlockText": "免费版：每个列表最多 2 个国家，性别筛选已锁定。观看一段短广告即可免费解锁全部功能 5 分钟。"
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("zh");
