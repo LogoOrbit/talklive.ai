@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server/index.js",
     "dev": "node server/index.js",
+    "build:usernames": "node scripts/build-username-words.js",
     "build:seo": "node scripts/build-seo.js && node scripts/migrate-schema.js && node scripts/migrate-hub-schema.js && node scripts/migrate-pwa.js && node scripts/migrate-adsterra.js && node scripts/migrate-analytics.js",
     "ads:adsterra": "node scripts/migrate-adsterra.js",
     "audit:seo": "node scripts/audit-seo.js",
