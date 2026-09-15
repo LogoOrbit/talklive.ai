@@ -4486,9 +4486,6 @@ body.panel-open .side-panel {
   grid-template-columns: 1fr 1fr;
   gap: 6px;
 }
-/* Filters / call history inside an accordion body, above the toggle rows. */
-.settings-inline-links { margin-bottom: 2px; }
-
 .settings-link {
   display: flex;
   align-items: center;
@@ -4533,25 +4530,6 @@ body.panel-open .side-panel {
   position: relative;
 }
 
-/* Call history opened from Settings has no top-bar icon to hang off, so it
-   sits centred on screen like a small modal instead. */
-.history-dropdown.is-floating:not(.hidden) {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  right: auto;
-  transform: translate(-50%, -50%);
-  transform-origin: center;
-  z-index: 600;
-  animation: dropdownInCentered 0.2s cubic-bezier(.2,.85,.25,1);
-}
-@keyframes dropdownInCentered {
-  from { opacity: 0; transform: translate(-50%, -50%) scale(0.96); }
-  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .history-dropdown.is-floating:not(.hidden) { animation: none; }
-}
 
 .friends-dropdown .friend-item {
   flex-wrap: wrap;

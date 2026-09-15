@@ -15,9 +15,9 @@
      rather than after it - the sooner it lands, the sooner the hero paints.
      Analytics and ad tags are loaded at the end of <body> instead of here so
      they stop competing for mobile bandwidth during Largest Contentful Paint. -->
-<link rel="stylesheet" href="style.css?v=20260915ui2" />
-<link rel="stylesheet" href="chat-extras.css?v=20260915ui2" />
-<link rel="stylesheet" href="games.css?v=20260915ui2" />
+<link rel="stylesheet" href="style.css?v=20260915ui3" />
+<link rel="stylesheet" href="chat-extras.css?v=20260915ui3" />
+<link rel="stylesheet" href="games.css?v=20260915ui3" />
 <script defer src="/config.js"></script>
 
 <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
@@ -220,12 +220,8 @@
         </button>
       </div>
       <nav class="header-tools" aria-label="TalkLive tools">
-        <!-- Call history lives in Settings, not the top bar: the call screen
-             stays down to the controls a live conversation actually needs. The
-             dropdown stays here so it keeps its existing styling; it is
-             centred on screen when opened from Settings. -->
         <div class="history-wrap">
-          <button id="historyBtn" class="icon-btn hidden" data-i18n-title="historyAria" data-i18n-aria="historyAria" title="Call history" aria-label="Call history">
+          <button id="historyBtn" class="icon-btn" data-i18n-title="historyAria" data-i18n-aria="historyAria" title="Call history" aria-label="Call history">
             <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <circle cx="12" cy="12" r="8.5"/>
               <path d="M12 7.5V12l3.2 2"/>
@@ -250,8 +246,7 @@
             <span id="friendsMsgBadge" class="notif-badge hidden" aria-hidden="true">0</span>
           </button>
         </div>
-        <!-- Match filters are a Settings control too (see above). -->
-        <button id="filtersBtn" class="icon-btn hidden" data-i18n-title="filtersAria" data-i18n-aria="filtersAria" title="Match filters" aria-label="Match filters">
+        <button id="filtersBtn" class="icon-btn" data-i18n-title="filtersAria" data-i18n-aria="filtersAria" title="Match filters" aria-label="Match filters">
           <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <line x1="4" y1="6" x2="20" y2="6"/>
             <circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"/>
@@ -426,13 +421,6 @@
                     <button type="button" class="pill" data-value="ocean"><span class="pill-dot theme-dot-ocean" aria-hidden="true"></span><span data-i18n="themeOcean">Ocean</span></button>
                     <button type="button" class="pill" data-value="sunset"><span class="pill-dot theme-dot-sunset" aria-hidden="true"></span><span data-i18n="themeSunset">Sunset</span></button>
                   </div>
-                </div>
-
-                <!-- Match filters and call history used to sit in the top bar;
-                     they live here now so the call screen stays uncluttered. -->
-                <div class="settings-links settings-inline-links">
-                  <button type="button" id="settingsFiltersBtn" class="settings-link" data-i18n="filters">Filters</button>
-                  <button type="button" id="settingsHistoryBtn" class="settings-link" data-i18n="callHistory">Call History</button>
                 </div>
 
                 <label class="toggle-row" for="soundToggle">
@@ -1572,8 +1560,8 @@
        browser finish parsing and paint the page first. -->
   <script defer src="/socket.io/socket.io.js"></script>
   <script defer src="countries.js?v=20260828fix"></script>
-  <script defer src="i18n.js?v=20260915ui2"></script>
-  <script defer src="animals.js?v=20260915ui2"></script>
+  <script defer src="i18n.js?v=20260915ui3"></script>
+  <script defer src="animals.js?v=20260915ui3"></script>
   <script defer src="moderation.js?v=20260705b"></script>
   <script defer src="error-reporter.js?v=20260823ui"></script>
   <script>
@@ -1607,9 +1595,9 @@
       audio.addEventListener('play', function () { setState(true); });
     })();
   </script>
-  <script defer src="chat-extras.js?v=20260915ui2"></script>
-  <script defer src="games.js?v=20260915ui2"></script>
-  <script defer src="app.js?v=20260915ui2"></script>
+  <script defer src="chat-extras.js?v=20260915ui3"></script>
+  <script defer src="games.js?v=20260915ui3"></script>
+  <script defer src="app.js?v=20260915ui3"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

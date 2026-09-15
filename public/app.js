@@ -935,14 +935,6 @@ function closeFilters() {
 
 filtersBtn.addEventListener('click', openFilters);
 
-// Filters and call history are reached from Settings rather than the top bar.
-const settingsFiltersBtn = document.getElementById('settingsFiltersBtn');
-if (settingsFiltersBtn) {
-  settingsFiltersBtn.addEventListener('click', () => {
-    closeAppSettings();
-    openFilters();
-  });
-}
 closeFiltersBtn.addEventListener('click', closeFilters);
 filtersOverlay.addEventListener('click', closeFilters);
 
@@ -1027,11 +1019,7 @@ function openModal(modal) {
   // On small screens the toolbar dropdowns are position:fixed - anchor them
   // just under their own button so they open correctly at any scroll position
   // now that the header is sticky.
-  if (modal.classList.contains('is-floating')) {
-    // Opened from Settings: centred by CSS, so no button to anchor to.
-    modal.style.top = '';
-    modal.style.maxHeight = '';
-  } else if (modal.classList.contains('notif-dropdown') && window.matchMedia('(max-width: 480px)').matches) {
+  if (modal.classList.contains('notif-dropdown') && window.matchMedia('(max-width: 480px)').matches) {
     const btn = modal.parentElement ? modal.parentElement.querySelector('button.icon-btn') : null;
     if (btn) {
       const r = btn.getBoundingClientRect();
@@ -2337,26 +2325,11 @@ historyBtn.addEventListener('click', (e) => {
   const willOpen = historyDropdown.classList.contains('hidden');
   if (willOpen) {
     renderHistory();
-    historyDropdown.classList.remove('is-floating');
     openModal(historyDropdown);
   } else {
     closeModal(historyDropdown);
   }
 });
-const settingsHistoryBtn = document.getElementById('settingsHistoryBtn');
-if (settingsHistoryBtn) {
-  settingsHistoryBtn.addEventListener('click', (e) => {
-    // Without this the document-level "click outside" handler below would
-    // close the dropdown in the same tick it was opened.
-    e.stopPropagation();
-    closeAppSettings();
-    renderHistory();
-    // Opened from Settings there is no top-bar icon to hang off, so centre it.
-    historyDropdown.classList.add('is-floating');
-    openModal(historyDropdown);
-  });
-}
-
 closeHistoryBtn.addEventListener('click', () => closeModal(historyDropdown));
 document.addEventListener('click', (e) => {
   if (!e.composedPath().includes(historyWrap)) closeModal(historyDropdown);
@@ -3544,10 +3517,11 @@ function enterCallUI() {
   stageEl.classList.add('call-live');
   chatToggleBtn.classList.remove('hidden');
   appSettingsBtn.classList.remove('hidden');
+  historyBtn.classList.remove('hidden');
   friendsBtn.classList.remove('hidden');
+  filtersBtn.classList.remove('hidden');
   gameBtn.classList.remove('hidden');
-  // History and filters are Settings entries now, so the call screen keeps
-  // only the controls a live conversation needs.
+  // Auth is the one header control the call screen drops.
   renderHeaderAuthVisibility();
 }
 
