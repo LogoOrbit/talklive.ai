@@ -1369,9 +1369,13 @@ body.panel-open .side-panel {
 @media (max-width: 520px) {
   /* The wordmark yields only when the header actually needs the room.
    *
-   * Idle, the tools group is three buttons and "TalkLive" fits comfortably. In
-   * a call the game and chat buttons unhide and it does not, so :has() drops
-   * the wordmark for exactly that state and brings it back when the call ends.
+   * Two states cost more than the row has: a call, where the game and chat
+   * buttons unhide and the tools group goes from three buttons to five, and
+   * the signed-out landing screen, where Log In / Sign Up sit beside the live
+   * count. In both the wordmark ran straight into the first tool icon, so
+   * :has() drops it for exactly those states and brings it back afterwards -
+   * when the call ends, or once the user is signed in and the pair collapses
+   * to a single account icon.
    * The brand keeps its dot, its tap target and its reload behaviour either
    * way - only the lettering goes, and only while it would cost a control its
    * space.
@@ -1380,11 +1384,13 @@ body.panel-open .side-panel {
    * scrolls instead. Both outcomes keep every control reachable, which is why
    * this is safe to lean on. */
   .topbar:has(#gameBtn:not(.hidden)) .brand-name,
-  .topbar:has(#chatToggleBtn:not(.hidden)) .brand-name {
+  .topbar:has(#chatToggleBtn:not(.hidden)) .brand-name,
+  .topbar:has(#headerAuth:not(.hidden)) .brand-name {
     display: none;
   }
   .topbar:has(#gameBtn:not(.hidden)) .brand,
-  .topbar:has(#chatToggleBtn:not(.hidden)) .brand {
+  .topbar:has(#chatToggleBtn:not(.hidden)) .brand,
+  .topbar:has(#headerAuth:not(.hidden)) .brand {
     width: 40px;
     justify-content: center;
     gap: 0;
