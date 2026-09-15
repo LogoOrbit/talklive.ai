@@ -1,4 +1,6 @@
 node_modules/
+.env
+.env.local
 # Root-anchored on purpose. A bare `data/` matches a directory of that name at
 # any depth, which silently swallowed scripts/data/ - the SEO builder's source
 # dataset - and would have shipped a deploy whose build could not run. This
