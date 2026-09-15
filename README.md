@@ -139,6 +139,7 @@ A secured owner dashboard lives at **`/owner`** (e.g. `https://talklive.app/owne
 | `TURN_FORCE_RELAY` | `1` forces browsers to use relay candidates only, so neither peer learns the other's IP. **Ignored unless a TURN relay is actually configured** - forcing relay with no relay leaves the browser with zero candidates and every call connects with no audio. Run `npm run check:turn` before setting it |
 | `STRIPE_SECRET_KEY`, `STRIPE_PRICE_MONTHLY`, `STRIPE_PRICE_YEARLY`, `STRIPE_WEBHOOK_SECRET` | Stripe Checkout for TalkLive Plus. All optional: with none set, `/pricing` keeps its "coming soon" card and no checkout exists. See [GROWTH.md](GROWTH.md) |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_CONTACT` | Web push keypair. Optional; without it the browser is never asked for notification permission. **Never rotate** - it silently invalidates every existing subscription |
+| `TENOR_API_KEY` | Tenor (Google) API key, enabling the GIF picker in text chat. Optional: with it unset, `/api/gifs/config` reports the feature off and both clients never render the GIF button at all, so nothing dead is shown. Requests are proxied through `/api/gifs` so the key never reaches a browser, results are cached for 10 minutes per query, and `contentfilter=high` (Tenor's strictest tier) is always sent. `TENOR_CLIENT_KEY` optionally names the integration in Tenor's analytics |
 
 ### Premium (TalkLive Plus)
 

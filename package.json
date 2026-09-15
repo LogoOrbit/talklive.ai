@@ -15,6 +15,7 @@
     "test:billing": "node scripts/test-billing.js",
     "test:referral": "node scripts/test-referral.js",
     "test:reset": "node scripts/test-password-reset.js",
+    "test:chat": "node scripts/test-chat-extras.js",
     "seo:ping": "node scripts/ping-indexnow.js"
   },
   "dependencies": {

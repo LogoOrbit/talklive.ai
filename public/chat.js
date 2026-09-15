@@ -201,15 +201,36 @@
   // ---------------------------------------------------------------------------
   // Messages
   // ---------------------------------------------------------------------------
-  function addMessage(text, who) {
+  // `meta` carries the rich parts of a message - its id, the message it replies
+  // to, an attached GIF. System lines pass none and stay a plain text node.
+  function addMessage(text, who, meta) {
     var el = document.createElement('div');
     el.className = 'msg ' + who;
-    el.textContent = text;
+    if (text) {
+      // The text lives in its own span once a bubble can also hold a quote, a
+      // GIF and a reaction row - otherwise they cannot be stacked.
+      var body = document.createElement('span');
+      body.className = 'msg-text';
+      body.textContent = text;
+      el.appendChild(body);
+    }
     msgs.appendChild(el);
+    if (meta && extras) {
+      extras.decorate(el, {
+        id: meta.id,
+        mine: who === 'me',
+        text: text,
+        replyTo: meta.replyTo,
+        gif: meta.gif,
+      });
+    }
     msgs.scrollTop = msgs.scrollHeight;
     return el;
   }
-  function clearMessages() { msgs.innerHTML = ''; }
+  function clearMessages() {
+    msgs.innerHTML = '';
+    if (extras) extras.reset();
+  }
   // Turns a markup string into a single node without an innerHTML assignment on
   // a live element (used for the inline animal glyph in a system line).
   function htmlToNode(html) {
@@ -454,17 +475,54 @@
 
   // Composer
   var typingThrottle = null;
+
+  // Emoji, GIFs, replies and reactions. Attached once; everything it owns is
+  // built on first use, so the cost to a user who only types is four DOM nodes.
+  var extras = window.TalkLiveChatExtras ? window.TalkLiveChatExtras.attach({
+    form: composer,
+    input: input,
+    messages: msgs,
+    msgSelector: '.msg',
+    send: deliver,
+    react: function (id, emoji, on) {
+      socket.emit('chat-reaction', { id: id, emoji: emoji, on: on });
+    },
+  }) : null;
+
+  // The one path every outgoing stranger message takes, typed or picked. Returns
+  // false when the message was refused, which tells the extras controller to
+  // keep the reply context so the user can fix and resend.
+  function deliver(payload) {
+    if (!partnerHere) return false;
+    var text = payload.text || '';
+    if (!text && !payload.gif) return false;
+    if (text && LINK_RE.test(text)) { addMessage(t('chatLinkBlocked'), 'system'); return false; }
+    if (text && UNSAFE_RE.test(text)) { addMessage(t('chatBotWarning'), 'system'); return false; }
+    socket.emit('chat-message', {
+      text: text.slice(0, 1000),
+      id: payload.id,
+      replyTo: payload.replyTo,
+      gif: payload.gif,
+    });
+    addMessage(text, 'me', payload);
+    soundSend();
+    return true;
+  }
+
   composer.addEventListener('submit', function (e) {
     e.preventDefault();
     var text = input.value.trim();
-    if (!text || !partnerHere) return;
-    if (LINK_RE.test(text)) { addMessage(t('chatLinkBlocked'), 'system'); return; }
-    if (UNSAFE_RE.test(text)) { addMessage(t('chatBotWarning'), 'system'); return; }
-    socket.emit('chat-message', text.slice(0, 1000));
-    addMessage(text, 'me');
-    soundSend();
+    if (!text) return;
+    var sent = extras ? extras.compose(text) : deliver({ text: text, id: null, replyTo: null });
+    // compose() returns the payload it built; deliver() reports success itself.
+    if (sent === false) return;
     input.value = '';
     input.focus();
+  });
+
+  socket.on('chat-reaction', function (data) {
+    if (!data || !extras) return;
+    extras.remoteReaction(data.id, data.emoji, data.on);
   });
   input.addEventListener('input', function () {
     if (typingThrottle) return;
@@ -858,18 +916,60 @@
   var friendChatInput = $('friendChatInput');
   var activeFriendChatId = null;
 
-  function appendFriendMsg(text, who) {
+  function appendFriendMsg(text, who, meta) {
     var el = document.createElement('div');
     el.className = 'msg ' + who;
-    el.textContent = text;
+    if (text) {
+      var body = document.createElement('span');
+      body.className = 'msg-text';
+      body.textContent = text;
+      el.appendChild(body);
+    }
     friendChatMsgs.appendChild(el);
+    if (meta && friendExtras) {
+      friendExtras.decorate(el, {
+        id: meta.id,
+        mine: who === 'me',
+        text: text,
+        replyTo: meta.replyTo,
+        gif: meta.gif,
+        reactions: meta.reactions,
+        myClientId: getClientId(),
+      });
+    }
     friendChatMsgs.scrollTop = friendChatMsgs.scrollHeight;
   }
+
+  // Friend chats get the same extras as stranger chat, plus persisted
+  // reactions - the server stores those, so they survive a reload on both sides.
+  var friendExtras = window.TalkLiveChatExtras ? window.TalkLiveChatExtras.attach({
+    form: friendChatForm,
+    input: friendChatInput,
+    messages: friendChatMsgs,
+    msgSelector: '.msg',
+    send: function (payload) {
+      if (!activeFriendChatId) return false;
+      if (!payload.text && !payload.gif) return false;
+      socket.emit('friend-message', {
+        toClientId: activeFriendChatId,
+        text: (payload.text || '').slice(0, 1000),
+        id: payload.id,
+        replyTo: payload.replyTo,
+        gif: payload.gif,
+      });
+      return true;
+    },
+    react: function (id, emoji, on) {
+      if (!activeFriendChatId) return;
+      socket.emit('friend-reaction', { toClientId: activeFriendChatId, id: id, emoji: emoji, on: on });
+    },
+  }) : null;
 
   function openFriendChat(friend) {
     activeFriendChatId = friend.clientId;
     $('friendChatTitle').textContent = friend.username || t('chat');
     friendChatMsgs.innerHTML = '';
+    if (friendExtras) friendExtras.reset();
     closePanel(friendsPanel, friendsOverlay);
     openPanel(friendChatPanel, friendChatOverlay);
     socket.emit('get-friend-chat', { friendClientId: friend.clientId });
@@ -893,7 +993,11 @@
     e.preventDefault();
     var text = friendChatInput.value.trim();
     if (!text || !activeFriendChatId) return;
-    socket.emit('friend-message', { toClientId: activeFriendChatId, text: text.slice(0, 1000) });
+    if (friendExtras) {
+      if (friendExtras.compose(text) === false) return;
+    } else {
+      socket.emit('friend-message', { toClientId: activeFriendChatId, text: text.slice(0, 1000) });
+    }
     friendChatInput.value = '';
     friendChatInput.focus();
   });
@@ -901,21 +1005,27 @@
   socket.on('friend-chat-history', function (data) {
     if (!data || data.friendClientId !== activeFriendChatId) return;
     friendChatMsgs.innerHTML = '';
+    if (friendExtras) friendExtras.reset();
     (data.messages || []).forEach(function (m) {
-      appendFriendMsg(m.text, m.from === activeFriendChatId ? 'them' : 'me');
+      appendFriendMsg(m.text, m.from === activeFriendChatId ? 'them' : 'me', m);
     });
   });
   socket.on('friend-message-sent', function (data) {
-    if (data && data.toClientId === activeFriendChatId) appendFriendMsg(data.text, 'me');
+    if (data && data.toClientId === activeFriendChatId) appendFriendMsg(data.text, 'me', data);
   });
   socket.on('friend-message', function (data) {
     if (!data) return;
     if (data.fromClientId === activeFriendChatId) {
-      appendFriendMsg(data.text, 'them');
+      appendFriendMsg(data.text, 'them', data);
       soundReceive();
       socket.emit('mark-messages-read', { friendClientId: data.fromClientId });
     }
     // Badges refresh via the state-sync the server sends with the notification.
+  });
+  socket.on('friend-reaction', function (data) {
+    if (!data || !friendExtras) return;
+    if (data.fromClientId !== activeFriendChatId) return;
+    friendExtras.remoteReaction(data.id, data.emoji, data.on);
   });
 
   // ---------------------------------------------------------------------------
@@ -1014,11 +1124,12 @@
   socket.on('random-fallback', function () { /* server widened the net; nothing to do */ });
 
   socket.on('chat-message', function (data) {
-    var text = data && data.text ? String(data.text) : '';
-    if (!text) return;
-    addMessage(text, 'them');
+    if (!data) return;
+    var text = data.text ? String(data.text) : '';
+    if (!text && !data.gif) return;
+    addMessage(text, 'them', { id: data.id, replyTo: data.replyTo, gif: data.gif });
     soundReceive();
-    checkIncoming(text);
+    if (text) checkIncoming(text);
   });
 
   var typingHideTimer = null;

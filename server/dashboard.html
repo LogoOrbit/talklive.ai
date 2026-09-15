@@ -210,6 +210,59 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .searchbar{display:flex;gap:8px;margin-bottom:12px;max-width:460px}
 .searchbar .btn{width:auto;margin:0;padding:9px 16px}
 
+/* --- conversation reader -----------------------------------------------------
+   Two panes: a scannable list of conversations on the left, the thread you
+   picked on the right. Both scroll independently inside a fixed height, so the
+   page itself never grows - the whole point is that you can work straight down
+   the list without losing your place. Below 1000px it collapses to one pane at
+   a time, list then thread. */
+.cvwrap{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:14px;align-items:start}
+.cvlist,.cvthread{height:min(68vh,640px);overflow-y:auto;overscroll-behavior:contain;border:1px solid var(--ring);border-radius:14px;background:var(--surface-2)}
+.cvlist{padding:6px}
+.cvrow{display:block;width:100%;text-align:left;border:0;background:none;color:inherit;font:inherit;cursor:pointer;padding:9px 10px;border-radius:11px;transition:background .12s ease}
+.cvrow+.cvrow{margin-top:2px}
+.cvrow:hover{background:var(--surface-2)}
+.cvrow.on{background:color-mix(in srgb,var(--accent) 22%,transparent);outline:1px solid var(--accent)}
+.cvrow .who{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:.86rem;font-weight:700;margin-bottom:3px}
+.cvrow .prev{font-size:.79rem;color:var(--ink2);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cvrow .meta{margin-top:4px;font-size:.71rem;color:var(--muted);display:flex;gap:7px;flex-wrap:wrap}
+.cvempty{padding:26px 16px;text-align:center;color:var(--muted);font-size:.85rem}
+
+.cvthead{position:sticky;top:0;z-index:2;display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;
+  padding:11px 14px;border-bottom:1px solid var(--ring);background:var(--surface-2);backdrop-filter:blur(10px)}
+.cvthead h3{margin:0;font-size:.95rem}
+.cvthead .sub{display:block;font-weight:400;font-size:.74rem;color:var(--muted);margin-top:3px}
+.cvthead .rowbtns{margin-left:auto}
+.cvback{display:none}
+
+.cvbody{display:flex;flex-direction:column;gap:3px;padding:12px 14px 18px}
+/* Bubbles are aligned by side, not by who is "me" - in a transcript neither
+   party is the reader, so the left/right split is simply "first speaker" vs
+   "the other one", held stable for the whole thread. */
+.cvb{max-width:74%;padding:7px 11px;border-radius:13px;font-size:.87rem;line-height:1.45;overflow-wrap:anywhere;position:relative}
+.cvb.a{align-self:flex-start;background:var(--surface);border:1px solid var(--ring);border-bottom-left-radius:4px}
+.cvb.b{align-self:flex-end;background:color-mix(in srgb,var(--accent) 26%,transparent);border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);border-bottom-right-radius:4px}
+.cvb.risk{box-shadow:inset 3px 0 0 var(--crit)}
+.cvb .t{display:block;font-size:.66rem;color:var(--muted);margin-top:3px}
+.cvb .q{display:block;font-size:.72rem;color:var(--muted);border-left:2px solid var(--muted);padding-left:6px;margin-bottom:4px;opacity:.85}
+.cvname{font-size:.7rem;color:var(--muted);margin:9px 0 1px;font-weight:700;letter-spacing:.02em}
+.cvname.b{align-self:flex-end}
+.cvgap{align-self:center;font-size:.68rem;color:var(--muted);padding:6px 0}
+.cvflags{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
+
+/* Flag chips: one colour family for "look now", one for context. */
+.fl{font-size:.63rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:1px 6px;border-radius:999px;border:1px solid currentColor}
+.fl.minor,.fl.sexual,.fl.abuse{color:var(--crit)}
+.fl.contact,.fl.link,.fl.money{color:var(--warn)}
+
+@media (max-width:1000px){
+  .cvwrap{grid-template-columns:1fr}
+  .cvwrap.reading .cvlist{display:none}
+  .cvwrap:not(.reading) .cvthread{display:none}
+  .cvlist,.cvthread{height:min(72vh,620px)}
+  .cvback{display:inline-flex}
+}
+
 .concl{position:relative;overflow:hidden}
 .concl::before{content:"";position:absolute;inset:0 0 auto;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent-2),var(--accent));background-size:200% 100%;animation:glowmove 4s linear infinite}
 .concl li{margin:7px 0 7px 16px;line-height:1.6;color:var(--ink2)}
@@ -596,7 +649,10 @@ function startDash(){
 async function load(force){
   scheduleRefresh();
   if(force===false){
-    const busy=overlayEl||(document.activeElement&&/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName));
+    const busy=overlayEl||(document.activeElement&&/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName))
+      /* Reading a transcript is the one view where a repaint is destructive:
+         it would reload the thread and throw away where you had scrolled to. */
+      ||(tab==='chats'&&chatOpen);
     if(busy&&Date.now()-lastLoadTs<60000)return;
   }
   try{
@@ -1052,27 +1108,193 @@ async function viewBans(){
 }
 window.unban=async(id)=>{try{await post('unban',{banId:id});toast('Ban lifted','The user can connect again.','good');load();}catch(e){toast('Could not lift ban',e.message,'bad');}};
 
-/* ---------- chats: live bubble feed ---------- */
-let chatQuery='';
+/* ---------- chats: conversation reader ----------
+   Chat used to render as one flat, newest-first feed of every message from
+   every pair. That is unreadable for the job it exists for - judging whether
+   conversations on the app are healthy - because consecutive lines almost never
+   belong to the same conversation.
+
+   So: the server folds the store into conversations and scores each one, this
+   picks one to read, and the thread renders as a real transcript. The list
+   carries enough (who, how long, what was said last, what tripped a flag) to
+   skip a conversation without opening it, which is where the time actually
+   goes. j/k move, Enter opens, Esc goes back, so a review pass never needs
+   the mouse. */
+let chatQuery='',chatKind='',chatFlagged=false,chatSort='recent',chatOpen=null,chatRows=[],chatCursor=-1;
+
+const FLAG_LABEL={minor:'age',sexual:'sexual',contact:'contact',link:'link',money:'money',abuse:'abuse'};
+const flagChips=(flags)=>(flags||[]).map(f=>`<span class="fl ${f}">${FLAG_LABEL[f]||esc(f)}</span>`).join('');
+
+const clock=(ts)=>new Date(ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+
+/* "4m", "1h 12m" - how long the pair actually talked, which separates a real
+   conversation from two people saying hi and leaving. */
+function span(ms){
+  const m=Math.round(ms/60000);
+  if(m<1)return'<1m';
+  if(m<60)return m+'m';
+  return Math.floor(m/60)+'h '+(m%60)+'m';
+}
+
+function convRow(c,i){
+  const names=c.people.map(p=>esc(p.name)).join(' <span class="muted">&#8596;</span> ')||'unknown';
+  return `<button class="cvrow${c.pair===chatOpen?' on':''}" data-pair="${esc(c.pair)}" data-i="${i}">
+    <span class="who">${names}
+      ${c.kind==='friend'?'<span class="pill info">Friends</span>':'<span class="pill warn">Stranger</span>'}
+      ${c.oneSided?'<span class="pill crit">One-sided</span>':''}</span>
+    <span class="prev">${esc(c.preview)||'<span class="muted">(no text)</span>'}</span>
+    <span class="meta"><span>${num(c.count)} msg</span><span>${span(c.end-c.start)}</span><span>${ago(c.end)}</span>${c.country?`<span>${esc(c.country)}</span>`:''}</span>
+    ${c.flags.length?`<span class="cvflags">${flagChips(c.flags)}</span>`:''}
+  </button>`;
+}
+
 async function viewChats(){
-  const r=await api('transcripts'+(chatQuery?'?q='+encodeURIComponent(chatQuery):''));
-  $('#main').innerHTML=`<div class="card anim" style="margin-top:0"><h2>💬 Runtime chats <span class="sub">${num(r.total)} messages stored · newest first · text only, voice is peer-to-peer and never recorded</span></h2>
+  const params=new URLSearchParams();
+  if(chatQuery)params.set('q',chatQuery);
+  if(chatKind)params.set('kind',chatKind);
+  if(chatFlagged)params.set('flagged','1');
+  if(chatSort!=='recent')params.set('sort',chatSort);
+  const qs=params.toString();
+  const r=await api('transcripts'+(qs?'?'+qs:''));
+  chatRows=r.conversations||[];
+  /* A conversation that fell out of the current filter must not stay selected -
+     the thread pane would keep showing something the list no longer offers. */
+  if(chatOpen&&!chatRows.some(c=>c.pair===chatOpen))chatOpen=null;
+  chatCursor=chatRows.findIndex(c=>c.pair===chatOpen);
+
+  const flagged=chatRows.filter(c=>c.flags.length).length;
+  $('#main').innerHTML=`<div class="card anim" style="margin-top:0">
+  <h2>&#128172; Conversations <span class="sub">${num(r.matched||chatRows.length)} threads &middot; ${num(r.total)} messages stored &middot; text only, voice is peer-to-peer and never recorded</span></h2>
   <div class="searchbar">
-    <input id="chatQ" placeholder="Search by username, ID or text…" value="${esc(chatQuery)}">
+    <input id="chatQ" placeholder="Search by username, ID or message text&hellip;" value="${esc(chatQuery)}">
     <button class="btn" id="chatQBtn">Search</button>
   </div>
-  <div class="feed">
-  ${r.messages.map(m=>`<div class="fmsg">
-    <div class="top"><span><b>${esc(m.from)}</b> → ${esc(m.to)} ${m.kind==='friend'?'<span class="pill info">Friends</span>':'<span class="pill warn">Stranger</span>'}${m.country?` <span>· ${esc(m.country)}</span>`:''}</span>
-    <span>${ago(m.ts)} · ${fmtTs(m.ts)}</span></div>
-    <div class="txt">${esc(m.text)}</div>
-    <div class="rowbtns" style="margin-top:7px"><button class="danger" onclick="banUser('${jsq(m.fromClientId)}','','${jsq(m.from)}','${jsq(m.country||'')}','')">Ban sender…</button></div>
-  </div>`).join('')||'<div class="muted">No chat messages recorded yet.</div>'}
+  <div class="tbar">
+    <div class="seg">
+      <button data-ck="" class="${chatKind===''?'on':''}">All</button>
+      <button data-ck="stranger" class="${chatKind==='stranger'?'on':''}">Strangers</button>
+      <button data-ck="friend" class="${chatKind==='friend'?'on':''}">Friends</button>
+    </div>
+    <div class="seg">
+      <button data-cs="recent" class="${chatSort==='recent'?'on':''}">Recent</button>
+      <button data-cs="longest" class="${chatSort==='longest'?'on':''}">Longest</button>
+      <button data-cs="risk" class="${chatSort==='risk'?'on':''}">Needs review</button>
+    </div>
+    <div class="seg"><button id="chatFlagBtn" class="${chatFlagged?'on':''}">&#9873; Flagged only (${num(flagged)})</button></div>
+  </div>
+  <div class="cvwrap${chatOpen?' reading':''}" id="cvwrap">
+    <div class="cvlist" id="cvlist">
+      ${chatRows.map(convRow).join('')||'<div class="cvempty">No conversations match. Clear the filters, or wait for people to talk.</div>'}
+    </div>
+    <div class="cvthread" id="cvthread"><div class="cvempty">Pick a conversation to read it.<br><span class="muted">j / k to move, Enter to open, Esc to come back.</span></div></div>
   </div></div>`;
-  const go=()=>{chatQuery=$('#chatQ').value.trim();load();};
+
+  const go=()=>{chatQuery=$('#chatQ').value.trim();chatOpen=null;load();};
   $('#chatQBtn').onclick=go;
   $('#chatQ').addEventListener('keydown',e=>{if(e.key==='Enter')go();});
+  document.querySelectorAll('[data-ck]').forEach(b=>b.onclick=()=>{chatKind=b.dataset.ck;chatOpen=null;load();});
+  document.querySelectorAll('[data-cs]').forEach(b=>b.onclick=()=>{chatSort=b.dataset.cs;load();});
+  $('#chatFlagBtn').onclick=()=>{chatFlagged=!chatFlagged;chatOpen=null;load();};
+  /* One listener for the whole list rather than one per row. */
+  $('#cvlist').addEventListener('click',e=>{
+    const row=e.target.closest('.cvrow');
+    if(row)openConversation(row.dataset.pair,Number(row.dataset.i));
+  });
+  if(chatOpen)openConversation(chatOpen,chatCursor);
 }
+
+/* Fetches and renders one thread. Deliberately does NOT call load(): re-running
+   the whole tab to open a conversation would refetch the list and throw away
+   the reader's scroll position on every click. */
+async function openConversation(pair,i){
+  chatOpen=pair;
+  if(typeof i==='number'&&i>=0)chatCursor=i;
+  document.querySelectorAll('.cvrow').forEach(b=>b.classList.toggle('on',b.dataset.pair===pair));
+  const wrap=$('#cvwrap'),pane=$('#cvthread');
+  if(!pane)return;
+  wrap.classList.add('reading');
+  pane.innerHTML='<div class="cvempty">Loading&hellip;</div>';
+  let c;
+  try{
+    const r=await api('transcripts?pair='+encodeURIComponent(pair));
+    c=r.conversation;
+  }catch(e){
+    pane.innerHTML=`<div class="cvempty">Could not load this conversation.<br><span class="muted">${esc(e.message)}</span></div>`;
+    return;
+  }
+  /* The transcript has no "me", so sides are assigned by who spoke first and
+     held for the whole thread - otherwise the bubbles would swap sides between
+     renders and the thread would be unreadable. */
+  const order=[];
+  for(const m of c.messages){if(m.fromClientId&&order.indexOf(m.fromClientId)===-1)order.push(m.fromClientId);}
+  const sideOf=(id)=>order.indexOf(id)===1?'b':'a';
+  const byId={};
+  for(const m of c.messages)if(m.id)byId[m.id]=m;
+
+  let lastFrom=null,lastTs=0;
+  const body=c.messages.map(m=>{
+    const side=sideOf(m.fromClientId);
+    let out='';
+    /* A gap longer than five minutes is usually a different sitting; marking it
+       stops two separate exchanges reading as one. */
+    if(lastTs&&m.ts-lastTs>300000)out+=`<div class="cvgap">&#8212; ${span(m.ts-lastTs)} later &#8212;</div>`;
+    if(m.fromClientId!==lastFrom)out+=`<div class="cvname ${side}">${esc(m.from)}</div>`;
+    lastFrom=m.fromClientId;lastTs=m.ts;
+    const q=m.replyTo&&byId[m.replyTo]?`<span class="q">&#8618; ${esc(String(byId[m.replyTo].text||'').slice(0,90))}</span>`:'';
+    /* Clock time only on the bubble - a transcript is read as one sitting, so
+       repeating the date on every line is pure noise. The full stamp stays on
+       the title, and the thread header carries the date. */
+    return out+`<div class="cvb ${side}${m.flags.length?' risk':''}">${q}${esc(m.text)}
+      ${m.flags.length?`<span class="cvflags">${flagChips(m.flags)}</span>`:''}
+      <span class="t" title="${esc(fmtTs(m.ts))}">${clock(m.ts)}</span></div>`;
+  }).join('');
+
+  const bans=c.people.map(p=>`<button class="danger" onclick="banUser('${jsq(p.clientId)}','','${jsq(p.name)}','${jsq(c.country||'')}','')">Ban ${esc(p.name)}&hellip;</button>`).join('');
+  pane.innerHTML=`<div class="cvthead">
+    <button class="cvback" id="cvBack">&#8592; List</button>
+    <h3>${c.people.map(p=>esc(p.name)).join(' &#8596; ')}
+      <span class="sub">${num(c.count)} messages &middot; ${span(c.end-c.start)} &middot; ${fmtTs(c.end)} (${ago(c.end)})${c.country?' &middot; '+esc(c.country):''} &middot; ${c.kind==='friend'?'friends':'strangers'}</span></h3>
+    <div class="rowbtns">${bans}</div>
+  </div>
+  <div class="cvbody">${body||'<div class="cvempty">No messages.</div>'}</div>`;
+  const back=$('#cvBack');
+  if(back)back.onclick=closeConversation;
+  /* Newest at the bottom, like every chat app - so the pane opens where the
+     conversation ended. */
+  pane.scrollTop=pane.scrollHeight;
+}
+
+function closeConversation(){
+  chatOpen=null;
+  const wrap=$('#cvwrap');
+  if(wrap)wrap.classList.remove('reading');
+  document.querySelectorAll('.cvrow').forEach(b=>b.classList.remove('on'));
+}
+
+/* Keyboard review pass. Only live while the Chats tab is showing and the
+   operator is not typing into the search box. */
+document.addEventListener('keydown',(e)=>{
+  if(tab!=='chats')return;
+  const el=document.activeElement;
+  if(el&&(el.tagName==='INPUT'||el.tagName==='TEXTAREA'||el.isContentEditable))return;
+  if(e.key==='Escape'){closeConversation();return;}
+  if(e.key!=='j'&&e.key!=='k'&&e.key!=='Enter')return;
+  if(!chatRows.length)return;
+  e.preventDefault();
+  if(e.key==='Enter'){
+    if(chatCursor>=0)openConversation(chatRows[chatCursor].pair,chatCursor);
+    return;
+  }
+  chatCursor=Math.max(0,Math.min(chatRows.length-1,chatCursor+(e.key==='j'?1:-1)));
+  const row=document.querySelector(`.cvrow[data-i="${chatCursor}"]`);
+  if(row){
+    row.scrollIntoView({block:'nearest'});
+    /* On a wide screen both panes are visible, so moving the cursor may as well
+       load the thread; on a narrow one that would hide the list mid-scroll. */
+    if(window.innerWidth>1000)openConversation(chatRows[chatCursor].pair,chatCursor);
+    else document.querySelectorAll('.cvrow').forEach(b=>b.classList.toggle('on',b===row));
+  }
+});
 
 let accCountryAll=false,accQ='',accSort='createdAt',accDir=-1;
 const ACC_COLS=[['username','Username'],['nickname','Nickname'],['method','Sign-up method'],['country','Location'],['createdAt','Created'],['lastSeen','Last seen'],['ip','IP']];
