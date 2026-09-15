@@ -440,3 +440,67 @@
   margin: 0 0 16px;
   text-align: left;
 }
+
+/* ---------------------------------------------------------------------------
+   Incoming play request: a centred prompt that lands on top of whatever the
+   user is doing, so an invite to play is never missed behind a small badge.
+   --------------------------------------------------------------------------- */
+.game-invite-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 700;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.game-invite-overlay.hidden { display: none; }
+
+.game-invite-card {
+  background:
+    radial-gradient(120% 80% at 50% -10%, var(--bg-glow, var(--bg-1)) 0%, var(--bg-2) 60%, var(--bg-1) 100%);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 22px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.55);
+  width: min(92vw, 360px);
+  padding: 22px 20px 18px;
+  text-align: center;
+  color: var(--text);
+  animation: gameInvitePop 0.22s ease-out;
+}
+@keyframes gameInvitePop {
+  from { opacity: 0; transform: scale(0.92) translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .game-invite-card { animation: none; }
+}
+
+.game-invite-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+}
+.game-invite-icon svg { width: 30px; height: 30px; }
+
+.game-invite-text {
+  margin: 0 0 18px;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.game-invite-actions {
+  display: flex;
+  gap: 10px;
+}
+.game-invite-actions .btn { flex: 1; }

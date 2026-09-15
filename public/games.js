@@ -56,6 +56,10 @@
     const tttEndConfirmModal = document.getElementById('tttEndConfirmModal');
     const tttContinueBtn = document.getElementById('tttContinueBtn');
     const tttEndBtn = document.getElementById('tttEndBtn');
+    const gameInviteOverlay = document.getElementById('gameInviteOverlay');
+    const gameInviteText = document.getElementById('gameInviteText');
+    const gameInviteAcceptBtn = document.getElementById('gameInviteAcceptBtn');
+    const gameInviteDeclineBtn = document.getElementById('gameInviteDeclineBtn');
 
 
     // All 8 ways to win on a 3x3 board.
@@ -505,7 +509,39 @@
 
     let tttOverAnnounced = false;
 
+    // The centred "wants to play" prompt. It sits above everything else so an
+    // invite is impossible to miss, wherever the user happens to be looking.
+    function showInvitePopup() {
+      if (!gameInviteOverlay) return;
+      gameInviteText.textContent = t('gameInvited', {
+        name: opts.partnerName() || t('chat'),
+        game: gameName(pendingInviteGame),
+      });
+      gameInviteOverlay.classList.remove('hidden');
+    }
+    function hideInvitePopup() {
+      if (gameInviteOverlay) gameInviteOverlay.classList.add('hidden');
+    }
+
+    // Shared by the popup and the in-overlay buttons.
+    function acceptInvite() {
+      hideInvitePopup();
+      if (tttStage !== 'invited') return;
+      const game = pendingInviteGame || 'ttt';
+      opts.socket.emit('game', { type: 'accept', game });
+      onGameHandshake(game);
+    }
+    function declineInvite() {
+      hideInvitePopup();
+      if (tttStage !== 'invited') return;
+      opts.socket.emit('game', { type: 'decline' });
+      tttStage = 'idle';
+      pendingInviteGame = null;
+      closeGameOverlay();
+    }
+
     function openGameOverlay() {
+      hideInvitePopup();
       buildTttBoard();
       clearGameDisconnect();
       gameOverlay.classList.remove('hidden');
@@ -518,6 +554,7 @@
       opts.closeModal(tttEndConfirmModal);
     }
     function resetGame() {
+      hideInvitePopup();
       tttStage = 'idle';
       tttState = null;
       activeGame = null;
@@ -649,17 +686,10 @@
       inviteGame = null;
       updateGameUI();
     });
-    gameAcceptBtn.addEventListener('click', () => {
-      const game = pendingInviteGame || 'ttt';
-      opts.socket.emit('game', { type: 'accept', game });
-      onGameHandshake(game);
-    });
-    gameDeclineBtn.addEventListener('click', () => {
-      opts.socket.emit('game', { type: 'decline' });
-      tttStage = 'idle';
-      pendingInviteGame = null;
-      closeGameOverlay();
-    });
+    gameAcceptBtn.addEventListener('click', acceptInvite);
+    gameDeclineBtn.addEventListener('click', declineInvite);
+    if (gameInviteAcceptBtn) gameInviteAcceptBtn.addEventListener('click', acceptInvite);
+    if (gameInviteDeclineBtn) gameInviteDeclineBtn.addEventListener('click', declineInvite);
     tttRematchBtn.addEventListener('click', () => {
       if (opts.isHost()) startGame(activeGame);
       else opts.socket.emit('game', { type: 'rematch' });
@@ -680,11 +710,12 @@
             // They're already looking at the games screen - show the accept UI.
             updateGameUI();
           } else {
-            // Don't interrupt with a big dialog: a red badge + a chime on the game
-            // button, and they open it whenever they feel like playing.
+            // Ask right away, in the middle of the screen: a play request is a
+            // live invitation, so it gets a prompt rather than a quiet badge.
             gameBtnBadge.textContent = '!';
             gameBtnBadge.classList.add('is-invite');
             gameBtnBadge.classList.remove('hidden', 'is-move');
+            showInvitePopup();
           }
           sound('invite');
           buzz(30);
@@ -694,6 +725,7 @@
           if (tttStage === 'inviting') onGameHandshake(inviteGame || (data.game === 'dab' ? 'dab' : 'ttt'));
           break;
         case 'decline':
+          hideInvitePopup();
           tttStage = 'idle';
           tttState = null;
           pendingInviteGame = null;
@@ -702,6 +734,7 @@
           break;
         case 'state': {
           if (!data.state) break;
+          hideInvitePopup();
           myPlayerIndex = opts.isHost() ? 0 : 1;
           // Open the board on the first state (game start); afterwards just update -
           // don't yank a closed board back open, so the "your move" badge can show.
