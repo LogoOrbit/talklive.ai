@@ -45,6 +45,24 @@ The app works fully without this - the Google button just won't be shown.
    GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com npm start
    ```
 
+The same button signs existing users in and creates an account for new ones:
+the server verifies the ID token Google returns, then finds the account by its
+Google `sub` or creates one from the profile.
+
+**What is stored, and where it shows up.** The ID token carries only the
+claims the user consents to on Google's own screen (`openid email profile`).
+Those are kept verbatim on the account - name, given/family name, verified
+email, avatar URL, locale, and the Google Workspace domain for managed
+accounts - plus when the account was linked and last signed in with Google. A
+claim the user declines is simply absent and is stored as `null`. Nothing is
+requested beyond those scopes, and no Google API is called on the user's
+behalf.
+
+The owner dashboard shows it all under **Accounts**: the table gains an email
+column (marked *verified* when Google vouched for it), every row has a
+**Details** button that expands the complete shared profile with the avatar,
+and the accounts CSV export carries every field.
+
 ### Forgot password (email OTP)
 
 An account is a username and a password, so the one thing that can lose it

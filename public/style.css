@@ -3040,6 +3040,35 @@ body.panel-open .side-panel {
   line-height: 1.5;
 }
 
+/* "or" divider between the password form and the Google button. The rules on
+   either side are drawn with a flexed pseudo-element each, so the divider fits
+   any width without a fixed line length. */
+.account-or {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0 12px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--muted);
+}
+.account-or::before,
+.account-or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border, rgba(255, 255, 255, .14));
+}
+
+/* Google renders its own fixed-width button inside this slot; centre it so it
+   sits under the full-width form controls without looking misaligned. */
+.google-btn-slot {
+  display: flex;
+  justify-content: center;
+  min-height: 44px;
+}
+
 .account-status {
   font-size: 13px;
   margin-bottom: 12px;

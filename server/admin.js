@@ -473,7 +473,32 @@ function createAdmin({ io, getRuntime, kickBanned }) {
 
   router.get('/api/accounts', (req, res) => {
     const accounts = Object.entries(store.data.accountsRegistry)
-      .map(([key, a]) => ({ key, ...a }))
+      .map(([key, a]) => {
+        // The credentials record holds the Google profile the user consented to
+        // share; the registry holds the analytics metadata. The dashboard wants
+        // both on one row, so join them here (credentials win - they are
+        // refreshed on every Google sign-in), and never leak the password hash.
+        const cred = (store.data.accounts || {})[key] || {};
+        const g = cred.google || null;
+        return {
+          key,
+          ...a,
+          email: (g && g.email) || cred.email || a.email || null,
+          google: g && {
+            id: g.sub || null,
+            email: g.email || null,
+            emailVerified: !!g.emailVerified,
+            name: g.name || null,
+            givenName: g.givenName || null,
+            familyName: g.familyName || null,
+            picture: g.picture || null,
+            locale: g.locale || null,
+            hostedDomain: g.hostedDomain || null,
+            linkedAt: g.linkedAt || null,
+            lastSignInAt: g.lastSignInAt || null,
+          },
+        };
+      })
       .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
     res.json({ accounts });
   });
@@ -683,11 +708,11 @@ function createAdmin({ io, getRuntime, kickBanned }) {
     const push = (kind, label, items) => { if (items.length) groups.push({ kind, label, items }); };
 
     push('accounts', 'Accounts', Object.entries(store.data.accountsRegistry)
-      .filter(([key, a]) => hit(key, a.username, a.nickname, a.country, a.city, a.ip))
+      .filter(([key, a]) => hit(key, a.username, a.nickname, a.country, a.city, a.ip, a.email, a.fullName))
       .slice(0, 12)
       .map(([key, a]) => ({
         title: a.username || key,
-        sub: [a.nickname, a.country, a.method === 'google' ? 'Google' : 'Password'].filter(Boolean).join(' · '),
+        sub: [a.fullName || a.nickname, a.email, a.country, a.method === 'google' ? 'Google' : 'Password'].filter(Boolean).join(' · '),
         ts: a.createdAt || null,
       })));
 
@@ -738,10 +763,20 @@ function createAdmin({ io, getRuntime, kickBanned }) {
     const kind = String(req.params.kind).replace(/\.csv$/i, '');
     let csv = null;
     if (kind === 'accounts') {
-      csv = toCsv(['username', 'nickname', 'method', 'country', 'city', 'ip', 'created', 'last_seen'],
+      csv = toCsv(['username', 'nickname', 'method', 'email', 'email_verified', 'google_id', 'full_name',
+        'given_name', 'family_name', 'avatar_url', 'google_locale', 'workspace_domain', 'google_linked',
+        'country', 'city', 'ip', 'created', 'last_seen'],
         Object.entries(store.data.accountsRegistry)
           .sort((a, b) => (b[1].createdAt || 0) - (a[1].createdAt || 0))
-          .map(([key, a]) => [a.username || key, a.nickname || '', a.method || '', a.country || '', a.city || '', a.ip || '', isoOr(a.createdAt), isoOr(a.lastSeen)]));
+          .map(([key, a]) => {
+            const cred = (store.data.accounts || {})[key] || {};
+            const g = cred.google || {};
+            return [a.username || key, a.nickname || '', a.method || '',
+              g.email || cred.email || a.email || '', g.email ? (g.emailVerified ? 'yes' : 'no') : '',
+              g.sub || '', g.name || '', g.givenName || '', g.familyName || '', g.picture || '',
+              g.locale || '', g.hostedDomain || '', isoOr(g.linkedAt),
+              a.country || '', a.city || '', a.ip || '', isoOr(a.createdAt), isoOr(a.lastSeen)];
+          }));
     } else if (kind === 'daily') {
       const report = activityReport(req);
       csv = toCsv(['day', 'unique_visitors', 'visits', 'connections', 'matches', 'messages', 'peak_online', 'new_accounts', 'reports', 'errors'],

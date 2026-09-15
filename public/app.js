@@ -220,6 +220,8 @@ const signupUsername = document.getElementById('signupUsername');
 const signupPassword = document.getElementById('signupPassword');
 const signupEmail = document.getElementById('signupEmail');
 const signupSubmitBtn = document.getElementById('signupSubmitBtn');
+const googleBtnLogin = document.getElementById('googleBtnLogin');
+const googleBtnSignup = document.getElementById('googleBtnSignup');
 const logoutBtn = document.getElementById('logoutBtn');
 const settingsNickname = document.getElementById('settingsNickname');
 const updateNicknameBtn = document.getElementById('updateNicknameBtn');
@@ -731,6 +733,8 @@ function applyTheme(theme) {
   localStorage.setItem('talklive_theme', theme);
   document.documentElement.setAttribute('data-theme', theme);
   setPillGroupValue(themeGroup, theme);
+  // Google renders its own button, so it has to be redrawn for the new theme.
+  if (typeof renderGoogleButtons === 'function') renderGoogleButtons();
 }
 
 themeGroup.addEventListener('click', (e) => {
@@ -1486,6 +1490,84 @@ signupSubmitBtn.addEventListener('click', () => {
     // what the field under it says.
     email: signupEmail.value.trim(),
   });
+});
+
+// --- Sign in / sign up with Google -----------------------------------------
+//
+// One flow covers both: Google returns a signed ID token, the server verifies
+// it and either finds the existing account or creates one on the spot, so the
+// same button is "Sign in" for a returning user and "Sign up" for a new one.
+// Nothing here trusts the browser - the credential is only ever forwarded, and
+// the account is decided server-side from the verified token.
+let googleReady = false;
+
+function handleGoogleCredential(response) {
+  if (!response || !response.credential) return;
+  // Reuse the shared in-flight guard so a slow/disconnected socket surfaces the
+  // same "no connection" / "no reply" errors as the password buttons.
+  if (!beginAccountRequest(signupSubmitBtn)) return;
+  loginSubmitBtn.disabled = true;
+  showAccountStatus(t('statusSigningIn'), 'info');
+  socket.emit('google-auth', { credential: response.credential });
+}
+
+function renderGoogleButtons() {
+  if (!googleReady) return;
+  const dark = document.documentElement.getAttribute('data-theme') !== 'light';
+  [[googleBtnLogin, 'signin_with'], [googleBtnSignup, 'signup_with']].forEach(([slot, text]) => {
+    // Keyed on the theme too, so switching themes re-renders Google's button
+    // in matching colours instead of leaving a dark button on a light page.
+    const key = `${text}:${dark ? 'dark' : 'light'}`;
+    if (!slot || slot.dataset.rendered === key) return;
+    slot.innerHTML = '';
+    window.google.accounts.id.renderButton(slot, {
+      type: 'standard', theme: dark ? 'filled_black' : 'outline', size: 'large',
+      text, shape: 'pill', logo_alignment: 'left', width: 280,
+    });
+    slot.dataset.rendered = key;
+  });
+}
+
+function initGoogleSignIn() {
+  const clientId = window.GOOGLE_CLIENT_ID;
+  // No client ID configured (or the Google script was blocked) - leave the
+  // blocks hidden and the password forms working exactly as before.
+  if (!clientId || !window.google || !window.google.accounts || !window.google.accounts.id) return;
+  window.google.accounts.id.initialize({
+    client_id: clientId,
+    callback: handleGoogleCredential,
+    // The user chooses their own account every time rather than being silently
+    // signed into whichever Google session the browser happens to hold.
+    auto_select: false,
+    cancel_on_tap_outside: true,
+    ux_mode: 'popup',
+  });
+  googleReady = true;
+  document.querySelectorAll('.google-block').forEach((el) => el.classList.remove('hidden'));
+  renderGoogleButtons();
+}
+
+// Both /config.js and Google's client are `defer`red, so they are guaranteed to
+// have run by DOMContentLoaded; the readyState check covers app.js being loaded
+// late (cached/slow) and the load event already having fired.
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initGoogleSignIn);
+} else {
+  initGoogleSignIn();
+}
+
+socket.on('google-auth-result', ({ ok, nickname, email, error, sessionToken: token }) => {
+  endAccountRequest();
+  if (!ok) {
+    // Let the user try a different Google account instead of being stuck with
+    // the one the failed attempt remembered.
+    if (googleReady) window.google.accounts.id.disableAutoSelect();
+    return showAccountStatus(error || t('errGoogleSignIn'), 'error');
+  }
+  storeLogin(nickname, token);
+  storeAccountEmail(email);
+  showAccountStatus(t('statusLoggedIn', { name: nickname }), 'success');
+  setTimeout(reloadPage, 500);
 });
 
 // Pressing Enter in any login/signup field submits that form.

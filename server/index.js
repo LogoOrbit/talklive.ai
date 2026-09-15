@@ -110,7 +110,10 @@ const CSP = [
     + ' https://*.gstatic.com'
     + ' https://www.google.com'
     + (ADS_SCRIPT_HOSTS.length ? ' ' + ADS_SCRIPT_HOSTS.join(' ') : ''),
-  "style-src 'self' 'unsafe-inline'",
+  // Google Identity Services injects its own stylesheet from accounts.google.com
+  // to render the Sign-In button; without it listed the browser blocks the
+  // sheet and the button renders unstyled.
+  "style-src 'self' 'unsafe-inline' https://accounts.google.com",
   "img-src 'self' data: https:",
   "font-src 'self' data:",
   "connect-src 'self' ws: wss: https:",
@@ -1157,7 +1160,7 @@ function clearWaitFallbackTimer(socketId) {
 // Accounts are held in memory for fast access but are also written through to
 // the persistent store (Postgres/file), so a signed-in user keeps their account
 // across restarts and deploys. socketAuth stays in-memory (per-connection).
-const accounts = new Map(); // username (lowercase) -> { passwordHash, salt, nickname, googleId, email }
+const accounts = new Map(); // username (lowercase) -> { passwordHash, salt, nickname, googleId, email, google }
 const socketAuth = new Map(); // socketId -> logged-in username (lowercase)
 const googleAccounts = new Map(); // Google "sub" id -> username (lowercase)
 
@@ -1212,6 +1215,7 @@ function hydrateFromStore() {
       nickname: acc.nickname || '',
       googleId: acc.googleId || null,
       email: acc.email || null,
+      google: acc.google || null,
     });
   }
   for (const [googleId, usernameLower] of Object.entries(store.data.googleIndex || {})) {
@@ -1673,6 +1677,33 @@ function uniqueUsernameFromBase(base) {
   return candidate;
 }
 
+// Everything the ID token carries about the person, kept exactly as Google
+// signed it. These are the fields covered by the scopes the user ticks in the
+// Google consent screen ("openid email profile") and nothing more - if they
+// decline a scope the claim is simply absent and stays null here. Stored so the
+// owner dashboard can show a real profile (name, verified email, avatar,
+// locale, workspace domain) instead of just "signed in with Google".
+function googleProfileFrom(payload) {
+  const str = (v, max = 200) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null);
+  return {
+    sub: str(payload.sub, 64),
+    email: normalizeEmail(payload.email) || null,
+    emailVerified: payload.email_verified === true,
+    name: str(payload.name, 120),
+    givenName: str(payload.given_name, 60),
+    familyName: str(payload.family_name, 60),
+    picture: str(payload.picture, 500),
+    locale: str(payload.locale, 20),
+    // Google Workspace domain, only present for managed accounts.
+    hostedDomain: str(payload.hd, 120),
+    issuer: str(payload.iss, 100),
+    // When Google itself authenticated them, and when we last saw a token.
+    authTime: typeof payload.iat === 'number' ? payload.iat * 1000 : null,
+    linkedAt: Date.now(),
+    lastSignInAt: Date.now(),
+  };
+}
+
 // Verifies a Google ID token and finds-or-creates the account it belongs to.
 async function findOrCreateGoogleAccount(idToken) {
   const ticket = await googleClient.verifyIdToken({ idToken, audience: GOOGLE_CLIENT_ID });
@@ -1681,6 +1712,7 @@ async function findOrCreateGoogleAccount(idToken) {
     throw new Error('Could not verify Google account.');
   }
 
+  const profile = googleProfileFrom(payload);
   const googleId = payload.sub;
   // Google already verified this address, so it doubles as the recovery email
   // and the account can be recovered even if the user never signs in with
@@ -1697,18 +1729,24 @@ async function findOrCreateGoogleAccount(idToken) {
       nickname,
       googleId,
       email: googleEmail && !store.findUsernameByEmail(googleEmail) ? googleEmail : null,
+      google: profile,
     });
     googleAccounts.set(googleId, username.toLowerCase());
     persistAccount(username.toLowerCase());
   } else {
     const existing = accounts.get(username);
-    if (existing && !existing.email && googleEmail && !store.findUsernameByEmail(googleEmail)) {
-      existing.email = googleEmail;
+    if (existing) {
+      // Refresh the profile on every sign-in: the person may have changed their
+      // Google name or avatar, and `linkedAt` must keep the original link date.
+      existing.google = { ...profile, linkedAt: (existing.google && existing.google.linkedAt) || profile.linkedAt };
+      if (!existing.email && googleEmail && !store.findUsernameByEmail(googleEmail)) {
+        existing.email = googleEmail;
+      }
       persistAccount(username);
     }
   }
 
-  return { username, account: accounts.get(username.toLowerCase()) };
+  return { username, account: accounts.get(username.toLowerCase()), profile };
 }
 
 function getClientIp(socket) {
@@ -2282,11 +2320,22 @@ io.on('connection', (socket) => {
       return socket.emit('google-auth-result', { ok: false, error: 'Missing Google credential.' });
     }
     try {
-      const { username, account } = await findOrCreateGoogleAccount(credential);
+      const { username, account, profile } = await findOrCreateGoogleAccount(credential);
       socketAuth.set(socket.id, username.toLowerCase());
       store.recordFeature('google_signin');
       store.upsertAccount(username.toLowerCase(), {
         username, nickname: account.nickname, method: 'google', country: geo.countryName, city: geo.city, ip, lastSeen: Date.now(),
+        // The consented profile, mirrored into the analytics registry so the
+        // dashboard's accounts table has it without a second lookup.
+        email: profile.email || account.email || null,
+        emailVerified: profile.emailVerified,
+        fullName: profile.name,
+        givenName: profile.givenName,
+        familyName: profile.familyName,
+        picture: profile.picture,
+        locale: profile.locale,
+        hostedDomain: profile.hostedDomain,
+        googleId: profile.sub,
       });
       socket.emit('google-auth-result', {
         ok: true,

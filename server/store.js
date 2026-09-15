@@ -583,6 +583,10 @@ function saveAccount(usernameLower, account) {
     nickname: account.nickname || '',
     googleId: account.googleId || null,
     email,
+    // The Google profile the user consented to share (name, verified email,
+    // avatar, locale, workspace domain). Null for password accounts, and kept
+    // from the previous record if this write did not carry a fresh copy.
+    google: account.google || previous.google || null,
     createdAt: previous.createdAt || Date.now(),
   };
   if (account.googleId) data.googleIndex[account.googleId] = usernameLower;

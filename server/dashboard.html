@@ -1297,7 +1297,40 @@ document.addEventListener('keydown',(e)=>{
 });
 
 let accCountryAll=false,accQ='',accSort='createdAt',accDir=-1;
-const ACC_COLS=[['username','Username'],['nickname','Nickname'],['method','Sign-up method'],['country','Location'],['createdAt','Created'],['lastSeen','Last seen'],['ip','IP']];
+const ACC_COLS=[['username','Username'],['nickname','Nickname'],['method','Sign-up method'],['email','Email'],['country','Location'],['createdAt','Created'],['lastSeen','Last seen'],['ip','IP']];
+/* usernameLower of the account whose full shared profile is expanded, if any. */
+let accOpen='';
+/* Everything Google handed us for one account, shown only when the row is
+   expanded - the table stays readable, and the complete record is one click
+   away instead of living in a CSV. */
+function accProfileRow(a){
+  const g=a.google;
+  const fields=[
+    ['Full name',g&&g.name],
+    ['First name',g&&g.givenName],
+    ['Last name',g&&g.familyName],
+    ['Google email',g&&g.email],
+    ['Email verified',g?(g.emailVerified?'Yes':'No'):null],
+    ['Google ID',g&&g.id],
+    ['Locale',g&&g.locale],
+    ['Workspace domain',g&&g.hostedDomain],
+    ['Linked',g&&g.linkedAt?fmtTs(g.linkedAt):null],
+    ['Last Google sign-in',g&&g.lastSignInAt?fmtTs(g.lastSignInAt):null],
+    ['Country',a.country],['City',a.city],['IP',a.ip],
+    ['Account created',a.createdAt?fmtTs(a.createdAt):null],
+    ['Last seen',a.lastSeen?fmtTs(a.lastSeen):null],
+  ].filter(([,v])=>v!==null&&v!==undefined&&v!=='');
+  return `<tr class="accdetail"><td colspan="${ACC_COLS.length+1}">
+    <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;padding:6px 2px">
+      ${g&&g.picture?`<img src="${esc(g.picture)}" alt="" referrerpolicy="no-referrer" style="width:64px;height:64px;border-radius:50%;flex:0 0 auto">`:''}
+      <div style="flex:1;min-width:240px;display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:.82rem">
+        ${fields.map(([k,v])=>`<div class="muted">${esc(k)}</div><div>${esc(String(v))}</div>`).join('')}
+      </div>
+    </div>
+    ${g?'<div class="muted" style="font-size:.75rem">Shared by the user through Google Sign-In consent.</div>'
+       :'<div class="muted" style="font-size:.75rem">Password account - no Google profile shared.</div>'}
+  </td></tr>`;
+}
 function accSortTh(){
   return ACC_COLS.map(([k,l])=>`<th class="sortable" data-s="${k}">${l} <span class="ar">${accSort===k?(accDir<0?'▼':'▲'):'↕'}</span></th>`).join('');
 }
@@ -1318,12 +1351,16 @@ async function viewAccounts(){
   const max=Math.max(1,...ranked.map(e=>e[1]));
   const palette=['var(--s1)','var(--s2)','var(--s3)','var(--s5)','var(--accent)','var(--serious)'];
   const google=all.filter(a=>a.method==='google').length;
+  const withEmail=all.filter(a=>a.email).length;
+  const verified=all.filter(a=>a.google&&a.google.emailVerified).length;
   const DAY=86400000,now=Date.now();
   const newWeek=all.filter(a=>a.createdAt&&now-a.createdAt<7*DAY).length;
   const active7=all.filter(a=>a.lastSeen&&now-a.lastSeen<7*DAY).length;
 
   const q=accQ.trim().toLowerCase();
-  let rows=q?all.filter(a=>[a.username,a.key,a.nickname,a.country,a.city,a.ip].some(v=>String(v||'').toLowerCase().includes(q))):all.slice();
+  let rows=q?all.filter(a=>[a.username,a.key,a.nickname,a.country,a.city,a.ip,a.email,
+    a.google&&a.google.name,a.google&&a.google.hostedDomain,a.google&&a.google.id]
+    .some(v=>String(v||'').toLowerCase().includes(q))):all.slice();
   rows.sort((a,b)=>{
     const va=a[accSort],vb=b[accSort];
     if(typeof va==='number'||typeof vb==='number')return ((va||0)-(vb||0))*accDir;
@@ -1337,6 +1374,7 @@ async function viewAccounts(){
     <div class="tile"><div class="k">Active this week</div><div class="v" data-count="${active7}">0</div><div class="s">${pctOf(active7,total)} of all accounts</div></div>
     <div class="tile"><div class="k">Top country</div><div class="v" style="font-size:1.15rem">${ranked.length?esc(ranked[0][0]):'-'}</div><div class="s">${ranked.length?num(ranked[0][1])+' accounts · '+pctOf(ranked[0][1],total):'no data'}</div></div>
     <div class="tile"><div class="k">Sign-up method</div><div class="v" style="font-size:1.15rem">${num(google)} / ${num(total-google)}</div><div class="s">Google / password</div></div>
+    <div class="tile"><div class="k">Emails on file</div><div class="v" data-count="${withEmail}">0</div><div class="s">${num(verified)} verified by Google</div></div>
   </div>
   <div class="card anim"><h2>\u{1F30D} Accounts by country <span class="sub">${ranked.length} ${ranked.length===1?'country':'countries'} · ${num(total)} accounts</span>
   <span style="margin-left:auto;display:flex;gap:8px">${exportLink('countries','Country CSV')}
@@ -1354,14 +1392,21 @@ async function viewAccounts(){
     ${accQ?'<button class="lnk" id="accClear">Clear</button>':''}
     ${exportLink('accounts','Export accounts')}
   </div>
-  <table><tr>${accSortTh()}</tr>
-  ${rows.map(a=>`<tr><td><b>${esc(a.username||a.key)}</b></td><td>${esc(a.nickname||'')}</td>
+  <table><tr>${accSortTh()}<th></th></tr>
+  ${rows.map(a=>`<tr><td><b>${esc(a.username||a.key)}</b></td><td>${esc(a.google&&a.google.name||a.nickname||'')}</td>
   <td>${a.method==='google'?'<span class="pill info">Google</span>':'<span class="pill good">Password</span>'}</td>
+  <td>${a.email?esc(a.email)+(a.google&&a.google.emailVerified?' <span class="pill good">verified</span>':''):'<span class="muted">-</span>'}</td>
   <td>${esc(a.country||'')}${a.city&&a.city!=='Unknown'?', '+esc(a.city):''}</td>
-  <td>${a.createdAt?fmtTs(a.createdAt):'-'}</td><td>${a.lastSeen?ago(a.lastSeen):'-'}</td><td class="muted">${esc(a.ip||'')}</td></tr>`).join('')||`<tr><td colspan="7" class="muted">${q?'No account matches that search.':'No accounts registered yet.'}</td></tr>`}</table></div>`;
+  <td>${a.createdAt?fmtTs(a.createdAt):'-'}</td><td>${a.lastSeen?ago(a.lastSeen):'-'}</td><td class="muted">${esc(a.ip||'')}</td>
+  <td><button class="lnk accToggle" data-k="${esc(a.key)}">${accOpen===a.key?'Hide':'Details'}</button></td></tr>
+  ${accOpen===a.key?accProfileRow(a):''}`).join('')||`<tr><td colspan="${ACC_COLS.length+1}" class="muted">${q?'No account matches that search.':'No accounts registered yet.'}</td></tr>`}</table></div>`;
   animateCounters();
   const tg=$('#accCountryToggle');
   if(tg)tg.onclick=()=>{accCountryAll=!accCountryAll;viewAccounts();};
+  document.querySelectorAll('.accToggle').forEach(b=>b.onclick=()=>{
+    accOpen=accOpen===b.dataset.k?'':b.dataset.k;
+    viewAccounts();
+  });
   const inp=$('#accQ');
   onFilterInput(inp,(v)=>{accQ=v;},()=>viewAccounts().then(()=>keepFocus('#accQ')));
   const cl=$('#accClear');if(cl)cl.onclick=()=>{accQ='';viewAccounts();};
