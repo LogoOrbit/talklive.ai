@@ -52,6 +52,20 @@ jobs:
       # --remote-only builds on Fly's builder rather than this runner, so the
       # image is assembled in the same place whether the deploy is triggered
       # from CI or a workstation.
+      # fly.toml mounts /data so the store survives deploys, and a deploy fails
+      # outright if the volume named there does not exist yet. Volumes cannot be
+      # created from the Fly dashboard, so create it here (once) instead of
+      # requiring someone to run the CLI by hand.
+      - name: Ensure the data volume exists
+        run: |
+          if flyctl volumes list -a talklive-ai | grep -q talklive_data; then
+            echo "talklive_data already exists"
+          else
+            flyctl volumes create talklive_data -a talklive-ai -r iad -n 1 -s 1 -y
+          fi
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
       - name: Deploy
         run: flyctl deploy --remote-only
         env:

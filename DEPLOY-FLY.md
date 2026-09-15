@@ -34,24 +34,26 @@ better than `iad`. Full list: `fly platform regions`.
 
 The app `talklive-ai` already exists (created by `fly launch`).
 
-`fly.toml` deliberately mounts **no volume**. Volumes cannot be created from
-the Fly dashboard - only via `fly volumes create` - so a `[[mounts]]` block
-makes every deploy fail until the CLI has been run. Without one, `DATA_DIR`
-lands on the container filesystem and the JSON store resets on each deploy,
-which is the same behaviour Render's free plan had.
+`fly.toml` mounts the `talklive_data` volume at `/data` (`DATA_DIR`), so the
+JSON store - accounts, friends, friend chats, call history, bans, analytics -
+survives a deploy. A mount whose volume does not exist fails the deploy, and
+volumes cannot be created from the Fly dashboard, so the deploy workflow
+(`.github/workflows/fly-deploy.yml`) creates it once before the first deploy
+that needs it. Nothing has to be run by hand.
 
-**The recommended fix is Postgres, not a volume.** It survives deploys, gets
-backed up, and does not pin the app to one machine. `server/store.js` already
-supports it - set `DATABASE_URL` (Supabase and Neon both have free tiers) and
-it switches backends automatically. See step 4.
-
-If you would rather use a volume, it is CLI-only, and you must re-add the
-`[[mounts]]` block to `fly.toml`:
+To create or inspect it yourself:
 
 ```sh
 fly scale count 1 --app talklive-ai   # a volume attaches to exactly one machine
 fly volumes create talklive_data --region iad --size 1 --app talklive-ai
+fly volumes list --app talklive-ai
 ```
+
+**Postgres is still the better backend once there is more than one machine.**
+It survives deploys, gets backed up, and does not pin the app to one machine.
+`server/store.js` already supports it - set `DATABASE_URL` (Supabase and Neon
+both have free tiers) and it switches backends automatically, ignoring
+`DATA_DIR`. See step 4.
 
 If you ever re-run `fly launch`, pass `--copy-config --no-deploy` so it uses
 the committed `fly.toml` instead of regenerating one. The generated config sets

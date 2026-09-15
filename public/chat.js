@@ -175,6 +175,8 @@
     var connected = name === 'live' && partnerHere;
     reportBtn.classList.toggle('hidden', !connected);
     addFriendBtn.classList.toggle('hidden', !connected);
+    // Mini-games need a live partner, same as Report and Add friend.
+    if (gameBtn) gameBtn.classList.toggle('hidden', !connected);
     autoBtn.classList.toggle('hidden', name === 'start');
     // While connected the header shows who you're talking to (name + country
     // + flag); idle shows the online counter next to the TalkLive brand.
@@ -206,6 +208,7 @@
   function addMessage(text, who, meta) {
     var el = document.createElement('div');
     el.className = 'msg ' + who;
+    if (meta && meta.ts) el.dataset.ts = String(meta.ts);
     if (text) {
       // The text lives in its own span once a bubble can also hold a quote, a
       // GIF and a reaction row - otherwise they cannot be stacked.
@@ -381,6 +384,7 @@
   function goSearch(firstTime) {
     searching = true;
     partnerHere = false;
+    if (games) games.reset();
     showView('search');
     startSearchLines();
     if (firstTime) register();
@@ -397,6 +401,7 @@
   function goStart() {
     searching = false;
     partnerHere = false;
+    if (games) games.reset();
     if (location.pathname !== '/chat') history.replaceState(history.state, '', '/chat');
     showView('start');
   }
@@ -672,6 +677,45 @@
   function closeModal(m) { m.classList.add('hidden'); if (!document.querySelector('.modal-overlay:not(.hidden)')) document.body.classList.remove('modal-open'); }
 
   // ---------------------------------------------------------------------------
+  // Mini-games (Tic Tac Toe, Dots & Boxes) - the same games.js the call screen
+  // uses, over the same relayed 'game' event. The call app makes the caller the
+  // host; a text chat has no initiator, so the two clientIds pick one
+  // deterministically - both sides compare the same pair and agree.
+  // ---------------------------------------------------------------------------
+  var gameBtn = $('gameBtn');
+  var games = (window.TalkLiveGames && gameBtn) ? window.TalkLiveGames.attach({
+    socket: socket,
+    gameBtn: gameBtn,
+    isConnected: function () { return partnerHere; },
+    isHost: function () {
+      if (!currentPartner || !currentPartner.clientId) return false;
+      return String(getClientId()) < String(currentPartner.clientId);
+    },
+    partnerName: function () { return currentPartner ? currentPartner.username : ''; },
+    myName: function () { return myProfile && myProfile.username ? myProfile.username : ''; },
+    vibrate: vibrate,
+    openModal: openModal,
+    closeModal: closeModal,
+    sound: function (kind) {
+      initAudio();
+      if (kind === 'move') playBlip([520, 760], 0.07, 0.05);
+      else if (kind === 'turn') playBlip([660, 990], 0.11, 0.06);
+      else if (kind === 'win') { playBlip([660, 990], 0.12, 0.06); setTimeout(function () { playBlip([880, 1320], 0.16, 0.06); }, 110); }
+      else if (kind === 'lose') playBlip([420, 240], 0.22, 0.05);
+      else if (kind === 'invite') playBlip([880, 1170], 0.1, 0.05);
+    },
+  }) : null;
+
+  // The games menu item opens the overlay; the menu closes behind it.
+  if (gameBtn) {
+    gameBtn.addEventListener('click', function () {
+      if (!partnerHere || !games) return;
+      initAudio();
+      games.open(); // the menu closes itself on click
+    });
+  }
+
+  // ---------------------------------------------------------------------------
   // Side panels (settings / friends / friend chat) - the nav features shared
   // with the call app. Each panel slides in over its own overlay.
   // ---------------------------------------------------------------------------
@@ -916,6 +960,55 @@
   var friendChatInput = $('friendChatInput');
   var activeFriendChatId = null;
 
+  // --- Read receipts ("Seen"), same opt-in as the call app and stored under
+  // the same key, so the choice follows the user between /call and /chat.
+  // Off means: send no receipts, and show no "Seen" on messages I sent.
+  var messageSeenEnabled = localStorage.getItem('talklive_message_seen') !== 'off';
+  var chatSeenToggleBtn = $('chatSeenToggleBtn');
+  // ts of the partner's last read receipt per friend, so "Seen" survives a
+  // re-render of the thread.
+  var friendSeenTs = {};
+
+  function syncSeenToggleUi() {
+    if (!chatSeenToggleBtn) return;
+    chatSeenToggleBtn.classList.toggle('is-off', !messageSeenEnabled);
+    chatSeenToggleBtn.setAttribute('aria-pressed', messageSeenEnabled ? 'true' : 'false');
+  }
+  if (chatSeenToggleBtn) {
+    chatSeenToggleBtn.addEventListener('click', function () {
+      messageSeenEnabled = !messageSeenEnabled;
+      try { localStorage.setItem('talklive_message_seen', messageSeenEnabled ? 'on' : 'off'); } catch (e) {}
+      syncSeenToggleUi();
+      // Turning it back on while a chat is open sends a receipt for what is on
+      // screen right now, and brings my own "Seen" line back.
+      if (activeFriendChatId) {
+        if (messageSeenEnabled) socket.emit('chat-seen', { friendClientId: activeFriendChatId });
+        renderSeenLabel();
+      }
+    });
+  }
+  syncSeenToggleUi();
+
+  // "Seen" under the newest message I sent, once the other side has read the
+  // conversation. One label, always the last child of the thread.
+  function renderSeenLabel() {
+    var existing = friendChatMsgs.querySelector('.chat-seen-label');
+    if (existing) existing.remove();
+    if (!messageSeenEnabled || !activeFriendChatId) return;
+    var seenTs = friendSeenTs[activeFriendChatId];
+    if (!seenTs) return;
+    var mine = friendChatMsgs.querySelectorAll('.msg.me');
+    var last = mine[mine.length - 1];
+    if (!last) return;
+    var sentAt = Number(last.dataset.ts || 0);
+    if (sentAt && sentAt > seenTs) return;
+    var label = document.createElement('div');
+    label.className = 'chat-seen-label';
+    label.textContent = t('seen');
+    friendChatMsgs.appendChild(label);
+    friendChatMsgs.scrollTop = friendChatMsgs.scrollHeight;
+  }
+
   function appendFriendMsg(text, who, meta) {
     var el = document.createElement('div');
     el.className = 'msg ' + who;
@@ -937,6 +1030,7 @@
         myClientId: getClientId(),
       });
     }
+    renderSeenLabel();
     friendChatMsgs.scrollTop = friendChatMsgs.scrollHeight;
   }
 
@@ -967,13 +1061,16 @@
 
   function openFriendChat(friend) {
     activeFriendChatId = friend.clientId;
-    $('friendChatTitle').textContent = friend.username || t('chat');
+    $('friendChatTitle').textContent = friend.username
+      ? t('chatWith', { name: friend.username })
+      : t('chat');
     friendChatMsgs.innerHTML = '';
     if (friendExtras) friendExtras.reset();
     closePanel(friendsPanel, friendsOverlay);
     openPanel(friendChatPanel, friendChatOverlay);
     socket.emit('get-friend-chat', { friendClientId: friend.clientId });
     socket.emit('mark-messages-read', { friendClientId: friend.clientId });
+    if (messageSeenEnabled) socket.emit('chat-seen', { friendClientId: friend.clientId });
     // Clear this friend's unread notifications locally so badges update now.
     friendsState.notifications = friendsState.notifications.filter(function (n) {
       return !(n.type === 'message' && n.fromClientId === friend.clientId);
@@ -1008,7 +1105,11 @@
     if (friendExtras) friendExtras.reset();
     (data.messages || []).forEach(function (m) {
       appendFriendMsg(m.text, m.from === activeFriendChatId ? 'them' : 'me', m);
+      if (m.seen && m.from !== activeFriendChatId) {
+        friendSeenTs[activeFriendChatId] = Math.max(friendSeenTs[activeFriendChatId] || 0, m.ts || Date.now());
+      }
     });
+    renderSeenLabel();
   });
   socket.on('friend-message-sent', function (data) {
     if (data && data.toClientId === activeFriendChatId) appendFriendMsg(data.text, 'me', data);
@@ -1019,9 +1120,16 @@
       appendFriendMsg(data.text, 'them', data);
       soundReceive();
       socket.emit('mark-messages-read', { friendClientId: data.fromClientId });
+      if (messageSeenEnabled) socket.emit('chat-seen', { friendClientId: data.fromClientId });
     }
     // Badges refresh via the state-sync the server sends with the notification.
   });
+  socket.on('chat-seen', function (data) {
+    if (!data || !data.byClientId) return;
+    friendSeenTs[data.byClientId] = data.ts || Date.now();
+    if (data.byClientId === activeFriendChatId) renderSeenLabel();
+  });
+
   socket.on('friend-reaction', function (data) {
     if (!data || !friendExtras) return;
     if (data.fromClientId !== activeFriendChatId) return;
@@ -1053,15 +1161,21 @@
     }
   });
 
+  // Same reasoning as the call app: a refusal now means "this identity is live
+  // somewhere else right now", and rotating the clientId would orphan this
+  // person's friends, friend chats and history. Retry first, rotate last.
+  var identityRetries = 0;
   socket.on('register-result', function (res) {
-    if (res && res.ok === false) {
-      // A refused identity must never leave this page unable to chat. Rotate to
-      // a fresh local identity and register again.
-      localStorage.removeItem('talklive_client_id');
-      localStorage.removeItem('talklive_identity_token');
-      register();
+    if (!res || res.ok !== false) { identityRetries = 0; return; }
+    if (identityRetries < 4) {
+      identityRetries += 1;
+      setTimeout(function () { if (socket.connected) register(); }, 1500 * identityRetries);
       return;
     }
+    identityRetries = 0;
+    localStorage.removeItem('talklive_client_id');
+    localStorage.removeItem('talklive_identity_token');
+    register();
   });
 
   socket.on('profile', function (p) {
@@ -1147,6 +1261,8 @@
 
   socket.on('partner-left', function () {
     partnerHere = false;
+    // Surface the drop on an open board (grey it out) instead of yanking it away.
+    if (games) { if (games.isPlaying() || games.isNegotiating()) games.partnerLeft(); else games.reset(); }
     typingEl.classList.add('hidden');
     reportBtn.classList.add('hidden');
     addFriendBtn.classList.add('hidden');

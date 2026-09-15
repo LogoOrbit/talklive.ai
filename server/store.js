@@ -7,14 +7,12 @@
 //    than one machine.
 //  - otherwise: a JSON file under DATA_DIR (defaults to <repo>/data) - zero
 //    setup locally. In production this is only durable if DATA_DIR is a real
-//    mount. fly.toml sets DATA_DIR=/data but deliberately declares no
-//    [mounts] block (a mount that does not exist blocks every deploy until
-//    someone runs `fly volumes create` from the CLI), so on the live app /data
-//    is an ordinary directory inside the container and every deploy discards
-//    it. ephemeralStorage() below detects exactly that and the app says so
-//    loudly at boot, because the failure is otherwise completely silent: the
-//    server starts, serves users, accepts sign-ups, and destroys them all on
-//    the next push.
+//    mount: fly.toml sets DATA_DIR=/data and mounts the `talklive_data` volume
+//    there (the deploy workflow creates that volume if it is missing), so the
+//    file survives deploys. ephemeralStorage() below still checks at boot and
+//    says so loudly if /data is ever an ordinary container directory again,
+//    because that failure is otherwise completely silent: the server starts,
+//    serves users, accepts sign-ups, and destroys them all on the next push.
 // Writes are debounced either way so hot paths never block on I/O.
 const fs = require('fs');
 const path = require('path');
@@ -118,6 +116,12 @@ function defaults() {
     // the password-reset section below), because they are short-lived rows with
     // their own expiry and do not belong in the long-lived document.
     passwordResets: {},
+    // Long-lived server secrets that must survive a restart, name -> hex string.
+    // Today: 'identity', the HMAC key the server signs clientId identity tokens
+    // with. Regenerating it on every boot invalidated every browser's token, and
+    // a rejected token makes the client rotate to a brand-new clientId - which
+    // silently orphans that person's friends, friend chats and premium state.
+    secrets: {},
     // Durable login sessions: token -> { u: usernameLower, createdAt, lastSeen }.
     // Lets a signed-in user stay signed in across page reloads, server restarts
     // and deploys (sliding expiry, see SESSION_TTL_MS).
@@ -172,6 +176,7 @@ function applyParsed(parsed) {
   data.googleIndex = parsed.googleIndex || {};
   data.authSessions = parsed.authSessions || {};
   data.passwordResets = parsed.passwordResets || {};
+  data.secrets = parsed.secrets || {};
   // Rebuild the email index from the accounts themselves rather than trusting
   // the stored copy: accounts written before recovery emails existed have no
   // index entry, and a rebuild keeps the two from ever drifting apart.
@@ -1020,7 +1025,19 @@ async function flushAndExit(signal) {
 process.on('SIGTERM', () => flushAndExit('SIGTERM'));
 process.on('SIGINT', () => flushAndExit('SIGINT'));
 
+// A persistent random secret, created once and reused for the life of the
+// store. Callers read it after `ready`.
+function getOrCreateSecret(name) {
+  if (!data.secrets) data.secrets = {};
+  if (!data.secrets[name]) {
+    data.secrets[name] = crypto.randomBytes(32).toString('hex');
+    save();
+  }
+  return data.secrets[name];
+}
+
 module.exports = {
+  getOrCreateSecret,
   get data() { return data; },
   get backendStatus() { return backendStatus; },
   ready,

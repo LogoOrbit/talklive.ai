@@ -934,6 +934,15 @@ function closeFilters() {
 }
 
 filtersBtn.addEventListener('click', openFilters);
+
+// Filters and call history are reached from Settings rather than the top bar.
+const settingsFiltersBtn = document.getElementById('settingsFiltersBtn');
+if (settingsFiltersBtn) {
+  settingsFiltersBtn.addEventListener('click', () => {
+    closeAppSettings();
+    openFilters();
+  });
+}
 closeFiltersBtn.addEventListener('click', closeFilters);
 filtersOverlay.addEventListener('click', closeFilters);
 
@@ -1018,7 +1027,11 @@ function openModal(modal) {
   // On small screens the toolbar dropdowns are position:fixed - anchor them
   // just under their own button so they open correctly at any scroll position
   // now that the header is sticky.
-  if (modal.classList.contains('notif-dropdown') && window.matchMedia('(max-width: 480px)').matches) {
+  if (modal.classList.contains('is-floating')) {
+    // Opened from Settings: centred by CSS, so no button to anchor to.
+    modal.style.top = '';
+    modal.style.maxHeight = '';
+  } else if (modal.classList.contains('notif-dropdown') && window.matchMedia('(max-width: 480px)').matches) {
     const btn = modal.parentElement ? modal.parentElement.querySelector('button.icon-btn') : null;
     if (btn) {
       const r = btn.getBoundingClientRect();
@@ -1073,6 +1086,18 @@ document.addEventListener('keydown', (e) => {
 
 // --- Account (persisted server-side; a durable session token in localStorage
 // keeps the user signed in across reloads, restarts and deploys) ---
+// Header auth belongs to the Tap-to-Talk landing screen only. Once the user is
+// on the call screen (/call) the top bar is for the conversation, and signing
+// in is still one tap away inside Settings - which is where it lived before.
+function onLandingScreen() {
+  return callPanel.classList.contains('hidden');
+}
+function renderHeaderAuthVisibility() {
+  const landing = onLandingScreen();
+  headerAuth.classList.toggle('hidden', !landing || !!accountNickname);
+  headerAccountBtn.classList.toggle('hidden', !landing || !accountNickname);
+}
+
 function renderAccountState() {
   if (accountNickname) {
     accountLoggedOut.classList.add('hidden');
@@ -1086,8 +1111,6 @@ function renderAccountState() {
     sidePanelSignInBtn.classList.add('hidden');
     sidePanelRegisterBtn.classList.add('hidden');
     myAccountBtn.classList.remove('hidden');
-    headerAuth.classList.add('hidden');
-    headerAccountBtn.classList.remove('hidden');
   } else {
     accountLoggedOut.classList.remove('hidden');
     accountLoggedIn.classList.add('hidden');
@@ -1095,9 +1118,8 @@ function renderAccountState() {
     sidePanelSignInBtn.classList.remove('hidden');
     sidePanelRegisterBtn.classList.remove('hidden');
     myAccountBtn.classList.add('hidden');
-    headerAuth.classList.remove('hidden');
-    headerAccountBtn.classList.add('hidden');
   }
+  renderHeaderAuthVisibility();
   renderAvatarGrid();
   renderSettingsIdentity();
 }
@@ -2315,11 +2337,26 @@ historyBtn.addEventListener('click', (e) => {
   const willOpen = historyDropdown.classList.contains('hidden');
   if (willOpen) {
     renderHistory();
+    historyDropdown.classList.remove('is-floating');
     openModal(historyDropdown);
   } else {
     closeModal(historyDropdown);
   }
 });
+const settingsHistoryBtn = document.getElementById('settingsHistoryBtn');
+if (settingsHistoryBtn) {
+  settingsHistoryBtn.addEventListener('click', (e) => {
+    // Without this the document-level "click outside" handler below would
+    // close the dropdown in the same tick it was opened.
+    e.stopPropagation();
+    closeAppSettings();
+    renderHistory();
+    // Opened from Settings there is no top-bar icon to hang off, so centre it.
+    historyDropdown.classList.add('is-floating');
+    openModal(historyDropdown);
+  });
+}
+
 closeHistoryBtn.addEventListener('click', () => closeModal(historyDropdown));
 document.addEventListener('click', (e) => {
   if (!e.composedPath().includes(historyWrap)) closeModal(historyDropdown);
@@ -2423,17 +2460,31 @@ socket.on('needs-register', () => {
   if (lastRegisterPayload) socket.emit('register', lastRegisterPayload);
 });
 
+// The server now refuses a registration only while this identity is actively
+// held by another live socket - typically this same person in a second tab, or
+// a socket of ours the server has not yet noticed is dead. Rotating the local
+// identity there would be a disaster: a new clientId is a new person, so the
+// friends, friend chats, call history and premium attached to the old one are
+// orphaned. So retry the same identity a few times first, and only rotate if it
+// truly stays claimed.
+let identityRetries = 0;
 socket.on('register-result', ({ ok } = {}) => {
-  if (ok !== false) return;
-  // A stolen/invalid identity must not leave the client permanently unable to
-  // connect. Rotate the local opaque identity and register afresh.
+  if (ok !== false) { identityRetries = 0; return; }
+  if (!lastRegisterPayload) return;
+  if (identityRetries < 4) {
+    identityRetries += 1;
+    setTimeout(() => {
+      if (socket.connected && lastRegisterPayload) socket.emit('register', lastRegisterPayload);
+    }, 1500 * identityRetries);
+    return;
+  }
+  // Genuinely stuck: a client that can never register is worse than a new one.
+  identityRetries = 0;
   localStorage.removeItem('talklive_client_id');
   localStorage.removeItem('talklive_identity_token');
-  if (lastRegisterPayload) {
-    lastRegisterPayload.clientId = getClientId();
-    lastRegisterPayload.identityToken = '';
-    socket.emit('register', lastRegisterPayload);
-  }
+  lastRegisterPayload.clientId = getClientId();
+  lastRegisterPayload.identityToken = '';
+  socket.emit('register', lastRegisterPayload);
 });
 
 // --- State helpers ---
@@ -3432,6 +3483,8 @@ function resetUI() {
   }
   callPanel.classList.add('hidden');
   setupPanel.classList.remove('hidden');
+  // Back on the landing screen, so the header's Log In / Sign Up returns.
+  renderHeaderAuthVisibility();
   stageEl.classList.remove('call-live');
   startBtn.disabled = false;
   startBtn.classList.remove('is-connecting');
@@ -3491,10 +3544,11 @@ function enterCallUI() {
   stageEl.classList.add('call-live');
   chatToggleBtn.classList.remove('hidden');
   appSettingsBtn.classList.remove('hidden');
-  historyBtn.classList.remove('hidden');
   friendsBtn.classList.remove('hidden');
-  filtersBtn.classList.remove('hidden');
   gameBtn.classList.remove('hidden');
+  // History and filters are Settings entries now, so the call screen keeps
+  // only the controls a live conversation needs.
+  renderHeaderAuthVisibility();
 }
 
 let beginInFlight = false;
@@ -3974,711 +4028,43 @@ function stopGameNudge() {
 }
 
 // =====================================================================
-// Tic Tac Toe mini-game - play with whoever you're connected to. 2 players,
-// a classic 3x3 board (X = the call initiator, O = the other). The game
-// state is authoritative on the acting player's client and broadcast in
-// full to the partner after each move, so the two clients can never
-// desync. Relayed through the server 'game' event.
+// Mini-games (Tic Tac Toe, Dots & Boxes) with whoever you're on a call with.
+// The games themselves live in games.js, shared with the /chat page; this is
+// only the wiring - which socket, who hosts, and how the call screen sounds.
+// The host is the call initiator, so exactly one side builds the board.
 // =====================================================================
 const gameBtnBadge = document.getElementById('gameBtnBadge');
 const gameOverlay = document.getElementById('gameOverlay');
-const closeGameBtn = document.getElementById('closeGameBtn');
-const gameStatus = document.getElementById('gameStatus');
-const tttBoard = document.getElementById('tttBoard');
-const gameTitle = document.getElementById('gameTitle');
-const gamePicker = document.getElementById('gamePicker');
-const dabBoardWrap = document.getElementById('dabBoardWrap');
-const tttBoardWrap = document.getElementById('tttBoardWrap');
-const dabCanvas = document.getElementById('dabCanvas');
-const gameCancelBtn = document.getElementById('gameCancelBtn');
-const gameAcceptBtn = document.getElementById('gameAcceptBtn');
-const gameDeclineBtn = document.getElementById('gameDeclineBtn');
-const tttRematchBtn = document.getElementById('tttRematchBtn');
-const tttPlayers = document.getElementById('tttPlayers');
-const tttMeAvatar = document.getElementById('tttMeAvatar');
-const tttMeName = document.getElementById('tttMeName');
-const tttMeActivity = document.getElementById('tttMeActivity');
-const tttOppAvatar = document.getElementById('tttOppAvatar');
-const tttOppName = document.getElementById('tttOppName');
-const tttOppActivity = document.getElementById('tttOppActivity');
-const tttPlayerMe = document.getElementById('tttPlayerMe');
-const tttPlayerOpp = document.getElementById('tttPlayerOpp');
-const tttBoardArea = document.getElementById('tttBoardArea');
-const tttDisconnectBanner = document.getElementById('tttDisconnectBanner');
-const tttEndConfirmModal = document.getElementById('tttEndConfirmModal');
-const tttContinueBtn = document.getElementById('tttContinueBtn');
-const tttEndBtn = document.getElementById('tttEndBtn');
 
 let amCallInitiator = false;
 
-// All 8 ways to win on a 3x3 board.
-const TTT_LINES = [
-  [0,1,2],[3,4,5],[6,7,8],
-  [0,3,6],[1,4,7],[2,5,8],
-  [0,4,8],[2,4,6],
-];
+const GAME_SOUNDS = {
+  move: playMoveSound,
+  turn: playTurnSound,
+  win: playWinSound,
+  lose: playHangupSound,
+  invite: playInviteSound,
+};
 
-let tttState = null;      // shared game state (either game), or null when no game
-let tttStage = 'idle';    // idle | inviting | invited | playing
-let myPlayerIndex = 0;    // 0 = call initiator, 1 = the other
-let tttBoardBuilt = false;
-let tttWasMyTurn = false; // tracks the transition into "it's your move"
+const games = window.TalkLiveGames ? window.TalkLiveGames.attach({
+  socket,
+  gameBtn,
+  isConnected: () => callState === 'connected',
+  isHost: () => amCallInitiator,
+  partnerName: () => (currentPartner ? currentPartner.username : ''),
+  myName: () => (myProfile && myProfile.username ? myProfile.username : ''),
+  vibrate,
+  openModal,
+  closeModal,
+  sound: (kind) => { const fn = GAME_SOUNDS[kind]; if (fn) fn(); },
+}) : null;
 
-// Which mini-game is in play / being negotiated: 'ttt' or 'dab' (Dots & Boxes).
-let activeGame = null;
-let inviteGame = null;        // game I invited the partner to
-let pendingInviteGame = null; // game the partner invited me to
-
-function gameName(g) { return g === 'dab' ? t('gameDab') : t('gameTtt'); }
-
-// True when the game is waiting on *me* to move right now.
-function tttIsMyActionableTurn() {
-  return tttStage === 'playing' && tttState && tttState.phase !== 'over'
-    && tttState.turn === myPlayerIndex;
-}
-
-function buildTttBoard() {
-  if (tttBoardBuilt) return;
-  const frag = document.createDocumentFragment();
-  for (let i = 0; i < 9; i++) {
-    const cell = document.createElement('div');
-    cell.className = 'ttt-cell empty';
-    cell.dataset.i = String(i);
-    cell.addEventListener('click', () => tttTapCell(i));
-    frag.appendChild(cell);
-  }
-  tttBoard.appendChild(frag);
-  tttBoardBuilt = true;
-}
-
-function tttInitialState() {
-  return { board: Array(9).fill(null), turn: 0, phase: 'move', winner: null, line: null };
-}
-
-function tttWinningLine(board, pidx) {
-  return TTT_LINES.find((line) => line.every((i) => board[i] === pidx)) || null;
-}
-
-function tttApplyMove(state, pidx, i) {
-  state.board[i] = pidx;
-  const line = tttWinningLine(state.board, pidx);
-  if (line) {
-    state.phase = 'over';
-    state.winner = pidx;
-    state.line = line;
-  } else if (state.board.every((v) => v !== null)) {
-    state.phase = 'over';
-    state.winner = 'draw';
-  } else {
-    state.turn = 1 - pidx;
-  }
-}
-
-function broadcastTtt() {
-  socket.emit('game', { type: 'state', state: tttState });
-}
-
-function tttTapCell(i) {
-  if (!tttState || tttStage !== 'playing') return;
-  if (tttState.turn !== myPlayerIndex || tttState.phase !== 'move') return;
-  if (tttState.board[i] !== null) return;
-  tttApplyMove(tttState, myPlayerIndex, i);
-  playMoveSound();
-  vibrate(15);
-  broadcastTtt();
-  updateGameUI();
-}
-
-// =====================================================================
-// Dots and Boxes - 5×5 dots (4×4 boxes), canvas-rendered at 60fps.
-// Same authority model as Tic Tac Toe: the mover applies locally and
-// broadcasts the full state. Closing a box scores a point and grants
-// another turn; most boxes when the grid is full wins.
-// =====================================================================
-const DAB_N = 4; // boxes per side → 5×5 dots, 20 h-edges + 20 v-edges
-
-function dabInitialState() {
-  return {
-    g: 'dab',
-    h: Array((DAB_N + 1) * DAB_N).fill(null),
-    v: Array(DAB_N * (DAB_N + 1)).fill(null),
-    boxes: Array(DAB_N * DAB_N).fill(null),
-    scores: [0, 0],
-    turn: 0, phase: 'move', winner: null, last: null,
-  };
-}
-
-// The four edges surrounding box (r, c).
-function dabBoxEdges(r, c) {
-  return [
-    ['h', r * DAB_N + c], ['h', (r + 1) * DAB_N + c],
-    ['v', r * (DAB_N + 1) + c], ['v', r * (DAB_N + 1) + c + 1],
-  ];
-}
-function dabBoxComplete(state, b) {
-  const r = Math.floor(b / DAB_N), c = b % DAB_N;
-  return dabBoxEdges(r, c).every(([k, i]) => (k === 'h' ? state.h : state.v)[i] !== null);
-}
-
-function dabApplyMove(state, pidx, kind, i) {
-  const arr = kind === 'h' ? state.h : state.v;
-  if (arr[i] !== null) return false;
-  arr[i] = pidx;
-  state.last = { k: kind, i };
-  let closed = 0;
-  for (let b = 0; b < DAB_N * DAB_N; b++) {
-    if (state.boxes[b] === null && dabBoxComplete(state, b)) {
-      state.boxes[b] = pidx;
-      closed++;
-    }
-  }
-  state.scores[pidx] += closed;
-  if (state.boxes.every((v) => v !== null)) {
-    state.phase = 'over';
-    state.winner = state.scores[0] === state.scores[1] ? 'draw' : (state.scores[0] > state.scores[1] ? 0 : 1);
-  } else if (!closed) {
-    state.turn = 1 - pidx; // closing a box keeps the turn
-  }
-  return true;
-}
-
-// --- Canvas rendering: crisp (DPR-aware), animated line draws + box fills,
-// hover/tap edge preview. A rAF loop runs only while the board is visible. ---
-let dabCtx = null;
-let dabRafId = null;
-let dabCssSize = 0;
-const dabEdgeAnim = new Map(); // 'h12' -> timestamp the edge appeared
-const dabBoxAnim = new Map();  // boxIndex -> timestamp it was claimed
-let dabHover = null;           // { k, i } candidate edge under the pointer
-let dabPalette = null;
-
-function dabColors() {
-  if (!dabPalette) {
-    const cs = getComputedStyle(document.documentElement);
-    dabPalette = {
-      p0: (cs.getPropertyValue('--accent-2') || '#00d4ff').trim() || '#00d4ff',
-      p0Soft: 'rgba(0, 212, 255, 0.22)',
-      p1: '#ffb04d',
-      p1Soft: 'rgba(255, 176, 77, 0.22)',
-      dot: (cs.getPropertyValue('--text') || '#fff').trim() || '#fff',
-    };
-  }
-  return dabPalette;
-}
-
-function dabResizeCanvas() {
-  const wrapW = dabBoardWrap.clientWidth || 320;
-  dabCssSize = Math.max(220, Math.min(wrapW, 340));
-  const dpr = Math.min(window.devicePixelRatio || 1, 3);
-  dabCanvas.style.width = dabCssSize + 'px';
-  dabCanvas.style.height = dabCssSize + 'px';
-  dabCanvas.width = Math.round(dabCssSize * dpr);
-  dabCanvas.height = Math.round(dabCssSize * dpr);
-  dabCtx = dabCanvas.getContext('2d');
-  dabCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-}
-
-// Board geometry in CSS pixels: dots evenly spaced with an outer margin.
-function dabGeom() {
-  const pad = dabCssSize * 0.09;
-  const step = (dabCssSize - pad * 2) / DAB_N;
-  return { pad, step };
-}
-function dabEdgeEnds(kind, i) {
-  const { pad, step } = dabGeom();
-  if (kind === 'h') {
-    const r = Math.floor(i / DAB_N), c = i % DAB_N;
-    return [pad + c * step, pad + r * step, pad + (c + 1) * step, pad + r * step];
-  }
-  const r = Math.floor(i / (DAB_N + 1)), c = i % (DAB_N + 1);
-  return [pad + c * step, pad + r * step, pad + c * step, pad + (r + 1) * step];
-}
-
-// Nearest empty edge to a point, within a comfortable touch distance.
-function dabPickEdge(x, y) {
-  if (!tttState || tttState.g !== 'dab') return null;
-  const { step } = dabGeom();
-  let best = null, bestD = step * 0.42;
-  const consider = (kind, count) => {
-    for (let i = 0; i < count; i++) {
-      if ((kind === 'h' ? tttState.h : tttState.v)[i] !== null) continue;
-      const [x1, y1, x2, y2] = dabEdgeEnds(kind, i);
-      const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
-      // Distance to the segment's midpoint, biased so you can tap anywhere along it.
-      const along = kind === 'h' ? Math.abs(x - mx) - step * 0.32 : Math.abs(y - my) - step * 0.32;
-      const across = kind === 'h' ? Math.abs(y - my) : Math.abs(x - mx);
-      const d = Math.max(along, 0) + across;
-      if (d < bestD) { bestD = d; best = { k: kind, i }; }
-    }
-  };
-  consider('h', tttState.h.length);
-  consider('v', tttState.v.length);
-  return best;
-}
-
-function drawDabBoard(now) {
-  if (!dabCtx || !tttState || tttState.g !== 'dab') return;
-  const ctx = dabCtx;
-  const colors = dabColors();
-  const { step } = dabGeom();
-  ctx.clearRect(0, 0, dabCssSize, dabCssSize);
-
-  // Claimed boxes fade in with a slight grow.
-  for (let b = 0; b < DAB_N * DAB_N; b++) {
-    const owner = tttState.boxes[b];
-    if (owner === null) { dabBoxAnim.delete(b); continue; }
-    if (!dabBoxAnim.has(b)) dabBoxAnim.set(b, now);
-    const p = Math.min((now - dabBoxAnim.get(b)) / 260, 1);
-    const ease = 1 - (1 - p) * (1 - p);
-    const r = Math.floor(b / DAB_N), c = b % DAB_N;
-    const [bx, by] = [dabEdgeEnds('h', r * DAB_N + c)[0], dabEdgeEnds('h', r * DAB_N + c)[1]];
-    const inset = 5 + (1 - ease) * step * 0.18;
-    ctx.globalAlpha = ease;
-    ctx.fillStyle = owner === 0 ? colors.p0Soft : colors.p1Soft;
-    const rr = 7;
-    const x = bx + inset, y = by + inset, w = step - inset * 2, h = step - inset * 2;
-    ctx.beginPath();
-    ctx.roundRect(x, y, w, h, rr);
-    ctx.fill();
-    // Owner initial in the middle of the box.
-    ctx.globalAlpha = ease * 0.95;
-    ctx.fillStyle = owner === 0 ? colors.p0 : colors.p1;
-    ctx.font = `800 ${Math.round(step * 0.34)}px system-ui, sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    const ownerName = owner === myPlayerIndex
-      ? t('you')
-      : (currentPartner && currentPartner.username ? currentPartner.username : '?');
-    ctx.fillText((ownerName[0] || '?').toUpperCase(), bx + step / 2, by + step / 2 + 1);
-    ctx.globalAlpha = 1;
-  }
-
-  // Hover / tap-preview edge (only when it's my move).
-  if (dabHover && tttIsMyActionableTurn()) {
-    const [x1, y1, x2, y2] = dabEdgeEnds(dabHover.k, dabHover.i);
-    ctx.strokeStyle = myPlayerIndex === 0 ? colors.p0 : colors.p1;
-    ctx.globalAlpha = 0.35;
-    ctx.lineWidth = 5;
-    ctx.lineCap = 'round';
-    ctx.setLineDash([2, 7]);
-    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.globalAlpha = 1;
-  }
-
-  // Drawn edges animate outward from their centre.
-  const drawEdge = (kind, i, owner) => {
-    const key = kind + i;
-    if (!dabEdgeAnim.has(key)) dabEdgeAnim.set(key, now);
-    const p = Math.min((now - dabEdgeAnim.get(key)) / 180, 1);
-    const [x1, y1, x2, y2] = dabEdgeEnds(kind, i);
-    const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
-    const isLast = tttState.last && tttState.last.k === kind && tttState.last.i === i;
-    ctx.strokeStyle = owner === 0 ? colors.p0 : colors.p1;
-    ctx.lineWidth = isLast ? 5.5 : 4.5;
-    ctx.lineCap = 'round';
-    if (isLast && p >= 1) {
-      ctx.shadowColor = ctx.strokeStyle;
-      ctx.shadowBlur = 7;
-    }
-    ctx.beginPath();
-    ctx.moveTo(mx + (x1 - mx) * p, my + (y1 - my) * p);
-    ctx.lineTo(mx + (x2 - mx) * p, my + (y2 - my) * p);
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-  };
-  tttState.h.forEach((owner, i) => { if (owner !== null) drawEdge('h', i, owner); else dabEdgeAnim.delete('h' + i); });
-  tttState.v.forEach((owner, i) => { if (owner !== null) drawEdge('v', i, owner); else dabEdgeAnim.delete('v' + i); });
-
-  // Dots on top.
-  ctx.fillStyle = colors.dot;
-  for (let r = 0; r <= DAB_N; r++) {
-    for (let c = 0; c <= DAB_N; c++) {
-      const { pad, step: s } = dabGeom();
-      ctx.beginPath();
-      ctx.arc(pad + c * s, pad + r * s, dabCssSize * 0.013 + 2, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-}
-
-function dabLoop(ts) {
-  drawDabBoard(ts || performance.now());
-  dabRafId = requestAnimationFrame(dabLoop);
-}
-function startDabLoop() {
-  if (dabRafId !== null) return;
-  dabResizeCanvas();
-  dabRafId = requestAnimationFrame(dabLoop);
-}
-function stopDabLoop() {
-  if (dabRafId !== null) cancelAnimationFrame(dabRafId);
-  dabRafId = null;
-}
-window.addEventListener('resize', () => { if (dabRafId !== null) dabResizeCanvas(); });
-
-function dabPointerPos(e) {
-  const rect = dabCanvas.getBoundingClientRect();
-  return [e.clientX - rect.left, e.clientY - rect.top];
-}
-dabCanvas.addEventListener('pointermove', (e) => {
-  const [x, y] = dabPointerPos(e);
-  dabHover = dabPickEdge(x, y);
-});
-dabCanvas.addEventListener('pointerleave', () => { dabHover = null; });
-dabCanvas.addEventListener('pointerdown', (e) => {
-  if (!tttState || tttState.g !== 'dab' || !tttIsMyActionableTurn()) return;
-  const [x, y] = dabPointerPos(e);
-  const edge = dabPickEdge(x, y);
-  if (!edge) return;
-  if (!dabApplyMove(tttState, myPlayerIndex, edge.k, edge.i)) return;
-  dabHover = null;
-  playMoveSound();
-  vibrate(15);
-  broadcastTtt();
-  updateGameUI();
-});
-
-function renderTttBoard() {
-  if (activeGame === 'dab') return;
-  buildTttBoard();
-  const cells = tttBoard.querySelectorAll('.ttt-cell');
-  const myTurn = tttState && tttState.turn === myPlayerIndex && tttState.phase === 'move';
-  cells.forEach((cell, i) => {
-    const val = tttState ? tttState.board[i] : null;
-    cell.classList.toggle('empty', val === null);
-    cell.classList.toggle('p0', val === 0);
-    cell.classList.toggle('p1', val === 1);
-    cell.classList.toggle('movable', myTurn && val === null);
-    cell.classList.toggle('win', !!(tttState && tttState.line && tttState.line.includes(i)));
-    cell.innerHTML = val === null ? '' : `<span class="ttt-mark">${val === 0 ? '✕' : '◯'}</span>`;
-  });
-}
-
-// The player status bar: avatar, name, whose turn, and what the opponent is
-// doing right now - so you never have to guess what's happening.
-function renderTttPlayers() {
-  const playing = tttStage === 'playing' && tttState;
-  tttPlayers.classList.toggle('hidden', !playing);
-  if (!playing) return;
-
-  const oppName = currentPartner ? currentPartner.username : '-';
-  tttMeName.textContent = t('you');
-  tttOppName.textContent = oppName;
-  // Colour each chip by that player's actual mark/colour (0 = host, 1 = guest).
-  tttMeAvatar.className = 'ttt-player-avatar p' + myPlayerIndex;
-  tttOppAvatar.className = 'ttt-player-avatar p' + (1 - myPlayerIndex);
-  tttMeAvatar.textContent = ((myProfile && myProfile.username ? myProfile.username[0] : t('you')[0]) || 'Y').toUpperCase();
-  tttOppAvatar.textContent = ((oppName && oppName[0]) || '?').toUpperCase();
-
-  const live = tttState.phase !== 'over';
-  const myTurn = live && tttState.turn === myPlayerIndex;
-  const oppTurn = live && tttState.turn !== myPlayerIndex;
-  tttPlayerMe.classList.toggle('active', myTurn);
-  tttPlayerOpp.classList.toggle('active', oppTurn);
-
-  if (activeGame === 'dab' && Array.isArray(tttState.scores)) {
-    // Dots & Boxes: the activity line doubles as a live score.
-    tttMeActivity.textContent = `${t('dabBoxes')}: ${tttState.scores[myPlayerIndex]}`;
-    tttOppActivity.textContent = `${t('dabBoxes')}: ${tttState.scores[1 - myPlayerIndex]}`;
-  } else {
-    tttMeActivity.textContent = myTurn ? t('tttYourTurn') : '';
-    tttOppActivity.textContent = oppTurn ? t('tttActThinking') : '';
-  }
-}
-
-function updateGameUI() {
-  const name = currentPartner ? currentPartner.username : t('chat');
-  [gameCancelBtn, gameAcceptBtn, gameDeclineBtn, tttRematchBtn].forEach((b) => b.classList.add('hidden'));
-  renderTttPlayers();
-
-  // Which board (if any) is visible, and the picker only when nothing's afoot.
-  const showBoards = tttStage === 'playing' || tttStage === 'gone';
-  gamePicker.classList.toggle('hidden', tttStage !== 'idle');
-  tttBoardWrap.classList.toggle('hidden', !(showBoards && activeGame !== 'dab'));
-  dabBoardWrap.classList.toggle('hidden', !(showBoards && activeGame === 'dab'));
-  const negotiating = tttStage === 'inviting' || tttStage === 'invited';
-  gameTitle.textContent = tttStage === 'idle'
-    ? t('gamesTitle')
-    : gameName(negotiating ? (tttStage === 'inviting' ? inviteGame : pendingInviteGame) : activeGame);
-
-  if (tttStage === 'idle') {
-    gameStatus.textContent = t('gamePickPrompt', { name });
-  } else if (tttStage === 'inviting') {
-    gameStatus.textContent = t('tttInviteSent', { name });
-    gameCancelBtn.classList.remove('hidden');
-  } else if (tttStage === 'invited') {
-    gameStatus.textContent = t('gameInvited', { name, game: gameName(pendingInviteGame) });
-    gameAcceptBtn.classList.remove('hidden');
-    gameDeclineBtn.classList.remove('hidden');
-  } else if (tttStage === 'playing' && tttState) {
-    tttRematchBtn.classList.remove('hidden');
-    const myTurn = tttState.turn === myPlayerIndex;
-    if (tttState.phase === 'over') {
-      gameStatus.textContent = tttState.winner === 'draw'
-        ? t('tttDraw')
-        : (tttState.winner === myPlayerIndex ? t('tttYouWin') : t('tttTheyWin', { name }));
-      if (!tttOverAnnounced) {
-        tttOverAnnounced = true;
-        if (tttState.winner === myPlayerIndex) { playWinSound(); vibrate([40, 60, 40, 60, 80]); }
-        else if (tttState.winner !== 'draw') { playHangupSound(); }
-      }
-    } else {
-      const yourTurnKey = activeGame === 'dab' ? 'dabYourTurn' : 'tttYourTurn';
-      gameStatus.textContent = myTurn ? t(yourTurnKey) : t('tttTheirTurn', { name });
-    }
-  } else if (tttStage === 'playing') {
-    // handshake done, waiting for the host's first state broadcast
-    gameStatus.textContent = t('tttTheirTurn', { name });
-  }
-  renderTttBoard();
-
-  // Keep the Dots & Boxes render loop alive only while its board is on screen.
-  const dabVisible = activeGame === 'dab' && showBoards && !gameOverlay.classList.contains('hidden');
-  if (dabVisible) startDabLoop(); else stopDabLoop();
-
-  // Chime once when the turn passes to you; show a "your move" badge on the
-  // game button while it's your turn and you're not looking at the board.
-  const mine = tttIsMyActionableTurn();
-  const overlayOpen = !gameOverlay.classList.contains('hidden');
-  if (mine && !tttWasMyTurn) {
-    playTurnSound();
-    vibrate(30);
-  }
-  if (mine && !overlayOpen) {
-    gameBtnBadge.textContent = activeGame === 'dab' ? '●' : (myPlayerIndex === 0 ? '✕' : '◯');
-    gameBtnBadge.classList.add('is-move');
-    gameBtnBadge.classList.remove('hidden');
-  } else if (overlayOpen && gameBtnBadge.classList.contains('is-move')) {
-    gameBtnBadge.classList.add('hidden');
-    gameBtnBadge.classList.remove('is-move');
-  }
-  tttWasMyTurn = mine;
-}
-
-let tttOverAnnounced = false;
-
-function openGameOverlay() {
-  buildTttBoard();
-  clearGameDisconnect();
-  gameOverlay.classList.remove('hidden');
-  gameBtnBadge.classList.add('hidden');
-  gameBtnBadge.classList.remove('is-move', 'is-invite');
-}
-function closeGameOverlay() {
-  gameOverlay.classList.add('hidden');
-  stopDabLoop();
-  closeModal(tttEndConfirmModal);
-}
-function resetGame() {
-  tttStage = 'idle';
-  tttState = null;
-  activeGame = null;
-  inviteGame = null;
-  pendingInviteGame = null;
-  tttWasMyTurn = false;
-  tttOverAnnounced = false;
-  dabEdgeAnim.clear();
-  dabBoxAnim.clear();
-  dabHover = null;
-  clearGameDisconnect();
-  gameBtnBadge.classList.add('hidden');
-  gameBtnBadge.classList.remove('is-move', 'is-invite');
-  gameBtnBadge.textContent = '!';
-  closeGameOverlay();
-}
-
-// Grayscale the board + show a red message when the call itself drops mid-game.
-function markGamePartnerGone() {
-  if (gameOverlay.classList.contains('hidden')) { resetGame(); return; }
-  tttBoardArea.classList.add('is-dead');
-  tttDisconnectBanner.textContent = t('tttPartnerHungUp');
-  tttDisconnectBanner.classList.remove('hidden');
-  gameStatus.textContent = t('tttPartnerHungUp');
-  tttStage = 'gone';
-  playHangupSound();
-}
-function clearGameDisconnect() {
-  tttBoardArea.classList.remove('is-dead');
-  tttDisconnectBanner.classList.add('hidden');
-}
-
-// The partner deliberately left the game (closed their window / End Game).
-function markGamePartnerLeft() {
-  tttDisconnectBanner.textContent = t('tttPartnerLeft');
-  tttDisconnectBanner.classList.remove('hidden');
-  tttBoardArea.classList.add('is-dead');
-  gameStatus.textContent = t('tttPartnerLeft');
-  tttStage = 'gone';
-  playHangupSound();
-  // Auto-clear back to the invite screen after a moment so a rematch is easy.
-  setTimeout(() => {
-    if (tttStage === 'gone' && callState === 'connected') {
-      tttStage = 'idle'; tttState = null; tttOverAnnounced = false;
-      clearGameDisconnect();
-      updateGameUI();
-    }
-  }, 2600);
-}
-
-// Host (call initiator) builds the authoritative initial state and shares it.
-function startGame(game) {
-  activeGame = game === 'dab' ? 'dab' : 'ttt';
-  tttState = activeGame === 'dab' ? dabInitialState() : tttInitialState();
-  myPlayerIndex = 0;
-  tttStage = 'playing';
-  tttOverAnnounced = false;
-  dabEdgeAnim.clear();
-  dabBoxAnim.clear();
-  clearGameDisconnect();
-  broadcastTtt();
-  openGameOverlay();
-  updateGameUI();
-}
-
-// Both sides have agreed to play - exactly one of them is the host.
-function onGameHandshake(game) {
-  if (amCallInitiator) {
-    startGame(game);
-  } else {
-    activeGame = game === 'dab' ? 'dab' : 'ttt';
-    myPlayerIndex = 1;
-    tttStage = 'playing';
-    tttOverAnnounced = false;
-    dabEdgeAnim.clear();
-    dabBoxAnim.clear();
-    clearGameDisconnect();
-    openGameOverlay();
-    updateGameUI();
-  }
-}
-
-// Closing the game window mid-play asks for confirmation first (and, if the
-// user confirms, tells the partner the game ended). Any other stage just closes.
-function isGameActive() {
-  return tttStage === 'playing' && tttState && tttState.phase !== 'over';
-}
-function attemptCloseGame() {
-  if (isGameActive()) {
-    openModal(tttEndConfirmModal);
-    return false;
-  }
-  if (tttStage === 'playing' || tttStage === 'inviting' || tttStage === 'invited') {
-    // A finished/over game or a pending invite - leave cleanly.
-    socket.emit('game', { type: 'left' });
-    resetGame();
-  } else {
-    closeGameOverlay();
-  }
-  return true;
-}
-
-gameBtn.addEventListener('click', () => {
-  if (callState !== 'connected') return;
-  openGameOverlay();
-  updateGameUI();
-});
-closeGameBtn.addEventListener('click', attemptCloseGame);
-tttContinueBtn.addEventListener('click', () => closeModal(tttEndConfirmModal));
-tttEndBtn.addEventListener('click', () => {
-  closeModal(tttEndConfirmModal);
-  socket.emit('game', { type: 'left' });
-  resetGame();
-});
-
-// Picking a game from the picker sends the invite for that game.
-gamePicker.addEventListener('click', (e) => {
-  const card = e.target.closest('.game-pick-card');
-  if (!card || callState !== 'connected' || tttStage !== 'idle') return;
-  inviteGame = card.dataset.game === 'dab' ? 'dab' : 'ttt';
-  tttStage = 'inviting';
-  playInviteSound();
-  socket.emit('game', { type: 'invite', game: inviteGame });
-  updateGameUI();
-});
-gameCancelBtn.addEventListener('click', () => {
-  socket.emit('game', { type: 'decline' });
-  tttStage = 'idle';
-  inviteGame = null;
-  updateGameUI();
-});
-gameAcceptBtn.addEventListener('click', () => {
-  const game = pendingInviteGame || 'ttt';
-  socket.emit('game', { type: 'accept', game });
-  onGameHandshake(game);
-});
-gameDeclineBtn.addEventListener('click', () => {
-  socket.emit('game', { type: 'decline' });
-  tttStage = 'idle';
-  pendingInviteGame = null;
-  closeGameOverlay();
-});
-tttRematchBtn.addEventListener('click', () => {
-  if (amCallInitiator) startGame(activeGame);
-  else socket.emit('game', { type: 'rematch' });
-});
-
-socket.on('game', (data) => {
-  if (!data || typeof data !== 'object' || callState !== 'connected') return;
-  const name = currentPartner ? currentPartner.username : t('chat');
-  switch (data.type) {
-    case 'invite': {
-      if (tttStage === 'playing') return;
-      const invitedTo = data.game === 'dab' ? 'dab' : 'ttt';
-      // Both invited each other at once - just start the host's pick.
-      if (tttStage === 'inviting') { onGameHandshake(amCallInitiator ? inviteGame : invitedTo); break; }
-      tttStage = 'invited';
-      pendingInviteGame = invitedTo;
-      if (!gameOverlay.classList.contains('hidden')) {
-        // They're already looking at the games screen - show the accept UI.
-        updateGameUI();
-      } else {
-        // Don't interrupt with a big dialog: a red badge + a chime on the game
-        // button, and they open it whenever they feel like playing.
-        gameBtnBadge.textContent = '!';
-        gameBtnBadge.classList.add('is-invite');
-        gameBtnBadge.classList.remove('hidden', 'is-move');
-      }
-      playInviteSound();
-      vibrate(30);
-      break;
-    }
-    case 'accept':
-      if (tttStage === 'inviting') onGameHandshake(inviteGame || (data.game === 'dab' ? 'dab' : 'ttt'));
-      break;
-    case 'decline':
-      tttStage = 'idle';
-      tttState = null;
-      pendingInviteGame = null;
-      updateGameUI();
-      gameStatus.textContent = t('tttDeclined', { name });
-      break;
-    case 'state': {
-      if (!data.state) break;
-      myPlayerIndex = amCallInitiator ? 0 : 1;
-      // Open the board on the first state (game start); afterwards just update -
-      // don't yank a closed board back open, so the "your move" badge can show.
-      const firstState = tttStage !== 'playing';
-      if (firstState) tttOverAnnounced = false;
-      tttStage = 'playing';
-      activeGame = data.state.g === 'dab' ? 'dab' : 'ttt';
-      tttState = data.state;
-      buildTttBoard();
-      clearGameDisconnect();
-      if (firstState) openGameOverlay();
-      updateGameUI();
-      break;
-    }
-    case 'left':
-      // Partner closed their game window / chose End Game.
-      if (tttStage === 'playing' || tttStage === 'gone') markGamePartnerLeft();
-      else { resetGame(); }
-      break;
-    case 'rematch':
-      if (amCallInitiator) startGame(activeGame);
-      break;
-  }
-});
+// Thin wrappers so the rest of app.js reads the same as it did before the
+// games moved into their own file.
+function resetGame() { if (games) games.reset(); }
+function markGamePartnerGone() { if (games) games.partnerGone(); }
+function attemptCloseGame() { return games ? games.attemptClose() : true; }
+function gameIsInProgress() { return !!games && (games.isPlaying() || games.isNegotiating()); }
 
 
 // Shared send path for both the in-call side panel and the /chat page.
@@ -4859,7 +4245,7 @@ window.addEventListener('beforeunload', (e) => {
   if (suppressUnloadWarning) return;
   const onCall = callState === 'connected' || callState === 'connecting'
     || callState === 'reconnecting' || callState === 'searching';
-  const inGame = typeof tttStage !== 'undefined' && tttStage === 'playing';
+  const inGame = !!games && games.isPlaying();
   if (onCall || inGame) {
     e.preventDefault();
     e.returnValue = '';
@@ -5217,7 +4603,7 @@ socket.on('signal', (data) => {
 
 socket.on('partner-left', () => {
   playHangupSound();
-  const wasInGame = tttStage === 'playing' || tttStage === 'invited' || tttStage === 'inviting';
+  const wasInGame = gameIsInProgress();
   teardownPeer();
   clearChat();
   // If a game was open, surface it there too (grayscale + red banner handled by

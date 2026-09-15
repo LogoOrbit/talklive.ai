@@ -843,7 +843,7 @@ img { max-width: 100%; }
   text-decoration: none;
   transition: border-color 0.15s ease, transform 0.15s ease;
 }
-.house-ad:hover { border-color: var(--accent-2); transform: translateY(-1px); }
+.house-ad:hover { border-color: var(--accent-2, var(--accent)); transform: translateY(-1px); }
 .house-ad-icon { font-size: 1.6rem; line-height: 1; flex: 0 0 auto; }
 .house-ad-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .house-ad-title { font-size: 0.95rem; font-weight: 700; }
@@ -953,3 +953,90 @@ img { max-width: 100%; }
     transition: none; animation: none;
   }
 }
+
+
+/* ---------------------------------------------------------------------------
+   Friend chat header, lifted verbatim from the call app (style.css) so an
+   added friend's inbox looks and behaves the same on both pages: who you are
+   talking to, a read-receipts switch, and a "Seen" line under your last
+   message.
+   --------------------------------------------------------------------------- */
+.chat-seen-label {
+  align-self: flex-end;
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-top: -4px;
+  padding: 0 4px;
+}
+
+/* Chat top-bar controls: the read-receipts toggle sits next to the close X. */
+.chat-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Read-receipts toggle in the chat header: double-tick icon, label, and a
+   mini switch that slides, so the on/off state is obvious at a glance. */
+.seen-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px 6px 12px;
+  border: 1px solid rgba(0, 212, 255, 0.35);
+  border-radius: 999px;
+  background: rgba(0, 212, 255, 0.1);
+  color: var(--accent-2, var(--accent));
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+.seen-toggle:hover { background: rgba(0, 212, 255, 0.18); }
+.seen-toggle:active { transform: scale(0.97); }
+.seen-toggle-ticks { width: 17px; height: 17px; flex-shrink: 0; transition: color 0.2s ease; }
+.seen-toggle-switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 30px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--accent-2, var(--accent));
+  transition: background 0.2s ease;
+}
+.seen-toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  transform: translateX(12px);
+  transition: transform 0.2s ease;
+}
+.seen-toggle.is-off {
+  border-color: rgba(138, 144, 168, 0.35);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--muted);
+}
+.seen-toggle.is-off .seen-toggle-switch { background: rgba(138, 144, 168, 0.4); }
+.seen-toggle.is-off .seen-toggle-knob { transform: translateX(0); }
+
+/* Very narrow screens: drop the label, keep ticks + switch. */
+@media (max-width: 380px) {
+  .seen-toggle-label { display: none; }
+  .seen-toggle { padding: 6px 8px; }
+}
+.chat-header-actions { flex-shrink: 0; }
+
+/* Friend-chat bubbles pick up the call app's gradient so an added friend's
+   inbox reads the same on both pages. The stranger chat keeps its flat
+   accent bubble - that thread is deliberately plainer. */
+.friend-chat-msgs .msg.me {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2, var(--accent)));
+}
+.friend-chat-msgs .msg.them { background: var(--bubble-them); }

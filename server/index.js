@@ -22,7 +22,14 @@ const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 // Client IDs are browser-visible, so they are not an identity proof.  Bind
 // them to an HMAC token issued by the server; without this an attacker can
 // copy a peer's clientId and hijack social routing/premium state.
-const IDENTITY_SECRET = process.env.IDENTITY_SECRET || crypto.randomBytes(32).toString('hex');
+// Set from the durable store at boot (see store.ready below) unless the
+// environment pins one. It must not change between restarts: the token is an
+// HMAC of the clientId, so a fresh secret invalidates every browser's token at
+// once, and a browser whose token is refused rotates to a brand-new clientId -
+// losing its friends, friend chats and premium in the process. That is why a
+// per-process random key made friends "disappear" and show as permanently
+// offline after every deploy.
+let IDENTITY_SECRET = process.env.IDENTITY_SECRET || crypto.randomBytes(32).toString('hex');
 const identityTokens = new Map(); // clientId -> signed token for this process
 const identityTokenSeen = new Map(); // clientId -> last registration, for the sweeper below
 function signIdentity(clientId) {
@@ -2549,12 +2556,16 @@ io.on('connection', (socket) => {
     const rawClientId = typeof data.clientId === 'string' ? data.clientId : '';
     const clientId = /^[A-Za-z0-9_-]{8,64}$/.test(rawClientId) ? rawClientId : socket.id;
     const identityToken = typeof data.identityToken === 'string' ? data.identityToken : '';
-    if (identityToken && !validIdentityToken(clientId, identityToken)) {
-      return socket.emit('register-result', { ok: false, error: 'Invalid client identity.' });
-    }
-    const knownToken = identityTokens.get(clientId);
-    if (knownToken && identityToken !== knownToken) {
-      return socket.emit('register-result', { ok: false, error: 'Client identity is already claimed.' });
+    const tokenOk = !!identityToken && validIdentityToken(clientId, identityToken);
+    // A wrong or missing token is only a hijack attempt when the identity is
+    // *currently in use* by a live socket. Otherwise it is the ordinary case of
+    // a browser whose token predates a secret change or was never stored, and
+    // refusing it is far more destructive than the attack it guards against:
+    // both clients respond to a refusal by throwing away their clientId, which
+    // orphans that person's friends, friend chats, history and premium. So
+    // refuse only a contested identity, and re-issue a token otherwise.
+    if (!tokenOk && clientSockets.has(clientId) && io.sockets.sockets.get(clientSockets.get(clientId))) {
+      return socket.emit('register-result', { ok: false, error: 'Client identity is already active.' });
     }
     // Captured before the identity takeover below, which clears the old entry:
     // otherwise every reconnect looked like a fresh login and re-fired the
@@ -2572,11 +2583,10 @@ io.on('connection', (socket) => {
       // every 'find-partner' it sent afterwards silently no-opped. The user sat
       // in the search UI indefinitely while the online count still counted them.
       //
-      // Anyone presenting the signed identity token is the same user (an invalid
-      // or mismatched token was already rejected above), so hand the identity to
-      // the live socket and drop the stale one instead of turning the newcomer
-      // away.
-      if (identityToken) {
+      // Anyone presenting a valid signed identity token is the same user, so
+      // hand the identity to the live socket and drop the stale one instead of
+      // turning the newcomer away.
+      if (tokenOk) {
         const stale = io.sockets.sockets.get(existingSocketId);
         if (stale) {
           disconnectPartner(existingSocketId);
@@ -3267,10 +3277,20 @@ io.on('connection', (socket) => {
   socket.on('mark-messages-read', ({ friendClientId } = {}) => {
     const me = profiles.get(socket.id);
     friendClientId = validId(friendClientId);
-    if (!me || !friendClientId || !isFriend(me.clientId, friendClientId)) return;
+    // Deliberately not gated on isFriend(): messages also arrive from people in
+    // the chat-history "message back" list, and from someone who has since been
+    // removed as a friend. Gating on friendship left those notifications in the
+    // store forever - the client hid the badge locally, and the next state-sync
+    // or reload brought the same unread count straight back.
+    if (!me || !friendClientId) return;
     const list = notifications.get(me.clientId);
     if (!list) return;
-    notifications.set(me.clientId, list.filter((n) => !(n.type === 'message' && n.fromClientId === friendClientId)));
+    const remaining = list.filter((n) => !(n.type === 'message' && n.fromClientId === friendClientId));
+    if (remaining.length === list.length) return;
+    notifications.set(me.clientId, remaining);
+    // Push the truth back: the badge is rendered from state-sync, so without
+    // this the count only looks cleared until the next sync.
+    syncClientState(socket, me.clientId);
   });
 
   // Read receipts: when I (the viewer) open a chat, mark every message the
@@ -3663,6 +3683,8 @@ function warnIfStorageIsEphemeral() {
 // Wait for the store (Postgres or file) to load before accepting traffic so
 // bans, maintenance mode and admin credentials apply from the first request.
 store.ready.then(() => {
+  // Durable identity secret before anything can register.
+  if (!process.env.IDENTITY_SECRET) IDENTITY_SECRET = store.getOrCreateSecret('identity');
   // Restore durable accounts + social graph before accepting traffic so
   // returning users can log in and see their friends/chats immediately.
   hydrateFromStore();

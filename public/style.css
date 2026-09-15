@@ -3352,6 +3352,16 @@ body.panel-open .side-panel {
   display: none;
 }
 
+/* Header badges sit inside their 58px button rather than overhanging it: the
+   top bar is the first thing on the page, so a badge at top:-4px was drawn
+   above the bar's own edge and came out cropped. The icon is ~24px, so there
+   is room to spare. */
+.header-tools .icon-btn .notif-badge,
+.header-right .icon-btn .notif-badge {
+  top: 7px;
+  right: 7px;
+}
+
 /* Friends modal tabs */
 .friends-tabs {
   display: flex;
@@ -4476,6 +4486,9 @@ body.panel-open .side-panel {
   grid-template-columns: 1fr 1fr;
   gap: 6px;
 }
+/* Filters / call history inside an accordion body, above the toggle rows. */
+.settings-inline-links { margin-bottom: 2px; }
+
 .settings-link {
   display: flex;
   align-items: center;
@@ -4518,6 +4531,26 @@ body.panel-open .side-panel {
 .friends-wrap,
 .history-wrap {
   position: relative;
+}
+
+/* Call history opened from Settings has no top-bar icon to hang off, so it
+   sits centred on screen like a small modal instead. */
+.history-dropdown.is-floating:not(.hidden) {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  right: auto;
+  transform: translate(-50%, -50%);
+  transform-origin: center;
+  z-index: 600;
+  animation: dropdownInCentered 0.2s cubic-bezier(.2,.85,.25,1);
+}
+@keyframes dropdownInCentered {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.96); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .history-dropdown.is-floating:not(.hidden) { animation: none; }
 }
 
 .friends-dropdown .friend-item {
@@ -5159,424 +5192,6 @@ body.panel-open .side-panel {
 .chat-peer-status.is-offline { color: #ff6b7d; }
 .chat-peer-status.is-offline .chat-peer-status-dot { background: #ff6b7d; }
 
-/* =============================================================
-   Tic Tac Toe mini-game
-   ============================================================= */
-.game-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 500;
-  background: rgba(0,0,0,0.6);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-}
-.game-overlay.hidden { display: none; }
-
-.game-modal {
-  background:
-    radial-gradient(120% 80% at 50% -10%, var(--bg-glow) 0%, var(--bg-2) 60%, var(--bg-1) 100%);
-  border: 1px solid rgba(255,255,255,0.14);
-  border-radius: 22px;
-  box-shadow: 0 24px 60px rgba(0,0,0,0.55);
-  width: min(94vw, 420px);
-  max-height: 96vh;
-  overflow-y: auto;
-  padding: 14px 16px 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.game-modal .game-title,
-.game-modal .game-status { color: var(--text); }
-.game-modal .modal-close { color: var(--text); opacity: 0.85; }
-
-.game-modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.game-title {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 800;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.game-status {
-  margin: 0;
-  text-align: center;
-  font-size: 14.5px;
-  font-weight: 600;
-  color: var(--text);
-  min-height: 20px;
-}
-
-/* --- Game picker: pick which game to invite the partner to --- */
-.game-picker {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-.game-picker.hidden { display: none; }
-.game-pick-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 7px;
-  padding: 18px 12px 14px;
-  border-radius: 16px;
-  border: 1.5px solid rgba(255,255,255,0.12);
-  background: rgba(255,255,255,0.05);
-  color: var(--text);
-  cursor: pointer;
-  text-align: center;
-  transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
-}
-.game-pick-card:hover,
-.game-pick-card:focus-visible {
-  border-color: var(--accent-2);
-  background: var(--accent-soft, rgba(108, 92, 231, 0.14));
-  transform: translateY(-2px);
-  box-shadow: 0 8px 22px rgba(0,0,0,0.35);
-}
-.game-pick-card:active { transform: scale(0.97); }
-.game-pick-icon {
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 13px;
-  color: var(--accent-2);
-  background: rgba(255,255,255,0.06);
-}
-.game-pick-icon svg { width: 28px; height: 28px; }
-.game-pick-name { font-size: 14px; font-weight: 800; }
-.game-pick-desc { font-size: 11px; color: var(--muted); line-height: 1.35; }
-
-/* --- Dots & Boxes canvas board --- */
-.dab-board-wrap {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-}
-.dab-board-wrap.hidden { display: none; }
-.dab-canvas {
-  display: block;
-  border-radius: 18px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.12);
-  box-shadow: 0 10px 26px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(0,0,0,0.1);
-  touch-action: manipulation;
-  cursor: pointer;
-}
-.ttt-board-area.is-dead .dab-canvas {
-  filter: grayscale(1) brightness(0.7);
-  pointer-events: none;
-}
-
-/* Red "you've been invited" badge on the game button - quiet but noticeable. */
-#gameBtn .notif-badge.is-invite {
-  background: var(--danger);
-  box-shadow: 0 0 8px var(--danger);
-  animation: gameInvitePulse 1.4s ease-in-out infinite;
-}
-@keyframes gameInvitePulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.25); }
-}
-
-/* --- Player status bar: avatar · name · turn · live activity --- */
-.ttt-players {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-.ttt-players.hidden { display: none; }
-.ttt-player {
-  flex: 1 1 0;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 8px 11px;
-  border-radius: 16px;
-  border: 1.5px solid rgba(255,255,255,0.12);
-  background: rgba(255, 255, 255, 0.06);
-  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
-}
-.ttt-player[data-side="opp"] { flex-direction: row-reverse; text-align: right; }
-.ttt-player.active {
-  border-color: var(--accent-2);
-  background: var(--accent-soft, rgba(108, 92, 231, 0.16));
-  transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.28);
-}
-.ttt-player-avatar {
-  position: relative;
-  flex: 0 0 auto;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  font-weight: 800;
-  color: #fff;
-  border: 2.5px solid rgba(255, 255, 255, 0.5);
-  box-shadow: inset 0 3px 5px rgba(255, 255, 255, 0.25), 0 2px 5px rgba(0,0,0,0.3);
-}
-.ttt-player-avatar.p0 { background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
-.ttt-player-avatar.p1 { background: linear-gradient(135deg, #ff8a5b, #ffd166); color: #4a2a00; }
-.ttt-player.active .ttt-player-avatar { animation: tttAvatarPulse 1.1s ease-in-out infinite; }
-@keyframes tttAvatarPulse {
-  0%, 100% { box-shadow: inset 0 3px 5px rgba(255,255,255,0.3), 0 0 0 0 var(--accent-2); }
-  50% { box-shadow: inset 0 3px 5px rgba(255,255,255,0.3), 0 0 0 6px transparent; }
-}
-/* A little mark badge appears on whoever's turn it is. */
-.ttt-player.active .ttt-player-avatar::after {
-  position: absolute;
-  bottom: -4px;
-  right: -4px;
-  font-size: 12px;
-  line-height: 1;
-  font-weight: 900;
-  color: #fff;
-  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.6));
-}
-.ttt-player.active .ttt-player-avatar.p0::after { content: '✕'; }
-.ttt-player.active .ttt-player-avatar.p1::after { content: '◯'; }
-.ttt-player[data-side="opp"].active .ttt-player-avatar::after { right: auto; left: -4px; }
-.ttt-player-info { display: flex; flex-direction: column; min-width: 0; }
-.ttt-player-name {
-  font-size: 13.5px;
-  font-weight: 700;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.ttt-player-activity {
-  font-size: 11px;
-  color: var(--accent-2);
-  font-weight: 600;
-  min-height: 13px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.ttt-vs {
-  flex: 0 0 auto;
-  font-size: 11px;
-  font-weight: 800;
-  color: var(--text-dim, rgba(255,255,255,0.5));
-  letter-spacing: 1px;
-}
-
-/* --- Board area wrapper (for grayscale on disconnect) + banner --- */
-.ttt-board-area { position: relative; }
-.ttt-board-area.is-dead .ttt-board {
-  filter: grayscale(1) brightness(0.7);
-  pointer-events: none;
-}
-.ttt-disconnect-banner {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 20;
-  max-width: 84%;
-  text-align: center;
-  padding: 12px 18px;
-  border-radius: 12px;
-  background: rgba(20, 10, 14, 0.92);
-  color: #ff5470;
-  font-weight: 800;
-  font-size: 15px;
-  border: 1px solid rgba(255, 84, 112, 0.5);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-}
-.ttt-disconnect-banner.hidden { display: none; }
-
-/* Narrow confirm dialog (end game / end call) */
-.modal-box-narrow { max-width: 360px; }
-.confirm-actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 8px;
-}
-.confirm-actions .btn { flex: 1; }
-
-/* --- The board: a clean 3x3 grid themed with the site's accent gradient --- */
-.ttt-board-wrap {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-}
-.ttt-board {
-  position: relative;
-  width: min(78vw, 320px);
-  aspect-ratio: 1;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(3, 1fr);
-  gap: clamp(6px, 2vw, 10px);
-  padding: clamp(6px, 2vw, 10px);
-  background: rgba(255,255,255,0.05);
-  border-radius: 18px;
-  border: 1px solid rgba(255,255,255,0.12);
-  box-shadow: 0 10px 26px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(0,0,0,0.1);
-}
-
-.ttt-cell {
-  position: relative;
-  border-radius: 12px;
-  background: var(--bg-2);
-  border: 1px solid rgba(255,255,255,0.08);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: min(11vw, 44px);
-  font-weight: 900;
-  cursor: default;
-  transition: background 0.18s ease, transform 0.12s ease, box-shadow 0.2s ease;
-  overflow: hidden;
-}
-.ttt-cell.empty.movable {
-  cursor: pointer;
-  animation: tttCellGlow 1.6s ease-in-out infinite;
-}
-.ttt-cell.empty.movable:hover,
-.ttt-cell.empty.movable:active {
-  background: var(--accent-soft, rgba(108, 92, 231, 0.14));
-  transform: scale(0.97);
-}
-@keyframes tttCellGlow {
-  0%, 100% { box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08); }
-  50% { box-shadow: inset 0 0 0 1.5px var(--accent-2); }
-}
-.ttt-mark {
-  display: inline-block;
-  animation: tttMarkPop 0.28s cubic-bezier(.2,1.4,.4,1);
-}
-.ttt-cell.p0 .ttt-mark {
-  color: transparent;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-.ttt-cell.p1 .ttt-mark {
-  color: transparent;
-  background: linear-gradient(135deg, #ff8a5b, #ffd166);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-@keyframes tttMarkPop {
-  0% { transform: scale(0.3); opacity: 0; }
-  70% { transform: scale(1.15); opacity: 1; }
-  100% { transform: scale(1); }
-}
-.ttt-cell.win {
-  background: var(--accent-soft, rgba(108, 92, 231, 0.18));
-  box-shadow: 0 0 0 2px var(--accent-2), 0 0 16px 2px var(--accent-2);
-}
-.ttt-cell.win .ttt-mark { animation: tttWinPulse 0.9s ease-in-out infinite; }
-@keyframes tttWinPulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.12); }
-}
-
-/* --- Controls --- */
-.game-controls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-.game-buttons {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: center;
-  flex: 1;
-}
-.game-accept {
-  background: #2ed47a;
-  color: #06210f;
-  font-weight: 700;
-}
-.game-decline {
-  background: #ff3b52;
-  color: #fff;
-  font-weight: 700;
-}
-
-/* A little "!" nudge on the game button when you're invited */
-#gameBtn { position: relative; }
-#gameBtn .notif-badge { background: #2ed47a; }
-
-/* Nav tool buttons that require a live call (e.g. the game) dim when unavailable. */
-.icon-btn:disabled,
-.icon-btn.nav-btn-off {
-  opacity: 0.4;
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
-/* "your move" nudge on the game button */
-#gameBtn .notif-badge.is-move {
-  top: -9px;
-  right: -9px;
-  min-width: 0;
-  width: auto;
-  height: auto;
-  padding: 0;
-  background: transparent;
-  box-shadow: none;
-  font-size: 15px;
-  line-height: 1;
-  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.7));
-  animation: tttNudge 0.9s ease-in-out infinite;
-}
-@keyframes tttNudge {
-  0%, 100% { transform: translateY(0) rotate(-8deg); }
-  50% { transform: translateY(-2px) rotate(8deg); }
-}
-
-/* Periodic "come play" attention wiggle on the game button during a call. */
-#gameBtn.game-nudge {
-  animation: gameNudge 1.2s ease-in-out;
-  color: var(--accent-2);
-}
-@keyframes gameNudge {
-  0%   { transform: scale(1) rotate(0); box-shadow: 0 0 0 0 rgba(0,212,255,0.5); }
-  15%  { transform: scale(1.18) rotate(-12deg); box-shadow: 0 0 0 6px rgba(0,212,255,0); }
-  30%  { transform: scale(1.12) rotate(12deg); }
-  45%  { transform: scale(1.15) rotate(-9deg); box-shadow: 0 0 0 8px rgba(0,212,255,0); }
-  60%  { transform: scale(1.1) rotate(7deg); }
-  80%  { transform: scale(1.06) rotate(-3deg); }
-  100% { transform: scale(1) rotate(0); box-shadow: 0 0 0 0 rgba(0,212,255,0); }
-}
-@media (prefers-reduced-motion: reduce) {
-  #gameBtn.game-nudge { animation: none; }
-  #gameBtn .notif-badge.is-invite { animation: none; }
-  .ttt-player.active .ttt-player-avatar,
-  .ttt-cell.empty.movable,
-  .ttt-mark,
-  .ttt-cell.win .ttt-mark { animation: none; }
-  .ttt-cell { transition: none; }
-}
 
 /* --- Premium (TalkLive Plus) ------------------------------------------------ */
 /* Small, calm "Premium" chip - professional, not shouty. */
