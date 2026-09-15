@@ -205,6 +205,7 @@ const loginPassword = document.getElementById('loginPassword');
 const loginSubmitBtn = document.getElementById('loginSubmitBtn');
 const signupUsername = document.getElementById('signupUsername');
 const signupPassword = document.getElementById('signupPassword');
+const signupEmail = document.getElementById('signupEmail');
 const signupSubmitBtn = document.getElementById('signupSubmitBtn');
 const logoutBtn = document.getElementById('logoutBtn');
 const settingsNickname = document.getElementById('settingsNickname');
@@ -212,6 +213,24 @@ const updateNicknameBtn = document.getElementById('updateNicknameBtn');
 const currentPasswordInput = document.getElementById('currentPasswordInput');
 const newPasswordInput = document.getElementById('newPasswordInput');
 const changePasswordBtn = document.getElementById('changePasswordBtn');
+const recoveryEmailInput = document.getElementById('recoveryEmailInput');
+const recoveryEmailPassword = document.getElementById('recoveryEmailPassword');
+const recoveryEmailState = document.getElementById('recoveryEmailState');
+const updateRecoveryEmailBtn = document.getElementById('updateRecoveryEmailBtn');
+// Forgot password (email -> OTP -> new password)
+const forgotTab = document.getElementById('forgotTab');
+const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+const forgotStepEmail = document.getElementById('forgotStepEmail');
+const forgotStepCode = document.getElementById('forgotStepCode');
+const forgotStepPassword = document.getElementById('forgotStepPassword');
+const forgotEmail = document.getElementById('forgotEmail');
+const forgotSendBtn = document.getElementById('forgotSendBtn');
+const forgotCode = document.getElementById('forgotCode');
+const forgotVerifyBtn = document.getElementById('forgotVerifyBtn');
+const forgotResendBtn = document.getElementById('forgotResendBtn');
+const forgotNewPassword = document.getElementById('forgotNewPassword');
+const forgotResetBtn = document.getElementById('forgotResetBtn');
+const forgotBackBtn = document.getElementById('forgotBackBtn');
 
 const appSettingsBtn = document.getElementById('appSettingsBtn');
 const appSettingsPanel = document.getElementById('appSettingsPanel');
@@ -470,6 +489,10 @@ let currentPartnerInterests = [];
 let currentPartner = null;
 let callHistory = [];
 let accountNickname = localStorage.getItem('talklive_nickname') || null;
+// The account's recovery email, as the server last reported it. Cached locally
+// only so the My Account panel can show it before the socket reconnects; the
+// server is always the authority.
+let accountEmail = localStorage.getItem('talklive_email') || '';
 // Durable session token: proves the login to the server after every page
 // reload / reconnect, so an account is never lost to a refresh or a deploy.
 let sessionToken = localStorage.getItem('talklive_session') || null;
@@ -1044,6 +1067,7 @@ function renderAccountState() {
     accountNicknameDisplay.textContent = accountNickname;
     settingsNickname.value = accountNickname;
     updateNicknameBtn.disabled = true;
+    renderRecoveryEmailState();
 
     // Logged in: swap the Sign in / Register pair for a single My Account button.
     sidePanelSignInBtn.classList.add('hidden');
@@ -1305,12 +1329,18 @@ myAccountBtn.addEventListener('click', () => {
 closeAccountBtn.addEventListener('click', () => closeModal(accountModal));
 
 function selectAccountTab(which) {
+  // Password recovery is reached from the login tab, so that tab stays
+  // highlighted while it is open - the user has not left "logging in".
+  const highlight = which === 'forgot' ? 'login' : which;
   accountTabs.forEach((tab) => {
-    const on = tab.dataset.tab === which;
+    const on = tab.dataset.tab === highlight;
     tab.classList.toggle('selected', on);
   });
   loginTab.classList.toggle('hidden', which !== 'login');
   signupTab.classList.toggle('hidden', which !== 'signup');
+  // "forgot" is not one of the two tab buttons: it replaces both panels, and
+  // leaves Log In marked as the tab you came from (and go back to).
+  forgotTab.classList.toggle('hidden', which !== 'forgot');
   accountStatus.classList.add('hidden');
 }
 
@@ -1357,6 +1387,9 @@ signupSubmitBtn.addEventListener('click', () => {
   socket.emit('signup', {
     username: signupUsername.value.trim(),
     password: signupPassword.value,
+    // Optional. Without it the account cannot be recovered, which is exactly
+    // what the field under it says.
+    email: signupEmail.value.trim(),
   });
 });
 
@@ -1364,14 +1397,154 @@ signupSubmitBtn.addEventListener('click', () => {
 [loginUsername, loginPassword].forEach((el) => el.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') loginSubmitBtn.click();
 }));
-[signupUsername, signupPassword].forEach((el) => el.addEventListener('keydown', (e) => {
+[signupUsername, signupPassword, signupEmail].forEach((el) => el.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') signupSubmitBtn.click();
 }));
+
+// --- Forgot password: email -> 6-digit code -> new password ---------------
+// The reset token is what the server hands back once the code checks out; it
+// is what authorizes the final password change, and it lives only in this
+// variable (never in storage) so closing the tab ends the attempt.
+let resetToken = null;
+
+function showForgotStep(step) {
+  forgotStepEmail.classList.toggle('hidden', step !== 'email');
+  forgotStepCode.classList.toggle('hidden', step !== 'code');
+  forgotStepPassword.classList.toggle('hidden', step !== 'password');
+  const focus = { email: forgotEmail, code: forgotCode, password: forgotNewPassword }[step];
+  if (focus) setTimeout(() => focus.focus(), 50);
+}
+
+function openForgotPassword() {
+  resetToken = null;
+  forgotCode.value = '';
+  forgotNewPassword.value = '';
+  // Carry over whatever was typed as the username if it looks like an email -
+  // people routinely type their email into the username box.
+  if (!forgotEmail.value && loginUsername.value.includes('@')) {
+    forgotEmail.value = loginUsername.value.trim();
+  }
+  selectAccountTab('forgot');
+  showForgotStep('email');
+}
+
+function requestResetCode() {
+  const email = forgotEmail.value.trim();
+  if (!email) return showAccountStatus(t('enterEmail'), 'error');
+  forgotSendBtn.disabled = true;
+  forgotResendBtn.disabled = true;
+  showAccountStatus(t('sendingCode'), 'success');
+  socket.emit('forgot-password', { email });
+}
+
+forgotPasswordLink.addEventListener('click', openForgotPassword);
+forgotSendBtn.addEventListener('click', requestResetCode);
+forgotResendBtn.addEventListener('click', requestResetCode);
+
+forgotBackBtn.addEventListener('click', () => {
+  resetToken = null;
+  selectAccountTab('login');
+});
+
+// The code is six digits and nothing else; strip anything pasted in with it.
+forgotCode.addEventListener('input', () => {
+  forgotCode.value = forgotCode.value.replace(/\D/g, '').slice(0, 6);
+});
+
+forgotVerifyBtn.addEventListener('click', () => {
+  if (forgotCode.value.length !== 6) return showAccountStatus(t('enterCode'), 'error');
+  forgotVerifyBtn.disabled = true;
+  socket.emit('verify-reset-code', { email: forgotEmail.value.trim(), code: forgotCode.value });
+});
+
+forgotResetBtn.addEventListener('click', () => {
+  if (!resetToken) return showAccountStatus(t('resetExpired'), 'error');
+  if (forgotNewPassword.value.length < 4) return showAccountStatus(t('passwordTooShort'), 'error');
+  forgotResetBtn.disabled = true;
+  socket.emit('reset-password', { resetToken, newPassword: forgotNewPassword.value });
+});
+
+[forgotEmail, forgotCode, forgotNewPassword].forEach((el) => el.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter') return;
+  if (el === forgotEmail) forgotSendBtn.click();
+  else if (el === forgotCode) forgotVerifyBtn.click();
+  else forgotResetBtn.click();
+}));
+
+socket.on('forgot-password-result', ({ ok, message, error }) => {
+  forgotSendBtn.disabled = false;
+  forgotResendBtn.disabled = false;
+  if (!ok) return showAccountStatus(error, 'error');
+  showAccountStatus(message || t('codeSent'), 'success');
+  showForgotStep('code');
+});
+
+socket.on('verify-reset-code-result', ({ ok, resetToken: token, error }) => {
+  forgotVerifyBtn.disabled = false;
+  if (!ok) return showAccountStatus(error, 'error');
+  resetToken = token;
+  showAccountStatus(t('codeVerified'), 'success');
+  showForgotStep('password');
+});
+
+socket.on('reset-password-result', ({ ok, nickname, email, error, sessionToken: token }) => {
+  forgotResetBtn.disabled = false;
+  if (!ok) return showAccountStatus(error, 'error');
+  // The reset signed this device in, so treat it exactly like a login.
+  resetToken = null;
+  forgotCode.value = '';
+  forgotNewPassword.value = '';
+  storeLogin(nickname, token);
+  storeAccountEmail(email);
+  showAccountStatus(t('statusPasswordRestored', { name: nickname }), 'success');
+  setTimeout(reloadPage, 800);
+});
+
+// --- Recovery email (My Account) ------------------------------------------
+function storeAccountEmail(email) {
+  accountEmail = email || '';
+  if (accountEmail) localStorage.setItem('talklive_email', accountEmail);
+  else localStorage.removeItem('talklive_email');
+}
+
+function renderRecoveryEmailState() {
+  if (!recoveryEmailState) return;
+  recoveryEmailState.textContent = accountEmail
+    ? t('recoveryEmailSet', { email: accountEmail })
+    : t('recoveryEmailMissing');
+  recoveryEmailInput.value = accountEmail;
+  syncRecoveryEmailBtnState();
+}
+
+function syncRecoveryEmailBtnState() {
+  const value = recoveryEmailInput.value.trim();
+  updateRecoveryEmailBtn.disabled = !value || value === accountEmail;
+}
+
+recoveryEmailInput.addEventListener('input', syncRecoveryEmailBtnState);
+
+updateRecoveryEmailBtn.addEventListener('click', () => {
+  socket.emit('update-recovery-email', {
+    email: recoveryEmailInput.value.trim(),
+    // Ignored by the server for accounts that have no password (Google
+    // sign-in), required for every other account.
+    currentPassword: recoveryEmailPassword.value,
+  });
+});
+
+socket.on('update-recovery-email-result', ({ ok, email, error }) => {
+  if (!ok) return showAccountStatus(error, 'error');
+  storeAccountEmail(email);
+  recoveryEmailPassword.value = '';
+  renderRecoveryEmailState();
+  showAccountStatus(t('statusRecoveryEmailSaved'), 'success');
+});
 
 logoutBtn.addEventListener('click', () => {
   socket.emit('logout', { token: sessionToken });
   sessionToken = null;
   accountNickname = null;
+  storeAccountEmail('');
   localStorage.removeItem('talklive_session');
   localStorage.removeItem('talklive_nickname');
   // Give the logout packet a moment to flush before the page reloads.
@@ -1399,16 +1572,18 @@ function storeLogin(nickname, token) {
   }
 }
 
-socket.on('login-result', ({ ok, nickname, error, sessionToken: token }) => {
+socket.on('login-result', ({ ok, nickname, email, error, sessionToken: token }) => {
   if (!ok) return showAccountStatus(error, 'error');
   storeLogin(nickname, token);
+  storeAccountEmail(email);
   showAccountStatus(t('statusLoggedIn', { name: nickname }), 'success');
   setTimeout(reloadPage, 500);
 });
 
-socket.on('signup-result', ({ ok, nickname, error, sessionToken: token }) => {
+socket.on('signup-result', ({ ok, nickname, email, error, sessionToken: token }) => {
   if (!ok) return showAccountStatus(error, 'error');
   storeLogin(nickname, token);
+  storeAccountEmail(email);
   showAccountStatus(t('statusAccountCreated', { name: nickname }), 'success');
   setTimeout(reloadPage, 500);
 });
@@ -1416,17 +1591,22 @@ socket.on('signup-result', ({ ok, nickname, error, sessionToken: token }) => {
 // Answer to the silent re-login sent on every (re)connect. Success refreshes
 // the signed-in UI; failure (expired/revoked token) cleans up so the app never
 // pretends to be signed in when the server disagrees.
-socket.on('resume-session-result', ({ ok, nickname }) => {
+socket.on('resume-session-result', ({ ok, nickname, email }) => {
   if (ok) {
+    const emailChanged = (email || '') !== accountEmail;
+    if (emailChanged) storeAccountEmail(email);
     if (nickname && nickname !== accountNickname) {
       accountNickname = nickname;
       localStorage.setItem('talklive_nickname', nickname);
       renderAccountState();
       registerProfile();
+    } else if (emailChanged) {
+      renderAccountState();
     }
   } else {
     sessionToken = null;
     accountNickname = null;
+    storeAccountEmail('');
     localStorage.removeItem('talklive_session');
     localStorage.removeItem('talklive_nickname');
     renderAccountState();

@@ -637,12 +637,40 @@
                 <input type="text" id="loginUsername" class="search-input account-input" data-i18n-placeholder="username" data-i18n-aria="username" placeholder="Username" autocomplete="username" />
                 <input type="password" id="loginPassword" class="search-input account-input" data-i18n-placeholder="password" data-i18n-aria="password" placeholder="Password" autocomplete="current-password" />
                 <button type="button" id="loginSubmitBtn" class="btn btn-primary settings-save" data-i18n="logIn">Log In</button>
+                <button type="button" id="forgotPasswordLink" class="account-link" data-i18n="forgotPassword">Forgot password?</button>
               </form>
 
               <form id="signupTab" class="account-tab-panel hidden" autocomplete="on" onsubmit="return false;">
                 <input type="text" id="signupUsername" class="search-input account-input" data-i18n-placeholder="chooseUsername" data-i18n-aria="chooseUsername" placeholder="Choose a username" autocomplete="username" />
                 <input type="password" id="signupPassword" class="search-input account-input" data-i18n-placeholder="choosePassword" data-i18n-aria="choosePassword" placeholder="Choose a password" autocomplete="new-password" />
+                <input type="email" id="signupEmail" class="search-input account-input" data-i18n-placeholder="recoveryEmailOptional" data-i18n-aria="recoveryEmailOptional" placeholder="Email (to recover your password)" autocomplete="email" inputmode="email" />
                 <button type="button" id="signupSubmitBtn" class="btn btn-primary settings-save" data-i18n="createAccount">Create Account</button>
+                <p class="account-hint" data-i18n="recoveryEmailHint">Only used to send you a reset code if you forget your password. Never shown to anyone.</p>
+              </form>
+
+              <!-- Forgot password: email -> 6-digit code -> new password. Shown
+                   in place of the login/signup tabs, one step at a time. -->
+              <form id="forgotTab" class="account-tab-panel hidden" autocomplete="on" onsubmit="return false;">
+                <div id="forgotStepEmail">
+                  <label class="account-label" for="forgotEmail" data-i18n="forgotStepEmailLabel">Enter your account email</label>
+                  <input type="email" id="forgotEmail" class="search-input account-input" data-i18n-placeholder="email" data-i18n-aria="email" placeholder="Email" autocomplete="email" inputmode="email" />
+                  <button type="button" id="forgotSendBtn" class="btn btn-primary settings-save" data-i18n="sendCode">Send Code</button>
+                </div>
+
+                <div id="forgotStepCode" class="hidden">
+                  <label class="account-label" for="forgotCode" data-i18n="forgotStepCodeLabel">Enter the 6-digit code we emailed you</label>
+                  <input type="text" id="forgotCode" class="search-input account-input otp-input" placeholder="000000" data-i18n-aria="verificationCode" aria-label="Verification code" autocomplete="one-time-code" inputmode="numeric" maxlength="6" />
+                  <button type="button" id="forgotVerifyBtn" class="btn btn-primary settings-save" data-i18n="verifyCode">Verify Code</button>
+                  <button type="button" id="forgotResendBtn" class="account-link" data-i18n="resendCode">Resend code</button>
+                </div>
+
+                <div id="forgotStepPassword" class="hidden">
+                  <label class="account-label" for="forgotNewPassword" data-i18n="forgotStepPasswordLabel">Choose a new password</label>
+                  <input type="password" id="forgotNewPassword" class="search-input account-input" data-i18n-placeholder="newPassword" data-i18n-aria="newPassword" placeholder="New password" autocomplete="new-password" />
+                  <button type="button" id="forgotResetBtn" class="btn btn-primary settings-save" data-i18n="restorePassword">Restore Password</button>
+                </div>
+
+                <button type="button" id="forgotBackBtn" class="account-link" data-i18n="backToLogIn">Back to log in</button>
               </form>
 
               <p class="account-hint" data-i18n="accountHint">Your account is saved permanently - you stay signed in on this device and can log in from anywhere.</p>
@@ -672,6 +700,17 @@
                 <input type="password" id="currentPasswordInput" class="search-input account-input" data-i18n-placeholder="currentPassword" data-i18n-aria="currentPassword" placeholder="Current password" autocomplete="current-password" />
                 <input type="password" id="newPasswordInput" class="search-input account-input" data-i18n-placeholder="newPassword" data-i18n-aria="newPassword" placeholder="New password" autocomplete="new-password" />
                 <button type="button" id="changePasswordBtn" class="btn btn-secondary settings-save" data-i18n="updatePassword" disabled>Update Password</button>
+              </form>
+
+              <!-- Recovery email: the only way back into an account whose
+                   password is forgotten, so it is editable here and not only
+                   at sign-up. -->
+              <form class="account-tab-panel" autocomplete="on" onsubmit="return false;">
+                <label class="account-label account-label-spaced" for="recoveryEmailInput" data-i18n="recoveryEmail">Recovery Email</label>
+                <p id="recoveryEmailState" class="account-hint"></p>
+                <input type="email" id="recoveryEmailInput" class="search-input account-input" data-i18n-placeholder="email" data-i18n-aria="email" placeholder="Email" autocomplete="email" inputmode="email" />
+                <input type="password" id="recoveryEmailPassword" class="search-input account-input" data-i18n-placeholder="currentPassword" data-i18n-aria="currentPassword" placeholder="Current password" autocomplete="current-password" />
+                <button type="button" id="updateRecoveryEmailBtn" class="btn btn-secondary settings-save" data-i18n="saveRecoveryEmail" disabled>Save Recovery Email</button>
               </form>
 
               <button type="button" id="logoutBtn" class="btn btn-danger settings-save account-logout" data-i18n="logOut">Log Out</button>

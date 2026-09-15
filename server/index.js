@@ -14,6 +14,7 @@ const store = require('./store');
 const compress = require('./compress');
 const billing = require('./billing');
 const push = require('./push');
+const mail = require('./mailer');
 const { createAdmin } = require('./admin');
 
 const app = express();
@@ -990,7 +991,7 @@ function clearWaitFallbackTimer(socketId) {
 // Accounts are held in memory for fast access but are also written through to
 // the persistent store (Postgres/file), so a signed-in user keeps their account
 // across restarts and deploys. socketAuth stays in-memory (per-connection).
-const accounts = new Map(); // username (lowercase) -> { passwordHash, salt, nickname, googleId }
+const accounts = new Map(); // username (lowercase) -> { passwordHash, salt, nickname, googleId, email }
 const socketAuth = new Map(); // socketId -> logged-in username (lowercase)
 const googleAccounts = new Map(); // Google "sub" id -> username (lowercase)
 
@@ -1044,6 +1045,7 @@ function hydrateFromStore() {
       salt: acc.salt || null,
       nickname: acc.nickname || '',
       googleId: acc.googleId || null,
+      email: acc.email || null,
     });
   }
   for (const [googleId, usernameLower] of Object.entries(store.data.googleIndex || {})) {
@@ -1257,14 +1259,109 @@ function hashPassword(password, salt) {
   });
 }
 
-async function createAccount(username, password, nickname) {
+async function createAccount(username, password, nickname, email) {
   const salt = crypto.randomBytes(16).toString('hex');
   accounts.set(username.toLowerCase(), {
     passwordHash: await hashPassword(password, salt),
     salt,
     nickname,
+    email: email || null,
   });
   persistAccount(username.toLowerCase());
+}
+
+// --- Recovery email --------------------------------------------------------
+// An account is username + password; the email is optional and exists for one
+// purpose only - proving you own the account when the password is gone. It is
+// never shown to other users and never used for marketing.
+//
+// Deliberately permissive: this only has to reject text that is obviously not
+// an address. A stricter regex would bounce real addresses, and the address is
+// verified for real the moment the account holder reads a code sent to it.
+const EMAIL_RE = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
+
+function normalizeEmail(value) {
+  if (typeof value !== 'string') return '';
+  const email = value.trim().toLowerCase();
+  if (!email || email.length > 254 || !EMAIL_RE.test(email)) return '';
+  return email;
+}
+
+// --- Password reset by emailed OTP -----------------------------------------
+// Flow: request a code -> enter the 6 digits -> choose a new password. The
+// middle step hands out a short-lived token so the last step never has to
+// resend the code, and the codes/tokens themselves are stored only as hashes
+// (Supabase Postgres in production, see store.js).
+const RESET_CODE_TTL_MS = 10 * 60000;   // how long an emailed code is good for
+const RESET_TOKEN_TTL_MS = 15 * 60000;  // how long the verified step lasts
+const RESET_MAX_ATTEMPTS = 5;           // wrong codes before the code dies
+// Requesting a code is unauthenticated and sends mail, so it is throttled on
+// both sides: per address (an inbox cannot be used as a mailbomb target) and
+// per IP (one host cannot spray requests across many addresses).
+const RESET_LIMIT_EMAIL = 3;
+const RESET_LIMIT_IP = 15;
+const RESET_WINDOW_MS = 60 * 60000;
+const resetRequests = new Map(); // "ip:<ip>" | "email:<addr>" -> { first, count }
+
+function resetThrottled(ip, email) {
+  const now = Date.now();
+  for (const [key, limit] of [[`ip:${ip}`, RESET_LIMIT_IP], [`email:${email}`, RESET_LIMIT_EMAIL]]) {
+    const rec = resetRequests.get(key);
+    if (!rec) continue;
+    if (now - rec.first > RESET_WINDOW_MS) { resetRequests.delete(key); continue; }
+    if (rec.count >= limit) return true;
+  }
+  return false;
+}
+
+function noteResetRequest(ip, email) {
+  const now = Date.now();
+  for (const key of [`ip:${ip}`, `email:${email}`]) {
+    const rec = resetRequests.get(key);
+    if (!rec || now - rec.first > RESET_WINDOW_MS) resetRequests.set(key, { first: now, count: 1 });
+    else rec.count += 1;
+  }
+}
+
+// Six digits, uniformly distributed. Math.random() would be both biased and
+// predictable, and this value is the only thing standing between a stranger
+// and someone's account.
+function generateOtp() {
+  return String(crypto.randomInt(0, 1000000)).padStart(6, '0');
+}
+
+function hashToken(value) {
+  return crypto.createHash('sha256').update(String(value)).digest('hex');
+}
+
+// The nickname is user-supplied and goes into an HTML email body.
+function escapeHtmlText(str) {
+  return String(str).replace(/[&<>"']/g, (c) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+  ));
+}
+
+function otpEmail(nickname, code) {
+  const minutes = Math.round(RESET_CODE_TTL_MS / 60000);
+  const text = [
+    `Hi ${nickname},`,
+    '',
+    `Your TalkLive password reset code is: ${code}`,
+    '',
+    `It expires in ${minutes} minutes and can be used once.`,
+    'If you did not ask to reset your password, you can ignore this email - your password has not changed.',
+    '',
+    '- TalkLive',
+  ].join('\n');
+  const html = `
+    <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#1b1b1f">
+      <h2 style="margin:0 0 8px;font-size:20px">Reset your TalkLive password</h2>
+      <p style="margin:0 0 20px;color:#55555f">Hi ${escapeHtmlText(nickname)}, use this code to set a new password.</p>
+      <div style="font-size:34px;font-weight:700;letter-spacing:10px;text-align:center;padding:18px;border-radius:12px;background:#f3f2f8">${code}</div>
+      <p style="margin:20px 0 0;color:#55555f">The code expires in ${minutes} minutes and can be used once.</p>
+      <p style="margin:12px 0 0;color:#8a8a94;font-size:13px">Didn't ask for this? Ignore this email - your password has not changed.</p>
+    </div>`;
+  return { text, html };
 }
 
 // Per-IP signup throttle: at most a handful of new accounts per IP per hour so
@@ -1275,6 +1372,10 @@ const signupAttempts = new Map(); // ip -> { first, count }
 // Usernames whose account is mid-creation (password still hashing). Held only
 // for the duration of one scrypt call so a racing signup cannot claim the name.
 const pendingSignups = new Set();
+// Same idea for recovery emails: two signups racing on one address would both
+// pass the uniqueness check and the second would quietly take the address off
+// the first, leaving an account whose reset codes go somewhere else.
+const pendingEmails = new Set();
 function signupThrottled(ip) {
   const rec = signupAttempts.get(ip);
   if (!rec) return false;
@@ -1365,6 +1466,10 @@ async function findOrCreateGoogleAccount(idToken) {
   }
 
   const googleId = payload.sub;
+  // Google already verified this address, so it doubles as the recovery email
+  // and the account can be recovered even if the user never signs in with
+  // Google again. Skipped if another account already claims the address.
+  const googleEmail = normalizeEmail(payload.email);
   let username = googleAccounts.get(googleId);
 
   if (!username) {
@@ -1375,9 +1480,16 @@ async function findOrCreateGoogleAccount(idToken) {
       salt: null,
       nickname,
       googleId,
+      email: googleEmail && !store.findUsernameByEmail(googleEmail) ? googleEmail : null,
     });
     googleAccounts.set(googleId, username.toLowerCase());
     persistAccount(username.toLowerCase());
+  } else {
+    const existing = accounts.get(username);
+    if (existing && !existing.email && googleEmail && !store.findUsernameByEmail(googleEmail)) {
+      existing.email = googleEmail;
+      persistAccount(username);
+    }
   }
 
   return { username, account: accounts.get(username.toLowerCase()) };
@@ -1826,10 +1938,20 @@ io.on('connection', (socket) => {
   store.recordConnection();
   store.recordPeakOnline(io.engine.clientsCount);
 
-  socket.on('signup', async ({ username, password, nickname } = {}) => {
+  socket.on('signup', async ({ username, password, nickname, email } = {}) => {
     if (typeof username !== 'string' || typeof password !== 'string'
       || !username || !password || username.length < 3 || password.length < 4) {
       return socket.emit('signup-result', { ok: false, error: 'Username/password too short (min 3/4 chars).' });
+    }
+    // The recovery email is optional, but if something was typed it has to be
+    // a usable address - silently dropping a typo would leave the account
+    // unrecoverable exactly when it matters.
+    const signupEmail = normalizeEmail(email);
+    if (typeof email === 'string' && email.trim() && !signupEmail) {
+      return socket.emit('signup-result', { ok: false, error: 'That email address does not look valid.' });
+    }
+    if (signupEmail && (store.findUsernameByEmail(signupEmail) || pendingEmails.has(signupEmail))) {
+      return socket.emit('signup-result', { ok: false, error: 'That email is already used by another account.' });
     }
     // Nickname is optional - creating an account is just username + password,
     // and the display name defaults to the username (changeable later).
@@ -1848,10 +1970,12 @@ io.on('connection', (socket) => {
     // would both pass the check above and the second would overwrite the first.
     // Reserve the name synchronously, before the first await.
     pendingSignups.add(username.toLowerCase());
+    if (signupEmail) pendingEmails.add(signupEmail);
     try {
-      await createAccount(username, password, nickname.slice(0, 24));
+      await createAccount(username, password, nickname.slice(0, 24), signupEmail);
     } finally {
       pendingSignups.delete(username.toLowerCase());
+      if (signupEmail) pendingEmails.delete(signupEmail);
     }
     // The socket can go away while scrypt runs on the thread pool; emitting to a
     // dead socket is harmless but persisting a session for it is pointless work.
@@ -1871,6 +1995,7 @@ io.on('connection', (socket) => {
       ok: true,
       username,
       nickname: nickname.slice(0, 24),
+      email: signupEmail || '',
       // Durable session token: the browser stores it and stays signed in
       // across page reloads, server restarts and deploys.
       sessionToken: store.createAuthSession(username.toLowerCase()),
@@ -1900,6 +2025,7 @@ io.on('connection', (socket) => {
       ok: true,
       username,
       nickname: account.nickname,
+      email: account.email || '',
       sessionToken: store.createAuthSession((username || '').toLowerCase()),
     });
   });
@@ -1917,7 +2043,12 @@ io.on('connection', (socket) => {
     store.upsertAccount(usernameLower, {
       nickname: account.nickname, country: geo.countryName, city: geo.city, ip, lastSeen: Date.now(),
     });
-    socket.emit('resume-session-result', { ok: true, username: usernameLower, nickname: account.nickname });
+    socket.emit('resume-session-result', {
+      ok: true,
+      username: usernameLower,
+      nickname: account.nickname,
+      email: account.email || '',
+    });
   });
 
   socket.on('logout', ({ token } = {}) => {
@@ -1945,6 +2076,7 @@ io.on('connection', (socket) => {
         ok: true,
         username,
         nickname: account.nickname,
+        email: account.email || '',
         sessionToken: store.createAuthSession(username.toLowerCase()),
       });
     } catch (err) {
@@ -1995,6 +2127,210 @@ io.on('connection', (socket) => {
     // durable token so it stays logged in.
     store.deleteAuthSessionsForUser(authedUsername, null);
     socket.emit('change-password-result', { ok: true, sessionToken: store.createAuthSession(authedUsername) });
+  });
+
+  // Set or change the address password-reset codes are sent to. Changing it is
+  // as good as owning the account, so an account that has a password must
+  // prove it here; an account created through Google has none to prove.
+  socket.on('update-recovery-email', async ({ email, currentPassword } = {}) => {
+    const authedUsername = socketAuth.get(socket.id);
+    if (!authedUsername) return socket.emit('update-recovery-email-result', { ok: false, error: 'Not logged in.' });
+    const account = accounts.get(authedUsername);
+    if (!account) return socket.emit('update-recovery-email-result', { ok: false, error: 'Not logged in.' });
+
+    const next = normalizeEmail(email);
+    if (!next) return socket.emit('update-recovery-email-result', { ok: false, error: 'That email address does not look valid.' });
+
+    const owner = store.findUsernameByEmail(next);
+    if (owner && owner !== authedUsername) {
+      return socket.emit('update-recovery-email-result', { ok: false, error: 'That email is already used by another account.' });
+    }
+
+    if (account.passwordHash) {
+      if (loginLockedOut(ip, authedUsername)) {
+        return socket.emit('update-recovery-email-result', { ok: false, error: 'Too many failed attempts. Please try again in 15 minutes.' });
+      }
+      if (!(await verifyAccount(authedUsername, typeof currentPassword === 'string' ? currentPassword : ''))) {
+        noteLoginFailure(ip, authedUsername);
+        return socket.emit('update-recovery-email-result', { ok: false, error: 'Current password is incorrect.' });
+      }
+      noteLoginSuccess(ip, authedUsername);
+    }
+
+    const live = accounts.get(authedUsername);
+    if (!live) return socket.emit('update-recovery-email-result', { ok: false, error: 'Not logged in.' });
+    // Re-check after the password hash: another account could have claimed the
+    // address while scrypt was running.
+    const ownerNow = store.findUsernameByEmail(next);
+    if (ownerNow && ownerNow !== authedUsername) {
+      return socket.emit('update-recovery-email-result', { ok: false, error: 'That email is already used by another account.' });
+    }
+    live.email = next;
+    persistAccount(authedUsername);
+    socket.emit('update-recovery-email-result', { ok: true, email: next });
+  });
+
+  // Step 1 of "forgot password": email in, six-digit code out.
+  //
+  // The reply is deliberately the same whether or not the address belongs to
+  // an account. Saying "no account with that email" would turn this into a
+  // free membership oracle for any address someone cares to type, and this is
+  // an anonymous chat product where that leak is the whole privacy promise.
+  socket.on('forgot-password', async ({ email } = {}) => {
+    const address = normalizeEmail(email);
+    const generic = {
+      ok: true,
+      message: 'If that email is on an account, a 6-digit code is on its way. It expires in 10 minutes.',
+    };
+    if (!address) {
+      return socket.emit('forgot-password-result', { ok: false, error: 'Please enter a valid email address.' });
+    }
+    // Without SMTP credentials there is no way to deliver a code. In
+    // development that would make the whole flow untestable, so the code goes
+    // to the server console instead - never in production, where NODE_ENV is
+    // set by both the Dockerfile and fly.toml.
+    if (!mail.configured() && process.env.NODE_ENV === 'production') {
+      return socket.emit('forgot-password-result', {
+        ok: false,
+        error: 'Password reset by email is not available on this server right now.',
+      });
+    }
+    if (resetThrottled(ip, address)) {
+      return socket.emit('forgot-password-result', {
+        ok: false,
+        error: 'Too many reset requests. Please wait a while before trying again.',
+      });
+    }
+    noteResetRequest(ip, address);
+
+    const usernameLower = store.findUsernameByEmail(address);
+    const account = usernameLower ? accounts.get(usernameLower) : null;
+    if (!account) return socket.emit('forgot-password-result', generic);
+
+    try {
+      const code = generateOtp();
+      await store.startPasswordReset({
+        username: usernameLower,
+        email: address,
+        codeHash: hashToken(code),
+        ttlMs: RESET_CODE_TTL_MS,
+      });
+      const { text, html } = otpEmail(account.nickname || usernameLower, code);
+      let sent = false;
+      if (mail.configured()) {
+        sent = await mail.sendMail({
+          to: address,
+          subject: `${code} is your TalkLive password reset code`,
+          text,
+          html,
+        });
+      } else {
+        console.log(`[forgot-password] SMTP not configured; reset code for ${address} is ${code}`);
+        sent = true;
+      }
+      if (!sent) {
+        return socket.emit('forgot-password-result', {
+          ok: false,
+          error: 'We could not send the email just now. Please try again in a few minutes.',
+        });
+      }
+      store.recordFeature('password_reset_request');
+    } catch (err) {
+      console.error('[forgot-password] failed:', err.message);
+      return socket.emit('forgot-password-result', {
+        ok: false,
+        error: 'Something went wrong starting the reset. Please try again.',
+      });
+    }
+    socket.emit('forgot-password-result', generic);
+  });
+
+  // Step 2: check the code and hand back a short-lived token for step 3, so the
+  // new password is not sent in the same message as the code.
+  socket.on('verify-reset-code', async ({ email, code } = {}) => {
+    const address = normalizeEmail(email);
+    const digits = typeof code === 'string' ? code.replace(/\D/g, '') : '';
+    const invalid = { ok: false, error: 'That code is not valid or has expired. Request a new one.' };
+    if (!address || digits.length !== 6) {
+      return socket.emit('verify-reset-code-result', { ok: false, error: 'Enter the 6-digit code from your email.' });
+    }
+    try {
+      const pending = await store.findPasswordReset(address);
+      if (!pending || pending.codeHash === 'consumed') {
+        return socket.emit('verify-reset-code-result', invalid);
+      }
+      const a = Buffer.from(hashToken(digits), 'hex');
+      const b = Buffer.from(pending.codeHash, 'hex');
+      if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+        const attempts = await store.notePasswordResetFailure(pending.id);
+        // A six-digit code is only 20 bits; without a hard attempt cap it is
+        // guessable inside the ten minutes it stays alive.
+        if (attempts >= RESET_MAX_ATTEMPTS) {
+          await store.deletePasswordReset(pending.id);
+          return socket.emit('verify-reset-code-result', {
+            ok: false,
+            error: 'Too many wrong codes. Please request a new one.',
+          });
+        }
+        return socket.emit('verify-reset-code-result', {
+          ok: false,
+          error: `Incorrect code. ${RESET_MAX_ATTEMPTS - attempts} attempt(s) left.`,
+        });
+      }
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      await store.markPasswordResetVerified(pending.id, hashToken(resetToken), RESET_TOKEN_TTL_MS);
+      socket.emit('verify-reset-code-result', { ok: true, resetToken });
+    } catch (err) {
+      console.error('[verify-reset-code] failed:', err.message);
+      socket.emit('verify-reset-code-result', { ok: false, error: 'Something went wrong. Please try again.' });
+    }
+  });
+
+  // Step 3: spend the token, set the new password, and sign this device in.
+  socket.on('reset-password', async ({ resetToken, newPassword } = {}) => {
+    if (typeof newPassword !== 'string' || newPassword.length < 4) {
+      return socket.emit('reset-password-result', { ok: false, error: 'New password must be at least 4 characters.' });
+    }
+    if (typeof resetToken !== 'string' || !/^[a-f0-9]{64}$/.test(resetToken)) {
+      return socket.emit('reset-password-result', { ok: false, error: 'This reset has expired. Please start again.' });
+    }
+    try {
+      const claim = await store.consumePasswordResetToken(hashToken(resetToken));
+      if (!claim) {
+        return socket.emit('reset-password-result', { ok: false, error: 'This reset has expired. Please start again.' });
+      }
+      const usernameLower = claim.username;
+      const account = accounts.get(usernameLower);
+      if (!account) {
+        return socket.emit('reset-password-result', { ok: false, error: 'That account no longer exists.' });
+      }
+      const salt = crypto.randomBytes(16).toString('hex');
+      account.passwordHash = await hashPassword(newPassword, salt);
+      account.salt = salt;
+      persistAccount(usernameLower);
+      // Whoever knew the old password (and any stale session anywhere) loses
+      // access: a reset only means anything if it ends every other session.
+      store.deleteAuthSessionsForUser(usernameLower, null);
+      // The failed-login lockout would otherwise keep the real owner out with
+      // the password they just chose.
+      noteLoginSuccess(ip, usernameLower);
+      store.recordFeature('password_reset_complete');
+      if (!io.sockets.sockets.has(socket.id)) return;
+      socketAuth.set(socket.id, usernameLower);
+      store.upsertAccount(usernameLower, {
+        nickname: account.nickname, country: geo.countryName, city: geo.city, ip, lastSeen: Date.now(),
+      });
+      socket.emit('reset-password-result', {
+        ok: true,
+        username: usernameLower,
+        nickname: account.nickname,
+        email: account.email || '',
+        sessionToken: store.createAuthSession(usernameLower),
+      });
+    } catch (err) {
+      console.error('[reset-password] failed:', err.message);
+      socket.emit('reset-password-result', { ok: false, error: 'Something went wrong. Please try again.' });
+    }
   });
 
   socket.on('register', (data = {}) => {
@@ -2915,6 +3251,12 @@ function sweepEphemeralState() {
   for (const [key, rec] of loginAttempts) {
     if (now - rec.first > LOGIN_WINDOW_MS && (!rec.until || rec.until < now)) loginAttempts.delete(key);
   }
+  for (const [key, rec] of resetRequests) {
+    if (now - rec.first > RESET_WINDOW_MS) resetRequests.delete(key);
+  }
+  // Expired reset codes are already unusable; this only stops the table from
+  // accumulating dead rows on a server nobody is resetting passwords on.
+  store.purgePasswordResets().catch(() => { /* swept again next pass */ });
   for (const [key, rec] of hearts) {
     if (now - (rec.ts || 0) > HEART_TTL_MS) hearts.delete(key);
   }

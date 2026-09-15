@@ -7,40 +7,27 @@ const store = require('./store');
 const totp = require('./totp');
 const analytics = require('./analytics');
 
-let nodemailer = null;
-try { nodemailer = require('nodemailer'); } catch (_) { /* optional */ }
 let QRCode = null;
 try { QRCode = require('qrcode'); } catch (_) { /* optional */ }
+const mail = require('./mailer');
 
 const SESSION_HOURS = 12;
 const OWNER_EMAIL = process.env.OWNER_EMAIL || '';
-const SMTP_USER = process.env.SMTP_USER || '';
-const SMTP_PASS = process.env.SMTP_PASS || '';
 
-// --- Email alerts (Gmail SMTP app password) ---
-let mailer = null;
-if (nodemailer && SMTP_USER && SMTP_PASS) {
-  mailer = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: Number(process.env.SMTP_PORT || 465),
-    secure: true,
-    auth: { user: SMTP_USER, pass: SMTP_PASS },
-  });
-}
-
+// --- Email alerts (shared SMTP transport, see mailer.js) ---
 const emailThrottle = new Map(); // key -> last sent ts
 function sendAlertEmail(kind, subject, text) {
-  if (!mailer || !OWNER_EMAIL) return;
+  if (!mail.configured() || !OWNER_EMAIL) return;
   // At most one email per kind per 10 minutes so a burst can't flood the inbox.
   const last = emailThrottle.get(kind) || 0;
   if (Date.now() - last < 10 * 60000) return;
   emailThrottle.set(kind, Date.now());
-  mailer.sendMail({
-    from: `"TalkLive Dashboard" <${SMTP_USER}>`,
+  mail.sendMail({
     to: OWNER_EMAIL,
     subject: `[TalkLive] ${subject}`,
     text,
-  }).catch((err) => console.error('[mail] send failed:', err.message));
+    fromName: 'TalkLive Dashboard',
+  });
 }
 
 // --- Auth helpers ---

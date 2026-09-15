@@ -107,9 +107,17 @@ function defaults() {
     accountsRegistry: {}, // usernameLower -> details (analytics metadata)
     // Durable account credentials so signed-in users keep their account across
     // restarts/deploys. usernameLower -> { passwordHash, salt, nickname,
-    // googleId, createdAt }. googleIndex maps a Google "sub" -> usernameLower.
+    // googleId, email, createdAt }. googleIndex maps a Google "sub" ->
+    // usernameLower, emailIndex a lowercased recovery email -> usernameLower
+    // (that index is what "forgot password" looks an account up by).
     accounts: {},
     googleIndex: {},
+    emailIndex: {},
+    // Pending password-reset OTPs, id -> record. Only used by the file backend;
+    // with DATABASE_URL set these live in their own Postgres table instead (see
+    // the password-reset section below), because they are short-lived rows with
+    // their own expiry and do not belong in the long-lived document.
+    passwordResets: {},
     // Durable login sessions: token -> { u: usernameLower, createdAt, lastSeen }.
     // Lets a signed-in user stay signed in across page reloads, server restarts
     // and deploys (sliding expiry, see SESSION_TTL_MS).
@@ -163,6 +171,14 @@ function applyParsed(parsed) {
   data.accounts = parsed.accounts || {};
   data.googleIndex = parsed.googleIndex || {};
   data.authSessions = parsed.authSessions || {};
+  data.passwordResets = parsed.passwordResets || {};
+  // Rebuild the email index from the accounts themselves rather than trusting
+  // the stored copy: accounts written before recovery emails existed have no
+  // index entry, and a rebuild keeps the two from ever drifting apart.
+  data.emailIndex = {};
+  for (const [usernameLower, acc] of Object.entries(data.accounts)) {
+    if (acc && acc.email) data.emailIndex[String(acc.email).toLowerCase()] = usernameLower;
+  }
 }
 
 function loadFile() {
@@ -180,6 +196,25 @@ async function loadPg() {
   await pgPool.query(
     'CREATE TABLE IF NOT EXISTS owner_store (id int PRIMARY KEY, doc jsonb NOT NULL, updated_at timestamptz NOT NULL DEFAULT now())'
   );
+  // Password-reset OTPs get a real table instead of a corner of the document:
+  // they are written and deleted constantly, expire on their own schedule, and
+  // rewriting the whole document for each one would be wasteful. Created here
+  // (rather than as a checked-in migration) for the same reason owner_store is
+  // - the app is deployed straight from git with no migration step.
+  await pgPool.query(`CREATE TABLE IF NOT EXISTS password_resets (
+    id text PRIMARY KEY,
+    username text NOT NULL,
+    email text NOT NULL,
+    code_hash text NOT NULL,
+    token_hash text,
+    attempts integer NOT NULL DEFAULT 0,
+    expires_at bigint NOT NULL,
+    token_expires_at bigint,
+    used_at bigint,
+    created_at bigint NOT NULL
+  )`);
+  await pgPool.query('CREATE INDEX IF NOT EXISTS password_resets_email_idx ON password_resets (email)');
+  await pgPool.query('CREATE INDEX IF NOT EXISTS password_resets_token_idx ON password_resets (token_hash)');
   const res = await pgPool.query('SELECT doc FROM owner_store WHERE id = 1');
   if (res.rows.length) applyParsed(res.rows[0].doc);
   backendStatus.mode = 'postgres';
@@ -529,15 +564,31 @@ function premiumExpiry(clientId) {
 // account creation, nickname change and password change so a signed-in user's
 // login keeps working after a restart or deploy.
 function saveAccount(usernameLower, account) {
+  const previous = data.accounts[usernameLower] || {};
+  const email = account.email ? String(account.email).toLowerCase() : null;
+  // A changed recovery email must release the old address, or the old one keeps
+  // resolving to this account and password-reset codes go to whoever used to
+  // own it.
+  if (previous.email && previous.email !== email) {
+    delete data.emailIndex[String(previous.email).toLowerCase()];
+  }
   data.accounts[usernameLower] = {
     passwordHash: account.passwordHash || null,
     salt: account.salt || null,
     nickname: account.nickname || '',
     googleId: account.googleId || null,
-    createdAt: (data.accounts[usernameLower] && data.accounts[usernameLower].createdAt) || Date.now(),
+    email,
+    createdAt: previous.createdAt || Date.now(),
   };
   if (account.googleId) data.googleIndex[account.googleId] = usernameLower;
+  if (email) data.emailIndex[email] = usernameLower;
   save();
+}
+
+// Which account, if any, a recovery email belongs to. Returns usernameLower.
+function findUsernameByEmail(email) {
+  if (typeof email !== 'string' || !email) return null;
+  return data.emailIndex[email.trim().toLowerCase()] || null;
 }
 
 // --- Durable login sessions ------------------------------------------------
@@ -603,6 +654,183 @@ function deleteAuthSessionsForUser(usernameLower, exceptToken) {
     }
   }
   if (changed) save();
+}
+
+// --- Password reset (email OTP) ---------------------------------------------
+//
+// One pending reset per email address at a time: asking for a new code
+// replaces the old one, so a resend can never leave two valid codes alive.
+//
+// Nothing here stores a secret in the clear. The six-digit code and the token
+// handed out after it is verified are both kept as SHA-256 hashes, exactly like
+// a password hash: a leaked database row is not enough to take over an account.
+// Rows carry their own expiry and are deleted on use, and purgePasswordResets()
+// sweeps up whatever was abandoned.
+//
+// Two backends, same rule as everything else here: a Postgres table when
+// DATABASE_URL points at one (Supabase in production), otherwise a corner of
+// the JSON document.
+
+function normalizeReset(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    username: row.username,
+    email: row.email,
+    codeHash: row.code_hash !== undefined ? row.code_hash : row.codeHash,
+    tokenHash: row.token_hash !== undefined ? row.token_hash : row.tokenHash,
+    attempts: Number(row.attempts || 0),
+    expiresAt: Number(row.expires_at !== undefined ? row.expires_at : row.expiresAt),
+    tokenExpiresAt: Number(
+      (row.token_expires_at !== undefined ? row.token_expires_at : row.tokenExpiresAt) || 0
+    ),
+    usedAt: Number((row.used_at !== undefined ? row.used_at : row.usedAt) || 0),
+    createdAt: Number((row.created_at !== undefined ? row.created_at : row.createdAt) || 0),
+  };
+}
+
+// Drop everything expired or already spent. Cheap, so it runs on the way into
+// every reset request rather than on a timer.
+async function purgePasswordResets() {
+  const now = Date.now();
+  if (pgPool) {
+    try {
+      await pgPool.query(
+        'DELETE FROM password_resets WHERE used_at IS NOT NULL OR (expires_at < $1 AND (token_expires_at IS NULL OR token_expires_at < $1))',
+        [now]
+      );
+    } catch (err) {
+      console.error('[store] password reset purge failed:', err.message);
+    }
+    return;
+  }
+  let changed = false;
+  for (const [id, r] of Object.entries(data.passwordResets)) {
+    const rec = normalizeReset(r);
+    if (!rec || rec.usedAt || (rec.expiresAt < now && (!rec.tokenExpiresAt || rec.tokenExpiresAt < now))) {
+      delete data.passwordResets[id];
+      changed = true;
+    }
+  }
+  if (changed) save();
+}
+
+// Replaces any pending reset for this email and returns the new record's id.
+async function startPasswordReset({ username, email, codeHash, ttlMs }) {
+  const emailLower = String(email).toLowerCase();
+  const now = Date.now();
+  const id = crypto.randomBytes(16).toString('hex');
+  const expiresAt = now + ttlMs;
+  await purgePasswordResets();
+  if (pgPool) {
+    await pgPool.query('DELETE FROM password_resets WHERE email = $1', [emailLower]);
+    await pgPool.query(
+      `INSERT INTO password_resets (id, username, email, code_hash, attempts, expires_at, created_at)
+       VALUES ($1, $2, $3, $4, 0, $5, $6)`,
+      [id, username, emailLower, codeHash, expiresAt, now]
+    );
+    return { id, expiresAt };
+  }
+  for (const [key, r] of Object.entries(data.passwordResets)) {
+    if (r && String(r.email).toLowerCase() === emailLower) delete data.passwordResets[key];
+  }
+  data.passwordResets[id] = {
+    id, username, email: emailLower, codeHash, tokenHash: null,
+    attempts: 0, expiresAt, tokenExpiresAt: 0, usedAt: 0, createdAt: now,
+  };
+  save();
+  return { id, expiresAt };
+}
+
+// The live, unexpired, unspent reset for an email, or null.
+async function findPasswordReset(email) {
+  const emailLower = String(email || '').toLowerCase();
+  if (!emailLower) return null;
+  const now = Date.now();
+  if (pgPool) {
+    const res = await pgPool.query(
+      'SELECT * FROM password_resets WHERE email = $1 AND used_at IS NULL AND expires_at > $2 ORDER BY created_at DESC LIMIT 1',
+      [emailLower, now]
+    );
+    return res.rows.length ? normalizeReset(res.rows[0]) : null;
+  }
+  const rows = Object.values(data.passwordResets)
+    .map(normalizeReset)
+    .filter((r) => r && r.email === emailLower && !r.usedAt && r.expiresAt > now)
+    .sort((a, b) => b.createdAt - a.createdAt);
+  return rows[0] || null;
+}
+
+// Counts one wrong code and returns the new attempt total.
+async function notePasswordResetFailure(id) {
+  if (pgPool) {
+    const res = await pgPool.query(
+      'UPDATE password_resets SET attempts = attempts + 1 WHERE id = $1 RETURNING attempts',
+      [id]
+    );
+    return res.rows.length ? Number(res.rows[0].attempts) : 0;
+  }
+  const rec = data.passwordResets[id];
+  if (!rec) return 0;
+  rec.attempts = Number(rec.attempts || 0) + 1;
+  save();
+  return rec.attempts;
+}
+
+async function deletePasswordReset(id) {
+  if (pgPool) {
+    await pgPool.query('DELETE FROM password_resets WHERE id = $1', [id]);
+    return;
+  }
+  if (data.passwordResets[id]) {
+    delete data.passwordResets[id];
+    save();
+  }
+}
+
+// The right code was entered: retire it and attach the short-lived token that
+// authorizes the actual password change.
+async function markPasswordResetVerified(id, tokenHash, tokenTtlMs) {
+  const tokenExpiresAt = Date.now() + tokenTtlMs;
+  if (pgPool) {
+    await pgPool.query(
+      'UPDATE password_resets SET token_hash = $1, token_expires_at = $2, code_hash = $3, attempts = 0 WHERE id = $4',
+      [tokenHash, tokenExpiresAt, 'consumed', id]
+    );
+    return tokenExpiresAt;
+  }
+  const rec = data.passwordResets[id];
+  if (!rec) return tokenExpiresAt;
+  rec.tokenHash = tokenHash;
+  rec.tokenExpiresAt = tokenExpiresAt;
+  rec.codeHash = 'consumed'; // the OTP itself can never be replayed
+  rec.attempts = 0;
+  save();
+  return tokenExpiresAt;
+}
+
+// Spends a verified reset token exactly once and returns whose account it was.
+async function consumePasswordResetToken(tokenHash) {
+  const now = Date.now();
+  if (pgPool) {
+    // The UPDATE ... RETURNING is the single-use guarantee: two requests racing
+    // with the same token both match the row, but only the first one finds it
+    // unused, so only the first gets a row back.
+    const res = await pgPool.query(
+      `UPDATE password_resets SET used_at = $1
+       WHERE token_hash = $2 AND used_at IS NULL AND token_expires_at > $1
+       RETURNING username, email`,
+      [now, tokenHash]
+    );
+    return res.rows.length ? { username: res.rows[0].username, email: res.rows[0].email } : null;
+  }
+  const rec = Object.values(data.passwordResets)
+    .map(normalizeReset)
+    .find((r) => r && r.tokenHash && r.tokenHash === tokenHash && !r.usedAt && r.tokenExpiresAt > now);
+  if (!rec) return null;
+  delete data.passwordResets[rec.id];
+  save();
+  return { username: rec.username, email: rec.email };
 }
 
 // --- Referrals ---------------------------------------------------------------
@@ -817,6 +1045,14 @@ module.exports = {
   liftBan,
   upsertAccount,
   saveAccount,
+  findUsernameByEmail,
+  startPasswordReset,
+  findPasswordReset,
+  notePasswordResetFailure,
+  deletePasswordReset,
+  markPasswordResetVerified,
+  consumePasswordResetToken,
+  purgePasswordResets,
   createAuthSession,
   getAuthSessionUser,
   deleteAuthSession,

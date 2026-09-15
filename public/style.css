@@ -3052,6 +3052,42 @@ body.panel-open .side-panel {
   margin-top: 16px;
 }
 
+/* Inline text actions inside the account forms ("Forgot password?", "Resend
+   code", "Back to log in"). A <button> rather than an <a> so it is keyboard
+   reachable and never navigates away from the modal. */
+.account-link {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  color: var(--accent-2);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+}
+
+.account-link:hover {
+  text-decoration: underline;
+}
+
+.account-link:disabled {
+  color: var(--muted);
+  cursor: default;
+  text-decoration: none;
+}
+
+/* The 6-digit reset code: wide spacing so a code read off a phone is easy to
+   check against what was typed. */
+.otp-input {
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 8px;
+}
+
 .account-logout {
   width: 100%;
   margin-top: 18px;

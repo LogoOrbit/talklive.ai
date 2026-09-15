@@ -6,6 +6,8 @@ A random audio chat app - pairs strangers for live, audio-only conversations. Bu
 
 - One-tap random matchmaking (no sign up required)
 - Optional account sign up/log in, including "Sign Up / Continue with Google"
+- Password recovery by emailed one-time code, so an account is never lost to a
+  forgotten password (see [Forgot password](#forgot-password-email-otp))
 - Peer-to-peer audio over WebRTC (low latency, not routed through the server)
 - "Next Stranger" to skip and instantly requeue
 - Mute/unmute mic
@@ -42,6 +44,42 @@ The app works fully without this - the Google button just won't be shown.
    ```bash
    GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com npm start
    ```
+
+### Forgot password (email OTP)
+
+An account is a username and a password, so the one thing that can lose it
+forever is a forgotten password. Every account can therefore carry an optional
+**recovery email** - set at sign-up, or later under My Account, and filled in
+automatically for accounts created through Google. It is never shown to other
+users and is never mailed anything but reset codes.
+
+The flow, all over the existing Socket.IO connection:
+
+1. **`forgot-password`** - the user enters their email. If it belongs to an
+   account, a random 6-digit code is emailed to it. The reply is identical
+   whether or not the address is on an account: on an anonymous chat product,
+   "no account with that email" would be a membership oracle for any address
+   someone cares to type.
+2. **`verify-reset-code`** - the code buys a short-lived reset token. The code
+   is good for 10 minutes, survives 5 wrong guesses, and cannot be replayed.
+3. **`reset-password`** - the token is spent once to set the new password. Every
+   other session of that account is signed out, and the device that did the
+   reset is signed straight in.
+
+Codes and tokens are stored only as SHA-256 hashes, in a `password_resets`
+table in Supabase Postgres when `DATABASE_URL` is set (created by the server at
+boot, like `owner_store`) and in the JSON store otherwise. Requests are
+throttled per email address and per IP.
+
+Delivery needs `SMTP_USER` / `SMTP_PASS` (the same Gmail app password the owner
+alerts use). Without them the flow is refused in production; in development the
+code is printed to the server console instead, which is what
+`npm run test:reset` drives:
+
+```bash
+DATA_DIR=/tmp/tl-reset PORT=5098 node server/index.js > /tmp/tl.log 2>&1 &
+URL=http://localhost:5098 LOG=/tmp/tl.log npm run test:reset
+```
 
 ## How it works
 
@@ -87,7 +125,8 @@ A secured owner dashboard lives at **`/owner`** (e.g. `https://talklive.app/owne
 | Var | Purpose |
 |---|---|
 | `OWNER_EMAIL` | Where report/feedback/error alert emails go |
-| `SMTP_USER` / `SMTP_PASS` | Gmail address + **app password** (Google Account → Security → 2-Step Verification → App passwords) |
+| `SMTP_USER` / `SMTP_PASS` | Gmail address + **app password** (Google Account → Security → 2-Step Verification → App passwords). Also sends users their password-reset codes |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_FROM_NAME` | Optional SMTP overrides (default `smtp.gmail.com`, `465`, `TalkLive`) |
 | `DATA_DIR` | Directory for the JSON store (default `./data`). In production `fly.toml` sets it to `/data`, but **no volume is mounted there**, so it is an ordinary directory inside the container and everything in it is destroyed on each deploy. The server detects this at boot, logs it prominently, emails the owner and flags it on the `/owner` screen. The fix is `DATABASE_URL` (Postgres) — see `DEPLOY-FLY.md` and `CODEX-HANDOFF.md`. |
 | `PREMIUM_CLIENT_IDS` | Comma-separated clientIds to grant premium manually (testing) |
 | `LANDING_HOST` | Optional subdomain (e.g. `start.talklive.app`) whose root serves the marketing landing page (`/landing`) |
