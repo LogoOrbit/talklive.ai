@@ -352,8 +352,11 @@
   // ---------------------------------------------------------------------------
   // Flow control
   // ---------------------------------------------------------------------------
-  function register() {
+  // takeover: this tab is the one the user is looking at, so the server should
+  // move the identity here even if another tab still answers for it.
+  function register(takeover) {
     socket.emit('register', {
+      takeover: !!takeover,
       clientId: getClientId(),
       // Both pages share one client id, and the server binds that id to a
       // signed token the first time it sees it. Registering without the token
@@ -1164,9 +1167,38 @@
   // Same reasoning as the call app: a refusal now means "this identity is live
   // somewhere else right now", and rotating the clientId would orphan this
   // person's friends, friend chats and history. Retry first, rotate last.
+  // Answering this is how the server tells a live tab from a dead socket before
+  // moving the identity; see the register handler in server/index.js.
+  socket.on('identity-ping', function (ack) { if (typeof ack === 'function') ack(); });
+
+  // The tab being looked at claims the identity; a background tab waits.
+  var lastTakeoverAt = 0;
+  function claimIdentityWhenVisible() {
+    function claim() {
+      if (document.visibilityState !== 'visible') return watchForVisible();
+      if (Date.now() - lastTakeoverAt < 10000) return;
+      lastTakeoverAt = Date.now();
+      if (socket.connected) register(true);
+    }
+    function watchForVisible() {
+      document.addEventListener('visibilitychange', function onVis() {
+        if (document.visibilityState !== 'visible') return;
+        document.removeEventListener('visibilitychange', onVis);
+        claim();
+      });
+    }
+    if (document.visibilityState === 'visible') setTimeout(claim, 600);
+    else watchForVisible();
+  }
+
   var identityRetries = 0;
   socket.on('register-result', function (res) {
     if (!res || res.ok !== false) { identityRetries = 0; return; }
+    if (res.reason === 'active-elsewhere') {
+      identityRetries = 0;
+      claimIdentityWhenVisible();
+      return;
+    }
     if (identityRetries < 4) {
       identityRetries += 1;
       setTimeout(function () { if (socket.connected) register(); }, 1500 * identityRetries);

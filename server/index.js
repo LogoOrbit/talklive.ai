@@ -2549,7 +2549,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('register', (data = {}) => {
+  socket.on('register', async (data = {}) => {
     // Only accept well-formed client IDs: they are echoed back to other users'
     // browsers inside HTML attributes (friends list, notifications), so an
     // arbitrary string here would be a stored-XSS vector.
@@ -2586,19 +2586,52 @@ io.on('connection', (socket) => {
       // Anyone presenting a valid signed identity token is the same user, so
       // hand the identity to the live socket and drop the stale one instead of
       // turning the newcomer away.
-      if (tokenOk) {
-        const stale = io.sockets.sockets.get(existingSocketId);
-        if (stale) {
-          disconnectPartner(existingSocketId);
-          clearFromQueue(existingSocketId);
-          clearWaitFallbackTimer(existingSocketId);
-          profiles.delete(existingSocketId);
-          stale.disconnect(true);
-        }
-        clientSockets.delete(clientId);
-      } else {
-        return socket.emit('register-result', { ok: false, error: 'Client identity is already active.' });
+      //
+      // But "the same user" covers two very different situations, and taking
+      // the identity in the wrong one is what made buttons look dead: a phone
+      // reconnecting after its old socket died (take over - the old socket is
+      // never coming back), and the same person with the app open in a second
+      // tab (do not - kicking the other tab just makes it reconnect and kick
+      // this one straight back, and whichever tab is losing that exchange has a
+      // socket that keeps dropping, so everything it sends is silently buffered
+      // and every button in it does nothing).
+      //
+      // Asking the incumbent to answer a ping tells the two apart exactly: a
+      // dead socket cannot reply. An older client that does not know the ping
+      // also cannot, so it is treated as dead - which is simply the behaviour
+      // this had before.
+      const incumbent = io.sockets.sockets.get(existingSocketId);
+      const incumbentAlive = (tokenOk && incumbent && !data.takeover)
+        ? await new Promise((resolve) => {
+          let settled = false;
+          const done = (alive) => { if (!settled) { settled = true; resolve(alive); } };
+          try {
+            incumbent.timeout(2000).emit('identity-ping', (err) => done(!err));
+          } catch (_) { done(false); }
+          setTimeout(() => done(false), 2500);
+        })
+        : false;
+
+      if (!tokenOk || incumbentAlive) {
+        // `reason` lets the client say something true instead of retrying into
+        // a loop: the foreground tab re-registers with takeover, the background
+        // one waits until it is looked at again.
+        return socket.emit('register-result', {
+          ok: false,
+          error: 'Client identity is already active.',
+          reason: incumbentAlive ? 'active-elsewhere' : 'contested',
+        });
       }
+
+      const stale = io.sockets.sockets.get(existingSocketId);
+      if (stale) {
+        disconnectPartner(existingSocketId);
+        clearFromQueue(existingSocketId);
+        clearWaitFallbackTimer(existingSocketId);
+        profiles.delete(existingSocketId);
+        stale.disconnect(true);
+      }
+      clientSockets.delete(clientId);
     }
     const issuedIdentityToken = signIdentity(clientId);
     identityTokens.set(clientId, issuedIdentityToken);

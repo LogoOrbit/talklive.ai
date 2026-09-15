@@ -1421,7 +1421,33 @@ currentPasswordInput.addEventListener('input', syncPasswordBtnState);
 newPasswordInput.addEventListener('input', syncPasswordBtnState);
 syncPasswordBtnState();
 
+// Log in and Create Account are the two buttons whose whole job is to talk to
+// the server, so they must never look inert. A tap that lands while the socket
+// is down used to do nothing at all - socket.io quietly buffers the emit and
+// there is no reply to react to - which reads exactly like a broken button.
+let accountReplyTimer = null;
+function beginAccountRequest(button) {
+  if (!socket.connected) {
+    showAccountStatus(t('errNoConnection'), 'error');
+    return false;
+  }
+  button.disabled = true;
+  clearTimeout(accountReplyTimer);
+  accountReplyTimer = setTimeout(() => {
+    endAccountRequest();
+    showAccountStatus(t('errNoServerReply'), 'error');
+  }, 9000);
+  return true;
+}
+function endAccountRequest() {
+  clearTimeout(accountReplyTimer);
+  accountReplyTimer = null;
+  loginSubmitBtn.disabled = false;
+  signupSubmitBtn.disabled = false;
+}
+
 loginSubmitBtn.addEventListener('click', () => {
+  if (!beginAccountRequest(loginSubmitBtn)) return;
   socket.emit('login', { username: loginUsername.value.trim(), password: loginPassword.value });
 });
 
@@ -1452,6 +1478,7 @@ signupSubmitBtn.addEventListener('click', () => {
     markInvalidField(signupUsername);
     return;
   }
+  if (!beginAccountRequest(signupSubmitBtn)) return;
   socket.emit('signup', {
     username,
     password: signupPassword.value,
@@ -1641,6 +1668,7 @@ function storeLogin(nickname, token) {
 }
 
 socket.on('login-result', ({ ok, nickname, email, error, sessionToken: token }) => {
+  endAccountRequest();
   if (!ok) return showAccountStatus(error, 'error');
   storeLogin(nickname, token);
   storeAccountEmail(email);
@@ -1649,6 +1677,7 @@ socket.on('login-result', ({ ok, nickname, email, error, sessionToken: token }) 
 });
 
 socket.on('signup-result', ({ ok, nickname, email, error, sessionToken: token }) => {
+  endAccountRequest();
   if (!ok) {
     showAccountStatus(error, 'error');
     // Point at the field the server is complaining about.
@@ -2473,10 +2502,50 @@ socket.on('needs-register', () => {
 // friends, friend chats, call history and premium attached to the old one are
 // orphaned. So retry the same identity a few times first, and only rotate if it
 // truly stays claimed.
+// The server asks the socket that currently holds this identity to prove it is
+// still alive before handing the identity to anyone else. Answering is the
+// whole contract.
+socket.on('identity-ping', (ack) => { if (typeof ack === 'function') ack(); });
+
+// Whichever copy of the app the user is actually looking at should own the
+// identity; a tab sitting in the background waits its turn rather than kicking
+// the foreground one and starting a fight neither wins. Rate-limited so two
+// visible windows on a desktop settle instead of trading it forever.
+let lastTakeoverAt = 0;
+let takeoverPending = false;
+function claimIdentityWhenVisible() {
+  if (takeoverPending || !lastRegisterPayload) return;
+  const claim = () => {
+    takeoverPending = false;
+    if (document.visibilityState !== 'visible') return watchForVisible();
+    if (Date.now() - lastTakeoverAt < 10000) return;
+    lastTakeoverAt = Date.now();
+    if (socket.connected) socket.emit('register', { ...lastRegisterPayload, takeover: true });
+  };
+  const watchForVisible = () => {
+    takeoverPending = true;
+    document.addEventListener('visibilitychange', function onVis() {
+      if (document.visibilityState !== 'visible') return;
+      document.removeEventListener('visibilitychange', onVis);
+      takeoverPending = false;
+      claim();
+    });
+  };
+  if (document.visibilityState === 'visible') { takeoverPending = true; setTimeout(claim, 600); }
+  else watchForVisible();
+}
+
 let identityRetries = 0;
-socket.on('register-result', ({ ok } = {}) => {
+socket.on('register-result', ({ ok, reason } = {}) => {
   if (ok !== false) { identityRetries = 0; return; }
   if (!lastRegisterPayload) return;
+  // Another live copy of the app holds this identity - not a stuck client, so
+  // retrying on a timer would only spin.
+  if (reason === 'active-elsewhere') {
+    identityRetries = 0;
+    claimIdentityWhenVisible();
+    return;
+  }
   if (identityRetries < 4) {
     identityRetries += 1;
     setTimeout(() => {

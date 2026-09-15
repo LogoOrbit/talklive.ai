@@ -172,6 +172,8 @@ const I18N_STRINGS = {
     "labelPassword": "Password",
     "labelRecoveryEmail": "Recovery email (optional)",
     "errUsernameIsEmail": "That is an email address. Your username goes in the first box - put the email in the last one.",
+    "errNoConnection": "You are offline at the moment. The app is reconnecting - try again in a few seconds.",
+    "errNoServerReply": "The server did not answer. Check your connection and try again.",
     "recoveryEmailHint": "Only used to send you a reset code if you forget your password. Never shown to anyone.",
     "recoveryEmailSet": "Reset codes go to {email}.",
     "recoveryEmailMissing": "No recovery email yet - add one so you can never lose this account.",
