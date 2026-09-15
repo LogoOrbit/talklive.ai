@@ -2905,12 +2905,25 @@ body.panel-open .side-panel {
 
 .chat-form input {
   flex: 1;
+  /* Without this the input cannot shrink below its intrinsic width, so on a
+     320px phone the composer row overflows its panel instead of the text field
+     giving way to the buttons beside it. */
+  min-width: 0;
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 999px;
   padding: 12px 18px;
   color: var(--text);
   font-size: 16px; /* >=16px prevents iOS input zoom */
+}
+
+/* Narrow phones: the composer now also carries the emoji and GIF buttons, so
+   tighten everything that is not the input itself. */
+@media (max-width: 380px) {
+  .chat-form { gap: 5px; padding: 8px 6px; }
+  .chat-form input { padding: 12px 14px; }
+  .chat-form .cx-btn { min-width: 32px; padding: 0 2px; }
+  .chat-send { padding: 13px 14px; }
 }
 
 .chat-form input:focus {

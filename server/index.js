@@ -914,6 +914,127 @@ app.get('/ads-config.json', (req, res) => {
   res.json(ADS_CONFIG);
 });
 
+// --- GIF search (Tenor) ------------------------------------------------------
+//
+// Proxied rather than called from the browser for three reasons: the API key
+// never ships to the client, every response is cached here so a hundred people
+// typing "lol" cost one upstream call, and we hand the client a trimmed payload
+// (two URLs and a size) instead of Tenor's ~4 kB-per-result JSON - which is what
+// keeps the picker usable on a slow phone.
+//
+// Without TENOR_API_KEY the feature reports itself disabled and the clients hide
+// the GIF button entirely, so an unconfigured deploy shows no dead UI.
+const TENOR_KEY = process.env.TENOR_API_KEY || '';
+const TENOR_CLIENT = process.env.TENOR_CLIENT_KEY || 'talklive';
+// contentfilter=high is Tenor's strictest tier. On a product that pairs
+// strangers anonymously this is not a preference, it is the only defensible
+// default.
+const TENOR_FILTER = 'high';
+const GIF_LIMIT = 18;
+const GIF_CACHE_TTL = 10 * 60 * 1000;
+const GIF_CACHE_MAX = 300;
+const gifCache = new Map(); // key -> { expires, body }
+
+function gifCacheGet(key) {
+  const hit = gifCache.get(key);
+  if (!hit) return null;
+  if (hit.expires < Date.now()) { gifCache.delete(key); return null; }
+  // Refresh LRU position so popular searches survive eviction.
+  gifCache.delete(key);
+  gifCache.set(key, hit);
+  return hit.body;
+}
+
+function gifCacheSet(key, body) {
+  gifCache.set(key, { expires: Date.now() + GIF_CACHE_TTL, body });
+  while (gifCache.size > GIF_CACHE_MAX) gifCache.delete(gifCache.keys().next().value);
+}
+
+// Per-IP sliding window. The picker debounces and caches client-side, so a real
+// user never comes close to this; a script hammering it does.
+const gifRate = new Map(); // ip -> { start, n }
+function gifRateOk(ip) {
+  const now = Date.now();
+  let rl = gifRate.get(ip);
+  if (!rl || now - rl.start > 60000) { rl = { start: now, n: 0 }; gifRate.set(ip, rl); }
+  return ++rl.n <= 40;
+}
+setInterval(() => {
+  const cutoff = Date.now() - 120000;
+  for (const [ip, rl] of gifRate) if (rl.start < cutoff) gifRate.delete(ip);
+}, 120000).unref();
+
+// Trim a Tenor result to what the picker actually renders: a small preview for
+// the grid and a full-size GIF for the bubble. Anything missing a usable format
+// is dropped rather than rendered as a broken tile.
+function tenorItem(r) {
+  const f = (r && r.media_formats) || {};
+  const full = f.tinygif || f.gif || f.mediumgif;
+  const preview = f.nanogif || f.tinygif || full;
+  if (!full || !full.url || !preview || !preview.url) return null;
+  const dims = Array.isArray(full.dims) ? full.dims : [];
+  return {
+    url: full.url,
+    preview: preview.url,
+    w: Number(dims[0]) || 0,
+    h: Number(dims[1]) || 0,
+    alt: String(r.content_description || '').slice(0, 80),
+  };
+}
+
+async function tenorFetch(endpoint, params) {
+  const url = new URL('https://tenor.googleapis.com/v2/' + endpoint);
+  url.searchParams.set('key', TENOR_KEY);
+  url.searchParams.set('client_key', TENOR_CLIENT);
+  url.searchParams.set('contentfilter', TENOR_FILTER);
+  url.searchParams.set('media_filter', 'tinygif,nanogif');
+  url.searchParams.set('limit', String(GIF_LIMIT));
+  for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
+  // A stuck upstream must not hold a socket open: give up and let the client
+  // show "no results" rather than spinning forever.
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 6000);
+  try {
+    const resp = await fetch(url, { signal: ctl.signal });
+    if (!resp.ok) throw new Error('tenor ' + resp.status);
+    const json = await resp.json();
+    return { results: (json.results || []).map(tenorItem).filter(Boolean) };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+app.get('/api/gifs/config', (req, res) => {
+  res.set('Cache-Control', 'public, max-age=3600');
+  res.json({ enabled: !!TENOR_KEY });
+});
+
+app.get('/api/gifs', async (req, res) => {
+  if (!TENOR_KEY) return res.status(503).json({ enabled: false, results: [] });
+  if (!gifRateOk(clientIp(req))) return res.status(429).json({ results: [] });
+  const q = String(req.query.q || '').trim().slice(0, 50);
+  // Locale only ever reaches Tenor as a language tag we recognise, never raw
+  // query input.
+  const locale = /^[a-z]{2}$/.test(String(req.query.lang || '')) ? String(req.query.lang) : 'en';
+  const key = (q ? 's:' + q.toLowerCase() : 'featured') + '|' + locale;
+  const cached = gifCacheGet(key);
+  if (cached) {
+    res.set('Cache-Control', 'public, max-age=600');
+    return res.json(cached);
+  }
+  try {
+    const body = q
+      ? await tenorFetch('search', { q, locale, random: 'false' })
+      : await tenorFetch('featured', { locale });
+    gifCacheSet(key, body);
+    res.set('Cache-Control', 'public, max-age=600');
+    res.json(body);
+  } catch (err) {
+    console.warn('[gifs] lookup failed:', err.message);
+    res.status(502).json({ results: [] });
+  }
+});
+
 app.use(
   express.static(PUBLIC_DIR, {
     // Serve clean URLs: /talk-to-strangers resolves to talk-to-strangers.html.
@@ -1225,6 +1346,53 @@ function containsLink(text) {
 // Clearly illegal / scam content is blocked in stranger chat (mirrors the
 // client-side filter) so the text pool stays legally safe.
 const UNSAFE_RE = /\b(child\s*porn|cp\s*trade|loli(?:con)?|jailbait|sell(?:ing)?\s+(?:drugs|guns|weapons)|buy\s+(?:drugs|cocaine|heroin|meth|fentanyl)|hire\s*(?:a\s*)?hitman|credit\s*card\s*numbers?|send\s+nudes|onlyfans|escort\s*service|invest\s+in\s+(?:crypto|bitcoin)|gift\s*cards?\s+for)\b/i;
+
+// --- Rich message parts: ids, replies, GIFs, reactions ----------------------
+//
+// A chat message used to be a bare string on the wire. It is now either that
+// (older clients still in someone's cache) or an object, so every reader below
+// goes through readChatPayload rather than trusting the shape.
+const MSG_ID_RE = /^[A-Za-z0-9_-]{1,24}$/;
+// GIFs may only ever point at Tenor's own CDN. The picker gets its URLs from
+// our proxy, so anything else arriving here is a client that has been tampered
+// with trying to make us relay an arbitrary remote image.
+const TENOR_URL_RE = /^https:\/\/(?:[a-z0-9-]+\.)*tenor\.com\/[A-Za-z0-9._~:/?#[\]@!$&'()*+,;=%-]+$/i;
+// The reaction set is fixed. An open emoji field is a free text channel that
+// bypasses every filter above it.
+const REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
+const REACTION_SET = new Set(REACTIONS);
+
+function cleanMsgId(v) {
+  return typeof v === 'string' && MSG_ID_RE.test(v) ? v : null;
+}
+
+function cleanGif(g) {
+  if (!g || typeof g !== 'object') return null;
+  const url = String(g.url || '');
+  const preview = String(g.preview || url);
+  if (url.length > 400 || preview.length > 400) return null;
+  if (!TENOR_URL_RE.test(url) || !TENOR_URL_RE.test(preview)) return null;
+  const dim = (v) => Math.min(800, Math.max(0, Math.round(Number(v) || 0)));
+  return { url, preview, w: dim(g.w), h: dim(g.h), alt: String(g.alt || '').slice(0, 80) };
+}
+
+// Normalizes both wire shapes into one record. Returns null for anything that
+// carries neither text nor a GIF - there is nothing to deliver.
+function readChatPayload(raw) {
+  const obj = typeof raw === 'string' ? { text: raw } : raw;
+  if (!obj || typeof obj !== 'object') return null;
+  const text = typeof obj.text === 'string' ? obj.text.trim().slice(0, 1000) : '';
+  const gif = cleanGif(obj.gif);
+  if (!text && !gif) return null;
+  return { text, gif, id: cleanMsgId(obj.id), replyTo: cleanMsgId(obj.replyTo) };
+}
+
+// What the owner dashboard stores for a GIF-only message, so moderation sees
+// something meaningful instead of an empty row.
+function transcriptText(msg) {
+  if (msg.text) return msg.text;
+  return '[GIF] ' + (msg.gif.alt || msg.gif.url);
+}
 // Reported client errors that are not our code and not actionable: browser
 // extensions injecting into the page, in-app webviews tearing down their JS
 // bridge, opaque cross-origin script errors and autoplay-policy rejections.
@@ -1244,6 +1412,8 @@ const ERROR_NOISE = [
 
 // socket.id -> { start, n } sliding 5s window for the chat bot-flood guard.
 const chatRate = new Map();
+// Same shape, separate budget for reactions - a tap is not a message.
+const reactRate = new Map();
 
 // scrypt is deliberately expensive (~80-100ms here). The synchronous form runs
 // that on the event loop, which this process shares with every live call's
@@ -2761,39 +2931,64 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('chat-message', (text) => {
+  socket.on('chat-message', (raw) => {
     const partnerId = partners.get(socket.id);
-    if (partnerId && typeof text === 'string' && text.trim()) {
-      if (containsLink(text)) {
-        return socket.emit('chat-blocked', { reason: 'link' });
-      }
-      if (UNSAFE_RE.test(text)) {
-        return socket.emit('chat-blocked', { reason: 'unsafe' });
-      }
-      // Bot-flood guard: humans don't send 8+ messages in 5 seconds.
-      const now = Date.now();
-      let rl = chatRate.get(socket.id);
-      if (!rl || now - rl.start > 5000) { rl = { start: now, n: 0 }; chatRate.set(socket.id, rl); }
-      if (++rl.n > 8) return;
-      const clean = text.trim().slice(0, 1000);
-      store.recordFeature('chat_message');
-      store.recordTopics(clean);
-      const me = profiles.get(socket.id);
-      const them = profiles.get(partnerId);
-      if (me && them) {
-        store.addTranscript({
-          kind: 'stranger',
-          pair: pairKey(me.clientId, them.clientId),
-          from: me.username,
-          fromClientId: me.clientId,
-          to: them.username,
-          toClientId: them.clientId,
-          country: me.countryName,
-          text: clean,
-        });
-      }
-      io.to(partnerId).emit('chat-message', { text: clean });
+    if (!partnerId) return;
+    const msg = readChatPayload(raw);
+    if (!msg) return;
+    // A GIF carries a tenor.com URL by definition, so the link filter only
+    // applies to what the user actually typed.
+    if (msg.text && containsLink(msg.text)) {
+      return socket.emit('chat-blocked', { reason: 'link' });
     }
+    if (msg.text && UNSAFE_RE.test(msg.text)) {
+      return socket.emit('chat-blocked', { reason: 'unsafe' });
+    }
+    // Bot-flood guard: humans don't send 8+ messages in 5 seconds.
+    const now = Date.now();
+    let rl = chatRate.get(socket.id);
+    if (!rl || now - rl.start > 5000) { rl = { start: now, n: 0 }; chatRate.set(socket.id, rl); }
+    if (++rl.n > 8) return;
+    store.recordFeature('chat_message');
+    if (msg.gif) store.recordFeature('chat_gif');
+    if (msg.replyTo) store.recordFeature('chat_reply');
+    if (msg.text) store.recordTopics(msg.text);
+    const me = profiles.get(socket.id);
+    const them = profiles.get(partnerId);
+    if (me && them) {
+      store.addTranscript({
+        kind: 'stranger',
+        pair: pairKey(me.clientId, them.clientId),
+        from: me.username,
+        fromClientId: me.clientId,
+        to: them.username,
+        toClientId: them.clientId,
+        country: me.countryName,
+        text: transcriptText(msg),
+        msgId: msg.id || undefined,
+        replyTo: msg.replyTo || undefined,
+      });
+    }
+    io.to(partnerId).emit('chat-message', {
+      text: msg.text, id: msg.id, replyTo: msg.replyTo, gif: msg.gif,
+    });
+  });
+
+  // Reactions on a stranger message. Pure relay: the pair is live, both sides
+  // hold the same message list in memory, and nothing is worth persisting once
+  // the call ends.
+  socket.on('chat-reaction', ({ id, emoji, on } = {}) => {
+    const partnerId = partners.get(socket.id);
+    const msgId = cleanMsgId(id);
+    if (!partnerId || !msgId || !REACTION_SET.has(emoji)) return;
+    // Tapping a reaction is cheap for a human and cheaper for a script, so it
+    // gets its own budget rather than eating into the message allowance.
+    const now = Date.now();
+    let rl = reactRate.get(socket.id);
+    if (!rl || now - rl.start > 5000) { rl = { start: now, n: 0 }; reactRate.set(socket.id, rl); }
+    if (++rl.n > 25) return;
+    if (on) store.recordFeature('chat_reaction');
+    io.to(partnerId).emit('chat-reaction', { id: msgId, emoji, on: !!on });
   });
 
   socket.on('typing', () => {
@@ -2910,10 +3105,11 @@ io.on('connection', (socket) => {
   });
 
   // --- Friend-to-friend chat (separate from the ephemeral in-call chat) ---
-  socket.on('friend-message', ({ toClientId, text } = {}) => {
+  socket.on('friend-message', (payload = {}) => {
     const me = profiles.get(socket.id);
-    toClientId = validId(toClientId);
-    if (!me || !toClientId || typeof text !== 'string' || !text.trim()) return;
+    const toClientId = validId(payload && payload.toClientId);
+    const parsed = readChatPayload(payload);
+    if (!me || !toClientId || !parsed) return;
     // Friends can always message; so can two people who recently chatted at
     // random (the "message back from history" path), even without a friendship.
     if (!isFriend(me.clientId, toClientId) && !hasChatHistory(me.clientId, toClientId)) return;
@@ -2921,13 +3117,13 @@ io.on('connection', (socket) => {
     // Friends can message each other any time - no call required. If the friend
     // is offline the message is still stored and a notification is queued, so it
     // reaches them the next time they come online.
-    if (containsLink(text)) {
+    if (parsed.text && containsLink(parsed.text)) {
       return socket.emit('chat-blocked', { reason: 'link' });
     }
-    if (UNSAFE_RE.test(text)) {
+    if (parsed.text && UNSAFE_RE.test(parsed.text)) {
       return socket.emit('chat-blocked', { reason: 'unsafe' });
     }
-    const trimmed = text.trim().slice(0, 1000);
+    const trimmed = parsed.text;
     const friendInfo = (friends.get(me.clientId) || new Map()).get(toClientId);
     store.addTranscript({
       kind: 'friend',
@@ -2937,27 +3133,88 @@ io.on('connection', (socket) => {
       to: friendInfo ? friendInfo.username : toClientId,
       toClientId,
       country: me.countryName,
-      text: trimmed,
+      text: transcriptText(parsed),
+      msgId: parsed.id || undefined,
+      replyTo: parsed.replyTo || undefined,
     });
     const key = pairKey(me.clientId, toClientId);
     if (!friendChats.has(key)) friendChats.set(key, []);
-    const msg = { from: me.clientId, text: trimmed, ts: Date.now() };
+    // Stored ids are what replies and reactions point at after a reload, so a
+    // client that sent none gets one here rather than an unaddressable message.
+    const msg = {
+      from: me.clientId,
+      text: trimmed,
+      ts: Date.now(),
+      id: parsed.id || 'm' + Math.random().toString(36).slice(2, 10),
+    };
+    if (parsed.replyTo) msg.replyTo = parsed.replyTo;
+    if (parsed.gif) msg.gif = parsed.gif;
     const list = friendChats.get(key);
     list.push(msg);
     if (list.length > 200) list.shift();
     persistSocial();
+    if (parsed.gif) store.recordFeature('chat_gif');
+    if (parsed.replyTo) store.recordFeature('chat_reply');
 
+    const wire = {
+      fromClientId: me.clientId,
+      text: trimmed,
+      ts: msg.ts,
+      id: msg.id,
+      replyTo: msg.replyTo || null,
+      gif: msg.gif || null,
+    };
     const targetSocket = getSocketByClientId(toClientId);
-    if (targetSocket) targetSocket.emit('friend-message', { fromClientId: me.clientId, text: trimmed, ts: msg.ts });
+    if (targetSocket) targetSocket.emit('friend-message', wire);
 
     pushNotification(toClientId, {
       type: 'message',
       fromClientId: me.clientId,
       username: me.username,
-      text: trimmed,
+      text: trimmed || '[GIF]',
     });
 
-    socket.emit('friend-message-sent', { toClientId, text: trimmed, ts: msg.ts });
+    socket.emit('friend-message-sent', {
+      toClientId, text: trimmed, ts: msg.ts, id: msg.id, replyTo: msg.replyTo || null, gif: msg.gif || null,
+    });
+  });
+
+  // Reactions on a stored friend message. Unlike stranger reactions these are
+  // persisted, so they survive a reload on both sides - a reaction that vanishes
+  // when you reopen the chat reads as a bug.
+  socket.on('friend-reaction', ({ toClientId, id, emoji, on } = {}) => {
+    const me = profiles.get(socket.id);
+    toClientId = validId(toClientId);
+    const msgId = cleanMsgId(id);
+    if (!me || !toClientId || !msgId || !REACTION_SET.has(emoji)) return;
+    if (!isFriend(me.clientId, toClientId) && !hasChatHistory(me.clientId, toClientId)) return;
+    if (isBlockedPair(me.clientId, toClientId)) return;
+    const now = Date.now();
+    let rl = reactRate.get(socket.id);
+    if (!rl || now - rl.start > 5000) { rl = { start: now, n: 0 }; reactRate.set(socket.id, rl); }
+    if (++rl.n > 25) return;
+
+    const list = friendChats.get(pairKey(me.clientId, toClientId));
+    const msg = list && list.find((m) => m.id === msgId);
+    if (!msg) return;
+    // reactions: emoji -> array of clientIds, so each side can tell its own
+    // reaction from the other's and toggle only its own.
+    if (!msg.reactions) msg.reactions = {};
+    const who = msg.reactions[emoji] || [];
+    const has = who.indexOf(me.clientId) !== -1;
+    if (on && !has) msg.reactions[emoji] = who.concat(me.clientId);
+    else if (!on && has) {
+      const left = who.filter((c) => c !== me.clientId);
+      if (left.length) msg.reactions[emoji] = left; else delete msg.reactions[emoji];
+    } else return;
+    if (!Object.keys(msg.reactions).length) delete msg.reactions;
+    persistSocial();
+    if (on) store.recordFeature('chat_reaction');
+
+    const targetSocket = getSocketByClientId(toClientId);
+    if (targetSocket) {
+      targetSocket.emit('friend-reaction', { fromClientId: me.clientId, id: msgId, emoji, on: !!on });
+    }
   });
 
   socket.on('get-friend-chat', ({ friendClientId } = {}) => {
@@ -3211,6 +3468,7 @@ io.on('connection', (socket) => {
     // counter accumulates one entry per socket that ever sent a message and is
     // never reclaimed.
     chatRate.delete(socket.id);
+    reactRate.delete(socket.id);
     broadcastOnlineCount();
   });
 });
@@ -3272,6 +3530,9 @@ function sweepEphemeralState() {
   // Rate-limit records for sockets that are already gone.
   for (const socketId of chatRate.keys()) {
     if (!io.sockets.sockets.has(socketId)) chatRate.delete(socketId);
+  }
+  for (const socketId of reactRate.keys()) {
+    if (!io.sockets.sockets.has(socketId)) reactRate.delete(socketId);
   }
 }
 

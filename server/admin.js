@@ -478,18 +478,151 @@ function createAdmin({ io, getRuntime, kickBanned }) {
     res.json({ accounts });
   });
 
-  // Chat transcripts, filterable by username/clientId substring, grouped into
-  // conversations client-side.
-  router.get('/api/transcripts', (req, res) => {
-    const q = String(req.query.q || '').toLowerCase();
-    let list = store.data.transcripts;
-    if (q) {
-      list = list.filter((m) => (m.from || '').toLowerCase().includes(q)
-        || (m.to || '').toLowerCase().includes(q)
-        || (m.fromClientId || '').toLowerCase().includes(q)
-        || (m.text || '').toLowerCase().includes(q));
+  // --- Chat transcripts -----------------------------------------------------
+  //
+  // Reading chat for quality is a conversation-level job, not a message-level
+  // one: a flat feed of the newest 500 lines from 200 different pairs cannot be
+  // read at all. So the store is folded into conversations here, each one
+  // scored, and the client asks for the messages of a single conversation only
+  // when it opens it. That keeps the list response a few kB no matter how much
+  // is stored, which is what makes the tab usable on a phone.
+
+  // Patterns worth an operator's attention, cheapest and most specific first.
+  // These are triage hints for a human, never an automated action - so they are
+  // deliberately broad, and a false positive costs one glance.
+  const RISK_RULES = [
+    ['minor', /\b(?:i(?:'?m| am)|im)\s*(?:only\s*)?(?:1[0-7]|[89])\b|\b(?:1[0-7]|[89])\s*(?:yo|y\/o|years? old)\b|\b(?:what'?s? your |ur |how old)\s*(?:age|are you)\b/i],
+    ['sexual', /\b(nudes?|sext(?:ing)?|horny|dick\s*pic|boobs|naked|cam\s*sex|snapchat\s*nudes)\b/i],
+    ['contact', /\b(whats\s*app|whatsapp|telegram|snap(?:chat)?|insta(?:gram)?|discord|kik|@[a-z0-9._]{3,}|\+?\d[\d\s().-]{7,}\d)\b/i],
+    ['link', /(https?:\/\/|www\.|\b[a-z0-9-]+\.(?:com|net|org|io|xyz|ru|link|gg|me|app)\b)/i],
+    ['money', /\b(bitcoin|crypto|invest(?:ment)?|paypal|cash\s*app|gift\s*card|send\s*money|western\s*union)\b/i],
+    ['abuse', /\b(kill\s*your\s*self|kys|nigg|faggot|retard|rape|bitch|whore)\b/i],
+  ];
+  // Anything in these two is worth looking at first; the rest is context.
+  const SEVERE = new Set(['minor', 'sexual', 'abuse']);
+
+  function riskFlags(text) {
+    const s = String(text || '');
+    const out = [];
+    for (const [name, re] of RISK_RULES) if (re.test(s)) out.push(name);
+    return out;
+  }
+
+  // Folds the flat transcript store into conversations, newest activity first.
+  // `store.data.transcripts` is newest-first and capped at 5000, so this is a
+  // single pass over a bounded list.
+  function buildConversations() {
+    const byPair = new Map();
+    for (const m of store.data.transcripts) {
+      const key = m.pair || `${m.fromClientId}|${m.toClientId}`;
+      let c = byPair.get(key);
+      if (!c) {
+        c = {
+          pair: key,
+          kind: m.kind || 'stranger',
+          country: m.country || '',
+          count: 0,
+          start: m.ts,
+          end: m.ts,
+          // clientId -> display name, so a conversation knows both sides even
+          // when only one of them ever sent anything.
+          people: new Map(),
+          senders: new Set(),
+          flags: new Set(),
+          severe: 0,
+          // The store is newest-first, so the message that creates the
+          // conversation is its most recent one - seed the preview from it here
+          // rather than waiting for a later message to beat c.end, which by
+          // construction none of them can.
+          preview: String(m.text || '').slice(0, 120),
+          messages: [],
+        };
+        byPair.set(key, c);
+      }
+      const flags = riskFlags(m.text);
+      for (const f of flags) {
+        c.flags.add(f);
+        if (SEVERE.has(f)) c.severe++;
+      }
+      c.count++;
+      if (m.ts > c.end) { c.end = m.ts; c.preview = String(m.text || '').slice(0, 120); }
+      if (m.ts < c.start) c.start = m.ts;
+      if (m.fromClientId) { c.people.set(m.fromClientId, m.from); c.senders.add(m.fromClientId); }
+      if (m.toClientId) if (!c.people.has(m.toClientId)) c.people.set(m.toClientId, m.to);
+      if (!c.country && m.country) c.country = m.country;
+      c.messages.push({
+        ts: m.ts,
+        from: m.from,
+        fromClientId: m.fromClientId,
+        text: m.text,
+        flags,
+        id: m.msgId || null,
+        replyTo: m.replyTo || null,
+      });
     }
-    res.json({ messages: list.slice(0, 500), total: store.data.transcripts.length });
+    return byPair;
+  }
+
+  // The list row: everything needed to decide whether to open it, and nothing
+  // else. Message bodies stay behind the detail request.
+  function conversationMeta(c) {
+    const people = [...c.people.entries()].map(([clientId, name]) => ({
+      clientId, name: name || clientId, spoke: c.senders.has(clientId),
+    }));
+    return {
+      pair: c.pair,
+      kind: c.kind,
+      country: c.country,
+      count: c.count,
+      start: c.start,
+      end: c.end,
+      people,
+      flags: [...c.flags],
+      severe: c.severe,
+      preview: c.preview,
+      // A conversation only one side ever spoke in is the signature of a bot,
+      // a scraper, or someone who got ignored - all worth seeing at a glance.
+      oneSided: c.senders.size < 2,
+    };
+  }
+
+  router.get('/api/transcripts', (req, res) => {
+    const q = String(req.query.q || '').toLowerCase().trim();
+    const pair = String(req.query.pair || '');
+    const byPair = buildConversations();
+
+    // Detail view: one conversation, oldest message first so it reads top down.
+    if (pair) {
+      const c = byPair.get(pair);
+      if (!c) return res.status(404).json({ error: 'not found' });
+      const meta = conversationMeta(c);
+      meta.messages = c.messages.slice().reverse();
+      return res.json({ conversation: meta });
+    }
+
+    let list = [...byPair.values()];
+    if (q) {
+      list = list.filter((c) => {
+        for (const [clientId, name] of c.people) {
+          if (clientId.toLowerCase().includes(q) || String(name || '').toLowerCase().includes(q)) return true;
+        }
+        return c.messages.some((m) => String(m.text || '').toLowerCase().includes(q));
+      });
+    }
+    const kind = String(req.query.kind || '');
+    if (kind === 'friend' || kind === 'stranger') list = list.filter((c) => c.kind === kind);
+    if (req.query.flagged === '1') list = list.filter((c) => c.flags.size > 0);
+
+    const sort = String(req.query.sort || 'recent');
+    if (sort === 'longest') list.sort((a, b) => b.count - a.count || b.end - a.end);
+    else if (sort === 'risk') list.sort((a, b) => (b.severe - a.severe) || (b.flags.size - a.flags.size) || (b.end - a.end));
+    else list.sort((a, b) => b.end - a.end);
+
+    res.json({
+      total: store.data.transcripts.length,
+      conversations: list.slice(0, 250).map(conversationMeta),
+      matched: list.length,
+    });
   });
 
   // Subscriptions, referrals and push reach - all read from existing records,

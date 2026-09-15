@@ -175,6 +175,13 @@ const friendChatMessages = document.getElementById('friendChatMessages');
 const friendChatForm = document.getElementById('friendChatForm');
 const friendChatInput = document.getElementById('friendChatInput');
 
+// Reply / emoji / GIF / reaction controllers for the two chat surfaces here.
+// Declared up with the DOM refs because both the renderers and the attach calls
+// below reference them, and a `let` further down would put every earlier line in
+// its temporal dead zone - which throws at load and takes the whole app with it.
+let strangerExtras = null;
+let friendExtras = null;
+
 // --- Side-panel helpers shared by the Friends / Friend-profile / Friend-chat panels ---
 function openSidePanel(panel, overlay) {
   panel.classList.add('open');
@@ -1988,6 +1995,9 @@ socket.on('notification', (n) => {
 function renderFriendChatMessages() {
   const messages = friendChatCache.get(activeFriendChatId) || [];
   friendChatMessages.innerHTML = '';
+  // The whole list is re-rendered, so every id the controller knows about is
+  // stale - drop them before the new bubbles register themselves.
+  if (friendExtras) friendExtras.reset();
   if (messages.length === 0) {
     const empty = document.createElement('p');
     empty.className = 'history-empty';
@@ -1995,11 +2005,24 @@ function renderFriendChatMessages() {
     friendChatMessages.appendChild(empty);
     return;
   }
+  const myId = getClientId();
   messages.forEach((m) => {
+    const mine = m.from === myId;
     const el = document.createElement('div');
-    el.className = `chat-msg ${m.from === getClientId() ? 'me' : 'them'}`;
-    el.textContent = m.text;
+    el.className = `chat-msg ${mine ? 'me' : 'them'}`;
+    if (m.text) {
+      const body = document.createElement('span');
+      body.className = 'chat-msg-text';
+      body.textContent = m.text;
+      el.appendChild(body);
+    }
     friendChatMessages.appendChild(el);
+    if (friendExtras) {
+      friendExtras.decorate(el, {
+        id: m.id, mine, text: m.text, replyTo: m.replyTo, gif: m.gif,
+        reactions: m.reactions, myClientId: myId,
+      });
+    }
   });
   // "Seen" label under the most recent message I sent, once the recipient
   // has viewed the conversation (and only if I've opted into read receipts).
@@ -2053,25 +2076,81 @@ closeFriendChatBtn.addEventListener('click', () => {
   activeFriendChatId = null;
 });
 
-friendChatForm.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const text = friendChatInput.value.trim();
-  if (!text || !activeFriendChatId) return;
-  if (messageHasLink(text)) {
+// Same extras as stranger chat. Reactions here are persisted server-side, so
+// they survive a reload for both people rather than living only in the session.
+friendExtras = window.TalkLiveChatExtras ? window.TalkLiveChatExtras.attach({
+  form: friendChatForm,
+  input: friendChatInput,
+  messages: friendChatMessages,
+  msgSelector: '.chat-msg',
+  send: sendFriendMessage,
+  react: (id, emoji, on) => {
+    if (!activeFriendChatId) return;
+    socket.emit('friend-reaction', { toClientId: activeFriendChatId, id, emoji, on });
+    cacheReaction(activeFriendChatId, getClientId(), id, emoji, on);
+  },
+}) : null;
+
+function sendFriendMessage(payload) {
+  const text = payload.text || '';
+  if (!activeFriendChatId || (!text && !payload.gif)) return false;
+  if (text && messageHasLink(text)) {
     const el = document.createElement('div');
     el.className = 'chat-msg system';
     el.textContent = t('errNoLinks');
     friendChatMessages.appendChild(el);
     friendChatMessages.scrollTop = friendChatMessages.scrollHeight;
-    return;
+    return false;
   }
-  socket.emit('friend-message', { toClientId: activeFriendChatId, text });
+  socket.emit('friend-message', {
+    toClientId: activeFriendChatId,
+    text,
+    id: payload.id,
+    replyTo: payload.replyTo,
+    gif: payload.gif,
+  });
+  return true;
+}
+
+friendChatForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const text = friendChatInput.value.trim();
+  if (!text || !activeFriendChatId) return;
+  const sent = friendExtras
+    ? friendExtras.compose(text)
+    : sendFriendMessage({ text, id: null, replyTo: null });
+  if (sent === false) return;
   friendChatInput.value = '';
 });
 
-socket.on('friend-message', ({ fromClientId, text, ts }) => {
+// The friend-chat panel re-renders from friendChatCache on every incoming
+// message and read receipt, so a reaction that only exists as a painted chip
+// disappears the moment anything else arrives. Both directions write through
+// to the cache here.
+function cacheReaction(chatClientId, byClientId, id, emoji, on) {
+  const cache = friendChatCache.get(chatClientId);
+  const msg = cache && cache.find((m) => m.id === id);
+  if (!msg) return;
+  const reactions = msg.reactions || (msg.reactions = {});
+  const who = reactions[emoji] || [];
+  if (on) {
+    if (who.indexOf(byClientId) === -1) reactions[emoji] = who.concat(byClientId);
+  } else {
+    const left = who.filter((c) => c !== byClientId);
+    if (left.length) reactions[emoji] = left; else delete reactions[emoji];
+  }
+}
+
+socket.on('friend-reaction', ({ fromClientId, id, emoji, on } = {}) => {
+  cacheReaction(fromClientId, fromClientId, id, emoji, on);
+  if (friendExtras && activeFriendChatId === fromClientId) {
+    friendExtras.remoteReaction(id, emoji, on);
+  }
+});
+
+socket.on('friend-message', ({ fromClientId, text, ts, id, replyTo, gif }) => {
   const cache = friendChatCache.get(fromClientId) || [];
-  cache.push({ from: fromClientId, text, ts });
+  cache.push({ from: fromClientId, text, ts, id, replyTo, gif });
   friendChatCache.set(fromClientId, cache);
   if (activeFriendChatId === fromClientId && friendChatModal.classList.contains('open')) {
     renderFriendChatMessages();
@@ -2090,9 +2169,9 @@ socket.on('chat-seen', ({ byClientId, ts } = {}) => {
   if (activeFriendChatId === byClientId) renderFriendChatMessages();
 });
 
-socket.on('friend-message-sent', ({ toClientId, text, ts }) => {
+socket.on('friend-message-sent', ({ toClientId, text, ts, id, replyTo, gif }) => {
   const cache = friendChatCache.get(toClientId) || [];
-  cache.push({ from: getClientId(), text, ts });
+  cache.push({ from: getClientId(), text, ts, id, replyTo, gif });
   friendChatCache.set(toClientId, cache);
   if (activeFriendChatId === toClientId) renderFriendChatMessages();
 });
@@ -2748,7 +2827,7 @@ function setSubTextFading(key, vars, delayMs = 5000) {
 // Returns the created element so the caller can transition its delivery state
 // (WhatsApp-style: sending → sent). Uses a transform/opacity entrance animation
 // that stays on the compositor for a smooth 60fps pop with no layout jank.
-function addChatMessage(text, kind) {
+function addChatMessage(text, kind, meta) {
   const el = document.createElement('div');
   // Sent messages get the punchy "pop" keyframe; received/system slide in.
   el.className = `chat-msg ${kind}` + (kind === 'me' ? ' chat-msg-pop' : ' chat-msg-enter');
@@ -2761,6 +2840,13 @@ function addChatMessage(text, kind) {
     ticks.className = 'chat-msg-ticks sending';
     ticks.innerHTML = '<svg viewBox="0 0 16 11" aria-hidden="true"><path d="M11.1.6 4.9 8.4 1.9 5.4.5 6.8l4.4 4.4L12.5 2z"/><path d="M15.6.6 9.4 8.4l-.9-.9-1 1.3 1.9 1.9L17 2z"/></svg>';
     el.appendChild(ticks);
+  }
+  // Quote, GIF and reaction row, when the message carries them. After the ticks
+  // so a GIF renders below the delivery state rather than shoving it down.
+  if (meta && strangerExtras) {
+    strangerExtras.decorate(el, {
+      id: meta.id, mine: kind === 'me', text, replyTo: meta.replyTo, gif: meta.gif,
+    });
   }
   chatMessages.appendChild(el);
   if (kind !== 'me') {
@@ -2775,6 +2861,7 @@ function addChatMessage(text, kind) {
 
 function clearChat() {
   chatMessages.innerHTML = '';
+  if (strangerExtras) strangerExtras.reset();
   typingIndicator.classList.add('hidden');
   if (typeof setChatUnread === 'function') setChatUnread(0);
 }
@@ -4597,20 +4684,26 @@ socket.on('game', (data) => {
 // Shared send path for both the in-call side panel and the /chat page.
 // Blocks links (mirrors the server) and clearly unsafe content before it
 // ever leaves the device.
-function sendStrangerChat(text) {
-  if (!text) return false;
-  if (messageHasLink(text)) {
+function sendStrangerChat(text, meta) {
+  const gif = meta && meta.gif;
+  if (!text && !gif) return false;
+  if (text && messageHasLink(text)) {
     addChatMessage(t('errNoLinks'), 'system');
     return false;
   }
-  if (messageIsUnsafe(text)) {
+  if (text && messageIsUnsafe(text)) {
     addChatMessage(t('errUnsafeMessage'), 'system');
     return false;
   }
-  const el = addChatMessage(text, 'me');
+  const el = addChatMessage(text, 'me', meta);
   playSendSound();
   vibrate(15);
-  socket.emit('chat-message', text);
+  socket.emit('chat-message', {
+    text,
+    id: meta ? meta.id : null,
+    replyTo: meta ? meta.replyTo : null,
+    gif: gif || null,
+  });
   // Optimistic WhatsApp-style delivery: mark "sent" on the next tick once the
   // message has left the client (the relay is fire-and-forget server-side).
   const ticks = el.querySelector('.chat-msg-ticks');
@@ -4618,12 +4711,30 @@ function sendStrangerChat(text) {
   return true;
 }
 
+// Emoji picker, Tenor GIFs, reply-to and reactions for the in-call stranger
+// panel. Everything it owns is built the first time it is opened, so a caller
+// who never taps the buttons pays for two of them and nothing else.
+strangerExtras = window.TalkLiveChatExtras ? window.TalkLiveChatExtras.attach({
+  form: chatForm,
+  input: chatInput,
+  messages: chatMessages,
+  msgSelector: '.chat-msg',
+  send: (payload) => sendStrangerChat(payload.text || '', payload),
+  react: (id, emoji, on) => socket.emit('chat-reaction', { id, emoji, on }),
+}) : null;
+
 chatForm.addEventListener('submit', (e) => {
   e.preventDefault();
-  if (sendStrangerChat(chatInput.value.trim())) {
-    chatInput.value = '';
-    chatInput.focus();
-  }
+  const text = chatInput.value.trim();
+  if (!text) return;
+  const sent = strangerExtras ? strangerExtras.compose(text) : sendStrangerChat(text);
+  if (sent === false) return;
+  chatInput.value = '';
+  chatInput.focus();
+});
+
+socket.on('chat-reaction', ({ id, emoji, on } = {}) => {
+  if (strangerExtras) strangerExtras.remoteReaction(id, emoji, on);
 });
 
 // Server-side link filter rejected a message we let through - surface it.
@@ -5145,8 +5256,9 @@ socket.on('partner-mic-state', (muted) => {
   }
 });
 
-socket.on('chat-message', ({ text }) => {
-  addChatMessage(text, 'them');
+socket.on('chat-message', ({ text, id, replyTo, gif } = {}) => {
+  if (!text && !gif) return;
+  addChatMessage(text || '', 'them', { id, replyTo, gif });
   playMessageSound();
   vibrate(20);
   if (!chatOpen) {

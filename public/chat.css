@@ -391,11 +391,20 @@ img { max-width: 100%; }
      backwards - that is where they need to be easiest to hit. */
 }
 
-/* Very narrow phones: tighten the composer so all three controls fit. The
-   top bar needs nothing here - it carries three controls at any width. */
-@media (max-width: 360px) {
+/* Narrow phones: tighten the composer so every control fits. The row carries
+   five now - Next, emoji, GIF, the input and send - so the Next label drops
+   earlier than it used to, and the two picker buttons go compact with it. */
+@media (max-width: 430px) {
   .next-btn { padding: 0 12px; }
   .next-btn span { display: none; } /* icon-only Next */
+  .composer .cx-btn { min-width: 34px; padding: 0 4px; }
+}
+/* 320px phones: claw back every spare pixel for the input itself, which is the
+   only control here whose width does any work. */
+@media (max-width: 360px) {
+  .composer { gap: 5px; padding-left: 6px; padding-right: 6px; }
+  .next-btn { padding: 0 9px; }
+  .composer .cx-btn { min-width: 32px; padding: 0 2px; }
 }
 
 /* Blocked / maintenance full screen */
