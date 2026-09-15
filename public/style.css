@@ -171,7 +171,63 @@ body.panel-open .side-panel {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  gap: 8px;
   min-width: 0;
+}
+
+/* Header auth pills. Sized as real tap targets (38px tall) rather than bare
+   text runs, and kept on one line so they never wrap into the live count. */
+.header-auth {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-auth-btn {
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.header-auth-btn:active {
+  transform: scale(0.96);
+}
+
+.header-auth-login {
+  border: 1px solid rgba(255,255,255,0.16);
+  background: rgba(255,255,255,0.04);
+  color: var(--text);
+}
+
+.header-auth-login:hover {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.24);
+}
+
+.header-auth-signup {
+  border: 0;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+}
+
+.header-auth-signup:hover {
+  filter: brightness(1.08);
+}
+
+/* Signed in: one account button, sized like the other header icons. */
+.header-account-btn {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  border-color: rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.05);
 }
 
 /* App settings side panel */
@@ -1360,6 +1416,17 @@ body.panel-open .side-panel {
   /* Dot and number carry the meaning; the group glyph is the decoration. */
   .people-count .people-icon { display: none; }
   .people-count { padding: 5px 9px; }
+
+  /* Two auth pills plus the live count do not fit beside the tool icons on a
+     phone. Keep Log In - it is the one people go looking for, and Sign Up is
+     one tap away on the tab inside - and tighten it. */
+  .header-auth-signup { display: none; }
+  .header-auth-btn {
+    min-height: 34px;
+    padding: 0 11px;
+    font-size: 12px;
+  }
+  .header-account-btn { width: 40px; height: 40px; border-radius: 12px; }
 }
 
 /* Mobile responsiveness */
@@ -3067,29 +3134,46 @@ body.panel-open .side-panel {
 
 /* Inline text actions inside the account forms ("Forgot password?", "Resend
    code", "Back to log in"). A <button> rather than an <a> so it is keyboard
-   reachable and never navigates away from the modal. */
+   reachable and never navigates away from the modal. Styled explicitly down to
+   the border and background: a bare <button> inherits the platform's grey
+   chrome, which looks like a broken control next to these inputs. */
 .account-link {
   display: block;
   width: 100%;
-  margin-top: 10px;
-  padding: 6px 0;
+  margin-top: 12px;
+  padding: 9px 0;
   border: 0;
-  background: none;
+  border-radius: 10px;
+  background: transparent;
   color: var(--accent-2);
-  font-size: 12px;
+  font-family: inherit;
+  font-size: 13px;
   font-weight: 600;
   text-align: center;
   cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .account-link:hover {
-  text-decoration: underline;
+  background: rgba(255,255,255,0.05);
+  color: var(--text);
 }
 
 .account-link:disabled {
   color: var(--muted);
+  background: transparent;
   cursor: default;
-  text-decoration: none;
+}
+
+/* The step label above each field in the reset flow. */
+.account-step-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 10px;
+  text-align: center;
+  line-height: 1.5;
 }
 
 /* The 6-digit reset code: wide spacing so a code read off a phone is easy to
