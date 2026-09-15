@@ -20,8 +20,6 @@
     "seo:ping": "node scripts/ping-indexnow.js"
   },
   "dependencies": {
-    "@clerk/express": "^2.1.67",
-    "dotenv": "^17.4.2",
     "express": "^4.19.2",
     "geoip-lite": "^1.4.10",
     "google-auth-library": "^9.15.1",

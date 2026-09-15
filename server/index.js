@@ -1,4 +1,3 @@
-require('dotenv').config();
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -7,7 +6,6 @@ const http = require('http');
 const { Server } = require('socket.io');
 const geoip = require('geoip-lite');
 const { OAuth2Client } = require('google-auth-library');
-const { clerkMiddleware, requireAuth, getAuth, createClerkClient } = require('@clerk/express');
 const { generateUsername } = require('./usernames');
 // Shared with the browser: public/countries.js exports for Node and defines a
 // global when loaded as a plain <script>, so there is one country list, not two.
@@ -111,7 +109,6 @@ const CSP = [
     + ' https://*.effectivecpmnetwork.com https://www.googletagmanager.com'
     + ' https://*.gstatic.com'
     + ' https://www.google.com'
-    + ' https://*.clerk.accounts.dev https://clerk.com https://*.clerk.com'
     + (ADS_SCRIPT_HOSTS.length ? ' ' + ADS_SCRIPT_HOSTS.join(' ') : ''),
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: https:",
@@ -155,24 +152,6 @@ app.use((req, res, next) => {
 // Socket.IO is unaffected: engine.io handles /socket.io/ at the HTTP server
 // level, before Express ever sees the request.
 app.use(compress());
-
-// Clerk authentication. Mounted only when real keys are configured: the
-// middleware throws on every request if the publishable key is malformed, which
-// would turn the whole site into 500s. The existing account system is
-// unaffected either way, so an unconfigured Clerk is a no-op, not an outage.
-const CLERK_PUBLISHABLE_KEY = process.env.CLERK_PUBLISHABLE_KEY || '';
-const CLERK_SECRET_KEY = process.env.CLERK_SECRET_KEY || '';
-// Real keys are a prefix followed by a long base64 blob, so require that shape
-// rather than just the prefix - a placeholder like `pk_test_replace_me` has the
-// right prefix and would otherwise sail through and 500 every request.
-const clerkConfigured = /^pk_(test|live)_[A-Za-z0-9+/=_-]{20,}$/.test(CLERK_PUBLISHABLE_KEY)
-  && /^sk_(test|live)_[A-Za-z0-9+/=_-]{20,}$/.test(CLERK_SECRET_KEY);
-if (clerkConfigured) {
-  app.use(clerkMiddleware());
-  console.log('[clerk] authentication enabled');
-} else {
-  console.log('[clerk] CLERK_PUBLISHABLE_KEY / CLERK_SECRET_KEY not set - Clerk disabled');
-}
 
 // Tiny health check for uptime pingers (cron-job.org / UptimeRobot). Returns a
 // few bytes instead of the full homepage, so the pinger doesn't abort with
