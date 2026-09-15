@@ -1123,6 +1123,59 @@ const blocks = new Map(); // clientId -> Set<clientId>
 const hearts = new Map(); // pairKey ("clientIdA|clientIdB" sorted) -> Set<clientId who hearted>
 const reportCooldowns = new Map(); // reporter|target -> last report timestamp
 
+// Pairs that were matched a moment ago and are already apart again.
+//
+// Nothing used to stop the matcher from handing two people straight back to
+// each other: skipping put both of them back in the same short queue, so the
+// very next scan paired them again. On a site with a handful of people online
+// that is a loop, and it is the loop behind "I keep getting disconnected
+// without ever getting connected": two peers whose media path cannot be
+// established (both behind symmetric NAT with no relay between them) fail the
+// 20s connect watchdog, both auto-skip, and the matcher immediately reunites
+// them for another 20s of "Connecting…" - forever, while the site shows plenty
+// of other people online.
+//
+// So a parted pair is held apart for a while. Two strengths, because the two
+// cases are not the same:
+//  - someone skipped (or the tab closed): a soft hold, so the next match is a
+//    new person, but a long wait may still fall back to them.
+//  - the call never connected: a hard hold. Re-matching that pair provably
+//    cannot produce a working call, so the random-match fallback must not
+//    override it either.
+const pairCooldowns = new Map(); // pairKey -> { until, failed }
+const PAIR_COOLDOWN_MS = 60 * 1000;
+// Long enough to break the loop outright, short enough that a genuine change of
+// network on either side (cellular to wifi, a VPN switched off) gets another go.
+const FAILED_PAIR_COOLDOWN_MS = 10 * 60 * 1000;
+
+function notePairParted(clientIdA, clientIdB, failed) {
+  if (!clientIdA || !clientIdB || clientIdA === clientIdB) return;
+  const key = pairKey(clientIdA, clientIdB);
+  const prev = pairCooldowns.get(key);
+  const prevLive = prev && prev.until > Date.now();
+  // A pair that has already failed stays "failed" for the rest of the session's
+  // hold: one side later leaving voluntarily must not downgrade it.
+  const isFailed = !!failed || !!(prevLive && prev.failed);
+  const until = Date.now() + (isFailed ? FAILED_PAIR_COOLDOWN_MS : PAIR_COOLDOWN_MS);
+  pairCooldowns.set(key, {
+    until: prevLive ? Math.max(prev.until, until) : until,
+    failed: isFailed,
+  });
+}
+
+// `soft` false asks only about a hold the random-match fallback may not
+// override - i.e. a pair whose call never connected.
+function pairOnCooldown(clientIdA, clientIdB, soft) {
+  const key = pairKey(clientIdA, clientIdB);
+  const rec = pairCooldowns.get(key);
+  if (!rec) return false;
+  if (rec.until <= Date.now()) {
+    pairCooldowns.delete(key);
+    return false;
+  }
+  return soft ? true : rec.failed;
+}
+
 // In-chat voice-call invites: a /chat user invites their current text partner
 // to a voice call. On accept the server mints a one-time token; both browsers
 // navigate to /call?invite=<token> (which creates brand-new sockets) and
@@ -1865,7 +1918,10 @@ function emitPremiumStatus(clientId) {
 // in two seconds counted the same as a twenty-minute call. It is also what
 // makes a referral payable, so it has to be measured server-side - a client
 // could otherwise just claim it.
-function disconnectPartner(socketId) {
+// `opts.failed` marks a pairing that never became a working call, so the pair is
+// held apart hard (see pairCooldowns) and the other side is told the truth: it
+// was a connection that never came up, not a stranger who hung up on them.
+function disconnectPartner(socketId, opts = {}) {
   const partnerId = partners.get(socketId);
   if (!partnerId) return null;
   partners.delete(socketId);
@@ -1885,9 +1941,13 @@ function disconnectPartner(socketId) {
   if (profile) profile.matchedAt = 0;
   if (partnerProfile) partnerProfile.matchedAt = 0;
 
+  if (profile && partnerProfile) {
+    notePairParted(profile.clientId, partnerProfile.clientId, opts.failed);
+  }
+
   const partnerSocket = io.sockets.sockets.get(partnerId);
   if (partnerSocket) {
-    partnerSocket.emit('partner-left');
+    partnerSocket.emit('partner-left', { reason: opts.failed ? 'failed' : 'left' });
   }
   return partnerId;
 }
@@ -1944,9 +2004,19 @@ function mutuallyCompatible(seeker, candidate) {
   // random fallback below - dropping it would put a mic-less chatter in a call.
   if ((seeker.mode || 'talk') !== (candidate.mode || 'talk')) return false;
 
+  // A pair whose last call never connected is a hard gate, like a block: there
+  // is no filter to relax that would make that media path work, so handing them
+  // back to each other only costs both of them another failed connect.
+  if (pairOnCooldown(seeker.clientId, candidate.clientId, false)) return false;
+
   // After a long wait either side falls back to "match me with anyone random":
   // every preference filter is dropped, only blocks still apply.
   if (seeker.randomFallbackActive || candidate.randomFallbackActive) return true;
+
+  // Just parted voluntarily - give them someone new first. Soft, so the random
+  // fallback above can still reunite them rather than leave anyone waiting on a
+  // near-empty site.
+  if (pairOnCooldown(seeker.clientId, candidate.clientId, true)) return false;
 
   if (seeker.prefGender && seeker.prefGender !== 'any' && candidate.gender !== seeker.prefGender) {
     return false;
@@ -1997,6 +2067,8 @@ function findBestMatch(socketId) {
     // two tabs) is the other.
     if (candidate.clientId === seeker.clientId) continue;
     if ((seeker.mode || 'talk') !== (candidate.mode || 'talk')) continue;
+    // A mutual heart cannot fix a media path that does not exist either.
+    if (pairOnCooldown(seeker.clientId, candidate.clientId, false)) continue;
     const key = pairKey(seeker.clientId, candidate.clientId);
     const heartSet = hearts.get(key);
     if (heartSet && heartSet.has(seeker.clientId) && heartSet.has(candidate.clientId)) {
@@ -2131,6 +2203,7 @@ function predictedMatch(socketId) {
   for (const [sid, p] of profiles) {
     if (sid === socketId || p.clientId === seeker.clientId) continue;
     if (isBlockedPair(seeker.clientId, p.clientId)) continue;
+    if (pairOnCooldown(seeker.clientId, p.clientId, false)) continue;
     if ((seeker.mode || 'talk') !== (p.mode || 'talk')) continue;
     candidates.push(p);
   }
@@ -2855,8 +2928,14 @@ io.on('connection', (socket) => {
     tryMatch(socket.id);
   });
 
-  socket.on('skip', () => {
-    disconnectPartner(socket.id);
+  socket.on('skip', (opts = {}) => {
+    // The client emits 'skip' both for a deliberate "next stranger" tap and for
+    // an involuntary advance - a call whose media never arrived, a reconnect
+    // that ran out of time. Only the latter says anything about the pair, and
+    // it says a lot: keep the two of them apart instead of looping them
+    // through the same dead connection.
+    const failed = !!(opts && opts.failed);
+    disconnectPartner(socket.id, { failed });
     const profile = profiles.get(socket.id);
     if (profile) profile.randomFallbackActive = false;
     // Everyone skips straight to the next stranger. The free tier used to be
@@ -3662,6 +3741,11 @@ function sweepEphemeralState() {
   }
   for (const [key, ts] of reportCooldowns) {
     if (now - ts > REPORT_COOLDOWN_TTL_MS) reportCooldowns.delete(key);
+  }
+  // Pair holds carry their own expiry; this only reclaims the ones no matcher
+  // pass happened to look at again.
+  for (const [key, rec] of pairCooldowns) {
+    if (!rec || rec.until <= now) pairCooldowns.delete(key);
   }
   // Status visibility is a per-client preference with no expiry, but it only
   // matters while the client is online or is somebody's friend.

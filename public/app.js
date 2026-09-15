@@ -3177,7 +3177,13 @@ function clearReconnectDeadline() {
 
 // Automatically move to the next available match. Used by skip, the initial
 // connect watchdog, and the 30s reconnect deadline.
-function autoNextMatch(statusKey) {
+//
+// `failed` tells the server this match never became a working call, so it keeps
+// the two of us apart instead of handing us straight back to each other - which
+// is what turned one dead media path into an endless cycle of 20s "Connecting…"
+// screens. Read before teardownPeer(), which clears mediaConnected.
+function autoNextMatch(statusKey, failed) {
+  const neverConnected = failed === undefined ? !mediaConnected : !!failed;
   clearConnectWatchdog();
   clearReconnectDeadline();
   teardownPeer();
@@ -3188,7 +3194,7 @@ function autoNextMatch(statusKey) {
   setConnection('red', 'connDisconnected');
   setStatusText(statusKey || 'statusFindingNew');
   setSubText('subHangTight');
-  socket.emit('skip');
+  socket.emit('skip', neverConnected ? { failed: true } : {});
   setTimeout(() => { if (isSearching && callState === 'searching') setConnection('orange', 'connSearching'); }, 600);
 }
 
@@ -4791,8 +4797,18 @@ socket.on('signal', (data) => {
   handleSignal(data);
 });
 
-socket.on('partner-left', () => {
-  playHangupSound();
+socket.on('partner-left', (info) => {
+  // Two very different endings arrive on this event, and treating them alike is
+  // why people reported being "disconnected without ever getting connected":
+  // the stranger hanging up mid-conversation, and a pairing whose media never
+  // came up at all (the other side's connect watchdog fired first, so it moved
+  // on before either of us heard anything). The second is not someone ending a
+  // call on you - there was no call - so it must not show "your friend ended
+  // the call" and must not drop the user out of their search. Read before
+  // teardownPeer(), which clears mediaConnected.
+  const neverConnected = (info && info.reason === 'failed') || !mediaConnected;
+  // A hang-up tone for a call that never had any audio just reads as a bug.
+  if (!neverConnected) playHangupSound();
   const wasInGame = gameIsInProgress();
   teardownPeer();
   clearChat();
@@ -4801,6 +4817,19 @@ socket.on('partner-left', () => {
   if (wasInGame && typeof markGamePartnerGone === 'function') markGamePartnerGone();
   else if (typeof resetGame === 'function') resetGame();
   if (!isSearching) return;
+  // The pairing never produced a call. The user is still mid-search as far as
+  // they are concerned, so carry the search straight on to the next person -
+  // regardless of the auto-connect setting, which is about what happens after a
+  // conversation ends, not about abandoning a search that never started.
+  if (neverConnected) {
+    setCallState('searching');
+    setState('waiting');
+    setConnection('orange', 'connSearching');
+    setStatusText('statusFindingNew');
+    setSubText('subHangTight');
+    emitFindPartner();
+    return;
+  }
   // The partner ended the call. Show the single red "your friend ended the call"
   // message. Only keep hunting for a new person if auto-connect is on; otherwise
   // stop on the red message so the user isn't yanked into a new search.
