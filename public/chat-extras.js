@@ -70,7 +70,7 @@
 
   // --- GIF backend ----------------------------------------------------------
   // One config probe per page, shared by every surface. Resolves to false when
-  // TENOR_API_KEY is unset server-side, and the GIF button is then never built.
+  // GIPHY_API_KEY is unset server-side, and the GIF button is then never built.
   var gifConfig = null;
   function gifsAvailable() {
     if (!gifConfig) {
@@ -84,7 +84,7 @@
 
   // Query -> results, for the life of the page. Retyping a search or reopening
   // the picker costs nothing; the server caches the same lookups again behind
-  // this, so a popular query rarely reaches Tenor at all.
+  // this, so a popular query rarely reaches Giphy at all.
   var gifCache = {};
   function gifSearch(q) {
     var key = q || '*';
@@ -279,9 +279,9 @@
       root.appendChild(bar);
       root.appendChild(status);
       root.appendChild(grid);
-      // Tenor's attribution, on its own line: sharing the row with the search
-      // box squeezed both on a narrow phone.
-      root.appendChild(el('p', 'cx-gif-credit', 'Powered by Tenor'));
+      // Giphy's attribution, which their terms require, on its own line: sharing the
+      // row with the search box squeezed both on a narrow phone.
+      root.appendChild(el('p', 'cx-gif-credit', 'Powered by GIPHY'));
 
       var timer = null, token = 0;
       function run(q) {

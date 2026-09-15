@@ -4684,7 +4684,7 @@ function sendStrangerChat(text, meta) {
   return true;
 }
 
-// Emoji picker, Tenor GIFs, reply-to and reactions for the in-call stranger
+// Emoji picker, Giphy GIFs, reply-to and reactions for the in-call stranger
 // panel. Everything it owns is built the first time it is opened, so a caller
 // who never taps the buttons pays for two of them and nothing else.
 strangerExtras = window.TalkLiveChatExtras ? window.TalkLiveChatExtras.attach({

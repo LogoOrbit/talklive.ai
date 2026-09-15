@@ -23,8 +23,8 @@ const ok = (name, cond, extra) => {
 };
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const GIF = {
-  url: 'https://media.tenor.com/abc123/laugh.gif',
-  preview: 'https://media.tenor.com/abc123/laugh-nano.gif',
+  url: 'https://media1.giphy.com/media/abc123/laugh.gif',
+  preview: 'https://media1.giphy.com/media/abc123/laugh-small.gif',
   w: 320, h: 240, alt: 'laughing',
 };
 
@@ -53,7 +53,7 @@ function connect(name) {
 
 (async () => {
   const srv = spawn(process.execPath, [path.join(__dirname, '..', 'server', 'index.js')], {
-    env: { ...process.env, PORT: String(PORT), DATA_DIR, NODE_ENV: 'development', TENOR_API_KEY: '' },
+    env: { ...process.env, PORT: String(PORT), DATA_DIR, NODE_ENV: 'development', GIPHY_API_KEY: '' },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   const logs = [];
@@ -106,11 +106,11 @@ function connect(name) {
     const m3 = await got3;
     ok('reply target relays', m3.replyTo === 'm1');
 
-    // 4. GIF from Tenor.
+    // 4. GIF from Giphy.
     const got4 = once(b, 'chat-message');
     a.emit('chat-message', { text: '', id: 'm3', gif: GIF });
     const m4 = await got4;
-    ok('tenor GIF relays', m4.gif && m4.gif.url === GIF.url, JSON.stringify(m4));
+    ok('giphy GIF relays', m4.gif && m4.gif.url === GIF.url, JSON.stringify(m4));
 
     // 5. A GIF pointing anywhere else is dropped, not relayed.
     let leaked = false;
@@ -119,7 +119,7 @@ function connect(name) {
     a.emit('chat-message', { text: '', id: 'm4', gif: { ...GIF, url: 'https://evil.example.com/x.gif' } });
     await wait(300);
     b.off('chat-message', watch);
-    ok('non-Tenor GIF URL rejected', !leaked);
+    ok('non-Giphy GIF URL rejected', !leaked);
 
     // 6. Reactions relay, and only from the allowed set.
     const got6 = once(b, 'chat-reaction');

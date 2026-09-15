@@ -914,31 +914,39 @@ app.get('/ads-config.json', (req, res) => {
   res.json(ADS_CONFIG);
 });
 
-// --- GIF search (Tenor) ------------------------------------------------------
+// --- GIF search (Giphy) ------------------------------------------------------
+//
+// Was Tenor until Google shut that API down to external developers on
+// 2026-06-30. Giphy is where the rest of the industry landed, and the shape of
+// the integration is unchanged: same /api/gifs endpoint, same trimmed payload,
+// so only this block and the URL allowlist below knew the difference.
 //
 // Proxied rather than called from the browser for three reasons: the API key
 // never ships to the client, every response is cached here so a hundred people
 // typing "lol" cost one upstream call, and we hand the client a trimmed payload
-// (two URLs and a size) instead of Tenor's ~4 kB-per-result JSON - which is what
+// (two URLs and a size) instead of Giphy's ~8 kB-per-result JSON - which is what
 // keeps the picker usable on a slow phone.
 //
-// Without TENOR_API_KEY the feature reports itself disabled and the clients hide
+// Without GIPHY_API_KEY the feature reports itself disabled and the clients hide
 // the GIF button entirely, so an unconfigured deploy shows no dead UI.
-const TENOR_KEY = process.env.TENOR_API_KEY || '';
-const TENOR_CLIENT = process.env.TENOR_CLIENT_KEY || 'talklive';
-// contentfilter=high is Tenor's strictest tier. On a product that pairs
-// strangers anonymously this is not a preference, it is the only defensible
-// default.
-const TENOR_FILTER = 'high';
+const GIPHY_KEY = process.env.GIPHY_API_KEY || '';
+// "g" is Giphy's most restrictive rating. On a product that pairs strangers
+// anonymously this is not a preference, it is the only defensible default.
+const GIPHY_RATING = 'g';
 const GIF_LIMIT = 18;
-const GIF_CACHE_TTL = 10 * 60 * 1000;
-const GIF_CACHE_MAX = 300;
+// Longer than it would otherwise need to be, because a Giphy beta key allows
+// only 100 calls an hour: the cache is what turns that into a usable feature
+// rather than a quota that runs out mid-evening.
+const GIF_CACHE_TTL = 30 * 60 * 1000;
+const GIF_CACHE_MAX = 500;
 const gifCache = new Map(); // key -> { expires, body }
 
-function gifCacheGet(key) {
+// A stale entry is kept rather than dropped: when the hourly budget below is
+// spent, yesterday's results for a query beat an empty grid.
+function gifCacheGet(key, allowStale) {
   const hit = gifCache.get(key);
   if (!hit) return null;
-  if (hit.expires < Date.now()) { gifCache.delete(key); return null; }
+  if (!allowStale && hit.expires < Date.now()) return null;
   // Refresh LRU position so popular searches survive eviction.
   gifCache.delete(key);
   gifCache.set(key, hit);
@@ -948,6 +956,19 @@ function gifCacheGet(key) {
 function gifCacheSet(key, body) {
   gifCache.set(key, { expires: Date.now() + GIF_CACHE_TTL, body });
   while (gifCache.size > GIF_CACHE_MAX) gifCache.delete(gifCache.keys().next().value);
+}
+
+// Giphy's free tier is 100 calls/hour for the whole key, not per user. Going
+// over does not degrade politely - it starts returning errors - so we spend at
+// most GIPHY_HOURLY_BUDGET and serve stale cache after that. Raise it once the
+// key is upgraded to production.
+const GIPHY_HOURLY_BUDGET = Number(process.env.GIPHY_HOURLY_BUDGET || 90);
+let upstreamWindow = 0;
+let upstreamCalls = 0;
+function upstreamBudgetOk() {
+  const hour = Math.floor(Date.now() / 3600000);
+  if (hour !== upstreamWindow) { upstreamWindow = hour; upstreamCalls = 0; }
+  return upstreamCalls < GIPHY_HOURLY_BUDGET;
 }
 
 // Per-IP sliding window. The picker debounces and caches client-side, so a real
@@ -964,73 +985,90 @@ setInterval(() => {
   for (const [ip, rl] of gifRate) if (rl.start < cutoff) gifRate.delete(ip);
 }, 120000).unref();
 
-// Trim a Tenor result to what the picker actually renders: a small preview for
-// the grid and a full-size GIF for the bubble. Anything missing a usable format
-// is dropped rather than rendered as a broken tile.
-function tenorItem(r) {
-  const f = (r && r.media_formats) || {};
-  const full = f.tinygif || f.gif || f.mediumgif;
-  const preview = f.nanogif || f.tinygif || full;
+// Trim a Giphy result to what the picker actually renders: a small preview for
+// the grid and a bubble-sized GIF for the message. fixed_width is ~200px wide,
+// which is exactly the width the bubble caps at - sending the original would
+// push multi-megabyte files at phones for no visible gain. Anything missing a
+// usable rendition is dropped rather than rendered as a broken tile.
+function giphyItem(r) {
+  const im = (r && r.images) || {};
+  const full = im.fixed_width || im.downsized || im.original;
+  const preview = im.fixed_width_small || im.preview_gif || full;
   if (!full || !full.url || !preview || !preview.url) return null;
-  const dims = Array.isArray(full.dims) ? full.dims : [];
   return {
     url: full.url,
     preview: preview.url,
-    w: Number(dims[0]) || 0,
-    h: Number(dims[1]) || 0,
-    alt: String(r.content_description || '').slice(0, 80),
+    w: Number(full.width) || 0,
+    h: Number(full.height) || 0,
+    alt: String(r.title || '').slice(0, 80),
   };
 }
 
-async function tenorFetch(endpoint, params) {
-  const url = new URL('https://tenor.googleapis.com/v2/' + endpoint);
-  url.searchParams.set('key', TENOR_KEY);
-  url.searchParams.set('client_key', TENOR_CLIENT);
-  url.searchParams.set('contentfilter', TENOR_FILTER);
-  url.searchParams.set('media_filter', 'tinygif,nanogif');
+// Overridable so the proxy can be pointed at a local mock in tests; there is no
+// reason to set it in production.
+const GIPHY_BASE = process.env.GIPHY_API_BASE || 'https://api.giphy.com/v1/gifs/';
+
+async function giphyFetch(endpoint, params) {
+  const url = new URL(GIPHY_BASE + endpoint);
+  url.searchParams.set('api_key', GIPHY_KEY);
+  url.searchParams.set('rating', GIPHY_RATING);
   url.searchParams.set('limit', String(GIF_LIMIT));
+  url.searchParams.set('bundle', 'messaging_non_clips');
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
   // A stuck upstream must not hold a socket open: give up and let the client
   // show "no results" rather than spinning forever.
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), 6000);
+  upstreamCalls++;
   try {
     const resp = await fetch(url, { signal: ctl.signal });
-    if (!resp.ok) throw new Error('tenor ' + resp.status);
+    if (!resp.ok) throw new Error('giphy ' + resp.status);
     const json = await resp.json();
-    return { results: (json.results || []).map(tenorItem).filter(Boolean) };
+    return { results: (json.data || []).map(giphyItem).filter(Boolean) };
   } finally {
     clearTimeout(timer);
   }
 }
 
 app.get('/api/gifs/config', (req, res) => {
-  res.set('Cache-Control', 'public, max-age=3600');
-  res.json({ enabled: !!TENOR_KEY });
+  // Short enough that turning the key on reaches existing visitors in minutes
+  // rather than the next hour, which is what an operator expects after setting
+  // a secret and redeploying.
+  res.set('Cache-Control', 'public, max-age=300');
+  res.json({ enabled: !!GIPHY_KEY });
 });
 
 app.get('/api/gifs', async (req, res) => {
-  if (!TENOR_KEY) return res.status(503).json({ enabled: false, results: [] });
+  if (!GIPHY_KEY) return res.status(503).json({ enabled: false, results: [] });
   if (!gifRateOk(clientIp(req))) return res.status(429).json({ results: [] });
   const q = String(req.query.q || '').trim().slice(0, 50);
-  // Locale only ever reaches Tenor as a language tag we recognise, never raw
+  // Locale only ever reaches Giphy as a language tag we recognise, never raw
   // query input.
-  const locale = /^[a-z]{2}$/.test(String(req.query.lang || '')) ? String(req.query.lang) : 'en';
-  const key = (q ? 's:' + q.toLowerCase() : 'featured') + '|' + locale;
-  const cached = gifCacheGet(key);
+  const lang = /^[a-z]{2}$/.test(String(req.query.lang || '')) ? String(req.query.lang) : 'en';
+  const key = (q ? 's:' + q.toLowerCase() : 'trending') + '|' + lang;
+  const cached = gifCacheGet(key, false);
   if (cached) {
     res.set('Cache-Control', 'public, max-age=600');
     return res.json(cached);
   }
+  // Out of upstream budget: stale results, or an empty grid, but never a burst
+  // of calls that gets the key rate-limited for everyone.
+  if (!upstreamBudgetOk()) {
+    const stale = gifCacheGet(key, true);
+    res.set('Cache-Control', 'public, max-age=120');
+    return res.json(stale || { results: [] });
+  }
   try {
     const body = q
-      ? await tenorFetch('search', { q, locale, random: 'false' })
-      : await tenorFetch('featured', { locale });
+      ? await giphyFetch('search', { q, lang })
+      : await giphyFetch('trending', {});
     gifCacheSet(key, body);
     res.set('Cache-Control', 'public, max-age=600');
     res.json(body);
   } catch (err) {
     console.warn('[gifs] lookup failed:', err.message);
+    const stale = gifCacheGet(key, true);
+    if (stale) return res.json(stale);
     res.status(502).json({ results: [] });
   }
 });
@@ -1353,10 +1391,11 @@ const UNSAFE_RE = /\b(child\s*porn|cp\s*trade|loli(?:con)?|jailbait|sell(?:ing)?
 // (older clients still in someone's cache) or an object, so every reader below
 // goes through readChatPayload rather than trusting the shape.
 const MSG_ID_RE = /^[A-Za-z0-9_-]{1,24}$/;
-// GIFs may only ever point at Tenor's own CDN. The picker gets its URLs from
-// our proxy, so anything else arriving here is a client that has been tampered
-// with trying to make us relay an arbitrary remote image.
-const TENOR_URL_RE = /^https:\/\/(?:[a-z0-9-]+\.)*tenor\.com\/[A-Za-z0-9._~:/?#[\]@!$&'()*+,;=%-]+$/i;
+// GIFs may only ever point at Giphy's own CDN (media0-4.giphy.com, i.giphy.com
+// and friends). The picker gets its URLs from our proxy, so anything else
+// arriving here is a client that has been tampered with trying to make us relay
+// an arbitrary remote image.
+const GIF_URL_RE = /^https:\/\/(?:[a-z0-9-]+\.)*giphy\.com\/[A-Za-z0-9._~:/?#[\]@!$&'()*+,;=%-]+$/i;
 // The reaction set is fixed. An open emoji field is a free text channel that
 // bypasses every filter above it.
 const REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
@@ -1371,7 +1410,7 @@ function cleanGif(g) {
   const url = String(g.url || '');
   const preview = String(g.preview || url);
   if (url.length > 400 || preview.length > 400) return null;
-  if (!TENOR_URL_RE.test(url) || !TENOR_URL_RE.test(preview)) return null;
+  if (!GIF_URL_RE.test(url) || !GIF_URL_RE.test(preview)) return null;
   const dim = (v) => Math.min(800, Math.max(0, Math.round(Number(v) || 0)));
   return { url, preview, w: dim(g.w), h: dim(g.h), alt: String(g.alt || '').slice(0, 80) };
 }
@@ -2936,7 +2975,7 @@ io.on('connection', (socket) => {
     if (!partnerId) return;
     const msg = readChatPayload(raw);
     if (!msg) return;
-    // A GIF carries a tenor.com URL by definition, so the link filter only
+    // A GIF carries a giphy.com URL by definition, so the link filter only
     // applies to what the user actually typed.
     if (msg.text && containsLink(msg.text)) {
       return socket.emit('chat-blocked', { reason: 'link' });
