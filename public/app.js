@@ -222,6 +222,11 @@ const signupEmail = document.getElementById('signupEmail');
 const signupSubmitBtn = document.getElementById('signupSubmitBtn');
 const googleBtnLogin = document.getElementById('googleBtnLogin');
 const googleBtnSignup = document.getElementById('googleBtnSignup');
+// Declared up here, not next to the Google sign-in code below: applyTheme()
+// runs during start-up and calls renderGoogleButtons(), which reads this. A
+// `let` further down would still be in its temporal dead zone at that point
+// and throw, taking the rest of app.js (every button handler) with it.
+let googleReady = false;
 const logoutBtn = document.getElementById('logoutBtn');
 const settingsNickname = document.getElementById('settingsNickname');
 const updateNicknameBtn = document.getElementById('updateNicknameBtn');
@@ -1499,7 +1504,7 @@ signupSubmitBtn.addEventListener('click', () => {
 // same button is "Sign in" for a returning user and "Sign up" for a new one.
 // Nothing here trusts the browser - the credential is only ever forwarded, and
 // the account is decided server-side from the verified token.
-let googleReady = false;
+// (googleReady is declared near the top of the file - see the note there.)
 
 function handleGoogleCredential(response) {
   if (!response || !response.credential) return;
