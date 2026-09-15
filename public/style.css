@@ -3172,6 +3172,26 @@ body.panel-open .side-panel {
 }
 
 /* The step label above each field in the reset flow. */
+/* Labels above every credential field. The sign-up form is three identical
+   rounded boxes, and once they are filled the placeholders are gone - which is
+   how an email address ends up typed into the username box. Left-aligned,
+   unlike the centred step labels in the forgot-password flow, so each one
+   clearly belongs to the field beneath it. */
+.account-field-label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+  margin: 2px 0 6px 14px;
+  text-align: left;
+}
+
+/* The field an error is actually about. */
+.account-input.is-invalid {
+  border-color: var(--danger);
+  outline: 1px solid var(--danger);
+}
+
 .account-step-label {
   display: block;
   font-size: 13px;

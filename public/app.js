@@ -1425,11 +1425,35 @@ loginSubmitBtn.addEventListener('click', () => {
   socket.emit('login', { username: loginUsername.value.trim(), password: loginPassword.value });
 });
 
+// Marks the field an error is about, so a message like "that email does not
+// look valid" points at a box instead of leaving the user to guess which of
+// three identical rounded fields it means.
+function markInvalidField(input) {
+  [signupUsername, signupPassword, signupEmail, loginUsername, loginPassword]
+    .forEach((el) => el && el.classList.remove('is-invalid'));
+  if (!input) return;
+  input.classList.add('is-invalid');
+  input.focus();
+  input.select && input.select();
+}
+[signupUsername, signupPassword, signupEmail, loginUsername, loginPassword]
+  .forEach((el) => el && el.addEventListener('input', () => el.classList.remove('is-invalid')));
+
 // Creating an account is just username + password - the display name defaults
 // to the username and can be changed later in My Account.
 signupSubmitBtn.addEventListener('click', () => {
+  const username = signupUsername.value.trim();
+  // The username box is first and the recovery email last, so an email typed
+  // into the first one is the obvious slip - and the server could only answer
+  // it with "username may only contain letters, numbers, dot, dash or
+  // underscore", which does not explain anything. Say what happened instead.
+  if (username.includes('@')) {
+    showAccountStatus(t('errUsernameIsEmail'), 'error');
+    markInvalidField(signupUsername);
+    return;
+  }
   socket.emit('signup', {
-    username: signupUsername.value.trim(),
+    username,
     password: signupPassword.value,
     // Optional. Without it the account cannot be recovered, which is exactly
     // what the field under it says.
@@ -1625,7 +1649,16 @@ socket.on('login-result', ({ ok, nickname, email, error, sessionToken: token }) 
 });
 
 socket.on('signup-result', ({ ok, nickname, email, error, sessionToken: token }) => {
-  if (!ok) return showAccountStatus(error, 'error');
+  if (!ok) {
+    showAccountStatus(error, 'error');
+    // Point at the field the server is complaining about.
+    const about = /email/i.test(error || '') ? signupEmail
+      : /password/i.test(error || '') && !/username/i.test(error || '') ? signupPassword
+      : /username/i.test(error || '') ? signupUsername
+      : null;
+    markInvalidField(about);
+    return;
+  }
   storeLogin(nickname, token);
   storeAccountEmail(email);
   showAccountStatus(t('statusAccountCreated', { name: nickname }), 'success');
