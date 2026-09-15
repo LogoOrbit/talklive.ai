@@ -15,9 +15,9 @@
      rather than after it - the sooner it lands, the sooner the hero paints.
      Analytics and ad tags are loaded at the end of <body> instead of here so
      they stop competing for mobile bandwidth during Largest Contentful Paint. -->
-<link rel="stylesheet" href="style.css?v=20260915ui9" />
-<link rel="stylesheet" href="chat-extras.css?v=20260915ui9" />
-<link rel="stylesheet" href="games.css?v=20260915ui9" />
+<link rel="stylesheet" href="style.css?v=20260915ui10" />
+<link rel="stylesheet" href="chat-extras.css?v=20260915ui10" />
+<link rel="stylesheet" href="games.css?v=20260915ui10" />
 <script defer src="/config.js"></script>
 <!-- Google Identity Services, deferred so it never blocks first paint. app.js
      waits for it (and for /config.js) before rendering the sign-in buttons. -->
@@ -676,8 +676,11 @@
                 <input type="password" id="signupPassword" class="search-input account-input" data-i18n-placeholder="choosePassword" data-i18n-aria="choosePassword" placeholder="Choose a password" autocomplete="new-password" />
                 <label class="account-field-label" for="signupEmail" data-i18n="labelRecoveryEmail">Recovery email (optional)</label>
                 <input type="email" id="signupEmail" class="search-input account-input" data-i18n-placeholder="recoveryEmailOptional" data-i18n-aria="recoveryEmailOptional" placeholder="Email (to recover your password)" autocomplete="email" inputmode="email" />
+                <!-- The hint belongs to the email field, so it sits with it
+                     rather than below the button, where it read as a footnote
+                     about the whole form. -->
+                <p class="account-hint account-hint-field" data-i18n="recoveryEmailHint">Only used to send you a reset code if you forget your password. Never shown to anyone.</p>
                 <button type="button" id="signupSubmitBtn" class="btn btn-primary settings-save" data-i18n="createAccount">Create Account</button>
-                <p class="account-hint" data-i18n="recoveryEmailHint">Only used to send you a reset code if you forget your password. Never shown to anyone.</p>
                 <div class="account-or google-block hidden"><span data-i18n="orDivider">or</span></div>
                 <div id="googleBtnSignup" class="google-btn-slot google-block hidden"></div>
                 <p class="account-hint google-block hidden" data-i18n="googleSignupHint">Signing up with Google creates your account instantly using the name and email you choose to share.</p>
@@ -708,7 +711,7 @@
                 <button type="button" id="forgotBackBtn" class="account-link" data-i18n="backToLogIn">Back to log in</button>
               </form>
 
-              <p class="account-hint" data-i18n="accountHint">Your account is saved permanently - you stay signed in on this device and can log in from anywhere.</p>
+              <p class="account-hint account-hint-footer" data-i18n="accountHint">Your account is saved permanently - you stay signed in on this device and can log in from anywhere.</p>
             </div>
 
             <div id="accountLoggedIn" class="hidden">
@@ -1592,8 +1595,8 @@
        browser finish parsing and paint the page first. -->
   <script defer src="/socket.io/socket.io.js"></script>
   <script defer src="countries.js?v=20260828fix"></script>
-  <script defer src="i18n.js?v=20260915ui9"></script>
-  <script defer src="animals.js?v=20260915ui9"></script>
+  <script defer src="i18n.js?v=20260915ui10"></script>
+  <script defer src="animals.js?v=20260915ui10"></script>
   <script defer src="moderation.js?v=20260705b"></script>
   <script defer src="error-reporter.js?v=20260823ui"></script>
   <script>
@@ -1627,9 +1630,9 @@
       audio.addEventListener('play', function () { setState(true); });
     })();
   </script>
-  <script defer src="chat-extras.js?v=20260915ui9"></script>
-  <script defer src="games.js?v=20260915ui9"></script>
-  <script defer src="app.js?v=20260915ui9"></script>
+  <script defer src="chat-extras.js?v=20260915ui10"></script>
+  <script defer src="games.js?v=20260915ui10"></script>
+  <script defer src="app.js?v=20260915ui10"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

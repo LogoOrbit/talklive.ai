@@ -1018,6 +1018,12 @@ socket.on('friend-request-result', ({ ok, error, limitReached }) => {
 let lastFocusedBeforeModal = null;
 function openModal(modal) {
   modal.classList.remove('hidden');
+  // Now that the modal has a layout, Google's button can be rendered at the
+  // real form width (it measures 0 while hidden, so it would otherwise keep the
+  // fallback size).
+  if (modal === accountModal && typeof renderGoogleButtons === 'function') {
+    requestAnimationFrame(() => renderGoogleButtons());
+  }
   // Move focus into dialogs so keyboard/screen-reader users land inside them,
   // and remember where to return focus on close.
   if (modal.classList.contains('modal-overlay')) {
@@ -1516,22 +1522,43 @@ function handleGoogleCredential(response) {
   socket.emit('google-auth', { credential: response.credential });
 }
 
+// Google only accepts a pixel width, so the button is rendered at the width of
+// the form it sits in - a hardcoded 280px left it visibly narrower than the
+// inputs and the Create Account button. A hidden modal measures 0, so fall back
+// to the panel width and finally to a sane default; Google clamps to 400.
+function googleBtnWidth(slot) {
+  const measured = Math.round(
+    slot.getBoundingClientRect().width ||
+    (slot.closest('.modal-body') || {}).clientWidth ||
+    0,
+  );
+  return Math.max(200, Math.min(400, measured || 320));
+}
+
 function renderGoogleButtons() {
   if (!googleReady) return;
   const dark = document.documentElement.getAttribute('data-theme') !== 'light';
   [[googleBtnLogin, 'signin_with'], [googleBtnSignup, 'signup_with']].forEach(([slot, text]) => {
-    // Keyed on the theme too, so switching themes re-renders Google's button
-    // in matching colours instead of leaving a dark button on a light page.
-    const key = `${text}:${dark ? 'dark' : 'light'}`;
-    if (!slot || slot.dataset.rendered === key) return;
+    if (!slot) return;
+    const width = googleBtnWidth(slot);
+    // Keyed on the theme and width, so switching themes re-renders Google's
+    // button in matching colours instead of leaving a dark button on a light
+    // page, and a resize (or the modal opening at its real width) re-renders it
+    // at the new size instead of leaving a stale, mismatched one.
+    const key = `${text}:${dark ? 'dark' : 'light'}:${width}`;
+    if (slot.dataset.rendered === key) return;
     slot.innerHTML = '';
     window.google.accounts.id.renderButton(slot, {
       type: 'standard', theme: dark ? 'filled_black' : 'outline', size: 'large',
-      text, shape: 'pill', logo_alignment: 'left', width: 280,
+      text, shape: 'pill', logo_alignment: 'center', width,
     });
     slot.dataset.rendered = key;
   });
 }
+
+// The slots have no width until the modal is actually on screen, and the window
+// can be resized (or rotated) while it is open.
+window.addEventListener('resize', () => renderGoogleButtons());
 
 function initGoogleSignIn() {
   const clientId = window.GOOGLE_CLIENT_ID;
