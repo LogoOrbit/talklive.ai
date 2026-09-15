@@ -191,6 +191,12 @@ const callBackAcceptBtn = document.getElementById('callBackAcceptBtn');
 const callBackDeclineBtn = document.getElementById('callBackDeclineBtn');
 
 const myAccountBtn = document.getElementById('myAccountBtn');
+// Header auth: the always-visible pair, swapped for one account button when
+// signed in. Mirrors the side panel's pair, which stays where it was.
+const headerAuth = document.getElementById('headerAuth');
+const headerLoginBtn = document.getElementById('headerLoginBtn');
+const headerSignupBtn = document.getElementById('headerSignupBtn');
+const headerAccountBtn = document.getElementById('headerAccountBtn');
 const accountModal = document.getElementById('accountModal');
 const closeAccountBtn = document.getElementById('closeAccountBtn');
 const accountStatus = document.getElementById('accountStatus');
@@ -1073,6 +1079,8 @@ function renderAccountState() {
     sidePanelSignInBtn.classList.add('hidden');
     sidePanelRegisterBtn.classList.add('hidden');
     myAccountBtn.classList.remove('hidden');
+    headerAuth.classList.add('hidden');
+    headerAccountBtn.classList.remove('hidden');
   } else {
     accountLoggedOut.classList.remove('hidden');
     accountLoggedIn.classList.add('hidden');
@@ -1080,6 +1088,8 @@ function renderAccountState() {
     sidePanelSignInBtn.classList.remove('hidden');
     sidePanelRegisterBtn.classList.remove('hidden');
     myAccountBtn.classList.add('hidden');
+    headerAuth.classList.remove('hidden');
+    headerAccountBtn.classList.add('hidden');
   }
   renderAvatarGrid();
   renderSettingsIdentity();
@@ -1360,6 +1370,23 @@ sidePanelRegisterBtn.addEventListener('click', () => {
   closeAppSettings();
   renderAccountState();
   selectAccountTab('signup');
+  openModal(accountModal);
+});
+
+// Header auth - the same three destinations as the side panel, one tap from
+// anywhere in the app instead of behind the settings menu.
+function openAccountModal(tab) {
+  closeAppSettings();
+  renderAccountState();
+  selectAccountTab(tab);
+  openModal(accountModal);
+}
+
+headerLoginBtn.addEventListener('click', () => openAccountModal('login'));
+headerSignupBtn.addEventListener('click', () => openAccountModal('signup'));
+headerAccountBtn.addEventListener('click', () => {
+  closeAppSettings();
+  renderAccountState();
   openModal(accountModal);
 });
 
