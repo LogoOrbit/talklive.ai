@@ -1,3 +1,4 @@
+require('dotenv').config();
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -6,6 +7,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const geoip = require('geoip-lite');
 const { OAuth2Client } = require('google-auth-library');
+const { clerkMiddleware, requireAuth, getAuth, createClerkClient } = require('@clerk/express');
 const { generateUsername } = require('./usernames');
 // Shared with the browser: public/countries.js exports for Node and defines a
 // global when loaded as a plain <script>, so there is one country list, not two.
@@ -102,6 +104,7 @@ const CSP = [
     + ' https://*.effectivecpmnetwork.com https://www.googletagmanager.com'
     + ' https://*.gstatic.com'
     + ' https://www.google.com'
+    + ' https://*.clerk.accounts.dev https://clerk.com https://*.clerk.com'
     + (ADS_SCRIPT_HOSTS.length ? ' ' + ADS_SCRIPT_HOSTS.join(' ') : ''),
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: https:",
@@ -145,6 +148,10 @@ app.use((req, res, next) => {
 // Socket.IO is unaffected: engine.io handles /socket.io/ at the HTTP server
 // level, before Express ever sees the request.
 app.use(compress());
+
+// Clerk authentication middleware — reads the session token from every request
+// and populates req.auth. Routes can call requireAuth() or getAuth(req) after this.
+app.use(clerkMiddleware());
 
 // Tiny health check for uptime pingers (cron-job.org / UptimeRobot). Returns a
 // few bytes instead of the full homepage, so the pinger doesn't abort with
