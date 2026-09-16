@@ -96,6 +96,9 @@ const I18N_STRINGS = {
     "statusReadyToChat": "Ready to chat - tap the button to meet someone new",
     "subTapChat": "Tap the button whenever you're ready to chat",
     "chatSystemMatched": "You're now chatting with {name} from {country} - say hi! 👋",
+    // Used when the geo lookup found nothing: "from " with a hole in it reads
+    // as a bug, and "from Unknown" tells the reader less than not saying it.
+    "chatSystemMatchedNoCountry": "You're now chatting with {name} - say hi! 👋",
     "chatSystemLeft": "The stranger left the chat. Tap the green button to meet someone new.",
     "chatStartTitle": "Chat with a stranger",
     "chatStartSub": "Anonymous · worldwide · free",
@@ -682,7 +685,11 @@ function t(key, vars) {
 // Localized country name (falls back to the English list in countries.js).
 let i18nRegionNames = null;
 function getCountryName(code) {
-  if (!code || code === 'XX') return typeof COUNTRIES !== 'undefined' && COUNTRIES[code] ? COUNTRIES[code] : (code || '');
+  // 'XX' is the server's "geo lookup found nothing" code, and there is no such
+  // country to name. Returning the code itself put the literal string "XX" on
+  // screen under a stranger's name; every caller already has a `|| fallback`,
+  // so an empty string is what they are all written to expect.
+  if (!code || code === 'XX') return (typeof COUNTRIES !== 'undefined' && COUNTRIES[code]) || '';
   try {
     if (!i18nRegionNames) i18nRegionNames = new Intl.DisplayNames([I18N_STATE.lang], { type: 'region' });
     const name = i18nRegionNames.of(code.toUpperCase());

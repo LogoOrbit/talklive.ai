@@ -19,6 +19,7 @@ const subText = document.getElementById('subText');
 const errorText = document.getElementById('errorText');
 const setupErrorText = document.getElementById('setupErrorText');
 const onlineCountEl = document.getElementById('onlineCount');
+const brandLiveEl = document.getElementById('brandLive');
 const remoteAudio = document.getElementById('remoteAudio');
 const brandDot = document.getElementById('brandDot');
 
@@ -1172,6 +1173,9 @@ document.addEventListener('keydown', (e) => {
     closeSidePanel(friendChatModal, friendChatOverlay);
     closeAppSettings();
     closeFilters();
+    // The consent gate was the one dialog Escape did not reach. Declared far
+    // below this handler, but only ever read here at event time.
+    if (!ageConsentModal.classList.contains('hidden')) dismissAgeConsent();
   }
 });
 
@@ -4283,6 +4287,7 @@ function resetUI() {
   chatToggleBtn.classList.add('hidden');
   gameBtn.classList.add('hidden');
   if (typeof resetGame === 'function') resetGame();
+  syncToolRailOverflow();
 }
 
 // Return the single button to green "Call" (idle) on the persistent call screen.
@@ -4338,7 +4343,25 @@ function enterCallUI() {
   gameBtn.classList.remove('hidden');
   // Auth is the one header control the call screen drops.
   renderHeaderAuthVisibility();
+  syncToolRailOverflow();
 }
+
+// The header's tool rail is one capsule, and mid-call it grows from four tools
+// to six. On the narrowest phones that can run past the track it is given, so
+// it scrolls - and a scrolled icon cut dead at the capsule edge reads as a
+// rendering fault rather than as "there is more here". The class turns on the
+// edge fade in style.css, and only while there is genuinely something hidden.
+const headerToolsEl = document.querySelector('.header-tools');
+function syncToolRailOverflow() {
+  if (!headerToolsEl) return;
+  // Measured after layout: the tools are shown/hidden in the same frame.
+  requestAnimationFrame(() => {
+    const over = headerToolsEl.scrollWidth - headerToolsEl.clientWidth > 1;
+    headerToolsEl.classList.toggle('is-overflowing', over);
+  });
+}
+window.addEventListener('resize', syncToolRailOverflow);
+syncToolRailOverflow();
 
 let beginInFlight = false;
 const MIC_EXPLAINED_KEY = 'talklive_mic_explained';
@@ -4400,6 +4423,7 @@ async function begin() {
 const ageConsentModal = document.getElementById('ageConsentModal');
 const ageAgreeBtn = document.getElementById('ageAgreeBtn');
 const ageAgreeCheckbox = document.getElementById('ageAgreeCheckbox');
+const closeAgeConsentBtn = document.getElementById('closeAgeConsentBtn');
 const CONSENT_KEY = 'talklive_age_consent';
 
 // Start a call from the big button - gated by the one-time age/terms consent,
@@ -4451,6 +4475,22 @@ ageAgreeBtn.addEventListener('click', () => {
   closeModal(ageConsentModal);
   if (pendingInviteToken) joinVoiceInvite();
   else begin();
+});
+
+// Backing out of the consent gate. Nothing is stored, so the gate is still a
+// gate next time - but the button that opened it has to come back to life.
+// It was put into its connecting state on the tap that opened the modal, and
+// that state is also what guards against double taps, so leaving it set made
+// "Tap to Talk" permanently inert until the page was reloaded.
+function dismissAgeConsent() {
+  closeModal(ageConsentModal);
+  startBtn.disabled = false;
+  startBtn.classList.remove('is-connecting');
+}
+
+closeAgeConsentBtn.addEventListener('click', dismissAgeConsent);
+ageConsentModal.addEventListener('click', (e) => {
+  if (e.target === ageConsentModal) dismissAgeConsent();
 });
 
 // Accepting a voice-call invite from /chat: same consent + mic setup as a
@@ -5127,6 +5167,9 @@ window.addEventListener('beforeunload', (e) => {
 socket.on('online-count', (count) => {
   lastOnlineCount = count;
   onlineCountEl.textContent = count;
+  // The lockup's live line ships as a grey dot and an em dash - "0 online" on
+  // first paint reads as "nobody is here". The first real count lights it up.
+  if (brandLiveEl) brandLiveEl.classList.remove('is-waiting');
 });
 
 socket.on('waiting', ({ estimatedSeconds, predicted } = {}) => {
@@ -5184,7 +5227,12 @@ socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
   trackGrowthEvent('call_partner_found');
   setConnection('orange', 'connConnecting');
   if (callback) setStatusText('statusCallingBack', { name: partner.username });
-  else setStatusText('statusConnectingTo', { country: getCountryName(partner.countryCode) || partner.country });
+  // No country when the geo lookup found nothing: the server sends 'XX' /
+  // 'Unknown', and "Connecting to someone in Unknown…" is worse than just
+  // saying we are connecting.
+  else if (partner.countryCode && partner.countryCode !== 'XX') {
+    setStatusText('statusConnectingTo', { country: getCountryName(partner.countryCode) || partner.country });
+  } else setStatusText('statusConnecting');
   if (rematched) setSubText('subRematched');
   else setSubText(null);
 
@@ -5744,7 +5792,9 @@ socket.on('friend-request-result', ({ ok, limitReached } = {}) => {
 
 // --- "James from UK is online" - friend came online notification -------------
 socket.on('friend-online', ({ username, countryCode, country } = {}) => {
-  const where = getCountryName(countryCode) || country || '';
+  // Same 'XX' / 'Unknown' guard as the match line: no place is better than a
+  // placeholder, and the toast already has a no-country wording.
+  const where = (countryCode && countryCode !== 'XX') ? (getCountryName(countryCode) || country || '') : '';
   showToast(where ? t('friendOnlineToast', { name: username, country: where }) : t('friendOnlineToastNoCountry', { name: username }));
   vibrate([30, 40, 30]);
 });

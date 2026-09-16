@@ -1543,3 +1543,185 @@ img { max-width: 100%; }
 .msg.is-grouped { margin-top: -2px; }
 .msg.me.is-grouped { border-top-right-radius: 6px; }
 .msg.them.is-grouped { border-top-left-radius: 6px; }
+
+/* === Top bar: same three objects as / and /call ============================
+ *
+ * This bar was already disciplined - one shape, one weight, everything
+ * secondary behind a single menu - but it told the product's story in a
+ * different dialect to the voice app: a gear ahead of the brand, a green
+ * capsule of headcount in the middle slot, and circular controls where the
+ * other screens use rounded squares. Two bars, one product.
+ *
+ * Same three objects here now: the lockup (with liveness under the wordmark),
+ * the partner in the middle and nothing else, and one control group on the
+ * right. Only the dialect changes - none of this bar's structure moves, so
+ * the menu, the auto toggle and their scripts are untouched.
+ */
+.topbar {
+  --brand-mark: 32px;
+  --brand-gap: 10px;
+}
+
+/* The lockup stacks: wordmark, then the live line indented to start under it. */
+.top-lead {
+  display: block;
+  min-width: 0;
+}
+
+.brand { gap: var(--brand-gap); }
+.brand-logo { width: var(--brand-mark); height: var(--brand-mark); }
+/* Never ellipsed away - see the matching note in style.css. */
+.brand-name { flex: 0 0 auto; }
+
+/* The headcount, no longer a capsule: at lockup scale a tinted pill with a
+   border is a third weight competing with the wordmark above it. A dot, a
+   number and a word, in the muted voice the rest of the bar's secondary text
+   uses. */
+.live-count {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: auto;
+  margin-top: 1px;
+  padding: 0 0 0 calc(var(--brand-mark) + var(--brand-gap));
+  border: 0;
+  background: none;
+  border-radius: 0;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+
+.live-beacon {
+  width: 6px;
+  height: 6px;
+  margin: 0;
+}
+
+.live-beacon::before {
+  width: 6px;
+  height: 6px;
+}
+
+/* The halo was sized for a 14px beacon inside a capsule; at 6px it swamped
+   the line. The dot keeps its breathing ring, one size down. */
+.live-beacon::after {
+  width: 6px;
+  height: 6px;
+}
+
+.live-num {
+  font-size: 11px;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--text) 82%, transparent);
+}
+
+.live-label {
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  text-transform: lowercase;
+  color: var(--muted);
+  opacity: 0.85;
+}
+
+.live-count.is-waiting { opacity: 0.55; }
+
+/* --- One control group ---------------------------------------------------- */
+
+/* The same rail the voice app's tools sit in: one capsule, hairline border,
+   rounded-square targets inside it. */
+.top-actions {
+  gap: 2px;
+  padding: 3px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text) 6%, transparent);
+}
+
+.top-actions .icon-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: transparent;
+  border-color: transparent;
+}
+
+.top-actions .icon-btn:hover {
+  background: color-mix(in srgb, var(--text) 9%, transparent);
+  transform: none;
+}
+
+.top-actions .icon-btn:active {
+  transform: scale(0.93);
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+  color: var(--text);
+}
+
+.top-actions .icon-btn:focus-visible {
+  box-shadow: none;
+  outline: 2px solid var(--accent-2);
+  outline-offset: 2px;
+}
+
+/* Auto keeps its pill shape - it is a word, not a glyph - but drops into the
+   same rail rhythm as the icons beside it. */
+.top-actions .auto-btn {
+  width: auto;
+  height: 38px;
+  border-radius: 12px;
+  padding: 0 13px;
+}
+
+@media (max-width: 600px) {
+  .topbar {
+    --brand-mark: 30px;
+    --brand-gap: 9px;
+  }
+  .live-count,
+  .live-num,
+  .live-label { font-size: 10.5px; }
+  .top-actions .icon-btn { width: 36px; height: 36px; border-radius: 11px; }
+  .top-actions .auto-btn { padding: 0 11px; }
+}
+
+/* The beacon's halo is decoration; motion-sensitive users get the dot. */
+@media (prefers-reduced-motion: reduce) {
+  .live-beacon::after { animation: none; }
+}
+
+/* Light theme: translucent white goes invisible on a light surface. */
+[data-theme="light"] .top-actions {
+  background: rgba(26, 32, 51, 0.045);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+[data-theme="light"] .top-actions .icon-btn:hover {
+  background: rgba(26, 32, 51, 0.08);
+}
+
+/* Two phone-width trades that only made sense while the headcount was a
+   capsule in the middle of the bar. It is a line under the wordmark now, so
+   neither the word "online" nor the word "TalkLive" is costing anything the
+   controls beside them need.
+ *
+ *  - the label: it sits on its own line, so hiding it bought nothing.
+ *  - the wordmark: the bar used to delete it the moment a conversation
+ *    started, which left a bare tile as the only thing naming the site on the
+ *    one screen people screenshot and send to a friend. The middle slot is
+ *    the partner and nothing else now, and the controls are one compact rail,
+ *    so it fits. */
+@media (max-width: 480px) {
+  .live-label { display: inline; }
+
+  .live-count {
+    height: auto;
+    padding: 0 0 0 calc(var(--brand-mark) + var(--brand-gap));
+    gap: 5px;
+  }
+
+  .topbar.connected .brand-name { display: inline; }
+  .topbar.connected .brand { gap: var(--brand-gap); }
+}

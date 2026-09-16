@@ -1569,18 +1569,21 @@
     addFriendBtn.disabled = false;
     clearMessages();
     // Top bar: partner name + country with its flag.
-    var countryName = getCountryName(data.partner.countryCode) || data.partner.country || '';
+    // When the geo lookup found nothing the server sends 'XX' / 'Unknown'.
+    // Neither is a place, and a line reading "Unknown" under someone's name
+    // says less than no line at all - so the whole row stands down.
+    var known = !!data.partner.countryCode && data.partner.countryCode !== 'XX';
+    var countryName = known ? (getCountryName(data.partner.countryCode) || data.partner.country || '') : '';
     $('topPartnerName').textContent = data.partner.username;
     $('topPartnerCountry').textContent = countryName;
-    $('topPartnerFlag').innerHTML = getFlagImg(data.partner.countryCode, 16);
+    $('topPartnerFlag').innerHTML = countryName ? getFlagImg(data.partner.countryCode, 16) : '';
     showView('live');
     soundConnect();
     // "You're now chatting with X from Pakistan 🇵🇰" - the flag image goes right
     // after the country name inside the system line, so it's built as DOM.
-    var line = addMessage(t('chatSystemMatched', {
-      name: data.partner.username,
-      country: countryName,
-    }), 'system');
+    var line = addMessage(countryName
+      ? t('chatSystemMatched', { name: data.partner.username, country: countryName })
+      : t('chatSystemMatchedNoCountry', { name: data.partner.username }), 'system');
     var html = escapeHtml(line.textContent);
     if (countryName && data.partner.countryCode && data.partner.countryCode !== 'XX') {
       html = html.replace(escapeHtml(countryName), escapeHtml(countryName) + ' ' + getFlagImg(data.partner.countryCode, 15));

@@ -7187,3 +7187,433 @@ html.perf-lite .side-panel { box-shadow: none; }
 }
 .rename-actions { margin-top: 14px; }
 #renameFriendInput { width: 100%; }
+
+/* === Top bar: one bar, three objects =======================================
+ *
+ * The bar had seven independent things competing on a 390px phone - a gear, a
+ * lockup, three tool glyphs, two auth pills and a headcount chip - and no two
+ * of them agreed on size, weight or shape. At that width they simply ran out
+ * of room: the filters icon was clipped to a sliver, Log In sat on top of the
+ * headcount, and the count itself hung half off the right edge. On a desktop
+ * the same set read as debris floating in a mostly empty bar.
+ *
+ * Three objects now, at every width:
+ *
+ *   1. The lockup, alone on the left, with the live headcount tucked under the
+ *      wordmark. Stacked, the count costs nothing horizontally - which is what
+ *      made a phone bar possible at all - and it says the true thing about
+ *      this product in the place people read first: it is alive right now.
+ *   2. One tool rail. A single translucent capsule holding every tool, so six
+ *      glyphs read as one control, not six decisions. Call-only tools (chat,
+ *      game) lead it; settings closes it.
+ *   3. Auth, the only saturated thing on the bar, so the eye knows where the
+ *      action is without anything shouting.
+ *
+ * Everything inside shares one radius scale, one hover language and one focus
+ * ring, so the row reads as a single set of controls rather than an accretion.
+ */
+
+.topbar {
+  /* Sizes the lockup's second line indents against - see .brand-live. */
+  --brand-mark: 32px;
+  --brand-gap: 10px;
+  --tool-size: 40px;
+  --tool-radius: 12px;
+  align-items: center;
+  padding: 9px 18px;
+  padding-top: calc(9px + env(safe-area-inset-top));
+  column-gap: 12px;
+  /* A quiet vertical lift so the bar has a top edge of its own rather than
+     being a flat slab the page runs into. */
+  background-image: linear-gradient(180deg, color-mix(in srgb, var(--text) 4%, transparent), transparent 70%);
+}
+
+.topbar.is-stuck {
+  box-shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.7);
+}
+
+/* --- 1. The lockup -------------------------------------------------------- */
+
+.topbar-left {
+  display: block;   /* the live line stacks under the brand button */
+  min-width: 0;
+}
+
+.brand {
+  gap: var(--brand-gap);
+  font-size: 19px;
+  min-height: 0;
+  padding: 0;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.brand-logo {
+  width: var(--brand-mark);
+  height: var(--brand-mark);
+}
+
+/* Indented to start exactly where the wordmark starts, so the lockup reads as
+   one block of type rather than a caption floating under a logo. */
+.brand-live {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 1px 0 0;
+  padding-inline-start: calc(var(--brand-mark) + var(--brand-gap));
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.brand-live-num {
+  color: color-mix(in srgb, var(--text) 82%, transparent);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.brand-live-label {
+  text-transform: lowercase;
+  opacity: 0.85;
+}
+
+.brand-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--green);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--green) 55%, transparent);
+  animation: brandLivePulse 2.4s ease-out infinite;
+}
+
+/* Before the first count lands: a still grey dot and an em dash. Never a zero,
+   which reads as "nobody is here" on the one screen that has to say otherwise. */
+.brand-live.is-waiting {
+  opacity: 0.55;
+}
+
+.brand-live.is-waiting .brand-live-dot {
+  background: var(--muted);
+  box-shadow: none;
+  animation: none;
+}
+
+/* A ring that breathes outward rather than a dot that flashes - the same
+   "live" idiom the /chat beacon uses, at lockup scale. */
+@keyframes brandLivePulse {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--green) 55%, transparent); }
+  70%  { box-shadow: 0 0 0 5px color-mix(in srgb, var(--green) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--green) 0%, transparent); }
+}
+
+/* --- 2. The tool rail ----------------------------------------------------- */
+
+.header-tools {
+  /* Sits beside auth rather than marooned in the middle of the bar. At desktop
+     widths there is room to centre it (below), which is where a tool group
+     belongs when the bar is wide enough for the gesture to read as deliberate. */
+  justify-self: end;
+  justify-content: safe center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: calc(var(--tool-radius) + 4px);
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text) 6%, transparent);
+  /* The capsule is the object; an empty one (no tools shown) would be a stray
+     pill, so it collapses to nothing. */
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.header-tools:empty,
+.header-tools:not(:has(.icon-btn:not(.hidden))) {
+  border-color: transparent;
+  background: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+.topbar .header-tools .icon-btn {
+  width: var(--tool-size);
+  height: var(--tool-size);
+  border-radius: var(--tool-radius);
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+  opacity: 1;
+}
+
+.topbar .header-tools .icon-btn:hover {
+  background: color-mix(in srgb, var(--text) 9%, transparent);
+  border-color: transparent;
+  color: var(--text);
+}
+
+/* Pressed reads as the accent, not as a deeper grey: the app has a colour, and
+   this is the one moment a tool is allowed to use it. */
+.topbar .header-tools .icon-btn:active {
+  transform: scale(0.93);
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+  color: var(--text);
+}
+
+/* An open panel keeps its tool lit, so there is always an answer to "what is
+   this sheet, and what opened it". */
+.topbar .header-tools .icon-btn[aria-expanded="true"],
+.topbar .header-tools .icon-btn.is-active {
+  background: color-mix(in srgb, var(--accent) 26%, transparent);
+  color: var(--text);
+}
+
+.topbar .topbar-svg-icon {
+  width: 21px;
+  height: 21px;
+}
+
+/* The friends glyph was the one tool in a different colour; inside one rail
+   every tool answers to the same state rules. The badge still carries urgency. */
+.topbar .header-tools .friends-btn { color: var(--muted); }
+.topbar .header-tools .friends-btn:hover { color: var(--text); }
+
+/* --- 3. Auth -------------------------------------------------------------- */
+
+.header-right { gap: 6px; }
+
+.header-auth { gap: 6px; }
+
+.header-auth-btn {
+  min-height: 38px;
+  padding: 0 15px;
+  font-size: 13px;
+  letter-spacing: 0.01em;
+}
+
+.header-auth-login {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+}
+
+.header-auth-login:hover {
+  background: color-mix(in srgb, var(--text) 9%, transparent);
+  border-color: transparent;
+  color: var(--text);
+}
+
+/* The one saturated element on the bar. The glow is what separates it from a
+   flat chip without adding a second border weight. */
+.header-auth-signup {
+  box-shadow: 0 6px 18px -8px var(--accent), 0 1px 0 rgba(255, 255, 255, 0.2) inset;
+}
+
+.header-account-btn {
+  width: var(--tool-size);
+  height: var(--tool-size);
+  border-radius: var(--tool-radius);
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+  color: var(--muted);
+}
+
+.header-account-btn:hover {
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+  color: var(--text);
+}
+
+/* Badges hang off the tool's own corner. Inside a 3px-padded rail the old
+   offsets put them under the capsule's edge. */
+.topbar .header-tools .icon-btn .notif-badge,
+.topbar .header-tools .icon-btn .chat-badge {
+  top: -1px;
+  right: -1px;
+}
+
+/* One focus ring for every control in the bar, drawn outside the shape so it
+   is never clipped by the rail. */
+.topbar .icon-btn:focus-visible,
+.topbar .header-auth-btn:focus-visible,
+.topbar .brand:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 2px;
+  border-radius: var(--tool-radius);
+}
+
+/* --- Widths --------------------------------------------------------------- */
+
+/* Wide enough for the gesture to read: the rail centres against the bar. */
+@media (min-width: 900px) {
+  .header-tools { justify-self: center; }
+  .topbar { padding: 10px 24px; padding-top: calc(10px + env(safe-area-inset-top)); }
+}
+
+@media (max-width: 600px) {
+  .topbar {
+    --tool-size: 38px;
+    --tool-radius: 11px;
+    --brand-mark: 30px;
+    --brand-gap: 9px;
+    padding: 7px 12px;
+    padding-top: calc(7px + env(safe-area-inset-top));
+    column-gap: 10px;
+  }
+
+  .brand { font-size: 17.5px; }
+  .brand-live { font-size: 10.5px; }
+  .topbar .topbar-svg-icon { width: 20px; height: 20px; }
+
+  .header-auth-btn {
+    min-height: 34px;
+    padding: 0 13px;
+    font-size: 12.5px;
+  }
+
+  /* Sign Up comes back. It was hidden here because two pills plus a headcount
+     chip could not fit; the chip is in the lockup now, and the room it used to
+     take is exactly what the primary action needed. Log In goes back to being
+     quiet text - it was only wearing the gradient because it was alone. */
+  .header-auth-signup { display: inline-flex; }
+
+  .header-auth-login,
+  .header-auth-login:hover {
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--muted);
+  }
+  .header-auth-login:hover { color: var(--text); }
+}
+
+/* Under ~480px two auth pills and a four-tool rail cannot both be honest about
+   tap targets - past this the rail starts scrolling, which hides a tool behind
+   a gesture nobody knows is there. Log In is the one people go looking for;
+   Sign Up is a tap away inside it, and on the page below. */
+@media (max-width: 479px) {
+  .header-auth-signup { display: none; }
+
+  .header-auth-login,
+  .header-auth-login:hover {
+    border: 0;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #fff;
+    box-shadow: 0 6px 18px -8px var(--accent);
+  }
+  .header-auth-login:hover { filter: brightness(1.08); }
+}
+
+/* Small phones. Everything tightens; nothing disappears and nothing scrolls -
+   a four-tool rail at 34px still clears every tap-target guideline. */
+@media (max-width: 389px) {
+  .topbar {
+    --tool-size: 34px;
+    --tool-radius: 10px;
+    --brand-mark: 26px;
+    --brand-gap: 8px;
+    padding-left: 9px;
+    padding-right: 9px;
+    column-gap: 8px;
+  }
+  .brand { font-size: 15.5px; letter-spacing: -0.4px; }
+  .brand-live { font-size: 10px; }
+  .topbar .topbar-svg-icon { width: 18px; height: 18px; }
+  .header-auth-btn { padding: 0 11px; font-size: 12px; }
+  .header-tools { padding: 2px; gap: 0; }
+}
+
+/* The pulse is decoration; motion-sensitive users get the dot without it. */
+@media (prefers-reduced-motion: reduce) {
+  .brand-live-dot { animation: none; }
+}
+
+/* Light theme: the translucent-white fills the dark themes use go invisible on
+   a light background, so the rail and the account button take an ink tint. */
+[data-theme="light"] .header-tools,
+[data-theme="light"] .header-account-btn {
+  background: rgba(26, 32, 51, 0.045);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+[data-theme="light"] .topbar .header-tools .icon-btn:hover,
+[data-theme="light"] .header-auth-login:hover,
+[data-theme="light"] .header-account-btn:hover {
+  background: rgba(26, 32, 51, 0.08);
+}
+
+/* The lockup is never the thing that gives way. As a plain `auto` track it was
+   the first: mid-call the rail grows to six tools, the grid squeezed the left
+   column to its min-content, and "TalkLive" ellipsed itself out of existence -
+   leaving a bare tile as the only thing on the page naming the site. The rail
+   is the element that can afford to give (it scrolls), so it is the one that
+   does. */
+.topbar {
+  grid-template-columns: max-content minmax(0, 1fr) auto;
+}
+
+/* And the wordmark itself refuses to shrink. `overflow:hidden` on a flex item
+   sets its automatic minimum size to zero, so "TalkLive" was free to ellipse
+   all the way down to nothing while the mark beside it stayed full size - the
+   grid track above can only protect what the flex line inside it will not give
+   away first. */
+.brand-name {
+  flex: 0 0 auto;
+}
+
+/* If the rail ever does run past its track, the overflowing icon fades out
+   instead of being guillotined at the capsule edge, so it reads as "there is
+   more here" rather than as a rendering fault. */
+.header-tools {
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+}
+
+/* The mask is only wanted when there is something to hide. A rail that fits -
+   which is every width the app actually ships at - keeps hard edges. */
+.header-tools:not(.is-overflowing) {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+/* Mid-call, the lockup keeps its lettering.
+ *
+ * The bar used to delete the word "TalkLive" the moment a call started, on any
+ * screen under 600px, because the tool row grew from three buttons to five and
+ * there was genuinely nowhere else for the room to come from. That trade is
+ * gone: the headcount chip that used to sit in the right corner is in the
+ * lockup now, and auth hides itself on the call screen, so the corner it all
+ * used to fight over is empty. The tools tighten by a few pixels instead - a
+ * six-tool rail at 36px is still well clear of every tap-target guideline -
+ * and the site keeps its name on screen during the one activity people are
+ * most likely to be screenshotting and sending to a friend.
+ */
+@media (max-width: 600px) {
+  .topbar:has(#gameBtn:not(.hidden)) .brand-name,
+  .topbar:has(#chatToggleBtn:not(.hidden)) .brand-name {
+    display: inline;
+  }
+
+  .topbar:has(#gameBtn:not(.hidden)) .brand,
+  .topbar:has(#chatToggleBtn:not(.hidden)) .brand {
+    gap: var(--brand-gap);
+  }
+
+  .topbar:has(#chatToggleBtn:not(.hidden)) {
+    --tool-size: 36px;
+    --tool-radius: 11px;
+  }
+
+  .topbar:has(#chatToggleBtn:not(.hidden)) .header-tools {
+    gap: 0;
+  }
+}
+
+@media (max-width: 389px) {
+  .topbar:has(#chatToggleBtn:not(.hidden)) {
+    --tool-size: 32px;
+    --tool-radius: 10px;
+  }
+  .topbar:has(#chatToggleBtn:not(.hidden)) .topbar-svg-icon {
+    width: 17px;
+    height: 17px;
+  }
+}

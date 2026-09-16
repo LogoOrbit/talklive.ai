@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
-<link rel="stylesheet" href="/chat.css?v=20260916chatpolish" />
-<link rel="stylesheet" href="/chat-extras.css?v=20260916chatpolish" />
-<link rel="stylesheet" href="/games.css?v=20260916chatpolish" />
+<link rel="stylesheet" href="/chat.css?v=20260916navbar" />
+<link rel="stylesheet" href="/chat-extras.css?v=20260916navbar" />
+<link rel="stylesheet" href="/games.css?v=20260916navbar" />
 <style>
   .skip-link {
     position: fixed;
@@ -70,13 +70,11 @@
     <!-- The one and only top bar. Idle: brand + online count. Connected: the
          partner's flag/name take the middle, and the action icons light up. -->
     <header class="topbar">
+      <!-- The lockup owns the left edge, exactly as it does on / and /call: the
+           settings gear used to sit ahead of it here too, which made the first
+           thing on the page a grey cog instead of the product's name. It is in
+           the action group on the right now. -->
       <div class="top-lead">
-      <button type="button" id="chatSettingsBtn" class="icon-btn settings-btn" data-i18n-title="settings" data-i18n-aria="settings" aria-label="Settings">
-        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="3.2"/>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-        </svg>
-      </button>
       <!-- The TalkLive lockup. Byte-for-byte the same mark and wordmark the
            voice app uses (public/index.html), so /chat is visibly the same
            product and not a different site. Never hidden - not on a phone,
@@ -89,21 +87,23 @@
         </span>
         <span class="brand-name">Talk<span class="brand-name-live">Live</span></span>
       </a>
+      <!-- Live headcount, moved out of the middle of the bar and tucked under
+           the wordmark - the same line the voice app's lockup carries. It was
+           a green capsule in the centre slot, which meant the bar's middle
+           changed meaning the moment a conversation started (headcount, then
+           partner). The middle is only ever "who you are talking to" now, and
+           liveness is said once, by the brand, on both screens. The waiting
+           state is a grey dot and an em dash - never a zero, which reads as
+           "nobody is here". -->
+      <div class="live-count is-waiting" id="liveCount" data-i18n-title="onlineAria" data-i18n-aria="onlineAria" title="Number of people online now" aria-label="Number of people online now" role="status" aria-live="polite">
+        <span class="live-beacon" aria-hidden="true"></span>
+        <span class="live-num" id="onlineCount">&mdash;</span>
+        <span class="live-label" data-i18n="online">Online</span>
+      </div>
       </div>
 
       <div class="top-info">
-        <div id="topDefault" class="top-id">
-          <!-- Live headcount. A beacon (dot + breathing halo), the number, and
-               a small uppercase label, wrapped in one green-tinted capsule so
-               it reads as a live badge instead of three loose fragments. The
-               waiting state (no count yet) is a grey, still beacon and an
-               em dash - never a zero, which reads as "nobody is here". -->
-          <div class="live-count is-waiting" id="liveCount" data-i18n-title="onlineAria" data-i18n-aria="onlineAria" title="Number of people online now" aria-label="Number of people online now" role="status" aria-live="polite">
-            <span class="live-beacon" aria-hidden="true"></span>
-            <span class="live-num" id="onlineCount">&mdash;</span>
-            <span class="live-label" data-i18n="online">Online</span>
-          </div>
-        </div>
+        <div id="topDefault" class="top-id"></div>
         <div id="topPartner" class="top-id hidden">
           <span class="top-name"><span id="topPartnerAnimal" class="top-animal hidden"></span><span id="topPartnerName"></span></span>
           <span class="top-sub"><span id="topPartnerFlag" class="peer-flag" aria-hidden="true"></span><span id="topPartnerCountry"></span></span>
@@ -113,6 +113,12 @@
       <div class="top-actions">
         <button type="button" id="autoBtn" class="icon-btn auto-btn hidden" aria-pressed="false" data-i18n-title="chatAutoHint" data-i18n-aria="chatAutoHint" aria-label="Auto-connect me to a new person when a chat ends">
           <span data-i18n="chatAuto">Auto</span>
+        </button>
+        <button type="button" id="chatSettingsBtn" class="icon-btn settings-btn" data-i18n-title="settings" data-i18n-aria="settings" aria-label="Settings">
+          <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3.2"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
         </button>
         <!-- There is no call button here. /chat is a text product; the one
              thing the bar used to carry that pulled people out of it was a
@@ -796,13 +802,13 @@
 
   <script defer src="/socket.io/socket.io.js"></script>
   <script defer src="/countries.js?v=20260828fix"></script>
-  <script defer src="/i18n.js?v=20260916chatpolish"></script>
-  <script defer src="/chat-time.js?v=20260916chatpolish"></script>
-  <script defer src="/animals.js?v=20260916chatpolish"></script>
+  <script defer src="/i18n.js?v=20260916navbar"></script>
+  <script defer src="/chat-time.js?v=20260916navbar"></script>
+  <script defer src="/animals.js?v=20260916navbar"></script>
   <script defer src="/error-reporter.js?v=20260823ui"></script>
-  <script defer src="/chat-extras.js?v=20260916chatpolish"></script>
-  <script defer src="/games.js?v=20260916chatpolish"></script>
-  <script defer src="/chat.js?v=20260916chatpolish"></script>
+  <script defer src="/chat-extras.js?v=20260916navbar"></script>
+  <script defer src="/games.js?v=20260916navbar"></script>
+  <script defer src="/chat.js?v=20260916navbar"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the
