@@ -40,7 +40,7 @@ I built an 18+ random chat product that deliberately removed video. It offers vo
 2. Post one useful answer in a language-learning or friendship community before mentioning TalkLive where promotion is permitted.
 3. Refresh one strong article using real user questions from Search Console; do not mass-produce thin pages.
 4. Check owner-dashboard counters: acquisition source, visits, matches, 30-second calls, shares, invite arrivals, pricing views, and checkout clicks.
-5. Keep a channel only when it produces matches or checkout clicks—not merely page views.
+5. Keep a channel only when it produces matches or checkout clicks - not merely page views.
 
 ## Revenue scoreboard
 

@@ -264,7 +264,7 @@ precisely the thin auto-generated content that gets a site demoted, and there is
 nobody to review the output. The localized homepages link into the English pages
 under a heading, in each language, that says the linked pages are in English.
 
-The right next step is to translate the highest-traffic 5–10 landing pages
+The right next step is to translate the highest-traffic 5-10 landing pages
 properly, per language, prioritised by which markets Search Console shows
 impressions in.
 
@@ -286,7 +286,7 @@ visit transferred everything raw:
 
 Implemented on Node's built-in `zlib` rather than the `compression` package: no
 new dependency on a repo that deploys via `npm ci`, and `compression` still
-cannot do Brotli, which beats gzip by another 15–20% on HTML and CSS. Compressed
+cannot do Brotli, which beats gzip by another 15-20% on HTML and CSS. Compressed
 static bodies are cached by ETag so a repeat hit costs a map lookup.
 
 `loading.js` also no longer runs on the ~260 server-rendered pages as a
@@ -340,7 +340,7 @@ Bing Webmaster Tools can import directly from Search Console.
 
 Then watch the per-sitemap coverage: the country and city clusters are the ones
 worth monitoring, because if Google decides they are thin it will show up there
-first as "Crawled – currently not indexed".
+first as "Crawled - currently not indexed".
 
 ### 2. `sameAs` - social profiles
 

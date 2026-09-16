@@ -270,12 +270,12 @@ module.exports = [
         'The practical consequence: if you are awake at 3am in Europe or the Americas, you will match faster by aiming at South and Southeast Asia than by leaving filters open and hoping.',
       ]},
       { h: 'Rough guide by region', ps: [
-        '<strong>South Asia</strong> (India, Pakistan, Bangladesh) peaks 9pm–2am local, which is roughly 15:30–20:30 UTC. Late tails are common, particularly in Pakistan.',
-        '<strong>Southeast Asia</strong> (Indonesia, Philippines, Vietnam, Thailand) peaks 8pm–1am local, around 13:00–18:00 UTC. The Philippines is the exception - a large night-shift workforce gives it genuine traffic at 4am local.',
-        '<strong>Europe</strong> peaks 8pm–midnight local, roughly 19:00–23:00 UTC, running later the further south you go.',
-        '<strong>The Americas</strong> peak 8pm–1am local across four zones, so the window rolls from roughly 00:00 to 08:00 UTC. Brazil and Argentina run later than the US.',
-        '<strong>The Middle East</strong> peaks late - 10pm–3am local for Turkey, Saudi Arabia and Iran, around 19:00–00:00 UTC.',
-        '<strong>Africa</strong> peaks 8pm–midnight local; Nigeria and Kenya carry most of the volume.',
+        '<strong>South Asia</strong> (India, Pakistan, Bangladesh) peaks 9pm-2am local, which is roughly 15:30-20:30 UTC. Late tails are common, particularly in Pakistan.',
+        '<strong>Southeast Asia</strong> (Indonesia, Philippines, Vietnam, Thailand) peaks 8pm-1am local, around 13:00-18:00 UTC. The Philippines is the exception - a large night-shift workforce gives it genuine traffic at 4am local.',
+        '<strong>Europe</strong> peaks 8pm-midnight local, roughly 19:00-23:00 UTC, running later the further south you go.',
+        '<strong>The Americas</strong> peak 8pm-1am local across four zones, so the window rolls from roughly 00:00 to 08:00 UTC. Brazil and Argentina run later than the US.',
+        '<strong>The Middle East</strong> peaks late - 10pm-3am local for Turkey, Saudi Arabia and Iran, around 19:00-00:00 UTC.',
+        '<strong>Africa</strong> peaks 8pm-midnight local; Nigeria and Kenya carry most of the volume.',
       ]},
       { h: 'The one adjustment that fixes most complaints', ps: [
         'Select three or four countries rather than one. A single-country filter gives you that country\'s curve and nothing else, which means it is dead for most of the day. Three or four in different time zones means something is always in its evening.',

@@ -4203,7 +4203,7 @@ document.addEventListener('touchend', (e) => {
 let gameNudgeTimer = null;
 function scheduleGameNudge() {
   clearTimeout(gameNudgeTimer);
-  const delay = 20000 + Math.random() * 10000; // 20–30s
+  const delay = 20000 + Math.random() * 10000; // 20-30s
   gameNudgeTimer = setTimeout(() => {
     const overlayOpen = !gameOverlay.classList.contains('hidden');
     // Don't nudge if the game's open, or an "it's your move" badge already shows.

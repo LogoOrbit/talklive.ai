@@ -31,7 +31,7 @@ const COUNTRIES = [
   {
     slug: 'india', name: 'India', demonym: 'Indian', code: 'IN', region: 'South Asia',
     langs: [{ name: 'Hindi', hello: 'Namaste' }, { name: 'English', hello: 'Hello' }, { name: 'Bengali', hello: 'Nomoshkar' }, { name: 'Tamil', hello: 'Vanakkam' }],
-    capital: 'New Delhi', tz: 'UTC+5:30 (IST)', peak: '9pm – 2am IST',
+    capital: 'New Delhi', tz: 'UTC+5:30 (IST)', peak: '9pm - 2am IST',
     cities: [
       { name: 'Mumbai', slug: 'mumbai', note: 'the longest commutes in the country, which is exactly when a voice call beats typing' },
       { name: 'Delhi', slug: 'delhi', note: 'a mix of Hindi, Punjabi and English in a single conversation is completely normal here' },
@@ -46,7 +46,7 @@ const COUNTRIES = [
   {
     slug: 'pakistan', name: 'Pakistan', demonym: 'Pakistani', code: 'PK', region: 'South Asia',
     langs: [{ name: 'Urdu', hello: 'Assalam-o-Alaikum' }, { name: 'Punjabi', hello: 'Sat sri akal' }, { name: 'English', hello: 'Hello' }, { name: 'Pashto', hello: 'Salam' }],
-    capital: 'Islamabad', tz: 'UTC+5 (PKT)', peak: '9pm – 3am PKT',
+    capital: 'Islamabad', tz: 'UTC+5 (PKT)', peak: '9pm - 3am PKT',
     cities: [
       { name: 'Karachi', slug: 'karachi', note: 'the country\'s largest city and the most linguistically mixed room you will land in' },
       { name: 'Lahore', slug: 'lahore', note: 'Punjabi and Urdu switch mid-sentence and nobody comments on it' },
@@ -59,7 +59,7 @@ const COUNTRIES = [
   {
     slug: 'united-states', name: 'United States', demonym: 'American', code: 'US', the: true, region: 'North America',
     langs: [{ name: 'English', hello: 'Hey' }, { name: 'Spanish', hello: 'Hola' }],
-    capital: 'Washington, D.C.', tz: 'UTC−5 to −10 (ET through HT)', peak: '8pm – 1am local, in four waves',
+    capital: 'Washington, D.C.', tz: 'UTC-5 to -10 (ET through HT)', peak: '8pm - 1am local, in four waves',
     cities: [
       { name: 'New York', slug: 'new-york', note: 'the only US city where 2am chat traffic is as heavy as 10pm' },
       { name: 'Los Angeles', slug: 'los-angeles', note: 'three hours behind the east coast, so it keeps the country online after midnight ET' },
@@ -73,7 +73,7 @@ const COUNTRIES = [
   {
     slug: 'united-kingdom', name: 'United Kingdom', demonym: 'British', code: 'GB', the: true, region: 'Europe',
     langs: [{ name: 'English', hello: 'Alright?' }],
-    capital: 'London', tz: 'UTC+0 / UTC+1 (GMT/BST)', peak: '8pm – midnight GMT',
+    capital: 'London', tz: 'UTC+0 / UTC+1 (GMT/BST)', peak: '8pm - midnight GMT',
     cities: [
       { name: 'London', slug: 'london', note: 'more languages spoken per square mile than anywhere else on this list' },
       { name: 'Manchester', slug: 'manchester', note: 'a student city, so term time and holidays visibly change who is online' },
@@ -86,7 +86,7 @@ const COUNTRIES = [
   {
     slug: 'canada', name: 'Canada', demonym: 'Canadian', code: 'CA', region: 'North America',
     langs: [{ name: 'English', hello: 'Hi there' }, { name: 'French', hello: 'Bonjour' }],
-    capital: 'Ottawa', tz: 'UTC−3:30 to −8', peak: '8pm – 1am local',
+    capital: 'Ottawa', tz: 'UTC-3:30 to -8', peak: '8pm - 1am local',
     cities: [
       { name: 'Toronto', slug: 'toronto', note: 'roughly half its residents were born elsewhere, so first-language matches vary wildly' },
       { name: 'Montreal', slug: 'montreal', note: 'the best place on the platform to practise French with someone who also speaks English' },
@@ -98,7 +98,7 @@ const COUNTRIES = [
   {
     slug: 'brazil', name: 'Brazil', demonym: 'Brazilian', code: 'BR', region: 'South America',
     langs: [{ name: 'Portuguese', hello: 'Oi, tudo bem?' }],
-    capital: 'Brasília', tz: 'UTC−3 (BRT)', peak: '9pm – 2am BRT',
+    capital: 'Brasília', tz: 'UTC-3 (BRT)', peak: '9pm - 2am BRT',
     cities: [
       { name: 'São Paulo', slug: 'sao-paulo', note: 'the largest city in the southern hemisphere and the busiest Portuguese-language chat city anywhere' },
       { name: 'Rio de Janeiro', slug: 'rio-de-janeiro', note: 'a noticeably more talkative match on average, which regulars will tell you unprompted' },
@@ -110,7 +110,7 @@ const COUNTRIES = [
   {
     slug: 'mexico', name: 'Mexico', demonym: 'Mexican', code: 'MX', region: 'North America',
     langs: [{ name: 'Spanish', hello: '¿Qué tal?' }],
-    capital: 'Mexico City', tz: 'UTC−6 (CST)', peak: '9pm – 1am CST',
+    capital: 'Mexico City', tz: 'UTC-6 (CST)', peak: '9pm - 1am CST',
     cities: [
       { name: 'Mexico City', slug: 'mexico-city', note: 'one of the largest metros on earth, and the Spanish accent most learners are taught' },
       { name: 'Guadalajara', slug: 'guadalajara', note: 'a big tech and student city with a lot of English learners' },
@@ -122,7 +122,7 @@ const COUNTRIES = [
   {
     slug: 'indonesia', name: 'Indonesia', demonym: 'Indonesian', code: 'ID', region: 'Southeast Asia',
     langs: [{ name: 'Indonesian', hello: 'Halo, apa kabar?' }, { name: 'Javanese', hello: 'Sugeng enjing' }],
-    capital: 'Jakarta', tz: 'UTC+7 to +9 (WIB/WITA/WIT)', peak: '8pm – 1am WIB',
+    capital: 'Jakarta', tz: 'UTC+7 to +9 (WIB/WITA/WIT)', peak: '8pm - 1am WIB',
     cities: [
       { name: 'Jakarta', slug: 'jakarta', note: 'traffic so bad that a long commute call is a genuine use case here' },
       { name: 'Surabaya', slug: 'surabaya', note: 'a port city with a blunter, faster conversational style than the capital' },
@@ -134,7 +134,7 @@ const COUNTRIES = [
   {
     slug: 'philippines', name: 'Philippines', demonym: 'Filipino', code: 'PH', the: true, region: 'Southeast Asia',
     langs: [{ name: 'Filipino', hello: 'Kumusta?' }, { name: 'English', hello: 'Hello' }, { name: 'Cebuano', hello: 'Kumusta ka?' }],
-    capital: 'Manila', tz: 'UTC+8 (PHT)', peak: '9pm – 2am PHT',
+    capital: 'Manila', tz: 'UTC+8 (PHT)', peak: '9pm - 2am PHT',
     cities: [
       { name: 'Manila', slug: 'manila', note: 'a huge night-shift workforce, so its "evening" traffic runs at odd hours by local clock' },
       { name: 'Cebu City', slug: 'cebu-city', note: 'Cebuano rather than Tagalog is the first language for most matches here' },
@@ -146,7 +146,7 @@ const COUNTRIES = [
   {
     slug: 'germany', name: 'Germany', demonym: 'German', code: 'DE', region: 'Europe',
     langs: [{ name: 'German', hello: 'Hallo, wie geht\'s?' }, { name: 'Turkish', hello: 'Merhaba' }],
-    capital: 'Berlin', tz: 'UTC+1 / UTC+2 (CET/CEST)', peak: '8pm – midnight CET',
+    capital: 'Berlin', tz: 'UTC+1 / UTC+2 (CET/CEST)', peak: '8pm - midnight CET',
     cities: [
       { name: 'Berlin', slug: 'berlin', note: 'so international that a "German" match here often opens in English' },
       { name: 'Munich', slug: 'munich', note: 'a noticeably more formal opening line than the rest of the country' },
@@ -159,7 +159,7 @@ const COUNTRIES = [
   {
     slug: 'france', name: 'France', demonym: 'French', code: 'FR', region: 'Europe',
     langs: [{ name: 'French', hello: 'Salut, ça va ?' }, { name: 'Arabic', hello: 'Salam' }],
-    capital: 'Paris', tz: 'UTC+1 / UTC+2 (CET/CEST)', peak: '9pm – 1am CET',
+    capital: 'Paris', tz: 'UTC+1 / UTC+2 (CET/CEST)', peak: '9pm - 1am CET',
     cities: [
       { name: 'Paris', slug: 'paris', note: 'the busiest French-language chat city on the platform by a wide margin' },
       { name: 'Marseille', slug: 'marseille', note: 'a Mediterranean city where French, Arabic and Italian all turn up in the same evening' },
@@ -171,7 +171,7 @@ const COUNTRIES = [
   {
     slug: 'spain', name: 'Spain', demonym: 'Spanish', code: 'ES', region: 'Europe',
     langs: [{ name: 'Spanish', hello: '¿Qué tal?' }, { name: 'Catalan', hello: 'Hola, com va?' }],
-    capital: 'Madrid', tz: 'UTC+1 / UTC+2 (CET/CEST)', peak: '10pm – 2am CET',
+    capital: 'Madrid', tz: 'UTC+1 / UTC+2 (CET/CEST)', peak: '10pm - 2am CET',
     cities: [
       { name: 'Madrid', slug: 'madrid', note: 'the reference accent for European Spanish and the one learners ask for' },
       { name: 'Barcelona', slug: 'barcelona', note: 'Catalan and Spanish in the same city, and often the same call' },
@@ -183,7 +183,7 @@ const COUNTRIES = [
   {
     slug: 'italy', name: 'Italy', demonym: 'Italian', code: 'IT', region: 'Europe',
     langs: [{ name: 'Italian', hello: 'Ciao, come va?' }],
-    capital: 'Rome', tz: 'UTC+1 / UTC+2 (CET/CEST)', peak: '9pm – 1am CET',
+    capital: 'Rome', tz: 'UTC+1 / UTC+2 (CET/CEST)', peak: '9pm - 1am CET',
     cities: [
       { name: 'Rome', slug: 'rome', note: 'the accent most Italian learners have been trained on' },
       { name: 'Milan', slug: 'milan', note: 'the most internationally-minded matches in the country' },
@@ -195,7 +195,7 @@ const COUNTRIES = [
   {
     slug: 'turkey', name: 'Turkey', demonym: 'Turkish', code: 'TR', region: 'Europe / Middle East',
     langs: [{ name: 'Turkish', hello: 'Merhaba, nasılsın?' }],
-    capital: 'Ankara', tz: 'UTC+3 (TRT)', peak: '10pm – 3am TRT',
+    capital: 'Ankara', tz: 'UTC+3 (TRT)', peak: '10pm - 3am TRT',
     cities: [
       { name: 'Istanbul', slug: 'istanbul', note: 'the only city on this list that straddles two continents, and its chat traffic is as mixed as that suggests' },
       { name: 'Ankara', slug: 'ankara', note: 'a government and university city, so the median match is studying something' },
@@ -207,7 +207,7 @@ const COUNTRIES = [
   {
     slug: 'russia', name: 'Russia', demonym: 'Russian', code: 'RU', region: 'Europe / Asia',
     langs: [{ name: 'Russian', hello: 'Привет, как дела?' }],
-    capital: 'Moscow', tz: 'UTC+2 to +12', peak: '9pm – 2am MSK',
+    capital: 'Moscow', tz: 'UTC+2 to +12', peak: '9pm - 2am MSK',
     cities: [
       { name: 'Moscow', slug: 'moscow', note: 'the busiest Russian-language chat city, by a long way' },
       { name: 'Saint Petersburg', slug: 'saint-petersburg', note: 'white nights in summer visibly push chat traffic later' },
@@ -219,7 +219,7 @@ const COUNTRIES = [
   {
     slug: 'saudi-arabia', name: 'Saudi Arabia', demonym: 'Saudi', code: 'SA', region: 'Middle East',
     langs: [{ name: 'Arabic', hello: 'السلام عليكم' }, { name: 'English', hello: 'Hello' }],
-    capital: 'Riyadh', tz: 'UTC+3 (AST)', peak: '10pm – 3am AST',
+    capital: 'Riyadh', tz: 'UTC+3 (AST)', peak: '10pm - 3am AST',
     cities: [
       { name: 'Riyadh', slug: 'riyadh', note: 'the largest source of Gulf Arabic matches on the platform' },
       { name: 'Jeddah', slug: 'jeddah', note: 'a coastal city with a more international mix than the interior' },
@@ -230,7 +230,7 @@ const COUNTRIES = [
   {
     slug: 'united-arab-emirates', name: 'United Arab Emirates', demonym: 'Emirati', code: 'AE', the: true, region: 'Middle East',
     langs: [{ name: 'Arabic', hello: 'مرحبا' }, { name: 'English', hello: 'Hello' }, { name: 'Hindi', hello: 'Namaste' }, { name: 'Urdu', hello: 'Assalam-o-Alaikum' }],
-    capital: 'Abu Dhabi', tz: 'UTC+4 (GST)', peak: '10pm – 2am GST',
+    capital: 'Abu Dhabi', tz: 'UTC+4 (GST)', peak: '10pm - 2am GST',
     cities: [
       { name: 'Dubai', slug: 'dubai', note: 'roughly nine in ten residents were born abroad - no other city on this list matches strangers across so many first languages' },
       { name: 'Abu Dhabi', slug: 'abu-dhabi', note: 'a slightly older, more settled population than Dubai and longer average calls' },
@@ -241,7 +241,7 @@ const COUNTRIES = [
   {
     slug: 'egypt', name: 'Egypt', demonym: 'Egyptian', code: 'EG', region: 'Middle East / Africa',
     langs: [{ name: 'Arabic', hello: 'إزيك' }],
-    capital: 'Cairo', tz: 'UTC+2 (EET)', peak: '10pm – 2am EET',
+    capital: 'Cairo', tz: 'UTC+2 (EET)', peak: '10pm - 2am EET',
     cities: [
       { name: 'Cairo', slug: 'cairo', note: 'the largest Arabic-speaking city in the world and the accent most of the Arab world already understands' },
       { name: 'Alexandria', slug: 'alexandria', note: 'a Mediterranean city with a distinctly different pace from the capital' },
@@ -252,7 +252,7 @@ const COUNTRIES = [
   {
     slug: 'nigeria', name: 'Nigeria', demonym: 'Nigerian', code: 'NG', region: 'Africa',
     langs: [{ name: 'English', hello: 'How far?' }, { name: 'Yoruba', hello: 'Bawo ni' }, { name: 'Igbo', hello: 'Kedu' }, { name: 'Hausa', hello: 'Sannu' }],
-    capital: 'Abuja', tz: 'UTC+1 (WAT)', peak: '8pm – 1am WAT',
+    capital: 'Abuja', tz: 'UTC+1 (WAT)', peak: '8pm - 1am WAT',
     cities: [
       { name: 'Lagos', slug: 'lagos', note: 'the largest city in Africa and the busiest source of African chat traffic anywhere' },
       { name: 'Abuja', slug: 'abuja', note: 'a planned capital with a more even mix of the country\'s language groups than Lagos' },
@@ -263,7 +263,7 @@ const COUNTRIES = [
   {
     slug: 'south-africa', name: 'South Africa', demonym: 'South African', code: 'ZA', region: 'Africa',
     langs: [{ name: 'English', hello: 'Howzit' }, { name: 'Zulu', hello: 'Sawubona' }, { name: 'Afrikaans', hello: 'Hallo' }],
-    capital: 'Pretoria', tz: 'UTC+2 (SAST)', peak: '8pm – midnight SAST',
+    capital: 'Pretoria', tz: 'UTC+2 (SAST)', peak: '8pm - midnight SAST',
     cities: [
       { name: 'Johannesburg', slug: 'johannesburg', note: 'the country\'s commercial centre and the most language-mixed matches in it' },
       { name: 'Cape Town', slug: 'cape-town', note: 'a large remote-working and visiting population, so daytime matches are common' },
@@ -274,7 +274,7 @@ const COUNTRIES = [
   {
     slug: 'japan', name: 'Japan', demonym: 'Japanese', code: 'JP', region: 'East Asia',
     langs: [{ name: 'Japanese', hello: 'こんにちは' }],
-    capital: 'Tokyo', tz: 'UTC+9 (JST)', peak: '10pm – 1am JST',
+    capital: 'Tokyo', tz: 'UTC+9 (JST)', peak: '10pm - 1am JST',
     cities: [
       { name: 'Tokyo', slug: 'tokyo', note: 'the largest metro area on earth and the most active Japanese chat city' },
       { name: 'Osaka', slug: 'osaka', note: 'a dialect and a comic sensibility that other Japanese speakers immediately recognise' },
@@ -285,7 +285,7 @@ const COUNTRIES = [
   {
     slug: 'south-korea', name: 'South Korea', demonym: 'Korean', code: 'KR', region: 'East Asia',
     langs: [{ name: 'Korean', hello: '안녕하세요' }],
-    capital: 'Seoul', tz: 'UTC+9 (KST)', peak: '10pm – 2am KST',
+    capital: 'Seoul', tz: 'UTC+9 (KST)', peak: '10pm - 2am KST',
     cities: [
       { name: 'Seoul', slug: 'seoul', note: 'roughly half the country lives in its metro area, so "Korean chat" is largely Seoul chat' },
       { name: 'Busan', slug: 'busan', note: 'a coastal accent Koreans can place instantly' },
@@ -296,7 +296,7 @@ const COUNTRIES = [
   {
     slug: 'china', name: 'China', demonym: 'Chinese', code: 'CN', region: 'East Asia',
     langs: [{ name: 'Mandarin', hello: '你好' }, { name: 'Cantonese', hello: '你好 (néih hóu)' }],
-    capital: 'Beijing', tz: 'UTC+8 (CST)', peak: '9pm – 1am CST',
+    capital: 'Beijing', tz: 'UTC+8 (CST)', peak: '9pm - 1am CST',
     cities: [
       { name: 'Shanghai', slug: 'shanghai', note: 'the most internationally connected matches in the country' },
       { name: 'Beijing', slug: 'beijing', note: 'the standard Mandarin accent that learners are taught' },
@@ -307,7 +307,7 @@ const COUNTRIES = [
   {
     slug: 'vietnam', name: 'Vietnam', demonym: 'Vietnamese', code: 'VN', region: 'Southeast Asia',
     langs: [{ name: 'Vietnamese', hello: 'Xin chào' }],
-    capital: 'Hanoi', tz: 'UTC+7 (ICT)', peak: '9pm – 1am ICT',
+    capital: 'Hanoi', tz: 'UTC+7 (ICT)', peak: '9pm - 1am ICT',
     cities: [
       { name: 'Ho Chi Minh City', slug: 'ho-chi-minh-city', note: 'the country\'s commercial engine and its busiest source of English learners' },
       { name: 'Hanoi', slug: 'hanoi', note: 'the northern accent, which is the one taught to learners' },
@@ -318,7 +318,7 @@ const COUNTRIES = [
   {
     slug: 'thailand', name: 'Thailand', demonym: 'Thai', code: 'TH', region: 'Southeast Asia',
     langs: [{ name: 'Thai', hello: 'สวัสดี' }],
-    capital: 'Bangkok', tz: 'UTC+7 (ICT)', peak: '9pm – 1am ICT',
+    capital: 'Bangkok', tz: 'UTC+7 (ICT)', peak: '9pm - 1am ICT',
     cities: [
       { name: 'Bangkok', slug: 'bangkok', note: 'a huge visiting and expatriate population, so English matches inside Thailand are common' },
       { name: 'Chiang Mai', slug: 'chiang-mai', note: 'a remote-work hub, which gives it real weekday-daytime chat traffic' },
@@ -329,7 +329,7 @@ const COUNTRIES = [
   {
     slug: 'bangladesh', name: 'Bangladesh', demonym: 'Bangladeshi', code: 'BD', region: 'South Asia',
     langs: [{ name: 'Bengali', hello: 'Kemon achho?' }, { name: 'English', hello: 'Hello' }],
-    capital: 'Dhaka', tz: 'UTC+6 (BST)', peak: '9pm – 2am BST',
+    capital: 'Dhaka', tz: 'UTC+6 (BST)', peak: '9pm - 2am BST',
     cities: [
       { name: 'Dhaka', slug: 'dhaka', note: 'one of the most densely populated cities on earth, and its chat traffic is proportionate' },
       { name: 'Chittagong', slug: 'chittagong', note: 'a regional dialect distinct enough that Dhaka speakers notice it immediately' },
@@ -340,7 +340,7 @@ const COUNTRIES = [
   {
     slug: 'australia', name: 'Australia', demonym: 'Australian', code: 'AU', region: 'Oceania',
     langs: [{ name: 'English', hello: 'G\'day' }],
-    capital: 'Canberra', tz: 'UTC+8 to +11 (AWST/ACST/AEDT)', peak: '8pm – midnight AEST',
+    capital: 'Canberra', tz: 'UTC+8 to +11 (AWST/ACST/AEDT)', peak: '8pm - midnight AEST',
     cities: [
       { name: 'Sydney', slug: 'sydney', note: 'the country\'s busiest chat city and its most internationally mixed' },
       { name: 'Melbourne', slug: 'melbourne', note: 'a large student population that visibly changes the traffic in term time' },
@@ -352,7 +352,7 @@ const COUNTRIES = [
   {
     slug: 'poland', name: 'Poland', demonym: 'Polish', code: 'PL', region: 'Europe',
     langs: [{ name: 'Polish', hello: 'Cześć' }],
-    capital: 'Warsaw', tz: 'UTC+1 / UTC+2 (CET/CEST)', peak: '8pm – 1am CET',
+    capital: 'Warsaw', tz: 'UTC+1 / UTC+2 (CET/CEST)', peak: '8pm - 1am CET',
     cities: [
       { name: 'Warsaw', slug: 'warsaw', note: 'the largest source of Polish-language matches' },
       { name: 'Kraków', slug: 'krakow', note: 'a student and tech city with unusually strong English' },
@@ -363,7 +363,7 @@ const COUNTRIES = [
   {
     slug: 'ukraine', name: 'Ukraine', demonym: 'Ukrainian', code: 'UA', region: 'Europe',
     langs: [{ name: 'Ukrainian', hello: 'Привіт' }, { name: 'Russian', hello: 'Привет' }],
-    capital: 'Kyiv', tz: 'UTC+2 / UTC+3 (EET/EEST)', peak: '8pm – 1am EET',
+    capital: 'Kyiv', tz: 'UTC+2 / UTC+3 (EET/EEST)', peak: '8pm - 1am EET',
     cities: [
       { name: 'Kyiv', slug: 'kyiv', note: 'the largest source of Ukrainian-language matches' },
       { name: 'Lviv', slug: 'lviv', note: 'the most consistently Ukrainian-speaking major city' },
@@ -374,7 +374,7 @@ const COUNTRIES = [
   {
     slug: 'netherlands', name: 'Netherlands', demonym: 'Dutch', code: 'NL', the: true, region: 'Europe',
     langs: [{ name: 'Dutch', hello: 'Hoi, hoe gaat het?' }, { name: 'English', hello: 'Hello' }],
-    capital: 'Amsterdam', tz: 'UTC+1 / UTC+2 (CET/CEST)', peak: '8pm – midnight CET',
+    capital: 'Amsterdam', tz: 'UTC+1 / UTC+2 (CET/CEST)', peak: '8pm - midnight CET',
     cities: [
       { name: 'Amsterdam', slug: 'amsterdam', note: 'so comfortably bilingual that most matches will simply switch to English if you ask' },
       { name: 'Rotterdam', slug: 'rotterdam', note: 'a port city with a blunter register than the capital' },
@@ -385,7 +385,7 @@ const COUNTRIES = [
   {
     slug: 'colombia', name: 'Colombia', demonym: 'Colombian', code: 'CO', region: 'South America',
     langs: [{ name: 'Spanish', hello: '¿Quiubo?' }],
-    capital: 'Bogotá', tz: 'UTC−5 (COT)', peak: '9pm – 1am COT',
+    capital: 'Bogotá', tz: 'UTC-5 (COT)', peak: '9pm - 1am COT',
     cities: [
       { name: 'Bogotá', slug: 'bogota', note: 'widely considered the clearest Spanish accent in the Americas, which is why learners ask for it' },
       { name: 'Medellín', slug: 'medellin', note: 'a distinctive paisa accent and a large remote-working population' },
@@ -396,7 +396,7 @@ const COUNTRIES = [
   {
     slug: 'argentina', name: 'Argentina', demonym: 'Argentine', code: 'AR', region: 'South America',
     langs: [{ name: 'Spanish', hello: '¿Cómo andás?' }],
-    capital: 'Buenos Aires', tz: 'UTC−3 (ART)', peak: '10pm – 3am ART',
+    capital: 'Buenos Aires', tz: 'UTC-3 (ART)', peak: '10pm - 3am ART',
     cities: [
       { name: 'Buenos Aires', slug: 'buenos-aires', note: 'a Spanish so distinctive - sh sounds, vos instead of tú - that learners treat it as its own dialect' },
       { name: 'Córdoba', slug: 'cordoba', note: 'a student city with a sing-song accent Argentines can spot in one sentence' },
@@ -407,7 +407,7 @@ const COUNTRIES = [
   {
     slug: 'malaysia', name: 'Malaysia', demonym: 'Malaysian', code: 'MY', region: 'Southeast Asia',
     langs: [{ name: 'Malay', hello: 'Apa khabar?' }, { name: 'English', hello: 'Hello' }, { name: 'Mandarin', hello: '你好' }, { name: 'Tamil', hello: 'Vanakkam' }],
-    capital: 'Kuala Lumpur', tz: 'UTC+8 (MYT)', peak: '9pm – 1am MYT',
+    capital: 'Kuala Lumpur', tz: 'UTC+8 (MYT)', peak: '9pm - 1am MYT',
     cities: [
       { name: 'Kuala Lumpur', slug: 'kuala-lumpur', note: 'four languages in routine daily use, and matches here reflect all four' },
       { name: 'Penang', slug: 'penang', note: 'a smaller, food-obsessed city with a distinct Hokkien-inflected English' },
@@ -418,7 +418,7 @@ const COUNTRIES = [
   {
     slug: 'singapore', name: 'Singapore', demonym: 'Singaporean', code: 'SG', region: 'Southeast Asia',
     langs: [{ name: 'English', hello: 'Hello lah' }, { name: 'Mandarin', hello: '你好' }, { name: 'Malay', hello: 'Apa khabar?' }, { name: 'Tamil', hello: 'Vanakkam' }],
-    capital: 'Singapore', tz: 'UTC+8 (SGT)', peak: '9pm – 1am SGT',
+    capital: 'Singapore', tz: 'UTC+8 (SGT)', peak: '9pm - 1am SGT',
     cities: [{ name: 'Singapore', slug: 'singapore-city', note: 'a city and a country at once, with four official languages inside it' }],
     context: 'Singapore is small, dense and four-language official, which produces some of the most efficiently multilingual matches on the platform. Its position also makes it a natural crossroads: a Singaporean evening reaches India, China, Australia and Southeast Asia simultaneously.',
     topics: ['food', 'work and study', 'travel', 'the region\'s politics, carefully'],
@@ -426,7 +426,7 @@ const COUNTRIES = [
   {
     slug: 'iran', name: 'Iran', demonym: 'Iranian', code: 'IR', region: 'Middle East',
     langs: [{ name: 'Persian', hello: 'سلام، حالت چطوره' }],
-    capital: 'Tehran', tz: 'UTC+3:30 (IRST)', peak: '10pm – 2am IRST',
+    capital: 'Tehran', tz: 'UTC+3:30 (IRST)', peak: '10pm - 2am IRST',
     cities: [
       { name: 'Tehran', slug: 'tehran', note: 'the overwhelming majority of Persian-language chat traffic starts here' },
       { name: 'Mashhad', slug: 'mashhad', note: 'a large city with a noticeably different accent from the capital' },
@@ -437,7 +437,7 @@ const COUNTRIES = [
   {
     slug: 'morocco', name: 'Morocco', demonym: 'Moroccan', code: 'MA', region: 'Africa / Middle East',
     langs: [{ name: 'Arabic', hello: 'Salam, labas?' }, { name: 'French', hello: 'Salut' }, { name: 'Amazigh', hello: 'Azul' }],
-    capital: 'Rabat', tz: 'UTC+1', peak: '9pm – 2am',
+    capital: 'Rabat', tz: 'UTC+1', peak: '9pm - 2am',
     cities: [
       { name: 'Casablanca', slug: 'casablanca', note: 'the country\'s commercial centre and the busiest source of Moroccan matches' },
       { name: 'Marrakesh', slug: 'marrakesh', note: 'a tourist city where French and English turn up in Moroccan matches constantly' },
@@ -448,7 +448,7 @@ const COUNTRIES = [
   {
     slug: 'kenya', name: 'Kenya', demonym: 'Kenyan', code: 'KE', region: 'Africa',
     langs: [{ name: 'Swahili', hello: 'Habari?' }, { name: 'English', hello: 'Hello' }],
-    capital: 'Nairobi', tz: 'UTC+3 (EAT)', peak: '8pm – midnight EAT',
+    capital: 'Nairobi', tz: 'UTC+3 (EAT)', peak: '8pm - midnight EAT',
     cities: [
       { name: 'Nairobi', slug: 'nairobi', note: 'East Africa\'s tech centre, with the strongest mobile-first internet culture on the continent' },
       { name: 'Mombasa', slug: 'mombasa', note: 'a coastal city where Swahili dominates over English far more than inland' },
@@ -459,7 +459,7 @@ const COUNTRIES = [
   {
     slug: 'portugal', name: 'Portugal', demonym: 'Portuguese', code: 'PT', region: 'Europe',
     langs: [{ name: 'Portuguese', hello: 'Olá, tudo bem?' }],
-    capital: 'Lisbon', tz: 'UTC+0 / UTC+1 (WET/WEST)', peak: '9pm – 1am WET',
+    capital: 'Lisbon', tz: 'UTC+0 / UTC+1 (WET/WEST)', peak: '9pm - 1am WET',
     cities: [
       { name: 'Lisbon', slug: 'lisbon', note: 'a large international remote-working population alongside the local one' },
       { name: 'Porto', slug: 'porto', note: 'a northern accent that Brazilians will tell you is harder to follow than Lisbon\'s' },
@@ -470,7 +470,7 @@ const COUNTRIES = [
   {
     slug: 'ireland', name: 'Ireland', demonym: 'Irish', code: 'IE', region: 'Europe',
     langs: [{ name: 'English', hello: 'How\'s it going?' }, { name: 'Irish', hello: 'Dia dhuit' }],
-    capital: 'Dublin', tz: 'UTC+0 / UTC+1 (GMT/IST)', peak: '8pm – 1am GMT',
+    capital: 'Dublin', tz: 'UTC+0 / UTC+1 (GMT/IST)', peak: '8pm - 1am GMT',
     cities: [
       { name: 'Dublin', slug: 'dublin', note: 'a young, heavily international city - a Dublin match is often not Irish at all' },
       { name: 'Cork', slug: 'cork', note: 'an accent that other Irish people enjoy imitating and foreigners rarely place' },
@@ -481,7 +481,7 @@ const COUNTRIES = [
   {
     slug: 'romania', name: 'Romania', demonym: 'Romanian', code: 'RO', region: 'Europe',
     langs: [{ name: 'Romanian', hello: 'Salut, ce faci?' }],
-    capital: 'Bucharest', tz: 'UTC+2 / UTC+3 (EET/EEST)', peak: '9pm – 1am EET',
+    capital: 'Bucharest', tz: 'UTC+2 / UTC+3 (EET/EEST)', peak: '9pm - 1am EET',
     cities: [
       { name: 'Bucharest', slug: 'bucharest', note: 'the largest source of Romanian-language matches' },
       { name: 'Cluj-Napoca', slug: 'cluj-napoca', note: 'a university and tech city with very strong English' },
@@ -492,7 +492,7 @@ const COUNTRIES = [
   {
     slug: 'greece', name: 'Greece', demonym: 'Greek', code: 'GR', region: 'Europe',
     langs: [{ name: 'Greek', hello: 'Γεια σου' }],
-    capital: 'Athens', tz: 'UTC+2 / UTC+3 (EET/EEST)', peak: '10pm – 2am EET',
+    capital: 'Athens', tz: 'UTC+2 / UTC+3 (EET/EEST)', peak: '10pm - 2am EET',
     cities: [
       { name: 'Athens', slug: 'athens', note: 'roughly a third of the country lives in its metro area' },
       { name: 'Thessaloniki', slug: 'thessaloniki', note: 'a student city with a reputation for staying out later than the capital' },
@@ -503,7 +503,7 @@ const COUNTRIES = [
   {
     slug: 'israel', name: 'Israel', demonym: 'Israeli', code: 'IL', region: 'Middle East',
     langs: [{ name: 'Hebrew', hello: 'שלום, מה קורה' }, { name: 'Arabic', hello: 'مرحبا' }, { name: 'Russian', hello: 'Привет' }, { name: 'English', hello: 'Hi' }],
-    capital: 'Jerusalem', tz: 'UTC+2 / UTC+3 (IST/IDT)', peak: '9pm – 1am IST',
+    capital: 'Jerusalem', tz: 'UTC+2 / UTC+3 (IST/IDT)', peak: '9pm - 1am IST',
     cities: [
       { name: 'Tel Aviv', slug: 'tel-aviv', note: 'the busiest and most international source of matches in the country' },
       { name: 'Haifa', slug: 'haifa', note: 'a genuinely mixed city where Hebrew and Arabic matches are equally likely' },
@@ -514,7 +514,7 @@ const COUNTRIES = [
   {
     slug: 'new-zealand', name: 'New Zealand', demonym: 'New Zealander', code: 'NZ', region: 'Oceania',
     langs: [{ name: 'English', hello: 'Kia ora' }, { name: 'Māori', hello: 'Kia ora' }],
-    capital: 'Wellington', tz: 'UTC+12 / UTC+13 (NZST/NZDT)', peak: '8pm – midnight NZST',
+    capital: 'Wellington', tz: 'UTC+12 / UTC+13 (NZST/NZDT)', peak: '8pm - midnight NZST',
     cities: [
       { name: 'Auckland', slug: 'auckland', note: 'the largest Polynesian city in the world, which shapes who you meet in it' },
       { name: 'Wellington', slug: 'wellington', note: 'small, creative and disproportionately talkative' },
@@ -525,7 +525,7 @@ const COUNTRIES = [
   {
     slug: 'sweden', name: 'Sweden', demonym: 'Swedish', code: 'SE', region: 'Europe',
     langs: [{ name: 'Swedish', hello: 'Hej, hur mår du?' }, { name: 'English', hello: 'Hello' }],
-    capital: 'Stockholm', tz: 'UTC+1 / UTC+2 (CET/CEST)', peak: '8pm – midnight CET',
+    capital: 'Stockholm', tz: 'UTC+1 / UTC+2 (CET/CEST)', peak: '8pm - midnight CET',
     cities: [
       { name: 'Stockholm', slug: 'stockholm', note: 'the busiest Nordic chat city and among the most English-fluent anywhere' },
       { name: 'Gothenburg', slug: 'gothenburg', note: 'a west-coast accent Swedes describe as friendlier than the capital\'s' },
@@ -536,7 +536,7 @@ const COUNTRIES = [
   {
     slug: 'norway', name: 'Norway', demonym: 'Norwegian', code: 'NO', region: 'Europe',
     langs: [{ name: 'Norwegian', hello: 'Hei, hvordan går det?' }, { name: 'English', hello: 'Hello' }],
-    capital: 'Oslo', tz: 'UTC+1 / UTC+2 (CET/CEST)', peak: '8pm – midnight CET',
+    capital: 'Oslo', tz: 'UTC+1 / UTC+2 (CET/CEST)', peak: '8pm - midnight CET',
     cities: [
       { name: 'Oslo', slug: 'oslo', note: 'the largest source of Norwegian matches and the most international city in the country' },
       { name: 'Bergen', slug: 'bergen', note: 'a dialect distinct enough that other Norwegians comment on it immediately' },

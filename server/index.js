@@ -2284,7 +2284,7 @@ io.on('connection', (socket) => {
     // and the display name defaults to the username (changeable later).
     nickname = (typeof nickname === 'string' && nickname.trim()) ? nickname.trim() : username;
     if (!/^[A-Za-z0-9_.-]{3,24}$/.test(username)) {
-      return socket.emit('signup-result', { ok: false, error: 'Username may only contain letters, numbers, dot, dash or underscore (3–24 chars).' });
+      return socket.emit('signup-result', { ok: false, error: 'Username may only contain letters, numbers, dot, dash or underscore (3-24 chars).' });
     }
     if (signupThrottled(ip)) {
       return socket.emit('signup-result', { ok: false, error: 'Too many accounts created from this network. Please try again later.' });

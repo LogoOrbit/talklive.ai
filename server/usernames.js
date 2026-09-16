@@ -1,13 +1,13 @@
 // Random display names for people who never typed one.
 //
 // Goals, in order: make someone smile, never look repetitive, never offend.
-// The old generator was one shape — Adjective + Animal + two digits — over 20
+// The old generator was one shape - Adjective + Animal + two digits - over 20
 // adjectives and 20 nouns, so every name in a room looked like a sibling of
 // the last one and the trailing digits made all of them read as throwaway.
 //
 // This version drops the digits, writes names as separate words ("Cosmic Fox",
 // not "CosmicFox31"), and mixes a dozen sentence shapes across large word
-// banks — including plain one-word names, which often land best. The banks
+// banks - including plain one-word names, which often land best. The banks
 // live in username-words.js and are rebuilt by scripts/build-username-words.js.
 
 const W = require('./username-words');

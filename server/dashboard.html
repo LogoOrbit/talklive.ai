@@ -737,7 +737,7 @@ function openSearch(){
 }
 
 /* ---------- keyboard shortcuts ---------- */
-const SHORTCUTS=[['/ or Ctrl K','Search everything'],['1 – 9','Jump to a section'],['r','Refresh now'],['p','Pause / resume auto-refresh'],['t','Switch theme'],['e','Export the current tab as CSV'],['?','This help'],['Esc','Close a dialog']];
+const SHORTCUTS=[['/ or Ctrl K','Search everything'],['1 - 9','Jump to a section'],['r','Refresh now'],['p','Pause / resume auto-refresh'],['t','Switch theme'],['e','Export the current tab as CSV'],['?','This help'],['Esc','Close a dialog']];
 function openHelp(){
   modal('⌨️ Keyboard shortcuts',
     `<div class="kbdlist">${SHORTCUTS.map(([k,d])=>`<kbd>${esc(k)}</kbd><span>${esc(d)}</span>`).join('')}</div>`,
@@ -883,7 +883,7 @@ async function viewActivity(){
     <div id="hoursYesterday"></div>
   </div>
 
-  <div class="card anim"><h2>🗓️ Weekly report <span class="sub">Mon–Sun, last 8 weeks</span></h2>
+  <div class="card anim"><h2>🗓️ Weekly report <span class="sub">Mon-Sun, last 8 weeks</span></h2>
     <table><tr><th>Week</th><th class="num">Unique visitors</th><th class="num">Visits</th><th class="num">Connections</th><th class="num">Matches</th><th class="num">Messages</th><th class="num">Peak online</th><th>Best day</th></tr>
     ${r.weekly.slice().reverse().map(w=>`<tr>
       <td><b>${esc(w.weekStart)} → ${esc(w.weekEnd)}</b>${w.current?` <span class="pill info">this week · ${w.daysElapsed}/7 days</span>`:''}</td>
@@ -935,7 +935,7 @@ async function botAnswer(kind){
     const r=await api('activity?tz='+encodeURIComponent(actTz||browserTz()));
     const cur=r.weekly[r.weekly.length-1],prev=r.weekly[r.weekly.length-2];
     const best=r.daily.reduce((b,d)=>d.visits>(b?b.visits:-1)?d:b,null);
-    return `Weekly report (weeks run Mon–Sun, ${r.timezone})\n\n`
+    return `Weekly report (weeks run Mon-Sun, ${r.timezone})\n\n`
       +`This week so far (${cur.weekStart} → ${cur.weekEnd}, ${cur.daysElapsed}/7 days):\n`
       +`• ${num(cur.uniques)} unique visitors, ${num(cur.visits)} visits\n`
       +`• ${num(cur.connections)} connections, ${num(cur.matches)} matches, ${num(cur.messages)} messages\n`
@@ -1237,7 +1237,7 @@ async function openConversation(pair,i){
     let out='';
     /* A gap longer than five minutes is usually a different sitting; marking it
        stops two separate exchanges reading as one. */
-    if(lastTs&&m.ts-lastTs>300000)out+=`<div class="cvgap">&#8212; ${span(m.ts-lastTs)} later &#8212;</div>`;
+    if(lastTs&&m.ts-lastTs>300000)out+=`<div class="cvgap">- ${span(m.ts-lastTs)} later -</div>`;
     if(m.fromClientId!==lastFrom)out+=`<div class="cvname ${side}">${esc(m.from)}</div>`;
     lastFrom=m.fromClientId;lastTs=m.ts;
     const q=m.replyTo&&byId[m.replyTo]?`<span class="q">&#8618; ${esc(String(byId[m.replyTo].text||'').slice(0,90))}</span>`:'';

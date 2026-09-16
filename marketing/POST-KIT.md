@@ -1,7 +1,7 @@
 # TalkLive Post Kit - copy, paste, launch
 
 Everything below is ready to post as-is. Fill in the launch hour where marked.
-Golden rule: **concentrate traffic into announced peak hours** (e.g. 9–11pm your
+Golden rule: **concentrate traffic into announced peak hours** (e.g. 9-11pm your
 audience's time) so the queue is never empty. An empty queue kills word of mouth;
 a busy hour creates it.
 
@@ -33,7 +33,7 @@ a busy hour creates it.
 
 ## 2. Show HN
 
-> Title: Show HN: TalkLive – P2P voice chat with random strangers (no video, no sign-up)
+> Title: Show HN: TalkLive - P2P voice chat with random strangers (no video, no sign-up)
 >
 > Omegle's shutdown left the "talk to a random human" niche to video clones. I went the other way: audio only. WebRTC peer-to-peer, so calls never touch the server - it only does matchmaking/signaling over Socket.IO. No accounts; moderation is report-based with device+IP bans, 18+.
 >
@@ -41,7 +41,7 @@ a busy hour creates it.
 >
 > https://talklive.app - I'll be in the queue while this is on the front page, so you should match instantly.
 
-## 3. Product Hunt (launch Tue–Thu)
+## 3. Product Hunt (launch Tue-Thu)
 
 - **Tagline:** Talk to a stranger. Right now.
 - **Description:** TalkLive is one-tap anonymous voice chat with random people worldwide. No video, no sign-up, no recordings - audio is peer-to-peer. Text mode included. The Omegle successor that kept the conversations and deleted the camera.
@@ -55,7 +55,7 @@ a busy hour creates it.
 4. No profile. No followers. No camera. No history. Just a stranger's voice and yours. The internet used to feel like this. talklive.app
 5. We rebuilt the "stranger on a train" effect: people tell an anonymous voice things they'd never post anywhere. It's free: talklive.app
 
-## 5. TikTok / Reels / Shorts scripts (2–3 per day, screen-record real calls with consent)
+## 5. TikTok / Reels / Shorts scripts (2-3 per day, screen-record real calls with consent)
 
 1. **"Asking strangers for life advice"** - call 3 strangers, ask "what's one thing you wish you knew at 20?" Cut the best answers. Caption: the app is free & voice-only, link in bio.
 2. **"Rating accents with the world"** - match, guess the country from the accent, react. Endlessly repeatable format.

@@ -59,7 +59,7 @@ with nobody online at your hour churns instantly.
 2. **TikTok / Reels / Shorts** - the entire category (OmeTV, Monkey) grows on
    reaction-style clips of funny/wholesome stranger calls. Voice-only is a
    twist: subtitle the audio. Post per-market with local-language captions and
-   hashtags; 3–5 clips/week. This is the single highest-leverage free channel.
+   hashtags; 3-5 clips/week. This is the single highest-leverage free channel.
 3. **Reddit / Discord / Telegram** - r/MakeNewFriendsHere, r/Omegle,
    language-exchange Discords ("practice English with strangers" angle for
    PK/IN/ID/BR is your strongest hook - you already have the
@@ -84,4 +84,4 @@ worse, not better.
 - Segment GA4 by country + language page (`utm_campaign=home-<lang>`).
 - Watch: visit → mic-permission → first match → 2nd-day return, per market.
 - Search Console: impressions/clicks per locale URL (`/es/`, `/hi/`, …) -
-  expect first movement in 2–6 weeks after indexing.
+  expect first movement in 2-6 weeks after indexing.
