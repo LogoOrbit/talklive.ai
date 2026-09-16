@@ -7,8 +7,10 @@
   --accent: #6c5ce7;
   --accent-2: #00d4ff;
   --danger: #ff5470;
+  --green: #2ed47a;
   --text: #f2f4ff;
   --muted: #8a90a8;
+  --line: rgba(255, 255, 255, 0.09);
 }
 
 /* Themes: dark is the default (:root). Light flips the whole palette; ocean
@@ -19,8 +21,10 @@
   --bg-glow: #dde4f5;
   --accent: #6c5ce7;
   --accent-2: #0086b3;
+  --green: #17a862;
   --text: #1a2033;
   --muted: #5a617a;
+  --line: rgba(26, 32, 51, 0.14);
 }
 
 [data-theme="ocean"] {
@@ -88,19 +92,41 @@ body.panel-open .side-panel {
   position: sticky;
   top: 0;
   z-index: 55;
-  display: flex;
+  /* A three-column grid, not a wrapping flex row.
+   *
+   * As flex with flex-wrap:wrap the tool icons dropped onto a second line at
+   * awkward widths, and the two flex:1 side zones fought over the middle so
+   * the "centred" tools were never actually centred. A grid with a
+   * minmax(0,1fr) middle column centres the tools against the bar itself and
+   * makes overflow impossible to hide: the middle scrolls instead of wrapping.
+   */
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   padding: 10px 18px;
   padding-top: calc(10px + env(safe-area-inset-top));
   gap: 10px;
-  flex-wrap: wrap;
+  /* Near-opaque on purpose. At 82% the page text scrolling underneath stayed
+     legible straight through the bar - headings and body copy read as if they
+     were printed on top of the header. The blur alone never hid it. */
   background: var(--bg-1);
-  background: color-mix(in srgb, var(--bg-1) 82%, transparent);
+  background: color-mix(in srgb, var(--bg-1) 96%, transparent);
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  border-bottom: 1px solid var(--line);
   transition: box-shadow 0.25s ease;
+}
+
+/* A whisper of accent along the base edge, matching /chat exactly. */
+.topbar::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 40%, transparent), transparent);
+  pointer-events: none;
 }
 
 /* A soft shadow only once the bar is actually stuck (class set from app.js). */
@@ -108,69 +134,139 @@ body.panel-open .side-panel {
   box-shadow: 0 8px 24px rgba(0,0,0,0.3);
 }
 
+/* --- The TalkLive lockup --------------------------------------------------
+ *
+ * One mark and one wordmark, rendered identically here and in chat.css, so /,
+ * /call and /chat are unmistakably the same product. Before this the voice app
+ * showed a bare coloured dot and /chat showed four little bars, and on a phone
+ * both dropped the word "TalkLive" entirely - a visitor on a small screen had
+ * nothing on the page telling them whose site they were on.
+ *
+ * The mark is public/favicon.svg itself - derived from the brand logo in
+ * marketing/TalkLiveLogoTransparent.png - so the header, the browser tab, the
+ * installed PWA icon and the marketing pages all serve the same file. The
+ * wordmark is live text rather than the artwork's bitmap: it stays sharp at
+ * any size, and the artwork's white "Talk" would be invisible on the light
+ * theme. "Live" takes the brand cyan, exactly as the logo sets it.
+ */
 .brand {
-  font-weight: 700;
-  font-size: 20px;
-  letter-spacing: 0.3px;
+  font-weight: 800;
+  font-size: 19px;
+  letter-spacing: -0.3px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
+  min-width: 0;
   /* Rendered as a <button> so tapping it reloads the app - reset native chrome. */
   background: none;
   border: none;
   padding: 0;
   margin: 0;
-  color: inherit;
+  color: var(--text);
   font-family: inherit;
   cursor: pointer;
+  text-decoration: none;
+  border-radius: 12px;
+  transition: opacity 0.18s ease;
 }
+.brand:hover { opacity: 0.82; }
 .brand:active { transform: scale(0.97); }
 
+.brand-logo {
+  position: relative;
+  display: block;
+  width: 32px;
+  height: 32px;
+  flex: none;
+}
+.brand-logo img,
+.brand-logo svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* "Live" in the brand cyan, exactly as the logo artwork sets it. Live text
+   rather than a bitmap wordmark so it stays sharp at any size and legible in
+   every theme - the artwork's white "Talk" would vanish on the light theme. */
+.brand-name-live { color: var(--accent-2); }
+
+.brand-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The status dot sits exactly where the favicon puts it - top-right of the
+   tile - and doubles as the network indicator: green online, red offline. The
+   ring is the header background, so it reads as punched out of the tile. */
 .brand-dot {
-  width: 11px;
-  height: 11px;
+  position: absolute;
+  /* Clear of the tile's artwork: sitting flush in the corner it covered the
+     top of the sound waves, which are most of what makes the mark readable at
+     this size. */
+  top: -4px;
+  right: -4px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
+  border: 2px solid var(--bg-1);
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  display: inline-block;
+  display: block;
   transition: background 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* The brand dot doubles as the network indicator: green online, red offline. */
 .brand-dot.is-online {
-  background: #2ed47a;
-  box-shadow: 0 0 8px #2ed47a;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
   animation: dotPulse 1.8s ease-in-out infinite;
 }
 
 .brand-dot.is-offline {
-  background: #ff5470;
-  box-shadow: 0 0 8px #ff5470;
+  background: var(--danger);
+  box-shadow: 0 0 8px var(--danger);
   animation: dotPulse 1s ease-in-out infinite;
 }
 
-/* Three header zones: brand left, tool icons dead-center, live count right.
-   The side zones share flex:1 so the tools stay truly centered. */
+/* Three header zones, one per grid column: brand left, tool icons centred,
+   account controls and the live count right. */
 .topbar-left {
-  flex: 1 1 0;
+  justify-self: start;
   display: flex;
   align-items: center;
   gap: 12px;
   min-width: 0;
 }
 
+/* The middle column. It owns all the leftover width and scrolls when the tool
+   set grows mid-call, so nothing in it can ever push the brand or the account
+   controls out of the bar. */
 .header-tools {
-  flex: 0 0 auto;
+  justify-self: center;
   display: flex;
   align-items: center;
+  /* `safe` matters here. Once the tool set outgrows the column - five buttons
+     during a call on a phone - plain `center` overflows the box at BOTH ends,
+     so the first icon was laid out to the left of the brand (clipped, and
+     unreachable however far you scrolled, because scrollLeft starts at 0).
+     `safe center` falls back to flex-start in exactly that case, which puts
+     every icon inside the scrollable area. */
   justify-content: center;
+  justify-content: safe center;
   gap: 10px;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
+.header-tools::-webkit-scrollbar { display: none; }
+.header-tools > * { flex-shrink: 0; }
 
 .header-right {
-  flex: 1 1 0;
+  justify-self: end;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
   gap: 8px;
   min-width: 0;
 }
@@ -951,77 +1047,83 @@ body.panel-open .side-panel {
 }
 
 /* Conversation guide - friendly tips, scrollable, below the call area. */
-.convo-guide {
-  width: min(560px, 92%);
-  margin: 8px auto 26px;
-  padding: 18px 20px 20px;
-  border-radius: 18px;
-  background: var(--card, rgba(255, 255, 255, 0.04));
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+/* --- Page notes -----------------------------------------------------------
+ *
+ * The conversation guide and the "made free" note at the bottom of the call
+ * screen. Both used to be bordered cards - one with a tinted panel behind
+ * every emoji, one with a purple gradient and an emoji in its heading - which
+ * made two pieces of ordinary, sincere copy read like promotional widgets
+ * stacked between the ad slots.
+ *
+ * They are set as page copy now: one measure, a heading with a hairline under
+ * it, and text. No panel, no border, no emoji. The only colour is the small
+ * accent marker on each list item, which is what tells the eye it is a list.
+ */
+.note {
+  width: min(620px, 92%);
+  margin: 34px auto;
+  text-align: left;
 }
-.convo-guide-title {
+
+.note-title {
+  margin: 0 0 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: var(--text);
+}
+
+.note p {
   margin: 0 0 12px;
   font-size: 15px;
-  font-weight: 700;
-  color: var(--text);
-  text-align: center;
+  line-height: 1.65;
+  color: var(--muted);
 }
-.convo-guide-list {
+.note p:last-child { margin-bottom: 0; }
+.note p strong { color: var(--text); font-weight: 700; }
+
+/* `.note p` is the more specific selector, so the sign-off needs to match it
+   to take the brighter colour. */
+.note p.note-sign {
+  margin-top: 18px;
+  color: var(--text);
+  font-style: italic;
+  opacity: 0.9;
+}
+
+.note-list {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
 }
-.convo-guide-list li {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 14px;
-  line-height: 1.4;
+.note-list li {
+  position: relative;
+  padding-left: 20px;
+  margin-bottom: 11px;
+  font-size: 15px;
+  line-height: 1.6;
   color: var(--muted);
 }
-.convo-guide-list .cg-emoji {
-  flex: 0 0 auto;
-  font-size: 20px;
-  width: 34px;
-  height: 34px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.note-list li:last-child { margin-bottom: 0; }
+/* A 5px dot on the text's own baseline grid, so it stays put when the line
+   wraps and when the user scales the font. */
+.note-list li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 0.62em;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
-  background: var(--accent-soft, rgba(108, 92, 231, 0.14));
+  background: var(--accent);
 }
 
-/* "Made free for you" note at the bottom of the call screen. */
-.made-for-you {
-  width: min(560px, 92%);
-  margin: 10px auto 30px;
-  padding: 22px 24px;
-  border-radius: 18px;
-  text-align: center;
-  background: linear-gradient(160deg, rgba(108, 92, 231, 0.10), rgba(0, 212, 255, 0.05));
-  border: 1px solid rgba(108, 92, 231, 0.25);
-}
-.made-for-you-title {
-  margin: 0 0 12px;
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--text);
-}
-.made-for-you p {
-  margin: 0 0 10px;
-  font-size: 14px;
-  line-height: 1.55;
-  color: var(--muted);
-}
-.made-for-you p strong { color: var(--text); }
-.made-for-you-sign {
-  margin-bottom: 0 !important;
-  font-style: italic;
-  color: var(--text) !important;
-  opacity: 0.85;
+@media (max-width: 520px) {
+  .note { margin: 26px auto; }
+  .note-title { font-size: 17px; }
+  .note p, .note-list li { font-size: 14.5px; }
 }
 
 .connection-indicator {
@@ -1357,82 +1459,14 @@ body.panel-open .side-panel {
   transform: translateY(-1px);
 }
 
-/* Narrow phones: the header sheds decoration, never a control.
- *
- * In a call the tools row carries five buttons instead of three - the game and
- * chat icons unhide - and that is the width the header has to survive. The
- * order things are given up in is deliberate: the wordmark first (it is
- * branding, and the URL bar above it already says talklive.app), then the
- * group glyph inside the live-count pill (the pulsing dot and the number
- * already say what it is), and only then a few pixels off the buttons. Every
- * control stays present, labelled and tappable at every width. */
-@media (max-width: 520px) {
-  /* The wordmark yields only when the header actually needs the room.
-   *
-   * Two states cost more than the row has: a call, where the game and chat
-   * buttons unhide and the tools group goes from three buttons to five, and
-   * the signed-out landing screen, where Log In / Sign Up sit beside the live
-   * count. In both the wordmark ran straight into the first tool icon, so
-   * :has() drops it for exactly those states and brings it back afterwards -
-   * when the call ends, or once the user is signed in and the pair collapses
-   * to a single account icon.
-   * The brand keeps its dot, its tap target and its reload behaviour either
-   * way - only the lettering goes, and only while it would cost a control its
-   * space.
-   *
-   * Where :has() is unsupported the wordmark simply stays, and the tools group
-   * scrolls instead. Both outcomes keep every control reachable, which is why
-   * this is safe to lean on. */
-  .topbar:has(#gameBtn:not(.hidden)) .brand-name,
-  .topbar:has(#chatToggleBtn:not(.hidden)) .brand-name,
-  .topbar:has(#headerAuth:not(.hidden)) .brand-name {
-    display: none;
-  }
-  .topbar:has(#gameBtn:not(.hidden)) .brand,
-  .topbar:has(#chatToggleBtn:not(.hidden)) .brand,
-  .topbar:has(#headerAuth:not(.hidden)) .brand {
-    width: 40px;
-    justify-content: center;
-    gap: 0;
-    padding: 0;
-  }
-}
-
-/* Genuinely tiny screens: the wordmark goes regardless of call state. */
-@media (max-width: 359px) {
-  .brand-name { display: none; }
-  .brand {
-    width: 40px;
-    justify-content: center;
-    gap: 0;
-    padding: 0;
-  }
-}
-
-@media (max-width: 420px) {
-  .topbar .icon-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-  }
-  .topbar .topbar-svg-icon {
-    width: 22px;
-    height: 22px;
-  }
-  /* Dot and number carry the meaning; the group glyph is the decoration. */
-  .people-count .people-icon { display: none; }
-  .people-count { padding: 5px 9px; }
-
-  /* Two auth pills plus the live count do not fit beside the tool icons on a
-     phone. Keep Log In - it is the one people go looking for, and Sign Up is
-     one tap away on the tab inside - and tighten it. */
-  .header-auth-signup { display: none; }
-  .header-auth-btn {
-    min-height: 34px;
-    padding: 0 11px;
-    font-size: 12px;
-  }
-  .header-account-btn { width: 40px; height: 40px; border-radius: 12px; }
+/* Tablets and small laptops. The header keeps full-size everything until the
+   in-call tool set (five buttons) stops fitting beside the brand and the
+   account controls; a couple of pixels off each button buys the whole row
+   rather than letting the last icon sit half off the edge. */
+@media (min-width: 601px) and (max-width: 900px) {
+  .topbar .icon-btn { width: 46px; height: 46px; border-radius: 13px; }
+  .topbar .topbar-svg-icon { width: 24px; height: 24px; }
+  .header-tools { gap: 8px; }
 }
 
 /* Mobile responsiveness */
@@ -1451,14 +1485,11 @@ body.panel-open .side-panel {
   .topbar {
     padding: 6px 10px;
     padding-top: calc(6px + env(safe-area-inset-top));
-    column-gap: 6px;
-    justify-content: space-between;
-    flex-wrap: nowrap;
+    column-gap: 9px;
   }
 
   .topbar-left {
     gap: 6px;
-    flex: 0 1 auto;
   }
 
   /* Below about 340px the five in-call tools genuinely cannot fit beside the
@@ -1468,19 +1499,7 @@ body.panel-open .side-panel {
      visible icon at the edge is its own affordance. Above that width nothing
      scrolls, because nothing overflows. */
   .header-tools {
-    order: 0;
-    flex: 0 1 auto;
-    flex-basis: auto;
     gap: 2px;
-    min-width: 0;
-    overflow-x: auto;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-  }
-  .header-tools::-webkit-scrollbar { display: none; }
-
-  .header-right {
-    flex: 0 0 auto;
   }
 
   /* Nothing with a tap target is allowed to shrink. */
@@ -1491,11 +1510,11 @@ body.panel-open .side-panel {
   }
 
   .brand {
-    font-size: 15px;
+    font-size: 16px;
     /* Rendered as a button that reloads the app, so it needs a real target
        height - as a bare text run it was 17px tall. */
     min-height: 40px;
-    padding: 0 4px;
+    padding: 0 2px;
     border-radius: 12px;
     white-space: nowrap;
   }
@@ -1638,6 +1657,90 @@ body.panel-open .side-panel {
     min-width: 120px;
   }
 }
+
+/* Narrow phones: the header sheds decoration, never a control and never the
+ * brand mark.
+ *
+ * In a call the tools row carries five buttons instead of three - the game and
+ * chat icons unhide - and that is the width the header has to survive. The
+ * order things are given up in is deliberate: first the group glyph inside the
+ * live-count pill (the pulsing dot and the number already say what it is),
+ * then a few pixels off the buttons, and only in a call the wordmark beside
+ * the mark. Every control stays present, labelled and tappable at every
+ * width, and the mark stays at every width and in every state. */
+@media (max-width: 560px) {
+  /* The wordmark used to be dropped here whenever the header got busy - in a
+   * call AND on the signed-out landing screen. The landing screen is exactly
+   * where it must not be: that is the page a first-time visitor arrives on,
+   * and it left them with a bare coloured dot and nothing saying whose site
+   * they were on. So the lettering now stays through the whole landing and
+   * search flow and yields in one state only - mid-call, where the tools row
+   * grows from three buttons to five (game and chat unhide) and five 40px
+   * targets plus the account controls genuinely do not fit beside it.
+   *
+   * The mark never goes. It is the same tile as the browser tab, the installed
+   * icon and the OG card, so even at its most crowded the bar still reads as
+   * TalkLive - which the old bare dot never did.
+   *
+   * Where :has() is unsupported the wordmark simply stays and the tools group
+   * scrolls instead; both outcomes keep every control reachable, which is why
+   * this is safe to lean on. */
+  .topbar:has(#gameBtn:not(.hidden)) .brand-name,
+  .topbar:has(#chatToggleBtn:not(.hidden)) .brand-name {
+    display: none;
+  }
+  .topbar:has(#gameBtn:not(.hidden)) .brand,
+  .topbar:has(#chatToggleBtn:not(.hidden)) .brand {
+    gap: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .topbar .icon-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+  }
+  .topbar .topbar-svg-icon {
+    width: 22px;
+    height: 22px;
+  }
+  /* Dot and number carry the meaning; the group glyph is the decoration. */
+  .people-count .people-icon { display: none; }
+  .people-count { padding: 5px 9px; }
+
+  /* Two auth pills plus the live count do not fit beside the tool icons on a
+     phone. Keep Log In - it is the one people go looking for, and Sign Up is
+     one tap away on the tab inside - and tighten it. */
+  .header-auth-signup { display: none; }
+  .header-auth-btn {
+    min-height: 34px;
+    padding: 0 11px;
+    font-size: 12px;
+  }
+  .header-account-btn { width: 40px; height: 40px; border-radius: 12px; }
+
+  /* The lockup scales down rather than shedding a half of itself. */
+  .brand-logo { width: 26px; height: 26px; }
+  .brand-dot { width: 9px; height: 9px; }
+  .brand { gap: 7px; }
+}
+
+/* Genuinely tiny screens. Everything gets tighter; nothing disappears. */
+@media (max-width: 359px) {
+  .topbar { padding-left: 8px; padding-right: 8px; column-gap: 6px; }
+  .brand-logo { width: 24px; height: 24px; }
+  .brand-name { font-size: 14px; letter-spacing: -0.4px; }
+  .header-auth-btn { padding: 0 9px; }
+  /* 36px is below the 40px this header holds elsewhere, and deliberately so:
+     at 320px the alternative is a tool group only one icon wide. Still a
+     comfortable target, and the group scrolls for whatever does not fit. */
+  .topbar .icon-btn { width: 36px; height: 36px; }
+  .topbar .topbar-svg-icon { width: 20px; height: 20px; }
+  .header-tools { gap: 0; }
+  .people-count { padding: 4px 7px; }
+}
+
 
 @media (max-width: 360px) {
   .controls {
@@ -5879,9 +5982,13 @@ html.perf-lite .side-panel { box-shadow: none; }
   align-items: center;
   gap: 4px;
   padding: 8px 2px 6px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  /* Theme tokens, not hardcoded white: at rgba(255,255,255,0.04) over a light
+     background these cards were invisible, so the light theme showed twelve
+     bare icons floating on the page while /chat showed twelve real cards.
+     Same declarations as the /chat picker in chat.css. */
+  border: 1px solid var(--line);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-2);
   color: var(--muted);
   font: inherit;
   cursor: pointer;
@@ -5902,7 +6009,7 @@ html.perf-lite .side-panel { box-shadow: none; }
   border-color: var(--animal-color, var(--accent));
   /* Fallback first: color-mix is dropped wholesale on older engines, and the
      selected state must still read as selected there. */
-  background: rgba(255, 255, 255, 0.12);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
   background: color-mix(in srgb, var(--animal-color, #6c5ce7) 18%, transparent);
   color: var(--text);
   box-shadow: 0 0 0 1px var(--animal-color, var(--accent)) inset;

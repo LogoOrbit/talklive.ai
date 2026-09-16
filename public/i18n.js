@@ -100,6 +100,8 @@ const I18N_STRINGS = {
     "chatStartTitle": "Chat with a stranger",
     "chatStartSub": "Anonymous · worldwide · free",
     "chatStartBtn": "Start chatting",
+    "chatCallInstead": "Call instead",
+    "chatCallInsteadAria": "Start a voice call with a random person instead",
     "chatSearch1": "Scanning the globe…",
     "chatSearch2": "Someone out there is looking too…",
     "chatSearch3": "Crossing time zones…",

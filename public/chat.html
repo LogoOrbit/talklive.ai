@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
-<link rel="stylesheet" href="/chat.css?v=20260915ui7" />
-<link rel="stylesheet" href="/chat-extras.css?v=20260915ui7" />
-<link rel="stylesheet" href="/games.css?v=20260915ui7" />
+<link rel="stylesheet" href="/chat.css?v=20260916brand2" />
+<link rel="stylesheet" href="/chat-extras.css?v=20260916brand2" />
+<link rel="stylesheet" href="/games.css?v=20260916brand2" />
 <style>
   .skip-link {
     position: fixed;
@@ -77,9 +77,17 @@
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
         </svg>
       </button>
+      <!-- The TalkLive lockup. Byte-for-byte the same mark and wordmark the
+           voice app uses (public/index.html), so /chat is visibly the same
+           product and not a different site. Never hidden - not on a phone,
+           not mid-conversation. -->
       <a class="brand" id="brandHome" href="/chat" aria-label="TalkLive" title="Reload TalkLive">
-        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
-        <span class="brand-text">TalkLive</span>
+        <span class="brand-logo" aria-hidden="true">
+          <img src="/favicon.svg?v=20260916brand2" width="30" height="30" alt="" decoding="async" />
+          <!-- Network status, wired in chat.js exactly as it is in app.js. -->
+          <span id="brandDot" class="brand-dot is-online" data-i18n-title="netOnline" title="You are online"></span>
+        </span>
+        <span class="brand-name">Talk<span class="brand-name-live">Live</span></span>
       </a>
       </div>
 
@@ -97,7 +105,12 @@
         <button type="button" id="autoBtn" class="icon-btn auto-btn hidden" aria-pressed="false" data-i18n-title="chatAutoHint" data-i18n-aria="chatAutoHint" aria-label="Auto-connect me to a new person when a chat ends">
           <span data-i18n="chatAuto">Auto</span>
         </button>
-        <button type="button" id="voiceCallBtn" class="icon-btn call-btn" data-i18n-aria="voiceCall" data-i18n-title="voiceCall" aria-label="Voice call">
+        <!-- Hidden until a partner is actually connected. It invites the person
+             you are chatting with to a voice call, so with nobody there it had
+             nothing to do - it sat in the bar looking like the main action and
+             did nothing at all when tapped. People who want a call before they
+             have a partner get the "Call instead" button on the start view. -->
+        <button type="button" id="voiceCallBtn" class="icon-btn call-btn hidden" data-i18n-aria="voiceCall" data-i18n-title="voiceCall" aria-label="Voice call">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
         </button>
 
@@ -142,9 +155,19 @@
         <div id="viewStart" class="chat-view" aria-hidden="false">
           <h1 class="chat-start-title" data-i18n="chatStartTitle">Chat with a stranger</h1>
           <p class="chat-start-sub" data-i18n="chatStartSub">Anonymous · worldwide · free</p>
-          <button type="button" id="startBtn" class="chat-start-btn" data-i18n-aria="startChatAria" aria-label="Start a text chat with a random person">
-            <span data-i18n="chatStartBtn">Start chatting</span>
-          </button>
+          <div class="chat-start-actions">
+            <button type="button" id="startBtn" class="chat-start-btn" data-i18n-aria="startChatAria" aria-label="Start a text chat with a random person">
+              <span data-i18n="chatStartBtn">Start chatting</span>
+            </button>
+            <!-- The way across to the voice app. Text and voice are two halves
+                 of one product, and until now /chat was a dead end: the only
+                 call control on the page needed a partner you did not have
+                 yet. -->
+            <a id="callInsteadBtn" class="chat-start-alt" href="/" data-i18n-aria="chatCallInsteadAria" aria-label="Start a voice call with a random person instead">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+              <span data-i18n="chatCallInstead">Call instead</span>
+            </a>
+          </div>
 
           <!-- Spirit animal: the same picker as the voice app, sharing the same
                localStorage key, so a choice made on either page follows the
@@ -169,7 +192,7 @@
             <span class="cs-halo h1"></span>
             <span class="cs-halo h2"></span>
             <div class="cs-beacon">
-              <img src="/favicon.svg" alt="TalkLive" width="76" height="76" />
+              <img src="/favicon.svg?v=20260916brand2" alt="TalkLive" width="76" height="76" decoding="async" />
             </div>
           </div>
           <p id="searchLine" class="search-line" aria-live="polite">Scanning the globe…</p>
@@ -520,12 +543,12 @@
 
   <script defer src="/socket.io/socket.io.js"></script>
   <script defer src="/countries.js?v=20260828fix"></script>
-  <script defer src="/i18n.js?v=20260915ui7"></script>
-  <script defer src="/animals.js?v=20260915ui7"></script>
+  <script defer src="/i18n.js?v=20260916brand2"></script>
+  <script defer src="/animals.js?v=20260916brand2"></script>
   <script defer src="/error-reporter.js?v=20260823ui"></script>
-  <script defer src="/chat-extras.js?v=20260915ui7"></script>
-  <script defer src="/games.js?v=20260915ui7"></script>
-  <script defer src="/chat.js?v=20260915ui7"></script>
+  <script defer src="/chat-extras.js?v=20260916brand2"></script>
+  <script defer src="/games.js?v=20260916brand2"></script>
+  <script defer src="/chat.js?v=20260916brand2"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

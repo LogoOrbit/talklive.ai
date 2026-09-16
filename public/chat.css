@@ -6,28 +6,44 @@
    ========================================================================== */
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
+/* One palette for the whole product.
+ *
+ * These values are the :root block of style.css, verbatim. They used to differ
+ * by a few points in every channel - a slightly bluer accent, a slightly
+ * lighter background, a different light theme - which is exactly the kind of
+ * mismatch that makes two screens of one site feel like two different sites
+ * when you move between them. If you change a colour here, change it there.
+ */
 :root {
-  --bg-1: #0e1220;
-  --bg-2: #151a2c;
-  --line: rgba(138, 144, 168, 0.16);
-  --accent: #5b6cf0;
-  --accent-soft: rgba(91, 108, 240, 0.14);
+  --bg-1: #0b0f1a;
+  --bg-2: #111729;
+  --bg-glow: #1c2240;
+  --line: rgba(255, 255, 255, 0.09);
+  --accent: #6c5ce7;
+  --accent-2: #00d4ff;
+  --accent-soft: rgba(108, 92, 231, 0.16);
   --danger: #ff5470;
   --green: #2ed47a;
-  --text: #eef0fa;
+  --text: #f2f4ff;
   --muted: #8a90a8;
-  --bubble-them: #232a42;
+  --bubble-them: #1d2438;
 }
 [data-theme="light"] {
-  --bg-1: #f3f5fb; --bg-2: #ffffff; --line: rgba(90, 97, 122, 0.18);
-  --accent: #4a5bd8; --accent-soft: rgba(74, 91, 216, 0.1);
+  --bg-1: #eef1f9; --bg-2: #ffffff; --bg-glow: #dde4f5;
+  --line: rgba(26, 32, 51, 0.14);
+  --accent: #6c5ce7; --accent-2: #0086b3; --accent-soft: rgba(108, 92, 231, 0.1);
+  --green: #17a862;
   --text: #1a2033; --muted: #5a617a; --bubble-them: #e7eaf4;
 }
 [data-theme="ocean"] {
-  --bg-1: #06202e; --bg-2: #0a2c3d; --accent: #0aa2c8; --bubble-them: #0f3a4e;
+  --bg-1: #03151f; --bg-2: #072330; --bg-glow: #0a3648;
+  --accent: #00b4d8; --accent-2: #90e0ef; --accent-soft: rgba(0, 180, 216, 0.16);
+  --bubble-them: #0f3a4e;
 }
 [data-theme="sunset"] {
-  --bg-1: #1c0e17; --bg-2: #281423; --accent: #e05c6e; --bubble-them: #3a1f31;
+  --bg-1: #1a0b14; --bg-2: #2a1220; --bg-glow: #3d1a2e;
+  --accent: #ff6b6b; --accent-2: #ffa94d; --accent-soft: rgba(255, 107, 107, 0.16);
+  --bubble-them: #3a1f31;
 }
 
 html { -webkit-text-size-adjust: 100%; }
@@ -96,31 +112,49 @@ img { max-width: 100%; }
 }
 
 .top-lead { display: inline-flex; align-items: center; gap: 9px; min-width: 0; }
+/* --- The TalkLive lockup --------------------------------------------------
+ *
+ * The same mark and wordmark style.css defines for / and /call: the favicon
+ * tile, the status dot in its top-right corner, and "TalkLive" in solid
+ * --text. This page used to show four little animated bars and a
+ * gradient-clipped wordmark - a second logo for the same product - and on a
+ * phone it dropped the word entirely, leaving nothing on screen that said
+ * where you were. Keep the two blocks in step. */
 .brand {
-  display: inline-flex; align-items: center; gap: 8px; min-width: 0;
+  display: inline-flex; align-items: center; gap: 9px; min-width: 0;
+  font-weight: 800; font-size: 19px; letter-spacing: -0.3px;
   text-decoration: none; color: var(--text); border-radius: 12px;
   transition: opacity 0.18s ease;
 }
-.brand:hover { opacity: 0.78; }
-/* Four bars that idle as a static waveform and animate while the app is
-   live - a small sign that the product is about voice. */
-.brand-mark { display: inline-flex; align-items: flex-end; gap: 2px; height: 18px; flex: none; }
-.brand-mark i {
-  display: block; width: 3px; border-radius: 2px;
-  background: linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--green)));
-  animation: brandWave 1.5s ease-in-out infinite;
+.brand:hover { opacity: 0.82; }
+.brand:active { transform: scale(0.97); }
+
+.brand-logo { position: relative; display: block; width: 32px; height: 32px; flex: none; }
+.brand-logo img, .brand-logo svg { display: block; width: 100%; height: 100%; }
+/* "Live" in the brand cyan, exactly as the logo artwork sets it - see the
+   note on the same rule in style.css. */
+.brand-name-live { color: var(--accent-2); }
+
+.brand-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.brand-dot {
+  /* Clear of the tile's artwork - see the note on the same rule in style.css. */
+  position: absolute; top: -4px; right: -4px;
+  width: 10px; height: 10px; border-radius: 50%;
+  border: 2px solid var(--bg-2);
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  display: block;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
 }
-.brand-mark i:nth-child(1) { height: 8px;  animation-delay: 0s; }
-.brand-mark i:nth-child(2) { height: 15px; animation-delay: 0.18s; }
-.brand-mark i:nth-child(3) { height: 11px; animation-delay: 0.36s; }
-.brand-mark i:nth-child(4) { height: 6px;  animation-delay: 0.54s; }
-@keyframes brandWave { 0%, 100% { transform: scaleY(0.55); } 50% { transform: scaleY(1); } }
-.brand-text {
-  font-size: 17px; font-weight: 800; letter-spacing: -0.4px; white-space: nowrap;
-  background: linear-gradient(120deg, var(--text) 30%, var(--accent) 100%);
-  -webkit-background-clip: text; background-clip: text;
-  -webkit-text-fill-color: transparent; color: transparent;
+.brand-dot.is-online {
+  background: var(--green); box-shadow: 0 0 8px var(--green);
+  animation: brandDotPulse 1.8s ease-in-out infinite;
 }
+.brand-dot.is-offline {
+  background: var(--danger); box-shadow: 0 0 8px var(--danger);
+  animation: brandDotPulse 1s ease-in-out infinite;
+}
+@keyframes brandDotPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
 
 /* Centre zone. Idle it holds the online pill; connected it holds the partner. */
 .top-info { justify-self: stretch; min-width: 0; overflow: hidden; }
@@ -138,12 +172,13 @@ img { max-width: 100%; }
 }
 .online-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); flex: none; }
 
-/* Idle: the online count is one compact status pill, centred in the bar. */
+/* Idle: the online count reads as a quiet status line - a live dot and a
+   number - exactly as it does on the call screen. It used to be a filled,
+   green-outlined capsule, which gave a passive counter more visual weight
+   than the buttons either side of it and made the bar look unfinished. */
 #topDefault .top-sub {
-  margin-top: 0; padding: 6px 13px; border-radius: 999px; width: fit-content;
-  background: color-mix(in srgb, var(--green) 12%, transparent);
-  border: 1px solid color-mix(in srgb, var(--green) 22%, transparent);
-  color: var(--text); font-weight: 600; letter-spacing: 0.01em;
+  margin-top: 0; width: fit-content;
+  color: var(--muted); font-weight: 600; letter-spacing: 0.01em;
 }
 /* The live dot breathes, so the count reads as a real-time number. */
 #topDefault .top-sub .online-dot { animation: livePulse 2.4s ease-in-out infinite; }
@@ -271,7 +306,7 @@ img { max-width: 100%; }
    there is a single place that decides how it degrades. */
 
 @media (prefers-reduced-motion: reduce) {
-  .brand-mark i, #topDefault .top-sub .online-dot { animation: none; }
+  .brand-dot, #topDefault .top-sub .online-dot { animation: none; }
   .icon-btn { transition: background 0.2s ease, color 0.2s ease; }
   .icon-btn:hover, .icon-btn:active { transform: none; }
 }
@@ -279,7 +314,31 @@ img { max-width: 100%; }
 /* --- Stage --- */
 .chat-stage { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 .chat-body { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
-.chat-view { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; min-height: 0; }
+/* Centred while the content fits, scrolled the moment it does not.
+ *
+ * Plain `justify-content: center` overflows in BOTH directions once the
+ * content is taller than the stage, and this page never scrolls, so the top of
+ * the start view - the "Chat with a stranger" heading - was pushed up behind
+ * the top bar and printed straight through it, while the ad card at the
+ * bottom was clipped away entirely. `safe center` refuses to overflow the
+ * start edge, and overflow-y gives the rest somewhere to go. The unprefixed
+ * declaration stays first as the fallback for engines without `safe`. */
+.chat-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  justify-content: safe center;
+  padding: 20px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+/* A flex item cannot shrink below its content here, or the scroll never
+   starts - it just squashes the animal grid instead. The live view is
+   excluded: its message list is the scroller and has to keep shrinking. */
+.chat-view:not(.chat-view-live) > * { flex-shrink: 0; }
 
 /* START */
 .chat-start-title { margin: 0 0 6px; font-size: clamp(24px, 6vw, 32px); font-weight: 800; letter-spacing: -0.5px; text-align: center; }
@@ -291,6 +350,39 @@ img { max-width: 100%; }
 }
 .chat-start-btn:hover { opacity: 0.92; }
 .chat-start-btn:active { transform: scale(0.96); }
+
+/* The two ways in, stacked: text chat first because that is what this page is
+   for, then the way across to the voice app. Secondary weight throughout - an
+   outline, not a second filled pill - so the primary action is never in
+   competition with it. */
+.chat-start-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.chat-start-alt {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 22px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+.chat-start-alt:hover {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: var(--accent-soft);
+}
+.chat-start-alt:active { transform: scale(0.97); }
+.chat-start-alt svg { flex: none; opacity: 0.9; }
 
 /* SEARCHING: the official logo, gently breathing, with a couple of quiet
    ripples radiating out from it. No orbits, no sparks - calm. */
@@ -318,7 +410,7 @@ img { max-width: 100%; }
 }
 
 /* LIVE: just the messages. Who you're talking to lives in the top bar. */
-.chat-view-live { justify-content: flex-start; align-items: stretch; padding: 0; min-height: 0; }
+.chat-view-live { justify-content: flex-start; align-items: stretch; padding: 0; min-height: 0; overflow: hidden; }
 .msgs {
   flex: 1 1 auto; overflow-y: auto; padding: 12px 12px 8px; display: flex; flex-direction: column; gap: 4px;
   overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
@@ -378,12 +470,31 @@ img { max-width: 100%; }
    run to "ElectricPanther45". Rather than shrink everything at once, it sheds
    in stages: first the wordmark, then the label text, then size. --- */
 @media (max-width: 700px) {
-  /* Connected, the partner's name takes the room the wordmark was using. */
-  .topbar.connected .brand { display: none; }
+  /* Connected, the bar is busiest - so the lockup goes compact rather than
+     vanishing. Dropping it mid-conversation left the page with no visible
+     sign of whose site it was, on the screen people spend the most time on. */
+  .topbar.connected .brand-name { font-size: 15px; }
+  .topbar.connected .brand-logo { width: 26px; height: 26px; }
+}
+@media (max-width: 560px) {
+  /* The one place the lettering yields: connected, on a phone, where the row
+     also has to carry a stranger's username. The mark stays - it is the same
+     tile as the tab icon and the installed app icon, so the page is still
+     visibly TalkLive - and the name gets the width it needs instead of being
+     cut to five characters. */
+  .topbar.connected .brand-name { display: none; }
+  .topbar.connected .brand { gap: 0; }
+}
+@media (max-width: 480px) {
+  /* Dot and number carry the meaning; the word is the decoration. Same trade
+     the voice app's people-count makes at the same width. */
+  #topDefault .top-sub > span:last-child { display: none; }
 }
 @media (max-width: 480px) {
   .topbar { gap: 8px; padding-left: 10px; padding-right: 10px; }
-  .brand-text { display: none; }
+  .brand { font-size: 16px; }
+  .brand-logo { width: 26px; height: 26px; }
+  .brand-dot { width: 9px; height: 9px; }
   .top-lead { gap: 6px; }
   .top-sub { font-size: 11.5px; }
   /* Controls keep their full size here on purpose. With three of them in the
@@ -607,8 +718,7 @@ img { max-width: 100%; }
   }
   @keyframes appRise { from { opacity: 0; transform: translateY(18px) scale(0.985); } to { opacity: 1; transform: none; } }
 
-  .topbar { min-height: 64px; padding: 10px 18px; gap: 14px; background: color-mix(in srgb, var(--bg-2) 80%, transparent); }
-  .brand-text { font-size: 19px; }
+  .topbar { min-height: 64px; padding: 10px 18px; gap: 14px; background: color-mix(in srgb, var(--bg-2) 92%, transparent); }
   /* Hover stays borderless here - the base rules already carry the tint and
      the lift, and re-introducing outlines on hover alone made the controls
      jump between two different shapes. */
@@ -913,7 +1023,7 @@ img { max-width: 100%; }
   color: var(--text);
   border-color: var(--animal-color, var(--accent));
   background: var(--accent-soft);
-  background: color-mix(in srgb, var(--animal-color, #5b6cf0) 18%, transparent);
+  background: color-mix(in srgb, var(--animal-color, #6c5ce7) 18%, transparent);
   box-shadow: 0 0 0 1px var(--animal-color, var(--accent)) inset;
 }
 .animal-option.selected .tl-animal-icon { transform: scale(1.1); }

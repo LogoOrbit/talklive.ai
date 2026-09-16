@@ -36,6 +36,7 @@
   // Resolved once. Every caller used to re-query it and dereference the result
   // blind, so a markup change turned into a TypeError mid-conversation.
   var topbar = document.querySelector('.topbar');
+  var brandDot = $('brandDot');
   var stage = $('chatStage');
   var viewStart = $('viewStart');
   var viewSearch = $('viewSearch');
@@ -175,6 +176,9 @@
     var connected = name === 'live' && partnerHere;
     reportBtn.classList.toggle('hidden', !connected);
     addFriendBtn.classList.toggle('hidden', !connected);
+    // The call button invites your current partner, so it only exists once
+    // there is one. Idle it was a no-op that looked like the primary action.
+    voiceCallBtn.classList.toggle('hidden', !connected);
     // Mini-games need a live partner, same as Report and Add friend.
     if (gameBtn) gameBtn.classList.toggle('hidden', !connected);
     autoBtn.classList.toggle('hidden', name === 'start');
@@ -1149,10 +1153,34 @@
   // sat in the search view forever on a search the server had never heard of.
   socket.on('connect', function () {
     register();
+    socketConnected = true;
+    refreshNetStatus();
     // Clearing the ack is what restarts the search: the watchdog re-sends
     // 'find-partner' a moment later, once the register above has landed and the
     // new socket has a profile to search with.
     if (searching && !partnerHere) searchAcked = false;
+  });
+
+  // --- Network status --------------------------------------------------------
+  // The dot on the TalkLive mark is green while the internet and the socket are
+  // both healthy and red the moment either drops - the same indicator, wired the
+  // same way, as the voice app (see refreshNetStatus in app.js). Without this
+  // the dot was decoration on /chat and a live signal on /, which is worse than
+  // either on its own.
+  var socketConnected = false;
+  function refreshNetStatus() {
+    if (!brandDot) return;
+    var online = socketConnected && (typeof navigator.onLine === 'undefined' || navigator.onLine);
+    brandDot.classList.toggle('is-online', online);
+    brandDot.classList.toggle('is-offline', !online);
+    brandDot.setAttribute('title', t(online ? 'netOnline' : 'netOffline'));
+  }
+  window.addEventListener('online', refreshNetStatus);
+  window.addEventListener('offline', refreshNetStatus);
+
+  socket.on('disconnect', function () {
+    socketConnected = false;
+    refreshNetStatus();
   });
 
   socket.on('needs-register', register);
@@ -1298,6 +1326,7 @@
     typingEl.classList.add('hidden');
     reportBtn.classList.add('hidden');
     addFriendBtn.classList.add('hidden');
+    voiceCallBtn.classList.add('hidden');
     topDefault.classList.remove('hidden');
     topPartner.classList.add('hidden');
     renderTopPartnerAnimal(null); // never let the last stranger's animal linger
