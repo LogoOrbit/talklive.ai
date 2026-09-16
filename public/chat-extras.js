@@ -439,41 +439,176 @@
       if (menu) menu.hidden = true;
     }
 
-    // One set of delegated listeners for the whole conversation. Long-press on
-    // touch, right-click on desktop - both land on the same menu.
+    // ------------------------------------------------------------------------
+    // Gestures
+    //
+    // Three on one bubble, from one set of delegated listeners for the whole
+    // conversation - a 200 message chat still adds none of its own:
+    //
+    //   swipe right  -> reply to that message
+    //   double tap   -> heart it
+    //   long press    -> the full menu (every reaction, plus Reply)
+    //
+    // The first two are the shortcuts people already have the muscle memory
+    // for from every other messenger; the menu stays as the discoverable path
+    // and as the only way to reach the other five reactions.
+    // ------------------------------------------------------------------------
+    var SWIPE_TRIGGER = 52;   // px of travel past which a release fires Reply
+    var SWIPE_MAX = 76;       // px the bubble can travel, however far the finger goes
+    var SWIPE_CLAIM = 12;     // px before the gesture is declared a swipe, not a scroll
+    var DOUBLE_TAP_MS = 320;
+    var HEART = '❤️';
+
     var pressTimer = null, pressX = 0, pressY = 0;
+    // Live swipe state. axis is '' until the direction is known, then 'x' (we
+    // own the gesture) or 'y' (the user is scrolling - hands off for the rest
+    // of this touch).
+    var swipeEl = null, swipeId = null, swipeAxis = '', swipeTravel = 0, swipeArmed = false;
+    var hint = null;          // the reply glyph revealed behind the bubble
+    var lastTapId = null, lastTapAt = 0;
+
     function bubbleIdFrom(target) {
       var bubble = target.closest ? target.closest(msgSelector) : null;
       return bubble && bubble.dataset ? bubble.dataset.cxId : null;
     }
 
+    function buzz(ms) {
+      if (!navigator.vibrate) return;
+      try { navigator.vibrate(ms); } catch (err) { /* iOS and desktop: no-op */ }
+    }
+
+    // The glyph lives in the message list, not in the bubble: a bubble from the
+    // other side starts flush against the left padding, so an icon parented to
+    // it would sit outside the scroller and be clipped away. One shared node,
+    // moved into place, also means no per-message DOM.
+    function buildHint() {
+      hint = el('div', 'cx-swipe-hint');
+      hint.setAttribute('aria-hidden', 'true');
+      hint.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"'
+        + ' stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/>'
+        + '<path d="M4 9h7.5A6.5 6.5 0 0 1 18 15.5V20"/></svg>';
+      // The scroller is the positioning context; `position: static` here would
+      // throw the glyph out to the page and it would never line up.
+      if (getComputedStyle(messages).position === 'static') messages.style.position = 'relative';
+      messages.appendChild(hint);
+    }
+
+    function paintSwipe() {
+      var ratio = Math.min(1, swipeTravel / SWIPE_TRIGGER);
+      swipeEl.style.transform = 'translate3d(' + swipeTravel + 'px,0,0)';
+      hint.style.opacity = String(ratio);
+      // The glyph grows into place with the swipe and settles the moment the
+      // threshold is crossed, so the arm point is felt as well as seen.
+      hint.style.transform = 'translateY(-50%) scale(' + (0.6 + ratio * 0.4) + ')';
+      hint.classList.toggle('is-armed', swipeArmed);
+    }
+
+    function endSwipe(fire) {
+      if (!swipeEl) return;
+      var el2 = swipeEl, id = swipeId, armed = swipeArmed;
+      swipeEl.classList.remove('cx-swiping');
+      swipeEl.style.transform = '';
+      if (hint) { hint.classList.remove('is-visible', 'is-armed'); hint.style.opacity = '0'; }
+      swipeEl = null; swipeId = null; swipeAxis = ''; swipeTravel = 0; swipeArmed = false;
+      if (fire && armed && id) startReply(id);
+    }
+
     messages.addEventListener('touchstart', function (e) {
-      var id = bubbleIdFrom(e.target);
+      // A second finger means a pinch or a two-finger scroll; drop everything
+      // rather than dragging a bubble around underneath it.
+      if (e.touches.length > 1) { clearTimeout(pressTimer); pressTimer = null; endSwipe(false); return; }
+      var bubble = e.target.closest ? e.target.closest(msgSelector) : null;
+      var id = bubble && bubble.dataset ? bubble.dataset.cxId : null;
       if (!id) return;
       var touch = e.touches[0];
       pressX = touch.clientX; pressY = touch.clientY;
+      swipeEl = bubble; swipeId = id; swipeAxis = ''; swipeTravel = 0; swipeArmed = false;
       clearTimeout(pressTimer);
       pressTimer = setTimeout(function () {
         pressTimer = null;
-        if (navigator.vibrate) { try { navigator.vibrate(12); } catch (err) { /* ignore */ } }
+        endSwipe(false);      // the menu wins; the bubble goes back to rest
+        buzz(12);
         showMenu(id, pressX, pressY);
       }, 420);
     }, { passive: true });
 
-    // Any movement means the user is scrolling, not pressing.
-    function cancelPress(e) {
-      if (!pressTimer) return;
-      if (e && e.touches && e.touches[0]) {
-        var dx = Math.abs(e.touches[0].clientX - pressX);
-        var dy = Math.abs(e.touches[0].clientY - pressY);
-        if (dx < 8 && dy < 8) return;
+    // Non-passive on purpose, and only this one: once the gesture is claimed as
+    // a swipe it has to stop the scroller from also moving under the finger,
+    // and preventDefault() is ignored in a passive listener. It bails in three
+    // comparisons when there is nothing to drag, so the scroll path stays cheap.
+    messages.addEventListener('touchmove', function (e) {
+      if (!swipeEl || swipeAxis === 'y' || !e.touches.length) return;
+      var dx = e.touches[0].clientX - pressX;
+      var dy = e.touches[0].clientY - pressY;
+      if (swipeAxis === '') {
+        if (Math.abs(dy) > SWIPE_CLAIM && Math.abs(dy) > Math.abs(dx)) { swipeAxis = 'y'; endSwipe(false); return; }
+        // Right only. Dragging a bubble left is how you scroll a wide GIF, and
+        // a reply gesture that fires in both directions fires by accident.
+        if (dx < SWIPE_CLAIM || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+        swipeAxis = 'x';
+        clearTimeout(pressTimer); pressTimer = null;
+        // The host empties the list between conversations, which takes the
+        // glyph with it - so the node is rebuilt whenever it is not attached,
+        // not only the first time.
+        if (!hint || !hint.parentNode) buildHint();
+        // offsetLeft/Top are read once per gesture, not per frame: everything
+        // after this is a transform, so nothing below re-lays out the list.
+        // They are offsets inside the scrolled content, which is exactly the
+        // box the glyph is positioned against, so scrollTop does not come into it.
+        hint.style.top = (swipeEl.offsetTop + swipeEl.offsetHeight / 2) + 'px';
+        hint.style.left = Math.max(0, swipeEl.offsetLeft - 36) + 'px';
+        hint.classList.add('is-visible');
+        swipeEl.classList.add('cx-swiping');
       }
-      clearTimeout(pressTimer);
-      pressTimer = null;
-    }
-    messages.addEventListener('touchmove', cancelPress, { passive: true });
-    messages.addEventListener('touchend', function () { clearTimeout(pressTimer); pressTimer = null; }, { passive: true });
-    messages.addEventListener('touchcancel', function () { clearTimeout(pressTimer); pressTimer = null; }, { passive: true });
+      e.preventDefault();
+      // Rubber band: the first 52px track the finger, the rest of the drag is
+      // increasingly resisted, so the bubble cannot be flung across the screen.
+      var raw = dx - SWIPE_CLAIM;
+      swipeTravel = raw <= SWIPE_TRIGGER
+        ? Math.max(0, raw)
+        : SWIPE_TRIGGER + Math.min(SWIPE_MAX - SWIPE_TRIGGER, (raw - SWIPE_TRIGGER) * 0.35);
+      var armed = swipeTravel >= SWIPE_TRIGGER;
+      if (armed !== swipeArmed) { swipeArmed = armed; if (armed) buzz(10); }
+      paintSwipe();
+    }, { passive: false });
+
+    messages.addEventListener('touchend', function (e) {
+      clearTimeout(pressTimer); pressTimer = null;
+      // A drag is never half of a double tap.
+      if (swipeAxis === 'x') { lastTapId = null; endSwipe(true); return; }
+      var wasSwiping = !!swipeEl;
+      var id = swipeId;
+      endSwipe(false);
+      if (!wasSwiping || !id || !canReact) return;
+      // Double tap to heart. A tap that wandered is a scroll that did not quite
+      // take, and a tap on a chip or a quote already means something else.
+      var touch = e.changedTouches && e.changedTouches[0];
+      if (touch && (Math.abs(touch.clientX - pressX) > 10 || Math.abs(touch.clientY - pressY) > 10)) return;
+      if (e.target.closest && e.target.closest('.cx-reaction, .cx-quote')) return;
+      var now = Date.now();
+      if (lastTapId === id && now - lastTapAt < DOUBLE_TAP_MS) {
+        lastTapId = null; lastTapAt = 0;
+        // The browser would otherwise follow this up with a synthetic click on
+        // the bubble, and on some Androids a zoom.
+        if (e.cancelable) e.preventDefault();
+        heartTap(id);
+      } else {
+        lastTapId = id; lastTapAt = now;
+      }
+    }, { passive: false });
+
+    messages.addEventListener('touchcancel', function () {
+      clearTimeout(pressTimer); pressTimer = null;
+      endSwipe(false);
+    }, { passive: true });
+
+    // The same heart on a desktop, where there is no swipe and no double tap.
+    messages.addEventListener('dblclick', function (e) {
+      if (!canReact) return;
+      if (e.target.closest('.cx-reaction, .cx-quote')) return;
+      var id = bubbleIdFrom(e.target);
+      if (id) heartTap(id);
+    });
 
     messages.addEventListener('contextmenu', function (e) {
       var id = bubbleIdFrom(e.target);
@@ -481,6 +616,32 @@
       e.preventDefault();
       showMenu(id, e.clientX, e.clientY);
     });
+
+    // Double tap only ever adds a heart - it never takes one back. Undoing is
+    // deliberate by design: tap the chip under the message, or use the menu.
+    // Two fast taps are far too easy to produce by accident for one of them to
+    // silently undo what the other just did.
+    function heartTap(id) {
+      var rec = index[id];
+      if (!rec) return;
+      if (!(rec.mineReacts && rec.mineReacts[HEART])) toggleReaction(id, HEART);
+      burstHeart(rec.el);
+      buzz(14);
+    }
+
+    // The burst answers the gesture on the message you tapped, which the chip
+    // alone does not: it appears under the bubble, where you are not looking.
+    function burstHeart(node) {
+      var h = el('span', 'cx-heart-burst', HEART);
+      h.setAttribute('aria-hidden', 'true');
+      node.appendChild(h);
+      var done = false;
+      function drop() { if (done) return; done = true; if (h.parentNode) h.parentNode.removeChild(h); }
+      h.addEventListener('animationend', drop);
+      // animationend never fires under prefers-reduced-motion, and a stray node
+      // per double tap would pile up for the life of the conversation.
+      setTimeout(drop, 1200);
+    }
 
     // Tapping a message's own reaction chip toggles it - the quickest path back
     // out of a reaction you did not mean to send.
@@ -668,6 +829,12 @@
         cancelReply();
         closePanel();
         hideMenu();
+        endSwipe(false);
+        lastTapId = null;
+        // The host is about to empty the list, which detaches the glyph; the
+        // next swipe rebuilds it rather than writing to an orphaned node.
+        if (hint && hint.parentNode) hint.parentNode.removeChild(hint);
+        hint = null;
       },
     };
   }

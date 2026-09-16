@@ -56,10 +56,10 @@
   var addFriendBtn = $('addFriendBtn');
   var typingEl = $('typing');
   var onlineCount = $('onlineCount');
+  var liveCount = $('liveCount');
   var autoBtn = $('autoBtn');
   var topDefault = $('topDefault');
   var topPartner = $('topPartner');
-  var voiceCallBtn = $('voiceCallBtn');
   var animalGrid = $('animalGrid');
   var animalChosenText = $('animalChosen');
   var topPartnerAnimal = $('topPartnerAnimal');
@@ -195,9 +195,6 @@
     var connected = name === 'live' && partnerHere;
     reportBtn.classList.toggle('hidden', !connected);
     addFriendBtn.classList.toggle('hidden', !connected);
-    // The call button invites your current partner, so it only exists once
-    // there is one. Idle it was a no-op that looked like the primary action.
-    voiceCallBtn.classList.toggle('hidden', !connected);
     // Mini-games need a live partner, same as Report and Add friend.
     if (gameBtn) gameBtn.classList.toggle('hidden', !connected);
     autoBtn.classList.toggle('hidden', name === 'start');
@@ -729,35 +726,16 @@
   friendModal.addEventListener('click', function (e) { if (e.target === friendModal) closeModal(friendModal); });
 
   // ---------------------------------------------------------------------------
-  // Voice call: the phone icon never navigates away silently. Tapping it sends
-  // your current partner a "wants to call you" popup; only once THEY accept
-  // does either browser leave for the voice app - and both land there
-  // together, paired up automatically via a one-time invite token.
+  // Voice call invites - incoming only.
+  //
+  // /chat no longer offers a way to start a call: the bar's filled phone button
+  // is gone, and with it the whole outgoing flow. What stays is the answering
+  // half, because a partner still running the previously cached version of this
+  // page can send an invite, and an invite that cannot be answered would look
+  // to them like being ignored. Accepting still takes both sides to the voice
+  // app together, paired by a one-time token.
   // ---------------------------------------------------------------------------
-  var callModal = $('callModal');       // "Calling… waiting for them to accept"
   var callIncomingModal = $('callIncomingModal'); // shown to the invited side
-
-  var inviteOutTimer = null;
-  function clearOutgoingInvite() {
-    clearTimeout(inviteOutTimer);
-    inviteOutTimer = null;
-    closeModal(callModal);
-  }
-  voiceCallBtn.addEventListener('click', function () {
-    if (!partnerHere) return;
-    vibrate(10);
-    socket.emit('voice-invite');
-    openModal(callModal);
-    // No response within 20s (e.g. they never notice the popup) - stop waiting.
-    clearTimeout(inviteOutTimer);
-    inviteOutTimer = setTimeout(function () {
-      closeModal(callModal);
-      addMessage(t('callInviteNoAnswer'), 'system');
-    }, 20000);
-  });
-  $('callCancelBtn').addEventListener('click', function () { clearOutgoingInvite(); });
-  $('callCloseBtn').addEventListener('click', function () { clearOutgoingInvite(); });
-  callModal.addEventListener('click', function (e) { if (e.target === callModal) clearOutgoingInvite(); });
 
   socket.on('voice-invite', function (data) {
     if (!partnerHere) return; // stray/late event from a chat we already left
@@ -775,12 +753,14 @@
     $('callAcceptBtn').disabled = true;
   });
 
+  // Only ever reaches a page that sent an invite, which this one no longer
+  // does - kept so the server has no listener-less event to reason about.
   socket.on('voice-invite-declined', function () {
-    clearOutgoingInvite();
     addMessage(t('callInviteDeclined'), 'system');
   });
+  // Both sides of an accepted invite get this, the accepting one included, so
+  // this is still the handler that carries a user out of a call they said yes to.
   socket.on('voice-invite-accepted', function (data) {
-    clearOutgoingInvite();
     var token = data && data.token;
     if (!token) return;
     location.href = '/call?invite=' + encodeURIComponent(token);
@@ -1455,8 +1435,19 @@
     myProfile = { username: p.username, country: p.country, countryCode: p.countryCode };
   });
 
+  // The capsule leaves its waiting state the moment a real number arrives, and
+  // the number itself is re-animated on every change so the badge reads as
+  // live. Restarting the animation needs the class off, a reflow, then on -
+  // re-adding a class the element already has does nothing.
   socket.on('online-count', function (n) {
-    if (onlineCount) onlineCount.textContent = String(n);
+    if (!onlineCount) return;
+    var next = String(n);
+    if (onlineCount.textContent === next) return;
+    onlineCount.textContent = next;
+    if (liveCount) liveCount.classList.remove('is-waiting');
+    onlineCount.classList.remove('is-bump');
+    void onlineCount.offsetWidth;
+    onlineCount.classList.add('is-bump');
   });
 
   socket.on('matched', function (data) {
@@ -1544,13 +1535,11 @@
     typingEl.classList.add('hidden');
     reportBtn.classList.add('hidden');
     addFriendBtn.classList.add('hidden');
-    voiceCallBtn.classList.add('hidden');
     topDefault.classList.remove('hidden');
     topPartner.classList.add('hidden');
     renderTopPartnerAnimal(null); // never let the last stranger's animal linger
     if (topbar) topbar.classList.remove('connected');
     input.disabled = true;
-    clearOutgoingInvite();
     closeModal(callIncomingModal);
     if (autoNext) {
       // Keep going straight into a new search - no need to wait for a tap on Next.

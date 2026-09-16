@@ -172,57 +172,90 @@ img { max-width: 100%; }
 }
 .online-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); flex: none; }
 
-/* Idle: the online count reads as a quiet status line - a live dot and a
-   number - exactly as it does on the call screen. It used to be a filled,
-   green-outlined capsule, which gave a passive counter more visual weight
-   than the buttons either side of it and made the bar look unfinished. */
-#topDefault .top-sub {
-  margin-top: 0; width: fit-content;
-  /* Spacing is set per part rather than by one flex gap: an even gap on both
-     sides left the number floating between the dot and the word instead of
-     reading as "12 Online". */
-  gap: 0;
-  color: var(--muted); font-weight: 500; font-size: 12.5px; letter-spacing: 0;
+/* --- Live headcount capsule (idle top bar) ---
+ *
+ * One object, not three: a beacon, the number and a small label inside a
+ * green-tinted capsule that sits on the same 28px rhythm as the bar's other
+ * controls. The tint is derived from --green so every theme (light, ocean,
+ * sunset) gets its own shade for free; the rgba line before each color-mix is
+ * the dark-theme value, kept as a fallback for engines without color-mix.
+ *
+ * Nothing here escapes the element's own box: .top-info clips its overflow,
+ * so a glow or ring spreading outside the capsule would be sliced in half. */
+.live-count {
+  display: inline-flex; align-items: center; gap: 7px;
+  height: 28px; padding: 0 11px 0 9px; border-radius: 999px;
+  background: rgba(46, 212, 122, 0.1);
+  background: color-mix(in srgb, var(--green) 11%, transparent);
+  border: 1px solid rgba(46, 212, 122, 0.26);
+  border-color: color-mix(in srgb, var(--green) 28%, transparent);
+  line-height: 1; white-space: nowrap; max-width: 100%;
+  transition: background 0.25s ease, border-color 0.25s ease;
 }
-/* The number is the content; the word after it is the label. Giving them the
-   same muted weight made the pair look like two unrelated fragments. */
-#topDefault #onlineCount {
-  color: var(--text); font-weight: 700;
-  font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
-  margin-right: 4px;
+
+/* The beacon: a solid core with a halo breathing out of it, so the number
+   beside it reads as live rather than as a figure printed once at load. */
+.live-beacon {
+  position: relative; flex: none; width: 14px; height: 14px;
+  /* The box is wider than the dot, so a negative margin pulls the optical
+     spacing back to where it belongs instead of leaving a hole. */
+  margin: 0 -3px 0 -2px;
 }
-/* The live dot breathes, so the count reads as a real-time number. The ring is
-   drawn inside the dot's own box rather than as a box-shadow spreading past
-   it: this row and the header zone around it both clip their overflow, which
-   sliced the ring - and at the edge the dot itself - clean in half. A 14px box
-   fits inside the line, so there is nothing left to crop. */
-#topDefault .top-sub .online-dot {
-  position: relative; flex: none;
-  width: 14px; height: 14px;
-  /* The box is 4px wider than the dot on each side, so the margins pull the
-     spacing back to where it reads: level with the number, 7px clear of it. */
-  margin-left: -4px; margin-right: 3px;
-  background: none; border-radius: 0;
-}
-#topDefault .top-sub .online-dot::before,
-#topDefault .top-sub .online-dot::after {
+.live-beacon::before,
+.live-beacon::after {
   content: ''; position: absolute; top: 50%; left: 50%;
-  border-radius: 50%; transform: translate(-50%, -50%);
+  border-radius: 50%; background: var(--green);
+  transform: translate(-50%, -50%);
 }
-#topDefault .top-sub .online-dot::before {
-  width: 6px; height: 6px; background: var(--green);
+.live-beacon::before { width: 7px; height: 7px; }
+.live-beacon::after {
+  width: 14px; height: 14px;
+  animation: liveHalo 2.4s ease-in-out infinite;
 }
-#topDefault .top-sub .online-dot::after {
-  width: 14px; height: 14px; background: var(--green);
-  animation: livePulse 2.4s ease-in-out infinite;
-}
-/* A halo spreading out of the dot and fading, not an outline: at 6px a ring
-   this size sits right on the dot's edge and the two read as one muddy donut. */
-@keyframes livePulse {
-  0%   { transform: translate(-50%, -50%) scale(0.45); opacity: 0.4; }
+/* A halo spreading out of the dot and fading, not an outline: at this size a
+   ring would sit right on the dot's edge and the two read as one muddy donut. */
+@keyframes liveHalo {
+  0%   { transform: translate(-50%, -50%) scale(0.5); opacity: 0.45; }
   70%  { transform: translate(-50%, -50%) scale(1); opacity: 0; }
   100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
 }
+
+/* The number is the content. Tabular figures so a change from 9 to 10 does not
+   shuffle the label sideways. */
+.live-num {
+  font-size: 14px; font-weight: 800; color: var(--text);
+  font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
+}
+/* Each new count lands with a short lift - enough to notice out of the corner
+   of your eye, not enough to pull you away from the message you are writing. */
+.live-num.is-bump { animation: liveBump 0.42s cubic-bezier(0.22, 1, 0.36, 1); }
+@keyframes liveBump {
+  0%   { transform: translateY(-5px); opacity: 0; }
+  60%  { transform: translateY(0.5px); opacity: 1; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+/* The label is a caption, so it is small, spaced and tinted rather than set in
+   the same weight as the number - that made the pair look like two unrelated
+   fragments sitting next to each other. */
+.live-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(46, 212, 122, 0.92);
+  color: color-mix(in srgb, var(--green) 82%, var(--text));
+  overflow: hidden; text-overflow: ellipsis;
+}
+
+/* Before the first count arrives there is nothing live to advertise: the tint
+   drains out, the beacon stops breathing, and the number is an em dash. */
+.live-count.is-waiting {
+  background: transparent;
+  border-color: var(--line);
+}
+.live-count.is-waiting .live-beacon::before { background: var(--muted); opacity: 0.6; }
+.live-count.is-waiting .live-beacon::after { display: none; }
+.live-count.is-waiting .live-num { color: var(--muted); font-weight: 700; }
+.live-count.is-waiting .live-label { color: var(--muted); }
 .peer-flag { display: inline-flex; flex: none; }
 .peer-flag .flag-icon { border-radius: 3px; display: block; }
 
@@ -252,18 +285,8 @@ img { max-width: 100%; }
 .report-btn:hover { color: var(--danger); background: color-mix(in srgb, var(--danger) 14%, transparent); }
 .friend-btn:hover { color: var(--green); background: color-mix(in srgb, var(--green) 14%, transparent); }
 
-/* The one saturated control in the bar: the primary action. */
-.call-btn {
-  background: var(--accent); color: #fff;
-  box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 34%, transparent);
-}
-.call-btn:hover {
-  background: color-mix(in srgb, var(--accent) 88%, #fff); color: #fff;
-  box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 44%, transparent);
-}
-
 /* "Auto" - the auto-reconnect toggle. Same height as its neighbours, tonal
-   when off so it stops shouting over the call button, filled when on. */
+   when off, filled when on. */
 .auto-btn {
   width: auto; min-width: 0; border-radius: 999px; padding: 0 14px; height: 38px;
   font: inherit; font-size: 12.5px; font-weight: 700; letter-spacing: 0.02em;
@@ -346,7 +369,8 @@ img { max-width: 100%; }
   .brand-dot { animation: none; }
   /* The ring is the animation here, so it goes entirely rather than freezing
      mid-pulse as a stray circle around the dot. */
-  #topDefault .top-sub .online-dot::after { display: none; }
+  .live-beacon::after { display: none; }
+  .live-num.is-bump { animation: none; }
   .icon-btn { transition: background 0.2s ease, color 0.2s ease; }
   .icon-btn:hover, .icon-btn:active { transform: none; }
 }
@@ -526,11 +550,11 @@ img { max-width: 100%; }
   .topbar.connected .brand { gap: 0; }
 }
 @media (max-width: 480px) {
-  /* Dot and number carry the meaning; the word is the decoration. Same trade
-     the voice app's people-count makes at the same width. */
-  #topDefault .top-sub > span:last-child { display: none; }
-  /* Nothing left to sit next to, so the gap after the number goes too. */
-  #topDefault #onlineCount { margin-right: 0; }
+  /* Beacon and number carry the meaning; the word is the decoration. Same
+     trade the voice app's people-count makes at the same width. The capsule
+     stays - it is what makes the pair read as one live badge. */
+  .live-count { height: 26px; padding: 0 9px 0 8px; gap: 6px; }
+  .live-label { display: none; }
 }
 @media (max-width: 480px) {
   .topbar { gap: 8px; padding-left: 10px; padding-right: 10px; }
@@ -1029,7 +1053,6 @@ img { max-width: 100%; }
      jump between two different shapes. */
   .icon-btn:hover { background: var(--accent-soft); color: var(--accent); }
   .report-btn:hover { background: color-mix(in srgb, var(--danger) 14%, transparent); color: var(--danger); }
-  .call-btn:hover { color: #fff; }
   .icon-btn, .pill, .btn, .next-btn, .send-btn, .chat-start-btn { will-change: transform; }
 
   /* START view: a real desktop hero */

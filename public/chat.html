@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
-<link rel="stylesheet" href="/chat.css?v=20260916gate" />
-<link rel="stylesheet" href="/chat-extras.css?v=20260916gate" />
+<link rel="stylesheet" href="/chat.css?v=20260916live" />
+<link rel="stylesheet" href="/chat-extras.css?v=20260916live" />
 <link rel="stylesheet" href="/games.css?v=20260916gate" />
 <style>
   .skip-link {
@@ -93,7 +93,16 @@
 
       <div class="top-info">
         <div id="topDefault" class="top-id">
-          <span class="top-sub"><span class="online-dot" aria-hidden="true"></span><span id="onlineCount">-</span><span data-i18n="online">Online</span></span>
+          <!-- Live headcount. A beacon (dot + breathing halo), the number, and
+               a small uppercase label, wrapped in one green-tinted capsule so
+               it reads as a live badge instead of three loose fragments. The
+               waiting state (no count yet) is a grey, still beacon and an
+               em dash - never a zero, which reads as "nobody is here". -->
+          <div class="live-count is-waiting" id="liveCount" data-i18n-title="onlineAria" data-i18n-aria="onlineAria" title="Number of people online now" aria-label="Number of people online now" role="status" aria-live="polite">
+            <span class="live-beacon" aria-hidden="true"></span>
+            <span class="live-num" id="onlineCount">&mdash;</span>
+            <span class="live-label" data-i18n="online">Online</span>
+          </div>
         </div>
         <div id="topPartner" class="top-id hidden">
           <span class="top-name"><span id="topPartnerAnimal" class="top-animal hidden"></span><span id="topPartnerName"></span></span>
@@ -105,14 +114,11 @@
         <button type="button" id="autoBtn" class="icon-btn auto-btn hidden" aria-pressed="false" data-i18n-title="chatAutoHint" data-i18n-aria="chatAutoHint" aria-label="Auto-connect me to a new person when a chat ends">
           <span data-i18n="chatAuto">Auto</span>
         </button>
-        <!-- Hidden until a partner is actually connected. It invites the person
-             you are chatting with to a voice call, so with nobody there it had
-             nothing to do - it sat in the bar looking like the main action and
-             did nothing at all when tapped. People who want a call before they
-             have a partner get the "Call instead" button on the start view. -->
-        <button type="button" id="voiceCallBtn" class="icon-btn call-btn hidden" data-i18n-aria="voiceCall" data-i18n-title="voiceCall" aria-label="Voice call">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
-        </button>
+        <!-- There is no call button here. /chat is a text product; the one
+             thing the bar used to carry that pulled people out of it was a
+             filled accent circle sitting where the eye lands first. People who
+             want a call reach it from the "Call instead" button on the start
+             view, before a conversation is underway. -->
 
         <!-- Everything that is not Auto or Call sits behind one menu, so the
              bar never carries more than three controls and every secondary
@@ -329,27 +335,10 @@
     </div>
   </div>
 
-  <!-- Outgoing voice-call invite: tapping the phone icon never leaves the page
-       by itself - it sends your partner a request and waits for them to
-       accept before either of you goes to the voice app. -->
-  <div id="callModal" class="modal-overlay hidden">
-    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="callTitle">
-      <div class="modal-header">
-        <h2 id="callTitle" data-i18n="callInviteWaitTitle">Calling…</h2>
-        <button type="button" id="callCloseBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
-      </div>
-      <div class="modal-body">
-        <p class="hint" data-i18n="callInviteWaitBody">Asking them to start a voice call. This closes automatically if they accept.</p>
-        <div class="modal-actions">
-          <button type="button" id="callCancelBtn" class="btn btn-secondary" data-i18n="cancel">Cancel</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Incoming voice-call invite: shown to the partner when the other side
-       taps the phone icon. Accepting takes BOTH of you to the voice app,
-       already paired together. -->
+  <!-- Incoming voice-call invite. Nothing on this page sends one any more, but
+       a partner whose browser is still running the cached previous version
+       can, so the invite is still answerable for as long as those pages live.
+       Accepting takes BOTH of you to the voice app, already paired together. -->
   <div id="callIncomingModal" class="modal-overlay hidden">
     <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="callIncomingTitle">
       <div class="modal-header">
@@ -791,9 +780,9 @@
   <script defer src="/i18n.js?v=20260916gate"></script>
   <script defer src="/animals.js?v=20260916gate"></script>
   <script defer src="/error-reporter.js?v=20260823ui"></script>
-  <script defer src="/chat-extras.js?v=20260916gate"></script>
+  <script defer src="/chat-extras.js?v=20260916live"></script>
   <script defer src="/games.js?v=20260916gate"></script>
-  <script defer src="/chat.js?v=20260916gate"></script>
+  <script defer src="/chat.js?v=20260916live"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

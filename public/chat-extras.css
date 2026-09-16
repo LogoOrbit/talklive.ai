@@ -248,6 +248,68 @@
 [data-theme="light"] .cx-reaction { background: rgba(0, 0, 0, 0.08); }
 .cx-reaction.own { border-color: currentColor; }
 
+/* --- gestures: swipe to reply, double tap to heart ------------------------ */
+/* Every decorated bubble, and only those: system lines are never registered,
+   so they never get a position, a transition or a gesture. */
+[data-cx-id] {
+  position: relative;
+  z-index: 1;
+  /* Vertical scrolling stays with the browser; horizontal is ours, and this is
+     also what removes the 300ms double-tap-to-zoom delay on the heart. */
+  touch-action: pan-y;
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+/* While a finger is on it the bubble tracks the finger exactly - a transition
+   here would make the drag feel like it is lagging behind the touch. */
+[data-cx-id].cx-swiping { transition: none; }
+
+/* The reply glyph sits in the list behind the bubbles and is uncovered as one
+   slides off it, so nothing has to be inserted into the message itself. */
+.cx-swipe-hint {
+  position: absolute;
+  z-index: 0;
+  width: 30px;
+  height: 30px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(127, 127, 127, 0.16);
+  color: var(--muted, #8a90a8);
+  opacity: 0;
+  transform: translateY(-50%) scale(0.6);
+  pointer-events: none;
+}
+.cx-swipe-hint.is-visible { display: flex; }
+.cx-swipe-hint svg { width: 17px; height: 17px; display: block; }
+/* Armed: release now and the reply lands. The colour change is the whole
+   promise of the gesture, so it is the accent and not a shade of grey. */
+.cx-swipe-hint.is-armed {
+  background: var(--accent-soft, rgba(108, 92, 231, 0.16));
+  color: var(--accent, #6c5ce7);
+}
+
+/* The heart the double tap throws: it rises out of the bubble it was aimed at,
+   because the chip it leaves behind lands under the message where nobody is
+   looking at that moment. */
+.cx-heart-burst {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 2;
+  font-size: 30px;
+  line-height: 1;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  animation: cxHeartPop 0.85s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes cxHeartPop {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.3); }
+  35%  { opacity: 1; transform: translate(-50%, -62%) scale(1.15); }
+  60%  { opacity: 1; transform: translate(-50%, -76%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -128%) scale(0.85); }
+}
+
 /* --- long-press action menu ----------------------------------------------- */
 .cx-menu {
   position: fixed;
@@ -293,4 +355,13 @@
 @media (prefers-reduced-motion: reduce) {
   .cx-menu, .cx-flash { animation: none; }
   .cx-btn, .cx-emoji-cell, .cx-gif-tile, .cx-menu-react { transition: none; }
+  /* The swipe itself stays - it is direct manipulation, not decoration - but
+     the spring back and the rising heart are both motion for motion's sake.
+     The heart still appears and still fades, so the gesture is acknowledged. */
+  [data-cx-id] { transition: none; }
+  .cx-heart-burst { animation: cxHeartFade 0.85s ease forwards; }
+  @keyframes cxHeartFade {
+    0%, 70% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+  }
 }
