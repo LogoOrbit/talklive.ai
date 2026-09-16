@@ -1261,6 +1261,32 @@ function persistAccount(usernameLower) {
 const clientSockets = new Map(); // clientId -> current socketId, for online lookup
 const friends = new Map(); // clientId -> Map<friendClientId, { username, countryCode, temporary }>
 const friendRequests = new Map(); // clientId -> Map<fromClientId, { username, countryCode, temporary, ts }>
+// The same requests seen from the sender's side: clientId -> Map<targetClientId,
+// { username, countryCode, avatar, ts }>. Kept as its own index rather than
+// derived, because "have I already asked this person?" is a question the
+// profile sheet asks about one person and answering it by scanning every
+// recipient's inbox would walk the whole graph.
+const sentRequests = new Map();
+
+function noteSentRequest(fromClientId, targetClientId, info) {
+  if (!sentRequests.has(fromClientId)) sentRequests.set(fromClientId, new Map());
+  sentRequests.get(fromClientId).set(targetClientId, { ...info, ts: Date.now() });
+}
+
+// Drop a request from both indexes at once - they only ever describe the same
+// request from the two ends, so they have to go together.
+function clearRequestPair(fromClientId, targetClientId) {
+  const inbox = friendRequests.get(targetClientId);
+  if (inbox) {
+    inbox.delete(fromClientId);
+    if (!inbox.size) friendRequests.delete(targetClientId);
+  }
+  const outbox = sentRequests.get(fromClientId);
+  if (outbox) {
+    outbox.delete(targetClientId);
+    if (!outbox.size) sentRequests.delete(fromClientId);
+  }
+}
 const notifications = new Map(); // clientId -> Array<notification>
 const friendChats = new Map(); // pairKey -> Array<{ from, text, ts }>
 const chatHistory = new Map(); // clientId -> Array<{ clientId, username, countryCode, ts }> (newest last, max 10)
@@ -1451,9 +1477,17 @@ function syncClientState(socket, clientId) {
       ts: e.ts,
       online: clientSockets.has(e.clientId) && !statusHidden.get(e.clientId),
     }));
+  // Who this user has asked and not heard back from, so a profile can say
+  // "Pending" instead of offering to send the same request twice.
+  const sentList = Array.from((sentRequests.get(clientId) || new Map()).entries()).map(([fid, info]) => ({
+    clientId: fid,
+    ...info,
+    online: clientSockets.has(fid) && !statusHidden.get(fid),
+  }));
   socket.emit('state-sync', {
     friends: friendList,
     friendRequests: requestList,
+    sentRequests: sentList,
     notifications: notifications.get(clientId) || [],
     chatHistory: historyList,
   });
@@ -1883,6 +1917,11 @@ function isBlockedPair(clientIdA, clientIdB) {
 function blockPair(clientIdA, clientIdB) {
   if (!blocks.has(clientIdA)) blocks.set(clientIdA, new Set());
   blocks.get(clientIdA).add(clientIdB);
+  // A friend request either way is dead the moment one of them blocks: leaving
+  // it would keep the blocker's inbox showing someone they refused, and leave
+  // the other side looking at a "Pending" that can never be answered.
+  clearRequestPair(clientIdA, clientIdB);
+  clearRequestPair(clientIdB, clientIdA);
   persistSocial();
 }
 
@@ -1979,7 +2018,13 @@ function disconnectPartner(socketId, opts = {}) {
 
   const partnerSocket = io.sockets.sockets.get(partnerId);
   if (partnerSocket) {
-    partnerSocket.emit('partner-left', { reason: opts.failed ? 'failed' : 'left' });
+    // "They hung up" and "their connection died" are different things to be
+    // told: one is a decision about you, the other is a phone that went into a
+    // tunnel. The name rides along so the other side can say who it was.
+    partnerSocket.emit('partner-left', {
+      reason: opts.failed ? 'failed' : (opts.dropped ? 'disconnected' : 'left'),
+      username: profile ? profile.username : '',
+    });
   }
   return partnerId;
 }
@@ -3331,6 +3376,12 @@ io.on('connection', (socket) => {
 
     if (!friendRequests.has(targetClientId)) friendRequests.set(targetClientId, new Map());
     friendRequests.get(targetClientId).set(me.clientId, { ...myInfo, ts: Date.now() });
+    const targetProfile = profiles.get(clientSockets.get(targetClientId) || '');
+    noteSentRequest(me.clientId, targetClientId, {
+      username: (targetProfile && targetProfile.username) || '',
+      countryCode: (targetProfile && targetProfile.country) || '',
+      avatar: targetProfile ? targetProfile.avatar : null,
+    });
 
     // Optional intro message ("remind them who you are") - links stripped,
     // capped, and only ever shown inside the recipient's notification.
@@ -3348,6 +3399,7 @@ io.on('connection', (socket) => {
     const targetSocket = getSocketByClientId(targetClientId);
     if (targetSocket) syncClientState(targetSocket, targetClientId);
 
+    syncClientState(socket, me.clientId);
     socket.emit('friend-request-result', { ok: true, sent: true });
   });
 
@@ -3358,7 +3410,7 @@ io.on('connection', (socket) => {
     const reqMap = friendRequests.get(me.clientId);
     const req = reqMap && reqMap.get(fromClientId);
     if (!req) return;
-    reqMap.delete(fromClientId);
+    clearRequestPair(fromClientId, me.clientId);
     if (notificationId) removeNotification(me.clientId, notificationId);
 
     if (accept && atFriendLimit(me.clientId)) {
@@ -3766,7 +3818,9 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    disconnectPartner(socket.id);
+    // The socket went away rather than the user pressing anything, so tell
+    // whoever they were talking to exactly that.
+    disconnectPartner(socket.id, { dropped: true });
     clearFromQueue(socket.id);
     clearWaitFallbackTimer(socket.id);
     const profile = profiles.get(socket.id);

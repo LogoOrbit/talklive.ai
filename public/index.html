@@ -295,7 +295,10 @@
              lives only in this browser. This pill is the one-tap offer to keep
              it: it opens Sign Up, where the profile is shown being linked to
              the new account. Hidden once there is an account to link to. -->
-        <button type="button" id="headerLinkProfileBtn" class="header-link-profile hidden" data-i18n="linkProfilePill">Link your account to keep this profile</button>
+        <button type="button" id="headerLinkProfileBtn" class="header-link-profile hidden">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M9.5 14.5 14.5 9.5"/><path d="M11 7.4 12.6 5.8a3.7 3.7 0 0 1 5.3 5.3l-1.6 1.6"/><path d="M13 16.6l-1.6 1.6a3.7 3.7 0 0 1-5.3-5.3l1.6-1.6"/></svg>
+          <span data-i18n="linkProfilePill">Save your profile</span>
+        </button>
         <div class="header-auth" id="headerAuth">
           <button type="button" id="headerLoginBtn" class="header-auth-btn header-auth-login" data-i18n="logIn">Log In</button>
           <button type="button" id="headerSignupBtn" class="header-auth-btn header-auth-signup" data-i18n="signUp">Sign Up</button>
@@ -332,8 +335,8 @@
             </svg>
           </span>
           <span class="link-profile-banner-text">
-            <strong data-i18n="linkProfileBannerTitle">Link your account to save your profile</strong>
-            <small data-i18n="linkProfileBannerBody">Keep friends and history across devices.</small>
+            <strong data-i18n="linkProfileBannerTitle">Save your profile</strong>
+            <small data-i18n="linkProfileBannerBody">Keep your friends and history on any device.</small>
           </span>
           <span class="link-profile-banner-go" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
@@ -377,6 +380,16 @@
           <p class="friend-profile-actions-label" data-i18n="quickActions">Quick actions</p>
           <div class="friend-profile-action-row">
             <button type="button" id="friendProfileChatBtn" class="btn btn-primary" data-i18n="chat">Chat</button>
+            <!-- Not-a-friend actions. Which of these is shown depends on where
+                 the two of you stand (see openUserProfile): ask, wait, or
+                 answer someone else's ask. -->
+            <button type="button" id="friendProfileAddBtn" class="btn btn-primary hidden" data-i18n="addFriend">Add friend</button>
+            <button type="button" id="friendProfileAcceptBtn" class="btn btn-primary hidden" data-i18n="confirm">Confirm</button>
+            <button type="button" id="friendProfileDeclineBtn" class="btn btn-secondary hidden" data-i18n="dismiss">Dismiss</button>
+            <span id="friendProfilePending" class="btn btn-pending hidden" role="status">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 1.8"/></svg>
+              <span data-i18n="pending">Pending</span>
+            </span>
             <button type="button" id="friendProfileReportBtn" class="btn btn-report">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4.5"/><path d="M5 5.2c4-2 7 2 11 0v8.4c-4 2-7-2-11 0z"/></svg>
               <span data-i18n="report">Report</span>
@@ -406,6 +419,13 @@
       </div>
       <div class="chat-side-body">
         <div id="friendChatMessages" class="chat-messages friend-chat-messages"></div>
+        <div id="friendChatPresence" class="peer-gone peer-gone-chat hidden" role="status">
+          <span class="peer-gone-dot" aria-hidden="true"></span>
+          <span class="peer-gone-text">
+            <strong id="friendChatPresenceTitle"></strong>
+            <small id="friendChatPresenceSub"></small>
+          </span>
+        </div>
         <form id="friendChatForm" class="chat-form">
           <input id="friendChatInput" type="text" maxlength="1000" data-i18n-placeholder="typeMessage" data-i18n-aria="typeMessage" placeholder="Type a message…" autocomplete="off" />
           <button type="submit" class="btn btn-primary chat-send" data-i18n="send">Send</button>
@@ -1244,6 +1264,17 @@
 
       <!-- Call panel: shown after the Tap to Talk orb, for the whole call flow -->
       <section id="callPanel" class="call-panel hidden">
+        <!-- "They dropped" is not "they hung up", and the difference decides
+             whether it is worth waiting. Shown only when the other side's
+             connection died (see the partner-left handler). -->
+        <div id="peerGoneBanner" class="peer-gone hidden" role="status">
+          <span class="peer-gone-dot" aria-hidden="true"></span>
+          <span class="peer-gone-text">
+            <strong id="peerGoneTitle"></strong>
+            <small id="peerGoneSub"></small>
+          </span>
+        </div>
+
         <div class="orb-wrap">
           <div id="orb" class="orb idle" aria-hidden="true">
             <div class="orb-core"></div>

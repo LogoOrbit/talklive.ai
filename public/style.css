@@ -6358,17 +6358,17 @@ html.perf-lite .side-panel { box-shadow: none; }
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  flex: 0 0 40px;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.06);
   color: var(--muted);
 }
 
 .settings-row-icon svg {
-  width: 20px;
-  height: 20px;
+  width: 19px;
+  height: 19px;
 }
 
 .settings-row-text {
@@ -6396,11 +6396,12 @@ html.perf-lite .side-panel { box-shadow: none; }
 }
 
 .settings-row-badge {
-  padding: 3px 9px;
+  flex: none;
+  padding: 3px 8px;
   border: 1px solid rgba(108, 92, 231, 0.5);
   border-radius: 999px;
   background: rgba(108, 92, 231, 0.16);
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 700;
   white-space: nowrap;
   color: var(--text);
@@ -6666,4 +6667,314 @@ html.perf-lite .side-panel { box-shadow: none; }
 
 .btn-report:hover {
   background: rgba(255, 84, 112, 0.22);
+}
+
+/* A past partner's name in call history is a link to their profile. */
+.history-profile-btn {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: start;
+}
+
+.history-profile-btn:hover {
+  color: var(--accent-2);
+}
+
+/* Waiting on someone else's answer: an action-shaped label, not a button. */
+.btn-pending {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px dashed var(--line);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+  cursor: default;
+}
+
+.btn-pending svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* === Top bar refresh =======================================================
+ *
+ * The bar had accumulated four competing weights: 58px bordered icon tiles, a
+ * green-outlined live-count pill, two filled auth pills and the profile
+ * prompt, all fighting the brand at the left. On a phone they ran into each
+ * other.
+ *
+ * One weight now. The brand is the only strong element; every control is a
+ * quiet 42px target that only lights up under the cursor, and the live count
+ * is a neutral chip with a green dot rather than a green badge. Sizes and
+ * radii are shared, so the row reads as one set of controls.
+ */
+
+.topbar {
+  padding: 8px 16px;
+  padding-top: calc(8px + env(safe-area-inset-top));
+  column-gap: 14px;
+}
+
+.topbar .icon-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  border-color: transparent;
+  color: var(--muted);
+  opacity: 1;
+}
+
+.topbar .icon-btn:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: transparent;
+  color: var(--text);
+}
+
+.topbar .topbar-svg-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.header-tools {
+  gap: 2px;
+}
+
+/* Live count: information, not an alert. A dot carries "live"; the number
+   carries the rest. */
+.people-count {
+  gap: 7px;
+  height: 36px;
+  padding: 0 13px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.people-count .people-icon {
+  display: none;
+}
+
+.people-count-num {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+/* Auth: one action carries colour (Sign Up), the other is quiet text. Two
+   filled pills side by side made the corner the loudest thing on screen. */
+.header-auth {
+  gap: 4px;
+}
+
+.header-auth-btn {
+  min-height: 36px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+
+.header-auth-login {
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+}
+
+.header-auth-login:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: transparent;
+  color: var(--text);
+}
+
+.header-account-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  border-color: transparent;
+  background: transparent;
+}
+
+/* The profile prompt is an offer, not a call to action competing with Sign Up:
+   quiet until hovered, and only where there is real room for it. */
+.header-link-profile {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 230px;
+  min-height: 34px;
+  padding: 0 13px;
+  border-color: transparent;
+  background: rgba(108, 92, 231, 0.14);
+  color: color-mix(in srgb, var(--text) 80%, transparent);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.header-link-profile:hover {
+  background: rgba(108, 92, 231, 0.26);
+  border-color: transparent;
+  color: var(--text);
+}
+
+.header-link-profile svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  color: var(--accent-2);
+}
+
+/* Below this the bar is full: the same offer is waiting in the friends panel
+   and on the sign-up form. */
+@media (max-width: 1100px) {
+  .header-link-profile,
+  .header-link-profile:not(.hidden) { display: none; }
+}
+
+/* Header dropdowns (call history, and anything else anchored to a tool icon)
+   hang below the bar as fixed panels.
+ *
+ * They used to be absolutely positioned inside .header-tools, which scrolls
+ * horizontally - and a scroll container clips both axes, so the entire history
+ * panel was cut off at the bottom edge of the bar. It was invisible and
+ * unclickable at every width. Fixed positioning takes them out of that box
+ * entirely. */
+.notif-dropdown {
+  position: fixed;
+  top: calc(66px + env(safe-area-inset-top));
+  right: 16px;
+  left: auto;
+  max-height: min(70vh, 520px);
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+}
+
+@media (max-width: 600px) {
+  .topbar {
+    padding: 6px 10px;
+    padding-top: calc(6px + env(safe-area-inset-top));
+    column-gap: 8px;
+  }
+
+  .topbar .icon-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+  }
+
+  .topbar .topbar-svg-icon {
+    width: 21px;
+    height: 21px;
+  }
+
+  .people-count {
+    height: 32px;
+    padding: 0 10px;
+    gap: 6px;
+  }
+
+  .header-auth-btn {
+    min-height: 34px;
+    padding: 0 12px;
+    font-size: 12.5px;
+  }
+
+  .notif-dropdown {
+    top: calc(58px + env(safe-area-inset-top));
+    right: 10px;
+    left: 10px;
+    width: auto;
+    max-width: none;
+  }
+}
+
+/* On a phone the bar already keeps Log In and drops Sign Up (see the 600px
+   block above), so Log In carries the colour there instead - a bare grey word
+   in the corner does not read as the way back into an account. */
+@media (max-width: 600px) {
+  .header-auth-login {
+    border: 0;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #fff;
+  }
+
+  .header-auth-login:hover {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    filter: brightness(1.08);
+    color: #fff;
+  }
+}
+
+/* Where you stand with someone who is not a friend yet. Neutral on purpose -
+   the online/offline colours belong to friends, and "pending" is not a fault. */
+.friend-relation-text {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Empty states inside the side panels ran to the panel edge (and past it, on a
+   narrow one). Give them the same gutter as everything else in the panel. */
+.side-panel .history-empty {
+  padding: 8px 14px;
+  line-height: 1.55;
+}
+
+/* --- "They dropped out" ----------------------------------------------------
+   One card, used on the call screen and in a friend chat: a live red dot, who
+   went, and what that means for the person still here. */
+
+.peer-gone {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: min(420px, 92%);
+  margin: 0 auto 14px;
+  padding: 11px 15px;
+  border: 1px solid rgba(255, 84, 112, 0.35);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--bg-2) 92%, transparent);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+  animation: peerGoneIn 0.22s ease;
+}
+
+@keyframes peerGoneIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.peer-gone-dot {
+  width: 9px;
+  height: 9px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--danger);
+  box-shadow: 0 0 8px var(--danger);
+  animation: dotPulse 1.6s ease-in-out infinite;
+}
+
+.peer-gone-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  text-align: start;
+}
+
+.peer-gone-text strong {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.peer-gone-text small {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+/* In a chat it sits above the composer, full width of the panel. */
+.peer-gone-chat {
+  width: auto;
+  margin: 0 14px 10px;
 }

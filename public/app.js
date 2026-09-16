@@ -113,6 +113,8 @@ function findPartnerPayload() {
 let searchAcked = false;
 function emitFindPartner() {
   searchAcked = false;
+  // Looking for the next person: whoever dropped is no longer the news.
+  if (typeof hidePeerGone === 'function') hidePeerGone();
   socket.emit('find-partner', findPartnerPayload());
 }
 function markSearchAcked() {
@@ -165,6 +167,16 @@ const friendProfileChatBtn = document.getElementById('friendProfileChatBtn');
 const friendProfileRemoveBtn = document.getElementById('friendProfileRemoveBtn');
 const friendProfileBlockBtn = document.getElementById('friendProfileBlockBtn');
 const friendProfileReportBtn = document.getElementById('friendProfileReportBtn');
+const friendProfileAddBtn = document.getElementById('friendProfileAddBtn');
+const friendProfileAcceptBtn = document.getElementById('friendProfileAcceptBtn');
+const friendProfileDeclineBtn = document.getElementById('friendProfileDeclineBtn');
+const friendProfilePending = document.getElementById('friendProfilePending');
+const peerGoneBanner = document.getElementById('peerGoneBanner');
+const peerGoneTitle = document.getElementById('peerGoneTitle');
+const peerGoneSub = document.getElementById('peerGoneSub');
+const friendChatPresence = document.getElementById('friendChatPresence');
+const friendChatPresenceTitle = document.getElementById('friendChatPresenceTitle');
+const friendChatPresenceSub = document.getElementById('friendChatPresenceSub');
 const settingsProfileRow = document.getElementById('settingsProfileRow');
 const settingsProfileAvatar = document.getElementById('settingsProfileAvatar');
 const settingsProfileName = document.getElementById('settingsProfileName');
@@ -546,6 +558,11 @@ let wasConnected = false;
 // --- Friends / notifications / friend chat / call-back state ---
 let friendsData = [];        // [{ clientId, username, countryCode, temporary, online }]
 let friendRequestsData = []; // [{ clientId, username, countryCode, temporary, ts }]
+// Requests this user has sent and not heard back from, so a profile can say
+// "Pending" rather than offering to ask the same person twice.
+let sentRequestsData = [];   // [{ clientId, username, countryCode, avatar, ts }]
+// Which set of actions the open profile sheet is showing (see relationTo).
+let activeProfileRelation = 'friend';
 let notifData = [];          // [{ id, type, ts, ... }]
 let activeFriendChatId = null;
 const friendChatCache = new Map(); // friendClientId -> [{ from, text, ts }]
@@ -1255,6 +1272,46 @@ if (linkProfileBanner) {
     closeSidePanel(friendsDropdown, friendsOverlay);
     openAccountModal('signup');
   });
+}
+
+// --- "They dropped out" ----------------------------------------------------
+// Someone whose connection died has not rejected you, and often comes straight
+// back - so say which of the two happened, in the call and in a friend chat
+// alike, instead of leaving the other person staring at a dead screen.
+
+function showPeerGone(name) {
+  if (!peerGoneBanner) return;
+  peerGoneTitle.textContent = t('peerDisconnected', { name: name || t('stranger') });
+  peerGoneSub.textContent = t('peerDisconnectedSub');
+  peerGoneBanner.classList.remove('hidden');
+}
+
+function hidePeerGone() {
+  if (peerGoneBanner) peerGoneBanner.classList.add('hidden');
+}
+
+// The friend whose chat is open going offline mid-conversation. Only ever
+// shown for that transition: opening a chat with someone who was already
+// offline is ordinary, and does not need announcing.
+let friendChatWasOnline = false;
+
+function renderFriendChatPresence() {
+  if (!friendChatPresence) return;
+  if (!activeFriendChatId || !friendChatModal.classList.contains('open')) {
+    friendChatPresence.classList.add('hidden');
+    return;
+  }
+  const friend = friendsData.find((f) => f.clientId === activeFriendChatId);
+  const online = !!(friend && friend.online);
+  if (online) {
+    friendChatWasOnline = true;
+    friendChatPresence.classList.add('hidden');
+    return;
+  }
+  if (!friendChatWasOnline) return;
+  friendChatPresenceTitle.textContent = t('peerDisconnected', { name: (friend && friend.username) || t('stranger') });
+  friendChatPresenceSub.textContent = t('peerDisconnectedChatSub');
+  friendChatPresence.classList.remove('hidden');
 }
 
 // --- Settings rows: who you are, the Shop, and Billing ---------------------
@@ -2240,15 +2297,50 @@ function markFriendCallOffline(clientId) {
 // --- Friend profile view: avatar, name, status + Remove Friend / Block User ---
 let activeProfileFriendId = null;
 
+// Where this user and that one stand, which is what the profile's actions are:
+//  'friend'   - chat, report, remove, block
+//  'incoming' - they asked: confirm or dismiss
+//  'pending'  - this user asked and is waiting: nothing to do but report
+//  'stranger' - met in a call, never asked: ask
+function relationTo(clientId) {
+  if (friendsData.some((f) => f.clientId === clientId)) return 'friend';
+  if (friendRequestsData.some((r) => r.clientId === clientId)) return 'incoming';
+  if (sentRequestsData.some((r) => r.clientId === clientId)) return 'pending';
+  return 'stranger';
+}
+
+// One profile sheet for everyone: friends opened from the friends list, and
+// people met in a call who are not (yet) friends. Only the actions differ.
+function openUserProfile(person) {
+  if (!person || !person.clientId) return;
+  const relation = relationTo(person.clientId);
+  const friend = friendsData.find((f) => f.clientId === person.clientId);
+  const known = friend || person;
+  activeProfileFriendId = person.clientId;
+  activeProfileRelation = relation;
+  friendProfileAvatar.innerHTML = genderIcon(known.avatar, 72);
+  friendProfileName.innerHTML = `${getFlagImg(known.countryCode)} ${escapeHtml(known.username || '')}`;
+  const online = !!known.online;
+  friendProfileStatus.innerHTML = relation === 'friend'
+    ? `<span class="friend-status-text ${online ? 'is-online' : 'is-offline'}">${escapeHtml(online ? t('online') : t('offline'))}</span>`
+    : `<span class="friend-relation-text">${escapeHtml(t('profileRelation_' + relation))}</span>`;
+
+  friendProfileChatBtn.classList.toggle('hidden', relation !== 'friend');
+  friendProfileRemoveBtn.classList.toggle('hidden', relation !== 'friend');
+  friendProfileBlockBtn.classList.toggle('hidden', relation !== 'friend');
+  friendProfileAddBtn.classList.toggle('hidden', relation !== 'stranger');
+  friendProfileAcceptBtn.classList.toggle('hidden', relation !== 'incoming');
+  friendProfileDeclineBtn.classList.toggle('hidden', relation !== 'incoming');
+  friendProfilePending.classList.toggle('hidden', relation !== 'pending');
+
+  closeSidePanel(friendsDropdown, friendsOverlay);
+  openSidePanel(friendProfileModal, friendProfileOverlay);
+}
+
 function openFriendProfile(friendClientId) {
   const friend = friendsData.find((f) => f.clientId === friendClientId);
   if (!friend) return;
-  activeProfileFriendId = friendClientId;
-  friendProfileAvatar.innerHTML = genderIcon(friend.avatar, 72);
-  friendProfileName.innerHTML = `${getFlagImg(friend.countryCode)} ${escapeHtml(friend.username)}`;
-  friendProfileStatus.innerHTML = `<span class="friend-status-text ${friend.online ? 'is-online' : 'is-offline'}">${escapeHtml(friend.online ? t('online') : t('offline'))}</span>`;
-  closeSidePanel(friendsDropdown, friendsOverlay);
-  openSidePanel(friendProfileModal, friendProfileOverlay);
+  openUserProfile(friend);
 }
 
 closeFriendProfileBtn.addEventListener('click', () => closeSidePanel(friendProfileModal, friendProfileOverlay));
@@ -2264,6 +2356,30 @@ friendProfileRemoveBtn.addEventListener('click', async () => {
   const ok = await showConfirm({ title: 'removeFriend', text: 'confirmRemoveFriend', okKey: 'remove' });
   if (!ok || !activeProfileFriendId) return;
   socket.emit('remove-friend', { friendClientId: activeProfileFriendId });
+  closeSidePanel(friendProfileModal, friendProfileOverlay);
+});
+
+friendProfileAddBtn.addEventListener('click', () => {
+  if (!activeProfileFriendId) return;
+  socket.emit('friend-request', { targetClientId: activeProfileFriendId });
+  // Flip to Pending immediately rather than waiting for the round trip: the
+  // state-sync that follows says the same thing.
+  friendProfileAddBtn.classList.add('hidden');
+  friendProfilePending.classList.remove('hidden');
+  activeProfileRelation = 'pending';
+  friendProfileStatus.innerHTML = `<span class="friend-relation-text">${escapeHtml(t('profileRelation_pending'))}</span>`;
+  showToast(t('friendRequestSent'));
+});
+
+friendProfileAcceptBtn.addEventListener('click', () => {
+  if (!activeProfileFriendId) return;
+  socket.emit('friend-request-respond', { fromClientId: activeProfileFriendId, accept: true });
+  closeSidePanel(friendProfileModal, friendProfileOverlay);
+});
+
+friendProfileDeclineBtn.addEventListener('click', () => {
+  if (!activeProfileFriendId) return;
+  socket.emit('friend-request-respond', { fromClientId: activeProfileFriendId, accept: false });
   closeSidePanel(friendProfileModal, friendProfileOverlay);
 });
 
@@ -2292,15 +2408,25 @@ friendProfileBlockBtn.addEventListener('click', async () => {
 let friendsSynced = false;
 setTimeout(() => { if (!friendsSynced) renderFriendsList(); }, 5000);
 
-socket.on('state-sync', ({ friends: friendList, friendRequests: requestList, notifications: notifList } = {}) => {
+socket.on('state-sync', ({ friends: friendList, friendRequests: requestList, sentRequests: sentList, notifications: notifList } = {}) => {
   friendsSynced = true;
   friendsData = friendList || [];
   friendRequestsData = requestList || [];
+  sentRequestsData = sentList || [];
   notifData = notifList || [];
   renderFriendsList();
   renderNotifications();
   // A first friend is exactly the moment the profile becomes worth keeping.
   renderLinkProfilePrompts();
+  renderFriendChatPresence();
+  // An open profile sheet is looking at data that just changed - a pending
+  // request may have turned into a friendship while it sat there.
+  if (activeProfileFriendId && friendProfileModal.classList.contains('open')) {
+    const person = friendsData.find((f) => f.clientId === activeProfileFriendId)
+      || friendRequestsData.find((r) => r.clientId === activeProfileFriendId)
+      || { clientId: activeProfileFriendId, username: friendProfileName.textContent.trim() };
+    openUserProfile(person);
+  }
 });
 
 function notifIcon(type) {
@@ -2384,6 +2510,8 @@ function renderNotifications() {
       } else {
         actions = `<button type="button" class="btn-chip notif-clear-btn" data-id="${n.id}">${ICONS.close} ${escapeHtml(t('dismiss'))}</button>`;
       }
+      const profileId = n.fromClientId || n.byClientId || '';
+      if (profileId) item.dataset.profileId = profileId;
       item.innerHTML = `
         <div class="notif-item-icon">${notifIcon(n.type)}</div>
         <div class="notif-item-body">
@@ -2401,6 +2529,20 @@ function renderNotifications() {
 }
 
 notifList.addEventListener('click', (e) => {
+  // Anywhere on the row that is not one of its chips opens the profile of the
+  // person the notification is about - the chips below keep working as before.
+  if (!e.target.closest('.btn-chip')) {
+    const row = e.target.closest('.notif-item');
+    const person = row && row.dataset.profileId
+      ? (friendRequestsData.find((r) => r.clientId === row.dataset.profileId)
+        || friendsData.find((f) => f.clientId === row.dataset.profileId)
+        || { clientId: row.dataset.profileId })
+      : null;
+    if (person) {
+      openUserProfile(person);
+      return;
+    }
+  }
   const confirmBtn = e.target.closest('.notif-confirm-btn');
   const dismissBtn = e.target.closest('.notif-dismiss-btn');
   const clearBtn = e.target.closest('.notif-clear-btn');
@@ -2531,6 +2673,9 @@ function openFriendChat(friendClientId) {
   renderNotifications();
   renderFriendChatMessages();
   applyFriendChatLock();
+  // Whoever is online right now is the baseline; only a drop from here is news.
+  friendChatWasOnline = !!(friend && friend.online);
+  friendChatPresence.classList.add('hidden');
   friendChatInput.focus();
 }
 
@@ -2662,7 +2807,7 @@ function renderHistory() {
         </button>`
       : '';
     item.innerHTML = `
-      <span class="history-item-name">${getFlagImg(entry.countryCode)} ${escapeHtml(entry.username)}</span>
+      <button type="button" class="history-item-name history-profile-btn" data-id="${escapeHtml(entry.clientId || '')}" title="${escapeHtml(t('openProfile'))}">${getFlagImg(entry.countryCode)} ${escapeHtml(entry.username)}</button>
       <span class="history-item-right">
         <span class="history-item-duration">${mins}:${secs.toString().padStart(2, '0')}</span>
         ${callBackBtn}
@@ -2789,6 +2934,20 @@ document.addEventListener('click', (e) => {
 });
 
 historyList.addEventListener('click', (e) => {
+  // Tapping the name opens who they are (and whether you have already asked
+  // to add them); the green button still calls them straight back.
+  const nameBtn = e.target.closest('.history-profile-btn');
+  if (nameBtn && nameBtn.dataset.id) {
+    const entry = callHistory.find((h) => h.clientId === nameBtn.dataset.id);
+    closeModal(historyDropdown);
+    openUserProfile({
+      clientId: nameBtn.dataset.id,
+      username: entry ? entry.username : '',
+      countryCode: entry ? entry.countryCode : '',
+      avatar: entry ? entry.avatar : null,
+    });
+    return;
+  }
   const btn = e.target.closest('.call-back-btn');
   if (!btn || !btn.dataset.id) return;
   closeModal(historyDropdown);
@@ -3943,6 +4102,7 @@ function teardownPeer() {
 // callback, and whenever the user has no live call to return to).
 function resetUI() {
   teardownPeer();
+  hidePeerGone();
   isSearching = false;
   clearHangupConfirm();
   setCallState('idle');
@@ -5081,6 +5241,10 @@ socket.on('signal', (data) => {
 });
 
 socket.on('partner-left', (info) => {
+  // Their connection dropped rather than them leaving: say so, by name, and
+  // leave the door open instead of declaring the call over.
+  const dropped = !!(info && info.reason === 'disconnected') && mediaConnected;
+  if (dropped) showPeerGone(info.username || (currentPartner && currentPartner.username));
   // Two very different endings arrive on this event, and treating them alike is
   // why people reported being "disconnected without ever getting connected":
   // the stranger hanging up mid-conversation, and a pairing whose media never
@@ -5116,11 +5280,13 @@ socket.on('partner-left', (info) => {
   // The partner ended the call. Show the single red "your friend ended the call"
   // message. Only keep hunting for a new person if auto-connect is on; otherwise
   // stop on the red message so the user isn't yanked into a new search.
+  const endedKey = dropped ? 'statusPartnerDropped' : 'statusFriendEnded';
+  const connKey = dropped ? 'connPartnerDropped' : 'connFriendEnded';
   if (autoCallEnabled) {
     setCallState('searching');
     setState('waiting');
-    setConnection('red', 'connFriendEnded');
-    setStatusText('statusFriendEnded');
+    setConnection('red', connKey);
+    setStatusText(endedKey);
     setSubText(null);
     emitFindPartner();
     setTimeout(() => { if (isSearching && callState === 'searching') setConnection('orange', 'connSearching'); }, 900);
@@ -5129,8 +5295,8 @@ socket.on('partner-left', (info) => {
     socket.emit('leave');
     setCallState('idle');
     setState('idle');
-    setConnection('red', 'connFriendEnded');
-    setStatusText('statusFriendEnded');
+    setConnection('red', connKey);
+    setStatusText(endedKey);
     setSubText(null);
   }
 });
