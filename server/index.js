@@ -1291,7 +1291,7 @@ const notifications = new Map(); // clientId -> Array<notification>
 const friendChats = new Map(); // pairKey -> Array<{ from, text, ts }>
 const chatHistory = new Map(); // clientId -> Array<{ clientId, username, countryCode, ts }> (newest last, max 10)
 
-const MAX_CHAT_HISTORY = 10;
+const MAX_CHAT_HISTORY = 30;
 
 // Serialize the live social Maps back to plain JSON and persist them, so users'
 // friends and their chat history ("memories") survive restarts. Debounced by
@@ -1354,7 +1354,11 @@ function isFriend(a, b) {
 
 // Record that `owner` just chatted with `partner`, keeping only the newest
 // MAX_CHAT_HISTORY unique partners (most recent moved to the end).
-function recordChatHistory(ownerClientId, partner) {
+// `extra` carries what the History tab needs beyond the name: how the two met
+// ('talk' or 'chat') and, for a voice call, how long it lasted. The avatar and
+// animal ride along so a history row can show a face without the other person
+// having to be online for liveAvatarFor() to find them.
+function recordChatHistory(ownerClientId, partner, extra = {}) {
   if (!ownerClientId || !partner || !partner.clientId || partner.clientId === ownerClientId) return;
   let list = chatHistory.get(ownerClientId);
   if (!list) { list = []; chatHistory.set(ownerClientId, list); }
@@ -1364,6 +1368,10 @@ function recordChatHistory(ownerClientId, partner) {
     clientId: partner.clientId,
     username: partner.username,
     countryCode: partner.country,
+    avatar: partner.avatar || null,
+    animal: partner.animal || null,
+    kind: extra.kind === 'chat' ? 'chat' : 'talk',
+    durationSeconds: Number.isFinite(extra.durationSeconds) ? Math.max(0, Math.round(extra.durationSeconds)) : 0,
     ts: Date.now(),
   });
   while (list.length > MAX_CHAT_HISTORY) list.shift();
@@ -1452,11 +1460,35 @@ function liveAvatarFor(clientId, fallback) {
   return (profile && profile.avatar) || fallback || null;
 }
 
+// Same idea as liveAvatarFor for the spirit animal: a face in a list should be
+// the one the person is wearing right now, not the one they wore when you met.
+function liveAnimalFor(clientId, fallback) {
+  const sock = getSocketByClientId(clientId);
+  const profile = sock ? profiles.get(sock.id) : null;
+  return (profile && profile.animal) || fallback || null;
+}
+
+// The last line of a conversation, for the Messages list. Only what a preview
+// row needs - never the whole thread, which stays behind get-friend-chat.
+function lastMessageFor(a, b) {
+  const list = friendChats.get(pairKey(a, b));
+  if (!list || !list.length) return null;
+  const m = list[list.length - 1];
+  return {
+    from: m.from,
+    text: m.gif ? '' : String(m.text || '').slice(0, 120),
+    gif: !!m.gif,
+    ts: m.ts || 0,
+  };
+}
+
 function syncClientState(socket, clientId) {
   const friendList = Array.from((friends.get(clientId) || new Map()).entries()).map(([fid, info]) => ({
     clientId: fid,
     ...info,
     avatar: liveAvatarFor(fid, info.avatar),
+    animal: liveAnimalFor(fid, info.animal),
+    lastMessage: lastMessageFor(clientId, fid),
     // Friends who hid their status always appear offline to friends - this
     // only masks the per-friend indicator, never the global online count.
     online: clientSockets.has(fid) && !statusHidden.get(fid),
@@ -1474,6 +1506,10 @@ function syncClientState(socket, clientId) {
       clientId: e.clientId,
       username: e.username,
       countryCode: e.countryCode,
+      avatar: liveAvatarFor(e.clientId, e.avatar),
+      animal: liveAnimalFor(e.clientId, e.animal),
+      kind: e.kind || 'chat',
+      durationSeconds: e.durationSeconds || 0,
       ts: e.ts,
       online: clientSockets.has(e.clientId) && !statusHidden.get(e.clientId),
     }));
@@ -2008,6 +2044,20 @@ function disconnectPartner(socketId, opts = {}) {
       if (profile) settleReferral(profile.clientId);
       if (partnerProfile) settleReferral(partnerProfile.clientId);
     }
+    // Voice calls belong in History the same way text chats do, and History is
+    // only useful if it outlives the tab: record both sides server-side with
+    // the duration the server measured, so a reload does not wipe the list.
+    if (profile && partnerProfile) {
+      const durationSeconds = Math.round(ms / 1000);
+      const kind = (profile.mode === 'chat' || partnerProfile.mode === 'chat') ? 'chat' : 'talk';
+      recordChatHistory(profile.clientId, partnerProfile, { kind, durationSeconds });
+      recordChatHistory(partnerProfile.clientId, profile, { kind, durationSeconds });
+      persistSocial();
+      const mySocket = io.sockets.sockets.get(socketId);
+      const theirSocket = io.sockets.sockets.get(partnerId);
+      if (mySocket) syncClientState(mySocket, profile.clientId);
+      if (theirSocket) syncClientState(theirSocket, partnerProfile.clientId);
+    }
   }
   if (profile) profile.matchedAt = 0;
   if (partnerProfile) partnerProfile.matchedAt = 0;
@@ -2214,8 +2264,8 @@ function tryMatch(socketId) {
     // Remember each other in the text-chat history so either side can message
     // back later if the conversation ends abruptly.
     if (mode === 'chat') {
-      recordChatHistory(seekerProfile.clientId, partnerProfile);
-      recordChatHistory(partnerProfile.clientId, seekerProfile);
+      recordChatHistory(seekerProfile.clientId, partnerProfile, { kind: 'chat' });
+      recordChatHistory(partnerProfile.clientId, seekerProfile, { kind: 'chat' });
       persistSocial();
       syncClientState(seekerSocket, seekerProfile.clientId);
       syncClientState(partnerSocket, partnerProfile.clientId);

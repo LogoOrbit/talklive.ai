@@ -1,0 +1,1007 @@
+/* ============================================================================
+   TalkLive mobile shell
+   ----------------------------------------------------------------------------
+   The whole product in three tabs, a top bar with four controls, and bottom
+   sheets for everything that used to be a side panel on a phone.
+
+   This file only ever ADDS or OVERRIDES. style.css still owns the call screen,
+   the chat panels, the modals and the SEO page below the app - nothing in here
+   redefines any of that, so the two can be read independently.
+
+   Layout contract, top to bottom:
+     .topbar     fixed-height row: your face | brand (>=640px) | Shop, invite, bell
+     .stage      one visible .tab-pane at a time
+     .tabbar     fixed to the bottom of the viewport, above the safe area
+   ========================================================================== */
+
+:root {
+  --tabbar-h: 62px;
+  --shell-card: rgba(255, 255, 255, 0.045);
+  --shell-card-2: rgba(255, 255, 255, 0.075);
+  --shell-radius: 18px;
+}
+[data-theme="light"] {
+  --shell-card: rgba(20, 26, 46, 0.045);
+  --shell-card-2: rgba(20, 26, 46, 0.08);
+}
+
+/* Room for the fixed tab bar, so nothing at the end of a scroll is unreachable
+   - both at the very bottom of the document and at the bottom of the app
+   itself, whose 100dvh would otherwise put its last row behind the bar. */
+body {
+  padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
+}
+.app {
+  min-height: calc(100dvh - var(--tabbar-h) - env(safe-area-inset-bottom));
+}
+body.tl-in-call .app { min-height: 100dvh; }
+
+.visually-hidden-btn {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+}
+
+/* ---------------------------------------------------------------------------
+   Top bar
+   ------------------------------------------------------------------------ */
+
+.topbar-me {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 50%;
+  position: relative;
+  flex: 0 0 auto;
+  overflow: visible;
+}
+.topbar-me-avatar {
+  display: block;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--shell-card-2);
+}
+.topbar-me-avatar .tl-avatar { width: 40px !important; height: 40px !important; }
+/* The "+" on a guest's face: the only nag about signing up on the home
+   screen, and it disappears the moment there is an account. */
+.topbar-me-badge {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 16px;
+  text-align: center;
+  border: 2px solid var(--bg-1);
+}
+
+/* style.css lays the bar out as a three-column grid (left | tools | right).
+   The corner actions are a fourth column, not a second row. */
+.topbar { grid-template-columns: auto minmax(0, 1fr) auto auto; }
+.topbar-actions {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.shop-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 14px 0 6px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(108, 92, 231, 0.32), rgba(108, 92, 231, 0.18));
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.shop-pill:active { transform: scale(0.96); }
+.shop-pill-coin { display: inline-flex; width: 26px; height: 26px; }
+.shop-pill-coin svg { width: 26px; height: 26px; }
+.shop-pill-coins {
+  font-variant-numeric: tabular-nums;
+  color: #f5c451;
+  font-weight: 800;
+}
+
+.topbar-action {
+  width: 40px;
+  height: 40px;
+  position: relative;
+}
+.topbar-action .topbar-svg-icon { width: 23px; height: 23px; }
+
+/* These moved: history and friends are tabs now, filters live on the home
+   screen. Keeping the buttons in the DOM keeps app.js's wiring intact. */
+#historyBtn,
+#friendsBtn,
+#filtersBtn,
+.history-wrap,
+.friends-wrap {
+  display: none !important;
+}
+
+/* The game and in-call chat buttons belong to a live call. app.js leaves them
+   on screen (disabled) through the post-call view, where they are two dead
+   controls in the corner. */
+body:not(.tl-in-call) #gameBtn,
+body:not(.tl-in-call) #chatToggleBtn {
+  display: none !important;
+}
+
+@media (max-width: 640px) {
+  /* Your own face is the identity marker on a phone; the lockup would be a
+     second logo beside it. The brand is still on the call screen, the settings
+     panel, the footer and every SEO page. */
+  #brandHome { display: none !important; }
+  .header-auth { display: none !important; }
+  .people-count { display: none !important; }
+  .topbar { gap: 8px; }
+}
+
+/* A live call owns the screen: nothing to tap but the call controls. The bell
+   is the exception - a friend request or a call-back can land mid-call, and
+   its sheet is the only way to answer one without hanging up first. */
+body.tl-in-call .tabbar,
+body.tl-in-call #shopPillBtn,
+body.tl-in-call #inviteBtn,
+body.tl-in-call .footer,
+body.tl-in-call .seo-section { display: none !important; }
+body.tl-in-call { padding-bottom: env(safe-area-inset-bottom); }
+
+/* ---------------------------------------------------------------------------
+   Shared: one face for every person, everywhere
+   ------------------------------------------------------------------------ */
+
+.tl-avatar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--tl-avatar-bg, var(--accent));
+  overflow: visible;
+}
+.tl-avatar-art {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+}
+.tl-avatar-art svg { display: block; }
+.tl-avatar-letter {
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.44em;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+.tl-avatar-flag {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  line-height: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--bg-1);
+  background: var(--bg-1);
+}
+.tl-avatar-flag .flag-icon {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 50%;
+  object-fit: cover;
+  aspect-ratio: 1;
+}
+.tl-avatar-dot {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 28%;
+  height: 28%;
+  min-width: 10px;
+  min-height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--bg-1);
+  background: #6b7280;
+}
+.tl-avatar-dot.is-online { background: var(--green); }
+
+/* ---------------------------------------------------------------------------
+   Tabs
+   ------------------------------------------------------------------------ */
+
+/* .stage centres and centre-aligns everything for the call screen. A list is
+   read from the top-left, so the tab panes opt out of both. Its 24px padding
+   also costs a phone a sixth of its width, which the panes cannot spare. */
+.stage { justify-content: flex-start; }
+body.tl-in-call .stage { justify-content: center; }
+/* .stage keeps its .call-live layout (centred, full-height) for as long as the
+   post-call screen is up. That layout belongs to the voice tab, so a list
+   opened while it is up must not inherit it and start half way down. */
+body.tl-tab-messages .stage.call-live,
+body.tl-tab-history .stage.call-live {
+  justify-content: flex-start;
+  min-height: 0;
+}
+@media (max-width: 640px) {
+  .stage { padding-left: 0; padding-right: 0; padding-top: 8px; }
+}
+
+.tab-pane {
+  width: min(560px, 100%);
+  margin: 0 auto;
+  padding: 4px 16px 24px;
+  align-self: stretch;
+  text-align: start;
+}
+/* The shell's own hide class. `.hidden` stays app.js's - it is what swaps the
+   landing screen for the live call - so the two never overwrite each other. */
+.tl-hide { display: none !important; }
+
+.tab-head { padding: 12px 2px 4px; }
+.tab-head h2 {
+  margin: 0;
+  font-size: clamp(30px, 8vw, 38px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.tab-head-sub {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.tab-subhead {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  margin: 18px 0 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: start;
+}
+.tab-subhead svg { width: 17px; height: 17px; opacity: 0.6; }
+.tab-subhead-plain { cursor: default; }
+
+.tab-empty {
+  margin: 10px 0;
+  padding: 26px 18px;
+  border-radius: var(--shell-radius);
+  background: var(--shell-card);
+  color: var(--muted);
+  font-size: 15px;
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* Friend requests / call-backs, moved from the old Friends panel. */
+.tab-requests-slot:empty { display: none; }
+.tab-requests-slot .notif-list { margin: 0 0 6px; }
+
+/* --- Messages: the friends rail ------------------------------------------ */
+
+.friends-rail {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 2px 2px 8px;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.friends-rail::-webkit-scrollbar { display: none; }
+/* Expanded by the "Friends >" heading: the same cards, wrapped, so a long
+   friend list can be read at a glance instead of scrubbed sideways. */
+.friends-rail.is-expanded {
+  flex-wrap: wrap;
+  overflow-x: visible;
+}
+.friends-rail.is-expanded .friend-card { flex: 1 1 128px; max-width: 168px; }
+.tab-subhead.is-open svg { transform: rotate(90deg); }
+.tab-subhead svg { transition: transform 0.2s ease; }
+
+.friend-card {
+  flex: 0 0 auto;
+  width: 128px;
+  padding: 14px 10px 12px;
+  border-radius: var(--shell-radius);
+  background: var(--shell-card);
+  border: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  scroll-snap-align: start;
+}
+.friend-card-name {
+  max-width: 100%;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.friend-card-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 34px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--shell-card-2);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.friend-card-btn svg { width: 15px; height: 15px; }
+.friend-card-btn:active { transform: scale(0.97); }
+.friend-card-avatar { border: 0; background: none; padding: 0; cursor: pointer; }
+
+/* --- Messages: the conversation list ------------------------------------- */
+
+.convo-list { display: flex; flex-direction: column; gap: 2px; }
+
+.convo-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 8px;
+  border-radius: 14px;
+}
+.convo-row:active { background: var(--shell-card); }
+.convo-open {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+  font: inherit;
+}
+.convo-text { min-width: 0; flex: 1 1 auto; display: block; }
+.convo-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+.convo-line + .convo-line { margin-top: 2px; }
+.convo-name {
+  flex: 0 1 auto;
+  font-size: 16px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.convo-preview {
+  flex: 1 1 auto;
+  color: var(--muted);
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.convo-preview.is-unread { color: var(--text); font-weight: 600; }
+.convo-side {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+.convo-time {
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+  color: var(--muted);
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+.convo-action {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--shell-card-2);
+  color: var(--text);
+  cursor: pointer;
+}
+.convo-action svg { width: 18px; height: 18px; }
+.convo-action:active { transform: scale(0.94); }
+.convo-action.is-busy { opacity: 0.55; pointer-events: none; }
+.convo-unread {
+  flex: 0 0 auto;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 20px;
+  text-align: center;
+}
+
+/* --- History -------------------------------------------------------------- */
+
+.history-feed { display: flex; flex-direction: column; gap: 10px; }
+
+.history-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border-radius: var(--shell-radius);
+  background: var(--shell-card);
+  border: 1px solid var(--line);
+}
+.history-card-avatar { border: 0; background: none; padding: 0; cursor: pointer; margin-top: 2px; }
+.history-card-main { flex: 1 1 auto; min-width: 0; }
+.history-card-name {
+  display: block;
+  font-size: 17px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.history-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.history-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--shell-card-2);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.history-chip svg { width: 15px; height: 15px; }
+.history-chip:active { transform: scale(0.97); }
+.history-chip[disabled] { opacity: 0.5; cursor: default; }
+.history-chip.is-danger { color: #ffb3c0; }
+.history-chip.is-accept { background: var(--green); color: #05130b; font-weight: 700; }
+
+.history-card-meta {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.history-card-duration {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.history-card-duration svg { width: 13px; height: 13px; }
+
+/* ---------------------------------------------------------------------------
+   Home screen
+   ------------------------------------------------------------------------ */
+
+.setup-panel.home-screen {
+  width: min(520px, 100%);
+  margin: 0 auto;
+  padding: 0 16px 8px;
+  /* Take the height .stage has left over rather than computing it from dvh:
+     the header, the tab bar, the safe areas and .stage's own padding all vary,
+     and a calc that is 40px out puts the Start button under the tab bar. */
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+}
+.home-screen .tap-to-talk {
+  display: flex;
+  flex-direction: column;
+  /* stretch, not centre: the selector row and the button are full-bleed, and
+     style.css centres .tap-to-talk's children for the old two-orb layout. */
+  align-items: stretch;
+  width: 100%;
+  flex: 1 1 auto;
+  /* --tl-home-min is measured in JS from the real header and tab-bar heights
+     (sizeHome), so the Start button lands just above the tab bar on any
+     device, with the rest of the page continuing below the fold. */
+  min-height: var(--tl-home-min, 420px);
+  gap: 16px;
+}
+
+.home-hero {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 20px 0 8px;
+  text-align: center;
+}
+
+.hero-animal {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  border: 0;
+  padding: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+}
+.hero-animal-art {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 132px;
+  height: 132px;
+}
+.hero-animal-art svg { width: 100%; height: 100%; filter: drop-shadow(0 12px 28px rgba(108, 92, 231, 0.35)); }
+.hero-animal:active .hero-animal-art { transform: scale(0.96); }
+.hero-animal-edit {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  border: 3px solid var(--bg-1);
+}
+.hero-animal-edit svg { width: 15px; height: 15px; }
+
+.hero-carousel {
+  position: relative;
+  width: 100%;
+  /* Reserve the tallest slide's height so rotating never nudges the button. */
+  min-height: 104px;
+  display: grid;
+}
+.hero-slide {
+  grid-area: 1 / 1;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+  pointer-events: none;
+}
+.hero-slide.is-active { opacity: 1; transform: none; pointer-events: auto; }
+.hero-title {
+  margin: 0;
+  font-size: clamp(27px, 7.4vw, 36px);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.12;
+}
+.hero-sub {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: clamp(15px, 4.2vw, 18px);
+  line-height: 1.4;
+}
+
+.hero-dots { display: flex; align-items: center; gap: 7px; }
+.hero-dot {
+  width: 7px;
+  height: 7px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--line);
+  cursor: pointer;
+  transition: width 0.25s ease, background 0.25s ease;
+}
+.hero-dot.is-active { width: 20px; background: var(--accent); }
+
+.hero-online {
+  margin: 2px 0 0;
+  min-height: 18px;
+  color: var(--muted);
+  font-size: 13.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.hero-online-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 0 0 rgba(46, 212, 122, 0.6);
+  animation: heroPulse 2s infinite;
+}
+@keyframes heroPulse {
+  70% { box-shadow: 0 0 0 7px rgba(46, 212, 122, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(46, 212, 122, 0); }
+}
+.perf-lite .hero-online-dot { animation: none; }
+
+/* --- the action block ----------------------------------------------------- */
+
+.home-actions {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 6px;
+}
+
+.quick-select-row { display: flex; gap: 10px; }
+.quick-select {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 56px;
+  padding: 0 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--shell-card);
+  color: var(--text);
+  font-size: 15.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.quick-select:active { transform: scale(0.985); }
+.quick-select.is-set { border-color: rgba(108, 92, 231, 0.55); background: rgba(108, 92, 231, 0.14); }
+.quick-select-icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  font-size: 19px;
+  line-height: 1;
+}
+.quick-select-icon svg { width: 24px; height: 24px; }
+.quick-select-icon .flag-icon { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; }
+.quick-select-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.quick-select-caret { flex: 0 0 auto; opacity: 0.65; }
+.quick-select-caret svg { width: 16px; height: 16px; display: block; transition: transform 0.2s ease; }
+.quick-select[aria-expanded="true"] .quick-select-caret svg { transform: rotate(180deg); }
+
+.start-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
+  width: 100%;
+  height: 62px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #8b7bf0, #6c5ce7);
+  color: #fff;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  box-shadow: 0 10px 26px rgba(108, 92, 231, 0.35);
+  transition: transform 0.12s ease, box-shadow 0.2s ease;
+}
+.start-cta:active { transform: scale(0.98); box-shadow: 0 5px 16px rgba(108, 92, 231, 0.3); }
+.start-cta:disabled { opacity: 0.6; cursor: default; }
+.start-cta-icon { width: 24px; height: 24px; }
+/* app.js flips this class on the moment the mic is being asked for. The button
+   must keep its size - a shrinking button under a thumb is a mis-tap - so the
+   contents swap for a spinner rather than the button changing shape. */
+.start-cta.is-connecting { pointer-events: none; }
+.start-cta.is-connecting > * { visibility: hidden; }
+.start-cta.is-connecting::after {
+  content: "";
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2.6px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  animation: startSpin 0.8s linear infinite;
+}
+.start-cta { position: relative; }
+@keyframes startSpin { to { transform: rotate(360deg); } }
+
+.home-fineprint {
+  margin: 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+.home-fineprint .link-btn { font-size: 13px; font-weight: 700; }
+
+.home-text-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  color: var(--muted);
+  font-size: 14.5px;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 12px;
+}
+.home-text-link svg { width: 17px; height: 17px; }
+.home-text-link:active { background: var(--shell-card); }
+
+.home-screen .ad-card-app { margin-top: 18px; }
+
+/* ---------------------------------------------------------------------------
+   Bottom sheets
+   ------------------------------------------------------------------------ */
+
+.sheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: rgba(3, 6, 15, 0.62);
+  backdrop-filter: blur(2px);
+}
+.sheet-overlay.hidden { display: none; }
+
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 91;
+  display: flex;
+  flex-direction: column;
+  max-height: min(78dvh, 640px);
+  width: min(520px, 100%);
+  margin: 0 auto;
+  padding: 6px 16px calc(16px + env(safe-area-inset-bottom));
+  border-radius: 24px 24px 0 0;
+  background: var(--bg-2);
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -18px 50px rgba(0, 0, 0, 0.5);
+  animation: sheetIn 0.22s ease;
+}
+.sheet.hidden { display: none; }
+@keyframes sheetIn { from { transform: translateY(14px); opacity: 0; } }
+.perf-lite .sheet { animation: none; }
+
+.sheet-grip {
+  width: 38px;
+  height: 4px;
+  margin: 4px auto 8px;
+  border-radius: 999px;
+  background: var(--line);
+}
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.sheet-head h2 { margin: 0; font-size: 19px; font-weight: 700; }
+.sheet-close {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 50%;
+  background: var(--shell-card-2);
+  color: var(--text);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.sheet-body {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 10px 0 2px;
+}
+.sheet-search { padding: 10px 0 4px; }
+.sheet-search .search-input { width: 100%; }
+.sheet-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.sheet-foot-link {
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 0;
+}
+
+/* Rows inside a sheet: one tap target per line, a check on the chosen one. */
+.sheet-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 13px 12px;
+  border: 0;
+  border-radius: 14px;
+  background: none;
+  color: var(--text);
+  font-size: 16.5px;
+  font-weight: 600;
+  text-align: start;
+  cursor: pointer;
+}
+.sheet-option:active { background: var(--shell-card); }
+.sheet-option.is-selected { background: rgba(108, 92, 231, 0.16); }
+.sheet-option-icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  font-size: 20px;
+}
+.sheet-option-icon svg { width: 24px; height: 24px; }
+.sheet-option-icon .flag-icon { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
+.sheet-option-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sheet-option-check { flex: 0 0 auto; width: 20px; height: 20px; opacity: 0; color: var(--accent); }
+.sheet-option.is-selected .sheet-option-check { opacity: 1; }
+.sheet-option-check svg { width: 20px; height: 20px; }
+
+.sheet-note {
+  margin: 8px 2px 0;
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+/* The animal grid keeps its own look from style.css; it just needs to breathe
+   inside a sheet rather than a full-width landing panel. */
+#animalSheet .animal-picker-hint { margin: 2px 2px 0; }
+#animalSheet .animal-grid { margin-top: 10px; }
+
+/* Notifications sheet reuses the notification rows from style.css. */
+#notifSheetBody .notif-list { margin: 0; }
+
+/* ---------------------------------------------------------------------------
+   Bottom tab bar
+   ------------------------------------------------------------------------ */
+
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  display: flex;
+  align-items: stretch;
+  height: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  background: color-mix(in srgb, var(--bg-2) 92%, transparent);
+  backdrop-filter: blur(16px);
+  border-top: 1px solid var(--line);
+}
+@supports not (background: color-mix(in srgb, red 50%, blue)) {
+  .tabbar { background: var(--bg-2); }
+}
+
+.tabbar-btn {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.tabbar-btn.is-active { color: var(--text); font-weight: 700; }
+.tabbar-icon { position: relative; display: inline-flex; width: 25px; height: 25px; }
+.tabbar-icon svg { width: 25px; height: 25px; }
+.tabbar-btn.is-active .tabbar-icon svg { filter: drop-shadow(0 0 10px rgba(108, 92, 231, 0.6)); }
+.tabbar-label { line-height: 1.1; }
+.tabbar-badge {
+  position: absolute;
+  top: -4px;
+  right: -7px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 17px;
+  text-align: center;
+}
+.tabbar-badge.hidden { display: none; }
+
+/* Only the home tab carries the marketing page, the conversation tips and the
+   ad slots beneath it - they belong to the voice surface, not to a list. */
+body.tl-tab-messages .footer,
+body.tl-tab-messages .seo-section,
+body.tl-tab-messages .tl-voice-only,
+body.tl-tab-history .footer,
+body.tl-tab-history .seo-section,
+body.tl-tab-history .tl-voice-only { display: none !important; }
+
+/* ---------------------------------------------------------------------------
+   Desktop: the same three tabs, just wider and with the brand and count back.
+   ------------------------------------------------------------------------ */
+
+@media (min-width: 900px) {
+  .tabbar {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: min(560px, 100%);
+    border-radius: 20px 20px 0 0;
+    border: 1px solid var(--line);
+    border-bottom: 0;
+  }
+}

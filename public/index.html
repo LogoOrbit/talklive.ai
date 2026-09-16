@@ -18,6 +18,7 @@
 <link rel="stylesheet" href="style.css?v=20260916chatpolish" />
 <link rel="stylesheet" href="chat-extras.css?v=20260916chatpolish" />
 <link rel="stylesheet" href="games.css?v=20260916settings" />
+<link rel="stylesheet" href="mobile-app.css?v=20260916shell" />
 <script defer src="/config.js"></script>
 <!-- Google Identity Services, deferred so it never blocks first paint. app.js
      waits for it (and for /config.js) before rendering the sign-in buttons. -->
@@ -210,11 +211,14 @@
   <div class="app">
     <header class="topbar">
       <div class="topbar-left">
-        <button id="appSettingsBtn" class="icon-btn" data-i18n-title="settings" data-i18n-aria="menuAria" title="Settings" aria-label="Open settings menu">
-          <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="3.2"/>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-          </svg>
+        <!-- Your own face, top-left, and the way into everything about you:
+             profile, avatar, animal, theme, account, sign-in. One tap, and it
+             is the same control on every screen width. The gear icon it
+             replaced said "preferences"; a face says "this is you", which is
+             what people are actually looking for when they tap here. -->
+        <button id="appSettingsBtn" class="icon-btn topbar-me" data-i18n-title="settings" data-i18n-aria="menuAria" title="Settings" aria-label="Open settings menu">
+          <span id="topbarMeAvatar" class="topbar-me-avatar" aria-hidden="true"></span>
+          <span id="topbarMeBadge" class="topbar-me-badge hidden" aria-hidden="true">+</span>
         </button>
         <!-- The TalkLive lockup. Identical markup, mark and wordmark on every
              screen of the product (/, /call and /chat) so a visitor always
@@ -285,6 +289,40 @@
           <span id="chatBadge" class="chat-badge hidden" aria-hidden="true">0</span>
         </button>
       </nav>
+      <!-- The three things worth a permanent slot in the corner: what you can
+           spend, who you can bring, and what happened while you were away.
+           Everything else that used to live up here (history, friends,
+           filters) moved to the bottom tab bar or onto the home screen, where
+           a thumb can reach it. -->
+      <div class="topbar-actions">
+        <button type="button" id="shopPillBtn" class="shop-pill" data-i18n-title="shopTitle" title="Shop">
+          <span class="shop-pill-coin" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" fill="#f5c451"/>
+              <circle cx="12" cy="12" r="7.6" fill="none" stroke="#a9781c" stroke-width="1.1" opacity=".55"/>
+              <g stroke="#8a5f13" stroke-width="1.7" stroke-linecap="round">
+                <path d="M8.4 10v4"/><path d="M10.8 8.4v7.2"/><path d="M13.2 9.4v5.2"/><path d="M15.6 11v2"/>
+              </g>
+            </svg>
+          </span>
+          <span class="shop-pill-text" data-i18n="shopTitle">Shop</span>
+          <span id="shopPillCoins" class="shop-pill-coins hidden">0</span>
+        </button>
+        <button type="button" id="inviteBtn" class="icon-btn topbar-action" data-i18n-title="inviteFriend" data-i18n-aria="inviteFriend" title="Invite a friend" aria-label="Invite a friend">
+          <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="9.5" cy="8" r="3.6"/>
+            <path d="M3.4 20a6.1 6.1 0 0 1 12.2 0"/>
+            <path d="M18.5 8.2v5.6M15.7 11h5.6"/>
+          </svg>
+        </button>
+        <button type="button" id="bellBtn" class="icon-btn topbar-action" data-i18n-title="notifications" data-i18n-aria="notifications" title="Notifications" aria-label="Notifications">
+          <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 9a6 6 0 1 0-12 0c0 5-2 6-2 6h16s-2-1-2-6"/>
+            <path d="M13.7 19.5a2 2 0 0 1-3.4 0"/>
+          </svg>
+          <span id="bellBadge" class="notif-badge hidden" aria-hidden="true">0</span>
+        </button>
+      </div>
       <div class="header-right">
         <!-- Auth, always visible in the header rather than only inside the
              settings panel: signing in is the one action a returning user
@@ -684,67 +722,132 @@
 
       <!-- Setup panel: the Tap to Talk / Tap to Chat landing shown before the
            first call or chat. Two orbs, one decision: voice or text. -->
-      <section id="setupPanel" class="setup-panel">
-        <h1 class="setup-title" data-i18n="heroTitle">Meet someone new by voice or text</h1>
+      <!-- HOME / "Voice chat" tab.
+           One screen, one decision. A face at the top (your spirit animal -
+           tap it to change), a line that says what this is, the two choices
+           that actually change who you meet, and one button. Everything that
+           used to compete with that button - the second orb, the animal grid,
+           the premium card, the share card, the consent paragraph - either
+           moved behind a tap or moved to the tab bar. -->
+      <section id="setupPanel" class="setup-panel home-screen">
         <div id="tapToTalk" class="tap-to-talk">
-          <p class="tap-choice-heading" data-i18n="chooseYourVibe">How do you want to meet someone?</p>
-          <div class="tap-choice-row">
-            <div class="tap-choice">
-              <button id="startBtn" class="tap-orb call-btn-green" data-i18n-aria="startAria" aria-label="Start a call with a random person">
-                <svg class="phone-icon" viewBox="0 0 24 24" fill="white" aria-hidden="true">
-                  <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
-                </svg>
-                <span class="tap-orb-label" data-i18n="tapToTalk">Tap to Talk</span>
-              </button>
-              <span class="tap-choice-caption" data-i18n="tapTalkCaption">Live voice call · mic on</span>
-            </div>
-            <div class="tap-choice-divider" aria-hidden="true"><span data-i18n="or">or</span></div>
-            <div class="tap-choice">
-              <a id="startChatBtn" href="/chat" class="tap-orb chat-btn-blue" data-i18n-aria="startChatAria" aria-label="Start a text chat with a random person">
-                <svg class="phone-icon" viewBox="0 0 24 24" fill="white" aria-hidden="true">
-                  <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM7 9.5h10a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2zm0-3.5h10a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2zm0 7h6a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2z"/>
-                </svg>
-                <span class="tap-orb-label" data-i18n="tapToChat">Tap to Chat</span>
-              </a>
-              <span class="tap-choice-caption" data-i18n="tapChatCaption">Anonymous text chat · no mic</span>
-            </div>
-          </div>
-          <!-- Spirit animal: one tap, no sign-up, and the stranger on the other
-               end sees it the moment you connect. Deliberately sits on the
-               landing screen rather than behind the settings panel - it only
-               works as an ice-breaker if people actually see it before they
-               call. The icons are vectors from /animals.js (an SVG sprite),
-               not emoji, so they look the same on every device. -->
-          <section class="animal-picker" aria-labelledby="animalPickerTitle">
-            <h2 class="animal-picker-title" id="animalPickerTitle" data-i18n="pickAnimal">Pick your spirit animal</h2>
-            <p class="animal-picker-hint" data-i18n="pickAnimalHint">Whoever you connect with sees it - an easy way to start talking.</p>
-            <div class="animal-grid" id="animalGrid" role="radiogroup" data-i18n-aria="pickAnimal" aria-label="Pick your spirit animal"></div>
-            <p class="animal-chosen" id="animalChosen" aria-live="polite"></p>
-          </section>
-
-          <p class="consent-line">
-            <span data-i18n="consentPrefix">By tapping Call you agree to our</span>
-            <button type="button" id="openTermsLink" class="link-btn" data-i18n="termsLink">Terms &amp; Community Guidelines</button>
-          </p>
-          <div class="setup-growth" aria-label="TalkLive membership and sharing">
-            <a class="setup-growth-card setup-growth-premium" href="/pricing?utm_source=app&amp;utm_medium=home&amp;utm_campaign=premium">
-              <span class="setup-growth-icon" aria-hidden="true">💎</span>
-              <span><strong data-i18n="growthPremiumTitle">Premium - coming soon</strong><small data-i18n="growthPremiumSub">All filters, instant rematching and no ads</small></span>
-            </a>
-            <button type="button" id="shareTalkLiveBtn" class="setup-growth-card setup-growth-share">
-              <span class="setup-growth-icon" aria-hidden="true">↗</span>
-              <span><strong>Bring more people online</strong><small>Invite a friend to TalkLive</small></span>
+          <div class="home-hero">
+            <button type="button" id="heroAnimalBtn" class="hero-animal" data-i18n-title="pickAnimal" title="Pick your spirit animal">
+              <span id="heroAnimalArt" class="hero-animal-art" aria-hidden="true"></span>
+              <span class="hero-animal-edit" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.5 2.5 0 0 0-3.5-3.5L4.5 16.5V20z"/></svg>
+              </span>
             </button>
+
+            <!-- Three lines that rotate on a timer, with dots so it reads as
+                 a deliberate carousel and not a glitch. Swipeable. -->
+            <!-- Only the first slide is the page's H1; the other two are the same
+                 sentence said differently, so they are paragraphs. One H1 per
+                 page, and the tab headings below are H2s for the same reason. -->
+            <div id="heroCarousel" class="hero-carousel" aria-live="off">
+              <div class="hero-slide is-active">
+                <h1 class="hero-title" data-i18n="heroSlide1Title">Talk to someone new</h1>
+                <p class="hero-sub" data-i18n="heroSlide1Sub">One tap and you are in a real conversation.</p>
+              </div>
+              <div class="hero-slide">
+                <p class="hero-title" data-i18n="heroSlide2Title">Say what is on your mind</p>
+                <p class="hero-sub" data-i18n="heroSlide2Sub">Anonymous, voice only, gone when you hang up.</p>
+              </div>
+              <div class="hero-slide">
+                <p class="hero-title" data-i18n="heroSlide3Title">Choose who you hear</p>
+                <p class="hero-sub" data-i18n="heroSlide3Sub">Set a preference and meet someone ready.</p>
+              </div>
+            </div>
+            <div class="hero-dots" id="heroDots" role="tablist" aria-label="Highlights">
+              <button type="button" class="hero-dot is-active" data-slide="0" aria-label="1"></button>
+              <button type="button" class="hero-dot" data-slide="1" aria-label="2"></button>
+              <button type="button" class="hero-dot" data-slide="2" aria-label="3"></button>
+            </div>
+            <p class="hero-online" id="heroOnline" aria-live="polite"></p>
           </div>
+
+          <!-- The action block is pinned to the bottom of the screen so the
+               button lands under a thumb on a phone, whatever the hero does. -->
+          <div class="home-actions">
+            <div class="quick-select-row">
+              <button type="button" id="quickGenderBtn" class="quick-select" aria-haspopup="dialog" aria-expanded="false">
+                <span class="quick-select-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <g stroke="#ff5fa2"><circle cx="8.5" cy="8" r="4"/><path d="M8.5 12v6M5.8 15.6h5.4"/></g>
+                    <g stroke="#4aa8ff"><circle cx="15" cy="15" r="4"/><path d="M17.9 12.1 21.4 8.6M17.4 8.6h4v4"/></g>
+                  </svg>
+                </span>
+                <span class="quick-select-text" id="quickGenderLabel" data-i18n="gender">Gender</span>
+                <span class="quick-select-caret" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 6-6 6 6"/></svg>
+                </span>
+              </button>
+              <button type="button" id="quickCountryBtn" class="quick-select" aria-haspopup="dialog" aria-expanded="false">
+                <span class="quick-select-icon" id="quickCountryIcon" aria-hidden="true">🌍</span>
+                <span class="quick-select-text" id="quickCountryLabel" data-i18n="balanced">Balanced</span>
+                <span class="quick-select-caret" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 6-6 6 6"/></svg>
+                </span>
+              </button>
+            </div>
+
+            <button id="startBtn" class="start-cta" data-i18n-aria="startAria" aria-label="Start a call with a random person">
+              <svg class="start-cta-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+              </svg>
+              <span data-i18n="startVoiceChat">Start Voice Chat</span>
+            </button>
+
+            <p class="home-fineprint">
+              <span data-i18n="ageGateShort">18+ only. Follow the</span>
+              <button type="button" id="openTermsLink" class="link-btn" data-i18n="guidelines">Guidelines</button><span>.</span>
+            </p>
+
+            <a id="startChatBtn" href="/chat" class="home-text-link" data-i18n-aria="startChatAria" aria-label="Start a text chat with a random person">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+              <span data-i18n="preferTyping">Prefer typing? Start a text chat</span>
+            </a>
+          </div>
+
           <p id="setupErrorText" class="error-text hidden" role="alert"></p>
         </div>
-        <!-- Ad shown only on this pre-call screen; hidden with the whole
-             panel once a call or chat starts. Framed like the rest of the UI
-             so a creative never reads as a pop-up over the app. -->
+
+        <!-- Kept in the DOM, off the home screen: the invite button in the top
+             bar drives this, so the share flow in app.js is untouched. -->
+        <button type="button" id="shareTalkLiveBtn" class="visually-hidden-btn" tabindex="-1" aria-hidden="true">Invite a friend</button>
+
+        <!-- Ad shown only on this pre-call screen, and only below the fold -
+             it can never sit between a person and the Start button. -->
         <div class="ad-card ad-card-app">
           <span class="ad-card-label" data-i18n="sponsored">Sponsored</span>
           <div data-ad="leaderboard"></div>
         </div>
+      </section>
+
+      <!-- MESSAGES tab: friends you can reach right now across the top,
+           conversations under them. Same data as the old Friends panel. -->
+      <section id="messagesTab" class="tab-pane tl-hide" aria-labelledby="messagesTabTitle">
+        <header class="tab-head">
+          <h2 id="messagesTabTitle" data-i18n="messages">Messages</h2>
+          <p class="tab-head-sub" id="messagesOnlineLine"></p>
+        </header>
+        <button type="button" id="msgFriendsHeading" class="tab-subhead">
+          <span data-i18n="friends">Friends</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+        </button>
+        <div id="msgFriendsRail" class="friends-rail"></div>
+        <div id="msgRequestsSlot" class="tab-requests-slot"></div>
+        <h2 class="tab-subhead tab-subhead-plain" data-i18n="messages">Messages</h2>
+        <div id="msgConvoList" class="convo-list"></div>
+      </section>
+
+      <!-- HISTORY tab: everyone you have met, newest first, each row one tap
+           from reporting them or asking to be friends. -->
+      <section id="historyTab" class="tab-pane tl-hide" aria-labelledby="historyTabTitle">
+        <header class="tab-head">
+          <h2 id="historyTabTitle" data-i18n="history">History</h2>
+        </header>
+        <div id="historyFeed" class="history-feed"></div>
       </section>
 
       <!-- Account modal: optional account - just a username + password. Stored
@@ -1481,7 +1584,7 @@
         <!-- Conversation guide. Set as ordinary page copy - a heading, a rule
              and a list - rather than a bordered card full of emoji roundels.
              It is advice, and advice reads better as text than as a widget. -->
-        <section id="convoGuide" class="note">
+        <section id="convoGuide" class="note tl-voice-only">
           <h3 class="note-title" data-i18n="convoGuideTitle">How to have a great talk</h3>
           <ul class="note-list">
             <li data-i18n="convoTip1">Smile before you start talking - it changes your voice.</li>
@@ -1500,7 +1603,7 @@
              is free and the care that goes into it. Plain English on purpose,
              and plain typography to match - the tinted box and the emoji in the
              heading made a sincere note read like a promo banner. -->
-        <section id="madeForYou" class="note">
+        <section id="madeForYou" class="note tl-voice-only">
           <h3 class="note-title">Made free, just for you</h3>
           <p>TalkLive is <strong>100% free</strong>. No payment needed to talk, no time limits, no tricks.</p>
           <p>We work on it every day to make this the smoothest, cleanest way to talk to new people anywhere in the world - fast connections and a simple design, built with care.</p>
@@ -1554,10 +1657,90 @@
 
 
 
-  <div style="margin:28px auto">
+  <div class="tl-voice-only" style="margin:28px auto">
     <div class="ad-card"><span class="ad-card-label">Sponsored</span><div data-ad="native"></div></div>
   </div>
 </main>
+
+    <!-- Bottom sheets. One overlay, one container per sheet: a phone-native
+         way to ask a single question without taking over the screen, and the
+         reason the home screen only has to carry two controls. -->
+    <div id="sheetOverlay" class="sheet-overlay hidden"></div>
+
+    <!-- Spirit animal: still the thing the stranger sees the moment you
+         connect, now one tap behind the face on the home screen instead of a
+         grid competing with the Start button. -->
+    <div id="animalSheet" class="sheet hidden" role="dialog" aria-modal="true" aria-labelledby="animalPickerTitle">
+      <div class="sheet-grip" aria-hidden="true"></div>
+      <div class="sheet-head">
+        <h2 class="animal-picker-title" id="animalPickerTitle" data-i18n="pickAnimal">Pick your spirit animal</h2>
+        <button type="button" class="sheet-close" data-sheet-close data-i18n-aria="close" aria-label="Close">&times;</button>
+      </div>
+      <p class="animal-picker-hint" data-i18n="pickAnimalHint">Whoever you connect with sees it - an easy way to start talking.</p>
+      <div class="sheet-body">
+        <div class="animal-grid" id="animalGrid" role="radiogroup" data-i18n-aria="pickAnimal" aria-label="Pick your spirit animal"></div>
+        <p class="animal-chosen" id="animalChosen" aria-live="polite"></p>
+      </div>
+    </div>
+
+    <div id="genderSheet" class="sheet hidden" role="dialog" aria-modal="true" aria-labelledby="genderSheetTitle">
+      <div class="sheet-grip" aria-hidden="true"></div>
+      <div class="sheet-head">
+        <h2 id="genderSheetTitle" data-i18n="matchMeWith">Match me with</h2>
+        <button type="button" class="sheet-close" data-sheet-close data-i18n-aria="close" aria-label="Close">&times;</button>
+      </div>
+      <div class="sheet-body" id="genderSheetBody"></div>
+    </div>
+
+    <div id="countrySheet" class="sheet hidden" role="dialog" aria-modal="true" aria-labelledby="countrySheetTitle">
+      <div class="sheet-grip" aria-hidden="true"></div>
+      <div class="sheet-head">
+        <h2 id="countrySheetTitle" data-i18n="wantCountries">Countries I want to talk to</h2>
+        <button type="button" class="sheet-close" data-sheet-close data-i18n-aria="close" aria-label="Close">&times;</button>
+      </div>
+      <div class="sheet-search">
+        <input type="search" id="countrySheetSearch" class="search-input" data-i18n-placeholder="searchCountry" placeholder="Search country…" autocomplete="off" />
+      </div>
+      <div class="sheet-body" id="countrySheetBody"></div>
+      <div class="sheet-foot">
+        <button type="button" id="countrySheetMore" class="sheet-foot-link" data-i18n="allFilters">All filters</button>
+        <button type="button" id="countrySheetDone" class="btn btn-primary" data-i18n="done">Done</button>
+      </div>
+    </div>
+
+    <div id="notifSheet" class="sheet hidden" role="dialog" aria-modal="true" aria-labelledby="notifSheetTitle">
+      <div class="sheet-grip" aria-hidden="true"></div>
+      <div class="sheet-head">
+        <h2 id="notifSheetTitle" data-i18n="notifications">Notifications</h2>
+        <button type="button" class="sheet-close" data-sheet-close data-i18n-aria="close" aria-label="Close">&times;</button>
+      </div>
+      <div class="sheet-body" id="notifSheetBody"></div>
+    </div>
+
+    <!-- The whole app in three tabs. Fixed to the bottom of the viewport so it
+         is reachable one-handed, hidden while a call is live (nothing competes
+         with hanging up) and mirrored by a skip target for keyboard users. -->
+    <nav id="tabBar" class="tabbar" aria-label="TalkLive">
+      <button type="button" class="tabbar-btn is-active" data-tab="voice" aria-current="page">
+        <span class="tabbar-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+        </span>
+        <span class="tabbar-label" data-i18n="tabVoice">Voice chat</span>
+      </button>
+      <button type="button" class="tabbar-btn" data-tab="messages">
+        <span class="tabbar-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/><circle cx="8" cy="10" r="1.3" fill="#0b0f1a"/><circle cx="12" cy="10" r="1.3" fill="#0b0f1a"/><circle cx="16" cy="10" r="1.3" fill="#0b0f1a"/></svg>
+          <span id="tabMessagesBadge" class="tabbar-badge hidden">0</span>
+        </span>
+        <span class="tabbar-label" data-i18n="messages">Messages</span>
+      </button>
+      <button type="button" class="tabbar-btn" data-tab="history">
+        <span class="tabbar-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.2 12a8.8 8.8 0 1 0 2.6-6.2"/><path d="M3 4.4V9h4.6"/><path d="M12 7.6V12l3 1.8"/></svg>
+        </span>
+        <span class="tabbar-label" data-i18n="history">History</span>
+      </button>
+    </nav>
 
     <footer class="footer">
       <a href="/blog/" class="footer-blog-btn" data-i18n="readOurBlog">📖 Read our blog</a>
@@ -1911,6 +2094,9 @@
   <script defer src="chat-extras.js?v=20260916chatpolish"></script>
   <script defer src="games.js?v=20260916settings"></script>
   <script defer src="app.js?v=20260916chatpolish"></script>
+  <!-- Loaded after app.js: the shell re-presents app.js's own state as three
+       tabs and a set of bottom sheets, and never owns any of it. -->
+  <script defer src="mobile-app.js?v=20260916shell"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the
