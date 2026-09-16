@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
-<link rel="stylesheet" href="/chat.css?v=20260916settings" />
-<link rel="stylesheet" href="/chat-extras.css?v=20260916settings" />
-<link rel="stylesheet" href="/games.css?v=20260916settings" />
+<link rel="stylesheet" href="/chat.css?v=20260916gate" />
+<link rel="stylesheet" href="/chat-extras.css?v=20260916gate" />
+<link rel="stylesheet" href="/games.css?v=20260916gate" />
 <style>
   .skip-link {
     position: fixed;
@@ -169,6 +169,49 @@
             </a>
           </div>
 
+          <!-- Who you want to be matched with. Lives on the start view and
+               nowhere else, so it is there while you are deciding and gone the
+               moment you search or connect - the start view is hidden for both.
+               Male/Female are a Premium filter (the server ignores them on the
+               free tier), so they carry a bolt and free taps route to /pricing
+               instead of silently doing nothing. -->
+          <section class="pref-partner" aria-labelledby="prefPartnerLabel">
+            <p class="pref-partner-label" id="prefPartnerLabel">
+              <span data-i18n="preferredPartner">Preferred partner</span>
+              <span class="pref-partner-opt" data-i18n="optional">(optional)</span>
+            </p>
+            <div class="pref-cards" id="prefGenderGroup" data-value="any" role="group" aria-labelledby="prefPartnerLabel">
+              <button type="button" class="pref-card" data-value="male" aria-pressed="false">
+                <span class="pref-card-bolt premium-lock" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/></svg>
+                </span>
+                <span class="pref-card-icon pref-icon-male" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="14" r="6"/><line x1="14.5" y1="9.5" x2="20" y2="4"/><polyline points="14.5 4 20 4 20 9.5"/></svg>
+                </span>
+                <span class="pref-card-name" data-i18n="male">Male</span>
+              </button>
+              <button type="button" class="pref-card" data-value="any" aria-pressed="true">
+                <span class="pref-card-icon pref-icon-any" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 9a3 3 0 1 1 4 2.8c-.7.3-1 .9-1 1.7v.5"/><line x1="12" y1="18" x2="12" y2="18"/></svg>
+                </span>
+                <span class="pref-card-name" data-i18n="everyone">Everyone</span>
+              </button>
+              <button type="button" class="pref-card" data-value="female" aria-pressed="false">
+                <span class="pref-card-bolt premium-lock" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/></svg>
+                </span>
+                <span class="pref-card-icon pref-icon-female" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="6"/><line x1="12" y1="15" x2="12" y2="21"/><line x1="9" y1="18" x2="15" y2="18"/></svg>
+                </span>
+                <span class="pref-card-name" data-i18n="female">Female</span>
+              </button>
+            </div>
+            <p class="pref-partner-hint hidden" id="prefPremiumHint" role="status">
+              <span data-i18n="premiumGenderLocked">The gender filter is a Premium feature.</span>
+              <a href="/pricing?utm_source=chat&amp;utm_medium=pref&amp;utm_campaign=premium" data-i18n="pricingLink">Pricing &amp; Premium</a>
+            </p>
+          </section>
+
           <!-- Spirit animal: the same picker as the voice app, sharing the same
                localStorage key, so a choice made on either page follows the
                user to the other. Vector icons from /animals.js, never emoji. -->
@@ -322,19 +365,98 @@
     </div>
   </div>
 
-  <!-- Age / terms gate (once per browser, before the first chat) -->
-  <div id="consentModal" class="modal-overlay hidden">
-    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="consentTitle">
-      <div class="modal-header">
-        <h2 id="consentTitle" data-i18n="beforeYouStart">Before You Start</h2>
+  <!-- Step 1 of the gate: gender. Asked before the rules screen because it is
+       what matching actually needs, and because the rules then read as rules
+       about the person you are about to be matched with. Once per browser -
+       the settings panel changes it afterwards. -->
+  <div id="genderModal" class="modal-overlay hidden">
+    <div class="modal-box gate-box" role="dialog" aria-modal="true" aria-labelledby="genderGateTitle">
+      <div class="modal-body gate-body">
+        <span class="gate-mark" aria-hidden="true">
+          <img src="/favicon.svg?v=20260916gate" width="62" height="62" alt="" decoding="async" />
+        </span>
+        <h2 id="genderGateTitle" class="gate-title" data-i18n="chooseGenderTitle">Choose your gender</h2>
+        <p class="gate-sub" data-i18n="chooseGenderSub">Required for matching. It keeps gender preferences accurate and helps build safer conversations.</p>
+        <div class="gate-options" id="genderGateOptions" role="radiogroup" aria-labelledby="genderGateTitle">
+          <button type="button" class="gate-option gate-option-male" data-value="male" role="radio" aria-checked="false">
+            <span class="gate-option-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="14" r="6"/><line x1="14.5" y1="9.5" x2="20" y2="4"/><polyline points="14.5 4 20 4 20 9.5"/></svg>
+            </span>
+            <span class="gate-option-label" data-i18n="male">Male</span>
+            <span class="gate-option-mark" aria-hidden="true"></span>
+          </button>
+          <button type="button" class="gate-option gate-option-female" data-value="female" role="radio" aria-checked="false">
+            <span class="gate-option-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="6"/><line x1="12" y1="15" x2="12" y2="21"/><line x1="9" y1="18" x2="15" y2="18"/></svg>
+            </span>
+            <span class="gate-option-label" data-i18n="female">Female</span>
+            <span class="gate-option-mark" aria-hidden="true"></span>
+          </button>
+        </div>
+        <p class="gate-note" data-i18n="chooseGenderNote">False selections may limit account access.</p>
       </div>
-      <div class="modal-body">
-        <p class="hint" data-i18n="mustBe18">You must be 18 years or older to use TalkLive.</p>
-        <label class="consent-check" for="consentCheckbox">
-          <input type="checkbox" id="consentCheckbox" />
-          <span class="consent-links" data-i18n="agreeToTerms">I have read and agree to the Terms &amp; Conditions.</span>
-        </label>
-        <button type="button" id="consentAgreeBtn" class="btn btn-primary btn-block" data-i18n="iAgree" disabled>I AGREE</button>
+    </div>
+  </div>
+
+  <!-- Step 2: age / rules gate (once per browser, before the first chat). -->
+  <div id="consentModal" class="modal-overlay hidden">
+    <div class="modal-box gate-box" role="dialog" aria-modal="true" aria-labelledby="consentTitle">
+      <div class="modal-body gate-body">
+        <h2 id="consentTitle" class="gate-title" data-i18n="beforeYouBegin">Before you begin</h2>
+        <p class="gate-sub" data-i18n="beforeYouBeginSub">Adults only. Be respectful and keep it consensual.</p>
+        <ul class="rule-list">
+          <li class="rule-item">
+            <span class="rule-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.6-7-9.3A4.2 4.2 0 0 1 12 8a4.2 4.2 0 0 1 7 2.7C19 15.4 12 20 12 20z"/></svg>
+            </span>
+            <span class="rule-text">
+              <strong data-i18n="ruleRespectTitle">Be respectful</strong>
+              <small data-i18n="ruleRespectBody">Treat people with kindness and courtesy.</small>
+            </span>
+          </li>
+          <li class="rule-item">
+            <span class="rule-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v5.2c0 4.4 2.9 7.8 7 9.8 4.1-2 7-5.4 7-9.8V6l-7-3z"/><polyline points="9 12 11.2 14.2 15.2 10.2"/></svg>
+            </span>
+            <span class="rule-text">
+              <strong data-i18n="ruleBoundariesTitle">Respect boundaries</strong>
+              <small data-i18n="ruleBoundariesBody">No harassment, pressure, or unwanted sexual content.</small>
+            </span>
+          </li>
+          <li class="rule-item">
+            <span class="rule-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="8.2 12.2 11 15 16 9.6"/></svg>
+            </span>
+            <span class="rule-text">
+              <strong data-i18n="ruleConsentTitle">Keep it consensual</strong>
+              <small data-i18n="ruleConsentBody">Make sure the conversation stays mutual.</small>
+            </span>
+          </li>
+          <li class="rule-item">
+            <span class="rule-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h12a4 4 0 0 1 0 8H7"/><polyline points="10 13 7 16 10 19"/></svg>
+            </span>
+            <span class="rule-text">
+              <strong data-i18n="ruleMoveOnTitle">Move on politely</strong>
+              <small data-i18n="ruleMoveOnBody">If it is not a fit, end the chat respectfully.</small>
+            </span>
+          </li>
+        </ul>
+        <p class="gate-fine">
+          <span data-i18n="consentFine">18+ only. By continuing, you agree to our community rules,</span>
+          <a href="/privacy" data-i18n="privacyPolicy">Privacy Policy</a>
+          <span data-i18n="consentFineAnd">and</span>
+          <a href="/terms" data-i18n="consentFineTerms">Terms</a>.
+        </p>
+        <div class="gate-actions">
+          <button type="button" id="consentBackBtn" class="gate-back" data-i18n-aria="back" aria-label="Back">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="11 6 5 12 11 18"/></svg>
+          </button>
+          <button type="button" id="consentAgreeBtn" class="gate-cta">
+            <span data-i18n="startChattingCta">Start Chatting</span>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -666,12 +788,12 @@
 
   <script defer src="/socket.io/socket.io.js"></script>
   <script defer src="/countries.js?v=20260828fix"></script>
-  <script defer src="/i18n.js?v=20260916settings"></script>
-  <script defer src="/animals.js?v=20260916settings"></script>
+  <script defer src="/i18n.js?v=20260916gate"></script>
+  <script defer src="/animals.js?v=20260916gate"></script>
   <script defer src="/error-reporter.js?v=20260823ui"></script>
-  <script defer src="/chat-extras.js?v=20260916settings"></script>
-  <script defer src="/games.js?v=20260916settings"></script>
-  <script defer src="/chat.js?v=20260916settings"></script>
+  <script defer src="/chat-extras.js?v=20260916gate"></script>
+  <script defer src="/games.js?v=20260916gate"></script>
+  <script defer src="/chat.js?v=20260916gate"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

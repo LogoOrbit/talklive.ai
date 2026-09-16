@@ -74,6 +74,21 @@
   var vibrationEnabled = localStorage.getItem('talklive_vibration') !== 'off';
   var myGender = localStorage.getItem('talklive_gender') || '';
 
+  // Preferred partner. Stored in the same sessionStorage blob the call app
+  // uses for its filters, so a choice made on either page holds for the tab
+  // and neither page clobbers the other's country/interest filters.
+  var FILTERS_KEY = 'talklive_filters';
+  function readFilters() {
+    try { return JSON.parse(sessionStorage.getItem(FILTERS_KEY)) || {}; } catch (e) { return {}; }
+  }
+  var myPrefGender = readFilters().prefGender || 'any';
+  function savePrefGender(value) {
+    myPrefGender = value;
+    var filters = readFilters();
+    filters.prefGender = value;
+    try { sessionStorage.setItem(FILTERS_KEY, JSON.stringify(filters)); } catch (e) {}
+  }
+
   function escapeHtml(str) {
     return String(str).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
@@ -374,6 +389,7 @@
       identityToken: localStorage.getItem('talklive_identity_token') || '',
       nickname: accountNickname || tempUsername || undefined,
       gender: myGender || undefined,
+      prefGender: myPrefGender,
       animal: myAnimal || undefined,
       // Kept with every register, as the call app does, so the choice survives
       // a reconnect instead of quietly reverting to visible.
@@ -420,18 +436,56 @@
     showView('start');
   }
 
-  // Age/terms gate before the first ever search (once per browser).
+  // Entry gate before the first ever search: gender, then the house rules.
+  // Both steps are once per browser - gender because it is stored like every
+  // other profile choice (the settings panel edits it afterwards), the rules
+  // because agreeing to them is recorded under CONSENT_KEY.
+  var genderModal = $('genderModal');
+  var genderGateOptions = $('genderGateOptions');
   var consentModal = $('consentModal');
-  var consentCheckbox = $('consentCheckbox');
   var consentAgreeBtn = $('consentAgreeBtn');
-  function requestStart() {
-    if (localStorage.getItem(CONSENT_KEY) === 'yes') { goSearch(true); return; }
-    consentCheckbox.checked = false;
-    consentAgreeBtn.disabled = true;
+  var consentBackBtn = $('consentBackBtn');
+
+  function setGenderGateValue(value) {
+    genderGateOptions.querySelectorAll('.gate-option').forEach(function (opt) {
+      opt.setAttribute('aria-checked', opt.dataset.value === value ? 'true' : 'false');
+    });
+  }
+  function openGenderGate() {
+    setGenderGateValue(myGender);
+    openModal(genderModal);
+  }
+  function openRulesGate() {
     openModal(consentModal);
   }
-  consentCheckbox.addEventListener('change', function () {
-    consentAgreeBtn.disabled = !consentCheckbox.checked;
+  function requestStart() {
+    if (!myGender) { openGenderGate(); return; }
+    if (localStorage.getItem(CONSENT_KEY) !== 'yes') { openRulesGate(); return; }
+    goSearch(true);
+  }
+
+  genderGateOptions.addEventListener('click', function (e) {
+    var opt = e.target.closest('.gate-option');
+    if (!opt) return;
+    vibrate(10);
+    myGender = opt.dataset.value;
+    localStorage.setItem('talklive_gender', myGender);
+    setGenderGateValue(myGender);
+    setPillValue(genderGroup, myGender); // keep the settings panel in step
+    // No register() here: every path out of this handler ends in goSearch(true),
+    // which registers with the new gender itself.
+    // A beat so the choice is visibly selected before the panel swaps, rather
+    // than the tap appearing to skip straight past the question.
+    setTimeout(function () {
+      closeModal(genderModal);
+      if (localStorage.getItem(CONSENT_KEY) === 'yes') goSearch(true);
+      else openRulesGate();
+    }, 180);
+  });
+
+  consentBackBtn.addEventListener('click', function () {
+    closeModal(consentModal);
+    openGenderGate();
   });
   consentAgreeBtn.addEventListener('click', function () {
     localStorage.setItem(CONSENT_KEY, 'yes');
@@ -443,6 +497,47 @@
   // screen everyone already treats as "home". It used to point at /chat and
   // reload the page instead, which left people stuck inside the chat app.
   // A plain link does the job, so middle-click and long-press work too.
+
+  // --- Preferred partner, on the start view only ----------------------------
+  // It lives inside #viewStart, so searching or connecting hides it with the
+  // rest of that view - there is nothing extra to hide by hand. Male/Female
+  // are a Premium filter the server drops on the free tier, so a free tap is
+  // sent to /pricing instead of quietly selecting a filter that does nothing.
+  var prefGenderGroup = $('prefGenderGroup');
+  var prefPremiumHint = $('prefPremiumHint');
+  var isPremiumUser = false;
+
+  function setPrefCards(value) {
+    prefGenderGroup.dataset.value = value;
+    prefGenderGroup.querySelectorAll('.pref-card').forEach(function (card) {
+      card.setAttribute('aria-pressed', card.dataset.value === value ? 'true' : 'false');
+    });
+  }
+  setPrefCards(myPrefGender);
+
+  prefGenderGroup.addEventListener('click', function (e) {
+    var card = e.target.closest('.pref-card');
+    if (!card) return;
+    vibrate(10);
+    if (!isPremiumUser && card.dataset.value !== 'any') {
+      prefPremiumHint.classList.remove('hidden');
+      return;
+    }
+    prefPremiumHint.classList.add('hidden');
+    savePrefGender(card.dataset.value);
+    setPrefCards(myPrefGender);
+    register(); // the preference is part of the profile, so push it now
+  });
+
+  socket.on('premium-status', function (data) {
+    isPremiumUser = !!(data && data.premium);
+    // The bolt badges mark what the free tier cannot use, so they go away
+    // once it can.
+    document.querySelectorAll('.premium-lock').forEach(function (el) {
+      el.classList.toggle('hidden', isPremiumUser);
+    });
+    if (isPremiumUser) prefPremiumHint.classList.add('hidden');
+  });
 
   startBtn.addEventListener('click', function () { vibrate(10); initAudio(); requestStart(); });
   cancelBtn.addEventListener('click', function () {
