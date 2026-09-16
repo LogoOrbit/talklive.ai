@@ -6109,3 +6109,190 @@ html.perf-lite .side-panel { box-shadow: none; }
   .animal-option .tl-animal-icon,
   .partner-animal { transition: none; animation: none; }
 }
+
+/* --- "Keep this profile" prompts ------------------------------------------
+   Three surfaces, one message: the anonymous profile lives in this browser
+   only, and an account is what keeps it. They share the accent tint so they
+   read as the same offer wherever the user meets it. */
+
+.header-link-profile {
+  max-width: 260px;
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid rgba(108, 92, 231, 0.5);
+  border-radius: 999px;
+  background: rgba(108, 92, 231, 0.16);
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.header-link-profile:hover {
+  background: rgba(108, 92, 231, 0.3);
+  border-color: rgba(108, 92, 231, 0.75);
+}
+
+.header-link-profile:active {
+  transform: scale(0.96);
+}
+
+/* The top bar runs out of room long before this is the most important thing
+   on it; the friends-panel banner carries the same offer on small screens. */
+@media (max-width: 860px) {
+  .header-link-profile { display: none; }
+}
+
+.link-profile-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(108, 92, 231, 0.45);
+  border-radius: 14px;
+  background: rgba(108, 92, 231, 0.14);
+  color: var(--text);
+  text-align: start;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.link-profile-banner:hover {
+  background: rgba(108, 92, 231, 0.24);
+  border-color: rgba(108, 92, 231, 0.7);
+}
+
+.link-profile-banner-icon svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+  color: var(--accent-2);
+}
+
+.link-profile-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.link-profile-banner-text strong {
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.link-profile-banner-text small {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.link-profile-banner-go svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+  color: var(--muted);
+}
+
+/* The sign-up card: what the new account is about to inherit. */
+.link-profile-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.link-profile-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+  border-radius: 50%;
+  background: rgba(108, 92, 231, 0.2);
+  overflow: hidden;
+}
+
+.link-profile-card-text {
+  min-width: 0;
+  /* The account modal centers its text; this card is a profile summary and
+     reads as one only when it is left-aligned against the avatar. */
+  text-align: start;
+}
+
+.link-profile-kicker {
+  margin: 0;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--accent-2);
+}
+
+.link-profile-name {
+  margin: 2px 0 6px;
+  font-size: 16px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.link-profile-body {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.link-profile-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.link-profile-chip {
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+/* "Receive incoming calls", above the friends list it applies to. */
+.accept-calls-row {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.accept-calls-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.accept-calls-text strong {
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.accept-calls-text small {
+  font-size: 11.5px;
+  color: var(--muted);
+}

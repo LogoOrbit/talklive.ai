@@ -291,6 +291,11 @@
              comes looking for, and a control they have to open a menu to find
              reads as "there are no accounts here". Swapped for a single
              account button once signed in (see renderAccountState). -->
+        <!-- Anonymous users own a real profile (name, friends, history) that
+             lives only in this browser. This pill is the one-tap offer to keep
+             it: it opens Sign Up, where the profile is shown being linked to
+             the new account. Hidden once there is an account to link to. -->
+        <button type="button" id="headerLinkProfileBtn" class="header-link-profile hidden" data-i18n="linkProfilePill">Link your account to keep this profile</button>
         <div class="header-auth" id="headerAuth">
           <button type="button" id="headerLoginBtn" class="header-auth-btn header-auth-login" data-i18n="logIn">Log In</button>
           <button type="button" id="headerSignupBtn" class="header-auth-btn header-auth-signup" data-i18n="signUp">Sign Up</button>
@@ -318,6 +323,31 @@
         <button type="button" id="closeFriendsBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
       </div>
       <div class="side-panel-body">
+        <button type="button" id="linkProfileBanner" class="link-profile-banner hidden">
+          <span class="link-profile-banner-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+              <path d="M9.5 14.5 14.5 9.5"/>
+              <path d="M11 7.4 12.6 5.8a3.7 3.7 0 0 1 5.3 5.3l-1.6 1.6"/>
+              <path d="M13 16.6l-1.6 1.6a3.7 3.7 0 0 1-5.3-5.3l1.6-1.6"/>
+            </svg>
+          </span>
+          <span class="link-profile-banner-text">
+            <strong data-i18n="linkProfileBannerTitle">Link your account to save your profile</strong>
+            <small data-i18n="linkProfileBannerBody">Keep friends and history across devices.</small>
+          </span>
+          <span class="link-profile-banner-go" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+          </span>
+        </button>
+        <!-- Reachable from the list the calls come from, rather than buried in
+             settings: friends can still message while this is off. -->
+        <label id="acceptCallsRow" class="checkbox-row accept-calls-row" for="acceptCallsCheckbox">
+          <input type="checkbox" id="acceptCallsCheckbox" checked />
+          <span class="accept-calls-text">
+            <strong data-i18n="acceptCallsTitle">Receive incoming calls</strong>
+            <small data-i18n="acceptCallsBody">Friends can call you</small>
+          </span>
+        </label>
         <div id="notifList" class="notif-list">
           <p class="history-empty" data-i18n="noRequestsYet">No requests yet.</p>
         </div>
@@ -678,6 +708,22 @@
               </form>
 
               <form id="signupTab" class="account-tab-panel hidden" autocomplete="on" onsubmit="return false;">
+                <!-- What the new account inherits, shown before the fields so
+                     signing up reads as keeping this profile rather than
+                     starting a second, empty one. Populated (and hidden when
+                     there is nothing to link) by renderLinkProfileCard(). -->
+                <div id="linkProfileCard" class="link-profile-card hidden">
+                  <span id="linkProfileAvatar" class="link-profile-avatar" aria-hidden="true"></span>
+                  <div class="link-profile-card-text">
+                    <p class="link-profile-kicker" data-i18n="linkProfileKicker">Link your current profile</p>
+                    <p id="linkProfileName" class="link-profile-name"></p>
+                    <p class="link-profile-body" data-i18n="linkProfileCardBody">This profile is linked to the account you create now. Your name, friends and history stay with you.</p>
+                    <div class="link-profile-chips">
+                      <span id="linkProfileCreated" class="link-profile-chip hidden"></span>
+                      <span id="linkProfileFriends" class="link-profile-chip"></span>
+                    </div>
+                  </div>
+                </div>
                 <label class="account-field-label" for="signupUsername" data-i18n="labelUsername">Username</label>
                 <input type="text" id="signupUsername" class="search-input account-input" data-i18n-placeholder="chooseUsername" data-i18n-aria="chooseUsername" placeholder="Choose a username" autocomplete="username" />
                 <label class="account-field-label" for="signupPassword" data-i18n="labelPassword">Password</label>

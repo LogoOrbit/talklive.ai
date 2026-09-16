@@ -587,11 +587,43 @@ function saveAccount(usernameLower, account) {
     // avatar, locale, workspace domain). Null for password accounts, and kept
     // from the previous record if this write did not carry a fresh copy.
     google: account.google || previous.google || null,
+    // The anonymous profile (clientId) this account owns: friends, chat
+    // history and premium all hang off it, so binding it to the account is
+    // what lets a sign-in on a second device pick the same profile back up.
+    // Never written from the in-memory accounts Map (which does not carry it),
+    // so always keep whatever the previous record had unless this write
+    // explicitly replaces it.
+    clientId: account.clientId || previous.clientId || null,
     createdAt: previous.createdAt || Date.now(),
   };
   if (account.googleId) data.googleIndex[account.googleId] = usernameLower;
   if (email) data.emailIndex[email] = usernameLower;
   save();
+}
+
+// --- Account <-> profile link ----------------------------------------------
+// An account is credentials; a profile (clientId) is everything the person
+// actually cares about - friends, friend chats, call history, premium. They
+// used to be unrelated, so signing in on a new device handed you an empty
+// profile. These two bind them: the first device to sign in donates its
+// profile, and every later sign-in is handed that same clientId back.
+
+// The clientId an account is linked to, or null if it never got one.
+function getAccountClientId(usernameLower) {
+  const acc = data.accounts[String(usernameLower || '').toLowerCase()];
+  return (acc && acc.clientId) || null;
+}
+
+// Link an account to a profile. Refuses to overwrite an existing link: the
+// first profile is the one that holds the friends, and quietly repointing the
+// account at a fresh device's empty profile would lose them.
+function setAccountClientId(usernameLower, clientId) {
+  const key = String(usernameLower || '').toLowerCase();
+  const acc = data.accounts[key];
+  if (!acc || !clientId || acc.clientId) return acc ? acc.clientId || null : null;
+  acc.clientId = clientId;
+  save();
+  return clientId;
 }
 
 // Which account, if any, a recovery email belongs to. Returns usernameLower.
@@ -1066,6 +1098,8 @@ module.exports = {
   liftBan,
   upsertAccount,
   saveAccount,
+  getAccountClientId,
+  setAccountClientId,
   findUsernameByEmail,
   startPasswordReset,
   findPasswordReset,

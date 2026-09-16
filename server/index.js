@@ -1202,6 +1202,14 @@ function atFriendLimit(clientId) {
 // added friends. Never affects the global online-user count.
 const statusHidden = new Map();
 
+// clientId -> false when the user turned off "Receive incoming calls", so
+// friends can still message them but cannot ring them. Absent means on.
+const callsOpen = new Map();
+
+function acceptsCalls(clientId) {
+  return callsOpen.get(clientId) !== false;
+}
+
 function clearWaitFallbackTimer(socketId) {
   const timer = waitFallbackTimers.get(socketId);
   if (timer) {
@@ -1216,6 +1224,30 @@ function clearWaitFallbackTimer(socketId) {
 const accounts = new Map(); // username (lowercase) -> { passwordHash, salt, nickname, googleId, email, google }
 const socketAuth = new Map(); // socketId -> logged-in username (lowercase)
 const googleAccounts = new Map(); // Google "sub" id -> username (lowercase)
+
+// --- Linking an account to the profile that holds the friends --------------
+// Credentials and profile are two different things here: the account is a
+// username and a password, while friends, friend chats, call history and
+// premium all hang off the anonymous clientId the browser generated on its
+// first visit. Signing in on a second device used to leave those behind,
+// because nothing tied the two together.
+//
+// So the first sign-in donates this device's profile to the account, and every
+// later sign-in is handed that same clientId back (with a fresh identity token,
+// since the new device has never held one for it) and adopts it. The link is
+// written once and never repointed - see store.setAccountClientId - so signing
+// in from a fresh browser can't swap the account's real profile for an empty
+// one.
+function linkAccountProfile(usernameLower, socketId) {
+  const profile = profiles.get(socketId);
+  const currentClientId = profile ? profile.clientId : null;
+  const linked = store.getAccountClientId(usernameLower)
+    || store.setAccountClientId(usernameLower, currentClientId);
+  // Nothing linked and nothing to link (the socket authenticated before it
+  // registered a profile): leave the browser on the clientId it already has.
+  if (!linked || linked === currentClientId) return {};
+  return { profileClientId: linked, identityToken: signIdentity(linked) };
+}
 
 // Persist the live accounts Map back to the durable store.
 function persistAccount(usernameLower) {
@@ -2323,6 +2355,9 @@ io.on('connection', (socket) => {
       username,
       nickname: nickname.slice(0, 24),
       email: signupEmail || '',
+      // The brand-new account adopts the profile this browser has been using,
+      // so the friends made before signing up stay put.
+      ...linkAccountProfile(username.toLowerCase(), socket.id),
       // Durable session token: the browser stores it and stays signed in
       // across page reloads, server restarts and deploys.
       sessionToken: store.createAuthSession(username.toLowerCase()),
@@ -2354,6 +2389,9 @@ io.on('connection', (socket) => {
       nickname: account.nickname,
       email: account.email || '',
       sessionToken: store.createAuthSession((username || '').toLowerCase()),
+      // Hands this device the account's profile, so a sign-in on a new phone
+      // arrives with the same friends and history as the old one.
+      ...linkAccountProfile((username || '').toLowerCase(), socket.id),
     });
   });
 
@@ -2375,6 +2413,7 @@ io.on('connection', (socket) => {
       username: usernameLower,
       nickname: account.nickname,
       email: account.email || '',
+      ...linkAccountProfile(usernameLower, socket.id),
     });
   });
 
@@ -2416,6 +2455,7 @@ io.on('connection', (socket) => {
         nickname: account.nickname,
         email: account.email || '',
         sessionToken: store.createAuthSession(username.toLowerCase()),
+        ...linkAccountProfile(username.toLowerCase(), socket.id),
       });
     } catch (err) {
       console.error('[google-auth] verification failed:', err.message);
@@ -2792,6 +2832,7 @@ io.on('connection', (socket) => {
     });
     clientSockets.set(clientId, socket.id);
     if (typeof data.hideStatus === 'boolean') statusHidden.set(clientId, data.hideStatus);
+    if (typeof data.acceptCalls === 'boolean') callsOpen.set(clientId, data.acceptCalls);
 
     socket.emit('profile', {
       username: profiles.get(socket.id).username,
@@ -2960,6 +3001,14 @@ io.on('connection', (socket) => {
         if (friendSocket) syncClientState(friendSocket, fid);
       }
     }
+  });
+
+  // "Receive incoming calls": when off, friends can still message but their
+  // call-backs are refused instead of ringing this device.
+  socket.on('set-call-availability', ({ accept } = {}) => {
+    const profile = profiles.get(socket.id);
+    if (!profile) return;
+    callsOpen.set(profile.clientId, accept !== false);
   });
 
   socket.on('leave', () => {
@@ -3490,6 +3539,11 @@ io.on('connection', (socket) => {
     if (isBlockedPair(me.clientId, targetClientId)) {
       return socket.emit('call-back-request-result', { ok: false, reason: 'blocked' });
     }
+    if (!acceptsCalls(targetClientId)) {
+      // Deliberately not "offline": they are here, they just aren't taking
+      // calls, and queueing one for later would ring them anyway.
+      return socket.emit('call-back-request-result', { ok: false, reason: 'calls-off' });
+    }
     const targetSocketId = clientSockets.get(targetClientId);
     const targetSocket = targetSocketId ? io.sockets.sockets.get(targetSocketId) : null;
     if (!targetSocket) {
@@ -3525,6 +3579,9 @@ io.on('connection', (socket) => {
     if (!me || !targetClientId) return;
     if (isBlockedPair(me.clientId, targetClientId)) {
       return socket.emit('call-back-later-result', { ok: false, reason: 'blocked', targetClientId });
+    }
+    if (!acceptsCalls(targetClientId)) {
+      return socket.emit('call-back-later-result', { ok: false, reason: 'calls-off', targetClientId });
     }
     pushNotification(targetClientId, {
       type: 'call_back_request',

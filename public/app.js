@@ -204,6 +204,14 @@ const headerAuth = document.getElementById('headerAuth');
 const headerLoginBtn = document.getElementById('headerLoginBtn');
 const headerSignupBtn = document.getElementById('headerSignupBtn');
 const headerAccountBtn = document.getElementById('headerAccountBtn');
+const headerLinkProfileBtn = document.getElementById('headerLinkProfileBtn');
+const linkProfileBanner = document.getElementById('linkProfileBanner');
+const linkProfileCard = document.getElementById('linkProfileCard');
+const linkProfileAvatar = document.getElementById('linkProfileAvatar');
+const linkProfileName = document.getElementById('linkProfileName');
+const linkProfileCreated = document.getElementById('linkProfileCreated');
+const linkProfileFriends = document.getElementById('linkProfileFriends');
+const acceptCallsCheckbox = document.getElementById('acceptCallsCheckbox');
 const accountModal = document.getElementById('accountModal');
 const closeAccountBtn = document.getElementById('closeAccountBtn');
 const accountStatus = document.getElementById('accountStatus');
@@ -550,12 +558,43 @@ function getClientId() {
   if (!id) {
     id = 'c_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
     localStorage.setItem('talklive_client_id', id);
+    // When this profile came into existence, so the sign-up screen can show
+    // what the new account is about to inherit. Only ever set alongside a
+    // freshly minted id: profiles from before this existed stay undated rather
+    // than claiming to have been created today.
+    localStorage.setItem('talklive_profile_created', String(Date.now()));
   }
   return id;
 }
 
+// Timestamp this browser's profile was created, or null if it predates the
+// bookkeeping above.
+function profileCreatedAt() {
+  const raw = Number(localStorage.getItem('talklive_profile_created'));
+  return Number.isFinite(raw) && raw > 0 ? raw : null;
+}
+
 function getIdentityToken() {
   return localStorage.getItem('talklive_identity_token') || '';
+}
+
+// The server hands a signing-in device the profile its account is linked to
+// (see linkAccountProfile on the server). Adopting it is what makes an account
+// worth having: the friends, chats and history made on the first device come
+// back on the second one instead of it starting empty. The identity token
+// arrives with it, because this browser has never held one for that profile.
+//
+// Returns true when the identity actually changed, which every caller follows
+// with a reload - half the app is already holding the old clientId.
+function adoptLinkedProfile(profileClientId, identityToken) {
+  if (!profileClientId || profileClientId === getClientId()) return false;
+  localStorage.setItem('talklive_client_id', profileClientId);
+  if (identityToken) localStorage.setItem('talklive_identity_token', identityToken);
+  else localStorage.removeItem('talklive_identity_token');
+  // This browser cannot know how old the adopted profile is, and the account
+  // is its record from here on.
+  localStorage.removeItem('talklive_profile_created');
+  return true;
 }
 
 // --- Pill group (radio-style dot buttons) ---
@@ -1099,6 +1138,9 @@ function renderHeaderAuthVisibility() {
   const landing = onLandingScreen();
   headerAuth.classList.toggle('hidden', !landing || !!accountNickname);
   headerAccountBtn.classList.toggle('hidden', !landing || !accountNickname);
+  if (headerLinkProfileBtn) {
+    headerLinkProfileBtn.classList.toggle('hidden', !landing || !profileWorthLinking());
+  }
 }
 
 function renderAccountState() {
@@ -1125,6 +1167,99 @@ function renderAccountState() {
   renderHeaderAuthVisibility();
   renderAvatarGrid();
   renderSettingsIdentity();
+  renderLinkProfilePrompts();
+}
+
+// --- "Keep this profile": linking the anonymous profile to an account -------
+// Everything a user builds here - their name, their friends, their chat
+// history - hangs off a clientId that exists only in this browser's storage,
+// so clearing site data or picking up another phone loses all of it. An
+// account is the only way to keep it, and these prompts are how we say so: a
+// pill in the header, a banner above the friends list, and a card on the
+// sign-up form showing exactly what the new account will inherit.
+//
+// Shown only while there is something to lose and no account to lose it to.
+
+function profileDisplayName() {
+  return accountNickname || tempUsername || (myProfile && myProfile.username) || '';
+}
+
+// A profile worth keeping: one that has friends, or a name the user chose.
+// Prompting someone who has done neither is nagging, not helping.
+function profileWorthLinking() {
+  if (accountNickname) return false;
+  return friendsData.length > 0 || !!tempUsername;
+}
+
+function formatProfileCreated(ts) {
+  try {
+    return new Date(ts).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  } catch (e) {
+    return new Date(ts).toDateString();
+  }
+}
+
+function renderLinkProfileCard() {
+  if (!linkProfileCard) return;
+  // The card describes a profile that is about to be inherited, so it has no
+  // place on the sign-up form of someone who is already signed in.
+  if (accountNickname) {
+    linkProfileCard.classList.add('hidden');
+    return;
+  }
+  linkProfileCard.classList.remove('hidden');
+  const name = profileDisplayName();
+  linkProfileName.textContent = name || t('linkProfileAnonymous');
+  linkProfileAvatar.innerHTML = (myAnimal && typeof Animals !== 'undefined' && Animals)
+    ? Animals.icon(myAnimal, 46)
+    : genderIcon(myAvatar, 46);
+  const created = profileCreatedAt();
+  linkProfileCreated.classList.toggle('hidden', !created);
+  if (created) linkProfileCreated.textContent = t('linkProfileCreated', { date: formatProfileCreated(created) });
+  linkProfileFriends.textContent = friendsData.length === 1
+    ? t('linkProfileFriendsOne')
+    : t('linkProfileFriends', { count: friendsData.length });
+}
+
+function renderLinkProfilePrompts() {
+  const show = profileWorthLinking();
+  if (headerLinkProfileBtn) {
+    // The header pill belongs to the landing screen only - mid-call the top
+    // bar is the conversation's, exactly as the sign-in buttons are.
+    headerLinkProfileBtn.classList.toggle('hidden', !show || !onLandingScreen());
+  }
+  if (linkProfileBanner) linkProfileBanner.classList.toggle('hidden', !show);
+  renderLinkProfileCard();
+}
+
+if (headerLinkProfileBtn) {
+  headerLinkProfileBtn.addEventListener('click', () => openAccountModal('signup'));
+}
+if (linkProfileBanner) {
+  linkProfileBanner.addEventListener('click', () => {
+    closeSidePanel(friendsDropdown, friendsOverlay);
+    openAccountModal('signup');
+  });
+}
+
+// --- "Receive incoming calls" ----------------------------------------------
+// Off means friends can still message, they just can't ring this device; the
+// server refuses their call-back rather than this client silently ignoring it,
+// so the caller is told instead of listening to a phone that never rings.
+let acceptCallsEnabled = localStorage.getItem('talklive_accept_calls') !== 'off';
+
+function renderAcceptCalls() {
+  if (acceptCallsCheckbox) acceptCallsCheckbox.checked = acceptCallsEnabled;
+}
+
+if (acceptCallsCheckbox) {
+  acceptCallsCheckbox.addEventListener('change', () => {
+    acceptCallsEnabled = acceptCallsCheckbox.checked;
+    localStorage.setItem('talklive_accept_calls', acceptCallsEnabled ? 'on' : 'off');
+    socket.emit('set-call-availability', { accept: acceptCallsEnabled });
+    showToast(acceptCallsEnabled ? t('acceptCallsOn') : t('acceptCallsOff'));
+    vibrate(15);
+  });
 }
 
 // --- Lightweight toast for brief confirmations (settings, copy, etc.) ---
@@ -1588,7 +1723,7 @@ if (document.readyState === 'loading') {
   initGoogleSignIn();
 }
 
-socket.on('google-auth-result', ({ ok, nickname, email, error, sessionToken: token }) => {
+socket.on('google-auth-result', ({ ok, nickname, email, error, sessionToken: token, profileClientId, identityToken }) => {
   endAccountRequest();
   if (!ok) {
     // Let the user try a different Google account instead of being stuck with
@@ -1596,7 +1731,7 @@ socket.on('google-auth-result', ({ ok, nickname, email, error, sessionToken: tok
     if (googleReady) window.google.accounts.id.disableAutoSelect();
     return showAccountStatus(error || t('errGoogleSignIn'), 'error');
   }
-  storeLogin(nickname, token);
+  storeLogin(nickname, token, profileClientId, identityToken);
   storeAccountEmail(email);
   showAccountStatus(t('statusLoggedIn', { name: nickname }), 'success');
   setTimeout(reloadPage, 500);
@@ -1773,24 +1908,27 @@ changePasswordBtn.addEventListener('click', () => {
 
 // Persist the login locally (nickname for instant UI, token for the server-side
 // session), then reload - the token signs the reloaded page straight back in.
-function storeLogin(nickname, token) {
+function storeLogin(nickname, token, profileClientId, identityToken) {
   localStorage.setItem('talklive_nickname', nickname);
   if (token) {
     sessionToken = token;
     localStorage.setItem('talklive_session', token);
   }
+  // Signing in on a new device: take on the profile the account is linked to.
+  // Every caller reloads straight after, which is what this needs.
+  adoptLinkedProfile(profileClientId, identityToken);
 }
 
-socket.on('login-result', ({ ok, nickname, email, error, sessionToken: token }) => {
+socket.on('login-result', ({ ok, nickname, email, error, sessionToken: token, profileClientId, identityToken }) => {
   endAccountRequest();
   if (!ok) return showAccountStatus(error, 'error');
-  storeLogin(nickname, token);
+  storeLogin(nickname, token, profileClientId, identityToken);
   storeAccountEmail(email);
   showAccountStatus(t('statusLoggedIn', { name: nickname }), 'success');
   setTimeout(reloadPage, 500);
 });
 
-socket.on('signup-result', ({ ok, nickname, email, error, sessionToken: token }) => {
+socket.on('signup-result', ({ ok, nickname, email, error, sessionToken: token, profileClientId, identityToken }) => {
   endAccountRequest();
   if (!ok) {
     showAccountStatus(error, 'error');
@@ -1802,7 +1940,7 @@ socket.on('signup-result', ({ ok, nickname, email, error, sessionToken: token })
     markInvalidField(about);
     return;
   }
-  storeLogin(nickname, token);
+  storeLogin(nickname, token, profileClientId, identityToken);
   storeAccountEmail(email);
   showAccountStatus(t('statusAccountCreated', { name: nickname }), 'success');
   setTimeout(reloadPage, 500);
@@ -1811,8 +1949,20 @@ socket.on('signup-result', ({ ok, nickname, email, error, sessionToken: token })
 // Answer to the silent re-login sent on every (re)connect. Success refreshes
 // the signed-in UI; failure (expired/revoked token) cleans up so the app never
 // pretends to be signed in when the server disagrees.
-socket.on('resume-session-result', ({ ok, nickname, email }) => {
+socket.on('resume-session-result', ({ ok, nickname, email, profileClientId, identityToken }) => {
   if (ok) {
+    // This device signed in elsewhere since it last loaded (or signed in
+    // before profiles were linked at all), so it is holding the wrong profile.
+    // Reload once on the right one; the guard keeps a server that keeps
+    // answering with an unexpected id from turning that into a reload loop.
+    if (adoptLinkedProfile(profileClientId, identityToken)) {
+      let reloaded = false;
+      try { reloaded = sessionStorage.getItem('talklive_profile_adopted') === '1'; } catch (e) { /* private mode */ }
+      if (!reloaded) {
+        try { sessionStorage.setItem('talklive_profile_adopted', '1'); } catch (e) { /* private mode */ }
+        return reloadPage();
+      }
+    }
     const emailChanged = (email || '') !== accountEmail;
     if (emailChanged) storeAccountEmail(email);
     if (nickname && nickname !== accountNickname) {
@@ -2024,6 +2174,8 @@ socket.on('state-sync', ({ friends: friendList, friendRequests: requestList, not
   notifData = notifList || [];
   renderFriendsList();
   renderNotifications();
+  // A first friend is exactly the moment the profile becomes worth keeping.
+  renderLinkProfilePrompts();
 });
 
 function notifIcon(type) {
@@ -3722,6 +3874,7 @@ function registerProfile() {
     avatar: myAvatar || undefined,
     animal: myAnimal || undefined,
     hideStatus: !statusVisible,
+    acceptCalls: acceptCallsEnabled,
   });
 }
 
@@ -4763,6 +4916,8 @@ socket.on('call-back-request-result', ({ ok, reason }) => {
     if (reason === 'offline') {
       markFriendCallOffline(clientId);
       showToast(t('friendWentOffline'));
+    } else if (reason === 'calls-off') {
+      showToast(t('friendCallsOff'));
     } else if (reason === 'blocked') {
       showError(t('errBlocked'));
     } else {
@@ -4772,6 +4927,7 @@ socket.on('call-back-request-result', ({ ok, reason }) => {
   }
   abandonCallBack();
   if (reason === 'offline') showError(t('errOffline'));
+  else if (reason === 'calls-off') showError(t('friendCallsOff'));
   else if (reason === 'busy') showError(t('errBusy'));
   else if (reason === 'blocked') showError(t('errBlocked'));
   else showError(t('errCallbackFailed'));
@@ -4785,7 +4941,9 @@ socket.on('call-back-later-result', ({ ok, reason, targetClientId }) => {
     chip.classList.remove('sent');
     chip.disabled = false;
   }
-  showError(reason === 'blocked' ? t('errBlocked') : t('errCallbackFailed'));
+  showError(reason === 'blocked' ? t('errBlocked')
+    : reason === 'calls-off' ? t('friendCallsOff')
+    : t('errCallbackFailed'));
 });
 
 socket.on('call-back-declined', ({ username }) => {
@@ -4973,6 +5131,7 @@ try {
 // Initial state: the Tap-to-Talk landing, a green idle Call button ready for
 // when the call screen opens, and an unchecked auto-call checkbox.
 autoCallCheckbox.checked = autoCallEnabled;
+renderAcceptCalls();
 setCallState('idle');
 setState('idle');
 setStatusText('statusIdle');
