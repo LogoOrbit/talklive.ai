@@ -2676,7 +2676,7 @@ function openFriendChat(friendClientId) {
   // Whoever is online right now is the baseline; only a drop from here is news.
   friendChatWasOnline = !!(friend && friend.online);
   friendChatPresence.classList.add('hidden');
-  friendChatInput.focus();
+  focusComposer(friendChatInput);
 }
 
 closeFriendChatBtn.addEventListener('click', () => {
@@ -4502,15 +4502,27 @@ function syncChatHeader() {
   }
 }
 
+// Put the caret in the box the person is about to type in when a panel with a
+// composer opens. Deferred a frame because these panels animate in from
+// visibility:hidden and a hidden element cannot take focus, and skipped on
+// touch: there the only effect is the on-screen keyboard popping up over the
+// messages, forcing the user to dismiss it just to read.
+function focusComposer(el) {
+  if (!el || el.disabled) return;
+  if (window.matchMedia && !window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    if (el.disabled) return;
+    try { el.focus({ preventScroll: true }); } catch (err) { el.focus(); }
+  }));
+}
+
 // --- Chat panel: slides in from the right; swipe right to close. ---
 function openChatPanel() {
   chatOpen = true;
   chatPanel.classList.add('open');
   chatOverlay.classList.remove('hidden');
   setChatUnread(0);
-  // Deliberately do NOT auto-focus the input: on mobile that pops the keyboard
-  // over the messages, forcing the user to dismiss it just to read. The keyboard
-  // now opens only when they actually tap the text box.
+  focusComposer(chatInput);
   scrollChatToBottom();
   if (typeof syncChatViewport === 'function') syncChatViewport();
   updateScrollLock();

@@ -488,6 +488,26 @@
   // Composer
   var typingThrottle = null;
 
+  // Put the caret in the box the person is about to type in - on a match, and
+  // whenever a panel with its own composer opens. Two details it has to get
+  // right, both of which used to make a plain .focus() do nothing:
+  //   - the box is usually revealed in the same tick (the side panels animate
+  //     in from visibility:hidden, and a hidden element cannot take focus), so
+  //     the call waits for the frame after the style lands;
+  //   - a disabled input silently refuses focus, so callers re-enable first.
+  // Skipped on touch, where the only effect is the on-screen keyboard leaping
+  // up over the conversation before you've read a word of it.
+  function focusComposer(el) {
+    if (!el || el.disabled) return;
+    if (window.matchMedia && !window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        if (el.disabled) return;
+        try { el.focus({ preventScroll: true }); } catch (err) { el.focus(); }
+      });
+    });
+  }
+
   // Emoji, GIFs, replies and reactions. Attached once; everything it owns is
   // built on first use, so the cost to a user who only types is four DOM nodes.
   var extras = window.TalkLiveChatExtras ? window.TalkLiveChatExtras.attach({
@@ -1084,7 +1104,7 @@
     });
     renderFriends();
     renderHistory();
-    friendChatInput.focus();
+    focusComposer(friendChatInput);
   }
   function closeFriendChat() {
     activeFriendChatId = null;
@@ -1251,6 +1271,11 @@
     searchAcked = true;
     currentPartner = data.partner;
     partnerHere = true;
+    // Before anything else: a disabled input cannot take focus, and the box is
+    // left disabled when a chat ends. It used to be re-enabled by a second
+    // 'matched' listener further down, which ran after the focus call below
+    // and so cost you a click into the box on every single match.
+    input.disabled = false;
     botWarned = false; lastIn = ''; repeat = 0;
     addFriendBtn.classList.remove('sent');
     addFriendBtn.disabled = false;
@@ -1291,7 +1316,7 @@
       }
       msgs.scrollTop = msgs.scrollHeight;
     }
-    input.focus();
+    focusComposer(input);
   });
 
   socket.on('waiting', function () { searchAcked = true; });
@@ -1343,8 +1368,8 @@
       addMessage(t('chatStageLeft'), 'system system-warn');
     }
   });
-  // re-enable the input on the next match
-  socket.on('matched', function () { input.disabled = false; });
+  // (The input is re-enabled at the top of the 'matched' handler above, where
+  // it happens before the focus call rather than after it.)
 
   socket.on('banned', function (data) {
     stage.innerHTML = '<div class="chat-blocked-full"><h1>' + escapeHtml(t('bannedTitle')) + '</h1><p>' + escapeHtml(t('bannedBody')) + '</p></div>';

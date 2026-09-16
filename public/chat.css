@@ -178,10 +178,24 @@ img { max-width: 100%; }
    than the buttons either side of it and made the bar look unfinished. */
 #topDefault .top-sub {
   margin-top: 0; width: fit-content;
-  color: var(--muted); font-weight: 600; letter-spacing: 0.01em;
+  /* Spacing is set per part rather than by one flex gap: an even gap on both
+     sides left the number floating between the dot and the word instead of
+     reading as "12 Online". */
+  gap: 0;
+  color: var(--muted); font-weight: 500; font-size: 12.5px; letter-spacing: 0;
 }
-/* The live dot breathes, so the count reads as a real-time number. */
-#topDefault .top-sub .online-dot { animation: livePulse 2.4s ease-in-out infinite; }
+/* The number is the content; the word after it is the label. Giving them the
+   same muted weight made the pair look like two unrelated fragments. */
+#topDefault #onlineCount {
+  color: var(--text); font-weight: 700;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
+  margin-right: 4px;
+}
+#topDefault .top-sub .online-dot {
+  width: 6px; height: 6px; margin-right: 7px;
+  /* The live dot breathes, so the count reads as a real-time number. */
+  animation: livePulse 2.4s ease-in-out infinite;
+}
 @keyframes livePulse {
   0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--green) 55%, transparent); }
   70%      { box-shadow: 0 0 0 6px color-mix(in srgb, var(--green) 0%, transparent); }
@@ -489,6 +503,8 @@ img { max-width: 100%; }
   /* Dot and number carry the meaning; the word is the decoration. Same trade
      the voice app's people-count makes at the same width. */
   #topDefault .top-sub > span:last-child { display: none; }
+  /* Nothing left to sit next to, so the gap after the number goes too. */
+  #topDefault #onlineCount { margin-right: 0; }
 }
 @media (max-width: 480px) {
   .topbar { gap: 8px; padding-left: 10px; padding-right: 10px; }
@@ -528,6 +544,14 @@ img { max-width: 100%; }
   position: fixed; inset: 0; background: rgba(5, 7, 15, 0.65);
   display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 100;
 }
+/* "End the game?" is raised from the game window itself (z-index 500), so it
+   has to sit above it. At the shared modal z-index it opened behind the board,
+   which made the game's close button look completely dead: you pressed the
+   cross, the confirmation appeared underneath, and nothing moved.
+   An incoming call lands over a game too, so it gets the same treatment. */
+#tttEndConfirmModal,
+#callIncomingModal { z-index: 700; }
+
 .modal-box {
   width: 100%; max-width: 400px; max-height: 85vh; background: var(--bg-2);
   border: 1px solid var(--line); border-radius: 16px; display: flex; flex-direction: column;
