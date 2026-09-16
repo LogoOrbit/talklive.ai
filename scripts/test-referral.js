@@ -1,20 +1,33 @@
 /*
  * End-to-end test of the referral loop, driven entirely through Socket.IO
- * against a running server - the same surface a browser uses, so it exercises
- * the real claim, match, qualify and reward path rather than the store in
+ * against a real server - the same surface a browser uses, so it exercises the
+ * real claim, match, qualify and reward path rather than the store in
  * isolation.
  *
  * Run:
- *   REAL_CONVERSATION_MS=1500 PORT=5099 node server/index.js &
- *   URL=http://localhost:5099 node scripts/test-referral.js
+ *   node scripts/test-referral.js      (or: npm run test:referral)
+ *
+ * It boots its own server against a throwaway DATA_DIR, exactly like
+ * test-matchmaking.js. It used to expect one to be started by hand, so the npm
+ * script failed on the first assertion for anyone who did not read this header.
+ * Point it at a server you started yourself with URL=http://localhost:5099.
  *
  * REAL_CONVERSATION_MS shortens the "was this a real conversation" threshold so
  * the test does not have to hold a call open for a minute. Everything else is
  * production behaviour.
  */
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const { spawn } = require('child_process');
 const { io } = require('socket.io-client');
 
-const URL = process.env.URL || 'http://localhost:5099';
+const OWN_PORT = 5099 + Math.floor(Math.random() * 300);
+const URL = process.env.URL || `http://127.0.0.1:${OWN_PORT}`;
+// Only boot a server when the caller did not point us at one.
+const BOOT_OWN_SERVER = !process.env.URL;
+const DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'tl-referral-'));
+const THRESHOLD_MS = Number(process.env.REAL_CONVERSATION_MS) || 1500;
 let failed = 0;
 const ok = (name, cond) => { if (!cond) failed++; console.log(cond ? 'PASS' : 'FAIL', name); };
 
@@ -42,7 +55,36 @@ async function until(fn, ms = 8000) {
   return false;
 }
 
+let server = null;
+function bootServer() {
+  if (!BOOT_OWN_SERVER) return;
+  server = spawn(process.execPath, [path.join(__dirname, '..', 'server', 'index.js')], {
+    env: {
+      ...process.env,
+      PORT: String(OWN_PORT),
+      DATA_DIR,
+      REAL_CONVERSATION_MS: String(THRESHOLD_MS),
+      NODE_ENV: 'development',
+    },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  // Swallowed rather than inherited: a passing run should print assertions, not
+  // the server's boot banner.
+  server.stdout.on('data', () => {});
+  server.stderr.on('data', () => {});
+}
+
+function finish(code) {
+  if (server) { try { server.kill('SIGKILL'); } catch (_) { /* already gone */ } }
+  fs.rmSync(DATA_DIR, { recursive: true, force: true });
+  process.exit(code);
+}
+
 (async () => {
+  bootServer();
+  for (let i = 0; i < 40; i++) {
+    try { await fetch(URL + '/healthz'); break; } catch (_) { await wait(250); }
+  }
   const stamp = Date.now();
   const owner = connect(`ownerE2E${stamp}`);
   const friend = connect(`friendE2E${stamp}`);
@@ -88,15 +130,24 @@ async function until(fn, ms = 8000) {
   ok('an instant skip does not qualify', owner.referral.qualified === 0);
   ok('no reward for an instant skip', owner.reward === null);
 
-  // Now a conversation that lasts past the threshold.
+  // Now a conversation that lasts past the threshold - with someone new.
+  //
+  // Not with the same stranger: a pair that just parted is deliberately held
+  // apart for a minute (see PAIR_COOLDOWN_MS), so asking these two to rematch
+  // asks the matcher to break the rule the matchmaking test pins down. This
+  // check was failing for exactly that reason, and the referral loop does not
+  // care who the second conversation is with.
+  const secondPartner = connect(`secondE2E${stamp}`);
+  ok('a second stranger connected', await until(() => secondPartner.socket.connected));
+  secondPartner.socket.emit('register', { clientId: secondPartner.clientId });
+  await wait(300);
   friend.matched = false;
-  stranger.matched = false;
   friend.socket.emit('find-partner', { mode: 'talk' });
   await wait(300);
-  stranger.socket.emit('find-partner', { mode: 'talk' });
-  ok('rematched for the real conversation', await until(() => friend.matched && stranger.matched));
+  secondPartner.socket.emit('find-partner', { mode: 'talk' });
+  ok('matched for the real conversation', await until(() => friend.matched && secondPartner.matched));
 
-  const threshold = Number(process.env.REAL_CONVERSATION_MS) || 60000;
+  const threshold = THRESHOLD_MS;
   await wait(threshold + 600);
   friend.socket.emit('leave');
 
@@ -115,18 +166,20 @@ async function until(fn, ms = 8000) {
 
   // A second qualifying call from the same invited user must not pay again.
   owner.reward = null;
+  const thirdPartner = connect(`thirdE2E${stamp}`);
+  thirdPartner.socket.emit('register', { clientId: thirdPartner.clientId });
+  await wait(300);
   friend.matched = false;
-  stranger.matched = false;
   friend.socket.emit('find-partner', { mode: 'talk' });
   await wait(300);
-  stranger.socket.emit('find-partner', { mode: 'talk' });
-  await until(() => friend.matched && stranger.matched);
+  thirdPartner.socket.emit('find-partner', { mode: 'talk' });
+  ok('matched for a second qualifying call', await until(() => friend.matched && thirdPartner.matched));
   await wait(threshold + 600);
   friend.socket.emit('leave');
   await wait(1200);
   ok('a referral pays out exactly once', owner.reward === null);
 
-  for (const c of [owner, friend, stranger]) c.socket.close();
+  for (const c of [owner, friend, stranger, secondPartner, thirdPartner]) c.socket.close();
   console.log(failed ? `\n${failed} FAILED` : '\nall passed');
-  process.exit(failed ? 1 : 0);
-})().catch((err) => { console.error('ERR', err); process.exit(1); });
+  finish(failed ? 1 : 0);
+})().catch((err) => { console.error('ERR', err); finish(1); });
