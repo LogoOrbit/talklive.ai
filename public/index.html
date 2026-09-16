@@ -15,9 +15,9 @@
      rather than after it - the sooner it lands, the sooner the hero paints.
      Analytics and ad tags are loaded at the end of <body> instead of here so
      they stop competing for mobile bandwidth during Largest Contentful Paint. -->
-<link rel="stylesheet" href="style.css?v=20260915ui10" />
-<link rel="stylesheet" href="chat-extras.css?v=20260915ui10" />
-<link rel="stylesheet" href="games.css?v=20260915ui10" />
+<link rel="stylesheet" href="style.css?v=20260916brand1" />
+<link rel="stylesheet" href="chat-extras.css?v=20260916brand1" />
+<link rel="stylesheet" href="games.css?v=20260916brand1" />
 <script defer src="/config.js"></script>
 <!-- Google Identity Services, deferred so it never blocks first paint. app.js
      waits for it (and for /config.js) before rendering the sign-in buttons. -->
@@ -216,9 +216,31 @@
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
           </svg>
         </button>
+        <!-- The TalkLive lockup. Identical markup, mark and wordmark on every
+             screen of the product (/, /call and /chat) so a visitor always
+             knows which site they are on: the tile is public/favicon.svg drawn
+             inline, and the network dot sits in the same top-right corner the
+             favicon puts it in. Never hidden - not on a phone, not mid-call. -->
         <button type="button" id="brandHome" class="brand" data-i18n-title="reloadHome" title="Reload TalkLive">
-          <!-- Network status: green dot when online, red when the connection drops. -->
-          <span id="brandDot" class="brand-dot is-online" data-i18n-title="netOnline" title="You are online"></span>
+          <span class="brand-logo" aria-hidden="true">
+            <svg viewBox="0 0 64 64" focusable="false">
+              <defs>
+                <linearGradient id="tlBrandGrad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#6c5ce7"/>
+                  <stop offset="1" stop-color="#00d4ff"/>
+                </linearGradient>
+              </defs>
+              <rect width="64" height="64" rx="15" fill="url(#tlBrandGrad)"/>
+              <g fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round">
+                <line x1="20" y1="26" x2="20" y2="38"/>
+                <line x1="28" y1="20" x2="28" y2="44"/>
+                <line x1="36" y1="24" x2="36" y2="40"/>
+                <line x1="44" y1="28" x2="44" y2="36"/>
+              </g>
+            </svg>
+            <!-- Network status: green dot when online, red when the connection drops. -->
+            <span id="brandDot" class="brand-dot is-online" data-i18n-title="netOnline" title="You are online"></span>
+          </span>
           <span class="brand-name">TalkLive</span>
         </button>
       </div>
@@ -1595,8 +1617,8 @@
        browser finish parsing and paint the page first. -->
   <script defer src="/socket.io/socket.io.js"></script>
   <script defer src="countries.js?v=20260828fix"></script>
-  <script defer src="i18n.js?v=20260915ui10"></script>
-  <script defer src="animals.js?v=20260915ui10"></script>
+  <script defer src="i18n.js?v=20260916brand1"></script>
+  <script defer src="animals.js?v=20260916brand1"></script>
   <script defer src="moderation.js?v=20260705b"></script>
   <script defer src="error-reporter.js?v=20260823ui"></script>
   <script>
@@ -1630,9 +1652,9 @@
       audio.addEventListener('play', function () { setState(true); });
     })();
   </script>
-  <script defer src="chat-extras.js?v=20260915ui10"></script>
-  <script defer src="games.js?v=20260915ui10"></script>
-  <script defer src="app.js?v=20260915ui11"></script>
+  <script defer src="chat-extras.js?v=20260916brand1"></script>
+  <script defer src="games.js?v=20260916brand1"></script>
+  <script defer src="app.js?v=20260916brand1"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the
