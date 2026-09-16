@@ -5378,6 +5378,9 @@ body.panel-open .side-panel {
   align-items: center;
   gap: 10px;
 }
+/* Three children now (avatar, name block, close) rather than two, so the name
+   block takes the slack instead of space-between spreading all three. */
+.chat-side-header .chat-peer { margin-inline-end: auto; }
 
 .chat-peer {
   display: flex;
@@ -7027,3 +7030,160 @@ html.perf-lite .side-panel { box-shadow: none; }
   width: auto;
   margin: 0 14px 10px;
 }
+
+/* ============================================================================
+   Message furniture: day separators, per-bubble times, grouped turns, the
+   empty-chat panel and the friend rename sheet. Shared by both chat boxes on
+   this page (the in-call stranger panel and the friend chat), with the same
+   markup the text app at /chat uses in its own stylesheet.
+   ========================================================================== */
+
+/* "Today" / "Yesterday" / "Monday" / "4 Mar" - a centred pill, the way every
+   messenger marks where one day ends and the next begins. */
+.chat-day-divider {
+  align-self: center;
+  margin: 10px 0 4px;
+  max-width: 90%;
+}
+.chat-day-divider span {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+[data-theme="light"] .chat-day-divider span { background: rgba(26, 32, 51, 0.07); }
+
+/* Time (+ delivery ticks on my own messages) in the bottom corner of a bubble.
+   Nudged onto the same baseline as the last line of text, as WhatsApp does, so
+   a short message keeps its time on the same row instead of growing a line. */
+.chat-msg-meta {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-end;
+  transform: translateY(3px);
+}
+.chat-msg-time {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  opacity: 0.75;
+}
+.chat-msg.me .chat-msg-time { color: rgba(255, 255, 255, 0.85); }
+.chat-msg.them .chat-msg-time { color: var(--muted); opacity: 1; }
+/* A bubble carrying a GIF stacks vertically, so the time belongs under the
+   media rather than wedged beside it. */
+.chat-msg.cx-has-gif .chat-msg-meta { align-self: flex-end; transform: none; }
+
+/* Consecutive messages from the same person within a few minutes read as one
+   turn: tighter spacing and a squared-off inner corner, so the thread has a
+   rhythm instead of a uniform ladder of identical rounded boxes. */
+.chat-msg.is-grouped { margin-top: -4px; }
+.chat-msg.me.is-grouped { border-top-right-radius: 6px; }
+.chat-msg.them.is-grouped { border-top-left-radius: 6px; }
+
+/* --- The empty chat ------------------------------------------------------- */
+.chat-empty {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px 22px;
+  text-align: center;
+  overflow-y: auto;
+}
+.chat-empty.hidden { display: none; }
+/* While the placeholder stands in, the (empty) message list keeps no space. */
+.chat-side-body.is-empty .chat-messages { display: none; }
+.chat-empty-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  background: rgba(108, 92, 231, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.chat-empty-title {
+  margin: 4px 0 0;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+}
+.chat-empty-body {
+  margin: 0;
+  max-width: 30ch;
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.chat-empty-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.chat-ice-chip {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 9px 15px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
+}
+.chat-ice-chip:hover {
+  background: rgba(108, 92, 231, 0.2);
+  border-color: var(--accent);
+}
+.chat-ice-chip:active { transform: scale(0.95); }
+[data-theme="light"] .chat-ice-chip {
+  border-color: rgba(26, 32, 51, 0.14);
+  background: rgba(26, 32, 51, 0.04);
+}
+
+/* The stranger's spirit animal in the chat header, left of their name. */
+.chat-peer-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border-radius: 50%;
+  background: rgba(108, 92, 231, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* --- Friend rename -------------------------------------------------------- */
+/* Same sizing the Report button gives its flag - an inline SVG with no width
+   attribute otherwise collapses to a sliver next to the label. */
+#friendProfileRenameBtn svg {
+  width: 16px;
+  height: 16px;
+  margin-inline-end: 6px;
+}
+
+.friend-profile-realname {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-style: italic;
+}
+.rename-actions { margin-top: 14px; }
+#renameFriendInput { width: 100%; }

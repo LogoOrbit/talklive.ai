@@ -3318,8 +3318,11 @@ io.on('connection', (socket) => {
         replyTo: msg.replyTo || undefined,
       });
     }
+    // The server's clock is the only one both sides agree on, so it stamps the
+    // message rather than letting each browser date it by its own (often
+    // wrong, sometimes wildly wrong) local time.
     io.to(partnerId).emit('chat-message', {
-      text: msg.text, id: msg.id, replyTo: msg.replyTo, gif: msg.gif,
+      text: msg.text, id: msg.id, replyTo: msg.replyTo, gif: msg.gif, ts: now,
     });
   });
 
@@ -3449,6 +3452,25 @@ io.on('connection', (socket) => {
     syncClientState(socket, me.clientId);
     const friendSocket = getSocketByClientId(friendClientId);
     if (friendSocket) syncClientState(friendSocket, friendClientId);
+  });
+
+  // Rename a friend. The nickname is written only onto *this* user's copy of
+  // the friendship, so it is a private label: the friend is never told, never
+  // sees it, and keeps whatever name they chose for themselves. Clearing it
+  // (empty string) falls back to their own name everywhere.
+  socket.on('rename-friend', ({ friendClientId, nickname } = {}) => {
+    const me = profiles.get(socket.id);
+    friendClientId = validId(friendClientId);
+    if (!me || !friendClientId) return;
+    const mine = friends.get(me.clientId);
+    const info = mine && mine.get(friendClientId);
+    if (!info) return; // not a friend of theirs - nothing to label
+    const clean = typeof nickname === 'string' ? nickname.trim().slice(0, 24) : '';
+    if (clean) info.nickname = clean;
+    else delete info.nickname;
+    persistSocial();
+    store.recordFeature('friend_rename');
+    syncClientState(socket, me.clientId);
   });
 
   socket.on('block-friend', ({ friendClientId } = {}) => {

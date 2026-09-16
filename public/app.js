@@ -162,6 +162,8 @@ const friendProfileOverlay = document.getElementById('friendProfileOverlay');
 const closeFriendProfileBtn = document.getElementById('closeFriendProfileBtn');
 const friendProfileAvatar = document.getElementById('friendProfileAvatar');
 const friendProfileName = document.getElementById('friendProfileName');
+const friendProfileRealName = document.getElementById('friendProfileRealName');
+const friendProfileRenameBtn = document.getElementById('friendProfileRenameBtn');
 const friendProfileStatus = document.getElementById('friendProfileStatus');
 const friendProfileChatBtn = document.getElementById('friendProfileChatBtn');
 const friendProfileRemoveBtn = document.getElementById('friendProfileRemoveBtn');
@@ -556,7 +558,23 @@ let autoCallEnabled = false;
 let wasConnected = false;
 
 // --- Friends / notifications / friend chat / call-back state ---
-let friendsData = [];        // [{ clientId, username, countryCode, temporary, online }]
+let friendsData = [];        // [{ clientId, username, nickname, countryCode, temporary, online }]
+
+// What to call a friend. A nickname is a private label this account put on
+// them - the friend is never told and keeps their own name everywhere else -
+// so every friend-facing surface goes through here rather than reading
+// .username directly, and they all change the moment one is set.
+function friendLabel(person) {
+  if (!person) return '';
+  return (person.nickname && person.nickname.trim()) || person.username || '';
+}
+
+// The same, for a bare clientId: notifications and call-backs arrive carrying
+// whatever name the *server* knows, which is never the private one.
+function labelForClientId(clientId, fallback) {
+  const friend = friendsData.find((f) => f.clientId === clientId);
+  return (friend && friendLabel(friend)) || fallback || '';
+}
 let friendRequestsData = []; // [{ clientId, username, countryCode, temporary, ts }]
 // Requests this user has sent and not heard back from, so a profile can say
 // "Pending" rather than offering to ask the same person twice.
@@ -1309,7 +1327,7 @@ function renderFriendChatPresence() {
     return;
   }
   if (!friendChatWasOnline) return;
-  friendChatPresenceTitle.textContent = t('peerDisconnected', { name: (friend && friend.username) || t('stranger') });
+  friendChatPresenceTitle.textContent = t('peerDisconnected', { name: friendLabel(friend) || t('stranger') });
   friendChatPresenceSub.textContent = t('peerDisconnectedChatSub');
   friendChatPresence.classList.remove('hidden');
 }
@@ -2229,14 +2247,14 @@ function renderFriendsList() {
     item.innerHTML = `
       <button type="button" class="friend-avatar-btn" data-id="${escapeHtml(f.clientId)}" title="${escapeHtml(t('profile'))}" aria-label="${escapeHtml(t('profile'))}">${genderIcon(f.avatar, 30)}</button>
       <div class="friend-item-info friend-row-main" data-id="${escapeHtml(f.clientId)}">
-        <span class="friend-item-name">${getFlagImg(f.countryCode)} ${escapeHtml(f.username)}</span>
+        <span class="friend-item-name">${getFlagImg(f.countryCode)} ${escapeHtml(friendLabel(f))}</span>
         <span class="friend-status-text ${f.online ? 'is-online' : 'is-offline'}">${escapeHtml(f.online ? t('online') : t('offline'))}</span>
         ${unread > 0 ? `<span class="unread-badge">${unread}</span>` : ''}
       </div>
       <button type="button" class="friend-msg-btn" data-id="${escapeHtml(f.clientId)}" title="${escapeHtml(t('chat'))}" aria-label="${escapeHtml(t('chat'))}">
         ${ICONS.chat}
       </button>
-      <button type="button" class="friend-call-btn" data-id="${escapeHtml(f.clientId)}" data-name="${escapeHtml(f.username)}" title="${escapeHtml(t('callBack'))}" aria-label="${escapeHtml(t('callBack'))}">
+      <button type="button" class="friend-call-btn" data-id="${escapeHtml(f.clientId)}" data-name="${escapeHtml(friendLabel(f))}" title="${escapeHtml(t('callBack'))}" aria-label="${escapeHtml(t('callBack'))}">
         ${FRIEND_CALL_SVG}
       </button>
     `;
@@ -2322,13 +2340,21 @@ function openUserProfile(person) {
   activeProfileFriendId = person.clientId;
   activeProfileRelation = relation;
   friendProfileAvatar.innerHTML = genderIcon(known.avatar, 72);
-  friendProfileName.innerHTML = `${getFlagImg(known.countryCode)} ${escapeHtml(known.username || '')}`;
+  friendProfileName.innerHTML = `${getFlagImg(known.countryCode)} ${escapeHtml(friendLabel(known))}`;
   const online = !!known.online;
   friendProfileStatus.innerHTML = relation === 'friend'
     ? `<span class="friend-status-text ${online ? 'is-online' : 'is-offline'}">${escapeHtml(online ? t('online') : t('offline'))}</span>`
     : `<span class="friend-relation-text">${escapeHtml(t('profileRelation_' + relation))}</span>`;
 
+  // "Really <their own name>" - only when this account has renamed them, so a
+  // friend you gave a private label to is still identifiable by the name they
+  // chose for themselves.
+  const renamed = relation === 'friend' && friend && friend.nickname && friend.nickname !== friend.username;
+  friendProfileRealName.classList.toggle('hidden', !renamed);
+  if (renamed) friendProfileRealName.textContent = t('realName', { name: friend.username });
+
   friendProfileChatBtn.classList.toggle('hidden', relation !== 'friend');
+  friendProfileRenameBtn.classList.toggle('hidden', relation !== 'friend');
   friendProfileRemoveBtn.classList.toggle('hidden', relation !== 'friend');
   friendProfileBlockBtn.classList.toggle('hidden', relation !== 'friend');
   friendProfileAddBtn.classList.toggle('hidden', relation !== 'stranger');
@@ -2352,6 +2378,54 @@ friendProfileChatBtn.addEventListener('click', () => {
   if (!activeProfileFriendId) return;
   closeSidePanel(friendProfileModal, friendProfileOverlay);
   openFriendChat(activeProfileFriendId);
+});
+
+// --- Renaming a friend ----------------------------------------------------
+// Purely this account's own label. The server writes it onto this user's copy
+// of the friendship only, so the friend is never notified and never sees it;
+// clearing the field puts their own name back everywhere.
+const renameFriendModal = document.getElementById('renameFriendModal');
+const renameFriendInput = document.getElementById('renameFriendInput');
+const renameFriendHint = document.getElementById('renameFriendHint');
+
+function openRenameFriend() {
+  const friend = friendsData.find((f) => f.clientId === activeProfileFriendId);
+  if (!friend) return;
+  renameFriendHint.textContent = t('renameFriendHint', { name: friend.username });
+  renameFriendInput.value = friend.nickname || '';
+  openModal(renameFriendModal);
+  requestAnimationFrame(() => { try { renameFriendInput.focus(); renameFriendInput.select(); } catch (e) {} });
+}
+
+function commitRenameFriend(nickname) {
+  if (!activeProfileFriendId) return;
+  const friend = friendsData.find((f) => f.clientId === activeProfileFriendId);
+  socket.emit('rename-friend', { friendClientId: activeProfileFriendId, nickname });
+  // Paint it locally so the panels behind the modal change with the tap; the
+  // state-sync that follows says exactly the same thing.
+  if (friend) {
+    if (nickname) friend.nickname = nickname;
+    else delete friend.nickname;
+    renderFriendsList();
+    openUserProfile(friend);
+  }
+  closeModal(renameFriendModal);
+  showToast(nickname
+    ? t('renameFriendSaved', { name: nickname })
+    : t('renameFriendCleared'));
+}
+
+friendProfileRenameBtn.addEventListener('click', openRenameFriend);
+document.getElementById('renameFriendCloseBtn').addEventListener('click', () => closeModal(renameFriendModal));
+document.getElementById('renameFriendSaveBtn').addEventListener('click', () => {
+  commitRenameFriend(renameFriendInput.value.trim().slice(0, 24));
+});
+document.getElementById('renameFriendResetBtn').addEventListener('click', () => commitRenameFriend(''));
+renameFriendInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    commitRenameFriend(renameFriendInput.value.trim().slice(0, 24));
+  }
 });
 
 friendProfileRemoveBtn.addEventListener('click', async () => {
@@ -2442,10 +2516,13 @@ function notifIcon(type) {
 }
 
 function notifText(n) {
+  // Someone you have renamed should read as the name you gave them here too,
+  // otherwise a notification is the one place their old name resurfaces.
+  const name = escapeHtml(labelForClientId(n.fromClientId, n.username));
   switch (n.type) {
-    case 'friend_request': return t('notifWantsFriends', { name: escapeHtml(n.username) });
-    case 'friend_accepted': return t('notifAccepted', { name: escapeHtml(n.username) });
-    case 'call_back_request': return t('notifWantsCallback', { name: escapeHtml(n.username) });
+    case 'friend_request': return t('notifWantsFriends', { name });
+    case 'friend_accepted': return t('notifAccepted', { name });
+    case 'call_back_request': return t('notifWantsCallback', { name });
     default: return escapeHtml(t('notification'));
   }
 }
@@ -2616,15 +2693,25 @@ function renderFriendChatMessages() {
   const myId = getClientId();
   messages.forEach((m) => {
     const mine = m.from === myId;
+    const ts = m.ts || Date.now();
+    // A stored chat can span weeks, so this is where day separators earn their
+    // keep: "Yesterday" above the first message of yesterday, a weekday name
+    // for the past week, a date beyond that.
+    appendDayDivider(friendChatMessages, ts);
     const el = document.createElement('div');
     el.className = `chat-msg ${mine ? 'me' : 'them'}`;
+    el.dataset.ts = String(ts);
     if (m.text) {
       const body = document.createElement('span');
       body.className = 'chat-msg-text';
       body.textContent = m.text;
       el.appendChild(body);
     }
+    // Delivery ticks are the friend chat's own business (it has real "seen"
+    // state below), so the bubble only carries the time.
+    appendMessageMeta(el, ts, false);
     friendChatMessages.appendChild(el);
+    applyGrouping(friendChatMessages, el, mine ? 'me' : 'them', ts);
     if (friendExtras) {
       friendExtras.decorate(el, {
         id: m.id, mine, text: m.text, replyTo: m.replyTo, gif: m.gif,
@@ -2664,7 +2751,7 @@ function applyFriendChatLock() {
 function openFriendChat(friendClientId) {
   activeFriendChatId = friendClientId;
   const friend = friendsData.find((f) => f.clientId === friendClientId);
-  friendChatTitle.textContent = friend ? t('chatWith', { name: friend.username }) : t('chat');
+  friendChatTitle.textContent = friend ? t('chatWith', { name: friendLabel(friend) }) : t('chat');
   closeSidePanel(friendsDropdown, friendsOverlay);
   closeSidePanel(friendProfileModal, friendProfileOverlay);
   openSidePanel(friendChatModal, friendChatOverlay);
@@ -3512,23 +3599,77 @@ function setSubTextFading(key, vars, delayMs = 5000) {
   }, delayMs);
 }
 
+// --- Message time: every bubble is stamped, every new day gets a separator ---
+// The stranger chat is a relay, so a message carries the server's timestamp
+// (meta.ts) and only falls back to this browser's clock when it does not - two
+// phones with two wrong clocks should still agree on the order of a
+// conversation they are both in.
+const Clock = () => window.TalkLiveTime || null;
+
+// Drops a "Today / Yesterday / Monday / 4 Mar" row above the first message of
+// a day. The last stamp is read off the list itself rather than held in a
+// variable, so it survives clearChat(), a re-render, and messages arriving out
+// of order relative to a panel being rebuilt.
+function appendDayDivider(container, ts, className) {
+  const clock = Clock();
+  if (!clock) return;
+  const rows = container.querySelectorAll('[data-day]');
+  const last = rows.length ? rows[rows.length - 1].dataset.day : null;
+  const stamp = clock.dayStamp(ts);
+  if (last === stamp) return;
+  container.appendChild(clock.dividerNode(ts, className || 'chat-day-divider'));
+}
+
+// The small time (and, for my own messages, the delivery ticks) that sits in
+// the bottom corner of a bubble.
+function appendMessageMeta(el, ts, withTicks) {
+  const clock = Clock();
+  const meta = document.createElement('span');
+  meta.className = 'chat-msg-meta';
+  const time = document.createElement('span');
+  time.className = 'chat-msg-time';
+  time.textContent = clock ? clock.time(ts) : '';
+  // The full date is only ever a hover/long-press away.
+  try { time.title = new Date(ts).toLocaleString(); } catch (e) { /* invalid date */ }
+  meta.appendChild(time);
+  if (withTicks) {
+    const ticks = document.createElement('span');
+    ticks.className = 'chat-msg-ticks sending';
+    ticks.innerHTML = '<svg viewBox="0 0 16 11" aria-hidden="true"><path d="M11.1.6 4.9 8.4 1.9 5.4.5 6.8l4.4 4.4L12.5 2z"/><path d="M15.6.6 9.4 8.4l-.9-.9-1 1.3 1.9 1.9L17 2z"/></svg>';
+    meta.appendChild(ticks);
+  }
+  el.appendChild(meta);
+  return meta;
+}
+
+// Consecutive messages from the same side within a few minutes are one turn in
+// the conversation, so they tuck together instead of each floating alone.
+const GROUP_WINDOW_MS = 3 * 60 * 1000;
+function applyGrouping(container, el, kind, ts) {
+  const prev = el.previousElementSibling;
+  if (!prev || !prev.classList.contains('chat-msg')) return;
+  if (!prev.classList.contains(kind) || kind === 'system') return;
+  const prevTs = Number(prev.dataset.ts);
+  if (prevTs && ts - prevTs > GROUP_WINDOW_MS) return;
+  el.classList.add('is-grouped');
+}
+
 // Returns the created element so the caller can transition its delivery state
 // (WhatsApp-style: sending → sent). Uses a transform/opacity entrance animation
 // that stays on the compositor for a smooth 60fps pop with no layout jank.
 function addChatMessage(text, kind, meta) {
+  const ts = (meta && meta.ts) || Date.now();
+  if (kind !== 'system') appendDayDivider(chatMessages, ts);
   const el = document.createElement('div');
   // Sent messages get the punchy "pop" keyframe; received/system slide in.
   el.className = `chat-msg ${kind}` + (kind === 'me' ? ' chat-msg-pop' : ' chat-msg-enter');
+  el.dataset.ts = String(ts);
   const bubble = document.createElement('span');
   bubble.className = 'chat-msg-text';
   bubble.textContent = text;
   el.appendChild(bubble);
-  if (kind === 'me') {
-    const ticks = document.createElement('span');
-    ticks.className = 'chat-msg-ticks sending';
-    ticks.innerHTML = '<svg viewBox="0 0 16 11" aria-hidden="true"><path d="M11.1.6 4.9 8.4 1.9 5.4.5 6.8l4.4 4.4L12.5 2z"/><path d="M15.6.6 9.4 8.4l-.9-.9-1 1.3 1.9 1.9L17 2z"/></svg>';
-    el.appendChild(ticks);
-  }
+  if (kind !== 'system') appendMessageMeta(el, ts, kind === 'me');
+  setChatEmptyVisible(false);
   // Quote, GIF and reaction row, when the message carries them. After the ticks
   // so a GIF renders below the delivery state rather than shoving it down.
   if (meta && strangerExtras) {
@@ -3537,6 +3678,7 @@ function addChatMessage(text, kind, meta) {
     });
   }
   chatMessages.appendChild(el);
+  applyGrouping(chatMessages, el, kind, ts);
   if (kind !== 'me') {
     // Double rAF so the enter animation is guaranteed to run from its start frame.
     requestAnimationFrame(() => {
@@ -3550,6 +3692,7 @@ function addChatMessage(text, kind, meta) {
 function clearChat() {
   chatMessages.innerHTML = '';
   if (strangerExtras) strangerExtras.reset();
+  syncChatEmpty();
   typingIndicator.classList.add('hidden');
   if (typeof setChatUnread === 'function') setChatUnread(0);
 }
@@ -4490,6 +4633,7 @@ function setChatUnread(n) {
 }
 
 // --- Chat peer header: partner name + flag + online/offline while on a call ---
+const chatPeerAvatar = document.getElementById('chatPeerAvatar');
 const chatPeerName = document.getElementById('chatPeerName');
 const chatPeerFlag = document.getElementById('chatPeerFlag');
 const chatPeerStatus = document.getElementById('chatPeerStatus');
@@ -4512,7 +4656,75 @@ function syncChatHeader() {
     chatPeerFlag.innerHTML = '';
     chatPeerStatus.classList.add('hidden');
   }
+  // The stranger's spirit animal, next to their name. It is the one thing
+  // either of you knows about the other, and it is already on the call screen -
+  // repeating it here is what turns the panel header from the word "Chat" into
+  // a person.
+  const animalId = currentPartner && currentPartner.animal;
+  const hasAnimal = !!(animalId && typeof Animals !== 'undefined' && Animals.has(animalId));
+  if (chatPeerAvatar) {
+    chatPeerAvatar.classList.toggle('hidden', !hasAnimal);
+    if (hasAnimal) {
+      Animals.installSprite();
+      chatPeerAvatar.innerHTML = Animals.icon(animalId, 26);
+    } else {
+      chatPeerAvatar.innerHTML = '';
+    }
+  }
+  syncChatEmpty();
 }
+
+// --- The empty chat -------------------------------------------------------
+// A blank panel is the worst thing to open: it says nothing about who is on
+// the other end and gives you no reason to type. This one names them, shows
+// their animal, and hands over four openers that send on tap.
+// Looked up on demand rather than held in a const: addChatMessage and
+// clearChat both reach for this block, and either can run before this point in
+// the file has executed.
+function setChatEmptyVisible(show) {
+  const box = document.getElementById('chatEmpty');
+  if (!box) return;
+  box.classList.toggle('hidden', !show);
+  // The placeholder and the message list are both flex:1 siblings, so the
+  // empty list has to be taken out of the flow or it keeps half the panel and
+  // pushes the placeholder off centre. A class rather than :has(), which the
+  // older Android WebViews a lot of this traffic arrives on do not support.
+  if (box.parentNode) box.parentNode.classList.toggle('is-empty', show);
+}
+
+function syncChatEmpty() {
+  const box = document.getElementById('chatEmpty');
+  if (!box) return;
+  // Only ever stands in for messages that are not there yet.
+  if (chatMessages.querySelector('.chat-msg')) { setChatEmptyVisible(false); return; }
+  const name = (currentPartner && currentPartner.username) || '';
+  document.getElementById('chatEmptyTitle').textContent = name
+    ? t('chatEmptyTitle', { name })
+    : t('noMessagesYet');
+  const avatar = document.getElementById('chatEmptyAvatar');
+  const animalId = currentPartner && currentPartner.animal;
+  if (animalId && typeof Animals !== 'undefined' && Animals.has(animalId)) {
+    Animals.installSprite();
+    avatar.innerHTML = Animals.icon(animalId, 54);
+    avatar.classList.remove('hidden');
+  } else {
+    avatar.innerHTML = '';
+    avatar.classList.add('hidden');
+  }
+  // Openers only make sense while there is somebody to send them to.
+  document.getElementById('chatEmptyChips').classList.toggle('hidden', !currentPartner);
+  setChatEmptyVisible(true);
+}
+
+document.getElementById('chatEmptyChips').addEventListener('click', (e) => {
+  const chip = e.target.closest('.chat-ice-chip');
+  if (!chip) return;
+  const text = t(chip.dataset.ice);
+  // Through the same path a typed message takes, so a starter carries the same
+  // id, reply state, sound and delivery ticks as anything else.
+  if (strangerExtras) strangerExtras.compose(text);
+  else sendStrangerChat(text);
+});
 
 // Put the caret in the box the person is about to type in when a panel with a
 // composer opens. Deferred a frame because these panels animate in from
@@ -5334,9 +5546,9 @@ socket.on('partner-mic-state', (muted) => {
   }
 });
 
-socket.on('chat-message', ({ text, id, replyTo, gif } = {}) => {
+socket.on('chat-message', ({ text, id, replyTo, gif, ts } = {}) => {
   if (!text && !gif) return;
-  addChatMessage(text || '', 'them', { id, replyTo, gif });
+  addChatMessage(text || '', 'them', { id, replyTo, gif, ts });
   playMessageSound();
   vibrate(20);
   if (!chatOpen) {
@@ -5412,7 +5624,7 @@ window.addEventListener('i18n-changed', () => {
 
   if (activeFriendChatId) {
     const friend = friendsData.find((f) => f.clientId === activeFriendChatId);
-    friendChatTitle.textContent = friend ? t('chatWith', { name: friend.username }) : t('chat');
+    friendChatTitle.textContent = friend ? t('chatWith', { name: friendLabel(friend) }) : t('chat');
     renderFriendChatMessages();
   }
 });

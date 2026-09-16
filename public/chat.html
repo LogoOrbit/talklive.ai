@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
-<link rel="stylesheet" href="/chat.css?v=20260916live" />
-<link rel="stylesheet" href="/chat-extras.css?v=20260916live" />
-<link rel="stylesheet" href="/games.css?v=20260916gate" />
+<link rel="stylesheet" href="/chat.css?v=20260916chatpolish" />
+<link rel="stylesheet" href="/chat-extras.css?v=20260916chatpolish" />
+<link rel="stylesheet" href="/games.css?v=20260916chatpolish" />
 <style>
   .skip-link {
     position: fixed;
@@ -349,6 +349,25 @@
         <div class="modal-actions">
           <button type="button" id="callDeclineBtn" class="btn btn-secondary" data-i18n="callInviteDecline">Decline</button>
           <button type="button" id="callAcceptBtn" class="btn btn-primary" data-i18n="callInviteAccept">Accept</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rename a friend. The label is private to this account - the friend is
+       never told - which the hint says out loud. -->
+  <div id="renameFriendModal" class="modal-overlay hidden">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="renameFriendTitle">
+      <div class="modal-header">
+        <h2 id="renameFriendTitle" data-i18n="renameFriendTitle">Rename friend</h2>
+        <button type="button" id="renameFriendCloseBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="renameFriendHint" class="hint"></p>
+        <input type="text" id="renameFriendInput" class="text-input" maxlength="24" data-i18n-placeholder="renameFriendPlaceholder" placeholder="A name you will recognise…" autocomplete="off" />
+        <div class="modal-actions">
+          <button type="button" id="renameFriendResetBtn" class="btn btn-secondary" data-i18n="renameFriendReset">Use their real name</button>
+          <button type="button" id="renameFriendSaveBtn" class="btn btn-primary" data-i18n="save">Save</button>
         </div>
       </div>
     </div>
@@ -777,12 +796,13 @@
 
   <script defer src="/socket.io/socket.io.js"></script>
   <script defer src="/countries.js?v=20260828fix"></script>
-  <script defer src="/i18n.js?v=20260916gate"></script>
-  <script defer src="/animals.js?v=20260916gate"></script>
+  <script defer src="/i18n.js?v=20260916chatpolish"></script>
+  <script defer src="/chat-time.js?v=20260916chatpolish"></script>
+  <script defer src="/animals.js?v=20260916chatpolish"></script>
   <script defer src="/error-reporter.js?v=20260823ui"></script>
-  <script defer src="/chat-extras.js?v=20260916live"></script>
-  <script defer src="/games.js?v=20260916gate"></script>
-  <script defer src="/chat.js?v=20260916live"></script>
+  <script defer src="/chat-extras.js?v=20260916chatpolish"></script>
+  <script defer src="/games.js?v=20260916chatpolish"></script>
+  <script defer src="/chat.js?v=20260916chatpolish"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

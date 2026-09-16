@@ -225,10 +225,50 @@
   // ---------------------------------------------------------------------------
   // `meta` carries the rich parts of a message - its id, the message it replies
   // to, an attached GIF. System lines pass none and stay a plain text node.
+  // --- Message time ------------------------------------------------------
+  // Same rules as the call app: every bubble carries the time it was sent, and
+  // a "Today / Yesterday / Monday / 4 Mar" row marks where one day ends. The
+  // stranger relay stamps a message server-side (one clock both sides agree
+  // on); anything without a stamp falls back to this browser's.
+  var GROUP_WINDOW_MS = 3 * 60 * 1000;
+
+  function clock() { return window.TalkLiveTime || null; }
+
+  function appendDayDivider(container, ts) {
+    var c = clock();
+    if (!c) return;
+    var rows = container.querySelectorAll('[data-day]');
+    var last = rows.length ? rows[rows.length - 1].dataset.day : null;
+    if (last === c.dayStamp(ts)) return;
+    container.appendChild(c.dividerNode(ts, 'day-divider'));
+  }
+
+  function appendMsgTime(el, ts) {
+    var c = clock();
+    var span = document.createElement('span');
+    span.className = 'msg-time';
+    span.textContent = c ? c.time(ts) : '';
+    try { span.title = new Date(ts).toLocaleString(); } catch (e) {}
+    el.appendChild(span);
+  }
+
+  // Consecutive messages from the same side inside a few minutes read as one
+  // turn, so they tuck together instead of each floating on its own.
+  function applyGrouping(el, who, ts) {
+    var prev = el.previousElementSibling;
+    if (!prev || !prev.classList.contains('msg')) return;
+    if (!prev.classList.contains(who) || who === 'system') return;
+    var prevTs = Number(prev.dataset.ts);
+    if (prevTs && ts - prevTs > GROUP_WINDOW_MS) return;
+    el.classList.add('is-grouped');
+  }
+
   function addMessage(text, who, meta) {
+    var ts = (meta && meta.ts) || Date.now();
+    if (who !== 'system') appendDayDivider(msgs, ts);
     var el = document.createElement('div');
     el.className = 'msg ' + who;
-    if (meta && meta.ts) el.dataset.ts = String(meta.ts);
+    el.dataset.ts = String(ts);
     if (text) {
       // The text lives in its own span once a bubble can also hold a quote, a
       // GIF and a reaction row - otherwise they cannot be stacked.
@@ -237,7 +277,9 @@
       body.textContent = text;
       el.appendChild(body);
     }
+    if (who !== 'system') appendMsgTime(el, ts);
     msgs.appendChild(el);
+    applyGrouping(el, who, ts);
     if (meta && extras) {
       extras.decorate(el, {
         id: meta.id,
@@ -1012,6 +1054,59 @@
     return n;
   }
 
+  // What to call a friend. A nickname is this account's own private label for
+  // them - the friend is never told and keeps their own name - so every
+  // friend-facing surface reads it through here instead of .username.
+  function friendLabel(f) {
+    if (!f) return '';
+    return (f.nickname && f.nickname.trim()) || f.username || '';
+  }
+
+  // --- Renaming a friend ---------------------------------------------------
+  // The nickname is written onto this account's copy of the friendship only,
+  // so the friend is never notified and keeps their own name; clearing the
+  // field puts it back everywhere.
+  var renameFriendModal = $('renameFriendModal');
+  var renameFriendInput = $('renameFriendInput');
+  var renameTargetId = null;
+
+  function openRenameFriend(friend) {
+    if (!friend) return;
+    renameTargetId = friend.clientId;
+    $('renameFriendHint').textContent = t('renameFriendHint', { name: friend.username });
+    renameFriendInput.value = friend.nickname || '';
+    openModal(renameFriendModal);
+    requestAnimationFrame(function () {
+      try { renameFriendInput.focus(); renameFriendInput.select(); } catch (e) {}
+    });
+  }
+
+  function commitRenameFriend(nickname) {
+    if (!renameTargetId) return;
+    socket.emit('rename-friend', { friendClientId: renameTargetId, nickname: nickname });
+    // Paint it now so the list behind the modal changes with the tap; the
+    // state-sync that follows says the same thing.
+    var friend = friendsState.friends.filter(function (f) { return f.clientId === renameTargetId; })[0];
+    if (friend) {
+      if (nickname) friend.nickname = nickname;
+      else delete friend.nickname;
+      renderFriends();
+    }
+    closeModal(renameFriendModal);
+    renameTargetId = null;
+  }
+
+  $('renameFriendCloseBtn').addEventListener('click', function () { closeModal(renameFriendModal); });
+  $('renameFriendSaveBtn').addEventListener('click', function () {
+    commitRenameFriend(renameFriendInput.value.trim().slice(0, 24));
+  });
+  $('renameFriendResetBtn').addEventListener('click', function () { commitRenameFriend(''); });
+  renameFriendInput.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    commitRenameFriend(renameFriendInput.value.trim().slice(0, 24));
+  });
+
   function renderFriends() {
     // Header badge: pending requests + unread friend messages.
     var unread = friendsState.notifications.filter(function (n) { return n.type === 'message'; }).length;
@@ -1064,15 +1159,17 @@
       row.className = 'friend-row';
       var unreadN = unreadCountFor(f.clientId);
       row.innerHTML =
-        '<span class="friend-avatar" aria-hidden="true">' + escapeHtml((f.username || '?').charAt(0)) + '</span>' +
-        '<span class="friend-main"><span class="friend-name">' + escapeHtml(f.username || '-') + ' ' + getFlagImg(f.countryCode, 14) + '</span>' +
+        '<span class="friend-avatar" aria-hidden="true">' + escapeHtml((friendLabel(f) || '?').charAt(0)) + '</span>' +
+        '<span class="friend-main"><span class="friend-name">' + escapeHtml(friendLabel(f) || '-') + ' ' + getFlagImg(f.countryCode, 14) + '</span>' +
         '<span class="friend-status' + (f.online ? '' : ' is-offline') + '"><span class="online-dot"></span>' + escapeHtml(t(f.online ? 'online' : 'offline')) + '</span></span>' +
         '<span class="friend-actions">' +
         '<button type="button" class="mini-btn" data-act="chat" title="' + escapeHtml(t('chat')) + '" aria-label="' + escapeHtml(t('chat')) + '"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>' +
         (unreadN ? '<span class="notif-badge">' + unreadN + '</span>' : '') + '</button>' +
+        '<button type="button" class="mini-btn" data-act="rename" title="' + escapeHtml(t('renameFriend')) + '" aria-label="' + escapeHtml(t('renameFriend')) + '"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.5 2.5 0 0 0-3.5-3.5L4.5 16.5V20z"/><line x1="14.5" y1="6.5" x2="17.5" y2="9.5"/></svg></button>' +
         '<button type="button" class="mini-btn danger" data-act="remove" title="' + escapeHtml(t('removeFriend')) + '" aria-label="' + escapeHtml(t('removeFriend')) + '"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>' +
         '</span>';
       row.querySelector('[data-act="chat"]').addEventListener('click', function () { openFriendChat(f); });
+      row.querySelector('[data-act="rename"]').addEventListener('click', function () { openRenameFriend(f); });
       row.querySelector('[data-act="remove"]').addEventListener('click', function () {
         socket.emit('remove-friend', { friendClientId: f.clientId });
       });
@@ -1210,15 +1307,22 @@
   }
 
   function appendFriendMsg(text, who, meta) {
+    var ts = (meta && meta.ts) || Date.now();
+    // A stored friend chat can span weeks, which is where day separators earn
+    // their keep.
+    appendDayDivider(friendChatMsgs, ts);
     var el = document.createElement('div');
     el.className = 'msg ' + who;
+    el.dataset.ts = String(ts);
     if (text) {
       var body = document.createElement('span');
       body.className = 'msg-text';
       body.textContent = text;
       el.appendChild(body);
     }
+    appendMsgTime(el, ts);
     friendChatMsgs.appendChild(el);
+    applyGrouping(el, who, ts);
     if (meta && friendExtras) {
       friendExtras.decorate(el, {
         id: meta.id,
@@ -1261,8 +1365,8 @@
 
   function openFriendChat(friend) {
     activeFriendChatId = friend.clientId;
-    $('friendChatTitle').textContent = friend.username
-      ? t('chatWith', { name: friend.username })
+    $('friendChatTitle').textContent = friendLabel(friend)
+      ? t('chatWith', { name: friendLabel(friend) })
       : t('chat');
     friendChatMsgs.innerHTML = '';
     if (friendExtras) friendExtras.reset();
@@ -1510,7 +1614,7 @@
     if (!data) return;
     var text = data.text ? String(data.text) : '';
     if (!text && !data.gif) return;
-    addMessage(text, 'them', { id: data.id, replyTo: data.replyTo, gif: data.gif });
+    addMessage(text, 'them', { id: data.id, replyTo: data.replyTo, gif: data.gif, ts: data.ts });
     soundReceive();
     if (text) checkIncoming(text);
   });

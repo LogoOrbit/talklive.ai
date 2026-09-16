@@ -602,6 +602,11 @@ img { max-width: 100%; }
 #tttEndConfirmModal,
 #callIncomingModal { z-index: 700; }
 
+/* Opened from inside the friends panel, which is a side sheet at z-index 120 -
+   at the shared modal z-index it appeared underneath, so the input could not
+   be typed into and Save could not be pressed. */
+#renameFriendModal { z-index: 700; }
+
 .modal-box {
   width: 100%; max-width: 400px; max-height: 85vh; background: var(--bg-2);
   border: 1px solid var(--line); border-radius: 16px; display: flex; flex-direction: column;
@@ -1497,3 +1502,44 @@ img { max-width: 100%; }
   font-weight: 800;
   background: linear-gradient(135deg, var(--accent), var(--accent-2, var(--accent)));
 }
+
+/* ============================================================================
+   Message time + day separators. Same rules and the same look as the call app
+   (public/style.css): a centred day pill, and the time in the corner of every
+   bubble. Applies to both chat boxes on this page - the live stranger thread
+   and the friend chat panel.
+   ========================================================================== */
+.day-divider { align-self: center; margin: 10px 0 4px; max-width: 90%; }
+.day-divider span {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--muted) 18%, transparent);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+/* Sits at the end of the last line of text, the way every messenger puts it,
+   rather than claiming a line of its own. */
+.msg-time {
+  display: inline-block;
+  margin-inline-start: 8px;
+  vertical-align: bottom;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  opacity: 0.75;
+}
+.msg.me .msg-time { color: rgba(255, 255, 255, 0.88); }
+.msg.them .msg-time { color: var(--muted); opacity: 1; }
+
+/* Consecutive messages from the same side within a few minutes are one turn:
+   tighter spacing, and the inner corner squared off so the thread has a rhythm
+   instead of a uniform ladder of identical rounded boxes. */
+.msg.is-grouped { margin-top: -2px; }
+.msg.me.is-grouped { border-top-right-radius: 6px; }
+.msg.them.is-grouped { border-top-left-radius: 6px; }

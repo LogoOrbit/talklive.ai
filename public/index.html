@@ -15,8 +15,8 @@
      rather than after it - the sooner it lands, the sooner the hero paints.
      Analytics and ad tags are loaded at the end of <body> instead of here so
      they stop competing for mobile bandwidth during Largest Contentful Paint. -->
-<link rel="stylesheet" href="style.css?v=20260916settings" />
-<link rel="stylesheet" href="chat-extras.css?v=20260916live" />
+<link rel="stylesheet" href="style.css?v=20260916chatpolish" />
+<link rel="stylesheet" href="chat-extras.css?v=20260916chatpolish" />
 <link rel="stylesheet" href="games.css?v=20260916settings" />
 <script defer src="/config.js"></script>
 <!-- Google Identity Services, deferred so it never blocks first paint. app.js
@@ -375,6 +375,9 @@
         <div class="friend-profile-cover" aria-hidden="true"></div>
         <div id="friendProfileAvatar" class="friend-profile-avatar" aria-hidden="true"></div>
         <div id="friendProfileName" class="friend-profile-name"></div>
+        <!-- Shown only when this friend carries a nickname, so the person you
+             renamed is still identifiable by the name they chose themselves. -->
+        <div id="friendProfileRealName" class="friend-profile-realname hidden"></div>
         <div id="friendProfileStatus" class="friend-profile-status"></div>
         <div class="friend-profile-actions">
           <p class="friend-profile-actions-label" data-i18n="quickActions">Quick actions</p>
@@ -396,6 +399,10 @@
             </button>
           </div>
           <div class="friend-profile-action-row">
+            <button type="button" id="friendProfileRenameBtn" class="btn btn-secondary hidden">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.5 2.5 0 0 0-3.5-3.5L4.5 16.5V20z"/><line x1="14.5" y1="6.5" x2="17.5" y2="9.5"/></svg>
+              <span data-i18n="renameFriend">Rename</span>
+            </button>
             <button type="button" id="friendProfileRemoveBtn" class="btn btn-secondary" data-i18n="removeFriend">Remove Friend</button>
             <button type="button" id="friendProfileBlockBtn" class="btn btn-danger" data-i18n="blockUser">Block User</button>
           </div>
@@ -992,6 +999,26 @@
         </div>
       </div>
 
+      <!-- Rename a friend. The label is private to this account, which the
+           hint says out loud - people hesitate to rename someone if they think
+           the other person will be told. -->
+      <div id="renameFriendModal" class="modal-overlay hidden">
+        <div class="modal-box modal-box-narrow" role="dialog" aria-modal="true" aria-labelledby="renameFriendTitle">
+          <div class="modal-header">
+            <h2 id="renameFriendTitle" data-i18n="renameFriendTitle">Rename friend</h2>
+            <button type="button" id="renameFriendCloseBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
+          </div>
+          <div class="modal-body">
+            <p id="renameFriendHint" class="consent-modal-text"></p>
+            <input type="text" id="renameFriendInput" class="search-input" maxlength="24" data-i18n-placeholder="renameFriendPlaceholder" placeholder="A name you will recognise…" autocomplete="off" />
+            <div class="confirm-actions rename-actions">
+              <button type="button" id="renameFriendResetBtn" class="btn btn-secondary" data-i18n="renameFriendReset">Use their real name</button>
+              <button type="button" id="renameFriendSaveBtn" class="btn btn-save" data-i18n="save">Save</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Feedback for Improvement dialog -->
       <div id="feedbackModal" class="modal-overlay hidden">
         <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="feedbackModalTitle">
@@ -1486,6 +1513,10 @@
       <div id="chatOverlay" class="side-panel-overlay hidden"></div>
       <aside id="chatPanel" class="side-panel side-panel-right chat-side-panel" role="dialog" data-i18n-aria="chat" aria-label="Chat">
         <div class="side-panel-header chat-side-header">
+          <!-- The spirit animal the stranger picked, next to their name. It is
+               the only thing either of you knows about the other, so the panel
+               shows it rather than leaving the header as the bare word "Chat". -->
+          <span id="chatPeerAvatar" class="chat-peer-avatar hidden" aria-hidden="true"></span>
           <div class="chat-peer" id="chatPeer">
             <div class="chat-peer-name">
               <span id="chatPeerName" data-i18n="chat">Chat</span>
@@ -1496,6 +1527,22 @@
           <button type="button" id="closeChatBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
         </div>
         <div class="chat-side-body">
+          <!-- What an empty chat says. A blank panel used to be the first thing
+               anyone saw here, and a blank panel gives you no reason to type.
+               This one names who is on the other end and hands over four
+               openers that send on tap. Replaced by the messages themselves the
+               moment either side says anything. -->
+          <div id="chatEmpty" class="chat-empty">
+            <span id="chatEmptyAvatar" class="chat-empty-avatar" aria-hidden="true"></span>
+            <h3 id="chatEmptyTitle" class="chat-empty-title"></h3>
+            <p class="chat-empty-body" data-i18n="chatEmptyBody">You are both here right now. Break the ice - the first message is the hard one.</p>
+            <div class="chat-empty-chips" id="chatEmptyChips">
+              <button type="button" class="chat-ice-chip" data-ice="iceHi" data-i18n="iceHi">Hey! 👋</button>
+              <button type="button" class="chat-ice-chip" data-ice="iceWhereFrom" data-i18n="iceWhereFrom">Where are you from?</button>
+              <button type="button" class="chat-ice-chip" data-ice="iceUpTo" data-i18n="iceUpTo">What are you up to?</button>
+              <button type="button" class="chat-ice-chip" data-ice="iceMusic" data-i18n="iceMusic">What are you listening to?</button>
+            </div>
+          </div>
           <div id="chatMessages" class="chat-messages"></div>
           <p id="typingIndicator" class="typing-indicator hidden"><span data-i18n="strangerTyping">Stranger is typing</span><span class="typing-dots" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span></p>
           <form id="chatForm" class="chat-form">
@@ -1825,7 +1872,8 @@
        browser finish parsing and paint the page first. -->
   <script defer src="/socket.io/socket.io.js"></script>
   <script defer src="countries.js?v=20260828fix"></script>
-  <script defer src="i18n.js?v=20260916settings"></script>
+  <script defer src="i18n.js?v=20260916chatpolish"></script>
+  <script defer src="chat-time.js?v=20260916chatpolish"></script>
   <script defer src="animals.js?v=20260916settings"></script>
   <script defer src="moderation.js?v=20260705b"></script>
   <script defer src="error-reporter.js?v=20260823ui"></script>
@@ -1860,9 +1908,9 @@
       audio.addEventListener('play', function () { setState(true); });
     })();
   </script>
-  <script defer src="chat-extras.js?v=20260916live"></script>
+  <script defer src="chat-extras.js?v=20260916chatpolish"></script>
   <script defer src="games.js?v=20260916settings"></script>
-  <script defer src="app.js?v=20260916settings"></script>
+  <script defer src="app.js?v=20260916chatpolish"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the
