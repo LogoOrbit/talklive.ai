@@ -331,10 +331,7 @@ function getFlagImg(code, size = 20) {
     return `<svg class="flag-icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><ellipse cx="12" cy="12" rx="4.2" ry="9.5"/><line x1="2.5" y1="12" x2="21.5" y2="12"/></svg>`;
   }
   const cc = code.toLowerCase();
-  // Flags come from a CDN, so on a flaky connection some of them will not
-  // arrive. A hidden image is a small gap; a broken-image glyph in the middle
-  // of a name is a bug report.
-  return `<img class="flag-icon" src="https://flagcdn.com/24x18/${cc}.png" srcset="https://flagcdn.com/48x36/${cc}.png 2x" width="${size}" loading="lazy" onerror="this.style.visibility='hidden'" alt="${escapeHtml(getCountryName(code))}" />`;
+  return `<img class="flag-icon" src="https://flagcdn.com/24x18/${cc}.png" srcset="https://flagcdn.com/48x36/${cc}.png 2x" width="${size}" alt="${escapeHtml(getCountryName(code))}" />`;
 }
 
 // --- Avatars: 5 male + 5 female inline-SVG busts. Shown only to yourself
@@ -381,57 +378,6 @@ function genderIcon(avatarId, size = 30) {
   const person = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="7.4" r="3.9"/><path d="M4.6 20.4c.5-4.3 3.5-6.9 7.4-6.9s6.9 2.6 7.4 6.9a.9.9 0 0 1-.9 1H5.5a.9.9 0 0 1-.9-1z"/></svg>';
   const svg = g === 'm' ? man : (g === 'f' ? woman : person);
   return `<span class="gender-icon ${cls}" style="width:${size}px;height:${size}px" aria-hidden="true">${svg}</span>`;
-}
-
-// --- One face for everybody -------------------------------------------------
-// Every person in every list - friends, conversations, call history, requests -
-// gets the same picture, so a row is scannable at a glance instead of being a
-// wall of names. Order of preference:
-//   1. their spirit animal (the thing they actually chose and that the other
-//      side already sees during a call),
-//   2. their avatar bust, if they picked one and no animal,
-//   3. a lettered disc in a colour derived from their name, so even someone
-//      who has picked nothing still has a stable, recognisable face.
-// `opts.flag` overlays their country, `opts.online` the presence dot - both
-// exactly where the reference apps put them, bottom-right of the circle.
-const AVATAR_FALLBACK_COLORS = ['#6c5ce7', '#00b4d8', '#2ed47a', '#f0a92c', '#ff6b6b', '#c084fc', '#14b8a6', '#fb923c'];
-function avatarHue(seed) {
-  const s = String(seed || '');
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-  return AVATAR_FALLBACK_COLORS[h % AVATAR_FALLBACK_COLORS.length];
-}
-
-function personAvatar(person, size = 44, opts = {}) {
-  const p = person || {};
-  const name = friendLabel(p) || p.username || '';
-  const animalId = p.animal && Animals && Animals.has(p.animal) ? p.animal : null;
-  let inner;
-  let bg;
-  if (animalId) {
-    bg = Animals.color(animalId);
-    inner = Animals.icon(animalId, Math.round(size * 0.82));
-  } else if (p.avatar && AVATAR_STYLES[p.avatar]) {
-    bg = AVATAR_STYLES[p.avatar].bg;
-    inner = avatarSvg(p.avatar, size);
-  } else {
-    bg = avatarHue(p.clientId || name);
-    const letter = (name.trim()[0] || '?').toUpperCase();
-    inner = `<span class="tl-avatar-letter">${escapeHtml(letter)}</span>`;
-  }
-  // Only a real country earns the badge. The "unknown country" globe in a
-  // corner of a face reads as a broken image, not as information.
-  const hasCountry = p.countryCode && p.countryCode.length === 2 && p.countryCode !== 'XX';
-  const flag = opts.flag && hasCountry
-    ? `<span class="tl-avatar-flag">${getFlagImg(p.countryCode, Math.max(14, Math.round(size * 0.38)))}</span>`
-    : '';
-  const dot = opts.online === undefined || opts.online === null
-    ? ''
-    : `<span class="tl-avatar-dot ${p.online || opts.online === true ? 'is-online' : 'is-offline'}"></span>`;
-  // font-size is set here, not in CSS, so the fallback letter can be sized as a
-  // fraction of the circle (em) at any of the sizes this is called with.
-  return `<span class="tl-avatar${animalId ? ' has-animal' : ''}" style="width:${size}px;height:${size}px;font-size:${size}px;--tl-avatar-bg:${bg}" aria-hidden="true">`
-    + `<span class="tl-avatar-art">${inner}</span>${flag}${dot}</span>`;
 }
 
 let myAvatar = localStorage.getItem('talklive_avatar');
@@ -598,11 +544,6 @@ let skipUnlockTimeout = null;
 let currentPartnerInterests = [];
 let currentPartner = null;
 let callHistory = [];
-// Recent people, as the *server* remembers them: survives a reload, carries an
-// avatar, an animal, a duration and whether the person is online right now.
-// The session-only callHistory above still records the call that just ended so
-// History updates the instant you hang up, before the next state-sync lands.
-let serverHistory = [];
 let accountNickname = localStorage.getItem('talklive_nickname') || null;
 // The account's recovery email, as the server last reported it. Cached locally
 // only so the My Account panel can show it before the socket reconnects; the
@@ -1145,57 +1086,6 @@ clearFiltersBtn.addEventListener('click', () => {
   selectedInterests.clear();
   renderInterestTags();
 });
-
-// --- Quick filters, for the two selectors on the home screen -----------------
-// The Filters panel is still the full editor (exclusions, interests). These two
-// dropdowns are the 90% case - who and where - and they have to apply the
-// moment they are tapped, because they sit directly above Start. Everything
-// goes through the same applied-filter state the panel writes, so the two
-// surfaces can never disagree and the panel is always showing the truth.
-function applyQuickFilters(next) {
-  appliedFilters = {
-    prefGender: next.prefGender || appliedFilters.prefGender || 'any',
-    includeCountries: next.includeCountries || appliedFilters.includeCountries || [],
-    excludeCountries: appliedFilters.excludeCountries || [],
-    interests: appliedFilters.interests || [],
-  };
-  try {
-    sessionStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(appliedFilters));
-  } catch (e) { /* private mode - the choice just does not survive a reload */ }
-  syncFilterDraftUiFromApplied();
-  registerProfile();
-  quickFilterListeners.forEach((fn) => { try { fn(appliedFilters); } catch (err) {} });
-}
-
-const quickFilterListeners = [];
-window.TalkLiveFilters = {
-  get: () => ({
-    prefGender: appliedFilters.prefGender || 'any',
-    includeCountries: (appliedFilters.includeCountries || []).slice(),
-    excludeCountries: (appliedFilters.excludeCountries || []).slice(),
-    interests: (appliedFilters.interests || []).slice(),
-  }),
-  setGender(value) {
-    applyQuickFilters({ prefGender: value === 'male' || value === 'female' ? value : 'any' });
-  },
-  setCountries(list) {
-    const next = Array.isArray(list) ? list.filter(Boolean) : [];
-    // Same cap the Filters panel enforces, and the same upsell - a limit that
-    // only exists in one of two places is a bug people report as unfairness.
-    if (!isPremiumUser && next.length > freeLimits.countries) {
-      showPremiumUpsell(t('premiumCountryLimit', { n: freeLimits.countries }));
-      return false;
-    }
-    applyQuickFilters({ includeCountries: next });
-    return true;
-  },
-  countryLimit: () => (isPremiumUser ? Infinity : freeLimits.countries),
-  countries: () => getCountryEntries(),
-  countryName: (code) => getCountryName(code),
-  flag: (code, size) => getFlagImg(code, size),
-  onChange(fn) { if (typeof fn === 'function') quickFilterListeners.push(fn); },
-  openPanel: () => openFilters(),
-};
 
 // --- Add Friend: sends a real friend request to the current call partner.
 // Works the same whether the partner is a temporary (guest) user or signed in -
@@ -2344,30 +2234,7 @@ const FRIEND_CALL_SVG = '<svg viewBox="0 0 24 24" fill="white" aria-hidden="true
 
 // Each row: online/offline dot + flag + username on the left (tap → chat box),
 // small green call button on the right. Tapping the avatar opens the profile view.
-// --- Bridge to the mobile shell (mobile-app.js) -----------------------------
-// The Messages and History tabs render the same data these panels do, from the
-// same state, so every renderer here ends with one call: whatever just changed,
-// the tabs redraw from it. Guarded so app.js still works with no shell loaded.
-function shellSync() {
-  const shell = window.TalkLiveShell;
-  if (!shell || typeof shell.sync !== 'function') return;
-  try {
-    shell.sync({
-      friends: friendsData,
-      requests: friendRequestsData,
-      sent: sentRequestsData,
-      notifs: notifData,
-      history: historyEntries(),
-      // Locally cached threads, so a message you just sent shows up as the
-      // preview before the next state-sync confirms it.
-      chats: friendChatCache,
-      myClientId: getClientId(),
-    });
-  } catch (err) { /* a broken tab must never take the app down with it */ }
-}
-
 function renderFriendsList() {
-  shellSync();
   if (friendsData.length === 0) {
     friendsList.innerHTML = `<p class="history-empty">${escapeHtml(t('noFriendsYet'))}</p>`;
     return;
@@ -2378,7 +2245,7 @@ function renderFriendsList() {
     const item = document.createElement('div');
     item.className = 'friend-item';
     item.innerHTML = `
-      <button type="button" class="friend-avatar-btn" data-id="${escapeHtml(f.clientId)}" title="${escapeHtml(t('profile'))}" aria-label="${escapeHtml(t('profile'))}">${personAvatar(f, 40, { online: f.online })}</button>
+      <button type="button" class="friend-avatar-btn" data-id="${escapeHtml(f.clientId)}" title="${escapeHtml(t('profile'))}" aria-label="${escapeHtml(t('profile'))}">${genderIcon(f.avatar, 30)}</button>
       <div class="friend-item-info friend-row-main" data-id="${escapeHtml(f.clientId)}">
         <span class="friend-item-name">${getFlagImg(f.countryCode)} ${escapeHtml(friendLabel(f))}</span>
         <span class="friend-status-text ${f.online ? 'is-online' : 'is-offline'}">${escapeHtml(f.online ? t('online') : t('offline'))}</span>
@@ -2618,16 +2485,14 @@ friendProfileBlockBtn.addEventListener('click', async () => {
 let friendsSynced = false;
 setTimeout(() => { if (!friendsSynced) renderFriendsList(); }, 5000);
 
-socket.on('state-sync', ({ friends: friendList, friendRequests: requestList, sentRequests: sentList, notifications: notifList, chatHistory: historyList } = {}) => {
+socket.on('state-sync', ({ friends: friendList, friendRequests: requestList, sentRequests: sentList, notifications: notifList } = {}) => {
   friendsSynced = true;
   friendsData = friendList || [];
   friendRequestsData = requestList || [];
   sentRequestsData = sentList || [];
   notifData = notifList || [];
-  serverHistory = historyList || [];
   renderFriendsList();
   renderNotifications();
-  renderHistory();
   // A first friend is exactly the moment the profile becomes worth keeping.
   renderLinkProfilePrompts();
   renderFriendChatPresence();
@@ -2696,7 +2561,6 @@ function updateFriendsMsgBadge() {
 // requests) lives at the top of the Friends dropdown; new message notifications
 // surface as unread badges on the Friends button/list instead.
 function renderNotifications() {
-  shellSync();
   const visible = notifData.filter((n) => n.type !== 'message');
   notifList.classList.toggle('no-requests', visible.length === 0);
 
@@ -3016,31 +2880,7 @@ socket.on('friend-chat-history', ({ friendClientId, messages }) => {
 });
 
 // --- Call history (session-only, cleared on reload) ---
-// The one list the History surfaces read: the server's durable record of who
-// you met, with this session's just-ended calls merged over the top so a row
-// appears the moment you hang up rather than one state-sync later. Newest
-// first, one row per person.
-function historyEntries() {
-  const byId = new Map();
-  serverHistory.forEach((e) => {
-    if (!e || !e.clientId) return;
-    byId.set(e.clientId, { ...e });
-  });
-  callHistory.forEach((e) => {
-    const prev = e.clientId ? byId.get(e.clientId) : null;
-    const merged = { kind: 'talk', ts: Date.now(), ...(prev || {}), ...e };
-    // A session row always wins on duration and recency - it is the call that
-    // just happened.
-    merged.durationSeconds = e.durationSeconds;
-    merged.ts = e.ts || Date.now();
-    if (e.clientId) byId.set(e.clientId, merged);
-    else byId.set(`local:${merged.ts}:${merged.username}`, merged);
-  });
-  return Array.from(byId.values()).sort((a, b) => (b.ts || 0) - (a.ts || 0));
-}
-
 function renderHistory() {
-  shellSync();
   if (callHistory.length === 0) {
     historyList.innerHTML = `<p class="history-empty">${escapeHtml(t('noCallsYet'))}</p>`;
     return;
@@ -3075,10 +2915,6 @@ function recordCallHistory() {
     username: currentPartner.username,
     countryCode: currentPartner.countryCode,
     clientId: currentPartner.clientId,
-    animal: currentPartner.animal || null,
-    avatar: currentPartner.avatar || null,
-    kind: 'talk',
-    ts: Date.now(),
     durationSeconds,
   });
   renderHistory();
