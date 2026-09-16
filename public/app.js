@@ -164,6 +164,20 @@ const friendProfileStatus = document.getElementById('friendProfileStatus');
 const friendProfileChatBtn = document.getElementById('friendProfileChatBtn');
 const friendProfileRemoveBtn = document.getElementById('friendProfileRemoveBtn');
 const friendProfileBlockBtn = document.getElementById('friendProfileBlockBtn');
+const friendProfileReportBtn = document.getElementById('friendProfileReportBtn');
+const settingsProfileRow = document.getElementById('settingsProfileRow');
+const settingsProfileAvatar = document.getElementById('settingsProfileAvatar');
+const settingsProfileName = document.getElementById('settingsProfileName');
+const settingsProfileJoined = document.getElementById('settingsProfileJoined');
+const settingsShopRow = document.getElementById('settingsShopRow');
+const settingsBillingRow = document.getElementById('settingsBillingRow');
+const shopModal = document.getElementById('shopModal');
+const closeShopBtn = document.getElementById('closeShopBtn');
+const shopGrid = document.getElementById('shopGrid');
+const shopBalanceNum = document.getElementById('shopBalanceNum');
+const billingModal = document.getElementById('billingModal');
+const closeBillingBtn = document.getElementById('closeBillingBtn');
+const billingEmailValue = document.getElementById('billingEmailValue');
 
 const notifList = document.getElementById('notifList');
 
@@ -1168,6 +1182,7 @@ function renderAccountState() {
   renderAvatarGrid();
   renderSettingsIdentity();
   renderLinkProfilePrompts();
+  renderSettingsProfileRow();
 }
 
 // --- "Keep this profile": linking the anonymous profile to an account -------
@@ -1241,6 +1256,101 @@ if (linkProfileBanner) {
     openAccountModal('signup');
   });
 }
+
+// --- Settings rows: who you are, the Shop, and Billing ---------------------
+
+// The avatar this user is wearing: their spirit animal if they picked one,
+// otherwise the plain gender silhouette.
+function myAvatarIcon(size) {
+  return (myAnimal && typeof Animals !== 'undefined' && Animals)
+    ? Animals.icon(myAnimal, size)
+    : genderIcon(myAvatar, size);
+}
+
+function renderSettingsProfileRow() {
+  if (!settingsProfileRow) return;
+  settingsProfileAvatar.innerHTML = `${myAvatarIcon(40)}<span class="settings-row-online" aria-hidden="true"></span>`;
+  settingsProfileName.textContent = profileDisplayName() || t('linkProfileAnonymous');
+  const created = profileCreatedAt();
+  settingsProfileJoined.textContent = created
+    ? t('joinedOn', { date: formatProfileCreated(created) })
+    : t(accountNickname ? 'settingsRowAccount' : 'settingsRowGuest');
+}
+
+if (settingsProfileRow) {
+  // The row is the profile, so it opens the place the profile is edited:
+  // the account panel (sign up / sign in, or My Account once signed in).
+  settingsProfileRow.addEventListener('click', () => {
+    openAccountModal(accountNickname ? 'login' : 'signup');
+  });
+}
+
+// --- Shop ------------------------------------------------------------------
+// Coins and Boosts are not built yet and nothing here can be bought: TalkLive
+// is free. The screen exists so the shape of it is visible (and so the price
+// of finding that out later is paid now), which is why every card is disabled
+// and labelled rather than wired to checkout.
+const SHOP_PACKS = [
+  { id: 'drop', coins: 500, price: '$4.99', tagKey: 'shopTagEntry' },
+  { id: 'stack', coins: 1100, bonus: 150, price: '$9.99', tagKey: 'shopTagValue' },
+  { id: 'basket', coins: 2500, bonus: 400, price: '$19.99', tagKey: 'shopTagPopular' },
+  { id: 'cache', coins: 4700, bonus: 800, price: '$34.99', tagKey: 'shopTagBest' },
+  { id: 'chest', coins: 8800, bonus: 1600, price: '$59.99', tagKey: 'shopTagPower' },
+  { id: 'hoard', coins: 16000, bonus: 3500, price: '$99.99', tagKey: 'shopTagMax' },
+];
+
+function formatCoins(n) {
+  try {
+    return n.toLocaleString();
+  } catch (e) {
+    return String(n);
+  }
+}
+
+function renderShop() {
+  if (!shopGrid) return;
+  shopGrid.innerHTML = '';
+  SHOP_PACKS.forEach((pack) => {
+    const card = document.createElement('div');
+    card.className = 'shop-card';
+    card.innerHTML = `
+      <span class="shop-card-tag">${escapeHtml(t(pack.tagKey))}</span>
+      <span class="shop-card-coin" aria-hidden="true"></span>
+      <strong class="shop-card-name">${escapeHtml(t('shopPack_' + pack.id))}</strong>
+      <span class="shop-card-amount">${escapeHtml(t('shopCoinsAmount', { count: formatCoins(pack.coins) }))}</span>
+      ${pack.bonus ? `<span class="shop-card-bonus">${escapeHtml(t('shopBonus', { count: formatCoins(pack.bonus) }))}</span>` : ''}
+      <span class="shop-card-price">${escapeHtml(pack.price)}</span>
+      <button type="button" class="shop-card-btn" disabled>${escapeHtml(t('comingSoon'))}</button>
+    `;
+    shopGrid.appendChild(card);
+  });
+  // No coins exist yet, so the balance is the truth rather than a placeholder.
+  if (shopBalanceNum) shopBalanceNum.textContent = '0';
+}
+
+function openShop() {
+  closeAppSettings();
+  renderShop();
+  openModal(shopModal);
+}
+
+if (settingsShopRow) settingsShopRow.addEventListener('click', openShop);
+if (closeShopBtn) closeShopBtn.addEventListener('click', () => closeModal(shopModal));
+
+// --- Billing ---------------------------------------------------------------
+function renderBilling() {
+  if (!billingEmailValue) return;
+  billingEmailValue.textContent = accountEmail || t('billingEmailNone');
+}
+
+function openBilling() {
+  closeAppSettings();
+  renderBilling();
+  openModal(billingModal);
+}
+
+if (settingsBillingRow) settingsBillingRow.addEventListener('click', openBilling);
+if (closeBillingBtn) closeBillingBtn.addEventListener('click', () => closeModal(billingModal));
 
 // --- "Receive incoming calls" ----------------------------------------------
 // Off means friends can still message, they just can't ring this device; the
@@ -1322,6 +1432,8 @@ if (saveTempNameBtn) {
     // Push it to the server for the current/next match.
     registerProfile();
     showToast(t('tempNameSaved'));
+    renderSettingsProfileRow();
+    renderLinkProfilePrompts();
     vibrate(15);
     // Grey the button out until the name is edited again.
     syncSaveNameBtn();
@@ -1456,6 +1568,8 @@ function setMyAnimal(id) {
     btn.setAttribute('aria-checked', on ? 'true' : 'false');
   });
   renderAnimalChoiceLine();
+  // The Settings profile row wears this avatar, so it re-renders with it.
+  renderSettingsProfileRow();
   registerProfile(); // so a search already queued picks the new animal up
 }
 
@@ -2151,6 +2265,17 @@ friendProfileRemoveBtn.addEventListener('click', async () => {
   if (!ok || !activeProfileFriendId) return;
   socket.emit('remove-friend', { friendClientId: activeProfileFriendId });
   closeSidePanel(friendProfileModal, friendProfileOverlay);
+});
+
+friendProfileReportBtn.addEventListener('click', async () => {
+  if (!activeProfileFriendId) return;
+  const ok = await showConfirm({ title: 'report', text: 'confirmReportUser', okKey: 'report' });
+  if (!ok || !activeProfileFriendId) return;
+  // Reporting someone you are not in a call with: the server records it and
+  // blocks the pair, same as an in-call report, without touching any call.
+  socket.emit('report-user', { targetClientId: activeProfileFriendId, reason: 'profile' });
+  closeSidePanel(friendProfileModal, friendProfileOverlay);
+  showToast(t('reportUserSent'));
 });
 
 friendProfileBlockBtn.addEventListener('click', async () => {
@@ -5132,6 +5257,7 @@ try {
 // when the call screen opens, and an unchecked auto-call checkbox.
 autoCallCheckbox.checked = autoCallEnabled;
 renderAcceptCalls();
+renderSettingsProfileRow();
 setCallState('idle');
 setState('idle');
 setStatusText('statusIdle');

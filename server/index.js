@@ -3076,6 +3076,50 @@ io.on('connection', (socket) => {
     tryMatch(socket.id);
   });
 
+  // Reporting someone you are not currently in a call with (from their profile
+  // in the friends panel). Same record, same cooldown and same mutual block as
+  // an in-call report - it just has no call to end, so it never touches
+  // matchmaking. Reports are only accepted about people this user actually
+  // knows: an arbitrary clientId would let anyone file reports against
+  // strangers they picked out of thin air.
+  socket.on('report-user', ({ targetClientId, reason, detail } = {}) => {
+    const me = profiles.get(socket.id);
+    targetClientId = validId(targetClientId);
+    if (!me || !targetClientId || targetClientId === me.clientId) return;
+    const known = (friends.get(me.clientId) || new Map()).get(targetClientId)
+      || (chatHistory.get(me.clientId) || []).find((h) => h.clientId === targetClientId);
+    if (!known) return;
+    const reportKey = `${me.clientId}|${targetClientId}`;
+    const now = Date.now();
+    if (now - (reportCooldowns.get(reportKey) || 0) < 24 * 60 * 60 * 1000) return;
+    reportCooldowns.set(reportKey, now);
+    // Same outcome as blocking them from this screen: the friendship goes and
+    // the pair is blocked, which is what "you will also stop seeing each
+    // other" in the confirmation promises.
+    removeFriendPair(me.clientId, targetClientId);
+    blockPair(me.clientId, targetClientId);
+    const targetSocketId = clientSockets.get(targetClientId);
+    const targetSocket = targetSocketId ? io.sockets.sockets.get(targetSocketId) : null;
+    const targetProfile = targetSocketId ? profiles.get(targetSocketId) : null;
+    store.recordFeature('report');
+    store.addReport({
+      reporter: { clientId: me.clientId, username: me.username, country: me.countryName, city: me.city },
+      reported: {
+        clientId: targetClientId,
+        username: (targetProfile && targetProfile.username) || known.username || '',
+        country: (targetProfile && targetProfile.countryName) || '',
+        city: (targetProfile && targetProfile.city) || '',
+        ip: targetSocket ? getClientIp(targetSocket) : null,
+      },
+      reason: typeof reason === 'string' ? reason.slice(0, 40) : 'profile',
+      detail: typeof detail === 'string' ? detail.slice(0, 300) : '',
+    });
+    console.log(`[report] ${me.username} reported ${targetClientId} from a profile (total reports: ${store.reportCountFor(targetClientId)})`);
+    syncClientState(socket, me.clientId);
+    // The other side's friends list has lost someone too.
+    if (targetSocket) syncClientState(targetSocket, targetClientId);
+  });
+
   // User-submitted product feedback. Logged for the operator; kept lightweight
   // (no storage layer yet) but rate-limited implicitly by being a manual action.
   socket.on('feedback', (payload = {}) => {

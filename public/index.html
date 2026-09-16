@@ -367,13 +367,25 @@
         <button type="button" id="closeFriendProfileBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
       </div>
       <div class="side-panel-body friend-profile-body">
+        <!-- Cover + overlapping avatar: a profile should look like a profile,
+             not a list row with buttons under it. -->
+        <div class="friend-profile-cover" aria-hidden="true"></div>
         <div id="friendProfileAvatar" class="friend-profile-avatar" aria-hidden="true"></div>
         <div id="friendProfileName" class="friend-profile-name"></div>
         <div id="friendProfileStatus" class="friend-profile-status"></div>
         <div class="friend-profile-actions">
-          <button type="button" id="friendProfileChatBtn" class="btn btn-primary" data-i18n="chat">Chat</button>
-          <button type="button" id="friendProfileRemoveBtn" class="btn btn-secondary" data-i18n="removeFriend">Remove Friend</button>
-          <button type="button" id="friendProfileBlockBtn" class="btn btn-danger" data-i18n="blockUser">Block User</button>
+          <p class="friend-profile-actions-label" data-i18n="quickActions">Quick actions</p>
+          <div class="friend-profile-action-row">
+            <button type="button" id="friendProfileChatBtn" class="btn btn-primary" data-i18n="chat">Chat</button>
+            <button type="button" id="friendProfileReportBtn" class="btn btn-report">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4.5"/><path d="M5 5.2c4-2 7 2 11 0v8.4c-4 2-7-2-11 0z"/></svg>
+              <span data-i18n="report">Report</span>
+            </button>
+          </div>
+          <div class="friend-profile-action-row">
+            <button type="button" id="friendProfileRemoveBtn" class="btn btn-secondary" data-i18n="removeFriend">Remove Friend</button>
+            <button type="button" id="friendProfileBlockBtn" class="btn btn-danger" data-i18n="blockUser">Block User</button>
+          </div>
         </div>
       </div>
     </aside>
@@ -409,6 +421,50 @@
         <button type="button" id="closeAppSettingsBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
       </div>
       <div class="side-panel-body">
+        <!-- Who you are here, and the two money-adjacent screens, as tappable
+             rows at the top of Settings rather than buried in the accordion.
+             Nothing below can be bought yet: TalkLive is free, and Boosts and
+             coins are still in development. -->
+        <div class="settings-rows">
+          <button type="button" id="settingsProfileRow" class="settings-row">
+            <span id="settingsProfileAvatar" class="settings-row-avatar" aria-hidden="true"></span>
+            <span class="settings-row-text">
+              <strong id="settingsProfileName"></strong>
+              <small id="settingsProfileJoined"></small>
+            </span>
+            <span class="settings-row-go" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+            </span>
+          </button>
+
+          <button type="button" id="settingsShopRow" class="settings-row">
+            <span class="settings-row-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h16l-1.2 11.2a1.8 1.8 0 0 1-1.8 1.6H7a1.8 1.8 0 0 1-1.8-1.6z"/><path d="M8.5 8V6.4a3.5 3.5 0 0 1 7 0V8"/></svg>
+            </span>
+            <span class="settings-row-text">
+              <strong data-i18n="shopTitle">Shop</strong>
+              <small data-i18n="shopRowSub">Coins and Boosts</small>
+            </span>
+            <span class="settings-row-badge" data-i18n="comingSoon">Coming soon</span>
+            <span class="settings-row-go" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+            </span>
+          </button>
+
+          <button type="button" id="settingsBillingRow" class="settings-row">
+            <span class="settings-row-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="19" height="13" rx="2.5"/><path d="M2.5 10h19"/><path d="M6 14.5h3.5"/></svg>
+            </span>
+            <span class="settings-row-text">
+              <strong data-i18n="billingTitle">Billing</strong>
+              <small data-i18n="billingRowSub">Boosts and receipts</small>
+            </span>
+            <span class="settings-row-go" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+            </span>
+          </button>
+        </div>
+
         <!-- Display name: change the name strangers see, no account needed -->
         <div class="temp-name-block">
           <label class="pill-label" for="tempUsernameInput" data-i18n="tempUsername">Your name</label>
@@ -667,6 +723,73 @@
       <!-- Account modal: optional account - just a username + password. Stored
            permanently (Postgres/file store) with a durable session token so a
            user never loses their account to a reload, restart or deploy. -->
+      <!-- Shop: what Boosts and coins will look like when they exist. Nothing
+           here is purchasable - TalkLive is free - so every card carries the
+           price it is heading for and a disabled "Coming soon" button, and the
+           banner at the top says so before anyone reads a price. -->
+      <div id="shopModal" class="modal-overlay hidden">
+        <div class="modal-box shop-box" role="dialog" aria-modal="true" aria-labelledby="shopModalTitle">
+          <div class="modal-header">
+            <h2 id="shopModalTitle" data-i18n="shopTitle">Shop</h2>
+            <div class="shop-header-right">
+              <span class="shop-balance" id="shopBalance" aria-live="polite">
+                <span class="shop-coin" aria-hidden="true"></span><span id="shopBalanceNum">0</span>
+              </span>
+              <button type="button" id="closeShopBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
+            </div>
+          </div>
+          <div class="modal-body">
+            <p class="shop-note" data-i18n="shopFreeNote">Everything on TalkLive is free right now. Coins and Boosts are still being built - nothing here can be bought yet.</p>
+            <div id="shopGrid" class="shop-grid"></div>
+            <p class="shop-fine" data-i18n="shopFinePrint">Coins will be for TalkLive features only and will have no cash value.</p>
+            <p class="shop-fine">
+              <a href="/terms" data-i18n="termsOfService">Terms of Service</a> ·
+              <a href="/privacy" data-i18n="privacyPolicy">Privacy Policy</a> ·
+              <a href="/safety" data-i18n="safetyLink">Safety</a>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Billing: one screen that answers "have you charged me / will you".
+           Every section reflects the same fact - there is nothing to bill. -->
+      <div id="billingModal" class="modal-overlay hidden">
+        <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="billingModalTitle">
+          <div class="modal-header">
+            <h2 id="billingModalTitle" data-i18n="billingTitle">Billing</h2>
+            <button type="button" id="closeBillingBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div class="billing-list">
+              <div class="billing-item">
+                <p class="billing-kicker" data-i18n="billingEmailKicker">BILLING EMAIL</p>
+                <p class="billing-value" id="billingEmailValue" data-i18n="billingEmailNone">No email linked yet</p>
+                <p class="billing-hint" data-i18n="billingEmailHint">Link an email to your account and receipts will have somewhere to go once Boosts exist.</p>
+              </div>
+              <div class="billing-item">
+                <p class="billing-kicker" data-i18n="billingCardsKicker">SAVED PAYMENT METHODS</p>
+                <p class="billing-value" data-i18n="billingCardsValue">Not stored by TalkLive</p>
+                <p class="billing-hint" data-i18n="billingCardsHint">Payments will be handled through Stripe Checkout. Card details are never stored on TalkLive servers.</p>
+              </div>
+              <div class="billing-item">
+                <p class="billing-kicker" data-i18n="billingBoostKicker">CURRENT BOOST</p>
+                <p class="billing-value" data-i18n="billingBoostValue">No active Boost</p>
+                <p class="billing-hint" data-i18n="billingBoostHint">Every feature is free while Boosts are in development. You have not been charged for anything.</p>
+              </div>
+              <div class="billing-item">
+                <p class="billing-kicker" data-i18n="billingSupportKicker">BILLING SUPPORT</p>
+                <p class="billing-value"><a href="mailto:info@talklive.app">info@talklive.app</a></p>
+                <p class="billing-hint" data-i18n="billingSupportHint">Write to us about receipts, payment questions, or anything account-related.</p>
+              </div>
+            </div>
+            <p class="billing-footer">
+              <span data-i18n="billingFooter">Boosts and coins are coming soon. Read the full terms in</span>
+              <a href="/terms" data-i18n="termsOfService">Terms of Service</a>.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div id="accountModal" class="modal-overlay hidden">
         <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="accountModalTitle">
           <div class="modal-header">
