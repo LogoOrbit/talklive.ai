@@ -71,6 +71,8 @@ img { max-width: 100%; height: auto; }
 .site-header .wrap { display: flex; align-items: center; justify-content: space-between; height: 64px; gap: 16px; }
 .logo { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; color: var(--text); }
 .logo:hover { text-decoration: none; }
+/* "Live" in the brand cyan, exactly as the logo artwork sets it. */
+.logo-live { color: var(--accent-2); }
 .logo img { width: 30px; height: 30px; }
 .nav { display: flex; gap: 18px; flex-wrap: wrap; }
 .nav a { color: var(--muted); font-size: 15px; font-weight: 600; }

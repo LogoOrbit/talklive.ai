@@ -113,7 +113,7 @@ function headerHtml(currentSlug) {
     .map(n => `<a href="/${n.slug}">${n.label}</a>`).join('');
   return `<header class="site-header">
     <div class="wrap">
-      <a class="logo" href="/"><img src="/favicon.svg" width="30" height="30" alt="TalkLive logo" /> TalkLive</a>
+      <a class="logo" href="/"><img src="/favicon.svg" width="30" height="30" alt="TalkLive logo" /><span class="logo-name">Talk<span class="logo-live">Live</span></span></a>
       <nav class="nav" aria-label="Primary">${links}</nav>
       <span style="display:inline-flex;gap:8px">
         <a class="btn btn-talk" href="${trackedHref('/', 'seo', 'header', currentSlug || 'home')}" style="padding:10px 18px;font-size:15px">🎙 Talk</a>
@@ -140,7 +140,7 @@ function footerHtml() {
     <div class="wrap">
       <div class="cols">
         <div style="max-width:280px">
-          <a class="logo" href="/"><img src="/favicon.svg" width="28" height="28" alt="TalkLive logo" /> TalkLive</a>
+          <a class="logo" href="/"><img src="/favicon.svg" width="28" height="28" alt="TalkLive logo" /><span class="logo-name">Talk<span class="logo-live">Live</span></span></a>
           <p style="margin-top:12px">Free random voice &amp; text chat with strangers around the world. Tap to Talk or Tap to Chat - anonymous, no sign-up, just real live conversations.</p>
         </div>
         ${colHtml}
@@ -414,7 +414,7 @@ function page(p, index) {
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<link rel="stylesheet" href="/seo.css?v=20260908growth" />
+<link rel="stylesheet" href="/seo.css?v=20260916brand2" />
 <title>${esc(p.title)}</title>
 <meta name="description" content="${esc(p.description)}" />
 <meta name="robots" content="${p.noindex ? 'noindex, follow' : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1'}" />
@@ -1944,7 +1944,7 @@ function blogPost(b) {
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<link rel="stylesheet" href="/seo.css?v=20260908growth" />
+<link rel="stylesheet" href="/seo.css?v=20260916brand2" />
 <title>${esc(b.title)}</title>
 <meta name="description" content="${esc(b.description)}" />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
@@ -2053,7 +2053,7 @@ function blogIndex() {
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<link rel="stylesheet" href="/seo.css?v=20260908growth" />
+<link rel="stylesheet" href="/seo.css?v=20260916brand2" />
 <title>TalkLive Blog - Voice Chat & Talking to Strangers</title>
 <meta name="description" content="Guides and research on talking to strangers, voice-only chat, practising languages with real people, and staying safe online - from the team behind TalkLive." />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
@@ -2170,7 +2170,7 @@ function localeHome(loc) {
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<link rel="stylesheet" href="/seo.css?v=20260908growth" />
+<link rel="stylesheet" href="/seo.css?v=20260916brand2" />
 <title>${esc(loc.title)}</title>
 <meta name="description" content="${esc(loc.description)}" />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
@@ -2209,7 +2209,7 @@ ${alternates}
 <a class="skip-link" href="#main-content">${loc.skipToContent}</a>
 <header class="site-header">
   <div class="wrap">
-    <a class="logo" href="/${loc.code}/"><img src="/favicon.svg" width="30" height="30" alt="TalkLive logo" /> TalkLive</a>
+    <a class="logo" href="/${loc.code}/"><img src="/favicon.svg" width="30" height="30" alt="TalkLive logo" /><span class="logo-name">Talk<span class="logo-live">Live</span></span></a>
     <span style="display:inline-flex;gap:8px">
       <a class="btn btn-talk" href="${appVoice}" style="padding:10px 18px;font-size:15px">🎙 ${loc.ctaTalk}</a>
       <a class="btn btn-chat" href="${appChat}" style="padding:10px 18px;font-size:15px">💬 ${loc.ctaChat}</a>

@@ -142,10 +142,12 @@ body.panel-open .side-panel {
  * both dropped the word "TalkLive" entirely - a visitor on a small screen had
  * nothing on the page telling them whose site they were on.
  *
- * The tile is public/favicon.svg inlined, so the header, the browser tab, the
- * installed PWA icon and the OG card all carry the same glyph. The wordmark is
- * solid --text rather than gradient-clipped: it matches og-image.svg, and it
- * stays legible in every theme.
+ * The mark is public/favicon.svg itself - derived from the brand logo in
+ * marketing/TalkLiveLogoTransparent.png - so the header, the browser tab, the
+ * installed PWA icon and the marketing pages all serve the same file. The
+ * wordmark is live text rather than the artwork's bitmap: it stays sharp at
+ * any size, and the artwork's white "Talk" would be invisible on the light
+ * theme. "Live" takes the brand cyan, exactly as the logo sets it.
  */
 .brand {
   font-weight: 800;
@@ -173,15 +175,21 @@ body.panel-open .side-panel {
 .brand-logo {
   position: relative;
   display: block;
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   flex: none;
 }
+.brand-logo img,
 .brand-logo svg {
   display: block;
   width: 100%;
   height: 100%;
 }
+
+/* "Live" in the brand cyan, exactly as the logo artwork sets it. Live text
+   rather than a bitmap wordmark so it stays sharp at any size and legible in
+   every theme - the artwork's white "Talk" would vanish on the light theme. */
+.brand-name-live { color: var(--accent-2); }
 
 .brand-name {
   white-space: nowrap;
@@ -194,10 +202,13 @@ body.panel-open .side-panel {
    ring is the header background, so it reads as punched out of the tile. */
 .brand-dot {
   position: absolute;
-  top: -2px;
-  right: -2px;
-  width: 11px;
-  height: 11px;
+  /* Clear of the tile's artwork: sitting flush in the corner it covered the
+     top of the sound waves, which are most of what makes the mark readable at
+     this size. */
+  top: -4px;
+  right: -4px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   border: 2px solid var(--bg-1);
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
@@ -1036,77 +1047,83 @@ body.panel-open .side-panel {
 }
 
 /* Conversation guide - friendly tips, scrollable, below the call area. */
-.convo-guide {
-  width: min(560px, 92%);
-  margin: 8px auto 26px;
-  padding: 18px 20px 20px;
-  border-radius: 18px;
-  background: var(--card, rgba(255, 255, 255, 0.04));
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+/* --- Page notes -----------------------------------------------------------
+ *
+ * The conversation guide and the "made free" note at the bottom of the call
+ * screen. Both used to be bordered cards - one with a tinted panel behind
+ * every emoji, one with a purple gradient and an emoji in its heading - which
+ * made two pieces of ordinary, sincere copy read like promotional widgets
+ * stacked between the ad slots.
+ *
+ * They are set as page copy now: one measure, a heading with a hairline under
+ * it, and text. No panel, no border, no emoji. The only colour is the small
+ * accent marker on each list item, which is what tells the eye it is a list.
+ */
+.note {
+  width: min(620px, 92%);
+  margin: 34px auto;
+  text-align: left;
 }
-.convo-guide-title {
+
+.note-title {
+  margin: 0 0 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: var(--text);
+}
+
+.note p {
   margin: 0 0 12px;
   font-size: 15px;
-  font-weight: 700;
-  color: var(--text);
-  text-align: center;
+  line-height: 1.65;
+  color: var(--muted);
 }
-.convo-guide-list {
+.note p:last-child { margin-bottom: 0; }
+.note p strong { color: var(--text); font-weight: 700; }
+
+/* `.note p` is the more specific selector, so the sign-off needs to match it
+   to take the brighter colour. */
+.note p.note-sign {
+  margin-top: 18px;
+  color: var(--text);
+  font-style: italic;
+  opacity: 0.9;
+}
+
+.note-list {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
 }
-.convo-guide-list li {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 14px;
-  line-height: 1.4;
+.note-list li {
+  position: relative;
+  padding-left: 20px;
+  margin-bottom: 11px;
+  font-size: 15px;
+  line-height: 1.6;
   color: var(--muted);
 }
-.convo-guide-list .cg-emoji {
-  flex: 0 0 auto;
-  font-size: 20px;
-  width: 34px;
-  height: 34px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.note-list li:last-child { margin-bottom: 0; }
+/* A 5px dot on the text's own baseline grid, so it stays put when the line
+   wraps and when the user scales the font. */
+.note-list li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 0.62em;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
-  background: var(--accent-soft, rgba(108, 92, 231, 0.14));
+  background: var(--accent);
 }
 
-/* "Made free for you" note at the bottom of the call screen. */
-.made-for-you {
-  width: min(560px, 92%);
-  margin: 10px auto 30px;
-  padding: 22px 24px;
-  border-radius: 18px;
-  text-align: center;
-  background: linear-gradient(160deg, rgba(108, 92, 231, 0.10), rgba(0, 212, 255, 0.05));
-  border: 1px solid rgba(108, 92, 231, 0.25);
-}
-.made-for-you-title {
-  margin: 0 0 12px;
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--text);
-}
-.made-for-you p {
-  margin: 0 0 10px;
-  font-size: 14px;
-  line-height: 1.55;
-  color: var(--muted);
-}
-.made-for-you p strong { color: var(--text); }
-.made-for-you-sign {
-  margin-bottom: 0 !important;
-  font-style: italic;
-  color: var(--text) !important;
-  opacity: 0.85;
+@media (max-width: 520px) {
+  .note { margin: 26px auto; }
+  .note-title { font-size: 17px; }
+  .note p, .note-list li { font-size: 14.5px; }
 }
 
 .connection-indicator {

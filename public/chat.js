@@ -176,6 +176,9 @@
     var connected = name === 'live' && partnerHere;
     reportBtn.classList.toggle('hidden', !connected);
     addFriendBtn.classList.toggle('hidden', !connected);
+    // The call button invites your current partner, so it only exists once
+    // there is one. Idle it was a no-op that looked like the primary action.
+    voiceCallBtn.classList.toggle('hidden', !connected);
     // Mini-games need a live partner, same as Report and Add friend.
     if (gameBtn) gameBtn.classList.toggle('hidden', !connected);
     autoBtn.classList.toggle('hidden', name === 'start');
@@ -1323,6 +1326,7 @@
     typingEl.classList.add('hidden');
     reportBtn.classList.add('hidden');
     addFriendBtn.classList.add('hidden');
+    voiceCallBtn.classList.add('hidden');
     topDefault.classList.remove('hidden');
     topPartner.classList.add('hidden');
     renderTopPartnerAnimal(null); // never let the last stranger's animal linger

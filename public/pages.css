@@ -68,6 +68,8 @@ a { color: var(--accent-2); }
 .brand:hover { opacity: 0.82; }
 .brand .brand-logo { display: block; width: 28px; height: 28px; flex: none; }
 .brand .brand-name { white-space: nowrap; }
+/* "Live" in the brand cyan, exactly as the logo artwork sets it. */
+.brand .brand-name-live { color: var(--accent-2); }
 .page-nav { display: flex; gap: 14px; flex-wrap: wrap; }
 .page-nav a {
   color: var(--muted);

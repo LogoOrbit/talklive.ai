@@ -129,14 +129,18 @@ img { max-width: 100%; }
 .brand:hover { opacity: 0.82; }
 .brand:active { transform: scale(0.97); }
 
-.brand-logo { position: relative; display: block; width: 30px; height: 30px; flex: none; }
-.brand-logo svg { display: block; width: 100%; height: 100%; }
+.brand-logo { position: relative; display: block; width: 32px; height: 32px; flex: none; }
+.brand-logo img, .brand-logo svg { display: block; width: 100%; height: 100%; }
+/* "Live" in the brand cyan, exactly as the logo artwork sets it - see the
+   note on the same rule in style.css. */
+.brand-name-live { color: var(--accent-2); }
 
 .brand-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .brand-dot {
-  position: absolute; top: -2px; right: -2px;
-  width: 11px; height: 11px; border-radius: 50%;
+  /* Clear of the tile's artwork - see the note on the same rule in style.css. */
+  position: absolute; top: -4px; right: -4px;
+  width: 10px; height: 10px; border-radius: 50%;
   border: 2px solid var(--bg-2);
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   display: block;
@@ -168,12 +172,13 @@ img { max-width: 100%; }
 }
 .online-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); flex: none; }
 
-/* Idle: the online count is one compact status pill, centred in the bar. */
+/* Idle: the online count reads as a quiet status line - a live dot and a
+   number - exactly as it does on the call screen. It used to be a filled,
+   green-outlined capsule, which gave a passive counter more visual weight
+   than the buttons either side of it and made the bar look unfinished. */
 #topDefault .top-sub {
-  margin-top: 0; padding: 6px 13px; border-radius: 999px; width: fit-content;
-  background: color-mix(in srgb, var(--green) 12%, transparent);
-  border: 1px solid color-mix(in srgb, var(--green) 22%, transparent);
-  color: var(--text); font-weight: 600; letter-spacing: 0.01em;
+  margin-top: 0; width: fit-content;
+  color: var(--muted); font-weight: 600; letter-spacing: 0.01em;
 }
 /* The live dot breathes, so the count reads as a real-time number. */
 #topDefault .top-sub .online-dot { animation: livePulse 2.4s ease-in-out infinite; }
@@ -346,6 +351,39 @@ img { max-width: 100%; }
 .chat-start-btn:hover { opacity: 0.92; }
 .chat-start-btn:active { transform: scale(0.96); }
 
+/* The two ways in, stacked: text chat first because that is what this page is
+   for, then the way across to the voice app. Secondary weight throughout - an
+   outline, not a second filled pill - so the primary action is never in
+   competition with it. */
+.chat-start-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.chat-start-alt {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 22px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+.chat-start-alt:hover {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: var(--accent-soft);
+}
+.chat-start-alt:active { transform: scale(0.97); }
+.chat-start-alt svg { flex: none; opacity: 0.9; }
+
 /* SEARCHING: the official logo, gently breathing, with a couple of quiet
    ripples radiating out from it. No orbits, no sparks - calm. */
 .search-scene { position: relative; width: 150px; height: 150px; display: flex; align-items: center; justify-content: center; }
@@ -447,13 +485,10 @@ img { max-width: 100%; }
   .topbar.connected .brand-name { display: none; }
   .topbar.connected .brand { gap: 0; }
 }
-@media (max-width: 560px) {
-  /* The live-count pill was being cut mid-word - "1 Onli" - once Auto joined
-     the row while searching. The dot and the number already say what the pill
-     is, so the label goes rather than the pill being clipped; this is the same
-     trade the voice app's people-count makes at the same widths. */
+@media (max-width: 480px) {
+  /* Dot and number carry the meaning; the word is the decoration. Same trade
+     the voice app's people-count makes at the same width. */
   #topDefault .top-sub > span:last-child { display: none; }
-  #topDefault .top-sub { padding: 6px 11px; gap: 5px; }
 }
 @media (max-width: 480px) {
   .topbar { gap: 8px; padding-left: 10px; padding-right: 10px; }

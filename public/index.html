@@ -15,9 +15,9 @@
      rather than after it - the sooner it lands, the sooner the hero paints.
      Analytics and ad tags are loaded at the end of <body> instead of here so
      they stop competing for mobile bandwidth during Largest Contentful Paint. -->
-<link rel="stylesheet" href="style.css?v=20260916brand1" />
-<link rel="stylesheet" href="chat-extras.css?v=20260916brand1" />
-<link rel="stylesheet" href="games.css?v=20260916brand1" />
+<link rel="stylesheet" href="style.css?v=20260916brand2" />
+<link rel="stylesheet" href="chat-extras.css?v=20260916brand2" />
+<link rel="stylesheet" href="games.css?v=20260916brand2" />
 <script defer src="/config.js"></script>
 <!-- Google Identity Services, deferred so it never blocks first paint. app.js
      waits for it (and for /config.js) before rendering the sign-in buttons. -->
@@ -223,25 +223,11 @@
              favicon puts it in. Never hidden - not on a phone, not mid-call. -->
         <button type="button" id="brandHome" class="brand" data-i18n-title="reloadHome" title="Reload TalkLive">
           <span class="brand-logo" aria-hidden="true">
-            <svg viewBox="0 0 64 64" focusable="false">
-              <defs>
-                <linearGradient id="tlBrandGrad" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0" stop-color="#6c5ce7"/>
-                  <stop offset="1" stop-color="#00d4ff"/>
-                </linearGradient>
-              </defs>
-              <rect width="64" height="64" rx="15" fill="url(#tlBrandGrad)"/>
-              <g fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round">
-                <line x1="20" y1="26" x2="20" y2="38"/>
-                <line x1="28" y1="20" x2="28" y2="44"/>
-                <line x1="36" y1="24" x2="36" y2="40"/>
-                <line x1="44" y1="28" x2="44" y2="36"/>
-              </g>
-            </svg>
+            <img src="/favicon.svg?v=20260916brand2" width="30" height="30" alt="" decoding="async" />
             <!-- Network status: green dot when online, red when the connection drops. -->
             <span id="brandDot" class="brand-dot is-online" data-i18n-title="netOnline" title="You are online"></span>
           </span>
-          <span class="brand-name">TalkLive</span>
+          <span class="brand-name">Talk<span class="brand-name-live">Live</span></span>
         </button>
       </div>
       <nav class="header-tools" aria-label="TalkLive tools">
@@ -1245,17 +1231,18 @@
           <div data-ad="box"></div>
         </div>
 
-        <!-- Conversation guide: friendly, simple tips shown on the call screen
-             so they're readable without leaving the call. -->
-        <section id="convoGuide" class="convo-guide">
-          <h3 class="convo-guide-title" data-i18n="convoGuideTitle">How to have a great talk</h3>
-          <ul class="convo-guide-list">
-            <li><span class="cg-emoji" aria-hidden="true">😊</span><span data-i18n="convoTip1">Smile before you start talking - it changes your voice.</span></li>
-            <li><span class="cg-emoji" aria-hidden="true">💬</span><span data-i18n="convoTip2">Ask simple questions first, like where they're from.</span></li>
-            <li><span class="cg-emoji" aria-hidden="true">🤝</span><span data-i18n="convoTip3">Be respectful and kind to everyone you meet.</span></li>
-            <li><span class="cg-emoji" aria-hidden="true">👂</span><span data-i18n="convoTip4">Listen carefully and let them finish speaking.</span></li>
-            <li><span class="cg-emoji" aria-hidden="true">🌱</span><span data-i18n="convoTip5">Don't worry if someone skips you - it's completely normal.</span></li>
-            <li><span class="cg-emoji" aria-hidden="true">🎉</span><span data-i18n="convoTip6">Relax and have fun meeting new people.</span></li>
+        <!-- Conversation guide. Set as ordinary page copy - a heading, a rule
+             and a list - rather than a bordered card full of emoji roundels.
+             It is advice, and advice reads better as text than as a widget. -->
+        <section id="convoGuide" class="note">
+          <h3 class="note-title" data-i18n="convoGuideTitle">How to have a great talk</h3>
+          <ul class="note-list">
+            <li data-i18n="convoTip1">Smile before you start talking - it changes your voice.</li>
+            <li data-i18n="convoTip2">Ask simple questions first, like where they're from.</li>
+            <li data-i18n="convoTip3">Be respectful and kind to everyone you meet.</li>
+            <li data-i18n="convoTip4">Listen carefully and let them finish speaking.</li>
+            <li data-i18n="convoTip5">Don't worry if someone skips you - it's completely normal.</li>
+            <li data-i18n="convoTip6">Relax and have fun meeting new people.</li>
           </ul>
         </section>
 
@@ -1263,13 +1250,14 @@
         <div class="ad-card ad-card-app"><span class="ad-card-label">Sponsored</span><div data-ad="box" style="margin:24px auto;text-align:center"></div></div>
 
         <!-- A warm, simple note at the bottom of the call screen: why TalkLive
-             is free and the care that goes into it. Plain English on purpose. -->
-        <section id="madeForYou" class="made-for-you">
-          <h3 class="made-for-you-title">💜 Made free, just for you</h3>
-          <p>TalkLive is <strong>100% free</strong>. No payment needed to talk. No time limits. No tricks.</p>
-          <p>We work hard every single day to make this the smoothest, cleanest, and most beautiful way to talk to new people anywhere in the world.</p>
-          <p>Fast connections. A simple design. An experience we believe is second to none - built with love, for you.</p>
-          <p class="made-for-you-sign">Enjoy your talks. - The TalkLive team</p>
+             is free and the care that goes into it. Plain English on purpose,
+             and plain typography to match - the tinted box and the emoji in the
+             heading made a sincere note read like a promo banner. -->
+        <section id="madeForYou" class="note">
+          <h3 class="note-title">Made free, just for you</h3>
+          <p>TalkLive is <strong>100% free</strong>. No payment needed to talk, no time limits, no tricks.</p>
+          <p>We work on it every day to make this the smoothest, cleanest way to talk to new people anywhere in the world - fast connections and a simple design, built with care.</p>
+          <p class="note-sign">Enjoy your talks. &mdash; The TalkLive team</p>
         </section>
       </section>
 
@@ -1617,8 +1605,8 @@
        browser finish parsing and paint the page first. -->
   <script defer src="/socket.io/socket.io.js"></script>
   <script defer src="countries.js?v=20260828fix"></script>
-  <script defer src="i18n.js?v=20260916brand1"></script>
-  <script defer src="animals.js?v=20260916brand1"></script>
+  <script defer src="i18n.js?v=20260916brand2"></script>
+  <script defer src="animals.js?v=20260916brand2"></script>
   <script defer src="moderation.js?v=20260705b"></script>
   <script defer src="error-reporter.js?v=20260823ui"></script>
   <script>
@@ -1652,9 +1640,9 @@
       audio.addEventListener('play', function () { setState(true); });
     })();
   </script>
-  <script defer src="chat-extras.js?v=20260916brand1"></script>
-  <script defer src="games.js?v=20260916brand1"></script>
-  <script defer src="app.js?v=20260916brand1"></script>
+  <script defer src="chat-extras.js?v=20260916brand2"></script>
+  <script defer src="games.js?v=20260916brand2"></script>
+  <script defer src="app.js?v=20260916brand2"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the
