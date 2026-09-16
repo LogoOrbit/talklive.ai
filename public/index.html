@@ -15,9 +15,9 @@
      rather than after it - the sooner it lands, the sooner the hero paints.
      Analytics and ad tags are loaded at the end of <body> instead of here so
      they stop competing for mobile bandwidth during Largest Contentful Paint. -->
-<link rel="stylesheet" href="style.css?v=20260916brand2" />
-<link rel="stylesheet" href="chat-extras.css?v=20260916brand2" />
-<link rel="stylesheet" href="games.css?v=20260916brand2" />
+<link rel="stylesheet" href="style.css?v=20260916settings" />
+<link rel="stylesheet" href="chat-extras.css?v=20260916settings" />
+<link rel="stylesheet" href="games.css?v=20260916settings" />
 <script defer src="/config.js"></script>
 <!-- Google Identity Services, deferred so it never blocks first paint. app.js
      waits for it (and for /config.js) before rendering the sign-in buttons. -->
@@ -221,9 +221,9 @@
              knows which site they are on: the tile is public/favicon.svg drawn
              inline, and the network dot sits in the same top-right corner the
              favicon puts it in. Never hidden - not on a phone, not mid-call. -->
-        <button type="button" id="brandHome" class="brand" data-i18n-title="reloadHome" title="Reload TalkLive">
+        <button type="button" id="brandHome" class="brand" data-i18n-title="goHome" data-i18n-aria="goHome" aria-label="TalkLive home" title="TalkLive home">
           <span class="brand-logo" aria-hidden="true">
-            <img src="/favicon.svg?v=20260916brand2" width="30" height="30" alt="" decoding="async" />
+            <img src="/favicon.svg?v=20260916settings" width="30" height="30" alt="" decoding="async" />
             <!-- Network status: green dot when online, red when the connection drops. -->
             <span id="brandDot" class="brand-dot is-online" data-i18n-title="netOnline" title="You are online"></span>
           </span>
@@ -847,7 +847,19 @@
                      self-hosted deploy without Google never shows a dead
                      button. -->
                 <div class="account-or google-block hidden"><span data-i18n="orDivider">or</span></div>
-                <div id="googleBtnLogin" class="google-btn-slot google-block hidden"></div>
+                <!-- The face is ours; Google's own button is rendered into the
+                     slot behind it and takes the clicks (its markup cannot be
+                     restyled, and left to itself it sat in the form as a stray
+                     black rectangle with a white halo). -->
+                <div id="googleBtnLogin" class="google-btn-slot google-block hidden">
+                  <span class="google-btn-face" aria-hidden="true">
+                    <span class="google-btn-mark">
+                      <svg viewBox="0 0 48 48" width="18" height="18" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+                    </span>
+                    <span class="google-btn-label" data-i18n="signInWithGoogle">Sign in with Google</span>
+                  </span>
+                  <div class="google-btn-real"></div>
+                </div>
               </form>
 
               <form id="signupTab" class="account-tab-panel hidden" autocomplete="on" onsubmit="return false;">
@@ -879,7 +891,15 @@
                 <p class="account-hint account-hint-field" data-i18n="recoveryEmailHint">Only used to send you a reset code if you forget your password. Never shown to anyone.</p>
                 <button type="button" id="signupSubmitBtn" class="btn btn-primary settings-save" data-i18n="createAccount">Create Account</button>
                 <div class="account-or google-block hidden"><span data-i18n="orDivider">or</span></div>
-                <div id="googleBtnSignup" class="google-btn-slot google-block hidden"></div>
+                <div id="googleBtnSignup" class="google-btn-slot google-block hidden">
+                  <span class="google-btn-face" aria-hidden="true">
+                    <span class="google-btn-mark">
+                      <svg viewBox="0 0 48 48" width="18" height="18" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+                    </span>
+                    <span class="google-btn-label" data-i18n="signUpWithGoogle">Sign up with Google</span>
+                  </span>
+                  <div class="google-btn-real"></div>
+                </div>
                 <p class="account-hint google-block hidden" data-i18n="googleSignupHint">Signing up with Google creates your account instantly using the name and email you choose to share.</p>
               </form>
 
@@ -1805,8 +1825,8 @@
        browser finish parsing and paint the page first. -->
   <script defer src="/socket.io/socket.io.js"></script>
   <script defer src="countries.js?v=20260828fix"></script>
-  <script defer src="i18n.js?v=20260916brand2"></script>
-  <script defer src="animals.js?v=20260916brand2"></script>
+  <script defer src="i18n.js?v=20260916settings"></script>
+  <script defer src="animals.js?v=20260916settings"></script>
   <script defer src="moderation.js?v=20260705b"></script>
   <script defer src="error-reporter.js?v=20260823ui"></script>
   <script>
@@ -1840,9 +1860,9 @@
       audio.addEventListener('play', function () { setState(true); });
     })();
   </script>
-  <script defer src="chat-extras.js?v=20260916brand2"></script>
-  <script defer src="games.js?v=20260916brand2"></script>
-  <script defer src="app.js?v=20260916online"></script>
+  <script defer src="chat-extras.js?v=20260916settings"></script>
+  <script defer src="games.js?v=20260916settings"></script>
+  <script defer src="app.js?v=20260916settings"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

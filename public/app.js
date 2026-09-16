@@ -1853,8 +1853,11 @@ function renderGoogleButtons() {
     // at the new size instead of leaving a stale, mismatched one.
     const key = `${text}:${dark ? 'dark' : 'light'}:${width}`;
     if (slot.dataset.rendered === key) return;
-    slot.innerHTML = '';
-    window.google.accounts.id.renderButton(slot, {
+    // Google's button goes in its own host, behind our visible face - blowing
+    // away the slot's contents would take the face with it.
+    const host = slot.querySelector('.google-btn-real') || slot;
+    host.innerHTML = '';
+    window.google.accounts.id.renderButton(host, {
       type: 'standard', theme: dark ? 'filled_black' : 'outline', size: 'large',
       text, shape: 'pill', logo_alignment: 'center', width,
     });
@@ -3161,7 +3164,16 @@ window.addEventListener('offline', refreshNetStatus);
 // Tapping the "TalkLive" brand reloads the app (a clean way back to a fresh
 // start from anywhere - search, an active call, or a game).
 const brandHome = document.getElementById('brandHome');
-if (brandHome) brandHome.addEventListener('click', reloadPage);
+// The logo goes home. From /call that is a real navigation back to the landing
+// page; on the landing page itself there is nowhere to go, so it reloads as
+// before. The unload warning is left in place deliberately - if a call is live,
+// the browser asks before dropping it.
+if (brandHome) {
+  brandHome.addEventListener('click', () => {
+    if (location.pathname !== '/') { location.href = '/'; return; }
+    reloadPage();
+  });
+}
 
 // --- The single Call button and its four visual modes ---
 //   'call'    green phone   → tap to start searching
@@ -5427,6 +5439,23 @@ try {
   // prompted it, which is the whole reason the person tapped.
   if (params.get('open') === 'friends') {
     openSidePanel(friendsDropdown, friendsOverlay);
+    history.replaceState(history.state, '', '/');
+  }
+  // The account screens live here, so /chat's Settings rows link to them
+  // rather than the chat app carrying its own copy of the account stack.
+  const open = params.get('open');
+  if (open === 'account') {
+    openAccountModal(params.get('tab') === 'login' ? 'login' : 'signup');
+    history.replaceState(history.state, '', '/');
+  } else if (open === 'shop') {
+    openShop();
+    history.replaceState(history.state, '', '/');
+  } else if (open === 'billing') {
+    openBilling();
+    history.replaceState(history.state, '', '/');
+  } else if (open === 'feedback' && feedbackModal) {
+    if (feedbackInput) feedbackInput.value = '';
+    openModal(feedbackModal);
     history.replaceState(history.state, '', '/');
   }
 } catch (e) { /* very old browser without URLSearchParams - ignore */ }

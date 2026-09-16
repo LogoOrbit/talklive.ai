@@ -3212,23 +3212,72 @@ body.panel-open .side-panel {
   background: var(--border, rgba(255, 255, 255, .14));
 }
 
-/* Google renders its own button inside this slot and its markup cannot be
-   restyled from here, so the slot does the work instead: app.js renders the
-   button at the slot's measured width, and the pill radius plus overflow
-   clipping make it sit in the same silhouette as the form controls above it
-   rather than as a stray white rectangle. */
+/* Google's own button cannot be restyled from here - clipping it to a pill
+   still left a black slab ringed in white sitting under our own controls. So
+   the visible button is ours, in Google's light branding (white, the four
+   colour mark, their wording), and Google's real button is rendered into the
+   slot on top of it at full size but invisible, so every click still goes
+   through Google's script exactly as before. */
 .google-btn-slot {
-  display: flex;
-  justify-content: center;
-  min-height: 44px;
-  border-radius: 999px;
-  overflow: hidden;
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 46px;
 }
 
-/* Google's wrapper is inline-block at its rendered width; stretch it so the
-   clipped corners line up with the button's own edges. */
-.google-btn-slot > div {
-  width: 100%;
+.google-btn-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border-radius: 999px;
+  background: #fff;
+  color: #1f1f1f;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.1px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+.google-btn-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Hover and press live on the slot, not the face: the invisible Google button
+   is what the pointer is actually over. */
+.google-btn-slot:hover .google-btn-face {
+  background: #f6f7f9;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+.google-btn-slot:active .google-btn-face {
+  transform: scale(0.985);
+}
+/* Google's button keeps its own focus ring, which is invisible along with it,
+   so the keyboard ring is drawn on the face instead. */
+.google-btn-slot:focus-within .google-btn-face {
+  box-shadow: 0 0 0 3px var(--accent), 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.google-btn-real {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  opacity: 0;
+  overflow: hidden;
+  border-radius: 999px;
+}
+/* Google renders an inline-block wrapper at its own measured size; stretching
+   it keeps the clickable area exactly the pill the user can see. */
+.google-btn-real > div,
+.google-btn-real iframe,
+.google-btn-real [role="button"] {
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .account-status {

@@ -24,6 +24,10 @@
     if (!id) {
       id = 'c_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
       localStorage.setItem('talklive_client_id', id);
+      // When this profile came into existence, so Settings can say how long it
+      // has been around. Same key the call app writes, and only ever set
+      // alongside a freshly minted id.
+      localStorage.setItem('talklive_profile_created', String(Date.now()));
     }
     return id;
   }
@@ -371,6 +375,9 @@
       nickname: accountNickname || tempUsername || undefined,
       gender: myGender || undefined,
       animal: myAnimal || undefined,
+      // Kept with every register, as the call app does, so the choice survives
+      // a reconnect instead of quietly reverting to visible.
+      hideStatus: localStorage.getItem('talklive_status_visible') === 'off',
     });
   }
 
@@ -432,15 +439,10 @@
     goSearch(true);
   });
 
-  // Tapping the brand restarts the page. The href alone is a same-URL
-  // navigation, which some browsers turn into a no-op once a chat is running.
-  var brandHome = document.getElementById('brandHome');
-  if (brandHome) {
-    brandHome.addEventListener('click', function (e) {
-      e.preventDefault();
-      location.reload();
-    });
-  }
+  // The logo is the way back to the landing page - it is the one mark on the
+  // screen everyone already treats as "home". It used to point at /chat and
+  // reload the page instead, which left people stuck inside the chat app.
+  // A plain link does the job, so middle-click and long-press work too.
 
   startBtn.addEventListener('click', function () { vibrate(10); initAudio(); requestStart(); });
   cancelBtn.addEventListener('click', function () {
@@ -775,10 +777,65 @@
   var soundToggle = $('soundToggle');
   var vibrationToggle = $('vibrationToggle');
 
+  // The row at the top of Settings is you: avatar, name, and when this profile
+  // came into existence. Same row, same wording as the call app.
+  var settingsProfileRow = $('settingsProfileRow');
+  function renderSettingsProfileRow() {
+    if (!settingsProfileRow) return;
+    var name = accountNickname || tempUsername || (myProfile && myProfile.username) || '';
+    var icon = (myAnimal && Animals && Animals.has(myAnimal)) ? Animals.icon(myAnimal, 40) : '';
+    $('settingsProfileAvatar').innerHTML =
+      (icon || escapeHtml((name || '?').charAt(0).toUpperCase())) +
+      '<span class="settings-row-online" aria-hidden="true"></span>';
+    $('settingsProfileName').textContent = name || t('linkProfileAnonymous');
+    var created = Number(localStorage.getItem('talklive_profile_created'));
+    $('settingsProfileJoined').textContent = (created > 0)
+      ? t('joinedOn', { date: formatProfileCreated(created) })
+      : t(accountNickname ? 'settingsRowAccount' : 'settingsRowGuest');
+  }
+  function formatProfileCreated(ts) {
+    try {
+      return new Date(ts).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    } catch (e) {
+      return new Date(ts).toDateString();
+    }
+  }
+
+  // The account screens (sign in, register, My Account, Shop, Billing) live on
+  // the landing page. /chat hands over to them rather than carrying a second
+  // copy of the whole account stack.
+  function goLanding(query) { location.href = '/' + (query || ''); }
+  if (settingsProfileRow) {
+    settingsProfileRow.addEventListener('click', function () {
+      goLanding('?open=account&tab=' + (accountNickname ? 'login' : 'signup'));
+    });
+  }
+  if ($('settingsShopRow')) $('settingsShopRow').addEventListener('click', function () { goLanding('?open=shop'); });
+  if ($('settingsBillingRow')) $('settingsBillingRow').addEventListener('click', function () { goLanding('?open=billing'); });
+
+  // Accordion: one tap opens a category, and only one stays open at a time.
+  var settingsAccordion = $('settingsAccordion');
+  if (settingsAccordion) {
+    settingsAccordion.querySelectorAll('.acc-header').forEach(function (header) {
+      var item = header.parentNode;
+      if (header.getAttribute('aria-expanded') === 'true') item.classList.add('open');
+      header.addEventListener('click', function () {
+        var open = !item.classList.contains('open');
+        settingsAccordion.querySelectorAll('.acc-item').forEach(function (other) {
+          other.classList.remove('open');
+          other.querySelector('.acc-header').setAttribute('aria-expanded', 'false');
+        });
+        item.classList.toggle('open', open);
+        header.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+    });
+  }
+
   $('chatSettingsBtn').addEventListener('click', function () {
     vibrate(10);
     closeAllPanels();
     tempNameInput.value = tempUsername || (myProfile && myProfile.username) || '';
+    renderSettingsProfileRow();
     openPanel(settingsPanel, settingsOverlay);
   });
   $('settingsCloseBtn').addEventListener('click', function () { closePanel(settingsPanel, settingsOverlay); });
@@ -841,6 +898,20 @@
     localStorage.setItem('talklive_vibration', vibrationEnabled ? 'on' : 'off');
   });
 
+  // Privacy & Safety. Both preferences are shared with the call app - same
+  // storage keys, same server events - so a choice made on either page holds
+  // on the other.
+  var statusVisibilityToggle = $('statusVisibilityToggle');
+  var statusVisible = localStorage.getItem('talklive_status_visible') !== 'off';
+  if (statusVisibilityToggle) {
+    statusVisibilityToggle.checked = statusVisible;
+    statusVisibilityToggle.addEventListener('change', function () {
+      statusVisible = statusVisibilityToggle.checked;
+      localStorage.setItem('talklive_status_visible', statusVisible ? 'on' : 'off');
+      socket.emit('set-status-visibility', { hidden: !statusVisible });
+    });
+  }
+
   // --- Friends panel: requests + friend list, kept in sync by 'state-sync'. ---
   var friendsPanel = $('friendsPanel');
   var friendsOverlay = $('friendsOverlay');
@@ -873,7 +944,16 @@
     friendsBadge.textContent = String(badgeCount);
     friendsBadge.classList.toggle('hidden', badgeCount === 0);
 
+    // Each list says what it is and how many are in it. Without the headings a
+    // pending request sat above "No friends yet" with nothing to say which was
+    // which, and an accepted friend appeared as one unlabelled row.
     requestsList.innerHTML = '';
+    if (friendsState.requests.length) {
+      var reqHead = document.createElement('p');
+      reqHead.className = 'list-heading';
+      reqHead.textContent = t('friendRequestsCount', { n: friendsState.requests.length });
+      requestsList.appendChild(reqHead);
+    }
     friendsState.requests.forEach(function (r) {
       var row = document.createElement('div');
       row.className = 'request-row';
@@ -895,9 +975,15 @@
 
     friendsList.innerHTML = '';
     if (!friendsState.friends.length) {
-      friendsList.innerHTML = '<p class="list-empty">' + escapeHtml(t('noFriendsYet')) + '</p>';
+      // "during a call" is the call app's wording; here you add someone while
+      // you are chatting with them.
+      friendsList.innerHTML = '<p class="list-empty">' + escapeHtml(t('noFriendsYetChat')) + '</p>';
       return;
     }
+    var friendsHead = document.createElement('p');
+    friendsHead.className = 'list-heading';
+    friendsHead.textContent = t('friendsCount', { n: friendsState.friends.length });
+    friendsList.appendChild(friendsHead);
     friendsState.friends.forEach(function (f) {
       var row = document.createElement('div');
       row.className = 'friend-row';
@@ -996,10 +1082,22 @@
   // re-render of the thread.
   var friendSeenTs = {};
 
+  // The same preference has two controls - the switch in Settings and the
+  // toggle in the friend-chat header - so both are redrawn together.
+  var messageSeenToggle = $('messageSeenToggle');
   function syncSeenToggleUi() {
+    if (messageSeenToggle) messageSeenToggle.checked = messageSeenEnabled;
     if (!chatSeenToggleBtn) return;
     chatSeenToggleBtn.classList.toggle('is-off', !messageSeenEnabled);
     chatSeenToggleBtn.setAttribute('aria-pressed', messageSeenEnabled ? 'true' : 'false');
+  }
+  if (messageSeenToggle) {
+    messageSeenToggle.addEventListener('change', function () {
+      messageSeenEnabled = messageSeenToggle.checked;
+      try { localStorage.setItem('talklive_message_seen', messageSeenEnabled ? 'on' : 'off'); } catch (e) {}
+      syncSeenToggleUi();
+      if (messageSeenEnabled && activeFriendChatId) socket.emit('chat-seen', { friendClientId: activeFriendChatId });
+    });
   }
   if (chatSeenToggleBtn) {
     chatSeenToggleBtn.addEventListener('click', function () {

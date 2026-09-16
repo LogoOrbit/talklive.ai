@@ -191,14 +191,37 @@ img { max-width: 100%; }
   font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
   margin-right: 4px;
 }
+/* The live dot breathes, so the count reads as a real-time number. The ring is
+   drawn inside the dot's own box rather than as a box-shadow spreading past
+   it: this row and the header zone around it both clip their overflow, which
+   sliced the ring - and at the edge the dot itself - clean in half. A 14px box
+   fits inside the line, so there is nothing left to crop. */
 #topDefault .top-sub .online-dot {
-  width: 6px; height: 6px; margin-right: 7px;
-  /* The live dot breathes, so the count reads as a real-time number. */
+  position: relative; flex: none;
+  width: 14px; height: 14px;
+  /* The box is 4px wider than the dot on each side, so the margins pull the
+     spacing back to where it reads: level with the number, 7px clear of it. */
+  margin-left: -4px; margin-right: 3px;
+  background: none; border-radius: 0;
+}
+#topDefault .top-sub .online-dot::before,
+#topDefault .top-sub .online-dot::after {
+  content: ''; position: absolute; top: 50%; left: 50%;
+  border-radius: 50%; transform: translate(-50%, -50%);
+}
+#topDefault .top-sub .online-dot::before {
+  width: 6px; height: 6px; background: var(--green);
+}
+#topDefault .top-sub .online-dot::after {
+  width: 14px; height: 14px; background: var(--green);
   animation: livePulse 2.4s ease-in-out infinite;
 }
+/* A halo spreading out of the dot and fading, not an outline: at 6px a ring
+   this size sits right on the dot's edge and the two read as one muddy donut. */
 @keyframes livePulse {
-  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--green) 55%, transparent); }
-  70%      { box-shadow: 0 0 0 6px color-mix(in srgb, var(--green) 0%, transparent); }
+  0%   { transform: translate(-50%, -50%) scale(0.45); opacity: 0.4; }
+  70%  { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
 }
 .peer-flag { display: inline-flex; flex: none; }
 .peer-flag .flag-icon { border-radius: 3px; display: block; }
@@ -320,7 +343,10 @@ img { max-width: 100%; }
    there is a single place that decides how it degrades. */
 
 @media (prefers-reduced-motion: reduce) {
-  .brand-dot, #topDefault .top-sub .online-dot { animation: none; }
+  .brand-dot { animation: none; }
+  /* The ring is the animation here, so it goes entirely rather than freezing
+     mid-pulse as a stray circle around the dot. */
+  #topDefault .top-sub .online-dot::after { display: none; }
   .icon-btn { transition: background 0.2s ease, color 0.2s ease; }
   .icon-btn:hover, .icon-btn:active { transform: none; }
 }
@@ -630,6 +656,146 @@ img { max-width: 100%; }
 .side-header h2 { margin: 0; font-size: 16px; font-weight: 800; letter-spacing: -0.2px; }
 .side-body { flex: 1 1 auto; overflow-y: auto; padding: 16px 18px calc(18px + env(safe-area-inset-bottom, 0px)); }
 
+/* --- Settings panel -------------------------------------------------------
+   Section for section the same panel the call app shows (style.css): the rows
+   at the top, the name block, then the four accordion categories. The rules
+   below are the same ones, kept here because /chat deliberately never loads
+   style.css. Keep the two in step. */
+.settings-rows { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
+.settings-row {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04); color: var(--text);
+  font: inherit; text-align: start; text-decoration: none; cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.settings-row:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.18); }
+.settings-row-avatar {
+  position: relative; display: flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; flex: 0 0 44px; border-radius: 50%;
+  background: rgba(108, 92, 231, 0.22);
+  font-size: 17px; font-weight: 800;
+}
+/* The "you are online" dot, in the one place that is unambiguously you. */
+.settings-row-online {
+  position: absolute; right: 0; bottom: 1px; width: 11px; height: 11px;
+  border: 2px solid var(--bg-2); border-radius: 50%; background: var(--green);
+}
+.settings-row-icon {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; flex: 0 0 36px; border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06); color: var(--muted);
+}
+.settings-row-icon svg { width: 19px; height: 19px; }
+.settings-row-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.settings-row-text strong { font-size: 14.5px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.settings-row-text small { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.settings-row-badge {
+  flex: none; padding: 3px 8px; border: 1px solid rgba(108, 92, 231, 0.5);
+  border-radius: 999px; background: rgba(108, 92, 231, 0.16);
+  font-size: 10px; font-weight: 700; white-space: nowrap; color: var(--text);
+}
+.settings-row-go svg { width: 18px; height: 18px; display: block; color: var(--muted); }
+
+.temp-name-block {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 12px 14px 14px; border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px; background: rgba(255, 255, 255, 0.02);
+  margin-bottom: 14px;
+}
+.temp-name-block > .pill-label { font-weight: 700; color: var(--text); }
+.temp-name-row { display: flex; gap: 8px; align-items: stretch; }
+.temp-name-save { white-space: nowrap; flex: 0 0 auto; padding: 12px 16px; }
+
+/* One-tap expanding settings categories (accordion) */
+.settings-accordion { display: flex; flex-direction: column; gap: 8px; }
+.acc-item {
+  border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px;
+  overflow: hidden; background: rgba(255, 255, 255, 0.02);
+}
+.acc-header {
+  width: 100%; display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; padding: 13px 14px; background: none; border: none; color: var(--text);
+  font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; text-align: left;
+  -webkit-tap-highlight-color: transparent;
+}
+.acc-header:hover { background: rgba(255, 255, 255, 0.03); }
+.acc-chevron { width: 18px; height: 18px; flex: 0 0 auto; color: var(--muted); transition: transform 0.25s ease; }
+.acc-item.open .acc-chevron { transform: rotate(180deg); }
+/* Smooth 0fr->1fr height animation with no fixed max-height guesswork */
+.acc-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.28s ease; }
+.acc-item.open .acc-body { grid-template-rows: 1fr; }
+.acc-body-inner {
+  overflow: hidden; min-height: 0; display: flex; flex-direction: column;
+  gap: 10px; padding: 0 14px;
+}
+.acc-item.open .acc-body-inner { padding: 2px 14px 14px; }
+
+.pill-row { display: flex; flex-direction: column; gap: 8px; margin-bottom: 6px; }
+.pill-row:last-child { margin-bottom: 0; }
+.pill-label { font-size: 13px; color: var(--muted); }
+.pill-dot { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, 0.4); flex-shrink: 0; }
+.pill-icon { width: 14px; height: 14px; flex-shrink: 0; opacity: 0.85; }
+.pill-dot-male { background: #4da6ff; border-color: transparent; }
+.pill-dot-female { background: #ff6fb5; border-color: transparent; }
+.pill-dot-neutral { background: linear-gradient(135deg, #ffb84d, #4da6ff, #ff6fb5); border-color: transparent; }
+.theme-dot-dark { background: #0b0f1a; border: 1px solid rgba(255, 255, 255, 0.4); }
+.theme-dot-light { background: #f4f6fb; }
+.theme-dot-ocean { background: #00b4d8; }
+.theme-dot-sunset { background: #ff6b6b; }
+
+.lang-wrap { position: relative; display: flex; align-items: center; }
+.lang-icon { position: absolute; left: 10px; width: 16px; height: 16px; color: var(--accent-2); pointer-events: none; }
+.lang-select {
+  appearance: none; -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.06); color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 999px;
+  padding: 10px 12px 10px 32px; font: inherit; font-size: 13px; font-weight: 600;
+  cursor: pointer; width: 100%;
+}
+.lang-select:hover { background: rgba(255, 255, 255, 0.1); }
+/* A <select> only reliably honours background/color on the element and its
+   options, so the popup list is set explicitly to match the active theme. */
+.lang-select option { background: var(--bg-2); color: var(--text); }
+.settings-lang-wrap { width: 100%; }
+
+.switch { position: relative; display: inline-block; width: 42px; height: 24px; flex-shrink: 0; }
+.switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.switch-slider {
+  position: absolute; inset: 0; border-radius: 999px;
+  background: rgba(128, 134, 160, 0.35); transition: background 0.2s ease; pointer-events: none;
+}
+.switch-slider::before {
+  content: ''; position: absolute; width: 18px; height: 18px; border-radius: 50%;
+  background: #fff; top: 3px; left: 3px;
+  transition: transform 0.2s ease; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+.switch input:checked + .switch-slider { background: #2ed47a; }
+.switch input:checked + .switch-slider::before { transform: translateX(18px); }
+[dir="rtl"] .switch input:checked + .switch-slider::before { transform: translateX(-18px); }
+
+/* Help & About: a quiet two-column grid of small links instead of a stack of
+   full-width buttons - same tap targets, half the visual noise. */
+.settings-links { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.settings-link {
+  display: flex; align-items: center; min-height: 40px; padding: 8px 10px;
+  border-radius: 10px; border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.04); color: var(--muted);
+  font-size: 12.5px; font-weight: 600; line-height: 1.3; text-align: left;
+  text-decoration: none; cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.settings-link:hover { background: rgba(255, 255, 255, 0.09); color: var(--text); }
+[data-theme="light"] .settings-link { background: rgba(20, 30, 70, 0.05); }
+[data-theme="light"] .settings-link:hover { background: rgba(20, 30, 70, 0.1); }
+
+/* Sign in / Register at the bottom of the panel */
+.side-panel-auth {
+  display: flex; flex-direction: column; gap: 10px;
+  margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.side-auth-btn { width: 100%; text-decoration: none; }
+
 /* Settings controls */
 .name-row { display: flex; gap: 8px; margin-bottom: 6px; }
 .text-input {
@@ -643,19 +809,28 @@ img { max-width: 100%; }
 .side-body .field-label { margin: 16px 0 8px; font-weight: 600; color: var(--muted); }
 .side-body .field-label:first-child { margin-top: 0; }
 .pill-group { display: flex; flex-wrap: wrap; gap: 8px; }
+/* Same pill as the call app: a translucent fill when selected, with the dot
+   doing the colour work, rather than a solid block that swallows the icon. */
 .pill {
-  border: 1px solid var(--line); background: transparent; color: var(--text);
-  border-radius: 999px; padding: 8px 16px; font-size: 13.5px; font-weight: 600;
-  cursor: pointer; font-family: inherit;
+  display: inline-flex; align-items: center; gap: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.06);
+  color: var(--text); border-radius: 999px; padding: 8px 14px;
+  font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+  white-space: nowrap;
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.12s ease;
 }
 .pill:active { transform: scale(0.95); }
-.pill.selected { background: var(--accent); border-color: var(--accent); color: #fff; }
+.pill.selected { background: rgba(108, 92, 231, 0.18); border-color: var(--accent); }
+.pill.selected .pill-dot {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  border-color: transparent; box-shadow: 0 0 6px rgba(108, 92, 231, 0.8);
+}
+.pill.selected .pill-dot-male { background: #4da6ff; box-shadow: 0 0 8px #4da6ff; }
+.pill.selected .pill-dot-female { background: #ff6fb5; box-shadow: 0 0 8px #ff6fb5; }
 .toggle-row {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  margin-top: 18px; font-size: 14.5px; font-weight: 600; cursor: pointer;
+  font-size: 14px; font-weight: 600; cursor: pointer;
 }
-.toggle-row input { width: 20px; height: 20px; accent-color: var(--accent); flex: none; cursor: pointer; }
 
 /* Friends panel */
 .requests-list:not(:empty) { margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
@@ -689,6 +864,12 @@ img { max-width: 100%; }
 .mini-btn .notif-badge { top: -5px; right: -5px; }
 .request-note { font-size: 12px; color: var(--muted); margin: 2px 0 0; overflow-wrap: anywhere; }
 .list-empty { color: var(--muted); font-size: 13.5px; text-align: center; margin: 18px 0; }
+/* Says which list this is and how many are in it. */
+.list-heading {
+  margin: 2px 0 8px; padding: 0 2px;
+  font-size: 11.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--muted);
+}
 .side-hint { color: var(--muted); font-size: 13px; line-height: 1.4; margin: 0 0 12px; }
 
 /* Friend chat panel */
