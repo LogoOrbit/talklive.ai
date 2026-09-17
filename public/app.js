@@ -294,9 +294,11 @@ const forgotResetBtn = document.getElementById('forgotResetBtn');
 const forgotBackBtn = document.getElementById('forgotBackBtn');
 
 const appSettingsBtn = document.getElementById('appSettingsBtn');
-const appSettingsPanel = document.getElementById('appSettingsPanel');
-const appSettingsOverlay = document.getElementById('appSettingsOverlay');
-const closeAppSettingsBtn = document.getElementById('closeAppSettingsBtn');
+// Settings is a screen now, not a side panel, so there is no overlay and no
+// swipe-to-dismiss: you leave it with Back, or with the browser's own back.
+const settingsPage = document.getElementById('settingsPage');
+const settingsBackBtn = document.getElementById('settingsBackBtn');
+const settingsNav = document.getElementById('settingsNav');
 const themeGroup = document.getElementById('themeGroup');
 const soundToggle = document.getElementById('soundToggle');
 const vibrationToggle = document.getElementById('vibrationToggle');
@@ -1119,8 +1121,7 @@ syncMessageSeenUi();
 // Lock the main screen's scroll whenever a side panel (settings or chat) is
 // open, so scrolling only happens inside the open panel - never the page behind.
 function updateScrollLock() {
-  const anyOpen = appSettingsPanel.classList.contains('open')
-    || (typeof chatPanel !== 'undefined' && chatPanel && chatPanel.classList.contains('open'))
+  const anyOpen = (typeof chatPanel !== 'undefined' && chatPanel && chatPanel.classList.contains('open'))
     || friendsDropdown.classList.contains('open')
     || historyPanel.classList.contains('open')
     || friendProfileModal.classList.contains('open')
@@ -1133,47 +1134,107 @@ function closeHistoryPanel() {
   updateScrollLock();
 }
 
-// --- App settings side panel ---
-function openAppSettings() {
-  appSettingsPanel.classList.add('open');
-  appSettingsOverlay.classList.remove('hidden');
+// --- Settings, as a screen -------------------------------------------------
+// It used to be a side panel: a 380px column stacked on top of the page you
+// were trying to use, with the whole thing gone the moment you tapped
+// outside it. Settings is not a quick action - it is somewhere you go - so
+// the stage swaps the home screen out for it exactly the way a call does,
+// at its own URL, in the same tab.
+//
+// That means the browser's Back button has to work, which is the whole reason
+// this pushes a history entry rather than just toggling a class.
+let settingsReturnPath = '/';
+
+function settingsIsOpen() {
+  return settingsPage && !settingsPage.classList.contains('hidden');
+}
+
+function openAppSettings(tab) {
+  if (!settingsPage) return;
+  // Remember where to go back to: /call if this was opened mid-call, / if not.
+  if (!settingsIsOpen()) settingsReturnPath = location.pathname;
+  setupPanel.classList.add('hidden');
+  callPanel.classList.add('hidden');
+  settingsPage.classList.remove('hidden');
+  stageEl.classList.add('settings-live');
   if (typeof renderSettingsIdentity === 'function') renderSettingsIdentity();
+  showSettingsTab(tab || activeSettingsTab);
+  syncNavCurrent();
   updateScrollLock();
-}
-
-function closeAppSettings() {
-  appSettingsPanel.classList.remove('open');
-  appSettingsOverlay.classList.add('hidden');
-  updateScrollLock();
-}
-
-appSettingsBtn.addEventListener('click', openAppSettings);
-closeAppSettingsBtn.addEventListener('click', closeAppSettings);
-appSettingsOverlay.addEventListener('click', () => { if (Date.now() < swipeSuppressUntil) return; closeAppSettings(); });
-
-// Swipe to dismiss the settings panel in its own slide-in direction: it enters
-// from the left, so a leftward swipe closes it (rightward in RTL layouts).
-let settingsTouchStartX = null;
-let settingsTouchStartY = null;
-appSettingsPanel.addEventListener('touchstart', (e) => {
-  settingsTouchStartX = e.touches[0].clientX;
-  settingsTouchStartY = e.touches[0].clientY;
-}, { passive: true });
-appSettingsPanel.addEventListener('touchmove', (e) => {
-  if (settingsTouchStartX === null) return;
-  const dx = e.touches[0].clientX - settingsTouchStartX;
-  const dy = e.touches[0].clientY - settingsTouchStartY;
-  const closeDir = document.documentElement.dir === 'rtl' ? 1 : -1;
-  // A mostly-horizontal swipe toward the panel's edge, past a threshold → close.
-  if (dx * closeDir > 70 && Math.abs(dx) > Math.abs(dy)) {
-    settingsTouchStartX = null;
-    closeAppSettings();
+  window.scrollTo({ top: 0 });
+  if (location.pathname !== '/settings') {
+    history.pushState({ settings: true }, '', '/settings');
   }
-}, { passive: true });
-appSettingsPanel.addEventListener('touchend', () => {
-  settingsTouchStartX = null;
-  settingsTouchStartY = null;
+}
+
+// `fromHistory` is set when the browser's own Back button brought us here:
+// the entry is already gone, so popping another one would skip a page.
+function closeAppSettings(fromHistory) {
+  if (!settingsIsOpen()) return;
+  settingsPage.classList.add('hidden');
+  stageEl.classList.remove('settings-live');
+  // Back to whichever screen was underneath - the landing page, or the call
+  // that was still running while its settings were being read.
+  if (settingsReturnPath === '/call') callPanel.classList.remove('hidden');
+  else setupPanel.classList.remove('hidden');
+  syncNavCurrent();
+  updateScrollLock();
+  if (!fromHistory && location.pathname === '/settings') history.back();
+}
+
+// Five groups, one on screen at a time. A column of tabs on a desktop; on a
+// phone the list itself is the screen, and picking one opens it - the pattern
+// every phone settings app uses, because five screens of one thing beats one
+// screen of five.
+let activeSettingsTab = 'profile';
+
+// `drill` is the difference between "this section is the current one" and
+// "the user just asked to open it". On a phone those are two different
+// screens, and opening Settings must land on the list - not inside whichever
+// section happened to be current, with no way back to the other four.
+function showSettingsTab(name, drill) {
+  if (!settingsNav) return;
+  const known = Array.from(settingsNav.querySelectorAll('[data-settings-tab]'))
+    .map((b) => b.dataset.settingsTab);
+  if (!known.includes(name)) name = known[0];
+  activeSettingsTab = name;
+  settingsNav.querySelectorAll('[data-settings-tab]').forEach((btn) => {
+    const on = btn.dataset.settingsTab === name;
+    btn.classList.toggle('selected', on);
+    btn.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  document.querySelectorAll('[data-settings-pane]').forEach((pane) => {
+    pane.classList.toggle('hidden', pane.dataset.settingsPane !== name);
+  });
+  // On a phone the nav and the pane are two screens, not two columns.
+  if (settingsPage) settingsPage.classList.toggle('is-drilled', !!drill);
+}
+
+if (settingsNav) {
+  settingsNav.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-settings-tab]');
+    if (btn) showSettingsTab(btn.dataset.settingsTab, true);
+  });
+}
+
+appSettingsBtn.addEventListener('click', () => {
+  // A second tap on Settings while it is open goes back, the way tapping the
+  // current tab in a tab bar does.
+  if (settingsIsOpen()) closeAppSettings();
+  else openAppSettings();
 });
+
+if (settingsBackBtn) {
+  settingsBackBtn.addEventListener('click', () => {
+    // On a phone, Back steps out of the section first and out of Settings
+    // second - two screens deep means two taps back, not one.
+    if (settingsPage.classList.contains('is-drilled') && window.matchMedia('(max-width: 859px)').matches) {
+      settingsPage.classList.remove('is-drilled');
+      return;
+    }
+    closeAppSettings();
+  });
+}
 
 // --- Filters side panel: who you get matched with ---
 function openFilters() {
@@ -5245,7 +5306,7 @@ let swipeStartT = 0;
 let swipeSuppressUntil = 0;
 function panelsAreClosed() {
   return !chatOpen
-    && !appSettingsPanel.classList.contains('open')
+    && !settingsIsOpen()
     && !filtersPanel.classList.contains('open')
     && !friendsDropdown.classList.contains('open')
     && !friendProfileModal.classList.contains('open')
@@ -5471,7 +5532,7 @@ function closeTopmostLayer() {
   }
   if (!gameOverlay.classList.contains('hidden')) { attemptCloseGame(); return true; }
   if (chatOpen) { closeChatPanel(); return true; }
-  if (appSettingsPanel.classList.contains('open')) { closeAppSettings(); return true; }
+  if (settingsIsOpen()) { closeAppSettings(); return true; }
   if (filtersPanel.classList.contains('open')) { closeFilters(); return true; }
   if (friendChatModal.classList.contains('open')) { closeSidePanel(friendChatModal, friendChatOverlay); activeFriendChatId = null; return true; }
   if (friendProfileModal.classList.contains('open')) { closeSidePanel(friendProfileModal, friendProfileOverlay); return true; }
@@ -5490,6 +5551,10 @@ window.addEventListener('popstate', async () => {
   // An edge swipe that just opened a panel also fires the browser's back
   // gesture; ignore that trailing popstate so it doesn't re-close the panel.
   if (Date.now() < swipeSuppressUntil) { primeBackGuard(); return; }
+  // Settings is a real history entry, so Back leaves it the ordinary way -
+  // and it is handled before closeTopmostLayer(), which would otherwise pop a
+  // second entry for the same press and skip a page.
+  if (settingsIsOpen() && location.pathname !== '/settings') { closeAppSettings(true); return; }
   if (closeTopmostLayer()) { primeBackGuard(); return; }
   // On (or entering) a call: never exit silently - confirm ending first.
   const onCall = callState === 'connected' || callState === 'connecting'
@@ -5649,17 +5714,25 @@ document.querySelectorAll('.js-share-talklive').forEach((el) => {
 // Which section the nav is pointing at. Only Home and "a panel is open" are
 // real states today; the panels set their own while they are open.
 const tlFrameEl = document.querySelector('.tl-frame');
+
+// Which screen the nav is pointing at, and how wide that screen gets.
 function syncNavCurrent() {
   const home = !setupPanel.classList.contains('hidden');
-  // A live call gets the whole width. The activity rail is a home-screen
-  // thing - a column of "who you talked to before" alongside the person you
-  // are talking to now is noise, and the call screen is already the one place
-  // in the app that deliberately has nothing else on it.
+  const onSettings = settingsIsOpen();
+  // Anything that is not the home screen gets the whole width. The activity
+  // rail is a home-screen thing: a column of "who you talked to before"
+  // alongside the person you are talking to now is noise, and so is one
+  // beside a settings form.
   if (tlFrameEl) tlFrameEl.classList.toggle('is-call', !home);
-  if (!navHomeBtn) return;
-  navHomeBtn.classList.toggle('is-current', home);
-  if (home) navHomeBtn.setAttribute('aria-current', 'page');
-  else navHomeBtn.removeAttribute('aria-current');
+
+  const mark = (btn, on) => {
+    if (!btn) return;
+    btn.classList.toggle('is-current', on);
+    if (on) btn.setAttribute('aria-current', 'page');
+    else btn.removeAttribute('aria-current');
+  };
+  mark(navHomeBtn, home);
+  mark(appSettingsBtn, onSettings);
 }
 
 // --- The rail's two lists ---------------------------------------------------
@@ -6348,6 +6421,12 @@ if (location.pathname === '/call' && !pendingInviteToken) {
   history.replaceState(history.state, '', '/');
 } else if (pendingInviteToken) {
   history.replaceState(history.state, '', '/call');
+} else if (location.pathname === '/settings') {
+  // Landed on /settings directly - a bookmark, a reload, a shared link. The
+  // URL is already right, so the screen is opened in place without pushing a
+  // second entry, and Back leaves for the home screen.
+  history.replaceState({ settings: true }, '', '/settings');
+  openAppSettings();
 }
 
 // Deep link from the SEO landing pages: /?mode=chat sends the visitor straight

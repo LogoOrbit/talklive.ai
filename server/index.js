@@ -766,6 +766,13 @@ app.get('/chat', (req, res) => {
   sendPage(res, 'chat.html');
 });
 
+// Settings is a screen inside the same single-page shell, at its own URL, so
+// a reload or a bookmark lands back on it rather than 404ing. app.js opens the
+// screen when it sees this path (see the deep-link block at the bottom of it).
+app.get('/settings', (req, res) => {
+  sendPage(res, 'index.html');
+});
+
 // --- Owner dashboard, analytics & maintenance mode ---------------------------
 
 // Runtime snapshot handed to the dashboard: everything live, straight from memory.

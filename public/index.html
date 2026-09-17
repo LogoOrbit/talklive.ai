@@ -512,150 +512,6 @@
          Every preference now sits in a labelled group you can read top to
          bottom, because "which of these four drawers is Theme in" is not a
          question a settings panel should ask. -->
-    <div id="appSettingsOverlay" class="side-panel-overlay hidden"></div>
-    <aside id="appSettingsPanel" class="side-panel tl-panel" role="dialog" data-i18n-aria="settings" aria-label="Settings">
-      <div class="tl-panel-head">
-        <h2 data-i18n="settings">Settings</h2>
-        <button type="button" id="closeAppSettingsBtn" class="tl-panel-close" data-i18n-aria="close" aria-label="Close">&times;</button>
-      </div>
-      <div class="side-panel-body">
-        <div class="tl-panel-body">
-
-          <!-- You -->
-          <section>
-            <h3 class="tl-set-legend" data-i18n="catProfile">Profile</h3>
-            <div class="tl-set-group">
-              <button type="button" id="settingsProfileRow" class="tl-set-row">
-                <span id="settingsProfileAvatar" class="tl-set-row-icon" aria-hidden="true"></span>
-                <span class="tl-set-row-text">
-                  <strong id="settingsProfileName"></strong>
-                  <small id="settingsProfileJoined"></small>
-                </span>
-                <span class="tl-set-row-go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
-              </button>
-
-              <!-- Display name: the name strangers see. No account needed. -->
-              <div class="tl-set-control tl-set-control-stack">
-                <label class="tl-set-label" for="tempUsernameInput" data-i18n="tempUsername">Your name</label>
-                <div class="tl-set-field">
-                  <input type="text" id="tempUsernameInput" class="search-input" maxlength="24" data-i18n-placeholder="tempUsernamePlaceholder" placeholder="Your display name" autocomplete="off" />
-                  <button type="button" id="saveTempNameBtn" data-i18n="saveName">Save name</button>
-                </div>
-              </div>
-
-              <div class="tl-set-control tl-set-control-stack">
-                <span class="tl-set-label" id="genderGroupLabel" data-i18n="iAm">I am</span>
-                <div class="tl-seg pill-group" id="genderGroup" data-value="unspecified" role="group" aria-labelledby="genderGroupLabel">
-                  <button type="button" class="tl-seg-opt pill" data-value="unspecified"><span class="pill-dot pill-dot-neutral" aria-hidden="true"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span data-i18n="preferNotSay">Prefer not to say</span></button>
-                  <button type="button" class="tl-seg-opt pill" data-value="male"><span class="pill-dot pill-dot-male" aria-hidden="true"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="14" r="6"/><line x1="14.5" y1="9.5" x2="20" y2="4"/><polyline points="14.5 4 20 4 20 9.5"/></svg><span data-i18n="male">Male</span></button>
-                  <button type="button" class="tl-seg-opt pill" data-value="female"><span class="pill-dot pill-dot-female" aria-hidden="true"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="9" r="6"/><line x1="12" y1="15" x2="12" y2="21"/><line x1="9" y1="18" x2="15" y2="18"/></svg><span data-i18n="female">Female</span></button>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <!-- App -->
-          <section>
-            <h3 class="tl-set-legend" data-i18n="appSettings">App Settings</h3>
-            <div class="tl-set-group">
-              <div class="tl-set-control tl-set-control-stack">
-                <span class="tl-set-label" data-i18n="language">Language</span>
-                <div class="lang-wrap settings-lang-wrap">
-                  <svg class="lang-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><ellipse cx="12" cy="12" rx="4.2" ry="9.5"/><line x1="2.5" y1="12" x2="21.5" y2="12"/></svg>
-                  <select id="langSelect" class="lang-select" data-i18n-aria="language" data-i18n-title="language" aria-label="Language"></select>
-                </div>
-              </div>
-
-              <div class="tl-set-control tl-set-control-stack">
-                <span class="tl-set-label" id="themeGroupLabel" data-i18n="theme">Theme</span>
-                <div class="tl-seg pill-group" id="themeGroup" data-value="dark" role="group" aria-labelledby="themeGroupLabel">
-                  <button type="button" class="tl-seg-opt pill" data-value="dark"><span class="pill-dot theme-dot-dark" aria-hidden="true"></span><span data-i18n="themeDark">Dark</span></button>
-                  <button type="button" class="tl-seg-opt pill" data-value="light"><span class="pill-dot theme-dot-light" aria-hidden="true"></span><span data-i18n="themeLight">Light</span></button>
-                  <button type="button" class="tl-seg-opt pill" data-value="ocean"><span class="pill-dot theme-dot-ocean" aria-hidden="true"></span><span data-i18n="themeOcean">Ocean</span></button>
-                  <button type="button" class="tl-seg-opt pill" data-value="sunset"><span class="pill-dot theme-dot-sunset" aria-hidden="true"></span><span data-i18n="themeSunset">Sunset</span></button>
-                </div>
-              </div>
-
-              <label class="tl-set-control" for="soundToggle">
-                <span data-i18n="soundNotifications">Sound notifications</span>
-                <span class="switch"><input type="checkbox" id="soundToggle" checked /><span class="switch-slider" aria-hidden="true"></span></span>
-              </label>
-
-              <label class="tl-set-control" for="vibrationToggle">
-                <span data-i18n="vibration">Vibration</span>
-                <span class="switch"><input type="checkbox" id="vibrationToggle" checked /><span class="switch-slider" aria-hidden="true"></span></span>
-              </label>
-            </div>
-          </section>
-
-          <!-- Privacy -->
-          <section>
-            <h3 class="tl-set-legend" data-i18n="catPrivacy">Privacy &amp; Safety</h3>
-            <div class="tl-set-group">
-              <label class="tl-set-control" for="statusVisibilityToggle">
-                <span data-i18n="showOnlineStatus">Show my online status to friends</span>
-                <span class="switch"><input type="checkbox" id="statusVisibilityToggle" checked /><span class="switch-slider" aria-hidden="true"></span></span>
-              </label>
-
-              <label class="tl-set-control" for="messageSeenToggle">
-                <span data-i18n="messageSeen">Read receipts (Seen)</span>
-                <span class="switch"><input type="checkbox" id="messageSeenToggle" checked /><span class="switch-slider" aria-hidden="true"></span></span>
-              </label>
-            </div>
-          </section>
-
-          <!-- Money-adjacent. Nothing here is purchasable yet: TalkLive is free. -->
-          <section>
-            <h3 class="tl-set-legend" data-i18n="catBilling">Coins &amp; Billing</h3>
-            <div class="tl-set-group">
-              <button type="button" id="settingsShopRow" class="tl-set-row">
-                <span class="tl-set-row-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h16l-1.2 11.2a1.8 1.8 0 0 1-1.8 1.6H7a1.8 1.8 0 0 1-1.8-1.6z"/><path d="M8.5 8V6.4a3.5 3.5 0 0 1 7 0V8"/></svg>
-                </span>
-                <span class="tl-set-row-text">
-                  <strong data-i18n="shopTitle">Shop</strong>
-                  <small data-i18n="shopRowSub">Coins and Boosts</small>
-                </span>
-                <span class="tl-set-row-badge" data-i18n="comingSoon">Coming soon</span>
-                <span class="tl-set-row-go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
-              </button>
-
-              <button type="button" id="settingsBillingRow" class="tl-set-row">
-                <span class="tl-set-row-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="19" height="13" rx="2.5"/><path d="M2.5 10h19"/><path d="M6 14.5h3.5"/></svg>
-                </span>
-                <span class="tl-set-row-text">
-                  <strong data-i18n="billingTitle">Billing</strong>
-                  <small data-i18n="billingRowSub">Boosts and receipts</small>
-                </span>
-                <span class="tl-set-row-go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
-              </button>
-            </div>
-          </section>
-
-          <!-- Help -->
-          <section>
-            <h3 class="tl-set-legend" data-i18n="catAbout">Help &amp; About</h3>
-            <div class="tl-set-group tl-set-links">
-              <button type="button" id="feedbackBtn" data-i18n="feedback">Feedback for Improvement</button>
-              <button type="button" id="settingsTermsBtn" data-i18n="termsLink">Terms &amp; Community Guidelines</button>
-              <a href="/pricing" data-i18n="pricingLink">Pricing &amp; Premium</a>
-              <a href="/about" data-i18n="aboutLink">About TalkLive</a>
-              <a href="/contact" data-i18n="contactLink">Contact Us</a>
-              <a href="/terms" data-i18n="termsPageLink">Terms &amp; Conditions</a>
-              <a href="/privacy" data-i18n="privacyPolicy">Privacy Policy</a>
-              <a href="/refund" data-i18n="refundLink">Refund Policy</a>
-            </div>
-          </section>
-
-          <div class="tl-set-foot" id="sidePanelAuth">
-            <button type="button" id="sidePanelSignInBtn" class="btn btn-secondary side-auth-btn" data-i18n="signIn">Sign in</button>
-            <button type="button" id="sidePanelRegisterBtn" class="btn btn-primary side-auth-btn" data-i18n="register">Register</button>
-            <button type="button" id="myAccountBtn" class="btn btn-primary side-auth-btn hidden" data-i18n="myAccount">My Account</button>
-          </div>
-        </div>
-      </div>
-    </aside>
 
     <!-- Filters side panel: who you get matched with, opened from the top-right filter icon -->
     <div id="filtersOverlay" class="side-panel-overlay hidden"></div>
@@ -1037,6 +893,225 @@
         <div class="ad-card ad-card-app">
           <span class="ad-card-label" data-i18n="sponsored">Sponsored</span>
           <div data-ad="leaderboard"></div>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           SETTINGS, as a page.
+           -------------------------------------------------------------------
+           It used to be a side panel: a 380px column you scrolled through
+           five unrelated groups of, on top of the page you were trying to
+           use, with the whole thing gone the moment you tapped outside it.
+           Settings is not a quick action. It is somewhere you go.
+
+           So it is a screen now, at its own URL, in the same tab: the stage
+           swaps the home screen out for it exactly the way a call does. On a
+           desktop the five groups are a column of tabs beside the one you are
+           reading; on a phone they are a list, and picking one opens it with
+           a back arrow - the pattern every phone settings app uses, because
+           five screens of one thing beats one screen of five.
+
+           Every control inside is the original markup, moved: same IDs, same
+           handlers, same state. Nothing here re-implements a setting.
+           =================================================================== -->
+      <section id="settingsPage" class="tl-set-page hidden" aria-labelledby="settingsPageTitle">
+        <header class="tl-set-page-head">
+          <button type="button" id="settingsBackBtn" class="tl-set-back" data-i18n-aria="back" aria-label="Back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>
+          </button>
+          <!-- h2, not h1: the hero's headline is this document's one H1, and a
+               second one on a screen inside the same single-page shell makes
+               the page ambiguous to a crawler (the SEO audit fails on it). -->
+          <h2 id="settingsPageTitle" data-i18n="settings">Settings</h2>
+        </header>
+
+        <div class="tl-set-layout">
+          <nav class="tl-set-nav" id="settingsNav" role="tablist" data-i18n-aria="settings" aria-label="Settings sections">
+          <button type="button" class="tl-set-nav-item selected" data-settings-tab="profile" role="tab" aria-selected="true" aria-controls="settingsPane-profile">
+            <span class="tl-set-nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"/></svg>
+            </span>
+            <span class="tl-set-nav-label" data-i18n="catProfile">Profile</span>
+            <span class="tl-set-nav-go" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+            </span>
+          </button>
+          <button type="button" class="tl-set-nav-item" data-settings-tab="app" role="tab" aria-selected="false" aria-controls="settingsPane-app">
+            <span class="tl-set-nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </span>
+            <span class="tl-set-nav-label" data-i18n="appSettings">App Settings</span>
+            <span class="tl-set-nav-go" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+            </span>
+          </button>
+          <button type="button" class="tl-set-nav-item" data-settings-tab="privacy" role="tab" aria-selected="false" aria-controls="settingsPane-privacy">
+            <span class="tl-set-nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.2 19 6v6c0 4.4-3 7.6-7 8.8-4-1.2-7-4.4-7-8.8V6z"/><path d="m9 12 2.2 2.2L15.4 10"/></svg>
+            </span>
+            <span class="tl-set-nav-label" data-i18n="catPrivacy">Privacy & Safety</span>
+            <span class="tl-set-nav-go" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+            </span>
+          </button>
+          <button type="button" class="tl-set-nav-item" data-settings-tab="billing" role="tab" aria-selected="false" aria-controls="settingsPane-billing">
+            <span class="tl-set-nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2.5"/><path d="M3 10.5h18"/></svg>
+            </span>
+            <span class="tl-set-nav-label" data-i18n="catBilling">Coins & Billing</span>
+            <span class="tl-set-nav-go" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+            </span>
+          </button>
+          <button type="button" class="tl-set-nav-item" data-settings-tab="about" role="tab" aria-selected="false" aria-controls="settingsPane-about">
+            <span class="tl-set-nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.8 9.4a2.3 2.3 0 1 1 3 2.2v1.2"/><path d="M12 16.6h.01"/></svg>
+            </span>
+            <span class="tl-set-nav-label" data-i18n="catAbout">Help & About</span>
+            <span class="tl-set-nav-go" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+            </span>
+          </button>
+          </nav>
+
+          <div class="tl-set-content" id="settingsContent">
+        <div id="settingsPane-profile" class="tl-set-pane" data-settings-pane="profile" role="tabpanel">
+          <section>
+            <h3 class="tl-set-legend" data-i18n="catProfile">Profile</h3>
+            <div class="tl-set-group">
+              <button type="button" id="settingsProfileRow" class="tl-set-row">
+                <span id="settingsProfileAvatar" class="tl-set-row-icon" aria-hidden="true"></span>
+                <span class="tl-set-row-text">
+                  <strong id="settingsProfileName"></strong>
+                  <small id="settingsProfileJoined"></small>
+                </span>
+                <span class="tl-set-row-go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
+              </button>
+
+              <!-- Display name: the name strangers see. No account needed. -->
+              <div class="tl-set-control tl-set-control-stack">
+                <label class="tl-set-label" for="tempUsernameInput" data-i18n="tempUsername">Your name</label>
+                <div class="tl-set-field">
+                  <input type="text" id="tempUsernameInput" class="search-input" maxlength="24" data-i18n-placeholder="tempUsernamePlaceholder" placeholder="Your display name" autocomplete="off" />
+                  <button type="button" id="saveTempNameBtn" data-i18n="saveName">Save name</button>
+                </div>
+              </div>
+
+              <div class="tl-set-control tl-set-control-stack">
+                <span class="tl-set-label" id="genderGroupLabel" data-i18n="iAm">I am</span>
+                <div class="tl-seg pill-group" id="genderGroup" data-value="unspecified" role="group" aria-labelledby="genderGroupLabel">
+                  <button type="button" class="tl-seg-opt pill" data-value="unspecified"><span class="pill-dot pill-dot-neutral" aria-hidden="true"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span data-i18n="preferNotSay">Prefer not to say</span></button>
+                  <button type="button" class="tl-seg-opt pill" data-value="male"><span class="pill-dot pill-dot-male" aria-hidden="true"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="14" r="6"/><line x1="14.5" y1="9.5" x2="20" y2="4"/><polyline points="14.5 4 20 4 20 9.5"/></svg><span data-i18n="male">Male</span></button>
+                  <button type="button" class="tl-seg-opt pill" data-value="female"><span class="pill-dot pill-dot-female" aria-hidden="true"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="9" r="6"/><line x1="12" y1="15" x2="12" y2="21"/><line x1="9" y1="18" x2="15" y2="18"/></svg><span data-i18n="female">Female</span></button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Sign in / register / account. It used to hang off the bottom of
+               the settings panel shell, belonging to no group in particular;
+               on a page it sits with Profile, which is what it is about. -->
+          <div class="tl-set-foot" id="sidePanelAuth">
+            <button type="button" id="sidePanelSignInBtn" class="btn btn-secondary side-auth-btn" data-i18n="signIn">Sign in</button>
+            <button type="button" id="sidePanelRegisterBtn" class="btn btn-primary side-auth-btn" data-i18n="register">Register</button>
+            <button type="button" id="myAccountBtn" class="btn btn-primary side-auth-btn hidden" data-i18n="myAccount">My Account</button>
+          </div>
+        </div>
+        <div id="settingsPane-app" class="tl-set-pane hidden" data-settings-pane="app" role="tabpanel">
+          <section>
+            <h3 class="tl-set-legend" data-i18n="appSettings">App Settings</h3>
+            <div class="tl-set-group">
+              <div class="tl-set-control tl-set-control-stack">
+                <span class="tl-set-label" data-i18n="language">Language</span>
+                <div class="lang-wrap settings-lang-wrap">
+                  <svg class="lang-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><ellipse cx="12" cy="12" rx="4.2" ry="9.5"/><line x1="2.5" y1="12" x2="21.5" y2="12"/></svg>
+                  <select id="langSelect" class="lang-select" data-i18n-aria="language" data-i18n-title="language" aria-label="Language"></select>
+                </div>
+              </div>
+
+              <div class="tl-set-control tl-set-control-stack">
+                <span class="tl-set-label" id="themeGroupLabel" data-i18n="theme">Theme</span>
+                <div class="tl-seg pill-group" id="themeGroup" data-value="dark" role="group" aria-labelledby="themeGroupLabel">
+                  <button type="button" class="tl-seg-opt pill" data-value="dark"><span class="pill-dot theme-dot-dark" aria-hidden="true"></span><span data-i18n="themeDark">Dark</span></button>
+                  <button type="button" class="tl-seg-opt pill" data-value="light"><span class="pill-dot theme-dot-light" aria-hidden="true"></span><span data-i18n="themeLight">Light</span></button>
+                  <button type="button" class="tl-seg-opt pill" data-value="ocean"><span class="pill-dot theme-dot-ocean" aria-hidden="true"></span><span data-i18n="themeOcean">Ocean</span></button>
+                  <button type="button" class="tl-seg-opt pill" data-value="sunset"><span class="pill-dot theme-dot-sunset" aria-hidden="true"></span><span data-i18n="themeSunset">Sunset</span></button>
+                </div>
+              </div>
+
+              <label class="tl-set-control" for="soundToggle">
+                <span data-i18n="soundNotifications">Sound notifications</span>
+                <span class="switch"><input type="checkbox" id="soundToggle" checked /><span class="switch-slider" aria-hidden="true"></span></span>
+              </label>
+
+              <label class="tl-set-control" for="vibrationToggle">
+                <span data-i18n="vibration">Vibration</span>
+                <span class="switch"><input type="checkbox" id="vibrationToggle" checked /><span class="switch-slider" aria-hidden="true"></span></span>
+              </label>
+            </div>
+          </section>
+        </div>
+        <div id="settingsPane-privacy" class="tl-set-pane hidden" data-settings-pane="privacy" role="tabpanel">
+          <section>
+            <h3 class="tl-set-legend" data-i18n="catPrivacy">Privacy &amp; Safety</h3>
+            <div class="tl-set-group">
+              <label class="tl-set-control" for="statusVisibilityToggle">
+                <span data-i18n="showOnlineStatus">Show my online status to friends</span>
+                <span class="switch"><input type="checkbox" id="statusVisibilityToggle" checked /><span class="switch-slider" aria-hidden="true"></span></span>
+              </label>
+
+              <label class="tl-set-control" for="messageSeenToggle">
+                <span data-i18n="messageSeen">Read receipts (Seen)</span>
+                <span class="switch"><input type="checkbox" id="messageSeenToggle" checked /><span class="switch-slider" aria-hidden="true"></span></span>
+              </label>
+            </div>
+          </section>
+        </div>
+        <div id="settingsPane-billing" class="tl-set-pane hidden" data-settings-pane="billing" role="tabpanel">
+          <section>
+            <h3 class="tl-set-legend" data-i18n="catBilling">Coins &amp; Billing</h3>
+            <div class="tl-set-group">
+              <button type="button" id="settingsShopRow" class="tl-set-row">
+                <span class="tl-set-row-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h16l-1.2 11.2a1.8 1.8 0 0 1-1.8 1.6H7a1.8 1.8 0 0 1-1.8-1.6z"/><path d="M8.5 8V6.4a3.5 3.5 0 0 1 7 0V8"/></svg>
+                </span>
+                <span class="tl-set-row-text">
+                  <strong data-i18n="shopTitle">Shop</strong>
+                  <small data-i18n="shopRowSub">Coins and Boosts</small>
+                </span>
+                <span class="tl-set-row-badge" data-i18n="comingSoon">Coming soon</span>
+                <span class="tl-set-row-go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
+              </button>
+
+              <button type="button" id="settingsBillingRow" class="tl-set-row">
+                <span class="tl-set-row-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="19" height="13" rx="2.5"/><path d="M2.5 10h19"/><path d="M6 14.5h3.5"/></svg>
+                </span>
+                <span class="tl-set-row-text">
+                  <strong data-i18n="billingTitle">Billing</strong>
+                  <small data-i18n="billingRowSub">Boosts and receipts</small>
+                </span>
+                <span class="tl-set-row-go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
+              </button>
+            </div>
+          </section>
+        </div>
+        <div id="settingsPane-about" class="tl-set-pane hidden" data-settings-pane="about" role="tabpanel">
+          <section>
+            <h3 class="tl-set-legend" data-i18n="catAbout">Help &amp; About</h3>
+            <div class="tl-set-group tl-set-links">
+              <button type="button" id="feedbackBtn" data-i18n="feedback">Feedback for Improvement</button>
+              <button type="button" id="settingsTermsBtn" data-i18n="termsLink">Terms &amp; Community Guidelines</button>
+              <a href="/pricing" data-i18n="pricingLink">Pricing &amp; Premium</a>
+              <a href="/about" data-i18n="aboutLink">About TalkLive</a>
+              <a href="/contact" data-i18n="contactLink">Contact Us</a>
+              <a href="/terms" data-i18n="termsPageLink">Terms &amp; Conditions</a>
+              <a href="/privacy" data-i18n="privacyPolicy">Privacy Policy</a>
+              <a href="/refund" data-i18n="refundLink">Refund Policy</a>
+            </div>
+          </section>
+        </div>
+          </div>
         </div>
       </section>
 

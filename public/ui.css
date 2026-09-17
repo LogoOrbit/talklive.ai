@@ -1863,3 +1863,183 @@
 
 /* An empty count is no count, not a blank pill. */
 .tl-filter-count:empty { display: none; }
+
+/* ===========================================================================
+ * 8. SETTINGS, AS A SCREEN
+ * ---------------------------------------------------------------------------
+ * Five groups of unrelated things used to be one 380px column you scrolled,
+ * stacked on top of the page you were trying to use and gone the moment you
+ * tapped outside it. Settings is not a quick action; it is somewhere you go.
+ *
+ * Desktop: a column of sections beside the one you are reading.
+ * Phone:   the column IS the screen, and picking a section opens it with a
+ *          back arrow - the pattern every phone settings app uses, because
+ *          five screens of one thing beats one screen of five.
+ * ======================================================================== */
+
+.tl-set-page { width: 100%; }
+.tl-set-page.hidden { display: none; }
+
+.tl-set-page-head {
+  display: flex;
+  align-items: center;
+  gap: var(--tl-s3);
+  margin-bottom: var(--tl-s5);
+}
+.tl-set-back {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--tl-line);
+  border-radius: var(--tl-r-md);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+.tl-set-back:hover { background: color-mix(in srgb, var(--text) 8%, transparent); }
+.tl-set-back svg { width: 20px; height: 20px; }
+.tl-set-page-head h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.tl-set-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--tl-s5);
+  align-items: start;
+}
+
+/* --- The section list ---------------------------------------------------- */
+.tl-set-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tl-s1);
+}
+.tl-set-nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--tl-s3);
+  width: 100%;
+  min-height: var(--tl-tap);
+  padding: 0 var(--tl-s3);
+  border: 0;
+  border-radius: var(--tl-r-md);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: start;
+  cursor: pointer;
+}
+.tl-set-nav-item:hover { background: color-mix(in srgb, var(--text) 7%, transparent); }
+.tl-set-nav-item.selected { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+.tl-set-nav-icon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--tl-r-sm);
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  color: var(--muted);
+}
+.tl-set-nav-item.selected .tl-set-nav-icon {
+  background: color-mix(in srgb, var(--accent) 26%, transparent);
+  color: var(--text);
+}
+.tl-set-nav-icon svg { width: 18px; height: 18px; }
+.tl-set-nav-label { flex: 1 1 auto; min-width: 0; }
+.tl-set-nav-go {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  color: var(--muted);
+}
+.tl-set-nav-go svg { width: 18px; height: 18px; }
+
+/* --- The pane ------------------------------------------------------------ */
+.tl-set-pane.hidden { display: none; }
+/* The old panel drew its own heading above every group; on a page the group
+   is already named by the section you picked to get here. */
+.tl-set-pane > section > .tl-set-legend { display: none; }
+.tl-set-content {
+  min-width: 0;
+  padding: var(--tl-s5);
+  border: 1px solid var(--tl-line);
+  border-radius: var(--tl-r-lg);
+  background: var(--tl-card);
+}
+
+@media (min-width: 860px) {
+  .tl-set-layout { grid-template-columns: 240px minmax(0, 1fr); }
+  .tl-set-nav {
+    position: sticky;
+    top: calc(64px + var(--tl-s4));
+  }
+  /* On a desktop both columns are on screen at once, so the chevron on each
+     row would be promising a navigation that does not happen. */
+  .tl-set-nav-go { display: none; }
+}
+
+/* --- Phone: two screens, not two columns. -------------------------------- */
+@media (max-width: 859px) {
+  .tl-set-page-head h2 { font-size: 21px; }
+  .tl-set-content {
+    padding: var(--tl-s4);
+    border: 0;
+    border-radius: 0;
+    background: none;
+  }
+  /* Before a section is picked, the list is the whole screen. */
+  .tl-set-page:not(.is-drilled) .tl-set-content { display: none; }
+  .tl-set-page.is-drilled .tl-set-nav { display: none; }
+  .tl-set-nav-item { min-height: 56px; }
+}
+
+/* The stage centres its children for the call screen; a settings page is
+   read, not watched, so everything in it starts at the left edge. */
+.tl-set-page,
+.tl-set-page .tl-set-control,
+.tl-set-page .tl-set-row { text-align: start; }
+
+/* On a page there is room for label and control on one line, so the stacked
+   layout the 380px panel needed only applies where it still has to. */
+@media (min-width: 720px) {
+  .tl-set-page .tl-set-control-stack {
+    display: flex;
+    align-items: center;
+    gap: var(--tl-s4);
+  }
+  .tl-set-page .tl-set-control-stack > .tl-set-label {
+    flex: 0 0 168px;
+    margin-bottom: 0;
+  }
+  .tl-set-page .tl-set-control-stack > .tl-set-field,
+  .tl-set-page .tl-set-control-stack > .lang-wrap,
+  .tl-set-page .tl-set-control-stack > .tl-seg { flex: 1 1 auto; min-width: 0; }
+  /* The segmented groups would stretch each option to fill a 700px row. */
+  .tl-set-page .tl-set-control-stack > .tl-seg { justify-content: flex-start; }
+}
+
+/* A group inside a pane is already inside a card, so it does not need a
+   second border around it - just a rule between its rows. */
+.tl-set-page .tl-set-group {
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+.tl-set-page .tl-set-group + .tl-set-group { margin-top: var(--tl-s5); }
+.tl-set-page .tl-set-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--tl-s2);
+  margin-top: var(--tl-s5);
+  padding-top: var(--tl-s4);
+  border-top: 1px solid var(--tl-line);
+}
