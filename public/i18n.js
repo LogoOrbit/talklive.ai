@@ -496,6 +496,16 @@ const I18N_STRINGS = {
     "feedbackSend": "Send Feedback",
     "feedbackThanks": "Thank you! Your feedback was sent.",
     "feedbackEmpty": "Please write something first.",
+
+    // The "still under development" notice on the landing screen.
+    "devNoticeEyebrow": "Heads up",
+    "devNoticeTitle": "TalkLive is still under development",
+    "devNoticeBody": "We are building in the open, so you may run into a rough edge or two while you talk. Thank you for bearing with us - your support is what keeps this running and getting smoother.",
+    "devNoticeLabel": "Have a suggestion? We read every one.",
+    "devNoticePlaceholder": "What would make TalkLive better for you?",
+    "devNoticeSend": "Send feedback",
+    "devNoticeSkip": "No thanks",
+    "devNoticeThanks": "Thank you - that helps more than you think.",
     "catProfile": "Profile",
     "catApp": "App Settings",
     "catPrivacy": "Privacy & Safety",

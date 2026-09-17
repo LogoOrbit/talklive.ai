@@ -544,3 +544,201 @@
    invert on their own. Only the shadows need toning down. */
 [data-theme="light"] .tl-tab.selected,
 [data-theme="light"] .tl-auth-tab.selected { box-shadow: 0 2px 8px rgba(20, 30, 70, 0.12); }
+
+/* ===========================================================================
+ * THE "UNDER DEVELOPMENT" NOTICE
+ * ---------------------------------------------------------------------------
+ * A single card, shown once per browser on the landing screen: what the state
+ * of the product is, and a box to say what would make it better. It is a
+ * dialog rather than a strip along the top because a strip is read as an ad
+ * and scrolled past - and because the feedback box needs room to be typed in.
+ *
+ * Its own overlay, not .modal-overlay, so nothing in the older sheets can
+ * reach it and the z-index stays below the call surfaces (the notice never
+ * outranks a live call; app.js also refuses to open it once one starts).
+ * ======================================================================== */
+
+.tl-devnotice-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--tl-s4);
+  padding-bottom: calc(var(--tl-s4) + env(safe-area-inset-bottom, 0px));
+  background: rgba(5, 7, 15, 0.66);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  animation: tl-devnotice-fade 180ms ease-out both;
+}
+.tl-devnotice-overlay.hidden { display: none; }
+
+.tl-devnotice {
+  position: relative;
+  width: min(460px, 100%);
+  margin: auto;
+  box-sizing: border-box;
+  padding: var(--tl-s5);
+  border: 1px solid var(--tl-line-strong);
+  border-radius: var(--tl-r-lg);
+  background: var(--bg-2);
+  box-shadow: var(--tl-shadow);
+  animation: tl-devnotice-rise 200ms ease-out both;
+}
+
+.tl-devnotice-close {
+  position: absolute;
+  top: var(--tl-s2);
+  inset-inline-end: var(--tl-s2);
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: var(--tl-r-md);
+  background: transparent;
+  color: var(--muted);
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+}
+.tl-devnotice-close:hover { background: color-mix(in srgb, var(--text) 8%, transparent); color: var(--text); }
+
+.tl-devnotice-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--tl-s3);
+  /* Room for the close button, so a long title never runs under it. */
+  padding-inline-end: var(--tl-s6);
+}
+.tl-devnotice-icon {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--tl-r-md);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent-2);
+}
+.tl-devnotice-icon svg { width: 22px; height: 22px; }
+.tl-devnotice-headtext { min-width: 0; }
+.tl-devnotice-eyebrow {
+  margin: 0 0 2px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.tl-devnotice-headtext h2 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  line-height: 1.25;
+}
+
+.tl-devnotice-body {
+  margin: var(--tl-s3) 0 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.tl-devnotice-form {
+  margin-top: var(--tl-s4);
+  padding-top: var(--tl-s4);
+  border-top: 1px solid var(--tl-line);
+}
+.tl-devnotice-label {
+  display: block;
+  margin-bottom: var(--tl-s2);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+.tl-devnotice-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--tl-s3);
+  border: 1px solid var(--tl-line-strong);
+  border-radius: var(--tl-r-md);
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+  color: var(--text);
+  /* 16px so iOS Safari does not zoom the page when the box is focused. */
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 84px;
+}
+.tl-devnotice-input::placeholder { color: var(--muted); }
+.tl-devnotice-input:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.tl-devnotice-status {
+  margin: var(--tl-s2) 0 0;
+  min-height: 18px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.tl-devnotice-status.is-error { color: var(--danger); }
+.tl-devnotice-status.is-done { color: var(--green); }
+
+.tl-devnotice-actions {
+  display: flex;
+  gap: var(--tl-s2);
+  margin-top: var(--tl-s3);
+}
+.tl-devnotice-btn {
+  flex: 1 1 0;
+  min-height: var(--tl-tap);
+  padding: 0 var(--tl-s4);
+  border: 1px solid transparent;
+  border-radius: var(--tl-r-md);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.tl-devnotice-btn-ghost {
+  border-color: var(--tl-line-strong);
+  background: transparent;
+  color: var(--muted);
+}
+.tl-devnotice-btn-ghost:hover { background: color-mix(in srgb, var(--text) 7%, transparent); color: var(--text); }
+.tl-devnotice-btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+.tl-devnotice-btn-primary:hover { filter: brightness(1.08); }
+.tl-devnotice-btn-primary:disabled { opacity: 0.6; cursor: default; filter: none; }
+
+@keyframes tl-devnotice-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes tl-devnotice-rise {
+  from { opacity: 0; transform: translateY(10px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tl-devnotice-overlay,
+  .tl-devnotice { animation: none; }
+}
+
+@media (max-width: 420px) {
+  .tl-devnotice { padding: var(--tl-s4); }
+  .tl-devnotice-headtext h2 { font-size: 17px; }
+  .tl-devnotice-actions { flex-direction: column-reverse; }
+}
+
+/* The card takes focus when it opens (see openDevNotice), so a screen reader
+   lands inside the dialog - but it is a container, not a control, and should
+   not be ringed like one. */
+.tl-devnotice:focus { outline: none; }

@@ -3172,9 +3172,13 @@ io.on('connection', (socket) => {
     if (!text) return;
     const p = profiles.get(socket.id);
     const who = p ? `${p.username} (${p.country})` : socket.id;
-    console.log(`[feedback] from ${who}: ${text}`);
+    // Which surface it was sent from - Settings, or the landing screen's
+    // "still under development" notice. Both land in the same dashboard list;
+    // the tag is what makes "what do first-time visitors say" answerable.
+    const source = payload.source === 'dev-notice' ? 'dev-notice' : 'settings';
+    console.log(`[feedback:${source}] from ${who}: ${text}`);
     store.recordFeature('feedback');
-    store.addFeedback({ username: p ? p.username : 'Unknown', country: p ? p.countryName : '', city: p ? p.city : '', text });
+    store.addFeedback({ username: p ? p.username : 'Unknown', country: p ? p.countryName : '', city: p ? p.city : '', text, source });
     // No email alert for user feedback, same as user reports above: it is
     // recorded and reviewable in the owner dashboard at /owner instead.
   });

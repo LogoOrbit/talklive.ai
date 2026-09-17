@@ -1495,7 +1495,7 @@ async function viewFeedback(){
   $('#main').innerHTML=`<div class="card anim" style="margin-top:0"><h2>⭐ User feedback <span class="sub">${q?list.length+' of '+r.feedback.length+' shown':r.feedback.length+' total'} · ${num(week)} this week</span></h2>
   <div class="tbar"><input id="fbQ" class="grow" placeholder="Search feedback…" value="${esc(fbQ)}">${fbQ?'<button class="lnk" id="fbClear">Clear</button>':''}${exportLink('feedback','Export feedback')}</div>
   <div class="feed">
-  ${list.map(f=>`<div class="fmsg"><div class="top"><span><b>${esc(f.username)}</b>${f.country?` · ${esc(f.country)}`:''}</span><span>${ago(f.ts)} · ${fmtTs(f.ts)}</span></div>
+  ${list.map(f=>`<div class="fmsg"><div class="top"><span><b>${esc(f.username)}</b>${f.country?` · ${esc(f.country)}`:''}${f.source==='dev-notice'?' · <span class="pill info">landing notice</span>':''}</span><span>${ago(f.ts)} · ${fmtTs(f.ts)}</span></div>
   <div class="txt">${esc(f.text)}</div></div>`).join('')||`<div class="muted">${q?'No feedback matches that search.':'No feedback yet.'}</div>`}
   </div></div>`;
   const inp=$('#fbQ');

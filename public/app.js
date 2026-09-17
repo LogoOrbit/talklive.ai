@@ -1560,6 +1560,104 @@ if (feedbackBtn) {
 }
 if (settingsTermsBtn) settingsTermsBtn.addEventListener('click', () => openModal(termsModal));
 
+// --- "Still under development" notice ---------------------------------------
+// TalkLive is live while it is still being built, and a visitor who meets a
+// rough edge with no warning reads it as a broken site rather than an
+// unfinished one. So the landing screen says so itself, once per browser, and
+// uses the same card to ask for the thing that fixes rough edges fastest: one
+// sentence from the person who just hit one.
+//
+// The box posts through the same `feedback` socket event Settings uses, so
+// every suggestion lands in one inbox on the owner dashboard. Bump the version
+// below to show a fresh notice to everyone who already dismissed the last one.
+const TL_DEV_NOTICE_VERSION = '2026-09';
+const TL_DEV_NOTICE_KEY = `talklive_devnotice_${TL_DEV_NOTICE_VERSION}`;
+
+const devNoticeOverlay = document.getElementById('devNoticeOverlay');
+const devNoticeForm = document.getElementById('devNoticeForm');
+const devNoticeInput = document.getElementById('devNoticeInput');
+const devNoticeSend = document.getElementById('devNoticeSend');
+const devNoticeSkip = document.getElementById('devNoticeSkip');
+const devNoticeCloseBtn = document.getElementById('devNoticeClose');
+const devNoticeStatus = document.getElementById('devNoticeStatus');
+
+if (devNoticeOverlay) {
+  // Private browsing and blocked site data make localStorage throw on access,
+  // not just return null - and a storage error is never a reason to break the
+  // landing screen, so both sides are guarded and the notice simply shows.
+  const devNoticeSeen = () => {
+    try { return localStorage.getItem(TL_DEV_NOTICE_KEY) === '1'; } catch (_) { return false; }
+  };
+  const rememberDevNotice = () => {
+    try { localStorage.setItem(TL_DEV_NOTICE_KEY, '1'); } catch (_) { /* nothing to do */ }
+  };
+
+  let devNoticeReturnFocus = null;
+
+  function closeDevNotice() {
+    if (devNoticeOverlay.classList.contains('hidden')) return;
+    devNoticeOverlay.classList.add('hidden');
+    devNoticeOverlay.hidden = true;
+    rememberDevNotice();
+    if (devNoticeReturnFocus && document.body.contains(devNoticeReturnFocus)) devNoticeReturnFocus.focus();
+    devNoticeReturnFocus = null;
+  }
+
+  function openDevNotice() {
+    // Never over a live conversation: the notice is an introduction, and a
+    // card that lands mid-call is an interruption. /call deep links and a
+    // reload into a call both take this path.
+    if (setupPanel && setupPanel.classList.contains('hidden')) return;
+    if (document.querySelector('.modal-overlay:not(.hidden)')) return;
+    devNoticeReturnFocus = document.activeElement;
+    devNoticeOverlay.hidden = false;
+    devNoticeOverlay.classList.remove('hidden');
+    // Focus the card itself rather than the close button: a screen reader
+    // still lands inside the dialog and Esc still works, but a mouse visitor
+    // is not met by a focus ring drawn around the one control that dismisses
+    // everything they were just offered.
+    const devNoticeCard = document.getElementById('devNotice');
+    if (devNoticeCard) devNoticeCard.focus();
+  }
+
+  devNoticeCloseBtn.addEventListener('click', closeDevNotice);
+  devNoticeSkip.addEventListener('click', closeDevNotice);
+  // A click on the backdrop dismisses it; a click inside the card must not,
+  // or typing a suggestion would keep closing the box it is being typed into.
+  devNoticeOverlay.addEventListener('click', (e) => { if (e.target === devNoticeOverlay) closeDevNotice(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !devNoticeOverlay.classList.contains('hidden')) closeDevNotice();
+  });
+
+  devNoticeForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = devNoticeInput.value.trim().slice(0, 1000);
+    if (!text) {
+      devNoticeStatus.className = 'tl-devnotice-status is-error';
+      devNoticeStatus.textContent = t('feedbackEmpty');
+      devNoticeInput.focus();
+      return;
+    }
+    // `source` tells the operator which surface a suggestion came from; the
+    // server ignores fields it does not know, so an older server still logs it.
+    socket.emit('feedback', { text, source: 'dev-notice' });
+    devNoticeSend.disabled = true;
+    devNoticeStatus.className = 'tl-devnotice-status is-done';
+    devNoticeStatus.textContent = t('devNoticeThanks');
+    vibrate(20);
+    // Left on screen just long enough to be read, then the card gets out of
+    // the way on its own - nobody should have to dismiss a thank-you.
+    setTimeout(closeDevNotice, 1200);
+  });
+
+  // Not on the first frame: the landing screen should paint first, so the
+  // notice arrives over a page the visitor can already see rather than being
+  // the page. Deliberately after load, so it never competes for bandwidth
+  // during the largest contentful paint either.
+  if (!devNoticeSeen()) setTimeout(openDevNotice, 900);
+}
+
+
 // --- Avatar picker: male/female category, 5 avatars each ---
 function renderAvatarGrid() {
   if (!avatarGrid) return;
