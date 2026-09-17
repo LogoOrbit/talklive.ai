@@ -1377,6 +1377,9 @@ document.addEventListener('keydown', (e) => {
     closeSidePanel(friendChatModal, friendChatOverlay);
     closeAppSettings();
     closeFilters();
+    // The phone drawer is a dialog like the rest of these; declared below this
+    // handler, but only ever read here at event time.
+    if (typeof setNavDrawerOpen === 'function') setNavDrawerOpen(false);
     // The consent gate was the one dialog Escape did not reach. Declared far
     // below this handler, but only ever read here at event time.
     if (!ageConsentModal.classList.contains('hidden')) dismissAgeConsent();
@@ -5624,6 +5627,7 @@ function closeTopmostLayer() {
     closeModal(openModalEl);
     return true;
   }
+  if (navDrawer && !navDrawer.classList.contains('hidden')) { setNavDrawerOpen(false); return true; }
   if (!gameOverlay.classList.contains('hidden')) { attemptCloseGame(); return true; }
   if (chatOpen) { closeChatPanel(); return true; }
   if (settingsIsOpen()) { closeAppSettings(); return true; }
@@ -5719,6 +5723,56 @@ if (navHomeBtn) {
 
 if (navShopBtn) navShopBtn.addEventListener('click', openShop);
 
+// --- The phone drawer -------------------------------------------------------
+// Everything the bottom bar has no room for. It is phone-only: on a desktop
+// the nav rail shows all of it outright, and a drawer there would be a door
+// in front of an open room.
+const navMoreBtn = document.getElementById('navMoreBtn');
+const navDrawer = document.getElementById('navDrawer');
+const navDrawerOverlay = document.getElementById('navDrawerOverlay');
+const closeNavDrawerBtn = document.getElementById('closeNavDrawerBtn');
+
+function setNavDrawerOpen(open) {
+  if (!navDrawer) return;
+  navDrawer.classList.toggle('hidden', !open);
+  navDrawer.classList.toggle('open', open);
+  navDrawerOverlay.classList.toggle('hidden', !open);
+  document.body.classList.toggle('panel-open', open);
+  if (open && closeNavDrawerBtn) closeNavDrawerBtn.focus();
+}
+
+if (navMoreBtn) {
+  navMoreBtn.addEventListener('click', () => setNavDrawerOpen(navDrawer.classList.contains('hidden')));
+  closeNavDrawerBtn.addEventListener('click', () => setNavDrawerOpen(false));
+  navDrawerOverlay.addEventListener('click', () => setNavDrawerOpen(false));
+  // Anything picked in here goes somewhere else, so the drawer closes behind
+  // it - a drawer left open over the screen it just opened is a second thing
+  // to dismiss. The [data-opens] proxy handler does the navigation itself.
+  navDrawer.addEventListener('click', (e) => {
+    if (e.target.closest('[data-opens], a')) setNavDrawerOpen(false);
+  });
+}
+
+// The theme chips write through the same applyTheme() the Settings control
+// does, so the two can never disagree about which theme is on.
+const drawerThemes = document.getElementById('drawerThemes');
+function syncDrawerTheme() {
+  if (!drawerThemes) return;
+  drawerThemes.querySelectorAll('[data-theme-pick]').forEach((chip) => {
+    chip.classList.toggle('selected', chip.dataset.themePick === currentTheme);
+  });
+}
+if (drawerThemes) {
+  drawerThemes.addEventListener('click', (e) => {
+    const chip = e.target.closest('[data-theme-pick]');
+    if (!chip) return;
+    applyTheme(chip.dataset.themePick);
+    syncDrawerTheme();
+    vibrate(8);
+  });
+  syncDrawerTheme();
+}
+
 // "See all" on a rail card opens the panel that owns the full list, by
 // clicking the nav button that owns the panel - one path into each panel,
 // rather than a second copy of its open/close logic living out here.
@@ -5731,6 +5785,46 @@ document.querySelectorAll('[data-opens]').forEach((el) => {
 
 // The rail's green CTA is the hero's voice card, said again at the point where
 // someone has just finished reading who is online.
+// --- "Notify me" -------------------------------------------------------------
+// Premium and the coin shop are announced, not on sale, so the only honest
+// button on either card is one that does something today. This one asks for
+// push permission through the flow that already exists (pwa.js owns the
+// service worker, the VAPID key and the /push/subscribe call), and records the
+// interest either way - a browser that refuses notifications still told us
+// somebody wanted this.
+//
+// It never claims more than it did: the button says "we will tell you" only
+// once a subscription actually exists.
+function markNotified(btn, key) {
+  btn.classList.add('is-notified');
+  btn.disabled = true;
+  const label = btn.querySelector('span');
+  if (label) label.textContent = t(key);
+}
+
+document.querySelectorAll('[data-notify]').forEach((btn) => {
+  btn.addEventListener('click', async () => {
+    trackGrowthEvent('premium_notify_click');
+    vibrate(15);
+    const pwa = window.TalkLivePWA;
+    if (!pwa || typeof pwa.askForPush !== 'function' || !('Notification' in window)) {
+      // No push on this browser at all. The interest is still recorded, and
+      // the button says what actually happened rather than pretending.
+      markNotified(btn, 'notifyNoted');
+      showToast(t('notifyNotedToast'));
+      return;
+    }
+    try { await pwa.askForPush(); } catch (_) { /* denied or unavailable */ }
+    if (Notification.permission === 'granted') {
+      markNotified(btn, 'notifyDone');
+      showToast(t('notifyDoneToast'));
+    } else {
+      markNotified(btn, 'notifyNoted');
+      showToast(t('notifyNotedToast'));
+    }
+  });
+});
+
 // --- Header search ----------------------------------------------------------
 // TalkLive has no feed and no profiles to search through, so a box promising
 // "search people, countries or interests" has to mean something concrete. It

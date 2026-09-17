@@ -2287,3 +2287,251 @@
 .tl-call-end-wrap .call-main-btn.is-loading::before { opacity: 0.55; }
 /* While searching the spinner is the icon. */
 .tl-call-end-wrap .call-main-btn.is-loading .call-main-icon { display: none; }
+
+/* ===========================================================================
+ * 10. "COMING SOON" CARDS
+ * ---------------------------------------------------------------------------
+ * Premium and the coin shop are announced, not on sale. A card that sells
+ * something nobody can buy is a card that lies, so these say what is coming,
+ * list what it will do, and carry one button that works today: a reminder for
+ * when it does.
+ * ======================================================================== */
+
+.tl-soon-list {
+  margin: var(--tl-s3) 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tl-soon-list li {
+  position: relative;
+  padding-inline-start: 22px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.tl-soon-list li::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  top: 4px;
+  width: 13px;
+  height: 8px;
+  border-inline-start: 2px solid var(--green);
+  border-bottom: 2px solid var(--green);
+  transform: rotate(-45deg);
+}
+
+.tl-notify-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--tl-s2);
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--tl-s4);
+  border: 0;
+  border-radius: var(--tl-r-md);
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.tl-notify-btn svg { width: 16px; height: 16px; }
+.tl-notify-btn:hover { filter: brightness(1.08); }
+.tl-notify-btn.is-notified {
+  background: color-mix(in srgb, var(--green) 20%, transparent);
+  color: var(--green);
+  cursor: default;
+  filter: none;
+}
+
+.tl-soon-cta { margin-top: var(--tl-s4); }
+.tl-soon-foot {
+  margin: var(--tl-s2) 0 0;
+  font-size: 12px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.tl-nav-promo-cta { margin-top: var(--tl-s3); }
+.tl-nav-promo-link {
+  display: block;
+  margin-top: var(--tl-s2);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--accent-2);
+  text-decoration: none;
+}
+.tl-nav-promo-link:hover { text-decoration: underline; }
+
+/* ===========================================================================
+ * 11. THE PHONE DRAWER
+ * ---------------------------------------------------------------------------
+ * Everything the bottom bar has no room for: the destination that is not
+ * built yet, Settings, Help, Safety, and the theme picker - the one
+ * preference people change often enough that a trip into a settings screen
+ * for it is a trip too many.
+ *
+ * Phone only, both ways round: the drawer and its "More" tab do not exist on
+ * a desktop, where the rail already shows all of this, and the rail's own
+ * Settings row does not exist on a phone, where the drawer holds it.
+ * ======================================================================== */
+
+.tl-nav-item-phone { display: none; }
+
+@media (max-width: 859px) {
+  .tl-nav-item-phone { display: flex; }
+  .tl-nav-item-desk { display: none; }
+}
+
+.tl-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: rgba(5, 7, 15, 0.6);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+.tl-drawer-overlay.hidden { display: none; }
+
+.tl-drawer {
+  position: fixed;
+  z-index: 71;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: min(300px, 86vw);
+  display: flex;
+  flex-direction: column;
+  padding: var(--tl-s4);
+  padding-top: calc(var(--tl-s4) + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(var(--tl-s4) + env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+  background: var(--bg-2);
+  border-inline-end: 1px solid var(--tl-line);
+  box-shadow: var(--tl-shadow);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  animation: tl-drawer-in 180ms ease-out both;
+}
+.tl-drawer.hidden { display: none; }
+@keyframes tl-drawer-in {
+  from { transform: translateX(-100%); }
+  to { transform: none; }
+}
+[dir="rtl"] .tl-drawer { animation-name: tl-drawer-in-rtl; }
+@keyframes tl-drawer-in-rtl {
+  from { transform: translateX(100%); }
+  to { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tl-drawer { animation: none; }
+}
+/* On a desktop the rail already shows everything in here. */
+@media (min-width: 860px) {
+  .tl-drawer,
+  .tl-drawer-overlay { display: none !important; }
+}
+
+.tl-drawer-head {
+  display: flex;
+  align-items: center;
+  gap: var(--tl-s2);
+  margin-bottom: var(--tl-s4);
+}
+.tl-drawer-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--tl-s2);
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+}
+.tl-drawer-head .tl-panel-close { margin-inline-start: auto; }
+
+.tl-drawer-items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tl-s1);
+}
+.tl-drawer-item {
+  display: flex;
+  align-items: center;
+  gap: var(--tl-s3);
+  width: 100%;
+  min-height: var(--tl-tap);
+  padding: 0 var(--tl-s3);
+  border: 0;
+  border-radius: var(--tl-r-md);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+.tl-drawer-item:hover { background: color-mix(in srgb, var(--text) 8%, transparent); }
+.tl-drawer-icon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  color: var(--muted);
+}
+.tl-drawer-icon svg { width: 21px; height: 21px; }
+.tl-drawer-item .tl-nav-soon { margin-inline-start: auto; display: inline-block; }
+
+.tl-drawer-theme {
+  margin-top: auto;
+  padding-top: var(--tl-s4);
+  border-top: 1px solid var(--tl-line);
+}
+.tl-drawer-theme-label {
+  margin: 0 0 var(--tl-s2);
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.tl-drawer-themes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--tl-s2);
+}
+.tl-theme-chip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 42px;
+  padding: 0 var(--tl-s3);
+  border: 1px solid var(--tl-line-strong);
+  border-radius: var(--tl-r-md);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.tl-theme-chip.selected {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--text);
+}
+.tl-theme-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid var(--tl-line-strong);
+}
+.theme-dot-ocean { background: #00b4d8; }
+.theme-dot-sunset { background: #ff6b6b; }

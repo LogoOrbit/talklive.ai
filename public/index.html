@@ -21,7 +21,7 @@
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
      side-panel shell, Settings, Friends/History and the account dialog, and it
      does so with its own `tl-` class names so nothing above can reach it. -->
-<link rel="stylesheet" href="ui.css?v=20260917devnotice" />
+<link rel="stylesheet" href="ui.css?v=20260917ui2" />
 <script defer src="/config.js"></script>
 <!-- Google Identity Services, deferred so it never blocks first paint. app.js
      waits for it (and for /config.js) before rendering the sign-in buttons. -->
@@ -728,6 +728,73 @@
          rather than copied: same IDs, same handlers, same badges. The header
          keeps only the two controls that belong to a live conversation.
          =================================================================== -->
+    <!-- ===================================================================
+         THE PHONE DRAWER.
+         -------------------------------------------------------------------
+         Everything the bottom bar has no room for: the two destinations that
+         are not built yet, Settings, Help, and the theme picker - which is
+         the one setting people change often enough to be worth a tap rather
+         than a trip into Settings.
+
+         Phone only. On a desktop the nav rail shows all of this outright and
+         a drawer would be a door in front of an open room.
+         =================================================================== -->
+    <div id="navDrawerOverlay" class="tl-drawer-overlay hidden"></div>
+    <aside id="navDrawer" class="tl-drawer hidden" role="dialog" data-i18n-aria="more" aria-label="More">
+      <header class="tl-drawer-head">
+        <span class="tl-drawer-brand">
+          <img src="/favicon.svg?v=20260917ui2" width="26" height="26" alt="" decoding="async" />
+          <span>Talk<span class="brand-name-live">Live</span></span>
+        </span>
+        <button type="button" id="closeNavDrawerBtn" class="tl-panel-close" data-i18n-aria="close" aria-label="Close">&times;</button>
+      </header>
+
+      <nav class="tl-drawer-items" data-i18n-aria="more" aria-label="More">
+        <button type="button" class="tl-drawer-item" data-opens="navShopBtn">
+          <span class="tl-drawer-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 8h15l-1.2 10.2a2 2 0 0 1-2 1.8H7.7a2 2 0 0 1-2-1.8z"/><path d="M8.8 8V6.6a3.2 3.2 0 0 1 6.4 0V8"/></svg>
+          </span>
+          <span data-i18n="navShop">Shop</span>
+          <span class="tl-nav-soon" data-i18n="comingSoonShort">Soon</span>
+        </button>
+
+        <button type="button" class="tl-drawer-item" data-opens="appSettingsBtn">
+          <span class="tl-drawer-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </span>
+          <span data-i18n="settings">Settings</span>
+        </button>
+
+        <a class="tl-drawer-item" href="/contact">
+          <span class="tl-drawer-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.8 9.4a2.3 2.3 0 1 1 3 2.2v1.2"/><path d="M12 16.6h.01"/></svg>
+          </span>
+          <span data-i18n="helpSupport">Help &amp; Support</span>
+        </a>
+
+        <a class="tl-drawer-item" href="/safety">
+          <span class="tl-drawer-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.2 19 6v6c0 4.4-3 7.6-7 8.8-4-1.2-7-4.4-7-8.8V6z"/><path d="m9 12 2.2 2.2L15.4 10"/></svg>
+          </span>
+          <span data-i18n="safetyLink">Safety</span>
+        </a>
+      </nav>
+
+      <!-- The theme picker lives here rather than only in Settings: it is the
+           one preference people change often enough that a trip into a
+           settings screen for it is a trip too many. It writes through the
+           same applyTheme() the Settings control does. -->
+      <div class="tl-drawer-theme">
+        <p class="tl-drawer-theme-label" data-i18n="theme">Theme</p>
+        <div class="tl-drawer-themes" id="drawerThemes" role="group" data-i18n-aria="theme" aria-label="Theme">
+          <button type="button" class="tl-theme-chip" data-theme-pick="dark"><span class="tl-theme-dot theme-dot-dark" aria-hidden="true"></span><span data-i18n="themeDark">Dark</span></button>
+          <button type="button" class="tl-theme-chip" data-theme-pick="light"><span class="tl-theme-dot theme-dot-light" aria-hidden="true"></span><span data-i18n="themeLight">Light</span></button>
+          <button type="button" class="tl-theme-chip" data-theme-pick="ocean"><span class="tl-theme-dot theme-dot-ocean" aria-hidden="true"></span><span data-i18n="themeOcean">Ocean</span></button>
+          <button type="button" class="tl-theme-chip" data-theme-pick="sunset"><span class="tl-theme-dot theme-dot-sunset" aria-hidden="true"></span><span data-i18n="themeSunset">Sunset</span></button>
+        </div>
+      </div>
+    </aside>
+
     <div class="tl-frame">
       <nav class="tl-nav" data-i18n-aria="navAria" aria-label="TalkLive sections">
         <div class="tl-nav-items">
@@ -772,7 +839,17 @@
             <span class="tl-nav-soon" data-i18n="comingSoonShort">Soon</span>
           </button>
 
-          <button id="appSettingsBtn" class="tl-nav-item" data-i18n-title="settings" data-i18n-aria="menuAria" title="Settings" aria-label="Open settings menu">
+          <!-- Phone only. The bar holds four destinations and this, because a
+               tab bar with everything in it is a tab bar you cannot hit; the
+               desktop rail has the room to show the rest outright. -->
+          <button type="button" id="navMoreBtn" class="tl-nav-item tl-nav-item-phone" data-i18n-title="more" data-i18n-aria="more" title="More" aria-label="More">
+            <span class="tl-nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5.5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="18.5" cy="12" r="1.9"/></svg>
+            </span>
+            <span class="tl-nav-label" data-i18n="more">More</span>
+          </button>
+
+          <button id="appSettingsBtn" class="tl-nav-item tl-nav-item-desk" data-i18n-title="settings" data-i18n-aria="menuAria" title="Settings" aria-label="Open settings menu">
             <span class="tl-nav-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             </span>
@@ -782,14 +859,27 @@
 
         <!-- Desktop only: the rail has room under the nav that a phone does
              not, and this is the one thing worth putting in it. -->
-        <a class="tl-nav-promo" href="/pricing?utm_source=app&amp;utm_medium=nav&amp;utm_campaign=premium">
+        <!-- Premium is announced, not on sale. So the card sells nothing: it
+             says what is coming, lists what it will do, and its button is the
+             one thing that works today - a reminder for when it does. The
+             price link is still there for anyone who wants the detail. -->
+        <div class="tl-nav-promo">
           <span class="tl-nav-promo-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.5 8.5 7 11l5-5.5 5 5.5 3.5-2.5-1.6 9.2a1 1 0 0 1-1 .8H6.1a1 1 0 0 1-1-.8z"/></svg>
           </span>
           <strong data-i18n="growthPremiumTitle">Premium - coming soon</strong>
           <small data-i18n="navPremiumSub">More control. Better matches. A safer experience.</small>
-          <span class="tl-nav-promo-cta" data-i18n="navPremiumCta">See what is coming</span>
-        </a>
+          <ul class="tl-soon-list">
+            <li data-i18n="premiumPerkGender">Gender &amp; country filters</li>
+            <li data-i18n="premiumPerkFriends">Unlimited friends and favourites</li>
+            <li data-i18n="premiumPerkAds">No ads</li>
+          </ul>
+          <button type="button" class="tl-notify-btn tl-nav-promo-cta" data-notify="premium">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 16V11a6 6 0 1 0-12 0v5l-1.6 2.4h15.2z"/><path d="M10 20.2a2.2 2.2 0 0 0 4 0"/></svg>
+            <span data-i18n="notifyMe">Notify me</span>
+          </button>
+          <a class="tl-nav-promo-link" href="/pricing?utm_source=app&amp;utm_medium=nav&amp;utm_campaign=premium" data-i18n="navPremiumCta">See what is coming</a>
+        </div>
       </nav>
     <main class="stage" id="main">
 
@@ -1134,8 +1224,20 @@
             </div>
           </div>
           <div class="modal-body">
+            <!-- The "coming soon" card, said the way the reference says it:
+                 what it is, what it will do, what you get, and one button
+                 that does something today. Everything below is still a price
+                 nobody can pay - the banner says so before the first number
+                 is read, and every buy button is disabled. -->
             <p class="shop-note" data-i18n="shopFreeNote">Everything on TalkLive is free right now. Coins and Boosts are still being built - nothing here can be bought yet.</p>
             <div id="shopGrid" class="shop-grid"></div>
+            <div class="tl-soon-cta">
+              <button type="button" class="tl-notify-btn" data-notify="shop">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 16V11a6 6 0 1 0-12 0v5l-1.6 2.4h15.2z"/><path d="M10 20.2a2.2 2.2 0 0 0 4 0"/></svg>
+                <span data-i18n="notifyMe">Notify me</span>
+              </button>
+              <p class="tl-soon-foot" data-i18n="notifyShopFoot">Be the first to know when it goes live.</p>
+            </div>
             <p class="shop-fine" data-i18n="shopFinePrint">Coins will be for TalkLive features only and will have no cash value.</p>
             <p class="shop-fine">
               <a href="/terms" data-i18n="termsOfService">Terms of Service</a> ·
@@ -2373,7 +2475,7 @@
        browser finish parsing and paint the page first. -->
   <script defer src="/socket.io/socket.io.js"></script>
   <script defer src="countries.js?v=20260828fix"></script>
-  <script defer src="i18n.js?v=20260917devnotice"></script>
+  <script defer src="i18n.js?v=20260917ui2"></script>
   <script defer src="chat-time.js?v=20260916navbar"></script>
   <script defer src="animals.js?v=20260916settings"></script>
   <script defer src="moderation.js?v=20260705b"></script>
@@ -2411,7 +2513,7 @@
   </script>
   <script defer src="chat-extras.js?v=20260916navbar"></script>
   <script defer src="games.js?v=20260916settings"></script>
-  <script defer src="app.js?v=20260917devnotice"></script>
+  <script defer src="app.js?v=20260917ui2"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

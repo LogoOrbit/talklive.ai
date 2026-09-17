@@ -485,6 +485,10 @@ const GROWTH_EVENTS = new Set([
   'pwa_install_click',
   'pwa_installed',
   'push_optin',
+  // Someone tapped "Notify me" on Premium or the coin shop. The clearest
+  // demand signal the app has for a thing that does not exist yet: it is a
+  // person asking to be told when it does.
+  'premium_notify_click',
 ]);
 app.post('/events', express.json({ limit: '2kb' }), (req, res) => {
   const event = req.body && req.body.event;
