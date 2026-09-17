@@ -146,8 +146,12 @@ try {
   onScroll();
 })();
 
-const historyDropdown = document.getElementById('historyDropdown');
-const historyWrap = document.querySelector('.history-wrap');
+// Call history. Same button in the header rail, but it opens the same
+// right-hand side panel every other list in the app uses. It used to be a
+// floating dropdown, which needed its own outside-click handling and its own
+// mobile repositioning, and gave the app two shapes for "a list of people".
+const historyPanel = document.getElementById('historyPanel');
+const historyOverlay = document.getElementById('historyOverlay');
 const closeHistoryBtn = document.getElementById('closeHistoryBtn');
 const historyList = document.getElementById('historyList');
 
@@ -973,9 +977,15 @@ function updateScrollLock() {
   const anyOpen = appSettingsPanel.classList.contains('open')
     || (typeof chatPanel !== 'undefined' && chatPanel && chatPanel.classList.contains('open'))
     || friendsDropdown.classList.contains('open')
+    || historyPanel.classList.contains('open')
     || friendProfileModal.classList.contains('open')
     || friendChatModal.classList.contains('open');
   document.body.classList.toggle('panel-open', anyOpen);
+}
+
+function closeHistoryPanel() {
+  closeSidePanel(historyPanel, historyOverlay);
+  updateScrollLock();
 }
 
 // --- App settings side panel ---
@@ -1120,21 +1130,6 @@ function openModal(modal) {
     const focusTarget = modal.querySelector('input:not([type="hidden"]):not(:disabled), .btn, button');
     if (focusTarget) focusTarget.focus();
   }
-  // On small screens the toolbar dropdowns are position:fixed - anchor them
-  // just under their own button so they open correctly at any scroll position
-  // now that the header is sticky.
-  if (modal.classList.contains('notif-dropdown') && window.matchMedia('(max-width: 480px)').matches) {
-    const btn = modal.parentElement ? modal.parentElement.querySelector('button.icon-btn') : null;
-    if (btn) {
-      const r = btn.getBoundingClientRect();
-      const top = Math.round(r.bottom + 8);
-      modal.style.top = top + 'px';
-      modal.style.maxHeight = Math.max(180, window.innerHeight - top - 16) + 'px';
-    }
-  } else if (modal.classList.contains('notif-dropdown')) {
-    modal.style.top = '';
-    modal.style.maxHeight = '';
-  }
 }
 
 function closeModal(modal) {
@@ -1156,7 +1151,10 @@ closeTermsBtn.addEventListener('click', () => closeModal(termsModal));
   });
 });
 
-friendsOverlay.addEventListener('click', () => closeSidePanel(friendsDropdown, friendsOverlay));
+friendsOverlay.addEventListener('click', () => {
+  closeSidePanel(friendsDropdown, friendsOverlay);
+  updateScrollLock();
+});
 friendProfileOverlay.addEventListener('click', () => closeSidePanel(friendProfileModal, friendProfileOverlay));
 friendChatOverlay.addEventListener('click', () => {
   closeSidePanel(friendChatModal, friendChatOverlay);
@@ -1167,7 +1165,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     closeModal(termsModal);
     closeModal(accountModal);
-    closeModal(historyDropdown);
+    closeHistoryPanel();
     closeSidePanel(friendsDropdown, friendsOverlay);
     closeSidePanel(friendProfileModal, friendProfileOverlay);
     closeSidePanel(friendChatModal, friendChatOverlay);
@@ -1197,6 +1195,11 @@ function renderHeaderAuthVisibility() {
 }
 
 function renderAccountState() {
+  // The dialog is two different screens, so it says which one it is. "My
+  // Account" over a login form is a title for a page you do not have yet.
+  const accountTitle = document.getElementById('accountModalTitle');
+  if (accountTitle) accountTitle.textContent = t(accountNickname ? 'myAccount' : 'logInOrSignUp');
+
   if (accountNickname) {
     accountLoggedOut.classList.add('hidden');
     accountLoggedIn.classList.remove('hidden');
@@ -2205,12 +2208,21 @@ friendsBtn.addEventListener('click', (e) => {
   e.stopPropagation();
   if (!friendsDropdown.classList.contains('open')) {
     renderFriendsList();
+    renderSentRequests();
+    syncFriendsTabCounts();
+    // If someone has asked to be your friend, that is why you tapped the icon.
+    showFriendsTab(notifData.some((n) => n.type !== 'message') ? 'requests' : 'friends');
     openSidePanel(friendsDropdown, friendsOverlay);
+    updateScrollLock();
   } else {
     closeSidePanel(friendsDropdown, friendsOverlay);
+    updateScrollLock();
   }
 });
-closeFriendsBtn.addEventListener('click', () => closeSidePanel(friendsDropdown, friendsOverlay));
+closeFriendsBtn.addEventListener('click', () => {
+  closeSidePanel(friendsDropdown, friendsOverlay);
+  updateScrollLock();
+});
 
 // Swipe right on the friends panel closes it (it slides in from the right).
 let friendsTouchStartX = null;
@@ -2240,7 +2252,7 @@ const FRIEND_CALL_SVG = '<svg viewBox="0 0 24 24" fill="white" aria-hidden="true
 // small green call button on the right. Tapping the avatar opens the profile view.
 function renderFriendsList() {
   if (friendsData.length === 0) {
-    friendsList.innerHTML = `<p class="history-empty">${escapeHtml(t('noFriendsYet'))}</p>`;
+    friendsList.innerHTML = `<p class="tl-empty">${escapeHtml(t('noFriendsYet'))}</p>`;
     return;
   }
   friendsList.innerHTML = '';
@@ -2569,7 +2581,7 @@ function renderNotifications() {
   notifList.classList.toggle('no-requests', visible.length === 0);
 
   if (visible.length === 0) {
-    notifList.innerHTML = '';
+    notifList.innerHTML = `<p class="tl-empty">${escapeHtml(t('noRequestsYet'))}</p>`;
   } else {
     notifList.innerHTML = '';
     [...visible].reverse().forEach((n) => {
@@ -2610,6 +2622,87 @@ function renderNotifications() {
 
   updateFriendsMsgBadge();
   renderFriendsList();
+  renderSentRequests();
+  syncFriendsTabCounts();
+}
+
+// --- Requests you sent -----------------------------------------------------
+// The other half of the friends story. The client has always known about
+// outgoing requests (sentRequestsData, used to decide what a profile sheet
+// offers), but nothing ever listed them: you asked someone to be your friend
+// and the app then behaved as though you never had.
+const sentRequestsList = document.getElementById('sentRequestsList');
+
+function renderSentRequests() {
+  if (!sentRequestsList) return;
+  if (!sentRequestsData.length) {
+    sentRequestsList.innerHTML = `<p class="tl-empty">${escapeHtml(t('noSentRequests'))}</p>`;
+    return;
+  }
+  sentRequestsList.innerHTML = '';
+  sentRequestsData.forEach((r) => {
+    const item = document.createElement('div');
+    item.className = 'tl-sent-item';
+    item.dataset.profileId = r.clientId;
+    item.innerHTML = `
+      <span class="tl-sent-avatar" aria-hidden="true">${genderIcon(r.avatar, 30)}</span>
+      <span class="tl-sent-text">
+        <span class="tl-sent-name">${getFlagImg(r.countryCode)} ${escapeHtml(r.username || t('stranger'))}</span>
+        <span class="tl-sent-sub">${escapeHtml(timeAgo(r.ts))}</span>
+      </span>
+      <span class="tl-sent-chip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 1.8"/></svg>
+        ${escapeHtml(t('pending'))}
+      </span>
+    `;
+    sentRequestsList.appendChild(item);
+  });
+}
+
+if (sentRequestsList) {
+  sentRequestsList.addEventListener('click', (e) => {
+    const row = e.target.closest('.tl-sent-item');
+    if (!row || !row.dataset.profileId) return;
+    const person = sentRequestsData.find((r) => r.clientId === row.dataset.profileId);
+    if (person) openUserProfile(person);
+  });
+}
+
+// --- Friends panel tabs ----------------------------------------------------
+const friendsTabs = document.getElementById('friendsTabs');
+const friendsTabPanel = document.getElementById('friendsTabPanel');
+const requestsTabPanel = document.getElementById('requestsTabPanel');
+const friendsTabCount = document.getElementById('friendsTabCount');
+const requestsTabCount = document.getElementById('requestsTabCount');
+
+function setTabCount(el, n) {
+  if (!el) return;
+  el.textContent = n > 99 ? '99+' : String(n);
+  el.classList.toggle('hidden', n === 0);
+}
+
+function syncFriendsTabCounts() {
+  setTabCount(friendsTabCount, friendsData.length);
+  const pending = notifData.filter((n) => n.type !== 'message').length + sentRequestsData.length;
+  setTabCount(requestsTabCount, pending);
+}
+
+function showFriendsTab(name) {
+  if (!friendsTabs) return;
+  friendsTabs.querySelectorAll('.tl-tab').forEach((tab) => {
+    const on = tab.dataset.tab === name;
+    tab.classList.toggle('selected', on);
+    tab.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  if (friendsTabPanel) friendsTabPanel.classList.toggle('hidden', name !== 'friends');
+  if (requestsTabPanel) requestsTabPanel.classList.toggle('hidden', name !== 'requests');
+}
+
+if (friendsTabs) {
+  friendsTabs.addEventListener('click', (e) => {
+    const tab = e.target.closest('.tl-tab');
+    if (tab) showFriendsTab(tab.dataset.tab);
+  });
 }
 
 notifList.addEventListener('click', (e) => {
@@ -2689,7 +2782,7 @@ function renderFriendChatMessages() {
   if (friendExtras) friendExtras.reset();
   if (messages.length === 0) {
     const empty = document.createElement('p');
-    empty.className = 'history-empty';
+    empty.className = 'tl-empty';
     empty.textContent = t('noMessagesYet');
     friendChatMessages.appendChild(empty);
     return;
@@ -2886,7 +2979,7 @@ socket.on('friend-chat-history', ({ friendClientId, messages }) => {
 // --- Call history (session-only, cleared on reload) ---
 function renderHistory() {
   if (callHistory.length === 0) {
-    historyList.innerHTML = `<p class="history-empty">${escapeHtml(t('noCallsYet'))}</p>`;
+    historyList.innerHTML = `<p class="tl-empty">${escapeHtml(t('noCallsYet'))}</p>`;
     return;
   }
   historyList.innerHTML = '';
@@ -3012,20 +3105,14 @@ function showSharePrompt() {
 
 if (shareTalkLiveBtn) shareTalkLiveBtn.addEventListener('click', showSharePrompt);
 
-historyBtn.addEventListener('click', (e) => {
-  e.stopPropagation();
-  const willOpen = historyDropdown.classList.contains('hidden');
-  if (willOpen) {
-    renderHistory();
-    openModal(historyDropdown);
-  } else {
-    closeModal(historyDropdown);
-  }
+historyBtn.addEventListener('click', () => {
+  if (historyPanel.classList.contains('open')) { closeHistoryPanel(); return; }
+  renderHistory();
+  openSidePanel(historyPanel, historyOverlay);
+  updateScrollLock();
 });
-closeHistoryBtn.addEventListener('click', () => closeModal(historyDropdown));
-document.addEventListener('click', (e) => {
-  if (!e.composedPath().includes(historyWrap)) closeModal(historyDropdown);
-});
+closeHistoryBtn.addEventListener('click', closeHistoryPanel);
+historyOverlay.addEventListener('click', closeHistoryPanel);
 
 historyList.addEventListener('click', (e) => {
   // Tapping the name opens who they are (and whether you have already asked
@@ -3033,7 +3120,7 @@ historyList.addEventListener('click', (e) => {
   const nameBtn = e.target.closest('.history-profile-btn');
   if (nameBtn && nameBtn.dataset.id) {
     const entry = callHistory.find((h) => h.clientId === nameBtn.dataset.id);
-    closeModal(historyDropdown);
+    closeHistoryPanel();
     openUserProfile({
       clientId: nameBtn.dataset.id,
       username: entry ? entry.username : '',
@@ -3044,7 +3131,7 @@ historyList.addEventListener('click', (e) => {
   }
   const btn = e.target.closest('.call-back-btn');
   if (!btn || !btn.dataset.id) return;
-  closeModal(historyDropdown);
+  closeHistoryPanel();
   requestCallBack(btn.dataset.id, btn.dataset.name);
 });
 
@@ -4879,8 +4966,8 @@ function panelsAreClosed() {
     && !friendProfileModal.classList.contains('open')
     && !friendChatModal.classList.contains('open')
     && gameOverlay.classList.contains('hidden')
-    && !document.querySelector('.modal-overlay:not(.hidden)')
-    && !document.querySelector('.notif-dropdown:not(.hidden)');
+    && !historyPanel.classList.contains('open')
+    && !document.querySelector('.modal-overlay:not(.hidden)');
 }
 document.addEventListener('touchstart', (e) => {
   if (e.touches.length !== 1) { swipeStartX = null; return; }
@@ -5103,9 +5190,8 @@ function closeTopmostLayer() {
   if (filtersPanel.classList.contains('open')) { closeFilters(); return true; }
   if (friendChatModal.classList.contains('open')) { closeSidePanel(friendChatModal, friendChatOverlay); activeFriendChatId = null; return true; }
   if (friendProfileModal.classList.contains('open')) { closeSidePanel(friendProfileModal, friendProfileOverlay); return true; }
-  if (friendsDropdown.classList.contains('open')) { closeSidePanel(friendsDropdown, friendsOverlay); return true; }
-  const openDropdown = document.querySelector('.notif-dropdown:not(.hidden)');
-  if (openDropdown) { openDropdown.classList.add('hidden'); return true; }
+  if (friendsDropdown.classList.contains('open')) { closeSidePanel(friendsDropdown, friendsOverlay); updateScrollLock(); return true; }
+  if (historyPanel.classList.contains('open')) { closeHistoryPanel(); return true; }
   if (!callBackBanner.classList.contains('hidden')) { callBackDeclineBtn.click(); return true; }
   return false;
 }
@@ -5664,6 +5750,7 @@ window.addEventListener('i18n-changed', () => {
 
   renderNotifications(); // also re-renders the friends list + badges
   renderHistory();
+  renderAccountState(); // the account dialog's title depends on being signed in
   includeCountryWidget.renderChips();
   excludeCountryWidget.renderChips();
   renderInterestTags();

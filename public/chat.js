@@ -1035,12 +1035,44 @@
   var friendsBadge = $('friendsBadge');
   var requestsList = $('requestsList');
   var friendsList = $('friendsList');
-  var friendsState = { friends: [], requests: [], notifications: [] };
+  var friendsState = { friends: [], requests: [], sent: [], notifications: [] };
+  var friendsTabs = $('friendsTabs');
+  var friendsTabPanel = $('friendsTabPanel');
+  var requestsTabPanel = $('requestsTabPanel');
+  var friendsTabCount = $('friendsTabCount');
+  var requestsTabCount = $('requestsTabCount');
+  var sentRequestsList = $('sentRequestsList');
   var historyState = []; // [{ clientId, username, countryCode, online, ts }]
+
+  function setTabCount(el, n) {
+    if (!el) return;
+    el.textContent = n > 99 ? '99+' : String(n);
+    el.classList.toggle('hidden', n === 0);
+  }
+
+  function showFriendsTab(name) {
+    if (!friendsTabs) return;
+    friendsTabs.querySelectorAll('.tl-tab').forEach(function (tab) {
+      var on = tab.dataset.tab === name;
+      tab.classList.toggle('selected', on);
+      tab.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    if (friendsTabPanel) friendsTabPanel.classList.toggle('hidden', name !== 'friends');
+    if (requestsTabPanel) requestsTabPanel.classList.toggle('hidden', name !== 'requests');
+  }
+
+  if (friendsTabs) {
+    friendsTabs.addEventListener('click', function (e) {
+      var tab = e.target.closest('.tl-tab');
+      if (tab) showFriendsTab(tab.dataset.tab);
+    });
+  }
 
   $('friendsBtn').addEventListener('click', function () {
     vibrate(10);
     closeAllPanels();
+    // If someone has asked to be your friend, that is why you tapped Friends.
+    showFriendsTab(friendsState.requests.length ? 'requests' : 'friends');
     openPanel(friendsPanel, friendsOverlay);
   });
   $('friendsCloseBtn').addEventListener('click', function () { closePanel(friendsPanel, friendsOverlay); });
@@ -1107,6 +1139,31 @@
     commitRenameFriend(renameFriendInput.value.trim().slice(0, 24));
   });
 
+  // Requests you sent. The server ships them with every state-sync and the
+  // client has always had them; nothing ever listed them, so asking someone to
+  // be your friend left no trace anywhere in the UI.
+  function renderSentRequests() {
+    if (!sentRequestsList) return;
+    if (!friendsState.sent.length) {
+      sentRequestsList.innerHTML = '<p class="tl-empty">' + escapeHtml(t('noSentRequests')) + '</p>';
+      return;
+    }
+    sentRequestsList.innerHTML = '';
+    friendsState.sent.forEach(function (r) {
+      var row = document.createElement('div');
+      row.className = 'tl-sent-item';
+      row.innerHTML =
+        '<span class="tl-sent-avatar" aria-hidden="true">' + escapeHtml((r.username || '?').charAt(0)) + '</span>' +
+        '<span class="tl-sent-text">' +
+        '<span class="tl-sent-name">' + escapeHtml(r.username || '-') + ' ' + getFlagImg(r.countryCode, 14) + '</span>' +
+        '</span>' +
+        '<span class="tl-sent-chip">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 1.8"/></svg>' +
+        escapeHtml(t('pending')) + '</span>';
+      sentRequestsList.appendChild(row);
+    });
+  }
+
   function renderFriends() {
     // Header badge: pending requests + unread friend messages.
     var unread = friendsState.notifications.filter(function (n) { return n.type === 'message'; }).length;
@@ -1114,15 +1171,16 @@
     friendsBadge.textContent = String(badgeCount);
     friendsBadge.classList.toggle('hidden', badgeCount === 0);
 
+    setTabCount(friendsTabCount, friendsState.friends.length);
+    setTabCount(requestsTabCount, friendsState.requests.length + friendsState.sent.length);
+    renderSentRequests();
+
     // Each list says what it is and how many are in it. Without the headings a
     // pending request sat above "No friends yet" with nothing to say which was
     // which, and an accepted friend appeared as one unlabelled row.
     requestsList.innerHTML = '';
-    if (friendsState.requests.length) {
-      var reqHead = document.createElement('p');
-      reqHead.className = 'list-heading';
-      reqHead.textContent = t('friendRequestsCount', { n: friendsState.requests.length });
-      requestsList.appendChild(reqHead);
+    if (!friendsState.requests.length) {
+      requestsList.innerHTML = '<p class="tl-empty">' + escapeHtml(t('noRequestsYet')) + '</p>';
     }
     friendsState.requests.forEach(function (r) {
       var row = document.createElement('div');
@@ -1147,13 +1205,9 @@
     if (!friendsState.friends.length) {
       // "during a call" is the call app's wording; here you add someone while
       // you are chatting with them.
-      friendsList.innerHTML = '<p class="list-empty">' + escapeHtml(t('noFriendsYetChat')) + '</p>';
+      friendsList.innerHTML = '<p class="tl-empty">' + escapeHtml(t('noFriendsYetChat')) + '</p>';
       return;
     }
-    var friendsHead = document.createElement('p');
-    friendsHead.className = 'list-heading';
-    friendsHead.textContent = t('friendsCount', { n: friendsState.friends.length });
-    friendsList.appendChild(friendsHead);
     friendsState.friends.forEach(function (f) {
       var row = document.createElement('div');
       row.className = 'friend-row';
@@ -1181,6 +1235,7 @@
     data = data || {};
     friendsState.friends = data.friends || [];
     friendsState.requests = data.friendRequests || [];
+    friendsState.sent = data.sentRequests || [];
     friendsState.notifications = data.notifications || [];
     historyState = data.chatHistory || [];
     renderFriends();

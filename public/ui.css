@@ -1,0 +1,546 @@
+/* ===========================================================================
+ * TalkLive UI — the redesigned panels and dialogs
+ * ---------------------------------------------------------------------------
+ * Loaded last on / , /call and /chat. It covers four surfaces and nothing
+ * else: the side-panel shell, Settings, the Friends/History panels, and the
+ * log-in / sign-up dialog. The top bar and the landing screen are deliberately
+ * untouched and keep the styling they ship with.
+ *
+ * Everything here uses its own `tl-` class names, so nothing in the older
+ * sheets can reach it and it never has to out-shout them with !important. The
+ * handful of rules that do talk to old markup are in LEGACY BRIDGES at the
+ * bottom, kept deliberately short.
+ *
+ * Three rules the whole file follows:
+ *   1. Nothing tappable is smaller than 44px, ever.
+ *   2. One spacing scale (4 / 8 / 12 / 16 / 24 / 32) - no stray magic numbers.
+ *   3. One primary action per screen, and it is the biggest thing on it.
+ * ======================================================================== */
+
+:root {
+  --tl-s1: 4px;
+  --tl-s2: 8px;
+  --tl-s3: 12px;
+  --tl-s4: 16px;
+  --tl-s5: 24px;
+  --tl-s6: 32px;
+
+  --tl-r-sm: 10px;
+  --tl-r-md: 14px;
+  --tl-r-lg: 20px;
+  --tl-r-pill: 999px;
+
+  --tl-tap: 48px;
+
+  --tl-card: color-mix(in srgb, var(--bg-2) 92%, transparent);
+  --tl-line: var(--line);
+  --tl-line-strong: color-mix(in srgb, var(--text) 18%, transparent);
+  --tl-shadow: 0 12px 34px rgba(0, 0, 0, 0.35);
+}
+
+/* ===========================================================================
+ * 1. THE PANEL SHELL - one header and one scrolling body for Settings,
+ *    Friends and History alike.
+ * ======================================================================== */
+
+.tl-panel-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: var(--tl-s3);
+  padding: var(--tl-s3) var(--tl-s4);
+  min-height: 60px;
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--tl-line);
+}
+.tl-panel-head h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+}
+.tl-panel-close {
+  margin-inline-start: auto;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: var(--tl-r-md);
+  background: transparent;
+  color: var(--muted);
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+}
+.tl-panel-close:hover { background: color-mix(in srgb, var(--text) 8%, transparent); color: var(--text); }
+
+.tl-panel-body {
+  padding: var(--tl-s4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--tl-s4);
+}
+
+.tl-hint {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.tl-empty {
+  margin: 0;
+  padding: var(--tl-s5) var(--tl-s4);
+  text-align: center;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* ===========================================================================
+ * 2. SETTINGS
+ *    Every preference it had, none of the four collapsed accordions. Labelled
+ *    groups you can read top to bottom, so "which drawer is Theme in" stops
+ *    being a question.
+ * ======================================================================== */
+
+.tl-set-group {
+  border: 1px solid var(--tl-line);
+  border-radius: var(--tl-r-lg);
+  background: var(--tl-card);
+  overflow: hidden;
+}
+
+.tl-set-legend {
+  margin: 0 0 var(--tl-s2);
+  padding: 0 var(--tl-s1);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.tl-set-row {
+  width: 100%;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  gap: var(--tl-s3);
+  padding: var(--tl-s3) var(--tl-s4);
+  border: 0;
+  border-bottom: 1px solid var(--tl-line);
+  background: transparent;
+  color: var(--text);
+  font-size: 15px;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+.tl-set-row:last-child { border-bottom: 0; }
+.tl-set-row:hover { background: color-mix(in srgb, var(--text) 5%, transparent); }
+
+.tl-set-row-icon {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--tl-r-sm);
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  color: var(--muted);
+  overflow: hidden;
+}
+.tl-set-row-icon svg { width: 19px; height: 19px; }
+
+.tl-set-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.tl-set-row-text strong { font-size: 15px; font-weight: 700; }
+.tl-set-row-text small { font-size: 12.5px; color: var(--muted); }
+
+.tl-set-row-go { flex: 0 0 auto; color: var(--muted); display: grid; place-items: center; }
+.tl-set-row-go svg { width: 18px; height: 18px; }
+
+.tl-set-row-badge {
+  flex: 0 0 auto;
+  padding: 3px 9px;
+  border-radius: var(--tl-r-pill);
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* A control row: label on the left, control on the right. */
+.tl-set-control {
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  gap: var(--tl-s3);
+  padding: var(--tl-s3) var(--tl-s4);
+  border-bottom: 1px solid var(--tl-line);
+}
+.tl-set-control:last-child { border-bottom: 0; }
+.tl-set-control > span:first-child { flex: 1 1 auto; font-size: 15px; }
+.tl-set-control-stack {
+  display: block;
+  padding: var(--tl-s3) var(--tl-s4);
+}
+.tl-set-control-stack > .tl-set-label { display: block; margin-bottom: var(--tl-s2); }
+
+.tl-set-label { font-size: 13px; font-weight: 700; color: var(--muted); }
+
+.tl-set-field { display: flex; gap: var(--tl-s2); }
+.tl-set-field input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 46px;
+  padding: 0 var(--tl-s3);
+  border-radius: var(--tl-r-md);
+  border: 1px solid var(--tl-line-strong);
+  background: color-mix(in srgb, var(--bg-1) 70%, transparent);
+  color: var(--text);
+  font-size: 15px;
+}
+.tl-set-field button {
+  flex: 0 0 auto;
+  min-height: 46px;
+  padding: 0 var(--tl-s4);
+  border-radius: var(--tl-r-md);
+  border: 1px solid var(--tl-line-strong);
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.tl-set-field button:disabled { opacity: 0.45; cursor: default; }
+
+/* Segmented options (gender, theme). Still `.pill` underneath, so the existing
+   initPillGroup / setPillGroupValue wiring keeps working untouched. */
+.tl-seg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--tl-s2);
+}
+.tl-seg .tl-seg-opt {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--tl-s2);
+  padding: 0 var(--tl-s3);
+  border-radius: var(--tl-r-pill);
+  border: 1px solid var(--tl-line-strong);
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tl-seg .tl-seg-opt.selected {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--text);
+}
+.tl-seg .tl-seg-opt svg { width: 17px; height: 17px; }
+
+.tl-set-links { display: grid; grid-template-columns: 1fr; }
+.tl-set-links > * {
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--tl-s4);
+  border: 0;
+  border-bottom: 1px solid var(--tl-line);
+  background: transparent;
+  color: var(--text);
+  font-size: 14.5px;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+.tl-set-links > *:last-child { border-bottom: 0; }
+.tl-set-links > *:hover { background: color-mix(in srgb, var(--text) 5%, transparent); }
+
+.tl-set-foot { display: flex; gap: var(--tl-s2); }
+.tl-set-foot > * { flex: 1 1 0; }
+
+/* ===========================================================================
+ * 3. FRIENDS - one panel, two tabs
+ * ======================================================================== */
+
+.tl-tabs {
+  display: flex;
+  gap: var(--tl-s1);
+  padding: var(--tl-s1);
+  border-radius: var(--tl-r-pill);
+  background: color-mix(in srgb, var(--text) 7%, transparent);
+}
+.tl-tab {
+  flex: 1 1 0;
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 0;
+  border-radius: var(--tl-r-pill);
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.tl-tab.selected {
+  background: var(--bg-2);
+  color: var(--text);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+}
+.tl-tab-count {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--tl-r-pill);
+  background: color-mix(in srgb, var(--text) 12%, transparent);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 20px;
+}
+.tl-tab.selected .tl-tab-count { background: var(--danger); color: #fff; }
+.tl-tab-count.hidden { display: none; }
+
+.tl-tabpanel.hidden { display: none; }
+
+.tl-subhead {
+  margin: var(--tl-s4) 0 var(--tl-s2);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.tl-subhead:first-child { margin-top: 0; }
+
+/* Requests you sent - the half of the story that used to be invisible: you
+   asked someone to be your friend and nothing on screen ever said so again. */
+.tl-sent-item {
+  display: flex;
+  align-items: center;
+  gap: var(--tl-s3);
+  min-height: 56px;
+  padding: var(--tl-s2) var(--tl-s3);
+  border-radius: var(--tl-r-md);
+  border: 1px solid var(--tl-line);
+  background: var(--tl-card);
+  margin-bottom: var(--tl-s2);
+  cursor: pointer;
+}
+.tl-sent-avatar {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  font-weight: 700;
+  overflow: hidden;
+}
+.tl-sent-avatar svg, .tl-sent-avatar img { width: 30px; height: 30px; }
+.tl-sent-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
+.tl-sent-name { font-size: 14.5px; font-weight: 700; }
+.tl-sent-sub { font-size: 12px; color: var(--muted); }
+.tl-sent-chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 11px;
+  border-radius: var(--tl-r-pill);
+  background: color-mix(in srgb, var(--text) 9%, transparent);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+.tl-sent-chip svg { width: 13px; height: 13px; }
+
+/* ===========================================================================
+ * 4. LOG IN / SIGN UP
+ *    Two tabs, two fields, one button. Recovery e-mail, Google and the reset
+ *    flow all sit after the primary action rather than in front of it.
+ * ======================================================================== */
+
+/* The dialog opens inside a centred stage, so the form has to say it is a
+   form: labels and helper text read left, only the tabs and button centre. */
+.tl-auth-card {
+  padding: 0;
+  text-align: start;
+}
+
+.tl-auth-tabs {
+  display: flex;
+  gap: var(--tl-s1);
+  padding: var(--tl-s1);
+  margin-bottom: var(--tl-s5);
+  border-radius: var(--tl-r-pill);
+  background: color-mix(in srgb, var(--text) 7%, transparent);
+}
+.tl-auth-tab {
+  flex: 1 1 0;
+  min-height: 46px;
+  border: 0;
+  border-radius: var(--tl-r-pill);
+  background: transparent;
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.tl-auth-tab.selected {
+  background: var(--bg-2);
+  color: var(--text);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+}
+
+.tl-field { margin-bottom: var(--tl-s4); }
+.tl-field > label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.tl-field > input {
+  width: 100%;
+  min-height: 52px;
+  padding: 0 var(--tl-s4);
+  border-radius: var(--tl-r-md);
+  border: 1px solid var(--tl-line-strong);
+  background: color-mix(in srgb, var(--bg-1) 70%, transparent);
+  color: var(--text);
+  font-size: 16px; /* 16px stops iOS zooming the page on focus */
+}
+.tl-field > input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.tl-field-note {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.tl-submit {
+  width: 100%;
+  min-height: 54px;
+  border: 0;
+  border-radius: var(--tl-r-md);
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.12s ease;
+}
+.tl-submit:hover { filter: brightness(1.07); }
+.tl-submit:active { transform: scale(0.985); }
+.tl-submit:disabled { opacity: 0.5; cursor: default; filter: none; }
+
+.tl-linkline {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin-top: var(--tl-s2);
+  border: 0;
+  background: none;
+  color: var(--accent-2);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tl-or {
+  display: flex;
+  align-items: center;
+  gap: var(--tl-s3);
+  margin: var(--tl-s4) 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.tl-or::before,
+.tl-or::after {
+  content: "";
+  flex: 1 1 0;
+  height: 1px;
+  background: var(--tl-line);
+}
+.tl-or.hidden { display: none; }
+
+/* ===========================================================================
+ * 5. LEGACY BRIDGES
+ *    Short rules so the redesigned shells sit correctly inside the older
+ *    containers that still do the open/close work.
+ * ======================================================================== */
+
+/* The redesigned panels carry their own sticky header and padded body, so the
+   shell's padding and gap would double up on both. */
+.side-panel.tl-panel {
+  padding: 0;
+  gap: 0;
+}
+.tl-panel > .side-panel-body:not(.tl-panel-body),
+.tl-panel > .side-body:not(.tl-panel-body) {
+  padding: 0;
+  gap: 0;
+}
+/* The scrolling region is the body, so the header can stick to its top. */
+.tl-panel > .side-panel-body,
+.tl-panel > .side-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+.tl-panel > .side-body.tl-panel-body {
+  padding-bottom: calc(var(--tl-s4) + env(safe-area-inset-bottom, 0px));
+}
+
+/* A closed panel is parked off-screen with transform, so its drop shadow still
+   paints - a dark vertical band down the edge of every page, on every theme.
+   Only an open panel casts one. */
+.side-panel:not(.open) { box-shadow: none; }
+
+/* Lists inside a panel are plain blocks; the shell used to make them flex
+   columns with their own gap, which fought with each row's own spacing. */
+.tl-panel .history-list,
+.tl-panel .friends-list,
+.tl-panel .notif-list,
+.tl-panel .requests-list { display: block; }
+
+/* Keep the redesigned account dialog readable on a phone. */
+.modal-box.tl-auth-box {
+  width: min(430px, 94vw);
+  border-radius: var(--tl-r-lg);
+}
+.modal-box.tl-auth-box .modal-body { padding: var(--tl-s5); }
+
+@media (prefers-reduced-motion: reduce) {
+  .tl-submit { transition: none; }
+}
+
+/* Light theme: the translucent fills above are mixed from --text, so they
+   invert on their own. Only the shadows need toning down. */
+[data-theme="light"] .tl-tab.selected,
+[data-theme="light"] .tl-auth-tab.selected { box-shadow: 0 2px 8px rgba(20, 30, 70, 0.12); }

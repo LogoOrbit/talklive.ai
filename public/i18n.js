@@ -50,6 +50,11 @@ const I18N_STRINGS = {
     "notifyOn": "Notifications are on.",
     "appTitle": "TalkLive - Free Random Voice & Text Chat with Strangers",
     "heroTitle": "Meet someone new by voice or text",
+    "logInOrSignUp": "Log in or sign up",
+    "waitingOnYou": "Waiting on you",
+    "youAsked": "You asked",
+    "noSentRequests": "You have not sent any requests.",
+    "catBilling": "Coins & Billing",
     "skipToContent": "Skip to main content",
     "menuAria": "Open settings menu",
     "online": "Online",
@@ -277,7 +282,10 @@ const I18N_STRINGS = {
     "passwordTooShort": "New password must be at least 4 characters.",
     "statusPasswordRestored": "Password restored - welcome back, {name}!",
     "callHistory": "Call History",
-    "historyHint": "This session only - it clears when you close or reload the page. Tap the green button to call someone back if they're online.",
+    // Not "historyHint": /chat defines that key too, further down, and the
+    // later definition wins - so the call list used to describe the text-chat
+    // list. The two lists say different things; they get two keys.
+    "callHistoryHint": "This session only - it clears when you close or reload the page. Tap the green button to call someone back if they're online.",
     "noCallsYet": "No calls yet.",
     "callBack": "Call back",
     "friendOffline": "Offline - tap to retry",
@@ -488,7 +496,7 @@ const I18N_STRINGS = {
     "feedbackSend": "Send Feedback",
     "feedbackThanks": "Thank you! Your feedback was sent.",
     "feedbackEmpty": "Please write something first.",
-    "catProfile": "My Gender",
+    "catProfile": "Profile",
     "catApp": "App Settings",
     "catPrivacy": "Privacy & Safety",
     "catAbout": "Help & About",

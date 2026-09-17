@@ -6,6 +6,7 @@
 <link rel="stylesheet" href="/chat.css?v=20260916navbar" />
 <link rel="stylesheet" href="/chat-extras.css?v=20260916navbar" />
 <link rel="stylesheet" href="/games.css?v=20260916navbar" />
+<link rel="stylesheet" href="/ui.css?v=20260917panels" />
 <style>
   .skip-link {
     position: fixed;
@@ -477,181 +478,181 @@
 
   <!-- Settings side panel (left): name, gender, theme, language, sounds - the
        same core preferences the call app exposes from its gear icon. -->
+  <!-- Settings. Same sections as the call app, in the same order, and with
+       the same contents - the four collapsed accordions are gone, so every
+       preference is readable without first guessing which drawer it is in. -->
   <div id="settingsOverlay" class="side-overlay hidden"></div>
-  <aside id="settingsPanel" class="side-panel side-left" role="dialog" data-i18n-aria="settings" aria-label="Settings" aria-hidden="true" inert>
-    <div class="side-header">
+  <aside id="settingsPanel" class="side-panel side-left tl-panel" role="dialog" data-i18n-aria="settings" aria-label="Settings" aria-hidden="true" inert>
+    <div class="tl-panel-head">
       <h2 data-i18n="settings">Settings</h2>
-      <button type="button" id="settingsCloseBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
+      <button type="button" id="settingsCloseBtn" class="tl-panel-close" data-i18n-aria="close" aria-label="Close">&times;</button>
     </div>
-    <!-- Same Settings as the call app, section for section: the rows at the
-         top, the name block, then the four accordion categories. The account
-         screens themselves live on the landing page, so the rows that need one
-         hand over to it rather than /chat carrying a second copy of the whole
-         sign-in stack. -->
     <div class="side-body">
-      <div class="settings-rows">
-        <button type="button" id="settingsProfileRow" class="settings-row">
-          <span id="settingsProfileAvatar" class="settings-row-avatar" aria-hidden="true"></span>
-          <span class="settings-row-text">
-            <strong id="settingsProfileName"></strong>
-            <small id="settingsProfileJoined"></small>
-          </span>
-          <span class="settings-row-go" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
-          </span>
-        </button>
+      <div class="tl-panel-body">
 
-        <button type="button" id="settingsShopRow" class="settings-row">
-          <span class="settings-row-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h16l-1.2 11.2a1.8 1.8 0 0 1-1.8 1.6H7a1.8 1.8 0 0 1-1.8-1.6z"/><path d="M8.5 8V6.4a3.5 3.5 0 0 1 7 0V8"/></svg>
-          </span>
-          <span class="settings-row-text">
-            <strong data-i18n="shopTitle">Shop</strong>
-            <small data-i18n="shopRowSub">Coins and Boosts</small>
-          </span>
-          <span class="settings-row-badge" data-i18n="comingSoon">Coming soon</span>
-          <span class="settings-row-go" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
-          </span>
-        </button>
+        <section>
+          <h3 class="tl-set-legend" data-i18n="catProfile">Profile</h3>
+          <div class="tl-set-group">
+            <button type="button" id="settingsProfileRow" class="tl-set-row">
+              <span id="settingsProfileAvatar" class="tl-set-row-icon" aria-hidden="true"></span>
+              <span class="tl-set-row-text">
+                <strong id="settingsProfileName"></strong>
+                <small id="settingsProfileJoined"></small>
+              </span>
+              <span class="tl-set-row-go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
+            </button>
 
-        <button type="button" id="settingsBillingRow" class="settings-row">
-          <span class="settings-row-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="19" height="13" rx="2.5"/><path d="M2.5 10h19"/><path d="M6 14.5h3.5"/></svg>
-          </span>
-          <span class="settings-row-text">
-            <strong data-i18n="billingTitle">Billing</strong>
-            <small data-i18n="billingRowSub">Boosts and receipts</small>
-          </span>
-          <span class="settings-row-go" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
-          </span>
-        </button>
-      </div>
+            <div class="tl-set-control tl-set-control-stack">
+              <label class="tl-set-label" for="tempNameInput" data-i18n="tempUsername">Your name</label>
+              <div class="tl-set-field">
+                <input type="text" id="tempNameInput" class="text-input" maxlength="24" data-i18n-placeholder="tempUsernamePlaceholder" placeholder="Your display name" autocomplete="off" />
+                <button type="button" id="tempNameSaveBtn" data-i18n="saveName">Save name</button>
+              </div>
+            </div>
 
-      <div class="temp-name-block">
-        <label class="pill-label" for="tempNameInput" data-i18n="tempUsername">Your name</label>
-        <div class="temp-name-row">
-          <input type="text" id="tempNameInput" class="text-input" maxlength="24" data-i18n-placeholder="tempUsernamePlaceholder" placeholder="Your display name" autocomplete="off" />
-          <button type="button" id="tempNameSaveBtn" class="btn btn-secondary temp-name-save" data-i18n="saveName">Save name</button>
+            <div class="tl-set-control tl-set-control-stack">
+              <span class="tl-set-label" id="genderGroupLabel" data-i18n="iAm">I am</span>
+              <div class="tl-seg pill-group" id="genderGroup" role="group" aria-labelledby="genderGroupLabel">
+                  <button type="button" class="tl-seg-opt pill" data-value=""><span class="pill-dot pill-dot-neutral" aria-hidden="true"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span data-i18n="preferNotSay">Prefer not to say</span></button>
+                  <button type="button" class="tl-seg-opt pill" data-value="male"><span class="pill-dot pill-dot-male" aria-hidden="true"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="14" r="6"/><line x1="14.5" y1="9.5" x2="20" y2="4"/><polyline points="14.5 4 20 4 20 9.5"/></svg><span data-i18n="male">Male</span></button>
+                  <button type="button" class="tl-seg-opt pill" data-value="female"><span class="pill-dot pill-dot-female" aria-hidden="true"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="9" r="6"/><line x1="12" y1="15" x2="12" y2="21"/><line x1="9" y1="18" x2="15" y2="18"/></svg><span data-i18n="female">Female</span></button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3 class="tl-set-legend" data-i18n="appSettings">App Settings</h3>
+          <div class="tl-set-group">
+            <div class="tl-set-control tl-set-control-stack">
+              <span class="tl-set-label" data-i18n="language">Language</span>
+              <div class="lang-wrap settings-lang-wrap">
+                <svg class="lang-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><ellipse cx="12" cy="12" rx="4.2" ry="9.5"/><line x1="2.5" y1="12" x2="21.5" y2="12"/></svg>
+                <select id="langSelect" class="lang-select" data-i18n-aria="language" data-i18n-title="language" aria-label="Language"></select>
+              </div>
+            </div>
+
+            <div class="tl-set-control tl-set-control-stack">
+              <span class="tl-set-label" id="themeGroupLabel" data-i18n="theme">Theme</span>
+              <div class="tl-seg pill-group" id="themeGroup" role="group" aria-labelledby="themeGroupLabel">
+                <button type="button" class="tl-seg-opt pill" data-value="dark"><span class="pill-dot theme-dot-dark" aria-hidden="true"></span><span data-i18n="themeDark">Dark</span></button>
+                <button type="button" class="tl-seg-opt pill" data-value="light"><span class="pill-dot theme-dot-light" aria-hidden="true"></span><span data-i18n="themeLight">Light</span></button>
+                <button type="button" class="tl-seg-opt pill" data-value="ocean"><span class="pill-dot theme-dot-ocean" aria-hidden="true"></span><span data-i18n="themeOcean">Ocean</span></button>
+                <button type="button" class="tl-seg-opt pill" data-value="sunset"><span class="pill-dot theme-dot-sunset" aria-hidden="true"></span><span data-i18n="themeSunset">Sunset</span></button>
+              </div>
+            </div>
+
+            <label class="tl-set-control" for="soundToggle">
+              <span data-i18n="soundNotifications">Sound notifications</span>
+              <span class="switch"><input type="checkbox" id="soundToggle" checked /><span class="switch-slider" aria-hidden="true"></span></span>
+            </label>
+
+            <label class="tl-set-control" for="vibrationToggle">
+              <span data-i18n="vibration">Vibration</span>
+              <span class="switch"><input type="checkbox" id="vibrationToggle" checked /><span class="switch-slider" aria-hidden="true"></span></span>
+            </label>
+          </div>
+        </section>
+
+        <section>
+          <h3 class="tl-set-legend" data-i18n="catPrivacy">Privacy &amp; Safety</h3>
+          <div class="tl-set-group">
+            <label class="tl-set-control" for="statusVisibilityToggle">
+              <span data-i18n="showOnlineStatus">Show my online status to friends</span>
+              <span class="switch"><input type="checkbox" id="statusVisibilityToggle" checked /><span class="switch-slider" aria-hidden="true"></span></span>
+            </label>
+
+            <label class="tl-set-control" for="messageSeenToggle">
+              <span data-i18n="messageSeen">Read receipts (Seen)</span>
+              <span class="switch"><input type="checkbox" id="messageSeenToggle" checked /><span class="switch-slider" aria-hidden="true"></span></span>
+            </label>
+          </div>
+        </section>
+
+        <!-- The account screens live on the landing page; /chat hands over to
+             them rather than carrying a second copy of the whole stack. -->
+        <section>
+          <h3 class="tl-set-legend" data-i18n="catBilling">Coins &amp; Billing</h3>
+          <div class="tl-set-group">
+            <button type="button" id="settingsShopRow" class="tl-set-row">
+              <span class="tl-set-row-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h16l-1.2 11.2a1.8 1.8 0 0 1-1.8 1.6H7a1.8 1.8 0 0 1-1.8-1.6z"/><path d="M8.5 8V6.4a3.5 3.5 0 0 1 7 0V8"/></svg>
+              </span>
+              <span class="tl-set-row-text">
+                <strong data-i18n="shopTitle">Shop</strong>
+                <small data-i18n="shopRowSub">Coins and Boosts</small>
+              </span>
+              <span class="tl-set-row-badge" data-i18n="comingSoon">Coming soon</span>
+              <span class="tl-set-row-go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
+            </button>
+
+            <button type="button" id="settingsBillingRow" class="tl-set-row">
+              <span class="tl-set-row-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="19" height="13" rx="2.5"/><path d="M2.5 10h19"/><path d="M6 14.5h3.5"/></svg>
+              </span>
+              <span class="tl-set-row-text">
+                <strong data-i18n="billingTitle">Billing</strong>
+                <small data-i18n="billingRowSub">Boosts and receipts</small>
+              </span>
+              <span class="tl-set-row-go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
+            </button>
+          </div>
+        </section>
+
+        <section>
+          <h3 class="tl-set-legend" data-i18n="catAbout">Help &amp; About</h3>
+          <div class="tl-set-group tl-set-links">
+            <a href="/?open=feedback" data-i18n="feedback">Feedback for Improvement</a>
+            <a href="/pricing" data-i18n="pricingLink">Pricing &amp; Premium</a>
+            <a href="/about" data-i18n="aboutLink">About TalkLive</a>
+            <a href="/contact" data-i18n="contactLink">Contact Us</a>
+            <a href="/terms" data-i18n="termsPageLink">Terms &amp; Conditions</a>
+            <a href="/privacy" data-i18n="privacyPolicy">Privacy Policy</a>
+            <a href="/refund" data-i18n="refundLink">Refund Policy</a>
+          </div>
+        </section>
+
+        <div class="tl-set-foot" id="sidePanelAuth">
+          <a href="/?open=account&amp;tab=login" id="sidePanelSignInBtn" class="btn btn-secondary side-auth-btn" data-i18n="signIn">Sign in</a>
+          <a href="/?open=account&amp;tab=signup" id="sidePanelRegisterBtn" class="btn btn-primary side-auth-btn" data-i18n="register">Register</a>
         </div>
-      </div>
-
-      <div class="settings-accordion" id="settingsAccordion">
-        <section class="acc-item">
-          <button type="button" class="acc-header" aria-expanded="true">
-            <span data-i18n="catProfile">Profile</span>
-            <svg class="acc-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
-          </button>
-          <div class="acc-body">
-            <div class="acc-body-inner">
-              <div class="pill-row">
-                <span class="pill-label" id="genderGroupLabel" data-i18n="iAm">I am</span>
-                <div class="pill-group" id="genderGroup" role="group" aria-labelledby="genderGroupLabel">
-                  <button type="button" class="pill" data-value=""><span class="pill-dot pill-dot-neutral" aria-hidden="true"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span data-i18n="preferNotSay">Prefer not to say</span></button>
-                  <button type="button" class="pill" data-value="male"><span class="pill-dot pill-dot-male" aria-hidden="true"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="14" r="6"/><line x1="14.5" y1="9.5" x2="20" y2="4"/><polyline points="14.5 4 20 4 20 9.5"/></svg><span data-i18n="male">Male</span></button>
-                  <button type="button" class="pill" data-value="female"><span class="pill-dot pill-dot-female" aria-hidden="true"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="9" r="6"/><line x1="12" y1="15" x2="12" y2="21"/><line x1="9" y1="18" x2="15" y2="18"/></svg><span data-i18n="female">Female</span></button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section class="acc-item">
-          <button type="button" class="acc-header" aria-expanded="false">
-            <span data-i18n="appSettings">App Settings</span>
-            <svg class="acc-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
-          </button>
-          <div class="acc-body">
-            <div class="acc-body-inner">
-              <div class="pill-row">
-                <span class="pill-label" for="langSelect" data-i18n="language">Language</span>
-                <div class="lang-wrap settings-lang-wrap">
-                  <svg class="lang-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><ellipse cx="12" cy="12" rx="4.2" ry="9.5"/><line x1="2.5" y1="12" x2="21.5" y2="12"/></svg>
-                  <select id="langSelect" class="lang-select" data-i18n-aria="language" data-i18n-title="language" aria-label="Language"></select>
-                </div>
-              </div>
-
-              <div class="pill-row">
-                <span class="pill-label" id="themeGroupLabel" data-i18n="theme">Theme</span>
-                <div class="pill-group" id="themeGroup" role="group" aria-labelledby="themeGroupLabel">
-                  <button type="button" class="pill" data-value="dark"><span class="pill-dot theme-dot-dark" aria-hidden="true"></span><span data-i18n="themeDark">Dark</span></button>
-                  <button type="button" class="pill" data-value="light"><span class="pill-dot theme-dot-light" aria-hidden="true"></span><span data-i18n="themeLight">Light</span></button>
-                  <button type="button" class="pill" data-value="ocean"><span class="pill-dot theme-dot-ocean" aria-hidden="true"></span><span data-i18n="themeOcean">Ocean</span></button>
-                  <button type="button" class="pill" data-value="sunset"><span class="pill-dot theme-dot-sunset" aria-hidden="true"></span><span data-i18n="themeSunset">Sunset</span></button>
-                </div>
-              </div>
-
-              <label class="toggle-row" for="soundToggle">
-                <span data-i18n="soundNotifications">Sound notifications</span>
-                <span class="switch"><input type="checkbox" id="soundToggle" checked /><span class="switch-slider" aria-hidden="true"></span></span>
-              </label>
-
-              <label class="toggle-row" for="vibrationToggle">
-                <span data-i18n="vibration">Vibration</span>
-                <span class="switch"><input type="checkbox" id="vibrationToggle" checked /><span class="switch-slider" aria-hidden="true"></span></span>
-              </label>
-            </div>
-          </div>
-        </section>
-
-        <section class="acc-item">
-          <button type="button" class="acc-header" aria-expanded="false">
-            <span data-i18n="catPrivacy">Privacy &amp; Safety</span>
-            <svg class="acc-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
-          </button>
-          <div class="acc-body">
-            <div class="acc-body-inner">
-              <label class="toggle-row" for="statusVisibilityToggle">
-                <span data-i18n="showOnlineStatus">Show my online status to friends</span>
-                <span class="switch"><input type="checkbox" id="statusVisibilityToggle" checked /><span class="switch-slider" aria-hidden="true"></span></span>
-              </label>
-
-              <label class="toggle-row" for="messageSeenToggle">
-                <span data-i18n="messageSeen">Read receipts (Seen)</span>
-                <span class="switch"><input type="checkbox" id="messageSeenToggle" checked /><span class="switch-slider" aria-hidden="true"></span></span>
-              </label>
-            </div>
-          </div>
-        </section>
-
-        <section class="acc-item">
-          <button type="button" class="acc-header" aria-expanded="false">
-            <span data-i18n="catAbout">Help &amp; About</span>
-            <svg class="acc-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
-          </button>
-          <div class="acc-body">
-            <div class="acc-body-inner settings-links">
-              <a href="/?open=feedback" class="settings-link" data-i18n="feedback">Feedback for Improvement</a>
-              <a href="/pricing" class="settings-link" data-i18n="pricingLink">Pricing &amp; Premium</a>
-              <a href="/about" class="settings-link" data-i18n="aboutLink">About TalkLive</a>
-              <a href="/contact" class="settings-link" data-i18n="contactLink">Contact Us</a>
-              <a href="/terms" class="settings-link" data-i18n="termsPageLink">Terms &amp; Conditions</a>
-              <a href="/privacy" class="settings-link" data-i18n="privacyPolicy">Privacy Policy</a>
-              <a href="/refund" class="settings-link" data-i18n="refundLink">Refund Policy</a>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <div class="side-panel-auth" id="sidePanelAuth">
-        <a href="/?open=account&amp;tab=login" id="sidePanelSignInBtn" class="btn btn-secondary side-auth-btn" data-i18n="signIn">Sign in</a>
-        <a href="/?open=account&amp;tab=signup" id="sidePanelRegisterBtn" class="btn btn-primary side-auth-btn" data-i18n="register">Register</a>
       </div>
     </div>
   </aside>
 
-  <!-- Friends side panel (right): requests + friend list, same as the call app. -->
+  <!-- THE friends panel. One panel, two tabs - the people you have, and every
+       request in flight, incoming and outgoing. Identical to the call app. -->
   <div id="friendsOverlay" class="side-overlay hidden"></div>
-  <aside id="friendsPanel" class="side-panel side-right" role="dialog" data-i18n-aria="friends" aria-label="Friends" aria-hidden="true" inert>
-    <div class="side-header">
+  <aside id="friendsPanel" class="side-panel side-right tl-panel" role="dialog" data-i18n-aria="friends" aria-label="Friends" aria-hidden="true" inert>
+    <div class="tl-panel-head">
       <h2 data-i18n="friends">Friends</h2>
-      <button type="button" id="friendsCloseBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
+      <button type="button" id="friendsCloseBtn" class="tl-panel-close" data-i18n-aria="close" aria-label="Close">&times;</button>
     </div>
     <div class="side-body">
-      <div id="requestsList" class="requests-list"></div>
-      <div id="friendsList" class="friends-list">
-        <p class="list-empty" data-i18n="noFriendsYet">No friends yet.</p>
+      <div class="tl-panel-body">
+        <div class="tl-tabs" id="friendsTabs" role="tablist">
+          <button type="button" class="tl-tab selected" data-tab="friends" role="tab" aria-selected="true" aria-controls="friendsTabPanel">
+            <span data-i18n="friends">Friends</span>
+            <span class="tl-tab-count hidden" id="friendsTabCount">0</span>
+          </button>
+          <button type="button" class="tl-tab" data-tab="requests" role="tab" aria-selected="false" aria-controls="requestsTabPanel">
+            <span data-i18n="requests">Requests</span>
+            <span class="tl-tab-count hidden" id="requestsTabCount">0</span>
+          </button>
+        </div>
+
+        <div id="friendsTabPanel" class="tl-tabpanel" role="tabpanel">
+          <div id="friendsList" class="friends-list">
+            <p class="tl-empty" data-i18n="noFriendsYet">No friends yet.</p>
+          </div>
+        </div>
+
+        <div id="requestsTabPanel" class="tl-tabpanel hidden" role="tabpanel">
+          <p class="tl-subhead" data-i18n="waitingOnYou">Waiting on you</p>
+          <div id="requestsList" class="requests-list"></div>
+          <p class="tl-subhead" data-i18n="youAsked">You asked</p>
+          <div id="sentRequestsList" class="sent-requests-list"></div>
+        </div>
       </div>
     </div>
   </aside>
@@ -659,13 +660,13 @@
   <!-- Chat history side panel (right): the last 10 people you chatted with, so
        you can message back someone you lost. No call-back here - text only. -->
   <div id="historyOverlay" class="side-overlay hidden"></div>
-  <aside id="historyPanel" class="side-panel side-right" role="dialog" data-i18n-aria="history" aria-label="History" aria-hidden="true" inert>
-    <div class="side-header">
+  <aside id="historyPanel" class="side-panel side-right tl-panel" role="dialog" data-i18n-aria="history" aria-label="History" aria-hidden="true" inert>
+    <div class="tl-panel-head">
       <h2 data-i18n="history">History</h2>
-      <button type="button" id="historyCloseBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
+      <button type="button" id="historyCloseBtn" class="tl-panel-close" data-i18n-aria="close" aria-label="Close">&times;</button>
     </div>
-    <div class="side-body">
-      <p class="side-hint" data-i18n="historyHint">The last 10 people you chatted with. Message someone back if you lost them.</p>
+    <div class="side-body tl-panel-body">
+      <p class="tl-hint" data-i18n="historyHint">The last 10 people you chatted with. Message someone back if you lost them.</p>
       <div id="historyList" class="friends-list">
         <p class="list-empty" data-i18n="noHistoryYet">No chats yet.</p>
       </div>
@@ -802,13 +803,13 @@
 
   <script defer src="/socket.io/socket.io.js"></script>
   <script defer src="/countries.js?v=20260828fix"></script>
-  <script defer src="/i18n.js?v=20260916navbar"></script>
+  <script defer src="/i18n.js?v=20260917panels"></script>
   <script defer src="/chat-time.js?v=20260916navbar"></script>
   <script defer src="/animals.js?v=20260916navbar"></script>
   <script defer src="/error-reporter.js?v=20260823ui"></script>
   <script defer src="/chat-extras.js?v=20260916navbar"></script>
   <script defer src="/games.js?v=20260916navbar"></script>
-  <script defer src="/chat.js?v=20260916navbar"></script>
+  <script defer src="/chat.js?v=20260917panels"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the
