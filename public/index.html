@@ -18,10 +18,6 @@
 <link rel="stylesheet" href="style.css?v=20260916navbar" />
 <link rel="stylesheet" href="chat-extras.css?v=20260916navbar" />
 <link rel="stylesheet" href="games.css?v=20260916settings" />
-<!-- The redesign layer. Loaded last on purpose: it owns the top bar, the start
-     gate, the side panels and the account modal, and it does so with its own
-     `tl-` class names so nothing above can reach into it. -->
-<link rel="stylesheet" href="ui.css?v=20260917ui" />
 <script defer src="/config.js"></script>
 <!-- Google Identity Services, deferred so it never blocks first paint. app.js
      waits for it (and for /config.js) before rendering the sign-in buttons. -->
@@ -212,182 +208,171 @@
 <body>
   <a href="#main" class="skip-link" data-i18n="skipToContent">Skip to main content</a>
   <div class="app">
-    <!-- One bar, two objects: the lockup, and the actions.
-         It used to carry six bare glyphs in a scrolling rail plus two auth
-         pills, which on a phone left every control under 40px and none of them
-         labelled. Everything that is not "talk to the person in front of me"
-         now sits behind a single More menu, where each entry gets a word next
-         to its icon. -->
-    <header class="topbar tl-bar">
-      <div class="tl-bar-lead">
-        <button type="button" id="brandHome" class="tl-brand" data-i18n-title="goHome" data-i18n-aria="goHome" aria-label="TalkLive home" title="TalkLive home">
-          <span class="tl-brand-mark" aria-hidden="true">
-            <img src="/favicon.svg?v=20260917ui" width="34" height="34" alt="" decoding="async" />
-            <!-- Network status: green when online, red when the connection drops. -->
-            <span id="brandDot" class="tl-brand-dot is-online" data-i18n-title="netOnline" title="You are online"></span>
+    <header class="topbar">
+      <!-- The lockup owns the left edge on its own. The settings gear used to
+           sit to the left of it, which put a tool ahead of the brand and made
+           the first thing on the page a grey cog; it now lives in the tool
+           group with the other tools, where it belongs. -->
+      <div class="topbar-left">
+        <!-- The TalkLive lockup. Identical markup, mark and wordmark on every
+             screen of the product (/, /call and /chat) so a visitor always
+             knows which site they are on: the tile is public/favicon.svg drawn
+             inline, and the network dot sits in the same top-right corner the
+             favicon puts it in. Never hidden - not on a phone, not mid-call. -->
+        <button type="button" id="brandHome" class="brand" data-i18n-title="goHome" data-i18n-aria="goHome" aria-label="TalkLive home" title="TalkLive home">
+          <span class="brand-logo" aria-hidden="true">
+            <img src="/favicon.svg?v=20260916settings" width="30" height="30" alt="" decoding="async" />
+            <!-- Network status: green dot when online, red when the connection drops. -->
+            <span id="brandDot" class="brand-dot is-online" data-i18n-title="netOnline" title="You are online"></span>
           </span>
-          <span class="tl-brand-name">Talk<em>Live</em></span>
+          <span class="brand-name">Talk<span class="brand-name-live">Live</span></span>
         </button>
-        <!-- Live headcount, under the wordmark: proof the product is alive,
-             said once, by the brand, at no cost to the bar's width. Starts as
-             an em dash, never "0", which reads as "nobody is here". -->
-        <p class="tl-brand-live is-waiting" id="brandLive" role="status" aria-live="polite" data-i18n-title="onlineAria" data-i18n-aria="onlineAria" title="People online now" aria-label="Number of people online now">
-          <span class="tl-live-dot" aria-hidden="true"></span>
-          <b id="onlineCount">&mdash;</b>
-          <span data-i18n="online">Online</span>
+        <!-- Live headcount, tucked under the wordmark instead of sitting in a
+             chip in the opposite corner. It costs no horizontal room - the
+             reason the bar ran out of it on a phone - and reads as what it
+             actually is: proof the product is alive, said by the brand itself.
+             Starts as an em dash, never "0", which reads as "nobody is here". -->
+        <p class="brand-live is-waiting" id="brandLive" role="status" aria-live="polite" data-i18n-title="onlineAria" data-i18n-aria="onlineAria" title="People online now" aria-label="Number of people online now">
+          <span class="brand-live-dot" aria-hidden="true"></span>
+          <span class="brand-live-num" id="onlineCount">&mdash;</span>
+          <span class="brand-live-label" data-i18n="online">Online</span>
         </p>
       </div>
-
-      <div class="tl-bar-actions">
-        <!-- The only filled control in the bar, and only during a call: the
-             conversation's own chat. -->
-        <button id="chatToggleBtn" class="tl-act tl-act-accent hidden" type="button" data-i18n-title="chat" data-i18n-aria="chat" title="Chat" aria-label="Chat">
-          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <!-- One object, not six loose glyphs: a single segmented rail. The two
+           call-only tools lead it, so mid-call the conversation's own controls
+           are the first thing in the group. -->
+      <nav class="header-tools" aria-label="TalkLive tools">
+        <button id="chatToggleBtn" class="icon-btn hidden" data-i18n-title="chat" data-i18n-aria="chat" title="Chat" aria-label="Chat">
+          <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
           </svg>
-          <span id="chatBadge" class="tl-act-badge hidden" aria-hidden="true">0</span>
+          <span id="chatBadge" class="chat-badge hidden" aria-hidden="true">0</span>
         </button>
-
-        <!-- Friends: the one list of people, everywhere in the app. -->
-        <button id="friendsBtn" class="tl-act" type="button" data-i18n-title="friendsAria" data-i18n-aria="friendsAria" title="Friends &amp; messages" aria-label="Friends and messages">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.1"/><path d="M3.6 19a5.4 5.4 0 0 1 10.8 0"/><circle cx="17.2" cy="9" r="2.5"/><path d="M15.7 13.7A4.8 4.8 0 0 1 21 18.4"/></svg>
-          <span id="friendsMsgBadge" class="tl-act-badge hidden" aria-hidden="true">0</span>
+        <button id="gameBtn" class="icon-btn hidden" data-i18n-title="playGames" data-i18n-aria="playGames" title="Play a game" aria-label="Play a game">
+          <span id="gameBtnBadge" class="notif-badge hidden" aria-hidden="true">!</span>
+          <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="9" y1="3.5" x2="9" y2="20.5"/>
+            <line x1="15" y1="3.5" x2="15" y2="20.5"/>
+            <line x1="3.5" y1="9" x2="20.5" y2="9"/>
+            <line x1="3.5" y1="15" x2="20.5" y2="15"/>
+            <path stroke-width="2.1" d="M5.3 5.3l3.1 3.1M8.4 5.3L5.3 8.4"/>
+            <circle cx="18" cy="18" r="2.1" stroke-width="2.1"/>
+          </svg>
         </button>
-
-        <!-- Everything else, with labels. -->
-        <div class="tl-menu-wrap">
-          <button type="button" id="moreBtn" class="tl-act" aria-haspopup="true" aria-expanded="false" aria-controls="moreMenu" data-i18n-title="more" data-i18n-aria="more" title="More" aria-label="More">
-            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>
-            <span id="moreDot" class="tl-act-dot hidden" aria-hidden="true"></span>
+        <div class="friends-wrap">
+          <button id="friendsBtn" class="icon-btn friends-btn" data-i18n-title="friendsAria" data-i18n-aria="friendsAria" title="Friends &amp; messages" aria-label="Friends and messages">
+            <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.1"/><path d="M3.6 19a5.4 5.4 0 0 1 10.8 0"/><circle cx="17.2" cy="9" r="2.5"/><path d="M15.7 13.7A4.8 4.8 0 0 1 21 18.4"/></svg>
+            <span id="friendsMsgBadge" class="notif-badge hidden" aria-hidden="true">0</span>
           </button>
-          <div id="moreMenu" class="tl-menu hidden" role="menu" aria-labelledby="moreBtn">
-            <button type="button" id="historyBtn" class="tl-menu-item" role="menuitem">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.2 2"/></svg>
-              <span data-i18n="callHistory">Call History</span>
-            </button>
-            <button type="button" id="filtersBtn" class="tl-menu-item" role="menuitem">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="11" cy="18" r="2" fill="currentColor" stroke="none"/></svg>
-              <span data-i18n="filters">Filters</span>
-            </button>
-            <button type="button" id="gameBtn" class="tl-menu-item hidden" role="menuitem">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <line x1="9" y1="3.5" x2="9" y2="20.5"/><line x1="15" y1="3.5" x2="15" y2="20.5"/><line x1="3.5" y1="9" x2="20.5" y2="9"/><line x1="3.5" y1="15" x2="20.5" y2="15"/><path stroke-width="2.1" d="M5.3 5.3l3.1 3.1M8.4 5.3L5.3 8.4"/><circle cx="18" cy="18" r="2.1" stroke-width="2.1"/>
-              </svg>
-              <span data-i18n="playGames">Play a game</span>
-              <span id="gameBtnBadge" class="notif-badge tl-menu-count hidden" aria-hidden="true">!</span>
-            </button>
-            <div class="tl-menu-sep" aria-hidden="true"></div>
-            <button type="button" id="appSettingsBtn" class="tl-menu-item" role="menuitem">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="3.2"/>
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-              </svg>
-              <span data-i18n="settings">Settings</span>
-            </button>
+        </div>
+        <div class="history-wrap">
+          <button id="historyBtn" class="icon-btn" data-i18n-title="historyAria" data-i18n-aria="historyAria" title="Call history" aria-label="Call history">
+            <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="8.5"/>
+              <path d="M12 7.5V12l3.2 2"/>
+            </svg>
+          </button>
+          <div id="historyDropdown" class="notif-dropdown history-dropdown hidden" role="dialog" aria-labelledby="historyDropdownTitle">
+            <div class="modal-header">
+              <h2 id="historyDropdownTitle" data-i18n="callHistory">Call History</h2>
+              <button type="button" id="closeHistoryBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+              <p class="account-hint" data-i18n="historyHint">This session only - it clears when you close or reload the page. Tap the green button to call someone back if they're online.</p>
+              <div id="historyList" class="history-list">
+                <p class="history-empty" data-i18n="noCallsYet">No calls yet.</p>
+              </div>
+            </div>
           </div>
         </div>
-
-        <!-- Auth stays in the bar: signing in is the one thing a returning
-             user arrives looking for. One pill on a phone, two from 560px. -->
-        <div class="tl-auth" id="headerAuth">
-          <button type="button" id="headerLoginBtn" class="tl-auth-btn tl-auth-login" data-i18n="logIn">Log In</button>
-          <button type="button" id="headerSignupBtn" class="tl-auth-btn tl-auth-signup" data-i18n="signUp">Sign Up</button>
+        <button id="filtersBtn" class="icon-btn" data-i18n-title="filtersAria" data-i18n-aria="filtersAria" title="Match filters" aria-label="Match filters">
+          <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="4" y1="6" x2="20" y2="6"/>
+            <circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"/>
+            <line x1="4" y1="12" x2="20" y2="12"/>
+            <circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"/>
+            <line x1="4" y1="18" x2="20" y2="18"/>
+            <circle cx="11" cy="18" r="2" fill="currentColor" stroke="none"/>
+          </svg>
+        </button>
+        <button id="appSettingsBtn" class="icon-btn" data-i18n-title="settings" data-i18n-aria="menuAria" title="Settings" aria-label="Open settings menu">
+          <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3.2"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </button>
+      </nav>
+      <div class="header-right">
+        <!-- Auth, always visible in the header rather than only inside the
+             settings panel: signing in is the one action a returning user
+             comes looking for, and a control they have to open a menu to find
+             reads as "there are no accounts here". Swapped for a single
+             account button once signed in (see renderAccountState). -->
+        <!-- Anonymous users own a real profile (name, friends, history) that
+             lives only in this browser. This pill is the one-tap offer to keep
+             it: it opens Sign Up, where the profile is shown being linked to
+             the new account. Hidden once there is an account to link to. -->
+        <button type="button" id="headerLinkProfileBtn" class="header-link-profile hidden">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M9.5 14.5 14.5 9.5"/><path d="M11 7.4 12.6 5.8a3.7 3.7 0 0 1 5.3 5.3l-1.6 1.6"/><path d="M13 16.6l-1.6 1.6a3.7 3.7 0 0 1-5.3-5.3l1.6-1.6"/></svg>
+          <span data-i18n="linkProfilePill">Save your profile</span>
+        </button>
+        <div class="header-auth" id="headerAuth">
+          <button type="button" id="headerLoginBtn" class="header-auth-btn header-auth-login" data-i18n="logIn">Log In</button>
+          <button type="button" id="headerSignupBtn" class="header-auth-btn header-auth-signup" data-i18n="signUp">Sign Up</button>
         </div>
-        <button type="button" id="headerAccountBtn" class="tl-act hidden" data-i18n-title="myAccount" data-i18n-aria="myAccount" title="My Account" aria-label="My Account">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <button type="button" id="headerAccountBtn" class="icon-btn header-account-btn hidden" data-i18n-title="myAccount" data-i18n-aria="myAccount" title="My Account" aria-label="My Account">
+          <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <circle cx="12" cy="8.5" r="3.6"/>
             <path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"/>
           </svg>
         </button>
+        <!-- The live headcount used to sit here, in a grey chip in the far
+             corner, where it competed with Sign Up for the one part of a phone
+             bar that had no room left. It is now part of the lockup on the
+             left, under the wordmark. -->
       </div>
     </header>
 
-    <!-- THE friends panel. One panel, two tabs: the people you have, and
-         every request in flight - the ones waiting on you, and the ones you
-         sent that are waiting on them. Outgoing requests used to be invisible:
-         you asked, and nothing on screen ever said so again. -->
+    <!-- Friends side panel: friend list and requests, opened from the header friends icon -->
     <div id="friendsOverlay" class="side-panel-overlay hidden"></div>
-    <aside id="friendsDropdown" class="side-panel side-panel-right tl-panel friends-dropdown" role="dialog" data-i18n-aria="friends" aria-label="Friends">
-      <div class="tl-panel-head">
+    <aside id="friendsDropdown" class="side-panel side-panel-right friends-dropdown" role="dialog" data-i18n-aria="friends" aria-label="Friends">
+      <div class="side-panel-header">
         <h2 data-i18n="friends">Friends</h2>
-        <button type="button" id="closeFriendsBtn" class="tl-panel-close" data-i18n-aria="close" aria-label="Close">&times;</button>
+        <button type="button" id="closeFriendsBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
       </div>
       <div class="side-panel-body">
-        <div class="tl-panel-body">
-          <button type="button" id="linkProfileBanner" class="link-profile-banner hidden">
-            <span class="link-profile-banner-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
-                <path d="M9.5 14.5 14.5 9.5"/>
-                <path d="M11 7.4 12.6 5.8a3.7 3.7 0 0 1 5.3 5.3l-1.6 1.6"/>
-                <path d="M13 16.6l-1.6 1.6a3.7 3.7 0 0 1-5.3-5.3l1.6-1.6"/>
-              </svg>
-            </span>
-            <span class="link-profile-banner-text">
-              <strong data-i18n="linkProfileBannerTitle">Save your profile</strong>
-              <small data-i18n="linkProfileBannerBody">Keep your friends and history on any device.</small>
-            </span>
-            <span class="link-profile-banner-go" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
-            </span>
-          </button>
-
-          <div class="tl-tabs" id="friendsTabs" role="tablist">
-            <button type="button" class="tl-tab selected" data-tab="friends" role="tab" aria-selected="true" aria-controls="friendsTabPanel">
-              <span data-i18n="friends">Friends</span>
-              <span class="tl-tab-count hidden" id="friendsTabCount">0</span>
-            </button>
-            <button type="button" class="tl-tab" data-tab="requests" role="tab" aria-selected="false" aria-controls="requestsTabPanel">
-              <span data-i18n="requests">Requests</span>
-              <span class="tl-tab-count hidden" id="requestsTabCount">0</span>
-            </button>
-          </div>
-
-          <div id="friendsTabPanel" class="tl-tabpanel" role="tabpanel">
-            <!-- Reachable from the list the calls come from, rather than buried
-                 in settings: friends can still message while this is off. -->
-            <label id="acceptCallsRow" class="checkbox-row accept-calls-row" for="acceptCallsCheckbox">
-              <input type="checkbox" id="acceptCallsCheckbox" checked />
-              <span class="accept-calls-text">
-                <strong data-i18n="acceptCallsTitle">Receive incoming calls</strong>
-                <small data-i18n="acceptCallsBody">Friends can call you</small>
-              </span>
-            </label>
-            <div id="friendsList" class="friends-list">
-              <!-- Skeleton rows shown until the first friends sync from the server. -->
-              <div class="skeleton-row" aria-hidden="true"><span class="skeleton skeleton-avatar"></span><span class="skeleton skeleton-line"></span></div>
-              <div class="skeleton-row" aria-hidden="true"><span class="skeleton skeleton-avatar"></span><span class="skeleton skeleton-line short"></span></div>
-            </div>
-          </div>
-
-          <div id="requestsTabPanel" class="tl-tabpanel hidden" role="tabpanel">
-            <p class="tl-subhead" data-i18n="waitingOnYou">Waiting on you</p>
-            <div id="notifList" class="notif-list">
-              <p class="tl-empty" data-i18n="noRequestsYet">No requests yet.</p>
-            </div>
-            <p class="tl-subhead" data-i18n="youAsked">You asked</p>
-            <div id="sentRequestsList" class="sent-requests-list">
-              <p class="tl-empty" data-i18n="noSentRequests">You have not sent any requests.</p>
-            </div>
-          </div>
+        <button type="button" id="linkProfileBanner" class="link-profile-banner hidden">
+          <span class="link-profile-banner-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+              <path d="M9.5 14.5 14.5 9.5"/>
+              <path d="M11 7.4 12.6 5.8a3.7 3.7 0 0 1 5.3 5.3l-1.6 1.6"/>
+              <path d="M13 16.6l-1.6 1.6a3.7 3.7 0 0 1-5.3-5.3l1.6-1.6"/>
+            </svg>
+          </span>
+          <span class="link-profile-banner-text">
+            <strong data-i18n="linkProfileBannerTitle">Save your profile</strong>
+            <small data-i18n="linkProfileBannerBody">Keep your friends and history on any device.</small>
+          </span>
+          <span class="link-profile-banner-go" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+          </span>
+        </button>
+        <!-- Reachable from the list the calls come from, rather than buried in
+             settings: friends can still message while this is off. -->
+        <label id="acceptCallsRow" class="checkbox-row accept-calls-row" for="acceptCallsCheckbox">
+          <input type="checkbox" id="acceptCallsCheckbox" checked />
+          <span class="accept-calls-text">
+            <strong data-i18n="acceptCallsTitle">Receive incoming calls</strong>
+            <small data-i18n="acceptCallsBody">Friends can call you</small>
+          </span>
+        </label>
+        <div id="notifList" class="notif-list">
+          <p class="history-empty" data-i18n="noRequestsYet">No requests yet.</p>
         </div>
-      </div>
-    </aside>
-
-    <!-- The one and only call history. It was a floating dropdown hanging off
-         a header glyph; it is the same right-hand panel as everything else now,
-         so "where do I find my calls" has a single answer. -->
-    <div id="historyOverlay" class="side-panel-overlay hidden"></div>
-    <aside id="historyPanel" class="side-panel side-panel-right tl-panel" role="dialog" aria-labelledby="historyPanelTitle">
-      <div class="tl-panel-head">
-        <h2 id="historyPanelTitle" data-i18n="callHistory">Call History</h2>
-        <button type="button" id="closeHistoryBtn" class="tl-panel-close" data-i18n-aria="close" aria-label="Close">&times;</button>
-      </div>
-      <div class="side-panel-body">
-        <div class="tl-panel-body">
-          <p class="tl-step-hint" data-i18n="callHistoryHint">This session only - it clears when you close or reload the page. Tap the green button to call someone back if they are online.</p>
-          <div id="historyList" class="history-list">
-            <p class="tl-empty" data-i18n="noCallsYet">No calls yet.</p>
-          </div>
+        <div id="friendsList" class="friends-list">
+          <!-- Skeleton rows shown until the first friends sync from the server. -->
+          <div class="skeleton-row" aria-hidden="true"><span class="skeleton skeleton-avatar"></span><span class="skeleton skeleton-line"></span></div>
+          <div class="skeleton-row" aria-hidden="true"><span class="skeleton skeleton-avatar"></span><span class="skeleton skeleton-line short"></span></div>
         </div>
       </div>
     </aside>
@@ -470,151 +455,170 @@
       </div>
     </aside>
 
-    <!-- Settings. Nothing was removed; the four collapsed accordions were.
-         Every preference now sits in a labelled group you can read top to
-         bottom, because "which of these four drawers is Theme in" is not a
-         question a settings panel should ask. -->
+    <!-- App settings side panel: app-level preferences + your own profile fields, opened from the left menu icon -->
     <div id="appSettingsOverlay" class="side-panel-overlay hidden"></div>
-    <aside id="appSettingsPanel" class="side-panel tl-panel" role="dialog" data-i18n-aria="settings" aria-label="Settings">
-      <div class="tl-panel-head">
+    <aside id="appSettingsPanel" class="side-panel" role="dialog" data-i18n-aria="settings" aria-label="Settings">
+      <div class="side-panel-header">
         <h2 data-i18n="settings">Settings</h2>
-        <button type="button" id="closeAppSettingsBtn" class="tl-panel-close" data-i18n-aria="close" aria-label="Close">&times;</button>
+        <button type="button" id="closeAppSettingsBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
       </div>
       <div class="side-panel-body">
-        <div class="tl-panel-body">
+        <!-- Who you are here, and the two money-adjacent screens, as tappable
+             rows at the top of Settings rather than buried in the accordion.
+             Nothing below can be bought yet: TalkLive is free, and Boosts and
+             coins are still in development. -->
+        <div class="settings-rows">
+          <button type="button" id="settingsProfileRow" class="settings-row">
+            <span id="settingsProfileAvatar" class="settings-row-avatar" aria-hidden="true"></span>
+            <span class="settings-row-text">
+              <strong id="settingsProfileName"></strong>
+              <small id="settingsProfileJoined"></small>
+            </span>
+            <span class="settings-row-go" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+            </span>
+          </button>
 
-          <!-- You -->
-          <section>
-            <h3 class="tl-set-legend" data-i18n="catProfile">Profile</h3>
-            <div class="tl-set-group">
-              <button type="button" id="settingsProfileRow" class="tl-set-row">
-                <span id="settingsProfileAvatar" class="tl-set-row-icon" aria-hidden="true"></span>
-                <span class="tl-set-row-text">
-                  <strong id="settingsProfileName"></strong>
-                  <small id="settingsProfileJoined"></small>
-                </span>
-                <span class="tl-set-row-go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
-              </button>
+          <button type="button" id="settingsShopRow" class="settings-row">
+            <span class="settings-row-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h16l-1.2 11.2a1.8 1.8 0 0 1-1.8 1.6H7a1.8 1.8 0 0 1-1.8-1.6z"/><path d="M8.5 8V6.4a3.5 3.5 0 0 1 7 0V8"/></svg>
+            </span>
+            <span class="settings-row-text">
+              <strong data-i18n="shopTitle">Shop</strong>
+              <small data-i18n="shopRowSub">Coins and Boosts</small>
+            </span>
+            <span class="settings-row-badge" data-i18n="comingSoon">Coming soon</span>
+            <span class="settings-row-go" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+            </span>
+          </button>
 
-              <!-- Display name: the name strangers see. No account needed. -->
-              <div class="tl-set-control tl-set-control-stack">
-                <label class="tl-set-label" for="tempUsernameInput" data-i18n="tempUsername">Your name</label>
-                <div class="tl-set-field">
-                  <input type="text" id="tempUsernameInput" class="search-input" maxlength="24" data-i18n-placeholder="tempUsernamePlaceholder" placeholder="Your display name" autocomplete="off" />
-                  <button type="button" id="saveTempNameBtn" data-i18n="saveName">Save name</button>
-                </div>
-              </div>
+          <button type="button" id="settingsBillingRow" class="settings-row">
+            <span class="settings-row-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="19" height="13" rx="2.5"/><path d="M2.5 10h19"/><path d="M6 14.5h3.5"/></svg>
+            </span>
+            <span class="settings-row-text">
+              <strong data-i18n="billingTitle">Billing</strong>
+              <small data-i18n="billingRowSub">Boosts and receipts</small>
+            </span>
+            <span class="settings-row-go" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+            </span>
+          </button>
+        </div>
 
-              <div class="tl-set-control tl-set-control-stack">
-                <span class="tl-set-label" id="genderGroupLabel" data-i18n="iAm">I am</span>
-                <div class="tl-seg pill-group" id="genderGroup" data-value="unspecified" role="group" aria-labelledby="genderGroupLabel">
-                  <button type="button" class="tl-seg-opt pill" data-value="male"><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="14" r="6"/><line x1="14.5" y1="9.5" x2="20" y2="4"/><polyline points="14.5 4 20 4 20 9.5"/></svg><span data-i18n="male">Male</span></button>
-                  <button type="button" class="tl-seg-opt pill" data-value="female"><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="9" r="6"/><line x1="12" y1="15" x2="12" y2="21"/><line x1="9" y1="18" x2="15" y2="18"/></svg><span data-i18n="female">Female</span></button>
-                  <button type="button" class="tl-seg-opt pill" data-value="unspecified"><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span data-i18n="preferNotSay">Prefer not to say</span></button>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <!-- App -->
-          <section>
-            <h3 class="tl-set-legend" data-i18n="appSettings">App Settings</h3>
-            <div class="tl-set-group">
-              <div class="tl-set-control tl-set-control-stack">
-                <span class="tl-set-label" data-i18n="language">Language</span>
-                <div class="lang-wrap settings-lang-wrap">
-                  <svg class="lang-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><ellipse cx="12" cy="12" rx="4.2" ry="9.5"/><line x1="2.5" y1="12" x2="21.5" y2="12"/></svg>
-                  <select id="langSelect" class="lang-select" data-i18n-aria="language" data-i18n-title="language" aria-label="Language"></select>
-                </div>
-              </div>
-
-              <div class="tl-set-control tl-set-control-stack">
-                <span class="tl-set-label" id="themeGroupLabel" data-i18n="theme">Theme</span>
-                <div class="tl-seg pill-group" id="themeGroup" data-value="dark" role="group" aria-labelledby="themeGroupLabel">
-                  <button type="button" class="tl-seg-opt pill" data-value="dark"><span class="pill-dot theme-dot-dark" aria-hidden="true"></span><span data-i18n="themeDark">Dark</span></button>
-                  <button type="button" class="tl-seg-opt pill" data-value="light"><span class="pill-dot theme-dot-light" aria-hidden="true"></span><span data-i18n="themeLight">Light</span></button>
-                  <button type="button" class="tl-seg-opt pill" data-value="ocean"><span class="pill-dot theme-dot-ocean" aria-hidden="true"></span><span data-i18n="themeOcean">Ocean</span></button>
-                  <button type="button" class="tl-seg-opt pill" data-value="sunset"><span class="pill-dot theme-dot-sunset" aria-hidden="true"></span><span data-i18n="themeSunset">Sunset</span></button>
-                </div>
-              </div>
-
-              <label class="tl-set-control" for="soundToggle">
-                <span data-i18n="soundNotifications">Sound notifications</span>
-                <span class="switch"><input type="checkbox" id="soundToggle" checked /><span class="switch-slider" aria-hidden="true"></span></span>
-              </label>
-
-              <label class="tl-set-control" for="vibrationToggle">
-                <span data-i18n="vibration">Vibration</span>
-                <span class="switch"><input type="checkbox" id="vibrationToggle" checked /><span class="switch-slider" aria-hidden="true"></span></span>
-              </label>
-            </div>
-          </section>
-
-          <!-- Privacy -->
-          <section>
-            <h3 class="tl-set-legend" data-i18n="catPrivacy">Privacy &amp; Safety</h3>
-            <div class="tl-set-group">
-              <label class="tl-set-control" for="statusVisibilityToggle">
-                <span data-i18n="showOnlineStatus">Show my online status to friends</span>
-                <span class="switch"><input type="checkbox" id="statusVisibilityToggle" checked /><span class="switch-slider" aria-hidden="true"></span></span>
-              </label>
-
-              <label class="tl-set-control" for="messageSeenToggle">
-                <span data-i18n="messageSeen">Read receipts (Seen)</span>
-                <span class="switch"><input type="checkbox" id="messageSeenToggle" checked /><span class="switch-slider" aria-hidden="true"></span></span>
-              </label>
-            </div>
-          </section>
-
-          <!-- Money-adjacent. Nothing here is purchasable yet: TalkLive is free. -->
-          <section>
-            <h3 class="tl-set-legend" data-i18n="catBilling">Coins &amp; Billing</h3>
-            <div class="tl-set-group">
-              <button type="button" id="settingsShopRow" class="tl-set-row">
-                <span class="tl-set-row-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h16l-1.2 11.2a1.8 1.8 0 0 1-1.8 1.6H7a1.8 1.8 0 0 1-1.8-1.6z"/><path d="M8.5 8V6.4a3.5 3.5 0 0 1 7 0V8"/></svg>
-                </span>
-                <span class="tl-set-row-text">
-                  <strong data-i18n="shopTitle">Shop</strong>
-                  <small data-i18n="shopRowSub">Coins and Boosts</small>
-                </span>
-                <span class="tl-set-row-badge" data-i18n="comingSoon">Coming soon</span>
-                <span class="tl-set-row-go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
-              </button>
-
-              <button type="button" id="settingsBillingRow" class="tl-set-row">
-                <span class="tl-set-row-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="19" height="13" rx="2.5"/><path d="M2.5 10h19"/><path d="M6 14.5h3.5"/></svg>
-                </span>
-                <span class="tl-set-row-text">
-                  <strong data-i18n="billingTitle">Billing</strong>
-                  <small data-i18n="billingRowSub">Boosts and receipts</small>
-                </span>
-                <span class="tl-set-row-go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
-              </button>
-            </div>
-          </section>
-
-          <!-- Help -->
-          <section>
-            <h3 class="tl-set-legend" data-i18n="catAbout">Help &amp; About</h3>
-            <div class="tl-set-group tl-set-links">
-              <button type="button" id="feedbackBtn" data-i18n="feedback">Feedback for Improvement</button>
-              <button type="button" id="settingsTermsBtn" data-i18n="termsLink">Terms &amp; Community Guidelines</button>
-              <a href="/pricing" data-i18n="pricingLink">Pricing &amp; Premium</a>
-              <a href="/about" data-i18n="aboutLink">About TalkLive</a>
-              <a href="/contact" data-i18n="contactLink">Contact Us</a>
-              <a href="/terms" data-i18n="termsPageLink">Terms &amp; Conditions</a>
-              <a href="/privacy" data-i18n="privacyPolicy">Privacy Policy</a>
-              <a href="/refund" data-i18n="refundLink">Refund Policy</a>
-            </div>
-          </section>
-
-          <div class="tl-set-foot" id="sidePanelAuth">
-            <button type="button" id="sidePanelSignInBtn" class="btn btn-secondary side-auth-btn" data-i18n="signIn">Sign in</button>
-            <button type="button" id="sidePanelRegisterBtn" class="btn btn-primary side-auth-btn" data-i18n="register">Register</button>
-            <button type="button" id="myAccountBtn" class="btn btn-primary side-auth-btn hidden" data-i18n="myAccount">My Account</button>
+        <!-- Display name: change the name strangers see, no account needed -->
+        <div class="temp-name-block">
+          <label class="pill-label" for="tempUsernameInput" data-i18n="tempUsername">Your name</label>
+          <div class="temp-name-row">
+            <input type="text" id="tempUsernameInput" class="search-input" maxlength="24" data-i18n-placeholder="tempUsernamePlaceholder" placeholder="Your display name" autocomplete="off" />
+            <button type="button" id="saveTempNameBtn" class="btn btn-secondary temp-name-save" data-i18n="saveName">Save name</button>
           </div>
+        </div>
+
+        <!-- One-tap expanding categories keep the panel uncluttered -->
+        <div class="settings-accordion" id="settingsAccordion">
+          <section class="acc-item">
+            <button type="button" class="acc-header" aria-expanded="true">
+              <span data-i18n="catProfile">Profile</span>
+              <svg class="acc-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="acc-body">
+              <div class="acc-body-inner">
+                <div class="pill-row">
+                  <span class="pill-label" id="genderGroupLabel" data-i18n="iAm">I am</span>
+                  <div class="pill-group" id="genderGroup" data-value="unspecified" role="group" aria-labelledby="genderGroupLabel">
+                    <button type="button" class="pill" data-value="unspecified"><span class="pill-dot pill-dot-neutral" aria-hidden="true"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span data-i18n="preferNotSay">Prefer not to say</span></button>
+                    <button type="button" class="pill" data-value="male"><span class="pill-dot pill-dot-male" aria-hidden="true"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="14" r="6"/><line x1="14.5" y1="9.5" x2="20" y2="4"/><polyline points="14.5 4 20 4 20 9.5"/></svg><span data-i18n="male">Male</span></button>
+                    <button type="button" class="pill" data-value="female"><span class="pill-dot pill-dot-female" aria-hidden="true"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="9" r="6"/><line x1="12" y1="15" x2="12" y2="21"/><line x1="9" y1="18" x2="15" y2="18"/></svg><span data-i18n="female">Female</span></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="acc-item">
+            <button type="button" class="acc-header" aria-expanded="false">
+              <span data-i18n="appSettings">App Settings</span>
+              <svg class="acc-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="acc-body">
+              <div class="acc-body-inner">
+                <div class="pill-row">
+                  <span class="pill-label" data-i18n="language">Language</span>
+                  <div class="lang-wrap settings-lang-wrap">
+                    <svg class="lang-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><ellipse cx="12" cy="12" rx="4.2" ry="9.5"/><line x1="2.5" y1="12" x2="21.5" y2="12"/></svg>
+                    <select id="langSelect" class="lang-select" data-i18n-aria="language" data-i18n-title="language" aria-label="Language"></select>
+                  </div>
+                </div>
+
+                <div class="pill-row">
+                  <span class="pill-label" id="themeGroupLabel" data-i18n="theme">Theme</span>
+                  <div class="pill-group" id="themeGroup" data-value="dark" role="group" aria-labelledby="themeGroupLabel">
+                    <button type="button" class="pill" data-value="dark"><span class="pill-dot theme-dot-dark" aria-hidden="true"></span><span data-i18n="themeDark">Dark</span></button>
+                    <button type="button" class="pill" data-value="light"><span class="pill-dot theme-dot-light" aria-hidden="true"></span><span data-i18n="themeLight">Light</span></button>
+                    <button type="button" class="pill" data-value="ocean"><span class="pill-dot theme-dot-ocean" aria-hidden="true"></span><span data-i18n="themeOcean">Ocean</span></button>
+                    <button type="button" class="pill" data-value="sunset"><span class="pill-dot theme-dot-sunset" aria-hidden="true"></span><span data-i18n="themeSunset">Sunset</span></button>
+                  </div>
+                </div>
+
+                <label class="toggle-row" for="soundToggle">
+                  <span data-i18n="soundNotifications">Sound notifications</span>
+                  <span class="switch"><input type="checkbox" id="soundToggle" checked /><span class="switch-slider" aria-hidden="true"></span></span>
+                </label>
+
+                <label class="toggle-row" for="vibrationToggle">
+                  <span data-i18n="vibration">Vibration</span>
+                  <span class="switch"><input type="checkbox" id="vibrationToggle" checked /><span class="switch-slider" aria-hidden="true"></span></span>
+                </label>
+              </div>
+            </div>
+          </section>
+
+          <section class="acc-item">
+            <button type="button" class="acc-header" aria-expanded="false">
+              <span data-i18n="catPrivacy">Privacy &amp; Safety</span>
+              <svg class="acc-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="acc-body">
+              <div class="acc-body-inner">
+                <label class="toggle-row" for="statusVisibilityToggle">
+                  <span data-i18n="showOnlineStatus">Show my online status to friends</span>
+                  <span class="switch"><input type="checkbox" id="statusVisibilityToggle" checked /><span class="switch-slider" aria-hidden="true"></span></span>
+                </label>
+
+                <label class="toggle-row" for="messageSeenToggle">
+                  <span data-i18n="messageSeen">Read receipts (Seen)</span>
+                  <span class="switch"><input type="checkbox" id="messageSeenToggle" checked /><span class="switch-slider" aria-hidden="true"></span></span>
+                </label>
+              </div>
+            </div>
+          </section>
+
+          <section class="acc-item">
+            <button type="button" class="acc-header" aria-expanded="false">
+              <span data-i18n="catAbout">Help &amp; About</span>
+              <svg class="acc-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="acc-body">
+              <div class="acc-body-inner settings-links">
+                <button type="button" id="feedbackBtn" class="settings-link" data-i18n="feedback">Feedback for Improvement</button>
+                <button type="button" id="settingsTermsBtn" class="settings-link" data-i18n="termsLink">Terms &amp; Community Guidelines</button>
+                <a href="/pricing" class="settings-link" data-i18n="pricingLink">Pricing &amp; Premium</a>
+                <a href="/about" class="settings-link" data-i18n="aboutLink">About TalkLive</a>
+                <a href="/contact" class="settings-link" data-i18n="contactLink">Contact Us</a>
+                <a href="/terms" class="settings-link" data-i18n="termsPageLink">Terms &amp; Conditions</a>
+                <a href="/privacy" class="settings-link" data-i18n="privacyPolicy">Privacy Policy</a>
+                <a href="/refund" class="settings-link" data-i18n="refundLink">Refund Policy</a>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="side-panel-auth" id="sidePanelAuth">
+          <button type="button" id="sidePanelSignInBtn" class="btn btn-secondary side-auth-btn" data-i18n="signIn">Sign in</button>
+          <button type="button" id="sidePanelRegisterBtn" class="btn btn-primary side-auth-btn" data-i18n="register">Register</button>
+          <button type="button" id="myAccountBtn" class="btn btn-primary side-auth-btn hidden" data-i18n="myAccount">My Account</button>
         </div>
       </div>
     </aside>
@@ -693,123 +697,65 @@
 
     <main class="stage" id="main">
 
-      <!-- The start gate.
-           Three numbered steps down one column. Step 1 and 2 are not optional
-           and they are not hidden: the spirit animal used to sit below a pair
-           of orbs that filled the screen, so almost nobody scrolled to it and
-           almost nobody arrived in a conversation with an ice-breaker. Now the
-           two Start buttons stay dead until both are answered, and the whole
-           thing is one scroll on a phone. Both answers are remembered, so a
-           returning visitor only has to tap Start. -->
-      <section id="setupPanel" class="setup-panel tl-start">
-        <div class="tl-start-head">
-          <h1 class="tl-start-title" data-i18n="heroTitle">Meet someone new by voice or text</h1>
-          <p class="tl-start-sub" data-i18n="heroSub">Anonymous &middot; worldwide &middot; free</p>
-        </div>
-
-        <!-- Anonymous users own a real profile (name, friends, history) that
-             lives only in this browser. One tap to keep it. Hidden once there
-             is an account to keep it in. -->
-        <button type="button" id="headerLinkProfileBtn" class="link-profile-banner hidden">
-          <span class="link-profile-banner-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M9.5 14.5 14.5 9.5"/><path d="M11 7.4 12.6 5.8a3.7 3.7 0 0 1 5.3 5.3l-1.6 1.6"/><path d="M13 16.6l-1.6 1.6a3.7 3.7 0 0 1-5.3-5.3l1.6-1.6"/></svg>
-          </span>
-          <span class="link-profile-banner-text">
-            <strong data-i18n="linkProfilePill">Save your profile</strong>
-            <small data-i18n="linkProfileBannerBody">Keep your friends and history on any device.</small>
-          </span>
-          <span class="link-profile-banner-go" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
-          </span>
-        </button>
-
+      <!-- Setup panel: the Tap to Talk / Tap to Chat landing shown before the
+           first call or chat. Two orbs, one decision: voice or text. -->
+      <section id="setupPanel" class="setup-panel">
+        <h1 class="setup-title" data-i18n="heroTitle">Meet someone new by voice or text</h1>
         <div id="tapToTalk" class="tap-to-talk">
-
-          <!-- STEP 1 - who you are -->
-          <section class="tl-step" id="stepGender">
-            <div class="tl-step-head">
-              <span class="tl-step-num" aria-hidden="true">1</span>
-              <h2 class="tl-step-title" id="startGenderLabel" data-i18n="iAm">I am</h2>
-            </div>
-            <div class="tl-choices" id="startGenderGroup" data-value="" role="group" aria-labelledby="startGenderLabel">
-              <button type="button" class="tl-choice tl-choice-male" data-value="male" aria-pressed="false">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="14" r="6"/><line x1="14.5" y1="9.5" x2="20" y2="4"/><polyline points="14.5 4 20 4 20 9.5"/></svg>
-                <span data-i18n="male">Male</span>
+          <p class="tap-choice-heading" data-i18n="chooseYourVibe">How do you want to meet someone?</p>
+          <div class="tap-choice-row">
+            <div class="tap-choice">
+              <button id="startBtn" class="tap-orb call-btn-green" data-i18n-aria="startAria" aria-label="Start a call with a random person">
+                <svg class="phone-icon" viewBox="0 0 24 24" fill="white" aria-hidden="true">
+                  <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+                </svg>
+                <span class="tap-orb-label" data-i18n="tapToTalk">Tap to Talk</span>
               </button>
-              <button type="button" class="tl-choice tl-choice-female" data-value="female" aria-pressed="false">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="9" r="6"/><line x1="12" y1="15" x2="12" y2="21"/><line x1="9" y1="18" x2="15" y2="18"/></svg>
-                <span data-i18n="female">Female</span>
-              </button>
-              <button type="button" class="tl-choice" data-value="unspecified" aria-pressed="false">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-                <span data-i18n="preferNotSay">Prefer not to say</span>
-              </button>
+              <span class="tap-choice-caption" data-i18n="tapTalkCaption">Live voice call · mic on</span>
             </div>
-          </section>
-
-          <!-- STEP 2 - your spirit animal -->
-          <section class="tl-step" id="stepAnimal" aria-labelledby="animalPickerTitle">
-            <div class="tl-step-head">
-              <span class="tl-step-num" aria-hidden="true">2</span>
-              <h2 class="tl-step-title" id="animalPickerTitle" data-i18n="pickAnimal">Pick your spirit animal</h2>
-            </div>
-            <p class="tl-step-hint" data-i18n="pickAnimalHint">Whoever you connect with sees it - an easy way to start talking.</p>
-            <div class="tl-animals-wrap" id="animalWrap">
-              <div class="animal-grid tl-animals" id="animalGrid" role="radiogroup" data-i18n-aria="pickAnimal" aria-label="Pick your spirit animal"></div>
-            </div>
-            <button type="button" class="tl-animals-more" id="animalMoreBtn" aria-expanded="false" data-i18n="showAllAnimals">Show all animals</button>
-            <p class="tl-animal-chosen" id="animalChosen" aria-live="polite"></p>
-          </section>
-
-          <!-- STEP 3 - how you want to meet -->
-          <section class="tl-step" id="stepStart">
-            <div class="tl-step-head">
-              <span class="tl-step-num" aria-hidden="true">3</span>
-              <h2 class="tl-step-title" data-i18n="chooseYourVibe">How do you want to meet someone?</h2>
-            </div>
-            <div class="tl-start-actions">
-              <button id="startBtn" class="tl-cta tl-cta-talk is-locked" disabled data-i18n-aria="startAria" aria-label="Start a call with a random person">
-                <span class="tl-cta-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
-                </span>
-                <span class="tl-cta-text">
-                  <strong data-i18n="tapToTalk">Start voice call</strong>
-                  <small data-i18n="tapTalkCaption">Live voice call &middot; mic on</small>
-                </span>
-              </button>
-              <a id="startChatBtn" href="/chat" class="tl-cta tl-cta-chat is-locked" aria-disabled="true" data-i18n-aria="startChatAria" aria-label="Start a text chat with a random person">
-                <span class="tl-cta-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM7 9.5h10a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2zm0-3.5h10a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2zm0 7h6a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2z"/></svg>
-                </span>
-                <span class="tl-cta-text">
-                  <strong data-i18n="tapToChat">Start text chat</strong>
-                  <small data-i18n="tapChatCaption">Anonymous text chat &middot; no mic</small>
-                </span>
+            <div class="tap-choice-divider" aria-hidden="true"><span data-i18n="or">or</span></div>
+            <div class="tap-choice">
+              <a id="startChatBtn" href="/chat" class="tap-orb chat-btn-blue" data-i18n-aria="startChatAria" aria-label="Start a text chat with a random person">
+                <svg class="phone-icon" viewBox="0 0 24 24" fill="white" aria-hidden="true">
+                  <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM7 9.5h10a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2zm0-3.5h10a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2zm0 7h6a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2z"/>
+                </svg>
+                <span class="tap-orb-label" data-i18n="tapToChat">Tap to Chat</span>
               </a>
+              <span class="tap-choice-caption" data-i18n="tapChatCaption">Anonymous text chat · no mic</span>
             </div>
-            <p class="tl-gate-hint" id="startGateHint" role="status" data-i18n="gateHint">Answer steps 1 and 2 above to start.</p>
+          </div>
+          <!-- Spirit animal: one tap, no sign-up, and the stranger on the other
+               end sees it the moment you connect. Deliberately sits on the
+               landing screen rather than behind the settings panel - it only
+               works as an ice-breaker if people actually see it before they
+               call. The icons are vectors from /animals.js (an SVG sprite),
+               not emoji, so they look the same on every device. -->
+          <section class="animal-picker" aria-labelledby="animalPickerTitle">
+            <h2 class="animal-picker-title" id="animalPickerTitle" data-i18n="pickAnimal">Pick your spirit animal</h2>
+            <p class="animal-picker-hint" data-i18n="pickAnimalHint">Whoever you connect with sees it - an easy way to start talking.</p>
+            <div class="animal-grid" id="animalGrid" role="radiogroup" data-i18n-aria="pickAnimal" aria-label="Pick your spirit animal"></div>
+            <p class="animal-chosen" id="animalChosen" aria-live="polite"></p>
           </section>
 
-          <p class="tl-start-legal consent-line">
+          <p class="consent-line">
             <span data-i18n="consentPrefix">By tapping Call you agree to our</span>
             <button type="button" id="openTermsLink" class="link-btn" data-i18n="termsLink">Terms &amp; Community Guidelines</button>
           </p>
-
           <div class="setup-growth" aria-label="TalkLive membership and sharing">
             <a class="setup-growth-card setup-growth-premium" href="/pricing?utm_source=app&amp;utm_medium=home&amp;utm_campaign=premium">
-              <span class="setup-growth-icon" aria-hidden="true">&#128142;</span>
+              <span class="setup-growth-icon" aria-hidden="true">💎</span>
               <span><strong data-i18n="growthPremiumTitle">Premium - coming soon</strong><small data-i18n="growthPremiumSub">All filters, instant rematching and no ads</small></span>
             </a>
             <button type="button" id="shareTalkLiveBtn" class="setup-growth-card setup-growth-share">
-              <span class="setup-growth-icon" aria-hidden="true">&#8599;</span>
-              <span><strong data-i18n="growthShareTitle">Bring more people online</strong><small data-i18n="growthShareSub">Invite a friend to TalkLive</small></span>
+              <span class="setup-growth-icon" aria-hidden="true">↗</span>
+              <span><strong>Bring more people online</strong><small>Invite a friend to TalkLive</small></span>
             </button>
           </div>
           <p id="setupErrorText" class="error-text hidden" role="alert"></p>
         </div>
-
-        <!-- Ad shown only on this pre-call screen; hidden with the whole panel
-             once a call or chat starts. -->
+        <!-- Ad shown only on this pre-call screen; hidden with the whole
+             panel once a call or chat starts. Framed like the rest of the UI
+             so a creative never reads as a pop-up over the app. -->
         <div class="ad-card ad-card-app">
           <span class="ad-card-label" data-i18n="sponsored">Sponsored</span>
           <div data-ad="leaderboard"></div>
@@ -887,49 +833,51 @@
       </div>
 
       <div id="accountModal" class="modal-overlay hidden">
-        <div class="modal-box tl-auth-box" role="dialog" aria-modal="true" aria-labelledby="accountModalTitle">
+        <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="accountModalTitle">
           <div class="modal-header">
-            <h2 id="accountModalTitle">Log in or sign up</h2>
-            <button type="button" id="closeAccountBtn" class="tl-panel-close" data-i18n-aria="close" aria-label="Close">&times;</button>
+            <h2 id="accountModalTitle" data-i18n="myAccount">My Account</h2>
+            <button type="button" id="closeAccountBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
           </div>
           <div class="modal-body">
             <p id="accountStatus" class="account-status hidden" role="alert"></p>
 
-            <!-- Logged out. Two tabs, and then the shortest form that can
-                 possibly work: a username, a password, one button. Everything
-                 else - recovery email, Google, the reset flow - sits after the
-                 primary action or behind a link, so the page never opens with
-                 five fields and three paragraphs of explanation. -->
-            <div id="accountLoggedOut" class="tl-auth-card">
-              <div class="tl-auth-tabs">
-                <button type="button" class="tl-auth-tab account-tab selected" data-tab="login" data-i18n="logIn">Log In</button>
-                <button type="button" class="tl-auth-tab account-tab" data-tab="signup" data-i18n="signUp">Sign Up</button>
+            <div id="accountLoggedOut">
+              <div class="account-tabs">
+                <button type="button" class="account-tab selected" data-tab="login" data-i18n="logIn">Log In</button>
+                <button type="button" class="account-tab" data-tab="signup" data-i18n="signUp">Sign Up</button>
               </div>
 
-              <!-- Real <form> elements: password managers refuse to offer to
-                   save credentials that are not inside one. Submission is
-                   handled by the button/Enter listeners in app.js, so the form
-                   itself must never navigate. -->
+              <!-- Wrapped in real <form> elements so browser and third-party
+                   password managers recognise these as credential fields and
+                   offer to save/fill them. Loose inputs with correct
+                   autocomplete attributes are not enough - Chrome logs
+                   "Password field is not contained in a form" and declines to
+                   offer saving, so returning users had to retype their password
+                   every time. Submission is handled by the existing button and
+                   Enter-key listeners in app.js, so the form itself must never
+                   navigate. -->
               <form id="loginTab" class="account-tab-panel" autocomplete="on" onsubmit="return false;">
-                <div class="tl-field">
-                  <label for="loginUsername" data-i18n="username">Username</label>
-                  <input type="text" id="loginUsername" class="account-input" data-i18n-placeholder="username" data-i18n-aria="username" placeholder="Username" autocomplete="username" />
-                </div>
-                <div class="tl-field">
-                  <label for="loginPassword" data-i18n="password">Password</label>
-                  <input type="password" id="loginPassword" class="account-input" data-i18n-placeholder="password" data-i18n-aria="password" placeholder="Password" autocomplete="current-password" />
-                </div>
-                <button type="button" id="loginSubmitBtn" class="tl-submit" data-i18n="logIn">Log In</button>
-                <button type="button" id="forgotPasswordLink" class="tl-linkline" data-i18n="forgotPassword">Forgot password?</button>
-
-                <!-- Google renders its own button into the slot behind our
-                     face; the whole block stays hidden when GOOGLE_CLIENT_ID
-                     is not configured, so a self-hosted deploy never shows a
-                     dead button. -->
-                <div class="tl-or google-block hidden"><span data-i18n="orDivider">or</span></div>
+                <label class="account-field-label" for="loginUsername" data-i18n="username">Username</label>
+                <input type="text" id="loginUsername" class="search-input account-input" data-i18n-placeholder="username" data-i18n-aria="username" placeholder="Username" autocomplete="username" />
+                <label class="account-field-label" for="loginPassword" data-i18n="password">Password</label>
+                <input type="password" id="loginPassword" class="search-input account-input" data-i18n-placeholder="password" data-i18n-aria="password" placeholder="Password" autocomplete="current-password" />
+                <button type="button" id="loginSubmitBtn" class="btn btn-primary settings-save" data-i18n="logIn">Log In</button>
+                <button type="button" id="forgotPasswordLink" class="account-link" data-i18n="forgotPassword">Forgot password?</button>
+                <!-- Google Sign-In. The button is rendered by Google's own
+                     script into this container (see app.js); the whole block
+                     stays hidden when GOOGLE_CLIENT_ID is not configured, so a
+                     self-hosted deploy without Google never shows a dead
+                     button. -->
+                <div class="account-or google-block hidden"><span data-i18n="orDivider">or</span></div>
+                <!-- The face is ours; Google's own button is rendered into the
+                     slot behind it and takes the clicks (its markup cannot be
+                     restyled, and left to itself it sat in the form as a stray
+                     black rectangle with a white halo). -->
                 <div id="googleBtnLogin" class="google-btn-slot google-block hidden">
                   <span class="google-btn-face" aria-hidden="true">
-                    <span class="google-btn-mark"><svg viewBox="0 0 48 48" width="18" height="18" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg></span>
+                    <span class="google-btn-mark">
+                      <svg viewBox="0 0 48 48" width="18" height="18" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+                    </span>
                     <span class="google-btn-label" data-i18n="signInWithGoogle">Sign in with Google</span>
                   </span>
                   <div class="google-btn-real"></div>
@@ -937,9 +885,10 @@
               </form>
 
               <form id="signupTab" class="account-tab-panel hidden" autocomplete="on" onsubmit="return false;">
-                <!-- What the new account inherits, so signing up reads as
-                     keeping this profile rather than starting an empty one.
-                     Hidden when there is nothing to link. -->
+                <!-- What the new account inherits, shown before the fields so
+                     signing up reads as keeping this profile rather than
+                     starting a second, empty one. Populated (and hidden when
+                     there is nothing to link) by renderLinkProfileCard(). -->
                 <div id="linkProfileCard" class="link-profile-card hidden">
                   <span id="linkProfileAvatar" class="link-profile-avatar" aria-hidden="true"></span>
                   <div class="link-profile-card-text">
@@ -952,113 +901,93 @@
                     </div>
                   </div>
                 </div>
-                <div class="tl-field">
-                  <label for="signupUsername" data-i18n="labelUsername">Username</label>
-                  <input type="text" id="signupUsername" class="account-input" data-i18n-placeholder="chooseUsername" data-i18n-aria="chooseUsername" placeholder="Choose a username" autocomplete="username" />
-                </div>
-                <div class="tl-field">
-                  <label for="signupPassword" data-i18n="labelPassword">Password</label>
-                  <input type="password" id="signupPassword" class="account-input" data-i18n-placeholder="choosePassword" data-i18n-aria="choosePassword" placeholder="Choose a password" autocomplete="new-password" />
-                </div>
-                <div class="tl-field">
-                  <label for="signupEmail" data-i18n="labelRecoveryEmail">Recovery email (optional)</label>
-                  <input type="email" id="signupEmail" class="account-input" data-i18n-placeholder="recoveryEmailOptional" data-i18n-aria="recoveryEmailOptional" placeholder="Email (to recover your password)" autocomplete="email" inputmode="email" />
-                  <p class="tl-field-note" data-i18n="recoveryEmailHint">Only used to send you a reset code if you forget your password. Never shown to anyone.</p>
-                </div>
-                <button type="button" id="signupSubmitBtn" class="tl-submit" data-i18n="createAccount">Create Account</button>
-                <div class="tl-or google-block hidden"><span data-i18n="orDivider">or</span></div>
+                <label class="account-field-label" for="signupUsername" data-i18n="labelUsername">Username</label>
+                <input type="text" id="signupUsername" class="search-input account-input" data-i18n-placeholder="chooseUsername" data-i18n-aria="chooseUsername" placeholder="Choose a username" autocomplete="username" />
+                <label class="account-field-label" for="signupPassword" data-i18n="labelPassword">Password</label>
+                <input type="password" id="signupPassword" class="search-input account-input" data-i18n-placeholder="choosePassword" data-i18n-aria="choosePassword" placeholder="Choose a password" autocomplete="new-password" />
+                <label class="account-field-label" for="signupEmail" data-i18n="labelRecoveryEmail">Recovery email (optional)</label>
+                <input type="email" id="signupEmail" class="search-input account-input" data-i18n-placeholder="recoveryEmailOptional" data-i18n-aria="recoveryEmailOptional" placeholder="Email (to recover your password)" autocomplete="email" inputmode="email" />
+                <!-- The hint belongs to the email field, so it sits with it
+                     rather than below the button, where it read as a footnote
+                     about the whole form. -->
+                <p class="account-hint account-hint-field" data-i18n="recoveryEmailHint">Only used to send you a reset code if you forget your password. Never shown to anyone.</p>
+                <button type="button" id="signupSubmitBtn" class="btn btn-primary settings-save" data-i18n="createAccount">Create Account</button>
+                <div class="account-or google-block hidden"><span data-i18n="orDivider">or</span></div>
                 <div id="googleBtnSignup" class="google-btn-slot google-block hidden">
                   <span class="google-btn-face" aria-hidden="true">
-                    <span class="google-btn-mark"><svg viewBox="0 0 48 48" width="18" height="18" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg></span>
+                    <span class="google-btn-mark">
+                      <svg viewBox="0 0 48 48" width="18" height="18" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+                    </span>
                     <span class="google-btn-label" data-i18n="signUpWithGoogle">Sign up with Google</span>
                   </span>
                   <div class="google-btn-real"></div>
                 </div>
+                <p class="account-hint google-block hidden" data-i18n="googleSignupHint">Signing up with Google creates your account instantly using the name and email you choose to share.</p>
               </form>
 
-              <!-- Forgot password: email -> 6-digit code -> new password, one
-                   step at a time, in place of the tabs. -->
+              <!-- Forgot password: email -> 6-digit code -> new password. Shown
+                   in place of the login/signup tabs, one step at a time. -->
               <form id="forgotTab" class="account-tab-panel hidden" autocomplete="on" onsubmit="return false;">
                 <div id="forgotStepEmail">
-                  <div class="tl-field">
-                    <label for="forgotEmail" data-i18n="forgotStepEmailLabel">Enter your account email</label>
-                    <input type="email" id="forgotEmail" class="account-input" data-i18n-placeholder="email" data-i18n-aria="email" placeholder="Email" autocomplete="email" inputmode="email" />
-                  </div>
-                  <button type="button" id="forgotSendBtn" class="tl-submit" data-i18n="sendCode">Send Code</button>
+                  <label class="account-step-label" for="forgotEmail" data-i18n="forgotStepEmailLabel">Enter your account email</label>
+                  <input type="email" id="forgotEmail" class="search-input account-input" data-i18n-placeholder="email" data-i18n-aria="email" placeholder="Email" autocomplete="email" inputmode="email" />
+                  <button type="button" id="forgotSendBtn" class="btn btn-primary settings-save" data-i18n="sendCode">Send Code</button>
                 </div>
 
                 <div id="forgotStepCode" class="hidden">
-                  <div class="tl-field">
-                    <label for="forgotCode" data-i18n="forgotStepCodeLabel">Enter the 6-digit code we emailed you</label>
-                    <input type="text" id="forgotCode" class="account-input otp-input" placeholder="000000" data-i18n-aria="verificationCode" aria-label="Verification code" autocomplete="one-time-code" inputmode="numeric" maxlength="6" />
-                  </div>
-                  <button type="button" id="forgotVerifyBtn" class="tl-submit" data-i18n="verifyCode">Verify Code</button>
-                  <button type="button" id="forgotResendBtn" class="tl-linkline" data-i18n="resendCode">Resend code</button>
+                  <label class="account-step-label" for="forgotCode" data-i18n="forgotStepCodeLabel">Enter the 6-digit code we emailed you</label>
+                  <input type="text" id="forgotCode" class="search-input account-input otp-input" placeholder="000000" data-i18n-aria="verificationCode" aria-label="Verification code" autocomplete="one-time-code" inputmode="numeric" maxlength="6" />
+                  <button type="button" id="forgotVerifyBtn" class="btn btn-primary settings-save" data-i18n="verifyCode">Verify Code</button>
+                  <button type="button" id="forgotResendBtn" class="account-link" data-i18n="resendCode">Resend code</button>
                 </div>
 
                 <div id="forgotStepPassword" class="hidden">
-                  <div class="tl-field">
-                    <label for="forgotNewPassword" data-i18n="forgotStepPasswordLabel">Choose a new password</label>
-                    <input type="password" id="forgotNewPassword" class="account-input" data-i18n-placeholder="newPassword" data-i18n-aria="newPassword" placeholder="New password" autocomplete="new-password" />
-                  </div>
-                  <button type="button" id="forgotResetBtn" class="tl-submit" data-i18n="restorePassword">Restore Password</button>
+                  <label class="account-step-label" for="forgotNewPassword" data-i18n="forgotStepPasswordLabel">Choose a new password</label>
+                  <input type="password" id="forgotNewPassword" class="search-input account-input" data-i18n-placeholder="newPassword" data-i18n-aria="newPassword" placeholder="New password" autocomplete="new-password" />
+                  <button type="button" id="forgotResetBtn" class="btn btn-primary settings-save" data-i18n="restorePassword">Restore Password</button>
                 </div>
 
-                <button type="button" id="forgotBackBtn" class="tl-linkline" data-i18n="backToLogIn">Back to log in</button>
+                <button type="button" id="forgotBackBtn" class="account-link" data-i18n="backToLogIn">Back to log in</button>
               </form>
+
+              <p class="account-hint account-hint-footer" data-i18n="accountHint">Your account is saved permanently - you stay signed in on this device and can log in from anywhere.</p>
             </div>
 
-            <!-- Signed in. Same four things it always had - avatar, nickname,
-                 password, recovery email - each in its own labelled block with
-                 its own save button, instead of one unbroken column of inputs. -->
             <div id="accountLoggedIn" class="hidden">
               <p class="account-welcome"><span data-i18n="signedInAs">Signed in as</span> <strong id="accountNicknameDisplay"></strong></p>
 
-              <h3 class="tl-set-legend" data-i18n="avatar">Avatar</h3>
-              <p class="tl-field-note" data-i18n="avatarHint">Your avatar is shown to you and your friends only - strangers never see it during a call.</p>
+              <h3 class="account-section-title" data-i18n="avatar">Avatar</h3>
+              <p class="account-hint" data-i18n="avatarHint">Your avatar is shown to you and your friends only - strangers never see it during a call.</p>
               <div class="avatar-cat-tabs" id="avatarCatTabs">
                 <button type="button" class="avatar-cat selected" data-cat="male" data-i18n="male">Male</button>
                 <button type="button" class="avatar-cat" data-cat="female" data-i18n="female">Female</button>
               </div>
               <div id="avatarGrid" class="avatar-grid"></div>
 
-              <h3 class="tl-set-legend" data-i18n="nickname">Nickname</h3>
-              <div class="tl-field">
-                <label for="settingsNickname" data-i18n="nickname">Nickname</label>
-                <input type="text" id="settingsNickname" class="account-input" data-i18n-placeholder="nickname" placeholder="Nickname" maxlength="24" />
-              </div>
-              <button type="button" id="updateNicknameBtn" class="tl-submit" data-i18n="updateNickname" disabled>Update Nickname</button>
+              <label class="account-label account-label-spaced" for="settingsNickname" data-i18n="nickname">Nickname</label>
+              <input type="text" id="settingsNickname" class="search-input account-input" data-i18n-placeholder="nickname" placeholder="Nickname" maxlength="24" />
+              <button type="button" id="updateNicknameBtn" class="btn btn-secondary settings-save" data-i18n="updateNickname" disabled>Update Nickname</button>
 
               <!-- Also a real form, for the same reason as login/signup: a
                    password manager can only offer to update a stored password
-                   when the change fields live in a form. -->
-              <h3 class="tl-set-legend" data-i18n="changePassword">Change Password</h3>
+                   when the change fields live in a form. Submission stays with
+                   the button handler in app.js. -->
               <form class="account-tab-panel" autocomplete="on" onsubmit="return false;">
-                <div class="tl-field">
-                  <label for="currentPasswordInput" data-i18n="currentPassword">Current password</label>
-                  <input type="password" id="currentPasswordInput" class="account-input" data-i18n-placeholder="currentPassword" data-i18n-aria="currentPassword" placeholder="Current password" autocomplete="current-password" />
-                </div>
-                <div class="tl-field">
-                  <label for="newPasswordInput" data-i18n="newPassword">New password</label>
-                  <input type="password" id="newPasswordInput" class="account-input" data-i18n-placeholder="newPassword" data-i18n-aria="newPassword" placeholder="New password" autocomplete="new-password" />
-                </div>
-                <button type="button" id="changePasswordBtn" class="tl-submit" data-i18n="updatePassword" disabled>Update Password</button>
+                <label class="account-label account-label-spaced" for="currentPasswordInput" data-i18n="changePassword">Change Password</label>
+                <input type="password" id="currentPasswordInput" class="search-input account-input" data-i18n-placeholder="currentPassword" data-i18n-aria="currentPassword" placeholder="Current password" autocomplete="current-password" />
+                <input type="password" id="newPasswordInput" class="search-input account-input" data-i18n-placeholder="newPassword" data-i18n-aria="newPassword" placeholder="New password" autocomplete="new-password" />
+                <button type="button" id="changePasswordBtn" class="btn btn-secondary settings-save" data-i18n="updatePassword" disabled>Update Password</button>
               </form>
 
               <!-- Recovery email: the only way back into an account whose
-                   password is forgotten, so it is editable here too. -->
-              <h3 class="tl-set-legend" data-i18n="recoveryEmail">Recovery Email</h3>
+                   password is forgotten, so it is editable here and not only
+                   at sign-up. -->
               <form class="account-tab-panel" autocomplete="on" onsubmit="return false;">
-                <p id="recoveryEmailState" class="tl-field-note"></p>
-                <div class="tl-field">
-                  <label for="recoveryEmailInput" data-i18n="email">Email</label>
-                  <input type="email" id="recoveryEmailInput" class="account-input" data-i18n-placeholder="email" data-i18n-aria="email" placeholder="Email" autocomplete="email" inputmode="email" />
-                </div>
-                <div class="tl-field">
-                  <label for="recoveryEmailPassword" data-i18n="currentPassword">Current password</label>
-                  <input type="password" id="recoveryEmailPassword" class="account-input" data-i18n-placeholder="currentPassword" data-i18n-aria="currentPassword" placeholder="Current password" autocomplete="current-password" />
-                </div>
-                <button type="button" id="updateRecoveryEmailBtn" class="tl-submit" data-i18n="saveRecoveryEmail" disabled>Save Recovery Email</button>
+                <label class="account-label account-label-spaced" for="recoveryEmailInput" data-i18n="recoveryEmail">Recovery Email</label>
+                <p id="recoveryEmailState" class="account-hint"></p>
+                <input type="email" id="recoveryEmailInput" class="search-input account-input" data-i18n-placeholder="email" data-i18n-aria="email" placeholder="Email" autocomplete="email" inputmode="email" />
+                <input type="password" id="recoveryEmailPassword" class="search-input account-input" data-i18n-placeholder="currentPassword" data-i18n-aria="currentPassword" placeholder="Current password" autocomplete="current-password" />
+                <button type="button" id="updateRecoveryEmailBtn" class="btn btn-secondary settings-save" data-i18n="saveRecoveryEmail" disabled>Save Recovery Email</button>
               </form>
 
               <button type="button" id="logoutBtn" class="btn btn-danger settings-save account-logout" data-i18n="logOut">Log Out</button>

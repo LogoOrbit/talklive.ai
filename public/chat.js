@@ -393,27 +393,8 @@
       if (!option) return;
       vibrate(8);
       setMyAnimal(option.dataset.animal);
-      syncStartGate();
     });
     renderAnimalPicker();
-  }
-
-  // Two rows of animals, the rest one tap away: step 2 must never push the
-  // Start button off a phone screen - burying the picker is exactly what made
-  // people arrive in a conversation with no ice-breaker.
-  var animalWrap = $('animalWrap');
-  var animalMoreBtn = $('animalMoreBtn');
-  if (animalWrap && animalMoreBtn) {
-    animalMoreBtn.addEventListener('click', function () {
-      var open = animalWrap.classList.toggle('is-open');
-      animalMoreBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-      animalMoreBtn.textContent = t(open ? 'showFewerAnimals' : 'showAllAnimals');
-    });
-    if (myAnimal && Animals) {
-      var idx = -1;
-      Animals.list.forEach(function (a, i) { if (a.id === myAnimal) idx = i; });
-      if (idx >= 8) animalMoreBtn.click();
-    }
   }
 
   // The stranger's animal, next to their name in the top bar.
@@ -494,87 +475,56 @@
     showView('start');
   }
 
-  // The only gate left between Start and a conversation: the house rules, once
-  // per browser, recorded under CONSENT_KEY. Gender used to be a second modal
-  // here; it is step 1 of the start view now, answered before anyone commits
-  // to starting rather than sprung on them afterwards.
+  // Entry gate before the first ever search: gender, then the house rules.
+  // Both steps are once per browser - gender because it is stored like every
+  // other profile choice (the settings panel edits it afterwards), the rules
+  // because agreeing to them is recorded under CONSENT_KEY.
+  var genderModal = $('genderModal');
+  var genderGateOptions = $('genderGateOptions');
   var consentModal = $('consentModal');
   var consentAgreeBtn = $('consentAgreeBtn');
   var consentBackBtn = $('consentBackBtn');
 
+  function setGenderGateValue(value) {
+    genderGateOptions.querySelectorAll('.gate-option').forEach(function (opt) {
+      opt.setAttribute('aria-checked', opt.dataset.value === value ? 'true' : 'false');
+    });
+  }
+  function openGenderGate() {
+    setGenderGateValue(myGender);
+    openModal(genderModal);
+  }
   function openRulesGate() {
     openModal(consentModal);
   }
   function requestStart() {
-    // Steps 1 and 2 are answered on the page now, not in a modal that ambushes
-    // people after they have already committed to starting. The gate below
-    // keeps the button dead until they are, so these two are belt and braces.
-    if (!myGender) { scrollToStep(stepGenderEl); return; }
-    if (!myAnimal) { scrollToStep(stepAnimalEl); return; }
+    if (!myGender) { openGenderGate(); return; }
     if (localStorage.getItem(CONSENT_KEY) !== 'yes') { openRulesGate(); return; }
     goSearch(true);
   }
 
-  // --- The start gate ------------------------------------------------------
-  // Who you are and which animal you are, before you reach anybody. Both
-  // answers persist, so a returning visitor sees them already ticked.
-  var startGenderGroup = $('startGenderGroup');
-  var startGateHint = $('startGateHint');
-  var stepGenderEl = $('stepGender');
-  var stepAnimalEl = $('stepAnimal');
-
-  function scrollToStep(el) {
-    if (el && el.scrollIntoView) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
-  }
-
-  function syncStartGate() {
-    if (stepGenderEl) stepGenderEl.classList.toggle('is-done', !!myGender);
-    if (stepAnimalEl) stepAnimalEl.classList.toggle('is-done', !!myAnimal);
-    if (startGenderGroup) {
-      startGenderGroup.dataset.value = myGender || '';
-      startGenderGroup.querySelectorAll('.tl-choice').forEach(function (card) {
-        var on = !!myGender && card.dataset.value === myGender;
-        card.classList.toggle('selected', on);
-        card.setAttribute('aria-pressed', on ? 'true' : 'false');
-      });
-    }
-    var ready = !!myGender && !!myAnimal;
-    if (startBtn) {
-      startBtn.disabled = !ready;
-      startBtn.classList.toggle('is-locked', !ready);
-    }
-    if (startGateHint) {
-      startGateHint.classList.toggle('hidden', ready);
-      if (!ready) {
-        startGateHint.textContent = (!myGender && !myAnimal)
-          ? t('gateHint')
-          : t(!myGender ? 'gateHintGender' : 'gateHintAnimal');
-      }
-    }
-  }
-
-  // One value, two places it can be set: these cards and the Settings pills.
-  function setMyGender(value) {
-    myGender = value || '';
+  genderGateOptions.addEventListener('click', function (e) {
+    var opt = e.target.closest('.gate-option');
+    if (!opt) return;
+    vibrate(10);
+    myGender = opt.dataset.value;
     localStorage.setItem('talklive_gender', myGender);
-    setPillValue(genderGroup, myGender);
-    syncStartGate();
-    register();
-  }
-
-  if (startGenderGroup) {
-    startGenderGroup.addEventListener('click', function (e) {
-      var card = e.target.closest('.tl-choice');
-      if (!card) return;
-      vibrate(8);
-      setMyGender(card.dataset.value);
-    });
-  }
+    setGenderGateValue(myGender);
+    setPillValue(genderGroup, myGender); // keep the settings panel in step
+    // No register() here: every path out of this handler ends in goSearch(true),
+    // which registers with the new gender itself.
+    // A beat so the choice is visibly selected before the panel swaps, rather
+    // than the tap appearing to skip straight past the question.
+    setTimeout(function () {
+      closeModal(genderModal);
+      if (localStorage.getItem(CONSENT_KEY) === 'yes') goSearch(true);
+      else openRulesGate();
+    }, 180);
+  });
 
   consentBackBtn.addEventListener('click', function () {
-    // Back is back to the start view, not to a gender modal: that question is
-    // answered on the page now, in step 1.
     closeModal(consentModal);
+    openGenderGate();
   });
   consentAgreeBtn.addEventListener('click', function () {
     localStorage.setItem(CONSENT_KEY, 'yes');
@@ -598,16 +548,14 @@
 
   function setPrefCards(value) {
     prefGenderGroup.dataset.value = value;
-    prefGenderGroup.querySelectorAll('.tl-choice').forEach(function (card) {
-      var on = card.dataset.value === value;
-      card.classList.toggle('selected', on);
-      card.setAttribute('aria-pressed', on ? 'true' : 'false');
+    prefGenderGroup.querySelectorAll('.pref-card').forEach(function (card) {
+      card.setAttribute('aria-pressed', card.dataset.value === value ? 'true' : 'false');
     });
   }
   setPrefCards(myPrefGender);
 
   prefGenderGroup.addEventListener('click', function (e) {
-    var card = e.target.closest('.tl-choice');
+    var card = e.target.closest('.pref-card');
     if (!card) return;
     vibrate(10);
     if (!isPremiumUser && card.dataset.value !== 'any') {
@@ -1026,12 +974,12 @@
   genderGroup.addEventListener('click', function (e) {
     var pill = e.target.closest('.pill');
     if (!pill) return;
-    // No tap-to-clear here any more: gender is required before a conversation,
-    // so an empty value is a state the start gate would only have to refuse.
-    setMyGender(pill.dataset.value);
+    myGender = pill.dataset.value === myGender ? '' : pill.dataset.value; // tap again to clear
+    localStorage.setItem('talklive_gender', myGender);
+    setPillValue(genderGroup, myGender);
+    register();
   });
   setPillValue(genderGroup, myGender);
-  syncStartGate();
 
   themeGroup.addEventListener('click', function (e) {
     var pill = e.target.closest('.pill');
@@ -1087,45 +1035,12 @@
   var friendsBadge = $('friendsBadge');
   var requestsList = $('requestsList');
   var friendsList = $('friendsList');
-  var friendsState = { friends: [], requests: [], sent: [], notifications: [] };
-  var friendsTabs = $('friendsTabs');
-  var friendsTabPanel = $('friendsTabPanel');
-  var requestsTabPanel = $('requestsTabPanel');
-  var friendsTabCount = $('friendsTabCount');
-  var requestsTabCount = $('requestsTabCount');
-  var sentRequestsList = $('sentRequestsList');
+  var friendsState = { friends: [], requests: [], notifications: [] };
   var historyState = []; // [{ clientId, username, countryCode, online, ts }]
-
-  function setTabCount(el, n) {
-    if (!el) return;
-    el.textContent = n > 99 ? '99+' : String(n);
-    el.classList.toggle('hidden', n === 0);
-  }
-
-  function showFriendsTab(name) {
-    if (!friendsTabs) return;
-    friendsTabs.querySelectorAll('.tl-tab').forEach(function (tab) {
-      var on = tab.dataset.tab === name;
-      tab.classList.toggle('selected', on);
-      tab.setAttribute('aria-selected', on ? 'true' : 'false');
-    });
-    if (friendsTabPanel) friendsTabPanel.classList.toggle('hidden', name !== 'friends');
-    if (requestsTabPanel) requestsTabPanel.classList.toggle('hidden', name !== 'requests');
-  }
-
-  if (friendsTabs) {
-    friendsTabs.addEventListener('click', function (e) {
-      var tab = e.target.closest('.tl-tab');
-      if (tab) showFriendsTab(tab.dataset.tab);
-    });
-  }
 
   $('friendsBtn').addEventListener('click', function () {
     vibrate(10);
     closeAllPanels();
-    // Open on whichever half has something waiting: if someone has asked to be
-    // your friend, that is why you tapped the icon.
-    showFriendsTab(friendsState.requests.length ? 'requests' : 'friends');
     openPanel(friendsPanel, friendsOverlay);
   });
   $('friendsCloseBtn').addEventListener('click', function () { closePanel(friendsPanel, friendsOverlay); });
@@ -1192,31 +1107,6 @@
     commitRenameFriend(renameFriendInput.value.trim().slice(0, 24));
   });
 
-  // Requests you sent. The client has always known about them (the server
-  // ships them with every state-sync) but nothing ever listed them: you asked
-  // someone to be your friend and the app then behaved as though you never had.
-  function renderSentRequests() {
-    if (!sentRequestsList) return;
-    if (!friendsState.sent.length) {
-      sentRequestsList.innerHTML = '<p class="tl-empty">' + escapeHtml(t('noSentRequests')) + '</p>';
-      return;
-    }
-    sentRequestsList.innerHTML = '';
-    friendsState.sent.forEach(function (r) {
-      var row = document.createElement('div');
-      row.className = 'tl-sent-item';
-      row.innerHTML =
-        '<span class="tl-sent-avatar" aria-hidden="true">' + escapeHtml((r.username || '?').charAt(0)) + '</span>' +
-        '<span class="tl-sent-text">' +
-        '<span class="tl-sent-name">' + escapeHtml(r.username || '-') + ' ' + getFlagImg(r.countryCode, 14) + '</span>' +
-        '</span>' +
-        '<span class="tl-sent-chip">' +
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 1.8"/></svg>' +
-        escapeHtml(t('pending')) + '</span>';
-      sentRequestsList.appendChild(row);
-    });
-  }
-
   function renderFriends() {
     // Header badge: pending requests + unread friend messages.
     var unread = friendsState.notifications.filter(function (n) { return n.type === 'message'; }).length;
@@ -1224,16 +1114,15 @@
     friendsBadge.textContent = String(badgeCount);
     friendsBadge.classList.toggle('hidden', badgeCount === 0);
 
-    setTabCount(friendsTabCount, friendsState.friends.length);
-    setTabCount(requestsTabCount, friendsState.requests.length + friendsState.sent.length);
-    renderSentRequests();
-
     // Each list says what it is and how many are in it. Without the headings a
     // pending request sat above "No friends yet" with nothing to say which was
     // which, and an accepted friend appeared as one unlabelled row.
     requestsList.innerHTML = '';
-    if (!friendsState.requests.length) {
-      requestsList.innerHTML = '<p class="tl-empty">' + escapeHtml(t('noRequestsYet')) + '</p>';
+    if (friendsState.requests.length) {
+      var reqHead = document.createElement('p');
+      reqHead.className = 'list-heading';
+      reqHead.textContent = t('friendRequestsCount', { n: friendsState.requests.length });
+      requestsList.appendChild(reqHead);
     }
     friendsState.requests.forEach(function (r) {
       var row = document.createElement('div');
@@ -1258,9 +1147,13 @@
     if (!friendsState.friends.length) {
       // "during a call" is the call app's wording; here you add someone while
       // you are chatting with them.
-      friendsList.innerHTML = '<p class="tl-empty">' + escapeHtml(t('noFriendsYetChat')) + '</p>';
+      friendsList.innerHTML = '<p class="list-empty">' + escapeHtml(t('noFriendsYetChat')) + '</p>';
       return;
     }
+    var friendsHead = document.createElement('p');
+    friendsHead.className = 'list-heading';
+    friendsHead.textContent = t('friendsCount', { n: friendsState.friends.length });
+    friendsList.appendChild(friendsHead);
     friendsState.friends.forEach(function (f) {
       var row = document.createElement('div');
       row.className = 'friend-row';
@@ -1288,7 +1181,6 @@
     data = data || {};
     friendsState.friends = data.friends || [];
     friendsState.requests = data.friendRequests || [];
-    friendsState.sent = data.sentRequests || [];
     friendsState.notifications = data.notifications || [];
     historyState = data.chatHistory || [];
     renderFriends();
@@ -1779,17 +1671,13 @@
   window.addEventListener('i18n-changed', function () {
     if (!nextArmed) nextBtn.querySelector('span').textContent = t('chatNext');
     refreshAnimalLabels();
-    if (animalMoreBtn && animalWrap) {
-      animalMoreBtn.textContent = t(animalWrap.classList.contains('is-open') ? 'showFewerAnimals' : 'showAllAnimals');
-    }
     if (currentPartner) renderTopPartnerAnimal(currentPartner.animal);
-    syncStartGate(); // the gate's hint is a sentence, not a data-i18n label
   });
 
   // --- Overflow menu -------------------------------------------------------
-  // Auto and Friends stay in the bar; History, Settings, Add friend, Games and
-  // Report live in here with their names spelled out. Report and Add friend
-  // are still shown/hidden by setStage(), which just makes them appear or
+  // Auto and Call stay in the bar; History, Friends, Add friend and Report
+  // live in here with their names spelled out. Report and Add friend are
+  // still shown/hidden by setStage(), which just makes them appear or
   // disappear as rows.
   var moreBtn = $('moreBtn'), topMenu = $('topMenu'), moreDot = $('moreDot');
 

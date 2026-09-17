@@ -146,13 +146,8 @@ try {
   onScroll();
 })();
 
-// Call history. One entry point (the More menu), one surface: the same
-// right-hand side panel every other list in the app uses. It used to be a
-// floating dropdown anchored to a header glyph, which needed its own
-// outside-click handling, its own mobile repositioning, and gave the app two
-// different shapes for "a list of people".
-const historyPanel = document.getElementById('historyPanel');
-const historyOverlay = document.getElementById('historyOverlay');
+const historyDropdown = document.getElementById('historyDropdown');
+const historyWrap = document.querySelector('.history-wrap');
 const closeHistoryBtn = document.getElementById('closeHistoryBtn');
 const historyList = document.getElementById('historyList');
 
@@ -806,16 +801,7 @@ interestInput.addEventListener('keydown', (e) => {
 // Explicit Add button - many mobile keyboards have no obvious Enter key.
 document.getElementById('addInterestBtn').addEventListener('click', addInterestFromInput);
 
-// Gender is deliberately NOT auto-selected to the first option: the start gate
-// asks for it, and a pre-ticked answer would make the question a no-op. The
-// Settings pill row is the same value, wired to the same setter.
-if (genderGroup) {
-  genderGroup.addEventListener('click', (e) => {
-    const pill = e.target.closest('.pill');
-    if (!pill) return;
-    setMyGender(pill.dataset.value);
-  });
-}
+initPillGroup(genderGroup);
 initPillGroup(prefGenderGroup);
 initPillGroup(themeGroup);
 
@@ -987,67 +973,10 @@ function updateScrollLock() {
   const anyOpen = appSettingsPanel.classList.contains('open')
     || (typeof chatPanel !== 'undefined' && chatPanel && chatPanel.classList.contains('open'))
     || friendsDropdown.classList.contains('open')
-    || historyPanel.classList.contains('open')
     || friendProfileModal.classList.contains('open')
     || friendChatModal.classList.contains('open');
   document.body.classList.toggle('panel-open', anyOpen);
 }
-
-function closeHistoryPanel() {
-  closeSidePanel(historyPanel, historyOverlay);
-  updateScrollLock();
-}
-
-// --- The More menu ---------------------------------------------------------
-// Everything the top bar used to say with a bare glyph - history, filters,
-// games, settings - lives here, each with a word next to its icon. The bar
-// itself is down to the two controls that are about the person you are talking
-// to, so nothing in it is ever smaller than a thumb.
-const moreBtn = document.getElementById('moreBtn');
-const moreMenu = document.getElementById('moreMenu');
-const moreDot = document.getElementById('moreDot');
-
-function closeMoreMenu() {
-  if (!moreMenu) return;
-  moreMenu.classList.add('hidden');
-  moreBtn.setAttribute('aria-expanded', 'false');
-}
-
-function openMoreMenu() {
-  if (!moreMenu) return;
-  moreMenu.classList.remove('hidden');
-  moreBtn.setAttribute('aria-expanded', 'true');
-}
-
-if (moreBtn && moreMenu) {
-  moreBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    if (moreMenu.classList.contains('hidden')) openMoreMenu();
-    else closeMoreMenu();
-  });
-  // Any tap outside the menu (including on one of its own items, which all
-  // open something else) puts it away.
-  document.addEventListener('click', (e) => {
-    if (moreMenu.classList.contains('hidden')) return;
-    if (e.composedPath().includes(moreMenu) && !e.target.closest('.tl-menu-item')) return;
-    closeMoreMenu();
-  });
-}
-
-// A dot on the More button whenever something inside it wants attention - a
-// menu must never be the reason a notification goes unseen. games.js owns the
-// game badge and toggles it directly, so the dot mirrors it by observation
-// rather than by every call site remembering to say so.
-const gameBadgeEl = document.getElementById('gameBtnBadge');
-function syncMoreDot() {
-  if (!moreDot) return;
-  const wants = !!gameBadgeEl && !gameBadgeEl.classList.contains('hidden');
-  moreDot.classList.toggle('hidden', !wants);
-}
-if (gameBadgeEl && typeof MutationObserver !== 'undefined') {
-  new MutationObserver(syncMoreDot).observe(gameBadgeEl, { attributes: true, attributeFilter: ['class'] });
-}
-syncMoreDot();
 
 // --- App settings side panel ---
 function openAppSettings() {
@@ -1191,6 +1120,21 @@ function openModal(modal) {
     const focusTarget = modal.querySelector('input:not([type="hidden"]):not(:disabled), .btn, button');
     if (focusTarget) focusTarget.focus();
   }
+  // On small screens the toolbar dropdowns are position:fixed - anchor them
+  // just under their own button so they open correctly at any scroll position
+  // now that the header is sticky.
+  if (modal.classList.contains('notif-dropdown') && window.matchMedia('(max-width: 480px)').matches) {
+    const btn = modal.parentElement ? modal.parentElement.querySelector('button.icon-btn') : null;
+    if (btn) {
+      const r = btn.getBoundingClientRect();
+      const top = Math.round(r.bottom + 8);
+      modal.style.top = top + 'px';
+      modal.style.maxHeight = Math.max(180, window.innerHeight - top - 16) + 'px';
+    }
+  } else if (modal.classList.contains('notif-dropdown')) {
+    modal.style.top = '';
+    modal.style.maxHeight = '';
+  }
 }
 
 function closeModal(modal) {
@@ -1212,10 +1156,7 @@ closeTermsBtn.addEventListener('click', () => closeModal(termsModal));
   });
 });
 
-friendsOverlay.addEventListener('click', () => {
-  closeSidePanel(friendsDropdown, friendsOverlay);
-  updateScrollLock();
-});
+friendsOverlay.addEventListener('click', () => closeSidePanel(friendsDropdown, friendsOverlay));
 friendProfileOverlay.addEventListener('click', () => closeSidePanel(friendProfileModal, friendProfileOverlay));
 friendChatOverlay.addEventListener('click', () => {
   closeSidePanel(friendChatModal, friendChatOverlay);
@@ -1226,8 +1167,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     closeModal(termsModal);
     closeModal(accountModal);
-    closeHistoryPanel();
-    closeMoreMenu();
+    closeModal(historyDropdown);
     closeSidePanel(friendsDropdown, friendsOverlay);
     closeSidePanel(friendProfileModal, friendProfileOverlay);
     closeSidePanel(friendChatModal, friendChatOverlay);
@@ -1257,11 +1197,6 @@ function renderHeaderAuthVisibility() {
 }
 
 function renderAccountState() {
-  // The dialog is two different screens, so it says which one it is. "My
-  // Account" over a login form is a title for a page you do not have yet.
-  const accountTitle = document.getElementById('accountModalTitle');
-  if (accountTitle) accountTitle.textContent = t(accountNickname ? 'myAccount' : 'logInOrSignUp');
-
   if (accountNickname) {
     accountLoggedOut.classList.add('hidden');
     accountLoggedIn.classList.remove('hidden');
@@ -1723,123 +1658,9 @@ if (animalGrid) {
     if (!option) return;
     vibrate(8);
     setMyAnimal(option.dataset.animal);
-    syncStartGate();
   });
   renderAnimalPicker();
 }
-
-// The grid is twelve animals deep. Two rows are shown, the rest are one tap
-// away, so step 2 never pushes the Start buttons off a phone screen - which is
-// what buried the picker in the first place.
-const animalWrap = document.getElementById('animalWrap');
-const animalMoreBtn = document.getElementById('animalMoreBtn');
-if (animalWrap && animalMoreBtn) {
-  animalMoreBtn.addEventListener('click', () => {
-    const open = animalWrap.classList.toggle('is-open');
-    animalMoreBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-    animalMoreBtn.textContent = t(open ? 'showFewerAnimals' : 'showAllAnimals');
-  });
-  // If they already have an animal and it is down in the hidden rows, open the
-  // grid so the selection they made last time is visible, not implied.
-  if (myAnimal && Animals) {
-    const idx = Animals.list.findIndex((a) => a.id === myAnimal);
-    if (idx >= 8) animalMoreBtn.click();
-  }
-}
-
-// --- The start gate ---------------------------------------------------------
-// Nobody reaches a stranger without having said who they are and picked an
-// ice-breaker. Both answers persist, so this is a one-time cost: a returning
-// visitor sees both steps already answered and taps Start.
-const GENDER_KEY = 'talklive_gender';
-const startGenderGroup = document.getElementById('startGenderGroup');
-const startGateHint = document.getElementById('startGateHint');
-const stepGenderEl = document.getElementById('stepGender');
-const stepAnimalEl = document.getElementById('stepAnimal');
-
-function storedGender() {
-  const v = localStorage.getItem(GENDER_KEY);
-  return v === 'male' || v === 'female' || v === 'unspecified' ? v : '';
-}
-
-// One value, two places it can be set: the start gate's cards and the Settings
-// panel's pill row. Whichever is touched, both show the same answer.
-function setMyGender(value, opts) {
-  const silent = opts && opts.silent;
-  if (value) localStorage.setItem(GENDER_KEY, value);
-  if (startGenderGroup) {
-    startGenderGroup.dataset.value = value || '';
-    startGenderGroup.querySelectorAll('.tl-choice').forEach((c) => {
-      const on = !!value && c.dataset.value === value;
-      c.classList.toggle('selected', on);
-      c.setAttribute('aria-pressed', on ? 'true' : 'false');
-    });
-  }
-  if (genderGroup) {
-    genderGroup.dataset.value = value || 'unspecified';
-    genderGroup.querySelectorAll('.pill').forEach((p) => {
-      const on = !!value && p.dataset.value === value;
-      p.classList.toggle('selected', on);
-      p.setAttribute('aria-pressed', on ? 'true' : 'false');
-    });
-  }
-  syncStartGate();
-  if (!silent) registerProfile();
-}
-
-function startGateReady() {
-  return !!storedGender() && !!myAnimal;
-}
-
-// Reflects the gate in the UI: ticks on the steps that are answered, and the
-// two Start buttons live or dead with one sentence saying why.
-function syncStartGate() {
-  const hasGender = !!storedGender();
-  if (stepGenderEl) stepGenderEl.classList.toggle('is-done', hasGender);
-  if (stepAnimalEl) stepAnimalEl.classList.toggle('is-done', !!myAnimal);
-
-  const ready = hasGender && !!myAnimal;
-  if (startBtn) {
-    startBtn.disabled = !ready;
-    startBtn.classList.toggle('is-locked', !ready);
-  }
-  if (startChatBtn) {
-    startChatBtn.classList.toggle('is-locked', !ready);
-    startChatBtn.setAttribute('aria-disabled', ready ? 'false' : 'true');
-  }
-  if (startGateHint) {
-    startGateHint.classList.toggle('hidden', ready);
-    if (!ready) {
-      startGateHint.textContent = !hasGender && !myAnimal
-        ? t('gateHint')
-        : t(!hasGender ? 'gateHintGender' : 'gateHintAnimal');
-    }
-  }
-}
-
-if (startGenderGroup) {
-  startGenderGroup.addEventListener('click', (e) => {
-    const card = e.target.closest('.tl-choice');
-    if (!card) return;
-    vibrate(8);
-    setMyGender(card.dataset.value);
-  });
-}
-
-// /chat is a link, so a dead button has to be stopped rather than disabled.
-if (startChatBtn) {
-  startChatBtn.addEventListener('click', (e) => {
-    if (startGateReady()) return;
-    e.preventDefault();
-    syncStartGate();
-    if (stepGenderEl && !storedGender()) stepGenderEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    else if (stepAnimalEl) stepAnimalEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
-  });
-}
-
-// Paint whatever this browser already answered, without re-registering (the
-// first register happens on connect anyway).
-setMyGender(storedGender(), { silent: true });
 
 // The stranger's animal, shown on their card once the call is actually
 // connected (same moment as their name - never before, see revealPartner).
@@ -2384,22 +2205,12 @@ friendsBtn.addEventListener('click', (e) => {
   e.stopPropagation();
   if (!friendsDropdown.classList.contains('open')) {
     renderFriendsList();
-    renderSentRequests();
-    syncFriendsTabCounts();
-    // Open on whichever half has something waiting: if someone has asked to be
-    // your friend, that is the reason you tapped the icon.
-    showFriendsTab(notifData.some((n) => n.type !== 'message') ? 'requests' : 'friends');
     openSidePanel(friendsDropdown, friendsOverlay);
-    updateScrollLock();
   } else {
     closeSidePanel(friendsDropdown, friendsOverlay);
-    updateScrollLock();
   }
 });
-closeFriendsBtn.addEventListener('click', () => {
-  closeSidePanel(friendsDropdown, friendsOverlay);
-  updateScrollLock();
-});
+closeFriendsBtn.addEventListener('click', () => closeSidePanel(friendsDropdown, friendsOverlay));
 
 // Swipe right on the friends panel closes it (it slides in from the right).
 let friendsTouchStartX = null;
@@ -2429,7 +2240,7 @@ const FRIEND_CALL_SVG = '<svg viewBox="0 0 24 24" fill="white" aria-hidden="true
 // small green call button on the right. Tapping the avatar opens the profile view.
 function renderFriendsList() {
   if (friendsData.length === 0) {
-    friendsList.innerHTML = `<p class="tl-empty">${escapeHtml(t('noFriendsYet'))}</p>`;
+    friendsList.innerHTML = `<p class="history-empty">${escapeHtml(t('noFriendsYet'))}</p>`;
     return;
   }
   friendsList.innerHTML = '';
@@ -2758,7 +2569,7 @@ function renderNotifications() {
   notifList.classList.toggle('no-requests', visible.length === 0);
 
   if (visible.length === 0) {
-    notifList.innerHTML = `<p class="tl-empty">${escapeHtml(t('noRequestsYet'))}</p>`;
+    notifList.innerHTML = '';
   } else {
     notifList.innerHTML = '';
     [...visible].reverse().forEach((n) => {
@@ -2799,88 +2610,6 @@ function renderNotifications() {
 
   updateFriendsMsgBadge();
   renderFriendsList();
-  renderSentRequests();
-  syncFriendsTabCounts();
-}
-
-// --- Requests you sent -----------------------------------------------------
-// The other half of the friends story. The client has always known about
-// outgoing requests (sentRequestsData, used to decide what a profile sheet
-// offers), but nothing ever listed them: you asked someone to be your friend
-// and the app then behaved as though you never had. They live in the same
-// panel as incoming ones, under their own heading.
-const sentRequestsList = document.getElementById('sentRequestsList');
-
-function renderSentRequests() {
-  if (!sentRequestsList) return;
-  if (!sentRequestsData.length) {
-    sentRequestsList.innerHTML = `<p class="tl-empty">${escapeHtml(t('noSentRequests'))}</p>`;
-    return;
-  }
-  sentRequestsList.innerHTML = '';
-  sentRequestsData.forEach((r) => {
-    const item = document.createElement('div');
-    item.className = 'tl-sent-item';
-    item.dataset.profileId = r.clientId;
-    item.innerHTML = `
-      <span class="tl-sent-avatar" aria-hidden="true">${genderIcon(r.avatar, 30)}</span>
-      <span class="tl-sent-text">
-        <span class="tl-sent-name">${getFlagImg(r.countryCode)} ${escapeHtml(r.username || t('stranger'))}</span>
-        <span class="tl-sent-sub">${escapeHtml(timeAgo(r.ts))}</span>
-      </span>
-      <span class="tl-sent-chip">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 1.8"/></svg>
-        ${escapeHtml(t('pending'))}
-      </span>
-    `;
-    sentRequestsList.appendChild(item);
-  });
-}
-
-if (sentRequestsList) {
-  sentRequestsList.addEventListener('click', (e) => {
-    const row = e.target.closest('.tl-sent-item');
-    if (!row || !row.dataset.profileId) return;
-    const person = sentRequestsData.find((r) => r.clientId === row.dataset.profileId);
-    if (person) openUserProfile(person);
-  });
-}
-
-// --- Friends panel tabs ----------------------------------------------------
-const friendsTabs = document.getElementById('friendsTabs');
-const friendsTabPanel = document.getElementById('friendsTabPanel');
-const requestsTabPanel = document.getElementById('requestsTabPanel');
-const friendsTabCount = document.getElementById('friendsTabCount');
-const requestsTabCount = document.getElementById('requestsTabCount');
-
-function setCount(el, n) {
-  if (!el) return;
-  el.textContent = n > 99 ? '99+' : String(n);
-  el.classList.toggle('hidden', n === 0);
-}
-
-function syncFriendsTabCounts() {
-  setCount(friendsTabCount, friendsData.length);
-  const pending = notifData.filter((n) => n.type !== 'message').length + sentRequestsData.length;
-  setCount(requestsTabCount, pending);
-}
-
-function showFriendsTab(name) {
-  if (!friendsTabs) return;
-  friendsTabs.querySelectorAll('.tl-tab').forEach((tab) => {
-    const on = tab.dataset.tab === name;
-    tab.classList.toggle('selected', on);
-    tab.setAttribute('aria-selected', on ? 'true' : 'false');
-  });
-  if (friendsTabPanel) friendsTabPanel.classList.toggle('hidden', name !== 'friends');
-  if (requestsTabPanel) requestsTabPanel.classList.toggle('hidden', name !== 'requests');
-}
-
-if (friendsTabs) {
-  friendsTabs.addEventListener('click', (e) => {
-    const tab = e.target.closest('.tl-tab');
-    if (tab) showFriendsTab(tab.dataset.tab);
-  });
 }
 
 notifList.addEventListener('click', (e) => {
@@ -3283,14 +3012,20 @@ function showSharePrompt() {
 
 if (shareTalkLiveBtn) shareTalkLiveBtn.addEventListener('click', showSharePrompt);
 
-historyBtn.addEventListener('click', () => {
-  closeMoreMenu();
-  renderHistory();
-  openSidePanel(historyPanel, historyOverlay);
-  updateScrollLock();
+historyBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const willOpen = historyDropdown.classList.contains('hidden');
+  if (willOpen) {
+    renderHistory();
+    openModal(historyDropdown);
+  } else {
+    closeModal(historyDropdown);
+  }
 });
-closeHistoryBtn.addEventListener('click', closeHistoryPanel);
-historyOverlay.addEventListener('click', closeHistoryPanel);
+closeHistoryBtn.addEventListener('click', () => closeModal(historyDropdown));
+document.addEventListener('click', (e) => {
+  if (!e.composedPath().includes(historyWrap)) closeModal(historyDropdown);
+});
 
 historyList.addEventListener('click', (e) => {
   // Tapping the name opens who they are (and whether you have already asked
@@ -3298,7 +3033,7 @@ historyList.addEventListener('click', (e) => {
   const nameBtn = e.target.closest('.history-profile-btn');
   if (nameBtn && nameBtn.dataset.id) {
     const entry = callHistory.find((h) => h.clientId === nameBtn.dataset.id);
-    closeHistoryPanel();
+    closeModal(historyDropdown);
     openUserProfile({
       clientId: nameBtn.dataset.id,
       username: entry ? entry.username : '',
@@ -3309,7 +3044,7 @@ historyList.addEventListener('click', (e) => {
   }
   const btn = e.target.closest('.call-back-btn');
   if (!btn || !btn.dataset.id) return;
-  closeHistoryPanel();
+  closeModal(historyDropdown);
   requestCallBack(btn.dataset.id, btn.dataset.name);
 });
 
@@ -4542,8 +4277,8 @@ function resetUI() {
   // Back on the landing screen, so the header's Log In / Sign Up returns.
   renderHeaderAuthVisibility();
   stageEl.classList.remove('call-live');
+  startBtn.disabled = false;
   startBtn.classList.remove('is-connecting');
-  syncStartGate();
   closeChatPanel();
   clearChat();
   hideConnection();
@@ -4552,6 +4287,7 @@ function resetUI() {
   chatToggleBtn.classList.add('hidden');
   gameBtn.classList.add('hidden');
   if (typeof resetGame === 'function') resetGame();
+  syncToolRailOverflow();
 }
 
 // Return the single button to green "Call" (idle) on the persistent call screen.
@@ -4607,8 +4343,25 @@ function enterCallUI() {
   gameBtn.classList.remove('hidden');
   // Auth is the one header control the call screen drops.
   renderHeaderAuthVisibility();
+  syncToolRailOverflow();
 }
 
+// The header's tool rail is one capsule, and mid-call it grows from four tools
+// to six. On the narrowest phones that can run past the track it is given, so
+// it scrolls - and a scrolled icon cut dead at the capsule edge reads as a
+// rendering fault rather than as "there is more here". The class turns on the
+// edge fade in style.css, and only while there is genuinely something hidden.
+const headerToolsEl = document.querySelector('.header-tools');
+function syncToolRailOverflow() {
+  if (!headerToolsEl) return;
+  // Measured after layout: the tools are shown/hidden in the same frame.
+  requestAnimationFrame(() => {
+    const over = headerToolsEl.scrollWidth - headerToolsEl.clientWidth > 1;
+    headerToolsEl.classList.toggle('is-overflowing', over);
+  });
+}
+window.addEventListener('resize', syncToolRailOverflow);
+syncToolRailOverflow();
 
 let beginInFlight = false;
 const MIC_EXPLAINED_KEY = 'talklive_mic_explained';
@@ -4626,8 +4379,8 @@ async function begin() {
     });
     if (!proceed) {
       beginInFlight = false;
+      startBtn.disabled = false;
       startBtn.classList.remove('is-connecting');
-      syncStartGate();
       setButtonMode('call');
       return;
     }
@@ -4638,8 +4391,8 @@ async function begin() {
   } catch (e) {
     trackGrowthEvent('call_mic_denied');
     beginInFlight = false;
+    startBtn.disabled = false;
     startBtn.classList.remove('is-connecting');
-    syncStartGate();
     setButtonMode('call');
     if (e.name === 'NotAllowedError' || e.name === 'SecurityError') {
       showError(t('errMicBlocked'));
@@ -4731,8 +4484,8 @@ ageAgreeBtn.addEventListener('click', () => {
 // "Tap to Talk" permanently inert until the page was reloaded.
 function dismissAgeConsent() {
   closeModal(ageConsentModal);
+  startBtn.disabled = false;
   startBtn.classList.remove('is-connecting');
-  syncStartGate();
 }
 
 closeAgeConsentBtn.addEventListener('click', dismissAgeConsent);
@@ -5126,9 +4879,8 @@ function panelsAreClosed() {
     && !friendProfileModal.classList.contains('open')
     && !friendChatModal.classList.contains('open')
     && gameOverlay.classList.contains('hidden')
-    && !historyPanel.classList.contains('open')
-    && (!moreMenu || moreMenu.classList.contains('hidden'))
-    && !document.querySelector('.modal-overlay:not(.hidden)');
+    && !document.querySelector('.modal-overlay:not(.hidden)')
+    && !document.querySelector('.notif-dropdown:not(.hidden)');
 }
 document.addEventListener('touchstart', (e) => {
   if (e.touches.length !== 1) { swipeStartX = null; return; }
@@ -5351,9 +5103,9 @@ function closeTopmostLayer() {
   if (filtersPanel.classList.contains('open')) { closeFilters(); return true; }
   if (friendChatModal.classList.contains('open')) { closeSidePanel(friendChatModal, friendChatOverlay); activeFriendChatId = null; return true; }
   if (friendProfileModal.classList.contains('open')) { closeSidePanel(friendProfileModal, friendProfileOverlay); return true; }
-  if (friendsDropdown.classList.contains('open')) { closeSidePanel(friendsDropdown, friendsOverlay); updateScrollLock(); return true; }
-  if (historyPanel.classList.contains('open')) { closeHistoryPanel(); return true; }
-  if (moreMenu && !moreMenu.classList.contains('hidden')) { closeMoreMenu(); return true; }
+  if (friendsDropdown.classList.contains('open')) { closeSidePanel(friendsDropdown, friendsOverlay); return true; }
+  const openDropdown = document.querySelector('.notif-dropdown:not(.hidden)');
+  if (openDropdown) { openDropdown.classList.add('hidden'); return true; }
   if (!callBackBanner.classList.contains('hidden')) { callBackDeclineBtn.click(); return true; }
   return false;
 }
@@ -5912,17 +5664,10 @@ window.addEventListener('i18n-changed', () => {
 
   renderNotifications(); // also re-renders the friends list + badges
   renderHistory();
-  renderAccountState(); // the account dialog's title depends on being signed in
-  syncStartGate();      // and the start gate's hint is a sentence, not a label
   includeCountryWidget.renderChips();
   excludeCountryWidget.renderChips();
   renderInterestTags();
   refreshAnimalLabels();
-  // applyI18n() resets this button from its data-i18n key, which is the
-  // closed-state label; say what it actually does right now.
-  if (animalMoreBtn && animalWrap) {
-    animalMoreBtn.textContent = t(animalWrap.classList.contains('is-open') ? 'showFewerAnimals' : 'showAllAnimals');
-  }
   if (currentPartner && !partnerCard.classList.contains('hidden')) renderPartnerAnimal(currentPartner.animal);
 
   if (activeFriendChatId) {
