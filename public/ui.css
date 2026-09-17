@@ -1397,3 +1397,285 @@
    carrying one ink colour into both. */
 [data-theme="light"] .tl-action-voice,
 [data-theme="light"] .tl-rail-live-cta { color: #fff; }
+
+/* The picker's last tile: opens the rest of the animals, and closes them
+   again. It is deliberately the same size and shape as a real animal tile, so
+   the row reads as one strip of choices with a door at the end of it. */
+.animal-option-more {
+  color: var(--muted);
+  border-style: dashed;
+}
+.animal-option-more:hover { border-color: var(--accent); color: var(--text); }
+.animal-more-glyph {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  font-size: 24px;
+  font-weight: 300;
+  line-height: 1;
+}
+
+/* --- Online now: the rail's own header furniture and person rows. --------- */
+.tl-rail-head-dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 22%, transparent);
+  animation: tl-rail-pulse 2.4s ease-in-out infinite;
+}
+.tl-rail-head-icon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+}
+.tl-rail-head-icon svg { width: 16px; height: 16px; }
+.tl-rail-count {
+  margin-inline-start: auto;
+  padding: 2px 9px;
+  border-radius: var(--tl-r-pill);
+  background: color-mix(in srgb, var(--green) 16%, transparent);
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 800;
+}
+.tl-rail-row-go {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--tl-r-sm);
+  color: var(--muted);
+}
+.tl-rail-row-go svg { width: 15px; height: 15px; }
+/* Someone actually waiting in the queue gets the phone glyph and the green:
+   they are the rows where searching their country is most likely to land. */
+.tl-rail-person .tl-rail-row-go svg[fill="currentColor"] { color: var(--green); }
+.tl-rail-person:hover .tl-rail-row-go { background: color-mix(in srgb, var(--text) 10%, transparent); color: var(--text); }
+.tl-rail-foot {
+  margin: var(--tl-s2) 0 0;
+  padding: 0 var(--tl-s2);
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.tl-rail-person .tl-rail-row-icon { background: color-mix(in srgb, var(--text) 7%, transparent); }
+.tl-rail-person .tl-animal-icon { width: 22px; height: 22px; }
+
+/* ===========================================================================
+ * 5. THE TOP BAR - search in the middle, quick tools and the account at the end
+ * ======================================================================== */
+
+.header-mid {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--tl-s3);
+  min-width: 0;
+}
+
+.header-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  max-width: 520px;
+  min-width: 0;
+  height: 40px;
+  padding: 0 var(--tl-s3);
+  border: 1px solid var(--tl-line);
+  border-radius: var(--tl-r-pill);
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.header-search:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+  background: color-mix(in srgb, var(--text) 9%, transparent);
+}
+.header-search-icon {
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
+  color: var(--muted);
+}
+.header-search input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  padding: 0 var(--tl-s2);
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+}
+.header-search input:focus { outline: none; }
+.header-search input::placeholder { color: var(--muted); }
+/* Safari draws its own clear glyph on a search input, next to ours. */
+.header-search input::-webkit-search-cancel-button { display: none; }
+.header-search-clear {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--text) 12%, transparent);
+  color: var(--text);
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+}
+.header-search-clear.hidden { display: none; }
+
+/* The three proxy glyphs. Hidden on a phone, where the bottom bar owns
+   navigation and the bar has no room to spare. */
+.header-quick { position: relative; }
+.header-quick-dot {
+  position: absolute;
+  top: 8px;
+  inset-inline-end: 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--danger);
+  box-shadow: 0 0 0 2px var(--bg-1);
+}
+.header-quick-dot.hidden { display: none; }
+@media (max-width: 859px) {
+  .header-quick { display: none; }
+  /* The search box keeps the middle to itself; at this width it is the only
+     thing in it worth the room. */
+  .header-search { max-width: none; }
+}
+/* Below this the bar cannot hold a search box and the brand at once, and the
+   brand wins - it is the thing that says which site you are on. */
+@media (max-width: 560px) {
+  .header-search { display: none; }
+}
+
+/* The account button: avatar + caret, as the reference has it. */
+.header-account-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 40px;
+  padding: 0 6px 0 4px;
+  border: 1px solid transparent;
+  border-radius: var(--tl-r-pill);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+.header-account-btn:hover { background: color-mix(in srgb, var(--text) 8%, transparent); }
+.header-account-btn.hidden { display: none; }
+.header-account-avatar {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 24%, transparent);
+  color: var(--text);
+  overflow: hidden;
+}
+.header-account-avatar svg { width: 19px; height: 19px; }
+.header-account-avatar .tl-animal-icon { width: 30px; height: 30px; }
+.header-account-caret { width: 15px; height: 15px; color: var(--muted); }
+
+/* ===========================================================================
+ * 6. THE HERO SKY
+ * ---------------------------------------------------------------------------
+ * Drawn from the theme tokens rather than photographed: no extra request on
+ * the one screen that must paint instantly on a weak phone, no licence to
+ * track, and it is the right picture on all four themes instead of on one.
+ * Sits behind the hero text only, and never takes a pointer event.
+ * ======================================================================== */
+
+.setup-panel { position: relative; }
+
+.tl-hero-sky {
+  position: absolute;
+  inset: calc(var(--tl-s5) * -1) calc(var(--tl-s5) * -1) auto;
+  /* Ends just below the two action cards. Taken any further down it becomes a
+     wash behind the animal picker, where it competes with twenty small
+     coloured icons and wins - and its own bottom corners start showing as a
+     rectangle drawn across the page. */
+  height: 286px;
+  z-index: 0;
+  overflow: hidden;
+  border-radius: var(--tl-r-lg);
+  pointer-events: none;
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--accent) 42%, var(--bg-1)) 0%,
+      color-mix(in srgb, var(--accent-2) 22%, var(--bg-1)) 52%,
+      var(--bg-1) 100%);
+  -webkit-mask-image:
+    linear-gradient(180deg, #000 0%, #000 58%, transparent 100%),
+    linear-gradient(90deg, transparent 0%, #000 12%, #000 88%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(180deg, #000 0%, #000 58%, transparent 100%),
+    linear-gradient(90deg, transparent 0%, #000 12%, #000 88%, transparent 100%);
+  mask-composite: intersect;
+}
+/* The low sun, just off the left edge, where the reference photograph has it. */
+.tl-hero-glow {
+  position: absolute;
+  left: 22%;
+  top: 30%;
+  width: 460px;
+  height: 460px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    color-mix(in srgb, var(--accent-2) 52%, transparent) 0%,
+    color-mix(in srgb, var(--accent-2) 14%, transparent) 42%,
+    transparent 70%);
+}
+/* The ridges sit above the fade rather than inside it, so they read as a
+   skyline against the sky rather than dissolving into the page. */
+.tl-hero-range {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 30px;
+  width: 100%;
+  height: 150px;
+}
+.tl-hero-far { fill: color-mix(in srgb, var(--bg-1) 55%, var(--accent)); opacity: 0.75; }
+.tl-hero-near { fill: color-mix(in srgb, var(--bg-1) 78%, var(--accent)); }
+
+/* Everything the hero says sits above the sky. */
+.setup-panel > .setup-title,
+.setup-panel > .tl-hero-sub,
+.setup-panel > .tl-hero-actions,
+.setup-panel > #tapToTalk { position: relative; z-index: 1; }
+
+/* Light theme: the same sky, but a bright one - a dark wash over a white
+   page reads as a rendering fault rather than as weather. */
+[data-theme="light"] .tl-hero-sky {
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--accent) 18%, #ffffff) 0%,
+      color-mix(in srgb, var(--accent-2) 12%, #ffffff) 48%,
+      var(--bg-1) 100%);
+}
+[data-theme="light"] .tl-hero-far { fill: color-mix(in srgb, var(--accent) 26%, #ffffff); opacity: 0.8; }
+[data-theme="light"] .tl-hero-near { fill: color-mix(in srgb, var(--accent) 40%, #ffffff); opacity: 0.9; }
+
+@media (max-width: 859px) {
+  .tl-hero-sky {
+    inset: -24px -24px auto;
+    height: 300px;
+  }
+  .tl-hero-glow { width: 300px; height: 300px; }
+}

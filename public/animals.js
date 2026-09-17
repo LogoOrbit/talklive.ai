@@ -207,6 +207,110 @@
           + line('M52 30.6c2 1.2 4 1.6 6.4 1.4', '#0284c7', 1.5);
       },
     },
+    {
+      id: 'elephant', name: 'Elephant', trait: 'Kind and never forgets a face', color: '#94a3b8',
+      art: function () {
+        return e(13, 30, 10, 12, '#8d9bb0') + e(51, 30, 10, 12, '#8d9bb0')
+          + e(13, 30, 6, 7.6, '#a9b6c8') + e(51, 30, 6, 7.6, '#a9b6c8')
+          + e(32, 32, 16, 15, '#9aa8bd')
+          + p('M26 42h12v9c0 5-2.4 8-6 8s-6-3-6-8z', '#8d9bb0')
+          + line('M27.5 48h9M27.5 52h9', '#76839a', 1.5)
+          + p('M24 47c-2.6 3-6 3.6-8.6 1.6M40 47c2.6 3 6 3.6 8.6 1.6', '#f1f5f9', ' opacity=".9"')
+          + eye(24, 30, 2.7) + eye(40, 30, 2.7);
+      },
+    },
+    {
+      id: 'koala', name: 'Koala', trait: 'Laid-back and sleeps on it', color: '#a3adbd',
+      art: function () {
+        return c(12, 24, 10.5, '#8f99aa') + c(12, 24, 6, '#c6ced9')
+          + c(52, 24, 10.5, '#8f99aa') + c(52, 24, 6, '#c6ced9')
+          + e(32, 35, 17, 16, '#a3adbd')
+          + e(32, 41, 8, 6.4, '#4b5563')
+          + line('M32 47.4q-3.4 2.8-6.2 0M32 47.4q3.4 2.8 6.2 0', '#5b6472', 1.7)
+          + eye(25, 32, 2.9) + eye(39, 32, 2.9);
+      },
+    },
+    {
+      id: 'monkey', name: 'Monkey', trait: 'Playful and up for anything', color: '#b07b4f',
+      art: function () {
+        return c(11, 32, 8.6, '#b07b4f') + c(11, 32, 5, '#e2b183')
+          + c(53, 32, 8.6, '#b07b4f') + c(53, 32, 5, '#e2b183')
+          + c(32, 32, 17, '#b07b4f')
+          + e(32, 38, 12.5, 11, '#e8c59c')
+          + e(26, 41, 2.6, 2, '#8a5a33') + e(38, 41, 2.6, 2, '#8a5a33')
+          + line('M32 45.5q-3.6 3-6.6 0M32 45.5q3.6 3 6.6 0', '#8a5a33', 1.7)
+          + eye(26, 32, 3) + eye(38, 32, 3);
+      },
+    },
+    {
+      id: 'frog', name: 'Frog', trait: 'Cheerful and full of surprises', color: '#4ade80',
+      art: function () {
+        return c(19, 18, 9, '#4ade80') + c(45, 18, 9, '#4ade80')
+          + c(19, 18, 5.4, '#ffffff') + c(45, 18, 5.4, '#ffffff')
+          + c(19, 18.6, 2.9, INK) + c(45, 18.6, 2.9, INK)
+          + e(32, 38, 19, 15, '#4ade80')
+          + e(32, 42, 14, 9.5, '#86efac')
+          + line('M22 40q10 8 20 0', '#15803d', 2.2)
+          + c(24, 33, 1.7, '#22c55e') + c(40, 33, 1.7, '#22c55e');
+      },
+    },
+    {
+      id: 'deer', name: 'Deer', trait: 'Quiet, warm and easy to be around', color: '#c98a4b',
+      art: function () {
+        return line('M22 16 18 6M18 10l-5-2M22 16l-6-1M42 16 46 6M46 10l5-2M42 16l6-1', '#8a6234', 2.4)
+          + c(16, 27, 5.4, '#b87a41') + c(48, 27, 5.4, '#b87a41')
+          + e(32, 34, 14.5, 16, '#c98a4b')
+          + e(32, 43, 8.6, 7.4, '#e8c091')
+          + e(32, 41.5, 4, 3, '#6b4423')
+          + c(23, 26, 2, '#e8c091') + c(41, 26, 2, '#e8c091')
+          + eye(25, 33, 2.8) + eye(39, 33, 2.8);
+      },
+    },
+    {
+      id: 'turtle', name: 'Turtle', trait: 'Steady, patient, gets there', color: '#34d399',
+      art: function () {
+        // Shell first, head over it: drawn the other way round the head was
+        // a bump on a green blob rather than a turtle looking at you.
+        return e(12, 45, 7, 4.6, '#6ee7b7') + e(52, 45, 7, 4.6, '#6ee7b7')
+          + e(22, 56, 5.6, 3.6, '#6ee7b7') + e(42, 56, 5.6, 3.6, '#6ee7b7')
+          + e(32, 43, 21, 15, '#15803d')
+          + e(32, 43, 16.5, 11, '#34d399')
+          + line('M32 32v22M18 43h28M23 35l18 16M41 35 23 51', '#15803d', 1.6)
+          + c(32, 20, 11, '#6ee7b7')
+          + e(32, 26, 6, 3.4, '#34d399')
+          + eye(27.6, 19, 2.9) + eye(36.4, 19, 2.9);
+      },
+    },
+    {
+      id: 'horse', name: 'Horse', trait: 'Free-spirited and generous', color: '#a97142',
+      art: function () {
+        // Head-on, and long: the giveaway is the muzzle, so the face is built
+        // as a tapering wedge rather than the round head every other animal
+        // here has - side-on it just read as a brown dog.
+        return p('M20 14c-2-6 0-10 3-11 2 4 1.6 8-.4 11zM44 14c2-6 0-10-3-11-2 4-1.6 8 .4 11z', '#8a5a33')
+          + p('M22 20h20l-2.4 22c-.6 5-3.2 8-7.6 8s-7-3-7.6-8z', '#a97142')
+          + p('M22 20h20l-.6 5.5H22.6z', '#8a5a33')
+          + p('M24 12c3-4 13-4 16 0 1.6 2 2 5 1.6 8H22.4c-.4-3 0-6 1.6-8z', '#8a5a33')
+          + e(32, 43, 6.6, 6, '#d9a066')
+          + e(29.6, 42, 1.9, 1.5, '#6b4423') + e(34.4, 42, 1.9, 1.5, '#6b4423')
+          + eye(25.6, 28, 2.8) + eye(38.4, 28, 2.8);
+      },
+    },
+    {
+      id: 'eagle', name: 'Eagle', trait: 'Sharp-eyed and goes its own way', color: '#b45309',
+      art: function () {
+        // A white head, a dark body and a heavy hooked beak. Without the brow
+        // and the hook this is an owl, which is already in the list.
+        return p('M4 30c7-9 15-11 22-6-5 7-14 10-22 6zM60 30c-7-9-15-11-22-6 5 7 14 10 22 6z', '#78350f')
+          + e(32, 40, 15, 13, '#92400e')
+          + c(32, 28, 15, '#f8fafc')
+          + p('M18.5 22c4-4 9-5.6 13.5-4.6 4.5-1 9.5.6 13.5 4.6z', '#e2e8f0')
+          + eye(25.5, 27, 3.2) + eye(38.5, 27, 3.2)
+          + p('M17.5 23.5c3.4-2.6 6.6-3 9.6-1.2l-.6 2.2c-3-1.4-6-1.2-9 .6zM46.5 23.5c-3.4-2.6-6.6-3-9.6-1.2l.6 2.2c3-1.4 6-1.2 9 .6z', '#cbd5e1')
+          + p('M32 30c3.4 0 5.6 2.2 5.6 5.2 0 4.4-2.6 8.4-5.6 10.4-3-2-5.6-6-5.6-10.4 0-3 2.2-5.2 5.6-5.2z', '#f59e0b')
+          + p('M32 41c1.8 1.6 2.6 3.6 2.2 5.6-1.6.4-3.2-1-3.4-3z', '#d97706');
+      },
+    },
   ];
 
   var BY_ID = {};

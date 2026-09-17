@@ -1892,13 +1892,70 @@ function lookupGeo(ip) {
 
 function broadcastOnlineCount() {
   io.emit('online-count', io.engine.clientsCount);
+  broadcastOnlinePeople();
 }
+
+// --- Who is online, for the home screen's "Online now" rail -----------------
+// The rail needs more than a number: a page that says "412 online" and shows
+// nothing else is asking to be taken on trust. What it lists is exactly what
+// a match already reveals about someone the moment you connect - the random
+// username they were given, their country, and the avatar and spirit animal
+// they picked for strangers to see. No city, no clientId, nothing that
+// identifies a person or lets one be singled out and called.
+//
+// Three rules it holds to:
+//   1. Anyone who turned their status off in Settings is not in it. That
+//      switch already means "do not show me as online" and this is the most
+//      literal reading of it there is.
+//   2. Anyone mid-call is not in it. They are not reachable, and who is
+//      talking to whom right now is nobody else's business.
+//   3. It is capped and it is a sample, not a directory: the cap is small
+//      enough that the list can never be walked to enumerate the user base.
+const ONLINE_PEOPLE_CAP = 24;
+
+function onlinePeopleList() {
+  const out = [];
+  for (const [socketId, p] of profiles) {
+    if (out.length >= ONLINE_PEOPLE_CAP) break;
+    if (partners.has(socketId)) continue;              // mid-call
+    if (statusHidden.get(p.clientId)) continue;        // "appear offline"
+    out.push({
+      username: p.username,
+      countryCode: p.country,
+      country: p.countryName,
+      gender: p.gender || 'unspecified',
+      avatar: p.avatar || null,
+      animal: p.animal || null,
+      waiting: waitingQueue.includes(socketId),
+    });
+  }
+  return out;
+}
+
+// Coalesced: connects, disconnects, matches and hang-ups all move this list,
+// and on a busy server that is a great many events per second for a rail that
+// nobody is reading more than once a second.
+// Every connect, disconnect, match and hang-up moves this list, and chasing
+// each of those call sites is how one gets missed. Instead it is recomputed on
+// a slow tick and sent only when it actually differs from what was last sent,
+// so an idle server emits nothing at all and a busy one emits at most once a
+// tick regardless of the churn underneath.
+let lastOnlinePeopleJson = '';
+function broadcastOnlinePeople() {
+  const list = onlinePeopleList();
+  const json = JSON.stringify(list);
+  if (json === lastOnlinePeopleJson) return;
+  lastOnlinePeopleJson = json;
+  io.emit('online-people', list);
+}
+setInterval(broadcastOnlinePeople, 4000).unref();
 
 // Push the current count straight to one freshly-connected socket so a late
 // joiner always gets correct initial state immediately, independent of the
 // broadcast (initial-state sync, not just incremental updates).
 function sendOnlineCountTo(socket) {
   socket.emit('online-count', io.engine.clientsCount);
+  socket.emit('online-people', onlinePeopleList());
 }
 
 function clearFromQueue(socketId) {

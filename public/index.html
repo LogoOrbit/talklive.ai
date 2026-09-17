@@ -245,6 +245,24 @@
       <!-- One object, not six loose glyphs: a single segmented rail. The two
            call-only tools lead it, so mid-call the conversation's own controls
            are the first thing in the group. -->
+      <div class="header-mid">
+        <!-- Search. It filters the "Online now" rail and, on a country match,
+             offers to search that country - so it does something on a product
+             with no browsable content to search through, rather than being a
+             box that swallows what you type. -->
+        <form id="headerSearchForm" class="header-search" role="search">
+          <svg class="header-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
+          <input
+            id="headerSearchInput"
+            type="search"
+            autocomplete="off"
+            data-i18n-placeholder="searchPlaceholder"
+            data-i18n-aria="searchPlaceholder"
+            placeholder="Search people, countries, or interests…"
+            aria-label="Search people, countries, or interests"
+          />
+          <button type="button" id="headerSearchClear" class="header-search-clear hidden" data-i18n-aria="clear" aria-label="Clear">&times;</button>
+        </form>
       <nav class="header-tools" aria-label="TalkLive tools">
         <button id="chatToggleBtn" class="icon-btn hidden" data-i18n-title="chat" data-i18n-aria="chat" title="Chat" aria-label="Chat">
           <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -264,7 +282,32 @@
           </svg>
         </button>
       </nav>
+      </div>
       <div class="header-right">
+        <!-- The three glyphs the reference puts in this corner. They are
+             proxies, not second copies: each one clicks the real control in
+             the nav rail (see [data-opens]), so there is exactly one Friends
+             panel, one History panel and one Filters panel, with one set of
+             handlers and one set of state. -->
+        <button type="button" id="headerBellBtn" class="icon-btn header-quick" data-opens="friendsBtn" data-i18n-title="notificationsAria" data-i18n-aria="notificationsAria" title="Notifications" aria-label="Notifications">
+          <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 16V11a6 6 0 1 0-12 0v5l-1.6 2.4h15.2z"/>
+            <path d="M10 20.2a2.2 2.2 0 0 0 4 0"/>
+          </svg>
+          <span id="headerBellDot" class="header-quick-dot hidden" aria-hidden="true"></span>
+        </button>
+        <button type="button" id="headerHistoryBtn" class="icon-btn header-quick" data-opens="historyBtn" data-i18n-title="historyAria" data-i18n-aria="historyAria" title="Call history" aria-label="Call history">
+          <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.2 2"/>
+          </svg>
+        </button>
+        <button type="button" id="headerFiltersBtn" class="icon-btn header-quick" data-opens="filtersBtn" data-i18n-title="filtersAria" data-i18n-aria="filtersAria" title="Match filters" aria-label="Match filters">
+          <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"/>
+            <line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"/>
+            <line x1="4" y1="18" x2="20" y2="18"/><circle cx="11" cy="18" r="2" fill="currentColor" stroke="none"/>
+          </svg>
+        </button>
         <!-- Auth, always visible in the header rather than only inside the
              settings panel: signing in is the one action a returning user
              comes looking for, and a control they have to open a menu to find
@@ -282,11 +325,13 @@
           <button type="button" id="headerLoginBtn" class="header-auth-btn header-auth-login" data-i18n="logIn">Log In</button>
           <button type="button" id="headerSignupBtn" class="header-auth-btn header-auth-signup" data-i18n="signUp">Sign Up</button>
         </div>
-        <button type="button" id="headerAccountBtn" class="icon-btn header-account-btn hidden" data-i18n-title="myAccount" data-i18n-aria="myAccount" title="My Account" aria-label="My Account">
-          <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="8.5" r="3.6"/>
-            <path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"/>
-          </svg>
+        <button type="button" id="headerAccountBtn" class="header-account-btn hidden" data-i18n-title="myAccount" data-i18n-aria="myAccount" title="My Account" aria-label="My Account">
+          <span id="headerAccountAvatar" class="header-account-avatar" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="8.5" r="3.6"/><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"/>
+            </svg>
+          </span>
+          <svg class="header-account-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
         </button>
         <!-- The live headcount used to sit here, in a grey chip in the far
              corner, where it competed with Sign Up for the one part of a phone
@@ -838,7 +883,24 @@
            first call or chat. Two orbs, one decision: voice or text. -->
       <section id="setupPanel" class="setup-panel">
         <!-- The hero. One promise, one line under it, and then the only
-             two decisions on the page. -->
+             two decisions on the page.
+
+             The sky behind it is drawn, not photographed: layered gradients
+             and two mountain silhouettes, about 2KB of CSS and SVG. A real
+             photograph would be a 200KB+ request racing the largest
+             contentful paint on the one screen that has to be instant on a
+             weak phone - and it would need a licence, and it would look
+             wrong on every theme but the one it was picked for. This is
+             built from the theme's own tokens, so it is a dusk sky on dark,
+             a dawn one on light, and it re-tints itself for ocean and
+             sunset without a second file. -->
+        <div class="tl-hero-sky" aria-hidden="true">
+          <span class="tl-hero-glow"></span>
+          <svg class="tl-hero-range" viewBox="0 0 1200 260" preserveAspectRatio="none" focusable="false">
+            <path class="tl-hero-far" d="M0 176 118 116 214 164 318 92 430 158 530 108 648 170 764 104 880 156 986 110 1096 162 1200 122V260H0z"/>
+            <path class="tl-hero-near" d="M0 214 96 160 190 206 300 146 404 200 512 152 628 210 740 158 852 204 960 162 1072 208 1200 168V260H0z"/>
+          </svg>
+        </div>
         <h1 class="setup-title" data-i18n="heroTitle">Meet someone new by voice or text</h1>
         <p class="tl-hero-sub" data-i18n="heroSub">Real people. Genuine conversations. No sign-up required.</p>
         <div id="tapToTalk" class="tap-to-talk">
@@ -1771,18 +1833,21 @@
            ================================================================= -->
       <aside class="tl-rail" data-i18n-aria="railAria" aria-label="Your activity">
 
-        <section class="tl-rail-card tl-rail-live">
-          <p class="tl-rail-live-label">
-            <span class="tl-rail-live-dot" aria-hidden="true"></span>
-            <span data-i18n="railLiveNow">Live now</span>
-          </p>
-          <p class="tl-rail-live-num" id="railOnlineCount" role="status" aria-live="polite">&mdash;</p>
-          <p class="tl-rail-live-sub" data-i18n="railLiveSub">people ready to talk</p>
-          <button type="button" id="railStartBtn" class="tl-rail-live-cta" data-i18n="railLiveCta">Start a call</button>
+        <section class="tl-rail-card">
+          <div class="tl-rail-head">
+            <span class="tl-rail-head-dot" aria-hidden="true"></span>
+            <h2 data-i18n="railOnlineNow">Online Now</h2>
+            <span class="tl-rail-count" id="railOnlineCount" role="status" aria-live="polite">&mdash;</span>
+          </div>
+          <div id="railOnlineList" class="tl-rail-list"></div>
+          <p class="tl-rail-foot" data-i18n="railOnlineFoot">Tap anyone to look for a match in their country.</p>
         </section>
 
         <section class="tl-rail-card">
           <div class="tl-rail-head">
+            <span class="tl-rail-head-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.2 2"/></svg>
+            </span>
             <h2 data-i18n="railRecent">Recent calls</h2>
             <button type="button" class="tl-rail-more" data-opens="historyBtn" data-i18n="seeAll">See all</button>
           </div>
@@ -1791,6 +1856,9 @@
 
         <section class="tl-rail-card">
           <div class="tl-rail-head">
+            <span class="tl-rail-head-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.1"/><path d="M3.6 19a5.4 5.4 0 0 1 10.8 0"/><circle cx="17.2" cy="9" r="2.5"/><path d="M15.7 13.7A4.8 4.8 0 0 1 21 18.4"/></svg>
+            </span>
             <h2 data-i18n="friends">Friends</h2>
             <button type="button" class="tl-rail-more" data-opens="friendsBtn" data-i18n="seeAll">See all</button>
           </div>

@@ -1695,11 +1695,28 @@ avatarGrid.addEventListener('click', (e) => {
 // buttons (the old one and the new one), so tapping through the row costs no
 // layout of the grid and nothing to garbage-collect. One delegated listener
 // handles all twelve.
+// The picker opens on one row and grows on request. There are twenty animals
+// now, and a wall of twenty is a thing to get past on the way to the call
+// button rather than a thing to enjoy picking from. The row you land on is
+// never missing your own choice: a pick from further down is pulled into it.
+const ANIMAL_PREVIEW_COUNT = 7;
+let animalPickerExpanded = false;
+
+function animalPreviewIds() {
+  const ids = Animals.list.map((a) => a.id).slice(0, ANIMAL_PREVIEW_COUNT);
+  if (myAnimal && !ids.includes(myAnimal)) ids[ids.length - 1] = myAnimal;
+  return ids;
+}
+
 function renderAnimalPicker() {
   if (!animalGrid || !Animals) return;
   Animals.installSprite();
+  animalGrid.innerHTML = '';
+  const shown = animalPickerExpanded ? Animals.list.map((a) => a.id) : animalPreviewIds();
   const frag = document.createDocumentFragment();
-  Animals.list.forEach((animal) => {
+  shown.forEach((id) => {
+    const animal = Animals.get(id);
+    if (!animal) return;
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = `animal-option${myAnimal === animal.id ? ' selected' : ''}`;
@@ -1710,6 +1727,19 @@ function renderAnimalPicker() {
     btn.innerHTML = `${Animals.icon(animal.id, 44)}<span class="animal-option-name">${escapeHtml(Animals.name(animal.id))}</span>`;
     frag.appendChild(btn);
   });
+
+  if (Animals.list.length > ANIMAL_PREVIEW_COUNT) {
+    const more = document.createElement('button');
+    more.type = 'button';
+    more.className = 'animal-option animal-option-more';
+    more.dataset.animalMore = '1';
+    more.innerHTML = `
+      <span class="animal-more-glyph" aria-hidden="true">${animalPickerExpanded ? '&minus;' : '+'}</span>
+      <span class="animal-option-name">${escapeHtml(t(animalPickerExpanded ? 'animalLess' : 'animalMore'))}</span>
+    `;
+    frag.appendChild(more);
+  }
+
   animalGrid.appendChild(frag);
   renderAnimalChoiceLine();
 }
@@ -1717,11 +1747,9 @@ function renderAnimalPicker() {
 // Re-labels the existing buttons (language switch) without touching the icons.
 function refreshAnimalLabels() {
   if (!animalGrid) return;
-  animalGrid.querySelectorAll('.animal-option').forEach((btn) => {
-    const label = btn.querySelector('.animal-option-name');
-    if (label) label.textContent = Animals.name(btn.dataset.animal);
-  });
-  renderAnimalChoiceLine();
+  // A rebuild rather than a relabel: the "More" tile's own label is
+  // translated too, and which animals are on screen depends on the choice.
+  renderAnimalPicker();
 }
 
 function renderAnimalChoiceLine() {
@@ -1758,6 +1786,11 @@ if (animalGrid) {
     const option = e.target.closest('.animal-option');
     if (!option) return;
     vibrate(8);
+    if (option.dataset.animalMore) {
+      animalPickerExpanded = !animalPickerExpanded;
+      renderAnimalPicker();
+      return;
+    }
     setMyAnimal(option.dataset.animal);
   });
   renderAnimalPicker();
@@ -2666,10 +2699,15 @@ function totalUnreadMessages() {
   return notifData.filter((n) => n.type === 'message').length;
 }
 
+const headerBellDot = document.getElementById('headerBellDot');
 function updateFriendsMsgBadge() {
   const count = totalUnreadMessages() + notifData.filter((n) => n.type !== 'message').length;
   friendsMsgBadge.textContent = count;
   friendsMsgBadge.classList.toggle('hidden', count === 0);
+  // The bell is the same count said in the corner the reference puts it in.
+  // A dot, not a number: the number is already on the nav item it opens, and
+  // two counters for one thing invite the question of why they differ.
+  if (headerBellDot) headerBellDot.classList.toggle('hidden', count === 0);
 }
 
 // The requests list (friend requests, accepted-friend confirmations, call-back
@@ -5360,6 +5398,7 @@ window.addEventListener('beforeunload', (e) => {
 const navHomeBtn = document.getElementById('navHomeBtn');
 const navShopBtn = document.getElementById('navShopBtn');
 const railOnlineCountEl = document.getElementById('railOnlineCount');
+const railOnlineList = document.getElementById('railOnlineList');
 const railHistoryList = document.getElementById('railHistoryList');
 const railFriendsList = document.getElementById('railFriendsList');
 const railStartBtn = document.getElementById('railStartBtn');
@@ -5388,6 +5427,74 @@ document.querySelectorAll('[data-opens]').forEach((el) => {
 
 // The rail's green CTA is the hero's voice card, said again at the point where
 // someone has just finished reading who is online.
+// --- Header search ----------------------------------------------------------
+// TalkLive has no feed and no profiles to search through, so a box promising
+// "search people, countries or interests" has to mean something concrete. It
+// means: narrow the Online now rail to what you typed, and if what you typed
+// is a country, offer to go looking there.
+const headerSearchForm = document.getElementById('headerSearchForm');
+const headerSearchInput = document.getElementById('headerSearchInput');
+const headerSearchClear = document.getElementById('headerSearchClear');
+let onlineQuery = '';
+
+function matchedCountryCode(query) {
+  const q = query.trim().toLowerCase();
+  if (q.length < 2 || typeof COUNTRIES !== 'object') return null;
+  let exact = null;
+  let prefix = null;
+  for (const code of Object.keys(COUNTRIES)) {
+    const name = String(COUNTRIES[code]).toLowerCase();
+    if (name === q) { exact = code; break; }
+    if (!prefix && name.startsWith(q)) prefix = code;
+  }
+  return exact || prefix;
+}
+
+if (headerSearchForm) {
+  headerSearchInput.addEventListener('input', () => {
+    onlineQuery = headerSearchInput.value.trim().toLowerCase();
+    headerSearchClear.classList.toggle('hidden', onlineQuery === '');
+    renderRailOnline();
+  });
+  headerSearchClear.addEventListener('click', () => {
+    headerSearchInput.value = '';
+    onlineQuery = '';
+    headerSearchClear.classList.add('hidden');
+    renderRailOnline();
+    headerSearchInput.focus();
+  });
+  headerSearchForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const code = matchedCountryCode(headerSearchInput.value);
+    if (code) { searchCountry(code, COUNTRIES[code]); return; }
+    // Not a country: treat it as an interest, which the filters already take.
+    const interest = headerSearchInput.value.trim().slice(0, 40);
+    if (!interest) return;
+    appliedFilters = Object.assign({}, appliedFilters, { interests: [interest] });
+    persistAppliedFilters();
+    syncFilterDraftUiFromApplied();
+    registerProfile();
+    showToast(t('searchInterest', { interest }));
+    startBtn.click();
+  });
+}
+
+function persistAppliedFilters() {
+  try { sessionStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(appliedFilters)); } catch (_) { /* private mode */ }
+}
+
+// One country, replacing whatever was in the include list: a shortcut, not an
+// edit of filters someone sat down and set. Saved the way Save saves, so the
+// search that starts next uses it and the Filters panel shows the truth.
+function searchCountry(code, countryName) {
+  appliedFilters = Object.assign({}, appliedFilters, { includeCountries: [code] });
+  persistAppliedFilters();
+  syncFilterDraftUiFromApplied();
+  registerProfile();
+  showToast(t('railFindIn', { country: countryName || code }));
+  startBtn.click();
+}
+
 if (railStartBtn) railStartBtn.addEventListener('click', () => startBtn.click());
 
 document.querySelectorAll('.js-share-talklive').forEach((el) => {
@@ -5488,14 +5595,90 @@ if (railFriendsList) {
   });
 }
 
-// First paint. Both lists are empty on a fresh visit, and an empty card that
+// --- Online now -------------------------------------------------------------
+// A sample of who is in the queue, as the server publishes it: the random
+// username, the country, the avatar and animal they picked for strangers to
+// see - the same things a match reveals the moment you connect. Nobody who
+// turned their status off is in it, and nobody mid-call.
+//
+// Tapping a row is not "call this person": TalkLive matches at random and
+// there is no way to dial someone. It searches their country instead, which
+// is the real thing the list makes possible.
+let onlinePeople = [];
+
+function filteredOnlinePeople() {
+  if (!onlineQuery) return onlinePeople;
+  return onlinePeople.filter((p) => [p.username, p.country, p.countryCode]
+    .some((v) => String(v || '').toLowerCase().includes(onlineQuery)));
+}
+
+function renderRailOnline() {
+  if (!railOnlineList) return;
+  const people = filteredOnlinePeople();
+  if (people.length === 0) {
+    railOnlineList.innerHTML = `<p class="tl-rail-empty">${escapeHtml(t(onlineQuery ? 'railNoMatch' : 'railNoOne'))}</p>`;
+    return;
+  }
+  railOnlineList.innerHTML = '';
+  people.slice(0, 8).forEach((person) => {
+    const row = document.createElement('button');
+    row.type = 'button';
+    row.className = 'tl-rail-row tl-rail-person';
+    row.dataset.country = person.countryCode || '';
+    row.dataset.countryName = person.country || '';
+    row.title = person.countryCode ? t('railFindIn', { country: person.country }) : '';
+    const face = (person.animal && Animals && Animals.has(person.animal))
+      ? Animals.icon(person.animal, 22)
+      : genderIcon(person.avatar, 18);
+    const genderLabel = person.gender === 'male' ? t('male')
+      : person.gender === 'female' ? t('female')
+      : '';
+    // A country the server could not place comes back as "Unknown"/"XX".
+    // Printed beside a name that reads as a broken record, so it is dropped
+    // and the row says what it does know.
+    const placed = person.country && person.country !== 'Unknown' ? person.country : '';
+    const meta = [genderLabel, placed].filter(Boolean).join(' · ') || t('railSomewhere');
+    row.innerHTML = `
+      <span class="tl-rail-row-icon" aria-hidden="true">
+        ${face}
+        <span class="tl-rail-presence is-online"></span>
+      </span>
+      <span class="tl-rail-row-text">
+        <strong>${getFlagImg(person.countryCode)} ${escapeHtml(person.username)}</strong>
+        <small>${escapeHtml(meta)}</small>
+      </span>
+      <span class="tl-rail-row-go" aria-hidden="true">
+        ${person.waiting
+          ? '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>'
+          : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>'}
+      </span>
+    `;
+    railOnlineList.appendChild(row);
+  });
+}
+
+if (railOnlineList) {
+  railOnlineList.addEventListener('click', (e) => {
+    const row = e.target.closest('.tl-rail-person');
+    if (!row || !row.dataset.country) return;
+    searchCountry(row.dataset.country, row.dataset.countryName);
+  });
+}
+
+// First paint. Every list is empty on a fresh visit, and an empty card that
 // says nothing reads as a card that failed to load - so they are rendered once
 // here rather than only when their first row arrives. After this they refresh
 // from renderHistory() / renderFriendsList(), including on a language change.
+renderRailOnline();
 renderRailHistory();
 renderRailFriends();
 
 // --- Socket events ---
+socket.on('online-people', (people) => {
+  onlinePeople = Array.isArray(people) ? people : [];
+  renderRailOnline();
+});
+
 socket.on('online-count', (count) => {
   lastOnlineCount = count;
   onlineCountEl.textContent = count;
@@ -5997,6 +6180,7 @@ window.addEventListener('i18n-changed', () => {
 
   renderNotifications(); // also re-renders the friends list + badges
   renderHistory();
+  renderRailOnline();
   renderAccountState(); // the account dialog's title depends on being signed in
   includeCountryWidget.renderChips();
   excludeCountryWidget.renderChips();
