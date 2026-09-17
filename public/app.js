@@ -2349,6 +2349,7 @@ const FRIEND_CALL_SVG = '<svg viewBox="0 0 24 24" fill="white" aria-hidden="true
 // Each row: online/offline dot + flag + username on the left (tap → chat box),
 // small green call button on the right. Tapping the avatar opens the profile view.
 function renderFriendsList() {
+  renderRailFriends();
   if (friendsData.length === 0) {
     friendsList.innerHTML = `<p class="tl-empty">${escapeHtml(t('noFriendsYet'))}</p>`;
     return;
@@ -3076,6 +3077,7 @@ socket.on('friend-chat-history', ({ friendClientId, messages }) => {
 
 // --- Call history (session-only, cleared on reload) ---
 function renderHistory() {
+  renderRailHistory();
   if (callHistory.length === 0) {
     historyList.innerHTML = `<p class="tl-empty">${escapeHtml(t('noCallsYet'))}</p>`;
     return;
@@ -4463,6 +4465,7 @@ function resetUI() {
   renderHeaderAuthVisibility();
   stageEl.classList.remove('call-live');
   startBtn.disabled = false;
+  syncNavCurrent();
   startBtn.classList.remove('is-connecting');
   closeChatPanel();
   clearChat();
@@ -4521,6 +4524,7 @@ function enterCallUI() {
   callPanel.classList.remove('hidden');
   stageEl.classList.add('call-live');
   chatToggleBtn.classList.remove('hidden');
+  syncNavCurrent();
   appSettingsBtn.classList.remove('hidden');
   historyBtn.classList.remove('hidden');
   friendsBtn.classList.remove('hidden');
@@ -5347,10 +5351,155 @@ window.addEventListener('beforeunload', (e) => {
   }
 });
 
+
+// --- The nav rail and the activity rail -------------------------------------
+// The nav's tool buttons are the real ones - moved out of the header rail, not
+// copied - so Friends, History, Filters and Settings need no wiring here; they
+// are the same elements their handlers were already bound to. What is new is
+// everything that had nowhere to live before: Home, Shop, and the rail.
+const navHomeBtn = document.getElementById('navHomeBtn');
+const navShopBtn = document.getElementById('navShopBtn');
+const railOnlineCountEl = document.getElementById('railOnlineCount');
+const railHistoryList = document.getElementById('railHistoryList');
+const railFriendsList = document.getElementById('railFriendsList');
+const railStartBtn = document.getElementById('railStartBtn');
+
+if (navHomeBtn) {
+  navHomeBtn.addEventListener('click', () => {
+    // Mid-call, Home means "back to the landing screen", which is what the
+    // brand lockup already means. Off a call there is nowhere to go, so it is
+    // the same no-op scroll-to-top the reference designs give it.
+    if (location.pathname !== '/') { location.href = '/'; return; }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+}
+
+if (navShopBtn) navShopBtn.addEventListener('click', openShop);
+
+// "See all" on a rail card opens the panel that owns the full list, by
+// clicking the nav button that owns the panel - one path into each panel,
+// rather than a second copy of its open/close logic living out here.
+document.querySelectorAll('[data-opens]').forEach((el) => {
+  el.addEventListener('click', () => {
+    const target = document.getElementById(el.dataset.opens);
+    if (target) target.click();
+  });
+});
+
+// The rail's green CTA is the hero's voice card, said again at the point where
+// someone has just finished reading who is online.
+if (railStartBtn) railStartBtn.addEventListener('click', () => startBtn.click());
+
+document.querySelectorAll('.js-share-talklive').forEach((el) => {
+  el.addEventListener('click', showSharePrompt);
+});
+
+// Which section the nav is pointing at. Only Home and "a panel is open" are
+// real states today; the panels set their own while they are open.
+const tlFrameEl = document.querySelector('.tl-frame');
+function syncNavCurrent() {
+  const home = !setupPanel.classList.contains('hidden');
+  // A live call gets the whole width. The activity rail is a home-screen
+  // thing - a column of "who you talked to before" alongside the person you
+  // are talking to now is noise, and the call screen is already the one place
+  // in the app that deliberately has nothing else on it.
+  if (tlFrameEl) tlFrameEl.classList.toggle('is-call', !home);
+  if (!navHomeBtn) return;
+  navHomeBtn.classList.toggle('is-current', home);
+  if (home) navHomeBtn.setAttribute('aria-current', 'page');
+  else navHomeBtn.removeAttribute('aria-current');
+}
+
+// --- The rail's two lists ---------------------------------------------------
+// Compact renders of data the panels already hold, so there is no second
+// source of truth: both are called from the same place the panel list is.
+
+function renderRailHistory() {
+  if (!railHistoryList) return;
+  if (callHistory.length === 0) {
+    railHistoryList.innerHTML = `<p class="tl-rail-empty">${escapeHtml(t('railNoCalls'))}</p>`;
+    return;
+  }
+  railHistoryList.innerHTML = '';
+  [...callHistory].reverse().slice(0, 4).forEach((entry) => {
+    const mins = Math.floor(entry.durationSeconds / 60);
+    const secs = entry.durationSeconds % 60;
+    const row = document.createElement('button');
+    row.type = 'button';
+    row.className = 'tl-rail-row history-profile-btn';
+    row.dataset.id = entry.clientId || '';
+    row.title = t('openProfile');
+    row.innerHTML = `
+      <span class="tl-rail-row-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+      </span>
+      <span class="tl-rail-row-text">
+        <strong>${getFlagImg(entry.countryCode)} ${escapeHtml(entry.username)}</strong>
+        <small>${mins}:${secs.toString().padStart(2, '0')}</small>
+      </span>
+    `;
+    railHistoryList.appendChild(row);
+  });
+}
+
+function renderRailFriends() {
+  if (!railFriendsList) return;
+  if (friendsData.length === 0) {
+    railFriendsList.innerHTML = `<p class="tl-rail-empty">${escapeHtml(t('railNoFriends'))}</p>`;
+    return;
+  }
+  railFriendsList.innerHTML = '';
+  // Online first: the only ones you can do anything with right now.
+  [...friendsData]
+    .sort((a, b) => Number(!!b.online) - Number(!!a.online))
+    .slice(0, 5)
+    .forEach((f) => {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'tl-rail-row friend-avatar-btn';
+      row.dataset.id = f.clientId;
+      row.title = t('profile');
+      row.innerHTML = `
+        <span class="tl-rail-row-icon" aria-hidden="true">
+          ${genderIcon(f.avatar, 18)}
+          <span class="tl-rail-presence${f.online ? ' is-online' : ''}"></span>
+        </span>
+        <span class="tl-rail-row-text">
+          <strong>${getFlagImg(f.countryCode)} ${escapeHtml(friendLabel(f))}</strong>
+          <small>${escapeHtml(f.online ? t('online') : t('offline'))}</small>
+        </span>
+      `;
+      railFriendsList.appendChild(row);
+    });
+}
+
+// The rows carry the same data-id and class the panel rows do, so the profile
+// opens the same way from either place.
+if (railHistoryList) {
+  railHistoryList.addEventListener('click', (e) => {
+    const btn = e.target.closest('.history-profile-btn');
+    if (btn && btn.dataset.id) openUserProfile(btn.dataset.id);
+  });
+}
+if (railFriendsList) {
+  railFriendsList.addEventListener('click', (e) => {
+    const btn = e.target.closest('.friend-avatar-btn');
+    if (btn && btn.dataset.id) openFriendProfile(btn.dataset.id);
+  });
+}
+
+// First paint. Both lists are empty on a fresh visit, and an empty card that
+// says nothing reads as a card that failed to load - so they are rendered once
+// here rather than only when their first row arrives. After this they refresh
+// from renderHistory() / renderFriendsList(), including on a language change.
+renderRailHistory();
+renderRailFriends();
+
 // --- Socket events ---
 socket.on('online-count', (count) => {
   lastOnlineCount = count;
   onlineCountEl.textContent = count;
+  if (railOnlineCountEl) railOnlineCountEl.textContent = count;
   // The lockup's live line ships as a grey dot and an em dash - "0 online" on
   // first paint reads as "nobody is here". The first real count lights it up.
   if (brandLiveEl) brandLiveEl.classList.remove('is-waiting');

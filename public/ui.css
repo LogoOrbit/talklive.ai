@@ -742,3 +742,658 @@
    lands inside the dialog - but it is a container, not a control, and should
    not be ringed like one. */
 .tl-devnotice:focus { outline: none; }
+
+/* ===========================================================================
+ * THE APP FRAME - nav rail, stage, activity rail
+ * ---------------------------------------------------------------------------
+ * The home screen used to be one centred 560px column with every tool hidden
+ * behind glyphs in the header. On anything wider than a tablet that column sat
+ * in the middle of a very large empty page, and "where are my friends / my
+ * calls / my filters" had no answer you could see - only one you could guess.
+ *
+ * So the page is three columns now, and it degrades by dropping columns rather
+ * than by reflowing:
+ *
+ *   >= 1180px   nav rail | stage | activity rail
+ *   >= 860px    nav rail | stage
+ *   <  860px    stage, with the nav as a bottom tab bar
+ *
+ * The nav is the same markup at every size. The buttons in it are the real
+ * ones - moved out of the header rail, not copied - so every handler, badge
+ * and aria label in app.js still finds exactly what it found before.
+ * ======================================================================== */
+
+.tl-frame {
+  flex: 1;
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  /* The stage is the only column that scrolls the page; the rails are sticky
+     inside their tracks, so a long SEO section below never drags them out of
+     view on the way past. */
+  min-height: 0;
+}
+
+.tl-nav,
+.tl-rail { display: none; }
+
+/* --- The stage keeps its own centring, inside whatever track it is given. -- */
+.tl-frame > .stage {
+  width: 100%;
+  min-width: 0;
+}
+
+/* ===========================================================================
+ * 1. THE NAV - a labelled column on a desktop, a tab bar on a phone.
+ * ======================================================================== */
+
+.tl-nav-items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tl-s1);
+}
+
+.tl-nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--tl-s3);
+  width: 100%;
+  min-height: var(--tl-tap);
+  padding: 0 var(--tl-s3);
+  border: 0;
+  border-radius: var(--tl-r-md);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: 600;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.tl-nav-item:hover { background: color-mix(in srgb, var(--text) 7%, transparent); color: var(--text); }
+.tl-nav-item.is-current {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--text);
+}
+/* The one thing a rail has that a row of glyphs never did: a marker saying
+   which of these you are looking at. */
+.tl-nav-item.is-current::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: -10px;
+  top: 50%;
+  width: 3px;
+  height: 22px;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  background: var(--accent);
+}
+.tl-nav-icon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+}
+.tl-nav-icon svg { width: 21px; height: 21px; }
+.tl-nav-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tl-nav-label-short { display: none; }
+
+.tl-nav-soon {
+  flex: 0 0 auto;
+  padding: 3px 8px;
+  border-radius: var(--tl-r-pill);
+  background: color-mix(in srgb, var(--accent-2) 16%, transparent);
+  color: var(--accent-2);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Unread messages. The badge markup is the one that used to sit on the header
+   glyph, so it keeps its ID and app.js keeps writing to it. */
+.tl-nav-item .notif-badge {
+  position: static;
+  flex: 0 0 auto;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--tl-r-pill);
+  background: var(--danger);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+}
+.tl-nav-item .notif-badge.hidden { display: none; }
+
+.tl-nav-promo {
+  display: block;
+  margin-top: var(--tl-s4);
+  padding: var(--tl-s4);
+  border: 1px solid var(--tl-line);
+  border-radius: var(--tl-r-lg);
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg-2));
+  color: var(--text);
+  text-decoration: none;
+}
+.tl-nav-promo-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  margin-bottom: var(--tl-s2);
+  border-radius: var(--tl-r-md);
+  background: color-mix(in srgb, var(--accent) 26%, transparent);
+  color: var(--accent-2);
+}
+.tl-nav-promo-icon svg { width: 20px; height: 20px; }
+.tl-nav-promo strong { display: block; font-size: 14px; font-weight: 800; }
+.tl-nav-promo small {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.tl-nav-promo-cta {
+  display: block;
+  margin-top: var(--tl-s3);
+  padding: 9px var(--tl-s3);
+  border-radius: var(--tl-r-md);
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
+.tl-nav-promo:hover .tl-nav-promo-cta { filter: brightness(1.08); }
+
+/* ===========================================================================
+ * 2. THE ACTIVITY RAIL
+ * ======================================================================== */
+
+.tl-rail-card {
+  padding: var(--tl-s4);
+  border: 1px solid var(--tl-line);
+  border-radius: var(--tl-r-lg);
+  background: var(--tl-card);
+}
+.tl-rail-card + .tl-rail-card { margin-top: var(--tl-s3); }
+
+.tl-rail-head {
+  display: flex;
+  align-items: center;
+  gap: var(--tl-s2);
+  margin-bottom: var(--tl-s3);
+}
+.tl-rail-head h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+}
+.tl-rail-more {
+  margin-inline-start: auto;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: var(--tl-r-sm);
+  background: transparent;
+  color: var(--accent-2);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.tl-rail-more:hover { background: color-mix(in srgb, var(--text) 8%, transparent); }
+
+/* --- Live now: the headcount, said plainly and once. ---------------------- */
+.tl-rail-live { text-align: center; }
+.tl-rail-live-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.tl-rail-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: tl-rail-pulse 2.4s ease-in-out infinite;
+}
+.tl-rail-live-num {
+  margin: var(--tl-s2) 0 0;
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -1px;
+}
+.tl-rail-live-sub {
+  margin: var(--tl-s1) 0 0;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.tl-rail-live-cta {
+  width: 100%;
+  min-height: 42px;
+  margin-top: var(--tl-s3);
+  border: 0;
+  border-radius: var(--tl-r-md);
+  background: var(--green);
+  color: #06210f;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.tl-rail-live-cta:hover { filter: brightness(1.06); }
+@keyframes tl-rail-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+/* --- The two lists. One row shape, whatever is in it. --------------------- */
+.tl-rail-list { display: block; }
+.tl-rail-row {
+  display: flex;
+  align-items: center;
+  gap: var(--tl-s3);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--tl-s2);
+  border: 0;
+  border-radius: var(--tl-r-md);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.tl-rail-row:hover { background: color-mix(in srgb, var(--text) 6%, transparent); }
+.tl-rail-row-icon {
+  position: relative;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--text) 9%, transparent);
+  color: var(--muted);
+}
+.tl-rail-row-icon svg { width: 17px; height: 17px; }
+/* Presence, as a dot on the avatar rather than a word beside it. */
+.tl-rail-row-icon .tl-rail-presence {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--bg-2);
+  background: var(--muted);
+}
+.tl-rail-row-icon .tl-rail-presence.is-online { background: var(--green); }
+.tl-rail-row-text { min-width: 0; flex: 1 1 auto; }
+.tl-rail-row-text strong {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tl-rail-row-text small {
+  display: block;
+  margin-top: 1px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.tl-rail-row-text img { vertical-align: -2px; }
+.tl-rail-empty {
+  margin: 0;
+  padding: var(--tl-s2) var(--tl-s2) var(--tl-s3);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.tl-rail-invite h2 { margin: 0; font-size: 14px; font-weight: 800; }
+.tl-rail-invite p {
+  margin: var(--tl-s2) 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.tl-rail-invite-btn {
+  width: 100%;
+  min-height: 42px;
+  margin-top: var(--tl-s3);
+  border: 1px solid var(--tl-line-strong);
+  border-radius: var(--tl-r-md);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.tl-rail-invite-btn:hover { background: color-mix(in srgb, var(--text) 8%, transparent); }
+
+/* ===========================================================================
+ * 3. BREAKPOINTS
+ * ======================================================================== */
+
+/* --- Phone: the nav becomes the bottom bar. ------------------------------ */
+@media (max-width: 859px) {
+  .tl-nav {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 56;
+    padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+    background: color-mix(in srgb, var(--bg-1) 96%, transparent);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    border-top: 1px solid var(--line);
+  }
+  .tl-nav-items {
+    flex-direction: row;
+    gap: 2px;
+  }
+  .tl-nav-item {
+    flex: 1 1 0;
+    min-width: 0;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    padding: 6px 2px;
+    min-height: 54px;
+    border-radius: var(--tl-r-sm);
+    font-size: 10.5px;
+    font-weight: 700;
+    text-align: center;
+  }
+  .tl-nav-item.is-current::before {
+    top: 0;
+    inset-inline-start: 50%;
+    width: 22px;
+    height: 3px;
+    transform: translateX(-50%);
+  }
+  .tl-nav-label {
+    flex: 0 0 auto;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .tl-nav-label-long { display: none; }
+  .tl-nav-label-short { display: block; }
+  /* No room for a "Soon" chip or a promo card on a tab bar, and Shop is the
+     one destination nobody can act on yet - so it is the one that goes. It is
+     still reachable from Settings, where it always was. */
+  .tl-nav-soon,
+  .tl-nav-promo,
+  .tl-nav-item-wide { display: none; }
+  .tl-nav-item .notif-badge {
+    position: absolute;
+    top: 4px;
+    inset-inline-end: 50%;
+    margin-inline-end: -22px;
+    min-width: 17px;
+    height: 17px;
+    font-size: 10px;
+  }
+  /* Clear the bar, so the last thing on the page is never parked under it. */
+  .app { padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
+}
+
+/* --- Desktop: the nav is a column. --------------------------------------- */
+@media (min-width: 860px) {
+  .tl-frame {
+    grid-template-columns: 224px minmax(0, 1fr);
+    gap: var(--tl-s5);
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: var(--tl-s5) var(--tl-s5) 0;
+    box-sizing: border-box;
+  }
+  .tl-nav {
+    display: block;
+    position: sticky;
+    /* Under the sticky header, not behind it. */
+    top: calc(64px + var(--tl-s4));
+  }
+  .tl-frame > .stage {
+    justify-content: flex-start;
+    padding: 0 0 var(--tl-s5);
+  }
+}
+
+/* --- Wide: the activity rail joins. -------------------------------------- */
+@media (min-width: 1180px) {
+  .tl-frame {
+    grid-template-columns: 224px minmax(0, 1fr) 300px;
+  }
+  .tl-rail {
+    display: block;
+    position: sticky;
+    top: calc(64px + var(--tl-s4));
+  }
+  /* The rail now carries Premium and the invite, so the pair of cards under
+     the animal picker would be saying both things twice on the same screen. */
+  .setup-growth { display: none; }
+}
+
+/* ===========================================================================
+ * 4. THE HOME SCREEN - hero, the two action cards, the animal picker
+ * ---------------------------------------------------------------------------
+ * The two choices used to be glowing circles. A circle holds a label and
+ * nothing else, so everything that actually made the choice - "live voice
+ * call", "no mic needed" - had to be printed underneath as loose caption text,
+ * and the whole decision came to three stacked pieces per option. These are
+ * cards: icon, name, explanation and the arrow that says it goes somewhere,
+ * one object per decision, and a far bigger target at the same width.
+ * ======================================================================== */
+
+.tl-hero-sub {
+  margin: var(--tl-s3) 0 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--muted);
+  text-wrap: balance;
+}
+
+.tl-action {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: var(--tl-s3);
+  width: 100%;
+  min-height: 84px;
+  padding: var(--tl-s4);
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  border-radius: var(--tl-r-lg);
+  color: #fff;
+  font: inherit;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+.tl-action:hover { filter: brightness(1.06); }
+.tl-action:active { transform: scale(0.99); }
+
+/* Flat fills from the theme's own tokens. The old orbs carried three stacked
+   box-shadows each and a breathing animation, which on a mid-range phone was
+   two continuously repainting 158px circles above the fold. */
+.tl-action-voice { background: var(--green); color: #05230f; }
+.tl-action-chat { background: var(--accent); color: #fff; }
+
+.tl-action-icon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: var(--tl-r-md);
+  background: rgba(255, 255, 255, 0.18);
+}
+.tl-action-icon svg { width: 26px; height: 26px; }
+.tl-action-body { min-width: 0; flex: 1 1 auto; }
+.tl-action-body strong {
+  display: block;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+}
+.tl-action-body small {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  font-weight: 500;
+  opacity: 0.82;
+}
+.tl-action-go {
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  opacity: 0.8;
+}
+.tl-action-go svg { width: 20px; height: 20px; }
+
+/* The connecting state app.js sets on the voice card while it looks for a
+   match. The card stops taking taps and says why, in place. */
+.tl-action.is-connecting { cursor: default; filter: saturate(0.7); }
+.tl-action.is-connecting .tl-action-go svg { display: none; }
+.tl-action.is-connecting .tl-action-go::after {
+  content: "";
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  animation: tl-action-spin 0.7s linear infinite;
+}
+@keyframes tl-action-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .tl-action.is-connecting .tl-action-go::after { animation-duration: 2s; }
+}
+
+/* The ripple app.js spawns on tap (see spawnRipple) is a child span, and the
+   card clips it to its own rounded corners. */
+.tl-action .tap-ripple { background: rgba(255, 255, 255, 0.35); }
+
+/* --- The row that holds them. On a phone they stack, with OR between. ----- */
+.setup-panel .tap-choice-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  gap: var(--tl-s3);
+}
+/* The old divider was a 34px circle nudged up by a magic 26px to sit level
+   with a caption that no longer exists. */
+.setup-panel .tap-choice-divider {
+  width: auto;
+  height: auto;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 11.5px;
+  letter-spacing: 0.1em;
+}
+/* A rule with the word set into it, rather than a word floating in space. */
+.setup-panel .tap-choice-divider::before,
+.setup-panel .tap-choice-divider::after {
+  content: "";
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--tl-line);
+}
+.setup-panel .tap-choice-divider span { padding: 0 var(--tl-s3); }
+
+@media (min-width: 720px) {
+  .setup-panel .tap-choice-row {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+  }
+  .setup-panel .tap-choice-divider {
+    flex-direction: column;
+    width: 34px;
+    align-self: stretch;
+  }
+  .setup-panel .tap-choice-divider::before,
+  .setup-panel .tap-choice-divider::after {
+    width: 1px;
+    height: auto;
+  }
+  .setup-panel .tap-choice-divider span { padding: var(--tl-s2) 0; }
+}
+
+/* --- The panel itself. --------------------------------------------------- */
+@media (min-width: 860px) {
+  /* Wider than the old 560px column, and no longer centred inside an empty
+     page: the nav rail holds the left edge and the hero starts at it. */
+  .setup-panel {
+    max-width: 760px;
+    margin-inline: 0;
+    text-align: start;
+  }
+  .setup-panel .setup-title { margin-inline: 0; font-size: clamp(2.1rem, 3.4vw, 2.9rem); }
+  .setup-panel .animal-picker { max-width: none; margin-inline: 0; text-align: start; }
+  .setup-panel .animal-grid { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+  /* The panel is a centring flex column, which is what still pulled the two
+     narrow items below the picker into the middle of a left-aligned page -
+     their own margins and text-align had already been cleared. */
+  .setup-panel .tap-to-talk { align-items: stretch; }
+  .setup-panel .consent-line {
+    margin-inline: 0;
+    text-align: start;
+  }
+  .setup-panel .setup-growth { margin-inline: 0; }
+  .setup-panel .tl-hero-sub { max-width: 62ch; }
+
+  /* The stage centres its children; the home column starts at the rail. The
+     call screen keeps the centring it was built with. */
+  .tl-frame:not(.is-call) > .stage { align-items: stretch; text-align: start; }
+}
+
+/* Mid-call the frame collapses to a single full-width track. */
+@media (min-width: 1180px) {
+  .tl-frame.is-call { grid-template-columns: 224px minmax(0, 1fr); }
+  .tl-frame.is-call .tl-rail { display: none; }
+}
+
+/* The green tokens are not the same green in every theme: dark ships a bright
+   #2ed47a that wants dark ink on it, light ships a much deeper #17a862 that
+   does not. Anything sitting on --green flips with the theme rather than
+   carrying one ink colour into both. */
+[data-theme="light"] .tl-action-voice,
+[data-theme="light"] .tl-rail-live-cta { color: #fff; }

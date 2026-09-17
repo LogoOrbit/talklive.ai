@@ -263,38 +263,6 @@
             <circle cx="18" cy="18" r="2.1" stroke-width="2.1"/>
           </svg>
         </button>
-        <div class="friends-wrap">
-          <button id="friendsBtn" class="icon-btn friends-btn" data-i18n-title="friendsAria" data-i18n-aria="friendsAria" title="Friends &amp; messages" aria-label="Friends and messages">
-            <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.1"/><path d="M3.6 19a5.4 5.4 0 0 1 10.8 0"/><circle cx="17.2" cy="9" r="2.5"/><path d="M15.7 13.7A4.8 4.8 0 0 1 21 18.4"/></svg>
-            <span id="friendsMsgBadge" class="notif-badge hidden" aria-hidden="true">0</span>
-          </button>
-        </div>
-        <!-- Call history opens the right-hand side panel below, the same shape
-             as Friends. It used to be a floating dropdown anchored to this
-             button, with its own outside-click handling and its own mobile
-             repositioning - two different surfaces for "a list of people". -->
-        <button id="historyBtn" class="icon-btn" data-i18n-title="historyAria" data-i18n-aria="historyAria" title="Call history" aria-label="Call history">
-          <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="8.5"/>
-            <path d="M12 7.5V12l3.2 2"/>
-          </svg>
-        </button>
-        <button id="filtersBtn" class="icon-btn" data-i18n-title="filtersAria" data-i18n-aria="filtersAria" title="Match filters" aria-label="Match filters">
-          <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <line x1="4" y1="6" x2="20" y2="6"/>
-            <circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"/>
-            <line x1="4" y1="12" x2="20" y2="12"/>
-            <circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"/>
-            <line x1="4" y1="18" x2="20" y2="18"/>
-            <circle cx="11" cy="18" r="2" fill="currentColor" stroke="none"/>
-          </svg>
-        </button>
-        <button id="appSettingsBtn" class="icon-btn" data-i18n-title="settings" data-i18n-aria="menuAria" title="Settings" aria-label="Open settings menu">
-          <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="3.2"/>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-          </svg>
-        </button>
       </nav>
       <div class="header-right">
         <!-- Auth, always visible in the header rather than only inside the
@@ -789,34 +757,130 @@
     </section>
   </div>
 
+    <!-- ===================================================================
+         THE APP FRAME - nav rail, stage, activity rail.
+         -------------------------------------------------------------------
+         One object at two sizes. On a desktop the nav is a labelled column
+         down the left, exactly where a product with more than one place to
+         be puts it; on a phone the same markup becomes the bottom tab bar,
+         because a column of labels is not something a thumb can reach.
+
+         The tools in it are the real ones, moved here from the header rail
+         rather than copied: same IDs, same handlers, same badges. The header
+         keeps only the two controls that belong to a live conversation.
+         =================================================================== -->
+    <div class="tl-frame">
+      <nav class="tl-nav" data-i18n-aria="navAria" aria-label="TalkLive sections">
+        <div class="tl-nav-items">
+          <button type="button" id="navHomeBtn" class="tl-nav-item is-current" aria-current="page">
+            <span class="tl-nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 10.5 12 4l8.5 6.5V19a1.5 1.5 0 0 1-1.5 1.5h-3.5v-6h-5v6H5A1.5 1.5 0 0 1 3.5 19z"/></svg>
+            </span>
+            <span class="tl-nav-label" data-i18n="navHome">Home</span>
+          </button>
+
+          <button id="friendsBtn" class="tl-nav-item friends-btn" data-i18n-title="friendsAria" data-i18n-aria="friendsAria" title="Friends &amp; messages" aria-label="Friends and messages">
+            <span class="tl-nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.1"/><path d="M3.6 19a5.4 5.4 0 0 1 10.8 0"/><circle cx="17.2" cy="9" r="2.5"/><path d="M15.7 13.7A4.8 4.8 0 0 1 21 18.4"/></svg>
+            </span>
+            <span class="tl-nav-label" data-i18n="friends">Friends</span>
+            <span id="friendsMsgBadge" class="notif-badge hidden" aria-hidden="true">0</span>
+          </button>
+
+          <button id="historyBtn" class="tl-nav-item" data-i18n-title="historyAria" data-i18n-aria="historyAria" title="Call history" aria-label="Call history">
+            <span class="tl-nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.2 2"/></svg>
+            </span>
+            <span class="tl-nav-label tl-nav-label-long" data-i18n="callHistory">Call History</span>
+            <span class="tl-nav-label tl-nav-label-short" data-i18n="navHistoryShort">History</span>
+          </button>
+
+          <button id="filtersBtn" class="tl-nav-item" data-i18n-title="filtersAria" data-i18n-aria="filtersAria" title="Match filters" aria-label="Match filters">
+            <span class="tl-nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="11" cy="18" r="2" fill="currentColor" stroke="none"/></svg>
+            </span>
+            <span class="tl-nav-label" data-i18n="filters">Filters</span>
+          </button>
+
+          <!-- Shop is real markup behind a real dialog, but nothing in it is
+               purchasable yet, so the rail says so rather than letting someone
+               find that out by opening it. -->
+          <button type="button" id="navShopBtn" class="tl-nav-item tl-nav-item-wide">
+            <span class="tl-nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 8h15l-1.2 10.2a2 2 0 0 1-2 1.8H7.7a2 2 0 0 1-2-1.8z"/><path d="M8.8 8V6.6a3.2 3.2 0 0 1 6.4 0V8"/></svg>
+            </span>
+            <span class="tl-nav-label" data-i18n="navShop">Shop</span>
+            <span class="tl-nav-soon" data-i18n="comingSoonShort">Soon</span>
+          </button>
+
+          <button id="appSettingsBtn" class="tl-nav-item" data-i18n-title="settings" data-i18n-aria="menuAria" title="Settings" aria-label="Open settings menu">
+            <span class="tl-nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </span>
+            <span class="tl-nav-label" data-i18n="settings">Settings</span>
+          </button>
+        </div>
+
+        <!-- Desktop only: the rail has room under the nav that a phone does
+             not, and this is the one thing worth putting in it. -->
+        <a class="tl-nav-promo" href="/pricing?utm_source=app&amp;utm_medium=nav&amp;utm_campaign=premium">
+          <span class="tl-nav-promo-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.5 8.5 7 11l5-5.5 5 5.5 3.5-2.5-1.6 9.2a1 1 0 0 1-1 .8H6.1a1 1 0 0 1-1-.8z"/></svg>
+          </span>
+          <strong data-i18n="growthPremiumTitle">Premium - coming soon</strong>
+          <small data-i18n="navPremiumSub">More control. Better matches. A safer experience.</small>
+          <span class="tl-nav-promo-cta" data-i18n="navPremiumCta">See what is coming</span>
+        </a>
+      </nav>
     <main class="stage" id="main">
 
       <!-- Setup panel: the Tap to Talk / Tap to Chat landing shown before the
            first call or chat. Two orbs, one decision: voice or text. -->
       <section id="setupPanel" class="setup-panel">
+        <!-- The hero. One promise, one line under it, and then the only
+             two decisions on the page. -->
         <h1 class="setup-title" data-i18n="heroTitle">Meet someone new by voice or text</h1>
+        <p class="tl-hero-sub" data-i18n="heroSub">Real people. Genuine conversations. No sign-up required.</p>
         <div id="tapToTalk" class="tap-to-talk">
-          <p class="tap-choice-heading" data-i18n="chooseYourVibe">How do you want to meet someone?</p>
+          <!-- Two cards, not two circles.
+               A circle can only hold a label, so everything that made the
+               choice ("live voice call", "no mic needed") had to be printed
+               underneath it as loose caption text. A card holds the icon, the
+               name, the explanation and the arrow that says it goes somewhere
+               - one object per decision instead of three stacked pieces - and
+               it is a far bigger tap target at the same width. -->
           <div class="tap-choice-row">
-            <div class="tap-choice">
-              <button id="startBtn" class="tap-orb call-btn-green" data-i18n-aria="startAria" aria-label="Start a call with a random person">
-                <svg class="phone-icon" viewBox="0 0 24 24" fill="white" aria-hidden="true">
+            <button id="startBtn" class="tl-action tl-action-voice" data-i18n-aria="startAria" aria-label="Start a call with a random person">
+              <span class="tl-action-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="currentColor">
                   <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
                 </svg>
-                <span class="tap-orb-label" data-i18n="tapToTalk">Tap to Talk</span>
-              </button>
-              <span class="tap-choice-caption" data-i18n="tapTalkCaption">Live voice call · mic on</span>
-            </div>
+              </span>
+              <span class="tl-action-body">
+                <strong data-i18n="tapToTalk">Tap to Talk</strong>
+                <small data-i18n="tapTalkCaption">Live voice call &middot; mic on</small>
+              </span>
+              <span class="tl-action-go" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+              </span>
+            </button>
+
             <div class="tap-choice-divider" aria-hidden="true"><span data-i18n="or">or</span></div>
-            <div class="tap-choice">
-              <a id="startChatBtn" href="/chat" class="tap-orb chat-btn-blue" data-i18n-aria="startChatAria" aria-label="Start a text chat with a random person">
-                <svg class="phone-icon" viewBox="0 0 24 24" fill="white" aria-hidden="true">
+
+            <a id="startChatBtn" href="/chat" class="tl-action tl-action-chat" data-i18n-aria="startChatAria" aria-label="Start a text chat with a random person">
+              <span class="tl-action-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="currentColor">
                   <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM7 9.5h10a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2zm0-3.5h10a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2zm0 7h6a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2z"/>
                 </svg>
-                <span class="tap-orb-label" data-i18n="tapToChat">Tap to Chat</span>
-              </a>
-              <span class="tap-choice-caption" data-i18n="tapChatCaption">Anonymous text chat · no mic</span>
-            </div>
+              </span>
+              <span class="tl-action-body">
+                <strong data-i18n="tapToChat">Tap to Chat</strong>
+                <small data-i18n="tapChatCaption">Anonymous text chat &middot; no mic</small>
+              </span>
+              <span class="tl-action-go" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+              </span>
+            </a>
           </div>
           <!-- Spirit animal: one tap, no sign-up, and the stranger on the other
                end sees it the moment you connect. Deliberately sits on the
@@ -1691,6 +1755,56 @@
     <div class="ad-card"><span class="ad-card-label">Sponsored</span><div data-ad="native"></div></div>
   </div>
 </main>
+      <!-- =================================================================
+           THE ACTIVITY RAIL.
+           -----------------------------------------------------------------
+           Everything here is real. TalkLive matches strangers at random and
+           keeps no public directory of who is online, so this rail shows the
+           three things the app genuinely knows: how many people are in the
+           queue right now, the calls you have had this session, and the
+           friends you made. It deliberately does NOT list browsable
+           strangers - that would be a different product and a worse promise
+           about privacy than the one on the front page.
+
+           Desktop only. On a phone the same information lives one tap away
+           in the History and Friends panels the bottom bar opens.
+           ================================================================= -->
+      <aside class="tl-rail" data-i18n-aria="railAria" aria-label="Your activity">
+
+        <section class="tl-rail-card tl-rail-live">
+          <p class="tl-rail-live-label">
+            <span class="tl-rail-live-dot" aria-hidden="true"></span>
+            <span data-i18n="railLiveNow">Live now</span>
+          </p>
+          <p class="tl-rail-live-num" id="railOnlineCount" role="status" aria-live="polite">&mdash;</p>
+          <p class="tl-rail-live-sub" data-i18n="railLiveSub">people ready to talk</p>
+          <button type="button" id="railStartBtn" class="tl-rail-live-cta" data-i18n="railLiveCta">Start a call</button>
+        </section>
+
+        <section class="tl-rail-card">
+          <div class="tl-rail-head">
+            <h2 data-i18n="railRecent">Recent calls</h2>
+            <button type="button" class="tl-rail-more" data-opens="historyBtn" data-i18n="seeAll">See all</button>
+          </div>
+          <div id="railHistoryList" class="tl-rail-list"></div>
+        </section>
+
+        <section class="tl-rail-card">
+          <div class="tl-rail-head">
+            <h2 data-i18n="friends">Friends</h2>
+            <button type="button" class="tl-rail-more" data-opens="friendsBtn" data-i18n="seeAll">See all</button>
+          </div>
+          <div id="railFriendsList" class="tl-rail-list"></div>
+        </section>
+
+        <section class="tl-rail-card tl-rail-invite">
+          <h2 data-i18n="railInviteTitle">Bring more people online</h2>
+          <p data-i18n="railInviteBody">Every match needs someone on the other end. Invite a friend and the queue gets shorter for everyone.</p>
+          <button type="button" class="tl-rail-invite-btn js-share-talklive" data-i18n="railInviteCta">Invite a friend</button>
+        </section>
+
+      </aside>
+    </div>
 
     <footer class="footer">
       <a href="/blog/" class="footer-blog-btn" data-i18n="readOurBlog">📖 Read our blog</a>
