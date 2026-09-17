@@ -659,72 +659,130 @@
 
     <!-- Filters side panel: who you get matched with, opened from the top-right filter icon -->
     <div id="filtersOverlay" class="side-panel-overlay hidden"></div>
-    <aside id="filtersPanel" class="side-panel side-panel-right" role="dialog" data-i18n-aria="filters" aria-label="Filters">
-      <div class="side-panel-header">
+    <!-- ===================================================================
+         MATCH FILTERS.
+         -------------------------------------------------------------------
+         The old panel asked the same question four times in four identical
+         boxes: two unlabelled country searches that looked exactly alike, an
+         interest field, and a gender row, with nothing anywhere saying what
+         the combination of them would actually do. People set a country in
+         the wrong list and then waited for a match that could not come.
+
+         Three changes fix that:
+           1. A plain-English summary at the top, rebuilt on every change,
+              that reads back what these settings mean: "Anyone, anywhere" or
+              "Women in Canada or Japan, never Brazil".
+           2. The two country lists stop being twins. One is green and says
+              ONLY; the other is red and says NEVER, each with its own icon
+              and its own count against the free limit.
+           3. Quick-pick chips for the countries most people want, so the
+              common case needs no typing at all.
+         =================================================================== -->
+    <aside id="filtersPanel" class="side-panel side-panel-right tl-panel" role="dialog" data-i18n-aria="filters" aria-label="Filters">
+      <div class="tl-panel-head">
         <h2 data-i18n="filters">Filters</h2>
-        <button type="button" id="closeFiltersBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
+        <button type="button" id="closeFiltersBtn" class="tl-panel-close" data-i18n-aria="close" aria-label="Close">&times;</button>
       </div>
       <div class="side-panel-body">
-        <!-- Premium explainer: free users see exactly what's locked and why,
-             with one clear way to unlock it. Hidden for premium users. -->
-        <div class="filters-premium-banner premium-lock hidden">
-          <div class="fpb-head">
-            <span class="fpb-diamond" aria-hidden="true">💎</span>
-            <span class="fpb-title" data-i18n="filtersPremiumTitle">Filters are a Premium feature</span>
-          </div>
-          <p class="fpb-text">Free includes up to 3 countries per list. Premium will unlock gender filters, unlimited country lists, unlimited friends, instant rematching and no ads - it is coming soon.</p>
-          <a id="filtersUpgradeBtn" class="upgrade-cta-btn" href="/pricing?utm_source=app&amp;utm_medium=filters&amp;utm_campaign=premium">
-            <span class="upgrade-diamond" aria-hidden="true">💎</span><span data-i18n="premiumSeeSoon">SEE PREMIUM - COMING SOON</span>
-          </a>
-        </div>
+        <div class="tl-panel-body">
 
-        <div class="pill-row">
-          <span class="pill-label" id="prefGenderGroupLabel"><span data-i18n="matchMeWith">Match me with</span> <a href="/pricing" class="premium-lock hidden" data-i18n="premiumBadge">💎 Premium</a></span>
-          <div class="pill-group" id="prefGenderGroup" data-value="any" role="group" aria-labelledby="prefGenderGroupLabel">
-            <button type="button" class="pill" data-value="any"><span class="pill-dot pill-dot-neutral" aria-hidden="true"></span><span data-i18n="anyone">Anyone</span></button>
-            <button type="button" class="pill" data-value="male"><span class="pill-dot pill-dot-male" aria-hidden="true"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="14" r="6"/><line x1="14.5" y1="9.5" x2="20" y2="4"/><polyline points="14.5 4 20 4 20 9.5"/></svg><span data-i18n="male">Male</span></button>
-            <button type="button" class="pill" data-value="female"><span class="pill-dot pill-dot-female" aria-hidden="true"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="9" r="6"/><line x1="12" y1="15" x2="12" y2="21"/><line x1="9" y1="18" x2="15" y2="18"/></svg><span data-i18n="female">Female</span></button>
+          <!-- What all of this adds up to, in one sentence. -->
+          <div class="tl-filter-summary">
+            <span class="tl-filter-summary-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4.5M12 8h.01"/></svg>
+            </span>
+            <span class="tl-filter-summary-text">
+              <small data-i18n="filterSummaryLabel">You will be matched with</small>
+              <strong id="filterSummary">Anyone, anywhere</strong>
+            </span>
           </div>
-        </div>
 
-        <div class="pill-row">
-          <span class="pill-label pill-label-strong" data-i18n="wantCountries">Countries I want to talk to</span>
-          <div class="country-multiselect">
-            <div class="country-search-wrap">
-              <input type="text" id="includeCountrySearch" class="search-input" data-i18n-placeholder="searchCountry" data-i18n-aria="wantCountries" placeholder="Search country…" autocomplete="off" />
-              <div id="includeCountryResults" class="search-results hidden"></div>
+          <div class="filters-premium-banner premium-lock hidden">
+            <div class="fpb-head">
+              <span class="fpb-diamond" aria-hidden="true">💎</span>
+              <span class="fpb-title" data-i18n="filtersPremiumTitle">Filters are a Premium feature</span>
             </div>
-            <div id="includeCountryChips" class="interest-tags"></div>
+            <p class="fpb-text">Free includes up to 3 countries per list. Premium will unlock gender filters, unlimited country lists, unlimited friends, instant rematching and no ads - it is coming soon.</p>
+            <a id="filtersUpgradeBtn" class="upgrade-cta-btn" href="/pricing?utm_source=app&amp;utm_medium=filters&amp;utm_campaign=premium">
+              <span class="upgrade-diamond" aria-hidden="true">💎</span><span data-i18n="premiumSeeSoon">SEE PREMIUM - COMING SOON</span>
+            </a>
           </div>
-        </div>
 
-        <div class="pill-row">
-          <span class="pill-label pill-label-strong" data-i18n="avoidCountries">Countries I don't want</span>
-          <div class="country-multiselect">
-            <div class="country-search-wrap">
-              <input type="text" id="excludeCountrySearch" class="search-input" data-i18n-placeholder="searchCountry" data-i18n-aria="avoidCountries" placeholder="Search country…" autocomplete="off" />
-              <div id="excludeCountryResults" class="search-results hidden"></div>
+          <!-- 1. Who -->
+          <section class="tl-filter-block">
+            <h3 class="tl-filter-legend" id="prefGenderGroupLabel">
+              <span data-i18n="matchMeWith">Match me with</span>
+              <a href="/pricing" class="tl-filter-premium premium-lock hidden" data-i18n="premiumBadge">💎 Premium</a>
+            </h3>
+            <div class="tl-seg pill-group" id="prefGenderGroup" data-value="any" role="group" aria-labelledby="prefGenderGroupLabel">
+              <button type="button" class="tl-seg-opt pill" data-value="any"><span class="pill-dot pill-dot-neutral" aria-hidden="true"></span><span data-i18n="anyone">Anyone</span></button>
+              <button type="button" class="tl-seg-opt pill" data-value="male"><span class="pill-dot pill-dot-male" aria-hidden="true"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="14" r="6"/><line x1="14.5" y1="9.5" x2="20" y2="4"/><polyline points="14.5 4 20 4 20 9.5"/></svg><span data-i18n="male">Male</span></button>
+              <button type="button" class="tl-seg-opt pill" data-value="female"><span class="pill-dot pill-dot-female" aria-hidden="true"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="9" r="6"/><line x1="12" y1="15" x2="12" y2="21"/><line x1="9" y1="18" x2="15" y2="18"/></svg><span data-i18n="female">Female</span></button>
             </div>
-            <div id="excludeCountryChips" class="interest-tags"></div>
-          </div>
-        </div>
+          </section>
 
-        <div class="pill-row">
-          <span class="pill-label"><span data-i18n="interests">Interests</span> <span class="hint" data-i18n="optional">(optional)</span></span>
-          <div class="interests-picker">
-            <div id="interestTags" class="interest-tags"></div>
-            <div class="interest-input-wrap">
-              <input type="text" id="interestInput" class="search-input" data-i18n-placeholder="interestPlaceholder" data-i18n-aria="interests" placeholder="Type an interest…" name="tl-interest-nofill" autocomplete="one-time-code" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" maxlength="20" />
-              <button type="button" id="addInterestBtn" class="btn btn-secondary interest-add-btn" data-i18n="add">Add</button>
+          <!-- 2. Where - only. Green, a tick, and its own count. -->
+          <section class="tl-filter-block tl-filter-country tl-filter-only">
+            <h3 class="tl-filter-legend">
+              <span class="tl-filter-mark" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
+              </span>
+              <span data-i18n="onlyFromTitle">Only from these countries</span>
+              <span class="tl-filter-count" id="includeCountryCount"></span>
+            </h3>
+            <p class="tl-filter-hint" data-i18n="onlyFromHint">Leave this empty to be matched with the whole world.</p>
+            <div class="country-multiselect">
+              <div class="country-search-wrap">
+                <input type="text" id="includeCountrySearch" class="tl-filter-input" data-i18n-placeholder="searchCountry" data-i18n-aria="onlyFromTitle" placeholder="Search country…" autocomplete="off" />
+                <div id="includeCountryResults" class="search-results hidden"></div>
+              </div>
+              <div id="includeCountryQuick" class="tl-filter-quick"></div>
+              <div id="includeCountryChips" class="interest-tags tl-filter-chips"></div>
             </div>
-          </div>
-        </div>
+          </section>
 
+          <!-- 3. Where - never. Red, a cross, and its own count. -->
+          <section class="tl-filter-block tl-filter-country tl-filter-never">
+            <h3 class="tl-filter-legend">
+              <span class="tl-filter-mark" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10M17 7 7 17"/></svg>
+              </span>
+              <span data-i18n="neverFromTitle">Never from these countries</span>
+              <span class="tl-filter-count" id="excludeCountryCount"></span>
+            </h3>
+            <p class="tl-filter-hint" data-i18n="neverFromHint">Anyone here is skipped, even if the list above allows them.</p>
+            <div class="country-multiselect">
+              <div class="country-search-wrap">
+                <input type="text" id="excludeCountrySearch" class="tl-filter-input" data-i18n-placeholder="searchCountry" data-i18n-aria="neverFromTitle" placeholder="Search country…" autocomplete="off" />
+                <div id="excludeCountryResults" class="search-results hidden"></div>
+              </div>
+              <div id="excludeCountryChips" class="interest-tags tl-filter-chips"></div>
+            </div>
+          </section>
+
+          <!-- 4. What about -->
+          <section class="tl-filter-block">
+            <h3 class="tl-filter-legend">
+              <span data-i18n="interests">Interests</span>
+              <span class="tl-filter-optional" data-i18n="optional">(optional)</span>
+            </h3>
+            <p class="tl-filter-hint" data-i18n="interestsHint">We try to pair you with someone who typed something similar. It never blocks a match.</p>
+            <div class="interests-picker">
+              <div class="interest-input-wrap">
+                <input type="text" id="interestInput" class="tl-filter-input" data-i18n-placeholder="interestPlaceholder" data-i18n-aria="interests" placeholder="Type an interest…" name="tl-interest-nofill" autocomplete="one-time-code" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" maxlength="20" />
+                <button type="button" id="addInterestBtn" class="tl-filter-add" data-i18n="add">Add</button>
+              </div>
+              <div id="interestQuick" class="tl-filter-quick"></div>
+              <div id="interestTags" class="interest-tags tl-filter-chips"></div>
+            </div>
+          </section>
+
+        </div>
       </div>
       <div class="side-panel-footer">
         <div class="filters-actions">
-          <button type="button" id="saveFiltersBtn" class="btn btn-save filters-action-btn" data-i18n="save">Save</button>
-          <button type="button" id="clearFiltersBtn" class="btn btn-secondary filters-action-btn" data-i18n="clear">Clear</button>
+          <button type="button" id="clearFiltersBtn" class="tl-filter-btn tl-filter-btn-ghost" data-i18n="clearAll">Clear all</button>
+          <button type="button" id="saveFiltersBtn" class="tl-filter-btn tl-filter-btn-primary" data-i18n="saveFilters">Save filters</button>
         </div>
       </div>
     </aside>

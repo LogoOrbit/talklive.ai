@@ -1679,3 +1679,187 @@
   }
   .tl-hero-glow { width: 300px; height: 300px; }
 }
+
+/* ===========================================================================
+ * 7. MATCH FILTERS
+ * ---------------------------------------------------------------------------
+ * The panel used to ask four questions in four near-identical boxes and never
+ * say what the answers added up to - two unlabelled country searches that
+ * looked exactly alike, so people put a country in the wrong one and then
+ * waited for a match that could not come. The colour, the mark and the count
+ * on each list are what make them two different questions at a glance; the
+ * sentence at the top is what makes the pair of them checkable.
+ * ======================================================================== */
+
+.tl-filter-summary {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--tl-s3);
+  padding: var(--tl-s3) var(--tl-s4);
+  border: 1px solid var(--tl-line);
+  border-radius: var(--tl-r-md);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.tl-filter-summary-icon {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  color: var(--accent-2);
+}
+.tl-filter-summary-icon svg { width: 20px; height: 20px; }
+.tl-filter-summary-text { min-width: 0; }
+.tl-filter-summary-text small {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.tl-filter-summary-text strong {
+  display: block;
+  margin-top: 3px;
+  font-size: 14.5px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.tl-filter-block { margin-top: var(--tl-s5); }
+.tl-filter-legend {
+  display: flex;
+  align-items: center;
+  gap: var(--tl-s2);
+  margin: 0 0 var(--tl-s2);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+}
+.tl-filter-optional { font-size: 12.5px; font-weight: 500; color: var(--muted); }
+.tl-filter-premium { margin-inline-start: auto; font-size: 11.5px; text-decoration: none; }
+
+/* The mark is what stops the two country lists being twins: a green tick on
+   one, a red cross on the other, before a single word is read. */
+.tl-filter-mark {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+}
+.tl-filter-mark svg { width: 13px; height: 13px; }
+.tl-filter-only .tl-filter-mark {
+  background: color-mix(in srgb, var(--green) 20%, transparent);
+  color: var(--green);
+}
+.tl-filter-never .tl-filter-mark {
+  background: color-mix(in srgb, var(--danger) 20%, transparent);
+  color: var(--danger);
+}
+
+.tl-filter-count {
+  margin-inline-start: auto;
+  padding: 2px 9px;
+  border-radius: var(--tl-r-pill);
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 800;
+}
+/* At the free cap, so the next tap's refusal is not a surprise. */
+.tl-filter-count.is-full {
+  background: color-mix(in srgb, var(--accent-2) 18%, transparent);
+  color: var(--accent-2);
+}
+
+.tl-filter-hint {
+  margin: 0 0 var(--tl-s3);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.tl-filter-input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 46px;
+  padding: 0 var(--tl-s3);
+  border: 1px solid var(--tl-line-strong);
+  border-radius: var(--tl-r-md);
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+  color: var(--text);
+  font: inherit;
+  /* 16px so iOS does not zoom the panel when the field is focused. */
+  font-size: 16px;
+}
+.tl-filter-input::placeholder { color: var(--muted); }
+.tl-filter-input:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 1px; border-color: transparent; }
+/* The two country lists tint their own field, so it is obvious which one the
+   cursor is in once the heading has scrolled past. */
+.tl-filter-only .tl-filter-input:focus-visible { outline-color: var(--green); }
+.tl-filter-never .tl-filter-input:focus-visible { outline-color: var(--danger); }
+
+/* Quick-picks: the common case, without typing. They disappear as they are
+   used, so the row is always "what you could still add". */
+.tl-filter-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--tl-s2);
+  margin-top: var(--tl-s3);
+}
+.tl-quick-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 34px;
+  padding: 0 var(--tl-s3);
+  border: 1px dashed var(--tl-line-strong);
+  border-radius: var(--tl-r-pill);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tl-quick-chip:hover { border-style: solid; color: var(--text); background: color-mix(in srgb, var(--text) 8%, transparent); }
+.tl-filter-only .tl-quick-chip:hover { border-color: var(--green); }
+
+.tl-filter-chips { margin-top: var(--tl-s3); }
+.tl-filter-chips:empty { margin-top: 0; }
+
+.interest-input-wrap { display: flex; gap: var(--tl-s2); }
+.tl-filter-add {
+  flex: 0 0 auto;
+  min-height: 46px;
+  padding: 0 var(--tl-s4);
+  border: 1px solid var(--tl-line-strong);
+  border-radius: var(--tl-r-md);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.tl-filter-add:hover { background: color-mix(in srgb, var(--text) 8%, transparent); }
+
+.filters-actions { display: flex; gap: var(--tl-s2); }
+.tl-filter-btn {
+  flex: 1 1 0;
+  min-height: var(--tl-tap);
+  border: 1px solid transparent;
+  border-radius: var(--tl-r-md);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.tl-filter-btn-ghost { border-color: var(--tl-line-strong); background: transparent; color: var(--muted); }
+.tl-filter-btn-ghost:hover { background: color-mix(in srgb, var(--text) 8%, transparent); color: var(--text); }
+.tl-filter-btn-primary { flex: 2 1 0; background: var(--accent); color: #fff; }
+.tl-filter-btn-primary:hover { filter: brightness(1.08); }
+
+/* An empty count is no count, not a blank pill. */
+.tl-filter-count:empty { display: none; }

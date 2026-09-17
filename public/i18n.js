@@ -522,6 +522,28 @@ const I18N_STRINGS = {
     "railFindIn": "Looking for someone in {country}…",
     "railNoMatch": "Nobody online matches that right now.",
     "railSomewhere": "Somewhere out there",
+
+    // The filters panel: the readout at the top, the two country lists, and
+    // the quick-picks. The sentence is assembled from these, so the pieces
+    // are separate keys - a translator needs to be able to reorder them.
+    "filterSummaryLabel": "You will be matched with",
+    "summaryAnyone": "anyone",
+    "summaryMen": "men",
+    "summaryWomen": "women",
+    "summaryAnywhere": "{who}, anywhere in the world",
+    "summaryIn": "{who} in {where}",
+    "summaryExcept": ", never {where}",
+    "summaryInterests": ", ideally into {interests}",
+    "joinTwo": "{a} or {b}",
+    "joinMore": "{first} or {last}",
+    "countOfCap": "{n} of {cap}",
+    "onlyFromTitle": "Only from these countries",
+    "onlyFromHint": "Leave this empty to be matched with the whole world.",
+    "neverFromTitle": "Never from these countries",
+    "neverFromHint": "Anyone here is skipped, even if the list above allows them.",
+    "interestsHint": "We try to pair you with someone who typed something similar. It never blocks a match.",
+    "clearAll": "Clear all",
+    "saveFilters": "Save filters",
     "searchPlaceholder": "Search people, countries, or interests…",
     "searchInterest": "Looking for someone into {interest}…",
     "notificationsAria": "Notifications",

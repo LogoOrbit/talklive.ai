@@ -100,7 +100,14 @@
       return '<svg class="flag-icon" width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><ellipse cx="12" cy="12" rx="4.2" ry="9.5"/><line x1="2.5" y1="12" x2="21.5" y2="12"/></svg>';
     }
     var cc = code.toLowerCase();
-    return '<img class="flag-icon" src="https://flagcdn.com/24x18/' + cc + '.png" srcset="https://flagcdn.com/48x36/' + cc + '.png 2x" width="' + size + '" alt="' + escapeHtml(getCountryName(code)) + '" />';
+    // alt="" plus a self-removing onerror: flagcdn is a third party, and the
+    // networks this app is most used on are the ones that block third
+    // parties. A flag that fails has to leave nothing behind rather than a
+    // broken icon with a country name spilling out of it - the country is
+    // written next to every flag here anyway. Same rule as app.js.
+    return '<img class="flag-icon" src="https://flagcdn.com/24x18/' + cc + '.png" srcset="https://flagcdn.com/48x36/' + cc
+      + '.png 2x" width="' + size + '" height="' + Math.round(size * 0.75)
+      + '" loading="lazy" decoding="async" alt="" onerror="this.remove()" />';
   }
   function vibrate(ms) { try { if (vibrationEnabled && navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
 

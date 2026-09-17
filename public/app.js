@@ -336,7 +336,14 @@ function getFlagImg(code, size = 20) {
     return `<svg class="flag-icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><ellipse cx="12" cy="12" rx="4.2" ry="9.5"/><line x1="2.5" y1="12" x2="21.5" y2="12"/></svg>`;
   }
   const cc = code.toLowerCase();
-  return `<img class="flag-icon" src="https://flagcdn.com/24x18/${cc}.png" srcset="https://flagcdn.com/48x36/${cc}.png 2x" width="${size}" alt="${escapeHtml(getCountryName(code))}" />`;
+  // alt="" and a hard-failed image is removed, not left as a broken icon with
+  // the country's name spilling out of it. flagcdn is a third party, and the
+  // networks TalkLive is most used on are exactly the ones that block third
+  // parties - so "the flag did not load" has to degrade to no flag at all
+  // rather than to a row of alt text shoving every label out of line. The
+  // country is already written next to every flag in this app, so nothing is
+  // lost when one goes missing.
+  return `<img class="flag-icon" src="https://flagcdn.com/24x18/${cc}.png" srcset="https://flagcdn.com/48x36/${cc}.png 2x" width="${size}" height="${Math.round(size * 0.75)}" loading="lazy" decoding="async" alt="" onerror="this.remove()" />`;
 }
 
 // --- Avatars: 5 male + 5 female inline-SVG busts. Shown only to yourself
@@ -695,6 +702,12 @@ function getCountryEntries() {
 
 function makeCountryMultiSelect(searchInput, resultsEl, chipsEl, set, getOther) {
   function renderChips() {
+    // Every path that changes this list ends here, so this is the one place
+    // the count, the quick-picks and the summary need refreshing from - but
+    // not during construction, when half of what the readout reads is still
+    // in its temporal dead zone. The first render happens explicitly instead,
+    // once everything it depends on exists.
+    if (filtersReady) syncFilterReadout();
     chipsEl.innerHTML = '';
     Array.from(set)
       .sort((a, b) => getCountryName(a).localeCompare(getCountryName(b), I18N_STATE.lang))
@@ -754,7 +767,23 @@ function makeCountryMultiSelect(searchInput, resultsEl, chipsEl, set, getOther) 
   searchInput.addEventListener('focus', () => renderResults(searchInput.value));
   renderChips();
 
-  return { renderChips, renderResults, set };
+  // One place adds a country, whether it came from the search results or from
+  // a quick-pick chip, so the free-tier cap and the "it cannot be in both
+  // lists" rule are enforced once rather than at every call site.
+  function add(code) {
+    if (set.has(code)) { set.delete(code); renderChips(); return true; }
+    if (!isPremiumUser && set.size >= freeLimits.countries) {
+      showPremiumUpsell(t('premiumCountryLimit', { n: freeLimits.countries }));
+      return false;
+    }
+    set.add(code);
+    const other = getOther();
+    if (other.set.delete(code)) other.renderChips();
+    renderChips();
+    return true;
+  }
+
+  return { renderChips, renderResults, add, set };
 }
 
 const includeCountryWidget = makeCountryMultiSelect(
@@ -773,8 +802,123 @@ document.addEventListener('click', (e) => {
   }
 });
 
+// --- The filters readout -----------------------------------------------------
+// The panel used to ask four questions in four near-identical boxes and never
+// once say what the answers added up to. People put a country in the wrong
+// list and then waited for a match that could not come. These three pieces
+// say it out loud: a sentence at the top, a count per list, and quick-picks
+// so the common case needs no typing.
+
+// Set once everything the readout depends on has been declared. A `var` on
+// purpose: it is read by code that runs before this line, and `var` is the one
+// declaration that is safely readable before its initialiser.
+var filtersReady = false;
+
+// The countries people actually reach for. Not a ranking of anything - just
+// the ones that come up most in a random-chat queue, so the first tap is
+// usually right there. Anything else is still one search away.
+const QUICK_COUNTRIES = ['US', 'GB', 'CA', 'IN', 'PK', 'DE', 'BR', 'PH'];
+const QUICK_INTERESTS = ['music', 'gaming', 'movies', 'travel', 'football', 'coding', 'books', 'anime'];
+
+// Everything below looks its elements up on use rather than capturing them in
+// consts up here. The country widgets are built ABOVE this point and render
+// their chips as they are constructed, and that first render calls straight
+// into syncFilterReadout() - so anything declared here with const or let is
+// still in its temporal dead zone when it is read, and reading it throws and
+// takes the rest of app.js down with it.
+
+function countryListSentence(set) {
+  const names = Array.from(set).map(getCountryName);
+  if (names.length === 0) return '';
+  if (names.length === 1) return names[0];
+  if (names.length === 2) return t('joinTwo', { a: names[0], b: names[1] });
+  return t('joinMore', { first: names.slice(0, -1).join(', '), last: names[names.length - 1] });
+}
+
+// Reads back the draft - what is on screen right now, not what was last
+// saved - because the point of it is to check your edit before you commit it.
+function syncFilterReadout() {
+  const filterSummaryEl = document.getElementById('filterSummary');
+  if (!filterSummaryEl) return;
+  const includeCountryCountEl = document.getElementById('includeCountryCount');
+  const excludeCountryCountEl = document.getElementById('excludeCountryCount');
+
+  const who = prefGenderGroup && prefGenderGroup.dataset.value === 'male' ? t('summaryMen')
+    : prefGenderGroup && prefGenderGroup.dataset.value === 'female' ? t('summaryWomen')
+    : t('summaryAnyone');
+  const only = countryListSentence(includeCountries);
+  const never = countryListSentence(excludeCountries);
+
+  let sentence = only ? t('summaryIn', { who, where: only }) : t('summaryAnywhere', { who });
+  if (never) sentence += t('summaryExcept', { where: never });
+  if (selectedInterests.size > 0) {
+    sentence += t('summaryInterests', { interests: Array.from(selectedInterests).join(', ') });
+  }
+  filterSummaryEl.textContent = sentence;
+
+  const cap = isPremiumUser ? null : freeLimits.countries;
+  const countText = (n) => (cap ? t('countOfCap', { n, cap }) : String(n));
+  if (includeCountryCountEl) {
+    includeCountryCountEl.textContent = includeCountries.size ? countText(includeCountries.size) : '';
+    includeCountryCountEl.classList.toggle('is-full', !!cap && includeCountries.size >= cap);
+  }
+  if (excludeCountryCountEl) {
+    excludeCountryCountEl.textContent = excludeCountries.size ? countText(excludeCountries.size) : '';
+    excludeCountryCountEl.classList.toggle('is-full', !!cap && excludeCountries.size >= cap);
+  }
+  renderQuickPicks();
+}
+
+function renderQuickPicks() {
+  const includeCountryQuickEl = document.getElementById('includeCountryQuick');
+  const interestQuickEl = document.getElementById('interestQuick');
+  if (includeCountryQuickEl) {
+    includeCountryQuickEl.innerHTML = '';
+    QUICK_COUNTRIES.filter((code) => !includeCountries.has(code)).forEach((code) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'tl-quick-chip';
+      btn.dataset.country = code;
+      btn.innerHTML = `${getFlagImg(code, 15)} ${escapeHtml(getCountryName(code))}`;
+      includeCountryQuickEl.appendChild(btn);
+    });
+  }
+  if (interestQuickEl) {
+    interestQuickEl.innerHTML = '';
+    QUICK_INTERESTS.filter((i) => !selectedInterests.has(i)).forEach((interest) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'tl-quick-chip';
+      btn.dataset.interest = interest;
+      btn.textContent = `+ ${t('interest_' + interest) === 'interest_' + interest ? interest : t('interest_' + interest)}`;
+      interestQuickEl.appendChild(btn);
+    });
+  }
+}
+
+// Delegated from the panel, so the handlers survive every re-render of the
+// chip rows without being re-attached.
+if (document.getElementById('includeCountryQuick')) {
+  document.getElementById('includeCountryQuick').addEventListener('click', (e) => {
+    const chip = e.target.closest('.tl-quick-chip');
+    if (chip) includeCountryWidget.add(chip.dataset.country);
+  });
+}
+if (document.getElementById('interestQuick')) {
+  document.getElementById('interestQuick').addEventListener('click', (e) => {
+    const chip = e.target.closest('.tl-quick-chip');
+    if (!chip) return;
+    selectedInterests.add(chip.dataset.interest);
+    renderInterestTags();
+  });
+}
+// The first readout is deliberately NOT here. It reads isPremiumUser and
+// freeLimits, which the premium-status block declares near the bottom of this
+// file, so it is run from there - after everything it depends on exists.
+
 // --- Custom interest tags (free text, no suggestions) ---
 function renderInterestTags() {
+  if (filtersReady) syncFilterReadout();
   interestTagsEl.innerHTML = '';
   selectedInterests.forEach((interest) => {
     const tag = document.createElement('span');
@@ -807,6 +951,7 @@ document.getElementById('addInterestBtn').addEventListener('click', addInterestF
 
 initPillGroup(genderGroup);
 initPillGroup(prefGenderGroup);
+prefGenderGroup.addEventListener('click', () => syncFilterReadout());
 initPillGroup(themeGroup);
 
 autoCallCheckbox.checked = autoCallEnabled;
@@ -6255,6 +6400,12 @@ refreshNetStatus();
 // all limits - this state only drives the UI.
 let isPremiumUser = false;
 let freeLimits = { countries: 2, friends: 5 };
+
+// Now that the free limits and the premium flag exist, the filters panel can
+// say what it is set to. From here on every change refreshes it (see the note
+// in renderChips); this is just the first paint.
+filtersReady = true;
+syncFilterReadout();
 
 socket.on('premium-status', ({ premium, limits } = {}) => {
   isPremiumUser = !!premium;
