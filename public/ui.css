@@ -2043,3 +2043,247 @@
   padding-top: var(--tl-s4);
   border-top: 1px solid var(--tl-line);
 }
+
+/* ===========================================================================
+ * 9. THE CALL SCREEN
+ * ---------------------------------------------------------------------------
+ * It used to be a stack of everything the app could do, on the one screen
+ * where the point is to be talking to someone: orb, status, sub-status,
+ * ticker, reassurance, partner card, reaction bar, four identical buttons
+ * where hanging up looked exactly like muting, an auto-call checkbox, a music
+ * button and an ad.
+ *
+ * Now it is three things in the order you need them - who you are talking to,
+ * what you can do, and how to leave - on one centred column with air around
+ * it. Mute and Add friend stay out in the open because they are wanted
+ * mid-sentence; everything else is behind More. End Call is the only red pill
+ * on the screen and it is nowhere near the other two.
+ * ======================================================================== */
+
+.tl-call {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(420px, 100%);
+  margin: 0 auto;
+  padding: var(--tl-s5) var(--tl-s4) var(--tl-s6);
+  box-sizing: border-box;
+  border: 1px solid var(--tl-line);
+  border-radius: 28px;
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--accent) 10%, var(--bg-2)) 0%,
+    var(--bg-2) 46%);
+  text-align: center;
+}
+
+.tl-call-top {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin-bottom: var(--tl-s3);
+}
+.tl-call-min {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  color: var(--muted);
+  cursor: pointer;
+}
+.tl-call-min:hover { background: color-mix(in srgb, var(--text) 14%, transparent); color: var(--text); }
+.tl-call-min svg { width: 20px; height: 20px; }
+
+/* The connection dot and the timer belong together in the corner, the way
+   every call app puts them - not as a chip in the middle of the column. */
+.tl-call .connection-indicator {
+  margin-inline-start: auto;
+  margin-bottom: 0;
+}
+
+/* --- Who ----------------------------------------------------------------- */
+.tl-call .orb-wrap { margin-bottom: var(--tl-s4); }
+.tl-call .status-text {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+}
+.tl-call .sub-text {
+  margin: var(--tl-s1) 0 0;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+
+/* --- The voice ----------------------------------------------------------- */
+.tl-call-wave {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 100%;
+  height: 54px;
+  margin: var(--tl-s4) 0 0;
+}
+.tl-call-wave.hidden { display: none; }
+.tl-call-wave-bar {
+  flex: 1 1 0;
+  max-width: 5px;
+  height: 8%;
+  min-height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--accent-2), var(--accent));
+  /* Short enough to track a voice, long enough not to strobe. */
+  transition: height 90ms linear;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tl-call-wave-bar { transition: none; }
+}
+
+/* --- What you can do ----------------------------------------------------- */
+.tl-call-controls {
+  display: flex;
+  justify-content: center;
+  gap: var(--tl-s5);
+  margin-top: var(--tl-s5);
+}
+.tl-call-controls .call-action-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.stage .tl-call-controls .action-btn,
+.stage.call-live .tl-call-controls .action-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+}
+.tl-call-controls .action-label { font-size: 12px; color: var(--muted); }
+#callMoreBtn.is-open {
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+  color: var(--text);
+}
+
+/* --- How to leave -------------------------------------------------------- */
+.tl-call-end-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--tl-s2);
+  width: 100%;
+  /* Deliberately far from Mute and Add friend. The old row put hang-up
+     one thumb-width from mute, at the same size and nearly the same colour. */
+  margin-top: var(--tl-s6);
+}
+/* The three-class selector is deliberate: style.css sizes every .action-btn
+   on a live call with `.stage.call-live .action-btn`, and a pill has to
+   out-specify that rather than hope to out-order it. */
+.stage .tl-call-end-wrap .call-main-btn,
+.stage.call-live .tl-call-end-wrap .call-main-btn {
+  width: min(280px, 100%);
+  height: 58px;
+  border-radius: var(--tl-r-pill);
+}
+.tl-call-end-wrap .call-main-label {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* --- More ---------------------------------------------------------------- */
+.tl-call-sheet {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--tl-s3);
+  width: 100%;
+  margin-top: var(--tl-s4);
+  padding: var(--tl-s4);
+  box-sizing: border-box;
+  border: 1px solid var(--tl-line);
+  border-radius: var(--tl-r-lg);
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+}
+.tl-call-sheet.hidden { display: none; }
+.tl-call-sheet .call-action-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.tl-call-sheet .action-btn { width: 52px; height: 52px; border-radius: 50%; }
+.tl-call-sheet .action-label { font-size: 12px; color: var(--muted); }
+.tl-call-sheet .auto-call-row { margin: 0; font-size: 13px; }
+
+/* Reactions belong to the live call, so they sit with it rather than in the
+   sheet - but they are a strip, not a stack. */
+.tl-call-reactions { margin-top: var(--tl-s4); }
+
+@media (max-width: 480px) {
+  .tl-call {
+    border: 0;
+    border-radius: 0;
+    background: none;
+    padding-inline: var(--tl-s2);
+  }
+  .tl-call-controls { gap: var(--tl-s4); }
+}
+
+/* The pill carries its own caption, so the label that used to sit under it
+   would be saying the same word twice. */
+.tl-call-end-wrap .call-main-label { display: none; }
+.tl-call-end-text {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+  color: #fff;
+}
+.tl-call-end-wrap .call-main-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--tl-s2);
+}
+.tl-call-end-wrap .call-main-icon { width: 21px; height: 21px; }
+/* The button's four colours are three stacked ::before/::after/confirm layers
+   that cross-fade, and every one of them is a 50%-radius circle carrying a
+   radial gradient and a triple glow drawn for a 72px orb. At pill width that
+   is an ellipse with a smear on it, so the layers are re-cut to the pill's
+   shape and flattened - the cross-fade between modes still works exactly as
+   it did, it just happens on a pill now. */
+.tl-call-end-wrap .call-main-btn::before,
+.tl-call-end-wrap .call-main-btn::after,
+.tl-call-end-wrap .call-main-btn .call-main-confirm-layer {
+  border-radius: var(--tl-r-pill);
+  box-shadow: none;
+}
+.tl-call-end-wrap .call-main-btn::before { background: var(--green); }
+.tl-call-end-wrap .call-main-btn::after { background: var(--danger); }
+.tl-call-end-wrap .call-main-btn .call-main-confirm-layer { background: #d97706; }
+/* The caption and the icon sit above all three layers. */
+.tl-call-end-wrap .tl-call-end-text,
+.tl-call-end-wrap .call-main-icon,
+.tl-call-end-wrap .action-spinner { position: relative; z-index: 1; }
+.tl-call-end-wrap .call-main-btn.is-call .tl-call-end-text { color: #05230f; }
+.tl-call-end-wrap .call-main-btn.is-call .call-main-icon { fill: #05230f; }
+[data-theme="light"] .tl-call-end-wrap .call-main-btn.is-call .tl-call-end-text { color: #fff; }
+[data-theme="light"] .tl-call-end-wrap .call-main-btn.is-call .call-main-icon { fill: #fff; }
+/* The spinner is absolutely positioned and centred, which on a 72px circle
+   put it over the (hidden) icon and on a 280px pill puts it over the caption.
+   In the pill it becomes an ordinary inline item, sitting where the icon
+   would, with the caption beside it. */
+.tl-call-end-wrap .action-spinner {
+  position: static;
+  width: 21px;
+  height: 21px;
+  border-width: 3px;
+  flex: 0 0 auto;
+}
+/* Searching keeps the green it has always had - green means "this is the
+   button you pressed and it is still working" - just dimmed, so a live call's
+   red is unmistakably a different state and not just a different hue. */
+.tl-call-end-wrap .call-main-btn.is-loading::before { opacity: 0.55; }
+/* While searching the spinner is the icon. */
+.tl-call-end-wrap .call-main-btn.is-loading .call-main-icon { display: none; }

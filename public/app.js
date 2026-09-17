@@ -3721,6 +3721,11 @@ function setButtonMode(mode) {
     : 'call';
   callMainLabel.textContent = t(labelKey);
   callMainLabel.className = 'action-label call-main-label is-' + mode;
+  // The call screen's button is a pill with its caption inside it, so the
+  // same word goes there too. The label below stays for the layouts that
+  // still use it, and CSS hides it where the pill is showing.
+  const callMainText = document.getElementById('callMainText');
+  if (callMainText) callMainText.textContent = t(labelKey);
   callMainBtn.setAttribute('aria-label', t(labelKey));
 }
 
@@ -3752,6 +3757,13 @@ function setCallState(state) {
   muteBtn.disabled = !connected;
   addFriendBtn.disabled = !connected || addFriendBtn.classList.contains('added');
   reportBtn.disabled = !connected;
+  // More holds report, reactions and auto-call, so it follows the same rule -
+  // and it closes when the call does, rather than being left open over a
+  // screen where none of it applies any more.
+  if (typeof callMoreBtn !== 'undefined' && callMoreBtn) callMoreBtn.disabled = !connected;
+  if (!connected) setCallMoreOpen(false);
+  // The bars only mean anything while there is a voice to draw.
+  showCallWave(connected);
   // The Tic Tac Toe game needs a live partner.
   gameBtn.disabled = !connected;
   gameBtn.classList.toggle('nav-btn-off', !connected);
@@ -4482,6 +4494,85 @@ function createPeerConnection(isInitiator) {
 let visualizerCtx = null;
 let visualizerSource = null;
 
+// --- The call screen's live waveform ---------------------------------------
+// A voice call with a silent screen and a dead call look exactly the same.
+// These bars are the proof that something is coming down the wire, and they
+// are driven by the analyser monitorRemoteAudio already runs on the remote
+// stream - so they cost one more read of numbers computed anyway, and they
+// stop the moment that analyser does.
+const callWaveEl = document.getElementById('callWave');
+const CALL_WAVE_BARS = 28;
+let callWaveBars = [];
+
+function buildCallWave() {
+  if (!callWaveEl || callWaveBars.length) return;
+  const frag = document.createDocumentFragment();
+  for (let i = 0; i < CALL_WAVE_BARS; i++) {
+    const bar = document.createElement('span');
+    bar.className = 'tl-call-wave-bar';
+    frag.appendChild(bar);
+    callWaveBars.push(bar);
+  }
+  callWaveEl.appendChild(frag);
+}
+
+function drawCallWave(data) {
+  if (!callWaveEl || callWaveEl.classList.contains('hidden')) return;
+  buildCallWave();
+  // The spectrum is bass-heavy, so the bars sample the lower half of it and
+  // mirror around the middle - a symmetric shape reads as a voice, a
+  // left-loaded one reads as a bar chart.
+  const half = Math.ceil(CALL_WAVE_BARS / 2);
+  for (let i = 0; i < half; i++) {
+    const bin = Math.floor((i / half) * (data.length * 0.55));
+    const v = Math.min(1, (data[bin] || 0) / 190);
+    const h = Math.round(8 + v * 92);
+    if (callWaveBars[half - 1 - i]) callWaveBars[half - 1 - i].style.height = h + '%';
+    if (callWaveBars[half + i]) callWaveBars[half + i].style.height = h + '%';
+  }
+}
+
+function resetCallWave() {
+  callWaveBars.forEach((bar) => { bar.style.height = '8%'; });
+}
+
+function showCallWave(on) {
+  if (!callWaveEl) return;
+  buildCallWave();
+  callWaveEl.classList.toggle('hidden', !on);
+  if (!on) resetCallWave();
+}
+
+// --- More ------------------------------------------------------------------
+// Report, reactions and auto-call are all things you decide about, not things
+// you reach for mid-sentence, so they sit one tap away where an accidental
+// tap cannot reach them.
+const callMoreBtn = document.getElementById('callMoreBtn');
+const callMoreSheet = document.getElementById('callMoreSheet');
+
+function setCallMoreOpen(open) {
+  if (!callMoreSheet || !callMoreBtn) return;
+  callMoreSheet.classList.toggle('hidden', !open);
+  callMoreBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  callMoreBtn.classList.toggle('is-open', open);
+}
+
+if (callMoreBtn) {
+  callMoreBtn.addEventListener('click', () => {
+    setCallMoreOpen(callMoreSheet.classList.contains('hidden'));
+  });
+}
+
+// Back to the home screen without ending the call - the call keeps running,
+// and the nav's Home does the same thing. The call is still reachable from
+// /call, and the browser's own back guard still asks before a real exit.
+const callMinimizeBtn = document.getElementById('callMinimizeBtn');
+if (callMinimizeBtn) {
+  callMinimizeBtn.addEventListener('click', () => {
+    if (navHomeBtn) navHomeBtn.click();
+  });
+}
+
 function monitorRemoteAudio(stream) {
   clearInterval(speakingCheckInterval);
   try {
@@ -4510,6 +4601,9 @@ function monitorRemoteAudio(stream) {
       const avg = data.reduce((a, b) => a + b, 0) / data.length;
       const level = Math.min(1, avg / 90); // 0..1 normalized volume
       orb.classList.toggle('speaking', avg > 12);
+      // The bars read the same spectrum the rings do - no second analyser,
+      // no second timer, just one more use of numbers already computed.
+      drawCallWave(data);
 
       // Drive the background rings from live audio amplitude, not a fixed loop.
       orbRings.forEach((ring, i) => {

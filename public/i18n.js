@@ -547,7 +547,6 @@ const I18N_STRINGS = {
     "searchPlaceholder": "Search people, countries, or interests…",
     "searchInterest": "Looking for someone into {interest}…",
     "notificationsAria": "Notifications",
-    "clear": "Clear",
     "railRecent": "Recent calls",
     "seeAll": "See all",
     "railNoCalls": "No calls yet. Your calls from this session show up here.",

@@ -1714,17 +1714,30 @@
           </span>
         </div>
 
-        <div class="orb-wrap">
-          <div id="orb" class="orb idle" aria-hidden="true">
-            <div class="orb-core"></div>
-            <div class="orb-ring r1"></div>
-            <div class="orb-ring r2"></div>
-            <div id="orbTimer" class="orb-timer hidden" aria-live="off">0:00</div>
-          </div>
-          <div id="orbEmojiFlash" class="orb-emoji-flash" aria-hidden="true"></div>
-        </div>
+        <!-- ===============================================================
+             THE CALL SCREEN.
+             ---------------------------------------------------------------
+             It used to be a stack: an orb, a status line, a sub-line, a
+             ticker, a reassurance, a partner card, a reaction bar, four
+             equal buttons where the most destructive one (hang up) looked
+             exactly like the least (mute), an auto-call checkbox, a music
+             button and an ad. Everything the app could do, all at once, on
+             the one screen where the point is to be talking to someone.
 
-        <div id="connectionIndicator" class="connection-indicator hidden">
+             Now it is three things, in the order you need them:
+               who you are talking to, what you can do to them, and how to
+               leave. Mute and Add friend stay out in the open because they
+               are wanted mid-sentence; everything else moved behind More,
+               which is one tap and cannot be hit by accident. End Call is
+               its own red pill, the only thing on the screen that shape and
+               that colour, well clear of the other two.
+             =============================================================== -->
+        <div class="tl-call">
+        <header class="tl-call-top">
+          <button type="button" id="callMinimizeBtn" class="tl-call-min" data-i18n-aria="goHome" aria-label="Back to home">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div id="connectionIndicator" class="connection-indicator hidden">
           <span id="connectionDot" class="connection-dot" aria-hidden="true"></span>
           <span id="connectionLabel" class="connection-label">Searching</span>
           <span id="qualityIndicator" class="quality-indicator hidden" data-i18n-title="connectionQuality" title="Connection quality">
@@ -1735,9 +1748,28 @@
             <span id="qualityLabel" class="quality-label"></span>
           </span>
         </div>
+        </header>
+
+        <div class="orb-wrap">
+          <div id="orb" class="orb idle" aria-hidden="true">
+            <div class="orb-core"></div>
+            <div class="orb-ring r1"></div>
+            <div class="orb-ring r2"></div>
+            <div id="orbTimer" class="orb-timer hidden" aria-live="off">0:00</div>
+          </div>
+          <div id="orbEmojiFlash" class="orb-emoji-flash" aria-hidden="true"></div>
+        </div>
+
 
         <p id="statusText" class="status-text" aria-live="polite">Tap the green button to talk to a random person</p>
         <p id="subText" class="sub-text">Voice only · No sign up needed</p>
+
+        <!-- The other person's voice, drawn. It is the one thing on a voice
+             call that proves the connection is alive - a silent screen and a
+             dead call look identical otherwise. Driven by the analyser that
+             already runs on the remote stream (see monitorRemoteAudio), so it
+             costs one more read of numbers that were being computed anyway. -->
+        <div id="callWave" class="tl-call-wave hidden" aria-hidden="true"></div>
 
         <!-- Rotating content shown only while searching, so waiting never feels like dead air -->
         <div id="searchTicker" class="search-ticker hidden" aria-live="polite">
@@ -1768,7 +1800,7 @@
           <div id="sharedInterestNote" class="shared-interest-note hidden"></div>
         </div>
 
-        <div id="reactionBar" class="reaction-bar hidden">
+        <div id="reactionBar" class="reaction-bar hidden tl-call-reactions">
           <button type="button" class="reaction-btn" data-reaction="like" data-i18n-aria="reactLike" aria-label="Send a thumbs up">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
           </button>
@@ -1787,17 +1819,9 @@
         <!-- One row, four equal-sized buttons. The first is the single
              Call / Loading / Hang Up / Confirm button on the left; the other
              three are the in-call actions, enabled only once connected. -->
-        <div class="call-actions" id="callActions">
-          <div class="call-action-wrap">
-            <button id="callMainBtn" class="action-btn call-main-btn is-call" data-i18n-aria="call" aria-label="Call">
-              <span class="call-main-confirm-layer" aria-hidden="true"></span>
-              <svg class="phone-icon call-main-icon" viewBox="0 0 24 24" fill="white" aria-hidden="true">
-                <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
-              </svg>
-              <span class="action-spinner" aria-hidden="true"></span>
-            </button>
-            <span id="callMainLabel" class="action-label call-main-label is-call">Call</span>
-          </div>
+        <!-- Two controls out in the open, because both are wanted
+             mid-sentence and neither can do damage. -->
+        <div class="call-actions tl-call-controls" id="callActions">
           <div class="call-action-wrap" id="muteActionWrap">
             <button id="muteBtn" class="action-btn action-btn-neutral" data-i18n-title="mute" data-i18n-aria="mute" title="Mute" aria-label="Mute" aria-pressed="false" disabled>
               <svg id="muteIcon" class="simple-icon simple-icon-lg" viewBox="0 0 24 24" fill="#aab0c4" aria-hidden="true">
@@ -1816,6 +1840,33 @@
             <span class="action-label" data-i18n="addFriend">Add friend</span>
           </div>
           <div class="call-action-wrap">
+            <button type="button" id="callMoreBtn" class="action-btn action-btn-neutral" data-i18n-title="more" data-i18n-aria="more" title="More" aria-label="More" aria-expanded="false" disabled>
+              <svg class="simple-icon simple-icon-lg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5.5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="18.5" cy="12" r="1.9"/></svg>
+            </button>
+            <span class="action-label" data-i18n="more">More</span>
+          </div>
+        </div>
+
+        <!-- The one way out, and the only thing on this screen that is a red
+             pill. It is still the same four-mode button it always was (call /
+             searching / hang up / confirm) - it just no longer looks exactly
+             like Mute sitting next to it. -->
+        <div class="tl-call-end-wrap">
+            <button id="callMainBtn" class="action-btn call-main-btn is-call" data-i18n-aria="call" aria-label="Call">
+              <span class="call-main-confirm-layer" aria-hidden="true"></span>
+              <svg class="phone-icon call-main-icon" viewBox="0 0 24 24" fill="white" aria-hidden="true">
+                <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+              </svg>
+              <span class="action-spinner" aria-hidden="true"></span>
+              <span id="callMainText" class="tl-call-end-text">Call</span>
+            </button>
+          <span id="callMainLabel" class="action-label call-main-label is-call">Call</span>
+        </div>
+
+        <!-- Everything that is not wanted mid-sentence. One tap away, and out
+             of reach of an accidental one. -->
+        <div id="callMoreSheet" class="tl-call-sheet hidden" role="group" data-i18n-aria="more" aria-label="More">
+          <div class="call-action-wrap">
             <button id="reportBtn" class="action-btn action-btn-neutral" data-i18n-title="report" data-i18n-aria="report" title="Report" aria-label="Report" disabled>
               <svg class="simple-icon simple-icon-lg" viewBox="0 0 24 24" aria-hidden="true">
                 <line x1="5" y1="3" x2="5" y2="21" stroke="#ff5470" stroke-width="2" stroke-linecap="round"/>
@@ -1824,12 +1875,12 @@
             </button>
             <span class="action-label" data-i18n="report">Report</span>
           </div>
+          <label id="autoCallRow" class="checkbox-row auto-call-row" for="autoCallCheckbox">
+            <input type="checkbox" id="autoCallCheckbox" />
+            <span data-i18n="enableAutoCall">Enable - keep connecting me to new people</span>
+          </label>
         </div>
 
-        <label id="autoCallRow" class="checkbox-row auto-call-row" for="autoCallCheckbox">
-          <input type="checkbox" id="autoCallCheckbox" />
-          <span data-i18n="enableAutoCall">Enable - keep connecting me to new people</span>
-        </label>
 
         <p id="errorText" class="error-text hidden" role="alert"></p>
 
@@ -1851,6 +1902,8 @@
              gone with it - a native and a leaderboard back to back is the
              stacked pair that was removed from 271 other pages, and it would
              have earned little while reading as an ad wall. -->
+
+        </div><!-- /.tl-call -->
 
         <div class="call-music-row">
           <button type="button" id="bannerMusicBtn" class="video-banner__music call-music-btn" aria-pressed="false" aria-label="Play music" title="Play music">
