@@ -1,0 +1,1176 @@
+/* ===========================================================================
+ * TalkLive UI — one clean layer
+ * ---------------------------------------------------------------------------
+ * Loaded last on / , /call and /chat. Everything in here uses its own `tl-`
+ * class names, so nothing in the older sheets can reach it and it never has to
+ * out-shout them with !important. The rules that do talk to old markup (the
+ * top bar container, side panels, the account modal) are the handful at the
+ * bottom of each block, kept deliberately short.
+ *
+ * Three rules the whole file follows:
+ *   1. Nothing tappable is smaller than 44px, ever.
+ *   2. One spacing scale (4 / 8 / 12 / 16 / 24 / 32) - no stray magic numbers.
+ *   3. One primary action per screen, and it is the biggest thing on it.
+ * ======================================================================== */
+
+:root {
+  --tl-s1: 4px;
+  --tl-s2: 8px;
+  --tl-s3: 12px;
+  --tl-s4: 16px;
+  --tl-s5: 24px;
+  --tl-s6: 32px;
+
+  --tl-r-sm: 10px;
+  --tl-r-md: 14px;
+  --tl-r-lg: 20px;
+  --tl-r-pill: 999px;
+
+  --tl-tap: 48px;
+
+  --tl-card: color-mix(in srgb, var(--bg-2) 92%, transparent);
+  --tl-card-hover: color-mix(in srgb, var(--bg-2) 100%, #fff 4%);
+  --tl-line: var(--line);
+  --tl-line-strong: color-mix(in srgb, var(--text) 18%, transparent);
+  --tl-shadow: 0 12px 34px rgba(0, 0, 0, 0.35);
+}
+
+/* ===========================================================================
+ * 1. TOP BAR
+ * Brand on the left, at most three controls on the right. Everything that is
+ * not "talk to the person in front of me" lives behind one More menu, with a
+ * word next to every icon, instead of six bare glyphs in a rail.
+ * ======================================================================== */
+
+/* `.topbar` is still on the element (the stuck-shadow, the background and the
+   hairline all hang off it) but none of its children are: the old grid's
+   columns have nothing to lay out, and this sheet loads after style.css, so
+   an equal-specificity rule is enough to take the layout back. */
+.tl-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--tl-s3);
+  padding: var(--tl-s2) var(--tl-s4);
+  padding-top: calc(var(--tl-s2) + env(safe-area-inset-top));
+  min-height: 60px;
+}
+
+/* The lockup column: mark + wordmark on one line, headcount on the next,
+   indented past the mark so it hangs under the word, not under the icon. */
+.tl-bar-lead {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  min-width: 0;
+}
+
+.tl-bar .tl-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 6px 8px 6px 4px;
+  margin-inline-start: -4px;
+  border: 0;
+  border-radius: var(--tl-r-md);
+  background: transparent;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+.tl-bar .tl-brand:active { transform: scale(0.98); }
+
+.tl-brand-mark {
+  position: relative;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  display: block;
+}
+.tl-brand-mark img,
+.tl-brand-mark svg { width: 34px; height: 34px; display: block; border-radius: 9px; }
+
+.tl-brand-dot {
+  position: absolute;
+  top: -2px;
+  inset-inline-end: -2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--green);
+  border: 2px solid var(--bg-1);
+}
+.tl-brand-dot.is-offline { background: var(--danger); }
+
+.tl-brand-name {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+.tl-brand-name em { font-style: normal; color: var(--accent-2); }
+
+.tl-brand-live {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  padding-inline-start: 48px; /* mark (34) + gap (10) + the button's own 4px */
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.tl-brand-live b { color: var(--green); font-weight: 700; }
+.tl-brand-live .tl-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+}
+.tl-brand-live.is-waiting b { color: var(--muted); }
+.tl-brand-live.is-waiting .tl-live-dot { background: var(--muted); }
+
+/* --- The action group ---------------------------------------------------- */
+
+.tl-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--tl-s2);
+  flex: 0 0 auto;
+}
+
+.tl-act {
+  position: relative;
+  flex: 0 0 auto;
+  width: var(--tl-tap);
+  height: var(--tl-tap);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--tl-r-md);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.12s ease;
+}
+.tl-act svg { width: 24px; height: 24px; display: block; }
+.tl-act:hover { background: color-mix(in srgb, var(--text) 8%, transparent); color: var(--text); }
+.tl-act:active { transform: scale(0.94); }
+.tl-act[aria-expanded="true"],
+.tl-act.is-active {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  color: var(--text);
+}
+
+/* The one filled control in the bar: the live conversation's own chat toggle. */
+.tl-act-accent {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+  border-color: transparent;
+}
+.tl-act-accent:hover { filter: brightness(1.08); background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; }
+
+.tl-act-badge {
+  position: absolute;
+  top: 4px;
+  inset-inline-end: 4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--tl-r-pill);
+  background: var(--danger);
+  border: 2px solid var(--bg-1);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 14px;
+  text-align: center;
+}
+
+/* Auth. One pill on a phone, two from 560px up. */
+.tl-auth { display: flex; align-items: center; gap: var(--tl-s2); }
+.tl-auth-btn {
+  min-height: 44px;
+  padding: 0 var(--tl-s4);
+  border-radius: var(--tl-r-pill);
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: filter 0.15s ease, background 0.15s ease, transform 0.12s ease;
+}
+.tl-auth-btn:active { transform: scale(0.96); }
+.tl-auth-login {
+  border-color: var(--tl-line-strong);
+  background: transparent;
+  color: var(--text);
+}
+.tl-auth-login:hover { background: color-mix(in srgb, var(--text) 8%, transparent); }
+.tl-auth-signup {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+}
+.tl-auth-signup:hover { filter: brightness(1.08); }
+
+@media (max-width: 559px) {
+  /* Only one auth control fits next to the brand. It is Log in, styled as the
+     accent pill, because the modal it opens leads with Sign up anyway. */
+  .tl-auth-signup { display: none; }
+  .tl-auth-login {
+    border-color: transparent;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #fff;
+    padding: 0 var(--tl-s3);
+  }
+  .tl-auth-login:hover { background: linear-gradient(135deg, var(--accent), var(--accent-2)); filter: brightness(1.08); }
+}
+
+@media (max-width: 400px) {
+  .tl-bar { padding-inline: var(--tl-s3); gap: var(--tl-s2); }
+  .tl-bar-actions { gap: var(--tl-s1); }
+  .tl-act { width: 44px; height: 44px; }
+  .tl-brand-name { font-size: 16px; }
+}
+
+/* --- The More menu ------------------------------------------------------- */
+
+.tl-menu-wrap { position: relative; flex: 0 0 auto; }
+
+.tl-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  inset-inline-end: 0;
+  z-index: 90;
+  min-width: 232px;
+  padding: var(--tl-s2);
+  border-radius: var(--tl-r-lg);
+  border: 1px solid var(--tl-line);
+  background: var(--bg-2);
+  box-shadow: var(--tl-shadow);
+}
+.tl-menu.hidden { display: none; }
+
+.tl-menu-item {
+  position: relative;
+  width: 100%;
+  min-height: var(--tl-tap);
+  display: flex;
+  align-items: center;
+  gap: var(--tl-s3);
+  padding: 0 var(--tl-s3);
+  border: 0;
+  border-radius: var(--tl-r-md);
+  background: transparent;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+.tl-menu-item:hover { background: color-mix(in srgb, var(--text) 8%, transparent); }
+.tl-menu-item:active { background: color-mix(in srgb, var(--text) 14%, transparent); }
+.tl-menu-item.hidden { display: none; }
+.tl-menu-item svg { width: 21px; height: 21px; flex: 0 0 auto; color: var(--muted); }
+.tl-menu-item-danger { color: var(--danger); }
+.tl-menu-item-danger svg { color: var(--danger); }
+
+.tl-menu-sep {
+  height: 1px;
+  margin: var(--tl-s2) var(--tl-s3);
+  background: var(--tl-line);
+}
+
+.tl-menu-item .tl-menu-count {
+  margin-inline-start: auto;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--tl-r-pill);
+  background: var(--danger);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 20px;
+  text-align: center;
+}
+.tl-menu-count.hidden { display: none; }
+
+/* A dot on the More button whenever something inside the menu wants attention. */
+.tl-act-dot {
+  position: absolute;
+  top: 8px;
+  inset-inline-end: 8px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--danger);
+  border: 2px solid var(--bg-1);
+}
+.tl-act-dot.hidden { display: none; }
+
+/* ===========================================================================
+ * 2. THE START GATE
+ * Three numbered steps down one column: who you are, which animal you are,
+ * and how you want to meet. The two Start buttons stay dead until steps 1 and
+ * 2 are answered, so nobody reaches a stranger without an ice-breaker.
+ * ======================================================================== */
+
+.tl-start {
+  width: min(560px, 100%);
+  max-width: 560px;
+  margin: 0 auto;
+  padding: var(--tl-s5) var(--tl-s4) var(--tl-s6);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--tl-s5);
+  text-align: start;
+}
+
+/* The gate is taller than a phone, so the landing stage scrolls from the top
+   instead of centring its contents and clipping the first step off-screen. */
+.stage:not(.call-live) {
+  justify-content: flex-start;
+  padding: 0;
+}
+
+/* The inner wrapper is a legacy centring column; the steps own their width. */
+.tl-start .tap-to-talk {
+  align-items: stretch;
+  gap: var(--tl-s5);
+  width: 100%;
+}
+
+.tl-start-head { text-align: center; }
+
+.tl-start-title {
+  margin: 0 0 var(--tl-s2);
+  font-size: clamp(26px, 6.4vw, 34px);
+  font-weight: 800;
+  letter-spacing: -0.8px;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+.tl-start-sub {
+  margin: 0;
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.tl-step {
+  border: 1px solid var(--tl-line);
+  border-radius: var(--tl-r-lg);
+  background: var(--tl-card);
+  padding: var(--tl-s4);
+}
+
+.tl-step-head {
+  display: flex;
+  align-items: center;
+  gap: var(--tl-s3);
+  margin-bottom: var(--tl-s3);
+}
+
+.tl-step-num {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--accent) 24%, transparent);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 800;
+}
+.tl-step.is-done .tl-step-num {
+  background: var(--green);
+  color: #06210f;
+}
+
+.tl-step-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+}
+
+.tl-step-opt {
+  margin-inline-start: auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.tl-step-hint {
+  margin: 0 0 var(--tl-s3);
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* --- Big choice cards (gender, preferred partner) ------------------------ */
+
+.tl-choices {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--tl-s2);
+}
+
+.tl-choice {
+  position: relative;
+  min-height: 96px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--tl-s2);
+  padding: var(--tl-s3) var(--tl-s2);
+  border-radius: var(--tl-r-md);
+  border: 2px solid var(--tl-line);
+  background: color-mix(in srgb, var(--bg-1) 60%, transparent);
+  color: var(--muted);
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease, transform 0.12s ease;
+}
+.tl-choice svg { width: 28px; height: 28px; }
+.tl-choice:hover { border-color: var(--tl-line-strong); color: var(--text); }
+.tl-choice:active { transform: scale(0.97); }
+.tl-choice.selected {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--text);
+}
+.tl-choice.selected::after {
+  content: "";
+  position: absolute;
+  top: 7px;
+  inset-inline-end: 7px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent) url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") center / 11px 11px no-repeat;
+}
+.tl-choice-male svg { color: #4da6ff; }
+.tl-choice-female svg { color: #ff6fa5; }
+
+.tl-choice-lock {
+  position: absolute;
+  top: 7px;
+  inset-inline-start: 7px;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: #fff;
+}
+.tl-choice-lock svg { width: 10px; height: 10px; }
+.tl-choice.selected .tl-choice-lock { display: none; }
+
+/* --- Animal grid --------------------------------------------------------- */
+
+.tl-animals {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--tl-s2);
+}
+@media (max-width: 380px) {
+  .tl-animals { grid-template-columns: repeat(3, 1fr); }
+}
+
+.tl-animals .animal-option,
+.tl-animal {
+  min-height: 84px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: var(--tl-s2) var(--tl-s1);
+  border-radius: var(--tl-r-md);
+  border: 2px solid var(--tl-line);
+  background: color-mix(in srgb, var(--bg-1) 60%, transparent);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease, transform 0.12s ease;
+}
+.tl-animals .animal-option:active { transform: scale(0.96); }
+.tl-animals .animal-option.selected {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--text);
+}
+.tl-animals .animal-option svg,
+.tl-animals .animal-option img { width: 34px; height: 34px; }
+
+/* The grid is twelve animals; two full rows are shown and the rest come in on
+   request, so step 2 never pushes the Start buttons off the screen. Clipped
+   cleanly at a row boundary - a fade over the last visible row made perfectly
+   tappable animals read as disabled. */
+.tl-animals-wrap { position: relative; }
+.tl-animals-wrap:not(.is-open) .tl-animals {
+  max-height: 176px; /* 2 rows of 84px + the 8px gap between them */
+  overflow: hidden;
+}
+
+.tl-animals-more {
+  width: 100%;
+  min-height: 44px;
+  margin-top: var(--tl-s2);
+  border: 1px solid var(--tl-line);
+  border-radius: var(--tl-r-md);
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.tl-animals-more:hover { background: color-mix(in srgb, var(--text) 8%, transparent); }
+
+.tl-animal-chosen {
+  margin: var(--tl-s3) 0 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--muted);
+  text-align: center;
+}
+.tl-animal-chosen.is-chosen { color: var(--green); }
+
+/* --- Start buttons ------------------------------------------------------- */
+
+.tl-start-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tl-s3);
+}
+
+.tl-cta {
+  width: 100%;
+  min-height: 68px;
+  display: flex;
+  align-items: center;
+  gap: var(--tl-s3);
+  padding: var(--tl-s3) var(--tl-s4);
+  border: 0;
+  border-radius: var(--tl-r-lg);
+  color: #fff;
+  cursor: pointer;
+  text-align: start;
+  text-decoration: none;
+  transition: filter 0.15s ease, transform 0.12s ease, opacity 0.15s ease;
+}
+.tl-cta:active { transform: scale(0.985); }
+.tl-cta-icon {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.2);
+}
+.tl-cta-icon svg { width: 24px; height: 24px; }
+.tl-cta-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.tl-cta-text strong { font-size: 17px; font-weight: 800; letter-spacing: -0.2px; }
+.tl-cta-text small { font-size: 12.5px; opacity: 0.85; font-weight: 600; }
+
+.tl-cta-talk { background: linear-gradient(135deg, #1fbf6b, #12a05c); }
+.tl-cta-chat { background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+.tl-cta:hover { filter: brightness(1.06); }
+
+.tl-cta.is-locked,
+.tl-cta[aria-disabled="true"],
+.tl-cta:disabled {
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+  color: var(--muted);
+  cursor: not-allowed;
+  filter: none;
+}
+.tl-cta.is-locked .tl-cta-icon,
+.tl-cta[aria-disabled="true"] .tl-cta-icon { background: color-mix(in srgb, var(--text) 10%, transparent); }
+
+.tl-gate-hint {
+  margin: var(--tl-s3) 0 0;
+  padding: var(--tl-s3);
+  border-radius: var(--tl-r-md);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--text);
+  text-align: center;
+}
+.tl-gate-hint.hidden { display: none; }
+
+.tl-start-legal {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--muted);
+  text-align: center;
+}
+.tl-start-legal .link-btn,
+.tl-start-legal button {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--accent-2);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* The connecting state the old orb used, kept working on the new button. */
+.tl-cta.is-connecting { opacity: 0.75; pointer-events: none; }
+
+/* ===========================================================================
+ * 3. SIDE PANELS - one shell for Settings, Friends, History, Filters
+ * ======================================================================== */
+
+.tl-panel-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: var(--tl-s3);
+  padding: var(--tl-s3) var(--tl-s4);
+  min-height: 60px;
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--tl-line);
+}
+.tl-panel-head h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+}
+.tl-panel-close {
+  margin-inline-start: auto;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: var(--tl-r-md);
+  background: transparent;
+  color: var(--muted);
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+}
+.tl-panel-close:hover { background: color-mix(in srgb, var(--text) 8%, transparent); color: var(--text); }
+
+.tl-panel-body {
+  padding: var(--tl-s4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--tl-s4);
+}
+
+/* --- Settings ------------------------------------------------------------ */
+
+.tl-set-group {
+  border: 1px solid var(--tl-line);
+  border-radius: var(--tl-r-lg);
+  background: var(--tl-card);
+  overflow: hidden;
+}
+
+.tl-set-legend {
+  margin: 0 0 var(--tl-s2);
+  padding: 0 var(--tl-s1);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.tl-set-row {
+  width: 100%;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  gap: var(--tl-s3);
+  padding: var(--tl-s3) var(--tl-s4);
+  border: 0;
+  border-bottom: 1px solid var(--tl-line);
+  background: transparent;
+  color: var(--text);
+  font-size: 15px;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+.tl-set-row:last-child { border-bottom: 0; }
+.tl-set-row:hover { background: color-mix(in srgb, var(--text) 5%, transparent); }
+.tl-set-row-static { cursor: default; }
+.tl-set-row-static:hover { background: transparent; }
+
+.tl-set-row-icon {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--tl-r-sm);
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  color: var(--muted);
+}
+.tl-set-row-icon svg { width: 19px; height: 19px; }
+
+.tl-set-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.tl-set-row-text strong { font-size: 15px; font-weight: 700; }
+.tl-set-row-text small { font-size: 12.5px; color: var(--muted); }
+
+.tl-set-row-go { flex: 0 0 auto; color: var(--muted); display: grid; place-items: center; }
+.tl-set-row-go svg { width: 18px; height: 18px; }
+
+.tl-set-row-badge {
+  flex: 0 0 auto;
+  padding: 3px 9px;
+  border-radius: var(--tl-r-pill);
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* A control row: label on the left, control on the right. */
+.tl-set-control {
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  gap: var(--tl-s3);
+  padding: var(--tl-s3) var(--tl-s4);
+  border-bottom: 1px solid var(--tl-line);
+}
+.tl-set-control:last-child { border-bottom: 0; }
+.tl-set-control > span:first-child { flex: 1 1 auto; font-size: 15px; }
+.tl-set-control-stack {
+  display: block;
+  padding: var(--tl-s3) var(--tl-s4);
+}
+.tl-set-control-stack > .tl-set-label { display: block; margin-bottom: var(--tl-s2); }
+
+.tl-set-label { font-size: 13px; font-weight: 700; color: var(--muted); }
+
+.tl-set-field {
+  display: flex;
+  gap: var(--tl-s2);
+}
+.tl-set-field input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 46px;
+  padding: 0 var(--tl-s3);
+  border-radius: var(--tl-r-md);
+  border: 1px solid var(--tl-line-strong);
+  background: color-mix(in srgb, var(--bg-1) 70%, transparent);
+  color: var(--text);
+  font-size: 15px;
+}
+.tl-set-field button {
+  flex: 0 0 auto;
+  min-height: 46px;
+  padding: 0 var(--tl-s4);
+  border-radius: var(--tl-r-md);
+  border: 1px solid var(--tl-line-strong);
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.tl-set-field button:disabled { opacity: 0.45; cursor: default; }
+
+/* Segmented option row used for gender / theme inside Settings. */
+.tl-seg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--tl-s2);
+}
+.tl-seg .tl-seg-opt {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--tl-s2);
+  padding: 0 var(--tl-s3);
+  border-radius: var(--tl-r-pill);
+  border: 1px solid var(--tl-line-strong);
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tl-seg .tl-seg-opt.selected {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--text);
+}
+.tl-seg .tl-seg-opt svg { width: 17px; height: 17px; }
+
+.tl-set-links {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+.tl-set-links > * {
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--tl-s4);
+  border: 0;
+  border-bottom: 1px solid var(--tl-line);
+  background: transparent;
+  color: var(--text);
+  font-size: 14.5px;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+.tl-set-links > *:last-child { border-bottom: 0; }
+.tl-set-links > *:hover { background: color-mix(in srgb, var(--text) 5%, transparent); }
+
+.tl-set-foot {
+  display: flex;
+  gap: var(--tl-s2);
+}
+.tl-set-foot > * { flex: 1 1 0; }
+
+/* --- Tabs (Friends / Requests) ------------------------------------------- */
+
+.tl-tabs {
+  display: flex;
+  gap: var(--tl-s1);
+  padding: var(--tl-s1);
+  border-radius: var(--tl-r-pill);
+  background: color-mix(in srgb, var(--text) 7%, transparent);
+}
+.tl-tab {
+  flex: 1 1 0;
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 0;
+  border-radius: var(--tl-r-pill);
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.tl-tab.selected {
+  background: var(--bg-2);
+  color: var(--text);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+}
+.tl-tab-count {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--tl-r-pill);
+  background: color-mix(in srgb, var(--text) 12%, transparent);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 20px;
+}
+.tl-tab.selected .tl-tab-count { background: var(--danger); color: #fff; }
+.tl-tab-count.hidden { display: none; }
+
+.tl-tabpanel.hidden { display: none; }
+
+.tl-subhead {
+  margin: var(--tl-s4) 0 var(--tl-s2);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.tl-subhead:first-child { margin-top: 0; }
+
+.tl-empty {
+  margin: 0;
+  padding: var(--tl-s5) var(--tl-s4);
+  text-align: center;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* Sent (outgoing) friend requests - the half of the story that used to be
+   invisible: you asked, and nothing on screen said so. */
+.tl-sent-item {
+  display: flex;
+  align-items: center;
+  gap: var(--tl-s3);
+  min-height: 56px;
+  padding: var(--tl-s2) var(--tl-s3);
+  border-radius: var(--tl-r-md);
+  border: 1px solid var(--tl-line);
+  background: var(--tl-card);
+  margin-bottom: var(--tl-s2);
+}
+.tl-sent-avatar { flex: 0 0 auto; width: 34px; height: 34px; display: grid; place-items: center; }
+.tl-sent-avatar svg, .tl-sent-avatar img { width: 30px; height: 30px; }
+.tl-sent-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
+.tl-sent-name { font-size: 14.5px; font-weight: 700; }
+.tl-sent-sub { font-size: 12px; color: var(--muted); }
+.tl-sent-chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 11px;
+  border-radius: var(--tl-r-pill);
+  background: color-mix(in srgb, var(--text) 9%, transparent);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+.tl-sent-chip svg { width: 13px; height: 13px; }
+
+/* ===========================================================================
+ * 4. LOG IN / SIGN UP
+ * Two tabs, three fields, one button. Everything that is not needed to get
+ * in is either a link or lives after the primary action.
+ * ======================================================================== */
+
+/* The modal sits inside a centred stage, so the form has to say it is a form:
+   labels and helper text read left, only the tabs and the button are centred. */
+.tl-auth-card {
+  padding: 0;
+  text-align: start;
+}
+
+.tl-auth-tabs {
+  display: flex;
+  gap: var(--tl-s1);
+  padding: var(--tl-s1);
+  margin-bottom: var(--tl-s5);
+  border-radius: var(--tl-r-pill);
+  background: color-mix(in srgb, var(--text) 7%, transparent);
+}
+.tl-auth-tab {
+  flex: 1 1 0;
+  min-height: 46px;
+  border: 0;
+  border-radius: var(--tl-r-pill);
+  background: transparent;
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.tl-auth-tab.selected {
+  background: var(--bg-2);
+  color: var(--text);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+}
+
+.tl-field { margin-bottom: var(--tl-s4); }
+.tl-field > label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.tl-field > input {
+  width: 100%;
+  min-height: 52px;
+  padding: 0 var(--tl-s4);
+  border-radius: var(--tl-r-md);
+  border: 1px solid var(--tl-line-strong);
+  background: color-mix(in srgb, var(--bg-1) 70%, transparent);
+  color: var(--text);
+  font-size: 16px; /* 16px stops iOS zooming the page on focus */
+}
+.tl-field > input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.tl-field-note {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.tl-submit {
+  width: 100%;
+  min-height: 54px;
+  border: 0;
+  border-radius: var(--tl-r-md);
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.12s ease;
+}
+.tl-submit:hover { filter: brightness(1.07); }
+.tl-submit:active { transform: scale(0.985); }
+
+.tl-linkline {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin-top: var(--tl-s2);
+  border: 0;
+  background: none;
+  color: var(--accent-2);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tl-or {
+  display: flex;
+  align-items: center;
+  gap: var(--tl-s3);
+  margin: var(--tl-s4) 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.tl-or::before,
+.tl-or::after {
+  content: "";
+  flex: 1 1 0;
+  height: 1px;
+  background: var(--tl-line);
+}
+.tl-or.hidden { display: none; }
+
+/* ===========================================================================
+ * 5. LEGACY BRIDGES
+ * A few short rules so the redesigned shells sit correctly inside the older
+ * panel/modal containers that are still doing the open/close work.
+ * ======================================================================== */
+
+/* The redesigned panels carry their own sticky header and their own padded
+   body, so the shell's padding and gap would double up on both. */
+.side-panel.tl-panel {
+  padding: 0;
+  gap: 0;
+}
+.tl-panel > .side-panel-body:not(.tl-panel-body),
+.tl-panel > .side-body:not(.tl-panel-body) {
+  padding: 0;
+  gap: 0;
+}
+/* The scrolling region is the body, so the header can stick to its top. */
+.tl-panel > .side-panel-body,
+.tl-panel > .side-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+.tl-panel > .side-body.tl-panel-body {
+  padding-bottom: calc(var(--tl-s4) + env(safe-area-inset-bottom, 0px));
+}
+
+/* A closed panel is parked off-screen with transform, so its drop shadow still
+   paints - a dark vertical band down the edge of every page, on every theme.
+   Only an open panel casts one. */
+.side-panel:not(.open) { box-shadow: none; }
+
+/* Lists inside a panel are plain blocks; the shell used to make them flex
+   columns with their own gap, which fought with each row's own spacing. */
+.tl-panel .history-list,
+.tl-panel .friends-list,
+.tl-panel .notif-list,
+.tl-panel .requests-list { display: block; }
+
+/* --- /chat specifics ------------------------------------------------------ */
+
+/* The middle of the chat bar is "who you are talking to". It takes the slack
+   so the lockup and the actions keep their own size. */
+.tl-bar .top-info {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-align: center;
+}
+
+/* Mid-conversation that name needs the room, and on a phone there is not
+   enough of it for both. The mark stays - you always know whose site this is -
+   while the wordmark and the headcount stand down until the chat ends.
+   chat.js already puts `connected` on the bar, so this needs no :has(). */
+@media (max-width: 700px) {
+  .tl-bar.connected .tl-brand-name,
+  .tl-bar.connected .tl-brand-live { display: none; }
+}
+
+/* Auto is a word, not a glyph, so it gets width instead of a square. */
+.tl-bar .tl-act.auto-btn {
+  width: auto;
+  min-width: 56px;
+  padding: 0 var(--tl-s3);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+.tl-bar .tl-act.auto-btn[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--green) 20%, transparent);
+  color: var(--green);
+}
+
+/* The start view is a flex column in chat.css; the gate brings its own. */
+#viewStart.tl-start {
+  align-items: stretch;
+}
+
+/* Keep the redesigned account modal readable on a phone. */
+.modal-box.tl-auth-box {
+  width: min(430px, 94vw);
+  border-radius: var(--tl-r-lg);
+}
+.modal-box.tl-auth-box .modal-body { padding: var(--tl-s5); }
+
+@media (prefers-reduced-motion: reduce) {
+  .tl-act,
+  .tl-cta,
+  .tl-choice,
+  .tl-auth-btn,
+  .tl-submit { transition: none; }
+}
+
+/* Light theme: the translucent fills above are mixed from --text, so they
+   invert on their own. Only the shadows need toning down. */
+[data-theme="light"] .tl-menu { box-shadow: 0 12px 30px rgba(20, 30, 70, 0.16); }
+[data-theme="light"] .tl-tab.selected,
+[data-theme="light"] .tl-auth-tab.selected { box-shadow: 0 2px 8px rgba(20, 30, 70, 0.12); }
+[data-theme="light"] .tl-act-badge,
+[data-theme="light"] .tl-brand-dot,
+[data-theme="light"] .tl-act-dot { border-color: var(--bg-2); }
