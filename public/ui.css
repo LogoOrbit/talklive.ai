@@ -1225,11 +1225,18 @@
 /* --- Desktop: the nav is a column. --------------------------------------- */
 @media (min-width: 860px) {
   :root { --tl-callbar: 0px; }
+  /* The frame spans the window. It used to be a 1440px block centred in it,
+     which on anything wider left the nav floating in the middle of the page
+     with a hand's width of empty desktop to its left - a sidebar that is not
+     beside anything. The nav is pinned to the left edge and the rail to the
+     right, the way every app with a sidebar does it; what gets centred is
+     the column of content between them, not the furniture around it. */
   .tl-frame {
     grid-template-columns: 224px minmax(0, 1fr);
     gap: var(--tl-s5);
-    max-width: 1440px;
-    margin: 0 auto;
+    width: 100%;
+    max-width: none;
+    margin: 0;
     padding: var(--tl-s5) var(--tl-s5) 0;
     box-sizing: border-box;
   }
@@ -2526,15 +2533,18 @@
     max-width: 980px;
     margin-inline: auto;
   }
-  /* Equal size means equal: the call card gives up its own max-width and
-     fills its half, and the ad card matches its height rather than shrinking
-     to whatever the creative happens to be. */
+  /* The ad card is as tall as its creative and no taller. Matching the call
+     card's height sounded tidy and produced a 500px panel with a 250px
+     banner pinned to the top of it and a labelled void underneath - which
+     reads as a thing that failed to load, not as a layout. It sits at the
+     top of its column, level with the call card's own top edge. */
+  .tl-call-row { align-items: start; }
   .tl-call-row .tl-call { width: 100%; margin: 0; }
   .tl-call-row .tl-call-ad {
-    height: 100%;
     box-sizing: border-box;
     border: 1px solid var(--tl-line);
     border-radius: 28px;
+    padding: var(--tl-s4);
   }
 }
 
@@ -3028,5 +3038,107 @@
   .stage.call-live .tl-call-main .call-main-icon {
     width: clamp(24px, 3.9dvh, 30px);
     height: clamp(24px, 3.9dvh, 30px);
+  }
+}
+
+/* ===========================================================================
+ * 19. BIG SCREENS
+ * ---------------------------------------------------------------------------
+ * The whole app was drawn at one size and then centred, so on a 1080p or
+ * larger display it was a small, slightly cramped page marooned in the
+ * middle of a lot of empty desktop. Two separate problems, and they need
+ * different answers:
+ *
+ *   The furniture - nav and rail - should be at the edges. That is fixed
+ *   above by letting the frame span the window.
+ *
+ *   The content should NOT simply stretch with it. A headline 1700px wide is
+ *   unreadable, and a row of spirit animals spread across a whole monitor is
+ *   worse than one you can take in. So the middle column caps its content at
+ *   a comfortable measure and centres it in whatever room it has.
+ *
+ * Then everything scales: past 1600px the columns, the gutters and the type
+ * all step up, because 15px body copy on a 27" screen is what "small" means.
+ * ======================================================================== */
+
+@media (min-width: 1180px) {
+  /* The reading column. Wide enough for the hero and the picker to sit
+     comfortably side by side with the rails, capped before the line length
+     stops being readable, and centred in the space that is left. */
+  .tl-frame > .stage {
+    max-width: 1080px;
+    margin-inline: auto;
+    width: 100%;
+  }
+  .setup-panel { max-width: 100%; }
+}
+
+@media (min-width: 1600px) {
+  .tl-frame {
+    grid-template-columns: 268px minmax(0, 1fr) 340px;
+    gap: var(--tl-s6);
+    padding: var(--tl-s6) var(--tl-s6) 0;
+  }
+  .tl-frame.is-call { grid-template-columns: 268px minmax(0, 1fr); }
+
+  /* Type and controls step up together - scaling one without the other is
+     how a page ends up with big headings over small everything. */
+  .tl-nav-item { font-size: 15.5px; min-height: 52px; }
+  .tl-nav-icon { width: 24px; height: 24px; }
+  .tl-nav-icon svg { width: 23px; height: 23px; }
+
+  .setup-panel .setup-title { font-size: clamp(2.6rem, 2.9vw, 3.4rem); }
+  .setup-panel .tl-hero-sub { font-size: 17px; max-width: 58ch; }
+
+  .tl-action { min-height: 98px; padding: var(--tl-s5); }
+  .tl-action-icon { width: 60px; height: 60px; }
+  .tl-action-icon svg { width: 30px; height: 30px; }
+  .tl-action-body strong { font-size: 20px; }
+  .tl-action-body small { font-size: 14px; }
+
+  .animal-picker-title { font-size: 17px; }
+  .animal-picker-hint { font-size: 13.5px; }
+
+  .tl-rail-card { padding: var(--tl-s5); }
+  .tl-rail-head h2 { font-size: 15px; }
+  .tl-rail-row-text strong { font-size: 14.5px; }
+  .tl-rail-row-text small { font-size: 12.5px; }
+  .tl-rail-row-icon { width: 38px; height: 38px; }
+}
+
+/* Past this the columns stop growing and only the middle does, so a very
+   wide monitor gets more breathing room rather than a wider sidebar. */
+@media (min-width: 2000px) {
+  .tl-frame { padding-inline: clamp(var(--tl-s6), 4vw, 96px); }
+  .tl-frame > .stage { max-width: 1180px; }
+}
+
+/* The ad and house cards inside the reading column centre themselves with
+   `margin: auto` and cap at a width chosen for a 560px panel. Next to a
+   left-aligned hero that reads as a stray box rather than part of the page,
+   so on a desktop they line up with everything else and the creative centres
+   inside the card instead of the card centring in the column. */
+@media (min-width: 860px) {
+  .tl-frame > .stage .ad-card {
+    width: 100%;
+    max-width: none;
+    margin-inline: 0;
+  }
+  .tl-frame > .stage .ad-card [data-ad] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* Everything below the call - the conversation guide, the notes, the music
+   row - keeps the same measure and the same left edge as the call row above
+   it. Without this the row is a centred 980px pair and the guide beneath it
+   is full-column, so the two start at different places and the screen reads
+   as two layouts stacked rather than one. */
+@media (min-width: 980px) {
+  .call-panel > *:not(.tl-call-row) {
+    max-width: 980px;
+    margin-inline: auto;
   }
 }
