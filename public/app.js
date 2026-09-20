@@ -2990,15 +2990,10 @@ function totalUnreadMessages() {
   return notifData.filter((n) => n.type === 'message').length;
 }
 
-const headerBellDot = document.getElementById('headerBellDot');
 function updateFriendsMsgBadge() {
   const count = totalUnreadMessages() + notifData.filter((n) => n.type !== 'message').length;
   friendsMsgBadge.textContent = count;
   friendsMsgBadge.classList.toggle('hidden', count === 0);
-  // The bell is the same count said in the corner the reference puts it in.
-  // A dot, not a number: the number is already on the nav item it opens, and
-  // two counters for one thing invite the question of why they differ.
-  if (headerBellDot) headerBellDot.classList.toggle('hidden', count === 0);
 }
 
 // The requests list (friend requests, accepted-friend confirmations, call-back
@@ -4959,7 +4954,6 @@ function resetUI() {
   chatToggleBtn.classList.add('hidden');
   gameBtn.classList.add('hidden');
   if (typeof resetGame === 'function') resetGame();
-  syncToolRailOverflow();
 }
 
 // Return the single button to green "Call" (idle) on the persistent call screen.
@@ -5016,25 +5010,7 @@ function enterCallUI() {
   gameBtn.classList.remove('hidden');
   // Auth is the one header control the call screen drops.
   renderHeaderAuthVisibility();
-  syncToolRailOverflow();
 }
-
-// The header's tool rail is one capsule, and mid-call it grows from four tools
-// to six. On the narrowest phones that can run past the track it is given, so
-// it scrolls - and a scrolled icon cut dead at the capsule edge reads as a
-// rendering fault rather than as "there is more here". The class turns on the
-// edge fade in style.css, and only while there is genuinely something hidden.
-const headerToolsEl = document.querySelector('.header-tools');
-function syncToolRailOverflow() {
-  if (!headerToolsEl) return;
-  // Measured after layout: the tools are shown/hidden in the same frame.
-  requestAnimationFrame(() => {
-    const over = headerToolsEl.scrollWidth - headerToolsEl.clientWidth > 1;
-    headerToolsEl.classList.toggle('is-overflowing', over);
-  });
-}
-window.addEventListener('resize', syncToolRailOverflow);
-syncToolRailOverflow();
 
 let beginInFlight = false;
 const MIC_EXPLAINED_KEY = 'talklive_mic_explained';
