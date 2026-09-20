@@ -157,7 +157,10 @@
   // same storage key as the voice app's "keep connecting me" checkbox, so the
   // preference is consistent across both sub-apps.
   var AUTO_NEXT_KEY = 'talklive_autocall';
-  var autoNext = localStorage.getItem(AUTO_NEXT_KEY) === 'on';
+  // On unless it has been turned off. Same key and same default as the voice
+  // app, so "auto" means one thing across both halves of the product: when a
+  // conversation ends, the next one starts without being asked for.
+  var autoNext = localStorage.getItem(AUTO_NEXT_KEY) !== 'off';
   function setAutoNext(on, announce) {
     autoNext = on;
     localStorage.setItem(AUTO_NEXT_KEY, autoNext ? 'on' : 'off');
@@ -638,14 +641,25 @@
   //     in from visibility:hidden, and a hidden element cannot take focus), so
   //     the call waits for the frame after the style lands;
   //   - a disabled input silently refuses focus, so callers re-enable first.
-  // Skipped on touch, where the only effect is the on-screen keyboard leaping
-  // up over the conversation before you've read a word of it.
+  // It used to skip touch devices on the grounds that the keyboard would leap
+  // up over the conversation. It does not any more: on a chat you opened on
+  // purpose, or a stranger who has just connected, typing is the entire next
+  // thing you are going to do, and making everyone tap the box first was a
+  // tap charged to every single message.
+  //
+  // What it will not do is take focus away from something else: if the person
+  // is already typing somewhere, or a dialog is up over the top, the caret
+  // stays where it is.
   function focusComposer(el) {
     if (!el || el.disabled) return;
-    if (window.matchMedia && !window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+    var active = document.activeElement;
+    if (active && active !== document.body && active !== el
+        && /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName)) return;
+    if (document.querySelector('.modal-overlay:not(.hidden)')) return;
     requestAnimationFrame(function () {
       requestAnimationFrame(function () {
         if (el.disabled) return;
+        if (document.querySelector('.modal-overlay:not(.hidden)')) return;
         try { el.focus({ preventScroll: true }); } catch (err) { el.focus(); }
       });
     });

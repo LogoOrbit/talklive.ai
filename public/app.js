@@ -622,8 +622,19 @@ let accountEmail = localStorage.getItem('talklive_email') || '';
 // reload / reconnect, so an account is never lost to a refresh or a deploy.
 let sessionToken = localStorage.getItem('talklive_session') || null;
 let tempUsername = localStorage.getItem('talklive_tempname') || null;
-// Always starts unchecked when the app is opened, regardless of last session.
-let autoCallEnabled = false;
+// Auto-connect is on unless the person has turned it off. It is what turns
+// one call into an evening: without it, every conversation ends on a still
+// screen that has to be tapped again, and the tap is where people leave.
+//
+// `!== 'off'` rather than `=== 'on'` on purpose - a first visit has nothing
+// stored, and the default for nothing stored is on. Turning it off is
+// remembered, so a deliberate choice survives a reload; it used to be reset
+// to off every single time the app opened, which meant the switch never
+// stayed where anyone put it.
+//
+// Shared with /chat through the same key, so the setting means one thing
+// across both halves of the product.
+let autoCallEnabled = localStorage.getItem('talklive_autocall') !== 'off';
 let wasConnected = false;
 
 // --- Friends / notifications / friend chat / call-back state ---
@@ -4730,16 +4741,6 @@ if (callMoreBtn) {
   });
 }
 
-// Back to the home screen without ending the call - the call keeps running,
-// and the nav's Home does the same thing. The call is still reachable from
-// /call, and the browser's own back guard still asks before a real exit.
-const callMinimizeBtn = document.getElementById('callMinimizeBtn');
-if (callMinimizeBtn) {
-  callMinimizeBtn.addEventListener('click', () => {
-    if (navHomeBtn) navHomeBtn.click();
-  });
-}
-
 function monitorRemoteAudio(stream) {
   clearInterval(speakingCheckInterval);
   try {
@@ -5446,11 +5447,32 @@ document.getElementById('chatEmptyChips').addEventListener('click', (e) => {
 // visibility:hidden and a hidden element cannot take focus, and skipped on
 // touch: there the only effect is the on-screen keyboard popping up over the
 // messages, forcing the user to dismiss it just to read.
+// Put the caret in the box the person is about to type in - on a match, and
+// whenever anything with a composer opens. Two details it has to get right,
+// both of which used to make a plain .focus() do nothing:
+//   - the box is usually revealed in the same tick (the side panels animate in
+//     from visibility:hidden, and a hidden element cannot take focus), so the
+//     call waits for the frame after the style lands;
+//   - a disabled input silently refuses focus, so callers re-enable first.
+//
+// This used to skip touch devices on the grounds that the keyboard would leap
+// up over the conversation. It does not skip them any more: on a chat you
+// opened on purpose, or a stranger who has just connected, typing is the
+// entire next thing you are going to do, and making everyone tap the box
+// first was a tap charged to every single message.
+//
+// What it will not do is take focus away from something else: if the person
+// is already typing somewhere, or a dialog is up over the top, the caret
+// stays where it is.
 function focusComposer(el) {
   if (!el || el.disabled) return;
-  if (window.matchMedia && !window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+  const active = document.activeElement;
+  if (active && active !== document.body && active !== el
+      && /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName)) return;
+  if (document.querySelector('.modal-overlay:not(.hidden)')) return;
   requestAnimationFrame(() => requestAnimationFrame(() => {
     if (el.disabled) return;
+    if (document.querySelector('.modal-overlay:not(.hidden)')) return;
     try { el.focus({ preventScroll: true }); } catch (err) { el.focus(); }
   }));
 }
@@ -6796,8 +6818,10 @@ try {
 } catch (e) { /* very old browser without URLSearchParams - ignore */ }
 
 // Initial state: the Tap-to-Talk landing, a green idle Call button ready for
-// when the call screen opens, and an unchecked auto-call checkbox.
+// when the call screen opens, and the auto-connect control showing whatever
+// the setting actually is - which, unless it has been turned off, is on.
 autoCallCheckbox.checked = autoCallEnabled;
+syncAutoCallBtn();
 renderAcceptCalls();
 renderSettingsProfileRow();
 setCallState('idle');

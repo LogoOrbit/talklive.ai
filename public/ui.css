@@ -2028,31 +2028,15 @@
   text-align: center;
 }
 
-.tl-call-top {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  margin-bottom: var(--tl-s3);
-}
-.tl-call-min {
-  width: 40px;
-  height: 40px;
-  display: grid;
-  place-items: center;
-  border: 0;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--text) 8%, transparent);
-  color: var(--muted);
-  cursor: pointer;
-}
-.tl-call-min:hover { background: color-mix(in srgb, var(--text) 14%, transparent); color: var(--text); }
-.tl-call-min svg { width: 20px; height: 20px; }
 
-/* The connection dot and the timer belong together in the corner, the way
-   every call app puts them - not as a chip in the middle of the column. */
+/* The connection dot and the timer sit in the column with the status lines,
+   centred, because that is what they are about. They used to be pinned to a
+   corner in a header row of their own - a whole row of the shortest screen in
+   the app, spent putting the word for what is happening as far from the
+   sentence about it as the card allowed. */
 .tl-call .connection-indicator {
-  margin-inline-start: auto;
-  margin-bottom: 0;
+  margin: var(--tl-s2) auto 0;
+  justify-content: center;
 }
 
 /* --- Who ----------------------------------------------------------------- */
@@ -3141,4 +3125,116 @@
     max-width: 980px;
     margin-inline: auto;
   }
+}
+
+/* ===========================================================================
+ * 20. THE IN-CALL CHAT, AS A SHEET
+ * ---------------------------------------------------------------------------
+ * On a phone the chat during a call was a full-height drawer sliding in from
+ * the right at 92vw. That is a page swap: the call disappears, and the thing
+ * you were doing - talking to someone - stops being on screen at all. It
+ * also slides sideways, which is the gesture language of navigation, so it
+ * reads as "you have gone somewhere else".
+ *
+ * A chat over a live call is a box, not a destination. It comes up from the
+ * bottom, stops well short of the top so the call is still visible above it,
+ * and has the rounded top edge and the grab handle that say "this is a sheet
+ * over the thing you were on, and it goes back down".
+ *
+ * Desktop keeps the side panel: there it sits beside the call rather than on
+ * top of it, which is the whole reason it works there.
+ * ======================================================================== */
+
+@media (max-width: 859px) {
+  .side-panel.chat-side-panel {
+    /* Anchored to the bottom edge, full width, rounded at the top only. */
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: none;
+    height: min(74dvh, 620px);
+    padding: 0;
+    gap: 0;
+    border: 0;
+    border-top: 1px solid var(--tl-line-strong);
+    border-radius: var(--tl-r-lg) var(--tl-r-lg) 0 0;
+    /* Up, not across: sideways is how this app moves between screens, and
+       this is not a different screen. */
+    transform: translateY(100%);
+    /* Decelerating, so it arrives rather than stops - the same curve the
+       message bubbles already use. */
+    transition: transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.42);
+    overflow: hidden;
+  }
+  .side-panel.chat-side-panel.open { transform: translateY(0); }
+
+  /* The handle. It is what makes a sheet look draggable and, more usefully,
+     what makes it obvious the call is still behind it. */
+  .side-panel.chat-side-panel::before {
+    content: "";
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    width: 38px;
+    height: 4px;
+    transform: translateX(-50%);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--text) 26%, transparent);
+    pointer-events: none;
+    z-index: 2;
+  }
+  .side-panel.chat-side-panel .side-panel-header {
+    padding: var(--tl-s5) var(--tl-s4) var(--tl-s3);
+  }
+  .side-panel.chat-side-panel .chat-side-body {
+    flex: 1;
+    min-height: 0;
+    padding-inline: var(--tl-s4);
+    padding-bottom: calc(var(--tl-s3) + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* RTL slides sideways by default; a sheet has no side to come from, so the
+   direction rules have nothing to flip here. */
+[dir="rtl"] .side-panel.chat-side-panel { transform: translateY(100%); }
+[dir="rtl"] .side-panel.chat-side-panel.open { transform: translateY(0); }
+@media (min-width: 860px) {
+  [dir="rtl"] .side-panel.chat-side-panel { transform: translateX(-100%); }
+  [dir="rtl"] .side-panel.chat-side-panel.open { transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .side-panel.chat-side-panel { transition: none; }
+}
+
+/* The presence dot on the Settings profile row is absolutely positioned, and
+   its container had no position of its own - so it anchored to the page
+   instead of the avatar and rendered as a lone green dot pinned to the right
+   edge of the screen, level with nothing. */
+.tl-set-row-icon { position: relative; }
+#settingsProfileAvatar { overflow: visible; }
+
+/* Which phone call-screen ad runs, by how much height the screen has. The
+   rectangle needs roughly 270px under the controls; below that the strip
+   keeps the call controls clear of the tab bar, which always wins. */
+.tl-call-ad-tall { display: none; }
+@media (max-width: 979px) and (min-height: 760px) {
+  .tl-call-ad-tall {
+    /* Column, not row: `display: flex` alone laid the "Sponsored" label and
+       the creative out side by side and shoved the rectangle off the right
+       edge of the screen. */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .tl-call-ad-short { display: none; }
+  /* The rectangle is 250px against about 210px of room, so every pixel of
+     the gap above it is a pixel of creative that falls behind the tab bar.
+     It keeps enough of a break to stay clearly separate from the controls -
+     a thumb going for Hang Up must never be able to land on an ad - and
+     gives up the rest. */
+  .tl-call-ad-phone { margin-top: var(--tl-s2); }
 }
