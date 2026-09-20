@@ -15,17 +15,17 @@
      rather than after it - the sooner it lands, the sooner the hero paints.
      Analytics and ad tags are loaded at the end of <body> instead of here so
      they stop competing for mobile bandwidth during Largest Contentful Paint. -->
-<link rel="stylesheet" href="style.css?v=20260920tight" />
+<link rel="stylesheet" href="style.css?v=20260920controls" />
 <link rel="stylesheet" href="chat-extras.css?v=20260916navbar" />
 <link rel="stylesheet" href="games.css?v=20260916settings" />
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
      side-panel shell, Settings, Friends/History and the account dialog, and it
      does so with its own `tl-` class names so nothing above can reach it. -->
-<link rel="stylesheet" href="ui.css?v=20260920tight" />
+<link rel="stylesheet" href="ui.css?v=20260920controls" />
 <!-- The top bar, shared with /chat. Loaded after everything else because it
      owns the header outright: one button language, one radius, one focus ring
      on every screen of the product. -->
-<link rel="stylesheet" href="nav.css?v=20260920tight" />
+<link rel="stylesheet" href="nav.css?v=20260920controls" />
 <script defer src="/config.js"></script>
 <!-- Google Identity Services, deferred so it never blocks first paint. app.js
      waits for it (and for /config.js) before rendering the sign-in buttons. -->
@@ -458,6 +458,9 @@
     <!-- Friend chat side panel: persistent (server-side, while it's running) chat with a friend -->
     <div id="friendChatOverlay" class="side-panel-overlay hidden"></div>
     <aside id="friendChatModal" class="side-panel side-panel-right chat-side-panel" role="dialog" aria-labelledby="friendChatTitle">
+        <!-- Drag this down to put the sheet away. A pseudo-element cannot be
+             grabbed, so the handle is a real one. -->
+        <div class="tl-sheet-grip" aria-hidden="true"></div>
       <div class="side-panel-header">
         <h2 id="friendChatTitle" data-i18n="chat">Chat</h2>
         <div class="chat-header-actions">
@@ -720,7 +723,7 @@
     <aside id="navDrawer" class="tl-drawer hidden" role="dialog" data-i18n-aria="more" aria-label="More">
       <header class="tl-drawer-head">
         <span class="tl-drawer-brand">
-          <img src="/favicon.svg?v=20260920tight" width="26" height="26" alt="" decoding="async" />
+          <img src="/favicon.svg?v=20260920controls" width="26" height="26" alt="" decoding="async" />
           <span>Talk<span class="brand-name-live">Live</span></span>
         </span>
         <button type="button" id="closeNavDrawerBtn" class="tl-panel-close" data-i18n-aria="close" aria-label="Close">&times;</button>
@@ -1938,13 +1941,37 @@
         </div>
         <div id="reactionOverlay" class="reaction-overlay" aria-hidden="true"></div>
 
-        <!-- One row, four equal-sized buttons. The first is the single
-             Call / Loading / Hang Up / Confirm button on the left; the other
-             three are the in-call actions, enabled only once connected. -->
-        <!-- Two controls out in the open, because both are wanted
-             mid-sentence and neither can do damage. -->
-        <div class="call-actions tl-call-controls" id="callActions">
-          <div class="call-action-wrap" id="muteActionWrap">
+        <!-- ===============================================================
+             THE CONTROLS. One row, four circles of the same size, each with
+             its word underneath. They are the four things you do to a call
+             and none of them outranks the others by enough to be drawn
+             bigger - what separates them is colour, not scale:
+
+               1  Call -> are you sure? -> Hang up   (one button, four modes)
+               2  Mute            red once you are muted
+               3  Add friend      green once it is sent
+               4  Report          red, and only red
+
+             The caption takes the button's colour, so the one that is
+             currently doing something says so twice.
+
+             Auto-connect sits under them as a switch rather than a fifth
+             circle: it is a setting that stays on, not an action you take,
+             and a switch is the control that says so.
+             =============================================================== -->
+        <div class="tl-call-main">
+          <div class="call-action-wrap">
+            <button id="callMainBtn" class="action-btn call-main-btn is-call" data-i18n-aria="call" aria-label="Call">
+              <span class="call-main-confirm-layer" aria-hidden="true"></span>
+              <svg class="phone-icon call-main-icon" viewBox="0 0 24 24" fill="white" aria-hidden="true">
+                <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+              </svg>
+              <span class="action-spinner" aria-hidden="true"></span>
+            </button>
+            <span id="callMainLabel" class="action-label call-main-label is-call">Call</span>
+          </div>
+
+          <div class="call-action-wrap">
             <button id="muteBtn" class="action-btn action-btn-neutral" data-i18n-title="mute" data-i18n-aria="mute" title="Mute" aria-label="Mute" aria-pressed="false" disabled>
               <svg id="muteIcon" class="simple-icon simple-icon-lg" viewBox="0 0 24 24" fill="#aab0c4" aria-hidden="true">
                 <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
@@ -1962,71 +1989,41 @@
             <span class="action-label" data-i18n="addFriend">Add friend</span>
           </div>
           <div class="call-action-wrap">
-            <button type="button" id="callMoreBtn" class="action-btn action-btn-neutral" data-i18n-title="more" data-i18n-aria="more" title="More" aria-label="More" aria-expanded="false" disabled>
-              <svg class="simple-icon simple-icon-lg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5.5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="18.5" cy="12" r="1.9"/></svg>
+            <button id="reportBtn" class="action-btn action-btn-neutral action-btn-danger" data-i18n-title="report" data-i18n-aria="report" title="Report" aria-label="Report" disabled>
+              <svg class="simple-icon simple-icon-lg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M5 21a1 1 0 0 1-1-1V4a1 1 0 0 1 2 0v.6c3.7-1.7 6.6 1.9 10.4.2a1 1 0 0 1 1.4.9v8.5a1 1 0 0 1-.6.9c-3.8 1.7-6.7-1.9-10.2-.3V20a1 1 0 0 1-1 1z"/>
+              </svg>
             </button>
-            <span class="action-label" data-i18n="more">More</span>
+            <span class="action-label" data-i18n="report">Report</span>
           </div>
         </div>
 
-        <!-- ===============================================================
-             THE MAIN ROW. Three controls, and they are the whole product:
+        <div class="tl-call-extras">
+          <!-- The real input, visible at last. It was a hidden checkbox
+               driven by a round button; a switch is what this setting is. -->
+          <label class="tl-auto-switch" for="autoCallCheckbox" data-i18n-title="autoConnectNote" title="Auto-connect keeps finding you someone new as soon as a call ends.">
+            <span class="tl-auto-switch-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.2 2 4 13.4h5.6L8.8 22 20 10.2h-6z"/></svg>
+            </span>
+            <span class="tl-auto-switch-text">
+              <strong data-i18n="autoConnectTitle">Auto-connect</strong>
+              <small data-i18n="autoConnectNote">Auto-connect keeps finding you someone new as soon as a call ends.</small>
+            </span>
+            <input type="checkbox" id="autoCallCheckbox" />
+            <span class="tl-switch" aria-hidden="true"><span class="tl-switch-knob"></span></span>
+          </label>
 
-               Next          the core loop of a random-chat app, and until
-                             now it had no button at all. You could only
-                             reach the next stranger by hanging up and
-                             starting again, which is two taps and a dead
-                             screen between every conversation. Everyone this
-                             app competes with puts Next under your thumb.
-
-               The circle     call, searching, hang up, are-you-sure. Round
-                             and big, because it is the one control that
-                             must be unmissable and unmistakable.
-
-               Auto-connect   was a checkbox buried behind More. It is a
-                             mode, it is what turns one call into an
-                             evening, and a mode belongs where you can see
-                             whether it is on.
-             =============================================================== -->
-        <div class="tl-call-main">
-          <div class="call-action-wrap tl-call-side">
-            <button type="button" id="nextBtn" class="tl-call-round tl-call-next" data-i18n-title="nextPerson" data-i18n-aria="nextPerson" title="Next person" aria-label="Next person" disabled>
-              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5.5 5.2 15 12l-9.5 6.8z"/><rect x="16.6" y="5.2" width="2.6" height="13.6" rx="1.1"/></svg>
+          <div class="tl-call-quiet">
+            <button type="button" id="callMoreBtn" class="tl-call-quiet-btn" data-i18n-title="pickAnimal" data-i18n-aria="pickAnimal" title="Pick your spirit animal" aria-label="Pick your spirit animal" aria-expanded="false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 10.5h.01M15.5 10.5h.01"/><path d="M9 15c1.8 1.4 4.2 1.4 6 0"/></svg>
+              <span data-i18n="animalShort">Animal</span>
             </button>
-            <span class="action-label" data-i18n="nextPerson">Next</span>
-          </div>
-
-          <div class="call-action-wrap tl-call-centre">
-            <button id="callMainBtn" class="action-btn call-main-btn is-call" data-i18n-aria="call" aria-label="Call">
-              <span class="call-main-confirm-layer" aria-hidden="true"></span>
-              <svg class="phone-icon call-main-icon" viewBox="0 0 24 24" fill="white" aria-hidden="true">
-                <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
-              </svg>
-              <span class="action-spinner" aria-hidden="true"></span>
-            </button>
-            <span id="callMainLabel" class="action-label call-main-label is-call">Call</span>
-          </div>
-
-          <div class="call-action-wrap tl-call-side">
-            <button type="button" id="autoCallBtn" class="tl-call-round tl-call-auto" data-i18n-title="autoConnectTitle" data-i18n-aria="autoConnectTitle" title="Auto-connect" aria-label="Auto-connect" aria-pressed="false">
-              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.2 2 4 13.4h5.6L8.8 22 20 10.2h-6z"/></svg>
-            </button>
-            <span class="action-label" data-i18n="autoConnect">Auto</span>
           </div>
         </div>
 
         <!-- Everything that is not wanted mid-sentence. One tap away, and out
              of reach of an accidental one. -->
         <div id="callMoreSheet" class="tl-call-sheet hidden" role="group" data-i18n-aria="more" aria-label="More">
-          <div class="call-action-wrap">
-            <button id="reportBtn" class="action-btn action-btn-neutral" data-i18n-title="report" data-i18n-aria="report" title="Report" aria-label="Report" disabled>
-              <svg class="simple-icon simple-icon-lg" viewBox="0 0 24 24" aria-hidden="true">
-                <line x1="5" y1="3" x2="5" y2="21" stroke="#ff5470" stroke-width="2" stroke-linecap="round"/>
-                <path d="M6 4h13l-3.5 4L19 12H6V4z" fill="#ff5470"/>
-              </svg>
-            </button>
-            <span class="action-label" data-i18n="report">Report</span>
-          </div>
           <!-- Your spirit animal, pickable from here too. It is the one thing
                a stranger sees about you the moment you connect, and the
                moment you most want to set it is while you are waiting for
@@ -2038,13 +2035,6 @@
             <div id="callAnimalGrid" class="animal-grid tl-call-animal-grid" role="radiogroup" data-i18n-aria="pickAnimal" aria-label="Pick your spirit animal"></div>
           </div>
 
-          <!-- Auto-connect used to be this checkbox. It is the round button in
-               the main row now - one control per setting, and this one is a
-               mode you want to see the state of without opening a drawer. The
-               input stays, hidden, because it is the element every other part
-               of the app reads and writes; the button drives it. -->
-          <input type="checkbox" id="autoCallCheckbox" class="visually-hidden" tabindex="-1" aria-hidden="true" />
-          <p class="tl-call-sheet-note" data-i18n="autoConnectNote">Auto-connect keeps finding you someone new as soon as a call ends.</p>
         </div>
 
 
@@ -2157,6 +2147,9 @@
            Usable during a call; swipe right to close. -->
       <div id="chatOverlay" class="side-panel-overlay hidden"></div>
       <aside id="chatPanel" class="side-panel side-panel-right chat-side-panel" role="dialog" data-i18n-aria="chat" aria-label="Chat">
+        <!-- Drag this down to put the sheet away. A pseudo-element cannot be
+             grabbed, so the handle is a real one. -->
+        <div class="tl-sheet-grip" aria-hidden="true"></div>
         <div class="side-panel-header chat-side-header">
           <!-- The spirit animal the stranger picked, next to their name. It is
                the only thing either of you knows about the other, so the panel
@@ -2573,7 +2566,7 @@
        browser finish parsing and paint the page first. -->
   <script defer src="/socket.io/socket.io.js"></script>
   <script defer src="countries.js?v=20260828fix"></script>
-  <script defer src="i18n.js?v=20260920tight"></script>
+  <script defer src="i18n.js?v=20260920controls"></script>
   <script defer src="chat-time.js?v=20260916navbar"></script>
   <script defer src="animals.js?v=20260916settings"></script>
   <script defer src="moderation.js?v=20260705b"></script>
@@ -2611,7 +2604,7 @@
   </script>
   <script defer src="chat-extras.js?v=20260916navbar"></script>
   <script defer src="games.js?v=20260916settings"></script>
-  <script defer src="app.js?v=20260920tight"></script>
+  <script defer src="app.js?v=20260920controls"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

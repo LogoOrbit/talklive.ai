@@ -199,6 +199,14 @@
       entry[0].classList.toggle('hidden', !active);
       entry[0].setAttribute('aria-hidden', active ? 'false' : 'true');
     });
+    // The landing scrolls; a conversation does not. The page was locked at
+    // `overflow: hidden` in every state, which is right once you are chatting
+    // - only the message list should move - but on the start screen it meant
+    // everything past the fold was unreachable. On an 820px phone that was
+    // the bottom half of this page's only ad: rendered, never scrollable to,
+    // and impossible for anyone to see in full.
+    document.body.classList.toggle('page-scrolls', name === 'start');
+
     var live = name === 'live';
     composer.classList.toggle('hidden', !live);
     composer.setAttribute('aria-hidden', live ? 'false' : 'true');
@@ -353,11 +361,34 @@
     animalChosenText.classList.add('is-chosen');
   }
 
+  // The picker opens on one row and grows on request, the same as the voice
+  // app's. All twenty at once is a wall roughly 400px tall between the Start
+  // button and everything under it - on a phone that pushed this page's only
+  // ad to y=940 on an 820px screen, where nobody ever saw it, and made the
+  // ice-breaker feel like a form to fill in before you were allowed to chat.
+  //
+  // The row you land on is never missing your own choice: a pick from further
+  // down is pulled into it.
+  var ANIMAL_PREVIEW_COUNT = 7;
+  var animalPickerExpanded = false;
+
+  function animalPreviewIds() {
+    var ids = Animals.list.map(function (a) { return a.id; }).slice(0, ANIMAL_PREVIEW_COUNT);
+    if (myAnimal && ids.indexOf(myAnimal) === -1) ids[ids.length - 1] = myAnimal;
+    return ids;
+  }
+
   function renderAnimalPicker() {
     if (!animalGrid || !Animals) return;
     Animals.installSprite();
+    animalGrid.innerHTML = '';
+    var shown = animalPickerExpanded
+      ? Animals.list.map(function (a) { return a.id; })
+      : animalPreviewIds();
     var frag = document.createDocumentFragment();
-    Animals.list.forEach(function (animal) {
+    shown.forEach(function (id) {
+      var animal = Animals.get(id);
+      if (!animal) return;
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'animal-option' + (myAnimal === animal.id ? ' selected' : '');
@@ -369,18 +400,27 @@
         + '<span class="animal-option-name">' + escapeHtml(Animals.name(animal.id)) + '</span>';
       frag.appendChild(btn);
     });
+
+    if (Animals.list.length > ANIMAL_PREVIEW_COUNT) {
+      var more = document.createElement('button');
+      more.type = 'button';
+      more.className = 'animal-option animal-option-more';
+      more.dataset.animalMore = '1';
+      more.innerHTML = '<span class="animal-more-glyph" aria-hidden="true">'
+        + (animalPickerExpanded ? '&minus;' : '+') + '</span>'
+        + '<span class="animal-option-name">'
+        + escapeHtml(t(animalPickerExpanded ? 'animalLess' : 'animalMore'))
+        + '</span>';
+      frag.appendChild(more);
+    }
+
     animalGrid.appendChild(frag);
     renderAnimalChoiceLine();
   }
 
   function refreshAnimalLabels() {
     if (!animalGrid || !Animals) return;
-    var names = animalGrid.querySelectorAll('.animal-option');
-    for (var i = 0; i < names.length; i++) {
-      var label = names[i].querySelector('.animal-option-name');
-      if (label) label.textContent = Animals.name(names[i].dataset.animal);
-    }
-    renderAnimalChoiceLine();
+    renderAnimalPicker();
   }
 
   function setMyAnimal(id) {
@@ -402,6 +442,11 @@
       var option = ev.target.closest('.animal-option');
       if (!option) return;
       vibrate(8);
+      if (option.dataset.animalMore) {
+        animalPickerExpanded = !animalPickerExpanded;
+        renderAnimalPicker();
+        return;
+      }
       setMyAnimal(option.dataset.animal);
     });
     renderAnimalPicker();

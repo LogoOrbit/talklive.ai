@@ -53,8 +53,18 @@ html, body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   background: var(--bg-1);
   color: var(--text);
-  overflow: hidden; /* the page never scrolls - only the message list does */
+  overflow: hidden; /* a conversation never scrolls - only the message list does */
 }
+
+/* ...but the start screen is a landing page, and a landing page scrolls. With
+   the lock on in every state, everything below the fold was unreachable: on
+   an 820px phone that was the bottom half of this page's only ad, rendered
+   and impossible to reach. Set from setView(), and dropped again the moment
+   a search starts. */
+body.page-scrolls,
+body.page-scrolls > .app { height: auto; min-height: 100%; overflow-y: auto; }
+html:has(body.page-scrolls) { overflow-y: auto; }
+
 body.modal-open { overflow: hidden; }
 img { max-width: 100%; }
 .hidden { display: none !important; }
