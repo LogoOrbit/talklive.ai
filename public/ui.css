@@ -31,6 +31,10 @@
   --tl-r-pill: 999px;
 
   --tl-tap: 48px;
+  /* The phone tab bar's height. Everything that has to sit clear of it - the
+     page's bottom padding, the adhesive ad - measures from this, so they
+     cannot drift apart when the bar changes. */
+  --tl-navbar: 67px;
 
   --tl-card: color-mix(in srgb, var(--bg-2) 92%, transparent);
   --tl-line: var(--line);
@@ -1100,7 +1104,17 @@
  * 3. BREAKPOINTS
  * ======================================================================== */
 
-/* --- Phone: the nav becomes the bottom bar. ------------------------------ */
+/* --- Phone: the nav becomes the bottom bar. ------------------------------
+ * Rebuilt for legibility. It was five 21px outlines with 10.5px grey labels
+ * and a 3px line over the current one: at arm's length that is a row of grey
+ * smudges, and which one you are on is a detail you have to look for. On the
+ * screen where a first-time visitor decides whether this app is simple, a
+ * navigation that reads as noise is a navigation that reads as complicated.
+ *
+ * So: bigger icons, bigger labels, and the current item wears a filled pill
+ * behind its icon - the one active state that is legible in a glance, in
+ * sunlight, on a cheap screen.
+ * ---------------------------------------------------------------------- */
 @media (max-width: 859px) {
   .tl-nav {
     display: block;
@@ -1109,61 +1123,87 @@
     right: 0;
     bottom: 0;
     z-index: 56;
-    padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
-    background: color-mix(in srgb, var(--bg-1) 96%, transparent);
-    -webkit-backdrop-filter: blur(14px);
-    backdrop-filter: blur(14px);
-    border-top: 1px solid var(--line);
+    padding: 6px 4px calc(4px + env(safe-area-inset-bottom, 0px));
+    background: color-mix(in srgb, var(--bg-2) 97%, transparent);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    border-top: 1px solid var(--tl-line);
   }
   .tl-nav-items {
     flex-direction: row;
-    gap: 2px;
+    gap: 0;
   }
   .tl-nav-item {
     flex: 1 1 0;
     min-width: 0;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     gap: 3px;
-    padding: 6px 2px;
-    min-height: 54px;
-    border-radius: var(--tl-r-sm);
-    font-size: 10.5px;
-    font-weight: 700;
+    padding: 4px 2px 2px;
+    min-height: 56px;
+    border-radius: var(--tl-r-md);
+    background: transparent;
+    /* Brighter than --muted: an unselected tab still has to be readable, and
+       the palette's muted grey was chosen for body copy, not for 11px
+       all-caps-sized labels on a dark bar. */
+    color: color-mix(in srgb, var(--text) 62%, transparent);
+    font-size: 11.5px;
+    font-weight: 600;
     text-align: center;
   }
-  .tl-nav-item.is-current::before {
-    top: 0;
-    inset-inline-start: 50%;
-    width: 22px;
-    height: 3px;
-    transform: translateX(-50%);
+  .tl-nav-item:hover { background: transparent; }
+
+  /* The icon lives in its own pill, which is what fills in when selected. */
+  .tl-nav-icon {
+    width: 100%;
+    max-width: 58px;
+    height: 30px;
+    border-radius: var(--tl-r-pill);
+    transition: background-color 0.16s ease, color 0.16s ease;
   }
+  .tl-nav-icon svg { width: 23px; height: 23px; }
+
+  .tl-nav-item.is-current {
+    background: transparent;
+    color: var(--text);
+    font-weight: 700;
+  }
+  .tl-nav-item.is-current .tl-nav-icon {
+    background: color-mix(in srgb, var(--accent) 34%, transparent);
+    color: var(--text);
+  }
+  /* The hairline over the current tab is gone - the filled pill says it. */
+  .tl-nav-item.is-current::before { display: none; }
+
   .tl-nav-label {
     flex: 0 0 auto;
     width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
+    line-height: 1.2;
   }
   .tl-nav-label-long { display: none; }
   .tl-nav-label-short { display: block; }
-  /* No room for a "Soon" chip or a promo card on a tab bar, and Shop is the
-     one destination nobody can act on yet - so it is the one that goes. It is
-     still reachable from Settings, where it always was. */
+
+  /* No room for a "Soon" chip or a promo card on a tab bar - and no room for
+     a sixth tab either. Shop is the one destination nobody can act on yet, so
+     it is the one that goes; it is still in the drawer behind More. */
   .tl-nav-soon,
   .tl-nav-promo,
   .tl-nav-item-wide { display: none; }
+
   .tl-nav-item .notif-badge {
     position: absolute;
-    top: 4px;
+    top: 2px;
     inset-inline-end: 50%;
     margin-inline-end: -22px;
-    min-width: 17px;
-    height: 17px;
-    font-size: 10px;
+    min-width: 18px;
+    height: 18px;
+    font-size: 10.5px;
+    border: 2px solid var(--bg-2);
   }
   /* Clear the bar, so the last thing on the page is never parked under it. */
-  .app { padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
+  .app { padding-bottom: calc(var(--tl-navbar) + var(--tl-s2) + env(safe-area-inset-bottom, 0px)); }
 }
 
 /* --- Desktop: the nav is a column. --------------------------------------- */
@@ -1218,7 +1258,10 @@
   margin: var(--tl-s3) 0 0;
   font-size: 15px;
   line-height: 1.55;
-  color: var(--muted);
+  /* Brighter than --muted. This one line is the whole pitch - "real people,
+     no sign-up" - and it was sitting at body-copy grey on top of a tinted
+     sky, which is the lowest-contrast text on the highest-stakes screen. */
+  color: color-mix(in srgb, var(--text) 78%, transparent);
   text-wrap: balance;
 }
 
@@ -2167,28 +2210,93 @@
   color: var(--text);
 }
 
-/* --- How to leave -------------------------------------------------------- */
-.tl-call-end-wrap {
-  display: flex;
-  flex-direction: column;
+/* --- The main row: Next, the circle, Auto-connect ------------------------ */
+.tl-call-main {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: var(--tl-s2);
+  justify-items: center;
+  gap: var(--tl-s3);
   width: 100%;
-  /* Deliberately far from Mute and Add friend. The old row put hang-up
+  /* Well clear of Mute and Add friend above it: the old layout put hang-up
      one thumb-width from mute, at the same size and nearly the same colour. */
   margin-top: var(--tl-s6);
 }
-/* The three-class selector is deliberate: style.css sizes every .action-btn
-   on a live call with `.stage.call-live .action-btn`, and a pill has to
-   out-specify that rather than hope to out-order it. */
-.stage .tl-call-end-wrap .call-main-btn,
-.stage.call-live .tl-call-end-wrap .call-main-btn {
-  width: min(280px, 100%);
-  height: 58px;
-  border-radius: var(--tl-r-pill);
+.tl-call-main .call-action-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
 }
-.tl-call-end-wrap .call-main-label {
+.tl-call-main .action-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* The two side buttons. Big enough to hit without looking, small enough that
+   the circle between them is obviously the main one. */
+.tl-call-round {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  border: 1px solid var(--tl-line-strong);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 0.12s ease, background-color 0.15s ease, border-color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.tl-call-round svg { width: 26px; height: 26px; }
+.tl-call-round:hover:not(:disabled) { background: color-mix(in srgb, var(--text) 15%, transparent); }
+.tl-call-round:active:not(:disabled) { transform: scale(0.94); }
+.tl-call-round:disabled { opacity: 0.35; cursor: default; }
+
+/* Auto-connect is a mode, so it has to look switched on rather than just
+   pressed - the whole point of moving it out of the drawer was being able to
+   see its state without opening anything. */
+.tl-call-auto.is-on {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 26%, transparent);
+  color: var(--accent-2);
+}
+
+/* The circle. Round and big, because it is the one control on this screen
+   that must be unmissable - and round is the shape every phone has used for
+   answer and hang up for twenty years. */
+.stage .tl-call-main .call-main-btn,
+.stage.call-live .tl-call-main .call-main-btn {
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+}
+.tl-call-main .call-main-icon { width: 34px; height: 34px; }
+.tl-call-main .call-main-label {
   font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* Hidden but still readable by the code that owns the setting. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+.tl-call-sheet-note {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  text-align: center;
   color: var(--muted);
 }
 
@@ -2231,62 +2339,6 @@
   .tl-call-controls { gap: var(--tl-s4); }
 }
 
-/* The pill carries its own caption, so the label that used to sit under it
-   would be saying the same word twice. */
-.tl-call-end-wrap .call-main-label { display: none; }
-.tl-call-end-text {
-  font-size: 16px;
-  font-weight: 800;
-  letter-spacing: -0.2px;
-  color: #fff;
-}
-.tl-call-end-wrap .call-main-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--tl-s2);
-}
-.tl-call-end-wrap .call-main-icon { width: 21px; height: 21px; }
-/* The button's four colours are three stacked ::before/::after/confirm layers
-   that cross-fade, and every one of them is a 50%-radius circle carrying a
-   radial gradient and a triple glow drawn for a 72px orb. At pill width that
-   is an ellipse with a smear on it, so the layers are re-cut to the pill's
-   shape and flattened - the cross-fade between modes still works exactly as
-   it did, it just happens on a pill now. */
-.tl-call-end-wrap .call-main-btn::before,
-.tl-call-end-wrap .call-main-btn::after,
-.tl-call-end-wrap .call-main-btn .call-main-confirm-layer {
-  border-radius: var(--tl-r-pill);
-  box-shadow: none;
-}
-.tl-call-end-wrap .call-main-btn::before { background: var(--green); }
-.tl-call-end-wrap .call-main-btn::after { background: var(--danger); }
-.tl-call-end-wrap .call-main-btn .call-main-confirm-layer { background: #d97706; }
-/* The caption and the icon sit above all three layers. */
-.tl-call-end-wrap .tl-call-end-text,
-.tl-call-end-wrap .call-main-icon,
-.tl-call-end-wrap .action-spinner { position: relative; z-index: 1; }
-.tl-call-end-wrap .call-main-btn.is-call .tl-call-end-text { color: #05230f; }
-.tl-call-end-wrap .call-main-btn.is-call .call-main-icon { fill: #05230f; }
-[data-theme="light"] .tl-call-end-wrap .call-main-btn.is-call .tl-call-end-text { color: #fff; }
-[data-theme="light"] .tl-call-end-wrap .call-main-btn.is-call .call-main-icon { fill: #fff; }
-/* The spinner is absolutely positioned and centred, which on a 72px circle
-   put it over the (hidden) icon and on a 280px pill puts it over the caption.
-   In the pill it becomes an ordinary inline item, sitting where the icon
-   would, with the caption beside it. */
-.tl-call-end-wrap .action-spinner {
-  position: static;
-  width: 21px;
-  height: 21px;
-  border-width: 3px;
-  flex: 0 0 auto;
-}
-/* Searching keeps the green it has always had - green means "this is the
-   button you pressed and it is still working" - just dimmed, so a live call's
-   red is unmistakably a different state and not just a different hue. */
-.tl-call-end-wrap .call-main-btn.is-loading::before { opacity: 0.55; }
-/* While searching the spinner is the icon. */
-.tl-call-end-wrap .call-main-btn.is-loading .call-main-icon { display: none; }
 
 /* ===========================================================================
  * 10. "COMING SOON" CARDS
@@ -2589,4 +2641,36 @@
    fold as an ad can honestly get on a 640px-tall viewport. */
 @media (max-width: 979px) {
   .tl-call-ad { margin-top: var(--tl-s3); }
+}
+
+/* ===========================================================================
+ * 13. THE SEARCH ANCHOR vs THE TAB BAR
+ * ---------------------------------------------------------------------------
+ * The adhesive 320x50 shown while the voice matcher is searching is
+ * `position:fixed; bottom:0; z-index:45`. The phone's tab bar is
+ * `position:fixed; bottom:0; z-index:56`. So on every phone since the tab bar
+ * shipped, that ad has been rendering underneath it: requested, served,
+ * counted as an impression, and impossible for anyone to see.
+ *
+ * That is worse than no ad. It earns nothing, and an impression nobody could
+ * have seen is exactly what viewability audits and invalid-traffic checks
+ * look for. It sits above the bar now, which is where an adhesive belongs
+ * anyway - between the content and the navigation, not under both.
+ * ======================================================================== */
+
+@media (max-width: 859px) {
+  .tl-search-anchor {
+    bottom: calc(var(--tl-navbar) + env(safe-area-inset-bottom, 0px));
+    /* Its own safe-area padding is now the tab bar's job, not its own. */
+    padding-bottom: 0;
+    min-height: 50px;
+    border-radius: 12px;
+  }
+}
+
+/* A slot that only pays its way at desktop widths. On a phone the leaderboard
+   degrades to a 320x50 and stacks against the content native a screen below
+   it; one good ad on that scroll beats two bad ones. */
+@media (max-width: 859px) {
+  .ad-card-desk { display: none; }
 }

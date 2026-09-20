@@ -1017,6 +1017,7 @@ function setAutoCallEnabled(value) {
   autoCallEnabled = value;
   localStorage.setItem('talklive_autocall', autoCallEnabled ? 'on' : 'off');
   autoCallCheckbox.checked = autoCallEnabled;
+  if (typeof syncAutoCallBtn === 'function') syncAutoCallBtn();
   syncWakeLock();
 }
 
@@ -3845,6 +3846,10 @@ function setCallState(state) {
   // and it closes when the call does, rather than being left open over a
   // screen where none of it applies any more.
   if (typeof callMoreBtn !== 'undefined' && callMoreBtn) callMoreBtn.disabled = !connected;
+  // Next needs somebody to move on from. Auto-connect does not - it is a mode
+  // you set before or during a call, and switching it on while searching is
+  // exactly when it is most useful.
+  if (typeof nextBtn !== 'undefined' && nextBtn) nextBtn.disabled = !connected;
   if (!connected) setCallMoreOpen(false);
   // The bars only mean anything while there is a voice to draw.
   showCallWave(connected);
@@ -4577,6 +4582,47 @@ function createPeerConnection(isInitiator) {
 
 let visualizerCtx = null;
 let visualizerSource = null;
+
+// --- Next -------------------------------------------------------------------
+// The core loop of a random-chat app, and until now it had no button. The only
+// way to the next stranger was to hang up and start again: two taps with a
+// dead screen in between, on the one action people take most.
+//
+// It reuses autoNextMatch(), which is what the reconnect watchdog already uses
+// to advance - so a deliberate skip and an automatic one take exactly the same
+// path, and the server is told the same thing either way.
+const nextBtn = document.getElementById('nextBtn');
+if (nextBtn) {
+  nextBtn.addEventListener('click', () => {
+    if (nextBtn.disabled || callState !== 'connected') return;
+    vibrate(12);
+    // `false` for failed: this call worked, we just want a different person.
+    // Saying otherwise would make the server keep us apart permanently.
+    autoNextMatch('statusFindingNew', false);
+  });
+}
+
+// --- Auto-connect -----------------------------------------------------------
+// A mode, not a preference buried in a drawer: it is what turns one call into
+// an evening, and you should be able to see whether it is on without opening
+// anything. The hidden checkbox stays the element the rest of the app reads
+// and writes, so there is still one source of truth - this just drives it.
+const autoCallBtn = document.getElementById('autoCallBtn');
+function syncAutoCallBtn() {
+  if (!autoCallBtn) return;
+  autoCallBtn.classList.toggle('is-on', autoCallEnabled);
+  autoCallBtn.setAttribute('aria-pressed', autoCallEnabled ? 'true' : 'false');
+  autoCallBtn.title = t(autoCallEnabled ? 'autoConnectOn' : 'autoConnectOff');
+  autoCallBtn.setAttribute('aria-label', t(autoCallEnabled ? 'autoConnectOn' : 'autoConnectOff'));
+}
+if (autoCallBtn) {
+  autoCallBtn.addEventListener('click', () => {
+    setAutoCallEnabled(!autoCallEnabled);
+    syncAutoCallBtn();
+    vibrate(10);
+    showToast(t(autoCallEnabled ? 'autoConnectOnToast' : 'autoConnectOffToast'));
+  });
+}
 
 // --- The call screen's live waveform ---------------------------------------
 // A voice call with a silent screen and a dead call look exactly the same.
