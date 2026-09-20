@@ -3011,15 +3011,10 @@ function totalUnreadMessages() {
   return notifData.filter((n) => n.type === 'message').length;
 }
 
-const headerBellDot = document.getElementById('headerBellDot');
 function updateFriendsMsgBadge() {
   const count = totalUnreadMessages() + notifData.filter((n) => n.type !== 'message').length;
   friendsMsgBadge.textContent = count;
   friendsMsgBadge.classList.toggle('hidden', count === 0);
-  // The bell is the same count said in the corner the reference puts it in.
-  // A dot, not a number: the number is already on the nav item it opens, and
-  // two counters for one thing invite the question of why they differ.
-  if (headerBellDot) headerBellDot.classList.toggle('hidden', count === 0);
 }
 
 // The requests list (friend requests, accepted-friend confirmations, call-back
@@ -3879,6 +3874,13 @@ function setCallState(state) {
   if (!connected) setCallMoreOpen(false);
   // The bars only mean anything while there is a voice to draw.
   showCallWave(connected);
+  // A live call is its own layout on a short phone: the corner already reads
+  // CONNECTED, the timer is running in the orb and the partner's name is on
+  // screen, so the "You're connected" line is three ways of saying the same
+  // thing and it is the one that gives up its height. ui.css owns the rule;
+  // this is only the hook, and it is off in every other state so "Searching",
+  // "Connecting" and "Reconnecting" always have somewhere to be said.
+  stageEl.classList.toggle('call-connected', connected);
   // The Tic Tac Toe game needs a live partner.
   gameBtn.disabled = !connected;
   gameBtn.classList.toggle('nav-btn-off', !connected);
@@ -4711,6 +4713,15 @@ function setCallMoreOpen(open) {
   callMoreSheet.classList.toggle('hidden', !open);
   callMoreBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
   callMoreBtn.classList.toggle('is-open', open);
+  // On a phone the call screen already fills the viewport, so the sheet opens
+  // below the fold: the button said "expanded" and nothing appeared to happen.
+  // It brings itself into view instead, clearing the tab bar via the
+  // scroll-margin set on it in ui.css.
+  if (!open || !callMoreSheet.scrollIntoView) return;
+  const still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  requestAnimationFrame(() => {
+    callMoreSheet.scrollIntoView({ block: 'nearest', behavior: still ? 'auto' : 'smooth' });
+  });
 }
 
 if (callMoreBtn) {
@@ -4969,7 +4980,6 @@ function resetUI() {
   chatToggleBtn.classList.add('hidden');
   gameBtn.classList.add('hidden');
   if (typeof resetGame === 'function') resetGame();
-  syncToolRailOverflow();
 }
 
 // Return the single button to green "Call" (idle) on the persistent call screen.
@@ -5026,25 +5036,7 @@ function enterCallUI() {
   gameBtn.classList.remove('hidden');
   // Auth is the one header control the call screen drops.
   renderHeaderAuthVisibility();
-  syncToolRailOverflow();
 }
-
-// The header's tool rail is one capsule, and mid-call it grows from four tools
-// to six. On the narrowest phones that can run past the track it is given, so
-// it scrolls - and a scrolled icon cut dead at the capsule edge reads as a
-// rendering fault rather than as "there is more here". The class turns on the
-// edge fade in style.css, and only while there is genuinely something hidden.
-const headerToolsEl = document.querySelector('.header-tools');
-function syncToolRailOverflow() {
-  if (!headerToolsEl) return;
-  // Measured after layout: the tools are shown/hidden in the same frame.
-  requestAnimationFrame(() => {
-    const over = headerToolsEl.scrollWidth - headerToolsEl.clientWidth > 1;
-    headerToolsEl.classList.toggle('is-overflowing', over);
-  });
-}
-window.addEventListener('resize', syncToolRailOverflow);
-syncToolRailOverflow();
 
 let beginInFlight = false;
 const MIC_EXPLAINED_KEY = 'talklive_mic_explained';

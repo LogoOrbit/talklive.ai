@@ -3,10 +3,13 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
-<link rel="stylesheet" href="/chat.css?v=20260916navbar" />
+<link rel="stylesheet" href="/chat.css?v=20260920navbar" />
 <link rel="stylesheet" href="/chat-extras.css?v=20260916navbar" />
 <link rel="stylesheet" href="/games.css?v=20260916navbar" />
-<link rel="stylesheet" href="/ui.css?v=20260917panels" />
+<link rel="stylesheet" href="/ui.css?v=20260920navbar" />
+<!-- The top bar, shared with / and /call: one button language, one radius,
+     one focus ring on every screen of the product. -->
+<link rel="stylesheet" href="/nav.css?v=20260920navbar" />
 <style>
   .skip-link {
     position: fixed;
@@ -68,91 +71,84 @@
   <a href="#chatStage" class="skip-link" data-i18n="skipToContent">Skip to main content</a>
   <div class="app">
 
-    <!-- The one and only top bar. Idle: brand + online count. Connected: the
-         partner's flag/name take the middle, and the action icons light up. -->
-    <header class="topbar">
-      <!-- The lockup owns the left edge, exactly as it does on / and /call: the
-           settings gear used to sit ahead of it here too, which made the first
-           thing on the page a grey cog instead of the product's name. It is in
-           the action group on the right now. -->
-      <div class="top-lead">
+    <!-- The one and only top bar, built from the same three zones and the same
+         button language as / and /call (public/nav.css). Idle: the lockup and
+         the online count. Connected: the partner takes the middle, and the
+         conversation's own actions light up on the right. -->
+    <header class="topbar nav">
       <!-- The TalkLive lockup. Byte-for-byte the same mark and wordmark the
            voice app uses (public/index.html), so /chat is visibly the same
            product and not a different site. Never hidden - not on a phone,
-           not mid-conversation. -->
-      <a class="brand" id="brandHome" href="/" data-i18n-title="goHome" data-i18n-aria="goHome" aria-label="TalkLive home" title="TalkLive home">
-        <span class="brand-logo" aria-hidden="true">
-          <img src="/favicon.svg?v=20260916settings" width="30" height="30" alt="" decoding="async" />
-          <!-- Network status, wired in chat.js exactly as it is in app.js. -->
-          <span id="brandDot" class="brand-dot is-online" data-i18n-title="netOnline" title="You are online"></span>
-        </span>
-        <span class="brand-name">Talk<span class="brand-name-live">Live</span></span>
-      </a>
-      <!-- Live headcount, moved out of the middle of the bar and tucked under
-           the wordmark - the same line the voice app's lockup carries. It was
-           a green capsule in the centre slot, which meant the bar's middle
-           changed meaning the moment a conversation started (headcount, then
-           partner). The middle is only ever "who you are talking to" now, and
-           liveness is said once, by the brand, on both screens. The waiting
-           state is a grey dot and an em dash - never a zero, which reads as
-           "nobody is here". -->
-      <div class="live-count is-waiting" id="liveCount" data-i18n-title="onlineAria" data-i18n-aria="onlineAria" title="Number of people online now" aria-label="Number of people online now" role="status" aria-live="polite">
-        <span class="live-beacon" aria-hidden="true"></span>
-        <span class="live-num" id="onlineCount">&mdash;</span>
-        <span class="live-label" data-i18n="online">Online</span>
-      </div>
+           not mid-conversation. The headcount sits under the wordmark, so the
+           middle of the bar only ever means "who you are talking to" and
+           liveness is said once, by the brand, on both screens. -->
+      <div class="nav-brand">
+        <a class="nav-logo" id="brandHome" href="/" data-i18n-title="goHome" data-i18n-aria="goHome" aria-label="TalkLive home" title="TalkLive home">
+          <span class="brand-logo" aria-hidden="true">
+            <img src="/favicon.svg?v=20260916settings" width="30" height="30" alt="" decoding="async" />
+            <!-- Network status, wired in chat.js exactly as it is in app.js. -->
+            <span id="brandDot" class="brand-dot is-online" data-i18n-title="netOnline" title="You are online"></span>
+          </span>
+          <span class="brand-name">Talk<span class="brand-name-live">Live</span></span>
+        </a>
+        <!-- The waiting state is a grey dot and an em dash - never a zero,
+             which reads as "nobody is here". -->
+        <p class="nav-live is-waiting" id="liveCount" data-i18n-title="onlineAria" data-i18n-aria="onlineAria" title="Number of people online now" aria-label="Number of people online now" role="status" aria-live="polite">
+          <span class="nav-live-dot" aria-hidden="true"></span>
+          <span class="nav-live-num" id="onlineCount">&mdash;</span>
+          <span class="nav-live-label" data-i18n="online">Online</span>
+        </p>
       </div>
 
-      <div class="top-info">
-        <div id="topDefault" class="top-id"></div>
-        <div id="topPartner" class="top-id hidden">
-          <span class="top-name"><span id="topPartnerAnimal" class="top-animal hidden"></span><span id="topPartnerName"></span></span>
-          <span class="top-sub"><span id="topPartnerFlag" class="peer-flag" aria-hidden="true"></span><span id="topPartnerCountry"></span></span>
+      <div class="nav-peer">
+        <div id="topDefault" class="nav-peer-id"></div>
+        <div id="topPartner" class="nav-peer-id hidden">
+          <span class="nav-peer-name"><span id="topPartnerAnimal" class="top-animal hidden"></span><span id="topPartnerName"></span></span>
+          <span class="nav-peer-sub"><span id="topPartnerFlag" class="peer-flag" aria-hidden="true"></span><span id="topPartnerCountry"></span></span>
         </div>
       </div>
 
-      <div class="top-actions">
-        <button type="button" id="autoBtn" class="icon-btn auto-btn hidden" aria-pressed="false" data-i18n-title="chatAutoHint" data-i18n-aria="chatAutoHint" aria-label="Auto-connect me to a new person when a chat ends">
-          <span data-i18n="chatAuto">Auto</span>
+      <div class="nav-actions">
+        <button type="button" id="autoBtn" class="nav-btn nav-btn-soft auto-btn hidden" aria-pressed="false" data-i18n-title="chatAutoHint" data-i18n-aria="chatAutoHint" aria-label="Auto-connect me to a new person when a chat ends">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 0 1 14.6-5.9L20.5 8.5"/><polyline points="20.5 3.6 20.5 8.5 15.6 8.5"/><path d="M20.5 12a8.5 8.5 0 0 1-14.6 5.9L3.5 15.5"/><polyline points="3.5 20.4 3.5 15.5 8.4 15.5"/></svg>
+          <span class="nav-btn-label" data-i18n="chatAuto">Auto</span>
         </button>
-        <button type="button" id="chatSettingsBtn" class="icon-btn settings-btn" data-i18n-title="settings" data-i18n-aria="settings" aria-label="Settings">
-          <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <button type="button" id="chatSettingsBtn" class="nav-btn nav-btn-soft is-icon settings-btn" data-i18n-title="settings" data-i18n-aria="settings" aria-label="Settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <circle cx="12" cy="12" r="3.2"/>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
           </svg>
         </button>
-        <!-- There is no call button here. /chat is a text product; the one
-             thing the bar used to carry that pulled people out of it was a
-             filled accent circle sitting where the eye lands first. People who
-             want a call reach it from the "Call instead" button on the start
-             view, before a conversation is underway. -->
+        <!-- There is no call button here. /chat is a text product; people who
+             want a call reach it from "Call instead" on the start view, before
+             a conversation is underway. -->
 
-        <!-- Everything that is not Auto or Call sits behind one menu, so the
-             bar never carries more than three controls and every secondary
+        <!-- Everything that is not Auto or Settings sits behind one menu, so
+             the bar never carries more than three controls and every secondary
              action gets a word next to its icon instead of standing alone as
              a glyph you have to decode. -->
-        <div class="top-more">
-          <button type="button" id="moreBtn" class="icon-btn more-btn" aria-haspopup="true" aria-expanded="false" aria-controls="topMenu" data-i18n-title="more" data-i18n-aria="more" aria-label="More">
-            <svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>
-            <span id="moreDot" class="more-dot hidden" aria-hidden="true"></span>
+        <div class="nav-more">
+          <button type="button" id="moreBtn" class="nav-btn nav-btn-soft is-icon more-btn" aria-haspopup="true" aria-expanded="false" aria-controls="topMenu" data-i18n-title="more" data-i18n-aria="more" aria-label="More">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>
+            <span id="moreDot" class="nav-dot hidden" aria-hidden="true"></span>
           </button>
-          <div id="topMenu" class="top-menu hidden" role="menu" aria-labelledby="moreBtn">
-            <button type="button" id="addFriendBtn" class="menu-item hidden" role="menuitem" data-i18n-aria="addFriend" aria-label="Add friend">
-              <svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor" aria-hidden="true"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg><span data-i18n="addFriend">Add friend</span>
+          <div id="topMenu" class="nav-menu hidden" role="menu" aria-labelledby="moreBtn">
+            <button type="button" id="addFriendBtn" class="nav-menu-item hidden" role="menuitem" data-i18n-aria="addFriend" aria-label="Add friend">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg><span data-i18n="addFriend">Add friend</span>
             </button>
-            <button type="button" id="gameBtn" class="menu-item hidden" role="menuitem" data-i18n-aria="playGames" aria-label="Play a game">
-              <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="9" y1="3.5" x2="9" y2="20.5"/><line x1="15" y1="3.5" x2="15" y2="20.5"/><line x1="3.5" y1="9" x2="20.5" y2="9"/><line x1="3.5" y1="15" x2="20.5" y2="15"/><path stroke-width="2.1" d="M5.3 5.3l3.1 3.1M8.4 5.3L5.3 8.4"/><circle cx="18" cy="18" r="2.1" stroke-width="2.1"/></svg><span data-i18n="playGames">Play a game</span>
+            <button type="button" id="gameBtn" class="nav-menu-item hidden" role="menuitem" data-i18n-aria="playGames" aria-label="Play a game">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="9" y1="3.5" x2="9" y2="20.5"/><line x1="15" y1="3.5" x2="15" y2="20.5"/><line x1="3.5" y1="9" x2="20.5" y2="9"/><line x1="3.5" y1="15" x2="20.5" y2="15"/><path stroke-width="2.1" d="M5.3 5.3l3.1 3.1M8.4 5.3L5.3 8.4"/><circle cx="18" cy="18" r="2.1" stroke-width="2.1"/></svg><span data-i18n="playGames">Play a game</span>
               <span id="gameBtnBadge" class="notif-badge hidden" aria-hidden="true">!</span>
             </button>
-            <button type="button" id="historyBtn" class="menu-item" role="menuitem" data-i18n-aria="history" aria-label="History">
-              <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l3 2"/></svg><span data-i18n="history">History</span>
+            <button type="button" id="historyBtn" class="nav-menu-item" role="menuitem" data-i18n-aria="history" aria-label="History">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l3 2"/></svg><span data-i18n="history">History</span>
             </button>
-            <button type="button" id="friendsBtn" class="menu-item" role="menuitem" data-i18n-aria="friends" aria-label="Friends">
-              <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.1"/><path d="M3.6 19a5.4 5.4 0 0 1 10.8 0"/><circle cx="17.2" cy="9" r="2.5"/><path d="M15.7 13.7A4.8 4.8 0 0 1 21 18.4"/></svg><span data-i18n="friends">Friends</span>
+            <button type="button" id="friendsBtn" class="nav-menu-item" role="menuitem" data-i18n-aria="friends" aria-label="Friends">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.1"/><path d="M3.6 19a5.4 5.4 0 0 1 10.8 0"/><circle cx="17.2" cy="9" r="2.5"/><path d="M15.7 13.7A4.8 4.8 0 0 1 21 18.4"/></svg><span data-i18n="friends">Friends</span>
               <span id="friendsBadge" class="notif-badge hidden" aria-hidden="true">0</span>
             </button>
-            <button type="button" id="reportBtn" class="menu-item menu-item-danger hidden" role="menuitem" data-i18n-aria="report" aria-label="Report">
-              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><line x1="5" y1="3" x2="5" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M6 4h13l-3.5 4L19 12H6V4z" fill="currentColor"/></svg><span data-i18n="report">Report</span>
+            <button type="button" id="reportBtn" class="nav-menu-item nav-menu-item-danger hidden" role="menuitem" data-i18n-aria="report" aria-label="Report">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="5" y1="3" x2="5" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M6 4h13l-3.5 4L19 12H6V4z" fill="currentColor"/></svg><span data-i18n="report">Report</span>
             </button>
           </div>
         </div>

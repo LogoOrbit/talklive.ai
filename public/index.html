@@ -15,13 +15,17 @@
      rather than after it - the sooner it lands, the sooner the hero paints.
      Analytics and ad tags are loaded at the end of <body> instead of here so
      they stop competing for mobile bandwidth during Largest Contentful Paint. -->
-<link rel="stylesheet" href="style.css?v=20260916navbar" />
+<link rel="stylesheet" href="style.css?v=20260920navbar" />
 <link rel="stylesheet" href="chat-extras.css?v=20260916navbar" />
 <link rel="stylesheet" href="games.css?v=20260916settings" />
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
      side-panel shell, Settings, Friends/History and the account dialog, and it
      does so with its own `tl-` class names so nothing above can reach it. -->
 <link rel="stylesheet" href="ui.css?v=20260920polish" />
+<!-- The top bar, shared with /chat. Loaded after everything else because it
+     owns the header outright: one button language, one radius, one focus ring
+     on every screen of the product. -->
+<link rel="stylesheet" href="nav.css?v=20260920polish" />
 <script defer src="/config.js"></script>
 <!-- Google Identity Services, deferred so it never blocks first paint. app.js
      waits for it (and for /config.js) before rendering the sign-in buttons. -->
@@ -212,139 +216,113 @@
 <body>
   <a href="#main" class="skip-link" data-i18n="skipToContent">Skip to main content</a>
   <div class="app">
-    <header class="topbar">
-      <!-- The lockup owns the left edge on its own. The settings gear used to
-           sit to the left of it, which put a tool ahead of the brand and made
-           the first thing on the page a grey cog; it now lives in the tool
-           group with the other tools, where it belongs. -->
-      <div class="topbar-left">
-        <!-- The TalkLive lockup. Identical markup, mark and wordmark on every
-             screen of the product (/, /call and /chat) so a visitor always
-             knows which site they are on: the tile is public/favicon.svg drawn
-             inline, and the network dot sits in the same top-right corner the
-             favicon puts it in. Never hidden - not on a phone, not mid-call. -->
-        <button type="button" id="brandHome" class="brand" data-i18n-title="goHome" data-i18n-aria="goHome" aria-label="TalkLive home" title="TalkLive home">
+    <!-- The top bar. Three zones, in the same order at every width: the lockup,
+         the middle (search where there is room for it), and the actions.
+         Everything on the right is a real button with a surface and, wherever
+         it fits, a word - the bar used to be a row of bare glyphs, which is
+         what makes a header look decorative rather than operable. Its looks
+         live in public/nav.css, shared with /chat. -->
+    <header class="topbar nav">
+      <!-- The TalkLive lockup. Identical markup, mark and wordmark on every
+           screen of the product (/, /call and /chat) so a visitor always knows
+           which site they are on, with the network dot in the same top-right
+           corner the favicon puts it in. Never hidden - not on a phone, not
+           mid-call. The live headcount sits under the wordmark, where it costs
+           no horizontal room and reads as what it is: proof the product is
+           alive, said by the brand itself. -->
+      <div class="nav-brand">
+        <button type="button" id="brandHome" class="nav-logo" data-i18n-title="goHome" data-i18n-aria="goHome" aria-label="TalkLive home" title="TalkLive home">
           <span class="brand-logo" aria-hidden="true">
             <img src="/favicon.svg?v=20260916settings" width="30" height="30" alt="" decoding="async" />
-            <!-- Network status: green dot when online, red when the connection drops. -->
             <span id="brandDot" class="brand-dot is-online" data-i18n-title="netOnline" title="You are online"></span>
           </span>
           <span class="brand-name">Talk<span class="brand-name-live">Live</span></span>
         </button>
-        <!-- Live headcount, tucked under the wordmark instead of sitting in a
-             chip in the opposite corner. It costs no horizontal room - the
-             reason the bar ran out of it on a phone - and reads as what it
-             actually is: proof the product is alive, said by the brand itself.
-             Starts as an em dash, never "0", which reads as "nobody is here". -->
-        <p class="brand-live is-waiting" id="brandLive" role="status" aria-live="polite" data-i18n-title="onlineAria" data-i18n-aria="onlineAria" title="People online now" aria-label="Number of people online now">
-          <span class="brand-live-dot" aria-hidden="true"></span>
-          <span class="brand-live-num" id="onlineCount">&mdash;</span>
-          <span class="brand-live-label" data-i18n="online">Online</span>
+        <!-- Starts as an em dash, never "0", which reads as "nobody is here". -->
+        <p class="nav-live is-waiting" id="brandLive" role="status" aria-live="polite" data-i18n-title="onlineAria" data-i18n-aria="onlineAria" title="People online now" aria-label="Number of people online now">
+          <span class="nav-live-dot" aria-hidden="true"></span>
+          <span class="nav-live-num" id="onlineCount">&mdash;</span>
+          <span class="nav-live-label" data-i18n="online">Online</span>
         </p>
       </div>
-      <!-- One object, not six loose glyphs: a single segmented rail. The two
-           call-only tools lead it, so mid-call the conversation's own controls
-           are the first thing in the group. -->
-      <div class="header-mid">
-        <!-- Search. It filters the "Online now" rail and, on a country match,
-             offers to search that country - so it does something on a product
-             with no browsable content to search through, rather than being a
-             box that swallows what you type. -->
-        <form id="headerSearchForm" class="header-search" role="search">
-          <svg class="header-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
-          <input
-            id="headerSearchInput"
-            type="search"
-            autocomplete="off"
-            data-i18n-placeholder="searchPlaceholder"
-            data-i18n-aria="searchPlaceholder"
-            placeholder="Search people, countries, or interests…"
-            aria-label="Search people, countries, or interests"
-          />
-          <button type="button" id="headerSearchClear" class="header-search-clear hidden" data-i18n-aria="clear" aria-label="Clear">&times;</button>
-        </form>
-      <nav class="header-tools" aria-label="TalkLive tools">
-        <button id="chatToggleBtn" class="icon-btn hidden" data-i18n-title="chat" data-i18n-aria="chat" title="Chat" aria-label="Chat">
-          <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+
+      <!-- Search. It filters the "Online now" rail and, on a country match,
+           offers to search that country - so it does something on a product
+           with no browsable content to search through, rather than being a box
+           that swallows what you type. Shown only on screens wide enough to
+           type in it. -->
+      <form id="headerSearchForm" class="nav-search" role="search">
+        <svg class="nav-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
+        <input
+          id="headerSearchInput"
+          type="search"
+          autocomplete="off"
+          data-i18n-placeholder="searchPlaceholder"
+          data-i18n-aria="searchPlaceholder"
+          placeholder="Search people, countries, or interests…"
+          aria-label="Search people, countries, or interests"
+        />
+        <button type="button" id="headerSearchClear" class="nav-search-clear hidden" data-i18n-aria="clear" aria-label="Clear">&times;</button>
+      </form>
+
+      <div class="nav-actions">
+        <!-- Call-only. Friends, History and Filters are not repeated here: the
+             nav rail (a sidebar on a desktop, the tab bar on a phone) already
+             owns one button for each, and a second copy in the corner was three
+             more glyphs to decode for panels that were already one tap away. -->
+        <button id="chatToggleBtn" class="nav-btn nav-btn-soft nav-btn-tool hidden" data-i18n-title="chat" data-i18n-aria="chat" title="Chat" aria-label="Chat">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
           </svg>
+          <span class="nav-btn-label" data-i18n="chat">Chat</span>
           <span id="chatBadge" class="chat-badge hidden" aria-hidden="true">0</span>
         </button>
-        <button id="gameBtn" class="icon-btn hidden" data-i18n-title="playGames" data-i18n-aria="playGames" title="Play a game" aria-label="Play a game">
-          <span id="gameBtnBadge" class="notif-badge hidden" aria-hidden="true">!</span>
+        <button id="gameBtn" class="nav-btn nav-btn-soft nav-btn-tool hidden" data-i18n-title="playGames" data-i18n-aria="playGames" title="Play a game" aria-label="Play a game">
           <!-- A gamepad. The old icon was a noughts-and-crosses grid, which
                reads as a table or a hash at 20px and names one game rather
-               than the thing the button actually opens. -->
-          <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+               than the thing the button actually opens. Filled rather than
+               stroked, because the cut-outs are what make it a controller. -->
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M7.6 6.5h8.8a5.1 5.1 0 0 1 5 4.1l.9 4.6a2.75 2.75 0 0 1-5.02 2l-1.2-1.7H7.92l-1.2 1.7a2.75 2.75 0 0 1-5.02-2l.9-4.6a5.1 5.1 0 0 1 5-4.1z"/>
             <rect x="5.7" y="10.6" width="1.7" height="4.3" rx="0.85" fill="var(--bg-2)"/>
             <rect x="4.4" y="11.9" width="4.3" height="1.7" rx="0.85" fill="var(--bg-2)"/>
             <circle cx="16.3" cy="11.6" r="1.15" fill="var(--bg-2)"/>
             <circle cx="18.5" cy="13.8" r="1.15" fill="var(--bg-2)"/>
           </svg>
+          <span class="nav-btn-label" data-i18n="gamesTitle">Games</span>
+          <span id="gameBtnBadge" class="notif-badge hidden" aria-hidden="true">!</span>
         </button>
-      </nav>
-      </div>
-      <div class="header-right">
-        <!-- The three glyphs the reference puts in this corner. They are
-             proxies, not second copies: each one clicks the real control in
-             the nav rail (see [data-opens]), so there is exactly one Friends
-             panel, one History panel and one Filters panel, with one set of
-             handlers and one set of state. -->
-        <button type="button" id="headerBellBtn" class="icon-btn header-quick" data-opens="friendsBtn" data-i18n-title="notificationsAria" data-i18n-aria="notificationsAria" title="Notifications" aria-label="Notifications">
-          <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M18 16V11a6 6 0 1 0-12 0v5l-1.6 2.4h15.2z"/>
-            <path d="M10 20.2a2.2 2.2 0 0 0 4 0"/>
-          </svg>
-          <span id="headerBellDot" class="header-quick-dot hidden" aria-hidden="true"></span>
+
+        <!-- Anonymous users own a real profile (name, friends, history) that
+             lives only in this browser. This is the one-tap offer to keep it:
+             it opens Sign Up, where the profile is shown being linked to the
+             new account. Hidden once there is an account to link to. -->
+        <button type="button" id="headerLinkProfileBtn" class="nav-btn nav-btn-soft nav-save hidden">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M9.5 14.5 14.5 9.5"/><path d="M11 7.4 12.6 5.8a3.7 3.7 0 0 1 5.3 5.3l-1.6 1.6"/><path d="M13 16.6l-1.6 1.6a3.7 3.7 0 0 1-5.3-5.3l1.6-1.6"/></svg>
+          <span class="nav-btn-label" data-i18n="linkProfilePill">Save your profile</span>
         </button>
-        <button type="button" id="headerHistoryBtn" class="icon-btn header-quick" data-opens="historyBtn" data-i18n-title="historyAria" data-i18n-aria="historyAria" title="Call history" aria-label="Call history">
-          <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.2 2"/>
-          </svg>
-        </button>
-        <button type="button" id="headerFiltersBtn" class="icon-btn header-quick" data-opens="filtersBtn" data-i18n-title="filtersAria" data-i18n-aria="filtersAria" title="Match filters" aria-label="Match filters">
-          <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"/>
-            <line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"/>
-            <line x1="4" y1="18" x2="20" y2="18"/><circle cx="11" cy="18" r="2" fill="currentColor" stroke="none"/>
-          </svg>
-        </button>
+
         <!-- Auth, always visible in the header rather than only inside the
              settings panel: signing in is the one action a returning user
              comes looking for, and a control they have to open a menu to find
              reads as "there are no accounts here". Swapped for a single
              account button once signed in (see renderAccountState). -->
-        <!-- Anonymous users own a real profile (name, friends, history) that
-             lives only in this browser. This pill is the one-tap offer to keep
-             it: it opens Sign Up, where the profile is shown being linked to
-             the new account. Hidden once there is an account to link to. -->
-        <button type="button" id="headerLinkProfileBtn" class="header-link-profile hidden">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M9.5 14.5 14.5 9.5"/><path d="M11 7.4 12.6 5.8a3.7 3.7 0 0 1 5.3 5.3l-1.6 1.6"/><path d="M13 16.6l-1.6 1.6a3.7 3.7 0 0 1-5.3-5.3l1.6-1.6"/></svg>
-          <span data-i18n="linkProfilePill">Save your profile</span>
-        </button>
-        <div class="header-auth" id="headerAuth">
-          <button type="button" id="headerLoginBtn" class="header-auth-btn header-auth-login" data-i18n="logIn">Log In</button>
-          <button type="button" id="headerSignupBtn" class="header-auth-btn header-auth-signup" data-i18n="signUp">Sign Up</button>
+        <div class="nav-auth" id="headerAuth">
+          <button type="button" id="headerLoginBtn" class="nav-btn nav-btn-ghost" data-i18n="logIn">Log In</button>
+          <button type="button" id="headerSignupBtn" class="nav-btn nav-btn-primary" data-i18n="signUp">Sign Up</button>
         </div>
-        <!-- The account button goes to Settings > Profile. It used to open a
-             dialog, and it wore a caret to say so; a caret on something that
-             navigates is a promise of a menu that never appears, so it is
-             gone. What is left is the one thing worth putting here: the
-             avatar you actually chose, at a size you can recognise, with your
-             name beside it where there is room for it. -->
-        <button type="button" id="headerAccountBtn" class="header-account-btn hidden" data-i18n-title="myAccount" data-i18n-aria="myAccount" title="My Account" aria-label="My Account">
-          <span id="headerAccountAvatar" class="header-account-avatar" aria-hidden="true">
+
+        <!-- The account button goes to Settings > Profile: the avatar you
+             actually chose, at a size you can recognise, with your name beside
+             it where there is room for it. -->
+        <button type="button" id="headerAccountBtn" class="nav-btn nav-btn-soft nav-account hidden" data-i18n-title="myAccount" data-i18n-aria="myAccount" title="My Account" aria-label="My Account">
+          <span id="headerAccountAvatar" class="nav-account-avatar" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="currentColor">
               <circle cx="12" cy="7.4" r="3.9"/><path d="M4.6 20.4c.5-4.3 3.5-6.9 7.4-6.9s6.9 2.6 7.4 6.9a.9.9 0 0 1-.9 1H5.5a.9.9 0 0 1-.9-1z"/>
             </svg>
           </span>
-          <span id="headerAccountName" class="header-account-name"></span>
+          <span id="headerAccountName" class="nav-account-name"></span>
         </button>
-        <!-- The live headcount used to sit here, in a grey chip in the far
-             corner, where it competed with Sign Up for the one part of a phone
-             bar that had no room left. It is now part of the lockup on the
-             left, under the wordmark. -->
       </div>
     </header>
 
@@ -2093,10 +2071,29 @@
         <!-- Moved up from below the conversation guide: this is the slot that
              is now beside the call instead of under it. ads.js will not start,
              retry or collapse it while a call is live, so it fills during the
-             search and then holds completely still. -->
-        <div class="ad-card ad-card-app ad-card-wide tl-call-ad">
+             search and then holds completely still.
+
+             Two columns only. A 300x250 is the right shape for the empty half
+             of a desktop window and the wrong one for a phone, where it was
+             250px of rectangle stacked under a call screen that already did
+             not fit - so the phone gets the strip below instead, and this card
+             is display:none there. A hidden slot never enters the viewport, so
+             ads.js never loads it and it costs no slot budget. -->
+        <div class="ad-card ad-card-app ad-card-wide tl-call-ad tl-call-ad-wide">
           <span class="ad-card-label" data-i18n="sponsored">Sponsored</span>
           <div data-ad="box"></div>
+        </div>
+
+        <!-- The phone's ad: one strip, its own reserved height, directly under
+             the controls and clear of them. It is a leaderboard, so it resolves
+             to a 320x50 on a phone and a 728x90 on a tablet - the shapes that
+             actually fit one column - and the space is reserved before anything
+             loads, so a creative arriving never moves the call controls. It is
+             kept out of the desktop layout, where the card above is beside the
+             call instead. -->
+        <div class="ad-card ad-card-app tl-call-ad-phone">
+          <span class="ad-card-label" data-i18n="sponsored">Sponsored</span>
+          <div data-ad="leaderboard"></div>
         </div>
         </div><!-- /.tl-call-row -->
 

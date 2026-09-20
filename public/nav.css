@@ -1,0 +1,750 @@
+/* ============================================================================
+   TalkLive - the top bar.
+   ==========================================================================
+
+   One bar, one button language, on every screen of the product (/, /call and
+   /chat). It loads after style.css and chat.css and owns the header outright:
+   the markup uses `nav-` classes that nothing else in those files targets, so
+   there is exactly one place that decides what the bar looks like.
+
+   Three zones, always in the same order:
+
+     1. The lockup, alone on the left, with the live headcount under the
+        wordmark. Stacked, the count costs no horizontal room, and it says the
+        one true thing about this product in the place people read first.
+     2. The middle: search on the wide screens that have room for it, or -
+        on /chat - who you are talking to.
+     3. The actions, on the right. Every one of them is a real button with a
+        surface, a border and (wherever there is room) a word: the bar used to
+        be a row of bare glyphs floating on the background, which is the thing
+        that makes a header look decorative rather than operable.
+
+   Every control in here shares one height, one radius, one hover, one press
+   and one focus ring, so the row reads as a single set of controls.
+   ========================================================================== */
+
+.topbar.nav {
+  --nav-pad: 20px;
+  --nav-btn: 40px;
+  --nav-gap: 8px;
+  --nav-mark: 32px;
+  --nav-mark-gap: 10px;
+  --nav-radius: 999px;
+  --nav-surface: color-mix(in srgb, var(--text) 6%, transparent);
+  --nav-surface-hover: color-mix(in srgb, var(--text) 12%, transparent);
+  --nav-accent-soft: color-mix(in srgb, var(--accent) 26%, transparent);
+
+  position: sticky;
+  top: 0;
+  z-index: 55;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  align-items: center;
+  column-gap: 14px;
+  padding: 10px var(--nav-pad);
+  padding-top: calc(10px + env(safe-area-inset-top));
+  /* Near-opaque: at lower alphas the page scrolling underneath reads straight
+     through the bar, and the blur alone never hides it. */
+  background: var(--bg-1);
+  background: color-mix(in srgb, var(--bg-1) 94%, transparent);
+  background-image: none;
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  backdrop-filter: blur(16px) saturate(140%);
+  border-bottom: 1px solid var(--line);
+  transition: box-shadow 0.25s ease;
+}
+
+/* A whisper of accent along the base edge - the bar's only ornament. */
+.topbar.nav::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 38%, transparent), transparent);
+  pointer-events: none;
+}
+
+.topbar.nav.is-stuck {
+  box-shadow: 0 10px 30px -14px rgba(0, 0, 0, 0.65);
+}
+
+
+/* --- 1. The lockup -------------------------------------------------------- */
+
+.nav-brand {
+  justify-self: start;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  min-width: 0;
+}
+
+.nav-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nav-mark-gap);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.nav-logo:hover { opacity: 0.84; }
+.nav-logo:active { transform: scale(0.97); }
+
+.nav-logo .brand-logo {
+  position: relative;
+  display: block;
+  width: var(--nav-mark);
+  height: var(--nav-mark);
+  flex: none;
+}
+
+.nav-logo .brand-logo img,
+.nav-logo .brand-logo svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* The wordmark never gives way. `overflow:hidden` on a flex item sets its
+   automatic minimum size to zero, and "TalkLive" was free to ellipse itself
+   out of existence while the tile beside it stayed full size. */
+.nav-logo .brand-name {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.nav-logo .brand-name-live { color: var(--accent-2); }
+
+/* Network status, in the same corner the favicon puts it in. */
+.nav-logo .brand-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--bg-1);
+  background: var(--muted);
+  transition: background 0.2s ease;
+}
+
+.nav-logo .brand-dot.is-online {
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+  animation: navDotPulse 1.8s ease-in-out infinite;
+}
+
+.nav-logo .brand-dot.is-offline {
+  background: var(--danger);
+  box-shadow: 0 0 8px var(--danger);
+  animation: navDotPulse 1s ease-in-out infinite;
+}
+
+@keyframes navDotPulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.45; }
+}
+
+/* The headcount, indented to start exactly where the wordmark starts, so the
+   lockup reads as one block of type rather than a caption under a logo. */
+.nav-live {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  padding-inline-start: calc(var(--nav-mark) + var(--nav-mark-gap));
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* Tabular figures so a change from 9 to 10 does not shuffle the label
+   sideways, and each new count lands with a short lift - enough to notice out
+   of the corner of your eye, not enough to pull you off what you were doing.
+   chat.js and app.js both set `is-bump` when the number changes. */
+.nav-live-num {
+  display: inline-block;
+  color: color-mix(in srgb, var(--text) 82%, transparent);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.nav-live-num.is-bump { animation: navLiveBump 0.42s cubic-bezier(0.22, 1, 0.36, 1); }
+
+@keyframes navLiveBump {
+  0%   { transform: translateY(-5px); opacity: 0; }
+  60%  { transform: translateY(0.5px); opacity: 1; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+.nav-live-label { opacity: 0.85; }
+
+.nav-live-dot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--green);
+  animation: navLivePulse 2.4s ease-out infinite;
+}
+
+/* Before the first count lands: a still grey dot and an em dash. Never a zero,
+   which reads as "nobody is here" on the one screen that has to say otherwise. */
+.nav-live.is-waiting { opacity: 0.55; }
+.nav-live.is-waiting .nav-live-dot {
+  background: var(--muted);
+  animation: none;
+}
+
+@keyframes navLivePulse {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--green) 55%, transparent); }
+  70%  { box-shadow: 0 0 0 5px color-mix(in srgb, var(--green) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--green) 0%, transparent); }
+}
+
+
+/* --- 2. The middle -------------------------------------------------------- */
+
+/* Search. Hidden until there is genuinely room for it: a search field squeezed
+   between a lockup and two auth pills on a phone is a field nobody can type in
+   and everything else has to shrink around. */
+.nav-search {
+  display: none;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  height: var(--nav-btn);
+  padding: 0 14px;
+  border-radius: var(--nav-radius);
+  border: 1px solid var(--line);
+  background: var(--nav-surface);
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.nav-search:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: var(--nav-surface-hover);
+}
+
+.nav-search-icon {
+  width: 17px;
+  height: 17px;
+  flex: none;
+  color: var(--muted);
+}
+
+.nav-search input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13.5px;
+  padding: 0;
+}
+
+.nav-search input:focus { outline: none; }
+.nav-search input::placeholder { color: var(--muted); }
+.nav-search input::-webkit-search-cancel-button { display: none; }
+
+.nav-search-clear {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--nav-surface-hover);
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.nav-search-clear:hover { color: var(--text); }
+
+@media (min-width: 1024px) {
+  .nav-search { display: flex; }
+}
+
+/* /chat: who you are talking to. The middle of that bar only ever means one
+   thing, so it is either empty or a person - never a headcount, never a tool. */
+.nav-peer {
+  justify-self: center;
+  min-width: 0;
+  max-width: 100%;
+  text-align: center;
+  line-height: 1.25;
+}
+
+.nav-peer-id {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+
+.nav-peer-name {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nav-peer-name svg { width: 18px; height: 18px; flex: none; }
+
+.nav-peer-sub {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin-top: 1px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+/* --- 3. The actions ------------------------------------------------------- */
+
+.nav-actions {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: var(--nav-gap);
+  min-width: 0;
+}
+
+/* One button. Everything in the right-hand zone is one of these, in one of
+   four weights: soft (a tool), ghost (a quiet action), primary (the one
+   saturated thing on the bar) and danger. */
+.nav-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: none;
+  height: var(--nav-btn);
+  min-width: var(--nav-btn);
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: var(--nav-radius);
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 650;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease,
+              transform 0.12s ease, filter 0.18s ease;
+}
+
+.nav-btn svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+
+/* Icon-only: a circle, not a pill with nothing in it. */
+.nav-btn.is-icon {
+  width: var(--nav-btn);
+  padding: 0;
+}
+
+.nav-btn:hover {
+  background: var(--nav-surface-hover);
+  color: var(--text);
+}
+
+.nav-btn:active { transform: scale(0.95); }
+
+.nav-btn:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 2px;
+}
+
+/* A tool that needs a live call (the game) dims rather than disappearing, so
+   the bar does not reflow the moment a conversation starts or ends. */
+.nav-btn[disabled],
+.nav-btn.nav-btn-off {
+  opacity: 0.45;
+  pointer-events: none;
+  box-shadow: none;
+}
+
+/* Soft: a tool with a surface of its own, so it reads as pressable sitting on
+   the bar's own background. */
+.nav-btn-soft {
+  border-color: var(--line);
+  background: var(--nav-surface);
+  color: var(--text);
+}
+
+.nav-btn-soft:hover {
+  background: var(--nav-surface-hover);
+  border-color: color-mix(in srgb, var(--text) 18%, transparent);
+}
+
+/* Ghost: an outline and a word. */
+.nav-btn-ghost {
+  border-color: var(--line);
+  background: transparent;
+  color: var(--text);
+}
+
+.nav-btn-ghost:hover {
+  background: var(--nav-surface);
+  border-color: color-mix(in srgb, var(--text) 18%, transparent);
+}
+
+/* Primary: the only saturated element in the bar, so the eye knows where the
+   action is without anything else shouting. */
+.nav-btn-primary {
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+  font-weight: 750;
+  box-shadow: 0 6px 18px -8px var(--accent);
+}
+
+.nav-btn-primary:hover {
+  filter: brightness(1.08);
+  color: #fff;
+}
+
+.nav-btn-danger { color: var(--danger); }
+.nav-btn-danger:hover {
+  background: color-mix(in srgb, var(--danger) 16%, transparent);
+  color: var(--danger);
+}
+
+/* On, open, or holding a panel: the app has a colour, and this is where a tool
+   is allowed to use it. There is always an answer to "what opened this sheet". */
+.nav-btn.active,
+.nav-btn.is-active,
+.nav-btn[aria-pressed="true"],
+.nav-btn[aria-expanded="true"] {
+  background: var(--nav-accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+  color: var(--text);
+}
+
+/* Counters hang off the button's own corner and are punched out of the bar so
+   they never smudge into the icon behind them. */
+.nav-btn .notif-badge,
+.nav-btn .chat-badge,
+.nav-btn .nav-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 2px solid var(--bg-1);
+  background: var(--danger);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.nav-btn .nav-dot {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 2px solid var(--bg-1);
+  background: var(--danger);
+  pointer-events: none;
+}
+
+/* "Keep this profile" is an offer rather than a tool, so it wears the same
+   accent tint as the other two surfaces that carry the message (see the
+   link-profile prompts in style.css) instead of the neutral tool surface. */
+.nav-save {
+  max-width: 260px;
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--text);
+}
+
+.nav-save:hover {
+  border-color: color-mix(in srgb, var(--accent) 75%, transparent);
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.nav-save .nav-btn-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Auth sits slightly apart from the tools: they are different kinds of thing,
+   and a hairline says so more quietly than a gap big enough to notice. */
+.nav-auth {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Signed in: the avatar you actually chose, at a size you can recognise, with
+   your name beside it where there is room for it. */
+.nav-account {
+  padding-inline: 5px 14px;
+  gap: 9px;
+}
+
+.nav-account-avatar {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 50%;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+  color: var(--text);
+}
+
+/* renderHeaderAccountFace() drops the avatar you actually picked in here - an
+   animal sprite, a styled bust or the generic outline below. Whichever it is,
+   it fills the circle rather than being sized by the button's icon rule. */
+.nav-account-avatar svg,
+.nav-account-avatar img,
+.nav-account-avatar .avatar-animal {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.nav-account-name {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+
+/* --- The overflow menu (/chat) -------------------------------------------- */
+
+.nav-more { position: relative; display: inline-flex; }
+
+.nav-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 60;
+  min-width: 208px;
+  padding: 6px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  box-shadow: 0 24px 48px -20px rgba(0, 0, 0, 0.75);
+  animation: navMenuIn 0.14s ease-out;
+}
+
+@keyframes navMenuIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.nav-menu-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 11px;
+  background: none;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: start;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.nav-menu-item svg { width: 19px; height: 19px; flex: none; color: var(--muted); }
+.nav-menu-item:hover { background: var(--nav-surface-hover); }
+.nav-menu-item:hover svg { color: var(--text); }
+
+.nav-menu-item:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: -2px;
+}
+
+.nav-menu-item-danger { color: var(--danger); }
+.nav-menu-item-danger svg { color: var(--danger); }
+.nav-menu-item-danger:hover { background: color-mix(in srgb, var(--danger) 14%, transparent); }
+
+.nav-menu-item .notif-badge {
+  position: static;
+  margin-inline-start: auto;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 800;
+}
+
+
+/* --- Widths --------------------------------------------------------------- */
+
+@media (max-width: 860px) {
+  /* The word goes, the button stays. A tool without its label is still a
+     circle with a surface and a 40px tap target - not a bare glyph. */
+  .nav-btn-tool { width: var(--nav-btn); padding: 0; }
+  .nav-btn-tool .nav-btn-label { display: none; }
+  /* "Save your profile" is an offer, not an action anyone came for. */
+  .nav-save { display: none; }
+}
+
+@media (max-width: 640px) {
+  .topbar.nav {
+    --nav-pad: 12px;
+    --nav-btn: 38px;
+    --nav-gap: 6px;
+    --nav-mark: 30px;
+    --nav-mark-gap: 9px;
+    column-gap: 10px;
+    padding-top: calc(8px + env(safe-area-inset-top));
+    padding-bottom: 8px;
+  }
+
+  .nav-logo { font-size: 17.5px; }
+  .nav-live { font-size: 10.5px; }
+  .nav-btn { padding: 0 13px; font-size: 13px; }
+  .nav-btn svg { width: 19px; height: 19px; }
+  .nav-account { padding-inline: 5px; gap: 0; }
+  .nav-account-name { display: none; }
+  .nav-peer-name { font-size: 13.5px; }
+  .nav-peer-sub { font-size: 11px; }
+}
+
+@media (max-width: 400px) {
+  .topbar.nav {
+    --nav-pad: 10px;
+    --nav-btn: 36px;
+    --nav-mark: 28px;
+    --nav-mark-gap: 8px;
+  }
+  .nav-logo { font-size: 16px; letter-spacing: -0.4px; }
+  .nav-btn { padding: 0 11px; font-size: 12.5px; }
+  .nav-btn svg { width: 18px; height: 18px; }
+  /* Two auth pills plus a lockup is more than this width holds honestly, so
+     one of them goes. Sign Up stays because it is the action, and the dialog
+     it opens has Log In as its other tab - nobody is locked out by this. */
+  .nav-auth .nav-btn-ghost { display: none; }
+}
+
+/* --- /chat, mid-conversation --------------------------------------------- *
+ *
+ * chat.js puts `connected` on the bar while a conversation is live, and the
+ * old stylesheet used it to shrink the mark and delete the wordmark in three
+ * separate stages. The bar sheds in one place now - here - so the lockup keeps
+ * one size at each width instead of two.
+ */
+.topbar.nav.connected .brand-logo {
+  width: var(--nav-mark);
+  height: var(--nav-mark);
+}
+
+.topbar.nav.connected .brand-name {
+  display: inline;
+  font-size: inherit;
+}
+
+/* The one place the lettering yields: connected, on a phone, where the row
+   also has to carry a stranger's username. The mark stays - it is the same
+   tile as the tab icon and the installed app icon, so the page is still
+   visibly TalkLive - and the name gets the width it needs. */
+@media (max-width: 560px) {
+  .topbar.nav.connected .brand-name { display: none; }
+  .topbar.nav.connected .nav-live { padding-inline-start: 0; }
+}
+
+/* The pulse is decoration; motion-sensitive users get the dot without it. */
+@media (prefers-reduced-motion: reduce) {
+  .nav-live-dot,
+  .nav-live-num.is-bump,
+  .nav-logo .brand-dot { animation: none; }
+  .nav-menu { animation: none; }
+  .nav-btn:active { transform: none; }
+}
+
+/* Weak devices (app.js sets perf-lite): a backdrop blur across a full-width
+   sticky element is the most expensive thing in this file, and the bar is
+   already near-opaque without it. */
+html.perf-lite .topbar.nav {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: var(--bg-1);
+}
+
+html.perf-lite .topbar.nav.is-stuck,
+html.perf-lite .nav-menu,
+html.perf-lite .nav-btn-primary { box-shadow: none; }
+
+/* Light theme: the translucent-white fills the dark themes use go invisible on
+   a light background, so every surface in the bar takes an ink tint instead. */
+[data-theme="light"] .topbar.nav {
+  --nav-surface: rgba(26, 32, 51, 0.05);
+  --nav-surface-hover: rgba(26, 32, 51, 0.09);
+}
+
+[data-theme="light"] .nav-btn-primary { color: #fff; }
