@@ -21,7 +21,7 @@
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
      side-panel shell, Settings, Friends/History and the account dialog, and it
      does so with its own `tl-` class names so nothing above can reach it. -->
-<link rel="stylesheet" href="ui.css?v=20260920phone" />
+<link rel="stylesheet" href="ui.css?v=20260920polish" />
 <script defer src="/config.js"></script>
 <!-- Google Identity Services, deferred so it never blocks first paint. app.js
      waits for it (and for /config.js) before rendering the sign-in buttons. -->
@@ -272,13 +272,15 @@
         </button>
         <button id="gameBtn" class="icon-btn hidden" data-i18n-title="playGames" data-i18n-aria="playGames" title="Play a game" aria-label="Play a game">
           <span id="gameBtnBadge" class="notif-badge hidden" aria-hidden="true">!</span>
-          <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <line x1="9" y1="3.5" x2="9" y2="20.5"/>
-            <line x1="15" y1="3.5" x2="15" y2="20.5"/>
-            <line x1="3.5" y1="9" x2="20.5" y2="9"/>
-            <line x1="3.5" y1="15" x2="20.5" y2="15"/>
-            <path stroke-width="2.1" d="M5.3 5.3l3.1 3.1M8.4 5.3L5.3 8.4"/>
-            <circle cx="18" cy="18" r="2.1" stroke-width="2.1"/>
+          <!-- A gamepad. The old icon was a noughts-and-crosses grid, which
+               reads as a table or a hash at 20px and names one game rather
+               than the thing the button actually opens. -->
+          <svg class="topbar-svg-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M7.6 6.5h8.8a5.1 5.1 0 0 1 5 4.1l.9 4.6a2.75 2.75 0 0 1-5.02 2l-1.2-1.7H7.92l-1.2 1.7a2.75 2.75 0 0 1-5.02-2l.9-4.6a5.1 5.1 0 0 1 5-4.1z"/>
+            <rect x="5.7" y="10.6" width="1.7" height="4.3" rx="0.85" fill="var(--bg-2)"/>
+            <rect x="4.4" y="11.9" width="4.3" height="1.7" rx="0.85" fill="var(--bg-2)"/>
+            <circle cx="16.3" cy="11.6" r="1.15" fill="var(--bg-2)"/>
+            <circle cx="18.5" cy="13.8" r="1.15" fill="var(--bg-2)"/>
           </svg>
         </button>
       </nav>
@@ -387,15 +389,6 @@
           </div>
 
           <div id="friendsTabPanel" class="tl-tabpanel" role="tabpanel">
-            <!-- Reachable from the list the calls come from, rather than buried
-                 in settings: friends can still message while this is off. -->
-            <label id="acceptCallsRow" class="checkbox-row accept-calls-row" for="acceptCallsCheckbox">
-              <input type="checkbox" id="acceptCallsCheckbox" checked />
-              <span class="accept-calls-text">
-                <strong data-i18n="acceptCallsTitle">Receive incoming calls</strong>
-                <small data-i18n="acceptCallsBody">Friends can call you</small>
-              </span>
-            </label>
             <div id="friendsList" class="friends-list">
               <!-- Skeleton rows shown until the first friends sync from the server. -->
               <div class="skeleton-row" aria-hidden="true"><span class="skeleton skeleton-avatar"></span><span class="skeleton skeleton-line"></span></div>
@@ -749,7 +742,7 @@
     <aside id="navDrawer" class="tl-drawer hidden" role="dialog" data-i18n-aria="more" aria-label="More">
       <header class="tl-drawer-head">
         <span class="tl-drawer-brand">
-          <img src="/favicon.svg?v=20260920phone" width="26" height="26" alt="" decoding="async" />
+          <img src="/favicon.svg?v=20260920polish" width="26" height="26" alt="" decoding="async" />
           <span>Talk<span class="brand-name-live">Live</span></span>
         </span>
         <button type="button" id="closeNavDrawerBtn" class="tl-panel-close" data-i18n-aria="close" aria-label="Close">&times;</button>
@@ -987,15 +980,18 @@
              panel once a call or chat starts. Framed like the rest of the UI
              so a creative never reads as a pop-up over the app.
 
-             Desktop only (see .ad-card-desk). On a phone this leaderboard
-             renders as a 320x50 - the lowest-CPM shape in the inventory - and
-             it lands directly above the content native further down, so a
-             first-time visitor scrolling past the hero met two ads back to
-             back before reaching anything else. One good ad on that scroll
-             earns more than two bad ones and costs far less trust. -->
+             The unit is chosen per width rather than hidden: ads.js sizes a
+             "leaderboard" from the viewport, so on a phone this became a
+             320x50 - the lowest-CPM shape in the inventory, sitting in the
+             best slot on the site. The phone gets a 300x250 instead, which
+             is the shape that actually fits and actually pays. -->
         <div class="ad-card ad-card-app ad-card-desk">
           <span class="ad-card-label" data-i18n="sponsored">Sponsored</span>
           <div data-ad="leaderboard"></div>
+        </div>
+        <div class="ad-card ad-card-app ad-card-phone">
+          <span class="ad-card-label" data-i18n="sponsored">Sponsored</span>
+          <div data-ad="box"></div>
         </div>
       </section>
 
@@ -1176,6 +1172,19 @@
           <section>
             <h3 class="tl-set-legend" data-i18n="catPrivacy">Privacy &amp; Safety</h3>
             <div class="tl-set-group">
+              <!-- Moved out of the Friends panel, where it was a large
+                   checkbox card sitting above the list - the first thing you
+                   met when you opened Friends to look at your friends. It is
+                   a setting about who can reach you, so it lives with the
+                   other settings about who can reach you. -->
+              <label id="acceptCallsRow" class="checkbox-row accept-calls-row" for="acceptCallsCheckbox">
+                <input type="checkbox" id="acceptCallsCheckbox" checked />
+                <span class="accept-calls-text">
+                  <strong data-i18n="acceptCallsTitle">Receive incoming calls</strong>
+                  <small data-i18n="acceptCallsBody">Friends can call you</small>
+                </span>
+              </label>
+
               <label class="tl-set-control" for="statusVisibilityToggle">
                 <span data-i18n="showOnlineStatus">Show my online status to friends</span>
                 <span class="switch"><input type="checkbox" id="statusVisibilityToggle" checked /><span class="switch-slider" aria-hidden="true"></span></span>
@@ -2037,6 +2046,17 @@
             </button>
             <span class="action-label" data-i18n="report">Report</span>
           </div>
+          <!-- Your spirit animal, pickable from here too. It is the one thing
+               a stranger sees about you the moment you connect, and the
+               moment you most want to set it is while you are waiting for
+               one - not back on a landing page you have already left. Same
+               list, same storage, same server call as the landing picker;
+               this is a second view of it, not a second copy. -->
+          <div class="tl-call-animals">
+            <p class="tl-call-animals-label" data-i18n="pickAnimal">Pick your spirit animal</p>
+            <div id="callAnimalGrid" class="animal-grid tl-call-animal-grid" role="radiogroup" data-i18n-aria="pickAnimal" aria-label="Pick your spirit animal"></div>
+          </div>
+
           <!-- Auto-connect used to be this checkbox. It is the round button in
                the main row now - one control per setting, and this one is a
                mode you want to see the state of without opening a drawer. The
@@ -2538,7 +2558,7 @@
        browser finish parsing and paint the page first. -->
   <script defer src="/socket.io/socket.io.js"></script>
   <script defer src="countries.js?v=20260828fix"></script>
-  <script defer src="i18n.js?v=20260920phone"></script>
+  <script defer src="i18n.js?v=20260920polish"></script>
   <script defer src="chat-time.js?v=20260916navbar"></script>
   <script defer src="animals.js?v=20260916settings"></script>
   <script defer src="moderation.js?v=20260705b"></script>
@@ -2576,7 +2596,7 @@
   </script>
   <script defer src="chat-extras.js?v=20260916navbar"></script>
   <script defer src="games.js?v=20260916settings"></script>
-  <script defer src="app.js?v=20260920phone"></script>
+  <script defer src="app.js?v=20260920polish"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

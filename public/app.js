@@ -1996,11 +1996,22 @@ function animalPreviewIds() {
   return ids;
 }
 
+const callAnimalGrid = document.getElementById('callAnimalGrid');
+
+// Drawn in two places - the landing screen and the call screen's More sheet -
+// from one list, one storage key and one server call. The call screen always
+// shows the whole set: you are waiting, and there is nothing else to get past.
 function renderAnimalPicker() {
-  if (!animalGrid || !Animals) return;
+  paintAnimalPicker(animalGrid, animalPickerExpanded ? null : animalPreviewIds());
+  paintAnimalPicker(callAnimalGrid, null);
+  renderAnimalChoiceLine();
+}
+
+function paintAnimalPicker(grid, limitIds) {
+  if (!grid || !Animals) return;
   Animals.installSprite();
-  animalGrid.innerHTML = '';
-  const shown = animalPickerExpanded ? Animals.list.map((a) => a.id) : animalPreviewIds();
+  grid.innerHTML = '';
+  const shown = limitIds || Animals.list.map((a) => a.id);
   const frag = document.createDocumentFragment();
   shown.forEach((id) => {
     const animal = Animals.get(id);
@@ -2016,7 +2027,9 @@ function renderAnimalPicker() {
     frag.appendChild(btn);
   });
 
-  if (Animals.list.length > ANIMAL_PREVIEW_COUNT) {
+  // The "More" tile only belongs on a grid that is actually holding something
+  // back. The call screen shows the full set, so it never gets one.
+  if (limitIds && Animals.list.length > ANIMAL_PREVIEW_COUNT) {
     const more = document.createElement('button');
     more.type = 'button';
     more.className = 'animal-option animal-option-more';
@@ -2028,8 +2041,7 @@ function renderAnimalPicker() {
     frag.appendChild(more);
   }
 
-  animalGrid.appendChild(frag);
-  renderAnimalChoiceLine();
+  grid.appendChild(frag);
 }
 
 // Re-labels the existing buttons (language switch) without touching the icons.
@@ -2058,7 +2070,7 @@ function setMyAnimal(id) {
   const next = myAnimal === id ? null : id; // tapping the chosen one clears it
   myAnimal = next;
   Animals.store(next);
-  animalGrid.querySelectorAll('.animal-option').forEach((btn) => {
+  document.querySelectorAll('#animalGrid .animal-option, #callAnimalGrid .animal-option').forEach((btn) => {
     const on = btn.dataset.animal === next;
     btn.classList.toggle('selected', on);
     btn.setAttribute('aria-checked', on ? 'true' : 'false');
@@ -2067,6 +2079,15 @@ function setMyAnimal(id) {
   // The Settings profile row wears this avatar, so it re-renders with it.
   renderSettingsProfileRow();
   registerProfile(); // so a search already queued picks the new animal up
+}
+
+if (callAnimalGrid) {
+  callAnimalGrid.addEventListener('click', (e) => {
+    const option = e.target.closest('.animal-option');
+    if (!option || !option.dataset.animal) return;
+    vibrate(8);
+    setMyAnimal(option.dataset.animal);
+  });
 }
 
 if (animalGrid) {
@@ -3850,6 +3871,11 @@ function setCallState(state) {
   // you set before or during a call, and switching it on while searching is
   // exactly when it is most useful.
   if (typeof nextBtn !== 'undefined' && nextBtn) nextBtn.disabled = !connected;
+  // Published on the panel so the stylesheet can act on it. While there is
+  // nobody on the other end, Mute / Add friend / More are four dimmed
+  // buttons that do nothing - they take a whole row of a phone screen to say
+  // "not yet", and that row is exactly the space the waiting screen needs.
+  callPanel.classList.toggle('is-connected', connected);
   if (!connected) setCallMoreOpen(false);
   // The bars only mean anything while there is a voice to draw.
   showCallWave(connected);

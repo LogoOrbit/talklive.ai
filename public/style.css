@@ -4474,20 +4474,25 @@ body.panel-open .side-panel {
 }
 
 /* Searching entertainment ticker */
+/* No box. It is a line of reassurance while you wait, not a notice - and as
+   a tinted, bordered card with the loading dots jammed against the text it
+   read as an alert that had collided with a spinner. The dots now sit on
+   their own line above the words, centred, with room to bounce in. */
 .search-ticker {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 10px;
   max-width: 440px;
-  margin: 0 auto 18px;
-  min-height: 40px;
-  padding: 9px 16px;
-  border-radius: 12px;
-  background: rgba(108, 92, 231, 0.08);
-  border: 1px solid rgba(108, 92, 231, 0.25);
-  font-size: 13px;
-  color: var(--text);
+  margin: 14px auto 18px;
+  padding: 0 16px;
+  border: 0;
+  background: none;
+  font-size: 13.5px;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--muted);
 }
 
 .search-ticker-loader {
@@ -4497,8 +4502,8 @@ body.panel-open .side-panel {
 }
 
 .search-ticker-loader span {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: var(--accent-2);
   animation: tickerBounce 1.2s ease-in-out infinite;
