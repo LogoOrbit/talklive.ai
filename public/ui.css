@@ -2957,3 +2957,76 @@
   .stage .tl-call,
   .stage.call-live .tl-call { padding-bottom: var(--tl-s1); }
 }
+
+/* ===========================================================================
+ * 18. THE CALL BUTTON, SLIMMED
+ * ---------------------------------------------------------------------------
+ * It read as a fat blob rather than a button. Three things were doing it,
+ * and all three came from artwork drawn for a 140px orb on a landing page:
+ *
+ *   1. A 60px glow halo. The button's actual edge was the faintest part of
+ *      it, so the eye read the whole soft cloud as the shape - which is what
+ *      "fatty" is. A control needs a crisp edge; only the halo was ever
+ *      saying "big", and the size already says that.
+ *   2. A radial gradient lit from 35%/30%. That is how you shade a sphere,
+ *      and a shaded sphere is a ball, not a button. Flat fills read as
+ *      pressable; balls read as decoration.
+ *   3. A 28%-white inset highlight across the top, which is the gloss that
+ *      made the ball look inflated.
+ *
+ * And it was 92px against 60px neighbours - a 1.53x jump. At 80px the ratio
+ * is 1.33, which still makes it unmistakably the main control without it
+ * looking swollen next to the other two.
+ * ======================================================================== */
+
+.stage .tl-call-main .call-main-btn,
+.stage.call-live .tl-call-main .call-main-btn {
+  width: 80px;
+  height: 80px;
+}
+.tl-call-main .call-main-icon { width: 30px; height: 30px; }
+
+/* Flat fills, and a shadow that sits under the button instead of around it -
+   depth, not a halo. The three layers still cross-fade between modes exactly
+   as they did; they just stop being spheres. */
+.tl-call-main .call-main-btn::before,
+.tl-call-main .call-main-btn::after,
+.tl-call-main .call-main-btn .call-main-confirm-layer {
+  box-shadow: none;
+}
+.tl-call-main .call-main-btn::before { background: var(--green); }
+.tl-call-main .call-main-btn::after { background: var(--danger); }
+.tl-call-main .call-main-btn .call-main-confirm-layer { background: #e08700; }
+
+/* One soft drop shadow, tinted to whichever mode is showing, so the button
+   sits on the screen rather than glowing through it. */
+.tl-call-main .call-main-btn {
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--green) 38%, transparent);
+  transition: box-shadow 0.35s ease, transform 0.12s ease;
+}
+.tl-call-main .call-main-btn.is-hangup {
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--danger) 40%, transparent);
+}
+.tl-call-main .call-main-btn.is-confirm {
+  box-shadow: 0 6px 18px rgba(224, 135, 0, 0.4);
+}
+.tl-call-main .call-main-btn.is-loading {
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--green) 22%, transparent);
+}
+.tl-call-main .call-main-btn:active { transform: scale(0.96); }
+
+/* The orb on the waiting screen breathes; a button someone is about to press
+   should hold still. */
+.tl-call-main .call-main-btn { animation: none; }
+
+@media (max-width: 979px) {
+  .stage .tl-call-main .call-main-btn,
+  .stage.call-live .tl-call-main .call-main-btn {
+    width: clamp(62px, 8.8dvh, 80px);
+    height: clamp(62px, 8.8dvh, 80px);
+  }
+  .stage.call-live .tl-call-main .call-main-icon {
+    width: clamp(24px, 3.9dvh, 30px);
+    height: clamp(24px, 3.9dvh, 30px);
+  }
+}
