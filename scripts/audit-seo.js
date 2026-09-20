@@ -192,6 +192,22 @@ function auditInternalLinks(html, pageScope) {
       continue;
     }
     if (target.origin !== SITE_ORIGIN) continue;
+
+    // Tracking parameters on internal links turn one page into as many
+    // crawlable URLs as there are tag combinations, all of them duplicates
+    // that resolve back to the canonical. `utm_source` is the exception: the
+    // server counts a fixed set of values from it, and one constant value per
+    // cluster adds one URL, not one per page. Everything else - the rest of
+    // the utm family, and `lang`, which nothing reads - is caught here so the
+    // link graph cannot silently regrow the duplicate pile.
+    for (const name of target.searchParams.keys()) {
+      if (/^utm_[a-z_]+$/i.test(name) && name.toLowerCase() !== 'utm_source') {
+        report(pageScope, `internal link carries unread tracking parameter "${name}": "${href}"`);
+      } else if (name.toLowerCase() === 'lang') {
+        report(pageScope, `internal link carries unread "lang" parameter: "${href}"`);
+      }
+    }
+
     if (target.pathname === '/') continue; // app home, including query/hash CTAs
     if (DYNAMIC_PAGE_ROUTES.has(target.pathname)) continue;
     if (DYNAMIC_PAGE_PREFIXES.some(prefix => target.pathname === prefix || target.pathname.startsWith(prefix + '/'))) continue;

@@ -74,14 +74,27 @@ const NAV = [
 
 function url(slug) { return slug ? `${SITE}/${slug}` : `${SITE}/`; }
 
-function trackedHref(pathname, source, medium, campaign, extra) {
-  const params = [
-    ['utm_source', source],
-    ['utm_medium', medium],
-    ['utm_campaign', campaign],
-  ].concat(extra || []).filter((entry) => entry[1]);
-  const query = params.map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`).join('&amp;');
-  return `${pathname}?${query}`;
+/*
+ * Internal CTAs carry one constant `utm_source` and nothing else.
+ *
+ * They used to carry `utm_medium` and a per-page `utm_campaign` as well, which
+ * gave every page on the site its own unique query string pointing at `/` and
+ * `/chat`: 1,098 distinct crawlable URLs that all render the homepage or the
+ * chat app. Each one is a duplicate Google has to fetch, compare and discard
+ * against the canonical - that is the "Alternate page with proper canonical
+ * tag" pile in Search Console, and it is crawl budget spent on URLs that can
+ * never rank while real pages sit in "Discovered - currently not indexed".
+ *
+ * `utm_source` stays because it is the only tracking parameter anything reads:
+ * `server/index.js` counts `acq_seo` / `acq_blog` from it (ACQUISITION_SOURCES).
+ * Medium and campaign were written and never read, and so was `lang` - no
+ * client code looks at that parameter, the app picks its language from the
+ * browser and the stored preference. One source value per cluster keeps the
+ * acquisition counters exact and collapses the duplicate set to two URLs.
+ */
+function appHref(pathname, source) {
+  if (!source) return pathname;
+  return `${pathname}?utm_source=${encodeURIComponent(source)}`;
 }
 
 function icon(name) {
@@ -116,8 +129,8 @@ function headerHtml(currentSlug) {
       <a class="logo" href="/"><img src="/favicon.svg" width="30" height="30" alt="TalkLive logo" /><span class="logo-name">Talk<span class="logo-live">Live</span></span></a>
       <nav class="nav" aria-label="Primary">${links}</nav>
       <span style="display:inline-flex;gap:8px">
-        <a class="btn btn-talk" href="${trackedHref('/', 'seo', 'header', currentSlug || 'home')}" style="padding:10px 18px;font-size:15px">🎙 Talk</a>
-        <a class="btn btn-chat" href="${trackedHref('/chat', 'seo', 'header', currentSlug || 'home')}" style="padding:10px 18px;font-size:15px">💬 Chat</a>
+        <a class="btn btn-talk" href="${appHref('/', 'seo')}" style="padding:10px 18px;font-size:15px">🎙 Talk</a>
+        <a class="btn btn-chat" href="${appHref('/chat', 'seo')}" style="padding:10px 18px;font-size:15px">💬 Chat</a>
       </span>
     </div>
   </header>`;
@@ -454,8 +467,8 @@ ${headerHtml(p.slug)}
       <h1>${p.h1}</h1>
       <p class="lede">${p.lede}</p>
       <div class="cta-row">
-        <a class="btn btn-talk" href="${trackedHref('/', 'seo', 'landing', p.slug)}">🎙 ${p.cta}</a>
-        <a class="btn btn-chat" href="${trackedHref('/chat', 'seo', 'landing', p.slug)}">💬 ${p.ctaChat || 'Tap to Chat'}</a>
+        <a class="btn btn-talk" href="${appHref('/', 'seo')}">🎙 ${p.cta}</a>
+        <a class="btn btn-chat" href="${appHref('/chat', 'seo')}">💬 ${p.ctaChat || 'Tap to Chat'}</a>
         <a class="btn btn-ghost" href="#how">How it works</a>
       </div>
       <p class="hero-meta">Core matching is free · No sign-up required · Voice &amp; text · Adults 18+ · Leave any time</p>
@@ -512,8 +525,8 @@ ${headerHtml(p.slug)}
       <h2>${p.ctaBandH}</h2>
       <p>${p.ctaBandP}</p>
       <div class="cta-row">
-        <a class="btn btn-talk" href="${trackedHref('/', 'seo', 'cta', p.slug)}">🎙 ${p.cta}</a>
-        <a class="btn btn-chat" href="${trackedHref('/chat', 'seo', 'cta', p.slug)}">💬 ${p.ctaChat || 'Tap to Chat'}</a>
+        <a class="btn btn-talk" href="${appHref('/', 'seo')}">🎙 ${p.cta}</a>
+        <a class="btn btn-chat" href="${appHref('/chat', 'seo')}">💬 ${p.ctaChat || 'Tap to Chat'}</a>
       </div>
     </div>
   </div>
@@ -2002,8 +2015,8 @@ ${headerHtml('blog')}
       <h2>Try it right now - talk or text with a stranger</h2>
       <p>TalkLive offers free random voice and text matching for adults. Voice calls use encrypted WebRTC and are not recorded or stored by TalkLive; typed chats follow the retention terms in our Privacy Policy.</p>
       <div class="cta-row">
-        <a class="btn btn-talk" href="${trackedHref('/', 'blog', 'cta', b.slug)}">🎙 Start Talking Free</a>
-        <a class="btn btn-chat" href="${trackedHref('/chat', 'blog', 'cta', b.slug)}">💬 Start Chatting Free</a>
+        <a class="btn btn-talk" href="${appHref('/', 'blog')}">🎙 Start Talking Free</a>
+        <a class="btn btn-chat" href="${appHref('/chat', 'blog')}">💬 Start Chatting Free</a>
       </div>
     </div>
   </div>
@@ -2103,8 +2116,8 @@ ${headerHtml('blog')}
       <h2>Done reading? Go talk - or chat.</h2>
       <p>Choose a free random voice or text match. No account is required for the core experience; availability varies with the live queue.</p>
       <div class="cta-row">
-        <a class="btn btn-talk" href="${trackedHref('/', 'blog', 'index', 'blog-home')}">🎙 Start Talking Free</a>
-        <a class="btn btn-chat" href="${trackedHref('/chat', 'blog', 'index', 'blog-home')}">💬 Start Chatting Free</a>
+        <a class="btn btn-talk" href="${appHref('/', 'blog')}">🎙 Start Talking Free</a>
+        <a class="btn btn-chat" href="${appHref('/chat', 'blog')}">💬 Start Chatting Free</a>
       </div>
     </div>
   </div>
@@ -2133,8 +2146,8 @@ function languageSwitcher(current) {
 
 function localeHome(loc) {
   const canonical = `${SITE}/${loc.code}/`;
-  const appVoice = trackedHref('/', 'seo', 'locale', `home-${loc.code}`, [['lang', loc.code]]);
-  const appChat = trackedHref('/chat', 'seo', 'locale', `home-${loc.code}`, [['lang', loc.code]]);
+  const appVoice = appHref('/', 'seo');
+  const appChat = appHref('/chat', 'seo');
   const alternates = homeAlternates((href, lang) => `<link rel="alternate" href="${href}" hreflang="${lang}" />`).join('\n');
   const features = loc.features.map(f => `<div class="card"><div class="ico">${icon(f.icon)}</div><h3>${f.h}</h3><p>${f.p}</p></div>`).join('');
   const steps = loc.steps.map(s => `<div class="step"><h3>${s.h}</h3><p>${s.p}</p></div>`).join('');
@@ -2388,7 +2401,10 @@ const LEDGER_PATH = path.join(__dirname, 'seo-lastmod.json');
 // Bumped when the hashing rules change. An entry written by an older version
 // is re-hashed but keeps its recorded date, so changing the algorithm never
 // backdates or forward-dates a page it cannot actually vouch for.
-const LEDGER_VERSION = 2;
+// v3: the fingerprint now also normalizes away internal-link tracking
+// parameters, so removing them from 192 pages of CTAs re-hashes the site
+// without dating it to the day of the cleanup.
+const LEDGER_VERSION = 3;
 const TODAY = new Date().toISOString().slice(0, 10);
 
 let LASTMOD = {};
@@ -2410,6 +2426,16 @@ function contentFingerprint(html) {
     .replace(/<div\b[^>]*\bdata-ad=[^>]*>\s*<\/div>/gi, '')
     // Cache-buster query strings: ?v=20260828fix is not a content change.
     .replace(/([?&])v=[^"'&\s>]*/g, '$1v=')
+    // Tracking parameters on internal links. Dropping `utm_medium`,
+    // `utm_campaign` and `lang` from 277 pages of CTAs (see
+    // scripts/migrate-internal-utm.js) removes duplicate crawl targets; it
+    // does not change a word of what the page says, so it must not restamp
+    // `lastmod` any more than the ad or PWA tags do. Normalizing both the
+    // tagged and the untagged form to the same string keeps every date put.
+    .replace(/([?&]|&amp;)(?:utm_[a-z_]+|lang)=[^"'&\s>]*/gi, '$1')
+    .replace(/\?(?:&amp;|&)+/g, '?')
+    .replace(/(?:&amp;|&)+(?=&amp;|&)/g, '')
+    .replace(/[?&](?:&amp;)*(?=["'\s>])/g, '')
     .replace(/\s+/g, ' ')
     .trim();
   return crypto.createHash('sha256').update(normalized).digest('hex').slice(0, 16);

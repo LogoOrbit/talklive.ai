@@ -228,6 +228,65 @@ equity onward. `scripts/audit-seo.js` fails the build if a sitemap page ever
 becomes `noindex`, so a real regression here would be caught rather than
 reported by Google. Nothing to fix.
 
+The same header goes on `/call` and `/settings` (`sendAppShell()` in
+`server/index.js`). Both are screens inside the single-page app and both serve
+`public/index.html` byte for byte, canonical included, so to a crawler they are
+the homepage at two more URLs. The 113 city pages under `/cities/` are
+`noindex` too, for the reason in `noindexUnsupportedCityPages()`.
+
+### Alternate page with proper canonical tag - the link graph, not the canonicals
+
+Search Console reported 30 pages under `Alternate page with proper canonical
+tag` and climbing. No page on the site canonicalizes to a different page, so
+the duplicates were not pages at all - they were **query strings on our own
+internal links**.
+
+Every CTA was tagged `utm_source` + `utm_medium` + `utm_campaign`, and the
+campaign was the linking page's own slug:
+
+```
+/?utm_source=seo&utm_medium=landing&utm_campaign=countries/india
+/?utm_source=seo&utm_medium=landing&utm_campaign=countries/japan
+/chat?utm_source=seo&utm_medium=locale&utm_campaign=home-zh&lang=zh
+```
+
+277 pages linking that way produced **1,098 distinct crawlable URLs that all
+serve `/` or `/chat`**. Google fetches each one, reads the canonical, discards
+it and files it under that heading - four duplicates for every real page on a
+272-page site, all of it crawl budget not spent on the pages sitting in
+`Discovered - currently not indexed`.
+
+UTM is for inbound links from somewhere else. A site that tags its own internal
+links also overwrites the visitor's original acquisition source in any
+analytics that reads them, so the tags cost accuracy as well as crawl budget.
+
+What is left is exactly what something reads:
+
+| Parameter | Kept? | Why |
+|---|---|---|
+| `utm_source` | yes, one constant value per cluster | `server/index.js` counts `acq_seo` / `acq_blog` / `acq_app` from it (`ACQUISITION_SOURCES`). One value per cluster adds one URL, not one per page. |
+| `utm_medium`, `utm_campaign`, other `utm_*` | no | Written by the builder, read by nothing. |
+| `lang` | no | No client code has ever read it; the app picks its language from the browser and the stored preference. |
+| `mode`, `open`, `tab`, `ref`, `v` | yes | Functional. `app.js` opens text chat on `?mode=chat`, `pwa.js` captures `?ref=`. |
+
+That is 1,109 distinct query URLs down to 18, of which 11 are pages.
+
+Three places hold it there:
+
+- `appHref()` in `scripts/build-seo.js` - what the generator emits.
+- `scripts/migrate-internal-utm.js` - the sweep, because most page sets ship
+  from disk with no live generator (see above). Idempotent; runs in
+  `npm run build:seo`.
+- `scripts/audit-seo.js` - fails the build if any internal link carries a
+  dropped parameter, so the duplicate pile cannot silently regrow.
+
+Existing entries in the report clear on recrawl, which takes weeks; the count
+goes up before it goes down as Google works through URLs it already queued.
+It will not reach zero and does not need to - `/?utm_source=seo`,
+`/?mode=chat`, `/pricing?utm_source=app` and the other functional variants are
+duplicates Google is *supposed* to resolve with our canonical, and this status
+is informational, not an error.
+
 ---
 
 ## Accurate `lastmod`
@@ -243,6 +302,13 @@ the signal that gets a genuinely updated page recrawled quickly.
 
 The hash is taken over the page's source object, not its rendered HTML, because
 the rendered HTML embeds the build date and would always differ.
+
+`contentFingerprint()` normalizes away the things a sweep changes without
+changing what the page says: the ads/PWA script tags, empty ad slots, `?v=`
+cache busters and internal-link tracking parameters. When those rules change,
+bump `LEDGER_VERSION` - an entry written by an older version is re-hashed but
+**keeps its recorded date**, so a sitewide cleanup never dates 169 pages to the
+day someone edited the link markup.
 
 ---
 
