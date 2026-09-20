@@ -3853,6 +3853,13 @@ function setCallState(state) {
   if (!connected) setCallMoreOpen(false);
   // The bars only mean anything while there is a voice to draw.
   showCallWave(connected);
+  // A live call is its own layout on a short phone: the corner already reads
+  // CONNECTED, the timer is running in the orb and the partner's name is on
+  // screen, so the "You're connected" line is three ways of saying the same
+  // thing and it is the one that gives up its height. ui.css owns the rule;
+  // this is only the hook, and it is off in every other state so "Searching",
+  // "Connecting" and "Reconnecting" always have somewhere to be said.
+  stageEl.classList.toggle('call-connected', connected);
   // The Tic Tac Toe game needs a live partner.
   gameBtn.disabled = !connected;
   gameBtn.classList.toggle('nav-btn-off', !connected);

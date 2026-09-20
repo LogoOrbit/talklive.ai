@@ -21,7 +21,7 @@
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
      side-panel shell, Settings, Friends/History and the account dialog, and it
      does so with its own `tl-` class names so nothing above can reach it. -->
-<link rel="stylesheet" href="ui.css?v=20260920callfit" />
+<link rel="stylesheet" href="ui.css?v=20260920adbox" />
 <script defer src="/config.js"></script>
 <!-- Google Identity Services, deferred so it never blocks first paint. app.js
      waits for it (and for /config.js) before rendering the sign-in buttons. -->
@@ -2595,7 +2595,7 @@
   </script>
   <script defer src="chat-extras.js?v=20260916navbar"></script>
   <script defer src="games.js?v=20260916settings"></script>
-  <script defer src="app.js?v=20260920phone"></script>
+  <script defer src="app.js?v=20260920adbox"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the
