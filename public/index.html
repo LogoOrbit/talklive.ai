@@ -15,17 +15,17 @@
      rather than after it - the sooner it lands, the sooner the hero paints.
      Analytics and ad tags are loaded at the end of <body> instead of here so
      they stop competing for mobile bandwidth during Largest Contentful Paint. -->
-<link rel="stylesheet" href="style.css?v=20260920sheet" />
+<link rel="stylesheet" href="style.css?v=20260920tight" />
 <link rel="stylesheet" href="chat-extras.css?v=20260916navbar" />
 <link rel="stylesheet" href="games.css?v=20260916settings" />
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
      side-panel shell, Settings, Friends/History and the account dialog, and it
      does so with its own `tl-` class names so nothing above can reach it. -->
-<link rel="stylesheet" href="ui.css?v=20260920sheet" />
+<link rel="stylesheet" href="ui.css?v=20260920tight" />
 <!-- The top bar, shared with /chat. Loaded after everything else because it
      owns the header outright: one button language, one radius, one focus ring
      on every screen of the product. -->
-<link rel="stylesheet" href="nav.css?v=20260920sheet" />
+<link rel="stylesheet" href="nav.css?v=20260920tight" />
 <script defer src="/config.js"></script>
 <!-- Google Identity Services, deferred so it never blocks first paint. app.js
      waits for it (and for /config.js) before rendering the sign-in buttons. -->
@@ -720,7 +720,7 @@
     <aside id="navDrawer" class="tl-drawer hidden" role="dialog" data-i18n-aria="more" aria-label="More">
       <header class="tl-drawer-head">
         <span class="tl-drawer-brand">
-          <img src="/favicon.svg?v=20260920sheet" width="26" height="26" alt="" decoding="async" />
+          <img src="/favicon.svg?v=20260920tight" width="26" height="26" alt="" decoding="async" />
           <span>Talk<span class="brand-name-live">Live</span></span>
         </span>
         <button type="button" id="closeNavDrawerBtn" class="tl-panel-close" data-i18n-aria="close" aria-label="Close">&times;</button>
@@ -2573,7 +2573,7 @@
        browser finish parsing and paint the page first. -->
   <script defer src="/socket.io/socket.io.js"></script>
   <script defer src="countries.js?v=20260828fix"></script>
-  <script defer src="i18n.js?v=20260920sheet"></script>
+  <script defer src="i18n.js?v=20260920tight"></script>
   <script defer src="chat-time.js?v=20260916navbar"></script>
   <script defer src="animals.js?v=20260916settings"></script>
   <script defer src="moderation.js?v=20260705b"></script>
@@ -2611,7 +2611,7 @@
   </script>
   <script defer src="chat-extras.js?v=20260916navbar"></script>
   <script defer src="games.js?v=20260916settings"></script>
-  <script defer src="app.js?v=20260920sheet"></script>
+  <script defer src="app.js?v=20260920tight"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

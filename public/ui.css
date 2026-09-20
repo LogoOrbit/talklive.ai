@@ -3238,3 +3238,70 @@
      gives up the rest. */
   .tl-call-ad-phone { margin-top: var(--tl-s2); }
 }
+
+/* ===========================================================================
+ * 21. THE CALL SCREEN'S EMPTY SPACE
+ * ---------------------------------------------------------------------------
+ * Three gaps, each individually reasonable, together about 136px on a 820px
+ * phone - which is the difference between the ad below being 57% visible and
+ * all of it being on screen.
+ *
+ *   The orb's box was 150px around a much smaller ball, so most of the space
+ *   between the header and the status line was an empty ring.
+ *
+ *   The ticker's bottom margin (18px) and the control row's top margin (32px)
+ *   stacked into a 50px hole between the icebreaker and the buttons.
+ *
+ *   The card's bottom padding (32px) and the ad's own top margin (24px)
+ *   stacked into another 56px before the word SPONSORED.
+ *
+ * Nothing here shrinks a control or a line of text. It is all air between
+ * them, and the ad is a better use of it. The separation above the ad is kept
+ * - a thumb going for Hang Up must never land on a creative - it is just no
+ * longer paid for twice.
+ *
+ * The selectors carry .stage.call-live because style.css sizes the orb with
+ * it, and a phone size has to out-specify that rather than hope to out-order
+ * it - the same trap that swallowed this block once already in a merge.
+ * ======================================================================== */
+
+@media (max-width: 979px) {
+  .stage .tl-call,
+  .stage.call-live .tl-call {
+    padding-top: var(--tl-s2);
+    padding-bottom: var(--tl-s3);
+  }
+
+  .stage .tl-call .orb-wrap,
+  .stage.call-live .tl-call .orb-wrap {
+    width: clamp(84px, 13dvh, 108px);
+    height: clamp(84px, 13dvh, 108px);
+    margin-bottom: var(--tl-s1);
+  }
+  .stage .tl-call .orb,
+  .stage.call-live .tl-call .orb {
+    width: clamp(72px, 11dvh, 94px);
+    height: clamp(72px, 11dvh, 94px);
+  }
+  .stage .tl-call .orb-core,
+  .stage.call-live .tl-call .orb-core {
+    width: clamp(48px, 7.4dvh, 64px);
+    height: clamp(48px, 7.4dvh, 64px);
+  }
+
+  .stage .tl-call .search-ticker,
+  .stage.call-live .tl-call .search-ticker {
+    margin-top: var(--tl-s2);
+    margin-bottom: 0;
+  }
+  .stage .tl-call .connection-indicator,
+  .stage.call-live .tl-call .connection-indicator { margin-top: var(--tl-s1); }
+
+  .stage .tl-call-main,
+  .stage.call-live .tl-call-main { margin-top: var(--tl-s4); }
+
+  /* One gap above the ad, not the card's padding plus the ad's margin. Still
+     a clear break from the controls - it is the same distance as sits between
+     any two rows of the card - just not paid for twice. */
+  .tl-call-ad-phone { margin-top: var(--tl-s2); }
+}
