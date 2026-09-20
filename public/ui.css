@@ -2636,11 +2636,15 @@
   }
 }
 
-/* A phone has one column, and the call has to be the top of it - so the ad
-   sits directly under the card with nothing between, which is as close to the
-   fold as an ad can honestly get on a 640px-tall viewport. */
+/* One column, one ad. The 300x250 card belongs to the two-column layout; the
+   phone gets the strip in section 14 instead. Each is hidden at the other's
+   widths, and a display:none slot never enters the viewport, so ads.js never
+   loads it and it spends no slot budget. */
 @media (max-width: 979px) {
-  .tl-call-ad { margin-top: var(--tl-s3); }
+  .tl-call-ad-wide { display: none; }
+}
+@media (min-width: 980px) {
+  .tl-call-ad-phone { display: none; }
 }
 
 /* ===========================================================================
@@ -2673,4 +2677,166 @@
    it; one good ad on that scroll beats two bad ones. */
 @media (max-width: 859px) {
   .ad-card-desk { display: none; }
+}
+
+/* ===========================================================================
+ * 14. THE PHONE CALL SCREEN - one screen, and the ad's own place in it
+ * ---------------------------------------------------------------------------
+ * On a phone the live call did not fit. The column - back button and
+ * connection row, orb, status, waveform, partner, reactions, Mute/Add
+ * friend/More, then Next/Call/Auto - was sized by three hard-coded viewport
+ * heights (110px orb over 740, 92px under it, 72px under 620). Every real
+ * phone in portrait lands in the middle band, where the stack came to roughly
+ * 620px inside a viewport that, once the browser bar and the tab bar have
+ * taken their share, is about 560px tall. The main row - Next, the call
+ * button, Auto, the three controls the whole product is - was cut in half by
+ * the tab bar, and the only way to hang up was to scroll first.
+ *
+ * So the sizes are keyed to the viewport itself rather than to three guesses
+ * about it: each one is a clamp between the smallest it can be and the size it
+ * has today, tracking dvh in between. Nothing jumps at a breakpoint, every
+ * phone gets the largest call screen that fits it, and the controls stay put
+ * when the browser bar collapses because dvh is the small viewport.
+ *
+ * The room that frees up is the ad's. It is one strip, with its height
+ * reserved before anything loads, directly below the controls and separated
+ * from them by more space than sits between any two controls - close enough to
+ * be seen without scrolling, far enough that a thumb aiming for the call
+ * button cannot land on a creative. (The 300x250 that used to stack here on a
+ * phone is desktop-only now: 250px of rectangle, more than a third of the
+ * viewport, under a screen that already overflowed.)
+ * ======================================================================== */
+
+@media (max-width: 979px) {
+  /* The stage is already exactly the viewport minus the header and the tab bar
+     - .app is 100dvh with the bar's height as padding, and .stage is the flex
+     child that grows. It does not need a second min-height of its own, and the
+     one it had (100dvh - 90px) was taller than the space it sits in. */
+  .stage.call-live {
+    min-height: 0;
+    justify-content: flex-start;
+    padding: var(--tl-s2) var(--tl-s3) 0;
+  }
+
+  .stage.call-live .tl-call {
+    padding: var(--tl-s2) var(--tl-s2) 0;
+  }
+
+  /* One column, so the row's column gap would only push the ad strip further
+     down the screen. The strip brings its own space above it. */
+  .tl-call-row { gap: 0; }
+
+  /* The back button and the connection row. Full-size taps, minimal margin. */
+  .stage.call-live .tl-call-top { margin-bottom: var(--tl-s2); }
+  .stage.call-live .tl-call-min { width: 40px; height: 40px; }
+  .stage.call-live .connection-indicator { margin-bottom: 0; font-size: 11.5px; }
+
+  /* The orb. The ring box is the orb plus room to pulse, so the two scale
+     together; the timer inside it is the one number on the screen you read at
+     a glance, so it gives up the least. */
+  .stage.call-live .orb-wrap {
+    width: clamp(78px, 12dvh, 124px);
+    height: clamp(78px, 12dvh, 124px);
+    margin-bottom: var(--tl-s2);
+  }
+  .stage.call-live .orb {
+    width: clamp(62px, 9.4dvh, 98px);
+    height: clamp(62px, 9.4dvh, 98px);
+  }
+  .stage.call-live .orb-core {
+    width: clamp(42px, 6.3dvh, 66px);
+    height: clamp(42px, 6.3dvh, 66px);
+  }
+  .stage.call-live .orb-timer { font-size: clamp(15px, 2.4dvh, 22px); }
+
+  .stage.call-live .tl-call .status-text {
+    margin-bottom: 0;
+    font-size: clamp(15px, 2.5dvh, 20px);
+  }
+  .stage.call-live .tl-call .sub-text { font-size: 12.5px; }
+
+  /* The waveform is the proof the call is alive, so it stays on every phone -
+     it just gets shorter rather than taking a fixed 54px everywhere. */
+  .stage.call-live .tl-call-wave {
+    height: clamp(24px, 4.2dvh, 48px);
+    margin-top: var(--tl-s2);
+  }
+
+  /* Who you are talking to is a name and a flag. It was taking 61px for two
+     short lines, most of it the padding and margins of children that are
+     empty on almost every call. */
+  .stage.call-live .partner-card { margin: var(--tl-s2) 0 0; padding: 0; }
+  .stage.call-live .partner-name { font-size: 15px; line-height: 1.25; }
+  .stage.call-live .partner-interests:empty,
+  .stage.call-live .partner-animal:empty { display: none; }
+
+  .stage.call-live .tl-call-reactions { margin: var(--tl-s2) 0 0; gap: var(--tl-s2); }
+  .stage.call-live .reaction-btn {
+    width: clamp(40px, 5.6dvh, 44px);
+    height: clamp(40px, 5.6dvh, 44px);
+  }
+  .stage.call-live .reaction-btn svg { width: 20px; height: 20px; }
+
+  /* Mute / Add friend / More. Never below 44px: these are taps. */
+  .stage.call-live .tl-call-controls {
+    gap: var(--tl-s5);
+    margin-top: clamp(var(--tl-s2), 1.2dvh, var(--tl-s5));
+  }
+  .stage .tl-call-controls .action-btn,
+  .stage.call-live .tl-call-controls .action-btn {
+    width: clamp(44px, 6.8dvh, 56px);
+    height: clamp(44px, 6.8dvh, 56px);
+  }
+  .stage.call-live .tl-call-controls .action-label { font-size: 11.5px; }
+
+  /* The main row keeps the most air of anything here: it is the row you must
+     never hit by accident, and the row the ad below must never be mistaken
+     for. */
+  .stage.call-live .tl-call-main { margin-top: clamp(var(--tl-s3), 1.6dvh, var(--tl-s6)); }
+  .stage.call-live .tl-call-round {
+    width: clamp(50px, 7.8dvh, 60px);
+    height: clamp(50px, 7.8dvh, 60px);
+  }
+  .stage.call-live .tl-call-round svg { width: 24px; height: 24px; }
+  .stage .tl-call-main .call-main-btn,
+  .stage.call-live .tl-call-main .call-main-btn {
+    width: clamp(70px, 10.6dvh, 92px);
+    height: clamp(70px, 10.6dvh, 92px);
+  }
+  .stage.call-live .tl-call-main .call-main-icon {
+    width: clamp(28px, 4.4dvh, 34px);
+    height: clamp(28px, 4.4dvh, 34px);
+  }
+
+  /* More opens below the fold on a phone, so app.js scrolls it into view; this
+     is how far it has to clear the tab bar to be fully visible when it does. */
+  .stage.call-live .tl-call-sheet {
+    scroll-margin-bottom: calc(var(--tl-navbar) + var(--tl-s3) + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* --- The ad's place --------------------------------------------------- */
+  .tl-call-ad-phone {
+    /* More space above it than between any two controls, so the strip reads as
+       a different thing from the screen it sits under rather than as one more
+       row of it. */
+    margin-top: clamp(var(--tl-s4), 2.4dvh, var(--tl-s5));
+    /* The chrome around a 50px creative was taking another 45px. A strip on a
+       phone gets a label and a hairline, and that is all it gets. */
+    padding: 4px 6px 5px;
+  }
+  /* The label keeps the site's size: a smaller disclosure to buy two pixels is
+     not a trade worth making. */
+  .tl-call-ad-phone .ad-card-label { margin-bottom: 2px; line-height: 1.2; }
+
+  /* The music button and the conversation guide are below the fold during a
+     call anyway; keeping them tight means the ad is the last thing on the
+     first screen rather than the first thing on the second. */
+  .stage.call-live .call-music-row { margin-top: var(--tl-s3); }
+}
+
+/* Landscape and the shortest phones: the waveform and the reassurance the
+   screen can do without go first, never a control. */
+@media (max-width: 979px) and (max-height: 560px) {
+  .stage.call-live .tl-call-wave { display: none; }
+  .stage.call-live .tl-call-reactions { margin-top: var(--tl-s1); }
 }

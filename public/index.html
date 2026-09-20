@@ -21,7 +21,7 @@
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
      side-panel shell, Settings, Friends/History and the account dialog, and it
      does so with its own `tl-` class names so nothing above can reach it. -->
-<link rel="stylesheet" href="ui.css?v=20260920phone" />
+<link rel="stylesheet" href="ui.css?v=20260920callfit" />
 <script defer src="/config.js"></script>
 <!-- Google Identity Services, deferred so it never blocks first paint. app.js
      waits for it (and for /config.js) before rendering the sign-in buttons. -->
@@ -2073,10 +2073,29 @@
         <!-- Moved up from below the conversation guide: this is the slot that
              is now beside the call instead of under it. ads.js will not start,
              retry or collapse it while a call is live, so it fills during the
-             search and then holds completely still. -->
-        <div class="ad-card ad-card-app ad-card-wide tl-call-ad">
+             search and then holds completely still.
+
+             Two columns only. A 300x250 is the right shape for the empty half
+             of a desktop window and the wrong one for a phone, where it was
+             250px of rectangle stacked under a call screen that already did
+             not fit - so the phone gets the strip below instead, and this card
+             is display:none there. A hidden slot never enters the viewport, so
+             ads.js never loads it and it costs no slot budget. -->
+        <div class="ad-card ad-card-app ad-card-wide tl-call-ad tl-call-ad-wide">
           <span class="ad-card-label" data-i18n="sponsored">Sponsored</span>
           <div data-ad="box"></div>
+        </div>
+
+        <!-- The phone's ad: one strip, its own reserved height, directly under
+             the controls and clear of them. It is a leaderboard, so it resolves
+             to a 320x50 on a phone and a 728x90 on a tablet - the shapes that
+             actually fit one column - and the space is reserved before anything
+             loads, so a creative arriving never moves the call controls. It is
+             kept out of the desktop layout, where the card above is beside the
+             call instead. -->
+        <div class="ad-card ad-card-app tl-call-ad-phone">
+          <span class="ad-card-label" data-i18n="sponsored">Sponsored</span>
+          <div data-ad="leaderboard"></div>
         </div>
         </div><!-- /.tl-call-row -->
 

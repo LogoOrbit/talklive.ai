@@ -4685,6 +4685,15 @@ function setCallMoreOpen(open) {
   callMoreSheet.classList.toggle('hidden', !open);
   callMoreBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
   callMoreBtn.classList.toggle('is-open', open);
+  // On a phone the call screen already fills the viewport, so the sheet opens
+  // below the fold: the button said "expanded" and nothing appeared to happen.
+  // It brings itself into view instead, clearing the tab bar via the
+  // scroll-margin set on it in ui.css.
+  if (!open || !callMoreSheet.scrollIntoView) return;
+  const still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  requestAnimationFrame(() => {
+    callMoreSheet.scrollIntoView({ block: 'nearest', behavior: still ? 'auto' : 'smooth' });
+  });
 }
 
 if (callMoreBtn) {
