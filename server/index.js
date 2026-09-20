@@ -1901,6 +1901,13 @@ function lookupGeo(ip) {
   };
 }
 
+function sanitizeAvatar(value) {
+  if (typeof value !== 'string') return null;
+  if (/^[mf][1-5]$/.test(value)) return value;
+  if (value.slice(0, 2) === 'a:' && ANIMAL_IDS.has(value.slice(2))) return value;
+  return null;
+}
+
 function broadcastOnlineCount() {
   io.emit('online-count', io.engine.clientsCount);
   broadcastOnlinePeople();
@@ -2104,6 +2111,7 @@ function disconnectPartner(socketId, opts = {}) {
 const ANIMAL_IDS = new Set([
   'lion', 'tiger', 'wolf', 'fox', 'cat', 'dog',
   'bear', 'panda', 'rabbit', 'owl', 'penguin', 'dolphin',
+  'elephant', 'koala', 'monkey', 'frog', 'deer', 'turtle', 'horse', 'eagle',
 ]);
 function sanitizeAnimal(value) {
   return typeof value === 'string' && ANIMAL_IDS.has(value) ? value : null;
@@ -2940,7 +2948,10 @@ io.on('connection', (socket) => {
       interests: Array.isArray(data.interests)
         ? data.interests.filter((i) => typeof i === 'string').map((i) => i.slice(0, 40)).slice(0, 10)
         : [],
-      avatar: typeof data.avatar === 'string' && /^[mf][1-5]$/.test(data.avatar) ? data.avatar : null,
+      // `m1`-`f5` are the gendered busts; `a:<animal>` is a spirit-animal
+      // avatar, validated against the same list the picker is built from so a
+      // client cannot store an animal that does not exist.
+      avatar: sanitizeAvatar(data.avatar),
       animal: sanitizeAnimal(data.animal),
     });
     clientSockets.set(clientId, socket.id);

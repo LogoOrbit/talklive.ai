@@ -351,7 +351,37 @@ function getFlagImg(code, size = 20) {
 // --- Avatars: 5 male + 5 female inline-SVG busts. Shown only to yourself
 // (left panel) and to your friends (friends list / profile) - never to the
 // stranger during a call, so nothing about it can reveal anyone's gender. ---
-const AVATAR_IDS = { male: ['m1', 'm2', 'm3', 'm4', 'm5'], female: ['f1', 'f2', 'f3', 'f4', 'f5'] };
+// Ten gendered busts and every spirit animal. The animals were already drawn
+// for the ice-breaker on the landing screen, and they are the thing people
+// actually want as a picture of themselves: the busts are five skin/hair
+// permutations of the same silhouette, and "which of these five identical men
+// am I" is not a choice worth offering on its own.
+//
+// An animal avatar is stored as `a:<id>` - a prefix, so nothing that already
+// parses `m`/`f` can mistake it for a gendered one, and so an unknown animal
+// in storage (a rename, an older build) fails a lookup instead of rendering
+// something wrong.
+const ANIMAL_AVATAR_PREFIX = 'a:';
+const AVATAR_IDS = {
+  male: ['m1', 'm2', 'm3', 'm4', 'm5'],
+  female: ['f1', 'f2', 'f3', 'f4', 'f5'],
+  get animal() {
+    return (window.TalkLiveAnimals ? window.TalkLiveAnimals.ids : []).map((id) => ANIMAL_AVATAR_PREFIX + id);
+  },
+};
+
+function isAnimalAvatar(id) {
+  return typeof id === 'string' && id.slice(0, 2) === ANIMAL_AVATAR_PREFIX;
+}
+function animalAvatarId(id) {
+  return isAnimalAvatar(id) ? id.slice(2) : null;
+}
+function validAvatarId(id) {
+  if (isAnimalAvatar(id)) {
+    return !!(window.TalkLiveAnimals && window.TalkLiveAnimals.has(animalAvatarId(id)));
+  }
+  return !!AVATAR_STYLES[id];
+}
 const AVATAR_STYLES = {
   m1: { bg: '#6c5ce7', skin: '#f2c9a0', hair: '#2f2a26', long: false },
   m2: { bg: '#00a8cc', skin: '#c68642', hair: '#101010', long: false },
@@ -364,6 +394,20 @@ const AVATAR_STYLES = {
   f4: { bg: '#ffb84d', skin: '#8d5524', hair: '#2b1b12', long: true },
   f5: { bg: '#16a34a', skin: '#e0ac69', hair: '#8c2f39', long: true },
 };
+
+// The one place that turns an avatar id into a picture, whichever kind it is.
+// Everything that shows a person - the header button, the settings row, the
+// friends list, the rail - goes through this, so adding a kind of avatar is a
+// change in one function rather than in eight call sites.
+function avatarFaceHtml(id, size = 36) {
+  const animal = animalAvatarId(id);
+  if (animal && window.TalkLiveAnimals && window.TalkLiveAnimals.has(animal)) {
+    window.TalkLiveAnimals.installSprite();
+    return `<span class="avatar-animal" style="width:${size}px;height:${size}px">${window.TalkLiveAnimals.icon(animal, size)}</span>`;
+  }
+  if (AVATAR_STYLES[id]) return avatarSvg(id, size);
+  return genderIcon(id, size);
+}
 
 function avatarSvg(id, size = 36) {
   const a = AVATAR_STYLES[id];
@@ -383,6 +427,14 @@ function avatarSvg(id, size = 36) {
 // image: a blue man for male, a pink woman for female, a grey person when the
 // gender isn't known. Gender is derived from the chosen avatar id prefix (m*/f*).
 function genderIcon(avatarId, size = 30) {
+  // An animal avatar is a picture in its own right, not a gender to infer -
+  // and the lists that call this are exactly where someone's chosen animal
+  // should show up.
+  const animal = animalAvatarId(avatarId);
+  if (animal && window.TalkLiveAnimals && window.TalkLiveAnimals.has(animal)) {
+    window.TalkLiveAnimals.installSprite();
+    return `<span class="avatar-animal" style="width:${size}px;height:${size}px">${window.TalkLiveAnimals.icon(animal, size)}</span>`;
+  }
   const g = typeof avatarId === 'string' && (avatarId[0] === 'm' || avatarId[0] === 'f') ? avatarId[0] : null;
   const cls = g === 'm' ? 'gender-male' : (g === 'f' ? 'gender-female' : 'gender-neutral');
   // Filled bust silhouettes: the woman gets a longer-hair outline so the two
@@ -395,8 +447,11 @@ function genderIcon(avatarId, size = 30) {
 }
 
 let myAvatar = localStorage.getItem('talklive_avatar');
-if (myAvatar && !AVATAR_STYLES[myAvatar]) myAvatar = null;
-let avatarCat = myAvatar && myAvatar[0] === 'f' ? 'female' : 'male';
+if (myAvatar && !validAvatarId(myAvatar)) myAvatar = null;
+// Open the picker on the tab your own avatar is in, so the one you chose is
+// the first thing you see rather than something you have to go and find.
+let avatarCat = isAnimalAvatar(myAvatar) ? 'animal'
+  : (myAvatar && myAvatar[0] === 'f' ? 'female' : 'male');
 
 // --- Spirit animal -----------------------------------------------------------
 // Unlike the avatar (private, gendered, friends-only) this is the one thing the
@@ -1158,7 +1213,11 @@ function openAppSettings(tab) {
   settingsPage.classList.remove('hidden');
   stageEl.classList.add('settings-live');
   if (typeof renderSettingsIdentity === 'function') renderSettingsIdentity();
-  showSettingsTab(tab || activeSettingsTab);
+  // An explicit section (the account button asking for Profile, a deep link)
+  // means "take me there", so on a phone it opens that section rather than
+  // the list it lives in. Opening Settings with no section in mind lands on
+  // the list, which is where you choose one.
+  showSettingsTab(tab || activeSettingsTab, !!tab);
   syncNavCurrent();
   updateScrollLock();
   window.scrollTo({ top: 0 });
@@ -1398,9 +1457,20 @@ function renderHeaderAuthVisibility() {
   const landing = onLandingScreen();
   headerAuth.classList.toggle('hidden', !landing || !!accountNickname);
   headerAccountBtn.classList.toggle('hidden', !landing || !accountNickname);
+  renderHeaderAccountFace();
   if (headerLinkProfileBtn) {
     headerLinkProfileBtn.classList.toggle('hidden', !landing || !profileWorthLinking());
   }
+}
+
+// The button wears the avatar you actually picked - the animal, or the
+// gendered bust - rather than a generic outline of a person. A face you chose
+// is the only thing in that corner worth recognising at a glance.
+function renderHeaderAccountFace() {
+  const face = document.getElementById('headerAccountAvatar');
+  const name = document.getElementById('headerAccountName');
+  if (face && myAvatar) face.innerHTML = avatarFaceHtml(myAvatar, 30);
+  if (name) name.textContent = accountNickname || '';
 }
 
 function renderAccountState() {
@@ -1876,8 +1946,12 @@ function renderAvatarGrid() {
     btn.type = 'button';
     btn.className = `avatar-option${myAvatar === id ? ' selected' : ''}`;
     btn.dataset.avatar = id;
-    btn.setAttribute('aria-label', t('avatar'));
-    btn.innerHTML = avatarSvg(id, 52);
+    const animal = animalAvatarId(id);
+    btn.setAttribute('aria-label', animal && window.TalkLiveAnimals
+      ? window.TalkLiveAnimals.name(animal)
+      : t('avatar'));
+    btn.innerHTML = avatarFaceHtml(id, 52)
+      + (animal ? `<span class="avatar-option-name">${escapeHtml(window.TalkLiveAnimals.name(animal))}</span>` : '');
     avatarGrid.appendChild(btn);
   });
 }
@@ -1895,8 +1969,12 @@ avatarGrid.addEventListener('click', (e) => {
   if (!option) return;
   myAvatar = option.dataset.avatar;
   localStorage.setItem('talklive_avatar', myAvatar);
+  renderAvatarGrid();          // move the tick to the one just picked
   renderAccountState();
+  renderHeaderAccountFace();   // the corner wears it immediately
+  renderSettingsProfileRow();
   registerProfile(); // pushes the new avatar to the server so friends see it
+  vibrate(8);
 });
 
 // --- Spirit animal picker ----------------------------------------------------
@@ -2087,10 +2165,13 @@ function openAccountModal(tab) {
 
 headerLoginBtn.addEventListener('click', () => openAccountModal('login'));
 headerSignupBtn.addEventListener('click', () => openAccountModal('signup'));
+// Your face in the corner goes to your profile - not to a dialog on top of
+// whatever you were doing. Settings owns the profile now, so this is a
+// navigation to /settings with the Profile section open, which is also what
+// the URL says afterwards.
 headerAccountBtn.addEventListener('click', () => {
-  closeAppSettings();
   renderAccountState();
-  openModal(accountModal);
+  openAppSettings('profile');
 });
 
 // "Update nickname" only becomes active once the nickname was actually edited.

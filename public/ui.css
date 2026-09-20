@@ -2535,3 +2535,58 @@
 }
 .theme-dot-ocean { background: #00b4d8; }
 .theme-dot-sunset { background: #ff6b6b; }
+
+/* ===========================================================================
+ * 12. THE CALL ROW - call on the left, one ad beside it on the right
+ * ---------------------------------------------------------------------------
+ * The rectangle used to sit under the call card, which on a 1000px-tall
+ * window put it below the fold. An ad nobody scrolls to is an ad nobody is
+ * paid for - and the space beside the call card was empty anyway.
+ *
+ * Two equal columns from 980px up, stacked below it, because a phone only
+ * ever has one column to give.
+ * ======================================================================== */
+
+.tl-call-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--tl-s4);
+  width: 100%;
+  align-items: stretch;
+}
+
+.tl-call-ad {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--tl-s2);
+  min-width: 0;
+  margin: 0;
+}
+
+@media (min-width: 980px) {
+  .tl-call-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--tl-s5);
+    max-width: 980px;
+    margin-inline: auto;
+  }
+  /* Equal size means equal: the call card gives up its own max-width and
+     fills its half, and the ad card matches its height rather than shrinking
+     to whatever the creative happens to be. */
+  .tl-call-row .tl-call { width: 100%; margin: 0; }
+  .tl-call-row .tl-call-ad {
+    height: 100%;
+    box-sizing: border-box;
+    border: 1px solid var(--tl-line);
+    border-radius: 28px;
+  }
+}
+
+/* A phone has one column, and the call has to be the top of it - so the ad
+   sits directly under the card with nothing between, which is as close to the
+   fold as an ad can honestly get on a 640px-tall viewport. */
+@media (max-width: 979px) {
+  .tl-call-ad { margin-top: var(--tl-s3); }
+}
