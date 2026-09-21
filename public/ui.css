@@ -832,7 +832,10 @@
   text-align: start;
   text-decoration: none;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  /* transform is in here for the press: these are the most-tapped controls on
+     a phone, and a rule that redefines `transition` without it leaves the dip
+     happening in one frame instead of easing. */
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.12s ease;
 }
 .tl-nav-item:hover { background: color-mix(in srgb, var(--text) 7%, transparent); color: var(--text); }
 .tl-nav-item.is-current {
@@ -2126,7 +2129,13 @@
 .tl-call-main .call-main-label.is-confirm { color: var(--danger); }
 .tl-call-main .call-main-label.is-loading { color: var(--muted); }
 .tl-call-main .action-btn.muted + .action-label { color: var(--danger); }
-.tl-call-main .action-btn.added + .action-label { color: var(--green); }
+/* A sent request is a control that is spent, not a control that is doing
+   something: it goes quiet and stays quiet until the next partner. Colour on
+   this row is reserved for what is live right now. */
+.tl-call-main .action-btn.added + .action-label {
+  color: var(--muted);
+  opacity: 0.75;
+}
 
 /* One size for all three, set here so it beats style.css's own .action-btn
    and .stage.call-live .action-btn rules (3 classes, so ours need .stage
@@ -2187,12 +2196,15 @@
 /* The slash was drawn at a fixed 40px for a 72px button; the buttons shrink
    with the viewport now, so it does too. */
 .tl-call-main .mute-slash { height: 58%; box-shadow: none; }
+/* Sent: greyed out and done with, the way a used control should look. The
+   toast is the receipt; this is just the button remembering. */
 .tl-call-main .action-btn.added {
-  background: color-mix(in srgb, var(--green) 22%, transparent);
-  border-color: color-mix(in srgb, var(--green) 55%, transparent);
-  box-shadow: 0 0 18px color-mix(in srgb, var(--green) 28%, transparent);
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  border-color: color-mix(in srgb, var(--text) 8%, transparent);
+  box-shadow: none;
+  opacity: 0.55;
 }
-.tl-call-main .action-btn.added svg { fill: var(--green); }
+.tl-call-main .action-btn.added svg { fill: var(--muted); }
 
 /* --- Under the row: the auto switch, then the quiet buttons --------------- */
 .tl-call-extras {
@@ -2204,91 +2216,47 @@
   margin: var(--tl-s4) auto 0;
 }
 
-/* Auto-connect is a setting that stays on, not an action you take, so it is
-   a switch and not a fourth circle - and a switch shows its state without
-   being pressed, which is the whole reason it left the drawer. */
+/* Auto-connect is a preference, and it is drawn as one: a checkbox and the
+   word next to it. It has been a round button, then a pill with a lit icon
+   and a toggle track that turned green when on - on a screen whose whole job
+   is a phone call, that made the quietest thing on it the brightest, sitting
+   directly under Hang Up. No box, no fill, no icon: just the box you tick. */
 .tl-auto-switch {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  /* Small, and on one line: it is a setting, not one of the three actions,
-     and anything taller starts competing with them for the eye. */
-  padding: 6px 8px 6px 10px;
-  border: 1px solid var(--tl-line);
-  border-radius: var(--tl-r-md);
-  background: color-mix(in srgb, var(--text) 5%, transparent);
+  gap: 8px;
+  padding: 4px 2px;
+  border: 0;
+  background: none;
   cursor: pointer;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
   -webkit-tap-highlight-color: transparent;
 }
-.tl-auto-switch:hover { border-color: var(--tl-line-strong); }
-.tl-auto-switch-icon {
-  display: grid;
-  place-items: center;
+/* The real checkbox, at the size a finger expects, tinted to the app's green
+   by the browser's own control rather than by a track drawn out of spans. */
+.tl-auto-switch input[type="checkbox"] {
   flex: 0 0 auto;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--text) 8%, transparent);
-  color: var(--muted);
-  transition: background-color 0.15s ease, color 0.15s ease;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--green);
+  cursor: pointer;
 }
-.tl-auto-switch-icon svg { width: 14px; height: 14px; }
 .tl-auto-switch-text {
   min-width: 0;
   flex: 0 1 auto;
 }
-.tl-auto-switch-text strong { font-size: 13px; font-weight: 700; color: var(--text); }
-/* The explanation is what a tooltip is for. On one line it would double the
+.tl-auto-switch-text strong {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  transition: color 0.15s ease;
+}
+/* Ticked, the word is readable rather than decorative; unticked it stays a
+   caption. Either way it is the label that changes, not a lit panel. */
+.tl-auto-switch:has(input:checked) .tl-auto-switch-text strong { color: var(--text); }
+/* The explanation is what the tooltip is for. On one line it would double the
    height of the smallest control on the screen. */
 .tl-auto-switch-text small { display: none; }
-
-/* The input itself stays in the accessibility tree and keeps the keyboard
-   working - it is just drawn as the track beside it. */
-.tl-auto-switch input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-  pointer-events: none;
-}
-.tl-switch {
-  position: relative;
-  flex: 0 0 auto;
-  width: 38px;
-  height: 22px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--text) 16%, transparent);
-  transition: background-color 0.18s ease;
-}
-.tl-switch-knob {
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
-  transition: transform 0.18s ease;
-}
-.tl-auto-switch input:checked ~ .tl-switch { background: var(--green); }
-.tl-auto-switch input:checked ~ .tl-switch .tl-switch-knob { transform: translateX(16px); }
-.tl-auto-switch:has(input:checked) {
-  border-color: color-mix(in srgb, var(--green) 55%, transparent);
-  background: color-mix(in srgb, var(--green) 10%, transparent);
-}
-.tl-auto-switch:has(input:checked) .tl-auto-switch-icon {
-  background: color-mix(in srgb, var(--green) 22%, transparent);
-  color: var(--green);
-}
-.tl-auto-switch input:focus-visible ~ .tl-switch {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-@media (prefers-reduced-motion: reduce) {
-  .tl-switch, .tl-switch-knob { transition: none; }
-}
 
 /* Your spirit animal, pickable mid-wait. It is a quiet button rather than a
    fifth circle: it changes how you look, not what the call does. */
@@ -2796,13 +2764,16 @@
    with the viewport now, so it does too. */
 .tl-call-main .mute-slash { height: 58%; box-shadow: none; }
 
-/* Add friend, once sent, is a thing that succeeded - green, not grey. */
+/* Add friend, once sent, is a control that is spent. It greys out and stays
+   that way until the next partner, and the toast that fires with the tap is
+   what confirms the request actually went. Green here said "this is doing
+   something", which a request sitting in someone else's inbox is not. */
 .tl-call-main .action-btn.added {
-  background: color-mix(in srgb, var(--green) 24%, transparent);
-  color: var(--green);
-  opacity: 1;
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  color: var(--muted);
+  opacity: 0.55;
 }
-.tl-call-main .action-btn.added svg { fill: var(--green); }
+.tl-call-main .action-btn.added svg { fill: var(--muted); }
 
 /* The two landing cards already carry the product's two promises in colour -
    green for voice, accent for text. The labels under them are what tells
@@ -2865,17 +2836,26 @@
     /* One column, so the row's column gap would only push the strip down. The
        call column and the strip bring their own space. */
     gap: 0;
-    min-height: calc(100dvh - 60px - var(--tl-callbar) - var(--tl-s3)
-      - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    /* No min-height. It used to hold the row open to the full first screen so
+       the ad would land on its bottom edge - but on any phone where the
+       rectangle does not fit, that reserved height had nothing in it, and the
+       leftover became the two holes this screen was full of. The row is as
+       tall as what is in it now: the ad follows the controls directly, higher
+       up and fully on screen, and the page continues straight after it
+       instead of after a stretch of nothing. */
   }
 
-  /* The free space goes above and below the call, which centres it in
-     whatever is left once the strip has its height - so the strip sits on the
-     bottom edge of the first screen and the call sits in the middle of the
-     rest. Nothing is pinned or floating: both scroll away with the page. */
+  /* The call column starts at the top and the ad takes everything left over.
+     It used to be centred with `margin-block: auto`, which split the leftover
+     height into two holes - one between the header and the orb, one between
+     the controls and the ad - and on a phone with any room to spare those two
+     holes were the biggest things on the screen. Nothing was in them and
+     nothing could be: they were margin. Now the space goes to the slot that
+     can earn from it. Nothing is pinned or floating: both still scroll away
+     with the page. */
   .stage.call-live .tl-call {
-    flex: 0 1 auto;
-    margin-block: auto;
+    flex: 0 0 auto;
+    margin-block: 0;
     padding: clamp(var(--tl-s1), 1dvh, var(--tl-s2)) var(--tl-s2) 0;
   }
 
@@ -2974,7 +2954,7 @@
     margin-top: clamp(var(--tl-s1), 1.4dvh, var(--tl-s4));
   }
   .stage.call-live .tl-auto-switch {
-    padding: 5px 7px 5px 9px;
+    padding: 3px 2px;
     gap: 7px;
   }
   .stage.call-live .tl-auto-switch-text strong { font-size: 12.5px; }
@@ -3001,6 +2981,11 @@
     margin-inline: auto;
     padding: 4px 6px 5px;
     border-radius: var(--tl-r-lg);
+    /* Its own height and no more. With the call column no longer centred,
+       the slot follows straight on from the controls and whatever height is
+       left over falls after it - below the fold, where nothing is wasted -
+       instead of being split into two holes in the middle of the screen. */
+    flex: 0 0 auto;
   }
 
   /* The box only exists once there is an ad in it.

@@ -15,13 +15,13 @@
      rather than after it - the sooner it lands, the sooner the hero paints.
      Analytics and ad tags are loaded at the end of <body> instead of here so
      they stop competing for mobile bandwidth during Largest Contentful Paint. -->
-<link rel="stylesheet" href="style.css?v=20260920controls" />
+<link rel="stylesheet" href="style.css?v=20260921ux" />
 <link rel="stylesheet" href="chat-extras.css?v=20260916navbar" />
 <link rel="stylesheet" href="games.css?v=20260916settings" />
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
      side-panel shell, Settings, Friends/History and the account dialog, and it
      does so with its own `tl-` class names so nothing above can reach it. -->
-<link rel="stylesheet" href="ui.css?v=20260921controls" />
+<link rel="stylesheet" href="ui.css?v=20260921ux" />
 <!-- The top bar, shared with /chat. Loaded after everything else because it
      owns the header outright: one button language, one radius, one focus ring
      on every screen of the product. -->
@@ -1999,18 +1999,17 @@
         </div>
 
         <div class="tl-call-extras">
-          <!-- The real input, visible at last. It was a hidden checkbox
-               driven by a round button; a switch is what this setting is. -->
+          <!-- A checkbox and its word. It has been a round button, then a
+               pill with a lit icon and a toggle track, and on a screen whose
+               job is a phone call a green-boxed setting was the brightest
+               thing under the controls - louder than Hang Up. It is a
+               preference, so it looks like one. -->
           <label class="tl-auto-switch" for="autoCallCheckbox" data-i18n-title="autoConnectNote" title="Auto-connect keeps finding you someone new as soon as a call ends.">
-            <span class="tl-auto-switch-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.2 2 4 13.4h5.6L8.8 22 20 10.2h-6z"/></svg>
-            </span>
+            <input type="checkbox" id="autoCallCheckbox" />
             <span class="tl-auto-switch-text">
               <strong data-i18n="autoConnectTitle">Auto-connect</strong>
               <small data-i18n="autoConnectNote">Auto-connect keeps finding you someone new as soon as a call ends.</small>
             </span>
-            <input type="checkbox" id="autoCallCheckbox" />
-            <span class="tl-switch" aria-hidden="true"><span class="tl-switch-knob"></span></span>
           </label>
 
           <div class="tl-call-quiet">
@@ -2604,7 +2603,7 @@
   </script>
   <script defer src="chat-extras.js?v=20260916navbar"></script>
   <script defer src="games.js?v=20260916settings"></script>
-  <script defer src="app.js?v=20260920controls"></script>
+  <script defer src="app.js?v=20260921ux"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

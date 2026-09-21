@@ -70,7 +70,15 @@ body.panel-open {
   overflow: hidden;
   touch-action: none;
 }
-body.panel-open .side-panel {
+/* Everything that can be the thing on top has to get its touches back, or
+   the lock meant to stop the page behind it moving stops the layer itself
+   from scrolling - which on a phone is a dialog you cannot read the bottom
+   of. `.side-panel` was the only exception here while it was the only kind
+   of layer that took the lock. */
+body.panel-open .side-panel,
+body.panel-open .modal-overlay,
+body.panel-open .tl-drawer,
+body.panel-open .game-overlay {
   touch-action: auto;
 }
 
@@ -3932,8 +3940,12 @@ body.panel-open .side-panel {
   transform: none;
 }
 
+/* Sent. A spent control, so it goes quiet - the toast that fires with the tap
+   is the confirmation, and this is only the button remembering. (No
+   !important: it was here to beat a rule that no longer exists, and all it
+   does now is stop the call row from styling its own buttons.) */
 .action-btn.added {
-  background: rgba(46, 212, 122, 0.25) !important;
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .action-btn.muted {
@@ -4999,6 +5011,40 @@ body.panel-open .side-panel {
 }
 
 .link-btn:active { opacity: 0.55; }
+
+/* The baseline, for every control the list above does not name: a button
+   that does nothing at all under a finger reads as broken, and on a touch
+   screen this dip is the only acknowledgement there is until the next
+   screen paints. Written at element specificity on purpose, so every
+   control with a press of its own - and there are a lot of them above -
+   keeps exactly the press it was given.
+   `:active:hover` is there for touch: a tap leaves :hover stuck on, and a
+   class-level :hover rule would otherwise outrank this and swallow the
+   press. */
+button,
+[role="button"],
+a.btn,
+summary {
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s ease, background 0.15s ease,
+              box-shadow 0.15s ease, opacity 0.15s ease, filter 0.15s ease;
+}
+button:active:not(:disabled),
+[role="button"]:active,
+a.btn:active,
+a.btn:active:hover,
+summary:active {
+  transform: scale(0.96);
+}
+
+/* Somebody who has asked for less motion gets the colour change and no
+   movement - the acknowledgement without the travel. */
+@media (prefers-reduced-motion: reduce) {
+  button:active,
+  [role="button"]:active,
+  a.btn:active,
+  summary:active { transform: none; }
+}
 
 /* =============================================================
    Chat panel header: shows the partner's name, flag and status. */

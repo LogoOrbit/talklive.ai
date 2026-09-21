@@ -216,13 +216,24 @@ let strangerExtras = null;
 let friendExtras = null;
 
 // --- Side-panel helpers shared by the Friends / Friend-profile / Friend-chat panels ---
+//
+// Both of these refresh the page's scroll lock themselves. They used to leave
+// it to the caller, and most callers forgot: closing the friend chat - by its
+// X, by the overlay, or with the phone's Back button - left `panel-open` on
+// the body, which is `overflow: hidden; touch-action: none`. The panel was
+// gone and the landing page underneath it could no longer be scrolled or
+// tapped, with nothing on screen to explain why and nothing but a reload to
+// clear it. The lock is now derived from what is actually open, in one place,
+// every time anything opens or closes.
 function openSidePanel(panel, overlay) {
   panel.classList.add('open');
   overlay.classList.remove('hidden');
+  updateScrollLock();
 }
 function closeSidePanel(panel, overlay) {
   panel.classList.remove('open');
   overlay.classList.add('hidden');
+  updateScrollLock();
 }
 
 const callBackBanner = document.getElementById('callBackBanner');
@@ -1184,14 +1195,35 @@ if (chatSeenToggleBtn) {
 }
 syncMessageSeenUi();
 
-// Lock the main screen's scroll whenever a side panel (settings or chat) is
-// open, so scrolling only happens inside the open panel - never the page behind.
+// Lock the main screen's scroll whenever something is open over it, so
+// scrolling only happens inside that layer - never the page behind it.
+//
+// This is the single source of truth for the lock, and it is derived rather
+// than tracked: it asks the DOM what is open every time instead of counting
+// opens and closes, because a missed decrement here does not show up as a
+// scroll bug - it shows up as a landing page that has stopped responding to
+// touch entirely, and the only way out of that is a reload. Anything that
+// can cover the page belongs in this list.
+// Looked up by id rather than through the module's own `const` bindings: this
+// runs from every open and close in the file, including ones that fire while
+// the script is still evaluating, and a `const` that has not been reached yet
+// throws on any mention of it - `typeof` included. An id lookup cannot.
+const COVERING_LAYERS = [
+  ['chatPanel', 'open'],
+  ['friendsDropdown', 'open'],
+  ['historyPanel', 'open'],
+  ['friendProfileModal', 'open'],
+  ['friendChatModal', 'open'],
+  ['filtersPanel', 'open'],
+  ['navDrawer', '!hidden'],
+  ['gameOverlay', '!hidden'],
+];
 function updateScrollLock() {
-  const anyOpen = (typeof chatPanel !== 'undefined' && chatPanel && chatPanel.classList.contains('open'))
-    || friendsDropdown.classList.contains('open')
-    || historyPanel.classList.contains('open')
-    || friendProfileModal.classList.contains('open')
-    || friendChatModal.classList.contains('open');
+  const anyOpen = COVERING_LAYERS.some(([id, test]) => {
+    const el = document.getElementById(id);
+    if (!el) return false;
+    return test === '!hidden' ? !el.classList.contains('hidden') : el.classList.contains(test);
+  }) || !!document.querySelector('.modal-overlay:not(.hidden)');
   document.body.classList.toggle('panel-open', anyOpen);
 }
 
@@ -1310,11 +1342,13 @@ if (settingsBackBtn) {
 function openFilters() {
   filtersPanel.classList.add('open');
   filtersOverlay.classList.remove('hidden');
+  updateScrollLock();
 }
 
 function closeFilters() {
   filtersPanel.classList.remove('open');
   filtersOverlay.classList.add('hidden');
+  updateScrollLock();
 }
 
 filtersBtn.addEventListener('click', openFilters);
@@ -1383,6 +1417,10 @@ addFriendBtn.addEventListener('click', () => {
   socket.emit('friend-request', { targetClientId: currentPartner.clientId });
   addFriendBtn.classList.add('added');
   addFriendBtn.disabled = true;
+  // Say it out loud. The button going quiet is the state, not the receipt -
+  // the friend-profile button next to it has always said "Request sent" and
+  // this one left you guessing whether the tap had registered at all.
+  showToast(t('friendRequestSent'));
 });
 
 socket.on('friend-request-result', ({ ok, error, limitReached }) => {
@@ -1406,6 +1444,7 @@ function openModal(modal) {
     const focusTarget = modal.querySelector('input:not([type="hidden"]):not(:disabled), .btn, button');
     if (focusTarget) focusTarget.focus();
   }
+  updateScrollLock();
 }
 
 function closeModal(modal) {
@@ -1415,6 +1454,7 @@ function closeModal(modal) {
     lastFocusedBeforeModal.focus();
     lastFocusedBeforeModal = null;
   }
+  updateScrollLock();
 }
 
 openTermsLink.addEventListener('click', () => openModal(termsModal));
@@ -1438,22 +1478,15 @@ friendChatOverlay.addEventListener('click', () => {
 });
 
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') {
-    closeModal(termsModal);
-    closeModal(accountModal);
-    closeHistoryPanel();
-    closeSidePanel(friendsDropdown, friendsOverlay);
-    closeSidePanel(friendProfileModal, friendProfileOverlay);
-    closeSidePanel(friendChatModal, friendChatOverlay);
-    closeAppSettings();
-    closeFilters();
-    // The phone drawer is a dialog like the rest of these; declared below this
-    // handler, but only ever read here at event time.
-    if (typeof setNavDrawerOpen === 'function') setNavDrawerOpen(false);
-    // The consent gate was the one dialog Escape did not reach. Declared far
-    // below this handler, but only ever read here at event time.
-    if (!ageConsentModal.classList.contains('hidden')) dismissAgeConsent();
-  }
+  if (e.key !== 'Escape') return;
+  // One press, one layer. This used to close every open thing at once, so
+  // Escape out of a friend's chat also shut the friends list behind it and
+  // the settings screen behind that - one keystroke and four screens of
+  // navigation gone. closeTopmostLayer() is the same precedence the phone's
+  // Back button uses, so the two now agree about what "back" means.
+  // Declared below this handler, but only ever read here at event time.
+  if (!ageConsentModal.classList.contains('hidden')) { dismissAgeConsent(); return; }
+  closeTopmostLayer();
 });
 
 // --- Account (persisted server-side; a durable session token in localStorage
@@ -5865,7 +5898,7 @@ window.addEventListener('popstate', async () => {
   // and it is handled before closeTopmostLayer(), which would otherwise pop a
   // second entry for the same press and skip a page.
   if (settingsIsOpen() && location.pathname !== '/settings') { closeAppSettings(true); return; }
-  if (closeTopmostLayer()) { primeBackGuard(); return; }
+  if (closeTopmostLayer()) { primeBackGuard(); updateScrollLock(); return; }
   // On (or entering) a call: never exit silently - confirm ending first.
   const onCall = callState === 'connected' || callState === 'connecting'
     || callState === 'reconnecting' || callState === 'searching';
@@ -5884,9 +5917,26 @@ window.addEventListener('popstate', async () => {
     }
     return;
   }
-  // Idle with nothing open - let a subsequent back actually leave the page.
+  // Still on the call screen with no call running - a hang-up leaves you here,
+  // looking at a green Call button. Back means "out of this screen", so it
+  // goes to the Tap-to-Talk landing rather than off the site. Without this the
+  // press ate the guard entry silently: the screen did not change, the URL
+  // quietly became "/", and the next press left the app from what still looked
+  // like the call screen.
+  if (!callPanel.classList.contains('hidden')) {
+    resetUI();
+    primeBackGuard();
+    return;
+  }
+  // Idle on the landing with nothing open - let this back actually leave.
 });
 primeBackGuard();
+
+// A page restored from the back/forward cache keeps whatever classes it had
+// when it was frozen, including a scroll lock belonging to a panel that is no
+// longer open. Re-deriving it on restore is the cheap way to never hand
+// somebody back a page they cannot scroll.
+window.addEventListener('pageshow', updateScrollLock);
 
 // Guard against an *accidental* tab close, refresh, or navigation away while the
 // user is actively engaged - a live/searching call or a game in progress. The
@@ -5928,8 +5978,36 @@ if (navHomeBtn) {
     // Mid-call, Home means "back to the landing screen", which is what the
     // brand lockup already means. Off a call there is nowhere to go, so it is
     // the same no-op scroll-to-top the reference designs give it.
-    if (location.pathname !== '/') { location.href = '/'; return; }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    //
+    // It used to do that by setting location.href, which reloads the whole
+    // app: a white flash, a dropped socket, a fresh handshake, and every panel
+    // and filter in the page thrown away - to move between two screens that
+    // are both already in the document. resetUI() is the same trip without
+    // leaving the page.
+    if (!settingsIsOpen() && callPanel.classList.contains('hidden')) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    if (settingsIsOpen()) closeAppSettings();
+    if (!callPanel.classList.contains('hidden')) {
+      const live = callState === 'connected' || callState === 'connecting'
+        || callState === 'reconnecting' || callState === 'searching';
+      // Never drop a live call on a nav tap without asking - the same question
+      // the Back button asks, so the two ways out of a call behave alike.
+      if (live) {
+        showConfirm({
+          title: 'confirmEndCallTitle', text: 'confirmEndCallText',
+          okKey: 'hangUp', cancelKey: 'keepTalking', okClass: 'btn-danger',
+        }).then((ok) => {
+          if (!ok) return;
+          socket.emit('leave');
+          resetUI();
+        });
+        return;
+      }
+      resetUI();
+    }
+    window.scrollTo({ top: 0 });
   });
 }
 
@@ -5949,7 +6027,10 @@ function setNavDrawerOpen(open) {
   navDrawer.classList.toggle('hidden', !open);
   navDrawer.classList.toggle('open', open);
   navDrawerOverlay.classList.toggle('hidden', !open);
-  document.body.classList.toggle('panel-open', open);
+  // Through updateScrollLock(), never straight onto the body: closing the
+  // drawer used to clear the lock outright, which unfroze the page behind
+  // whatever else was still open over it.
+  updateScrollLock();
   if (open && closeNavDrawerBtn) closeNavDrawerBtn.focus();
 }
 

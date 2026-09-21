@@ -302,3 +302,39 @@ main.page-main.wide { max-width: 1080px; }
 }
 .pwa-prompt-yes { background: linear-gradient(90deg, #7c3aed, #22d3ee); color: #fff; flex: 1; }
 .pwa-prompt-no { background: rgba(255, 255, 255, 0.08); color: #aab3c8; }
+
+/* ===========================================================================
+   Press feedback
+   ---------------------------------------------------------------------------
+   Every control dips under a finger. On a touch screen that dip is the only
+   acknowledgement there is until the next page paints, and a button that
+   does nothing at all when pressed reads as broken.
+
+   The `:active:hover` pair is not redundant: a tap leaves :hover stuck on,
+   and .btn-primary:hover above carries more weight than a bare :active, so
+   without it the hover state swallows the press.
+   ======================================================================== */
+button,
+[role="button"],
+.btn,
+a.btn,
+summary {
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s ease, background 0.15s ease,
+              border-color 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+button:active:not(:disabled),
+[role="button"]:active,
+.btn:active,
+.btn:active:hover,
+summary:active {
+  transform: scale(0.96);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button:active,
+  [role="button"]:active,
+  .btn:active,
+  .btn:active:hover,
+  summary:active { transform: none; }
+}

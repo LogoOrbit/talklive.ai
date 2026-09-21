@@ -1218,3 +1218,38 @@ img { max-width: 100%; }
 .msg.is-grouped { margin-top: -2px; }
 .msg.me.is-grouped { border-top-right-radius: 6px; }
 .msg.them.is-grouped { border-top-left-radius: 6px; }
+
+/* ===========================================================================
+   Press feedback - the baseline
+   ---------------------------------------------------------------------------
+   The controls above mostly press in already. This is for the ones no rule
+   names: the close buttons, the drawer rows, the settings rows, the links
+   drawn as buttons. A control that does nothing at all under a finger reads
+   as broken, and on a touch screen the dip is the only acknowledgement there
+   is until the next screen paints.
+
+   Element specificity on purpose, so every control with a press of its own
+   keeps exactly the press it was given.
+   ======================================================================== */
+button,
+[role="button"],
+a.btn,
+summary {
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s ease, background 0.15s ease,
+              box-shadow 0.15s ease, opacity 0.15s ease, filter 0.15s ease;
+}
+button:active:not(:disabled),
+[role="button"]:active,
+a.btn:active,
+a.btn:active:hover,
+summary:active {
+  transform: scale(0.96);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button:active,
+  [role="button"]:active,
+  a.btn:active,
+  summary:active { transform: none; }
+}
