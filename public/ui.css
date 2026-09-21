@@ -2089,60 +2089,30 @@
  * pressed, a white ring while it searches, red once you are in - and the
  * word beneath it takes the same colour.
  *
- * How they are painted lives in style.css, which is where the row was drawn
- * in the first place. All that is set here is the grid they sit in and the
- * size they are drawn at.
+ * The row is style.css's, whole: .call-actions is a flex row of four 72px
+ * circles at 18px apart, dropping to 60px at 14px once a call is live and
+ * again on short screens. This file used to re-lay it out as a 376px grid
+ * of 74px circles and repaint every state in it; none of that is here any
+ * more, because two files with opinions about one row is how it drifted in
+ * the first place. What is left below is the mute slash, which has to scale
+ * with a button whose size now changes, and the light theme's icons.
  * ------------------------------------------------------------------------- */
-.tl-call-main {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  align-items: start;
-  justify-items: center;
-  gap: var(--tl-s1);
-  /* Capped and centred. On a wide phone four 1fr columns pushed the circles
-     apart until the row read as four separate things rather than one set of
-     controls; the circle should own most of its column, not float in it. */
-  width: min(376px, 100%);
-  margin-inline: auto;
-  /* Clear of the waveform above: nothing should be one thumb-width from
-     Hang up. */
-  margin-top: var(--tl-s5);
-}
-/* Only what the grid needs. The circles, their captions and their colours
-   are style.css's - the row is drawn there and has been since the start, and
-   this file stopped repainting it. */
-.tl-call-main .action-label,
-.tl-call-main .call-main-label {
+.call-actions .action-label,
+.call-actions .call-main-label {
   text-align: center;
   line-height: 1.2;
 }
 
-/* One size for all four, set here so it beats style.css's own .action-btn
-   and .stage.call-live .action-btn rules (3 classes, so ours need .stage
-   too). Round, because round is what every phone has used for answer and
-   hang up for twenty years. */
-.stage .tl-call-main .action-btn,
-.stage.call-live .tl-call-main .action-btn,
-.stage .tl-call-main .call-main-btn,
-.stage.call-live .tl-call-main .call-main-btn {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  margin: 0;
-}
-.tl-call-main .call-main-icon { width: 30px; height: 30px; }
-.tl-call-main .simple-icon-lg { width: 28px; height: 28px; }
-
-/* The slash was drawn at a fixed 40px for a 72px button; the buttons shrink
-   with the viewport now, so it does too. */
-.tl-call-main .mute-slash { height: 58%; }
+/* The slash was drawn at a fixed 40px, which is longer than the 50px button
+   a short screen gets. It scales with whatever the button is instead. */
+.call-actions .mute-slash { height: 58%; }
 
 /* The mic and the person are drawn grey and white in the markup, which is a
    dark-theme assumption: on the light theme's pale circles a white glyph is
    a circle with nothing in it. Report keeps its red - it is the one icon
    that reads the same either way. */
-[data-theme="light"] .tl-call-main #muteIcon,
-[data-theme="light"] .tl-call-main #addFriendIcon { fill: var(--text); }
+[data-theme="light"] .call-actions #muteIcon,
+[data-theme="light"] .call-actions #addFriendIcon { fill: var(--text); }
 
 /* --- Under the row: the auto switch, then the quiet buttons --------------- */
 .tl-call-extras {
@@ -2151,7 +2121,10 @@
   align-items: center;
   gap: var(--tl-s3);
   width: min(420px, 100%);
-  margin: var(--tl-s4) auto 0;
+  /* The auto-connect row used to sit 6px under the labels, and that is where
+     it sits again; the wrapper that now holds it and the animal button adds
+     no more than the row had on its own. */
+  margin: var(--tl-s2) auto 0;
 }
 
 /* Auto-connect is a preference, and it is drawn as one: the box you tick and
@@ -2238,7 +2211,6 @@
     background: none;
     padding-inline: var(--tl-s2);
   }
-  .tl-call-main { gap: var(--tl-s2); }
 }
 
 
@@ -2794,32 +2766,10 @@
   }
   .stage.call-live .reaction-btn svg { width: 20px; height: 20px; }
 
-  /* Four of them across a phone. One size for all four, never below 44px:
-     these are taps, and the row you must never hit by accident. */
-  .stage.call-live .tl-call-main {
-    gap: var(--tl-s1);
-    margin-top: clamp(var(--tl-s1), 1.4dvh, var(--tl-s5));
-  }
-  /* The floor was 48px, and on a short phone the clamp sat on it: four small
-     circles adrift in four wide columns, which is the row reading as empty
-     space with buttons in it. The circle now keeps most of its column at
-     every height the screen can be. */
-  .stage .tl-call-main .action-btn,
-  .stage.call-live .tl-call-main .action-btn,
-  .stage .tl-call-main .call-main-btn,
-  .stage.call-live .tl-call-main .call-main-btn {
-    width: clamp(58px, 8.8dvh, 72px);
-    height: clamp(58px, 8.8dvh, 72px);
-  }
-  /* "Add friend" is the long one. It gets to wrap rather than force the
-     four columns apart. */
-  .stage.call-live .tl-call-main .action-label,
-  .stage.call-live .tl-call-main .call-main-label { font-size: 12px; }
-  .stage.call-live .tl-call-main .call-main-icon,
-  .stage.call-live .tl-call-main .simple-icon-lg {
-    width: clamp(24px, 3.9dvh, 30px);
-    height: clamp(24px, 3.9dvh, 30px);
-  }
+  /* The four circles on a phone are style.css's too: 60px at 14px apart in
+     a live call, 54px at 12px under 740px of height, 50px under 620px. This
+     block used to re-size them here and they came out bigger than the row
+     was ever drawn to be. */
 
   /* On a phone the auto-connect row and the quiet button share one line.
      Stacked they cost about 45px, and 45px here is 45px of the ad below
@@ -3300,9 +3250,6 @@
   }
   .stage .tl-call .connection-indicator,
   .stage.call-live .tl-call .connection-indicator { margin-top: var(--tl-s1); }
-
-  .stage .tl-call-main,
-  .stage.call-live .tl-call-main { margin-top: var(--tl-s4); }
 
   /* One gap above the ad, not the card's padding plus the ad's margin. It is
      wider than the space between any two controls, because a thumb heading
