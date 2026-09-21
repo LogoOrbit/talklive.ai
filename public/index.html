@@ -21,7 +21,7 @@
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
      side-panel shell, Settings, Friends/History and the account dialog, and it
      does so with its own `tl-` class names so nothing above can reach it. -->
-<link rel="stylesheet" href="ui.css?v=20260921animals" />
+<link rel="stylesheet" href="ui.css?v=20260921callrow" />
 <!-- The top bar, shared with /chat. Loaded after everything else because it
      owns the header outright: one button language, one radius, one focus ring
      on every screen of the product. -->
@@ -1974,9 +1974,9 @@
              The caption takes the button's colour, so the one that is
              currently doing something says so twice.
 
-             Auto-connect sits under them as a switch rather than a fifth
+             Auto-connect sits under them as a checkbox rather than a fifth
              circle: it is a setting that stays on, not an action you take,
-             and a switch is the control that says so.
+             and a box you tick is the control that says so.
              =============================================================== -->
         <div class="tl-call-main">
           <div class="call-action-wrap">
@@ -2008,9 +2008,10 @@
             <span class="action-label" data-i18n="addFriend">Add friend</span>
           </div>
           <div class="call-action-wrap">
-            <button id="reportBtn" class="action-btn action-btn-neutral action-btn-danger" data-i18n-title="report" data-i18n-aria="report" title="Report" aria-label="Report" disabled>
-              <svg class="simple-icon simple-icon-lg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M5 21a1 1 0 0 1-1-1V4a1 1 0 0 1 2 0v.6c3.7-1.7 6.6 1.9 10.4.2a1 1 0 0 1 1.4.9v8.5a1 1 0 0 1-.6.9c-3.8 1.7-6.7-1.9-10.2-.3V20a1 1 0 0 1-1 1z"/>
+            <button id="reportBtn" class="action-btn action-btn-neutral" data-i18n-title="report" data-i18n-aria="report" title="Report" aria-label="Report" disabled>
+              <svg class="simple-icon simple-icon-lg" viewBox="0 0 24 24" aria-hidden="true">
+                <line x1="5" y1="3" x2="5" y2="21" stroke="#ff5470" stroke-width="2" stroke-linecap="round"/>
+                <path d="M6 4h13l-3.5 4L19 12H6V4z" fill="#ff5470"/>
               </svg>
             </button>
             <span class="action-label" data-i18n="report">Report</span>
@@ -2018,17 +2019,15 @@
         </div>
 
         <div class="tl-call-extras">
-          <!-- A checkbox and its word. It has been a round button, then a
-               pill with a lit icon and a toggle track, and on a screen whose
-               job is a phone call a green-boxed setting was the brightest
-               thing under the controls - louder than Hang Up. It is a
-               preference, so it looks like one. -->
-          <label class="tl-auto-switch" for="autoCallCheckbox" data-i18n-title="autoConnectNote" title="Auto-connect keeps finding you someone new as soon as a call ends.">
+          <!-- A checkbox and its word, the way it was drawn before: the box
+               you tick and the sentence that says what ticking it does. It
+               has been a round button and a pill with a lit toggle track,
+               and on a screen whose job is a phone call a green-boxed
+               setting was the brightest thing under the controls - louder
+               than Hang Up. It is a preference, so it looks like one. -->
+          <label id="autoCallRow" class="checkbox-row auto-call-row" for="autoCallCheckbox" data-i18n-title="autoConnectNote" title="Auto-connect keeps finding you someone new as soon as a call ends.">
             <input type="checkbox" id="autoCallCheckbox" />
-            <span class="tl-auto-switch-text">
-              <strong data-i18n="autoConnectTitle">Auto-connect</strong>
-              <small data-i18n="autoConnectNote">Auto-connect keeps finding you someone new as soon as a call ends.</small>
-            </span>
+            <span data-i18n="enableAutoCall">Enable - keep connecting me to new people</span>
           </label>
 
           <div class="tl-call-quiet">
