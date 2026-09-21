@@ -757,10 +757,21 @@ function sendPage(res, file) {
   res.sendFile(path.join(__dirname, '..', 'public', file));
 }
 
+// Screens inside the single-page shell serve `public/index.html` byte for
+// byte, canonical included - so to a crawler they are duplicates of the
+// homepage that resolve to it, which is the "Alternate page with proper
+// canonical tag" bucket in Search Console. The canonical already tells Google
+// which URL wins; `noindex` keeps it from spending a crawl on them at all.
+// The header is the only way to say so, since the shell is one shared file.
+function sendAppShell(res, file) {
+  res.setHeader('X-Robots-Tag', 'noindex, follow');
+  sendPage(res, file);
+}
+
 // The voice-call screen is its own URL (reached via history.replaceState once
 // the user taps Talk) but shares the main single-page shell.
 app.get('/call', (req, res) => {
-  sendPage(res, 'index.html');
+  sendAppShell(res, 'index.html');
 });
 
 // The text-chat app is a genuinely separate, lightweight page - no voice/WebRTC
@@ -774,7 +785,7 @@ app.get('/chat', (req, res) => {
 // a reload or a bookmark lands back on it rather than 404ing. app.js opens the
 // screen when it sees this path (see the deep-link block at the bottom of it).
 app.get('/settings', (req, res) => {
-  sendPage(res, 'index.html');
+  sendAppShell(res, 'index.html');
 });
 
 // --- Owner dashboard, analytics & maintenance mode ---------------------------
