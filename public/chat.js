@@ -427,7 +427,7 @@
     var next = myAnimal === id ? null : id; // tapping the chosen one clears it
     myAnimal = next;
     Animals.store(next);
-    var options = animalGrid.querySelectorAll('.animal-option');
+    var options = document.querySelectorAll('#animalGrid .animal-option, #animalGateGrid .animal-option');
     for (var i = 0; i < options.length; i++) {
       var on = options[i].dataset.animal === next;
       options[i].classList.toggle('selected', on);
@@ -435,6 +435,32 @@
     }
     renderAnimalChoiceLine();
     register(); // so the server has it even before the next search goes out
+  }
+
+  // --- The animal gate ------------------------------------------------------
+  // The whole set, in a panel of its own, shown once before the first chat.
+  // The picker on the start view holds seven back behind a "More" tile because
+  // it is something to get past on the way to the button; here the choice is
+  // the only thing on screen, so there is nothing to hold back.
+  var animalGateGrid = $('animalGateGrid');
+  function paintAnimalGate() {
+    if (!animalGateGrid || !Animals) return;
+    Animals.installSprite();
+    animalGateGrid.innerHTML = '';
+    var frag = document.createDocumentFragment();
+    Animals.list.forEach(function (animal) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'animal-option' + (myAnimal === animal.id ? ' selected' : '');
+      btn.dataset.animal = animal.id;
+      btn.style.setProperty('--animal-color', animal.color);
+      btn.setAttribute('role', 'radio');
+      btn.setAttribute('aria-checked', myAnimal === animal.id ? 'true' : 'false');
+      btn.innerHTML = Animals.icon(animal.id, 44)
+        + '<span class="animal-option-name">' + escapeHtml(Animals.name(animal.id)) + '</span>';
+      frag.appendChild(btn);
+    });
+    animalGateGrid.appendChild(frag);
   }
 
   if (animalGrid) {
@@ -536,6 +562,7 @@
   // because agreeing to them is recorded under CONSENT_KEY.
   var genderModal = $('genderModal');
   var genderGateOptions = $('genderGateOptions');
+  var animalModal = $('animalModal');
   var consentModal = $('consentModal');
   var consentAgreeBtn = $('consentAgreeBtn');
   var consentBackBtn = $('consentBackBtn');
@@ -549,13 +576,40 @@
     setGenderGateValue(myGender);
     openModal(genderModal);
   }
+  function openAnimalGate() {
+    paintAnimalGate();
+    openModal(animalModal);
+  }
   function openRulesGate() {
     openModal(consentModal);
   }
+  // Gender, then the animal, then the rules. The animal sits in the middle
+  // because it is the other half of "who is the person on the other end about
+  // to meet" - and it is the half they actually see.
   function requestStart() {
     if (!myGender) { openGenderGate(); return; }
+    if (!myAnimal && animalModal && Animals) { openAnimalGate(); return; }
     if (localStorage.getItem(CONSENT_KEY) !== 'yes') { openRulesGate(); return; }
     goSearch(true);
+  }
+
+  if (animalGateGrid) {
+    animalGateGrid.addEventListener('click', function (ev) {
+      var option = ev.target.closest('.animal-option');
+      if (!option || !option.dataset.animal) return;
+      vibrate(10);
+      // Never a toggle here: this gate exists to end with one chosen, and
+      // tapping the selected one to clear it would close it with none.
+      if (myAnimal !== option.dataset.animal) setMyAnimal(option.dataset.animal);
+      refreshAnimalLabels(); // the start view's picker wears it too
+      // A beat so the tick is visibly on the one just tapped before the panel
+      // swaps, rather than the tap appearing to skip past the question.
+      setTimeout(function () {
+        closeModal(animalModal);
+        if (localStorage.getItem(CONSENT_KEY) === 'yes') goSearch(true);
+        else openRulesGate();
+      }, 180);
+    });
   }
 
   genderGateOptions.addEventListener('click', function (e) {
@@ -572,6 +626,7 @@
     // than the tap appearing to skip straight past the question.
     setTimeout(function () {
       closeModal(genderModal);
+      if (!myAnimal && animalModal && Animals) { openAnimalGate(); return; }
       if (localStorage.getItem(CONSENT_KEY) === 'yes') goSearch(true);
       else openRulesGate();
     }, 180);
@@ -579,7 +634,11 @@
 
   consentBackBtn.addEventListener('click', function () {
     closeModal(consentModal);
-    openGenderGate();
+    // Back goes to the step actually before this one, which is the animal
+    // once there is a gender - sending it to the gender gate made Back skip
+    // a screen and re-ask a question already answered.
+    if (myGender && animalModal && Animals) openAnimalGate();
+    else openGenderGate();
   });
   consentAgreeBtn.addEventListener('click', function () {
     localStorage.setItem(CONSENT_KEY, 'yes');

@@ -2000,11 +2000,18 @@ function renderAvatarGrid() {
   });
 }
 
+function syncAvatarCatTabs() {
+  if (!avatarCatTabs) return;
+  avatarCatTabs.querySelectorAll('.avatar-cat').forEach((c) => {
+    c.classList.toggle('selected', c.dataset.cat === avatarCat);
+  });
+}
+
 avatarCatTabs.addEventListener('click', (e) => {
   const tab = e.target.closest('.avatar-cat');
   if (!tab) return;
   avatarCat = tab.dataset.cat;
-  avatarCatTabs.querySelectorAll('.avatar-cat').forEach((c) => c.classList.toggle('selected', c === tab));
+  syncAvatarCatTabs();
   renderAvatarGrid();
 });
 
@@ -2012,7 +2019,22 @@ avatarGrid.addEventListener('click', (e) => {
   const option = e.target.closest('.avatar-option');
   if (!option) return;
   myAvatar = option.dataset.avatar;
-  localStorage.setItem('talklive_avatar', myAvatar);
+  try { localStorage.setItem('talklive_avatar', myAvatar); } catch (err) { /* storage blocked */ }
+  // Picking an animal here is picking your spirit animal - the same choice,
+  // made from the other picker. Keeping them apart meant the animal on your
+  // own profile and the animal the person you called saw could be two
+  // different creatures.
+  const pickedAnimal = animalAvatarId(myAvatar);
+  if (pickedAnimal && Animals && Animals.has(pickedAnimal) && myAnimal !== pickedAnimal) {
+    myAnimal = pickedAnimal;
+    Animals.store(pickedAnimal);
+    document.querySelectorAll('#animalGrid .animal-option, #callAnimalGrid .animal-option, #animalGateGrid .animal-option').forEach((btn) => {
+      const on = btn.dataset.animal === pickedAnimal;
+      btn.classList.toggle('selected', on);
+      btn.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
+    renderAnimalChoiceLine();
+  }
   renderAvatarGrid();          // move the tick to the one just picked
   renderAccountState();
   renderHeaderAccountFace();   // the corner wears it immediately
@@ -2047,6 +2069,9 @@ const callAnimalGrid = document.getElementById('callAnimalGrid');
 function renderAnimalPicker() {
   paintAnimalPicker(animalGrid, animalPickerExpanded ? null : animalPreviewIds());
   paintAnimalPicker(callAnimalGrid, null);
+  // The gate shows the whole set too: it is the one screen whose only job is
+  // this choice, so there is nothing to get past and no reason to hide half.
+  paintAnimalPicker(document.getElementById('animalGateGrid'), null);
   renderAnimalChoiceLine();
 }
 
@@ -2113,11 +2138,26 @@ function setMyAnimal(id) {
   const next = myAnimal === id ? null : id; // tapping the chosen one clears it
   myAnimal = next;
   Animals.store(next);
-  document.querySelectorAll('#animalGrid .animal-option, #callAnimalGrid .animal-option').forEach((btn) => {
+  document.querySelectorAll('#animalGrid .animal-option, #callAnimalGrid .animal-option, #animalGateGrid .animal-option').forEach((btn) => {
     const on = btn.dataset.animal === next;
     btn.classList.toggle('selected', on);
     btn.setAttribute('aria-checked', on ? 'true' : 'false');
   });
+  // Your animal IS your face. It used to be two separate choices - a private
+  // avatar your friends saw and a spirit animal only the stranger saw - so
+  // picking a lion left the corner of your own screen showing the grey
+  // silhouette of a person you had never chosen. One pick, one face,
+  // everywhere: the header, the settings row, the friends list, the profile
+  // your friends open, and the card the person you are calling looks at.
+  if (next) {
+    myAvatar = ANIMAL_AVATAR_PREFIX + next;
+    try { localStorage.setItem('talklive_avatar', myAvatar); } catch (e) { /* storage blocked */ }
+    avatarCat = 'animal';
+    syncAvatarCatTabs();
+    renderAvatarGrid();
+    renderAccountState();
+    renderHeaderAccountFace();
+  }
   renderAnimalChoiceLine();
   // The Settings profile row wears this avatar, so it re-renders with it.
   renderSettingsProfileRow();
@@ -5101,14 +5141,73 @@ const ageAgreeCheckbox = document.getElementById('ageAgreeCheckbox');
 const closeAgeConsentBtn = document.getElementById('closeAgeConsentBtn');
 const CONSENT_KEY = 'talklive_age_consent';
 
+// --- The animal gate -------------------------------------------------------
+// Nobody goes into a call faceless. The animal is the only thing the person
+// on the other end sees before anyone has said a word, and it was optional -
+// so most calls opened with two blanks looking at each other. Asked once,
+// answered in one tap, and the tap goes straight on into whatever was being
+// started. Whoever connects sees it, because it is the same choice the
+// profile avatar is made of.
+const animalGateModal = document.getElementById('animalGateModal');
+const animalGateGrid = document.getElementById('animalGateGrid');
+const closeAnimalGateBtn = document.getElementById('closeAnimalGateBtn');
+let afterAnimalGate = null;
+
+// Runs `next` once there is an animal - immediately if there already is one,
+// otherwise after the gate has been answered. Returns true when it waited, so
+// callers can stop and let the gate drive.
+function requireAnimal(next) {
+  if (myAnimal || !animalGateModal || !Animals) { next(); return false; }
+  afterAnimalGate = next;
+  renderAnimalPicker();
+  openModal(animalGateModal);
+  return true;
+}
+
+function closeAnimalGate(run) {
+  const next = afterAnimalGate;
+  afterAnimalGate = null;
+  closeModal(animalGateModal);
+  if (run && next) next();
+}
+
+if (animalGateGrid) {
+  animalGateGrid.addEventListener('click', (e) => {
+    const option = e.target.closest('.animal-option');
+    if (!option || !option.dataset.animal) return;
+    vibrate(8);
+    // Never a toggle here: this gate exists to end with an animal chosen, and
+    // tapping the already-selected one to clear it would close it with none.
+    if (myAnimal !== option.dataset.animal) setMyAnimal(option.dataset.animal);
+    // A beat so the tick is visibly on the one just tapped before the panel
+    // goes, rather than the tap appearing to skip straight past the question.
+    setTimeout(() => closeAnimalGate(true), 180);
+  });
+}
+
+// Backing out. Nothing is stored, so it is still a gate next time - but the
+// button that opened it has to come back to life, the way the consent gate's
+// does, or "Tap to Talk" stays inert until the page is reloaded.
+function dismissAnimalGate() {
+  closeAnimalGate(false);
+  startBtn.disabled = false;
+  startBtn.classList.remove('is-connecting');
+}
+if (closeAnimalGateBtn) closeAnimalGateBtn.addEventListener('click', dismissAnimalGate);
+if (animalGateModal) {
+  animalGateModal.addEventListener('click', (e) => {
+    if (e.target === animalGateModal) dismissAnimalGate();
+  });
+}
+
 // Start a call from the big button - gated by the one-time age/terms consent,
-// then mic permission handled in begin().
+// then the animal, then mic permission handled in begin().
 function startCallFlow() {
   playTapSound();
   clearError();
   trackGrowthEvent('call_start_intent');
   if (localStorage.getItem(CONSENT_KEY) === 'yes') {
-    begin();
+    requireAnimal(begin);
   } else {
     ageAgreeCheckbox.checked = false;
     ageAgreeBtn.disabled = true;
@@ -5148,8 +5247,10 @@ startBtn.addEventListener('click', (ev) => {
 ageAgreeBtn.addEventListener('click', () => {
   localStorage.setItem(CONSENT_KEY, 'yes');
   closeModal(ageConsentModal);
-  if (pendingInviteToken) joinVoiceInvite();
-  else begin();
+  requireAnimal(() => {
+    if (pendingInviteToken) joinVoiceInvite();
+    else begin();
+  });
 });
 
 // Backing out of the consent gate. Nothing is stored, so the gate is still a
@@ -5206,7 +5307,7 @@ async function joinVoiceInvite() {
 // user gesture, unlike autoplay).
 if (pendingInviteToken) {
   if (localStorage.getItem(CONSENT_KEY) === 'yes') {
-    joinVoiceInvite();
+    requireAnimal(joinVoiceInvite);
   } else {
     ageAgreeCheckbox.checked = false;
     ageAgreeBtn.disabled = true;
@@ -5869,6 +5970,12 @@ function closeTopmostLayer() {
   const openModalEl = Array.from(document.querySelectorAll('.modal-overlay:not(.hidden)')).pop();
   if (openModalEl) {
     if (openModalEl === confirmModal && confirmOnOk) { confirmOnOk(false); confirmOnOk = null; }
+    // The two gates in front of a call leave the Start button in its
+    // connecting state, which is also what guards against double taps - so
+    // closing one from here has to go through its own dismiss or "Tap to
+    // Talk" stays inert until the page is reloaded.
+    if (openModalEl === animalGateModal) { dismissAnimalGate(); return true; }
+    if (openModalEl === ageConsentModal) { dismissAgeConsent(); return true; }
     closeModal(openModalEl);
     return true;
   }

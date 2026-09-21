@@ -360,7 +360,7 @@ const I18N_STRINGS = {
     "vibration": "Vibration",
     "showOnlineStatus": "Show my online status to friends",
     "avatar": "Avatar",
-    "avatarHint": "Pick a face or a spirit animal. Your avatar is shown to you and your friends only - strangers never see it during a call.",
+    "avatarHint": "Pick a face or a spirit animal. It is your face everywhere - your friends, your profile, and whoever you connect with on a call.",
     "updatePassword": "Update Password",
     "chatWith": "Chat with {name}",
     "typeMessage": "Type a message…",
