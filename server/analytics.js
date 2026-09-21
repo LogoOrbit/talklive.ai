@@ -13,7 +13,10 @@
 // `estimated`, so the dashboard can say so rather than quietly mixing them in.
 
 // Counters that live on the hour bucket and are summed across a local day.
-const HOUR_METRICS = ['visits', 'uniques', 'connections', 'matches', 'messages'];
+// `bots` is crawler page views, kept out of `visits`/`uniques` (see
+// server/bots.js) but folded on the same hour buckets so it can be cut on the
+// owner's local day like everything else.
+const HOUR_METRICS = ['visits', 'uniques', 'connections', 'matches', 'messages', 'bots'];
 // Counters only kept per UTC day; they follow the day's dominant local day.
 const DAY_ONLY_METRICS = ['reports', 'errors', 'newAccounts', 'feedback'];
 
@@ -84,7 +87,7 @@ function emptyDay(dayKey) {
     day: dayKey,
     peakOnline: 0,
     // 24 slots of the *local* day, index = local hour.
-    hours: Array.from({ length: 24 }, () => ({ visits: 0, uniques: 0, connections: 0, matches: 0, messages: 0, peakOnline: 0 })),
+    hours: Array.from({ length: 24 }, () => ({ visits: 0, uniques: 0, connections: 0, matches: 0, messages: 0, bots: 0, peakOnline: 0 })),
     // True when some of this day's numbers come from a pre-hourly record and
     // could not be split on the local day boundary.
     estimated: false,
@@ -215,7 +218,7 @@ function buildReport(days, tz, now = Date.now()) {
   // Compare like-for-like: today has only run `nowLocal.hour` hours so far, so
   // put yesterday's same window next to it instead of its full-day total.
   const hoursElapsed = nowLocal.hour + 1;
-  const yesterdaySoFar = { visits: 0, uniques: 0, connections: 0, matches: 0, messages: 0, peakOnline: 0 };
+  const yesterdaySoFar = { visits: 0, uniques: 0, connections: 0, matches: 0, messages: 0, bots: 0, peakOnline: 0 };
   for (let h = 0; h < hoursElapsed; h++) {
     const slot = yesterday.hours[h];
     for (const m of HOUR_METRICS) yesterdaySoFar[m] += slot[m];

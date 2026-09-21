@@ -161,13 +161,59 @@ function generateConclusion(runtime, report) {
   const lines = [];
   let health = 'good';
 
-  if (prevVisits > 0) {
+  /*
+   * Crawler traffic used to be counted as people (see server/bots.js). Days
+   * recorded before the split are humans and bots added together, so putting
+   * one of them next to a human-only week produces a "traffic collapsed"
+   * reading out of a change in bookkeeping. `humanSince` is the first day
+   * counted the new way; while either comparison window still reaches behind
+   * it, say so instead of reporting a trend that is not there.
+   */
+  const humanSince = store.data.analytics.humanSince || null;
+  const prevWeekStart = report.daily.length >= 14 ? report.daily[report.daily.length - 14].day : null;
+  const weekComparable = !humanSince || !prevWeekStart || prevWeekStart >= humanSince;
+
+  if (!weekComparable) {
+    lines.push(`Visitor counts now exclude search-engine crawlers and bots; days before ${humanSince} still include them. Week-over-week traffic comparisons become meaningful again from ${analytics.addDays(humanSince, 14)}.`);
+    lines.push(`${visits} human visits in the last 7 days${report.last7.bots ? `, plus ${report.last7.bots} crawler page views` : ''}.`);
+  } else if (prevVisits > 0) {
     const change = Math.round(((visits - prevVisits) / prevVisits) * 100);
     if (change >= 10) lines.push(`Traffic is growing: visits are up ${change}% versus the previous week (${visits} vs ${prevVisits}).`);
     else if (change <= -10) { lines.push(`Traffic is declining: visits are down ${Math.abs(change)}% versus the previous week (${visits} vs ${prevVisits}). Consider promotion or SEO work.`); health = 'warning'; }
     else lines.push(`Traffic is stable week-over-week (${visits} visits in the last 7 days).`);
   } else {
     lines.push(`${visits} visits recorded in the last 7 days.`);
+  }
+
+  // Crawlers, as their own story. A crawl-budget swing is worth knowing about
+  // - it is an early signal about indexing - but it is not an audience, and
+  // reading it as one is what sent this dashboard chasing a decline that never
+  // happened to a single person.
+  if (report.last7.bots) {
+    const topCrawlers = Object.entries(last7.reduce((acc, d) => {
+      for (const [c, n] of Object.entries(d.crawlers || {})) acc[c] = (acc[c] || 0) + n;
+      return acc;
+    }, {})).sort((a, b) => b[1] - a[1]).slice(0, 3);
+    const share = Math.round((report.last7.bots / Math.max(1, report.last7.bots + visits)) * 100);
+    lines.push(`Crawlers and bots made ${report.last7.bots} page requests this week (${share}% of all HTML traffic)${topCrawlers.length ? ` - mostly ${topCrawlers.map(([c, n]) => `${c} (${n})`).join(', ')}` : ''}. They are counted separately and never as visitors.`);
+    if (report.prev7.bots && weekComparable) {
+      const botChange = Math.round(((report.last7.bots - report.prev7.bots) / report.prev7.bots) * 100);
+      if (Math.abs(botChange) >= 25) {
+        lines.push(`Crawl volume is ${botChange > 0 ? 'up' : 'down'} ${Math.abs(botChange)}% week-over-week (${report.last7.bots} vs ${report.prev7.bots}). A sustained fall is worth checking in Search Console; it does not affect how many people visited.`);
+      }
+    }
+  }
+
+  // Where the people actually landed. The site is 169 indexable pages and
+  // three quarters of them sit below the root; before this was recorded, a
+  // shift of search traffic into the long tail was indistinguishable from
+  // losing traffic altogether.
+  const sections = Object.entries(last7.reduce((acc, d) => {
+    for (const [s, n] of Object.entries(d.sections || {})) acc[s] = (acc[s] || 0) + n;
+    return acc;
+  }, {})).sort((a, b) => b[1] - a[1]);
+  if (sections.length > 1) {
+    lines.push(`Where people landed this week: ${sections.slice(0, 4).map(([s, n]) => `${s} (${n})`).join(', ')}.`);
   }
 
   if (connections > 0) {
@@ -211,8 +257,12 @@ function generateConclusion(runtime, report) {
 
   const busiest = last7Days.reduce((best, d) => (d.peakOnline > (best ? best.peakOnline : -1) ? d : best), null);
   if (busiest && busiest.peakOnline) lines.push(`Busiest day of the week: ${busiest.day}, peaking at ${busiest.peakOnline} users online at once.`);
-  if (report.changeVsLastWeek.uniques !== null) {
+  // Same caveat as the visits comparison above: a week of people measured
+  // against a week of people-plus-crawlers is not a trend.
+  if (report.changeVsLastWeek.uniques !== null && weekComparable) {
     lines.push(`Unique visitors are ${report.changeVsLastWeek.uniques >= 0 ? 'up' : 'down'} ${Math.abs(report.changeVsLastWeek.uniques)}% week-over-week (${report.last7.uniques} vs ${report.prev7.uniques}).`);
+  } else if (report.last7.uniques) {
+    lines.push(`${report.last7.uniques} unique human visitors in the last 7 days. Week-over-week comparison resumes once both weeks exclude crawlers.`);
   }
 
   lines.push(`Right now: ${runtime.online} user(s) online, today's peak was ${today.peakOnline} (day measured in ${report.timezone}, ${report.offset}).`);
@@ -345,6 +395,7 @@ function createAdmin({ io, getRuntime, kickBanned }) {
     const series = report.daily.map((d) => ({
       day: d.day, visits: d.visits, uniques: d.uniques, connections: d.connections, matches: d.matches,
       messages: d.messages, reports: d.reports, errors: d.errors, peakOnline: d.peakOnline, newAccounts: d.newAccounts,
+      bots: d.bots,
     }));
     const today = report.today;
     const agg = (field) => keys.reduce((acc, k) => {
@@ -358,8 +409,8 @@ function createAdmin({ io, getRuntime, kickBanned }) {
       offset: report.offset,
       todayWindow: report.todayWindow,
       yesterdayWindow: report.yesterdayWindow,
-      today: { day: today.day, visits: today.visits, uniques: today.uniques, connections: today.connections, matches: today.matches, peakOnline: today.peakOnline },
-      yesterday: { day: report.yesterday.day, visits: report.yesterday.visits, uniques: report.yesterday.uniques, connections: report.yesterday.connections, matches: report.yesterday.matches, peakOnline: report.yesterday.peakOnline },
+      today: { day: today.day, visits: today.visits, uniques: today.uniques, connections: today.connections, matches: today.matches, peakOnline: today.peakOnline, bots: today.bots },
+      yesterday: { day: report.yesterday.day, visits: report.yesterday.visits, uniques: report.yesterday.uniques, connections: report.yesterday.connections, matches: report.yesterday.matches, peakOnline: report.yesterday.peakOnline, bots: report.yesterday.bots },
       yesterdaySoFar: report.yesterdaySoFar,
       changeVsYesterday: report.changeVsYesterday,
       totals: store.data.analytics.totals,
@@ -367,6 +418,13 @@ function createAdmin({ io, getRuntime, kickBanned }) {
       countries: Object.entries(agg('countries')).sort((a, b) => b[1] - a[1]).slice(0, 15),
       cities: Object.entries(agg('cities')).sort((a, b) => b[1] - a[1]).slice(0, 15),
       features: Object.entries(agg('features')).sort((a, b) => b[1] - a[1]),
+      // Human page views by area of the site, and crawler hits by crawler.
+      // Both are new: before this the dashboard could see neither.
+      sections: Object.entries(agg('sections')).sort((a, b) => b[1] - a[1]),
+      crawlers: Object.entries(agg('crawlers')).sort((a, b) => b[1] - a[1]).slice(0, 15),
+      // The day visitor counts stopped including crawlers, so the UI can mark
+      // the discontinuity rather than draw one misleading line across it.
+      humanSince: store.data.analytics.humanSince || null,
       topics,
       conclusion: generateConclusion(runtime, report),
       maintenance: store.data.settings.maintenance,
@@ -779,8 +837,8 @@ function createAdmin({ io, getRuntime, kickBanned }) {
           }));
     } else if (kind === 'daily') {
       const report = activityReport(req);
-      csv = toCsv(['day', 'unique_visitors', 'visits', 'connections', 'matches', 'messages', 'peak_online', 'new_accounts', 'reports', 'errors'],
-        report.daily.map((d) => [d.day, d.uniques, d.visits, d.connections, d.matches, d.messages, d.peakOnline, d.newAccounts, d.reports, d.errors]));
+      csv = toCsv(['day', 'unique_visitors', 'visits', 'crawler_hits', 'connections', 'matches', 'messages', 'peak_online', 'new_accounts', 'reports', 'errors'],
+        report.daily.map((d) => [d.day, d.uniques, d.visits, d.bots, d.connections, d.matches, d.messages, d.peakOnline, d.newAccounts, d.reports, d.errors]));
     } else if (kind === 'countries') {
       const days = store.data.analytics.days;
       const keys = Object.keys(days).sort().slice(-30);
@@ -833,4 +891,8 @@ function createAdmin({ io, getRuntime, kickBanned }) {
   return { router, sendAlertEmail };
 }
 
-module.exports = { createAdmin, sendAlertEmail };
+// `generateConclusion` is exported for scripts/test-analytics-visits.js: the
+// summary it writes is the one place the dashboard states a trend in words, so
+// it is worth being able to assert on those words directly rather than only
+// through an authenticated HTTP round trip.
+module.exports = { createAdmin, sendAlertEmail, generateConclusion };

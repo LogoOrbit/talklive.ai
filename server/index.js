@@ -15,6 +15,7 @@ const compress = require('./compress');
 const billing = require('./billing');
 const push = require('./push');
 const mail = require('./mailer');
+const { botLabel, isPrefetch } = require('./bots');
 const { createAdmin } = require('./admin');
 
 const app = express();
@@ -768,25 +769,11 @@ function sendAppShell(res, file) {
   sendPage(res, file);
 }
 
-// The voice-call screen is its own URL (reached via history.replaceState once
-// the user taps Talk) but shares the main single-page shell.
-app.get('/call', (req, res) => {
-  sendAppShell(res, 'index.html');
-});
-
-// The text-chat app is a genuinely separate, lightweight page - no voice/WebRTC
-// code is loaded here at all, so the two sub-apps can never bleed into each
-// other and it stays fast on weak phones.
-app.get('/chat', (req, res) => {
-  sendPage(res, 'chat.html');
-});
-
-// Settings is a screen inside the same single-page shell, at its own URL, so
-// a reload or a bookmark lands back on it rather than 404ing. app.js opens the
-// screen when it sees this path (see the deep-link block at the bottom of it).
-app.get('/settings', (req, res) => {
-  sendAppShell(res, 'index.html');
-});
+// The three app-screen routes (/call, /chat, /settings) used to be registered
+// here. They are further down now, below maintenance mode and the visit
+// counter, because being above both meant they were exempt from both: turning
+// maintenance on left the whole app reachable at /chat, and no page view of
+// any of them was ever counted.
 
 // --- Owner dashboard, analytics & maintenance mode ---------------------------
 
@@ -845,23 +832,133 @@ app.use((req, res, next) => {
   res.status(503).type('html').send(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>TalkLive - Maintenance</title><meta name="robots" content="noindex"><style>body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#0d0d0d;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;min-height:100dvh;text-align:center;padding:24px;padding-left:calc(24px + env(safe-area-inset-left));padding-right:calc(24px + env(safe-area-inset-right))}h1{font-size:2rem;margin:.4em 0}.orb{width:72px;height:72px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#6da7ec,#184f95);margin:0 auto 18px;animation:p 2s ease-in-out infinite}@keyframes p{50%{transform:scale(1.08);opacity:.85}}p{color:#c3c2b7;max-width:420px;margin:0 auto;line-height:1.5}</style></head><body><div><div class="orb"></div><h1>We&rsquo;ll be right back</h1><p>${store.data.settings.maintenance.message.replace(/</g, '&lt;')}</p></div></body></html>`);
 });
 
-// Count page visits (HTML navigations only, not assets) with geo attribution.
+/*
+ * Count page visits.
+ *
+ * Three things were wrong with how this used to work, and all three pushed the
+ * owner's traffic numbers in directions that had nothing to do with people.
+ *
+ * 1. It only counted `/` and single-segment paths (`/^\/[a-z0-9-]+$/`). That
+ *    silently excluded every page below the root: all 32 blog posts, 45
+ *    country pages, 17 language pages, 114 city pages, the hub indexes, and
+ *    all 16 localized homepages (`/es/`, `/hi/`, `/ur/` - they keep their
+ *    trailing slash, which the regex rejects). Roughly three quarters of the
+ *    indexed site reported zero traffic forever. A site whose entire content
+ *    arm is invisible cannot tell "the blog is growing" from "nothing is
+ *    happening", and a shift of search traffic from the root pages into the
+ *    long tail - the normal outcome of the SEO work in this repo - reads on
+ *    the dashboard as a decline.
+ *
+ * 2. It counted before routing, so a 404 and a 301 were both "visits". The
+ *    301s mattered: `/foo.html` -> `/foo` and `/foo/` -> `/foo` each counted
+ *    the redirect and then the page, double-counting every crawler that
+ *    followed a legacy URL.
+ *
+ * 3. It made no distinction between a person and a crawler. See
+ *    server/bots.js - on a site with a submitted sitemap and IndexNow pings,
+ *    crawlers are a large share of HTML requests and arrive from hundreds of
+ *    IPs, so they inflate `uniques` hardest of all. Removing the 1,098
+ *    duplicate internal URLs in scripts/migrate-internal-utm.js cut a large
+ *    block of Googlebot re-fetches of `/` - which, counted as people, looks
+ *    exactly like losing visitors.
+ *
+ * So: count on `finish`, only a 200 that actually returned HTML, at any depth,
+ * and put crawlers in their own bucket.
+ */
 const ACQUISITION_SOURCES = new Set([
   'member_share', 'seo', 'blog', 'google', 'bing', 'reddit', 'youtube',
   'tiktok', 'instagram', 'facebook', 'x', 'producthunt', 'app',
 ]);
+
+/*
+ * Which part of the site a URL belongs to. Now that pages below the root are
+ * counted at all, this is what makes them legible: "blog is up, country pages
+ * are flat" is an answer, where one undifferentiated visit total is not.
+ *
+ * Mirrors the clusters in scripts/build-seo.js so the dashboard's sections and
+ * Search Console's per-sitemap coverage can be read side by side.
+ */
+const LOCALE_SECTION_RE = /^\/(ar|bn|de|es|fa|fr|hi|id|it|ja|ko|pt|ru|tr|ur|zh)(\/|$)/;
+function pageSection(pathname) {
+  if (pathname === '/' || pathname === '/landing') return 'home';
+  if (LOCALE_SECTION_RE.test(pathname)) return 'localized home';
+  if (pathname.startsWith('/blog')) return 'blog';
+  if (pathname.startsWith('/countries')) return 'country pages';
+  if (pathname.startsWith('/cities')) return 'city pages';
+  if (pathname.startsWith('/languages')) return 'language pages';
+  if (pathname.startsWith('/guides')) return 'guides';
+  if (pathname === '/chat' || pathname === '/call' || pathname === '/settings') return 'app';
+  return 'landing pages';
+}
+
+// A path whose last segment carries a file extension other than .html. Checked
+// before anything else is done, so the ~15 asset requests behind every page
+// view cost one regex instead of a listener and a user-agent classification.
+// The bound reaches 12 so `site.webmanifest` is caught; no HTML page in
+// public/ has a dot in its slug, so nothing real is excluded by it.
+const ASSET_PATH_RE = /\.(?!html?$)[a-z0-9]{1,12}$/i;
+
 app.use((req, res, next) => {
-  if (req.method === 'GET' && !req.path.startsWith('/owner')
-    && (req.path === '/' || /^\/[a-z0-9-]+$/i.test(req.path))
-    && String(req.headers.accept || '').includes('text/html')) {
-    const ip = clientIp(req);
+  if (req.method !== 'GET') return next();
+  if (req.path.startsWith('/owner') || req.path.startsWith('/socket.io/')) return next();
+  if (ASSET_PATH_RE.test(req.path)) return next();
+
+  // Captured now because Express rewrites req.url as it routes, and the socket
+  // the IP is read from may be gone by the time `finish` fires. Headers are
+  // not rewritten, so the user-agent work can wait until we know it is needed.
+  const ip = clientIp(req);
+  const headers = req.headers;
+  const pathname = req.path;
+  const source = String(req.query.utm_source || '').toLowerCase();
+  const invited = req.query.ref === 'invite';
+
+  res.on('finish', () => {
+    // Only a page that was actually delivered. This is what keeps redirects,
+    // 404s and the maintenance 503 out, and - because it tests the response's
+    // own content type rather than the request's `Accept` - it needs no path
+    // pattern to tell a page from an asset or a JSON endpoint.
+    if (res.statusCode !== 200) return;
+    if (!/^text\/html/i.test(String(res.getHeader('Content-Type') || ''))) return;
+
+    // Classified here rather than above: this is the first point at which we
+    // know the request was a page view worth attributing to someone.
+    const crawler = botLabel(headers['user-agent']);
+    if (crawler || isPrefetch(headers)) {
+      store.recordVisit(ip, null, null, crawler || 'Browser prefetch');
+      return;
+    }
+
     const geo = lookupGeo(ip);
     store.recordVisit(ip, geo.countryName, geo.city);
-    const source = String(req.query.utm_source || '').toLowerCase();
+    store.recordSection(pageSection(pathname));
     if (ACQUISITION_SOURCES.has(source)) store.recordFeature(`acq_${source}`);
-    if (req.query.ref === 'invite') store.recordFeature('invite_arrival');
-  }
+    if (invited) store.recordFeature('invite_arrival');
+  });
+
   next();
+});
+
+// --- App screens -------------------------------------------------------------
+// Below maintenance mode and the visit counter on purpose, so they obey both.
+
+// The voice-call screen is its own URL (reached via history.replaceState once
+// the user taps Talk) but shares the main single-page shell.
+app.get('/call', (req, res) => {
+  sendAppShell(res, 'index.html');
+});
+
+// The text-chat app is a genuinely separate, lightweight page - no voice/WebRTC
+// code is loaded here at all, so the two sub-apps can never bleed into each
+// other and it stays fast on weak phones.
+app.get('/chat', (req, res) => {
+  sendPage(res, 'chat.html');
+});
+
+// Settings is a screen inside the same single-page shell, at its own URL, so
+// a reload or a bookmark lands back on it rather than 404ing. app.js opens the
+// screen when it sees this path (see the deep-link block at the bottom of it).
+app.get('/settings', (req, res) => {
+  sendAppShell(res, 'index.html');
 });
 
 // Marketing landing page on its own subdomain (e.g. start.talklive.app or

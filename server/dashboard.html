@@ -779,6 +779,7 @@ async function viewOverview(){
     <div class="tile anim"><div class="k">Visitors today</div><div class="v" data-count="${o.today.uniques}">0</div><div class="s">${num(o.today.visits)} visits · ${deltaHtml(o.changeVsYesterday.uniques)} vs same time yesterday</div></div>
     <div class="tile anim"><div class="k">Peak online today</div><div class="v" data-count="${o.today.peakOnline}">0</div><div class="s">most at once so far · yesterday ${num(o.yesterday.peakOnline)}</div></div>
     <div class="tile anim"><div class="k">Visitors yesterday</div><div class="v" data-count="${o.yesterday.uniques}">0</div><div class="s">${num(o.yesterday.visits)} visits · full day</div></div>
+    <div class="tile anim"><div class="k">🕷️ Crawler hits today</div><div class="v" data-count="${o.today.bots||0}">0</div><div class="s">bots &amp; search engines · not counted as visitors</div></div>
     <div class="tile anim"><div class="k">Matches today</div><div class="v" data-count="${o.today.matches}">0</div><div class="s">${num(o.totals.matches)} all-time</div></div>
     <div class="tile anim"><div class="k">Total visits</div><div class="v" data-count="${o.totals.visits}">0</div><div class="s">all-time</div></div>
     <div class="tile anim"><div class="k">Accounts</div><div class="v" data-count="${o.counts.accounts}">0</div><div class="s">registered users</div></div>
@@ -798,8 +799,11 @@ async function viewOverview(){
     <div class="quickq" style="margin-top:10px"><button onclick="go('ai')">💬 Ask the AI bot →</button></div></div>
   <div class="card anim"><h2>📈 Traffic - last 30 days <span style="margin-left:auto">${exportLink('daily','Export daily CSV')}</span></h2>
     <div class="legend"><span><i style="background:var(--s1)"></i>Visits</span><span><i style="background:var(--s2)"></i>Unique visitors</span><span><i style="background:var(--s3)"></i>Matches</span></div>
-    <div id="trafficChart"></div></div>
+    <div id="trafficChart"></div>
+    ${o.humanSince?`<div class="muted" style="margin-top:8px;font-size:13px">ℹ️ From <b>${esc(o.humanSince)}</b>, visits and unique visitors count people only - search-engine crawlers, link-preview bots and browser prefetches are counted separately. Earlier days still include them, so a step down at that date is the measurement changing, not traffic falling.</div>`:''}</div>
   <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
+    <div class="card anim"><h2>📄 Where people land <span class="sub">human page views by area, last 30 days</span></h2><div id="sectionBars"></div></div>
+    <div class="card anim"><h2>🕷️ Crawlers <span class="sub">bot page requests, last 30 days</span></h2><div id="crawlerBars"></div></div>
     <div class="card anim"><h2>🏆 Feature ranking <span class="sub">most used → least, last 30 days</span></h2><div id="featBars"></div></div>
     <div class="card anim"><h2>🌍 Top countries <span class="sub">visits, last 30 days</span> <span style="margin-left:auto">${exportLink('countries','CSV')}</span></h2><div id="countryBars"></div></div>
     <div class="card anim"><h2>🏙️ Top cities <span class="sub">visits, last 30 days</span></h2><div id="cityBars"></div></div>
@@ -809,13 +813,15 @@ async function viewOverview(){
   animateCounters();
   lineChart($('#trafficChart'),o.series,['visits','uniques','matches'],['var(--s1)','var(--s2)','var(--s3)'],['Visits','Uniques','Matches']);
   rankedBars($('#featBars'),o.features);
+  hbars($('#sectionBars'),o.sections||[],'var(--s3)');
+  hbars($('#crawlerBars'),o.crawlers||[],'var(--warn)');
   hbars($('#countryBars'),o.countries,'var(--s1)');
   hbars($('#cityBars'),o.cities,'var(--s2)');
 }
 
 /* ---------- activity: hour-by-hour, daily and weekly reports ---------- */
 let actTz=null,actMetric='uniques';
-const ACT_METRICS=[['uniques','Unique visitors'],['visits','Visits'],['connections','Connections'],['matches','Matches'],['messages','Messages']];
+const ACT_METRICS=[['uniques','Unique visitors'],['visits','Visits'],['connections','Connections'],['matches','Matches'],['messages','Messages'],['bots','Crawler hits']];
 
 /* Timezone list from the browser (falls back to a short list on old engines).
    The owner's own zone is preselected, so "today" matches the day they are
@@ -893,10 +899,10 @@ async function viewActivity(){
   </div>
 
   <div class="card anim"><h2>📆 Daily report <span class="sub">last 30 days, newest first</span></h2>
-    <table><tr><th>Day</th><th class="num">Unique visitors</th><th class="num">Visits</th><th class="num">Connections</th><th class="num">Matches</th><th class="num">Messages</th><th class="num">Peak online</th><th class="num">New accounts</th></tr>
+    <table><tr><th>Day</th><th class="num">Unique visitors</th><th class="num">Visits</th><th class="num">Crawler hits</th><th class="num">Connections</th><th class="num">Matches</th><th class="num">Messages</th><th class="num">Peak online</th><th class="num">New accounts</th></tr>
     ${r.daily.slice().reverse().map(d=>`<tr>
       <td><b>${esc(d.day)}</b>${d.day===r.now.day?' <span class="pill info">today</span>':d.day===y.day?' <span class="pill warn">yesterday</span>':''}${d.estimated?' <span class="pill warn" title="Recorded before hour-level tracking; shown on its UTC day.">approx</span>':''}</td>
-      <td class="num">${num(d.uniques)}</td><td class="num">${num(d.visits)}</td><td class="num">${num(d.connections)}</td>
+      <td class="num">${num(d.uniques)}</td><td class="num">${num(d.visits)}</td><td class="num muted">${num(d.bots)}</td><td class="num">${num(d.connections)}</td>
       <td class="num">${num(d.matches)}</td><td class="num">${num(d.messages)}</td><td class="num">${num(d.peakOnline)}</td><td class="num">${num(d.newAccounts)}</td></tr>`).join('')}</table>
     ${estNote}
   </div>`;

@@ -134,13 +134,21 @@ function defaults() {
     // accidentally losing them (kept to the newest 10 per user).
     social: { friends: {}, friendChats: {}, blocks: {}, chatHistory: {} },
     analytics: {
-      totals: { visits: 0, connections: 0, matches: 0, messages: 0, reports: 0, accounts: 0 },
+      totals: { visits: 0, connections: 0, matches: 0, messages: 0, reports: 0, accounts: 0, bots: 0 },
       // 'YYYY-MM-DD' (UTC) -> { visits, uniques, uniqueSet, connections, matches,
       // messages, reports, feedback, errors, newAccounts, peakOnline, countries,
-      // cities, features, hours }. `hours` is '0'..'23' (UTC hour) -> counters,
-      // which is what lets the dashboard re-cut a day into any timezone.
+      // cities, features, hours, bots, crawlers }. `hours` is '0'..'23' (UTC
+      // hour) -> counters, which is what lets the dashboard re-cut a day into
+      // any timezone.
       days: {},
       topics: {}, // word -> count (aggregate, anonymous)
+      // The first UTC day on which crawler traffic was separated out of
+      // `visits`/`uniques` rather than counted as people. Everything before it
+      // is humans and bots mixed together, so the dashboard has to say so
+      // instead of drawing one continuous line across the change and letting
+      // the owner read the step as a collapse in traffic. Written once, by the
+      // first visit recorded after the deploy that introduced the split.
+      humanSince: null,
     },
     premium: {}, // clientId -> { activatedAt, updatedAt, expiresAt, lastEvent, subscriptionId, revokedAt }
     // Referral graph. `codes` maps a short public code -> the clientId that owns
@@ -273,7 +281,7 @@ function dayKey(ts = Date.now()) {
 const UNIQUE_SET_DAYS = 2;
 
 function newHour() {
-  return { visits: 0, uniques: 0, connections: 0, matches: 0, messages: 0, peakOnline: 0 };
+  return { visits: 0, uniques: 0, connections: 0, matches: 0, messages: 0, peakOnline: 0, bots: 0 };
 }
 
 function day(ts = Date.now()) {
@@ -295,6 +303,15 @@ function day(ts = Date.now()) {
       cities: {},
       features: {},
       hours: {},
+      // Crawler traffic, kept beside the human numbers rather than inside
+      // them. `bots` is the hit count; `crawlers` is label -> hits, so a swing
+      // can be attributed ("Google is crawling less") instead of merely noted.
+      bots: 0,
+      crawlers: {},
+      // Section name -> human page views, so traffic to the blog, the country
+      // pages and the localized homepages is visible as itself rather than
+      // folded into one site-wide total.
+      sections: {},
     };
     // Trim old days so the file never grows unbounded.
     const keys = Object.keys(data.analytics.days).sort();
@@ -326,9 +343,38 @@ function hashIp(ip) {
 
 // --- Analytics recording ---
 
-function recordVisit(ip, countryName, city) {
+/**
+ * Record one page view.
+ *
+ * `crawler` is the label from server/bots.js when the request came from a
+ * crawler, prefetcher or script, and null when it came from a person. Crawler
+ * hits are counted in their own bucket and deliberately kept out of `visits`,
+ * `uniques` and the geo maps: a crawl-budget swing is not a change in
+ * audience, and letting one move the visitor graph is what made that graph
+ * impossible to act on. See server/bots.js for the full reasoning.
+ */
+function recordVisit(ip, countryName, city, crawler = null) {
   const d = day();
   const hr = hour();
+
+  if (crawler) {
+    d.bots = (d.bots || 0) + 1;
+    hr.bots = (hr.bots || 0) + 1;
+    data.analytics.totals.bots = (data.analytics.totals.bots || 0) + 1;
+    if (!d.crawlers) d.crawlers = {};
+    d.crawlers[crawler] = (d.crawlers[crawler] || 0) + 1;
+    // No geo for a crawler: Googlebot's datacentre is not an audience, and
+    // letting it into `countries` is how "your biggest audience is the United
+    // States" ends up meaning "Mountain View re-crawled you".
+    save();
+    return;
+  }
+
+  // First human visit after the split shipped: stamp the day, so the dashboard
+  // can mark where the definition of "visitor" changed rather than let the
+  // step be read as a fall in traffic.
+  if (!data.analytics.humanSince) data.analytics.humanSince = dayKey();
+
   d.visits += 1;
   hr.visits += 1;
   data.analytics.totals.visits += 1;
@@ -342,6 +388,20 @@ function recordVisit(ip, countryName, city) {
   }
   if (countryName) d.countries[countryName] = (d.countries[countryName] || 0) + 1;
   if (city && city !== 'Unknown') d.cities[city] = (d.cities[city] || 0) + 1;
+  save();
+}
+
+/**
+ * Which part of the site a human page view landed on ('blog', 'country
+ * pages', 'home', ...). Kept separate from `features` because features are
+ * things a user *did* and this is where they *were*; mixing them would put
+ * "blog" in the same ranking as "chat_message" and make both harder to read.
+ */
+function recordSection(name) {
+  if (!name) return;
+  const d = day();
+  if (!d.sections) d.sections = {};
+  d.sections[name] = (d.sections[name] || 0) + 1;
   save();
 }
 
@@ -1083,6 +1143,7 @@ module.exports = {
   day,
   hour,
   recordVisit,
+  recordSection,
   recordConnection,
   recordPeakOnline,
   recordFeature,
