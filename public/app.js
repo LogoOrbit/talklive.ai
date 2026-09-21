@@ -1028,7 +1028,6 @@ function setAutoCallEnabled(value) {
   autoCallEnabled = value;
   localStorage.setItem('talklive_autocall', autoCallEnabled ? 'on' : 'off');
   autoCallCheckbox.checked = autoCallEnabled;
-  if (typeof syncAutoCallBtn === 'function') syncAutoCallBtn();
   syncWakeLock();
 }
 
@@ -3873,12 +3872,8 @@ function setCallState(state) {
   // and it closes when the call does, rather than being left open over a
   // screen where none of it applies any more.
   if (typeof callMoreBtn !== 'undefined' && callMoreBtn) callMoreBtn.disabled = !connected;
-  // Next needs somebody to move on from. Auto-connect does not - it is a mode
-  // you set before or during a call, and switching it on while searching is
-  // exactly when it is most useful.
-  if (typeof nextBtn !== 'undefined' && nextBtn) nextBtn.disabled = !connected;
   // Published on the panel so the stylesheet can act on it. While there is
-  // nobody on the other end, Mute / Add friend / More are four dimmed
+  // nobody on the other end, Add friend / Mute / Report are dimmed
   // buttons that do nothing - they take a whole row of a phone screen to say
   // "not yet", and that row is exactly the space the waiting screen needs.
   callPanel.classList.toggle('is-connected', connected);
@@ -4622,44 +4617,15 @@ function createPeerConnection(isInitiator) {
 let visualizerCtx = null;
 let visualizerSource = null;
 
-// --- Next -------------------------------------------------------------------
-// The core loop of a random-chat app, and until now it had no button. The only
-// way to the next stranger was to hang up and start again: two taps with a
-// dead screen in between, on the one action people take most.
-//
-// It reuses autoNextMatch(), which is what the reconnect watchdog already uses
-// to advance - so a deliberate skip and an automatic one take exactly the same
-// path, and the server is told the same thing either way.
-const nextBtn = document.getElementById('nextBtn');
-if (nextBtn) {
-  nextBtn.addEventListener('click', () => {
-    if (nextBtn.disabled || callState !== 'connected') return;
-    vibrate(12);
-    // `false` for failed: this call worked, we just want a different person.
-    // Saying otherwise would make the server keep us apart permanently.
-    autoNextMatch('statusFindingNew', false);
-  });
-}
-
 // --- Auto-connect -----------------------------------------------------------
 // A mode, not a preference buried in a drawer: it is what turns one call into
-// an evening, and you should be able to see whether it is on without opening
-// anything. The hidden checkbox stays the element the rest of the app reads
-// and writes, so there is still one source of truth - this just drives it.
-const autoCallBtn = document.getElementById('autoCallBtn');
-function syncAutoCallBtn() {
-  if (!autoCallBtn) return;
-  autoCallBtn.classList.toggle('is-on', autoCallEnabled);
-  autoCallBtn.setAttribute('aria-pressed', autoCallEnabled ? 'true' : 'false');
-  autoCallBtn.title = t(autoCallEnabled ? 'autoConnectOn' : 'autoConnectOff');
-  autoCallBtn.setAttribute('aria-label', t(autoCallEnabled ? 'autoConnectOn' : 'autoConnectOff'));
-}
-if (autoCallBtn) {
-  autoCallBtn.addEventListener('click', () => {
-    setAutoCallEnabled(!autoCallEnabled);
-    syncAutoCallBtn();
+// an evening. It sits under the three round buttons as a plain switch, wired
+// straight to the checkbox the rest of the app already reads and writes, so
+// there is still exactly one source of truth.
+if (autoCallCheckbox) {
+  autoCallCheckbox.addEventListener('change', () => {
     vibrate(10);
-    showToast(t(autoCallEnabled ? 'autoConnectOnToast' : 'autoConnectOffToast'));
+    showToast(t(autoCallCheckbox.checked ? 'autoConnectOnToast' : 'autoConnectOffToast'));
   });
 }
 
@@ -5493,6 +5459,8 @@ function closeChatPanel() {
   chatOpen = false;
   chatPanel.classList.remove('open');
   chatOverlay.classList.add('hidden');
+  chatPanel.style.bottom = '';
+  chatPanel.style.maxHeight = '';
   chatPanel.style.height = '';
   chatPanel.style.top = '';
   updateScrollLock();
@@ -5502,18 +5470,29 @@ function scrollChatToBottom() {
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-// Keep the full-screen mobile chat sheet sized to the *visual* viewport so the
-// on-screen keyboard can never cover the input or the latest messages. On iOS a
-// position:fixed panel otherwise stays at full window height behind the keyboard.
+// Keep the phone chat sheet clear of the on-screen keyboard. A position:fixed
+// panel sits against the window, not the *visual* viewport, so on iOS it stays
+// put and the keyboard covers the composer.
+//
+// This used to stretch the panel to the full visual viewport, which is right
+// for a full-screen drawer and wrong for a sheet - it undid the sheet's height
+// and put it back over the whole call. So it lifts the sheet by however much
+// the keyboard is eating instead, and only caps the height if the sheet no
+// longer fits above it.
 function syncChatViewport() {
   const vv = window.visualViewport;
   if (!chatOpen || !vv || window.innerWidth > 767) {
+    chatPanel.style.bottom = '';
+    chatPanel.style.maxHeight = '';
     chatPanel.style.height = '';
     chatPanel.style.top = '';
     return;
   }
-  chatPanel.style.height = vv.height + 'px';
-  chatPanel.style.top = vv.offsetTop + 'px';
+  const keyboard = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+  chatPanel.style.bottom = keyboard + 'px';
+  // Leave a strip of the call visible above the sheet whatever the keyboard
+  // does - that strip is the reason this is a sheet and not a page.
+  chatPanel.style.maxHeight = Math.round(vv.height * 0.88) + 'px';
   scrollChatToBottom();
 }
 if (window.visualViewport) {
@@ -5536,26 +5515,92 @@ chatToggleBtn.addEventListener('click', () => {
 closeChatBtn.addEventListener('click', closeChatPanel);
 chatOverlay.addEventListener('click', () => { if (Date.now() < swipeSuppressUntil) return; closeChatPanel(); });
 
-// Swipe right on the panel closes it (matches the slide-in direction).
-let chatTouchStartX = null;
-let chatTouchStartY = null;
-chatPanel.addEventListener('touchstart', (e) => {
-  chatTouchStartX = e.touches[0].clientX;
-  chatTouchStartY = e.touches[0].clientY;
-}, { passive: true });
-chatPanel.addEventListener('touchmove', (e) => {
-  if (chatTouchStartX === null) return;
-  const dx = e.touches[0].clientX - chatTouchStartX;
-  const dy = e.touches[0].clientY - chatTouchStartY;
-  // Mostly-horizontal rightward swipe past a threshold → close.
-  if (dx > 70 && Math.abs(dx) > Math.abs(dy)) {
-    chatTouchStartX = null;
-    closeChatPanel();
+// --- Putting the sheet away --------------------------------------------------
+// On a phone the chat is a sheet sitting over a live call, and the gesture for
+// a sheet is to push it back down - nobody has to be taught that one. The sheet
+// tracks the finger the whole way rather than snapping shut at a threshold, so
+// a half-hearted drag visibly springs back instead of silently doing nothing.
+//
+// The drag starts from the grab handle or from the header, never from the
+// message list: dragging inside a scrollable list is how you scroll it, and
+// the two gestures must not fight.
+//
+// Wider than 767px the panel is a docked window with nowhere to go, so nothing
+// here applies; the old rightward swipe is kept for that case.
+function makeSheetDismissable(panel, close) {
+  if (!panel) return;
+  const CLOSE_AT = 90;      // px dragged down before it stays closed
+  const FLICK = 0.5;        // px/ms - a fast flick closes from anywhere
+  let startY = null;
+  let startX = 0;
+  let startT = 0;
+  let dy = 0;
+  let dragging = false;
+
+  const isSheet = () => window.matchMedia('(max-width: 767px)').matches;
+  const fromGrip = (target) => !!(target.closest && target.closest('.tl-sheet-grip, .side-panel-header'));
+
+  function reset() {
+    panel.classList.remove('is-dragging');
+    panel.style.transform = '';
+    startY = null;
+    dragging = false;
+    dy = 0;
   }
-}, { passive: true });
-chatPanel.addEventListener('touchend', () => {
-  chatTouchStartX = null;
-  chatTouchStartY = null;
+
+  panel.addEventListener('touchstart', (e) => {
+    if (!panel.classList.contains('open')) return;
+    startY = e.touches[0].clientY;
+    startX = e.touches[0].clientX;
+    startT = Date.now();
+    dy = 0;
+    // A drag only counts from the handle or the header; a button in the header
+    // is still a button.
+    dragging = isSheet() && fromGrip(e.target) && !e.target.closest('button');
+  }, { passive: true });
+
+  panel.addEventListener('touchmove', (e) => {
+    if (startY === null) return;
+    const y = e.touches[0].clientY;
+    const x = e.touches[0].clientX;
+    dy = y - startY;
+
+    if (dragging) {
+      // Downward only. Pulling up on a sheet that is already at the top has
+      // nowhere to go, so it does not move.
+      panel.classList.add('is-dragging');
+      panel.style.transform = 'translateY(' + Math.max(0, dy) + 'px)';
+      return;
+    }
+
+    // Docked window: the old mostly-horizontal rightward swipe.
+    if (!isSheet() && x - startX > 70 && Math.abs(x - startX) > Math.abs(dy)) {
+      startY = null;
+      close();
+    }
+  }, { passive: true });
+
+  function end() {
+    if (dragging) {
+      const speed = dy / Math.max(1, Date.now() - startT);
+      const shouldClose = dy > CLOSE_AT || (dy > 24 && speed > FLICK);
+      // Hand the transform back to the stylesheet before deciding, so the
+      // sheet animates from where the finger left it either way.
+      panel.classList.remove('is-dragging');
+      panel.style.transform = '';
+      if (shouldClose) close();
+    }
+    reset();
+  }
+  panel.addEventListener('touchend', end);
+  panel.addEventListener('touchcancel', end);
+}
+
+makeSheetDismissable(chatPanel, closeChatPanel);
+// The friend chat is the same sheet on a phone, so it puts away the same way.
+makeSheetDismissable(friendChatModal, () => {
+  closeSidePanel(friendChatModal, friendChatOverlay);
+  activeFriendChatId = null;
 });
 
 // --- Edge swipes on the call screen: swipe left → open chat (slides in from
@@ -6821,7 +6866,6 @@ try {
 // when the call screen opens, and the auto-connect control showing whatever
 // the setting actually is - which, unless it has been turned off, is on.
 autoCallCheckbox.checked = autoCallEnabled;
-syncAutoCallBtn();
 renderAcceptCalls();
 renderSettingsProfileRow();
 setCallState('idle');

@@ -2078,42 +2078,28 @@
   .tl-call-wave-bar { transition: none; }
 }
 
-/* --- What you can do ----------------------------------------------------- */
-.tl-call-controls {
-  display: flex;
-  justify-content: center;
-  gap: var(--tl-s5);
-  margin-top: var(--tl-s5);
-}
-.tl-call-controls .call-action-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
-.stage .tl-call-controls .action-btn,
-.stage.call-live .tl-call-controls .action-btn {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-}
-.tl-call-controls .action-label { font-size: 12px; color: var(--muted); }
-#callMoreBtn.is-open {
-  background: color-mix(in srgb, var(--accent) 30%, transparent);
-  color: var(--text);
-}
-
-/* --- The main row: Next, the circle, Auto-connect ------------------------ */
+/* --- What you can do -----------------------------------------------------
+ * Four circles, one row, one size, each with its word underneath. They are
+ * the four things you do to a call, and none of them wins by enough to be
+ * drawn bigger than the others: what tells them apart is colour, not scale.
+ * The caption takes its button's colour, so whichever one is doing something
+ * right now says so twice - red for Hang up and for a live mute, green once
+ * Add friend has landed, grey for everything at rest.
+ * ------------------------------------------------------------------------- */
 .tl-call-main {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: start;
   justify-items: center;
-  gap: var(--tl-s3);
-  width: 100%;
-  /* Well clear of Mute and Add friend above it: the old layout put hang-up
-     one thumb-width from mute, at the same size and nearly the same colour. */
-  margin-top: var(--tl-s6);
+  gap: var(--tl-s1);
+  /* Capped and centred. On a wide phone four 1fr columns pushed the circles
+     apart until the row read as four separate things rather than one set of
+     controls; the circle should own most of its column, not float in it. */
+  width: min(376px, 100%);
+  margin-inline: auto;
+  /* Clear of the waveform above: nothing should be one thumb-width from
+     Hang up. */
+  margin-top: var(--tl-s5);
 }
 .tl-call-main .call-action-wrap {
   display: flex;
@@ -2121,76 +2107,224 @@
   align-items: center;
   gap: 7px;
 }
-.tl-call-main .action-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--muted);
+.tl-call-main .action-label,
+.tl-call-main .call-main-label {
+  font-size: 12.5px;
+  font-weight: 700;
+  /* The word under a circle is part of the control, not a footnote to it:
+     at --muted it was greyer than the icon it labels. */
+  color: color-mix(in srgb, var(--text) 82%, transparent);
+  text-align: center;
+  line-height: 1.2;
 }
 
-/* The two side buttons. Big enough to hit without looking, small enough that
-   the circle between them is obviously the main one. */
-.tl-call-round {
-  display: grid;
-  place-items: center;
-  width: 60px;
-  height: 60px;
-  border: 1px solid var(--tl-line-strong);
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--text) 8%, transparent);
-  color: var(--text);
-  cursor: pointer;
-  transition: transform 0.12s ease, background-color 0.15s ease, border-color 0.15s ease;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-}
-.tl-call-round svg { width: 26px; height: 26px; }
-.tl-call-round:hover:not(:disabled) { background: color-mix(in srgb, var(--text) 15%, transparent); }
-.tl-call-round:active:not(:disabled) { transform: scale(0.94); }
-.tl-call-round:disabled { opacity: 0.35; cursor: default; }
+/* The caption follows the button. Red under Hang up, because the word and the
+   circle saying the same thing is what stops a thumb landing on it by
+   accident; green under Call, which is the only invitation on the screen. */
+.tl-call-main .call-main-label.is-call { color: var(--green); }
+.tl-call-main .call-main-label.is-hangup,
+.tl-call-main .call-main-label.is-confirm { color: var(--danger); }
+.tl-call-main .call-main-label.is-loading { color: var(--muted); }
+.tl-call-main .action-btn.muted + .action-label { color: var(--danger); }
+.tl-call-main .action-btn.added + .action-label { color: var(--green); }
 
-/* Auto-connect is a mode, so it has to look switched on rather than just
-   pressed - the whole point of moving it out of the drawer was being able to
-   see its state without opening anything. */
-.tl-call-auto.is-on {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 26%, transparent);
-  color: var(--accent-2);
-}
-
-/* The circle. Round and big, because it is the one control on this screen
-   that must be unmissable - and round is the shape every phone has used for
-   answer and hang up for twenty years. */
+/* One size for all three, set here so it beats style.css's own .action-btn
+   and .stage.call-live .action-btn rules (3 classes, so ours need .stage
+   too). Round, because round is what every phone has used for answer and
+   hang up for twenty years. */
+.stage .tl-call-main .action-btn,
+.stage.call-live .tl-call-main .action-btn,
 .stage .tl-call-main .call-main-btn,
 .stage.call-live .tl-call-main .call-main-btn {
-  width: 92px;
-  height: 92px;
+  width: 74px;
+  height: 74px;
   border-radius: 50%;
+  margin: 0;
+  transition: transform 0.12s ease, background-color 0.18s ease,
+              box-shadow 0.25s ease, border-color 0.18s ease, opacity 0.18s ease;
 }
-.tl-call-main .call-main-icon { width: 34px; height: 34px; }
-.tl-call-main .call-main-label {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text);
+.tl-call-main .call-main-icon { width: 30px; height: 30px; }
+.tl-call-main .simple-icon-lg { width: 28px; height: 28px; }
+
+/* The three that are not the call button: a surface you can actually see,
+   and a white icon on it. They were a 4%-of-text wash with a dimmed glyph -
+   a circle you had to look for. */
+.tl-call-main .action-btn-neutral {
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text) 9%, transparent);
+}
+.tl-call-main .action-btn-neutral:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--text) 16%, transparent);
+}
+/* The mic was drawn a hard #aab0c4 in the markup while the person beside it
+   was white, so two controls at the same rest state looked like two
+   different states. Both are white now; colour is reserved for a control
+   that is doing something. (Report and the muted/sent states set their own
+   fill after this.) */
+.tl-call-main .action-btn-neutral:not(.action-btn-danger) svg { fill: var(--text); }
+.tl-call-main .action-btn:active:not(:disabled) { transform: scale(0.93); }
+
+/* Report is red before it is pressed, not after. It is the only control here
+   whose whole job is to be recognised in a hurry. */
+.tl-call-main .action-btn-danger { color: var(--danger); }
+.tl-call-main .action-btn-danger svg { fill: currentColor; }
+.tl-call-main .action-btn-danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger) 20%, transparent);
 }
 
-/* Hidden but still readable by the code that owns the setting. */
-.visually-hidden {
+/* Held back rather than hidden while there is nobody on the other end: the
+   row keeps its shape, so the buttons do not jump under your thumb the
+   moment a call connects. Lightly held back, though - at 0.4 the three
+   circles read as damage rather than as waiting. */
+.tl-call-main .action-btn:disabled { opacity: 0.8; cursor: default; }
+
+.tl-call-main .action-btn.muted {
+  background: color-mix(in srgb, var(--danger) 22%, transparent);
+  border-color: color-mix(in srgb, var(--danger) 55%, transparent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--danger) 30%, transparent);
+}
+.tl-call-main .action-btn.muted svg { fill: var(--danger); }
+/* The slash was drawn at a fixed 40px for a 72px button; the buttons shrink
+   with the viewport now, so it does too. */
+.tl-call-main .mute-slash { height: 58%; box-shadow: none; }
+.tl-call-main .action-btn.added {
+  background: color-mix(in srgb, var(--green) 22%, transparent);
+  border-color: color-mix(in srgb, var(--green) 55%, transparent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--green) 28%, transparent);
+}
+.tl-call-main .action-btn.added svg { fill: var(--green); }
+
+/* --- Under the row: the auto switch, then the quiet buttons --------------- */
+.tl-call-extras {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--tl-s3);
+  width: min(420px, 100%);
+  margin: var(--tl-s4) auto 0;
+}
+
+/* Auto-connect is a setting that stays on, not an action you take, so it is
+   a switch and not a fourth circle - and a switch shows its state without
+   being pressed, which is the whole reason it left the drawer. */
+.tl-auto-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  /* Small, and on one line: it is a setting, not one of the three actions,
+     and anything taller starts competing with them for the eye. */
+  padding: 6px 8px 6px 10px;
+  border: 1px solid var(--tl-line);
+  border-radius: var(--tl-r-md);
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.tl-auto-switch:hover { border-color: var(--tl-line-strong); }
+.tl-auto-switch-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  color: var(--muted);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.tl-auto-switch-icon svg { width: 14px; height: 14px; }
+.tl-auto-switch-text {
+  min-width: 0;
+  flex: 0 1 auto;
+}
+.tl-auto-switch-text strong { font-size: 13px; font-weight: 700; color: var(--text); }
+/* The explanation is what a tooltip is for. On one line it would double the
+   height of the smallest control on the screen. */
+.tl-auto-switch-text small { display: none; }
+
+/* The input itself stays in the accessibility tree and keeps the keyboard
+   working - it is just drawn as the track beside it. */
+.tl-auto-switch input {
   position: absolute;
   width: 1px;
   height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-  border: 0;
+  opacity: 0;
+  pointer-events: none;
 }
-.tl-call-sheet-note {
-  margin: 0;
+.tl-switch {
+  position: relative;
+  flex: 0 0 auto;
+  width: 38px;
+  height: 22px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 16%, transparent);
+  transition: background-color 0.18s ease;
+}
+.tl-switch-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  transition: transform 0.18s ease;
+}
+.tl-auto-switch input:checked ~ .tl-switch { background: var(--green); }
+.tl-auto-switch input:checked ~ .tl-switch .tl-switch-knob { transform: translateX(16px); }
+.tl-auto-switch:has(input:checked) {
+  border-color: color-mix(in srgb, var(--green) 55%, transparent);
+  background: color-mix(in srgb, var(--green) 10%, transparent);
+}
+.tl-auto-switch:has(input:checked) .tl-auto-switch-icon {
+  background: color-mix(in srgb, var(--green) 22%, transparent);
+  color: var(--green);
+}
+.tl-auto-switch input:focus-visible ~ .tl-switch {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tl-switch, .tl-switch-knob { transition: none; }
+}
+
+/* Your spirit animal, pickable mid-wait. It is a quiet button rather than a
+   fifth circle: it changes how you look, not what the call does. */
+.tl-call-quiet {
+  display: flex;
+  justify-content: center;
+  gap: var(--tl-s2);
+}
+.tl-call-quiet-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
   font-size: 12.5px;
-  line-height: 1.5;
-  text-align: center;
+  font-weight: 600;
   color: var(--muted);
+  border: 1px solid var(--tl-line);
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.tl-call-quiet-btn svg { width: 15px; height: 15px; flex: 0 0 auto; }
+.tl-call-quiet-btn:hover:not(:disabled) {
+  color: var(--text);
+  border-color: var(--tl-line-strong);
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+}
+.tl-call-quiet-btn:disabled { opacity: 0.4; cursor: default; }
+.tl-call-quiet-btn.is-open {
+  color: var(--text);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
 /* --- More ---------------------------------------------------------------- */
@@ -2229,7 +2363,7 @@
     background: none;
     padding-inline: var(--tl-s2);
   }
-  .tl-call-controls { gap: var(--tl-s4); }
+  .tl-call-main { gap: var(--tl-s2); }
 }
 
 
@@ -2583,16 +2717,28 @@
 /* ===========================================================================
  * 15. NOTHING DIMMED THAT COULD BE ABSENT
  * ---------------------------------------------------------------------------
- * Mute, Add friend and More all need a partner. Before one arrives they are
- * three dimmed circles that say "not yet", and on a phone they cost a whole
- * row of the screen with the least room to spare - the row the ad below them
- * is competing for. Section 14 sizes everything else here to the viewport;
- * this simply removes what has nothing to do yet. They are back the moment
- * there is somebody on the other end.
+ * Add friend, Mute and Report all need a partner. The Call button sits in
+ * the same row, so the row itself can never go away - but the two circles
+ * beside it and the Report button have nothing to do yet, and saying so
+ * quietly is better than three controls that look live and are not.
  * ======================================================================== */
 
-@media (max-width: 979px) {
-  .call-panel:not(.is-connected) .tl-call-controls { display: none; }
+.call-panel:not(.is-connected) .tl-call-quiet-btn:disabled {
+  border-color: var(--tl-line);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+}
+/* The three circles keep their surface while they wait. Washing them out to
+   4% of the text colour left three holes in the row, and a control you have
+   to hunt for once it is live is worse than one that looks patient. The
+   opacity on :disabled above is the whole of the difference now. */
+.call-panel:not(.is-connected) .tl-call-main .action-btn:disabled {
+  border-color: color-mix(in srgb, var(--text) 9%, transparent);
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+}
+/* Their labels go with them, but only just: three words at full contrast
+   under three waiting buttons is the row reading as live when it is not. */
+.call-panel:not(.is-connected) .tl-call-main .action-btn:disabled + .action-label {
+  opacity: 0.8;
 }
 
 /* ===========================================================================
@@ -2630,56 +2776,40 @@
  * ---------------------------------------------------------------------------
  * Every control on the call screen was one of two colours: green for the big
  * one, grey for everything else. Grey says "inactive", so a row of grey said
- * "nothing here works", and the one button people press most - Next - looked
- * exactly like the one that does nothing yet.
+ * "nothing here works" - including the buttons that do.
  *
  * The rule, and it is the same one phones have taught everybody for years:
  *   green   start, go, connect
  *   red     stop, end, this is off
- *   blue    move forward, no risk, do it again
  *   grey    nothing is happening here
  * ======================================================================== */
-
-/* Next is the forward action and the safe one - nothing is lost by pressing
-   it - so it is blue, not the grey of a disabled control. */
-.tl-call-next {
-  border-color: color-mix(in srgb, var(--accent-2) 55%, transparent);
-  background: color-mix(in srgb, var(--accent-2) 20%, transparent);
-  color: var(--accent-2);
-}
-.tl-call-next:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--accent-2) 32%, transparent);
-}
-/* Until there is somebody to move on from, it goes back to saying nothing. */
-.tl-call-next:disabled {
-  border-color: var(--tl-line-strong);
-  background: color-mix(in srgb, var(--text) 6%, transparent);
-  color: var(--muted);
-}
 
 /* Muted is a thing being OFF, which is red everywhere else on a phone. Grey
    with a small slash through it was the only cue, and it read as "disabled"
    rather than as "they cannot hear you". */
-.tl-call-controls .action-btn.muted {
+.tl-call-main .action-btn.muted {
   background: color-mix(in srgb, var(--danger) 26%, transparent);
   color: var(--danger);
 }
-.tl-call-controls .action-btn.muted svg { fill: var(--danger); }
+.tl-call-main .action-btn.muted svg { fill: var(--danger); }
+/* The slash was drawn at a fixed 40px for a 72px button; the buttons shrink
+   with the viewport now, so it does too. */
+.tl-call-main .mute-slash { height: 58%; box-shadow: none; }
 
 /* Add friend, once sent, is a thing that succeeded - green, not grey. */
-.tl-call-controls .action-btn.added {
+.tl-call-main .action-btn.added {
   background: color-mix(in srgb, var(--green) 24%, transparent);
   color: var(--green);
   opacity: 1;
 }
-.tl-call-controls .action-btn.added svg { fill: var(--green); }
+.tl-call-main .action-btn.added svg { fill: var(--green); }
 
 /* The two landing cards already carry the product's two promises in colour -
    green for voice, accent for text. The labels under them are what tells
    somebody which is which before they read a word, so they keep full
    contrast rather than fading into the card. */
 .tl-action-body small { opacity: 0.92; }
-=======
+
 /* ===========================================================================
  * 14. THE PHONE CALL SCREEN - one screen, and the ad's own place in it
  * ---------------------------------------------------------------------------
@@ -2806,35 +2936,53 @@
   }
   .stage.call-live .reaction-btn svg { width: 20px; height: 20px; }
 
-  /* Mute / Add friend / More. Never below 44px: these are taps. */
-  .stage.call-live .tl-call-controls {
-    gap: var(--tl-s5);
-    margin-top: clamp(var(--tl-s1), 1.2dvh, var(--tl-s5));
+  /* Four of them across a phone. One size for all four, never below 44px:
+     these are taps, and the row you must never hit by accident. */
+  .stage.call-live .tl-call-main {
+    gap: var(--tl-s1);
+    margin-top: clamp(var(--tl-s1), 1.4dvh, var(--tl-s5));
   }
-  .stage .tl-call-controls .action-btn,
-  .stage.call-live .tl-call-controls .action-btn {
-    width: clamp(44px, 6.8dvh, 56px);
-    height: clamp(44px, 6.8dvh, 56px);
-  }
-  .stage.call-live .tl-call-controls .action-label { font-size: 11.5px; }
-
-  /* The main row keeps the most air of anything here: it is the row you must
-     never hit by accident, and the row the ad below must never be mistaken
-     for. */
-  .stage.call-live .tl-call-main { margin-top: clamp(var(--tl-s1), 1.6dvh, var(--tl-s6)); }
-  .stage.call-live .tl-call-round {
-    width: clamp(46px, 7.8dvh, 60px);
-    height: clamp(46px, 7.8dvh, 60px);
-  }
-  .stage.call-live .tl-call-round svg { width: 24px; height: 24px; }
+  /* The floor was 48px, and on a short phone the clamp sat on it: four small
+     circles adrift in four wide columns, which is the row reading as empty
+     space with buttons in it. The circle now keeps most of its column at
+     every height the screen can be. */
+  .stage .tl-call-main .action-btn,
+  .stage.call-live .tl-call-main .action-btn,
   .stage .tl-call-main .call-main-btn,
   .stage.call-live .tl-call-main .call-main-btn {
-    width: clamp(64px, 10dvh, 92px);
-    height: clamp(64px, 10dvh, 92px);
+    width: clamp(58px, 8.8dvh, 74px);
+    height: clamp(58px, 8.8dvh, 74px);
   }
-  .stage.call-live .tl-call-main .call-main-icon {
-    width: clamp(26px, 4.4dvh, 34px);
-    height: clamp(26px, 4.4dvh, 34px);
+  /* "Add friend" is the long one. It gets to wrap rather than force the
+     four columns apart. */
+  .stage.call-live .tl-call-main .action-label,
+  .stage.call-live .tl-call-main .call-main-label { font-size: 12px; }
+  .stage.call-live .tl-call-main .call-main-icon,
+  .stage.call-live .tl-call-main .simple-icon-lg {
+    width: clamp(24px, 3.9dvh, 30px);
+    height: clamp(24px, 3.9dvh, 30px);
+  }
+
+  /* On a phone the switch and the two quiet buttons share one line. Stacked
+     they cost about 45px, and 45px here is 45px of the ad below falling
+     behind the tab bar - which is the whole screen's tightest trade. */
+  .stage.call-live .tl-call-extras {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--tl-s2);
+    margin-top: clamp(var(--tl-s1), 1.4dvh, var(--tl-s4));
+  }
+  .stage.call-live .tl-auto-switch {
+    padding: 5px 7px 5px 9px;
+    gap: 7px;
+  }
+  .stage.call-live .tl-auto-switch-text strong { font-size: 12.5px; }
+  .stage.call-live .tl-call-quiet { width: auto; }
+  .stage.call-live .tl-call-quiet-btn {
+    flex: 0 0 auto;
+    padding: 6px 10px;
+    font-size: 12px;
   }
 
   /* More opens below the fold on a phone, so app.js scrolls it into view; this
@@ -2968,17 +3116,12 @@
  *   3. A 28%-white inset highlight across the top, which is the gloss that
  *      made the ball look inflated.
  *
- * And it was 92px against 60px neighbours - a 1.53x jump. At 80px the ratio
- * is 1.33, which still makes it unmistakably the main control without it
- * looking swollen next to the other two.
+ * It was also 92px against 60px neighbours - a 1.53x jump, which is what
+ * made it read as swollen rather than important. It is now exactly the size
+ * of the other two: colour carries the difference, so the size does not have
+ * to. Sizing lives in section 9 with the rest of the row; what is left here
+ * is only how the button is painted.
  * ======================================================================== */
-
-.stage .tl-call-main .call-main-btn,
-.stage.call-live .tl-call-main .call-main-btn {
-  width: 80px;
-  height: 80px;
-}
-.tl-call-main .call-main-icon { width: 30px; height: 30px; }
 
 /* Flat fills, and a shadow that sits under the button instead of around it -
    depth, not a halo. The three layers still cross-fade between modes exactly
@@ -2992,38 +3135,38 @@
 .tl-call-main .call-main-btn::after { background: var(--danger); }
 .tl-call-main .call-main-btn .call-main-confirm-layer { background: #e08700; }
 
-/* One soft drop shadow, tinted to whichever mode is showing, so the button
-   sits on the screen rather than glowing through it. */
+/* A close halo plus one soft drop shadow, tinted to whichever mode is
+   showing: enough light around the circle to say it is the live one, and
+   not the wide bloom that used to spill halfway across the row. */
 .tl-call-main .call-main-btn {
-  box-shadow: 0 6px 18px color-mix(in srgb, var(--green) 38%, transparent);
-  transition: box-shadow 0.35s ease, transform 0.12s ease;
+  box-shadow:
+    0 0 0 6px color-mix(in srgb, var(--green) 12%, transparent),
+    0 6px 18px color-mix(in srgb, var(--green) 34%, transparent);
+  transition: box-shadow 0.3s ease, transform 0.12s ease;
 }
 .tl-call-main .call-main-btn.is-hangup {
-  box-shadow: 0 6px 18px color-mix(in srgb, var(--danger) 40%, transparent);
+  box-shadow:
+    0 0 0 6px color-mix(in srgb, var(--danger) 14%, transparent),
+    0 6px 18px color-mix(in srgb, var(--danger) 36%, transparent);
 }
 .tl-call-main .call-main-btn.is-confirm {
-  box-shadow: 0 6px 18px rgba(224, 135, 0, 0.4);
+  box-shadow:
+    0 0 0 6px rgba(224, 135, 0, 0.14),
+    0 6px 18px rgba(224, 135, 0, 0.4);
 }
 .tl-call-main .call-main-btn.is-loading {
   box-shadow: 0 6px 18px color-mix(in srgb, var(--green) 22%, transparent);
 }
-.tl-call-main .call-main-btn:active { transform: scale(0.96); }
+.tl-call-main .call-main-btn:active { transform: scale(0.93); }
 
 /* The orb on the waiting screen breathes; a button someone is about to press
-   should hold still. */
-.tl-call-main .call-main-btn { animation: none; }
+   should hold still. No pulse in any mode, confirm included - a control that
+   throbs under a thumb is a control that is hard to aim at. */
+.tl-call-main .call-main-btn,
+.tl-call-main .call-main-btn.is-call,
+.tl-call-main .call-main-btn.is-confirm,
+.tl-call-main .call-main-btn.is-loading { animation: none; }
 
-@media (max-width: 979px) {
-  .stage .tl-call-main .call-main-btn,
-  .stage.call-live .tl-call-main .call-main-btn {
-    width: clamp(62px, 8.8dvh, 80px);
-    height: clamp(62px, 8.8dvh, 80px);
-  }
-  .stage.call-live .tl-call-main .call-main-icon {
-    width: clamp(24px, 3.9dvh, 30px);
-    height: clamp(24px, 3.9dvh, 30px);
-  }
-}
 
 /* ===========================================================================
  * 19. BIG SCREENS
@@ -3139,13 +3282,37 @@
  * A chat over a live call is a box, not a destination. It comes up from the
  * bottom, stops well short of the top so the call is still visible above it,
  * and has the rounded top edge and the grab handle that say "this is a sheet
- * over the thing you were on, and it goes back down".
+ * over the thing you were on, and it goes back down" - and it does go back
+ * down, by dragging the handle, because that is the one gesture nobody has
+ * to be taught.
  *
- * Desktop keeps the side panel: there it sits beside the call rather than on
- * top of it, which is the whole reason it works there.
+ * The call behind it is blurred rather than merely dimmed. Blur is what says
+ * "still there, not in focus"; a flat dark wash says "gone", and the whole
+ * point of a sheet is that the call has not gone anywhere.
+ *
+ * Desktop keeps the docked window: there it sits beside the call rather than
+ * on top of it, which is the whole reason it works there.
+ *
+ * 767px, not 859: that is where style.css switches the panel to the docked
+ * desktop window and hides the overlay, and a sheet with no backdrop was the
+ * result of the two disagreeing.
  * ======================================================================== */
 
-@media (max-width: 859px) {
+/* The grab handle exists only while the panel is a sheet; on desktop the
+   panel is a docked window and there is nothing to drag. */
+.side-panel.chat-side-panel .tl-sheet-grip { display: none; }
+
+@media (max-width: 767px) {
+  .side-panel.chat-side-panel .tl-sheet-grip { display: block; }
+
+  /* The backdrop. Blurred, so the call reads as paused behind the box rather
+     than closed. */
+  #chatOverlay:not(.hidden) {
+    background: rgba(8, 10, 20, 0.34);
+    backdrop-filter: blur(9px) saturate(115%);
+    -webkit-backdrop-filter: blur(9px) saturate(115%);
+  }
+
   .side-panel.chat-side-panel {
     /* Anchored to the bottom edge, full width, rounded at the top only. */
     top: auto;
@@ -3154,7 +3321,10 @@
     right: 0;
     width: 100%;
     max-width: none;
-    height: min(74dvh, 620px);
+    /* Shorter than it was: the top of the call - who you are talking to and
+       for how long - has to stay on screen, or the sheet is just the old
+       page swap with a rounded corner. */
+    height: min(62dvh, 540px);
     padding: 0;
     gap: 0;
     border: 0;
@@ -3168,12 +3338,29 @@
     transition: transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
     box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.42);
     overflow: hidden;
+    touch-action: pan-y;
   }
   .side-panel.chat-side-panel.open { transform: translateY(0); }
 
+  /* While a finger is on it the sheet follows that finger exactly, so the
+     transition has to be out of the way; it comes back for the snap. */
+  .side-panel.chat-side-panel.is-dragging { transition: none; }
+
   /* The handle. It is what makes a sheet look draggable and, more usefully,
-     what makes it obvious the call is still behind it. */
-  .side-panel.chat-side-panel::before {
+     what makes it obvious the call is still behind it. It is also the grab
+     area, so it is a real element rather than a ::before - a pseudo-element
+     cannot be dragged. */
+  .side-panel.chat-side-panel .tl-sheet-grip {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    /* Tall enough to catch a thumb aimed at a 4px bar. */
+    height: 26px;
+    z-index: 3;
+    cursor: grab;
+  }
+  .side-panel.chat-side-panel .tl-sheet-grip::before {
     content: "";
     position: absolute;
     top: 8px;
@@ -3183,8 +3370,6 @@
     transform: translateX(-50%);
     border-radius: 999px;
     background: color-mix(in srgb, var(--text) 26%, transparent);
-    pointer-events: none;
-    z-index: 2;
   }
   .side-panel.chat-side-panel .side-panel-header {
     padding: var(--tl-s5) var(--tl-s4) var(--tl-s3);
@@ -3300,8 +3485,9 @@
   .stage .tl-call-main,
   .stage.call-live .tl-call-main { margin-top: var(--tl-s4); }
 
-  /* One gap above the ad, not the card's padding plus the ad's margin. Still
-     a clear break from the controls - it is the same distance as sits between
-     any two rows of the card - just not paid for twice. */
-  .tl-call-ad-phone { margin-top: var(--tl-s2); }
+  /* One gap above the ad, not the card's padding plus the ad's margin. It is
+     wider than the space between any two controls, because a thumb heading
+     for Hang Up must never be able to land on a creative - but it is paid
+     for once rather than twice. */
+  .tl-call-ad-phone { margin-top: var(--tl-s4); }
 }
