@@ -197,3 +197,17 @@ window.I18N_STRINGS.hi = {
   "filtersAdUnlockText": "मुफ़्त प्लान: हर सूची में अधिकतम 2 देश, जेंडर फ़िल्टर लॉक है। एक छोटा विज्ञापन देखें और 5 मिनट के लिए सब कुछ अनलॉक करें - मुफ़्त।"
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("hi");
+
+// Social: presence, typing, previews, unsend
+Object.assign(window.I18N_STRINGS.hi, {
+  "lastSeen": "आखिरी बार {time}",
+  "friendTyping": "टाइप कर रहे हैं…",
+  "youSaid": "आप: {text}",
+  "gifMessage": "GIF",
+  "unsend": "भेजना रद्द करें",
+  "copyText": "कॉपी करें",
+  "alreadyFriendsMsg": "आप पहले से दोस्त हैं।",
+  "friendReqPendingMsg": "आपका फ्रेंड रिक्वेस्ट अभी जवाब का इंतज़ार कर रहा है।",
+  "friendReqFailed": "फ्रेंड रिक्वेस्ट नहीं भेजा जा सका।",
+  "tapAgainToRemove": "हटाने के लिए फिर से टैप करें"
+});

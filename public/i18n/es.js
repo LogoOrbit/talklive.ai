@@ -197,3 +197,17 @@ window.I18N_STRINGS.es = {
   "filtersAdUnlockText": "Plan gratuito: hasta 2 países por lista, filtro de género bloqueado. Mira un anuncio corto para desbloquear todo durante 5 minutos, gratis."
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("es");
+
+// Social: presence, typing, previews, unsend
+Object.assign(window.I18N_STRINGS.es, {
+  "lastSeen": "Últ. vez {time}",
+  "friendTyping": "escribiendo…",
+  "youSaid": "Tú: {text}",
+  "gifMessage": "GIF",
+  "unsend": "Anular envío",
+  "copyText": "Copiar",
+  "alreadyFriendsMsg": "Ya sois amigos.",
+  "friendReqPendingMsg": "Tu solicitud de amistad sigue esperando respuesta.",
+  "friendReqFailed": "No se pudo enviar la solicitud de amistad.",
+  "tapAgainToRemove": "Toca otra vez para eliminar"
+});

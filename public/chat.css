@@ -1315,3 +1315,20 @@ summary:active {
 @media (max-width: 420px) {
   .animal-gate-grid { grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 8px; }
 }
+
+/* --- Social: inbox-style rows, presence and typing ------------------------ */
+.friend-row .friend-main { cursor: pointer; }
+.friend-status .friend-status-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.friend-status { max-width: 100%; }
+.friend-status.is-unread { color: var(--text); font-weight: 700; }
+.friend-status.is-typing { color: var(--accent); font-style: italic; }
+.mini-btn.danger.confirm { color: #fff; background: var(--danger); border-color: var(--danger); }
+.chat-head-who { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; }
+.chat-head-who h2 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-head-status {
+  font-size: 12px; font-weight: 600; color: var(--muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.chat-head-status:empty { display: none; }
+.chat-head-status.is-online { color: var(--green); }
+.chat-head-status.is-typing { color: var(--accent); font-style: italic; }

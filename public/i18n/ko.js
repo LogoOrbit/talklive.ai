@@ -197,3 +197,17 @@ window.I18N_STRINGS.ko = {
   "filtersAdUnlockText": "무료 플랜: 목록당 최대 2개 국가, 성별 필터 잠김. 짧은 광고 한 편이면 모든 기능이 5분간 무료로 열립니다."
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("ko");
+
+// Social: presence, typing, previews, unsend
+Object.assign(window.I18N_STRINGS.ko, {
+  "lastSeen": "마지막 접속 {time}",
+  "friendTyping": "입력 중…",
+  "youSaid": "나: {text}",
+  "gifMessage": "GIF",
+  "unsend": "전송 취소",
+  "copyText": "복사",
+  "alreadyFriendsMsg": "이미 친구예요.",
+  "friendReqPendingMsg": "친구 요청이 아직 응답을 기다리고 있어요.",
+  "friendReqFailed": "친구 요청을 보낼 수 없어요.",
+  "tapAgainToRemove": "다시 탭하면 삭제돼요"
+});

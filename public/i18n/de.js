@@ -197,3 +197,17 @@ window.I18N_STRINGS.de = {
   "filtersAdUnlockText": "Gratis-Plan: bis zu 2 Länder pro Liste, Geschlechtsfilter gesperrt. Sieh dir eine kurze Werbung an und schalte alles für 5 Minuten frei - kostenlos."
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("de");
+
+// Social: presence, typing, previews, unsend
+Object.assign(window.I18N_STRINGS.de, {
+  "lastSeen": "Zuletzt online {time}",
+  "friendTyping": "schreibt…",
+  "youSaid": "Du: {text}",
+  "gifMessage": "GIF",
+  "unsend": "Zurückziehen",
+  "copyText": "Kopieren",
+  "alreadyFriendsMsg": "Ihr seid schon befreundet.",
+  "friendReqPendingMsg": "Deine Freundschaftsanfrage wartet noch auf Antwort.",
+  "friendReqFailed": "Freundschaftsanfrage konnte nicht gesendet werden.",
+  "tapAgainToRemove": "Zum Entfernen erneut tippen"
+});

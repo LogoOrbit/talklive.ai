@@ -62,10 +62,10 @@ async function waitUp() {
   throw new Error('server never came up');
 }
 
-async function matchPair(a, b) {
+async function matchPair(a, b, mode = 'chat') {
   const matched = Promise.all([once(a, 'matched'), once(b, 'matched')]);
-  a.emit('find-partner', { mode: 'chat' });
-  b.emit('find-partner', { mode: 'chat' });
+  a.emit('find-partner', { mode });
+  b.emit('find-partner', { mode });
   await matched;
 }
 
@@ -98,6 +98,37 @@ async function matchPair(a, b) {
     b.emit('get-friend-chat', { friendClientId: A });
     const hist = await once(b, 'friend-chat-history');
     ok('history partner can load the stored chat', (hist.messages || []).some((m) => m.id === 'h1'), JSON.stringify(hist));
+    const readSync = once(b, 'state-sync');
+    b.emit('mark-messages-read', { friendClientId: A });
+    await readSync;
+    const bHist = ((lastSync.get(b) || {}).chatHistory || []).find((h) => h.clientId === A);
+    ok('history row carries the last message', bHist && bHist.last && bHist.last.id === 'h1' && !bHist.last.mine, JSON.stringify(bHist));
+
+    // --- Typing indicator is relayed -------------------------------------
+    const typing = once(b, 'friend-typing');
+    a.emit('friend-typing', { toClientId: B });
+    ok('typing reaches the other side', (await typing).fromClientId === A);
+    const cTyping = arrives(c, 'friend-typing', 500);
+    await wait(1100);
+    c.emit('friend-typing', { toClientId: B });
+    ok('typing to a stranger is dropped', !(await arrives(b, 'friend-typing', 500)));
+    await cTyping;
+
+    // --- Unsend ----------------------------------------------------------
+    const unreadNotif = once(b, 'notification');
+    a.emit('friend-message', { toClientId: B, text: 'oops', id: 'u1' });
+    ok('message leaves an unread marker', (await unreadNotif).msgId === 'u1');
+    c.emit('friend-message-delete', { toClientId: B, id: 'u1' });
+    ok('only the author can unsend', !(await arrives(b, 'friend-message-deleted', 500)));
+    const gone = once(b, 'friend-message-deleted');
+    a.emit('friend-message-delete', { toClientId: B, id: 'u1' });
+    const del = await gone;
+    ok('recipient is told the message was unsent', del.chatWith === A && del.id === 'u1');
+    await wait(100);
+    ok('unsent message clears its unread marker', !(lastSync.get(b).notifications || []).some((n) => n.msgId === 'u1'));
+    b.emit('get-friend-chat', { friendClientId: A });
+    const afterDel = await once(b, 'friend-chat-history');
+    ok('unsent message is gone from the thread', !(afterDel.messages || []).some((m) => m.id === 'u1'));
 
     // --- Rate limit on direct messages -----------------------------------
     let blockedRate = false;
@@ -107,8 +138,10 @@ async function matchPair(a, b) {
     ok('message flood is rate limited', blockedRate);
 
     // --- Duplicate friend requests do not stack --------------------------
-    a.emit('friend-request', { targetClientId: B });
+    a.emit('friend-request', { targetClientId: B, message: 'we talked about cats' });
     await once(a, 'friend-request-result');
+    await wait(100);
+    ok('intro message rides on the request', ((lastSync.get(b).friendRequests || []).find((r) => r.clientId === A) || {}).message === 'we talked about cats');
     a.emit('friend-request', { targetClientId: B });
     const dup = await once(a, 'friend-request-result');
     ok('second request reports pending', dup.ok && dup.pending, JSON.stringify(dup));
@@ -139,6 +172,8 @@ async function matchPair(a, b) {
     await wait(200);
     ok('both sides are friends', (lastSync.get(a2).friends || []).some((f) => f.clientId === B)
       && (lastSync.get(b2).friends || []).some((f) => f.clientId === A));
+    const bAsFriend = (lastSync.get(a2).friends || []).find((f) => f.clientId === B) || {};
+    ok('friend row carries presence and last message', bAsFriend.online === true && bAsFriend.last && typeof bAsFriend.last.ts === 'number', JSON.stringify(bAsFriend));
     ok('request notification cleared', !(lastSync.get(b2).notifications || []).some((n) => n.type === 'friend_request'));
 
     // --- Forged call-back accept cannot force-pair -----------------------
@@ -172,6 +207,35 @@ async function matchPair(a, b) {
     a2.emit('leave');
     await wait(200);
 
+    // --- Last seen after a disconnect ------------------------------------
+    const seenSync = once(a2, 'state-sync');
+    c2.disconnect();
+    await seenSync.catch(() => null);
+    // Charlie is nobody's friend and in nobody's history yet: no last-seen to show.
+    const d = connect('Delta');
+    const D = 'c_social_Delta';
+    await wait(300);
+
+    // --- Voice-call partners are remembered (call back, message back) ----
+    await matchPair(a2, d, 'talk');
+    a2.emit('leave'); d.emit('leave');
+    await wait(300);
+    ok('voice partner lands in history', ((lastSync.get(a2) || {}).chatHistory || []).some((h) => h.clientId === D && h.mode === 'talk'));
+    const dRing = once(d, 'call-back-request');
+    a2.emit('call-back-request', { targetClientId: D });
+    const cbRes = await once(a2, 'call-back-request-result');
+    ok('call back to a voice partner is allowed', cbRes.ok === true, JSON.stringify(cbRes));
+    await dRing;
+    a2.emit('call-back-cancel', { targetClientId: D });
+    const dMsg = once(d, 'friend-message');
+    a2.emit('friend-message', { toClientId: D, text: 'nice talking' });
+    ok('message back to a voice partner is delivered', (await dMsg).text === 'nice talking');
+    const aSeen = once(a2, 'state-sync');
+    d.disconnect();
+    await aSeen;
+    const dRow = ((lastSync.get(a2) || {}).chatHistory || []).find((h) => h.clientId === D) || {};
+    ok('offline partner shows last seen', dRow.online === false && typeof dRow.lastSeen === 'number', JSON.stringify(dRow));
+
     // --- Blocking updates the other side live ---------------------------
     const aResync = once(a2, 'state-sync');
     b2.emit('block-friend', { friendClientId: A });
@@ -179,6 +243,7 @@ async function matchPair(a, b) {
     ok('blocked friend sees the friendship end live', !(aState.friends || []).some((f) => f.clientId === B));
     a2.emit('friend-message', { toClientId: B, text: 'still there?' });
     ok('blocked person cannot message', !(await arrives(b2, 'friend-message', 600)));
+    ok('blocked person leaves the history list', !((lastSync.get(b2) || {}).chatHistory || []).some((h) => h.clientId === A));
 
     console.log(failed ? `\n${failed} check(s) failed` : '\nAll checks passed');
     done(failed ? 1 : 0);

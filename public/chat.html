@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
-<link rel="stylesheet" href="/chat.css?v=20260922type" />
-<link rel="stylesheet" href="/chat-extras.css?v=20260916navbar" />
+<link rel="stylesheet" href="/chat.css?v=20260922social2" />
+<link rel="stylesheet" href="/chat-extras.css?v=20260922social2" />
 <link rel="stylesheet" href="/games.css?v=20260916navbar" />
 <link rel="stylesheet" href="/ui.css?v=20260922save" />
 <!-- The top bar, shared with / and /call: one button language, one radius,
@@ -707,7 +707,10 @@
   <div id="friendChatOverlay" class="side-overlay hidden"></div>
   <aside id="friendChatPanel" class="side-panel side-right" role="dialog" aria-labelledby="friendChatTitle" aria-hidden="true" inert>
     <div class="side-header">
-      <h2 id="friendChatTitle" data-i18n="chat">Chat</h2>
+      <div class="chat-head-who">
+        <h2 id="friendChatTitle" data-i18n="chat">Chat</h2>
+        <span id="friendChatStatus" class="chat-head-status" aria-live="polite"></span>
+      </div>
       <!-- Same header as the call app's friend chat: who you're talking to,
            and the read-receipts switch right where the conversation is. -->
       <div class="chat-header-actions">
@@ -833,13 +836,13 @@
 
   <script defer src="/socket.io/socket.io.js"></script>
   <script defer src="/countries.js?v=20260828fix"></script>
-  <script defer src="/i18n.js?v=20260922social"></script>
+  <script defer src="/i18n.js?v=20260922social2"></script>
   <script defer src="/chat-time.js?v=20260916navbar"></script>
   <script defer src="/animals.js?v=20260921animals"></script>
   <script defer src="/error-reporter.js?v=20260823ui"></script>
-  <script defer src="/chat-extras.js?v=20260916navbar"></script>
+  <script defer src="/chat-extras.js?v=20260922social2"></script>
   <script defer src="/games.js?v=20260916navbar"></script>
-  <script defer src="/chat.js?v=20260922social"></script>
+  <script defer src="/chat.js?v=20260922social2"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

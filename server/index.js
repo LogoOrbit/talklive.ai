@@ -1408,9 +1408,15 @@ function clearRequestPair(fromClientId, targetClientId) {
 }
 const notifications = new Map(); // clientId -> Array<notification>
 const friendChats = new Map(); // pairKey -> Array<{ from, text, ts }>
-const chatHistory = new Map(); // clientId -> Array<{ clientId, username, countryCode, ts }> (newest last, max 10)
+const chatHistory = new Map(); // clientId -> Array<{ clientId, username, countryCode, mode, ts }> (newest last)
+// When each person was last connected: clientId -> ts. Only kept for people
+// someone could be looking for (friends, recent matches) - see the sweep.
+const lastSeen = new Map();
 
-const MAX_CHAT_HISTORY = 10;
+// Voice and text matches both land here, so it is sized for a session of
+// skipping: ten was gone after a few minutes of "next", taking with it the one
+// person worth calling back.
+const MAX_CHAT_HISTORY = 20;
 const MAX_NOTIFICATIONS = 50;
 // Pending requests and queued notifications older than this are dead weight:
 // nobody acts on a month-old "wants to talk".
@@ -1468,6 +1474,7 @@ function writeSocial() {
     friendRequests: mapOfMaps(friendRequests),
     sentRequests: mapOfMaps(sentRequests),
     notifications: notifObj,
+    lastSeen: Object.fromEntries(lastSeen),
   });
 }
 
@@ -1509,6 +1516,9 @@ function hydrateFromStore() {
   for (const [cid, list] of Object.entries(social.notifications || {})) {
     if (Array.isArray(list) && list.length) notifications.set(cid, list.slice(-MAX_NOTIFICATIONS));
   }
+  for (const [cid, ts] of Object.entries(social.lastSeen || {})) {
+    if (typeof ts === 'number') lastSeen.set(cid, ts);
+  }
 }
 
 function isFriend(a, b) {
@@ -1528,9 +1538,69 @@ function recordChatHistory(ownerClientId, partner) {
     clientId: partner.clientId,
     username: partner.username,
     countryCode: partner.country,
+    mode: partner.mode === 'chat' ? 'chat' : 'talk',
     ts: Date.now(),
   });
   while (list.length > MAX_CHAT_HISTORY) list.shift();
+}
+
+function dropFromChatHistory(ownerClientId, otherClientId) {
+  const list = chatHistory.get(ownerClientId);
+  if (!list) return;
+  const left = list.filter((e) => e.clientId !== otherClientId);
+  if (left.length === list.length) return;
+  if (left.length) chatHistory.set(ownerClientId, left); else chatHistory.delete(ownerClientId);
+}
+
+// Both sides of a fresh pairing remember each other - whether it was a random
+// match, an accepted call-back or an in-chat voice invite - so either can
+// message, call back, add or report the other afterwards.
+function rememberPairing(sockA, profA, sockB, profB) {
+  recordChatHistory(profA.clientId, profB);
+  recordChatHistory(profB.clientId, profA);
+  persistSocial();
+  syncClientState(sockA, profA.clientId);
+  syncClientState(sockB, profB.clientId);
+}
+
+// Re-send state to everyone whose lists show this person - their friends and
+// anyone with them among recent matches - so a green dot flips live.
+function resyncWatchers(clientId) {
+  const seen = new Set();
+  for (const [fid] of friends.get(clientId) || new Map()) {
+    seen.add(fid);
+    const sock = getSocketByClientId(fid);
+    if (sock) syncClientState(sock, fid);
+  }
+  for (const [otherId, list] of chatHistory) {
+    if (otherId === clientId || seen.has(otherId) || !list.some((e) => e.clientId === clientId)) continue;
+    const sock = getSocketByClientId(otherId);
+    if (sock) syncClientState(sock, otherId);
+  }
+}
+
+// The newest stored message between two people, trimmed to what a list row
+// needs to show - so a friend list reads like an inbox, not a phone book.
+function lastMessageBetween(me, other) {
+  const list = friendChats.get(pairKey(me, other));
+  const m = list && list[list.length - 1];
+  if (!m) return null;
+  return {
+    id: m.id,
+    mine: m.from === me,
+    text: m.text ? m.text.slice(0, 80) : '',
+    gif: !!m.gif,
+    ts: m.ts,
+    seen: !!m.seen,
+  };
+}
+
+// Presence as friends see it: live, or when they were last here. Someone who
+// hides their status shows neither.
+function presenceOf(clientId) {
+  if (statusHidden.get(clientId)) return { online: false, lastSeen: null };
+  if (clientSockets.has(clientId)) return { online: true, lastSeen: null };
+  return { online: false, lastSeen: lastSeen.get(clientId) || null };
 }
 
 // True if `b` appears in `a`'s recent chat history (either direction) - used to
@@ -1711,7 +1781,8 @@ function syncClientState(socket, clientId) {
     avatar: liveAvatarFor(fid, info.avatar),
     // Friends who hid their status always appear offline to friends - this
     // only masks the per-friend indicator, never the global online count.
-    online: clientSockets.has(fid) && !statusHidden.get(fid),
+    ...presenceOf(fid),
+    last: lastMessageBetween(clientId, fid),
   }));
   const requestList = Array.from((friendRequests.get(clientId) || new Map()).entries()).map(([fid, info]) => ({
     clientId: fid,
@@ -1726,8 +1797,10 @@ function syncClientState(socket, clientId) {
       clientId: e.clientId,
       username: e.username,
       countryCode: e.countryCode,
+      mode: e.mode || 'chat',
       ts: e.ts,
-      online: clientSockets.has(e.clientId) && !statusHidden.get(e.clientId),
+      ...presenceOf(e.clientId),
+      last: lastMessageBetween(clientId, e.clientId),
     }));
   // Who this user has asked and not heard back from, so a profile can say
   // "Pending" instead of offering to send the same request twice.
@@ -2274,6 +2347,10 @@ function blockPair(clientIdA, clientIdB) {
   if (pa) pa.delete(clientIdB);
   const pb = pendingCallBacks.get(clientIdB);
   if (pb) pb.delete(clientIdA);
+  // And from each other's recent-people list: "message back" and "call back"
+  // offering someone you just blocked is an invitation to undo the block.
+  dropFromChatHistory(clientIdA, clientIdB);
+  dropFromChatHistory(clientIdB, clientIdA);
   persistSocial();
 }
 
@@ -2564,15 +2641,11 @@ function tryMatch(socketId) {
     partnerSocket.emit('matched', { initiator: true, partner: publicProfile(seekerProfile), rematched, mode });
     seekerSocket.emit('matched', { initiator: false, partner: publicProfile(partnerProfile), rematched, mode });
 
-    // Remember each other in the text-chat history so either side can message
-    // back later if the conversation ends abruptly.
-    if (mode === 'chat') {
-      recordChatHistory(seekerProfile.clientId, partnerProfile);
-      recordChatHistory(partnerProfile.clientId, seekerProfile);
-      persistSocial();
-      syncClientState(seekerSocket, seekerProfile.clientId);
-      syncClientState(partnerSocket, partnerProfile.clientId);
-    }
+    // Remember each other so either side can message back, call back, add or
+    // report later. This used to happen for text matches only, which left every
+    // voice-call partner unknown to the server: calling one back from the call
+    // history, messaging them, or reporting them from their profile was refused.
+    rememberPairing(seekerSocket, seekerProfile, partnerSocket, partnerProfile);
   } else {
     waitingQueue.push(socketId);
     const seekerProfile = profiles.get(socketId);
@@ -3293,15 +3366,10 @@ io.on('connection', (socket) => {
           countryCode: me.country,
           country: me.countryName,
         });
-        syncClientState(friendSocket, fid);
       }
-      // Also flip this user's dot on for anyone who has them in their chat
-      // history (they may not be friends), so "message back" shows them online.
-      for (const [otherId, list] of chatHistory) {
-        if (otherId === clientId || !list.some((e) => e.clientId === clientId)) continue;
-        const otherSocket = getSocketByClientId(otherId);
-        if (otherSocket) syncClientState(otherSocket, otherId);
-      }
+      // Flip the dot on for friends and for anyone who has them in their
+      // recent matches, so "message back" shows them online.
+      resyncWatchers(clientId);
     }
   });
 
@@ -3403,13 +3471,9 @@ io.on('connection', (socket) => {
     const profile = profiles.get(socket.id);
     if (!profile) return;
     statusHidden.set(profile.clientId, !!hidden);
-    // Re-sync everyone who has this user as a friend so their list updates live.
-    for (const [fid, map] of friends) {
-      if (map.has(profile.clientId)) {
-        const friendSocket = getSocketByClientId(fid);
-        if (friendSocket) syncClientState(friendSocket, fid);
-      }
-    }
+    // Re-sync everyone who sees this user's dot - friends and recent matches -
+    // so going invisible (or coming back) shows up live.
+    resyncWatchers(profile.clientId);
   });
 
   // "Receive incoming calls": when off, friends can still message but their
@@ -3495,8 +3559,12 @@ io.on('connection', (socket) => {
     const me = profiles.get(socket.id);
     targetClientId = validId(targetClientId);
     if (!me || !targetClientId || targetClientId === me.clientId) return;
+    // Anyone with a standing connection, or who sent this user a request: the
+    // profile sheet offers Report on all of them.
     const known = (friends.get(me.clientId) || new Map()).get(targetClientId)
-      || (chatHistory.get(me.clientId) || []).find((h) => h.clientId === targetClientId);
+      || (chatHistory.get(me.clientId) || []).find((h) => h.clientId === targetClientId)
+      || (friendRequests.get(me.clientId) || new Map()).get(targetClientId)
+      || (hasChatHistory(me.clientId, targetClientId) ? {} : null);
     if (!known) return;
     const reportKey = `${me.clientId}|${targetClientId}`;
     const now = Date.now();
@@ -3778,8 +3846,15 @@ io.on('connection', (socket) => {
       return socket.emit('friend-request-result', { ok: false, rateLimited: true, error: 'Too many friend requests. Try again in a few minutes.' });
     }
 
+    // Optional intro message ("remind them who you are") - links stripped,
+    // capped, and only ever shown to the recipient. Kept on the request itself
+    // too, not just the notification, so the requests list can show it.
+    const intro = (typeof message === 'string' && !containsLink(message) && !UNSAFE_RE.test(message))
+      ? message.trim().slice(0, 200) : '';
     if (!friendRequests.has(targetClientId)) friendRequests.set(targetClientId, new Map());
-    friendRequests.get(targetClientId).set(me.clientId, { ...myInfo, ts: Date.now() });
+    const reqEntry = { ...myInfo, ts: Date.now() };
+    if (intro) reqEntry.message = intro;
+    friendRequests.get(targetClientId).set(me.clientId, reqEntry);
     const targetProfile = profiles.get(clientSockets.get(targetClientId) || '');
     noteSentRequest(me.clientId, targetClientId, {
       username: (targetProfile && targetProfile.username) || '',
@@ -3787,10 +3862,6 @@ io.on('connection', (socket) => {
       avatar: targetProfile ? targetProfile.avatar : null,
     });
 
-    // Optional intro message ("remind them who you are") - links stripped,
-    // capped, and only ever shown inside the recipient's notification.
-    const intro = (typeof message === 'string' && !containsLink(message) && !UNSAFE_RE.test(message))
-      ? message.trim().slice(0, 200) : '';
     pushNotification(targetClientId, {
       type: 'friend_request',
       fromClientId: me.clientId,
@@ -3972,6 +4043,7 @@ io.on('connection', (socket) => {
       fromClientId: me.clientId,
       username: me.username,
       text: trimmed || '[GIF]',
+      msgId: msg.id,
     });
 
     socket.emit('friend-message-sent', {
@@ -4015,6 +4087,47 @@ io.on('connection', (socket) => {
     if (targetSocket) {
       targetSocket.emit('friend-reaction', { fromClientId: me.clientId, id: msgId, emoji, on: !!on });
     }
+  });
+
+  // Unsend: the author takes a stored message back. It goes from the thread on
+  // both sides and from the recipient's unread count. The moderation transcript
+  // keeps it - unsending is for regret, not for erasing evidence.
+  socket.on('friend-message-delete', ({ toClientId, id } = {}) => {
+    const me = profiles.get(socket.id);
+    toClientId = validId(toClientId);
+    const msgId = cleanMsgId(id);
+    if (!me || !toClientId || !msgId) return;
+    const key = pairKey(me.clientId, toClientId);
+    const list = friendChats.get(key);
+    const idx = list ? list.findIndex((m) => m.id === msgId && m.from === me.clientId) : -1;
+    if (idx === -1) return;
+    list.splice(idx, 1);
+    if (!list.length) friendChats.delete(key);
+    const unreadGone = removeNotificationsWhere(toClientId,
+      (n) => n.type === 'message' && n.fromClientId === me.clientId && n.msgId === msgId);
+    persistSocial();
+    store.recordFeature('chat_unsend');
+    socket.emit('friend-message-deleted', { chatWith: toClientId, id: msgId });
+    const targetSocket = getSocketByClientId(toClientId);
+    if (targetSocket) {
+      targetSocket.emit('friend-message-deleted', { chatWith: me.clientId, id: msgId });
+      if (unreadGone) syncClientState(targetSocket, toClientId);
+    }
+  });
+
+  // "typing…" in a direct chat. Relayed only between people who could message
+  // each other anyway, and never faster than a human types.
+  socket.on('friend-typing', ({ toClientId } = {}) => {
+    const me = profiles.get(socket.id);
+    toClientId = validId(toClientId);
+    if (!me || !toClientId || toClientId === me.clientId) return;
+    const now = Date.now();
+    if (me.lastFriendTypingAt && now - me.lastFriendTypingAt < 1000) return;
+    me.lastFriendTypingAt = now;
+    if (!knowsEachOther(me.clientId, toClientId) || isBlockedPair(me.clientId, toClientId)) return;
+    if (statusHidden.get(me.clientId)) return; // appearing offline means not typing either
+    const targetSocket = getSocketByClientId(toClientId);
+    if (targetSocket) targetSocket.emit('friend-typing', { fromClientId: me.clientId });
   });
 
   socket.on('get-friend-chat', ({ friendClientId } = {}) => {
@@ -4209,6 +4322,7 @@ io.on('connection', (socket) => {
     requesterProfile.mode = 'talk';
     requesterSocket.emit('matched', { initiator: true, partner: publicProfile(me), rematched: false, callback: true, mode: 'talk' });
     socket.emit('matched', { initiator: false, partner: publicProfile(requesterProfile), rematched: false, callback: true, mode: 'talk' });
+    rememberPairing(socket, me, requesterSocket, requesterProfile);
   });
 
   // The caller gave up before an answer: take the ask back, so the other side's
@@ -4301,6 +4415,7 @@ io.on('connection', (socket) => {
     otherProfile.mode = 'talk';
     otherSocket.emit('matched', { initiator: true, partner: publicProfile(me), rematched: false, callback: true, mode: 'talk' });
     socket.emit('matched', { initiator: false, partner: publicProfile(otherProfile), rematched: false, callback: true, mode: 'talk' });
+    rememberPairing(socket, me, otherSocket, otherProfile);
   });
 
   socket.on('disconnect', () => {
@@ -4312,17 +4427,13 @@ io.on('connection', (socket) => {
     const profile = profiles.get(socket.id);
     if (profile && clientSockets.get(profile.clientId) === socket.id) {
       clientSockets.delete(profile.clientId);
-      // Flip this user's green dot off in their friends' lists right away.
-      for (const [fid] of friends.get(profile.clientId) || new Map()) {
-        const friendSocket = getSocketByClientId(fid);
-        if (friendSocket) syncClientState(friendSocket, fid);
+      if (friends.has(profile.clientId) || chatHistory.has(profile.clientId)) {
+        lastSeen.set(profile.clientId, Date.now());
+        persistSocial();
       }
-      // And grey this user out in anyone's chat-history "message back" panel.
-      for (const [otherId, list] of chatHistory) {
-        if (otherId === profile.clientId || !list.some((e) => e.clientId === profile.clientId)) continue;
-        const otherSocket = getSocketByClientId(otherId);
-        if (otherSocket) syncClientState(otherSocket, otherId);
-      }
+      // Flip this user's green dot off in friends' lists and in anyone's
+      // "message back" panel right away.
+      resyncWatchers(profile.clientId);
     }
     profiles.delete(socket.id);
     socketAuth.delete(socket.id);
@@ -4422,6 +4533,11 @@ function sweepEphemeralState() {
     if (fresh.length === list.length) continue;
     socialChanged = true;
     if (fresh.length) notifications.set(cid, fresh); else notifications.delete(cid);
+  }
+  for (const cid of lastSeen.keys()) {
+    if (friends.has(cid) || chatHistory.has(cid)) continue;
+    lastSeen.delete(cid);
+    socialChanged = true;
   }
   if (socialChanged) persistSocial();
 }

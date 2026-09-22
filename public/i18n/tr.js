@@ -197,3 +197,17 @@ window.I18N_STRINGS.tr = {
   "filtersAdUnlockText": "Ücretsiz plan: liste başına en fazla 2 ülke, cinsiyet filtresi kilitli. Kısa bir reklam izleyerek her şeyi 5 dakikalığına aç - ücretsiz."
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("tr");
+
+// Social: presence, typing, previews, unsend
+Object.assign(window.I18N_STRINGS.tr, {
+  "lastSeen": "Son görülme {time}",
+  "friendTyping": "yazıyor…",
+  "youSaid": "Sen: {text}",
+  "gifMessage": "GIF",
+  "unsend": "Gönderimi geri al",
+  "copyText": "Kopyala",
+  "alreadyFriendsMsg": "Zaten arkadaşsınız.",
+  "friendReqPendingMsg": "Arkadaşlık isteğin hâlâ yanıt bekliyor.",
+  "friendReqFailed": "Arkadaşlık isteği gönderilemedi.",
+  "tapAgainToRemove": "Kaldırmak için tekrar dokun"
+});

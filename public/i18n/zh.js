@@ -197,3 +197,17 @@ window.I18N_STRINGS.zh = {
   "filtersAdUnlockText": "免费版：每个列表最多 2 个国家，性别筛选已锁定。观看一段短广告即可免费解锁全部功能 5 分钟。"
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("zh");
+
+// Social: presence, typing, previews, unsend
+Object.assign(window.I18N_STRINGS.zh, {
+  "lastSeen": "最后在线 {time}",
+  "friendTyping": "正在输入…",
+  "youSaid": "你：{text}",
+  "gifMessage": "GIF",
+  "unsend": "撤回",
+  "copyText": "复制",
+  "alreadyFriendsMsg": "你们已经是好友了。",
+  "friendReqPendingMsg": "你的好友请求仍在等待回复。",
+  "friendReqFailed": "无法发送好友请求。",
+  "tapAgainToRemove": "再点一次即可移除"
+});

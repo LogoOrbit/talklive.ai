@@ -197,3 +197,17 @@ window.I18N_STRINGS.ru = {
   "filtersAdUnlockText": "Бесплатный план: до 2 стран в списке, фильтр по полу заблокирован. Посмотрите короткую рекламу и разблокируйте всё на 5 минут - бесплатно."
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("ru");
+
+// Social: presence, typing, previews, unsend
+Object.assign(window.I18N_STRINGS.ru, {
+  "lastSeen": "Был(а) {time}",
+  "friendTyping": "печатает…",
+  "youSaid": "Вы: {text}",
+  "gifMessage": "GIF",
+  "unsend": "Отменить отправку",
+  "copyText": "Копировать",
+  "alreadyFriendsMsg": "Вы уже друзья.",
+  "friendReqPendingMsg": "Ваша заявка в друзья ещё ждёт ответа.",
+  "friendReqFailed": "Не удалось отправить заявку в друзья.",
+  "tapAgainToRemove": "Нажмите ещё раз, чтобы удалить"
+});
