@@ -5360,11 +5360,49 @@ function spawnRipple(el, ev) {
   setTimeout(() => ripple.remove(), 650);
 }
 
-// The Tap-to-Talk landing orb: same flow as the green Call button, with
-// immediate visual feedback and guarded against double taps.
-startBtn.addEventListener('click', (ev) => {
+// --- Press feedback on the two landing cards. -----------------------------
+// The CSS press (see .tl-action.is-pressed in ui.css) is driven from here
+// rather than left to :active, because :active is the one state touch
+// browsers will not commit to: iOS Safari holds it back until it has decided
+// the touch is a tap and not the start of a scroll, which is precisely the
+// ~100ms the feedback exists to fill. pointerdown fires immediately.
+//
+// The class is removed on pointerup/cancel/leave and on blur, so a press that
+// turns into a scroll, a drag off the card, or a tab switch mid-touch cannot
+// strand the card in its pressed state.
+(function wireActionPress() {
+  const cards = [startBtn, startChatBtn].filter(Boolean);
+  if (!cards.length) return;
+
+  const release = (card) => card.classList.remove('is-pressed');
+
+  cards.forEach((card) => {
+    card.addEventListener('pointerdown', (ev) => {
+      // Primary button only - a right-click or a two-finger touch is not a tap.
+      if (ev.button != null && ev.button !== 0) return;
+      if (card.disabled || card.classList.contains('is-connecting')) return;
+      card.classList.add('is-pressed');
+      spawnRipple(card, ev);
+    });
+    ['pointerup', 'pointercancel', 'pointerleave', 'blur'].forEach((type) => {
+      card.addEventListener(type, () => release(card));
+    });
+    // Keyboard activation gets the same press, briefly, so Enter and Space on
+    // a focused card look like what a tap looks like.
+    card.addEventListener('keydown', (ev) => {
+      if (ev.key !== 'Enter' && ev.key !== ' ') return;
+      if (card.classList.contains('is-connecting')) return;
+      card.classList.add('is-pressed');
+    });
+    card.addEventListener('keyup', () => release(card));
+  });
+})();
+
+// The Tap-to-Talk landing card: same flow as the green Call button, guarded
+// against double taps. The ripple and press already fired on pointerdown.
+startBtn.addEventListener('click', () => {
   if (startBtn.disabled || startBtn.classList.contains('is-connecting')) return;
-  spawnRipple(startBtn, ev);
+  startBtn.classList.remove('is-pressed');
   startBtn.classList.add('is-connecting');
   startCallFlow();
 });

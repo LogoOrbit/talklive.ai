@@ -1282,45 +1282,175 @@
  * ======================================================================== */
 
 .tl-hero-sub {
-  margin: var(--tl-s3) 0 0;
-  font-size: 15px;
-  line-height: 1.55;
+  margin: var(--tl-s4) auto 0;
+  /* Measured, not full-bleed, and deliberately not balanced.
+     The line used to break mid-sentence ("Real people. Genuine /
+     conversations. No sign-up required.") because it was only ever limited by
+     the panel. text-wrap: balance does not fix that - it makes it, since the
+     two lines it equalises are shorter that way than the break after
+     "conversations." would be. A measure just wide enough for the first
+     sentence and not wide enough for the next word lets ordinary greedy
+     wrapping put the break where the sentence already does. In ch, so it
+     holds if the font falls back to the system face. */
+  max-width: 24ch;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.5;
   /* Brighter than --muted. This one line is the whole pitch - "real people,
      no sign-up" - and it was sitting at body-copy grey on top of a tinted
      sky, which is the lowest-contrast text on the highest-stakes screen. */
-  color: color-mix(in srgb, var(--text) 78%, transparent);
-  text-wrap: balance;
+  color: color-mix(in srgb, var(--text) 74%, transparent);
 }
 
+/* The two choices sit a clear step below the pitch, not floating in it. */
+.setup-panel .tap-to-talk { margin-top: var(--tl-s6); }
+
+/* ---------------------------------------------------------------------------
+ * The action cards.
+ *
+ * They were two flat rectangles of --green and --accent: a solid fill, one
+ * radius and nothing else, which reads as a placeholder rather than the most
+ * important control on the site. What makes a button look built is depth that
+ * agrees with itself - a fill that is lit from one direction, a hairline of
+ * light along the top edge where that light would catch, a shadow underneath
+ * in the button's own hue rather than generic black, and a ring that holds
+ * the shape against the sky behind it. All four are one gradient and one
+ * box-shadow list, so it is still two paint layers, not an image.
+ * ------------------------------------------------------------------------ */
 .tl-action {
   position: relative;
   overflow: hidden;
   display: flex;
   align-items: center;
-  gap: var(--tl-s3);
+  gap: var(--tl-s4);
   width: 100%;
-  min-height: 84px;
-  padding: var(--tl-s4);
+  min-height: 88px;
+  padding: 18px var(--tl-s4) 18px 18px;
   box-sizing: border-box;
-  border: 1px solid transparent;
-  border-radius: var(--tl-r-lg);
+  border: 0;
+  border-radius: 22px;
   color: #fff;
   font: inherit;
   text-align: start;
   text-decoration: none;
   cursor: pointer;
+  isolation: isolate;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
-  transition: transform 0.15s ease, filter 0.15s ease;
+  /* Two speeds on purpose: the press has to land instantly (see :active and
+     .is-pressed below), the release is allowed to ease back. */
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+              filter 0.2s ease;
 }
-.tl-action:hover { filter: brightness(1.06); }
-.tl-action:active { transform: scale(0.99); }
 
-/* Flat fills from the theme's own tokens. The old orbs carried three stacked
-   box-shadows each and a breathing animation, which on a mid-range phone was
-   two continuously repainting 158px circles above the fold. */
-.tl-action-voice { background: var(--green); color: #05230f; }
-.tl-action-chat { background: var(--accent); color: #fff; }
+/* The lit fill. --tl-action-tint is the button's own hue, set per variant, and
+   every layer below is mixed from it so the two cards are the same object in
+   two colours rather than two separately tuned designs. */
+.tl-action {
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--tl-action-tint) 88%, #fff) 0%,
+      var(--tl-action-tint) 46%,
+      color-mix(in srgb, var(--tl-action-tint) 84%, #000) 100%
+    );
+  box-shadow:
+    /* the ring */
+    0 0 0 1px color-mix(in srgb, var(--tl-action-tint) 70%, #000),
+    /* light catching the top edge */
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    /* the floor, in the button's own hue */
+    0 1px 2px color-mix(in srgb, var(--tl-action-tint) 40%, transparent),
+    0 10px 24px -8px color-mix(in srgb, var(--tl-action-tint) 55%, transparent),
+    0 18px 40px -20px rgba(0, 0, 0, 0.7);
+}
+
+/* A soft sheen across the top third. Sits under the content (z-index) and is
+   pure CSS, so it costs nothing and disappears cleanly on press. */
+.tl-action::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.22) 0%,
+    rgba(255, 255, 255, 0.05) 38%,
+    rgba(255, 255, 255, 0) 62%
+  );
+  transition: opacity 0.28s ease;
+}
+
+.tl-action-voice { --tl-action-tint: var(--green); color: #05230f; }
+.tl-action-chat { --tl-action-tint: var(--accent); color: #fff; }
+
+/* --- Hover: the card lifts toward the finger. ---------------------------- */
+@media (hover: hover) and (pointer: fine) {
+  .tl-action:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--tl-action-tint) 70%, #000),
+      inset 0 1px 0 rgba(255, 255, 255, 0.42),
+      0 2px 4px color-mix(in srgb, var(--tl-action-tint) 40%, transparent),
+      0 16px 32px -10px color-mix(in srgb, var(--tl-action-tint) 65%, transparent),
+      0 26px 52px -22px rgba(0, 0, 0, 0.75);
+  }
+  .tl-action:hover .tl-action-go { transform: translateX(3px); opacity: 1; }
+  .tl-action:hover .tl-action-icon { transform: scale(1.04); }
+}
+
+/* --- Press: the whole card goes down, not just its size. -----------------
+ * A press should read as the button being pushed into the page, which is
+ * three things happening together: it shrinks slightly, it moves down, and
+ * the shadow under it collapses because there is less gap left to cast one.
+ * Scale alone (what this had) just looks like a glitch.
+ *
+ * .is-pressed is set by app.js on pointerdown. It is there because :active is
+ * unreliable on touch - iOS Safari withholds it until it has decided the
+ * touch is not a scroll, which is exactly the 100ms the feedback is for. The
+ * two selectors carry the same rule so either route gives the same press. */
+/* Scoped to the panel purely for weight. style.css gives every control on the
+   site a baseline press at `button:active:not(:disabled)`, which is one class
+   heavier than a bare `.tl-action:active` and would otherwise replace this
+   card's press with the generic scale(0.96) - shadow collapse and all, but no
+   travel, and no reduced-motion opt-out either. The extra class outranks it. */
+.setup-panel .tl-action:active,
+.setup-panel .tl-action.is-pressed {
+  transform: translateY(2px) scale(0.975);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--tl-action-tint) 70%, #000),
+    inset 0 2px 6px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 1px 2px color-mix(in srgb, var(--tl-action-tint) 30%, transparent),
+    0 4px 10px -6px rgba(0, 0, 0, 0.6);
+  transition-duration: 0.09s;
+}
+.setup-panel .tl-action:active::before,
+.setup-panel .tl-action.is-pressed::before { opacity: 0.35; }
+.setup-panel .tl-action:active .tl-action-icon,
+.setup-panel .tl-action.is-pressed .tl-action-icon { transform: scale(0.94); }
+
+/* Keyboard users get the same ring the mouse never sees. */
+.tl-action:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--bg-1),
+    0 0 0 5px color-mix(in srgb, var(--tl-action-tint) 85%, #fff),
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    0 10px 24px -8px color-mix(in srgb, var(--tl-action-tint) 55%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tl-action,
+  .tl-action-icon,
+  .tl-action-go { transition: none; }
+  .setup-panel .tl-action:hover { transform: none; }
+  /* The press still confirms itself - it just stops travelling. Same weight
+     as the rule above, for the same reason. */
+  .setup-panel .tl-action:active,
+  .setup-panel .tl-action.is-pressed { transform: none; filter: brightness(0.94); }
+}
 
 .tl-action-icon {
   flex: 0 0 auto;
@@ -1328,38 +1458,77 @@
   place-items: center;
   width: 52px;
   height: 52px;
-  border-radius: var(--tl-r-md);
-  background: rgba(255, 255, 255, 0.18);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.08);
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .tl-action-icon svg { width: 26px; height: 26px; }
-.tl-action-body { min-width: 0; flex: 1 1 auto; }
+
+/* --- The text block. ------------------------------------------------------
+ * Both lines were sitting on their own defaults: the name at the browser's
+ * <strong> leading, the caption at 82% opacity, and nothing tying the pair to
+ * the 52px icon beside them. Now the block is one optical unit - name and
+ * caption share a tracking scale, the caption is held at a fixed 2px baseline
+ * gap instead of drifting with line-height, and the whole thing is centred
+ * against the icon rather than the card's padding box. */
+.tl-action-body {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+}
 .tl-action-body strong {
   display: block;
-  font-size: 18px;
+  font-family: var(--font-display);
+  font-size: 19px;
   font-weight: 800;
-  letter-spacing: -0.3px;
+  line-height: 1.15;
+  letter-spacing: -0.022em;
 }
 .tl-action-body small {
   display: block;
-  margin-top: 2px;
-  font-size: 13px;
-  font-weight: 500;
-  opacity: 0.82;
+  margin-top: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.3;
+  /* No negative tracking down here - at 13px it closes word gaps rather than
+     tightening letterfit, which is the opposite of what it does at 19px. */
+  letter-spacing: 0;
+  /* Held just under the name rather than faded out of legibility. The old
+     0.82 on a saturated fill put this caption under 4.5:1. */
+  opacity: 0.88;
 }
+
+/* The arrow is a chip now, not a loose glyph at the edge. It reads as the
+   thing you are heading toward, and it gives the card a right-hand anchor
+   that lines up with the icon on the left. */
 .tl-action-go {
   flex: 0 0 auto;
   margin-inline-start: auto;
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
-  opacity: 0.8;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  opacity: 0.92;
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease;
 }
-.tl-action-go svg { width: 20px; height: 20px; }
+.tl-action-go svg { width: 18px; height: 18px; }
 
 /* The connecting state app.js sets on the voice card while it looks for a
    match. The card stops taking taps and says why, in place. */
 .tl-action.is-connecting { cursor: default; filter: saturate(0.7); }
+/* Once it is working, it stops answering presses - a card that keeps bouncing
+   under the finger reads as "that didn't register, tap again". */
+.setup-panel .tl-action.is-connecting:active,
+.setup-panel .tl-action.is-connecting.is-pressed { transform: none; }
 .tl-action.is-connecting .tl-action-go svg { display: none; }
 .tl-action.is-connecting .tl-action-go::after {
   content: "";
@@ -1377,7 +1546,16 @@
 
 /* The ripple app.js spawns on tap (see spawnRipple) is a child span, and the
    card clips it to its own rounded corners. */
-.tl-action .tap-ripple { background: rgba(255, 255, 255, 0.35); }
+/* A soft-edged ripple rather than a hard white disc: the press is already
+   doing the work, this only says where the finger landed. */
+.tl-action .tap-ripple {
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.42) 0%,
+    rgba(255, 255, 255, 0.22) 55%,
+    rgba(255, 255, 255, 0) 72%
+  );
+}
 
 /* --- The row that holds them. On a phone they stack, with OR between. ----- */
 .setup-panel .tap-choice-row {
@@ -1395,9 +1573,11 @@
   border: 0;
   border-radius: 0;
   background: none;
-  color: var(--muted);
-  font-size: 11.5px;
-  letter-spacing: 0.1em;
+  color: color-mix(in srgb, var(--text) 45%, transparent);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
 }
 /* A rule with the word set into it, rather than a word floating in space. */
 .setup-panel .tap-choice-divider::before,
@@ -1436,8 +1616,13 @@
     margin-inline: 0;
     text-align: start;
   }
-  .setup-panel .setup-title { margin-inline: 0; font-size: clamp(2.1rem, 3.4vw, 2.9rem); }
+  .setup-panel .setup-title { margin-inline: 0; font-size: clamp(2.1rem, 3.4vw, 2.9rem); letter-spacing: -0.038em; }
+  .setup-panel .tl-hero-sub { margin-inline: 0; }
   .setup-panel .animal-picker { max-width: none; margin-inline: 0; text-align: start; }
+  /* The measure is there to force a good break on a phone. From here the
+     column is wide enough for the whole hint on one line, which is better
+     than any break. */
+  .setup-panel .animal-picker-hint { margin-inline: 0; max-width: none; }
   .setup-panel .animal-grid { grid-template-columns: repeat(8, minmax(0, 1fr)); }
   /* The panel is a centring flex column, which is what still pulled the two
      narrow items below the picker into the middle of a left-aligned page -
@@ -1448,7 +1633,7 @@
     text-align: start;
   }
   .setup-panel .setup-growth { margin-inline: 0; }
-  .setup-panel .tl-hero-sub { max-width: 62ch; }
+  .setup-panel .tl-hero-sub { max-width: 44ch; }
 
   /* The stage centres its children; the home column starts at the rail. The
      call screen keeps the centring it was built with. */
@@ -2983,14 +3168,16 @@
   .tl-nav-icon { width: 24px; height: 24px; }
   .tl-nav-icon svg { width: 23px; height: 23px; }
 
-  .setup-panel .setup-title { font-size: clamp(2.6rem, 2.9vw, 3.4rem); }
-  .setup-panel .tl-hero-sub { font-size: 17px; max-width: 58ch; }
+  .setup-panel .setup-title { font-size: clamp(2.6rem, 2.9vw, 3.4rem); letter-spacing: -0.042em; }
+  .setup-panel .tl-hero-sub { font-size: 17.5px; max-width: 46ch; }
 
-  .tl-action { min-height: 98px; padding: var(--tl-s5); }
-  .tl-action-icon { width: 60px; height: 60px; }
+  .tl-action { min-height: 100px; padding: 20px var(--tl-s5) 20px 20px; border-radius: 24px; }
+  .tl-action-icon { width: 60px; height: 60px; border-radius: 18px; }
   .tl-action-icon svg { width: 30px; height: 30px; }
-  .tl-action-body strong { font-size: 20px; }
-  .tl-action-body small { font-size: 14px; }
+  .tl-action-body strong { font-size: 21px; }
+  .tl-action-body small { font-size: 14.5px; }
+  .tl-action-go { width: 36px; height: 36px; }
+  .tl-action-go svg { width: 20px; height: 20px; }
 
   .animal-picker-title { font-size: 17px; }
   .animal-picker-hint { font-size: 13.5px; }

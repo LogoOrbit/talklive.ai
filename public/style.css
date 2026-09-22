@@ -1,6 +1,40 @@
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
+/* --- Type -----------------------------------------------------------------
+ * Plus Jakarta Sans, self-hosted as two variable woff2 subsets (latin 27KB,
+ * latin-ext 21KB, only the one a reader needs is ever fetched). Self-hosted
+ * rather than pulled from Google: the CSP already allows font-src 'self' and
+ * nothing else, it saves a third-party connection on the one screen that has
+ * to be instant, and the bytes are versioned like every other asset here.
+ *
+ * One variable face covers 400-800, so the headline weight costs no extra
+ * request. Scripts outside these subsets (Arabic, Chinese, Hindi, Urdu...)
+ * fall through per-character to the system stack below, which is what those
+ * readers should be getting anyway.
+ * ------------------------------------------------------------------------ */
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("/fonts/plus-jakarta-sans-latin.woff2?v=20260922type") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("/fonts/plus-jakarta-sans-latin-ext.woff2?v=20260922type") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
 :root {
+  --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  /* Same family at display sizes; kept as its own token so headline type can
+     be swapped independently of body copy later. */
+  --font-display: var(--font-sans);
+
   --bg-1: #0b0f1a;
   --bg-2: #111729;
   --bg-glow: #1c2240;
@@ -49,7 +83,17 @@ html {
 html, body {
   margin: 0;
   min-height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans);
+  /* Plus Jakarta's default figures are fine, but its contextual alternates and
+     kerning are what make the headline sit right. */
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+  /* Its word space is noticeably narrower than Roboto's or San Francisco's,
+     which at body sizes reads as words running into each other. One hair of
+     word-spacing at the root puts the gap back everywhere at once, without
+     touching letterfit. */
+  word-spacing: 0.012em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   background: radial-gradient(circle at 50% -10%, var(--bg-glow) 0%, var(--bg-1) 55%);
   color: var(--text);
   /* clip (not hidden) so the sticky header works: overflow-x:hidden turns
@@ -1391,11 +1435,20 @@ body.panel-open .game-overlay {
   text-align: center;
 }
 
+/* The headline. It was set at the browser's default h1 weight in the system
+   UI face, which on Android is Roboto Bold - competent, and completely
+   anonymous. This is the display face at 800 with display-grade tracking:
+   negative, tightening as the type grows, so the line reads as one shape
+   rather than five words. Leading is pulled under 1 because at this size the
+   font's default line box leaves a visible gap between the two lines. */
 .setup-title {
-  margin: 0 auto 22px;
-  font-size: clamp(1.75rem, 5.4vw, 2.6rem);
-  line-height: 1.1;
-  letter-spacing: -0.025em;
+  margin: 0 auto;
+  max-width: 15ch;
+  font-family: var(--font-display);
+  font-size: clamp(2.05rem, 8.4vw, 2.9rem);
+  font-weight: 800;
+  line-height: 1.04;
+  letter-spacing: -0.035em;
   text-wrap: balance;
 }
 
@@ -1441,6 +1494,14 @@ body.panel-open .game-overlay {
 }
 @keyframes tapRipple {
   to { transform: scale(2.4); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* No travelling ring - just a brief flash where the finger landed. */
+  .tap-ripple { animation: tapRippleFade 0.22s ease-out forwards; transform: scale(1); }
+}
+@keyframes tapRippleFade {
+  from { opacity: 0.35; }
+  to { opacity: 0; }
 }
 
 /* Connecting state: freeze the breathing, dim the label, and spin a ring so the
@@ -5706,17 +5767,32 @@ html.perf-lite .side-panel { box-shadow: none; }
   text-align: center;
 }
 
+/* This heading and its hint were the one place on the landing screen still
+   set on defaults: a 15px semibold line with positive tracking (which widens
+   type meant to read as a title) over a 12px grey hint that ran the full
+   width of the panel as one thin line. They are a pair, so they are now sized
+   as a pair - the title in the display face with the headline's negative
+   tracking, the hint one clear step below it and measured so it breaks after
+   "sees it" instead of wherever the panel happens to end. */
 .animal-picker-title {
   margin: 0;
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0.2px;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
 }
 
 .animal-picker-hint {
-  margin: 4px 0 12px;
-  font-size: 12px;
-  color: var(--muted);
+  margin: 5px auto 14px;
+  /* Narrow enough that the line breaks at the dash - the sentence's own pause
+     - instead of after "sees", which is where both the full panel width and
+     text-wrap: balance put it. */
+  max-width: 26ch;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: color-mix(in srgb, var(--text) 62%, transparent);
 }
 
 .animal-grid {
