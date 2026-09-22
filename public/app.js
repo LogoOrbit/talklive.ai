@@ -4349,6 +4349,7 @@ async function getMic() {
     localStream.getTracks().forEach((t) => { try { t.stop(); } catch (_) { /* already gone */ } });
     localStream = null;
   }
+  declareAudioSession();
   localStream = await navigator.mediaDevices.getUserMedia({
     audio: {
       echoCancellation: true,
@@ -4456,16 +4457,110 @@ function attemptIceRestart(peer) {
     .catch(() => { /* the reconnect window will auto-advance if this fails */ });
 }
 
+// --- Loudspeaker routing -----------------------------------------------------
+// A phone treats a live microphone capture as a phone call. Chrome on Android
+// switches to the voice-call stream and iOS Safari puts WebKit's audio session
+// into "play and record"; on both, the default output route for that mode is
+// the receiver - the pinhole earpiece at the top of the handset. So a plain
+// <audio> element carrying the remote track plays out of the earpiece, and the
+// call is inaudible unless the phone is held against the ear, which is not what
+// an audio-only chat room wants.
+//
+// A Web Audio graph is not a phone call. Audio that reaches
+// AudioContext.destination plays on the ordinary media route - the
+// loudspeaker - even while the mic is open. So the remote stream is played
+// through the context that already analyses it for the orb, and the element is
+// muted instead of being the thing you hear.
+//
+// The element stays attached rather than being torn down: Chrome only produces
+// samples from createMediaStreamSource() on a WebRTC stream that is also bound
+// to a media element, and it is what we fall back to the moment the graph is
+// not actually running.
+let speakerSink = null;          // gain node feeding the loudspeaker route
+let speakerSource = null;        // the match's stream node, while it feeds that sink
+let speakerRouteActive = false;  // true while the graph, not the element, is audible
+let speakerRouteGivenUp = false; // this match tried the graph and it did not play
+
+// Tell WebKit what kind of session this is instead of leaving it to infer one
+// from the APIs we happen to call (iOS 17+). Declared once, before the first
+// capture: flipping the type mid-session is what makes iOS lose the route
+// altogether, so this never runs again once a type is set.
+function declareAudioSession() {
+  try {
+    const session = navigator.audioSession;
+    if (session && session.type === 'auto') session.type = 'play-and-record';
+  } catch (_) { /* pre-iOS-17 and every non-WebKit browser: nothing to declare */ }
+}
+
+// Muting the element is only safe while the graph is genuinely running. A
+// suspended context - a backgrounded tab, autoplay not yet unlocked by a tap -
+// produces no sound at all, and muting against it would turn the call silent
+// rather than merely quiet. Re-checked on every state change for that reason.
+function syncSpeakerRoute(audioCtx) {
+  speakerRouteActive = !!speakerSource && !speakerRouteGivenUp && audioCtx.state === 'running';
+  if (remoteAudio) remoteAudio.muted = speakerRouteActive;
+}
+
+function routeRemoteToSpeaker(audioCtx, source) {
+  try {
+    // One sink per context, like the context itself: a node per match would
+    // stack gain on every skip and leave the graph louder each time.
+    if (!speakerSink || speakerSink.context !== audioCtx) {
+      speakerSink = audioCtx.createGain();
+      speakerSink.connect(audioCtx.destination);
+      // A context that suspends mid-call (backgrounded tab, an incoming phone
+      // call) stops playing without telling anyone, so the element has to be
+      // handed the call back the moment that happens - and taken off it again
+      // when the context comes back.
+      audioCtx.onstatechange = () => syncSpeakerRoute(audioCtx);
+    }
+    // A fresh match gets a fresh verdict: whatever went wrong last time was
+    // that call's problem, not a permanent one.
+    speakerRouteGivenUp = false;
+    speakerSource = source;
+    source.connect(speakerSink);
+    // Where the context can pick its own output device (Chrome 110+), ask for
+    // the system default explicitly - a sink left set by an earlier call would
+    // otherwise survive into this one.
+    if (typeof audioCtx.setSinkId === 'function') audioCtx.setSinkId('').catch(() => {});
+    syncSpeakerRoute(audioCtx);
+  } catch (_) {
+    // No Web Audio output available: leave the element unmuted and let the
+    // earpiece have it. Quiet beats silent.
+    releaseSpeakerRoute();
+  }
+}
+
+// Hand the call back to the <audio> element. The graph has to be disconnected
+// as well as un-muted: leaving both playing is the same voice out of the
+// earpiece and the speaker a few milliseconds apart.
+function releaseSpeakerRoute() {
+  speakerRouteGivenUp = true;
+  speakerRouteActive = false;
+  if (speakerSource && speakerSink) {
+    try { speakerSource.disconnect(speakerSink); } catch (_) { /* already detached */ }
+  }
+  speakerSource = null;
+  if (remoteAudio) remoteAudio.muted = false;
+}
+
 // Playback can be refused if the tab lost its autoplay permission (a rejected
 // play() is silent, not an error the user sees). Retry once on the next tap.
 function playRemoteAudio() {
   if (!remoteAudio || !remoteAudio.play) return;
-  remoteAudio.muted = false;
+  // Unmuting here would double up on the loudspeaker route once it is live -
+  // the same voice out of both the earpiece and the speaker.
+  remoteAudio.muted = speakerRouteActive;
   const attempt = remoteAudio.play();
   if (!attempt || !attempt.catch) return;
   attempt.catch(() => {
     const retry = () => {
       document.removeEventListener('pointerdown', retry);
+      // The same tap is the gesture a suspended context needs, and the graph is
+      // where the loudspeaker route lives - resume it before falling back.
+      if (visualizerCtx && visualizerCtx.state === 'suspended') {
+        visualizerCtx.resume().then(() => syncSpeakerRoute(visualizerCtx)).catch(() => {});
+      }
       if (remoteAudio.srcObject) remoteAudio.play().catch(() => {});
     };
     document.addEventListener('pointerdown', retry, { once: true });
@@ -4790,7 +4885,12 @@ function monitorRemoteAudio(stream) {
       visualizerCtx = new (window.AudioContext || window.webkitAudioContext)();
     }
     const audioCtx = visualizerCtx;
-    if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+    // resume() settles a tick later, and the loudspeaker route may not be muted
+    // into the element until it has - so re-sync once it lands rather than
+    // reading a state that is still 'suspended'.
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume().then(() => syncSpeakerRoute(audioCtx)).catch(() => {});
+    }
     // Release the previous match's graph so nodes don't pile up on the shared context.
     if (visualizerSource) {
       try { visualizerSource.disconnect(); } catch (_) { /* already detached */ }
@@ -4798,15 +4898,35 @@ function monitorRemoteAudio(stream) {
     }
     const source = audioCtx.createMediaStreamSource(stream);
     visualizerSource = source;
+    // Play the remote voice out of the loudspeaker, not the earpiece.
+    routeRemoteToSpeaker(audioCtx, source);
     const analyser = audioCtx.createAnalyser();
     analyser.fftSize = 256;
     source.connect(analyser);
     const data = new Uint8Array(analyser.frequencyBinCount);
+    // Guards the loudspeaker route below - see the check inside the tick.
+    let graphEverHeard = false;
+    let mutedTicks = 0;
 
     speakingCheckInterval = setInterval(() => {
       analyser.getByteFrequencyData(data);
       const avg = data.reduce((a, b) => a + b, 0) / data.length;
       const level = Math.min(1, avg / 90); // 0..1 normalized volume
+
+      // Muting the element hands the whole call to the Web Audio graph, so a
+      // browser that hands us a live-looking but sample-less source would make
+      // the call completely silent. watchMediaFlow() already knows when RTP
+      // audio is genuinely arriving; if it is, and the graph has still not seen
+      // a single non-zero sample after five seconds, the graph is not playing
+      // this call. Give it back to the element - the earpiece is a worse route,
+      // not a dead one.
+      if (avg > 0) graphEverHeard = true;
+      if (speakerRouteActive && mediaConnected && !graphEverHeard) {
+        if (++mutedTicks > 50) releaseSpeakerRoute();
+      } else {
+        mutedTicks = 0;
+      }
+
       orb.classList.toggle('speaking', avg > 12);
       // The bars read the same spectrum the rings do - no second analyser,
       // no second timer, just one more use of numbers already computed.
@@ -4824,7 +4944,9 @@ function monitorRemoteAudio(stream) {
 
     }, 100);
   } catch (e) {
-    // AudioContext may be unavailable; non-critical
+    // AudioContext may be unavailable; non-critical. The element is then the
+    // only thing that can make sound, so make sure it is not left muted.
+    releaseSpeakerRoute();
   }
 }
 
@@ -4981,6 +5103,9 @@ function teardownPeer() {
     pc = null;
   }
   remoteAudio.srcObject = null;
+  // The next match re-routes from scratch; leaving the mute flag set would hand
+  // it a muted element if the graph fails that time.
+  releaseSpeakerRoute();
   partnerCard.classList.add('hidden');
   sharedInterestNote.classList.add('hidden');
   reactionBar.classList.add('hidden');
