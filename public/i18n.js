@@ -361,6 +361,8 @@ const I18N_STRINGS = {
     "showOnlineStatus": "Show my online status to friends",
     "avatar": "Avatar",
     "avatarHint": "Pick a face or a spirit animal. It is your face everywhere - your friends, your profile, and whoever you connect with on a call.",
+    "saveAvatar": "Save avatar",
+    "avatarSaved": "Avatar updated.",
     "updatePassword": "Update Password",
     "chatWith": "Chat with {name}",
     "typeMessage": "Type a message…",

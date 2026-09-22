@@ -320,6 +320,7 @@ const sidePanelSignInBtn = document.getElementById('sidePanelSignInBtn');
 const sidePanelRegisterBtn = document.getElementById('sidePanelRegisterBtn');
 const avatarCatTabs = document.getElementById('avatarCatTabs');
 const avatarGrid = document.getElementById('avatarGrid');
+const saveAvatarBtn = document.getElementById('saveAvatarBtn');
 
 const MIN_CALL_SECONDS_BEFORE_SKIP = 2;
 
@@ -1256,6 +1257,12 @@ function openAppSettings(tab) {
   settingsPage.classList.remove('hidden');
   stageEl.classList.add('settings-live');
   if (typeof renderSettingsIdentity === 'function') renderSettingsIdentity();
+  // An unsaved face from a previous visit is not a choice you made; the picker
+  // opens showing the face you actually wear.
+  if (typeof renderAvatarGrid === 'function') {
+    pendingAvatar = myAvatar;
+    renderAvatarGrid();
+  }
   // An explicit section (the account button asking for Profile, a deep link)
   // means "take me there", so on a phone it opens that section rather than
   // the list it lives in. Opening Settings with no section in mind lands on
@@ -1804,34 +1811,59 @@ const closeFeedbackBtn = document.getElementById('closeFeedbackBtn');
 const feedbackInput = document.getElementById('feedbackInput');
 const feedbackSendBtn = document.getElementById('feedbackSendBtn');
 
-// Show the temporary name in the editor (only when not signed in - a signed-in
-// nickname is edited in the Account panel).
-// The Save Name button is only enabled when the field holds a new, non-empty
+// Your name is your name, account or not. This field used to grey itself out
+// the moment you signed in, sending you to the Account dialog for the one thing
+// the settings page is most obviously for; now it edits whichever name you
+// actually have - the account nickname if you are signed in, the local one if
+// you are not - and Save does the right thing either way.
+// The Save name button is only enabled when the field holds a new, non-empty
 // name different from what's already saved - so it greys out right after saving.
+function currentDisplayName() {
+  return accountNickname || tempUsername || '';
+}
+
 function syncSaveNameBtn() {
   if (!saveTempNameBtn || !tempUsernameInput) return;
   const val = tempUsernameInput.value.trim();
-  const changed = val.length > 0 && val !== (tempUsername || '');
-  saveTempNameBtn.disabled = !!accountNickname || !changed;
+  saveTempNameBtn.disabled = !(val.length > 0 && val !== currentDisplayName());
 }
 
 function renderSettingsIdentity() {
   if (tempUsernameInput && document.activeElement !== tempUsernameInput) {
-    tempUsernameInput.value = accountNickname ? '' : (tempUsername || '');
-    tempUsernameInput.disabled = !!accountNickname;
-    tempUsernameInput.placeholder = accountNickname ? accountNickname : t('tempUsernamePlaceholder');
+    tempUsernameInput.value = currentDisplayName();
+    tempUsernameInput.disabled = false;
+    tempUsernameInput.placeholder = t('tempUsernamePlaceholder');
   }
   syncSaveNameBtn();
 }
 
 if (tempUsernameInput) {
   tempUsernameInput.addEventListener('input', syncSaveNameBtn);
+  // Enter saves, the same as tapping the button next to it.
+  tempUsernameInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && saveTempNameBtn && !saveTempNameBtn.disabled) {
+      e.preventDefault();
+      saveTempNameBtn.click();
+    }
+  });
 }
+
+// Set while a nickname change is in flight from this panel, so the reply lands
+// as a toast here instead of a status line in the account dialog nobody opened.
+let nicknameSaveFromSettings = false;
 
 if (saveTempNameBtn) {
   saveTempNameBtn.addEventListener('click', () => {
     const val = tempUsernameInput.value.trim().slice(0, 24);
-    if (!val || val === tempUsername) return;
+    if (!val || val === currentDisplayName()) return;
+    vibrate(15);
+    if (accountNickname) {
+      // Signed in: the account owns the name, so the server has to agree.
+      nicknameSaveFromSettings = true;
+      saveTempNameBtn.disabled = true;
+      socket.emit('update-nickname', { nickname: val });
+      return;
+    }
     tempUsername = val;
     localStorage.setItem('talklive_tempname', val);
     // Push it to the server for the current/next match.
@@ -1839,7 +1871,6 @@ if (saveTempNameBtn) {
     showToast(t('tempNameSaved'));
     renderSettingsProfileRow();
     renderLinkProfilePrompts();
-    vibrate(15);
     // Grey the button out until the name is edited again.
     syncSaveNameBtn();
   });
@@ -1982,13 +2013,19 @@ if (devNoticeOverlay) {
 
 
 // --- Avatar picker: male/female category, 5 avatars each ---
+// A tap used to be the save: the face changed everywhere before you had
+// decided it was the one, and a stray tap while scrolling the grid was a new
+// face for everyone who knows you. The grid now holds a pending choice and
+// Save commits it - the same shape as the name field above it.
+let pendingAvatar = myAvatar;
+
 function renderAvatarGrid() {
   if (!avatarGrid) return;
   avatarGrid.innerHTML = '';
   AVATAR_IDS[avatarCat].forEach((id) => {
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = `avatar-option${myAvatar === id ? ' selected' : ''}`;
+    btn.className = `avatar-option${pendingAvatar === id ? ' selected' : ''}`;
     btn.dataset.avatar = id;
     const animal = animalAvatarId(id);
     btn.setAttribute('aria-label', animal && window.TalkLiveAnimals
@@ -1998,6 +2035,7 @@ function renderAvatarGrid() {
       + (animal ? `<span class="avatar-option-name">${escapeHtml(window.TalkLiveAnimals.name(animal))}</span>` : '');
     avatarGrid.appendChild(btn);
   });
+  syncSaveAvatarBtn();
 }
 
 function syncAvatarCatTabs() {
@@ -2015,33 +2053,50 @@ avatarCatTabs.addEventListener('click', (e) => {
   renderAvatarGrid();
 });
 
+function syncSaveAvatarBtn() {
+  if (!saveAvatarBtn) return;
+  saveAvatarBtn.disabled = !pendingAvatar || pendingAvatar === myAvatar;
+}
+
 avatarGrid.addEventListener('click', (e) => {
   const option = e.target.closest('.avatar-option');
   if (!option) return;
-  myAvatar = option.dataset.avatar;
-  try { localStorage.setItem('talklive_avatar', myAvatar); } catch (err) { /* storage blocked */ }
-  // Picking an animal here is picking your spirit animal - the same choice,
-  // made from the other picker. Keeping them apart meant the animal on your
-  // own profile and the animal the person you called saw could be two
-  // different creatures.
-  const pickedAnimal = animalAvatarId(myAvatar);
-  if (pickedAnimal && Animals && Animals.has(pickedAnimal) && myAnimal !== pickedAnimal) {
-    myAnimal = pickedAnimal;
-    Animals.store(pickedAnimal);
-    document.querySelectorAll('#animalGrid .animal-option, #callAnimalGrid .animal-option, #animalGateGrid .animal-option').forEach((btn) => {
-      const on = btn.dataset.animal === pickedAnimal;
-      btn.classList.toggle('selected', on);
-      btn.setAttribute('aria-checked', on ? 'true' : 'false');
-    });
-    renderAnimalChoiceLine();
-  }
+  pendingAvatar = option.dataset.avatar;
   renderAvatarGrid();          // move the tick to the one just picked
-  renderAccountState();
-  renderHeaderAccountFace();   // the corner wears it immediately
-  renderSettingsProfileRow();
-  registerProfile(); // pushes the new avatar to the server so friends see it
+  syncSaveAvatarBtn();
   vibrate(8);
 });
+
+if (saveAvatarBtn) {
+  saveAvatarBtn.addEventListener('click', () => {
+    if (!pendingAvatar || pendingAvatar === myAvatar) return;
+    myAvatar = pendingAvatar;
+    try { localStorage.setItem('talklive_avatar', myAvatar); } catch (err) { /* storage blocked */ }
+    // Picking an animal here is picking your spirit animal - the same choice,
+    // made from the other picker. Keeping them apart meant the animal on your
+    // own profile and the animal the person you called saw could be two
+    // different creatures.
+    const pickedAnimal = animalAvatarId(myAvatar);
+    if (pickedAnimal && Animals && Animals.has(pickedAnimal) && myAnimal !== pickedAnimal) {
+      myAnimal = pickedAnimal;
+      Animals.store(pickedAnimal);
+      document.querySelectorAll('#animalGrid .animal-option, #callAnimalGrid .animal-option, #animalGateGrid .animal-option').forEach((btn) => {
+        const on = btn.dataset.animal === pickedAnimal;
+        btn.classList.toggle('selected', on);
+        btn.setAttribute('aria-checked', on ? 'true' : 'false');
+      });
+      renderAnimalChoiceLine();
+    }
+    renderAvatarGrid();
+    renderAccountState();
+    renderHeaderAccountFace();   // the corner wears it once it is saved
+    renderSettingsProfileRow();
+    registerProfile(); // pushes the new avatar to the server so friends see it
+    showToast(t('avatarSaved'));
+    syncSaveAvatarBtn();
+    vibrate(15);
+  });
+}
 
 // --- Spirit animal picker ----------------------------------------------------
 // Built once on load, then never rebuilt: selection is a class toggle on two
@@ -2151,6 +2206,9 @@ function setMyAnimal(id) {
   // your friends open, and the card the person you are calling looks at.
   if (next) {
     myAvatar = ANIMAL_AVATAR_PREFIX + next;
+    // The settings grid shows a pending pick; this pick is already committed,
+    // so it is the pending one too - otherwise Save would offer to undo it.
+    pendingAvatar = myAvatar;
     try { localStorage.setItem('talklive_avatar', myAvatar); } catch (e) { /* storage blocked */ }
     avatarCat = 'animal';
     syncAvatarCatTabs();
@@ -2709,11 +2767,22 @@ socket.on('resume-session-result', ({ ok, nickname, email, profileClientId, iden
 });
 
 socket.on('update-nickname-result', ({ ok, nickname, error }) => {
-  if (!ok) return showAccountStatus(error, 'error');
+  const fromSettings = nicknameSaveFromSettings;
+  nicknameSaveFromSettings = false;
+  if (!ok) {
+    if (fromSettings) {
+      showToast(error || t('statusNicknameUpdated'));
+      syncSaveNameBtn();
+      return;
+    }
+    return showAccountStatus(error, 'error');
+  }
   accountNickname = nickname;
   localStorage.setItem('talklive_nickname', nickname);
   renderAccountState();
-  showAccountStatus(t('statusNicknameUpdated'), 'success');
+  renderSettingsProfileRow();
+  if (fromSettings) showToast(t('tempNameSaved'));
+  else showAccountStatus(t('statusNicknameUpdated'), 'success');
 });
 
 socket.on('change-password-result', ({ ok, error, sessionToken: token }) => {

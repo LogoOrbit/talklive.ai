@@ -232,6 +232,11 @@
 }
 .tl-set-field button:disabled { opacity: 0.45; cursor: default; }
 
+/* The avatar picker's Save spans the panel - there is no field beside it to
+   share the row with, and a lone short button in a wide panel reads as a nit. */
+.tl-avatar-save { margin-top: var(--tl-s3); }
+.tl-avatar-save button { flex: 1 1 auto; }
+
 /* Segmented options (gender, theme). Still `.pill` underneath, so the existing
    initPillGroup / setPillGroupValue wiring keeps working untouched. */
 .tl-seg {
