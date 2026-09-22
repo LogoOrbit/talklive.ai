@@ -3449,3 +3449,29 @@
      for once rather than twice. */
   .tl-call-ad-phone { margin-top: var(--tl-s4); }
 }
+
+/* ===========================================================================
+ * THE DRAWERS vs THE TAB BAR
+ * ---------------------------------------------------------------------------
+ * On a phone the drawers are `height:100%` and `z-index:60`; the tab bar is
+ * fixed to the bottom edge at `z-index:56`. So an open drawer runs the full
+ * height of the screen and paints over the bar, and its footer - the row that
+ * holds "Clear all" and "Save filters" - ends up flush against the bottom
+ * edge, sharing that strip with the tab bar it is covering and with the home
+ * indicator below it. The primary action of the panel sits exactly where the
+ * phone's own gestures live.
+ *
+ * The drawers stop above the bar instead. The bar stays visible and tappable,
+ * the footer keeps its own padding clear of the safe area, and nothing in a
+ * panel is parked under the navigation.
+ *
+ * The chat sheet is excluded: below 768px it is a bottom sheet with its own
+ * anchoring and height, and above that it is only ever open during a call.
+ * ======================================================================== */
+
+@media (max-width: 859px) {
+  .side-panel:not(.chat-side-panel) {
+    height: calc(100dvh - var(--tl-navbar) - env(safe-area-inset-bottom, 0px));
+    border-bottom: 1px solid var(--tl-line);
+  }
+}
