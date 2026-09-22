@@ -551,13 +551,28 @@
 
 /* renderHeaderAccountFace() drops the avatar you actually picked in here - an
    animal sprite, a styled bust or the generic outline below. Whichever it is,
-   it fills the circle rather than being sized by the button's icon rule. */
-.nav-account-avatar svg,
-.nav-account-avatar img,
-.nav-account-avatar .avatar-animal {
+   it fills the circle rather than being sized by the button's icon rule.
+ *
+ * Every selector here is deliberately two classes deep. `.nav-btn svg` is one
+ * class and a tag, and the phone breakpoints below restate it - so a one-class
+ * rule here loses to them on source order alone and the face is drawn at icon
+ * size. A spirit animal made that visible: its artwork sits inside a wrapper
+ * span the size of the circle, so the shrunken sprite was not merely small, it
+ * was pinned to the top-left corner of an otherwise empty disc. */
+.nav-account .nav-account-avatar svg,
+.nav-account .nav-account-avatar img,
+.nav-account .nav-account-avatar .avatar-animal,
+.nav-account .nav-account-avatar .avatar-animal svg {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+/* Belt and braces: whatever ends up inside the wrapper is centred, so nothing
+   can sit in a corner again if it does come out smaller than the circle. */
+.nav-account .nav-account-avatar .avatar-animal {
+  display: grid;
+  place-items: center;
 }
 
 .nav-account-name {
