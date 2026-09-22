@@ -1430,9 +1430,15 @@ addFriendBtn.addEventListener('click', () => {
   showToast(t('friendRequestSent'));
 });
 
-socket.on('friend-request-result', ({ ok, error, limitReached }) => {
+socket.on('friend-request-result', ({ ok, error, limitReached, accepted }) => {
   // limitReached is handled by the premium-upsell listener further down.
   if (!ok && error && !limitReached) showError(error);
+  // Both sides tapped "Add friend": the server turned the second request into
+  // an acceptance, so say so instead of leaving a "Request sent" on screen.
+  if (ok && accepted) {
+    showToast(t('nowFriends'));
+    playFriendAddedSound();
+  }
 });
 
 let lastFocusedBeforeModal = null;
@@ -3366,7 +3372,7 @@ socket.on('notification', (n) => {
   notifData.push(n);
   renderNotifications();
   if (n.type === 'call_back_request') {
-    showCallBackBanner(n.fromClientId, n.username);
+    showCallBackBanner(n.fromClientId, labelForClientId(n.fromClientId, n.username));
   }
   if (n.type === 'message') {
     playMessageSound();
@@ -3461,7 +3467,11 @@ function applyFriendChatLock() {
 function openFriendChat(friendClientId) {
   activeFriendChatId = friendClientId;
   const friend = friendsData.find((f) => f.clientId === friendClientId);
-  friendChatTitle.textContent = friend ? t('chatWith', { name: friendLabel(friend) }) : t('chat');
+  // A "message back" chat with a recent match has no friend entry - name it
+  // from the call history rather than a bare "Chat".
+  const past = friend ? null : [...callHistory].reverse().find((h) => h.clientId === friendClientId);
+  const chatName = friend ? friendLabel(friend) : (past && past.username);
+  friendChatTitle.textContent = chatName ? t('chatWith', { name: chatName }) : t('chat');
   closeSidePanel(friendsDropdown, friendsOverlay);
   closeSidePanel(friendProfileModal, friendProfileOverlay);
   openSidePanel(friendChatModal, friendChatOverlay);
@@ -5640,6 +5650,7 @@ callMainBtn.addEventListener('click', () => {
     }, 4000);
   } else if (mode === 'loading') {
     // Cancel an in-progress search/connection.
+    cancelOutgoingCallBack();
     socket.emit('leave');
     goIdleOnCallScreen();
   } else {
@@ -6186,7 +6197,8 @@ socket.on('chat-blocked', ({ reason } = {}) => {
   const el = document.createElement('div');
   el.className = 'chat-msg system';
   el.textContent = reason === 'call-required' ? t('errCallRequiredToChat')
-    : reason === 'unsafe' ? t('errUnsafeMessage') : t('errNoLinks');
+    : reason === 'unsafe' ? t('errUnsafeMessage')
+    : reason === 'rate' ? t('errSlowDown') : t('errNoLinks');
   target.appendChild(el);
   target.scrollTop = target.scrollHeight;
   if (reason === 'call-required') applyFriendChatLock();
@@ -6806,6 +6818,7 @@ socket.on('random-fallback', () => {
 
 socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
   markSearchAcked();
+  clearOutgoingCallBack();
   // A deferred-UI callback (rule 11) is on the friends menu with a spinner -
   // now that the peer accepted, restore the icon and enter the call screen.
   restoreCallbackSpinner();
@@ -6975,6 +6988,25 @@ function restoreCallbackSpinner() {
 const CALLBACK_COOLDOWN_MS = 10000;
 let lastCallbackAt = 0;
 
+// The call-back this user is ringing out on, if any. It used to spin forever
+// when nobody answered, and cancelling left the other side's banner offering
+// a call nobody was waiting on.
+const CALLBACK_RING_MS = 45000;
+let outgoingCallBack = null; // { targetClientId, timer }
+
+function clearOutgoingCallBack() {
+  if (!outgoingCallBack) return;
+  clearTimeout(outgoingCallBack.timer);
+  outgoingCallBack = null;
+}
+
+// Take the ask back on the server (and so off their screen).
+function cancelOutgoingCallBack() {
+  if (!outgoingCallBack) return;
+  socket.emit('call-back-cancel', { targetClientId: outgoingCallBack.targetClientId });
+  clearOutgoingCallBack();
+}
+
 async function requestCallBack(targetClientId, targetUsername, opts = {}) {
   if (isSearching) {
     restoreCallbackSpinner();
@@ -7010,6 +7042,25 @@ async function requestCallBack(targetClientId, targetUsername, opts = {}) {
     setSubText('subWaitingAccept');
   }
 
+  clearOutgoingCallBack();
+  outgoingCallBack = {
+    targetClientId,
+    timer: setTimeout(() => {
+      if (!outgoingCallBack || outgoingCallBack.targetClientId !== targetClientId) return;
+      cancelOutgoingCallBack();
+      if (activeCallbackSpinner) {
+        isSearching = false;
+        if (localStream) {
+          localStream.getTracks().forEach((tr) => tr.stop());
+          localStream = null;
+        }
+        restoreCallbackSpinner();
+      } else {
+        abandonCallBack();
+      }
+      showToast(t('callbackNoAnswer'));
+    }, CALLBACK_RING_MS),
+  };
   socket.emit('call-back-request', { targetClientId });
 }
 
@@ -7075,11 +7126,19 @@ callBackDeclineBtn.addEventListener('click', () => {
 });
 
 socket.on('call-back-request', ({ fromClientId, username }) => {
-  showCallBackBanner(fromClientId, username);
+  showCallBackBanner(fromClientId, labelForClientId(fromClientId, username));
+});
+
+// The caller hung up before we answered: stop offering the call.
+socket.on('call-back-cancelled', ({ fromClientId } = {}) => {
+  if (pendingCallBackFrom === fromClientId) hideCallBackBanner();
+  notifData = notifData.filter((n) => !(n.type === 'call_back_request' && n.fromClientId === fromClientId));
+  renderNotifications();
 });
 
 socket.on('call-back-request-result', ({ ok, reason }) => {
   if (ok) return;
+  clearOutgoingCallBack();
   // Deferred (friends-list) callback: keep the friends panel up. On "offline"
   // we grey the button + offer "send request for later"; other failures just
   // restore the green icon. We never resetUI() here, so the user isn't yanked
@@ -7099,6 +7158,8 @@ socket.on('call-back-request-result', ({ ok, reason }) => {
       showToast(t('friendCallsOff'));
     } else if (reason === 'blocked') {
       showError(t('errBlocked'));
+    } else if (reason === 'rate') {
+      showError(t('errCallbackRate'));
     } else {
       showError(t('errCallbackFailed'));
     }
@@ -7109,6 +7170,8 @@ socket.on('call-back-request-result', ({ ok, reason }) => {
   else if (reason === 'calls-off') showError(t('friendCallsOff'));
   else if (reason === 'busy') showError(t('errBusy'));
   else if (reason === 'blocked') showError(t('errBlocked'));
+  else if (reason === 'rate') showError(t('errCallbackRate'));
+  else if (reason === 'expired') showError(t('errCallbackExpired'));
   else showError(t('errCallbackFailed'));
 });
 
@@ -7122,10 +7185,12 @@ socket.on('call-back-later-result', ({ ok, reason, targetClientId }) => {
   }
   showError(reason === 'blocked' ? t('errBlocked')
     : reason === 'calls-off' ? t('friendCallsOff')
+    : reason === 'rate' ? t('errCallbackRate')
     : t('errCallbackFailed'));
 });
 
 socket.on('call-back-declined', ({ username }) => {
+  clearOutgoingCallBack();
   abandonCallBack();
   showError(t('errDeclined', { name: username }));
 });
@@ -7420,11 +7485,13 @@ socket.on('friend-request-result', ({ ok, limitReached } = {}) => {
 });
 
 // --- "James from UK is online" - friend came online notification -------------
-socket.on('friend-online', ({ username, countryCode, country } = {}) => {
+socket.on('friend-online', ({ clientId, username, countryCode, country } = {}) => {
   // Same 'XX' / 'Unknown' guard as the match line: no place is better than a
   // placeholder, and the toast already has a no-country wording.
   const where = (countryCode && countryCode !== 'XX') ? (getCountryName(countryCode) || country || '') : '';
-  showToast(where ? t('friendOnlineToast', { name: username, country: where }) : t('friendOnlineToastNoCountry', { name: username }));
+  // A friend you renamed comes online under the name you gave them.
+  const name = labelForClientId(clientId, username);
+  showToast(where ? t('friendOnlineToast', { name, country: where }) : t('friendOnlineToastNoCountry', { name }));
   vibrate([30, 40, 30]);
 });
 

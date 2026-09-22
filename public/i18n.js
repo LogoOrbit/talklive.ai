@@ -655,6 +655,11 @@ const I18N_STRINGS = {
     "errBlocked": "You can no longer contact this person.",
     "errCallbackFailed": "Could not start the call back.",
     "errDeclined": "{name} declined the call back.",
+    "errCallbackExpired": "That call request has expired. Ask them to call again.",
+    "errCallbackRate": "Too many call attempts. Wait a minute and try again.",
+    "callbackNoAnswer": "No answer. They'll see that you called.",
+    "errSlowDown": "You're sending messages too fast. Slow down a little.",
+    "nowFriends": "You're now friends!",
     "confirmReport": "Report and block this person? You will not be matched with them again.",
     "notifWantsFriends": "{name} wants to be friends",
     "notifAccepted": "{name} accepted your friend request",
@@ -831,7 +836,7 @@ function applyI18n() {
 
 // Non-English dictionaries load on demand from /i18n/<lang>.js. Until the file
 // arrives t() falls back to English, then the UI re-translates once it lands.
-const I18N_VERSION = '20260922visitors';
+const I18N_VERSION = '20260922social';
 const i18nLoading = {};
 window.__i18nLangLoaded = function (lang) {
   delete i18nLoading[lang];

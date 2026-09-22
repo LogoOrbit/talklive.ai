@@ -19,7 +19,8 @@
     "test:matchmaking": "node scripts/test-matchmaking.js",
     "test:analytics": "node scripts/test-analytics-visits.js",
     "test:gifs": "node scripts/test-gif-proxy.js",
-    "seo:ping": "node scripts/ping-indexnow.js"
+    "seo:ping": "node scripts/ping-indexnow.js",
+    "test:social": "node scripts/test-social.js"
   },
   "dependencies": {
     "express": "^4.19.2",
