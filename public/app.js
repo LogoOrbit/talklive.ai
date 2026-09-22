@@ -18,7 +18,7 @@ const statusText = document.getElementById('statusText');
 const subText = document.getElementById('subText');
 const errorText = document.getElementById('errorText');
 const setupErrorText = document.getElementById('setupErrorText');
-const onlineCountEl = document.getElementById('onlineCount');
+const visitorCountEl = document.getElementById('visitorCount');
 const brandLiveEl = document.getElementById('brandLive');
 const remoteAudio = document.getElementById('remoteAudio');
 const brandDot = document.getElementById('brandDot');
@@ -6719,12 +6719,26 @@ socket.on('online-people', (people) => {
 
 socket.on('online-count', (count) => {
   lastOnlineCount = count;
-  onlineCountEl.textContent = count;
   if (railOnlineCountEl) railOnlineCountEl.textContent = count;
-  // The lockup's live line ships as a grey dot and an em dash - "0 online" on
+});
+
+// Visitors in the last 24 hours, not people online this second: a live count
+// on a quiet minute says "two online" and reads as a dead site, where the day's
+// footfall is both truer to the traffic and stable enough to be worth showing.
+socket.on('visitor-count', (count) => {
+  if (visitorCountEl) visitorCountEl.textContent = formatVisitorCount(count);
+  // The lockup's live line ships as a grey dot and an em dash - "0 visitors" on
   // first paint reads as "nobody is here". The first real count lights it up.
   if (brandLiveEl) brandLiveEl.classList.remove('is-waiting');
 });
+
+// 1_240 visitors is a wider number than the lockup has room for; 1.2k is not.
+function formatVisitorCount(count) {
+  const n = Number(count) || 0;
+  if (n < 1000) return String(n);
+  if (n < 10000) return (Math.floor(n / 100) / 10).toFixed(1).replace(/\.0$/, '') + 'k';
+  return Math.floor(n / 1000) + 'k';
+}
 
 socket.on('waiting', ({ estimatedSeconds, predicted } = {}) => {
   markSearchAcked();

@@ -5,6 +5,8 @@ window.I18N_STRINGS.ar = {
   "menuAria": "فتح قائمة الإعدادات",
   "online": "متصل",
   "onlineAria": "عدد الأشخاص المتصلين الآن",
+  "visitors": "زوار",
+  "visitorsAria": "عدد الأشخاص الذين زاروا خلال آخر 24 ساعة",
   "historyAria": "سجل المكالمات",
   "friendsAria": "الأصدقاء والرسائل",
   "requests": "الطلبات",

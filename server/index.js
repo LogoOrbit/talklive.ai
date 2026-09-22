@@ -2018,8 +2018,35 @@ function sanitizeAvatar(value) {
 
 function broadcastOnlineCount() {
   io.emit('online-count', io.engine.clientsCount);
+  broadcastVisitorCount();
   broadcastOnlinePeople();
 }
+
+// --- Visitors in the last 24 hours -----------------------------------------
+// What the header lockup shows. It walks 24 hour buckets, so it is computed at
+// most once a minute and reused: connects and disconnects can arrive in bursts
+// and this number moves far too slowly to be worth recomputing per event.
+let visitorCountCache = { at: 0, value: 0 };
+const VISITOR_COUNT_TTL = 60000;
+
+function visitorCount() {
+  const now = Date.now();
+  if (now - visitorCountCache.at < VISITOR_COUNT_TTL) return visitorCountCache.value;
+  visitorCountCache = { at: now, value: store.visitorsLast24h(now) };
+  return visitorCountCache.value;
+}
+
+let lastVisitorCountSent = -1;
+function broadcastVisitorCount() {
+  const count = visitorCount();
+  if (count === lastVisitorCountSent) return;
+  lastVisitorCountSent = count;
+  io.emit('visitor-count', count);
+}
+// The count also moves while nobody connects or disconnects (a visit that
+// never opens a socket, an hour bucket ageing out), so it is refreshed on its
+// own tick rather than only on socket churn.
+setInterval(broadcastVisitorCount, VISITOR_COUNT_TTL).unref();
 
 // --- Who is online, for the home screen's "Online now" rail -----------------
 // The rail needs more than a number: a page that says "412 online" and shows
@@ -2081,6 +2108,7 @@ setInterval(broadcastOnlinePeople, 4000).unref();
 // broadcast (initial-state sync, not just incremental updates).
 function sendOnlineCountTo(socket) {
   socket.emit('online-count', io.engine.clientsCount);
+  socket.emit('visitor-count', visitorCount());
   socket.emit('online-people', onlinePeopleList());
 }
 

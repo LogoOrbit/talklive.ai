@@ -5,6 +5,8 @@ window.I18N_STRINGS.ru = {
   "menuAria": "Открыть меню настроек",
   "online": "Онлайн",
   "onlineAria": "Сколько людей сейчас онлайн",
+  "visitors": "Посетители",
+  "visitorsAria": "Сколько людей заходило за последние 24 часа",
   "historyAria": "История звонков",
   "friendsAria": "Друзья и сообщения",
   "requests": "Запросы",

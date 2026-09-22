@@ -5,6 +5,8 @@ window.I18N_STRINGS.fa = {
   "menuAria": "باز کردن منوی تنظیمات",
   "online": "آنلاین",
   "onlineAria": "تعداد افراد آنلاین در حال حاضر",
+  "visitors": "بازدیدکننده",
+  "visitorsAria": "تعداد افرادی که در ۲۴ ساعت گذشته بازدید کرده‌اند",
   "historyAria": "تاریخچه تماس‌ها",
   "friendsAria": "دوستان و پیام‌ها",
   "requests": "درخواست‌ها",

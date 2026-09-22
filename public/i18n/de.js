@@ -5,6 +5,8 @@ window.I18N_STRINGS.de = {
   "menuAria": "Einstellungsmenü öffnen",
   "online": "Online",
   "onlineAria": "Anzahl der Personen, die gerade online sind",
+  "visitors": "Besucher",
+  "visitorsAria": "Anzahl der Besucher in den letzten 24 Stunden",
   "historyAria": "Anrufverlauf",
   "friendsAria": "Freunde und Nachrichten",
   "requests": "Anfragen",

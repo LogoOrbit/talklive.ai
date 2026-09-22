@@ -59,6 +59,8 @@ const I18N_STRINGS = {
     "menuAria": "Open settings menu",
     "online": "Online",
     "onlineAria": "Number of people online now",
+    "visitors": "Visitors",
+    "visitorsAria": "Number of people who visited in the last 24 hours",
     "historyAria": "Call history",
     "friendsAria": "Friends and messages",
     "requests": "Requests",

@@ -5,6 +5,8 @@ window.I18N_STRINGS.id = {
   "menuAria": "Buka menu pengaturan",
   "online": "Online",
   "onlineAria": "Jumlah orang yang online sekarang",
+  "visitors": "Pengunjung",
+  "visitorsAria": "Jumlah orang yang berkunjung dalam 24 jam terakhir",
   "historyAria": "Riwayat panggilan",
   "friendsAria": "Teman dan pesan",
   "requests": "Permintaan",

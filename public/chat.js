@@ -55,7 +55,7 @@
   var reportBtn = $('reportBtn');
   var addFriendBtn = $('addFriendBtn');
   var typingEl = $('typing');
-  var onlineCount = $('onlineCount');
+  var visitorCount = $('visitorCount');
   var liveCount = $('liveCount');
   var autoBtn = $('autoBtn');
   var topDefault = $('topDefault');
@@ -1723,16 +1723,24 @@
   // the number itself is re-animated on every change so the badge reads as
   // live. Restarting the animation needs the class off, a reflow, then on -
   // re-adding a class the element already has does nothing.
-  socket.on('online-count', function (n) {
-    if (!onlineCount) return;
-    var next = String(n);
-    if (onlineCount.textContent === next) return;
-    onlineCount.textContent = next;
+  socket.on('visitor-count', function (n) {
+    if (!visitorCount) return;
+    var next = formatVisitors(n);
+    if (visitorCount.textContent === next) return;
+    visitorCount.textContent = next;
     if (liveCount) liveCount.classList.remove('is-waiting');
-    onlineCount.classList.remove('is-bump');
-    void onlineCount.offsetWidth;
-    onlineCount.classList.add('is-bump');
+    visitorCount.classList.remove('is-bump');
+    void visitorCount.offsetWidth;
+    visitorCount.classList.add('is-bump');
   });
+
+  // 1240 visitors is a wider number than the capsule has room for; 1.2k is not.
+  function formatVisitors(n) {
+    var v = Number(n) || 0;
+    if (v < 1000) return String(v);
+    if (v < 10000) return (Math.floor(v / 100) / 10).toFixed(1).replace(/\.0$/, '') + 'k';
+    return Math.floor(v / 1000) + 'k';
+  }
 
   socket.on('matched', function (data) {
     if (data.mode && data.mode !== 'chat') return; // safety: ignore stray voice matches

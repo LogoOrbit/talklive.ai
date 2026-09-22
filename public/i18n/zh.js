@@ -5,6 +5,8 @@ window.I18N_STRINGS.zh = {
   "menuAria": "打开设置菜单",
   "online": "在线",
   "onlineAria": "当前在线人数",
+  "visitors": "访客",
+  "visitorsAria": "过去 24 小时的访问人数",
   "historyAria": "通话记录",
   "friendsAria": "好友与消息",
   "requests": "请求",

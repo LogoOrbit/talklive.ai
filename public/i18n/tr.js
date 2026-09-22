@@ -5,6 +5,8 @@ window.I18N_STRINGS.tr = {
   "menuAria": "Ayarlar menüsünü aç",
   "online": "Çevrimiçi",
   "onlineAria": "Şu anda çevrimiçi kişi sayısı",
+  "visitors": "Ziyaretçi",
+  "visitorsAria": "Son 24 saatte ziyaret eden kişi sayısı",
   "historyAria": "Arama geçmişi",
   "friendsAria": "Arkadaşlar ve mesajlar",
   "requests": "İstekler",

@@ -405,6 +405,30 @@ function recordSection(name) {
   save();
 }
 
+/**
+ * Distinct visitors over the trailing 24 hours, for the home screen's live
+ * counter. Rolling, not "today": a calendar day resets to a near-zero number
+ * just after UTC midnight, which reads as an empty site to anyone visiting
+ * then. Summing the last 24 hour buckets (this hour plus the previous 23,
+ * crossing the day boundary) always covers a full day of traffic.
+ *
+ * `uniques` is per-hour first-seen, so the buckets sum without double-counting
+ * within an hour. A visitor spanning two hours is counted once per UTC day,
+ * because the dedupe set is per-day - close enough for a display counter, and
+ * it never inflates the way raw page views would.
+ */
+function visitorsLast24h(ts = Date.now()) {
+  let total = 0;
+  for (let back = 0; back < 24; back++) {
+    const t = ts - back * 3600000;
+    const d = data.analytics.days[dayKey(t)];
+    if (!d || !d.hours) continue;
+    const hr = d.hours[String(new Date(t).getUTCHours())];
+    if (hr) total += hr.uniques || 0;
+  }
+  return total;
+}
+
 function recordConnection() {
   day().connections += 1;
   hour().connections += 1;
@@ -1143,6 +1167,7 @@ module.exports = {
   day,
   hour,
   recordVisit,
+  visitorsLast24h,
   recordSection,
   recordConnection,
   recordPeakOnline,

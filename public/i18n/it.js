@@ -5,6 +5,8 @@ window.I18N_STRINGS.it = {
   "menuAria": "Apri il menu impostazioni",
   "online": "Online",
   "onlineAria": "Numero di persone online ora",
+  "visitors": "Visitatori",
+  "visitorsAria": "Numero di persone che hanno visitato nelle ultime 24 ore",
   "historyAria": "Cronologia chiamate",
   "friendsAria": "Amici e messaggi",
   "requests": "Richieste",

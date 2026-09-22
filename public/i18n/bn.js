@@ -5,6 +5,8 @@ window.I18N_STRINGS.bn = {
   "menuAria": "সেটিংস মেনু খুলুন",
   "online": "অনলাইন",
   "onlineAria": "এখন অনলাইনে থাকা মানুষের সংখ্যা",
+  "visitors": "দর্শক",
+  "visitorsAria": "গত ২৪ ঘণ্টায় আসা মানুষের সংখ্যা",
   "historyAria": "কল ইতিহাস",
   "friendsAria": "বন্ধু ও মেসেজ",
   "requests": "অনুরোধ",

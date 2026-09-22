@@ -5,6 +5,8 @@ window.I18N_STRINGS.ur = {
   "menuAria": "ترتیبات کا مینو کھولیں",
   "online": "آن لائن",
   "onlineAria": "ابھی آن لائن لوگوں کی تعداد",
+  "visitors": "وزیٹرز",
+  "visitorsAria": "پچھلے 24 گھنٹوں میں آنے والے لوگوں کی تعداد",
   "historyAria": "کال کی تاریخ",
   "friendsAria": "دوست اور پیغامات",
   "requests": "درخواستیں",
