@@ -391,6 +391,10 @@
     trait: trait,
     stored: stored,
     store: store,
+    // One of the set, at random. The pickers all gate something the user is
+    // trying to get past, so each of them offers a tap that answers the
+    // question without reading twenty options first.
+    random: function () { return LIST[Math.floor(Math.random() * LIST.length)].id; },
     STORAGE_KEY: STORAGE_KEY,
   };
 }(window));

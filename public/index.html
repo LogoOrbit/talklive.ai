@@ -920,7 +920,10 @@
 
             <div class="tap-choice-divider" aria-hidden="true"><span data-i18n="or">or</span></div>
 
-            <a id="startChatBtn" href="/chat" class="tl-action tl-action-chat" data-i18n-aria="startChatAria" aria-label="Start a text chat with a random person">
+            <!-- ?go=1: this button says "Tap to Chat", so it starts the chat.
+                 It used to land on /chat's own start screen, where a second
+                 button had to be pressed to do the thing the first one named. -->
+            <a id="startChatBtn" href="/chat?go=1" class="tl-action tl-action-chat" data-i18n-aria="startChatAria" aria-label="Start a text chat with a random person">
               <span class="tl-action-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="currentColor">
                   <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM7 9.5h10a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2zm0-3.5h10a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2zm0 7h6a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2z"/>
@@ -1589,6 +1592,14 @@
           </div>
           <div class="modal-body">
             <p class="animal-gate-hint" data-i18n="pickAnimalHint">Whoever you connect with sees it - an easy way to start talking.</p>
+            <!-- A way past the question for whoever does not care which animal
+                 it is. The gate exists so nobody arrives faceless, not so
+                 everybody reads twenty names - one tap satisfies it either
+                 way, and the call carries on to exactly where it would have.
+                 Above the grid, not below it: twenty tiles are taller than a
+                 phone, and an escape hatch you have to scroll the whole wall
+                 to find is not one. -->
+            <button type="button" id="animalSurpriseBtn" class="gate-skip-btn" data-i18n="surpriseMe">Surprise me</button>
             <div id="animalGateGrid" class="animal-grid animal-gate-grid" role="radiogroup" data-i18n-aria="pickAnimal" aria-label="Pick your spirit animal"></div>
           </div>
         </div>
@@ -2039,7 +2050,7 @@
                than Hang Up. It is a preference, so it looks like one. -->
           <label id="autoCallRow" class="checkbox-row auto-call-row" for="autoCallCheckbox" data-i18n-title="autoConnectNote" title="Auto-connect keeps finding you someone new as soon as a call ends.">
             <input type="checkbox" id="autoCallCheckbox" />
-            <span data-i18n="enableAutoCall">Enable - keep connecting me to new people</span>
+            <span data-i18n="enableAutoCall">When a call ends, find me someone new</span>
           </label>
 
           <div class="tl-call-quiet">

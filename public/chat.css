@@ -251,11 +251,17 @@ img { max-width: 100%; }
   padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--line); background: var(--bg-2);
 }
+/* Next is the most-tapped control in a stranger chat - it is how you leave a
+   conversation that is not going anywhere. It used to be drawn as the quietest
+   thing in the composer: muted grey, transparent, and on phones the word
+   itself was hidden, leaving an unlabelled skip glyph next to a bright filled
+   Send. Nobody who had not used a chat roulette before could tell what it did.
+   It carries its word at every width now, and enough contrast to be read. */
 .next-btn {
   flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   border: 1px solid var(--line); border-radius: 999px; min-height: 44px; padding: 0 16px;
   font-size: 14px; font-weight: 700; cursor: pointer;
-  color: var(--muted); background: transparent;
+  color: var(--text); background: var(--bg-1);
   transition: transform 0.12s ease, color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
 }
 .next-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
@@ -278,19 +284,20 @@ img { max-width: 100%; }
 .send-btn:hover { opacity: 0.92; }
 .send-btn:active { transform: scale(0.9); }
 
-/* Narrow phones: tighten the composer so every control fits. The row carries
-   five now - Next, emoji, GIF, the input and send - so the Next label drops
-   earlier than it used to, and the two picker buttons go compact with it. */
+/* Narrow phones: tighten the composer so every control fits. The room comes
+   out of the padding and the picker buttons, never out of the Next label -
+   the word is the only thing that tells a first-timer what the button does,
+   and it is the only thing that shows the "Sure?" confirm. */
 @media (max-width: 430px) {
-  .next-btn { padding: 0 12px; }
-  .next-btn span { display: none; } /* icon-only Next */
+  .next-btn { padding: 0 11px; gap: 5px; }
   .composer .cx-btn { min-width: 34px; padding: 0 4px; }
 }
 /* 320px phones: claw back every spare pixel for the input itself, which is the
    only control here whose width does any work. */
 @media (max-width: 360px) {
   .composer { gap: 5px; padding-left: 6px; padding-right: 6px; }
-  .next-btn { padding: 0 9px; }
+  .next-btn { padding: 0 8px; font-size: 13px; }
+  .next-btn svg { display: none; } /* the word outranks the glyph when space runs out */
   .composer .cx-btn { min-width: 32px; padding: 0 2px; }
 }
 
@@ -395,6 +402,18 @@ img { max-width: 100%; }
   content: ''; position: absolute; inset: 3px; border-radius: 50%; background: var(--accent);
 }
 .gate-note { margin: 18px 0 0; color: var(--muted); font-size: 12px; }
+.gate-option-neutral .gate-option-icon { color: var(--muted); }
+
+/* The way past a picker for whoever does not care which one. Quiet enough not
+   to be mistaken for the answer, big enough to be hit without aiming. */
+.gate-skip-btn {
+  display: block; margin: 0 auto 16px; min-height: 44px; padding: 0 22px;
+  border-radius: 999px; border: 1px solid var(--line); background: transparent;
+  color: var(--muted); font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
+}
+.gate-skip-btn:hover { color: var(--text); border-color: var(--accent); }
+.gate-skip-btn:active { transform: scale(0.97); }
 
 /* Rules step */
 .rule-list { list-style: none; margin: 4px 0 20px; padding: 0; display: flex; flex-direction: column; gap: 16px; text-align: start; }

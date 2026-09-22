@@ -583,11 +583,20 @@
   function openRulesGate() {
     openModal(consentModal);
   }
+  // The gate asks the question once; the answer may legitimately be "no
+  // answer". `myGender` alone cannot tell those apart - '' is both "never
+  // asked" and "prefer not to say" - so what is recorded here is that the
+  // question has been put, not what came back.
+  var GENDER_ASKED_KEY = 'talklive_gender_asked';
+  function genderAnswered() {
+    return !!myGender || localStorage.getItem(GENDER_ASKED_KEY) === 'yes';
+  }
+
   // Gender, then the animal, then the rules. The animal sits in the middle
   // because it is the other half of "who is the person on the other end about
   // to meet" - and it is the half they actually see.
   function requestStart() {
-    if (!myGender) { openGenderGate(); return; }
+    if (!genderAnswered()) { openGenderGate(); return; }
     if (!myAnimal && animalModal && Animals) { openAnimalGate(); return; }
     if (localStorage.getItem(CONSENT_KEY) !== 'yes') { openRulesGate(); return; }
     goSearch(true);
@@ -612,12 +621,29 @@
     });
   }
 
+  // "Surprise me" - the same outcome as tapping one of the twenty, for
+  // whoever does not care which. Same storage, same beat, same next step.
+  var animalSurpriseBtn = $('animalSurpriseBtn');
+  if (animalSurpriseBtn) {
+    animalSurpriseBtn.addEventListener('click', function () {
+      vibrate(10);
+      setMyAnimal(Animals.random());
+      refreshAnimalLabels();
+      setTimeout(function () {
+        closeModal(animalModal);
+        if (localStorage.getItem(CONSENT_KEY) === 'yes') goSearch(true);
+        else openRulesGate();
+      }, 180);
+    });
+  }
+
   genderGateOptions.addEventListener('click', function (e) {
     var opt = e.target.closest('.gate-option');
     if (!opt) return;
     vibrate(10);
     myGender = opt.dataset.value;
     localStorage.setItem('talklive_gender', myGender);
+    localStorage.setItem(GENDER_ASKED_KEY, 'yes'); // "prefer not to say" is an answer
     setGenderGateValue(myGender);
     setPillValue(genderGroup, myGender); // keep the settings panel in step
     // No register() here: every path out of this handler ends in goSearch(true),
@@ -637,7 +663,7 @@
     // Back goes to the step actually before this one, which is the animal
     // once there is a gender - sending it to the gender gate made Back skip
     // a screen and re-ask a question already answered.
-    if (myGender && animalModal && Animals) openAnimalGate();
+    if (genderAnswered() && animalModal && Animals) openAnimalGate();
     else openGenderGate();
   });
   consentAgreeBtn.addEventListener('click', function () {
@@ -1101,6 +1127,10 @@
     if (!pill) return;
     myGender = pill.dataset.value === myGender ? '' : pill.dataset.value; // tap again to clear
     localStorage.setItem('talklive_gender', myGender);
+    // Setting it here answers the gate's question too, including when what is
+    // set is "prefer not to say" - otherwise clearing it in settings would
+    // bring the gate back on the next search.
+    localStorage.setItem(GENDER_ASKED_KEY, 'yes');
     setPillValue(genderGroup, myGender);
     register();
   });
@@ -1805,6 +1835,12 @@
     if (!data) return;
     var text = data.text ? String(data.text) : '';
     if (!text && !data.gif) return;
+    // The message IS the end of the typing. Without this the indicator sat
+    // under the bubble it had just announced for the rest of its 3s timeout,
+    // so every single message left a "Stranger is typing..." lying about what
+    // was happening.
+    typingEl.classList.add('hidden');
+    clearTimeout(typingHideTimer);
     addMessage(text, 'them', { id: data.id, replyTo: data.replyTo, gif: data.gif, ts: data.ts });
     soundReceive();
     if (text) checkIncoming(text);
@@ -1906,4 +1942,20 @@
 
   // --- Boot: land straight on the single "Start chatting" button. ---
   goStart();
+
+  // ...unless the visitor has already pressed a button that said it would
+  // start one. "Tap to Chat" on the home screen sends ?go=1, and landing on a
+  // second screen with a second button after that made the first button a
+  // lie - the commonest reason someone taps once, sees another page, and
+  // leaves. The gates it goes through are unchanged; only the extra press of
+  // a button already pressed is gone.
+  try {
+    if (new URLSearchParams(location.search).get('go') === '1') {
+      // The query string has done its job - keep it out of Back and out of
+      // anything the visitor might bookmark or share.
+      history.replaceState(history.state, '', '/chat');
+      initAudio();
+      requestStart();
+    }
+  } catch (err) { /* URLSearchParams unavailable - the start button still works */ }
 })();

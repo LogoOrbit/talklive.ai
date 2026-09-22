@@ -1935,6 +1935,11 @@ const devNoticeSkip = document.getElementById('devNoticeSkip');
 const devNoticeCloseBtn = document.getElementById('devNoticeClose');
 const devNoticeStatus = document.getElementById('devNoticeStatus');
 
+// Set once the visitor has actually been in a conversation, and called when
+// they are back on the landing screen. See the note on the scheduling at the
+// bottom of the block below.
+let offerDevNotice = () => {};
+
 if (devNoticeOverlay) {
   // Private browsing and blocked site data make localStorage throw on access,
   // not just return null - and a storage error is never a reason to break the
@@ -2004,12 +2009,24 @@ if (devNoticeOverlay) {
     setTimeout(closeDevNotice, 1200);
   });
 
-  // Not on the first frame: the landing screen should paint first, so the
-  // notice arrives over a page the visitor can already see rather than being
-  // the page. Deliberately after load, so it never competes for bandwidth
-  // during the largest contentful paint either.
-  if (!devNoticeSeen()) setTimeout(openDevNotice, 900);
+  // It used to open 900ms after the first ever page load - so the very first
+  // thing a visitor met was a card apologising for rough edges and asking
+  // them to suggest improvements to a product they had not used for one
+  // second. It asked the only person on the site with no answer, and it did
+  // it by covering the two buttons they came for.
+  //
+  // It is the same card, asked of someone who now has something to say: it
+  // waits for a real conversation, and then for the landing screen, so it
+  // never lands over a call or over the gates on the way into one.
+  offerDevNotice = () => {
+    if (devNoticeSeen()) return;
+    setTimeout(openDevNotice, 700);
+  };
 }
+
+// Set by the first connected conversation of the session. Only somebody who
+// has had one is asked what would make TalkLive better.
+let hasHadAConversation = false;
 
 
 // --- Avatar picker: male/female category, 5 avatars each ---
@@ -4682,6 +4699,7 @@ function confirmMediaFlowing() {
   trackGrowthEvent('call_media_ok');
   stopMediaFlowWatch();
   revealPartner();
+  hasHadAConversation = true;
   setState('connected');
   setCallState('connected');
   setStatusText('statusConnected');
@@ -5216,6 +5234,15 @@ function resetUI() {
   if (typeof resetGame === 'function') resetGame();
 }
 
+// Back on the landing screen, by choice, with a conversation behind them:
+// the one moment the "what would make this better?" card has a real answer
+// to collect, and the one screen it can cover without costing anything.
+// Deliberately not inside resetUI() - that also runs on a ban and on
+// maintenance, and neither is a moment to ask for suggestions.
+function wentHomeFromACall() {
+  if (hasHadAConversation) offerDevNotice();
+}
+
 // Return the single button to green "Call" (idle) on the persistent call screen.
 // Used both after a manual hang-up and when the other side ends the call.
 function goIdleOnCallScreen(statusKey) {
@@ -5375,6 +5402,18 @@ if (animalGateGrid) {
     if (myAnimal !== option.dataset.animal) setMyAnimal(option.dataset.animal);
     // A beat so the tick is visibly on the one just tapped before the panel
     // goes, rather than the tap appearing to skip straight past the question.
+    setTimeout(() => closeAnimalGate(true), 180);
+  });
+}
+
+// "Surprise me" - the same outcome as tapping one, for whoever does not care
+// which. It picks, shows the pick for the same beat a tapped one gets, and
+// carries on into whatever the gate interrupted.
+const animalSurpriseBtn = document.getElementById('animalSurpriseBtn');
+if (animalSurpriseBtn) {
+  animalSurpriseBtn.addEventListener('click', () => {
+    vibrate(8);
+    setMyAnimal(Animals.random());
     setTimeout(() => closeAnimalGate(true), 180);
   });
 }
@@ -6264,6 +6303,7 @@ window.addEventListener('popstate', async () => {
   // like the call screen.
   if (!callPanel.classList.contains('hidden')) {
     resetUI();
+    wentHomeFromACall();
     primeBackGuard();
     return;
   }
@@ -6341,10 +6381,12 @@ if (navHomeBtn) {
           if (!ok) return;
           socket.emit('leave');
           resetUI();
+          wentHomeFromACall();
         });
         return;
       }
       resetUI();
+      wentHomeFromACall();
     }
     window.scrollTo({ top: 0 });
   });
@@ -7164,6 +7206,10 @@ socket.on('partner-mic-state', (muted) => {
 
 socket.on('chat-message', ({ text, id, replyTo, gif, ts } = {}) => {
   if (!text && !gif) return;
+  // Their message is the end of their typing. Left alone, the indicator ran
+  // on under the bubble it had just announced until its own 3s timeout.
+  typingIndicator.classList.add('hidden');
+  clearTimeout(typingHideTimeout);
   addChatMessage(text || '', 'them', { id, replyTo, gif, ts });
   playMessageSound();
   vibrate(20);

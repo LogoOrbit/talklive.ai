@@ -403,8 +403,21 @@
             <span class="gate-option-label" data-i18n="female">Female</span>
             <span class="gate-option-mark" aria-hidden="true"></span>
           </button>
+          <!-- The third answer. The settings panel has always offered it, and
+               the server has always understood a profile without a gender -
+               only this gate insisted, and it is the one screen with no close
+               button, so insisting here meant a dead end rather than a
+               question. Saying nothing costs the gender filters, which is
+               what the sub-line says, and nothing else. -->
+          <button type="button" class="gate-option gate-option-neutral" data-value="" role="radio" aria-checked="false">
+            <span class="gate-option-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            </span>
+            <span class="gate-option-label" data-i18n="preferNotSay">Prefer not to say</span>
+            <span class="gate-option-mark" aria-hidden="true"></span>
+          </button>
         </div>
-        <p class="gate-note" data-i18n="chooseGenderNote">False selections may limit account access.</p>
+        <p class="gate-note" data-i18n="chooseGenderNote">Only used for gender matching. Say nothing and you are matched with everyone.</p>
       </div>
     </div>
   </div>
@@ -419,6 +432,12 @@
       <div class="modal-body gate-body">
         <h2 id="animalGateTitle" class="gate-title" data-i18n="pickAnimal">Pick your spirit animal</h2>
         <p class="gate-sub" data-i18n="pickAnimalHint">Whoever you connect with sees it - an easy way to start talking.</p>
+        <!-- A way past the question for whoever does not care which animal it
+             is. The gate exists so nobody arrives faceless, not so everybody
+             reads twenty names - one tap satisfies it either way. Above the
+             grid, not below it: twenty tiles are taller than a phone, and an
+             escape hatch you have to scroll the whole wall to find is not one. -->
+        <button type="button" id="animalSurpriseBtn" class="gate-skip-btn" data-i18n="surpriseMe">Surprise me</button>
         <div class="animal-grid animal-gate-grid" id="animalGateGrid" role="radiogroup" aria-labelledby="animalGateTitle"></div>
       </div>
     </div>

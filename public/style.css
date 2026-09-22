@@ -6744,3 +6744,24 @@ html.perf-lite .side-panel { box-shadow: none; }
 @media (max-width: 420px) {
   .animal-gate-grid { grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 8px; }
 }
+
+/* The way past the wall of twenty for whoever does not care which one. Quiet
+   enough not to be mistaken for the answer, big enough to be hit without
+   aiming. Same control, same name, same look as the one on /chat. */
+.gate-skip-btn {
+  display: block;
+  margin: 0 auto 16px;
+  min-height: 44px;
+  padding: 0 22px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
+}
+.gate-skip-btn:hover { color: var(--text); border-color: var(--accent); }
+.gate-skip-btn:active { transform: scale(0.97); }
