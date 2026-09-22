@@ -2659,9 +2659,32 @@
  * window put it below the fold. An ad nobody scrolls to is an ad nobody is
  * paid for - and the space beside the call card was empty anyway.
  *
- * Two equal columns from 980px up, stacked below it, because a phone only
- * ever has one column to give.
+ * Two columns from 980px up, stacked below it, because a phone only ever has
+ * one column to give.
+ *
+ * The two columns are NOT equal. They were, and half a 980px row is 478px -
+ * so a 300x250 creative sat in a 478px bordered box with 160px of empty panel
+ * beside it, which reads as an ad that failed to load rather than as a layout.
+ * The ad column is now exactly one creative wide (300px plus its padding) and
+ * the call keeps the rest, which is also the width everything below the row
+ * lines up with.
  * ======================================================================== */
+
+.call-panel {
+  /* The desktop call screen's geometry, in one place: a content column, an ad
+     column beside it, and the gap between them. The call card, the ad card,
+     the conversation guide, the free-service note and the ad under them all
+     measure themselves from these three, so they share one left edge and one
+     right edge instead of each arriving at its own. */
+  --tl-call-col: 560px;
+  /* Exactly one 300x250 creative, plus the card's padding and its hairline
+     border on each side. Two pixels short and the unit is squeezed by the
+     flex row it sits in; a hundred wide and the card is a labelled void with
+     a banner in the corner of it. */
+  --tl-call-ad-col: calc(300px + 2 * var(--tl-s4) + 2px);
+  --tl-call-gap: var(--tl-s5);
+  --tl-call-measure: calc(var(--tl-call-col) + var(--tl-call-ad-col) + var(--tl-call-gap));
+}
 
 .tl-call-row {
   display: grid;
@@ -2683,9 +2706,14 @@
 
 @media (min-width: 980px) {
   .tl-call-row {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--tl-s5);
-    max-width: 980px;
+    /* The ad column is fixed - it holds one creative of a known size - and the
+       call takes what is left, so between 980px and the full measure the call
+       card gives up width rather than the pair overflowing the column it is
+       centred in. */
+    grid-template-columns: minmax(0, 1fr) var(--tl-call-ad-col);
+    gap: var(--tl-call-gap);
+    width: 100%;
+    max-width: var(--tl-call-measure);
     margin-inline: auto;
   }
   /* The ad card is as tall as its creative and no taller. Matching the call
@@ -2694,12 +2722,29 @@
      reads as a thing that failed to load, not as a layout. It sits at the
      top of its column, level with the call card's own top edge. */
   .tl-call-row { align-items: start; }
-  .tl-call-row .tl-call { width: 100%; margin: 0; }
+  .tl-call-row .tl-call {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+  }
   .tl-call-row .tl-call-ad {
     box-sizing: border-box;
     border: 1px solid var(--tl-line);
     border-radius: 28px;
     padding: var(--tl-s4);
+    /* The column is one creative wide, so the card hugs what is in it. */
+    width: var(--tl-call-ad-col);
+    justify-self: start;
+  }
+  /* The slot takes the card's full inner width so the creative centres in it.
+     `.tl-call-ad` is a centring flex column, so without this the slot is only
+     as wide as what is in it and a unit that arrives narrow sits off-centre
+     under a centred label. */
+  .tl-call-row .tl-call-ad [data-ad] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
   }
 }
 
@@ -3219,15 +3264,43 @@
   }
 }
 
-/* Everything below the call - the conversation guide, the notes, the music
-   row - keeps the same measure and the same left edge as the call row above
-   it. Without this the row is a centred 980px pair and the guide beneath it
-   is full-column, so the two start at different places and the screen reads
-   as two layouts stacked rather than one. */
+/* Everything below the call - the conversation guide, the notes, the ad
+   between them, the music row - stands in the call's own column: the same
+   left edge as the call card, the same width, directly under it.
+
+   It used to be capped at the full width of the row and centred in it, while
+   the notes inside kept their own 620px measure and centred again - so the
+   guide began 180px to the right of the call card's left edge and ended 180px
+   short of the ad's right edge, lined up with nothing on the screen. One
+   column of content with the ads down its right is a layout; a stack of
+   blocks each centred on a different measure is what it looked like.
+
+   The width is the call column's own arithmetic, and the left margin is the
+   distance from the panel's edge to the row's, so both regimes are covered:
+   once there is room for the whole measure the blocks land under a 560px card,
+   and below that they narrow exactly as the card does. */
 @media (min-width: 980px) {
   .call-panel > *:not(.tl-call-row) {
-    max-width: 980px;
-    margin-inline: auto;
+    box-sizing: border-box;
+    width: min(
+      var(--tl-call-col),
+      calc(100% - var(--tl-call-ad-col) - var(--tl-call-gap))
+    );
+    max-width: none;
+    margin-left: max(0px, calc(50% - var(--tl-call-measure) / 2));
+    margin-right: auto;
+  }
+  /* Section 19's desktop rule for ad cards in the reading column is the more
+     specific selector, so the ad between the guide and the note has to be
+     named at least as precisely to stand in the column with them. */
+  .tl-frame > .stage .call-panel > .ad-card:not(.tl-call-ad) {
+    width: min(
+      var(--tl-call-col),
+      calc(100% - var(--tl-call-ad-col) - var(--tl-call-gap))
+    );
+    max-width: none;
+    margin-left: max(0px, calc(50% - var(--tl-call-measure) / 2));
+    margin-right: auto;
   }
 }
 
