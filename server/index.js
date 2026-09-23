@@ -112,6 +112,12 @@ const CSP = [
     + ' https://*.effectivecpmnetwork.com https://www.googletagmanager.com'
     + ' https://*.gstatic.com'
     + ' https://www.google.com'
+    // Google AdSense loader plus the ad/fraud-check scripts it pulls in.
+    + ' https://pagead2.googlesyndication.com https://*.googlesyndication.com'
+    + ' https://*.doubleclick.net https://*.adtrafficquality.google'
+    + ' https://*.googleadservices.com'
+    // Google's consent (CMP) message for EEA/UK/CH visitors.
+    + ' https://fundingchoicesmessages.google.com'
     + (ADS_SCRIPT_HOSTS.length ? ' ' + ADS_SCRIPT_HOSTS.join(' ') : ''),
   // Google Identity Services injects its own stylesheet from accounts.google.com
   // to render the Sign-In button; without it listed the browser blocks the
@@ -998,12 +1004,13 @@ app.get('/', (req, res, next) => {
 // refilled, so it is served from ADS_TXT (the lines Adsterra shows under
 // Websites -> ads.txt, newline or "|" separated) and 404s while that is unset,
 // which demand partners treat as "no ads.txt" rather than "nobody authorised".
-const ADS_TXT = (process.env.ADS_TXT || '').split(/[|\n]/)
+// The AdSense seller line is always listed; ADS_TXT adds any other networks.
+const ADSENSE_ADS_TXT = 'google.com, pub-6368797323385379, DIRECT, f08c47fec0942fa0';
+const ADS_TXT = [...new Set([ADSENSE_ADS_TXT, ...(process.env.ADS_TXT || '').split(/[|\n]/)]
   .map((line) => line.trim())
-  .filter(Boolean)
+  .filter(Boolean))]
   .join('\n');
 app.get('/ads.txt', (req, res) => {
-  if (!ADS_TXT) return res.status(404).type('text').send('Not found');
   res.type('text').set('Cache-Control', 'public, max-age=3600').send(ADS_TXT + '\n');
 });
 
