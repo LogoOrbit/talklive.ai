@@ -133,7 +133,9 @@
 /* Network status, in the same corner the favicon puts it in. */
 .nav-logo .brand-dot {
   position: absolute;
-  top: -2px;
+  /* Bottom-right: the T mark leaves that corner empty, so the dot never
+     covers the artwork. */
+  bottom: -2px;
   right: -2px;
   width: 10px;
   height: 10px;

@@ -71,7 +71,7 @@ input:focus,textarea:focus{border-color:var(--accent)}
 .auth p{color:var(--ink2);font-size:.9rem;margin-bottom:14px;line-height:1.5}
 .auth label{display:block;font-size:.78rem;color:var(--muted);margin:12px 0 5px;text-transform:uppercase;letter-spacing:.05em}
 .auth .err{color:var(--crit);font-size:.85rem;margin-top:10px;min-height:1.2em}
-.mark{width:34px;height:34px;border-radius:10px;background:var(--grad);display:grid;place-items:center;font-size:1.05rem;flex:none;box-shadow:0 4px 18px rgba(108,92,231,.45)}
+.mark{width:34px;height:34px;display:block;flex:none;object-fit:contain}
 .stbox{font-size:.82rem;border-radius:12px;padding:11px 13px;margin:12px 0;line-height:1.5}
 .stbox.bad{background:color-mix(in srgb,var(--crit) 14%,transparent);border:1px solid var(--crit)}
 .stbox.warn{background:color-mix(in srgb,var(--warn) 14%,transparent);border:1px solid var(--warn)}
@@ -339,7 +339,7 @@ th.sortable .ar{opacity:.5;font-size:.7rem}
 <body>
 
 <div id="setupView" class="auth hidden">
-  <div class="logo"><span class="mark">🎙️</span><h1>Dashboard Setup</h1></div>
+  <div class="logo"><img class="mark" src="/favicon.svg" alt="TalkLive"><h1>Dashboard Setup</h1></div>
   <div id="setupStorage"></div>
   <p>First-time setup. Create your admin password, then scan the QR code with <strong>Google Authenticator</strong>.</p>
   <div id="setupStep1">
@@ -361,7 +361,7 @@ th.sortable .ar{opacity:.5;font-size:.7rem}
 </div>
 
 <div id="loginView" class="auth hidden">
-  <div class="logo"><span class="mark">🎙️</span><h1>TalkLive <span style="font-weight:400;color:var(--muted)">Owner</span></h1></div>
+  <div class="logo"><img class="mark" src="/favicon.svg" alt="TalkLive"><h1>TalkLive <span style="font-weight:400;color:var(--muted)">Owner</span></h1></div>
   <div id="loginStorage"></div>
   <p>Password + Google Authenticator code required.</p>
   <label>Password</label>
@@ -374,7 +374,7 @@ th.sortable .ar{opacity:.5;font-size:.7rem}
 
 <div id="dash" class="hidden">
 <header>
-  <h1><span class="mark" style="width:28px;height:28px;font-size:.85rem">🎙️</span><span class="grad-text">TalkLive</span>&nbsp;<span class="dot"></span></h1>
+  <h1><img class="mark" src="/favicon.svg" alt="TalkLive" style="width:28px;height:28px"><span class="grad-text">TalkLive</span>&nbsp;<span class="dot"></span></h1>
   <nav class="top" id="nav"></nav>
   <button class="hbtn searchbtn" id="searchBtn" title="Search everything (press /)">🔍<span class="lbl">Search</span><kbd>/</kbd></button>
   <button class="hbtn" id="refreshBtn" title="Pause or resume auto-refresh">⏸<span class="lbl" id="refreshLbl"> live</span></button>
