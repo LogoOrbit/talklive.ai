@@ -53,7 +53,7 @@
      system face a beat later. Only the latin subset is preloaded - latin-ext
      is fetched on demand by the unicode-range in style.css. -->
 <link rel="preload" as="font" type="font/woff2" href="/fonts/plus-jakarta-sans-latin.woff2?v=20260922type" crossorigin />
-<link rel="stylesheet" href="style.css?v=20260923chatdock" />
+<link rel="stylesheet" href="style.css?v=20260923demo" />
 <link rel="stylesheet" href="chat-extras.css?v=20260922social2" />
 <link rel="stylesheet" href="games.css?v=20260916settings" />
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
@@ -1044,6 +1044,34 @@
               <span><strong data-i18n="railInviteTitle">Bring more people online</strong><small data-i18n="railInviteCta">Invite a friend to TalkLive</small></span>
             </button>
           </div>
+          <section class="setup-demo" aria-labelledby="setupDemoTitle">
+            <h2 class="setup-demo-title" id="setupDemoTitle">See it in action</h2>
+            <div class="setup-demo-frame">
+              <video id="setupDemoVideo" muted loop playsinline preload="none" poster="/media/talklive-ad-poster.jpg?v=20260923ad" width="540" height="960" aria-label="TalkLive in action: picking a spirit animal, matching, a live voice call and a text chat">
+                <source src="/media/talklive-ad-540.mp4?v=20260923ad" type="video/mp4" />
+                <source src="/media/talklive-ad-540.webm?v=20260923ad" type="video/webm" />
+              </video>
+              <button type="button" class="setup-demo-sound" id="setupDemoSound" aria-pressed="false">🔇 Sound off</button>
+            </div>
+          </section>
+          <script>
+          // Downloads and plays only while on screen; a call or chat hides the panel, which pauses it.
+          (function () {
+            var v = document.getElementById('setupDemoVideo'), b = document.getElementById('setupDemoSound');
+            if (!v) return;
+            if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) { v.controls = true; b.hidden = true; }
+            else if ('IntersectionObserver' in window) {
+              new IntersectionObserver(function (es) {
+                es.forEach(function (e) { if (e.isIntersecting) { var p = v.play(); if (p && p.catch) p.catch(function () {}); } else v.pause(); });
+              }, { threshold: 0.35 }).observe(v);
+            } else { v.controls = true; b.hidden = true; }
+            b.addEventListener('click', function () {
+              v.muted = !v.muted; if (!v.muted && v.paused) v.play();
+              b.textContent = v.muted ? '\ud83d\udd07 Sound off' : '\ud83d\udd0a Sound on';
+              b.setAttribute('aria-pressed', String(!v.muted));
+            });
+          })();
+          </script>
           <p id="setupErrorText" class="error-text hidden" role="alert"></p>
         </div>
         <!-- Ad shown only on this pre-call screen; hidden with the whole

@@ -5240,6 +5240,18 @@ a.premium-lock:hover { background: rgba(108, 92, 231, 0.22); }
 
 /* Revenue and referral actions sit below Talk / Chat so they can grow the
    service without competing with the visitor's primary first action. */
+.setup-demo { margin: 28px auto 8px; text-align: center; }
+.setup-demo-title { margin: 0 0 12px; font-size: 1.05rem; font-weight: 700; }
+.setup-demo-frame {
+  position: relative; width: min(260px, 70vw); aspect-ratio: 9 / 16; margin: 0 auto;
+  border-radius: 24px; overflow: hidden; background: #0b0f1f;
+  border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 16px 50px rgba(0,0,0,0.45), 0 0 60px rgba(108,92,231,0.22);
+}
+.setup-demo-frame video { display: block; width: 100%; height: 100%; object-fit: cover; }
+.setup-demo-sound {
+  position: absolute; right: 10px; bottom: 10px; border: 0; border-radius: 999px; padding: 7px 12px;
+  font: inherit; font-size: 0.78rem; font-weight: 700; color: #fff; background: rgba(10,14,30,0.72); cursor: pointer;
+}
 .setup-growth {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
