@@ -2065,6 +2065,15 @@ const ERROR_NOISE = [
 const chatRate = new Map();
 // Same shape, separate budget for reactions - a tap is not a message.
 const reactRate = new Map();
+// socket.id -> timer that ends a text chat whose tab stayed in the background.
+// A phone that switches apps keeps its socket open, and the ping timeout would
+// otherwise leave the stranger waiting up to ~85s for nobody.
+const chatAwayTimers = new Map();
+const CHAT_AWAY_DROP_MS = Number(process.env.CHAT_AWAY_DROP_MS) || 60000;
+function clearChatAway(socketId) {
+  const timer = chatAwayTimers.get(socketId);
+  if (timer) { clearTimeout(timer); chatAwayTimers.delete(socketId); }
+}
 
 // scrypt is deliberately expensive (~80-100ms here). The synchronous form runs
 // that on the event loop, which this process shares with every live call's
@@ -3962,6 +3971,24 @@ io.on('connection', (socket) => {
     io.to(partnerId).emit('chat-reaction', { id: msgId, emoji, on: !!on });
   });
 
+  // Text chat only: this side's tab went to the background (switched apps,
+  // locked the phone) or came back. The stranger hears it now instead of
+  // whenever the ping times out, and the chat ends if the tab stays hidden.
+  socket.on('chat-away', ({ away } = {}) => {
+    clearChatAway(socket.id);
+    const partnerId = partners.get(socket.id);
+    const me = profiles.get(socket.id);
+    if (!partnerId || !me || me.mode !== 'chat') return;
+    io.to(partnerId).emit('partner-away', { away: !!away });
+    if (!away) return;
+    chatAwayTimers.set(socket.id, setTimeout(() => {
+      chatAwayTimers.delete(socket.id);
+      if (partners.get(socket.id) !== partnerId) return;
+      disconnectPartner(socket.id, { dropped: true });
+      socket.emit('partner-left', { reason: 'away' });
+    }, CHAT_AWAY_DROP_MS));
+  });
+
   socket.on('typing', () => {
     const partnerId = partners.get(socket.id);
     if (partnerId) {
@@ -4805,6 +4832,7 @@ io.on('connection', (socket) => {
     disconnectPartner(socket.id, { dropped: true });
     clearFromQueue(socket.id);
     clearWaitFallbackTimer(socket.id);
+    clearChatAway(socket.id);
     const profile = profiles.get(socket.id);
     if (profile && clientSockets.get(profile.clientId) === socket.id) {
       clientSockets.delete(profile.clientId);

@@ -34,7 +34,7 @@
   document.head.appendChild(s);
 })();
 </script>
-<link rel="stylesheet" href="/chat.css?v=20260923seen" />
+<link rel="stylesheet" href="/chat.css?v=20260923ice" />
 <link rel="stylesheet" href="/chat-extras.css?v=20260922social2" />
 <link rel="stylesheet" href="/games.css?v=20260916navbar" />
 <link rel="stylesheet" href="/ui.css?v=20260923art" />
@@ -320,6 +320,7 @@
           <span data-i18n="chatNext">Next</span>
           <kbd class="next-kbd" aria-hidden="true">Esc</kbd>
         </button>
+        <button type="button" id="icebreakBtn" class="cx-btn icebreak-btn" data-i18n-aria="icebreakIdeas" aria-label="Question ideas">💡</button>
         <input id="msgInput" type="text" maxlength="1000" data-i18n-placeholder="typeMessage" data-i18n-aria="typeMessage" placeholder="Type a message…" autocomplete="off" />
         <button type="submit" class="send-btn" data-i18n-aria="send" aria-label="Send">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.4 20.4 22 12 3.4 3.6 3.4 10l13 2-13 2z"/></svg>
@@ -878,13 +879,14 @@
 
   <script defer src="/socket.io/socket.io.min.js"></script>
   <script defer src="/countries.js?v=20260828fix"></script>
-  <script defer src="/i18n.js?v=20260923safety"></script>
+  <script defer src="/i18n.js?v=20260923ice"></script>
   <script defer src="/chat-time.js?v=20260916navbar"></script>
   <script defer src="/animals.js?v=20260921animals"></script>
   <script defer src="/error-reporter.js?v=20260823ui"></script>
   <script defer src="/chat-extras.js?v=20260922social2"></script>
   <script defer src="/games.js?v=20260916navbar"></script>
-  <script defer src="/chat.js?v=20260923social5"></script>
+  <script defer src="/icebreakers.js?v=20260923ice"></script>
+  <script defer src="/chat.js?v=20260923ice"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the
