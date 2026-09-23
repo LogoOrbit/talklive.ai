@@ -2433,6 +2433,9 @@ function contentFingerprint(html) {
     // search engines everything was rewritten when nothing was, which is the
     // exact signal a site should not send.
     .replace(/<script\b[^>]*\bsrc=["'][^"']*(?:ads|pwa)\.js[^"']*["'][^>]*><\/script>/gi, '')
+    // The Consent Mode default scripts/migrate-analytics.js adds to the
+    // analytics tag - infrastructure, not content.
+    .replace(/\s*gtag\('consent', 'default'[\s\S]*?gtag\('set', 'ads_data_redaction', true\);/g, '')
     // Empty ad slots, inserted and moved by scripts/migrate-ads.js.
     .replace(/<div\b[^>]*\bdata-ad=[^>]*>\s*<\/div>/gi, '')
     // Cache-buster query strings: ?v=20260828fix is not a content change.

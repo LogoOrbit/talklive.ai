@@ -66,6 +66,26 @@ const SNIPPET = `<!-- Google tag (gtag.js) - see scripts/migrate-analytics.js --
 </script>
 `;
 
+/*
+ * Google Consent Mode v2 default: in the EEA, the UK and Switzerland, Google
+ * tags start with every storage type denied and wait up to half a second for
+ * the consent message (AdSense Privacy & messaging, a Google-certified CMP) to
+ * report the visitor's choice, which it passes to these tags. Everywhere else
+ * the defaults are unchanged. It must run before gtag('config'), so it is
+ * inserted straight after the gtag() stub on every page.
+ */
+const CONSENT_REGIONS = ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE',
+  'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'IS', 'LI', 'NO', 'GB', 'CH'];
+const CONSENT_DEFAULT = `
+  gtag('consent', 'default', {
+    ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: 'denied',
+    region: ${JSON.stringify(CONSENT_REGIONS).replace(/"/g, "'").replace(/,/g, ', ')},
+    wait_for_update: 500
+  });
+  gtag('set', 'ads_data_redaction', true);`;
+const GTAG_STUB = /function gtag\(\)\{dataLayer\.push\(arguments\);\}/;
+let consented = 0;
+
 function htmlFiles(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const fullPath = path.join(dir, entry.name);
@@ -86,21 +106,26 @@ for (const file of htmlFiles(publicDir)) {
     continue;
   }
   const before = fs.readFileSync(file, 'utf8');
+  let html = before;
 
   // Already tagged - by this sweep or by hand. Matching on the host rather than
   // on this snippet's exact text means a hand-written tag is never duplicated.
-  if (before.includes('googletagmanager.com/gtag/js')) {
+  if (html.includes('googletagmanager.com/gtag/js')) {
     skipped += 1;
-    continue;
+  } else if (html.includes('</body>')) {
+    // No closing body tag means this is not a page shell; leave it alone
+    // rather than appending a script to something whose structure is unknown.
+    html = html.replace('</body>', `${SNIPPET}</body>`);
+    updated += 1;
   }
 
-  // No closing body tag means this is not a page shell; leave it alone rather
-  // than appending a script to something whose structure is unknown.
-  if (!before.includes('</body>')) continue;
+  // Consent Mode default on every tagged page, hand-written tags included.
+  if (!html.includes("gtag('consent', 'default'")) {
+    const withConsent = html.replace(GTAG_STUB, (stub) => stub + CONSENT_DEFAULT);
+    if (withConsent !== html) { html = withConsent; consented += 1; }
+  }
 
-  const html = before.replace('</body>', `${SNIPPET}</body>`);
-  fs.writeFileSync(file, html);
-  updated += 1;
+  if (html !== before) fs.writeFileSync(file, html);
 }
 
-console.log(`Analytics: tagged ${updated} HTML files (${skipped} already had it).`);
+console.log(`Analytics: tagged ${updated} HTML files (${skipped} already had it); consent default added to ${consented}.`);
