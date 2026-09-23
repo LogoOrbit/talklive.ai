@@ -749,6 +749,7 @@ function persistNow() {
   // DATABASE_URL set, database unreachable, and no mirror to serve from: what
   // is in memory is not anybody's data, so it goes nowhere.
   if (pgPool && pgUnreachable && !runningOnMirror) return;
+  materializeSocial();
   stampMeta();
   const shrinking = checkShrink();
   if (shrinking) pendingShrinkSnapshot = true;
@@ -1570,7 +1571,31 @@ function pushSubscriberCount() {
 // --- Durable social graph ("memories": friends + friend chats + blocks) ---
 // index.js holds the live Maps; these take the already-serialized plain objects
 // and persist them (debounced), keeping the store the single source of truth.
+// The social graph is serialized when the store is actually written, not on
+// every change. index.js used to rebuild the whole graph as plain objects each
+// time anything social happened - once per event-loop turn - so a burst of
+// three hundred disconnects serialized every friendship and history list three
+// hundred times, on the same thread that relays live calls. Now a change only
+// marks the graph dirty; the (debounced) write asks for it once.
+let socialProvider = null;
+let socialDirty = false;
+function setSocialProvider(fn) { socialProvider = fn; }
+function markSocialDirty() {
+  socialDirty = true;
+  save();
+}
+function materializeSocial() {
+  if (!socialDirty || !socialProvider) return;
+  socialDirty = false;
+  assignSocial(socialProvider());
+}
+
 function saveSocial(social) {
+  assignSocial(social);
+  save();
+}
+
+function assignSocial(social) {
   data.social = {
     friends: social.friends || {},
     friendChats: social.friendChats || {},
@@ -1592,7 +1617,6 @@ function saveSocial(social) {
     // Declined friend requests, so a decline still holds after a deploy.
     declinedRequests: social.declinedRequests || {},
   };
-  save();
 }
 
 // --- Admin / sessions / audit ---
@@ -1749,6 +1773,8 @@ module.exports = {
   deleteAuthSession,
   deleteAuthSessionsForUser,
   saveSocial,
+  setSocialProvider,
+  markSocialDirty,
   setPremium,
   extendPremium,
   revokePremium,

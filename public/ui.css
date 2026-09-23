@@ -375,7 +375,13 @@
   background: var(--danger);
   color: #fff;
 }
+.tl-tab[data-tab="friends"] .tl-tab-unread {
+  background: var(--danger);
+  color: #fff;
+}
 .tl-tab-count.hidden { display: none; }
+/* Seen news ("accepted your request") stays listed but stops asking. */
+.notif-item.is-seen { opacity: 0.62; }
 
 .tl-tabpanel.hidden { display: none; }
 

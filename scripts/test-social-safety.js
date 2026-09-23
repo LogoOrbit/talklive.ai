@@ -141,6 +141,32 @@ async function matchPair(a, b, mode = 'chat') {
     await wait(100);
     ok('remover still finds the conversation', (sync(a).chatHistory || []).some((h) => h.clientId === B && h.username === 'Ben'));
 
+    // --- Unfriending with no conversation, and news rows ----------------
+    // Ann and Ben re-friend (they know each other from history), then Ben is
+    // told "accepted", looks at it, and Ann unfriends him.
+    b.emit('friend-request', { targetClientId: A });
+    await once(b, 'friend-request-result');
+    const accepted = once(b, 'notification');
+    a.emit('friend-request', { targetClientId: B });
+    await once(a, 'friend-request-result');
+    const acc = await accepted.catch(() => null);
+    // Ben asked first, so Ann's tap is the acceptance and Ben hears about it.
+    ok('the requester is told the request was accepted', acc && acc.type === 'friend_accepted', JSON.stringify(acc));
+    await wait(200);
+    b.emit('mark-notifications-seen');
+    await wait(250);
+    ok('looking at requests marks accepted-news seen', (sync(b).notifications || []).some((n) => n.type === 'friend_accepted' && n.seen), JSON.stringify(sync(b).notifications));
+    a.emit('remove-friend', { friendClientId: B });
+    await wait(250);
+    const bAfter = sync(b);
+    ok('unfriending clears the "accepted" row it contradicts', !(bAfter.notifications || []).some((n) => n.type === 'friend_accepted' && n.byClientId === A));
+    ok('both stay in recent people', (bAfter.chatHistory || []).some((h) => h.clientId === A));
+    b.emit('friend-request', { targetClientId: A });
+    const reAdd = await once(b, 'friend-request-result');
+    ok('an ex-friend can ask again', reAdd.ok, JSON.stringify(reAdd));
+    a.emit('friend-request-respond', { fromClientId: B, accept: true });
+    await wait(200);
+
     // --- Call-backs and the text-only page ------------------------------
     // Ben moves to /chat (same identity, text surface).
     b.disconnect();
