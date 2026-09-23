@@ -1,0 +1,92 @@
+# Copy the live store into Postgres, by hand, from the Actions tab.
+#
+# Why this is a workflow rather than a command someone runs: the two things it
+# has to touch are the Fly volume and the database, and the tokens for both
+# already live here as repository secrets. Nobody has to install flyctl, hold a
+# copy of the data on a laptop, or paste a connection string anywhere.
+#
+# It never uploads the data as an artifact and never prints its contents - the
+# document holds password hashes and private messages. Only counts are logged.
+name: Copy live data into Postgres
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Check first (recommended), or actually copy'
+        required: true
+        default: 'check'
+        type: choice
+        options:
+          - check
+          - copy
+      force:
+        description: 'Copy even if Postgres already holds more data (dangerous)'
+        required: false
+        default: false
+        type: boolean
+
+# Never two of these at once against one row.
+concurrency:
+  group: migrate-to-postgres
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    name: Copy the store
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check the database secret is present
+        run: |
+          if [ -z "${{ secrets.DATABASE_URL }}" ]; then
+            echo "::error::DATABASE_URL is not set in this repository's secrets."
+            echo "Add it under Settings -> Secrets and variables -> Actions -> New repository secret."
+            exit 1
+          fi
+
+      - name: Install flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      # sftp rather than `ssh console -C cat`: a console session can interleave
+      # its own output with the file, and a document that has picked up a stray
+      # line no longer parses - which the migration script would then correctly
+      # refuse, after the confusing part had already happened.
+      - name: Fetch the live store from the Fly volume
+        run: flyctl ssh sftp get /data/owner-data.json ./live-store.json -a talklive-ai
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Confirm we got a real document
+        run: |
+          test -s ./live-store.json || { echo "::error::the file came back empty"; exit 1; }
+          node -e "
+            const d = JSON.parse(require('fs').readFileSync('./live-store.json','utf8'));
+            const n = Object.keys(d.accounts||{}).length;
+            console.log('parsed OK -', n, 'account(s)');
+          "
+
+      - name: Copy into Postgres
+        run: |
+          ARGS="./live-store.json"
+          if [ "${{ inputs.mode }}" != "copy" ]; then ARGS="$ARGS --dry-run"; fi
+          if [ "${{ inputs.force }}" = "true" ]; then ARGS="$ARGS --force"; fi
+          node scripts/migrate-to-postgres.js $ARGS
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      # Belt and braces: the runner is thrown away anyway, but the file should
+      # not outlive the step that needed it even so.
+      - name: Shred the local copy
+        if: always()
+        run: shred -u ./live-store.json 2>/dev/null || rm -f ./live-store.json

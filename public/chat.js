@@ -1377,7 +1377,14 @@
         '</span>' +
         '<span class="tl-sent-chip">' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 1.8"/></svg>' +
-        escapeHtml(t('pending')) + '</span>';
+        escapeHtml(t('pending')) + '</span>' +
+        '<button type="button" class="tl-sent-cancel">' + escapeHtml(t('cancelRequest')) + '</button>';
+      var cancelBtn = row.querySelector('.tl-sent-cancel');
+      cancelBtn.setAttribute('aria-label', t('cancelFriendRequest'));
+      cancelBtn.addEventListener('click', function () {
+        cancelBtn.disabled = true;
+        socket.emit('cancel-friend-request', { targetClientId: r.clientId });
+      });
       sentRequestsList.appendChild(row);
     });
   }
@@ -2006,7 +2013,21 @@
 
   socket.on('chat-blocked', function (data) {
     var reason = data && data.reason;
-    addMessage(reason === 'link' ? t('chatLinkBlocked') : t('errUnsafeMessage'), 'system');
+    var text = reason === 'link' ? t('chatLinkBlocked')
+      : reason === 'rate' ? t('errSlowDown')
+      : reason === 'unreachable' ? t('errCantMessage')
+      : t('errUnsafeMessage');
+    // A refused direct message belongs in the direct chat it was typed in, not
+    // in the stranger conversation behind it.
+    if (activeFriendChatId && (reason === 'unreachable' || friendChatPanel.classList.contains('open'))) {
+      var el = document.createElement('div');
+      el.className = 'msg system';
+      el.textContent = text;
+      friendChatMsgs.appendChild(el);
+      friendChatMsgs.scrollTop = friendChatMsgs.scrollHeight;
+      return;
+    }
+    addMessage(text, 'system');
   });
 
   socket.on('partner-left', function () {

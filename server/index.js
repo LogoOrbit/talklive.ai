@@ -1239,6 +1239,15 @@ const waitingQueue = []; // socket ids waiting for a partner
 const partners = new Map(); // socketId -> partnerSocketId
 const profiles = new Map(); // socketId -> { username, country, city, gender, prefGender, includeCountries, excludeCountries, interests, clientId, countryFallbackActive }
 const blocks = new Map(); // clientId -> Set<clientId>
+// Who each person blocked, as they knew them: clientId -> Map<blockedId,
+// { username, countryCode, avatar, ts }>. `blocks` alone is a set of opaque ids,
+// which is why blocking used to be forever - there was nothing to list, so
+// nothing to undo.
+const blockMeta = new Map();
+const MAX_BLOCKS = 500;
+// "Clear chat" is one-sided: `${clientId}|${pairKey}` -> ts. Messages at or
+// before it are hidden from that person only; the other side keeps the thread.
+const chatClears = new Map();
 const hearts = new Map(); // pairKey ("clientIdA|clientIdB" sorted) -> Set<clientId who hearted>
 const reportCooldowns = new Map(); // reporter|target -> last report timestamp
 
@@ -1475,6 +1484,8 @@ function writeSocial() {
     sentRequests: mapOfMaps(sentRequests),
     notifications: notifObj,
     lastSeen: Object.fromEntries(lastSeen),
+    blockMeta: mapOfMaps(blockMeta),
+    chatClears: Object.fromEntries(chatClears),
   });
 }
 
@@ -1519,6 +1530,12 @@ function hydrateFromStore() {
   for (const [cid, ts] of Object.entries(social.lastSeen || {})) {
     if (typeof ts === 'number') lastSeen.set(cid, ts);
   }
+  for (const [cid, m] of Object.entries(social.blockMeta || {})) {
+    if (m && typeof m === 'object') blockMeta.set(cid, new Map(Object.entries(m)));
+  }
+  for (const [key, ts] of Object.entries(social.chatClears || {})) {
+    if (typeof ts === 'number') chatClears.set(key, ts);
+  }
 }
 
 function isFriend(a, b) {
@@ -1538,10 +1555,69 @@ function recordChatHistory(ownerClientId, partner) {
     clientId: partner.clientId,
     username: partner.username,
     countryCode: partner.country,
+    avatar: partner.avatar || null,
     mode: partner.mode === 'chat' ? 'chat' : 'talk',
     ts: Date.now(),
   });
   while (list.length > MAX_CHAT_HISTORY) list.shift();
+}
+
+// A direct conversation with someone who is not a friend lives in "recent
+// people" - that list is where it is opened from. Twenty more random matches
+// used to push the person out of it, and with them the whole conversation:
+// messages to them were silently dropped and the thread could not be loaded.
+// Talking keeps the row fresh on both sides, the way a messenger's inbox does.
+// Returns true when the row was missing and had to be added back, which is the
+// case where the owner's list needs a fresh state-sync to show it.
+function touchChatHistory(ownerClientId, otherClientId, fallback) {
+  if (!ownerClientId || !otherClientId || ownerClientId === otherClientId) return false;
+  if (isFriend(ownerClientId, otherClientId)) return false;
+  let list = chatHistory.get(ownerClientId);
+  const idx = list ? list.findIndex((e) => e.clientId === otherClientId) : -1;
+  let entry = idx !== -1 ? list[idx] : null;
+  if (!entry) {
+    if (!fallback || !fallback.username) return false;
+    entry = {
+      clientId: otherClientId,
+      username: fallback.username,
+      countryCode: fallback.countryCode || '',
+      avatar: fallback.avatar || null,
+      mode: 'chat',
+    };
+  } else {
+    list.splice(idx, 1);
+  }
+  if (!list) { list = []; chatHistory.set(ownerClientId, list); }
+  list.push({ ...entry, ts: Date.now() });
+  while (list.length > MAX_CHAT_HISTORY) list.shift();
+  return idx === -1;
+}
+
+// What one person knows about another, from the freshest place that has it:
+// their live profile, a friendship, a recent match, or a request.
+function snapshotOf(clientId, viewerClientId) {
+  const sock = getSocketByClientId(clientId);
+  const live = sock ? profiles.get(sock.id) : null;
+  if (live) return { username: live.username, countryCode: live.country, avatar: live.avatar || null };
+  const friend = (friends.get(viewerClientId) || new Map()).get(clientId);
+  if (friend) return { username: friend.username, countryCode: friend.countryCode, avatar: friend.avatar || null };
+  const past = (chatHistory.get(viewerClientId) || []).find((e) => e.clientId === clientId);
+  if (past) return { username: past.username, countryCode: past.countryCode, avatar: past.avatar || null };
+  const req = (friendRequests.get(viewerClientId) || new Map()).get(clientId)
+    || (sentRequests.get(viewerClientId) || new Map()).get(clientId);
+  if (req) return { username: req.username, countryCode: req.countryCode, avatar: req.avatar || null };
+  return { username: '', countryCode: '', avatar: null };
+}
+
+// The point before which `viewer` has cleared their copy of a conversation.
+function clearedAt(viewerClientId, otherClientId) {
+  return chatClears.get(`${viewerClientId}|${pairKey(viewerClientId, otherClientId)}`) || 0;
+}
+
+function visibleThread(viewerClientId, otherClientId) {
+  const list = friendChats.get(pairKey(viewerClientId, otherClientId)) || [];
+  const cut = clearedAt(viewerClientId, otherClientId);
+  return cut ? list.filter((m) => m.ts > cut) : list;
 }
 
 function dropFromChatHistory(ownerClientId, otherClientId) {
@@ -1584,7 +1660,7 @@ function resyncWatchers(clientId) {
 function lastMessageBetween(me, other) {
   const list = friendChats.get(pairKey(me, other));
   const m = list && list[list.length - 1];
-  if (!m) return null;
+  if (!m || m.ts <= clearedAt(me, other)) return null;
   return {
     id: m.id,
     mine: m.from === me,
@@ -1715,7 +1791,7 @@ function notifSubject(n) {
 // (call-backs, direct chat) - without it, a clientId seen once is enough to
 // ring or message someone forever.
 function knowsEachOther(a, b) {
-  return isFriend(a, b) || hasChatHistory(a, b);
+  return isFriend(a, b) || hasChatHistory(a, b) || friendChats.has(pairKey(a, b));
 }
 
 // Per-client sliding budget for social actions that reach another person
@@ -1797,6 +1873,7 @@ function syncClientState(socket, clientId) {
       clientId: e.clientId,
       username: e.username,
       countryCode: e.countryCode,
+      avatar: liveAvatarFor(e.clientId, e.avatar),
       mode: e.mode || 'chat',
       ts: e.ts,
       ...presenceOf(e.clientId),
@@ -1809,12 +1886,19 @@ function syncClientState(socket, clientId) {
     ...info,
     online: clientSockets.has(fid) && !statusHidden.get(fid),
   }));
+  // Only the people this user blocked - never who blocked them, which would
+  // tell a blocked person exactly who shut them out.
+  const metaMap = blockMeta.get(clientId) || new Map();
+  const blockedList = Array.from(blocks.get(clientId) || [])
+    .map((bid) => ({ clientId: bid, ...(metaMap.get(bid) || {}) }))
+    .sort((a, b) => (b.ts || 0) - (a.ts || 0));
   socket.emit('state-sync', {
     friends: friendList,
     friendRequests: requestList,
     sentRequests: sentList,
     notifications: notifications.get(clientId) || [],
     chatHistory: historyList,
+    blocked: blockedList,
   });
 }
 
@@ -2332,8 +2416,12 @@ function isBlockedPair(clientIdA, clientIdB) {
 }
 
 function blockPair(clientIdA, clientIdB) {
+  // Snapshot before anything below forgets who they were.
+  const who = snapshotOf(clientIdB, clientIdA);
   if (!blocks.has(clientIdA)) blocks.set(clientIdA, new Set());
   blocks.get(clientIdA).add(clientIdB);
+  if (!blockMeta.has(clientIdA)) blockMeta.set(clientIdA, new Map());
+  blockMeta.get(clientIdA).set(clientIdB, { ...who, ts: Date.now() });
   // A friend request either way is dead the moment one of them blocks: leaving
   // it would keep the blocker's inbox showing someone they refused, and leave
   // the other side looking at a "Pending" that can never be answered.
@@ -3564,7 +3652,7 @@ io.on('connection', (socket) => {
     const known = (friends.get(me.clientId) || new Map()).get(targetClientId)
       || (chatHistory.get(me.clientId) || []).find((h) => h.clientId === targetClientId)
       || (friendRequests.get(me.clientId) || new Map()).get(targetClientId)
-      || (hasChatHistory(me.clientId, targetClientId) ? {} : null);
+      || (knowsEachOther(me.clientId, targetClientId) ? {} : null);
     if (!known) return;
     const reportKey = `${me.clientId}|${targetClientId}`;
     const now = Date.now();
@@ -3855,12 +3943,10 @@ io.on('connection', (socket) => {
     const reqEntry = { ...myInfo, ts: Date.now() };
     if (intro) reqEntry.message = intro;
     friendRequests.get(targetClientId).set(me.clientId, reqEntry);
-    const targetProfile = profiles.get(clientSockets.get(targetClientId) || '');
-    noteSentRequest(me.clientId, targetClientId, {
-      username: (targetProfile && targetProfile.username) || '',
-      countryCode: (targetProfile && targetProfile.country) || '',
-      avatar: targetProfile ? targetProfile.avatar : null,
-    });
+    // Asked while they were offline (from recent people): their live profile
+    // is not there to read, so fall back to what this user knows of them -
+    // otherwise the "You asked" list showed a nameless "Stranger".
+    noteSentRequest(me.clientId, targetClientId, snapshotOf(targetClientId, me.clientId));
 
     pushNotification(targetClientId, {
       type: 'friend_request',
@@ -3960,7 +4046,13 @@ io.on('connection', (socket) => {
   socket.on('block-friend', ({ friendClientId } = {}) => {
     const me = profiles.get(socket.id);
     friendClientId = validId(friendClientId);
-    if (!me || !friendClientId) return;
+    if (!me || !friendClientId || friendClientId === me.clientId) return;
+    // Anyone can be blocked from their profile - a friend, a recent match or
+    // someone who sent a request - but the list has a ceiling so a scripted
+    // client cannot grow it without bound.
+    const mine = blocks.get(me.clientId);
+    if (mine && mine.size >= MAX_BLOCKS && !mine.has(friendClientId)) return;
+    store.recordFeature('block');
     removeFriendPair(me.clientId, friendClientId);
     blockPair(me.clientId, friendClientId);
     syncClientState(socket, me.clientId);
@@ -3970,16 +4062,77 @@ io.on('connection', (socket) => {
     if (friendSocket) syncClientState(friendSocket, friendClientId);
   });
 
+  // Undo a block from Settings > Privacy. Only lifts this user's side: if the
+  // other person blocked them too, that block still stands. The friendship and
+  // history the block removed are not restored - unblocking makes them
+  // reachable again, it does not pretend nothing happened.
+  socket.on('unblock-user', ({ targetClientId } = {}) => {
+    const me = profiles.get(socket.id);
+    targetClientId = validId(targetClientId);
+    if (!me || !targetClientId) return;
+    const mine = blocks.get(me.clientId);
+    if (!mine || !mine.delete(targetClientId)) return;
+    if (!mine.size) blocks.delete(me.clientId);
+    const meta = blockMeta.get(me.clientId);
+    if (meta) {
+      meta.delete(targetClientId);
+      if (!meta.size) blockMeta.delete(me.clientId);
+    }
+    persistSocial();
+    store.recordFeature('unblock');
+    syncClientState(socket, me.clientId);
+  });
+
+  // Take back a friend request that has not been answered yet. The request
+  // leaves their inbox too, so a tap on "Confirm" there cannot resurrect it.
+  socket.on('cancel-friend-request', ({ targetClientId } = {}) => {
+    const me = profiles.get(socket.id);
+    targetClientId = validId(targetClientId);
+    if (!me || !targetClientId) return;
+    const pending = (sentRequests.get(me.clientId) || new Map()).has(targetClientId)
+      || (friendRequests.get(targetClientId) || new Map()).has(me.clientId);
+    if (!pending) return syncClientState(socket, me.clientId);
+    clearRequestPair(me.clientId, targetClientId);
+    removeNotificationsWhere(targetClientId,
+      (n) => n.type === 'friend_request' && n.fromClientId === me.clientId);
+    persistSocial();
+    store.recordFeature('friend_request_cancel');
+    syncClientState(socket, me.clientId);
+    const targetSocket = getSocketByClientId(targetClientId);
+    if (targetSocket) syncClientState(targetSocket, targetClientId);
+  });
+
+  // "Clear chat": hides everything so far from this user only. The other
+  // person keeps their copy - wiping someone else's history is not a thing a
+  // messenger lets you do (unsend is the per-message tool for that).
+  socket.on('clear-friend-chat', ({ friendClientId } = {}) => {
+    const me = profiles.get(socket.id);
+    friendClientId = validId(friendClientId);
+    if (!me || !friendClientId) return;
+    const key = pairKey(me.clientId, friendClientId);
+    const list = friendChats.get(key);
+    if (!list || !list.length) return;
+    chatClears.set(`${me.clientId}|${key}`, list[list.length - 1].ts);
+    removeNotificationsWhere(me.clientId, (n) => n.type === 'message' && n.fromClientId === friendClientId);
+    persistSocial();
+    store.recordFeature('chat_clear');
+    socket.emit('friend-chat-history', { friendClientId, messages: [] });
+    syncClientState(socket, me.clientId);
+  });
+
   // --- Friend-to-friend chat (separate from the ephemeral in-call chat) ---
   socket.on('friend-message', (payload = {}) => {
     const me = profiles.get(socket.id);
     const toClientId = validId(payload && payload.toClientId);
     const parsed = readChatPayload(payload);
-    if (!me || !toClientId || !parsed) return;
+    if (!me || !toClientId || !parsed || toClientId === me.clientId) return;
     // Friends can always message; so can two people who recently chatted at
     // random (the "message back from history" path), even without a friendship.
-    if (!isFriend(me.clientId, toClientId) && !hasChatHistory(me.clientId, toClientId)) return;
-    if (isBlockedPair(me.clientId, toClientId)) return;
+    // Refusals are said out loud: the composer had already cleared, so a
+    // silent drop looked like a message that was sent and never answered.
+    if (!knowsEachOther(me.clientId, toClientId) || isBlockedPair(me.clientId, toClientId)) {
+      return socket.emit('chat-blocked', { reason: 'unreachable', toClientId });
+    }
     // Friends can message each other any time - no call required. If the friend
     // is offline the message is still stored and a notification is queued, so it
     // reaches them the next time they come online.
@@ -4023,6 +4176,13 @@ io.on('connection', (socket) => {
     const list = friendChats.get(key);
     list.push(msg);
     if (list.length > 200) list.shift();
+    // Not friends: keep the conversation in both people's recent list.
+    let mineAdded = false;
+    let theirsAdded = false;
+    if (!isFriend(me.clientId, toClientId)) {
+      mineAdded = touchChatHistory(me.clientId, toClientId, snapshotOf(toClientId, me.clientId));
+      theirsAdded = touchChatHistory(toClientId, me.clientId, { username: me.username, countryCode: me.country, avatar: me.avatar });
+    }
     persistSocial();
     if (parsed.gif) store.recordFeature('chat_gif');
     if (parsed.replyTo) store.recordFeature('chat_reply');
@@ -4036,7 +4196,11 @@ io.on('connection', (socket) => {
       gif: msg.gif || null,
     };
     const targetSocket = getSocketByClientId(toClientId);
-    if (targetSocket) targetSocket.emit('friend-message', wire);
+    if (targetSocket) {
+      targetSocket.emit('friend-message', wire);
+      if (theirsAdded) syncClientState(targetSocket, toClientId);
+    }
+    if (mineAdded) syncClientState(socket, me.clientId);
 
     pushNotification(toClientId, {
       type: 'message',
@@ -4059,8 +4223,7 @@ io.on('connection', (socket) => {
     toClientId = validId(toClientId);
     const msgId = cleanMsgId(id);
     if (!me || !toClientId || !msgId || !REACTION_SET.has(emoji)) return;
-    if (!isFriend(me.clientId, toClientId) && !hasChatHistory(me.clientId, toClientId)) return;
-    if (isBlockedPair(me.clientId, toClientId)) return;
+    if (!knowsEachOther(me.clientId, toClientId) || isBlockedPair(me.clientId, toClientId)) return;
     const now = Date.now();
     let rl = reactRate.get(socket.id);
     if (!rl || now - rl.start > 5000) { rl = { start: now, n: 0 }; reactRate.set(socket.id, rl); }
@@ -4138,8 +4301,7 @@ io.on('connection', (socket) => {
     // chat opened empty and every earlier message looked lost.
     if (!me || !friendClientId || !knowsEachOther(me.clientId, friendClientId)) return;
     if (isBlockedPair(me.clientId, friendClientId)) return;
-    const key = pairKey(me.clientId, friendClientId);
-    socket.emit('friend-chat-history', { friendClientId, messages: friendChats.get(key) || [] });
+    socket.emit('friend-chat-history', { friendClientId, messages: visibleThread(me.clientId, friendClientId) });
   });
 
   socket.on('mark-messages-read', ({ friendClientId } = {}) => {
@@ -4537,6 +4699,12 @@ function sweepEphemeralState() {
   for (const cid of lastSeen.keys()) {
     if (friends.has(cid) || chatHistory.has(cid)) continue;
     lastSeen.delete(cid);
+    socialChanged = true;
+  }
+  // A clear marker outlives its purpose once the thread itself is gone.
+  for (const key of chatClears.keys()) {
+    if (friendChats.has(key.slice(key.indexOf('|') + 1))) continue;
+    chatClears.delete(key);
     socialChanged = true;
   }
   if (socialChanged) persistSocial();
