@@ -40,6 +40,7 @@
   "confirmClearChat": "이 대화를 지울까요? 나에게서만 삭제되고 상대방은 사본을 그대로 가져요.",
   "chatCleared": "채팅을 지웠어요",
   "errCantMessage": "메시지를 보낼 수 없어요. 이 사람에게 더 이상 메시지를 보낼 수 없어요.",
+  "msgNotSentRetry": "전송 실패 · 탭하여 다시 시도",
   "someone": "누군가",
   "catBilling": "코인 및 결제",
   "skipToContent": "본문으로 건너뛰기",

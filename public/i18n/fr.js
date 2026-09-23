@@ -40,6 +40,7 @@
   "confirmClearChat": "Effacer cette conversation ? Elle n'est supprimée que pour vous ; l'autre personne garde sa copie.",
   "chatCleared": "Discussion effacée",
   "errCantMessage": "Ce message n'a pas pu être envoyé. Vous ne pouvez plus écrire à cette personne.",
+  "msgNotSentRetry": "Non envoyé · Touchez pour réessayer",
   "someone": "Quelqu'un",
   "catBilling": "Pièces et facturation",
   "skipToContent": "Aller au contenu principal",

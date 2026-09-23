@@ -40,6 +40,7 @@
   "confirmClearChat": "Bu sohbet temizlensin mi? Yalnızca senden silinir, karşı taraf kendi kopyasını tutar.",
   "chatCleared": "Sohbet temizlendi",
   "errCantMessage": "Bu mesaj gönderilemedi. Artık bu kişiye mesaj atamazsın.",
+  "msgNotSentRetry": "Gönderilemedi · Tekrar denemek için dokun",
   "someone": "Biri",
   "catBilling": "Jetonlar ve ödeme",
   "skipToContent": "Ana içeriğe geç",

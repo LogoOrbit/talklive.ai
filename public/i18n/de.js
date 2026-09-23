@@ -40,6 +40,7 @@
   "confirmClearChat": "Diese Unterhaltung leeren? Sie wird nur für dich gelöscht – die andere Person behält ihre Kopie.",
   "chatCleared": "Chat geleert",
   "errCantMessage": "Diese Nachricht konnte nicht gesendet werden. Du kannst dieser Person nicht mehr schreiben.",
+  "msgNotSentRetry": "Nicht gesendet · Tippen zum Wiederholen",
   "someone": "Jemand",
   "catBilling": "Münzen & Abrechnung",
   "skipToContent": "Zum Hauptinhalt springen",

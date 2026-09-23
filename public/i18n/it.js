@@ -40,6 +40,7 @@
   "confirmClearChat": "Svuotare questa conversazione? Viene rimossa solo per te: l'altra persona conserva la sua copia.",
   "chatCleared": "Chat svuotata",
   "errCantMessage": "Impossibile inviare questo messaggio. Non puoi più scrivere a questa persona.",
+  "msgNotSentRetry": "Non inviato · Tocca per riprovare",
   "someone": "Qualcuno",
   "catBilling": "Monete e fatturazione",
   "skipToContent": "Vai al contenuto principale",

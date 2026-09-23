@@ -40,6 +40,7 @@
   "confirmClearChat": "¿Borrar esta conversación? Solo se borra para ti; la otra persona conserva su copia.",
   "chatCleared": "Chat borrado",
   "errCantMessage": "No se pudo enviar este mensaje. Ya no puedes escribir a esta persona.",
+  "msgNotSentRetry": "No enviado · Toca para reintentar",
   "someone": "Alguien",
   "catBilling": "Monedas y facturación",
   "skipToContent": "Saltar al contenido principal",
