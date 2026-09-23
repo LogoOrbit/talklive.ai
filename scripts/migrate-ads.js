@@ -27,6 +27,19 @@ const appOnlyPages = new Set(['chat.html']);
 // page would contradict the ad-free plan it is selling).
 const noLoaderPages = new Set([...appOnlyPages, ...adFreePages]);
 
+// No Google ads on the geo cluster: /countries/, /cities/ and /languages/.
+// These pages come from one template and, measured on 5-word shingles in
+// <main>, only ~17% (languages) to ~25% (countries) of their text is unique to
+// the page; the 113 city pages are already noindexed as thin. AdSense does not
+// allow Google ads on low-value or templated content, and one flagged section
+// can hold up approval for the whole site. The pages stay published and
+// indexed as before - they just carry no ad code and no ad slots.
+const NO_AD_DIRS = ['countries', 'cities', 'languages'];
+function isNoAdPage(file) {
+  const rel = path.relative(publicDir, file).split(path.sep);
+  return rel.length > 1 && NO_AD_DIRS.includes(rel[0]);
+}
+
 function htmlFiles(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const fullPath = path.join(dir, entry.name);
@@ -39,6 +52,7 @@ let updated = 0;
 for (const file of htmlFiles(publicDir)) {
   const before = fs.readFileSync(file, 'utf8');
   let html = before;
+  const noAds = isNoAdPage(file);
 
   html = html.replace(/<!--([\s\S]*?)-->/g, (comment) =>
     /AdSense|adsbygoogle/i.test(comment) ? '' : comment
@@ -157,12 +171,18 @@ for (const file of htmlFiles(publicDir)) {
     `src="/ads.js?v=${adsVersion}"`
   );
 
-  if (!adFreePages.has(path.basename(file)) && !/src=["']\/ads\.js\?v=/.test(html)) {
+  if (!adFreePages.has(path.basename(file)) && !noAds && !/src=["']\/ads\.js\?v=/.test(html)) {
     html = html.replace('</head>', `<script defer src="/ads.js?v=${adsVersion}"></script>\n</head>`);
   }
   // The AdSense loader on every ad-carrying page (site verification and Auto
   // ads need it in the head of each page, not only the homepage).
-  if (noLoaderPages.has(path.basename(file))) {
+  if (noAds) {
+    // Every slot with its labelled card, any wrapper left empty, and ads.js.
+    html = html.replace(/<div class="ad-card"><span class="ad-card-label"[^>]*>[^<]*<\/span><div\b[^>]*\bdata-ad="[^"]*"[^>]*><\/div><\/div>/g, '');
+    html = html.replace(/[ \t]*<div class="wrap" style="margin:28px auto(?:;text-align:center)?">\s*<\/div>\r?\n?/g, '');
+    html = html.replace(/^.*<script\b[^>]*src=["']\/ads\.js[^"']*["'][^>]*><\/script>.*\r?\n?/gm, '');
+  }
+  if (noLoaderPages.has(path.basename(file)) || noAds) {
     html = html.replace(/^.*pagead2\.googlesyndication\.com.*\r?\n(?:\s*crossorigin="anonymous"><\/script>\r?\n)?/gim, '');
   } else if (!adFreePages.has(path.basename(file)) && !/ca-pub-6368797323385379/.test(html)) {
     html = html.replace('</head>', `${ADSENSE_LOADER}\n</head>`);
