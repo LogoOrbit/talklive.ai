@@ -6915,3 +6915,19 @@ html.perf-lite .side-panel { box-shadow: none; }
 [data-theme="light"] .profile-dialog { box-shadow: 0 30px 80px rgba(20, 30, 70, 0.25); }
 [data-theme="light"] .friend-profile-status { background: rgba(20, 30, 70, 0.06); }
 [data-theme="light"] .friend-profile-avatar { color: var(--text); }
+
+/* Anything that names the other person - call screen, in-call chat header -
+   opens their profile. */
+.tl-profile-link { cursor: pointer; }
+.partner-name.tl-profile-link,
+.chat-peer.tl-profile-link { border-radius: 8px; }
+.partner-name.tl-profile-link:hover,
+.chat-peer.tl-profile-link:hover .chat-peer-name > span:first-child {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.tl-profile-link:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 3px;
+}
+

@@ -3001,7 +3001,7 @@ function openUserProfile(person) {
   // recent matches ("message back"). Block is for everyone - it used to be
   // friends-only, so the one person you most wanted gone after a bad call
   // could only be reported, never simply blocked.
-  friendProfileChatBtn.classList.toggle('hidden', !canMessage(person.clientId));
+  friendProfileChatBtn.classList.toggle('hidden', !canMessage(person.clientId) && !inCallWith(person.clientId));
   friendProfileRenameBtn.classList.toggle('hidden', relation !== 'friend');
   friendProfileRemoveBtn.classList.toggle('hidden', relation !== 'friend');
   document.getElementById('friendProfileManageRow').classList.toggle('hidden', relation !== 'friend');
@@ -3035,6 +3035,11 @@ closeFriendProfileBtn.addEventListener('click', () => closeSidePanel(friendProfi
 friendProfileChatBtn.addEventListener('click', () => {
   if (!activeProfileFriendId) return;
   closeSidePanel(friendProfileModal, friendProfileOverlay);
+  // The person you are on a call with: their chat is the in-call one.
+  if (inCallWith(activeProfileFriendId)) {
+    openChatPanel();
+    return;
+  }
   openFriendChat(activeProfileFriendId);
 });
 
@@ -6024,6 +6029,29 @@ function syncChatHeader() {
   }
   syncChatEmpty();
 }
+
+// --- The person on the call, as a profile ---------------------------------
+// Their name or animal on the call screen and in the in-call chat header opens
+// the same profile sheet as everywhere else: add, report and block live there.
+function openPartnerProfile() {
+  const p = currentPartner;
+  if (!p || !p.clientId) return;
+  openUserProfile({
+    clientId: p.clientId,
+    username: p.username,
+    countryCode: p.countryCode,
+    avatar: p.animal ? ANIMAL_AVATAR_PREFIX + p.animal : null,
+  });
+}
+[chatPeerAvatar, document.getElementById('chatPeer'),
+  document.getElementById('partnerAnimal'), document.getElementById('partnerName'),
+  document.getElementById('partnerMeta')].forEach((el) => {
+  if (!el) return;
+  el.addEventListener('click', openPartnerProfile);
+  el.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPartnerProfile(); }
+  });
+});
 
 // --- The empty chat -------------------------------------------------------
 // A blank panel is the worst thing to open: it says nothing about who is on

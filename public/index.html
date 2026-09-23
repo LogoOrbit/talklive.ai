@@ -53,7 +53,7 @@
      system face a beat later. Only the latin subset is preloaded - latin-ext
      is fetched on demand by the unicode-range in style.css. -->
 <link rel="preload" as="font" type="font/woff2" href="/fonts/plus-jakarta-sans-latin.woff2?v=20260922type" crossorigin />
-<link rel="stylesheet" href="style.css?v=20260923profile" />
+<link rel="stylesheet" href="style.css?v=20260923profile2" />
 <link rel="stylesheet" href="chat-extras.css?v=20260922social2" />
 <link rel="stylesheet" href="games.css?v=20260916settings" />
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
@@ -2012,9 +2012,9 @@
              let them load or change while a call is live. -->
 
         <div id="partnerCard" class="partner-card hidden">
-          <div class="partner-animal hidden" id="partnerAnimal" aria-live="polite"></div>
-          <div class="partner-name" id="partnerName">-</div>
-          <div class="partner-meta" id="partnerMeta">-</div>
+          <div class="partner-animal tl-profile-link hidden" id="partnerAnimal" aria-live="polite"></div>
+          <div class="partner-name tl-profile-link" id="partnerName" role="button" tabindex="0" data-i18n-title="openProfile" title="Open profile">-</div>
+          <div class="partner-meta tl-profile-link" id="partnerMeta">-</div>
           <div class="partner-interests" id="partnerInterests"></div>
           <div id="sharedInterestNote" class="shared-interest-note hidden"></div>
         </div>
@@ -2246,8 +2246,8 @@
           <!-- The spirit animal the stranger picked, next to their name. It is
                the only thing either of you knows about the other, so the panel
                shows it rather than leaving the header as the bare word "Chat". -->
-          <span id="chatPeerAvatar" class="chat-peer-avatar hidden" aria-hidden="true"></span>
-          <div class="chat-peer" id="chatPeer">
+          <span id="chatPeerAvatar" class="chat-peer-avatar tl-profile-link hidden" aria-hidden="true"></span>
+          <div class="chat-peer tl-profile-link" id="chatPeer" role="button" tabindex="0" data-i18n-title="openProfile" title="Open profile">
             <div class="chat-peer-name">
               <span id="chatPeerName" data-i18n="chat">Chat</span>
               <span id="chatPeerFlag" class="chat-peer-flag" aria-hidden="true"></span>
@@ -2697,7 +2697,7 @@
   </script>
   <script defer src="chat-extras.js?v=20260922social2"></script>
   <script defer src="games.js?v=20260916settings"></script>
-  <script defer src="app.js?v=20260923profile"></script>
+  <script defer src="app.js?v=20260923profile2"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the
