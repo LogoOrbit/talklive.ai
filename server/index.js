@@ -116,6 +116,8 @@ const CSP = [
     + ' https://pagead2.googlesyndication.com https://*.googlesyndication.com'
     + ' https://*.doubleclick.net https://*.adtrafficquality.google'
     + ' https://*.googleadservices.com'
+    // Google's consent (CMP) message for EEA/UK/CH visitors.
+    + ' https://fundingchoicesmessages.google.com'
     + (ADS_SCRIPT_HOSTS.length ? ' ' + ADS_SCRIPT_HOSTS.join(' ') : ''),
   // Google Identity Services injects its own stylesheet from accounts.google.com
   // to render the Sign-In button; without it listed the browser blocks the
