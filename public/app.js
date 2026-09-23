@@ -1493,8 +1493,34 @@ socket.on('friend-request-result', ({ ok, error, limitReached, accepted }) => {
 });
 
 let lastFocusedBeforeModal = null;
+// Long legal text is not shipped in the page. A .policy-remote[data-policy-src]
+// block is filled from that standalone page the first time its dialog opens,
+// so the text shown here is always the one published there. If the fetch
+// fails the block keeps its link to the page, which is the same text.
+function loadPolicyText(modal) {
+  modal.querySelectorAll('.policy-remote[data-policy-src]').forEach((slot) => {
+    if (slot.dataset.policyState) return;
+    slot.dataset.policyState = 'loading';
+    fetch(slot.dataset.policySrc, { credentials: 'same-origin' })
+      .then((r) => (r.ok ? r.text() : Promise.reject(new Error(String(r.status)))))
+      .then((html) => {
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const main = doc.querySelector('main');
+        if (!main) throw new Error('no <main>');
+        // The page's own furniture has no place inside the dialog.
+        main.querySelectorAll('h1, .blog-cta, .ad-card, [data-ad], script').forEach((el) => el.remove());
+        const frag = document.createDocumentFragment();
+        [...main.childNodes].forEach((node) => frag.appendChild(document.importNode(node, true)));
+        slot.replaceChildren(frag);
+        slot.dataset.policyState = 'loaded';
+      })
+      .catch(() => { slot.dataset.policyState = ''; });
+  });
+}
+
 function openModal(modal) {
   modal.classList.remove('hidden');
+  loadPolicyText(modal);
   // Now that the modal has a layout, Google's button can be rendered at the
   // real form width (it measures 0 while hidden, so it would otherwise keep the
   // fallback size).

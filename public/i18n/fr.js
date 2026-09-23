@@ -363,6 +363,8 @@
   "noteFreeBody": "Parler sur TalkLive est 100 % gratuit - financé par quelques publicités, jamais de paywall sur le chat vocal ou textuel. Aucune limite de temps, aucun piège.",
   "genderFilterNote": "Le genre est choisi par chaque personne et n'est jamais vérifié. TalkLive n'analyse pas les voix pour le deviner.",
   "genderFilterNoteLink": "Comment ça marche",
+  "termsLoading": "Chargement des Conditions générales…",
+  "termsOpenPage": "Les ouvrir sur leur propre page",
   "noteFreeCare": "Nous y travaillons chaque jour pour en faire le moyen le plus fluide et le plus simple de parler à de nouvelles personnes partout dans le monde : connexions rapides et design épuré, conçu avec soin.",
   "noteFreeSign": "Bonnes conversations. - L'équipe TalkLive",
   "filtersPremiumBody": "L'offre gratuite inclut jusqu'à 3 pays par liste. Premium débloquera les filtres de genre, des listes de pays illimitées, des amis illimités, de nouvelles rencontres instantanées et aucune publicité. Bientôt disponible.",

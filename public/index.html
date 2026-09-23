@@ -27,7 +27,7 @@
   root.classList.add('i18n-pending');
   setTimeout(function () { root.classList.remove('i18n-pending'); }, 1500);
   var s = document.createElement('script');
-  s.src = '/i18n/' + lang + '.js?v=20260923i18n';
+  s.src = '/i18n/' + lang + '.js?v=20260923fixlist';
   s.async = true;
   s.setAttribute('data-i18n-lang', lang);
   s.onerror = function () { root.classList.remove('i18n-pending'); };
@@ -53,13 +53,13 @@
      system face a beat later. Only the latin subset is preloaded - latin-ext
      is fetched on demand by the unicode-range in style.css. -->
 <link rel="preload" as="font" type="font/woff2" href="/fonts/plus-jakarta-sans-latin.woff2?v=20260922type" crossorigin />
-<link rel="stylesheet" href="style.css?v=20260923profile3" />
+<link rel="stylesheet" href="style.css?v=20260923fixlist" />
 <link rel="stylesheet" href="chat-extras.css?v=20260922social2" />
 <link rel="stylesheet" href="games.css?v=20260916settings" />
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
      side-panel shell, Settings, Friends/History and the account dialog, and it
      does so with its own `tl-` class names so nothing above can reach it. -->
-<link rel="stylesheet" href="ui.css?v=20260923profile2" />
+<link rel="stylesheet" href="ui.css?v=20260923fixlist" />
 <!-- The top bar, shared with /chat. Loaded after everything else because it
      owns the header outright: one button language, one radius, one focus ring
      on every screen of the product. -->
@@ -250,7 +250,7 @@
 }
 </script>
 
-<script defer src="/ads.js?v=20260923i18n"></script>
+<script defer src="/ads.js?v=20260923fixlist"></script>
 </head>
 <body>
   <a href="#main" class="skip-link" data-i18n="skipToContent">Skip to main content</a>
@@ -1678,159 +1678,14 @@
           <div class="modal-body policy-body consent-terms-body">
             <p class="consent-modal-text"><svg class="age-badge-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><text x="12" y="15.5" text-anchor="middle" font-size="8" font-weight="700" fill="currentColor" stroke="none">18+</text></svg> <span data-i18n="mustBe18">You must be 18 years or older to use TalkLive.</span></p>
 
-            <p class="policy-updated">Effective Date: 5th July 2026 &middot; Last Updated: 5th July 2026</p>
-
-            <p>Welcome to TalkLive. TalkLive is an online platform that allows users to communicate with other users through random text and live audio conversations over the internet. By accessing, browsing, registering for, or otherwise using TalkLive, you acknowledge that you have read, understood, and agree to comply with these Terms &amp; Conditions ("Terms").</p>
-            <p>These Terms form a legally binding agreement between you and TalkLive. If you do not agree to these Terms, you must not access or use TalkLive. Your continued use of TalkLive after any updates to these Terms constitutes your acceptance of the revised Terms.</p>
-
-            <h3>1. Eligibility</h3>
-            <p>TalkLive is intended solely for adults. By using TalkLive, you represent and warrant that:</p>
-            <ul>
-              <li>You are at least 18 years of age.</li>
-              <li>You have the legal capacity to enter into a binding agreement.</li>
-              <li>You are not prohibited from using our services under any applicable law.</li>
-              <li>All information you provide during registration is accurate, truthful, and complete.</li>
-            </ul>
-            <p>Users under the age of 18 are strictly prohibited from using TalkLive. TalkLive reserves the right to suspend, restrict, or permanently terminate any account that is believed to belong to a person under the age of 18 or any user who has provided false information regarding their identity or age.</p>
-
-            <h3>2. Acceptance of Risk</h3>
-            <p>TalkLive connects users with strangers from around the world. You acknowledge that:</p>
-            <ul>
-              <li>Every conversation occurs between independent users.</li>
-              <li>TalkLive does not verify the identity, age, intentions, honesty, gender, or background of users.</li>
-              <li>Other users may provide inaccurate, misleading, or false information.</li>
-              <li>Your interactions with other users are entirely voluntary and at your own risk.</li>
-            </ul>
-            <p>You are solely responsible for exercising your own judgment before trusting, communicating with, or sharing any information with another user.</p>
-
-            <h3>3. User Accounts</h3>
-            <p>To access certain features, users may create an account or sign in using supported authentication methods, including Google Sign-In. You agree that:</p>
-            <ul>
-              <li>All information you submit is accurate.</li>
-              <li>You will keep your login credentials secure.</li>
-              <li>You are responsible for all activity occurring under your account.</li>
-              <li>You will immediately notify TalkLive if you suspect unauthorized access to your account.</li>
-            </ul>
-            <p>TalkLive reserves the right to suspend or terminate accounts that contain false information, impersonate another person, violate these Terms, or are used for fraudulent or unlawful purposes.</p>
-
-            <h3>4. Google Sign-In</h3>
-            <p>TalkLive may allow users to authenticate using Google. By choosing Google Sign-In, you acknowledge and agree that:</p>
-            <ul>
-              <li>Authentication is provided by Google.</li>
-              <li>Your use of Google services is subject to Google's own Terms of Service and Privacy Policy.</li>
-              <li>TalkLive does not control Google's services.</li>
-              <li>TalkLive is not responsible for any interruption, security issue, or account-related problem arising from Google's systems.</li>
-            </ul>
-
-            <h3>5. Description of the Service</h3>
-            <p>TalkLive is a web-based stranger communication platform. The platform may include features such as random audio chat, random text chat, user accounts, Google Sign-In, gender preference filters, reporting tools, moderation tools, profile settings, and other features introduced in future updates. TalkLive reserves the right to modify, remove, suspend, discontinue, or introduce any feature at any time without prior notice.</p>
-
-            <h3>6. Temporary Free Service</h3>
-            <p>TalkLive is currently provided free of charge for research, development, testing, user growth, community building, and platform improvement. The availability of free access does not create any obligation for TalkLive to continue offering the service free of charge. TalkLive reserves the right, at any time and without prior notice, to introduce premium subscriptions, offer paid features, display advertisements, limit certain features, restrict usage, introduce usage limits, modify pricing, or charge fees for existing or future services. Nothing in these Terms guarantees permanent free access.</p>
-
-            <h3>7. Gender Filters</h3>
-            <p>TalkLive may offer optional gender-based matching preferences. You understand and agree that gender information is self-declared by users, TalkLive does not verify gender identities, gender filters are provided solely as a convenience feature, and TalkLive makes no guarantee regarding the accuracy of another user's stated gender. Users are solely responsible for deciding whether to continue interacting with another user.</p>
-
-            <h3>8. WebRTC Technology</h3>
-            <p>TalkLive uses encrypted WebRTC and a TURN relay in production to facilitate live audio communication between users. TalkLive does not record, store, monitor, or listen to live audio conversations. Other participants control their own devices and may independently record what they hear. No internet technology can guarantee absolute security or uninterrupted transmission. Users acknowledge that internet communications involve inherent risks, including technical failures, interruptions, compromised devices or networks, and circumstances beyond TalkLive's reasonable control.</p>
-
-            <h3>9. User Responsibilities</h3>
-            <p>You agree to use TalkLive responsibly and lawfully. You are solely responsible for your conversations, your conduct, information you share, content you send, decisions you make while using the platform, and compliance with all applicable laws in your jurisdiction. You understand that conversations on TalkLive occur between private individuals and that you alone are responsible for the consequences of your interactions.</p>
-
-            <h3>10. Personal Safety</h3>
-            <p>For your own safety, you should never disclose sensitive personal information to strangers, including but not limited to your home address, workplace, school, financial information, credit or debit card information, passwords, one-time verification codes, government-issued identification numbers, passport information, driver's license details, banking credentials, exact real-time location, or private family information. TalkLive cannot recover information voluntarily shared with another user and accepts no responsibility for consequences arising from such disclosures. Always exercise caution when communicating with strangers online.</p>
-
-            <h3>11. Acceptable Use</h3>
-            <p>By using TalkLive, you agree to use the platform responsibly, respectfully, and only for lawful purposes. You agree that you will not use TalkLive in any manner that could interfere with the rights, safety, privacy, or enjoyment of other users or the operation of the platform. You remain solely responsible for every message, audio conversation, profile detail, username, and any other content or activity associated with your account.</p>
-
-            <h3>12. Prohibited Conduct</h3>
-            <p>The following activities are strictly prohibited and may result in immediate suspension or permanent termination of your account without prior notice. You must not:</p>
-            <ul>
-              <li>Violate any applicable local, national, or international law.</li>
-              <li>Harass, threaten, intimidate, stalk, or abuse another person.</li>
-              <li>Engage in bullying or targeted harassment.</li>
-              <li>Encourage violence or criminal activity, or promote terrorism or extremist organizations.</li>
-              <li>Share or promote illegal content.</li>
-              <li>Impersonate another person, business, government official, or organization.</li>
-              <li>Attempt to deceive or defraud other users, or operate fake accounts for malicious purposes.</li>
-              <li>Engage in phishing or identity theft, or attempt to obtain passwords, financial information, or confidential information from others.</li>
-              <li>Distribute malware, spyware, viruses, ransomware, or other malicious software.</li>
-              <li>Spam users with repeated unwanted messages, or advertise products or services without authorization.</li>
-              <li>Recruit users for third-party platforms, or share referral, affiliate, or promotional links.</li>
-              <li>Use automated scripts, bots, crawlers, or scraping software.</li>
-              <li>Reverse engineer, copy, or exploit TalkLive's software or systems.</li>
-              <li>Interfere with the operation or security of TalkLive, attempt unauthorized access to our servers, systems, or databases, or circumvent security measures or access restrictions.</li>
-              <li>Use TalkLive in any way that may damage our reputation or services.</li>
-            </ul>
-
-            <h3>13. Inappropriate Content</h3>
-            <p>Users may not transmit, publish, request, encourage, or promote content that includes hate speech, racism, religious hatred, ethnic discrimination, homophobia, threats, blackmail, extortion, graphic violence, illegal drug trafficking, human trafficking, child exploitation, child sexual abuse material, non-consensual sexual content, revenge pornography, terrorist propaganda, fraudulent schemes, gambling scams, copyright infringement, defamatory statements, false impersonation, or any material prohibited by applicable law. TalkLive maintains zero tolerance for child exploitation or any content involving minors. Where legally required, such activity may be reported to appropriate law enforcement authorities.</p>
-
-            <h3>14. Sexual Content</h3>
-            <p>TalkLive is not intended to be an adult entertainment platform. Users must not request sexual services, solicit prostitution, exchange explicit sexual content, engage in sexually explicit harassment, pressure another user into sexual conversations, share obscene material, or request or distribute pornographic content. Consensual discussions between adults may still be subject to moderation if they violate these Terms or applicable laws.</p>
-
-            <h3>15. Privacy Between Users</h3>
-            <p>Users should exercise caution when interacting with strangers. Never assume another user is who they claim to be. Never send money, gift cards, cryptocurrency, banking credentials, personal documents, sensitive photographs, government-issued identification, passwords, or verification codes. TalkLive cannot verify the honesty or identity of other users and is not responsible for losses resulting from interactions between users.</p>
-
-            <h3>16. Recording Conversations</h3>
-            <p>TalkLive does not record, listen to, monitor, or store live audio conversations transmitted through its WebRTC infrastructure. However, users acknowledge that other participants may independently record conversations using third-party software or external devices. Where permitted by applicable law, users are solely responsible for complying with all laws relating to recording conversations. Users must not secretly record conversations where doing so would violate applicable laws. TalkLive accepts no responsibility for recordings made independently by users or third parties outside the TalkLive platform.</p>
-
-            <h3>17. Reports and Moderation</h3>
-            <p>Users are encouraged to report violations of these Terms. TalkLive reserves the right, but is not obligated, to investigate reports and take appropriate action, including warning a user, restricting platform features, temporarily suspending an account, permanently terminating an account, blocking IP addresses or devices where reasonably necessary to protect the platform, or cooperating with law enforcement when legally required. Moderation decisions are made at TalkLive's sole discretion.</p>
-
-            <h3>18. Intellectual Property</h3>
-            <p>All software, source code, algorithms, website designs, user interfaces, graphics, logos, branding, trademarks, text, and other proprietary materials associated with TalkLive are owned by TalkLive or its licensors and are protected by applicable intellectual property laws. Except as expressly permitted, users may not copy, modify, reproduce, redistribute, sell, license, reverse engineer, decompile, or create derivative works from any part of TalkLive. Your use of the platform grants only a limited, revocable, non-exclusive, non-transferable license to access and use the service for its intended purpose.</p>
-
-            <h3>19. Availability of Service</h3>
-            <p>TalkLive is provided on an "AS IS" and "AS AVAILABLE" basis. We do not guarantee continuous availability, uninterrupted operation, error-free performance, compatibility with every browser or device, perfect audio quality, successful user matching, continuous server uptime, or freedom from bugs or technical issues. We reserve the right to update, suspend, modify, restrict, or discontinue any part of the platform at any time without prior notice.</p>
-
-            <h3>20. Limitation of Liability</h3>
-            <p>To the fullest extent permitted by applicable law, TalkLive, its owners, operators, employees, contractors, affiliates, licensors, and partners shall not be liable for any direct, indirect, incidental, consequential, special, exemplary, or punitive damages arising from or related to your use of the platform, interactions with other users, fraud or misrepresentation by another user, emotional distress, offensive or objectionable content, loss of profits or data, business interruption, device damage, unauthorized account access, internet failures, service interruptions, security breaches beyond our reasonable control, or third-party services or providers. Nothing in these Terms excludes or limits liability where such exclusion or limitation is prohibited by applicable law.</p>
-
-            <h3>21. Indemnification</h3>
-            <p>To the fullest extent permitted by applicable law, you agree to defend, indemnify, and hold harmless TalkLive, its owner(s), employees, contractors, affiliates, licensors, partners, service providers, successors, and assigns from and against any claims, lawsuits, liabilities, damages, losses, judgments, fines, penalties, costs, and expenses (including reasonable legal fees) arising out of or related to your use or misuse of TalkLive, your violation of these Terms or any applicable law, your infringement of another person's rights, your interactions with other users, or any content or information you submit, transmit, or share through TalkLive. This obligation survives the termination of your account or your use of the platform.</p>
-
-            <h3>22. Privacy and Data Handling</h3>
-            <p>Your privacy is important to us. TalkLive collects only the information reasonably necessary to provide, maintain, secure, and improve the platform, which may include account information, email address, username, authentication information, device information, browser information, IP address, approximate location derived from your IP address, connection diagnostics, crash reports, security logs, and user reports submitted through the platform. TalkLive does not record, store, or monitor the contents of live audio conversations conducted through the platform's WebRTC architecture. Technical information may be retained for security, fraud prevention, debugging, abuse prevention, legal compliance, and service improvement. For more information regarding personal data, please refer to the TalkLive Privacy Policy.</p>
-
-            <h3>23. Third-Party Services</h3>
-            <p>TalkLive may use third-party providers to operate certain parts of the service, including but not limited to Google authentication, cloud hosting, analytics services, security services, content delivery services, database providers, and payment providers (if introduced in the future). These third-party services operate under their own terms and privacy policies. TalkLive is not responsible for the availability, security, accuracy, or practices of third-party services beyond our reasonable control.</p>
-
-            <h3>24. Cookies and Similar Technologies</h3>
-            <p>TalkLive may use cookies, local storage, session storage, and similar technologies to maintain user sessions, remember preferences, improve website performance, protect against fraud and abuse, analyze platform usage, and enhance the overall user experience. By using TalkLive, you consent to the use of such technologies where permitted by applicable law.</p>
-
-            <h3>25. Account Suspension and Termination</h3>
-            <p>TalkLive reserves the right to suspend, restrict, or permanently terminate any account at its sole discretion if it reasonably believes that a user violates these Terms or applicable law, endangers the safety of other users, attempts to compromise platform security, engages in abusive or fraudulent behavior, uses TalkLive for unauthorized commercial purposes, or creates excessive risk or liability for TalkLive. Termination may occur without prior notice. Users may discontinue using TalkLive at any time. Termination does not affect any rights, obligations, or legal remedies that arose before termination.</p>
-
-            <h3>26. Service Modifications</h3>
-            <p>TalkLive may modify, update, suspend, discontinue, replace, or remove any feature, functionality, service, or part of the platform at any time without liability. We are under no obligation to continue providing any particular feature or functionality.</p>
-
-            <h3>27. Force Majeure</h3>
-            <p>TalkLive shall not be liable for any delay or failure to perform resulting from events beyond our reasonable control, including but not limited to natural disasters, floods, earthquakes, fires, pandemics, war, civil unrest, terrorist acts, internet outages, power failures, government actions, labor disputes, cyberattacks, or failures of third-party infrastructure.</p>
-
-            <h3>28. Governing Law</h3>
-            <p>These Terms &amp; Conditions shall be governed by and interpreted in accordance with the laws of the jurisdiction in which TalkLive operates, without regard to conflict of law principles. Any dispute arising from or relating to these Terms or the use of TalkLive shall, to the extent permitted by applicable law, be subject to the exclusive jurisdiction of the competent courts of that jurisdiction. Nothing in these Terms limits any mandatory legal rights that users may have under applicable consumer protection laws.</p>
-
-            <h3>29. Dispute Resolution</h3>
-            <p>Before initiating formal legal proceedings, users agree to make reasonable efforts to resolve disputes by contacting TalkLive through the official support channels. Nothing in this section prevents either party from seeking urgent legal or equitable relief where necessary.</p>
-
-            <h3>30. Severability</h3>
-            <p>If any provision of these Terms is held to be invalid, illegal, or unenforceable by a court of competent jurisdiction, that provision shall be enforced to the maximum extent permitted by law, and the remaining provisions shall remain in full force and effect.</p>
-
-            <h3>31. No Waiver</h3>
-            <p>Failure by TalkLive to enforce any provision of these Terms shall not constitute a waiver of any right or provision. Any waiver must be in writing and signed by an authorized representative of TalkLive.</p>
-
-            <h3>32. Entire Agreement</h3>
-            <p>These Terms &amp; Conditions, together with the Privacy Policy and any additional legal policies published by TalkLive, constitute the entire agreement between you and TalkLive regarding your use of the platform and supersede any prior agreements, communications, or understandings relating to the service.</p>
-
-            <h3>33. Changes to These Terms</h3>
-            <p>TalkLive may revise these Terms &amp; Conditions at any time. Updated versions will become effective upon publication on the TalkLive website unless otherwise stated. Your continued use of the platform after revised Terms become effective constitutes your acceptance of those updated Terms. If you do not agree to the revised Terms, you must stop using TalkLive.</p>
-
-            <h3>34. Contact Information</h3>
-            <p>If you have questions regarding these Terms &amp; Conditions or wish to contact TalkLive regarding legal matters, email <a href="mailto:info@talklive.app">info@talklive.app</a>.</p>
-
-            <h3>35. Acknowledgement</h3>
-            <p>By creating an account, signing in using Google, accessing, or using TalkLive, you acknowledge that you have read and understand these Terms &amp; Conditions, you agree to be legally bound by them, you are at least 18 years of age, you understand that you communicate with strangers at your own risk, you understand that TalkLive does not verify the identity, age, gender, or intentions of other users, you understand that TalkLive uses WebRTC technology and does not record, store, or monitor the contents of live audio conversations, and you agree to comply with all applicable laws while using the platform. Failure to comply with these Terms may result in suspension or permanent termination of your access to TalkLive and any other remedies available under applicable law.</p>
+            <!-- The full Terms are not shipped in this page: they are fetched from
+                 /terms the first time this dialog opens (loadPolicyText in
+                 app.js), so the text agreed to here is always the one published
+                 there, and a first visit does not download ~30KB of legal copy
+                 it may never display. -->
+            <div class="policy-remote" data-policy-src="/terms">
+              <p class="policy-loading"><span data-i18n="termsLoading">Loading the Terms &amp; Conditions…</span> <a href="/terms" target="_blank" rel="noopener" data-i18n="termsOpenPage">Open them on their own page</a></p>
+            </div>
 
           </div>
           <div class="modal-footer consent-modal-footer">
@@ -1861,6 +1716,7 @@
             </div>
 
             <p class="account-hint" data-i18n="termsEnglishNote">The full rules below are provided in English.</p>
+            <p class="account-hint">This is a summary. The complete documents are the <a href="/terms" target="_blank" rel="noopener">Terms &amp; Conditions</a>, the <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a> and the <a href="/safety" target="_blank" rel="noopener">Safety Center</a>.</p>
 
             <h3>How TalkLive Works</h3>
             <p>TalkLive connects you with a random stranger for a live, audio-only conversation. There's no sign-up - tap "Start," allow microphone access, and you'll be paired with someone automatically. Tap "Next" any time to end the current call and get matched with someone new, or "Hang Up" to leave entirely. You can optionally set a gender preference, a country, and interest tags from the settings menu to help find a better match.</p>
@@ -2665,9 +2521,9 @@
        and `defer` keeps them running in document order (so socket.io, the data
        modules and i18n are all in place before app.js), while letting the
        browser finish parsing and paint the page first. -->
-  <script defer src="/socket.io/socket.io.js"></script>
+  <script defer src="/socket.io/socket.io.min.js"></script>
   <script defer src="countries.js?v=20260828fix"></script>
-  <script defer src="i18n.js?v=20260923i18n"></script>
+  <script defer src="i18n.js?v=20260923fixlist"></script>
   <script defer src="chat-time.js?v=20260916navbar"></script>
   <script defer src="animals.js?v=20260921animals"></script>
   <script defer src="moderation.js?v=20260705b"></script>
@@ -2706,7 +2562,7 @@
   </script>
   <script defer src="chat-extras.js?v=20260922social2"></script>
   <script defer src="games.js?v=20260916settings"></script>
-  <script defer src="app.js?v=20260923profile3"></script>
+  <script defer src="app.js?v=20260923fixlist"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

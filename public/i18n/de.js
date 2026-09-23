@@ -363,6 +363,8 @@
   "noteFreeBody": "Reden auf TalkLive ist 100 % kostenlos - finanziert durch ein paar Anzeigen, nie eine Bezahlschranke für Sprach- oder Textchat. Keine Zeitlimits, keine Tricks.",
   "genderFilterNote": "Das Geschlecht wählt jede Person selbst, es wird nie überprüft. TalkLive analysiert keine Stimmen, um es zu erraten.",
   "genderFilterNoteLink": "So funktioniert das",
+  "termsLoading": "Die AGB werden geladen…",
+  "termsOpenPage": "Auf eigener Seite öffnen",
   "noteFreeCare": "Wir arbeiten jeden Tag daran, dass dies der einfachste und angenehmste Weg ist, überall auf der Welt mit neuen Menschen zu reden – schnelle Verbindungen und ein schlichtes Design, mit Sorgfalt gebaut.",
   "noteFreeSign": "Viel Spaß beim Reden. – Das TalkLive-Team",
   "filtersPremiumBody": "Kostenlos sind bis zu 3 Länder pro Liste enthalten. Premium schaltet Geschlechterfilter, unbegrenzte Länderlisten, unbegrenzt Freunde, sofortige neue Treffer und keine Werbung frei – kommt bald.",

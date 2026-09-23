@@ -1332,3 +1332,7 @@ summary:active {
 .chat-head-status:empty { display: none; }
 .chat-head-status.is-online { color: var(--green); }
 .chat-head-status.is-typing { color: var(--accent); font-style: italic; }
+
+/* One-line disclosure under the partner preference (see chat.html). */
+.pref-partner-note { margin: 8px 2px 0; font-size: 12px; line-height: 1.45; color: var(--muted, #8a8f98); }
+.pref-partner-note a { color: inherit; text-decoration: underline; white-space: nowrap; }
