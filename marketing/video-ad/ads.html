@@ -1,6 +1,6 @@
 <!doctype html>
 <html><head><meta charset="utf-8"><title>TalkLive Ads</title>
-<!-- Short social ads (15s, 1080x1920). Pick one with ?ad=omegle|language|animals.
+<!-- Short social ads (15s, 1080x1920). Pick one with ?ad=<key of ADS below>.
      Rendered frame by frame by render.js; everything is a pure function of time t. -->
 <style>
 @font-face{font-family:PJS;src:url(/public/fonts/plus-jakarta-sans-latin.woff2) format('woff2');font-weight:200 800}
@@ -41,6 +41,15 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#070a18;font-fam
 .chip{position:absolute;padding:22px 34px;border-radius:999px;font-weight:700;font-size:42px;background:rgba(20,24,48,.86);border:2px solid rgba(255,255,255,.14);
   box-shadow:0 20px 50px rgba(0,0,0,.5);white-space:nowrap;display:flex;align-items:center;gap:16px;opacity:0}
 .chip b{display:inline-block;width:18px;height:18px;border-radius:50%}
+/* POV captions: TikTok-style white text boxes */
+.cap.pov{top:150px;font-size:60px;letter-spacing:-.5px;font-weight:700;line-height:1.55}
+.cap.pov .pb{background:#fff;color:#111;padding:8px 22px;border-radius:16px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+/* world clocks (worldwide ad) */
+#clocks{position:absolute;left:80px;right:80px;top:560px;display:none;flex-direction:column;gap:28px}
+.clk{display:flex;align-items:center;gap:28px;padding:30px 44px;border-radius:40px;background:rgba(20,24,48,.88);border:2px solid rgba(255,255,255,.1);box-shadow:0 20px 50px rgba(0,0,0,.45)}
+.clk .fl{font-size:66px}.clk .city{font-size:56px;font-weight:700;flex:1}.clk .tm{font-size:64px;font-weight:800;letter-spacing:-2px}
+.clk .ic{font-size:56px}.clk.me{border-color:rgba(167,139,250,.7)}.clk.me .tm{color:#c4b5fd}
+.clk small{display:block;font-size:30px;font-weight:600;color:#8a90a8;letter-spacing:0}
 /* counters (language ad) */
 #counters{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:120px;text-align:center}
 .ctr .lbl{font-weight:700;font-size:54px;color:#b8bdd6}
@@ -70,6 +79,7 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#070a18;font-fam
     <div class="ctr" id="ct1"><div class="lbl">Language app streak</div><div class="num"><svg width="170" height="200" viewBox="0 0 34 40"><path d="M17 1c2 7 11 11 11 22a11 11 0 0 1-22 0c0-6 3-9 5-12 0 4 2 6 4 6-2-6 0-12 2-16z" fill="url(#fl)"/><defs><linearGradient id="fl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fde047"/><stop offset="1" stop-color="#f97316"/></linearGradient></defs></svg><span id="n1">0</span><small>days</small></div></div>
     <div class="ctr" id="ct2"><div class="lbl">Real conversations</div><div class="num rd"><span id="n2">0</span></div></div>
   </div>
+  <div id="clocks"></div>
   <div id="roul"><div class="ico" id="rIco"></div><div class="nm" id="rNm"></div><div class="tr" id="rTr"></div></div>
   <div id="burst"></div>
   <div id="cam"><div id="phone"><div id="screen"><div id="island"></div><img id="sA"><img id="sB"><div id="hl"></div><div id="rip"></div><div id="fin"></div></div></div></div>
@@ -149,6 +159,66 @@ const ADS = {
     chips: [], chipsOut: 0,
     tag: 'Who will you<br><span class="pu">meet tonight?</span>',
   },
+  games: {
+    duration: 15, music: ['MusicForTalkLive.mp3', 10],
+    kin: [{ a: .05, b: 1.7, lines: [['Awkward', .1, 's'], ['<span class="rd">silence?</span>', .45, 's']] },
+          { a: 1.75, b: 2.9, lines: [['Play a', 1.8, 's'], ['<span class="cy">game.</span>', 2.05, '']] }],
+    phone: { rise: 2.8, drop: 12.0 },
+    screens: [[0, 'game-00-chat.png'], [4.3, 'game-01-picker.png'], [5.3, 'game-02-invite.png'], [5.9, 'game-03-start.png'], [6.6, 'game-04-m1.png'],
+              [7.35, 'game-05-m4.png'], [8.1, 'game-06-m2.png'], [8.85, 'game-07-m0.png'], [9.6, 'game-08-m5.png'], [10.35, 'game-09-m8.png']],
+    taps: [[5.1, 111 * S, 409 * S], [7.2, 195 * S, 462 * S], [8.7, 97 * S, 363 * S], [10.2, 292 * S, 558 * S]],
+    cam: [[0, 1, ...HOME], [5.6, 1, ...HOME], [6.3, 1.3, PX + 330, PY + 785], [11.7, 1.3, PX + 330, PY + 785]],
+    caps: [['Challenge a <span class="cy">stranger.</span>', 'Tic Tac Toe or Dots &amp; Boxes, right in the chat.', 3.0, 6.4],
+           ['Your <span class="cy">move.</span>', null, 6.5, 10.35],
+           ['<span class="gr">You win.</span>', 'Loser buys the coffee.', 10.45, 12.0]],
+    chips: [], chipsOut: 0,
+    tag: 'Talk. Text.<br><span class="cy">Play.</span>',
+  },
+  worldwide: {
+    duration: 15, music: ['Meditation.mp3', 12],
+    kin: [{ a: .05, b: 1.6, lines: [["It's 2am.", .1, 's'], ["Can't <span class=\"pu\">sleep?</span>", .6, 's']] }],
+    clocks: [1.65, 5.0, [['🇵🇰', 'Karachi', '2:00 AM', '🌙', 1], ['🇬🇧', 'London', '10:00 PM', '🌆'], ['🇺🇸', 'New York', '5:00 PM', '☀️'],
+             ['🇧🇷', 'São Paulo', '6:00 PM', '🌇'], ['🇯🇵', 'Tokyo', '6:00 AM', '🌅']]],
+    phone: { rise: 4.95, drop: 11.4 },
+    screens: [[0, '03b-search.png'], [6.4, 'CALL']],
+    taps: [],
+    cam: [[0, 1, ...HOME], [8.9, 1, ...HOME], [9.6, 1.45, PX + 330, PY + 538], [11.2, 1.45, PX + 330, PY + 538]],
+    caps: [['Somewhere, it&#39;s<br><span class="cy">daytime.</span>', null, 1.7, 4.95],
+           ['Tap <span class="cy">once.</span>', 'Meet someone who&#39;s awake right now.', 5.1, 7.4],
+           ['Talk to the<br><span class="cy">whole world.</span>', null, 7.5, 11.3]],
+    chips: [['Worldwide', '#22d3ee', 7.9, 60, 800], ['No sign-up', '#22c55e', 8.2, 620, 1080], ['Free', '#a78bfa', 8.5, 90, 1400]],
+    chipsOut: 9.2,
+    tag: 'Someone is always<br><span class="cy">awake.</span>',
+  },
+  texting: {
+    duration: 15, music: ['MusicForTalkLive.mp3', 38],
+    kin: [{ a: .05, b: 1.9, lines: [['Hate phone calls?', .1, 's'], ['Same.', .95, 's mu']] },
+          { a: 1.95, b: 3.35, lines: [['Text a stranger', 2.0, 's'], ['<span class="pu">instead.</span>', 2.3, 's']] }],
+    phone: { rise: 3.3, drop: 11.0 },
+    screens: [[0, '05-chathome.png'], [4.75, 'chat-0.png'], [5.5, 'chat-1.png'], [6.2, 'chat-2.png'], [6.9, 'chat-3.png'], [7.6, 'chat-4.png'], [8.3, 'chat-5.png']],
+    taps: [[4.55, 194 * S, 187 * S]],
+    cam: [[0, 1, ...HOME], [3.9, 1, ...HOME], [4.3, 1.2, PX + 330, PY + 320], [4.9, 1.2, PX + 330, PY + 320], [5.5, 1, ...HOME],
+          [6.3, 1, ...HOME], [7.0, 1.22, PX + 330, PY + 480], [10.8, 1.22, PX + 330, PY + 480]],
+    caps: [['No mic.<br><span class="pu">No pressure.</span>', null, 3.5, 6.3],
+           ['Just <span class="pu">type.</span>', 'Anonymous text chat with real people.', 6.4, 10.95]],
+    chips: [['No mic needed', '#a78bfa', 7.2, 50, 820], ['No sign-up', '#22c55e', 7.5, 620, 1110], ['Skip anytime', '#22d3ee', 7.8, 70, 1430]],
+    chipsOut: 9.0,
+    tag: 'Text a stranger.<br><span class="pu">Right now.</span>',
+  },
+  pov: {
+    duration: 15, music: ['Meditation.mp3', 18],
+    kin: [],
+    phone: { rise: -2, drop: 11.4 },
+    screens: [[0, '01-home.png'], [2.85, '03b-search.png'], [4.1, 'CALL'], [8.3, 'chat-2.png'], [9.2, 'chat-3.png'], [10.4, 'chat-5.png']],
+    taps: [[2.65, 194 * S, 284 * S]],
+    cam: [[0, 1, ...HOME], [1.4, 1, ...HOME], [2.1, 1.18, PX + 330, PY + 520], [3.0, 1.18, PX + 330, PY + 520], [3.8, 1, ...HOME],
+          [5.4, 1, ...HOME], [6.2, 1.4, PX + 330, PY + 538], [8.0, 1.4, PX + 330, PY + 538], [8.4, 1.2, PX + 330, PY + 480], [11.2, 1.2, PX + 330, PY + 480]],
+    caps: [['POV: it&#39;s 2am, you can&#39;t sleep, so you tap one button', null, .15, 4.1, { pov: true }],
+           ['…and now you&#39;re talking to a stranger on the other side of the world', null, 4.2, 8.2, { pov: true }],
+           ['turns out it&#39;s 3am for them too 😭', null, 8.3, 11.3, { pov: true }]],
+    chips: [], chipsOut: 0,
+    tag: 'Can&#39;t sleep?<br><span class="cy">Someone&#39;s awake.</span>',
+  },
 };
 const AD = ADS[new URLSearchParams(location.search).get('ad') || 'omegle'];
 window.DURATION = AD.duration; window.MUSIC = AD.music;
@@ -172,7 +242,8 @@ function kinAt(t) {
 
 // ------------------------------------------------------------------ captions
 $('caps').innerHTML = AD.caps.map((c, i) => `<div class="cap" id="c${i}"></div>`).join('');
-AD.caps.forEach(([html, sub], i) => {
+AD.caps.forEach(([html, sub, , , o], i) => {
+  if (o && o.pov) { $('c' + i).classList.add('pov'); $('c' + i).innerHTML = `<span class="pb">${html}</span>`; return; }
   const tmp = document.createElement('div'); tmp.innerHTML = html; const out = [];
   tmp.childNodes.forEach((n) => {
     if (n.nodeName === 'BR') { out.push('<br>'); return; }
@@ -182,15 +253,16 @@ AD.caps.forEach(([html, sub], i) => {
   $('c' + i).innerHTML = out.join('') + (sub ? `<span class="sub">${sub}</span>` : '');
 });
 function capsAt(t) {
-  AD.caps.forEach(([, , a, b], i) => {
+  AD.caps.forEach(([, , a, b, o], i) => {
     const el = $('c' + i); const out = eio(prog(t, b - .3, b));
     el.style.opacity = t < a || t > b ? 0 : 1 - out; el.style.transform = `translateY(${-40 * out}px)`;
+    if (o && o.pov) { const p = back(prog(t, a, a + .4)); el.style.opacity = t < a || t > b ? 0 : Math.min(1, prog(t, a, a + .15)) * (1 - out); el.style.transform = `scale(${lerp(.6, 1, p)})`; return; }
     el.querySelectorAll('.w, .sub').forEach((w, j) => {
       const p = eo(prog(t, a + j * .06, a + j * .06 + .4));
       w.style.opacity = p; w.style.transform = `translateY(${(1 - p) * 60}px)`; w.style.filter = `blur(${(1 - p) * 12}px)`;
     });
   });
-  $('capbg').style.opacity = AD.caps.some(([, , a, b]) => t >= a - .1 && t <= b) ? 1 : 0;
+  $('capbg').style.opacity = AD.caps.some(([, , a, b, o]) => !(o && o.pov) && t >= a - .1 && t <= b) ? 1 : 0;
 }
 
 // ------------------------------------------------------------------ phone
@@ -253,6 +325,17 @@ function countersAt(t) {
   $('n1').textContent = Math.round(412 * eio(prog(t, .3, 1.6)));
 }
 
+// ------------------------------------------------------------------ world clocks (worldwide)
+if (AD.clocks) $('clocks').innerHTML = AD.clocks[2].map(([fl, city, tm, ic, me], i) =>
+  `<div class="clk${me ? ' me' : ''}" id="clk${i}"><span class="fl">${fl}</span><span class="city">${city}${me ? '<small>You, wide awake</small>' : ''}</span><span class="tm">${tm}</span><span class="ic">${ic}</span></div>`).join('');
+function clocksAt(t) {
+  const c = AD.clocks; if (!c) return; const [a, b] = c; const box = $('clocks');
+  const on = t >= a && t <= b; box.style.display = on ? 'flex' : 'none'; if (!on) return;
+  const out = eio(prog(t, b - .35, b)); box.style.opacity = 1 - out; box.style.transform = `translateY(${-100 * out}px)`;
+  c[2].forEach((_, i) => { const p = eo(prog(t, a + .15 + i * .28, a + .6 + i * .28)); const el = $('clk' + i);
+    el.style.opacity = p; el.style.transform = `translateX(${(1 - p) * (i % 2 ? 300 : -300)}px)`; });
+}
+
 // ------------------------------------------------------------------ roulette (animals)
 const ORDER = ['lion', 'panda', 'owl', 'fox', 'dolphin', 'tiger', 'penguin', 'koala', 'wolf', 'rabbit', 'frog', 'eagle', 'bear', 'monkey', 'deer', 'elephant', 'turtle', 'horse', 'dog', 'cat'];
 let lastAnimal = null;
@@ -298,7 +381,7 @@ function bgAt(t) {
   $('g3').style.transform = `translate(${Math.sin(t * .3) * 160}px,${Math.cos(t * .55) * 140}px) scale(${1 + .15 * Math.sin(t)})`;
 }
 
-window.render = (t) => { bgAt(t); kinAt(t); countersAt(t); rouletteAt(t); camAt(t); screenAt(t); tapAt(t); hlAt(t); chipsAt(t); capsAt(t); outroAt(t); };
+window.render = (t) => { bgAt(t); kinAt(t); countersAt(t); clocksAt(t); rouletteAt(t); camAt(t); screenAt(t); tapAt(t); hlAt(t); chipsAt(t); capsAt(t); outroAt(t); };
 window.preload = async () => {
   TalkLiveAnimals.installSprite();
   const urls = [...new Set([...CALL, ...AD.screens.filter((s) => s[1] !== 'CALL').map((s) => SH + s[1]), $('mark').src])];
