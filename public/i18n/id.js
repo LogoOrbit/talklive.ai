@@ -361,6 +361,8 @@
   "pauseMusic": "Jeda musik",
   "noteFreeTitle": "Gratis, khusus untukmu",
   "noteFreeBody": "Mengobrol di TalkLive 100% gratis - didukung oleh beberapa iklan, tidak pernah ada paywall untuk obrolan suara atau teks. Tanpa batas waktu, tanpa trik.",
+  "genderFilterNote": "Gender dipilih sendiri oleh setiap orang dan tidak pernah diverifikasi. TalkLive tidak menganalisis suara untuk menebaknya.",
+  "genderFilterNoteLink": "Cara kerjanya",
   "noteFreeCare": "Kami mengerjakannya setiap hari agar jadi cara paling lancar dan simpel untuk ngobrol dengan orang baru di mana saja: koneksi cepat dan desain sederhana, dibuat dengan sepenuh hati.",
   "noteFreeSign": "Selamat mengobrol. - Tim TalkLive",
   "filtersPremiumBody": "Paket gratis mencakup hingga 3 negara per daftar. Premium akan membuka filter gender, daftar negara tanpa batas, teman tanpa batas, pencocokan ulang instan, dan tanpa iklan. Segera hadir.",

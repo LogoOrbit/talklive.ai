@@ -616,6 +616,13 @@
               <button type="button" class="tl-seg-opt pill" data-value="male"><span class="pill-dot pill-dot-male" aria-hidden="true"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="14" r="6"/><line x1="14.5" y1="9.5" x2="20" y2="4"/><polyline points="14.5 4 20 4 20 9.5"/></svg><span data-i18n="male">Male</span></button>
               <button type="button" class="tl-seg-opt pill" data-value="female"><span class="pill-dot pill-dot-female" aria-hidden="true"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="9" r="6"/><line x1="12" y1="15" x2="12" y2="21"/><line x1="9" y1="18" x2="15" y2="18"/></svg><span data-i18n="female">Female</span></button>
             </div>
+            <!-- Just-in-time disclosure, shown the first time the filters open
+                 (see openFilters in app.js): what the gender filter matches on
+                 and what it does not. One line, not another dialog. -->
+            <p class="tl-filter-note" id="genderFilterNote" hidden>
+              <span data-i18n="genderFilterNote">Gender is what each person picks for themselves and is never verified. TalkLive does not analyse voices to guess it.</span>
+              <a href="/privacy#gender" target="_blank" rel="noopener" data-i18n="genderFilterNoteLink">How this works</a>
+            </p>
           </section>
 
           <!-- 2. Where - only. Green, a tick, and its own count. -->
@@ -1903,7 +1910,7 @@
             <p><strong>Governing law.</strong> These terms are governed by the laws of the jurisdiction in which TalkLive operates, without regard to conflict-of-law principles.</p>
 
             <h3>Privacy Note</h3>
-            <p>A basic match does not require an account, email, or phone number. Voice uses encrypted WebRTC through a production TURN relay and is not recorded or stored by TalkLive. Typed messages, reports and related context may be retained for a limited rolling period for delivery, safety and moderation. TalkLive also processes IP address, approximate location and operational information as described in the full <a href="/privacy">Privacy Policy</a>, including details about voice-based gender estimation.</p>
+            <p>A basic match does not require an account, email, or phone number. Voice uses encrypted WebRTC through a production TURN relay and is not recorded or stored by TalkLive. Typed messages, reports and related context may be retained for a limited rolling period for delivery, safety and moderation. TalkLive also processes IP address, approximate location and operational information as described in the full <a href="/privacy">Privacy Policy</a>, Gender is only what you choose in Settings: it is used for gender filters, is never verified, and TalkLive does not analyse voices to estimate it.</p>
 
           </div>
         </div>

@@ -361,6 +361,8 @@
   "pauseMusic": "暂停音乐",
   "noteFreeTitle": "免费，只为你",
   "noteFreeBody": "在 TalkLive 聊天 100% 免费——由少量广告支持，语音和文字聊天永远不设付费墙。没有时间限制，没有套路。",
+  "genderFilterNote": "性别由每个人自己选择，从不经过核实。TalkLive 不会通过分析声音来猜测性别。",
+  "genderFilterNoteLink": "了解详情",
   "noteFreeCare": "我们每天都在打磨，让它成为和世界各地新朋友聊天最流畅、最简洁的方式：连接快速、设计简单，用心打造。",
   "noteFreeSign": "祝你聊得愉快。- TalkLive 团队",
   "filtersPremiumBody": "免费版每个列表最多 3 个国家。高级版将解锁性别筛选、无限国家列表、无限好友、即时重新匹配并去除广告，即将推出。",

@@ -399,6 +399,8 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "pauseMusic": "Pause music",
     "noteFreeTitle": "Made free, just for you",
     "noteFreeBody": "TalkLive is 100% free to talk - supported by a few ads, never a paywall on voice or text chat. No time limits, no tricks.",
+    "genderFilterNote": "Gender is what each person picks for themselves and is never verified. TalkLive does not analyse voices to guess it.",
+    "genderFilterNoteLink": "How this works",
     "noteFreeCare": "We work on it every day to make this the smoothest, cleanest way to talk to new people anywhere in the world - fast connections and a simple design, built with care.",
     "noteFreeSign": "Enjoy your talks. - The TalkLive team",
     "filtersPremiumBody": "Free includes up to 3 countries per list. Premium will unlock gender filters, unlimited country lists, unlimited friends, instant rematching and no ads - it is coming soon.",

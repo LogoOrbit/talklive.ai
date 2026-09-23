@@ -2172,6 +2172,17 @@ body.panel-open .game-overlay {
   margin: 0 0 4px;
 }
 
+.policy-summary {
+  margin: 18px 0 26px;
+  padding: 16px 18px;
+  border: 1px solid var(--border, rgba(127,127,127,0.25));
+  border-radius: 14px;
+  background: rgba(127,127,127,0.06);
+}
+.policy-summary h2 { margin: 0 0 8px; font-size: 1.05rem; }
+.policy-summary ul { margin: 0 0 8px; padding-inline-start: 20px; }
+.policy-summary li { margin: 6px 0; }
+.policy-summary p { margin: 0; font-size: 0.9rem; opacity: 0.8; }
 .policy-updated {
   font-size: 12px !important;
   color: var(--muted) !important;

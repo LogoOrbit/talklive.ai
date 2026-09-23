@@ -1382,7 +1382,22 @@ if (settingsBackBtn) {
 }
 
 // --- Filters side panel: who you get matched with ---
+// The first time the filters open, say plainly what the gender filter matches
+// on. Stays up for the rest of that visit; later visits get a clean panel.
+const GENDER_NOTE_KEY = 'tl_gender_note_seen';
+const genderFilterNote = document.getElementById('genderFilterNote');
+let genderNoteShownThisVisit = false;
+
 function openFilters() {
+  if (genderFilterNote && !genderNoteShownThisVisit) {
+    let seen = false;
+    try { seen = localStorage.getItem(GENDER_NOTE_KEY) === '1'; } catch (_) {}
+    if (!seen) {
+      genderFilterNote.hidden = false;
+      genderNoteShownThisVisit = true;
+      try { localStorage.setItem(GENDER_NOTE_KEY, '1'); } catch (_) {}
+    }
+  }
   filtersPanel.classList.add('open');
   filtersOverlay.classList.remove('hidden');
   updateScrollLock();
