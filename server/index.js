@@ -2883,6 +2883,119 @@ function validId(id) {
   return typeof id === 'string' && id.length >= 1 && id.length <= 64 ? id : null;
 }
 
+// --- Public friend IDs ------------------------------------------------------
+// Everyone gets a short letters-and-digits code others can search to add them,
+// like a Discord or Riot tag. An account keeps its code forever (persisted via
+// store.ensureAccountFriendId). A guest gets a temporary one held only in
+// memory and released shortly after their last socket goes away, so closing
+// the app for good retires it; a reload inside the grace window keeps it.
+//
+// Account codes are 8 characters ("K7MX29QP"). Guest codes are "G-" plus 6
+// ("G-4RT9KQ", canonically "G4RT9KQ"), so the two can never collide.
+const FRIEND_ID_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no 0/O or 1/I/L
+const ACCOUNT_FRIEND_ID_LENGTH = 8;
+const GUEST_FRIEND_ID_LENGTH = 6;
+const GUEST_FRIEND_ID_GRACE_MS = 2 * 60000;
+const guestFriendIds = new Map(); // clientId -> canonical guest code
+const guestFriendIdOwners = new Map(); // canonical guest code -> clientId
+const guestFriendIdTimers = new Map(); // clientId -> release Timeout
+
+function randomFriendCode(length) {
+  for (;;) {
+    const bytes = crypto.randomBytes(length);
+    let code = '';
+    for (let i = 0; i < length; i += 1) code += FRIEND_ID_ALPHABET[bytes[i] % FRIEND_ID_ALPHABET.length];
+    // "Numeric plus alphabetic": always at least one of each.
+    if (/[A-Z]/.test(code) && /[0-9]/.test(code)) return code;
+  }
+}
+
+// Whatever the user typed ("#g-4rt9kq", "K7MX 29QP") -> canonical code, or null.
+function normalizeFriendId(raw) {
+  if (typeof raw !== 'string') return null;
+  const code = raw.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (code.length === ACCOUNT_FRIEND_ID_LENGTH) return code;
+  if (code.length === GUEST_FRIEND_ID_LENGTH + 1 && code[0] === 'G') return code;
+  return null;
+}
+
+function isGuestFriendId(code) {
+  return code.length === GUEST_FRIEND_ID_LENGTH + 1;
+}
+
+// How a code is shown: guests keep the dash so "temporary" reads at a glance.
+function displayFriendId(code) {
+  return isGuestFriendId(code) ? `G-${code.slice(1)}` : code;
+}
+
+function releaseGuestFriendId(clientId) {
+  const timer = guestFriendIdTimers.get(clientId);
+  if (timer) clearTimeout(timer);
+  guestFriendIdTimers.delete(clientId);
+  const code = guestFriendIds.get(clientId);
+  if (!code) return;
+  guestFriendIds.delete(clientId);
+  if (guestFriendIdOwners.get(code) === clientId) guestFriendIdOwners.delete(code);
+}
+
+// `fresh` means the browser started a new app session (its sessionStorage was
+// empty), so a code still in its grace window belongs to the closed session.
+function guestFriendIdFor(clientId, fresh) {
+  const timer = guestFriendIdTimers.get(clientId);
+  if (timer) {
+    clearTimeout(timer);
+    guestFriendIdTimers.delete(clientId);
+    if (fresh) releaseGuestFriendId(clientId);
+  }
+  let code = guestFriendIds.get(clientId);
+  if (code) return code;
+  do {
+    code = `G${randomFriendCode(GUEST_FRIEND_ID_LENGTH)}`;
+  } while (guestFriendIdOwners.has(code));
+  guestFriendIds.set(clientId, code);
+  guestFriendIdOwners.set(code, clientId);
+  return code;
+}
+
+function scheduleGuestFriendIdRelease(clientId) {
+  if (!guestFriendIds.has(clientId) || guestFriendIdTimers.has(clientId)) return;
+  const timer = setTimeout(() => {
+    guestFriendIdTimers.delete(clientId);
+    if (!clientSockets.has(clientId)) releaseGuestFriendId(clientId);
+  }, GUEST_FRIEND_ID_GRACE_MS);
+  timer.unref();
+  guestFriendIdTimers.set(clientId, timer);
+}
+
+function accountFriendId(usernameLower) {
+  return store.ensureAccountFriendId(usernameLower, () => randomFriendCode(ACCOUNT_FRIEND_ID_LENGTH));
+}
+
+// The profile (clientId) a code currently points at, or null.
+function clientIdForFriendId(code) {
+  if (!code) return null;
+  if (isGuestFriendId(code)) return guestFriendIdOwners.get(code) || null;
+  const usernameLower = store.findUsernameByFriendId(code);
+  return usernameLower ? store.getAccountClientId(usernameLower) : null;
+}
+
+// Tell this socket its own ID: the account's permanent one when signed in,
+// otherwise a temporary guest one.
+function sendFriendId(socket, { fresh = false } = {}) {
+  const usernameLower = socketAuth.get(socket.id);
+  const profile = profiles.get(socket.id);
+  if (usernameLower) {
+    const code = accountFriendId(usernameLower);
+    // Signed in: this browser is no longer a guest, so its guest code goes.
+    if (profile) releaseGuestFriendId(profile.clientId);
+    if (code) socket.emit('friend-id', { friendId: displayFriendId(code), temporary: false });
+    return;
+  }
+  if (!profile) return;
+  const code = guestFriendIdFor(profile.clientId, fresh);
+  socket.emit('friend-id', { friendId: displayFriendId(code), temporary: true });
+}
+
 io.on('connection', (socket) => {
   const ip = getClientIp(socket);
   const geo = lookupGeo(ip);
@@ -2928,6 +3041,9 @@ io.on('connection', (socket) => {
 
   store.recordConnection();
   store.recordPeakOnline(io.engine.clientsCount);
+  // A browser that says it is signed in waits for 'resume-session' before it
+  // is given an ID; this records that the resume came back refused.
+  let resumeRefused = false;
 
   // Age-assurance gate for account, friends and premium features (fix list
   // 3.1). Answers { ok: true } while the ageAssurance flag is off.
@@ -3043,7 +3159,9 @@ io.on('connection', (socket) => {
     const usernameLower = store.getAuthSessionUser(token);
     const account = usernameLower ? accounts.get(usernameLower) : null;
     if (!account) {
-      return socket.emit('resume-session-result', { ok: false });
+      resumeRefused = true;
+      socket.emit('resume-session-result', { ok: false });
+      return sendFriendId(socket);
     }
     socketAuth.set(socket.id, usernameLower);
     store.upsertAccount(usernameLower, {
@@ -3056,6 +3174,7 @@ io.on('connection', (socket) => {
       email: account.email || '',
       ...linkAccountProfile(usernameLower, socket.id),
     });
+    sendFriendId(socket);
   });
 
   socket.on('logout', ({ token } = {}) => {
@@ -3063,6 +3182,7 @@ io.on('connection', (socket) => {
     // Kill the durable session too, so the token in localStorage (or a stolen
     // copy of it) can't silently sign back in.
     store.deleteAuthSession(token);
+    sendFriendId(socket);
   });
 
   socket.on('google-auth', async ({ credential } = {}) => {
@@ -3525,6 +3645,11 @@ io.on('connection', (socket) => {
     socket.emit('register-result', { ok: true });
     refreshFriendSnapshots(clientId, profiles.get(socket.id));
     syncClientState(socket, clientId);
+    // A signed-in browser gets its account ID from 'resume-session' instead,
+    // so it is never handed a guest code it would drop a moment later.
+    if (socketAuth.get(socket.id) || !data.signedIn || resumeRefused) {
+      sendFriendId(socket, { fresh: data.freshSession === true && wasOffline });
+    }
 
     // "James from UK is online": tell each online friend this user just came
     // online (only on a genuine offline→online transition, and never when the
@@ -3979,7 +4104,43 @@ io.on('connection', (socket) => {
   });
 
   // --- Friends ---
-  socket.on('friend-request', ({ targetClientId, message } = {}) => {
+  // Look someone up by their public friend ID, to add them without having met.
+  socket.on('find-by-friend-id', ({ friendId } = {}) => {
+    const me = profiles.get(socket.id);
+    if (!me) return;
+    const code = normalizeFriendId(friendId);
+    const reply = (result) => socket.emit('find-by-friend-id-result', { query: code ? displayFriendId(code) : '', ...result });
+    if (!code) return reply({ ok: false, error: 'IDs look like K7MX29QP, or G-4RT9KQ for guests.' });
+    // Codes are short enough to guess at, so searching is metered.
+    if (!socialRateOk('find-by-friend-id', me.clientId, 30, 10 * 60000)) {
+      return reply({ ok: false, error: 'Too many searches. Try again in a few minutes.' });
+    }
+    const targetClientId = clientIdForFriendId(code);
+    if (targetClientId === me.clientId) return reply({ ok: false, self: true, error: 'That is your own ID.' });
+    if (!targetClientId || isBlockedPair(me.clientId, targetClientId) || ageAssurance.isRestricted(targetClientId)) {
+      return reply({ ok: false, error: 'No one has that ID right now.' });
+    }
+    store.recordFeature('friend_id_search');
+    const snap = snapshotOf(targetClientId, me.clientId);
+    const usernameLower = isGuestFriendId(code) ? null : store.findUsernameByFriendId(code);
+    const account = usernameLower ? accounts.get(usernameLower) : null;
+    reply({
+      ok: true,
+      user: {
+        clientId: targetClientId,
+        friendId: displayFriendId(code),
+        username: snap.username || (account && account.nickname) || 'Stranger',
+        countryCode: snap.countryCode || '',
+        avatar: snap.avatar || null,
+        temporary: isGuestFriendId(code),
+        isFriend: isFriend(me.clientId, targetClientId),
+        pending: (sentRequests.get(me.clientId) || new Map()).has(targetClientId),
+        ...presenceOf(targetClientId),
+      },
+    });
+  });
+
+  socket.on('friend-request', ({ targetClientId, message, friendId } = {}) => {
     const me = profiles.get(socket.id);
     targetClientId = validId(targetClientId);
     if (!me || !targetClientId || targetClientId === me.clientId) return;
@@ -3997,7 +4158,10 @@ io.on('connection', (socket) => {
     // met (a match, a conversation, a request from them). A clientId on its own
     // must not be enough to land in somebody's inbox.
     const inboxReq = (friendRequests.get(me.clientId) || new Map()).get(targetClientId);
-    if (!inboxReq && !knowsEachOther(me.clientId, targetClientId)) {
+    // ...or someone whose friend ID this user typed in, which is the other way
+    // people are meant to find each other.
+    const viaFriendId = clientIdForFriendId(normalizeFriendId(friendId)) === targetClientId;
+    if (!inboxReq && !viaFriendId && !knowsEachOther(me.clientId, targetClientId)) {
       return socket.emit('friend-request-result', { ok: false, error: 'Unable to send friend request.' });
     }
     if (isFriend(me.clientId, targetClientId)) {
@@ -4065,7 +4229,15 @@ io.on('connection', (socket) => {
     // Asked while they were offline (from recent people): their live profile
     // is not there to read, so fall back to what this user knows of them -
     // otherwise the "You asked" list showed a nameless "Stranger".
-    noteSentRequest(me.clientId, targetClientId, snapshotOf(targetClientId, me.clientId));
+    const targetSnap = snapshotOf(targetClientId, me.clientId);
+    // Found by an account's friend ID while they are offline: nothing above
+    // knows their name yet, but the account does.
+    if (!targetSnap.username && viaFriendId) {
+      const owner = store.findUsernameByFriendId(normalizeFriendId(friendId));
+      const account = owner ? accounts.get(owner) : null;
+      if (account) targetSnap.username = account.nickname;
+    }
+    noteSentRequest(me.clientId, targetClientId, targetSnap);
 
     pushNotification(targetClientId, {
       type: 'friend_request',
@@ -4808,6 +4980,7 @@ io.on('connection', (socket) => {
     const profile = profiles.get(socket.id);
     if (profile && clientSockets.get(profile.clientId) === socket.id) {
       clientSockets.delete(profile.clientId);
+      scheduleGuestFriendIdRelease(profile.clientId);
       if (friends.has(profile.clientId) || chatHistory.has(profile.clientId)) {
         lastSeen.set(profile.clientId, Date.now());
         persistSocial();

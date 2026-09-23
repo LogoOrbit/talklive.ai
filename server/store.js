@@ -184,6 +184,8 @@ function defaults() {
 
 let data = defaults();
 let saveTimer = null;
+// Public friend ID -> usernameLower. Rebuilt from the accounts on every load.
+let friendIdIndex = new Map();
 
 function applyParsed(parsed) {
   data = { ...defaults(), ...parsed };
@@ -203,6 +205,11 @@ function applyParsed(parsed) {
   data.emailIndex = {};
   for (const [usernameLower, acc] of Object.entries(data.accounts)) {
     if (acc && acc.email) data.emailIndex[String(acc.email).toLowerCase()] = usernameLower;
+  }
+  // Same for the public friend IDs: derived from the accounts, never stored.
+  friendIdIndex = new Map();
+  for (const [usernameLower, acc] of Object.entries(data.accounts)) {
+    if (acc && acc.friendId) friendIdIndex.set(acc.friendId, usernameLower);
   }
 }
 
@@ -1172,6 +1179,10 @@ function saveAccount(usernameLower, account) {
     // so always keep whatever the previous record had unless this write
     // explicitly replaces it.
     clientId: account.clientId || previous.clientId || null,
+    // The public ID others search to add this account (see
+    // ensureAccountFriendId). Like clientId, never carried by the in-memory
+    // accounts Map, so it is always kept from the previous record.
+    friendId: previous.friendId || null,
     createdAt: previous.createdAt || Date.now(),
   };
   if (account.googleId) data.googleIndex[account.googleId] = usernameLower;
@@ -1202,6 +1213,42 @@ function setAccountClientId(usernameLower, clientId) {
   acc.clientId = clientId;
   save();
   return clientId;
+}
+
+// --- Public friend IDs ------------------------------------------------------
+// A short code (e.g. "K7MX29QP") that is this account's forever, so people can
+// find and add each other without having met in a random match. Assigned
+// lazily the first time the account is used, and never changed afterwards.
+
+function getAccountFriendId(usernameLower) {
+  const acc = data.accounts[String(usernameLower || '').toLowerCase()];
+  return (acc && acc.friendId) || null;
+}
+
+// The account's friend ID, minting one with `generate` if it has none yet.
+// `isTaken(id)` lets the caller reserve IDs that live outside the store too.
+function ensureAccountFriendId(usernameLower, generate, isTaken = () => false) {
+  const key = String(usernameLower || '').toLowerCase();
+  const acc = data.accounts[key];
+  if (!acc) return null;
+  if (acc.friendId) return acc.friendId;
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    const id = generate();
+    if (friendIdIndex.has(id) || isTaken(id)) continue;
+    acc.friendId = id;
+    friendIdIndex.set(id, key);
+    save();
+    return id;
+  }
+  return null;
+}
+
+function findUsernameByFriendId(friendId) {
+  return friendIdIndex.get(friendId) || null;
+}
+
+function isAccountFriendId(friendId) {
+  return friendIdIndex.has(friendId);
 }
 
 // Which account, if any, a recovery email belongs to. Returns usernameLower.
@@ -1760,6 +1807,10 @@ module.exports = {
   saveAccount,
   getAccountClientId,
   setAccountClientId,
+  getAccountFriendId,
+  ensureAccountFriendId,
+  findUsernameByFriendId,
+  isAccountFriendId,
   findUsernameByEmail,
   startPasswordReset,
   findPasswordReset,

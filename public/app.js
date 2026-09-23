@@ -1514,6 +1514,101 @@ socket.on('friend-request-result', ({ ok, error, limitReached, accepted, already
   }
 });
 
+// --- Public friend ID -------------------------------------------------------
+// Everyone has one: an account's is permanent, a guest's lasts until the app
+// is closed. Typing someone's ID finds them so they can be added without
+// having met in a random match.
+const myFriendIdEl = document.getElementById('myFriendId');
+const myFriendIdNote = document.getElementById('myFriendIdNote');
+const copyFriendIdBtn = document.getElementById('copyFriendIdBtn');
+const friendIdSearchForm = document.getElementById('friendIdSearchForm');
+const friendIdSearchInput = document.getElementById('friendIdSearchInput');
+const friendIdResult = document.getElementById('friendIdResult');
+let myFriendId = '';
+let friendIdFound = null;
+let friendIdAddPending = false;
+
+socket.on('friend-id', ({ friendId, temporary } = {}) => {
+  if (typeof friendId !== 'string' || !friendId) return;
+  myFriendId = friendId;
+  myFriendIdEl.textContent = friendId;
+  myFriendIdNote.classList.toggle('hidden', !temporary);
+  copyFriendIdBtn.disabled = false;
+});
+
+copyFriendIdBtn.addEventListener('click', async () => {
+  if (!myFriendId) return;
+  try {
+    await navigator.clipboard.writeText(myFriendId);
+    showToast(t('friendIdCopied'));
+  } catch (e) {
+    // No clipboard access (insecure context, denied): select it instead.
+    const range = document.createRange();
+    range.selectNodeContents(myFriendIdEl);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+});
+
+friendIdSearchForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const query = friendIdSearchInput.value.trim();
+  if (!query) return friendIdSearchInput.focus();
+  socket.emit('find-by-friend-id', { friendId: query });
+});
+
+function renderFriendIdResult() {
+  const user = friendIdFound;
+  if (!user) return;
+  const relation = relationTo(user.clientId);
+  const action = relation === 'friend'
+    ? `<button type="button" class="btn btn-secondary" data-act="chat">${escapeHtml(t('chat'))}</button>`
+    : relation === 'pending'
+      ? `<button type="button" class="btn btn-secondary" disabled>${escapeHtml(t('pending'))}</button>`
+      : `<button type="button" class="btn btn-primary" data-act="add">${escapeHtml(t('addFriend'))}</button>`;
+  const sub = [user.friendId, user.temporary ? t('friendIdGuest') : '', user.online ? t('online') : '']
+    .filter(Boolean).join(' · ');
+  friendIdResult.classList.remove('hidden', 'is-error');
+  friendIdResult.innerHTML = `${genderIcon(user.avatar, 36)}
+    <span class="friend-id-result-who"><strong>${getFlagImg(user.countryCode)} ${escapeHtml(user.username)}</strong><small>${escapeHtml(sub)}</small></span>
+    ${action}`;
+}
+
+socket.on('find-by-friend-id-result', ({ ok, error, user } = {}) => {
+  friendIdFound = ok && user ? user : null;
+  if (!friendIdFound) {
+    friendIdResult.classList.remove('hidden');
+    friendIdResult.classList.add('is-error');
+    friendIdResult.textContent = error || '';
+    return;
+  }
+  renderFriendIdResult();
+});
+
+friendIdResult.addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-act]');
+  if (!btn || !friendIdFound) return;
+  if (btn.dataset.act === 'chat') {
+    openUserProfile(personById(friendIdFound.clientId, friendIdFound));
+    return;
+  }
+  btn.disabled = true;
+  friendIdAddPending = true;
+  socket.emit('friend-request', { targetClientId: friendIdFound.clientId, friendId: friendIdFound.friendId });
+});
+
+socket.on('friend-request-result', ({ ok, sent } = {}) => {
+  if (!friendIdFound) return;
+  if (friendIdAddPending && ok && sent) showToast(t('friendRequestSent'));
+  friendIdAddPending = false;
+  // The state-sync that follows updates the relation; this re-enables the
+  // button when the request was refused.
+  renderFriendIdResult();
+});
+
+socket.on('state-sync', () => { if (friendIdFound) renderFriendIdResult(); });
+
 let lastFocusedBeforeModal = null;
 // Long legal text is not shipped in the page. A .policy-remote[data-policy-src]
 // block is filled from that standalone page the first time its dialog opens,
@@ -4191,9 +4286,21 @@ historyList.addEventListener('click', (e) => {
 // server's clientId -> socketId map goes stale and friend messages/notifications
 // sent to this device silently fail to arrive until the page is reloaded.
 let lastRegisterPayload = null;
+// True only for the first registration of a brand-new app session (a fresh
+// tab or a relaunched app has empty sessionStorage; a reload does not). It
+// tells the server a guest's temporary friend ID from the closed session can
+// go, instead of being handed back.
+let freshAppSession = (() => {
+  try {
+    const fresh = sessionStorage.getItem('tl_app_session') !== '1';
+    sessionStorage.setItem('tl_app_session', '1');
+    return fresh;
+  } catch (e) { return false; }
+})();
 function registerClient(payload) {
-  lastRegisterPayload = payload;
-  socket.emit('register', payload);
+  lastRegisterPayload = { ...payload, freshSession: false };
+  socket.emit('register', { ...payload, freshSession: freshAppSession });
+  freshAppSession = false;
 }
 
 // --- Referrals ---------------------------------------------------------------
@@ -5709,6 +5816,8 @@ function registerProfile() {
     animal: myAnimal || undefined,
     hideStatus: !statusVisible,
     acceptCalls: acceptCallsEnabled,
+    // Signed in: the account's permanent friend ID arrives with the resume.
+    signedIn: !!sessionToken,
   });
 }
 
