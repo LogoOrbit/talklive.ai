@@ -691,7 +691,7 @@
   "guideChat": "通话中可使用聊天按钮发送文字消息。",
   "footerText": "保持尊重。你可能与世界上任何人匹配。仅语音--无视频、无录音。仅限 18 岁以上。",
   "privacyPolicy": "隐私政策",
-  "sponsored": "赞助",
+  "sponsored": "广告",
   "premiumBadge": "💎 高级版",
   "filtersPremiumTitle": "筛选是高级版功能",
   "filtersPremiumText": "免费版：每个列表最多 2 个国家，性别筛选已锁定。",

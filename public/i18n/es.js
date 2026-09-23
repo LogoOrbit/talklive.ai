@@ -691,7 +691,7 @@
   "guideChat": "Usa el botón de chat para enviar mensajes de texto durante la llamada.",
   "footerText": "Sé respetuoso. Puedes ser emparejado con cualquier persona del mundo. Solo voz - sin vídeo, sin grabación. Solo mayores de 18.",
   "privacyPolicy": "Política de privacidad",
-  "sponsored": "Patrocinado",
+  "sponsored": "Publicidad",
   "premiumBadge": "💎 Premium",
   "filtersPremiumTitle": "Los filtros son una función Premium",
   "filtersPremiumText": "Plan gratuito: hasta 2 países por lista. Filtro de género bloqueado.",

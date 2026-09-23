@@ -691,7 +691,7 @@
   "guideChat": "Arama sırasında yazılı mesaj göndermek için sohbet düğmesini kullan.",
   "footerText": "Saygılı ol. Dünyadaki herhangi biriyle eşleşebilirsin. Yalnızca ses - video yok, kayıt yok. Yalnızca 18+.",
   "privacyPolicy": "Gizlilik Politikası",
-  "sponsored": "Sponsorlu",
+  "sponsored": "Reklam",
   "premiumBadge": "💎 Premium",
   "filtersPremiumTitle": "Filtreler bir Premium özelliğidir",
   "filtersPremiumText": "Ücretsiz plan: liste başına en fazla 2 ülke. Cinsiyet filtresi kilitli.",

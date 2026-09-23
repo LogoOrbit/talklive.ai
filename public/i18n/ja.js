@@ -691,7 +691,7 @@
   "guideChat": "通話中はチャットボタンでテキストメッセージを送れます。",
   "footerText": "礼儀正しく。世界中の誰とでもマッチする可能性があります。音声のみ - 映像なし、録音なし。18歳以上限定。",
   "privacyPolicy": "プライバシーポリシー",
-  "sponsored": "スポンサー",
+  "sponsored": "広告",
   "premiumBadge": "💎 プレミアム",
   "filtersPremiumTitle": "フィルターはプレミアム機能です",
   "filtersPremiumText": "無料プラン：リストごとに最大2か国。性別フィルターはロック中。",

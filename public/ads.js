@@ -1,100 +1,60 @@
 /*
- * TalkLive ad loader (Adsterra).
+ * TalkLive ad loader (Google AdSense only).
  *
- * Fills placeholder slots lazily so ads never block page render and only load
- * when the slot is near the viewport.
+ * The AdSense loader (pagead2.googlesyndication.com/.../adsbygoogle.js) sits
+ * in the <head> of every page, which is what Auto ads and site verification
+ * need. This file handles the fixed slots in the page:
  *
- * Slots (add anywhere in the page body):
- *   <div data-ad="native"></div>       Native banner (blends with content)
- *   <div data-ad="box"></div>          300x250 medium rectangle
- *   <div data-ad="leaderboard"></div>  Widest banner the slot can actually fit
- *   <div data-ad="banner"></div>       468x60 where it fits, 320x50 below that
- *   <div data-ad="skyscraper"></div>   160x600 on desktop, 160x300 below 1024px
+ *   <div class="ad-card"><span class="ad-card-label">Advertisement</span>
+ *     <div data-ad="leaderboard"></div></div>
  *
- * Any exact size in BANNERS also works as a slot name, e.g.
- *   <div data-ad="160x600"></div>
+ * Slot types: leaderboard, banner, box, skyscraper, native. Each one becomes
+ * an AdSense unit when it nears the viewport, using the ad-unit ID configured
+ * for its type in /ads-config.json (adsense.slots). A type with no ID
+ * configured never loads and its space collapses; Auto ads, configured in the
+ * AdSense account, decide placement instead.
  *
- * Three things this file is responsible for beyond loading a tag:
+ * Rules this file enforces, beyond loading a tag:
  *
- * 1. NOT MOVING THE PAGE. Every slot's dimensions are reserved in CSS before
- *    anything loads (the [data-ad] block mirrored in seo.css, style.css and
- *    chat.css), and this file must not do anything that changes a slot's size
- *    once the user can see it. That includes collapsing an unfilled one - see
- *    hideSlot.
+ * 1. NO GOOGLE ADS ON APP SCREENS. Slots inside .ad-card-app (the start,
+ *    matchmaking, call and chat screens) are never filled. Those screens are
+ *    mostly controls and waiting states, which AdSense treats as screens
+ *    without publisher content, and an ad beside the call buttons invites
+ *    accidental clicks. The CSS hides those cards too.
  * 2. NOT INTERRUPTING A LIVE CONVERSATION. While a call or chat is live,
- *    nothing starts loading, retries, or collapses. Ads already on screen stay
- *    exactly as they are, so a twenty-minute call is twenty minutes of
- *    stationary page. See callIsLive.
- * 3. READING ITS DENSITY FROM CONFIG. Slot counts and per-format switches come
- *    from /ads-config.json at runtime, not from the markup, so they can be
- *    retuned without rebuilding 282 pages. See config.
+ *    nothing starts loading or collapses, so nothing moves under a
+ *    conversation. See callIsLive.
+ * 3. NOT MOVING THE PAGE. Slot space is reserved in CSS before anything loads;
+ *    an unfilled slot gives its space up only when no conversation is live.
+ * 4. HONEST LABELS. The card's "Advertisement" label and frame only appear
+ *    once Google has actually filled the unit, and house promos (our own
+ *    pages) are never labelled as ads.
+ * 5. READING DENSITY FROM CONFIG, so it can be retuned without a deploy.
  */
 (function () {
   'use strict';
 
-  // Adsterra serves the same tags from several hosts. The first is the one the
-  // dashboard hands out; the second is Adsterra's long-standing banner origin
-  // and is tried only when the first never renders (DNS filter, blocklist,
-  // network hiccup) - without it those visitors are simply worth nothing.
-  // Both are allowlisted in the script-src CSP in server/index.js.
-  var HOSTS = [
-    'https://delvefencescrewdriver.com',
-    'https://www.highperformanceformat.com',
-  ];
+  var CLIENT = 'ca-pub-6368797323385379';
 
-  var NATIVE = {
-    path: '/b6c7c32837efbcc9a34a0986523c06c5/invoke.js',
-    container: 'container-b6c7c32837efbcc9a34a0986523c06c5',
-  };
-
-  var BANNERS = {
-    '320x50':  { key: '2cb8019064140640529e87ba7bfea884', w: 320, h: 50 },
-    '468x60':  { key: '890009febc64ee8cc3ed37e40c0664ea', w: 468, h: 60 },
-    '300x250': { key: 'd12fcb01cfece74010f3fd29781e3ce4', w: 300, h: 250 },
-    '728x90':  { key: 'bc52532dc8d29f62e8bd95a442953b14', w: 728, h: 90 },
-    '160x300': { key: '07074e4c3772083d48e650ea40b449e6', w: 160, h: 300 },
-    '160x600': { key: '20e9abfee215ecab6c128da50698bb01', w: 160, h: 600 },
-  };
-
-  // --- Config ---------------------------------------------------------------
-
-  // Mirrors public/ads-config.json. Used verbatim if the fetch fails, so a
-  // network blip or a bad deploy degrades to sane density rather than to no
-  // ads at all - or, worse, to every slot on the page filling at once.
+  // Mirrors public/ads-config.json. Used verbatim if the fetch fails.
   var config = {
     enabled: true,
     maxSlotsPerPage: 3,
-    types: { native: true, leaderboard: true, banner: true, box: true, skyscraper: true, socialBar: true },
-    socialBar: { enabled: true, contentOnly: true, minDelayMs: 12000, minScrollRatio: 0.25 },
-    // Opt-in through ads-config.json so a config-fetch failure cannot create a
-    // floating unit unexpectedly.
-    searchAnchor: { enabled: false, minViewportHeight: 700, dismissHours: 24 },
+    types: { native: true, leaderboard: true, banner: true, box: true, skyscraper: true },
     pauseDuringCall: true,
-    // Mirrors callScreenCap in ads-config.json. 1 = no cap.
-    callScreenCap: { everyNCalls: 1 },
-    // Mirrors adsenseSafe in ads-config.json: off unless the config turns it on.
-    adsenseSafe: false,
     lazyRootMargin: '100px',
     fillTimeoutMs: 15000,
-    visibleFillTimeoutMs: 6000,
-    minViewportHeight: 620,
-    // Overwritten by /ads-config.json. Empty here so that if the config never
-    // arrives an unfilled slot collapses quietly rather than showing a promo
-    // this file had to hard-code.
+    visibleFillTimeoutMs: 8000,
+    adsense: { client: CLIENT, slots: {} },
+    // Overwritten by /ads-config.json; empty here so a failed fetch collapses
+    // an unfilled slot rather than showing a promo hard-coded in this file.
     fallback: { enabled: false, promos: [] },
-    // Further demand, tried in order only after Adsterra has failed on every
-    // host. Off until ads-config.json supplies zone IDs - see the backfill
-    // section. Empty here so a failed config fetch cannot load a network that
-    // was never set up.
-    backfill: { enabled: false, networks: [] },
   };
 
   function loadConfig(done) {
     if (!window.fetch) { done(); return; }
     var settled = false;
     function finish() { if (!settled) { settled = true; done(); } }
-    // Never let a slow config request hold the ads hostage. After a second the
-    // defaults above are good enough, and a slot that loads late earns nothing.
     var timer = setTimeout(finish, 1000);
     fetch('/ads-config.json', { credentials: 'omit' })
       .then(function (r) { return r.ok ? r.json() : null; })
@@ -109,40 +69,25 @@
       .then(function () { clearTimeout(timer); finish(); });
   }
 
+  // "banner" is a leaderboard at a smaller breakpoint and shares its switch.
   function typeEnabled(type) {
-    // An exact size like "160x600" is governed by the family it belongs to.
-    var family = type;
-    if (BANNERS[type]) family = type === '300x250' ? 'box' : (/^160x/.test(type) ? 'skyscraper' : 'banner');
-    return !config.types || config.types[family] !== false;
+    var family = type === 'banner' ? 'leaderboard' : type;
+    return !config.types || (config.types[family] !== false && config.types[type] !== false);
+  }
+
+  function unitIdFor(type) {
+    var slots = (config.adsense && config.adsense.slots) || {};
+    return slots[type] || slots['default'] || '';
   }
 
   // --- Live conversation detection -----------------------------------------
-
-  /*
-   * True while the user is in a live voice call or text chat.
-   *
-   * Read entirely out of DOM state that app.js and chat.js already maintain -
-   * nothing here writes to the page's own state, and no signalling or WebRTC
-   * code is touched. Two independent signals, one per sub-app:
-   *
-   *   /  and /call : #callMainBtn carries data-mode, set by setButtonMode() in
-   *                  app.js. "hangup" and "confirm" both mean a call is up;
-   *                  "call" is idle. "loading" covers three different states,
-   *                  so data-call-state (set by setCallState) is read to tell
-   *                  them apart: "searching" is NOT a live conversation - the
-   *                  screen is static and the user is waiting, which is the
-   *                  best moment on the whole app to fill a slot, and it is
-   *                  what the call screen's markup already assumes. Connecting
-   *                  and reconnecting are part of the call and do pause ads.
-   *                  If the attribute is missing, "loading" is treated as live,
-   *                  so older markup still errs on the safe side.
-   *   /chat        : #viewLive loses its .hidden class while a text chat runs.
-   *
-   * If neither element exists - every landing page, blog post and geo page -
-   * there is no conversation to interrupt and this is always false.
-   */
+  //
+  // Read from DOM state app.js and chat.js already maintain:
+  //   / and /call : #callMainBtn data-mode ("hangup"/"confirm" = call up;
+  //                 "loading" = live unless data-call-state is "searching").
+  //   /chat       : #viewLive loses .hidden while a text chat runs.
   function callIsLive() {
-    // Never allow remote density settings to disable conversation protection.
+    if (config.pauseDuringCall === false) return false;
     var btn = document.getElementById('callMainBtn');
     if (btn) {
       var mode = btn.dataset ? btn.dataset.mode : btn.getAttribute('data-mode');
@@ -153,45 +98,25 @@
       }
     }
     var live = document.getElementById('viewLive');
-    if (live && !live.classList.contains('hidden')) return true;
-    return false;
+    return !!(live && !live.classList.contains('hidden'));
   }
 
-  // Matchmaking. Deliberately not part of callIsLive - a slot inside the page
-  // SHOULD fill while the user waits - but a floating overlay is different: it
-  // would land on the one screen the user is staring at waiting for a match,
-  // right as the call controls become live.
-  function isSearching() {
-    var btn = document.getElementById('callMainBtn');
-    if (!btn) return false;
-    return (btn.dataset ? btn.dataset.callState : btn.getAttribute('data-call-state')) === 'searching';
-  }
-
-  // Slots that were ready to fill when a conversation started. They wait here
-  // rather than being dropped, so the impression is served the moment the call
-  // ends instead of being lost.
+  // Slots that became visible during a conversation wait here and load when it
+  // ends; slots that gave up mid-call keep their space until then.
   var deferred = [];
+  var pendingCollapse = [];
 
   function releaseDeferred() {
-    countSearch();
-    if (callIsLive()) { abandonInFlight(); return; }
-    if (document.hidden) return;
-    collapsePending();
-    if (!deferred.length) return;
+    if (document.hidden || callIsLive()) return;
+    var collapsing = pendingCollapse;
+    pendingCollapse = [];
+    collapsing.forEach(collapse);
     var pending = deferred;
     deferred = [];
     pending.forEach(fill);
   }
 
-  /*
-   * Watch for the conversation ending.
-   *
-   * A MutationObserver on the two signal elements rather than a poll: it fires
-   * on the same tick the class or attribute changes, costs nothing while
-   * nothing changes, and needs no cooperation from app.js.
-   */
   function watchCallState() {
-    countSearch();
     document.addEventListener('visibilitychange', releaseDeferred);
     if (!window.MutationObserver) return;
     var targets = [document.getElementById('callMainBtn'), document.getElementById('viewLive')]
@@ -203,89 +128,8 @@
     });
   }
 
-  // --- Nothing renders at the connect moment --------------------------------
-
-  /*
-   * A slot whose tag is still loading when a match connects is abandoned, not
-   * left to finish. Before this, a banner that started during the search
-   * (which on the call screen is usually about six seconds) routinely landed
-   * a second or two after the call connected - an ad appearing at exactly the
-   * moment the user is trying to say hello.
-   *
-   * Abandoning never moves the page: the slot is made invisible inside the
-   * space it already reserved, its poll stops, and the space is given back
-   * only when the call ends (collapsePending). A creative that arrives late
-   * lands in an invisible box and is never revealed. Slots that had already
-   * filled during the search stay exactly as they were.
-   */
-  function abandonInFlight() {
-    var slots = [].slice.call(document.querySelectorAll('[data-ad]'));
-    slots.forEach(function (el) {
-      if (!el.dataset.adLoaded || el.dataset.adDone || el.getAttribute('data-ad-filled')) return;
-      el.dataset.adDone = '1';
-      el.dataset.adAbandoned = '1';
-      el.style.visibility = 'hidden';
-      reportFill(el, false);
-      pendingCollapse.push(el);
-    });
-  }
-
-  // --- Call-screen frequency cap ---------------------------------------------
-
-  /*
-   * config.callScreenCap.everyNCalls: the slots inside #callPanel serve a
-   * network ad on at most one call in every N. On the other calls they are
-   * handed to hideSlot, which puts one of our own promos (never labelled
-   * Sponsored) in the reserved space, or collapses it.
-   *
-   * A "call" is one search for a match, counted per browser tab session so a
-   * reload does not reset it. Slots are never refreshed within a page view, so
-   * within one page this only decides whether the call screen's slots load at
-   * all; across reloads it is what limits impressions per call.
-   */
-  var memoryCounters = { searches: 0, served: -1 };
-  function counter(key, value) {
-    try {
-      var store = window.sessionStorage;
-      if (value === undefined) {
-        var raw = store.getItem('tl_ad_' + key);
-        return raw === null ? memoryCounters[key] : Number(raw);
-      }
-      store.setItem('tl_ad_' + key, String(value));
-    } catch (err) { /* private mode or no storage: fall through to memory */ }
-    if (value !== undefined) memoryCounters[key] = value;
-    return memoryCounters[key];
-  }
-
-  var lastCallState = null;
-  function countSearch() {
-    var btn = document.getElementById('callMainBtn');
-    if (!btn) return;
-    var state = btn.dataset ? btn.dataset.callState : btn.getAttribute('data-call-state');
-    if (state === 'searching' && lastCallState !== 'searching') counter('searches', counter('searches') + 1);
-    lastCallState = state;
-  }
-
-  function isCallScreenSlot(el) {
-    return !!(el.closest && el.closest('#callPanel'));
-  }
-
-  // True when this call-screen slot must not serve a network ad on this call.
-  function callScreenCapped() {
-    var n = Math.floor(Number(config.callScreenCap && config.callScreenCap.everyNCalls) || 1);
-    if (n <= 1) return false;
-    var searches = counter('searches');
-    var served = counter('served');
-    // Every slot on the call that won the cap may serve, not just the first.
-    if (served === searches) return false;
-    if (served >= 0 && searches - served < n) return true;
-    counter('served', searches);
-    return false;
-  }
-
   // --- Slot lifecycle -------------------------------------------------------
 
-  // Is any part of the slot on screen right now?
   function isOnScreen(el) {
     try {
       var rect = el.getBoundingClientRect();
@@ -295,143 +139,86 @@
     }
   }
 
-  /*
-   * A slot has actually put a creative on the page.
-   *
-   * This is what reveals the card's border, background and "Sponsored" label -
-   * see the .ad-card rules in the stylesheets. Until it fires the frame is
-   * completely invisible, which is the whole point: an empty labelled panel
-   * announcing an advertisement that does not exist is worse than no frame at
-   * all, and on a blocked or filtered connection that is what every slot on the
-   * page would otherwise be.
-   */
-  function markFilled(el) {
-    el.setAttribute('data-ad-filled', '1');
-    var card = el.closest && el.closest('.ad-card');
-    if (card) card.setAttribute('data-ad-filled', '1');
-    reportFill(el, true);
+  function card(el) {
+    return el.closest ? el.closest('.ad-card') : null;
   }
 
-  /*
-   * Give up on a slot and take its space back.
-   *
-   * This used to keep the reserved space when the slot was on screen, on the
-   * grounds that collapsing it is itself a layout shift. That was the wrong
-   * trade and it showed: with an ad blocker or a filtered DNS - which is a lot
-   * of this audience - the call screen held a 200px empty box under a
-   * "Sponsored" label for thirty seconds. A one-off shift is cheaper than a
-   * hole in the page, so the slot now always collapses. The fill deadline in
-   * pollFill is short while the slot is visible precisely so this happens
-   * before the user has settled on it.
-   *
-   * Before collapsing, though, houseAd gets a chance at the space.
-   */
-  function hideSlot(el, keepSpace) {
-    if (el.dataset.adDone) return;
-    el.dataset.adDone = '1';
-    reportFill(el, false);
-    if (houseAd(el)) return;
-    // A slot that ran out of time while a call was live must not collapse: that
-    // would move the page under a conversation, which is the one thing this
-    // file is not allowed to do. It gives its space up when the call ends
-    // instead - see collapsePending, called from releaseDeferred.
-    if (keepSpace) { pendingCollapse.push(el); return; }
-    collapse(el);
+  // Google put a creative in the unit: reveal the card's frame and label.
+  function markFilled(el) {
+    el.setAttribute('data-ad-filled', '1');
+    var c = card(el);
+    if (c) c.setAttribute('data-ad-filled', '1');
+    report(el, true);
   }
 
   function collapse(el) {
     el.style.display = 'none';
-    var card = el.closest && el.closest('.ad-card');
-    if (card) card.style.display = 'none';
+    var c = card(el);
+    if (c) c.style.display = 'none';
   }
 
-  // Slots that ran out of time mid-call and are holding their reserved space
-  // until the conversation ends.
-  var pendingCollapse = [];
-
-  function collapsePending() {
-    if (!pendingCollapse.length) return;
-    var pending = pendingCollapse;
-    pendingCollapse = [];
-    pending.forEach(collapse);
+  // Give up on a slot: one of our own promos takes the space if there is one,
+  // otherwise it collapses - but never while a conversation is live.
+  function hideSlot(el) {
+    if (el.dataset.adDone) return;
+    el.dataset.adDone = '1';
+    if (houseAd(el)) return;
+    if (callIsLive()) { pendingCollapse.push(el); return; }
+    collapse(el);
   }
 
-  // --- House promos ---------------------------------------------------------
+  function report(el, filled) {
+    if (typeof window.gtag !== 'function') return;
+    try {
+      window.gtag('event', filled ? 'ad_slot_filled' : 'ad_slot_unfilled', {
+        ad_format: el.dataset.ad || 'unknown',
+        ad_network: 'adsense',
+      });
+    } catch (_) { /* analytics must never break ads */ }
+  }
 
-  /*
-   * What goes in a slot the ad network never filled.
-   *
-   * There is no way to make a third-party ad unblockable. Proxying the network
-   * through this domain would work for a few weeks until the filter lists catch
-   * up, and it is the pattern browsers treat as tracking evasion, so it is not
-   * worth the ban risk or the EU exposure. What IS possible is to stop losing
-   * the space: a visitor with an ad blocker still reads the page, and one of
-   * our own promos in that slot costs nothing and can still convert.
-   *
-   * These are plain first-party HTML built from strings already in the page's
-   * JavaScript. No image, font, script, iframe or beacon of any kind is
-   * requested, so there is no network call for a blocker to intercept and no
-   * selector a cosmetic filter would target without also hiding real content.
-   * That is what makes it durable - not cleverness, just having nothing to
-   * block.
-   *
-   * They are deliberately NOT labelled "Sponsored". These are our own pages;
-   * calling them sponsored would be a false disclosure, and the .ad-card
-   * chrome stays off so a promo never impersonates a paid placement.
-   */
+  // --- House promos -----------------------------------------------------------
+  //
+  // Our own pages, as plain first-party HTML, in a slot Google did not fill.
+  // Deliberately NOT labelled as an advertisement - they are our content - and
+  // the .ad-card chrome stays off so a promo never impersonates a paid unit.
   function promoFor(el) {
     var fb = config.fallback;
     if (!fb || !fb.enabled || !fb.promos || !fb.promos.length) return null;
-    // The call and chat screens are "app"; everything else is "content".
     var surface = document.getElementById('callMainBtn') || document.getElementById('viewLive')
       ? 'app' : 'content';
     var pool = fb.promos.filter(function (p) {
       return p && p.href && (!p.where || p.where === 'any' || p.where === surface);
     });
     if (!pool.length) return null;
-    // Rotate by slot position so two slots on one page do not show the same
-    // promo, and different visits do not always open on the same one.
     var slots = [].slice.call(document.querySelectorAll('[data-ad]'));
     var seed = Math.max(0, slots.indexOf(el)) + Math.floor(Date.now() / 3600000);
     return pool[seed % pool.length];
   }
 
   function houseAd(el) {
-    // The adhesive is a 50px strip pinned over the app. A promo card does not
-    // fit in it and an unsold one has no business staying on screen at all, so
-    // that slot opts out and collapses instead - see initSearchAnchor.
-    if (el.dataset.adNoHouse) return false;
     var promo = promoFor(el);
     if (!promo || el.dataset.adHouse) return false;
     el.dataset.adHouse = '1';
-
-    var external = /^https?:/i.test(promo.href);
-    // Built as a string and assigned once. Reading back el.href would return
-    // the resolved absolute URL, so appending to it baked the current origin
-    // into every internal link.
     var href = promo.href;
-    if (!external) {
-      // Tagged so the click shows up in analytics as a house promo rather than
-      // as ordinary internal navigation.
+    if (!/^https?:/i.test(href)) {
       href += (href.indexOf('?') === -1 ? '?' : '&')
         + 'utm_source=house&utm_medium=slot&utm_campaign=' + encodeURIComponent(promo.id || 'promo');
     }
-
+    while (el.firstChild) el.removeChild(el.firstChild);
     var a = document.createElement('a');
     a.className = 'house-ad';
     a.setAttribute('href', href);
-    if (external) {
-      // Any off-site promo is a commercial placement whether or not money has
-      // changed hands yet, so it carries the disclosure Google asks for.
+    if (/^https?:/i.test(promo.href)) {
+      // An off-site promo is a commercial placement, so it carries the
+      // disclosure Google asks for.
       a.rel = 'sponsored nofollow noopener';
       a.target = '_blank';
     }
-
     var icon = document.createElement('span');
     icon.className = 'house-ad-icon';
     icon.setAttribute('aria-hidden', 'true');
-    icon.textContent = promo.icon || '✨';
-
+    icon.textContent = promo.icon || '\u2728';
     var text = document.createElement('span');
     text.className = 'house-ad-text';
     var title = document.createElement('strong');
@@ -446,607 +233,110 @@
     text.appendChild(title);
     text.appendChild(body);
     text.appendChild(cta);
-
     a.appendChild(icon);
     a.appendChild(text);
-    // textContent everywhere above, never innerHTML: the promos come from a
-    // config file that an operator edits, and it should not be able to inject
-    // markup into every page on the site by accident.
+    // textContent only: the promos come from an operator-edited config file.
     el.appendChild(a);
-
-    var card = el.closest && el.closest('.ad-card');
-    if (card) card.setAttribute('data-ad-house', '1');
+    var c = card(el);
+    if (c) c.setAttribute('data-ad-house', '1');
     return true;
   }
 
-  /*
-   * Report that a slot never filled.
-   *
-   * There is currently no first-party number for how much of this audience
-   * blocks ads, which makes every revenue projection guesswork at the top. One
-   * GA4 event per unfilled slot turns that into a measurement: compare
-   * ad_slot_unfilled against ad_slot_filled and the block rate falls out.
-   */
-  function reportFill(el, filled) {
-    if (typeof window.gtag !== 'function') return;
-    try {
-      window.gtag('event', filled ? 'ad_slot_filled' : 'ad_slot_unfilled', {
-        ad_format: el.dataset.ad,
-        ad_surface: document.getElementById('callMainBtn') || document.getElementById('viewLive')
-          ? 'app' : 'content',
-      });
-    } catch (err) { /* analytics must never break the page */ }
-  }
+  // --- AdSense units ---------------------------------------------------------
 
-  /*
-   * Run `check` until it reports a fill or the deadline passes.
-   *
-   * Two deadlines, chosen by whether the user can see the slot. Off screen
-   * there is nothing to be annoyed by, so a slow mobile connection gets the
-   * full budget - an earlier single short deadline threw away real fills, and a
-   * hidden slot earns nothing. On screen the budget is much shorter, because
-   * every extra second is a second of blank space someone is looking at.
-   * Visibility is re-tested each tick, so scrolling a slot into view shortens
-   * its deadline immediately.
-   */
-  function pollFill(el, check, onFill, onGiveUp, failed) {
-    var interval = 500;
+  // The unit shape per slot type. Responsive units sized to the reserved space.
+  var FORMATS = {
+    leaderboard: 'horizontal',
+    banner: 'horizontal',
+    box: 'rectangle',
+    skyscraper: 'vertical',
+    native: 'auto',
+  };
+
+  function adsenseUnit(el, type, unitId) {
+    var ins = document.createElement('ins');
+    ins.className = 'adsbygoogle';
+    ins.style.display = 'block';
+    ins.setAttribute('data-ad-client', (config.adsense && config.adsense.client) || CLIENT);
+    ins.setAttribute('data-ad-slot', unitId);
+    ins.setAttribute('data-ad-format', FORMATS[type] || 'auto');
+    ins.setAttribute('data-full-width-responsive', 'true');
+    el.appendChild(ins);
+    try {
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
+    } catch (err) {
+      hideSlot(el);
+      return;
+    }
+    // Google marks the unit data-ad-status="filled" or "unfilled" once it has
+    // decided. Until then the card stays invisible.
     var waited = 0;
+    var interval = 500;
     var poll = setInterval(function () {
-      // A backgrounded tab is nobody looking at anything, so the clock stops.
-      // A live call does NOT stop it: this slot's tag is already loading, and
-      // pausing here used to strand it as a permanently blank reserved box for
-      // the whole call - the search screen only ever gives a slot about six
-      // seconds before a match connects, so that was most of them. Resolving is
-      // safe mid-call because neither outcome changes the slot's size: a house
-      // promo fills the space that was already reserved, and an actual collapse
-      // is deferred to the end of the call by hideSlot's keepSpace.
-      if (el.dataset.adAbandoned) { clearInterval(poll); return; }
       if (document.hidden) return;
-      if (check()) { clearInterval(poll); onFill(); return; }
-      // A host the browser could not load - a filter list, a DNS resolver that
-      // answers with nothing, a network that cannot reach it - is never going
-      // to fill this slot, and the deadline above is the wrong thing to wait
-      // for: it is six seconds of blank space on a screen someone is looking
-      // at, then six more on the second host. The search screen lasts about as
-      // long as one of those, so on the call screen the whole visible window
-      // was spent waiting for a request that had already failed - a reserved
-      // box that never became anything. Acting on the error instead takes the
-      // slot to its other host, or to a house promo, inside half a second.
-      if (failed && failed()) { clearInterval(poll); onGiveUp(callIsLive()); return; }
+      var status = ins.getAttribute('data-ad-status');
+      if (status === 'filled') { clearInterval(poll); markFilled(el); return; }
+      if (status === 'unfilled') { clearInterval(poll); report(el, false); hideSlot(el); return; }
       waited += interval;
       var budget = isOnScreen(el)
-        ? (config.visibleFillTimeoutMs || 6000)
+        ? (config.visibleFillTimeoutMs || 8000)
         : (config.fillTimeoutMs || 15000);
       if (waited < budget) return;
       clearInterval(poll);
-      // Whether a conversation is live is passed on rather than acted on here:
-      // the caller uses it to skip host failover, which would swap one frame
-      // for another mid-call, and to resolve into the reserved space instead of
-      // collapsing it.
-      onGiveUp(callIsLive());
+      // No verdict from Google. A frame that did render counts as filled.
+      if (ins.querySelector && ins.querySelector('iframe')) { markFilled(el); return; }
+      report(el, false);
+      hideSlot(el);
     }, interval);
   }
 
-  // True once the tag has put something in the frame. A cross-origin document
-  // means a creative already took the frame over, which also counts as filled.
-  function isFilled(frame) {
-    try {
-      var body = frame.contentWindow && frame.contentWindow.document.body;
-      if (!body) return false;
-      return body.childElementCount > 2 || !!body.querySelector('iframe,img,ins,a');
-    } catch (err) {
-      return true;
-    }
-  }
-
-  // The banner tag lives inside the frame, so the error that says "this host is
-  // not reachable" is raised in there too. The inline onerror written with the
-  // document sets this flag; reading it from out here costs nothing on the poll
-  // that is already running. A cross-origin frame throws, and that is a
-  // creative that took the document over - the opposite of a failure - so it
-  // reports false and isFilled has the final word.
-  function frameFailed(frame) {
-    try {
-      return !!(frame.contentWindow && frame.contentWindow.__tlAdFailed);
-    } catch (err) {
-      return false;
-    }
-  }
-
-  // The frame a document.write tag is given. Shared by the Adsterra banners and
-  // by an "iframe" backfill network, which need an identical container.
-  function adFrame(w, h) {
-    var frame = document.createElement('iframe');
-    frame.width = w;
-    frame.height = h;
-    // Transparent background so an unfilled slot shows the page behind it
-    // instead of an ugly white block.
-    frame.style.cssText = 'border:0;display:block;margin:0 auto;max-width:100%;overflow:hidden;background:transparent;color-scheme:light';
-    frame.setAttribute('scrolling', 'no');
-    frame.setAttribute('allowtransparency', 'true');
-    frame.title = 'Advertisement';
-    return frame;
-  }
-
-  // Adsterra banner tags use document.write, so each one is rendered in
-  // its own same-origin iframe instead of being injected into the page.
-  function banner(el, size, hostIndex) {
-    var b = BANNERS[size];
-    var host = HOSTS[hostIndex || 0];
-    var frame = adFrame(b.w, b.h);
-    el.appendChild(frame);
-    var doc = frame.contentWindow && frame.contentWindow.document;
-    if (!doc) { hideSlot(el); return; }
-    doc.open();
-    doc.write(
-      '<!DOCTYPE html><html><head><base target="_blank"></head>' +
-      '<body style="margin:0;padding:0;overflow:hidden;background:transparent">' +
-      '<script>atOptions={key:"' + b.key + '",format:"iframe",height:' + b.h + ',width:' + b.w + ',params:{}};<\/script>' +
-      '<script src="' + host + '/' + b.key + '/invoke.js" onerror="window.__tlAdFailed=1"><\/script>' +
-      '</body></html>'
-    );
-    doc.close();
-
-    pollFill(el,
-      function () { return isFilled(frame); },
-      function () { markFilled(el); },
-      function (live) {
-        var next = (hostIndex || 0) + 1;
-        // Mid-call the frame stays exactly where it is and the slot resolves
-        // into the space already reserved for it, so nothing on screen moves.
-        if (live) { hideSlot(el, true); return; }
-        el.removeChild(frame);
-        if (next < HOSTS.length) { banner(el, size, next); return; }
-        // Adsterra has no more hosts to try. The impression is unsold rather
-        // than blocked, so offer it to the backfill network before giving the
-        // space to a promo that earns nothing.
-        if (backfill(el, size, false)) return;
-        hideSlot(el, false);
-      },
-      function () { return frameFailed(frame); });
-  }
-
-  // --- Backfill networks -----------------------------------------------------
-
-  /*
-   * The demand waterfall for a slot Adsterra could not fill.
-   *
-   * An unsold Adsterra impression is worth nothing, and until now that space
-   * went to one of our own promos, which is worth nothing per impression too.
-   * Each configured network is offered the slot in turn, and only when they
-   * have all passed does the promo take it. Nothing changes for a slot Adsterra
-   * does sell: this runs strictly after every Adsterra host has failed, so no
-   * slot ever carries two tags competing for one impression.
-   *
-   * Order is the order in ads-config.json, so the highest paying network goes
-   * first and the rest see only what it declined.
-   *
-   * Deliberately described by config rather than coded per network. Monetag,
-   * PropellerAds and HilltopAds all deliver a banner one of exactly two ways,
-   * and which one is the only thing that differs between them:
-   *
-   *   render: "script" - an in-page <script> carrying the zone in an attribute,
-   *                      which writes the creative in beside itself. This is
-   *                      the Monetag/PropellerAds MultiTag shape.
-   *   render: "iframe" - a tag that uses document.write, so it needs its own
-   *                      same-origin frame, exactly like the Adsterra banners.
-   *                      This is the HilltopAds and classic direct-tag shape.
-   *
-   * So adding, reordering or dropping a network is an edit to ads-config.json -
-   * or to the ADS_CONFIG secret, with no deploy - plus one CSP origin. That
-   * origin must be in ADS_SCRIPT_HOSTS or the browser drops the tag silently,
-   * and a blocked slot is indistinguishable from an unsold one from the page.
-   *
-   * zones maps a slot size - or "native" - to that network's zone ID. A network
-   * with no zone for this size is skipped rather than loaded empty, so a
-   * partially configured account is safe and a network can be run for one
-   * format only.
-   */
-  function backfillNetworks() {
-    var bf = config.backfill;
-    if (!bf || !bf.enabled) return [];
-    var nets = bf.networks;
-    return Object.prototype.toString.call(nets) === '[object Array]' ? nets : [];
-  }
-
-  function zoneFor(net, size) {
-    if (!net || !net.src || !net.zones) return null;
-    var zone = net.zones[size];
-    if (!zone) return null;
-    return { src: net.src, zone: String(zone), render: net.render === 'iframe' ? 'iframe' : 'script',
-      zoneAttr: net.zoneAttr || 'data-zone', attrs: net.attrs || {}, id: net.id || 'backfill' };
-  }
-
-  function reportBackfill(size, id) {
-    if (typeof window.gtag !== 'function') return;
-    try {
-      window.gtag('event', 'ad_backfill_requested', { ad_format: size, ad_network: id });
-    } catch (err) { /* analytics must never break the page */ }
-  }
-
-  /*
-   * Offer the slot to the networks from `i` onward. Returns false when none of
-   * them wants it, so the caller falls through to the house promo.
-   *
-   * `live` is threaded through rather than re-read: mid-call a new tag must not
-   * be swapped into a frame the user is looking at, so the whole waterfall is
-   * skipped and the slot resolves into its reserved space instead.
-   */
-  function backfill(el, size, live, i) {
-    if (live) return false;
-    var nets = backfillNetworks();
-    var net = null;
-    for (i = i || 0; i < nets.length; i++) {
-      net = zoneFor(nets[i], size);
-      if (net) break;
-    }
-    if (!net) return false;
-    var nextIndex = i + 1;
-    el.dataset.adBackfill = net.id;
-    reportBackfill(size, net.id);
-
-    // Whatever this attempt puts in the slot, so the next network in the chain
-    // starts from an empty one rather than stacking dead tags.
-    var placed = [];
-    function clear() {
-      placed.forEach(function (node) { if (node.parentNode === el) el.removeChild(node); });
-    }
-    function next(nowLive) {
-      if (nowLive) { hideSlot(el, true); return; }
-      clear();
-      if (backfill(el, size, false, nextIndex)) return;
-      hideSlot(el, false);
-    }
-
-    var b = BANNERS[size];
-    if (net.render === 'iframe' && b) {
-      var frame = adFrame(b.w, b.h);
-      el.appendChild(frame);
-      placed.push(frame);
-      var doc = frame.contentWindow && frame.contentWindow.document;
-      if (!doc) { clear(); return backfill(el, size, false, nextIndex); }
-      doc.open();
-      doc.write(
-        '<!DOCTYPE html><html><head><base target="_blank"></head>' +
-        '<body style="margin:0;padding:0;overflow:hidden;background:transparent">' +
-        '<script src="' + encodeURI(net.src) + '" ' + net.zoneAttr + '="'
-          + encodeURIComponent(net.zone) + '" onerror="window.__tlAdFailed=1"><\/script>' +
-        '</body></html>'
-      );
-      doc.close();
-      pollFill(el,
-        function () { return isFilled(frame); },
-        function () { markFilled(el); },
-        next,
-        function () { return frameFailed(frame); });
-      return true;
-    }
-
-    // render: "script" - the tag goes in the page and writes beside itself, so
-    // a filled slot is one that gained a child the tag put there.
-    var before = el.childElementCount;
-    var s = document.createElement('script');
-    s.async = true;
-    var failed = false;
-    s.onerror = function () { failed = true; };
-    for (var k in net.attrs) {
-      if (Object.prototype.hasOwnProperty.call(net.attrs, k)) s.setAttribute(k, net.attrs[k]);
-    }
-    s.setAttribute(net.zoneAttr, net.zone);
-    s.src = net.src;
-    el.appendChild(s);
-    placed.push(s);
-    pollFill(el,
-      function () { return el.childElementCount > before + 1; },
-      function () { markFilled(el); },
-      next,
-      function () { return failed; });
-    return true;
-  }
-
-
-  // A conservative version of the high-viewability bottom banner used by
-  // larger random-chat apps. It is owned by our page (unlike Social Bar), has
-  // a permanent close control, and exists only during the matchmaking wait.
-  // The instant the state changes to connecting, reconnecting or connected it
-  // is hidden; it never refreshes during the same page view.
-  function initSearchAnchor() {
-    var opts = config.searchAnchor || {};
-    var btn = document.getElementById('callMainBtn');
-    if (!btn || opts.enabled !== true || config.adsenseSafe || (config.types && config.types.banner === false)) return;
-    if ((window.innerHeight || 0) < (Number(opts.minViewportHeight) || 700)) return;
-
-    var dismissKey = 'talklive_search_ad_dismissed_until';
-    try {
-      if (Number(localStorage.getItem(dismissKey) || 0) > Date.now()) return;
-    } catch (_) { /* storage may be unavailable; the close button still works */ }
-
-    var shell = document.createElement('aside');
-    shell.className = 'tl-search-anchor ad-card';
-    shell.setAttribute('aria-label', typeof t === 'function' ? t('adAria') : 'Sponsored advertisement');
-    shell.style.display = 'none';
-
-    var label = document.createElement('span');
-    label.className = 'tl-search-anchor__label';
-    label.textContent = typeof t === 'function' ? t('sponsored') : 'Sponsored';
-    var slot = document.createElement('div');
-    // Created after eligible() has counted normal page slots, so the anchor is
-    // an explicit, independently controlled unit rather than silently pushing
-    // a higher-value native/rectangle placement out of the page limit.
-    slot.dataset.ad = '320x50';
-    slot.dataset.adNoHouse = '1';
-    slot.className = 'tl-search-anchor__slot';
-    var close = document.createElement('button');
-    close.type = 'button';
-    close.className = 'tl-search-anchor__close';
-    close.setAttribute('aria-label', typeof t === 'function' ? t('adHide') : 'Hide advertisement for 24 hours');
-    close.textContent = '\u00d7';
-    shell.appendChild(label);
-    shell.appendChild(slot);
-    shell.appendChild(close);
-    document.body.appendChild(shell);
-
-    var started = false;
-    var dismissed = false;
-    function state() {
-      return btn.dataset ? btn.dataset.callState : btn.getAttribute('data-call-state');
-    }
-    function sync() {
-      // adDone is set once the slot has given up on every host. sync() runs
-      // again on the next state change, so without this the collapsed shell
-      // would be shown back to the user as an empty bar pinned over the app.
-      var searching = !dismissed && !slot.dataset.adDone
-        && state() === 'searching' && !document.hidden;
-      shell.style.display = searching ? 'flex' : 'none';
-      if (searching && !started) {
-        started = true;
-        banner(slot, '320x50', 0);
-        if (typeof window.gtag === 'function') {
-          try { window.gtag('event', 'ad_search_anchor_requested', { ad_surface: 'search' }); } catch (_) {}
-        }
-      }
-    }
-    close.addEventListener('click', function () {
-      dismissed = true;
-      shell.style.display = 'none';
-      try {
-        var hours = Math.max(1, Number(opts.dismissHours) || 24);
-        localStorage.setItem(dismissKey, String(Date.now() + hours * 3600000));
-      } catch (_) {}
-      if (typeof window.gtag === 'function') {
-        try { window.gtag('event', 'ad_search_anchor_dismissed', { ad_surface: 'search' }); } catch (_) {}
-      }
-    });
-    document.addEventListener('visibilitychange', sync);
-    if (window.MutationObserver) {
-      new MutationObserver(sync).observe(btn, {
-        attributes: true,
-        attributeFilter: ['data-call-state', 'data-mode'],
-      });
-    }
-    sync();
-  }
-
-  function native(el, hostIndex) {
-    var host = HOSTS[hostIndex || 0];
-    var container = document.createElement('div');
-    container.id = NATIVE.container;
-    el.appendChild(container);
-    var s = document.createElement('script');
-    s.async = true;
-    s.setAttribute('data-cfasync', 'false');
-    var failed = false;
-    s.onerror = function () { failed = true; };
-    s.src = host + NATIVE.path;
-    el.appendChild(s);
-
-    pollFill(el,
-      function () { return !!container.childElementCount; },
-      function () { markFilled(el); },
-      function (live) {
-        var next = (hostIndex || 0) + 1;
-        if (!live && next < HOSTS.length) {
-          el.removeChild(container);
-          el.removeChild(s);
-          native(el, next);
-          return;
-        }
-        if (backfill(el, 'native', live)) return;
-        hideSlot(el, live);
-      },
-      function () { return failed; });
-  }
-
-  // The width the slot can really give an ad. Sizing off window.innerWidth
-  // pushed a 728x90 into containers barely half that wide, and the iframe was
-  // then clipped by max-width - a creative nobody could see and an impression
-  // that paid nothing.
-  function slotWidth(el) {
-    var w = el.clientWidth || Math.round(el.getBoundingClientRect().width) || 0;
-    var node = el.parentElement;
-    while (!w && node) {
-      w = node.clientWidth;
-      node = node.parentElement;
-    }
-    return w || window.innerWidth || 320;
-  }
-
-  /*
-   * The size a slot will resolve to.
-   *
-   * Kept as its own function because the CSS reservation has to agree with it
-   * exactly - the [data-ad] min-height rules encode the same three breakpoints,
-   * and if the two ever disagree the page shifts by the difference.
-   */
-  function sizeFor(type, el) {
-    var w = slotWidth(el);
-    if (type === 'box') return '300x250';
-    if (type === 'leaderboard') return w >= 744 ? '728x90' : (w >= 484 ? '468x60' : '320x50');
-    if (type === 'banner') return w >= 484 ? '468x60' : '320x50';
-    if (type === 'skyscraper') return window.innerWidth >= 1024 ? '160x600' : '160x300';
-    return BANNERS[type] ? type : null;
-  }
-
-  // How many slots have actually started loading on this page view. This, not
-  // a count taken at DOMContentLoaded, is what maxSlotsPerPage caps - see the
-  // comment on eligible().
   var loaded = 0;
-  var nativeClaimed = false;
 
   function fill(el) {
     if (el.dataset.adLoaded || el.dataset.adDone) return;
-    var type = el.dataset.ad;
-
-    // Held back rather than dropped: the slot fills the moment the call ends.
-    // Checked before the ceiling so a deferred slot does not spend budget it
-    // may never use.
     if (document.hidden || callIsLive()) {
       if (deferred.indexOf(el) === -1) deferred.push(el);
       return;
     }
-
-    // The supplied native tag has one fixed container ID, so loading it twice
-    // makes the tag target the wrong slot. Claimed on first load rather than in
-    // eligible(), for the same reason the ceiling moved: in document order the
-    // first native on index.html is inside the hidden #callPanel, so it used to
-    // claim the container while invisible and starve the content native that
-    // the visitor could actually see.
-    if (type === 'native' && nativeClaimed) { hideSlot(el); return; }
+    var type = el.dataset.ad;
+    var unitId = unitIdFor(type);
+    // No unit configured for this type: the slot is not in use, so it gives
+    // its space back (no house promo) and Auto ads handle placement instead.
+    if (!unitId) { el.dataset.adDone = '1'; if (callIsLive()) pendingCollapse.push(el); else collapse(el); return; }
     if (loaded >= (config.maxSlotsPerPage || 0)) { hideSlot(el); return; }
-    if (isCallScreenSlot(el) && callScreenCapped()) { hideSlot(el); return; }
     loaded++;
     el.dataset.adLoaded = '1';
-    if (type === 'native') { nativeClaimed = true; native(el, 0); return; }
-    var size = sizeFor(type, el);
-    if (size) banner(el, size, 0);
+    adsenseUnit(el, type, unitId);
   }
 
   // --- Init -----------------------------------------------------------------
 
-  /*
-   * Which slots are allowed to load on this page.
-   *
-   * This applies only the checks that are decided once and never change: the
-   * native tag's single-container limit, the per-format kill switches, and the
-   * short-viewport rule for in-app cards.
-   *
-   * maxSlotsPerPage is deliberately NOT applied here. It used to be, counted in
-   * document order at DOMContentLoaded, and that quietly cost most of the
-   * inventory on the busiest page on the site. index.html carries three
-   * .ad-card-app slots before any content slot, and two of them live inside
-   * #callPanel, which is .hidden - display:none - until a call starts. They
-   * therefore came first in document order, consumed the entire ceiling of
-   * three while occupying zero pixels and loading nothing, and every visible
-   * slot below them was collapsed before it had a chance. A visitor who
-   * scrolled the home page saw one ad; a visitor who never started a call saw
-   * one ad and two invisible reservations.
-   *
-   * The ceiling now applies in fill(), where a slot consumes budget only when
-   * it actually starts loading. Because IntersectionObserver reports in
-   * document order, the slots that win the budget are still the highest ones
-   * the user genuinely reaches, which is what the ceiling was always for.
-   */
   function eligible() {
     var slots = [].slice.call(document.querySelectorAll('[data-ad]'));
-    if (!config.enabled) return [];
-
-    var shortViewport = (window.innerHeight || 0) < (config.minViewportHeight || 0);
     var kept = [];
     for (var i = 0; i < slots.length; i++) {
       var el = slots[i];
-      if (!typeEnabled(el.dataset.ad)) { hideSlot(el); continue; }
-      // In-app slots on a short screen would leave the call or chat UI mostly
-      // advertisement, so they are dropped before anything loads.
-      //
-      // Keyed on .ad-card-app, not .ad-card. Every ad on the site now ships in
-      // an .ad-card frame, so matching that would have silently dropped every
-      // slot on every landing page whenever the viewport was under 620px tall -
-      // which is any phone held in landscape. Only the cards inside the call
-      // and chat UI carry the -app modifier.
-      if (shortViewport && el.closest && el.closest('.ad-card-app')) { hideSlot(el); continue; }
-      // AdSense-safe mode: no network ads on the app screens (start, matchmaking,
-      // call, chat) - screens without publisher content, next to controls.
-      // Content pages keep their slots. See adsenseSafe in ads-config.json.
-      if (config.adsenseSafe && el.closest && el.closest('.ad-card-app')) { hideSlot(el); continue; }
+      // Rule 1: never on an app screen, whatever the config says.
+      if (el.closest && el.closest('.ad-card-app')) { el.dataset.adDone = '1'; collapse(el); continue; }
+      if (!config.enabled || !typeEnabled(el.dataset.ad)) { hideSlot(el); continue; }
       kept.push(el);
     }
     return kept;
   }
 
-  // Adsterra Social Bar is the account's dismissible floating unit. It can
-  // earn more than a fixed banner because it stays viewable, but its rendering
-  // is controlled remotely, so it is never allowed into either conversation
-  // app. On editorial pages it also waits until the visitor has spent time on
-  // the page AND scrolled through a meaningful portion of it. That keeps it
-  // away from the search landing experience and prevents an overlay from
-  // competing with the first screen of content.
-  function initSocialBar() {
-    var opts = config.socialBar || {};
-    if (opts.enabled === false || config.adsenseSafe || (config.types && config.types.socialBar === false)) return;
-    if (opts.contentOnly !== false
-      && (document.getElementById('callMainBtn') || document.getElementById('viewLive'))) return;
-
-    var readyAt = Date.now() + Math.max(0, Number(opts.minDelayMs) || 0);
-    var minScroll = Math.max(0, Math.min(1, Number(opts.minScrollRatio) || 0));
-    var loaded = false;
-    function scrollRatio() {
-      var root = document.documentElement;
-      var body = document.body;
-      var height = Math.max(root ? root.scrollHeight : 0, body ? body.scrollHeight : 0);
-      var travel = Math.max(1, height - (window.innerHeight || 0));
-      return Math.max(0, window.scrollY || window.pageYOffset || 0) / travel;
-    }
-    function maybeLoad() {
-      if (loaded || document.hidden || Date.now() < readyAt || scrollRatio() < minScroll) return;
-      // Social Bar is a remotely controlled floating unit, so it is never
-      // allowed to appear over a live conversation or over the matchmaking
-      // screen, whatever contentOnly says. Checked here rather than only at
-      // init because the user may well start a call during the delay above.
-      // It gets another chance when the call ends - the listeners stay armed.
-      if (callIsLive() || isSearching()) return;
-      loaded = true;
-      document.removeEventListener('scroll', maybeLoad);
-      document.removeEventListener('visibilitychange', maybeLoad);
-      var script = document.createElement('script');
-      script.async = true;
-      script.setAttribute('data-cfasync', 'false');
-      script.setAttribute('data-talklive-social-bar', '1');
-      script.src = 'https://delvefencescrewdriver.com/6c/cc/ce/6cccce7190388ac7a53bb4b9de9f8dc8.js';
-      document.body.appendChild(script);
-      if (typeof window.gtag === 'function') {
-        try { window.gtag('event', 'ad_social_bar_loaded', { ad_surface: 'content' }); } catch (_) {}
-      }
-    }
-    document.addEventListener('scroll', maybeLoad, { passive: true });
-    document.addEventListener('visibilitychange', maybeLoad);
-    // On the app surfaces the state the guard above cares about changes without
-    // a scroll or a tab switch, so the end of a call is what re-offers the unit.
-    var btn = document.getElementById('callMainBtn');
-    if (btn && window.MutationObserver) {
-      new MutationObserver(maybeLoad).observe(btn, {
-        attributes: true, attributeFilter: ['data-call-state', 'data-mode'],
-      });
-    }
-    setTimeout(maybeLoad, Math.max(0, readyAt - Date.now()));
-  }
-
   function init() {
     var slots = eligible();
-    initSocialBar();
-    initSearchAnchor();
-    if (slots.length) {
-      watchCallState();
-      if ('IntersectionObserver' in window) {
-        var io = new IntersectionObserver(function (entries) {
-          entries.forEach(function (e) {
-            if (e.isIntersecting) { io.unobserve(e.target); fill(e.target); }
-          });
-        }, { rootMargin: config.lazyRootMargin || '400px' });
-        slots.forEach(function (el) { io.observe(el); });
-      } else {
-        slots.forEach(fill);
-      }
+    if (!slots.length) return;
+    watchCallState();
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) { io.unobserve(e.target); fill(e.target); }
+        });
+      }, { rootMargin: config.lazyRootMargin || '100px' });
+      slots.forEach(function (el) { io.observe(el); });
+    } else {
+      slots.forEach(fill);
     }
   }
 

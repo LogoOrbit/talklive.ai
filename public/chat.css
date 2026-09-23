@@ -1336,3 +1336,8 @@ summary:active {
 /* One-line disclosure under the partner preference (see chat.html). */
 .pref-partner-note { margin: 8px 2px 0; font-size: 12px; line-height: 1.45; color: var(--muted, #8a8f98); }
 .pref-partner-note a { color: inherit; text-decoration: underline; white-space: nowrap; }
+
+/* No Google ads on the app screens (start, matchmaking, call, chat): AdSense
+   treats them as screens without publisher content, and a unit beside the
+   call controls invites accidental clicks. ads.js never fills these either. */
+.ad-card-app { display: none !important; }

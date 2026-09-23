@@ -217,7 +217,7 @@ function linkCloud(currentSlug) {
 
 // --- Page template ----------------------------------------------------------
 
-// Adsterra-only slots used throughout generated pages.
+// Ad slots used throughout generated pages; public/ads.js fills them with Google AdSense units.
 //
 // Every slot ships inside the labelled .ad-card frame the app screens use, so
 // an ad reads as part of the product rather than as something dropped onto it,
@@ -228,7 +228,7 @@ function linkCloud(currentSlug) {
 // The label text is plain rather than data-i18n: these pages do not load
 // i18n.js, so an i18n key here would never be substituted.
 function adSlot(type) {
-  return `<div class="wrap"><div class="ad-card"><span class="ad-card-label">Sponsored</span><div data-ad="${type}"></div></div></div>`;
+  return `<div class="wrap"><div class="ad-card"><span class="ad-card-label">Advertisement</span><div data-ad="${type}"></div></div></div>`;
 }
 
 // Responsive leaderboard: 728x90 on desktop, 320x50 on mobile.
@@ -2404,7 +2404,7 @@ function walkHtml(dir, out = []) {
  *
  * The hash deliberately ignores the parts of a page that change on every
  * build without the content changing - asset cache-buster versions and the
- * ad markup scripts/migrate-adsterra.js rewrites afterwards. Without that,
+ * ad markup scripts/migrate-ads.js rewrites afterwards. Without that,
  * every page would look modified on every deploy, which is the same lie in
  * the opposite direction.
  */
@@ -2433,7 +2433,7 @@ function contentFingerprint(html) {
     // search engines everything was rewritten when nothing was, which is the
     // exact signal a site should not send.
     .replace(/<script\b[^>]*\bsrc=["'][^"']*(?:ads|pwa)\.js[^"']*["'][^>]*><\/script>/gi, '')
-    // Empty ad slots, inserted and moved by the adsterra migration.
+    // Empty ad slots, inserted and moved by scripts/migrate-ads.js.
     .replace(/<div\b[^>]*\bdata-ad=[^>]*>\s*<\/div>/gi, '')
     // Cache-buster query strings: ?v=20260828fix is not a content change.
     .replace(/([?&])v=[^"'&\s>]*/g, '$1v=')

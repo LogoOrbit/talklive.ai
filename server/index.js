@@ -76,40 +76,20 @@ app.disable('x-powered-by');
 // request to an attacker's host is refused by the browser. frame-ancestors and
 // X-Frame-Options stop the site being embedded for clickjacking; nosniff stops
 // MIME-confusion attacks. 'unsafe-inline' is required by the existing inline
-// scripts/handlers and styles. Adsterra's banner runtime also uses evaluated
-// JavaScript, so 'unsafe-eval' is limited to this host-restricted script list.
+// scripts/handlers and styles. 'unsafe-eval' is kept for third-party runtimes
+// (Google sign-in, analytics, ads) and is limited to this host-restricted list.
 // The CSP remains defense-in-depth on top of the output-escaping fixes rather
 // than the sole XSS barrier.
-/*
- * Extra script origins for the backfill ad network, space-separated, e.g.
- *   fly secrets set ADS_SCRIPT_HOSTS='https://fpyf8.com https://*.monetag.com'
- *
- * A network's tag is dropped silently by the browser when its origin is not in
- * script-src, and an unsold slot and a blocked one look identical from the
- * page, so this is the first thing to check when a newly configured backfill
- * earns nothing. It lives in an environment variable because the zone IDs that
- * go with it already do (ADS_CONFIG), so a network can be added or swapped
- * without a deploy. Entries are restricted to https origins - anything else is
- * dropped rather than widening the policy by accident.
- */
-const ADS_SCRIPT_HOSTS = String(process.env.ADS_SCRIPT_HOSTS || '')
-  .split(/\s+/)
-  .filter((h) => /^https:\/\/[A-Za-z0-9*.:-]+$/.test(h));
-if (process.env.ADS_SCRIPT_HOSTS && !ADS_SCRIPT_HOSTS.length) {
-  console.warn('[ads-config] ADS_SCRIPT_HOSTS set but no valid https origin found; ignoring');
-}
-
 const CSP = [
   "default-src 'self'",
-  // Adsterra and analytics origins must be allowlisted
+  // Google AdSense and analytics origins must be allowlisted
   // explicitly or the browser silently drops the ad scripts and the slots stay
   // empty. Ad creatives render inside cross-origin iframes, and their tracking
   // pixels/beacons go to arbitrary ad-exchange hosts, so frame-src/img-src/
   // connect-src need broad https: - script execution on the page itself is
   // still restricted to the named script-src hosts.
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com"
-    + ' https://delvefencescrewdriver.com https://www.highperformanceformat.com'
-    + ' https://*.effectivecpmnetwork.com https://www.googletagmanager.com'
+    + ' https://www.googletagmanager.com'
     + ' https://*.gstatic.com'
     + ' https://www.google.com'
     // Google AdSense loader plus the ad/fraud-check scripts it pulls in.
@@ -117,8 +97,7 @@ const CSP = [
     + ' https://*.doubleclick.net https://*.adtrafficquality.google'
     + ' https://*.googleadservices.com'
     // Google's consent (CMP) message for EEA/UK/CH visitors.
-    + ' https://fundingchoicesmessages.google.com'
-    + (ADS_SCRIPT_HOSTS.length ? ' ' + ADS_SCRIPT_HOSTS.join(' ') : ''),
+    + ' https://fundingchoicesmessages.google.com',
   // Google Identity Services injects its own stylesheet from accounts.google.com
   // to render the Sign-In button; without it listed the browser blocks the
   // sheet and the button renders unstyled.
@@ -126,8 +105,7 @@ const CSP = [
   "img-src 'self' data: https:",
   "font-src 'self' data:",
   "connect-src 'self' ws: wss: https:",
-  // 'self' covers the srcless about:blank iframes ads.js sandboxes each
-  // Adsterra banner tag in; https: covers the creative frames they load.
+  // https: covers the AdSense creative frames and Google's consent message.
   "frame-src 'self' https:",
   "media-src 'self' blob:",
   // Both would fall back to default-src 'self' anyway, but stated explicitly so
@@ -1000,16 +978,10 @@ app.get('/', (req, res, next) => {
 // ads.txt. An ads.txt that exists but lists nobody is the worst of both
 // worlds: crawlers read it as "no seller is authorised to sell this
 // inventory", so programmatic demand stops bidding and the CPM collapses.
-// public/ads.txt was emptied during the AdSense -> Adsterra switch and never
-// refilled, so it is served from ADS_TXT (the lines Adsterra shows under
-// Websites -> ads.txt, newline or "|" separated) and 404s while that is unset,
-// which demand partners treat as "no ads.txt" rather than "nobody authorised".
-// The AdSense seller line is always listed; ADS_TXT adds any other networks.
-const ADSENSE_ADS_TXT = 'google.com, pub-6368797323385379, DIRECT, f08c47fec0942fa0';
-const ADS_TXT = [...new Set([ADSENSE_ADS_TXT, ...(process.env.ADS_TXT || '').split(/[|\n]/)]
-  .map((line) => line.trim())
-  .filter(Boolean))]
-  .join('\n');
+// Google AdSense is the only ad network, so Google is the only authorised
+// seller. Nothing else is listed: an ads.txt line for a network that no longer
+// serves here would authorise it to sell this inventory.
+const ADS_TXT = 'google.com, pub-6368797323385379, DIRECT, f08c47fec0942fa0';
 app.get('/ads.txt', (req, res) => {
   res.type('text').set('Cache-Control', 'public, max-age=3600').send(ADS_TXT + '\n');
 });

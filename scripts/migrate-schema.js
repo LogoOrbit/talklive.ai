@@ -13,7 +13,7 @@
  * builder by design.
  *
  * Rather than hand-patching 246 files, this sweeps the built output the way
- * scripts/migrate-adsterra.js does: parse each ld+json block, fill in only
+ * scripts/migrate-ads.js does: parse each ld+json block, fill in only
  * what is missing, and rewrite the file only if something actually changed. It
  * is idempotent, so it stays quiet once the site is correct and catches any
  * page that regresses later.

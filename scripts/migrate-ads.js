@@ -2,7 +2,14 @@ const fs = require('fs');
 const path = require('path');
 
 const publicDir = path.join(__dirname, '..', 'public');
-const adsVersion = '20260923adsense';
+// Google AdSense is the only ad network. This sweep keeps every page in step:
+// the AdSense loader in the head, the ads.js slot loader, labelled slots, and
+// nothing left over from Adsterra. It runs on the files on disk because most
+// of the site (the geo cluster and older batches) is not rebuilt from
+// templates - see SEO.md.
+const adsVersion = '20260923adsense2';
+const ADSENSE_LOADER = '<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6368797323385379"\n     crossorigin="anonymous"></script>';
+const AD_LABEL = 'Advertisement';
 // Keep the purchase decision page clean. Showing network ads beside the paid
 // plan distracts from the higher-value conversion and undermines "ad-free".
 //
@@ -10,6 +17,15 @@ const adsVersion = '20260923adsense';
 // precisely when there is no network, so an ad tag on it can only fail, and it
 // must stay self-contained.
 const adFreePages = new Set(['pricing.html', 'offline.html']);
+// Pages that are only the app - no publisher content for an ad to sit beside -
+// so they carry no AdSense loader, which keeps Auto ads off them too.
+// index.html is not here: it carries the app and the site's main content, and
+// AdSense verification looks for the tag on the homepage.
+const appOnlyPages = new Set(['chat.html']);
+// No AdSense loader at all: the app-only pages, plus the pages kept ad-free
+// above (the offline page cannot load it anyway, and Auto ads on the pricing
+// page would contradict the ad-free plan it is selling).
+const noLoaderPages = new Set([...appOnlyPages, ...adFreePages]);
 
 function htmlFiles(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -123,9 +139,16 @@ for (const file of htmlFiles(publicDir)) {
       const before = whole.slice(Math.max(0, offset - 300), offset);
       // Already framed - the card opens somewhere just above this slot.
       if (/class="[^"]*\bad-card\b/.test(before)) return match;
-      return `<div class="ad-card"><span class="ad-card-label">Sponsored</span>${match}</div>`;
+      return `<div class="ad-card"><span class="ad-card-label">${AD_LABEL}</span>${match}</div>`;
     }
   );
+
+  // Google allows ads to be labelled "Advertisements" or "Sponsored Links";
+  // plain "Sponsored" on a card is replaced with the unambiguous label.
+  html = html.replace(/(<span class="ad-card-label"(?: data-i18n="sponsored")?>)Sponsored(<\/span>)/g, `$1${AD_LABEL}$2`);
+
+  // Anything left from Adsterra: its hosts in any tag, and its script tags.
+  html = html.replace(/^.*(?:delvefencescrewdriver\.com|highperformanceformat\.com|effectivecpmnetwork\.com).*\r?\n?/gim, '');
 
   html = html.replace(/^[ \t]+$/gm, '');
 
@@ -137,6 +160,13 @@ for (const file of htmlFiles(publicDir)) {
   if (!adFreePages.has(path.basename(file)) && !/src=["']\/ads\.js\?v=/.test(html)) {
     html = html.replace('</head>', `<script defer src="/ads.js?v=${adsVersion}"></script>\n</head>`);
   }
+  // The AdSense loader on every ad-carrying page (site verification and Auto
+  // ads need it in the head of each page, not only the homepage).
+  if (noLoaderPages.has(path.basename(file))) {
+    html = html.replace(/^.*pagead2\.googlesyndication\.com.*\r?\n(?:\s*crossorigin="anonymous"><\/script>\r?\n)?/gim, '');
+  } else if (!adFreePages.has(path.basename(file)) && !/ca-pub-6368797323385379/.test(html)) {
+    html = html.replace('</head>', `${ADSENSE_LOADER}\n</head>`);
+  }
 
   if (html !== before) {
     fs.writeFileSync(file, html);
@@ -144,4 +174,4 @@ for (const file of htmlFiles(publicDir)) {
   }
 }
 
-console.log(`Migrated ${updated} HTML files to Adsterra-only placements.`);
+console.log(`Ads: ${updated} HTML files updated (AdSense loader, ads.js, labels).`);

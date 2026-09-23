@@ -691,7 +691,7 @@
   "guideChat": "Utilisez le bouton de discussion pour envoyer des messages pendant l'appel.",
   "footerText": "Soyez respectueux. Vous pouvez être mis en relation avec n'importe qui dans le monde. Voix uniquement - pas de vidéo, pas d'enregistrement. 18 ans et plus uniquement.",
   "privacyPolicy": "Politique de confidentialité",
-  "sponsored": "Sponsorisé",
+  "sponsored": "Publicité",
   "premiumBadge": "💎 Premium",
   "filtersPremiumTitle": "Les filtres sont une fonctionnalité Premium",
   "filtersPremiumText": "Offre gratuite : jusqu'à 2 pays par liste. Filtre de genre verrouillé.",

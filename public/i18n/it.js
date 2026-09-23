@@ -691,7 +691,7 @@
   "guideChat": "Usa il pulsante chat per inviare messaggi durante una chiamata.",
   "footerText": "Sii rispettoso. Potresti essere abbinato a chiunque nel mondo. Solo voce - niente video, nessuna registrazione. Solo 18+.",
   "privacyPolicy": "Informativa sulla privacy",
-  "sponsored": "Sponsorizzato",
+  "sponsored": "Pubblicità",
   "premiumBadge": "💎 Premium",
   "filtersPremiumTitle": "I filtri sono una funzione Premium",
   "filtersPremiumText": "Piano gratuito: fino a 2 paesi per lista. Filtro di genere bloccato.",

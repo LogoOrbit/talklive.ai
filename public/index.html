@@ -27,7 +27,7 @@
   root.classList.add('i18n-pending');
   setTimeout(function () { root.classList.remove('i18n-pending'); }, 1500);
   var s = document.createElement('script');
-  s.src = '/i18n/' + lang + '.js?v=20260923fixlist';
+  s.src = '/i18n/' + lang + '.js?v=20260923adsense';
   s.async = true;
   s.setAttribute('data-i18n-lang', lang);
   s.onerror = function () { root.classList.remove('i18n-pending'); };
@@ -53,7 +53,7 @@
      system face a beat later. Only the latin subset is preloaded - latin-ext
      is fetched on demand by the unicode-range in style.css. -->
 <link rel="preload" as="font" type="font/woff2" href="/fonts/plus-jakarta-sans-latin.woff2?v=20260922type" crossorigin />
-<link rel="stylesheet" href="style.css?v=20260923fixlist" />
+<link rel="stylesheet" href="style.css?v=20260923adsense" />
 <link rel="stylesheet" href="chat-extras.css?v=20260922social2" />
 <link rel="stylesheet" href="games.css?v=20260916settings" />
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
@@ -250,7 +250,7 @@
 }
 </script>
 
-<script defer src="/ads.js?v=20260923adsense"></script>
+<script defer src="/ads.js?v=20260923adsense2"></script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6368797323385379"
      crossorigin="anonymous"></script>
 </head>
@@ -1056,11 +1056,11 @@
              best slot on the site. The phone gets a 300x250 instead, which
              is the shape that actually fits and actually pays. -->
         <div class="ad-card ad-card-app ad-card-desk">
-          <span class="ad-card-label" data-i18n="sponsored">Sponsored</span>
+          <span class="ad-card-label" data-i18n="sponsored">Advertisement</span>
           <div data-ad="leaderboard"></div>
         </div>
         <div class="ad-card ad-card-app ad-card-phone">
-          <span class="ad-card-label" data-i18n="sponsored">Sponsored</span>
+          <span class="ad-card-label" data-i18n="sponsored">Advertisement</span>
           <div data-ad="box"></div>
         </div>
       </section>
@@ -1890,7 +1890,7 @@
              ever move or compete for attention; a creative directly above a
              hang-up button is an accidental-click layout, and invalid-traffic
              ratios are what get publisher accounts closed; and it was a
-             468x60 / 320x50, the lowest-CPM shape Adsterra sells, spending the
+             468x60 / 320x50, the lowest-CPM shape on offer, spending the
              highest-attention moment on the site for the least money.
              The slots further down this panel stay, and public/ads.js will not
              let them load or change while a call is live. -->
@@ -2049,7 +2049,7 @@
              is display:none there. A hidden slot never enters the viewport, so
              ads.js never loads it and it costs no slot budget. -->
         <div class="ad-card ad-card-app ad-card-wide tl-call-ad tl-call-ad-wide">
-          <span class="ad-card-label" data-i18n="sponsored">Sponsored</span>
+          <span class="ad-card-label" data-i18n="sponsored">Advertisement</span>
           <div data-ad="box"></div>
         </div>
 
@@ -2072,11 +2072,11 @@
              A display:none slot never enters the viewport, so ads.js never
              loads the one that is not in use and it spends no slot budget. -->
         <div class="ad-card ad-card-app tl-call-ad-phone tl-call-ad-tall">
-          <span class="ad-card-label" data-i18n="sponsored">Sponsored</span>
+          <span class="ad-card-label" data-i18n="sponsored">Advertisement</span>
           <div data-ad="box"></div>
         </div>
         <div class="ad-card ad-card-app tl-call-ad-phone tl-call-ad-short">
-          <span class="ad-card-label" data-i18n="sponsored">Sponsored</span>
+          <span class="ad-card-label" data-i18n="sponsored">Advertisement</span>
           <div data-ad="leaderboard"></div>
         </div>
         </div><!-- /.tl-call-row -->
@@ -2105,7 +2105,7 @@
         </section>
 
         <!-- High-value rectangle between the guide and the free-service note. -->
-        <div class="ad-card ad-card-app"><span class="ad-card-label" data-i18n="sponsored">Sponsored</span><div data-ad="box" style="margin:24px auto;text-align:center"></div></div>
+        <div class="ad-card ad-card-app"><span class="ad-card-label" data-i18n="sponsored">Advertisement</span><div data-ad="box" style="margin:24px auto;text-align:center"></div></div>
 
         <!-- A warm, simple note at the bottom of the call screen: why TalkLive
              is free and the care that goes into it. Plain English on purpose,
@@ -2169,7 +2169,7 @@
 
 
   <div style="margin:28px auto">
-    <div class="ad-card"><span class="ad-card-label" data-i18n="sponsored">Sponsored</span><div data-ad="native"></div></div>
+    <div class="ad-card"><span class="ad-card-label" data-i18n="sponsored">Advertisement</span><div data-ad="native"></div></div>
   </div>
 </main>
       <!-- =================================================================
@@ -2419,7 +2419,7 @@
 
 
       <div style="margin:28px auto;text-align:center">
-        <div class="ad-card"><span class="ad-card-label" data-i18n="sponsored">Sponsored</span><div data-ad="leaderboard"></div></div>
+        <div class="ad-card"><span class="ad-card-label" data-i18n="sponsored">Advertisement</span><div data-ad="leaderboard"></div></div>
       </div>
     </div>
   </section>
@@ -2544,7 +2544,7 @@
        browser finish parsing and paint the page first. -->
   <script defer src="/socket.io/socket.io.min.js"></script>
   <script defer src="countries.js?v=20260828fix"></script>
-  <script defer src="i18n.js?v=20260923fixlist"></script>
+  <script defer src="i18n.js?v=20260923adsense"></script>
   <script defer src="chat-time.js?v=20260916navbar"></script>
   <script defer src="animals.js?v=20260921animals"></script>
   <script defer src="moderation.js?v=20260705b"></script>

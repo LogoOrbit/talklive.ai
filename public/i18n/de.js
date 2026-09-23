@@ -691,7 +691,7 @@
   "guideChat": "Nutze den Chat-Knopf, um während des Anrufs Textnachrichten zu senden.",
   "footerText": "Sei respektvoll. Du kannst mit jedem auf der Welt verbunden werden. Nur Sprache - kein Video, keine Aufnahme. Nur ab 18.",
   "privacyPolicy": "Datenschutzerklärung",
-  "sponsored": "Gesponsert",
+  "sponsored": "Anzeige",
   "premiumBadge": "💎 Premium",
   "filtersPremiumTitle": "Filter sind eine Premium-Funktion",
   "filtersPremiumText": "Kostenloser Plan: bis zu 2 Länder pro Liste. Geschlechterfilter gesperrt.",

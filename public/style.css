@@ -6898,3 +6898,8 @@ html.perf-lite .side-panel { box-shadow: none; }
   outline-offset: 3px;
 }
 
+
+/* No Google ads on the app screens (start, matchmaking, call, chat): AdSense
+   treats them as screens without publisher content, and a unit beside the
+   call controls invites accidental clicks. ads.js never fills these either. */
+.ad-card-app { display: none !important; }

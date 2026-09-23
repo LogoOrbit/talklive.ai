@@ -24,7 +24,7 @@
  * disk and Google crawls them, but no template change can reach them. SEO.md
  * documents why reviving those generators destroys 14-18% of the pages' visible
  * text, so the established pattern for anything sitewide is a sweep over
- * public/**\/*.html. scripts/migrate-schema.js and scripts/migrate-adsterra.js
+ * public/**\/*.html. scripts/migrate-schema.js and scripts/migrate-ads.js
  * both work this way and this follows them.
  *
  * Idempotent: a page that already carries the tag is skipped, so on a correct

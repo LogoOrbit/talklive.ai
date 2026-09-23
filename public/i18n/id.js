@@ -691,7 +691,7 @@
   "guideChat": "Gunakan tombol obrolan untuk mengirim pesan teks selama panggilan.",
   "footerText": "Bersikaplah sopan. Kamu bisa dicocokkan dengan siapa saja di dunia. Hanya suara - tanpa video, tanpa rekaman. Hanya 18+.",
   "privacyPolicy": "Kebijakan Privasi",
-  "sponsored": "Bersponsor",
+  "sponsored": "Iklan",
   "premiumBadge": "💎 Premium",
   "filtersPremiumTitle": "Filter adalah fitur Premium",
   "filtersPremiumText": "Paket gratis: maksimal 2 negara per daftar. Filter gender terkunci.",
