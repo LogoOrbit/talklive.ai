@@ -7131,3 +7131,7 @@ html.perf-lite .side-panel { box-shadow: none; }
 .friend-presence-dot.is-online { background: #2ed47a; box-shadow: 0 0 6px rgba(46, 212, 122, 0.6); }
 .friend-item .friend-call-later-btn { flex-basis: 100%; }
 [data-theme="light"] .friends-dropdown .friend-item:hover { background: rgba(20, 30, 70, 0.05); }
+/* Rename, Pin and Remove share one row; on a phone the three no longer fit,
+   so the row wraps instead of pushing "Remove friend" out of the card. */
+.profile-actions-manage { flex-wrap: wrap; }
+.profile-actions-manage .btn { min-width: max-content; }
