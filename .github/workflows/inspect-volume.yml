@@ -1,0 +1,29 @@
+# Read-only look at every copy of the store on the Fly data volume: counts and
+# dates per file, never contents. Run from the Actions tab when the question
+# is "what is actually on the disk?" - it needs no flyctl on anyone's machine,
+# because the deploy token already lives here.
+name: Inspect data volume
+
+on:
+  workflow_dispatch:
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Volumes
+        run: flyctl volumes list -a talklive-ai
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      - name: Files on the volume
+        # A listing that fails must not stop the census below from running.
+        continue-on-error: true
+        run: flyctl ssh console -a talklive-ai -C "ls -la --full-time /data /data/backups"
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      - name: What each store file holds (counts only)
+        run: flyctl ssh console -a talklive-ai -C "node /app/scripts/inspect-store-files.js"
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

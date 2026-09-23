@@ -2914,72 +2914,28 @@ body.panel-open .game-overlay {
   background: var(--border, rgba(255, 255, 255, .14));
 }
 
-/* Google's own button cannot be restyled from here - clipping it to a pill
-   still left a black slab ringed in white sitting under our own controls. So
-   the visible button is ours, in Google's light branding (white, the four
-   colour mark, their wording), and Google's real button is rendered into the
-   slot on top of it at full size but invisible, so every click still goes
-   through Google's script exactly as before. */
+/* Google's real button, shown as itself.
+
+   It used to be rendered invisibly (opacity: 0) on top of a white button
+   drawn here, so the page looked the way we wanted and clicks still went to
+   Google. Chrome lets Google's button check that it is actually visible - a
+   clickjacking defence - and an invisible one has its clicks silently
+   ignored: no popup, no error. From 16 Sep, when that design shipped, only
+   browsers without the check (Safari, Firefox) could sign in with Google;
+   Google sign-ups fell from up to 8 a day to 2-3, and on Chrome the button
+   did nothing at all. Google's own "outline" pill is white with the four-colour
+   mark - the same look the drawn face imitated - so it is simply shown. */
 .google-btn-slot {
-  position: relative;
-  display: block;
-  width: 100%;
-  height: 46px;
-}
-
-.google-btn-face {
-  position: absolute;
-  inset: 0;
   display: flex;
-  align-items: center;
   justify-content: center;
-  gap: 12px;
-  border-radius: 999px;
-  background: #fff;
-  color: #1f1f1f;
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: -0.1px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.08);
-  transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+  width: 100%;
+  min-height: 44px;
 }
-
-.google-btn-mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Hover and press live on the slot, not the face: the invisible Google button
-   is what the pointer is actually over. */
-.google-btn-slot:hover .google-btn-face {
-  background: #f6f7f9;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.14);
-}
-.google-btn-slot:active .google-btn-face {
-  transform: scale(0.985);
-}
-/* Google's button keeps its own focus ring, which is invisible along with it,
-   so the keyboard ring is drawn on the face instead. */
-.google-btn-slot:focus-within .google-btn-face {
-  box-shadow: 0 0 0 3px var(--accent), 0 4px 14px rgba(0, 0, 0, 0.35);
-}
-
+.google-btn-face { display: none; }
 .google-btn-real {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  opacity: 0;
-  overflow: hidden;
-  border-radius: 999px;
-}
-/* Google renders an inline-block wrapper at its own measured size; stretching
-   it keeps the clickable area exactly the pill the user can see. */
-.google-btn-real > div,
-.google-btn-real iframe,
-.google-btn-real [role="button"] {
-  width: 100% !important;
-  height: 100% !important;
+  display: flex;
+  justify-content: center;
+  width: 100%;
 }
 
 .account-status {

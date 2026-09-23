@@ -53,7 +53,7 @@
      system face a beat later. Only the latin subset is preloaded - latin-ext
      is fetched on demand by the unicode-range in style.css. -->
 <link rel="preload" as="font" type="font/woff2" href="/fonts/plus-jakarta-sans-latin.woff2?v=20260922type" crossorigin />
-<link rel="stylesheet" href="style.css?v=20260923profile2" />
+<link rel="stylesheet" href="style.css?v=20260923profile3" />
 <link rel="stylesheet" href="chat-extras.css?v=20260922social2" />
 <link rel="stylesheet" href="games.css?v=20260916settings" />
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
@@ -64,6 +64,7 @@
      owns the header outright: one button language, one radius, one focus ring
      on every screen of the product. -->
 <link rel="stylesheet" href="nav.css?v=20260922social" />
+  <link rel="stylesheet" href="data-notice.css?v=2">
 <script defer src="/config.js"></script>
 <!-- Google Identity Services, deferred so it never blocks first paint. app.js
      waits for it (and for /config.js) before rendering the sign-in buttons. -->
@@ -2697,7 +2698,7 @@
   </script>
   <script defer src="chat-extras.js?v=20260922social2"></script>
   <script defer src="games.js?v=20260916settings"></script>
-  <script defer src="app.js?v=20260923profile2"></script>
+  <script defer src="app.js?v=20260923profile3"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the
@@ -2710,5 +2711,6 @@
 
   gtag('config', 'G-713E3C1RH1');
 </script>
+  <script defer src="data-notice.js?v=1"></script>
 </body>
 </html>

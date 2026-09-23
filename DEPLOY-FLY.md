@@ -132,6 +132,24 @@ the other way round - from an exported file into a database that already has
 something in it. It refuses to write when the destination holds more than the
 source, and reads back what it wrote.
 
+### Which schema the store lives in
+
+The store uses unqualified table names (`owner_store`, `owner_store_history`),
+so the schema it reads and writes is decided by the login in `DATABASE_URL`:
+the default `postgres.<ref>` login resolves to `public`, while a role with its
+own `search_path` resolves elsewhere. Until 23 Sep 2026 the app logged in as a
+role pointed at `talklive_private`, so a month of data lived in
+`talklive_private.owner_store` while `public.owner_store` sat empty - and
+switching the connection string to the default login switched the app to the
+empty one without a word. The boot log now prints
+`[store] database login <user>, schema <schema>` and `backendStatus` carries
+`dbUser` / `dbSchema`; check them whenever the connection string changes.
+
+The data from before that switch was merged back into `public.owner_store` the
+same day. Both originals are kept untouched as
+`talklive_private.owner_store_backup_20260923` and
+`public.owner_store_backup_20260923`.
+
 ### Two copies, always
 
 With `DATABASE_URL` set the store exists twice at every moment: the row in

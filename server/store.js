@@ -565,6 +565,15 @@ function preserveConflict(doc, reason) {
 // boot (local = the mirror on disk) and on reconnect after an outage (local =
 // what this process has been serving from the mirror meanwhile).
 async function connectPg(atBoot) {
+  // Which database user and which schema the unqualified table names below
+  // resolve to. They depend on the login in DATABASE_URL: a role with its own
+  // search_path reads and writes a different owner_store from the default
+  // `postgres` login, in the same database, with nothing to say so. That is
+  // how a month of data sat in talklive_private while public looked empty.
+  const who = await pgPool.query('SELECT current_user AS u, current_schema() AS s');
+  backendStatus.dbUser = who.rows[0].u;
+  backendStatus.dbSchema = who.rows[0].s;
+  console.log(`[store] database login ${backendStatus.dbUser}, schema ${backendStatus.dbSchema}`);
   await ensureSchema();
   const res = await pgPool.query('SELECT doc FROM owner_store WHERE id = 1');
   const pgDoc = res.rows.length ? res.rows[0].doc : null;
