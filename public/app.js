@@ -1496,9 +1496,8 @@ function syncAddFriendBtn() {
   }
 }
 
-socket.on('friend-request-result', ({ ok, error, limitReached, accepted, alreadyFriends }) => {
-  // limitReached is handled by the premium-upsell listener further down.
-  if (!ok && error && !limitReached) {
+socket.on('friend-request-result', ({ ok, error, accepted, alreadyFriends }) => {
+  if (!ok && error) {
     showError(error);
     // Refused (blocked, restricted, rate-limited): the button went quiet on
     // the tap, so give it back rather than leave it claiming a request exists.
@@ -8184,7 +8183,7 @@ refreshNetStatus();
 // (who upgrade via /pricing) get everything unlocked. The server enforces
 // all limits - this state only drives the UI.
 let isPremiumUser = false;
-let freeLimits = { countries: 2, friends: 5 };
+let freeLimits = { countries: 2 };
 
 // Now that the free limits and the premium flag exist, the filters panel can
 // say what it is set to. From here on every change refreshes it (see the note
@@ -8197,7 +8196,6 @@ socket.on('premium-status', ({ premium, limits } = {}) => {
   if (limits) {
     freeLimits = {
       countries: limits.countries || 2,
-      friends: limits.friends || 5,
     };
   }
   updatePremiumUi();
@@ -8234,15 +8232,6 @@ prefGenderGroup.addEventListener('click', (e) => {
   e.preventDefault();
   showPremiumUpsell(t('premiumGenderLocked'));
 }, true);
-
-// Friend-limit errors from the normal in-call "Add friend" flow.
-socket.on('friend-request-result', ({ ok, limitReached } = {}) => {
-  if (!ok && limitReached) {
-    addFriendBtn.classList.remove('added');
-    addFriendBtn.disabled = false;
-    showPremiumUpsell(t('premiumFriendLimit', { n: freeLimits.friends }));
-  }
-});
 
 // --- "James from UK is online" - friend came online notification -------------
 socket.on('friend-online', ({ clientId, username, countryCode, country } = {}) => {

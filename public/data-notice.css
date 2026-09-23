@@ -2,41 +2,35 @@
    an error, and it must not out-shout the buttons on the start screen. */
 .tl-data-notice {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin: 14px 0;
-  padding: 12px 14px;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0;
+  padding: 6px 6px 6px 12px;
   border-radius: 14px;
   border: 1px solid rgba(245, 180, 60, 0.45);
   background: rgba(245, 180, 60, 0.1);
   color: var(--text, #e8eaf2);
   text-align: start;
-  font-size: 13.5px;
-  line-height: 1.45;
+  font-size: 13px;
+  line-height: 1.35;
 }
-.tl-data-notice.is-dismissible { flex-wrap: wrap; }
-/* The text takes the whole row, so the button drops beneath it rather than
-   squeezing the message into a narrow column beside it. */
-.tl-data-notice.is-dismissible .tl-data-notice-text { flex-basis: calc(100% - 40px); }
 .tl-data-notice-icon {
   flex: none;
   display: inline-flex;
   color: #f5b43c;
-  margin-top: 1px;
 }
+.tl-data-notice-icon svg { width: 16px; height: 16px; }
+/* One line: "Beta  Friends and messages may occasionally reset." */
 .tl-data-notice-text {
-  flex: 1 1 200px;
+  flex: 1;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
 }
-.tl-data-notice-text strong { font-size: 14px; font-weight: 700; }
+.tl-data-notice-text strong { font-weight: 700; margin-inline-end: 6px; }
 .tl-data-notice-text > span { color: var(--muted, #aab0c4); }
 .tl-data-notice-ok {
-  margin-inline-start: auto;
-  min-height: 36px;
-  padding: 0 16px;
+  flex: none;
+  min-height: 32px;
+  padding: 0 12px;
   border-radius: 999px;
   border: 1px solid rgba(245, 180, 60, 0.55);
   background: transparent;

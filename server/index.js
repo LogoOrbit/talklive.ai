@@ -274,10 +274,10 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 // --- Premium (TalkLive Plus) -------------------------------------------------
-// Free-tier limits; premium removes all of them.
+// Free-tier limits; premium removes all of them. Friends are unlimited for
+// everyone.
 const FREE_LIMITS = {
   countries: 2, // max countries per preferred/not-preferred list
-  friends: 5, // max friends
 };
 // Premium registry lives in the persistent store (Postgres/file) so grants
 // survive restarts and deploys. Grants come from three places now: a Stripe
@@ -1328,15 +1328,6 @@ const VOICE_INVITE_TTL_MS = 2 * 60 * 1000; // plenty for two page loads; then it
 // auto-match with any random stranger so nobody waits forever.
 const RANDOM_FALLBACK_MS = 10000;
 const waitFallbackTimers = new Map(); // socketId -> Timeout
-
-function friendCount(clientId) {
-  const map = friends.get(clientId);
-  return map ? map.size : 0;
-}
-
-function atFriendLimit(clientId) {
-  return !isPremium(clientId) && friendCount(clientId) >= FREE_LIMITS.friends;
-}
 
 // clientId -> true when the user chose to hide their online status from their
 // added friends. Never affects the global online-user count.
@@ -4205,9 +4196,6 @@ io.on('connection', (socket) => {
     if (isFriend(me.clientId, targetClientId)) {
       return socket.emit('friend-request-result', { ok: true, alreadyFriends: true });
     }
-    if (atFriendLimit(me.clientId)) {
-      return socket.emit('friend-request-result', { ok: false, limitReached: true, error: `Free plan allows up to ${FREE_LIMITS.friends} friends. Upgrade to add unlimited friends.` });
-    }
     const temporary = !socketAuth.get(socket.id);
     const myInfo = { username: me.username, countryCode: me.country, temporary, avatar: me.avatar };
 
@@ -4219,9 +4207,6 @@ io.on('connection', (socket) => {
     const heldReq = (sentRequests.get(targetClientId) || new Map()).get(me.clientId);
     const theirRequest = inboxReq || (heldReq && heldReq.held ? heldReq : null);
     if (theirRequest) {
-      if (atFriendLimit(targetClientId)) {
-        return socket.emit('friend-request-result', { ok: false, error: 'Their friend list is full.' });
-      }
       let theirInfo;
       if (inboxReq) {
         theirInfo = { username: inboxReq.username, countryCode: inboxReq.countryCode, temporary: inboxReq.temporary, avatar: inboxReq.avatar };
@@ -4312,17 +4297,6 @@ io.on('connection', (socket) => {
       return;
     }
 
-    // Limits are checked before the request is consumed: hitting the cap used
-    // to delete the request anyway, so upgrading could not bring it back.
-    if (accept && atFriendLimit(me.clientId)) {
-      syncClientState(socket, me.clientId);
-      return socket.emit('friend-request-result', { ok: false, limitReached: true, error: `Free plan allows up to ${FREE_LIMITS.friends} friends. Upgrade to add unlimited friends.` });
-    }
-    // The requester may have filled up their own list since sending the request.
-    if (accept && atFriendLimit(fromClientId)) {
-      syncClientState(socket, me.clientId);
-      return socket.emit('friend-request-result', { ok: false, error: 'Their friend list is full.' });
-    }
     const outboxEntry = (sentRequests.get(fromClientId) || new Map()).get(me.clientId);
     clearRequestPair(fromClientId, me.clientId);
     if (notificationId) removeNotification(me.clientId, notificationId);

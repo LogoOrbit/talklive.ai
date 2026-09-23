@@ -111,6 +111,22 @@ async function waitUp() {
     a.sock.emit('friend-request', { targetClientId: 'c_fid_nobody_met' });
     ok('without an ID a stranger still cannot be added', (await strangerRefused).ok === false);
 
+    // --- Friends are unlimited for everyone ------------------------------
+    const crowd = [];
+    for (let i = 0; i < 7; i++) crowd.push(await connect(`c_fid_crowd_${i}`, { freshSession: true }));
+    for (const [i, p] of crowd.entries()) {
+      const res = once(a.sock, 'friend-request-result');
+      a.sock.emit('friend-request', { targetClientId: `c_fid_crowd_${i}`, friendId: p.id.friendId });
+      await res;
+      const accepted = once(p.sock, 'friend-request-result');
+      p.sock.emit('friend-request', { targetClientId: 'c_fid_alpha' });
+      ok(`crowd member ${i} becomes a friend`, (await accepted).accepted === true);
+    }
+    await wait(300);
+    const friendCount = ((lastSync.get(a.sock) || {}).friends || []).filter((f) => f.clientId.startsWith('c_fid_crowd_')).length;
+    ok('a free user can have more than 5 friends', friendCount === 7, friendCount);
+    crowd.forEach((p) => p.sock.disconnect());
+
     // --- Guest ID lifetime -----------------------------------------------
     const oldGuestId = b.id.friendId;
     b.sock.disconnect();
