@@ -676,12 +676,12 @@
 
     var shell = document.createElement('aside');
     shell.className = 'tl-search-anchor ad-card';
-    shell.setAttribute('aria-label', 'Sponsored advertisement');
+    shell.setAttribute('aria-label', typeof t === 'function' ? t('adAria') : 'Sponsored advertisement');
     shell.style.display = 'none';
 
     var label = document.createElement('span');
     label.className = 'tl-search-anchor__label';
-    label.textContent = 'Sponsored';
+    label.textContent = typeof t === 'function' ? t('sponsored') : 'Sponsored';
     var slot = document.createElement('div');
     // Created after eligible() has counted normal page slots, so the anchor is
     // an explicit, independently controlled unit rather than silently pushing
@@ -692,7 +692,7 @@
     var close = document.createElement('button');
     close.type = 'button';
     close.className = 'tl-search-anchor__close';
-    close.setAttribute('aria-label', 'Hide advertisement for 24 hours');
+    close.setAttribute('aria-label', typeof t === 'function' ? t('adHide') : 'Hide advertisement for 24 hours');
     close.textContent = '\u00d7';
     shell.appendChild(label);
     shell.appendChild(slot);

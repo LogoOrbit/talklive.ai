@@ -6828,7 +6828,7 @@ function searchCountry(code, countryName) {
   persistAppliedFilters();
   syncFilterDraftUiFromApplied();
   registerProfile();
-  showToast(t('railFindIn', { country: countryName || code }));
+  showToast(t('railFindIn', { country: getCountryName(code) || countryName || code }));
   startBtn.click();
 }
 
@@ -6974,17 +6974,17 @@ function renderRailOnline() {
     row.className = 'tl-rail-row tl-rail-person';
     row.dataset.country = person.countryCode || '';
     row.dataset.countryName = person.country || '';
-    row.title = person.countryCode ? t('railFindIn', { country: person.country }) : '';
+    // A country the server could not place comes back as "Unknown"/"XX" -
+    // no place is better than a wrong one. Named in the visitor's language.
+    const placed = person.countryCode && person.countryCode !== 'XX' && person.country !== 'Unknown'
+      ? (getCountryName(person.countryCode) || person.country || '') : '';
+    row.title = placed ? t('railFindIn', { country: placed }) : '';
     const face = (person.animal && Animals && Animals.has(person.animal))
       ? Animals.icon(person.animal, 22)
       : genderIcon(person.avatar, 18);
     const genderLabel = person.gender === 'male' ? t('male')
       : person.gender === 'female' ? t('female')
       : '';
-    // A country the server could not place comes back as "Unknown"/"XX".
-    // Printed beside a name that reads as a broken record, so it is dropped
-    // and the row says what it does know.
-    const placed = person.country && person.country !== 'Unknown' ? person.country : '';
     const meta = [genderLabel, placed].filter(Boolean).join(' · ') || t('railSomewhere');
     row.innerHTML = `
       <span class="tl-rail-row-icon" aria-hidden="true">
