@@ -88,7 +88,10 @@ async function allTime() {
   const years = await Promise.all(ranges.map((r) => stats(r, 60 * 60000)));
   const rows = years.flat().map((it) => row(it, String(it.date || '').slice(0, 10)));
   const firstDay = rows.filter((r) => r.impressions || r.revenue).map((r) => r.key).sort()[0] || null;
-  return { ...sum(rows), since: firstDay };
+  // Adsterra's balance ("Earned") only credits finished days, so also give the
+  // total without today to compare against it.
+  const settled = sum(rows.filter((r) => r.key !== today)).revenue;
+  return { ...sum(rows), settled, since: firstDay };
 }
 
 // Daily series for the last `days` days plus the period broken down by ad unit
