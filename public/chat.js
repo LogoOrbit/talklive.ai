@@ -32,7 +32,20 @@
     return id;
   }
   var tempUsername = localStorage.getItem('talklive_tempname') || null;
-  var accountNickname = null; // set if a logged-in session exists elsewhere
+  // Signed in on the main app: the same durable session signs this page in
+  // too. Without it a signed-in user chatted here under a random name, and
+  // anyone they added saw them as a guest.
+  var sessionToken = localStorage.getItem('talklive_session') || null;
+  var accountNickname = sessionToken ? (localStorage.getItem('talklive_nickname') || null) : null;
+  // First registration of a brand-new app session (see registerClient in
+  // app.js): lets the server retire a guest's temporary friend ID.
+  var freshAppSession = (function () {
+    try {
+      var fresh = sessionStorage.getItem('tl_app_session') !== '1';
+      sessionStorage.setItem('tl_app_session', '1');
+      return fresh;
+    } catch (e) { return false; }
+  })();
   var CONSENT_KEY = 'talklive_age_consent';
 
   // --- DOM ---
@@ -519,7 +532,10 @@
       // Kept with every register, as the call app does, so the choice survives
       // a reconnect instead of quietly reverting to visible.
       hideStatus: localStorage.getItem('talklive_status_visible') === 'off',
+      signedIn: !!sessionToken,
+      freshSession: freshAppSession,
     });
+    freshAppSession = false;
   }
 
   // Every search goes through here so the watchdog below can tell an
@@ -1641,6 +1657,126 @@
     renderFriends();
     renderHistory();
     renderFriendChatStatus();
+    if (friendIdFound) renderFriendIdResult();
+  });
+
+  // --- Public friend ID (same card as the call app's friends panel) --------
+  var myFriendIdEl = $('myFriendId');
+  var myFriendIdNote = $('myFriendIdNote');
+  var copyFriendIdBtn = $('copyFriendIdBtn');
+  var shareFriendIdBtn = $('shareFriendIdBtn');
+  var friendIdSearchForm = $('friendIdSearchForm');
+  var friendIdSearchInput = $('friendIdSearchInput');
+  var friendIdResult = $('friendIdResult');
+  var myFriendId = '';
+  var friendIdFound = null;
+  var friendIdAddPending = false;
+
+  function friendIdNotice(text) {
+    friendIdFound = null;
+    friendIdResult.classList.remove('hidden');
+    friendIdResult.classList.add('is-error');
+    friendIdResult.textContent = text || '';
+  }
+
+  socket.on('friend-id', function (data) {
+    if (!data || typeof data.friendId !== 'string' || !data.friendId) return;
+    myFriendId = data.friendId;
+    myFriendIdEl.textContent = data.friendId;
+    myFriendIdNote.classList.toggle('hidden', !data.temporary);
+    copyFriendIdBtn.disabled = false;
+    shareFriendIdBtn.disabled = false;
+  });
+
+  function copyText(text, done) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () { window.prompt('', text); });
+    } else {
+      window.prompt('', text);
+    }
+  }
+
+  copyFriendIdBtn.addEventListener('click', function () {
+    if (!myFriendId) return;
+    copyText(myFriendId, function () { friendIdNotice(t('friendIdCopied')); });
+  });
+
+  shareFriendIdBtn.addEventListener('click', function () {
+    if (!myFriendId) return;
+    var url = location.origin + '/add/' + encodeURIComponent(myFriendId);
+    var text = t('friendIdShareText', { id: myFriendId });
+    var fallback = function () { copyText(text + ' ' + url, function () { friendIdNotice(t('friendIdLinkCopied')); }); };
+    if (navigator.share) {
+      navigator.share({ title: 'TalkLive', text: text, url: url }).catch(function (e) {
+        if (!e || e.name !== 'AbortError') fallback();
+      });
+    } else {
+      fallback();
+    }
+  });
+
+  friendIdSearchForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var query = friendIdSearchInput.value.trim();
+    if (!query) return friendIdSearchInput.focus();
+    socket.emit('find-by-friend-id', { friendId: query });
+  });
+
+  function friendIdRelation(clientId) {
+    var has = function (list) { return list.some(function (p) { return p.clientId === clientId; }); };
+    if (has(friendsState.friends)) return 'friend';
+    if (has(friendsState.requests)) return 'incoming';
+    if (has(friendsState.sent)) return 'pending';
+    return 'stranger';
+  }
+
+  function renderFriendIdResult() {
+    var user = friendIdFound;
+    if (!user) return;
+    var relation = friendIdRelation(user.clientId);
+    var action = relation === 'friend'
+      ? '<button type="button" class="btn btn-secondary" data-act="chat">' + escapeHtml(t('chat')) + '</button>'
+      : relation === 'pending'
+        ? '<button type="button" class="btn btn-secondary" disabled>' + escapeHtml(t('pending')) + '</button>'
+        : '<button type="button" class="btn btn-primary" data-act="add">' + escapeHtml(t('addFriend')) + '</button>';
+    var sub = [user.friendId, user.temporary ? t('friendIdGuest') : '', user.online ? t('online') : '']
+      .filter(Boolean).join(' · ');
+    friendIdResult.classList.remove('hidden', 'is-error');
+    friendIdResult.innerHTML = '<span class="friend-id-result-who"><strong>' + getFlagImg(user.countryCode) + ' '
+      + escapeHtml(user.username) + '</strong><small>' + escapeHtml(sub) + '</small></span>' + action;
+  }
+
+  socket.on('find-by-friend-id-result', function (res) {
+    if (!res || !res.ok || !res.user) return friendIdNotice((res && res.error) || '');
+    friendIdFound = res.user;
+    renderFriendIdResult();
+  });
+
+  friendIdResult.addEventListener('click', function (e) {
+    var btn = e.target.closest('button[data-act]');
+    if (!btn || !friendIdFound) return;
+    if (btn.dataset.act === 'chat') {
+      var friend = friendsState.friends.filter(function (f) { return f.clientId === friendIdFound.clientId; })[0];
+      if (friend) openFriendChat(friend);
+      return;
+    }
+    btn.disabled = true;
+    friendIdAddPending = true;
+    socket.emit('friend-request', { targetClientId: friendIdFound.clientId, friendId: friendIdFound.friendId });
+  });
+
+  socket.on('friend-request-result', function (res) {
+    if (!friendIdAddPending || !friendIdFound) return;
+    friendIdAddPending = false;
+    if (res && !res.ok && res.error) {
+      renderFriendIdResult();
+      var note = document.createElement('small');
+      note.className = 'friend-id-note';
+      note.textContent = res.error;
+      friendIdResult.querySelector('.friend-id-result-who').appendChild(note);
+      return;
+    }
+    renderFriendIdResult();
   });
   // Live badge updates: message notifications arrive alone (friend-request
   // ones come with a full state-sync), so track them locally too.
@@ -2011,6 +2147,7 @@
   // sat in the search view forever on a search the server had never heard of.
   socket.on('connect', function () {
     register();
+    if (sessionToken) socket.emit('resume-session', { token: sessionToken });
     socketConnected = true;
     refreshNetStatus();
     // Clearing the ack is what restarts the search: the watchdog re-sends
@@ -2042,6 +2179,40 @@
   });
 
   socket.on('needs-register', register);
+
+  socket.on('resume-session-result', function (res) {
+    if (!res) return;
+    if (!res.ok) {
+      // Expired or revoked: stop pretending to be signed in, as the call app does.
+      sessionToken = null;
+      accountNickname = null;
+      localStorage.removeItem('talklive_session');
+      localStorage.removeItem('talklive_nickname');
+      renderSettingsProfileRow();
+      return;
+    }
+    // Signed in on another device first: take on the account's profile (its
+    // friends and chats), once, exactly like the call app.
+    if (res.profileClientId && res.profileClientId !== getClientId()) {
+      var reloaded = false;
+      try { reloaded = sessionStorage.getItem('talklive_profile_adopted') === '1'; } catch (e) { /* private mode */ }
+      if (!reloaded) {
+        try { sessionStorage.setItem('talklive_profile_adopted', '1'); } catch (e) { /* private mode */ }
+        localStorage.setItem('talklive_client_id', res.profileClientId);
+        if (res.identityToken) localStorage.setItem('talklive_identity_token', res.identityToken);
+        else localStorage.removeItem('talklive_identity_token');
+        localStorage.removeItem('talklive_profile_created');
+        location.reload();
+        return;
+      }
+    }
+    if (res.nickname && res.nickname !== accountNickname) {
+      accountNickname = res.nickname;
+      localStorage.setItem('talklive_nickname', res.nickname);
+      register();
+    }
+    renderSettingsProfileRow();
+  });
 
   socket.on('identity-token', function (data) {
     if (data && data.clientId === getClientId() && typeof data.token === 'string'

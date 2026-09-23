@@ -1395,3 +1395,119 @@ summary:active {
 .icebreak-emoji { font-size: 16px; line-height: 1; }
 .icebreak-btn:disabled { opacity: 0.4; cursor: default; }
 @media (prefers-reduced-motion: reduce) { .icebreak { animation: none; } }
+
+/* --- Public friend ID: yours, and add someone by theirs ------------------ */
+.friend-id-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--bg-2) 92%, transparent);
+}
+
+.friend-id-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.friend-id-mine {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.friend-id-label {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.friend-id-value {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
+  user-select: all;
+}
+
+.friend-id-note {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.friend-id-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.friend-id-copy,
+.friend-id-search .btn {
+  padding: 8px 16px;
+  font-size: 13.5px;
+  flex-shrink: 0;
+}
+
+.friend-id-search {
+  display: flex;
+  gap: 8px;
+}
+
+.friend-id-search input {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg-1);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.friend-id-search input::placeholder {
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.friend-id-result {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13.5px;
+}
+
+.friend-id-result.is-error {
+  color: var(--muted);
+}
+
+.friend-id-result-who {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.friend-id-result-who strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.friend-id-result-who small {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.friend-id-result .btn {
+  padding: 7px 14px;
+  font-size: 13px;
+  flex-shrink: 0;
+}

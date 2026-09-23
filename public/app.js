@@ -1521,6 +1521,7 @@ socket.on('friend-request-result', ({ ok, error, limitReached, accepted, already
 const myFriendIdEl = document.getElementById('myFriendId');
 const myFriendIdNote = document.getElementById('myFriendIdNote');
 const copyFriendIdBtn = document.getElementById('copyFriendIdBtn');
+const shareFriendIdBtn = document.getElementById('shareFriendIdBtn');
 const friendIdSearchForm = document.getElementById('friendIdSearchForm');
 const friendIdSearchInput = document.getElementById('friendIdSearchInput');
 const friendIdResult = document.getElementById('friendIdResult');
@@ -1534,7 +1535,49 @@ socket.on('friend-id', ({ friendId, temporary } = {}) => {
   myFriendIdEl.textContent = friendId;
   myFriendIdNote.classList.toggle('hidden', !temporary);
   copyFriendIdBtn.disabled = false;
+  shareFriendIdBtn.disabled = false;
 });
+
+// The link opens TalkLive with this ID already looked up, one tap from
+// "Add friend" - so an ID can be posted anywhere (a bio, a group chat).
+shareFriendIdBtn.addEventListener('click', async () => {
+  if (!myFriendId) return;
+  const url = `${location.origin}/add/${encodeURIComponent(myFriendId)}`;
+  const text = t('friendIdShareText', { id: myFriendId });
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: 'TalkLive', text, url });
+      return;
+    } catch (e) {
+      if (e && e.name === 'AbortError') return; // the person closed the sheet
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(`${text} ${url}`);
+    showToast(t('friendIdLinkCopied'));
+  } catch (e) {
+    window.prompt(t('friendIdShareText', { id: myFriendId }), url);
+  }
+});
+
+// Arrived through someone's /add/<ID> link: open Friends with it looked up.
+// The search needs a registered socket, so it waits for the first successful
+// registration.
+let pendingAddFriendId = null;
+try { pendingAddFriendId = new URLSearchParams(location.search).get('add'); } catch (e) { /* old browser */ }
+if (pendingAddFriendId) {
+  pendingAddFriendId = pendingAddFriendId.slice(0, 16);
+  history.replaceState(history.state, '', '/');
+  friendIdSearchInput.value = pendingAddFriendId;
+  const onRegistered = ({ ok } = {}) => {
+    if (!ok) return;
+    socket.off('register-result', onRegistered);
+    openSidePanel(friendsDropdown, friendsOverlay);
+    showFriendsTab('friends');
+    socket.emit('find-by-friend-id', { friendId: pendingAddFriendId });
+  };
+  socket.on('register-result', onRegistered);
+}
 
 copyFriendIdBtn.addEventListener('click', async () => {
   if (!myFriendId) return;

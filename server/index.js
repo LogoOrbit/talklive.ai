@@ -949,6 +949,15 @@ app.get('/call', (req, res) => {
   sendAppShell(res, 'index.html');
 });
 
+// A shareable "add me" link (/add/K7MX29QP). It lands on the app with the ID
+// already looked up; the app then clears it from the address bar. A redirect
+// rather than its own page, so there is no second URL for search engines.
+app.get('/add/:code', (req, res) => {
+  const code = normalizeFriendId(req.params.code);
+  res.set('X-Robots-Tag', 'noindex');
+  res.redirect(302, code ? `/?add=${encodeURIComponent(displayFriendId(code))}` : '/');
+});
+
 // The text-chat app is a genuinely separate, lightweight page - no voice/WebRTC
 // code is loaded here at all, so the two sub-apps can never bleed into each
 // other and it stays fast on weak phones.
@@ -4138,8 +4147,10 @@ io.on('connection', (socket) => {
     const code = normalizeFriendId(friendId);
     const reply = (result) => socket.emit('find-by-friend-id-result', { query: code ? displayFriendId(code) : '', ...result });
     if (!code) return reply({ ok: false, error: 'IDs look like K7MX29QP, or G-4RT9KQ for guests.' });
-    // Codes are short enough to guess at, so searching is metered.
-    if (!socialRateOk('find-by-friend-id', me.clientId, 30, 10 * 60000)) {
+    // Codes are short enough to guess at, so searching is metered - per
+    // profile, and per network too, since a fresh clientId costs nothing.
+    if (!socialRateOk('find-by-friend-id', me.clientId, 30, 10 * 60000)
+      || !socialRateOk('find-by-friend-id-ip', ip, 90, 10 * 60000)) {
       return reply({ ok: false, error: 'Too many searches. Try again in a few minutes.' });
     }
     const targetClientId = clientIdForFriendId(code);
@@ -4974,7 +4985,10 @@ io.on('connection', (socket) => {
     const otherClientId = invite.clients.find((c) => c !== me.clientId);
     const otherSocketId = invite.joined.get(otherClientId);
     const otherSocket = otherSocketId ? io.sockets.sockets.get(otherSocketId) : null;
-    if (!otherSocket) return; // first one here - wait for the partner
+    const otherProfile = otherSocket ? profiles.get(otherSocketId) : null;
+    // First one here - wait for the partner. A socket that has since lost its
+    // profile (re-registering) is waited on too, not paired half-built.
+    if (!otherSocket || !otherProfile) return;
 
     clearTimeout(invite.timer);
     voiceInvites.delete(token);
@@ -4987,7 +5001,6 @@ io.on('connection', (socket) => {
     partners.set(socket.id, otherSocketId);
     partners.set(otherSocketId, socket.id);
 
-    const otherProfile = profiles.get(otherSocketId);
     hearts.delete(pairKey(me.clientId, otherProfile.clientId));
     me.matchedAt = Date.now();
     otherProfile.matchedAt = me.matchedAt;
