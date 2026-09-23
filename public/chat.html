@@ -34,10 +34,10 @@
   document.head.appendChild(s);
 })();
 </script>
-<link rel="stylesheet" href="/chat.css?v=20260923fixlist" />
+<link rel="stylesheet" href="/chat.css?v=20260923social5" />
 <link rel="stylesheet" href="/chat-extras.css?v=20260922social2" />
 <link rel="stylesheet" href="/games.css?v=20260916navbar" />
-<link rel="stylesheet" href="/ui.css?v=20260923social3" />
+<link rel="stylesheet" href="/ui.css?v=20260923social5" />
 <!-- The top bar, shared with / and /call: one button language, one radius,
      one focus ring on every screen of the product. -->
 <link rel="stylesheet" href="/nav.css?v=20260922social" />
@@ -758,6 +758,11 @@
           <span class="seen-toggle-label" data-i18n="readReceipts">Read Receipts</span>
           <span class="seen-toggle-switch" aria-hidden="true"><span class="seen-toggle-knob"></span></span>
         </button>
+        <!-- Block lives with the conversation: this page had no way to block a
+             friend or a recent match at all, only to remove a friendship. -->
+        <button type="button" id="friendChatBlockBtn" class="chat-block-btn" data-i18n-title="blockUser" title="Block User" data-i18n-aria="blockUser" aria-label="Block User">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/></svg>
+        </button>
         <button type="button" id="friendChatCloseBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
       </div>
     </div>
@@ -875,13 +880,13 @@
 
   <script defer src="/socket.io/socket.io.min.js"></script>
   <script defer src="/countries.js?v=20260828fix"></script>
-  <script defer src="/i18n.js?v=20260923fixlist"></script>
+  <script defer src="/i18n.js?v=20260923social5"></script>
   <script defer src="/chat-time.js?v=20260916navbar"></script>
   <script defer src="/animals.js?v=20260921animals"></script>
   <script defer src="/error-reporter.js?v=20260823ui"></script>
   <script defer src="/chat-extras.js?v=20260922social2"></script>
   <script defer src="/games.js?v=20260916navbar"></script>
-  <script defer src="/chat.js?v=20260923i18n"></script>
+  <script defer src="/chat.js?v=20260923social5"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

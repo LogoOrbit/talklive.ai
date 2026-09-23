@@ -2891,9 +2891,15 @@ friendsBtn.addEventListener('click', (e) => {
     renderFriendsList();
     renderSentRequests();
     syncFriendsTabCounts();
-    // If someone has asked to be your friend, that is why you tapped the icon.
-    showFriendsTab(notifData.some((n) => n.type !== 'message') ? 'requests' : 'friends');
+    // Open where the badge pointed: something to answer (a request, a
+    // call-back) wins; otherwise unread messages live under Friends. News
+    // alone ("accepted your request") used to pull the panel to Requests and
+    // hide the messages the badge was actually counting.
+    const answerable = requestRows().some((n) => n.type === 'friend_request' || n.type === 'call_back_request');
+    const unseenNews = requestRows().some((n) => needsAttention(n));
+    const tab = answerable || (unseenNews && !totalUnreadMessages()) ? 'requests' : 'friends';
     openSidePanel(friendsDropdown, friendsOverlay);
+    showFriendsTab(tab);
     updateScrollLock();
   } else {
     closeSidePanel(friendsDropdown, friendsOverlay);
@@ -3039,6 +3045,18 @@ function relationTo(clientId) {
   return 'stranger';
 }
 
+// Everything this client knows about someone, from the freshest list that has
+// them. A profile opened from a notification, or refreshed by a state-sync,
+// used to get a bare { clientId } - a sheet with no name, flag or avatar.
+function personById(clientId, fallback) {
+  const lists = [friendsData, friendRequestsData, sentRequestsData, historyEntries()];
+  for (const list of lists) {
+    const hit = list.find((p) => p.clientId === clientId);
+    if (hit) return fallback ? { ...fallback, ...hit } : hit;
+  }
+  return { clientId, ...(fallback || {}) };
+}
+
 // One profile sheet for everyone: friends opened from the friends list, and
 // people met in a call who are not (yet) friends. Only the actions differ.
 function openUserProfile(person) {
@@ -3051,9 +3069,15 @@ function openUserProfile(person) {
   friendProfileAvatar.innerHTML = genderIcon(known.avatar, 72);
   friendProfileName.innerHTML = `${getFlagImg(known.countryCode)} ${escapeHtml(friendLabel(known))}`;
   const online = !!known.online;
-  friendProfileStatus.innerHTML = relation === 'friend'
+  // Presence is shown to anyone the server reports it for - friends, and
+  // recent people - so "message back" can say whether they are around.
+  const hasPresence = relation === 'friend' || 'online' in known || !!known.lastSeen;
+  const presence = hasPresence
     ? `<span class="friend-status-text ${online ? 'is-online' : 'is-offline'}">${escapeHtml(presenceText(known))}</span>`
-    : `<span class="friend-relation-text">${escapeHtml(t('profileRelation_' + relation))}</span>`;
+    : '';
+  friendProfileStatus.innerHTML = relation === 'friend'
+    ? presence
+    : `<span class="friend-relation-text">${escapeHtml(t('profileRelation_' + relation))}</span>${presence ? ' · ' + presence : ''}`;
 
   // "Really <their own name>" - only when this account has renamed them, so a
   // friend you gave a private label to is still identifiable by the name they
@@ -3305,10 +3329,13 @@ socket.on('state-sync', ({ friends: friendList, friendRequests: requestList, sen
   // An open profile sheet is looking at data that just changed - a pending
   // request may have turned into a friendship while it sat there.
   if (activeProfileFriendId && friendProfileModal.classList.contains('open')) {
-    const person = friendsData.find((f) => f.clientId === activeProfileFriendId)
-      || friendRequestsData.find((r) => r.clientId === activeProfileFriendId)
-      || { clientId: activeProfileFriendId, username: friendProfileName.textContent.trim() };
-    openUserProfile(person);
+    // Blocked from another device, or they blocked this user: nothing left to
+    // show, and the sheet's buttons would act on someone out of reach.
+    if (blockedData.some((x) => x.clientId === activeProfileFriendId)) {
+      closeSidePanel(friendProfileModal, friendProfileOverlay);
+    } else {
+      openUserProfile(personById(activeProfileFriendId, { username: friendProfileName.textContent.trim() }));
+    }
   }
 });
 
@@ -3324,7 +3351,7 @@ function notifIcon(type) {
 function notifText(n) {
   // Someone you have renamed should read as the name you gave them here too,
   // otherwise a notification is the one place their old name resurfaces.
-  const name = escapeHtml(labelForClientId(n.fromClientId, n.username));
+  const name = escapeHtml(labelForClientId(n.fromClientId || n.byClientId, n.username));
   switch (n.type) {
     case 'friend_request': return t('notifWantsFriends', { name });
     case 'friend_accepted': return t('notifAccepted', { name });
@@ -3357,17 +3384,73 @@ function totalUnreadMessages() {
   return notifData.filter((n) => n.type === 'message').length;
 }
 
+// Whether a notification still wants the user. Messages count until read,
+// requests and call-backs until answered; "<name> accepted your request" is
+// news, and counts only until the Requests tab has been looked at. Every
+// accepted request used to sit in the badge until dismissed by hand.
+function needsAttention(n) {
+  if (n.type === 'friend_accepted') return !n.seen;
+  return true;
+}
+
+// The Requests tab, built from what is actually pending rather than from the
+// inbox alone. A request is its own record on the server; its notification is
+// a pointer to it that can be evicted or cleared, which used to leave a
+// request nobody could see (and so nobody could answer), or a row for a
+// request already answered on another device.
+function requestRows() {
+  const pending = new Set(friendRequestsData.map((r) => r.clientId));
+  const rows = notifData.filter((n) => n.type !== 'message'
+    && (n.type !== 'friend_request' || pending.has(n.fromClientId)));
+  const shown = new Set(rows.filter((n) => n.type === 'friend_request').map((n) => n.fromClientId));
+  friendRequestsData.forEach((r) => {
+    if (shown.has(r.clientId)) return;
+    rows.push({
+      id: 'req:' + r.clientId, type: 'friend_request', fromClientId: r.clientId,
+      username: r.username, countryCode: r.countryCode, message: r.message, ts: r.ts || 0,
+    });
+  });
+  return rows.sort((a, b) => (a.ts || 0) - (b.ts || 0));
+}
+
+function friendsBadgeCount() {
+  return totalUnreadMessages() + requestRows().filter(needsAttention).length;
+}
+
 function updateFriendsMsgBadge() {
-  const count = totalUnreadMessages() + notifData.filter((n) => n.type !== 'message').length;
-  friendsMsgBadge.textContent = count;
+  const count = friendsBadgeCount();
+  friendsMsgBadge.textContent = count > 99 ? '99+' : String(count);
   friendsMsgBadge.classList.toggle('hidden', count === 0);
+  showCountOutsidePage(count);
+}
+
+// The same count where it can be seen with the page in the background: the
+// tab title, and the icon of the installed app. A message that arrived while
+// you were in another tab used to leave no trace until you came back.
+function showCountOutsidePage(count) {
+  const base = document.title.replace(/^\(\d+\+?\)\s*/, '');
+  const next = count > 0 ? `(${count > 99 ? '99+' : count}) ${base}` : base;
+  if (document.title !== next) document.title = next;
+  try {
+    if (count > 0 && navigator.setAppBadge) navigator.setAppBadge(count).catch(() => {});
+    else if (!count && navigator.clearAppBadge) navigator.clearAppBadge().catch(() => {});
+  } catch (_) { /* unsupported */ }
+}
+
+// Looking at the Requests tab is what "seen" means for news rows.
+function markRequestsSeen() {
+  if (!notifData.some((n) => n.type === 'friend_accepted' && !n.seen)) return;
+  notifData.forEach((n) => { if (n.type === 'friend_accepted') n.seen = true; });
+  socket.emit('mark-notifications-seen');
+  updateFriendsMsgBadge();
+  syncFriendsTabCounts();
 }
 
 // The requests list (friend requests, accepted-friend confirmations, call-back
 // requests) lives at the top of the Friends dropdown; new message notifications
 // surface as unread badges on the Friends button/list instead.
 function renderNotifications() {
-  const visible = notifData.filter((n) => n.type !== 'message');
+  const visible = requestRows();
   notifList.classList.toggle('no-requests', visible.length === 0);
 
   if (visible.length === 0) {
@@ -3376,7 +3459,7 @@ function renderNotifications() {
     notifList.innerHTML = '';
     [...visible].reverse().forEach((n) => {
       const item = document.createElement('div');
-      item.className = 'notif-item';
+      item.className = 'notif-item' + (needsAttention(n) ? '' : ' is-seen');
       let actions = '';
       if (n.type === 'friend_request') {
         actions = `
@@ -3479,9 +3562,28 @@ function setTabCount(el, n) {
 }
 
 function syncFriendsTabCounts() {
-  setTabCount(friendsTabCount, friendsData.length);
-  const pending = notifData.filter((n) => n.type !== 'message').length + sentRequestsData.length;
-  setTabCount(requestsTabCount, pending);
+  const unreadFromFriends = friendsData.reduce((sum, f) => sum + unreadCountFor(f.clientId), 0);
+  // Two numbers side by side on one tab ("Friends 2 2") read as a typo, so
+  // while there is something unread the red count stands in for the total.
+  setTabCount(friendsTabCount, unreadFromFriends ? 0 : friendsData.length);
+  // Red means "waiting on you": requests to answer and news not yet seen.
+  // Requests this user sent are waiting on someone else, so they are listed
+  // but never counted here.
+  setTabCount(requestsTabCount, requestRows().filter(needsAttention).length);
+  // The friend count is not an alert, but unread messages are: they get their
+  // own red dot on the Friends tab, or a panel opened on Requests hid them.
+  if (friendsTabCount) {
+    let dot = document.getElementById('friendsTabUnread');
+    if (!dot) {
+      dot = document.createElement('span');
+      dot.id = 'friendsTabUnread';
+      dot.className = 'tl-tab-count tl-tab-unread hidden';
+      friendsTabCount.after(dot);
+    }
+    const unread = unreadFromFriends;
+    setTabCount(dot, unread);
+    dot.setAttribute('aria-label', t('unreadMessagesCount', { n: unread }));
+  }
 }
 
 function showFriendsTab(name) {
@@ -3493,6 +3595,7 @@ function showFriendsTab(name) {
   });
   if (friendsTabPanel) friendsTabPanel.classList.toggle('hidden', name !== 'friends');
   if (requestsTabPanel) requestsTabPanel.classList.toggle('hidden', name !== 'requests');
+  if (name === 'requests' && friendsDropdown.classList.contains('open')) markRequestsSeen();
 }
 
 if (friendsTabs) {
@@ -3507,10 +3610,9 @@ notifList.addEventListener('click', (e) => {
   // person the notification is about - the chips below keep working as before.
   if (!e.target.closest('.btn-chip')) {
     const row = e.target.closest('.notif-item');
+    const notif = row && requestRows().find((n) => (n.fromClientId || n.byClientId) === row.dataset.profileId);
     const person = row && row.dataset.profileId
-      ? (friendRequestsData.find((r) => r.clientId === row.dataset.profileId)
-        || friendsData.find((f) => f.clientId === row.dataset.profileId)
-        || { clientId: row.dataset.profileId })
+      ? personById(row.dataset.profileId, notif ? { username: notif.username, countryCode: notif.countryCode } : null)
       : null;
     if (person) {
       openUserProfile(person);
@@ -3682,11 +3784,8 @@ const friendChatWho = document.getElementById('friendChatWho');
 function openActiveChatProfile() {
   const id = activeFriendChatId;
   if (!id) return;
-  const person = friendsData.find((f) => f.clientId === id)
-    || historyEntries().find((h) => h.clientId === id)
-    || { clientId: id };
   closeSidePanel(friendChatModal, friendChatOverlay);
-  openUserProfile(person);
+  openUserProfile(personById(id));
 }
 if (friendChatWho) {
   friendChatWho.addEventListener('click', openActiveChatProfile);
@@ -3938,7 +4037,7 @@ function renderHistory() {
       <span class="history-item-main">
         <button type="button" class="history-item-name history-profile-btn" data-id="${id}" title="${escapeHtml(t('openProfile'))}">
           <span class="history-presence${entry.online ? ' is-online' : ''}" aria-hidden="true"></span>
-          ${getFlagImg(entry.countryCode)} ${escapeHtml(entry.username)}
+          ${getFlagImg(entry.countryCode)} ${escapeHtml(labelForClientId(entry.clientId, entry.username))}
         </button>
         <span class="history-item-sub">${escapeHtml(preview || historySubline(entry))}</span>
       </span>
@@ -7876,9 +7975,26 @@ try {
   // Where a push notification and the manifest's Friends shortcut both land.
   // Without this the notification opens the app but not the message that
   // prompted it, which is the whole reason the person tapped.
-  if (params.get('open') === 'friends') {
+  if (params.get('open') === 'friends' || params.get('open') === 'requests') {
     openSidePanel(friendsDropdown, friendsOverlay);
+    showFriendsTab(params.get('open') === 'requests' ? 'requests' : 'friends');
     history.replaceState(history.state, '', '/');
+  }
+  // A message notification opens that conversation. The lists that say who
+  // this user may message arrive with the first state-sync, so it waits for
+  // that (once) rather than opening a chat the server would refuse.
+  const chatWith = params.get('open') === 'chat' ? params.get('with') : null;
+  if (chatWith && /^[A-Za-z0-9_-]{8,64}$/.test(chatWith)) {
+    history.replaceState(history.state, '', '/');
+    const openWhenKnown = () => {
+      if (canMessage(chatWith)) openFriendChat(chatWith);
+      else {
+        openSidePanel(friendsDropdown, friendsOverlay);
+        showFriendsTab('friends');
+      }
+    };
+    if (friendsSynced) openWhenKnown();
+    else socket.once('state-sync', () => setTimeout(openWhenKnown, 0));
   }
   // The account screens live here, so /chat's Settings rows link to them
   // rather than the chat app carrying its own copy of the account stack.
