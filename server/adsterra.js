@@ -14,10 +14,10 @@ function configured() { return !!API_KEY; }
 
 function ymd(d) { return d.toISOString().slice(0, 10); }
 
-async function stats(params) {
+async function stats(params, maxAge = CACHE_MS) {
   const url = `${API}/stats.json?${new URLSearchParams(params)}`;
   const hit = cache.get(url);
-  if (hit && Date.now() - hit.ts < CACHE_MS) return hit.items;
+  if (hit && Date.now() - hit.ts < maxAge) return hit.items;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
@@ -74,6 +74,23 @@ function grouped(items, keyOf) {
   return [...m.values()].map(withRates).sort((a, b) => b.revenue - a.revenue);
 }
 
+// Earliest date counted in the all-time total. Adsterra has no lifetime
+// endpoint, so it is summed one calendar year per request (hourly cache).
+const ALL_TIME_FROM = process.env.ADSTERRA_START_DATE || '2020-01-01';
+async function allTime() {
+  const today = ymd(new Date());
+  const ranges = [];
+  for (let y = Number(ALL_TIME_FROM.slice(0, 4)); y <= Number(today.slice(0, 4)); y++) {
+    const start = y === Number(ALL_TIME_FROM.slice(0, 4)) ? ALL_TIME_FROM : `${y}-01-01`;
+    const finish = String(y) === today.slice(0, 4) ? today : `${y}-12-31`;
+    ranges.push({ start_date: start, finish_date: finish, group_by: 'date' });
+  }
+  const years = await Promise.all(ranges.map((r) => stats(r, 60 * 60000)));
+  const rows = years.flat().map((it) => row(it, String(it.date || '').slice(0, 10)));
+  const firstDay = rows.filter((r) => r.impressions || r.revenue).map((r) => r.key).sort()[0] || null;
+  return { ...sum(rows), since: firstDay };
+}
+
 // Daily series for the last `days` days plus the period broken down by ad unit
 // and by country. Days are UTC, which is what Adsterra reports in. 31 days so
 // month-to-date is complete on the 31st as well.
@@ -81,10 +98,11 @@ async function report(days = 31) {
   const finish = new Date();
   const start = new Date(finish.getTime() - (days - 1) * 86400000);
   const range = { start_date: ymd(start), finish_date: ymd(finish) };
-  const [byDate, byPlacement, byCountry] = await Promise.all([
+  const [byDate, byPlacement, byCountry, lifetime] = await Promise.all([
     stats({ ...range, group_by: 'date' }),
     stats({ ...range, group_by: 'placement' }).catch(() => []),
     stats({ ...range, group_by: 'country' }).catch(() => []),
+    allTime().catch((err) => ({ error: String(err.message || err) })),
   ]);
 
   const perDay = new Map(byDate.map((it) => [String(it.date || '').slice(0, 10), withRates(row(it, String(it.date || '').slice(0, 10)))]));
@@ -107,6 +125,7 @@ async function report(days = 31) {
       last7: last(7),
       last30: last(30),
       monthToDate: sum(daily.filter((d) => d.key.startsWith(month))),
+      allTime: lifetime,
     },
     daily,
     placements: grouped(byPlacement, (it) => String(it.placement || it.placement_name || it.title || it.placement_id || 'unknown')).slice(0, 25),

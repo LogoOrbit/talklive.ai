@@ -1493,6 +1493,7 @@ function adsterraSection(a){
     <div class="tile"><div class="k">Last 7 days</div><div class="v">${usd(t.last7.revenue)}</div><div class="s">${num(t.last7.impressions)} impressions</div></div>
     <div class="tile"><div class="k">This month</div><div class="v">${usd(t.monthToDate.revenue)}</div><div class="s">CPM ${usd(t.monthToDate.cpm)}</div></div>
     <div class="tile"><div class="k">Last 30 days</div><div class="v">${usd(t.last30.revenue)}</div><div class="s">CTR ${t.last30.ctr}% · CPM ${usd(t.last30.cpm)}</div></div>
+    <div class="tile"><div class="k">💰 All time</div>${t.allTime.error?`<div class="v">-</div><div class="s">${esc(t.allTime.error)}</div>`:`<div class="v grad">${usd(t.allTime.revenue)}</div><div class="s">${num(t.allTime.impressions)} impressions${t.allTime.since?' · since '+esc(t.allTime.since):''}</div>`}</div>
   </div>
   <div class="card anim"><h2>📢 Ad revenue by day <span class="sub">Adsterra · last 30 days · refreshed every 10 min</span></h2>
     ${days.slice().reverse().map(d=>`<div class="hrow"><div>${esc(d.key.slice(5))}</div><div><div class="hbar" style="width:${d.revenue?Math.max(2,d.revenue/max*100):0}%;background:var(--good)"></div></div><div class="n">${usd(d.revenue)}</div></div>`).join('')}
