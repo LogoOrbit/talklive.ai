@@ -3004,6 +3004,7 @@ function openUserProfile(person) {
   friendProfileChatBtn.classList.toggle('hidden', !canMessage(person.clientId));
   friendProfileRenameBtn.classList.toggle('hidden', relation !== 'friend');
   friendProfileRemoveBtn.classList.toggle('hidden', relation !== 'friend');
+  document.getElementById('friendProfileManageRow').classList.toggle('hidden', relation !== 'friend');
   friendProfileBlockBtn.classList.remove('hidden');
   friendProfileAddBtn.classList.toggle('hidden', relation !== 'stranger');
   friendProfileAcceptBtn.classList.toggle('hidden', relation !== 'incoming');
