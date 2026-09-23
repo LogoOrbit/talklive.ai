@@ -15,6 +15,7 @@ const compress = require('./compress');
 const billing = require('./billing');
 const push = require('./push');
 const flags = require('./flags');
+const ageAssurance = require('./age-assurance');
 const mail = require('./mailer');
 const { botLabel, isPrefetch } = require('./bots');
 const { createAdmin } = require('./admin');
@@ -369,6 +370,9 @@ app.post('/billing/checkout', httpRateLimit('checkout', 10, 60000), express.json
   if (!clientId || !validIdentityToken(clientId, token)) {
     return res.status(403).json({ error: 'Unrecognised client.' });
   }
+  // Age-assurance gate (fix list 3.1). A no-op while the flag is off.
+  const ageGate = ageAssurance.check('premium', { clientId, country: lookupGeo(clientIp(req)).country });
+  if (!ageGate.ok) return res.status(403).json({ error: ageGate.message, ageCheck: ageGate.reason });
   try {
     const url = await billing.createCheckout({
       clientId,
@@ -2869,7 +2873,16 @@ io.on('connection', (socket) => {
   store.recordConnection();
   store.recordPeakOnline(io.engine.clientsCount);
 
+  // Age-assurance gate for account, friends and premium features (fix list
+  // 3.1). Answers { ok: true } while the ageAssurance flag is off.
+  const ageGate = (feature) => {
+    const p = profiles.get(socket.id);
+    return ageAssurance.check(feature, { clientId: p && p.clientId, country: p && p.country });
+  };
+
   socket.on('signup', async ({ username, password, nickname, email } = {}) => {
+    const gate = ageGate('account');
+    if (!gate.ok) return socket.emit('signup-result', { ok: false, error: gate.message, ageCheck: gate.reason });
     if (typeof username !== 'string' || typeof password !== 'string'
       || !username || !password || username.length < 3 || password.length < 4) {
       return socket.emit('signup-result', { ok: false, error: 'Username/password too short (min 3/4 chars).' });
@@ -2997,6 +3010,8 @@ io.on('connection', (socket) => {
   });
 
   socket.on('google-auth', async ({ credential } = {}) => {
+    const gate = ageGate('account');
+    if (!gate.ok) return socket.emit('google-auth-result', { ok: false, error: gate.message, ageCheck: gate.reason });
     if (!GOOGLE_CLIENT_ID) {
       return socket.emit('google-auth-result', { ok: false, error: 'Google Sign-In is not configured on this server.' });
     }
@@ -3511,7 +3526,15 @@ io.on('connection', (socket) => {
       socket.disconnect(true);
       return;
     }
-    const mode = (opts && opts.mode === 'chat') ? 'chat' : 'talk';
+    let mode = (opts && opts.mode === 'chat') ? 'chat' : 'talk';
+    // Restricted profile (fix list 3.1, age-band signal): text-only. Only ever
+    // set when the ageBandSignal flag is on and a signal reported an under-18
+    // band, so this is dead code until then.
+    const restrictions = ageAssurance.restrictionsFor(profile.clientId);
+    if (restrictions && !restrictions.voice && mode === 'talk') {
+      socket.emit('age-restricted', { feature: 'voice' });
+      mode = 'chat';
+    }
 
     // The client re-sends its search when one goes unanswered (a socket that
     // reconnected, a registration that had not landed). If this socket is
@@ -3901,6 +3924,12 @@ io.on('connection', (socket) => {
     const me = profiles.get(socket.id);
     targetClientId = validId(targetClientId);
     if (!me || !targetClientId || targetClientId === me.clientId) return;
+    const gate = ageGate('friends');
+    if (!gate.ok) return socket.emit('friend-request-result', { ok: false, error: gate.message, ageCheck: gate.reason });
+    // A restricted recipient cannot be added either.
+    if (ageAssurance.isRestricted(targetClientId)) {
+      return socket.emit('friend-request-result', { ok: false, error: 'Unable to send friend request.' });
+    }
     store.recordFeature('friend_request');
     if (isBlockedPair(me.clientId, targetClientId)) {
       return socket.emit('friend-request-result', { ok: false, error: 'Unable to send friend request.' });
@@ -3981,6 +4010,10 @@ io.on('connection', (socket) => {
     const me = profiles.get(socket.id);
     fromClientId = validId(fromClientId);
     if (!me || !fromClientId) return;
+    if (accept) {
+      const gate = ageGate('friends');
+      if (!gate.ok) return socket.emit('friend-request-result', { ok: false, error: gate.message, ageCheck: gate.reason });
+    }
     const reqMap = friendRequests.get(me.clientId);
     const req = reqMap && reqMap.get(fromClientId);
     if (!req) {
@@ -4139,6 +4172,7 @@ io.on('connection', (socket) => {
     const toClientId = validId(payload && payload.toClientId);
     const parsed = readChatPayload(payload);
     if (!me || !toClientId || !parsed || toClientId === me.clientId) return;
+    if (!ageGate('friends').ok || ageAssurance.isRestricted(toClientId)) return;
     // Friends can always message; so can two people who recently chatted at
     // random (the "message back from history" path), even without a friendship.
     // Refusals are said out loud: the composer had already cleared, so a

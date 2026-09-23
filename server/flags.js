@@ -60,4 +60,10 @@ function clientFlags() {
   return out;
 }
 
-module.exports = { isOn, clientFlags, load, DEFS };
+// Tests only: flip a flag for the current process.
+function _set(name, value) {
+  if (!DEFS[name]) throw new Error(`unknown flag ${name}`);
+  FLAGS[name] = value === true;
+}
+
+module.exports = { isOn, clientFlags, load, DEFS, _set };
