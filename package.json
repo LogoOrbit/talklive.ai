@@ -17,6 +17,7 @@
     "test:reset": "node scripts/test-password-reset.js",
     "test:chat": "node scripts/test-chat-extras.js",
     "test:matchmaking": "node scripts/test-matchmaking.js",
+    "test:durability": "node scripts/test-durability.js",
     "test:analytics": "node scripts/test-analytics-visits.js",
     "test:gifs": "node scripts/test-gif-proxy.js",
     "seo:ping": "node scripts/ping-indexnow.js"

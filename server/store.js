@@ -33,6 +33,11 @@ const backendStatus = {
   // deploy. Null when the backend is Postgres or the check could not run.
   ephemeral: null,
   dataDir: DATA_DIR,
+  // Set to a reason string when the store has latched itself read-only because
+  // it could not read the real document. Surfaced so this is visible in the
+  // dashboard rather than only in the boot logs, which nobody reads until
+  // after the accounts are already gone.
+  persistBlocked: null,
 };
 
 // Is DATA_DIR a real mount, or just a directory inside the container image?
@@ -67,6 +72,13 @@ if (DATABASE_URL) {
 }
 
 let pgPool = null;
+// DATABASE_URL is set but the database is not answering. The pool is kept (so
+// reconnects can use it) and every write is suppressed, because the database
+// still holds the real accounts and the local file must not become a second,
+// competing copy of them. Declared here so the boot path and the write path
+// can both see it regardless of evaluation order.
+let pgUnreachable = false;
+let pgRetryDelay = 5000;
 if (DATABASE_URL) {
   const { Pool } = require('pg');
   pgPool = new Pool({
@@ -194,15 +206,140 @@ function applyParsed(parsed) {
   }
 }
 
-function loadFile() {
+// --- Never overwrite what we failed to read ---------------------------------
+//
+// The store is one document, and that document is every account, every
+// friendship, every friend chat and every login session. Losing it is not a
+// degraded service, it is the end of everybody's history - so the rule here is
+// that the only thing allowed to destroy data is a deliberate write of data we
+// actually loaded. A read that went wrong never gets to.
+//
+// When the document cannot be read or cannot be parsed, the old code logged a
+// line and did `data = defaults()`. Two seconds later the first ordinary save
+// wrote that empty document over the real one: a truncated file, a half-second
+// of I/O trouble or a full disk turned into permanent, silent, total loss.
+// Now a failed load quarantines the unreadable file, tries the rotating
+// backups newest-first, and - if nothing can be recovered - latches the store
+// into a state where it refuses to persist at all, so whatever is still on
+// that disk stays there for a human to look at.
+let persistBlocked = null;
+function blockPersist(reason) {
+  if (persistBlocked) return;
+  persistBlocked = reason;
+  backendStatus.persistBlocked = reason;
+  console.error('[store] ============================================================');
+  console.error('[store] REFUSING TO WRITE:', reason);
+  console.error('[store] The store could not be read, so what is in memory is NOT');
+  console.error('[store] the real data. Saving it would overwrite accounts, friends');
+  console.error('[store] and chats with an empty document. Writes are disabled until');
+  console.error('[store] the next restart. Look in', DATA_DIR, 'for the quarantined');
+  console.error('[store] file and the backups/ directory, then restore one by hand.');
+  console.error('[store] ============================================================');
+}
+
+const BACKUP_DIR = path.join(DATA_DIR, 'backups');
+// Ten snapshots on a 6-hour cadence is a little over two days of history: long
+// enough that damage introduced by a bad deploy is still recoverable after a
+// weekend, small enough to be free on a 1GB volume.
+const BACKUP_KEEP = 10;
+const BACKUP_EVERY_MS = 6 * 60 * 60 * 1000;
+let lastBackupAt = 0;
+
+// Newest first, so recovery tries the least-stale snapshot before older ones.
+function backupFiles() {
   try {
-    if (fs.existsSync(DATA_FILE)) {
-      applyParsed(JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')));
+    return fs.readdirSync(BACKUP_DIR)
+      .filter((n) => n.startsWith('owner-data.') && n.endsWith('.json'))
+      .sort()
+      .reverse()
+      .map((n) => path.join(BACKUP_DIR, n));
+  } catch (_) { return []; }
+}
+
+// A snapshot of the last known-good document. Taken from the file that was
+// just written rather than from `data`, so a snapshot is always a copy of
+// something that already survived a full serialize + atomic rename.
+function writeBackup() {
+  try {
+    fs.mkdirSync(BACKUP_DIR, { recursive: true });
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    fs.copyFileSync(DATA_FILE, path.join(BACKUP_DIR, `owner-data.${stamp}.json`));
+    for (const old of backupFiles().slice(BACKUP_KEEP)) {
+      try { fs.unlinkSync(old); } catch (_) { /* a stuck file is not worth failing over */ }
     }
+    lastBackupAt = Date.now();
   } catch (err) {
-    console.error('[store] failed to load file, starting fresh:', err.message);
-    data = defaults();
+    // A snapshot that cannot be taken must never break the write that
+    // triggered it - the live file is the thing that matters.
+    console.error('[store] backup failed:', err.message);
   }
+}
+
+// Move a file we could not read out of the way under a name that says what it
+// is, so the next boot starts clean instead of hitting the same failure, and
+// nothing is deleted. Returns the new path, or null if even this failed.
+function quarantine(file, why) {
+  try {
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const dest = `${file}.${why}-${stamp}`;
+    fs.renameSync(file, dest);
+    console.error('[store] moved the unreadable file to', dest);
+    return dest;
+  } catch (err) {
+    console.error('[store] could not quarantine', file + ':', err.message);
+    return null;
+  }
+}
+
+// Try each snapshot newest-first. Returns the one that loaded, or null.
+function restoreFromBackup() {
+  for (const file of backupFiles()) {
+    try {
+      applyParsed(JSON.parse(fs.readFileSync(file, 'utf8')));
+      console.error('[store] RECOVERED from backup:', file);
+      return file;
+    } catch (err) {
+      console.error('[store] backup unusable, trying older:', file, '-', err.message);
+    }
+  }
+  return null;
+}
+
+function loadFile() {
+  let raw;
+  try {
+    // Nothing there at all is the ordinary first-ever boot, not a failure:
+    // there is no data to lose, so an empty document is the right answer and
+    // writing is safe.
+    if (!fs.existsSync(DATA_FILE)) return;
+    raw = fs.readFileSync(DATA_FILE, 'utf8');
+  } catch (err) {
+    // The file exists but would not open. It is very probably intact, so it is
+    // the one thing we must not touch - no quarantine, no restore, no writes.
+    console.error('[store] could not read', DATA_FILE + ':', err.message);
+    blockPersist(`cannot read ${DATA_FILE}: ${err.message}`);
+    return;
+  }
+
+  try {
+    applyParsed(JSON.parse(raw));
+    return;
+  } catch (err) {
+    console.error('[store] data file is unreadable:', err.message);
+  }
+
+  // Parsed as garbage. Keep the evidence, then fall back through the snapshots.
+  quarantine(DATA_FILE, 'corrupt');
+  if (restoreFromBackup()) {
+    // Recovered: let the restored document be written back out as the live
+    // file, so the next boot is an ordinary one.
+    persistNow();
+    return;
+  }
+
+  // Corrupt and nothing to restore from. Serve what we can, save nothing.
+  data = defaults();
+  blockPersist(`${DATA_FILE} was corrupt and no usable backup was found`);
 }
 
 async function loadPg() {
@@ -238,6 +375,10 @@ async function loadPg() {
 let pgWriting = false;
 let pgDirty = false;
 function persistPg() {
+  // Not connected yet: `data` is not the database's document, so writing it
+  // would overwrite the real accounts with a blank one the moment the database
+  // came back. The reconnect loads the truth instead.
+  if (pgUnreachable) return;
   // Serialize writes: if one is in flight, mark dirty and rewrite after.
   if (pgWriting) { pgDirty = true; return; }
   pgWriting = true;
@@ -253,6 +394,14 @@ function persistPg() {
 
 function persistNow() {
   if (pgPool) return persistPg();
+  // The load failed, so `data` is not the real document. Writing it here is
+  // exactly the destructive act this guard exists to prevent.
+  if (persistBlocked) return;
+  // DATABASE_URL is set but unreachable: the file on this disk belongs to a
+  // different backend (or to nothing at all), and writing the half-built
+  // in-memory document into it would leave two stores that each think they
+  // are authoritative. See the boot path below.
+  if (pgUnreachable) return;
   try {
     fs.mkdirSync(DATA_DIR, { recursive: true });
     const tmp = DATA_FILE + '.tmp';
@@ -260,7 +409,10 @@ function persistNow() {
     fs.renameSync(tmp, DATA_FILE);
   } catch (err) {
     console.error('[store] failed to save:', err.message);
+    return;
   }
+  // Snapshot on a slow cadence, from the file that was just proved writable.
+  if (Date.now() - lastBackupAt >= BACKUP_EVERY_MS) writeBackup();
 }
 
 function save() {
@@ -1102,21 +1254,55 @@ const ready = (async () => {
     try {
       await loadPg();
     } catch (err) {
-      backendStatus.mode = 'file';
       backendStatus.error = String(err.message || err);
+      // Falling back to the file store used to happen here: pgPool was set to
+      // null for good and the local JSON file became the live store. That is
+      // the most dangerous thing this file could do. The database is still the
+      // real store and still holds everyone's accounts; the local file is from
+      // a different life of the app, or does not exist. Serving from it means
+      // existing users cannot log in, sign up again, and get written to a file
+      // that the next successful boot silently discards in favour of the
+      // database. Two stores, both believing they are authoritative, and
+      // whichever loses takes real accounts with it.
+      //
+      // So: stay on Postgres, keep retrying, and write nothing anywhere until
+      // it answers. Minutes of writes lost during an outage is a far smaller
+      // harm than a divergence nobody notices until the accounts are gone.
+      pgUnreachable = true;
+      backendStatus.mode = 'postgres-unreachable';
       console.error('[store] ============================================================');
-      console.error('[store] DATABASE_URL is set but the connection FAILED. Falling back');
-      console.error('[store] to the ephemeral file store - data will NOT survive restarts');
-      console.error('[store] until this is fixed. Host:', backendStatus.host);
+      console.error('[store] DATABASE_URL is set but the connection FAILED. The database');
+      console.error('[store] is still the real store, so this process will NOT write to');
+      console.error('[store] the local file - that would fork the data. Retrying in the');
+      console.error('[store] background; the store is read-only until it connects.');
+      console.error('[store] Host:', backendStatus.host);
       console.error('[store] Reason:', backendStatus.error);
       console.error('[store] ============================================================');
-      pgPool = null;
-      loadFile();
+      retryPg();
     }
   } else {
     loadFile();
   }
 })();
+
+// Reconnect attempts, backing off to a minute. Once the database answers, its
+// document replaces whatever this process accumulated while it was down -
+// those writes were never durable, and the database is the truth.
+function retryPg() {
+  setTimeout(async () => {
+    if (!pgUnreachable || !pgPool) return;
+    try {
+      await loadPg();
+      pgUnreachable = false;
+      backendStatus.persistBlocked = null;
+      console.log('[store] Postgres is back - loaded the live document; writes re-enabled.');
+    } catch (err) {
+      backendStatus.error = String(err.message || err);
+      pgRetryDelay = Math.min(pgRetryDelay * 2, 60000);
+      retryPg();
+    }
+  }, pgRetryDelay).unref();
+}
 
 process.on('exit', () => { if (!pgPool) persistNow(); });
 
@@ -1128,6 +1314,12 @@ async function flushAndExit(signal) {
   if (shuttingDown) return;
   shuttingDown = true;
   if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+  // Same rule on the way out as on every other write: a document we never
+  // successfully loaded must not be the last thing written over a good one.
+  if (persistBlocked || pgUnreachable) {
+    console.error(`[store] ${signal}: not saving -`, persistBlocked || 'database unreachable');
+    process.exit(0);
+  }
   try {
     if (pgPool) {
       await pgPool.query(

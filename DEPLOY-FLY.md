@@ -60,6 +60,53 @@ the committed `fly.toml` instead of regenerating one. The generated config sets
 `auto_stop_machines = 'stop'` and `min_machines_running = 0`, which puts the
 machine back to sleep and undoes the reason for this migration.
 
+### Snapshots and recovery
+
+The store keeps its own rotating snapshots in `/data/backups` - ten of them, at
+most one every six hours, so a little over two days of history. They are copied
+from the live file straight after a successful write, so a snapshot is always a
+copy of something that already parsed and saved cleanly.
+
+The rule the store follows is that **only a deliberate write of data it
+actually loaded is allowed to destroy anything**. Three cases follow from it:
+
+| What happened | What the store does |
+| --- | --- |
+| The file is missing (first ever boot) | Starts empty and saves normally. |
+| The file exists but will not open | Touches nothing at all - no move, no write - and disables saving for the life of the process. The contents are probably fine and the fault is in the reading. |
+| The file is there but is not valid JSON | Renames it to `owner-data.json.corrupt-<timestamp>`, loads the newest snapshot that parses, and writes that back as the live file. If no snapshot is usable it serves an empty store but **never saves**, so the quarantined file stays on disk for you. |
+
+A store that has disabled saving says so loudly at boot and reports it in
+`backendStatus.persistBlocked`, which the `/owner` login screen shows. If you
+see it, the data is still on the volume - restore it by hand and restart:
+
+```sh
+fly ssh console --app talklive-ai
+ls /data /data/backups                       # find the snapshot you want
+cp /data/backups/owner-data.<stamp>.json /data/owner-data.json
+exit
+fly apps restart talklive-ai
+```
+
+To keep a copy off the machine entirely (the one thing a single volume cannot
+give you), pull the live file down periodically:
+
+```sh
+fly ssh sftp get /data/owner-data.json ./owner-data-$(date +%F).json --app talklive-ai
+```
+
+`npm run test:durability` exercises every row of that table, including the
+"database is unreachable" case below.
+
+**A database that is briefly unreachable never forks the data.** With
+`DATABASE_URL` set, the database is the only store; if it cannot be reached at
+boot the app keeps retrying and writes nothing anywhere until it answers.
+Earlier this fell back to the local JSON file, which meant existing users could
+not log in, signed up again, and were written to a file that the next
+successful boot silently discarded in favour of the database. Losing a few
+minutes of writes during an outage is a much smaller harm than two stores that
+each believe they are authoritative.
+
 ## 4. Set secrets
 
 `fly.toml` `[env]` holds only non-sensitive values. Everything else is a
