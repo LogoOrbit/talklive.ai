@@ -367,6 +367,8 @@
   "termsOpenPage": "별도 페이지에서 열기",
   "fvFriendPromptTitle": "{name}님과의 대화가 즐거웠나요?",
   "fvFriendPromptBody": "친구로 추가하면 나중에 다시 통화할 수 있어요.",
+  "callSafetyNote": "통화 중에는 악용을 감지하기 위한 자동 안전 점검이 실행돼요. 통화는 절대 녹음되지 않아요.",
+  "callSafetyLink": "작동 방식",
   "noteFreeCare": "전 세계 어디서든 새로운 사람과 가장 매끄럽고 깔끔하게 대화할 수 있도록 매일 다듬고 있어요. 빠른 연결과 단순한 디자인, 정성을 담아 만들었어요.",
   "noteFreeSign": "즐거운 대화 되세요. - TalkLive 팀",
   "filtersPremiumBody": "무료 플랜은 목록당 최대 3개국까지예요. 프리미엄에서는 성별 필터, 무제한 국가 목록, 무제한 친구, 즉시 재매칭, 광고 없음이 제공돼요. 곧 출시.",

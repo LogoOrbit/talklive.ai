@@ -367,6 +367,8 @@
   "termsOpenPage": "Kendi sayfasında aç",
   "fvFriendPromptTitle": "{name} ile konuşmak hoşuna gitti mi?",
   "fvFriendPromptBody": "Daha sonra tekrar aramak için arkadaş olarak ekle.",
+  "callSafetyNote": "Aramalar sırasında kötüye kullanımı yakalamak için otomatik güvenlik kontrolleri çalışır. Aramalar asla kaydedilmez.",
+  "callSafetyLink": "Nasıl çalışır",
   "noteFreeCare": "Dünyanın her yerinden yeni insanlarla konuşmanın en akıcı ve sade yolu olması için her gün çalışıyoruz: hızlı bağlantılar ve özenle yapılmış basit bir tasarım.",
   "noteFreeSign": "Keyifli sohbetler. - TalkLive ekibi",
   "filtersPremiumBody": "Ücretsiz planda liste başına en fazla 3 ülke var. Premium; cinsiyet filtreleri, sınırsız ülke listeleri, sınırsız arkadaş, anında yeni eşleşme ve reklamsız kullanım sunacak. Yakında geliyor.",

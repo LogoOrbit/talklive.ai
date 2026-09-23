@@ -1707,7 +1707,7 @@ const CORE_BLOG = [
         'Any app that connects you to strangers owes you a straight answer about safety. This post explains exactly how TalkLive works under the hood - what we can see, what we cannot, and what happens when someone behaves badly.',
       ]},
       { h: 'How TalkLive handles voice traffic', ps: [
-        'TalkLive calls use encrypted WebRTC and a production TURN relay for connectivity. TalkLive does not record or store voice audio, and no person listens to calls; on desktop browsers, automated safety checks run on each person\'s own microphone and keep a short text snippet only when abuse is detected. The other participant still controls their own device and can record what they hear, so do not share secrets or identifying details.',
+        'TalkLive calls use encrypted WebRTC and a production TURN relay for connectivity. TalkLive does not record or store voice audio, and no person listens to calls; automated safety checks run on each person\'s own microphone during calls (speech-to-text on desktop browsers only) and keep a short record only when abuse is detected. The other participant still controls their own device and can record what they hear, so do not share secrets or identifying details.',
       ]},
       { h: 'Anonymous by default', ps: [
         'You can use TalkLive without creating an account. No name, no email, no phone number. The person you talk to sees a display name and a country flag - nothing else. Signing up (optional) only exists so you can keep friends and settings across devices.',

@@ -3699,3 +3699,14 @@
   .tl-fv .tl-drawer:not(.hidden) { display: flex !important; }
   .tl-fv .tl-drawer-overlay:not(.hidden) { display: block !important; }
 }
+
+/* One-line notice about the automated call safety checks (index.html). */
+.tl-call-safety-note {
+  margin: var(--tl-s2) auto 0;
+  max-width: 34em;
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: center;
+  color: var(--muted);
+}
+.tl-call-safety-note a { color: inherit; text-decoration: underline; white-space: nowrap; }

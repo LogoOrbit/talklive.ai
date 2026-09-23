@@ -367,6 +367,8 @@
   "termsOpenPage": "Abrir na página própria",
   "fvFriendPromptTitle": "Gostou de conversar com {name}?",
   "fvFriendPromptBody": "Adicione como amigo para se ligarem de novo mais tarde.",
+  "callSafetyNote": "Verificações de segurança automáticas são feitas durante as chamadas para detectar abusos. As chamadas nunca são gravadas.",
+  "callSafetyLink": "Como funciona",
   "noteFreeCare": "Trabalhamos nele todos os dias para ser o jeito mais simples e fluido de falar com pessoas novas em qualquer lugar do mundo: conexões rápidas e um design simples, feito com carinho.",
   "noteFreeSign": "Aproveite suas conversas. - Equipe TalkLive",
   "filtersPremiumBody": "O plano grátis inclui até 3 países por lista. O Premium vai liberar filtros de gênero, listas de países ilimitadas, amigos ilimitados, novos pareamentos na hora e sem anúncios. Em breve.",

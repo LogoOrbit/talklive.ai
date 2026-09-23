@@ -410,6 +410,8 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "termsOpenPage": "Open them on their own page",
     "fvFriendPromptTitle": "Enjoyed talking with {name}?",
     "fvFriendPromptBody": "Add them as a friend so you can call each other again later.",
+    "callSafetyNote": "Automatic safety checks run during calls to catch abuse. Calls are never recorded.",
+    "callSafetyLink": "How it works",
     "noteFreeCare": "We work on it every day to make this the smoothest, cleanest way to talk to new people anywhere in the world - fast connections and a simple design, built with care.",
     "noteFreeSign": "Enjoy your talks. - The TalkLive team",
     "filtersPremiumBody": "Free includes up to 3 countries per list. Premium will unlock gender filters, unlimited country lists, unlimited friends, instant rematching and no ads - it is coming soon.",
@@ -921,7 +923,7 @@ function applyI18n() {
 // Non-English dictionaries load on demand from /i18n/<lang>.js. Until the file
 // arrives t() falls back to English, then the UI re-translates once it lands.
 // Keep in step with the preload snippet in the <head> of index.html/chat.html.
-const I18N_VERSION = '20260923merged';
+const I18N_VERSION = '20260923safety';
 const i18nLoading = {};
 window.__i18nLangLoaded = function (lang) {
   delete i18nLoading[lang];
