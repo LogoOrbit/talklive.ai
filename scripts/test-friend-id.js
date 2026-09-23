@@ -91,6 +91,13 @@ async function waitUp() {
     ok('malformed ID is refused', (await search(a.sock, 'abc')).ok === false);
     ok('unknown ID is not found', (await search(a.sock, 'G-ZZZZZZ')).ok === false);
 
+    // --- Shareable link ------------------------------------------------
+    const link = await fetch(`${BASE}/add/${b.id.friendId.toLowerCase()}`, { redirect: 'manual' });
+    ok('/add/<id> redirects into the app with the ID', link.status === 302
+      && link.headers.get('location') === `/?add=${encodeURIComponent(b.id.friendId)}`, link.headers.get('location'));
+    const badLink = await fetch(`${BASE}/add/nope`, { redirect: 'manual' });
+    ok('/add/<junk> goes home', badLink.status === 302 && badLink.headers.get('location') === '/');
+
     // --- Adding by ID without ever having met ----------------------------
     const bGotRequest = once(b.sock, 'state-sync');
     const sent = once(a.sock, 'friend-request-result');
@@ -103,6 +110,22 @@ async function waitUp() {
     const strangerRefused = once(a.sock, 'friend-request-result');
     a.sock.emit('friend-request', { targetClientId: 'c_fid_nobody_met' });
     ok('without an ID a stranger still cannot be added', (await strangerRefused).ok === false);
+
+    // --- Friends are unlimited for everyone ------------------------------
+    const crowd = [];
+    for (let i = 0; i < 7; i++) crowd.push(await connect(`c_fid_crowd_${i}`, { freshSession: true }));
+    for (const [i, p] of crowd.entries()) {
+      const res = once(a.sock, 'friend-request-result');
+      a.sock.emit('friend-request', { targetClientId: `c_fid_crowd_${i}`, friendId: p.id.friendId });
+      await res;
+      const accepted = once(p.sock, 'friend-request-result');
+      p.sock.emit('friend-request', { targetClientId: 'c_fid_alpha' });
+      ok(`crowd member ${i} becomes a friend`, (await accepted).accepted === true);
+    }
+    await wait(300);
+    const friendCount = ((lastSync.get(a.sock) || {}).friends || []).filter((f) => f.clientId.startsWith('c_fid_crowd_')).length;
+    ok('a free user can have more than 5 friends', friendCount === 7, friendCount);
+    crowd.forEach((p) => p.sock.disconnect());
 
     // --- Guest ID lifetime -----------------------------------------------
     const oldGuestId = b.id.friendId;

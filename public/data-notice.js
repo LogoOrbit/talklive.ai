@@ -1,7 +1,7 @@
 // Temporary: the store is being moved and people's friends and messages may
-// go missing for a while. Everyone is told once on the start screen, and the
-// Friends panel says it for as long as this file is included - that is where
-// someone looks when a friend has disappeared.
+// go missing for a while. A one-line note on the start screen and in the
+// Friends panel (where someone looks when a friend has disappeared), until the
+// person taps "Got it" - then it is gone from both.
 //
 // Self-contained on purpose. To remove it, delete the data-notice.js and
 // data-notice.css tags from index.html and chat.html; nothing else refers to
@@ -19,12 +19,8 @@
     return fallback;
   }
 
-  var TITLE = tx('dataNoticeTitle', 'TalkLive is still being built');
-  // Links cannot be sent in chat, so the advice is usernames, not links.
-  var BODY = tx('dataNoticeBody',
-    'While we fix things, your friends and messages here might disappear for a while. ' +
-    'If you have made a friend, swap usernames on another app (like Instagram or WhatsApp) ' +
-    'so you can stay in touch. Only share with people you trust.');
+  var TITLE = tx('dataNoticeTitle', 'Beta');
+  var BODY = tx('dataNoticeBody', 'Friends and messages may occasionally reset.');
   var OK = tx('dataNoticeOk', 'Got it');
 
   function seen() {
@@ -62,13 +58,11 @@
   }
 
   function init() {
-    // Friends panels, both apps: always shown while this file is included.
+    if (seen()) return;
     ['#friendsDropdown .tl-panel-body', '#friendsPanel .tl-panel-body'].forEach(function (sel) {
       var body = document.querySelector(sel);
-      if (body) body.insertBefore(build(false), body.firstChild);
+      if (body) body.insertBefore(build(true), body.firstChild);
     });
-
-    if (seen()) return;
     // Start screens: once per browser, right under the buttons people came for
     // so it is on the first screen without pushing them down.
     var startChat = document.getElementById('startChatBtn');   // home

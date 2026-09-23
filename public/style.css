@@ -2646,6 +2646,26 @@ body.panel-open .game-overlay {
 .chat-msg-ticks.sending svg { opacity: 0.5; }
 .chat-msg-ticks.sent svg { fill: rgba(255,255,255,0.9); opacity: 1; }
 
+/* Direct messages on their way to the server, and ones that never got there. */
+.chat-msg.me.is-pending { opacity: 0.72; }
+.chat-msg.me.is-failed {
+  opacity: 0.8;
+  background: linear-gradient(135deg, #8a3b4a, #6d2c3a);
+}
+.chat-msg-retry {
+  align-self: flex-end;
+  margin: -2px 2px 2px;
+  padding: 2px 4px;
+  border: 0;
+  background: none;
+  color: #ff7a8a;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.chat-msg-retry:hover, .chat-msg-retry:focus-visible { text-decoration: underline; }
+
 /* "Seen" label under the last message I sent, once the friend has viewed it. */
 .chat-seen-label {
   align-self: flex-end;
@@ -6959,6 +6979,12 @@ html.perf-lite .side-panel { box-shadow: none; }
   color: var(--muted);
 }
 
+.friend-id-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
 .friend-id-copy,
 .friend-id-search .btn {
   padding: 8px 16px;
@@ -6977,7 +7003,7 @@ html.perf-lite .side-panel { box-shadow: none; }
   padding: 9px 12px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: var(--bg);
+  background: var(--bg-1);
   color: var(--text);
   font: inherit;
   font-size: 14px;

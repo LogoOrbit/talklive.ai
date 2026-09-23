@@ -79,7 +79,7 @@ function bot(base, name) {
   return s;
 }
 
-async function browser(base, { path: p = '/', clientId = ID.ann, lang = 'en' } = {}) {
+async function browser(base, { path: p = '/', clientId = ID.ann, lang = 'en', init = null } = {}) {
   const args = ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'];
   const b = await (process.env.CHROMIUM_PATH
     ? chromium.launch({ executablePath: process.env.CHROMIUM_PATH, args })
@@ -91,6 +91,7 @@ async function browser(base, { path: p = '/', clientId = ID.ann, lang = 'en' } =
       localStorage.setItem('talklive_lang', lang);
     } catch (_) {}
   }, [clientId, lang]);
+  if (init) await ctx.addInitScript(init);
   const page = await ctx.newPage();
   page.errors = [];
   page.on('pageerror', (e) => page.errors.push('pageerror: ' + e.message));

@@ -274,10 +274,10 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 // --- Premium (TalkLive Plus) -------------------------------------------------
-// Free-tier limits; premium removes all of them.
+// Free-tier limits; premium removes all of them. Friends are unlimited for
+// everyone.
 const FREE_LIMITS = {
   countries: 2, // max countries per preferred/not-preferred list
-  friends: 5, // max friends
 };
 // Premium registry lives in the persistent store (Postgres/file) so grants
 // survive restarts and deploys. Grants come from three places now: a Stripe
@@ -949,6 +949,15 @@ app.get('/call', (req, res) => {
   sendAppShell(res, 'index.html');
 });
 
+// A shareable "add me" link (/add/K7MX29QP). It lands on the app with the ID
+// already looked up; the app then clears it from the address bar. A redirect
+// rather than its own page, so there is no second URL for search engines.
+app.get('/add/:code', (req, res) => {
+  const code = normalizeFriendId(req.params.code);
+  res.set('X-Robots-Tag', 'noindex');
+  res.redirect(302, code ? `/?add=${encodeURIComponent(displayFriendId(code))}` : '/');
+});
+
 // The text-chat app is a genuinely separate, lightweight page - no voice/WebRTC
 // code is loaded here at all, so the two sub-apps can never bleed into each
 // other and it stays fast on weak phones.
@@ -1339,15 +1348,6 @@ const VOICE_INVITE_TTL_MS = 2 * 60 * 1000; // plenty for two page loads; then it
 // auto-match with any random stranger so nobody waits forever.
 const RANDOM_FALLBACK_MS = 10000;
 const waitFallbackTimers = new Map(); // socketId -> Timeout
-
-function friendCount(clientId) {
-  const map = friends.get(clientId);
-  return map ? map.size : 0;
-}
-
-function atFriendLimit(clientId) {
-  return !isPremium(clientId) && friendCount(clientId) >= FREE_LIMITS.friends;
-}
 
 // clientId -> true when the user chose to hide their online status from their
 // added friends. Never affects the global online-user count.
@@ -3038,6 +3038,22 @@ function sendFriendId(socket, { fresh = false } = {}) {
   socket.emit('friend-id', { friendId: displayFriendId(code), temporary: true });
 }
 
+// Events that need a registered profile and are worth delivering late rather
+// than never (see the hold in the connection handler). Live, time-bound asks -
+// a ring, a search - are deliberately absent: those answer 'needs-register' or
+// are simply re-sent by the client.
+const HOLD_UNTIL_REGISTERED = new Set([
+  'friend-message', 'friend-reaction', 'friend-message-delete', 'friend-typing',
+  'get-friend-chat', 'mark-messages-read', 'chat-seen',
+  'friend-request', 'friend-request-respond', 'cancel-friend-request',
+  'remove-friend', 'rename-friend', 'block-friend', 'unblock-user', 'clear-friend-chat',
+  'clear-notification', 'mark-notifications-seen', 'call-back-request-later',
+  'set-status-visibility', 'set-call-availability', 'find-by-friend-id', 'voice-invite-join',
+  'pin-friend', 'mute-chat',
+]);
+const MAX_HELD_EVENTS = 40;
+const HELD_EVENTS_TTL_MS = 20 * 1000;
+
 io.on('connection', (socket) => {
   const ip = getClientIp(socket);
   const geo = lookupGeo(ip);
@@ -3065,6 +3081,32 @@ io.on('connection', (socket) => {
   // Swallow rate-limit errors quietly instead of disconnecting on the first
   // over-limit event, so a brief burst just drops packets rather than the call.
   socket.on('error', () => { /* rate-limited or malformed packet - ignore */ });
+
+  // Social events that arrive before this socket has a profile are held, not
+  // dropped. The client's socket.io buffer flushes everything typed while it
+  // was offline the instant it reconnects - *before* its own 'register' - and
+  // a register that has to ping a stale incumbent takes up to 2.5s more. Every
+  // handler below starts with `profiles.get(socket.id)` and quietly returns on
+  // a miss, so a message sent from a phone coming back from the background
+  // vanished: the composer had cleared, nothing was stored, nothing was said.
+  // Released in order once 'register' succeeds; dropped if it never does.
+  const heldEvents = [];
+  let heldTimer = null;
+  socket.use((packet, next) => {
+    const event = Array.isArray(packet) ? packet[0] : '';
+    if (!HOLD_UNTIL_REGISTERED.has(event) || profiles.has(socket.id)) return next();
+    if (heldEvents.length >= MAX_HELD_EVENTS) return next(new Error('not-registered'));
+    heldEvents.push(next);
+    if (!heldTimer) {
+      heldTimer = setTimeout(() => { heldEvents.length = 0; heldTimer = null; }, HELD_EVENTS_TTL_MS);
+    }
+  });
+  socket.releaseHeldEvents = () => {
+    clearTimeout(heldTimer);
+    heldTimer = null;
+    const due = heldEvents.splice(0);
+    for (const next of due) next();
+  };
 
   // Maintenance mode: only the owner dashboard stays live.
   if (store.data.settings.maintenance.on) {
@@ -3717,6 +3759,8 @@ io.on('connection', (socket) => {
       // recent matches, so "message back" shows them online.
       resyncWatchers(clientId);
     }
+    // Anything sent while this socket had no profile runs now, in order.
+    socket.releaseHeldEvents();
   });
 
   // Codes are minted on demand rather than for every visitor: the overwhelming
@@ -4175,8 +4219,10 @@ io.on('connection', (socket) => {
     const code = normalizeFriendId(friendId);
     const reply = (result) => socket.emit('find-by-friend-id-result', { query: code ? displayFriendId(code) : '', ...result });
     if (!code) return reply({ ok: false, error: 'IDs look like K7MX29QP, or G-4RT9KQ for guests.' });
-    // Codes are short enough to guess at, so searching is metered.
-    if (!socialRateOk('find-by-friend-id', me.clientId, 30, 10 * 60000)) {
+    // Codes are short enough to guess at, so searching is metered - per
+    // profile, and per network too, since a fresh clientId costs nothing.
+    if (!socialRateOk('find-by-friend-id', me.clientId, 30, 10 * 60000)
+      || !socialRateOk('find-by-friend-id-ip', ip, 90, 10 * 60000)) {
       return reply({ ok: false, error: 'Too many searches. Try again in a few minutes.' });
     }
     const targetClientId = clientIdForFriendId(code);
@@ -4231,9 +4277,6 @@ io.on('connection', (socket) => {
     if (isFriend(me.clientId, targetClientId)) {
       return socket.emit('friend-request-result', { ok: true, alreadyFriends: true });
     }
-    if (atFriendLimit(me.clientId)) {
-      return socket.emit('friend-request-result', { ok: false, limitReached: true, error: `Free plan allows up to ${FREE_LIMITS.friends} friends. Upgrade to add unlimited friends.` });
-    }
     const temporary = !socketAuth.get(socket.id);
     const myInfo = { username: me.username, countryCode: me.country, temporary, avatar: me.avatar };
 
@@ -4245,9 +4288,6 @@ io.on('connection', (socket) => {
     const heldReq = (sentRequests.get(targetClientId) || new Map()).get(me.clientId);
     const theirRequest = inboxReq || (heldReq && heldReq.held ? heldReq : null);
     if (theirRequest) {
-      if (atFriendLimit(targetClientId)) {
-        return socket.emit('friend-request-result', { ok: false, error: 'Their friend list is full.' });
-      }
       let theirInfo;
       if (inboxReq) {
         theirInfo = { username: inboxReq.username, countryCode: inboxReq.countryCode, temporary: inboxReq.temporary, avatar: inboxReq.avatar };
@@ -4338,17 +4378,6 @@ io.on('connection', (socket) => {
       return;
     }
 
-    // Limits are checked before the request is consumed: hitting the cap used
-    // to delete the request anyway, so upgrading could not bring it back.
-    if (accept && atFriendLimit(me.clientId)) {
-      syncClientState(socket, me.clientId);
-      return socket.emit('friend-request-result', { ok: false, limitReached: true, error: `Free plan allows up to ${FREE_LIMITS.friends} friends. Upgrade to add unlimited friends.` });
-    }
-    // The requester may have filled up their own list since sending the request.
-    if (accept && atFriendLimit(fromClientId)) {
-      syncClientState(socket, me.clientId);
-      return socket.emit('friend-request-result', { ok: false, error: 'Their friend list is full.' });
-    }
     const outboxEntry = (sentRequests.get(fromClientId) || new Map()).get(me.clientId);
     clearRequestPair(fromClientId, me.clientId);
     if (notificationId) removeNotification(me.clientId, notificationId);
@@ -4567,40 +4596,37 @@ io.on('connection', (socket) => {
     const toClientId = validId(payload && payload.toClientId);
     const parsed = readChatPayload(payload);
     if (!me || !toClientId || !parsed || toClientId === me.clientId) return;
-    const gate = ageGate('friends');
-    if (!gate.ok) return socket.emit('chat-blocked', { reason: 'age', message: gate.message, toClientId });
-    if (ageAssurance.isRestricted(toClientId)) return socket.emit('chat-blocked', { reason: 'unreachable', toClientId });
     // Friends can always message; so can two people who recently chatted at
     // random (the "message back from history" path), even without a friendship.
     // Refusals are said out loud: the composer had already cleared, so a
     // silent drop looked like a message that was sent and never answered.
+    // Every refusal names the message it refuses and the chat it was typed in,
+    // so the client can take back exactly that pending bubble (and give the
+    // text back to the composer) instead of guessing.
+    const refuse = (reason) => socket.emit('chat-blocked', {
+      reason, scope: 'friend', toClientId, id: parsed.id || null, text: parsed.text || '',
+    });
+    if (!ageGate('friends').ok || ageAssurance.isRestricted(toClientId)) return refuse('unreachable');
     if (!knowsEachOther(me.clientId, toClientId) || isBlockedPair(me.clientId, toClientId)) {
-      return socket.emit('chat-blocked', { reason: 'unreachable', toClientId });
+      return refuse('unreachable');
     }
     // Friends can message each other any time - no call required. If the friend
     // is offline the message is still stored and a notification is queued, so it
     // reaches them the next time they come online.
-    if (parsed.text && containsLink(parsed.text)) {
-      return socket.emit('chat-blocked', { reason: 'link', toClientId });
-    }
-    if (parsed.text && UNSAFE_RE.test(parsed.text)) {
-      return socket.emit('chat-blocked', { reason: 'unsafe', toClientId });
-    }
-    // Direct messages are stored and notified, so a flood costs the recipient
-    // far more than one in a live chat does. Same human-speed ceiling.
-    if (!socialRateOk('friend-message', me.clientId, 10, 5000)) {
-      return socket.emit('chat-blocked', { reason: 'rate', toClientId });
-    }
+    if (parsed.text && containsLink(parsed.text)) return refuse('link');
+    if (parsed.text && UNSAFE_RE.test(parsed.text)) return refuse('unsafe');
     const trimmed = parsed.text;
     // Ids are chosen by the client, and are what replies, reactions and unsend
     // point at. One already in the thread is either a resend of the same
     // message (a flaky connection) - stored once, not twice - or a collision,
     // which must not make two messages answer to one id.
+    // A resend is answered with the stored copy: the client is resending
+    // because it never saw the first acknowledgement, and staying silent left
+    // its bubble on "sending" for good. Checked before the rate limit, which a
+    // reconnect flushing a backlog must not trip.
     let msgId = parsed.id;
     if (msgId) {
       const dup = (friendChats.get(pairKey(me.clientId, toClientId)) || []).find((m) => m.id === msgId);
-      // Still confirmed, so the sender's pending bubble settles rather than
-      // timing out on a message that was in fact delivered.
       if (dup && dup.from === me.clientId && dup.text === trimmed) {
         return socket.emit('friend-message-sent', {
           toClientId, text: dup.text, ts: dup.ts, id: dup.id, replyTo: dup.replyTo || null, gif: dup.gif || null,
@@ -4608,6 +4634,9 @@ io.on('connection', (socket) => {
       }
       if (dup) msgId = null;
     }
+    // Direct messages are stored and notified, so a flood costs the recipient
+    // far more than one in a live chat does. Same human-speed ceiling.
+    if (!socialRateOk('friend-message', me.clientId, 10, 5000)) return refuse('rate');
     const friendInfo = (friends.get(me.clientId) || new Map()).get(toClientId);
     store.addTranscript({
       kind: 'friend',
@@ -5080,7 +5109,10 @@ io.on('connection', (socket) => {
     const otherClientId = invite.clients.find((c) => c !== me.clientId);
     const otherSocketId = invite.joined.get(otherClientId);
     const otherSocket = otherSocketId ? io.sockets.sockets.get(otherSocketId) : null;
-    if (!otherSocket) return; // first one here - wait for the partner
+    const otherProfile = otherSocket ? profiles.get(otherSocketId) : null;
+    // First one here - wait for the partner. A socket that has since lost its
+    // profile (re-registering) is waited on too, not paired half-built.
+    if (!otherSocket || !otherProfile) return;
 
     clearTimeout(invite.timer);
     voiceInvites.delete(token);
@@ -5093,7 +5125,6 @@ io.on('connection', (socket) => {
     partners.set(socket.id, otherSocketId);
     partners.set(otherSocketId, socket.id);
 
-    const otherProfile = profiles.get(otherSocketId);
     hearts.delete(pairKey(me.clientId, otherProfile.clientId));
     me.matchedAt = Date.now();
     otherProfile.matchedAt = me.matchedAt;

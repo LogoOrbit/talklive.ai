@@ -32,7 +32,20 @@
     return id;
   }
   var tempUsername = localStorage.getItem('talklive_tempname') || null;
-  var accountNickname = null; // set if a logged-in session exists elsewhere
+  // Signed in on the main app: the same durable session signs this page in
+  // too. Without it a signed-in user chatted here under a random name, and
+  // anyone they added saw them as a guest.
+  var sessionToken = localStorage.getItem('talklive_session') || null;
+  var accountNickname = sessionToken ? (localStorage.getItem('talklive_nickname') || null) : null;
+  // First registration of a brand-new app session (see registerClient in
+  // app.js): lets the server retire a guest's temporary friend ID.
+  var freshAppSession = (function () {
+    try {
+      var fresh = sessionStorage.getItem('tl_app_session') !== '1';
+      sessionStorage.setItem('tl_app_session', '1');
+      return fresh;
+    } catch (e) { return false; }
+  })();
   var CONSENT_KEY = 'talklive_age_consent';
 
   // --- DOM ---
@@ -519,7 +532,10 @@
       // Kept with every register, as the call app does, so the choice survives
       // a reconnect instead of quietly reverting to visible.
       hideStatus: localStorage.getItem('talklive_status_visible') === 'off',
+      signedIn: !!sessionToken,
+      freshSession: freshAppSession,
     });
+    freshAppSession = false;
   }
 
   // Every search goes through here so the watchdog below can tell an
@@ -1650,12 +1666,132 @@
     renderFriends();
     renderHistory();
     renderFriendChatStatus();
+    if (friendIdFound) renderFriendIdResult();
+  });
+
+  // --- Public friend ID (same card as the call app's friends panel) --------
+  var myFriendIdEl = $('myFriendId');
+  var myFriendIdNote = $('myFriendIdNote');
+  var copyFriendIdBtn = $('copyFriendIdBtn');
+  var shareFriendIdBtn = $('shareFriendIdBtn');
+  var friendIdSearchForm = $('friendIdSearchForm');
+  var friendIdSearchInput = $('friendIdSearchInput');
+  var friendIdResult = $('friendIdResult');
+  var myFriendId = '';
+  var friendIdFound = null;
+  var friendIdAddPending = false;
+
+  function friendIdNotice(text) {
+    friendIdFound = null;
+    friendIdResult.classList.remove('hidden');
+    friendIdResult.classList.add('is-error');
+    friendIdResult.textContent = text || '';
+  }
+
+  socket.on('friend-id', function (data) {
+    if (!data || typeof data.friendId !== 'string' || !data.friendId) return;
+    myFriendId = data.friendId;
+    myFriendIdEl.textContent = data.friendId;
+    myFriendIdNote.classList.toggle('hidden', !data.temporary);
+    copyFriendIdBtn.disabled = false;
+    shareFriendIdBtn.disabled = false;
+  });
+
+  function copyText(text, done) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () { window.prompt('', text); });
+    } else {
+      window.prompt('', text);
+    }
+  }
+
+  copyFriendIdBtn.addEventListener('click', function () {
+    if (!myFriendId) return;
+    copyText(myFriendId, function () { friendIdNotice(t('friendIdCopied')); });
+  });
+
+  shareFriendIdBtn.addEventListener('click', function () {
+    if (!myFriendId) return;
+    var url = location.origin + '/add/' + encodeURIComponent(myFriendId);
+    var text = t('friendIdShareText', { id: myFriendId });
+    var fallback = function () { copyText(text + ' ' + url, function () { friendIdNotice(t('friendIdLinkCopied')); }); };
+    if (navigator.share) {
+      navigator.share({ title: 'TalkLive', text: text, url: url }).catch(function (e) {
+        if (!e || e.name !== 'AbortError') fallback();
+      });
+    } else {
+      fallback();
+    }
+  });
+
+  friendIdSearchForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var query = friendIdSearchInput.value.trim();
+    if (!query) return friendIdSearchInput.focus();
+    socket.emit('find-by-friend-id', { friendId: query });
+  });
+
+  function friendIdRelation(clientId) {
+    var has = function (list) { return list.some(function (p) { return p.clientId === clientId; }); };
+    if (has(friendsState.friends)) return 'friend';
+    if (has(friendsState.requests)) return 'incoming';
+    if (has(friendsState.sent)) return 'pending';
+    return 'stranger';
+  }
+
+  function renderFriendIdResult() {
+    var user = friendIdFound;
+    if (!user) return;
+    var relation = friendIdRelation(user.clientId);
+    var action = relation === 'friend'
+      ? '<button type="button" class="btn btn-secondary" data-act="chat">' + escapeHtml(t('chat')) + '</button>'
+      : relation === 'pending'
+        ? '<button type="button" class="btn btn-secondary" disabled>' + escapeHtml(t('pending')) + '</button>'
+        : '<button type="button" class="btn btn-primary" data-act="add">' + escapeHtml(t('addFriend')) + '</button>';
+    var sub = [user.friendId, user.temporary ? t('friendIdGuest') : '', user.online ? t('online') : '']
+      .filter(Boolean).join(' · ');
+    friendIdResult.classList.remove('hidden', 'is-error');
+    friendIdResult.innerHTML = '<span class="friend-id-result-who"><strong>' + getFlagImg(user.countryCode) + ' '
+      + escapeHtml(user.username) + '</strong><small>' + escapeHtml(sub) + '</small></span>' + action;
+  }
+
+  socket.on('find-by-friend-id-result', function (res) {
+    if (!res || !res.ok || !res.user) return friendIdNotice((res && res.error) || '');
+    friendIdFound = res.user;
+    renderFriendIdResult();
+  });
+
+  friendIdResult.addEventListener('click', function (e) {
+    var btn = e.target.closest('button[data-act]');
+    if (!btn || !friendIdFound) return;
+    if (btn.dataset.act === 'chat') {
+      var friend = friendsState.friends.filter(function (f) { return f.clientId === friendIdFound.clientId; })[0];
+      if (friend) openFriendChat(friend);
+      return;
+    }
+    btn.disabled = true;
+    friendIdAddPending = true;
+    socket.emit('friend-request', { targetClientId: friendIdFound.clientId, friendId: friendIdFound.friendId });
+  });
+
+  socket.on('friend-request-result', function (res) {
+    if (!friendIdAddPending || !friendIdFound) return;
+    friendIdAddPending = false;
+    if (res && !res.ok && res.error) {
+      renderFriendIdResult();
+      var note = document.createElement('small');
+      note.className = 'friend-id-note';
+      note.textContent = res.error;
+      friendIdResult.querySelector('.friend-id-result-who').appendChild(note);
+      return;
+    }
+    renderFriendIdResult();
   });
   // Live badge updates: message notifications arrive alone (friend-request
   // ones come with a full state-sync), so track them locally too.
   socket.on('notification', function (n) {
     if (!n) return;
-    if (n.type === 'message' && n.fromClientId === activeFriendChatId) return; // already reading it
+    if (n.type === 'message' && friendChatOnScreen(n.fromClientId)) return; // already reading it
     friendsState.notifications.push(n);
     var who = friendLabel(findPerson(n.fromClientId || n.byClientId)) || n.username || t('someone');
     // A conversation muted on either page stays quiet on both.
@@ -1793,6 +1929,7 @@
     var el = document.createElement('div');
     el.className = 'msg ' + who;
     el.dataset.ts = String(ts);
+    if (meta && meta.id) el.dataset.cxId = meta.id;
     if (text) {
       var body = document.createElement('span');
       body.className = 'msg-text';
@@ -1824,18 +1961,7 @@
     input: friendChatInput,
     messages: friendChatMsgs,
     msgSelector: '.msg',
-    send: function (payload) {
-      if (!activeFriendChatId) return false;
-      if (!payload.text && !payload.gif) return false;
-      socket.emit('friend-message', {
-        toClientId: activeFriendChatId,
-        text: (payload.text || '').slice(0, 1000),
-        id: payload.id,
-        replyTo: payload.replyTo,
-        gif: payload.gif,
-      });
-      return true;
-    },
+    send: function (payload) { return sendFriendMessage(payload); },
     react: function (id, emoji, on) {
       if (!activeFriendChatId) return;
       socket.emit('friend-reaction', { toClientId: activeFriendChatId, id: id, emoji: emoji, on: on });
@@ -1844,6 +1970,143 @@
       if (activeFriendChatId) socket.emit('friend-message-delete', { toClientId: activeFriendChatId, id: id });
     },
   }) : null;
+
+  // --- Sending: shown at once, settled by the server -------------------------
+  // A direct message appears the instant it is sent, faded while on its way,
+  // and is settled by 'friend-message-sent'. One that never gets there is
+  // marked "Not sent" with a retry instead of vanishing, and anything still
+  // waiting goes again once the socket registers (the server stores an id once).
+  var friendOutbox = {}; // id -> { toClientId, payload, tries, timer }
+  var FRIEND_SEND_TIMEOUT_MS = 12000;
+  var FRIEND_SEND_MAX_TRIES = 5;
+  var friendDrafts = {}; // clientId -> unsent text
+
+  function msgNode(id) {
+    if (!id) return null;
+    return friendChatMsgs.querySelector('[data-cx-id="' + (window.CSS && CSS.escape ? CSS.escape(id) : id) + '"]');
+  }
+  function paintOutboxState(id, state) {
+    var node = msgNode(id);
+    if (!node) return;
+    node.classList.toggle('is-pending', state === 'pending');
+    node.classList.toggle('is-failed', state === 'failed');
+    var retry = node.nextElementSibling;
+    if (retry && retry.classList.contains('msg-retry')) retry.remove();
+    if (state === 'failed') {
+      retry = document.createElement('button');
+      retry.type = 'button';
+      retry.className = 'msg-retry';
+      retry.setAttribute('data-retry-id', id);
+      retry.textContent = t('msgNotSentRetry');
+      node.parentNode.insertBefore(retry, node.nextSibling);
+    }
+  }
+  function emitOutbox(id) {
+    var entry = friendOutbox[id];
+    if (!entry) return;
+    entry.tries += 1;
+    entry.failed = false;
+    clearTimeout(entry.timer);
+    entry.timer = setTimeout(function () {
+      if (!friendOutbox[id]) return;
+      friendOutbox[id].failed = true;
+      paintOutboxState(id, 'failed');
+    }, FRIEND_SEND_TIMEOUT_MS);
+    var wire = { toClientId: entry.toClientId };
+    for (var k in entry.payload) wire[k] = entry.payload[k];
+    socket.emit('friend-message', wire);
+  }
+  function retryFriendMessage(id) {
+    if (!friendOutbox[id]) return;
+    friendOutbox[id].tries = 0;
+    paintOutboxState(id, 'pending');
+    emitOutbox(id);
+  }
+  function settleFriendMessage(id) {
+    var entry = friendOutbox[id];
+    if (!entry) return;
+    clearTimeout(entry.timer);
+    delete friendOutbox[id];
+    paintOutboxState(id, 'sent');
+  }
+  // Refused for good: take the bubble back and give the text back to the
+  // composer, so a link or a typo can be fixed rather than retyped.
+  function dropFriendMessage(id) {
+    var entry = friendOutbox[id];
+    if (!entry) return;
+    clearTimeout(entry.timer);
+    delete friendOutbox[id];
+    var node = msgNode(id);
+    if (node) {
+      var retry = node.nextElementSibling;
+      if (retry && retry.classList.contains('msg-retry')) retry.remove();
+      if (friendExtras) friendExtras.forget(id);
+      node.remove();
+    }
+    if (entry.toClientId === activeFriendChatId && !friendChatInput.value && entry.payload.text) {
+      friendChatInput.value = entry.payload.text;
+      friendDrafts[entry.toClientId] = entry.payload.text;
+    }
+  }
+  friendChatMsgs.addEventListener('click', function (e) {
+    var retry = e.target.closest && e.target.closest('.msg-retry');
+    if (retry) retryFriendMessage(retry.getAttribute('data-retry-id'));
+  });
+
+  function sendFriendMessage(payload) {
+    var toClientId = activeFriendChatId;
+    var text = (payload.text || '').slice(0, 1000);
+    if (!toClientId || (!text && !payload.gif)) return false;
+    if (text && LINK_RE.test(text)) { friendSystemNote(t('chatLinkBlocked')); return false; }
+    if (text && UNSAFE_RE.test(text)) { friendSystemNote(t('errUnsafeMessage')); return false; }
+    var id = payload.id || ('m' + Math.random().toString(36).slice(2, 10));
+    var wire = { text: text, id: id, replyTo: payload.replyTo || null, gif: payload.gif || null };
+    var ts = Date.now();
+    appendFriendMsg(text, 'me', { id: id, replyTo: wire.replyTo, gif: wire.gif, ts: ts });
+    paintOutboxState(id, 'pending');
+    friendOutbox[id] = { toClientId: toClientId, payload: wire, tries: 0, timer: null };
+    delete friendDrafts[toClientId];
+    noteLastMessage(toClientId, { id: id, mine: true, text: text, gif: !!wire.gif, ts: ts });
+    renderFriends();
+    renderHistory();
+    emitOutbox(id);
+    return true;
+  }
+
+  function friendSystemNote(text) {
+    var el = document.createElement('div');
+    el.className = 'msg system';
+    el.textContent = text;
+    friendChatMsgs.appendChild(el);
+    friendChatMsgs.scrollTop = friendChatMsgs.scrollHeight;
+  }
+
+  // Whether this conversation is in front of the user: open, in a tab being
+  // looked at. A chat left open in a background tab used to send "Seen" for
+  // messages nobody had read.
+  function friendChatOnScreen(clientId) {
+    return !!clientId && clientId === activeFriendChatId
+      && friendChatPanel.classList.contains('open')
+      && document.visibilityState === 'visible';
+  }
+  function markActiveChatRead(always) {
+    var id = activeFriendChatId;
+    if (!friendChatOnScreen(id)) return;
+    var unread = friendsState.notifications.some(function (n) {
+      return n.type === 'message' && n.fromClientId === id;
+    });
+    if (!always && !unread) return;
+    socket.emit('mark-messages-read', { friendClientId: id });
+    if (messageSeenEnabled) socket.emit('chat-seen', { friendClientId: id });
+    if (unread) {
+      friendsState.notifications = friendsState.notifications.filter(function (n) {
+        return !(n.type === 'message' && n.fromClientId === id);
+      });
+      renderFriends();
+      renderHistory();
+    }
+  }
+  document.addEventListener('visibilitychange', function () { markActiveChatRead(false); });
 
   // --- Header status: typing / online / last seen --------------------------
   var friendChatStatus = $('friendChatStatus');
@@ -1870,6 +2133,10 @@
   });
   var friendTypingAt = 0;
   friendChatInput.addEventListener('input', function () {
+    if (activeFriendChatId) {
+      if (friendChatInput.value.trim()) friendDrafts[activeFriendChatId] = friendChatInput.value;
+      else delete friendDrafts[activeFriendChatId];
+    }
     if (!activeFriendChatId || !friendChatInput.value) return;
     var now = Date.now();
     if (now - friendTypingAt < 2000) return;
@@ -1893,6 +2160,9 @@
 
   function openFriendChat(friend) {
     activeFriendChatId = friend.clientId;
+    // Each conversation keeps its own unsent text: it used to stay in the box
+    // when another chat was opened, and went to the wrong person.
+    friendChatInput.value = friendDrafts[friend.clientId] || '';
     $('friendChatTitle').textContent = friendLabel(friend)
       ? t('chatWith', { name: friendLabel(friend) })
       : t('chat');
@@ -1957,8 +2227,8 @@
     if (!text || !activeFriendChatId) return;
     if (friendExtras) {
       if (friendExtras.compose(text) === false) return;
-    } else {
-      socket.emit('friend-message', { toClientId: activeFriendChatId, text: text.slice(0, 1000) });
+    } else if (sendFriendMessage({ text: text }) === false) {
+      return;
     }
     friendChatInput.value = '';
     friendChatInput.focus();
@@ -1968,11 +2238,21 @@
     if (!data || data.friendClientId !== activeFriendChatId) return;
     friendChatMsgs.innerHTML = '';
     if (friendExtras) friendExtras.reset();
+    var stored = {};
     (data.messages || []).forEach(function (m) {
+      stored[m.id] = true;
       appendFriendMsg(m.text, m.from === activeFriendChatId ? 'them' : 'me', m);
       if (m.seen && m.from !== activeFriendChatId) {
         friendSeenTs[activeFriendChatId] = Math.max(friendSeenTs[activeFriendChatId] || 0, m.ts || Date.now());
       }
+    });
+    // Messages still on their way are not in the server's copy yet - keep them.
+    Object.keys(friendOutbox).forEach(function (id) {
+      var entry = friendOutbox[id];
+      if (entry.toClientId !== activeFriendChatId) return;
+      if (stored[id]) { settleFriendMessage(id); return; }
+      appendFriendMsg(entry.payload.text, 'me', { id: id, replyTo: entry.payload.replyTo, gif: entry.payload.gif });
+      paintOutboxState(id, entry.failed ? 'failed' : 'pending');
     });
     renderSeenLabel();
   });
@@ -1980,7 +2260,9 @@
     return !!(id && friendChatMsgs.querySelector('[data-cx-id="' + (window.CSS && CSS.escape ? CSS.escape(id) : id) + '"]'));
   }
   socket.on('friend-message-sent', function (data) {
-    if (!data || (data.toClientId === activeFriendChatId && onScreen(data.id))) return;
+    if (!data) return;
+    settleFriendMessage(data.id);
+    if (data.toClientId === activeFriendChatId && onScreen(data.id)) return;
     noteLastMessage(data.toClientId, { id: data.id, mine: true, text: data.text || '', gif: !!data.gif, ts: data.ts });
     if (data.toClientId === activeFriendChatId) appendFriendMsg(data.text, 'me', data);
     renderFriends();
@@ -1994,8 +2276,7 @@
     if (data.fromClientId === activeFriendChatId) {
       appendFriendMsg(data.text, 'them', data);
       soundReceive();
-      socket.emit('mark-messages-read', { friendClientId: data.fromClientId });
-      if (messageSeenEnabled) socket.emit('chat-seen', { friendClientId: data.fromClientId });
+      markActiveChatRead(true);
     }
     // Badges refresh via the state-sync the server sends with the notification.
   });
@@ -2021,6 +2302,7 @@
   // sat in the search view forever on a search the server had never heard of.
   socket.on('connect', function () {
     register();
+    if (sessionToken) socket.emit('resume-session', { token: sessionToken });
     socketConnected = true;
     refreshNetStatus();
     // Clearing the ack is what restarts the search: the watchdog re-sends
@@ -2052,6 +2334,40 @@
   });
 
   socket.on('needs-register', register);
+
+  socket.on('resume-session-result', function (res) {
+    if (!res) return;
+    if (!res.ok) {
+      // Expired or revoked: stop pretending to be signed in, as the call app does.
+      sessionToken = null;
+      accountNickname = null;
+      localStorage.removeItem('talklive_session');
+      localStorage.removeItem('talklive_nickname');
+      renderSettingsProfileRow();
+      return;
+    }
+    // Signed in on another device first: take on the account's profile (its
+    // friends and chats), once, exactly like the call app.
+    if (res.profileClientId && res.profileClientId !== getClientId()) {
+      var reloaded = false;
+      try { reloaded = sessionStorage.getItem('talklive_profile_adopted') === '1'; } catch (e) { /* private mode */ }
+      if (!reloaded) {
+        try { sessionStorage.setItem('talklive_profile_adopted', '1'); } catch (e) { /* private mode */ }
+        localStorage.setItem('talklive_client_id', res.profileClientId);
+        if (res.identityToken) localStorage.setItem('talklive_identity_token', res.identityToken);
+        else localStorage.removeItem('talklive_identity_token');
+        localStorage.removeItem('talklive_profile_created');
+        location.reload();
+        return;
+      }
+    }
+    if (res.nickname && res.nickname !== accountNickname) {
+      accountNickname = res.nickname;
+      localStorage.setItem('talklive_nickname', res.nickname);
+      register();
+    }
+    renderSettingsProfileRow();
+  });
 
   socket.on('identity-token', function (data) {
     if (data && data.clientId === getClientId() && typeof data.token === 'string'
@@ -2092,6 +2408,12 @@
     if (!res || res.ok !== false) {
       identityRetries = 0;
       if (document.visibilityState === 'hidden') reportVisibility();
+      // Re-registered after a drop: anything still unacknowledged goes again.
+      Object.keys(friendOutbox).forEach(function (id) {
+        friendOutbox[id].tries = 0;
+        paintOutboxState(id, 'pending');
+        emitOutbox(id);
+      });
       return;
     }
     if (res.reason === 'active-elsewhere') {
@@ -2225,6 +2547,17 @@
 
   socket.on('chat-blocked', function (data) {
     var reason = data && data.reason;
+    if (data && data.scope === 'friend' && data.id && friendOutbox[data.id]) {
+      var entry = friendOutbox[data.id];
+      // Too fast, usually a backlog flushed on reconnect: wait and go again.
+      if (reason === 'rate' && entry.tries < FRIEND_SEND_MAX_TRIES) {
+        clearTimeout(entry.timer);
+        entry.timer = setTimeout(function () { emitOutbox(data.id); }, 2500 * entry.tries);
+        return;
+      }
+      dropFriendMessage(data.id);
+      if (data.toClientId !== activeFriendChatId) return;
+    }
     var text = reason === 'link' ? t('chatLinkBlocked')
       : reason === 'rate' ? t('errSlowDown')
       : reason === 'unreachable' ? t('errCantMessage')

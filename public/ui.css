@@ -3723,7 +3723,7 @@
 #historyList > .tl-empty::before,
 #historyList > .list-empty::before { background-image: url("/illustrations/online-friends.svg"); }
 
-/* Friends: pin / mute glyphs, the list filter, unconfirmed messages. */
+/* Friends: pin / mute glyphs and the list filter. */
 .friend-flag-icon { width: 13px; height: 13px; flex: 0 0 auto; color: var(--muted); }
 .chat-mute-btn .friend-flag-icon { width: 19px; height: 19px; color: inherit; }
 .chat-mute-btn:hover { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
@@ -3732,4 +3732,3 @@
 .friends-search.hidden { display: none; }
 .friends-search-input { width: 100%; box-sizing: border-box; padding: 9px 14px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--muted) 35%, transparent); background: transparent; color: inherit; font: inherit; font-size: 14px; }
 .friends-search-input:focus { outline: none; border-color: var(--accent); }
-.chat-msg.is-pending { opacity: .55; }
