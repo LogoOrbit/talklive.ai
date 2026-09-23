@@ -690,6 +690,20 @@ function presenceText(p) {
   return t('offline');
 }
 
+// When a list row last had news, the way a messenger's inbox says it: the
+// time today, "Yesterday", a weekday within the week, a date beyond that.
+function rowStamp(ts) {
+  const T = window.TalkLiveTime;
+  if (!ts || !T) return '';
+  const days = Math.round((new Date().setHours(0, 0, 0, 0) - new Date(ts).setHours(0, 0, 0, 0)) / 86400000);
+  if (days <= 0) return T.time(ts);
+  if (days < 7) {
+    if (days === 1) return T.day(ts);
+    try { return new Intl.DateTimeFormat(document.documentElement.lang || undefined, { weekday: 'short' }).format(ts); } catch (_) { return T.day(ts); }
+  }
+  try { return new Intl.DateTimeFormat(document.documentElement.lang || undefined, { month: 'short', day: 'numeric' }).format(ts); } catch (_) { return T.day(ts); }
+}
+
 // One line of the newest message in a conversation, for list rows.
 function previewText(last) {
   if (!last) return '';
@@ -1611,7 +1625,10 @@ function renderFriendIdResult() {
     ? `<button type="button" class="btn btn-secondary" data-act="chat">${escapeHtml(t('chat'))}</button>`
     : relation === 'pending'
       ? `<button type="button" class="btn btn-secondary" disabled>${escapeHtml(t('pending'))}</button>`
-      : `<button type="button" class="btn btn-primary" data-act="add">${escapeHtml(t('addFriend'))}</button>`;
+      // They already asked this user: the answer is one tap, not a second ask.
+      : relation === 'incoming'
+        ? `<button type="button" class="btn btn-primary" data-act="accept">${escapeHtml(t('accept'))}</button>`
+        : `<button type="button" class="btn btn-primary" data-act="add">${escapeHtml(t('addFriend'))}</button>`;
   const sub = [user.friendId, user.temporary ? t('friendIdGuest') : '', user.online ? t('online') : '']
     .filter(Boolean).join(' · ');
   friendIdResult.classList.remove('hidden', 'is-error');
@@ -1635,7 +1652,13 @@ friendIdResult.addEventListener('click', (e) => {
   const btn = e.target.closest('button[data-act]');
   if (!btn || !friendIdFound) return;
   if (btn.dataset.act === 'chat') {
-    openUserProfile(personById(friendIdFound.clientId, friendIdFound));
+    // The button says Chat, so it opens the chat - not the profile sheet.
+    openFriendChat(friendIdFound.clientId);
+    return;
+  }
+  if (btn.dataset.act === 'accept') {
+    btn.disabled = true;
+    socket.emit('friend-request-respond', { fromClientId: friendIdFound.clientId, accept: true });
     return;
   }
   btn.disabled = true;
@@ -3142,14 +3165,25 @@ function renderFriendsList() {
     const typing = typingFrom.has(f.clientId);
     const preview = typing ? t('friendTyping') : previewText(f.last);
     const item = document.createElement('div');
-    item.className = 'friend-item' + (f.pinned ? ' is-pinned' : '');
+    item.className = 'friend-item' + (unread > 0 ? ' has-unread' : '') + (f.pinned ? ' is-pinned' : '');
+    // Laid out like a messenger inbox: presence rides on the avatar, the name
+    // shares its line with when they last spoke, and the second line is the
+    // conversation itself - or, before there is one, where they are.
+    const stamp = f.last && f.last.ts ? rowStamp(f.last.ts) : '';
+    const second = preview
+      ? `<span class="friend-item-preview${unread > 0 ? ' is-unread' : ''}${typing ? ' is-typing' : ''}">${escapeHtml(preview)}</span>`
+      : `<span class="friend-status-text ${f.online ? 'is-online' : 'is-offline'}">${escapeHtml(presenceText(f))}</span>`;
     item.innerHTML = `
-      <button type="button" class="friend-avatar-btn" data-id="${escapeHtml(f.clientId)}" title="${escapeHtml(t('profile'))}" aria-label="${escapeHtml(t('profile'))}">${genderIcon(f.avatar, 30)}</button>
-      <div class="friend-item-info friend-row-main" data-id="${escapeHtml(f.clientId)}">
-        <span class="friend-item-name">${getFlagImg(f.countryCode)} ${escapeHtml(friendLabel(f))}${f.pinned ? PIN_SVG : ''}${mutedIds.has(f.clientId) ? MUTE_SVG : ''}</span>
-        <span class="friend-status-text ${f.online ? 'is-online' : 'is-offline'}">${escapeHtml(presenceText(f))}</span>
-        ${unread > 0 ? `<span class="unread-badge">${unread}</span>` : ''}
-        ${preview ? `<span class="friend-item-preview${unread > 0 ? ' is-unread' : ''}${typing ? ' is-typing' : ''}">${escapeHtml(preview)}</span>` : ''}
+      <button type="button" class="friend-avatar-btn" data-id="${escapeHtml(f.clientId)}" title="${escapeHtml(t('profile'))}" aria-label="${escapeHtml(t('profile'))}">${genderIcon(f.avatar, 30)}<span class="friend-presence-dot${f.online ? ' is-online' : ''}" aria-hidden="true"></span></button>
+      <div class="friend-item-info friend-row-main" data-id="${escapeHtml(f.clientId)}" role="button" tabindex="0" aria-label="${escapeHtml(t('chatWith', { name: friendLabel(f) }))}${f.online ? ' - ' + escapeHtml(t('online')) : ''}">
+        <span class="friend-item-line">
+          <span class="friend-item-name">${getFlagImg(f.countryCode)} <span class="friend-item-label">${escapeHtml(friendLabel(f))}</span>${f.pinned ? PIN_SVG : ''}${mutedIds.has(f.clientId) ? MUTE_SVG : ''}</span>
+          ${stamp ? `<span class="friend-item-time${unread > 0 ? ' is-unread' : ''}">${escapeHtml(stamp)}</span>` : ''}
+        </span>
+        <span class="friend-item-line">
+          ${second}
+          ${unread > 0 ? `<span class="unread-badge">${unread > 99 ? '99+' : unread}</span>` : ''}
+        </span>
       </div>
       <button type="button" class="friend-msg-btn" data-id="${escapeHtml(f.clientId)}" title="${escapeHtml(t('chat'))}" aria-label="${escapeHtml(t('chat'))}">
         ${ICONS.chat}
@@ -3190,6 +3224,14 @@ friendsList.addEventListener('click', (e) => {
   } else if (rowMain) {
     openFriendChat(rowMain.dataset.id);
   }
+});
+
+friendsList.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const rowMain = e.target.closest('.friend-row-main');
+  if (!rowMain) return;
+  e.preventDefault();
+  openFriendChat(rowMain.dataset.id);
 });
 
 // Turn a friend's call button into its offline (greyed, red-dotted) state and
@@ -3276,6 +3318,14 @@ function openUserProfile(person) {
   // friends-only, so the one person you most wanted gone after a bad call
   // could only be reported, never simply blocked.
   friendProfileChatBtn.classList.toggle('hidden', !canMessage(person.clientId) && !inCallWith(person.clientId));
+  // Calling: any friend (an offline one can be asked for later from the call
+  // screen), or a recent match who is here right now. Never the person this
+  // user is already on a call with.
+  if (friendProfileCallBtn) {
+    const callable = !inCallWith(person.clientId)
+      && (relation === 'friend' || (online && canMessage(person.clientId)));
+    friendProfileCallBtn.classList.toggle('hidden', !callable);
+  }
   friendProfileRenameBtn.classList.toggle('hidden', relation !== 'friend');
   renderProfilePinBtn(relation === 'friend' ? friend : null);
   friendProfileRemoveBtn.classList.toggle('hidden', relation !== 'friend');
@@ -3368,6 +3418,17 @@ function openFriendProfile(friendClientId) {
 }
 
 closeFriendProfileBtn.addEventListener('click', () => closeSidePanel(friendProfileModal, friendProfileOverlay));
+
+const friendProfileCallBtn = document.getElementById('friendProfileCallBtn');
+if (friendProfileCallBtn) {
+  friendProfileCallBtn.addEventListener('click', () => {
+    const id = activeProfileFriendId;
+    if (!id) return;
+    const person = personById(id);
+    closeSidePanel(friendProfileModal, friendProfileOverlay);
+    requestCallBack(id, labelForClientId(id, person.username) || t('stranger'));
+  });
+}
 
 friendProfileChatBtn.addEventListener('click', () => {
   if (!activeProfileFriendId) return;
@@ -3486,6 +3547,7 @@ friendProfileReportBtn.addEventListener('click', async () => {
   if (!ok || !activeProfileFriendId) return;
   // Reporting someone you are not in a call with: the server records it and
   // blocks the pair, same as an in-call report, without touching any call.
+  hangUpOn(activeProfileFriendId);
   socket.emit('report-user', { targetClientId: activeProfileFriendId, reason: 'profile' });
   closeSidePanel(friendProfileModal, friendProfileOverlay);
   showToast(t('reportUserSent'));
@@ -3497,6 +3559,7 @@ friendProfileBlockBtn.addEventListener('click', async () => {
   const wasFriend = relationTo(target) === 'friend';
   const ok = await showConfirm({ title: 'block', text: wasFriend ? 'confirmBlockFriend' : 'confirmBlockUser', okKey: 'block' });
   if (!ok) return;
+  hangUpOn(target);
   socket.emit('block-friend', { friendClientId: target });
   closeSidePanel(friendProfileModal, friendProfileOverlay);
   // A chat with them may still be open behind the sheet; it is dead now.
@@ -3518,6 +3581,16 @@ if (friendProfileCancelBtn) {
     activeProfileRelation = 'stranger';
     friendProfileStatus.innerHTML = `<span class="friend-relation-text">${escapeHtml(t('profileRelation_stranger'))}</span>`;
   });
+}
+
+// Blocking or reporting the person on the other end of a live call ends it
+// here too; the server has already cut the pairing, so the call screen must
+// not sit on "connected" to nobody.
+function hangUpOn(clientId) {
+  if (!clientId || !currentPartner || currentPartner.clientId !== clientId) return;
+  if (callState === 'idle') return;
+  socket.emit('leave');
+  goIdleOnCallScreen('statusYouLeft');
 }
 
 // Take back a request nobody has answered yet. Painted now; the state-sync
@@ -4147,12 +4220,30 @@ if (friendChatClearBtn) {
   });
 }
 
+// Call from inside the conversation, as any messenger offers: friends
+// always, a recent match only while they are here.
+const friendChatCallBtn = document.getElementById('friendChatCallBtn');
+if (friendChatCallBtn) {
+  friendChatCallBtn.addEventListener('click', () => {
+    const id = activeFriendChatId;
+    if (!id) return;
+    const person = personById(id);
+    closeSidePanel(friendChatModal, friendChatOverlay);
+    activeFriendChatId = null;
+    requestCallBack(id, labelForClientId(id, person.username) || t('stranger'));
+  });
+}
+
 // The line under the chat title: "typing…", "Online" or "Last seen 5m ago".
 const friendChatStatus = document.getElementById('friendChatStatus');
 function renderFriendChatStatus() {
   if (!friendChatStatus) return;
   const id = activeFriendChatId;
   const person = id && (friendsData.find((f) => f.clientId === id) || serverHistory.find((h) => h.clientId === id));
+  if (friendChatCallBtn) {
+    const isFriend = !!id && friendsData.some((f) => f.clientId === id);
+    friendChatCallBtn.classList.toggle('hidden', !id || inCallWith(id) || !(isFriend || (person && person.online)));
+  }
   const typing = !!id && typingFrom.has(id);
   friendChatStatus.textContent = typing ? t('friendTyping') : presenceText(person);
   friendChatStatus.classList.toggle('is-online', !typing && !!(person && person.online));

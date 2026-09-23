@@ -53,7 +53,7 @@
      system face a beat later. Only the latin subset is preloaded - latin-ext
      is fetched on demand by the unicode-range in style.css. -->
 <link rel="preload" as="font" type="font/woff2" href="/fonts/plus-jakarta-sans-latin.woff2?v=20260922type" crossorigin />
-<link rel="stylesheet" href="style.css?v=20260923friendid2" />
+<link rel="stylesheet" href="style.css?v=20260923social5" />
 <link rel="stylesheet" href="chat-extras.css?v=20260922social2" />
 <link rel="stylesheet" href="games.css?v=20260916settings" />
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
@@ -491,6 +491,12 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a7.5 7.5 0 0 1-11 6.6L4 20l1.4-4.6A7.5 7.5 0 1 1 20 12z"/></svg>
               <span data-i18n="chat">Chat</span>
             </button>
+            <!-- Ring them straight from their profile - friends, and recent
+                 people who are online. Same call-back as the list's button. -->
+            <button type="button" id="friendProfileCallBtn" class="btn btn-secondary profile-call-btn hidden">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+              <span data-i18n="call">Call</span>
+            </button>
             <!-- Not-a-friend actions. Which of these is shown depends on where
                  the two of you stand (see openUserProfile): ask, wait, or
                  answer someone else's ask. -->
@@ -544,6 +550,9 @@
           <span id="friendChatStatus" class="chat-head-status" aria-live="polite"></span>
         </div>
         <div class="chat-header-actions">
+          <button type="button" id="friendChatCallBtn" class="chat-clear-btn chat-call-btn hidden" data-i18n-title="call" title="Call" data-i18n-aria="call" aria-label="Call">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+          </button>
           <button type="button" id="chatSeenToggleBtn" class="seen-toggle" aria-pressed="true" data-i18n-title="messageSeen" title="Read receipts (Seen)" data-i18n-aria="readReceipts" aria-label="Read Receipts">
             <svg class="seen-toggle-ticks" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1.5 12.5 5.5 16.5 13 8"/><polyline points="10.5 14.5 12.5 16.5 22 6"/></svg>
             <span class="seen-toggle-label" data-i18n="readReceipts">Read Receipts</span>
@@ -2639,7 +2648,7 @@
   </script>
   <script defer src="chat-extras.js?v=20260922social2"></script>
   <script defer src="games.js?v=20260916settings"></script>
-  <script defer src="app.js?v=20260923social4"></script>
+  <script defer src="app.js?v=20260923social5"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

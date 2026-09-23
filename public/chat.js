@@ -1569,7 +1569,9 @@
     showCountOutsidePage(badgeCount);
 
     setTabCount(friendsTabCount, friendsState.friends.length);
-    setTabCount(requestsTabCount, friendsState.requests.length + friendsState.sent.length);
+    // Red means waiting on you, as in the call app. Requests this user sent
+    // are waiting on someone else: listed below, never counted as an alert.
+    setTabCount(requestsTabCount, friendsState.requests.length);
     renderSentRequests();
 
     // Each list says what it is and how many are in it. Without the headings a
@@ -2214,6 +2216,11 @@
         return;
       }
       disarmBlock();
+      // Blocking the stranger in the live chat ends that chat too.
+      if (partnerHere && currentPartner && currentPartner.clientId === target) {
+        socket.emit('leave');
+        onPartnerLeft({ reason: 'blocked' });
+      }
       socket.emit('block-friend', { friendClientId: target });
       closeFriendChat();
       socialToast(t('userBlocked'));
@@ -2575,7 +2582,8 @@
     addMessage(text, 'system');
   });
 
-  socket.on('partner-left', function (info) {
+  socket.on('partner-left', onPartnerLeft);
+  function onPartnerLeft(info) {
     var reason = info && info.reason;
     var name = (info && info.username) || (currentPartner && currentPartner.username) || t('stranger');
     partnerHere = false;
@@ -2593,7 +2601,12 @@
     if (topbar) topbar.classList.remove('connected');
     input.disabled = true;
     closeModal(callIncomingModal);
-    if (reason === 'away') {
+    if (reason === 'blocked') {
+      // This user blocked the person they were chatting with, from the
+      // friends panel. Stay put rather than searching on: they may want to
+      // report, or simply take a breath.
+      addMessage(t('userBlocked'), 'system system-warn');
+    } else if (reason === 'away') {
       // We were the one who left the app for too long. Not auto-searching: a
       // match made while nobody is looking would just leave the next stranger
       // waiting the same way.
@@ -2606,7 +2619,7 @@
     } else {
       addMessage(reason === 'disconnected' ? t('chatPartnerDropped', { name: name }) : t('chatStageLeft'), 'system system-warn');
     }
-  });
+  }
   // (The input is re-enabled at the top of the 'matched' handler above, where
   // it happens before the focus call rather than after it.)
 
