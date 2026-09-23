@@ -3464,14 +3464,10 @@
   }
 }
 
-/* RTL slides sideways by default; a sheet has no side to come from, so the
-   direction rules have nothing to flip here. */
+/* RTL slides sideways by default; the chat comes up from the bottom at every
+   width, so the direction rules have nothing to flip here. */
 [dir="rtl"] .side-panel.chat-side-panel { transform: translateY(100%); }
 [dir="rtl"] .side-panel.chat-side-panel.open { transform: translateY(0); }
-@media (min-width: 860px) {
-  [dir="rtl"] .side-panel.chat-side-panel { transform: translateX(-100%); }
-  [dir="rtl"] .side-panel.chat-side-panel.open { transform: translateX(0); }
-}
 
 @media (prefers-reduced-motion: reduce) {
   .side-panel.chat-side-panel { transition: none; }

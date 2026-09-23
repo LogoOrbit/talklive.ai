@@ -1146,8 +1146,8 @@ img { max-width: 100%; }
 .seen-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 8px 6px 12px;
+  gap: 6px;
+  padding: 5px 6px 5px 8px;
   border: 1px solid rgba(0, 212, 255, 0.35);
   border-radius: 999px;
   background: rgba(0, 212, 255, 0.1);
@@ -1191,11 +1191,9 @@ img { max-width: 100%; }
 .seen-toggle.is-off .seen-toggle-switch { background: rgba(138, 144, 168, 0.4); }
 .seen-toggle.is-off .seen-toggle-knob { transform: translateX(0); }
 
-/* Very narrow screens: drop the label, keep ticks + switch. */
-@media (max-width: 380px) {
-  .seen-toggle-label { display: none; }
-  .seen-toggle { padding: 6px 8px; }
-}
+/* The label crowded the name out of the header; ticks + switch say enough,
+   and the button keeps its aria-label and tooltip. */
+.seen-toggle-label { display: none; }
 .chat-header-actions { flex-shrink: 0; }
 
 /* Friend-chat bubbles pick up the call app's gradient so an added friend's
