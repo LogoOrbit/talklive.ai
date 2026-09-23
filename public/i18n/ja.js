@@ -40,6 +40,7 @@
   "confirmClearChat": "この会話を消去しますか？消えるのはあなたの側だけで、相手のコピーは残ります。",
   "chatCleared": "チャットを消去しました",
   "errCantMessage": "このメッセージは送信できませんでした。この人にはもうメッセージを送れません。",
+  "msgNotSentRetry": "送信できませんでした · タップして再試行",
   "someone": "誰か",
   "catBilling": "コインと支払い",
   "skipToContent": "メインコンテンツへスキップ",

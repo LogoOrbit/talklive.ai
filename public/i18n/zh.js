@@ -40,6 +40,7 @@
   "confirmClearChat": "清空这段对话？只会从你这边删除，对方仍保留自己的记录。",
   "chatCleared": "聊天已清空",
   "errCantMessage": "消息发送失败。你已无法再给这个人发消息。",
+  "msgNotSentRetry": "未发送 · 点按重试",
   "someone": "某人",
   "catBilling": "金币与账单",
   "skipToContent": "跳到主要内容",

@@ -40,6 +40,7 @@
   "confirmClearChat": "Limpar esta conversa? Ela é removida só para você; a outra pessoa mantém a cópia dela.",
   "chatCleared": "Conversa limpa",
   "errCantMessage": "Não foi possível enviar esta mensagem. Você não pode mais mandar mensagem para esta pessoa.",
+  "msgNotSentRetry": "Não enviada · Toque para tentar de novo",
   "someone": "Alguém",
   "catBilling": "Moedas e cobrança",
   "skipToContent": "Ir para o conteúdo principal",

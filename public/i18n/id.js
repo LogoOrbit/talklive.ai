@@ -40,6 +40,7 @@
   "confirmClearChat": "Hapus obrolan ini? Hanya terhapus untukmu, dia tetap menyimpan salinannya.",
   "chatCleared": "Obrolan dihapus",
   "errCantMessage": "Pesan ini tidak terkirim. Kamu tidak bisa lagi mengirim pesan ke orang ini.",
+  "msgNotSentRetry": "Tidak terkirim · Ketuk untuk coba lagi",
   "someone": "Seseorang",
   "catBilling": "Koin & Tagihan",
   "skipToContent": "Lompat ke konten utama",

@@ -84,6 +84,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "confirmClearChat": "Clear this conversation? It is removed for you only - they keep their copy.",
     "chatCleared": "Chat cleared",
     "errCantMessage": "This message could not be sent. You can no longer message this person.",
+    "msgNotSentRetry": "Not sent · Tap to retry",
     "someone": "Someone",
     "catBilling": "Coins & Billing",
     "skipToContent": "Skip to main content",
