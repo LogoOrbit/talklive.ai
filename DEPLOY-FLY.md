@@ -109,14 +109,16 @@ volume vanish from the app.
 
 So the app carries them up itself. On the first boot with `DATABASE_URL` set,
 if Postgres holds nothing and the volume still holds a real store, that file is
-copied into Postgres before the first request is served, read back to check it
-landed, and left exactly where it is - which makes it a free backup of the
-cutover. The boot log says so, and `backendStatus.seededFromFile` records it.
+copied into Postgres before the first request is served and read back to check
+it landed. The file then carries on as the live mirror (below), and the
+original is kept in `/data/backups` first. The boot log says so, and
+`backendStatus.seededFromFile` records it.
 
 It only ever runs in that one direction and only when there is nothing to lose:
 a populated database is never overwritten by a file, however stale, and a
-restart after a successful cutover does not seed again. An unreadable file is
-skipped, not used as a seed and not touched.
+restart after a successful cutover does not seed again. A file that is not
+valid JSON is never used as a seed; its bytes are moved aside, not
+overwritten.
 
 So the whole migration is: set `DATABASE_URL` on the app and restart it.
 
@@ -130,14 +132,38 @@ the other way round - from an exported file into a database that already has
 something in it. It refuses to write when the destination holds more than the
 source, and reads back what it wrote.
 
-**A database that is briefly unreachable never forks the data.** With
-`DATABASE_URL` set, the database is the only store; if it cannot be reached at
-boot the app keeps retrying and writes nothing anywhere until it answers.
-Earlier this fell back to the local JSON file, which meant existing users could
-not log in, signed up again, and were written to a file that the next
-successful boot silently discarded in favour of the database. Losing a few
-minutes of writes during an outage is a much smaller harm than two stores that
-each believe they are authoritative.
+### Two copies, always
+
+With `DATABASE_URL` set the store exists twice at every moment: the row in
+Postgres (off this machine) and a mirror at `/data/owner-data.json` (on this
+machine). Every save writes the mirror first and Postgres second, so the
+mirror is never behind. Losing either one - the volume, or the whole Supabase
+project - loses nobody's account.
+
+| What happens | What the store does |
+| --- | --- |
+| Database unreachable at boot | Serves the mirror and keeps saving to it; pushes it up automatically when the database answers. The site keeps working. |
+| Database has nothing, mirror has data | Copies the mirror up before serving (the cutover). |
+| Mirror is a later version of the database | Brings the database up to date. |
+| The two copies are different histories | Serves the database, keeps the other copy as `owner-data.conflict-<time>.json` and in `owner_store_history`, and reports a conflict. Nothing is overwritten. |
+| A second copy of the app writes to the database | Stops writing there, keeps saving to disk, reports it. Run one machine. |
+| A save suddenly drops 20%+ of accounts or chats | Keeps a copy of the state before it (on disk and in the database), then saves. Flagged in `backendStatus.lastShrink`. |
+
+Every save is stamped with `_meta` (a lineage id, a version number and the
+writing process), so which copy is newer is decided, never guessed.
+
+**Free Supabase projects have no backups you can restore.** So the database
+keeps its own: `owner_store_history` holds a snapshot every six hours (up to a
+week, sized to stay under 150MB) plus every conflict and pre-drop copy for 90
+days. To restore one:
+
+```sql
+UPDATE owner_store SET doc = (SELECT doc FROM owner_store_history WHERE id = <id>), updated_at = now() WHERE id = 1;
+```
+
+then restart the app. Use the **Session pooler** connection string for
+`DATABASE_URL` (Supabase -> Connect -> Direct -> Session pooler); the direct
+`db.<ref>.supabase.co` address needs IPv6 and may not be reachable from Fly.
 
 ## 4. Set secrets
 

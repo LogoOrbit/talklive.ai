@@ -33,6 +33,9 @@ function inStore(dir, body, env = {}) {
     (async () => {
       await store.ready;
       ${body}
+      // An idle database pool keeps a process alive for its idle timeout;
+      // the snippet is done, so leave now rather than wait it out.
+      process.exit(0);
     })().catch((e) => { console.error('THREW', e.message); process.exit(3); });
   `;
   return execFileSync(process.execPath, ['-e', src], {
@@ -195,6 +198,27 @@ function accountsOf(file) {
   ok('nothing is written to the local file while the database is down', !fs.existsSync(DATA(dir)), fs.readdirSync(dir));
 }
 
+// --- 6b. A database outage keeps the site saving, on the mirror --------------
+//
+// The mirror is written before Postgres on every save, so it is never older
+// than the database. When the database cannot be reached, the app serves the
+// mirror and keeps saving to it rather than losing everything done meanwhile.
+{
+  const dir = tmpDir();
+  seed(dir);
+  const out = inStore(dir, `
+    store.saveAccount('carol', { passwordHash: 'z', salt: 'w', nickname: 'Carol', createdAt: 3 });
+    store.persistNow();
+    console.log(JSON.stringify({ mode: store.backendStatus.mode, accounts: Object.keys(store.data.accounts) }));
+  `, { DATABASE_URL: 'postgres://u:p@127.0.0.1:1/db' });
+  const got = JSON.parse(out.trim().split('\n').pop());
+  ok('an outage serves the copy on the volume', got.mode === 'postgres-offline' && got.accounts.includes('ada'), got);
+  ok('and existing users are all still there', got.accounts.includes('ada'), got);
+  const doc = JSON.parse(fs.readFileSync(DATA(dir), 'utf8'));
+  ok('and new accounts made during the outage are saved to disk', !!doc.accounts.carol, Object.keys(doc.accounts));
+  ok('and the saved copy carries a version stamp', !!(doc._meta && doc._meta.lineage && doc._meta.rev >= 1), doc._meta);
+}
+
 // --- 7. Switching to Postgres carries the volume's data up with it ----------
 //
 // Needs a real Postgres. TEST_DATABASE_URL points at a throwaway one; without
@@ -228,8 +252,10 @@ if (!TEST_DB) {
     ok('the cutover carries friend chats up', got.chats.includes('client-a|client-b'), got);
     ok('the cutover says it seeded', got.seeded === true, got);
     ok('the data really is in Postgres', pgAccounts() === '1', pgAccounts());
-    ok('the volume file is left untouched as a backup',
+    ok('the volume keeps a copy (now the live mirror)',
       fs.existsSync(DATA(dir)) && accountsOf(DATA(dir)).includes('ada'));
+    ok('and the original file is kept as a snapshot before it is first rewritten',
+      fs.existsSync(path.join(dir, 'backups')) && fs.readdirSync(path.join(dir, 'backups')).length >= 1);
 
     // Restarting must not seed again, and must not re-read the file.
     const out2 = inStore(dir, `console.log(JSON.stringify({ seeded: store.backendStatus.seededFromFile }));`, { DATABASE_URL: TEST_DB });
@@ -269,7 +295,112 @@ if (!TEST_DB) {
     const got2 = JSON.parse(out2.trim().split('\n').pop());
     ok('an unreadable file does not stop the Postgres boot', got2.mode === 'postgres', got2);
     ok('and an unreadable file is never used as a seed', got2.seeded === false, got2);
-    ok('and it is left on disk untouched', fs.readFileSync(DATA(dir), 'utf8') === '{"accounts":');
+    // The mirror is rewritten at that path, so the damaged bytes are moved
+    // aside rather than left where the next save would overwrite them.
+    const kept = fs.readdirSync(dir).filter((f) => f.includes('.corrupt-'));
+    ok('and its bytes are kept aside, not overwritten',
+      kept.length === 1 && fs.readFileSync(path.join(dir, kept[0]), 'utf8') === '{"accounts":', fs.readdirSync(dir));
+  }
+
+  const pgDoc = () => JSON.parse(psql("SELECT doc::text FROM owner_store WHERE id=1") || 'null');
+  const histCount = (kind) => Number(psql(`SELECT count(*) FROM owner_store_history WHERE kind='${kind}'`));
+
+  // Every save lands in both copies, and the database keeps its own history.
+  {
+    reset(); psql('DROP TABLE IF EXISTS owner_store_history');
+    const dir = tmpDir();
+    seed(dir);
+    inStore(dir, `
+      store.saveAccount('dave', { passwordHash: 'q', salt: 'r', nickname: 'Dave', createdAt: 4 });
+      store.persistNow();
+      await store.whenPersisted();
+    `, { DATABASE_URL: TEST_DB });
+    const db = pgDoc();
+    const disk = JSON.parse(fs.readFileSync(DATA(dir), 'utf8'));
+    ok('a save reaches the database', !!db.accounts.dave, Object.keys(db.accounts));
+    ok('and the same save reaches the copy on disk', !!disk.accounts.dave, Object.keys(disk.accounts));
+    ok('and both copies are the same version', db._meta.rev === disk._meta.rev, [db._meta.rev, disk._meta.rev]);
+    ok('the database keeps a history snapshot of its own', histCount('periodic') >= 1, histCount('periodic'));
+    ok('the history table is closed to the public API (RLS on)',
+      psql("SELECT relrowsecurity FROM pg_class WHERE relname='owner_store_history'") === 't');
+
+    // An outage, then the database comes back: what was saved meanwhile goes up.
+    inStore(dir, `
+      store.saveAccount('erin', { passwordHash: 'e', salt: 'e', nickname: 'Erin', createdAt: 5 });
+      store.persistNow();
+    `, { DATABASE_URL: 'postgres://u:p@127.0.0.1:1/db' });
+    ok('an outage save is on disk', !!JSON.parse(fs.readFileSync(DATA(dir), 'utf8')).accounts.erin);
+    ok('and not yet in the database', !pgDoc().accounts.erin);
+    const back = inStore(dir, `console.log(JSON.stringify(Object.keys(store.data.accounts)));`, { DATABASE_URL: TEST_DB });
+    ok('when the database is back, the outage saves are served', JSON.parse(back.trim().split('\n').pop()).includes('erin'));
+    ok('and pushed up to the database', !!pgDoc().accounts.erin, Object.keys(pgDoc().accounts));
+    ok('and nothing from before the outage is lost', !!pgDoc().accounts.ada && !!pgDoc().accounts.dave);
+  }
+
+  // Two different histories: nothing is thrown away, and it is said out loud.
+  {
+    const dir = tmpDir();
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(DATA(dir), JSON.stringify({
+      accounts: { other: { nickname: 'Other' } },
+      social: { friends: {}, friendChats: {}, blocks: {}, chatHistory: {} },
+      analytics: {},
+      _meta: { lineage: 'some-other-history', rev: 999 },
+    }));
+    const before = histCount('conflict');
+    const out = inStore(dir, `console.log(JSON.stringify({
+      accounts: Object.keys(store.data.accounts), conflict: !!store.backendStatus.conflict,
+    }));`, { DATABASE_URL: TEST_DB });
+    const got = JSON.parse(out.trim().split('\n').pop());
+    ok('a different history never overwrites the database, even with a higher version',
+      got.accounts.includes('ada') && !got.accounts.includes('other'), got);
+    ok('the conflict is reported', got.conflict === true, got);
+    const kept = fs.readdirSync(dir).filter((f) => f.startsWith('owner-data.conflict-'));
+    ok('the other history is kept on disk', kept.length === 1 &&
+      !!JSON.parse(fs.readFileSync(path.join(dir, kept[0]), 'utf8')).accounts.other, fs.readdirSync(dir));
+    ok('and in the database history', histCount('conflict') === before + 1);
+  }
+
+  // A second copy of the app writing to the same database is caught, not interleaved.
+  {
+    const dir = tmpDir();
+    const out = inStore(dir, `
+      const { execFileSync } = require('child_process');
+      execFileSync('psql', [${JSON.stringify(TEST_DB)}, '-tAc',
+        "UPDATE owner_store SET doc = jsonb_set(jsonb_set(doc, '{_meta,writer}', '\\"someone-else\\"'), '{_meta,rev}', to_jsonb(((doc->'_meta'->>'rev')::bigint + 50)))"]);
+      store.upsertAccount('frank', {});
+      store.persistNow();
+      await store.whenPersisted();
+      console.log(JSON.stringify({ mode: store.backendStatus.mode }));
+    `, { DATABASE_URL: TEST_DB });
+    const got = JSON.parse(out.trim().split('\n').pop());
+    ok('a second writer is detected', got.mode === 'postgres-conflict', got);
+    ok('and its data in the database is left alone', pgDoc()._meta.writer === 'someone-else');
+    ok('and this process keeps saving to disk', !!JSON.parse(fs.readFileSync(DATA(dir), 'utf8')).accountsRegistry.frank);
+  }
+
+  // The wipe guard: a sudden mass drop keeps the previous state first.
+  {
+    reset(); psql('DROP TABLE IF EXISTS owner_store_history');
+    const dir = tmpDir();
+    const many = {};
+    for (let i = 0; i < 20; i++) many['user' + i] = { nickname: 'U' + i };
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(DATA(dir), JSON.stringify({ accounts: many,
+      social: { friends: {}, friendChats: {}, blocks: {}, chatHistory: {} }, analytics: {} }));
+    const out = inStore(dir, `
+      for (let i = 2; i < 20; i++) delete store.data.accounts['user' + i];
+      store.persistNow();
+      await store.whenPersisted();
+      console.log(JSON.stringify({ shrink: store.backendStatus.lastShrink || null }));
+    `, { DATABASE_URL: TEST_DB });
+    const got = JSON.parse(out.trim().split('\n').pop());
+    ok('a mass drop is flagged', !!got.shrink, got);
+    ok('the state before the drop is kept in the database',
+      histCount('pre-shrink') === 1 &&
+      Number(psql("SELECT count(*) FROM jsonb_object_keys((SELECT doc->'accounts' FROM owner_store_history WHERE kind='pre-shrink' LIMIT 1))")) === 20);
+    ok('and the save itself still happened (the site did not stop saving)',
+      Object.keys(pgDoc().accounts).length === 2);
   }
   reset();
 }

@@ -342,10 +342,71 @@ function loadFile() {
   blockPersist(`${DATA_FILE} was corrupt and no usable backup was found`);
 }
 
-async function loadPg() {
+// --- Two copies, always ------------------------------------------------------
+//
+// With DATABASE_URL set there are two copies of the store at every moment:
+// the Postgres row (off this machine) and a mirror file on the volume (on
+// this machine). Every save writes the mirror first and Postgres second, so
+// the mirror is never older than the database. Either one can be lost
+// outright - the volume, or the whole Supabase project - and the other still
+// holds everyone's accounts, friends and chats.
+//
+// That ordering is also what lets the site keep working through a database
+// outage. When Postgres cannot be reached, the mirror is a faithful copy of
+// what was last in it, so the app serves from the mirror and keeps saving to
+// it, and pushes the result up when the database comes back. It used to do
+// neither: first it forked into a stale file, then (briefly) it refused to
+// save anything at all. Both lost data.
+//
+// Which copy is newer is never guessed. Every save stamps `_meta`:
+//   lineage - random id born with the store and kept forever, so two copies
+//             can tell whether they are versions of the same history at all
+//   rev     - increments on every save within a lineage
+//   writer  - this process, so a second copy of the app writing to the same
+//             database is noticed instead of silently interleaved
+// A copy only ever replaces another when it is provably a later version of
+// the same history. Anything else is a conflict, and a conflict destroys
+// nothing: the side not being served is preserved as a file and as a history
+// row, and the owner dashboard says so.
+
+const WRITER = crypto.randomBytes(8).toString('hex');
+const newLineage = () => crypto.randomBytes(12).toString('hex');
+const metaOf = (doc) => (doc && typeof doc === 'object' && doc._meta) || {};
+const revOf = (doc) => Number(metaOf(doc).rev) || 0;
+const lineageOf = (doc) => metaOf(doc).lineage || null;
+
+let runningOnMirror = false;  // Postgres unreachable; serving and saving the mirror
+let pgConflict = false;       // another writer touched the row; stop writing to it
+let pgConfirmedRev = 0;       // the rev we know is in Postgres right now
+let mirrorBlocked = false;    // the mirror path exists but cannot be read; never write it
+const pgLive = () => !!pgPool && !pgUnreachable;
+
+// History inside the database. Free Supabase projects have no restorable
+// backups of their own, so without this the Postgres copy is a single
+// version with no past. Kept on the same cadence as the volume snapshots.
+const PG_HISTORY_EVERY_MS = 6 * 60 * 60 * 1000;
+const PG_HISTORY_BUDGET_BYTES = 150 * 1024 * 1024; // of a 500MB free database
+let lastPgHistoryAt = 0;
+
+async function ensureSchema() {
   await pgPool.query(
     'CREATE TABLE IF NOT EXISTS owner_store (id int PRIMARY KEY, doc jsonb NOT NULL, updated_at timestamptz NOT NULL DEFAULT now())'
   );
+  await pgPool.query(`CREATE TABLE IF NOT EXISTS owner_store_history (
+    id bigserial PRIMARY KEY,
+    taken_at timestamptz NOT NULL DEFAULT now(),
+    kind text NOT NULL,
+    rev bigint,
+    doc jsonb NOT NULL
+  )`);
+  // Same exposure as owner_store: reachable only over the server's own
+  // connection. RLS on with no policies closes it to Supabase's public API,
+  // and it holds password hashes and private messages, so that matters.
+  // Best effort: a role that is not the owner cannot ALTER, and that must
+  // never be the reason the store fails to connect.
+  for (const t of ['owner_store', 'owner_store_history']) {
+    try { await pgPool.query(`ALTER TABLE ${t} ENABLE ROW LEVEL SECURITY`); } catch (_) { /* see above */ }
+  }
   // Password-reset OTPs get a real table instead of a corner of the document:
   // they are written and deleted constantly, expire on their own schedule, and
   // rewriting the whole document for each one would be wasteful. Created here
@@ -365,60 +426,34 @@ async function loadPg() {
   )`);
   await pgPool.query('CREATE INDEX IF NOT EXISTS password_resets_email_idx ON password_resets (email)');
   await pgPool.query('CREATE INDEX IF NOT EXISTS password_resets_token_idx ON password_resets (token_hash)');
-  const res = await pgPool.query('SELECT doc FROM owner_store WHERE id = 1');
-  const pgDoc = res.rows.length ? res.rows[0].doc : null;
+}
 
-  // Switching a live site from the file backend to Postgres is not a migration
-  // step anyone gets to do separately: the moment DATABASE_URL is set, Postgres
-  // is the only store and DATA_DIR is ignored, so whatever is in Postgres right
-  // then becomes the whole world. An empty row there - which is exactly what a
-  // database that was connected once and never written to again looks like -
-  // means every account, friendship and chat on the volume disappears from the
-  // app the instant the variable is set.
-  //
-  // So carry them over instead. When Postgres has nothing and the volume still
-  // has a real store, that file IS the data, and the first thing this process
-  // does is copy it up. The file is left exactly where it is afterwards, which
-  // makes it a free pre-migration backup.
-  const seed = isEmptyDoc(pgDoc) ? readFileDocIfUsable() : null;
-  const seeding = seed && !isEmptyDoc(seed);
-
-  applyParsed(seeding ? seed : (pgDoc || {}));
-
-  backendStatus.mode = 'postgres';
-  backendStatus.error = null;
-  backendStatus.seededFromFile = false;
-
-  if (seeding) {
-    // Written here rather than left to the ordinary debounced save, so the
-    // data is in Postgres before the first request is served - and read back,
-    // because this is the one moment it exists in a place nobody has checked.
-    await pgPool.query(
-      'INSERT INTO owner_store (id, doc, updated_at) VALUES (1, $1, now()) ON CONFLICT (id) DO UPDATE SET doc = $1, updated_at = now()',
-      [JSON.stringify(data)]
-    );
-    const back = await pgPool.query('SELECT doc FROM owner_store WHERE id = 1');
-    const n = (o) => Object.keys(o || {}).length;
-    const got = back.rows[0] && back.rows[0].doc;
-    if (isEmptyDoc(got)) throw new Error('seeded Postgres but read back an empty document');
-    backendStatus.seededFromFile = true;
-    console.log('[store] ------------------------------------------------------------');
-    console.log('[store] FIRST RUN ON POSTGRES - copied the store up from', DATA_FILE);
-    console.log('[store]  accounts:', n(got.accounts),
-      '· people with friends:', n((got.social || {}).friends),
-      '· friend chats:', n((got.social || {}).friendChats),
-      '· logged-in sessions:', n(got.authSessions));
-    console.log('[store] The file is untouched and is now a backup of the cutover.');
-    console.log('[store] ------------------------------------------------------------');
+// Copy a document into owner_store_history. `sql` form copies the live row
+// server-side (no re-upload); `doc` form stores something we hold in memory.
+async function pgHistory(kind, doc) {
+  if (doc) {
+    await pgPool.query('INSERT INTO owner_store_history (kind, rev, doc) VALUES ($1, $2, $3)',
+      [kind, revOf(doc), JSON.stringify(doc)]);
+  } else {
+    await pgPool.query(`INSERT INTO owner_store_history (kind, rev, doc)
+      SELECT $1, COALESCE((doc->'_meta'->>'rev')::bigint, 0), doc FROM owner_store WHERE id = 1`, [kind]);
   }
+}
 
-  console.log('[store] using Postgres backend (DATABASE_URL) -', backendStatus.host);
+async function prunePgHistory(docBytes) {
+  // As many periodic snapshots as fit the budget, never fewer than four and
+  // never more than a week's worth. Conflict and pre-shrink copies are the
+  // ones someone may need to look at by hand, so they are kept for 90 days.
+  const keep = Math.max(4, Math.min(28, Math.floor(PG_HISTORY_BUDGET_BYTES / Math.max(docBytes, 1))));
+  await pgPool.query(`DELETE FROM owner_store_history WHERE kind = 'periodic' AND id NOT IN (
+    SELECT id FROM owner_store_history WHERE kind = 'periodic' ORDER BY id DESC LIMIT $1)`, [keep]);
+  await pgPool.query(`DELETE FROM owner_store_history WHERE kind <> 'periodic' AND taken_at < now() - interval '90 days'`);
 }
 
 // "Nothing anyone would miss." Analytics and settings do not count: a document
 // holding only counters and defaults is what a database that has been
 // connected to but never really used looks like, and treating that as data
-// worth keeping is what would block the carry-over below.
+// worth keeping is what would block a carry-over.
 function isEmptyDoc(doc) {
   if (!doc || typeof doc !== 'object') return true;
   const n = (o) => Object.keys(o || {}).length;
@@ -434,61 +469,265 @@ function isEmptyDoc(doc) {
     && (doc.bans || []).length === 0;
 }
 
-// The volume's document, or null. Deliberately quiet and non-destructive: this
-// runs on the Postgres path, where the file is not the live store, so a missing
-// or unreadable one is not an error and nothing here may move or rewrite it.
-function readFileDocIfUsable() {
+// The copy on the volume, for the Postgres path. A file that parses as garbage
+// is moved aside with its bytes intact and the newest usable snapshot is used
+// instead; a file that exists but cannot be read at all is left strictly
+// alone, and the mirror is never written over it for the life of the process.
+function readLocalDoc() {
+  let raw;
   try {
     if (!fs.existsSync(DATA_FILE)) return null;
-    return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+    raw = fs.readFileSync(DATA_FILE, 'utf8');
   } catch (err) {
-    console.error('[store] there is a file at', DATA_FILE, 'but it could not be read:', err.message);
-    console.error('[store] continuing on Postgres; the file has not been touched.');
+    console.error('[store] the mirror at', DATA_FILE, 'exists but cannot be read:', err.message);
+    console.error('[store] it will not be touched or written for the life of this process.');
+    mirrorBlocked = true;
+    return null;
+  }
+  try {
+    return JSON.parse(raw);
+  } catch (err) {
+    console.error('[store] the mirror at', DATA_FILE, 'is not valid JSON:', err.message);
+    quarantine(DATA_FILE, 'corrupt');
+    for (const file of backupFiles()) {
+      try {
+        const doc = JSON.parse(fs.readFileSync(file, 'utf8'));
+        console.error('[store] using the newest usable snapshot instead:', file);
+        return doc;
+      } catch (_) { /* try the next older one */ }
+    }
     return null;
   }
 }
 
-let pgWriting = false;
-let pgDirty = false;
-function persistPg() {
-  // Not connected yet: `data` is not the database's document, so writing it
-  // would overwrite the real accounts with a blank one the moment the database
-  // came back. The reconnect loads the truth instead.
-  if (pgUnreachable) return;
-  // Serialize writes: if one is in flight, mark dirty and rewrite after.
-  if (pgWriting) { pgDirty = true; return; }
-  pgWriting = true;
-  pgPool.query(
-    'INSERT INTO owner_store (id, doc, updated_at) VALUES (1, $1, now()) ON CONFLICT (id) DO UPDATE SET doc = $1, updated_at = now()',
-    [JSON.stringify(data)]
-  ).catch((err) => console.error('[store] pg save failed:', err.message))
-    .finally(() => {
-      pgWriting = false;
-      if (pgDirty) { pgDirty = false; persistPg(); }
-    });
+// Read the volume's copy once per boot. connectPg may have read it already
+// before failing, and reading it again after a quarantine would find nothing.
+let localDocMemo;
+function bootLocal() {
+  if (localDocMemo === undefined) localDocMemo = readLocalDoc();
+  return localDocMemo;
 }
 
-function persistNow() {
-  if (pgPool) return persistPg();
-  // The load failed, so `data` is not the real document. Writing it here is
-  // exactly the destructive act this guard exists to prevent.
-  if (persistBlocked) return;
-  // DATABASE_URL is set but unreachable: the file on this disk belongs to a
-  // different backend (or to nothing at all), and writing the half-built
-  // in-memory document into it would leave two stores that each think they
-  // are authoritative. See the boot path below.
-  if (pgUnreachable) return;
+// What to do with the database's copy and ours. Pure, so it can be reasoned
+// about (and tested) without a database.
+//   'use-pg'     the database copy is the one to serve
+//   'push-local' ours is a later version of the same history, or the database
+//                has nothing - send ours up
+//   'conflict'   both hold real data and neither is provably newer
+function decide(pgDoc, local) {
+  if (isEmptyDoc(local)) return 'use-pg';
+  if (isEmptyDoc(pgDoc)) return 'push-local';
+  const lp = lineageOf(pgDoc);
+  const ll = lineageOf(local);
+  if (lp && ll && lp === ll) return revOf(local) > revOf(pgDoc) ? 'push-local' : 'use-pg';
+  return 'conflict';
+}
+
+// Keep the side we are not serving, in both places a person could find it.
+function preserveConflict(doc, reason) {
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const file = path.join(DATA_DIR, `owner-data.conflict-${stamp}.json`);
   try {
     fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.writeFileSync(file, JSON.stringify(doc));
+  } catch (err) {
+    console.error('[store] could not write the conflict copy to disk:', err.message);
+  }
+  backendStatus.conflict = { at: new Date().toISOString(), reason, file };
+  console.error('[store] ============================================================');
+  console.error('[store] TWO DIFFERENT COPIES OF THE STORE:', reason);
+  console.error('[store] Serving the database copy. The other one has been kept at');
+  console.error('[store]  ', file);
+  console.error('[store] and in owner_store_history (kind = conflict). Nothing was');
+  console.error('[store] deleted; merge them by hand if the other copy has anything new.');
+  console.error('[store] ============================================================');
+  return file;
+}
+
+// Connect, decide which copy wins, and leave both copies identical. Used at
+// boot (local = the mirror on disk) and on reconnect after an outage (local =
+// what this process has been serving from the mirror meanwhile).
+async function connectPg(atBoot) {
+  await ensureSchema();
+  const res = await pgPool.query('SELECT doc FROM owner_store WHERE id = 1');
+  const pgDoc = res.rows.length ? res.rows[0].doc : null;
+  const local = atBoot ? bootLocal() : (runningOnMirror ? data : null);
+  const verdict = decide(pgDoc, local);
+  const n = (o) => Object.keys(o || {}).length;
+
+  backendStatus.seededFromFile = false;
+
+  if (verdict === 'push-local') {
+    if (atBoot) applyParsed(local);
+    stampMeta();
+    await pgPool.query(
+      'INSERT INTO owner_store (id, doc, updated_at) VALUES (1, $1, now()) ON CONFLICT (id) DO UPDATE SET doc = $1, updated_at = now()',
+      [JSON.stringify(data)]
+    );
+    // Read it back: this is the one moment the data exists in a place nobody
+    // has checked yet.
+    const back = await pgPool.query('SELECT doc FROM owner_store WHERE id = 1');
+    const got = back.rows[0] && back.rows[0].doc;
+    if (revOf(got) !== revOf(data)) throw new Error('wrote the store to Postgres but read back a different version');
+    const fresh = isEmptyDoc(pgDoc);
+    backendStatus.seededFromFile = fresh;
+    console.log('[store] ------------------------------------------------------------');
+    console.log(fresh
+      ? `[store] FIRST RUN ON POSTGRES - copied the store up from ${DATA_FILE}`
+      : '[store] Postgres was behind the mirror - brought it up to date');
+    console.log('[store]  accounts:', n(got.accounts),
+      '· people with friends:', n((got.social || {}).friends),
+      '· friend chats:', n((got.social || {}).friendChats),
+      '· logged-in sessions:', n(got.authSessions));
+    console.log('[store] ------------------------------------------------------------');
+  } else if (verdict === 'conflict') {
+    await pgHistory('conflict', local);
+    preserveConflict(local, 'the mirror and the database hold different histories');
+    applyParsed(pgDoc);
+  } else {
+    applyParsed(pgDoc || {});
+  }
+
+  pgConfirmedRev = revOf(data);
+  pgUnreachable = false;
+  runningOnMirror = false;
+  pgConflict = false;
+  backendStatus.mode = 'postgres';
+  backendStatus.error = null;
+  // From here the mirror is exactly the database copy again.
+  writeMirror();
+  console.log('[store] using Postgres backend (DATABASE_URL) -', backendStatus.host,
+    '- mirrored to', DATA_FILE);
+}
+
+// --- Wipe guard ---------------------------------------------------------------
+//
+// A save that would suddenly drop a large share of accounts or conversations
+// is far more likely to be a bug than a hundred people deleting themselves in
+// two seconds. It is not refused - refusing would stop the site saving, which
+// loses data too - but the copy about to be overwritten is kept first, on
+// disk and in the database, so whatever caused it can be undone.
+let lastCensus = null;
+let pendingShrinkSnapshot = false;
+function census(doc) {
+  const n = (o) => Object.keys(o || {}).length;
+  const social = doc.social || {};
+  return { accounts: n(doc.accounts), friends: n(social.friends), chats: n(social.friendChats) };
+}
+function bigDrop(before, after) {
+  return before - after >= Math.max(5, Math.ceil(before * 0.2));
+}
+function checkShrink() {
+  const now = census(data);
+  const prev = lastCensus;
+  lastCensus = now;
+  if (!prev) return false;
+  const hit = ['accounts', 'friends', 'chats'].filter((k) => bigDrop(prev[k], now[k]));
+  if (!hit.length) return false;
+  const detail = hit.map((k) => `${k} ${prev[k]} -> ${now[k]}`).join(', ');
+  backendStatus.lastShrink = { at: new Date().toISOString(), detail };
+  console.error('[store] LARGE DROP ON SAVE:', detail, '- keeping a copy of the previous state first.');
+  return true;
+}
+
+function stampMeta() {
+  const m = metaOf(data);
+  data._meta = {
+    lineage: m.lineage || newLineage(),
+    rev: (Number(m.rev) || 0) + 1,
+    writer: WRITER,
+    savedAt: Date.now(),
+  };
+}
+
+let mirrorPrimed = false;
+function writeMirror(shrinking) {
+  if (mirrorBlocked) return false;
+  try {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+    // Whatever was on disk before this process first writes is kept as a
+    // snapshot - it may be a store from an earlier life of the app - and so
+    // is the previous state ahead of any save the wipe guard flagged.
+    if ((!mirrorPrimed || shrinking) && fs.existsSync(DATA_FILE)) writeBackup();
+    mirrorPrimed = true;
     const tmp = DATA_FILE + '.tmp';
     fs.writeFileSync(tmp, JSON.stringify(data));
     fs.renameSync(tmp, DATA_FILE);
   } catch (err) {
-    console.error('[store] failed to save:', err.message);
-    return;
+    console.error('[store] failed to save to disk:', err.message);
+    return false;
   }
-  // Snapshot on a slow cadence, from the file that was just proved writable.
   if (Date.now() - lastBackupAt >= BACKUP_EVERY_MS) writeBackup();
+  return true;
+}
+
+// One Postgres write at a time; a save that lands while one is in flight is
+// folded into the next, which serializes whatever `data` is by then.
+let pgChain = Promise.resolve();
+let pgQueued = false;
+function persistPg() {
+  if (pgQueued) return;
+  pgQueued = true;
+  pgChain = pgChain.then(async () => {
+    pgQueued = false;
+    if (!pgLive() || pgConflict) return;
+    const payload = JSON.stringify(data);
+    const rev = revOf(data);
+    try {
+      if (pendingShrinkSnapshot) {
+        pendingShrinkSnapshot = false;
+        await pgHistory('pre-shrink');
+      }
+      // Only overwrite a row that is ours: last written by this process, or no
+      // newer than the version we last confirmed. Anything else means a second
+      // copy of the app is writing too, and interleaving two of them would
+      // silently lose whichever wrote first.
+      const r = await pgPool.query(
+        `INSERT INTO owner_store (id, doc, updated_at) VALUES (1, $1, now())
+         ON CONFLICT (id) DO UPDATE SET doc = $1, updated_at = now()
+         WHERE owner_store.doc->'_meta'->>'writer' = $3
+            OR COALESCE((owner_store.doc->'_meta'->>'rev')::bigint, 0) <= $2`,
+        [payload, pgConfirmedRev, WRITER]
+      );
+      if (r.rowCount === 0) {
+        pgConflict = true;
+        backendStatus.mode = 'postgres-conflict';
+        backendStatus.conflict = { at: new Date().toISOString(), reason: 'another process wrote to the database' };
+        console.error('[store] ============================================================');
+        console.error('[store] Another copy of the app has written to the database. This');
+        console.error('[store] process has stopped writing there and keeps saving to', DATA_FILE);
+        console.error('[store] Both copies are intact. Run one machine only, then restart.');
+        console.error('[store] ============================================================');
+        return;
+      }
+      pgConfirmedRev = rev;
+      if (Date.now() - lastPgHistoryAt >= PG_HISTORY_EVERY_MS) {
+        lastPgHistoryAt = Date.now();
+        await pgHistory('periodic');
+        await prunePgHistory(payload.length);
+      }
+    } catch (err) {
+      // The mirror already has this save; the next one retries Postgres.
+      console.error('[store] pg save failed (kept on disk):', err.message);
+    }
+  });
+}
+
+function persistNow() {
+  // Everything is being written now, so a debounced save already queued has
+  // nothing left to do.
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+  // The load failed, so `data` is not the real document. Writing it is exactly
+  // the destructive act this guard exists to prevent.
+  if (persistBlocked) return;
+  // DATABASE_URL set, database unreachable, and no mirror to serve from: what
+  // is in memory is not anybody's data, so it goes nowhere.
+  if (pgPool && pgUnreachable && !runningOnMirror) return;
+  stampMeta();
+  const shrinking = checkShrink();
+  if (shrinking) pendingShrinkSnapshot = true;
+  writeMirror(shrinking);
+  if (pgLive()) persistPg();
 }
 
 function save() {
@@ -1046,7 +1285,7 @@ function normalizeReset(row) {
 // every reset request rather than on a timer.
 async function purgePasswordResets() {
   const now = Date.now();
-  if (pgPool) {
+  if (pgLive()) {
     try {
       await pgPool.query(
         'DELETE FROM password_resets WHERE used_at IS NOT NULL OR (expires_at < $1 AND (token_expires_at IS NULL OR token_expires_at < $1))',
@@ -1075,7 +1314,7 @@ async function startPasswordReset({ username, email, codeHash, ttlMs }) {
   const id = crypto.randomBytes(16).toString('hex');
   const expiresAt = now + ttlMs;
   await purgePasswordResets();
-  if (pgPool) {
+  if (pgLive()) {
     await pgPool.query('DELETE FROM password_resets WHERE email = $1', [emailLower]);
     await pgPool.query(
       `INSERT INTO password_resets (id, username, email, code_hash, attempts, expires_at, created_at)
@@ -1100,7 +1339,7 @@ async function findPasswordReset(email) {
   const emailLower = String(email || '').toLowerCase();
   if (!emailLower) return null;
   const now = Date.now();
-  if (pgPool) {
+  if (pgLive()) {
     const res = await pgPool.query(
       'SELECT * FROM password_resets WHERE email = $1 AND used_at IS NULL AND expires_at > $2 ORDER BY created_at DESC LIMIT 1',
       [emailLower, now]
@@ -1116,7 +1355,7 @@ async function findPasswordReset(email) {
 
 // Counts one wrong code and returns the new attempt total.
 async function notePasswordResetFailure(id) {
-  if (pgPool) {
+  if (pgLive()) {
     const res = await pgPool.query(
       'UPDATE password_resets SET attempts = attempts + 1 WHERE id = $1 RETURNING attempts',
       [id]
@@ -1131,7 +1370,7 @@ async function notePasswordResetFailure(id) {
 }
 
 async function deletePasswordReset(id) {
-  if (pgPool) {
+  if (pgLive()) {
     await pgPool.query('DELETE FROM password_resets WHERE id = $1', [id]);
     return;
   }
@@ -1145,7 +1384,7 @@ async function deletePasswordReset(id) {
 // authorizes the actual password change.
 async function markPasswordResetVerified(id, tokenHash, tokenTtlMs) {
   const tokenExpiresAt = Date.now() + tokenTtlMs;
-  if (pgPool) {
+  if (pgLive()) {
     await pgPool.query(
       'UPDATE password_resets SET token_hash = $1, token_expires_at = $2, code_hash = $3, attempts = 0 WHERE id = $4',
       [tokenHash, tokenExpiresAt, 'consumed', id]
@@ -1165,7 +1404,7 @@ async function markPasswordResetVerified(id, tokenHash, tokenTtlMs) {
 // Spends a verified reset token exactly once and returns whose account it was.
 async function consumePasswordResetToken(tokenHash) {
   const now = Date.now();
-  if (pgPool) {
+  if (pgLive()) {
     // The UPDATE ... RETURNING is the single-use guarantee: two requests racing
     // with the same token both match the row, but only the first one finds it
     // unused, so only the first gets a row back.
@@ -1341,29 +1580,31 @@ function audit(action, ip, detail) {
 const ready = (async () => {
   if (pgPool) {
     try {
-      await loadPg();
+      await connectPg(true);
     } catch (err) {
       backendStatus.error = String(err.message || err);
-      // Falling back to the file store used to happen here: pgPool was set to
-      // null for good and the local JSON file became the live store. That is
-      // the most dangerous thing this file could do. The database is still the
-      // real store and still holds everyone's accounts; the local file is from
-      // a different life of the app, or does not exist. Serving from it means
-      // existing users cannot log in, sign up again, and get written to a file
-      // that the next successful boot silently discards in favour of the
-      // database. Two stores, both believing they are authoritative, and
-      // whichever loses takes real accounts with it.
-      //
-      // So: stay on Postgres, keep retrying, and write nothing anywhere until
-      // it answers. Minutes of writes lost during an outage is a far smaller
-      // harm than a divergence nobody notices until the accounts are gone.
       pgUnreachable = true;
-      backendStatus.mode = 'postgres-unreachable';
+      // The database cannot be reached. The mirror on this volume is a copy
+      // of what was last in it (every save writes the mirror first), so serve
+      // it and keep saving to it, and push up when the database answers.
+      // Without a usable mirror nothing here is anybody's real data, so
+      // nothing is saved at all - see persistNow.
+      const local = bootLocal();
+      if (local && !mirrorBlocked) {
+        applyParsed(local);
+        runningOnMirror = true;
+        backendStatus.mode = 'postgres-offline';
+      } else {
+        backendStatus.mode = 'postgres-unreachable';
+      }
       console.error('[store] ============================================================');
-      console.error('[store] DATABASE_URL is set but the connection FAILED. The database');
-      console.error('[store] is still the real store, so this process will NOT write to');
-      console.error('[store] the local file - that would fork the data. Retrying in the');
-      console.error('[store] background; the store is read-only until it connects.');
+      console.error('[store] DATABASE_URL is set but the database could not be reached.');
+      console.error(runningOnMirror
+        ? `[store] Serving and saving the copy in ${DATA_FILE}; it is pushed up`
+        : '[store] There is no usable copy on this machine either, so NOTHING');
+      console.error(runningOnMirror
+        ? '[store] to the database automatically when it comes back.'
+        : '[store] will be saved until the database answers. Retrying.');
       console.error('[store] Host:', backendStatus.host);
       console.error('[store] Reason:', backendStatus.error);
       console.error('[store] ============================================================');
@@ -1372,19 +1613,20 @@ const ready = (async () => {
   } else {
     loadFile();
   }
+  // The baseline the wipe guard compares the first save against.
+  lastCensus = census(data);
 })();
 
-// Reconnect attempts, backing off to a minute. Once the database answers, its
-// document replaces whatever this process accumulated while it was down -
-// those writes were never durable, and the database is the truth.
+// Reconnect attempts, backing off to a minute. connectPg decides which copy
+// is newer, pushes the mirror up if it is, and leaves both identical.
 function retryPg() {
   setTimeout(async () => {
     if (!pgUnreachable || !pgPool) return;
     try {
-      await loadPg();
-      pgUnreachable = false;
+      await connectPg(false);
       backendStatus.persistBlocked = null;
-      console.log('[store] Postgres is back - loaded the live document; writes re-enabled.');
+      lastCensus = census(data);
+      console.log('[store] the database is back - both copies are in step again.');
     } catch (err) {
       backendStatus.error = String(err.message || err);
       pgRetryDelay = Math.min(pgRetryDelay * 2, 60000);
@@ -1393,11 +1635,13 @@ function retryPg() {
   }, pgRetryDelay).unref();
 }
 
-process.on('exit', () => { if (!pgPool) persistNow(); });
+// A plain exit cannot wait for the network, but the mirror is synchronous.
+process.on('exit', () => { if (!shuttingDown && saveTimer) persistNow(); });
 
 // 'exit' never fires for SIGTERM/SIGINT - and SIGTERM is exactly what Fly
 // sends on every deploy/restart. Flush any debounced write before going down
-// so a signup seconds before a deploy is never lost.
+// so a signup seconds before a deploy is never lost: the mirror first (it is
+// instant), then wait for Postgres, but not past Fly's kill timeout.
 let shuttingDown = false;
 async function flushAndExit(signal) {
   if (shuttingDown) return;
@@ -1405,19 +1649,13 @@ async function flushAndExit(signal) {
   if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
   // Same rule on the way out as on every other write: a document we never
   // successfully loaded must not be the last thing written over a good one.
-  if (persistBlocked || pgUnreachable) {
-    console.error(`[store] ${signal}: not saving -`, persistBlocked || 'database unreachable');
+  if (persistBlocked || (pgPool && pgUnreachable && !runningOnMirror)) {
+    console.error(`[store] ${signal}: not saving -`, persistBlocked || 'no copy of the store is loaded');
     process.exit(0);
   }
   try {
-    if (pgPool) {
-      await pgPool.query(
-        'INSERT INTO owner_store (id, doc, updated_at) VALUES (1, $1, now()) ON CONFLICT (id) DO UPDATE SET doc = $1, updated_at = now()',
-        [JSON.stringify(data)]
-      );
-    } else {
-      persistNow();
-    }
+    persistNow();
+    await Promise.race([pgChain, new Promise((r) => setTimeout(r, 4000))]);
   } catch (err) {
     console.error(`[store] final save on ${signal} failed:`, err.message);
   }
@@ -1438,6 +1676,9 @@ function getOrCreateSecret(name) {
 }
 
 module.exports = {
+  // Resolves when every save queued so far has reached the database (or
+  // failed and been kept on disk). Shutdown uses the same chain.
+  whenPersisted: () => pgChain,
   getOrCreateSecret,
   get data() { return data; },
   get backendStatus() { return backendStatus; },
