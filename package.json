@@ -10,6 +10,7 @@
     "build:seo": "node scripts/build-seo.js && node scripts/migrate-schema.js && node scripts/migrate-languages.js && node scripts/migrate-hub-schema.js && node scripts/migrate-pwa.js && node scripts/migrate-adsterra.js && node scripts/migrate-analytics.js && node scripts/migrate-internal-utm.js",
     "ads:adsterra": "node scripts/migrate-adsterra.js",
     "audit:seo": "node scripts/audit-seo.js",
+    "check:bundle": "node scripts/check-bundle-size.js",
     "check:seo": "npm run build:seo && npm run audit:seo",
     "check:turn": "node scripts/check-turn.js",
     "test:billing": "node scripts/test-billing.js",

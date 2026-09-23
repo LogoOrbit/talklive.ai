@@ -1,0 +1,24 @@
+{
+  "pages": {
+    "index.html": {
+      "jsKb": 190,
+      "cssKb": 88,
+      "htmlKb": 46
+    },
+    "chat.html": {
+      "jsKb": 114,
+      "cssKb": 65,
+      "htmlKb": 16
+    },
+    "random-text-chat.html": {
+      "jsKb": 20,
+      "cssKb": 8,
+      "htmlKb": 7
+    },
+    "free-voice-chat.html": {
+      "jsKb": 20,
+      "cssKb": 8,
+      "htmlKb": 7
+    }
+  }
+}

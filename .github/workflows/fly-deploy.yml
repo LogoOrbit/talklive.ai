@@ -46,6 +46,9 @@ jobs:
       - name: Audit generated SEO
         run: npm run audit:seo
 
+      - name: Bundle size budget
+        run: npm run check:bundle
+
       - name: Install flyctl
         uses: superfly/flyctl-actions/setup-flyctl@master
 

@@ -1,0 +1,47 @@
+name: CI
+
+# Checks every pull request and every branch push before anything reaches
+# main (which deploys straight to production - see fly-deploy.yml). The same
+# checks run there too, but finding out on main is finding out in production.
+on:
+  pull_request:
+  push:
+    branches-ignore:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Build, test and bundle budget
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build SEO pages
+        run: npm run build:seo
+
+      - name: Test compression and call-safe ads
+        run: node --test scripts/test-compression.js scripts/test-ad-lifecycle.js
+
+      - name: Audit generated SEO
+        run: npm run audit:seo
+
+      # Fails the PR if a page's initial JS, CSS or HTML outgrows
+      # scripts/bundle-budget.json.
+      - name: Bundle size budget
+        run: npm run check:bundle
