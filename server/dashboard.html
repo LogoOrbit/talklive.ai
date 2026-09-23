@@ -1427,13 +1427,13 @@ async function viewAccounts(){
 
 /* ---------- revenue: subscriptions, referrals, push reach ---------- */
 async function viewRevenue(){
-  const [r,ads]=await Promise.all([api('premium'),api('adsterra').catch(e=>({configured:true,error:e.message}))]);
+  const r=await api('premium');
   const t=r.totals,ref=r.referrals;
   const act=r.activations.slice(-14);
   const actMax=Math.max(1,...act.map(d=>Math.max(d.activated,d.cancelled)));
   const srcColor={stripe:'var(--good)',referral:'var(--s1)',client:'var(--s3)',unknown:'var(--muted)'};
   const expiringSoon=r.rows.filter(x=>x.status==='active'&&x.expiresAt&&x.expiresAt-Date.now()<7*86400000);
-  $('#main').innerHTML=adsterraSection(ads)+`<div class="grid tiles anim">
+  $('#main').innerHTML=adRevenueNote()+`<div class="grid tiles anim">
     <div class="tile"><div class="k">💎 Active Plus</div><div class="v grad" data-count="${t.active}">0</div><div class="s">${num(t.paying)} paying · ${num(t.permanent)} permanent</div></div>
     <div class="tile"><div class="k">Expiring in 7 days</div><div class="v" style="color:${t.expiringIn7Days?'var(--warn)':'inherit'}" data-count="${t.expiringIn7Days}">0</div><div class="s">renew or lapse</div></div>
     <div class="tile"><div class="k">Lapsed</div><div class="v" data-count="${t.expired}">0</div><div class="s">${num(t.revoked)} cancelled</div></div>
@@ -1479,31 +1479,10 @@ async function viewRevenue(){
   animateCounters();
 }
 
-/* Adsterra ad earnings, fetched server-side with ADSTERRA_API_KEY. */
-const usd=v=>'$'+(Number(v)||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
-function adsterraSection(a){
-  if(!a||!a.configured)return `<div class="card anim" style="margin-top:0"><h2>📢 Ad revenue <span class="sub">Adsterra</span></h2>
-    <div class="muted">Not connected. Copy your API token from Adsterra → Profile → API, then run <code>fly secrets set ADSTERRA_API_KEY='...'</code>.</div></div>`;
-  if(a.error)return `<div class="card anim" style="margin-top:0"><h2>📢 Ad revenue <span class="sub">Adsterra</span></h2>
-    <div class="muted">Could not load Adsterra stats: ${esc(a.error)}</div></div>`;
-  const t=a.totals,days=a.daily.slice(-30),max=Math.max(0.01,...days.map(d=>d.revenue));
-  const table=(rows,label)=>`<table><tr><th>${label}</th><th class="num">Revenue</th><th class="num">Impressions</th><th class="num">CPM</th><th class="num">CTR</th></tr>
-    ${rows.map(x=>`<tr><td>${esc(x.key)}</td><td class="num"><b>${usd(x.revenue)}</b></td><td class="num">${num(x.impressions)}</td><td class="num">${usd(x.cpm)}</td><td class="num">${x.ctr}%</td></tr>`).join('')||`<tr><td colspan="5" class="muted">No data yet.</td></tr>`}</table>`;
-  return `<div class="grid tiles anim" style="margin-top:0">
-    <div class="tile"><div class="k">📢 Ads today</div><div class="v grad">${usd(t.today.revenue)}</div><div class="s">${num(t.today.impressions)} impressions · UTC day</div></div>
-    <div class="tile"><div class="k">Yesterday</div><div class="v">${usd(t.yesterday.revenue)}</div><div class="s">CPM ${usd(t.yesterday.cpm)}</div></div>
-    <div class="tile"><div class="k">Last 7 days</div><div class="v">${usd(t.last7.revenue)}</div><div class="s">${num(t.last7.impressions)} impressions</div></div>
-    <div class="tile"><div class="k">This month</div><div class="v">${usd(t.monthToDate.revenue)}</div><div class="s">CPM ${usd(t.monthToDate.cpm)}</div></div>
-    <div class="tile"><div class="k">Last 30 days</div><div class="v">${usd(t.last30.revenue)}</div><div class="s">CTR ${t.last30.ctr}% · CPM ${usd(t.last30.cpm)}</div></div>
-    <div class="tile"><div class="k">💰 All time</div>${t.allTime.error?`<div class="v">-</div><div class="s">${esc(t.allTime.error)}</div>`:`<div class="v grad">${usd(t.allTime.revenue)}</div><div class="s">${usd(t.allTime.settled)} excl. today · compare with “Earned” in Adsterra${t.allTime.since?' · since '+esc(t.allTime.since):''}</div>`}</div>
-  </div>
-  <div class="card anim"><h2>📢 Ad revenue by day <span class="sub">Adsterra · last 30 days · refreshed every 10 min</span></h2>
-    ${days.slice().reverse().map(d=>`<div class="hrow"><div>${esc(d.key.slice(5))}</div><div><div class="hbar" style="width:${d.revenue?Math.max(2,d.revenue/max*100):0}%;background:var(--good)"></div></div><div class="n">${usd(d.revenue)}</div></div>`).join('')}
-  </div>
-  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
-    <div class="card anim"><h2>🧩 By ad unit <span class="sub">last 31 days</span></h2>${table(a.placements,'Placement')}</div>
-    <div class="card anim"><h2>🌍 By country <span class="sub">last 31 days</span></h2>${table(a.countries,'Country')}</div>
-  </div>`;
+/* Ad revenue lives in Google AdSense; there is no reporting API wired in here. */
+function adRevenueNote(){
+  return `<div class="card anim" style="margin-top:0"><h2>📢 Ad revenue <span class="sub">Google AdSense</span></h2>
+    <div class="muted">Ads are served by Google AdSense only. Earnings, impressions and RPM are in <a href="https://adsense.google.com/adsense/u/0/pub-6368797323385379/reports" target="_blank" rel="noopener">AdSense → Reports</a>.</div></div>`;
 }
 
 async function viewErrors(){
