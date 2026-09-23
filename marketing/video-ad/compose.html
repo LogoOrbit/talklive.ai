@@ -1,0 +1,233 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>TalkLive Ad</title>
+<style>
+@font-face{font-family:PJS;src:url(/public/fonts/plus-jakarta-sans-latin.woff2) format('woff2');font-weight:200 800}
+:root{--bg:#070a18;--purple:#6c5ce7;--cyan:#22d3ee;--green:#22c55e;--text:#f2f4ff;--muted:#8a90a8}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:var(--bg);font-family:PJS,sans-serif;color:var(--text)}
+#stage{position:absolute;inset:0;overflow:hidden}
+.glow{position:absolute;border-radius:50%;filter:blur(120px);opacity:.55}
+#g1{width:900px;height:900px;background:#4c3fd6;left:-300px;top:-200px}
+#g2{width:800px;height:800px;background:#0e7490;right:-300px;bottom:-100px}
+#g3{width:600px;height:600px;background:#6c5ce7;left:240px;top:700px;opacity:.25}
+#grain{position:absolute;inset:0;opacity:.06;background-image:radial-gradient(#fff 1px,transparent 1px);background-size:4px 4px}
+/* intro */
+#intro{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:26px}
+.big{font-weight:800;font-size:124px;letter-spacing:-4px;line-height:1.02}
+.mid{font-weight:700;font-size:78px;letter-spacing:-2px;line-height:1.1}
+.cy{background:linear-gradient(90deg,#7dd3fc,#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent}
+.pu{background:linear-gradient(90deg,#a78bfa,#6c5ce7);-webkit-background-clip:text;background-clip:text;color:transparent}
+#wave{position:absolute;left:0;right:0;top:1420px;height:220px;display:flex;align-items:center;justify-content:center;gap:12px}
+#wave i{display:block;width:14px;border-radius:7px;background:linear-gradient(#22d3ee,#6c5ce7)}
+/* captions */
+#capbg{position:absolute;left:0;right:0;top:0;height:470px;background:linear-gradient(180deg,rgba(7,10,24,.97) 0%,rgba(7,10,24,.92) 70%,rgba(7,10,24,0) 100%);opacity:0}
+.cap{position:absolute;left:60px;right:60px;top:110px;text-align:center;font-weight:800;font-size:92px;letter-spacing:-3px;line-height:1.04}
+.cap .sub{display:block;font-weight:600;font-size:40px;letter-spacing:0;color:#b8bdd6;margin-top:18px}
+.w{display:inline-block;white-space:pre}
+/* phone */
+#cam{position:absolute;left:0;top:0;width:1080px;height:1920px;transform-origin:0 0}
+#phone{position:absolute;left:194px;top:420px;width:692px;height:1460px;border-radius:92px;background:#0b0e1c;padding:16px;
+  box-shadow:0 0 0 3px #2a3052,0 0 0 5px #0a0d1a,0 60px 140px rgba(0,0,0,.7),0 0 160px rgba(108,92,231,.35)}
+#screen{position:relative;width:660px;height:1428px;border-radius:78px;overflow:hidden;background:#0b0f1f}
+#screen img{position:absolute;inset:0;width:100%;height:100%}
+#island{position:absolute;left:50%;top:22px;width:190px;height:52px;margin-left:-95px;border-radius:26px;background:#000;z-index:5}
+.ripple{position:absolute;border-radius:50%;border:6px solid rgba(255,255,255,.9);z-index:6;pointer-events:none}
+.finger{position:absolute;width:86px;height:86px;border-radius:50%;background:rgba(255,255,255,.35);border:3px solid rgba(255,255,255,.85);z-index:7;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+/* chips */
+.chip{position:absolute;padding:22px 34px;border-radius:999px;font-weight:700;font-size:40px;background:rgba(20,24,48,.82);border:2px solid rgba(255,255,255,.14);
+  backdrop-filter:blur(10px);box-shadow:0 20px 50px rgba(0,0,0,.5);white-space:nowrap;display:flex;align-items:center;gap:16px}
+.chip b{display:inline-block;width:18px;height:18px;border-radius:50%}
+/* outro */
+#outro{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+#mark{width:300px;height:300px;filter:drop-shadow(0 0 60px rgba(34,211,238,.45))}
+#word{font-weight:800;font-size:150px;letter-spacing:-5px;margin-top:10px}
+#tag{font-weight:700;font-size:66px;letter-spacing:-1.5px;margin-top:40px;line-height:1.15}
+#cta{margin-top:80px;padding:34px 70px;border-radius:999px;font-weight:800;font-size:60px;background:linear-gradient(90deg,#22c55e,#16a34a);
+  box-shadow:0 0 0 0 rgba(34,197,94,.6),0 20px 60px rgba(34,197,94,.35)}
+#fine{margin-top:44px;font-weight:600;font-size:38px;color:#b8bdd6}
+</style></head><body>
+<div id="stage">
+  <div class="glow" id="g1"></div><div class="glow" id="g2"></div><div class="glow" id="g3"></div>
+  <div id="grain"></div>
+  <div id="intro">
+    <div class="big" id="i1">It's 3am.</div>
+    <div class="big pu" id="i2">Can't sleep?</div>
+    <div class="mid" id="i3">Someone, somewhere,<br><span class="cy">is awake too.</span></div>
+  </div>
+  <div id="wave"></div>
+  <div id="cam">
+    <div id="phone"><div id="screen"><div id="island"></div><img id="sA"><img id="sB"><div class="ripple" id="rip"></div><div class="finger" id="fin"></div></div></div>
+  </div>
+  <div id="capbg"></div>
+    <div class="chip" id="c1"><b style="background:#22c55e"></b>Voice only</div>
+    <div class="chip" id="c2"><b style="background:#22d3ee"></b>No sign-up</div>
+    <div class="chip" id="c3"><b style="background:#a78bfa"></b>100% anonymous</div>
+<div class="cap" id="cap1"></div><div class="cap" id="cap2"></div><div class="cap" id="cap3"></div><div class="cap" id="cap4"></div><div class="cap" id="cap5"></div>
+  <div id="outro">
+    <img id="mark" src="/marketing/TalkLive%20Mark%20Transparent.png">
+    <div id="word">Talk<span class="cy">Live</span></div>
+    <div id="tag">Talk to a stranger.<br><span class="cy">Right now.</span></div>
+    <div id="cta">talklive.app</div>
+    <div id="fine">Free · No sign-up · Voice &amp; text · 18+</div>
+  </div>
+</div>
+<script>
+const $ = (id) => document.getElementById(id);
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const prog = (t, a, b) => clamp((t - a) / (b - a));
+const eo = (x) => 1 - Math.pow(1 - x, 3);                 // ease out cubic
+const eio = (x) => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const back = (x) => { const c = 1.7; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+const lerp = (a, b, x) => a + (b - a) * x;
+
+// ---- captions: words rise in with a stagger, fade out together
+const CAPS = [
+  ['cap1', 'Meet someone <span class="cy">new.</span>', 'Real people. Genuine conversations.', 3.5, 4.95],
+  ['cap2', 'Pick your <span class="pu">spirit animal.</span>', 'Whoever you meet sees it first.', 4.95, 6.95],
+  ['cap3', 'One tap to <span class="cy">talk.</span>', 'Matched in seconds, worldwide.', 7.0, 9.7],
+  ['cap4', 'Live voice.<br><span class="cy">No camera.</span>', null, 9.8, 13.8],
+  ['cap5', 'Rather type?<br><span class="pu">Text chat too.</span>', null, 13.9, 18.3],
+];
+function buildCap(id, html, sub) {
+  const el = $(id); const tmp = document.createElement('div'); tmp.innerHTML = html;
+  const out = [];
+  tmp.childNodes.forEach((n) => {
+    if (n.nodeName === 'BR') { out.push('<br>'); return; }
+    const cls = n.nodeType === 1 ? n.className : '';
+    n.textContent.split(/(\s+)/).forEach((w) => { if (!w) return; if (/^\s+$/.test(w)) out.push(' '); else out.push(`<span class="w ${cls}">${w}</span>`); });
+  });
+  el.innerHTML = out.join('') + (sub ? `<span class="sub">${sub}</span>` : '');
+}
+CAPS.forEach(([id, h, s]) => buildCap(id, h, s));
+function capAt(t, [id, , , a, b]) {
+  const el = $(id); const ws = el.querySelectorAll('.w, .sub');
+  const out = eio(prog(t, b - .35, b));
+  el.style.opacity = t < a || t > b ? 0 : 1 - out;
+  el.style.transform = `translateY(${-40 * out}px)`;
+  ws.forEach((w, i) => { const p = eo(prog(t, a + i * .07, a + i * .07 + .45)); w.style.opacity = p; w.style.transform = `translateY(${(1 - p) * 60}px)`; w.style.filter = `blur(${(1 - p) * 12}px)`; });
+}
+
+// ---- screen timeline: [time, image]
+const CALL = Array.from({ length: 36 }, (_, i) => `/marketing/video-ad/shots/call-${String(i).padStart(2, '0')}.png`);
+const SCREENS = [
+  [0, '/marketing/video-ad/shots/01-home.png'],
+  [5.95, '/marketing/video-ad/shots/02-animal.png'],
+  [8.05, '/marketing/video-ad/shots/03-search.png'],
+  [8.6, '/marketing/video-ad/shots/03b-search.png'],
+  [9.7, 'CALL'],
+  [14.2, '/marketing/video-ad/shots/chat-1.png'], [15.0, '/marketing/video-ad/shots/chat-2.png'], [15.8, '/marketing/video-ad/shots/chat-3.png'], [16.6, '/marketing/video-ad/shots/chat-4.png'], [17.4, '/marketing/video-ad/shots/chat-5.png'],
+];
+const FADE = .18;
+function srcFor(entry, t) { return entry[1] === 'CALL' ? CALL[Math.floor((t - entry[0]) * 9) % CALL.length] : entry[1]; }
+function screenAt(t) {
+  let k = 0; for (let i = 0; i < SCREENS.length; i++) if (t >= SCREENS[i][0]) k = i;
+  const cur = SCREENS[k], prev = SCREENS[k - 1];
+  const f = prev ? prog(t, cur[0], cur[0] + FADE) : 1;
+  const A = $('sA'), B = $('sB');
+  const sb = srcFor(cur, t); if (!B.src.endsWith(sb)) B.src = sb;
+  const sa = prev ? srcFor(prev, Math.max(t, prev[0])) : sb; if (!A.src.endsWith(sa)) A.src = sa;
+  B.style.opacity = f; A.style.opacity = 1;
+  // new chat messages slide their pixels up a touch as they arrive
+  B.style.transform = cur[1].includes('chat-') && prev && prev[1].includes('chat-') ? `translateY(${(1 - eo(f)) * 14}px)` : 'none';
+}
+
+// ---- taps (screen px, 660 wide): fox tile and Tap to Talk
+const S = 660 / 390;
+const TAPS = [[5.8, 331 * S, 603 * S], [7.85, 194 * S, 284 * S]];
+function tapAt(t) {
+  const fin = $('fin'), rip = $('rip'); fin.style.opacity = 0; rip.style.opacity = 0;
+  for (const [tt, x, y] of TAPS) {
+    const a = prog(t, tt - .55, tt), d = prog(t, tt, tt + .5);
+    if (t > tt - .55 && t < tt + .6) {
+      const press = t < tt ? 1 - .15 * eo(a) : .85 + .15 * eo(prog(t, tt, tt + .2));
+      fin.style.opacity = t < tt ? eo(a) : 1 - d;
+      fin.style.left = x - 43 + 'px'; fin.style.top = y - 43 + (1 - eo(a)) * 120 + 'px';
+      fin.style.transform = `scale(${press})`;
+    }
+    if (t >= tt && t < tt + .6) {
+      const r = 40 + 170 * eo(d); rip.style.opacity = 1 - d;
+      rip.style.width = rip.style.height = r * 2 + 'px'; rip.style.left = x - r + 'px'; rip.style.top = y - r + 'px';
+    }
+  }
+}
+
+// ---- camera: [time, scale, focusX, focusY] in stage px; focus point stays put on screen
+const PX = 194 + 16, PY = 420 + 16;        // screen origin in stage
+const CAM = [
+  [0, 1, 540, 1150], [4.6, 1, 540, 1150], [5.3, 1.42, PX + 330, PY + 1010], [6.5, 1.42, PX + 330, PY + 1010],
+  [7.2, 1.18, PX + 330, PY + 520], [8.5, 1.18, PX + 330, PY + 520], [9.3, 1, 540, 1150], [10.6, 1, 540, 1150],
+  [11.4, 1.3, PX + 330, PY + 440], [13.0, 1.3, PX + 330, PY + 440], [13.8, 1, 540, 1150],
+  [15.4, 1, 540, 1150], [16.4, 1.14, PX + 330, PY + 520], [18.0, 1.14, PX + 330, PY + 520], [18.6, 1, 540, 1150],
+];
+function camAt(t) {
+  let i = 0; while (i < CAM.length - 1 && t >= CAM[i + 1][0]) i++;
+  const a = CAM[i], b = CAM[i + 1] || a; const x = b === a ? 1 : eio(prog(t, a[0], b[0]));
+  const s = lerp(a[1], b[1], x), fx = lerp(a[2], b[2], x), fy = lerp(a[3], b[3], x);
+  // keep the focus point at the same place on the canvas (slightly above centre)
+  const k = (s - 1) / .42; const tx = 540 - fx * s, ty = lerp(1150, 1260, clamp(k)) - fy * s;
+  // entrance rise + exit drop
+  const rise = (1 - eo(prog(t, 3.1, 4.0))) * 1500, drop = eio(prog(t, 18.2, 18.9)) * 1600;
+  $('cam').style.transform = `translate(${tx}px,${ty + rise + drop}px) scale(${s})`;
+  $('phone').style.transform = `rotate(${(1 - eo(prog(t, 3.1, 4.2))) * -8}deg)`;
+}
+
+// ---- chips around the phone during the call
+const CHIPS = [['c1', 11.5, 50, 760], ['c2', 11.8, 610, 1060], ['c3', 12.1, 70, 1420]];
+function chipsAt(t) {
+  CHIPS.forEach(([id, a, x, y]) => {
+    const el = $(id); const p = back(prog(t, a, a + .45)); const o = eio(prog(t, 13.3, 13.7));
+    el.style.left = x + 'px'; el.style.top = y + 'px';
+    el.style.opacity = t < a ? 0 : Math.min(1, prog(t, a, a + .2)) * (1 - o);
+    el.style.transform = `scale(${lerp(.4, 1, p)}) translateY(${Math.sin(t * 2 + a) * 8}px)`;
+  });
+}
+
+// ---- intro + waveform
+const BARS = 44; $('wave').innerHTML = '<i></i>'.repeat(BARS);
+function introAt(t) {
+  const out = eio(prog(t, 2.95, 3.35));
+  [['i1', .15], ['i2', .95], ['i3', 1.75]].forEach(([id, a]) => {
+    const p = eo(prog(t, a, a + .5)); const el = $(id);
+    el.style.opacity = p * (1 - out); el.style.transform = `translateY(${(1 - p) * 80 - out * 120}px) scale(${lerp(.92, 1, p)})`; el.style.filter = `blur(${(1 - p) * 16}px)`;
+  });
+  $('intro').style.display = t > 3.4 ? 'none' : 'flex';
+  const w = $('wave'); const wv = prog(t, .2, 1) * (1 - eio(prog(t, 2.9, 3.3)));
+  w.style.opacity = wv;
+  w.querySelectorAll('i').forEach((b, k) => {
+    const env = Math.sin(Math.PI * (k + .5) / BARS);
+    const h = 14 + env * 170 * (.35 + .65 * Math.abs(Math.sin(t * 5.3 + k * .55) * Math.cos(t * 2.1 + k * .23)));
+    b.style.height = h + 'px';
+  });
+}
+
+// ---- outro
+function outroAt(t) {
+  const on = t > 18.5; $('outro').style.display = on ? 'flex' : 'none'; if (!on) return;
+  const m = back(prog(t, 18.7, 19.3));
+  $('mark').style.transform = `scale(${lerp(.3, 1, m)}) rotate(${(1 - m) * -20}deg)`; $('mark').style.opacity = prog(t, 18.7, 18.95);
+  [['word', 19.05], ['tag', 19.4], ['cta', 19.9], ['fine', 20.25]].forEach(([id, a]) => {
+    const p = eo(prog(t, a, a + .5)); const el = $(id);
+    el.style.opacity = p; el.style.transform = `translateY(${(1 - p) * 60}px)`;
+  });
+  const pulse = (t - 20.4) % 1.2; const pr = t > 20.4 ? pulse / 1.2 : 0;
+  $('cta').style.boxShadow = `0 0 0 ${pr * 40}px rgba(34,197,94,${.55 * (1 - pr)}),0 20px 60px rgba(34,197,94,.35)`;
+  $('cta').style.transform += ` scale(${1 + .03 * Math.sin(Math.max(0, t - 20.4) * 5.2)})`;
+}
+
+function bgAt(t) {
+  $('g1').style.transform = `translate(${Math.sin(t * .5) * 120}px,${Math.cos(t * .4) * 90}px)`;
+  $('g2').style.transform = `translate(${Math.cos(t * .45) * 110}px,${Math.sin(t * .35) * 120}px)`;
+  $('g3').style.transform = `translate(${Math.sin(t * .3) * 160}px,${Math.cos(t * .55) * 140}px) scale(${1 + .15 * Math.sin(t)})`;
+}
+
+function capbgAt(t){ $('capbg').style.opacity = t > 3.3 && t < 18.4 ? 1 : 0; }
+window.render = (t) => { capbgAt(t); bgAt(t); introAt(t); camAt(t); screenAt(t); tapAt(t); chipsAt(t); CAPS.forEach((c) => capAt(t, c)); outroAt(t); };
+window.preload = async () => {
+  const all = [...new Set([...CALL, ...SCREENS.map((s) => s[1]).filter((s) => s !== 'CALL'), '/marketing/TalkLive%20Mark%20Transparent.png'])];
+  window._imgs = []; for (const u of all) { const i = new Image(); i.src = u; window._imgs.push(i); await new Promise((r) => { if (i.complete) r(); else { i.onload = r; i.onerror = () => { console.log('FAIL ' + u); r(); }; } }); }
+  await document.fonts.ready; await document.fonts.load('800 80px PJS');
+};
+window.DURATION = 23;
+render(0);
+</script>
+</body></html>
