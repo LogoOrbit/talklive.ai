@@ -469,6 +469,19 @@ function isEmptyDoc(doc) {
     && (doc.bans || []).length === 0;
 }
 
+// Anything at all worth keeping, including the owner's side: isEmptyDoc plus
+// the dashboard - login, visitor stats, reports, feedback, errors.
+function hasAnything(doc) {
+  if (!isEmptyDoc(doc)) return true;
+  const a = (doc && doc.analytics) || {};
+  return !!(doc && (doc.admin
+    || (a.totals && a.totals.visits > 0)
+    || Object.keys(a.days || {}).length
+    || (doc.reports || []).length
+    || (doc.feedback || []).length
+    || (doc.errors || []).length));
+}
+
 // The copy on the volume, for the Postgres path. A file that parses as garbage
 // is moved aside with its bytes intact and the newest usable snapshot is used
 // instead; a file that exists but cannot be read at all is left strictly
@@ -515,7 +528,11 @@ function bootLocal() {
 //                has nothing - send ours up
 //   'conflict'   both hold real data and neither is provably newer
 function decide(pgDoc, local) {
-  if (isEmptyDoc(local)) return 'use-pg';
+  // Our side is only nothing if it has no owner dashboard either - an owner
+  // login, visitor stats, reports and feedback are data too, and a store
+  // holding only those must still win over an empty database rather than be
+  // replaced by it.
+  if (!hasAnything(local)) return 'use-pg';
   if (isEmptyDoc(pgDoc)) return 'push-local';
   const lp = lineageOf(pgDoc);
   const ll = lineageOf(local);

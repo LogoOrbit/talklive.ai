@@ -379,6 +379,27 @@ if (!TEST_DB) {
     ok('and this process keeps saving to disk', !!JSON.parse(fs.readFileSync(DATA(dir), 'utf8')).accountsRegistry.frank);
   }
 
+  // The owner dashboard survives the cutover too - even with no user accounts.
+  {
+    reset(); psql('DROP TABLE IF EXISTS owner_store_history');
+    psql(`CREATE TABLE owner_store (id int PRIMARY KEY, doc jsonb NOT NULL, updated_at timestamptz NOT NULL DEFAULT now())`);
+    // What the live database actually holds: 12 visits, no owner login.
+    psql(`INSERT INTO owner_store (id, doc) VALUES (1, '{"admin":null,"analytics":{"totals":{"visits":12},"days":{"2026-08-14":{}}},"accounts":{},"social":{}}')`);
+    const dir = tmpDir();
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(DATA(dir), JSON.stringify({
+      admin: { passwordHash: 'owner-hash', salt: 's', createdAt: 1 },
+      analytics: { totals: { visits: 9000 }, days: { '2026-09-01': {}, '2026-09-02': {} } },
+      reports: [{ id: 'r1' }], feedback: [{ id: 'f1' }],
+      accounts: {}, social: { friends: {}, friendChats: {}, blocks: {}, chatHistory: {} },
+    }));
+    inStore(dir, '', { DATABASE_URL: TEST_DB });
+    const db = pgDoc();
+    ok('the owner login survives the cutover', db.admin && db.admin.passwordHash === 'owner-hash', db.admin);
+    ok('the visitor stats survive the cutover', db.analytics.totals.visits === 9000, db.analytics.totals);
+    ok('reports and feedback survive the cutover', db.reports.length === 1 && db.feedback.length === 1);
+  }
+
   // The wipe guard: a sudden mass drop keeps the previous state first.
   {
     reset(); psql('DROP TABLE IF EXISTS owner_store_history');
