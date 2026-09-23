@@ -75,23 +75,31 @@ function grouped(items, keyOf) {
 }
 
 // Earliest date counted in the all-time total. Adsterra has no lifetime
-// endpoint, so it is summed one calendar year per request (hourly cache).
+// endpoint, so days before the 31-day window are summed one calendar year per
+// request. Finished days barely change, so that part is cached for an hour;
+// the window itself comes from the fresh 10-minute data, which keeps All time
+// consistent with the other tiles.
 const ALL_TIME_FROM = process.env.ADSTERRA_START_DATE || '2020-01-01';
-async function allTime() {
-  const today = ymd(new Date());
+async function historyBefore(windowStart) {
+  const last = ymd(new Date(Date.parse(windowStart) - 86400000));
+  const perDay = new Map();
+  if (last < ALL_TIME_FROM) return perDay;
   const ranges = [];
-  for (let y = Number(ALL_TIME_FROM.slice(0, 4)); y <= Number(today.slice(0, 4)); y++) {
+  for (let y = Number(ALL_TIME_FROM.slice(0, 4)); y <= Number(last.slice(0, 4)); y++) {
     const start = y === Number(ALL_TIME_FROM.slice(0, 4)) ? ALL_TIME_FROM : `${y}-01-01`;
-    const finish = String(y) === today.slice(0, 4) ? today : `${y}-12-31`;
+    const finish = y === Number(last.slice(0, 4)) ? last : `${y}-12-31`;
     ranges.push({ start_date: start, finish_date: finish, group_by: 'date' });
   }
-  const years = await Promise.all(ranges.map((r) => stats(r, 60 * 60000)));
-  const rows = years.flat().map((it) => row(it, String(it.date || '').slice(0, 10)));
-  const firstDay = rows.filter((r) => r.impressions || r.revenue).map((r) => r.key).sort()[0] || null;
-  // Adsterra's balance ("Earned") only credits finished days, so also give the
-  // total without today to compare against it.
-  const settled = sum(rows.filter((r) => r.key !== today)).revenue;
-  return { ...sum(rows), settled, since: firstDay };
+  const chunks = await Promise.all(ranges.map((r) => stats(r, 60 * 60000)));
+  // Keyed by date and bounded to what was asked for, so no day is ever
+  // counted twice even if the API returns rows outside a range.
+  chunks.forEach((items, i) => {
+    for (const it of items) {
+      const d = String(it.date || '').slice(0, 10);
+      if (d >= ranges[i].start_date && d <= ranges[i].finish_date) perDay.set(d, row(it, d));
+    }
+  });
+  return perDay;
 }
 
 // Daily series for the last `days` days plus the period broken down by ad unit
@@ -105,10 +113,14 @@ async function report(days = 31) {
     stats({ ...range, group_by: 'date' }),
     stats({ ...range, group_by: 'placement' }).catch(() => []),
     stats({ ...range, group_by: 'country' }).catch(() => []),
-    allTime().catch((err) => ({ error: String(err.message || err) })),
+    historyBefore(range.start_date).catch((err) => ({ error: String(err.message || err) })),
   ]);
 
-  const perDay = new Map(byDate.map((it) => [String(it.date || '').slice(0, 10), withRates(row(it, String(it.date || '').slice(0, 10)))]));
+  const perDay = new Map();
+  for (const it of byDate) {
+    const d = String(it.date || '').slice(0, 10);
+    if (d >= range.start_date && d <= range.finish_date) perDay.set(d, withRates(row(it, d)));
+  }
   const daily = [];
   for (let t = start.getTime(); t <= finish.getTime(); t += 86400000) {
     const d = ymd(new Date(t));
@@ -118,6 +130,15 @@ async function report(days = 31) {
   const yesterday = ymd(new Date(finish.getTime() - 86400000));
   const month = today.slice(0, 7);
   const last = (k) => sum(daily.slice(-k));
+  let allTime = lifetime;
+  if (!lifetime.error) {
+    const rows = [...lifetime.values(), ...daily];
+    const since = rows.filter((r) => r.impressions || r.revenue).map((r) => r.key).sort()[0] || null;
+    // Adsterra's "Earned" only credits finished days, so also give the total
+    // without today to compare against it.
+    const settled = sum(rows.filter((r) => r.key !== today)).revenue;
+    allTime = { ...sum(rows), settled, since };
+  }
 
   return {
     range,
@@ -128,7 +149,7 @@ async function report(days = 31) {
       last7: last(7),
       last30: last(30),
       monthToDate: sum(daily.filter((d) => d.key.startsWith(month))),
-      allTime: lifetime,
+      allTime,
     },
     daily,
     placements: grouped(byPlacement, (it) => String(it.placement || it.placement_name || it.title || it.placement_id || 'unknown')).slice(0, 25),
