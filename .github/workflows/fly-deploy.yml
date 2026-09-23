@@ -40,6 +40,11 @@ jobs:
       - name: Build SEO pages
         run: npm run build:seo
 
+      # Minified copies of the scripts, served only while they match the
+      # source (server/minified.js). Must run after build:seo.
+      - name: Minify scripts
+        run: npm run build:min
+
       - name: Test compression and call-safe ads
         run: node --test scripts/test-compression.js scripts/test-ad-lifecycle.js scripts/test-age-assurance.js
 

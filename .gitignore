@@ -7,3 +7,6 @@ node_modules/
 # rule is only meant for the runtime store directory at the repo root (see
 # DATA_DIR in fly.toml).
 /data/
+
+# Minified scripts written by scripts/minify-assets.js (CI builds them).
+/build/

@@ -15,6 +15,7 @@ const compress = require('./compress');
 const billing = require('./billing');
 const push = require('./push');
 const flags = require('./flags');
+const { minifiedScripts } = require('./minified');
 const ageAssurance = require('./age-assurance');
 const mail = require('./mailer');
 const { botLabel, isPrefetch } = require('./bots');
@@ -1198,31 +1199,37 @@ app.get('/api/gifs', async (req, res) => {
   }
 });
 
+// Minified copies of the scripts (scripts/minify-assets.js, run in CI), each
+// served only while it still matches the source in public/.
+app.use(minifiedScripts(PUBLIC_DIR, path.join(__dirname, '..', 'build', 'min'), staticHeaders));
+
 app.use(
   express.static(PUBLIC_DIR, {
     // Serve clean URLs: /talk-to-strangers resolves to talk-to-strangers.html.
     extensions: ['html'],
-    setHeaders(res, filePath) {
-      if (/\.html$/i.test(filePath)) {
-        // HTML changes with deploys - revalidate so updates show up fast.
-        res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
-      } else if (/\.(css|js|svg|png|jpg|jpeg|webp|ico|woff2?|mp4|webm|m4a|mp3)$/i.test(filePath)) {
-        // Assets requested with a ?v= cache buster get a brand new URL on every
-        // deploy, so the bytes behind a given URL never change - cache them for
-        // a year. Everything else keeps the conservative one-day window.
-        const versioned = /[?&]v=/.test(res.req && res.req.url ? res.req.url : '');
-        res.setHeader(
-          'Cache-Control',
-          versioned
-            ? 'public, max-age=31536000, immutable'
-            : 'public, max-age=86400, stale-while-revalidate=604800'
-        );
-      } else if (/\.(xml|txt|webmanifest)$/i.test(filePath)) {
-        res.setHeader('Cache-Control', 'public, max-age=3600');
-      }
-    },
+    setHeaders: staticHeaders,
   })
 );
+
+function staticHeaders(res, filePath) {
+  if (/\.html$/i.test(filePath)) {
+    // HTML changes with deploys - revalidate so updates show up fast.
+    res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+  } else if (/\.(css|js|svg|png|jpg|jpeg|webp|ico|woff2?|mp4|webm|m4a|mp3)$/i.test(filePath)) {
+    // Assets requested with a ?v= cache buster get a brand new URL on every
+    // deploy, so the bytes behind a given URL never change - cache them for
+    // a year. Everything else keeps the conservative one-day window.
+    const versioned = /[?&]v=/.test(res.req && res.req.url ? res.req.url : '');
+    res.setHeader(
+      'Cache-Control',
+      versioned
+        ? 'public, max-age=31536000, immutable'
+        : 'public, max-age=86400, stale-while-revalidate=604800'
+    );
+  } else if (/\.(xml|txt|webmanifest)$/i.test(filePath)) {
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+  }
+}
 
 // Friendly 404 for unknown pages: correct status code (so search engines drop
 // dead URLs) plus links back into the site instead of Express's plain text.
