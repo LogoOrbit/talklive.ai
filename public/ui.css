@@ -3668,6 +3668,8 @@
 .chat-clear-btn svg { width: 19px; height: 19px; }
 .chat-clear-btn:hover { color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, transparent); }
 .chat-clear-btn.hidden { display: none; }
+.chat-call-btn { color: var(--green, #2ed47a); }
+.chat-call-btn:hover { color: var(--green, #2ed47a); background: color-mix(in srgb, var(--green, #2ed47a) 14%, transparent); }
 /* A pane's first heading is the tab's own name and stays hidden; a second
    section in the same pane (Privacy > Blocked people) still needs its name. */
 .tl-set-pane > section + section { margin-top: var(--tl-s5); }

@@ -2570,6 +2570,15 @@ function isBlockedPair(clientIdA, clientIdB) {
   return false;
 }
 
+// Blocking or reporting someone from their profile while still paired with
+// them (the sheet opens mid-call and mid-chat) left the call running: they
+// could go on talking and typing to the person who had just shut them out.
+function endPairingWith(socketId, otherClientId) {
+  const partnerId = partners.get(socketId);
+  const partner = partnerId ? profiles.get(partnerId) : null;
+  if (partner && partner.clientId === otherClientId) disconnectPartner(socketId);
+}
+
 function blockPair(clientIdA, clientIdB) {
   // Snapshot before anything below forgets who they were.
   const who = snapshotOf(clientIdB, clientIdA);
@@ -4037,6 +4046,7 @@ io.on('connection', (socket) => {
     // Same outcome as blocking them from this screen: the friendship goes and
     // the pair is blocked, which is what "you will also stop seeing each
     // other" in the confirmation promises.
+    endPairingWith(socket.id, targetClientId);
     removeFriendPair(me.clientId, targetClientId);
     blockPair(me.clientId, targetClientId);
     const targetSocketId = clientSockets.get(targetClientId);
@@ -4589,6 +4599,7 @@ io.on('connection', (socket) => {
     const mine = blocks.get(me.clientId);
     if (mine && mine.size >= MAX_BLOCKS && !mine.has(friendClientId)) return;
     store.recordFeature('block');
+    endPairingWith(socket.id, friendClientId);
     removeFriendPair(me.clientId, friendClientId);
     blockPair(me.clientId, friendClientId);
     syncClientState(socket, me.clientId);
@@ -5182,6 +5193,8 @@ io.on('connection', (socket) => {
 
     clearTimeout(invite.timer);
     voiceInvites.delete(token);
+    // One of them blocked the other on the way over: no call.
+    if (isBlockedPair(me.clientId, otherClientId)) return;
 
     for (const id of [socket.id, otherSocketId]) {
       disconnectPartner(id);
