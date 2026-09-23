@@ -178,6 +178,7 @@ const friendProfileAddBtn = document.getElementById('friendProfileAddBtn');
 const friendProfileAcceptBtn = document.getElementById('friendProfileAcceptBtn');
 const friendProfileDeclineBtn = document.getElementById('friendProfileDeclineBtn');
 const friendProfilePending = document.getElementById('friendProfilePending');
+const friendProfileCancelBtn = document.getElementById('friendProfileCancelBtn');
 const peerGoneBanner = document.getElementById('peerGoneBanner');
 const peerGoneTitle = document.getElementById('peerGoneTitle');
 const peerGoneSub = document.getElementById('peerGoneSub');
@@ -681,6 +682,8 @@ const friendChatCache = new Map(); // friendClientId -> [{ from, text, ts }]
 // Unlike callHistory it survives a reload, which is exactly when "who was that
 // person I liked talking to" gets asked.
 let serverHistory = [];
+// People this user blocked, newest first: [{ clientId, username, countryCode, avatar, ts }].
+let blockedData = [];
 // clientId -> timeout, while that person is typing to this user.
 const typingFrom = new Map();
 
@@ -3038,17 +3041,30 @@ function openUserProfile(person) {
   friendProfileRealName.classList.toggle('hidden', !renamed);
   if (renamed) friendProfileRealName.textContent = t('realName', { name: friend.username });
 
-  friendProfileChatBtn.classList.toggle('hidden', relation !== 'friend');
+  // Chat is for anyone the server lets this user message: friends, and
+  // recent matches ("message back"). Block is for everyone - it used to be
+  // friends-only, so the one person you most wanted gone after a bad call
+  // could only be reported, never simply blocked.
+  friendProfileChatBtn.classList.toggle('hidden', !canMessage(person.clientId));
   friendProfileRenameBtn.classList.toggle('hidden', relation !== 'friend');
   friendProfileRemoveBtn.classList.toggle('hidden', relation !== 'friend');
-  friendProfileBlockBtn.classList.toggle('hidden', relation !== 'friend');
+  friendProfileBlockBtn.classList.remove('hidden');
   friendProfileAddBtn.classList.toggle('hidden', relation !== 'stranger');
   friendProfileAcceptBtn.classList.toggle('hidden', relation !== 'incoming');
   friendProfileDeclineBtn.classList.toggle('hidden', relation !== 'incoming');
   friendProfilePending.classList.toggle('hidden', relation !== 'pending');
+  if (friendProfileCancelBtn) friendProfileCancelBtn.classList.toggle('hidden', relation !== 'pending');
 
   closeSidePanel(friendsDropdown, friendsOverlay);
   openSidePanel(friendProfileModal, friendProfileOverlay);
+}
+
+// Whether a direct chat with this person can be opened: friends, and anyone
+// among recent people (the server accepts both).
+function canMessage(clientId) {
+  return friendsData.some((f) => f.clientId === clientId)
+    || serverHistory.some((h) => h.clientId === clientId)
+    || callHistory.some((h) => h.clientId === clientId);
 }
 
 function openFriendProfile(friendClientId) {
@@ -3128,6 +3144,7 @@ friendProfileAddBtn.addEventListener('click', () => {
   // state-sync that follows says the same thing.
   friendProfileAddBtn.classList.add('hidden');
   friendProfilePending.classList.remove('hidden');
+  if (friendProfileCancelBtn) friendProfileCancelBtn.classList.remove('hidden');
   activeProfileRelation = 'pending';
   friendProfileStatus.innerHTML = `<span class="friend-relation-text">${escapeHtml(t('profileRelation_pending'))}</span>`;
   showToast(t('friendRequestSent'));
@@ -3158,11 +3175,82 @@ friendProfileReportBtn.addEventListener('click', async () => {
 
 friendProfileBlockBtn.addEventListener('click', async () => {
   if (!activeProfileFriendId) return;
-  const ok = await showConfirm({ title: 'block', text: 'confirmBlockFriend', okKey: 'block' });
-  if (!ok || !activeProfileFriendId) return;
-  socket.emit('block-friend', { friendClientId: activeProfileFriendId });
+  const target = activeProfileFriendId;
+  const wasFriend = relationTo(target) === 'friend';
+  const ok = await showConfirm({ title: 'block', text: wasFriend ? 'confirmBlockFriend' : 'confirmBlockUser', okKey: 'block' });
+  if (!ok) return;
+  socket.emit('block-friend', { friendClientId: target });
   closeSidePanel(friendProfileModal, friendProfileOverlay);
+  // A chat with them may still be open behind the sheet; it is dead now.
+  if (activeFriendChatId === target) {
+    closeSidePanel(friendChatModal, friendChatOverlay);
+    activeFriendChatId = null;
+  }
+  friendChatCache.delete(target);
+  showToast(t('userBlocked'));
 });
+
+if (friendProfileCancelBtn) {
+  friendProfileCancelBtn.addEventListener('click', () => {
+    if (!activeProfileFriendId) return;
+    cancelFriendRequest(activeProfileFriendId);
+    friendProfileCancelBtn.classList.add('hidden');
+    friendProfilePending.classList.add('hidden');
+    friendProfileAddBtn.classList.remove('hidden');
+    activeProfileRelation = 'stranger';
+    friendProfileStatus.innerHTML = `<span class="friend-relation-text">${escapeHtml(t('profileRelation_stranger'))}</span>`;
+  });
+}
+
+// Take back a request nobody has answered yet. Painted now; the state-sync
+// that follows says the same.
+function cancelFriendRequest(clientId) {
+  socket.emit('cancel-friend-request', { targetClientId: clientId });
+  sentRequestsData = sentRequestsData.filter((r) => r.clientId !== clientId);
+  renderSentRequests();
+  syncFriendsTabCounts();
+  showToast(t('friendRequestCancelled'));
+}
+
+// --- Blocked people (Settings > Privacy) -----------------------------------
+const blockedList = document.getElementById('blockedList');
+
+function renderBlockedList() {
+  if (!blockedList) return;
+  if (!blockedData.length) {
+    blockedList.innerHTML = `<p class="tl-empty">${escapeHtml(t('noBlockedPeople'))}</p>`;
+    return;
+  }
+  blockedList.innerHTML = '';
+  blockedData.forEach((b) => {
+    const row = document.createElement('div');
+    row.className = 'blocked-row';
+    const name = b.username || t('someone');
+    row.innerHTML = `
+      <span class="blocked-row-avatar" aria-hidden="true">${genderIcon(b.avatar, 30)}</span>
+      <span class="blocked-row-text">
+        <span class="blocked-row-name">${getFlagImg(b.countryCode)} ${escapeHtml(name)}</span>
+        ${b.ts ? `<span class="blocked-row-sub">${escapeHtml(timeAgo(b.ts))}</span>` : ''}
+      </span>
+      <button type="button" class="tl-unblock-btn" data-id="${escapeHtml(b.clientId)}" data-name="${escapeHtml(name)}">${escapeHtml(t('unblock'))}</button>
+    `;
+    blockedList.appendChild(row);
+  });
+}
+
+if (blockedList) {
+  blockedList.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.tl-unblock-btn');
+    if (!btn) return;
+    const name = btn.dataset.name;
+    const ok = await showConfirm({ title: 'unblock', text: 'confirmUnblock', textVars: { name }, okKey: 'unblock', okClass: 'btn-primary' });
+    if (!ok) return;
+    socket.emit('unblock-user', { targetClientId: btn.dataset.id });
+    blockedData = blockedData.filter((b) => b.clientId !== btn.dataset.id);
+    renderBlockedList();
+    showToast(t('unblocked', { name }));
+  });
+}
 
 // The friends list starts as skeleton rows (index.html); the first state-sync
 // replaces them. If no sync arrives (server hiccup, logged-out edge case),
@@ -3170,13 +3258,15 @@ friendProfileBlockBtn.addEventListener('click', async () => {
 let friendsSynced = false;
 setTimeout(() => { if (!friendsSynced) renderFriendsList(); }, 5000);
 
-socket.on('state-sync', ({ friends: friendList, friendRequests: requestList, sentRequests: sentList, notifications: notifList, chatHistory: historyList } = {}) => {
+socket.on('state-sync', ({ friends: friendList, friendRequests: requestList, sentRequests: sentList, notifications: notifList, chatHistory: historyList, blocked } = {}) => {
   friendsSynced = true;
   friendsData = friendList || [];
   friendRequestsData = requestList || [];
   sentRequestsData = sentList || [];
   notifData = notifList || [];
   serverHistory = historyList || [];
+  blockedData = blocked || [];
+  renderBlockedList();
   renderHistory();
   renderFriendChatStatus();
   renderFriendsList();
@@ -3326,6 +3416,7 @@ function renderSentRequests() {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 1.8"/></svg>
         ${escapeHtml(t('pending'))}
       </span>
+      <button type="button" class="tl-sent-cancel" data-id="${escapeHtml(r.clientId)}" title="${escapeHtml(t('cancelFriendRequest'))}" aria-label="${escapeHtml(t('cancelFriendRequest'))}">${escapeHtml(t('cancelRequest'))}</button>
     `;
     sentRequestsList.appendChild(item);
   });
@@ -3333,6 +3424,12 @@ function renderSentRequests() {
 
 if (sentRequestsList) {
   sentRequestsList.addEventListener('click', (e) => {
+    const cancel = e.target.closest('.tl-sent-cancel');
+    if (cancel) {
+      cancel.disabled = true;
+      cancelFriendRequest(cancel.dataset.id);
+      return;
+    }
     const row = e.target.closest('.tl-sent-item');
     if (!row || !row.dataset.profileId) return;
     const person = sentRequestsData.find((r) => r.clientId === row.dataset.profileId);
@@ -3551,6 +3648,42 @@ closeFriendChatBtn.addEventListener('click', () => {
   closeSidePanel(friendChatModal, friendChatOverlay);
   activeFriendChatId = null;
 });
+
+// Who you are talking to, as a profile: add, block and report live there.
+const friendChatWho = document.getElementById('friendChatWho');
+function openActiveChatProfile() {
+  const id = activeFriendChatId;
+  if (!id) return;
+  const person = friendsData.find((f) => f.clientId === id)
+    || historyEntries().find((h) => h.clientId === id)
+    || { clientId: id };
+  closeSidePanel(friendChatModal, friendChatOverlay);
+  openUserProfile(person);
+}
+if (friendChatWho) {
+  friendChatWho.addEventListener('click', openActiveChatProfile);
+  friendChatWho.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openActiveChatProfile(); }
+  });
+}
+
+// Clear this conversation - for this user only; the other side keeps theirs.
+const friendChatClearBtn = document.getElementById('friendChatClearBtn');
+if (friendChatClearBtn) {
+  friendChatClearBtn.addEventListener('click', async () => {
+    const id = activeFriendChatId;
+    if (!id || !(friendChatCache.get(id) || []).length) return;
+    const ok = await showConfirm({ title: 'clearChat', text: 'confirmClearChat', okKey: 'clearChat' });
+    if (!ok || activeFriendChatId !== id) return;
+    socket.emit('clear-friend-chat', { friendClientId: id });
+    friendChatCache.set(id, []);
+    noteLastMessage(id, null);
+    renderFriendChatMessages();
+    renderFriendsList();
+    renderHistory();
+    showToast(t('chatCleared'));
+  });
+}
 
 // The line under the chat title: "typing…", "Online" or "Last seen 5m ago".
 const friendChatStatus = document.getElementById('friendChatStatus');
@@ -6360,6 +6493,7 @@ socket.on('chat-blocked', ({ reason } = {}) => {
   const el = document.createElement('div');
   el.className = 'chat-msg system';
   el.textContent = reason === 'call-required' ? t('errCallRequiredToChat')
+    : reason === 'unreachable' ? t('errCantMessage')
     : reason === 'unsafe' ? t('errUnsafeMessage')
     : reason === 'rate' ? t('errSlowDown') : t('errNoLinks');
   target.appendChild(el);
