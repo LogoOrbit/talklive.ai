@@ -1581,7 +1581,7 @@ function recordChatHistory(ownerClientId, partner) {
   let list = chatHistory.get(ownerClientId);
   if (!list) { list = []; chatHistory.set(ownerClientId, list); }
   const idx = list.findIndex((e) => e.clientId === partner.clientId);
-  if (idx !== -1) list.splice(idx, 1);
+  const prev = idx !== -1 ? list.splice(idx, 1)[0] : null;
   list.push({
     clientId: partner.clientId,
     username: partner.username,
@@ -1589,8 +1589,23 @@ function recordChatHistory(ownerClientId, partner) {
     avatar: partner.avatar || null,
     mode: partner.mode === 'chat' ? 'chat' : 'talk',
     ts: Date.now(),
+    // Meeting the same person again is the strongest hint there is that they
+    // are worth keeping, so the history remembers it.
+    met: ((prev && prev.met) || (prev ? 1 : 0)) + 1,
   });
   while (list.length > MAX_CHAT_HISTORY) list.shift();
+}
+
+// How long the last conversation with `otherClientId` lasted, written onto
+// the owner's history row once it ends. Only this session's calls knew their
+// length before, so after a reload every row read the same and a twenty-minute
+// call was indistinguishable from a two-second skip.
+function noteConversationLength(ownerClientId, otherClientId, seconds) {
+  const list = chatHistory.get(ownerClientId);
+  const entry = list && list.find((e) => e.clientId === otherClientId);
+  if (!entry) return false;
+  entry.durationSeconds = seconds;
+  return true;
 }
 
 // A direct conversation with someone who is not a friend lives in "recent
@@ -1959,6 +1974,8 @@ function syncClientState(socket, clientId) {
       avatar: liveAvatarFor(e.clientId, e.avatar),
       mode: e.mode || 'chat',
       ts: e.ts,
+      met: e.met || 1,
+      durationSeconds: e.durationSeconds || 0,
       ...presenceOf(e.clientId),
       last: lastMessageBetween(clientId, e.clientId),
     }));
@@ -2433,9 +2450,10 @@ setInterval(broadcastVisitorCount, VISITOR_COUNT_TTL).unref();
 // The rail needs more than a number: a page that says "412 online" and shows
 // nothing else is asking to be taken on trust. What it lists is exactly what
 // a match already reveals about someone the moment you connect - the random
-// username they were given, their country, and the avatar and spirit animal
-// they picked for strangers to see. No city, no clientId, nothing that
-// identifies a person or lets one be singled out and called.
+// username they were given, their country, a few of their interests, and the
+// avatar and spirit animal they picked for strangers to see. No city, no
+// clientId, nothing that identifies a person or lets one be singled out and
+// called.
 //
 // Three rules it holds to:
 //   1. Anyone who turned their status off in Settings is not in it. That
@@ -2460,6 +2478,10 @@ function onlinePeopleList() {
       gender: p.gender || 'unspecified',
       avatar: p.avatar || null,
       animal: p.animal || null,
+      // Shown to a partner the moment a match connects (publicProfile), so
+      // listing a few here reveals nothing a match would not - and it is what
+      // lets search and "you both like" work on this list.
+      interests: (p.interests || []).slice(0, 5),
       waiting: waitingQueue.includes(socketId),
     });
   }
@@ -2622,6 +2644,17 @@ function disconnectPartner(socketId, opts = {}) {
 
   if (profile && partnerProfile) {
     notePairParted(profile.clientId, partnerProfile.clientId, opts.failed);
+    // A pairing whose media never came up was not a conversation.
+    if (startedAt && !opts.failed) {
+      const seconds = Math.round((Date.now() - startedAt) / 1000);
+      const a = noteConversationLength(profile.clientId, partnerProfile.clientId, seconds);
+      const b = noteConversationLength(partnerProfile.clientId, profile.clientId, seconds);
+      if (a || b) {
+        persistSocial();
+        schedulePresenceSync(profile.clientId);
+        schedulePresenceSync(partnerProfile.clientId);
+      }
+    }
   }
 
   const partnerSocket = io.sockets.sockets.get(partnerId);
@@ -2715,9 +2748,33 @@ function mutuallyCompatible(seeker, candidate) {
   return true;
 }
 
+// Trimmed, non-empty, at most 10, and no two that differ only by case - a
+// list holding both "Music" and "music" counted double against one partner.
+// Interests are free text shown to strangers (a partner, the Online now list),
+// so they get the chat's rules: no links, nothing unsafe, and no run of digits
+// long enough to be a phone number or a handle.
+function cleanInterests(list) {
+  if (!Array.isArray(list)) return [];
+  const seen = new Set();
+  const out = [];
+  for (const raw of list) {
+    if (typeof raw !== 'string') continue;
+    const i = raw.trim().slice(0, 40);
+    const key = i.toLowerCase();
+    if (!i || seen.has(key)) continue;
+    if (containsLink(i) || UNSAFE_RE.test(i) || /\d{5,}/.test(i.replace(/[\s().+-]/g, ''))) continue;
+    seen.add(key);
+    out.push(i);
+    if (out.length >= 10) break;
+  }
+  return out;
+}
+
+// Case-insensitive: "Music" typed by one person and the "music" quick-pick
+// chosen by the other are the same interest, and used to score as nothing.
 function sharedInterestCount(a, b) {
-  const setB = new Set(b.interests || []);
-  return (a.interests || []).filter((i) => setB.has(i)).length;
+  const setB = new Set((b.interests || []).map((i) => i.toLowerCase()));
+  return (a.interests || []).filter((i) => setB.has(i.toLowerCase())).length;
 }
 
 // Drop queue entries whose socket is gone or whose profile was cleared. These
@@ -3612,9 +3669,7 @@ io.on('connection', (socket) => {
       excludeCountries: sanitizeCountryList(data.excludeCountries),
       randomFallbackActive: false,
       mode: 'talk',
-      interests: Array.isArray(data.interests)
-        ? data.interests.filter((i) => typeof i === 'string').map((i) => i.slice(0, 40)).slice(0, 10)
-        : [],
+      interests: cleanInterests(data.interests),
       // `m1`-`f5` are the gendered busts; `a:<animal>` is a spirit-animal
       // avatar, validated against the same list the picker is built from so a
       // client cannot store an animal that does not exist.

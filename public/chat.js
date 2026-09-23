@@ -1734,12 +1734,20 @@
     var user = friendIdFound;
     if (!user) return;
     var relation = friendIdRelation(user.clientId);
-    var action = relation === 'friend'
-      ? '<button type="button" class="btn btn-secondary" data-act="chat">' + escapeHtml(t('chat')) + '</button>'
-      : relation === 'pending'
-        ? '<button type="button" class="btn btn-secondary" disabled>' + escapeHtml(t('pending')) + '</button>'
-        : '<button type="button" class="btn btn-primary" data-act="add">' + escapeHtml(t('addFriend')) + '</button>';
-    var sub = [user.friendId, user.temporary ? t('friendIdGuest') : '', user.online ? t('online') : '']
+    // Same actions as on the main app: someone who already asked gets Accept
+    // (it used to offer a second "Add friend"), a request you sent can be
+    // taken back.
+    var btn = function (act, cls, key) {
+      return '<button type="button" class="btn ' + cls + '" data-act="' + act + '">' + escapeHtml(t(key)) + '</button>';
+    };
+    var action = relation === 'friend' ? btn('chat', 'btn-secondary', 'message')
+      : relation === 'incoming' ? btn('accept', 'btn-primary', 'acceptRequest')
+        : relation === 'pending' ? btn('cancel', 'btn-secondary', 'cancelRequest')
+          : btn('add', 'btn-primary', 'addFriend');
+    var status = relation === 'friend' ? t('profileRelation_friend')
+      : relation === 'pending' ? t('profileRelation_pending')
+        : relation === 'incoming' ? t('profileRelation_incoming') : '';
+    var sub = [user.friendId, status, user.temporary ? t('friendIdGuest') : '', user.online ? t('online') : '']
       .filter(Boolean).join(' · ');
     friendIdResult.classList.remove('hidden', 'is-error');
     friendIdResult.innerHTML = '<span class="friend-id-result-who"><strong>' + getFlagImg(user.countryCode) + ' '
@@ -1761,6 +1769,14 @@
       return;
     }
     btn.disabled = true;
+    if (btn.dataset.act === 'accept') {
+      socket.emit('friend-request-respond', { fromClientId: friendIdFound.clientId, accept: true });
+      return;
+    }
+    if (btn.dataset.act === 'cancel') {
+      socket.emit('cancel-friend-request', { targetClientId: friendIdFound.clientId });
+      return;
+    }
     friendIdAddPending = true;
     socket.emit('friend-request', { targetClientId: friendIdFound.clientId, friendId: friendIdFound.friendId });
   });

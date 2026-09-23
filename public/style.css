@@ -7030,3 +7030,224 @@ html.perf-lite .side-panel { box-shadow: none; }
   font-size: 13px;
   flex-shrink: 0;
 }
+
+/* ===========================================================================
+ * Friends & discovery (main app only - /chat does not load this file)
+ *    Header search results, the friends filter, "People you've met", the
+ *    relation chip on history rows, and the empty states' actions.
+ * ======================================================================== */
+
+/* Header search: a results list under the box. */
+.nav-search { position: relative; }
+.nav-search-results {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: min(420px, 70vh);
+  overflow-y: auto;
+  padding: var(--tl-s1);
+  border: 1px solid var(--tl-line-strong);
+  border-radius: var(--tl-r-md);
+  background: var(--bg-2);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+}
+.nav-search-results.hidden { display: none; }
+.nav-search-result {
+  display: flex;
+  align-items: center;
+  gap: var(--tl-s3);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--tl-s2);
+  border: 0;
+  border-radius: var(--tl-r-sm);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.nav-search-result:hover,
+.nav-search-result.is-active { background: color-mix(in srgb, var(--text) 8%, transparent); }
+.nav-search-result-icon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--text) 9%, transparent);
+  color: var(--muted);
+  font-weight: 800;
+}
+.nav-search-result-icon svg { width: 17px; height: 17px; }
+.nav-search-result-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  line-height: 1.3;
+}
+.nav-search-result-text strong,
+.nav-search-result-text small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nav-search-result-text strong { font-size: 13.5px; font-weight: 700; }
+.nav-search-result-text small { font-size: 12px; color: var(--muted); }
+.nav-search-empty {
+  margin: 0;
+  padding: var(--tl-s3);
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* "Friend" / "Pending" / "+ Add" beside a person. */
+.tl-relation-chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 var(--tl-s2);
+  border: 1px solid var(--tl-line-strong);
+  border-radius: var(--tl-r-pill);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.tl-relation-chip.is-friend {
+  border-color: color-mix(in srgb, var(--green) 45%, transparent);
+  color: var(--green);
+}
+.tl-relation-chip.is-action {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  color: var(--text);
+  cursor: pointer;
+}
+.tl-relation-chip.is-action:hover { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+.tl-relation-chip:disabled { opacity: 0.5; cursor: default; }
+
+/* Friends filter: shown once the list is long enough to need one. */
+.tl-list-filter {
+  display: flex;
+  align-items: center;
+  gap: var(--tl-s2);
+  margin-bottom: var(--tl-s3);
+  padding: 0 var(--tl-s3);
+  min-height: 40px;
+  border: 1px solid var(--tl-line);
+  border-radius: var(--tl-r-pill);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+}
+.tl-list-filter.hidden { display: none; }
+.tl-list-filter svg { width: 16px; height: 16px; flex: none; color: var(--muted); }
+.tl-list-filter input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+}
+.tl-list-filter input:focus { outline: none; }
+
+/* People you've met, not yet added. */
+.tl-suggest { margin-top: var(--tl-s4); }
+.tl-suggest.hidden { display: none; }
+.tl-suggest-hint { font-size: 12.5px; margin-bottom: var(--tl-s2); }
+.tl-suggest-list { display: flex; flex-direction: column; gap: var(--tl-s1); }
+.tl-suggest-item {
+  display: flex;
+  align-items: center;
+  gap: var(--tl-s2);
+  padding: var(--tl-s1) 0;
+}
+.tl-suggest-who {
+  display: flex;
+  align-items: center;
+  gap: var(--tl-s3);
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: var(--tl-s1);
+  border: 0;
+  border-radius: var(--tl-r-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.tl-suggest-who:hover { background: color-mix(in srgb, var(--text) 6%, transparent); }
+.tl-suggest-face { position: relative; flex: none; display: grid; place-items: center; }
+.tl-suggest-face .tl-rail-presence {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--bg-2);
+  background: var(--muted);
+}
+.tl-suggest-face .tl-rail-presence.is-online { background: var(--green); }
+.tl-suggest-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.3; }
+.tl-suggest-text strong,
+.tl-suggest-text small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tl-suggest-text strong { font-size: 13.5px; }
+.tl-suggest-text small { font-size: 12px; color: var(--muted); }
+.tl-suggest-add { flex: none; padding: 6px 14px; font-size: 13px; }
+
+/* Empty lists that point somewhere instead of just saying "nothing". */
+.tl-empty > p { margin: 0; }
+.tl-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--tl-s2);
+  margin-top: var(--tl-s3);
+}
+.tl-empty > .tl-empty-cta { margin-top: var(--tl-s3); }
+.tl-empty-cta { padding: 8px 18px; font-size: 13.5px; }
+#friendsList > .tl-empty-plain::before { content: none; }
+
+/* How you know someone, under their name on the profile. */
+.friend-profile-met {
+  margin-top: 6px;
+  font-size: 12.5px;
+  color: var(--muted);
+  text-align: center;
+}
+.friend-profile-met.hidden { display: none; }
+
+/* The add-by-ID result's avatar opens the profile. */
+.friend-id-result-face {
+  flex: none;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* Online now: someone who shares an interest with you. */
+.tl-rail-person.is-shared .tl-rail-row-text small { color: var(--green); }
+
+/* Three actions (Chat, Call back, Add friend) have to fit a 320px phone:
+   let the row wrap rather than squeeze the labels out of their buttons. */
+.profile-actions-main { flex-wrap: wrap; }
+.profile-actions-main > .btn { flex: 1 1 96px; }
+@media (max-width: 380px) {
+  .friend-profile-actions .profile-actions-main > .btn { padding: 11px 10px; font-size: 13.5px; gap: 6px; }
+}

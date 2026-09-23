@@ -1427,6 +1427,10 @@ let appliedFilters = { prefGender: 'any', includeCountries: [], excludeCountries
   } catch (e) {
     // ignore malformed/missing storage
   }
+  // A country on both lists can never match; "only" wins, as it does when one
+  // is picked in the panel.
+  const only = new Set(appliedFilters.includeCountries || []);
+  appliedFilters.excludeCountries = (appliedFilters.excludeCountries || []).filter((c) => !only.has(c));
 })();
 
 function syncFilterDraftUiFromApplied() {
@@ -1454,6 +1458,8 @@ saveFiltersBtn.addEventListener('click', () => {
   sessionStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(appliedFilters));
   registerProfile();
   closeFilters();
+  // Who online shares an interest just changed.
+  renderRailOnline();
 });
 
 clearFiltersBtn.addEventListener('click', () => {
@@ -1533,6 +1539,8 @@ socket.on('friend-id', ({ friendId, temporary } = {}) => {
   if (typeof friendId !== 'string' || !friendId) return;
   myFriendId = friendId;
   myFriendIdEl.textContent = friendId;
+  // The empty friends list offers "Share my ID", disabled until there is one.
+  if (friendsSynced && !friendsData.length) renderFriendsList();
   myFriendIdNote.classList.toggle('hidden', !temporary);
   copyFriendIdBtn.disabled = false;
   shareFriendIdBtn.disabled = false;
@@ -1601,22 +1609,41 @@ friendIdSearchForm.addEventListener('submit', (e) => {
   socket.emit('find-by-friend-id', { friendId: query });
 });
 
+// The action follows where the two of you stand, as on a profile: a friend
+// gets Message (it used to say "Chat" and open the profile instead), someone
+// who already asked you gets Accept, and a request you sent can be taken back.
 function renderFriendIdResult() {
   const user = friendIdFound;
   if (!user) return;
   const relation = relationTo(user.clientId);
-  const action = relation === 'friend'
-    ? `<button type="button" class="btn btn-secondary" data-act="chat">${escapeHtml(t('chat'))}</button>`
-    : relation === 'pending'
-      ? `<button type="button" class="btn btn-secondary" disabled>${escapeHtml(t('pending'))}</button>`
-      : `<button type="button" class="btn btn-primary" data-act="add">${escapeHtml(t('addFriend'))}</button>`;
-  const sub = [user.friendId, user.temporary ? t('friendIdGuest') : '', user.online ? t('online') : '']
+  const btn = (act, cls, key) => `<button type="button" class="btn ${cls}" data-act="${act}">${escapeHtml(t(key))}</button>`;
+  const action = relation === 'friend' ? btn('chat', 'btn-secondary', 'message')
+    : relation === 'incoming' ? btn('accept', 'btn-primary', 'acceptRequest')
+      : relation === 'pending' ? btn('cancel', 'btn-secondary', 'cancelRequest')
+        : btn('add', 'btn-primary', 'addFriend');
+  const status = relation === 'friend' ? t('profileRelation_friend')
+    : relation === 'pending' ? t('profileRelation_pending')
+      : relation === 'incoming' ? t('profileRelation_incoming') : '';
+  const sub = [user.friendId, status, user.temporary ? t('friendIdGuest') : '', user.online ? t('online') : '']
     .filter(Boolean).join(' · ');
   friendIdResult.classList.remove('hidden', 'is-error');
-  friendIdResult.innerHTML = `${genderIcon(user.avatar, 36)}
-    <span class="friend-id-result-who"><strong>${getFlagImg(user.countryCode)} ${escapeHtml(user.username)}</strong><small>${escapeHtml(sub)}</small></span>
+  friendIdResult.innerHTML = `<button type="button" class="friend-id-result-face" data-act="profile" aria-label="${escapeHtml(t('openProfile'))}">${genderIcon(user.avatar, 36)}</button>
+    <span class="friend-id-result-who"><strong>${getFlagImg(user.countryCode)} ${escapeHtml(labelForClientId(user.clientId, user.username))}</strong><small>${escapeHtml(sub)}</small></span>
     ${action}`;
 }
+
+function clearFriendIdResult() {
+  friendIdFound = null;
+  friendIdResult.classList.add('hidden');
+  friendIdResult.classList.remove('is-error');
+  friendIdResult.innerHTML = '';
+}
+
+// An emptied box is a finished search: the old result (or error) under it
+// read as the answer to whatever gets typed next.
+friendIdSearchInput.addEventListener('input', () => {
+  if (!friendIdSearchInput.value.trim()) clearFriendIdResult();
+});
 
 socket.on('find-by-friend-id-result', ({ ok, error, user } = {}) => {
   friendIdFound = ok && user ? user : null;
@@ -1632,8 +1659,23 @@ socket.on('find-by-friend-id-result', ({ ok, error, user } = {}) => {
 friendIdResult.addEventListener('click', (e) => {
   const btn = e.target.closest('button[data-act]');
   if (!btn || !friendIdFound) return;
+  const id = friendIdFound.clientId;
+  if (btn.dataset.act === 'profile') {
+    openUserProfile(personById(id, friendIdFound));
+    return;
+  }
   if (btn.dataset.act === 'chat') {
-    openUserProfile(personById(friendIdFound.clientId, friendIdFound));
+    openFriendChat(id);
+    return;
+  }
+  if (btn.dataset.act === 'accept') {
+    socket.emit('friend-request-respond', { fromClientId: id, accept: true });
+    btn.disabled = true;
+    return;
+  }
+  if (btn.dataset.act === 'cancel') {
+    cancelFriendRequest(id);
+    renderFriendIdResult();
     return;
   }
   btn.disabled = true;
@@ -3075,17 +3117,89 @@ const FRIEND_CALL_SVG = '<svg viewBox="0 0 24 24" fill="white" aria-hidden="true
 
 // Each row: online/offline dot + flag + username on the left (tap → chat box),
 // small green call button on the right. Tapping the avatar opens the profile view.
+const friendsFilterWrap = document.getElementById('friendsFilterWrap');
+const friendsFilterInput = document.getElementById('friendsFilterInput');
+const suggestedWrap = document.getElementById('suggestedWrap');
+const suggestedList = document.getElementById('suggestedList');
+// A search box is noise on a short list and a necessity on a long one.
+const FRIENDS_FILTER_MIN = 6;
+
+// Name, private nickname, real name or country - whatever someone remembers.
+function personMatches(p, q) {
+  if (!q) return true;
+  return [friendLabel(p), p.username, getCountryName(p.countryCode), p.countryCode]
+    .some((v) => String(v || '').toLowerCase().includes(q));
+}
+
+function renderSuggested() {
+  if (!suggestedWrap) return;
+  const people = suggestedPeople();
+  suggestedWrap.classList.toggle('hidden', people.length === 0);
+  if (!people.length) return;
+  suggestedList.innerHTML = '';
+  people.forEach((p) => {
+    const row = document.createElement('div');
+    row.className = 'tl-suggest-item';
+    row.innerHTML = `
+      <button type="button" class="tl-suggest-who" data-id="${escapeHtml(p.clientId)}" title="${escapeHtml(t('openProfile'))}">
+        <span class="tl-suggest-face" aria-hidden="true">${genderIcon(p.avatar, 30)}<span class="tl-rail-presence${p.online ? ' is-online' : ''}"></span></span>
+        <span class="tl-suggest-text">
+          <strong>${getFlagImg(p.countryCode)} ${escapeHtml(p.username || t('someone'))}</strong>
+          <small>${escapeHtml(historySubline(p))}</small>
+        </span>
+      </button>
+      <button type="button" class="btn btn-primary tl-suggest-add history-add-btn" data-id="${escapeHtml(p.clientId)}">+ ${escapeHtml(t('addShort'))}</button>
+    `;
+    suggestedList.appendChild(row);
+  });
+}
+
+if (suggestedList) {
+  suggestedList.addEventListener('click', (e) => {
+    const add = e.target.closest('.history-add-btn');
+    if (add) {
+      add.disabled = true;
+      quickAddFriend(add.dataset.id);
+      return;
+    }
+    const who = e.target.closest('.tl-suggest-who');
+    if (who) openUserProfile(personById(who.dataset.id));
+  });
+}
+
+if (friendsFilterInput) {
+  friendsFilterInput.addEventListener('input', () => renderFriendsList());
+}
+
 function renderFriendsList() {
   renderRailFriends();
+  renderSuggested();
+  if (friendsFilterWrap) {
+    const showFilter = friendsData.length >= FRIENDS_FILTER_MIN;
+    friendsFilterWrap.classList.toggle('hidden', !showFilter);
+    if (!showFilter && friendsFilterInput) friendsFilterInput.value = '';
+  }
   if (friendsData.length === 0) {
-    friendsList.innerHTML = `<p class="tl-empty">${escapeHtml(t('noFriendsYet'))}</p>`;
+    // A dead end used to sit here: one line of text and nothing to press.
+    // The two real ways to make a friend are one tap away instead.
+    friendsList.innerHTML = `<div class="tl-empty"><p>${escapeHtml(t('noFriendsYet'))}</p>
+      <div class="tl-empty-actions">
+        <button type="button" class="btn btn-primary tl-empty-cta" data-empty-act="call">${escapeHtml(t('tapToTalk'))}</button>
+        <button type="button" class="btn btn-secondary tl-empty-cta" data-empty-act="share"${myFriendId ? '' : ' disabled'}>${escapeHtml(t('shareMyId'))}</button>
+      </div></div>`;
+    return;
+  }
+  const q = friendsFilterInput ? friendsFilterInput.value.trim().toLowerCase() : '';
+  const shown = friendsData.filter((f) => personMatches(f, q));
+  if (shown.length === 0) {
+    friendsList.innerHTML = `<p class="tl-empty tl-empty-plain">${escapeHtml(t('noFriendsMatch', { q: friendsFilterInput.value.trim() }))}</p>`;
     return;
   }
   friendsList.innerHTML = '';
   // An inbox, not a phone book: whoever has something unread, then whoever is
   // here right now, then the most recent conversation.
   const lastTs = (f) => (f.last && f.last.ts) || 0;
-  const sorted = [...friendsData].sort((a, b) => (
+  const sorted = shown.sort((a, b) => (
     Number(unreadCountFor(b.clientId) > 0) - Number(unreadCountFor(a.clientId) > 0)
     || Number(!!b.online) - Number(!!a.online)
     || lastTs(b) - lastTs(a)
@@ -3116,6 +3230,16 @@ function renderFriendsList() {
 }
 
 friendsList.addEventListener('click', (e) => {
+  const emptyAct = e.target.closest('[data-empty-act]');
+  if (emptyAct) {
+    if (emptyAct.dataset.emptyAct === 'share') shareFriendIdBtn.click();
+    else {
+      closeSidePanel(friendsDropdown, friendsOverlay);
+      updateScrollLock();
+      startTalkingFromPanel();
+    }
+    return;
+  }
   const avatarBtn = e.target.closest('.friend-avatar-btn');
   const msgBtn = e.target.closest('.friend-msg-btn');
   const callBtn = e.target.closest('.friend-call-btn');
@@ -3213,9 +3337,18 @@ function openUserProfile(person) {
   const presence = hasPresence
     ? `<span class="friend-status-text ${online ? 'is-online' : 'is-offline'}">${escapeHtml(presenceText(known))}</span>`
     : '';
+  // "You talked before" is only true of someone in the history - a person
+  // found by their ID has never spoken to this user.
+  const met = historyEntries().find((h) => h.clientId === person.clientId);
+  const relationKey = relation === 'stranger' && !met ? 'profileRelation_new' : 'profileRelation_' + relation;
   friendProfileStatus.innerHTML = relation === 'friend'
     ? presence
-    : `<span class="friend-relation-text">${escapeHtml(t('profileRelation_' + relation))}</span>${presence ? ' · ' + presence : ''}`;
+    : `<span class="friend-relation-text">${escapeHtml(t(relationKey))}</span>${presence ? ' · ' + presence : ''}`;
+  // How you know them: the one thing a profile on an app of strangers can
+  // usefully remind you of.
+  const metLine = met ? historySubline(met, { long: true }) : '';
+  friendProfileMet.textContent = metLine;
+  friendProfileMet.classList.toggle('hidden', !metLine);
 
   // "Really <their own name>" - only when this account has renamed them, so a
   // friend you gave a private label to is still identifiable by the name they
@@ -3229,6 +3362,10 @@ function openUserProfile(person) {
   // friends-only, so the one person you most wanted gone after a bad call
   // could only be reported, never simply blocked.
   friendProfileChatBtn.classList.toggle('hidden', !canMessage(person.clientId) && !inCallWith(person.clientId));
+  // Calling back was only offered from list rows, so a profile opened from a
+  // chat header, a notification or a search was a dead end for it.
+  friendProfileCallBtn.classList.toggle('hidden', !canMessage(person.clientId) || inCallWith(person.clientId));
+  friendProfileCallBtn.dataset.name = friendLabel(known) || '';
   friendProfileRenameBtn.classList.toggle('hidden', relation !== 'friend');
   friendProfileRemoveBtn.classList.toggle('hidden', relation !== 'friend');
   document.getElementById('friendProfileManageRow').classList.toggle('hidden', relation !== 'friend');
@@ -3258,6 +3395,15 @@ function openFriendProfile(friendClientId) {
 }
 
 closeFriendProfileBtn.addEventListener('click', () => closeSidePanel(friendProfileModal, friendProfileOverlay));
+
+const friendProfileMet = document.getElementById('friendProfileMet');
+const friendProfileCallBtn = document.getElementById('friendProfileCallBtn');
+friendProfileCallBtn.addEventListener('click', () => {
+  if (!activeProfileFriendId) return;
+  const id = activeProfileFriendId;
+  closeSidePanel(friendProfileModal, friendProfileOverlay);
+  requestCallBack(id, friendProfileCallBtn.dataset.name || labelForClientId(id, t('someone')));
+});
 
 friendProfileChatBtn.addEventListener('click', () => {
   if (!activeProfileFriendId) return;
@@ -3328,7 +3474,10 @@ friendProfileRemoveBtn.addEventListener('click', async () => {
 
 friendProfileAddBtn.addEventListener('click', () => {
   if (!activeProfileFriendId) return;
-  socket.emit('friend-request', { targetClientId: activeProfileFriendId });
+  // Someone found by their ID has never met this user; the ID is what lets
+  // the server accept the request, so it has to ride along from here too.
+  const viaId = friendIdFound && friendIdFound.clientId === activeProfileFriendId ? friendIdFound.friendId : undefined;
+  socket.emit('friend-request', { targetClientId: activeProfileFriendId, friendId: viaId });
   // Flip to Pending immediately rather than waiting for the round trip: the
   // state-sync that follows says the same thing.
   friendProfileAddBtn.classList.add('hidden');
@@ -4142,20 +4291,90 @@ function historyEntries() {
   return out.sort((a, b) => (b.ts || 0) - (a.ts || 0));
 }
 
-function historySubline(entry) {
-  if (entry.durationSeconds) {
-    const mins = Math.floor(entry.durationSeconds / 60);
-    const secs = entry.durationSeconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  }
-  return entry.ts ? timeAgo(entry.ts) : '';
+// When, how long, and how often. Only this session's calls knew their length
+// before, so after a reload a twenty-minute call and a two-second skip read
+// the same; the server now remembers both, and how many times you have met.
+function formatDuration(seconds) {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
+
+function historySubline(entry, opts = {}) {
+  const parts = [];
+  if (entry.ts) parts.push(opts.long ? t('talkedAgo', { time: timeAgo(entry.ts) }) : timeAgo(entry.ts));
+  if (entry.durationSeconds) {
+    const d = formatDuration(entry.durationSeconds);
+    parts.push(entry.mode === 'chat' ? t('chatLasted', { d }) : t('callLasted', { d }));
+  } else if (entry.mode === 'chat') {
+    parts.push(t('textChat'));
+  }
+  if (entry.met > 1) parts.push(t(opts.long ? 'metTimes' : 'metTimesShort', { n: entry.met }));
+  return parts.join(' · ');
+}
+
+// People worth keeping: met and not yet friends, and either talked to for a
+// while, met more than once, or written to since. Only ever people this user
+// has already spoken to - there is no directory of strangers to suggest from,
+// and there should not be one.
+const SUGGEST_MIN_SECONDS = 60;
+function suggestedPeople(limit = 4) {
+  return historyEntries()
+    .filter((h) => h.clientId && relationTo(h.clientId) === 'stranger'
+      && !blockedData.some((b) => b.clientId === h.clientId)
+      && ((h.durationSeconds || 0) >= SUGGEST_MIN_SECONDS || (h.met || 1) > 1 || !!h.last))
+    .sort((a, b) => Number(!!b.online) - Number(!!a.online)
+      || (b.met || 1) - (a.met || 1)
+      || (b.durationSeconds || 0) - (a.durationSeconds || 0))
+    .slice(0, limit);
+}
+
+// One tap to ask, right on the row - adding someone you met used to take
+// opening their profile first, which is one step too many to bother with.
+function relationChipHtml(clientId) {
+  const relation = relationTo(clientId);
+  if (relation === 'friend') return `<span class="tl-relation-chip is-friend">${escapeHtml(t('friendChip'))}</span>`;
+  if (relation === 'pending') return `<span class="tl-relation-chip">${escapeHtml(t('pending'))}</span>`;
+  if (relation === 'incoming') {
+    return `<button type="button" class="tl-relation-chip is-action history-accept-btn" data-id="${escapeHtml(clientId)}">${escapeHtml(t('acceptRequest'))}</button>`;
+  }
+  if (blockedData.some((b) => b.clientId === clientId)) return '';
+  return `<button type="button" class="tl-relation-chip is-action history-add-btn" data-id="${escapeHtml(clientId)}" aria-label="${escapeHtml(t('addFriend'))}">+ ${escapeHtml(t('addShort'))}</button>`;
+}
+
+// "Tap to Talk" from an empty list. Only from the home screen: mid-call or
+// mid-search, closing the panel already puts the person back where they were.
+function startTalkingFromPanel() {
+  if (setupPanel.classList.contains('hidden') || isSearching) return;
+  startBtn.click();
+}
+
+// Tapping "Add" on any list row. The button goes quiet on the tap; the
+// state-sync that follows a sent request turns the row into "Pending", and a
+// refusal (limit, block, rate) re-renders the rows so the button comes back.
+let quickAddPending = false;
+function quickAddFriend(clientId) {
+  if (!clientId || relationTo(clientId) !== 'stranger') return;
+  quickAddPending = true;
+  socket.emit('friend-request', { targetClientId: clientId });
+}
+
+socket.on('friend-request-result', ({ ok, sent } = {}) => {
+  if (!quickAddPending) return;
+  quickAddPending = false;
+  if (ok && sent) showToast(t('friendRequestSent'));
+  if (!ok) {
+    renderHistory();
+    renderFriendsList();
+  }
+});
 
 function renderHistory() {
   renderRailHistory();
   const entries = historyEntries();
   if (entries.length === 0) {
-    historyList.innerHTML = `<p class="tl-empty">${escapeHtml(t('noCallsYet'))}</p>`;
+    historyList.innerHTML = `<div class="tl-empty"><p>${escapeHtml(t('noCallsYet'))}</p>
+      <button type="button" class="btn btn-primary tl-empty-cta" data-empty-act="call">${escapeHtml(t('tapToTalk'))}</button></div>`;
     return;
   }
   historyList.innerHTML = '';
@@ -4165,7 +4384,8 @@ function renderHistory() {
     const id = escapeHtml(entry.clientId || '');
     const unread = entry.clientId ? unreadCountFor(entry.clientId) : 0;
     const actions = entry.clientId
-      ? `<button type="button" class="friend-msg-btn history-msg-btn" data-id="${id}" title="${escapeHtml(t('messageBack'))}" aria-label="${escapeHtml(t('messageBack'))}">${ICONS.chat}${unread ? `<span class="unread-badge">${unread}</span>` : ''}</button>
+      ? `${relationChipHtml(entry.clientId)}
+        <button type="button" class="friend-msg-btn history-msg-btn" data-id="${id}" title="${escapeHtml(t('messageBack'))}" aria-label="${escapeHtml(t('messageBack'))}">${ICONS.chat}${unread ? `<span class="unread-badge">${unread}</span>` : ''}</button>
         <button type="button" class="call-back-btn" data-id="${id}" data-name="${escapeHtml(entry.username)}" title="${escapeHtml(t('callBack'))}" aria-label="${escapeHtml(t('callBack'))}">
           <svg viewBox="0 0 24 24" fill="white" aria-hidden="true"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
         </button>`
@@ -4297,6 +4517,23 @@ closeHistoryBtn.addEventListener('click', closeHistoryPanel);
 historyOverlay.addEventListener('click', closeHistoryPanel);
 
 historyList.addEventListener('click', (e) => {
+  if (e.target.closest('[data-empty-act="call"]')) {
+    closeHistoryPanel();
+    startTalkingFromPanel();
+    return;
+  }
+  const addBtn = e.target.closest('.history-add-btn');
+  if (addBtn) {
+    addBtn.disabled = true;
+    quickAddFriend(addBtn.dataset.id);
+    return;
+  }
+  const acceptBtn = e.target.closest('.history-accept-btn');
+  if (acceptBtn) {
+    acceptBtn.disabled = true;
+    socket.emit('friend-request-respond', { fromClientId: acceptBtn.dataset.id, accept: true });
+    return;
+  }
   // Tapping the name opens who they are (and whether you have already asked
   // to add them); the green button still calls them straight back.
   const msgBtn = e.target.closest('.history-msg-btn');
@@ -7245,54 +7482,191 @@ document.querySelectorAll('[data-notify]').forEach((btn) => {
 });
 
 // --- Header search ----------------------------------------------------------
-// TalkLive has no feed and no profiles to search through, so a box promising
-// "search people, countries or interests" has to mean something concrete. It
-// means: narrow the Online now rail to what you typed, and if what you typed
-// is a country, offer to go looking there.
+// "Search people, countries or interests" has to mean something concrete on an
+// app with no public directory. It searches what this user can actually act
+// on: their friends and the people they have met (by name, nickname or
+// country), a friend ID typed in full, countries to go looking in, and an
+// interest to be matched on. It also narrows the Online now rail as you type.
+// Enter takes the top result; the arrow keys move through them.
 const headerSearchForm = document.getElementById('headerSearchForm');
 const headerSearchInput = document.getElementById('headerSearchInput');
 const headerSearchClear = document.getElementById('headerSearchClear');
+const headerSearchResults = document.getElementById('headerSearchResults');
 let onlineQuery = '';
+let searchResults = [];
+let searchActive = 0;
 
-function matchedCountryCode(query) {
+// Every country whose name - in the visitor's language or in English - starts
+// with (or, failing that, contains) what was typed. Exact names first.
+function matchedCountryCodes(query, limit = 3) {
   const q = query.trim().toLowerCase();
-  if (q.length < 2 || typeof COUNTRIES !== 'object') return null;
-  let exact = null;
-  let prefix = null;
+  if (q.length < 2 || typeof COUNTRIES !== 'object') return [];
+  const scored = [];
   for (const code of Object.keys(COUNTRIES)) {
-    const name = String(COUNTRIES[code]).toLowerCase();
-    if (name === q) { exact = code; break; }
-    if (!prefix && name.startsWith(q)) prefix = code;
+    const names = [String(COUNTRIES[code]).toLowerCase(), String(getCountryName(code) || '').toLowerCase()];
+    let score = 0;
+    if (names.includes(q) || code.toLowerCase() === q) score = 3;
+    else if (names.some((n) => n.startsWith(q))) score = 2;
+    else if (q.length >= 3 && names.some((n) => n.includes(q))) score = 1;
+    if (score) scored.push([score, code]);
   }
-  return exact || prefix;
+  return scored.sort((a, b) => b[0] - a[0] || getCountryName(a[1]).localeCompare(getCountryName(b[1])))
+    .slice(0, limit).map(([, code]) => code);
+}
+
+// Mirrors the server's normalizeFriendId: "k7mx 29qp", "#G-4RT9KQ" -> an ID.
+function looksLikeFriendId(query) {
+  const code = String(query || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const account = code.length === 8;
+  const guest = code.length === 7 && code[0] === 'G';
+  if (!account && !guest) return null;
+  const body = guest ? code.slice(1) : code;
+  if (!/[A-Z]/.test(body) || !/[0-9]/.test(body)) return null;
+  return guest ? `G-${body}` : code;
+}
+
+function buildSearchResults(raw) {
+  const q = raw.trim().toLowerCase();
+  const out = [];
+  if (!q) return out;
+  const friendHits = friendsData.filter((f) => personMatches(f, q)).slice(0, 3);
+  friendHits.forEach((f) => out.push({ kind: 'person', id: f.clientId, person: f, sub: presenceText(f) }));
+  const friendIds = new Set(friendsData.map((f) => f.clientId));
+  historyEntries()
+    .filter((h) => h.clientId && !friendIds.has(h.clientId) && personMatches(h, q))
+    .slice(0, 3)
+    .forEach((h) => out.push({ kind: 'person', id: h.clientId, person: h, sub: historySubline(h) }));
+  const id = looksLikeFriendId(raw);
+  if (id && id !== myFriendId) out.unshift({ kind: 'id', id });
+  // A country typed out in full is what the person meant, even when a friend
+  // happens to live there: it goes to the top, where Enter takes it.
+  matchedCountryCodes(raw).forEach((code) => {
+    const exact = [COUNTRIES[code], getCountryName(code)].some((n) => String(n || '').toLowerCase() === q);
+    if (exact) out.unshift({ kind: 'country', code });
+    else out.push({ kind: 'country', code });
+  });
+  const interest = raw.trim().slice(0, 40);
+  const exactCountry = out.some((r) => r.kind === 'country' && out[0] === r);
+  if (interest.length >= 2 && !id && !exactCountry) {
+    const online = onlinePeople.filter((p) => (p.interests || []).some((i) => String(i).toLowerCase() === q)).length;
+    out.push({ kind: 'interest', interest, online });
+  }
+  return out;
+}
+
+function searchResultHtml(r, i) {
+  const active = i === searchActive ? ' is-active' : '';
+  const open = `<button type="button" class="nav-search-result${active}" role="option" aria-selected="${i === searchActive}" data-i="${i}">`;
+  if (r.kind === 'person') {
+    const chip = relationTo(r.id) === 'friend' ? `<span class="tl-relation-chip is-friend">${escapeHtml(t('friendChip'))}</span>` : '';
+    return `${open}<span class="nav-search-result-icon">${genderIcon(r.person.avatar, 26)}</span>
+      <span class="nav-search-result-text"><strong>${getFlagImg(r.person.countryCode)} ${escapeHtml(labelForClientId(r.id, r.person.username) || t('someone'))}</strong><small>${escapeHtml(r.sub || '')}</small></span>${chip}</button>`;
+  }
+  if (r.kind === 'id') {
+    return `${open}<span class="nav-search-result-icon">${ICONS.person}</span>
+      <span class="nav-search-result-text"><strong>${escapeHtml(t('searchFindId', { id: r.id }))}</strong><small>${escapeHtml(t('searchFindIdSub'))}</small></span></button>`;
+  }
+  if (r.kind === 'country') {
+    const here = onlinePeople.filter((p) => p.countryCode === r.code).length;
+    return `${open}<span class="nav-search-result-icon">${getFlagImg(r.code, 22)}</span>
+      <span class="nav-search-result-text"><strong>${escapeHtml(t('searchTalkIn', { country: getCountryName(r.code) }))}</strong><small>${escapeHtml(here ? t('searchOnlineThere', { n: here }) : t('searchCountrySub'))}</small></span></button>`;
+  }
+  return `${open}<span class="nav-search-result-icon">#</span>
+    <span class="nav-search-result-text"><strong>${escapeHtml(t('searchTalkAbout', { interest: r.interest }))}</strong><small>${escapeHtml(r.online ? t('searchInterestOnline', { n: r.online }) : t('searchInterestSub'))}</small></span></button>`;
+}
+
+function renderSearchResults() {
+  if (!headerSearchResults) return;
+  const raw = headerSearchInput.value;
+  searchResults = buildSearchResults(raw);
+  if (searchActive >= searchResults.length) searchActive = 0;
+  const open = document.activeElement === headerSearchInput && raw.trim() !== '';
+  headerSearchResults.classList.toggle('hidden', !open);
+  headerSearchInput.setAttribute('aria-expanded', open ? 'true' : 'false');
+  if (!open) return;
+  headerSearchResults.innerHTML = searchResults.length
+    ? searchResults.map(searchResultHtml).join('')
+    : `<p class="nav-search-empty">${escapeHtml(t('searchNothing'))}</p>`;
+}
+
+function closeSearchResults() {
+  if (headerSearchResults) headerSearchResults.classList.add('hidden');
+  if (headerSearchInput) headerSearchInput.setAttribute('aria-expanded', 'false');
+}
+
+// Look an ID up where the answer lives: the Friends panel, with its Add button.
+function lookUpFriendId(id) {
+  friendIdSearchInput.value = id;
+  openSidePanel(friendsDropdown, friendsOverlay);
+  showFriendsTab('friends');
+  updateScrollLock();
+  socket.emit('find-by-friend-id', { friendId: id });
+}
+
+function searchInterest(interest) {
+  appliedFilters = Object.assign({}, appliedFilters, { interests: [interest] });
+  persistAppliedFilters();
+  syncFilterDraftUiFromApplied();
+  registerProfile();
+  showToast(t('searchInterest', { interest }));
+  startTalkingFromPanel();
+}
+
+function runSearchResult(r) {
+  if (!r) return;
+  closeSearchResults();
+  headerSearchInput.blur();
+  if (r.kind === 'person') openUserProfile(personById(r.id, r.person));
+  else if (r.kind === 'id') lookUpFriendId(r.id);
+  else if (r.kind === 'country') searchCountry(r.code, COUNTRIES[r.code]);
+  else searchInterest(r.interest);
 }
 
 if (headerSearchForm) {
+  headerSearchInput.setAttribute('aria-autocomplete', 'list');
+  headerSearchInput.setAttribute('aria-controls', 'headerSearchResults');
+  headerSearchInput.setAttribute('aria-expanded', 'false');
   headerSearchInput.addEventListener('input', () => {
     onlineQuery = headerSearchInput.value.trim().toLowerCase();
     headerSearchClear.classList.toggle('hidden', onlineQuery === '');
+    searchActive = 0;
     renderRailOnline();
+    renderSearchResults();
   });
+  headerSearchInput.addEventListener('focus', renderSearchResults);
+  headerSearchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { closeSearchResults(); return; }
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+    if (!searchResults.length) return;
+    e.preventDefault();
+    const step = e.key === 'ArrowDown' ? 1 : -1;
+    searchActive = (searchActive + step + searchResults.length) % searchResults.length;
+    renderSearchResults();
+  });
+  // Closing on blur has to wait for a click inside the list to land.
+  headerSearchInput.addEventListener('blur', () => setTimeout(() => {
+    if (!headerSearchForm.contains(document.activeElement)) closeSearchResults();
+  }, 150));
+  if (headerSearchResults) {
+    headerSearchResults.addEventListener('mousedown', (e) => e.preventDefault());
+    headerSearchResults.addEventListener('click', (e) => {
+      const row = e.target.closest('.nav-search-result');
+      if (row) runSearchResult(searchResults[Number(row.dataset.i)]);
+    });
+  }
   headerSearchClear.addEventListener('click', () => {
     headerSearchInput.value = '';
     onlineQuery = '';
     headerSearchClear.classList.add('hidden');
     renderRailOnline();
     headerSearchInput.focus();
+    renderSearchResults();
   });
   headerSearchForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    const code = matchedCountryCode(headerSearchInput.value);
-    if (code) { searchCountry(code, COUNTRIES[code]); return; }
-    // Not a country: treat it as an interest, which the filters already take.
-    const interest = headerSearchInput.value.trim().slice(0, 40);
-    if (!interest) return;
-    appliedFilters = Object.assign({}, appliedFilters, { interests: [interest] });
-    persistAppliedFilters();
-    syncFilterDraftUiFromApplied();
-    registerProfile();
-    showToast(t('searchInterest', { interest }));
-    startBtn.click();
+    const raw = headerSearchInput.value;
+    if (!raw.trim()) return;
+    runSearchResult(buildSearchResults(raw)[searchActive] || buildSearchResults(raw)[0]);
   });
 }
 
@@ -7300,11 +7674,23 @@ function persistAppliedFilters() {
   try { sessionStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(appliedFilters)); } catch (_) { /* private mode */ }
 }
 
+// Which of someone's interests this user also listed. Case-insensitive, like
+// the server's scoring: "Music" and the "music" quick-pick are one interest.
+function sharedInterests(theirs) {
+  const mine = new Set((appliedFilters.interests || []).map((i) => String(i).toLowerCase()));
+  return (theirs || []).filter((i) => mine.has(String(i).toLowerCase()));
+}
+
 // One country, replacing whatever was in the include list: a shortcut, not an
 // edit of filters someone sat down and set. Saved the way Save saves, so the
 // search that starts next uses it and the Filters panel shows the truth.
+// It also comes off the "never" list: a country in both could never match,
+// and the search would sit there until the random fallback gave up on it.
 function searchCountry(code, countryName) {
-  appliedFilters = Object.assign({}, appliedFilters, { includeCountries: [code] });
+  appliedFilters = Object.assign({}, appliedFilters, {
+    includeCountries: [code],
+    excludeCountries: (appliedFilters.excludeCountries || []).filter((c) => c !== code),
+  });
   persistAppliedFilters();
   syncFilterDraftUiFromApplied();
   registerProfile();
@@ -7365,7 +7751,7 @@ function renderRailHistory() {
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
       </span>
       <span class="tl-rail-row-text">
-        <strong>${getFlagImg(entry.countryCode)} ${escapeHtml(entry.username)}</strong>
+        <strong>${getFlagImg(entry.countryCode)} ${escapeHtml(labelForClientId(entry.clientId, entry.username))}</strong>
         <small>${escapeHtml(historySubline(entry))}</small>
       </span>
     `;
@@ -7434,10 +7820,15 @@ if (railFriendsList) {
 // is the real thing the list makes possible.
 let onlinePeople = [];
 
+// Anyone sharing an interest with this user comes first: that is the one
+// thing on this list that makes a conversation more likely to go somewhere.
 function filteredOnlinePeople() {
-  if (!onlineQuery) return onlinePeople;
-  return onlinePeople.filter((p) => [p.username, p.country, p.countryCode]
+  const list = !onlineQuery ? onlinePeople : onlinePeople.filter((p) => [p.username, p.country, p.countryCode, getCountryName(p.countryCode), ...(p.interests || [])]
     .some((v) => String(v || '').toLowerCase().includes(onlineQuery)));
+  return list
+    .map((p, i) => ({ p, i, shared: sharedInterests(p.interests).length }))
+    .sort((a, b) => b.shared - a.shared || a.i - b.i)
+    .map((x) => x.p);
 }
 
 function renderRailOnline() {
@@ -7465,7 +7856,13 @@ function renderRailOnline() {
     const genderLabel = person.gender === 'male' ? t('male')
       : person.gender === 'female' ? t('female')
       : '';
-    const meta = [genderLabel, placed].filter(Boolean).join(' · ') || t('railSomewhere');
+    // "Both like music" beats "Male · Japan" when there is something shared;
+    // otherwise an interest or two says more than a gender does.
+    const shared = sharedInterests(person.interests);
+    const likes = shared.length ? t('bothLike', { list: shared.slice(0, 2).join(', ') })
+      : (person.interests || []).length ? t('railLikes', { list: person.interests.slice(0, 2).join(', ') }) : '';
+    const meta = [likes || genderLabel, placed].filter(Boolean).join(' · ') || t('railSomewhere');
+    if (shared.length) row.classList.add('is-shared');
     row.innerHTML = `
       <span class="tl-rail-row-icon" aria-hidden="true">
         ${face}
@@ -7547,9 +7944,14 @@ socket.on('waiting', ({ estimatedSeconds, predicted } = {}) => {
 
 // After ~10s of waiting the server drops every filter and auto-matches with
 // any random stranger instead of leaving the user stuck.
+// It used to blame "your chosen countries" whatever was set - including when
+// nothing was, or when it was the gender filter doing the narrowing.
 socket.on('random-fallback', () => {
+  const f = appliedFilters;
+  const filtered = (f.prefGender && f.prefGender !== 'any' && isPremiumUser)
+    || (f.includeCountries || []).length || (f.excludeCountries || []).length;
   setStatusText('statusConnectingRandom');
-  setSubText('subCountryFallback');
+  setSubText(filtered ? 'subFiltersFallback' : 'subHangTight');
 });
 
 socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
@@ -7643,7 +8045,7 @@ function revealPartner() {
   });
   partnerCard.classList.remove('hidden');
 
-  const shared = currentPartnerInterests.filter((i) => (appliedFilters.interests || []).includes(i));
+  const shared = sharedInterests(currentPartnerInterests);
   if (shared.length > 0) {
     sharedInterestNote.textContent = t('bothLike', { list: shared.join(', ') });
     sharedInterestNote.classList.remove('hidden');
@@ -7873,8 +8275,9 @@ socket.on('call-back-cancelled', ({ fromClientId } = {}) => {
   renderNotifications();
 });
 
-socket.on('call-back-request-result', ({ ok, reason }) => {
+socket.on('call-back-request-result', ({ ok, reason, canQueue }) => {
   if (ok) return;
+  const calledId = outgoingCallBack && outgoingCallBack.targetClientId;
   clearOutgoingCallBack();
   // Deferred (friends-list) callback: keep the friends panel up. On "offline"
   // we grey the button + offer "send request for later"; other failures just
@@ -7909,6 +8312,13 @@ socket.on('call-back-request-result', ({ ok, reason }) => {
   // painting it red.
   if (reason === 'away') { showToast(t('callbackAway')); return; }
   if (reason === 'busy-queued') { showToast(t('callbackBusyQueued')); return; }
+  // Offline is not the end of it: the same ask can wait in their inbox and
+  // ring them when they are back. Only the friends list used to offer that;
+  // calling from history or a profile ended on a red error and nothing else.
+  if (reason === 'offline' && canQueue && calledId) {
+    offerCallBackLater(calledId);
+    return;
+  }
   if (reason === 'offline') showError(t('errOffline'));
   else if (reason === 'calls-off') showError(t('friendCallsOff'));
   else if (reason === 'busy') showError(t('errBusy'));
@@ -7918,8 +8328,21 @@ socket.on('call-back-request-result', ({ ok, reason }) => {
   else showError(t('errCallbackFailed'));
 });
 
+async function offerCallBackLater(clientId) {
+  const name = labelForClientId(clientId, personById(clientId).username) || t('someone');
+  const yes = await showConfirm({
+    title: 'callbackOfflineTitle', text: 'callbackOfflineAsk', textVars: { name },
+    okKey: 'sendRequestLater', okClass: 'btn-primary',
+  });
+  if (!yes) return;
+  socket.emit('call-back-request-later', { targetClientId: clientId });
+}
+
 socket.on('call-back-later-result', ({ ok, reason, targetClientId }) => {
-  if (ok) return;
+  if (ok) {
+    showToast(t('callbackLaterSent', { name: labelForClientId(targetClientId, personById(targetClientId).username) || t('someone') }));
+    return;
+  }
   const chip = targetClientId && friendsList.querySelector(`.friend-call-later-btn[data-id="${CSS.escape(targetClientId)}"]`);
   if (chip) {
     chip.textContent = t('sendRequestLater');
@@ -8200,8 +8623,35 @@ socket.on('premium-status', ({ premium, limits } = {}) => {
       friends: limits.friends || 5,
     };
   }
+  // Deferred: signing in can re-register under the account's profile, and the
+  // first answer (the guest's, free) is followed a moment later by the real
+  // one. Trimming on the first would throw away a Plus member's filters.
+  clearTimeout(dropLockedFiltersTimer);
+  if (!isPremiumUser) dropLockedFiltersTimer = setTimeout(dropLockedFilters, 4000);
   updatePremiumUi();
 });
+let dropLockedFiltersTimer = null;
+
+// Filters saved while Plus was active (or on another tab) outlive it here, but
+// the server ignores them on the free tier - so the panel said "Women in Japan,
+// Korea and Brazil" while matching used anyone from the first two. Bring the
+// saved filters down to what actually applies, and say so once.
+function dropLockedFilters() {
+  if (isPremiumUser) return;
+  const cap = freeLimits.countries;
+  const inc = appliedFilters.includeCountries || [];
+  const exc = appliedFilters.excludeCountries || [];
+  const genderLocked = appliedFilters.prefGender && appliedFilters.prefGender !== 'any';
+  if (!genderLocked && inc.length <= cap && exc.length <= cap) return;
+  appliedFilters = Object.assign({}, appliedFilters, {
+    prefGender: 'any',
+    includeCountries: inc.slice(0, cap),
+    excludeCountries: exc.slice(0, cap),
+  });
+  persistAppliedFilters();
+  syncFilterDraftUiFromApplied();
+  showToast(t('filtersTrimmedFree'));
+}
 
 function updatePremiumUi() {
   // "👑 Premium" locks/hints show only on the free tier.
