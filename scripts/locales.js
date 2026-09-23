@@ -17,7 +17,7 @@ module.exports = [
     h1: 'Habla con desconocidos de todo el mundo',
     lede: 'Toca para Hablar y empieza una llamada de voz anónima en vivo, o toca para Chatear y escribe con una persona al azar en cualquier lugar del mundo. Gratis y sin registro.',
     ctaTalk: 'Toca para Hablar', ctaChat: 'Toca para Chatear',
-    heroMeta: 'Gratis para siempre · Sin registro · Anónimo · Voz y texto · Funciona en cualquier dispositivo',
+    heroMeta: 'Gratis para hablar · Con anuncios · Sin registro · Anónimo · Voz y texto · Funciona en cualquier dispositivo',
     featuresH: 'Por qué TalkLive',
     features: [
       { icon: 'mic', h: 'Llamadas de voz al instante', p: 'Un toque y estás en una llamada de voz en vivo con una persona nueva. Sin vídeo, sin presión: solo conversación real.' },
@@ -49,7 +49,7 @@ module.exports = [
     h1: 'Converse com desconhecidos do mundo todo',
     lede: 'Toque para Falar e entre numa chamada de voz anônima ao vivo, ou toque para Conversar e troque mensagens com uma pessoa aleatória em qualquer lugar do mundo. Grátis e sem cadastro.',
     ctaTalk: 'Toque para Falar', ctaChat: 'Toque para Conversar',
-    heroMeta: 'Grátis para sempre · Sem cadastro · Anônimo · Voz e texto · Funciona em qualquer aparelho',
+    heroMeta: 'Grátis para conversar · Mantido por anúncios · Sem cadastro · Anônimo · Voz e texto · Funciona em qualquer aparelho',
     featuresH: 'Por que o TalkLive',
     features: [
       { icon: 'mic', h: 'Chamadas de voz instantâneas', p: 'Um toque e você está numa chamada de voz ao vivo com alguém novo. Sem vídeo, sem pressão - só conversa de verdade.' },
@@ -81,7 +81,7 @@ module.exports = [
     h1: 'Parlez avec des inconnus du monde entier',
     lede: 'Appuyez sur Parler pour lancer un appel vocal anonyme en direct, ou sur Discuter pour échanger par texto avec une personne au hasard, où qu’elle soit dans le monde. Gratuit, sans inscription.',
     ctaTalk: 'Appuyer pour Parler', ctaChat: 'Appuyer pour Discuter',
-    heroMeta: 'Gratuit pour toujours · Sans inscription · Anonyme · Voix et texte · Sur tous les appareils',
+    heroMeta: 'Gratuit pour parler · Financé par la pub · Sans inscription · Anonyme · Voix et texte · Sur tous les appareils',
     featuresH: 'Pourquoi TalkLive',
     features: [
       { icon: 'mic', h: 'Appels vocaux instantanés', p: 'Un appui et vous êtes en appel vocal en direct avec quelqu’un de nouveau. Pas de vidéo, pas de pression - juste une vraie conversation.' },
@@ -113,7 +113,7 @@ module.exports = [
     h1: 'Sprich mit Fremden auf der ganzen Welt',
     lede: 'Tippe auf Sprechen für einen anonymen Live-Sprachanruf oder auf Chatten für sofortigen Text-Chat mit einer zufälligen Person irgendwo auf der Welt. Kostenlos, ohne Anmeldung.',
     ctaTalk: 'Tippen zum Sprechen', ctaChat: 'Tippen zum Chatten',
-    heroMeta: 'Für immer kostenlos · Keine Anmeldung · Anonym · Sprache & Text · Auf jedem Gerät',
+    heroMeta: 'Kostenlos reden · Werbefinanziert · Keine Anmeldung · Anonym · Sprache & Text · Auf jedem Gerät',
     featuresH: 'Warum TalkLive',
     features: [
       { icon: 'mic', h: 'Sofortige Sprachanrufe', p: 'Ein Tipp und du bist in einem Live-Sprachanruf mit jemand Neuem. Kein Video, kein Druck - nur echte Gespräche.' },
@@ -145,7 +145,7 @@ module.exports = [
     h1: 'Общайтесь с незнакомцами со всего мира',
     lede: 'Нажмите «Говорить», чтобы начать анонимный голосовой звонок, или «Чат», чтобы мгновенно переписываться со случайным человеком из любой точки мира. Бесплатно и без регистрации.',
     ctaTalk: 'Нажми и говори', ctaChat: 'Нажми и пиши',
-    heroMeta: 'Бесплатно навсегда · Без регистрации · Анонимно · Голос и текст · На любом устройстве',
+    heroMeta: 'Общение бесплатно · С рекламой · Без регистрации · Анонимно · Голос и текст · На любом устройстве',
     featuresH: 'Почему TalkLive',
     features: [
       { icon: 'mic', h: 'Мгновенные голосовые звонки', p: 'Одно нажатие - и вы в живом голосовом звонке с новым человеком. Без видео и без давления: только живой разговор.' },
@@ -177,7 +177,7 @@ module.exports = [
     h1: 'Dünyanın her yerinden yabancılarla konuş',
     lede: 'Konuş’a dokunarak anonim canlı bir sesli arama başlat, ya da Sohbet’e dokunarak dünyanın herhangi bir yerindeki rastgele biriyle anında yazış. Ücretsiz, kayıt yok.',
     ctaTalk: 'Dokun ve Konuş', ctaChat: 'Dokun ve Yaz',
-    heroMeta: 'Sonsuza dek ücretsiz · Kayıt yok · Anonim · Ses ve yazı · Her cihazda çalışır',
+    heroMeta: 'Konuşmak ücretsiz · Reklam destekli · Kayıt yok · Anonim · Ses ve yazı · Her cihazda çalışır',
     featuresH: 'Neden TalkLive',
     features: [
       { icon: 'mic', h: 'Anında sesli aramalar', p: 'Tek dokunuşla yeni biriyle canlı sesli aramadasın. Video yok, baskı yok - sadece gerçek sohbet.' },
@@ -209,7 +209,7 @@ module.exports = [
     h1: 'تحدث مع غرباء من جميع أنحاء العالم',
     lede: 'اضغط «تحدث» لبدء مكالمة صوتية مباشرة مجهولة، أو اضغط «دردش» للمراسلة الفورية مع شخص عشوائي في أي مكان في العالم. مجاني وبدون تسجيل.',
     ctaTalk: 'اضغط للتحدث', ctaChat: 'اضغط للدردشة',
-    heroMeta: 'مجاني للأبد · بدون تسجيل · مجهول الهوية · صوت ونص · يعمل على أي جهاز',
+    heroMeta: 'التحدث مجاني · مدعوم بالإعلانات · بدون تسجيل · مجهول الهوية · صوت ونص · يعمل على أي جهاز',
     featuresH: 'لماذا TalkLive',
     features: [
       { icon: 'mic', h: 'مكالمات صوتية فورية', p: 'ضغطة واحدة وتكون في مكالمة صوتية مباشرة مع شخص جديد. بلا فيديو وبلا ضغوط - مجرد حديث حقيقي.' },
@@ -241,7 +241,7 @@ module.exports = [
     h1: 'दुनिया भर के अजनबियों से बात करें',
     lede: '“टॉक” पर टैप करके गुमनाम लाइव वॉयस कॉल शुरू करें, या “चैट” पर टैप करके दुनिया में कहीं भी किसी रैंडम व्यक्ति से तुरंत टेक्स्ट चैट करें। मुफ़्त, बिना साइन-अप।',
     ctaTalk: 'टैप करके बोलें', ctaChat: 'टैप करके चैट करें',
-    heroMeta: 'हमेशा मुफ़्त · कोई साइन-अप नहीं · गुमनाम · वॉयस और टेक्स्ट · हर डिवाइस पर',
+    heroMeta: 'बात करना मुफ़्त · विज्ञापन-समर्थित · कोई साइन-अप नहीं · गुमनाम · वॉयस और टेक्स्ट · हर डिवाइस पर',
     featuresH: 'TalkLive ही क्यों',
     features: [
       { icon: 'mic', h: 'तुरंत वॉयस कॉल', p: 'एक टैप और आप किसी नए व्यक्ति के साथ लाइव वॉयस कॉल पर हैं। न वीडियो, न दबाव - बस असली बातचीत।' },
@@ -273,7 +273,7 @@ module.exports = [
     h1: 'دنیا بھر کے اجنبیوں سے بات کریں',
     lede: '”ٹاک“ پر ٹیپ کر کے گمنام لائیو وائس کال شروع کریں، یا ”چیٹ“ پر ٹیپ کر کے دنیا میں کہیں بھی کسی رینڈم شخص سے فوری ٹیکسٹ چیٹ کریں۔ مفت، بغیر سائن اپ۔',
     ctaTalk: 'ٹیپ کریں اور بولیں', ctaChat: 'ٹیپ کریں اور چیٹ کریں',
-    heroMeta: 'ہمیشہ مفت · کوئی سائن اپ نہیں · گمنام · وائس اور ٹیکسٹ · ہر ڈیوائس پر',
+    heroMeta: 'بات کرنا مفت · اشتہارات سے چلتا ہے · کوئی سائن اپ نہیں · گمنام · وائس اور ٹیکسٹ · ہر ڈیوائس پر',
     featuresH: 'TalkLive ہی کیوں',
     features: [
       { icon: 'mic', h: 'فوری وائس کالز', p: 'ایک ٹیپ اور آپ کسی نئے شخص کے ساتھ لائیو وائس کال پر ہیں۔ نہ ویڈیو، نہ دباؤ - بس اصلی گفتگو۔' },
@@ -305,7 +305,7 @@ module.exports = [
     h1: 'Ngobrol dengan orang asing di seluruh dunia',
     lede: 'Ketuk Bicara untuk memulai panggilan suara langsung yang anonim, atau ketuk Chat untuk mengobrol teks instan dengan orang acak di mana pun di dunia. Gratis, tanpa daftar.',
     ctaTalk: 'Ketuk untuk Bicara', ctaChat: 'Ketuk untuk Chat',
-    heroMeta: 'Gratis selamanya · Tanpa daftar · Anonim · Suara & teks · Berjalan di semua perangkat',
+    heroMeta: 'Gratis mengobrol · Didukung iklan · Tanpa daftar · Anonim · Suara & teks · Berjalan di semua perangkat',
     featuresH: 'Kenapa TalkLive',
     features: [
       { icon: 'mic', h: 'Panggilan suara instan', p: 'Sekali ketuk, kamu langsung dalam panggilan suara dengan orang baru. Tanpa video, tanpa tekanan - hanya obrolan nyata.' },
@@ -337,7 +337,7 @@ module.exports = [
     h1: '与世界各地的陌生人聊天',
     lede: '轻点“语音”开始匿名实时语音通话，或轻点“聊天”与世界任何角落的随机陌生人即时文字交流。完全免费，无需注册。',
     ctaTalk: '轻点开聊（语音）', ctaChat: '轻点开聊（文字）',
-    heroMeta: '永久免费 · 无需注册 · 匿名 · 语音和文字 · 任何设备均可使用',
+    heroMeta: '免费聊天 · 广告支持 · 无需注册 · 匿名 · 语音和文字 · 任何设备均可使用',
     featuresH: '为什么选择 TalkLive',
     features: [
       { icon: 'mic', h: '即时语音通话', p: '轻点一下，就能与新朋友进行实时语音通话。没有视频，没有压力--只有真实的交流。' },
@@ -369,7 +369,7 @@ module.exports = [
     h1: '世界中の見知らぬ人と話そう',
     lede: '「トーク」をタップして匿名のライブ音声通話を始めるか、「チャット」をタップして世界のどこかのランダムな相手と今すぐテキストチャット。無料・登録不要。',
     ctaTalk: 'タップして話す', ctaChat: 'タップしてチャット',
-    heroMeta: 'ずっと無料 · 登録不要 · 匿名 · 音声とテキスト · どのデバイスでも',
+    heroMeta: '会話は無料 · 広告で運営 · 登録不要 · 匿名 · 音声とテキスト · どのデバイスでも',
     featuresH: 'TalkLiveが選ばれる理由',
     features: [
       { icon: 'mic', h: '即時の音声通話', p: 'ワンタップで新しい相手とライブ音声通話。ビデオなし、プレッシャーなし--本当の会話だけ。' },
@@ -401,7 +401,7 @@ module.exports = [
     h1: '전 세계 낯선 사람과 대화하세요',
     lede: '‘토크’를 탭해 익명 라이브 음성 통화를 시작하거나, ‘채팅’을 탭해 세계 어디에 있든 랜덤한 상대와 즉시 텍스트로 대화하세요. 무료, 가입 불필요.',
     ctaTalk: '탭해서 통화하기', ctaChat: '탭해서 채팅하기',
-    heroMeta: '평생 무료 · 가입 없음 · 익명 · 음성과 텍스트 · 모든 기기에서 작동',
+    heroMeta: '대화 무료 · 광고로 운영 · 가입 없음 · 익명 · 음성과 텍스트 · 모든 기기에서 작동',
     featuresH: 'TalkLive를 쓰는 이유',
     features: [
       { icon: 'mic', h: '즉시 연결되는 음성 통화', p: '탭 한 번이면 새로운 사람과 라이브 음성 통화. 영상도, 부담도 없이 - 진짜 대화만.' },
@@ -433,7 +433,7 @@ module.exports = [
     h1: 'Parla con sconosciuti di tutto il mondo',
     lede: 'Tocca Parla per avviare una chiamata vocale anonima dal vivo, o tocca Chatta per scrivere subito a una persona a caso ovunque nel mondo. Gratis, senza registrazione.',
     ctaTalk: 'Tocca per Parlare', ctaChat: 'Tocca per Chattare',
-    heroMeta: 'Gratis per sempre · Nessuna registrazione · Anonimo · Voce e testo · Su qualsiasi dispositivo',
+    heroMeta: 'Gratis per parlare · Sostenuto da annunci · Nessuna registrazione · Anonimo · Voce e testo · Su qualsiasi dispositivo',
     featuresH: 'Perché TalkLive',
     features: [
       { icon: 'mic', h: 'Chiamate vocali istantanee', p: 'Un tocco e sei in una chiamata vocale dal vivo con qualcuno di nuovo. Niente video, niente pressioni - solo conversazione vera.' },
@@ -465,7 +465,7 @@ module.exports = [
     h1: 'با غریبه‌ها از سراسر جهان صحبت کنید',
     lede: 'روی «صحبت» ضربه بزنید تا یک تماس صوتی زندهٔ ناشناس شروع شود، یا روی «چت» ضربه بزنید و فوراً با فردی تصادفی در هر جای دنیا پیام رد و بدل کنید. رایگان و بدون ثبت‌نام.',
     ctaTalk: 'ضربه بزن و صحبت کن', ctaChat: 'ضربه بزن و چت کن',
-    heroMeta: 'برای همیشه رایگان · بدون ثبت‌نام · ناشناس · صدا و متن · روی هر دستگاهی',
+    heroMeta: 'گفتگو رایگان · با پشتیبانی تبلیغات · بدون ثبت‌نام · ناشناس · صدا و متن · روی هر دستگاهی',
     featuresH: 'چرا TalkLive',
     features: [
       { icon: 'mic', h: 'تماس صوتی فوری', p: 'با یک ضربه در تماس صوتی زنده با یک فرد جدید هستید. بدون ویدیو و بدون فشار - فقط گفت‌وگوی واقعی.' },
@@ -497,7 +497,7 @@ module.exports = [
     h1: 'বিশ্বজুড়ে অপরিচিতদের সাথে কথা বলুন',
     lede: '“টক”-এ ট্যাপ করে বেনামি লাইভ ভয়েস কল শুরু করুন, অথবা “চ্যাট”-এ ট্যাপ করে বিশ্বের যেকোনো জায়গার র্যান্ডম কারও সাথে সাথে সাথে টেক্সট চ্যাট করুন। ফ্রি, সাইন-আপ ছাড়াই।',
     ctaTalk: 'ট্যাপ করে কথা বলুন', ctaChat: 'ট্যাপ করে চ্যাট করুন',
-    heroMeta: 'চিরকাল ফ্রি · সাইন-আপ নেই · বেনামি · ভয়েস ও টেক্সট · যেকোনো ডিভাইসে চলে',
+    heroMeta: 'কথা বলা ফ্রি · বিজ্ঞাপন-সমর্থিত · সাইন-আপ নেই · বেনামি · ভয়েস ও টেক্সট · যেকোনো ডিভাইসে চলে',
     featuresH: 'কেন TalkLive',
     features: [
       { icon: 'mic', h: 'তাৎক্ষণিক ভয়েস কল', p: 'এক ট্যাপেই নতুন কারও সাথে লাইভ ভয়েস কলে। ভিডিও নেই, চাপ নেই - শুধু আসল কথাবার্তা।' },

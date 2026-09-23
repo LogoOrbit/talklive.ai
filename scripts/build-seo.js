@@ -471,7 +471,7 @@ ${headerHtml(p.slug)}
         <a class="btn btn-chat" href="${appHref('/chat', 'seo')}">💬 ${p.ctaChat || 'Tap to Chat'}</a>
         <a class="btn btn-ghost" href="#how">How it works</a>
       </div>
-      <p class="hero-meta">Core matching is free · No sign-up required · Voice &amp; text · Adults 18+ · Leave any time</p>
+      <p class="hero-meta">Core matching is free · Ad-supported · No sign-up required · Voice &amp; text · Adults 18+ · Leave any time</p>
     </div>
   </section>
 

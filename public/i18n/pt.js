@@ -360,7 +360,7 @@
   "playMusic": "Tocar música",
   "pauseMusic": "Pausar música",
   "noteFreeTitle": "Grátis, feito para você",
-  "noteFreeBody": "O TalkLive é 100% grátis. Sem pagamento para conversar, sem limite de tempo, sem truques.",
+  "noteFreeBody": "Conversar no TalkLive é 100% grátis - mantido por alguns anúncios, nunca um paywall no chat de voz ou texto. Sem limite de tempo, sem truques.",
   "noteFreeCare": "Trabalhamos nele todos os dias para ser o jeito mais simples e fluido de falar com pessoas novas em qualquer lugar do mundo: conexões rápidas e um design simples, feito com carinho.",
   "noteFreeSign": "Aproveite suas conversas. - Equipe TalkLive",
   "filtersPremiumBody": "O plano grátis inclui até 3 países por lista. O Premium vai liberar filtros de gênero, listas de países ilimitadas, amigos ilimitados, novos pareamentos na hora e sem anúncios. Em breve.",

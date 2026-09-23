@@ -360,7 +360,7 @@
   "playMusic": "Müziği çal",
   "pauseMusic": "Müziği duraklat",
   "noteFreeTitle": "Ücretsiz, sadece senin için",
-  "noteFreeBody": "TalkLive %100 ücretsiz. Konuşmak için ödeme yok, süre sınırı yok, hile yok.",
+  "noteFreeBody": "TalkLive'da konuşmak %100 ücretsiz - birkaç reklamla desteklenir, sesli veya yazılı sohbette asla ödeme duvarı yok. Süre sınırı yok, hile yok.",
   "noteFreeCare": "Dünyanın her yerinden yeni insanlarla konuşmanın en akıcı ve sade yolu olması için her gün çalışıyoruz: hızlı bağlantılar ve özenle yapılmış basit bir tasarım.",
   "noteFreeSign": "Keyifli sohbetler. - TalkLive ekibi",
   "filtersPremiumBody": "Ücretsiz planda liste başına en fazla 3 ülke var. Premium; cinsiyet filtreleri, sınırsız ülke listeleri, sınırsız arkadaş, anında yeni eşleşme ve reklamsız kullanım sunacak. Yakında geliyor.",
