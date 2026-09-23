@@ -21,7 +21,7 @@
  * cached.
  */
 
-const VERSION = 'v1';
+const VERSION = 'v2';
 const SHELL_CACHE = `talklive-shell-${VERSION}`;
 const ASSET_CACHE = `talklive-assets-${VERSION}`;
 // Extensionless on purpose: the server 301s /offline.html -> /offline to keep

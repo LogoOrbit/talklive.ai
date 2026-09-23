@@ -216,6 +216,9 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "acceptCallsOn": "Friends can call you again.",
     "acceptCallsOff": "Incoming calls are off. Friends can still message you.",
     "friendCallsOff": "They are not taking calls right now.",
+    "tapAgainToBlock": "Tap again to block",
+    "callbackOnVoice": "{name} wants to talk. Open voice chat to call back.",
+    "unreadMessagesCount": "{n} unread messages",
     "callbackAway": "They’re texting right now. We’ve let them know you want to talk.",
     "callbackBusyQueued": "They’re on another call. We’ve let them know you’re free to talk.",
     "joinedOn": "Joined {date}",
@@ -918,7 +921,7 @@ function applyI18n() {
 // Non-English dictionaries load on demand from /i18n/<lang>.js. Until the file
 // arrives t() falls back to English, then the UI re-translates once it lands.
 // Keep in step with the preload snippet in the <head> of index.html/chat.html.
-const I18N_VERSION = '20260923adsense';
+const I18N_VERSION = '20260923merged';
 const i18nLoading = {};
 window.__i18nLangLoaded = function (lang) {
   delete i18nLoading[lang];

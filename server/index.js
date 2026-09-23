@@ -1450,14 +1450,11 @@ const SOCIAL_INBOX_TTL_MS = 30 * 24 * 60 * 60000;
 // Coalesced to one write per event-loop turn: a single friend message touches
 // the chat log and the inbox, and serialising the whole graph twice for it was
 // pure waste.
-let socialWriteQueued = false;
+// Now cheaper still: this only marks the graph dirty, and the store builds it
+// once when its debounced write fires (or on shutdown) - see
+// store.setSocialProvider.
 function persistSocial() {
-  if (socialWriteQueued) return;
-  socialWriteQueued = true;
-  setImmediate(() => {
-    socialWriteQueued = false;
-    writeSocial();
-  });
+  store.markSocialDirty();
 }
 
 function writeSocial() {
@@ -1488,7 +1485,7 @@ function writeSocial() {
   for (const [cid, list] of notifications) {
     if (list.length) notifObj[cid] = list;
   }
-  store.saveSocial({
+  return {
     friends: friendsObj,
     friendChats: chatsObj,
     blocks: blocksObj,
@@ -1500,8 +1497,9 @@ function writeSocial() {
     blockMeta: mapOfMaps(blockMeta),
     chatClears: Object.fromEntries(chatClears),
     declinedRequests: Object.fromEntries(declinedRequests),
-  });
+  };
 }
+store.setSocialProvider(writeSocial);
 
 // Load durable accounts + social graph from the store into the in-memory Maps
 // on boot, before the server starts accepting connections.
@@ -1658,12 +1656,35 @@ function rememberPairing(sockA, profA, sockB, profB) {
 
 // Re-send state to everyone whose lists show this person - their friends and
 // anyone with them among recent matches - so a green dot flips live.
+//
+// Coalesced: presence changes come in bursts (a deploy reconnects everyone, a
+// mobile network drops a whole region), and each one used to rebuild and send
+// every watcher's full state on the spot. A person watched by twenty others
+// going offline and back cost forty full syncs; three hundred reconnecting at
+// once stalled the event loop that also relays every live call's signalling.
+// A watcher touched several times inside the window gets one sync.
+const PRESENCE_SYNC_MS = 40;
+const presenceDirty = new Set();
+let presenceTimer = null;
+function schedulePresenceSync(clientId) {
+  presenceDirty.add(clientId);
+  if (presenceTimer) return;
+  presenceTimer = setTimeout(() => {
+    presenceTimer = null;
+    const due = Array.from(presenceDirty);
+    presenceDirty.clear();
+    for (const cid of due) {
+      const sock = getSocketByClientId(cid);
+      if (sock) syncClientState(sock, cid);
+    }
+  }, PRESENCE_SYNC_MS);
+}
+
 function resyncWatchers(clientId) {
   const seen = new Set();
   for (const [fid] of friends.get(clientId) || new Map()) {
     seen.add(fid);
-    const sock = getSocketByClientId(fid);
-    if (sock) syncClientState(sock, fid);
+    if (clientSockets.has(fid)) schedulePresenceSync(fid);
   }
   // Only someone connected right now can be shown anything, so walk the
   // online set rather than every history list ever stored: the latter is every
@@ -1672,8 +1693,7 @@ function resyncWatchers(clientId) {
     if (otherId === clientId || seen.has(otherId)) continue;
     const list = chatHistory.get(otherId);
     if (!list || !list.some((e) => e.clientId === clientId)) continue;
-    const sock = getSocketByClientId(otherId);
-    if (sock) syncClientState(sock, otherId);
+    schedulePresenceSync(otherId);
   }
 }
 
@@ -1748,13 +1768,15 @@ function getSocketByClientId(clientId) {
 function pushCopyFor(notif) {
   switch (notif.type) {
     case 'message':
-      return { topic: `msg:${notif.fromClientId}`, title: `${notif.username} messaged you`, body: 'Open TalkLive to read it.', url: '/?open=friends' };
+      // Each lands where the tap meant to go: the conversation itself, or the
+      // request waiting for an answer - not a panel to hunt through.
+      return { topic: `msg:${notif.fromClientId}`, title: `${notif.username} messaged you`, body: 'Open TalkLive to read it.', url: `/?open=chat&with=${encodeURIComponent(notif.fromClientId)}` };
     case 'friend_request':
-      return { topic: `req:${notif.fromClientId}`, title: `${notif.username} wants to be friends`, body: 'Tap to accept or decline.', url: '/?open=friends' };
+      return { topic: `req:${notif.fromClientId}`, title: `${notif.username} wants to be friends`, body: 'Tap to accept or decline.', url: '/?open=requests' };
     case 'friend_accepted':
-      return { topic: `acc:${notif.byClientId}`, title: `${notif.username} accepted your friend request`, body: 'Say hello - you can message them any time.', url: '/?open=friends' };
+      return { topic: `acc:${notif.byClientId}`, title: `${notif.username} accepted your friend request`, body: 'Say hello - you can message them any time.', url: `/?open=chat&with=${encodeURIComponent(notif.byClientId)}` };
     case 'call_back_request':
-      return { topic: `call:${notif.fromClientId}`, title: `${notif.username} wants to talk`, body: 'They asked you to call back.', url: '/?open=friends' };
+      return { topic: `call:${notif.fromClientId}`, title: `${notif.username} wants to talk`, body: 'They asked you to call back.', url: '/?open=requests' };
     default:
       return null;
   }
@@ -4130,15 +4152,19 @@ io.on('connection', (socket) => {
     const mine = snapshotOf(me.clientId, friendClientId);
     removeFriendPair(me.clientId, friendClientId);
     store.recordFeature('friend_remove');
-    // Unfriending is not blocking. The conversation is still there and either
-    // side may still write in it, but it used to be listed only under Friends -
-    // so it vanished from both screens with no way to open it again. It moves
-    // to recent people instead, the way a messenger keeps the thread.
-    if (friendChats.has(pairKey(me.clientId, friendClientId))) {
-      touchChatHistory(me.clientId, friendClientId, them);
-      touchChatHistory(friendClientId, me.clientId, mine);
-      persistSocial();
-    }
+    // "<name> accepted your friend request" is not true any more, and its Chat
+    // button pointed at a friendship that is gone. It went on counting in the
+    // badge until dismissed by hand.
+    removeNotificationsWhere(me.clientId, (n) => n.type === 'friend_accepted' && n.byClientId === friendClientId);
+    removeNotificationsWhere(friendClientId, (n) => n.type === 'friend_accepted' && n.byClientId === me.clientId);
+    // Unfriending is not blocking. Both people stay in each other's recent
+    // people, so the conversation (if any) can still be opened and either can
+    // add the other again. It used to be listed only under Friends - so it
+    // vanished from both screens, and with no thread and no recent match left
+    // between them the two could not even find each other to re-add.
+    touchChatHistory(me.clientId, friendClientId, them);
+    touchChatHistory(friendClientId, me.clientId, mine);
+    persistSocial();
     syncClientState(socket, me.clientId);
     const friendSocket = getSocketByClientId(friendClientId);
     if (friendSocket) syncClientState(friendSocket, friendClientId);
@@ -4478,8 +4504,25 @@ io.on('connection', (socket) => {
 
   socket.on('clear-notification', ({ notificationId } = {}) => {
     const me = profiles.get(socket.id);
-    if (!me || !notificationId) return;
+    if (!me || typeof notificationId !== 'string') return;
     removeNotification(me.clientId, notificationId);
+  });
+
+  // The Requests tab was looked at. Informational rows ("<name> accepted your
+  // friend request") stop counting in the badge but stay in the list; rows
+  // that need an answer (a request, a call-back) keep counting until answered.
+  // Before this, an accepted-request row counted until dismissed one by one,
+  // so the badge read as an alert that would not go away.
+  socket.on('mark-notifications-seen', () => {
+    const me = profiles.get(socket.id);
+    if (!me) return;
+    let changed = false;
+    for (const n of notifications.get(me.clientId) || []) {
+      if (n.type === 'friend_accepted' && !n.seen) { n.seen = true; changed = true; }
+    }
+    if (!changed) return;
+    persistSocial();
+    syncClientState(socket, me.clientId);
   });
 
   // --- Call back: re-connect directly with someone from call history ---

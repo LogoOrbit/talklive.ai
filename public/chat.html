@@ -27,20 +27,20 @@
   root.classList.add('i18n-pending');
   setTimeout(function () { root.classList.remove('i18n-pending'); }, 1500);
   var s = document.createElement('script');
-  s.src = '/i18n/' + lang + '.js?v=20260923adsense';
+  s.src = '/i18n/' + lang + '.js?v=20260923merged';
   s.async = true;
   s.setAttribute('data-i18n-lang', lang);
   s.onerror = function () { root.classList.remove('i18n-pending'); };
   document.head.appendChild(s);
 })();
 </script>
-<link rel="stylesheet" href="/chat.css?v=20260923adsense" />
+<link rel="stylesheet" href="/chat.css?v=20260923merged" />
 <link rel="stylesheet" href="/chat-extras.css?v=20260922social2" />
 <link rel="stylesheet" href="/games.css?v=20260916navbar" />
-<link rel="stylesheet" href="/ui.css?v=20260923social3" />
+<link rel="stylesheet" href="/ui.css?v=20260923social5" />
 <!-- The top bar, shared with / and /call: one button language, one radius,
      one focus ring on every screen of the product. -->
-<link rel="stylesheet" href="/nav.css?v=20260922social" />
+<link rel="stylesheet" href="/nav.css?v=20260923logo" />
   <link rel="stylesheet" href="/data-notice.css?v=2">
 <style>
   .skip-link {
@@ -117,7 +117,7 @@
       <div class="nav-brand">
         <a class="nav-logo" id="brandHome" href="/" data-i18n-title="goHome" data-i18n-aria="goHome" aria-label="TalkLive home" title="TalkLive home">
           <span class="brand-logo" aria-hidden="true">
-            <img src="/favicon.svg?v=20260916settings" width="30" height="30" alt="" decoding="async" />
+            <img src="/favicon.svg?v=20260923logo" width="30" height="30" alt="" decoding="async" />
             <!-- Network status, wired in chat.js exactly as it is in app.js. -->
             <span id="brandDot" class="brand-dot is-online" data-i18n-title="netOnline" title="You are online"></span>
           </span>
@@ -281,7 +281,7 @@
             <span class="cs-halo h1"></span>
             <span class="cs-halo h2"></span>
             <div class="cs-beacon">
-              <img src="/favicon.svg?v=20260916settings" alt="TalkLive" width="76" height="76" decoding="async" />
+              <img src="/favicon.svg?v=20260923logo" alt="TalkLive" width="76" height="76" decoding="async" />
             </div>
           </div>
           <p id="searchLine" class="search-line" aria-live="polite">Scanning the globe…</p>
@@ -421,7 +421,7 @@
     <div class="modal-box gate-box" role="dialog" aria-modal="true" aria-labelledby="genderGateTitle">
       <div class="modal-body gate-body">
         <span class="gate-mark" aria-hidden="true">
-          <img src="/favicon.svg?v=20260916gate" width="62" height="62" alt="" decoding="async" />
+          <img src="/favicon.svg?v=20260923logo" width="62" height="62" alt="" decoding="async" />
         </span>
         <h2 id="genderGateTitle" class="gate-title" data-i18n="chooseGenderTitle">Choose your gender</h2>
         <p class="gate-sub" data-i18n="chooseGenderSub">Required for matching. It keeps gender preferences accurate and helps build safer conversations.</p>
@@ -756,6 +756,11 @@
           <span class="seen-toggle-label" data-i18n="readReceipts">Read Receipts</span>
           <span class="seen-toggle-switch" aria-hidden="true"><span class="seen-toggle-knob"></span></span>
         </button>
+        <!-- Block lives with the conversation: this page had no way to block a
+             friend or a recent match at all, only to remove a friendship. -->
+        <button type="button" id="friendChatBlockBtn" class="chat-block-btn" data-i18n-title="blockUser" title="Block User" data-i18n-aria="blockUser" aria-label="Block User">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/></svg>
+        </button>
         <button type="button" id="friendChatCloseBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
       </div>
     </div>
@@ -873,13 +878,13 @@
 
   <script defer src="/socket.io/socket.io.min.js"></script>
   <script defer src="/countries.js?v=20260828fix"></script>
-  <script defer src="/i18n.js?v=20260923adsense"></script>
+  <script defer src="/i18n.js?v=20260923merged"></script>
   <script defer src="/chat-time.js?v=20260916navbar"></script>
   <script defer src="/animals.js?v=20260921animals"></script>
   <script defer src="/error-reporter.js?v=20260823ui"></script>
   <script defer src="/chat-extras.js?v=20260922social2"></script>
   <script defer src="/games.js?v=20260916navbar"></script>
-  <script defer src="/chat.js?v=20260923i18n"></script>
+  <script defer src="/chat.js?v=20260923social5"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

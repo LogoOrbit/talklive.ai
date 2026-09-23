@@ -1047,6 +1047,11 @@
     panel.setAttribute('aria-hidden', 'true');
     panel.inert = true;
     overlay.classList.add('hidden');
+    // The friend chat can be closed from anywhere (another panel opening,
+    // Escape), not just its own button. Leaving the id set meant every later
+    // message from that friend was marked read and counted nowhere - the
+    // badge stayed empty for messages nobody had seen.
+    if (panel === friendChatPanel) activeFriendChatId = null;
   }
   function closeAllPanels() {
     closePanel(settingsPanel, settingsOverlay);
@@ -1395,12 +1400,44 @@
     });
   }
 
+  // The count where it can be seen with the tab in the background: its title,
+  // and the installed app's icon.
+  function showCountOutsidePage(count) {
+    var base = document.title.replace(/^\(\d+\+?\)\s*/, '');
+    var next = count > 0 ? '(' + (count > 99 ? '99+' : count) + ') ' + base : base;
+    if (document.title !== next) document.title = next;
+    try {
+      if (count > 0 && navigator.setAppBadge) navigator.setAppBadge(count).catch(function () {});
+      else if (!count && navigator.clearAppBadge) navigator.clearAppBadge().catch(function () {});
+    } catch (e) { /* unsupported */ }
+  }
+
+  // A small, polite toast for social news. This page never said a word when a
+  // request arrived, was accepted, or someone asked for a call - the only
+  // trace was a number changing on a button.
+  var socialToastEl = null;
+  function socialToast(text) {
+    if (!text) return;
+    if (!socialToastEl) {
+      socialToastEl = document.createElement('div');
+      socialToastEl.className = 'social-toast';
+      socialToastEl.setAttribute('role', 'status');
+      socialToastEl.setAttribute('aria-live', 'polite');
+      document.body.appendChild(socialToastEl);
+    }
+    socialToastEl.textContent = text;
+    socialToastEl.classList.add('show');
+    clearTimeout(socialToast._t);
+    socialToast._t = setTimeout(function () { socialToastEl.classList.remove('show'); }, 3200);
+  }
+
   function renderFriends() {
     // Header badge: pending requests + unread friend messages.
     var unread = friendsState.notifications.filter(function (n) { return n.type === 'message'; }).length;
     var badgeCount = friendsState.requests.length + unread;
-    friendsBadge.textContent = String(badgeCount);
+    friendsBadge.textContent = badgeCount > 99 ? '99+' : String(badgeCount);
     friendsBadge.classList.toggle('hidden', badgeCount === 0);
+    showCountOutsidePage(badgeCount);
 
     setTabCount(friendsTabCount, friendsState.friends.length);
     setTabCount(requestsTabCount, friendsState.requests.length + friendsState.sent.length);
@@ -1505,8 +1542,12 @@
     if (!n) return;
     if (n.type === 'message' && n.fromClientId === activeFriendChatId) return; // already reading it
     friendsState.notifications.push(n);
+    var who = friendLabel(findPerson(n.fromClientId || n.byClientId)) || n.username || t('someone');
     if (n.type === 'message') { soundReceive(); vibrate(20); }
     else if (n.type === 'friend_request' || n.type === 'friend_accepted') vibrate([20, 40, 20]);
+    if (n.type === 'friend_request') socialToast(t('notifWantsFriends', { name: who }));
+    else if (n.type === 'friend_accepted') socialToast(t('notifAccepted', { name: who }));
+    else if (n.type === 'call_back_request') socialToast(t('callbackOnVoice', { name: who }));
     renderFriends();
     renderHistory();
   });
@@ -1527,6 +1568,12 @@
   $('historyCloseBtn').addEventListener('click', function () { closePanel(historyPanel, historyOverlay); });
   historyOverlay.addEventListener('click', function () { closePanel(historyPanel, historyOverlay); });
 
+  // A friend you renamed reads by that name here too.
+  function historyLabel(h) {
+    var f = friendsState.friends.filter(function (x) { return x.clientId === h.clientId; })[0];
+    return friendLabel(f) || h.username || '';
+  }
+
   function renderHistory() {
     historyList.innerHTML = '';
     if (!historyState.length) {
@@ -1539,8 +1586,8 @@
       var unreadN = unreadCountFor(h.clientId);
       var line = statusLine(h);
       row.innerHTML =
-        '<span class="friend-avatar" aria-hidden="true">' + escapeHtml((h.username || '?').charAt(0)) + '</span>' +
-        '<span class="friend-main"><span class="friend-name">' + escapeHtml(h.username || '-') + ' ' + getFlagImg(h.countryCode, 14) + '</span>' +
+        '<span class="friend-avatar" aria-hidden="true">' + escapeHtml((historyLabel(h) || '?').charAt(0)) + '</span>' +
+        '<span class="friend-main"><span class="friend-name">' + escapeHtml(historyLabel(h) || '-') + ' ' + getFlagImg(h.countryCode, 14) + '</span>' +
         '<span class="friend-status' + (h.online ? '' : ' is-offline') + line.cls + '"><span class="online-dot"></span><span class="friend-status-text">' + escapeHtml(line.text) + '</span></span></span>' +
         '<span class="friend-actions">' +
         '<button type="button" class="mini-btn" data-act="chat" title="' + escapeHtml(t('messageBack')) + '" aria-label="' + escapeHtml(t('messageBack')) + '"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>' +
@@ -1750,10 +1797,42 @@
     focusComposer(friendChatInput);
   }
   function closeFriendChat() {
+    disarmBlock();
     activeFriendChatId = null;
     closePanel(friendChatPanel, friendChatOverlay);
   }
   $('friendChatCloseBtn').addEventListener('click', closeFriendChat);
+
+  // Two taps, like Remove: blocking ends the friendship and the conversation
+  // for good (until unblocked from the call app's Settings > Privacy).
+  var friendChatBlockBtn = $('friendChatBlockBtn');
+  var blockArmed = null;
+  function disarmBlock() {
+    clearTimeout(blockArmed);
+    blockArmed = null;
+    if (!friendChatBlockBtn) return;
+    friendChatBlockBtn.classList.remove('confirm');
+    friendChatBlockBtn.title = t('blockUser');
+    friendChatBlockBtn.setAttribute('aria-label', t('blockUser'));
+  }
+  if (friendChatBlockBtn) {
+    friendChatBlockBtn.addEventListener('click', function () {
+      var target = activeFriendChatId;
+      if (!target) return;
+      if (!blockArmed) {
+        friendChatBlockBtn.classList.add('confirm');
+        friendChatBlockBtn.title = t('tapAgainToBlock');
+        friendChatBlockBtn.setAttribute('aria-label', t('tapAgainToBlock'));
+        vibrate(15);
+        blockArmed = setTimeout(disarmBlock, 3000);
+        return;
+      }
+      disarmBlock();
+      socket.emit('block-friend', { friendClientId: target });
+      closeFriendChat();
+      socialToast(t('userBlocked'));
+    });
+  }
   friendChatOverlay.addEventListener('click', closeFriendChat);
 
   friendChatForm.addEventListener('submit', function (e) {
@@ -1781,15 +1860,18 @@
     });
     renderSeenLabel();
   });
+  function onScreen(id) {
+    return !!(id && friendChatMsgs.querySelector('[data-cx-id="' + (window.CSS && CSS.escape ? CSS.escape(id) : id) + '"]'));
+  }
   socket.on('friend-message-sent', function (data) {
-    if (!data) return;
+    if (!data || (data.toClientId === activeFriendChatId && onScreen(data.id))) return;
     noteLastMessage(data.toClientId, { id: data.id, mine: true, text: data.text || '', gif: !!data.gif, ts: data.ts });
     if (data.toClientId === activeFriendChatId) appendFriendMsg(data.text, 'me', data);
     renderFriends();
     renderHistory();
   });
   socket.on('friend-message', function (data) {
-    if (!data) return;
+    if (!data || (data.fromClientId === activeFriendChatId && onScreen(data.id))) return;
     noteLastMessage(data.fromClientId, { id: data.id, mine: false, text: data.text || '', gif: !!data.gif, ts: data.ts });
     if (typingFrom[data.fromClientId]) setTyping(data.fromClientId, false);
     else { renderFriends(); renderHistory(); }
