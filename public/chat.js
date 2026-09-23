@@ -500,6 +500,9 @@
   function register(takeover) {
     socket.emit('register', {
       takeover: !!takeover,
+      // This page is text only: it must not be rung or force-paired for a
+      // voice call-back, which it has no way to answer.
+      surface: 'chat',
       clientId: getClientId(),
       // Both pages share one client id, and the server binds that id to a
       // signed token the first time it sees it. Registering without the token
