@@ -98,6 +98,38 @@ fly ssh sftp get /data/owner-data.json ./owner-data-$(date +%F).json --app talkl
 `npm run test:durability` exercises every row of that table, including the
 "database is unreachable" case below.
 
+### Moving to Postgres without losing anyone
+
+Setting `DATABASE_URL` is not a step before the cutover, it *is* the cutover:
+from that moment Postgres is the only store and `DATA_DIR` is ignored, so
+whatever is in Postgres right then becomes the whole world. A database that was
+connected once and never written to again holds an empty document, and setting
+the variable against it would make every account, friendship and chat on the
+volume vanish from the app.
+
+So the app carries them up itself. On the first boot with `DATABASE_URL` set,
+if Postgres holds nothing and the volume still holds a real store, that file is
+copied into Postgres before the first request is served, read back to check it
+landed, and left exactly where it is - which makes it a free backup of the
+cutover. The boot log says so, and `backendStatus.seededFromFile` records it.
+
+It only ever runs in that one direction and only when there is nothing to lose:
+a populated database is never overwritten by a file, however stale, and a
+restart after a successful cutover does not seed again. An unreadable file is
+skipped, not used as a seed and not touched.
+
+So the whole migration is: set `DATABASE_URL` on the app and restart it.
+
+```sh
+fly secrets set DATABASE_URL='postgresql://...' --app talklive-ai
+fly logs --app talklive-ai        # look for "FIRST RUN ON POSTGRES"
+```
+
+`scripts/migrate-to-postgres.js` does the same copy by hand if you ever need it
+the other way round - from an exported file into a database that already has
+something in it. It refuses to write when the destination holds more than the
+source, and reads back what it wrote.
+
 **A database that is briefly unreachable never forks the data.** With
 `DATABASE_URL` set, the database is the only store; if it cannot be reached at
 boot the app keeps retrying and writes nothing anywhere until it answers.

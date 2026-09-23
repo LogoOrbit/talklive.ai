@@ -195,5 +195,84 @@ function accountsOf(file) {
   ok('nothing is written to the local file while the database is down', !fs.existsSync(DATA(dir)), fs.readdirSync(dir));
 }
 
+// --- 7. Switching to Postgres carries the volume's data up with it ----------
+//
+// Needs a real Postgres. TEST_DATABASE_URL points at a throwaway one; without
+// it these are skipped rather than silently counted as passing.
+const TEST_DB = process.env.TEST_DATABASE_URL || '';
+if (!TEST_DB) {
+  console.log('\nSKIP the Postgres cutover checks (set TEST_DATABASE_URL to a scratch database to run them)');
+} else {
+  const { execFileSync: run } = require('child_process');
+  const psql = (sql) => run('psql', [TEST_DB, '-tAc', sql], { encoding: 'utf8' }).trim();
+  const reset = () => psql('DROP TABLE IF EXISTS owner_store');
+  const pgAccounts = () => psql("SELECT coalesce(count(*),0) FROM jsonb_object_keys((SELECT doc->'accounts' FROM owner_store WHERE id=1))");
+
+  // The real situation: a populated volume and a database holding the empty
+  // document a connect-once-never-write leaves behind.
+  {
+    reset();
+    const dir = tmpDir();
+    seed(dir);
+    const out = inStore(dir, `console.log(JSON.stringify({
+      accounts: Object.keys(store.data.accounts),
+      friends: Object.keys(store.data.social.friends),
+      chats: Object.keys(store.data.social.friendChats),
+      seeded: store.backendStatus.seededFromFile,
+      mode: store.backendStatus.mode,
+    }));`, { DATABASE_URL: TEST_DB });
+    const got = JSON.parse(out.trim().split('\n').pop());
+    ok('the cutover switches to Postgres', got.mode === 'postgres', got);
+    ok('the cutover carries accounts up', got.accounts.includes('ada'), got);
+    ok('the cutover carries friends up', got.friends.includes('client-a'), got);
+    ok('the cutover carries friend chats up', got.chats.includes('client-a|client-b'), got);
+    ok('the cutover says it seeded', got.seeded === true, got);
+    ok('the data really is in Postgres', pgAccounts() === '1', pgAccounts());
+    ok('the volume file is left untouched as a backup',
+      fs.existsSync(DATA(dir)) && accountsOf(DATA(dir)).includes('ada'));
+
+    // Restarting must not seed again, and must not re-read the file.
+    const out2 = inStore(dir, `console.log(JSON.stringify({ seeded: store.backendStatus.seededFromFile }));`, { DATABASE_URL: TEST_DB });
+    ok('a restart does not seed a second time',
+      JSON.parse(out2.trim().split('\n').pop()).seeded === false);
+  }
+
+  // The dangerous inversion: a stale file must never overwrite a live database.
+  {
+    const dir = tmpDir();
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(DATA(dir), JSON.stringify({
+      accounts: { stale: { nickname: 'Stale' } },
+      social: { friends: {}, friendChats: {}, blocks: {}, chatHistory: {} },
+      analytics: {},
+    }));
+    const out = inStore(dir, `console.log(JSON.stringify({
+      accounts: Object.keys(store.data.accounts), seeded: store.backendStatus.seededFromFile,
+    }));`, { DATABASE_URL: TEST_DB });
+    const got = JSON.parse(out.trim().split('\n').pop());
+    ok('a stale file never overwrites a populated database',
+      got.accounts.includes('ada') && !got.accounts.includes('stale'), got);
+    ok('and it does not claim to have seeded', got.seeded === false, got);
+  }
+
+  // A fresh install with nothing anywhere, and a corrupt file with an empty
+  // database: both must come up cleanly rather than crashing the boot.
+  {
+    reset();
+    const dir = tmpDir();
+    const out = inStore(dir, `console.log(JSON.stringify({ mode: store.backendStatus.mode, n: Object.keys(store.data.accounts).length }));`, { DATABASE_URL: TEST_DB });
+    const got = JSON.parse(out.trim().split('\n').pop());
+    ok('a fresh install with no file starts cleanly on Postgres', got.mode === 'postgres' && got.n === 0, got);
+
+    fs.writeFileSync(DATA(dir), '{"accounts":');
+    const out2 = inStore(dir, `console.log(JSON.stringify({ mode: store.backendStatus.mode, seeded: store.backendStatus.seededFromFile }));`, { DATABASE_URL: TEST_DB });
+    const got2 = JSON.parse(out2.trim().split('\n').pop());
+    ok('an unreadable file does not stop the Postgres boot', got2.mode === 'postgres', got2);
+    ok('and an unreadable file is never used as a seed', got2.seeded === false, got2);
+    ok('and it is left on disk untouched', fs.readFileSync(DATA(dir), 'utf8') === '{"accounts":');
+  }
+  reset();
+}
+
 console.log(failed ? `\n${failed} check(s) failed` : '\nAll checks passed');
 process.exit(failed ? 1 : 0);

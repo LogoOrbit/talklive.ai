@@ -366,10 +366,86 @@ async function loadPg() {
   await pgPool.query('CREATE INDEX IF NOT EXISTS password_resets_email_idx ON password_resets (email)');
   await pgPool.query('CREATE INDEX IF NOT EXISTS password_resets_token_idx ON password_resets (token_hash)');
   const res = await pgPool.query('SELECT doc FROM owner_store WHERE id = 1');
-  if (res.rows.length) applyParsed(res.rows[0].doc);
+  const pgDoc = res.rows.length ? res.rows[0].doc : null;
+
+  // Switching a live site from the file backend to Postgres is not a migration
+  // step anyone gets to do separately: the moment DATABASE_URL is set, Postgres
+  // is the only store and DATA_DIR is ignored, so whatever is in Postgres right
+  // then becomes the whole world. An empty row there - which is exactly what a
+  // database that was connected once and never written to again looks like -
+  // means every account, friendship and chat on the volume disappears from the
+  // app the instant the variable is set.
+  //
+  // So carry them over instead. When Postgres has nothing and the volume still
+  // has a real store, that file IS the data, and the first thing this process
+  // does is copy it up. The file is left exactly where it is afterwards, which
+  // makes it a free pre-migration backup.
+  const seed = isEmptyDoc(pgDoc) ? readFileDocIfUsable() : null;
+  const seeding = seed && !isEmptyDoc(seed);
+
+  applyParsed(seeding ? seed : (pgDoc || {}));
+
   backendStatus.mode = 'postgres';
   backendStatus.error = null;
+  backendStatus.seededFromFile = false;
+
+  if (seeding) {
+    // Written here rather than left to the ordinary debounced save, so the
+    // data is in Postgres before the first request is served - and read back,
+    // because this is the one moment it exists in a place nobody has checked.
+    await pgPool.query(
+      'INSERT INTO owner_store (id, doc, updated_at) VALUES (1, $1, now()) ON CONFLICT (id) DO UPDATE SET doc = $1, updated_at = now()',
+      [JSON.stringify(data)]
+    );
+    const back = await pgPool.query('SELECT doc FROM owner_store WHERE id = 1');
+    const n = (o) => Object.keys(o || {}).length;
+    const got = back.rows[0] && back.rows[0].doc;
+    if (isEmptyDoc(got)) throw new Error('seeded Postgres but read back an empty document');
+    backendStatus.seededFromFile = true;
+    console.log('[store] ------------------------------------------------------------');
+    console.log('[store] FIRST RUN ON POSTGRES - copied the store up from', DATA_FILE);
+    console.log('[store]  accounts:', n(got.accounts),
+      '· people with friends:', n((got.social || {}).friends),
+      '· friend chats:', n((got.social || {}).friendChats),
+      '· logged-in sessions:', n(got.authSessions));
+    console.log('[store] The file is untouched and is now a backup of the cutover.');
+    console.log('[store] ------------------------------------------------------------');
+  }
+
   console.log('[store] using Postgres backend (DATABASE_URL) -', backendStatus.host);
+}
+
+// "Nothing anyone would miss." Analytics and settings do not count: a document
+// holding only counters and defaults is what a database that has been
+// connected to but never really used looks like, and treating that as data
+// worth keeping is what would block the carry-over below.
+function isEmptyDoc(doc) {
+  if (!doc || typeof doc !== 'object') return true;
+  const n = (o) => Object.keys(o || {}).length;
+  const social = doc.social || {};
+  return n(doc.accounts) === 0
+    && n(doc.accountsRegistry) === 0
+    && n(social.friends) === 0
+    && n(social.friendChats) === 0
+    && n(social.chatHistory) === 0
+    && n(doc.authSessions) === 0
+    && n(doc.premium) === 0
+    && n(doc.push) === 0
+    && (doc.bans || []).length === 0;
+}
+
+// The volume's document, or null. Deliberately quiet and non-destructive: this
+// runs on the Postgres path, where the file is not the live store, so a missing
+// or unreadable one is not an error and nothing here may move or rewrite it.
+function readFileDocIfUsable() {
+  try {
+    if (!fs.existsSync(DATA_FILE)) return null;
+    return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+  } catch (err) {
+    console.error('[store] there is a file at', DATA_FILE, 'but it could not be read:', err.message);
+    console.error('[store] continuing on Postgres; the file has not been touched.');
+    return null;
+  }
 }
 
 let pgWriting = false;
