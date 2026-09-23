@@ -18,7 +18,9 @@ jobs:
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
       - name: Files on the volume
-        run: flyctl ssh console -a talklive-ai -C "ls -la --time-style=full-iso /data /data/backups"
+        # A listing that fails must not stop the census below from running.
+        continue-on-error: true
+        run: flyctl ssh console -a talklive-ai -C "ls -la --full-time /data /data/backups"
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
       - name: What each store file holds (counts only)
