@@ -6,6 +6,7 @@ const express = require('express');
 const store = require('./store');
 const totp = require('./totp');
 const analytics = require('./analytics');
+const adsterra = require('./adsterra');
 
 let QRCode = null;
 try { QRCode = require('qrcode'); } catch (_) { /* optional */ }
@@ -754,6 +755,16 @@ function createAdmin({ io, getRuntime, kickBanned }) {
         endpoints: Object.values(store.data.push || {}).reduce((a, l) => a + (l ? l.length : 0), 0),
       },
     });
+  });
+
+  // Ad revenue straight from Adsterra's reporting API (cached server-side).
+  router.get('/api/adsterra', async (req, res) => {
+    if (!adsterra.configured()) return res.json({ configured: false });
+    try {
+      res.json({ configured: true, ...(await adsterra.report()) });
+    } catch (err) {
+      res.json({ configured: true, error: String(err.message || err) });
+    }
   });
 
   // One box that looks everywhere: accounts, live users, bans, reports,
