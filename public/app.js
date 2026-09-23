@@ -1611,7 +1611,8 @@ function renderFriendIdResult() {
     ? `<button type="button" class="btn btn-secondary" data-act="chat">${escapeHtml(t('chat'))}</button>`
     : relation === 'pending'
       ? `<button type="button" class="btn btn-secondary" disabled>${escapeHtml(t('pending'))}</button>`
-      : `<button type="button" class="btn btn-primary" data-act="add">${escapeHtml(t('addFriend'))}</button>`;
+      // They already asked: adding them back is accepting, so say that.
+      : `<button type="button" class="btn btn-primary" data-act="add">${escapeHtml(t(relation === 'incoming' ? 'confirm' : 'addFriend'))}</button>`;
   const sub = [user.friendId, user.temporary ? t('friendIdGuest') : '', user.online ? t('online') : '']
     .filter(Boolean).join(' · ');
   friendIdResult.classList.remove('hidden', 'is-error');
@@ -4815,6 +4816,10 @@ socket.on('register-result', ({ ok, reason } = {}) => {
     claimIdentityWhenVisible();
     return;
   }
+  // The identity has history and this browser cannot prove it owns it:
+  // retrying cannot change that, so start a fresh one now. A signed-in
+  // account gets its own profile back through resume-session.
+  if (reason === 'unverified') identityRetries = 4;
   if (identityRetries < 4) {
     identityRetries += 1;
     setTimeout(() => {

@@ -30,12 +30,21 @@ function once(sock, ev, ms = 4000) {
 
 const lastSync = new WeakMap();
 
+// The signed identity token each clientId was issued, sent back on every
+// later register exactly as a browser does - an identity that owns anything
+// is not handed over without it.
+const identityTokens = {};
+function rememberToken(sock) {
+  sock.on('identity-token', ({ clientId, token } = {}) => { identityTokens[clientId] = token; });
+}
+
 // Connects and registers; resolves with the socket and the ID it was given.
 async function connect(clientId, extra = {}) {
   const sock = io(BASE, { transports: ['websocket'], forceNew: true });
   sock.on('state-sync', (s) => lastSync.set(sock, s));
+  rememberToken(sock);
   const idEvent = once(sock, 'friend-id');
-  sock.emit('register', { clientId, nickname: clientId, gender: 'male', ...extra });
+  sock.emit('register', { clientId, identityToken: identityTokens[clientId], nickname: clientId, gender: 'male', ...extra });
   if (extra.sessionToken) sock.emit('resume-session', { token: extra.sessionToken });
   return { sock, id: await idEvent };
 }

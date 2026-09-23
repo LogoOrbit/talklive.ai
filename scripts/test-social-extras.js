@@ -33,10 +33,20 @@ function once(sock, ev, ms = 4000) {
 const arrives = (sock, ev, ms = 800) => once(sock, ev, ms).then(() => true, () => false);
 
 const lastSync = new WeakMap();
+// The signed identity token each clientId was issued, sent back on every
+// later register exactly as a browser does - an identity that owns anything
+// is not handed over without it.
+const identityTokens = {};
+function rememberToken(sock) {
+  sock.on('identity-token', ({ clientId, token } = {}) => { identityTokens[clientId] = token; });
+}
+
 function connect(name) {
   const sock = io(BASE, { transports: ['websocket'], forceNew: true });
   sock.on('state-sync', (s) => lastSync.set(sock, s));
-  sock.emit('register', { clientId: 'c_socx_' + name, nickname: name, gender: 'male' });
+  rememberToken(sock);
+  const clientId = 'c_socx_' + name;
+  sock.emit('register', { clientId, identityToken: identityTokens[clientId], nickname: name, gender: 'male' });
   return sock;
 }
 

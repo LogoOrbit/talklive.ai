@@ -23,7 +23,7 @@
     "test:analytics": "node scripts/test-analytics-visits.js",
     "test:gifs": "node scripts/test-gif-proxy.js",
     "seo:ping": "node scripts/ping-indexnow.js",
-    "test:social": "node scripts/test-social.js && node scripts/test-social-safety.js && node scripts/test-social-delivery.js && node scripts/test-social-extras.js",
+    "test:social": "node scripts/test-social.js && node scripts/test-social-safety.js && node scripts/test-social-delivery.js && node scripts/test-social-extras.js && node scripts/test-social-privacy.js",
     "test:friend-id": "node scripts/test-friend-id.js",
     "test:social-ui": "node scripts/social-ui/stress-call.js && node scripts/social-ui/stress-chat.js && node scripts/social-ui/stress-delivery.js",
     "test:social-load": "node scripts/social-ui/load.js"

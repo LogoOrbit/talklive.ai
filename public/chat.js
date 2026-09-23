@@ -1747,7 +1747,8 @@
       ? '<button type="button" class="btn btn-secondary" data-act="chat">' + escapeHtml(t('chat')) + '</button>'
       : relation === 'pending'
         ? '<button type="button" class="btn btn-secondary" disabled>' + escapeHtml(t('pending')) + '</button>'
-        : '<button type="button" class="btn btn-primary" data-act="add">' + escapeHtml(t('addFriend')) + '</button>';
+        // They already asked: adding them back is accepting, so say that.
+        : '<button type="button" class="btn btn-primary" data-act="add">' + escapeHtml(t(relation === 'incoming' ? 'confirm' : 'addFriend')) + '</button>';
     var sub = [user.friendId, user.temporary ? t('friendIdGuest') : '', user.online ? t('online') : '']
       .filter(Boolean).join(' · ');
     friendIdResult.classList.remove('hidden', 'is-error');
@@ -2421,6 +2422,8 @@
       claimIdentityWhenVisible();
       return;
     }
+    // Unprovable and owned: retrying cannot help, so start fresh now.
+    if (res.reason === 'unverified') identityRetries = 4;
     if (identityRetries < 4) {
       identityRetries += 1;
       setTimeout(function () { if (socket.connected) register(); }, 1500 * identityRetries);

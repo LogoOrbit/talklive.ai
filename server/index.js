@@ -1361,6 +1361,24 @@ function acceptsCalls(clientId) {
   return callsOpen.get(clientId) !== false;
 }
 
+// Whether a clientId carries anything worth taking over: people, messages,
+// requests, blocks, mutes, a paid plan or a linked account. Only a never-used
+// (or fully expired) identity may be claimed without its token.
+function identityHasState(clientId) {
+  if (friends.has(clientId) || chatHistory.has(clientId) || notifications.has(clientId)
+    || friendRequests.has(clientId) || sentRequests.has(clientId) || blocks.has(clientId)
+    || mutedChats.has(clientId) || isPremium(clientId)) return true;
+  for (const acc of Object.values(store.data.accounts || {})) {
+    if (acc && acc.clientId === clientId) return true;
+  }
+  const head = clientId + '|';
+  const tail = '|' + clientId;
+  for (const key of friendChats.keys()) {
+    if (key.startsWith(head) || key.endsWith(tail)) return true;
+  }
+  return false;
+}
+
 function clearWaitFallbackTimer(socketId) {
   const timer = waitFallbackTimers.get(socketId);
   if (timer) {
@@ -1525,9 +1543,26 @@ function writeSocial() {
     chatClears: Object.fromEntries(chatClears),
     declinedRequests: Object.fromEntries(declinedRequests),
     mutedChats: Object.fromEntries(Array.from(mutedChats).filter(([, s]) => s.size).map(([cid, s]) => [cid, Array.from(s)])),
+    privacy: privacyObj(),
   };
 }
 store.setSocialProvider(writeSocial);
+
+// "Appear offline" and "no incoming calls" are persisted with the graph. In
+// memory only, a restart forgot them until the person next connected - and in
+// that gap a hidden user's last-seen time was shown to everyone watching, and
+// call-backs could be queued at someone who had turned calls off. Only the
+// non-default choices are stored.
+function privacyObj() {
+  const out = {};
+  for (const [cid, hidden] of statusHidden) {
+    if (hidden) out[cid] = { hidden: true };
+  }
+  for (const [cid, open] of callsOpen) {
+    if (open === false) out[cid] = { ...(out[cid] || {}), calls: false };
+  }
+  return out;
+}
 
 // Load durable accounts + social graph from the store into the in-memory Maps
 // on boot, before the server starts accepting connections.
@@ -1581,6 +1616,11 @@ function hydrateFromStore() {
   }
   for (const [cid, arr] of Object.entries(social.mutedChats || {})) {
     if (Array.isArray(arr) && arr.length) mutedChats.set(cid, new Set(arr.slice(0, MAX_MUTED)));
+  }
+  for (const [cid, p] of Object.entries(social.privacy || {})) {
+    if (!p || typeof p !== 'object') continue;
+    if (p.hidden === true) statusHidden.set(cid, true);
+    if (p.calls === false) callsOpen.set(cid, false);
   }
 }
 
@@ -3583,6 +3623,18 @@ io.on('connection', (socket) => {
     if (!tokenOk && clientSockets.has(clientId) && io.sockets.sockets.get(clientSockets.get(clientId))) {
       return socket.emit('register-result', { ok: false, error: 'Client identity is already active.' });
     }
+    // Nor is a missing token fine for an identity that owns something. A
+    // clientId is not a secret - every stranger someone is matched with is
+    // sent theirs, and so is every friend - so without this, anyone could wait
+    // for a person to go offline, register as them and read their direct
+    // messages, write to their friends as them and take their Plus. A browser
+    // that really is that person has held the signed token since its first
+    // visit; one that cannot show it gets a fresh identity, and an account
+    // gets its profile back by signing in (linkAccountProfile re-issues the
+    // token).
+    if (!tokenOk && identityHasState(clientId)) {
+      return socket.emit('register-result', { ok: false, error: 'Client identity could not be verified.', reason: 'unverified' });
+    }
     // Captured before the identity takeover below, which clears the old entry:
     // otherwise every reconnect looked like a fresh login and re-fired the
     // "James is online" notification to all of this user's friends.
@@ -3691,8 +3743,17 @@ io.on('connection', (socket) => {
       surface: data.surface === 'chat' ? 'chat' : 'call',
     });
     clientSockets.set(clientId, socket.id);
-    if (typeof data.hideStatus === 'boolean') statusHidden.set(clientId, data.hideStatus);
-    if (typeof data.acceptCalls === 'boolean') callsOpen.set(clientId, data.acceptCalls);
+    // The device's own copy of these switches wins: it is what the person
+    // last saw and set. The stored copy covers the time they are away.
+    if (typeof data.hideStatus === 'boolean' && !!statusHidden.get(clientId) !== data.hideStatus) {
+      statusHidden.set(clientId, data.hideStatus);
+      if (data.hideStatus) lastSeen.delete(clientId);
+      persistSocial();
+    }
+    if (typeof data.acceptCalls === 'boolean' && acceptsCalls(clientId) !== data.acceptCalls) {
+      callsOpen.set(clientId, data.acceptCalls);
+      persistSocial();
+    }
 
     socket.emit('profile', {
       username: profiles.get(socket.id).username,
@@ -3869,6 +3930,10 @@ io.on('connection', (socket) => {
     const profile = profiles.get(socket.id);
     if (!profile) return;
     statusHidden.set(profile.clientId, !!hidden);
+    // Whatever "last seen" was recorded before going invisible must not be
+    // what everyone sees the moment this person disconnects.
+    if (hidden) lastSeen.delete(profile.clientId);
+    persistSocial();
     // Re-sync everyone who sees this user's dot - friends and recent matches -
     // so going invisible (or coming back) shows up live.
     resyncWatchers(profile.clientId);
@@ -3880,6 +3945,7 @@ io.on('connection', (socket) => {
     const profile = profiles.get(socket.id);
     if (!profile) return;
     callsOpen.set(profile.clientId, accept !== false);
+    persistSocial();
   });
 
   socket.on('leave', () => {
@@ -5146,7 +5212,10 @@ io.on('connection', (socket) => {
     if (profile && clientSockets.get(profile.clientId) === socket.id) {
       clientSockets.delete(profile.clientId);
       scheduleGuestFriendIdRelease(profile.clientId);
-      if (friends.has(profile.clientId) || chatHistory.has(profile.clientId)) {
+      // Someone appearing offline leaves no "last seen" behind either.
+      if (statusHidden.get(profile.clientId)) {
+        if (lastSeen.delete(profile.clientId)) persistSocial();
+      } else if (friends.has(profile.clientId) || chatHistory.has(profile.clientId)) {
         lastSeen.set(profile.clientId, Date.now());
         persistSocial();
       }
@@ -5218,11 +5287,17 @@ function sweepEphemeralState() {
   for (const [key, rec] of pairCooldowns) {
     if (!rec || rec.until <= now) pairCooldowns.delete(key);
   }
-  // Status visibility is a per-client preference with no expiry, but it only
-  // matters while the client is online or is somebody's friend.
-  for (const clientId of statusHidden.keys()) {
-    if (clientSockets.has(clientId) || friends.has(clientId)) continue;
+  // Status visibility and call availability are per-client preferences with
+  // no expiry, but they only matter while someone could be watching or
+  // calling: the client is online, has friends or has recent people.
+  const stillSocial = (cid) => clientSockets.has(cid) || friends.has(cid) || chatHistory.has(cid);
+  for (const [clientId, hidden] of statusHidden) {
+    if (hidden && stillSocial(clientId)) continue;
     statusHidden.delete(clientId);
+  }
+  for (const [clientId, open] of callsOpen) {
+    if (open === false && stillSocial(clientId)) continue;
+    callsOpen.delete(clientId);
   }
   // Rate-limit records for sockets that are already gone.
   for (const socketId of chatRate.keys()) {

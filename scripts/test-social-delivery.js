@@ -34,9 +34,19 @@ function once(sock, ev, ms = 4000, pred = () => true) {
 }
 const arrives = (sock, ev, ms = 800, pred) => once(sock, ev, ms, pred).then(() => true, () => false);
 
+// The signed identity token each clientId was issued, sent back on every
+// later register exactly as a browser does - an identity that owns anything
+// is not handed over without it.
+const identityTokens = {};
+function rememberToken(sock) {
+  sock.on('identity-token', ({ clientId, token } = {}) => { identityTokens[clientId] = token; });
+}
+
 function connect(name, { register = true } = {}) {
   const sock = io(BASE, { transports: ['websocket'], forceNew: true });
-  sock.regPayload = { clientId: 'c_deliv_' + name, nickname: name, gender: 'male' };
+  rememberToken(sock);
+  const clientId = 'c_deliv_' + name;
+  sock.regPayload = { clientId, identityToken: identityTokens[clientId], nickname: name, gender: 'male' };
   if (register) sock.emit('register', sock.regPayload);
   return sock;
 }
