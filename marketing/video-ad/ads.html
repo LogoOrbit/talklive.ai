@@ -1,0 +1,310 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>TalkLive Ads</title>
+<!-- Short social ads (15s, 1080x1920). Pick one with ?ad=omegle|language|animals.
+     Rendered frame by frame by render.js; everything is a pure function of time t. -->
+<style>
+@font-face{font-family:PJS;src:url(/public/fonts/plus-jakarta-sans-latin.woff2) format('woff2');font-weight:200 800}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#070a18;font-family:PJS,sans-serif;color:#f2f4ff}
+#stage{position:absolute;inset:0;overflow:hidden}
+.glow{position:absolute;border-radius:50%;filter:blur(120px);opacity:.55}
+#g1{width:900px;height:900px;background:#4c3fd6;left:-300px;top:-200px}
+#g2{width:800px;height:800px;background:#0e7490;right:-300px;bottom:-100px}
+#g3{width:600px;height:600px;background:#6c5ce7;left:240px;top:700px;opacity:.25}
+#grain{position:absolute;inset:0;opacity:.06;background-image:radial-gradient(#fff 1px,transparent 1px);background-size:4px 4px}
+.cy{background:linear-gradient(90deg,#7dd3fc,#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent}
+.pu{background:linear-gradient(90deg,#c4b5fd,#8b7cf6);-webkit-background-clip:text;background-clip:text;color:transparent}
+.gr{background:linear-gradient(90deg,#4ade80,#22c55e);-webkit-background-clip:text;background-clip:text;color:transparent}
+.rd{color:#f87171}
+.mu{color:#8a90a8}
+/* kinetic text blocks */
+.kin{position:absolute;left:50px;right:50px;top:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px}
+.kin > div{font-weight:800;font-size:176px;letter-spacing:-6px;line-height:1.02;position:relative}
+.kin > div.s{font-size:112px;letter-spacing:-4px}
+.kin > div.xs{font-size:48px;letter-spacing:-.5px;font-weight:700;color:#b8bdd6}
+.strike{position:absolute;left:-4%;top:52%;height:18px;border-radius:9px;background:#ef4444;box-shadow:0 0 30px rgba(239,68,68,.6);transform-origin:0 50%}
+/* captions over the phone */
+#capbg{position:absolute;left:0;right:0;top:0;height:470px;background:linear-gradient(180deg,rgba(7,10,24,.97) 0%,rgba(7,10,24,.92) 70%,rgba(7,10,24,0) 100%);opacity:0}
+.cap{position:absolute;left:50px;right:50px;top:110px;text-align:center;font-weight:800;font-size:92px;letter-spacing:-3px;line-height:1.04;opacity:0}
+.cap .sub{display:block;font-weight:600;font-size:42px;letter-spacing:0;color:#b8bdd6;margin-top:18px}
+.w{display:inline-block;white-space:pre}
+/* phone */
+#cam{position:absolute;left:0;top:0;width:1080px;height:1920px;transform-origin:0 0}
+#phone{position:absolute;left:194px;top:420px;width:692px;height:1460px;border-radius:92px;background:#0b0e1c;padding:16px;
+  box-shadow:0 0 0 3px #2a3052,0 0 0 5px #0a0d1a,0 60px 140px rgba(0,0,0,.7),0 0 160px rgba(108,92,231,.35)}
+#screen{position:relative;width:660px;height:1428px;border-radius:78px;overflow:hidden;background:#0b0f1f}
+#screen img{position:absolute;inset:0;width:100%;height:100%}
+#island{position:absolute;left:50%;top:22px;width:190px;height:52px;margin-left:-95px;border-radius:26px;background:#000;z-index:5}
+#rip{position:absolute;border-radius:50%;border:6px solid rgba(255,255,255,.9);z-index:6}
+#fin{position:absolute;width:86px;height:86px;border-radius:50%;background:rgba(255,255,255,.35);border:3px solid rgba(255,255,255,.85);z-index:7;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+#hl{position:absolute;border-radius:28px;border:5px solid #22d3ee;box-shadow:0 0 40px rgba(34,211,238,.6);z-index:6;opacity:0}
+.chip{position:absolute;padding:22px 34px;border-radius:999px;font-weight:700;font-size:42px;background:rgba(20,24,48,.86);border:2px solid rgba(255,255,255,.14);
+  box-shadow:0 20px 50px rgba(0,0,0,.5);white-space:nowrap;display:flex;align-items:center;gap:16px;opacity:0}
+.chip b{display:inline-block;width:18px;height:18px;border-radius:50%}
+/* counters (language ad) */
+#counters{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:120px;text-align:center}
+.ctr .lbl{font-weight:700;font-size:54px;color:#b8bdd6}
+.ctr .num{font-weight:800;font-size:220px;letter-spacing:-8px;line-height:1;display:flex;align-items:center;justify-content:center;gap:24px;margin-top:10px}
+.ctr .num small{font-size:80px;letter-spacing:-2px;color:#b8bdd6;margin-left:10px}
+/* roulette (animals ad) */
+#roul{position:absolute;left:50%;top:560px;width:640px;height:820px;margin-left:-320px;border-radius:64px;display:none;flex-direction:column;align-items:center;justify-content:center;
+  background:linear-gradient(160deg,#1d2146,#12152e);border:3px solid rgba(255,255,255,.12);box-shadow:0 50px 120px rgba(0,0,0,.6)}
+#roul .ico{width:400px;height:400px;display:flex;align-items:center;justify-content:center}
+#roul .ico svg{width:400px;height:400px}
+#roul .nm{font-weight:800;font-size:104px;letter-spacing:-3px;margin-top:10px}
+#roul .tr{font-weight:600;font-size:40px;color:#b8bdd6;margin-top:10px;padding:0 40px}
+#burst{position:absolute;left:50%;top:970px;width:10px;height:10px;display:none}
+#burst i{position:absolute;left:0;top:0;width:22px;height:22px;border-radius:50%}
+/* outro */
+#outro{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+#mark{width:280px;height:280px;filter:drop-shadow(0 0 60px rgba(34,211,238,.45))}
+#word{font-weight:800;font-size:150px;letter-spacing:-5px;margin-top:10px}
+#tag{font-weight:700;font-size:68px;letter-spacing:-1.5px;margin-top:40px;line-height:1.15;padding:0 60px}
+#cta{margin-top:80px;padding:34px 70px;border-radius:999px;font-weight:800;font-size:60px;background:linear-gradient(90deg,#22c55e,#16a34a)}
+#fine{margin-top:44px;font-weight:600;font-size:38px;color:#b8bdd6}
+</style></head><body>
+<div id="stage">
+  <div class="glow" id="g1"></div><div class="glow" id="g2"></div><div class="glow" id="g3"></div><div id="grain"></div>
+  <div id="kins"></div>
+  <div id="counters">
+    <div class="ctr" id="ct1"><div class="lbl">Language app streak</div><div class="num"><svg width="170" height="200" viewBox="0 0 34 40"><path d="M17 1c2 7 11 11 11 22a11 11 0 0 1-22 0c0-6 3-9 5-12 0 4 2 6 4 6-2-6 0-12 2-16z" fill="url(#fl)"/><defs><linearGradient id="fl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fde047"/><stop offset="1" stop-color="#f97316"/></linearGradient></defs></svg><span id="n1">0</span><small>days</small></div></div>
+    <div class="ctr" id="ct2"><div class="lbl">Real conversations</div><div class="num rd"><span id="n2">0</span></div></div>
+  </div>
+  <div id="roul"><div class="ico" id="rIco"></div><div class="nm" id="rNm"></div><div class="tr" id="rTr"></div></div>
+  <div id="burst"></div>
+  <div id="cam"><div id="phone"><div id="screen"><div id="island"></div><img id="sA"><img id="sB"><div id="hl"></div><div id="rip"></div><div id="fin"></div></div></div></div>
+  <div id="capbg"></div><div id="chips"></div><div id="caps"></div>
+  <div id="outro">
+    <img id="mark" src="/marketing/TalkLive%20Mark%20Transparent.png">
+    <div id="word">Talk<span class="cy">Live</span></div>
+    <div id="tag"></div>
+    <div id="cta">talklive.app</div>
+    <div id="fine">Free · No sign-up · Voice &amp; text · 18+</div>
+  </div>
+</div>
+<script src="/public/animals.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const prog = (t, a, b) => clamp((t - a) / (b - a));
+const eo = (x) => 1 - Math.pow(1 - x, 3);
+const eio = (x) => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const back = (x) => { const c = 1.7; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+const lerp = (a, b, x) => a + (b - a) * x;
+const SH = '/marketing/video-ad/shots/';
+const CALL = Array.from({ length: 36 }, (_, i) => `${SH}call-${String(i).padStart(2, '0')}.png`);
+const S = 660 / 390;                         // app css px -> phone screen px
+const PX = 194 + 16, PY = 420 + 16;          // phone screen origin on the canvas
+const HOME = [540, 1150];                    // resting camera focus
+
+// ------------------------------------------------------------------ the three ads
+const ADS = {
+  omegle: {
+    duration: 15, music: ['MusicForTalkLive.mp3', 3],
+    kin: [
+      { a: .05, b: 1.95, lines: [['Omegle', .1, '', { strike: .75 }], ['is gone.', 1.0, 's mu']] },
+      { a: 2.0, b: 3.5, lines: [['Every copy', 2.05, 's'], ['added a <span class="rd">camera.</span>', 2.4, 's']] },
+      { a: 3.55, b: 4.75, lines: [['We deleted it.', 3.6, 's cy']] },
+    ],
+    phone: { rise: 4.6, drop: 11.3 },
+    screens: [[0, '01-home.png'], [6.05, '03-search.png'], [6.6, '03b-search.png'], [7.3, 'CALL']],
+    taps: [[5.85, 194 * S, 284 * S]],
+    cam: [[0, 1, ...HOME], [5.0, 1, ...HOME], [5.5, 1.18, PX + 330, PY + 520], [6.5, 1.18, PX + 330, PY + 520], [7.2, 1, ...HOME],
+          [9.2, 1, ...HOME], [9.9, 1.45, PX + 330, PY + 538], [11.0, 1.45, PX + 330, PY + 538]],
+    caps: [['Just <span class="cy">voices.</span>', 'Tap. Talk. Next.', 4.8, 7.2],
+           ['Real strangers.<br><span class="gr">Real talk.</span>', null, 7.3, 11.2]],
+    chips: [['No camera', '#22c55e', 7.9, 40, 820], ['No sign-up', '#22d3ee', 8.2, 640, 1080], ['Never recorded', '#a78bfa', 8.5, 60, 1400]],
+    chipsOut: 9.3,
+    tag: 'Talk to strangers again.<br><span class="cy">Just your voice.</span>',
+  },
+  language: {
+    duration: 15, music: ['MusicForTalkLive.mp3', 28],
+    kin: [{ a: 3.35, b: 4.65, lines: [['Time to actually', 3.4, 's'], ['<span class="cy">speak.</span>', 3.7, '']] }],
+    counters: [.05, 3.3],
+    phone: { rise: 4.55, drop: 11.4 },
+    screens: [[0, 'CALL'], [8.7, 'chat-1.png'], [9.2, 'chat-2.png'], [9.7, 'chat-3.png'], [10.2, 'chat-4.png'], [10.7, 'chat-5.png']],
+    taps: [],
+    cam: [[0, 1, ...HOME], [5.4, 1, ...HOME], [6.2, 1.3, PX + 330, PY + 440], [8.4, 1.3, PX + 330, PY + 440], [8.9, 1, ...HOME],
+          [9.6, 1, ...HOME], [10.4, 1.14, PX + 330, PY + 560], [11.4, 1.14, PX + 330, PY + 560]],
+    caps: [['Talk to <span class="cy">real people.</span>', 'A new accent every call.', 4.75, 8.6],
+           ['Shy? Start<br>with <span class="pu">text.</span>', null, 8.7, 11.35]],
+    chips: [['No judgement', '#22c55e', 6.4, 40, 820], ['Skip anytime', '#22d3ee', 6.7, 620, 1100], ['100% free', '#a78bfa', 7.0, 70, 1420]],
+    chipsOut: 8.3,
+    tag: 'Practise speaking.<br><span class="cy">With real humans.</span>',
+  },
+  animals: {
+    duration: 15, music: ['Meditation.mp3', 0],
+    kin: [{ a: .05, b: 1.65, lines: [['Who will you', .1, 's'], ['meet <span class="pu">tonight?</span>', .45, 's']] }],
+    roulette: [1.7, 4.7, 5.9],
+    phone: { rise: 5.8, drop: 11.9 },
+    screens: [[0, 'CALL'], [9.0, 'chat-1.png'], [9.6, 'chat-2.png'], [10.2, 'chat-3.png'], [10.8, 'chat-4.png']],
+    taps: [],
+    cam: [[0, 1, ...HOME], [6.6, 1, ...HOME], [7.3, 1.55, PX + 330, PY + 538], [8.7, 1.55, PX + 330, PY + 538], [9.2, 1.4, PX + 330, PY + 330],
+          [11.6, 1.4, PX + 330, PY + 330]],
+    hl: [[7.4, 8.8, 60 * S, 283 * S, 270 * S, 66 * S], [9.4, 11.6, 14 * S, 145 * S, 362 * S, 50 * S]],
+    caps: [['Everyone picks a <span class="pu">spirit animal.</span>', null, 1.8, 4.6],
+           ['Yours for tonight:<br><span class="cy">a Cat.</span>', null, 4.75, 5.95],
+           ['Now you have<br>an <span class="cy">opener.</span>', null, 6.0, 8.9],
+           ['Ask them <span class="pu">why.</span>', 'Every match starts with a story.', 9.0, 11.85]],
+    chips: [], chipsOut: 0,
+    tag: 'Who will you<br><span class="pu">meet tonight?</span>',
+  },
+};
+const AD = ADS[new URLSearchParams(location.search).get('ad') || 'omegle'];
+window.DURATION = AD.duration; window.MUSIC = AD.music;
+const OUTRO = AD.phone.drop + .25;
+
+// ------------------------------------------------------------------ kinetic text
+$('kins').innerHTML = AD.kin.map((k, i) => `<div class="kin" id="k${i}">${k.lines.map(([h, , c]) => `<div class="${c}">${h}</div>`).join('')}</div>`).join('');
+AD.kin.forEach((k, i) => k.lines.forEach(([, , , o], j) => { if (o && o.strike) $('k' + i).children[j].insertAdjacentHTML('beforeend', '<div class="strike" style="width:108%"></div>'); }));
+function kinAt(t) {
+  AD.kin.forEach((k, i) => {
+    const el = $('k' + i); const on = t >= k.a && t <= k.b; el.style.display = on ? 'flex' : 'none'; if (!on) return;
+    const out = eio(prog(t, k.b - .25, k.b));
+    el.style.opacity = 1 - out; el.style.transform = `scale(${1 + out * .15})`; el.style.filter = `blur(${out * 14}px)`;
+    k.lines.forEach(([, at, , o], j) => {
+      const line = el.children[j]; const p = prog(t, at, at + .32);
+      line.style.opacity = clamp(p * 3); line.style.transform = `scale(${lerp(1.6, 1, eo(p))})`;
+      if (o && o.strike) line.querySelector('.strike').style.transform = `scaleX(${eio(prog(t, o.strike, o.strike + .3))})`;
+    });
+  });
+}
+
+// ------------------------------------------------------------------ captions
+$('caps').innerHTML = AD.caps.map((c, i) => `<div class="cap" id="c${i}"></div>`).join('');
+AD.caps.forEach(([html, sub], i) => {
+  const tmp = document.createElement('div'); tmp.innerHTML = html; const out = [];
+  tmp.childNodes.forEach((n) => {
+    if (n.nodeName === 'BR') { out.push('<br>'); return; }
+    const cls = n.nodeType === 1 ? n.className : '';
+    n.textContent.split(/(\s+)/).forEach((w) => { if (!w) return; out.push(/^\s+$/.test(w) ? ' ' : `<span class="w ${cls}">${w}</span>`); });
+  });
+  $('c' + i).innerHTML = out.join('') + (sub ? `<span class="sub">${sub}</span>` : '');
+});
+function capsAt(t) {
+  AD.caps.forEach(([, , a, b], i) => {
+    const el = $('c' + i); const out = eio(prog(t, b - .3, b));
+    el.style.opacity = t < a || t > b ? 0 : 1 - out; el.style.transform = `translateY(${-40 * out}px)`;
+    el.querySelectorAll('.w, .sub').forEach((w, j) => {
+      const p = eo(prog(t, a + j * .06, a + j * .06 + .4));
+      w.style.opacity = p; w.style.transform = `translateY(${(1 - p) * 60}px)`; w.style.filter = `blur(${(1 - p) * 12}px)`;
+    });
+  });
+  $('capbg').style.opacity = AD.caps.some(([, , a, b]) => t >= a - .1 && t <= b) ? 1 : 0;
+}
+
+// ------------------------------------------------------------------ phone
+function srcFor(e, t) { return e[1] === 'CALL' ? CALL[Math.floor(Math.max(0, t - e[0]) * 9) % CALL.length] : SH + e[1]; }
+function screenAt(t) {
+  const L = AD.screens; let k = 0; for (let i = 0; i < L.length; i++) if (t >= L[i][0]) k = i;
+  const cur = L[k], prev = L[k - 1]; const f = prev ? prog(t, cur[0], cur[0] + .18) : 1;
+  const A = $('sA'), B = $('sB'); const sb = srcFor(cur, t), sa = prev ? srcFor(prev, t) : sb;
+  if (!B.src.endsWith(sb)) B.src = sb; if (!A.src.endsWith(sa)) A.src = sa;
+  B.style.opacity = f;
+  B.style.transform = prev && cur[1].startsWith('chat-') && prev[1].startsWith('chat-') ? `translateY(${(1 - eo(f)) * 14}px)` : 'none';
+}
+function camAt(t) {
+  const C = AD.cam; let i = 0; while (i < C.length - 1 && t >= C[i + 1][0]) i++;
+  const a = C[i], b = C[i + 1] || a; const x = b === a ? 1 : eio(prog(t, a[0], b[0]));
+  const s = lerp(a[1], b[1], x), fx = lerp(a[2], b[2], x), fy = lerp(a[3], b[3], x);
+  const ty = lerp(1150, 1260, clamp((s - 1) / .42)) - fy * s;
+  const rise = (1 - eo(prog(t, AD.phone.rise, AD.phone.rise + .8))) * 1600, drop = eio(prog(t, AD.phone.drop, AD.phone.drop + .6)) * 1700;
+  $('cam').style.display = t < AD.phone.rise || t > AD.phone.drop + .6 ? 'none' : 'block';
+  $('cam').style.transform = `translate(${540 - fx * s}px,${ty + rise + drop}px) scale(${s})`;
+  $('phone').style.transform = `rotate(${(1 - eo(prog(t, AD.phone.rise, AD.phone.rise + 1))) * -8}deg)`;
+}
+function tapAt(t) {
+  const fin = $('fin'), rip = $('rip'); fin.style.opacity = 0; rip.style.opacity = 0;
+  for (const [tt, x, y] of AD.taps) {
+    const a = prog(t, tt - .5, tt), d = prog(t, tt, tt + .5);
+    if (t > tt - .5 && t < tt + .55) {
+      fin.style.opacity = t < tt ? eo(a) : 1 - d; fin.style.left = x - 43 + 'px'; fin.style.top = y - 43 + (1 - eo(a)) * 120 + 'px';
+      fin.style.transform = `scale(${t < tt ? 1 - .15 * eo(a) : .85 + .15 * eo(prog(t, tt, tt + .2))})`;
+    }
+    if (t >= tt && t < tt + .55) { const r = 40 + 170 * eo(d); rip.style.opacity = 1 - d; rip.style.width = rip.style.height = 2 * r + 'px'; rip.style.left = x - r + 'px'; rip.style.top = y - r + 'px'; }
+  }
+}
+function hlAt(t) {
+  const el = $('hl'); el.style.opacity = 0;
+  for (const [a, b, x, y, w, h] of AD.hl || []) if (t >= a && t <= b) {
+    const p = eo(prog(t, a, a + .35)), o = 1 - prog(t, b - .2, b); const pad = 30 * (1 - p);
+    el.style.opacity = p * o * (.75 + .25 * Math.sin(t * 8));
+    Object.assign(el.style, { left: x - pad + 'px', top: y - pad + 'px', width: w + 2 * pad + 'px', height: h + 2 * pad + 'px' });
+  }
+}
+$('chips').innerHTML = AD.chips.map(([txt, col], i) => `<div class="chip" id="ch${i}"><b style="background:${col}"></b>${txt}</div>`).join('');
+function chipsAt(t) {
+  AD.chips.forEach(([, , a, x, y], i) => {
+    const el = $('ch' + i); const p = back(prog(t, a, a + .45)); const o = eio(prog(t, AD.chipsOut, AD.chipsOut + .35));
+    el.style.left = x + 'px'; el.style.top = y + 'px';
+    el.style.opacity = t < a ? 0 : prog(t, a, a + .2) * (1 - o);
+    el.style.transform = `scale(${lerp(.4, 1, p)}) translateY(${Math.sin(t * 2 + a) * 8}px)`;
+  });
+}
+
+// ------------------------------------------------------------------ counters (language)
+function countersAt(t) {
+  const c = AD.counters; const box = $('counters'); if (!c) return;
+  const on = t >= c[0] && t <= c[1]; box.style.display = on ? 'flex' : 'none'; if (!on) return;
+  const out = eio(prog(t, c[1] - .3, c[1])); box.style.opacity = 1 - out; box.style.filter = `blur(${out * 14}px)`;
+  const p1 = eo(prog(t, .1, .45)), p2 = eo(prog(t, 1.7, 2.05));
+  $('ct1').style.opacity = p1; $('ct1').style.transform = `translateY(${(1 - p1) * 80}px)`;
+  $('ct2').style.opacity = p2; $('ct2').style.transform = `translateY(${(1 - p2) * 80}px) translateX(${t > 2.3 && t < 2.8 ? Math.sin(t * 90) * 22 * (1 - prog(t, 2.3, 2.8)) : 0}px)`;
+  $('n1').textContent = Math.round(412 * eio(prog(t, .3, 1.6)));
+}
+
+// ------------------------------------------------------------------ roulette (animals)
+const ORDER = ['lion', 'panda', 'owl', 'fox', 'dolphin', 'tiger', 'penguin', 'koala', 'wolf', 'rabbit', 'frog', 'eagle', 'bear', 'monkey', 'deer', 'elephant', 'turtle', 'horse', 'dog', 'cat'];
+let lastAnimal = null;
+function rouletteAt(t) {
+  const r = AD.roulette; const el = $('roul'), bu = $('burst'); if (!r) return;
+  const [a, land, end] = r; const on = t >= a && t <= end; el.style.display = on ? 'flex' : 'none'; bu.style.display = on && t >= land ? 'block' : 'none'; if (!on) return;
+  // position along the list decelerates onto the last entry (the Cat) at `land`
+  const idx = Math.min(ORDER.length - 1, Math.floor(eo(prog(t, a, land)) * (ORDER.length - 1) + .0001));
+  const id = t >= land ? 'cat' : ORDER[idx];
+  if (id !== lastAnimal) {
+    lastAnimal = id; const A = TalkLiveAnimals.get(id);
+    $('rIco').innerHTML = TalkLiveAnimals.icon(id, 400); $('rNm').textContent = A.name; $('rTr').textContent = t >= land ? A.trait : '';
+  }
+  const inP = back(prog(t, a, a + .45)), out = eio(prog(t, end - .3, end));
+  const pop = t >= land ? 1 + .12 * Math.sin(Math.PI * prog(t, land, land + .35)) : 1;
+  el.style.opacity = prog(t, a, a + .2) * (1 - out);
+  el.style.transform = `scale(${lerp(.5, 1, inP) * pop}) translateY(${out * -120}px)`;
+  el.style.boxShadow = t >= land ? `0 50px 120px rgba(0,0,0,.6), 0 0 ${120 * (1 - prog(t, land, end))}px rgba(167,139,250,.8)` : '0 50px 120px rgba(0,0,0,.6)';
+  $('rIco').style.transform = t < land ? `translateY(${(1 - ((eo(prog(t, a, land)) * (ORDER.length - 1)) % 1)) * -30}px)` : 'none';
+  const d = eo(prog(t, land, land + .8));
+  bu.querySelectorAll('i').forEach((p, k) => {
+    const ang = k / 18 * Math.PI * 2; const R = 120 + 520 * d;
+    p.style.transform = `translate(${Math.cos(ang) * R}px,${Math.sin(ang) * R}px) scale(${1 - d})`; p.style.opacity = 1 - d;
+  });
+}
+$('burst').innerHTML = Array.from({ length: 18 }, (_, k) => `<i style="background:${['#22d3ee', '#a78bfa', '#22c55e', '#fde047'][k % 4]}"></i>`).join('');
+
+// ------------------------------------------------------------------ outro + background
+$('tag').innerHTML = AD.tag;
+function outroAt(t) {
+  const on = t > OUTRO; $('outro').style.display = on ? 'flex' : 'none'; if (!on) return;
+  const m = back(prog(t, OUTRO + .1, OUTRO + .6));
+  $('mark').style.opacity = prog(t, OUTRO + .1, OUTRO + .3); $('mark').style.transform = `scale(${lerp(.3, 1, m)}) rotate(${(1 - m) * -20}deg)`;
+  [['word', .4], ['tag', .7], ['cta', 1.1], ['fine', 1.4]].forEach(([id, d]) => {
+    const p = eo(prog(t, OUTRO + d, OUTRO + d + .45)); $(id).style.opacity = p; $(id).style.transform = `translateY(${(1 - p) * 60}px)`;
+  });
+  const pr = t > OUTRO + 1.6 ? ((t - OUTRO - 1.6) % 1.1) / 1.1 : 0;
+  $('cta').style.boxShadow = `0 0 0 ${pr * 40}px rgba(34,197,94,${.55 * (1 - pr)}),0 20px 60px rgba(34,197,94,.35)`;
+}
+function bgAt(t) {
+  $('g1').style.transform = `translate(${Math.sin(t * .5) * 120}px,${Math.cos(t * .4) * 90}px)`;
+  $('g2').style.transform = `translate(${Math.cos(t * .45) * 110}px,${Math.sin(t * .35) * 120}px)`;
+  $('g3').style.transform = `translate(${Math.sin(t * .3) * 160}px,${Math.cos(t * .55) * 140}px) scale(${1 + .15 * Math.sin(t)})`;
+}
+
+window.render = (t) => { bgAt(t); kinAt(t); countersAt(t); rouletteAt(t); camAt(t); screenAt(t); tapAt(t); hlAt(t); chipsAt(t); capsAt(t); outroAt(t); };
+window.preload = async () => {
+  TalkLiveAnimals.installSprite();
+  const urls = [...new Set([...CALL, ...AD.screens.filter((s) => s[1] !== 'CALL').map((s) => SH + s[1]), $('mark').src])];
+  for (const u of urls) { const i = new Image(); i.src = u; await new Promise((r) => { i.onload = i.onerror = r; }); }
+  await document.fonts.load('800 80px PJS'); await document.fonts.load('600 40px PJS'); await document.fonts.ready;
+};
+render(0);
+</script>
+</body></html>
