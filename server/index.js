@@ -1251,6 +1251,26 @@ const MAX_BLOCKS = 500;
 // "Clear chat" is one-sided: `${clientId}|${pairKey}` -> ts. Messages at or
 // before it are hidden from that person only; the other side keeps the thread.
 const chatClears = new Map();
+// Muted conversations: clientId -> Set<otherClientId>. Messages still arrive and
+// still count as unread; they just never wake a phone or play a sound. The
+// other person is never told - muting is a private volume knob, not a signal.
+const mutedChats = new Map();
+const MAX_MUTED = 500;
+function isMuted(ownerClientId, otherClientId) {
+  const set = mutedChats.get(ownerClientId);
+  return !!(set && set.has(otherClientId));
+}
+// Pinned friends ride on the friendship entry itself (like a private nickname),
+// capped so the top of the list stays a shortlist.
+const MAX_PINNED = 10;
+// A friend who drops off and comes back inside this window (a reload, a tunnel,
+// hopping between the call and chat pages) was never really gone: announcing
+// "<name> is online" again each time turned a flaky connection into a stream of
+// toasts on every friend's screen.
+const FRIEND_ONLINE_QUIET_MS = Number(process.env.FRIEND_ONLINE_QUIET_MS) || 5 * 60000;
+// How long an in-chat voice invite can be answered. The popup is a question in
+// the moment; an answer to it minutes later is answering nobody.
+const VOICE_INVITE_ANSWER_MS = 60 * 1000;
 const hearts = new Map(); // pairKey ("clientIdA|clientIdB" sorted) -> Set<clientId who hearted>
 const reportCooldowns = new Map(); // reporter|target -> last report timestamp
 
@@ -1504,6 +1524,7 @@ function writeSocial() {
     blockMeta: mapOfMaps(blockMeta),
     chatClears: Object.fromEntries(chatClears),
     declinedRequests: Object.fromEntries(declinedRequests),
+    mutedChats: Object.fromEntries(Array.from(mutedChats).filter(([, s]) => s.size).map(([cid, s]) => [cid, Array.from(s)])),
   };
 }
 store.setSocialProvider(writeSocial);
@@ -1557,6 +1578,9 @@ function hydrateFromStore() {
   }
   for (const [key, ts] of Object.entries(social.declinedRequests || {})) {
     if (typeof ts === 'number') declinedRequests.set(key, ts);
+  }
+  for (const [cid, arr] of Object.entries(social.mutedChats || {})) {
+    if (Array.isArray(arr) && arr.length) mutedChats.set(cid, new Set(arr.slice(0, MAX_MUTED)));
   }
 }
 
@@ -1806,11 +1830,19 @@ function pushNotification(clientId, notif) {
   const targetSocket = getSocketByClientId(clientId);
   if (targetSocket) {
     targetSocket.emit('notification', full);
-    // Someone with the tab open has already been told. Sending a system
+    // Someone looking at the tab has already been told. Sending a system
     // notification on top of the in-app one is the fastest way to get push
-    // permission revoked.
-    return full;
+    // permission revoked. But a tab in the background (another tab in front,
+    // the phone locked, the app switched away from) keeps its socket for a
+    // long while, and treating that as "looking" meant a message sent then
+    // reached nobody: no push because the socket was up, and nobody watching
+    // the socket.
+    const targetProfile = profiles.get(targetSocket.id);
+    if (!targetProfile || !targetProfile.hidden) return full;
   }
+  // A muted conversation still lands in the inbox and the unread count; it
+  // just never wakes a phone.
+  if (full.type === 'message' && isMuted(clientId, full.fromClientId)) return full;
   const copy = pushCopyFor(full);
   // Fire and forget: a slow push service must never hold up the sender's
   // socket handler. Failures are logged inside push.send.
@@ -1972,6 +2004,7 @@ function syncClientState(socket, clientId) {
     notifications: notifications.get(clientId) || [],
     chatHistory: historyList,
     blocked: blockedList,
+    muted: Array.from(mutedChats.get(clientId) || []),
   });
 }
 
@@ -3664,9 +3697,13 @@ io.on('connection', (socket) => {
     // online (only on a genuine offline→online transition, and never when the
     // user hides their status). Also re-sync their friend lists so the green
     // dot flips live.
+    const awayFor = Date.now() - (lastSeen.get(clientId) || 0);
     if (wasOffline && !statusHidden.get(clientId)) {
       const me = profiles.get(socket.id);
-      for (const [fid] of friends.get(clientId) || new Map()) {
+      // Back from a blip, not from being away: the dot still flips below, but
+      // nobody gets told again that someone who never really left is here.
+      const friendsToTell = awayFor >= FRIEND_ONLINE_QUIET_MS ? friends.get(clientId) || new Map() : new Map();
+      for (const [fid] of friendsToTell) {
         const friendSocket = getSocketByClientId(fid);
         if (!friendSocket) continue;
         friendSocket.emit('friend-online', {
@@ -4395,6 +4432,58 @@ io.on('connection', (socket) => {
     syncClientState(socket, me.clientId);
   });
 
+  // Pin a friend to the top of the list. Like a nickname, it is written onto
+  // this user's copy of the friendship only.
+  socket.on('pin-friend', ({ friendClientId, pinned } = {}) => {
+    const me = profiles.get(socket.id);
+    friendClientId = validId(friendClientId);
+    if (!me || !friendClientId) return;
+    const mine = friends.get(me.clientId);
+    const info = mine && mine.get(friendClientId);
+    if (!info) return;
+    if (pinned) {
+      if (info.pinned) return;
+      let count = 0;
+      for (const f of mine.values()) if (f.pinned) count++;
+      if (count >= MAX_PINNED) return socket.emit('pin-friend-result', { ok: false, error: `You can pin up to ${MAX_PINNED} friends.` });
+      info.pinned = true;
+      store.recordFeature('friend_pin');
+    } else {
+      if (!info.pinned) return;
+      delete info.pinned;
+    }
+    persistSocial();
+    syncClientState(socket, me.clientId);
+  });
+
+  // Mute a conversation: no sound, no push. Anyone this user could hear from
+  // can be muted - a friend, or a recent match who messages back.
+  socket.on('mute-chat', ({ targetClientId, muted } = {}) => {
+    const me = profiles.get(socket.id);
+    targetClientId = validId(targetClientId);
+    if (!me || !targetClientId || targetClientId === me.clientId) return;
+    let set = mutedChats.get(me.clientId);
+    if (muted) {
+      if (!set) { set = new Set(); mutedChats.set(me.clientId, set); }
+      if (set.has(targetClientId) || set.size >= MAX_MUTED) return syncClientState(socket, me.clientId);
+      set.add(targetClientId);
+      store.recordFeature('chat_mute');
+    } else {
+      if (!set || !set.delete(targetClientId)) return;
+      if (!set.size) mutedChats.delete(me.clientId);
+    }
+    persistSocial();
+    syncClientState(socket, me.clientId);
+  });
+
+  // Whether this tab is in front of the person. A hidden tab keeps its socket,
+  // so without this a message to someone who had switched away reached neither
+  // their eyes nor their phone (see pushNotification).
+  socket.on('app-visibility', ({ hidden } = {}) => {
+    const me = profiles.get(socket.id);
+    if (me) me.hidden = hidden === true;
+  });
+
   socket.on('block-friend', ({ friendClientId } = {}) => {
     const me = profiles.get(socket.id);
     friendClientId = validId(friendClientId);
@@ -4478,7 +4567,9 @@ io.on('connection', (socket) => {
     const toClientId = validId(payload && payload.toClientId);
     const parsed = readChatPayload(payload);
     if (!me || !toClientId || !parsed || toClientId === me.clientId) return;
-    if (!ageGate('friends').ok || ageAssurance.isRestricted(toClientId)) return;
+    const gate = ageGate('friends');
+    if (!gate.ok) return socket.emit('chat-blocked', { reason: 'age', message: gate.message, toClientId });
+    if (ageAssurance.isRestricted(toClientId)) return socket.emit('chat-blocked', { reason: 'unreachable', toClientId });
     // Friends can always message; so can two people who recently chatted at
     // random (the "message back from history" path), even without a friendship.
     // Refusals are said out loud: the composer had already cleared, so a
@@ -4490,15 +4581,15 @@ io.on('connection', (socket) => {
     // is offline the message is still stored and a notification is queued, so it
     // reaches them the next time they come online.
     if (parsed.text && containsLink(parsed.text)) {
-      return socket.emit('chat-blocked', { reason: 'link' });
+      return socket.emit('chat-blocked', { reason: 'link', toClientId });
     }
     if (parsed.text && UNSAFE_RE.test(parsed.text)) {
-      return socket.emit('chat-blocked', { reason: 'unsafe' });
+      return socket.emit('chat-blocked', { reason: 'unsafe', toClientId });
     }
     // Direct messages are stored and notified, so a flood costs the recipient
     // far more than one in a live chat does. Same human-speed ceiling.
     if (!socialRateOk('friend-message', me.clientId, 10, 5000)) {
-      return socket.emit('chat-blocked', { reason: 'rate' });
+      return socket.emit('chat-blocked', { reason: 'rate', toClientId });
     }
     const trimmed = parsed.text;
     // Ids are chosen by the client, and are what replies, reactions and unsend
@@ -4508,7 +4599,13 @@ io.on('connection', (socket) => {
     let msgId = parsed.id;
     if (msgId) {
       const dup = (friendChats.get(pairKey(me.clientId, toClientId)) || []).find((m) => m.id === msgId);
-      if (dup && dup.from === me.clientId && dup.text === trimmed) return;
+      // Still confirmed, so the sender's pending bubble settles rather than
+      // timing out on a message that was in fact delivered.
+      if (dup && dup.from === me.clientId && dup.text === trimmed) {
+        return socket.emit('friend-message-sent', {
+          toClientId, text: dup.text, ts: dup.ts, id: dup.id, replyTo: dup.replyTo || null, gif: dup.gif || null,
+        });
+      }
       if (dup) msgId = null;
     }
     const friendInfo = (friends.get(me.clientId) || new Map()).get(toClientId);
@@ -4934,7 +5031,10 @@ io.on('connection', (socket) => {
     if (me.lastVoiceInviteAt && now - me.lastVoiceInviteAt < 5000) return;
     me.lastVoiceInviteAt = now;
     const partnerSocket = io.sockets.sockets.get(partnerId);
-    if (!partnerSocket) return;
+    const partnerProfile = profiles.get(partnerId);
+    if (!partnerSocket || !partnerProfile) return;
+    // Remember who asked, so only a real invite can be answered (below).
+    partnerProfile.voiceInviteFrom = { socketId: socket.id, ts: now };
     partnerSocket.emit('voice-invite', { username: me.username, countryCode: me.country });
   });
 
@@ -4948,6 +5048,12 @@ io.on('connection', (socket) => {
     const partnerSocket = io.sockets.sockets.get(partnerId);
     const partnerProfile = profiles.get(partnerId);
     if (!partnerSocket || !partnerProfile) return;
+    // Only an invite this partner actually sent, and recently, can be
+    // answered. Without this either side of a text chat could "accept" an
+    // invite nobody made and pull the other person off /chat into a call.
+    const asked = me.voiceInviteFrom;
+    delete me.voiceInviteFrom;
+    if (!asked || asked.socketId !== partnerId || Date.now() - asked.ts > VOICE_INVITE_ANSWER_MS) return;
     if (!accept) {
       partnerSocket.emit('voice-invite-declined', { username: me.username });
       return;

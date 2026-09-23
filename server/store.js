@@ -144,7 +144,7 @@ function defaults() {
     // chatHistory: clientId -> [{ clientId, username, countryCode, ts }] - the
     // last few random chat partners, so a user can message someone back after
     // accidentally losing them (kept to the newest 10 per user).
-    social: { friends: {}, friendChats: {}, blocks: {}, chatHistory: {}, friendRequests: {}, sentRequests: {}, notifications: {}, lastSeen: {}, blockMeta: {}, chatClears: {}, declinedRequests: {} },
+    social: { friends: {}, friendChats: {}, blocks: {}, chatHistory: {}, friendRequests: {}, sentRequests: {}, notifications: {}, lastSeen: {}, blockMeta: {}, chatClears: {}, declinedRequests: {}, mutedChats: {} },
     analytics: {
       totals: { visits: 0, connections: 0, matches: 0, messages: 0, reports: 0, accounts: 0, bots: 0 },
       // 'YYYY-MM-DD' (UTC) -> { visits, uniques, uniqueSet, connections, matches,
@@ -1663,6 +1663,8 @@ function assignSocial(social) {
     chatClears: social.chatClears || {},
     // Declined friend requests, so a decline still holds after a deploy.
     declinedRequests: social.declinedRequests || {},
+    // Conversations each person muted, so a deploy does not start ringing again.
+    mutedChats: social.mutedChats || {},
   };
 }
 

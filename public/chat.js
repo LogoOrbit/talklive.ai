@@ -917,6 +917,13 @@
     if (partnerHere) socket.emit('chat-away', { away: document.visibilityState === 'hidden' });
   }
   document.addEventListener('visibilitychange', reportAway);
+  // Separately, tell the server whether anyone is looking at this tab, so a
+  // friend's message that lands while it is in the background also reaches
+  // the phone's notification tray.
+  function reportVisibility() {
+    if (socket.connected) socket.emit('app-visibility', { hidden: document.visibilityState === 'hidden' });
+  }
+  document.addEventListener('visibilitychange', reportVisibility);
   window.addEventListener('pagehide', function () {
     if (partnerHere || searching) socket.emit('leave');
   });
@@ -1631,6 +1638,7 @@
     });
   }
 
+  var mutedChats = [];
   socket.on('state-sync', function (data) {
     data = data || {};
     friendsState.friends = data.friends || [];
@@ -1638,6 +1646,7 @@
     friendsState.sent = data.sentRequests || [];
     friendsState.notifications = data.notifications || [];
     historyState = data.chatHistory || [];
+    mutedChats = data.muted || [];
     renderFriends();
     renderHistory();
     renderFriendChatStatus();
@@ -1649,7 +1658,8 @@
     if (n.type === 'message' && n.fromClientId === activeFriendChatId) return; // already reading it
     friendsState.notifications.push(n);
     var who = friendLabel(findPerson(n.fromClientId || n.byClientId)) || n.username || t('someone');
-    if (n.type === 'message') { soundReceive(); vibrate(20); }
+    // A conversation muted on either page stays quiet on both.
+    if (n.type === 'message') { if (mutedChats.indexOf(n.fromClientId) === -1) { soundReceive(); vibrate(20); } }
     else if (n.type === 'friend_request' || n.type === 'friend_accepted') vibrate([20, 40, 20]);
     if (n.type === 'friend_request') socialToast(t('notifWantsFriends', { name: who }));
     else if (n.type === 'friend_accepted') socialToast(t('notifAccepted', { name: who }));
@@ -2079,7 +2089,11 @@
 
   var identityRetries = 0;
   socket.on('register-result', function (res) {
-    if (!res || res.ok !== false) { identityRetries = 0; return; }
+    if (!res || res.ok !== false) {
+      identityRetries = 0;
+      if (document.visibilityState === 'hidden') reportVisibility();
+      return;
+    }
     if (res.reason === 'active-elsewhere') {
       identityRetries = 0;
       claimIdentityWhenVisible();
