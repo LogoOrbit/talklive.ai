@@ -241,9 +241,73 @@ async function matchPair(a, b, mode = 'chat') {
     b2.emit('block-friend', { friendClientId: A });
     const aState = await aResync;
     ok('blocked friend sees the friendship end live', !(aState.friends || []).some((f) => f.clientId === B));
+    const refused = once(a2, 'chat-blocked');
     a2.emit('friend-message', { toClientId: B, text: 'still there?' });
     ok('blocked person cannot message', !(await arrives(b2, 'friend-message', 600)));
+    ok('refused message is reported to the sender', (await refused).reason === 'unreachable');
     ok('blocked person leaves the history list', !((lastSync.get(b2) || {}).chatHistory || []).some((h) => h.clientId === A));
+    const bBlocked = (lastSync.get(b2) || {}).blocked || [];
+    ok('blocker sees who they blocked, by name', bBlocked.length === 1 && bBlocked[0].clientId === A && bBlocked[0].username === 'Alpha', JSON.stringify(bBlocked));
+    ok('the blocked side is never told', !((lastSync.get(a2) || {}).blocked || []).length);
+
+    // --- Unblock --------------------------------------------------------
+    const unblockSync = once(b2, 'state-sync');
+    b2.emit('unblock-user', { targetClientId: A });
+    ok('unblock empties the block list', !((await unblockSync).blocked || []).length);
+    // The stored thread is still there, so they can pick the conversation up
+    // again - and it puts them back in each other's recent people.
+    const again = once(b2, 'friend-message');
+    a2.emit('friend-message', { toClientId: B, text: 'hi again', id: 'ub1' });
+    ok('after unblock the conversation works again', (await again).id === 'ub1');
+    await wait(150);
+    ok('messaging brings them back to recent people, live', ((lastSync.get(b2) || {}).chatHistory || []).some((h) => h.clientId === A));
+
+    // --- Cancel a sent friend request -----------------------------------
+    a2.emit('friend-request', { targetClientId: B });
+    await once(a2, 'friend-request-result');
+    await wait(150);
+    ok('request is pending before cancel', (lastSync.get(b2).friendRequests || []).some((r) => r.clientId === A));
+    const bAfterCancel = once(b2, 'state-sync');
+    a2.emit('cancel-friend-request', { targetClientId: B });
+    const bc = await bAfterCancel;
+    ok('cancelled request leaves their inbox', !(bc.friendRequests || []).some((r) => r.clientId === A)
+      && !(bc.notifications || []).some((n) => n.type === 'friend_request' && n.fromClientId === A));
+    await wait(100);
+    ok('cancelled request leaves my sent list', !((lastSync.get(a2) || {}).sentRequests || []).some((r) => r.clientId === B));
+    const late = arrives(a2, 'friend-request-result', 500);
+    b2.emit('friend-request-respond', { fromClientId: A, accept: true });
+    ok('a cancelled request cannot be accepted', !(await late) && !((lastSync.get(b2) || {}).friends || []).some((f) => f.clientId === A));
+
+    // --- Clear chat is one-sided -----------------------------------------
+    const clearedHist = once(a2, 'friend-chat-history');
+    a2.emit('clear-friend-chat', { friendClientId: B });
+    ok('clearing empties my copy', !((await clearedHist).messages || []).length);
+    b2.emit('get-friend-chat', { friendClientId: A });
+    ok('their copy is untouched', ((await once(b2, 'friend-chat-history')).messages || []).some((m) => m.id === 'ub1'));
+    const newMsg = once(a2, 'friend-message');
+    b2.emit('friend-message', { toClientId: A, text: 'after clear', id: 'ac1' });
+    await newMsg;
+    a2.emit('get-friend-chat', { friendClientId: B });
+    const afterClear = (await once(a2, 'friend-chat-history')).messages || [];
+    ok('new messages after a clear still show', afterClear.length === 1 && afterClear[0].id === 'ac1', JSON.stringify(afterClear));
+
+    // --- Durable across a restart: block list and last seen --------------
+    b2.emit('block-friend', { friendClientId: C });
+    await once(b2, 'state-sync');
+    a2.disconnect(); b2.disconnect();
+    await wait(2600);
+    srv.kill('SIGTERM');
+    await new Promise((r) => srv.once('exit', r));
+    srv = startServer();
+    await waitUp();
+    const a3 = connect('Alpha');
+    const b3 = connect('Bravo');
+    await wait(600);
+    ok('block list survives restart', ((lastSync.get(b3) || {}).blocked || []).some((x) => x.clientId === C));
+    const dAfter = ((lastSync.get(a3) || {}).chatHistory || []).find((h) => h.clientId === D) || {};
+    ok('last seen survives restart', typeof dAfter.lastSeen === 'number', JSON.stringify(dAfter));
+    a3.emit('get-friend-chat', { friendClientId: B });
+    ok('clear survives restart', ((await once(a3, 'friend-chat-history')).messages || []).every((m) => m.id !== 'ub1'));
 
     console.log(failed ? `\n${failed} check(s) failed` : '\nAll checks passed');
     done(failed ? 1 : 0);

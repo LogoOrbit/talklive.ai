@@ -144,7 +144,7 @@ function defaults() {
     // chatHistory: clientId -> [{ clientId, username, countryCode, ts }] - the
     // last few random chat partners, so a user can message someone back after
     // accidentally losing them (kept to the newest 10 per user).
-    social: { friends: {}, friendChats: {}, blocks: {}, chatHistory: {}, friendRequests: {}, sentRequests: {}, notifications: {} },
+    social: { friends: {}, friendChats: {}, blocks: {}, chatHistory: {}, friendRequests: {}, sentRequests: {}, notifications: {}, lastSeen: {}, blockMeta: {}, chatClears: {} },
     analytics: {
       totals: { visits: 0, connections: 0, matches: 0, messages: 0, reports: 0, accounts: 0, bots: 0 },
       // 'YYYY-MM-DD' (UTC) -> { visits, uniques, uniqueSet, connections, matches,
@@ -1241,6 +1241,13 @@ function saveSocial(social) {
     friendRequests: social.friendRequests || {},
     sentRequests: social.sentRequests || {},
     notifications: social.notifications || {},
+    // Written by index.js all along but never kept here, so every friend's
+    // "last seen" went blank on each deploy.
+    lastSeen: social.lastSeen || {},
+    // Who each person blocked, by name, so the block list can say who it is.
+    blockMeta: social.blockMeta || {},
+    // "Clear chat" is per person: the thread stays for the other side.
+    chatClears: social.chatClears || {},
   };
   save();
 }
