@@ -1,0 +1,52 @@
+/* Temporary notice - see data-notice.js. Amber, not red: it is a heads-up, not
+   an error, and it must not out-shout the buttons on the start screen. */
+.tl-data-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 14px 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(245, 180, 60, 0.45);
+  background: rgba(245, 180, 60, 0.1);
+  color: var(--text, #e8eaf2);
+  text-align: start;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.tl-data-notice.is-dismissible { flex-wrap: wrap; }
+/* The text takes the whole row, so the button drops beneath it rather than
+   squeezing the message into a narrow column beside it. */
+.tl-data-notice.is-dismissible .tl-data-notice-text { flex-basis: calc(100% - 40px); }
+.tl-data-notice-icon {
+  flex: none;
+  display: inline-flex;
+  color: #f5b43c;
+  margin-top: 1px;
+}
+.tl-data-notice-text {
+  flex: 1 1 200px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.tl-data-notice-text strong { font-size: 14px; font-weight: 700; }
+.tl-data-notice-text > span { color: var(--muted, #aab0c4); }
+.tl-data-notice-ok {
+  margin-inline-start: auto;
+  min-height: 36px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(245, 180, 60, 0.55);
+  background: transparent;
+  color: var(--text, #e8eaf2);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.tl-data-notice-ok:hover { background: rgba(245, 180, 60, 0.16); }
+/* The start screens centre their content; the notice keeps a readable width. */
+.setup-panel .tl-data-notice,
+#viewStart .tl-data-notice { max-width: 560px; margin-inline: auto; }
+[data-theme="light"] .tl-data-notice-text > span { color: #4a4f5e; }
