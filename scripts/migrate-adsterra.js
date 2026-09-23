@@ -31,7 +31,8 @@ for (const file of htmlFiles(publicDir)) {
     /<ins\b[^>]*class="adsbygoogle"[^>]*><\/ins>\s*<script>\(adsbygoogle = window\.adsbygoogle \|\| \[\]\)\.push\(\{\}\);<\/script>/gi,
     (unit) => `<div data-ad="${/8131758533/.test(unit) ? 'native' : 'leaderboard'}"></div>`
   );
-  html = html.replace(/^.*pagead2\.googlesyndication\.com.*\r?\n?/gim, '');
+  // Old AdSense loaders only; the current account's head tag stays.
+  html = html.replace(/^(?!.*ca-pub-6368797323385379).*pagead2\.googlesyndication\.com.*\r?\n?/gim, '');
 
   // Strip the opaque Adsterra "direct link" that still sat in the footer of
   // every country, city and language page. The intrusive Adsterra formats were

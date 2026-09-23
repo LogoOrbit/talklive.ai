@@ -112,6 +112,10 @@ const CSP = [
     + ' https://*.effectivecpmnetwork.com https://www.googletagmanager.com'
     + ' https://*.gstatic.com'
     + ' https://www.google.com'
+    // Google AdSense loader plus the ad/fraud-check scripts it pulls in.
+    + ' https://pagead2.googlesyndication.com https://*.googlesyndication.com'
+    + ' https://*.doubleclick.net https://*.adtrafficquality.google'
+    + ' https://*.googleadservices.com'
     + (ADS_SCRIPT_HOSTS.length ? ' ' + ADS_SCRIPT_HOSTS.join(' ') : ''),
   // Google Identity Services injects its own stylesheet from accounts.google.com
   // to render the Sign-In button; without it listed the browser blocks the

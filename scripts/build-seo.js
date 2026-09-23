@@ -457,6 +457,8 @@ function page(p, index) {
 <link rel="manifest" href="/site.webmanifest" />
 <script defer src="/pwa.js?v=20260908pwa"></script>
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6368797323385379"
+     crossorigin="anonymous"></script>
 </head>
 <body>
 <a class="skip-link" href="#main-content">Skip to main content</a>
@@ -1990,6 +1992,8 @@ function blogPost(b) {
 <link rel="manifest" href="/site.webmanifest" />
 <script defer src="/pwa.js?v=20260908pwa"></script>
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6368797323385379"
+     crossorigin="anonymous"></script>
 </head>
 <body>
 <a class="skip-link" href="#main-content">Skip to main content</a>
@@ -2095,6 +2099,8 @@ function blogIndex() {
 <link rel="manifest" href="/site.webmanifest" />
 <script defer src="/pwa.js?v=20260908pwa"></script>
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6368797323385379"
+     crossorigin="anonymous"></script>
 </head>
 <body>
 <a class="skip-link" href="#main-content">Skip to main content</a>
@@ -2214,6 +2220,8 @@ ${alternates}
 <link rel="manifest" href="/site.webmanifest" />
 <script defer src="/pwa.js?v=20260908pwa"></script>
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6368797323385379"
+     crossorigin="anonymous"></script>
 </head>
 <body>
 <!-- Every locale already carries a translated skip link in scripts/locales.js;
