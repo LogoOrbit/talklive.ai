@@ -311,6 +311,8 @@
     return el;
   }
   function clearMessages() {
+    hideIcebreakers();
+    awayLine = null;
     msgs.innerHTML = '';
     if (extras) extras.reset();
   }
@@ -828,8 +830,112 @@
     });
     addMessage(text, 'me', payload);
     soundSend();
+    hideIcebreakers();
     return true;
   }
+
+  // --- Break the ice --------------------------------------------------------
+  // A new stranger and an empty box is where most chats die. A row of ready-made
+  // questions (icebreakers.js) goes under the "you're now chatting with" line
+  // and one tap sends it. It stands down once you have said something; the 💡
+  // in the composer brings back a fresh batch at any point.
+  var Icebreakers = window.TalkLiveIcebreakers || null;
+  var icebreakBtn = $('icebreakBtn');
+  var icebreakCard = null;
+  if (icebreakBtn && !Icebreakers) icebreakBtn.classList.add('hidden');
+
+  function hideIcebreakers() {
+    if (icebreakCard && icebreakCard.parentNode) icebreakCard.parentNode.removeChild(icebreakCard);
+    icebreakCard = null;
+    if (icebreakBtn) icebreakBtn.classList.remove('on');
+  }
+
+  function fillIcebreakers(list) {
+    list.innerHTML = '';
+    Icebreakers.draw(5).forEach(function (q) {
+      var chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'icebreak-chip';
+      var emoji = document.createElement('span');
+      emoji.className = 'icebreak-emoji';
+      emoji.setAttribute('aria-hidden', 'true');
+      emoji.textContent = q.emoji;
+      var text = document.createElement('span');
+      text.textContent = q.text;
+      chip.appendChild(emoji);
+      chip.appendChild(text);
+      chip.addEventListener('click', function () {
+        vibrate(10);
+        if (extras) extras.compose(q.text);
+        else deliver({ text: q.text, id: null, replyTo: null });
+      });
+      list.appendChild(chip);
+    });
+  }
+
+  function showIcebreakers() {
+    if (!Icebreakers || !partnerHere) return;
+    hideIcebreakers();
+    var card = document.createElement('div');
+    card.className = 'icebreak';
+    var head = document.createElement('div');
+    head.className = 'icebreak-head';
+    var title = document.createElement('span');
+    title.textContent = t('icebreakTitle');
+    var shuffleBtn = document.createElement('button');
+    shuffleBtn.type = 'button';
+    shuffleBtn.className = 'icebreak-shuffle';
+    shuffleBtn.textContent = '🔀 ' + t('icebreakShuffle');
+    head.appendChild(title);
+    head.appendChild(shuffleBtn);
+    var list = document.createElement('div');
+    list.className = 'icebreak-list';
+    shuffleBtn.addEventListener('click', function () { vibrate(8); fillIcebreakers(list); });
+    fillIcebreakers(list);
+    card.appendChild(head);
+    card.appendChild(list);
+    msgs.appendChild(card);
+    icebreakCard = card;
+    if (icebreakBtn) icebreakBtn.classList.add('on');
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  if (icebreakBtn) {
+    icebreakBtn.addEventListener('click', function () {
+      vibrate(8);
+      if (icebreakCard) hideIcebreakers(); else showIcebreakers();
+    });
+  }
+
+  // --- Leaving the app mid-chat ----------------------------------------------
+  // Switching apps or locking the phone does not close the socket, and the
+  // server only notices once the pings stop (up to ~85s) - so the stranger sat
+  // typing into a chat nobody was reading. Say it as it happens instead: the
+  // server relays 'chat-away' to them and ends the chat if this tab stays
+  // hidden, and a page that is actually going away leaves outright.
+  function reportAway() {
+    if (partnerHere) socket.emit('chat-away', { away: document.visibilityState === 'hidden' });
+  }
+  document.addEventListener('visibilitychange', reportAway);
+  window.addEventListener('pagehide', function () {
+    if (partnerHere || searching) socket.emit('leave');
+  });
+
+  var awayLine = null;
+  socket.on('partner-away', function (data) {
+    if (!partnerHere) return;
+    var name = (currentPartner && currentPartner.username) || t('stranger');
+    if (data && data.away) {
+      typingEl.classList.add('hidden');
+      if (!awayLine || !awayLine.parentNode) awayLine = addMessage(' ', 'system system-warn');
+      awayLine.textContent = t('chatPartnerAway', { name: name });
+      msgs.scrollTop = msgs.scrollHeight;
+    } else if (awayLine) {
+      awayLine.textContent = t('chatPartnerBack', { name: name });
+      awayLine.className = 'msg system';
+      awayLine = null;
+    }
+  });
 
   composer.addEventListener('submit', function (e) {
     e.preventDefault();
@@ -2070,6 +2176,10 @@
       }
       msgs.scrollTop = msgs.scrollHeight;
     }
+    if (icebreakBtn) icebreakBtn.disabled = false;
+    showIcebreakers();
+    // Matched while this tab is in the background: tell them straight away.
+    if (document.visibilityState === 'hidden') reportAway();
     focusComposer(input);
   });
 
@@ -2118,8 +2228,13 @@
     addMessage(text, 'system');
   });
 
-  socket.on('partner-left', function () {
+  socket.on('partner-left', function (info) {
+    var reason = info && info.reason;
+    var name = (info && info.username) || (currentPartner && currentPartner.username) || t('stranger');
     partnerHere = false;
+    hideIcebreakers();
+    awayLine = null;
+    if (icebreakBtn) icebreakBtn.disabled = true;
     // Surface the drop on an open board (grey it out) instead of yanking it away.
     if (games) { if (games.isPlaying() || games.isNegotiating()) games.partnerLeft(); else games.reset(); }
     typingEl.classList.add('hidden');
@@ -2131,13 +2246,18 @@
     if (topbar) topbar.classList.remove('connected');
     input.disabled = true;
     closeModal(callIncomingModal);
-    if (autoNext) {
+    if (reason === 'away') {
+      // We were the one who left the app for too long. Not auto-searching: a
+      // match made while nobody is looking would just leave the next stranger
+      // waiting the same way.
+      addMessage(t('chatYouAwayEnded'), 'system system-warn');
+    } else if (autoNext) {
       // Keep going straight into a new search - no need to wait for a tap on Next.
       clearMessages();
       clearNextConfirm();
       goSearch(false);
     } else {
-      addMessage(t('chatStageLeft'), 'system system-warn');
+      addMessage(reason === 'disconnected' ? t('chatPartnerDropped', { name: name }) : t('chatStageLeft'), 'system system-warn');
     }
   });
   // (The input is re-enabled at the top of the 'matched' handler above, where

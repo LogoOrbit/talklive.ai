@@ -1376,3 +1376,22 @@ summary:active {
    treats them as screens without publisher content, and a unit beside the
    call controls invites accidental clicks. ads.js never fills these either. */
 .ad-card-app { display: none !important; }
+
+/* "Break the ice": tap-to-send starter questions under the match line. */
+.icebreak { align-self: center; width: 100%; max-width: 560px; margin: 10px auto 6px; text-align: center; animation: msgIn 0.2s ease both; }
+.icebreak-head { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px; font-size: 11.5px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+.icebreak-shuffle { border: 0; background: none; color: var(--accent); font: inherit; letter-spacing: 0.04em; text-transform: none; font-size: 12.5px; cursor: pointer; padding: 4px 6px; border-radius: 8px; }
+.icebreak-shuffle:hover { background: var(--accent-soft, rgba(108, 92, 231, 0.12)); }
+.icebreak-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.icebreak-chip {
+  display: inline-flex; align-items: center; gap: 8px; max-width: 100%;
+  padding: 9px 15px; border-radius: 999px; border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bubble-them) 70%, transparent); color: var(--text);
+  font: inherit; font-size: 14px; font-weight: 600; text-align: left; cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.icebreak-chip:hover { border-color: var(--accent); }
+.icebreak-chip:active { transform: scale(0.96); }
+.icebreak-emoji { font-size: 16px; line-height: 1; }
+.icebreak-btn:disabled { opacity: 0.4; cursor: default; }
+@media (prefers-reduced-motion: reduce) { .icebreak { animation: none; } }
