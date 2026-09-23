@@ -30,7 +30,7 @@ function harness(mode, hidden = false, callState, opts = {}) {
   function element(type) {
     return { dataset: { ad: type }, style: {}, children: [], clientWidth: 800,
       getBoundingClientRect: () => ({ width: 800, top: 10, bottom: 100 }),
-      closest: sel => (sel === '#callPanel' && opts.inCallPanel ? {} : null),
+      closest: sel => ((sel === '#callPanel' && opts.inCallPanel) || (sel === '.ad-card-app' && opts.appCard) ? {} : null),
       attrs: {}, setAttribute(k, v) { this.attrs[k] = v; }, getAttribute(k) { return this.attrs[k] || null; },
       appendChild(child) { this.children.push(child); },
       removeChild(child) { this.children.splice(this.children.indexOf(child), 1); } };
@@ -222,4 +222,23 @@ test('with everyNCalls = 3, call-screen slots serve on one call in three', async
     served.push(h.written.length > 0);
   }
   assert.deepEqual(served, [true, false, false, true, false, false]);
+});
+
+test('adsenseSafe ships off and, when on, drops the placements AdSense objects to', () => {
+  const config = require('../public/ads-config.json');
+  assert.equal(config.adsenseSafe, false, 'ships off - flipping it is a revenue decision');
+  assert.match(source, /adsenseSafe: false,/);
+  // Social Bar, the matchmaking adhesive, and every app-screen slot.
+  assert.match(source, /opts\.enabled === false \|\| config\.adsenseSafe \|\|/);
+  assert.match(source, /opts\.enabled !== true \|\| config\.adsenseSafe \|\|/);
+  assert.match(source, /if \(config\.adsenseSafe && el\.closest && el\.closest\('\.ad-card-app'\)\) \{ hideSlot\(el\); continue; \}/);
+});
+
+test('with adsenseSafe on, an app-screen slot never loads a network tag', async () => {
+  const base = require('../public/ads-config.json');
+  const config = Object.assign({}, base, { adsenseSafe: true, fallback: { enabled: false, promos: [] } });
+  const h = harness('call', false, 'idle', { config, appCard: true });
+  await new Promise(r => setImmediate(r));
+  assert.equal(h.written.length, 0);
+  assert.ok(h.slots.every(s => s.style.display === 'none'), 'app-screen slots collapse');
 });

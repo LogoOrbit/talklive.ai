@@ -37,6 +37,9 @@
   "_callScreenCap": "Frequency cap for the slots inside the call screen (#callPanel): they serve a network ad on at most one call in every everyNCalls, counted per browser tab session. On the other calls the reserved space gets one of our own promos (see fallback) or collapses. 1 means no cap. Separately and always on: a slot still loading when a match connects is abandoned invisibly inside its reserved space, so no ad ever appears at the connect moment.",
   "callScreenCap": { "everyNCalls": 1 },
 
+  "_adsenseSafe": "Turn on before applying for (or running) Google AdSense. true removes the placements AdSense policy objects to: the Social Bar floating unit, the matchmaking-screen adhesive, and every network ad on the app screens (.ad-card-app: start, search, call and chat) - screens without publisher content and next to call controls. Content pages (blog, guides, landing pages) keep their ads. Can be flipped live with the ADS_CONFIG secret, e.g. {\"adsenseSafe\":true}.",
+  "adsenseSafe": false,
+
   "_lazyRootMargin": "How far ahead of the viewport a slot begins loading. Larger fills sooner and wastes more impressions on users who never scroll that far; smaller risks an empty slot when the user arrives.",
   "lazyRootMargin": "100px",
 

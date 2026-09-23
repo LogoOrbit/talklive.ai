@@ -72,6 +72,8 @@
     pauseDuringCall: true,
     // Mirrors callScreenCap in ads-config.json. 1 = no cap.
     callScreenCap: { everyNCalls: 1 },
+    // Mirrors adsenseSafe in ads-config.json: off unless the config turns it on.
+    adsenseSafe: false,
     lazyRootMargin: '100px',
     fillTimeoutMs: 15000,
     visibleFillTimeoutMs: 6000,
@@ -752,7 +754,7 @@
   function initSearchAnchor() {
     var opts = config.searchAnchor || {};
     var btn = document.getElementById('callMainBtn');
-    if (!btn || opts.enabled !== true || (config.types && config.types.banner === false)) return;
+    if (!btn || opts.enabled !== true || config.adsenseSafe || (config.types && config.types.banner === false)) return;
     if ((window.innerHeight || 0) < (Number(opts.minViewportHeight) || 700)) return;
 
     var dismissKey = 'talklive_search_ad_dismissed_until';
@@ -963,6 +965,10 @@
       // which is any phone held in landscape. Only the cards inside the call
       // and chat UI carry the -app modifier.
       if (shortViewport && el.closest && el.closest('.ad-card-app')) { hideSlot(el); continue; }
+      // AdSense-safe mode: no network ads on the app screens (start, matchmaking,
+      // call, chat) - screens without publisher content, next to controls.
+      // Content pages keep their slots. See adsenseSafe in ads-config.json.
+      if (config.adsenseSafe && el.closest && el.closest('.ad-card-app')) { hideSlot(el); continue; }
       kept.push(el);
     }
     return kept;
@@ -977,7 +983,7 @@
   // competing with the first screen of content.
   function initSocialBar() {
     var opts = config.socialBar || {};
-    if (opts.enabled === false || (config.types && config.types.socialBar === false)) return;
+    if (opts.enabled === false || config.adsenseSafe || (config.types && config.types.socialBar === false)) return;
     if (opts.contentOnly !== false
       && (document.getElementById('callMainBtn') || document.getElementById('viewLive'))) return;
 
