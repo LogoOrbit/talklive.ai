@@ -912,7 +912,24 @@
     addFriendBtn.classList.add('sent');
     addFriendBtn.disabled = true;
     closeModal(friendModal);
-    addMessage(t('friendReqSentMsg', { name: currentPartner.username }), 'system');
+    // Say what actually happened once the server answers: it may have become a
+    // friendship on the spot (they had asked too), or been refused.
+    awaitingFriendResult = currentPartner.username;
+  });
+  var awaitingFriendResult = null;
+  socket.on('friend-request-result', function (res) {
+    if (!awaitingFriendResult || !res) return;
+    var name = awaitingFriendResult;
+    awaitingFriendResult = null;
+    if (res.ok && res.accepted) addMessage(t('nowFriends'), 'system');
+    else if (res.ok && res.alreadyFriends) addMessage(t('alreadyFriendsMsg'), 'system');
+    else if (res.ok && res.pending) addMessage(t('friendReqPendingMsg'), 'system');
+    else if (res.ok) addMessage(t('friendReqSentMsg', { name: name }), 'system');
+    else {
+      addFriendBtn.classList.remove('sent');
+      addFriendBtn.disabled = false;
+      addMessage(res.error || t('friendReqFailed'), 'system');
+    }
   });
   $('friendCancelBtn').addEventListener('click', function () { closeModal(friendModal); });
   $('friendCloseBtn').addEventListener('click', function () { closeModal(friendModal); });
@@ -1197,7 +1214,53 @@
   var friendsTabCount = $('friendsTabCount');
   var requestsTabCount = $('requestsTabCount');
   var sentRequestsList = $('sentRequestsList');
-  var historyState = []; // [{ clientId, username, countryCode, online, ts }]
+  var historyState = []; // [{ clientId, username, countryCode, online, lastSeen, last, ts }]
+  var typingFrom = {};   // clientId -> timeout, while they are typing to me
+
+  function timeAgo(ts) {
+    var sec = Math.floor((Date.now() - ts) / 1000);
+    if (sec < 60) return t('justNow');
+    var m = Math.floor(sec / 60);
+    if (m < 60) return t('minAgo', { n: m });
+    var h = Math.floor(m / 60);
+    if (h < 24) return t('hourAgo', { n: h });
+    return t('dayAgo', { n: Math.floor(h / 24) });
+  }
+
+  // "Online", "Last seen 5m ago", or plain offline for someone hiding status.
+  function presenceText(p) {
+    if (!p) return '';
+    if (p.online) return t('online');
+    if (p.lastSeen) return t('lastSeen', { time: timeAgo(p.lastSeen) });
+    return t('offline');
+  }
+
+  function previewText(last) {
+    if (!last) return '';
+    var body = last.text || (last.gif ? t('gifMessage') : '');
+    return last.mine ? t('youSaid', { text: body }) : body;
+  }
+
+  // The status line of a row: typing beats the last message, which beats
+  // presence - the same order every messenger uses.
+  function statusLine(p) {
+    if (typingFrom[p.clientId]) return { text: t('friendTyping'), cls: ' is-typing' };
+    var preview = previewText(p.last);
+    if (preview) return { text: preview, cls: unreadCountFor(p.clientId) ? ' is-unread' : '' };
+    return { text: presenceText(p), cls: '' };
+  }
+
+  function noteLastMessage(clientId, last) {
+    [friendsState.friends, historyState].forEach(function (list) {
+      list.forEach(function (p) { if (p.clientId === clientId) p.last = last; });
+    });
+  }
+
+  function findPerson(clientId) {
+    return friendsState.friends.filter(function (f) { return f.clientId === clientId; })[0]
+      || historyState.filter(function (h) { return h.clientId === clientId; })[0]
+      || null;
+  }
 
   function setTabCount(el, n) {
     if (!el) return;
@@ -1363,14 +1426,21 @@
       friendsList.innerHTML = '<p class="tl-empty">' + escapeHtml(t('noFriendsYetChat')) + '</p>';
       return;
     }
-    friendsState.friends.forEach(function (f) {
+    // Unread first, then who is here now, then the most recent conversation.
+    var lastTs = function (p) { return (p.last && p.last.ts) || 0; };
+    friendsState.friends.slice().sort(function (a, b) {
+      return (Number(unreadCountFor(b.clientId) > 0) - Number(unreadCountFor(a.clientId) > 0))
+        || (Number(!!b.online) - Number(!!a.online))
+        || (lastTs(b) - lastTs(a));
+    }).forEach(function (f) {
       var row = document.createElement('div');
       row.className = 'friend-row';
       var unreadN = unreadCountFor(f.clientId);
+      var line = statusLine(f);
       row.innerHTML =
         '<span class="friend-avatar" aria-hidden="true">' + escapeHtml((friendLabel(f) || '?').charAt(0)) + '</span>' +
         '<span class="friend-main"><span class="friend-name">' + escapeHtml(friendLabel(f) || '-') + ' ' + getFlagImg(f.countryCode, 14) + '</span>' +
-        '<span class="friend-status' + (f.online ? '' : ' is-offline') + '"><span class="online-dot"></span>' + escapeHtml(t(f.online ? 'online' : 'offline')) + '</span></span>' +
+        '<span class="friend-status' + (f.online ? '' : ' is-offline') + line.cls + '"><span class="online-dot"></span><span class="friend-status-text">' + escapeHtml(line.text) + '</span></span></span>' +
         '<span class="friend-actions">' +
         '<button type="button" class="mini-btn" data-act="chat" title="' + escapeHtml(t('chat')) + '" aria-label="' + escapeHtml(t('chat')) + '"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>' +
         (unreadN ? '<span class="notif-badge">' + unreadN + '</span>' : '') + '</button>' +
@@ -1378,8 +1448,27 @@
         '<button type="button" class="mini-btn danger" data-act="remove" title="' + escapeHtml(t('removeFriend')) + '" aria-label="' + escapeHtml(t('removeFriend')) + '"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>' +
         '</span>';
       row.querySelector('[data-act="chat"]').addEventListener('click', function () { openFriendChat(f); });
+      row.querySelector('.friend-main').addEventListener('click', function () { openFriendChat(f); });
       row.querySelector('[data-act="rename"]').addEventListener('click', function () { openRenameFriend(f); });
-      row.querySelector('[data-act="remove"]').addEventListener('click', function () {
+      // Two taps, like Next: one stray tap used to delete a friendship with no
+      // way back short of asking them again.
+      var removeBtn = row.querySelector('[data-act="remove"]');
+      var removeArmed = null;
+      removeBtn.addEventListener('click', function () {
+        if (!removeArmed) {
+          removeBtn.classList.add('confirm');
+          removeBtn.title = t('tapAgainToRemove');
+          removeBtn.setAttribute('aria-label', t('tapAgainToRemove'));
+          vibrate(15);
+          removeArmed = setTimeout(function () {
+            removeArmed = null;
+            removeBtn.classList.remove('confirm');
+            removeBtn.title = t('removeFriend');
+            removeBtn.setAttribute('aria-label', t('removeFriend'));
+          }, 3000);
+          return;
+        }
+        clearTimeout(removeArmed);
         socket.emit('remove-friend', { friendClientId: f.clientId });
       });
       friendsList.appendChild(row);
@@ -1395,6 +1484,7 @@
     historyState = data.chatHistory || [];
     renderFriends();
     renderHistory();
+    renderFriendChatStatus();
   });
   // Live badge updates: message notifications arrive alone (friend-request
   // ones come with a full state-sync), so track them locally too.
@@ -1402,6 +1492,8 @@
     if (!n) return;
     if (n.type === 'message' && n.fromClientId === activeFriendChatId) return; // already reading it
     friendsState.notifications.push(n);
+    if (n.type === 'message') { soundReceive(); vibrate(20); }
+    else if (n.type === 'friend_request' || n.type === 'friend_accepted') vibrate([20, 40, 20]);
     renderFriends();
     renderHistory();
   });
@@ -1432,17 +1524,18 @@
       var row = document.createElement('div');
       row.className = 'friend-row';
       var unreadN = unreadCountFor(h.clientId);
+      var line = statusLine(h);
       row.innerHTML =
         '<span class="friend-avatar" aria-hidden="true">' + escapeHtml((h.username || '?').charAt(0)) + '</span>' +
         '<span class="friend-main"><span class="friend-name">' + escapeHtml(h.username || '-') + ' ' + getFlagImg(h.countryCode, 14) + '</span>' +
-        '<span class="friend-status' + (h.online ? '' : ' is-offline') + '"><span class="online-dot"></span>' + escapeHtml(t(h.online ? 'online' : 'offline')) + '</span></span>' +
+        '<span class="friend-status' + (h.online ? '' : ' is-offline') + line.cls + '"><span class="online-dot"></span><span class="friend-status-text">' + escapeHtml(line.text) + '</span></span></span>' +
         '<span class="friend-actions">' +
         '<button type="button" class="mini-btn" data-act="chat" title="' + escapeHtml(t('messageBack')) + '" aria-label="' + escapeHtml(t('messageBack')) + '"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>' +
         (unreadN ? '<span class="notif-badge">' + unreadN + '</span>' : '') + '</button>' +
         '</span>';
-      row.querySelector('[data-act="chat"]').addEventListener('click', function () {
-        openFriendChat({ clientId: h.clientId, username: h.username });
-      });
+      var openIt = function () { openFriendChat({ clientId: h.clientId, username: h.username }); };
+      row.querySelector('[data-act="chat"]').addEventListener('click', openIt);
+      row.querySelector('.friend-main').addEventListener('click', openIt);
       historyList.appendChild(row);
     });
   }
@@ -1571,7 +1664,56 @@
       if (!activeFriendChatId) return;
       socket.emit('friend-reaction', { toClientId: activeFriendChatId, id: id, emoji: emoji, on: on });
     },
+    unsend: function (id) {
+      if (activeFriendChatId) socket.emit('friend-message-delete', { toClientId: activeFriendChatId, id: id });
+    },
   }) : null;
+
+  // --- Header status: typing / online / last seen --------------------------
+  var friendChatStatus = $('friendChatStatus');
+  function renderFriendChatStatus() {
+    if (!friendChatStatus) return;
+    var id = activeFriendChatId;
+    var typing = !!(id && typingFrom[id]);
+    var person = id ? findPerson(id) : null;
+    friendChatStatus.textContent = typing ? t('friendTyping') : presenceText(person);
+    friendChatStatus.classList.toggle('is-online', !typing && !!(person && person.online));
+    friendChatStatus.classList.toggle('is-typing', typing);
+  }
+
+  function setTyping(clientId, on) {
+    clearTimeout(typingFrom[clientId]);
+    if (on) typingFrom[clientId] = setTimeout(function () { setTyping(clientId, false); }, 4000);
+    else delete typingFrom[clientId];
+    renderFriendChatStatus();
+    renderFriends();
+    renderHistory();
+  }
+  socket.on('friend-typing', function (data) {
+    if (data && data.fromClientId) setTyping(data.fromClientId, true);
+  });
+  var friendTypingAt = 0;
+  friendChatInput.addEventListener('input', function () {
+    if (!activeFriendChatId || !friendChatInput.value) return;
+    var now = Date.now();
+    if (now - friendTypingAt < 2000) return;
+    friendTypingAt = now;
+    socket.emit('friend-typing', { toClientId: activeFriendChatId });
+  });
+
+  socket.on('friend-message-deleted', function (data) {
+    if (!data || !data.chatWith) return;
+    var p = findPerson(data.chatWith);
+    if (p && p.last && p.last.id === data.id) noteLastMessage(data.chatWith, null);
+    if (data.chatWith === activeFriendChatId) {
+      var node = friendChatMsgs.querySelector('[data-cx-id="' + (window.CSS && CSS.escape ? CSS.escape(data.id) : data.id) + '"]');
+      if (friendExtras) friendExtras.forget(data.id);
+      if (node) node.remove();
+      renderSeenLabel();
+    }
+    renderFriends();
+    renderHistory();
+  });
 
   function openFriendChat(friend) {
     activeFriendChatId = friend.clientId;
@@ -1591,6 +1733,7 @@
     });
     renderFriends();
     renderHistory();
+    renderFriendChatStatus();
     focusComposer(friendChatInput);
   }
   function closeFriendChat() {
@@ -1626,10 +1769,17 @@
     renderSeenLabel();
   });
   socket.on('friend-message-sent', function (data) {
-    if (data && data.toClientId === activeFriendChatId) appendFriendMsg(data.text, 'me', data);
+    if (!data) return;
+    noteLastMessage(data.toClientId, { id: data.id, mine: true, text: data.text || '', gif: !!data.gif, ts: data.ts });
+    if (data.toClientId === activeFriendChatId) appendFriendMsg(data.text, 'me', data);
+    renderFriends();
+    renderHistory();
   });
   socket.on('friend-message', function (data) {
     if (!data) return;
+    noteLastMessage(data.fromClientId, { id: data.id, mine: false, text: data.text || '', gif: !!data.gif, ts: data.ts });
+    if (typingFrom[data.fromClientId]) setTyping(data.fromClientId, false);
+    else { renderFriends(); renderHistory(); }
     if (data.fromClientId === activeFriendChatId) {
       appendFriendMsg(data.text, 'them', data);
       soundReceive();

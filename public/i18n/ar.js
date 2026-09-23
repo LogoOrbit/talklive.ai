@@ -197,3 +197,17 @@ window.I18N_STRINGS.ar = {
   "filtersAdUnlockText": "الخطة المجانية: حتى دولتين لكل قائمة، وفلتر الجنس مقفل. شاهد إعلانًا قصيرًا لفتح كل شيء لمدة 5 دقائق - مجانًا."
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("ar");
+
+// Social: presence, typing, previews, unsend
+Object.assign(window.I18N_STRINGS.ar, {
+  "lastSeen": "آخر ظهور {time}",
+  "friendTyping": "يكتب…",
+  "youSaid": "أنت: {text}",
+  "gifMessage": "GIF",
+  "unsend": "إلغاء الإرسال",
+  "copyText": "نسخ",
+  "alreadyFriendsMsg": "أنتما صديقان بالفعل.",
+  "friendReqPendingMsg": "طلب الصداقة الخاص بك لا يزال بانتظار الرد.",
+  "friendReqFailed": "تعذّر إرسال طلب الصداقة.",
+  "tapAgainToRemove": "اضغط مرة أخرى للإزالة"
+});

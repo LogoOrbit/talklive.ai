@@ -197,3 +197,17 @@ window.I18N_STRINGS.bn = {
   "filtersAdUnlockText": "ফ্রি প্ল্যান: প্রতি তালিকায় সর্বোচ্চ ২টি দেশ, লিঙ্গ ফিল্টার লক করা। একটি ছোট বিজ্ঞাপন দেখুন এবং ৫ মিনিটের জন্য সবকিছু আনলক করুন - ফ্রি।"
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("bn");
+
+// Social: presence, typing, previews, unsend
+Object.assign(window.I18N_STRINGS.bn, {
+  "lastSeen": "সর্বশেষ দেখা {time}",
+  "friendTyping": "লিখছে…",
+  "youSaid": "আপনি: {text}",
+  "gifMessage": "GIF",
+  "unsend": "পাঠানো বাতিল",
+  "copyText": "কপি",
+  "alreadyFriendsMsg": "আপনারা ইতিমধ্যে বন্ধু।",
+  "friendReqPendingMsg": "আপনার বন্ধুত্বের অনুরোধ এখনও উত্তরের অপেক্ষায়।",
+  "friendReqFailed": "বন্ধুত্বের অনুরোধ পাঠানো যায়নি।",
+  "tapAgainToRemove": "সরাতে আবার ট্যাপ করুন"
+});

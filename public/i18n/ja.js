@@ -197,3 +197,17 @@ window.I18N_STRINGS.ja = {
   "filtersAdUnlockText": "無料プラン：各リスト最大2か国、性別フィルターはロック中。短い広告を見るだけで、すべてを5分間無料でアンロックできます。"
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("ja");
+
+// Social: presence, typing, previews, unsend
+Object.assign(window.I18N_STRINGS.ja, {
+  "lastSeen": "最終ログイン {time}",
+  "friendTyping": "入力中…",
+  "youSaid": "あなた: {text}",
+  "gifMessage": "GIF",
+  "unsend": "送信取り消し",
+  "copyText": "コピー",
+  "alreadyFriendsMsg": "すでに友達です。",
+  "friendReqPendingMsg": "友達リクエストはまだ返事待ちです。",
+  "friendReqFailed": "友達リクエストを送信できませんでした。",
+  "tapAgainToRemove": "もう一度タップで削除"
+});

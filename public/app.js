@@ -676,6 +676,45 @@ let activeProfileRelation = 'friend';
 let notifData = [];          // [{ id, type, ts, ... }]
 let activeFriendChatId = null;
 const friendChatCache = new Map(); // friendClientId -> [{ from, text, ts }]
+// Recent people as the server remembers them (voice and text matches alike),
+// newest first: [{ clientId, username, countryCode, mode, ts, online, lastSeen, last }].
+// Unlike callHistory it survives a reload, which is exactly when "who was that
+// person I liked talking to" gets asked.
+let serverHistory = [];
+// clientId -> timeout, while that person is typing to this user.
+const typingFrom = new Map();
+
+// What to say under someone's name: live, when they were last here, or plain
+// offline when they hide their status.
+function presenceText(p) {
+  if (!p) return '';
+  if (p.online) return t('online');
+  if (p.lastSeen) return t('lastSeen', { time: timeAgo(p.lastSeen) });
+  return t('offline');
+}
+
+// One line of the newest message in a conversation, for list rows.
+function previewText(last) {
+  if (!last) return '';
+  const body = last.text || (last.gif ? t('gifMessage') : '');
+  return last.mine ? t('youSaid', { text: body }) : body;
+}
+
+// Keep the list rows' "last message" current between state-syncs, which the
+// server only sends when something structural changes.
+function noteLastMessage(clientId, last) {
+  [friendsData, serverHistory].forEach((list) => {
+    const row = list.find((p) => p.clientId === clientId);
+    if (row) row.last = last;
+  });
+}
+
+function lastFromCache(clientId) {
+  const cache = friendChatCache.get(clientId);
+  const m = cache && cache[cache.length - 1];
+  if (!m) return null;
+  return { id: m.id, mine: m.from === getClientId(), text: m.text || '', gif: !!m.gif, ts: m.ts, seen: !!m.seen };
+}
 let pendingCallBackFrom = null;
 
 function escapeHtml(str) {
@@ -1430,9 +1469,15 @@ addFriendBtn.addEventListener('click', () => {
   showToast(t('friendRequestSent'));
 });
 
-socket.on('friend-request-result', ({ ok, error, limitReached }) => {
+socket.on('friend-request-result', ({ ok, error, limitReached, accepted }) => {
   // limitReached is handled by the premium-upsell listener further down.
   if (!ok && error && !limitReached) showError(error);
+  // Both sides tapped "Add friend": the server turned the second request into
+  // an acceptance, so say so instead of leaving a "Request sent" on screen.
+  if (ok && accepted) {
+    showToast(t('nowFriends'));
+    playFriendAddedSound();
+  }
 });
 
 let lastFocusedBeforeModal = null;
@@ -2869,16 +2914,27 @@ function renderFriendsList() {
     return;
   }
   friendsList.innerHTML = '';
-  friendsData.forEach((f) => {
+  // An inbox, not a phone book: whoever has something unread, then whoever is
+  // here right now, then the most recent conversation.
+  const lastTs = (f) => (f.last && f.last.ts) || 0;
+  const sorted = [...friendsData].sort((a, b) => (
+    Number(unreadCountFor(b.clientId) > 0) - Number(unreadCountFor(a.clientId) > 0)
+    || Number(!!b.online) - Number(!!a.online)
+    || lastTs(b) - lastTs(a)
+  ));
+  sorted.forEach((f) => {
     const unread = unreadCountFor(f.clientId);
+    const typing = typingFrom.has(f.clientId);
+    const preview = typing ? t('friendTyping') : previewText(f.last);
     const item = document.createElement('div');
     item.className = 'friend-item';
     item.innerHTML = `
       <button type="button" class="friend-avatar-btn" data-id="${escapeHtml(f.clientId)}" title="${escapeHtml(t('profile'))}" aria-label="${escapeHtml(t('profile'))}">${genderIcon(f.avatar, 30)}</button>
       <div class="friend-item-info friend-row-main" data-id="${escapeHtml(f.clientId)}">
         <span class="friend-item-name">${getFlagImg(f.countryCode)} ${escapeHtml(friendLabel(f))}</span>
-        <span class="friend-status-text ${f.online ? 'is-online' : 'is-offline'}">${escapeHtml(f.online ? t('online') : t('offline'))}</span>
+        <span class="friend-status-text ${f.online ? 'is-online' : 'is-offline'}">${escapeHtml(presenceText(f))}</span>
         ${unread > 0 ? `<span class="unread-badge">${unread}</span>` : ''}
+        ${preview ? `<span class="friend-item-preview${unread > 0 ? ' is-unread' : ''}${typing ? ' is-typing' : ''}">${escapeHtml(preview)}</span>` : ''}
       </div>
       <button type="button" class="friend-msg-btn" data-id="${escapeHtml(f.clientId)}" title="${escapeHtml(t('chat'))}" aria-label="${escapeHtml(t('chat'))}">
         ${ICONS.chat}
@@ -2972,7 +3028,7 @@ function openUserProfile(person) {
   friendProfileName.innerHTML = `${getFlagImg(known.countryCode)} ${escapeHtml(friendLabel(known))}`;
   const online = !!known.online;
   friendProfileStatus.innerHTML = relation === 'friend'
-    ? `<span class="friend-status-text ${online ? 'is-online' : 'is-offline'}">${escapeHtml(online ? t('online') : t('offline'))}</span>`
+    ? `<span class="friend-status-text ${online ? 'is-online' : 'is-offline'}">${escapeHtml(presenceText(known))}</span>`
     : `<span class="friend-relation-text">${escapeHtml(t('profileRelation_' + relation))}</span>`;
 
   // "Really <their own name>" - only when this account has renamed them, so a
@@ -3114,12 +3170,15 @@ friendProfileBlockBtn.addEventListener('click', async () => {
 let friendsSynced = false;
 setTimeout(() => { if (!friendsSynced) renderFriendsList(); }, 5000);
 
-socket.on('state-sync', ({ friends: friendList, friendRequests: requestList, sentRequests: sentList, notifications: notifList } = {}) => {
+socket.on('state-sync', ({ friends: friendList, friendRequests: requestList, sentRequests: sentList, notifications: notifList, chatHistory: historyList } = {}) => {
   friendsSynced = true;
   friendsData = friendList || [];
   friendRequestsData = requestList || [];
   sentRequestsData = sentList || [];
   notifData = notifList || [];
+  serverHistory = historyList || [];
+  renderHistory();
+  renderFriendChatStatus();
   renderFriendsList();
   renderNotifications();
   // A first friend is exactly the moment the profile becomes worth keeping.
@@ -3363,10 +3422,14 @@ notifList.addEventListener('click', (e) => {
 });
 
 socket.on('notification', (n) => {
+  // Already on screen: the open chat marks it read, so counting it would only
+  // flash a badge for a message the user is looking at.
+  if (n.type === 'message' && n.fromClientId === activeFriendChatId
+    && friendChatModal.classList.contains('open')) return;
   notifData.push(n);
   renderNotifications();
   if (n.type === 'call_back_request') {
-    showCallBackBanner(n.fromClientId, n.username);
+    showCallBackBanner(n.fromClientId, labelForClientId(n.fromClientId, n.username));
   }
   if (n.type === 'message') {
     playMessageSound();
@@ -3461,7 +3524,11 @@ function applyFriendChatLock() {
 function openFriendChat(friendClientId) {
   activeFriendChatId = friendClientId;
   const friend = friendsData.find((f) => f.clientId === friendClientId);
-  friendChatTitle.textContent = friend ? t('chatWith', { name: friendLabel(friend) }) : t('chat');
+  // A "message back" chat with a recent match has no friend entry - name it
+  // from the call history rather than a bare "Chat".
+  const past = friend ? null : historyEntries().find((h) => h.clientId === friendClientId);
+  const chatName = friend ? friendLabel(friend) : (past && past.username);
+  friendChatTitle.textContent = chatName ? t('chatWith', { name: chatName }) : t('chat');
   closeSidePanel(friendsDropdown, friendsOverlay);
   closeSidePanel(friendProfileModal, friendProfileOverlay);
   openSidePanel(friendChatModal, friendChatOverlay);
@@ -3476,12 +3543,46 @@ function openFriendChat(friendClientId) {
   // Whoever is online right now is the baseline; only a drop from here is news.
   friendChatWasOnline = !!(friend && friend.online);
   friendChatPresence.classList.add('hidden');
+  renderFriendChatStatus();
   focusComposer(friendChatInput);
 }
 
 closeFriendChatBtn.addEventListener('click', () => {
   closeSidePanel(friendChatModal, friendChatOverlay);
   activeFriendChatId = null;
+});
+
+// The line under the chat title: "typing…", "Online" or "Last seen 5m ago".
+const friendChatStatus = document.getElementById('friendChatStatus');
+function renderFriendChatStatus() {
+  if (!friendChatStatus) return;
+  const id = activeFriendChatId;
+  const person = id && (friendsData.find((f) => f.clientId === id) || serverHistory.find((h) => h.clientId === id));
+  const typing = !!id && typingFrom.has(id);
+  friendChatStatus.textContent = typing ? t('friendTyping') : presenceText(person);
+  friendChatStatus.classList.toggle('is-online', !typing && !!(person && person.online));
+  friendChatStatus.classList.toggle('is-typing', typing);
+}
+
+function setTyping(clientId, on) {
+  clearTimeout(typingFrom.get(clientId));
+  if (on) typingFrom.set(clientId, setTimeout(() => setTyping(clientId, false), 4000));
+  else typingFrom.delete(clientId);
+  renderFriendChatStatus();
+  renderFriendsList();
+}
+
+socket.on('friend-typing', ({ fromClientId } = {}) => {
+  if (fromClientId) setTyping(fromClientId, true);
+});
+
+let friendTypingThrottle = 0;
+friendChatInput.addEventListener('input', () => {
+  if (!activeFriendChatId || !friendChatInput.value) return;
+  const now = Date.now();
+  if (now - friendTypingThrottle < 2000) return;
+  friendTypingThrottle = now;
+  socket.emit('friend-typing', { toClientId: activeFriendChatId });
 });
 
 // Same extras as stranger chat. Reactions here are persisted server-side, so
@@ -3497,7 +3598,26 @@ friendExtras = window.TalkLiveChatExtras ? window.TalkLiveChatExtras.attach({
     socket.emit('friend-reaction', { toClientId: activeFriendChatId, id, emoji, on });
     cacheReaction(activeFriendChatId, getClientId(), id, emoji, on);
   },
+  unsend: (id) => {
+    if (activeFriendChatId) socket.emit('friend-message-delete', { toClientId: activeFriendChatId, id });
+  },
 }) : null;
+
+socket.on('friend-message-deleted', ({ chatWith, id } = {}) => {
+  const cache = friendChatCache.get(chatWith);
+  if (cache) {
+    friendChatCache.set(chatWith, cache.filter((m) => m.id !== id));
+    noteLastMessage(chatWith, lastFromCache(chatWith));
+  } else {
+    // Never opened this chat here: only the preview can be showing it.
+    const row = friendsData.find((f) => f.clientId === chatWith) || serverHistory.find((h) => h.clientId === chatWith);
+    if (row && row.last && row.last.id === id) noteLastMessage(chatWith, null);
+  }
+  if (friendExtras && activeFriendChatId === chatWith) friendExtras.forget(id);
+  if (activeFriendChatId === chatWith) renderFriendChatMessages();
+  renderFriendsList();
+  renderHistory();
+});
 
 function sendFriendMessage(payload) {
   const text = payload.text || '';
@@ -3560,6 +3680,11 @@ socket.on('friend-message', ({ fromClientId, text, ts, id, replyTo, gif }) => {
   const cache = friendChatCache.get(fromClientId) || [];
   cache.push({ from: fromClientId, text, ts, id, replyTo, gif });
   friendChatCache.set(fromClientId, cache);
+  noteLastMessage(fromClientId, { id, mine: false, text: text || '', gif: !!gif, ts });
+  // The message is what they were typing.
+  if (typingFrom.has(fromClientId)) setTyping(fromClientId, false);
+  else renderFriendsList();
+  renderHistory();
   if (activeFriendChatId === fromClientId && friendChatModal.classList.contains('open')) {
     renderFriendChatMessages();
     socket.emit('mark-messages-read', { friendClientId: fromClientId });
@@ -3581,6 +3706,9 @@ socket.on('friend-message-sent', ({ toClientId, text, ts, id, replyTo, gif }) =>
   const cache = friendChatCache.get(toClientId) || [];
   cache.push({ from: getClientId(), text, ts, id, replyTo, gif });
   friendChatCache.set(toClientId, cache);
+  noteLastMessage(toClientId, { id, mine: true, text: text || '', gif: !!gif, ts });
+  renderFriendsList();
+  renderHistory();
   if (activeFriendChatId === toClientId) renderFriendChatMessages();
 });
 
@@ -3589,30 +3717,68 @@ socket.on('friend-chat-history', ({ friendClientId, messages }) => {
   if (activeFriendChatId === friendClientId) renderFriendChatMessages();
 });
 
-// --- Call history (session-only, cleared on reload) ---
+// --- Recent people ---
+// This session's calls (which know how long they lasted) merged with the
+// server's memory of recent matches (which survives a reload and includes text
+// chats), one row per person, newest first.
+function historyEntries() {
+  const live = new Map(serverHistory.map((h) => [h.clientId, h]));
+  const byId = new Map();
+  const out = [];
+  [...callHistory].reverse().forEach((e) => {
+    if (!e.clientId) { out.push(e); return; }
+    if (byId.has(e.clientId)) return;
+    const h = live.get(e.clientId);
+    const row = h ? { ...h, ...e, ts: Math.max(e.ts || 0, h.ts || 0) } : { ...e };
+    byId.set(e.clientId, row);
+    out.push(row);
+  });
+  serverHistory.forEach((h) => {
+    if (byId.has(h.clientId)) return;
+    byId.set(h.clientId, h);
+    out.push(h);
+  });
+  return out.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+}
+
+function historySubline(entry) {
+  if (entry.durationSeconds) {
+    const mins = Math.floor(entry.durationSeconds / 60);
+    const secs = entry.durationSeconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  }
+  return entry.ts ? timeAgo(entry.ts) : '';
+}
+
 function renderHistory() {
   renderRailHistory();
-  if (callHistory.length === 0) {
+  const entries = historyEntries();
+  if (entries.length === 0) {
     historyList.innerHTML = `<p class="tl-empty">${escapeHtml(t('noCallsYet'))}</p>`;
     return;
   }
   historyList.innerHTML = '';
-  [...callHistory].reverse().forEach((entry) => {
+  entries.forEach((entry) => {
     const item = document.createElement('div');
     item.className = 'history-item';
-    const mins = Math.floor(entry.durationSeconds / 60);
-    const secs = entry.durationSeconds % 60;
-    const callBackBtn = entry.clientId
-      ? `<button type="button" class="call-back-btn" data-id="${escapeHtml(entry.clientId)}" data-name="${escapeHtml(entry.username)}" title="${escapeHtml(t('callBack'))}" aria-label="${escapeHtml(t('callBack'))}">
+    const id = escapeHtml(entry.clientId || '');
+    const unread = entry.clientId ? unreadCountFor(entry.clientId) : 0;
+    const actions = entry.clientId
+      ? `<button type="button" class="friend-msg-btn history-msg-btn" data-id="${id}" title="${escapeHtml(t('messageBack'))}" aria-label="${escapeHtml(t('messageBack'))}">${ICONS.chat}${unread ? `<span class="unread-badge">${unread}</span>` : ''}</button>
+        <button type="button" class="call-back-btn" data-id="${id}" data-name="${escapeHtml(entry.username)}" title="${escapeHtml(t('callBack'))}" aria-label="${escapeHtml(t('callBack'))}">
           <svg viewBox="0 0 24 24" fill="white" aria-hidden="true"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
         </button>`
       : '';
+    const preview = typingFrom.has(entry.clientId) ? t('friendTyping') : previewText(entry.last);
     item.innerHTML = `
-      <button type="button" class="history-item-name history-profile-btn" data-id="${escapeHtml(entry.clientId || '')}" title="${escapeHtml(t('openProfile'))}">${getFlagImg(entry.countryCode)} ${escapeHtml(entry.username)}</button>
-      <span class="history-item-right">
-        <span class="history-item-duration">${mins}:${secs.toString().padStart(2, '0')}</span>
-        ${callBackBtn}
+      <span class="history-item-main">
+        <button type="button" class="history-item-name history-profile-btn" data-id="${id}" title="${escapeHtml(t('openProfile'))}">
+          <span class="history-presence${entry.online ? ' is-online' : ''}" aria-hidden="true"></span>
+          ${getFlagImg(entry.countryCode)} ${escapeHtml(entry.username)}
+        </button>
+        <span class="history-item-sub">${escapeHtml(preview || historySubline(entry))}</span>
       </span>
+      <span class="history-item-right">${actions}</span>
     `;
     historyList.appendChild(item);
   });
@@ -3626,6 +3792,7 @@ function recordCallHistory() {
     username: currentPartner.username,
     countryCode: currentPartner.countryCode,
     clientId: currentPartner.clientId,
+    ts: Date.now(),
     durationSeconds,
   });
   renderHistory();
@@ -3731,9 +3898,15 @@ historyOverlay.addEventListener('click', closeHistoryPanel);
 historyList.addEventListener('click', (e) => {
   // Tapping the name opens who they are (and whether you have already asked
   // to add them); the green button still calls them straight back.
+  const msgBtn = e.target.closest('.history-msg-btn');
+  if (msgBtn && msgBtn.dataset.id) {
+    closeHistoryPanel();
+    openFriendChat(msgBtn.dataset.id);
+    return;
+  }
   const nameBtn = e.target.closest('.history-profile-btn');
   if (nameBtn && nameBtn.dataset.id) {
-    const entry = callHistory.find((h) => h.clientId === nameBtn.dataset.id);
+    const entry = historyEntries().find((h) => h.clientId === nameBtn.dataset.id);
     closeHistoryPanel();
     openUserProfile({
       clientId: nameBtn.dataset.id,
@@ -5640,6 +5813,7 @@ callMainBtn.addEventListener('click', () => {
     }, 4000);
   } else if (mode === 'loading') {
     // Cancel an in-progress search/connection.
+    cancelOutgoingCallBack();
     socket.emit('leave');
     goIdleOnCallScreen();
   } else {
@@ -6186,7 +6360,8 @@ socket.on('chat-blocked', ({ reason } = {}) => {
   const el = document.createElement('div');
   el.className = 'chat-msg system';
   el.textContent = reason === 'call-required' ? t('errCallRequiredToChat')
-    : reason === 'unsafe' ? t('errUnsafeMessage') : t('errNoLinks');
+    : reason === 'unsafe' ? t('errUnsafeMessage')
+    : reason === 'rate' ? t('errSlowDown') : t('errNoLinks');
   target.appendChild(el);
   target.scrollTop = target.scrollHeight;
   if (reason === 'call-required') applyFriendChatLock();
@@ -6603,14 +6778,13 @@ function syncNavCurrent() {
 
 function renderRailHistory() {
   if (!railHistoryList) return;
-  if (callHistory.length === 0) {
+  const entries = historyEntries();
+  if (entries.length === 0) {
     railHistoryList.innerHTML = `<p class="tl-rail-empty">${escapeHtml(t('railNoCalls'))}</p>`;
     return;
   }
   railHistoryList.innerHTML = '';
-  [...callHistory].reverse().slice(0, 4).forEach((entry) => {
-    const mins = Math.floor(entry.durationSeconds / 60);
-    const secs = entry.durationSeconds % 60;
+  entries.slice(0, 4).forEach((entry) => {
     const row = document.createElement('button');
     row.type = 'button';
     row.className = 'tl-rail-row history-profile-btn';
@@ -6622,7 +6796,7 @@ function renderRailHistory() {
       </span>
       <span class="tl-rail-row-text">
         <strong>${getFlagImg(entry.countryCode)} ${escapeHtml(entry.username)}</strong>
-        <small>${mins}:${secs.toString().padStart(2, '0')}</small>
+        <small>${escapeHtml(historySubline(entry))}</small>
       </span>
     `;
     railHistoryList.appendChild(row);
@@ -6665,7 +6839,11 @@ function renderRailFriends() {
 if (railHistoryList) {
   railHistoryList.addEventListener('click', (e) => {
     const btn = e.target.closest('.history-profile-btn');
-    if (btn && btn.dataset.id) openUserProfile(btn.dataset.id);
+    if (!btn || !btn.dataset.id) return;
+    // openUserProfile takes a person, not an id - handed the bare id it
+    // returned without doing anything, so these rows were dead to the touch.
+    const entry = historyEntries().find((h) => h.clientId === btn.dataset.id);
+    openUserProfile(entry || { clientId: btn.dataset.id });
   });
 }
 if (railFriendsList) {
@@ -6806,6 +6984,7 @@ socket.on('random-fallback', () => {
 
 socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
   markSearchAcked();
+  clearOutgoingCallBack();
   // A deferred-UI callback (rule 11) is on the friends menu with a spinner -
   // now that the peer accepted, restore the icon and enter the call screen.
   restoreCallbackSpinner();
@@ -6975,6 +7154,25 @@ function restoreCallbackSpinner() {
 const CALLBACK_COOLDOWN_MS = 10000;
 let lastCallbackAt = 0;
 
+// The call-back this user is ringing out on, if any. It used to spin forever
+// when nobody answered, and cancelling left the other side's banner offering
+// a call nobody was waiting on.
+const CALLBACK_RING_MS = 45000;
+let outgoingCallBack = null; // { targetClientId, timer }
+
+function clearOutgoingCallBack() {
+  if (!outgoingCallBack) return;
+  clearTimeout(outgoingCallBack.timer);
+  outgoingCallBack = null;
+}
+
+// Take the ask back on the server (and so off their screen).
+function cancelOutgoingCallBack() {
+  if (!outgoingCallBack) return;
+  socket.emit('call-back-cancel', { targetClientId: outgoingCallBack.targetClientId });
+  clearOutgoingCallBack();
+}
+
 async function requestCallBack(targetClientId, targetUsername, opts = {}) {
   if (isSearching) {
     restoreCallbackSpinner();
@@ -7010,6 +7208,25 @@ async function requestCallBack(targetClientId, targetUsername, opts = {}) {
     setSubText('subWaitingAccept');
   }
 
+  clearOutgoingCallBack();
+  outgoingCallBack = {
+    targetClientId,
+    timer: setTimeout(() => {
+      if (!outgoingCallBack || outgoingCallBack.targetClientId !== targetClientId) return;
+      cancelOutgoingCallBack();
+      if (activeCallbackSpinner) {
+        isSearching = false;
+        if (localStream) {
+          localStream.getTracks().forEach((tr) => tr.stop());
+          localStream = null;
+        }
+        restoreCallbackSpinner();
+      } else {
+        abandonCallBack();
+      }
+      showToast(t('callbackNoAnswer'));
+    }, CALLBACK_RING_MS),
+  };
   socket.emit('call-back-request', { targetClientId });
 }
 
@@ -7075,11 +7292,19 @@ callBackDeclineBtn.addEventListener('click', () => {
 });
 
 socket.on('call-back-request', ({ fromClientId, username }) => {
-  showCallBackBanner(fromClientId, username);
+  showCallBackBanner(fromClientId, labelForClientId(fromClientId, username));
+});
+
+// The caller hung up before we answered: stop offering the call.
+socket.on('call-back-cancelled', ({ fromClientId } = {}) => {
+  if (pendingCallBackFrom === fromClientId) hideCallBackBanner();
+  notifData = notifData.filter((n) => !(n.type === 'call_back_request' && n.fromClientId === fromClientId));
+  renderNotifications();
 });
 
 socket.on('call-back-request-result', ({ ok, reason }) => {
   if (ok) return;
+  clearOutgoingCallBack();
   // Deferred (friends-list) callback: keep the friends panel up. On "offline"
   // we grey the button + offer "send request for later"; other failures just
   // restore the green icon. We never resetUI() here, so the user isn't yanked
@@ -7099,6 +7324,8 @@ socket.on('call-back-request-result', ({ ok, reason }) => {
       showToast(t('friendCallsOff'));
     } else if (reason === 'blocked') {
       showError(t('errBlocked'));
+    } else if (reason === 'rate') {
+      showError(t('errCallbackRate'));
     } else {
       showError(t('errCallbackFailed'));
     }
@@ -7109,6 +7336,8 @@ socket.on('call-back-request-result', ({ ok, reason }) => {
   else if (reason === 'calls-off') showError(t('friendCallsOff'));
   else if (reason === 'busy') showError(t('errBusy'));
   else if (reason === 'blocked') showError(t('errBlocked'));
+  else if (reason === 'rate') showError(t('errCallbackRate'));
+  else if (reason === 'expired') showError(t('errCallbackExpired'));
   else showError(t('errCallbackFailed'));
 });
 
@@ -7122,10 +7351,12 @@ socket.on('call-back-later-result', ({ ok, reason, targetClientId }) => {
   }
   showError(reason === 'blocked' ? t('errBlocked')
     : reason === 'calls-off' ? t('friendCallsOff')
+    : reason === 'rate' ? t('errCallbackRate')
     : t('errCallbackFailed'));
 });
 
 socket.on('call-back-declined', ({ username }) => {
+  clearOutgoingCallBack();
   abandonCallBack();
   showError(t('errDeclined', { name: username }));
 });
@@ -7420,11 +7651,13 @@ socket.on('friend-request-result', ({ ok, limitReached } = {}) => {
 });
 
 // --- "James from UK is online" - friend came online notification -------------
-socket.on('friend-online', ({ username, countryCode, country } = {}) => {
+socket.on('friend-online', ({ clientId, username, countryCode, country } = {}) => {
   // Same 'XX' / 'Unknown' guard as the match line: no place is better than a
   // placeholder, and the toast already has a no-country wording.
   const where = (countryCode && countryCode !== 'XX') ? (getCountryName(countryCode) || country || '') : '';
-  showToast(where ? t('friendOnlineToast', { name: username, country: where }) : t('friendOnlineToastNoCountry', { name: username }));
+  // A friend you renamed comes online under the name you gave them.
+  const name = labelForClientId(clientId, username);
+  showToast(where ? t('friendOnlineToast', { name, country: where }) : t('friendOnlineToastNoCountry', { name }));
   vibrate([30, 40, 30]);
 });
 

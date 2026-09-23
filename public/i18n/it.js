@@ -197,3 +197,17 @@ window.I18N_STRINGS.it = {
   "filtersAdUnlockText": "Piano gratuito: fino a 2 paesi per lista, filtro di genere bloccato. Guarda un breve annuncio per sbloccare tutto per 5 minuti - gratis."
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("it");
+
+// Social: presence, typing, previews, unsend
+Object.assign(window.I18N_STRINGS.it, {
+  "lastSeen": "Ultimo accesso {time}",
+  "friendTyping": "sta scrivendo…",
+  "youSaid": "Tu: {text}",
+  "gifMessage": "GIF",
+  "unsend": "Annulla invio",
+  "copyText": "Copia",
+  "alreadyFriendsMsg": "Siete già amici.",
+  "friendReqPendingMsg": "La tua richiesta di amicizia è ancora in attesa di risposta.",
+  "friendReqFailed": "Impossibile inviare la richiesta di amicizia.",
+  "tapAgainToRemove": "Tocca di nuovo per rimuovere"
+});

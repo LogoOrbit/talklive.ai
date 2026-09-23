@@ -197,3 +197,17 @@ window.I18N_STRINGS.fa = {
   "filtersAdUnlockText": "طرح رایگان: حداکثر ۲ کشور در هر فهرست، فیلتر جنسیت قفل است. یک تبلیغ کوتاه ببینید و همه‌چیز را برای ۵ دقیقه باز کنید - رایگان."
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("fa");
+
+// Social: presence, typing, previews, unsend
+Object.assign(window.I18N_STRINGS.fa, {
+  "lastSeen": "آخرین بازدید {time}",
+  "friendTyping": "در حال نوشتن…",
+  "youSaid": "شما: {text}",
+  "gifMessage": "GIF",
+  "unsend": "لغو ارسال",
+  "copyText": "کپی",
+  "alreadyFriendsMsg": "شما از قبل دوست هستید.",
+  "friendReqPendingMsg": "درخواست دوستی شما هنوز منتظر پاسخ است.",
+  "friendReqFailed": "ارسال درخواست دوستی ممکن نشد.",
+  "tapAgainToRemove": "برای حذف دوباره بزنید"
+});

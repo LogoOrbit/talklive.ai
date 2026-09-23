@@ -351,6 +351,11 @@
   cursor: pointer;
 }
 .cx-menu-item:active { background: var(--accent-soft, rgba(108, 92, 231, 0.16)); }
+.cx-menu-item[hidden] { display: none; }
+.cx-menu-item.cx-menu-danger { color: var(--danger, #e5484d); }
+@media (hover: hover) {
+  .cx-menu-item:hover { background: var(--accent-soft, rgba(108, 92, 231, 0.12)); }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .cx-menu, .cx-flash { animation: none; }

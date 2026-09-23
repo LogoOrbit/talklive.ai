@@ -197,3 +197,17 @@ window.I18N_STRINGS.id = {
   "filtersAdUnlockText": "Paket gratis: hingga 2 negara per daftar, filter gender terkunci. Tonton iklan singkat untuk membuka semuanya selama 5 menit - gratis."
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("id");
+
+// Social: presence, typing, previews, unsend
+Object.assign(window.I18N_STRINGS.id, {
+  "lastSeen": "Terakhir dilihat {time}",
+  "friendTyping": "mengetik…",
+  "youSaid": "Kamu: {text}",
+  "gifMessage": "GIF",
+  "unsend": "Batalkan kirim",
+  "copyText": "Salin",
+  "alreadyFriendsMsg": "Kalian sudah berteman.",
+  "friendReqPendingMsg": "Permintaan pertemananmu masih menunggu jawaban.",
+  "friendReqFailed": "Tidak dapat mengirim permintaan pertemanan.",
+  "tapAgainToRemove": "Ketuk lagi untuk menghapus"
+});

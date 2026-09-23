@@ -287,7 +287,7 @@ const I18N_STRINGS = {
     // Not "historyHint": /chat defines that key too, further down, and the
     // later definition wins - so the call list used to describe the text-chat
     // list. The two lists say different things; they get two keys.
-    "callHistoryHint": "This session only - it clears when you close or reload the page. Tap the green button to call someone back if they're online.",
+    "callHistoryHint": "The last people you talked to, by voice or text. Message them, or tap the green button to call back if they're online.",
     "noCallsYet": "No calls yet.",
     "callBack": "Call back",
     "friendOffline": "Offline - tap to retry",
@@ -301,6 +301,16 @@ const I18N_STRINGS = {
     "historyHint": "The last 10 people you chatted with. Message someone back if you lost them.",
     "noHistoryYet": "No chats yet. Start chatting and the people you meet show up here.",
     "messageBack": "Message back",
+    "lastSeen": "Last seen {time}",
+    "friendTyping": "typing…",
+    "youSaid": "You: {text}",
+    "gifMessage": "GIF",
+    "unsend": "Unsend",
+    "copyText": "Copy",
+    "alreadyFriendsMsg": "You're already friends.",
+    "friendReqPendingMsg": "Your friend request is still waiting for an answer.",
+    "friendReqFailed": "Couldn't send the friend request.",
+    "tapAgainToRemove": "Tap again to remove",
     "myFriends": "My Friends",
     "noFriendsYet": "No friends yet. Tap \"Add friend\" during a call to send a request.",
     "noFriendsYetChat": "No friends yet. Tap \"Add friend\" while you are chatting with someone to send a request.",
@@ -655,6 +665,11 @@ const I18N_STRINGS = {
     "errBlocked": "You can no longer contact this person.",
     "errCallbackFailed": "Could not start the call back.",
     "errDeclined": "{name} declined the call back.",
+    "errCallbackExpired": "That call request has expired. Ask them to call again.",
+    "errCallbackRate": "Too many call attempts. Wait a minute and try again.",
+    "callbackNoAnswer": "No answer. They'll see that you called.",
+    "errSlowDown": "You're sending messages too fast. Slow down a little.",
+    "nowFriends": "You're now friends!",
     "confirmReport": "Report and block this person? You will not be matched with them again.",
     "notifWantsFriends": "{name} wants to be friends",
     "notifAccepted": "{name} accepted your friend request",
@@ -831,7 +846,7 @@ function applyI18n() {
 
 // Non-English dictionaries load on demand from /i18n/<lang>.js. Until the file
 // arrives t() falls back to English, then the UI re-translates once it lands.
-const I18N_VERSION = '20260922visitors';
+const I18N_VERSION = '20260922social2';
 const i18nLoading = {};
 window.__i18nLangLoaded = function (lang) {
   delete i18nLoading[lang];

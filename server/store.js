@@ -144,7 +144,7 @@ function defaults() {
     // chatHistory: clientId -> [{ clientId, username, countryCode, ts }] - the
     // last few random chat partners, so a user can message someone back after
     // accidentally losing them (kept to the newest 10 per user).
-    social: { friends: {}, friendChats: {}, blocks: {}, chatHistory: {} },
+    social: { friends: {}, friendChats: {}, blocks: {}, chatHistory: {}, friendRequests: {}, sentRequests: {}, notifications: {} },
     analytics: {
       totals: { visits: 0, connections: 0, matches: 0, messages: 0, reports: 0, accounts: 0, bots: 0 },
       // 'YYYY-MM-DD' (UTC) -> { visits, uniques, uniqueSet, connections, matches,
@@ -1235,6 +1235,12 @@ function saveSocial(social) {
     friendChats: social.friendChats || {},
     blocks: social.blocks || {},
     chatHistory: social.chatHistory || {},
+    // Pending requests and the in-app inbox (unread messages, call-back asks)
+    // have to survive a deploy too: deploys are automatic on push, and losing
+    // them made a friend request sent before one silently vanish.
+    friendRequests: social.friendRequests || {},
+    sentRequests: social.sentRequests || {},
+    notifications: social.notifications || {},
   };
   save();
 }

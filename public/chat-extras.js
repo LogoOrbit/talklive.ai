@@ -129,6 +129,7 @@
   //   messages  scrolling message container
   //   send(payload)          required - { text, gif, replyTo, id }
   //   react(id, emoji, on)   optional - omit to disable reactions
+  //   unsend(id)             optional - offers "Unsend" on your own messages
   //   msgSelector  CSS selector matching one message bubble ('.msg')
   //   gifs         false to force the GIF button off for this surface
   //
@@ -139,6 +140,7 @@
     var messages = opts.messages;
     var msgSelector = opts.msgSelector || '.msg';
     var canReact = typeof opts.react === 'function';
+    var canUnsend = typeof opts.unsend === 'function';
 
     // id -> { el, text, mine }. Rebuilt whenever the host calls reset(), which
     // it does on every new conversation, so this never grows unbounded.
@@ -392,18 +394,38 @@
         }
         menu.appendChild(row);
       }
-      var reply = el('button', 'cx-menu-item', tr('reply', 'Reply'));
-      reply.type = 'button';
-      reply.dataset.act = 'reply';
-      menu.appendChild(reply);
+      var item = function (act, label) {
+        var b = el('button', 'cx-menu-item', label);
+        b.type = 'button';
+        b.dataset.act = act;
+        menu.appendChild(b);
+        return b;
+      };
+      item('reply', tr('reply', 'Reply'));
+      item('copy', tr('copyText', 'Copy'));
+      if (canUnsend) item('unsend', tr('unsend', 'Unsend')).classList.add('cx-menu-danger');
       menu.addEventListener('click', function (e) {
         var btn = e.target.closest('button');
         if (!btn || !menuTarget) return;
-        if (btn.dataset.act === 'reply') startReply(menuTarget);
+        var act = btn.dataset.act;
+        if (act === 'reply') startReply(menuTarget);
+        else if (act === 'copy') copyText(menuTarget);
+        else if (act === 'unsend') opts.unsend(menuTarget);
         else if (btn.dataset.emoji) toggleReaction(menuTarget, btn.dataset.emoji);
         hideMenu();
       });
       document.body.appendChild(menu);
+    }
+
+    function copyText(id) {
+      var rec = index[id];
+      if (!rec || !rec.plain) return;
+      var done = function () { buzz(10); };
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(rec.plain).then(done, function () {});
+        }
+      } catch (e) { /* clipboard blocked - nothing to do */ }
     }
 
     function showMenu(id, x, y) {
@@ -412,6 +434,11 @@
       menuTarget = id;
       // Mark which reactions I have already given, so the menu doubles as state.
       var rec = index[id];
+      // Copy only makes sense for words, Unsend only for your own message.
+      var copyBtn = menu.querySelector('[data-act="copy"]');
+      if (copyBtn) copyBtn.hidden = !rec.plain;
+      var unsendBtn = menu.querySelector('[data-act="unsend"]');
+      if (unsendBtn) unsendBtn.hidden = !rec.mine;
       var btns = menu.querySelectorAll('.cx-menu-react');
       for (var i = 0; i < btns.length; i++) {
         btns[i].classList.toggle('on', !!(rec.mineReacts && rec.mineReacts[btns[i].dataset.emoji]));
@@ -425,8 +452,13 @@
         x = b.left + b.width / 2;
         y = b.top + b.height / 2;
       }
-      // Measure once it is laid out, then clamp inside the viewport.
-      var r = menu.getBoundingClientRect();
+      // Measure once it is laid out, then clamp inside the viewport. Parked at
+      // the origin first so it lays out at its full width (left where it was
+      // last time it shrink-wraps against the right edge), and measured with
+      // offset sizes, which the scale-in animation does not distort.
+      menu.style.left = '0px';
+      menu.style.top = '0px';
+      var r = { width: menu.offsetWidth, height: menu.offsetHeight };
       var left = Math.min(Math.max(8, x - r.width / 2), Math.max(8, window.innerWidth - r.width - 8));
       var top = y - r.height - 10;
       if (top < 8) top = Math.min(y + 14, Math.max(8, window.innerHeight - r.height - 8));
@@ -759,6 +791,7 @@
           el: node,
           mine: !!data.mine,
           text: data.text || (data.gif ? 'GIF' : ''),
+          plain: data.text || '',
         };
         index[id] = rec;
 
@@ -817,6 +850,14 @@
       // sends from its own submit handler.
       compose: function (text) {
         return sendPayload({ text: text });
+      },
+
+      // A message was taken back: forget it, and drop the reply if it was the
+      // one being answered.
+      forget: function (id) {
+        if (replyTo === id) cancelReply();
+        if (menuTarget === id) hideMenu();
+        delete index[id];
       },
 
       replyTarget: function () { return replyTo; },

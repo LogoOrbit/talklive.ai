@@ -197,3 +197,17 @@ window.I18N_STRINGS.ur = {
   "filtersAdUnlockText": "مفت پلان: ہر فہرست میں زیادہ سے زیادہ 2 ممالک، جنس کا فلٹر مقفل ہے۔ ایک مختصر اشتہار دیکھیں اور 5 منٹ کے لیے سب کچھ ان لاک کریں - بالکل مفت۔"
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("ur");
+
+// Social: presence, typing, previews, unsend
+Object.assign(window.I18N_STRINGS.ur, {
+  "lastSeen": "آخری بار {time}",
+  "friendTyping": "لکھ رہے ہیں…",
+  "youSaid": "آپ: {text}",
+  "gifMessage": "GIF",
+  "unsend": "بھیجنا منسوخ کریں",
+  "copyText": "کاپی",
+  "alreadyFriendsMsg": "آپ پہلے سے دوست ہیں۔",
+  "friendReqPendingMsg": "آپ کی دوستی کی درخواست ابھی جواب کی منتظر ہے۔",
+  "friendReqFailed": "دوستی کی درخواست نہیں بھیجی جا سکی۔",
+  "tapAgainToRemove": "ہٹانے کے لیے دوبارہ ٹیپ کریں"
+});
