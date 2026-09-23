@@ -6979,6 +6979,12 @@ html.perf-lite .side-panel { box-shadow: none; }
   color: var(--muted);
 }
 
+.friend-id-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
 .friend-id-copy,
 .friend-id-search .btn {
   padding: 8px 16px;
@@ -6997,7 +7003,7 @@ html.perf-lite .side-panel { box-shadow: none; }
   padding: 9px 12px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: var(--bg);
+  background: var(--bg-1);
   color: var(--text);
   font: inherit;
   font-size: 14px;

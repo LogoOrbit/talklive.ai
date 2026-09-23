@@ -91,6 +91,13 @@ async function waitUp() {
     ok('malformed ID is refused', (await search(a.sock, 'abc')).ok === false);
     ok('unknown ID is not found', (await search(a.sock, 'G-ZZZZZZ')).ok === false);
 
+    // --- Shareable link ------------------------------------------------
+    const link = await fetch(`${BASE}/add/${b.id.friendId.toLowerCase()}`, { redirect: 'manual' });
+    ok('/add/<id> redirects into the app with the ID', link.status === 302
+      && link.headers.get('location') === `/?add=${encodeURIComponent(b.id.friendId)}`, link.headers.get('location'));
+    const badLink = await fetch(`${BASE}/add/nope`, { redirect: 'manual' });
+    ok('/add/<junk> goes home', badLink.status === 302 && badLink.headers.get('location') === '/');
+
     // --- Adding by ID without ever having met ----------------------------
     const bGotRequest = once(b.sock, 'state-sync');
     const sent = once(a.sock, 'friend-request-result');
