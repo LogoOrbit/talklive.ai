@@ -2491,8 +2491,10 @@ function renderGoogleButtons() {
     // away the slot's contents would take the face with it.
     const host = slot.querySelector('.google-btn-real') || slot;
     host.innerHTML = '';
+    // 'outline' on every theme: Google's white pill, the look the site
+    // wants. It must stay visible - see the note on .google-btn-slot.
     window.google.accounts.id.renderButton(host, {
-      type: 'standard', theme: dark ? 'filled_black' : 'outline', size: 'large',
+      type: 'standard', theme: 'outline', size: 'large',
       text, shape: 'pill', logo_alignment: 'center', width,
     });
     slot.dataset.rendered = key;
