@@ -19,6 +19,9 @@ A random audio chat app - pairs strangers for live, audio-only conversations. Bu
 - Installable as an app (service worker + manifest), with an offline page
 - Web push for friend messages and call-backs, so a friendship survives the tab
   being closed
+- Friends: pin favourites to the top, search a long list, mute a conversation
+  (silent, still counted as unread); messages show as "sending" until the server
+  confirms them and are resent automatically after a reconnect
 - Referral links that pay both sides once the invited person actually talks
 - Stripe subscriptions for TalkLive Plus
 

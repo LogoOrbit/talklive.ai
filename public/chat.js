@@ -935,6 +935,13 @@
     if (partnerHere) socket.emit('chat-away', { away: document.visibilityState === 'hidden' });
   }
   document.addEventListener('visibilitychange', reportAway);
+  // Separately, tell the server whether anyone is looking at this tab, so a
+  // friend's message that lands while it is in the background also reaches
+  // the phone's notification tray.
+  function reportVisibility() {
+    if (socket.connected) socket.emit('app-visibility', { hidden: document.visibilityState === 'hidden' });
+  }
+  document.addEventListener('visibilitychange', reportVisibility);
   window.addEventListener('pagehide', function () {
     if (partnerHere || searching) socket.emit('leave');
   });
@@ -1564,7 +1571,9 @@
     showCountOutsidePage(badgeCount);
 
     setTabCount(friendsTabCount, friendsState.friends.length);
-    setTabCount(requestsTabCount, friendsState.requests.length + friendsState.sent.length);
+    // Red means waiting on you, as in the call app. Requests this user sent
+    // are waiting on someone else: listed below, never counted as an alert.
+    setTabCount(requestsTabCount, friendsState.requests.length);
     renderSentRequests();
 
     // Each list says what it is and how many are in it. Without the headings a
@@ -1649,6 +1658,7 @@
     });
   }
 
+  var mutedChats = [];
   socket.on('state-sync', function (data) {
     data = data || {};
     friendsState.friends = data.friends || [];
@@ -1656,6 +1666,7 @@
     friendsState.sent = data.sentRequests || [];
     friendsState.notifications = data.notifications || [];
     historyState = data.chatHistory || [];
+    mutedChats = data.muted || [];
     renderFriends();
     renderHistory();
     renderFriendChatStatus();
@@ -1740,7 +1751,8 @@
       ? '<button type="button" class="btn btn-secondary" data-act="chat">' + escapeHtml(t('chat')) + '</button>'
       : relation === 'pending'
         ? '<button type="button" class="btn btn-secondary" disabled>' + escapeHtml(t('pending')) + '</button>'
-        : '<button type="button" class="btn btn-primary" data-act="add">' + escapeHtml(t('addFriend')) + '</button>';
+        // They already asked: adding them back is accepting, so say that.
+        : '<button type="button" class="btn btn-primary" data-act="add">' + escapeHtml(t(relation === 'incoming' ? 'confirm' : 'addFriend')) + '</button>';
     var sub = [user.friendId, user.temporary ? t('friendIdGuest') : '', user.online ? t('online') : '']
       .filter(Boolean).join(' · ');
     friendIdResult.classList.remove('hidden', 'is-error');
@@ -1784,10 +1796,11 @@
   // ones come with a full state-sync), so track them locally too.
   socket.on('notification', function (n) {
     if (!n) return;
-    if (n.type === 'message' && n.fromClientId === activeFriendChatId) return; // already reading it
+    if (n.type === 'message' && friendChatOnScreen(n.fromClientId)) return; // already reading it
     friendsState.notifications.push(n);
     var who = friendLabel(findPerson(n.fromClientId || n.byClientId)) || n.username || t('someone');
-    if (n.type === 'message') { soundReceive(); vibrate(20); }
+    // A conversation muted on either page stays quiet on both.
+    if (n.type === 'message') { if (mutedChats.indexOf(n.fromClientId) === -1) { soundReceive(); vibrate(20); } }
     else if (n.type === 'friend_request' || n.type === 'friend_accepted') vibrate([20, 40, 20]);
     if (n.type === 'friend_request') socialToast(t('notifWantsFriends', { name: who }));
     else if (n.type === 'friend_accepted') socialToast(t('notifAccepted', { name: who }));
@@ -1923,6 +1936,7 @@
     var el = document.createElement('div');
     el.className = 'msg ' + who;
     el.dataset.ts = String(ts);
+    if (meta && meta.id) el.dataset.cxId = meta.id;
     if (text) {
       var body = document.createElement('span');
       body.className = 'msg-text';
@@ -1954,18 +1968,7 @@
     input: friendChatInput,
     messages: friendChatMsgs,
     msgSelector: '.msg',
-    send: function (payload) {
-      if (!activeFriendChatId) return false;
-      if (!payload.text && !payload.gif) return false;
-      socket.emit('friend-message', {
-        toClientId: activeFriendChatId,
-        text: (payload.text || '').slice(0, 1000),
-        id: payload.id,
-        replyTo: payload.replyTo,
-        gif: payload.gif,
-      });
-      return true;
-    },
+    send: function (payload) { return sendFriendMessage(payload); },
     react: function (id, emoji, on) {
       if (!activeFriendChatId) return;
       socket.emit('friend-reaction', { toClientId: activeFriendChatId, id: id, emoji: emoji, on: on });
@@ -1974,6 +1977,143 @@
       if (activeFriendChatId) socket.emit('friend-message-delete', { toClientId: activeFriendChatId, id: id });
     },
   }) : null;
+
+  // --- Sending: shown at once, settled by the server -------------------------
+  // A direct message appears the instant it is sent, faded while on its way,
+  // and is settled by 'friend-message-sent'. One that never gets there is
+  // marked "Not sent" with a retry instead of vanishing, and anything still
+  // waiting goes again once the socket registers (the server stores an id once).
+  var friendOutbox = {}; // id -> { toClientId, payload, tries, timer }
+  var FRIEND_SEND_TIMEOUT_MS = 12000;
+  var FRIEND_SEND_MAX_TRIES = 5;
+  var friendDrafts = {}; // clientId -> unsent text
+
+  function msgNode(id) {
+    if (!id) return null;
+    return friendChatMsgs.querySelector('[data-cx-id="' + (window.CSS && CSS.escape ? CSS.escape(id) : id) + '"]');
+  }
+  function paintOutboxState(id, state) {
+    var node = msgNode(id);
+    if (!node) return;
+    node.classList.toggle('is-pending', state === 'pending');
+    node.classList.toggle('is-failed', state === 'failed');
+    var retry = node.nextElementSibling;
+    if (retry && retry.classList.contains('msg-retry')) retry.remove();
+    if (state === 'failed') {
+      retry = document.createElement('button');
+      retry.type = 'button';
+      retry.className = 'msg-retry';
+      retry.setAttribute('data-retry-id', id);
+      retry.textContent = t('msgNotSentRetry');
+      node.parentNode.insertBefore(retry, node.nextSibling);
+    }
+  }
+  function emitOutbox(id) {
+    var entry = friendOutbox[id];
+    if (!entry) return;
+    entry.tries += 1;
+    entry.failed = false;
+    clearTimeout(entry.timer);
+    entry.timer = setTimeout(function () {
+      if (!friendOutbox[id]) return;
+      friendOutbox[id].failed = true;
+      paintOutboxState(id, 'failed');
+    }, FRIEND_SEND_TIMEOUT_MS);
+    var wire = { toClientId: entry.toClientId };
+    for (var k in entry.payload) wire[k] = entry.payload[k];
+    socket.emit('friend-message', wire);
+  }
+  function retryFriendMessage(id) {
+    if (!friendOutbox[id]) return;
+    friendOutbox[id].tries = 0;
+    paintOutboxState(id, 'pending');
+    emitOutbox(id);
+  }
+  function settleFriendMessage(id) {
+    var entry = friendOutbox[id];
+    if (!entry) return;
+    clearTimeout(entry.timer);
+    delete friendOutbox[id];
+    paintOutboxState(id, 'sent');
+  }
+  // Refused for good: take the bubble back and give the text back to the
+  // composer, so a link or a typo can be fixed rather than retyped.
+  function dropFriendMessage(id) {
+    var entry = friendOutbox[id];
+    if (!entry) return;
+    clearTimeout(entry.timer);
+    delete friendOutbox[id];
+    var node = msgNode(id);
+    if (node) {
+      var retry = node.nextElementSibling;
+      if (retry && retry.classList.contains('msg-retry')) retry.remove();
+      if (friendExtras) friendExtras.forget(id);
+      node.remove();
+    }
+    if (entry.toClientId === activeFriendChatId && !friendChatInput.value && entry.payload.text) {
+      friendChatInput.value = entry.payload.text;
+      friendDrafts[entry.toClientId] = entry.payload.text;
+    }
+  }
+  friendChatMsgs.addEventListener('click', function (e) {
+    var retry = e.target.closest && e.target.closest('.msg-retry');
+    if (retry) retryFriendMessage(retry.getAttribute('data-retry-id'));
+  });
+
+  function sendFriendMessage(payload) {
+    var toClientId = activeFriendChatId;
+    var text = (payload.text || '').slice(0, 1000);
+    if (!toClientId || (!text && !payload.gif)) return false;
+    if (text && LINK_RE.test(text)) { friendSystemNote(t('chatLinkBlocked')); return false; }
+    if (text && UNSAFE_RE.test(text)) { friendSystemNote(t('errUnsafeMessage')); return false; }
+    var id = payload.id || ('m' + Math.random().toString(36).slice(2, 10));
+    var wire = { text: text, id: id, replyTo: payload.replyTo || null, gif: payload.gif || null };
+    var ts = Date.now();
+    appendFriendMsg(text, 'me', { id: id, replyTo: wire.replyTo, gif: wire.gif, ts: ts });
+    paintOutboxState(id, 'pending');
+    friendOutbox[id] = { toClientId: toClientId, payload: wire, tries: 0, timer: null };
+    delete friendDrafts[toClientId];
+    noteLastMessage(toClientId, { id: id, mine: true, text: text, gif: !!wire.gif, ts: ts });
+    renderFriends();
+    renderHistory();
+    emitOutbox(id);
+    return true;
+  }
+
+  function friendSystemNote(text) {
+    var el = document.createElement('div');
+    el.className = 'msg system';
+    el.textContent = text;
+    friendChatMsgs.appendChild(el);
+    friendChatMsgs.scrollTop = friendChatMsgs.scrollHeight;
+  }
+
+  // Whether this conversation is in front of the user: open, in a tab being
+  // looked at. A chat left open in a background tab used to send "Seen" for
+  // messages nobody had read.
+  function friendChatOnScreen(clientId) {
+    return !!clientId && clientId === activeFriendChatId
+      && friendChatPanel.classList.contains('open')
+      && document.visibilityState === 'visible';
+  }
+  function markActiveChatRead(always) {
+    var id = activeFriendChatId;
+    if (!friendChatOnScreen(id)) return;
+    var unread = friendsState.notifications.some(function (n) {
+      return n.type === 'message' && n.fromClientId === id;
+    });
+    if (!always && !unread) return;
+    socket.emit('mark-messages-read', { friendClientId: id });
+    if (messageSeenEnabled) socket.emit('chat-seen', { friendClientId: id });
+    if (unread) {
+      friendsState.notifications = friendsState.notifications.filter(function (n) {
+        return !(n.type === 'message' && n.fromClientId === id);
+      });
+      renderFriends();
+      renderHistory();
+    }
+  }
+  document.addEventListener('visibilitychange', function () { markActiveChatRead(false); });
 
   // --- Header status: typing / online / last seen --------------------------
   var friendChatStatus = $('friendChatStatus');
@@ -2000,6 +2140,10 @@
   });
   var friendTypingAt = 0;
   friendChatInput.addEventListener('input', function () {
+    if (activeFriendChatId) {
+      if (friendChatInput.value.trim()) friendDrafts[activeFriendChatId] = friendChatInput.value;
+      else delete friendDrafts[activeFriendChatId];
+    }
     if (!activeFriendChatId || !friendChatInput.value) return;
     var now = Date.now();
     if (now - friendTypingAt < 2000) return;
@@ -2023,6 +2167,9 @@
 
   function openFriendChat(friend) {
     activeFriendChatId = friend.clientId;
+    // Each conversation keeps its own unsent text: it used to stay in the box
+    // when another chat was opened, and went to the wrong person.
+    friendChatInput.value = friendDrafts[friend.clientId] || '';
     $('friendChatTitle').textContent = friendLabel(friend)
       ? t('chatWith', { name: friendLabel(friend) })
       : t('chat');
@@ -2074,6 +2221,11 @@
         return;
       }
       disarmBlock();
+      // Blocking the stranger in the live chat ends that chat too.
+      if (partnerHere && currentPartner && currentPartner.clientId === target) {
+        socket.emit('leave');
+        onPartnerLeft({ reason: 'blocked' });
+      }
       socket.emit('block-friend', { friendClientId: target });
       closeFriendChat();
       socialToast(t('userBlocked'));
@@ -2087,8 +2239,8 @@
     if (!text || !activeFriendChatId) return;
     if (friendExtras) {
       if (friendExtras.compose(text) === false) return;
-    } else {
-      socket.emit('friend-message', { toClientId: activeFriendChatId, text: text.slice(0, 1000) });
+    } else if (sendFriendMessage({ text: text }) === false) {
+      return;
     }
     friendChatInput.value = '';
     friendChatInput.focus();
@@ -2098,11 +2250,21 @@
     if (!data || data.friendClientId !== activeFriendChatId) return;
     friendChatMsgs.innerHTML = '';
     if (friendExtras) friendExtras.reset();
+    var stored = {};
     (data.messages || []).forEach(function (m) {
+      stored[m.id] = true;
       appendFriendMsg(m.text, m.from === activeFriendChatId ? 'them' : 'me', m);
       if (m.seen && m.from !== activeFriendChatId) {
         friendSeenTs[activeFriendChatId] = Math.max(friendSeenTs[activeFriendChatId] || 0, m.ts || Date.now());
       }
+    });
+    // Messages still on their way are not in the server's copy yet - keep them.
+    Object.keys(friendOutbox).forEach(function (id) {
+      var entry = friendOutbox[id];
+      if (entry.toClientId !== activeFriendChatId) return;
+      if (stored[id]) { settleFriendMessage(id); return; }
+      appendFriendMsg(entry.payload.text, 'me', { id: id, replyTo: entry.payload.replyTo, gif: entry.payload.gif });
+      paintOutboxState(id, entry.failed ? 'failed' : 'pending');
     });
     renderSeenLabel();
   });
@@ -2110,7 +2272,9 @@
     return !!(id && friendChatMsgs.querySelector('[data-cx-id="' + (window.CSS && CSS.escape ? CSS.escape(id) : id) + '"]'));
   }
   socket.on('friend-message-sent', function (data) {
-    if (!data || (data.toClientId === activeFriendChatId && onScreen(data.id))) return;
+    if (!data) return;
+    settleFriendMessage(data.id);
+    if (data.toClientId === activeFriendChatId && onScreen(data.id)) return;
     noteLastMessage(data.toClientId, { id: data.id, mine: true, text: data.text || '', gif: !!data.gif, ts: data.ts });
     if (data.toClientId === activeFriendChatId) appendFriendMsg(data.text, 'me', data);
     renderFriends();
@@ -2124,8 +2288,7 @@
     if (data.fromClientId === activeFriendChatId) {
       appendFriendMsg(data.text, 'them', data);
       soundReceive();
-      socket.emit('mark-messages-read', { friendClientId: data.fromClientId });
-      if (messageSeenEnabled) socket.emit('chat-seen', { friendClientId: data.fromClientId });
+      markActiveChatRead(true);
     }
     // Badges refresh via the state-sync the server sends with the notification.
   });
@@ -2254,12 +2417,24 @@
 
   var identityRetries = 0;
   socket.on('register-result', function (res) {
-    if (!res || res.ok !== false) { identityRetries = 0; return; }
+    if (!res || res.ok !== false) {
+      identityRetries = 0;
+      if (document.visibilityState === 'hidden') reportVisibility();
+      // Re-registered after a drop: anything still unacknowledged goes again.
+      Object.keys(friendOutbox).forEach(function (id) {
+        friendOutbox[id].tries = 0;
+        paintOutboxState(id, 'pending');
+        emitOutbox(id);
+      });
+      return;
+    }
     if (res.reason === 'active-elsewhere') {
       identityRetries = 0;
       claimIdentityWhenVisible();
       return;
     }
+    // Unprovable and owned: retrying cannot help, so start fresh now.
+    if (res.reason === 'unverified') identityRetries = 4;
     if (identityRetries < 4) {
       identityRetries += 1;
       setTimeout(function () { if (socket.connected) register(); }, 1500 * identityRetries);
@@ -2386,6 +2561,17 @@
 
   socket.on('chat-blocked', function (data) {
     var reason = data && data.reason;
+    if (data && data.scope === 'friend' && data.id && friendOutbox[data.id]) {
+      var entry = friendOutbox[data.id];
+      // Too fast, usually a backlog flushed on reconnect: wait and go again.
+      if (reason === 'rate' && entry.tries < FRIEND_SEND_MAX_TRIES) {
+        clearTimeout(entry.timer);
+        entry.timer = setTimeout(function () { emitOutbox(data.id); }, 2500 * entry.tries);
+        return;
+      }
+      dropFriendMessage(data.id);
+      if (data.toClientId !== activeFriendChatId) return;
+    }
     var text = reason === 'link' ? t('chatLinkBlocked')
       : reason === 'rate' ? t('errSlowDown')
       : reason === 'unreachable' ? t('errCantMessage')
@@ -2403,7 +2589,8 @@
     addMessage(text, 'system');
   });
 
-  socket.on('partner-left', function (info) {
+  socket.on('partner-left', onPartnerLeft);
+  function onPartnerLeft(info) {
     var reason = info && info.reason;
     var name = (info && info.username) || (currentPartner && currentPartner.username) || t('stranger');
     partnerHere = false;
@@ -2421,7 +2608,12 @@
     if (topbar) topbar.classList.remove('connected');
     input.disabled = true;
     closeModal(callIncomingModal);
-    if (reason === 'away') {
+    if (reason === 'blocked') {
+      // This user blocked the person they were chatting with, from the
+      // friends panel. Stay put rather than searching on: they may want to
+      // report, or simply take a breath.
+      addMessage(t('userBlocked'), 'system system-warn');
+    } else if (reason === 'away') {
       // We were the one who left the app for too long. Not auto-searching: a
       // match made while nobody is looking would just leave the next stranger
       // waiting the same way.
@@ -2436,7 +2628,7 @@
     } else {
       addMessage(reason === 'disconnected' ? t('chatPartnerDropped', { name: name }) : t('chatStageLeft'), 'system system-warn');
     }
-  });
+  }
   // (The input is re-enabled at the top of the 'matched' handler above, where
   // it happens before the focus call rather than after it.)
 

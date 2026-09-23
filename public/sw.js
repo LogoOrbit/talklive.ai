@@ -130,11 +130,17 @@ self.addEventListener('notificationclick', (event) => {
       // Focusing an already-open tab is the right behaviour and also avoids a
       // second socket connection for the same person, which the server would
       // treat as an identity takeover.
-      for (const client of clientList) {
-        if (client.url.includes(self.location.origin) && 'focus' in client) {
-          if ('navigate' in client) client.navigate(target).catch(() => {});
-          return client.focus();
-        }
+      const ours = clientList.filter((c) => c.url.startsWith(self.location.origin) && 'focus' in c);
+      // The app itself is open: hand it the link rather than navigating, which
+      // would reload the page and drop any call going on in it.
+      const app = ours.find((c) => ['/', '/call', '/settings'].includes(new URL(c.url).pathname));
+      if (app) {
+        app.postMessage({ type: 'tl-open', url: target });
+        return app.focus();
+      }
+      if (ours.length) {
+        if ('navigate' in ours[0]) ours[0].navigate(target).catch(() => {});
+        return ours[0].focus();
       }
       return self.clients.openWindow(target);
     })

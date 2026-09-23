@@ -30,12 +30,21 @@ function once(sock, ev, ms = 4000) {
 
 const lastSync = new WeakMap();
 
+// The signed identity token each clientId was issued, sent back on every
+// later register exactly as a browser does - an identity that owns anything
+// is not handed over without it.
+const identityTokens = {};
+function rememberToken(sock) {
+  sock.on('identity-token', ({ clientId, token } = {}) => { identityTokens[clientId] = token; });
+}
+
 // Connects and registers; resolves with the socket and the ID it was given.
 async function connect(clientId, extra = {}) {
   const sock = io(BASE, { transports: ['websocket'], forceNew: true });
   sock.on('state-sync', (s) => lastSync.set(sock, s));
+  rememberToken(sock);
   const idEvent = once(sock, 'friend-id');
-  sock.emit('register', { clientId, nickname: clientId, gender: 'male', ...extra });
+  sock.emit('register', { clientId, identityToken: identityTokens[clientId], nickname: clientId, gender: 'male', ...extra });
   if (extra.sessionToken) sock.emit('resume-session', { token: extra.sessionToken });
   return { sock, id: await idEvent };
 }
@@ -110,6 +119,22 @@ async function waitUp() {
     const strangerRefused = once(a.sock, 'friend-request-result');
     a.sock.emit('friend-request', { targetClientId: 'c_fid_nobody_met' });
     ok('without an ID a stranger still cannot be added', (await strangerRefused).ok === false);
+
+    // --- Friends are unlimited for everyone ------------------------------
+    const crowd = [];
+    for (let i = 0; i < 7; i++) crowd.push(await connect(`c_fid_crowd_${i}`, { freshSession: true }));
+    for (const [i, p] of crowd.entries()) {
+      const res = once(a.sock, 'friend-request-result');
+      a.sock.emit('friend-request', { targetClientId: `c_fid_crowd_${i}`, friendId: p.id.friendId });
+      await res;
+      const accepted = once(p.sock, 'friend-request-result');
+      p.sock.emit('friend-request', { targetClientId: 'c_fid_alpha' });
+      ok(`crowd member ${i} becomes a friend`, (await accepted).accepted === true);
+    }
+    await wait(300);
+    const friendCount = ((lastSync.get(a.sock) || {}).friends || []).filter((f) => f.clientId.startsWith('c_fid_crowd_')).length;
+    ok('a free user can have more than 5 friends', friendCount === 7, friendCount);
+    crowd.forEach((p) => p.sock.disconnect());
 
     // --- Guest ID lifetime -----------------------------------------------
     const oldGuestId = b.id.friendId;

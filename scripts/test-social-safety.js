@@ -6,6 +6,8 @@
 //  - call-backs never ring or force-pair the text-only /chat page, and a
 //    queued ask accepted while its sender is in another call turns around
 //    instead of dropping that call
+//  - blocking or reporting the person you are paired with ends the pairing
+//  - an in-chat voice invite can only be accepted once it has been made
 //
 //   node scripts/test-social-safety.js
 const fs = require('fs');
@@ -37,10 +39,19 @@ const arrives = (sock, ev, ms = 800) => once(sock, ev, ms).then(() => true, () =
 const lastSync = new WeakMap();
 const id = (name) => 'c_safety_' + name;
 
+// The signed identity token each clientId was issued, sent back on every
+// later register exactly as a browser does - an identity that owns anything
+// is not handed over without it.
+const identityTokens = {};
+function rememberToken(sock) {
+  sock.on('identity-token', ({ clientId, token } = {}) => { identityTokens[clientId] = token; });
+}
+
 function connect(name, extra = {}) {
   const sock = io(BASE, { transports: ['websocket'], forceNew: true });
   sock.on('state-sync', (s) => lastSync.set(sock, s));
-  sock.emit('register', { clientId: id(name), nickname: name, gender: 'male', ...extra });
+  rememberToken(sock);
+  sock.emit('register', { clientId: id(name), identityToken: identityTokens[id(name)], nickname: name, gender: 'male', ...extra });
   return sock;
 }
 const sync = (sock) => lastSync.get(sock) || {};
@@ -214,6 +225,46 @@ async function matchPair(a, b, mode = 'chat') {
     b2.emit('call-back-respond', { fromClientId: A, accept: true });
     const [ma, mb] = await pair;
     ok('answering the turned-around ask connects', ma.callback && mb.callback);
+
+    // --- Blocking the person you are paired with ends the pairing -------
+    const dee = connect('Dee');
+    const eli = connect('Eli');
+    await wait(300);
+    await matchPair(dee, eli, 'chat');
+    const eliLeft = once(eli, 'partner-left');
+    dee.emit('block-friend', { friendClientId: id('Eli') });
+    ok('blocking a live partner ends the chat for them', !!(await eliLeft));
+    const echo = arrives(dee, 'chat-message', 500);
+    eli.emit('chat-message', { text: 'still here?' });
+    ok('the blocked partner can no longer reach them', !(await echo));
+
+    // Same for a report filed from the profile sheet mid-chat.
+    const fay = connect('Fay');
+    const gus = connect('Gus');
+    await wait(300);
+    await matchPair(fay, gus, 'chat');
+    const gusLeft = once(gus, 'partner-left');
+    fay.emit('report-user', { targetClientId: id('Gus'), reason: 'profile' });
+    ok('reporting a live partner ends the chat for them', !!(await gusLeft));
+
+    // --- A voice invite can only be accepted if one was made ----------
+    const hal = connect('Hal');
+    const ivy = connect('Ivy');
+    await wait(300);
+    await matchPair(hal, ivy, 'chat');
+    const forced = arrives(ivy, 'voice-invite-accepted', 600);
+    hal.emit('voice-invite-respond', { accept: true });
+    ok('a forged invite acceptance moves nobody', !(await forced));
+    const popup = once(hal, 'voice-invite');
+    ivy.emit('voice-invite');
+    await popup;
+    const bothGo = Promise.all([once(hal, 'voice-invite-accepted'), once(ivy, 'voice-invite-accepted')]);
+    hal.emit('voice-invite-respond', { accept: true });
+    const [t1, t2] = await bothGo;
+    ok('a real invite is accepted with one shared token', t1.token && t1.token === t2.token);
+    const replay = arrives(ivy, 'voice-invite-accepted', 600);
+    hal.emit('voice-invite-respond', { accept: true });
+    ok('an invite answers only once', !(await replay));
 
     console.log(failed ? `\n${failed} check(s) failed` : '\nAll checks passed');
     done(failed ? 1 : 0);

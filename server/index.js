@@ -274,10 +274,10 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 // --- Premium (TalkLive Plus) -------------------------------------------------
-// Free-tier limits; premium removes all of them.
+// Free-tier limits; premium removes all of them. Friends are unlimited for
+// everyone.
 const FREE_LIMITS = {
   countries: 2, // max countries per preferred/not-preferred list
-  friends: 5, // max friends
 };
 // Premium registry lives in the persistent store (Postgres/file) so grants
 // survive restarts and deploys. Grants come from three places now: a Stripe
@@ -1260,6 +1260,26 @@ const MAX_BLOCKS = 500;
 // "Clear chat" is one-sided: `${clientId}|${pairKey}` -> ts. Messages at or
 // before it are hidden from that person only; the other side keeps the thread.
 const chatClears = new Map();
+// Muted conversations: clientId -> Set<otherClientId>. Messages still arrive and
+// still count as unread; they just never wake a phone or play a sound. The
+// other person is never told - muting is a private volume knob, not a signal.
+const mutedChats = new Map();
+const MAX_MUTED = 500;
+function isMuted(ownerClientId, otherClientId) {
+  const set = mutedChats.get(ownerClientId);
+  return !!(set && set.has(otherClientId));
+}
+// Pinned friends ride on the friendship entry itself (like a private nickname),
+// capped so the top of the list stays a shortlist.
+const MAX_PINNED = 10;
+// A friend who drops off and comes back inside this window (a reload, a tunnel,
+// hopping between the call and chat pages) was never really gone: announcing
+// "<name> is online" again each time turned a flaky connection into a stream of
+// toasts on every friend's screen.
+const FRIEND_ONLINE_QUIET_MS = Number(process.env.FRIEND_ONLINE_QUIET_MS) || 5 * 60000;
+// How long an in-chat voice invite can be answered. The popup is a question in
+// the moment; an answer to it minutes later is answering nobody.
+const VOICE_INVITE_ANSWER_MS = 60 * 1000;
 const hearts = new Map(); // pairKey ("clientIdA|clientIdB" sorted) -> Set<clientId who hearted>
 const reportCooldowns = new Map(); // reporter|target -> last report timestamp
 
@@ -1329,15 +1349,6 @@ const VOICE_INVITE_TTL_MS = 2 * 60 * 1000; // plenty for two page loads; then it
 const RANDOM_FALLBACK_MS = 10000;
 const waitFallbackTimers = new Map(); // socketId -> Timeout
 
-function friendCount(clientId) {
-  const map = friends.get(clientId);
-  return map ? map.size : 0;
-}
-
-function atFriendLimit(clientId) {
-  return !isPremium(clientId) && friendCount(clientId) >= FREE_LIMITS.friends;
-}
-
 // clientId -> true when the user chose to hide their online status from their
 // added friends. Never affects the global online-user count.
 const statusHidden = new Map();
@@ -1348,6 +1359,24 @@ const callsOpen = new Map();
 
 function acceptsCalls(clientId) {
   return callsOpen.get(clientId) !== false;
+}
+
+// Whether a clientId carries anything worth taking over: people, messages,
+// requests, blocks, mutes, a paid plan or a linked account. Only a never-used
+// (or fully expired) identity may be claimed without its token.
+function identityHasState(clientId) {
+  if (friends.has(clientId) || chatHistory.has(clientId) || notifications.has(clientId)
+    || friendRequests.has(clientId) || sentRequests.has(clientId) || blocks.has(clientId)
+    || mutedChats.has(clientId) || isPremium(clientId)) return true;
+  for (const acc of Object.values(store.data.accounts || {})) {
+    if (acc && acc.clientId === clientId) return true;
+  }
+  const head = clientId + '|';
+  const tail = '|' + clientId;
+  for (const key of friendChats.keys()) {
+    if (key.startsWith(head) || key.endsWith(tail)) return true;
+  }
+  return false;
 }
 
 function clearWaitFallbackTimer(socketId) {
@@ -1526,9 +1555,27 @@ function writeSocial() {
     blockMeta: mapOfMaps(blockMeta),
     chatClears: Object.fromEntries(chatClears),
     declinedRequests: Object.fromEntries(declinedRequests),
+    mutedChats: Object.fromEntries(Array.from(mutedChats).filter(([, s]) => s.size).map(([cid, s]) => [cid, Array.from(s)])),
+    privacy: privacyObj(),
   };
 }
 store.setSocialProvider(writeSocial);
+
+// "Appear offline" and "no incoming calls" are persisted with the graph. In
+// memory only, a restart forgot them until the person next connected - and in
+// that gap a hidden user's last-seen time was shown to everyone watching, and
+// call-backs could be queued at someone who had turned calls off. Only the
+// non-default choices are stored.
+function privacyObj() {
+  const out = {};
+  for (const [cid, hidden] of statusHidden) {
+    if (hidden) out[cid] = { hidden: true };
+  }
+  for (const [cid, open] of callsOpen) {
+    if (open === false) out[cid] = { ...(out[cid] || {}), calls: false };
+  }
+  return out;
+}
 
 // Load durable accounts + social graph from the store into the in-memory Maps
 // on boot, before the server starts accepting connections.
@@ -1579,6 +1626,14 @@ function hydrateFromStore() {
   }
   for (const [key, ts] of Object.entries(social.declinedRequests || {})) {
     if (typeof ts === 'number') declinedRequests.set(key, ts);
+  }
+  for (const [cid, arr] of Object.entries(social.mutedChats || {})) {
+    if (Array.isArray(arr) && arr.length) mutedChats.set(cid, new Set(arr.slice(0, MAX_MUTED)));
+  }
+  for (const [cid, p] of Object.entries(social.privacy || {})) {
+    if (!p || typeof p !== 'object') continue;
+    if (p.hidden === true) statusHidden.set(cid, true);
+    if (p.calls === false) callsOpen.set(cid, false);
   }
 }
 
@@ -1828,11 +1883,19 @@ function pushNotification(clientId, notif) {
   const targetSocket = getSocketByClientId(clientId);
   if (targetSocket) {
     targetSocket.emit('notification', full);
-    // Someone with the tab open has already been told. Sending a system
+    // Someone looking at the tab has already been told. Sending a system
     // notification on top of the in-app one is the fastest way to get push
-    // permission revoked.
-    return full;
+    // permission revoked. But a tab in the background (another tab in front,
+    // the phone locked, the app switched away from) keeps its socket for a
+    // long while, and treating that as "looking" meant a message sent then
+    // reached nobody: no push because the socket was up, and nobody watching
+    // the socket.
+    const targetProfile = profiles.get(targetSocket.id);
+    if (!targetProfile || !targetProfile.hidden) return full;
   }
+  // A muted conversation still lands in the inbox and the unread count; it
+  // just never wakes a phone.
+  if (full.type === 'message' && isMuted(clientId, full.fromClientId)) return full;
   const copy = pushCopyFor(full);
   // Fire and forget: a slow push service must never hold up the sender's
   // socket handler. Failures are logged inside push.send.
@@ -1994,6 +2057,7 @@ function syncClientState(socket, clientId) {
     notifications: notifications.get(clientId) || [],
     chatHistory: historyList,
     blocked: blockedList,
+    muted: Array.from(mutedChats.get(clientId) || []),
   });
 }
 
@@ -2519,6 +2583,15 @@ function isBlockedPair(clientIdA, clientIdB) {
   return false;
 }
 
+// Blocking or reporting someone from their profile while still paired with
+// them (the sheet opens mid-call and mid-chat) left the call running: they
+// could go on talking and typing to the person who had just shut them out.
+function endPairingWith(socketId, otherClientId) {
+  const partnerId = partners.get(socketId);
+  const partner = partnerId ? profiles.get(partnerId) : null;
+  if (partner && partner.clientId === otherClientId) disconnectPartner(socketId);
+}
+
 function blockPair(clientIdA, clientIdB) {
   // Snapshot before anything below forgets who they were.
   const who = snapshotOf(clientIdB, clientIdA);
@@ -3027,6 +3100,22 @@ function sendFriendId(socket, { fresh = false } = {}) {
   socket.emit('friend-id', { friendId: displayFriendId(code), temporary: true });
 }
 
+// Events that need a registered profile and are worth delivering late rather
+// than never (see the hold in the connection handler). Live, time-bound asks -
+// a ring, a search - are deliberately absent: those answer 'needs-register' or
+// are simply re-sent by the client.
+const HOLD_UNTIL_REGISTERED = new Set([
+  'friend-message', 'friend-reaction', 'friend-message-delete', 'friend-typing',
+  'get-friend-chat', 'mark-messages-read', 'chat-seen',
+  'friend-request', 'friend-request-respond', 'cancel-friend-request',
+  'remove-friend', 'rename-friend', 'block-friend', 'unblock-user', 'clear-friend-chat',
+  'clear-notification', 'mark-notifications-seen', 'call-back-request-later',
+  'set-status-visibility', 'set-call-availability', 'find-by-friend-id', 'voice-invite-join',
+  'pin-friend', 'mute-chat',
+]);
+const MAX_HELD_EVENTS = 40;
+const HELD_EVENTS_TTL_MS = 20 * 1000;
+
 io.on('connection', (socket) => {
   const ip = getClientIp(socket);
   const geo = lookupGeo(ip);
@@ -3054,6 +3143,32 @@ io.on('connection', (socket) => {
   // Swallow rate-limit errors quietly instead of disconnecting on the first
   // over-limit event, so a brief burst just drops packets rather than the call.
   socket.on('error', () => { /* rate-limited or malformed packet - ignore */ });
+
+  // Social events that arrive before this socket has a profile are held, not
+  // dropped. The client's socket.io buffer flushes everything typed while it
+  // was offline the instant it reconnects - *before* its own 'register' - and
+  // a register that has to ping a stale incumbent takes up to 2.5s more. Every
+  // handler below starts with `profiles.get(socket.id)` and quietly returns on
+  // a miss, so a message sent from a phone coming back from the background
+  // vanished: the composer had cleared, nothing was stored, nothing was said.
+  // Released in order once 'register' succeeds; dropped if it never does.
+  const heldEvents = [];
+  let heldTimer = null;
+  socket.use((packet, next) => {
+    const event = Array.isArray(packet) ? packet[0] : '';
+    if (!HOLD_UNTIL_REGISTERED.has(event) || profiles.has(socket.id)) return next();
+    if (heldEvents.length >= MAX_HELD_EVENTS) return next(new Error('not-registered'));
+    heldEvents.push(next);
+    if (!heldTimer) {
+      heldTimer = setTimeout(() => { heldEvents.length = 0; heldTimer = null; }, HELD_EVENTS_TTL_MS);
+    }
+  });
+  socket.releaseHeldEvents = () => {
+    clearTimeout(heldTimer);
+    heldTimer = null;
+    const due = heldEvents.splice(0);
+    for (const next of due) next();
+  };
 
   // Maintenance mode: only the owner dashboard stays live.
   if (store.data.settings.maintenance.on) {
@@ -3530,6 +3645,18 @@ io.on('connection', (socket) => {
     if (!tokenOk && clientSockets.has(clientId) && io.sockets.sockets.get(clientSockets.get(clientId))) {
       return socket.emit('register-result', { ok: false, error: 'Client identity is already active.' });
     }
+    // Nor is a missing token fine for an identity that owns something. A
+    // clientId is not a secret - every stranger someone is matched with is
+    // sent theirs, and so is every friend - so without this, anyone could wait
+    // for a person to go offline, register as them and read their direct
+    // messages, write to their friends as them and take their Plus. A browser
+    // that really is that person has held the signed token since its first
+    // visit; one that cannot show it gets a fresh identity, and an account
+    // gets its profile back by signing in (linkAccountProfile re-issues the
+    // token).
+    if (!tokenOk && identityHasState(clientId)) {
+      return socket.emit('register-result', { ok: false, error: 'Client identity could not be verified.', reason: 'unverified' });
+    }
     // Captured before the identity takeover below, which clears the old entry:
     // otherwise every reconnect looked like a fresh login and re-fired the
     // "James is online" notification to all of this user's friends.
@@ -3638,8 +3765,17 @@ io.on('connection', (socket) => {
       surface: data.surface === 'chat' ? 'chat' : 'call',
     });
     clientSockets.set(clientId, socket.id);
-    if (typeof data.hideStatus === 'boolean') statusHidden.set(clientId, data.hideStatus);
-    if (typeof data.acceptCalls === 'boolean') callsOpen.set(clientId, data.acceptCalls);
+    // The device's own copy of these switches wins: it is what the person
+    // last saw and set. The stored copy covers the time they are away.
+    if (typeof data.hideStatus === 'boolean' && !!statusHidden.get(clientId) !== data.hideStatus) {
+      statusHidden.set(clientId, data.hideStatus);
+      if (data.hideStatus) lastSeen.delete(clientId);
+      persistSocial();
+    }
+    if (typeof data.acceptCalls === 'boolean' && acceptsCalls(clientId) !== data.acceptCalls) {
+      callsOpen.set(clientId, data.acceptCalls);
+      persistSocial();
+    }
 
     socket.emit('profile', {
       username: profiles.get(socket.id).username,
@@ -3686,9 +3822,13 @@ io.on('connection', (socket) => {
     // online (only on a genuine offline→online transition, and never when the
     // user hides their status). Also re-sync their friend lists so the green
     // dot flips live.
+    const awayFor = Date.now() - (lastSeen.get(clientId) || 0);
     if (wasOffline && !statusHidden.get(clientId)) {
       const me = profiles.get(socket.id);
-      for (const [fid] of friends.get(clientId) || new Map()) {
+      // Back from a blip, not from being away: the dot still flips below, but
+      // nobody gets told again that someone who never really left is here.
+      const friendsToTell = awayFor >= FRIEND_ONLINE_QUIET_MS ? friends.get(clientId) || new Map() : new Map();
+      for (const [fid] of friendsToTell) {
         const friendSocket = getSocketByClientId(fid);
         if (!friendSocket) continue;
         friendSocket.emit('friend-online', {
@@ -3702,6 +3842,8 @@ io.on('connection', (socket) => {
       // recent matches, so "message back" shows them online.
       resyncWatchers(clientId);
     }
+    // Anything sent while this socket had no profile runs now, in order.
+    socket.releaseHeldEvents();
   });
 
   // Codes are minted on demand rather than for every visitor: the overwhelming
@@ -3810,6 +3952,10 @@ io.on('connection', (socket) => {
     const profile = profiles.get(socket.id);
     if (!profile) return;
     statusHidden.set(profile.clientId, !!hidden);
+    // Whatever "last seen" was recorded before going invisible must not be
+    // what everyone sees the moment this person disconnects.
+    if (hidden) lastSeen.delete(profile.clientId);
+    persistSocial();
     // Re-sync everyone who sees this user's dot - friends and recent matches -
     // so going invisible (or coming back) shows up live.
     resyncWatchers(profile.clientId);
@@ -3821,6 +3967,7 @@ io.on('connection', (socket) => {
     const profile = profiles.get(socket.id);
     if (!profile) return;
     callsOpen.set(profile.clientId, accept !== false);
+    persistSocial();
   });
 
   socket.on('leave', () => {
@@ -3912,6 +4059,7 @@ io.on('connection', (socket) => {
     // Same outcome as blocking them from this screen: the friendship goes and
     // the pair is blocked, which is what "you will also stop seeing each
     // other" in the confirmation promises.
+    endPairingWith(socket.id, targetClientId);
     removeFriendPair(me.clientId, targetClientId);
     blockPair(me.clientId, targetClientId);
     const targetSocketId = clientSockets.get(targetClientId);
@@ -4218,9 +4366,6 @@ io.on('connection', (socket) => {
     if (isFriend(me.clientId, targetClientId)) {
       return socket.emit('friend-request-result', { ok: true, alreadyFriends: true });
     }
-    if (atFriendLimit(me.clientId)) {
-      return socket.emit('friend-request-result', { ok: false, limitReached: true, error: `Free plan allows up to ${FREE_LIMITS.friends} friends. Upgrade to add unlimited friends.` });
-    }
     const temporary = !socketAuth.get(socket.id);
     const myInfo = { username: me.username, countryCode: me.country, temporary, avatar: me.avatar };
 
@@ -4232,9 +4377,6 @@ io.on('connection', (socket) => {
     const heldReq = (sentRequests.get(targetClientId) || new Map()).get(me.clientId);
     const theirRequest = inboxReq || (heldReq && heldReq.held ? heldReq : null);
     if (theirRequest) {
-      if (atFriendLimit(targetClientId)) {
-        return socket.emit('friend-request-result', { ok: false, error: 'Their friend list is full.' });
-      }
       let theirInfo;
       if (inboxReq) {
         theirInfo = { username: inboxReq.username, countryCode: inboxReq.countryCode, temporary: inboxReq.temporary, avatar: inboxReq.avatar };
@@ -4325,17 +4467,6 @@ io.on('connection', (socket) => {
       return;
     }
 
-    // Limits are checked before the request is consumed: hitting the cap used
-    // to delete the request anyway, so upgrading could not bring it back.
-    if (accept && atFriendLimit(me.clientId)) {
-      syncClientState(socket, me.clientId);
-      return socket.emit('friend-request-result', { ok: false, limitReached: true, error: `Free plan allows up to ${FREE_LIMITS.friends} friends. Upgrade to add unlimited friends.` });
-    }
-    // The requester may have filled up their own list since sending the request.
-    if (accept && atFriendLimit(fromClientId)) {
-      syncClientState(socket, me.clientId);
-      return socket.emit('friend-request-result', { ok: false, error: 'Their friend list is full.' });
-    }
     const outboxEntry = (sentRequests.get(fromClientId) || new Map()).get(me.clientId);
     clearRequestPair(fromClientId, me.clientId);
     if (notificationId) removeNotification(me.clientId, notificationId);
@@ -4419,6 +4550,58 @@ io.on('connection', (socket) => {
     syncClientState(socket, me.clientId);
   });
 
+  // Pin a friend to the top of the list. Like a nickname, it is written onto
+  // this user's copy of the friendship only.
+  socket.on('pin-friend', ({ friendClientId, pinned } = {}) => {
+    const me = profiles.get(socket.id);
+    friendClientId = validId(friendClientId);
+    if (!me || !friendClientId) return;
+    const mine = friends.get(me.clientId);
+    const info = mine && mine.get(friendClientId);
+    if (!info) return;
+    if (pinned) {
+      if (info.pinned) return;
+      let count = 0;
+      for (const f of mine.values()) if (f.pinned) count++;
+      if (count >= MAX_PINNED) return socket.emit('pin-friend-result', { ok: false, error: `You can pin up to ${MAX_PINNED} friends.` });
+      info.pinned = true;
+      store.recordFeature('friend_pin');
+    } else {
+      if (!info.pinned) return;
+      delete info.pinned;
+    }
+    persistSocial();
+    syncClientState(socket, me.clientId);
+  });
+
+  // Mute a conversation: no sound, no push. Anyone this user could hear from
+  // can be muted - a friend, or a recent match who messages back.
+  socket.on('mute-chat', ({ targetClientId, muted } = {}) => {
+    const me = profiles.get(socket.id);
+    targetClientId = validId(targetClientId);
+    if (!me || !targetClientId || targetClientId === me.clientId) return;
+    let set = mutedChats.get(me.clientId);
+    if (muted) {
+      if (!set) { set = new Set(); mutedChats.set(me.clientId, set); }
+      if (set.has(targetClientId) || set.size >= MAX_MUTED) return syncClientState(socket, me.clientId);
+      set.add(targetClientId);
+      store.recordFeature('chat_mute');
+    } else {
+      if (!set || !set.delete(targetClientId)) return;
+      if (!set.size) mutedChats.delete(me.clientId);
+    }
+    persistSocial();
+    syncClientState(socket, me.clientId);
+  });
+
+  // Whether this tab is in front of the person. A hidden tab keeps its socket,
+  // so without this a message to someone who had switched away reached neither
+  // their eyes nor their phone (see pushNotification).
+  socket.on('app-visibility', ({ hidden } = {}) => {
+    const me = profiles.get(socket.id);
+    if (me) me.hidden = hidden === true;
+  });
+
   socket.on('block-friend', ({ friendClientId } = {}) => {
     const me = profiles.get(socket.id);
     friendClientId = validId(friendClientId);
@@ -4429,6 +4612,7 @@ io.on('connection', (socket) => {
     const mine = blocks.get(me.clientId);
     if (mine && mine.size >= MAX_BLOCKS && !mine.has(friendClientId)) return;
     store.recordFeature('block');
+    endPairingWith(socket.id, friendClientId);
     removeFriendPair(me.clientId, friendClientId);
     blockPair(me.clientId, friendClientId);
     syncClientState(socket, me.clientId);
@@ -4502,39 +4686,47 @@ io.on('connection', (socket) => {
     const toClientId = validId(payload && payload.toClientId);
     const parsed = readChatPayload(payload);
     if (!me || !toClientId || !parsed || toClientId === me.clientId) return;
-    if (!ageGate('friends').ok || ageAssurance.isRestricted(toClientId)) return;
     // Friends can always message; so can two people who recently chatted at
     // random (the "message back from history" path), even without a friendship.
     // Refusals are said out loud: the composer had already cleared, so a
     // silent drop looked like a message that was sent and never answered.
+    // Every refusal names the message it refuses and the chat it was typed in,
+    // so the client can take back exactly that pending bubble (and give the
+    // text back to the composer) instead of guessing.
+    const refuse = (reason) => socket.emit('chat-blocked', {
+      reason, scope: 'friend', toClientId, id: parsed.id || null, text: parsed.text || '',
+    });
+    if (!ageGate('friends').ok || ageAssurance.isRestricted(toClientId)) return refuse('unreachable');
     if (!knowsEachOther(me.clientId, toClientId) || isBlockedPair(me.clientId, toClientId)) {
-      return socket.emit('chat-blocked', { reason: 'unreachable', toClientId });
+      return refuse('unreachable');
     }
     // Friends can message each other any time - no call required. If the friend
     // is offline the message is still stored and a notification is queued, so it
     // reaches them the next time they come online.
-    if (parsed.text && containsLink(parsed.text)) {
-      return socket.emit('chat-blocked', { reason: 'link' });
-    }
-    if (parsed.text && UNSAFE_RE.test(parsed.text)) {
-      return socket.emit('chat-blocked', { reason: 'unsafe' });
-    }
-    // Direct messages are stored and notified, so a flood costs the recipient
-    // far more than one in a live chat does. Same human-speed ceiling.
-    if (!socialRateOk('friend-message', me.clientId, 10, 5000)) {
-      return socket.emit('chat-blocked', { reason: 'rate' });
-    }
+    if (parsed.text && containsLink(parsed.text)) return refuse('link');
+    if (parsed.text && UNSAFE_RE.test(parsed.text)) return refuse('unsafe');
     const trimmed = parsed.text;
     // Ids are chosen by the client, and are what replies, reactions and unsend
     // point at. One already in the thread is either a resend of the same
     // message (a flaky connection) - stored once, not twice - or a collision,
     // which must not make two messages answer to one id.
+    // A resend is answered with the stored copy: the client is resending
+    // because it never saw the first acknowledgement, and staying silent left
+    // its bubble on "sending" for good. Checked before the rate limit, which a
+    // reconnect flushing a backlog must not trip.
     let msgId = parsed.id;
     if (msgId) {
       const dup = (friendChats.get(pairKey(me.clientId, toClientId)) || []).find((m) => m.id === msgId);
-      if (dup && dup.from === me.clientId && dup.text === trimmed) return;
+      if (dup && dup.from === me.clientId && dup.text === trimmed) {
+        return socket.emit('friend-message-sent', {
+          toClientId, text: dup.text, ts: dup.ts, id: dup.id, replyTo: dup.replyTo || null, gif: dup.gif || null,
+        });
+      }
       if (dup) msgId = null;
     }
+    // Direct messages are stored and notified, so a flood costs the recipient
+    // far more than one in a live chat does. Same human-speed ceiling.
+    if (!socialRateOk('friend-message', me.clientId, 10, 5000)) return refuse('rate');
     const friendInfo = (friends.get(me.clientId) || new Map()).get(toClientId);
     store.addTranscript({
       kind: 'friend',
@@ -4958,7 +5150,10 @@ io.on('connection', (socket) => {
     if (me.lastVoiceInviteAt && now - me.lastVoiceInviteAt < 5000) return;
     me.lastVoiceInviteAt = now;
     const partnerSocket = io.sockets.sockets.get(partnerId);
-    if (!partnerSocket) return;
+    const partnerProfile = profiles.get(partnerId);
+    if (!partnerSocket || !partnerProfile) return;
+    // Remember who asked, so only a real invite can be answered (below).
+    partnerProfile.voiceInviteFrom = { socketId: socket.id, ts: now };
     partnerSocket.emit('voice-invite', { username: me.username, countryCode: me.country });
   });
 
@@ -4972,6 +5167,12 @@ io.on('connection', (socket) => {
     const partnerSocket = io.sockets.sockets.get(partnerId);
     const partnerProfile = profiles.get(partnerId);
     if (!partnerSocket || !partnerProfile) return;
+    // Only an invite this partner actually sent, and recently, can be
+    // answered. Without this either side of a text chat could "accept" an
+    // invite nobody made and pull the other person off /chat into a call.
+    const asked = me.voiceInviteFrom;
+    delete me.voiceInviteFrom;
+    if (!asked || asked.socketId !== partnerId || Date.now() - asked.ts > VOICE_INVITE_ANSWER_MS) return;
     if (!accept) {
       partnerSocket.emit('voice-invite-declined', { username: me.username });
       return;
@@ -5005,6 +5206,8 @@ io.on('connection', (socket) => {
 
     clearTimeout(invite.timer);
     voiceInvites.delete(token);
+    // One of them blocked the other on the way over: no call.
+    if (isBlockedPair(me.clientId, otherClientId)) return;
 
     for (const id of [socket.id, otherSocketId]) {
       disconnectPartner(id);
@@ -5035,7 +5238,10 @@ io.on('connection', (socket) => {
     if (profile && clientSockets.get(profile.clientId) === socket.id) {
       clientSockets.delete(profile.clientId);
       scheduleGuestFriendIdRelease(profile.clientId);
-      if (friends.has(profile.clientId) || chatHistory.has(profile.clientId)) {
+      // Someone appearing offline leaves no "last seen" behind either.
+      if (statusHidden.get(profile.clientId)) {
+        if (lastSeen.delete(profile.clientId)) persistSocial();
+      } else if (friends.has(profile.clientId) || chatHistory.has(profile.clientId)) {
         lastSeen.set(profile.clientId, Date.now());
         persistSocial();
       }
@@ -5107,11 +5313,17 @@ function sweepEphemeralState() {
   for (const [key, rec] of pairCooldowns) {
     if (!rec || rec.until <= now) pairCooldowns.delete(key);
   }
-  // Status visibility is a per-client preference with no expiry, but it only
-  // matters while the client is online or is somebody's friend.
-  for (const clientId of statusHidden.keys()) {
-    if (clientSockets.has(clientId) || friends.has(clientId)) continue;
+  // Status visibility and call availability are per-client preferences with
+  // no expiry, but they only matter while someone could be watching or
+  // calling: the client is online, has friends or has recent people.
+  const stillSocial = (cid) => clientSockets.has(cid) || friends.has(cid) || chatHistory.has(cid);
+  for (const [clientId, hidden] of statusHidden) {
+    if (hidden && stillSocial(clientId)) continue;
     statusHidden.delete(clientId);
+  }
+  for (const [clientId, open] of callsOpen) {
+    if (open === false && stillSocial(clientId)) continue;
+    callsOpen.delete(clientId);
   }
   // Rate-limit records for sockets that are already gone.
   for (const socketId of chatRate.keys()) {

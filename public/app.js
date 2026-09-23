@@ -685,6 +685,9 @@ const friendChatCache = new Map(); // friendClientId -> [{ from, text, ts }]
 let serverHistory = [];
 // People this user blocked, newest first: [{ clientId, username, countryCode, avatar, ts }].
 let blockedData = [];
+// Conversations this user muted: no sound, no vibration, no push. Unread still
+// counts - muting turns the volume down, it does not hide anything.
+let mutedIds = new Set();
 // clientId -> timeout, while that person is typing to this user.
 const typingFrom = new Map();
 
@@ -695,6 +698,20 @@ function presenceText(p) {
   if (p.online) return t('online');
   if (p.lastSeen) return t('lastSeen', { time: timeAgo(p.lastSeen) });
   return t('offline');
+}
+
+// When a list row last had news, the way a messenger's inbox says it: the
+// time today, "Yesterday", a weekday within the week, a date beyond that.
+function rowStamp(ts) {
+  const T = window.TalkLiveTime;
+  if (!ts || !T) return '';
+  const days = Math.round((new Date().setHours(0, 0, 0, 0) - new Date(ts).setHours(0, 0, 0, 0)) / 86400000);
+  if (days <= 0) return T.time(ts);
+  if (days < 7) {
+    if (days === 1) return T.day(ts);
+    try { return new Intl.DateTimeFormat(document.documentElement.lang || undefined, { weekday: 'short' }).format(ts); } catch (_) { return T.day(ts); }
+  }
+  try { return new Intl.DateTimeFormat(document.documentElement.lang || undefined, { month: 'short', day: 'numeric' }).format(ts); } catch (_) { return T.day(ts); }
 }
 
 // One line of the newest message in a conversation, for list rows.
@@ -1506,9 +1523,8 @@ function syncAddFriendBtn() {
   }
 }
 
-socket.on('friend-request-result', ({ ok, error, limitReached, accepted, alreadyFriends }) => {
-  // limitReached is handled by the premium-upsell listener further down.
-  if (!ok && error && !limitReached) {
+socket.on('friend-request-result', ({ ok, error, accepted, alreadyFriends }) => {
+  if (!ok && error) {
     showError(error);
     // Refused (blocked, restricted, rate-limited): the button went quiet on
     // the tap, so give it back rather than leave it claiming a request exists.
@@ -1619,7 +1635,10 @@ function renderFriendIdResult() {
     ? `<button type="button" class="btn btn-secondary" data-act="chat">${escapeHtml(t('chat'))}</button>`
     : relation === 'pending'
       ? `<button type="button" class="btn btn-secondary" disabled>${escapeHtml(t('pending'))}</button>`
-      : `<button type="button" class="btn btn-primary" data-act="add">${escapeHtml(t('addFriend'))}</button>`;
+      // They already asked this user: the answer is one tap, not a second ask.
+      : relation === 'incoming'
+        ? `<button type="button" class="btn btn-primary" data-act="accept">${escapeHtml(t('accept'))}</button>`
+        : `<button type="button" class="btn btn-primary" data-act="add">${escapeHtml(t('addFriend'))}</button>`;
   const sub = [user.friendId, user.temporary ? t('friendIdGuest') : '', user.online ? t('online') : '']
     .filter(Boolean).join(' · ');
   friendIdResult.classList.remove('hidden', 'is-error');
@@ -1643,7 +1662,13 @@ friendIdResult.addEventListener('click', (e) => {
   const btn = e.target.closest('button[data-act]');
   if (!btn || !friendIdFound) return;
   if (btn.dataset.act === 'chat') {
-    openUserProfile(personById(friendIdFound.clientId, friendIdFound));
+    // The button says Chat, so it opens the chat - not the profile sheet.
+    openFriendChat(friendIdFound.clientId);
+    return;
+  }
+  if (btn.dataset.act === 'accept') {
+    btn.disabled = true;
+    socket.emit('friend-request-respond', { fromClientId: friendIdFound.clientId, accept: true });
     return;
   }
   btn.disabled = true;
@@ -3085,34 +3110,90 @@ const FRIEND_CALL_SVG = '<svg viewBox="0 0 24 24" fill="white" aria-hidden="true
 
 // Each row: online/offline dot + flag + username on the left (tap → chat box),
 // small green call button on the right. Tapping the avatar opens the profile view.
+// Small glyphs for list rows: a pinned friend and a muted conversation.
+const PIN_SVG = '<svg class="friend-flag-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15 3l6 6-3 1-4 4 .5 4.5L13 20l-3.5-3.5L4 22l-.5-.5L9 16l-3.5-3.5L7 11l4.5.5 4-4z"/></svg>';
+const MUTE_SVG = '<svg class="friend-flag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M22 9l-6 6M16 9l6 6"/></svg>';
+
+// Filter box above the friends list, only once the list is long enough to need
+// one. Built here rather than in index.html: it is an affordance for the few
+// with many friends, and the page's first paint stays as small as it was.
+let friendsFilter = '';
+let friendsSearchInput = null;
+function ensureFriendsSearch() {
+  const need = friendsData.length >= 6;
+  if (!friendsSearchInput && need) {
+    const wrap = document.createElement('div');
+    wrap.className = 'friends-search';
+    friendsSearchInput = document.createElement('input');
+    friendsSearchInput.type = 'search';
+    friendsSearchInput.className = 'friends-search-input';
+    friendsSearchInput.autocomplete = 'off';
+    friendsSearchInput.maxLength = 40;
+    friendsSearchInput.addEventListener('input', () => {
+      friendsFilter = friendsSearchInput.value.trim().toLowerCase();
+      renderFriendsList();
+    });
+    wrap.appendChild(friendsSearchInput);
+    friendsList.before(wrap);
+  }
+  if (!friendsSearchInput) return;
+  friendsSearchInput.placeholder = t('searchFriends');
+  friendsSearchInput.setAttribute('aria-label', t('searchFriends'));
+  friendsSearchInput.parentNode.classList.toggle('hidden', !need);
+  if (!need && friendsFilter) { friendsFilter = ''; friendsSearchInput.value = ''; }
+}
+
 function renderFriendsList() {
   renderRailFriends();
+  ensureFriendsSearch();
   if (friendsData.length === 0) {
     friendsList.innerHTML = `<p class="tl-empty">${escapeHtml(t('noFriendsYet'))}</p>`;
     return;
   }
   friendsList.innerHTML = '';
-  // An inbox, not a phone book: whoever has something unread, then whoever is
-  // here right now, then the most recent conversation.
+  // An inbox, not a phone book: pinned friends first, then whoever has
+  // something unread, then whoever is here right now, then the most recent
+  // conversation.
   const lastTs = (f) => (f.last && f.last.ts) || 0;
   const sorted = [...friendsData].sort((a, b) => (
-    Number(unreadCountFor(b.clientId) > 0) - Number(unreadCountFor(a.clientId) > 0)
+    Number(!!b.pinned) - Number(!!a.pinned)
+    || Number(unreadCountFor(b.clientId) > 0) - Number(unreadCountFor(a.clientId) > 0)
     || Number(!!b.online) - Number(!!a.online)
     || lastTs(b) - lastTs(a)
   ));
-  sorted.forEach((f) => {
+  // Matches the name shown, the name they chose, and their friend's country.
+  const shown = friendsFilter
+    ? sorted.filter((f) => [friendLabel(f), f.username, getCountryName(f.countryCode) || '']
+      .some((s) => String(s || '').toLowerCase().includes(friendsFilter)))
+    : sorted;
+  if (!shown.length) {
+    friendsList.innerHTML = `<p class="tl-empty">${escapeHtml(t('noFriendsMatch'))}</p>`;
+    return;
+  }
+  shown.forEach((f) => {
     const unread = unreadCountFor(f.clientId);
     const typing = typingFrom.has(f.clientId);
     const preview = typing ? t('friendTyping') : previewText(f.last);
     const item = document.createElement('div');
-    item.className = 'friend-item';
+    item.className = 'friend-item' + (unread > 0 ? ' has-unread' : '') + (f.pinned ? ' is-pinned' : '');
+    // Laid out like a messenger inbox: presence rides on the avatar, the name
+    // shares its line with when they last spoke, and the second line is the
+    // conversation itself - or, before there is one, where they are.
+    const stamp = f.last && f.last.ts ? rowStamp(f.last.ts) : '';
+    const second = preview
+      ? `<span class="friend-item-preview${unread > 0 ? ' is-unread' : ''}${typing ? ' is-typing' : ''}">${escapeHtml(preview)}</span>`
+      : `<span class="friend-status-text ${f.online ? 'is-online' : 'is-offline'}">${escapeHtml(presenceText(f))}</span>`;
     item.innerHTML = `
-      <button type="button" class="friend-avatar-btn" data-id="${escapeHtml(f.clientId)}" title="${escapeHtml(t('profile'))}" aria-label="${escapeHtml(t('profile'))}">${genderIcon(f.avatar, 30)}</button>
-      <div class="friend-item-info friend-row-main" data-id="${escapeHtml(f.clientId)}">
-        <span class="friend-item-name">${getFlagImg(f.countryCode)} ${escapeHtml(friendLabel(f))}</span>
-        <span class="friend-status-text ${f.online ? 'is-online' : 'is-offline'}">${escapeHtml(presenceText(f))}</span>
-        ${unread > 0 ? `<span class="unread-badge">${unread}</span>` : ''}
-        ${preview ? `<span class="friend-item-preview${unread > 0 ? ' is-unread' : ''}${typing ? ' is-typing' : ''}">${escapeHtml(preview)}</span>` : ''}
+      <button type="button" class="friend-avatar-btn" data-id="${escapeHtml(f.clientId)}" title="${escapeHtml(t('profile'))}" aria-label="${escapeHtml(t('profile'))}">${genderIcon(f.avatar, 30)}<span class="friend-presence-dot${f.online ? ' is-online' : ''}" aria-hidden="true"></span></button>
+      <div class="friend-item-info friend-row-main" data-id="${escapeHtml(f.clientId)}" role="button" tabindex="0" aria-label="${escapeHtml(t('chatWith', { name: friendLabel(f) }))}${f.online ? ' - ' + escapeHtml(t('online')) : ''}">
+        <span class="friend-item-line">
+          <span class="friend-item-name">${getFlagImg(f.countryCode)} <span class="friend-item-label">${escapeHtml(friendLabel(f))}</span>${f.pinned ? PIN_SVG : ''}${mutedIds.has(f.clientId) ? MUTE_SVG : ''}</span>
+          ${stamp ? `<span class="friend-item-time${unread > 0 ? ' is-unread' : ''}">${escapeHtml(stamp)}</span>` : ''}
+        </span>
+        <span class="friend-item-line">
+          ${second}
+          ${unread > 0 ? `<span class="unread-badge">${unread > 99 ? '99+' : unread}</span>` : ''}
+        </span>
       </div>
       <button type="button" class="friend-msg-btn" data-id="${escapeHtml(f.clientId)}" title="${escapeHtml(t('chat'))}" aria-label="${escapeHtml(t('chat'))}">
         ${ICONS.chat}
@@ -3167,6 +3248,14 @@ friendsList.addEventListener('click', (e) => {
   } else if (rowMain) {
     openFriendChat(rowMain.dataset.id);
   }
+});
+
+friendsList.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const rowMain = e.target.closest('.friend-row-main');
+  if (!rowMain) return;
+  e.preventDefault();
+  openFriendChat(rowMain.dataset.id);
 });
 
 // Turn a friend's call button into its offline (greyed, red-dotted) state and
@@ -3253,7 +3342,16 @@ function openUserProfile(person) {
   // friends-only, so the one person you most wanted gone after a bad call
   // could only be reported, never simply blocked.
   friendProfileChatBtn.classList.toggle('hidden', !canMessage(person.clientId) && !inCallWith(person.clientId));
+  // Calling: any friend (an offline one can be asked for later from the call
+  // screen), or a recent match who is here right now. Never the person this
+  // user is already on a call with.
+  if (friendProfileCallBtn) {
+    const callable = !inCallWith(person.clientId)
+      && (relation === 'friend' || (online && canMessage(person.clientId)));
+    friendProfileCallBtn.classList.toggle('hidden', !callable);
+  }
   friendProfileRenameBtn.classList.toggle('hidden', relation !== 'friend');
+  renderProfilePinBtn(relation === 'friend' ? friend : null);
   friendProfileRemoveBtn.classList.toggle('hidden', relation !== 'friend');
   document.getElementById('friendProfileManageRow').classList.toggle('hidden', relation !== 'friend');
   friendProfileBlockBtn.classList.remove('hidden');
@@ -3265,6 +3363,68 @@ function openUserProfile(person) {
 
   closeSidePanel(friendsDropdown, friendsOverlay);
   openSidePanel(friendProfileModal, friendProfileOverlay);
+}
+
+// Pin / unpin, next to Rename. Built on first use so index.html stays as it was.
+let friendProfilePinBtn = null;
+function renderProfilePinBtn(friend) {
+  if (!friendProfilePinBtn) {
+    friendProfilePinBtn = document.createElement('button');
+    friendProfilePinBtn.type = 'button';
+    friendProfilePinBtn.className = 'btn btn-secondary';
+    friendProfilePinBtn.addEventListener('click', () => {
+      const f = friendsData.find((x) => x.clientId === activeProfileFriendId);
+      if (!f) return;
+      const pinned = !f.pinned;
+      socket.emit('pin-friend', { friendClientId: f.clientId, pinned });
+      // Painted now; the state-sync that follows says the same (or undoes it
+      // if the pin limit was reached).
+      if (pinned) f.pinned = true; else delete f.pinned;
+      renderFriendsList();
+      renderProfilePinBtn(f);
+      showToast(t(pinned ? 'friendPinned' : 'friendUnpinned', { name: friendLabel(f) }));
+    });
+    friendProfileRenameBtn.after(friendProfilePinBtn);
+  }
+  friendProfilePinBtn.classList.toggle('hidden', !friend);
+  if (!friend) return;
+  friendProfilePinBtn.innerHTML = `${PIN_SVG}<span>${escapeHtml(t(friend.pinned ? 'unpinFriend' : 'pinFriend'))}</span>`;
+}
+
+socket.on('pin-friend-result', ({ ok, error } = {}) => {
+  if (!ok && error) showError(error);
+});
+
+// Mute / unmute the open conversation, from the chat header. Works for anyone
+// who can message this user, friend or not.
+let friendChatMuteBtn = null;
+function renderFriendChatMuteBtn() {
+  if (!friendChatMuteBtn) {
+    const clearBtn = document.getElementById('friendChatClearBtn');
+    if (!clearBtn) return;
+    friendChatMuteBtn = document.createElement('button');
+    friendChatMuteBtn.type = 'button';
+    friendChatMuteBtn.className = 'chat-clear-btn chat-mute-btn';
+    friendChatMuteBtn.addEventListener('click', () => {
+      const id = activeFriendChatId;
+      if (!id) return;
+      const muted = !mutedIds.has(id);
+      socket.emit('mute-chat', { targetClientId: id, muted });
+      if (muted) mutedIds.add(id); else mutedIds.delete(id);
+      renderFriendChatMuteBtn();
+      renderFriendsList();
+      showToast(t(muted ? 'chatMuted' : 'chatUnmuted'));
+    });
+    clearBtn.before(friendChatMuteBtn);
+  }
+  const muted = !!activeFriendChatId && mutedIds.has(activeFriendChatId);
+  const label = t(muted ? 'unmuteChat' : 'muteChat');
+  friendChatMuteBtn.classList.toggle('is-muted', muted);
+  friendChatMuteBtn.title = label;
+  friendChatMuteBtn.setAttribute('aria-label', label);
+  friendChatMuteBtn.setAttribute('aria-pressed', muted ? 'true' : 'false');
+  friendChatMuteBtn.innerHTML = muted ? MUTE_SVG
+    : '<svg class="friend-flag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg>';
 }
 
 // Whether a direct chat with this person can be opened: friends, and anyone
@@ -3282,6 +3442,17 @@ function openFriendProfile(friendClientId) {
 }
 
 closeFriendProfileBtn.addEventListener('click', () => closeSidePanel(friendProfileModal, friendProfileOverlay));
+
+const friendProfileCallBtn = document.getElementById('friendProfileCallBtn');
+if (friendProfileCallBtn) {
+  friendProfileCallBtn.addEventListener('click', () => {
+    const id = activeProfileFriendId;
+    if (!id) return;
+    const person = personById(id);
+    closeSidePanel(friendProfileModal, friendProfileOverlay);
+    requestCallBack(id, labelForClientId(id, person.username) || t('stranger'));
+  });
+}
 
 friendProfileChatBtn.addEventListener('click', () => {
   if (!activeProfileFriendId) return;
@@ -3360,7 +3531,26 @@ friendProfileAddBtn.addEventListener('click', () => {
   if (friendProfileCancelBtn) friendProfileCancelBtn.classList.remove('hidden');
   activeProfileRelation = 'pending';
   friendProfileStatus.innerHTML = `<span class="friend-relation-text">${escapeHtml(t('profileRelation_pending'))}</span>`;
-  showToast(t('friendRequestSent'));
+  // Confirmed by the server's answer below, not assumed: a refused request
+  // (limit, block, rate) used to toast "sent" and leave the sheet on Pending.
+  profileAddTarget = activeProfileFriendId;
+});
+
+let profileAddTarget = null;
+socket.on('friend-request-result', ({ ok, sent, error, limitReached } = {}) => {
+  const target = profileAddTarget;
+  if (!target) return;
+  profileAddTarget = null;
+  if (ok) {
+    if (sent) showToast(t('friendRequestSent'));
+    return;
+  }
+  // limitReached opens the upgrade sheet elsewhere; anything else is said here,
+  // where the user is looking, rather than on the call screen behind the sheet.
+  if (error && !limitReached) showToast(error);
+  if (activeProfileFriendId === target && friendProfileModal.classList.contains('open')) {
+    openUserProfile(personById(target, { username: friendProfileName.textContent.trim() }));
+  }
 });
 
 friendProfileAcceptBtn.addEventListener('click', () => {
@@ -3381,6 +3571,7 @@ friendProfileReportBtn.addEventListener('click', async () => {
   if (!ok || !activeProfileFriendId) return;
   // Reporting someone you are not in a call with: the server records it and
   // blocks the pair, same as an in-call report, without touching any call.
+  hangUpOn(activeProfileFriendId);
   socket.emit('report-user', { targetClientId: activeProfileFriendId, reason: 'profile' });
   closeSidePanel(friendProfileModal, friendProfileOverlay);
   showToast(t('reportUserSent'));
@@ -3392,6 +3583,7 @@ friendProfileBlockBtn.addEventListener('click', async () => {
   const wasFriend = relationTo(target) === 'friend';
   const ok = await showConfirm({ title: 'block', text: wasFriend ? 'confirmBlockFriend' : 'confirmBlockUser', okKey: 'block' });
   if (!ok) return;
+  hangUpOn(target);
   socket.emit('block-friend', { friendClientId: target });
   closeSidePanel(friendProfileModal, friendProfileOverlay);
   // A chat with them may still be open behind the sheet; it is dead now.
@@ -3413,6 +3605,16 @@ if (friendProfileCancelBtn) {
     activeProfileRelation = 'stranger';
     friendProfileStatus.innerHTML = `<span class="friend-relation-text">${escapeHtml(t('profileRelation_stranger'))}</span>`;
   });
+}
+
+// Blocking or reporting the person on the other end of a live call ends it
+// here too; the server has already cut the pairing, so the call screen must
+// not sit on "connected" to nobody.
+function hangUpOn(clientId) {
+  if (!clientId || !currentPartner || currentPartner.clientId !== clientId) return;
+  if (callState === 'idle') return;
+  socket.emit('leave');
+  goIdleOnCallScreen('statusYouLeft');
 }
 
 // Take back a request nobody has answered yet. Painted now; the state-sync
@@ -3471,8 +3673,9 @@ if (blockedList) {
 let friendsSynced = false;
 setTimeout(() => { if (!friendsSynced) renderFriendsList(); }, 5000);
 
-socket.on('state-sync', ({ friends: friendList, friendRequests: requestList, sentRequests: sentList, notifications: notifList, chatHistory: historyList, blocked } = {}) => {
+socket.on('state-sync', ({ friends: friendList, friendRequests: requestList, sentRequests: sentList, notifications: notifList, chatHistory: historyList, blocked, muted } = {}) => {
   friendsSynced = true;
+  mutedIds = new Set(Array.isArray(muted) ? muted : []);
   friendsData = friendList || [];
   friendRequestsData = requestList || [];
   sentRequestsData = sentList || [];
@@ -3482,7 +3685,8 @@ socket.on('state-sync', ({ friends: friendList, friendRequests: requestList, sen
   renderBlockedList();
   renderHistory();
   renderFriendChatStatus();
-  renderFriendsList();
+  renderFriendChatMuteBtn();
+  // Also redraws the friends list, the sent requests and the tab counts.
   renderNotifications();
   syncAddFriendBtn();
   // A first friend is exactly the moment the profile becomes worth keeping.
@@ -3523,7 +3727,9 @@ function notifText(n) {
 }
 
 function timeAgo(ts) {
-  const s = Math.floor((Date.now() - ts) / 1000);
+  // A row with no timestamp (an old stored request) must not read "20,000 days ago".
+  if (!ts) return '';
+  const s = Math.max(0, Math.floor((Date.now() - ts) / 1000));
   if (s < 60) return t('justNow');
   const m = Math.floor(s / 60);
   if (m < 60) return t('minAgo', { n: m });
@@ -3813,16 +4019,19 @@ notifList.addEventListener('click', (e) => {
 socket.on('notification', (n) => {
   // Already on screen: the open chat marks it read, so counting it would only
   // flash a badge for a message the user is looking at.
-  if (n.type === 'message' && n.fromClientId === activeFriendChatId
-    && friendChatModal.classList.contains('open')) return;
+  // A chat left open in a background tab is not being read, so it counts
+  // there (tab title, app badge) until the tab is looked at again.
+  if (n.type === 'message' && friendChatOnScreen(n.fromClientId)) return;
   notifData.push(n);
   renderNotifications();
   if (n.type === 'call_back_request') {
     showCallBackBanner(n.fromClientId, labelForClientId(n.fromClientId, n.username));
   }
   if (n.type === 'message') {
-    playMessageSound();
-    vibrate(20);
+    if (!mutedIds.has(n.fromClientId)) {
+      playMessageSound();
+      vibrate(20);
+    }
   } else if (n.type === 'friend_request' || n.type === 'friend_accepted') {
     // Both a new friend request and a request being accepted mean a friend
     // event - play the distinct friend chime, never the message chime.
@@ -3843,8 +4052,14 @@ socket.on('notification', (n) => {
 });
 
 // --- Friend-to-friend chat ---
-function renderFriendChatMessages() {
+function renderFriendChatMessages(opts = {}) {
   const messages = friendChatCache.get(activeFriendChatId) || [];
+  const box = friendChatMessages;
+  // Every incoming message, receipt and reaction re-renders the thread. Always
+  // jumping to the bottom yanked anyone reading back through older messages
+  // down to the newest one; only follow the conversation when already there.
+  const stick = opts.toBottom || box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+  const prevTop = box.scrollTop;
   friendChatMessages.innerHTML = '';
   // The whole list is re-rendered, so every id the controller knows about is
   // stale - drop them before the new bubbles register themselves.
@@ -3873,11 +4088,23 @@ function renderFriendChatMessages() {
       body.textContent = m.text;
       el.appendChild(body);
     }
-    // Delivery ticks are the friend chat's own business (it has real "seen"
-    // state below), so the bubble only carries the time.
-    appendMessageMeta(el, ts, false);
+    // My messages carry a delivery tick: faded while on its way, solid once
+    // the server has stored it. "Seen" is the label under the thread.
+    const meta = appendMessageMeta(el, ts, mine);
+    const ticks = meta.querySelector('.chat-msg-ticks');
+    if (ticks && !m.pending) ticks.classList.replace('sending', 'sent');
+    if (m.pending) el.classList.add('is-pending');
+    if (m.failed) el.classList.add('is-failed');
     friendChatMessages.appendChild(el);
     applyGrouping(friendChatMessages, el, mine ? 'me' : 'them', ts);
+    if (m.failed) {
+      const retry = document.createElement('button');
+      retry.type = 'button';
+      retry.className = 'chat-msg-retry';
+      retry.dataset.retryId = m.id;
+      retry.textContent = t('msgNotSentRetry');
+      friendChatMessages.appendChild(retry);
+    }
     if (friendExtras) {
       friendExtras.decorate(el, {
         id: m.id, mine, text: m.text, replyTo: m.replyTo, gif: m.gif,
@@ -3898,7 +4125,7 @@ function renderFriendChatMessages() {
       friendChatMessages.appendChild(seenEl);
     }
   }
-  friendChatMessages.scrollTop = friendChatMessages.scrollHeight;
+  box.scrollTop = stick ? box.scrollHeight : prevTop;
 }
 
 // Whether a live (accepted) call is in progress with this friend. Kept so the
@@ -3917,7 +4144,11 @@ function applyFriendChatLock() {
 }
 
 function openFriendChat(friendClientId) {
+  // The composer belongs to a conversation: text typed to one person used to
+  // stay in the box when another chat was opened, and went to the wrong one.
+  if (activeFriendChatId && activeFriendChatId !== friendClientId) saveFriendDraft();
   activeFriendChatId = friendClientId;
+  friendChatInput.value = friendDrafts.get(friendClientId) || '';
   const friend = friendsData.find((f) => f.clientId === friendClientId);
   // A "message back" chat with a recent match has no friend entry - name it
   // from the call history rather than a bare "Chat".
@@ -3933,19 +4164,58 @@ function openFriendChat(friendClientId) {
   if (messageSeenEnabled) socket.emit('chat-seen', { friendClientId });
   notifData = notifData.filter((n) => !(n.type === 'message' && n.fromClientId === friendClientId));
   renderNotifications();
-  renderFriendChatMessages();
+  renderFriendChatMessages({ toBottom: true });
   applyFriendChatLock();
   // Whoever is online right now is the baseline; only a drop from here is news.
   friendChatWasOnline = !!(friend && friend.online);
   friendChatPresence.classList.add('hidden');
   renderFriendChatStatus();
+  renderFriendChatMuteBtn();
   focusComposer(friendChatInput);
 }
 
 closeFriendChatBtn.addEventListener('click', () => {
+  saveFriendDraft();
   closeSidePanel(friendChatModal, friendChatOverlay);
   activeFriendChatId = null;
 });
+
+// --- Per-conversation drafts ------------------------------------------------
+const friendDrafts = new Map(); // clientId -> unsent text
+function saveFriendDraft() {
+  if (!activeFriendChatId) return;
+  const text = friendChatInput.value;
+  if (text.trim()) friendDrafts.set(activeFriendChatId, text);
+  else friendDrafts.delete(activeFriendChatId);
+}
+friendChatInput.addEventListener('input', saveFriendDraft);
+
+// Whether this person's conversation is actually in front of the user: open,
+// and in a tab that is being looked at. Read receipts and "read" markers are
+// only honest when it is - a chat left open in a background tab used to tell
+// the sender "Seen" for messages nobody had read.
+function friendChatOnScreen(clientId) {
+  return !!clientId && activeFriendChatId === clientId
+    && friendChatModal.classList.contains('open')
+    && document.visibilityState === 'visible';
+}
+
+// `always` for a message that just landed on screen: its unread marker is
+// still on its way. Coming back to the tab only needs to say anything when
+// something arrived while it was in the background.
+function markActiveChatRead(always) {
+  const id = activeFriendChatId;
+  if (!friendChatOnScreen(id)) return;
+  const unread = notifData.some((n) => n.type === 'message' && n.fromClientId === id);
+  if (!always && !unread) return;
+  socket.emit('mark-messages-read', { friendClientId: id });
+  if (messageSeenEnabled) socket.emit('chat-seen', { friendClientId: id });
+  if (unread) {
+    notifData = notifData.filter((n) => !(n.type === 'message' && n.fromClientId === id));
+    renderNotifications();
+  }
+}
+document.addEventListener('visibilitychange', () => markActiveChatRead(false));
 
 // Who you are talking to, as a profile: add, block and report live there.
 const friendChatWho = document.getElementById('friendChatWho');
@@ -3980,12 +4250,30 @@ if (friendChatClearBtn) {
   });
 }
 
+// Call from inside the conversation, as any messenger offers: friends
+// always, a recent match only while they are here.
+const friendChatCallBtn = document.getElementById('friendChatCallBtn');
+if (friendChatCallBtn) {
+  friendChatCallBtn.addEventListener('click', () => {
+    const id = activeFriendChatId;
+    if (!id) return;
+    const person = personById(id);
+    closeSidePanel(friendChatModal, friendChatOverlay);
+    activeFriendChatId = null;
+    requestCallBack(id, labelForClientId(id, person.username) || t('stranger'));
+  });
+}
+
 // The line under the chat title: "typing…", "Online" or "Last seen 5m ago".
 const friendChatStatus = document.getElementById('friendChatStatus');
 function renderFriendChatStatus() {
   if (!friendChatStatus) return;
   const id = activeFriendChatId;
   const person = id && (friendsData.find((f) => f.clientId === id) || serverHistory.find((h) => h.clientId === id));
+  if (friendChatCallBtn) {
+    const isFriend = !!id && friendsData.some((f) => f.clientId === id);
+    friendChatCallBtn.classList.toggle('hidden', !id || inCallWith(id) || !(isFriend || (person && person.online)));
+  }
   const typing = !!id && typingFrom.has(id);
   friendChatStatus.textContent = typing ? t('friendTyping') : presenceText(person);
   friendChatStatus.classList.toggle('is-online', !typing && !!(person && person.online));
@@ -4047,24 +4335,136 @@ socket.on('friend-message-deleted', ({ chatWith, id } = {}) => {
   renderHistory();
 });
 
+function friendChatSystemNote(text) {
+  const el = document.createElement('div');
+  el.className = 'chat-msg system';
+  el.textContent = text;
+  friendChatMessages.appendChild(el);
+  friendChatMessages.scrollTop = friendChatMessages.scrollHeight;
+}
+
+// --- Outbox: direct messages the server has not acknowledged yet ------------
+// A message is shown the instant it is sent, marked as on its way, and settled
+// by the server's 'friend-message-sent'. One that never gets there is marked
+// "Not sent" with a retry instead of vanishing, and everything still waiting is
+// re-sent when the socket registers again (the server stores each id once).
+const friendOutbox = new Map(); // id -> { toClientId, payload, tries, timer }
+const FRIEND_SEND_TIMEOUT_MS = 12000;
+const FRIEND_SEND_MAX_TRIES = 5;
+
+function newFriendMsgId() {
+  return 'm' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+}
+
+function outboxMessage(id) {
+  const entry = friendOutbox.get(id);
+  const cache = entry && friendChatCache.get(entry.toClientId);
+  return cache ? cache.find((m) => m.id === id) : null;
+}
+
+function repaintChat(clientId) {
+  if (activeFriendChatId === clientId) renderFriendChatMessages();
+}
+
+function emitOutbox(id) {
+  const entry = friendOutbox.get(id);
+  if (!entry) return;
+  entry.tries += 1;
+  clearTimeout(entry.timer);
+  entry.timer = setTimeout(() => markFriendMessageFailed(id), FRIEND_SEND_TIMEOUT_MS);
+  socket.emit('friend-message', { toClientId: entry.toClientId, ...entry.payload });
+}
+
+function markFriendMessageFailed(id) {
+  const entry = friendOutbox.get(id);
+  const msg = outboxMessage(id);
+  if (!entry || !msg) return;
+  clearTimeout(entry.timer);
+  msg.pending = false;
+  msg.failed = true;
+  repaintChat(entry.toClientId);
+}
+
+function retryFriendMessage(id) {
+  const entry = friendOutbox.get(id);
+  const msg = outboxMessage(id);
+  if (!entry || !msg) return;
+  msg.failed = false;
+  msg.pending = true;
+  entry.tries = 0;
+  repaintChat(entry.toClientId);
+  emitOutbox(id);
+}
+
+// The server stored it (or already had it): the bubble is real now.
+function settleFriendMessage(id) {
+  const entry = friendOutbox.get(id);
+  if (!entry) return;
+  clearTimeout(entry.timer);
+  friendOutbox.delete(id);
+}
+
+// The server refused it for good: take the bubble back and give the text back
+// to the composer, so a link or a typo can be fixed rather than retyped.
+function dropFriendMessage(id) {
+  const entry = friendOutbox.get(id);
+  if (!entry) return null;
+  clearTimeout(entry.timer);
+  friendOutbox.delete(id);
+  const cache = friendChatCache.get(entry.toClientId) || [];
+  friendChatCache.set(entry.toClientId, cache.filter((m) => m.id !== id));
+  noteLastMessage(entry.toClientId, lastFromCache(entry.toClientId));
+  if (activeFriendChatId === entry.toClientId && !friendChatInput.value && entry.payload.text) {
+    friendChatInput.value = entry.payload.text;
+    saveFriendDraft();
+  }
+  repaintChat(entry.toClientId);
+  renderFriendsList();
+  renderHistory();
+  return entry;
+}
+
+friendChatMessages.addEventListener('click', (e) => {
+  const retry = e.target.closest('.chat-msg-retry');
+  if (retry) retryFriendMessage(retry.dataset.retryId);
+});
+
+// Re-registered after a drop: anything still unacknowledged goes again.
+socket.on('register-result', ({ ok } = {}) => {
+  if (ok === false) return;
+  friendOutbox.forEach((entry, id) => {
+    const msg = outboxMessage(id);
+    if (msg && msg.failed) { msg.failed = false; msg.pending = true; repaintChat(entry.toClientId); }
+    entry.tries = 0;
+    emitOutbox(id);
+  });
+});
+
 function sendFriendMessage(payload) {
   const text = payload.text || '';
-  if (!activeFriendChatId || (!text && !payload.gif)) return false;
+  const toClientId = activeFriendChatId;
+  if (!toClientId || (!text && !payload.gif)) return false;
   if (text && messageHasLink(text)) {
-    const el = document.createElement('div');
-    el.className = 'chat-msg system';
-    el.textContent = t('errNoLinks');
-    friendChatMessages.appendChild(el);
-    friendChatMessages.scrollTop = friendChatMessages.scrollHeight;
+    friendChatSystemNote(t('errNoLinks'));
     return false;
   }
-  socket.emit('friend-message', {
-    toClientId: activeFriendChatId,
-    text,
-    id: payload.id,
-    replyTo: payload.replyTo,
-    gif: payload.gif,
-  });
+  if (text && messageIsUnsafe(text)) {
+    friendChatSystemNote(t('errUnsafeMessage'));
+    return false;
+  }
+  const id = payload.id || newFriendMsgId();
+  const wire = { text, id, replyTo: payload.replyTo || null, gif: payload.gif || null };
+  const cache = friendChatCache.get(toClientId) || [];
+  cache.push({ from: getClientId(), text, ts: Date.now(), id, replyTo: wire.replyTo, gif: wire.gif, pending: true });
+  friendChatCache.set(toClientId, cache);
+  friendOutbox.set(id, { toClientId, payload: wire, tries: 0, timer: null });
+  noteLastMessage(toClientId, { id, mine: true, text, gif: !!wire.gif, ts: Date.now() });
+  friendDrafts.delete(toClientId);
+  renderFriendChatMessages({ toBottom: true });
+  renderFriendsList();
+  renderHistory();
+  playSendSound();
+  emitOutbox(id);
   return true;
 }
 
@@ -4117,8 +4517,7 @@ socket.on('friend-message', ({ fromClientId, text, ts, id, replyTo, gif }) => {
   renderHistory();
   if (activeFriendChatId === fromClientId && friendChatModal.classList.contains('open')) {
     renderFriendChatMessages();
-    socket.emit('mark-messages-read', { friendClientId: fromClientId });
-    if (messageSeenEnabled) socket.emit('chat-seen', { friendClientId: fromClientId });
+    markActiveChatRead(true);
   }
 });
 
@@ -4133,8 +4532,18 @@ socket.on('chat-seen', ({ byClientId, ts } = {}) => {
 });
 
 socket.on('friend-message-sent', ({ toClientId, text, ts, id, replyTo, gif }) => {
+  settleFriendMessage(id);
   const cache = friendChatCache.get(toClientId) || [];
-  if (id && cache.some((m) => m.id === id)) return;
+  const mine = id && cache.find((m) => m.id === id);
+  if (mine) {
+    // The optimistic copy: it is delivered now, stamped with the server's time.
+    const changed = mine.pending || mine.failed;
+    mine.pending = false;
+    mine.failed = false;
+    mine.ts = ts || mine.ts;
+    if (changed) repaintChat(toClientId);
+    return;
+  }
   cache.push({ from: getClientId(), text, ts, id, replyTo, gif });
   friendChatCache.set(toClientId, cache);
   noteLastMessage(toClientId, { id, mine: true, text: text || '', gif: !!gif, ts });
@@ -4144,7 +4553,13 @@ socket.on('friend-message-sent', ({ toClientId, text, ts, id, replyTo, gif }) =>
 });
 
 socket.on('friend-chat-history', ({ friendClientId, messages }) => {
-  friendChatCache.set(friendClientId, messages || []);
+  // Anything still on its way is not in the server's copy yet - keep it.
+  const stored = messages || [];
+  const have = new Set(stored.map((m) => m.id));
+  const waiting = (friendChatCache.get(friendClientId) || [])
+    .filter((m) => (m.pending || m.failed) && !have.has(m.id));
+  stored.forEach((m) => { if (friendOutbox.has(m.id)) settleFriendMessage(m.id); });
+  friendChatCache.set(friendClientId, stored.concat(waiting));
   if (activeFriendChatId === friendClientId) renderFriendChatMessages();
 });
 
@@ -4498,8 +4913,22 @@ function claimIdentityWhenVisible() {
 }
 
 let identityRetries = 0;
+// Tell the server whether this tab is actually being looked at, so something
+// that arrives while it sits in the background also reaches the phone's
+// notification tray (see pushNotification on the server).
+function reportVisibility() {
+  if (socket.connected) socket.emit('app-visibility', { hidden: document.visibilityState === 'hidden' });
+}
+document.addEventListener('visibilitychange', reportVisibility);
+
 socket.on('register-result', ({ ok, reason } = {}) => {
-  if (ok !== false) { identityRetries = 0; return; }
+  if (ok !== false) {
+    identityRetries = 0;
+    // A fresh socket starts out "visible" on the server; correct it at once
+    // for a tab that reconnected while in the background.
+    if (document.visibilityState === 'hidden') reportVisibility();
+    return;
+  }
   if (!lastRegisterPayload) return;
   // Another live copy of the app holds this identity - not a stuck client, so
   // retrying on a timer would only spin.
@@ -4508,6 +4937,10 @@ socket.on('register-result', ({ ok, reason } = {}) => {
     claimIdentityWhenVisible();
     return;
   }
+  // The identity has history and this browser cannot prove it owns it:
+  // retrying cannot change that, so start a fresh one now. A signed-in
+  // account gets its own profile back through resume-session.
+  if (reason === 'unverified') identityRetries = 4;
   if (identityRetries < 4) {
     identityRetries += 1;
     setTimeout(() => {
@@ -6828,11 +7261,23 @@ socket.on('chat-reaction', ({ id, emoji, on } = {}) => {
 });
 
 // Server-side link filter rejected a message we let through - surface it.
-socket.on('chat-blocked', ({ reason } = {}) => {
+socket.on('chat-blocked', ({ reason, scope, id, toClientId } = {}) => {
+  if (scope === 'friend' && id && friendOutbox.has(id)) {
+    const entry = friendOutbox.get(id);
+    // Too fast, usually a backlog flushed on reconnect: wait and go again.
+    if (reason === 'rate' && entry.tries < FRIEND_SEND_MAX_TRIES) {
+      clearTimeout(entry.timer);
+      entry.timer = setTimeout(() => emitOutbox(id), 2500 * entry.tries);
+      return;
+    }
+    dropFriendMessage(id);
+    if (activeFriendChatId !== toClientId) return;
+  }
   const target = friendChatModal.classList.contains('open') ? friendChatMessages : chatMessages;
   const el = document.createElement('div');
   el.className = 'chat-msg system';
   el.textContent = reason === 'call-required' ? t('errCallRequiredToChat')
+    : reason === 'age' && message ? message
     : reason === 'unreachable' ? t('errCantMessage')
     : reason === 'unsafe' ? t('errUnsafeMessage')
     : reason === 'rate' ? t('errSlowDown') : t('errNoLinks');
@@ -7417,7 +7862,7 @@ function renderRailFriends() {
   railFriendsList.innerHTML = '';
   // Online first: the only ones you can do anything with right now.
   [...friendsData]
-    .sort((a, b) => Number(!!b.online) - Number(!!a.online))
+    .sort((a, b) => Number(!!b.online) - Number(!!a.online) || Number(!!b.pinned) - Number(!!a.pinned))
     .slice(0, 5)
     .forEach((f) => {
       const row = document.createElement('button');
@@ -8169,6 +8614,50 @@ if (location.pathname === '/call' && !pendingInviteToken) {
   openAppSettings();
 }
 
+// Where a push notification and the manifest's Friends shortcut both land.
+// Without this the notification opens the app but not the message that
+// prompted it, which is the whole reason the person tapped. Returns whether
+// the link was one of these.
+function openSocialDeepLink(params) {
+  const open = params.get('open');
+  if (open === 'friends' || open === 'requests') {
+    closeSidePanel(friendChatModal, friendChatOverlay);
+    closeSidePanel(friendProfileModal, friendProfileOverlay);
+    openSidePanel(friendsDropdown, friendsOverlay);
+    showFriendsTab(open === 'requests' ? 'requests' : 'friends');
+    return true;
+  }
+  // A message notification opens that conversation. The lists that say who
+  // this user may message arrive with the first state-sync, so it waits for
+  // that (once) rather than opening a chat the server would refuse.
+  const chatWith = open === 'chat' ? params.get('with') : null;
+  if (!chatWith || !/^[A-Za-z0-9_-]{8,64}$/.test(chatWith)) return false;
+  const openWhenKnown = () => {
+    if (canMessage(chatWith)) openFriendChat(chatWith);
+    else {
+      openSidePanel(friendsDropdown, friendsOverlay);
+      showFriendsTab('friends');
+    }
+  };
+  if (friendsSynced) openWhenKnown();
+  else socket.once('state-sync', () => setTimeout(openWhenKnown, 0));
+  return true;
+}
+
+// A notification tapped while the app is already open is handed over by the
+// service worker instead of reloading the tab - a reload would drop whatever
+// call was going on in it.
+if (navigator.serviceWorker) {
+  navigator.serviceWorker.addEventListener('message', (e) => {
+    const data = e.data || {};
+    if (data.type !== 'tl-open' || typeof data.url !== 'string') return;
+    try {
+      const url = new URL(data.url, location.origin);
+      if (url.origin === location.origin) openSocialDeepLink(url.searchParams);
+    } catch (_) { /* malformed - ignore */ }
+  });
+}
+
 // Deep link from the SEO landing pages: /?mode=chat sends the visitor straight
 // to the dedicated text-chat app.
 try {
@@ -8176,30 +8665,7 @@ try {
   if (params.get('mode') === 'chat') {
     location.replace('/chat');
   }
-  // Where a push notification and the manifest's Friends shortcut both land.
-  // Without this the notification opens the app but not the message that
-  // prompted it, which is the whole reason the person tapped.
-  if (params.get('open') === 'friends' || params.get('open') === 'requests') {
-    openSidePanel(friendsDropdown, friendsOverlay);
-    showFriendsTab(params.get('open') === 'requests' ? 'requests' : 'friends');
-    history.replaceState(history.state, '', '/');
-  }
-  // A message notification opens that conversation. The lists that say who
-  // this user may message arrive with the first state-sync, so it waits for
-  // that (once) rather than opening a chat the server would refuse.
-  const chatWith = params.get('open') === 'chat' ? params.get('with') : null;
-  if (chatWith && /^[A-Za-z0-9_-]{8,64}$/.test(chatWith)) {
-    history.replaceState(history.state, '', '/');
-    const openWhenKnown = () => {
-      if (canMessage(chatWith)) openFriendChat(chatWith);
-      else {
-        openSidePanel(friendsDropdown, friendsOverlay);
-        showFriendsTab('friends');
-      }
-    };
-    if (friendsSynced) openWhenKnown();
-    else socket.once('state-sync', () => setTimeout(openWhenKnown, 0));
-  }
+  if (openSocialDeepLink(params)) history.replaceState(history.state, '', '/');
   // The account screens live here, so /chat's Settings rows link to them
   // rather than the chat app carrying its own copy of the account stack.
   const open = params.get('open');
@@ -8236,7 +8702,7 @@ refreshNetStatus();
 // (who upgrade via /pricing) get everything unlocked. The server enforces
 // all limits - this state only drives the UI.
 let isPremiumUser = false;
-let freeLimits = { countries: 2, friends: 5 };
+let freeLimits = { countries: 2 };
 
 // Now that the free limits and the premium flag exist, the filters panel can
 // say what it is set to. From here on every change refreshes it (see the note
@@ -8249,7 +8715,6 @@ socket.on('premium-status', ({ premium, limits } = {}) => {
   if (limits) {
     freeLimits = {
       countries: limits.countries || 2,
-      friends: limits.friends || 5,
     };
   }
   updatePremiumUi();
@@ -8286,15 +8751,6 @@ prefGenderGroup.addEventListener('click', (e) => {
   e.preventDefault();
   showPremiumUpsell(t('premiumGenderLocked'));
 }, true);
-
-// Friend-limit errors from the normal in-call "Add friend" flow.
-socket.on('friend-request-result', ({ ok, limitReached } = {}) => {
-  if (!ok && limitReached) {
-    addFriendBtn.classList.remove('added');
-    addFriendBtn.disabled = false;
-    showPremiumUpsell(t('premiumFriendLimit', { n: freeLimits.friends }));
-  }
-});
 
 // --- "James from UK is online" - friend came online notification -------------
 socket.on('friend-online', ({ clientId, username, countryCode, country } = {}) => {
