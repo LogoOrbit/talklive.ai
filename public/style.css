@@ -2667,8 +2667,8 @@ body.panel-open .game-overlay {
 .seen-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 8px 6px 12px;
+  gap: 6px;
+  padding: 5px 6px 5px 8px;
   border: 1px solid rgba(0, 212, 255, 0.35);
   border-radius: 999px;
   background: rgba(0, 212, 255, 0.1);
@@ -2712,11 +2712,9 @@ body.panel-open .game-overlay {
 .seen-toggle.is-off .seen-toggle-switch { background: rgba(138, 144, 168, 0.4); }
 .seen-toggle.is-off .seen-toggle-knob { transform: translateX(0); }
 
-/* Very narrow screens: drop the label, keep ticks + switch. */
-@media (max-width: 380px) {
-  .seen-toggle-label { display: none; }
-  .seen-toggle { padding: 6px 8px; }
-}
+/* The label crowded the name out of the header; ticks + switch say enough,
+   and the button keeps its aria-label and tooltip. */
+.seen-toggle-label { display: none; }
 
 .chat-form {
   display: flex;
@@ -4938,26 +4936,27 @@ body.panel-open .game-overlay {
     top: auto;
     left: auto;
     right: 24px;
-    bottom: 24px;
-    width: 400px;
+    bottom: 0;
+    width: 360px;
     max-width: calc(100vw - 48px);
-    height: min(620px, calc(100vh - 120px));
+    height: min(480px, calc(100vh - 96px));
     border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 20px;
-    box-shadow: 0 26px 70px rgba(0,0,0,0.5);
+    border-bottom: 0;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -10px 50px rgba(0,0,0,0.45);
     backdrop-filter: blur(14px);
-    /* Pop up from the corner with a slight scale; hidden state is offset +
-       faded so the transition reads as a spring, not a slide. */
-    transform: translateY(28px) scale(0.96);
+    /* Slides up from the bottom edge, like a Messenger chat window. */
+    transform: translateY(100%);
     opacity: 0;
     pointer-events: none;
-    transition: transform 0.3s cubic-bezier(.2,.9,.25,1), opacity 0.22s ease;
+    transition: transform 0.3s cubic-bezier(.2,.9,.25,1), opacity 0.2s ease;
   }
   .chat-side-panel.open {
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
     opacity: 1;
     pointer-events: auto;
   }
+  .chat-side-panel .side-panel-header { padding: 12px 12px 12px 16px; }
   .chat-side-panel .chat-msg { font-size: 16px; }
   .chat-side-panel .chat-messages { padding: 16px; gap: 10px; }
 }
