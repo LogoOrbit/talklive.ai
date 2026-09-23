@@ -24,13 +24,14 @@ test('search adhesive is controlled, dismissible, and restricted to matchmaking'
   assert.match(source, /attributeFilter: \['data-call-state', 'data-mode'\]/);
 });
 
-function harness(mode, hidden = false, callState) {
+function harness(mode, hidden = false, callState, opts = {}) {
   const events = {}, mutations = [], intervals = [], written = [];
   const button = { dataset: { mode, callState } };
   function element(type) {
     return { dataset: { ad: type }, style: {}, children: [], clientWidth: 800,
       getBoundingClientRect: () => ({ width: 800, top: 10, bottom: 100 }),
-      closest: () => null, setAttribute() {},
+      closest: sel => (sel === '#callPanel' && opts.inCallPanel ? {} : null),
+      attrs: {}, setAttribute(k, v) { this.attrs[k] = v; }, getAttribute(k) { return this.attrs[k] || null; },
       appendChild(child) { this.children.push(child); },
       removeChild(child) { this.children.splice(this.children.indexOf(child), 1); } };
   }
@@ -48,8 +49,12 @@ function harness(mode, hidden = false, callState) {
       return el;
     },
   };
-  const window = { innerHeight: 800, innerWidth: 1000, MutationObserver: true };
-  vm.runInNewContext(source, { window, document,
+  const window = { innerHeight: 800, innerWidth: 1000, MutationObserver: true, sessionStorage: opts.sessionStorage };
+  // With opts.config the page fetches it like /ads-config.json; the 1s
+  // fallback timer never fires, so the test awaits the fetch instead.
+  const fetch = opts.config ? () => Promise.resolve({ ok: true, json: () => opts.config }) : undefined;
+  if (fetch) window.fetch = fetch;
+  vm.runInNewContext(source, { window, document, fetch, setTimeout: () => 0, clearTimeout() {},
     MutationObserver: class { constructor(cb) { mutations.push(cb); } observe() {} },
     setInterval: cb => (intervals.push(cb), intervals.length), clearInterval() {},
   });
@@ -171,4 +176,50 @@ test('backfill stays off until a network is configured', () => {
   // The default in ads.js must agree, so a failed config fetch cannot turn on
   // a network that was never set up.
   assert.match(source, /backfill: \{ enabled: false, networks: \[\] \}/);
+});
+
+/*
+ * No ad renders at the connect moment. A tag still loading when the match
+ * connects used to finish a second or two into the call; it is now abandoned
+ * invisibly inside its reserved space, and the space is returned at idle.
+ */
+test('a slot still loading when the match connects never appears', () => {
+  const h = harness('loading', false, 'searching');
+  const slot = h.slots[2];
+  assert.equal(h.written.length, 1, 'the banner started loading during the search');
+  h.change('loading', 'connecting');
+  assert.equal(slot.style.visibility, 'hidden', 'hidden the instant the match connects');
+  assert.notEqual(slot.style.display, 'none', 'without giving up its space mid-call');
+  h.change('hangup', 'connected');
+  for (let i = 0; i < 40; i++) h.tick();
+  assert.equal(slot.attrs['data-ad-filled'], undefined, 'never revealed');
+  h.change('call', 'idle');
+  assert.equal(slot.style.display, 'none', 'space returned once the call ends');
+});
+
+test('call-screen frequency cap is a config value, off by default', () => {
+  const config = require('../public/ads-config.json');
+  assert.equal(config.callScreenCap.everyNCalls, 1);
+  assert.match(source, /callScreenCap: \{ everyNCalls: 1 \}/);
+  assert.match(source, /if \(isCallScreenSlot\(el\) && callScreenCapped\(\)\) \{ hideSlot\(el\); return; \}/);
+});
+
+test('with everyNCalls = 3, call-screen slots serve on one call in three', async () => {
+  const base = require('../public/ads-config.json');
+  const config = Object.assign({}, base, {
+    callScreenCap: { everyNCalls: 3 }, fallback: { enabled: false, promos: [] },
+    socialBar: { enabled: false }, searchAnchor: { enabled: false },
+  });
+  // One page view per call. The counters live in sessionStorage so they
+  // survive the reload; one shared store stands in for it here.
+  const data = {};
+  const sessionStorage = { getItem: k => (k in data ? data[k] : null), setItem: (k, v) => { data[k] = v; } };
+  const served = [];
+  for (let call = 1; call <= 6; call++) {
+    const h = harness('loading', false, undefined, { inCallPanel: true, config, sessionStorage });
+    await new Promise(r => setImmediate(r));
+    h.change('loading', 'searching');
+    served.push(h.written.length > 0);
+  }
+  assert.deepEqual(served, [true, false, false, true, false, false]);
 });

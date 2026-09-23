@@ -70,6 +70,8 @@
     // floating unit unexpectedly.
     searchAnchor: { enabled: false, minViewportHeight: 700, dismissHours: 24 },
     pauseDuringCall: true,
+    // Mirrors callScreenCap in ads-config.json. 1 = no cap.
+    callScreenCap: { everyNCalls: 1 },
     lazyRootMargin: '100px',
     fillTimeoutMs: 15000,
     visibleFillTimeoutMs: 6000,
@@ -169,7 +171,9 @@
   var deferred = [];
 
   function releaseDeferred() {
-    if (document.hidden || callIsLive()) return;
+    countSearch();
+    if (callIsLive()) { abandonInFlight(); return; }
+    if (document.hidden) return;
     collapsePending();
     if (!deferred.length) return;
     var pending = deferred;
@@ -185,6 +189,7 @@
    * nothing changes, and needs no cooperation from app.js.
    */
   function watchCallState() {
+    countSearch();
     document.addEventListener('visibilitychange', releaseDeferred);
     if (!window.MutationObserver) return;
     var targets = [document.getElementById('callMainBtn'), document.getElementById('viewLive')]
@@ -194,6 +199,86 @@
     targets.forEach(function (el) {
       observer.observe(el, { attributes: true, attributeFilter: ['class', 'data-mode', 'data-call-state'] });
     });
+  }
+
+  // --- Nothing renders at the connect moment --------------------------------
+
+  /*
+   * A slot whose tag is still loading when a match connects is abandoned, not
+   * left to finish. Before this, a banner that started during the search
+   * (which on the call screen is usually about six seconds) routinely landed
+   * a second or two after the call connected - an ad appearing at exactly the
+   * moment the user is trying to say hello.
+   *
+   * Abandoning never moves the page: the slot is made invisible inside the
+   * space it already reserved, its poll stops, and the space is given back
+   * only when the call ends (collapsePending). A creative that arrives late
+   * lands in an invisible box and is never revealed. Slots that had already
+   * filled during the search stay exactly as they were.
+   */
+  function abandonInFlight() {
+    var slots = [].slice.call(document.querySelectorAll('[data-ad]'));
+    slots.forEach(function (el) {
+      if (!el.dataset.adLoaded || el.dataset.adDone || el.getAttribute('data-ad-filled')) return;
+      el.dataset.adDone = '1';
+      el.dataset.adAbandoned = '1';
+      el.style.visibility = 'hidden';
+      reportFill(el, false);
+      pendingCollapse.push(el);
+    });
+  }
+
+  // --- Call-screen frequency cap ---------------------------------------------
+
+  /*
+   * config.callScreenCap.everyNCalls: the slots inside #callPanel serve a
+   * network ad on at most one call in every N. On the other calls they are
+   * handed to hideSlot, which puts one of our own promos (never labelled
+   * Sponsored) in the reserved space, or collapses it.
+   *
+   * A "call" is one search for a match, counted per browser tab session so a
+   * reload does not reset it. Slots are never refreshed within a page view, so
+   * within one page this only decides whether the call screen's slots load at
+   * all; across reloads it is what limits impressions per call.
+   */
+  var memoryCounters = { searches: 0, served: -1 };
+  function counter(key, value) {
+    try {
+      var store = window.sessionStorage;
+      if (value === undefined) {
+        var raw = store.getItem('tl_ad_' + key);
+        return raw === null ? memoryCounters[key] : Number(raw);
+      }
+      store.setItem('tl_ad_' + key, String(value));
+    } catch (err) { /* private mode or no storage: fall through to memory */ }
+    if (value !== undefined) memoryCounters[key] = value;
+    return memoryCounters[key];
+  }
+
+  var lastCallState = null;
+  function countSearch() {
+    var btn = document.getElementById('callMainBtn');
+    if (!btn) return;
+    var state = btn.dataset ? btn.dataset.callState : btn.getAttribute('data-call-state');
+    if (state === 'searching' && lastCallState !== 'searching') counter('searches', counter('searches') + 1);
+    lastCallState = state;
+  }
+
+  function isCallScreenSlot(el) {
+    return !!(el.closest && el.closest('#callPanel'));
+  }
+
+  // True when this call-screen slot must not serve a network ad on this call.
+  function callScreenCapped() {
+    var n = Math.floor(Number(config.callScreenCap && config.callScreenCap.everyNCalls) || 1);
+    if (n <= 1) return false;
+    var searches = counter('searches');
+    var served = counter('served');
+    // Every slot on the call that won the cap may serve, not just the first.
+    if (served === searches) return false;
+    if (served >= 0 && searches - served < n) return true;
+    counter('served', searches);
+    return false;
   }
 
   // --- Slot lifecycle -------------------------------------------------------
@@ -414,6 +499,7 @@
       // safe mid-call because neither outcome changes the slot's size: a house
       // promo fills the space that was already reserved, and an actual collapse
       // is deferred to the end of the call by hideSlot's keepSpace.
+      if (el.dataset.adAbandoned) { clearInterval(poll); return; }
       if (document.hidden) return;
       if (check()) { clearInterval(poll); onFill(); return; }
       // A host the browser could not load - a filter list, a DNS resolver that
@@ -826,6 +912,7 @@
     // the visitor could actually see.
     if (type === 'native' && nativeClaimed) { hideSlot(el); return; }
     if (loaded >= (config.maxSlotsPerPage || 0)) { hideSlot(el); return; }
+    if (isCallScreenSlot(el) && callScreenCapped()) { hideSlot(el); return; }
     loaded++;
     el.dataset.adLoaded = '1';
     if (type === 'native') { nativeClaimed = true; native(el, 0); return; }

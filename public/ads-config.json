@@ -34,6 +34,9 @@
   "_pauseDuringCall": "While a voice call or text chat is live, no slot starts loading, retries a host, or collapses. Ads already on screen stay exactly as they are. This is what keeps a long call free of movement while still earning from impressions placed before it started. Searching for a match is deliberately NOT counted as live: the screen is static and the user is waiting, so that is when the call screen's slots fill.",
   "pauseDuringCall": true,
 
+  "_callScreenCap": "Frequency cap for the slots inside the call screen (#callPanel): they serve a network ad on at most one call in every everyNCalls, counted per browser tab session. On the other calls the reserved space gets one of our own promos (see fallback) or collapses. 1 means no cap. Separately and always on: a slot still loading when a match connects is abandoned invisibly inside its reserved space, so no ad ever appears at the connect moment.",
+  "callScreenCap": { "everyNCalls": 1 },
+
   "_lazyRootMargin": "How far ahead of the viewport a slot begins loading. Larger fills sooner and wastes more impressions on users who never scroll that far; smaller risks an empty slot when the user arrives.",
   "lazyRootMargin": "100px",
 
