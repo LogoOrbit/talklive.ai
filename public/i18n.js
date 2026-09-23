@@ -216,6 +216,8 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "acceptCallsOn": "Friends can call you again.",
     "acceptCallsOff": "Incoming calls are off. Friends can still message you.",
     "friendCallsOff": "They are not taking calls right now.",
+    "callbackAway": "They’re texting right now. We’ve let them know you want to talk.",
+    "callbackBusyQueued": "They’re on another call. We’ve let them know you’re free to talk.",
     "joinedOn": "Joined {date}",
     "settingsRowGuest": "Anonymous profile on this device",
     "settingsRowAccount": "Signed in",

@@ -1481,9 +1481,31 @@ addFriendBtn.addEventListener('click', () => {
   showToast(t('friendRequestSent'));
 });
 
-socket.on('friend-request-result', ({ ok, error, limitReached, accepted }) => {
+// The in-call "Add friend" button reflects what is already true between the
+// two of you: a friend, or someone you have asked, is not someone to ask again.
+// It used to reset to "Add friend" on every match - call-backs included, which
+// are mostly with friends - and tapping it sent a pointless request.
+function syncAddFriendBtn() {
+  const id = currentPartner && currentPartner.clientId;
+  if (!id) return;
+  const known = friendsData.some((f) => f.clientId === id)
+    || sentRequestsData.some((r) => r.clientId === id);
+  if (known) {
+    addFriendBtn.classList.add('added');
+    addFriendBtn.disabled = true;
+  }
+}
+
+socket.on('friend-request-result', ({ ok, error, limitReached, accepted, alreadyFriends }) => {
   // limitReached is handled by the premium-upsell listener further down.
-  if (!ok && error && !limitReached) showError(error);
+  if (!ok && error && !limitReached) {
+    showError(error);
+    // Refused (blocked, restricted, rate-limited): the button went quiet on
+    // the tap, so give it back rather than leave it claiming a request exists.
+    addFriendBtn.classList.remove('added');
+    addFriendBtn.disabled = !(callState === 'connected');
+  }
+  if (ok && alreadyFriends) showToast(t('alreadyFriendsMsg'));
   // Both sides tapped "Add friend": the server turned the second request into
   // an acceptance, so say so instead of leaving a "Request sent" on screen.
   if (ok && accepted) {
@@ -3276,6 +3298,7 @@ socket.on('state-sync', ({ friends: friendList, friendRequests: requestList, sen
   renderFriendChatStatus();
   renderFriendsList();
   renderNotifications();
+  syncAddFriendBtn();
   // A first friend is exactly the moment the profile becomes worth keeping.
   renderLinkProfilePrompts();
   renderFriendChatPresence();
@@ -3816,6 +3839,8 @@ socket.on('friend-reaction', ({ fromClientId, id, emoji, on } = {}) => {
 
 socket.on('friend-message', ({ fromClientId, text, ts, id, replyTo, gif }) => {
   const cache = friendChatCache.get(fromClientId) || [];
+  // A history load that raced this delivery may already hold it.
+  if (id && cache.some((m) => m.id === id)) return;
   cache.push({ from: fromClientId, text, ts, id, replyTo, gif });
   friendChatCache.set(fromClientId, cache);
   noteLastMessage(fromClientId, { id, mine: false, text: text || '', gif: !!gif, ts });
@@ -3842,6 +3867,7 @@ socket.on('chat-seen', ({ byClientId, ts } = {}) => {
 
 socket.on('friend-message-sent', ({ toClientId, text, ts, id, replyTo, gif }) => {
   const cache = friendChatCache.get(toClientId) || [];
+  if (id && cache.some((m) => m.id === id)) return;
   cache.push({ from: getClientId(), text, ts, id, replyTo, gif });
   friendChatCache.set(toClientId, cache);
   noteLastMessage(toClientId, { id, mine: true, text: text || '', gif: !!gif, ts });
@@ -7351,6 +7377,7 @@ function revealPartner() {
   if (!partner) return;
   addFriendBtn.classList.remove('added');
   addFriendBtn.disabled = false;
+  syncAddFriendBtn();
   partnerName.textContent = partner.username;
   // Country/flag only - never show anything gendered about the stranger.
   partnerMeta.innerHTML = getFlagImg(partner.countryCode);
@@ -7613,6 +7640,8 @@ socket.on('call-back-request-result', ({ ok, reason }) => {
     if (reason === 'offline') {
       markFriendCallOffline(clientId);
       showToast(t('friendWentOffline'));
+    } else if (reason === 'away') {
+      showToast(t('callbackAway'));
     } else if (reason === 'calls-off') {
       showToast(t('friendCallsOff'));
     } else if (reason === 'blocked') {
@@ -7625,6 +7654,10 @@ socket.on('call-back-request-result', ({ ok, reason }) => {
     return;
   }
   abandonCallBack();
+  // Not failures: the ask is waiting in their inbox, so say that rather than
+  // painting it red.
+  if (reason === 'away') { showToast(t('callbackAway')); return; }
+  if (reason === 'busy-queued') { showToast(t('callbackBusyQueued')); return; }
   if (reason === 'offline') showError(t('errOffline'));
   else if (reason === 'calls-off') showError(t('friendCallsOff'));
   else if (reason === 'busy') showError(t('errBusy'));

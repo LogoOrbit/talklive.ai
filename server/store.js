@@ -144,7 +144,7 @@ function defaults() {
     // chatHistory: clientId -> [{ clientId, username, countryCode, ts }] - the
     // last few random chat partners, so a user can message someone back after
     // accidentally losing them (kept to the newest 10 per user).
-    social: { friends: {}, friendChats: {}, blocks: {}, chatHistory: {}, friendRequests: {}, sentRequests: {}, notifications: {}, lastSeen: {}, blockMeta: {}, chatClears: {} },
+    social: { friends: {}, friendChats: {}, blocks: {}, chatHistory: {}, friendRequests: {}, sentRequests: {}, notifications: {}, lastSeen: {}, blockMeta: {}, chatClears: {}, declinedRequests: {} },
     analytics: {
       totals: { visits: 0, connections: 0, matches: 0, messages: 0, reports: 0, accounts: 0, bots: 0 },
       // 'YYYY-MM-DD' (UTC) -> { visits, uniques, uniqueSet, connections, matches,
@@ -1589,6 +1589,8 @@ function saveSocial(social) {
     blockMeta: social.blockMeta || {},
     // "Clear chat" is per person: the thread stays for the other side.
     chatClears: social.chatClears || {},
+    // Declined friend requests, so a decline still holds after a deploy.
+    declinedRequests: social.declinedRequests || {},
   };
   save();
 }
