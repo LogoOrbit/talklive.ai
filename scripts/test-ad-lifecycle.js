@@ -77,7 +77,8 @@ test('a slot becomes an AdSense unit with the configured unit ID', async () => {
 });
 
 test('without a unit ID a slot never loads (Auto ads place ads instead)', async () => {
-  const h = harness({ cfg: config });
+  const noUnit = Object.assign({}, config, { adsense: { client: config.adsense.client, slots: {} } });
+  const h = harness({ cfg: noUnit });
   await h.ready();
   assert.equal(h.pushes.length, 0);
   assert.equal(h.els[0].style.display, 'none', 'collapses - no house promo either');
@@ -126,4 +127,8 @@ test('the density ceiling is applied when slots load', async () => {
   await h.ready();
   assert.equal(h.pushes.length, 1);
   assert.equal(h.els[1].style.display, 'none');
+});
+
+test('the shipped config uses the TalkLive display unit', () => {
+  assert.equal(config.adsense.slots.default, '2415869132');
 });

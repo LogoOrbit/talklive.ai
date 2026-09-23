@@ -15,7 +15,7 @@
   "adsense": {
     "client": "ca-pub-6368797323385379",
     "slots": {
-      "default": ""
+      "default": "2415869132"
     }
   },
   "_pauseDuringCall": "While a voice call or text chat is live, no slot starts loading or collapses, so nothing moves under a conversation.",
