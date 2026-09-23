@@ -28,7 +28,9 @@ const I18N_LANGS = {
 
 // Only English ships inline; other languages live in /i18n/<lang>.js and are
 // fetched on demand by setLanguage(), cutting ~90% of this file for most visitors.
-const I18N_STRINGS = {
+// Merged into whatever is already there: the head of each page preloads the
+// visitor's language file, and it can land before this script runs.
+const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
   en: {
     "sharePromptTitle": "Enjoyed that call?",
     "sharePromptBody": "TalkLive gets better with more people online. Invite a friend to join the conversation.",
@@ -390,6 +392,16 @@ const I18N_STRINGS = {
     "avatar": "Avatar",
     "avatarHint": "Pick a face or a spirit animal. It is your face everywhere - your friends, your profile, and whoever you connect with on a call.",
     "saveAvatar": "Save avatar",
+    "growthAria": "TalkLive membership and sharing",
+    "playMusic": "Play music",
+    "pauseMusic": "Pause music",
+    "noteFreeTitle": "Made free, just for you",
+    "noteFreeBody": "TalkLive is 100% free. No payment needed to talk, no time limits, no tricks.",
+    "noteFreeCare": "We work on it every day to make this the smoothest, cleanest way to talk to new people anywhere in the world - fast connections and a simple design, built with care.",
+    "noteFreeSign": "Enjoy your talks. - The TalkLive team",
+    "filtersPremiumBody": "Free includes up to 3 countries per list. Premium will unlock gender filters, unlimited country lists, unlimited friends, instant rematching and no ads - it is coming soon.",
+    "adAria": "Sponsored advertisement",
+    "adHide": "Hide advertisement for 24 hours",
     "accountGuestHint": "Sign in to keep your name, avatar and friends on any device.",
     "avatarSaved": "Avatar updated.",
     "updatePassword": "Update Password",
@@ -589,6 +601,14 @@ const I18N_STRINGS = {
     "neverFromTitle": "Never from these countries",
     "neverFromHint": "Anyone here is skipped, even if the list above allows them.",
     "interestsHint": "We try to pair you with someone who typed something similar. It never blocks a match.",
+    "interest_music": "music",
+    "interest_gaming": "gaming",
+    "interest_movies": "movies",
+    "interest_travel": "travel",
+    "interest_football": "football",
+    "interest_coding": "coding",
+    "interest_books": "books",
+    "interest_anime": "anime",
     "clearAll": "Clear all",
     "saveFilters": "Save filters",
     "searchPlaceholder": "Search people, countries, or interests…",
@@ -785,30 +805,52 @@ const I18N_STRINGS = {
     "animalEagle": "Eagle",
     "animalEagleTrait": "Sharp-eyed and goes its own way"
   },
-};
+});
 window.I18N_STRINGS = I18N_STRINGS;
 
 const I18N_STATE = {
   lang: 'en',
 };
 
-function i18nDetectLang() {
-  // An explicit ?lang= / ?hl= query param wins - this is what the hreflang
-  // alternates in the sitemap and page <head> point at, so search engines and
-  // shared links land directly on the right language.
-  try {
-    const qs = new URLSearchParams(window.location.search);
-    const q = (qs.get('lang') || qs.get('hl') || '').toLowerCase().split('-')[0];
-    if (q && I18N_LANGS[q]) return q;
-  } catch (e) { /* URLSearchParams unavailable - fall through */ }
-  const saved = localStorage.getItem('talklive_lang');
-  if (saved && I18N_LANGS[saved]) return saved;
-  const candidates = navigator.languages || [navigator.language || 'en'];
+// Only a language the visitor picked themselves is remembered. The one we
+// detect is never stored: storing it froze the first guess forever, so a
+// phone whose language changed later - or anyone who once arrived through a
+// ?lang= link - kept seeing the wrong language.
+const I18N_CHOICE_KEY = 'talklive_lang_choice';
+// Close relatives we do not ship separately: Malay reads fine in Indonesian,
+// and some older Android builds still report Indonesian as "in".
+const I18N_ALIASES = { in: 'id', ms: 'id' };
+
+function i18nNormalize(code) {
+  const base = String(code || '').toLowerCase().split(/[-_]/)[0];
+  const lang = I18N_ALIASES[base] || base;
+  return I18N_LANGS[lang] ? lang : null;
+}
+
+function i18nSavedChoice() {
+  try { return i18nNormalize(localStorage.getItem(I18N_CHOICE_KEY)); } catch (e) { return null; }
+}
+
+// The phone's or browser's own language list, most preferred first.
+function i18nBrowserLang() {
+  const candidates = (navigator.languages && navigator.languages.length)
+    ? navigator.languages : [navigator.language || navigator.userLanguage || 'en'];
   for (const c of candidates) {
-    const base = String(c).toLowerCase().split('-')[0];
-    if (I18N_LANGS[base]) return base;
+    const lang = i18nNormalize(c);
+    if (lang) return lang;
   }
   return 'en';
+}
+
+function i18nDetectLang() {
+  // An explicit ?lang= / ?hl= query param wins for this page view - it is what
+  // the hreflang alternates point at - but it is not remembered.
+  try {
+    const qs = new URLSearchParams(window.location.search);
+    const q = i18nNormalize(qs.get('lang') || qs.get('hl'));
+    if (q) return q;
+  } catch (e) { /* URLSearchParams unavailable - fall through */ }
+  return i18nSavedChoice() || i18nBrowserLang();
 }
 
 function t(key, vars) {
@@ -859,11 +901,14 @@ function applyI18n() {
   });
 
   window.dispatchEvent(new CustomEvent('i18n-changed', { detail: { lang } }));
+  // English is inline; any other language is ready once its file has landed.
+  if (lang === 'en' || I18N_STRINGS[lang]) i18nReveal();
 }
 
 // Non-English dictionaries load on demand from /i18n/<lang>.js. Until the file
 // arrives t() falls back to English, then the UI re-translates once it lands.
-const I18N_VERSION = '20260922social2';
+// Keep in step with the preload snippet in the <head> of index.html/chat.html.
+const I18N_VERSION = '20260923i18n';
 const i18nLoading = {};
 window.__i18nLangLoaded = function (lang) {
   delete i18nLoading[lang];
@@ -871,11 +916,14 @@ window.__i18nLangLoaded = function (lang) {
 };
 function loadLangFile(lang) {
   if (I18N_STRINGS[lang] || i18nLoading[lang]) return;
+  // Already on its way from the <head> preload; its own callback applies it.
+  if (document.querySelector('script[data-i18n-lang="' + lang + '"]')) { i18nLoading[lang] = true; return; }
   i18nLoading[lang] = true;
   const s = document.createElement('script');
   s.src = '/i18n/' + lang + '.js?v=' + I18N_VERSION;
   s.async = true;
-  s.onerror = () => { delete i18nLoading[lang]; };
+  s.dataset.i18nLang = lang;
+  s.onerror = () => { delete i18nLoading[lang]; i18nReveal(); };
   document.head.appendChild(s);
 }
 
@@ -883,11 +931,28 @@ function setLanguage(lang) {
   if (!I18N_LANGS[lang]) lang = 'en';
   I18N_STATE.lang = lang;
   i18nRegionNames = null;
-  localStorage.setItem('talklive_lang', lang);
   const select = document.getElementById('langSelect');
   if (select && select.value !== lang) select.value = lang;
   if (lang !== 'en') loadLangFile(lang);
   applyI18n();
+}
+
+// A language picked from a language menu: this one is remembered. Picking the
+// language the browser already asks for clears the choice instead, so the
+// site keeps following the device from then on.
+function chooseLanguage(lang) {
+  lang = i18nNormalize(lang) || 'en';
+  try {
+    if (lang === i18nBrowserLang()) localStorage.removeItem(I18N_CHOICE_KEY);
+    else localStorage.setItem(I18N_CHOICE_KEY, lang);
+  } catch (e) { /* storage blocked - still switch for this page */ }
+  setLanguage(lang);
+}
+
+// The <head> hides the page for a moment on a non-English device so it never
+// flashes English first; this lifts that once the words are in place.
+function i18nReveal() {
+  document.documentElement.classList.remove('i18n-pending');
 }
 
 (function initI18n() {
@@ -899,7 +964,19 @@ function setLanguage(lang) {
       opt.textContent = I18N_LANGS[code].name;
       select.appendChild(opt);
     });
-    select.addEventListener('change', () => setLanguage(select.value));
+    select.addEventListener('change', () => chooseLanguage(select.value));
   }
+  // The stored value used to be written on every visit, detected or not, so
+  // it cannot tell a real choice from a stale guess. Dropped once.
+  try { localStorage.removeItem('talklive_lang'); } catch (e) { /* storage blocked */ }
   setLanguage(i18nDetectLang());
+  // Changing the phone's language while the tab is open follows along too,
+  // unless a language was picked here by hand.
+  window.addEventListener('languagechange', () => {
+    try {
+      const q = new URLSearchParams(window.location.search);
+      if (q.get('lang') || q.get('hl')) return;
+    } catch (e) { /* ignore */ }
+    if (!i18nSavedChoice()) setLanguage(i18nBrowserLang());
+  });
 })();

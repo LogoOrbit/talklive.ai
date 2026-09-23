@@ -3,6 +3,37 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<!-- Language, decided before first paint. On a device set to a language other
+     than English, the page stays hidden (for at most 1.5s) while that
+     language's strings load, so it never flashes English first. Mirrors
+     i18nDetectLang() in i18n.js; the version matches I18N_VERSION there. -->
+<style>html.i18n-pending body{visibility:hidden}</style>
+<script>
+(function () {
+  var L = ['es','pt','fr','de','ru','tr','ar','fa','hi','bn','ur','id','it','ja','ko','zh'];
+  var A = { 'in': 'id', ms: 'id' };
+  function norm(c) { c = String(c || '').toLowerCase().split(/[-_]/)[0]; c = A[c] || c; return c === 'en' || L.indexOf(c) > -1 ? c : null; }
+  var lang = null;
+  try { var q = new URLSearchParams(location.search); lang = norm(q.get('lang') || q.get('hl')); } catch (e) {}
+  if (!lang) try { lang = norm(localStorage.getItem('talklive_lang_choice')); } catch (e) {}
+  if (!lang) {
+    var list = (navigator.languages && navigator.languages.length) ? navigator.languages : [navigator.language || 'en'];
+    for (var i = 0; i < list.length && !lang; i++) lang = norm(list[i]);
+  }
+  if (!lang || lang === 'en') return;
+  var root = document.documentElement;
+  root.lang = lang;
+  if (lang === 'ar' || lang === 'fa' || lang === 'ur') root.dir = 'rtl';
+  root.classList.add('i18n-pending');
+  setTimeout(function () { root.classList.remove('i18n-pending'); }, 1500);
+  var s = document.createElement('script');
+  s.src = '/i18n/' + lang + '.js?v=20260923i18n';
+  s.async = true;
+  s.setAttribute('data-i18n-lang', lang);
+  s.onerror = function () { root.classList.remove('i18n-pending'); };
+  document.head.appendChild(s);
+})();
+</script>
 
 <!-- Bing Webmaster Tools site verification. Bing re-checks this tag well after
      the initial verification, so removing it silently un-verifies the site and
@@ -218,7 +249,7 @@
 }
 </script>
 
-<script defer src="/ads.js?v=20260914density"></script>
+<script defer src="/ads.js?v=20260923i18n"></script>
 </head>
 <body>
   <a href="#main" class="skip-link" data-i18n="skipToContent">Skip to main content</a>
@@ -554,7 +585,7 @@
               <span class="fpb-diamond" aria-hidden="true">💎</span>
               <span class="fpb-title" data-i18n="filtersPremiumTitle">Filters are a Premium feature</span>
             </div>
-            <p class="fpb-text">Free includes up to 3 countries per list. Premium will unlock gender filters, unlimited country lists, unlimited friends, instant rematching and no ads - it is coming soon.</p>
+            <p class="fpb-text" data-i18n="filtersPremiumBody">Free includes up to 3 countries per list. Premium will unlock gender filters, unlimited country lists, unlimited friends, instant rematching and no ads - it is coming soon.</p>
             <a id="filtersUpgradeBtn" class="upgrade-cta-btn" href="/pricing?utm_source=app">
               <span class="upgrade-diamond" aria-hidden="true">💎</span><span data-i18n="premiumSeeSoon">SEE PREMIUM - COMING SOON</span>
             </a>
@@ -964,14 +995,14 @@
             <span data-i18n="consentPrefix">By tapping Call you agree to our</span>
             <button type="button" id="openTermsLink" class="link-btn" data-i18n="termsLink">Terms &amp; Community Guidelines</button>
           </p>
-          <div class="setup-growth" aria-label="TalkLive membership and sharing">
+          <div class="setup-growth" data-i18n-aria="growthAria" aria-label="TalkLive membership and sharing">
             <a class="setup-growth-card setup-growth-premium" href="/pricing?utm_source=app">
               <span class="setup-growth-icon" aria-hidden="true">💎</span>
               <span><strong data-i18n="growthPremiumTitle">Premium - coming soon</strong><small data-i18n="growthPremiumSub">All filters, instant rematching and no ads</small></span>
             </a>
             <button type="button" id="shareTalkLiveBtn" class="setup-growth-card setup-growth-share">
               <span class="setup-growth-icon" aria-hidden="true">↗</span>
-              <span><strong>Bring more people online</strong><small>Invite a friend to TalkLive</small></span>
+              <span><strong data-i18n="railInviteTitle">Bring more people online</strong><small data-i18n="railInviteCta">Invite a friend to TalkLive</small></span>
             </button>
           </div>
           <p id="setupErrorText" class="error-text hidden" role="alert"></p>
@@ -2154,7 +2185,7 @@
         </div><!-- /.tl-call-row -->
 
         <div class="call-music-row">
-          <button type="button" id="bannerMusicBtn" class="video-banner__music call-music-btn" aria-pressed="false" aria-label="Play music" title="Play music">
+          <button type="button" id="bannerMusicBtn" class="video-banner__music call-music-btn" aria-pressed="false" data-i18n-aria="playMusic" data-i18n-title="playMusic" aria-label="Play music" title="Play music">
             <svg class="vb-music-ico vb-music-play" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg>
             <svg class="vb-music-ico vb-music-pause" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>
           </button>
@@ -2177,17 +2208,17 @@
         </section>
 
         <!-- High-value rectangle between the guide and the free-service note. -->
-        <div class="ad-card ad-card-app"><span class="ad-card-label">Sponsored</span><div data-ad="box" style="margin:24px auto;text-align:center"></div></div>
+        <div class="ad-card ad-card-app"><span class="ad-card-label" data-i18n="sponsored">Sponsored</span><div data-ad="box" style="margin:24px auto;text-align:center"></div></div>
 
         <!-- A warm, simple note at the bottom of the call screen: why TalkLive
              is free and the care that goes into it. Plain English on purpose,
              and plain typography to match - the tinted box and the emoji in the
              heading made a sincere note read like a promo banner. -->
         <section id="madeForYou" class="note">
-          <h3 class="note-title">Made free, just for you</h3>
-          <p>TalkLive is <strong>100% free</strong>. No payment needed to talk, no time limits, no tricks.</p>
-          <p>We work on it every day to make this the smoothest, cleanest way to talk to new people anywhere in the world - fast connections and a simple design, built with care.</p>
-          <p class="note-sign">Enjoy your talks. - The TalkLive team</p>
+          <h3 class="note-title" data-i18n="noteFreeTitle">Made free, just for you</h3>
+          <p data-i18n="noteFreeBody">TalkLive is 100% free. No payment needed to talk, no time limits, no tricks.</p>
+          <p data-i18n="noteFreeCare">We work on it every day to make this the smoothest, cleanest way to talk to new people anywhere in the world - fast connections and a simple design, built with care.</p>
+          <p class="note-sign" data-i18n="noteFreeSign">Enjoy your talks. - The TalkLive team</p>
         </section>
       </section>
 
@@ -2241,7 +2272,7 @@
 
 
   <div style="margin:28px auto">
-    <div class="ad-card"><span class="ad-card-label">Sponsored</span><div data-ad="native"></div></div>
+    <div class="ad-card"><span class="ad-card-label" data-i18n="sponsored">Sponsored</span><div data-ad="native"></div></div>
   </div>
 </main>
       <!-- =================================================================
@@ -2489,7 +2520,7 @@
 
 
       <div style="margin:28px auto;text-align:center">
-        <div class="ad-card"><span class="ad-card-label">Sponsored</span><div data-ad="leaderboard"></div></div>
+        <div class="ad-card"><span class="ad-card-label" data-i18n="sponsored">Sponsored</span><div data-ad="leaderboard"></div></div>
       </div>
     </div>
   </section>
@@ -2614,7 +2645,7 @@
        browser finish parsing and paint the page first. -->
   <script defer src="/socket.io/socket.io.js"></script>
   <script defer src="countries.js?v=20260828fix"></script>
-  <script defer src="i18n.js?v=20260923profile2"></script>
+  <script defer src="i18n.js?v=20260923i18n"></script>
   <script defer src="chat-time.js?v=20260916navbar"></script>
   <script defer src="animals.js?v=20260921animals"></script>
   <script defer src="moderation.js?v=20260705b"></script>
@@ -2630,8 +2661,9 @@
       function setState(playing) {
         btn.classList.toggle('is-playing', playing);
         btn.setAttribute('aria-pressed', playing ? 'true' : 'false');
-        btn.setAttribute('aria-label', playing ? 'Pause music' : 'Play music');
-        btn.setAttribute('title', playing ? 'Pause music' : 'Play music');
+        var label = typeof t === 'function' ? t(playing ? 'pauseMusic' : 'playMusic') : (playing ? 'Pause music' : 'Play music');
+        btn.setAttribute('aria-label', label);
+        btn.setAttribute('title', label);
       }
 
       btn.addEventListener('click', function () {
@@ -2652,7 +2684,7 @@
   </script>
   <script defer src="chat-extras.js?v=20260922social2"></script>
   <script defer src="games.js?v=20260916settings"></script>
-  <script defer src="app.js?v=20260923profile2"></script>
+  <script defer src="app.js?v=20260923i18n"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

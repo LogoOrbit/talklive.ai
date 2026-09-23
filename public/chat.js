@@ -1166,6 +1166,9 @@
   // Language dropdown, built from the shared i18n language table.
   (function buildLangSelect() {
     if (typeof I18N_LANGS === 'undefined') { langSelect.parentNode.removeChild(langSelect); return; }
+    // i18n.js already fills and wires this select when it finds it on load;
+    // building it again listed every language twice.
+    if (langSelect.options.length) return;
     Object.keys(I18N_LANGS).forEach(function (code) {
       var opt = document.createElement('option');
       opt.value = code;
@@ -1173,7 +1176,7 @@
       langSelect.appendChild(opt);
     });
     langSelect.value = (typeof I18N_STATE !== 'undefined' && I18N_STATE.lang) || 'en';
-    langSelect.addEventListener('change', function () { setLanguage(langSelect.value); });
+    langSelect.addEventListener('change', function () { chooseLanguage(langSelect.value); });
   })();
 
   soundToggle.checked = soundEnabled;
