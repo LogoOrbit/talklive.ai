@@ -241,7 +241,6 @@ const callBackBannerText = document.getElementById('callBackBannerText');
 const callBackAcceptBtn = document.getElementById('callBackAcceptBtn');
 const callBackDeclineBtn = document.getElementById('callBackDeclineBtn');
 
-const myAccountBtn = document.getElementById('myAccountBtn');
 // Header auth: the always-visible pair, swapped for one account button when
 // signed in. Mirrors the side panel's pair, which stays where it was.
 const headerAuth = document.getElementById('headerAuth');
@@ -280,8 +279,6 @@ const googleBtnSignup = document.getElementById('googleBtnSignup');
 // and throw, taking the rest of app.js (every button handler) with it.
 let googleReady = false;
 const logoutBtn = document.getElementById('logoutBtn');
-const settingsNickname = document.getElementById('settingsNickname');
-const updateNicknameBtn = document.getElementById('updateNicknameBtn');
 const currentPasswordInput = document.getElementById('currentPasswordInput');
 const newPasswordInput = document.getElementById('newPasswordInput');
 const changePasswordBtn = document.getElementById('changePasswordBtn');
@@ -318,7 +315,6 @@ const messageSeenToggle = document.getElementById('messageSeenToggle');
 const sidePanelAuth = document.getElementById('sidePanelAuth');
 const sidePanelSignInBtn = document.getElementById('sidePanelSignInBtn');
 const sidePanelRegisterBtn = document.getElementById('sidePanelRegisterBtn');
-const avatarCatTabs = document.getElementById('avatarCatTabs');
 const avatarGrid = document.getElementById('avatarGrid');
 const saveAvatarBtn = document.getElementById('saveAvatarBtn');
 
@@ -460,11 +456,6 @@ function genderIcon(avatarId, size = 30) {
 
 let myAvatar = localStorage.getItem('talklive_avatar');
 if (myAvatar && !validAvatarId(myAvatar)) myAvatar = null;
-// Open the picker on the tab your own avatar is in, so the one you chose is
-// the first thing you see rather than something you have to go and find.
-let avatarCat = isAnimalAvatar(myAvatar) ? 'animal'
-  : (myAvatar && myAvatar[0] === 'f' ? 'female' : 'male');
-
 // --- Spirit animal -----------------------------------------------------------
 // Unlike the avatar (private, gendered, friends-only) this is the one thing the
 // stranger DOES see: it is self-chosen, says nothing about who you are, and
@@ -1307,6 +1298,7 @@ function openAppSettings(tab) {
   // the list it lives in. Opening Settings with no section in mind lands on
   // the list, which is where you choose one.
   showSettingsTab(tab || activeSettingsTab, !!tab);
+  if (typeof revealSelectedAvatar === 'function') revealSelectedAvatar();
   syncNavCurrent();
   updateScrollLock();
   window.scrollTo({ top: 0 });
@@ -1319,6 +1311,8 @@ function openAppSettings(tab) {
 // the entry is already gone, so popping another one would skip a page.
 function closeAppSettings(fromHistory) {
   if (!settingsIsOpen()) return;
+  // Dialogs opened from Settings belong to it; none outlives the screen.
+  [accountModal, shopModal, billingModal].forEach((m) => m && closeModal(m));
   settingsPage.classList.add('hidden');
   stageEl.classList.remove('settings-live');
   // Back to whichever screen was underneath - the landing page, or the call
@@ -1579,21 +1573,17 @@ function renderAccountState() {
     accountLoggedOut.classList.add('hidden');
     accountLoggedIn.classList.remove('hidden');
     accountNicknameDisplay.textContent = accountNickname;
-    settingsNickname.value = accountNickname;
-    updateNicknameBtn.disabled = true;
     renderRecoveryEmailState();
 
-    // Logged in: swap the Sign in / Register pair for a single My Account button.
-    sidePanelSignInBtn.classList.add('hidden');
-    sidePanelRegisterBtn.classList.add('hidden');
-    myAccountBtn.classList.remove('hidden');
+    // Signed in: the account controls replace the Sign in / Register pair,
+    // and the dialog (which only signs in) has nothing left to do.
+    sidePanelAuth.classList.add('hidden');
+    closeModal(accountModal);
   } else {
     accountLoggedOut.classList.remove('hidden');
     accountLoggedIn.classList.add('hidden');
 
-    sidePanelSignInBtn.classList.remove('hidden');
-    sidePanelRegisterBtn.classList.remove('hidden');
-    myAccountBtn.classList.add('hidden');
+    sidePanelAuth.classList.remove('hidden');
   }
   renderHeaderAuthVisibility();
   renderAvatarGrid();
@@ -1719,6 +1709,7 @@ function renderFriendChatPresence() {
 // The avatar this user is wearing: their spirit animal if they picked one,
 // otherwise the plain gender silhouette.
 function myAvatarIcon(size) {
+  if (myAvatar) return avatarFaceHtml(myAvatar, size);
   return (myAnimal && typeof Animals !== 'undefined' && Animals)
     ? Animals.icon(myAnimal, size)
     : genderIcon(myAvatar, size);
@@ -1732,14 +1723,6 @@ function renderSettingsProfileRow() {
   settingsProfileJoined.textContent = created
     ? t('joinedOn', { date: formatProfileCreated(created) })
     : t(accountNickname ? 'settingsRowAccount' : 'settingsRowGuest');
-}
-
-if (settingsProfileRow) {
-  // The row is the profile, so it opens the place the profile is edited:
-  // the account panel (sign up / sign in, or My Account once signed in).
-  settingsProfileRow.addEventListener('click', () => {
-    openAccountModal(accountNickname ? 'login' : 'signup');
-  });
 }
 
 // --- Shop ------------------------------------------------------------------
@@ -1786,7 +1769,6 @@ function renderShop() {
 }
 
 function openShop() {
-  closeAppSettings();
   renderShop();
   openModal(shopModal);
 }
@@ -1801,7 +1783,6 @@ function renderBilling() {
 }
 
 function openBilling() {
-  closeAppSettings();
   renderBilling();
   openModal(billingModal);
 }
@@ -2074,7 +2055,7 @@ if (devNoticeOverlay) {
 let hasHadAConversation = false;
 
 
-// --- Avatar picker: male/female category, 5 avatars each ---
+// --- Avatar picker: every face and animal in one scrollable grid ---
 // A tap used to be the save: the face changed everywhere before you had
 // decided it was the one, and a stray tap while scrolling the grid was a new
 // face for everyone who knows you. The grid now holds a pending choice and
@@ -2083,8 +2064,11 @@ let pendingAvatar = myAvatar;
 
 function renderAvatarGrid() {
   if (!avatarGrid) return;
+  // Rebuilding empties the grid, which would throw its scroll back to the
+  // top on every tap; keep the user where they were.
+  const keepScroll = avatarGrid.scrollTop;
   avatarGrid.innerHTML = '';
-  AVATAR_IDS[avatarCat].forEach((id) => {
+  AVATAR_IDS.male.concat(AVATAR_IDS.female, AVATAR_IDS.animal).forEach((id) => {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = `avatar-option${pendingAvatar === id ? ' selected' : ''}`;
@@ -2097,23 +2081,16 @@ function renderAvatarGrid() {
       + (animal ? `<span class="avatar-option-name">${escapeHtml(window.TalkLiveAnimals.name(animal))}</span>` : '');
     avatarGrid.appendChild(btn);
   });
+  avatarGrid.scrollTop = keepScroll;
   syncSaveAvatarBtn();
 }
 
-function syncAvatarCatTabs() {
-  if (!avatarCatTabs) return;
-  avatarCatTabs.querySelectorAll('.avatar-cat').forEach((c) => {
-    c.classList.toggle('selected', c.dataset.cat === avatarCat);
-  });
+// Opening the picker scrolls your current face into view inside the grid.
+function revealSelectedAvatar() {
+  if (!avatarGrid) return;
+  const sel = avatarGrid.querySelector('.avatar-option.selected');
+  avatarGrid.scrollTop = sel ? Math.max(0, sel.offsetTop - 8) : 0;
 }
-
-avatarCatTabs.addEventListener('click', (e) => {
-  const tab = e.target.closest('.avatar-cat');
-  if (!tab) return;
-  avatarCat = tab.dataset.cat;
-  syncAvatarCatTabs();
-  renderAvatarGrid();
-});
 
 function syncSaveAvatarBtn() {
   if (!saveAvatarBtn) return;
@@ -2272,8 +2249,6 @@ function setMyAnimal(id) {
     // so it is the pending one too - otherwise Save would offer to undo it.
     pendingAvatar = myAvatar;
     try { localStorage.setItem('talklive_avatar', myAvatar); } catch (e) { /* storage blocked */ }
-    avatarCat = 'animal';
-    syncAvatarCatTabs();
     renderAvatarGrid();
     renderAccountState();
     renderHeaderAccountFace();
@@ -2332,16 +2307,16 @@ function renderPartnerAnimal(animalId) {
 }
 
 function showAccountStatus(msg, kind) {
+  // Account changes made in Settings have no dialog to report into.
+  if (accountModal.classList.contains('hidden')) {
+    if (msg) showToast(msg);
+    return;
+  }
   accountStatus.textContent = msg;
   accountStatus.className = `account-status ${kind}`;
   accountStatus.classList.remove('hidden');
 }
 
-myAccountBtn.addEventListener('click', () => {
-  closeAppSettings();
-  renderAccountState();
-  openModal(accountModal);
-});
 closeAccountBtn.addEventListener('click', () => closeModal(accountModal));
 
 function selectAccountTab(which) {
@@ -2364,25 +2339,14 @@ accountTabs.forEach((tab) => {
   tab.addEventListener('click', () => selectAccountTab(tab.dataset.tab));
 });
 
-// Left side panel: Sign in / Register shortcuts at the bottom
-sidePanelSignInBtn.addEventListener('click', () => {
-  closeAppSettings();
-  renderAccountState();
-  selectAccountTab('login');
-  openModal(accountModal);
-});
-
-sidePanelRegisterBtn.addEventListener('click', () => {
-  closeAppSettings();
-  renderAccountState();
-  selectAccountTab('signup');
-  openModal(accountModal);
-});
-
 // Header auth - the same three destinations as the side panel, one tap from
 // anywhere in the app instead of behind the settings menu.
+// It opens on top of whatever is on screen, Settings included. Closing
+// Settings first used to pop its history entry, and the popstate that
+// followed closed this dialog again - the button just dropped you home.
 function openAccountModal(tab) {
-  closeAppSettings();
+  // Signed in, the account lives in Settings > Profile, not in a dialog.
+  if (accountNickname) { openAppSettings('profile'); return; }
   renderAccountState();
   selectAccountTab(tab);
   openModal(accountModal);
@@ -2390,6 +2354,8 @@ function openAccountModal(tab) {
 
 headerLoginBtn.addEventListener('click', () => openAccountModal('login'));
 headerSignupBtn.addEventListener('click', () => openAccountModal('signup'));
+sidePanelSignInBtn.addEventListener('click', () => openAccountModal('login'));
+sidePanelRegisterBtn.addEventListener('click', () => openAccountModal('signup'));
 // Your face in the corner goes to your profile - not to a dialog on top of
 // whatever you were doing. Settings owns the profile now, so this is a
 // navigation to /settings with the Profile section open, which is also what
@@ -2397,12 +2363,6 @@ headerSignupBtn.addEventListener('click', () => openAccountModal('signup'));
 headerAccountBtn.addEventListener('click', () => {
   renderAccountState();
   openAppSettings('profile');
-});
-
-// "Update nickname" only becomes active once the nickname was actually edited.
-settingsNickname.addEventListener('input', () => {
-  const value = settingsNickname.value.trim();
-  updateNicknameBtn.disabled = !value || value === (accountNickname || '');
 });
 
 // "Update password" only becomes active once the password form is filled in.
@@ -2738,10 +2698,6 @@ logoutBtn.addEventListener('click', () => {
   localStorage.removeItem('talklive_nickname');
   // Give the logout packet a moment to flush before the page reloads.
   setTimeout(reloadPage, 150);
-});
-
-updateNicknameBtn.addEventListener('click', () => {
-  socket.emit('update-nickname', { nickname: settingsNickname.value.trim() });
 });
 
 changePasswordBtn.addEventListener('click', () => {

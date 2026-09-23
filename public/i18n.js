@@ -374,6 +374,7 @@ const I18N_STRINGS = {
     "avatar": "Avatar",
     "avatarHint": "Pick a face or a spirit animal. It is your face everywhere - your friends, your profile, and whoever you connect with on a call.",
     "saveAvatar": "Save avatar",
+    "accountGuestHint": "Sign in to keep your name, avatar and friends on any device.",
     "avatarSaved": "Avatar updated.",
     "updatePassword": "Update Password",
     "chatWith": "Chat with {name}",

@@ -237,6 +237,41 @@
 .tl-avatar-save { margin-top: var(--tl-s3); }
 .tl-avatar-save button { flex: 1 1 auto; }
 
+/* A save button that can save looks like one. Enabled and disabled used to
+   be the same outlined box, so Save avatar read as greyed out either way. */
+.tl-set-field button:not(:disabled) {
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2, #00d4ff));
+  color: #fff;
+}
+.tl-set-field button:not(:disabled):hover { filter: brightness(1.07); }
+
+/* Every avatar in one grid, scrolled inside its own box so thirty faces do
+   not push the rest of the profile off the screen. */
+.avatar-grid.avatar-grid-all {
+  position: relative;
+  max-height: 272px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px;
+  margin: var(--tl-s2) 0 0;
+  border: 1px solid var(--tl-line);
+  border-radius: var(--tl-r-md);
+}
+
+/* The profile summary is not a link any more. */
+.tl-set-row.tl-set-row-static { cursor: default; }
+.tl-set-row.tl-set-row-static:hover { background: none; }
+
+/* Account controls, inline in Settings > Profile. */
+.tl-set-foot-note { flex: 1 1 100%; margin: 0 0 var(--tl-s1); }
+.tl-account-pane { display: grid; gap: var(--tl-s4); padding: var(--tl-s3) var(--tl-s4); }
+.tl-account-pane.hidden { display: none; }
+.tl-account-pane .account-welcome { margin: 0; }
+.tl-account-block { display: grid; gap: var(--tl-s2); }
+.tl-account-block h4 { margin: var(--tl-s2) 0 0; color: var(--text); font-size: 14px; }
+.tl-account-pane .account-logout { width: 100%; }
+
 /* Segmented options (gender, theme). Still `.pill` underneath, so the existing
    initPillGroup / setPillGroupValue wiring keeps working untouched. */
 .tl-seg {
@@ -3548,3 +3583,14 @@
     border-bottom: 1px solid var(--tl-line);
   }
 }
+.tl-set-page .tl-set-account {
+  margin-top: var(--tl-s5);
+  padding-top: var(--tl-s4);
+  border-top: 1px solid var(--tl-line);
+}
+/* Panes hide their own legend (the tab already names them); this one is a
+   second section inside Profile, so it keeps its heading. */
+.tl-set-page .tl-set-pane > section.tl-set-account > .tl-set-legend { display: block; margin: 0 0 var(--tl-s3); }
+.tl-set-page .tl-set-account .tl-set-foot { margin-top: 0; padding-top: 0; border-top: 0; align-items: center; }
+.tl-set-page .tl-set-account .tl-set-foot > .tl-set-foot-note { flex: 1 1 100%; }
+.tl-set-page .tl-set-account .tl-account-pane { padding-left: 0; padding-right: 0; }
