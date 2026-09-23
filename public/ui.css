@@ -3671,3 +3671,25 @@
 .tl-set-pane > section + section { margin-top: var(--tl-s5); }
 .tl-set-pane > section + section > .tl-set-legend { display: block; }
 .tl-set-pane > section > .tl-hint + .tl-set-group { margin-top: var(--tl-s2); }
+
+/* ===========================================================================
+ * PROGRESSIVE DISCLOSURE (feature flag progressiveDisclosure, fix list 2.3)
+ * ---------------------------------------------------------------------------
+ * <html class="tl-fv"> is set by app.js only for a first-time visitor while
+ * the flag is on. The two start actions stay; everything a first visit does
+ * not need moves behind "More", which is then shown at every width.
+ * ======================================================================== */
+.tl-drawer-item-fv { display: none; }
+.tl-fv .tl-drawer-item-fv { display: flex; }
+.tl-fv #friendsBtn,
+.tl-fv #historyBtn,
+.tl-fv #navShopBtn,
+.tl-fv #appSettingsBtn,
+.tl-fv .tl-nav-promo,
+.tl-fv .tl-rail,
+.tl-fv .tl-fv-hide { display: none !important; }
+.tl-fv #navMoreBtn { display: flex; }
+@media (min-width: 860px) {
+  .tl-fv .tl-drawer:not(.hidden) { display: flex !important; }
+  .tl-fv .tl-drawer-overlay:not(.hidden) { display: block !important; }
+}

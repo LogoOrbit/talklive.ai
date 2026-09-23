@@ -365,6 +365,8 @@
   "genderFilterNoteLink": "仕組みについて",
   "termsLoading": "利用規約を読み込んでいます…",
   "termsOpenPage": "専用ページで開く",
+  "fvFriendPromptTitle": "{name}さんとの会話は楽しかったですか？",
+  "fvFriendPromptBody": "友達に追加すれば、あとでまた通話できます。",
   "noteFreeCare": "世界中の新しい人と、いちばんスムーズでシンプルに話せる場所になるよう、毎日改善しています。速い接続とシンプルなデザインを、心を込めて。",
   "noteFreeSign": "楽しい会話を。- TalkLiveチーム",
   "filtersPremiumBody": "無料プランはリストごとに最大3か国まで。プレミアムでは性別フィルター、国リスト無制限、友だち無制限、即時再マッチング、広告なしが利用可能に。近日公開。",

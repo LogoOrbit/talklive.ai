@@ -798,6 +798,22 @@
       </header>
 
       <nav class="tl-drawer-items" data-i18n-aria="more" aria-label="More">
+        <!-- Only shown to first-time visitors under the progressiveDisclosure
+             flag, when Friends and History leave the nav for this drawer. -->
+        <button type="button" class="tl-drawer-item tl-drawer-item-fv" data-opens="friendsBtn">
+          <span class="tl-drawer-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.2A4.5 4.5 0 0 1 20.5 18.5"/></svg>
+          </span>
+          <span data-i18n="friends">Friends</span>
+        </button>
+
+        <button type="button" class="tl-drawer-item tl-drawer-item-fv" data-opens="historyBtn">
+          <span class="tl-drawer-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+          </span>
+          <span data-i18n="callHistory">Call History</span>
+        </button>
+
         <button type="button" class="tl-drawer-item" data-opens="navShopBtn">
           <span class="tl-drawer-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 8h15l-1.2 10.2a2 2 0 0 1-2 1.8H7.7a2 2 0 0 1-2-1.8z"/><path d="M8.8 8V6.6a3.2 3.2 0 0 1 6.4 0V8"/></svg>

@@ -365,6 +365,8 @@
   "genderFilterNoteLink": "Come funziona",
   "termsLoading": "Caricamento dei Termini e condizioni…",
   "termsOpenPage": "Aprili nella loro pagina",
+  "fvFriendPromptTitle": "Ti è piaciuto parlare con {name}?",
+  "fvFriendPromptBody": "Aggiungilo come amico per richiamarvi più tardi.",
   "noteFreeCare": "Ci lavoriamo ogni giorno per renderlo il modo più semplice e fluido di parlare con persone nuove in tutto il mondo: connessioni veloci e un design semplice, fatto con cura.",
   "noteFreeSign": "Buone chiacchierate. - Il team di TalkLive",
   "filtersPremiumBody": "Il piano gratuito include fino a 3 paesi per lista. Premium sbloccherà filtri di genere, liste di paesi illimitate, amici illimitati, nuovi abbinamenti immediati e niente pubblicità. In arrivo presto.",

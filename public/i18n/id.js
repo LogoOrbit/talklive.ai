@@ -365,6 +365,8 @@
   "genderFilterNoteLink": "Cara kerjanya",
   "termsLoading": "Memuat Syarat & Ketentuan…",
   "termsOpenPage": "Buka di halamannya sendiri",
+  "fvFriendPromptTitle": "Senang mengobrol dengan {name}?",
+  "fvFriendPromptBody": "Tambahkan sebagai teman agar bisa saling menelepon lagi nanti.",
   "noteFreeCare": "Kami mengerjakannya setiap hari agar jadi cara paling lancar dan simpel untuk ngobrol dengan orang baru di mana saja: koneksi cepat dan desain sederhana, dibuat dengan sepenuh hati.",
   "noteFreeSign": "Selamat mengobrol. - Tim TalkLive",
   "filtersPremiumBody": "Paket gratis mencakup hingga 3 negara per daftar. Premium akan membuka filter gender, daftar negara tanpa batas, teman tanpa batas, pencocokan ulang instan, dan tanpa iklan. Segera hadir.",

@@ -365,6 +365,8 @@
   "genderFilterNoteLink": "了解详情",
   "termsLoading": "正在加载条款与条件…",
   "termsOpenPage": "在单独页面中打开",
+  "fvFriendPromptTitle": "和 {name} 聊得开心吗？",
+  "fvFriendPromptBody": "加为好友，以后可以再次通话。",
   "noteFreeCare": "我们每天都在打磨，让它成为和世界各地新朋友聊天最流畅、最简洁的方式：连接快速、设计简单，用心打造。",
   "noteFreeSign": "祝你聊得愉快。- TalkLive 团队",
   "filtersPremiumBody": "免费版每个列表最多 3 个国家。高级版将解锁性别筛选、无限国家列表、无限好友、即时重新匹配并去除广告，即将推出。",

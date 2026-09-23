@@ -3935,7 +3935,7 @@ function recordCallHistory() {
   });
   renderHistory();
   if (durationSeconds >= 30) trackGrowthEvent('quality_call');
-  maybeShowSharePrompt(durationSeconds);
+  if (!maybeShowFriendPrompt(currentPartner, durationSeconds)) maybeShowSharePrompt(durationSeconds);
 }
 
 // --- Post-call share prompt -------------------------------------------------
@@ -6782,6 +6782,137 @@ if (drawerThemes) {
     vibrate(8);
   });
   syncDrawerTheme();
+}
+
+// --- Progressive disclosure (fix list 2.3, flag: progressiveDisclosure) ------
+// A first-time visitor came for one thing: to talk to someone. With the flag
+// on, their first session shows the two start actions and a "More" drawer;
+// Friends, Call History, Shop and Settings live in the drawer, the rail and the
+// Premium card are hidden, and "Add friend" leaves the call controls to come
+// back as a prompt after a call that went well. Games were already in-call only
+// (the game button appears when a call connects), so they need no change.
+//
+// Returning visitors, signed-in users and everyone with the flag off see the
+// app exactly as before. Either way a first-time session reports which arm it
+// was in and which of those surfaces it opened in its first two minutes, as
+// fv_on_* / fv_off_* counters on the owner dashboard (server GROWTH_EVENTS).
+//
+// QA: ?ff=progressiveDisclosure forces the flag on for this browser,
+// ?ff=-progressiveDisclosure forces it off, ?ff= clears the override, and
+// ?fv=1 treats this session as a first visit.
+const FV_FIRST_SEEN_KEY = 'tl_first_seen_at';
+const FV_SESSION_KEY = 'tl_fv_session';
+const FV_WINDOW_MS = 2 * 60 * 1000;
+
+function featureFlag(name) {
+  let override = null;
+  try {
+    const q = new URLSearchParams(location.search);
+    if (q.has('ff')) localStorage.setItem('tl_ff', q.get('ff'));
+    override = localStorage.getItem('tl_ff');
+  } catch (_) {}
+  if (override === name) return true;
+  if (override === `-${name}`) return false;
+  return !!(window.TL_FLAGS && window.TL_FLAGS[name]);
+}
+
+// First visit = this browser had never loaded TalkLive before this session
+// started, and nobody is signed in. Decided once per tab session, so a
+// reload does not flip someone from "first-time" to "returning" mid-visit.
+function isFirstTimeSession() {
+  try {
+    if (new URLSearchParams(location.search).get('fv') === '1') sessionStorage.setItem(FV_SESSION_KEY, '1');
+    const decided = sessionStorage.getItem(FV_SESSION_KEY);
+    if (decided !== null) return decided === '1';
+    const first = !localStorage.getItem(FV_FIRST_SEEN_KEY) && !localStorage.getItem(CONSENT_KEY)
+      && !sessionToken;
+    if (!localStorage.getItem(FV_FIRST_SEEN_KEY)) localStorage.setItem(FV_FIRST_SEEN_KEY, String(Date.now()));
+    sessionStorage.setItem(FV_SESSION_KEY, first ? '1' : '0');
+    return first;
+  } catch (_) {
+    return false;
+  }
+}
+
+const fvFirstTime = isFirstTimeSession();
+const fvOn = fvFirstTime && featureFlag('progressiveDisclosure');
+const fvStartedAt = Date.now();
+
+function fvTrack(what) {
+  if (!fvFirstTime) return;
+  const name = `fv_${fvOn ? 'on' : 'off'}_${what}`;
+  try {
+    const sent = JSON.parse(sessionStorage.getItem('tl_fv_sent') || '[]');
+    if (sent.includes(name)) return;
+    sent.push(name);
+    sessionStorage.setItem('tl_fv_sent', JSON.stringify(sent));
+  } catch (_) { /* at worst an event is counted twice */ }
+  trackGrowthEvent(name);
+}
+
+if (fvFirstTime) {
+  fvTrack('session');
+  [['friendsBtn', 'friends'], ['historyBtn', 'history'], ['navShopBtn', 'shop'],
+    ['appSettingsBtn', 'settings'], ['gameBtn', 'games']].forEach(([id, what]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('click', () => {
+      if (Date.now() - fvStartedAt <= FV_WINDOW_MS) fvTrack(`open_${what}`);
+    });
+  });
+}
+
+if (fvOn) {
+  document.documentElement.classList.add('tl-fv');
+  const addFriendWrap = addFriendBtn.closest('.call-action-wrap');
+  if (addFriendWrap) addFriendWrap.classList.add('tl-fv-hide');
+  if (navMoreBtn) {
+    navMoreBtn.addEventListener('click', () => {
+      if (Date.now() - fvStartedAt <= FV_WINDOW_MS) fvTrack('open_more');
+    });
+  }
+}
+
+// "Add friend", asked at the one moment it makes sense: right after a call
+// that went well (a minute or more), with someone who is not already a friend.
+// Returns true when it took the slot the share prompt would otherwise use.
+const FV_GOOD_CALL_SECONDS = 60;
+function maybeShowFriendPrompt(partner, durationSeconds) {
+  if (!fvOn || durationSeconds < FV_GOOD_CALL_SECONDS) return false;
+  if (!partner || !partner.clientId) return false;
+  if (friendsData.some((f) => f.clientId === partner.clientId)) return false;
+  if (addFriendBtn.classList.contains('added')) return false;
+  const target = { clientId: partner.clientId, username: partner.username || '' };
+  fvTrack('friend_prompt');
+  let card = document.getElementById('friendPromptCard');
+  if (card) card.remove();
+  card = document.createElement('div');
+  card.id = 'friendPromptCard';
+  card.className = 'share-prompt';
+  card.innerHTML = `
+    <h3></h3><p></p>
+    <div class="share-prompt-actions">
+      <button type="button" class="share-prompt-yes"></button>
+      <button type="button" class="share-prompt-no"></button>
+    </div>`;
+  card.querySelector('h3').textContent = t('fvFriendPromptTitle', { name: target.username || t('stranger') });
+  card.querySelector('p').textContent = t('fvFriendPromptBody');
+  const yes = card.querySelector('.share-prompt-yes');
+  const no = card.querySelector('.share-prompt-no');
+  yes.textContent = t('addFriend');
+  no.textContent = t('sharePromptLater');
+  const dismiss = () => { card.classList.remove('show'); setTimeout(() => card.remove(), 300); };
+  no.addEventListener('click', dismiss);
+  yes.addEventListener('click', () => {
+    dismiss();
+    fvTrack('friend_prompt_add');
+    socket.emit('friend-request', { targetClientId: target.clientId });
+    showToast(t('friendRequestSent'));
+  });
+  document.body.appendChild(card);
+  requestAnimationFrame(() => card.classList.add('show'));
+  setTimeout(() => { if (card.isConnected) dismiss(); }, 15000);
+  return true;
 }
 
 // "See all" on a rail card opens the panel that owns the full list, by

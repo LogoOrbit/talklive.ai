@@ -403,6 +403,8 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "genderFilterNoteLink": "How this works",
     "termsLoading": "Loading the Terms & Conditions…",
     "termsOpenPage": "Open them on their own page",
+    "fvFriendPromptTitle": "Enjoyed talking with {name}?",
+    "fvFriendPromptBody": "Add them as a friend so you can call each other again later.",
     "noteFreeCare": "We work on it every day to make this the smoothest, cleanest way to talk to new people anywhere in the world - fast connections and a simple design, built with care.",
     "noteFreeSign": "Enjoy your talks. - The TalkLive team",
     "filtersPremiumBody": "Free includes up to 3 countries per list. Premium will unlock gender filters, unlimited country lists, unlimited friends, instant rematching and no ads - it is coming soon.",

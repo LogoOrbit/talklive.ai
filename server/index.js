@@ -14,6 +14,7 @@ const store = require('./store');
 const compress = require('./compress');
 const billing = require('./billing');
 const push = require('./push');
+const flags = require('./flags');
 const mail = require('./mailer');
 const { botLabel, isPrefetch } = require('./bots');
 const { createAdmin } = require('./admin');
@@ -454,7 +455,7 @@ app.get('/config.js', (req, res) => {
   // an hour (and serve it stale for a day while revalidating) instead of
   // re-fetching it on the critical path of every single page view.
   res.setHeader('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400');
-  res.send(`window.GOOGLE_CLIENT_ID = ${JSON.stringify(GOOGLE_CLIENT_ID)};`);
+  res.send(`window.GOOGLE_CLIENT_ID = ${JSON.stringify(GOOGLE_CLIENT_ID)};\nwindow.TL_FLAGS = ${JSON.stringify(flags.clientFlags())};`);
 });
 
 // Small same-origin conversion endpoint. Only a fixed vocabulary is accepted,
@@ -490,6 +491,18 @@ const GROWTH_EVENTS = new Set([
   // demand signal the app has for a thing that does not exist yet: it is a
   // person asking to be told when it does.
   'premium_notify_click',
+  // Progressive disclosure (fix list 2.3). One exposure event per first-time
+  // session, per arm, and one event per surface opened within the first two
+  // minutes of it. "on" is the flag's arm, "off" is everyone else's first
+  // visit, so the two can be compared on the same dashboard.
+  'fv_on_session', 'fv_off_session',
+  'fv_on_open_friends', 'fv_off_open_friends',
+  'fv_on_open_history', 'fv_off_open_history',
+  'fv_on_open_shop', 'fv_off_open_shop',
+  'fv_on_open_settings', 'fv_off_open_settings',
+  'fv_on_open_games', 'fv_off_open_games',
+  'fv_on_open_more',
+  'fv_on_friend_prompt', 'fv_on_friend_prompt_add',
 ]);
 app.post('/events', express.json({ limit: '2kb' }), (req, res) => {
   const event = req.body && req.body.event;
