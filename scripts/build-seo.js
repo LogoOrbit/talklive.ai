@@ -18,6 +18,7 @@ const LOCALES = require('./locales');
 // Brand + Offer shape for the app node. See scripts/data/commerce.js for why
 // a free web app needs return and shipping fields at all.
 const { BRAND, freeOffer } = require('./data/commerce');
+const { languagesAnswer } = require('./data/languages');
 const LANGS = ['en'].concat(LOCALES.map((locale) => locale.code));
 const CONTENT_UPDATED = '2026-08-14';
 const ORGANIZATION_ID = `${SITE}/#organization`;
@@ -427,7 +428,7 @@ function page(p, index) {
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<link rel="stylesheet" href="/seo.css?v=20260916brand2" />
+<link rel="stylesheet" href="/seo.css?v=20260921ux" />
 <title>${esc(p.title)}</title>
 <meta name="description" content="${esc(p.description)}" />
 <meta name="robots" content="${p.noindex ? 'noindex, follow' : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1'}" />
@@ -917,7 +918,7 @@ const CORE_PAGES = [
     faq: [
       { q: 'Are international calls on TalkLive free?', a: 'Core matching has no TalkLive per-minute charge. Calls use your internet connection, so your provider\'s normal data charges can still apply.' },
       { q: 'Can I choose which countries to talk to?', a: 'Yes. Optional country filters let you include or exclude specific countries so you connect with the regions you want.' },
-      { q: 'What languages does TalkLive support?', a: 'The interface is available in twelve languages including English, Spanish, Portuguese, Arabic, Hindi, Urdu, Chinese and more, with full right-to-left support.' },
+      { q: 'What languages does TalkLive support?', a: languagesAnswer() },
       { q: 'Do I need a phone number to call internationally?', a: 'No. International calls happen inside the app with no number required, keeping your identity private.' },
       { q: 'Will it work on a slow connection?', a: 'Yes. TalkLive is audio-only and lightweight, so it performs well even on slower international networks.' },
     ],
@@ -1957,7 +1958,7 @@ function blogPost(b) {
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<link rel="stylesheet" href="/seo.css?v=20260916brand2" />
+<link rel="stylesheet" href="/seo.css?v=20260921ux" />
 <title>${esc(b.title)}</title>
 <meta name="description" content="${esc(b.description)}" />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
@@ -2066,7 +2067,7 @@ function blogIndex() {
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<link rel="stylesheet" href="/seo.css?v=20260916brand2" />
+<link rel="stylesheet" href="/seo.css?v=20260921ux" />
 <title>TalkLive Blog - Voice Chat & Talking to Strangers</title>
 <meta name="description" content="Guides and research on talking to strangers, voice-only chat, practising languages with real people, and staying safe online - from the team behind TalkLive." />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
@@ -2183,7 +2184,7 @@ function localeHome(loc) {
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<link rel="stylesheet" href="/seo.css?v=20260916brand2" />
+<link rel="stylesheet" href="/seo.css?v=20260921ux" />
 <title>${esc(loc.title)}</title>
 <meta name="description" content="${esc(loc.description)}" />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />

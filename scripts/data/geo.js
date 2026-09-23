@@ -683,6 +683,14 @@ const LANGUAGES = [
     hard: 'Two distinct registers - the literary form and the spoken one - plus regional variation between Bangladesh and West Bengal that surprises learners.',
     tip: 'Bengali speakers are concentrated in Dhaka and Kolkata but the diaspora in the UK and the Gulf is large, so matches come from further afield than you would guess.',
   },
+  {
+    slug: 'persian', name: 'Persian', native: 'فارسی', hello: 'Salam',
+    speakers: 'about 110 million including Dari and Tajik speakers',
+    countries: ['iran', 'canada', 'united-states'],
+    why: 'Persian is spoken across Iran, Afghanistan and Tajikistan and by large communities in North America and Europe, and its speakers are some of the most patient, conversation-hungry partners a learner can find.',
+    hard: 'The colloquial language shortens and reshapes almost every common verb, so the Persian you read and the Persian you hear sound like two different languages at first.',
+    tip: 'Iranian evenings run late - the busiest hours are around 10pm to 2am Tehran time, which lines up with European afternoons and American mornings.',
+  },
 ];
 
 module.exports = { COUNTRIES, LANGUAGES };

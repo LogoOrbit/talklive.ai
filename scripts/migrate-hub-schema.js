@@ -25,7 +25,8 @@
  * cluster, so sitewide schema changes reach it the same way
  * scripts/migrate-schema.js does.
  *
- * Idempotent: a hub that already carries an #itemlist node is skipped.
+ * Idempotent: a hub whose #itemlist already matches its visible members is
+ * skipped; one whose members changed has the node replaced.
  */
 
 const fs = require('fs');
@@ -89,10 +90,6 @@ for (const hub of HUBS) {
     continue;
   }
   const before = fs.readFileSync(file, 'utf8');
-  if (before.includes('#itemlist')) {
-    skipped += 1;
-    continue;
-  }
 
   const canonical = `${SITE}${hub.prefix}`;
   const items = memberLinks(before, hub.prefix);
@@ -140,9 +137,21 @@ for (const hub of HUBS) {
     continue;
   }
 
+  // A hub that already carries a list keeps it unless its visible members
+  // changed (scripts/migrate-languages.js rewrites the /languages/ list from
+  // scripts/data/languages.js), in which case the node is replaced in place.
+  const existing = root['@graph'].findIndex((node) => node['@id'] === itemList['@id']);
+  if (existing !== -1) {
+    if (JSON.stringify(root['@graph'][existing]) === JSON.stringify(itemList)) {
+      skipped += 1;
+      continue;
+    }
+    root['@graph'][existing] = itemList;
+  } else {
+    root['@graph'].push(itemList);
+  }
   const webPage = root['@graph'].find((node) => node['@type'] === 'WebPage');
   if (webPage && !webPage.mainEntity) webPage.mainEntity = { '@id': itemList['@id'] };
-  root['@graph'].push(itemList);
 
   const html = before.replace(blockPattern,
     `<script type="application/ld+json">${JSON.stringify(parsed)}</script>`);

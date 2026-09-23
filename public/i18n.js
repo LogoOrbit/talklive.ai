@@ -6,24 +6,26 @@
 // can be changed with the picker in the top bar, and is remembered in
 // localStorage. RTL languages flip the whole page via <html dir="rtl">.
 
+// Written by scripts/migrate-languages.js from scripts/data/languages.js -
+// edit the list there, not here.
 const I18N_LANGS = {
-  en: { name: 'English', dir: 'ltr' },
-  es: { name: 'Español', dir: 'ltr' },
-  pt: { name: 'Português', dir: 'ltr' },
-  fr: { name: 'Français', dir: 'ltr' },
-  de: { name: 'Deutsch', dir: 'ltr' },
-  ru: { name: 'Русский', dir: 'ltr' },
-  tr: { name: 'Türkçe', dir: 'ltr' },
-  ar: { name: 'العربية', dir: 'rtl' },
-  fa: { name: 'فارسی', dir: 'rtl' },
-  hi: { name: 'हिन्दी', dir: 'ltr' },
-  bn: { name: 'বাংলা', dir: 'ltr' },
-  ur: { name: 'اردو', dir: 'rtl' },
-  id: { name: 'Bahasa Indonesia', dir: 'ltr' },
-  it: { name: 'Italiano', dir: 'ltr' },
-  ja: { name: '日本語', dir: 'ltr' },
-  ko: { name: '한국어', dir: 'ltr' },
-  zh: { name: '中文', dir: 'ltr' },
+  en: { name: "English", dir: 'ltr' },
+  es: { name: "Español", dir: 'ltr' },
+  pt: { name: "Português", dir: 'ltr' },
+  fr: { name: "Français", dir: 'ltr' },
+  de: { name: "Deutsch", dir: 'ltr' },
+  ru: { name: "Русский", dir: 'ltr' },
+  tr: { name: "Türkçe", dir: 'ltr' },
+  ar: { name: "العربية", dir: 'rtl' },
+  fa: { name: "فارسی", dir: 'rtl' },
+  hi: { name: "हिन्दी", dir: 'ltr' },
+  bn: { name: "বাংলা", dir: 'ltr' },
+  ur: { name: "اردو", dir: 'rtl' },
+  id: { name: "Bahasa Indonesia", dir: 'ltr' },
+  it: { name: "Italiano", dir: 'ltr' },
+  ja: { name: "日本語", dir: 'ltr' },
+  ko: { name: "한국어", dir: 'ltr' },
+  zh: { name: "中文", dir: 'ltr' },
 };
 
 // Only English ships inline; other languages live in /i18n/<lang>.js and are

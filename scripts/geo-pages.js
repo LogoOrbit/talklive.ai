@@ -19,7 +19,17 @@
  * are written inline here - that is deliberate, and the only interpolated
  * values are our own slugs and names, never anything user-supplied.
  */
-const { COUNTRIES, LANGUAGES } = require('./data/geo');
+const { COUNTRIES, LANGUAGES: LANGUAGE_CONTENT } = require('./data/geo');
+const { SUPPORTED_LANGUAGES } = require('./data/languages');
+
+// The directory lists exactly the supported languages, in their order. The
+// per-language copy lives in data/geo.js; a supported language without it is a
+// build error rather than a silently missing page.
+const LANGUAGES = SUPPORTED_LANGUAGES.map((s) => {
+  const content = LANGUAGE_CONTENT.find(l => l.slug === s.slug);
+  if (!content) throw new Error(`scripts/data/geo.js has no LANGUAGES entry for supported language "${s.slug}"`);
+  return content;
+});
 
 const byCountrySlug = new Map(COUNTRIES.map(c => [c.slug, c]));
 
