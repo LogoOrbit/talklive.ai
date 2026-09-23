@@ -472,7 +472,7 @@
   "connReported": "Signalé",
   "connCalling": "Appel",
   "connFriendEnded": "Appel terminé",
-  "statusFriendEnded": "Votre ami a mis fin à l'appel.",
+  "statusFriendEnded": "L'autre personne a mis fin à l'appel.",
   "statusPartnerHungUp": "Votre partenaire a raccroché.",
   "convoGuideTitle": "Comment réussir une conversation",
   "convoTip1": "Souriez d'abord : ça change votre voix.",

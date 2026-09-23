@@ -472,7 +472,7 @@
   "connReported": "通報済み",
   "connCalling": "発信中",
   "connFriendEnded": "通話終了",
-  "statusFriendEnded": "友だちが通話を終了しました。",
+  "statusFriendEnded": "相手が通話を終了しました。",
   "statusPartnerHungUp": "相手が通話を切りました。",
   "convoGuideTitle": "楽しく話すコツ",
   "convoTip1": "まず笑顔で。声が変わります。",

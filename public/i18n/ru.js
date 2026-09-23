@@ -472,7 +472,7 @@
   "connReported": "Жалоба",
   "connCalling": "Звонок",
   "connFriendEnded": "Звонок завершён",
-  "statusFriendEnded": "Ваш друг завершил звонок.",
+  "statusFriendEnded": "Собеседник завершил звонок.",
   "statusPartnerHungUp": "Собеседник положил трубку.",
   "convoGuideTitle": "Как провести отличный разговор",
   "convoTip1": "Сначала улыбнитесь — это меняет голос.",

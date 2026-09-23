@@ -616,6 +616,16 @@ let callStartedAt = null;
 let skipUnlockTimeout = null;
 let currentPartnerInterests = [];
 let currentPartner = null;
+// A call-back is a call with a friend, not a spin of the roulette: when it ends,
+// "find me someone new" must not drop either side into a random search.
+let currentCallIsCallback = false;
+// The friend call button spinning while a call-back rings out (see
+// startCallbackSpinner). Declared up here: renderFriendsList re-applies it.
+let activeCallbackSpinner = null;
+// Set while "They ended the call." is on screen after an auto-next, so the
+// immediate 'waiting' reply does not paint over it (see 'partner-left').
+let endedNoticeUntil = 0;
+const ENDED_NOTICE_MS = 2200;
 let callHistory = [];
 let accountNickname = localStorage.getItem('talklive_nickname') || null;
 // The account's recovery email, as the server last reported it. Cached locally
@@ -3113,6 +3123,20 @@ function renderFriendsList() {
     `;
     friendsList.appendChild(item);
   });
+  // A call-back ringing out: the re-render (any state-sync, which the call
+  // itself triggers by re-registering) replaced the spinning button with a
+  // plain one, so the tap looked like it had done nothing. Carry it over.
+  if (activeCallbackSpinner) {
+    const id = activeCallbackSpinner.btn.dataset.id;
+    const fresh = friendsList.querySelector(`.friend-call-btn[data-id="${CSS.escape(id)}"]`);
+    if (fresh && fresh !== activeCallbackSpinner.btn) {
+      activeCallbackSpinner.btn = fresh;
+      activeCallbackSpinner.html = fresh.innerHTML;
+      fresh.classList.add('is-loading');
+      fresh.disabled = true;
+      fresh.innerHTML = '<span class="callback-spinner" aria-label="Connecting…"></span>';
+    }
+  }
 }
 
 friendsList.addEventListener('click', (e) => {
@@ -3804,6 +3828,10 @@ socket.on('notification', (n) => {
     // event - play the distinct friend chime, never the message chime.
     playFriendAddedSound();
     vibrate([20, 40, 20]);
+    // A chime and a badge on a menu item were all the voice page gave, so a
+    // stranger's "Add friend" mid-call went unnoticed. /chat already toasts.
+    const who = labelForClientId(n.fromClientId || n.byClientId, n.username);
+    showToast(t(n.type === 'friend_request' ? 'notifWantsFriends' : 'notifAccepted', { name: who }));
   }
   // The one moment notifications are self-evidently useful: this user now has
   // someone who can reach them, and every message after this one arrives while
@@ -3857,11 +3885,13 @@ function renderFriendChatMessages() {
       });
     }
   });
-  // "Seen" label under the most recent message I sent, once the recipient
-  // has viewed the conversation (and only if I've opted into read receipts).
+  // "Seen" label under my message when it is the newest one, once the
+  // recipient has viewed the conversation (and only if I've opted into read
+  // receipts). Once they have replied, their reply says it was seen; appended
+  // at the bottom regardless, the label sat under *their* message instead.
   if (messageSeenEnabled) {
-    const lastMine = [...messages].reverse().find((m) => m.from === getClientId());
-    if (lastMine && lastMine.seen) {
+    const last = messages[messages.length - 1];
+    if (last && last.from === getClientId() && last.seen) {
       const seenEl = document.createElement('div');
       seenEl.className = 'chat-seen-label';
       seenEl.textContent = t('seen');
@@ -4403,6 +4433,7 @@ function renderReferralStats() {
 
 socket.on('profile', (profile) => {
   myProfile = profile;
+  renderRailOnline();
 });
 
 socket.on('identity-token', ({ clientId, token } = {}) => {
@@ -5833,6 +5864,7 @@ function wentHomeFromACall() {
 // Used both after a manual hang-up and when the other side ends the call.
 function goIdleOnCallScreen(statusKey) {
   isSearching = false;
+  endedNoticeUntil = 0;
   teardownPeer();
   clearChat();
   closeChatPanel();
@@ -5842,7 +5874,9 @@ function goIdleOnCallScreen(statusKey) {
   setState('idle');
   hideConnection();
   setStatusText(statusKey || 'statusReadyToTalk');
-  setSubText('subTapCall');
+  // The default headline already says "tap Call"; repeating it underneath
+  // read as a glitch. Keep the hint for the other headlines ("You hung up").
+  setSubText(statusKey ? 'subTapCall' : null);
 }
 
 function registerProfile() {
@@ -6182,6 +6216,7 @@ if (pendingInviteToken) {
 // window and ICE restart) over a search that was already under way.
 function findNextPerson(statusKey) {
   clearError();
+  endedNoticeUntil = 0;
   teardownPeer();
   clearChat();
   closeChatPanel();
@@ -6209,7 +6244,7 @@ callMainBtn.addEventListener('click', () => {
     clearHangupConfirm();
     playHangupSound();
     socket.emit('leave');
-    if (autoCallEnabled) {
+    if (autoCallEnabled && !currentCallIsCallback) {
       findNextPerson('statusFindingNew');
     } else {
       goIdleOnCallScreen('statusYouLeft');
@@ -7435,8 +7470,13 @@ if (railFriendsList) {
 let onlinePeople = [];
 
 function filteredOnlinePeople() {
-  if (!onlineQuery) return onlinePeople;
-  return onlinePeople.filter((p) => [p.username, p.country, p.countryCode]
+  // The list is the same broadcast for everyone, so it has this visitor in it
+  // too - and "tap anyone to find a match" should never offer yourself. It
+  // carries no ids, so the (stable, per-visitor) username is what identifies us.
+  const myName = myProfile && myProfile.username;
+  const others = myName ? onlinePeople.filter((p) => p.username !== myName) : onlinePeople;
+  if (!onlineQuery) return others;
+  return others.filter((p) => [p.username, p.country, p.countryCode]
     .some((v) => String(v || '').toLowerCase().includes(onlineQuery)));
 }
 
@@ -7533,6 +7573,7 @@ function formatVisitorCount(count) {
 socket.on('waiting', ({ estimatedSeconds, predicted } = {}) => {
   markSearchAcked();
   setState('waiting');
+  if (Date.now() < endedNoticeUntil) return;
   setConnection('orange', 'connSearching');
   // Predicted match preview, e.g. "Connecting to someone in Japan…", based on
   // who's online right now - shown before the actual connection completes.
@@ -7554,6 +7595,8 @@ socket.on('random-fallback', () => {
 
 socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
   markSearchAcked();
+  endedNoticeUntil = 0;
+  currentCallIsCallback = !!callback;
   clearOutgoingCallBack();
   // A deferred-UI callback (rule 11) is on the friends menu with a spinner -
   // now that the peer accepted, restore the icon and enter the call screen.
@@ -7704,7 +7747,6 @@ function hideCallBackBanner() {
 }
 
 // In-place spinner for the friends-list call icon (rule 11).
-let activeCallbackSpinner = null;
 function startCallbackSpinner(btn) {
   if (activeCallbackSpinner) restoreCallbackSpinner();
   activeCallbackSpinner = { btn, html: btn.innerHTML };
@@ -7956,6 +7998,7 @@ socket.on('partner-left', (info) => {
   // the call" and must not drop the user out of their search. Read before
   // teardownPeer(), which clears mediaConnected.
   const neverConnected = (info && info.reason === 'failed') || !mediaConnected;
+  const wasCallback = currentCallIsCallback;
   // A hang-up tone for a call that never had any audio just reads as a bug.
   if (!neverConnected) playHangupSound();
   const wasInGame = gameIsInProgress();
@@ -7970,7 +8013,7 @@ socket.on('partner-left', (info) => {
   // they are concerned, so carry the search straight on to the next person -
   // regardless of the auto-connect setting, which is about what happens after a
   // conversation ends, not about abandoning a search that never started.
-  if (neverConnected) {
+  if (neverConnected && !wasCallback) {
     setCallState('searching');
     setState('waiting');
     setConnection('orange', 'connSearching');
@@ -7984,14 +8027,23 @@ socket.on('partner-left', (info) => {
   // stop on the red message so the user isn't yanked into a new search.
   const endedKey = dropped ? 'statusPartnerDropped' : 'statusFriendEnded';
   const connKey = dropped ? 'connPartnerDropped' : 'connFriendEnded';
-  if (autoCallEnabled) {
+  if (autoCallEnabled && !wasCallback) {
     setCallState('searching');
     setState('waiting');
     setConnection('red', connKey);
     setStatusText(endedKey);
-    setSubText(null);
+    setSubText('statusFindingNew');
+    // The server answers the new search with 'waiting' within milliseconds,
+    // which used to repaint "Looking for someone…" over this before anyone
+    // could read it - the stranger simply vanished with no word of why.
+    endedNoticeUntil = Date.now() + ENDED_NOTICE_MS;
     emitFindPartner();
-    setTimeout(() => { if (isSearching && callState === 'searching') setConnection('orange', 'connSearching'); }, 900);
+    setTimeout(() => {
+      if (!isSearching || callState !== 'searching') return;
+      setConnection('orange', 'connSearching');
+      setStatusText('statusSearching');
+      setSubText('subHangTight');
+    }, ENDED_NOTICE_MS);
   } else {
     isSearching = false;
     socket.emit('leave');

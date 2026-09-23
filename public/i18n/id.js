@@ -472,7 +472,7 @@
   "connReported": "Dilaporkan",
   "connCalling": "Memanggil",
   "connFriendEnded": "Panggilan berakhir",
-  "statusFriendEnded": "Temanmu mengakhiri panggilan.",
+  "statusFriendEnded": "Lawan bicaramu mengakhiri panggilan.",
   "statusPartnerHungUp": "Teman ngobrolmu menutup panggilan.",
   "convoGuideTitle": "Cara mengobrol dengan seru",
   "convoTip1": "Senyum dulu, suaramu jadi berbeda.",

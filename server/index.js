@@ -1399,6 +1399,19 @@ function persistAccount(usernameLower) {
 // persistent per-browser clientId so it survives reconnects (works for both
 // temporary/guest users and signed-in accounts). Resets on server restart.
 const clientSockets = new Map(); // clientId -> current socketId, for online lookup
+// A guest's generated name, kept per clientId. 'register' is re-sent on every
+// call start, animal/filter change and socket reconnect, and rolling a fresh
+// name each time meant the stranger saw one name in the call and another on
+// the friend request, and friends saw the guest renamed after every re-register.
+const guestNames = new Map(); // clientId -> generated username (insertion-ordered, capped)
+const GUEST_NAMES_MAX = 50000;
+function guestNameFor(clientId) {
+  let name = guestNames.get(clientId);
+  if (name) { guestNames.delete(clientId); } else { name = generateUsername(); }
+  guestNames.set(clientId, name);
+  if (guestNames.size > GUEST_NAMES_MAX) guestNames.delete(guestNames.keys().next().value);
+  return name;
+}
 const friends = new Map(); // clientId -> Map<friendClientId, { username, countryCode, temporary }>
 const friendRequests = new Map(); // clientId -> Map<fromClientId, { username, countryCode, temporary, ts }>
 // The same requests seen from the sender's side: clientId -> Map<targetClientId,
@@ -3602,7 +3615,7 @@ io.on('connection', (socket) => {
       clientId,
       username: (typeof data.nickname === 'string' && data.nickname.trim())
         ? data.nickname.trim().slice(0, 24)
-        : generateUsername(),
+        : guestNameFor(clientId),
       country: geo.country,
       countryName: geo.countryName,
       city: geo.city,

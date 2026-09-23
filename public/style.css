@@ -6632,7 +6632,10 @@ html.perf-lite .side-panel { box-shadow: none; }
 .chat-head-status.is-online { color: var(--green, #2ed47a); }
 .chat-head-status.is-typing { color: var(--accent); font-style: italic; }
 
-.friend-item-info { flex: 1 1 auto; min-width: 0; }
+/* Basis 0, not auto: the preview line is flex-basis 100% inside, so an auto
+   basis measured the whole preview on one line and wrapped the info onto its
+   own row, stacking avatar, name and buttons vertically. */
+.friend-item-info { flex: 1 1 0; min-width: 0; }
 .friend-item-preview {
   flex-basis: 100%;
   min-width: 0;

@@ -241,9 +241,11 @@
   var SEARCH_KEYS = ['chatSearch1', 'chatSearch2', 'chatSearch3', 'chatSearch4'];
   var searchTimer = null, searchIdx = 0;
   function stopSearchLines() { clearInterval(searchTimer); searchTimer = null; }
-  function startSearchLines() {
+  // `lead` is shown first, in place of the opening line: the reason this
+  // search started, when it was not the user's own tap.
+  function startSearchLines(lead) {
     searchIdx = 0;
-    searchLine.textContent = t(SEARCH_KEYS[0]);
+    searchLine.textContent = lead || t(SEARCH_KEYS[0]);
     stopSearchLines();
     searchTimer = setInterval(function () {
       searchIdx = (searchIdx + 1) % SEARCH_KEYS.length;
@@ -552,12 +554,12 @@
     socket.emit('find-partner', { mode: 'chat', animal: myAnimal });
   }
 
-  function goSearch(firstTime) {
+  function goSearch(firstTime, lead) {
     searching = true;
     partnerHere = false;
     if (games) games.reset();
     showView('search');
-    startSearchLines();
+    startSearchLines(lead);
     if (firstTime) register();
     emitFindPartner();
   }
@@ -1899,9 +1901,11 @@
     if (!messageSeenEnabled || !activeFriendChatId) return;
     var seenTs = friendSeenTs[activeFriendChatId];
     if (!seenTs) return;
-    var mine = friendChatMsgs.querySelectorAll('.msg.me');
-    var last = mine[mine.length - 1];
-    if (!last) return;
+    // Only while my message is the newest: after their reply the label would
+    // sit under their bubble, and the reply already says it was read.
+    var all = friendChatMsgs.querySelectorAll('.msg');
+    var last = all[all.length - 1];
+    if (!last || !last.classList.contains('me')) return;
     var sentAt = Number(last.dataset.ts || 0);
     if (sentAt && sentAt > seenTs) return;
     var label = document.createElement('div');
@@ -2424,9 +2428,11 @@
       addMessage(t('chatYouAwayEnded'), 'system system-warn');
     } else if (autoNext) {
       // Keep going straight into a new search - no need to wait for a tap on Next.
+      // The conversation vanishes, so say why: without this the screen just
+      // flipped to "Scanning the globe…" mid-sentence with no word of it.
       clearMessages();
       clearNextConfirm();
-      goSearch(false);
+      goSearch(false, t('statusChatEnded'));
     } else {
       addMessage(reason === 'disconnected' ? t('chatPartnerDropped', { name: name }) : t('chatStageLeft'), 'system system-warn');
     }

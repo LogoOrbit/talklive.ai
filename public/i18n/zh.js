@@ -472,7 +472,7 @@
   "connReported": "已举报",
   "connCalling": "呼叫中",
   "connFriendEnded": "通话已结束",
-  "statusFriendEnded": "你的好友结束了通话。",
+  "statusFriendEnded": "对方结束了通话。",
   "statusPartnerHungUp": "对方挂断了。",
   "convoGuideTitle": "如何聊得愉快",
   "convoTip1": "先微笑，声音都会变得不一样。",

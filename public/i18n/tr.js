@@ -472,7 +472,7 @@
   "connReported": "Şikayet edildi",
   "connCalling": "Aranıyor",
   "connFriendEnded": "Arama sona erdi",
-  "statusFriendEnded": "Arkadaşın aramayı sonlandırdı.",
+  "statusFriendEnded": "Karşı taraf aramayı sonlandırdı.",
   "statusPartnerHungUp": "Karşındaki aramayı kapattı.",
   "convoGuideTitle": "Harika bir sohbet için",
   "convoTip1": "Önce gülümse; sesini değiştirir.",

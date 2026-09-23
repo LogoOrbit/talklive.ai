@@ -123,6 +123,22 @@ async function waitUp() {
     ok('a new app session gets a new guest ID', bRelaunch.id.friendId !== oldGuestId);
     ok('the closed session\'s ID no longer resolves', (await search(a.sock, oldGuestId)).ok === false);
 
+    // --- Guest name stability -------------------------------------------
+    // 'register' is re-sent on every call start and reconnect. A guest with no
+    // nickname must keep the generated name, or the stranger sees one name in
+    // the call and another on the friend request.
+    const g = io(BASE, { transports: ['websocket'], forceNew: true });
+    const firstName = once(g, 'profile');
+    const token = once(g, 'identity-token');
+    g.emit('register', { clientId: 'c_fid_guestname', gender: 'male' });
+    const name1 = (await firstName).username;
+    const identityToken = (await token).token;
+    const secondName = once(g, 'profile');
+    g.emit('register', { clientId: 'c_fid_guestname', identityToken, gender: 'male' });
+    const name2 = (await secondName).username;
+    ok('a guest keeps its generated name across re-registers', !!name1 && name1 === name2, `${name1} vs ${name2}`);
+    g.disconnect();
+
     // --- Accounts --------------------------------------------------------
     const signedUp = once(a.sock, 'signup-result');
     a.sock.emit('signup', { username: 'fidalpha', password: 'secret123' });

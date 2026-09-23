@@ -472,7 +472,7 @@
   "connReported": "رپورٹ ہوئی",
   "connCalling": "کال جاری",
   "connFriendEnded": "کال ختم ہو گئی",
-  "statusFriendEnded": "آپ کے دوست نے کال ختم کر دی۔",
+  "statusFriendEnded": "دوسرے شخص نے کال ختم کر دی۔",
   "statusPartnerHungUp": "آپ کے ساتھی نے کال کاٹ دی۔",
   "convoGuideTitle": "اچھی گفتگو کیسے کریں",
   "convoTip1": "پہلے مسکرائیں، اس سے آواز بدل جاتی ہے۔",

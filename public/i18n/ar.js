@@ -472,7 +472,7 @@
   "connReported": "تم الإبلاغ",
   "connCalling": "اتصال",
   "connFriendEnded": "انتهت المكالمة",
-  "statusFriendEnded": "أنهى صديقك المكالمة.",
+  "statusFriendEnded": "أنهى الطرف الآخر المكالمة.",
   "statusPartnerHungUp": "أنهى شريكك المكالمة.",
   "convoGuideTitle": "كيف تُجري محادثة رائعة",
   "convoTip1": "ابتسم أولًا، فالابتسامة تغيّر صوتك.",

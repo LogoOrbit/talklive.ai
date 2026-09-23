@@ -472,7 +472,7 @@
   "connReported": "گزارش شد",
   "connCalling": "در حال تماس",
   "connFriendEnded": "تماس پایان یافت",
-  "statusFriendEnded": "دوستت تماس را تمام کرد.",
+  "statusFriendEnded": "طرف مقابل تماس را تمام کرد.",
   "statusPartnerHungUp": "هم‌صحبتت تماس را قطع کرد.",
   "convoGuideTitle": "چطور یک گفتگوی عالی داشته باشیم",
   "convoTip1": "اول لبخند بزن؛ صدایت را تغییر می‌دهد.",

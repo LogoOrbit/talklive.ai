@@ -533,7 +533,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "connReported": "Reported",
     "connCalling": "Calling",
     "connFriendEnded": "Call ended",
-    "statusFriendEnded": "Your friend ended the call.",
+    "statusFriendEnded": "They ended the call.",
     "statusPartnerHungUp": "Your partner hung up.",
     "convoGuideTitle": "How to have a great talk",
     "convoTip1": "Smile first - it changes your voice.",

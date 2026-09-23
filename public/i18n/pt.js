@@ -472,7 +472,7 @@
   "connReported": "Denunciado",
   "connCalling": "Ligando",
   "connFriendEnded": "Chamada encerrada",
-  "statusFriendEnded": "Seu amigo encerrou a chamada.",
+  "statusFriendEnded": "A outra pessoa encerrou a chamada.",
   "statusPartnerHungUp": "Seu parceiro desligou.",
   "convoGuideTitle": "Como ter uma ótima conversa",
   "convoTip1": "Sorria primeiro: isso muda sua voz.",

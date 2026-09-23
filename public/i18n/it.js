@@ -472,7 +472,7 @@
   "connReported": "Segnalato",
   "connCalling": "Chiamata",
   "connFriendEnded": "Chiamata terminata",
-  "statusFriendEnded": "Il tuo amico ha chiuso la chiamata.",
+  "statusFriendEnded": "L'altra persona ha chiuso la chiamata.",
   "statusPartnerHungUp": "Il tuo partner ha riagganciato.",
   "convoGuideTitle": "Come fare una bella chiacchierata",
   "convoTip1": "Sorridi prima: cambia la tua voce.",
