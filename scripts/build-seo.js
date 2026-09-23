@@ -1890,13 +1890,14 @@ const CORE_BLOG = [
 ];
 
 // Later articles live in ./blog-extra for the same reason.
-const BLOG = CORE_BLOG.concat(require("./blog-extra"), require("./blog-extra3"));
+const BLOG = CORE_BLOG.concat(require("./blog-extra"), require("./blog-extra3"), require("./blog-extra4"));
 
 function blogUrl(slug) { return `${SITE}/blog/${slug}`; }
 
 function blogPost(b) {
   const canonical = blogUrl(b.slug);
-  const modified = b.updated || CONTENT_UPDATED;
+  // A post newer than the site-wide content date is its own last update.
+  const modified = b.updated || (b.date > CONTENT_UPDATED ? b.date : CONTENT_UPDATED);
   const bodyHtml = b.sections.map(s =>
     (s.h ? `<h2>${s.h}</h2>` : '') + s.ps.map(p => `<p>${p}</p>`).join('')
   ).join('');
@@ -2045,7 +2046,9 @@ ${footerHtml()}
 
 function blogIndex() {
   const canonical = `${SITE}/blog/`;
-  const cards = BLOG.map(b => `<a class="card" href="/blog/${b.slug}" style="display:block;text-decoration:none">
+  // Newest first, so a new post is the first thing on the blog index.
+  const byDate = BLOG.slice().sort((x, y) => (y.updated || y.date).localeCompare(x.updated || x.date));
+  const cards = byDate.map(b => `<a class="card" href="/blog/${b.slug}" style="display:block;text-decoration:none">
       <p style="margin:0 0 8px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;opacity:.7">${esc(b.tag)}</p>
       <h3 style="margin:0 0 10px">${esc(b.h1)}</h3>
       <p>${esc(b.description)}</p>
@@ -2062,7 +2065,7 @@ function blogIndex() {
         url: canonical,
         description: 'Guides on talking to strangers, voice chat, language practice and online safety from the team behind TalkLive.',
         publisher: { '@id': ORGANIZATION_ID },
-        blogPost: BLOG.map(b => ({ '@type': 'BlogPosting', headline: b.h1, url: blogUrl(b.slug), datePublished: b.date, dateModified: b.updated || CONTENT_UPDATED })),
+        blogPost: BLOG.map(b => ({ '@type': 'BlogPosting', headline: b.h1, url: blogUrl(b.slug), datePublished: b.date, dateModified: b.updated || (b.date > CONTENT_UPDATED ? b.date : CONTENT_UPDATED) })),
       },
       { '@type': 'CollectionPage', '@id': `${canonical}#webpage`, name: 'TalkLive Blog', url: canonical, isPartOf: { '@id': WEBSITE_ID }, inLanguage: 'en' },
     ],

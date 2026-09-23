@@ -79,6 +79,9 @@ The app UI and a localized homepage are available in: English plus [Español](ht
 - [Why Chat Sites Ask for Microphone Access - and What They Get](https://talklive.app/blog/why-chat-sites-ask-for-microphone-access): What granting microphone permission to a website actually allows, what the browser will not let a site do, how to verify nothing is listening, and how to revoke it.
 - [What Happened to Chatroulette?](https://talklive.app/blog/what-happened-to-chatroulette): Chatroulette went from viral phenomenon to cautionary tale in under a year. What actually happened, what its founder tried, and what the whole episode taught the category.
 - [How Much Data Does Voice Chat Actually Use?](https://talklive.app/blog/how-much-data-does-voice-chat-use): Real numbers for WebRTC voice against video and streaming, what a relay adds, and how long you can talk on a small mobile data plan.
+- [Getting Skipped in Random Chat: Why It Happens and Why It Is Not About You](https://talklive.app/blog/getting-skipped-in-random-chat): Why strangers tap Next after a few seconds, what it does and does not say about you, and how to stop a skip from ruining the next conversation.
+- [How to Sound Good on a Voice Call: Fix Echo, Background Noise and Lag](https://talklive.app/blog/how-to-sound-good-on-a-voice-call): Practical fixes for the most common voice-call problems - echo, background noise, a quiet or crackly mic, and delay - on phones and computers, in two minutes.
+- [How to Be a Good Listener, Even With Someone You Just Met](https://talklive.app/blog/how-to-be-a-good-listener): Listening is the underrated half of every good conversation. How to show you are really listening on a voice call, the habits that quietly shut people down, and what to do when you run out of things to say.
 
 ## Policies
 - [About](https://talklive.app/about)

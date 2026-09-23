@@ -30,7 +30,7 @@
     "v": 3
   },
   "/blog/": {
-    "hash": "3bd5ab4fc513eb1a",
+    "hash": "96e21996639eb715",
     "date": "2026-09-23",
     "v": 3
   },
@@ -54,18 +54,28 @@
     "date": "2026-09-23",
     "v": 3
   },
+  "/blog/getting-skipped-in-random-chat": {
+    "hash": "607d2d14d8edddfa",
+    "date": "2026-09-23",
+    "v": 3
+  },
   "/blog/how-anonymous-voice-chat-works": {
     "hash": "4a3d892c8b862f48",
     "date": "2026-09-23",
     "v": 3
   },
   "/blog/how-much-data-does-voice-chat-use": {
-    "hash": "7979c23af1d2039e",
+    "hash": "c04223517cbf823f",
     "date": "2026-09-23",
     "v": 3
   },
   "/blog/how-random-matchmaking-works": {
     "hash": "ab955a053f092ecc",
+    "date": "2026-09-23",
+    "v": 3
+  },
+  "/blog/how-to-be-a-good-listener": {
+    "hash": "15379507f261a168",
     "date": "2026-09-23",
     "v": 3
   },
@@ -84,8 +94,13 @@
     "date": "2026-09-23",
     "v": 3
   },
+  "/blog/how-to-sound-good-on-a-voice-call": {
+    "hash": "d6b69416e09f35d7",
+    "date": "2026-09-23",
+    "v": 3
+  },
   "/blog/how-to-spot-a-bot-or-scam-in-random-chat": {
-    "hash": "26ceaa54e9166694",
+    "hash": "fb751619221000f4",
     "date": "2026-09-23",
     "v": 3
   },
@@ -100,7 +115,7 @@
     "v": 3
   },
   "/blog/is-random-voice-chat-safe-for-women": {
-    "hash": "35992d4c192d17d9",
+    "hash": "e64af3ff41c3ed9c",
     "date": "2026-09-23",
     "v": 3
   },
@@ -135,7 +150,7 @@
     "v": 3
   },
   "/blog/random-chat-without-a-camera": {
-    "hash": "ebf0808e7b330880",
+    "hash": "dcaf391c4f8bfe43",
     "date": "2026-09-23",
     "v": 3
   },
@@ -150,12 +165,12 @@
     "v": 3
   },
   "/blog/talking-to-strangers-in-another-language": {
-    "hash": "13c2a2b6a6fdd51e",
+    "hash": "d18d69bdc7424ac5",
     "date": "2026-09-23",
     "v": 3
   },
   "/blog/voice-chat-vs-text-chat": {
-    "hash": "50b0442ec0d5bfd4",
+    "hash": "0f8fcda48e7b7b6a",
     "date": "2026-09-23",
     "v": 3
   },
@@ -165,7 +180,7 @@
     "v": 3
   },
   "/blog/what-happened-to-chatroulette": {
-    "hash": "c462efc98bbee993",
+    "hash": "f23a47f6b2efd83d",
     "date": "2026-09-23",
     "v": 3
   },
@@ -175,12 +190,12 @@
     "v": 3
   },
   "/blog/what-to-talk-about-with-a-stranger": {
-    "hash": "40694a59740ecbc2",
+    "hash": "7e6708699f65b01b",
     "date": "2026-09-23",
     "v": 3
   },
   "/blog/why-chat-sites-ask-for-microphone-access": {
-    "hash": "76b60950ddde40ea",
+    "hash": "cdb3d7392b989ba6",
     "date": "2026-09-23",
     "v": 3
   },
@@ -670,7 +685,7 @@
     "v": 3
   },
   "/late-night-chat": {
-    "hash": "2ef01dd129cf64ca",
+    "hash": "521fc8fc9b4e662b",
     "date": "2026-09-23",
     "v": 3
   },
@@ -700,7 +715,7 @@
     "v": 3
   },
   "/ometv-alternative": {
-    "hash": "7d9ea293e54e8b15",
+    "hash": "dd4ac0001f9ac729",
     "date": "2026-09-23",
     "v": 3
   },
@@ -715,7 +730,7 @@
     "v": 3
   },
   "/practice-english-speaking": {
-    "hash": "f35bbf7ce423bd3f",
+    "hash": "1c58489e4aa8ef6a",
     "date": "2026-09-23",
     "v": 3
   },
@@ -735,7 +750,7 @@
     "v": 3
   },
   "/random-call": {
-    "hash": "a9e7d3459e6a00b1",
+    "hash": "bab08dc34df5f294",
     "date": "2026-09-23",
     "v": 3
   },
@@ -745,7 +760,7 @@
     "v": 3
   },
   "/random-text-chat": {
-    "hash": "b38713859441532f",
+    "hash": "20189cf6d58b3ccc",
     "date": "2026-09-23",
     "v": 3
   },
@@ -760,7 +775,7 @@
     "v": 3
   },
   "/random-voice-chat": {
-    "hash": "236cc7559fc3a088",
+    "hash": "60d70c9b01559273",
     "date": "2026-09-23",
     "v": 3
   },
@@ -800,7 +815,7 @@
     "v": 3
   },
   "/talk-to-someone": {
-    "hash": "da457e9554665a6c",
+    "hash": "9ba1c59503456bd4",
     "date": "2026-09-23",
     "v": 3
   },
