@@ -19,6 +19,7 @@ const LOCALES = require('./locales');
 // a free web app needs return and shipping fields at all.
 const { BRAND, freeOffer } = require('./data/commerce');
 const { languagesAnswer } = require('./data/languages');
+const { pageArt, blogArt, artImg } = require('./illustrations');
 const LANGS = ['en'].concat(LOCALES.map((locale) => locale.code));
 const CONTENT_UPDATED = '2026-08-14';
 const ORGANIZATION_ID = `${SITE}/#organization`;
@@ -332,7 +333,8 @@ function relatedPostsHtml(p, index) {
   }).sort((a, b) => b.score - a.score || b.post.date.localeCompare(a.post.date))
     .map((entry) => entry.post);
   const items = picked.concat(auto).slice(0, 3).map(b =>
-    `<a class="card" href="/blog/${b.slug}" style="display:block;text-decoration:none;color:inherit">
+    `<a class="card card-with-art" href="/blog/${b.slug}" style="display:block;text-decoration:none;color:inherit">
+      <div class="card-art">${artImg(blogArt(b))}</div>
       <p style="margin:0 0 8px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;opacity:.7">${esc(b.tag)}</p>
       <h3 style="margin:0 0 10px">${esc(b.h1)}</h3><p>${esc(b.description)}</p></a>`).join('');
   return `<section>
@@ -429,7 +431,7 @@ function page(p, index) {
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<link rel="stylesheet" href="/seo.css?v=20260921ux" />
+<link rel="stylesheet" href="/seo.css?v=20260923art" />
 <title>${esc(p.title)}</title>
 <meta name="description" content="${esc(p.description)}" />
 <meta name="robots" content="${p.noindex ? 'noindex, follow' : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1'}" />
@@ -466,7 +468,8 @@ function page(p, index) {
 ${headerHtml(p.slug)}
 <main id="main-content">
   <section class="hero">
-    <div class="wrap">
+    <div class="wrap hero-split">
+      <div class="hero-copy">
       <span class="eyebrow"><span class="dot"></span> ${p.eyebrow}</span>
       <h1>${p.h1}</h1>
       <p class="lede">${p.lede}</p>
@@ -476,6 +479,8 @@ ${headerHtml(p.slug)}
         <a class="btn btn-ghost" href="#how">How it works</a>
       </div>
       <p class="hero-meta">Core matching is free · Ad-supported · No sign-up required · Voice &amp; text · Adults 18+ · Leave any time</p>
+      </div>
+      <div class="hero-art">${artImg(pageArt(p.slug), { eager: true })}</div>
     </div>
   </section>
 
@@ -506,7 +511,7 @@ ${headerHtml(p.slug)}
   <section class="faq">
     <div class="wrap">
       <h2>Frequently asked questions</h2>
-      ${faqHtml}
+      <div class="faq-layout"><div>${faqHtml}</div>${artImg('question-answered', { cls: 'art art-faq' })}</div>
     </div>
   </section>
 
@@ -526,6 +531,7 @@ ${headerHtml(p.slug)}
 
   <div class="wrap">
     <div class="cta-band">
+      ${artImg('walking-together', { cls: 'art art-cta' })}
       <h2>${p.ctaBandH}</h2>
       <p>${p.ctaBandP}</p>
       <div class="cta-row">
@@ -1962,7 +1968,7 @@ function blogPost(b) {
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<link rel="stylesheet" href="/seo.css?v=20260921ux" />
+<link rel="stylesheet" href="/seo.css?v=20260923art" />
 <title>${esc(b.title)}</title>
 <meta name="description" content="${esc(b.description)}" />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
@@ -2008,6 +2014,7 @@ ${headerHtml('blog')}
         <h1>${esc(b.h1)}</h1>
         <p class="lede">${esc(b.description)}</p>
         <p class="hero-meta">By the TalkLive team · Updated ${modified}</p>
+        <div class="hero-art hero-art-center">${artImg(blogArt(b), { eager: true })}</div>
       </div>
     </section>
     <section>
@@ -2019,6 +2026,7 @@ ${headerHtml('blog')}
 
   <div class="wrap">
     <div class="cta-band">
+      ${artImg('walking-together', { cls: 'art art-cta' })}
       <h2>Try it right now - talk or text with a stranger</h2>
       <p>TalkLive offers free random voice and text matching for adults. Voice calls use encrypted WebRTC and are not recorded or stored by TalkLive; typed chats follow the retention terms in our Privacy Policy.</p>
       <div class="cta-row">
@@ -2048,7 +2056,8 @@ function blogIndex() {
   const canonical = `${SITE}/blog/`;
   // Newest first, so a new post is the first thing on the blog index.
   const byDate = BLOG.slice().sort((x, y) => (y.updated || y.date).localeCompare(x.updated || x.date));
-  const cards = byDate.map(b => `<a class="card" href="/blog/${b.slug}" style="display:block;text-decoration:none">
+  const cards = byDate.map(b => `<a class="card card-with-art" href="/blog/${b.slug}" style="display:block;text-decoration:none">
+      <div class="card-art">${artImg(blogArt(b))}</div>
       <p style="margin:0 0 8px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;opacity:.7">${esc(b.tag)}</p>
       <h3 style="margin:0 0 10px">${esc(b.h1)}</h3>
       <p>${esc(b.description)}</p>
@@ -2075,7 +2084,7 @@ function blogIndex() {
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<link rel="stylesheet" href="/seo.css?v=20260921ux" />
+<link rel="stylesheet" href="/seo.css?v=20260923art" />
 <title>TalkLive Blog - Voice Chat & Talking to Strangers</title>
 <meta name="description" content="Guides and research on talking to strangers, voice-only chat, practising languages with real people, and staying safe online - from the team behind TalkLive." />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
@@ -2115,6 +2124,7 @@ ${headerHtml('blog')}
       <span class="eyebrow"><span class="dot"></span> The TalkLive Blog</span>
       <h1>Conversations, strangers &amp; the science of talking</h1>
       <p class="lede">Guides and research on meeting people by voice - from the team behind TalkLive.</p>
+      <div class="hero-art hero-art-center">${artImg('blogging', { eager: true })}</div>
     </div>
   </section>
   <section>
@@ -2124,6 +2134,7 @@ ${headerHtml('blog')}
   </section>
   <div class="wrap">
     <div class="cta-band">
+      ${artImg('walking-together', { cls: 'art art-cta' })}
       <h2>Done reading? Go talk - or chat.</h2>
       <p>Choose a free random voice or text match. No account is required for the core experience; availability varies with the live queue.</p>
       <div class="cta-row">
@@ -2194,7 +2205,7 @@ function localeHome(loc) {
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<link rel="stylesheet" href="/seo.css?v=20260921ux" />
+<link rel="stylesheet" href="/seo.css?v=20260923art" />
 <title>${esc(loc.title)}</title>
 <meta name="description" content="${esc(loc.description)}" />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
@@ -2244,7 +2255,8 @@ ${alternates}
 </header>
 <main id="main-content">
   <section class="hero">
-    <div class="wrap">
+    <div class="wrap hero-split">
+      <div class="hero-copy">
       <h1>${loc.h1}</h1>
       <p class="lede">${loc.lede}</p>
       <div class="cta-row">
@@ -2252,6 +2264,8 @@ ${alternates}
         <a class="btn btn-chat" href="${appChat}">💬 ${loc.ctaChat}</a>
       </div>
       <p class="hero-meta">${loc.heroMeta}</p>
+      </div>
+      <div class="hero-art">${artImg('connected-world', { eager: true })}</div>
     </div>
   </section>
   <section id="features">
@@ -2270,12 +2284,13 @@ ${alternates}
   <section class="faq">
     <div class="wrap">
       <h2>${loc.faqH}</h2>
-      ${faqHtml}
+      <div class="faq-layout"><div>${faqHtml}</div>${artImg('question-answered', { cls: 'art art-faq' })}</div>
     </div>
   </section>
   ${leaderboardAd()}
   <div class="wrap">
     <div class="cta-band">
+      ${artImg('walking-together', { cls: 'art art-cta' })}
       <h2>${loc.ctaH}</h2>
       <p>${loc.ctaP}</p>
       <div class="cta-row">

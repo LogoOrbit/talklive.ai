@@ -3706,3 +3706,19 @@
   color: var(--muted);
 }
 .tl-call-safety-note a { color: inherit; text-decoration: underline; white-space: nowrap; }
+
+/* Illustrated empty states for the friends and history lists (unDraw art in
+   public/illustrations/). A pseudo-element, because app.js and chat.js
+   rebuild these lists with innerHTML; the image only loads once a panel is
+   actually shown. */
+#friendsList > .tl-empty::before,
+#historyList > .tl-empty::before,
+#historyList > .list-empty::before {
+  content: "";
+  display: block;
+  height: 110px;
+  margin: 0 auto 12px;
+  background: url("/illustrations/add-friends.svg") center / contain no-repeat;
+}
+#historyList > .tl-empty::before,
+#historyList > .list-empty::before { background-image: url("/illustrations/online-friends.svg"); }
