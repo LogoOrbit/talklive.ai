@@ -166,6 +166,7 @@ function footerHtml() {
           <li><a href="/contact">Contact</a></li>
           <li><a href="/privacy">Privacy Policy</a></li>
           <li><a href="/terms">Terms</a></li>
+          <li><a href="/community-guidelines">Community Guidelines</a></li>
           <li><a href="/refund">Refund Policy</a></li>
         </ul></div>
       </div>
@@ -1704,7 +1705,7 @@ const CORE_BLOG = [
         'Any app that connects you to strangers owes you a straight answer about safety. This post explains exactly how TalkLive works under the hood - what we can see, what we cannot, and what happens when someone behaves badly.',
       ]},
       { h: 'How TalkLive handles voice traffic', ps: [
-        'TalkLive calls use encrypted WebRTC and a production TURN relay for connectivity. TalkLive does not record, listen to or store voice audio. The other participant still controls their own device and can record what they hear, so do not share secrets or identifying details.',
+        'TalkLive calls use encrypted WebRTC and a production TURN relay for connectivity. TalkLive does not record or store voice audio, and no person listens to calls; on desktop browsers, automated safety checks run on each person\'s own microphone and keep a short text snippet only when abuse is detected. The other participant still controls their own device and can record what they hear, so do not share secrets or identifying details.',
       ]},
       { h: 'Anonymous by default', ps: [
         'You can use TalkLive without creating an account. No name, no email, no phone number. The person you talk to sees a display name and a country flag - nothing else. Signing up (optional) only exists so you can keep friends and settings across devices.',
@@ -2278,7 +2279,7 @@ ${alternates}
 </main>
 <footer class="site-footer">
   <div class="wrap">
-    <div class="fine">© ${new Date().getFullYear()} TalkLive · <a href="/about">About</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/contact">Contact</a> · <a href="/safety">Safety</a></div>
+    <div class="fine">© ${new Date().getFullYear()} TalkLive · <a href="/about">About</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/community-guidelines">Guidelines</a> · <a href="/contact">Contact</a> · <a href="/safety">Safety</a></div>
   </div>
 </footer>
 </body>
@@ -2326,6 +2327,7 @@ const sitemapUrls = [{ slug: '', priority: '1.0', freq: 'daily', home: true, las
     { slug: 'contact', priority: '0.4', freq: 'yearly', raw: true, lastmod: CONTENT_UPDATED },
     { slug: 'privacy', priority: '0.3', freq: 'yearly', raw: true, lastmod: CONTENT_UPDATED },
     { slug: 'terms', priority: '0.3', freq: 'yearly', raw: true, lastmod: CONTENT_UPDATED },
+    { slug: 'community-guidelines', priority: '0.3', freq: 'yearly', raw: true, lastmod: CONTENT_UPDATED },
     { slug: 'refund', priority: '0.3', freq: 'yearly', raw: true, lastmod: CONTENT_UPDATED },
   ]);
 
@@ -2558,7 +2560,7 @@ function extraSitemapEntries(existingLocs) {
  * SEO.md, "Do not fix the orphaned generators") land in the right cluster too.
  */
 const LOCALE_HOMES = new Set(LOCALES.map(l => `/${l.code}/`));
-const MAIN_PATHS = new Set(['/', '/pricing', '/about', '/contact', '/privacy', '/terms', '/refund']);
+const MAIN_PATHS = new Set(['/', '/pricing', '/about', '/contact', '/privacy', '/terms', '/community-guidelines', '/refund']);
 
 function sitemapCluster(loc) {
   const p = loc.slice(SITE.length) || '/';

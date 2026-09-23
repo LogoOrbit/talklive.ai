@@ -107,10 +107,10 @@ module.exports = [
     prose: [
       { h: 'No stranger-chat service can promise complete safety', body: [
         `TalkLive reduces some forms of exposure by offering voice and text without requiring video. That does not verify the identity, intentions or truthfulness of the person on the other side. Read the <a href="/blog/random-chat-safety-tips">practical safety rules</a> before your first match and treat pressure as useful information, not something you have to negotiate with.`,
-        `The fastest safety control is leaving. Next, block and report exist so you can act without debating whether someone has crossed a precise line. The <a href="/terms">Terms</a> explain prohibited behaviour; they do not require you to stay until a violation is proven.`,
+        `The fastest safety control is leaving. Next, block and report exist so you can act without debating whether someone has crossed a precise line. The <a href="/community-guidelines">Community Guidelines</a> and <a href="/terms">Terms</a> explain prohibited behaviour; they do not require you to stay until a violation is proven.`,
       ]},
       { h: 'What happens to voice and text', body: [
-        `TalkLive does not record or store voice audio. As explained in <a href="/how-it-works">How TalkLive Works</a>, WebRTC encrypts audio in transit and TalkLive uses a TURN relay in production for connectivity. Relaying encrypted packets is not the same as creating an audio recording.`,
+        `TalkLive does not record or store voice audio. On desktop browsers, automated safety checks run on your own microphone during a call and keep a short text snippet only when abuse is detected - see the <a href="/privacy#voice-safety-checks">Privacy Policy</a>. As explained in <a href="/how-it-works">How TalkLive Works</a>, WebRTC encrypts audio in transit and TalkLive uses a TURN relay in production for connectivity. Relaying encrypted packets is not the same as creating an audio recording.`,
         `Typed chat is different. Messages, reports and supporting operational information may be retained for a limited, rolling period so the service can deliver features and respond to misuse. The current details and retention wording live in the <a href="/privacy">Privacy Policy</a>, which should be treated as the source of truth.`,
       ]},
       { h: 'The other participant controls their device', body: [

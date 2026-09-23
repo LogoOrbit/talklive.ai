@@ -422,7 +422,7 @@
   </url>
   <url>
     <loc>https://talklive.app/contact</loc>
-    <lastmod>2026-09-06</lastmod>
+    <lastmod>2026-09-23</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.4</priority>
   </url>
@@ -439,8 +439,14 @@
     <priority>0.3</priority>
   </url>
   <url>
+    <loc>https://talklive.app/community-guidelines</loc>
+    <lastmod>2026-09-23</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
     <loc>https://talklive.app/refund</loc>
-    <lastmod>2026-09-06</lastmod>
+    <lastmod>2026-09-23</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
