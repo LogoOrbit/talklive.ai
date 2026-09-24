@@ -4252,6 +4252,16 @@ function applyFriendChatLock() {
   friendChatForm.classList.remove('locked');
 }
 
+// The chat header is just the person's name, as a messenger's is. A "message
+// back" chat with a recent match has no friend entry, so it is named from the
+// call history rather than a bare "Chat".
+function friendChatName(clientId) {
+  const friend = friendsData.find((f) => f.clientId === clientId);
+  if (friend) return friendLabel(friend);
+  const past = historyEntries().find((h) => h.clientId === clientId);
+  return (past && labelForClientId(clientId, past.username)) || '';
+}
+
 function openFriendChat(friendClientId) {
   // The composer belongs to a conversation: text typed to one person used to
   // stay in the box when another chat was opened, and went to the wrong one.
@@ -4259,11 +4269,7 @@ function openFriendChat(friendClientId) {
   activeFriendChatId = friendClientId;
   friendChatInput.value = friendDrafts.get(friendClientId) || '';
   const friend = friendsData.find((f) => f.clientId === friendClientId);
-  // A "message back" chat with a recent match has no friend entry - name it
-  // from the call history rather than a bare "Chat".
-  const past = friend ? null : historyEntries().find((h) => h.clientId === friendClientId);
-  const chatName = friend ? friendLabel(friend) : (past && past.username);
-  friendChatTitle.textContent = chatName ? t('chatWith', { name: chatName }) : t('chat');
+  friendChatTitle.textContent = friendChatName(friendClientId) || t('chat');
   closeSidePanel(friendsDropdown, friendsOverlay);
   closeSidePanel(friendProfileModal, friendProfileOverlay);
   openSidePanel(friendChatModal, friendChatOverlay);
@@ -8975,8 +8981,7 @@ window.addEventListener('i18n-changed', () => {
   if (currentPartner && !partnerCard.classList.contains('hidden')) renderPartnerAnimal(currentPartner.animal);
 
   if (activeFriendChatId) {
-    const friend = friendsData.find((f) => f.clientId === activeFriendChatId);
-    friendChatTitle.textContent = friend ? t('chatWith', { name: friendLabel(friend) }) : t('chat');
+    friendChatTitle.textContent = friendChatName(activeFriendChatId) || t('chat');
     renderFriendChatMessages();
   }
 });

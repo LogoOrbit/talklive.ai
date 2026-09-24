@@ -2185,9 +2185,8 @@
     // Each conversation keeps its own unsent text: it used to stay in the box
     // when another chat was opened, and went to the wrong person.
     friendChatInput.value = friendDrafts[friend.clientId] || '';
-    $('friendChatTitle').textContent = friendLabel(friend)
-      ? t('chatWith', { name: friendLabel(friend) })
-      : t('chat');
+    // Just their name in the header, as a messenger shows it.
+    $('friendChatTitle').textContent = friendLabel(friend) || t('chat');
     friendChatMsgs.innerHTML = '';
     if (friendExtras) friendExtras.reset();
     closePanel(friendsPanel, friendsOverlay);
