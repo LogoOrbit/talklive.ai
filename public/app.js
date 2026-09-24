@@ -1275,6 +1275,7 @@ const COVERING_LAYERS = [
   ['historyPanel', 'open'],
   ['friendProfileModal', 'open'],
   ['friendChatModal', 'open'],
+  ['myProfileSheet', 'open'],
   ['filtersPanel', 'open'],
   ['navDrawer', '!hidden'],
   ['gameOverlay', '!hidden'],
@@ -1564,6 +1565,7 @@ let friendIdAddPending = false;
 socket.on('friend-id', ({ friendId, temporary } = {}) => {
   if (typeof friendId !== 'string' || !friendId) return;
   myFriendId = friendId;
+  if (myProfileIsOpen()) renderMyProfileCard();
   myFriendIdEl.textContent = friendId;
   // The empty friends list offers "Share my ID", disabled until there is one.
   if (friendsSynced && !friendsData.length) renderFriendsList();
@@ -1833,6 +1835,7 @@ function renderHeaderAccountFace() {
   const name = document.getElementById('headerAccountName');
   if (face && myAvatar) face.innerHTML = avatarFaceHtml(myAvatar, 30);
   if (name) name.textContent = accountNickname || '';
+  if (myProfileIsOpen()) renderMyProfileCard();
 }
 
 function renderAccountState() {
@@ -2634,8 +2637,117 @@ sidePanelRegisterBtn.addEventListener('click', () => openAccountModal('signup'))
 // the URL says afterwards.
 headerAccountBtn.addEventListener('click', () => {
   renderAccountState();
-  openAppSettings('profile');
+  openMyProfile();
 });
+
+// --- My profile: a sheet of its own --------------------------------------
+// Your face in the corner opens your profile and nothing else - who you are,
+// your ID, your name, picture and account - in a sheet that slides up from
+// the bottom and goes away with Back, a tap outside or a swipe down. It used
+// to land on the whole Settings screen, which is a different thing entirely.
+// The name, avatar, "I am" and account controls are the very ones Settings >
+// Profile has; they are lent to the sheet while it is open (moving the nodes
+// keeps every listener), so there is one of each and they cannot disagree.
+// `var`: the header and friend-ID code call into this before it is reached.
+var myProfileSheet = null;
+var myProfileBorrowed = [];
+function myProfileIsOpen() {
+  return !!myProfileSheet && myProfileSheet.classList.contains('open');
+}
+function buildMyProfileSheet() {
+  myProfileSheet = document.createElement('div');
+  myProfileSheet.id = 'myProfileSheet';
+  myProfileSheet.className = 'my-profile';
+  myProfileSheet.innerHTML = `
+    <div class="my-profile-backdrop"></div>
+    <section class="my-profile-sheet" role="dialog" aria-modal="true" aria-labelledby="myProfileName" tabindex="-1">
+      <div class="my-profile-grab" aria-hidden="true"></div>
+      <button type="button" class="my-profile-close">&times;</button>
+      <div class="my-profile-scroll">
+        <div class="my-profile-card">
+          <div class="my-profile-face"></div>
+          <h2 id="myProfileName" class="my-profile-name"></h2>
+          <p class="my-profile-sub"></p>
+          <div class="my-profile-id">
+            <span class="my-profile-id-label"></span><strong class="my-profile-id-value"></strong>
+            <button type="button" class="btn btn-secondary my-profile-copy"></button>
+            <button type="button" class="btn btn-primary my-profile-share"></button>
+          </div>
+        </div>
+        <div class="my-profile-body"></div>
+      </div>
+    </section>`;
+  document.body.appendChild(myProfileSheet);
+  myProfileSheet.querySelector('.my-profile-backdrop').addEventListener('click', closeMyProfile);
+  myProfileSheet.querySelector('.my-profile-close').addEventListener('click', closeMyProfile);
+  myProfileSheet.querySelector('.my-profile-copy').addEventListener('click', () => copyFriendIdBtn.click());
+  myProfileSheet.querySelector('.my-profile-share').addEventListener('click', () => shareFriendIdBtn.click());
+  // Drag the top of the sheet down to put it away, as a phone sheet does.
+  const sheet = myProfileSheet.querySelector('.my-profile-sheet');
+  const scroller = myProfileSheet.querySelector('.my-profile-scroll');
+  let startY = null;
+  let dy = 0;
+  sheet.addEventListener('touchstart', (e) => {
+    if (scroller.scrollTop > 0) { startY = null; return; }
+    startY = e.touches[0].clientY;
+    dy = 0;
+  }, { passive: true });
+  sheet.addEventListener('touchmove', (e) => {
+    if (startY === null) return;
+    dy = Math.max(0, e.touches[0].clientY - startY);
+    if (dy > 0) sheet.style.transform = `translateY(${dy}px)`;
+  }, { passive: true });
+  sheet.addEventListener('touchend', () => {
+    if (startY === null) return;
+    startY = null;
+    sheet.style.transform = '';
+    if (dy > 90) closeMyProfile();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && myProfileIsOpen() && !document.querySelector('.modal-overlay:not(.hidden)')) closeMyProfile();
+  });
+}
+function renderMyProfileCard() {
+  if (!myProfileSheet) return;
+  const name = accountNickname || (tempUsernameInput && tempUsernameInput.value) || t('you');
+  myProfileSheet.querySelector('.my-profile-face').innerHTML = myAvatar ? avatarFaceHtml(myAvatar, 84) : genderIcon(null, 84);
+  myProfileSheet.querySelector('.my-profile-name').textContent = name;
+  const n = friendsData.length;
+  myProfileSheet.querySelector('.my-profile-sub').textContent = `${t('friends')}: ${n}`;
+  myProfileSheet.querySelector('.my-profile-id-label').textContent = t('yourFriendId');
+  myProfileSheet.querySelector('.my-profile-id-value').textContent = myFriendId || '…';
+  myProfileSheet.querySelector('.my-profile-copy').textContent = t('copyFriendId');
+  myProfileSheet.querySelector('.my-profile-share').textContent = t('shareFriendId');
+  myProfileSheet.querySelector('.my-profile-close').setAttribute('aria-label', t('close'));
+}
+function openMyProfile() {
+  if (!myProfileSheet) buildMyProfileSheet();
+  if (settingsIsOpen()) closeAppSettings();
+  const body = myProfileSheet.querySelector('.my-profile-body');
+  const pane = document.getElementById('settingsPane-profile');
+  myProfileBorrowed = pane ? Array.from(pane.children) : [];
+  myProfileBorrowed.forEach((el) => body.appendChild(el));
+  renderMyProfileCard();
+  myProfileSheet.querySelector('.my-profile-scroll').scrollTop = 0;
+  myProfileSheet.classList.add('shown');
+  requestAnimationFrame(() => requestAnimationFrame(() => myProfileSheet.classList.add('open')));
+  updateScrollLock();
+  try { myProfileSheet.querySelector('.my-profile-sheet').focus({ preventScroll: true }); } catch (_) {}
+}
+function closeMyProfile() {
+  if (!myProfileIsOpen()) return;
+  myProfileSheet.classList.remove('open');
+  const pane = document.getElementById('settingsPane-profile');
+  // Handed back once the sheet has slid away, so nothing jumps mid-animation.
+  const give = myProfileBorrowed;
+  myProfileBorrowed = [];
+  setTimeout(() => {
+    if (myProfileIsOpen()) return;
+    if (pane) give.forEach((el) => pane.appendChild(el));
+    myProfileSheet.classList.remove('shown');
+    updateScrollLock();
+  }, 280);
+}
 
 // "Update password" only becomes active once the password form is filled in.
 function syncPasswordBtnState() {
@@ -7594,6 +7706,7 @@ function closeTopmostLayer() {
     closeModal(openModalEl);
     return true;
   }
+  if (myProfileIsOpen()) { closeMyProfile(); return true; }
   if (navDrawer && !navDrawer.classList.contains('hidden')) { setNavDrawerOpen(false); return true; }
   if (!gameOverlay.classList.contains('hidden')) { attemptCloseGame(); return true; }
   if (chatOpen) { closeChatPanel(); return true; }
