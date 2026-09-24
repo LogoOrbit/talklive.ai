@@ -2993,7 +2993,10 @@ function buildMyProfileSheet() {
             <button type="button" class="btn btn-primary my-profile-share"></button>
           </div>
         </div>
-        <div class="my-profile-body"></div>
+        <div class="my-profile-body">
+          <div class="tl-set-group my-profile-controls"></div>
+          <div class="my-profile-actions"></div>
+        </div>
       </div>
     </section>`;
   document.body.appendChild(myProfileSheet);
@@ -3001,6 +3004,7 @@ function buildMyProfileSheet() {
   myProfileSheet.querySelector('.my-profile-close').addEventListener('click', closeMyProfile);
   myProfileSheet.querySelector('.my-profile-copy').addEventListener('click', () => copyFriendIdBtn.click());
   myProfileSheet.querySelector('.my-profile-share').addEventListener('click', () => shareFriendIdBtn.click());
+  myProfileSheet.querySelector('.my-profile-actions').addEventListener('click', onMyProfileAction);
   // Drag the top of the sheet down to put it away, as a phone sheet does.
   const sheet = myProfileSheet.querySelector('.my-profile-sheet');
   const scroller = myProfileSheet.querySelector('.my-profile-scroll');
@@ -3038,14 +3042,49 @@ function renderMyProfileCard() {
   myProfileSheet.querySelector('.my-profile-copy').textContent = t('copyFriendId');
   myProfileSheet.querySelector('.my-profile-share').textContent = t('shareFriendId');
   myProfileSheet.querySelector('.my-profile-close').setAttribute('aria-label', t('close'));
+  const actions = myProfileSheet.querySelector('.my-profile-actions');
+  actions.innerHTML = (accountNickname
+    ? `<button type="button" class="btn btn-danger" data-act="logout">${escapeHtml(t('logOut'))}</button>`
+    : `<button type="button" class="btn btn-secondary" data-act="login">${escapeHtml(t('signIn'))}</button>
+       <button type="button" class="btn btn-primary" data-act="signup">${escapeHtml(t('register'))}</button>`)
+    + `<button type="button" class="btn btn-secondary my-profile-more" data-act="more">${escapeHtml(t('moreProfileSettings'))}</button>`;
+}
+// Leaving the sheet for somewhere else in the app: it closes without sending
+// someone who came from /chat straight back there.
+function leaveMyProfileFor(next) {
+  if (returnToChatAfter === 'profile') returnToChatAfter = next === 'settings' ? 'settings' : null;
+  closeMyProfile(true);
+}
+function onMyProfileAction(e) {
+  const btn = e.target.closest('[data-act]');
+  if (!btn) return;
+  const act = btn.dataset.act;
+  if (act === 'logout') { logoutBtn.click(); return; }
+  if (act === 'more') { leaveMyProfileFor('settings'); openAppSettings('profile'); return; }
+  if (act === 'login' || act === 'signup') { leaveMyProfileFor('auth'); openAuthPage(act); }
 }
 function openMyProfile() {
   if (!myProfileSheet) buildMyProfileSheet();
   if (settingsIsOpen()) closeAppSettings();
-  const body = myProfileSheet.querySelector('.my-profile-body');
-  const pane = document.getElementById('settingsPane-profile');
-  myProfileBorrowed = pane ? Array.from(pane.children) : [];
-  myProfileBorrowed.forEach((el) => body.appendChild(el));
+  // The sheet is the quick version of Settings > Profile: display name, your
+  // ID (signed in only - a guest's is temporary), avatar, and log in or out.
+  // Those controls are lent to it (a placeholder keeps their spot, so they go
+  // back exactly where they were); everything else - "I am", password,
+  // recovery email - is one tap away under "More profile settings".
+  renderIdEditor();
+  const controls = myProfileSheet.querySelector('.my-profile-controls');
+  const nameInput = document.getElementById('tempUsernameInput');
+  const avatarGrid = document.getElementById('avatarGrid');
+  myProfileBorrowed = [
+    nameInput && nameInput.closest('.tl-set-control'),
+    myFriendIdEditable && idEditor,
+    avatarGrid && avatarGrid.closest('.tl-set-control'),
+  ].filter(Boolean).map((el) => {
+    const spot = document.createComment('my-profile');
+    el.before(spot);
+    controls.appendChild(el);
+    return { el, spot };
+  });
   renderMyProfileCard();
   myProfileSheet.querySelector('.my-profile-scroll').scrollTop = 0;
   myProfileSheet.classList.add('shown');
@@ -3067,17 +3106,19 @@ function maybeReturnToChat(what) {
   return true;
 }
 
-function closeMyProfile() {
+// `now`: the controls go straight back (the screen they belong to is about to
+// show them) instead of after the slide.
+function closeMyProfile(now) {
   if (!myProfileIsOpen()) return;
   myProfileSheet.classList.remove('open');
   if (returnToChatAfter === 'profile') setTimeout(() => maybeReturnToChat('profile'), 280);
-  const pane = document.getElementById('settingsPane-profile');
   // Handed back once the sheet has slid away, so nothing jumps mid-animation.
   const give = myProfileBorrowed;
   myProfileBorrowed = [];
+  if (now === true) give.splice(0).forEach(({ el, spot }) => spot.replaceWith(el));
   setTimeout(() => {
     if (myProfileIsOpen()) return;
-    if (pane) give.forEach((el) => pane.appendChild(el));
+    give.forEach(({ el, spot }) => spot.replaceWith(el));
     myProfileSheet.classList.remove('shown');
     updateScrollLock();
   }, 280);

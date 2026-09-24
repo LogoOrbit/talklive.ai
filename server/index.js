@@ -14,13 +14,13 @@ const { COUNTRIES } = require('../public/countries.js');
 const Nick = require('../public/nickname-rules.js');
 // English fallbacks; the pages show their own translation of `errorKey`.
 const NICK_ERRORS = {
-  nickEmpty: 'Nickname cannot be empty.',
+  nickEmpty: 'Display name cannot be empty.',
   nickBadChars: 'Use letters, numbers, spaces and . _ - \' only. No emoji or symbols.',
-  nickEdges: 'Start and end your nickname with a letter or number.',
+  nickEdges: 'Start and end your display name with a letter or number.',
   nickSeparators: 'Only one space or symbol in a row.',
   nickRepeat: 'Too many of the same character in a row.',
-  nickTooShort: `Nickname needs at least ${Nick.MIN_LEN} letters or numbers.`,
-  nickTooLong: `Nickname can be at most ${Nick.MAX_LEN} characters.`,
+  nickTooShort: `Display name needs at least ${Nick.MIN_LEN} letters or numbers.`,
+  nickTooLong: `Display name can be at most ${Nick.MAX_LEN} characters.`,
 };
 const store = require('./store');
 const compress = require('./compress');
@@ -3563,7 +3563,7 @@ io.on('connection', (socket) => {
     const authedUsername = socketAuth.get(socket.id);
     if (!authedUsername) return socket.emit('update-nickname-result', { ok: false, error: 'Not logged in.' });
     if (typeof nickname !== 'string' || !nickname.trim()) {
-      return socket.emit('update-nickname-result', { ok: false, error: 'Nickname cannot be empty.' });
+      return socket.emit('update-nickname-result', { ok: false, error: 'Display name cannot be empty.' });
     }
     const nick = Nick.check(nickname);
     if (!nick.ok) return socket.emit('update-nickname-result', { ok: false, error: NICK_ERRORS[nick.error], errorKey: nick.error });

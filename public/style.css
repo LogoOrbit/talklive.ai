@@ -7423,3 +7423,9 @@ html.perf-lite .side-panel { box-shadow: none; }
 .friend-profile-idline strong { letter-spacing: .02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .friend-profile-idcopy { border: 0; border-radius: 999px; padding: 4px 10px; background: color-mix(in srgb, var(--text) 12%, transparent); color: inherit; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
 .id-editor-note.is-error { color: var(--danger, #ff5470); }
+
+/* My profile sheet: the quick profile - display name, ID, avatar - then log
+   in/out and the way to the rest of Settings > Profile. */
+.my-profile-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+.my-profile-actions .btn { flex: 1 1 140px; padding: 12px 16px; }
+.my-profile-actions .my-profile-more { flex-basis: 100%; }

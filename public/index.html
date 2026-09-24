@@ -54,7 +54,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
      system face a beat later. Only the latin subset is preloaded - latin-ext
      is fetched on demand by the unicode-range in style.css. -->
 <link rel="preload" as="font" type="font/woff2" href="/fonts/plus-jakarta-sans-latin.woff2?v=20260922type" crossorigin />
-<link rel="stylesheet" href="style.css?v=20260924gbtn" />
+<link rel="stylesheet" href="style.css?v=20260924mp" />
 <link rel="stylesheet" href="chat-extras.css?v=20260924qa" />
 <link rel="stylesheet" href="games.css?v=20260916settings" />
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
@@ -1400,7 +1400,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 
               <!-- Display name: the name strangers see. No account needed. -->
               <div class="tl-set-control tl-set-control-stack">
-                <label class="tl-set-label" for="tempUsernameInput" data-i18n="tempUsername">Your name</label>
+                <label class="tl-set-label" for="tempUsernameInput" data-i18n="tempUsername">Display name</label>
                 <div class="tl-set-field">
                   <input type="text" id="tempUsernameInput" class="search-input" maxlength="40" data-i18n-placeholder="tempUsernamePlaceholder" placeholder="Your display name" autocomplete="off" />
                   <button type="button" id="saveTempNameBtn" data-i18n="saveName">Save name</button>
@@ -2670,7 +2670,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
        browser finish parsing and paint the page first. -->
   <script defer src="/socket.io/socket.io.min.js"></script>
   <script defer src="countries.js?v=20260828fix"></script>
-  <script defer src="i18n.js?v=20260924qsauth"></script>
+  <script defer src="i18n.js?v=20260924mp"></script>
   <script defer src="chat-time.js?v=20260916navbar"></script>
   <script defer src="animals.js?v=20260921animals"></script>
   <script defer src="social-kit.js?v=20260924kit"></script>
@@ -2712,7 +2712,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   <script defer src="games.js?v=20260924qa"></script>
   <script defer src="nickname-rules.js?v=20260924nick"></script>
   <script defer src="settings-panel.js?v=20260924qsauth"></script>
-  <script defer src="app.js?v=20260924qsgbtn"></script>
+  <script defer src="app.js?v=20260924mp"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the
