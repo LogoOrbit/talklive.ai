@@ -226,7 +226,7 @@
       const rules = window.TalkLiveNickname;
       const nick = rules ? rules.check(nameInput.value) : { ok: true, value: nameInput.value.trim() };
       if (!nick.ok) {
-        if (hooks.toast) hooks.toast(tr(nick.error));
+        if (hooks.toast) hooks.toast(tr(nick.error), 'error');
         nameInput.focus();
         return;
       }

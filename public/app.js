@@ -1437,7 +1437,7 @@ function closeQuickSettings() {
 // page over its size budget); it is fetched once the page is idle, or on the
 // first tap of the gear if that comes sooner.
 // It also brings settings.css, which the screen waits for (html.tl-set-css).
-var SETTINGS_PANEL_SRC = '/settings-panel.js?v=20260924allnote';
+var SETTINGS_PANEL_SRC = '/settings-panel.js?v=20260924tone';
 var settingsPanelLoading = null; // var: openAppSettings can run before this line on /settings
 function loadSettingsPanel() {
   if (window.TalkLiveSettingsPanel) return window.TalkLiveSettingsPanel.ready;
@@ -1496,7 +1496,7 @@ function openQuickSettings() {
       onVibration: (on) => flip(vibrationToggle, on),
       onStatusVisible: (on) => flip(statusVisibilityToggle, on),
       onMessageSeen: (on) => flip(messageSeenToggle, on),
-      toast: (msg) => showToast(msg),
+      toast: (msg, tone) => showToast(msg, tone),
     });
   }
   if (quickSettings) quickSettings.render();
@@ -1640,7 +1640,7 @@ addFriendBtn.addEventListener('click', () => {
   // Say it out loud. The button going quiet is the state, not the receipt -
   // the friend-profile button next to it has always said "Request sent" and
   // this one left you guessing whether the tap had registered at all.
-  showToast(t('friendRequestSent'));
+  showToast(t('friendRequestSent'), 'success');
 });
 
 // The in-call "Add friend" button reflects what is already true between the
@@ -1672,11 +1672,11 @@ function syncAddFriendBtn() {
 socket.on('friend-request-result', ({ ok, error, accepted, alreadyFriends }) => {
   const fromCallBtn = callAddPending;
   callAddPending = false;
-  if (ok && alreadyFriends) showToast(t('alreadyFriendsMsg'));
+  if (ok && alreadyFriends) showToast(t('alreadyFriendsMsg'), 'info');
   // They had already asked: the server turned this request into an
   // acceptance, whichever button sent it, so say so instead of "Request sent".
   if (ok && accepted) {
-    showToast(t('nowFriends'));
+    showToast(t('nowFriends'), 'social');
     playFriendAddedSound();
   }
   if (!fromCallBtn || ok || !error) return;
@@ -1799,7 +1799,7 @@ socket.on('set-handle-result', ({ ok, error, friendId, unchanged } = {}) => {
     save.disabled = true;
     note.classList.remove('is-error');
     note.textContent = t('idHint');
-    if (!unchanged) showToast(t('idSaved', { id: myFriendId }));
+    if (!unchanged) showToast(t('idSaved', { id: myFriendId }), 'success');
     return;
   }
   // "Already in use" and format problems are said right under the box.
@@ -1822,7 +1822,7 @@ shareFriendIdBtn.addEventListener('click', async () => {
   }
   try {
     await navigator.clipboard.writeText(`${text} ${url}`);
-    showToast(t('friendIdLinkCopied'));
+    showToast(t('friendIdLinkCopied'), 'info');
   } catch (e) {
     window.prompt(t('friendIdShareText', { id: myFriendId }), url);
   }
@@ -1851,7 +1851,7 @@ copyFriendIdBtn.addEventListener('click', async () => {
   if (!myFriendId) return;
   try {
     await navigator.clipboard.writeText(myFriendId);
-    showToast(t('friendIdCopied'));
+    showToast(t('friendIdCopied'), 'info');
   } catch (e) {
     // No clipboard access (insecure context, denied): select it instead.
     const range = document.createRange();
@@ -1945,7 +1945,7 @@ friendIdResult.addEventListener('click', (e) => {
 
 socket.on('friend-request-result', ({ ok, sent } = {}) => {
   if (!friendIdFound) return;
-  if (friendIdAddPending && ok && sent) showToast(t('friendRequestSent'));
+  if (friendIdAddPending && ok && sent) showToast(t('friendRequestSent'), 'success');
   friendIdAddPending = false;
   // The state-sync that follows updates the relation; this re-enables the
   // button when the request was refused.
@@ -2304,14 +2304,15 @@ if (acceptCallsCheckbox) {
     acceptCallsEnabled = acceptCallsCheckbox.checked;
     localStorage.setItem('talklive_accept_calls', acceptCallsEnabled ? 'on' : 'off');
     socket.emit('set-call-availability', { accept: acceptCallsEnabled });
-    showToast(acceptCallsEnabled ? t('acceptCallsOn') : t('acceptCallsOff'));
+    showToast(acceptCallsEnabled ? t('acceptCallsOn') : t('acceptCallsOff'), acceptCallsEnabled ? 'success' : 'neutral');
     vibrate(15);
   });
 }
 
 // --- Lightweight toast for brief confirmations (settings, copy, etc.) ---
 let toastTimer = null;
-function showToast(msg) {
+// tone: success | info | warn | error | social | plus | neutral (default).
+function showToast(msg, tone) {
   let el = document.getElementById('tlToast');
   if (!el) {
     el = document.createElement('div');
@@ -2325,6 +2326,7 @@ function showToast(msg) {
   const text = String(msg || '').replace(/([^.])[.。।۔]$/, '$1');
   if (!text) return;
   el.textContent = text;
+  el.dataset.tone = tone || 'neutral';
   el.classList.add('show');
   clearTimeout(toastTimer);
   // Short confirmations get out of the way fast; longer ones stay readable.
@@ -2392,7 +2394,7 @@ if (saveTempNameBtn) {
     // everyone who met this user; say what is wrong before anything is sent.
     const nick = window.TalkLiveNickname ? window.TalkLiveNickname.check(tempUsernameInput.value) : { ok: true, value: tempUsernameInput.value.trim() };
     if (!nick.ok) {
-      showToast(t(nick.error));
+      showToast(t(nick.error), 'error');
       tempUsernameInput.focus();
       return;
     }
@@ -2411,7 +2413,7 @@ if (saveTempNameBtn) {
     localStorage.setItem('talklive_tempname', val);
     // Push it to the server for the current/next match.
     registerProfile();
-    showToast(t('tempNameSaved'));
+    showToast(t('tempNameSaved'), 'success');
     renderSettingsProfileRow();
     renderLinkProfilePrompts();
     // Grey the button out until the name is edited again.
@@ -2448,10 +2450,10 @@ if (feedbackBtn) {
   feedbackModal.addEventListener('click', (e) => { if (e.target === feedbackModal) closeModal(feedbackModal); });
   feedbackSendBtn.addEventListener('click', () => {
     const text = feedbackInput.value.trim().slice(0, 1000);
-    if (!text) { showToast(t('feedbackEmpty')); return; }
+    if (!text) { showToast(t('feedbackEmpty'), 'warn'); return; }
     socket.emit('feedback', { text });
     closeModal(feedbackModal);
-    showToast(t('feedbackThanks'));
+    showToast(t('feedbackThanks'), 'success');
     vibrate(20);
   });
 }
@@ -2652,7 +2654,7 @@ if (saveAvatarBtn) {
     renderHeaderAccountFace();   // the corner wears it once it is saved
     renderSettingsProfileRow();
     registerProfile(); // pushes the new avatar to the server so friends see it
-    showToast(t('avatarSaved'));
+    showToast(t('avatarSaved'), 'success');
     syncSaveAvatarBtn();
     vibrate(15);
   });
@@ -2830,7 +2832,7 @@ function renderPartnerAnimal(animalId) {
 function showAccountStatus(msg, kind) {
   // Account changes made in Settings have no log-in page to report into.
   if (!authPageIsOpen()) {
-    if (msg) showToast(msg);
+    if (msg) showToast(msg, kind);
     return;
   }
   accountStatus.textContent = msg;
@@ -3705,7 +3707,7 @@ socket.on('update-nickname-result', ({ ok, nickname, error, errorKey }) => {
   if (!ok) {
     if (errorKey) error = t(errorKey);
     if (fromSettings) {
-      showToast(error || t('statusNicknameUpdated'));
+      showToast(error || t('statusNicknameUpdated'), error ? 'error' : 'success');
       syncSaveNameBtn();
       return;
     }
@@ -3715,7 +3717,7 @@ socket.on('update-nickname-result', ({ ok, nickname, error, errorKey }) => {
   localStorage.setItem('talklive_nickname', nickname);
   renderAccountState();
   renderSettingsProfileRow();
-  if (fromSettings) showToast(t('tempNameSaved'));
+  if (fromSettings) showToast(t('tempNameSaved'), 'success');
   else showAccountStatus(t('statusNicknameUpdated'), 'success');
 });
 
@@ -4176,7 +4178,7 @@ function renderProfileIdLine(id) {
     profileIdLine.innerHTML = '<span class="friend-profile-idlabel"></span><strong></strong><button type="button" class="friend-profile-idcopy"></button>';
     profileIdLine.querySelector('button').addEventListener('click', async () => {
       const v = profileIdLine.querySelector('strong').textContent;
-      try { await navigator.clipboard.writeText(v); showToast(t('idCopiedTheirs')); } catch (_) { /* no clipboard */ }
+      try { await navigator.clipboard.writeText(v); showToast(t('idCopiedTheirs'), 'info'); } catch (_) { /* no clipboard */ }
     });
     friendProfileName.after(profileIdLine);
   }
@@ -4206,7 +4208,7 @@ function renderProfilePinBtn(friend) {
       if (pinned) f.pinned = true; else delete f.pinned;
       renderFriendsList();
       renderProfilePinBtn(f);
-      showToast(t(pinned ? 'friendPinned' : 'friendUnpinned', { name: friendLabel(f) }));
+      showToast(t(pinned ? 'friendPinned' : 'friendUnpinned', { name: friendLabel(f) }), 'info');
     });
     friendProfileRenameBtn.after(friendProfilePinBtn);
   }
@@ -4237,7 +4239,7 @@ function renderFriendChatMuteBtn() {
       if (muted) mutedIds.add(id); else mutedIds.delete(id);
       renderFriendChatMuteBtn();
       renderFriendsList();
-      showToast(t(muted ? 'chatMuted' : 'chatUnmuted'));
+      showToast(t(muted ? 'chatMuted' : 'chatUnmuted'), 'neutral');
     });
     clearBtn.before(friendChatMuteBtn);
   }
@@ -4312,7 +4314,7 @@ function commitRenameFriend(nickname) {
   if (nickname && window.TalkLiveNickname) {
     const nick = window.TalkLiveNickname.check(nickname);
     if (!nick.ok) {
-      showToast(t(nick.error));
+      showToast(t(nick.error), 'error');
       renameFriendInput.focus();
       return;
     }
@@ -4331,7 +4333,7 @@ function commitRenameFriend(nickname) {
   closeModal(renameFriendModal);
   showToast(nickname
     ? t('renameFriendSaved', { name: nickname })
-    : t('renameFriendCleared'));
+    : t('renameFriendCleared'), 'success');
 }
 
 friendProfileRenameBtn.addEventListener('click', openRenameFriend);
@@ -4379,12 +4381,12 @@ socket.on('friend-request-result', ({ ok, sent, error, limitReached } = {}) => {
   if (!target) return;
   profileAddTarget = null;
   if (ok) {
-    if (sent) showToast(t('friendRequestSent'));
+    if (sent) showToast(t('friendRequestSent'), 'success');
     return;
   }
   // limitReached opens the upgrade sheet elsewhere; anything else is said here,
   // where the user is looking, rather than on the call screen behind the sheet.
-  if (error && !limitReached) showToast(error);
+  if (error && !limitReached) showToast(error, 'error');
   if (activeProfileFriendId === target && friendProfileModal.classList.contains('open')) {
     openUserProfile(personById(target, { username: friendProfileName.textContent.trim() }));
   }
@@ -4411,7 +4413,7 @@ friendProfileReportBtn.addEventListener('click', async () => {
   hangUpOn(activeProfileFriendId);
   socket.emit('report-user', { targetClientId: activeProfileFriendId, reason: 'profile' });
   closeSidePanel(friendProfileModal, friendProfileOverlay);
-  showToast(t('reportUserSent'));
+  showToast(t('reportUserSent'), 'success');
 });
 
 friendProfileBlockBtn.addEventListener('click', async () => {
@@ -4430,7 +4432,7 @@ friendProfileBlockBtn.addEventListener('click', async () => {
     activeFriendChatId = null;
   }
   friendChatCache.delete(target);
-  showToast(t('userBlocked'));
+  showToast(t('userBlocked'), 'error');
 });
 
 if (friendProfileCancelBtn) {
@@ -4462,7 +4464,7 @@ function cancelFriendRequest(clientId) {
   sentRequestsData = sentRequestsData.filter((r) => r.clientId !== clientId);
   renderSentRequests();
   syncFriendsTabCounts();
-  showToast(t('friendRequestCancelled'));
+  showToast(t('friendRequestCancelled'), 'neutral');
 }
 
 // --- Blocked people (Settings > Privacy) -----------------------------------
@@ -4503,7 +4505,7 @@ if (blockedList) {
     socket.emit('unblock-user', { targetClientId: btn.dataset.id });
     blockedData = blockedData.filter((b) => b.clientId !== btn.dataset.id);
     renderBlockedList();
-    showToast(t(wasFriend ? 'unblockedFriend' : 'unblocked', { name }));
+    showToast(t(wasFriend ? 'unblockedFriend' : 'unblocked', { name }), 'success');
   });
 }
 
@@ -4898,7 +4900,7 @@ socket.on('notification', (n) => {
     // A chime and a badge on a menu item were all the voice page gave, so a
     // stranger's "Add friend" mid-call went unnoticed. /chat already toasts.
     const who = labelForClientId(n.fromClientId || n.byClientId, n.username);
-    showToast(t(n.type === 'friend_request' ? 'notifWantsFriends' : 'notifAccepted', { name: who }));
+    showToast(t(n.type === 'friend_request' ? 'notifWantsFriends' : 'notifAccepted', { name: who }), 'social');
   }
   // The one moment notifications are self-evidently useful: this user now has
   // someone who can reach them, and every message after this one arrives while
@@ -5143,7 +5145,7 @@ if (friendChatClearBtn) {
     renderFriendChatMessages();
     renderFriendsList();
     renderHistory();
-    showToast(t('chatCleared'));
+    showToast(t('chatCleared'), 'neutral');
   });
 }
 
@@ -5560,7 +5562,7 @@ function quickAddFriend(clientId) {
 socket.on('friend-request-result', ({ ok, sent } = {}) => {
   if (!quickAddPending) return;
   quickAddPending = false;
-  if (ok && sent) showToast(t('friendRequestSent'));
+  if (ok && sent) showToast(t('friendRequestSent'), 'success');
   if (!ok) {
     renderHistory();
     renderFriendsList();
@@ -5695,7 +5697,7 @@ function showSharePrompt() {
       try {
         await navigator.clipboard.writeText(`${payload.text} ${payload.url}`);
         trackGrowthEvent('share_success');
-        showToast(t('shareLinkCopied'));
+        showToast(t('shareLinkCopied'), 'info');
       } catch (_) {}
     }
   });
@@ -5832,7 +5834,7 @@ socket.on('referral-status', (info = {}) => {
 socket.on('referral-reward', (info = {}) => {
   myReferral = { ...myReferral, ...info };
   renderReferralStats();
-  showToast(t('referralRewardToast').replace('{days}', String(info.days || 7)));
+  showToast(t('referralRewardToast').replace('{days}', String(info.days || 7)), 'plus');
 });
 
 // Shown on the invite card so the loop is visible: people share far more when
@@ -6938,7 +6940,7 @@ let visualizerSource = null;
 if (autoCallCheckbox) {
   autoCallCheckbox.addEventListener('change', () => {
     vibrate(10);
-    showToast(t(autoCallCheckbox.checked ? 'autoConnectOnToast' : 'autoConnectOffToast'));
+    showToast(t(autoCallCheckbox.checked ? 'autoConnectOnToast' : 'autoConnectOffToast'), autoCallCheckbox.checked ? 'success' : 'neutral');
   });
 }
 
@@ -8653,7 +8655,7 @@ function maybeShowFriendPrompt(partner, durationSeconds) {
     dismiss();
     fvTrack('friend_prompt_add');
     socket.emit('friend-request', { targetClientId: target.clientId });
-    showToast(t('friendRequestSent'));
+    showToast(t('friendRequestSent'), 'success');
   });
   document.body.appendChild(card);
   requestAnimationFrame(() => card.classList.add('show'));
@@ -8699,16 +8701,16 @@ document.querySelectorAll('[data-notify]').forEach((btn) => {
       // No push on this browser at all. The interest is still recorded, and
       // the button says what actually happened rather than pretending.
       markNotified(btn, 'notifyNoted');
-      showToast(t('notifyNotedToast'));
+      showToast(t('notifyNotedToast'), 'success');
       return;
     }
     try { await pwa.askForPush(); } catch (_) { /* denied or unavailable */ }
     if (Notification.permission === 'granted') {
       markNotified(btn, 'notifyDone');
-      showToast(t('notifyDoneToast'));
+      showToast(t('notifyDoneToast'), 'success');
     } else {
       markNotified(btn, 'notifyNoted');
-      showToast(t('notifyNotedToast'));
+      showToast(t('notifyNotedToast'), 'success');
     }
   });
 });
@@ -8840,7 +8842,7 @@ function searchInterest(interest) {
   persistAppliedFilters();
   syncFilterDraftUiFromApplied();
   registerProfile();
-  showToast(t('searchInterest', { interest }));
+  showToast(t('searchInterest', { interest }), 'info');
   startTalkingFromPanel();
 }
 
@@ -8926,7 +8928,7 @@ function searchCountry(code, countryName) {
   persistAppliedFilters();
   syncFilterDraftUiFromApplied();
   registerProfile();
-  showToast(t('railFindIn', { country: getCountryName(code) || countryName || code }));
+  showToast(t('railFindIn', { country: getCountryName(code) || countryName || code }), 'info');
   startBtn.click();
 }
 
@@ -9526,7 +9528,7 @@ async function requestCallBack(targetClientId, targetUsername, opts = {}) {
   const waitMs = CALLBACK_COOLDOWN_MS - (Date.now() - lastCallbackAt);
   if (waitMs > 0) {
     restoreCallbackSpinner();
-    showToast(t('callbackCooldown', { s: Math.ceil(waitMs / 1000) }));
+    showToast(t('callbackCooldown', { s: Math.ceil(waitMs / 1000) }), 'warn');
     return;
   }
   // Waiting in the random queue is not a call - calling a friend simply takes
@@ -9584,7 +9586,7 @@ async function requestCallBack(targetClientId, targetUsername, opts = {}) {
       } else {
         abandonCallBack();
       }
-      showToast(t('callbackNoAnswer'));
+      showToast(t('callbackNoAnswer'), 'warn');
     }, CALLBACK_RING_MS),
   };
   socket.emit('call-back-request', { targetClientId });
@@ -9680,11 +9682,11 @@ socket.on('call-back-request-result', ({ ok, reason, canQueue }) => {
     restoreCallbackSpinner();
     if (reason === 'offline') {
       markFriendCallOffline(clientId);
-      showToast(t('friendWentOffline'));
+      showToast(t('friendWentOffline'), 'warn');
     } else if (reason === 'away') {
-      showToast(t('callbackAway'));
+      showToast(t('callbackAway'), 'warn');
     } else if (reason === 'calls-off') {
-      showToast(t('friendCallsOff'));
+      showToast(t('friendCallsOff'), 'warn');
     } else if (reason === 'blocked') {
       showError(t('errBlocked'));
     } else if (reason === 'rate') {
@@ -9697,8 +9699,8 @@ socket.on('call-back-request-result', ({ ok, reason, canQueue }) => {
   abandonCallBack();
   // Not failures: the ask is waiting in their inbox, so say that rather than
   // painting it red.
-  if (reason === 'away') { showToast(t('callbackAway')); return; }
-  if (reason === 'busy-queued') { showToast(t('callbackBusyQueued')); return; }
+  if (reason === 'away') { showToast(t('callbackAway'), 'warn'); return; }
+  if (reason === 'busy-queued') { showToast(t('callbackBusyQueued'), 'warn'); return; }
   // Offline is not the end of it: the same ask can wait in their inbox and
   // ring them when they are back. Only the friends list used to offer that;
   // calling from history or a profile ended on a red error and nothing else.
@@ -9727,7 +9729,7 @@ async function offerCallBackLater(clientId) {
 
 socket.on('call-back-later-result', ({ ok, reason, targetClientId }) => {
   if (ok) {
-    showToast(t('callbackLaterSent', { name: labelForClientId(targetClientId, personById(targetClientId).username) || t('someone') }));
+    showToast(t('callbackLaterSent', { name: labelForClientId(targetClientId, personById(targetClientId).username) || t('someone') }), 'success');
     return;
   }
   const chip = targetClientId && friendsList.querySelector(`.friend-call-later-btn[data-id="${CSS.escape(targetClientId)}"]`);
@@ -10106,7 +10108,7 @@ function dropLockedFilters() {
   });
   persistAppliedFilters();
   syncFilterDraftUiFromApplied();
-  showToast(t('filtersTrimmedFree'));
+  showToast(t('filtersTrimmedFree'), 'plus');
 }
 
 function updatePremiumUi() {
@@ -10148,7 +10150,7 @@ socket.on('friend-online', ({ clientId, username, countryCode, country } = {}) =
   const where = (countryCode && countryCode !== 'XX') ? (getCountryName(countryCode) || country || '') : '';
   // A friend you renamed comes online under the name you gave them.
   const name = labelForClientId(clientId, username);
-  showToast(where ? t('friendOnlineToast', { name, country: where }) : t('friendOnlineToastNoCountry', { name }));
+  showToast(where ? t('friendOnlineToast', { name, country: where }) : t('friendOnlineToastNoCountry', { name }), 'social');
   vibrate([30, 40, 30]);
 });
 

@@ -4330,7 +4330,7 @@ body.panel-open .game-overlay {
 
 /* Toast: brief, compact confirmations at the top of the screen (visible even
    with a settings panel / keyboard open). Sized to its text, one line when it
-   fits; the dot picks up the theme accent. */
+   fits; coloured by its tone (see below). */
 .tl-toast {
   position: fixed;
   left: 50%;
@@ -4339,12 +4339,11 @@ body.panel-open .game-overlay {
   z-index: 800;
   display: flex;
   align-items: center;
-  gap: 8px;
   width: max-content;
   max-width: min(86vw, 340px);
-  padding: 8px 14px 8px 12px;
+  padding: 8px 14px;
   border-radius: 14px;
-  background: rgba(22, 26, 40, 0.85);
+  background: rgba(30, 34, 48, 0.92);
   -webkit-backdrop-filter: blur(14px) saturate(160%);
   backdrop-filter: blur(14px) saturate(160%);
   color: #fff;
@@ -4357,15 +4356,14 @@ body.panel-open .game-overlay {
   pointer-events: none;
   transition: opacity 0.18s ease, transform 0.3s cubic-bezier(0.2, 1.4, 0.4, 1);
 }
-.tl-toast::before {
-  content: '';
-  flex: none;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--accent, #8b7bff);
-  box-shadow: 0 0 8px var(--accent, #8b7bff);
-}
+/* Tone colours: green = done, blue = info/copied, amber = heads-up,
+   red = error/blocked, purple-pink = friends, gold = Plus, dark = neutral. */
+.tl-toast[data-tone="success"] { background: linear-gradient(135deg, #16a34a, #15803d); }
+.tl-toast[data-tone="info"] { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+.tl-toast[data-tone="warn"] { background: linear-gradient(135deg, #e07b0a, #b45309); }
+.tl-toast[data-tone="error"] { background: linear-gradient(135deg, #ef4444, #dc2626); }
+.tl-toast[data-tone="social"] { background: linear-gradient(135deg, #8b5cf6, #db2777); }
+.tl-toast[data-tone="plus"] { background: linear-gradient(135deg, #facc15, #f59e0b); color: #1f1500; }
 .tl-toast.show {
   opacity: 1;
   transform: translate(-50%, 0) scale(1);

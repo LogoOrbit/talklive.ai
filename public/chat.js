@@ -259,7 +259,7 @@
       quietHint.querySelector('button').addEventListener('click', function () {
         var url = location.origin + '/chat';
         if (navigator.share) { navigator.share({ title: 'TalkLive', url: url }).catch(function () {}); return; }
-        if (navigator.clipboard) navigator.clipboard.writeText(url).then(function () { socialToast(t('shareLinkCopied')); }).catch(function () {});
+        if (navigator.clipboard) navigator.clipboard.writeText(url).then(function () { socialToast(t('shareLinkCopied'), 'info'); }).catch(function () {});
       });
       searchLine.after(quietHint);
     }
@@ -1278,7 +1278,7 @@
     if (!settingsPanelLoading) {
       settingsPanelLoading = [];
       var s = document.createElement('script');
-      s.src = '/settings-panel.js?v=20260924allnote';
+      s.src = '/settings-panel.js?v=20260924tone';
       s.async = true;
       s.onload = function () {
         window.TalkLiveSettingsPanel.ready.then(function () {
@@ -1344,7 +1344,7 @@
           syncSeenToggleUi();
           if (on && activeFriendChatId) socket.emit('chat-seen', { friendClientId: activeFriendChatId });
         },
-        toast: function (msg) { socialToast(msg); },
+        toast: function (msg, tone) { socialToast(msg, tone); },
       });
     }
     if (quickSettings) quickSettings.render();
@@ -1354,7 +1354,7 @@
   settingsOverlay.addEventListener('click', function () { closePanel(settingsPanel, settingsOverlay); });
   socket.on('update-nickname-result', function (res) {
     if (!res) return;
-    if (!res.ok) { socialToast(res.errorKey ? t(res.errorKey) : (res.error || '')); return; }
+    if (!res.ok) { socialToast(res.errorKey ? t(res.errorKey) : (res.error || ''), 'error'); return; }
     accountNickname = res.nickname;
     localStorage.setItem('talklive_nickname', res.nickname);
     if (quickSettings) quickSettings.render();
@@ -1578,7 +1578,7 @@
     if (!renameTargetId) return;
     if (nickname && window.TalkLiveNickname) {
       var nick = window.TalkLiveNickname.check(nickname);
-      if (!nick.ok) { socialToast(t(nick.error)); renameFriendInput.focus(); return; }
+      if (!nick.ok) { socialToast(t(nick.error), 'error'); renameFriendInput.focus(); return; }
       nickname = nick.value;
     }
     socket.emit('rename-friend', { friendClientId: renameTargetId, nickname: nickname });
@@ -1653,7 +1653,7 @@
   // request arrived, was accepted, or someone asked for a call - the only
   // trace was a number changing on a button.
   var socialToastEl = null;
-  function socialToast(text) {
+  function socialToast(text, tone) {
     if (!text) return;
     if (!socialToastEl) {
       socialToastEl = document.createElement('div');
@@ -1664,6 +1664,7 @@
     }
     text = String(text).replace(/([^.])[.。।۔]$/, '$1');
     socialToastEl.textContent = text;
+    socialToastEl.dataset.tone = tone || 'neutral';
     socialToastEl.classList.add('show');
     clearTimeout(socialToast._t);
     socialToast._t = setTimeout(function () { socialToastEl.classList.remove('show'); }, Math.min(4000, 1300 + text.length * 45));
@@ -1821,7 +1822,7 @@
           socket.emit('unblock-user', { targetClientId: b.clientId });
           blockedState = blockedState.filter(function (x) { return x.clientId !== b.clientId; });
           renderBlocked();
-          socialToast(t(b.wasFriend ? 'unblockedFriend' : 'unblocked', { name: name }));
+          socialToast(t(b.wasFriend ? 'unblockedFriend' : 'unblocked', { name: name }), 'success');
         });
       });
     }
@@ -1940,7 +1941,7 @@
     if (!idEdit || !r) return;
     idEdit.querySelector('button').disabled = false;
     if (r.ok) {
-      if (!r.unchanged) socialToast(t('idSaved', { id: r.friendId }));
+      if (!r.unchanged) socialToast(t('idSaved', { id: r.friendId }), 'success');
       return;
     }
     idEditError(r.error || '');
@@ -2062,9 +2063,9 @@
     // A conversation muted on either page stays quiet on both.
     if (n.type === 'message') { if (mutedChats.indexOf(n.fromClientId) === -1) { soundReceive(); vibrate(20); } }
     else if (n.type === 'friend_request' || n.type === 'friend_accepted') vibrate([20, 40, 20]);
-    if (n.type === 'friend_request') socialToast(t('notifWantsFriends', { name: who }));
-    else if (n.type === 'friend_accepted') socialToast(t('notifAccepted', { name: who }));
-    else if (n.type === 'call_back_request') socialToast(t('callbackOnVoice', { name: who }));
+    if (n.type === 'friend_request') socialToast(t('notifWantsFriends', { name: who }), 'social');
+    else if (n.type === 'friend_accepted') socialToast(t('notifAccepted', { name: who }), 'social');
+    else if (n.type === 'call_back_request') socialToast(t('callbackOnVoice', { name: who }), 'social');
     renderFriends();
     renderHistory();
   });
@@ -2555,7 +2556,7 @@
     socket.emit('block-friend', { friendClientId: target });
     if (activeFriendChatId === target) closeFriendChat();
     closeProfile();
-    socialToast(t('userBlocked'));
+    socialToast(t('userBlocked'), 'error');
   }
   if (friendChatBlockBtn) {
     friendChatBlockBtn.addEventListener('click', function () {
@@ -2652,7 +2653,7 @@
     var name = friendLabel(p) || p.username || t('someone');
     switch (act) {
       case 'close': closeProfile(); break;
-      case 'copyid': if (p.friendId) copyText(p.friendId, function () { socialToast(t('idCopiedTheirs')); }); break;
+      case 'copyid': if (p.friendId) copyText(p.friendId, function () { socialToast(t('idCopiedTheirs'), 'info'); }); break;
       case 'chat': closeProfile(); openFriendChat({ clientId: id, username: p.username }); break;
       case 'call':
         // Voice lives in the call app: it opens there, already ringing them.
@@ -2662,7 +2663,7 @@
         if (isLivePartner(id)) { closeProfile(); addFriendBtn.click(); break; }
         socket.emit('friend-request', { targetClientId: id });
         friendsState.sent.push({ clientId: id, username: p.username, countryCode: p.countryCode, ts: Date.now() });
-        socialToast(t('friendRequestSent'));
+        socialToast(t('friendRequestSent'), 'success');
         renderFriends();
         renderProfile();
         break;
@@ -2674,7 +2675,7 @@
       case 'cancel':
         socket.emit('cancel-friend-request', { targetClientId: id });
         friendsState.sent = friendsState.sent.filter(function (r) { return r.clientId !== id; });
-        socialToast(t('friendRequestCancelled'));
+        socialToast(t('friendRequestCancelled'), 'neutral');
         renderFriends();
         renderProfile();
         break;
@@ -2689,7 +2690,7 @@
         var nowMuted = mutedChats.indexOf(id) === -1;
         socket.emit('mute-chat', { targetClientId: id, muted: nowMuted });
         mutedChats = nowMuted ? mutedChats.concat(id) : mutedChats.filter(function (x) { return x !== id; });
-        socialToast(t(nowMuted ? 'chatMuted' : 'chatUnmuted'));
+        socialToast(t(nowMuted ? 'chatMuted' : 'chatUnmuted'), 'neutral');
         renderFriends();
         renderProfile();
         renderChatHeadTools();
@@ -2706,7 +2707,7 @@
           socket.emit('report-user', { targetClientId: id, reason: 'profile' });
           if (activeFriendChatId === id) closeFriendChat();
           closeProfile();
-          socialToast(t('reportUserSent'));
+          socialToast(t('reportUserSent'), 'success');
         });
         break;
       case 'block': openBlockConfirm(id); break;
@@ -2747,7 +2748,7 @@
       noteLastMessage(id, null);
       renderFriends();
       renderHistory();
-      socialToast(t('chatCleared'));
+      socialToast(t('chatCleared'), 'neutral');
     });
   });
   if (friendChatBlockBtn) {
