@@ -1725,8 +1725,13 @@ function renderIdEditor() {
     const submit = () => {
       const v = input.value.trim();
       if (!v || v.toLowerCase() === myFriendId.toLowerCase()) return;
+      // A tap while the socket is down, or a reply that never comes, used to
+      // leave the button greyed out and the old ID in place with no word why.
+      if (!socket.connected) { idEditorError(t('errNoConnection')); return; }
       save.disabled = true;
       socket.emit('set-handle', { handle: v });
+      clearTimeout(idEditorTimer);
+      idEditorTimer = setTimeout(() => idEditorError(t('errNoServerReply')), 10000);
     };
     save.addEventListener('click', submit);
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
@@ -1744,17 +1749,33 @@ function renderIdEditor() {
   input.placeholder = 'name#1234';
   if (document.activeElement !== input) input.value = myFriendId || '';
   input.disabled = !myFriendIdEditable;
-  save.disabled = true;
+  // Re-rendered on every reconnect: an ID typed but not yet saved stays
+  // saveable instead of the button going grey under it.
+  save.disabled = !input.value.trim() || input.value.trim().toLowerCase() === (myFriendId || '').toLowerCase();
   save.classList.toggle('hidden', !myFriendIdEditable);
   note.classList.remove('is-error');
   note.textContent = myFriendIdEditable ? t('idHint') : t('idSignInHint');
 }
+let idEditorTimer = null;
+function idEditorError(text) {
+  clearTimeout(idEditorTimer);
+  if (!idEditor) return;
+  const note = idEditor.querySelector('.id-editor-note');
+  idEditor.querySelector('button').disabled = false;
+  note.classList.add('is-error');
+  note.textContent = text;
+}
 socket.on('set-handle-result', ({ ok, error, friendId, unchanged } = {}) => {
+  clearTimeout(idEditorTimer);
   if (!idEditor) return;
   const note = idEditor.querySelector('.id-editor-note');
   const save = idEditor.querySelector('button');
   if (ok) {
-    if (friendId) myFriendId = friendId;
+    if (friendId) {
+      myFriendId = friendId;
+      myFriendIdEl.textContent = friendId;
+      if (myProfileIsOpen()) renderMyProfileCard();
+    }
     idEditor.querySelector('input').value = myFriendId;
     save.disabled = true;
     note.classList.remove('is-error');
@@ -1763,9 +1784,7 @@ socket.on('set-handle-result', ({ ok, error, friendId, unchanged } = {}) => {
     return;
   }
   // "Already in use" and format problems are said right under the box.
-  save.disabled = false;
-  note.classList.add('is-error');
-  note.textContent = error || 'Could not save that ID.';
+  idEditorError(error || 'Could not save that ID.');
 });
 
 // The link opens TalkLive with this ID already looked up, one tap from

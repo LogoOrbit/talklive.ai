@@ -1849,6 +1849,7 @@
     if (!data || typeof data.friendId !== 'string' || !data.friendId) return;
     myFriendId = data.friendId;
     myFriendIdEl.textContent = data.friendId;
+    if (myProfileSheet) myProfileSheet.querySelector('.my-profile-id-value').textContent = data.friendId;
     myFriendIdNote.classList.toggle('hidden', !data.temporary);
     copyFriendIdBtn.disabled = false;
     shareFriendIdBtn.disabled = false;
@@ -1872,8 +1873,11 @@
         e.preventDefault();
         var v = idEdit.querySelector('input').value.trim();
         if (!v || v.toLowerCase() === myFriendId.toLowerCase()) return;
+        if (!socket.connected) { idEditError(t('errNoConnection')); return; }
         idEdit.querySelector('button').disabled = true;
         socket.emit('set-handle', { handle: v });
+        clearTimeout(idEditTimer);
+        idEditTimer = setTimeout(function () { idEditError(t('errNoServerReply')); }, 10000);
       });
     }
     idEdit.classList.remove('hidden');
@@ -1886,16 +1890,25 @@
     note.classList.remove('is-error');
     note.textContent = t('idHint');
   }
-  socket.on('set-handle-result', function (r) {
-    if (!idEdit || !r) return;
+  // A lost reply used to leave the button greyed out with no word why.
+  var idEditTimer = null;
+  function idEditError(text) {
+    clearTimeout(idEditTimer);
+    if (!idEdit) return;
     var note = idEdit.querySelector('.id-edit-note');
+    idEdit.querySelector('button').disabled = false;
+    note.classList.add('is-error');
+    note.textContent = text;
+  }
+  socket.on('set-handle-result', function (r) {
+    clearTimeout(idEditTimer);
+    if (!idEdit || !r) return;
     idEdit.querySelector('button').disabled = false;
     if (r.ok) {
       if (!r.unchanged) socialToast(t('idSaved', { id: r.friendId }));
       return;
     }
-    note.classList.add('is-error');
-    note.textContent = r.error || '';
+    idEditError(r.error || '');
   });
 
   function copyText(text, done) {
