@@ -20,7 +20,7 @@ const SITE_ORIGIN = 'https://talklive.app';
 
 const NON_MARKETING_PATHS = new Set(['/privacy', '/terms', '/refund']);
 const BANNED_SPONSORED_HOSTS = ['delvefencescrewdriver.com'];
-const DYNAMIC_PAGE_ROUTES = new Set(['/chat', '/call']);
+const DYNAMIC_PAGE_ROUTES = new Set(['/chat', '/call', '/login', '/signup']);
 const DYNAMIC_PAGE_PREFIXES = ['/owner'];
 const ASSET_EXTENSIONS = new Set([
   '.avif', '.css', '.csv', '.gif', '.ico', '.jpeg', '.jpg', '.js', '.json',

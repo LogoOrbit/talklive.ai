@@ -1910,7 +1910,7 @@ body.panel-open .game-overlay {
 /* These confirmations can be raised over the game overlay (z-index 500), so
    they must sit above it. */
 #tttEndConfirmModal,
-#confirmModal { z-index: 700; }
+#confirmModal { z-index: 1700; } /* above the profile sheet (1500), which holds Log Out */
 
 .modal-box {
   width: 100%;

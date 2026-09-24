@@ -259,13 +259,15 @@ const linkProfileName = document.getElementById('linkProfileName');
 const linkProfileCreated = document.getElementById('linkProfileCreated');
 const linkProfileFriends = document.getElementById('linkProfileFriends');
 const acceptCallsCheckbox = document.getElementById('acceptCallsCheckbox');
-const accountModal = document.getElementById('accountModal');
+const authPage = document.getElementById('authPage');
+const authTitle = document.getElementById('authTitle');
+const authSub = document.getElementById('authSub');
+const authDone = document.getElementById('authDone');
 const closeAccountBtn = document.getElementById('closeAccountBtn');
 const accountStatus = document.getElementById('accountStatus');
 const accountLoggedOut = document.getElementById('accountLoggedOut');
 const accountLoggedIn = document.getElementById('accountLoggedIn');
 const accountNicknameDisplay = document.getElementById('accountNicknameDisplay');
-const accountTabs = document.querySelectorAll('.account-tab');
 const loginTab = document.getElementById('loginTab');
 const signupTab = document.getElementById('signupTab');
 const loginUsername = document.getElementById('loginUsername');
@@ -1298,6 +1300,7 @@ const COVERING_LAYERS = [
   ['myProfileSheet', 'open'],
   ['filtersPanel', 'open'],
   ['navDrawer', '!hidden'],
+  ['authPage', '!hidden'],
   ['gameOverlay', '!hidden'],
 ];
 function updateScrollLock() {
@@ -1363,7 +1366,7 @@ function openAppSettings(tab) {
 function closeAppSettings(fromHistory) {
   if (!settingsIsOpen()) return;
   // Dialogs opened from Settings belong to it; none outlives the screen.
-  [accountModal, shopModal, billingModal].forEach((m) => m && closeModal(m));
+  [shopModal, billingModal].forEach((m) => m && closeModal(m));
   settingsPage.classList.add('hidden');
   stageEl.classList.remove('settings-live');
   // Back to whichever screen was underneath - the landing page, or the call
@@ -1861,12 +1864,6 @@ function loadPolicyText(modal) {
 function openModal(modal) {
   modal.classList.remove('hidden');
   loadPolicyText(modal);
-  // Now that the modal has a layout, Google's button can be rendered at the
-  // real form width (it measures 0 while hidden, so it would otherwise keep the
-  // fallback size).
-  if (modal === accountModal && typeof renderGoogleButtons === 'function') {
-    requestAnimationFrame(() => renderGoogleButtons());
-  }
   // Move focus into dialogs so keyboard/screen-reader users land inside them,
   // and remember where to return focus on close.
   if (modal.classList.contains('modal-overlay')) {
@@ -1891,7 +1888,7 @@ openTermsLink.addEventListener('click', () => openModal(termsModal));
 openTermsLinkFooter.addEventListener('click', () => openModal(termsModal));
 closeTermsBtn.addEventListener('click', () => closeModal(termsModal));
 
-[termsModal, accountModal].forEach((modal) => {
+[termsModal].forEach((modal) => {
   modal.addEventListener('click', (e) => {
     if (e.target === modal) closeModal(modal);
   });
@@ -1949,11 +1946,6 @@ function renderHeaderAccountFace() {
 }
 
 function renderAccountState() {
-  // The dialog is two different screens, so it says which one it is. "My
-  // Account" over a login form is a title for a page you do not have yet.
-  const accountTitle = document.getElementById('accountModalTitle');
-  if (accountTitle) accountTitle.textContent = t(accountNickname ? 'myAccount' : 'logInOrSignUp');
-
   if (accountNickname) {
     accountLoggedOut.classList.add('hidden');
     accountLoggedIn.classList.remove('hidden');
@@ -1961,11 +1953,11 @@ function renderAccountState() {
     renderRecoveryEmailState();
 
     // Signed in: the account controls replace the Sign in / Register pair,
-    // and the dialog (which only signs in) has nothing left to do.
+    // and the log-in page (which only signs in) has nothing left to do.
     sidePanelAuth.classList.add('hidden');
-    closeModal(accountModal);
+    if (authPageIsOpen() && authDone.classList.contains('hidden')) closeAuthPage();
   } else {
-    accountLoggedOut.classList.remove('hidden');
+    if (authDone.classList.contains('hidden')) accountLoggedOut.classList.remove('hidden');
     accountLoggedIn.classList.add('hidden');
 
     sidePanelAuth.classList.remove('hidden');
@@ -2040,12 +2032,12 @@ function renderLinkProfilePrompts() {
 }
 
 if (headerLinkProfileBtn) {
-  headerLinkProfileBtn.addEventListener('click', () => openAccountModal('signup'));
+  headerLinkProfileBtn.addEventListener('click', () => openAuthPage('signup'));
 }
 if (linkProfileBanner) {
   linkProfileBanner.addEventListener('click', () => {
     closeSidePanel(friendsDropdown, friendsOverlay);
-    openAccountModal('signup');
+    openAuthPage('signup');
   });
 }
 
@@ -2704,8 +2696,8 @@ function renderPartnerAnimal(animalId) {
 }
 
 function showAccountStatus(msg, kind) {
-  // Account changes made in Settings have no dialog to report into.
-  if (accountModal.classList.contains('hidden')) {
+  // Account changes made in Settings have no log-in page to report into.
+  if (!authPageIsOpen()) {
     if (msg) showToast(msg);
     return;
   }
@@ -2714,45 +2706,200 @@ function showAccountStatus(msg, kind) {
   accountStatus.classList.remove('hidden');
 }
 
-closeAccountBtn.addEventListener('click', () => closeModal(accountModal));
+// --- Log in / Sign up: pages of their own, at /login and /signup ----------
+// Not a dialog over whatever was on screen: a full page at its own URL, so
+// it can be bookmarked, shared and reached with Back like any other page.
+// Whatever happens on it - logging in, signing up, a Google sign-in, a reset
+// password - ends the same way: a moment of "you're in", then the home
+// screen, freshly loaded as the account. Logging out lands there too.
+const AUTH_PATH_RE = /^\/(login|signup)\/?$/;
+const AUTH_COPY = {
+  login: ['authLoginTitle', 'authLoginSub', 'logIn'],
+  signup: ['authSignupTitle', 'authSignupSub', 'signUp'],
+  forgot: ['authForgotTitle', 'authForgotSub', 'forgotPassword'],
+};
+let authTab = 'login';
+let authPushed = false;
+let authBackPending = false;
+let authPrevTitle = null;
 
-function selectAccountTab(which) {
-  // Password recovery is reached from the login tab, so that tab stays
-  // highlighted while it is open - the user has not left "logging in".
-  const highlight = which === 'forgot' ? 'login' : which;
-  accountTabs.forEach((tab) => {
-    const on = tab.dataset.tab === highlight;
-    tab.classList.toggle('selected', on);
-  });
-  loginTab.classList.toggle('hidden', which !== 'login');
-  signupTab.classList.toggle('hidden', which !== 'signup');
-  // "forgot" is not one of the two tab buttons: it replaces both panels, and
-  // leaves Log In marked as the tab you came from (and go back to).
-  forgotTab.classList.toggle('hidden', which !== 'forgot');
-  accountStatus.classList.add('hidden');
+function authPageIsOpen() {
+  return !authPage.classList.contains('hidden');
 }
 
-accountTabs.forEach((tab) => {
-  tab.addEventListener('click', () => selectAccountTab(tab.dataset.tab));
+function syncAuthTitle() {
+  if (!authPageIsOpen()) return;
+  document.title = `${t(AUTH_COPY[authTab][2])} · TalkLive`;
+}
+
+function openAuthPage(tab) {
+  // Signed in, there is nothing to log in to: the account lives in Settings.
+  if (accountNickname) { openAppSettings('profile'); return; }
+  const wasOpen = authPageIsOpen();
+  if (!wasOpen) {
+    authPrevTitle = document.title;
+    if (!AUTH_PATH_RE.test(location.pathname)) {
+      history.pushState({ auth: true }, '', tab === 'signup' ? '/signup' : '/login');
+      authPushed = true;
+    }
+  }
+  authDone.classList.add('hidden');
+  renderAccountState();
+  authPage.classList.remove('hidden');
+  document.documentElement.classList.add('auth-route');
+  selectAccountTab(tab);
+  authPage.scrollTop = 0;
+  updateScrollLock();
+  // Google's button can only be sized once the page has a layout; a phone
+  // gets no keyboard thrown over it, a desktop gets the cursor in the field.
+  requestAnimationFrame(() => {
+    renderGoogleButtons();
+    if (!wasOpen && window.matchMedia && matchMedia('(pointer: fine)').matches) {
+      const first = (tab === 'signup' ? signupUsername : loginUsername);
+      try { first.focus({ preventScroll: true }); } catch (_) { /* old browser */ }
+    }
+  });
+}
+
+// `fromHistory`: Back already left the URL, so there is no entry to pop.
+function closeAuthPage(fromHistory) {
+  if (!authPageIsOpen()) return;
+  authPage.classList.add('hidden');
+  document.documentElement.classList.remove('auth-route');
+  if (authPrevTitle) document.title = authPrevTitle;
+  endAccountRequest();
+  updateScrollLock();
+  if (AUTH_PATH_RE.test(location.pathname)) {
+    if (!fromHistory && authPushed) {
+      authBackPending = true;
+      history.back();
+    } else {
+      history.replaceState(history.state, '', settingsIsOpen() ? '/settings' : '/');
+    }
+  }
+  authPushed = false;
+}
+
+// Always a fresh load of the home screen, as whoever is now signed in (or
+// nobody), with one line saying what just happened. A reload in place used to
+// leave people on whatever screen they started from, half-updated.
+function goHomeAfterAuth(message, delay) {
+  try { if (message) sessionStorage.setItem('talklive_flash', message); } catch (_) { /* private mode */ }
+  setTimeout(() => {
+    suppressUnloadWarning = true;
+    location.replace('/');
+  }, delay || 0);
+}
+
+function finishAuth(message) {
+  endAccountRequest();
+  if (authPageIsOpen()) {
+    accountStatus.classList.add('hidden');
+    accountLoggedOut.classList.add('hidden');
+    document.getElementById('authDoneTitle').textContent = message;
+    authDone.classList.remove('hidden');
+  }
+  goHomeAfterAuth(message, 900);
+}
+
+closeAccountBtn.addEventListener('click', () => closeAuthPage());
+document.getElementById('authHomeLink').addEventListener('click', (e) => {
+  e.preventDefault();
+  closeAuthPage();
+});
+authPage.querySelectorAll('.tl-auth-go').forEach((link) => {
+  link.addEventListener('click', (e) => {
+    e.preventDefault();
+    selectAccountTab(link.dataset.go);
+  });
+});
+
+function selectAccountTab(which) {
+  authTab = AUTH_COPY[which] ? which : 'login';
+  loginTab.classList.toggle('hidden', authTab !== 'login');
+  signupTab.classList.toggle('hidden', authTab !== 'signup');
+  forgotTab.classList.toggle('hidden', authTab !== 'forgot');
+  accountStatus.classList.add('hidden');
+  const [titleKey, subKey] = AUTH_COPY[authTab];
+  authTitle.dataset.i18n = titleKey;
+  authTitle.textContent = t(titleKey);
+  authSub.dataset.i18n = subKey;
+  authSub.textContent = t(subKey);
+  // Log in and Sign up are two URLs; switching between them replaces the
+  // entry rather than stacking one, so Back still leaves the page in one go.
+  // The reset flow belongs to logging in and stays at /login.
+  if (authPageIsOpen()) {
+    const path = authTab === 'signup' ? '/signup' : '/login';
+    if (AUTH_PATH_RE.test(location.pathname) && location.pathname !== path) {
+      history.replaceState(history.state, '', path);
+    }
+    syncAuthTitle();
+    renderGoogleButtons();
+  }
+}
+
+// Show / hide password, on every password field of the page.
+const EYE_OPEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+const EYE_SHUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>';
+authPage.querySelectorAll('.tl-pw-toggle').forEach((btn) => {
+  const input = btn.previousElementSibling;
+  btn.innerHTML = EYE_OPEN;
+  btn.addEventListener('click', () => {
+    const show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    btn.innerHTML = show ? EYE_SHUT : EYE_OPEN;
+    btn.setAttribute('aria-pressed', String(show));
+    btn.dataset.i18nAria = show ? 'hidePassword' : 'showPassword';
+    btn.setAttribute('aria-label', t(btn.dataset.i18nAria));
+    // Keep the cursor where it was, at the end of what was typed.
+    try { input.focus({ preventScroll: true }); input.setSelectionRange(input.value.length, input.value.length); } catch (_) { /* email/number inputs */ }
+  });
+});
+
+// A wrong password typed with Caps Lock on is the commonest failed login there
+// is, and nothing on screen said so.
+authPage.querySelectorAll('input[type="password"]').forEach((input) => {
+  const note = input.closest('.tl-field').querySelector('.tl-caps');
+  if (!note) return;
+  const check = (e) => {
+    if (e.getModifierState) note.classList.toggle('hidden', !e.getModifierState('CapsLock'));
+  };
+  input.addEventListener('keydown', check);
+  input.addEventListener('keyup', check);
+  input.addEventListener('blur', () => note.classList.add('hidden'));
+});
+
+// Password strength, as you type it: three bars and a word.
+const signupPwMeter = document.getElementById('signupPwMeter');
+function passwordStrength(pw) {
+  if (!pw) return 0;
+  const kinds = [/[a-z]/, /[A-Z]/, /\d/, /[^A-Za-z0-9]/].filter((re) => re.test(pw)).length;
+  if (pw.length >= 12 && kinds >= 3) return 3;
+  if (pw.length >= 8 && kinds >= 2) return 2;
+  return 1;
+}
+function renderPasswordMeter() {
+  const level = passwordStrength(signupPassword.value);
+  signupPwMeter.dataset.level = String(level);
+  signupPwMeter.querySelector('.tl-pw-label').textContent = level ? t(['', 'pwWeak', 'pwOkay', 'pwStrong'][level]) : '';
+}
+signupPassword.addEventListener('input', renderPasswordMeter);
+
+// The username rules, checked as they are typed rather than after a round trip.
+const signupUsernameNote = document.getElementById('signupUsernameNote');
+const USERNAME_RE = /^[A-Za-z0-9_.-]{3,24}$/;
+signupUsername.addEventListener('input', () => {
+  const v = signupUsername.value.trim();
+  signupUsernameNote.classList.toggle('is-error', /[^A-Za-z0-9_.-]/.test(v));
 });
 
 // Header auth - the same three destinations as the side panel, one tap from
-// anywhere in the app instead of behind the settings menu.
-// It opens on top of whatever is on screen, Settings included. Closing
-// Settings first used to pop its history entry, and the popstate that
-// followed closed this dialog again - the button just dropped you home.
-function openAccountModal(tab) {
-  // Signed in, the account lives in Settings > Profile, not in a dialog.
-  if (accountNickname) { openAppSettings('profile'); return; }
-  renderAccountState();
-  selectAccountTab(tab);
-  openModal(accountModal);
-}
-
-headerLoginBtn.addEventListener('click', () => openAccountModal('login'));
-headerSignupBtn.addEventListener('click', () => openAccountModal('signup'));
-sidePanelSignInBtn.addEventListener('click', () => openAccountModal('login'));
-sidePanelRegisterBtn.addEventListener('click', () => openAccountModal('signup'));
+// anywhere in the app instead of behind the settings menu. The page opens on
+// top of whatever is on screen, Settings included, and Back returns to it.
+headerLoginBtn.addEventListener('click', () => openAuthPage('login'));
+headerSignupBtn.addEventListener('click', () => openAuthPage('signup'));
+sidePanelSignInBtn.addEventListener('click', () => openAuthPage('login'));
+sidePanelRegisterBtn.addEventListener('click', () => openAuthPage('signup'));
 // Your face in the corner goes to your profile - not to a dialog on top of
 // whatever you were doing. Settings owns the profile now, so this is a
 // navigation to /settings with the Profile section open, which is also what
@@ -2905,6 +3052,8 @@ function beginAccountRequest(button) {
     return false;
   }
   button.disabled = true;
+  button.classList.add('is-busy');
+  accountStatus.classList.add('hidden');
   clearTimeout(accountReplyTimer);
   accountReplyTimer = setTimeout(() => {
     endAccountRequest();
@@ -2915,11 +3064,19 @@ function beginAccountRequest(button) {
 function endAccountRequest() {
   clearTimeout(accountReplyTimer);
   accountReplyTimer = null;
-  loginSubmitBtn.disabled = false;
-  signupSubmitBtn.disabled = false;
+  [loginSubmitBtn, signupSubmitBtn].forEach((btn) => {
+    btn.disabled = false;
+    btn.classList.remove('is-busy');
+  });
 }
 
 loginSubmitBtn.addEventListener('click', () => {
+  if (loginSubmitBtn.disabled) return;
+  if (!loginUsername.value.trim() || !loginPassword.value) {
+    showAccountStatus(t('authFillBoth'), 'error');
+    markInvalidField(!loginUsername.value.trim() ? loginUsername : loginPassword);
+    return;
+  }
   if (!beginAccountRequest(loginSubmitBtn)) return;
   socket.emit('login', { username: loginUsername.value.trim(), password: loginPassword.value });
 });
@@ -2946,9 +3103,20 @@ signupSubmitBtn.addEventListener('click', () => {
   // into the first one is the obvious slip - and the server could only answer
   // it with "username may only contain letters, numbers, dot, dash or
   // underscore", which does not explain anything. Say what happened instead.
+  if (signupSubmitBtn.disabled) return;
   if (username.includes('@')) {
     showAccountStatus(t('errUsernameIsEmail'), 'error');
     markInvalidField(signupUsername);
+    return;
+  }
+  if (!USERNAME_RE.test(username)) {
+    showAccountStatus(t('usernameRules'), 'error');
+    markInvalidField(signupUsername);
+    return;
+  }
+  if (signupPassword.value.length < 4) {
+    showAccountStatus(t('authPasswordShort'), 'error');
+    markInvalidField(signupPassword);
     return;
   }
   if (!beginAccountRequest(signupSubmitBtn)) return;
@@ -2974,8 +3142,9 @@ function handleGoogleCredential(response) {
   if (!response || !response.credential) return;
   // Reuse the shared in-flight guard so a slow/disconnected socket surfaces the
   // same "no connection" / "no reply" errors as the password buttons.
-  if (!beginAccountRequest(signupSubmitBtn)) return;
+  if (!beginAccountRequest(authTab === 'signup' ? signupSubmitBtn : loginSubmitBtn)) return;
   loginSubmitBtn.disabled = true;
+  signupSubmitBtn.disabled = true;
   showAccountStatus(t('statusSigningIn'), 'info');
   socket.emit('google-auth', { credential: response.credential });
 }
@@ -2987,7 +3156,7 @@ function handleGoogleCredential(response) {
 function googleBtnWidth(slot) {
   const measured = Math.round(
     slot.getBoundingClientRect().width ||
-    (slot.closest('.modal-body') || {}).clientWidth ||
+    (slot.closest('.tl-auth-card') || {}).clientWidth ||
     0,
   );
   return Math.max(200, Math.min(400, measured || 320));
@@ -3061,14 +3230,18 @@ socket.on('google-auth-result', ({ ok, nickname, email, error, sessionToken: tok
   }
   storeLogin(nickname, token, profileClientId, identityToken);
   storeAccountEmail(email);
-  showAccountStatus(t('statusLoggedIn', { name: nickname }), 'success');
-  setTimeout(reloadPage, 500);
+  finishAuth(t('authWelcome', { name: nickname }));
 });
 
 // Pressing Enter in any login/signup field submits that form.
-[loginUsername, loginPassword].forEach((el) => el.addEventListener('keydown', (e) => {
+loginUsername.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter') return;
+  if (loginPassword.value) loginSubmitBtn.click();
+  else loginPassword.focus();
+});
+loginPassword.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') loginSubmitBtn.click();
-}));
+});
 [signupUsername, signupPassword, signupEmail].forEach((el) => el.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') signupSubmitBtn.click();
 }));
@@ -3083,6 +3256,7 @@ function showForgotStep(step) {
   forgotStepEmail.classList.toggle('hidden', step !== 'email');
   forgotStepCode.classList.toggle('hidden', step !== 'code');
   forgotStepPassword.classList.toggle('hidden', step !== 'password');
+  forgotTab.dataset.step = step;
   const focus = { email: forgotEmail, code: forgotCode, password: forgotNewPassword }[step];
   if (focus) setTimeout(() => focus.focus(), 50);
 }
@@ -3168,8 +3342,7 @@ socket.on('reset-password-result', ({ ok, nickname, email, error, sessionToken: 
   forgotNewPassword.value = '';
   storeLogin(nickname, token);
   storeAccountEmail(email);
-  showAccountStatus(t('statusPasswordRestored', { name: nickname }), 'success');
-  setTimeout(reloadPage, 800);
+  finishAuth(t('statusPasswordRestored', { name: nickname }));
 });
 
 // --- Recovery email (My Account) ------------------------------------------
@@ -3212,15 +3385,24 @@ socket.on('update-recovery-email-result', ({ ok, email, error }) => {
   showAccountStatus(t('statusRecoveryEmailSaved'), 'success');
 });
 
-logoutBtn.addEventListener('click', () => {
+// Asked first - it is one tap from the profile sheet, and a mis-tap used to
+// sign you out on the spot. Then straight to the home screen, signed out.
+logoutBtn.addEventListener('click', async () => {
+  const ok = await showConfirm({
+    title: 'confirmLogoutTitle', text: 'confirmLogoutText',
+    okKey: 'logOut', cancelKey: 'cancel', okClass: 'btn-danger',
+  });
+  if (!ok) return;
+  logoutBtn.disabled = true;
+  logoutBtn.textContent = t('loggingOut');
   socket.emit('logout', { token: sessionToken });
   sessionToken = null;
   accountNickname = null;
   storeAccountEmail('');
   localStorage.removeItem('talklive_session');
   localStorage.removeItem('talklive_nickname');
-  // Give the logout packet a moment to flush before the page reloads.
-  setTimeout(reloadPage, 150);
+  // Give the logout packet a moment to flush before the page goes.
+  goHomeAfterAuth(t('loggedOutToast'), 250);
 });
 
 changePasswordBtn.addEventListener('click', () => {
@@ -3248,8 +3430,7 @@ socket.on('login-result', ({ ok, nickname, email, error, sessionToken: token, pr
   if (!ok) return showAccountStatus(error, 'error');
   storeLogin(nickname, token, profileClientId, identityToken);
   storeAccountEmail(email);
-  showAccountStatus(t('statusLoggedIn', { name: nickname }), 'success');
-  setTimeout(reloadPage, 500);
+  finishAuth(t('authWelcomeBack', { name: nickname }));
 });
 
 socket.on('signup-result', ({ ok, nickname, email, error, sessionToken: token, profileClientId, identityToken }) => {
@@ -3266,8 +3447,7 @@ socket.on('signup-result', ({ ok, nickname, email, error, sessionToken: token, p
   }
   storeLogin(nickname, token, profileClientId, identityToken);
   storeAccountEmail(email);
-  showAccountStatus(t('statusAccountCreated', { name: nickname }), 'success');
-  setTimeout(reloadPage, 500);
+  finishAuth(t('statusAccountCreated', { name: nickname }));
 });
 
 // Answer to the silent re-login sent on every (re)connect. Success refreshes
@@ -7954,6 +8134,7 @@ function closeTopmostLayer() {
     closeModal(openModalEl);
     return true;
   }
+  if (authPageIsOpen()) { closeAuthPage(true); return true; }
   if (myProfileIsOpen()) { closeMyProfile(); return true; }
   if (navDrawer && !navDrawer.classList.contains('hidden')) { setNavDrawerOpen(false); return true; }
   if (!gameOverlay.classList.contains('hidden')) { attemptCloseGame(); return true; }
@@ -7977,6 +8158,10 @@ window.addEventListener('popstate', async () => {
   // An edge swipe that just opened a panel also fires the browser's back
   // gesture; ignore that trailing popstate so it doesn't re-close the panel.
   if (Date.now() < swipeSuppressUntil) { primeBackGuard(); return; }
+  // The log-in page closing itself popped its own entry: nothing else to do.
+  if (authBackPending) { authBackPending = false; return; }
+  // Back out of /login or /signup: the page closes, whatever was under it stays.
+  if (authPageIsOpen() && !AUTH_PATH_RE.test(location.pathname)) { closeAuthPage(true); return; }
   // Settings is a real history entry, so Back leaves it the ordinary way -
   // and it is handled before closeTopmostLayer(), which would otherwise pop a
   // second entry for the same press and skip a page.
@@ -9481,7 +9666,9 @@ window.addEventListener('i18n-changed', () => {
   renderNotifications(); // also re-renders the friends list + badges
   renderHistory();
   renderRailOnline();
-  renderAccountState(); // the account dialog's title depends on being signed in
+  renderAccountState();
+  syncAuthTitle();
+  if (authPageIsOpen() && signupPwMeter) renderPasswordMeter();
   includeCountryWidget.renderChips();
   excludeCountryWidget.renderChips();
   renderInterestTags();
@@ -9502,6 +9689,15 @@ if (location.pathname === '/call' && !pendingInviteToken) {
   history.replaceState(history.state, '', '/');
 } else if (pendingInviteToken) {
   history.replaceState(history.state, '', '/call');
+} else if (AUTH_PATH_RE.test(location.pathname)) {
+  // Landed on /login or /signup directly. Already signed in, there is nothing
+  // to do there: go home, without leaving the page in the history.
+  if (accountNickname) {
+    history.replaceState(history.state, '', '/');
+    document.documentElement.classList.remove('auth-route');
+  } else {
+    openAuthPage(location.pathname.startsWith('/signup') ? 'signup' : 'login');
+  }
 } else if (location.pathname === '/settings') {
   // Landed on /settings directly - a bookmark, a reload, a shared link. The
   // URL is already right, so the screen is opened in place without pushing a
@@ -9576,8 +9772,10 @@ try {
   // rather than the chat app carrying its own copy of the account stack.
   const open = params.get('open');
   if (open === 'account') {
-    openAccountModal(params.get('tab') === 'login' ? 'login' : 'signup');
-    history.replaceState(history.state, '', '/');
+    // Old links to the account dialog: the pages have their own URLs now.
+    history.replaceState(history.state, '', params.get('tab') === 'login' ? '/login' : '/signup');
+    if (accountNickname) history.replaceState(history.state, '', '/');
+    else openAuthPage(params.get('tab') === 'login' ? 'login' : 'signup');
   } else if (open === 'shop') {
     openShop();
     history.replaceState(history.state, '', '/');
@@ -9596,6 +9794,17 @@ try {
     history.replaceState(history.state, '', '/');
   }
 } catch (e) { /* very old browser without URLSearchParams - ignore */ }
+
+// One line saying what just happened on the page before this one - "Welcome
+// back", "You are logged out" - so arriving home reads as the end of that
+// step rather than an unexplained reload.
+try {
+  const flash = sessionStorage.getItem('talklive_flash');
+  if (flash) {
+    sessionStorage.removeItem('talklive_flash');
+    setTimeout(() => showToast(flash), 350);
+  }
+} catch (_) { /* private mode */ }
 
 // Initial state: the Tap-to-Talk landing, a green idle Call button ready for
 // when the call screen opens, and the auto-connect control showing whatever

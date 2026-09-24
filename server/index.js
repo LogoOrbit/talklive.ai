@@ -984,6 +984,14 @@ app.get('/settings', (req, res) => {
   sendAppShell(res, 'index.html');
 });
 
+// Log in and Sign up are pages of their own, at their own URLs, rather than a
+// dialog over whatever was on screen. They are still screens of the one shell
+// - the page needs the live socket and the browser's registered profile so
+// that signing up keeps it - and app.js opens the right one from the path.
+app.get(['/login', '/signup'], (req, res) => {
+  sendAppShell(res, 'index.html');
+});
+
 // Marketing landing page on its own subdomain (e.g. start.talklive.app or
 // www.talklive.app pointed here via LANDING_HOST). The root of that host
 // serves the landing page; the main app stays on the canonical host. The
@@ -3445,6 +3453,10 @@ io.on('connection', (socket) => {
   socket.on('login', async ({ username, password } = {}) => {
     if (typeof username !== 'string') username = '';
     if (typeof password !== 'string') password = '';
+    username = username.trim();
+    // Usernames cannot contain '@', so anything that does is the account's
+    // recovery email - people remember that far more often than the handle.
+    if (username.includes('@')) username = store.findUsernameByEmail(normalizeEmail(username)) || username;
     const usernameLower = username.toLowerCase();
     if (loginLockedOut(ip, usernameLower)) {
       return socket.emit('login-result', { ok: false, error: 'Too many failed attempts. Please try again in 15 minutes.' });
