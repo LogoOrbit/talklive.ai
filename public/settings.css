@@ -864,7 +864,7 @@ html:not(.tl-set-css) .tl-set-page { visibility: hidden; }
 .settings-quick .qs-all:hover { filter: brightness(1.08); }
 .settings-quick .qs-all:active { transform: scale(0.97); }
 .settings-quick .qs-all svg { width: 18px; height: 18px; flex: none; }
-.settings-quick .qs-all-note { margin: -8px 0 8px; text-align: center; }
+.settings-quick .qs-all-note { margin: 10px 0 8px; text-align: center; }
 
 /* The My profile sheet borrows the name, ID and avatar controls. */
 .my-profile-controls.tl-set-group { border-radius: 18px; }
