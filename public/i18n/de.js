@@ -745,7 +745,7 @@
   "animalClear": "Entfernen",
   "partnerAnimalLabel": "Sein/ihr Seelentier",
   "animalSameMatch": "Ihr habt beide gewählt: {animal}!",
-  "chatAnimalLine": "{name} hat gewählt: {animal} – {trait}. Frag nach dem Warum.",
+  "chatAnimalLine": "User hat gewählt: {animal}. {trait}. Frag warum!",
   "animalLion": "Löwe",
   "animalLionTrait": "Mutig und großherzig",
   "animalTiger": "Tiger",

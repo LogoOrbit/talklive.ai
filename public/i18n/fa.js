@@ -745,7 +745,7 @@
   "animalClear": "حذف",
   "partnerAnimalLabel": "حیوان روحی او",
   "animalSameMatch": "هر دو انتخاب کردید: {animal}!",
-  "chatAnimalLine": "{name} این را انتخاب کرد: {animal} - {trait}. بپرس چرا.",
+  "chatAnimalLine": "کاربر {animal} را انتخاب کرد. {trait}. بپرس چرا!",
   "animalLion": "شیر",
   "animalLionTrait": "جسور و بزرگ‌دل",
   "animalTiger": "ببر",

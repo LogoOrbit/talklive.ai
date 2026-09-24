@@ -745,7 +745,7 @@
   "animalClear": "外す",
   "partnerAnimalLabel": "相手のスピリットアニマル",
   "animalSameMatch": "2人とも{animal}を選びました！",
-  "chatAnimalLine": "{name}は{animal}を選びました：{trait}。理由を聞いてみよう。",
+  "chatAnimalLine": "ユーザーは{animal}を選びました。{trait}。理由を聞いてみよう！",
   "animalLion": "ライオン",
   "animalLionTrait": "大胆で心が広い",
   "animalTiger": "トラ",

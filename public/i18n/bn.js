@@ -745,7 +745,7 @@
   "animalClear": "সরান",
   "partnerAnimalLabel": "তাদের স্পিরিট অ্যানিমেল",
   "animalSameMatch": "আপনারা দুজনেই বেছেছেন: {animal}!",
-  "chatAnimalLine": "{name} বেছেছে: {animal} - {trait}। কারণ জিজ্ঞেস করুন।",
+  "chatAnimalLine": "ইউজার বেছেছে {animal}। {trait}। কারণ জিজ্ঞেস করুন!",
   "animalLion": "সিংহ",
   "animalLionTrait": "সাহসী ও বড় মনের",
   "animalTiger": "বাঘ",

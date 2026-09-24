@@ -745,7 +745,7 @@
   "animalClear": "Kaldır",
   "partnerAnimalLabel": "Onun ruh hayvanı",
   "animalSameMatch": "İkiniz de seçtiniz: {animal}!",
-  "chatAnimalLine": "{name} şunu seçti: {animal} - {trait}. Nedenini sor.",
+  "chatAnimalLine": "Kullanıcı şunu seçti: {animal}. {trait}. Nedenini sor!",
   "animalLion": "Aslan",
   "animalLionTrait": "Cesur ve yüce gönüllü",
   "animalTiger": "Kaplan",

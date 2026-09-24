@@ -3044,7 +3044,6 @@
     // to ask about it. Both picking the same one is worth its own line.
     if (data.partner.animal && Animals && Animals.has(data.partner.animal)) {
       var animalLine = addMessage(t('chatAnimalLine', {
-        name: data.partner.username,
         animal: Animals.name(data.partner.animal),
         trait: Animals.trait(data.partner.animal),
       }), 'system system-animal');

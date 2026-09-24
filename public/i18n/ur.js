@@ -745,7 +745,7 @@
   "animalClear": "ہٹائیں",
   "partnerAnimalLabel": "ان کا روحانی جانور",
   "animalSameMatch": "آپ دونوں نے چنا: {animal}!",
-  "chatAnimalLine": "{name} نے چنا: {animal} - {trait}۔ ان سے وجہ پوچھیں۔",
+  "chatAnimalLine": "یوزر نے چنا: {animal}۔ {trait}۔ وجہ پوچھیں!",
   "animalLion": "شیر",
   "animalLionTrait": "بہادر اور بڑے دل والا",
   "animalTiger": "چیتا",

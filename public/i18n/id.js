@@ -745,7 +745,7 @@
   "animalClear": "Hapus",
   "partnerAnimalLabel": "Hewan rohnya",
   "animalSameMatch": "Kalian berdua memilih: {animal}!",
-  "chatAnimalLine": "{name} memilih: {animal} - {trait}. Tanyakan alasannya.",
+  "chatAnimalLine": "Pengguna memilih {animal}. {trait}. Tanyakan alasannya!",
   "animalLion": "Singa",
   "animalLionTrait": "Berani dan berhati besar",
   "animalTiger": "Harimau",
