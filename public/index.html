@@ -532,7 +532,6 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
          sent that are waiting on them. Outgoing requests used to be invisible:
          you asked, and nothing on screen ever said so again. -->
     <!-- THE Settings panel: the same one a call and /chat open from their
-         gear (public/settings-panel.js fills it). Everyday preferences here;
          "All settings" opens the full screen below. -->
     <div id="settingsPanelOverlay" class="side-panel-overlay hidden"></div>
     <aside id="settingsPanel" class="side-panel side-panel-right tl-panel settings-quick" role="dialog" data-i18n-aria="settings" aria-label="Settings">
@@ -2711,8 +2710,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   <script defer src="chat-extras.js?v=20260922social2"></script>
   <script defer src="games.js?v=20260924qa"></script>
   <script defer src="nickname-rules.js?v=20260924nick"></script>
-  <script defer src="settings-panel.js?v=20260924qsauth"></script>
-  <script defer src="app.js?v=20260924mp"></script>
+  <script defer src="app.js?v=20260924lazy"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

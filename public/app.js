@@ -1428,8 +1428,36 @@ function quickSettingsIsOpen() {
 function closeQuickSettings() {
   if (quickSettingsIsOpen()) closeSidePanel(quickSettingsPanel, quickSettingsOverlay);
 }
+// The panel's script is not part of the first page load (it would push the
+// page over its size budget); it is fetched once the page is idle, or on the
+// first tap of the gear if that comes sooner.
+const SETTINGS_PANEL_SRC = '/settings-panel.js?v=20260924lazy';
+let settingsPanelLoading = null;
+function loadSettingsPanel() {
+  if (window.TalkLiveSettingsPanel) return Promise.resolve();
+  if (!settingsPanelLoading) {
+    settingsPanelLoading = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = SETTINGS_PANEL_SRC;
+      s.async = true;
+      s.onload = resolve;
+      s.onerror = () => { settingsPanelLoading = null; reject(); };
+      document.head.appendChild(s);
+    });
+  }
+  return settingsPanelLoading;
+}
+window.addEventListener('load', () => {
+  const later = window.requestIdleCallback || ((fn) => setTimeout(fn, 1500));
+  later(() => loadSettingsPanel().catch(() => {}));
+});
 function openQuickSettings() {
   if (!quickSettingsPanel) { openAppSettings(); return; }
+  if (!window.TalkLiveSettingsPanel) {
+    // Offline or blocked: the full screen still works.
+    loadSettingsPanel().then(openQuickSettings, () => openAppSettings());
+    return;
+  }
   if (!quickSettings && window.TalkLiveSettingsPanel) {
     const flip = (box, on) => { box.checked = on; box.dispatchEvent(new Event('change')); };
     quickSettings = window.TalkLiveSettingsPanel.mount(document.getElementById('quickSettings'), {

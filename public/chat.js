@@ -1242,11 +1242,45 @@
   var settingsPanel = $('settingsPanel');
   var settingsOverlay = $('settingsPanelOverlay');
   var quickSettings = null;
+  // Fetched when the page is idle (or on the first tap), not with the page
+  // itself, which has a size budget to stay inside.
+  var settingsPanelLoading = null;
+  function loadSettingsPanel(done, failed) {
+    if (window.TalkLiveSettingsPanel) { done(); return; }
+    if (!settingsPanelLoading) {
+      settingsPanelLoading = [];
+      var s = document.createElement('script');
+      s.src = '/settings-panel.js?v=20260924lazy';
+      s.async = true;
+      s.onload = function () { var q = settingsPanelLoading; settingsPanelLoading = null; q.forEach(function (c) { c[0](); }); };
+      s.onerror = function () { var q = settingsPanelLoading; settingsPanelLoading = null; q.forEach(function (c) { c[1](); }); };
+      document.head.appendChild(s);
+    }
+    settingsPanelLoading.push([done, failed || function () {}]);
+  }
+  window.addEventListener('load', function () {
+    var later = window.requestIdleCallback || function (fn) { setTimeout(fn, 1500); };
+    later(function () {
+      loadSettingsPanel(function () {});
+      // The display-name rules only check a name before it is sent (the
+      // server enforces them either way), so they can arrive late too.
+      if (!window.TalkLiveNickname) {
+        var n = document.createElement('script');
+        n.src = '/nickname-rules.js?v=20260924nick';
+        n.async = true;
+        document.head.appendChild(n);
+      }
+    });
+  });
   $('chatSettingsBtn').addEventListener('click', function () {
     vibrate(10);
     var wasOpen = settingsPanel.classList.contains('open');
     closeAllPanels();
     if (wasOpen) return;
+    if (!window.TalkLiveSettingsPanel) {
+      loadSettingsPanel(function () { $('chatSettingsBtn').click(); }, function () { leaveChatFor('/settings?from=chat'); });
+      return;
+    }
     if (!quickSettings && window.TalkLiveSettingsPanel) {
       quickSettings = window.TalkLiveSettingsPanel.mount($('quickSettings'), {
         profileFace: function (size) {
