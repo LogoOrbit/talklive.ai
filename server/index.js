@@ -515,6 +515,40 @@ app.post('/events', express.json({ limit: '2kb' }), (req, res) => {
   res.status(204).end();
 });
 
+// Google Sign-In, redirect mode (used on phones). The popup flow opens Google in
+// a new tab there, and when it closes the browser often lands on whatever tab
+// was open before TalkLive - or the opener was discarded in the background and
+// the credential is lost. Redirect mode keeps it in one tab: Google POSTs the
+// ID token here. It is not trusted or verified here - it is handed back to the
+// page, which forwards it over the socket exactly like the popup flow, where
+// the server verifies it. The double-submit CSRF check (Google sets the
+// g_csrf_token cookie and posts the same value) stops another site from
+// posting its own token and signing a visitor into the wrong account.
+function readCookie(req, name) {
+  const header = req.headers.cookie || '';
+  for (const part of header.split(';')) {
+    const i = part.indexOf('=');
+    if (i !== -1 && part.slice(0, i).trim() === name) {
+      try { return decodeURIComponent(part.slice(i + 1).trim()); } catch (_) { return ''; }
+    }
+  }
+  return '';
+}
+app.post('/auth/google', httpRateLimit('google-redirect', 20, 60000), express.urlencoded({ extended: false, limit: '8kb' }), (req, res) => {
+  const body = req.body || {};
+  const credential = typeof body.credential === 'string' ? body.credential : '';
+  const csrfBody = typeof body.g_csrf_token === 'string' ? body.g_csrf_token : '';
+  const csrfCookie = readCookie(req, 'g_csrf_token');
+  res.setHeader('Cache-Control', 'no-store');
+  if (!credential || !csrfBody || csrfBody !== csrfCookie) return res.redirect(303, '/login');
+  // JSON-encoded and with "<" escaped so the token can never close the script.
+  const payload = JSON.stringify(credential).replace(/</g, '\\u003c');
+  res.type('html').send('<!doctype html><meta charset="utf-8"><meta name="robots" content="noindex">'
+    + '<title>Signing in… · TalkLive</title><script>'
+    + `try{sessionStorage.setItem('talklive_google_credential',${payload})}catch(e){}`
+    + "location.replace('/login');</script>");
+});
+
 // ICE servers handed to the browser.
 //
 // STUN is always published. Withholding it (to avoid revealing each peer's

@@ -3376,11 +3376,39 @@ function initGoogleSignIn() {
     // signed into whichever Google session the browser happens to hold.
     auto_select: false,
     cancel_on_tap_outside: true,
-    ux_mode: 'popup',
+    // Phones open the popup as a new tab, and closing it often drops the user
+    // on the tab they had open before TalkLive (or the credential is lost with
+    // a discarded opener). There, Google redirects this tab instead and posts
+    // the credential to /auth/google, which hands it back - see
+    // consumeRedirectedGoogleCredential().
+    ...(googleUsesRedirect()
+      ? { ux_mode: 'redirect', login_uri: `${location.origin}/auth/google` }
+      : { ux_mode: 'popup' }),
   });
   googleReady = true;
   document.querySelectorAll('.google-block').forEach((el) => el.classList.remove('hidden'));
   renderGoogleButtons();
+}
+
+function googleUsesRedirect() {
+  return !!(window.matchMedia && matchMedia('(pointer: coarse)').matches);
+}
+
+// Back from Google's redirect: /auth/google left the credential in this tab's
+// sessionStorage and sent us to /login. Forward it once the socket is up.
+function consumeRedirectedGoogleCredential() {
+  let credential = null;
+  try {
+    credential = sessionStorage.getItem('talklive_google_credential');
+    sessionStorage.removeItem('talklive_google_credential');
+  } catch (_) { /* private mode */ }
+  if (!credential) return;
+  const send = () => handleGoogleCredential({ credential });
+  if (socket.connected) send();
+  else {
+    showAccountStatus(t('statusSigningIn'), 'info');
+    socket.once('connect', send);
+  }
 }
 
 // Both /config.js and Google's client are `defer`red, so they are guaranteed to
@@ -3391,6 +3419,8 @@ if (document.readyState === 'loading') {
 } else {
   initGoogleSignIn();
 }
+// After the rest of this script has run, so the /login page is already open.
+setTimeout(consumeRedirectedGoogleCredential, 0);
 
 socket.on('google-auth-result', ({ ok, nickname, email, error, sessionToken: token, profileClientId, identityToken }) => {
   endAccountRequest();
