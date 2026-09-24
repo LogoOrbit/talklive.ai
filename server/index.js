@@ -1165,6 +1165,14 @@ async function giphyFetch(endpoint, params) {
   }
 }
 
+// The landing page's live line ("1.2k people visited today · 14 online now").
+// The app gets the same two numbers over its socket; the landing page has no
+// socket, and opening one per marketing visit to print a number is waste.
+app.get('/api/live', (req, res) => {
+  res.set('Cache-Control', 'public, max-age=30');
+  res.json({ visitors: visitorCount(), online: io.engine.clientsCount });
+});
+
 app.get('/api/gifs/config', (req, res) => {
   // Short enough that turning the key on reaches existing visitors in minutes
   // rather than the next hour, which is what an operator expects after setting
@@ -2514,9 +2522,13 @@ const VISITOR_COUNT_TTL = 60000;
 
 function visitorCount() {
   const now = Date.now();
-  if (now - visitorCountCache.at < VISITOR_COUNT_TTL) return visitorCountCache.value;
-  visitorCountCache = { at: now, value: store.visitorsLast24h(now) };
-  return visitorCountCache.value;
+  if (now - visitorCountCache.at >= VISITOR_COUNT_TTL || !visitorCountCache.value) {
+    visitorCountCache = { at: now, value: store.visitorsLast24h(now) };
+  }
+  // Everyone connected right now visited today. The cached figure lags by up
+  // to a minute (and reads 0 straight after a deploy), which put "0 visitors"
+  // in the header of a page whose own "Online now" rail said 3.
+  return Math.max(visitorCountCache.value, io.engine.clientsCount);
 }
 
 let lastVisitorCountSent = -1;

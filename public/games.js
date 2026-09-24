@@ -463,7 +463,8 @@
         gameAcceptBtn.classList.remove('hidden');
         gameDeclineBtn.classList.remove('hidden');
       } else if (tttStage === 'playing' && tttState) {
-        tttRematchBtn.classList.remove('hidden');
+        // Offered once a game has ended; mid-game it read as "start over".
+        tttRematchBtn.classList.toggle('hidden', tttState.phase !== 'over');
         const myTurn = tttState.turn === myPlayerIndex;
         if (tttState.phase === 'over') {
           gameStatus.textContent = tttState.winner === 'draw'

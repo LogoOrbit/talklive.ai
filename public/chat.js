@@ -240,7 +240,37 @@
   // Rotating one-liners under the searching animation.
   var SEARCH_KEYS = ['chatSearch1', 'chatSearch2', 'chatSearch3', 'chatSearch4'];
   var searchTimer = null, searchIdx = 0;
-  function stopSearchLines() { clearInterval(searchTimer); searchTimer = null; }
+  // A long wait gets the truth instead of "Almost there" on a loop: it is
+  // quiet, the search carries on by itself, and one more person online is
+  // exactly what would end it.
+  var QUIET_AFTER_MS = 20000;
+  var quietTimer = null, quietHint = null;
+  function hideQuietHint() {
+    clearTimeout(quietTimer); quietTimer = null;
+    if (quietHint) quietHint.classList.add('hidden');
+  }
+  function showQuietHint() {
+    stopSearchLines(true);
+    searchLine.textContent = t('chatQuietTitle');
+    if (!quietHint) {
+      quietHint = document.createElement('div');
+      quietHint.className = 'search-quiet';
+      quietHint.innerHTML = '<p></p><button type="button" class="search-quiet-share"></button>';
+      quietHint.querySelector('button').addEventListener('click', function () {
+        var url = location.origin + '/chat';
+        if (navigator.share) { navigator.share({ title: 'TalkLive', url: url }).catch(function () {}); return; }
+        if (navigator.clipboard) navigator.clipboard.writeText(url).then(function () { socialToast(t('shareLinkCopied')); }).catch(function () {});
+      });
+      searchLine.after(quietHint);
+    }
+    quietHint.querySelector('p').textContent = t('chatQuietBody');
+    quietHint.querySelector('button').textContent = t('railInviteCta');
+    quietHint.classList.remove('hidden');
+  }
+  function stopSearchLines(keepQuiet) {
+    clearInterval(searchTimer); searchTimer = null;
+    if (!keepQuiet) hideQuietHint();
+  }
   // `lead` is shown first, in place of the opening line: the reason this
   // search started, when it was not the user's own tap.
   function startSearchLines(lead) {
@@ -251,6 +281,7 @@
       searchIdx = (searchIdx + 1) % SEARCH_KEYS.length;
       searchLine.textContent = t(SEARCH_KEYS[searchIdx]);
     }, 2600);
+    quietTimer = setTimeout(showQuietHint, QUIET_AFTER_MS);
   }
 
   // ---------------------------------------------------------------------------

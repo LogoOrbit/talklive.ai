@@ -1267,8 +1267,10 @@
     font-size: 10.5px;
     border: 2px solid var(--bg-2);
   }
-  /* Clear the bar, so the last thing on the page is never parked under it. */
-  .app { padding-bottom: calc(var(--tl-navbar) + var(--tl-s2) + env(safe-area-inset-bottom, 0px)); }
+  /* Clear the bar, so the last thing on the page is never parked under it.
+     Only where there is a bar: /chat has none, and this left a dead strip
+     under its message box. */
+  .app:has(.tl-nav) { padding-bottom: calc(var(--tl-navbar) + var(--tl-s2) + env(safe-area-inset-bottom, 0px)); }
 }
 
 /* --- Desktop: the nav is a column. --------------------------------------- */
@@ -3587,7 +3589,7 @@
  * ======================================================================== */
 
 @media (max-width: 859px) {
-  .side-panel:not(.chat-side-panel) {
+  body:has(.tl-nav) .side-panel:not(.chat-side-panel) {
     height: calc(100dvh - var(--tl-navbar) - env(safe-area-inset-bottom, 0px));
     border-bottom: 1px solid var(--tl-line);
   }
@@ -3746,3 +3748,87 @@
 .avatar-animal { display: inline-grid; place-items: center; flex: 0 0 auto; }
 .avatar-animal svg { width: 100%; height: 100%; }
 .chat-head-av { flex: 0 0 auto; padding: 0; border: 0; background: none; cursor: pointer; display: grid; place-items: center; border-radius: 50%; }
+
+/* ===========================================================================
+ * 22. THEY ASKED FIRST
+ * ---------------------------------------------------------------------------
+ * The in-call Add friend button turns into "Accept" when the person on the
+ * other end has already sent a request (app.js, syncAddFriendBtn).
+ * ======================================================================== */
+.action-btn.is-incoming {
+  background: linear-gradient(135deg, var(--green), color-mix(in srgb, var(--green) 60%, var(--accent-2)));
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--green) 55%, transparent);
+  animation: tl-incoming-pulse 1.8s ease-out infinite;
+}
+.call-action-wrap:has(.is-incoming) .action-label { color: var(--green); }
+@keyframes tl-incoming-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--green) 55%, transparent); }
+  70%, 100% { box-shadow: 0 0 0 12px transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .action-btn.is-incoming { animation: none; }
+}
+
+/* ===========================================================================
+ * 23. CHAT HEADERS KEEP THE NAME
+ * ---------------------------------------------------------------------------
+ * Call, read receipts, mute, clear and close left the person's name three
+ * letters wide ("Noo…"). The receipts control keeps its double tick - lit
+ * when on, dimmed and struck through when off - and drops the mini switch.
+ * ======================================================================== */
+.chat-header-actions { gap: 2px; flex: 0 0 auto; }
+.chat-header-actions .seen-toggle {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  justify-content: center;
+  border-radius: 50%;
+}
+.chat-header-actions .seen-toggle-switch { display: none; }
+.chat-header-actions .seen-toggle.is-off::after {
+  content: "";
+  position: absolute;
+  width: 20px;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  transform: rotate(-45deg);
+}
+
+/* The docked chat window (desktop) sits under any full-height panel opened
+   over it - Friends, History, a profile - instead of floating on top of the
+   panel and hiding half of it. Closing the panel brings it back. */
+@media (min-width: 768px) {
+  body:has(.side-panel.open:not(.chat-side-panel)) .chat-side-panel { z-index: 58; }
+}
+
+/* ===========================================================================
+ * 24. LONG NAMES
+ * ---------------------------------------------------------------------------
+ * Display names run to 24 characters with no spaces required. Every place a
+ * name is printed either truncates it or wraps it inside its own box - it
+ * used to run under the top bar's buttons on /chat, off both edges of the
+ * call screen and out of the side of toasts.
+ * ======================================================================== */
+.nav-peer-id, .nav-peer-name { max-width: 100%; }
+#topPartnerName { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.partner-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chat-empty-title,
+.msg.system,
+.tl-toast,
+.social-toast,
+.notif-item-text,
+.friend-profile-name { overflow-wrap: anywhere; }
+
+/* Filters: the Clear / Save row sat flush against both edges of the panel
+   (the panel dropped its own padding for the header and body, and the footer
+   never got any back). */
+.tl-panel > .side-panel-footer {
+  padding: var(--tl-s3) var(--tl-s4) calc(var(--tl-s3) + env(safe-area-inset-bottom, 0px));
+}

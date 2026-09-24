@@ -1503,9 +1503,14 @@ clearFiltersBtn.addEventListener('click', () => {
 // --- Add Friend: sends a real friend request to the current call partner.
 // Works the same whether the partner is a temporary (guest) user or signed in -
 // friendship is keyed by their persistent clientId either way. ---
+// Every add path (profile sheet, friend ID, history) shares the one result
+// event. Only a request sent from this button is answered here, or a refusal
+// from the profile sheet was reported twice and re-enabled this button.
+let callAddPending = false;
 addFriendBtn.addEventListener('click', () => {
   if (!currentPartner || !currentPartner.clientId) return;
   if (addFriendBtn.classList.contains('added')) return; // already sent to this partner
+  callAddPending = true;
   socket.emit('friend-request', { targetClientId: currentPartner.clientId });
   addFriendBtn.classList.add('added');
   addFriendBtn.disabled = true;
@@ -1519,32 +1524,44 @@ addFriendBtn.addEventListener('click', () => {
 // two of you: a friend, or someone you have asked, is not someone to ask again.
 // It used to reset to "Add friend" on every match - call-backs included, which
 // are mostly with friends - and tapping it sent a pointless request.
+//
+// And when they asked first, it says so: the request used to arrive as a toast
+// and a badge on a panel the call screen hides, while the button right in
+// front of you still read "Add friend". Now it reads "Accept" and lights up;
+// tapping it sends the request that the server turns into the acceptance.
+const addFriendLabel = addFriendBtn.closest('.call-action-wrap')?.querySelector('.action-label');
 function syncAddFriendBtn() {
   const id = currentPartner && currentPartner.clientId;
-  if (!id) return;
-  const known = friendsData.some((f) => f.clientId === id)
-    || sentRequestsData.some((r) => r.clientId === id);
+  const known = !!id && (friendsData.some((f) => f.clientId === id)
+    || sentRequestsData.some((r) => r.clientId === id));
+  const theyAsked = !!id && !known && friendRequestsData.some((r) => r.clientId === id);
   if (known) {
     addFriendBtn.classList.add('added');
     addFriendBtn.disabled = true;
   }
+  addFriendBtn.classList.toggle('is-incoming', theyAsked);
+  const label = t(theyAsked ? 'accept' : 'addFriend');
+  addFriendBtn.title = label;
+  addFriendBtn.setAttribute('aria-label', theyAsked ? t('acceptFriendFrom', { name: currentPartner.username || t('stranger') }) : label);
+  if (addFriendLabel) addFriendLabel.textContent = label;
 }
 
 socket.on('friend-request-result', ({ ok, error, accepted, alreadyFriends }) => {
-  if (!ok && error) {
-    showError(error);
-    // Refused (blocked, restricted, rate-limited): the button went quiet on
-    // the tap, so give it back rather than leave it claiming a request exists.
-    addFriendBtn.classList.remove('added');
-    addFriendBtn.disabled = !(callState === 'connected');
-  }
+  const fromCallBtn = callAddPending;
+  callAddPending = false;
   if (ok && alreadyFriends) showToast(t('alreadyFriendsMsg'));
-  // Both sides tapped "Add friend": the server turned the second request into
-  // an acceptance, so say so instead of leaving a "Request sent" on screen.
+  // They had already asked: the server turned this request into an
+  // acceptance, whichever button sent it, so say so instead of "Request sent".
   if (ok && accepted) {
     showToast(t('nowFriends'));
     playFriendAddedSound();
   }
+  if (!fromCallBtn || ok || !error) return;
+  showError(error);
+  // Refused (blocked, restricted, rate-limited): the button went quiet on
+  // the tap, so give it back rather than leave it claiming a request exists.
+  addFriendBtn.classList.remove('added');
+  addFriendBtn.disabled = !(callState === 'connected');
 });
 
 // --- Public friend ID -------------------------------------------------------
@@ -1863,7 +1880,7 @@ friendsOverlay.addEventListener('click', () => {
   closeSidePanel(friendsDropdown, friendsOverlay);
   updateScrollLock();
 });
-friendProfileOverlay.addEventListener('click', () => closeSidePanel(friendProfileModal, friendProfileOverlay));
+friendProfileOverlay.addEventListener('click', () => dismissFriendProfile());
 friendChatOverlay.addEventListener('click', () => {
   closeSidePanel(friendChatModal, friendChatOverlay);
   activeFriendChatId = null;
@@ -2205,7 +2222,9 @@ function renderSettingsIdentity() {
   if (tempUsernameInput && document.activeElement !== tempUsernameInput) {
     tempUsernameInput.value = currentDisplayName();
     tempUsernameInput.disabled = false;
-    tempUsernameInput.placeholder = t('tempUsernamePlaceholder');
+    // No chosen name yet: show the one the server gave out, which is what
+    // everyone this user meets actually sees - an empty box hid it.
+    tempUsernameInput.placeholder = (myProfile && myProfile.username) || t('tempUsernamePlaceholder');
   }
   syncSaveNameBtn();
 }
@@ -3643,8 +3662,22 @@ function openUserProfile(person) {
   friendProfilePending.classList.toggle('hidden', relation !== 'pending');
   if (friendProfileCancelBtn) friendProfileCancelBtn.classList.toggle('hidden', relation !== 'pending');
 
+  // Opened from the Friends panel: closing the profile goes back there, not
+  // all the way out to the screen underneath.
+  profileBackToFriends = friendsDropdown.classList.contains('open') || (profileBackToFriends && friendProfileModal.classList.contains('open'));
   closeSidePanel(friendsDropdown, friendsOverlay);
   openSidePanel(friendProfileModal, friendProfileOverlay);
+}
+
+let profileBackToFriends = false;
+// Dismissing the profile (X, the backdrop, Back/Escape) - as opposed to an
+// action in it that goes somewhere else, which closes it directly.
+function dismissFriendProfile() {
+  closeSidePanel(friendProfileModal, friendProfileOverlay);
+  if (!profileBackToFriends) return;
+  profileBackToFriends = false;
+  renderFriendsList();
+  openSidePanel(friendsDropdown, friendsOverlay);
 }
 
 // Their public ID under their name, with a copy button: the way to find
@@ -3746,7 +3779,7 @@ function openFriendProfile(friendClientId) {
   openUserProfile(friend);
 }
 
-closeFriendProfileBtn.addEventListener('click', () => closeSidePanel(friendProfileModal, friendProfileOverlay));
+closeFriendProfileBtn.addEventListener('click', () => dismissFriendProfile());
 
 const friendProfileMet = document.getElementById('friendProfileMet');
 const friendProfileCallBtn = document.getElementById('friendProfileCallBtn');
@@ -4130,9 +4163,16 @@ function markRequestsSeen() {
 // The requests list (friend requests, accepted-friend confirmations, call-back
 // requests) lives at the top of the Friends dropdown; new message notifications
 // surface as unread badges on the Friends button/list instead.
+const requestsSubhead = document.getElementById('requestsSubhead');
 function renderNotifications() {
   const visible = requestRows();
   notifList.classList.toggle('no-requests', visible.length === 0);
+  // "Waiting on you" is true of a request or a call-back to answer; above
+  // nothing but news ("Sam accepted your request") it read as an unanswered ask.
+  if (requestsSubhead) {
+    const asks = visible.some((n) => n.type === 'friend_request' || n.type === 'call_back_request');
+    requestsSubhead.textContent = t(asks || !visible.length ? 'waitingOnYou' : 'updates');
+  }
 
   if (visible.length === 0) {
     notifList.innerHTML = `<p class="tl-empty">${escapeHtml(t('noRequestsYet'))}</p>`;
@@ -5292,6 +5332,7 @@ function renderReferralStats() {
 socket.on('profile', (profile) => {
   myProfile = profile;
   renderRailOnline();
+  renderSettingsIdentity();
 });
 
 socket.on('identity-token', ({ clientId, token } = {}) => {
@@ -5455,6 +5496,13 @@ const brandHome = document.getElementById('brandHome');
 // the browser asks before dropping it.
 if (brandHome) {
   brandHome.addEventListener('click', () => {
+    // On the call screen or in Settings the logo means what Home means - and
+    // Home asks before ending a live call. Navigating away here dropped the
+    // call with no question asked.
+    if (navHomeBtn && (settingsIsOpen() || !callPanel.classList.contains('hidden'))) {
+      navHomeBtn.click();
+      return;
+    }
     if (location.pathname !== '/') { location.href = '/'; return; }
     reloadPage();
   });
@@ -7811,7 +7859,7 @@ function closeTopmostLayer() {
   if (settingsIsOpen()) { closeAppSettings(); return true; }
   if (filtersPanel.classList.contains('open')) { closeFilters(); return true; }
   if (friendChatModal.classList.contains('open')) { closeSidePanel(friendChatModal, friendChatOverlay); activeFriendChatId = null; return true; }
-  if (friendProfileModal.classList.contains('open')) { closeSidePanel(friendProfileModal, friendProfileOverlay); return true; }
+  if (friendProfileModal.classList.contains('open')) { dismissFriendProfile(); return true; }
   if (friendsDropdown.classList.contains('open')) { closeSidePanel(friendsDropdown, friendsOverlay); updateScrollLock(); return true; }
   if (historyPanel.classList.contains('open')) { closeHistoryPanel(); return true; }
   if (!callBackBanner.classList.contains('hidden')) { callBackDeclineBtn.click(); return true; }
@@ -7832,9 +7880,20 @@ window.addEventListener('popstate', async () => {
   // second entry for the same press and skip a page.
   if (settingsIsOpen() && location.pathname !== '/settings') { closeAppSettings(true); return; }
   if (closeTopmostLayer()) { primeBackGuard(); updateScrollLock(); return; }
+  // Still only looking for someone: there is no call to lose, so Back just
+  // stops the search and goes back - asking "End the call?" of a search read
+  // as though someone were on the line.
+  if (callState === 'searching' && !callPanel.classList.contains('hidden')) {
+    cancelOutgoingCallBack();
+    socket.emit('leave');
+    resetUI();
+    wentHomeFromACall();
+    primeBackGuard();
+    return;
+  }
   // On (or entering) a call: never exit silently - confirm ending first.
   const onCall = callState === 'connected' || callState === 'connecting'
-    || callState === 'reconnecting' || callState === 'searching';
+    || callState === 'reconnecting';
   if (onCall) {
     primeBackGuard();
     if (endCallConfirmOpen) return;
@@ -7925,7 +7984,7 @@ if (navHomeBtn) {
     if (settingsIsOpen()) closeAppSettings();
     if (!callPanel.classList.contains('hidden')) {
       const live = callState === 'connected' || callState === 'connecting'
-        || callState === 'reconnecting' || callState === 'searching';
+        || callState === 'reconnecting';
       // Never drop a live call on a nav tap without asking - the same question
       // the Back button asks, so the two ways out of a call behave alike.
       if (live) {
@@ -7939,6 +7998,12 @@ if (navHomeBtn) {
           wentHomeFromACall();
         });
         return;
+      }
+      // Searching: leave the queue on the server too, or this user stays in
+      // it and gets matched from a screen that is no longer listening.
+      if (isSearching) {
+        cancelOutgoingCallBack();
+        socket.emit('leave');
       }
       resetUI();
       wentHomeFromACall();
@@ -8252,7 +8317,7 @@ function buildSearchResults(raw) {
   const interest = raw.trim().slice(0, 40);
   const exactCountry = out.some((r) => r.kind === 'country' && out[0] === r);
   if (interest.length >= 2 && !id && !exactCountry) {
-    const online = onlinePeople.filter((p) => (p.interests || []).some((i) => String(i).toLowerCase() === q)).length;
+    const online = onlineOthers().filter((p) => (p.interests || []).some((i) => String(i).toLowerCase() === q)).length;
     out.push({ kind: 'interest', interest, online });
   }
   return out;
@@ -8271,7 +8336,7 @@ function searchResultHtml(r, i) {
       <span class="nav-search-result-text"><strong>${escapeHtml(t('searchFindId', { id: r.id }))}</strong><small>${escapeHtml(t('searchFindIdSub'))}</small></span></button>`;
   }
   if (r.kind === 'country') {
-    const here = onlinePeople.filter((p) => p.countryCode === r.code).length;
+    const here = onlineOthers().filter((p) => p.countryCode === r.code).length;
     return `${open}<span class="nav-search-result-icon">${getFlagImg(r.code, 22)}</span>
       <span class="nav-search-result-text"><strong>${escapeHtml(t('searchTalkIn', { country: getCountryName(r.code) }))}</strong><small>${escapeHtml(here ? t('searchOnlineThere', { n: here }) : t('searchCountrySub'))}</small></span></button>`;
   }
@@ -8526,12 +8591,16 @@ let onlinePeople = [];
 
 // Anyone sharing an interest with this user comes first: that is the one
 // thing on this list that makes a conversation more likely to go somewhere.
+function onlineOthers() {
+  const myName = myProfile && myProfile.username;
+  return myName ? onlinePeople.filter((p) => p.username !== myName) : onlinePeople;
+}
+
 function filteredOnlinePeople() {
   // The list is the same broadcast for everyone, so it has this visitor in it
   // too - and "tap anyone to find a match" should never offer yourself. It
   // carries no ids, so the (stable, per-visitor) username is what identifies us.
-  const myName = myProfile && myProfile.username;
-  const others = myName ? onlinePeople.filter((p) => p.username !== myName) : onlinePeople;
+  const others = onlineOthers();
   const list = !onlineQuery ? others : others.filter((p) => [p.username, p.country, p.countryCode, getCountryName(p.countryCode), ...(p.interests || [])]
     .some((v) => String(v || '').toLowerCase().includes(onlineQuery)));
   return list
@@ -8920,7 +8989,8 @@ function cancelOutgoingCallBack() {
 }
 
 async function requestCallBack(targetClientId, targetUsername, opts = {}) {
-  if (isSearching) {
+  // Already ringing someone: one outgoing call at a time.
+  if (outgoingCallBack) {
     restoreCallbackSpinner();
     showError(t('errFinishCall'));
     return;
@@ -8930,6 +9000,22 @@ async function requestCallBack(targetClientId, targetUsername, opts = {}) {
     restoreCallbackSpinner();
     showToast(t('callbackCooldown', { s: Math.ceil(waitMs / 1000) }));
     return;
+  }
+  // Waiting in the random queue is not a call - calling a friend simply takes
+  // this user out of it. A live call is: ask before ending it, the way
+  // accepting an incoming call-back does. Refusing outright left anyone with
+  // "find me someone new" ticked unable to ever call a friend.
+  if (isSearching) {
+    if (callState === 'connected') {
+      const name = targetUsername || t('stranger');
+      const ok = await showConfirm({
+        title: 'callSwitchTitle', text: 'callSwitchOutText', textVars: { name },
+        okKey: 'callSwitchConfirm', cancelKey: 'keepTalking', okClass: 'btn-danger',
+      });
+      if (!ok) { restoreCallbackSpinner(); return; }
+    }
+    socket.emit('leave');
+    goIdleOnCallScreen();
   }
   clearError();
   try {

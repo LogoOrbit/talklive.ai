@@ -370,3 +370,14 @@
     100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
   }
 }
+
+/* The long-wait note under the search line (chat.js, showQuietHint). */
+.search-quiet { max-width: 320px; margin: 4px auto 14px; text-align: center; }
+.search-quiet.hidden { display: none; }
+.search-quiet p { margin: 0 0 12px; color: var(--muted); font-size: 13.5px; line-height: 1.5; }
+.search-quiet-share {
+  min-height: 40px; padding: 0 18px; border: 1px solid var(--accent); border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--text);
+  font: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+}
+.search-quiet-share:hover { background: color-mix(in srgb, var(--accent) 24%, transparent); }
