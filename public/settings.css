@@ -504,6 +504,9 @@ html:not(.tl-set-css) .tl-set-page { visibility: hidden; }
   font-weight: 700;
   line-height: 1.2;
   text-align: center;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
   cursor: pointer;
   transition: color 0.25s, background 0.25s;
 }
