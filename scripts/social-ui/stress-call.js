@@ -33,7 +33,7 @@ const { ok, wait, ID } = H;
 
   let s = await snap();
   ok('initial badge = 2 unread + request + accepted', s.badge === 4, JSON.stringify(s));
-  ok('Ben row shows 2 unread', /Ben.* 2 /.test(s.friends[0] || ''), s.friends);
+  ok('Ben row shows 2 unread', /^Ben\b.*\s2\s*$/.test(s.friends[0] || ''), s.friends);
   ok('tab title carries the count', /^\(4\) /.test(s.title), s.title);
   ok('requests tab counts only what waits on me', s.reqTab === 2, s.reqTab);
 

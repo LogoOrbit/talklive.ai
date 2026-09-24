@@ -24,7 +24,7 @@ for (let i = 0; i < N; i++) {
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tl-load-'));
 fs.writeFileSync(path.join(dir, 'owner-data.json'), JSON.stringify({ social: { friends, chatHistory: hist, friendChats: {}, notifications: {}, friendRequests: {}, sentRequests: {}, blocks: {}, lastSeen: {}, blockMeta: {}, chatClears: {} } }));
 const PORT = 6899;
-const srv = spawn(process.execPath, [REPO + '/server/index.js'], { env: { ...process.env, PORT: String(PORT), DATA_DIR: dir, NODE_ENV: 'development' }, stdio: ['ignore', 'pipe', 'pipe'] });
+const srv = spawn(process.execPath, [REPO + '/server/index.js'], { env: { ...process.env, PORT: String(PORT), DATA_DIR: dir, NODE_ENV: 'development', IDENTITY_SECRET: 'social-load-secret' }, stdio: ['ignore', 'pipe', 'pipe'] });
 const logs = []; srv.stderr.on('data', (d) => logs.push(String(d)));
 (async () => {
   const base = `http://127.0.0.1:${PORT}`;
@@ -37,7 +37,9 @@ const logs = []; srv.stderr.on('data', (d) => logs.push(String(d)));
     s.on('friend-message', () => s.got++);
     s.on('notification', (n) => { if (n.type === 'message') s.notifs++; });
     s.on('state-sync', () => s.syncs++);
-    s.emit('register', { clientId: id(i), nickname: 'U' + i });
+    // Seeded identities own friends, so each signs in with its token.
+    const token = require('crypto').createHmac('sha256', 'social-load-secret').update(id(i)).digest('hex');
+    s.emit('register', { clientId: id(i), identityToken: token, nickname: 'U' + i });
     socks.push(s);
     if (i % 50 === 0) await wait(50);
   }

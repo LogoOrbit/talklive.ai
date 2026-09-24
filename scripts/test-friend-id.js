@@ -30,12 +30,21 @@ function once(sock, ev, ms = 4000) {
 
 const lastSync = new WeakMap();
 
+// The signed identity token each clientId was issued, sent back on every
+// later register exactly as a browser does - an identity that owns anything
+// is not handed over without it.
+const identityTokens = {};
+function rememberToken(sock) {
+  sock.on('identity-token', ({ clientId, token } = {}) => { identityTokens[clientId] = token; });
+}
+
 // Connects and registers; resolves with the socket and the ID it was given.
 async function connect(clientId, extra = {}) {
   const sock = io(BASE, { transports: ['websocket'], forceNew: true });
   sock.on('state-sync', (s) => lastSync.set(sock, s));
+  rememberToken(sock);
   const idEvent = once(sock, 'friend-id');
-  sock.emit('register', { clientId, nickname: clientId, gender: 'male', ...extra });
+  sock.emit('register', { clientId, identityToken: identityTokens[clientId], nickname: clientId, gender: 'male', ...extra });
   if (extra.sessionToken) sock.emit('resume-session', { token: extra.sessionToken });
   return { sock, id: await idEvent };
 }
@@ -111,6 +120,22 @@ async function waitUp() {
     a.sock.emit('friend-request', { targetClientId: 'c_fid_nobody_met' });
     ok('without an ID a stranger still cannot be added', (await strangerRefused).ok === false);
 
+    // --- Friends are unlimited for everyone ------------------------------
+    const crowd = [];
+    for (let i = 0; i < 7; i++) crowd.push(await connect(`c_fid_crowd_${i}`, { freshSession: true }));
+    for (const [i, p] of crowd.entries()) {
+      const res = once(a.sock, 'friend-request-result');
+      a.sock.emit('friend-request', { targetClientId: `c_fid_crowd_${i}`, friendId: p.id.friendId });
+      await res;
+      const accepted = once(p.sock, 'friend-request-result');
+      p.sock.emit('friend-request', { targetClientId: 'c_fid_alpha' });
+      ok(`crowd member ${i} becomes a friend`, (await accepted).accepted === true);
+    }
+    await wait(300);
+    const friendCount = ((lastSync.get(a.sock) || {}).friends || []).filter((f) => f.clientId.startsWith('c_fid_crowd_')).length;
+    ok('a free user can have more than 5 friends', friendCount === 7, friendCount);
+    crowd.forEach((p) => p.sock.disconnect());
+
     // --- Guest ID lifetime -----------------------------------------------
     const oldGuestId = b.id.friendId;
     b.sock.disconnect();
@@ -122,6 +147,22 @@ async function waitUp() {
     const bRelaunch = await connect('c_fid_bravo', { freshSession: true });
     ok('a new app session gets a new guest ID', bRelaunch.id.friendId !== oldGuestId);
     ok('the closed session\'s ID no longer resolves', (await search(a.sock, oldGuestId)).ok === false);
+
+    // --- Guest name stability -------------------------------------------
+    // 'register' is re-sent on every call start and reconnect. A guest with no
+    // nickname must keep the generated name, or the stranger sees one name in
+    // the call and another on the friend request.
+    const g = io(BASE, { transports: ['websocket'], forceNew: true });
+    const firstName = once(g, 'profile');
+    const token = once(g, 'identity-token');
+    g.emit('register', { clientId: 'c_fid_guestname', gender: 'male' });
+    const name1 = (await firstName).username;
+    const identityToken = (await token).token;
+    const secondName = once(g, 'profile');
+    g.emit('register', { clientId: 'c_fid_guestname', identityToken, gender: 'male' });
+    const name2 = (await secondName).username;
+    ok('a guest keeps its generated name across re-registers', !!name1 && name1 === name2, `${name1} vs ${name2}`);
+    g.disconnect();
 
     // --- Accounts --------------------------------------------------------
     const signedUp = once(a.sock, 'signup-result');

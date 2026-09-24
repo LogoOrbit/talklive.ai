@@ -59,7 +59,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "youAsked": "You asked",
     "noSentRequests": "You have not sent any requests.",
     "yourFriendId": "Your ID",
-    "guestFriendIdNote": "Temporary - it goes away when you close the app. Sign in to keep one for good.",
+    "guestFriendIdNote": "Temporary. Sign in to keep it.",
     "copyFriendId": "Copy",
     "shareFriendId": "Share",
     "friendIdShareText": "Add me on TalkLive - my ID is {id}",
@@ -82,8 +82,6 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "friendChip": "Friend",
     "addShort": "Add",
     "shareMyId": "Share my ID",
-    "noFriendsMatch": "No friends match “{q}”.",
-    "friendsFilterPlaceholder": "Search friends by name or country",
     "suggestedTitle": "People you've met",
     "suggestedHint": "You had a good talk with them. Add them before they get lost in your history.",
     "searchResults": "Search results",
@@ -117,6 +115,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "confirmClearChat": "Clear this conversation? It is removed for you only - they keep their copy.",
     "chatCleared": "Chat cleared",
     "errCantMessage": "This message could not be sent. You can no longer message this person.",
+    "msgNotSentRetry": "Not sent · Tap to retry",
     "someone": "Someone",
     "catBilling": "Coins & Billing",
     "skipToContent": "Skip to main content",
@@ -465,7 +464,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "callSafetyLink": "How it works",
     "noteFreeCare": "We work on it every day to make this the smoothest, cleanest way to talk to new people anywhere in the world - fast connections and a simple design, built with care.",
     "noteFreeSign": "Enjoy your talks. - The TalkLive team",
-    "filtersPremiumBody": "Free includes up to 3 countries per list. Premium will unlock gender filters, unlimited country lists, unlimited friends, instant rematching and no ads - it is coming soon.",
+    "filtersPremiumBody": "Free includes up to 3 countries per list. Premium will unlock gender filters, unlimited country lists, instant rematching and no ads - it is coming soon.",
     "adAria": "Sponsored advertisement",
     "adHide": "Hide advertisement for 24 hours",
     "accountGuestHint": "Sign in to keep your name, avatar and friends on any device.",
@@ -503,6 +502,16 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "renameFriendSaved": "Renamed to {name}",
     "renameFriendCleared": "Their own name is back",
     "realName": "Really {name}",
+    "searchFriends": "Search friends",
+    "noFriendsMatch": "No friends match that.",
+    "pinFriend": "Pin",
+    "unpinFriend": "Unpin",
+    "friendPinned": "{name} pinned to the top",
+    "friendUnpinned": "{name} unpinned",
+    "muteChat": "Mute notifications",
+    "unmuteChat": "Unmute notifications",
+    "chatMuted": "Muted. Messages still arrive, silently.",
+    "chatUnmuted": "Notifications back on",
     "strangerTyping": "Stranger is typing",
     "seen": "Seen",
     "messageSeen": "Read receipts (Seen)",
@@ -566,7 +575,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "connReported": "Reported",
     "connCalling": "Calling",
     "connFriendEnded": "Call ended",
-    "statusFriendEnded": "Your friend ended the call.",
+    "statusFriendEnded": "They ended the call.",
     "statusPartnerHungUp": "Your partner hung up.",
     "convoGuideTitle": "How to have a great talk",
     "convoTip1": "Smile first - it changes your voice.",
@@ -625,7 +634,6 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "navPremiumSub": "More control. Better matches. A safer experience.",
     "navPremiumCta": "See what is coming",
     "premiumPerkGender": "Gender & country filters",
-    "premiumPerkFriends": "Unlimited friends and favourites",
     "premiumPerkAds": "No ads",
     "notifyMe": "Notify me",
     "notifyDone": "We will tell you",
@@ -815,7 +823,6 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "premiumComingSoon": "Premium is coming soon - it is not on sale yet, and everything on TalkLive stays free in the meantime.",
     "premiumGenderLocked": "The gender filter is a Premium feature.",
     "premiumCountryLimit": "The free plan allows up to {n} countries per list.",
-    "premiumFriendLimit": "The free plan allows up to {n} friends.",
     "friendOnlineToast": "{name} from {country} is online",
     "friendOnlineToastNoCountry": "{name} is online",
     "micPromptTitle": "Allow microphone access",
@@ -974,7 +981,7 @@ function applyI18n() {
 // Non-English dictionaries load on demand from /i18n/<lang>.js. Until the file
 // arrives t() falls back to English, then the UI re-translates once it lands.
 // Keep in step with the preload snippet in the <head> of index.html/chat.html.
-const I18N_VERSION = '20260923safety';
+const I18N_VERSION = '20260923qa';
 const i18nLoading = {};
 window.__i18nLangLoaded = function (lang) {
   delete i18nLoading[lang];

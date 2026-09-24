@@ -2646,6 +2646,26 @@ body.panel-open .game-overlay {
 .chat-msg-ticks.sending svg { opacity: 0.5; }
 .chat-msg-ticks.sent svg { fill: rgba(255,255,255,0.9); opacity: 1; }
 
+/* Direct messages on their way to the server, and ones that never got there. */
+.chat-msg.me.is-pending { opacity: 0.72; }
+.chat-msg.me.is-failed {
+  opacity: 0.8;
+  background: linear-gradient(135deg, #8a3b4a, #6d2c3a);
+}
+.chat-msg-retry {
+  align-self: flex-end;
+  margin: -2px 2px 2px;
+  padding: 2px 4px;
+  border: 0;
+  background: none;
+  color: #ff7a8a;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.chat-msg-retry:hover, .chat-msg-retry:focus-visible { text-decoration: underline; }
+
 /* "Seen" label under the last message I sent, once the friend has viewed it. */
 .chat-seen-label {
   align-self: flex-end;
@@ -6632,7 +6652,10 @@ html.perf-lite .side-panel { box-shadow: none; }
 .chat-head-status.is-online { color: var(--green, #2ed47a); }
 .chat-head-status.is-typing { color: var(--accent); font-style: italic; }
 
-.friend-item-info { flex: 1 1 auto; min-width: 0; }
+/* Basis 0, not auto: the preview line is flex-basis 100% inside, so an auto
+   basis measured the whole preview on one line and wrapped the info onto its
+   own row, stacking avatar, name and buttons vertically. */
+.friend-item-info { flex: 1 1 0; min-width: 0; }
 .friend-item-preview {
   flex-basis: 100%;
   min-width: 0;
@@ -7030,6 +7053,91 @@ html.perf-lite .side-panel { box-shadow: none; }
   font-size: 13px;
   flex-shrink: 0;
 }
+
+/* --- Friends list as an inbox ---------------------------------------------
+   One tidy row per friend: avatar with a presence dot, name and time on the
+   first line, the last message (or where they are) on the second, the two
+   round actions at the end. The info block used to take its max-content
+   width, which pushed the buttons onto a line of their own on phones. */
+.friends-dropdown .friend-item {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.friends-dropdown .friend-item:hover { background: rgba(255, 255, 255, 0.07); }
+.friend-item.has-unread { border-color: rgba(255, 84, 112, 0.35); }
+.friends-dropdown .friend-item-info {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  flex-wrap: nowrap;
+  border-radius: 8px;
+  outline: none;
+}
+.friends-dropdown .friend-item-info:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
+.friend-item-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.friend-item-line .friend-item-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 14px;
+}
+.friend-item-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.friend-item-time {
+  flex: none;
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.friend-item-time.is-unread { color: var(--danger); font-weight: 700; }
+.friend-item-line .friend-item-preview,
+.friend-item-line .friend-status-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.friend-item-line .friend-status-text { text-transform: none; font-weight: 600; font-size: 12px; }
+.friend-item-line .friend-status-text.is-offline { color: var(--muted); }
+.friend-item-line .unread-badge { flex: none; }
+.friends-dropdown .friend-avatar-btn {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  overflow: visible;
+}
+.friend-presence-dot {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #4a5068;
+  border: 2px solid var(--bg-2, #111729);
+}
+.friend-presence-dot.is-online { background: #2ed47a; box-shadow: 0 0 6px rgba(46, 212, 122, 0.6); }
+.friend-item .friend-call-later-btn { flex-basis: 100%; }
+[data-theme="light"] .friends-dropdown .friend-item:hover { background: rgba(20, 30, 70, 0.05); }
+/* Rename, Pin and Remove share one row; on a phone the three no longer fit,
+   so the row wraps instead of pushing "Remove friend" out of the card. */
+.profile-actions-manage { flex-wrap: wrap; }
+.profile-actions-manage .btn { min-width: max-content; }
 
 /* ===========================================================================
  * Friends & discovery (main app only - /chat does not load this file)
