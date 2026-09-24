@@ -809,6 +809,7 @@
     if (e.key !== 'Escape' && e.key !== 'Esc') return;
     var openModalEl = document.querySelector('.modal-overlay:not(.hidden)');
     if (openModalEl) { closeModal(openModalEl); return; }
+    if (myProfileSheet && myProfileSheet.classList.contains('open')) { closeMyProfile(); return; }
     var openPanelEl = document.querySelector('.side-panel.open');
     if (openPanelEl) { closeAllPanels(); return; }
     if (!composer.classList.contains('hidden')) {
@@ -1288,7 +1289,7 @@
         },
         profileName: function () { return accountNickname || tempUsername || (myProfile && myProfile.username) || ''; },
         profileSub: function () { return t(accountNickname ? 'settingsRowAccount' : 'settingsRowGuest'); },
-        openProfile: function () { leaveChatFor('/?open=profile&from=chat'); },
+        openProfile: function () { openMyProfile(); },
         openAll: function () { leaveChatFor('/settings?from=chat'); },
         saveName: function (value) {
           if (accountNickname) {
@@ -1334,10 +1335,76 @@
       (window.TalkLiveSocial ? window.TalkLiveSocial.face(avatar, 30, myAnimal) : '') + '</span>';
   }
   renderMyFace();
+  // Your face opens your profile in a sheet over whatever is on screen - the
+  // chat and any call carry on underneath. Only "More profile settings" goes
+  // to the landing page's full profile (and asks first mid-chat).
+  var myProfileSheet = null;
+  function closeMyProfile() {
+    if (!myProfileSheet) return;
+    myProfileSheet.classList.remove('open');
+    setTimeout(function () { if (!myProfileSheet.classList.contains('open')) myProfileSheet.classList.remove('shown'); }, 280);
+  }
+  function openMyProfile() {
+    closeAllPanels();
+    if (!myProfileSheet) {
+      myProfileSheet = document.createElement('div');
+      myProfileSheet.className = 'my-profile';
+      myProfileSheet.innerHTML =
+        '<div class="my-profile-backdrop"></div>' +
+        '<section class="my-profile-sheet" role="dialog" aria-modal="true" aria-labelledby="myProfileName" tabindex="-1">' +
+          '<div class="my-profile-grab" aria-hidden="true"></div>' +
+          '<button type="button" class="my-profile-close" data-act="close">&times;</button>' +
+          '<div class="my-profile-face"></div><h2 id="myProfileName" class="my-profile-name"></h2><p class="my-profile-sub"></p>' +
+          '<div class="my-profile-id"><span class="my-profile-id-label"></span><strong class="my-profile-id-value"></strong>' +
+            '<button type="button" class="btn btn-secondary" data-act="copy"></button><button type="button" class="btn btn-primary" data-act="share"></button></div>' +
+          '<div class="my-profile-actions"><button type="button" class="btn btn-secondary" data-act="edit"></button><button type="button" class="btn btn-secondary" data-act="more"></button></div>' +
+        '</section>';
+      document.body.appendChild(myProfileSheet);
+      myProfileSheet.addEventListener('click', function (e) {
+        if (e.target.classList.contains('my-profile-backdrop')) return closeMyProfile();
+        var b = e.target.closest('[data-act]');
+        var act = b && b.dataset.act;
+        if (act === 'close') closeMyProfile();
+        else if (act === 'copy') copyFriendIdBtn.click();
+        else if (act === 'share') shareFriendIdBtn.click();
+        else if (act === 'edit') { closeMyProfile(); $('chatSettingsBtn').click(); }
+        else if (act === 'more') { closeMyProfile(); leaveChatFor('/?open=profile&from=chat'); }
+      });
+      // Drag it down to put it away, as a phone sheet does.
+      var sheet = myProfileSheet.querySelector('.my-profile-sheet');
+      var startY = null;
+      var dy = 0;
+      sheet.addEventListener('touchstart', function (e) { startY = e.touches[0].clientY; dy = 0; }, { passive: true });
+      sheet.addEventListener('touchmove', function (e) {
+        if (startY === null) return;
+        dy = Math.max(0, e.touches[0].clientY - startY);
+        sheet.style.transform = dy ? 'translateY(' + dy + 'px)' : '';
+      }, { passive: true });
+      sheet.addEventListener('touchend', function () {
+        startY = null;
+        sheet.style.transform = '';
+        if (dy > 90) closeMyProfile();
+      });
+    }
+    var q = function (s) { return myProfileSheet.querySelector(s); };
+    q('.my-profile-face').innerHTML = window.TalkLiveSocial ? window.TalkLiveSocial.face(localStorage.getItem('talklive_avatar'), 84, myAnimal) : '';
+    q('.my-profile-name').textContent = accountNickname || tempUsername || (myProfile && myProfile.username) || t('you');
+    q('.my-profile-sub').textContent = t('friends') + ': ' + friendsState.friends.length;
+    q('.my-profile-id-label').textContent = t('yourFriendId');
+    q('.my-profile-id-value').textContent = myFriendId || '…';
+    q('[data-act="copy"]').textContent = t('copyFriendId');
+    q('[data-act="share"]').textContent = t('shareFriendId');
+    q('[data-act="edit"]').textContent = t('settings');
+    q('[data-act="more"]').textContent = t('moreProfileSettings');
+    q('.my-profile-close').setAttribute('aria-label', t('close'));
+    myProfileSheet.classList.add('shown');
+    requestAnimationFrame(function () { requestAnimationFrame(function () { myProfileSheet.classList.add('open'); }); });
+    try { q('.my-profile-sheet').focus({ preventScroll: true }); } catch (e) {}
+  }
   if (myFaceBtn) {
     myFaceBtn.addEventListener('click', function () {
       vibrate(10);
-      leaveChatFor('/?open=profile&from=chat');
+      openMyProfile();
     });
   }
   // Back from /settings restores this page from the back/forward cache with

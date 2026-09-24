@@ -1565,3 +1565,22 @@ summary:active {
 .id-edit.hidden { display: none; }
 .id-edit-note { flex: 1 1 100%; margin: 4px 2px 0; font-size: 12px; color: var(--muted); }
 .id-edit-note.is-error { color: var(--danger); }
+
+/* My profile: a sheet over everything, so the chat and any call stay put. */
+.my-profile { position: fixed; inset: 0; z-index: 1600; display: none; }
+.my-profile.shown { display: block; }
+.my-profile-backdrop { position: absolute; inset: 0; background: rgba(5,7,15,.6); opacity: 0; transition: opacity .28s ease; }
+.my-profile-sheet { position: absolute; left: 0; right: 0; bottom: 0; margin: 0 auto; max-width: 560px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; padding: 0 18px calc(22px + env(safe-area-inset-bottom)); background: var(--bg-2); color: var(--text); border-radius: 22px 22px 0 0; box-shadow: 0 -12px 40px rgba(0,0,0,.45); transform: translateY(100%); transition: transform .28s cubic-bezier(.2,.8,.2,1); outline: none; }
+.my-profile.open .my-profile-backdrop { opacity: 1; }
+.my-profile.open .my-profile-sheet { transform: none; }
+.my-profile-grab { width: 42px; height: 5px; border-radius: 3px; background: var(--line); margin: 10px 0 8px; }
+.my-profile-close { position: absolute; top: 10px; right: 12px; width: 36px; height: 36px; border: 0; border-radius: 50%; background: var(--accent-soft); color: inherit; font-size: 22px; cursor: pointer; }
+.my-profile-face { width: 92px; height: 92px; border-radius: 50%; display: grid; place-items: center; background: var(--accent-soft); }
+.my-profile-name { margin: 8px 0 0; font-size: 22px; }
+.my-profile-sub, .my-profile-id-label { margin: 0; color: var(--muted); font-size: 13px; }
+.my-profile-id { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; margin-top: 10px; padding: 10px 12px; border-radius: 14px; background: var(--accent-soft); }
+.my-profile-id-value { letter-spacing: .08em; font-size: 16px; }
+.my-profile-id .btn { padding: 7px 14px; font-size: 13px; }
+.my-profile-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; width: 100%; }
+.my-profile-actions .btn { flex: 1 1 140px; }
+@media (prefers-reduced-motion: reduce) { .my-profile-sheet, .my-profile-backdrop { transition: none; } }
