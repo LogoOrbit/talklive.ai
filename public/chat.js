@@ -2204,7 +2204,6 @@
     focusComposer(friendChatInput);
   }
   function closeFriendChat() {
-    disarmBlock();
     activeFriendChatId = null;
     closePanel(friendChatPanel, friendChatOverlay);
   }
@@ -2213,36 +2212,63 @@
   // Two taps, like Remove: blocking ends the friendship and the conversation
   // for good (until unblocked from the call app's Settings > Privacy).
   var friendChatBlockBtn = $('friendChatBlockBtn');
-  var blockArmed = null;
-  function disarmBlock() {
-    clearTimeout(blockArmed);
-    blockArmed = null;
-    if (!friendChatBlockBtn) return;
-    friendChatBlockBtn.classList.remove('confirm');
-    friendChatBlockBtn.title = t('blockUser');
-    friendChatBlockBtn.setAttribute('aria-label', t('blockUser'));
+  // Blocking is hard to take back in the moment (it ends the chat, drops the
+  // friendship and the history), so it asks first - with what will happen -
+  // rather than acting on a single tap. Built on first use.
+  var blockModal = null;
+  var blockTarget = null;
+  function openBlockConfirm(target) {
+    if (!blockModal) {
+      blockModal = document.createElement('div');
+      blockModal.className = 'modal-overlay hidden';
+      blockModal.innerHTML =
+        '<div class="modal-box" role="alertdialog" aria-modal="true" aria-labelledby="blockConfirmTitle" aria-describedby="blockConfirmText">' +
+          '<div class="modal-header"><h2 id="blockConfirmTitle"></h2>' +
+          '<button type="button" class="modal-close" data-act="cancel">&times;</button></div>' +
+          '<div class="modal-body"><p id="blockConfirmText"></p>' +
+          '<div class="modal-actions">' +
+            '<button type="button" class="btn btn-secondary" data-act="cancel"></button>' +
+            '<button type="button" class="btn btn-danger" data-act="block"></button>' +
+          '</div></div></div>';
+      document.body.appendChild(blockModal);
+      blockModal.addEventListener('click', function (e) {
+        // A tap on the dim backdrop counts as Cancel.
+        var btn = e.target.closest('[data-act]');
+        var act = e.target === blockModal ? 'cancel' : (btn && btn.dataset.act);
+        if (!act) return;
+        closeModal(blockModal);
+        var who = blockTarget;
+        blockTarget = null;
+        if (act === 'block' && who) doBlock(who);
+      });
+    }
+    blockTarget = target;
+    var person = findPerson(target)
+      || (currentPartner && currentPartner.clientId === target ? currentPartner : null);
+    var name = (person && (friendLabel(person) || person.username)) || t('someone');
+    var isFriend = friendsState.friends.some(function (f) { return f.clientId === target; });
+    $('blockConfirmTitle').textContent = t('blockNamed', { name: name });
+    $('blockConfirmText').textContent = t(isFriend ? 'confirmBlockFriend' : 'confirmBlockUser');
+    blockModal.querySelector('.modal-close').setAttribute('aria-label', t('cancel'));
+    blockModal.querySelector('.btn-secondary').textContent = t('cancel');
+    blockModal.querySelector('.btn-danger').textContent = t('block');
+    openModal(blockModal);
+    vibrate(15);
+    blockModal.querySelector('.btn-secondary').focus();
+  }
+  function doBlock(target) {
+    // Blocking the stranger in the live chat ends that chat too.
+    if (partnerHere && currentPartner && currentPartner.clientId === target) {
+      socket.emit('leave');
+      onPartnerLeft({ reason: 'blocked' });
+    }
+    socket.emit('block-friend', { friendClientId: target });
+    if (activeFriendChatId === target) closeFriendChat();
+    socialToast(t('userBlocked'));
   }
   if (friendChatBlockBtn) {
     friendChatBlockBtn.addEventListener('click', function () {
-      var target = activeFriendChatId;
-      if (!target) return;
-      if (!blockArmed) {
-        friendChatBlockBtn.classList.add('confirm');
-        friendChatBlockBtn.title = t('tapAgainToBlock');
-        friendChatBlockBtn.setAttribute('aria-label', t('tapAgainToBlock'));
-        vibrate(15);
-        blockArmed = setTimeout(disarmBlock, 3000);
-        return;
-      }
-      disarmBlock();
-      // Blocking the stranger in the live chat ends that chat too.
-      if (partnerHere && currentPartner && currentPartner.clientId === target) {
-        socket.emit('leave');
-        onPartnerLeft({ reason: 'blocked' });
-      }
-      socket.emit('block-friend', { friendClientId: target });
-      closeFriendChat();
-      socialToast(t('userBlocked'));
+      if (activeFriendChatId) openBlockConfirm(activeFriendChatId);
     });
   }
   friendChatOverlay.addEventListener('click', closeFriendChat);

@@ -175,6 +175,35 @@ async function matchPair(a, b, mode = 'chat') {
     ok('coming back after a real absence is announced', await realToast);
     await wait(300);
 
+    // --- Block keeps the friendship; unblock gives it back -----------------------
+    const blockSync = once(a, 'state-sync');
+    a.emit('block-friend', { friendClientId: B });
+    await blockSync;
+    await wait(150);
+    let sa = lastSync.get(a) || {};
+    ok('blocking removes the friend', !(sa.friends || []).some((f) => f.clientId === B));
+    const row = (sa.blocked || []).find((x) => x.clientId === B) || {};
+    ok('blocked row says it was a friend, without leaking their copy', row.wasFriend === true && !('friendship' in row), JSON.stringify(row));
+    ok('the blocked side loses the friend too', !(((lastSync.get(b) || {}).friends) || []).some((f) => f.clientId === A));
+    // They block back while blocked, then this user unblocks: still blocked.
+    b.emit('block-friend', { friendClientId: A });
+    await wait(300);
+    const unblock1 = once(a, 'unblock-result');
+    a.emit('unblock-user', { targetClientId: B });
+    ok('unblocking while still blocked restores nothing yet', (await unblock1).friendRestored === false);
+    await wait(150);
+    const unblock2 = once(b, 'unblock-result');
+    b.emit('unblock-user', { targetClientId: A });
+    ok('the last unblock restores the friendship', (await unblock2).friendRestored === true);
+    await wait(300);
+    sa = lastSync.get(a) || {};
+    const back = (sa.friends || []).find((f) => f.clientId === B);
+    ok('friend is back on both sides', !!back && (((lastSync.get(b) || {}).friends) || []).some((f) => f.clientId === A));
+    ok('with this user\'s pin kept', back && back.pinned === true, JSON.stringify(back));
+    a.emit('get-friend-chat', { friendClientId: B });
+    const thread = await once(a, 'friend-chat-history');
+    ok('the whole conversation is back', (thread.messages || []).some((m) => m.id === 'mx1'), JSON.stringify(thread).slice(0, 200));
+
     // --- Unmute / restart ------------------------------------------------------
     b.emit('mute-chat', { targetClientId: C, muted: true });
     await wait(300);

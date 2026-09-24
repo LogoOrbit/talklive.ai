@@ -2065,7 +2065,12 @@ function syncClientState(socket, clientId) {
   // tell a blocked person exactly who shut them out.
   const metaMap = blockMeta.get(clientId) || new Map();
   const blockedList = Array.from(blocks.get(clientId) || [])
-    .map((bid) => ({ clientId: bid, ...(metaMap.get(bid) || {}) }))
+    // The kept friendship stays server-side: it holds the other person's own
+    // copy of this one, private nickname included.
+    .map((bid) => {
+      const { friendship, ...shown } = metaMap.get(bid) || {};
+      return { clientId: bid, ...shown, wasFriend: !!friendship };
+    })
     .sort((a, b) => (b.ts || 0) - (a.ts || 0));
   socket.emit('state-sync', {
     friends: friendList,
@@ -2617,10 +2622,28 @@ function endPairingWith(socketId, otherClientId) {
 function blockPair(clientIdA, clientIdB) {
   // Snapshot before anything below forgets who they were.
   const who = snapshotOf(clientIdB, clientIdA);
+  const record = { ...who, ts: Date.now() };
+  // A friendship ends with the block, but it is kept here - both sides' copies,
+  // private nickname and pin included - so unblocking can give it back. The
+  // conversation itself is never deleted by a block, only hidden while it lasts.
+  if (isFriend(clientIdA, clientIdB)) {
+    record.friendship = {
+      mine: { ...friends.get(clientIdA).get(clientIdB) },
+      theirs: { ...friends.get(clientIdB).get(clientIdA) },
+    };
+    removeFriendPair(clientIdA, clientIdB);
+  } else {
+    // Blocked back by someone who had blocked this user as a friend: that
+    // earlier record already holds the friendship to restore.
+    const earlier = (blockMeta.get(clientIdB) || new Map()).get(clientIdA);
+    if (earlier && earlier.friendship && !(blockMeta.get(clientIdA) || new Map()).has(clientIdB)) {
+      record.friendship = { mine: earlier.friendship.theirs, theirs: earlier.friendship.mine };
+    }
+  }
   if (!blocks.has(clientIdA)) blocks.set(clientIdA, new Set());
   blocks.get(clientIdA).add(clientIdB);
   if (!blockMeta.has(clientIdA)) blockMeta.set(clientIdA, new Map());
-  blockMeta.get(clientIdA).set(clientIdB, { ...who, ts: Date.now() });
+  blockMeta.get(clientIdA).set(clientIdB, record);
   // A friend request either way is dead the moment one of them blocks: leaving
   // it would keep the blocker's inbox showing someone they refused, and leave
   // the other side looking at a "Pending" that can never be answered.
@@ -4115,7 +4138,6 @@ io.on('connection', (socket) => {
     // the pair is blocked, which is what "you will also stop seeing each
     // other" in the confirmation promises.
     endPairingWith(socket.id, targetClientId);
-    removeFriendPair(me.clientId, targetClientId);
     blockPair(me.clientId, targetClientId);
     const targetSocketId = clientSockets.get(targetClientId);
     const targetSocket = targetSocketId ? io.sockets.sockets.get(targetSocketId) : null;
@@ -4668,7 +4690,6 @@ io.on('connection', (socket) => {
     if (mine && mine.size >= MAX_BLOCKS && !mine.has(friendClientId)) return;
     store.recordFeature('block');
     endPairingWith(socket.id, friendClientId);
-    removeFriendPair(me.clientId, friendClientId);
     blockPair(me.clientId, friendClientId);
     syncClientState(socket, me.clientId);
     // Their list has lost a friend and any pending request between the two is
@@ -4678,9 +4699,10 @@ io.on('connection', (socket) => {
   });
 
   // Undo a block from Settings > Privacy. Only lifts this user's side: if the
-  // other person blocked them too, that block still stands. The friendship and
-  // history the block removed are not restored - unblocking makes them
-  // reachable again, it does not pretend nothing happened.
+  // other person blocked them too, that block still stands. Otherwise
+  // everything the block took away comes back: a friend returns to both
+  // friends lists (with this user's nickname and pin for them), and the whole
+  // conversation - which the block only hid - is there to open again.
   socket.on('unblock-user', ({ targetClientId } = {}) => {
     const me = profiles.get(socket.id);
     targetClientId = validId(targetClientId);
@@ -4689,13 +4711,35 @@ io.on('connection', (socket) => {
     if (!mine || !mine.delete(targetClientId)) return;
     if (!mine.size) blocks.delete(me.clientId);
     const meta = blockMeta.get(me.clientId);
+    const record = (meta && meta.get(targetClientId)) || {};
     if (meta) {
       meta.delete(targetClientId);
       if (!meta.size) blockMeta.delete(me.clientId);
     }
+    let restored = false;
+    if (isBlockedPair(me.clientId, targetClientId)) {
+      // They blocked this user too. Hand the friendship to their block record,
+      // so it comes back if and when they lift theirs.
+      const theirs = (blockMeta.get(targetClientId) || new Map()).get(me.clientId);
+      if (record.friendship && theirs && !theirs.friendship) {
+        theirs.friendship = { mine: record.friendship.theirs, theirs: record.friendship.mine };
+      }
+    } else if (record.friendship) {
+      addFriendPair(me.clientId, record.friendship.theirs, targetClientId, record.friendship.mine);
+      restored = true;
+      store.recordFeature('unblock_friend_restored');
+    } else if (friendChats.has(pairKey(me.clientId, targetClientId))) {
+      // Not a friend, but they had talked: back into each other's recent
+      // people, which is where that conversation is opened from.
+      touchChatHistory(me.clientId, targetClientId, { username: record.username, countryCode: record.countryCode, avatar: record.avatar });
+      touchChatHistory(targetClientId, me.clientId, { username: me.username, countryCode: me.country, avatar: me.avatar });
+    }
     persistSocial();
     store.recordFeature('unblock');
     syncClientState(socket, me.clientId);
+    socket.emit('unblock-result', { ok: true, targetClientId, friendRestored: restored });
+    const targetSocket = getSocketByClientId(targetClientId);
+    if (targetSocket) syncClientState(targetSocket, targetClientId);
   });
 
   // Take back a friend request that has not been answered yet. The request

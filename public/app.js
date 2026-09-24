@@ -3690,7 +3690,8 @@ friendProfileBlockBtn.addEventListener('click', async () => {
   if (!activeProfileFriendId) return;
   const target = activeProfileFriendId;
   const wasFriend = relationTo(target) === 'friend';
-  const ok = await showConfirm({ title: 'block', text: wasFriend ? 'confirmBlockFriend' : 'confirmBlockUser', okKey: 'block' });
+  const name = friendLabel(personById(target)) || t('someone');
+  const ok = await showConfirm({ title: 'blockNamed', titleVars: { name }, text: wasFriend ? 'confirmBlockFriend' : 'confirmBlockUser', okKey: 'block' });
   if (!ok) return;
   hangUpOn(target);
   socket.emit('block-friend', { friendClientId: target });
@@ -3767,12 +3768,14 @@ if (blockedList) {
     const btn = e.target.closest('.tl-unblock-btn');
     if (!btn) return;
     const name = btn.dataset.name;
-    const ok = await showConfirm({ title: 'unblock', text: 'confirmUnblock', textVars: { name }, okKey: 'unblock', okClass: 'btn-primary' });
+    // A friend comes back as a friend, with the conversation intact - say so.
+    const wasFriend = blockedData.some((b) => b.clientId === btn.dataset.id && b.wasFriend);
+    const ok = await showConfirm({ title: 'unblock', text: wasFriend ? 'confirmUnblockFriend' : 'confirmUnblock', textVars: { name }, okKey: 'unblock', okClass: 'btn-primary' });
     if (!ok) return;
     socket.emit('unblock-user', { targetClientId: btn.dataset.id });
     blockedData = blockedData.filter((b) => b.clientId !== btn.dataset.id);
     renderBlockedList();
-    showToast(t('unblocked', { name }));
+    showToast(t(wasFriend ? 'unblockedFriend' : 'unblocked', { name }));
   });
 }
 
@@ -7515,8 +7518,8 @@ const confirmModalText = document.getElementById('confirmModalText');
 const confirmOkBtn = document.getElementById('confirmOkBtn');
 const confirmCancelBtn = document.getElementById('confirmCancelBtn');
 let confirmOnOk = null;
-function showConfirm({ title, text, textVars, okKey, cancelKey, okClass }) {
-  confirmModalTitle.textContent = t(title);
+function showConfirm({ title, titleVars, text, textVars, okKey, cancelKey, okClass }) {
+  confirmModalTitle.textContent = t(title, titleVars);
   confirmModalText.textContent = t(text, textVars);
   confirmOkBtn.textContent = t(okKey);
   confirmCancelBtn.textContent = t(cancelKey || 'cancel');

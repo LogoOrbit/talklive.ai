@@ -263,14 +263,22 @@ async function matchPair(a, b, mode = 'chat') {
     // --- Unblock --------------------------------------------------------
     const unblockSync = once(b2, 'state-sync');
     b2.emit('unblock-user', { targetClientId: A });
-    ok('unblock empties the block list', !((await unblockSync).blocked || []).length);
-    // The stored thread is still there, so they can pick the conversation up
-    // again - and it puts them back in each other's recent people.
+    const ubState = await unblockSync;
+    ok('unblock empties the block list', !(ubState.blocked || []).length);
+    // A blocked friend comes back as a friend, on both sides, live.
+    ok('unblocking a friend puts them back in friends', (ubState.friends || []).some((f) => f.clientId === A));
+    await wait(150);
+    ok('...on the other side too', ((lastSync.get(a2) || {}).friends || []).some((f) => f.clientId === B));
+    // The stored thread is still there, so they can pick the conversation up.
     const again = once(b2, 'friend-message');
     a2.emit('friend-message', { toClientId: B, text: 'hi again', id: 'ub1' });
     ok('after unblock the conversation works again', (await again).id === 'ub1');
+    // Back to strangers who have talked, for the request checks below.
+    const unfriended = once(b2, 'state-sync');
+    a2.emit('remove-friend', { friendClientId: B });
+    await unfriended;
     await wait(150);
-    ok('messaging brings them back to recent people, live', ((lastSync.get(b2) || {}).chatHistory || []).some((h) => h.clientId === A));
+    ok('an ex-friend stays in recent people', ((lastSync.get(b2) || {}).chatHistory || []).some((h) => h.clientId === A));
 
     // --- Cancel a sent friend request -----------------------------------
     a2.emit('friend-request', { targetClientId: B });
