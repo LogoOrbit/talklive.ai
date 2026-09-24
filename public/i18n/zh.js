@@ -370,7 +370,7 @@
   "vibration": "振动",
   "showOnlineStatus": "向好友显示我的在线状态",
   "avatar": "头像",
-  "avatarHint": "选择一张脸或一只守护动物。它就是你在各处的形象：好友列表、你的资料，以及与你通话的人看到的样子。",
+  "avatarHint": "选择你的头像。",
   "saveAvatar": "保存头像",
   "growthAria": "TalkLive 会员与分享",
   "playMusic": "播放音乐",

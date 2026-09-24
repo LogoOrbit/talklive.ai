@@ -370,7 +370,7 @@
   "vibration": "Getar",
   "showOnlineStatus": "Tampilkan status online ke teman",
   "avatar": "Avatar",
-  "avatarHint": "Pilih wajah atau hewan roh. Itulah wajahmu di mana saja: di daftar teman, profilmu, dan bagi siapa pun yang tersambung denganmu di panggilan.",
+  "avatarHint": "Pilih avatarmu.",
   "saveAvatar": "Simpan avatar",
   "growthAria": "Keanggotaan dan berbagi TalkLive",
   "playMusic": "Putar musik",

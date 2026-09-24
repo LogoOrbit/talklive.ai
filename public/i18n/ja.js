@@ -370,7 +370,7 @@
   "vibration": "バイブレーション",
   "showOnlineStatus": "友だちにオンライン状態を表示",
   "avatar": "アバター",
-  "avatarHint": "顔かスピリットアニマルを選びましょう。友だち、プロフィール、通話相手など、どこでもあなたの顔になります。",
+  "avatarHint": "アバターを選びましょう。",
   "saveAvatar": "アバターを保存",
   "growthAria": "TalkLiveのメンバーシップと共有",
   "playMusic": "音楽を再生",

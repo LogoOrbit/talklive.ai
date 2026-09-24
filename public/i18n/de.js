@@ -370,7 +370,7 @@
   "vibration": "Vibration",
   "showOnlineStatus": "Meinen Online-Status Freunden zeigen",
   "avatar": "Avatar",
-  "avatarHint": "Wähle ein Gesicht oder ein Seelentier. Es ist überall dein Gesicht – bei Freunden, in deinem Profil und bei allen, mit denen du telefonierst.",
+  "avatarHint": "Wähle deinen Avatar.",
   "saveAvatar": "Avatar speichern",
   "growthAria": "TalkLive-Mitgliedschaft und Teilen",
   "playMusic": "Musik abspielen",

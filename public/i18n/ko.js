@@ -370,7 +370,7 @@
   "vibration": "진동",
   "showOnlineStatus": "친구에게 내 온라인 상태 표시",
   "avatar": "아바타",
-  "avatarHint": "얼굴이나 수호 동물을 고르세요. 친구 목록, 프로필, 통화 상대 등 어디서나 나의 얼굴이 돼요.",
+  "avatarHint": "아바타를 고르세요.",
   "saveAvatar": "아바타 저장",
   "growthAria": "TalkLive 멤버십 및 공유",
   "playMusic": "음악 재생",

@@ -370,7 +370,7 @@
   "vibration": "Vibración",
   "showOnlineStatus": "Mostrar mi estado en línea a mis amigos",
   "avatar": "Avatar",
-  "avatarHint": "Elige una cara o un animal espiritual. Es tu imagen en todas partes: tus amigos, tu perfil y quien conecte contigo en una llamada.",
+  "avatarHint": "Elige tu avatar.",
   "saveAvatar": "Guardar avatar",
   "growthAria": "Membresía y compartir de TalkLive",
   "playMusic": "Reproducir música",

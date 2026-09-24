@@ -370,7 +370,7 @@
   "vibration": "Titreşim",
   "showOnlineStatus": "Çevrimiçi durumumu arkadaşlarıma göster",
   "avatar": "Avatar",
-  "avatarHint": "Bir yüz ya da ruh hayvanı seç. Her yerde yüzün bu olur: arkadaşlarında, profilinde ve aramada bağlandığın kişide.",
+  "avatarHint": "Avatarını seç.",
   "saveAvatar": "Avatarı kaydet",
   "growthAria": "TalkLive üyelik ve paylaşım",
   "playMusic": "Müziği çal",

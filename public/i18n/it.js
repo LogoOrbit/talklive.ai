@@ -370,7 +370,7 @@
   "vibration": "Vibrazione",
   "showOnlineStatus": "Mostra il mio stato online agli amici",
   "avatar": "Avatar",
-  "avatarHint": "Scegli un volto o un animale guida. È il tuo volto ovunque: per gli amici, nel tuo profilo e per chi si collega con te in chiamata.",
+  "avatarHint": "Scegli il tuo avatar.",
   "saveAvatar": "Salva avatar",
   "growthAria": "Abbonamento e condivisione TalkLive",
   "playMusic": "Riproduci musica",
