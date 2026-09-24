@@ -3228,13 +3228,21 @@ function renderGoogleButtons() {
     // away the slot's contents would take the face with it.
     const host = slot.querySelector('.google-btn-real') || slot;
     host.innerHTML = '';
-    // 'outline' on every theme: Google's white pill, the look the site
-    // wants. It must stay visible - see the note on .google-btn-slot.
+    slot.classList.remove('is-ready');
+    // Google's pill in the page's own colours: dark on the dark theme, the
+    // white outline on the light one. It must stay visible - see the note on
+    // .google-btn-slot.
     window.google.accounts.id.renderButton(host, {
-      type: 'standard', theme: 'outline', size: 'large',
+      type: 'standard', theme: dark ? 'filled_black' : 'outline', size: 'large',
       text, shape: 'pill', logo_alignment: 'center', width,
     });
     slot.dataset.rendered = key;
+    // Fade in once Google's frame has drawn, rather than popping in half
+    // built. The timer covers a frame whose load event never reaches us.
+    const reveal = () => slot.classList.add('is-ready');
+    const frame = host.querySelector('iframe');
+    if (frame) frame.addEventListener('load', reveal, { once: true });
+    setTimeout(reveal, frame ? 1500 : 0);
   });
 }
 
