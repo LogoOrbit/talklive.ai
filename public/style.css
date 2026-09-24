@@ -2959,12 +2959,27 @@ body.panel-open .game-overlay {
   justify-content: center;
   width: 100%;
   min-height: 44px;
+  /* Google's frame is a light-scheme document. Inside a dark-scheme page
+     Chrome paints an opaque white canvas behind such a frame - the white
+     box around the pill - so the frame is told it sits on a light page, and
+     its own transparent background shows through. */
+  color-scheme: light;
 }
+.google-btn-slot iframe { color-scheme: light; }
 .google-btn-face { display: none; }
 .google-btn-real {
   display: flex;
   justify-content: center;
   width: 100%;
+  min-height: 44px;
+  border-radius: 999px;
+  opacity: 0;
+  transform: translateY(2px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.google-btn-slot.is-ready .google-btn-real { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .google-btn-real { transition: none; transform: none; }
 }
 
 .account-status {
