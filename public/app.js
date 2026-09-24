@@ -234,11 +234,13 @@ function openSidePanel(panel, overlay) {
   panel.classList.add('open');
   overlay.classList.remove('hidden');
   updateScrollLock();
+  if (panel === friendChatModal) syncChatViewport();
 }
 function closeSidePanel(panel, overlay) {
   panel.classList.remove('open');
   overlay.classList.add('hidden');
   updateScrollLock();
+  if (panel === friendChatModal) syncChatViewport();
 }
 
 const callBackBanner = document.getElementById('callBackBanner');
@@ -7887,7 +7889,7 @@ function openChatPanel() {
   setChatUnread(0);
   focusComposer(chatInput);
   scrollChatToBottom();
-  if (typeof syncChatViewport === 'function') syncChatViewport();
+  syncChatViewport();
   updateScrollLock();
 }
 
@@ -7895,10 +7897,7 @@ function closeChatPanel() {
   chatOpen = false;
   chatPanel.classList.remove('open');
   chatOverlay.classList.add('hidden');
-  chatPanel.style.bottom = '';
-  chatPanel.style.maxHeight = '';
-  chatPanel.style.height = '';
-  chatPanel.style.top = '';
+  clearSheetViewport(chatPanel);
   updateScrollLock();
 }
 
@@ -7906,42 +7905,50 @@ function scrollChatToBottom() {
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-// Keep the phone chat sheet clear of the on-screen keyboard. A position:fixed
-// panel sits against the window, not the *visual* viewport, so on iOS it stays
-// put and the keyboard covers the composer.
+// Keep the phone chat sheets clear of the on-screen keyboard. A position:fixed
+// panel sits against the window, not the *visual* viewport, so on iOS (and on
+// Android Chrome, which resizes only the visual viewport) it stays put and the
+// keyboard covers the composer.
 //
-// This used to stretch the panel to the full visual viewport, which is right
-// for a full-screen drawer and wrong for a sheet - it undid the sheet's height
-// and put it back over the whole call. So it lifts the sheet by however much
-// the keyboard is eating instead, and only caps the height if the sheet no
-// longer fits above it.
+// It lifts each open sheet by however much the keyboard is eating. While the
+// keyboard is up it also grows the sheet into the room above it: at its resting
+// height a lifted sheet left a sliver of messages between the header and the
+// box, which made typing a conversation feel like typing through a letterbox.
+// A strip of the call stays visible above it either way - that strip is the
+// reason this is a sheet and not a page.
+function clearSheetViewport(panel) {
+  panel.style.bottom = '';
+  panel.style.maxHeight = '';
+  panel.style.height = '';
+  panel.style.top = '';
+}
 function syncChatViewport() {
   const vv = window.visualViewport;
-  if (!chatOpen || !vv || window.innerWidth > 767) {
-    chatPanel.style.bottom = '';
-    chatPanel.style.maxHeight = '';
-    chatPanel.style.height = '';
-    chatPanel.style.top = '';
-    return;
+  const keyboard = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
+  [chatPanel, friendChatModal].filter(Boolean).forEach((panel) => {
+    if (!vv || window.innerWidth > 767 || !panel.classList.contains('open')) {
+      clearSheetViewport(panel);
+      return;
+    }
+    const cap = Math.round(vv.height * 0.88);
+    panel.style.bottom = keyboard + 'px';
+    panel.style.maxHeight = cap + 'px';
+    panel.style.height = keyboard > 80 ? cap + 'px' : '';
+  });
+  if (chatOpen) scrollChatToBottom();
+  if (friendChatModal && friendChatModal.classList.contains('open')) {
+    friendChatMessages.scrollTop = friendChatMessages.scrollHeight;
   }
-  const keyboard = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-  chatPanel.style.bottom = keyboard + 'px';
-  // Leave a strip of the call visible above the sheet whatever the keyboard
-  // does - that strip is the reason this is a sheet and not a page.
-  chatPanel.style.maxHeight = Math.round(vv.height * 0.88) + 'px';
-  scrollChatToBottom();
 }
 if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', syncChatViewport);
   window.visualViewport.addEventListener('scroll', syncChatViewport);
 }
-// When the user taps the input, wait for the keyboard, then keep the newest
+// When the user taps an input, wait for the keyboard, then keep the newest
 // messages in view.
-chatInput.addEventListener('focus', () => {
-  setTimeout(() => { syncChatViewport(); scrollChatToBottom(); }, 250);
-});
-chatInput.addEventListener('blur', () => {
-  setTimeout(syncChatViewport, 100);
+[chatInput, friendChatInput].filter(Boolean).forEach((input) => {
+  input.addEventListener('focus', () => { setTimeout(syncChatViewport, 250); });
+  input.addEventListener('blur', () => { setTimeout(syncChatViewport, 100); });
 });
 
 chatToggleBtn.addEventListener('click', () => {
