@@ -248,6 +248,7 @@ const callBackDeclineBtn = document.getElementById('callBackDeclineBtn');
 // Header auth: the always-visible pair, swapped for one account button when
 // signed in. Mirrors the side panel's pair, which stays where it was.
 const headerAuth = document.getElementById('headerAuth');
+const headerSettingsBtn = document.getElementById('headerSettingsBtn');
 const headerLoginBtn = document.getElementById('headerLoginBtn');
 const headerSignupBtn = document.getElementById('headerSignupBtn');
 const headerAccountBtn = document.getElementById('headerAccountBtn');
@@ -1490,13 +1491,15 @@ if (quickSettingsPanel) {
   quickSettingsOverlay.addEventListener('click', closeQuickSettings);
 }
 
-appSettingsBtn.addEventListener('click', () => {
+const toggleQuickSettings = () => {
   // The gear opens the Settings panel; a second tap puts it (or the full
   // screen, if that is what is showing) away.
   if (settingsIsOpen()) closeAppSettings();
   else if (quickSettingsIsOpen()) closeQuickSettings();
   else openQuickSettings();
-});
+};
+appSettingsBtn.addEventListener('click', toggleQuickSettings);
+headerSettingsBtn.addEventListener('click', toggleQuickSettings);
 
 if (settingsBackBtn) {
   settingsBackBtn.addEventListener('click', () => {
@@ -2005,7 +2008,9 @@ function onLandingScreen() {
 function renderHeaderAuthVisibility() {
   const landing = onLandingScreen();
   headerAuth.classList.toggle('hidden', !landing || !!accountNickname);
-  headerAccountBtn.classList.toggle('hidden', !landing || !accountNickname);
+  // In a call, your face and the gear are there signed in or not, as on /chat.
+  headerAccountBtn.classList.toggle('hidden', landing && !accountNickname);
+  headerSettingsBtn.classList.toggle('hidden', landing);
   renderHeaderAccountFace();
   if (headerLinkProfileBtn) {
     headerLinkProfileBtn.classList.toggle('hidden', !landing || !profileWorthLinking());
@@ -2020,6 +2025,7 @@ function renderHeaderAccountFace() {
   const name = document.getElementById('headerAccountName');
   if (face && myAvatar) face.innerHTML = avatarFaceHtml(myAvatar, 30);
   if (name) name.textContent = accountNickname || '';
+  headerAccountBtn.classList.toggle('is-icon', !accountNickname);
   if (myProfileIsOpen()) renderMyProfileCard();
 }
 
