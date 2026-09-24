@@ -4328,31 +4328,50 @@ body.panel-open .game-overlay {
 .theme-dot-ocean { background: #00b4d8; }
 .theme-dot-sunset { background: #ff6b6b; }
 
-/* Toast: brief bottom-center confirmations */
+/* Toast: brief, compact confirmations at the top of the screen (visible even
+   with a settings panel / keyboard open). Sized to its text, one line when it
+   fits; the dot picks up the theme accent. */
 .tl-toast {
   position: fixed;
   left: 50%;
-  /* Top of the screen so it's visible even with a settings panel / keyboard open. */
-  top: calc(16px + env(safe-area-inset-top, 0px));
-  transform: translate(-50%, -20px);
+  top: calc(14px + env(safe-area-inset-top, 0px));
+  transform: translate(-50%, -10px) scale(0.96);
   z-index: 800;
-  max-width: 88vw;
-  padding: 12px 18px;
-  border-radius: 999px;
-  background: rgba(20, 24, 40, 0.96);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: max-content;
+  max-width: min(86vw, 340px);
+  padding: 8px 14px 8px 12px;
+  border-radius: 14px;
+  background: rgba(22, 26, 40, 0.85);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  backdrop-filter: blur(14px) saturate(160%);
   color: #fff;
-  font-size: 14px;
-  font-weight: 600;
-  text-align: center;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.35;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.25s ease, transform 0.25s ease;
+  transition: opacity 0.18s ease, transform 0.3s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+.tl-toast::before {
+  content: '';
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent, #8b7bff);
+  box-shadow: 0 0 8px var(--accent, #8b7bff);
 }
 .tl-toast.show {
   opacity: 1;
-  transform: translate(-50%, 0);
+  transform: translate(-50%, 0) scale(1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .tl-toast { transition: opacity 0.18s ease; transform: translate(-50%, 0); }
 }
 
 /* Temporary username editor + permanent User ID at the top of Settings */

@@ -1662,10 +1662,11 @@
       socialToastEl.setAttribute('aria-live', 'polite');
       document.body.appendChild(socialToastEl);
     }
+    text = String(text).replace(/([^.])[.。।۔]$/, '$1');
     socialToastEl.textContent = text;
     socialToastEl.classList.add('show');
     clearTimeout(socialToast._t);
-    socialToast._t = setTimeout(function () { socialToastEl.classList.remove('show'); }, 3200);
+    socialToast._t = setTimeout(function () { socialToastEl.classList.remove('show'); }, Math.min(4000, 1300 + text.length * 45));
   }
 
   function renderFriends() {

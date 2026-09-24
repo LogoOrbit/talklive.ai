@@ -2317,12 +2317,18 @@ function showToast(msg) {
     el = document.createElement('div');
     el.id = 'tlToast';
     el.className = 'tl-toast';
+    el.setAttribute('role', 'status');
+    el.setAttribute('aria-live', 'polite');
     document.body.appendChild(el);
   }
-  el.textContent = msg;
+  // Toasts read as labels, not sentences: drop a lone trailing full stop.
+  const text = String(msg || '').replace(/([^.])[.。।۔]$/, '$1');
+  if (!text) return;
+  el.textContent = text;
   el.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+  // Short confirmations get out of the way fast; longer ones stay readable.
+  toastTimer = setTimeout(() => el.classList.remove('show'), Math.min(4000, 1300 + text.length * 45));
 }
 
 // --- Settings: temporary username, categories, feedback ---

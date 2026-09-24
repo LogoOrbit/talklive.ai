@@ -27,14 +27,14 @@
   root.classList.add('i18n-pending');
   setTimeout(function () { root.classList.remove('i18n-pending'); }, 1500);
   var s = document.createElement('script');
-  s.src = '/i18n/' + lang + '.js?v=20260924kbsheet';
+  s.src = '/i18n/' + lang + '.js?v=20260924toast';
   s.async = true;
   s.setAttribute('data-i18n-lang', lang);
   s.onerror = function () { root.classList.remove('i18n-pending'); };
   document.head.appendChild(s);
 })();
 </script>
-<link rel="stylesheet" href="/chat.css?v=20260924pagescroll" />
+<link rel="stylesheet" href="/chat.css?v=20260924toast" />
 <link rel="stylesheet" href="/chat-extras.css?v=20260924qa" />
 <link rel="stylesheet" href="/games.css?v=20260916navbar" />
 <link rel="stylesheet" href="/ui.css?v=20260924swipeclose" />
@@ -779,7 +779,7 @@
 
   <script defer src="/socket.io/socket.io.min.js"></script>
   <script defer src="/countries.js?v=20260828fix"></script>
-  <script defer src="/i18n.js?v=20260924animline"></script>
+  <script defer src="/i18n.js?v=20260924toast"></script>
   <script defer src="/chat-time.js?v=20260916navbar"></script>
   <script defer src="/animals.js?v=20260924animline"></script>
   <script defer src="/social-kit.js?v=20260924id"></script>
@@ -787,7 +787,7 @@
   <script defer src="/chat-extras.js?v=20260924tidy"></script>
   <script defer src="/games.js?v=20260924qa"></script>
   <script defer src="/icebreakers.js?v=20260923ice"></script>
-  <script defer src="/chat.js?v=20260924allnote"></script>
+  <script defer src="/chat.js?v=20260924toast"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the
