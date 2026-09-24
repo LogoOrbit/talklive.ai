@@ -9,6 +9,7 @@
      i18nDetectLang() in i18n.js; the version matches I18N_VERSION there. -->
 <style>html.i18n-pending body{visibility:hidden}</style>
 <script>
+if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.classList.add('auth-route');
 (function () {
   var L = ['es','pt','fr','de','ru','tr','ar','fa','hi','bn','ur','id','it','ja','ko','zh'];
   var A = { 'in': 'id', ms: 'id' };
@@ -53,13 +54,14 @@
      system face a beat later. Only the latin subset is preloaded - latin-ext
      is fetched on demand by the unicode-range in style.css. -->
 <link rel="preload" as="font" type="font/woff2" href="/fonts/plus-jakarta-sans-latin.woff2?v=20260922type" crossorigin />
-<link rel="stylesheet" href="style.css?v=20260924badges" />
+<link rel="stylesheet" href="style.css?v=20260924auth" />
 <link rel="stylesheet" href="chat-extras.css?v=20260924qa" />
 <link rel="stylesheet" href="games.css?v=20260916settings" />
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
      side-panel shell, Settings, Friends/History and the account dialog, and it
      does so with its own `tl-` class names so nothing above can reach it. -->
-<link rel="stylesheet" href="ui.css?v=20260924qs" />
+<link rel="stylesheet" href="ui.css?v=20260924qsauth" />
+<link rel="stylesheet" href="auth.css?v=20260924auth" />
 <!-- The top bar, shared with /chat. Loaded after everything else because it
      owns the header outright: one button language, one radius, one focus ring
      on every screen of the product. -->
@@ -255,6 +257,163 @@
      crossorigin="anonymous"></script>
 </head>
 <body>
+<!-- Log in / Sign up, as pages of their own at /login and /signup. Full
+     screen over the app rather than a dialog on top of it, with the brand
+     beside the form on a wide screen. A direct load of either URL shows it
+     from the first paint (the auth-route class, set in <head>), so the home
+     screen never flashes first. Success always lands on the home screen. -->
+<section id="authPage" class="tl-authpage hidden" aria-labelledby="authTitle">
+  <aside class="tl-authpage-aside" aria-hidden="true">
+    <div class="tl-authpage-aside-in">
+      <span class="tl-authpage-logo"><img src="/favicon.svg?v=20260923logo" width="44" height="44" alt="" decoding="async" /></span>
+      <p class="tl-authpage-pitch" data-i18n="authAsideTitle">Talk to the world. Keep the people you meet.</p>
+      <ul class="tl-authpage-perks">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span data-i18n="authPerkFriends">Your friends and chats, saved</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg><span data-i18n="authPerkDevices">Same name and avatar on every device</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg><span data-i18n="authPerkCall">Call people you met, any time</span></li>
+      </ul>
+    </div>
+  </aside>
+
+  <div class="tl-authpage-main">
+    <header class="tl-authpage-top">
+      <a href="/" id="authHomeLink" class="tl-authpage-brand" data-i18n-aria="authBackHome" aria-label="Back to TalkLive">
+        <svg class="tl-authpage-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+        <img src="/favicon.svg?v=20260923logo" width="28" height="28" alt="" decoding="async" />
+        <span>Talk<span class="brand-name-live">Live</span></span>
+      </a>
+      <button type="button" id="closeAccountBtn" class="tl-panel-close" data-i18n-aria="close" aria-label="Close">&times;</button>
+    </header>
+
+    <div class="tl-authpage-body">
+      <div id="accountLoggedOut" class="tl-auth-card">
+        <h2 id="authTitle" class="tl-authpage-title" data-i18n="authLoginTitle">Welcome back</h2>
+        <p id="authSub" class="tl-authpage-sub" data-i18n="authLoginSub">Log in to pick up your friends, chats and name on any device.</p>
+
+        <p id="accountStatus" class="account-status hidden" role="alert"></p>
+
+        <!-- Real <form> elements: password managers refuse to offer to
+             save credentials that are not inside one. Submission is handled
+             by the button/Enter listeners in app.js, so the form itself must
+             never navigate. -->
+        <form id="loginTab" class="account-tab-panel" autocomplete="on" onsubmit="return false;">
+          <!-- Google renders its own button into the slot; the whole block
+               stays hidden when GOOGLE_CLIENT_ID is not configured, so a
+               self-hosted deploy never shows a dead button. -->
+          <div id="googleBtnLogin" class="google-btn-slot google-block hidden">
+            <div class="google-btn-real"></div>
+          </div>
+          <div class="tl-or google-block hidden"><span data-i18n="orDivider">or</span></div>
+          <div class="tl-field">
+            <label for="loginUsername" data-i18n="usernameOrEmail">Username or email</label>
+            <input type="text" id="loginUsername" class="account-input" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="next" />
+          </div>
+          <div class="tl-field">
+            <div class="tl-field-row">
+              <label for="loginPassword" data-i18n="password">Password</label>
+              <button type="button" id="forgotPasswordLink" class="tl-textlink" data-i18n="forgotPassword">Forgot password?</button>
+            </div>
+            <div class="tl-pw">
+              <input type="password" id="loginPassword" class="account-input" autocomplete="current-password" enterkeyhint="go" />
+              <button type="button" class="tl-pw-toggle" data-i18n-aria="showPassword" aria-label="Show password" aria-pressed="false"></button>
+            </div>
+            <p class="tl-caps hidden" data-i18n="capsLockOn">Caps Lock is on</p>
+          </div>
+          <button type="button" id="loginSubmitBtn" class="tl-submit"><span data-i18n="logIn">Log In</span></button>
+          <p class="tl-authpage-switch"><span data-i18n="authNoAccount">New to TalkLive?</span> <a href="/signup" class="tl-auth-go" data-go="signup" data-i18n="authCreateOne">Create an account</a></p>
+        </form>
+
+        <form id="signupTab" class="account-tab-panel hidden" autocomplete="on" onsubmit="return false;">
+          <!-- What the new account inherits, so signing up reads as keeping
+               this profile rather than starting an empty one. Hidden when
+               there is nothing to link. -->
+          <div id="linkProfileCard" class="link-profile-card hidden">
+            <span id="linkProfileAvatar" class="link-profile-avatar" aria-hidden="true"></span>
+            <div class="link-profile-card-text">
+              <p class="link-profile-kicker" data-i18n="linkProfileKicker">Link your current profile</p>
+              <p id="linkProfileName" class="link-profile-name"></p>
+              <p class="link-profile-body" data-i18n="linkProfileCardBody">This profile is linked to the account you create now. Your name, friends and history stay with you.</p>
+              <div class="link-profile-chips">
+                <span id="linkProfileCreated" class="link-profile-chip hidden"></span>
+                <span id="linkProfileFriends" class="link-profile-chip"></span>
+              </div>
+            </div>
+          </div>
+          <div id="googleBtnSignup" class="google-btn-slot google-block hidden">
+            <div class="google-btn-real"></div>
+          </div>
+          <div class="tl-or google-block hidden"><span data-i18n="orDivider">or</span></div>
+          <div class="tl-field">
+            <label for="signupUsername" data-i18n="labelUsername">Username</label>
+            <input type="text" id="signupUsername" class="account-input" maxlength="24" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="next" aria-describedby="signupUsernameNote" />
+            <p id="signupUsernameNote" class="tl-field-note" data-i18n="usernameRules">3-24 letters, numbers, dots, dashes or underscores.</p>
+          </div>
+          <div class="tl-field">
+            <label for="signupPassword" data-i18n="labelPassword">Password</label>
+            <div class="tl-pw">
+              <input type="password" id="signupPassword" class="account-input" autocomplete="new-password" enterkeyhint="next" aria-describedby="signupPwMeter" />
+              <button type="button" class="tl-pw-toggle" data-i18n-aria="showPassword" aria-label="Show password" aria-pressed="false"></button>
+            </div>
+            <div id="signupPwMeter" class="tl-pw-meter" data-level="0" aria-live="polite"><span class="tl-pw-bars" aria-hidden="true"><i></i><i></i><i></i></span><span class="tl-pw-label"></span></div>
+            <p class="tl-caps hidden" data-i18n="capsLockOn">Caps Lock is on</p>
+          </div>
+          <div class="tl-field">
+            <label for="signupEmail"><span data-i18n="email">Email</span> <span class="tl-optional" data-i18n="optional">(optional)</span></label>
+            <input type="email" id="signupEmail" class="account-input" autocomplete="email" inputmode="email" autocapitalize="none" spellcheck="false" enterkeyhint="go" />
+            <p class="tl-field-note" data-i18n="recoveryEmailHint">Only used to send you a reset code if you forget your password. Never shown to anyone.</p>
+          </div>
+          <button type="button" id="signupSubmitBtn" class="tl-submit"><span data-i18n="createAccount">Create Account</span></button>
+          <p class="tl-authpage-switch"><span data-i18n="authHaveAccount">Already have an account?</span> <a href="/login" class="tl-auth-go" data-go="login" data-i18n="logIn">Log In</a></p>
+        </form>
+
+        <!-- Forgot password: email -> 6-digit code -> new password, one step
+             at a time, in place of the login form. -->
+        <form id="forgotTab" class="account-tab-panel hidden" autocomplete="on" onsubmit="return false;">
+          <ol class="tl-steps" aria-hidden="true"><li data-step="email"></li><li data-step="code"></li><li data-step="password"></li></ol>
+          <div id="forgotStepEmail">
+            <div class="tl-field">
+              <label for="forgotEmail" data-i18n="forgotStepEmailLabel">Enter your account email</label>
+              <input type="email" id="forgotEmail" class="account-input" autocomplete="email" inputmode="email" autocapitalize="none" spellcheck="false" />
+            </div>
+            <button type="button" id="forgotSendBtn" class="tl-submit"><span data-i18n="sendCode">Send Code</span></button>
+          </div>
+
+          <div id="forgotStepCode" class="hidden">
+            <div class="tl-field">
+              <label for="forgotCode" data-i18n="forgotStepCodeLabel">Enter the 6-digit code we emailed you</label>
+              <input type="text" id="forgotCode" class="account-input otp-input" placeholder="000000" autocomplete="one-time-code" inputmode="numeric" maxlength="6" />
+            </div>
+            <button type="button" id="forgotVerifyBtn" class="tl-submit"><span data-i18n="verifyCode">Verify Code</span></button>
+            <button type="button" id="forgotResendBtn" class="tl-linkline" data-i18n="resendCode">Resend code</button>
+          </div>
+
+          <div id="forgotStepPassword" class="hidden">
+            <div class="tl-field">
+              <label for="forgotNewPassword" data-i18n="forgotStepPasswordLabel">Choose a new password</label>
+              <div class="tl-pw">
+                <input type="password" id="forgotNewPassword" class="account-input" autocomplete="new-password" />
+                <button type="button" class="tl-pw-toggle" data-i18n-aria="showPassword" aria-label="Show password" aria-pressed="false"></button>
+              </div>
+            </div>
+            <button type="button" id="forgotResetBtn" class="tl-submit"><span data-i18n="restorePassword">Restore Password</span></button>
+          </div>
+
+          <button type="button" id="forgotBackBtn" class="tl-linkline" data-i18n="backToLogIn">Back to log in</button>
+        </form>
+      </div>
+
+      <!-- Signed in: a clear moment of success before the home screen. -->
+      <div id="authDone" class="tl-authpage-done hidden" role="status" aria-live="polite">
+        <span class="tl-authpage-check" aria-hidden="true"><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24" fill="none"/><path fill="none" d="M15 27l7 7 15-15"/></svg></span>
+        <h2 id="authDoneTitle" class="tl-authpage-title"></h2>
+        <p class="tl-authpage-sub" data-i18n="authTakingHome">Taking you home…</p>
+      </div>
+    </div>
+
+    <p class="tl-authpage-legal"><span data-i18n="authLegal">By continuing you agree to our</span> <a href="/terms" data-i18n="termsOfService">Terms of Service</a> &middot; <a href="/privacy" data-i18n="privacyPolicy">Privacy Policy</a></p>
+  </div>
+</section>
+
   <a href="#main" class="skip-link" data-i18n="skipToContent">Skip to main content</a>
   <div class="app">
     <!-- The top bar. Three zones, in the same order at every width: the lockup,
@@ -1527,132 +1686,6 @@
         </div>
       </div>
 
-      <div id="accountModal" class="modal-overlay hidden">
-        <div class="modal-box tl-auth-box" role="dialog" aria-modal="true" aria-labelledby="accountModalTitle">
-          <div class="modal-header">
-            <h2 id="accountModalTitle" data-i18n="myAccount">My Account</h2>
-            <button type="button" id="closeAccountBtn" class="tl-panel-close" data-i18n-aria="close" aria-label="Close">&times;</button>
-          </div>
-          <div class="modal-body">
-            <p id="accountStatus" class="account-status hidden" role="alert"></p>
-
-            <!-- Logged out. Two tabs, and then the shortest form that can
-                 possibly work: a username, a password, one button. Everything
-                 else - recovery email, Google, the reset flow - sits after the
-                 primary action or behind a link, so the page never opens with
-                 five fields and three paragraphs of explanation. -->
-            <div id="accountLoggedOut" class="tl-auth-card">
-              <div class="tl-auth-tabs">
-                <button type="button" class="tl-auth-tab account-tab selected" data-tab="login" data-i18n="logIn">Log In</button>
-                <button type="button" class="tl-auth-tab account-tab" data-tab="signup" data-i18n="signUp">Sign Up</button>
-              </div>
-
-              <!-- Real <form> elements: password managers refuse to offer to
-                   save credentials that are not inside one. Submission is
-                   handled by the button/Enter listeners in app.js, so the form
-                   itself must never navigate. -->
-              <form id="loginTab" class="account-tab-panel" autocomplete="on" onsubmit="return false;">
-                <div class="tl-field">
-                  <label for="loginUsername" data-i18n="username">Username</label>
-                  <input type="text" id="loginUsername" class="account-input" data-i18n-placeholder="username" data-i18n-aria="username" placeholder="Username" autocomplete="username" />
-                </div>
-                <div class="tl-field">
-                  <label for="loginPassword" data-i18n="password">Password</label>
-                  <input type="password" id="loginPassword" class="account-input" data-i18n-placeholder="password" data-i18n-aria="password" placeholder="Password" autocomplete="current-password" />
-                </div>
-                <button type="button" id="loginSubmitBtn" class="tl-submit" data-i18n="logIn">Log In</button>
-                <button type="button" id="forgotPasswordLink" class="tl-linkline" data-i18n="forgotPassword">Forgot password?</button>
-
-                <!-- Google renders its own button into the slot behind our
-                     face; the whole block stays hidden when GOOGLE_CLIENT_ID
-                     is not configured, so a self-hosted deploy never shows a
-                     dead button. -->
-                <div class="tl-or google-block hidden"><span data-i18n="orDivider">or</span></div>
-                <div id="googleBtnLogin" class="google-btn-slot google-block hidden">
-                  <span class="google-btn-face" aria-hidden="true">
-                    <span class="google-btn-mark"><svg viewBox="0 0 48 48" width="18" height="18" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg></span>
-                    <span class="google-btn-label" data-i18n="signInWithGoogle">Sign in with Google</span>
-                  </span>
-                  <div class="google-btn-real"></div>
-                </div>
-              </form>
-
-              <form id="signupTab" class="account-tab-panel hidden" autocomplete="on" onsubmit="return false;">
-                <!-- What the new account inherits, so signing up reads as
-                     keeping this profile rather than starting an empty one.
-                     Hidden when there is nothing to link. -->
-                <div id="linkProfileCard" class="link-profile-card hidden">
-                  <span id="linkProfileAvatar" class="link-profile-avatar" aria-hidden="true"></span>
-                  <div class="link-profile-card-text">
-                    <p class="link-profile-kicker" data-i18n="linkProfileKicker">Link your current profile</p>
-                    <p id="linkProfileName" class="link-profile-name"></p>
-                    <p class="link-profile-body" data-i18n="linkProfileCardBody">This profile is linked to the account you create now. Your name, friends and history stay with you.</p>
-                    <div class="link-profile-chips">
-                      <span id="linkProfileCreated" class="link-profile-chip hidden"></span>
-                      <span id="linkProfileFriends" class="link-profile-chip"></span>
-                    </div>
-                  </div>
-                </div>
-                <div class="tl-field">
-                  <label for="signupUsername" data-i18n="labelUsername">Username</label>
-                  <input type="text" id="signupUsername" class="account-input" data-i18n-placeholder="chooseUsername" data-i18n-aria="chooseUsername" placeholder="Choose a username" autocomplete="username" />
-                </div>
-                <div class="tl-field">
-                  <label for="signupPassword" data-i18n="labelPassword">Password</label>
-                  <input type="password" id="signupPassword" class="account-input" data-i18n-placeholder="choosePassword" data-i18n-aria="choosePassword" placeholder="Choose a password" autocomplete="new-password" />
-                </div>
-                <div class="tl-field">
-                  <label for="signupEmail" data-i18n="labelRecoveryEmail">Recovery email (optional)</label>
-                  <input type="email" id="signupEmail" class="account-input" data-i18n-placeholder="recoveryEmailOptional" data-i18n-aria="recoveryEmailOptional" placeholder="Email (to recover your password)" autocomplete="email" inputmode="email" />
-                  <p class="tl-field-note" data-i18n="recoveryEmailHint">Only used to send you a reset code if you forget your password. Never shown to anyone.</p>
-                </div>
-                <button type="button" id="signupSubmitBtn" class="tl-submit" data-i18n="createAccount">Create Account</button>
-                <div class="tl-or google-block hidden"><span data-i18n="orDivider">or</span></div>
-                <div id="googleBtnSignup" class="google-btn-slot google-block hidden">
-                  <span class="google-btn-face" aria-hidden="true">
-                    <span class="google-btn-mark"><svg viewBox="0 0 48 48" width="18" height="18" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg></span>
-                    <span class="google-btn-label" data-i18n="signUpWithGoogle">Sign up with Google</span>
-                  </span>
-                  <div class="google-btn-real"></div>
-                </div>
-              </form>
-
-              <!-- Forgot password: email -> 6-digit code -> new password, one
-                   step at a time, in place of the tabs. -->
-              <form id="forgotTab" class="account-tab-panel hidden" autocomplete="on" onsubmit="return false;">
-                <div id="forgotStepEmail">
-                  <div class="tl-field">
-                    <label for="forgotEmail" data-i18n="forgotStepEmailLabel">Enter your account email</label>
-                    <input type="email" id="forgotEmail" class="account-input" data-i18n-placeholder="email" data-i18n-aria="email" placeholder="Email" autocomplete="email" inputmode="email" />
-                  </div>
-                  <button type="button" id="forgotSendBtn" class="tl-submit" data-i18n="sendCode">Send Code</button>
-                </div>
-
-                <div id="forgotStepCode" class="hidden">
-                  <div class="tl-field">
-                    <label for="forgotCode" data-i18n="forgotStepCodeLabel">Enter the 6-digit code we emailed you</label>
-                    <input type="text" id="forgotCode" class="account-input otp-input" placeholder="000000" data-i18n-aria="verificationCode" aria-label="Verification code" autocomplete="one-time-code" inputmode="numeric" maxlength="6" />
-                  </div>
-                  <button type="button" id="forgotVerifyBtn" class="tl-submit" data-i18n="verifyCode">Verify Code</button>
-                  <button type="button" id="forgotResendBtn" class="tl-linkline" data-i18n="resendCode">Resend code</button>
-                </div>
-
-                <div id="forgotStepPassword" class="hidden">
-                  <div class="tl-field">
-                    <label for="forgotNewPassword" data-i18n="forgotStepPasswordLabel">Choose a new password</label>
-                    <input type="password" id="forgotNewPassword" class="account-input" data-i18n-placeholder="newPassword" data-i18n-aria="newPassword" placeholder="New password" autocomplete="new-password" />
-                  </div>
-                  <button type="button" id="forgotResetBtn" class="tl-submit" data-i18n="restorePassword">Restore Password</button>
-                </div>
-
-                <button type="button" id="forgotBackBtn" class="tl-linkline" data-i18n="backToLogIn">Back to log in</button>
-              </form>
-            </div>
-
-          </div>
-        </div>
-      </div>
-
       <!-- Call history modal: session-only, no account required -->
 
       <!-- Reusable confirm dialog (end call, switch call, back-button, etc.) -->
@@ -2637,7 +2670,7 @@
        browser finish parsing and paint the page first. -->
   <script defer src="/socket.io/socket.io.min.js"></script>
   <script defer src="countries.js?v=20260828fix"></script>
-  <script defer src="i18n.js?v=20260924qs"></script>
+  <script defer src="i18n.js?v=20260924qsauth"></script>
   <script defer src="chat-time.js?v=20260916navbar"></script>
   <script defer src="animals.js?v=20260921animals"></script>
   <script defer src="social-kit.js?v=20260924kit"></script>
@@ -2678,8 +2711,8 @@
   <script defer src="chat-extras.js?v=20260922social2"></script>
   <script defer src="games.js?v=20260924qa"></script>
   <script defer src="nickname-rules.js?v=20260924nick"></script>
-  <script defer src="settings-panel.js?v=20260924qs"></script>
-  <script defer src="app.js?v=20260924qs"></script>
+  <script defer src="settings-panel.js?v=20260924qsauth"></script>
+  <script defer src="app.js?v=20260924qsauth"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

@@ -595,13 +595,6 @@
 .tl-panel .notif-list,
 .tl-panel .requests-list { display: block; }
 
-/* Keep the redesigned account dialog readable on a phone. */
-.modal-box.tl-auth-box {
-  width: min(430px, 94vw);
-  border-radius: var(--tl-r-lg);
-}
-.modal-box.tl-auth-box .modal-body { padding: var(--tl-s5); }
-
 @media (prefers-reduced-motion: reduce) {
   .tl-submit { transition: none; }
 }

@@ -1,0 +1,330 @@
+/* The log-in and sign-up pages (/login, /signup). Loaded by the main app
+ * shell only - /chat links here rather than carrying its own account forms.
+ * Builds on the tl- field, button and spacing tokens in ui.css. */
+/* ---- The log-in / sign-up page (/login, /signup) --------------------------
+   A page, not a dialog: it covers the app completely, brand panel on the
+   left from 900px up, the form centred in what is left. */
+.tl-authpage {
+  position: fixed;
+  inset: 0;
+  z-index: 1600;
+  display: flex;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--bg-1);
+  color: var(--text);
+}
+/* A direct load of /login shows the page from the very first paint. */
+html.auth-route #authPage.hidden { display: flex !important; }
+html.auth-route body { overflow: hidden; }
+
+.tl-authpage-aside { display: none; }
+.tl-authpage-main {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  padding: calc(var(--tl-s3) + env(safe-area-inset-top, 0px)) var(--tl-s4) calc(var(--tl-s4) + env(safe-area-inset-bottom, 0px));
+  background:
+    radial-gradient(600px 320px at 50% -80px, color-mix(in srgb, var(--accent) 22%, transparent), transparent 70%),
+    var(--bg-1);
+}
+.tl-authpage-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+}
+.tl-authpage-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--tl-s2);
+  min-height: 44px;
+  padding-inline-end: var(--tl-s2);
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 800;
+  text-decoration: none;
+}
+.tl-authpage-back { width: 20px; height: 20px; color: var(--muted); }
+[dir="rtl"] .tl-authpage-back { transform: scaleX(-1); }
+.tl-authpage-body {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  padding: var(--tl-s5) 0;
+}
+.tl-authpage .tl-auth-card {
+  padding: var(--tl-s5);
+  border: 1px solid var(--tl-line);
+  border-radius: var(--tl-r-lg);
+  background: var(--bg-2);
+  box-shadow: var(--tl-shadow);
+  animation: tl-auth-in 0.28s ease both;
+}
+.tl-authpage-title {
+  margin: 0 0 6px;
+  font-size: 28px;
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+}
+.tl-authpage-sub {
+  margin: 0 0 var(--tl-s5);
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.tl-authpage .account-status { margin: 0 0 var(--tl-s4); font-size: 14px; line-height: 1.45; }
+.tl-authpage .account-status.info {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--text);
+}
+.tl-authpage .account-input { margin: 0; }
+.tl-authpage .google-btn-slot { min-height: 44px; }
+.tl-authpage .tl-or { margin: var(--tl-s4) 0; }
+.tl-authpage .link-profile-card { margin-bottom: var(--tl-s4); }
+
+.tl-field-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--tl-s2);
+}
+.tl-field-row > label {
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.tl-textlink {
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--accent-2);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.tl-textlink:hover, .tl-authpage-switch a:hover, .tl-authpage-legal a:hover { text-decoration: underline; }
+.tl-optional { font-weight: 500; opacity: 0.8; }
+
+/* Password field with its show / hide eye. */
+.tl-pw { position: relative; }
+.tl-pw > input {
+  width: 100%;
+  min-height: 52px;
+  padding: 0 52px 0 var(--tl-s4);
+  border-radius: var(--tl-r-md);
+  border: 1px solid var(--tl-line-strong);
+  background: color-mix(in srgb, var(--bg-1) 70%, transparent);
+  color: var(--text);
+  font-size: 16px;
+}
+[dir="rtl"] .tl-pw > input { padding: 0 var(--tl-s4) 0 52px; }
+.tl-pw > input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.tl-pw-toggle {
+  position: absolute;
+  top: 50%;
+  inset-inline-end: 4px;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: var(--tl-r-sm);
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+.tl-pw-toggle:hover { color: var(--text); }
+.tl-pw-toggle svg { width: 20px; height: 20px; }
+.tl-field > input.is-invalid,
+.tl-pw > input.is-invalid {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 18%, transparent);
+}
+.tl-field-note.is-error { color: var(--danger); }
+.tl-caps {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #f0a020;
+}
+.tl-caps.hidden { display: none; }
+
+.tl-pw-meter {
+  display: flex;
+  align-items: center;
+  gap: var(--tl-s2);
+  min-height: 18px;
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.tl-pw-bars { display: flex; flex: 1 1 auto; gap: 4px; }
+.tl-pw-bars i {
+  flex: 1 1 0;
+  height: 4px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--text) 12%, transparent);
+  transition: background 0.2s ease;
+}
+.tl-pw-meter[data-level="1"] .tl-pw-bars i:nth-child(-n+1) { background: var(--danger); }
+.tl-pw-meter[data-level="2"] .tl-pw-bars i:nth-child(-n+2) { background: #f0a020; }
+.tl-pw-meter[data-level="3"] .tl-pw-bars i { background: #2ed47a; }
+.tl-pw-meter[data-level="1"] .tl-pw-label { color: var(--danger); }
+.tl-pw-meter[data-level="3"] .tl-pw-label { color: #2ed47a; }
+
+/* The primary button spins while the server is answering, so a slow network
+   never looks like a dead button. */
+.tl-submit {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.tl-submit.is-busy { opacity: 1; cursor: progress; }
+.tl-submit.is-busy > span { visibility: hidden; }
+.tl-submit.is-busy::after {
+  content: "";
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border: 2.5px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: tl-spin 0.7s linear infinite;
+}
+
+.tl-authpage-switch {
+  margin: var(--tl-s4) 0 0;
+  text-align: center;
+  font-size: 14.5px;
+  color: var(--muted);
+}
+.tl-authpage-switch a { color: var(--accent-2); font-weight: 800; text-decoration: none; }
+.tl-authpage-legal {
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  text-align: center;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.tl-authpage-legal a { color: inherit; font-weight: 700; text-decoration: none; }
+
+/* Reset-password progress: three dots, the current step lit. */
+.tl-steps {
+  display: flex;
+  gap: 6px;
+  margin: 0 0 var(--tl-s4);
+  padding: 0;
+  list-style: none;
+}
+.tl-steps li {
+  flex: 1 1 0;
+  height: 4px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--text) 12%, transparent);
+}
+#forgotTab[data-step="email"] .tl-steps li:nth-child(-n+1),
+#forgotTab[data-step="code"] .tl-steps li:nth-child(-n+2),
+#forgotTab[data-step="password"] .tl-steps li {
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+}
+
+/* Signed in: a tick that draws itself, then home. */
+.tl-authpage-done {
+  padding: var(--tl-s6) var(--tl-s5);
+  text-align: center;
+  animation: tl-auth-in 0.28s ease both;
+}
+.tl-authpage-done.hidden { display: none; }
+.tl-authpage-check svg {
+  width: 72px;
+  height: 72px;
+  margin-bottom: var(--tl-s4);
+  stroke: #2ed47a;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.tl-authpage-check circle { stroke-dasharray: 151; stroke-dashoffset: 151; animation: tl-draw 0.5s ease forwards; }
+.tl-authpage-check path { stroke-dasharray: 36; stroke-dashoffset: 36; animation: tl-draw 0.3s 0.4s ease forwards; }
+
+@keyframes tl-auth-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes tl-spin { to { transform: rotate(360deg); } }
+@keyframes tl-draw { to { stroke-dashoffset: 0; } }
+
+@media (min-width: 900px) {
+  .tl-authpage-aside {
+    display: flex;
+    flex: 0 0 42%;
+    max-width: 560px;
+    position: sticky;
+    top: 0;
+    min-height: 100%;
+    align-items: center;
+    padding: var(--tl-s6) 56px;
+    color: #fff;
+    background:
+      radial-gradient(520px 420px at 15% 10%, rgba(0, 212, 255, 0.35), transparent 65%),
+      radial-gradient(560px 460px at 90% 95%, rgba(255, 94, 170, 0.28), transparent 65%),
+      linear-gradient(160deg, #6c5ce7, #2a1f8f 70%);
+  }
+  .tl-authpage-logo {
+    display: inline-grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    margin-bottom: var(--tl-s5);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.14);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  }
+  .tl-authpage-pitch {
+    margin: 0 0 var(--tl-s6);
+    font-size: 34px;
+    line-height: 1.15;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+  .tl-authpage-perks { display: grid; gap: var(--tl-s4); margin: 0; padding: 0; list-style: none; }
+  .tl-authpage-perks li {
+    display: flex;
+    align-items: center;
+    gap: var(--tl-s3);
+    font-size: 16px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.92);
+  }
+  .tl-authpage-perks svg {
+    flex: 0 0 auto;
+    width: 38px;
+    height: 38px;
+    padding: 9px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.14);
+  }
+  .tl-authpage-main { padding-inline: var(--tl-s6); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tl-authpage .tl-auth-card, .tl-authpage-done { animation: none; }
+  .tl-authpage-check circle, .tl-authpage-check path { animation: none; stroke-dashoffset: 0; }
+}
+[data-theme="light"] .tl-authpage .tl-auth-card { box-shadow: 0 12px 34px rgba(20, 30, 70, 0.1); }
