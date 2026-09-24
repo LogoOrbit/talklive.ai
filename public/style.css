@@ -2530,6 +2530,13 @@ body.panel-open .game-overlay {
   gap: 6px;
 }
 
+.partner-local-time {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
 .flag-icon {
   vertical-align: middle;
   border-radius: 2px;

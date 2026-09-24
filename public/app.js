@@ -65,6 +65,7 @@ const clearFiltersBtn = document.getElementById('clearFiltersBtn');
 const partnerCard = document.getElementById('partnerCard');
 const partnerName = document.getElementById('partnerName');
 const partnerMeta = document.getElementById('partnerMeta');
+const partnerLocalTime = document.getElementById('partnerLocalTime');
 const partnerInterests = document.getElementById('partnerInterests');
 
 const muteBtn = document.getElementById('muteBtn');
@@ -5703,7 +5704,14 @@ let freshAppSession = (() => {
     return fresh;
   } catch (e) { return false; }
 })();
+// This device's IANA zone, sent at registration so a partner can see what
+// time it is here. Empty when the browser will not say.
+function myTimezone() {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (_) { return ''; }
+}
+
 function registerClient(payload) {
+  payload = { ...payload, timezone: myTimezone() || undefined };
   lastRegisterPayload = { ...payload, freshSession: false };
   socket.emit('register', { ...payload, freshSession: freshAppSession });
   freshAppSession = false;
@@ -7170,6 +7178,7 @@ function teardownPeer() {
   // it a muted element if the graph fails that time.
   releaseSpeakerRoute();
   partnerCard.classList.add('hidden');
+  stopPartnerClock();
   sharedInterestNote.classList.add('hidden');
   reactionBar.classList.add('hidden');
   stopQualityMonitor();
@@ -9258,6 +9267,7 @@ function revealPartner() {
   // Country/flag only - never show anything gendered about the stranger.
   partnerMeta.innerHTML = getFlagImg(partner.countryCode);
   renderPartnerAnimal(partner.animal);
+  startPartnerClock(partner.timezone);
 
   partnerInterests.innerHTML = '';
   currentPartnerInterests.forEach((i) => {
@@ -9278,6 +9288,70 @@ function revealPartner() {
 
   reactionBar.classList.remove('hidden');
   if (!callStartedAt) startCallTimer();
+}
+
+// --- Partner's local time ----------------------------------------------------
+// "🌙 2:00 AM their time · 9h ahead", under the partner's flag for the whole
+// call. The zone comes from the partner's own browser via the server; an older
+// client or a browser that hides it simply shows nothing.
+let partnerClockTimer = null;
+let partnerClockZone = '';
+
+function partnerTimeEmoji(hour) {
+  if (hour < 5) return '🌙';
+  if (hour < 8) return '🌅';
+  if (hour < 17) return '☀️';
+  if (hour < 20) return '🌇';
+  return '🌃';
+}
+
+// Minutes east of UTC for `zone` at `now`.
+function zoneOffsetMinutes(zone, now) {
+  const parts = {};
+  new Intl.DateTimeFormat('en-US', {
+    timeZone: zone, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric',
+  }).formatToParts(now).forEach((p) => { parts[p.type] = Number(p.value); });
+  const asUtc = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour % 24, parts.minute);
+  return Math.round((asUtc - Math.floor(now.getTime() / 60000) * 60000) / 60000);
+}
+
+function renderPartnerClock() {
+  const zone = partnerClockZone;
+  if (!zone) return;
+  try {
+    const now = new Date();
+    const lang = (typeof I18N_STATE !== 'undefined' && I18N_STATE.lang) || undefined;
+    const time = new Intl.DateTimeFormat(lang, { timeZone: zone, hour: 'numeric', minute: '2-digit' }).format(now);
+    const hour = Number(new Intl.DateTimeFormat('en-US', { timeZone: zone, hour: 'numeric', hourCycle: 'h23' }).format(now)) % 24;
+    const diff = zoneOffsetMinutes(zone, now) + now.getTimezoneOffset();
+    const abs = Math.abs(diff);
+    const span = [abs >= 60 ? Math.floor(abs / 60) + 'h' : '', abs % 60 ? (abs % 60) + 'm' : ''].filter(Boolean).join(' ');
+    const rel = diff === 0 ? t('partnerTimeSame')
+      : t(diff > 0 ? 'partnerTimeAhead' : 'partnerTimeBehind', { diff: span });
+    partnerLocalTime.textContent = `${partnerTimeEmoji(hour)} ${t('partnerLocalTime', { time })} · ${rel}`;
+    partnerLocalTime.classList.remove('hidden');
+  } catch (_) {
+    stopPartnerClock();
+  }
+}
+
+function startPartnerClock(zone) {
+  stopPartnerClock();
+  if (!zone || typeof zone !== 'string') return;
+  partnerClockZone = zone;
+  renderPartnerClock();
+  // Every 15s keeps the minute honest without a timer per second.
+  partnerClockTimer = setInterval(renderPartnerClock, 15000);
+}
+
+function stopPartnerClock() {
+  clearInterval(partnerClockTimer);
+  partnerClockTimer = null;
+  partnerClockZone = '';
+  if (partnerLocalTime) {
+    partnerLocalTime.classList.add('hidden');
+    partnerLocalTime.textContent = '';
+  }
 }
 
 socket.on('reaction', (reaction) => {

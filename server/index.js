@@ -32,6 +32,7 @@ const ageAssurance = require('./age-assurance');
 const mail = require('./mailer');
 const { botLabel, isPrefetch } = require('./bots');
 const { createAdmin } = require('./admin');
+const { isValidTimezone } = require('./analytics');
 
 const app = express();
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
@@ -2851,6 +2852,9 @@ function publicProfile(p) {
     city: p.city,
     interests: p.interests,
     animal: p.animal || null,
+    // IANA zone the partner's browser reported, so the call screen can show
+    // what time it is where they are. Null when missing or not a real zone.
+    timezone: p.timezone || null,
   };
 }
 
@@ -3961,6 +3965,9 @@ io.on('connection', (socket) => {
       // Which page this socket lives on. /chat is text only, and call-backs
       // must not ring or force-pair it (see canTakeCall).
       surface: data.surface === 'chat' ? 'chat' : 'call',
+      // Echoed to partners, so only a short, real IANA zone is kept.
+      timezone: typeof data.timezone === 'string' && data.timezone.length <= 64
+        && isValidTimezone(data.timezone) ? data.timezone : null,
     });
     clientSockets.set(clientId, socket.id);
     // The device's own copy of these switches wins: it is what the person
