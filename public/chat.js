@@ -2511,7 +2511,7 @@
     var muted = mutedChats.indexOf(id) !== -1;
     var main = '';
     if (!live && (friend || historyState.some(function (h) { return h.clientId === id; }))) main += psBtn('chat', t('chat'), 'btn-primary', ICON.chat);
-    if (canCall(id)) main += psBtn('call', t('callBack'), 'btn-call', ICON.call);
+    if (canCall(id)) main += psBtn('call', t('call'), 'btn-call', ICON.call);
     if (rel === 'stranger') main += psBtn('add', t('addFriend'), 'btn-primary');
     if (rel === 'incoming') main += psBtn('accept', t('accept'), 'btn-primary') + psBtn('decline', t('decline'));
     if (rel === 'pending') main += '<span class="ps-pending">' + escapeHtml(t('pending')) + '</span>' + psBtn('cancel', t('cancelRequest'));
