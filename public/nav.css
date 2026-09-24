@@ -587,6 +587,20 @@
   place-items: center;
 }
 
+/* Face only (/chat, and every phone): just the avatar at full button size -
+   the pill's surface and border around a lone circle read as a second ring. */
+.nav-account.is-icon,
+.nav-account.is-icon:hover {
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+}
+
+.nav-account.is-icon .nav-account-avatar {
+  width: 100%;
+  height: 100%;
+}
+
 .nav-account-name {
   max-width: 120px;
   overflow: hidden;
@@ -697,7 +711,16 @@
   .nav-live { font-size: 10.5px; }
   .nav-btn { padding: 0 13px; font-size: 13px; }
   .nav-btn svg { width: 19px; height: 19px; }
-  .nav-account { padding-inline: 5px; gap: 0; }
+  /* Two classes deep: the 400px block restates .nav-btn's padding later on. */
+  .nav-btn.nav-account,
+  .nav-btn.nav-account:hover {
+    width: var(--nav-btn);
+    padding: 0;
+    gap: 0;
+    border-color: transparent;
+    background: transparent;
+  }
+  .nav-account .nav-account-avatar { width: 100%; height: 100%; }
   .nav-account-name { display: none; }
   .nav-peer-name { font-size: 13.5px; }
   .nav-peer-sub { font-size: 11px; }
