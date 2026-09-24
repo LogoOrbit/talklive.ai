@@ -1,6 +1,21 @@
 // TalkLive translations: fa. Loaded on demand (and preloaded from the page
 // <head>), so it may run before i18n.js - hence the guard on I18N_STRINGS.
 (window.I18N_STRINGS = window.I18N_STRINGS || {})["fa"] = {
+  "setSearch": "جستجو در تنظیمات",
+  "setNoResults": "چیزی با «{q}» پیدا نشد",
+  "setDescProfile": "نام، آواتار، شناسه و حساب",
+  "setDescApp": "زبان، پوسته و صداها",
+  "setDescPrivacy": "تماس‌ها، وضعیت آنلاین و مسدودسازی",
+  "setDescBilling": "سکه‌ها، بوست‌ها و رسیدها",
+  "setDescAbout": "بازخورد، قوانین و تماس با ما",
+  "soundHint": "پخش صدا برای مچ‌ها و پیام‌ها",
+  "vibrationHint": "لرزش هنگام اتصال یا دریافت پیام",
+  "statusHint": "دوستان می‌بینند کی آنلاین هستید",
+  "seenHint": "نشان دادن اینکه پیام‌ها را خوانده‌اید",
+  "setSaved": "ذخیره شد",
+  "setAppearance": "ظاهر",
+  "setAlerts": "هشدارها",
+  "setLegal": "حقوقی",
   "sharePromptTitle": "از این تماس لذت بردی؟",
   "sharePromptBody": "TalkLive با آنلاین بودن افراد بیشتر بهتر می‌شود. یک دوست را به گفتگو دعوت کن.",
   "sharePromptBtn": "اشتراک‌گذاری TalkLive",

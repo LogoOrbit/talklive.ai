@@ -1,6 +1,21 @@
 // TalkLive translations: ur. Loaded on demand (and preloaded from the page
 // <head>), so it may run before i18n.js - hence the guard on I18N_STRINGS.
 (window.I18N_STRINGS = window.I18N_STRINGS || {})["ur"] = {
+  "setSearch": "ترتیبات میں تلاش کریں",
+  "setNoResults": "“{q}” سے کچھ نہیں ملا",
+  "setDescProfile": "نام، اوتار، آئی ڈی اور اکاؤنٹ",
+  "setDescApp": "زبان، تھیم اور آوازیں",
+  "setDescPrivacy": "کالز، آن لائن اسٹیٹس اور بلاک",
+  "setDescBilling": "سکے، بوسٹس اور رسیدیں",
+  "setDescAbout": "رائے، پالیسیاں اور رابطہ",
+  "soundHint": "میچ اور پیغامات پر آواز چلائیں",
+  "vibrationHint": "جڑنے یا پیغام آنے پر وائبریٹ کریں",
+  "statusHint": "دوست دیکھ سکتے ہیں کہ آپ آن لائن ہیں",
+  "seenHint": "دکھائیں کہ آپ نے پیغامات پڑھ لیے",
+  "setSaved": "محفوظ ہو گیا",
+  "setAppearance": "ظاہری شکل",
+  "setAlerts": "الرٹس",
+  "setLegal": "قانونی",
   "sharePromptTitle": "کیا یہ کال پسند آئی؟",
   "sharePromptBody": "زیادہ لوگ آن لائن ہوں تو TalkLive اور بہتر ہوتا ہے۔ کسی دوست کو گفتگو میں شامل ہونے کی دعوت دیں۔",
   "sharePromptBtn": "TalkLive شیئر کریں",

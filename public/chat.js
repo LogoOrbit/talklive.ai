@@ -1251,9 +1251,14 @@
     if (!settingsPanelLoading) {
       settingsPanelLoading = [];
       var s = document.createElement('script');
-      s.src = '/settings-panel.js?v=20260924lazy';
+      s.src = '/settings-panel.js?v=20260924redesign';
       s.async = true;
-      s.onload = function () { var q = settingsPanelLoading; settingsPanelLoading = null; q.forEach(function (c) { c[0](); }); };
+      s.onload = function () {
+        // Opens once settings.css (which the script injects) has arrived.
+        window.TalkLiveSettingsPanel.ready.then(function () {
+          var q = settingsPanelLoading; settingsPanelLoading = null; q.forEach(function (c) { c[0](); });
+        });
+      };
       s.onerror = function () { var q = settingsPanelLoading; settingsPanelLoading = null; q.forEach(function (c) { c[1](); }); };
       document.head.appendChild(s);
     }

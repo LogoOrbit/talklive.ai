@@ -1,6 +1,21 @@
 // TalkLive translations: ja. Loaded on demand (and preloaded from the page
 // <head>), so it may run before i18n.js - hence the guard on I18N_STRINGS.
 (window.I18N_STRINGS = window.I18N_STRINGS || {})["ja"] = {
+  "setSearch": "設定を検索",
+  "setNoResults": "「{q}」に一致する項目はありません",
+  "setDescProfile": "名前・アバター・ID・アカウント",
+  "setDescApp": "言語・テーマ・サウンド",
+  "setDescPrivacy": "通話・オンライン状態・ブロック",
+  "setDescBilling": "コイン・ブースト・領収書",
+  "setDescAbout": "フィードバック・規約・お問い合わせ",
+  "soundHint": "マッチやメッセージで音を鳴らす",
+  "vibrationHint": "接続時やメッセージ受信時に振動",
+  "statusHint": "オンライン中であることを友達に表示",
+  "seenHint": "メッセージを読んだことを相手に表示",
+  "setSaved": "保存しました",
+  "setAppearance": "外観",
+  "setAlerts": "通知",
+  "setLegal": "法的情報",
   "sharePromptTitle": "通話は楽しめましたか？",
   "sharePromptBody": "オンラインの人が多いほどTalkLiveはもっと楽しくなります。友だちを会話に招待しましょう。",
   "sharePromptBtn": "TalkLiveをシェア",

@@ -1,6 +1,21 @@
 // TalkLive translations: bn. Loaded on demand (and preloaded from the page
 // <head>), so it may run before i18n.js - hence the guard on I18N_STRINGS.
 (window.I18N_STRINGS = window.I18N_STRINGS || {})["bn"] = {
+  "setSearch": "সেটিংস খুঁজুন",
+  "setNoResults": "“{q}”-এর সাথে কিছু মেলেনি",
+  "setDescProfile": "নাম, অবতার, আইডি ও অ্যাকাউন্ট",
+  "setDescApp": "ভাষা, থিম ও শব্দ",
+  "setDescPrivacy": "কল, অনলাইন স্ট্যাটাস ও ব্লক",
+  "setDescBilling": "কয়েন, বুস্ট ও রসিদ",
+  "setDescAbout": "মতামত, নীতি ও যোগাযোগ",
+  "soundHint": "ম্যাচ ও মেসেজে শব্দ বাজান",
+  "vibrationHint": "সংযোগ বা মেসেজে ভাইব্রেট করুন",
+  "statusHint": "বন্ধুরা দেখতে পাবে আপনি অনলাইন",
+  "seenHint": "জানান যে আপনি মেসেজ পড়েছেন",
+  "setSaved": "সংরক্ষিত",
+  "setAppearance": "চেহারা",
+  "setAlerts": "সতর্কতা",
+  "setLegal": "আইনি",
   "sharePromptTitle": "কলটা ভালো লেগেছে?",
   "sharePromptBody": "বেশি মানুষ অনলাইনে থাকলে TalkLive আরও ভালো হয়। একজন বন্ধুকে আলাপে যোগ দিতে আমন্ত্রণ জানান।",
   "sharePromptBtn": "TalkLive শেয়ার করুন",

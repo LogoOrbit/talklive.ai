@@ -1,6 +1,21 @@
 // TalkLive translations: tr. Loaded on demand (and preloaded from the page
 // <head>), so it may run before i18n.js - hence the guard on I18N_STRINGS.
 (window.I18N_STRINGS = window.I18N_STRINGS || {})["tr"] = {
+  "setSearch": "Ayarlarda ara",
+  "setNoResults": "“{q}” ile eşleşen bir şey yok",
+  "setDescProfile": "Ad, avatar, kimlik ve hesap",
+  "setDescApp": "Dil, tema ve sesler",
+  "setDescPrivacy": "Aramalar, çevrimiçi durum ve engelleme",
+  "setDescBilling": "Jetonlar, Boost'lar ve makbuzlar",
+  "setDescAbout": "Geri bildirim, politikalar ve iletişim",
+  "soundHint": "Eşleşme ve mesajlarda ses çal",
+  "vibrationHint": "Bağlanınca veya mesaj gelince titret",
+  "statusHint": "Arkadaşların çevrimiçi olduğunu görür",
+  "seenHint": "Mesajları okuduğunu göster",
+  "setSaved": "Kaydedildi",
+  "setAppearance": "Görünüm",
+  "setAlerts": "Uyarılar",
+  "setLegal": "Yasal",
   "sharePromptTitle": "Görüşmeyi beğendin mi?",
   "sharePromptBody": "TalkLive, çevrimiçi kişi sayısı arttıkça daha iyi olur. Bir arkadaşını sohbete davet et.",
   "sharePromptBtn": "TalkLive'ı paylaş",

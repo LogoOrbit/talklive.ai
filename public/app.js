@@ -1342,6 +1342,7 @@ function openAppSettings(tab) {
   callPanel.classList.add('hidden');
   settingsPage.classList.remove('hidden');
   stageEl.classList.add('settings-live');
+  enhanceSettingsPage();
   if (typeof renderSettingsIdentity === 'function') renderSettingsIdentity();
   // An unsaved face from a previous visit is not a choice you made; the picker
   // opens showing the face you actually wear.
@@ -1432,21 +1433,35 @@ function closeQuickSettings() {
 // The panel's script is not part of the first page load (it would push the
 // page over its size budget); it is fetched once the page is idle, or on the
 // first tap of the gear if that comes sooner.
-const SETTINGS_PANEL_SRC = '/settings-panel.js?v=20260924lazy';
-let settingsPanelLoading = null;
+// It also brings settings.css, which the screen waits for (html.tl-set-css).
+var SETTINGS_PANEL_SRC = '/settings-panel.js?v=20260924redesign';
+var settingsPanelLoading = null; // var: openAppSettings can run before this line on /settings
 function loadSettingsPanel() {
-  if (window.TalkLiveSettingsPanel) return Promise.resolve();
+  if (window.TalkLiveSettingsPanel) return window.TalkLiveSettingsPanel.ready;
   if (!settingsPanelLoading) {
     settingsPanelLoading = new Promise((resolve, reject) => {
       const s = document.createElement('script');
       s.src = SETTINGS_PANEL_SRC;
       s.async = true;
-      s.onload = resolve;
-      s.onerror = () => { settingsPanelLoading = null; reject(); };
+      s.onload = () => window.TalkLiveSettingsPanel.ready.then(resolve);
+      s.onerror = () => {
+        settingsPanelLoading = null;
+        // Offline: show the screen as it is rather than not at all.
+        document.documentElement.classList.add('tl-set-css');
+        reject();
+      };
       document.head.appendChild(s);
     });
   }
   return settingsPanelLoading;
+}
+// Search, section headers and the "Saved" confirmation on the full screen.
+function enhanceSettingsPage() {
+  loadSettingsPanel().then(() => {
+    window.TalkLiveSettingsPanel.enhancePage(settingsPage, {
+      show: (tab, drill) => showSettingsTab(tab, drill),
+    });
+  }, () => {});
 }
 window.addEventListener('load', () => {
   const later = window.requestIdleCallback || ((fn) => setTimeout(fn, 1500));
@@ -2198,7 +2213,7 @@ function myAvatarIcon(size) {
 
 function renderSettingsProfileRow() {
   if (!settingsProfileRow) return;
-  settingsProfileAvatar.innerHTML = `${myAvatarIcon(40)}<span class="settings-row-online" aria-hidden="true"></span>`;
+  settingsProfileAvatar.innerHTML = `${myAvatarIcon(52)}<span class="settings-row-online" aria-hidden="true"></span>`;
   settingsProfileName.textContent = profileDisplayName() || t('linkProfileAnonymous');
   const created = profileCreatedAt();
   settingsProfileJoined.textContent = created
@@ -3119,6 +3134,7 @@ function onMyProfileAction(e) {
 }
 function openMyProfile() {
   if (!myProfileSheet) buildMyProfileSheet();
+  loadSettingsPanel().catch(() => {});
   if (settingsIsOpen()) closeAppSettings();
   // The sheet is the quick version of Settings > Profile: display name, your
   // ID (signed in only - a guest's is temporary), avatar, and log in or out.

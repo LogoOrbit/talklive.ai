@@ -1,6 +1,21 @@
 // TalkLive translations: es. Loaded on demand (and preloaded from the page
 // <head>), so it may run before i18n.js - hence the guard on I18N_STRINGS.
 (window.I18N_STRINGS = window.I18N_STRINGS || {})["es"] = {
+  "setSearch": "Buscar ajustes",
+  "setNoResults": "Nada coincide con “{q}”",
+  "setDescProfile": "Nombre, avatar, ID y cuenta",
+  "setDescApp": "Idioma, tema y sonidos",
+  "setDescPrivacy": "Llamadas, estado en línea y bloqueos",
+  "setDescBilling": "Monedas, Boosts y recibos",
+  "setDescAbout": "Comentarios, políticas y contacto",
+  "soundHint": "Sonar con coincidencias y mensajes",
+  "vibrationHint": "Vibrar al conectar o recibir un mensaje",
+  "statusHint": "Tus amigos ven cuándo estás en línea",
+  "seenHint": "Mostrar cuándo has leído los mensajes",
+  "setSaved": "Guardado",
+  "setAppearance": "Apariencia",
+  "setAlerts": "Avisos",
+  "setLegal": "Legal",
   "sharePromptTitle": "¿Te gustó esa llamada?",
   "sharePromptBody": "TalkLive mejora con más gente conectada. Invita a un amigo a unirse a la conversación.",
   "sharePromptBtn": "Compartir TalkLive",

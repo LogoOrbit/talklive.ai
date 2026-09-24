@@ -1,6 +1,21 @@
 // TalkLive translations: zh. Loaded on demand (and preloaded from the page
 // <head>), so it may run before i18n.js - hence the guard on I18N_STRINGS.
 (window.I18N_STRINGS = window.I18N_STRINGS || {})["zh"] = {
+  "setSearch": "搜索设置",
+  "setNoResults": "没有与“{q}”匹配的内容",
+  "setDescProfile": "昵称、头像、ID 和账号",
+  "setDescApp": "语言、主题和声音",
+  "setDescPrivacy": "通话、在线状态和屏蔽",
+  "setDescBilling": "金币、加速和收据",
+  "setDescAbout": "反馈、政策和联系我们",
+  "soundHint": "匹配和消息时播放提示音",
+  "vibrationHint": "连接或收到消息时振动",
+  "statusHint": "好友可以看到你是否在线",
+  "seenHint": "让对方知道你已读消息",
+  "setSaved": "已保存",
+  "setAppearance": "外观",
+  "setAlerts": "提醒",
+  "setLegal": "法律信息",
   "sharePromptTitle": "这次通话愉快吗？",
   "sharePromptBody": "在线的人越多，TalkLive 就越好玩。邀请朋友一起来聊天吧。",
   "sharePromptBtn": "分享 TalkLive",
