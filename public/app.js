@@ -1738,7 +1738,7 @@ function loadPolicyText(modal) {
         const main = doc.querySelector('main');
         if (!main) throw new Error('no <main>');
         // The page's own furniture has no place inside the dialog.
-        main.querySelectorAll('h1, .blog-cta, .ad-card, [data-ad], script').forEach((el) => el.remove());
+        main.querySelectorAll('h1, .page-art, .blog-cta, .ad-card, [data-ad], script').forEach((el) => el.remove());
         const frag = document.createDocumentFragment();
         [...main.childNodes].forEach((node) => frag.appendChild(document.importNode(node, true)));
         slot.replaceChildren(frag);
