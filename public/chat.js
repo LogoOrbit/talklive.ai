@@ -1513,7 +1513,7 @@
       var row = document.createElement('div');
       row.className = 'tl-sent-item';
       row.innerHTML =
-        '<span class="tl-sent-avatar" aria-hidden="true">' + escapeHtml((r.username || '?').charAt(0)) + '</span>' +
+        '<button type="button" class="tl-sent-avatar row-face" data-profile="' + escapeHtml(r.clientId) + '" aria-label="' + escapeHtml(t('openProfile')) + '">' + faceHtml(r, 30) + '</button>' +
         '<span class="tl-sent-text">' +
         '<span class="tl-sent-name">' + escapeHtml(r.username || '-') + ' ' + getFlagImg(r.countryCode, 14) + '</span>' +
         '</span>' +
@@ -1587,7 +1587,7 @@
       var row = document.createElement('div');
       row.className = 'request-row';
       row.innerHTML =
-        '<span class="friend-avatar" aria-hidden="true">' + escapeHtml((r.username || '?').charAt(0)) + '</span>' +
+        '<button type="button" class="friend-avatar row-face" data-profile="' + escapeHtml(r.clientId) + '" aria-label="' + escapeHtml(t('openProfile')) + '">' + faceHtml(r, 30) + '</button>' +
         '<span class="friend-main"><span class="friend-name">' + escapeHtml(r.username || '-') + ' ' + getFlagImg(r.countryCode, 14) + '</span>' +
         (r.message ? '<span class="request-note">' + escapeHtml(r.message) + '</span>' : '') + '</span>' +
         '<span class="friend-actions">' +
@@ -1603,62 +1603,134 @@
     });
 
     friendsList.innerHTML = '';
+    ensureFriendsSearch();
     if (!friendsState.friends.length) {
       // "during a call" is the call app's wording; here you add someone while
       // you are chatting with them.
       friendsList.innerHTML = '<p class="tl-empty">' + escapeHtml(t('noFriendsYetChat')) + '</p>';
       return;
     }
-    // Unread first, then who is here now, then the most recent conversation.
+    // Pinned first, then unread, then who is here now, then the most recent
+    // conversation - the same order as the call app.
     var lastTs = function (p) { return (p.last && p.last.ts) || 0; };
-    friendsState.friends.slice().sort(function (a, b) {
-      return (Number(unreadCountFor(b.clientId) > 0) - Number(unreadCountFor(a.clientId) > 0))
+    var sorted = friendsState.friends.slice().sort(function (a, b) {
+      return (Number(!!b.pinned) - Number(!!a.pinned))
+        || (Number(unreadCountFor(b.clientId) > 0) - Number(unreadCountFor(a.clientId) > 0))
         || (Number(!!b.online) - Number(!!a.online))
         || (lastTs(b) - lastTs(a));
-    }).forEach(function (f) {
+    });
+    if (friendsFilter) {
+      sorted = sorted.filter(function (f) {
+        return [friendLabel(f), f.username].some(function (x) { return String(x || '').toLowerCase().indexOf(friendsFilter) !== -1; });
+      });
+      if (!sorted.length) {
+        friendsList.innerHTML = '<p class="tl-empty">' + escapeHtml(t('noFriendsMatch')) + '</p>';
+        return;
+      }
+    }
+    sorted.forEach(function (f) {
       var row = document.createElement('div');
       row.className = 'friend-row';
       var unreadN = unreadCountFor(f.clientId);
       var line = statusLine(f);
       row.innerHTML =
-        '<span class="friend-avatar" aria-hidden="true">' + escapeHtml((friendLabel(f) || '?').charAt(0)) + '</span>' +
-        '<span class="friend-main"><span class="friend-name">' + escapeHtml(friendLabel(f) || '-') + ' ' + getFlagImg(f.countryCode, 14) + '</span>' +
+        '<button type="button" class="friend-avatar row-face" data-profile="' + escapeHtml(f.clientId) + '" aria-label="' + escapeHtml(t('openProfile')) + '">' + faceHtml(f, 30) + '</button>' +
+        '<span class="friend-main"><span class="friend-name">' + escapeHtml(friendLabel(f) || '-') + ' ' + getFlagImg(f.countryCode, 14) +
+        (f.pinned ? '<span class="row-flag" aria-label="' + escapeHtml(t('unpinFriend')) + '">' + PIN_ICON + '</span>' : '') +
+        (mutedChats.indexOf(f.clientId) !== -1 ? '<span class="row-flag">' + MUTE_ON + '</span>' : '') + '</span>' +
         '<span class="friend-status' + (f.online ? '' : ' is-offline') + line.cls + '"><span class="online-dot"></span><span class="friend-status-text">' + escapeHtml(line.text) + '</span></span></span>' +
         '<span class="friend-actions">' +
         '<button type="button" class="mini-btn" data-act="chat" title="' + escapeHtml(t('chat')) + '" aria-label="' + escapeHtml(t('chat')) + '"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>' +
         (unreadN ? '<span class="notif-badge">' + unreadN + '</span>' : '') + '</button>' +
-        '<button type="button" class="mini-btn" data-act="rename" title="' + escapeHtml(t('renameFriend')) + '" aria-label="' + escapeHtml(t('renameFriend')) + '"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.5 2.5 0 0 0-3.5-3.5L4.5 16.5V20z"/><line x1="14.5" y1="6.5" x2="17.5" y2="9.5"/></svg></button>' +
-        '<button type="button" class="mini-btn danger" data-act="remove" title="' + escapeHtml(t('removeFriend')) + '" aria-label="' + escapeHtml(t('removeFriend')) + '"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>' +
+        '<button type="button" class="mini-btn mini-call" data-act="call" title="' + escapeHtml(t('callBack')) + '" aria-label="' + escapeHtml(t('callBack')) + '">' + ICON.call + '</button>' +
         '</span>';
       row.querySelector('[data-act="chat"]').addEventListener('click', function () { openFriendChat(f); });
+      row.querySelector('[data-act="call"]').addEventListener('click', function () { profileAction('call', f.clientId); });
       row.querySelector('.friend-main').addEventListener('click', function () { openFriendChat(f); });
-      row.querySelector('[data-act="rename"]').addEventListener('click', function () { openRenameFriend(f); });
-      // Two taps, like Next: one stray tap used to delete a friendship with no
-      // way back short of asking them again.
-      var removeBtn = row.querySelector('[data-act="remove"]');
-      var removeArmed = null;
-      removeBtn.addEventListener('click', function () {
-        if (!removeArmed) {
-          removeBtn.classList.add('confirm');
-          removeBtn.title = t('tapAgainToRemove');
-          removeBtn.setAttribute('aria-label', t('tapAgainToRemove'));
-          vibrate(15);
-          removeArmed = setTimeout(function () {
-            removeArmed = null;
-            removeBtn.classList.remove('confirm');
-            removeBtn.title = t('removeFriend');
-            removeBtn.setAttribute('aria-label', t('removeFriend'));
-          }, 3000);
-          return;
-        }
-        clearTimeout(removeArmed);
-        socket.emit('remove-friend', { friendClientId: f.clientId });
-      });
       friendsList.appendChild(row);
     });
   }
 
+  var PIN_ICON = '<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M15 3l6 6-3 1-4 4 .5 4.5L13 20l-3.5-3.5L4 22l-.5-.5L9 16l-3.5-3.5L7 11l4.5.5 4-4z"/></svg>';
+  // Filter box, once the list is long enough to need one (as in the call app).
+  var friendsFilter = '';
+  var friendsSearch = null;
+  function ensureFriendsSearch() {
+    var need = friendsState.friends.length >= 6;
+    if (!friendsSearch && need) {
+      var wrap = document.createElement('div');
+      wrap.className = 'friends-search';
+      friendsSearch = document.createElement('input');
+      friendsSearch.type = 'search';
+      friendsSearch.className = 'friends-search-input';
+      friendsSearch.maxLength = 40;
+      friendsSearch.autocomplete = 'off';
+      friendsSearch.addEventListener('input', function () {
+        friendsFilter = friendsSearch.value.trim().toLowerCase();
+        renderFriends();
+      });
+      wrap.appendChild(friendsSearch);
+      friendsList.parentNode.insertBefore(wrap, friendsList);
+    }
+    if (!friendsSearch) return;
+    friendsSearch.placeholder = t('searchFriends');
+    friendsSearch.setAttribute('aria-label', t('searchFriends'));
+    friendsSearch.parentNode.classList.toggle('hidden', !need);
+    if (!need && friendsFilter) { friendsFilter = ''; friendsSearch.value = ''; }
+  }
+
+  // Any face in the friends, requests and history lists opens that profile.
+  document.addEventListener('click', function (e) {
+    var face = e.target.closest && e.target.closest('.row-face[data-profile]');
+    if (!face) return;
+    e.stopPropagation();
+    openProfile(face.dataset.profile);
+  });
+
   var mutedChats = [];
+  // People this user blocked, and the way back: unblocking a friend brings
+  // them back with the whole conversation (the call app lists these in
+  // Settings; this page has no Settings of its own for it).
+  var blockedState = [];
+  var blockedWrap = null;
+  function renderBlocked() {
+    if (!blockedWrap) {
+      blockedWrap = document.createElement('details');
+      blockedWrap.className = 'blocked-section';
+      blockedWrap.innerHTML = '<summary></summary><div class="blocked-list"></div>';
+      requestsTabPanel.appendChild(blockedWrap);
+      blockedWrap.addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-unblock]');
+        if (!btn) return;
+        var b = blockedState.filter(function (x) { return x.clientId === btn.dataset.unblock; })[0];
+        if (!b) return;
+        var name = b.username || t('someone');
+        askConfirm({
+          title: t('unblock'),
+          text: t(b.wasFriend ? 'confirmUnblockFriend' : 'confirmUnblock', { name: name }),
+          ok: t('unblock'),
+          danger: false,
+        }, function () {
+          socket.emit('unblock-user', { targetClientId: b.clientId });
+          blockedState = blockedState.filter(function (x) { return x.clientId !== b.clientId; });
+          renderBlocked();
+          socialToast(t(b.wasFriend ? 'unblockedFriend' : 'unblocked', { name: name }));
+        });
+      });
+    }
+    blockedWrap.querySelector('summary').textContent = t('blockedPeople') + (blockedState.length ? ' (' + blockedState.length + ')' : '');
+    var list = blockedWrap.querySelector('.blocked-list');
+    if (!blockedState.length) {
+      list.innerHTML = '<p class="tl-empty">' + escapeHtml(t('noBlockedPeople')) + '</p>';
+      return;
+    }
+    list.innerHTML = blockedState.map(function (b) {
+      return '<div class="friend-row"><span class="friend-avatar">' + faceHtml(b, 30) + '</span>' +
+        '<span class="friend-main"><span class="friend-name">' + escapeHtml(b.username || t('someone')) + ' ' + getFlagImg(b.countryCode, 14) + '</span></span>' +
+        '<span class="friend-actions"><button type="button" class="btn btn-secondary btn-sm" data-unblock="' + escapeHtml(b.clientId) + '">' + escapeHtml(t('unblock')) + '</button></span></div>';
+    }).join('');
+  }
+
   socket.on('state-sync', function (data) {
     data = data || {};
     friendsState.friends = data.friends || [];
@@ -1667,9 +1739,17 @@
     friendsState.notifications = data.notifications || [];
     historyState = data.chatHistory || [];
     mutedChats = data.muted || [];
+    blockedState = data.blocked || [];
     renderFriends();
     renderHistory();
     renderFriendChatStatus();
+    renderBlocked();
+    if (activeFriendChatId) renderChatHeadTools();
+    if (profileId) {
+      // Blocked from elsewhere: nothing left to act on.
+      if (blockedState.some(function (b) { return b.clientId === profileId; })) closeProfile();
+      else renderProfile();
+    }
     if (friendIdFound) renderFriendIdResult();
   });
 
@@ -1858,13 +1938,15 @@
       var unreadN = unreadCountFor(h.clientId);
       var line = statusLine(h);
       row.innerHTML =
-        '<span class="friend-avatar" aria-hidden="true">' + escapeHtml((historyLabel(h) || '?').charAt(0)) + '</span>' +
+        '<button type="button" class="friend-avatar row-face" data-profile="' + escapeHtml(h.clientId) + '" aria-label="' + escapeHtml(t('openProfile')) + '">' + faceHtml(h, 30) + '</button>' +
         '<span class="friend-main"><span class="friend-name">' + escapeHtml(historyLabel(h) || '-') + ' ' + getFlagImg(h.countryCode, 14) + '</span>' +
         '<span class="friend-status' + (h.online ? '' : ' is-offline') + line.cls + '"><span class="online-dot"></span><span class="friend-status-text">' + escapeHtml(line.text) + '</span></span></span>' +
         '<span class="friend-actions">' +
         '<button type="button" class="mini-btn" data-act="chat" title="' + escapeHtml(t('messageBack')) + '" aria-label="' + escapeHtml(t('messageBack')) + '"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>' +
         (unreadN ? '<span class="notif-badge">' + unreadN + '</span>' : '') + '</button>' +
+        '<button type="button" class="mini-btn mini-call" data-act="call" title="' + escapeHtml(t('callBack')) + '" aria-label="' + escapeHtml(t('callBack')) + '">' + ICON.call + '</button>' +
         '</span>';
+      row.querySelector('[data-act="call"]').addEventListener('click', function () { profileAction('call', h.clientId); });
       var openIt = function () { openFriendChat({ clientId: h.clientId, username: h.username }); };
       row.querySelector('[data-act="chat"]').addEventListener('click', openIt);
       row.querySelector('.friend-main').addEventListener('click', openIt);
@@ -2187,6 +2269,7 @@
     friendChatInput.value = friendDrafts[friend.clientId] || '';
     // Just their name in the header, as a messenger shows it.
     $('friendChatTitle').textContent = friendLabel(friend) || t('chat');
+    renderChatHeadTools();
     friendChatMsgs.innerHTML = '';
     if (friendExtras) friendExtras.reset();
     closePanel(friendsPanel, friendsOverlay);
@@ -2212,49 +2295,87 @@
   // Two taps, like Remove: blocking ends the friendship and the conversation
   // for good (until unblocked from the call app's Settings > Privacy).
   var friendChatBlockBtn = $('friendChatBlockBtn');
-  // Blocking is hard to take back in the moment (it ends the chat, drops the
-  // friendship and the history), so it asks first - with what will happen -
-  // rather than acting on a single tap. Built on first use.
-  var blockModal = null;
-  var blockTarget = null;
-  function openBlockConfirm(target) {
-    if (!blockModal) {
-      blockModal = document.createElement('div');
-      blockModal.className = 'modal-overlay hidden';
-      blockModal.innerHTML =
-        '<div class="modal-box" role="alertdialog" aria-modal="true" aria-labelledby="blockConfirmTitle" aria-describedby="blockConfirmText">' +
-          '<div class="modal-header"><h2 id="blockConfirmTitle"></h2>' +
+  var Social = window.TalkLiveSocial;
+  function faceHtml(p, size) {
+    p = p || {};
+    return Social ? Social.face(p.avatar, size, p.animal) : '';
+  }
+
+  // One confirmation dialog for everything that is hard to take back in the
+  // moment - block, remove, report, unblock. Built on first use, and raised
+  // above the side panels it is usually opened from.
+  var confirmBox = null;
+  var confirmCb = null;
+  function askConfirm(o, onOk) {
+    if (!confirmBox) {
+      confirmBox = document.createElement('div');
+      confirmBox.className = 'modal-overlay modal-top hidden';
+      confirmBox.innerHTML =
+        '<div class="modal-box" role="alertdialog" aria-modal="true" aria-labelledby="askTitle" aria-describedby="askText">' +
+          '<div class="modal-header"><h2 id="askTitle"></h2>' +
           '<button type="button" class="modal-close" data-act="cancel">&times;</button></div>' +
-          '<div class="modal-body"><p id="blockConfirmText"></p>' +
+          '<div class="modal-body"><p id="askText"></p>' +
           '<div class="modal-actions">' +
             '<button type="button" class="btn btn-secondary" data-act="cancel"></button>' +
-            '<button type="button" class="btn btn-danger" data-act="block"></button>' +
+            '<button type="button" class="btn" data-act="ok"></button>' +
           '</div></div></div>';
-      document.body.appendChild(blockModal);
-      blockModal.addEventListener('click', function (e) {
+      document.body.appendChild(confirmBox);
+      confirmBox.addEventListener('click', function (e) {
         // A tap on the dim backdrop counts as Cancel.
         var btn = e.target.closest('[data-act]');
-        var act = e.target === blockModal ? 'cancel' : (btn && btn.dataset.act);
+        var act = e.target === confirmBox ? 'cancel' : (btn && btn.dataset.act);
         if (!act) return;
-        closeModal(blockModal);
-        var who = blockTarget;
-        blockTarget = null;
-        if (act === 'block' && who) doBlock(who);
+        closeModal(confirmBox);
+        var cb = confirmCb;
+        confirmCb = null;
+        if (act === 'ok' && cb) cb();
       });
     }
-    blockTarget = target;
-    var person = findPerson(target)
-      || (currentPartner && currentPartner.clientId === target ? currentPartner : null);
-    var name = (person && (friendLabel(person) || person.username)) || t('someone');
-    var isFriend = friendsState.friends.some(function (f) { return f.clientId === target; });
-    $('blockConfirmTitle').textContent = t('blockNamed', { name: name });
-    $('blockConfirmText').textContent = t(isFriend ? 'confirmBlockFriend' : 'confirmBlockUser');
-    blockModal.querySelector('.modal-close').setAttribute('aria-label', t('cancel'));
-    blockModal.querySelector('.btn-secondary').textContent = t('cancel');
-    blockModal.querySelector('.btn-danger').textContent = t('block');
-    openModal(blockModal);
+    confirmCb = onOk;
+    $('askTitle').textContent = o.title;
+    $('askText').textContent = o.text;
+    confirmBox.querySelector('.modal-close').setAttribute('aria-label', t('cancel'));
+    confirmBox.querySelector('[data-act="cancel"].btn').textContent = t('cancel');
+    var ok = confirmBox.querySelector('[data-act="ok"]');
+    ok.textContent = o.ok;
+    ok.className = 'btn ' + (o.danger === false ? 'btn-primary' : 'btn-danger');
+    openModal(confirmBox);
     vibrate(15);
-    blockModal.querySelector('.btn-secondary').focus();
+    confirmBox.querySelector('.btn-secondary').focus();
+  }
+
+  // Whoever this page knows as `clientId`, from the freshest list that has them.
+  function personFor(clientId) {
+    var pick = function (list) { return list.filter(function (x) { return x.clientId === clientId; })[0]; };
+    var live = currentPartner && currentPartner.clientId === clientId
+      ? { clientId: clientId, username: currentPartner.username, countryCode: currentPartner.countryCode, animal: currentPartner.animal }
+      : null;
+    var hit = pick(friendsState.friends) || pick(friendsState.requests) || pick(friendsState.sent) || pick(historyState);
+    if (hit && live) return Object.assign({}, live, hit);
+    return hit || live || { clientId: clientId };
+  }
+  function relationOf(clientId) {
+    var has = function (list) { return list.some(function (x) { return x.clientId === clientId; }); };
+    if (has(friendsState.friends)) return 'friend';
+    if (has(friendsState.requests)) return 'incoming';
+    if (has(friendsState.sent)) return 'pending';
+    return 'stranger';
+  }
+  function isLivePartner(clientId) {
+    return !!(partnerHere && currentPartner && currentPartner.clientId === clientId);
+  }
+  function canCall(clientId) {
+    return relationOf(clientId) === 'friend' || historyState.some(function (h) { return h.clientId === clientId; });
+  }
+
+  function openBlockConfirm(target) {
+    var p = personFor(target);
+    var name = friendLabel(p) || p.username || t('someone');
+    askConfirm({
+      title: t('blockNamed', { name: name }),
+      text: t(relationOf(target) === 'friend' ? 'confirmBlockFriend' : 'confirmBlockUser'),
+      ok: t('block'),
+    }, function () { doBlock(target); });
   }
   function doBlock(target) {
     // Blocking the stranger in the live chat ends that chat too.
@@ -2264,6 +2385,7 @@
     }
     socket.emit('block-friend', { friendClientId: target });
     if (activeFriendChatId === target) closeFriendChat();
+    closeProfile();
     socialToast(t('userBlocked'));
   }
   if (friendChatBlockBtn) {
@@ -2271,6 +2393,225 @@
       if (activeFriendChatId) openBlockConfirm(activeFriendChatId);
     });
   }
+
+  // --- Profile sheet --------------------------------------------------------
+  // The same sheet the call app has: who someone is, where you stand with
+  // them, and every action - message, call, add, rename, pin, mute, remove,
+  // report, block. Opened by tapping anyone's face or name, anywhere.
+  var profileBox = null;
+  var profileId = null;
+  var ICON = {
+    chat: '<svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>',
+    call: '<svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>',
+  };
+  function psBtn(act, label, cls, icon) {
+    return '<button type="button" class="btn ' + (cls || 'btn-secondary') + '" data-act="' + act + '">' + (icon || '') + '<span>' + escapeHtml(label) + '</span></button>';
+  }
+  function closeProfile() {
+    if (profileBox) closeModal(profileBox);
+    profileId = null;
+  }
+  function openProfile(clientId) {
+    if (!clientId) return;
+    if (!profileBox) {
+      profileBox = document.createElement('div');
+      profileBox.className = 'modal-overlay modal-top hidden';
+      profileBox.innerHTML =
+        '<div class="modal-box profile-sheet" role="dialog" aria-modal="true" aria-labelledby="psName">' +
+          '<div class="modal-header"><span></span><button type="button" class="modal-close" data-act="close">&times;</button></div>' +
+          '<div class="modal-body"><div class="ps-face"></div><h2 id="psName" class="ps-name"></h2>' +
+          '<p class="ps-real hidden"></p><p class="ps-status"></p>' +
+          '<div class="ps-row ps-main"></div><div class="ps-row ps-manage"></div><div class="ps-row ps-safety"></div></div></div>';
+      document.body.appendChild(profileBox);
+      profileBox.addEventListener('click', function (e) {
+        if (e.target === profileBox) return closeProfile();
+        var btn = e.target.closest('[data-act]');
+        if (btn && profileId) profileAction(btn.dataset.act, profileId);
+      });
+    }
+    profileId = clientId;
+    renderProfile();
+    openModal(profileBox);
+  }
+  function renderProfile() {
+    if (!profileBox || !profileId) return;
+    var id = profileId;
+    var p = personFor(id);
+    var rel = relationOf(id);
+    var friend = rel === 'friend' ? p : null;
+    var live = isLivePartner(id);
+    profileBox.querySelector('.ps-face').innerHTML = faceHtml(p, 72);
+    profileBox.querySelector('.ps-name').innerHTML = getFlagImg(p.countryCode, 18) + ' ' + escapeHtml(friendLabel(p) || p.username || t('someone'));
+    var real = profileBox.querySelector('.ps-real');
+    var renamed = friend && friend.nickname && friend.nickname !== friend.username;
+    real.classList.toggle('hidden', !renamed);
+    if (renamed) real.textContent = t('realName', { name: friend.username });
+    var presence = ('online' in p || p.lastSeen) ? presenceText(p) : '';
+    var status = rel === 'friend' ? presence : t('profileRelation_' + rel) + (presence ? ' · ' + presence : '');
+    profileBox.querySelector('.ps-status').textContent = status;
+    profileBox.querySelector('.modal-close').setAttribute('aria-label', t('close'));
+
+    var muted = mutedChats.indexOf(id) !== -1;
+    var main = '';
+    if (!live && (friend || historyState.some(function (h) { return h.clientId === id; }))) main += psBtn('chat', t('chat'), 'btn-primary', ICON.chat);
+    if (canCall(id)) main += psBtn('call', t('callBack'), 'btn-call', ICON.call);
+    if (rel === 'stranger') main += psBtn('add', t('addFriend'), 'btn-primary');
+    if (rel === 'incoming') main += psBtn('accept', t('accept'), 'btn-primary') + psBtn('decline', t('decline'));
+    if (rel === 'pending') main += '<span class="ps-pending">' + escapeHtml(t('pending')) + '</span>' + psBtn('cancel', t('cancelRequest'));
+    var manage = '';
+    if (friend) {
+      manage += psBtn('rename', t('renameFriend'));
+      manage += psBtn('pin', t(friend.pinned ? 'unpinFriend' : 'pinFriend'));
+    }
+    if (rel !== 'stranger' || historyState.some(function (h) { return h.clientId === id; })) {
+      manage += psBtn('mute', t(muted ? 'unmuteChat' : 'muteChat'));
+    }
+    if (friend) manage += psBtn('remove', t('removeFriend'));
+    profileBox.querySelector('.ps-main').innerHTML = main;
+    profileBox.querySelector('.ps-manage').innerHTML = manage;
+    profileBox.querySelector('.ps-safety').innerHTML = psBtn('report', t('report'), 'btn-ghost') + psBtn('block', t('blockUser'), 'btn-ghost btn-ghost-danger');
+  }
+  function profileAction(act, id) {
+    var p = personFor(id);
+    var name = friendLabel(p) || p.username || t('someone');
+    switch (act) {
+      case 'close': closeProfile(); break;
+      case 'chat': closeProfile(); openFriendChat({ clientId: id, username: p.username }); break;
+      case 'call':
+        // Voice lives in the call app: it opens there, already ringing them.
+        location.href = '/?open=call&with=' + encodeURIComponent(id);
+        break;
+      case 'add':
+        if (isLivePartner(id)) { closeProfile(); addFriendBtn.click(); break; }
+        socket.emit('friend-request', { targetClientId: id });
+        friendsState.sent.push({ clientId: id, username: p.username, countryCode: p.countryCode, ts: Date.now() });
+        socialToast(t('friendRequestSent'));
+        renderFriends();
+        renderProfile();
+        break;
+      case 'accept':
+      case 'decline':
+        socket.emit('friend-request-respond', { fromClientId: id, accept: act === 'accept' });
+        closeProfile();
+        break;
+      case 'cancel':
+        socket.emit('cancel-friend-request', { targetClientId: id });
+        friendsState.sent = friendsState.sent.filter(function (r) { return r.clientId !== id; });
+        socialToast(t('friendRequestCancelled'));
+        renderFriends();
+        renderProfile();
+        break;
+      case 'rename': closeProfile(); openRenameFriend(p); break;
+      case 'pin':
+        socket.emit('pin-friend', { friendClientId: id, pinned: !p.pinned });
+        if (p.pinned) delete p.pinned; else p.pinned = true;
+        renderFriends();
+        renderProfile();
+        break;
+      case 'mute':
+        var nowMuted = mutedChats.indexOf(id) === -1;
+        socket.emit('mute-chat', { targetClientId: id, muted: nowMuted });
+        mutedChats = nowMuted ? mutedChats.concat(id) : mutedChats.filter(function (x) { return x !== id; });
+        socialToast(t(nowMuted ? 'chatMuted' : 'chatUnmuted'));
+        renderFriends();
+        renderProfile();
+        renderChatHeadTools();
+        break;
+      case 'remove':
+        askConfirm({ title: t('removeFriend'), text: t('confirmRemoveFriend'), ok: t('remove') }, function () {
+          socket.emit('remove-friend', { friendClientId: id });
+          closeProfile();
+        });
+        break;
+      case 'report':
+        if (isLivePartner(id)) { closeProfile(); openReport(); break; }
+        askConfirm({ title: t('report'), text: t('confirmReportUser'), ok: t('report') }, function () {
+          socket.emit('report-user', { targetClientId: id, reason: 'profile' });
+          if (activeFriendChatId === id) closeFriendChat();
+          closeProfile();
+          socialToast(t('reportUserSent'));
+        });
+        break;
+      case 'block': openBlockConfirm(id); break;
+    }
+  }
+
+  // The friend chat's header: their face and name open the profile; mute and
+  // clear sit beside block, as in the call app.
+  var chatHeadWho = friendChatPanel.querySelector('.chat-head-who');
+  var chatHeadAv = document.createElement('button');
+  chatHeadAv.type = 'button';
+  chatHeadAv.className = 'chat-head-av';
+  if (chatHeadWho) {
+    chatHeadWho.before(chatHeadAv);
+    chatHeadWho.setAttribute('role', 'button');
+    chatHeadWho.tabIndex = 0;
+    chatHeadWho.style.cursor = 'pointer';
+    chatHeadWho.addEventListener('click', function () { openProfile(activeFriendChatId); });
+    chatHeadWho.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openProfile(activeFriendChatId); }
+    });
+  }
+  chatHeadAv.addEventListener('click', function () { openProfile(activeFriendChatId); });
+  var chatMuteBtn = document.createElement('button');
+  chatMuteBtn.type = 'button';
+  chatMuteBtn.className = 'chat-block-btn chat-mute-btn';
+  chatMuteBtn.addEventListener('click', function () { if (activeFriendChatId) profileAction('mute', activeFriendChatId); });
+  var chatClearBtn = document.createElement('button');
+  chatClearBtn.type = 'button';
+  chatClearBtn.className = 'chat-block-btn';
+  chatClearBtn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>';
+  chatClearBtn.addEventListener('click', function () {
+    var id = activeFriendChatId;
+    if (!id) return;
+    askConfirm({ title: t('clearChat'), text: t('confirmClearChat'), ok: t('clearChat') }, function () {
+      socket.emit('clear-friend-chat', { friendClientId: id });
+      if (activeFriendChatId === id) friendChatMsgs.innerHTML = '';
+      noteLastMessage(id, null);
+      renderFriends();
+      renderHistory();
+      socialToast(t('chatCleared'));
+    });
+  });
+  if (friendChatBlockBtn) {
+    friendChatBlockBtn.before(chatMuteBtn);
+    friendChatBlockBtn.before(chatClearBtn);
+  }
+  var MUTE_ON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M22 9l-6 6M16 9l6 6"/></svg>';
+  var MUTE_OFF = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg>';
+  function renderChatHeadTools() {
+    var id = activeFriendChatId;
+    chatHeadAv.innerHTML = id ? faceHtml(personFor(id), 34) : '';
+    chatHeadAv.setAttribute('aria-label', t('openProfile'));
+    var muted = !!id && mutedChats.indexOf(id) !== -1;
+    chatMuteBtn.innerHTML = muted ? MUTE_ON : MUTE_OFF;
+    chatMuteBtn.classList.toggle('is-muted', muted);
+    chatMuteBtn.title = t(muted ? 'unmuteChat' : 'muteChat');
+    chatMuteBtn.setAttribute('aria-label', chatMuteBtn.title);
+    chatClearBtn.title = t('clearChat');
+    chatClearBtn.setAttribute('aria-label', t('clearChat'));
+  }
+
+  // Faces beside their messages: the friend's picture in a friend chat, the
+  // stranger's spirit animal in the live one. Both open the profile.
+  if (Social) {
+    Social.attachMessageAvatars(friendChatMsgs, {
+      selector: '.msg', them: 'them',
+      person: function () {
+        var p = activeFriendChatId ? personFor(activeFriendChatId) : {};
+        return { avatar: p.avatar, animal: p.animal, name: friendLabel(p) || p.username };
+      },
+      open: function () { openProfile(activeFriendChatId); },
+    });
+    Social.attachMessageAvatars(msgs, {
+      selector: '.msg', them: 'them',
+      person: function () {
+        return currentPartner ? { animal: currentPartner.animal, name: currentPartner.username } : {};
+      },
+      open: function () { if (currentPartner && currentPartner.clientId) openProfile(currentPartner.clientId); },
+    });
+  }
+
   friendChatOverlay.addEventListener('click', closeFriendChat);
 
   friendChatForm.addEventListener('submit', function (e) {

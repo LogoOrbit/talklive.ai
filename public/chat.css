@@ -1528,3 +1528,28 @@ summary:active {
   font-size: 13px;
   flex-shrink: 0;
 }
+
+/* Friends parity with the call app: raised dialogs, the profile sheet, faces
+   in every list, pin/mute marks, call buttons and the blocked list. */
+.modal-overlay.modal-top { z-index: 700; }
+.row-face { border: 0; padding: 0; cursor: pointer; }
+.row-face .gender-icon, .row-face .avatar-animal { width: 30px !important; height: 30px !important; }
+.row-flag { display: inline-grid; place-items: center; margin-left: 5px; color: var(--muted); vertical-align: -2px; }
+.mini-btn.mini-call { color: #fff; background: var(--green); border-color: var(--green); }
+.profile-sheet .modal-header { border: 0; padding-bottom: 0; }
+.profile-sheet .modal-body { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; padding-top: 0; }
+.ps-face { width: 76px; height: 76px; display: grid; place-items: center; border-radius: 50%; background: var(--accent-soft); }
+.ps-name { margin: 6px 0 0; font-size: 20px; display: flex; align-items: center; gap: 6px; }
+.ps-real, .ps-status { margin: 0; color: var(--muted); font-size: 13px; }
+.ps-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; width: 100%; margin-top: 8px; }
+.ps-row:empty { display: none; }
+.ps-row .btn { padding: 10px 16px; font-size: 14px; gap: 6px; }
+.ps-safety { border-top: 1px solid var(--line); padding-top: 12px; }
+.btn-call { background: var(--green); color: #fff; }
+.btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+.btn-ghost-danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, transparent); }
+.ps-pending { align-self: center; color: var(--muted); font-weight: 700; font-size: 13px; }
+.chat-block-btn.is-muted { color: var(--accent); opacity: 1; }
+.blocked-section { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 10px; }
+.blocked-section summary { cursor: pointer; font-weight: 700; color: var(--muted); font-size: 13px; padding: 4px 0; }
+.btn-sm { padding: 7px 14px; font-size: 13px; }

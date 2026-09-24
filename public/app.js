@@ -3293,17 +3293,7 @@ function renderFriendsList() {
   // A call-back ringing out: the re-render (any state-sync, which the call
   // itself triggers by re-registering) replaced the spinning button with a
   // plain one, so the tap looked like it had done nothing. Carry it over.
-  if (activeCallbackSpinner) {
-    const id = activeCallbackSpinner.btn.dataset.id;
-    const fresh = friendsList.querySelector(`.friend-call-btn[data-id="${CSS.escape(id)}"]`);
-    if (fresh && fresh !== activeCallbackSpinner.btn) {
-      activeCallbackSpinner.btn = fresh;
-      activeCallbackSpinner.html = fresh.innerHTML;
-      fresh.classList.add('is-loading');
-      fresh.disabled = true;
-      fresh.innerHTML = '<span class="callback-spinner" aria-label="Connecting…"></span>';
-    }
-  }
+  reattachCallbackSpinner(friendsList, '.friend-call-btn');
 }
 
 friendsList.addEventListener('click', (e) => {
@@ -3413,7 +3403,7 @@ function openUserProfile(person) {
   const known = friend || person;
   activeProfileFriendId = person.clientId;
   activeProfileRelation = relation;
-  friendProfileAvatar.innerHTML = genderIcon(known.avatar, 72);
+  friendProfileAvatar.innerHTML = chatPersonFace(known, 72);
   friendProfileName.innerHTML = `${getFlagImg(known.countryCode)} ${escapeHtml(friendLabel(known))}`;
   const online = !!known.online;
   // Presence is shown to anyone the server reports it for - friends, and
@@ -3798,6 +3788,7 @@ socket.on('state-sync', ({ friends: friendList, friendRequests: requestList, sen
   renderHistory();
   renderFriendChatStatus();
   renderFriendChatMuteBtn();
+  if (activeFriendChatId) renderFriendChatHeadAv();
   // Also redraws the friends list, the sent requests and the tab counts.
   renderNotifications();
   syncAddFriendBtn();
@@ -4273,6 +4264,7 @@ function openFriendChat(friendClientId) {
   friendChatInput.value = friendDrafts.get(friendClientId) || '';
   const friend = friendsData.find((f) => f.clientId === friendClientId);
   friendChatTitle.textContent = friendChatName(friendClientId) || t('chat');
+  renderFriendChatHeadAv();
   closeSidePanel(friendsDropdown, friendsOverlay);
   closeSidePanel(friendProfileModal, friendProfileOverlay);
   openSidePanel(friendChatModal, friendChatOverlay);
@@ -4342,6 +4334,38 @@ function openActiveChatProfile() {
   if (!id) return;
   closeSidePanel(friendChatModal, friendChatOverlay);
   openUserProfile(personById(id));
+}
+// Their face in the chat header, and beside each of their messages: both open
+// the profile, which is where add, rename, mute, block and report live.
+const Social = window.TalkLiveSocial;
+function chatPersonFace(p, size) {
+  return p && p.avatar ? genderIcon(p.avatar, size) : (Social ? Social.face(null, size, p && p.animal) : genderIcon(null, size));
+}
+let friendChatHeadAv = null;
+function renderFriendChatHeadAv() {
+  if (!friendChatWho) return;
+  if (!friendChatHeadAv) {
+    friendChatHeadAv = document.createElement('button');
+    friendChatHeadAv.type = 'button';
+    friendChatHeadAv.className = 'chat-head-av';
+    friendChatHeadAv.addEventListener('click', openActiveChatProfile);
+    friendChatWho.before(friendChatHeadAv);
+  }
+  const p = activeFriendChatId ? personById(activeFriendChatId) : null;
+  friendChatHeadAv.innerHTML = chatPersonFace(p, 34);
+  friendChatHeadAv.setAttribute('aria-label', t('openProfile'));
+}
+if (Social) {
+  Social.attachMessageAvatars(friendChatMessages, {
+    selector: '.chat-msg',
+    them: 'them',
+    person: () => {
+      const p = activeFriendChatId ? personById(activeFriendChatId) : {};
+      return { avatar: p.avatar, name: friendChatName(activeFriendChatId) };
+    },
+    face: (p) => chatPersonFace(p, 26),
+    open: openActiveChatProfile,
+  });
 }
 if (friendChatWho) {
   friendChatWho.addEventListener('click', openActiveChatProfile);
@@ -4817,6 +4841,7 @@ function renderHistory() {
     `;
     historyList.appendChild(item);
   });
+  reattachCallbackSpinner(historyList, '.call-back-btn');
 }
 
 function recordCallHistory() {
@@ -4970,8 +4995,10 @@ historyList.addEventListener('click', (e) => {
   }
   const btn = e.target.closest('.call-back-btn');
   if (!btn || !btn.dataset.id) return;
-  closeHistoryPanel();
-  requestCallBack(btn.dataset.id, btn.dataset.name);
+  // Same as calling a friend: the panel stays, the button spins, and the
+  // calling bar says what is happening until they answer.
+  startCallbackSpinner(btn);
+  requestCallBack(btn.dataset.id, btn.dataset.name, { deferUI: true });
 });
 
 // Wraps 'register' so we can safely re-send the same payload after a socket
@@ -7443,6 +7470,23 @@ function sendStrangerChat(text, meta) {
 // Emoji picker, Giphy GIFs, reply-to and reactions for the in-call stranger
 // panel. Everything it owns is built the first time it is opened, so a caller
 // who never taps the buttons pays for two of them and nothing else.
+// The stranger's face beside their messages is their spirit animal - their
+// avatar is never shown to someone they have only just met.
+if (Social) {
+  Social.attachMessageAvatars(chatMessages, {
+    selector: '.chat-msg',
+    them: 'them',
+    person: () => (currentPartner ? { animal: currentPartner.animal, name: currentPartner.username } : {}),
+    face: (p) => chatPersonFace(p, 26),
+    open: () => {
+      if (!currentPartner || !currentPartner.clientId) return;
+      openUserProfile(personById(currentPartner.clientId, {
+        username: currentPartner.username, countryCode: currentPartner.countryCode, animal: currentPartner.animal,
+      }));
+    },
+  });
+}
+
 strangerExtras = window.TalkLiveChatExtras ? window.TalkLiveChatExtras.attach({
   form: chatForm,
   input: chatInput,
@@ -8422,6 +8466,7 @@ socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
   // already connected) - tear the old peer down first so it never leaks.
   if (pc) teardownPeer();
   if (typeof friendsDropdown !== 'undefined') closeSidePanel(friendsDropdown, friendsOverlay);
+  if (callback && historyPanel.classList.contains('open')) closeHistoryPanel();
   enterCallUI();
   // Game mark (X/O) roles are fixed by who initiated the call; clear any old game.
   amCallInitiator = !!initiator;
@@ -8569,8 +8614,65 @@ function startCallbackSpinner(btn) {
   btn.classList.add('is-loading');
   btn.disabled = true;
   btn.innerHTML = '<span class="callback-spinner" aria-label="Connecting…"></span>';
+  showCallingPill(btn.dataset.name || '');
 }
+
+// Calling someone from Friends or History stays where you are: the button
+// spins and this bar says, live, what is happening - calling, then ringing
+// once their phone has it - with a Cancel. The call screen opens only when
+// they pick up.
+let callingPill = null;
+function showCallingPill(name) {
+  if (!callingPill) {
+    callingPill = document.createElement('div');
+    callingPill.className = 'calling-pill';
+    callingPill.setAttribute('role', 'status');
+    callingPill.setAttribute('aria-live', 'polite');
+    callingPill.innerHTML = '<span class="calling-pill-ring" aria-hidden="true"></span>'
+      + '<span class="calling-pill-text"></span><button type="button" class="calling-pill-cancel"></button>';
+    callingPill.querySelector('.calling-pill-cancel').addEventListener('click', () => {
+      cancelOutgoingCallBack();
+      isSearching = false;
+      if (localStream) {
+        localStream.getTracks().forEach((tr) => tr.stop());
+        localStream = null;
+      }
+      restoreCallbackSpinner();
+    });
+    document.body.appendChild(callingPill);
+  }
+  callingPill.dataset.name = name;
+  callingPill.querySelector('.calling-pill-text').textContent = t('statusCalling', { name: name || t('stranger') });
+  callingPill.querySelector('.calling-pill-cancel').textContent = t('cancel');
+  callingPill.classList.remove('is-ringing');
+  requestAnimationFrame(() => callingPill && callingPill.classList.add('show'));
+}
+function setCallingPillRinging() {
+  if (!callingPill || !callingPill.classList.contains('show')) return;
+  callingPill.classList.add('is-ringing');
+  callingPill.querySelector('.calling-pill-text').textContent = t('ringingName', { name: callingPill.dataset.name || t('stranger') });
+}
+function hideCallingPill() {
+  if (callingPill) callingPill.classList.remove('show', 'is-ringing');
+}
+
+// The friends and history lists are redrawn whenever anything changes (a
+// state-sync, a message, someone coming online) - which used to swap the
+// spinning button for a plain one mid-call. Put the spinner back on the new
+// button for the same person.
+function reattachCallbackSpinner(container, selector) {
+  if (!activeCallbackSpinner || activeCallbackSpinner.btn.isConnected || !container) return;
+  const id = activeCallbackSpinner.btn.dataset.id;
+  const btn = id && container.querySelector(`${selector}[data-id="${CSS.escape(id)}"]`);
+  if (!btn) return;
+  activeCallbackSpinner.btn = btn;
+  btn.classList.add('is-loading');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="callback-spinner" aria-label="Connecting…"></span>';
+}
+
 function restoreCallbackSpinner() {
+  hideCallingPill();
   if (!activeCallbackSpinner) return;
   const { btn, html } = activeCallbackSpinner;
   btn.classList.remove('is-loading');
@@ -8732,7 +8834,7 @@ socket.on('call-back-cancelled', ({ fromClientId } = {}) => {
 });
 
 socket.on('call-back-request-result', ({ ok, reason, canQueue }) => {
-  if (ok) return;
+  if (ok) { setCallingPillRinging(); return; }
   const calledId = outgoingCallBack && outgoingCallBack.targetClientId;
   clearOutgoingCallBack();
   // Deferred (friends-list) callback: keep the friends panel up. On "offline"
@@ -9016,6 +9118,15 @@ function openSocialDeepLink(params) {
     closeSidePanel(friendProfileModal, friendProfileOverlay);
     openSidePanel(friendsDropdown, friendsOverlay);
     showFriendsTab(open === 'requests' ? 'requests' : 'friends');
+    return true;
+  }
+  // "Call" from the text app (/chat): voice lives here, so it lands here and
+  // starts ringing them straight away, with the usual Calling screen.
+  const callWho = open === 'call' ? params.get('with') : null;
+  if (callWho && /^[A-Za-z0-9_-]{8,64}$/.test(callWho)) {
+    const ringWhenKnown = () => requestCallBack(callWho, friendChatName(callWho) || t('stranger'));
+    if (friendsSynced) ringWhenKnown();
+    else socket.once('state-sync', () => setTimeout(ringWhenKnown, 0));
     return true;
   }
   // A message notification opens that conversation. The lists that say who
