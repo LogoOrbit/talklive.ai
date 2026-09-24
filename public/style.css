@@ -4354,7 +4354,7 @@ body.panel-open .game-overlay {
   border: 1px solid rgba(255, 255, 255, 0.08);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.18s ease, transform 0.3s cubic-bezier(0.2, 1.4, 0.4, 1);
+  transition: opacity 0.18s ease, transform 0.3s cubic-bezier(0.2, 1.4, 0.4, 1), top 0.25s ease;
 }
 /* Tone colours: green = done, blue = info/copied, amber = heads-up,
    red = error/blocked, purple-pink = friends, gold = Plus, dark = neutral. */

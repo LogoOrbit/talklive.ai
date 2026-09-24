@@ -2318,7 +2318,9 @@ function placeToast() {
   const el = document.getElementById('tlToast');
   if (!el) return;
   const pillUp = callingPill && callingPill.classList.contains('show');
-  el.style.top = pillUp ? `${Math.round(callingPill.getBoundingClientRect().bottom) + 8}px` : '';
+  // offsetTop ignores the pill's slide-in transform, so this is where it lands,
+  // not where it is mid-animation (still above the screen).
+  el.style.top = pillUp ? `${callingPill.offsetTop + callingPill.offsetHeight + 8}px` : '';
 }
 
 // tone: success | info | warn | error | social | plus | neutral (default).
