@@ -4,7 +4,11 @@ A random audio chat app - pairs strangers for live, audio-only conversations. Bu
 
 ## Features
 
-- One-tap random matchmaking (no sign up required)
+- One-tap random matchmaking (no sign up required). Everyone searching is
+  matched together in short rounds by maximum-weight matching: first as many
+  pairs as possible, then the pairs most likely to become real conversations
+  (learned from how calls end), shared interests, and who has waited longest
+  (see `server/matching.js`)
 - Optional account sign up/log in, including "Sign Up / Continue with Google"
 - Password recovery by emailed one-time code, so an account is never lost to a
   forgotten password (see [Forgot password](#forgot-password-email-otp))

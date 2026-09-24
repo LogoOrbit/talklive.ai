@@ -33,6 +33,7 @@ const mail = require('./mailer');
 const { botLabel, isPrefetch } = require('./bots');
 const { createAdmin } = require('./admin');
 const { isValidTimezone } = require('./analytics');
+const matching = require('./matching');
 
 const app = express();
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
@@ -2828,6 +2829,16 @@ function disconnectPartner(socketId, opts = {}) {
       if (partnerProfile) settleReferral(partnerProfile.clientId);
     }
   }
+  // `socketId` is the side that ended it, unless the connection simply dropped.
+  if (startedAt && profile && partnerProfile) {
+    callQuality.recordCall({
+      a: profile.clientId,
+      b: partnerProfile.clientId,
+      seconds: (Date.now() - startedAt) / 1000,
+      endedBy: opts.dropped ? null : profile.clientId,
+      failed: !!opts.failed,
+    });
+  }
   if (profile) profile.matchedAt = 0;
   if (partnerProfile) partnerProfile.matchedAt = 0;
 
@@ -2982,51 +2993,40 @@ function pruneQueue() {
   }
 }
 
-function findBestMatch(socketId) {
-  const seeker = profiles.get(socketId);
-  if (!seeker) return -1;
-  pruneQueue();
+// They hearted each other on an earlier call. A mutual heart may override the
+// preference filters, but never the hard gates. Mode is one of them: this path
+// once skipped it, so a pair who hearted each other on a voice call and later
+// queued for text chat (or the reverse) could be matched across pools -
+// dropping a mic-less chatter into a call, which is precisely what
+// mutuallyCompatible() calls out as something that must not happen.
+// Self-matching (the same browser in two tabs) is another, and a mutual heart
+// cannot fix a media path that does not exist either.
+function mutualHeart(a, b) {
+  if (a.clientId === b.clientId) return false;
+  if (isBlockedPair(a.clientId, b.clientId)) return false;
+  if ((a.mode || 'talk') !== (b.mode || 'talk')) return false;
+  if (pairOnCooldown(a.clientId, b.clientId, false)) return false;
+  const heartSet = hearts.get(pairKey(a.clientId, b.clientId));
+  return !!(heartSet && heartSet.has(a.clientId) && heartSet.has(b.clientId));
+}
 
-  // Prioritize reconnecting with a recent match if both hearted each other last time.
-  for (let i = 0; i < waitingQueue.length; i++) {
-    const candidateId = waitingQueue[i];
-    const candidate = profiles.get(candidateId);
-    if (!candidate || !io.sockets.sockets.get(candidateId)) continue;
-    if (isBlockedPair(seeker.clientId, candidate.clientId)) continue;
-    // A mutual heart may override the preference filters, but never the two
-    // hard gates. Mode is one of them: this path used to skip it entirely, so a
-    // pair who hearted each other on a voice call and later queued for text
-    // chat (or the reverse) could be matched across pools - dropping a mic-less
-    // chatter into a call, which is precisely what mutuallyCompatible() calls
-    // out as something that must not happen. Self-matching (the same browser in
-    // two tabs) is the other.
-    if (candidate.clientId === seeker.clientId) continue;
-    if ((seeker.mode || 'talk') !== (candidate.mode || 'talk')) continue;
-    // A mutual heart cannot fix a media path that does not exist either.
-    if (pairOnCooldown(seeker.clientId, candidate.clientId, false)) continue;
-    const key = pairKey(seeker.clientId, candidate.clientId);
-    const heartSet = hearts.get(key);
-    if (heartSet && heartSet.has(seeker.clientId) && heartSet.has(candidate.clientId)) {
-      return i;
-    }
-  }
+// Learned from how calls end (see server/matching.js). In memory, bounded.
+const callQuality = matching.createQualityModel();
 
-  let bestIdx = -1;
-  let bestScore = -1;
-
-  for (let i = 0; i < waitingQueue.length; i++) {
-    const candidateId = waitingQueue[i];
-    const candidate = profiles.get(candidateId);
-    if (!candidate || !io.sockets.sockets.get(candidateId)) continue;
-    if (!mutuallyCompatible(seeker, candidate)) continue;
-
-    const score = sharedInterestCount(seeker, candidate);
-    if (score > bestScore) {
-      bestScore = score;
-      bestIdx = i;
-    }
-  }
-  return bestIdx;
+// 0 when the two may not be paired, else how much the round should want them
+// paired: a fixed amount per pair (so the round matches as many people as it
+// can) plus how good this particular call is likely to be.
+function matchWeight(a, b, now) {
+  if (!a || !b) return 0;
+  const heart = mutualHeart(a, b);
+  if (!heart && !mutuallyCompatible(a, b)) return 0;
+  return matching.pairWeight({
+    callScore: callQuality.pairScore(a.clientId, b.clientId),
+    sharedInterests: sharedInterestCount(a, b),
+    sameCountry: !!a.country && a.country !== 'XX' && a.country === b.country,
+    waitedSec: ((now - (a.queuedAt || now)) + (now - (b.queuedAt || now))) / 1000,
+    mutualHeart: heart,
+  });
 }
 
 function estimatedWaitSeconds() {
@@ -3034,68 +3034,114 @@ function estimatedWaitSeconds() {
   return Math.max(2, Math.min(20, Math.round(12 / Math.sqrt(online))));
 }
 
+// `initiatorId` is whoever waited longer; they send the WebRTC offer.
+function pairUp(initiatorId, otherId) {
+  const initiatorSocket = io.sockets.sockets.get(initiatorId);
+  const otherSocket = io.sockets.sockets.get(otherId);
+  const initiatorProfile = profiles.get(initiatorId);
+  const otherProfile = profiles.get(otherId);
+  if (!initiatorSocket || !otherSocket || !initiatorProfile || !otherProfile) return;
+  for (const id of [initiatorId, otherId]) {
+    clearFromQueue(id);
+    clearWaitFallbackTimer(id);
+  }
+
+  partners.set(initiatorId, otherId);
+  partners.set(otherId, initiatorId);
+
+  const key = pairKey(initiatorProfile.clientId, otherProfile.clientId);
+  const rematched = hearts.has(key) && hearts.get(key).size === 2;
+  hearts.delete(key);
+
+  // Stamped on both sides so disconnectPartner can measure how long the
+  // conversation actually lasted, whichever side ends it.
+  initiatorProfile.matchedAt = Date.now();
+  otherProfile.matchedAt = initiatorProfile.matchedAt;
+
+  const mode = initiatorProfile.mode || 'talk';
+  store.recordFeature(mode === 'chat' ? 'chat_match' : 'match');
+  initiatorSocket.emit('matched', { initiator: true, partner: publicProfile(otherProfile), rematched, mode });
+  otherSocket.emit('matched', { initiator: false, partner: publicProfile(initiatorProfile), rematched, mode });
+
+  // Remember each other so either side can message back, call back, add or
+  // report later. This used to happen for text matches only, which left every
+  // voice-call partner unknown to the server: calling one back from the call
+  // history, messaging them, or reporting them from their profile was refused.
+  rememberPairing(otherSocket, otherProfile, initiatorSocket, initiatorProfile);
+}
+
+// One matching round over everyone waiting: build the compatibility graph and
+// pair people up by maximum-weight matching (server/matching.js). The queue is
+// in arrival order, so the lower index of a pair waited longer.
+function runMatchRound() {
+  pruneQueue();
+  const ids = waitingQueue.slice();
+  if (ids.length < 2) return;
+  const people = ids.map((id) => profiles.get(id));
+  const now = Date.now();
+  const edges = [];
+  for (let i = 0; i < ids.length; i++) {
+    for (let j = i + 1; j < ids.length; j++) {
+      const w = matchWeight(people[i], people[j], now);
+      if (w > 0) edges.push([i, j, w]);
+    }
+  }
+  const mate = matching.maxWeightMatching(ids.length, edges);
+  for (let i = 0; i < ids.length; i++) {
+    if (mate[i] > i) pairUp(ids[i], ids[mate[i]]);
+  }
+}
+
+// Searches that land within this window are matched together in one round, so
+// three people tapping Start at once get the best split of the three instead
+// of whatever the first tap grabbed. Short enough not to be felt.
+const MATCH_BATCH_MS = Number.isFinite(Number(process.env.MATCH_BATCH_MS))
+  && process.env.MATCH_BATCH_MS !== '' ? Number(process.env.MATCH_BATCH_MS) : 400;
+let matchRoundTimer = null;
+function scheduleMatchRound() {
+  if (matchRoundTimer) return;
+  matchRoundTimer = setTimeout(() => {
+    matchRoundTimer = null;
+    runMatchRound();
+  }, MATCH_BATCH_MS);
+}
+
+function enterRandomFallback(socketId) {
+  const p = profiles.get(socketId);
+  if (!p || p.randomFallbackActive) return;
+  clearWaitFallbackTimer(socketId);
+  p.randomFallbackActive = true;
+  const sock = io.sockets.sockets.get(socketId);
+  if (sock) sock.emit('random-fallback');
+}
+
+// Put a socket (back) in the queue and let the next round find its partner.
 function tryMatch(socketId) {
   disconnectPartner(socketId);
   clearFromQueue(socketId);
   clearWaitFallbackTimer(socketId);
 
   const seekerSocket = io.sockets.sockets.get(socketId);
-  if (!seekerSocket) return;
+  const seekerProfile = profiles.get(socketId);
+  if (!seekerSocket || !seekerProfile) return;
 
-  const matchIdx = findBestMatch(socketId);
+  waitingQueue.push(socketId);
+  seekerProfile.queuedAt = Date.now();
+  seekerSocket.emit('waiting', {
+    estimatedSeconds: estimatedWaitSeconds(),
+    predicted: predictedMatch(socketId),
+  });
 
-  if (matchIdx !== -1) {
-    const partnerId = waitingQueue.splice(matchIdx, 1)[0];
-    clearWaitFallbackTimer(partnerId);
-    const partnerSocket = io.sockets.sockets.get(partnerId);
-    if (!partnerSocket) return tryMatch(socketId);
-
-    partners.set(socketId, partnerId);
-    partners.set(partnerId, socketId);
-
-    const seekerProfile = profiles.get(socketId);
-    const partnerProfile = profiles.get(partnerId);
-    const key = pairKey(seekerProfile.clientId, partnerProfile.clientId);
-    const rematched = hearts.has(key) && hearts.get(key).size === 2;
-    hearts.delete(key);
-
-    // Stamped on both sides so disconnectPartner can measure how long the
-    // conversation actually lasted, whichever side ends it.
-    seekerProfile.matchedAt = Date.now();
-    partnerProfile.matchedAt = seekerProfile.matchedAt;
-
-    const mode = seekerProfile.mode || 'talk';
-    store.recordFeature(mode === 'chat' ? 'chat_match' : 'match');
-    partnerSocket.emit('matched', { initiator: true, partner: publicProfile(seekerProfile), rematched, mode });
-    seekerSocket.emit('matched', { initiator: false, partner: publicProfile(partnerProfile), rematched, mode });
-
-    // Remember each other so either side can message back, call back, add or
-    // report later. This used to happen for text matches only, which left every
-    // voice-call partner unknown to the server: calling one back from the call
-    // history, messaging them, or reporting them from their profile was refused.
-    rememberPairing(seekerSocket, seekerProfile, partnerSocket, partnerProfile);
-  } else {
-    waitingQueue.push(socketId);
-    const seekerProfile = profiles.get(socketId);
-    if (seekerProfile) seekerProfile.queuedAt = Date.now();
-    seekerSocket.emit('waiting', {
-      estimatedSeconds: estimatedWaitSeconds(),
-      predicted: predictedMatch(socketId),
-    });
-
-    if (seekerProfile && !seekerProfile.randomFallbackActive) {
-      const timer = setTimeout(() => {
-        waitFallbackTimers.delete(socketId);
-        const p = profiles.get(socketId);
-        if (!p || !waitingQueue.includes(socketId)) return;
-        p.randomFallbackActive = true;
-        const sock = io.sockets.sockets.get(socketId);
-        if (sock) sock.emit('random-fallback');
-        tryMatch(socketId);
-      }, RANDOM_FALLBACK_MS);
-      waitFallbackTimers.set(socketId, timer);
-    }
+  if (!seekerProfile.randomFallbackActive) {
+    const timer = setTimeout(() => {
+      waitFallbackTimers.delete(socketId);
+      if (!waitingQueue.includes(socketId)) return;
+      enterRandomFallback(socketId);
+      runMatchRound();
+    }, RANDOM_FALLBACK_MS);
+    waitFallbackTimers.set(socketId, timer);
   }
+  scheduleMatchRound();
 }
 
 // Matching used to be driven purely by two events: somebody new arriving, and a
@@ -3103,25 +3149,19 @@ function tryMatch(socketId) {
 // re-entered the queue by another path, two waiters queued a moment apart who
 // only became compatible once one of them hit the fallback - and a pair could
 // sit in the same short queue indefinitely while the site showed people online.
-// This pass costs nothing on a queue of a few dozen and makes the queue
-// self-healing: prune the dead, apply any overdue fallback, and re-run matching
-// for everyone still waiting.
+// This pass makes the queue self-healing: apply any overdue fallback, then run
+// a full round for everyone still waiting.
 const QUEUE_SWEEP_MS = 3000;
 function sweepQueue() {
   pruneQueue();
-  for (const socketId of [...waitingQueue]) {
-    // Matched by an earlier iteration of this same pass.
-    if (!waitingQueue.includes(socketId)) continue;
+  const now = Date.now();
+  for (const socketId of waitingQueue) {
     const p = profiles.get(socketId);
-    if (!p) continue;
-    if (!p.randomFallbackActive && p.queuedAt && Date.now() - p.queuedAt >= RANDOM_FALLBACK_MS) {
-      clearWaitFallbackTimer(socketId);
-      p.randomFallbackActive = true;
-      const sock = io.sockets.sockets.get(socketId);
-      if (sock) sock.emit('random-fallback');
+    if (p && !p.randomFallbackActive && p.queuedAt && now - p.queuedAt >= RANDOM_FALLBACK_MS) {
+      enterRandomFallback(socketId);
     }
-    if (findBestMatch(socketId) !== -1) tryMatch(socketId);
   }
+  runMatchRound();
 }
 setInterval(sweepQueue, QUEUE_SWEEP_MS).unref?.();
 

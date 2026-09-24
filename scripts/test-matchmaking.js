@@ -10,6 +10,8 @@
 //      fallback has dropped every other filter
 //   3. the other side is told the pairing failed, rather than being told a
 //      stranger hung up on it
+//   4. searches that arrive together are paired by fit (shared interests), not
+//      by who tapped first
 //
 //   node scripts/test-matchmaking.js
 const fs = require('fs');
@@ -43,12 +45,13 @@ function maybe(sock, ev, ms) {
   return once(sock, ev, ms).catch(() => null);
 }
 
-function connect(name) {
+function connect(name, interests) {
   const sock = io(BASE, { transports: ['websocket'], forceNew: true });
   sock.emit('register', {
     clientId: 'c_match_' + name,
     username: name,
     gender: 'male',
+    interests,
   });
   return sock;
 }
@@ -148,6 +151,22 @@ function connect(name) {
       (await reunion) === null);
     ok('the random fallback still reunites them rather than stranding anyone',
       (await maybe(d, 'matched', 12000)) !== null);
+
+    // --- 5. Searches arriving together are matched as a batch ---------------
+    // Foxtrot and Hotel share interests; Golf shares none. First-fit would pair
+    // Foxtrot with whichever arrived before it. The batch round pairs by fit.
+    const f = connect('Foxtrot', ['music', 'movies']);
+    const g = connect('Golf', ['chess']);
+    const h = connect('Hotel', ['Music', 'movies']);
+    socks.push(f, g, h);
+    await wait(400);
+    const fGot = once(f, 'matched');
+    g.emit('find-partner', {});
+    f.emit('find-partner', {});
+    h.emit('find-partner', {});
+    const fPartner = (await fGot).partner;
+    ok('a batch round pairs the two with shared interests',
+      fPartner && fPartner.clientId === 'c_match_Hotel', JSON.stringify(fPartner));
 
     console.log(failed ? `\n${failed} check(s) failed` : '\nAll checks passed');
     done(failed ? 1 : 0);
