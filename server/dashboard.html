@@ -50,6 +50,12 @@ body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--text)
 button{font:inherit;cursor:pointer}
 input,textarea,select{font:inherit;background:var(--surface);color:var(--text);border:1px solid var(--ring);border-radius:10px;padding:10px 12px;width:100%;outline:none}
 input:focus,textarea:focus{border-color:var(--accent)}
+.pwWrap{position:relative}
+.pwWrap input{padding-right:44px}
+.pwEye{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:none;border:0;color:var(--muted);border-radius:8px}
+.pwEye:hover{color:var(--text)}
+.pwEye .slash{display:none}
+.pwEye.on .slash{display:inline}
 .hidden{display:none!important}
 ::-webkit-scrollbar{height:8px;width:8px}::-webkit-scrollbar-thumb{background:var(--surface-2);border-radius:4px}
 
@@ -344,9 +350,9 @@ th.sortable .ar{opacity:.5;font-size:.7rem}
   <p>First-time setup. Create your admin password, then scan the QR code with <strong>Google Authenticator</strong>.</p>
   <div id="setupStep1">
     <label>Admin password (min 10 characters)</label>
-    <input id="setupPass" type="password" autocomplete="new-password">
+    <div class="pwWrap"><input id="setupPass" type="password" autocomplete="new-password"><button type="button" class="pwEye" aria-label="Show password" title="Show password"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/><line class="slash" x1="3" y1="3" x2="21" y2="21"/></svg></button></div>
     <label>Repeat password</label>
-    <input id="setupPass2" type="password" autocomplete="new-password">
+    <div class="pwWrap"><input id="setupPass2" type="password" autocomplete="new-password"><button type="button" class="pwEye" aria-label="Show password" title="Show password"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/><line class="slash" x1="3" y1="3" x2="21" y2="21"/></svg></button></div>
     <button class="btn" id="setupBtn">Continue</button>
   </div>
   <div id="setupStep2" class="hidden">
@@ -365,7 +371,7 @@ th.sortable .ar{opacity:.5;font-size:.7rem}
   <div id="loginStorage"></div>
   <p>Password + Google Authenticator code required.</p>
   <label>Password</label>
-  <input id="loginPass" type="password" autocomplete="current-password">
+  <div class="pwWrap"><input id="loginPass" type="password" autocomplete="current-password"><button type="button" class="pwEye" aria-label="Show password" title="Show password"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/><line class="slash" x1="3" y1="3" x2="21" y2="21"/></svg></button></div>
   <label>Authenticator code</label>
   <input id="loginCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
   <button class="btn" id="loginBtn">Sign in</button>
@@ -519,6 +525,7 @@ $('#loginBtn').onclick=async()=>{
   try{await post('login',{password:$('#loginPass').value,code:$('#loginCode').value});$('#loginPass').value='';$('#loginCode').value='';show('dash');startDash();}
   catch(e){$('#loginErr').textContent=e.message;}
 };
+document.querySelectorAll('.pwEye').forEach(b=>b.onclick=()=>{const i=b.previousElementSibling,show=i.type==='password';i.type=show?'text':'password';b.classList.toggle('on',show);b.setAttribute('aria-label',show?'Hide password':'Show password');b.title=b.getAttribute('aria-label');i.focus();});
 $('#loginCode').addEventListener('keydown',e=>{if(e.key==='Enter')$('#loginBtn').click();});
 $('#logoutBtn').onclick=async()=>{await post('logout');location.reload();};
 $('#themeBtn').onclick=cycleTheme;
