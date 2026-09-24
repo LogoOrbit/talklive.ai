@@ -1,6 +1,21 @@
 // TalkLive translations: id. Loaded on demand (and preloaded from the page
 // <head>), so it may run before i18n.js - hence the guard on I18N_STRINGS.
 (window.I18N_STRINGS = window.I18N_STRINGS || {})["id"] = {
+  "setSearch": "Cari pengaturan",
+  "setNoResults": "Tidak ada yang cocok dengan “{q}”",
+  "setDescProfile": "Nama, avatar, ID, dan akun",
+  "setDescApp": "Bahasa, tema, dan suara",
+  "setDescPrivacy": "Panggilan, status online, dan blokir",
+  "setDescBilling": "Koin, Boost, dan tanda terima",
+  "setDescAbout": "Masukan, kebijakan, dan kontak",
+  "soundHint": "Bunyikan suara untuk match dan pesan",
+  "vibrationHint": "Getar saat terhubung atau ada pesan",
+  "statusHint": "Teman bisa melihat saat kamu online",
+  "seenHint": "Tunjukkan saat kamu sudah membaca pesan",
+  "setSaved": "Tersimpan",
+  "setAppearance": "Tampilan",
+  "setAlerts": "Peringatan",
+  "setLegal": "Hukum",
   "sharePromptTitle": "Suka dengan panggilan tadi?",
   "sharePromptBody": "TalkLive makin seru kalau makin banyak orang online. Ajak teman untuk ikut mengobrol.",
   "sharePromptBtn": "Bagikan TalkLive",

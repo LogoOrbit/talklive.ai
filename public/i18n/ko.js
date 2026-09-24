@@ -1,6 +1,21 @@
 // TalkLive translations: ko. Loaded on demand (and preloaded from the page
 // <head>), so it may run before i18n.js - hence the guard on I18N_STRINGS.
 (window.I18N_STRINGS = window.I18N_STRINGS || {})["ko"] = {
+  "setSearch": "설정 검색",
+  "setNoResults": "“{q}”와 일치하는 항목이 없어요",
+  "setDescProfile": "이름, 아바타, ID 및 계정",
+  "setDescApp": "언어, 테마 및 소리",
+  "setDescPrivacy": "통화, 접속 상태 및 차단",
+  "setDescBilling": "코인, 부스트 및 영수증",
+  "setDescAbout": "피드백, 정책 및 문의",
+  "soundHint": "매칭과 메시지에 소리 재생",
+  "vibrationHint": "연결되거나 메시지가 오면 진동",
+  "statusHint": "친구가 내 접속 상태를 볼 수 있어요",
+  "seenHint": "메시지를 읽었는지 상대에게 표시",
+  "setSaved": "저장됨",
+  "setAppearance": "모양",
+  "setAlerts": "알림",
+  "setLegal": "법적 고지",
   "sharePromptTitle": "통화 즐거우셨나요?",
   "sharePromptBody": "온라인에 사람이 많을수록 TalkLive가 더 좋아져요. 친구를 대화에 초대해 보세요.",
   "sharePromptBtn": "TalkLive 공유하기",

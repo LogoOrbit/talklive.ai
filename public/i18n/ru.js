@@ -1,6 +1,21 @@
 // TalkLive translations: ru. Loaded on demand (and preloaded from the page
 // <head>), so it may run before i18n.js - hence the guard on I18N_STRINGS.
 (window.I18N_STRINGS = window.I18N_STRINGS || {})["ru"] = {
+  "setSearch": "Поиск по настройкам",
+  "setNoResults": "Ничего не найдено по запросу «{q}»",
+  "setDescProfile": "Имя, аватар, ID и аккаунт",
+  "setDescApp": "Язык, тема и звуки",
+  "setDescPrivacy": "Звонки, статус в сети и блокировка",
+  "setDescBilling": "Монеты, бусты и чеки",
+  "setDescAbout": "Отзывы, правила и контакты",
+  "soundHint": "Звук при совпадениях и сообщениях",
+  "vibrationHint": "Вибрация при подключении и сообщениях",
+  "statusHint": "Друзья видят, когда вы в сети",
+  "seenHint": "Показывать, что вы прочитали сообщения",
+  "setSaved": "Сохранено",
+  "setAppearance": "Оформление",
+  "setAlerts": "Оповещения",
+  "setLegal": "Правовая информация",
   "sharePromptTitle": "Понравился разговор?",
   "sharePromptBody": "TalkLive становится лучше, когда онлайн больше людей. Пригласите друга присоединиться.",
   "sharePromptBtn": "Поделиться TalkLive",

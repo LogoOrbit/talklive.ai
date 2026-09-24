@@ -28,7 +28,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   root.classList.add('i18n-pending');
   setTimeout(function () { root.classList.remove('i18n-pending'); }, 1500);
   var s = document.createElement('script');
-  s.src = '/i18n/' + lang + '.js?v=20260923qa';
+  s.src = '/i18n/' + lang + '.js?v=20260924set';
   s.async = true;
   s.setAttribute('data-i18n-lang', lang);
   s.onerror = function () { root.classList.remove('i18n-pending'); };
@@ -60,7 +60,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
      side-panel shell, Settings, Friends/History and the account dialog, and it
      does so with its own `tl-` class names so nothing above can reach it. -->
-<link rel="stylesheet" href="ui.css?v=20260924qsauth" />
+<link rel="stylesheet" href="ui.css?v=20260924set" />
 <link rel="stylesheet" href="auth.css?v=20260924auth" />
 <!-- The top bar, shared with /chat. Loaded after everything else because it
      owns the header outright: one button language, one radius, one focus ring
@@ -1309,100 +1309,71 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
         </div>
       </section>
 
-      <!-- ===================================================================
-           SETTINGS, as a page.
-           -------------------------------------------------------------------
-           It used to be a side panel: a 380px column you scrolled through
-           five unrelated groups of, on top of the page you were trying to
-           use, with the whole thing gone the moment you tapped outside it.
-           Settings is not a quick action. It is somewhere you go.
-
-           So it is a screen now, at its own URL, in the same tab: the stage
-           swaps the home screen out for it exactly the way a call does. On a
-           desktop the five groups are a column of tabs beside the one you are
-           reading; on a phone they are a list, and picking one opens it with
-           a back arrow - the pattern every phone settings app uses, because
-           five screens of one thing beats one screen of five.
-
-           Every control inside is the original markup, moved: same IDs, same
-           handlers, same state. Nothing here re-implements a setting.
-           =================================================================== -->
+      <!-- SETTINGS, as a screen at /settings. Desktop: your card and the
+           sections on the left, the one you are reading on the right. Phone:
+           the list is the screen and a section slides in over it. Styles and
+           the search/animation layer load lazily (settings.css,
+           settings-panel.js); every control keeps its id and its handler in
+           app.js. -->
       <section id="settingsPage" class="tl-set-page hidden" aria-labelledby="settingsPageTitle">
         <header class="tl-set-page-head">
           <button type="button" id="settingsBackBtn" class="tl-set-back" data-i18n-aria="back" aria-label="Back">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>
           </button>
-          <!-- h2, not h1: the hero's headline is this document's one H1, and a
-               second one on a screen inside the same single-page shell makes
-               the page ambiguous to a crawler (the SEO audit fails on it). -->
+          <!-- h2: the hero headline is this document's one H1. -->
           <h2 id="settingsPageTitle" data-i18n="settings">Settings</h2>
         </header>
 
         <div class="tl-set-layout">
-          <nav class="tl-set-nav" id="settingsNav" role="tablist" data-i18n-aria="settings" aria-label="Settings sections">
-          <button type="button" class="tl-set-nav-item selected" data-settings-tab="profile" role="tab" aria-selected="true" aria-controls="settingsPane-profile">
-            <span class="tl-set-nav-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"/></svg>
-            </span>
-            <span class="tl-set-nav-label" data-i18n="catProfile">Profile</span>
-            <span class="tl-set-nav-go" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
-            </span>
-          </button>
-          <button type="button" class="tl-set-nav-item" data-settings-tab="app" role="tab" aria-selected="false" aria-controls="settingsPane-app">
-            <span class="tl-set-nav-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-            </span>
-            <span class="tl-set-nav-label" data-i18n="appSettings">App Settings</span>
-            <span class="tl-set-nav-go" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
-            </span>
-          </button>
-          <button type="button" class="tl-set-nav-item" data-settings-tab="privacy" role="tab" aria-selected="false" aria-controls="settingsPane-privacy">
-            <span class="tl-set-nav-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.2 19 6v6c0 4.4-3 7.6-7 8.8-4-1.2-7-4.4-7-8.8V6z"/><path d="m9 12 2.2 2.2L15.4 10"/></svg>
-            </span>
-            <span class="tl-set-nav-label" data-i18n="catPrivacy">Privacy & Safety</span>
-            <span class="tl-set-nav-go" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
-            </span>
-          </button>
-          <button type="button" class="tl-set-nav-item" data-settings-tab="billing" role="tab" aria-selected="false" aria-controls="settingsPane-billing">
-            <span class="tl-set-nav-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2.5"/><path d="M3 10.5h18"/></svg>
-            </span>
-            <span class="tl-set-nav-label" data-i18n="catBilling">Coins & Billing</span>
-            <span class="tl-set-nav-go" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
-            </span>
-          </button>
-          <button type="button" class="tl-set-nav-item" data-settings-tab="about" role="tab" aria-selected="false" aria-controls="settingsPane-about">
-            <span class="tl-set-nav-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.8 9.4a2.3 2.3 0 1 1 3 2.2v1.2"/><path d="M12 16.6h.01"/></svg>
-            </span>
-            <span class="tl-set-nav-label" data-i18n="catAbout">Help & About</span>
-            <span class="tl-set-nav-go" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
-            </span>
-          </button>
-          </nav>
+          <div class="tl-set-side">
+            <button type="button" id="settingsProfileRow" class="tl-set-hero">
+              <span id="settingsProfileAvatar" class="tl-set-hero-face" aria-hidden="true"></span>
+              <span class="tl-set-hero-text">
+                <strong id="settingsProfileName"></strong>
+                <small id="settingsProfileJoined"></small>
+              </span>
+              <span class="tl-set-hero-go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
+            </button>
+
+            <label class="tl-set-search">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg>
+              <input type="search" id="settingsSearch" autocomplete="off" enterkeyhint="search" data-i18n-set-ph="setSearch" data-i18n-set-aria="setSearch" placeholder="Search settings" aria-label="Search settings" />
+            </label>
+
+            <nav class="tl-set-nav" id="settingsNav" role="tablist" data-i18n-aria="settings" aria-label="Settings sections">
+              <button type="button" class="tl-set-nav-item selected" data-settings-tab="profile" role="tab" aria-selected="true" aria-controls="settingsPane-profile">
+                <span class="tl-set-nav-icon hue-violet" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"/></svg></span>
+                <span class="tl-set-nav-text"><span class="tl-set-nav-label" data-i18n="catProfile">Profile</span><small data-i18n-set="setDescProfile">Name, avatar, ID and account</small></span>
+                <span class="tl-set-nav-go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
+              </button>
+              <button type="button" class="tl-set-nav-item" data-settings-tab="app" role="tab" aria-selected="false" aria-controls="settingsPane-app">
+                <span class="tl-set-nav-icon hue-blue" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.6-.7 1.6-1.5 0-.9-.8-1.3-.8-2.2 0-.9.7-1.6 1.6-1.6H16a5 5 0 0 0 5-5C21 6.4 17 3 12 3z"/><circle cx="7.5" cy="11" r="1.2" fill="currentColor"/><circle cx="10.5" cy="7" r="1.2" fill="currentColor"/><circle cx="15.5" cy="7.5" r="1.2" fill="currentColor"/></svg></span>
+                <span class="tl-set-nav-text"><span class="tl-set-nav-label" data-i18n="appSettings">App Settings</span><small data-i18n-set="setDescApp">Language, theme and sounds</small></span>
+                <span class="tl-set-nav-go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
+              </button>
+              <button type="button" class="tl-set-nav-item" data-settings-tab="privacy" role="tab" aria-selected="false" aria-controls="settingsPane-privacy">
+                <span class="tl-set-nav-icon hue-green" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.2 19 6v6c0 4.4-3 7.6-7 8.8-4-1.2-7-4.4-7-8.8V6z"/><path d="m9 12 2.2 2.2L15.4 10"/></svg></span>
+                <span class="tl-set-nav-text"><span class="tl-set-nav-label" data-i18n="catPrivacy">Privacy &amp; Safety</span><small data-i18n-set="setDescPrivacy">Calls, online status and blocking</small></span>
+                <span class="tl-set-nav-go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
+              </button>
+              <button type="button" class="tl-set-nav-item" data-settings-tab="billing" role="tab" aria-selected="false" aria-controls="settingsPane-billing">
+                <span class="tl-set-nav-icon hue-amber" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2.5"/><path d="M3 10.5h18"/></svg></span>
+                <span class="tl-set-nav-text"><span class="tl-set-nav-label" data-i18n="catBilling">Coins &amp; Billing</span><small data-i18n-set="setDescBilling">Coins, Boosts and receipts</small></span>
+                <span class="tl-set-nav-go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
+              </button>
+              <button type="button" class="tl-set-nav-item" data-settings-tab="about" role="tab" aria-selected="false" aria-controls="settingsPane-about">
+                <span class="tl-set-nav-icon hue-pink" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.8 9.4a2.3 2.3 0 1 1 3 2.2v1.2"/><path d="M12 16.6h.01"/></svg></span>
+                <span class="tl-set-nav-text"><span class="tl-set-nav-label" data-i18n="catAbout">Help &amp; About</span><small data-i18n-set="setDescAbout">Feedback, policies and contact</small></span>
+                <span class="tl-set-nav-go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
+              </button>
+            </nav>
+          </div>
 
           <div class="tl-set-content" id="settingsContent">
         <div id="settingsPane-profile" class="tl-set-pane" data-settings-pane="profile" role="tabpanel">
           <section>
             <h3 class="tl-set-legend" data-i18n="catProfile">Profile</h3>
             <div class="tl-set-group">
-              <!-- Who you are right now. A summary, not a button: everything
-                   it used to link to is on this screen, right below it. -->
-              <div id="settingsProfileRow" class="tl-set-row tl-set-row-static">
-                <span id="settingsProfileAvatar" class="tl-set-row-icon" aria-hidden="true"></span>
-                <span class="tl-set-row-text">
-                  <strong id="settingsProfileName"></strong>
-                  <small id="settingsProfileJoined"></small>
-                </span>
-              </div>
-
-              <!-- Display name: the name strangers see. No account needed. -->
               <div class="tl-set-control tl-set-control-stack">
                 <label class="tl-set-label" for="tempUsernameInput" data-i18n="tempUsername">Display name</label>
                 <div class="tl-set-field">
@@ -1411,78 +1382,71 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
                 </div>
               </div>
 
-              <!-- Your picture. It used to live inside the account dialog's
-                   signed-in pane, which meant the one thing on this site that
-                   needs no account - a profile - could not have a face unless
-                   you made one. Anonymous users already have a name, friends
-                   and a history; they can have a picture too. -->
-              <div class="tl-set-control tl-set-control-stack">
-                <span class="tl-set-label" data-i18n="avatar">Avatar</span>
-                <div class="tl-avatar-picker">
-              <p class="tl-field-note" data-i18n="avatarHint">Pick a face or a spirit animal. It is your face everywhere - your friends, your profile, and whoever you connect with on a call.</p>
-              <!-- Every avatar in one scrollable grid: faces, then animals. -->
-              <div id="avatarGrid" class="avatar-grid avatar-grid-all"></div>
-              <!-- A face you tapped is a face you are trying on; it is yours
-                   once you say so. Nothing leaves this panel until Save. -->
-              <div class="tl-set-field tl-avatar-save">
-                <button type="button" id="saveAvatarBtn" data-i18n="saveAvatar" disabled>Save avatar</button>
-              </div>
-                </div>
-              </div>
-
               <div class="tl-set-control tl-set-control-stack">
                 <span class="tl-set-label" id="genderGroupLabel" data-i18n="iAm">I am</span>
                 <div class="tl-seg pill-group" id="genderGroup" data-value="unspecified" role="group" aria-labelledby="genderGroupLabel">
-                  <button type="button" class="tl-seg-opt pill" data-value="unspecified"><span class="pill-dot pill-dot-neutral" aria-hidden="true"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span data-i18n="preferNotSay">Prefer not to say</span></button>
-                  <button type="button" class="tl-seg-opt pill" data-value="male"><span class="pill-dot pill-dot-male" aria-hidden="true"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="14" r="6"/><line x1="14.5" y1="9.5" x2="20" y2="4"/><polyline points="14.5 4 20 4 20 9.5"/></svg><span data-i18n="male">Male</span></button>
-                  <button type="button" class="tl-seg-opt pill" data-value="female"><span class="pill-dot pill-dot-female" aria-hidden="true"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="9" r="6"/><line x1="12" y1="15" x2="12" y2="21"/><line x1="9" y1="18" x2="15" y2="18"/></svg><span data-i18n="female">Female</span></button>
+                  <button type="button" class="tl-seg-opt pill" data-value="unspecified"><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span data-i18n="preferNotSay">Prefer not to say</span></button>
+                  <button type="button" class="tl-seg-opt pill" data-value="male"><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="14" r="6"/><line x1="14.5" y1="9.5" x2="20" y2="4"/><polyline points="14.5 4 20 4 20 9.5"/></svg><span data-i18n="male">Male</span></button>
+                  <button type="button" class="tl-seg-opt pill" data-value="female"><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="9" r="6"/><line x1="12" y1="15" x2="12" y2="21"/><line x1="9" y1="18" x2="15" y2="18"/></svg><span data-i18n="female">Female</span></button>
+                </div>
+              </div>
+
+              <!-- Nothing leaves the picker until Save. -->
+              <div class="tl-set-control tl-set-control-stack">
+                <span class="tl-set-label" data-i18n="avatar">Avatar</span>
+                <div class="tl-avatar-picker">
+                  <p class="tl-field-note" data-i18n="avatarHint">Pick a face or a spirit animal. It is your face everywhere - your friends, your profile, and whoever you connect with on a call.</p>
+                  <div id="avatarGrid" class="avatar-grid avatar-grid-all"></div>
+                  <div class="tl-set-field tl-avatar-save">
+                    <button type="button" id="saveAvatarBtn" data-i18n="saveAvatar" disabled>Save avatar</button>
+                  </div>
                 </div>
               </div>
             </div>
           </section>
 
-          <!-- Account, managed right here rather than in a dialog on top of
-               Settings. Signed out: sign in / register. Signed in: password,
-               recovery email and log out. -->
           <section class="tl-set-account">
             <h3 class="tl-set-legend" data-i18n="myAccount">My Account</h3>
             <div class="tl-set-foot" id="sidePanelAuth">
+              <span class="tl-set-ico i-cloud" aria-hidden="true"></span>
               <p class="tl-field-note tl-set-foot-note" data-i18n="accountGuestHint">Sign in to keep your name, avatar and friends on any device.</p>
               <button type="button" id="sidePanelSignInBtn" class="btn btn-secondary side-auth-btn" data-i18n="signIn">Sign in</button>
               <button type="button" id="sidePanelRegisterBtn" class="btn btn-primary side-auth-btn" data-i18n="register">Register</button>
             </div>
 
             <div id="accountLoggedIn" class="tl-set-group tl-account-pane hidden">
-              <p class="account-welcome"><span data-i18n="signedInAs">Signed in as</span> <strong id="accountNicknameDisplay"></strong></p>
+              <p class="account-welcome"><span class="tl-set-ico i-check" aria-hidden="true"></span><span data-i18n="signedInAs">Signed in as</span> <strong id="accountNicknameDisplay"></strong></p>
 
-              <!-- Real forms, so password managers can offer to update a
-                   stored password. Submission is handled in app.js. -->
-              <form class="tl-account-block" autocomplete="on" onsubmit="return false;">
-                <h4 class="tl-set-label" data-i18n="changePassword">Change Password</h4>
-                <div class="tl-field">
-                  <label for="currentPasswordInput" data-i18n="currentPassword">Current password</label>
-                  <input type="password" id="currentPasswordInput" class="account-input" data-i18n-placeholder="currentPassword" data-i18n-aria="currentPassword" placeholder="Current password" autocomplete="current-password" />
-                </div>
-                <div class="tl-field">
-                  <label for="newPasswordInput" data-i18n="newPassword">New password</label>
-                  <input type="password" id="newPasswordInput" class="account-input" data-i18n-placeholder="newPassword" data-i18n-aria="newPassword" placeholder="New password" autocomplete="new-password" />
-                </div>
-                <button type="button" id="changePasswordBtn" class="tl-submit" data-i18n="updatePassword" disabled>Update Password</button>
-              </form>
+              <details class="tl-set-disclose">
+                <summary><span class="tl-set-ico i-key" aria-hidden="true"></span><span data-i18n="changePassword">Change Password</span></summary>
+                <form class="tl-account-block" autocomplete="on" onsubmit="return false;">
+                  <div class="tl-field">
+                    <label for="currentPasswordInput" data-i18n="currentPassword">Current password</label>
+                    <input type="password" id="currentPasswordInput" class="account-input" data-i18n-placeholder="currentPassword" data-i18n-aria="currentPassword" placeholder="Current password" autocomplete="current-password" />
+                  </div>
+                  <div class="tl-field">
+                    <label for="newPasswordInput" data-i18n="newPassword">New password</label>
+                    <input type="password" id="newPasswordInput" class="account-input" data-i18n-placeholder="newPassword" data-i18n-aria="newPassword" placeholder="New password" autocomplete="new-password" />
+                  </div>
+                  <button type="button" id="changePasswordBtn" class="tl-submit" data-i18n="updatePassword" disabled>Update Password</button>
+                </form>
+              </details>
 
-              <form class="tl-account-block" autocomplete="on" onsubmit="return false;">
-                <h4 class="tl-set-label" data-i18n="recoveryEmail">Recovery Email</h4>
-                <p id="recoveryEmailState" class="tl-field-note"></p>
-                <div class="tl-field">
-                  <label for="recoveryEmailInput" data-i18n="email">Email</label>
-                  <input type="email" id="recoveryEmailInput" class="account-input" data-i18n-placeholder="email" data-i18n-aria="email" placeholder="Email" autocomplete="email" inputmode="email" />
-                </div>
-                <div class="tl-field">
-                  <label for="recoveryEmailPassword" data-i18n="currentPassword">Current password</label>
-                  <input type="password" id="recoveryEmailPassword" class="account-input" data-i18n-placeholder="currentPassword" data-i18n-aria="currentPassword" placeholder="Current password" autocomplete="current-password" />
-                </div>
-                <button type="button" id="updateRecoveryEmailBtn" class="tl-submit" data-i18n="saveRecoveryEmail" disabled>Save Recovery Email</button>
-              </form>
+              <details class="tl-set-disclose">
+                <summary><span class="tl-set-ico i-mail" aria-hidden="true"></span><span data-i18n="recoveryEmail">Recovery Email</span></summary>
+                <form class="tl-account-block" autocomplete="on" onsubmit="return false;">
+                  <p id="recoveryEmailState" class="tl-field-note"></p>
+                  <div class="tl-field">
+                    <label for="recoveryEmailInput" data-i18n="email">Email</label>
+                    <input type="email" id="recoveryEmailInput" class="account-input" data-i18n-placeholder="email" data-i18n-aria="email" placeholder="Email" autocomplete="email" inputmode="email" />
+                  </div>
+                  <div class="tl-field">
+                    <label for="recoveryEmailPassword" data-i18n="currentPassword">Current password</label>
+                    <input type="password" id="recoveryEmailPassword" class="account-input" data-i18n-placeholder="currentPassword" data-i18n-aria="currentPassword" placeholder="Current password" autocomplete="current-password" />
+                  </div>
+                  <button type="button" id="updateRecoveryEmailBtn" class="tl-submit" data-i18n="saveRecoveryEmail" disabled>Save Recovery Email</button>
+                </form>
+              </details>
 
               <button type="button" id="logoutBtn" class="btn btn-danger settings-save account-logout" data-i18n="logOut">Log Out</button>
             </div>
@@ -1490,8 +1454,17 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
         </div>
         <div id="settingsPane-app" class="tl-set-pane hidden" data-settings-pane="app" role="tabpanel">
           <section>
-            <h3 class="tl-set-legend" data-i18n="appSettings">App Settings</h3>
+            <h3 class="tl-set-legend" data-i18n-set="setAppearance">Appearance</h3>
             <div class="tl-set-group">
+              <div class="tl-set-control tl-set-control-stack">
+                <span class="tl-set-label" id="themeGroupLabel" data-i18n="theme">Theme</span>
+                <div class="tl-themes pill-group" id="themeGroup" data-value="dark" role="group" aria-labelledby="themeGroupLabel">
+                  <button type="button" class="tl-theme-opt pill" data-value="dark"><span class="tl-theme-art" aria-hidden="true"><i></i><i></i><i></i></span><span data-i18n="themeDark">Dark</span></button>
+                  <button type="button" class="tl-theme-opt pill" data-value="light"><span class="tl-theme-art" aria-hidden="true"><i></i><i></i><i></i></span><span data-i18n="themeLight">Light</span></button>
+                  <button type="button" class="tl-theme-opt pill" data-value="ocean"><span class="tl-theme-art" aria-hidden="true"><i></i><i></i><i></i></span><span data-i18n="themeOcean">Ocean</span></button>
+                  <button type="button" class="tl-theme-opt pill" data-value="sunset"><span class="tl-theme-art" aria-hidden="true"><i></i><i></i><i></i></span><span data-i18n="themeSunset">Sunset</span></button>
+                </div>
+              </div>
               <div class="tl-set-control tl-set-control-stack">
                 <span class="tl-set-label" data-i18n="language">Language</span>
                 <div class="lang-wrap settings-lang-wrap">
@@ -1499,24 +1472,19 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
                   <select id="langSelect" class="lang-select" data-i18n-aria="language" data-i18n-title="language" aria-label="Language"></select>
                 </div>
               </div>
-
-              <div class="tl-set-control tl-set-control-stack">
-                <span class="tl-set-label" id="themeGroupLabel" data-i18n="theme">Theme</span>
-                <div class="tl-seg pill-group" id="themeGroup" data-value="dark" role="group" aria-labelledby="themeGroupLabel">
-                  <button type="button" class="tl-seg-opt pill" data-value="dark"><span class="pill-dot theme-dot-dark" aria-hidden="true"></span><span data-i18n="themeDark">Dark</span></button>
-                  <button type="button" class="tl-seg-opt pill" data-value="light"><span class="pill-dot theme-dot-light" aria-hidden="true"></span><span data-i18n="themeLight">Light</span></button>
-                  <button type="button" class="tl-seg-opt pill" data-value="ocean"><span class="pill-dot theme-dot-ocean" aria-hidden="true"></span><span data-i18n="themeOcean">Ocean</span></button>
-                  <button type="button" class="tl-seg-opt pill" data-value="sunset"><span class="pill-dot theme-dot-sunset" aria-hidden="true"></span><span data-i18n="themeSunset">Sunset</span></button>
-                </div>
-              </div>
-
-              <label class="tl-set-control" for="soundToggle">
-                <span data-i18n="soundNotifications">Sound notifications</span>
+            </div>
+          </section>
+          <section>
+            <h3 class="tl-set-legend" data-i18n-set="setAlerts">Alerts</h3>
+            <div class="tl-set-group">
+              <label class="tl-set-control tl-set-toggle" for="soundToggle">
+                <span class="tl-set-ico i-sound" aria-hidden="true"></span>
+                <span class="tl-set-text"><strong data-i18n="soundNotifications">Sound notifications</strong><small data-i18n-set="soundHint">Play a sound for matches and messages</small></span>
                 <span class="switch"><input type="checkbox" id="soundToggle" checked /><span class="switch-slider" aria-hidden="true"></span></span>
               </label>
-
-              <label class="tl-set-control" for="vibrationToggle">
-                <span data-i18n="vibration">Vibration</span>
+              <label class="tl-set-control tl-set-toggle" for="vibrationToggle">
+                <span class="tl-set-ico i-buzz" aria-hidden="true"></span>
+                <span class="tl-set-text"><strong data-i18n="vibration">Vibration</strong><small data-i18n-set="vibrationHint">Buzz when you connect or get a message</small></span>
                 <span class="switch"><input type="checkbox" id="vibrationToggle" checked /><span class="switch-slider" aria-hidden="true"></span></span>
               </label>
             </div>
@@ -1526,32 +1494,23 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
           <section>
             <h3 class="tl-set-legend" data-i18n="catPrivacy">Privacy &amp; Safety</h3>
             <div class="tl-set-group">
-              <!-- Moved out of the Friends panel, where it was a large
-                   checkbox card sitting above the list - the first thing you
-                   met when you opened Friends to look at your friends. It is
-                   a setting about who can reach you, so it lives with the
-                   other settings about who can reach you. -->
-              <label id="acceptCallsRow" class="checkbox-row accept-calls-row" for="acceptCallsCheckbox">
-                <input type="checkbox" id="acceptCallsCheckbox" checked />
-                <span class="accept-calls-text">
-                  <strong data-i18n="acceptCallsTitle">Receive incoming calls</strong>
-                  <small data-i18n="acceptCallsBody">Friends can call you</small>
-                </span>
+              <label id="acceptCallsRow" class="tl-set-control tl-set-toggle" for="acceptCallsCheckbox">
+                <span class="tl-set-ico i-phone" aria-hidden="true"></span>
+                <span class="tl-set-text"><strong data-i18n="acceptCallsTitle">Receive incoming calls</strong><small data-i18n="acceptCallsBody">Friends can call you</small></span>
+                <span class="switch"><input type="checkbox" id="acceptCallsCheckbox" checked /><span class="switch-slider" aria-hidden="true"></span></span>
               </label>
-
-              <label class="tl-set-control" for="statusVisibilityToggle">
-                <span data-i18n="showOnlineStatus">Show my online status to friends</span>
+              <label class="tl-set-control tl-set-toggle" for="statusVisibilityToggle">
+                <span class="tl-set-ico i-dot" aria-hidden="true"></span>
+                <span class="tl-set-text"><strong data-i18n="showOnlineStatus">Show my online status to friends</strong><small data-i18n-set="statusHint">Friends can see when you're online</small></span>
                 <span class="switch"><input type="checkbox" id="statusVisibilityToggle" checked /><span class="switch-slider" aria-hidden="true"></span></span>
               </label>
-
-              <label class="tl-set-control" for="messageSeenToggle">
-                <span data-i18n="messageSeen">Read receipts (Seen)</span>
+              <label class="tl-set-control tl-set-toggle" for="messageSeenToggle">
+                <span class="tl-set-ico i-seen" aria-hidden="true"></span>
+                <span class="tl-set-text"><strong data-i18n="messageSeen">Read receipts (Seen)</strong><small data-i18n-set="seenHint">Show people when you've read their messages</small></span>
                 <span class="switch"><input type="checkbox" id="messageSeenToggle" checked /><span class="switch-slider" aria-hidden="true"></span></span>
               </label>
             </div>
           </section>
-          <!-- Blocking used to be forever: nothing listed who you had blocked,
-               so there was nothing to undo. -->
           <section>
             <h3 class="tl-set-legend" data-i18n="blockedPeople">Blocked people</h3>
             <p class="tl-hint" data-i18n="blockedPeopleHint">They can't message you, call you or be matched with you.</p>
@@ -1565,26 +1524,15 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
             <h3 class="tl-set-legend" data-i18n="catBilling">Coins &amp; Billing</h3>
             <div class="tl-set-group">
               <button type="button" id="settingsShopRow" class="tl-set-row">
-                <span class="tl-set-row-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h16l-1.2 11.2a1.8 1.8 0 0 1-1.8 1.6H7a1.8 1.8 0 0 1-1.8-1.6z"/><path d="M8.5 8V6.4a3.5 3.5 0 0 1 7 0V8"/></svg>
-                </span>
-                <span class="tl-set-row-text">
-                  <strong data-i18n="shopTitle">Shop</strong>
-                  <small data-i18n="shopRowSub">Coins and Boosts</small>
-                </span>
+                <span class="tl-set-ico i-bag" aria-hidden="true"></span>
+                <span class="tl-set-row-text"><strong data-i18n="shopTitle">Shop</strong><small data-i18n="shopRowSub">Coins and Boosts</small></span>
                 <span class="tl-set-row-badge" data-i18n="comingSoon">Coming soon</span>
-                <span class="tl-set-row-go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
+                <span class="tl-set-row-go" aria-hidden="true"></span>
               </button>
-
               <button type="button" id="settingsBillingRow" class="tl-set-row">
-                <span class="tl-set-row-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="19" height="13" rx="2.5"/><path d="M2.5 10h19"/><path d="M6 14.5h3.5"/></svg>
-                </span>
-                <span class="tl-set-row-text">
-                  <strong data-i18n="billingTitle">Billing</strong>
-                  <small data-i18n="billingRowSub">Boosts and receipts</small>
-                </span>
-                <span class="tl-set-row-go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
+                <span class="tl-set-ico i-card" aria-hidden="true"></span>
+                <span class="tl-set-row-text"><strong data-i18n="billingTitle">Billing</strong><small data-i18n="billingRowSub">Boosts and receipts</small></span>
+                <span class="tl-set-row-go" aria-hidden="true"></span>
               </button>
             </div>
           </section>
@@ -1593,14 +1541,19 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
           <section>
             <h3 class="tl-set-legend" data-i18n="catAbout">Help &amp; About</h3>
             <div class="tl-set-group tl-set-links">
-              <button type="button" id="feedbackBtn" data-i18n="feedback">Feedback for Improvement</button>
-              <button type="button" id="settingsTermsBtn" data-i18n="termsLink">Terms &amp; Community Guidelines</button>
-              <a href="/pricing" data-i18n="pricingLink">Pricing &amp; Premium</a>
-              <a href="/about" data-i18n="aboutLink">About TalkLive</a>
-              <a href="/contact" data-i18n="contactLink">Contact Us</a>
-              <a href="/terms" data-i18n="termsPageLink">Terms &amp; Conditions</a>
-              <a href="/privacy" data-i18n="privacyPolicy">Privacy Policy</a>
-              <a href="/refund" data-i18n="refundLink">Refund Policy</a>
+              <button type="button" id="feedbackBtn" class="i-chat" data-i18n="feedback">Feedback for Improvement</button>
+              <button type="button" id="settingsTermsBtn" class="i-rules" data-i18n="termsLink">Terms &amp; Community Guidelines</button>
+              <a href="/pricing" class="i-star" data-i18n="pricingLink">Pricing &amp; Premium</a>
+              <a href="/about" class="i-info" data-i18n="aboutLink">About TalkLive</a>
+              <a href="/contact" class="i-mail" data-i18n="contactLink">Contact Us</a>
+            </div>
+          </section>
+          <section>
+            <h3 class="tl-set-legend" data-i18n-set="setLegal">Legal</h3>
+            <div class="tl-set-group tl-set-links">
+              <a href="/terms" class="i-doc" data-i18n="termsPageLink">Terms &amp; Conditions</a>
+              <a href="/privacy" class="i-lock" data-i18n="privacyPolicy">Privacy Policy</a>
+              <a href="/refund" class="i-refund" data-i18n="refundLink">Refund Policy</a>
             </div>
           </section>
         </div>
@@ -2675,7 +2628,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
        browser finish parsing and paint the page first. -->
   <script defer src="/socket.io/socket.io.min.js"></script>
   <script defer src="countries.js?v=20260828fix"></script>
-  <script defer src="i18n.js?v=20260924id"></script>
+  <script defer src="i18n.js?v=20260924set"></script>
   <script defer src="chat-time.js?v=20260916navbar"></script>
   <script defer src="animals.js?v=20260921animals"></script>
   <script defer src="social-kit.js?v=20260924id"></script>
@@ -2716,7 +2669,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   <script defer src="chat-extras.js?v=20260922social2"></script>
   <script defer src="games.js?v=20260924qa"></script>
   <script defer src="nickname-rules.js?v=20260924nick"></script>
-  <script defer src="app.js?v=20260924id"></script>
+  <script defer src="app.js?v=20260924set"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the
