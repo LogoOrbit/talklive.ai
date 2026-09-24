@@ -1427,15 +1427,18 @@ summary:active {
 
 .friend-id-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 10px 12px;
 }
 
 .friend-id-mine {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  flex: 1;
+  /* Sized to the ID itself, so when the ID and the buttons do not fit on one
+     line the buttons drop below instead of sitting on top of the ID. */
+  flex: 1 1 auto;
   min-width: 0;
 }
 
@@ -1450,8 +1453,7 @@ summary:active {
   letter-spacing: 0.08em;
   font-variant-numeric: tabular-nums;
   user-select: all;
-  /* A long name#1234 wraps instead of running under the Copy button. */
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .friend-id-note {

@@ -1297,8 +1297,11 @@
   settingsOverlay.addEventListener('click', function () { closePanel(settingsPanel, settingsOverlay); });
 
   $('tempNameSaveBtn').addEventListener('click', function () {
-    var name = tempNameInput.value.trim().slice(0, 24);
-    if (!name) return;
+    if (!tempNameInput.value.trim()) return;
+    var nick = window.TalkLiveNickname ? window.TalkLiveNickname.check(tempNameInput.value) : { ok: true, value: tempNameInput.value.trim() };
+    if (!nick.ok) { socialToast(t(nick.error)); tempNameInput.focus(); return; }
+    var name = nick.value;
+    tempNameInput.value = name;
     tempUsername = name;
     localStorage.setItem('talklive_tempname', name);
     register(); // re-register so the server picks up the new display name
@@ -1506,6 +1509,11 @@
 
   function commitRenameFriend(nickname) {
     if (!renameTargetId) return;
+    if (nickname && window.TalkLiveNickname) {
+      var nick = window.TalkLiveNickname.check(nickname);
+      if (!nick.ok) { socialToast(t(nick.error)); renameFriendInput.focus(); return; }
+      nickname = nick.value;
+    }
     socket.emit('rename-friend', { friendClientId: renameTargetId, nickname: nickname });
     // Paint it now so the list behind the modal changes with the tap; the
     // state-sync that follows says the same thing.
@@ -1521,13 +1529,13 @@
 
   $('renameFriendCloseBtn').addEventListener('click', function () { closeModal(renameFriendModal); });
   $('renameFriendSaveBtn').addEventListener('click', function () {
-    commitRenameFriend(renameFriendInput.value.trim().slice(0, 24));
+    commitRenameFriend(renameFriendInput.value.trim());
   });
   $('renameFriendResetBtn').addEventListener('click', function () { commitRenameFriend(''); });
   renameFriendInput.addEventListener('keydown', function (e) {
     if (e.key !== 'Enter') return;
     e.preventDefault();
-    commitRenameFriend(renameFriendInput.value.trim().slice(0, 24));
+    commitRenameFriend(renameFriendInput.value.trim());
   });
 
   // Requests you sent. The server ships them with every state-sync and the

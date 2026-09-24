@@ -10,6 +10,18 @@ const { generateUsername } = require('./usernames');
 // Shared with the browser: public/countries.js exports for Node and defines a
 // global when loaded as a plain <script>, so there is one country list, not two.
 const { COUNTRIES } = require('../public/countries.js');
+// Same deal for what a display name may contain.
+const Nick = require('../public/nickname-rules.js');
+// English fallbacks; the pages show their own translation of `errorKey`.
+const NICK_ERRORS = {
+  nickEmpty: 'Nickname cannot be empty.',
+  nickBadChars: 'Use letters, numbers, spaces and . _ - \' only. No emoji or symbols.',
+  nickEdges: 'Start and end your nickname with a letter or number.',
+  nickSeparators: 'Only one space or symbol in a row.',
+  nickRepeat: 'Too many of the same character in a row.',
+  nickTooShort: `Nickname needs at least ${Nick.MIN_LEN} letters or numbers.`,
+  nickTooLong: `Nickname can be at most ${Nick.MAX_LEN} characters.`,
+};
 const store = require('./store');
 const compress = require('./compress');
 const billing = require('./billing');
@@ -2461,7 +2473,7 @@ async function findOrCreateGoogleAccount(idToken) {
 
   if (!username) {
     username = uniqueUsernameFromBase((payload.email || 'user').split('@')[0]);
-    const nickname = (payload.name || username).slice(0, 24);
+    const nickname = Nick.clean(payload.name) || Nick.clean(username) || username.slice(0, Nick.MAX_LEN);
     accounts.set(username.toLowerCase(), {
       passwordHash: null,
       salt: null,
@@ -3268,7 +3280,7 @@ const HOLD_UNTIL_REGISTERED = new Set([
   'remove-friend', 'rename-friend', 'block-friend', 'unblock-user', 'clear-friend-chat',
   'clear-notification', 'mark-notifications-seen', 'call-back-request-later',
   'set-status-visibility', 'set-call-availability', 'find-by-friend-id', 'voice-invite-join',
-  'pin-friend', 'mute-chat',
+  'pin-friend', 'mute-chat', 'remove-history-entry',
 ]);
 const MAX_HELD_EVENTS = 40;
 const HELD_EVENTS_TTL_MS = 20 * 1000;
@@ -3374,7 +3386,13 @@ io.on('connection', (socket) => {
     }
     // Nickname is optional - creating an account is just username + password,
     // and the display name defaults to the username (changeable later).
-    nickname = (typeof nickname === 'string' && nickname.trim()) ? nickname.trim() : username;
+    if (typeof nickname === 'string' && nickname.trim()) {
+      const nick = Nick.check(nickname);
+      if (!nick.ok) return socket.emit('signup-result', { ok: false, error: NICK_ERRORS[nick.error], errorKey: nick.error });
+      nickname = nick.value;
+    } else {
+      nickname = Nick.clean(username) || username.slice(0, Nick.MAX_LEN);
+    }
     if (!/^[A-Za-z0-9_.-]{3,24}$/.test(username)) {
       return socket.emit('signup-result', { ok: false, error: 'Username may only contain letters, numbers, dot, dash or underscore (3-24 chars).' });
     }
@@ -3391,7 +3409,7 @@ io.on('connection', (socket) => {
     pendingSignups.add(username.toLowerCase());
     if (signupEmail) pendingEmails.add(signupEmail);
     try {
-      await createAccount(username, password, nickname.slice(0, 24), signupEmail);
+      await createAccount(username, password, nickname, signupEmail);
     } finally {
       pendingSignups.delete(username.toLowerCase());
       if (signupEmail) pendingEmails.delete(signupEmail);
@@ -3535,8 +3553,10 @@ io.on('connection', (socket) => {
     if (typeof nickname !== 'string' || !nickname.trim()) {
       return socket.emit('update-nickname-result', { ok: false, error: 'Nickname cannot be empty.' });
     }
+    const nick = Nick.check(nickname);
+    if (!nick.ok) return socket.emit('update-nickname-result', { ok: false, error: NICK_ERRORS[nick.error], errorKey: nick.error });
     const account = accounts.get(authedUsername);
-    account.nickname = nickname.trim().slice(0, 24);
+    account.nickname = nick.value;
     persistAccount(authedUsername);
     const profile = profiles.get(socket.id);
     if (profile) {
@@ -3897,9 +3917,8 @@ io.on('connection', (socket) => {
     const sanitizeCountryList = (list) => (Array.isArray(list) ? list.filter((c) => typeof c === 'string').slice(0, countryCap) : []);
     profiles.set(socket.id, {
       clientId,
-      username: (typeof data.nickname === 'string' && data.nickname.trim())
-        ? data.nickname.trim().slice(0, 24)
-        : guestNameFor(clientId),
+      // A name saved before the nickname rules is tidied rather than refused.
+      username: Nick.clean(data.nickname) || guestNameFor(clientId),
       country: geo.country,
       countryName: geo.countryName,
       city: geo.city,
@@ -4721,6 +4740,25 @@ io.on('connection', (socket) => {
     if (friendSocket) syncClientState(friendSocket, friendClientId);
   });
 
+  // Take someone off this user's own "people you've met" / history list. Only
+  // this side's copy: the other person is not told. A new message from them
+  // puts them back, since the conversation itself is kept.
+  socket.on('remove-history-entry', ({ clientId: otherClientId } = {}) => {
+    const me = profiles.get(socket.id);
+    otherClientId = validId(otherClientId);
+    if (!me || !otherClientId) return;
+    const list = chatHistory.get(me.clientId);
+    if (!list) return;
+    const remaining = list.filter((e) => e.clientId !== otherClientId);
+    if (remaining.length === list.length) return;
+    if (remaining.length) chatHistory.set(me.clientId, remaining);
+    else chatHistory.delete(me.clientId);
+    persistSocial();
+    store.recordFeature('history_remove');
+    // Also prunes any unread markers from them that nothing can open now.
+    syncClientState(socket, me.clientId);
+  });
+
   // Rename a friend. The nickname is written only onto *this* user's copy of
   // the friendship, so it is a private label: the friend is never told, never
   // sees it, and keeps whatever name they chose for themselves. Clearing it
@@ -4732,7 +4770,7 @@ io.on('connection', (socket) => {
     const mine = friends.get(me.clientId);
     const info = mine && mine.get(friendClientId);
     if (!info) return; // not a friend of theirs - nothing to label
-    const clean = typeof nickname === 'string' ? nickname.trim().slice(0, 24) : '';
+    const clean = Nick.clean(nickname);
     if (clean) info.nickname = clean;
     else delete info.nickname;
     persistSocial();

@@ -6929,15 +6929,18 @@ html.perf-lite .side-panel { box-shadow: none; }
 
 .friend-id-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 10px 12px;
 }
 
 .friend-id-mine {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  flex: 1;
+  /* Sized to the ID itself, so when the ID and the buttons do not fit on one
+     line the buttons drop below instead of sitting on top of the ID. */
+  flex: 1 1 auto;
   min-width: 0;
 }
 
@@ -6952,8 +6955,7 @@ html.perf-lite .side-panel { box-shadow: none; }
   letter-spacing: 0.08em;
   font-variant-numeric: tabular-nums;
   user-select: all;
-  /* A long name#1234 wraps instead of running under the Copy button. */
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .friend-id-note {
@@ -7252,6 +7254,22 @@ html.perf-lite .side-panel { box-shadow: none; }
 .tl-suggest { margin-top: var(--tl-s4); }
 .tl-suggest.hidden { display: none; }
 .tl-suggest-hint { font-size: 12.5px; margin-bottom: var(--tl-s2); }
+/* Quiet "×" at the end of a friend or people-you've-met row. */
+.tl-row-remove {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.tl-row-remove svg { width: 14px; height: 14px; }
+.tl-row-remove:hover { color: var(--text); background: color-mix(in srgb, var(--text) 8%, transparent); }
 .tl-suggest-list { display: flex; flex-direction: column; gap: var(--tl-s1); }
 .tl-suggest-item {
   display: flex;

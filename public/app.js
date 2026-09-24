@@ -2246,8 +2246,18 @@ let nicknameSaveFromSettings = false;
 
 if (saveTempNameBtn) {
   saveTempNameBtn.addEventListener('click', () => {
-    const val = tempUsernameInput.value.trim().slice(0, 24);
-    if (!val || val === currentDisplayName()) return;
+    if (!tempUsernameInput.value.trim()) return;
+    // Emoji, symbols and invisible characters broke rows and badges for
+    // everyone who met this user; say what is wrong before anything is sent.
+    const nick = window.TalkLiveNickname ? window.TalkLiveNickname.check(tempUsernameInput.value) : { ok: true, value: tempUsernameInput.value.trim() };
+    if (!nick.ok) {
+      showToast(t(nick.error));
+      tempUsernameInput.focus();
+      return;
+    }
+    const val = nick.value;
+    if (val === currentDisplayName()) return;
+    tempUsernameInput.value = val;
     vibrate(15);
     if (accountNickname) {
       // Signed in: the account owns the name, so the server has to agree.
@@ -3261,10 +3271,11 @@ socket.on('resume-session-result', ({ ok, nickname, email, profileClientId, iden
   }
 });
 
-socket.on('update-nickname-result', ({ ok, nickname, error }) => {
+socket.on('update-nickname-result', ({ ok, nickname, error, errorKey }) => {
   const fromSettings = nicknameSaveFromSettings;
   nicknameSaveFromSettings = false;
   if (!ok) {
+    if (errorKey) error = t(errorKey);
     if (fromSettings) {
       showToast(error || t('statusNicknameUpdated'));
       syncSaveNameBtn();
@@ -3409,6 +3420,7 @@ function renderSuggested() {
       </button>
       ${unread ? `<button type="button" class="friend-msg-btn history-msg-btn" data-id="${escapeHtml(p.clientId)}" title="${escapeHtml(t('messageBack'))}" aria-label="${escapeHtml(t('messageBack'))}">${ICONS.chat}<span class="unread-badge">${unread > 99 ? '99+' : unread}</span></button>` : ''}
       ${relationTo(p.clientId) === 'stranger' ? `<button type="button" class="btn btn-primary tl-suggest-add history-add-btn" data-id="${escapeHtml(p.clientId)}">+ ${escapeHtml(t('addShort'))}</button>` : ''}
+      <button type="button" class="tl-row-remove met-remove-btn" data-id="${escapeHtml(p.clientId)}" title="${escapeHtml(t('remove'))}" aria-label="${escapeHtml(t('remove'))}">${ICONS.close}</button>
     `;
     suggestedList.appendChild(row);
   });
@@ -3420,6 +3432,19 @@ if (suggestedList) {
     if (add) {
       add.disabled = true;
       quickAddFriend(add.dataset.id);
+      return;
+    }
+    const remove = e.target.closest('.met-remove-btn');
+    if (remove) {
+      const id = remove.dataset.id;
+      // Gone from this list at once; the state-sync that follows agrees.
+      callHistory = callHistory.filter((h) => h.clientId !== id);
+      serverHistory = serverHistory.filter((h) => h.clientId !== id);
+      socket.emit('remove-history-entry', { clientId: id });
+      renderSuggested();
+      renderHistory();
+      updateFriendsMsgBadge();
+      syncFriendsTabCounts();
       return;
     }
     const msg = e.target.closest('.history-msg-btn');
@@ -3498,6 +3523,7 @@ function renderFriendsList() {
       <button type="button" class="friend-call-btn" data-id="${escapeHtml(f.clientId)}" data-name="${escapeHtml(friendLabel(f))}" title="${escapeHtml(t('callBack'))}" aria-label="${escapeHtml(t('callBack'))}">
         ${FRIEND_CALL_SVG}
       </button>
+      <button type="button" class="tl-row-remove friend-remove-btn" data-id="${escapeHtml(f.clientId)}" title="${escapeHtml(t('removeFriend'))}" aria-label="${escapeHtml(t('removeFriend'))}">${ICONS.close}</button>
     `;
     friendsList.appendChild(item);
   });
@@ -3516,6 +3542,14 @@ friendsList.addEventListener('click', (e) => {
       updateScrollLock();
       startTalkingFromPanel();
     }
+    return;
+  }
+  const removeBtn = e.target.closest('.friend-remove-btn');
+  if (removeBtn) {
+    const id = removeBtn.dataset.id;
+    showConfirm({ title: 'removeFriend', text: 'confirmRemoveFriend', okKey: 'remove' }).then((ok) => {
+      if (ok) socket.emit('remove-friend', { friendClientId: id });
+    });
     return;
   }
   const avatarBtn = e.target.closest('.friend-avatar-btn');
@@ -3831,6 +3865,15 @@ function openRenameFriend() {
 
 function commitRenameFriend(nickname) {
   if (!activeProfileFriendId) return;
+  if (nickname && window.TalkLiveNickname) {
+    const nick = window.TalkLiveNickname.check(nickname);
+    if (!nick.ok) {
+      showToast(t(nick.error));
+      renameFriendInput.focus();
+      return;
+    }
+    nickname = nick.value;
+  }
   const friend = friendsData.find((f) => f.clientId === activeProfileFriendId);
   socket.emit('rename-friend', { friendClientId: activeProfileFriendId, nickname });
   // Paint it locally so the panels behind the modal change with the tap; the
@@ -3850,13 +3893,13 @@ function commitRenameFriend(nickname) {
 friendProfileRenameBtn.addEventListener('click', openRenameFriend);
 document.getElementById('renameFriendCloseBtn').addEventListener('click', () => closeModal(renameFriendModal));
 document.getElementById('renameFriendSaveBtn').addEventListener('click', () => {
-  commitRenameFriend(renameFriendInput.value.trim().slice(0, 24));
+  commitRenameFriend(renameFriendInput.value.trim());
 });
 document.getElementById('renameFriendResetBtn').addEventListener('click', () => commitRenameFriend(''));
 renameFriendInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
     e.preventDefault();
-    commitRenameFriend(renameFriendInput.value.trim().slice(0, 24));
+    commitRenameFriend(renameFriendInput.value.trim());
   }
 });
 
