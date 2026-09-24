@@ -1243,8 +1243,8 @@
   var settingsPanel = $('settingsPanel');
   var settingsOverlay = $('settingsPanelOverlay');
   var quickSettings = null;
-  // Fetched when the page is idle (or on the first tap), not with the page
-  // itself, which has a size budget to stay inside.
+  // Fetched when idle (or on the first tap), with settings.css: it opens once
+  // that has arrived. Not part of the page, which has a size budget.
   var settingsPanelLoading = null;
   function loadSettingsPanel(done, failed) {
     if (window.TalkLiveSettingsPanel) { done(); return; }
@@ -1254,7 +1254,6 @@
       s.src = '/settings-panel.js?v=20260924redesign';
       s.async = true;
       s.onload = function () {
-        // Opens once settings.css (which the script injects) has arrived.
         window.TalkLiveSettingsPanel.ready.then(function () {
           var q = settingsPanelLoading; settingsPanelLoading = null; q.forEach(function (c) { c[0](); });
         });

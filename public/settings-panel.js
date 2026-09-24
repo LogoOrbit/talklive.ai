@@ -19,6 +19,43 @@
   const THEMES = ['dark', 'light', 'ocean', 'sunset'];
   const CHEVRON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>';
 
+  // English for the strings only Settings uses. They ship here rather than in
+  // i18n.js, which every page loads up front; the other languages have them in
+  // their own /i18n/<lang>.js. Markup that needs them carries data-i18n-set*
+  // until now, so the page's first translation pass never prints a bare key.
+  const EN = {
+    setSearch: "Search settings",
+    setNoResults: "Nothing matches “{q}”",
+    setDescProfile: "Name, avatar, ID and account",
+    setDescApp: "Language, theme and sounds",
+    setDescPrivacy: "Calls, online status and blocking",
+    setDescBilling: "Coins, Boosts and receipts",
+    setDescAbout: "Feedback, policies and contact",
+    soundHint: "Play a sound for matches and messages",
+    vibrationHint: "Buzz when you connect or get a message",
+    statusHint: "Friends can see when you're online",
+    seenHint: "Show people when you've read their messages",
+    setSaved: "Saved",
+    setAppearance: "Appearance",
+    setAlerts: "Alerts",
+    setLegal: "Legal",
+  };
+  if (window.I18N_STRINGS) {
+    const en = window.I18N_STRINGS.en || (window.I18N_STRINGS.en = {});
+    Object.keys(EN).forEach((k) => { if (en[k] == null) en[k] = EN[k]; });
+  }
+  [['data-i18n-set', 'i18n'], ['data-i18n-set-ph', 'i18nPlaceholder'], ['data-i18n-set-aria', 'i18nAria']].forEach(([attr, to]) => {
+    document.querySelectorAll('[' + attr + ']').forEach((el) => {
+      const key = el.getAttribute(attr);
+      el.removeAttribute(attr);
+      el.dataset[to] = key;
+      const text = typeof t === 'function' ? t(key) : EN[key];
+      if (to === 'i18n') el.textContent = text;
+      else if (to === 'i18nPlaceholder') el.placeholder = text;
+      else el.setAttribute('aria-label', text);
+    });
+  });
+
   const ready = new Promise((resolve) => {
     const root = document.documentElement;
     const done = () => { root.classList.add('tl-set-css'); resolve(); };
