@@ -40,7 +40,7 @@
 <link rel="stylesheet" href="/ui.css?v=20260924qa" />
 <!-- The top bar, shared with / and /call: one button language, one radius,
      one focus ring on every screen of the product. -->
-<link rel="stylesheet" href="/nav.css?v=20260923logo" />
+<link rel="stylesheet" href="/nav.css?v=20260924peer" />
   <link rel="stylesheet" href="/data-notice.css?v=3">
 <style>
   .skip-link {
@@ -134,7 +134,7 @@
 
       <div class="nav-peer">
         <div id="topDefault" class="nav-peer-id"></div>
-        <div id="topPartner" class="nav-peer-id hidden">
+        <div id="topPartner" class="nav-peer-id is-link hidden" role="button" tabindex="0" data-i18n-title="openProfile" title="Open profile">
           <span class="nav-peer-name"><span id="topPartnerAnimal" class="top-animal hidden"></span><span id="topPartnerName"></span></span>
           <span class="nav-peer-sub"><span id="topPartnerFlag" class="peer-flag" aria-hidden="true"></span><span id="topPartnerCountry"></span></span>
         </div>
@@ -908,7 +908,7 @@
   <script defer src="/games.js?v=20260924qa"></script>
   <script defer src="/icebreakers.js?v=20260923ice"></script>
   <script defer src="/nickname-rules.js?v=20260924nick"></script>
-  <script defer src="/chat.js?v=20260924badges"></script>
+  <script defer src="/chat.js?v=20260924peer"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

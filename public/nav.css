@@ -321,6 +321,16 @@
 
 .nav-peer-name svg { width: 18px; height: 18px; flex: none; }
 
+/* Tapping who you are talking to opens their profile. */
+.nav-peer-id.is-link {
+  cursor: pointer;
+  padding: 3px 10px;
+  border-radius: 12px;
+  transition: background 0.15s ease;
+}
+.nav-peer-id.is-link:hover,
+.nav-peer-id.is-link:focus-visible { background: color-mix(in srgb, var(--text) 8%, transparent); }
+
 .nav-peer-sub {
   display: flex;
   align-items: center;

@@ -2705,6 +2705,15 @@
 
   friendChatOverlay.addEventListener('click', closeFriendChat);
 
+  // The name in the top bar opens the profile of whoever you are talking to.
+  function openPartnerProfile() {
+    if (currentPartner && currentPartner.clientId) openProfile(currentPartner.clientId);
+  }
+  topPartner.addEventListener('click', openPartnerProfile);
+  topPartner.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPartnerProfile(); }
+  });
+
   friendChatForm.addEventListener('submit', function (e) {
     e.preventDefault();
     var text = friendChatInput.value.trim();
