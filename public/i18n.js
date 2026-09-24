@@ -101,7 +101,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "friendIdSearchPlaceholder": "Add by ID, e.g. asad#1234",
     "idLabel": "ID",
     "saveId": "Save ID",
-    "idHint": "Your unique ID - people can find and add you with it. 3-16 letters, then # and 4 numbers, like anakin#1101.",
+    "idHint": "Share this to connect.",
     "idSignInHint": "Temporary guest ID. Sign in to get a permanent ID you can choose, like asad#1234.",
     "idSaved": "Your ID is now {id}",
     "idCopiedTheirs": "ID copied",
@@ -1048,7 +1048,7 @@ function applyI18n() {
 // Non-English dictionaries load on demand from /i18n/<lang>.js. Until the file
 // arrives t() falls back to English, then the UI re-translates once it lands.
 // Keep in step with the preload snippet in the <head> of index.html/chat.html.
-const I18N_VERSION = '20260924avhint';
+const I18N_VERSION = '20260924idhint';
 const i18nLoading = {};
 window.__i18nLangLoaded = function (lang) {
   delete i18nLoading[lang];
