@@ -1218,18 +1218,17 @@
     if (panel === friendChatPanel) activeFriendChatId = null;
   }
   function closeAllPanels() {
+    if (settingsPanel) closePanel(settingsPanel, settingsOverlay);
     closePanel(friendsPanel, friendsOverlay);
     closePanel(friendChatPanel, friendChatOverlay);
     closePanel(historyPanel, historyOverlay);
   }
 
   // --- Settings & profile: one of each, shared with the call app ---
-  // There used to be a second, smaller Settings panel here that drifted from
-  // the call app's (no avatar, no account, no blocked list, a gender that the
-  // other page never saw). Now the gear goes to /settings and your face goes
-  // to your profile - the same screens the landing page and a call open.
-  // Every preference is stored under the same keys, so this page reads the
-  // choices made there when it comes back.
+  // The gear opens THE Settings panel - the same one the landing page and a
+  // call open (public/settings-panel.js), same keys, same values. "All
+  // settings" and your face go to the full Settings screen and your profile,
+  // which live on the landing page.
   function leaveChatFor(url) {
     closeAllPanels();
     if (!partnerHere) { location.href = url; return; }
@@ -1240,9 +1239,58 @@
       danger: false,
     }, function () { location.href = url; });
   }
+  var settingsPanel = $('settingsPanel');
+  var settingsOverlay = $('settingsPanelOverlay');
+  var quickSettings = null;
   $('chatSettingsBtn').addEventListener('click', function () {
     vibrate(10);
-    leaveChatFor('/settings?from=chat');
+    var wasOpen = settingsPanel.classList.contains('open');
+    closeAllPanels();
+    if (wasOpen) return;
+    if (!quickSettings && window.TalkLiveSettingsPanel) {
+      quickSettings = window.TalkLiveSettingsPanel.mount($('quickSettings'), {
+        profileFace: function (size) {
+          return window.TalkLiveSocial ? window.TalkLiveSocial.face(localStorage.getItem('talklive_avatar'), size, myAnimal) : '';
+        },
+        profileName: function () { return accountNickname || tempUsername || (myProfile && myProfile.username) || ''; },
+        profileSub: function () { return t(accountNickname ? 'settingsRowAccount' : 'settingsRowGuest'); },
+        openProfile: function () { leaveChatFor('/?open=profile&from=chat'); },
+        openAll: function () { leaveChatFor('/settings?from=chat'); },
+        saveName: function (value) {
+          if (accountNickname) {
+            // Signed in: the account owns the name.
+            socket.emit('update-nickname', { nickname: value });
+            return;
+          }
+          tempUsername = value;
+          localStorage.setItem('talklive_tempname', value);
+          register(); // so the server picks up the new display name
+        },
+        onGender: function (g) { myGender = g; register(); },
+        onTheme: function (theme) { currentTheme = theme; },
+        onSound: function (on) { soundEnabled = on; },
+        onVibration: function (on) { vibrationEnabled = on; },
+        onStatusVisible: function (on) { socket.emit('set-status-visibility', { hidden: !on }); },
+        onMessageSeen: function (on) {
+          messageSeenEnabled = on;
+          syncSeenToggleUi();
+          if (on && activeFriendChatId) socket.emit('chat-seen', { friendClientId: activeFriendChatId });
+        },
+        toast: function (msg) { socialToast(msg); },
+      });
+    }
+    if (quickSettings) quickSettings.render();
+    openPanel(settingsPanel, settingsOverlay);
+  });
+  $('settingsPanelClose').addEventListener('click', function () { closePanel(settingsPanel, settingsOverlay); });
+  settingsOverlay.addEventListener('click', function () { closePanel(settingsPanel, settingsOverlay); });
+  socket.on('update-nickname-result', function (res) {
+    if (!res) return;
+    if (!res.ok) { socialToast(res.errorKey ? t(res.errorKey) : (res.error || '')); return; }
+    accountNickname = res.nickname;
+    localStorage.setItem('talklive_nickname', res.nickname);
+    if (quickSettings) quickSettings.render();
+    register();
   });
   var myFaceBtn = $('myFaceBtn');
   function renderMyFace() {

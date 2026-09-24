@@ -3832,3 +3832,19 @@
 .tl-panel > .side-panel-footer {
   padding: var(--tl-s3) var(--tl-s4) calc(var(--tl-s3) + env(safe-area-inset-bottom, 0px));
 }
+
+/* --- THE Settings panel (public/settings-panel.js) ------------------------ */
+.settings-quick .qs-all {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--tl-s2);
+  width: 100%;
+  margin-top: var(--tl-s4);
+  padding: 12px 16px;
+  font-size: 15px;
+  font-weight: 700;
+}
+.settings-quick .qs-all svg { width: 18px; height: 18px; flex: none; }
+.settings-quick .qs-all-note { margin: var(--tl-s2) 0 var(--tl-s4); text-align: center; }
+.settings-quick .qs-profile .tl-set-row-icon { overflow: hidden; border-radius: 50%; }

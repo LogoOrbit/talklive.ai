@@ -338,6 +338,8 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "safetyLink": "Safety",
     "statusNicknameUpdated": "Nickname updated.",
     "myProfile": "My profile",
+    "allSettings": "All settings",
+    "allSettingsHint": "Account, avatar, blocked people, calls, billing and help.",
     "leaveChatTitle": "Leave this chat?",
     "leaveChatForSettings": "Settings and your profile open on their own screen, which ends the chat you are in.",
     "leaveChatOk": "Leave chat",

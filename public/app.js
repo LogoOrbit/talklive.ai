@@ -1296,6 +1296,7 @@ const COVERING_LAYERS = [
   ['friendProfileModal', 'open'],
   ['friendChatModal', 'open'],
   ['myProfileSheet', 'open'],
+  ['settingsPanel', 'open'],
   ['filtersPanel', 'open'],
   ['navDrawer', '!hidden'],
   ['gameOverlay', '!hidden'],
@@ -1410,11 +1411,60 @@ if (settingsNav) {
   });
 }
 
+// --- The Settings panel ------------------------------------------------------
+// One side panel, the same on the landing page, in a call and on /chat
+// (public/settings-panel.js). The everyday preferences live in it; "All
+// settings" opens the full screen above. Every change is handed to the full
+// screen's own control, so there is still only one handler per setting.
+const quickSettingsPanel = document.getElementById('settingsPanel');
+const quickSettingsOverlay = document.getElementById('settingsPanelOverlay');
+let quickSettings = null;
+function quickSettingsIsOpen() {
+  return !!quickSettingsPanel && quickSettingsPanel.classList.contains('open');
+}
+function closeQuickSettings() {
+  if (quickSettingsIsOpen()) closeSidePanel(quickSettingsPanel, quickSettingsOverlay);
+}
+function openQuickSettings() {
+  if (!quickSettingsPanel) { openAppSettings(); return; }
+  if (!quickSettings && window.TalkLiveSettingsPanel) {
+    const flip = (box, on) => { box.checked = on; box.dispatchEvent(new Event('change')); };
+    quickSettings = window.TalkLiveSettingsPanel.mount(document.getElementById('quickSettings'), {
+      profileFace: (size) => (myAvatar ? avatarFaceHtml(myAvatar, size) : genderIcon(null, size)),
+      profileName: () => currentDisplayName() || (myProfile && myProfile.username) || '',
+      profileSub: () => t(accountNickname ? 'settingsRowAccount' : 'settingsRowGuest'),
+      openProfile: () => { closeQuickSettings(); renderAccountState(); openMyProfile(); },
+      openAll: () => { closeQuickSettings(); openAppSettings(); },
+      saveName: (value) => {
+        tempUsernameInput.value = value;
+        syncSaveNameBtn();
+        saveTempNameBtn.click();
+      },
+      onGender: (g) => { setPillGroupValue(genderGroup, g || 'unspecified'); registerProfile(); },
+      onTheme: (theme) => applyTheme(theme),
+      onSound: (on) => flip(soundToggle, on),
+      onVibration: (on) => flip(vibrationToggle, on),
+      onStatusVisible: (on) => flip(statusVisibilityToggle, on),
+      onMessageSeen: (on) => flip(messageSeenToggle, on),
+      toast: (msg) => showToast(msg),
+    });
+  }
+  if (quickSettings) quickSettings.render();
+  if (friendsDropdown.classList.contains('open')) closeSidePanel(friendsDropdown, friendsOverlay);
+  if (historyPanel.classList.contains('open')) closeHistoryPanel();
+  openSidePanel(quickSettingsPanel, quickSettingsOverlay);
+}
+if (quickSettingsPanel) {
+  document.getElementById('settingsPanelClose').addEventListener('click', closeQuickSettings);
+  quickSettingsOverlay.addEventListener('click', closeQuickSettings);
+}
+
 appSettingsBtn.addEventListener('click', () => {
-  // A second tap on Settings while it is open goes back, the way tapping the
-  // current tab in a tab bar does.
+  // The gear opens the Settings panel; a second tap puts it (or the full
+  // screen, if that is what is showing) away.
   if (settingsIsOpen()) closeAppSettings();
-  else openAppSettings();
+  else if (quickSettingsIsOpen()) closeQuickSettings();
+  else openQuickSettings();
 });
 
 if (settingsBackBtn) {
@@ -7728,7 +7778,7 @@ document.addEventListener('touchend', (e) => {
   if (dx < 0) {
     if (!chatToggleBtn.classList.contains('hidden')) { swipeSuppressUntil = Date.now() + 700; openChatPanel(); }
   } else {
-    if (!appSettingsBtn.classList.contains('hidden')) { swipeSuppressUntil = Date.now() + 700; openAppSettings(); }
+    if (!appSettingsBtn.classList.contains('hidden')) { swipeSuppressUntil = Date.now() + 700; openQuickSettings(); }
   }
 }, { passive: true });
 
@@ -7955,6 +8005,7 @@ function closeTopmostLayer() {
     return true;
   }
   if (myProfileIsOpen()) { closeMyProfile(); return true; }
+  if (quickSettingsIsOpen()) { closeQuickSettings(); return true; }
   if (navDrawer && !navDrawer.classList.contains('hidden')) { setNavDrawerOpen(false); return true; }
   if (!gameOverlay.classList.contains('hidden')) { attemptCloseGame(); return true; }
   if (chatOpen) { closeChatPanel(); return true; }

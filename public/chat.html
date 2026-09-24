@@ -37,7 +37,7 @@
 <link rel="stylesheet" href="/chat.css?v=20260924badges" />
 <link rel="stylesheet" href="/chat-extras.css?v=20260924qa" />
 <link rel="stylesheet" href="/games.css?v=20260916navbar" />
-<link rel="stylesheet" href="/ui.css?v=20260924qa" />
+<link rel="stylesheet" href="/ui.css?v=20260924qs" />
 <!-- The top bar, shared with / and /call: one button language, one radius,
      one focus ring on every screen of the product. -->
 <link rel="stylesheet" href="/nav.css?v=20260924peer" />
@@ -549,6 +549,20 @@
 
   <!-- THE friends panel. One panel, two tabs - the people you have, and every
        request in flight, incoming and outgoing. Identical to the call app. -->
+  <!-- THE Settings panel: the same one the landing page and a call open
+       (public/settings-panel.js fills it). "All settings" goes to the full
+       Settings screen. -->
+  <div id="settingsPanelOverlay" class="side-overlay hidden"></div>
+  <aside id="settingsPanel" class="side-panel side-right tl-panel settings-quick" role="dialog" data-i18n-aria="settings" aria-label="Settings" aria-hidden="true" inert>
+    <div class="tl-panel-head">
+      <h2 data-i18n="settings">Settings</h2>
+      <button type="button" id="settingsPanelClose" class="tl-panel-close" data-i18n-aria="close" aria-label="Close">&times;</button>
+    </div>
+    <div class="side-body">
+      <div id="quickSettings" class="tl-panel-body"></div>
+    </div>
+  </aside>
+
   <div id="friendsOverlay" class="side-overlay hidden"></div>
   <aside id="friendsPanel" class="side-panel side-right tl-panel" role="dialog" data-i18n-aria="friends" aria-label="Friends" aria-hidden="true" inert>
     <div class="tl-panel-head">
@@ -758,7 +772,7 @@
 
   <script defer src="/socket.io/socket.io.min.js"></script>
   <script defer src="/countries.js?v=20260828fix"></script>
-  <script defer src="/i18n.js?v=20260924unified"></script>
+  <script defer src="/i18n.js?v=20260924qs"></script>
   <script defer src="/chat-time.js?v=20260916navbar"></script>
   <script defer src="/animals.js?v=20260921animals"></script>
   <script defer src="/social-kit.js?v=20260924kit"></script>
@@ -767,7 +781,8 @@
   <script defer src="/games.js?v=20260924qa"></script>
   <script defer src="/icebreakers.js?v=20260923ice"></script>
   <script defer src="/nickname-rules.js?v=20260924nick"></script>
-  <script defer src="/chat.js?v=20260924unified"></script>
+  <script defer src="/settings-panel.js?v=20260924qs"></script>
+  <script defer src="/chat.js?v=20260924qs"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the
