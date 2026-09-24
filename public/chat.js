@@ -482,6 +482,7 @@
       options[i].setAttribute('aria-checked', on ? 'true' : 'false');
     }
     renderAnimalChoiceLine();
+    renderMyFace();
     register(); // so the server has it even before the next search goes out
   }
 
@@ -562,6 +563,8 @@
       gender: myGender || undefined,
       prefGender: myPrefGender,
       animal: myAnimal || undefined,
+      // The picture chosen in Settings > Profile, so /chat shows the same face.
+      avatar: localStorage.getItem('talklive_avatar') || undefined,
       // Kept with every register, as the call app does, so the choice survives
       // a reconnect instead of quietly reverting to visible.
       hideStatus: localStorage.getItem('talklive_status_visible') === 'off',
@@ -699,7 +702,6 @@
     localStorage.setItem('talklive_gender', myGender);
     localStorage.setItem(GENDER_ASKED_KEY, 'yes'); // "prefer not to say" is an answer
     setGenderGateValue(myGender);
-    setPillValue(genderGroup, myGender); // keep the settings panel in step
     // No register() here: every path out of this handler ends in goSearch(true),
     // which registers with the new gender itself.
     // A beat so the choice is visibly selected before the panel swaps, rather
@@ -1216,166 +1218,49 @@
     if (panel === friendChatPanel) activeFriendChatId = null;
   }
   function closeAllPanels() {
-    closePanel(settingsPanel, settingsOverlay);
     closePanel(friendsPanel, friendsOverlay);
     closePanel(friendChatPanel, friendChatOverlay);
     closePanel(historyPanel, historyOverlay);
   }
 
-  // --- Settings ---
-  var settingsPanel = $('settingsPanel');
-  var settingsOverlay = $('settingsOverlay');
-  var tempNameInput = $('tempNameInput');
-  var genderGroup = $('genderGroup');
-  var themeGroup = $('themeGroup');
-  var langSelect = $('langSelect');
-  var soundToggle = $('soundToggle');
-  var vibrationToggle = $('vibrationToggle');
-
-  // The row at the top of Settings is you: avatar, name, and when this profile
-  // came into existence. Same row, same wording as the call app.
-  var settingsProfileRow = $('settingsProfileRow');
-  function renderSettingsProfileRow() {
-    if (!settingsProfileRow) return;
-    var name = accountNickname || tempUsername || (myProfile && myProfile.username) || '';
-    var icon = (myAnimal && Animals && Animals.has(myAnimal)) ? Animals.icon(myAnimal, 40) : '';
-    $('settingsProfileAvatar').innerHTML =
-      (icon || escapeHtml((name || '?').charAt(0).toUpperCase())) +
-      '<span class="settings-row-online" aria-hidden="true"></span>';
-    $('settingsProfileName').textContent = name || t('linkProfileAnonymous');
-    var created = Number(localStorage.getItem('talklive_profile_created'));
-    $('settingsProfileJoined').textContent = (created > 0)
-      ? t('joinedOn', { date: formatProfileCreated(created) })
-      : t(accountNickname ? 'settingsRowAccount' : 'settingsRowGuest');
+  // --- Settings & profile: one of each, shared with the call app ---
+  // There used to be a second, smaller Settings panel here that drifted from
+  // the call app's (no avatar, no account, no blocked list, a gender that the
+  // other page never saw). Now the gear goes to /settings and your face goes
+  // to your profile - the same screens the landing page and a call open.
+  // Every preference is stored under the same keys, so this page reads the
+  // choices made there when it comes back.
+  function leaveChatFor(url) {
+    closeAllPanels();
+    if (!partnerHere) { location.href = url; return; }
+    askConfirm({
+      title: t('leaveChatTitle'),
+      text: t('leaveChatForSettings'),
+      ok: t('leaveChatOk'),
+      danger: false,
+    }, function () { location.href = url; });
   }
-  function formatProfileCreated(ts) {
-    try {
-      return new Date(ts).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-    } catch (e) {
-      return new Date(ts).toDateString();
-    }
-  }
-
-  // The account screens (sign in, register, My Account, Shop, Billing) live on
-  // the landing page. /chat hands over to them rather than carrying a second
-  // copy of the whole account stack.
-  function goLanding(query) { location.href = '/' + (query || ''); }
-  if (settingsProfileRow) {
-    settingsProfileRow.addEventListener('click', function () {
-      goLanding('?open=account&tab=' + (accountNickname ? 'login' : 'signup'));
-    });
-  }
-  if ($('settingsShopRow')) $('settingsShopRow').addEventListener('click', function () { goLanding('?open=shop'); });
-  if ($('settingsBillingRow')) $('settingsBillingRow').addEventListener('click', function () { goLanding('?open=billing'); });
-
-  // Accordion: one tap opens a category, and only one stays open at a time.
-  var settingsAccordion = $('settingsAccordion');
-  if (settingsAccordion) {
-    settingsAccordion.querySelectorAll('.acc-header').forEach(function (header) {
-      var item = header.parentNode;
-      if (header.getAttribute('aria-expanded') === 'true') item.classList.add('open');
-      header.addEventListener('click', function () {
-        var open = !item.classList.contains('open');
-        settingsAccordion.querySelectorAll('.acc-item').forEach(function (other) {
-          other.classList.remove('open');
-          other.querySelector('.acc-header').setAttribute('aria-expanded', 'false');
-        });
-        item.classList.toggle('open', open);
-        header.setAttribute('aria-expanded', open ? 'true' : 'false');
-      });
-    });
-  }
-
   $('chatSettingsBtn').addEventListener('click', function () {
     vibrate(10);
-    closeAllPanels();
-    tempNameInput.value = tempUsername || (myProfile && myProfile.username) || '';
-    renderSettingsProfileRow();
-    openPanel(settingsPanel, settingsOverlay);
+    leaveChatFor('/settings?from=chat');
   });
-  $('settingsCloseBtn').addEventListener('click', function () { closePanel(settingsPanel, settingsOverlay); });
-  settingsOverlay.addEventListener('click', function () { closePanel(settingsPanel, settingsOverlay); });
-
-  $('tempNameSaveBtn').addEventListener('click', function () {
-    if (!tempNameInput.value.trim()) return;
-    var nick = window.TalkLiveNickname ? window.TalkLiveNickname.check(tempNameInput.value) : { ok: true, value: tempNameInput.value.trim() };
-    if (!nick.ok) { socialToast(t(nick.error)); tempNameInput.focus(); return; }
-    var name = nick.value;
-    tempNameInput.value = name;
-    tempUsername = name;
-    localStorage.setItem('talklive_tempname', name);
-    register(); // re-register so the server picks up the new display name
-  });
-
-  function setPillValue(group, value) {
-    group.querySelectorAll('.pill').forEach(function (p) {
-      p.classList.toggle('selected', p.dataset.value === value);
+  var myFaceBtn = $('myFaceBtn');
+  function renderMyFace() {
+    if (!myFaceBtn) return;
+    var avatar = localStorage.getItem('talklive_avatar');
+    myFaceBtn.innerHTML = '<span class="nav-account-avatar" aria-hidden="true">' +
+      (window.TalkLiveSocial ? window.TalkLiveSocial.face(avatar, 30, myAnimal) : '') + '</span>';
+  }
+  renderMyFace();
+  if (myFaceBtn) {
+    myFaceBtn.addEventListener('click', function () {
+      vibrate(10);
+      leaveChatFor('/?open=profile&from=chat');
     });
   }
-  genderGroup.addEventListener('click', function (e) {
-    var pill = e.target.closest('.pill');
-    if (!pill) return;
-    myGender = pill.dataset.value === myGender ? '' : pill.dataset.value; // tap again to clear
-    localStorage.setItem('talklive_gender', myGender);
-    // Setting it here answers the gate's question too, including when what is
-    // set is "prefer not to say" - otherwise clearing it in settings would
-    // bring the gate back on the next search.
-    localStorage.setItem(GENDER_ASKED_KEY, 'yes');
-    setPillValue(genderGroup, myGender);
-    register();
-  });
-  setPillValue(genderGroup, myGender);
-
-  themeGroup.addEventListener('click', function (e) {
-    var pill = e.target.closest('.pill');
-    if (!pill) return;
-    currentTheme = THEMES.indexOf(pill.dataset.value) !== -1 ? pill.dataset.value : 'dark';
-    localStorage.setItem('talklive_theme', currentTheme);
-    document.documentElement.setAttribute('data-theme', currentTheme);
-    setPillValue(themeGroup, currentTheme);
-  });
-  setPillValue(themeGroup, currentTheme);
-
-  // Language dropdown, built from the shared i18n language table.
-  (function buildLangSelect() {
-    if (typeof I18N_LANGS === 'undefined') { langSelect.parentNode.removeChild(langSelect); return; }
-    // i18n.js already fills and wires this select when it finds it on load;
-    // building it again listed every language twice.
-    if (langSelect.options.length) return;
-    Object.keys(I18N_LANGS).forEach(function (code) {
-      var opt = document.createElement('option');
-      opt.value = code;
-      opt.textContent = I18N_LANGS[code].name;
-      langSelect.appendChild(opt);
-    });
-    langSelect.value = (typeof I18N_STATE !== 'undefined' && I18N_STATE.lang) || 'en';
-    langSelect.addEventListener('change', function () { chooseLanguage(langSelect.value); });
-  })();
-
-  soundToggle.checked = soundEnabled;
-  soundToggle.addEventListener('change', function () {
-    soundEnabled = soundToggle.checked;
-    localStorage.setItem('talklive_sound', soundEnabled ? 'on' : 'off');
-  });
-  vibrationToggle.checked = vibrationEnabled;
-  vibrationToggle.addEventListener('change', function () {
-    vibrationEnabled = vibrationToggle.checked;
-    localStorage.setItem('talklive_vibration', vibrationEnabled ? 'on' : 'off');
-  });
-
-  // Privacy & Safety. Both preferences are shared with the call app - same
-  // storage keys, same server events - so a choice made on either page holds
-  // on the other.
-  var statusVisibilityToggle = $('statusVisibilityToggle');
-  var statusVisible = localStorage.getItem('talklive_status_visible') !== 'off';
-  if (statusVisibilityToggle) {
-    statusVisibilityToggle.checked = statusVisible;
-    statusVisibilityToggle.addEventListener('change', function () {
-      statusVisible = statusVisibilityToggle.checked;
-      localStorage.setItem('talklive_status_visible', statusVisible ? 'on' : 'off');
-      socket.emit('set-status-visibility', { hidden: !statusVisible });
-    });
-  }
+  // Back from /settings restores this page from the back/forward cache with
+  // yesterday's preferences and a socket that was cut; start it fresh instead.
+  window.addEventListener('pageshow', function (e) { if (e.persisted) location.reload(); });
 
   // --- Friends panel: requests + friend list, kept in sync by 'state-sync'. ---
   var friendsPanel = $('friendsPanel');
@@ -2836,7 +2721,6 @@
       accountNickname = null;
       localStorage.removeItem('talklive_session');
       localStorage.removeItem('talklive_nickname');
-      renderSettingsProfileRow();
       return;
     }
     // Signed in on another device first: take on the account's profile (its
@@ -2859,7 +2743,6 @@
       localStorage.setItem('talklive_nickname', res.nickname);
       register();
     }
-    renderSettingsProfileRow();
   });
 
   socket.on('identity-token', function (data) {

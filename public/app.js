@@ -2,6 +2,9 @@
 // established) so we never get stuck on HTTP long-polling, which is subject to
 // per-host connection limits and breaks late joiners past a handful of
 // concurrent clients. Reconnection is enabled so a dropped socket retries.
+// How deep history was when this page loaded, so leaving back to /chat can
+// skip every entry this page added (Settings, the Back-button guard).
+const ARRIVAL_HISTORY_LENGTH = history.length;
 const socket = io({
   transports: ['websocket', 'polling'],
   upgrade: true,
@@ -1090,6 +1093,23 @@ interestInput.addEventListener('keydown', (e) => {
 document.getElementById('addInterestBtn').addEventListener('click', addInterestFromInput);
 
 initPillGroup(genderGroup);
+// "I am" is one profile field for both pages, stored where /chat keeps it
+// ("" there means prefer not to say). It used to reset on every visit here,
+// and a choice made on /chat never reached a call.
+(function syncStoredGender() {
+  let stored = null;
+  try { stored = localStorage.getItem('talklive_gender'); } catch (_) { /* storage blocked */ }
+  if (stored === 'male' || stored === 'female') setPillGroupValue(genderGroup, stored);
+})();
+genderGroup.addEventListener('click', (e) => {
+  if (!e.target.closest('.pill')) return;
+  const g = genderGroup.dataset.value;
+  try {
+    localStorage.setItem('talklive_gender', g === 'unspecified' ? '' : g);
+    localStorage.setItem('talklive_gender_asked', 'yes');
+  } catch (_) { /* storage blocked */ }
+  registerProfile();
+});
 initPillGroup(prefGenderGroup);
 prefGenderGroup.addEventListener('click', () => syncFilterReadout());
 initPillGroup(themeGroup);
@@ -1405,6 +1425,7 @@ if (settingsBackBtn) {
       settingsPage.classList.remove('is-drilled');
       return;
     }
+    if (maybeReturnToChat('settings')) return;
     closeAppSettings();
   });
 }
@@ -2835,9 +2856,24 @@ function openMyProfile() {
   updateScrollLock();
   try { myProfileSheet.querySelector('.my-profile-sheet').focus({ preventScroll: true }); } catch (_) {}
 }
+// /chat has no settings or profile screen of its own; it sends people here
+// (?from=chat) and they go back to the chat when they are done with it.
+var returnToChatAfter = null; // 'profile' | 'settings'
+function maybeReturnToChat(what) {
+  if (returnToChatAfter !== what) return false;
+  returnToChatAfter = null;
+  let fromChat = false;
+  try { fromChat = new URL(document.referrer).pathname === '/chat'; } catch (_) { /* no referrer */ }
+  const steps = history.length - ARRIVAL_HISTORY_LENGTH + 1;
+  if (fromChat && steps >= 1 && history.length < 50) history.go(-steps);
+  else location.replace('/chat');
+  return true;
+}
+
 function closeMyProfile() {
   if (!myProfileIsOpen()) return;
   myProfileSheet.classList.remove('open');
+  if (returnToChatAfter === 'profile') setTimeout(() => maybeReturnToChat('profile'), 280);
   const pane = document.getElementById('settingsPane-profile');
   // Handed back once the sheet has slid away, so nothing jumps mid-animation.
   const give = myProfileBorrowed;
@@ -9470,6 +9506,7 @@ if (location.pathname === '/call' && !pendingInviteToken) {
   // Landed on /settings directly - a bookmark, a reload, a shared link. The
   // URL is already right, so the screen is opened in place without pushing a
   // second entry, and Back leaves for the home screen.
+  if (new URLSearchParams(location.search).get('from') === 'chat') returnToChatAfter = 'settings';
   history.replaceState({ settings: true }, '', '/settings');
   openAppSettings();
 }
@@ -9546,6 +9583,12 @@ try {
     history.replaceState(history.state, '', '/');
   } else if (open === 'billing') {
     openBilling();
+    history.replaceState(history.state, '', '/');
+  } else if (open === 'profile') {
+    // Your face on /chat: the same profile sheet as the one here.
+    if (params.get('from') === 'chat') returnToChatAfter = 'profile';
+    renderAccountState();
+    openMyProfile();
     history.replaceState(history.state, '', '/');
   } else if (open === 'feedback' && feedbackModal) {
     if (feedbackInput) feedbackInput.value = '';
