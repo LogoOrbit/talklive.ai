@@ -42,6 +42,23 @@ function hashPassword(password, salt) {
   });
 }
 
+// Forgotten owner password: set OWNER_RESET to any new value and restart. The
+// login is wiped once, so /owner shows first-run setup again; the value is
+// remembered (hashed) so later restarts with the same value change nothing.
+function applyOwnerReset() {
+  const value = process.env.OWNER_RESET;
+  if (!value) return;
+  const tag = crypto.createHash('sha256').update(value).digest('hex');
+  if (!store.data.secrets) store.data.secrets = {};
+  if (store.data.secrets.ownerReset === tag) return;
+  store.data.secrets.ownerReset = tag;
+  store.data.admin = null;
+  store.data.sessions = [];
+  store.audit('owner_reset', '', 'Owner login cleared by OWNER_RESET');
+  store.persistNow();
+  console.warn('[owner] OWNER_RESET: login cleared - open /owner now to set a new password and authenticator.');
+}
+
 function safeEqual(a, b) {
   const ba = Buffer.from(String(a));
   const bb = Buffer.from(String(b));
@@ -932,4 +949,4 @@ function createAdmin({ io, getRuntime, kickBanned }) {
 // summary it writes is the one place the dashboard states a trend in words, so
 // it is worth being able to assert on those words directly rather than only
 // through an authenticated HTTP round trip.
-module.exports = { createAdmin, sendAlertEmail, generateConclusion };
+module.exports = { createAdmin, sendAlertEmail, generateConclusion, applyOwnerReset };
