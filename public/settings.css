@@ -609,11 +609,17 @@ html:not(.tl-set-css) .tl-set-page { visibility: hidden; }
 .tl-set-group .settings-lang-wrap .lang-select:focus { border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent); outline: none; }
 
 /* --- Avatar picker ------------------------------------------------------- */
+/* One row that scrolls sideways - a full grid of every face was a tall block
+   of scrolling on its own. */
 .avatar-grid.avatar-grid-all {
   position: relative;
-  max-height: 290px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  grid-auto-flow: column;
+  grid-template-columns: none;
+  grid-auto-columns: 74px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
   margin: 0;
   padding: 6px;
   border: 1px solid var(--set-line);
@@ -621,7 +627,7 @@ html:not(.tl-set-css) .tl-set-page { visibility: hidden; }
   background: color-mix(in srgb, var(--text) 3%, transparent);
   scrollbar-width: thin;
 }
-.avatar-grid-all .avatar-option { transition: transform 0.3s var(--set-spring), background 0.2s, border-color 0.2s; }
+.avatar-grid-all .avatar-option { scroll-snap-align: start; transition: transform 0.3s var(--set-spring), background 0.2s, border-color 0.2s; }
 .avatar-grid-all .avatar-option:hover { transform: translateY(-2px) scale(1.05); }
 .avatar-grid-all .avatar-option:active { transform: scale(0.94); }
 .avatar-grid-all .avatar-option.selected {

@@ -1437,7 +1437,7 @@ function closeQuickSettings() {
 // page over its size budget); it is fetched once the page is idle, or on the
 // first tap of the gear if that comes sooner.
 // It also brings settings.css, which the screen waits for (html.tl-set-css).
-var SETTINGS_PANEL_SRC = '/settings-panel.js?v=20260924redesign';
+var SETTINGS_PANEL_SRC = '/settings-panel.js?v=20260924avrow';
 var settingsPanelLoading = null; // var: openAppSettings can run before this line on /settings
 function loadSettingsPanel() {
   if (window.TalkLiveSettingsPanel) return window.TalkLiveSettingsPanel.ready;
@@ -2576,8 +2576,8 @@ let pendingAvatar = myAvatar;
 function renderAvatarGrid() {
   if (!avatarGrid) return;
   // Rebuilding empties the grid, which would throw its scroll back to the
-  // top on every tap; keep the user where they were.
-  const keepScroll = avatarGrid.scrollTop;
+  // start on every tap; keep the user where they were.
+  const keepScroll = avatarGrid.scrollLeft;
   avatarGrid.innerHTML = '';
   AVATAR_IDS.male.concat(AVATAR_IDS.female, AVATAR_IDS.animal).forEach((id) => {
     const btn = document.createElement('button');
@@ -2592,7 +2592,7 @@ function renderAvatarGrid() {
       + (animal ? `<span class="avatar-option-name">${escapeHtml(window.TalkLiveAnimals.name(animal))}</span>` : '');
     avatarGrid.appendChild(btn);
   });
-  avatarGrid.scrollTop = keepScroll;
+  avatarGrid.scrollLeft = keepScroll;
   syncSaveAvatarBtn();
 }
 
@@ -2600,7 +2600,11 @@ function renderAvatarGrid() {
 function revealSelectedAvatar() {
   if (!avatarGrid) return;
   const sel = avatarGrid.querySelector('.avatar-option.selected');
-  avatarGrid.scrollTop = sel ? Math.max(0, sel.offsetTop - 8) : 0;
+  if (!sel) { avatarGrid.scrollLeft = 0; return; }
+  // Measured from the rects so it lands right in RTL too, where scrollLeft
+  // runs negative.
+  avatarGrid.scrollLeft += sel.getBoundingClientRect().left
+    - avatarGrid.getBoundingClientRect().left - 8;
 }
 
 function syncSaveAvatarBtn() {
