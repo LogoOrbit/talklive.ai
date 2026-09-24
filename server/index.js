@@ -2083,6 +2083,16 @@ function syncClientState(socket, clientId) {
       return { clientId: bid, ...shown, wasFriend: !!friendship };
     })
     .sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  // An unread marker only means something while the conversation can still be
+  // opened from the Friends or History list. Markers from someone who dropped
+  // out of both (unfriended, aged out of history, blocked) counted in the
+  // badge forever, with nothing on screen that could clear them.
+  const ownHistory = chatHistory.get(clientId) || [];
+  removeNotificationsWhere(clientId, (n) => n.type === 'message' && (
+    !n.fromClientId
+    || isBlockedPair(clientId, n.fromClientId)
+    || (!isFriend(clientId, n.fromClientId) && !ownHistory.some((e) => e.clientId === n.fromClientId))
+  ));
   socket.emit('state-sync', {
     friends: friendList,
     friendRequests: requestList,

@@ -3396,6 +3396,7 @@ function renderSuggested() {
   if (!people.length) return;
   suggestedList.innerHTML = '';
   people.forEach((p) => {
+    const unread = unreadCountFor(p.clientId);
     const row = document.createElement('div');
     row.className = 'tl-suggest-item';
     row.innerHTML = `
@@ -3406,7 +3407,8 @@ function renderSuggested() {
           <small>${escapeHtml(historySubline(p))}</small>
         </span>
       </button>
-      <button type="button" class="btn btn-primary tl-suggest-add history-add-btn" data-id="${escapeHtml(p.clientId)}">+ ${escapeHtml(t('addShort'))}</button>
+      ${unread ? `<button type="button" class="friend-msg-btn history-msg-btn" data-id="${escapeHtml(p.clientId)}" title="${escapeHtml(t('messageBack'))}" aria-label="${escapeHtml(t('messageBack'))}">${ICONS.chat}<span class="unread-badge">${unread > 99 ? '99+' : unread}</span></button>` : ''}
+      ${relationTo(p.clientId) === 'stranger' ? `<button type="button" class="btn btn-primary tl-suggest-add history-add-btn" data-id="${escapeHtml(p.clientId)}">+ ${escapeHtml(t('addShort'))}</button>` : ''}
     `;
     suggestedList.appendChild(row);
   });
@@ -3418,6 +3420,12 @@ if (suggestedList) {
     if (add) {
       add.disabled = true;
       quickAddFriend(add.dataset.id);
+      return;
+    }
+    const msg = e.target.closest('.history-msg-btn');
+    if (msg) {
+      closeSidePanel(friendsDropdown, friendsOverlay);
+      openFriendChat(msg.dataset.id);
       return;
     }
     const who = e.target.closest('.tl-suggest-who');
@@ -4094,8 +4102,17 @@ function unreadCountFor(friendClientId) {
   return notifData.filter((n) => n.type === 'message' && n.fromClientId === friendClientId).length;
 }
 
+// Only conversations the user can actually open (a friend, or someone in
+// History) count. A marker from anyone else sat in the badge with nothing on
+// screen that could ever clear it.
+function canOpenChatWith(clientId) {
+  return !!clientId && !blockedData.some((b) => b.clientId === clientId)
+    && (friendsData.some((f) => f.clientId === clientId)
+      || serverHistory.some((h) => h.clientId === clientId));
+}
+
 function totalUnreadMessages() {
-  return notifData.filter((n) => n.type === 'message').length;
+  return notifData.filter((n) => n.type === 'message' && canOpenChatWith(n.fromClientId)).length;
 }
 
 // Whether a notification still wants the user. Messages count until read,
@@ -4283,7 +4300,8 @@ function setTabCount(el, n) {
 }
 
 function syncFriendsTabCounts() {
-  const unreadFromFriends = friendsData.reduce((sum, f) => sum + unreadCountFor(f.clientId), 0);
+  // Messages from people you've met are listed on this tab too, so they count here.
+  const unreadFromFriends = totalUnreadMessages();
   // Two numbers side by side on one tab ("Friends 2 2") read as a typo, so
   // while there is something unread the red count stands in for the total.
   setTabCount(friendsTabCount, unreadFromFriends ? 0 : friendsData.length);
@@ -5006,15 +5024,20 @@ function historySubline(entry, opts = {}) {
 // has already spoken to - there is no directory of strangers to suggest from,
 // and there should not be one.
 const SUGGEST_MIN_SECONDS = 60;
+// Anyone with an unread message is always listed, first: the Friends badge
+// counts their messages, so they have to be reachable from here.
 function suggestedPeople(limit = 4) {
-  return historyEntries()
-    .filter((h) => h.clientId && relationTo(h.clientId) === 'stranger'
+  const people = historyEntries()
+    .filter((h) => h.clientId && relationTo(h.clientId) !== 'friend'
       && !blockedData.some((b) => b.clientId === h.clientId)
-      && ((h.durationSeconds || 0) >= SUGGEST_MIN_SECONDS || (h.met || 1) > 1 || !!h.last))
-    .sort((a, b) => Number(!!b.online) - Number(!!a.online)
+      && (unreadCountFor(h.clientId) > 0 || (relationTo(h.clientId) === 'stranger'
+        && ((h.durationSeconds || 0) >= SUGGEST_MIN_SECONDS || (h.met || 1) > 1 || !!h.last))))
+    .sort((a, b) => Number(unreadCountFor(b.clientId) > 0) - Number(unreadCountFor(a.clientId) > 0)
+      || Number(!!b.online) - Number(!!a.online)
       || (b.met || 1) - (a.met || 1)
-      || (b.durationSeconds || 0) - (a.durationSeconds || 0))
-    .slice(0, limit);
+      || (b.durationSeconds || 0) - (a.durationSeconds || 0));
+  const unread = people.filter((p) => unreadCountFor(p.clientId) > 0);
+  return people.slice(0, Math.max(limit, unread.length));
 }
 
 // One tap to ask, right on the row - adding someone you met used to take

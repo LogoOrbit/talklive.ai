@@ -1450,6 +1450,8 @@ summary:active {
   letter-spacing: 0.08em;
   font-variant-numeric: tabular-nums;
   user-select: all;
+  /* A long name#1234 wraps instead of running under the Copy button. */
+  overflow-wrap: anywhere;
 }
 
 .friend-id-note {
