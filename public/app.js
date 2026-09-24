@@ -2311,6 +2311,16 @@ if (acceptCallsCheckbox) {
 
 // --- Lightweight toast for brief confirmations (settings, copy, etc.) ---
 let toastTimer = null;
+// The toast and the outgoing "Calling..." pill share the top-center spot;
+// while the pill is up, the toast drops just below it instead of covering it.
+let callingPill = null;
+function placeToast() {
+  const el = document.getElementById('tlToast');
+  if (!el) return;
+  const pillUp = callingPill && callingPill.classList.contains('show');
+  el.style.top = pillUp ? `${Math.round(callingPill.getBoundingClientRect().bottom) + 8}px` : '';
+}
+
 // tone: success | info | warn | error | social | plus | neutral (default).
 function showToast(msg, tone) {
   let el = document.getElementById('tlToast');
@@ -2327,6 +2337,7 @@ function showToast(msg, tone) {
   if (!text) return;
   el.textContent = text;
   el.dataset.tone = tone || 'neutral';
+  placeToast();
   el.classList.add('show');
   clearTimeout(toastTimer);
   // Short confirmations get out of the way fast; longer ones stay readable.
@@ -9434,8 +9445,7 @@ function startCallbackSpinner(btn) {
 // Calling someone from Friends or History stays where you are: the button
 // spins and this bar says, live, what is happening - calling, then ringing
 // once their phone has it - with a Cancel. The call screen opens only when
-// they pick up.
-let callingPill = null;
+// they pick up. (callingPill is declared with the toast, which steps around it.)
 function showCallingPill(name) {
   if (!callingPill) {
     callingPill = document.createElement('div');
@@ -9459,7 +9469,11 @@ function showCallingPill(name) {
   callingPill.querySelector('.calling-pill-text').textContent = t('statusCalling', { name: name || t('stranger') });
   callingPill.querySelector('.calling-pill-cancel').textContent = t('cancel');
   callingPill.classList.remove('is-ringing');
-  requestAnimationFrame(() => callingPill && callingPill.classList.add('show'));
+  requestAnimationFrame(() => {
+    if (!callingPill) return;
+    callingPill.classList.add('show');
+    placeToast();
+  });
 }
 function setCallingPillRinging() {
   if (!callingPill || !callingPill.classList.contains('show')) return;
@@ -9468,6 +9482,7 @@ function setCallingPillRinging() {
 }
 function hideCallingPill() {
   if (callingPill) callingPill.classList.remove('show', 'is-ringing');
+  placeToast();
 }
 
 // The friends and history lists are redrawn whenever anything changes (a
