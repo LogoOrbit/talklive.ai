@@ -159,13 +159,13 @@
 
     // --- composer buttons ----------------------------------------------------
     var emojiBtn = iconBtn('cx-btn cx-emoji-btn', tr('emojiPicker', 'Emoji'), '😊');
-    form.insertBefore(emojiBtn, input);
+    input.parentNode.insertBefore(emojiBtn, input);
     var gifBtn = null;
     if (opts.gifs !== false) {
       gifsAvailable().then(function (ok) {
         if (!ok) return;
         gifBtn = iconBtn('cx-btn cx-gif-btn', tr('gifPicker', 'GIF'), 'GIF');
-        form.insertBefore(gifBtn, input);
+        input.parentNode.insertBefore(gifBtn, input);
         gifBtn.addEventListener('click', function () { togglePanel('gif'); });
       });
     }

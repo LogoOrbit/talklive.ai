@@ -275,6 +275,25 @@ img { max-width: 100%; }
 }
 #msgInput:focus, #friendChatInput:focus { border-color: var(--accent); }
 #msgInput:disabled { opacity: 0.5; }
+/* The text box and its helpers share one pill: emoji on the left, GIF and
+   question ideas on the right. Once there is text to send the two right-hand
+   helpers step aside, so the words get the room. */
+.composer-field {
+  flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 0;
+  min-height: 44px; padding: 0 4px; border: 1px solid var(--line); border-radius: 999px;
+  background: var(--bg-1); transition: border-color 0.15s ease, box-shadow 0.2s ease;
+}
+.composer-field:focus-within { border-color: var(--accent); }
+.composer-field #msgInput {
+  order: 1; min-height: 42px; border: 0; border-radius: 0; background: transparent; padding: 0 6px;
+}
+.composer-field #msgInput:focus { box-shadow: none; }
+.composer-field .cx-btn { order: 2; min-width: 34px; height: 34px; padding: 0 4px; font-size: 18px; }
+.composer-field .cx-emoji-btn { order: 0; }
+.composer-field .cx-gif-btn { font-size: 12px; }
+.composer-field .icebreak-btn { order: 3; }
+.composer-field:has(#msgInput:not(:placeholder-shown)) .cx-gif-btn,
+.composer-field:has(#msgInput:not(:placeholder-shown)) .icebreak-btn { display: none; }
 .send-btn {
   flex: 0 0 auto; width: 44px; height: 44px; border: none; border-radius: 50%; cursor: pointer; color: #fff;
   background: var(--accent);
@@ -289,16 +308,16 @@ img { max-width: 100%; }
    the word is the only thing that tells a first-timer what the button does,
    and it is the only thing that shows the "Sure?" confirm. */
 @media (max-width: 430px) {
-  .next-btn { padding: 0 11px; gap: 5px; }
-  .composer .cx-btn { min-width: 34px; padding: 0 4px; }
+  .composer { gap: 6px; padding-left: 8px; padding-right: 8px; }
+  .next-btn { padding: 0 12px; }
+  .next-btn svg { display: none; } /* the word says it; the glyph only took room */
 }
 /* 320px phones: claw back every spare pixel for the input itself, which is the
    only control here whose width does any work. */
 @media (max-width: 360px) {
   .composer { gap: 5px; padding-left: 6px; padding-right: 6px; }
   .next-btn { padding: 0 8px; font-size: 13px; }
-  .next-btn svg { display: none; } /* the word outranks the glyph when space runs out */
-  .composer .cx-btn { min-width: 32px; padding: 0 2px; }
+  .composer-field .cx-btn { min-width: 30px; padding: 0 2px; }
 }
 
 /* Blocked / maintenance full screen */
@@ -812,8 +831,9 @@ img { max-width: 100%; }
   @keyframes msgInDesk { from { opacity: 0; transform: translateY(10px) scale(0.96); } to { opacity: 1; transform: none; } }
 
   .composer { padding: 12px 18px 14px; gap: 10px; background: color-mix(in srgb, var(--bg-2) 80%, transparent); }
-  #msgInput { min-height: 48px; font-size: 15px; padding: 0 18px; transition: border-color 0.15s ease, box-shadow 0.2s ease; }
-  #msgInput:focus { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+  .composer-field { min-height: 48px; padding: 0 6px; }
+  .composer-field #msgInput { min-height: 46px; font-size: 15px; padding: 0 10px; }
+  .composer-field:focus-within { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
   .next-btn { min-height: 48px; }
   /* Desktop-only hint that Esc jumps to the next stranger. */
   .next-kbd {
@@ -1584,3 +1604,27 @@ summary:active {
 .my-profile-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; width: 100%; }
 .my-profile-actions .btn { flex: 1 1 140px; }
 @media (prefers-reduced-motion: reduce) { .my-profile-sheet, .my-profile-backdrop { transition: none; } }
+
+/* --- Phone top bar -------------------------------------------------------- *
+ * A phone row holds the mark, who you are talking to and three round
+ * buttons - no more. Auto keeps its icon (its lit state says on/off), the
+ * gear moves into the More menu, and the visitor count steps aside while a
+ * conversation is on so the stranger's name is not cut to one letter.
+ */
+.nav-menu-item.nav-menu-phone { display: none; }
+@media (max-width: 560px) {
+  .nav-btn.auto-btn { width: var(--nav-btn); padding: 0; }
+  .nav-btn.auto-btn .nav-btn-label { display: none; }
+  .nav-btn.settings-btn { display: none; }
+  .nav-menu .nav-menu-item.nav-menu-phone { display: flex; }
+  .topbar.nav.connected .nav-live { display: none; }
+}
+
+/* Phone transcript: the animal opener reads as a quiet caption like the other
+   system lines, and system lines drop their timestamp - it wrapped the text
+   into two ragged lines beside a clock nobody needs there. */
+@media (max-width: 560px) {
+  .msg.system.system-animal { font-size: 13px; font-weight: 500; color: var(--muted); }
+  .msg.system.system-animal-match { font-size: 13px; }
+  .msg.system .msg-time { display: none; }
+}

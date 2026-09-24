@@ -1304,6 +1304,8 @@
       }
     });
   });
+  // On a phone the gear lives in the More menu; it is the same button.
+  $('settingsMenuItem').addEventListener('click', function () { $('chatSettingsBtn').click(); });
   $('chatSettingsBtn').addEventListener('click', function () {
     vibrate(10);
     var wasOpen = settingsPanel.classList.contains('open');

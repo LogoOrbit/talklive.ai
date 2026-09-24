@@ -34,7 +34,7 @@
   document.head.appendChild(s);
 })();
 </script>
-<link rel="stylesheet" href="/chat.css?v=20260924id" />
+<link rel="stylesheet" href="/chat.css?v=20260924tidy2" />
 <link rel="stylesheet" href="/chat-extras.css?v=20260924qa" />
 <link rel="stylesheet" href="/games.css?v=20260916navbar" />
 <link rel="stylesheet" href="/ui.css?v=20260924swipeclose" />
@@ -168,6 +168,9 @@
             <span id="moreDot" class="nav-dot hidden" aria-hidden="true"></span>
           </button>
           <div id="topMenu" class="nav-menu hidden" role="menu" aria-labelledby="moreBtn">
+            <button type="button" id="settingsMenuItem" class="nav-menu-item nav-menu-phone" role="menuitem" data-i18n-aria="settings" aria-label="Settings">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span data-i18n="settings">Settings</span>
+            </button>
             <button type="button" id="addFriendBtn" class="nav-menu-item hidden" role="menuitem" data-i18n-aria="addFriend" aria-label="Add friend">
               <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg><span data-i18n="addFriend">Add friend</span>
             </button>
@@ -323,8 +326,13 @@
           <span data-i18n="chatNext">Next</span>
           <kbd class="next-kbd" aria-hidden="true">Esc</kbd>
         </button>
-        <button type="button" id="icebreakBtn" class="cx-btn icebreak-btn" data-i18n-aria="icebreakIdeas" aria-label="Question ideas">💡</button>
-        <input id="msgInput" type="text" maxlength="1000" data-i18n-placeholder="typeMessage" data-i18n-aria="typeMessage" placeholder="Type a message…" autocomplete="off" />
+        <!-- One pill: the text box and its helpers (emoji and GIF are added by
+             chat-extras.js) read as a single field instead of a row of loose
+             icons. -->
+        <div class="composer-field">
+          <input id="msgInput" type="text" maxlength="1000" data-i18n-placeholder="typeMessage" data-i18n-aria="typeMessage" placeholder="Type a message…" autocomplete="off" />
+          <button type="button" id="icebreakBtn" class="cx-btn icebreak-btn" data-i18n-aria="icebreakIdeas" aria-label="Question ideas">💡</button>
+        </div>
         <button type="submit" class="send-btn" data-i18n-aria="send" aria-label="Send">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.4 20.4 22 12 3.4 3.6 3.4 10l13 2-13 2z"/></svg>
         </button>
@@ -776,10 +784,10 @@
   <script defer src="/animals.js?v=20260924animline"></script>
   <script defer src="/social-kit.js?v=20260924id"></script>
   <script defer src="/error-reporter.js?v=20260823ui"></script>
-  <script defer src="/chat-extras.js?v=20260922social2"></script>
+  <script defer src="/chat-extras.js?v=20260924tidy"></script>
   <script defer src="/games.js?v=20260924qa"></script>
   <script defer src="/icebreakers.js?v=20260923ice"></script>
-  <script defer src="/chat.js?v=20260924swipeclose"></script>
+  <script defer src="/chat.js?v=20260924tidy"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the
