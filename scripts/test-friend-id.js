@@ -173,7 +173,7 @@ async function waitUp() {
     await wait(200);
     const aSigned = await connect('c_fid_alpha', { signedIn: true, sessionToken: account.sessionToken });
     const accountId = aSigned.id.friendId;
-    ok('account ID is permanent and 8 characters', aSigned.id.temporary === false && /^[A-Z2-9]{8}$/.test(accountId), JSON.stringify(aSigned.id));
+    ok('account gets a name#1234 ID it can edit', aSigned.id.temporary === false && aSigned.id.editable === true && /^[a-z0-9_.]{3,20}#\d{4}$/.test(accountId), JSON.stringify(aSigned.id));
     ok('the old guest ID is released on sign-in', (await search(bRelaunch.sock, a.id.friendId)).ok === false);
     const foundAccount = await search(bRelaunch.sock, accountId);
     ok('account is found by its ID', foundAccount.ok && foundAccount.user.clientId === 'c_fid_alpha' && !foundAccount.user.temporary, JSON.stringify(foundAccount));
@@ -192,8 +192,31 @@ async function waitUp() {
     const offlineFound = await search(c.sock, accountId);
     ok('account is findable after restart', offlineFound.ok && offlineFound.user.clientId === 'c_fid_alpha', JSON.stringify(offlineFound));
 
-    aAfter.sock.disconnect();
+
+    // --- Choosing an ID ----------------------------------------------------
+    const setId = async (sock, handle) => { const r = once(sock, 'set-handle-result'); sock.emit('set-handle', { handle }); return r; };
+    const guestTry = await setId(c.sock, 'guesty#1111');
+    ok('a guest cannot choose an ID', guestTry.ok === false, JSON.stringify(guestTry));
+    const chosen = await setId(aAfter.sock, 'Alpha.Wolf#0042');
+    ok('an account can choose its ID (stored lowercase)', chosen.ok && chosen.friendId === 'alpha.wolf#0042', JSON.stringify(chosen));
+    ok('the new ID finds them', (await search(c.sock, 'ALPHA.WOLF#0042')).ok);
+    ok('the old ID no longer does', (await search(c.sock, accountId)).ok === false);
+    ok('bad formats are explained', (await setId(aAfter.sock, 'a#1')).ok === false);
+    const bSignup = once(c.sock, 'signup-result');
+    c.sock.emit('signup', { username: 'fidcharlie', password: 'secret123' });
+    const bAcc = await bSignup;
     c.sock.disconnect();
+    await wait(200);
+    const cSigned = await connect('c_fid_charlie', { signedIn: true, sessionToken: bAcc.sessionToken });
+    const clash = await setId(cSigned.sock, 'alpha.wolf#0042');
+    ok('someone else\'s ID is refused as already in use', clash.ok === false && clash.taken === true && /already in use/.test(clash.error), JSON.stringify(clash));
+    const nameOnly = await setId(cSigned.sock, 'alpha.wolf');
+    ok('a name alone gets a free number', nameOnly.ok && /^alpha\.wolf#\d{4}$/.test(nameOnly.friendId) && nameOnly.friendId !== 'alpha.wolf#0042', JSON.stringify(nameOnly));
+    const foundChosen = await search(cSigned.sock, 'alpha.wolf#0042');
+    ok('search results show the chosen ID', foundChosen.ok && foundChosen.user.friendId === 'alpha.wolf#0042', JSON.stringify(foundChosen));
+
+    aAfter.sock.disconnect();
+    cSigned.sock.disconnect();
   } catch (err) {
     failed++;
     console.log('FAIL', err.message);

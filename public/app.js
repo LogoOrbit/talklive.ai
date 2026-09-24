@@ -1562,9 +1562,11 @@ let myFriendId = '';
 let friendIdFound = null;
 let friendIdAddPending = false;
 
-socket.on('friend-id', ({ friendId, temporary } = {}) => {
+socket.on('friend-id', ({ friendId, temporary, editable } = {}) => {
   if (typeof friendId !== 'string' || !friendId) return;
   myFriendId = friendId;
+  myFriendIdEditable = !!editable;
+  renderIdEditor();
   if (myProfileIsOpen()) renderMyProfileCard();
   myFriendIdEl.textContent = friendId;
   // The empty friends list offers "Share my ID", disabled until there is one.
@@ -1572,6 +1574,76 @@ socket.on('friend-id', ({ friendId, temporary } = {}) => {
   myFriendIdNote.classList.toggle('hidden', !temporary);
   copyFriendIdBtn.disabled = false;
   shareFriendIdBtn.disabled = false;
+});
+
+// --- Your ID, editable ----------------------------------------------------
+// Every account has a unique public ID like "asad#1234" (a guest has a
+// temporary one). It is shown on every profile, and its owner can change it
+// here to any ID nobody else has. Lives in the Profile section, so it is in
+// Settings > Profile and in the My profile sheet alike.
+let myFriendIdEditable = false;
+let idEditor = null;
+function renderIdEditor() {
+  const group = document.querySelector('#settingsPane-profile .tl-set-group');
+  if (!group && !idEditor) return;
+  if (!idEditor) {
+    idEditor = document.createElement('div');
+    idEditor.className = 'tl-set-control tl-set-control-stack id-editor';
+    idEditor.innerHTML = `<label class="tl-set-label" for="idEditorInput"></label>
+      <div class="tl-set-field">
+        <input type="text" id="idEditorInput" class="search-input" maxlength="25" autocomplete="off" autocapitalize="none" spellcheck="false" />
+        <button type="button" id="idEditorSave"></button>
+      </div>
+      <p class="tl-field-note id-editor-note"></p>`;
+    const nameControl = document.getElementById('tempUsernameInput');
+    const after = nameControl && nameControl.closest('.tl-set-control');
+    if (after) after.after(idEditor); else group.appendChild(idEditor);
+    const input = idEditor.querySelector('input');
+    const save = idEditor.querySelector('button');
+    const submit = () => {
+      const v = input.value.trim();
+      if (!v || v.toLowerCase() === myFriendId.toLowerCase()) return;
+      save.disabled = true;
+      socket.emit('set-handle', { handle: v });
+    };
+    save.addEventListener('click', submit);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
+    input.addEventListener('input', () => {
+      save.disabled = !input.value.trim() || input.value.trim().toLowerCase() === myFriendId.toLowerCase();
+      idEditor.querySelector('.id-editor-note').classList.remove('is-error');
+      idEditor.querySelector('.id-editor-note').textContent = t('idHint');
+    });
+  }
+  const input = idEditor.querySelector('input');
+  const save = idEditor.querySelector('button');
+  const note = idEditor.querySelector('.id-editor-note');
+  idEditor.querySelector('label').textContent = t('yourFriendId');
+  save.textContent = t('saveId');
+  input.placeholder = 'name#1234';
+  if (document.activeElement !== input) input.value = myFriendId || '';
+  input.disabled = !myFriendIdEditable;
+  save.disabled = true;
+  save.classList.toggle('hidden', !myFriendIdEditable);
+  note.classList.remove('is-error');
+  note.textContent = myFriendIdEditable ? t('idHint') : t('idSignInHint');
+}
+socket.on('set-handle-result', ({ ok, error, friendId, unchanged } = {}) => {
+  if (!idEditor) return;
+  const note = idEditor.querySelector('.id-editor-note');
+  const save = idEditor.querySelector('button');
+  if (ok) {
+    if (friendId) myFriendId = friendId;
+    idEditor.querySelector('input').value = myFriendId;
+    save.disabled = true;
+    note.classList.remove('is-error');
+    note.textContent = t('idHint');
+    if (!unchanged) showToast(t('idSaved', { id: myFriendId }));
+    return;
+  }
+  // "Already in use" and format problems are said right under the box.
+  save.disabled = false;
+  note.classList.add('is-error');
+  note.textContent = error || 'Could not save that ID.';
 });
 
 // The link opens TalkLive with this ID already looked up, one tap from
@@ -3517,6 +3589,9 @@ function openUserProfile(person) {
   activeProfileRelation = relation;
   friendProfileAvatar.innerHTML = chatPersonFace(known, 72);
   friendProfileName.innerHTML = `${getFlagImg(known.countryCode)} ${escapeHtml(friendLabel(known))}`;
+  // Whichever list knows them best carries their ID (callers often pass a bare
+  // name and clientId).
+  renderProfileIdLine(known.friendId || person.friendId || personById(person.clientId).friendId || null);
   const online = !!known.online;
   // Presence is shown to anyone the server reports it for - friends, and
   // recent people - so "message back" can say whether they are around.
@@ -3570,6 +3645,29 @@ function openUserProfile(person) {
 
   closeSidePanel(friendsDropdown, friendsOverlay);
   openSidePanel(friendProfileModal, friendProfileOverlay);
+}
+
+// Their public ID under their name, with a copy button: the way to find
+// them again from anywhere, and to tell two people with the same name apart.
+let profileIdLine = null;
+function renderProfileIdLine(id) {
+  if (!profileIdLine) {
+    profileIdLine = document.createElement('div');
+    profileIdLine.className = 'friend-profile-idline';
+    profileIdLine.innerHTML = '<span class="friend-profile-idlabel"></span><strong></strong><button type="button" class="friend-profile-idcopy"></button>';
+    profileIdLine.querySelector('button').addEventListener('click', async () => {
+      const v = profileIdLine.querySelector('strong').textContent;
+      try { await navigator.clipboard.writeText(v); showToast(t('idCopiedTheirs')); } catch (_) { /* no clipboard */ }
+    });
+    friendProfileName.after(profileIdLine);
+  }
+  profileIdLine.classList.toggle('hidden', !id);
+  if (!id) return;
+  profileIdLine.querySelector('.friend-profile-idlabel').textContent = t('idLabel');
+  profileIdLine.querySelector('strong').textContent = id;
+  const copy = profileIdLine.querySelector('button');
+  copy.textContent = t('copyFriendId');
+  copy.setAttribute('aria-label', `${t('copyFriendId')} ${id}`);
 }
 
 // Pin / unpin, next to Rename. Built on first use so index.html stays as it was.

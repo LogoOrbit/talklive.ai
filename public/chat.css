@@ -1553,3 +1553,11 @@ summary:active {
 .blocked-section { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 10px; }
 .blocked-section summary { cursor: pointer; font-weight: 700; color: var(--muted); font-size: 13px; padding: 4px 0; }
 .btn-sm { padding: 7px 14px; font-size: 13px; }
+.ps-id { display: inline-flex; align-items: center; gap: 8px; margin: 2px 0; padding: 4px 4px 4px 12px; border-radius: 999px; background: var(--accent-soft); font-size: 13.5px; }
+.ps-id.hidden { display: none; }
+.ps-id span { color: var(--muted); font-weight: 600; }
+.ps-id button { border: 0; border-radius: 999px; padding: 4px 10px; background: var(--line); color: inherit; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.id-edit { flex-wrap: wrap; }
+.id-edit.hidden { display: none; }
+.id-edit-note { flex: 1 1 100%; margin: 4px 2px 0; font-size: 12px; color: var(--muted); }
+.id-edit-note.is-error { color: var(--danger); }

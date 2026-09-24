@@ -186,6 +186,11 @@ let data = defaults();
 let saveTimer = null;
 // Public friend ID -> usernameLower. Rebuilt from the accounts on every load.
 let friendIdIndex = new Map();
+// Chosen account IDs ("asad#1234", lowercase) -> usernameLower, and the
+// profile (clientId) each account owns -> usernameLower, so anyone's public
+// ID can be shown next to them. Both derived from the accounts, never stored.
+let handleIndex = new Map();
+let clientIdIndex = new Map();
 
 function applyParsed(parsed) {
   data = { ...defaults(), ...parsed };
@@ -208,8 +213,12 @@ function applyParsed(parsed) {
   }
   // Same for the public friend IDs: derived from the accounts, never stored.
   friendIdIndex = new Map();
+  handleIndex = new Map();
+  clientIdIndex = new Map();
   for (const [usernameLower, acc] of Object.entries(data.accounts)) {
     if (acc && acc.friendId) friendIdIndex.set(acc.friendId, usernameLower);
+    if (acc && acc.handle) handleIndex.set(String(acc.handle).toLowerCase(), usernameLower);
+    if (acc && acc.clientId) clientIdIndex.set(acc.clientId, usernameLower);
   }
 }
 
@@ -1183,6 +1192,8 @@ function saveAccount(usernameLower, account) {
     // ensureAccountFriendId). Like clientId, never carried by the in-memory
     // accounts Map, so it is always kept from the previous record.
     friendId: previous.friendId || null,
+    // The chosen, editable public ID ("asad#1234") - see setAccountHandle.
+    handle: previous.handle || null,
     createdAt: previous.createdAt || Date.now(),
   };
   if (account.googleId) data.googleIndex[account.googleId] = usernameLower;
@@ -1211,6 +1222,7 @@ function setAccountClientId(usernameLower, clientId) {
   const acc = data.accounts[key];
   if (!acc || !clientId || acc.clientId) return acc ? acc.clientId || null : null;
   acc.clientId = clientId;
+  clientIdIndex.set(clientId, key);
   save();
   return clientId;
 }
@@ -1241,6 +1253,58 @@ function ensureAccountFriendId(usernameLower, generate, isTaken = () => false) {
     return id;
   }
   return null;
+}
+
+// --- Chosen account IDs ("name#1234") ------------------------------------
+// Every account has one, unique across accounts (compared without case). It
+// is minted from the nickname on first use and can be changed by its owner to
+// any free one; the old one is released the moment it changes.
+function getAccountHandle(usernameLower) {
+  const acc = data.accounts[String(usernameLower || '').toLowerCase()];
+  return (acc && acc.handle) || null;
+}
+
+function ensureAccountHandle(usernameLower, generate) {
+  const key = String(usernameLower || '').toLowerCase();
+  const acc = data.accounts[key];
+  if (!acc) return null;
+  if (acc.handle) return acc.handle;
+  for (let attempt = 0; attempt < 200; attempt += 1) {
+    const handle = String(generate(attempt) || '').toLowerCase();
+    if (!handle || handleIndex.has(handle)) continue;
+    acc.handle = handle;
+    handleIndex.set(handle, key);
+    save();
+    return handle;
+  }
+  return null;
+}
+
+// Returns { ok: true, handle } or { ok: false, taken: true }.
+function setAccountHandle(usernameLower, handle) {
+  const key = String(usernameLower || '').toLowerCase();
+  const acc = data.accounts[key];
+  const next = String(handle || '').toLowerCase();
+  if (!acc || !next) return { ok: false };
+  const owner = handleIndex.get(next);
+  if (owner && owner !== key) return { ok: false, taken: true };
+  if (acc.handle && acc.handle !== next) handleIndex.delete(String(acc.handle).toLowerCase());
+  acc.handle = next;
+  handleIndex.set(next, key);
+  save();
+  return { ok: true, handle: next };
+}
+
+function isHandleTaken(handle) {
+  return handleIndex.has(String(handle || '').toLowerCase());
+}
+
+function findUsernameByHandle(handle) {
+  return handleIndex.get(String(handle || '').toLowerCase()) || null;
+}
+
+function findUsernameByClientId(clientId) {
+  return clientIdIndex.get(clientId) || null;
 }
 
 function findUsernameByFriendId(friendId) {
@@ -1815,6 +1879,12 @@ module.exports = {
   getAccountFriendId,
   ensureAccountFriendId,
   findUsernameByFriendId,
+  getAccountHandle,
+  ensureAccountHandle,
+  setAccountHandle,
+  isHandleTaken,
+  findUsernameByHandle,
+  findUsernameByClientId,
   isAccountFriendId,
   findUsernameByEmail,
   startPasswordReset,

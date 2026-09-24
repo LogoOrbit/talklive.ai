@@ -7369,3 +7369,22 @@ html.perf-lite .side-panel { box-shadow: none; }
 .my-profile-body #settingsProfileRow, .my-profile-body > section:first-child > .tl-set-legend { display: none; }
 @media (prefers-reduced-motion: reduce) { .my-profile-sheet, .my-profile-backdrop { transition: none; } }
 .my-profile-sheet:focus { outline: none; }
+
+/* Profile actions: the one relationship action (Add friend, Confirm/Dismiss,
+   Pending/Cancel) gets its own row on top; Chat and Call share the row below.
+   Three buttons squeezed onto one line pushed "Add friend" into its neighbour. */
+.profile-actions-main > .btn { flex: 1 1 0; }
+.profile-actions-main > #friendProfileAddBtn { flex: 1 1 100%; order: -1; }
+.profile-actions-main > #friendProfileAcceptBtn,
+.profile-actions-main > #friendProfileDeclineBtn,
+.profile-actions-main > #friendProfilePending,
+.profile-actions-main > #friendProfileCancelBtn { flex: 1 1 calc(50% - 5px); order: -1; }
+.friend-profile-actions .btn > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+/* Their ID under their name. */
+.friend-profile-idline { display: inline-flex; align-items: center; gap: 8px; margin: 4px auto 2px; padding: 4px 4px 4px 12px; border-radius: 999px; background: color-mix(in srgb, var(--text) 7%, transparent); font-size: 13.5px; max-width: 100%; }
+.friend-profile-idline.hidden { display: none; }
+.friend-profile-idlabel { color: var(--muted); font-weight: 600; }
+.friend-profile-idline strong { letter-spacing: .02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.friend-profile-idcopy { border: 0; border-radius: 999px; padding: 4px 10px; background: color-mix(in srgb, var(--text) 12%, transparent); color: inherit; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.id-editor-note.is-error { color: var(--danger, #ff5470); }

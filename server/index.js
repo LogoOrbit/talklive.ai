@@ -2028,6 +2028,7 @@ function syncClientState(socket, clientId) {
   const friendList = Array.from((friends.get(clientId) || new Map()).entries()).map(([fid, info]) => ({
     clientId: fid,
     ...info,
+    friendId: publicIdOf(fid),
     avatar: liveAvatarFor(fid, info.avatar),
     // Friends who hid their status always appear offline to friends - this
     // only masks the per-friend indicator, never the global online count.
@@ -2037,6 +2038,7 @@ function syncClientState(socket, clientId) {
   const requestList = Array.from((friendRequests.get(clientId) || new Map()).entries()).map(([fid, info]) => ({
     clientId: fid,
     ...info,
+    friendId: publicIdOf(fid),
   }));
   // Recent random-chat partners (newest first), each carrying a live online
   // flag so the history panel can show who's around to message back right now.
@@ -2050,6 +2052,7 @@ function syncClientState(socket, clientId) {
       avatar: liveAvatarFor(e.clientId, e.avatar),
       mode: e.mode || 'chat',
       ts: e.ts,
+      friendId: publicIdOf(e.clientId),
       met: e.met || 1,
       durationSeconds: e.durationSeconds || 0,
       ...presenceOf(e.clientId),
@@ -2059,7 +2062,7 @@ function syncClientState(socket, clientId) {
   // "Pending" instead of offering to send the same request twice.
   const sentList = Array.from((sentRequests.get(clientId) || new Map()).entries()).map(([fid, info]) => {
     const { held, ...rest } = info;
-    return { clientId: fid, ...rest, online: clientSockets.has(fid) && !statusHidden.get(fid) };
+    return { clientId: fid, ...rest, friendId: publicIdOf(fid), online: clientSockets.has(fid) && !statusHidden.get(fid) };
   });
   // Only the people this user blocked - never who blocked them, which would
   // tell a blocked person exactly who shut them out.
@@ -3097,18 +3100,69 @@ function randomFriendCode(length) {
 // Whatever the user typed ("#g-4rt9kq", "K7MX 29QP") -> canonical code, or null.
 function normalizeFriendId(raw) {
   if (typeof raw !== 'string') return null;
+  // A chosen account ID: "asad#1234" (any case, an "@" or spaces tolerated).
+  const handle = normalizeHandle(raw);
+  if (handle) return handle;
   const code = raw.toUpperCase().replace(/[^A-Z0-9]/g, '');
   if (code.length === ACCOUNT_FRIEND_ID_LENGTH) return code;
   if (code.length === GUEST_FRIEND_ID_LENGTH + 1 && code[0] === 'G') return code;
   return null;
 }
 
+// --- Chosen account IDs ---------------------------------------------------
+// Every account has a public ID like "asad#1234": a name of 3-20 letters,
+// numbers, dots or underscores, then # and four digits. Unique across all
+// accounts, shown on every profile, searchable, and changeable by its owner
+// to any ID nobody else has. (The older 8-character codes still find the same
+// account, so links already shared keep working.)
+const HANDLE_RE = /^([a-z0-9_.]{3,20})#(\d{4})$/;
+const HANDLE_NAME_RE = /^[a-z0-9_.]{3,20}$/;
+function normalizeHandle(raw) {
+  if (typeof raw !== 'string') return null;
+  const v = raw.trim().replace(/^@/, '').replace(/\s+/g, '').toLowerCase();
+  return HANDLE_RE.test(v) ? v : null;
+}
+function isHandle(code) {
+  return typeof code === 'string' && code.includes('#');
+}
+function handleBaseFrom(name) {
+  let base = String(name || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_.]/g, '').replace(/^[._]+|[._]+$/g, '').slice(0, 20);
+  if (base.length < 3) base = (base + 'user').slice(0, 20);
+  return base;
+}
+function randomDiscriminator() {
+  return String(1 + crypto.randomInt(9999)).padStart(4, '0');
+}
+function accountHandle(usernameLower) {
+  const acc = accounts.get(usernameLower);
+  const base = handleBaseFrom((acc && acc.nickname) || usernameLower);
+  return store.ensureAccountHandle(usernameLower, (attempt) => (
+    // A crowded name falls back to a generic one rather than looping forever.
+    `${attempt < 150 ? base : 'user'}#${randomDiscriminator()}`
+  ));
+}
+// The account a searched ID belongs to (chosen ID or the older code).
+function accountForFriendKey(code) {
+  if (!code || isGuestFriendId(code)) return null;
+  return isHandle(code) ? store.findUsernameByHandle(code) : store.findUsernameByFriendId(code);
+}
+// Someone's public ID, for showing on their profile: their account's chosen
+// ID, or - for a guest who is here right now - their temporary one.
+function publicIdOf(clientId) {
+  const usernameLower = store.findUsernameByClientId(clientId);
+  if (usernameLower && accounts.has(usernameLower)) return accountHandle(usernameLower);
+  const guest = guestFriendIds.get(clientId);
+  return guest ? displayFriendId(guest) : null;
+}
+
 function isGuestFriendId(code) {
-  return code.length === GUEST_FRIEND_ID_LENGTH + 1;
+  return !isHandle(code) && code.length === GUEST_FRIEND_ID_LENGTH + 1;
 }
 
 // How a code is shown: guests keep the dash so "temporary" reads at a glance.
 function displayFriendId(code) {
+  if (isHandle(code)) return code;
   return isGuestFriendId(code) ? `G-${code.slice(1)}` : code;
 }
 
@@ -3159,7 +3213,7 @@ function accountFriendId(usernameLower) {
 function clientIdForFriendId(code) {
   if (!code) return null;
   if (isGuestFriendId(code)) return guestFriendIdOwners.get(code) || null;
-  const usernameLower = store.findUsernameByFriendId(code);
+  const usernameLower = accountForFriendKey(code);
   return usernameLower ? store.getAccountClientId(usernameLower) : null;
 }
 
@@ -3169,10 +3223,11 @@ function sendFriendId(socket, { fresh = false } = {}) {
   const usernameLower = socketAuth.get(socket.id);
   const profile = profiles.get(socket.id);
   if (usernameLower) {
-    const code = accountFriendId(usernameLower);
+    accountFriendId(usernameLower); // the older code still finds them
+    const handle = accountHandle(usernameLower);
     // Signed in: this browser is no longer a guest, so its guest code goes.
     if (profile) releaseGuestFriendId(profile.clientId);
-    if (code) socket.emit('friend-id', { friendId: displayFriendId(code), temporary: false });
+    if (handle) socket.emit('friend-id', { friendId: handle, temporary: false, editable: true });
     return;
   }
   if (!profile) return;
@@ -4384,7 +4439,7 @@ io.on('connection', (socket) => {
     if (!me) return;
     const code = normalizeFriendId(friendId);
     const reply = (result) => socket.emit('find-by-friend-id-result', { query: code ? displayFriendId(code) : '', ...result });
-    if (!code) return reply({ ok: false, error: 'IDs look like K7MX29QP, or G-4RT9KQ for guests.' });
+    if (!code) return reply({ ok: false, error: 'IDs look like asad#1234, or G-4RT9KQ for guests.' });
     // Codes are short enough to guess at, so searching is metered - per
     // profile, and per network too, since a fresh clientId costs nothing.
     if (!socialRateOk('find-by-friend-id', me.clientId, 30, 10 * 60000)
@@ -4398,13 +4453,14 @@ io.on('connection', (socket) => {
     }
     store.recordFeature('friend_id_search');
     const snap = snapshotOf(targetClientId, me.clientId);
-    const usernameLower = isGuestFriendId(code) ? null : store.findUsernameByFriendId(code);
+    const usernameLower = accountForFriendKey(code);
     const account = usernameLower ? accounts.get(usernameLower) : null;
     reply({
       ok: true,
       user: {
         clientId: targetClientId,
-        friendId: displayFriendId(code),
+        // Found by an older code: shown by the ID they use now.
+        friendId: publicIdOf(targetClientId) || displayFriendId(code),
         username: snap.username || (account && account.nickname) || 'Stranger',
         countryCode: snap.countryCode || '',
         avatar: snap.avatar || null,
@@ -4414,6 +4470,41 @@ io.on('connection', (socket) => {
         ...presenceOf(targetClientId),
       },
     });
+  });
+
+  // Change this account's public ID. "asad#1234" asks for exactly that one;
+  // just "asad" takes any free number after it.
+  socket.on('set-handle', ({ handle } = {}) => {
+    const usernameLower = socketAuth.get(socket.id);
+    const reply = (r) => socket.emit('set-handle-result', r);
+    if (!usernameLower || !accounts.has(usernameLower)) {
+      return reply({ ok: false, error: 'Sign in to choose your own ID.' });
+    }
+    if (!socialRateOk('set-handle', usernameLower, 10, 60 * 60000)) {
+      return reply({ ok: false, error: 'Too many changes. Try again later.' });
+    }
+    const raw = typeof handle === 'string' ? handle.trim().replace(/^@/, '').replace(/\s+/g, '').toLowerCase() : '';
+    let next = normalizeHandle(raw);
+    if (!next && HANDLE_NAME_RE.test(raw)) {
+      for (let i = 0; i < 60 && !next; i += 1) {
+        const pick = `${raw}#${randomDiscriminator()}`;
+        if (!store.isHandleTaken(pick)) next = pick;
+      }
+      if (!next) return reply({ ok: false, taken: true, error: 'That name is very popular. Try adding a number of your own, like name#1234.' });
+    }
+    if (!next) {
+      return reply({ ok: false, error: 'Use 3-20 letters, numbers, dots or underscores, then # and 4 digits - like asad#1234.' });
+    }
+    const current = accountHandle(usernameLower);
+    if (next === current) return reply({ ok: true, friendId: current, unchanged: true });
+    const result = store.setAccountHandle(usernameLower, next);
+    if (!result.ok) return reply({ ok: false, taken: !!result.taken, error: result.taken ? 'That ID is already in use. Try another.' : 'Could not save that ID.' });
+    store.recordFeature('handle_change');
+    reply({ ok: true, friendId: result.handle });
+    socket.emit('friend-id', { friendId: result.handle, temporary: false, editable: true });
+    // Friends and recent people see the new ID on their next look.
+    const me = profiles.get(socket.id);
+    if (me) resyncWatchers(me.clientId);
   });
 
   socket.on('friend-request', ({ targetClientId, message, friendId } = {}) => {
@@ -4503,7 +4594,7 @@ io.on('connection', (socket) => {
     // Found by an account's friend ID while they are offline: nothing above
     // knows their name yet, but the account does.
     if (!targetSnap.username && viaFriendId) {
-      const owner = store.findUsernameByFriendId(normalizeFriendId(friendId));
+      const owner = accountForFriendKey(normalizeFriendId(friendId));
       const account = owner ? accounts.get(owner) : null;
       if (account) targetSnap.username = account.nickname;
     }

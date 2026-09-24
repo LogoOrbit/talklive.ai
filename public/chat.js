@@ -1779,6 +1779,50 @@
     myFriendIdNote.classList.toggle('hidden', !data.temporary);
     copyFriendIdBtn.disabled = false;
     shareFriendIdBtn.disabled = false;
+    renderIdEdit(!!data.editable);
+  });
+
+  // An account's ID ("asad#1234") is its own to change, to any ID nobody else
+  // has - the same control as the call app's Profile.
+  var idEdit = null;
+  function renderIdEdit(editable) {
+    if (!editable) { if (idEdit) idEdit.classList.add('hidden'); return; }
+    if (!idEdit) {
+      idEdit = document.createElement('form');
+      idEdit.className = 'friend-id-search id-edit';
+      idEdit.setAttribute('autocomplete', 'off');
+      idEdit.innerHTML = '<input type="text" maxlength="25" spellcheck="false" autocapitalize="none" placeholder="name#1234">' +
+        '<button type="submit" class="btn btn-secondary"></button><p class="id-edit-note"></p>';
+      var card = myFriendIdEl.closest('.friend-id-card');
+      card.insertBefore(idEdit, friendIdSearchForm);
+      idEdit.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var v = idEdit.querySelector('input').value.trim();
+        if (!v || v.toLowerCase() === myFriendId.toLowerCase()) return;
+        idEdit.querySelector('button').disabled = true;
+        socket.emit('set-handle', { handle: v });
+      });
+    }
+    idEdit.classList.remove('hidden');
+    var input = idEdit.querySelector('input');
+    if (document.activeElement !== input) input.value = myFriendId;
+    input.setAttribute('aria-label', t('yourFriendId'));
+    idEdit.querySelector('button').textContent = t('saveId');
+    idEdit.querySelector('button').disabled = false;
+    var note = idEdit.querySelector('.id-edit-note');
+    note.classList.remove('is-error');
+    note.textContent = t('idHint');
+  }
+  socket.on('set-handle-result', function (r) {
+    if (!idEdit || !r) return;
+    var note = idEdit.querySelector('.id-edit-note');
+    idEdit.querySelector('button').disabled = false;
+    if (r.ok) {
+      if (!r.unchanged) socialToast(t('idSaved', { id: r.friendId }));
+      return;
+    }
+    note.classList.add('is-error');
+    note.textContent = r.error || '';
   });
 
   function copyText(text, done) {
@@ -2420,7 +2464,7 @@
         '<div class="modal-box profile-sheet" role="dialog" aria-modal="true" aria-labelledby="psName">' +
           '<div class="modal-header"><span></span><button type="button" class="modal-close" data-act="close">&times;</button></div>' +
           '<div class="modal-body"><div class="ps-face"></div><h2 id="psName" class="ps-name"></h2>' +
-          '<p class="ps-real hidden"></p><p class="ps-status"></p>' +
+          '<p class="ps-id hidden"></p><p class="ps-real hidden"></p><p class="ps-status"></p>' +
           '<div class="ps-row ps-main"></div><div class="ps-row ps-manage"></div><div class="ps-row ps-safety"></div></div></div>';
       document.body.appendChild(profileBox);
       profileBox.addEventListener('click', function (e) {
@@ -2442,6 +2486,13 @@
     var live = isLivePartner(id);
     profileBox.querySelector('.ps-face').innerHTML = faceHtml(p, 72);
     profileBox.querySelector('.ps-name').innerHTML = getFlagImg(p.countryCode, 18) + ' ' + escapeHtml(friendLabel(p) || p.username || t('someone'));
+    // Their public ID, with a copy button.
+    var idLine = profileBox.querySelector('.ps-id');
+    idLine.classList.toggle('hidden', !p.friendId);
+    if (p.friendId) {
+      idLine.innerHTML = '<span>' + escapeHtml(t('idLabel')) + '</span><strong>' + escapeHtml(p.friendId) + '</strong>' +
+        '<button type="button" data-act="copyid">' + escapeHtml(t('copyFriendId')) + '</button>';
+    }
     var real = profileBox.querySelector('.ps-real');
     var renamed = friend && friend.nickname && friend.nickname !== friend.username;
     real.classList.toggle('hidden', !renamed);
@@ -2476,6 +2527,7 @@
     var name = friendLabel(p) || p.username || t('someone');
     switch (act) {
       case 'close': closeProfile(); break;
+      case 'copyid': if (p.friendId) copyText(p.friendId, function () { socialToast(t('idCopiedTheirs')); }); break;
       case 'chat': closeProfile(); openFriendChat({ clientId: id, username: p.username }); break;
       case 'call':
         // Voice lives in the call app: it opens there, already ringing them.
