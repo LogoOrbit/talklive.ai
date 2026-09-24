@@ -1713,7 +1713,7 @@ function renderIdEditor() {
     idEditor.className = 'tl-set-control tl-set-control-stack id-editor';
     idEditor.innerHTML = `<label class="tl-set-label" for="idEditorInput"></label>
       <div class="tl-set-field">
-        <input type="text" id="idEditorInput" class="search-input" maxlength="25" autocomplete="off" autocapitalize="none" spellcheck="false" />
+        <input type="text" id="idEditorInput" class="search-input" maxlength="21" autocomplete="off" autocapitalize="none" spellcheck="false" />
         <button type="button" id="idEditorSave"></button>
       </div>
       <p class="tl-field-note id-editor-note"></p>`;
@@ -1722,6 +1722,7 @@ function renderIdEditor() {
     if (after) after.after(idEditor); else group.appendChild(idEditor);
     const input = idEditor.querySelector('input');
     const save = idEditor.querySelector('button');
+    if (window.TalkLiveSocial) window.TalkLiveSocial.maskIdInput(input);
     const submit = () => {
       const v = input.value.trim();
       if (!v || v.toLowerCase() === myFriendId.toLowerCase()) return;

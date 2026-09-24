@@ -101,7 +101,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "friendIdSearchPlaceholder": "Add by ID, e.g. asad#1234",
     "idLabel": "ID",
     "saveId": "Save ID",
-    "idHint": "Your unique ID - people can find and add you with it. 3-20 letters, numbers, dots or underscores, then # and 4 digits.",
+    "idHint": "Your unique ID - people can find and add you with it. 3-16 letters, then # and 4 numbers, like anakin#1101.",
     "idSignInHint": "Temporary guest ID. Sign in to get a permanent ID you can choose, like asad#1234.",
     "idSaved": "Your ID is now {id}",
     "idCopiedTheirs": "ID copied",

@@ -1865,10 +1865,11 @@
       idEdit = document.createElement('form');
       idEdit.className = 'friend-id-search id-edit';
       idEdit.setAttribute('autocomplete', 'off');
-      idEdit.innerHTML = '<input type="text" maxlength="25" spellcheck="false" autocapitalize="none" placeholder="name#1234">' +
+      idEdit.innerHTML = '<input type="text" maxlength="21" spellcheck="false" autocapitalize="none" placeholder="name#1234">' +
         '<button type="submit" class="btn btn-secondary"></button><p class="id-edit-note"></p>';
       var card = myFriendIdEl.closest('.friend-id-card');
       card.insertBefore(idEdit, friendIdSearchForm);
+      if (window.TalkLiveSocial) window.TalkLiveSocial.maskIdInput(idEdit.querySelector('input'));
       idEdit.addEventListener('submit', function (e) {
         e.preventDefault();
         var v = idEdit.querySelector('input').value.trim();

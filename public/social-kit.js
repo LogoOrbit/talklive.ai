@@ -96,5 +96,25 @@
     };
   }
 
-  window.TalkLiveSocial = { face: face, attachMessageAvatars: attach };
+  // An ID is shaped as it is typed, like a Riot ID: letters, then # and four
+  // numbers ("anakin#1101"). A number typed in the name starts the tag, so the
+  // # arrives on its own; anything else simply does not go in.
+  function idMask(v) {
+    var name = '', tag = '', inTag = false;
+    String(v || '').toLowerCase().split('').forEach(function (ch) {
+      if (!inTag) {
+        if (/[a-z]/.test(ch)) { if (name.length < 16) name += ch; }
+        else if (name && (ch === '#' || /\d/.test(ch))) { inTag = true; if (ch !== '#') tag += ch; }
+      } else if (/\d/.test(ch) && tag.length < 4) tag += ch;
+    });
+    return inTag ? name + '#' + tag : name;
+  }
+  function maskIdInput(input) {
+    input.addEventListener('input', function () {
+      var v = idMask(input.value);
+      if (v !== input.value) input.value = v;
+    });
+  }
+
+  window.TalkLiveSocial = { face: face, attachMessageAvatars: attach, idMask: idMask, maskIdInput: maskIdInput };
 })();

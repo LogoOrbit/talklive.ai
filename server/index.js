@@ -3158,7 +3158,11 @@ function normalizeFriendId(raw) {
 // to any ID nobody else has. (The older 8-character codes still find the same
 // account, so links already shared keep working.)
 const HANDLE_RE = /^([a-z0-9_.]{3,20})#(\d{4})$/;
-const HANDLE_NAME_RE = /^[a-z0-9_.]{3,20}$/;
+// The shape every ID now has, like a Riot ID: 3-16 letters, then # and four
+// numbers ("anakin#1101"). HANDLE_RE above stays wider only so an ID someone
+// shared before this rule still looks up; accountHandle() replaces it.
+const ID_RE = /^[a-z]{3,16}#\d{4}$/;
+const ID_NAME_RE = /^[a-z]{3,16}$/;
 function normalizeHandle(raw) {
   if (typeof raw !== 'string') return null;
   const v = raw.trim().replace(/^@/, '').replace(/\s+/g, '').toLowerCase();
@@ -3169,8 +3173,8 @@ function isHandle(code) {
 }
 function handleBaseFrom(name) {
   let base = String(name || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_.]/g, '').replace(/^[._]+|[._]+$/g, '').slice(0, 20);
-  if (base.length < 3) base = (base + 'user').slice(0, 20);
+    .toLowerCase().replace(/[^a-z]/g, '').slice(0, 16);
+  if (base.length < 3) base = (base + 'user').slice(0, 16);
   return base;
 }
 function randomDiscriminator() {
@@ -3179,10 +3183,18 @@ function randomDiscriminator() {
 function accountHandle(usernameLower) {
   const acc = accounts.get(usernameLower);
   const base = handleBaseFrom((acc && acc.nickname) || usernameLower);
-  return store.ensureAccountHandle(usernameLower, (attempt) => (
-    // A crowded name falls back to a generic one rather than looping forever.
-    `${attempt < 150 ? base : 'user'}#${randomDiscriminator()}`
-  ));
+  // A crowded name falls back to a generic one rather than looping forever.
+  const pick = (attempt) => `${attempt < 150 ? base : 'user'}#${randomDiscriminator()}`;
+  const current = store.ensureAccountHandle(usernameLower, pick);
+  if (!current || ID_RE.test(current)) return current;
+  // An ID from before the letters-then-numbers rule gets a new one that fits.
+  for (let attempt = 0; attempt < 200; attempt += 1) {
+    const next = pick(attempt);
+    if (store.isHandleTaken(next)) continue;
+    const r = store.setAccountHandle(usernameLower, next);
+    if (r.ok) return r.handle;
+  }
+  return current;
 }
 // The account a searched ID belongs to (chosen ID or the older code).
 function accountForFriendKey(code) {
@@ -4537,16 +4549,16 @@ io.on('connection', (socket) => {
       return reply({ ok: false, error: 'Too many changes. Try again later.' });
     }
     const raw = typeof handle === 'string' ? handle.trim().replace(/^@/, '').replace(/\s+/g, '').toLowerCase() : '';
-    let next = normalizeHandle(raw);
-    if (!next && HANDLE_NAME_RE.test(raw)) {
+    let next = ID_RE.test(raw) ? raw : null;
+    if (!next && ID_NAME_RE.test(raw)) {
       for (let i = 0; i < 60 && !next; i += 1) {
         const pick = `${raw}#${randomDiscriminator()}`;
         if (!store.isHandleTaken(pick)) next = pick;
       }
-      if (!next) return reply({ ok: false, taken: true, error: 'That name is very popular. Try adding a number of your own, like name#1234.' });
+      if (!next) return reply({ ok: false, taken: true, error: 'That name is very popular. Pick your own 4 numbers, like anakin#1101.' });
     }
     if (!next) {
-      return reply({ ok: false, error: 'Use 3-20 letters, numbers, dots or underscores, then # and 4 digits - like asad#1234.' });
+      return reply({ ok: false, error: 'Use 3-16 letters, then # and 4 numbers - like anakin#1101.' });
     }
     const current = accountHandle(usernameLower);
     if (next === current) return reply({ ok: true, friendId: current, unchanged: true });
