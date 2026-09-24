@@ -60,7 +60,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
      side-panel shell, Settings, Friends/History and the account dialog, and it
      does so with its own `tl-` class names so nothing above can reach it. -->
-<link rel="stylesheet" href="ui.css?v=20260924kbsheet" />
+<link rel="stylesheet" href="ui.css?v=20260924swipeclose" />
 <link rel="stylesheet" href="auth.css?v=20260924auth" />
 <!-- The top bar, shared with /chat. Loaded after everything else because it
      owns the header outright: one button language, one radius, one focus ring
@@ -2199,8 +2199,8 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
         </section>
       </section>
 
-      <!-- Chat panel: slides in from the right (big chat button, top-right).
-           Usable during a call; swipe right to close. -->
+      <!-- Chat panel: comes up from the bottom (big chat button, top-right).
+           Usable during a call; swipe down to close. -->
       <div id="chatOverlay" class="side-panel-overlay hidden"></div>
       <aside id="chatPanel" class="side-panel side-panel-right chat-side-panel" role="dialog" data-i18n-aria="chat" aria-label="Chat">
         <!-- Drag this down to put the sheet away. A pseudo-element cannot be
@@ -2669,7 +2669,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   <script defer src="chat-extras.js?v=20260922social2"></script>
   <script defer src="games.js?v=20260924qa"></script>
   <script defer src="nickname-rules.js?v=20260924nick"></script>
-  <script defer src="app.js?v=20260924segwrap"></script>
+  <script defer src="app.js?v=20260924swipeclose"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

@@ -1225,6 +1225,33 @@
     closePanel(historyPanel, historyOverlay);
   }
 
+  // Swipes only ever close, never open: a side panel goes back out the edge
+  // it came in from (left for one on the left, right for one on the right).
+  function swipeToClose(panel, overlay) {
+    if (!panel) return;
+    var startX = null, startY = 0;
+    panel.addEventListener('touchstart', function (e) {
+      startX = null;
+      if (!panel.classList.contains('open') || e.touches.length !== 1) return;
+      if (e.target.closest && e.target.closest('input[type="range"]')) return;
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+    }, { passive: true });
+    panel.addEventListener('touchmove', function (e) {
+      if (startX === null) return;
+      var dx = e.touches[0].clientX - startX;
+      var dy = e.touches[0].clientY - startY;
+      if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+      startX = null;
+      var r = panel.getBoundingClientRect();
+      var fromLeft = r.left + r.width / 2 < window.innerWidth / 2
+        || (r.width >= window.innerWidth - 1 && document.documentElement.dir === 'rtl');
+      if ((dx < 0) === fromLeft) closePanel(panel, overlay);
+    }, { passive: true });
+    panel.addEventListener('touchend', function () { startX = null; });
+    panel.addEventListener('touchcancel', function () { startX = null; });
+  }
+
   // --- Settings & profile: one of each, shared with the call app ---
   // The gear opens THE Settings panel - the same one the landing page and a
   // call open (public/settings-panel.js), same keys, same values. "All
@@ -2092,6 +2119,10 @@
   // --- Friend chat: persistent one-to-one chat, same protocol as the call app. ---
   var friendChatPanel = $('friendChatPanel');
   var friendChatOverlay = $('friendChatOverlay');
+  swipeToClose(settingsPanel, settingsOverlay);
+  swipeToClose(friendsPanel, friendsOverlay);
+  swipeToClose(historyPanel, historyOverlay);
+  swipeToClose(friendChatPanel, friendChatOverlay);
   var friendChatMsgs = $('friendChatMsgs');
   var friendChatForm = $('friendChatForm');
   var friendChatInput = $('friendChatInput');

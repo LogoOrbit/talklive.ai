@@ -3753,25 +3753,41 @@ closeFriendsBtn.addEventListener('click', () => {
   updateScrollLock();
 });
 
-// Swipe right on the friends panel closes it (it slides in from the right).
-let friendsTouchStartX = null;
-let friendsTouchStartY = null;
-friendsDropdown.addEventListener('touchstart', (e) => {
-  friendsTouchStartX = e.touches[0].clientX;
-  friendsTouchStartY = e.touches[0].clientY;
-}, { passive: true });
-friendsDropdown.addEventListener('touchmove', (e) => {
-  if (friendsTouchStartX === null) return;
-  const dx = e.touches[0].clientX - friendsTouchStartX;
-  const dy = e.touches[0].clientY - friendsTouchStartY;
-  if (dx > 70 && Math.abs(dx) > Math.abs(dy)) {
-    friendsTouchStartX = null;
-    closeSidePanel(friendsDropdown, friendsOverlay);
-  }
-}, { passive: true });
-friendsDropdown.addEventListener('touchend', () => {
-  friendsTouchStartX = null;
-  friendsTouchStartY = null;
+// --- Swipe to close a side panel -------------------------------------------
+// Swipes only ever close, never open. A side panel goes back out the edge it
+// came in from: toward the left for one on the left, toward the right for one
+// on the right (the side flips under RTL, so it is read from the page).
+function makeSideSwipeClosable(panel, close) {
+  if (!panel) return;
+  let startX = null;
+  let startY = 0;
+  const fromLeft = () => {
+    const r = panel.getBoundingClientRect();
+    return r.left + r.width / 2 < window.innerWidth / 2
+      || (r.width >= window.innerWidth - 1 && document.documentElement.dir === 'rtl');
+  };
+  panel.addEventListener('touchstart', (e) => {
+    startX = null;
+    if (!panel.classList.contains('open') || e.touches.length !== 1) return;
+    // A slider is dragged sideways; that drag is not a swipe.
+    if (e.target.closest && e.target.closest('input[type="range"]')) return;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+  }, { passive: true });
+  panel.addEventListener('touchmove', (e) => {
+    if (startX === null) return;
+    const dx = e.touches[0].clientX - startX;
+    const dy = e.touches[0].clientY - startY;
+    if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    startX = null;
+    if ((dx < 0) === fromLeft()) close();
+  }, { passive: true });
+  panel.addEventListener('touchend', () => { startX = null; });
+  panel.addEventListener('touchcancel', () => { startX = null; });
+}
+makeSideSwipeClosable(friendsDropdown, () => {
+  closeSidePanel(friendsDropdown, friendsOverlay);
+  updateScrollLock();
 });
 
 // Phone glyph shared by the live call button and its offline (greyed) state.
@@ -7915,7 +7931,7 @@ function focusComposer(el) {
   }));
 }
 
-// --- Chat panel: slides in from the right; swipe right to close. ---
+// --- Chat panel: comes up from the bottom; swipe down to close. ---
 function openChatPanel() {
   chatOpen = true;
   chatPanel.classList.add('open');
@@ -7990,7 +8006,7 @@ chatToggleBtn.addEventListener('click', () => {
   else openChatPanel();
 });
 closeChatBtn.addEventListener('click', closeChatPanel);
-chatOverlay.addEventListener('click', () => { if (Date.now() < swipeSuppressUntil) return; closeChatPanel(); });
+chatOverlay.addEventListener('click', closeChatPanel);
 
 // --- Putting the sheet away --------------------------------------------------
 // On a phone the chat is a sheet sitting over a live call, and the gesture for
@@ -8002,19 +8018,17 @@ chatOverlay.addEventListener('click', () => { if (Date.now() < swipeSuppressUnti
 // message list: dragging inside a scrollable list is how you scroll it, and
 // the two gestures must not fight.
 //
-// Wider than 767px the panel is a docked window with nowhere to go, so nothing
-// here applies; the old rightward swipe is kept for that case.
+// Wider than 767px it is a docked window that also comes up from the bottom,
+// so it goes back down the same way.
 function makeSheetDismissable(panel, close) {
   if (!panel) return;
   const CLOSE_AT = 90;      // px dragged down before it stays closed
   const FLICK = 0.5;        // px/ms - a fast flick closes from anywhere
   let startY = null;
-  let startX = 0;
   let startT = 0;
   let dy = 0;
   let dragging = false;
 
-  const isSheet = () => window.matchMedia('(max-width: 767px)').matches;
   const fromGrip = (target) => !!(target.closest && target.closest('.tl-sheet-grip, .side-panel-header'));
 
   function reset() {
@@ -8028,33 +8042,20 @@ function makeSheetDismissable(panel, close) {
   panel.addEventListener('touchstart', (e) => {
     if (!panel.classList.contains('open')) return;
     startY = e.touches[0].clientY;
-    startX = e.touches[0].clientX;
     startT = Date.now();
     dy = 0;
     // A drag only counts from the handle or the header; a button in the header
     // is still a button.
-    dragging = isSheet() && fromGrip(e.target) && !e.target.closest('button');
+    dragging = fromGrip(e.target) && !e.target.closest('button');
   }, { passive: true });
 
   panel.addEventListener('touchmove', (e) => {
-    if (startY === null) return;
-    const y = e.touches[0].clientY;
-    const x = e.touches[0].clientX;
-    dy = y - startY;
-
-    if (dragging) {
-      // Downward only. Pulling up on a sheet that is already at the top has
-      // nowhere to go, so it does not move.
-      panel.classList.add('is-dragging');
-      panel.style.transform = 'translateY(' + Math.max(0, dy) + 'px)';
-      return;
-    }
-
-    // Docked window: the old mostly-horizontal rightward swipe.
-    if (!isSheet() && x - startX > 70 && Math.abs(x - startX) > Math.abs(dy)) {
-      startY = null;
-      close();
-    }
+    if (startY === null || !dragging) return;
+    dy = e.touches[0].clientY - startY;
+    // Downward only. Pulling up on a sheet that is already at the top has
+    // nowhere to go, so it does not move.
+    panel.classList.add('is-dragging');
+    panel.style.transform = 'translateY(' + Math.max(0, dy) + 'px)';
   }, { passive: true });
 
   function end() {
@@ -8079,57 +8080,9 @@ makeSheetDismissable(friendChatModal, () => {
   closeSidePanel(friendChatModal, friendChatOverlay);
   activeFriendChatId = null;
 });
-
-// --- Edge swipes on the call screen: swipe left → open chat (slides in from
-// the right), swipe right → open settings (slides in from the left). Decided at
-// touchend from start/end deltas with passive listeners and no preventDefault,
-// so vertical scrolling is never interfered with. ---
-let swipeStartX = null;
-let swipeStartY = null;
-let swipeStartT = 0;
-// A short window after an edge-swipe during which overlay clicks are ignored, so
-// the post-touch ghost click can't immediately re-close the panel we just opened.
-let swipeSuppressUntil = 0;
-function panelsAreClosed() {
-  return !chatOpen
-    && !settingsIsOpen()
-    && !filtersPanel.classList.contains('open')
-    && !friendsDropdown.classList.contains('open')
-    && !friendProfileModal.classList.contains('open')
-    && !friendChatModal.classList.contains('open')
-    && gameOverlay.classList.contains('hidden')
-    && !historyPanel.classList.contains('open')
-    && !document.querySelector('.modal-overlay:not(.hidden)');
-}
-document.addEventListener('touchstart', (e) => {
-  if (e.touches.length !== 1) { swipeStartX = null; return; }
-  // Only active on the call screen (where the chat/settings buttons live) and
-  // when nothing else is open, so it never fights another gesture.
-  if (!stageEl.classList.contains('call-live') || !panelsAreClosed()) { swipeStartX = null; return; }
-  swipeStartX = e.touches[0].clientX;
-  swipeStartY = e.touches[0].clientY;
-  swipeStartT = Date.now();
-}, { passive: true });
-document.addEventListener('touchend', (e) => {
-  if (swipeStartX === null) return;
-  const t = e.changedTouches[0];
-  const dx = t.clientX - swipeStartX;
-  const dy = t.clientY - swipeStartY;
-  const dt = Date.now() - swipeStartT;
-  swipeStartX = null;
-  // A deliberate, mostly-horizontal, reasonably quick flick.
-  if (dt > 700) return;
-  if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.6) return;
-  if (!panelsAreClosed()) return;
-  // Suppress the ghost click the browser fires ~300ms after touchend at the
-  // release point - without this it lands on the freshly-opened panel's overlay
-  // and immediately closes it again.
-  if (dx < 0) {
-    if (!chatToggleBtn.classList.contains('hidden')) { swipeSuppressUntil = Date.now() + 700; openChatPanel(); }
-  } else {
-    if (!appSettingsBtn.classList.contains('hidden')) { swipeSuppressUntil = Date.now() + 700; openQuickSettings(); }
-  }
-}, { passive: true });
+makeSideSwipeClosable(filtersPanel, closeFilters);
+makeSideSwipeClosable(historyPanel, closeHistoryPanel);
+makeSideSwipeClosable(quickSettingsPanel, closeQuickSettings);
 
 // --- Periodic "come play" nudge: while on a live call and the game isn't
 // open, wiggle the game button every 20-30s to invite the user to play. ---
@@ -8375,9 +8328,6 @@ function primeBackGuard() {
 
 let endCallConfirmOpen = false;
 window.addEventListener('popstate', async () => {
-  // An edge swipe that just opened a panel also fires the browser's back
-  // gesture; ignore that trailing popstate so it doesn't re-close the panel.
-  if (Date.now() < swipeSuppressUntil) { primeBackGuard(); return; }
   // The log-in page closing itself popped its own entry: nothing else to do.
   if (authBackPending) { authBackPending = false; return; }
   // Back out of /login or /signup: the page closes, whatever was under it stays.

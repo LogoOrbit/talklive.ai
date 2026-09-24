@@ -3026,10 +3026,6 @@
   }
   .side-panel.chat-side-panel.open { transform: translateY(0); }
 
-  /* While a finger is on it the sheet follows that finger exactly, so the
-     transition has to be out of the way; it comes back for the snap. */
-  .side-panel.chat-side-panel.is-dragging { transition: none; }
-
   /* The handle. It is what makes a sheet look draggable and, more usefully,
      what makes it obvious the call is still behind it. It is also the grab
      area, so it is a real element rather than a ::before - a pseudo-element
@@ -3070,6 +3066,10 @@
    width, so the direction rules have nothing to flip here. */
 [dir="rtl"] .side-panel.chat-side-panel { transform: translateY(100%); }
 [dir="rtl"] .side-panel.chat-side-panel.open { transform: translateY(0); }
+
+/* While a finger is on it the sheet follows that finger exactly, so the
+   transition has to be out of the way; it comes back for the snap. */
+.side-panel.chat-side-panel.is-dragging { transition: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .side-panel.chat-side-panel { transition: none; }
