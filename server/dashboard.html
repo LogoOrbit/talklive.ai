@@ -579,7 +579,7 @@ function rankedBars(el,entries){
 /* ---------- dashboard shell ---------- */
 const TABS=[
   ['overview','Overview','📊'],['activity','Activity','📅'],['ai','AI Bot','🤖'],['live','Live','🟢'],['chats','Chats','💬'],
-  ['reports','Reports','🚩'],['bans','Bans','⛔'],['accounts','Accounts','👤'],['revenue','Revenue','💎'],
+  ['reports','Reports','🚩'],['bans','Bans','⛔'],['accounts','Accounts','👤'],['talktime','Talk time','⏱️'],['revenue','Revenue','💎'],
   ['errors','Errors','🐛'],['feedback','Feedback','⭐'],['audit','Audit','🧾'],['settings','Settings','🛠️']
 ];
 const TAB_IDS=TABS.map(t=>t[0]);
@@ -666,6 +666,7 @@ async function load(force){
     else if(tab==='bans')await viewBans();
     else if(tab==='chats')await viewChats();
     else if(tab==='accounts')await viewAccounts();
+    else if(tab==='talktime')await viewTalkTime();
     else if(tab==='revenue')await viewRevenue();
     else if(tab==='errors')await viewErrors();
     else if(tab==='feedback')await viewFeedback();
@@ -1423,6 +1424,52 @@ async function viewAccounts(){
     if(accSort===k)accDir=-accDir; else {accSort=k;accDir=(k==='createdAt'||k==='lastSeen')?-1:1;}
     viewAccounts();
   });
+}
+
+/* ---------- talk time: who talked for how long ---------- */
+let ttRange='all',ttSort='most',ttMin=0,ttQ='';
+const TT_SORTS=[['most','Most talk time'],['least','Least talk time'],['calls','Most conversations'],['fewest','Fewest conversations'],['avg','Longest average'],['longest','Longest single call'],['recent','Recently talked']];
+const TT_MIN=[[0,'Any length'],[60,'≥ 1 min'],[600,'≥ 10 min'],[1800,'≥ 30 min'],[3600,'≥ 1 hour']];
+const dur=(s)=>{s=Math.round(s||0);if(s<60)return s+'s';const m=Math.floor(s/60);if(m<60)return m+'m '+String(s%60).padStart(2,'0')+'s';const h=Math.floor(m/60);return h+'h '+String(m%60).padStart(2,'0')+'m';};
+async function viewTalkTime(){
+  const r=await api('talktime?range='+ttRange);
+  const all=r.rows||[];
+  const totalS=all.reduce((a,x)=>a+x.seconds,0),totalC=all.reduce((a,x)=>a+x.calls,0);
+  const q=ttQ.trim().toLowerCase();
+  let rows=all.filter(x=>x.seconds>=ttMin&&(!q||[x.username,x.account,x.country,x.clientId].some(v=>String(v||'').toLowerCase().includes(q))));
+  const cmp={most:(a,b)=>b.seconds-a.seconds,least:(a,b)=>a.seconds-b.seconds,calls:(a,b)=>b.calls-a.calls||b.seconds-a.seconds,
+    fewest:(a,b)=>a.calls-b.calls||a.seconds-b.seconds,avg:(a,b)=>b.avg-a.avg,longest:(a,b)=>b.longest-a.longest,recent:(a,b)=>b.lastAt-a.lastAt}[ttSort];
+  rows.sort(cmp);
+  const max=Math.max(1,...rows.map(x=>x.seconds));
+  const shown=rows.slice(0,500);
+  const top=all[0];
+  $('#main').innerHTML=`<div class="grid tiles anim" style="margin-top:0">
+    <div class="tile"><div class="k">Total talk time</div><div class="v grad" style="font-size:1.4rem">${dur(totalS)}</div><div class="s">across ${num(totalC)} conversations</div></div>
+    <div class="tile"><div class="k">People who talked</div><div class="v" data-count="${all.length}">0</div><div class="s">${ttRange==='all'?'all time':ttRange==='today'?'today':'last '+ttRange.replace('d',' days')}</div></div>
+    <div class="tile"><div class="k">Avg per person</div><div class="v" style="font-size:1.4rem">${dur(all.length?totalS/all.length:0)}</div><div class="s">${totalC?dur(totalS/totalC)+' per conversation':'no data'}</div></div>
+    <div class="tile"><div class="k">Top talker</div><div class="v" style="font-size:1.15rem">${top?esc(top.username):'-'}</div><div class="s">${top?dur(top.seconds)+' · '+num(top.calls)+' conversations':'no data'}</div></div>
+  </div>
+  <div class="card anim"><h2>⏱️ Who talked for how long <span class="sub">${rows.length===all.length?num(all.length)+' people':num(rows.length)+' of '+num(all.length)+' shown'}${rows.length>500?' · first 500':''}</span></h2>
+  <div class="tbar">
+    <div class="seg" id="ttRange">${[['today','Today'],['7d','7 days'],['30d','30 days'],['all','All time']].map(([k,l])=>`<button data-r="${k}" class="${ttRange===k?'on':''}">${l}</button>`).join('')}</div>
+    <select id="ttSort">${TT_SORTS.map(([k,l])=>`<option value="${k}"${ttSort===k?' selected':''}>${l}</option>`).join('')}</select>
+    <select id="ttMin">${TT_MIN.map(([k,l])=>`<option value="${k}"${ttMin===k?' selected':''}>${l}</option>`).join('')}</select>
+    <input id="ttQ" class="grow" placeholder="Search name, account, country…" value="${esc(ttQ)}">
+    <a class="lnk" data-export="talktime" href="/owner/api/export/talktime.csv?range=${ttRange}" download>⬇ Export CSV</a>
+  </div>
+  <table><tr><th class="num">#</th><th>User</th><th>Country</th><th>Talk time</th><th class="num">Conversations</th><th class="num">Avg</th><th class="num">Longest call</th><th>Last talked</th></tr>
+  ${shown.map((x,i)=>`<tr><td class="num muted">${i+1}</td>
+    <td><b>${esc(x.username)}</b>${x.account?` <span class="pill info" title="Registered account">${esc(x.account)}</span>`:''}</td>
+    <td>${esc(x.country||'')}</td>
+    <td style="min-width:160px"><div style="display:flex;align-items:center;gap:8px"><div class="cbar" style="height:10px;border-radius:99px;background:var(--accent);width:${Math.max(2,x.seconds/max*100)}%;max-width:110px"></div><b style="white-space:nowrap">${dur(x.seconds)}</b></div></td>
+    <td class="num">${num(x.calls)}</td><td class="num">${dur(x.avg)}</td><td class="num">${dur(x.longest)}</td>
+    <td>${x.lastAt?ago(x.lastAt):'-'}</td></tr>`).join('')||`<tr><td colspan="8" class="muted">${all.length?'No one matches these filters.':'No finished conversations recorded yet. Talk time is counted from now on, when a call or chat ends.'}</td></tr>`}
+  </table></div>`;
+  animateCounters();
+  document.querySelectorAll('#ttRange button').forEach(b=>b.onclick=()=>{ttRange=b.dataset.r;viewTalkTime();});
+  $('#ttSort').onchange=(e)=>{ttSort=e.target.value;viewTalkTime();};
+  $('#ttMin').onchange=(e)=>{ttMin=Number(e.target.value);viewTalkTime();};
+  onFilterInput($('#ttQ'),(v)=>{ttQ=v;},()=>viewTalkTime().then(()=>keepFocus('#ttQ')));
 }
 
 /* ---------- revenue: subscriptions, referrals, push reach ---------- */

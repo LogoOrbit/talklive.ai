@@ -708,6 +708,40 @@ function createAdmin({ io, getRuntime, kickBanned }) {
     });
   });
 
+  // Talk time per person, re-cut to a range: all | today | 7d | 30d.
+  function talkTimeRows(range) {
+    const days = range === 'today' ? 1 : range === '7d' ? 7 : range === '30d' ? 30 : 0;
+    const since = days ? store.dayKey(Date.now() - (days - 1) * 86400000) : '';
+    const rows = [];
+    for (const [clientId, r] of Object.entries(store.data.talkTime || {})) {
+      let seconds = r.seconds || 0;
+      let calls = r.calls || 0;
+      if (days) {
+        seconds = 0; calls = 0;
+        for (const [k, d] of Object.entries(r.days || {})) if (k >= since) { seconds += d.s || 0; calls += d.n || 0; }
+      }
+      if (!calls) continue;
+      const key = store.findUsernameByClientId(clientId);
+      const acc = key ? (store.data.accountsRegistry[key] || {}) : null;
+      rows.push({
+        clientId,
+        username: r.username || (acc && acc.username) || clientId,
+        account: acc ? (acc.username || key) : null,
+        country: r.country || '',
+        seconds,
+        calls,
+        avg: Math.round(seconds / calls),
+        longest: r.longest || 0,
+        lastAt: r.lastAt || 0,
+      });
+    }
+    return rows.sort((a, b) => b.seconds - a.seconds);
+  }
+
+  router.get('/api/talktime', (req, res) => {
+    res.json({ rows: talkTimeRows(String(req.query.range || 'all')) });
+  });
+
   // Subscriptions, referrals and push reach - all read from existing records,
   // nothing here writes or removes anything.
   router.get('/api/premium', (req, res) => {
@@ -861,6 +895,9 @@ function createAdmin({ io, getRuntime, kickBanned }) {
     } else if (kind === 'feedback') {
       csv = toCsv(['when', 'username', 'country', 'text'],
         store.data.feedback.map((f) => [isoOr(f.ts), f.username || '', f.country || '', f.text || '']));
+    } else if (kind === 'talktime') {
+      csv = toCsv(['username', 'account', 'client_id', 'country', 'talk_seconds', 'conversations', 'avg_seconds', 'longest_seconds', 'last_talked'],
+        talkTimeRows(String(req.query.range || 'all')).map((r) => [r.username, r.account || '', r.clientId, r.country, r.seconds, r.calls, r.avg, r.longest, isoOr(r.lastAt)]));
     } else if (kind === 'premium') {
       csv = toCsv(['client_id', 'status', 'source', 'paying', 'permanent', 'activated', 'expires', 'revoked', 'last_event'],
         premiumRows().map((r) => [r.clientId, r.status, r.source, r.paying ? 'yes' : 'no', r.permanent ? 'yes' : 'no', isoOr(r.activatedAt), isoOr(r.expiresAt), isoOr(r.revokedAt), r.lastEvent]));

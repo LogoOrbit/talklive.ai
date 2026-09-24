@@ -170,6 +170,11 @@ function defaults() {
     // Web push subscriptions: clientId -> [{ endpoint, keys, ua, createdAt,
     // failures }]. Endpoints that a push service rejects as gone are dropped.
     push: {},
+    // Cumulative talk time per person, for the owner's "who talks most" view:
+    // clientId -> { username, country, seconds, calls, longest, lastAt,
+    // days: { 'YYYY-MM-DD': { s, n } } }. `days` keeps the last TALK_DAYS so the
+    // dashboard can re-cut the totals to today / 7 / 30 days.
+    talkTime: {},
     settings: {
       maintenance: { on: false, message: 'TalkLive is under maintenance. We will be back shortly!' },
       banThreshold: 3,
@@ -199,6 +204,7 @@ function applyParsed(parsed) {
   data.social = { ...defaults().social, ...(parsed.social || {}) };
   data.referrals = { ...defaults().referrals, ...(parsed.referrals || {}) };
   data.push = parsed.push || {};
+  data.talkTime = parsed.talkTime || {};
   data.accounts = parsed.accounts || {};
   data.googleIndex = parsed.googleIndex || {};
   data.authSessions = parsed.authSessions || {};
@@ -1640,6 +1646,32 @@ function noteReferralReward(clientId, days) {
   save();
 }
 
+// --- Talk time -----------------------------------------------------------------
+
+const TALK_DAYS = 30;
+
+// Add one finished conversation of `seconds` to `clientId`'s running total.
+function recordTalkTime(clientId, seconds, info = {}) {
+  if (!clientId || !(seconds > 0)) return;
+  const now = Date.now();
+  let rec = data.talkTime[clientId];
+  if (!rec) rec = data.talkTime[clientId] = { seconds: 0, calls: 0, longest: 0, days: {} };
+  if (info.username) rec.username = String(info.username).slice(0, 40);
+  if (info.country) rec.country = String(info.country).slice(0, 60);
+  rec.seconds += seconds;
+  rec.calls += 1;
+  rec.longest = Math.max(rec.longest || 0, seconds);
+  rec.lastAt = now;
+  const days = rec.days || (rec.days = {});
+  const key = dayKey(now);
+  const d = days[key] || (days[key] = { s: 0, n: 0 });
+  d.s += seconds;
+  d.n += 1;
+  const keys = Object.keys(days).sort();
+  while (keys.length > TALK_DAYS) delete days[keys.shift()];
+  save();
+}
+
 // --- Web push subscriptions --------------------------------------------------
 
 const MAX_PUSH_PER_CLIENT = 5;
@@ -1862,6 +1894,7 @@ module.exports = {
   recordConnection,
   recordPeakOnline,
   recordFeature,
+  recordTalkTime,
   recordTopics,
   addTranscript,
   addReport,

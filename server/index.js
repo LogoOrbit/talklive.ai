@@ -2836,6 +2836,8 @@ function disconnectPartner(socketId, opts = {}) {
     // A pairing whose media never came up was not a conversation.
     if (startedAt && !opts.failed) {
       const seconds = Math.round((Date.now() - startedAt) / 1000);
+      store.recordTalkTime(profile.clientId, seconds, { username: profile.username, country: profile.countryName || profile.country });
+      store.recordTalkTime(partnerProfile.clientId, seconds, { username: partnerProfile.username, country: partnerProfile.countryName || partnerProfile.country });
       const a = noteConversationLength(profile.clientId, partnerProfile.clientId, seconds);
       const b = noteConversationLength(partnerProfile.clientId, profile.clientId, seconds);
       if (a || b) {
