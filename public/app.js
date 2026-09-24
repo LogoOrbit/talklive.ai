@@ -8711,8 +8711,12 @@ let pendingCallBackName = null;
 function showCallBackBanner(fromClientId, username) {
   pendingCallBackFrom = fromClientId;
   pendingCallBackName = username;
-  callBackBannerText.innerHTML = `${ICONS.call} ${t('notifWantsCallback', { name: escapeHtml(username) })}`;
+  callBackBannerText.innerHTML = `${ICONS.call} ${t('incomingCallFrom', { name: escapeHtml(username) })}`;
+  callBackBannerText.title = username || '';
+  callBackAcceptBtn.textContent = t('answer');
+  callBackDeclineBtn.textContent = t('decline');
   callBackBanner.classList.remove('hidden');
+  vibrate([200, 100, 200]);
 }
 
 function hideCallBackBanner() {

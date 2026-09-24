@@ -568,6 +568,8 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "statusStrangerLeft": "The other person left. Finding someone new…",
     "statusCalling": "Calling {name}…",
     "ringingName": "Ringing {name}…",
+    "incomingCallFrom": "{name} is calling…",
+    "answer": "Answer",
     "statusConnecting": "Connecting…",
     "subWaitingAccept": "Waiting for them to accept…",
     "connSearching": "Searching",
