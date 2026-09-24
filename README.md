@@ -148,6 +148,7 @@ A secured owner dashboard lives at **`/owner`** (e.g. `https://talklive.app/owne
 | Var | Purpose |
 |---|---|
 | `OWNER_EMAIL` | Where report/feedback/error alert emails go |
+| `OWNER_RESET` | Forgot the /owner password: set to any new value and restart. The owner login is cleared once and /owner shows setup again. Reusing the same value does nothing |
 | `SMTP_USER` / `SMTP_PASS` | Gmail address + **app password** (Google Account → Security → 2-Step Verification → App passwords). Also sends users their password-reset codes |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_FROM_NAME` | Optional SMTP overrides (default `smtp.gmail.com`, `465`, `TalkLive`) |
 | `DATA_DIR` | Directory for the JSON store (default `./data`). In production `fly.toml` sets it to `/data`, but **no volume is mounted there**, so it is an ordinary directory inside the container and everything in it is destroyed on each deploy. The server detects this at boot, logs it prominently, emails the owner and flags it on the `/owner` screen. The fix is `DATABASE_URL` (Postgres) - see `DEPLOY-FLY.md` and `CODEX-HANDOFF.md`. |

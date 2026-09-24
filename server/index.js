@@ -31,7 +31,7 @@ const { minifiedScripts } = require('./minified');
 const ageAssurance = require('./age-assurance');
 const mail = require('./mailer');
 const { botLabel, isPrefetch } = require('./bots');
-const { createAdmin } = require('./admin');
+const { createAdmin, applyOwnerReset } = require('./admin');
 const { isValidTimezone } = require('./analytics');
 
 const app = express();
@@ -5787,6 +5787,7 @@ store.ready.then(() => {
   if (!process.env.IDENTITY_SECRET) IDENTITY_SECRET = store.getOrCreateSecret('identity');
   // Restore durable accounts + social graph before accepting traffic so
   // returning users can log in and see their friends/chats immediately.
+  applyOwnerReset();
   hydrateFromStore();
   console.log(`[accounts] restored ${accounts.size} account(s) from the store`);
   warnIfStorageIsEphemeral();
