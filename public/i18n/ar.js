@@ -745,7 +745,7 @@
   "animalClear": "إزالة",
   "partnerAnimalLabel": "حيوانه الروحي",
   "animalSameMatch": "اخترتما كلاكما: {animal}!",
-  "chatAnimalLine": "اختار {name}: {animal} - {trait}. اسأله عن السبب.",
+  "chatAnimalLine": "اختار المستخدم {animal}. {trait}. اسأله لماذا!",
   "animalLion": "أسد",
   "animalLionTrait": "جريء وكريم القلب",
   "animalTiger": "نمر",

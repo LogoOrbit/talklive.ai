@@ -903,7 +903,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "animalClear": "Remove",
     "partnerAnimalLabel": "Their spirit animal",
     "animalSameMatch": "You both picked the {animal}!",
-    "chatAnimalLine": "{name} picked the {animal} - {trait}. Ask them why.",
+    "chatAnimalLine": "User picked the {animal}. {trait}. Ask why!",
     "animalLion": "Lion",
     "animalLionTrait": "Bold and big-hearted",
     "animalTiger": "Tiger",
@@ -913,37 +913,37 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "animalFox": "Fox",
     "animalFoxTrait": "Clever and playful",
     "animalCat": "Cat",
-    "animalCatTrait": "Calm, curious, does its own thing",
+    "animalCatTrait": "Calm and curious",
     "animalDog": "Dog",
-    "animalDogTrait": "Friendly and always up for it",
+    "animalDogTrait": "Friendly and fun",
     "animalBear": "Bear",
-    "animalBearTrait": "Warm, steady, protective",
+    "animalBearTrait": "Warm and protective",
     "animalPanda": "Panda",
     "animalPandaTrait": "Chill and easy-going",
     "animalRabbit": "Rabbit",
     "animalRabbitTrait": "Gentle and quick-witted",
     "animalOwl": "Owl",
-    "animalOwlTrait": "Thoughtful and a good listener",
+    "animalOwlTrait": "A good listener",
     "animalPenguin": "Penguin",
-    "animalPenguinTrait": "Sweet, funny, a little awkward",
+    "animalPenguinTrait": "Sweet and funny",
     "animalDolphin": "Dolphin",
     "animalDolphinTrait": "Social and fun-loving",
     "animalElephant": "Elephant",
-    "animalElephantTrait": "Kind and never forgets a face",
+    "animalElephantTrait": "Kind and wise",
     "animalKoala": "Koala",
-    "animalKoalaTrait": "Laid-back and sleeps on it",
+    "animalKoalaTrait": "Relaxed and cozy",
     "animalMonkey": "Monkey",
-    "animalMonkeyTrait": "Playful and up for anything",
+    "animalMonkeyTrait": "Fun and full of energy",
     "animalFrog": "Frog",
-    "animalFrogTrait": "Cheerful and full of surprises",
+    "animalFrogTrait": "Cheerful and surprising",
     "animalDeer": "Deer",
-    "animalDeerTrait": "Quiet, warm and easy to be around",
+    "animalDeerTrait": "Quiet and warm",
     "animalTurtle": "Turtle",
-    "animalTurtleTrait": "Steady, patient, gets there",
+    "animalTurtleTrait": "Patient and steady",
     "animalHorse": "Horse",
     "animalHorseTrait": "Free-spirited and generous",
     "animalEagle": "Eagle",
-    "animalEagleTrait": "Sharp-eyed and goes its own way"
+    "animalEagleTrait": "Sharp and focused"
   },
 });
 window.I18N_STRINGS = I18N_STRINGS;
@@ -1048,7 +1048,7 @@ function applyI18n() {
 // Non-English dictionaries load on demand from /i18n/<lang>.js. Until the file
 // arrives t() falls back to English, then the UI re-translates once it lands.
 // Keep in step with the preload snippet in the <head> of index.html/chat.html.
-const I18N_VERSION = '20260924idhint';
+const I18N_VERSION = '20260924animline';
 const i18nLoading = {};
 window.__i18nLangLoaded = function (lang) {
   delete i18nLoading[lang];

@@ -745,7 +745,7 @@
   "animalClear": "移除",
   "partnerAnimalLabel": "对方的守护动物",
   "animalSameMatch": "你们都选了{animal}！",
-  "chatAnimalLine": "{name} 选了{animal}，{trait}。问问为什么吧。",
+  "chatAnimalLine": "用户选了{animal}。{trait}。问问为什么吧！",
   "animalLion": "狮子",
   "animalLionTrait": "勇敢又大方",
   "animalTiger": "老虎",

@@ -745,7 +745,7 @@
   "animalClear": "हटाएँ",
   "partnerAnimalLabel": "उनका स्पिरिट एनिमल",
   "animalSameMatch": "आप दोनों ने चुना: {animal}!",
-  "chatAnimalLine": "{name} ने चुना: {animal} - {trait}। उनसे वजह पूछें।",
+  "chatAnimalLine": "यूज़र ने चुना: {animal}। {trait}। वजह पूछें!",
   "animalLion": "शेर",
   "animalLionTrait": "साहसी और बड़े दिल वाला",
   "animalTiger": "बाघ",

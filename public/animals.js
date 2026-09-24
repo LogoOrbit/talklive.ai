@@ -103,7 +103,7 @@
       },
     },
     {
-      id: 'cat', name: 'Cat', trait: 'Calm, curious, does its own thing', color: '#a78bfa',
+      id: 'cat', name: 'Cat', trait: 'Calm and curious', color: '#a78bfa',
       art: function () {
         return p('M13 31L15 11l16 9.5z', '#a78bfa') + p('M17 26.5L18.5 16l9 5.5z', '#f3a6b8')
           + p('M51 31L49 11l-16 9.5z', '#a78bfa') + p('M47 26.5L45.5 16l-9 5.5z', '#f3a6b8')
@@ -116,7 +116,7 @@
       },
     },
     {
-      id: 'dog', name: 'Dog', trait: 'Friendly and always up for it', color: '#c98a4b',
+      id: 'dog', name: 'Dog', trait: 'Friendly and fun', color: '#c98a4b',
       art: function () {
         return e(12.5, 35, 6.6, 11.5, '#a56a33', ' transform="rotate(-12 12.5 35)"')
           + e(51.5, 35, 6.6, 11.5, '#a56a33', ' transform="rotate(12 51.5 35)"')
@@ -129,7 +129,7 @@
       },
     },
     {
-      id: 'bear', name: 'Bear', trait: 'Warm, steady, protective', color: '#9c6741',
+      id: 'bear', name: 'Bear', trait: 'Warm and protective', color: '#9c6741',
       art: function () {
         return c(14, 18.5, 7, '#8a5a3b') + c(14, 18.5, 3.6, '#c08a63')
           + c(50, 18.5, 7, '#8a5a3b') + c(50, 18.5, 3.6, '#c08a63')
@@ -170,7 +170,7 @@
       },
     },
     {
-      id: 'owl', name: 'Owl', trait: 'Thoughtful and a good listener', color: '#a16207',
+      id: 'owl', name: 'Owl', trait: 'A good listener', color: '#a16207',
       art: function () {
         return p('M15 20L19.5 8 28 17z', '#a16207') + p('M49 20L44.5 8 36 17z', '#a16207')
           + p('M32 12c11.6 0 19 9 19 20.5S43.6 53 32 53s-19-9-19-20.5S20.4 12 32 12z', '#a16207')
@@ -183,7 +183,7 @@
       },
     },
     {
-      id: 'penguin', name: 'Penguin', trait: 'Sweet, funny, a little awkward', color: '#38bdf8',
+      id: 'penguin', name: 'Penguin', trait: 'Sweet and funny', color: '#38bdf8',
       art: function () {
         return e(32, 34, 17.5, 19.5, '#232a36')
           + e(32, 38, 11.8, 15, '#f8fafc')
@@ -208,7 +208,7 @@
       },
     },
     {
-      id: 'elephant', name: 'Elephant', trait: 'Kind and never forgets a face', color: '#94a3b8',
+      id: 'elephant', name: 'Elephant', trait: 'Kind and wise', color: '#94a3b8',
       art: function () {
         return e(13, 30, 10, 12, '#8d9bb0') + e(51, 30, 10, 12, '#8d9bb0')
           + e(13, 30, 6, 7.6, '#a9b6c8') + e(51, 30, 6, 7.6, '#a9b6c8')
@@ -220,7 +220,7 @@
       },
     },
     {
-      id: 'koala', name: 'Koala', trait: 'Laid-back and sleeps on it', color: '#a3adbd',
+      id: 'koala', name: 'Koala', trait: 'Relaxed and cozy', color: '#a3adbd',
       art: function () {
         return c(12, 24, 10.5, '#8f99aa') + c(12, 24, 6, '#c6ced9')
           + c(52, 24, 10.5, '#8f99aa') + c(52, 24, 6, '#c6ced9')
@@ -231,7 +231,7 @@
       },
     },
     {
-      id: 'monkey', name: 'Monkey', trait: 'Playful and up for anything', color: '#b07b4f',
+      id: 'monkey', name: 'Monkey', trait: 'Fun and full of energy', color: '#b07b4f',
       art: function () {
         return c(11, 32, 8.6, '#b07b4f') + c(11, 32, 5, '#e2b183')
           + c(53, 32, 8.6, '#b07b4f') + c(53, 32, 5, '#e2b183')
@@ -243,7 +243,7 @@
       },
     },
     {
-      id: 'frog', name: 'Frog', trait: 'Cheerful and full of surprises', color: '#4ade80',
+      id: 'frog', name: 'Frog', trait: 'Cheerful and surprising', color: '#4ade80',
       art: function () {
         return c(19, 18, 9, '#4ade80') + c(45, 18, 9, '#4ade80')
           + c(19, 18, 5.4, '#ffffff') + c(45, 18, 5.4, '#ffffff')
@@ -255,7 +255,7 @@
       },
     },
     {
-      id: 'deer', name: 'Deer', trait: 'Quiet, warm and easy to be around', color: '#c98a4b',
+      id: 'deer', name: 'Deer', trait: 'Quiet and warm', color: '#c98a4b',
       art: function () {
         return line('M22 16 18 6M18 10l-5-2M22 16l-6-1M42 16 46 6M46 10l5-2M42 16l6-1', '#8a6234', 2.4)
           + c(16, 27, 5.4, '#b87a41') + c(48, 27, 5.4, '#b87a41')
@@ -267,7 +267,7 @@
       },
     },
     {
-      id: 'turtle', name: 'Turtle', trait: 'Steady, patient, gets there', color: '#34d399',
+      id: 'turtle', name: 'Turtle', trait: 'Patient and steady', color: '#34d399',
       art: function () {
         // Shell first, head over it: drawn the other way round the head was
         // a bump on a green blob rather than a turtle looking at you.
@@ -297,7 +297,7 @@
       },
     },
     {
-      id: 'eagle', name: 'Eagle', trait: 'Sharp-eyed and goes its own way', color: '#b45309',
+      id: 'eagle', name: 'Eagle', trait: 'Sharp and focused', color: '#b45309',
       art: function () {
         // A white head, a dark body and a heavy hooked beak. Without the brow
         // and the hook this is an owl, which is already in the list.

@@ -745,7 +745,7 @@
   "animalClear": "제거",
   "partnerAnimalLabel": "상대의 수호 동물",
   "animalSameMatch": "둘 다 {animal}을(를) 골랐어요!",
-  "chatAnimalLine": "{name} 님의 선택: {animal} - {trait}. 이유를 물어보세요.",
+  "chatAnimalLine": "사용자의 선택: {animal}. {trait}. 이유를 물어보세요!",
   "animalLion": "사자",
   "animalLionTrait": "대담하고 마음이 넓어요",
   "animalTiger": "호랑이",

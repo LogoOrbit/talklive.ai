@@ -745,7 +745,7 @@
   "animalClear": "Убрать",
   "partnerAnimalLabel": "Тотем собеседника",
   "animalSameMatch": "Вы оба выбрали: {animal}!",
-  "chatAnimalLine": "{name} выбрал(а): {animal} — {trait}. Спросите почему.",
+  "chatAnimalLine": "Пользователь выбрал: {animal}. {trait}. Спросите почему!",
   "animalLion": "Лев",
   "animalLionTrait": "Смелый и великодушный",
   "animalTiger": "Тигр",
