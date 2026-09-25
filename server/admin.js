@@ -288,9 +288,47 @@ function generateConclusion(runtime, report) {
 }
 
 // --- Module wiring ---
-function createAdmin({ io, getRuntime, kickBanned }) {
+function createAdmin({ io, getRuntime, getLiveCounts, kickBanned }) {
   const router = express.Router();
   router.use(express.json({ limit: '64kb' }));
+
+  // --- Live stream (Server-Sent Events) ---------------------------------------
+  // One shared 1s ticker for every open dashboard tab. It only writes when the
+  // numbers actually change, plus a comment line every 20s so proxies keep the
+  // connection open. Stops itself when the last tab goes away.
+  const MAX_STREAMS = 20;
+  const streams = new Set();
+  let streamTimer = null;
+  let lastCounts = '';
+  let lastWriteAt = 0;
+  let lastAuthCheck = 0;
+
+  function streamTick() {
+    if (!streams.size) {
+      clearInterval(streamTimer);
+      streamTimer = null;
+      lastCounts = '';
+      return;
+    }
+    const now = Date.now();
+    // A session can expire or be logged out while its stream is open.
+    if (now - lastAuthCheck > 60000) {
+      lastAuthCheck = now;
+      for (const s of streams) {
+        if (!validSession(s.req)) { streams.delete(s); s.res.end(); }
+      }
+    }
+    const counts = JSON.stringify(getLiveCounts());
+    if (counts !== lastCounts) {
+      lastCounts = counts;
+      lastWriteAt = now;
+      const frame = `data: ${counts.slice(0, -1)},"ts":${now}}\n\n`;
+      for (const s of streams) s.res.write(frame);
+    } else if (now - lastWriteAt > 20000) {
+      lastWriteAt = now;
+      for (const s of streams) s.res.write(': ping\n\n');
+    }
+  }
 
   // Hardened headers for everything under /owner.
   router.use((req, res, next) => {
@@ -458,7 +496,22 @@ function createAdmin({ io, getRuntime, kickBanned }) {
   });
 
   router.get('/api/online', (req, res) => {
-    res.json({ users: getRuntime().users });
+    const runtime = getRuntime();
+    res.json({ users: runtime.users, live: runtime.live });
+  });
+
+  router.get('/api/live/stream', (req, res) => {
+    if (streams.size >= MAX_STREAMS) return res.status(429).json({ error: 'Too many open dashboard streams.' });
+    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('X-Accel-Buffering', 'no');
+    req.socket.setTimeout(0);
+    const client = { req, res };
+    streams.add(client);
+    // First frame immediately, so the page never shows a blank counter.
+    res.write(`retry: 3000\ndata: ${JSON.stringify({ ...getLiveCounts(), ts: Date.now() })}\n\n`);
+    req.on('close', () => streams.delete(client));
+    if (!streamTimer) streamTimer = setInterval(streamTick, 1000);
   });
 
   // Activity reports: today (hour by hour), yesterday, the last 30 days and the

@@ -90,26 +90,64 @@ input:focus,textarea:focus{border-color:var(--accent)}
 .qrbox{text-align:center;margin:14px 0}.qrbox img{border-radius:10px;background:#fff;padding:6px}
 .secret{font-family:ui-monospace,monospace;font-size:.75rem;word-break:break-all;color:var(--ink2);background:var(--surface-2);padding:8px;border-radius:8px;margin-top:6px}
 
-/* shell */
-header{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 18px;padding-top:calc(12px + env(safe-area-inset-top));border-bottom:1px solid var(--grid);position:sticky;top:0;z-index:10;
+/* shell: sticky header on top, grouped sidebar on the left, content on the right */
+header{display:flex;align-items:center;gap:8px;min-height:56px;padding:10px 18px;padding-top:calc(10px + env(safe-area-inset-top));border-bottom:1px solid var(--grid);position:sticky;top:0;z-index:10;
   background:color-mix(in srgb,var(--bg-1) 78%,transparent);backdrop-filter:blur(16px)}
 header h1{font-size:1rem;display:flex;align-items:center;gap:9px;white-space:nowrap}
 header h1 .grad-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:800}
-.dot{width:9px;height:9px;border-radius:50%;background:var(--good);display:inline-block;animation:pulse 2s infinite;box-shadow:0 0 10px var(--good)}
-nav.top{display:flex;gap:3px;flex-wrap:wrap;flex:1;min-width:0}
-nav.top::-webkit-scrollbar{display:none}
-nav.top button{background:transparent;border:0;color:var(--muted);padding:7px 10px;border-radius:10px;font-size:.84rem;white-space:nowrap;transition:color .15s,background .15s}
-nav.top button:hover{color:var(--text)}
-nav.top button.on{background:var(--surface-2);color:var(--text);font-weight:700}
+header .spacer{flex:1;min-width:0}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--good);display:inline-block;flex:none;animation:pulse 2s infinite;box-shadow:0 0 10px var(--good)}
+.dot.off{background:var(--muted);box-shadow:none;animation:none}
 .badge{background:var(--crit);color:#fff;border-radius:9px;font-size:.66rem;padding:1px 6px;margin-left:5px;font-weight:700;vertical-align:1px}
-main{padding:18px;max-width:1200px;margin:0 auto;padding-bottom:calc(84px + env(safe-area-inset-bottom))}
+.shell{display:grid;grid-template-columns:212px minmax(0,1fr);max-width:1440px;margin:0 auto}
+.side{position:sticky;top:56px;align-self:start;height:calc(100vh - 56px);height:calc(100dvh - 56px);overflow-y:auto;padding:10px 10px 24px;border-right:1px solid var(--grid)}
+.side .grp{font-size:.64rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);padding:14px 10px 5px;font-weight:700}
+.side .grp:first-child{padding-top:6px}
+.side button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:transparent;border:0;color:var(--ink2);padding:8px 10px;border-radius:10px;font-size:.86rem;transition:background .15s,color .15s}
+.side button .ic{width:20px;text-align:center;flex:none}
+.side button:hover{background:var(--surface-2);color:var(--text)}
+.side button.on{background:var(--surface-2);color:var(--text);font-weight:700;box-shadow:inset 3px 0 0 var(--accent)}
+.side .badge{margin-left:auto}
+main{padding:18px 22px;min-width:0;padding-bottom:calc(84px + env(safe-area-inset-bottom))}
 @media(min-width:761px){main{padding-bottom:32px}}
+@media(max-width:1000px) and (min-width:761px){.shell{grid-template-columns:180px minmax(0,1fr)}}
+.phead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.phead h2{font-size:1.25rem;font-weight:800;display:flex;align-items:center;gap:9px}
+.phead .crumb{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.phead .stamp{margin-left:auto;font-size:.74rem;color:var(--muted)}
+
+/* realtime "people chatting" pill in the header */
+.livepill{display:flex;align-items:center;gap:8px;border:1px solid color-mix(in srgb,var(--good) 40%,transparent);background:color-mix(in srgb,var(--good) 10%,transparent);color:var(--text);border-radius:99px;padding:6px 13px;font-size:.84rem;white-space:nowrap;transition:border-color .15s}
+.livepill:hover{border-color:var(--good)}
+.livepill b{font-variant-numeric:tabular-nums;font-size:.95rem}
+.livepill .lpsub{color:var(--muted)}
+.livepill.stale{border-color:var(--ring);background:var(--surface-2)}
+@keyframes bump{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}
+.bump{display:inline-block;animation:bump .45s ease}
+
+/* live card */
+.livecard .lgrid{display:grid;grid-template-columns:minmax(190px,1.3fr) repeat(auto-fit,minmax(120px,1fr));gap:10px}
+.livecard .lbox{background:var(--surface-2);border:1px solid var(--ring);border-radius:14px;padding:12px 14px}
+.livecard .lbox .k{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.livecard .lbox .v{font-size:1.6rem;font-weight:800;margin-top:4px;font-variant-numeric:tabular-nums}
+.livecard .lbox .s{font-size:.74rem;color:var(--ink2);margin-top:2px}
+.livecard .lbox.big{background:color-mix(in srgb,var(--accent) 14%,transparent);border-color:color-mix(in srgb,var(--accent) 40%,transparent)}
+.livecard .lbox.big .v{font-size:2.6rem;line-height:1.1;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.splitbar{display:flex;height:6px;border-radius:99px;overflow:hidden;background:var(--surface);margin-top:8px}
+.splitbar i{display:block;height:100%;transition:width .6s ease}
+.spark{margin-top:12px}
+.sechead{font-size:.7rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:700;margin:22px 2px 8px}
 
 /* mobile bottom nav */
 .tabbar{display:none}
 @media(max-width:760px){
-  header nav.top{display:none}
-  header{gap:6px}
+  .shell{display:block}
+  .side{display:none}
+  header{gap:6px;padding-left:12px;padding-right:12px}
+  header h1 .grad-text{display:none}
+  .livepill .lpsub{display:none}
+  .livecard .lgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .livecard .lbox.big{grid-column:1/-1}
   #helpBtn{display:none}
   #searchBtn{margin-left:auto}
   header .btn.ghost{padding:7px 10px;font-size:.8rem}
@@ -313,8 +351,8 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .tbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
 .tbar input,.tbar select{width:auto;min-width:170px;padding:8px 11px;font-size:.84rem}
 .tbar .grow{flex:1;min-width:170px}
-.seg{display:flex;gap:0;border:1px solid var(--ring);border-radius:10px;overflow:hidden}
-.seg button{background:transparent;border:0;color:var(--muted);padding:7px 12px;font-size:.8rem}
+.seg{display:flex;gap:0;border:1px solid var(--ring);border-radius:10px;overflow-x:auto;max-width:100%}
+.seg button{background:transparent;border:0;color:var(--muted);padding:7px 12px;font-size:.8rem;white-space:nowrap}
 .seg button.on{background:var(--surface-2);color:var(--text);font-weight:700}
 .lnk{color:var(--accent-2);text-decoration:none;font-size:.8rem;border:1px solid var(--ring);border-radius:10px;padding:7px 12px;white-space:nowrap}
 .lnk:hover{border-color:var(--accent)}
@@ -380,15 +418,19 @@ th.sortable .ar{opacity:.5;font-size:.7rem}
 
 <div id="dash" class="hidden">
 <header>
-  <h1><img class="mark" src="/favicon.svg" alt="TalkLive" style="width:28px;height:28px"><span class="grad-text">TalkLive</span>&nbsp;<span class="dot"></span></h1>
-  <nav class="top" id="nav"></nav>
+  <h1><img class="mark" src="/favicon.svg" alt="TalkLive" style="width:28px;height:28px"><span class="grad-text">TalkLive</span></h1>
+  <button class="livepill stale" id="livePill" title="People in a voice call or text chat right now - updates in real time"><span class="dot off" id="lpDot"></span><b id="lpChat">-</b> chatting<span class="lpsub">&nbsp;· <span id="lpOnline">-</span> online</span></button>
+  <span class="spacer"></span>
   <button class="hbtn searchbtn" id="searchBtn" title="Search everything (press /)">🔍<span class="lbl">Search</span><kbd>/</kbd></button>
-  <button class="hbtn" id="refreshBtn" title="Pause or resume auto-refresh">⏸<span class="lbl" id="refreshLbl"> live</span></button>
+  <button class="hbtn" id="refreshBtn" title="Pause or resume auto-refresh">⏸<span class="lbl" id="refreshLbl"> auto</span></button>
   <button class="hbtn" id="themeBtn" title="Switch theme">🌗</button>
   <button class="hbtn" id="helpBtn" title="Keyboard shortcuts">⌨️</button>
   <button class="btn ghost" id="logoutBtn">Log out</button>
 </header>
-<main id="main"></main>
+<div class="shell">
+  <nav class="side" id="nav" aria-label="Sections"></nav>
+  <main><div class="phead" id="phead"></div><div id="main"></div></main>
+</div>
 <nav class="tabbar" id="tabbar"></nav>
 </div>
 <div class="toasts" id="toasts"></div>
@@ -532,6 +574,7 @@ $('#themeBtn').onclick=cycleTheme;
 $('#helpBtn').onclick=openHelp;
 $('#searchBtn').onclick=openSearch;
 $('#refreshBtn').onclick=togglePause;
+$('#livePill').onclick=()=>go('live');
 
 /* ---------- charts (inline SVG) ---------- */
 let tipEl=null;
@@ -584,39 +627,150 @@ function rankedBars(el,entries){
 }
 
 /* ---------- dashboard shell ---------- */
-const TABS=[
-  ['overview','Overview','📊'],['activity','Activity','📅'],['ai','AI Bot','🤖'],['live','Live','🟢'],['chats','Chats','💬'],
-  ['reports','Reports','🚩'],['bans','Bans','⛔'],['accounts','Accounts','👤'],['talktime','Talk time','⏱️'],['revenue','Revenue','💎'],
-  ['errors','Errors','🐛'],['feedback','Feedback','⭐'],['audit','Audit','🧾'],['settings','Settings','🛠️']
+/* Sections are grouped by the job they serve, so the sidebar reads as
+   "watch → act on people → understand users → money → the machine" instead of
+   fourteen peers in a row. Shortcut keys 1-9 follow this order. */
+const GROUPS=[
+  ['Monitor',[['overview','Overview','📊'],['live','Live','🟢'],['activity','Activity','📅'],['ai','AI Bot','🤖']]],
+  ['Moderation',[['reports','Reports','🚩'],['chats','Chats','💬'],['bans','Bans','⛔']]],
+  ['People',[['accounts','Accounts','👤'],['talktime','Talk time','⏱️'],['feedback','Feedback','⭐']]],
+  ['Business',[['revenue','Revenue','💎']]],
+  ['System',[['errors','Errors','🐛'],['audit','Audit log','🧾'],['settings','Settings','🛠️']]]
 ];
+const TABS=GROUPS.flatMap(g=>g[1]);
 const TAB_IDS=TABS.map(t=>t[0]);
-/* Five fit the bottom bar on a small phone; the sixth slot is a "More" sheet so
-   every tab stays reachable from a phone instead of only these five. */
-const MOBILE_TABS=['overview','activity','live','chats','reports'];
+const groupOf=(id)=>(GROUPS.find(g=>g[1].some(t=>t[0]===id))||GROUPS[0])[0];
+/* Four fit the bottom bar on a small phone; the fifth slot is a "More" sheet so
+   every tab stays reachable from a phone instead of only these four. */
+const MOBILE_TABS=['overview','live','chats','reports'];
 let tab='overview',timer=null,counts={},paused=false,lastLoadTs=0,loadFailures=0;
 const REFRESH_MS=()=>tab==='live'?5000:tab==='ai'?60000:12000;
 
-function navBtn(id,label,icon,mobile){
-  let badge='';
-  if(id==='reports'&&counts.unhandledReports)badge=`<span class="badge">${counts.unhandledReports}</span>`;
-  if(id==='errors'&&counts.errors)badge=`<span class="badge" style="background:var(--serious)">${counts.errors}</span>`;
-  if(mobile)return `<button data-t="${id}" class="${tab===id?'on':''}"><span class="ic">${icon}</span>${label}${badge}</button>`;
-  return `<button data-t="${id}" class="${tab===id?'on':''}">${icon} ${label}${badge}</button>`;
+function navBadge(id){
+  if(id==='reports'&&counts.unhandledReports)return `<span class="badge">${counts.unhandledReports}</span>`;
+  if(id==='errors'&&counts.errors)return `<span class="badge" style="background:var(--serious)">${counts.errors}</span>`;
+  return '';
 }
 function renderNav(){
-  $('#nav').innerHTML=TABS.map(([id,l,ic])=>navBtn(id,l,ic,false)).join('');
+  $('#nav').innerHTML=GROUPS.map(([g,items])=>`<div class="grp">${g}</div>`
+    +items.map(([id,l,ic])=>`<button data-t="${id}" class="${tab===id?'on':''}"><span class="ic">${ic}</span>${l}${navBadge(id)}</button>`).join('')).join('');
   const onMore=!MOBILE_TABS.includes(tab);
   const pending=(counts.unhandledReports||0)+(counts.errors||0);
-  $('#tabbar').innerHTML=MOBILE_TABS.map(id=>{const t=TABS.find(x=>x[0]===id);return navBtn(t[0],t[1],t[2],true);}).join('')
+  $('#tabbar').innerHTML=MOBILE_TABS.map(id=>{const t=TABS.find(x=>x[0]===id);return `<button data-t="${id}" class="${tab===id?'on':''}"><span class="ic">${t[2]}</span>${t[1]}${navBadge(id)}</button>`;}).join('')
     +`<button data-more="1" class="${onMore?'on':''}"><span class="ic">⋯</span>More${!onMore&&pending?`<span class="badge">${pending}</span>`:''}</button>`;
   document.querySelectorAll('#nav button,#tabbar button[data-t]').forEach(b=>b.onclick=()=>go(b.dataset.t));
   const more=document.querySelector('#tabbar button[data-more]');
   if(more)more.onclick=openMore;
+  renderPageHead();
+}
+function renderPageHead(){
+  const t=TABS.find(x=>x[0]===tab)||TABS[0];
+  $('#phead').innerHTML=`<span class="crumb">${esc(groupOf(tab))}</span><h2>${t[2]} ${esc(t[1])}</h2><span class="stamp" id="updStamp"></span>`;
 }
 function openMore(){
   modal('⋯ All sections',
-    `<div class="sres">${TABS.map(([id,l,ic])=>`<button class="sitem" data-go="${id}">${ic} ${l}${id===tab?' <span class="pill info">current</span>':''}</button>`).join('')}</div>`,
+    `<div class="sres">${GROUPS.map(([g,items])=>`<div class="sgroup">${g}</div>`
+      +items.map(([id,l,ic])=>`<button class="sitem" data-go="${id}">${ic} ${l}${navBadge(id)}${id===tab?' <span class="pill info">current</span>':''}</button>`).join('')).join('')}</div>`,
     (sheet)=>{sheet.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{closeModal();go(b.dataset.go);});});
+}
+
+/* ---------- realtime: people chatting right now ----------
+   The server pushes a frame over Server-Sent Events whenever the number of
+   people in a voice call or text chat changes (checked every second). Anything
+   on the page tagged data-live="<field>" is repainted from it, so the header
+   pill, the Overview card and the Live tab all move together without waiting
+   for the 12s poll. */
+let liveES=null,live=null,liveOk=false,liveRetry=null,liveHist=[],livePeak=0;
+const LIVE_HIST_MAX=300; // one sample every 2s → last 10 minutes
+function startLiveStream(){
+  if(liveES||typeof EventSource==='undefined')return;
+  liveES=new EventSource('/owner/api/live/stream');
+  liveES.onopen=()=>setLiveOk(true);
+  liveES.onmessage=(e)=>{let d;try{d=JSON.parse(e.data);}catch(_){return;}setLiveOk(true);onLive(d);};
+  liveES.onerror=()=>{
+    setLiveOk(false);
+    /* A non-200 answer (logged out, too many tabs) closes the stream for good;
+       a dropped connection is retried by the browser on its own. */
+    if(liveES&&liveES.readyState===2){liveES=null;clearTimeout(liveRetry);liveRetry=setTimeout(startLiveStream,15000);}
+  };
+}
+function setLiveOk(ok){
+  if(liveOk===ok)return;
+  liveOk=ok;
+  const p=$('#livePill'),d=$('#lpDot');
+  if(p)p.classList.toggle('stale',!ok);
+  if(d)d.classList.toggle('off',!ok);
+  const c=$('#liveConn');
+  if(c){c.className='pill '+(ok?'good':'warn');c.textContent=ok?'● streaming':'reconnecting…';}
+}
+function onLive(d){
+  const prev=live;
+  live=d;
+  if(d.chatting>livePeak)livePeak=d.chatting;
+  if(!liveHist.length)sampleLive();
+  paintLive(prev);
+}
+function sampleLive(){
+  if(!live)return;
+  liveHist.push({ts:Date.now(),chatting:live.chatting,online:live.online});
+  if(liveHist.length>LIVE_HIST_MAX)liveHist.shift();
+  const el=$('#liveSpark');if(el)liveSpark(el);
+}
+setInterval(sampleLive,2000);
+function paintLive(prev){
+  if(!live)return;
+  const set=(el,v,changed)=>{el.textContent=num(v);if(changed){el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump');}};
+  const lc=$('#lpChat'),lo=$('#lpOnline');
+  if(lc)set(lc,live.chatting,prev&&prev.chatting!==live.chatting);
+  if(lo)lo.textContent=num(live.online);
+  document.querySelectorAll('[data-live]').forEach(el=>{
+    const k=el.dataset.live;
+    const v=k==='peak'?livePeak:live[k];
+    if(v===undefined)return;
+    set(el,v,prev&&k!=='peak'&&prev[k]!==v);
+  });
+  const sb=$('#liveSplit');
+  if(sb){
+    const t=Math.max(1,live.chatting);
+    sb.innerHTML=`<i style="width:${live.voice/t*100}%;background:var(--s1)"></i><i style="width:${live.text/t*100}%;background:var(--s2)"></i>`;
+  }
+  document.title=`(${live.chatting}) TalkLive - Owner Dashboard`;
+}
+/* Chatting (filled) against online (line) for the last ten minutes. */
+function liveSpark(el){
+  const pts=liveHist;
+  const W=el.clientWidth||600,H=70,P=4;
+  if(pts.length<2){el.innerHTML='<div class="muted" style="font-size:.76rem">Collecting the last 10 minutes…</div>';return;}
+  const max=Math.max(1,...pts.map(p=>Math.max(p.online,p.chatting)));
+  /* Newest sample on the right edge; the window fills in from the right. */
+  const x=(i)=>P+((LIVE_HIST_MAX-pts.length+i)/(LIVE_HIST_MAX-1))*(W-2*P);
+  const y=(v)=>H-P-(v/max)*(H-2*P);
+  const line=(k)=>pts.map((p,i)=>`${x(i).toFixed(1)},${y(p[k]).toFixed(1)}`).join(' ');
+  el.innerHTML=`<svg width="100%" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="display:block;height:${H}px">
+    <defs><linearGradient id="lsg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" style="stop-color:var(--accent);stop-opacity:.45"/><stop offset="100%" style="stop-color:var(--accent);stop-opacity:0"/></linearGradient></defs>
+    <line x1="${P}" x2="${W-P}" y1="${H-P}" y2="${H-P}" style="stroke:var(--grid)"/>
+    <polygon points="${x(0).toFixed(1)},${H-P} ${line('chatting')} ${x(pts.length-1).toFixed(1)},${H-P}" fill="url(#lsg)"/>
+    <polyline points="${line('chatting')}" fill="none" style="stroke:var(--accent)" stroke-width="2" stroke-linejoin="round"/>
+    <polyline points="${line('online')}" fill="none" style="stroke:var(--s3)" stroke-width="1.5" stroke-dasharray="4 3" stroke-linejoin="round"/>
+  </svg>`;
+}
+/* Shared by Overview and Live: the realtime block. */
+function liveCardHtml(){
+  return `<div class="card livecard anim" style="margin-top:0">
+    <h2><span class="dot"></span> Live right now <span class="sub">updates the moment someone joins or leaves a conversation</span>
+      <span id="liveConn" class="pill ${liveOk?'good':'warn'}" style="margin-left:auto">${liveOk?'● streaming':'connecting…'}</span></h2>
+    <div class="lgrid">
+      <div class="lbox big"><div class="k">💬 People chatting</div><div class="v" data-live="chatting">-</div>
+        <div class="s"><span data-live="conversations">-</span> conversations · peak <span data-live="peak">-</span> since you opened this</div>
+        <div class="splitbar" id="liveSplit"></div></div>
+      <div class="lbox"><div class="k">🎙️ In voice calls</div><div class="v" data-live="voice">-</div><div class="s">people talking</div></div>
+      <div class="lbox"><div class="k">⌨️ In text chats</div><div class="v" data-live="text">-</div><div class="s">people typing</div></div>
+      <div class="lbox"><div class="k">⏳ Waiting</div><div class="v" data-live="waiting">-</div><div class="s"><span data-live="waitingVoice">-</span> voice · <span data-live="waitingText">-</span> text</div></div>
+      <div class="lbox"><div class="k">🟢 Online</div><div class="v" data-live="online">-</div><div class="s">connected right now</div></div>
+    </div>
+    <div class="spark" id="liveSpark"></div>
+    <div class="legend" style="margin:6px 0 0"><span><i style="background:var(--s1)"></i>Voice</span><span><i style="background:var(--s2)"></i>Text</span><span><i style="background:var(--accent)"></i>Chatting</span><span><i style="background:var(--s3)"></i>Online</span><span class="muted">last 10 min</span></div>
+  </div>`;
 }
 /* Tabs live in the URL hash, so a refresh, a bookmark or the browser Back
    button all land on the section the owner was actually looking at. */
@@ -637,7 +791,7 @@ function scheduleRefresh(){
   const b=$('#refreshBtn');
   if(b){
     b.className='hbtn '+(paused?'paused':'live');
-    b.innerHTML=(paused?'▶':'⏸')+`<span class="lbl" id="refreshLbl"> ${paused?'paused':'live'}</span>`;
+    b.innerHTML=(paused?'▶':'⏸')+`<span class="lbl" id="refreshLbl"> ${paused?'paused':'auto'}</span>`;
     b.title=paused?'Auto-refresh paused - click to resume':`Auto-refreshing every ${REFRESH_MS()/1000}s - click to pause`;
   }
 }
@@ -645,12 +799,12 @@ function togglePause(){
   paused=!paused;
   scheduleRefresh();
   if(!paused)load();
-  toast(paused?'Auto-refresh paused':'Auto-refresh on',paused?'Numbers stay frozen until you resume.':`Refreshing every ${REFRESH_MS()/1000}s.`,paused?'warn':'good');
+  toast(paused?'Auto-refresh paused':'Auto-refresh on',paused?'Tables stay frozen until you resume. Live chat counters keep streaming.':`Refreshing every ${REFRESH_MS()/1000}s.`,paused?'warn':'good');
 }
 function startDash(){
   const hash=location.hash.slice(1);
   if(TAB_IDS.includes(hash))tab=hash;
-  renderNav();load();scheduleRefresh();
+  renderNav();load();scheduleRefresh();startLiveStream();
 }
 /* `force` defaults to true so every click and keypress repaints immediately;
    the poll timer passes false, because typing into a filter box or having a
@@ -680,6 +834,8 @@ async function load(force){
     else if(tab==='audit')await viewAudit();
     else if(tab==='settings')await viewSettings();
     lastLoadTs=Date.now();loadFailures=0;
+    paintLive(null);
+    const sp=$('#liveSpark');if(sp)liveSpark(sp);
     stampUpdated();
   }catch(e){
     if(e.message==='auth')return;
@@ -693,14 +849,7 @@ async function load(force){
 /* A quiet "as of" line, so a number that hasn't moved in ten minutes is
    obviously stale rather than silently wrong. */
 function stampUpdated(){
-  const host=$('#main');if(!host)return;
-  let el=$('#updStamp');
-  if(!el){
-    el=document.createElement('div');
-    el.id='updStamp';el.className='muted';
-    el.style.cssText='margin-top:14px;text-align:right;font-size:.74rem';
-    host.appendChild(el);
-  }else host.appendChild(el);
+  const el=$('#updStamp');if(!el)return;
   const t=new Date();
   el.innerHTML=`Updated ${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}:${String(t.getSeconds()).padStart(2,'0')} · ${paused?'auto-refresh paused':'auto-refresh every '+REFRESH_MS()/1000+'s'}`;
 }
@@ -782,35 +931,44 @@ async function viewOverview(){
   lastOverview=o;
   counts=o.counts;renderNav();
   const c=o.conclusion;
+  if(!live&&o.runtime.live)onLive(o.runtime.live);
   $('#main').innerHTML=`
-  <div class="muted anim" style="margin-bottom:6px">📅 “Today” = <b>${esc(o.todayWindow)}</b> · <a href="#" onclick="go('activity');return false" style="color:var(--accent-2)">change timezone / see full reports →</a></div>
-  <div class="grid tiles">
-    <div class="tile anim"><div class="k">🟢 Online now</div><div class="v grad" data-count="${o.runtime.online}">0</div><div class="s">${num(o.runtime.inCall/2|0)} calls · ${num(o.runtime.waiting)} waiting</div></div>
-    <div class="tile anim"><div class="k">Visitors today</div><div class="v" data-count="${o.today.uniques}">0</div><div class="s">${num(o.today.visits)} visits · ${deltaHtml(o.changeVsYesterday.uniques)} vs same time yesterday</div></div>
-    <div class="tile anim"><div class="k">Peak online today</div><div class="v" data-count="${o.today.peakOnline}">0</div><div class="s">most at once so far · yesterday ${num(o.yesterday.peakOnline)}</div></div>
-    <div class="tile anim"><div class="k">Visitors yesterday</div><div class="v" data-count="${o.yesterday.uniques}">0</div><div class="s">${num(o.yesterday.visits)} visits · full day</div></div>
-    <div class="tile anim"><div class="k">🕷️ Crawler hits today</div><div class="v" data-count="${o.today.bots||0}">0</div><div class="s">bots &amp; search engines · not counted as visitors</div></div>
-    <div class="tile anim"><div class="k">Matches today</div><div class="v" data-count="${o.today.matches}">0</div><div class="s">${num(o.totals.matches)} all-time</div></div>
-    <div class="tile anim"><div class="k">Total visits</div><div class="v" data-count="${o.totals.visits}">0</div><div class="s">all-time</div></div>
-    <div class="tile anim"><div class="k">Accounts</div><div class="v" data-count="${o.counts.accounts}">0</div><div class="s">registered users</div></div>
-    <div class="tile anim"><div class="k">💎 Plus members</div><div class="v" data-count="${o.counts.premium||0}">0</div><div class="s">${pctOf(o.counts.premium||0,o.counts.accounts)} of accounts · <a href="#revenue" style="color:var(--accent-2)">details</a></div></div>
-    <div class="tile anim"><div class="k">Active bans</div><div class="v" style="color:${o.counts.activeBans?'var(--crit)':'inherit'}" data-count="${o.counts.activeBans}">0</div><div class="s">${num(o.counts.unhandledReports)} new reports</div></div>
-    <div class="tile anim"><div class="k">Server</div><div class="v">${Math.floor(o.runtime.uptimeSeconds/3600)}h</div><div class="s">uptime · ${o.runtime.memoryMB} MB ${o.maintenance.on?'· <b style="color:var(--crit)">MAINTENANCE</b>':''}</div></div>
-  </div>
-  ${(o.counts.unhandledReports||o.maintenance.on||o.counts.errors)?`<div class="card anim" style="border-color:color-mix(in srgb,var(--warn) 40%,transparent)"><h2>🔔 Needs your attention</h2>
+  ${(o.counts.unhandledReports||o.maintenance.on||o.counts.errors)?`<div class="card anim" style="margin:0 0 12px;border-color:color-mix(in srgb,var(--warn) 40%,transparent)"><h2>🔔 Needs your attention</h2>
     <div class="rowbtns">
     ${o.maintenance.on?`<button class="danger" onclick="go('settings')">🛠️ Site is in MAINTENANCE - bring it back</button>`:''}
     ${o.counts.unhandledReports?`<button class="danger" onclick="go('reports')">🚩 ${num(o.counts.unhandledReports)} unhandled report(s)</button>`:''}
     ${o.counts.errors?`<button onclick="go('errors')">🐛 ${num(o.counts.errors)} logged error(s)</button>`:''}
     ${o.counts.activeBans?`<button onclick="go('bans')">⛔ ${num(o.counts.activeBans)} active ban(s)</button>`:''}
     </div></div>`:''}
-  <div class="card concl anim"><h2>🤖 TalkLive AI Summary <span class="sub">analysis of the last 7 days</span> <span class="pill ${c.health==='good'?'good':c.health==='warning'?'warn':'crit'}">${c.health.toUpperCase()}</span></h2>
+  ${liveCardHtml()}
+
+  <div class="sechead">Today · ${esc(o.todayWindow)} · <a href="#" onclick="go('activity');return false" style="color:var(--accent-2);text-transform:none;letter-spacing:0">change timezone →</a></div>
+  <div class="grid tiles">
+    <div class="tile anim"><div class="k">Visitors today</div><div class="v grad" data-count="${o.today.uniques}">0</div><div class="s">${num(o.today.visits)} visits · ${deltaHtml(o.changeVsYesterday.uniques)} vs same time yesterday</div></div>
+    <div class="tile anim"><div class="k">Peak online today</div><div class="v" data-count="${o.today.peakOnline}">0</div><div class="s">most at once · yesterday ${num(o.yesterday.peakOnline)}</div></div>
+    <div class="tile anim"><div class="k">Matches today</div><div class="v" data-count="${o.today.matches}">0</div><div class="s">${deltaHtml(o.changeVsYesterday.matches)} vs same time yesterday</div></div>
+    <div class="tile anim"><div class="k">Visitors yesterday</div><div class="v" data-count="${o.yesterday.uniques}">0</div><div class="s">${num(o.yesterday.visits)} visits · full day</div></div>
+    <div class="tile anim"><div class="k">🕷️ Crawler hits today</div><div class="v" data-count="${o.today.bots||0}">0</div><div class="s">bots · not counted as visitors</div></div>
+  </div>
+
+  <div class="sechead">All time</div>
+  <div class="grid tiles">
+    <div class="tile anim"><div class="k">Total visits</div><div class="v" data-count="${o.totals.visits}">0</div><div class="s">${num(o.totals.matches)} matches</div></div>
+    <div class="tile anim"><div class="k">👤 Accounts</div><div class="v" data-count="${o.counts.accounts}">0</div><div class="s"><a href="#accounts" style="color:var(--accent-2)">registered users</a></div></div>
+    <div class="tile anim"><div class="k">💎 Plus members</div><div class="v" data-count="${o.counts.premium||0}">0</div><div class="s">${pctOf(o.counts.premium||0,o.counts.accounts)} of accounts · <a href="#revenue" style="color:var(--accent-2)">details</a></div></div>
+    <div class="tile anim"><div class="k">⛔ Active bans</div><div class="v" style="color:${o.counts.activeBans?'var(--crit)':'inherit'}" data-count="${o.counts.activeBans}">0</div><div class="s">${num(o.counts.unhandledReports)} new reports</div></div>
+    <div class="tile anim"><div class="k">🖥️ Server</div><div class="v">${Math.floor(o.runtime.uptimeSeconds/3600)}h</div><div class="s">uptime · ${o.runtime.memoryMB} MB ${o.maintenance.on?'· <b style="color:var(--crit)">MAINTENANCE</b>':''}</div></div>
+  </div>
+
+  <div class="sechead">Insights</div>
+  <div class="card concl anim" style="margin-top:0"><h2>🤖 TalkLive AI Summary <span class="sub">analysis of the last 7 days</span> <span class="pill ${c.health==='good'?'good':c.health==='warning'?'warn':'crit'}">${c.health.toUpperCase()}</span></h2>
     <ul>${c.summary.map(l=>`<li>${esc(l)}</li>`).join('')}</ul>
     <div class="quickq" style="margin-top:10px"><button onclick="go('ai')">💬 Ask the AI bot →</button></div></div>
   <div class="card anim"><h2>📈 Traffic - last 30 days <span style="margin-left:auto">${exportLink('daily','Export daily CSV')}</span></h2>
     <div class="legend"><span><i style="background:var(--s1)"></i>Visits</span><span><i style="background:var(--s2)"></i>Unique visitors</span><span><i style="background:var(--s3)"></i>Matches</span></div>
     <div id="trafficChart"></div>
     ${o.humanSince?`<div class="muted" style="margin-top:8px;font-size:13px">ℹ️ From <b>${esc(o.humanSince)}</b>, visits and unique visitors count people only - search-engine crawlers, link-preview bots and browser prefetches are counted separately. Earlier days still include them, so a step down at that date is the measurement changing, not traffic falling.</div>`:''}</div>
+  <div class="sechead">Audience &amp; usage · last 30 days</div>
   <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
     <div class="card anim"><h2>📄 Where people land <span class="sub">human page views by area, last 30 days</span></h2><div id="sectionBars"></div></div>
     <div class="card anim"><h2>🕷️ Crawlers <span class="sub">bot page requests, last 30 days</span></h2><div id="crawlerBars"></div></div>
@@ -983,7 +1141,8 @@ async function botAnswer(kind){
     const top=o.countries.slice(0,5).map(([c,n],i)=>`${i+1}. ${c} - ${num(n)} visits`).join('\n');
     return o.countries.length?`Your top countries (last 30 days):\n\n${top}\n\nTop city: ${o.cities[0]?o.cities[0][0]+' ('+num(o.cities[0][1])+' visits)':'n/a'}.`:'No geo data yet.';
   }
-  return `Right now: ${num(o.runtime.online)} user(s) online - ${num(o.runtime.inCall/2|0)} in calls, ${num(o.runtime.waiting)} waiting for a match.\nToday (${o.todayWindow}): ${num(o.today.uniques)} unique visitors, ${num(o.today.visits)} visits, ${num(o.today.matches)} matches, peak of ${num(o.today.peakOnline)} online.\nYesterday: ${num(o.yesterday.uniques)} unique visitors, peak of ${num(o.yesterday.peakOnline)} online.\nServer: up ${Math.floor(o.runtime.uptimeSeconds/3600)}h, ${o.runtime.memoryMB} MB RAM.`;
+  const L=live||o.runtime.live||{chatting:o.runtime.inCall,voice:o.runtime.inCall,text:0,waiting:o.runtime.waiting,online:o.runtime.online};
+  return `Right now: ${num(L.online)} user(s) online - ${num(L.chatting)} chatting (${num(L.voice)} in voice calls, ${num(L.text)} in text chats), ${num(L.waiting)} waiting for a match.\nToday (${o.todayWindow}): ${num(o.today.uniques)} unique visitors, ${num(o.today.visits)} visits, ${num(o.today.matches)} matches, peak of ${num(o.today.peakOnline)} online.\nYesterday: ${num(o.yesterday.uniques)} unique visitors, peak of ${num(o.yesterday.peakOnline)} online.\nServer: up ${Math.floor(o.runtime.uptimeSeconds/3600)}h, ${o.runtime.memoryMB} MB RAM.`;
 }
 window.askBot=async(kind,label)=>{
   botLog.push({me:true,text:label});
@@ -1046,30 +1205,38 @@ window.banUser=(clientId,ip,username,country,city)=>{
     },{mid:true});
 };
 
-let liveQ='';
+let liveQ='',liveStatus='';
+const liveState=(u)=>u.inCall?'chatting':u.waiting?'waiting':'idle';
+const liveStatusPill=(u)=>u.inCall
+  ?(u.mode==='chat'?'<span class="pill good">⌨️ Text chat</span>':'<span class="pill good">🎙️ Voice call</span>')
+  :u.waiting?`<span class="pill warn">Waiting · ${u.mode==='chat'?'text':'voice'}</span>`:'<span class="pill info">Idle</span>';
 async function viewLive(){
   const r=await api('online');
+  if(r.live)onLive(r.live);
   const q=liveQ.toLowerCase();
-  const users=q?r.users.filter(u=>[u.username,u.account,u.country,u.city,u.ip,u.clientId].some(v=>String(v||'').toLowerCase().includes(q))):r.users;
-  const inCall=r.users.filter(u=>u.inCall).length,waiting=r.users.filter(u=>u.waiting).length;
-  $('#main').innerHTML=`<div class="grid tiles anim" style="margin-top:0">
-    <div class="tile"><div class="k">🟢 Online</div><div class="v grad">${num(r.users.length)}</div><div class="s">connected right now</div></div>
-    <div class="tile"><div class="k">In a call</div><div class="v">${num(inCall)}</div><div class="s">${num(inCall/2|0)} conversations</div></div>
-    <div class="tile"><div class="k">Waiting</div><div class="v" style="color:${waiting>inCall&&waiting>2?'var(--warn)':'inherit'}">${num(waiting)}</div><div class="s">looking for a match</div></div>
-    <div class="tile"><div class="k">Signed in</div><div class="v">${num(r.users.filter(u=>u.account).length)}</div><div class="s">rest are guests</div></div>
+  const by={chatting:0,waiting:0,idle:0};
+  for(const u of r.users)by[liveState(u)]++;
+  const users=r.users.filter(u=>(!liveStatus||liveState(u)===liveStatus)
+    &&(!q||[u.username,u.account,u.country,u.city,u.ip,u.clientId].some(v=>String(v||'').toLowerCase().includes(q))))
+    /* People in a conversation first, then the queue, then everyone idle. */
+    .sort((a,b)=>['chatting','waiting','idle'].indexOf(liveState(a))-['chatting','waiting','idle'].indexOf(liveState(b)));
+  $('#main').innerHTML=`${liveCardHtml()}
+  <div class="card anim"><h2>👥 Who is online <span class="sub">${users.length===r.users.length?r.users.length+' connected':users.length+' of '+r.users.length+' shown'} · ${num(r.users.filter(u=>u.account).length)} signed in · list refreshes every 5s</span></h2>
+  <div class="tbar">
+    <div class="seg">${[['','All',r.users.length],['chatting','Chatting',by.chatting],['waiting','Waiting',by.waiting],['idle','Idle',by.idle]].map(([k,l,n])=>`<button data-ls="${k}" class="${liveStatus===k?'on':''}">${l} (${n})</button>`).join('')}</div>
+    <input id="liveQ" class="grow" placeholder="Filter by name, country, IP…" value="${esc(liveQ)}">${liveQ?'<button class="lnk" id="liveClear">Clear</button>':''}
   </div>
-  <div class="card anim"><h2>🟢 Live users <span class="sub">${users.length===r.users.length?r.users.length+' connected':users.length+' of '+r.users.length+' shown'} · refreshes every 5s</span></h2>
-  <div class="tbar"><input id="liveQ" class="grow" placeholder="Filter by name, country, IP…" value="${esc(liveQ)}">${liveQ?'<button class="lnk" id="liveClear">Clear</button>':''}</div>
   <table><tr><th>User</th><th>Location</th><th>Status</th><th>Account</th><th class="num">Reports</th><th>IP</th><th></th></tr>
   ${users.map(u=>`<tr><td><b>${esc(u.username)}</b><br><span class="muted">${esc(u.clientId.slice(0,12))}…</span></td>
   <td>${esc(u.country)}${u.city&&u.city!=='Unknown'?', '+esc(u.city):''}</td>
-  <td>${u.inCall?'<span class="pill good">In call</span>':u.waiting?'<span class="pill warn">Waiting</span>':'<span class="pill info">Idle</span>'}</td>
+  <td>${liveStatusPill(u)}</td>
   <td>${u.account?esc(u.account):'<span class="muted">guest</span>'}</td>
   <td class="num">${u.reports?`<span class="pill crit">${u.reports}</span>`:'0'}</td>
-  <td class="muted">${esc(u.ip)}</td><td>${banButtons(u)}</td></tr>`).join('')||`<tr><td colspan="7" class="muted">${liveQ?'No live user matches that filter.':'Nobody online right now.'}</td></tr>`}</table></div>`;
+  <td class="muted">${esc(u.ip)}</td><td>${banButtons(u)}</td></tr>`).join('')||`<tr><td colspan="7" class="muted">${liveQ||liveStatus?'No live user matches that filter.':'Nobody online right now.'}</td></tr>`}</table></div>`;
   const inp=$('#liveQ');
   onFilterInput(inp,(v)=>{liveQ=v;},()=>viewLive().then(()=>keepFocus('#liveQ')));
   const cl=$('#liveClear');if(cl)cl.onclick=()=>{liveQ='';viewLive();};
+  document.querySelectorAll('[data-ls]').forEach(b=>b.onclick=()=>{liveStatus=b.dataset.ls;load();});
 }
 
 let repFilter='open';
