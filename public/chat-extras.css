@@ -381,3 +381,25 @@
   font: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
 }
 .search-quiet-share:hover { background: color-mix(in srgb, var(--accent) 24%, transparent); }
+
+/* --- direct-message gate (not friends yet) --------------------------------
+   Sits right above the composer: why it is locked, or how many messages are
+   left, and the one button that moves things forward. */
+.dm-gate {
+  flex: 0 0 auto;
+  margin: 6px 10px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line, rgba(127, 127, 127, 0.2));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.4;
+}
+.dm-gate.hidden { display: none; }
+.dm-gate p { margin: 0; }
+.dm-gate[data-gate="waiting"], .dm-gate[data-gate="one"] { color: var(--muted); }
+.dm-gate-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.dm-gate-actions .btn { min-height: 34px; padding: 6px 14px; font: inherit; font-size: 13px; font-weight: 600; }
+.chat-form.locked input, .composer.locked input,
+.chat-form.locked button, .composer.locked button { opacity: 0.5; cursor: not-allowed; }

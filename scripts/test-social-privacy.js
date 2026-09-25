@@ -93,6 +93,8 @@ const D = 'c_priv_Delta';
     await wait(400);
     await matchPair(a, b);
     await matchPair(a, d);
+    a.emit('friend-request', { targetClientId: B });
+    await once(a, 'friend-request-result');
     a.emit('friend-message', { toClientId: B, text: 'private words', id: 'p1' });
     await once(b, 'friend-message');
 

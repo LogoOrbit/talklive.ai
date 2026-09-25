@@ -1844,6 +1844,7 @@
     friendsState.friends = data.friends || [];
     friendsState.requests = data.friendRequests || [];
     friendsState.sent = data.sentRequests || [];
+    dmGateOverrides = {};
     friendsState.notifications = data.notifications || [];
     historyState = data.chatHistory || [];
     mutedChats = data.muted || [];
@@ -1852,7 +1853,7 @@
     renderHistory();
     renderFriendChatStatus();
     renderBlocked();
-    if (activeFriendChatId) renderChatHeadTools();
+    if (activeFriendChatId) { renderChatHeadTools(); applyFriendChatGate(); }
     if (profileId) {
       // Blocked from elsewhere: nothing left to act on.
       if (blockedState.some(function (b) { return b.clientId === profileId; })) closeProfile();
@@ -2327,12 +2328,83 @@
     if (retry) retryFriendMessage(retry.getAttribute('data-retry-id'));
   });
 
+  // --- Who may be messaged (see dmGate in server/index.js) -------------------
+  // Friends any time; anyone else only after a friend request, and then one
+  // message until they accept. 'dm-gate' events are newer than the last
+  // state-sync, which clears them.
+  var dmGateOverrides = {};
+  function dmGateFor(clientId) {
+    if (!clientId) return 'request';
+    var has = function (list) { return list.some(function (x) { return x.clientId === clientId; }); };
+    if (has(friendsState.friends)) return 'open';
+    if (dmGateOverrides[clientId]) return dmGateOverrides[clientId];
+    if (has(friendsState.requests)) return 'accept';
+    var sent = friendsState.sent.filter(function (r) { return r.clientId === clientId; })[0];
+    if (sent) return sent.dm || 'one';
+    return 'request';
+  }
+  var friendChatGate = $('friendChatGate');
+  var activeFriendChatName = '';
+  var dmGateAddPending = false;
+  function applyFriendChatGate() {
+    if (!friendChatGate) return;
+    var gate = activeFriendChatId ? dmGateFor(activeFriendChatId) : 'open';
+    var locked = gate !== 'open' && gate !== 'one';
+    friendChatInput.disabled = locked;
+    friendChatForm.classList.toggle('locked', locked);
+    var sendBtn = friendChatForm.querySelector('button[type="submit"]');
+    if (sendBtn) sendBtn.disabled = locked;
+    var key = { request: 'dmGateRequest', one: 'dmGateOne', waiting: 'dmGateWaiting', accept: 'dmGateAccept' }[gate];
+    friendChatGate.classList.toggle('hidden', !key);
+    friendChatGate.setAttribute('data-gate', gate);
+    if (!key) { friendChatGate.innerHTML = ''; return; }
+    var actions = '';
+    if (gate === 'request') {
+      actions = '<button type="button" class="btn btn-primary btn-sm" data-gate-act="add">' + escapeHtml(t('dmGateAddBtn')) + '</button>';
+    } else if (gate === 'accept') {
+      actions = '<button type="button" class="btn btn-primary btn-sm" data-gate-act="accept">' + escapeHtml(t('dmGateAcceptBtn')) + '</button>'
+        + '<button type="button" class="btn btn-secondary btn-sm" data-gate-act="decline">' + escapeHtml(t('dmGateDeclineBtn')) + '</button>';
+    }
+    friendChatGate.innerHTML = '<p>' + escapeHtml(t(key, { name: activeFriendChatName || t('someone') })) + '</p>'
+      + (actions ? '<div class="dm-gate-actions">' + actions + '</div>' : '');
+  }
+  if (friendChatGate) {
+    friendChatGate.addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-gate-act]');
+      if (!btn || !activeFriendChatId) return;
+      btn.disabled = true;
+      var act = btn.getAttribute('data-gate-act');
+      if (act === 'add') {
+        dmGateAddPending = true;
+        socket.emit('friend-request', { targetClientId: activeFriendChatId });
+      } else {
+        socket.emit('friend-request-respond', { fromClientId: activeFriendChatId, accept: act === 'accept' });
+      }
+    });
+  }
+  socket.on('dm-gate', function (d) {
+    if (!d || !d.clientId || !d.gate) return;
+    dmGateOverrides[d.clientId] = d.gate;
+    if (d.clientId === activeFriendChatId) applyFriendChatGate();
+  });
+  socket.on('friend-request-result', function (res) {
+    if (activeFriendChatId) applyFriendChatGate();
+    if (!dmGateAddPending) return;
+    dmGateAddPending = false;
+    if (res && !res.ok && res.error && activeFriendChatId) friendSystemNote(res.error);
+  });
+
   function sendFriendMessage(payload) {
     var toClientId = activeFriendChatId;
     var text = (payload.text || '').slice(0, 1000);
     if (!toClientId || (!text && !payload.gif)) return false;
+    var gate = dmGateFor(toClientId);
+    if (gate !== 'open' && gate !== 'one') { applyFriendChatGate(); return false; }
     if (text && LINK_RE.test(text)) { friendSystemNote(t('chatLinkBlocked')); return false; }
     if (text && UNSAFE_RE.test(text)) { friendSystemNote(t('errUnsafeMessage')); return false; }
+    // The one message before they accept: lock now, so a quick second tap
+    // cannot go out too.
+    if (gate === 'one') { dmGateOverrides[toClientId] = 'waiting'; applyFriendChatGate(); }
     var id = payload.id || ('m' + Math.random().toString(36).slice(2, 10));
     var wire = { text: text, id: id, replyTo: payload.replyTo || null, gif: payload.gif || null };
     var ts = Date.now();
@@ -2438,8 +2510,10 @@
     // when another chat was opened, and went to the wrong person.
     friendChatInput.value = friendDrafts[friend.clientId] || '';
     // Just their name in the header, as a messenger shows it.
-    $('friendChatTitle').textContent = friendLabel(friend) || t('chat');
+    activeFriendChatName = friendLabel(friend) || '';
+    $('friendChatTitle').textContent = activeFriendChatName || t('chat');
     renderChatHeadTools();
+    applyFriendChatGate();
     friendChatMsgs.innerHTML = '';
     if (friendExtras) friendExtras.reset();
     closePanel(friendsPanel, friendsOverlay);
@@ -2816,6 +2890,7 @@
 
   socket.on('friend-chat-history', function (data) {
     if (!data || data.friendClientId !== activeFriendChatId) return;
+    if (data.gate) { dmGateOverrides[data.friendClientId] = data.gate; applyFriendChatGate(); }
     friendChatMsgs.innerHTML = '';
     if (friendExtras) friendExtras.reset();
     var stored = {};
@@ -3135,15 +3210,22 @@
         return;
       }
       dropFriendMessage(data.id);
+      // Refused for its content: the one allowed message was not used up.
+      if (reason === 'link' || reason === 'unsafe') delete dmGateOverrides[data.toClientId];
+      if (data.toClientId === activeFriendChatId) applyFriendChatGate();
       if (data.toClientId !== activeFriendChatId) return;
     }
     var text = reason === 'link' ? t('chatLinkBlocked')
       : reason === 'rate' ? t('errSlowDown')
       : reason === 'unreachable' ? t('errCantMessage')
+      : reason === 'request-first' ? t('errDmRequestFirst')
+      : reason === 'awaiting-accept' ? t('errDmAwaitingAccept')
+      : reason === 'accept-first' ? t('errDmAcceptFirst')
       : t('errUnsafeMessage');
     // A refused direct message belongs in the direct chat it was typed in, not
     // in the stranger conversation behind it.
-    if (activeFriendChatId && (reason === 'unreachable' || friendChatPanel.classList.contains('open'))) {
+    var dmReason = reason === 'unreachable' || reason === 'request-first' || reason === 'awaiting-accept' || reason === 'accept-first';
+    if (activeFriendChatId && (dmReason || friendChatPanel.classList.contains('open'))) {
       var el = document.createElement('div');
       el.className = 'msg system';
       el.textContent = text;

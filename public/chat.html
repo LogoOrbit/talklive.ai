@@ -35,7 +35,7 @@
 })();
 </script>
 <link rel="stylesheet" href="/chat.css?v=20260924tone" />
-<link rel="stylesheet" href="/chat-extras.css?v=20260924qa" />
+<link rel="stylesheet" href="/chat-extras.css?v=20260925dm" />
 <link rel="stylesheet" href="/games.css?v=20260916navbar" />
 <link rel="stylesheet" href="/ui.css?v=20260924swipeclose" />
 <!-- The top bar, shared with / and /call: one button language, one radius,
@@ -667,6 +667,7 @@
     </div>
     <div class="friend-chat-body">
       <div id="friendChatMsgs" class="msgs friend-chat-msgs"></div>
+      <div id="friendChatGate" class="dm-gate hidden" role="status" aria-live="polite"></div>
       <form id="friendChatForm" class="composer friend-chat-composer">
         <input id="friendChatInput" type="text" maxlength="1000" data-i18n-placeholder="typeMessage" data-i18n-aria="typeMessage" placeholder="Type a message…" autocomplete="off" />
         <!-- A labelled Send pill, like the call app's friend chat. The
@@ -779,7 +780,7 @@
 
   <script defer src="/socket.io/socket.io.min.js"></script>
   <script defer src="/countries.js?v=20260828fix"></script>
-  <script defer src="/i18n.js?v=20260924toast"></script>
+  <script defer src="/i18n.js?v=20260925dm"></script>
   <script defer src="/chat-time.js?v=20260916navbar"></script>
   <script defer src="/animals.js?v=20260924animline"></script>
   <script defer src="/social-kit.js?v=20260924id"></script>
@@ -787,7 +788,7 @@
   <script defer src="/chat-extras.js?v=20260924tidy"></script>
   <script defer src="/games.js?v=20260924qa"></script>
   <script defer src="/icebreakers.js?v=20260923ice"></script>
-  <script defer src="/chat.js?v=20260924tone"></script>
+  <script defer src="/chat.js?v=20260925dm"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

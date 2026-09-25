@@ -2047,6 +2047,39 @@ function knowsEachOther(a, b) {
   return isFriend(a, b) || hasChatHistory(a, b) || friendChats.has(pairKey(a, b));
 }
 
+function hasPendingRequest(from, to) {
+  return (sentRequests.get(from) || new Map()).has(to)
+    || (friendRequests.get(to) || new Map()).has(from);
+}
+
+// Who may open a direct thread: anyone met, plus either end of a pending
+// friend request (someone added by friend ID has not been met yet).
+function canOpenThread(a, b) {
+  return knowsEachOther(a, b) || hasPendingRequest(a, b) || hasPendingRequest(b, a);
+}
+
+// Whether `me` may send a direct message to `other` right now:
+//   open    - friends, no limit
+//   accept  - they asked to be friends; accept to reply
+//   request - send a friend request first
+//   one     - request sent: one message allowed until they accept
+//   waiting - that one message is sent; wait for them to accept
+// The one message is "one unanswered message": the thread ending on this
+// user's own message sent since the request uses it up. One that predates
+// the current request does not, unless the request is held after a decline -
+// otherwise cancel-and-ask-again would buy a fresh message each time.
+function dmGate(me, other) {
+  if (isFriend(me, other)) return 'open';
+  if ((friendRequests.get(me) || new Map()).has(other)) return 'accept';
+  const req = (sentRequests.get(me) || new Map()).get(other);
+  if (!req) return 'request';
+  const list = friendChats.get(pairKey(me, other)) || [];
+  const last = list[list.length - 1];
+  if (!last || last.from !== me) return 'one';
+  if (req.held) return 'waiting';
+  return last.ts >= (req.ts || 0) ? 'waiting' : 'one';
+}
+
 // Per-client sliding budget for social actions that reach another person
 // (friend requests, call-backs, direct messages). Keyed by clientId rather
 // than socket so reconnecting does not reset it.
@@ -2132,6 +2165,7 @@ function syncClientState(socket, clientId) {
     clientId: fid,
     ...info,
     friendId: publicIdOf(fid),
+    dm: 'accept',
   }));
   // Recent random-chat partners (newest first), each carrying a live online
   // flag so the history panel can show who's around to message back right now.
@@ -2150,12 +2184,13 @@ function syncClientState(socket, clientId) {
       durationSeconds: e.durationSeconds || 0,
       ...presenceOf(e.clientId),
       last: lastMessageBetween(clientId, e.clientId),
+      dm: dmGate(clientId, e.clientId),
     }));
   // Who this user has asked and not heard back from, so a profile can say
   // "Pending" instead of offering to send the same request twice.
   const sentList = Array.from((sentRequests.get(clientId) || new Map()).entries()).map(([fid, info]) => {
     const { held, ...rest } = info;
-    return { clientId: fid, ...rest, friendId: publicIdOf(fid), online: clientSockets.has(fid) && !statusHidden.get(fid) };
+    return { clientId: fid, ...rest, friendId: publicIdOf(fid), online: clientSockets.has(fid) && !statusHidden.get(fid), dm: dmGate(clientId, fid) };
   });
   // Only the people this user blocked - never who blocked them, which would
   // tell a blocked person exactly who shut them out.
@@ -5044,7 +5079,7 @@ io.on('connection', (socket) => {
       reason, scope: 'friend', toClientId, id: parsed.id || null, text: parsed.text || '',
     });
     if (!ageGate('friends').ok || ageAssurance.isRestricted(toClientId)) return refuse('unreachable');
-    if (!knowsEachOther(me.clientId, toClientId) || isBlockedPair(me.clientId, toClientId)) {
+    if (!canOpenThread(me.clientId, toClientId) || isBlockedPair(me.clientId, toClientId)) {
       return refuse('unreachable');
     }
     // Friends can message each other any time - no call required. If the friend
@@ -5070,6 +5105,12 @@ io.on('connection', (socket) => {
         });
       }
       if (dup) msgId = null;
+    }
+    // Not friends: a friend request first, then one message until they accept.
+    const gateBefore = dmGate(me.clientId, toClientId);
+    if (gateBefore !== 'open' && gateBefore !== 'one') {
+      socket.emit('dm-gate', { clientId: toClientId, gate: gateBefore });
+      return refuse(gateBefore === 'accept' ? 'accept-first' : gateBefore === 'waiting' ? 'awaiting-accept' : 'request-first');
     }
     // Direct messages are stored and notified, so a flood costs the recipient
     // far more than one in a live chat does. Same human-speed ceiling.
@@ -5139,6 +5180,7 @@ io.on('connection', (socket) => {
     socket.emit('friend-message-sent', {
       toClientId, text: trimmed, ts: msg.ts, id: msg.id, replyTo: msg.replyTo || null, gif: msg.gif || null,
     });
+    if (gateBefore !== 'open') socket.emit('dm-gate', { clientId: toClientId, gate: dmGate(me.clientId, toClientId) });
   });
 
   // Reactions on a stored friend message. Unlike stranger reactions these are
@@ -5149,7 +5191,7 @@ io.on('connection', (socket) => {
     toClientId = validId(toClientId);
     const msgId = cleanMsgId(id);
     if (!me || !toClientId || !msgId || !REACTION_SET.has(emoji)) return;
-    if (!knowsEachOther(me.clientId, toClientId) || isBlockedPair(me.clientId, toClientId)) return;
+    if (!canOpenThread(me.clientId, toClientId) || isBlockedPair(me.clientId, toClientId)) return;
     const now = Date.now();
     let rl = reactRate.get(socket.id);
     if (!rl || now - rl.start > 5000) { rl = { start: now, n: 0 }; reactRate.set(socket.id, rl); }
@@ -5213,7 +5255,10 @@ io.on('connection', (socket) => {
     const now = Date.now();
     if (me.lastFriendTypingAt && now - me.lastFriendTypingAt < 1000) return;
     me.lastFriendTypingAt = now;
-    if (!knowsEachOther(me.clientId, toClientId) || isBlockedPair(me.clientId, toClientId)) return;
+    if (!canOpenThread(me.clientId, toClientId) || isBlockedPair(me.clientId, toClientId)) return;
+    // Someone who cannot send right now is not "typing" to anyone either.
+    const gate = dmGate(me.clientId, toClientId);
+    if (gate !== 'open' && gate !== 'one') return;
     if (statusHidden.get(me.clientId)) return; // appearing offline means not typing either
     const targetSocket = getSocketByClientId(toClientId);
     if (targetSocket) targetSocket.emit('friend-typing', { fromClientId: me.clientId });
@@ -5225,9 +5270,11 @@ io.on('connection', (socket) => {
     // Same bar as sending: a "message back" conversation with a recent match
     // is stored like any other, so it has to be loadable too - otherwise the
     // chat opened empty and every earlier message looked lost.
-    if (!me || !friendClientId || !knowsEachOther(me.clientId, friendClientId)) return;
+    if (!me || !friendClientId || !canOpenThread(me.clientId, friendClientId)) return;
     if (isBlockedPair(me.clientId, friendClientId)) return;
-    socket.emit('friend-chat-history', { friendClientId, messages: visibleThread(me.clientId, friendClientId) });
+    socket.emit('friend-chat-history', {
+      friendClientId, messages: visibleThread(me.clientId, friendClientId), gate: dmGate(me.clientId, friendClientId),
+    });
   });
 
   socket.on('mark-messages-read', ({ friendClientId } = {}) => {
@@ -5256,7 +5303,7 @@ io.on('connection', (socket) => {
   socket.on('chat-seen', ({ friendClientId } = {}) => {
     const me = profiles.get(socket.id);
     friendClientId = validId(friendClientId);
-    if (!me || !friendClientId || !knowsEachOther(me.clientId, friendClientId)) return;
+    if (!me || !friendClientId || !canOpenThread(me.clientId, friendClientId)) return;
     if (isBlockedPair(me.clientId, friendClientId)) return;
     const key = pairKey(me.clientId, friendClientId);
     const list = friendChats.get(key);

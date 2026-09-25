@@ -101,12 +101,19 @@ async function run(base, surface) {
   await wait(700);
   if (!onChat) await open(ID.ben); // the block closed nothing on Ann's side
   await wait(300);
+  // No longer friends: the composer locks behind "send a friend request".
+  ok(tag('composer locks once the friendship ends'), await page.isDisabled(input));
+  ok(tag('the gate says why'), await q(() => {
+    const g = document.getElementById('friendChatGate');
+    return !!g && !g.classList.contains('hidden') && g.dataset.gate === 'request';
+  }));
+  // A send that slips past the lock is still refused and handed back.
+  await q((sel) => { document.querySelector(sel).disabled = false; }, input);
   await page.fill(input, 'anyone?');
-  await page.press(input, 'Enter');
+  await q(() => { window.__tlSocket.emit('friend-message', { toClientId: 'c_ben_bot_0001', text: 'anyone?', id: 'forced1' }); });
   await wait(900);
   list = await bubbles();
-  ok(tag('refused message is taken back'), !list.some((m) => m.text.includes('anyone?') && !/could not|no longer/i.test(m.text)), JSON.stringify(list));
-  ok(tag('its text goes back to the composer'), (await page.inputValue(input)) === 'anyone?', await page.inputValue(input));
+  ok(tag('refused message is never shown as sent'), !list.some((m) => m.text.includes('anyone?') && !/could not|no longer|friend request/i.test(m.text)), JSON.stringify(list));
   ben.emit('unblock-user', { targetClientId: ID.ann });
 
   // The sandbox has no route to third-party hosts (fonts, ads): not ours.
