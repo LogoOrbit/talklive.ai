@@ -143,6 +143,12 @@ function connect(name) {
     // --- persisted friend chat -------------------------------------------
     // Matching recorded chat history for the pair, which is enough to message
     // each other directly. Reactions on this path are stored, not just relayed.
+    // Only friends message without limit, so make them friends first.
+    a.emit('friend-request', { targetClientId: 'c_test_Bravo' });
+    await wait(300);
+    b.emit('friend-request-respond', { fromClientId: 'c_test_Alpha', accept: true });
+    await wait(300);
+
     const fm = once(b, 'friend-message');
     a.emit('friend-message', { toClientId: 'c_test_Bravo', text: 'saved message', id: 'f1' });
     const f1 = await fm;
@@ -157,13 +163,7 @@ function connect(name) {
     b.emit('friend-reaction', { toClientId: 'c_test_Alpha', id: 'f1', emoji: '❤️', on: true });
     ok('friend reaction relays', (await fr).id === 'f1');
 
-    // Only friends can pull stored history back, so make them friends and read
-    // the conversation the way a client does after a reload.
-    a.emit('friend-request', { targetClientId: 'c_test_Bravo' });
-    await wait(300);
-    b.emit('friend-request-respond', { fromClientId: 'c_test_Alpha', accept: true });
-    await wait(300);
-
+    // Read the conversation the way a client does after a reload.
     const hist = once(a, 'friend-chat-history');
     a.emit('get-friend-chat', { friendClientId: 'c_test_Bravo' });
     const stored = await hist;

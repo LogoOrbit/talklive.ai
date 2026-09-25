@@ -87,6 +87,11 @@ async function waitUp() {
     await matched;
     a.emit('leave'); b.emit('leave');
     await wait(200);
+    // Messaging needs a friendship (or a request and one message), so befriend.
+    a.emit('friend-request', { targetClientId: B });
+    await once(a, 'friend-request-result');
+    b.emit('friend-request', { targetClientId: A });
+    await once(b, 'friend-request-result');
 
     // --- Sent before register: held, then delivered ----------------------
     a.disconnect();

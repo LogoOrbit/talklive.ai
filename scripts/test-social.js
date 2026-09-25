@@ -103,26 +103,16 @@ async function matchPair(a, b, mode = 'chat') {
     await wait(200);
 
     // --- Direct chat with a recent match (not a friend) -------------------
-    a.emit('friend-message', { toClientId: B, text: 'hey from history', id: 'h1' });
-    await once(b, 'friend-message');
-    b.emit('get-friend-chat', { friendClientId: A });
-    const hist = await once(b, 'friend-chat-history');
-    ok('history partner can load the stored chat', (hist.messages || []).some((m) => m.id === 'h1'), JSON.stringify(hist));
-    const readSync = once(b, 'state-sync');
-    b.emit('mark-messages-read', { friendClientId: A });
-    await readSync;
-    const bHist = ((lastSync.get(b) || {}).chatHistory || []).find((h) => h.clientId === A);
-    ok('history row carries the last message', bHist && bHist.last && bHist.last.id === 'h1' && !bHist.last.mine, JSON.stringify(bHist));
-
-    // --- Typing indicator is relayed -------------------------------------
-    const typing = once(b, 'friend-typing');
-    a.emit('friend-typing', { toClientId: B });
-    ok('typing reaches the other side', (await typing).fromClientId === A);
-    const cTyping = arrives(c, 'friend-typing', 500);
-    await wait(1100);
-    c.emit('friend-typing', { toClientId: B });
-    ok('typing to a stranger is dropped', !(await arrives(b, 'friend-typing', 500)));
-    await cTyping;
+    // A friend request comes first; without one nothing is sent.
+    const noReq = once(a, 'chat-blocked');
+    a.emit('friend-message', { toClientId: B, text: 'hi without asking', id: 'n0' });
+    ok('messaging a non-friend needs a friend request first', (await noReq).reason === 'request-first');
+    ok('...and nothing reaches them', !(await arrives(b, 'friend-message', 400)));
+    a.emit('friend-request', { targetClientId: B, message: 'we talked about cats' });
+    await once(a, 'friend-request-result');
+    await wait(100);
+    ok('intro message rides on the request', ((lastSync.get(b).friendRequests || []).find((r) => r.clientId === A) || {}).message === 'we talked about cats');
+    ok('sender sees one message allowed', (((lastSync.get(a) || {}).sentRequests || []).find((r) => r.clientId === B) || {}).dm === 'one');
 
     // --- Unsend ----------------------------------------------------------
     const unreadNotif = once(b, 'notification');
@@ -139,19 +129,33 @@ async function matchPair(a, b, mode = 'chat') {
     b.emit('get-friend-chat', { friendClientId: A });
     const afterDel = await once(b, 'friend-chat-history');
     ok('unsent message is gone from the thread', !(afterDel.messages || []).some((m) => m.id === 'u1'));
+    ok('recipient is asked to accept before replying', afterDel.gate === 'accept', afterDel.gate);
 
-    // --- Rate limit on direct messages -----------------------------------
-    let blockedRate = false;
-    a.on('chat-blocked', ({ reason }) => { if (reason === 'rate') blockedRate = true; });
-    for (let i = 0; i < 14; i++) a.emit('friend-message', { toClientId: B, text: 'spam ' + i });
-    await wait(400);
-    ok('message flood is rate limited', blockedRate);
+    // Unsending gave the one message back.
+    const aGate = once(a, 'dm-gate');
+    a.emit('friend-message', { toClientId: B, text: 'hey from history', id: 'h1' });
+    await once(b, 'friend-message');
+    ok('after that one message the sender waits', (await aGate).gate === 'waiting');
+    b.emit('get-friend-chat', { friendClientId: A });
+    const hist = await once(b, 'friend-chat-history');
+    ok('history partner can load the stored chat', (hist.messages || []).some((m) => m.id === 'h1'), JSON.stringify(hist));
+    const readSync = once(b, 'state-sync');
+    b.emit('mark-messages-read', { friendClientId: A });
+    await readSync;
+    const bHist = ((lastSync.get(b) || {}).chatHistory || []).find((h) => h.clientId === A);
+    ok('history row carries the last message', bHist && bHist.last && bHist.last.id === 'h1' && !bHist.last.mine, JSON.stringify(bHist));
+    const second = once(a, 'chat-blocked');
+    a.emit('friend-message', { toClientId: B, text: 'hello??', id: 'h2' });
+    ok('a second message waits for the accept', (await second).reason === 'awaiting-accept');
+    ok('...and is not delivered', !(await arrives(b, 'friend-message', 400)));
+    const bReply = once(b, 'chat-blocked');
+    b.emit('friend-message', { toClientId: A, text: 'who is this', id: 'r1' });
+    ok('the recipient accepts before replying', (await bReply).reason === 'accept-first');
+    const waitTyping = arrives(b, 'friend-typing', 500);
+    a.emit('friend-typing', { toClientId: B });
+    ok('no typing while waiting for the accept', !(await waitTyping));
 
     // --- Duplicate friend requests do not stack --------------------------
-    a.emit('friend-request', { targetClientId: B, message: 'we talked about cats' });
-    await once(a, 'friend-request-result');
-    await wait(100);
-    ok('intro message rides on the request', ((lastSync.get(b).friendRequests || []).find((r) => r.clientId === A) || {}).message === 'we talked about cats');
     a.emit('friend-request', { targetClientId: B });
     const dup = await once(a, 'friend-request-result');
     ok('second request reports pending', dup.ok && dup.pending, JSON.stringify(dup));
@@ -185,6 +189,31 @@ async function matchPair(a, b, mode = 'chat') {
     const bAsFriend = (lastSync.get(a2).friends || []).find((f) => f.clientId === B) || {};
     ok('friend row carries presence and last message', bAsFriend.online === true && bAsFriend.last && typeof bAsFriend.last.ts === 'number', JSON.stringify(bAsFriend));
     ok('request notification cleared', !(lastSync.get(b2).notifications || []).some((n) => n.type === 'friend_request'));
+
+    // --- Friends message freely --------------------------------------------
+    const freeMsg = once(a2, 'friend-message');
+    b2.emit('friend-message', { toClientId: A, text: 'now we are friends', id: 'fr1' });
+    ok('friends message without a limit', (await freeMsg).id === 'fr1');
+    const freeMsg2 = once(b2, 'friend-message');
+    a2.emit('friend-message', { toClientId: B, text: 'yes', id: 'fr2' });
+    ok('...both ways', (await freeMsg2).id === 'fr2');
+
+    // --- Typing indicator is relayed -------------------------------------
+    const typing = once(b2, 'friend-typing');
+    a2.emit('friend-typing', { toClientId: B });
+    ok('typing reaches the other side', (await typing).fromClientId === A);
+    c2.emit('friend-typing', { toClientId: B });
+    ok('typing to a stranger is dropped', !(await arrives(b2, 'friend-typing', 500)));
+
+    // --- Rate limit on direct messages -----------------------------------
+    let blockedRate = false;
+    const onRate = ({ reason }) => { if (reason === 'rate') blockedRate = true; };
+    a2.on('chat-blocked', onRate);
+    for (let i = 0; i < 14; i++) a2.emit('friend-message', { toClientId: B, text: 'spam ' + i });
+    await wait(400);
+    a2.off('chat-blocked', onRate);
+    ok('message flood is rate limited', blockedRate);
+    await wait(5200);
 
     // --- Forged call-back accept cannot force-pair -----------------------
     const forgedMatch = arrives(a2, 'matched', 800);
@@ -237,6 +266,8 @@ async function matchPair(a, b, mode = 'chat') {
     ok('call back to a voice partner is allowed', cbRes.ok === true, JSON.stringify(cbRes));
     await dRing;
     a2.emit('call-back-cancel', { targetClientId: D });
+    a2.emit('friend-request', { targetClientId: D });
+    await once(a2, 'friend-request-result');
     const dMsg = once(d, 'friend-message');
     a2.emit('friend-message', { toClientId: D, text: 'nice talking' });
     ok('message back to a voice partner is delivered', (await dMsg).text === 'nice talking');
@@ -302,6 +333,8 @@ async function matchPair(a, b, mode = 'chat') {
     ok('clearing empties my copy', !((await clearedHist).messages || []).length);
     b2.emit('get-friend-chat', { friendClientId: A });
     ok('their copy is untouched', ((await once(b2, 'friend-chat-history')).messages || []).some((m) => m.id === 'ub1'));
+    b2.emit('friend-request', { targetClientId: A });
+    await once(b2, 'friend-request-result');
     const newMsg = once(a2, 'friend-message');
     b2.emit('friend-message', { toClientId: A, text: 'after clear', id: 'ac1' });
     await newMsg;

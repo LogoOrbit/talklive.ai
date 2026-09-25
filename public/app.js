@@ -4534,6 +4534,7 @@ socket.on('state-sync', ({ friends: friendList, friendRequests: requestList, sen
   friendsData = friendList || [];
   friendRequestsData = requestList || [];
   sentRequestsData = sentList || [];
+  dmGateOverrides.clear();
   notifData = notifList || [];
   serverHistory = historyList || [];
   blockedData = blocked || [];
@@ -4541,7 +4542,7 @@ socket.on('state-sync', ({ friends: friendList, friendRequests: requestList, sen
   renderHistory();
   renderFriendChatStatus();
   renderFriendChatMuteBtn();
-  if (activeFriendChatId) renderFriendChatHeadAv();
+  if (activeFriendChatId) { renderFriendChatHeadAv(); applyFriendChatLock(); }
   // Also redraws the friends list, the sent requests and the tab counts.
   renderNotifications();
   syncAddFriendBtn();
@@ -5007,13 +5008,66 @@ function inCallWith(clientId) {
   return callState === 'connected' && currentPartner && currentPartner.clientId === clientId;
 }
 
-// Friend chat is always open now: you can message an added friend any time,
-// whether or not you're on a call with them. Offline messages are stored and
-// delivered (with a notification) when they come back.
+// Who may be messaged, as the server last said (see dmGate in server/index.js):
+// friends any time; anyone else only after a friend request, and then just one
+// message until they accept. 'dm-gate' events are newer than the last
+// state-sync, which clears them.
+const dmGateOverrides = new Map(); // clientId -> gate
+function dmGateFor(clientId) {
+  if (!clientId) return 'request';
+  if (friendsData.some((f) => f.clientId === clientId)) return 'open';
+  if (dmGateOverrides.has(clientId)) return dmGateOverrides.get(clientId);
+  if (friendRequestsData.some((r) => r.clientId === clientId)) return 'accept';
+  const sent = sentRequestsData.find((r) => r.clientId === clientId);
+  if (sent) return sent.dm || 'one';
+  return 'request';
+}
+
+const friendChatGate = document.getElementById('friendChatGate');
+function renderFriendChatGate() {
+  if (!friendChatGate || !activeFriendChatId) return;
+  const gate = dmGateFor(activeFriendChatId);
+  const name = friendChatName(activeFriendChatId) || t('someone');
+  const text = { request: 'dmGateRequest', one: 'dmGateOne', waiting: 'dmGateWaiting', accept: 'dmGateAccept' }[gate];
+  friendChatGate.classList.toggle('hidden', !text);
+  friendChatGate.dataset.gate = gate;
+  if (!text) { friendChatGate.innerHTML = ''; return; }
+  let actions = '';
+  if (gate === 'request') {
+    actions = `<button type="button" class="btn btn-primary btn-sm" data-gate-act="add">${escapeHtml(t('dmGateAddBtn'))}</button>`;
+  } else if (gate === 'accept') {
+    actions = `<button type="button" class="btn btn-primary btn-sm" data-gate-act="accept">${escapeHtml(t('dmGateAcceptBtn'))}</button>`
+      + `<button type="button" class="btn btn-secondary btn-sm" data-gate-act="decline">${escapeHtml(t('dmGateDeclineBtn'))}</button>`;
+  }
+  friendChatGate.innerHTML = `<p>${escapeHtml(t(text, { name }))}</p>${actions ? `<div class="dm-gate-actions">${actions}</div>` : ''}`;
+}
+if (friendChatGate) {
+  friendChatGate.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-gate-act]');
+    if (!btn || !activeFriendChatId) return;
+    btn.disabled = true;
+    const act = btn.dataset.gateAct;
+    if (act === 'add') {
+      quickAddPending = true;
+      socket.emit('friend-request', { targetClientId: activeFriendChatId });
+    } else {
+      socket.emit('friend-request-respond', { fromClientId: activeFriendChatId, accept: act === 'accept' });
+    }
+  });
+}
+
+// Friends can message any time, whether or not a call is on. Offline messages
+// are stored and delivered (with a notification) when they come back. Anyone
+// else waits on a friend request - see dmGateFor.
 function applyFriendChatLock() {
-  friendChatInput.disabled = false;
+  const gate = activeFriendChatId ? dmGateFor(activeFriendChatId) : 'open';
+  const locked = gate !== 'open' && gate !== 'one';
+  friendChatInput.disabled = locked;
   friendChatInput.placeholder = t('typeMessage');
-  friendChatForm.classList.remove('locked');
+  friendChatForm.classList.toggle('locked', locked);
+  const sendBtn = friendChatForm.querySelector('button[type="submit"]');
+  if (sendBtn) sendBtn.disabled = locked;
+  renderFriendChatGate();
 }
 
 // The chat header is just the person's name, as a messenger's is. A "message
@@ -5356,6 +5410,11 @@ function sendFriendMessage(payload) {
   const text = payload.text || '';
   const toClientId = activeFriendChatId;
   if (!toClientId || (!text && !payload.gif)) return false;
+  const gate = dmGateFor(toClientId);
+  if (gate !== 'open' && gate !== 'one') {
+    applyFriendChatLock();
+    return false;
+  }
   if (text && messageHasLink(text)) {
     friendChatSystemNote(t('errNoLinks'));
     return false;
@@ -5363,6 +5422,12 @@ function sendFriendMessage(payload) {
   if (text && messageIsUnsafe(text)) {
     friendChatSystemNote(t('errUnsafeMessage'));
     return false;
+  }
+  // The one message before they accept: lock at once rather than after the
+  // server's answer, so a quick second tap cannot go out too.
+  if (gate === 'one') {
+    dmGateOverrides.set(toClientId, 'waiting');
+    applyFriendChatLock();
   }
   const id = payload.id || newFriendMsgId();
   const wire = { text, id, replyTo: payload.replyTo || null, gif: payload.gif || null };
@@ -5464,7 +5529,17 @@ socket.on('friend-message-sent', ({ toClientId, text, ts, id, replyTo, gif }) =>
   if (activeFriendChatId === toClientId) renderFriendChatMessages();
 });
 
-socket.on('friend-chat-history', ({ friendClientId, messages }) => {
+socket.on('dm-gate', ({ clientId, gate } = {}) => {
+  if (!clientId || !gate) return;
+  dmGateOverrides.set(clientId, gate);
+  if (activeFriendChatId === clientId) applyFriendChatLock();
+});
+
+socket.on('friend-chat-history', ({ friendClientId, messages, gate }) => {
+  if (gate) {
+    dmGateOverrides.set(friendClientId, gate);
+    if (activeFriendChatId === friendClientId) applyFriendChatLock();
+  }
   // Anything still on its way is not in the server's copy yet - keep it.
   const stored = messages || [];
   const have = new Set(stored.map((m) => m.id));
@@ -5572,11 +5647,14 @@ function quickAddFriend(clientId) {
   socket.emit('friend-request', { targetClientId: clientId });
 }
 
-socket.on('friend-request-result', ({ ok, sent } = {}) => {
+socket.on('friend-request-result', ({ ok, sent, error } = {}) => {
+  if (activeFriendChatId) applyFriendChatLock();
   if (!quickAddPending) return;
   quickAddPending = false;
   if (ok && sent) showToast(t('friendRequestSent'), 'success');
   if (!ok) {
+    // Refused (limit, block, rate): say why, not just put the button back.
+    if (error) showToast(error, 'error');
     renderHistory();
     renderFriendsList();
   }
@@ -8244,7 +8322,7 @@ socket.on('chat-reaction', ({ id, emoji, on } = {}) => {
 });
 
 // Server-side link filter rejected a message we let through - surface it.
-socket.on('chat-blocked', ({ reason, scope, id, toClientId } = {}) => {
+socket.on('chat-blocked', ({ reason, scope, id, toClientId, message } = {}) => {
   if (scope === 'friend' && id && friendOutbox.has(id)) {
     const entry = friendOutbox.get(id);
     // Too fast, usually a backlog flushed on reconnect: wait and go again.
@@ -8254,6 +8332,8 @@ socket.on('chat-blocked', ({ reason, scope, id, toClientId } = {}) => {
       return;
     }
     dropFriendMessage(id);
+    // Refused for its content: the one allowed message was not used up.
+    if (reason === 'link' || reason === 'unsafe') dmGateOverrides.delete(toClientId);
     if (activeFriendChatId !== toClientId) return;
   }
   const target = friendChatModal.classList.contains('open') ? friendChatMessages : chatMessages;
@@ -8262,11 +8342,14 @@ socket.on('chat-blocked', ({ reason, scope, id, toClientId } = {}) => {
   el.textContent = reason === 'call-required' ? t('errCallRequiredToChat')
     : reason === 'age' && message ? message
     : reason === 'unreachable' ? t('errCantMessage')
+    : reason === 'request-first' ? t('errDmRequestFirst')
+    : reason === 'awaiting-accept' ? t('errDmAwaitingAccept')
+    : reason === 'accept-first' ? t('errDmAcceptFirst')
     : reason === 'unsafe' ? t('errUnsafeMessage')
     : reason === 'rate' ? t('errSlowDown') : t('errNoLinks');
   target.appendChild(el);
   target.scrollTop = target.scrollHeight;
-  if (reason === 'call-required') applyFriendChatLock();
+  if (reason === 'call-required' || scope === 'friend') applyFriendChatLock();
 });
 
 // --- Typing indicator ---
