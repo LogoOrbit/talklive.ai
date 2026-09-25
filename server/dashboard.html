@@ -617,13 +617,27 @@ function hbars(el,entries,color){
   const max=Math.max(1,...entries.map(e=>e[1]));
   el.innerHTML=entries.map(([name,v])=>`<div class="hrow"><div title="${esc(name)}">${esc(name)}</div><div><div class="hbar" style="width:${Math.max(1,v/max*100)}%;background:${color}"></div></div><div class="n">${num(v)}</div></div>`).join('')||'<div class="muted">No data yet.</div>';
 }
+/* Top five features as bars; the rest fold into one quiet line that expands
+   on demand, so the card answers "what do people use?" at a glance. */
+let featShowAll=false;
 function rankedBars(el,entries){
+  if(!entries.length){el.innerHTML='<div class="muted">No feature usage recorded yet.</div>';return;}
+  const TOP=5;
   const max=Math.max(1,...entries.map(e=>e[1]));
-  el.innerHTML=entries.map(([name,v],i)=>`<div class="rankrow">
+  const total=entries.reduce((a,e)=>a+e[1],0);
+  const rest=entries.slice(TOP);
+  const row=([name,v],i)=>`<div class="rankrow">
     <div class="medal">${i<3?['🥇','🥈','🥉'][i]:'#'+(i+1)}</div>
     <div class="name" title="${esc(name)}">${esc(name)}</div>
     <div><div class="bar" style="width:${Math.max(2,v/max*100)}%${i>2?';opacity:.55':''}"></div></div>
-    <div class="n">${num(v)}</div></div>`).join('')||'<div class="muted">No feature usage recorded yet.</div>';
+    <div class="n" title="${pctOf(v,total)} of all feature use">${num(v)}</div></div>`;
+  el.innerHTML=entries.slice(0,TOP).map(row).join('')
+    +(rest.length?(featShowAll
+      ?`<div style="opacity:.7;font-size:.9em">${rest.map((e,i)=>row(e,i+TOP)).join('')}</div>`
+      :`<div class="muted" style="font-size:.78rem;margin-top:6px">+${rest.length} more: ${rest.map(([n,v])=>`${esc(n)} ${num(v)}`).join(' · ')}</div>`)
+      +`<button class="lnk" id="featToggle" style="margin-top:8px;background:none;cursor:pointer">${featShowAll?'Show top 5':'Show all '+entries.length}</button>`:'');
+  const t=el.querySelector('#featToggle');
+  if(t)t.onclick=()=>{featShowAll=!featShowAll;rankedBars(el,entries);};
 }
 
 /* ---------- dashboard shell ---------- */
@@ -972,7 +986,7 @@ async function viewOverview(){
   <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
     <div class="card anim"><h2>📄 Where people land <span class="sub">human page views by area, last 30 days</span></h2><div id="sectionBars"></div></div>
     <div class="card anim"><h2>🕷️ Crawlers <span class="sub">bot page requests, last 30 days</span></h2><div id="crawlerBars"></div></div>
-    <div class="card anim"><h2>🏆 Feature ranking <span class="sub">most used → least, last 30 days</span></h2><div id="featBars"></div></div>
+    <div class="card anim"><h2>🏆 Top features <span class="sub">times used, last 30 days</span></h2><div id="featBars"></div></div>
     <div class="card anim"><h2>🌍 Top countries <span class="sub">visits, last 30 days</span> <span style="margin-left:auto">${exportLink('countries','CSV')}</span></h2><div id="countryBars"></div></div>
     <div class="card anim"><h2>🏙️ Top cities <span class="sub">visits, last 30 days</span></h2><div id="cityBars"></div></div>
     <div class="card anim"><h2>💭 What users talk about <span class="sub">anonymous keyword aggregate</span></h2>
@@ -1089,7 +1103,7 @@ async function viewActivity(){
 let lastOverview=null,botLog=[];
 const BOT_QS=[
   ['summary','📋 Full summary'],['yesterday','🌙 How was yesterday?'],['week','🗓️ Weekly report'],
-  ['features','🏆 Rank features'],['feedback','⭐ User feedback'],
+  ['features','🏆 Top features'],['feedback','⭐ User feedback'],
   ['problems','🚨 Any problems?'],['audience','🌍 My audience'],['now','🟢 What’s happening now?']
 ];
 async function botAnswer(kind){
@@ -1120,7 +1134,7 @@ async function botAnswer(kind){
   }
   if(kind==='features'){
     if(!o.features.length)return 'No feature usage recorded yet. Once users start using filters, friends, text chat etc., I’ll rank them here.';
-    return 'Feature ranking over the last 30 days:\n\n'+o.features.map(([f,n],i)=>`${i<3?['🥇','🥈','🥉'][i]:(i+1)+'.'} ${f} - ${num(n)} uses`).join('\n')+`\n\nMost loved: ${o.features[0][0]}. Least used: ${o.features[o.features.length-1][0]} - consider improving or promoting it.`;
+    return 'Top features over the last 30 days:\n\n'+o.features.slice(0,5).map(([f,n],i)=>`${i<3?['🥇','🥈','🥉'][i]:(i+1)+'.'} ${f} - ${num(n)} uses`).join('\n')+`\n\nMost loved: ${o.features[0][0]}.`;
   }
   if(kind==='feedback'){
     const r=await api('feedback');

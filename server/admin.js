@@ -158,6 +158,31 @@ function toCsv(headers, rows) {
 }
 const isoOr = (ts) => (ts ? new Date(ts).toISOString() : '');
 
+// --- Feature ranking -----------------------------------------------------------
+// store.recordFeature() counts every tracked event: product features, but also
+// plumbing (searches, logins, acquisition sources, billing steps, password
+// resets, media health). Ranking all of it together put "chat_search" above
+// the features people actually choose to use. Only what a user would call a
+// feature is ranked, under a readable name, with related events folded in.
+const PRODUCT_FEATURES = [
+  ['Voice calls', ['match']],
+  ['Text chat', ['chat_match']],
+  ['Friends', ['friend_request', 'friend_id_search']],
+  ['Call back & voice invites', ['call_back', 'voice_invite']],
+  ['Reactions', ['reaction', 'heart_reaction', 'chat_reaction']],
+  ['GIFs', ['chat_gif']],
+  ['Replies', ['chat_reply']],
+  ['Mini games', ['mini_game']],
+  ['Animal avatars', ['animal_picked']],
+  ['Sharing', ['share_open']],
+];
+function rankFeatures(raw) {
+  return PRODUCT_FEATURES
+    .map(([label, keys]) => [label, keys.reduce((n, k) => n + (raw[k] || 0), 0)])
+    .filter(([, n]) => n > 0)
+    .sort((a, b) => b[1] - a[1]);
+}
+
 // --- Rule-based "AI" conclusion over the last 7 days of real metrics ---
 // `report` is an analytics.buildReport() result, so "the last 7 days" means
 // seven of the owner's local days - not seven UTC days.
@@ -257,9 +282,9 @@ function generateConclusion(runtime, report) {
     for (const [f, n] of Object.entries(d.features || {})) acc[f] = (acc[f] || 0) + n;
     return acc;
   }, {});
-  const sorted = Object.entries(features).sort((a, b) => b[1] - a[1]);
+  const sorted = rankFeatures(features);
   if (sorted.length) {
-    lines.push(`Most used feature: "${sorted[0][0]}" (${sorted[0][1]}×). Least used: "${sorted[sorted.length - 1][0]}" (${sorted[sorted.length - 1][1]}×).`);
+    lines.push(`Top features this week: ${sorted.slice(0, 3).map(([f, n]) => `${f} (${n}×)`).join(', ')}.`);
   }
 
   // Yesterday vs. the same slice of today, so a "we're down" reading is never
@@ -472,7 +497,7 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned }) {
       series,
       countries: Object.entries(agg('countries')).sort((a, b) => b[1] - a[1]).slice(0, 15),
       cities: Object.entries(agg('cities')).sort((a, b) => b[1] - a[1]).slice(0, 15),
-      features: Object.entries(agg('features')).sort((a, b) => b[1] - a[1]),
+      features: rankFeatures(agg('features')),
       // Human page views by area of the site, and crawler hits by crawler.
       // Both are new: before this the dashboard could see neither.
       sections: Object.entries(agg('sections')).sort((a, b) => b[1] - a[1]),
