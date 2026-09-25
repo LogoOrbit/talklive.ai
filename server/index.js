@@ -842,6 +842,7 @@ function getRuntime() {
       ip: getClientIp(sock),
       inCall: partners.has(sid),
       waiting: waitingQueue.includes(sid),
+      mode: p.mode === 'chat' ? 'chat' : 'talk',
       account: socketAuth.get(sid) || null,
       premium: isPremium(p.clientId),
       reports: store.reportCountFor(p.clientId),
@@ -851,9 +852,38 @@ function getRuntime() {
     online: io.engine.clientsCount,
     inCall: partners.size,
     waiting: waitingQueue.length,
+    live: getLiveCounts(),
     users,
     uptimeSeconds: Math.round(process.uptime()),
     memoryMB: Math.round(process.memoryUsage().rss / 1048576),
+  };
+}
+
+// Who is in a conversation right now, split by voice and text. Cheap enough to
+// run every second for the dashboard's live stream: it only walks the pairs
+// and the queue, never the whole user list.
+function getLiveCounts() {
+  let voice = 0;
+  let text = 0;
+  for (const sid of partners.keys()) {
+    const p = profiles.get(sid);
+    if (p && p.mode === 'chat') text++;
+    else voice++;
+  }
+  let waitingText = 0;
+  for (const sid of waitingQueue) {
+    const p = profiles.get(sid);
+    if (p && p.mode === 'chat') waitingText++;
+  }
+  return {
+    online: io.engine.clientsCount,
+    chatting: voice + text,
+    voice,
+    text,
+    conversations: Math.floor((voice + text) / 2),
+    waiting: waitingQueue.length,
+    waitingVoice: waitingQueue.length - waitingText,
+    waitingText,
   };
 }
 
@@ -869,7 +899,7 @@ function kickBanned(clientId, ip, ban) {
   }
 }
 
-const admin = createAdmin({ io, getRuntime, kickBanned });
+const admin = createAdmin({ io, getRuntime, getLiveCounts, kickBanned });
 app.use('/owner', admin.router);
 
 // Maintenance mode: when on, every non-dashboard page gets a friendly 503.
