@@ -29,15 +29,6 @@
     "enabled": true,
     "promos": [
       {
-        "id": "premium",
-        "where": "any",
-        "icon": "✨",
-        "title": "TalkLive Plus",
-        "body": "Every match filter, unlimited friends, no ads. Announced - not on sale yet.",
-        "cta": "See what is coming",
-        "href": "/pricing"
-      },
-      {
         "id": "chat",
         "where": "content",
         "icon": "💬",

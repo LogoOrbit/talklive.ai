@@ -35,9 +35,15 @@ const noLoaderPages = new Set([...appOnlyPages, ...adFreePages]);
 // can hold up approval for the whole site. The pages stay published and
 // indexed as before - they just carry no ad code and no ad slots.
 const NO_AD_DIRS = ['countries', 'cities', 'languages'];
+// Same treatment for two short pages that are about the site rather than
+// content for a reader: /contact (a list of email addresses) and /refund (a
+// policy for a plan that is not on sale). AdSense asks for no ad code on pages
+// with little original content.
+const NO_AD_PAGES = new Set(['contact.html', 'refund.html']);
 function isNoAdPage(file) {
   const rel = path.relative(publicDir, file).split(path.sep);
-  return rel.length > 1 && NO_AD_DIRS.includes(rel[0]);
+  if (rel.length === 1) return NO_AD_PAGES.has(rel[0]);
+  return NO_AD_DIRS.includes(rel[0]);
 }
 
 function htmlFiles(dir) {
