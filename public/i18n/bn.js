@@ -63,6 +63,7 @@
   "online": "অনলাইন",
   "onlineAria": "এখন অনলাইনে থাকা মানুষের সংখ্যা",
   "visitors": "দর্শক",
+  "visitor": "দর্শক",
   "visitorsAria": "গত ২৪ ঘণ্টায় আসা মানুষের সংখ্যা",
   "historyAria": "কল ইতিহাস",
   "friendsAria": "বন্ধু ও মেসেজ",

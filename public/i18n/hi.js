@@ -63,6 +63,7 @@
   "online": "ऑनलाइन",
   "onlineAria": "अभी ऑनलाइन लोगों की संख्या",
   "visitors": "विज़िटर",
+  "visitor": "विज़िटर",
   "visitorsAria": "पिछले 24 घंटों में आए लोगों की संख्या",
   "historyAria": "कॉल इतिहास",
   "friendsAria": "दोस्त और संदेश",

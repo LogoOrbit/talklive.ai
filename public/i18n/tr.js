@@ -63,6 +63,7 @@
   "online": "Çevrimiçi",
   "onlineAria": "Şu anda çevrimiçi kişi sayısı",
   "visitors": "Ziyaretçi",
+  "visitor": "Ziyaretçi",
   "visitorsAria": "Son 24 saatte ziyaret eden kişi sayısı",
   "historyAria": "Arama geçmişi",
   "friendsAria": "Arkadaşlar ve mesajlar",

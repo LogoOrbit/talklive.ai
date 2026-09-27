@@ -63,6 +63,7 @@
   "online": "En ligne",
   "onlineAria": "Nombre de personnes en ligne actuellement",
   "visitors": "Visiteurs",
+  "visitor": "Visiteur",
   "visitorsAria": "Nombre de personnes venues ces dernières 24 heures",
   "historyAria": "Historique des appels",
   "friendsAria": "Amis et messages",

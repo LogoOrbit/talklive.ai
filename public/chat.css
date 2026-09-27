@@ -1413,6 +1413,7 @@ summary:active {
 .social-toast[data-tone="error"] { background: linear-gradient(135deg, #ef4444, #dc2626); }
 .social-toast[data-tone="social"] { background: linear-gradient(135deg, #8b5cf6, #db2777); }
 .social-toast[data-tone="plus"] { background: linear-gradient(135deg, #facc15, #f59e0b); color: #1f1500; }
+.social-toast.show.is-tappable { pointer-events: auto; cursor: pointer; }
 .social-toast.show { opacity: 1; transform: translate(-50%, 0) scale(1); }
 @media (prefers-reduced-motion: reduce) {
   .social-toast { transition: opacity .18s ease; transform: translate(-50%, 0); }

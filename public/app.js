@@ -1161,6 +1161,9 @@ vibrationToggle.addEventListener('change', () => {
 });
 
 function vibrate(pattern) {
+  // Chrome logs an intervention error for every buzz before the first tap.
+  const ua = navigator.userActivation;
+  if (ua && !ua.hasBeenActive) return;
   if (vibrationEnabled && navigator.vibrate) {
     try { navigator.vibrate(pattern); } catch (e) { /* unsupported */ }
   }
@@ -2329,7 +2332,9 @@ function placeToast() {
 }
 
 // tone: success | info | warn | error | social | plus | neutral (default).
-function showToast(msg, tone) {
+let toastTap = null;
+// `onTap` makes the toast a shortcut (a new message opens its chat).
+function showToast(msg, tone, onTap) {
   let el = document.getElementById('tlToast');
   if (!el) {
     el = document.createElement('div');
@@ -2337,6 +2342,13 @@ function showToast(msg, tone) {
     el.className = 'tl-toast';
     el.setAttribute('role', 'status');
     el.setAttribute('aria-live', 'polite');
+    el.addEventListener('click', () => {
+      if (!toastTap) return;
+      const run = toastTap;
+      toastTap = null;
+      el.classList.remove('show', 'is-tappable');
+      run();
+    });
     document.body.appendChild(el);
   }
   // Toasts read as labels, not sentences: drop a lone trailing full stop.
@@ -2344,6 +2356,8 @@ function showToast(msg, tone) {
   if (!text) return;
   el.textContent = text;
   el.dataset.tone = tone || 'neutral';
+  toastTap = typeof onTap === 'function' ? onTap : null;
+  el.classList.toggle('is-tappable', !!toastTap);
   placeToast();
   el.classList.add('show');
   clearTimeout(toastTimer);
@@ -4921,6 +4935,11 @@ socket.on('notification', (n) => {
     if (!mutedIds.has(n.fromClientId)) {
       playMessageSound();
       vibrate(20);
+      // A chime and a badge said something arrived, not who from - and the
+      // Friends list is hidden on the call screen. Tap to open the chat.
+      const who = labelForClientId(n.fromClientId, n.username);
+      const preview = n.text === '[GIF]' ? 'GIF' : String(n.text || '').slice(0, 60);
+      showToast(preview ? `${who}: ${preview}` : who, 'social', () => openFriendChat(n.fromClientId));
     }
   } else if (n.type === 'friend_request' || n.type === 'friend_accepted') {
     // Both a new friend request and a request being accepted mean a friend
@@ -4930,7 +4949,11 @@ socket.on('notification', (n) => {
     // A chime and a badge on a menu item were all the voice page gave, so a
     // stranger's "Add friend" mid-call went unnoticed. /chat already toasts.
     const who = labelForClientId(n.fromClientId || n.byClientId, n.username);
-    showToast(t(n.type === 'friend_request' ? 'notifWantsFriends' : 'notifAccepted', { name: who }), 'social');
+    // Tap: a request opens Requests to answer it; an acceptance opens the chat.
+    const isReq = n.type === 'friend_request';
+    showToast(t(isReq ? 'notifWantsFriends' : 'notifAccepted', { name: who }), 'social',
+      isReq ? () => { if (!friendsDropdown.classList.contains('open')) friendsBtn.click(); }
+        : () => openFriendChat(n.byClientId));
   }
   // The one moment notifications are self-evidently useful: this user now has
   // someone who can reach them, and every message after this one arrives while
@@ -7474,6 +7497,12 @@ function enterCallUI() {
 
 let beginInFlight = false;
 const MIC_EXPLAINED_KEY = 'talklive_mic_explained';
+async function micAlreadyGranted() {
+  try {
+    const status = await navigator.permissions.query({ name: 'microphone' });
+    return status.state === 'granted';
+  } catch (_) { return false; } // Firefox/Safari may not know the name
+}
 async function begin() {
   if (beginInFlight) return;
   beginInFlight = true;
@@ -7481,7 +7510,9 @@ async function begin() {
   clearError();
   // One-time explainer before the browser's mic prompt so the permission
   // request doesn't come out of nowhere (biggest drop-off point on first use).
-  if (!localStream && !localStorage.getItem(MIC_EXPLAINED_KEY)) {
+  // Skipped when the browser already granted the mic - there is no prompt
+  // coming to explain.
+  if (!localStream && !localStorage.getItem(MIC_EXPLAINED_KEY) && !(await micAlreadyGranted())) {
     const proceed = await showConfirm({
       title: 'micPromptTitle', text: 'micPromptBody',
       okKey: 'micPromptOk', okClass: 'btn-primary',
@@ -9269,6 +9300,9 @@ socket.on('online-count', (count) => {
 // footfall is both truer to the traffic and stable enough to be worth showing.
 socket.on('visitor-count', (count) => {
   if (visitorCountEl) visitorCountEl.textContent = formatVisitorCount(count);
+  // "1 Visitors" read as a typo.
+  const label = brandLiveEl && brandLiveEl.querySelector('.nav-live-label');
+  if (label) { label.dataset.i18n = Number(count) === 1 ? 'visitor' : 'visitors'; label.textContent = t(label.dataset.i18n); }
   // The lockup's live line ships as a grey dot and an em dash - "0 visitors" on
   // first paint reads as "nobody is here". The first real count lights it up.
   if (brandLiveEl) brandLiveEl.classList.remove('is-waiting');

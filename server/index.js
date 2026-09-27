@@ -2333,6 +2333,8 @@ const ERROR_NOISE = [
 const chatRate = new Map();
 // Same shape, separate budget for reactions - a tap is not a message.
 const reactRate = new Map();
+// Every message public/games.js sends.
+const GAME_EVENT_TYPES = new Set(['invite', 'accept', 'decline', 'state', 'left', 'rematch']);
 // socket.id -> timer that ends a text chat whose tab stayed in the background.
 // A phone that switches apps keeps its socket open, and the ping timeout would
 // otherwise leave the stranger waiting up to ~85s for nobody.
@@ -4617,12 +4619,20 @@ io.on('connection', (socket) => {
   });
 
   // Mini-game (Tic Tac Toe) relay - forwards game events to the current partner only.
+  // Only the game's own message types, of a board's size, at a human pace -
+  // it was a blind relay of any object the partner's browser then trusted.
+  let gameRl = { start: 0, n: 0 };
   socket.on('game', (data) => {
     const partnerId = partners.get(socket.id);
-    if (partnerId && data && typeof data === 'object') {
-      if (data.type === 'invite') store.recordFeature('mini_game');
-      io.to(partnerId).emit('game', data);
-    }
+    if (!partnerId || !data || typeof data !== 'object' || !GAME_EVENT_TYPES.has(data.type)) return;
+    const now = Date.now();
+    if (now - gameRl.start > 5000) gameRl = { start: now, n: 0 };
+    if (++gameRl.n > 30) return;
+    let size = 0;
+    try { size = JSON.stringify(data).length; } catch (_) { return; }
+    if (size > 4096) return;
+    if (data.type === 'invite') store.recordFeature('mini_game');
+    io.to(partnerId).emit('game', data);
   });
 
   // --- Friends ---

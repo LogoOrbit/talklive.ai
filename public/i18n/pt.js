@@ -63,6 +63,7 @@
   "online": "Online",
   "onlineAria": "Número de pessoas online agora",
   "visitors": "Visitantes",
+  "visitor": "Visitante",
   "visitorsAria": "Número de pessoas que visitaram nas últimas 24 horas",
   "historyAria": "Histórico de chamadas",
   "friendsAria": "Amigos e mensagens",

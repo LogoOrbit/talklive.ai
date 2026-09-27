@@ -63,6 +63,7 @@
   "online": "オンライン",
   "onlineAria": "現在オンラインの人数",
   "visitors": "訪問者",
+  "visitor": "訪問者",
   "visitorsAria": "過去24時間に訪れた人数",
   "historyAria": "通話履歴",
   "friendsAria": "友達とメッセージ",

@@ -122,7 +122,12 @@
       + '.png 2x" width="' + size + '" height="' + Math.round(size * 0.75)
       + '" loading="lazy" decoding="async" alt="" onerror="this.remove()" />';
   }
-  function vibrate(ms) { try { if (vibrationEnabled && navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
+  function vibrate(ms) {
+    // Chrome logs an intervention error for every buzz before the first tap.
+    var ua = navigator.userActivation;
+    if (ua && !ua.hasBeenActive) return;
+    try { if (vibrationEnabled && navigator.vibrate) navigator.vibrate(ms); } catch (e) {}
+  }
 
   // --- Sound effects: tiny synthesized blips (no audio files, CSP-safe, work
   // offline). Built with the Web Audio API. The context can only start after a
@@ -1655,18 +1660,29 @@
   // request arrived, was accepted, or someone asked for a call - the only
   // trace was a number changing on a button.
   var socialToastEl = null;
-  function socialToast(text, tone) {
+  // `onTap` makes the toast a shortcut (a new message opens its chat).
+  var socialToastTap = null;
+  function socialToast(text, tone, onTap) {
     if (!text) return;
     if (!socialToastEl) {
       socialToastEl = document.createElement('div');
       socialToastEl.className = 'social-toast';
       socialToastEl.setAttribute('role', 'status');
       socialToastEl.setAttribute('aria-live', 'polite');
+      socialToastEl.addEventListener('click', function () {
+        if (!socialToastTap) return;
+        var run = socialToastTap;
+        socialToastTap = null;
+        socialToastEl.classList.remove('show', 'is-tappable');
+        run();
+      });
       document.body.appendChild(socialToastEl);
     }
     text = String(text).replace(/([^.])[.。।۔]$/, '$1');
     socialToastEl.textContent = text;
     socialToastEl.dataset.tone = tone || 'neutral';
+    socialToastTap = typeof onTap === 'function' ? onTap : null;
+    socialToastEl.classList.toggle('is-tappable', !!socialToastTap);
     socialToastEl.classList.add('show');
     clearTimeout(socialToast._t);
     socialToast._t = setTimeout(function () { socialToastEl.classList.remove('show'); }, Math.min(4000, 1300 + text.length * 45));
@@ -2065,12 +2081,25 @@
     friendsState.notifications.push(n);
     var who = friendLabel(findPerson(n.fromClientId || n.byClientId)) || n.username || t('someone');
     // A conversation muted on either page stays quiet on both.
-    if (n.type === 'message') { if (mutedChats.indexOf(n.fromClientId) === -1) { soundReceive(); vibrate(20); } }
+    if (n.type === 'message') {
+      if (mutedChats.indexOf(n.fromClientId) === -1) {
+        soundReceive(); vibrate(20);
+        // Who it is from, not just a dot on the menu - tap to open the chat.
+        var from = findPerson(n.fromClientId) || { clientId: n.fromClientId, username: n.username };
+        var preview = n.text === '[GIF]' ? 'GIF' : String(n.text || '').slice(0, 60);
+        socialToast(preview ? who + ': ' + preview : who, 'social', function () { openFriendChat(from); });
+      }
+    }
     else if (n.type === 'friend_request' || n.type === 'friend_accepted') vibrate([20, 40, 20]);
     if (n.type === 'friend_request' && isLivePartner(n.fromClientId)) showPartnerRequestCard(n.fromClientId, who);
-    else if (n.type === 'friend_request') socialToast(t('notifWantsFriends', { name: who }), 'social');
+    // Tap: a request opens Requests to answer it; an acceptance opens the chat.
+    else if (n.type === 'friend_request') socialToast(t('notifWantsFriends', { name: who }), 'social', function () { $('friendsBtn').click(); });
     else if (n.type === 'friend_accepted' && isLivePartner(n.byClientId)) addMessage(t('nowFriends'), 'system');
-    else if (n.type === 'friend_accepted') socialToast(t('notifAccepted', { name: who }), 'social');
+    else if (n.type === 'friend_accepted') {
+      socialToast(t('notifAccepted', { name: who }), 'social', function () {
+        openFriendChat(findPerson(n.byClientId) || { clientId: n.byClientId, username: n.username });
+      });
+    }
     else if (n.type === 'call_back_request') socialToast(t('callbackOnVoice', { name: who }), 'social');
     renderFriends();
     renderHistory();
@@ -3146,6 +3175,9 @@
     var next = formatVisitors(n);
     if (visitorCount.textContent === next) return;
     visitorCount.textContent = next;
+    // "1 Visitors" read as a typo.
+    var label = liveCount && liveCount.querySelector('.nav-live-label');
+    if (label) { label.setAttribute('data-i18n', Number(n) === 1 ? 'visitor' : 'visitors'); label.textContent = t(label.getAttribute('data-i18n')); }
     if (liveCount) liveCount.classList.remove('is-waiting');
     visitorCount.classList.remove('is-bump');
     void visitorCount.offsetWidth;

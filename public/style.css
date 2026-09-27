@@ -4364,6 +4364,8 @@ body.panel-open .game-overlay {
 }
 /* Tone colours: green = done, blue = info/copied, amber = heads-up,
    red = error/blocked, purple-pink = friends, gold = Plus, dark = neutral. */
+/* A toast with somewhere to go (a new message) can be tapped. */
+.tl-toast.show.is-tappable { pointer-events: auto; cursor: pointer; }
 .tl-toast[data-tone="success"] { background: linear-gradient(135deg, #16a34a, #15803d); }
 .tl-toast[data-tone="info"] { background: linear-gradient(135deg, #3b82f6, #2563eb); }
 .tl-toast[data-tone="warn"] { background: linear-gradient(135deg, #e07b0a, #b45309); }
@@ -6959,6 +6961,9 @@ html.perf-lite .side-panel { box-shadow: none; }
    treats them as screens without publisher content, and a unit beside the
    call controls invites accidental clicks. ads.js never fills these either. */
 .ad-card-app { display: none !important; }
+/* ...so the desktop call screen's ad column (ui.css) is always empty: give
+   its width back, or the call card sits left of a 334px void. */
+.call-panel:has(.tl-call-ad.ad-card-app) { --tl-call-ad-col: 0px; --tl-call-gap: 0px; }
 
 /* --- Public friend ID: yours, and add someone by theirs ------------------ */
 .friend-id-card {

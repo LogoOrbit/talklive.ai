@@ -3413,3 +3413,13 @@
   padding: var(--tl-s3) var(--tl-s4) calc(var(--tl-s3) + env(safe-area-inset-bottom, 0px));
 }
 
+
+/* Mouse pointers do not need 36px targets: five of them left the friend's
+   name ~100px wide ("Several La…") in the 360px desktop chat panel. */
+@media (hover: hover) and (pointer: fine) {
+  #friendChatModal .side-panel-header { gap: 6px; }
+  #friendChatModal .chat-header-actions .chat-clear-btn,
+  #friendChatModal .chat-header-actions .seen-toggle { width: 30px; height: 30px; }
+  #friendChatModal .chat-header-actions .chat-clear-btn svg { width: 18px; height: 18px; }
+  #friendChatModal .chat-header-actions .modal-close { min-width: 32px; width: 32px; }
+}

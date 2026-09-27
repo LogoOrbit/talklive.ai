@@ -135,6 +135,19 @@ function connect(name) {
     b.off('chat-reaction', watch2);
     ok('arbitrary reaction text rejected', !badReaction);
 
+    // 6b. Games relay their own messages only, at a board's size.
+    const gotGame = once(b, 'game');
+    a.emit('game', { type: 'invite', game: 'ttt' });
+    ok('game invite relays', (await gotGame).type === 'invite');
+    let badGame = 0;
+    const watch3 = () => { badGame++; };
+    b.on('game', watch3);
+    a.emit('game', { type: 'chat', text: 'not a game message' });
+    a.emit('game', { type: 'state', state: { board: 'x'.repeat(10000) } });
+    await wait(300);
+    b.off('game', watch3);
+    ok('unknown or oversized game payloads dropped', badGame === 0, badGame);
+
     // 7. Link filter still fires on the text of a rich payload.
     const blocked = once(a, 'chat-blocked');
     a.emit('chat-message', { text: 'go to evil.com now', id: 'm5' });

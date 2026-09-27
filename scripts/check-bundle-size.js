@@ -78,6 +78,19 @@ for (const [page, budget] of Object.entries(BUDGETS.pages)) {
     if (!reportOnly) failed = true;
   }
 }
+// The <head> language preload and i18n.js must ask for the same version of a
+// translation file, or a bump in one leaves visitors on a stale cached copy.
+{
+  const pub = path.join(__dirname, '..', 'public');
+  const want = (fs.readFileSync(path.join(pub, 'i18n.js'), 'utf8').match(/I18N_VERSION = '([^']+)'/) || [])[1];
+  for (const page of ['index.html', 'chat.html']) {
+    const got = (fs.readFileSync(path.join(pub, page), 'utf8').match(/'\/i18n\/' \+ lang \+ '\.js\?v=([^']+)'/) || [])[1];
+    if (got !== want) {
+      console.log(`OVER ${page}: head i18n preload asks for v=${got}, i18n.js for v=${want}`);
+      failed = true;
+    }
+  }
+}
 if (failed) {
   console.error('\nBundle budget exceeded. Shrink the payload, or raise the budget in scripts/bundle-budget.json deliberately in this PR.');
   process.exit(1);

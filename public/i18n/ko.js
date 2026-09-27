@@ -63,6 +63,7 @@
   "online": "온라인",
   "onlineAria": "현재 온라인 인원 수",
   "visitors": "방문자",
+  "visitor": "방문자",
   "visitorsAria": "지난 24시간 동안 방문한 인원 수",
   "historyAria": "통화 기록",
   "friendsAria": "친구 및 메시지",
