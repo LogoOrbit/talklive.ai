@@ -129,8 +129,6 @@ test('the density ceiling is applied when slots load', async () => {
   assert.equal(h.els[1].style.display, 'none');
 });
 
-// No display units yet on the current AdSense account: Auto ads place ads
-// until units are created there and their IDs added to ads-config.json.
-test('the shipped config has no ad unit from a previous AdSense account', () => {
-  assert.equal(Object.values(config.adsense.slots).includes('2415869132'), false);
+test('the shipped config uses the TalkLive default display unit', () => {
+  assert.equal(config.adsense.slots.default, '6296910995');
 });
