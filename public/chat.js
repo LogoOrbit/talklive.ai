@@ -1860,6 +1860,7 @@
       else renderProfile();
     }
     if (friendIdFound) renderFriendIdResult();
+    settlePartnerRequestCards();
   });
 
   // --- Public friend ID (same card as the call app's friends panel) --------
@@ -2064,12 +2065,55 @@
     // A conversation muted on either page stays quiet on both.
     if (n.type === 'message') { if (mutedChats.indexOf(n.fromClientId) === -1) { soundReceive(); vibrate(20); } }
     else if (n.type === 'friend_request' || n.type === 'friend_accepted') vibrate([20, 40, 20]);
-    if (n.type === 'friend_request') socialToast(t('notifWantsFriends', { name: who }), 'social');
+    if (n.type === 'friend_request' && isLivePartner(n.fromClientId)) showPartnerRequestCard(n.fromClientId, who);
+    else if (n.type === 'friend_request') socialToast(t('notifWantsFriends', { name: who }), 'social');
+    else if (n.type === 'friend_accepted' && isLivePartner(n.byClientId)) addMessage(t('nowFriends'), 'system');
     else if (n.type === 'friend_accepted') socialToast(t('notifAccepted', { name: who }), 'social');
     else if (n.type === 'call_back_request') socialToast(t('callbackOnVoice', { name: who }), 'social');
     renderFriends();
     renderHistory();
   });
+
+  // A request from the person on screen is answered on screen. It used to be a
+  // toast that vanished in seconds, and answering meant menu > Friends >
+  // Requests > tick - four taps away from the conversation it was about.
+  function showPartnerRequestCard(fromClientId, who) {
+    var line = addMessage(t('notifWantsFriends', { name: who }), 'system system-request');
+    line.dataset.from = fromClientId;
+    var actions = document.createElement('span');
+    actions.className = 'system-request-actions';
+    actions.innerHTML =
+      '<button type="button" class="btn btn-primary btn-sm" data-accept="1">' + escapeHtml(t('accept')) + '</button>' +
+      '<button type="button" class="btn btn-ghost btn-sm" data-accept="0">' + escapeHtml(t('decline')) + '</button>';
+    line.appendChild(actions);
+    actions.addEventListener('click', function (e) {
+      var b = e.target.closest('button');
+      if (!b) return;
+      var accept = b.dataset.accept === '1';
+      socket.emit('friend-request-respond', { fromClientId: fromClientId, accept: accept });
+      actions.remove();
+      if (accept) {
+        line.querySelector('.msg-text').textContent = t('nowFriends');
+        if (isLivePartner(fromClientId)) { addFriendBtn.classList.add('sent'); addFriendBtn.disabled = true; }
+      } else {
+        line.remove();
+      }
+    });
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  // Answered from the Friends panel or another tab, or taken back by them: the
+  // card stops offering buttons that no longer do anything.
+  function settlePartnerRequestCards() {
+    msgs.querySelectorAll('.msg.system-request').forEach(function (line) {
+      var actions = line.querySelector('.system-request-actions');
+      var id = line.dataset.from;
+      if (!actions || friendsState.requests.some(function (r) { return r.clientId === id; })) return;
+      actions.remove();
+      if (relationOf(id) === 'friend') line.querySelector('.msg-text').textContent = t('nowFriends');
+      else line.remove();
+    });
+  }
 
   // --- Chat history: the last people you talked to at random, so you can
   // message back someone you lost. Populated by 'state-sync'. Text only -

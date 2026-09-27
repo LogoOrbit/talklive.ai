@@ -93,8 +93,8 @@ const SOLO = words(`
   Jellybean Butterscotch Pumpernickel Tapioca Tiramisu Baklava Churro Crumpet Scone Mothman
   Bigfoot Nessie Chupacabra Yeti Kraken Wombat Quokka Platypus Pangolin Tapir Okapi Aardvark
   Armadillo Marmot Wallaby Puffin Dodo Nimbus Cumulus Vortex Eclipse Solstice Equinox Monsoon
-  Avalanche Quicksand Sinkhole Pothole Speedbump Roundabout Buffering Loading Offline Unsubscribe
-  Autocorrect Typo Spam Deadline Overtime Payday Sabbatical Layover Jetlag Insomnia Caffeine
+  Avalanche Quicksand Sinkhole Pothole Speedbump Roundabout
+  Autocorrect Typo Deadline Overtime Payday Sabbatical Layover Jetlag Insomnia Caffeine
   Decaf Espresso Hiccup Sneeze Yawn Wanderlust Cliffhanger Respawn Checkpoint Speedrun Glitch
   Ping Chaos Vibes Mayhem Nonsense Whimsy Mischief Trouble Bother Fuss Panic Drizzle Thunder
   Tumbleweed Moonrock Meteor Volcano Glacier Swamp Puddle Cactus Snorkel Kazoo Trombone Bagpipe

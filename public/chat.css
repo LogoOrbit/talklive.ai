@@ -76,13 +76,16 @@ html, body {
   font-family: var(--font-sans);
   font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
   /* See style.css - the family's word space is narrow, this puts it back. */
-  word-spacing: 0.012em;
+  word-spacing: 0.06em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background: var(--bg-1);
   color: var(--text);
   overflow: hidden; /* a conversation never scrolls - only the message list does */
 }
+/* Form controls reset word-spacing to normal in the UA stylesheet, so every
+   button kept the narrow gap ("Callinstead", "Gotit"). */
+button, input, select, textarea { word-spacing: inherit; }
 
 /* ...but the start screen is a landing page, and a landing page scrolls. With
    the lock on in every state, everything below the fold was unreachable: on
@@ -242,8 +245,15 @@ img { max-width: 100%; }
 @media (prefers-reduced-motion: reduce) { .msg { animation: none; } }
 .msg.me { align-self: flex-end; background: var(--accent); color: #fff; border-bottom-right-radius: 5px; }
 .msg.them { align-self: flex-start; background: var(--bubble-them); color: var(--text); border-bottom-left-radius: 5px; }
-.msg.system { align-self: center; margin: 4px auto; max-width: 92%; background: none; color: var(--muted); font-size: 12.5px; text-align: center; padding: 0 8px; }
+.msg.system { align-self: center; margin: 4px auto; max-width: 92%; background: none; color: var(--muted); font-size: 12.5px; text-align: center; padding: 0 8px; text-wrap: balance; }
 .msg.system.system-warn { color: var(--danger); font-weight: 600; }
+.msg.system.system-request {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  margin: 8px auto; padding: 10px 14px; border-radius: 14px;
+  background: var(--accent-soft); color: var(--text); font-weight: 600;
+}
+.msg.system.system-request .msg-time { display: none; }
+.system-request-actions { display: flex; gap: 8px; }
 .typing { flex: 0 0 auto; margin: 0; padding: 2px 16px 6px; font-size: 12.5px; color: var(--muted); }
 .typing-dots span { animation: typingDot 1.2s infinite; }
 .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
@@ -803,6 +813,13 @@ img { max-width: 100%; }
     animation: appRise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
   @keyframes appRise { from { opacity: 0; transform: translateY(18px) scale(0.985); } to { opacity: 1; transform: none; } }
+  /* The start screen drops the card's overflow clip (so the sticky bar works),
+     which let the card's 28px top margin collapse through <body> - a flat
+     strip above the backdrop - and let the square bar poke out of the card's
+     rounded top corners. flow-root stops the collapse; the bar takes the
+     corners itself. */
+  body.page-scrolls { display: flow-root; }
+  body.page-scrolls > .app > .topbar { border-radius: 23px 23px 0 0; }
 
   .pill, .btn, .next-btn, .send-btn, .chat-start-btn { will-change: transform; }
 

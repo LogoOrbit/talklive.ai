@@ -1637,6 +1637,7 @@ addFriendBtn.addEventListener('click', () => {
   socket.emit('friend-request', { targetClientId: currentPartner.clientId });
   addFriendBtn.classList.add('added');
   addFriendBtn.disabled = true;
+  if (addFriendLabel) addFriendLabel.textContent = t('pending');
   // Say it out loud. The button going quiet is the state, not the receipt -
   // the friend-profile button next to it has always said "Request sent" and
   // this one left you guessing whether the tap had registered at all.
@@ -1658,12 +1659,15 @@ function syncAddFriendBtn() {
   const known = !!id && (friendsData.some((f) => f.clientId === id)
     || sentRequestsData.some((r) => r.clientId === id));
   const theyAsked = !!id && !known && friendRequestsData.some((r) => r.clientId === id);
+  const isFriend = !!id && friendsData.some((f) => f.clientId === id);
   if (known) {
     addFriendBtn.classList.add('added');
     addFriendBtn.disabled = true;
   }
   addFriendBtn.classList.toggle('is-incoming', theyAsked);
-  const label = t(theyAsked ? 'accept' : 'addFriend');
+  // A greyed "Add friend" said nothing about why it was greyed: say what is
+  // true instead - asked and waiting, or already friends.
+  const label = t(theyAsked ? 'accept' : isFriend ? 'friends' : known ? 'pending' : 'addFriend');
   addFriendBtn.title = label;
   addFriendBtn.setAttribute('aria-label', theyAsked ? t('acceptFriendFrom', { name: currentPartner.username || t('stranger') }) : label);
   if (addFriendLabel) addFriendLabel.textContent = label;
@@ -1685,6 +1689,7 @@ socket.on('friend-request-result', ({ ok, error, accepted, alreadyFriends }) => 
   // the tap, so give it back rather than leave it claiming a request exists.
   addFriendBtn.classList.remove('added');
   addFriendBtn.disabled = !(callState === 'connected');
+  if (addFriendLabel) addFriendLabel.textContent = t('addFriend');
 });
 
 // --- Public friend ID -------------------------------------------------------
@@ -4687,18 +4692,28 @@ const requestsSubhead = document.getElementById('requestsSubhead');
 function renderNotifications() {
   const visible = requestRows();
   notifList.classList.toggle('no-requests', visible.length === 0);
-  // "Waiting on you" is true of a request or a call-back to answer; above
-  // nothing but news ("Sam accepted your request") it read as an unanswered ask.
+  // "Waiting on you" is true of a request or a call-back to answer, never of
+  // news ("Sam accepted your request"). Asks come first under that heading;
+  // news gets its own "Updates" heading below them, instead of both sharing one
+  // list that made news read as an unanswered ask.
+  const isAsk = (n) => n.type === 'friend_request' || n.type === 'call_back_request';
+  const asks = [...visible].reverse().filter(isAsk);
+  const news = [...visible].reverse().filter((n) => !isAsk(n));
   if (requestsSubhead) {
-    const asks = visible.some((n) => n.type === 'friend_request' || n.type === 'call_back_request');
-    requestsSubhead.textContent = t(asks || !visible.length ? 'waitingOnYou' : 'updates');
+    requestsSubhead.textContent = t(asks.length || !visible.length ? 'waitingOnYou' : 'updates');
   }
 
   if (visible.length === 0) {
     notifList.innerHTML = `<p class="tl-empty">${escapeHtml(t('noRequestsYet'))}</p>`;
   } else {
     notifList.innerHTML = '';
-    [...visible].reverse().forEach((n) => {
+    [...asks, ...news].forEach((n) => {
+      if (asks.length && n === news[0]) {
+        const head = document.createElement('p');
+        head.className = 'tl-subhead notif-updates-head';
+        head.textContent = t('updates');
+        notifList.appendChild(head);
+      }
       const item = document.createElement('div');
       item.className = 'notif-item' + (needsAttention(n) ? '' : ' is-seen');
       let actions = '';
@@ -9376,7 +9391,12 @@ function revealPartner() {
   syncAddFriendBtn();
   partnerName.textContent = partner.username;
   // Country/flag only - never show anything gendered about the stranger.
-  partnerMeta.innerHTML = getFlagImg(partner.countryCode);
+  // A flag alone made people guess the country; an unknown one ('XX') drew a
+  // lone globe on its own row, which says less than no row at all.
+  const countryName = getCountryName(partner.countryCode);
+  partnerMeta.innerHTML = countryName
+    ? `${getFlagImg(partner.countryCode)}<span>${escapeHtml(countryName)}</span>` : '';
+  partnerMeta.classList.toggle('hidden', !countryName);
   renderPartnerAnimal(partner.animal);
   startPartnerClock(partner.timezone);
 

@@ -88,10 +88,10 @@ html, body {
      kerning are what make the headline sit right. */
   font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
   /* Its word space is noticeably narrower than Roboto's or San Francisco's,
-     which at body sizes reads as words running into each other. One hair of
-     word-spacing at the root puts the gap back everywhere at once, without
-     touching letterfit. */
-  word-spacing: 0.012em;
+     which at body sizes reads as words running into each other ("Callinstead").
+     Its space glyph is 0.17em against the usual ~0.25em, so 0.06em at the root
+     puts the gap back everywhere at once, without touching letterfit. */
+  word-spacing: 0.06em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background: radial-gradient(circle at 50% -10%, var(--bg-glow) 0%, var(--bg-1) 55%);
@@ -101,6 +101,9 @@ html, body {
   overflow-x: hidden;
   overflow-x: clip;
 }
+/* Form controls reset word-spacing to normal in the UA stylesheet, so every
+   button kept the narrow gap ("Callinstead", "Gotit"). */
+button, input, select, textarea { word-spacing: inherit; }
 /* Scroll the whole page from anywhere, with iOS momentum. Deliberately no
    scroll-behavior:smooth (it makes wheel/drag scrolling feel like it sticks)
    and no overscroll lock, so vertical scrolling is never swallowed. */
@@ -3055,6 +3058,9 @@ body.panel-open .game-overlay {
   display: flex;
   align-items: flex-start;
   gap: 10px;
+  /* The modal footer centres its text; beside a checkbox the label read as
+     floating mid-row. */
+  text-align: start;
   font-size: 13.5px;
   line-height: 1.5;
   color: var(--text);

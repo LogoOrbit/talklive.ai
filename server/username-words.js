@@ -227,7 +227,7 @@ const SOLO = [
   'Quokka', 'Platypus', 'Pangolin', 'Tapir', 'Okapi', 'Aardvark', 'Armadillo', 'Marmot',
   'Wallaby', 'Puffin', 'Dodo', 'Nimbus', 'Cumulus', 'Vortex', 'Eclipse', 'Solstice', 'Equinox',
   'Monsoon', 'Avalanche', 'Quicksand', 'Sinkhole', 'Pothole', 'Speedbump', 'Roundabout',
-  'Buffering', 'Loading', 'Offline', 'Unsubscribe', 'Autocorrect', 'Typo', 'Spam', 'Deadline',
+  'Autocorrect', 'Typo', 'Deadline',
   'Overtime', 'Payday', 'Sabbatical', 'Layover', 'Jetlag', 'Insomnia', 'Caffeine', 'Decaf',
   'Espresso', 'Hiccup', 'Sneeze', 'Yawn', 'Wanderlust', 'Cliffhanger', 'Respawn', 'Checkpoint',
   'Speedrun', 'Glitch', 'Ping', 'Chaos', 'Vibes', 'Mayhem', 'Nonsense', 'Whimsy', 'Mischief',
