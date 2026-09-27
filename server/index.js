@@ -813,9 +813,27 @@ function sendPage(res, file) {
 // canonical tag" bucket in Search Console. The canonical already tells Google
 // which URL wins; `noindex` keeps it from spending a crawl on them at all.
 // The header is the only way to say so, since the shell is one shared file.
+//
+// They are also served without the AdSense loader. /login, /signup, /settings
+// and /call are controls and forms with no publisher content, and /login and
+// /signup are the "pages behind a login" AdSense reviews flag; with the loader
+// in the head, Auto ads would place ads on them. The homepage keeps it - it is
+// served by the static middleware, not here.
+const ADSENSE_LOADER_TAG = /<script\b[^>]*pagead2\.googlesyndication\.com[^>]*>\s*<\/script>\s*/gi;
+const appShellCache = new Map();
+function appShellHtml(file) {
+  const full = path.join(PUBLIC_DIR, file);
+  const mtime = fs.statSync(full).mtimeMs;
+  const cached = appShellCache.get(file);
+  if (cached && cached.mtime === mtime) return cached.html;
+  const html = fs.readFileSync(full, 'utf8').replace(ADSENSE_LOADER_TAG, '');
+  appShellCache.set(file, { mtime, html });
+  return html;
+}
 function sendAppShell(res, file) {
   res.setHeader('X-Robots-Tag', 'noindex, follow');
-  sendPage(res, file);
+  res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+  res.type('html').send(appShellHtml(file));
 }
 
 // The three app-screen routes (/call, /chat, /settings) used to be registered
