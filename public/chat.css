@@ -1629,14 +1629,11 @@ summary:active {
 
 /* --- Phone top bar -------------------------------------------------------- *
  * A phone row holds the mark, who you are talking to and three round
- * buttons - no more. Auto keeps its icon (its lit state says on/off), the
- * gear moves into the More menu, and the visitor count steps aside while a
+ * buttons - no more. The gear moves into the More menu, and the visitor count steps aside while a
  * conversation is on so the stranger's name is not cut to one letter.
  */
 .nav-menu-item.nav-menu-phone { display: none; }
 @media (max-width: 560px) {
-  .nav-btn.auto-btn { width: var(--nav-btn); padding: 0; }
-  .nav-btn.auto-btn .nav-btn-label { display: none; }
   .nav-btn.settings-btn { display: none; }
   .nav-menu .nav-menu-item.nav-menu-phone { display: flex; }
   .topbar.nav.connected .nav-live { display: none; }
