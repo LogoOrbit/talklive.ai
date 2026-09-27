@@ -1137,11 +1137,13 @@ img { max-width: 100%; }
 .top-animal { display: inline-flex; align-items: center; margin-inline-end: 5px; }
 .top-animal.hidden { display: none; }
 
+/* Inline, not flex: as a flex row the wrapped text became one centred block
+   and the glyph was stranded at the far left on a phone. */
 .msg.system.system-animal {
-  display: flex; align-items: center; justify-content: center; gap: 6px;
   color: var(--text); font-weight: 600;
   animation: animalLineIn 0.3s ease both;
 }
+.msg.system.system-animal > .tl-animal-icon { vertical-align: -5px; margin-inline-end: 6px; }
 .msg-animal-glyph { display: inline-flex; flex: none; }
 .msg.system.system-animal-match { color: var(--accent); font-weight: 700; }
 

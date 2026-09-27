@@ -3963,8 +3963,9 @@ function renderFriendsList() {
     const item = document.createElement('div');
     item.className = 'friend-item' + (unread > 0 ? ' has-unread' : '') + (f.pinned ? ' is-pinned' : '');
     // Laid out like a messenger inbox: presence rides on the avatar, the name
-    // shares its line with when they last spoke, and the second line is the
-    // conversation itself - or, before there is one, where they are.
+    // has its line to itself (beside two actions it was cut to three letters),
+    // and the second line is the conversation - or, before there is one, where
+    // they are - with when they last spoke.
     const stamp = f.last && f.last.ts ? rowStamp(f.last.ts) : '';
     const second = preview
       ? `<span class="friend-item-preview${unread > 0 ? ' is-unread' : ''}${typing ? ' is-typing' : ''}">${escapeHtml(preview)}</span>`
@@ -3974,10 +3975,10 @@ function renderFriendsList() {
       <div class="friend-item-info friend-row-main" data-id="${escapeHtml(f.clientId)}" role="button" tabindex="0" aria-label="${escapeHtml(t('chatWith', { name: friendLabel(f) }))}${f.online ? ' - ' + escapeHtml(t('online')) : ''}">
         <span class="friend-item-line">
           <span class="friend-item-name">${getFlagImg(f.countryCode)} <span class="friend-item-label">${escapeHtml(friendLabel(f))}</span>${f.pinned ? PIN_SVG : ''}${mutedIds.has(f.clientId) ? MUTE_SVG : ''}</span>
-          ${stamp ? `<span class="friend-item-time${unread > 0 ? ' is-unread' : ''}">${escapeHtml(stamp)}</span>` : ''}
         </span>
         <span class="friend-item-line">
           ${second}
+          ${stamp ? `<span class="friend-item-time${unread > 0 ? ' is-unread' : ''}">${escapeHtml(stamp)}</span>` : ''}
           ${unread > 0 ? `<span class="unread-badge">${unread > 99 ? '99+' : unread}</span>` : ''}
         </span>
       </div>

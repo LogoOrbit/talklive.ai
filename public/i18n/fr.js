@@ -745,7 +745,7 @@
   "animalClear": "Retirer",
   "partnerAnimalLabel": "Son animal totem",
   "animalSameMatch": "Vous avez tous les deux choisi : {animal} !",
-  "chatAnimalLine": "L'utilisateur a choisi : {animal}. {trait}. Demandez pourquoi !",
+  "chatAnimalLine": "{name} a choisi : {animal}. {trait}. Demandez pourquoi !",
   "animalLion": "Lion",
   "animalLionTrait": "Audacieux et généreux",
   "animalTiger": "Tigre",

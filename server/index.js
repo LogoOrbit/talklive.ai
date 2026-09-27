@@ -1765,7 +1765,7 @@ function recordChatHistory(ownerClientId, partner) {
     clientId: partner.clientId,
     username: partner.username,
     countryCode: partner.country,
-    avatar: partner.avatar || null,
+    avatar: shownAvatar(partner),
     mode: partner.mode === 'chat' ? 'chat' : 'talk',
     ts: Date.now(),
     // Meeting the same person again is the strongest hint there is that they
@@ -1823,7 +1823,7 @@ function touchChatHistory(ownerClientId, otherClientId, fallback) {
 function snapshotOf(clientId, viewerClientId) {
   const sock = getSocketByClientId(clientId);
   const live = sock ? profiles.get(sock.id) : null;
-  if (live) return { username: live.username, countryCode: live.country, avatar: live.avatar || null };
+  if (live) return { username: live.username, countryCode: live.country, avatar: shownAvatar(live) };
   const friend = (friends.get(viewerClientId) || new Map()).get(clientId);
   if (friend) return { username: friend.username, countryCode: friend.countryCode, avatar: friend.avatar || null };
   const past = (chatHistory.get(viewerClientId) || []).find((e) => e.clientId === clientId);
@@ -2156,7 +2156,8 @@ function refreshFriendSnapshots(clientId, profile) {
     const entry = (friends.get(fid) || new Map()).get(clientId);
     if (!entry) continue;
     if (profile.username && entry.username !== profile.username) { entry.username = profile.username; changed = true; }
-    if (profile.avatar && entry.avatar !== profile.avatar) { entry.avatar = profile.avatar; changed = true; }
+    const avatar = shownAvatar(profile);
+    if (avatar && entry.avatar !== avatar) { entry.avatar = avatar; changed = true; }
     if (profile.country && profile.country !== 'XX' && entry.countryCode !== profile.country) { entry.countryCode = profile.country; changed = true; }
   }
   if (changed) persistSocial();
@@ -2165,7 +2166,7 @@ function refreshFriendSnapshots(clientId, profile) {
 function liveAvatarFor(clientId, fallback) {
   const sock = getSocketByClientId(clientId);
   const profile = sock ? profiles.get(sock.id) : null;
-  return (profile && profile.avatar) || fallback || null;
+  return shownAvatar(profile) || fallback || null;
 }
 
 function syncClientState(socket, clientId) {
@@ -2646,6 +2647,14 @@ function lookupGeo(ip) {
     countryName: COUNTRIES[code] || code || 'Unknown',
     city: geo.city || 'Unknown',
   };
+}
+
+// The picture friends and recent people see. Most people never pick an
+// avatar, but everyone who calls has a spirit animal - without this fallback
+// their friends saw a blank silhouette for someone they knew as "the Fox".
+function shownAvatar(p) {
+  if (!p) return null;
+  return p.avatar || (p.animal ? `a:${p.animal}` : null);
 }
 
 function sanitizeAvatar(value) {
@@ -4719,7 +4728,7 @@ io.on('connection', (socket) => {
       return socket.emit('friend-request-result', { ok: true, alreadyFriends: true });
     }
     const temporary = !socketAuth.get(socket.id);
-    const myInfo = { username: me.username, countryCode: me.country, temporary, avatar: me.avatar };
+    const myInfo = { username: me.username, countryCode: me.country, temporary, avatar: shownAvatar(me) };
 
     // They already asked me: this is an answer, not a second question. Two
     // people tapping "Add friend" on each other used to leave two pending
@@ -4837,7 +4846,7 @@ io.on('connection', (socket) => {
     persistSocial();
     if (accept) {
       const temporary = !socketAuth.get(socket.id);
-      const myInfo = { username: me.username, countryCode: me.country, temporary, avatar: me.avatar };
+      const myInfo = { username: me.username, countryCode: me.country, temporary, avatar: shownAvatar(me) };
       addFriendPair(
         me.clientId, myInfo,
         fromClientId, { username: req.username, countryCode: req.countryCode, temporary: req.temporary, avatar: req.avatar }
@@ -5026,7 +5035,7 @@ io.on('connection', (socket) => {
       // Not a friend, but they had talked: back into each other's recent
       // people, which is where that conversation is opened from.
       touchChatHistory(me.clientId, targetClientId, { username: record.username, countryCode: record.countryCode, avatar: record.avatar });
-      touchChatHistory(targetClientId, me.clientId, { username: me.username, countryCode: me.country, avatar: me.avatar });
+      touchChatHistory(targetClientId, me.clientId, { username: me.username, countryCode: me.country, avatar: shownAvatar(me) });
     }
     persistSocial();
     store.recordFeature('unblock');
@@ -5159,7 +5168,7 @@ io.on('connection', (socket) => {
     let theirsAdded = false;
     if (!isFriend(me.clientId, toClientId)) {
       mineAdded = touchChatHistory(me.clientId, toClientId, snapshotOf(toClientId, me.clientId));
-      theirsAdded = touchChatHistory(toClientId, me.clientId, { username: me.username, countryCode: me.country, avatar: me.avatar });
+      theirsAdded = touchChatHistory(toClientId, me.clientId, { username: me.username, countryCode: me.country, avatar: shownAvatar(me) });
     }
     persistSocial();
     if (parsed.gif) store.recordFeature('chat_gif');

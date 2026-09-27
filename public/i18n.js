@@ -913,7 +913,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "animalClear": "Remove",
     "partnerAnimalLabel": "Their spirit animal",
     "animalSameMatch": "You both picked the {animal}!",
-    "chatAnimalLine": "User picked the {animal}. {trait}. Ask why!",
+    "chatAnimalLine": "{name} picked the {animal}. {trait}. Ask why!",
     "animalLion": "Lion",
     "animalLionTrait": "Bold and big-hearted",
     "animalTiger": "Tiger",
@@ -1058,7 +1058,7 @@ function applyI18n() {
 // Non-English dictionaries load on demand from /i18n/<lang>.js. Until the file
 // arrives t() falls back to English, then the UI re-translates once it lands.
 // Keep in step with the preload snippet in the <head> of index.html/chat.html.
-const I18N_VERSION = '20260924toast';
+const I18N_VERSION = '20260927fix';
 const i18nLoading = {};
 window.__i18nLangLoaded = function (lang) {
   delete i18nLoading[lang];

@@ -7130,6 +7130,16 @@ html.perf-lite .side-panel { box-shadow: none; }
   font-variant-numeric: tabular-nums;
 }
 .friend-item-time.is-unread { color: var(--danger); font-weight: 700; }
+/* A friend row carries a face, two round actions and a remove cross; at the
+   panel's width the old spacing left the name three letters ("Pop…") and
+   squashed the country glyph to a sliver. Tighter gaps and actions give the
+   name the room back. */
+.friends-dropdown .friend-item { gap: 6px; padding: 10px 10px 10px 12px; }
+.friends-dropdown .friend-call-btn,
+.friends-dropdown .friend-msg-btn { width: 32px; height: 32px; }
+.friends-dropdown .friend-item .tl-row-remove { width: 22px; }
+.friend-item-name .flag-icon,
+.friend-item-name .flag-img { flex: none; }
 .friend-item-line .friend-item-preview,
 .friend-item-line .friend-status-text {
   flex: 1 1 auto;

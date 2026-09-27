@@ -630,7 +630,9 @@
     });
   }
   function openGenderGate() {
-    setGenderGateValue(myGender);
+    // Nothing pre-ticked on a first ask: "Prefer not to say" looked already
+    // chosen, so people hunted for a Continue button that does not exist.
+    setGenderGateValue(genderAnswered() ? myGender : null);
     openModal(genderModal);
   }
   function openAnimalGate() {
@@ -3198,6 +3200,7 @@
     // to ask about it. Both picking the same one is worth its own line.
     if (data.partner.animal && Animals && Animals.has(data.partner.animal)) {
       var animalLine = addMessage(t('chatAnimalLine', {
+        name: data.partner.username,
         animal: Animals.name(data.partner.animal),
         trait: Animals.trait(data.partner.animal),
       }), 'system system-animal');
