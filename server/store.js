@@ -761,10 +761,31 @@ function persistPg() {
   });
 }
 
-function persistNow() {
+// Every Postgres save rewrites the whole document (megabytes, plus WAL), so
+// routine saves reach Postgres at most this often; the mirror on disk still
+// takes every one. Boot pushes a newer mirror up, so a hard kill inside the
+// window loses nothing. Explicit persistNow() calls (admin actions, shutdown,
+// crash) still write through immediately.
+const PG_SAVE_EVERY_MS = Math.max(0, Number(process.env.PG_SAVE_EVERY_MS) || 60 * 1000);
+let lastPgSaveAt = 0;
+let pgTimer = null;
+function persistPgThrottled() {
+  if (pgTimer) return;
+  const wait = lastPgSaveAt + PG_SAVE_EVERY_MS - Date.now();
+  if (wait <= 0) { lastPgSaveAt = Date.now(); persistPg(); return; }
+  pgTimer = setTimeout(() => {
+    pgTimer = null;
+    lastPgSaveAt = Date.now();
+    if (pgLive()) persistPg();
+  }, wait);
+  pgTimer.unref?.();
+}
+
+function persistNow(throttlePg) {
   // Everything is being written now, so a debounced save already queued has
   // nothing left to do.
   if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+  if (!throttlePg && pgTimer) { clearTimeout(pgTimer); pgTimer = null; }
   // The load failed, so `data` is not the real document. Writing it is exactly
   // the destructive act this guard exists to prevent.
   if (persistBlocked) return;
@@ -776,14 +797,16 @@ function persistNow() {
   const shrinking = checkShrink();
   if (shrinking) pendingShrinkSnapshot = true;
   writeMirror(shrinking);
-  if (pgLive()) persistPg();
+  if (!pgLive()) return;
+  if (throttlePg && !shrinking) persistPgThrottled();
+  else { lastPgSaveAt = Date.now(); persistPg(); }
 }
 
 function save() {
   if (saveTimer) return;
   saveTimer = setTimeout(() => {
     saveTimer = null;
-    persistNow();
+    persistNow(true);
   }, 2000);
 }
 
