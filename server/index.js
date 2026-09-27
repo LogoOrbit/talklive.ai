@@ -4417,7 +4417,8 @@ io.on('connection', (socket) => {
     // with browser-extension and in-app-webview noise.
     if (ERROR_NOISE.some((re) => re.test(message))) return;
     const p = profiles.get(socket.id);
-    const rec = store.addError({
+    // Logged to the dashboard's Errors tab only; no email.
+    store.addError({
       source: 'client',
       message,
       stack: typeof payload.stack === 'string' ? payload.stack.slice(0, 1500) : '',
@@ -4425,10 +4426,6 @@ io.on('connection', (socket) => {
       username: p ? p.username : 'Unknown',
       country: p ? p.countryName : '',
     });
-    if (rec.count >= 10) {
-      admin.sendAlertEmail('error', 'Recurring client error on TalkLive',
-        `"${message}" has now occurred ${rec.count} times.\nURL: ${rec.url}\n\nReview at https://${CANONICAL_HOST}/owner`);
-    }
   });
 
   socket.on('reaction', (reaction) => {
@@ -4470,9 +4467,8 @@ io.on('connection', (socket) => {
 
   // Client-side call moderation (moderation.js): keyword / sentiment /
   // shouting triggers detected from the local mic's live transcript. Log the
-  // incident to the dashboard transcript store and email the owner (throttled
-  // per-kind inside sendAlertEmail). Rate-limited per socket so a hostile
-  // client can't spam alerts.
+  // incident to the dashboard transcript store (no email). Rate-limited per
+  // socket so a hostile client can't spam the log.
   let lastModerationAlert = 0;
   socket.on('moderation-alert', ({ type, detail, transcript } = {}) => {
     const now = Date.now();
@@ -4482,7 +4478,6 @@ io.on('connection', (socket) => {
     const me = profiles.get(socket.id);
     const partnerId = partners.get(socket.id);
     const them = partnerId ? profiles.get(partnerId) : null;
-    const who = me ? `${me.username} (${me.countryName || '?'})` : socket.id;
     const detailStr = String(detail || '').slice(0, 200);
     const transcriptStr = String(transcript || '').slice(0, 500);
     if (me) {
@@ -4497,8 +4492,6 @@ io.on('connection', (socket) => {
         text: `[${type}] ${detailStr}${transcriptStr ? ` - "${transcriptStr}"` : ''}`,
       });
     }
-    admin.sendAlertEmail(`moderation-${type}`, `Moderation alert: ${type} from ${who}`,
-      `Type: ${type}\nUser: ${who}\nPartner: ${them ? them.username : 'none'}\nDetail: ${detailStr}\nTranscript: ${transcriptStr || '(n/a)'}\n\nReview at https://${CANONICAL_HOST}/owner`);
   });
 
   socket.on('mic-state', (muted) => {
