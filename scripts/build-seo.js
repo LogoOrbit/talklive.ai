@@ -25,7 +25,7 @@ const CONTENT_UPDATED = '2026-08-14';
 const ORGANIZATION_ID = `${SITE}/#organization`;
 const WEBSITE_ID = `${SITE}/#website`;
 const APP_ID = `${SITE}/#app`;
-const OG_IMAGE = `${SITE}/og-image.png`;
+const OG_IMAGE = `${SITE}/og-image.png?v=2`;
 const LOGO_IMAGE = `${SITE}/favicon-192.png`;
 // hreflang cluster for the homepage: x-default + en point at /, every other
 // language at its own statically rendered path. Path-based alternates are
@@ -448,7 +448,7 @@ function page(p, index) {
 <meta property="og:image:type" content="image/png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="TalkLive - free random voice chat with strangers worldwide" />
+<meta property="og:image:alt" content="TalkLive - free random voice calls and text chat with strangers worldwide" />
 <meta property="og:locale" content="en_US" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="${esc(p.title)}" />
