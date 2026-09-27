@@ -177,12 +177,13 @@
   function setAutoNext(on, announce) {
     autoNext = on;
     localStorage.setItem(AUTO_NEXT_KEY, autoNext ? 'on' : 'off');
-    autoBtn.classList.toggle('active', autoNext);
-    autoBtn.setAttribute('aria-pressed', autoNext ? 'true' : 'false');
+    autoBtn.setAttribute('aria-checked', autoNext ? 'true' : 'false');
     if (announce && partnerHere) addMessage(t(autoNext ? 'chatAutoOn' : 'chatAutoOff'), 'system');
   }
   setAutoNext(autoNext);
-  autoBtn.addEventListener('click', function () { vibrate(10); setAutoNext(!autoNext, true); });
+  // Lives in the More menu; stopPropagation keeps the menu open so the switch
+  // is seen flipping.
+  autoBtn.addEventListener('click', function (e) { e.stopPropagation(); vibrate(10); setAutoNext(!autoNext, true); });
 
   // ---------------------------------------------------------------------------
   // Views: start → search → live. Only one is visible at a time.
@@ -228,7 +229,6 @@
     addFriendBtn.classList.toggle('hidden', !connected);
     // Mini-games need a live partner, same as Report and Add friend.
     if (gameBtn) gameBtn.classList.toggle('hidden', !connected);
-    autoBtn.classList.toggle('hidden', name === 'start');
     // While connected the header shows who you're talking to (name + country
     // + flag); idle shows the online counter next to the TalkLive brand.
     topDefault.classList.toggle('hidden', connected);
@@ -3338,7 +3338,7 @@
   });
 
   // --- Overflow menu -------------------------------------------------------
-  // Auto and Call stay in the bar; History, Friends, Add friend and Report
+  // Auto-connect, History, Friends, Add friend and Report
   // live in here with their names spelled out. Report and Add friend are
   // still shown/hidden by setStage(), which just makes them appear or
   // disappear as rows.
