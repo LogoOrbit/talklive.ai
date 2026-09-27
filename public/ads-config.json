@@ -1,5 +1,5 @@
 {
-  "_comment": "Ad density and behaviour for Google AdSense, read at runtime by public/ads.js. server/index.js serves GET /ads-config.json and merges the ADS_CONFIG environment variable over the top, so this can be retuned with one Fly secret and no deploy. The AdSense loader itself (client ca-pub-6368797323385379) is in every page head and enables Auto ads, which are configured in the AdSense account, not here.",
+  "_comment": "Ad density and behaviour for Google AdSense, read at runtime by public/ads.js. server/index.js serves GET /ads-config.json and merges the ADS_CONFIG environment variable over the top, so this can be retuned with one Fly secret and no deploy. The AdSense loader itself (client ca-pub-5162304231095978) is in every page head and enables Auto ads, which are configured in the AdSense account, not here.",
   "enabled": true,
   "_maxSlotsPerPage": "Ceiling on how many fixed slots load on one page, in the order the visitor reaches them. 0 disables the fixed slots (Auto ads are unaffected).",
   "maxSlotsPerPage": 6,
@@ -13,10 +13,8 @@
   },
   "_adsense": "slots maps a slot type (leaderboard, banner, box, skyscraper, native) or 'default' to an AdSense display ad-unit ID (the data-ad-slot number from AdSense -> Ads -> By ad unit). A type with no ID never loads, and Auto ads place ads instead. Fixed slots never load on app screens (.ad-card-app: start, matchmaking, call, chat) - see public/ads.js.",
   "adsense": {
-    "client": "ca-pub-6368797323385379",
-    "slots": {
-      "default": "2415869132"
-    }
+    "client": "ca-pub-5162304231095978",
+    "slots": {}
   },
   "_pauseDuringCall": "While a voice call or text chat is live, no slot starts loading or collapses, so nothing moves under a conversation.",
   "pauseDuringCall": true,

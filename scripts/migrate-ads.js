@@ -8,7 +8,7 @@ const publicDir = path.join(__dirname, '..', 'public');
 // of the site (the geo cluster and older batches) is not rebuilt from
 // templates - see SEO.md.
 const adsVersion = '20260923adsense2';
-const ADSENSE_LOADER = '<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6368797323385379"\n     crossorigin="anonymous"></script>';
+const ADSENSE_LOADER = '<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978"\n     crossorigin="anonymous"></script>';
 const AD_LABEL = 'Advertisement';
 // Keep the purchase decision page clean. Showing network ads beside the paid
 // plan distracts from the higher-value conversion and undermines "ad-free".
@@ -68,7 +68,7 @@ for (const file of htmlFiles(publicDir)) {
     (unit) => `<div data-ad="${/8131758533/.test(unit) ? 'native' : 'leaderboard'}"></div>`
   );
   // Old AdSense loaders only; the current account's head tag stays.
-  html = html.replace(/^(?!.*ca-pub-6368797323385379).*pagead2\.googlesyndication\.com.*\r?\n?/gim, '');
+  html = html.replace(/^(?!.*ca-pub-5162304231095978).*pagead2\.googlesyndication\.com.*\r?\n?/gim, '');
 
   // Strip the opaque Adsterra "direct link" that still sat in the footer of
   // every country, city and language page. The intrusive Adsterra formats were
@@ -190,7 +190,7 @@ for (const file of htmlFiles(publicDir)) {
   }
   if (noLoaderPages.has(path.basename(file)) || noAds) {
     html = html.replace(/^.*pagead2\.googlesyndication\.com.*\r?\n(?:\s*crossorigin="anonymous"><\/script>\r?\n)?/gim, '');
-  } else if (!adFreePages.has(path.basename(file)) && !/ca-pub-6368797323385379/.test(html)) {
+  } else if (!adFreePages.has(path.basename(file)) && !/ca-pub-5162304231095978/.test(html)) {
     html = html.replace('</head>', `${ADSENSE_LOADER}\n</head>`);
   }
 

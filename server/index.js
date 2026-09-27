@@ -1094,7 +1094,7 @@ app.get('/', (req, res, next) => {
 // Google AdSense is the only ad network, so Google is the only authorised
 // seller. Nothing else is listed: an ads.txt line for a network that no longer
 // serves here would authorise it to sell this inventory.
-const ADS_TXT = 'google.com, pub-6368797323385379, DIRECT, f08c47fec0942fa0';
+const ADS_TXT = 'google.com, pub-5162304231095978, DIRECT, f08c47fec0942fa0';
 app.get('/ads.txt', (req, res) => {
   res.type('text').set('Cache-Control', 'public, max-age=3600').send(ADS_TXT + '\n');
 });

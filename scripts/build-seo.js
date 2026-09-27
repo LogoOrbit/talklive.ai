@@ -460,7 +460,7 @@ function page(p, index) {
 <link rel="manifest" href="/site.webmanifest" />
 <script defer src="/pwa.js?v=20260908pwa"></script>
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6368797323385379"
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978"
      crossorigin="anonymous"></script>
 </head>
 <body>
@@ -2000,7 +2000,7 @@ function blogPost(b) {
 <link rel="manifest" href="/site.webmanifest" />
 <script defer src="/pwa.js?v=20260908pwa"></script>
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6368797323385379"
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978"
      crossorigin="anonymous"></script>
 </head>
 <body>
@@ -2112,7 +2112,7 @@ function blogIndex() {
 <link rel="manifest" href="/site.webmanifest" />
 <script defer src="/pwa.js?v=20260908pwa"></script>
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6368797323385379"
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978"
      crossorigin="anonymous"></script>
 </head>
 <body>
@@ -2235,7 +2235,7 @@ ${alternates}
 <link rel="manifest" href="/site.webmanifest" />
 <script defer src="/pwa.js?v=20260908pwa"></script>
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6368797323385379"
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978"
      crossorigin="anonymous"></script>
 </head>
 <body>

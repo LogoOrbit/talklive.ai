@@ -61,8 +61,8 @@ test('Google AdSense is the only network: no Adsterra code or config remains', (
   for (const key of ['socialBar', 'searchAnchor', 'backfill', 'callScreenCap', 'adsenseSafe']) {
     assert.equal(key in config, false, `${key} is an Adsterra-era setting`);
   }
-  assert.equal(config.adsense.client, 'ca-pub-6368797323385379');
-  assert.match(source, /var CLIENT = 'ca-pub-6368797323385379';/);
+  assert.equal(config.adsense.client, 'ca-pub-5162304231095978');
+  assert.match(source, /var CLIENT = 'ca-pub-5162304231095978';/);
 });
 
 test('a slot becomes an AdSense unit with the configured unit ID', async () => {
@@ -71,7 +71,7 @@ test('a slot becomes an AdSense unit with the configured unit ID', async () => {
   assert.equal(h.pushes.length, 1, 'one adsbygoogle.push per unit');
   const ins = h.els[0].children[0];
   assert.equal(ins.className, 'adsbygoogle');
-  assert.equal(ins.attrs['data-ad-client'], 'ca-pub-6368797323385379');
+  assert.equal(ins.attrs['data-ad-client'], 'ca-pub-5162304231095978');
   assert.equal(ins.attrs['data-ad-slot'], '1234567890');
   assert.equal(ins.attrs['data-ad-format'], 'horizontal');
 });
@@ -129,6 +129,8 @@ test('the density ceiling is applied when slots load', async () => {
   assert.equal(h.els[1].style.display, 'none');
 });
 
-test('the shipped config uses the TalkLive display unit', () => {
-  assert.equal(config.adsense.slots.default, '2415869132');
+// No display units yet on the current AdSense account: Auto ads place ads
+// until units are created there and their IDs added to ads-config.json.
+test('the shipped config has no ad unit from a previous AdSense account', () => {
+  assert.equal(Object.values(config.adsense.slots).includes('2415869132'), false);
 });

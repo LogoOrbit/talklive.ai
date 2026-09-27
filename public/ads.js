@@ -34,7 +34,7 @@
 (function () {
   'use strict';
 
-  var CLIENT = 'ca-pub-6368797323385379';
+  var CLIENT = 'ca-pub-5162304231095978';
 
   // Mirrors public/ads-config.json. Used verbatim if the fetch fails.
   var config = {
