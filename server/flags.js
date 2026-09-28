@@ -23,6 +23,12 @@ const DEFS = {
   // Fix list 3.1: accept an age-band signal from a future voice-analysis
   // provider. No such analysis exists in this codebase today.
   ageBandSignal: { default: false, client: false },
+
+  // Opt-in on-device voice check and the "Voice-checked only" gender filter
+  // (public/voice-gender.js). Held back until Premium subscriptions launch:
+  // off, the Settings switch and filter option are hidden and the server
+  // ignores every voice-check field.
+  voiceCheck: { default: false, client: true },
 };
 
 function parse(raw) {

@@ -48,7 +48,7 @@ function connect(name, profile) {
 
 (async () => {
   const srv = spawn(process.execPath, [path.join(__dirname, '..', 'server', 'index.js')], {
-    env: { ...process.env, PORT: String(PORT), DATA_DIR, NODE_ENV: 'development', PREMIUM_CLIENT_IDS: 'c_vg_seeker', IDENTITY_SECRET },
+    env: { ...process.env, PORT: String(PORT), DATA_DIR, NODE_ENV: 'development', PREMIUM_CLIENT_IDS: 'c_vg_seeker', IDENTITY_SECRET, FEATURE_FLAGS: '{"voiceCheck":true}' },
     stdio: ['ignore', 'ignore', 'ignore'],
   });
   const done = (code) => {

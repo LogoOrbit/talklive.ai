@@ -624,14 +624,21 @@ const VOICE_CHECK_KEY = 'talklive_voice_check';
 const VOICE_RESULT_KEY = 'talklive_voice_result';
 const voiceCheckToggle = document.getElementById('voiceCheckToggle');
 const voiceCheckStatus = document.getElementById('voiceCheckStatus');
+const voiceCheckRow = document.getElementById('voiceCheckRow');
+// Locked behind the voiceCheck feature flag until Premium launches.
+const voiceCheckAvailable = featureFlag('voiceCheck');
 let voiceCheckEnabled = false;
 let voiceResult = null;
 try {
-  voiceCheckEnabled = localStorage.getItem(VOICE_CHECK_KEY) === 'on';
+  voiceCheckEnabled = voiceCheckAvailable && localStorage.getItem(VOICE_CHECK_KEY) === 'on';
   voiceResult = voiceCheckEnabled ? JSON.parse(localStorage.getItem(VOICE_RESULT_KEY) || 'null') : null;
 } catch (_) { voiceResult = null; }
 
 function renderVoiceCheck() {
+  if (voiceCheckRow) {
+    voiceCheckRow.hidden = !voiceCheckAvailable;
+    voiceCheckRow.style.display = voiceCheckAvailable ? '' : 'none';
+  }
   if (voiceCheckToggle) voiceCheckToggle.checked = voiceCheckEnabled;
   if (!voiceCheckStatus) return;
   let key = '';
@@ -1211,7 +1218,7 @@ const prefVoiceCheckedRow = document.getElementById('prefVoiceCheckedRow');
 const prefVoiceCheckedBox = document.getElementById('prefVoiceChecked');
 // "Voice-checked only" narrows a gender preference, so it only shows with one.
 function syncVoiceCheckedRow() {
-  if (prefVoiceCheckedRow) prefVoiceCheckedRow.hidden = prefGenderGroup.dataset.value === 'any';
+  if (prefVoiceCheckedRow) prefVoiceCheckedRow.hidden = !voiceCheckAvailable || prefGenderGroup.dataset.value === 'any';
 }
 initPillGroup(themeGroup);
 
@@ -1703,7 +1710,7 @@ syncFilterDraftUiFromApplied();
 saveFiltersBtn.addEventListener('click', () => {
   appliedFilters = {
     prefGender: prefGenderGroup.dataset.value,
-    prefVoiceChecked: prefGenderGroup.dataset.value !== 'any' && !!(prefVoiceCheckedBox && prefVoiceCheckedBox.checked),
+    prefVoiceChecked: voiceCheckAvailable && prefGenderGroup.dataset.value !== 'any' && !!(prefVoiceCheckedBox && prefVoiceCheckedBox.checked),
     includeCountries: Array.from(includeCountries),
     excludeCountries: Array.from(excludeCountries),
     interests: Array.from(selectedInterests),

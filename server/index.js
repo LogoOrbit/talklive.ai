@@ -4157,12 +4157,12 @@ io.on('connection', (socket) => {
       prefGender: premium ? (data.prefGender || 'any') : 'any',
       // "Voice-checked only": with a gender preference, match only people whose
       // on-device voice check agreed with the gender they picked themselves.
-      prefVoiceChecked: premium && data.prefVoiceChecked === true,
+      prefVoiceChecked: premium && flags.isOn('voiceCheck') && data.prefVoiceChecked === true,
       // Opt-in result of voice-gender.js, which runs on the person's own
       // device. Kept in memory for this socket only, never stored, never sent
       // to anyone else, and only ever used to confirm the self-declared gender.
-      voiceGender: data.voiceCheck === true ? sanitizeVoiceGender(data.voiceGender) : null,
-      voiceCheck: data.voiceCheck === true,
+      voiceGender: flags.isOn('voiceCheck') && data.voiceCheck === true ? sanitizeVoiceGender(data.voiceGender) : null,
+      voiceCheck: flags.isOn('voiceCheck') && data.voiceCheck === true,
       includeCountries: sanitizeCountryList(data.includeCountries),
       excludeCountries: sanitizeCountryList(data.excludeCountries),
       randomFallbackActive: false,

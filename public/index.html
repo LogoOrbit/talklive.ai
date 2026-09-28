@@ -1511,7 +1511,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
           <section>
             <h3 class="tl-set-legend" data-i18n="catPrivacy">Privacy &amp; Safety</h3>
             <div class="tl-set-group">
-              <label class="tl-set-control tl-set-toggle" for="voiceCheckToggle">
+              <label id="voiceCheckRow" class="tl-set-control tl-set-toggle" for="voiceCheckToggle" hidden>
                 <span class="tl-set-ico i-dot" aria-hidden="true"></span>
                 <span class="tl-set-text"><strong data-i18n="voiceCheck">Voice check</strong><small data-i18n="voiceCheckHint">During calls your device checks your voice against the gender you picked. No audio leaves your device and nobody you talk to sees the result.</small><small id="voiceCheckStatus"></small></span>
                 <span class="switch"><input type="checkbox" id="voiceCheckToggle" /><span class="switch-slider" aria-hidden="true"></span></span>
