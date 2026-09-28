@@ -15,8 +15,9 @@
 (function () {
   'use strict';
 
-  const CSS_HREF = '/settings.css?v=20260924allnote';
+  const CSS_HREF = '/settings.css?v=20260928aud';
   const THEMES = ['dark', 'light', 'ocean', 'sunset'];
+  const AGE_GROUPS = ['18-24', '25-34', '35-44', '45-54', '55+'];
   const CHEVRON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>';
 
   // English for the strings only Settings uses. They ship here rather than in
@@ -38,6 +39,7 @@
     setSaved: "Saved",
     setAppearance: "Appearance",
     setAlerts: "Alerts",
+    ageGroup: "Age group",
     setLegal: "Legal",
   };
   if (window.I18N_STRINGS) {
@@ -153,7 +155,8 @@
             <button type="button" id="qsNameSave" data-i18n="saveName" disabled>${esc(tr('saveName'))}</button>
           </div>
         </div>
-        ${seg('qsGender', 'iAm', [['', 'preferNotSay'], ['male', 'male'], ['female', 'female']])}`)}
+        ${seg('qsGender', 'iAm', [['', 'preferNotSay'], ['male', 'male'], ['female', 'female']])}
+        ${seg('qsAge', 'ageGroup', [['', 'preferNotSay']].concat(AGE_GROUPS.map((a) => [a, a])))}`)}
       ${section('setAppearance', `
         ${themes('qsTheme')}
         <div class="tl-set-control tl-set-control-stack">
@@ -205,6 +208,8 @@
       nameSave.disabled = true;
       const g = read('talklive_gender');
       setSeg($('#qsGender'), g === 'male' || g === 'female' ? g : '');
+      const age = read('talklive_age_group');
+      setSeg($('#qsAge'), AGE_GROUPS.includes(age) ? age : '');
       const theme = read('talklive_theme');
       setSeg($('#qsTheme'), THEMES.includes(theme) ? theme : 'dark');
       if (typeof I18N_STATE !== 'undefined') langSel.value = I18N_STATE.lang;
@@ -248,6 +253,15 @@
       write('talklive_gender_asked', 'yes');
       setSeg($('#qsGender'), g);
       if (hooks.onGender) hooks.onGender(g);
+      flashSaved();
+    });
+    $('#qsAge').classList.add('tl-seg-3');
+    $('#qsAge').addEventListener('click', (e) => {
+      const pill = e.target.closest('.pill');
+      if (!pill || pill.classList.contains('selected')) return;
+      write('talklive_age_group', pill.dataset.value);
+      setSeg($('#qsAge'), pill.dataset.value);
+      if (hooks.onAge) hooks.onAge(pill.dataset.value);
       flashSaved();
     });
     $('#qsTheme').addEventListener('click', (e) => {
@@ -427,7 +441,7 @@
       if (el.matches('input[type="checkbox"], select')) flashSaved();
     });
     content.addEventListener('click', (e) => {
-      const pill = e.target.closest('#themeGroup .pill, #genderGroup .pill');
+      const pill = e.target.closest('#themeGroup .pill, #genderGroup .pill, #ageGroup .pill');
       if (pill && !pill.classList.contains('selected')) setTimeout(flashSaved, 0);
     }, true);
 

@@ -861,6 +861,7 @@ function day(ts = Date.now()) {
     for (const k of keys.slice(0, Math.max(0, keys.length - UNIQUE_SET_DAYS))) {
       const d = data.analytics.days[k];
       if (d && d.uniqueSet && Object.keys(d.uniqueSet).length) d.uniqueSet = {};
+      if (d && d.peopleSet) delete d.peopleSet;
     }
   }
   const d = data.analytics.days[key];
@@ -989,6 +990,112 @@ function recordFeature(name) {
   d.features[name] = (d.features[name] || 0) + 1;
   if (name === 'match') { d.matches += 1; hour().matches += 1; data.analytics.totals.matches += 1; }
   if (name === 'chat_message') { d.messages += 1; hour().messages += 1; data.analytics.totals.messages += 1; }
+  save();
+}
+
+// --- Audience & experience (see server/audience.js) ---------------------------
+
+const MAX_INTEREST_KEYS = 200;
+
+function emptyPeople() {
+  return { n: 0, gender: {}, age: {}, cross: {}, device: {}, os: {}, browser: {}, lang: {}, lifecycle: {}, interests: {} };
+}
+
+function emptyCalls() {
+  return { n: 0, s: 0, len: {}, pairs: {}, waitN: 0, waitS: 0, wait: {}, abandonN: 0, abandonS: 0, up: 0, down: 0, rateLen: {}, seg: { gender: {}, age: {} } };
+}
+
+function bump(obj, key, by = 1) {
+  obj[key] = (obj[key] || 0) + by;
+  if (obj[key] <= 0) delete obj[key];
+}
+
+/**
+ * Count a person once per UTC day for the audience breakdown. `info` is
+ * { gender, age, device, os, browser, lang, lifecycle, interests }, already
+ * normalised. A person who changes gender or age group later the same day is
+ * moved, not double-counted: the day's set remembers what they were counted as.
+ */
+function recordPerson(clientId, info) {
+  if (!clientId) return;
+  const d = day();
+  const p = d.people || (d.people = emptyPeople());
+  const set = d.peopleSet || (d.peopleSet = {});
+  const h = crypto.createHash('sha256').update('talklive-pp:' + clientId).digest('hex').slice(0, 12);
+  const key = info.gender + '|' + info.age;
+  const prev = set[h];
+  if (prev === key) return;
+  if (prev) {
+    const [pg, pa] = prev.split('|');
+    bump(p.gender, pg, -1); bump(p.age, pa, -1); bump(p.cross, prev, -1);
+  } else {
+    p.n += 1;
+    for (const f of ['device', 'os', 'browser', 'lang', 'lifecycle']) if (info[f]) bump(p[f], info[f]);
+    for (const i of info.interests || []) {
+      if (p.interests[i] || Object.keys(p.interests).length < MAX_INTEREST_KEYS) bump(p.interests, i);
+    }
+  }
+  set[h] = key;
+  bump(p.gender, info.gender); bump(p.age, info.age); bump(p.cross, key);
+  save();
+}
+
+function dayCalls() {
+  const d = day();
+  return d.calls || (d.calls = emptyCalls());
+}
+
+/**
+ * One finished conversation. `sides` is [{ gender, age }, { gender, age }];
+ * each participant's segment gets the call, so "how long do women's calls
+ * last" can be read straight off the day.
+ */
+function recordCallEnd({ seconds, lenBucket, pair, sides, real }) {
+  const c = dayCalls();
+  c.n += 1;
+  c.s += seconds;
+  bump(c.len, lenBucket);
+  bump(c.pairs, pair);
+  for (const s of sides || []) {
+    for (const [dim, k] of [['gender', s.gender], ['age', s.age]]) {
+      const seg = c.seg[dim][k] || (c.seg[dim][k] = { n: 0, s: 0, real: 0, up: 0, down: 0 });
+      seg.n += 1;
+      seg.s += seconds;
+      if (real) seg.real += 1;
+    }
+  }
+  save();
+}
+
+// How long a person waited in the queue before being matched.
+function recordWait(seconds, bucket) {
+  const c = dayCalls();
+  c.waitN += 1;
+  c.waitS += seconds;
+  bump(c.wait, bucket);
+  save();
+}
+
+// A search that ended with the person leaving before anyone was found.
+function recordQueueAbandon(seconds) {
+  const c = dayCalls();
+  c.abandonN += 1;
+  c.abandonS += seconds;
+  save();
+}
+
+// A post-call thumbs up/down, attributed to the rater's segment and the
+// length of the call it was about.
+function recordRating(up, { gender, age, lenBucket }) {
+  const c = dayCalls();
+  const f = up ? 'up' : 'down';
+  c[f] += 1;
+  const rl = c.rateLen[lenBucket] || (c.rateLen[lenBucket] = { up: 0, down: 0 });
+  rl[f] += 1;
+  for (const [dim, k] of [['gender', gender], ['age', age]]) {
+    const seg = c.seg[dim][k] || (c.seg[dim][k] = { n: 0, s: 0, real: 0, up: 0, down: 0 });
+    seg[f] += 1;
+  }
   save();
 }
 
@@ -1918,6 +2025,11 @@ module.exports = {
   recordPeakOnline,
   recordFeature,
   recordTalkTime,
+  recordPerson,
+  recordCallEnd,
+  recordWait,
+  recordQueueAbandon,
+  recordRating,
   recordTopics,
   addTranscript,
   addReport,

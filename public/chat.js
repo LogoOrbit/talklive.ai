@@ -566,6 +566,7 @@
       identityToken: localStorage.getItem('talklive_identity_token') || '',
       nickname: accountNickname || tempUsername || undefined,
       gender: myGender || undefined,
+      ageGroup: localStorage.getItem('talklive_age_group') || undefined,
       prefGender: myPrefGender,
       animal: myAnimal || undefined,
       // The picture chosen in Settings > Profile, so /chat shows the same face.
@@ -701,6 +702,21 @@
     });
   }
 
+  var gateAge = $('gateAgeOptions');
+  function paintGateAge() {
+    var cur = localStorage.getItem('talklive_age_group') || '';
+    gateAge.querySelectorAll('.gate-age-opt').forEach(function (b) { b.classList.toggle('selected', b.dataset.value === cur); });
+  }
+  if (gateAge) {
+    paintGateAge();
+    gateAge.addEventListener('click', function (e) {
+      var b = e.target.closest('.gate-age-opt');
+      if (!b) return;
+      vibrate(10);
+      localStorage.setItem('talklive_age_group', b.dataset.value);
+      paintGateAge();
+    });
+  }
   genderGateOptions.addEventListener('click', function (e) {
     var opt = e.target.closest('.gate-option');
     if (!opt) return;
@@ -1285,7 +1301,7 @@
     if (!settingsPanelLoading) {
       settingsPanelLoading = [];
       var s = document.createElement('script');
-      s.src = '/settings-panel.js?v=20260924tone';
+      s.src = '/settings-panel.js?v=20260928aud';
       s.async = true;
       s.onload = function () {
         window.TalkLiveSettingsPanel.ready.then(function () {
@@ -1342,6 +1358,7 @@
           register(); // so the server picks up the new display name
         },
         onGender: function (g) { myGender = g; register(); },
+        onAge: function () { register(); },
         onTheme: function (theme) { currentTheme = theme; },
         onSound: function (on) { soundEnabled = on; },
         onVibration: function (on) { vibrationEnabled = on; },
@@ -3192,6 +3209,14 @@
     return Math.floor(v / 1000) + 'k';
   }
 
+  socket.on('rate-prompt', function (d) {
+    function show() { if (window.TalkLiveRate) window.TalkLiveRate.show(socket, d); }
+    if (window.TalkLiveRate) return show();
+    var s = document.createElement('script');
+    s.src = '/rate-prompt.js?v=1';
+    s.onload = show;
+    document.head.appendChild(s);
+  });
   socket.on('matched', function (data) {
     if (data.mode && data.mode !== 'chat') return; // safety: ignore stray voice matches
     searchAcked = true;

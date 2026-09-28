@@ -6,6 +6,7 @@ const express = require('express');
 const store = require('./store');
 const totp = require('./totp');
 const analytics = require('./analytics');
+const audience = require('./audience');
 
 let QRCode = null;
 try { QRCode = require('qrcode'); } catch (_) { /* optional */ }
@@ -553,6 +554,17 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned }) {
     });
   });
 
+  // Audience (gender, age group, device, language, new vs returning) and
+  // experience (wait, give-ups, call length, pairings, ratings) over the last
+  // 1, 7 or 30 UTC days, plus a live breakdown of who is connected now.
+  function audienceReport(req) {
+    const range = [1, 7, 30].includes(Number(req.query.range)) ? Number(req.query.range) : 7;
+    return audience.buildReport(store.data.analytics.days, range, getRuntime().users);
+  }
+  router.get('/api/audience', (req, res) => {
+    res.json(audienceReport(req));
+  });
+
   router.post('/api/timezone', (req, res) => {
     const tz = (req.body || {}).timezone;
     if (!analytics.isValidTimezone(tz)) return res.status(400).json({ error: 'Unknown timezone.' });
@@ -981,6 +993,25 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned }) {
       const names = Array.from(new Set([...Object.keys(agg), ...Object.keys(accByCountry)]));
       csv = toCsv(['country', 'visits_30d', 'accounts'],
         names.sort((a, b) => (agg[b] || 0) - (agg[a] || 0)).map((c) => [c, agg[c] || 0, accByCountry[c] || 0]));
+    } else if (kind === 'audience') {
+      const r = audienceReport(req);
+      const rows = [];
+      for (const g of r.people.gender) rows.push(['gender', g.key, g.n, g.pct]);
+      for (const a of r.people.age) rows.push(['age_group', a.key, a.n, a.pct]);
+      for (const x of r.people.cross) r.people.ageKeys.forEach((a, i) => rows.push(['gender_x_age', x.gender + ' ' + a, x.cells[i], '']));
+      for (const l of r.people.lifecycle) rows.push(['new_vs_returning', l.key, l.n, l.pct]);
+      for (const [k, n] of r.people.device) rows.push(['device', k, n, '']);
+      for (const [k, n] of r.people.os) rows.push(['os', k, n, '']);
+      for (const [k, n] of r.people.browser) rows.push(['browser', k, n, '']);
+      for (const [k, n] of r.people.lang) rows.push(['language', k, n, '']);
+      for (const b of r.experience.length) rows.push(['call_length', b.key, b.n, b.pct]);
+      for (const b of r.experience.wait) rows.push(['wait_time', b.key, b.n, b.pct]);
+      for (const b of r.experience.pairs) rows.push(['pairing', b.key, b.n, b.pct]);
+      for (const s of r.experience.byGender) rows.push(['avg_call_seconds_by_gender', s.key, s.avgSeconds, s.satisfaction == null ? '' : s.satisfaction]);
+      for (const s of r.experience.byAge) rows.push(['avg_call_seconds_by_age', s.key, s.avgSeconds, s.satisfaction == null ? '' : s.satisfaction]);
+      rows.push(['ratings', 'thumbs_up', r.experience.up, r.experience.satisfaction == null ? '' : r.experience.satisfaction]);
+      rows.push(['ratings', 'thumbs_down', r.experience.down, '']);
+      csv = toCsv(['metric', 'key', 'value', 'percent'], rows);
     } else if (kind === 'bans') {
       csv = toCsv(['username', 'client_id', 'ip', 'country', 'city', 'reason', 'created', 'expires', 'lifted'],
         store.data.bans.map((b) => [b.username || '', b.clientId || '', b.ip || '', b.country || '', b.city || '', b.reason || '', isoOr(b.createdAt), isoOr(b.expiresAt), isoOr(b.liftedAt)]));

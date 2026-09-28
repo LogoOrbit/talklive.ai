@@ -436,6 +436,8 @@ img { max-width: 100%; }
   content: ''; position: absolute; inset: 3px; border-radius: 50%; background: var(--accent);
 }
 .gate-note { margin: 18px 0 0; color: var(--muted); font-size: 12px; }
+.gate-age-opt { min-height: 36px; padding: 6px 12px; border-radius: 99px; border: 1px solid color-mix(in srgb, var(--text) 16%, transparent); background: transparent; color: var(--muted); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.gate-age-opt.selected { color: var(--text); border-color: var(--accent, #6c5ce7); background: color-mix(in srgb, var(--accent, #6c5ce7) 18%, transparent); }
 .gate-option-neutral .gate-option-icon { color: var(--muted); }
 
 /* The way past a picker for whoever does not care which one. Quiet enough not

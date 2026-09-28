@@ -486,6 +486,7 @@ html:not(.tl-set-css) .tl-set-page { visibility: hidden; }
   border-radius: 15px;
   background: color-mix(in srgb, var(--text) 7%, transparent);
 }
+.tl-seg.tl-seg-3 { grid-auto-flow: row; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .tl-seg .tl-seg-opt {
   position: relative;
   z-index: 1;

@@ -1116,6 +1116,15 @@ genderGroup.addEventListener('click', (e) => {
   } catch (_) { /* storage blocked */ }
   registerProfile();
 });
+// Age group: optional, self-reported, only used in aggregate analytics.
+const ageGroupEl = document.getElementById('ageGroup');
+initPillGroup(ageGroupEl);
+try { setPillGroupValue(ageGroupEl, localStorage.getItem('talklive_age_group') || 'unspecified'); } catch (_) {}
+ageGroupEl.addEventListener('click', (e) => {
+  if (!e.target.closest('.pill')) return;
+  try { localStorage.setItem('talklive_age_group', ageGroupEl.dataset.value === 'unspecified' ? '' : ageGroupEl.dataset.value); } catch (_) {}
+  registerProfile();
+});
 initPillGroup(prefGenderGroup);
 prefGenderGroup.addEventListener('click', () => syncFilterReadout());
 initPillGroup(themeGroup);
@@ -1440,7 +1449,7 @@ function closeQuickSettings() {
 // page over its size budget); it is fetched once the page is idle, or on the
 // first tap of the gear if that comes sooner.
 // It also brings settings.css, which the screen waits for (html.tl-set-css).
-var SETTINGS_PANEL_SRC = '/settings-panel.js?v=20260924tone';
+var SETTINGS_PANEL_SRC = '/settings-panel.js?v=20260928aud';
 var settingsPanelLoading = null; // var: openAppSettings can run before this line on /settings
 function loadSettingsPanel() {
   if (window.TalkLiveSettingsPanel) return window.TalkLiveSettingsPanel.ready;
@@ -1494,6 +1503,7 @@ function openQuickSettings() {
         saveTempNameBtn.click();
       },
       onGender: (g) => { setPillGroupValue(genderGroup, g || 'unspecified'); registerProfile(); },
+      onAge: (a) => { setPillGroupValue(ageGroupEl, a || 'unspecified'); registerProfile(); },
       onTheme: (theme) => applyTheme(theme),
       onSound: (on) => flip(soundToggle, on),
       onVibration: (on) => flip(vibrationToggle, on),
@@ -7458,6 +7468,7 @@ function registerProfile() {
     clientId: getClientId(),
     identityToken: getIdentityToken(),
     gender: genderGroup.dataset.value,
+    ageGroup: ageGroupEl.dataset.value,
     prefGender: appliedFilters.prefGender,
     includeCountries: appliedFilters.includeCountries,
     excludeCountries: appliedFilters.excludeCountries,
@@ -9909,6 +9920,15 @@ socket.on('signal', (data) => {
   handleSignal(data);
 });
 
+// Post-call "how was it?" - the card loads only when first needed.
+socket.on('rate-prompt', (d) => {
+  const show = () => window.TalkLiveRate && window.TalkLiveRate.show(socket, d);
+  if (window.TalkLiveRate) return show();
+  const s = document.createElement('script');
+  s.src = '/rate-prompt.js?v=1';
+  s.onload = show;
+  document.head.appendChild(s);
+});
 socket.on('partner-left', (info) => {
   // Their connection dropped rather than them leaving: say so, by name, and
   // leave the door open instead of declaring the call over.

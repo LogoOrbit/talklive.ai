@@ -204,6 +204,13 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .rankrow .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
 .rankrow .bar{height:20px;border-radius:99px;background:var(--grad);min-width:3px;transition:width .8s cubic-bezier(.2,.7,.3,1);box-shadow:0 2px 10px rgba(108,92,231,.3)}
 .rankrow .n{text-align:right;color:var(--ink2);font-variant-numeric:tabular-nums;font-size:.8rem}
+.stack{display:flex;gap:2px;height:22px;border-radius:99px;overflow:hidden;background:var(--surface-2)}
+.stack i{display:block;height:100%;min-width:3px;transition:width .8s cubic-bezier(.2,.7,.3,1)}
+.scols{display:flex;align-items:flex-end;gap:3px;height:150px;border-bottom:1px solid var(--grid)}
+.scol{flex:1;height:100%;display:flex;align-items:flex-end;min-width:0}
+.sfill{width:100%;display:flex;flex-direction:column-reverse;gap:2px;border-radius:4px 4px 0 0;overflow:hidden;min-height:2px}
+.sfill i{display:block;min-height:2px}
+table.heat{min-width:480px}table.heat td.num{border-radius:6px}
 .hrow{display:grid;grid-template-columns:minmax(90px,150px) 1fr 58px;align-items:center;gap:10px;margin:7px 0;font-size:.84rem}
 .hrow .hbar{height:18px;border-radius:99px;min-width:3px;transition:width .8s cubic-bezier(.2,.7,.3,1)}
 .hrow .n{text-align:right;color:var(--ink2);font-variant-numeric:tabular-nums}
@@ -645,9 +652,9 @@ function rankedBars(el,entries){
    "watch → act on people → understand users → money → the machine" instead of
    fourteen peers in a row. Shortcut keys 1-9 follow this order. */
 const GROUPS=[
-  ['Monitor',[['overview','Overview','📊'],['live','Live','🟢'],['activity','Activity','📅'],['ai','AI Bot','🤖']]],
+  ['Monitor',[['overview','Overview','📊'],['live','Live','🟢'],['activity','Activity','📅'],['experience','Experience','🩺'],['ai','AI Bot','🤖']]],
   ['Moderation',[['reports','Reports','🚩'],['chats','Chats','💬'],['bans','Bans','⛔']]],
-  ['People',[['accounts','Accounts','👤'],['talktime','Talk time','⏱️'],['feedback','Feedback','⭐']]],
+  ['People',[['audience','Audience','⚧'],['accounts','Accounts','👤'],['talktime','Talk time','⏱️'],['feedback','Feedback','⭐']]],
   ['Business',[['revenue','Revenue','💎']]],
   ['System',[['errors','Errors','🐛'],['audit','Audit log','🧾'],['settings','Settings','🛠️']]]
 ];
@@ -836,6 +843,8 @@ async function load(force){
     if(tab==='overview')await viewOverview();
     else if(tab==='activity')await viewActivity();
     else if(tab==='ai')await viewBot();
+    else if(tab==='audience')await viewAudience();
+    else if(tab==='experience')await viewExperience();
     else if(tab==='live')await viewLive();
     else if(tab==='reports')await viewReports();
     else if(tab==='bans')await viewBans();
@@ -999,6 +1008,153 @@ async function viewOverview(){
   hbars($('#crawlerBars'),o.crawlers||[],'var(--warn)');
   hbars($('#countryBars'),o.countries,'var(--s1)');
   hbars($('#cityBars'),o.cities,'var(--s2)');
+}
+
+/* ---------- audience & experience ----------
+   Who uses TalkLive (gender, age group, device, language, new vs returning)
+   and how it goes for them (wait, give-ups, call length, pairings, ratings).
+   Gender and age are self-reported and never verified. People are counted once
+   per person per UTC day, so a 7-day figure is "person-days". */
+let audRange=7,audCache=null;
+const G_COLOR={male:'var(--s1)',female:'var(--s5)',unspecified:'var(--muted)'};
+const G_LABEL={male:'♂ Male',female:'♀ Female',unspecified:'Not stated'};
+const LVL_PILL={good:'good',info:'info',warn:'warn',crit:'crit'};
+const LC_LABEL={'new':'🆕 New (first day)','1-7d':'Returning · within a week','8-30d':'Returning · 1-4 weeks','30d+':'Loyal · 30+ days','unknown':'Unknown'};
+function audRangeBar(kind){
+  return `<div class="tbar" style="margin:0 0 12px">
+    <div class="seg">${[[1,'Today (UTC)'],[7,'Last 7 days'],[30,'Last 30 days']].map(([v,l])=>`<button data-ar="${v}" class="${audRange===v?'on':''}">${l}</button>`).join('')}</div>
+    <span style="margin-left:auto"><a class="lnk" href="/owner/api/export/audience.csv?range=${audRange}" download>⬇ Export ${kind} CSV</a></span></div>`;
+}
+function wireAudRange(){document.querySelectorAll('[data-ar]').forEach(b=>b.onclick=()=>{audRange=Number(b.dataset.ar);load();});}
+/* One 100% bar split by share, every segment labelled so identity is never
+   colour alone. */
+function stackBar(parts,total){
+  const t=total||parts.reduce((a,p)=>a+p.n,0);
+  if(!t)return '<div class="muted">No data yet.</div>';
+  return `<div class="stack">${parts.filter(p=>p.n>0).map(p=>`<i style="width:${p.n/t*100}%;background:${p.color}" title="${esc(p.label)}: ${num(p.n)} (${pctOf(p.n,t)})"></i>`).join('')}</div>
+  <div class="legend" style="margin-top:8px">${parts.filter(p=>p.n>0||parts.length<=3).map(p=>`<span><i style="background:${p.color}"></i>${esc(p.label)} <b>${pctOf(p.n,t)}</b> <span class="muted">(${num(p.n)})</span></span>`).join('')}</div>`;
+}
+/* Bars with a count and a share. */
+function shareBars(rows,color){
+  const max=Math.max(1,...rows.map(r=>r.n));
+  return rows.map(r=>`<div class="hrow" style="grid-template-columns:minmax(100px,190px) 1fr 96px"><div title="${esc(r.label)}">${esc(r.label)}</div><div><div class="hbar" style="width:${Math.max(1,r.n/max*100)}%;background:${r.color||color}${r.dim?';opacity:.45':''}"></div></div><div class="n">${num(r.n)} · <b>${r.pct==null?'-':r.pct+'%'}</b></div></div>`).join('')||'<div class="muted">No data yet.</div>';
+}
+const entriesToShare=(list,labelFn)=>{const t=list.reduce((a,e)=>a+e[1],0);return list.map(([k,n])=>({label:labelFn?labelFn(k):k,n,pct:t?Math.round(n/t*1000)/10:0}));};
+const LANGS={en:'English',es:'Spanish',pt:'Portuguese',fr:'French',de:'German',it:'Italian',ru:'Russian',ar:'Arabic',hi:'Hindi',ur:'Urdu',bn:'Bengali',id:'Indonesian',tr:'Turkish',fa:'Persian',zh:'Chinese',ja:'Japanese',ko:'Korean',vi:'Vietnamese',th:'Thai',pl:'Polish',nl:'Dutch',uk:'Ukrainian',fil:'Filipino',tl:'Tagalog',ms:'Malay',sw:'Swahili'};
+async function fetchAudience(){audCache=await api('audience?range='+audRange);return audCache;}
+
+async function viewAudience(){
+  const r=await fetchAudience();
+  const p=r.people,L=r.live;
+  const g=Object.fromEntries(p.gender.map(x=>[x.key,x]));
+  const known=g.male.n+g.female.n;
+  const liveKnown=L.gender.male+L.gender.female;
+  const ageKnown=p.age.filter(a=>a.key!=='unspecified');
+  const ageKnownTotal=ageKnown.reduce((a,x)=>a+x.n,0);
+  const topAge=ageKnown.slice().sort((a,b)=>b.n-a.n)[0];
+  const rangeTxt=r.range===1?'today (UTC)':'last '+r.range+' days';
+  const heatMax=Math.max(1,...p.cross.flatMap(x=>x.cells));
+  $('#main').innerHTML=`${audRangeBar('audience')}
+  <div class="grid tiles anim" style="margin-top:0">
+    <div class="tile"><div class="k">People in app</div><div class="v grad" data-count="${p.personDays}">0</div><div class="s">${rangeTxt} · ${r.range===1?'unique people':'person-days'}</div></div>
+    <div class="tile"><div class="k">♀ Female share</div><div class="v" style="color:var(--s5)">${known?pctOf(g.female.n,known):'-'}</div><div class="s">of people who state a gender · ${num(g.female.n)}</div></div>
+    <div class="tile"><div class="k">♂ Male share</div><div class="v" style="color:var(--s1)">${known?pctOf(g.male.n,known):'-'}</div><div class="s">of people who state a gender · ${num(g.male.n)}</div></div>
+    <div class="tile"><div class="k">Women per man</div><div class="v">${p.femaleToMale==null?'-':p.femaleToMale}</div><div class="s">1.0 = perfectly balanced</div></div>
+    <div class="tile"><div class="k">Top age group</div><div class="v">${topAge&&topAge.n?esc(topAge.key):'-'}</div><div class="s">${topAge&&topAge.n?topAge.knownPct+'% of those who set an age':'no age data yet'}</div></div>
+    <div class="tile"><div class="k">🟢 Online now</div><div class="v" data-count="${L.total}">0</div><div class="s">${liveKnown?pctOf(L.gender.female,liveKnown)+' female · '+pctOf(L.gender.male,liveKnown)+' male':'no stated genders online'}</div></div>
+  </div>
+
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr))">
+    <div class="card anim"><h2>⚧ Gender <span class="sub">${rangeTxt} · self-reported, never verified</span></h2>
+      <div class="sechead" style="margin-top:4px">All people (${num(p.personDays)})</div>
+      ${stackBar(p.gender.map(x=>({label:G_LABEL[x.key],n:x.n,color:G_COLOR[x.key]})))}
+      <div class="sechead">Among people who state a gender (${num(known)} · ${p.genderKnownPct}% state one)</div>
+      ${stackBar([{label:G_LABEL.male,n:g.male.n,color:G_COLOR.male},{label:G_LABEL.female,n:g.female.n,color:G_COLOR.female}])}
+      <div class="sechead">🟢 Online right now (${num(L.total)})</div>
+      ${stackBar(['male','female','unspecified'].map(k=>({label:G_LABEL[k],n:L.gender[k],color:G_COLOR[k]})))}
+      ${L.waiting?`<div class="muted" style="margin-top:6px">Waiting for a match now: ${num(L.waitingBy.male)} male · ${num(L.waitingBy.female)} female · ${num(L.waitingBy.unspecified)} not stated</div>`:''}
+    </div>
+    <div class="card anim"><h2>🎂 Age groups <span class="sub">${rangeTxt} · ${p.ageKnownPct}% have set one</span></h2>
+      ${shareBars(ageKnown.map(a=>({label:a.key,n:a.n,pct:a.knownPct})),'var(--accent)')}
+      ${shareBars(p.age.filter(a=>a.key==='unspecified').map(a=>({label:'Not set',n:a.n,pct:a.pct,dim:true})),'var(--muted)')}
+      <div class="muted" style="margin-top:8px">Shares are of people who set an age group (${num(ageKnownTotal)}). "Not set" is a share of everyone.</div>
+      <div class="sechead">🟢 Online right now</div>
+      ${stackBar(['18-24','25-34','35-44','45-54','55+'].map((k,i)=>({label:k,n:L.age[k]||0,color:['var(--s1)','var(--s2)','var(--s3)','var(--s5)','var(--accent)'][i]})))}
+    </div>
+  </div>
+
+  <div class="card anim"><h2>🔥 Gender × age <span class="sub">${rangeTxt} · darker = more people · hover for share</span></h2>
+    <div style="overflow-x:auto"><table class="heat"><tr><th></th>${p.ageKeys.map(a=>`<th class="num">${a==='unspecified'?'Not set':esc(a)}</th>`).join('')}<th class="num">Total</th></tr>
+    ${p.cross.map(row=>{const rt=row.cells.reduce((a,b)=>a+b,0);return `<tr><td><b>${G_LABEL[row.gender]}</b></td>${row.cells.map((v,i)=>`<td class="num" title="${esc(G_LABEL[row.gender])}, ${esc(p.ageKeys[i])}: ${num(v)} (${pctOf(v,p.personDays)} of everyone, ${pctOf(v,rt)} of ${esc(G_LABEL[row.gender])})" style="background:color-mix(in srgb,var(--accent) ${Math.round(v/heatMax*70)}%,transparent)">${num(v)}</td>`).join('')}<td class="num"><b>${num(rt)}</b></td></tr>`;}).join('')}
+    </table></div></div>
+
+  ${r.range>1?`<div class="card anim"><h2>📈 Daily people by gender <span class="sub">${rangeTxt}</span></h2>
+    <div class="legend"><span><i style="background:var(--s1)"></i>Male</span><span><i style="background:var(--s5)"></i>Female</span><span><i style="background:var(--muted)"></i>Not stated</span></div>
+    <div id="audTrend"></div></div>`:''}
+
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
+    <div class="card anim"><h2>🔁 New vs returning <span class="sub">how long ago each person first came</span></h2>
+      ${shareBars(p.lifecycle.filter(l=>l.n||l.key!=='unknown').map(l=>({label:LC_LABEL[l.key],n:l.n,pct:l.pct})),'var(--s2)')}</div>
+    <div class="card anim"><h2>📱 Devices</h2>${shareBars(entriesToShare(p.device,k=>({mobile:'📱 Phone',desktop:'💻 Desktop',tablet:'📟 Tablet'}[k]||k)),'var(--s1)')}</div>
+    <div class="card anim"><h2>🖥️ Operating systems</h2>${shareBars(entriesToShare(p.os),'var(--s2)')}</div>
+    <div class="card anim"><h2>🌐 Browsers</h2>${shareBars(entriesToShare(p.browser),'var(--s3)')}</div>
+    <div class="card anim"><h2>🗣️ Languages <span class="sub">browser language</span></h2>${shareBars(entriesToShare(p.lang,k=>LANGS[k]||k),'var(--s5)')}</div>
+    <div class="card anim"><h2>🎯 Interests <span class="sub">what people put in their filters</span></h2>
+      <div class="chips">${p.interests.map(([w,n])=>`<span class="chip">${esc(w)} · ${num(n)}</span>`).join('')||'<span class="muted">No interests set yet.</span>'}</div></div>
+  </div>`;
+  animateCounters();wireAudRange();
+  const tr=$('#audTrend');if(tr)stackCols(tr,r.trend,['male','female','unspecified'],['var(--s1)','var(--s5)','var(--muted)'],['Male','Female','Not stated']);
+}
+/* Stacked daily columns (counts share one axis). */
+function stackCols(el,series,keys,colors,labels){
+  const max=Math.max(1,...series.map(d=>keys.reduce((a,k)=>a+(d[k]||0),0)));
+  el.innerHTML=`<div class="scols">${series.map(d=>{const t=keys.reduce((a,k)=>a+(d[k]||0),0);
+    return `<div class="scol" title="${esc(d.day)} · ${keys.map((k,i)=>labels[i]+': '+num(d[k])).join(' · ')}"><div class="sfill" style="height:${t/max*100}%">${keys.map((k,i)=>d[k]?`<i style="flex:${d[k]};background:${colors[i]}"></i>`:'').join('')}</div></div>`;}).join('')}</div>
+  <div class="hourlbl" style="grid-template-columns:repeat(${series.length},1fr)">${series.map((d,i)=>`<span>${i%Math.ceil(series.length/7)===0?d.day.slice(5):''}</span>`).join('')}</div>`;
+}
+
+async function viewExperience(){
+  const r=await fetchAudience();
+  const e=r.experience,h=r.health;
+  const rangeTxt=r.range===1?'today (UTC)':'last '+r.range+' days';
+  const scoreCls=h.score==null?'info':h.score>=75?'good':h.score>=50?'warn':'crit';
+  const segTable=(rows,label)=>`<div style="overflow-x:auto"><table style="min-width:0"><tr><th>${label}</th><th class="num">Calls</th><th class="num">Avg length</th><th class="num">≥ 1 min</th><th class="num">👍 rate</th></tr>
+    ${rows.map(s=>`<tr><td>${esc(G_LABEL[s.key]||(s.key==='unspecified'?'Not set':s.key))}</td><td class="num">${num(s.calls)}</td><td class="num">${dur(s.avgSeconds)}</td><td class="num">${s.calls?s.realPct+'%':'-'}</td><td class="num">${s.satisfaction==null?'<span class="muted">-</span>':s.satisfaction+'% <span class="muted">('+num(s.ratings)+')</span>'}</td></tr>`).join('')}</table></div>`;
+  $('#main').innerHTML=`${audRangeBar('experience')}
+  <div class="card concl anim" style="margin-top:0"><h2>🩺 App health score <span class="sub">${rangeTxt}</span> <span class="pill ${scoreCls}" style="font-size:1rem">${h.score==null?'not enough data':h.score+' / 100'}</span></h2>
+    ${h.parts.length?h.parts.map(x=>`<div class="hrow" style="grid-template-columns:minmax(90px,170px) 1fr 150px"><div>${esc(x.name)}</div><div><div class="hbar" style="width:${Math.max(2,x.score)}%;background:${x.score>=75?'var(--good)':x.score>=50?'var(--warn)':'var(--crit)'}"></div></div><div class="n"><b>${x.score}</b> <span class="muted">${esc(x.note)}</span></div></div>`).join('')
+      :'<div class="muted">Scores appear once there are a few searches, calls and ratings in this range.</div>'}
+    <div class="sechead">What the numbers say</div>
+    <ul>${r.insights.map(i=>`<li><span class="pill ${LVL_PILL[i.level]}">${i.level==='good'?'✓ good':i.level==='crit'?'⚠ act now':i.level==='warn'?'! watch':'i info'}</span> ${esc(i.text)}</li>`).join('')}</ul></div>
+
+  <div class="grid tiles anim">
+    <div class="tile"><div class="k">⏳ Avg wait to match</div><div class="v">${dur(e.avgWaitSeconds)}</div><div class="s">${num(e.searches)} searches</div></div>
+    <div class="tile"><div class="k">🚪 Gave up waiting</div><div class="v" style="color:${e.abandonPct>=30?'var(--crit)':'inherit'}">${e.abandonPct}%</div><div class="s">${num(e.abandoned)} · after ${dur(e.avgAbandonSeconds)} avg</div></div>
+    <div class="tile"><div class="k">💬 Conversations</div><div class="v" data-count="${e.calls}">0</div><div class="s">${e.totalTalkHours} hours of talk</div></div>
+    <div class="tile"><div class="k">⏱️ Avg conversation</div><div class="v">${dur(e.avgCallSeconds)}</div><div class="s">${e.realPct}% last over a minute</div></div>
+    <div class="tile"><div class="k">⏭️ Skip rate</div><div class="v" style="color:${e.skipRatePct>=50?'var(--warn)':'inherit'}">${e.skipRatePct}%</div><div class="s">ended within 10 seconds</div></div>
+    <div class="tile"><div class="k">👍 Satisfaction</div><div class="v" style="color:${e.satisfaction==null?'inherit':e.satisfaction>=75?'var(--good)':e.satisfaction<50?'var(--crit)':'var(--warn)'}">${e.satisfaction==null?'-':e.satisfaction+'%'}</div><div class="s">${num(e.up)} 👍 · ${num(e.down)} 👎</div></div>
+    <div class="tile"><div class="k">🚩 Reports / 1k matches</div><div class="v" style="color:${e.reportsPer1k>=20?'var(--crit)':'inherit'}">${e.reportsPer1k}</div><div class="s">${num(e.reports)} reports · ${num(e.matches)} matches</div></div>
+    <div class="tile"><div class="k">🎯 Visitor → user</div><div class="v">${e.visitors?e.visitorToUserPct+'%':'-'}</div><div class="s">visitors who opened the app</div></div>
+  </div>
+
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr))">
+    <div class="card anim"><h2>⏳ Time to match <span class="sub">per person, ${rangeTxt}</span></h2>${shareBars(e.wait.map(b=>({label:b.key,n:b.n,pct:b.pct})),'var(--s1)')}</div>
+    <div class="card anim"><h2>⏱️ Conversation length <span class="sub">${rangeTxt}</span></h2>${shareBars(e.length.map(b=>({label:b.key,n:b.n,pct:b.pct})),'var(--s2)')}</div>
+    <div class="card anim"><h2>👫 Who gets paired with whom <span class="sub">M = male · F = female · ? = not stated</span></h2>${shareBars(e.pairs.map(b=>({label:b.key,n:b.n,pct:b.pct})),'var(--s5)')}</div>
+    <div class="card anim"><h2>👍 Ratings by conversation length <span class="sub">post-call thumbs up / down</span></h2>
+      ${e.ratings?shareBars(e.rateByLength.filter(b=>b.up+b.down).map(b=>({label:b.key+' ('+num(b.up+b.down)+')',n:b.up,pct:b.satisfaction,color:b.satisfaction>=75?'var(--good)':b.satisfaction>=50?'var(--warn)':'var(--crit)'})),'var(--good)'):'<div class="muted">No ratings yet. After a conversation of 20s or more, both people are asked "How was that conversation?" with a 👍 / 👎.</div>'}</div>
+  </div>
+
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(360px,1fr))">
+    <div class="card anim"><h2>⚧ Experience by gender <span class="sub">each person's calls, ${rangeTxt}</span></h2>${segTable(e.byGender,'Gender')}</div>
+    <div class="card anim"><h2>🎂 Experience by age group <span class="sub">each person's calls, ${rangeTxt}</span></h2>${segTable(e.byAge,'Age group')}</div>
+  </div>
+
+  ${r.range>1?`<div class="card anim"><h2>📈 Daily wait vs conversation length <span class="sub">seconds, ${rangeTxt}</span></h2>
+    <div class="legend"><span><i style="background:var(--s1)"></i>Avg wait</span><span><i style="background:var(--s2)"></i>Avg conversation</span></div><div id="expTrend"></div></div>`:''}`;
+  animateCounters();wireAudRange();
+  const tr=$('#expTrend');if(tr)lineChart(tr,r.trend,['avgWait','avgCall'],['var(--s1)','var(--s2)'],['Avg wait (s)','Avg conversation (s)']);
 }
 
 /* ---------- activity: hour-by-hour, daily and weekly reports ---------- */
@@ -1240,13 +1396,14 @@ async function viewLive(){
     <div class="seg">${[['','All',r.users.length],['chatting','Chatting',by.chatting],['waiting','Waiting',by.waiting],['idle','Idle',by.idle]].map(([k,l,n])=>`<button data-ls="${k}" class="${liveStatus===k?'on':''}">${l} (${n})</button>`).join('')}</div>
     <input id="liveQ" class="grow" placeholder="Filter by name, country, IP…" value="${esc(liveQ)}">${liveQ?'<button class="lnk" id="liveClear">Clear</button>':''}
   </div>
-  <table><tr><th>User</th><th>Location</th><th>Status</th><th>Account</th><th class="num">Reports</th><th>IP</th><th></th></tr>
+  <table><tr><th>User</th><th>Location</th><th>Gender · age</th><th>Status</th><th>Account</th><th class="num">Reports</th><th>IP</th><th></th></tr>
   ${users.map(u=>`<tr><td><b>${esc(u.username)}</b><br><span class="muted">${esc(u.clientId.slice(0,12))}…</span></td>
   <td>${esc(u.country)}${u.city&&u.city!=='Unknown'?', '+esc(u.city):''}</td>
+  <td>${u.gender==='male'?'♂':u.gender==='female'?'♀':'<span class="muted">-</span>'} ${u.ageGroup&&u.ageGroup!=='unspecified'?esc(u.ageGroup):''}${u.device?` <span class="muted">${u.device==='mobile'?'📱':u.device==='tablet'?'📟':'💻'}</span>`:''}</td>
   <td>${liveStatusPill(u)}</td>
   <td>${u.account?esc(u.account):'<span class="muted">guest</span>'}</td>
   <td class="num">${u.reports?`<span class="pill crit">${u.reports}</span>`:'0'}</td>
-  <td class="muted">${esc(u.ip)}</td><td>${banButtons(u)}</td></tr>`).join('')||`<tr><td colspan="7" class="muted">${liveQ||liveStatus?'No live user matches that filter.':'Nobody online right now.'}</td></tr>`}</table></div>`;
+  <td class="muted">${esc(u.ip)}</td><td>${banButtons(u)}</td></tr>`).join('')||`<tr><td colspan="8" class="muted">${liveQ||liveStatus?'No live user matches that filter.':'Nobody online right now.'}</td></tr>`}</table></div>`;
   const inp=$('#liveQ');
   onFilterInput(inp,(v)=>{liveQ=v;},()=>viewLive().then(()=>keepFocus('#liveQ')));
   const cl=$('#liveClear');if(cl)cl.onclick=()=>{liveQ='';viewLive();};

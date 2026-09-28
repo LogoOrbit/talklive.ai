@@ -33,6 +33,7 @@ const mail = require('./mailer');
 const { botLabel, isPrefetch } = require('./bots');
 const { createAdmin, applyOwnerReset } = require('./admin');
 const { isValidTimezone } = require('./analytics');
+const audience = require('./audience');
 
 const app = express();
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
@@ -857,6 +858,8 @@ function getRuntime() {
       countryCode: p.country,
       city: p.city,
       gender: p.gender,
+      ageGroup: p.ageGroup || 'unspecified',
+      device: p.device || null,
       ip: getClientIp(sock),
       inCall: partners.has(sid),
       waiting: waitingQueue.includes(sid),
@@ -2771,6 +2774,14 @@ function sendOnlineCountTo(socket) {
   socket.emit('online-people', onlinePeopleList());
 }
 
+// Someone stopped searching (left or closed the tab) before a match was found.
+function noteSearchAbandoned(socketId) {
+  const p = profiles.get(socketId);
+  if (!p || !p.searchSince || !waitingQueue.includes(socketId)) return;
+  store.recordQueueAbandon(Math.max(0, Math.round((Date.now() - p.searchSince) / 1000)));
+  p.searchSince = 0;
+}
+
 function clearFromQueue(socketId) {
   const idx = waitingQueue.indexOf(socketId);
   if (idx !== -1) waitingQueue.splice(idx, 1);
@@ -2930,6 +2941,7 @@ function disconnectPartner(socketId, opts = {}) {
     // A pairing whose media never came up was not a conversation.
     if (startedAt && !opts.failed) {
       const seconds = Math.round((Date.now() - startedAt) / 1000);
+      noteCallForAnalytics(socketId, profile, partnerId, partnerProfile, seconds);
       store.recordTalkTime(profile.clientId, seconds, { username: profile.username, country: profile.countryName || profile.country });
       store.recordTalkTime(partnerProfile.clientId, seconds, { username: partnerProfile.username, country: partnerProfile.countryName || partnerProfile.country });
       const a = noteConversationLength(profile.clientId, partnerProfile.clientId, seconds);
@@ -2953,6 +2965,34 @@ function disconnectPartner(socketId, opts = {}) {
     });
   }
   return partnerId;
+}
+
+// Aggregate call analytics, plus the one-tap "how was it?" prompt. The prompt
+// is offered only after a conversation long enough to judge, and a moment
+// later so it does not land on top of the next match: someone who tapped Next
+// and is already talking to a new person is not asked about the last one.
+const RATE_MIN_SECONDS = Number(process.env.RATE_MIN_SECONDS) || 20;
+const RATE_WINDOW_MS = 10 * 60 * 1000;
+function noteCallForAnalytics(socketId, profile, partnerId, partnerProfile, seconds) {
+  const lenBucket = audience.bucketOf(audience.LEN_BUCKETS, seconds);
+  const side = (p) => ({ gender: audience.normGender(p.gender), age: audience.normAge(p.ageGroup) });
+  store.recordCallEnd({
+    seconds,
+    lenBucket,
+    pair: audience.pairKeyOf(profile.gender, partnerProfile.gender),
+    sides: [side(profile), side(partnerProfile)],
+    real: seconds >= REAL_CONVERSATION_MS / 1000,
+  });
+  if (seconds < RATE_MIN_SECONDS) return;
+  for (const [sid, p] of [[socketId, profile], [partnerId, partnerProfile]]) {
+    const token = crypto.randomBytes(6).toString('hex');
+    p.pendingRating = { token, at: Date.now(), lenBucket };
+    setTimeout(() => {
+      const sock = io.sockets.sockets.get(sid);
+      if (!sock || partners.has(sid) || !p.pendingRating || p.pendingRating.token !== token) return;
+      sock.emit('rate-prompt', { t: token, s: seconds });
+    }, 1500);
+  }
 }
 
 // The 12 spirit animals a user can pick (public/animals.js holds the artwork).
@@ -3159,6 +3199,13 @@ function tryMatch(socketId) {
     // conversation actually lasted, whichever side ends it.
     seekerProfile.matchedAt = Date.now();
     partnerProfile.matchedAt = seekerProfile.matchedAt;
+    // Time each side spent searching, for the dashboard's wait-time view.
+    for (const p of [seekerProfile, partnerProfile]) {
+      const since = p.searchSince || p.queuedAt || 0;
+      const waited = since ? Math.max(0, Math.round((p.matchedAt - since) / 1000)) : 0;
+      store.recordWait(waited, audience.bucketOf(audience.WAIT_BUCKETS, waited));
+      p.searchSince = 0;
+    }
 
     const mode = seekerProfile.mode || 'talk';
     store.recordFeature(mode === 'chat' ? 'chat_match' : 'match');
@@ -3173,7 +3220,12 @@ function tryMatch(socketId) {
   } else {
     waitingQueue.push(socketId);
     const seekerProfile = profiles.get(socketId);
-    if (seekerProfile) seekerProfile.queuedAt = Date.now();
+    if (seekerProfile) {
+      seekerProfile.queuedAt = Date.now();
+      // queuedAt resets whenever the fallback re-queues; this is when the
+      // search itself began.
+      if (!seekerProfile.searchSince) seekerProfile.searchSince = seekerProfile.queuedAt;
+    }
     seekerSocket.emit('waiting', {
       estimatedSeconds: estimatedWaitSeconds(),
       predicted: predictedMatch(socketId),
@@ -4081,6 +4133,10 @@ io.on('connection', (socket) => {
       countryName: geo.countryName,
       city: geo.city,
       gender: data.gender || 'unspecified',
+      // Self-reported in Settings, never verified; only used for the owner's
+      // aggregate audience analytics.
+      ageGroup: audience.normAge(data.ageGroup),
+      device: audience.parseUA(socket.handshake.headers['user-agent']).device,
       prefGender: premium ? (data.prefGender || 'any') : 'any',
       includeCountries: sanitizeCountryList(data.includeCountries),
       excludeCountries: sanitizeCountryList(data.excludeCountries),
@@ -4100,6 +4156,20 @@ io.on('connection', (socket) => {
         && isValidTimezone(data.timezone) ? data.timezone : null,
     });
     clientSockets.set(clientId, socket.id);
+    {
+      const p = profiles.get(socket.id);
+      const ua = audience.parseUA(socket.handshake.headers['user-agent']);
+      store.recordPerson(clientId, {
+        gender: audience.normGender(p.gender),
+        age: p.ageGroup,
+        device: ua.device,
+        os: ua.os,
+        browser: ua.browser,
+        lang: audience.parseLang(socket.handshake.headers['accept-language']),
+        lifecycle: audience.lifecycleOf(clientId),
+        interests: p.interests,
+      });
+    }
     // The device's own copy of these switches wins: it is what the person
     // last saw and set. The stored copy covers the time they are away.
     if (typeof data.hideStatus === 'boolean' && !!statusHidden.get(clientId) !== data.hideStatus) {
@@ -4307,6 +4377,7 @@ io.on('connection', (socket) => {
 
   socket.on('leave', () => {
     disconnectPartner(socket.id);
+    noteSearchAbandoned(socket.id);
     clearFromQueue(socket.id);
     clearWaitFallbackTimer(socket.id);
   });
@@ -4416,6 +4487,22 @@ io.on('connection', (socket) => {
     syncClientState(socket, me.clientId);
     // The other side's friends list has lost someone too.
     if (targetSocket) syncClientState(targetSocket, targetClientId);
+  });
+
+  // Post-call thumbs up / down, answering a 'rate-prompt'. One answer per
+  // prompt, only for a conversation this socket actually had.
+  socket.on('rate-call', (payload = {}) => {
+    const p = profiles.get(socket.id);
+    const pending = p && p.pendingRating;
+    if (!pending || typeof payload.t !== 'string' || payload.t !== pending.token) return;
+    p.pendingRating = null;
+    if (Date.now() - pending.at > RATE_WINDOW_MS) return;
+    if (payload.v !== 'up' && payload.v !== 'down') return;
+    store.recordRating(payload.v === 'up', {
+      gender: audience.normGender(p.gender),
+      age: audience.normAge(p.ageGroup),
+      lenBucket: pending.lenBucket,
+    });
   });
 
   // User-submitted product feedback. Logged for the operator; kept lightweight
@@ -5655,6 +5742,7 @@ io.on('connection', (socket) => {
     // The socket went away rather than the user pressing anything, so tell
     // whoever they were talking to exactly that.
     disconnectPartner(socket.id, { dropped: true });
+    noteSearchAbandoned(socket.id);
     clearFromQueue(socket.id);
     clearWaitFallbackTimer(socket.id);
     clearChatAway(socket.id);

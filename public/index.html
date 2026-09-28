@@ -1392,6 +1392,18 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
                 </div>
               </div>
 
+              <div class="tl-set-control tl-set-control-stack">
+                <span class="tl-set-label" id="ageGroupLabel" data-i18n="ageGroup">Age group</span>
+                <div class="tl-seg pill-group tl-seg-3" id="ageGroup" data-value="unspecified" role="group" aria-labelledby="ageGroupLabel">
+                  <button type="button" class="tl-seg-opt pill" data-value="unspecified"><span data-i18n="preferNotSay">Prefer not to say</span></button>
+                  <button type="button" class="tl-seg-opt pill" data-value="18-24">18–24</button>
+                  <button type="button" class="tl-seg-opt pill" data-value="25-34">25–34</button>
+                  <button type="button" class="tl-seg-opt pill" data-value="35-44">35–44</button>
+                  <button type="button" class="tl-seg-opt pill" data-value="45-54">45–54</button>
+                  <button type="button" class="tl-seg-opt pill" data-value="55+">55+</button>
+                </div>
+              </div>
+
               <!-- Nothing leaves the picker until Save. -->
               <div class="tl-set-control tl-set-control-stack">
                 <span class="tl-set-label" data-i18n="avatar">Avatar</span>
@@ -2629,7 +2641,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
        browser finish parsing and paint the page first. -->
   <script defer src="/socket.io/socket.io.min.js"></script>
   <script defer src="countries.js?v=20260828fix"></script>
-  <script defer src="i18n.js?v=20260927b"></script>
+  <script defer src="i18n.js?v=20260928aud"></script>
   <script defer src="chat-time.js?v=20260916navbar"></script>
   <script defer src="animals.js?v=20260924animline"></script>
   <script defer src="social-kit.js?v=20260924id"></script>
@@ -2670,7 +2682,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   <script defer src="chat-extras.js?v=20260924tidy"></script>
   <script defer src="games.js?v=20260924qa"></script>
   <script defer src="nickname-rules.js?v=20260924nick"></script>
-  <script defer src="app.js?v=20260927b"></script>
+  <script defer src="app.js?v=20260928aud"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the
