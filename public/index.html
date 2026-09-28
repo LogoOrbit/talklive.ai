@@ -60,7 +60,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
      side-panel shell, Settings, Friends/History and the account dialog, and it
      does so with its own `tl-` class names so nothing above can reach it. -->
-<link rel="stylesheet" href="ui.css?v=20260927b" />
+<link rel="stylesheet" href="ui.css?v=20260928vg" />
 <link rel="stylesheet" href="auth.css?v=20260924auth" />
 <!-- The top bar, shared with /chat. Loaded after everything else because it
      owns the header outright: one button language, one radius, one focus ring
@@ -839,8 +839,12 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
             <!-- Just-in-time disclosure, shown the first time the filters open
                  (see openFilters in app.js): what the gender filter matches on
                  and what it does not. One line, not another dialog. -->
+            <label class="tl-filter-check" id="prefVoiceCheckedRow" hidden>
+              <input type="checkbox" id="prefVoiceChecked" />
+              <span data-i18n="voiceCheckedOnly">Voice-checked only</span>
+            </label>
             <p class="tl-filter-note" id="genderFilterNote" hidden>
-              <span data-i18n="genderFilterNote">Gender is what each person picks for themselves and is never verified. TalkLive does not analyse voices to guess it.</span>
+              <span data-i18n="genderFilterNote">Gender is what each person picks for themselves. It is only checked by voice for people who turn on Voice check, and that check runs on their own device.</span>
               <a href="/privacy#gender" target="_blank" rel="noopener" data-i18n="genderFilterNoteLink">How this works</a>
             </p>
           </section>
@@ -1507,6 +1511,11 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
           <section>
             <h3 class="tl-set-legend" data-i18n="catPrivacy">Privacy &amp; Safety</h3>
             <div class="tl-set-group">
+              <label class="tl-set-control tl-set-toggle" for="voiceCheckToggle">
+                <span class="tl-set-ico i-dot" aria-hidden="true"></span>
+                <span class="tl-set-text"><strong data-i18n="voiceCheck">Voice check</strong><small data-i18n="voiceCheckHint">During calls your device checks your voice against the gender you picked. No audio leaves your device and nobody you talk to sees the result.</small><small id="voiceCheckStatus"></small></span>
+                <span class="switch"><input type="checkbox" id="voiceCheckToggle" /><span class="switch-slider" aria-hidden="true"></span></span>
+              </label>
               <label id="acceptCallsRow" class="tl-set-control tl-set-toggle" for="acceptCallsCheckbox">
                 <span class="tl-set-ico i-phone" aria-hidden="true"></span>
                 <span class="tl-set-text"><strong data-i18n="acceptCallsTitle">Receive incoming calls</strong><small data-i18n="acceptCallsBody">Friends can call you</small></span>
@@ -1870,7 +1879,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
             <p><strong>Governing law.</strong> These terms are governed by the laws of the jurisdiction in which TalkLive operates, without regard to conflict-of-law principles.</p>
 
             <h3>Privacy Note</h3>
-            <p>A basic match does not require an account, email, or phone number. Voice uses encrypted WebRTC through a production TURN relay and is not recorded or stored by TalkLive; automated safety checks run on your own microphone during calls (speech-to-text on desktop browsers only) and keep a short record only when abuse is detected. Typed messages, reports and related context may be retained for a limited rolling period for delivery, safety and moderation. TalkLive also processes IP address, approximate location and operational information as described in the full <a href="/privacy">Privacy Policy</a>, Gender is only what you choose in Settings: it is used for gender filters, is never verified, and TalkLive does not analyse voices to estimate it.</p>
+            <p>A basic match does not require an account, email, or phone number. Voice uses encrypted WebRTC through a production TURN relay and is not recorded or stored by TalkLive; automated safety checks run on your own microphone during calls (speech-to-text on desktop browsers only) and keep a short record only when abuse is detected. Typed messages, reports and related context may be retained for a limited rolling period for delivery, safety and moderation. TalkLive also processes IP address, approximate location and operational information as described in the full <a href="/privacy">Privacy Policy</a>, Gender is what you choose in Settings and is used for gender filters. If you turn on the optional Voice check, your own device compares your voice with the gender you picked; no audio leaves your device and only the yes/no result is used, for “Voice-checked only” matching.</p>
 
           </div>
         </div>
@@ -2682,7 +2691,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   <script defer src="chat-extras.js?v=20260924tidy"></script>
   <script defer src="games.js?v=20260924qa"></script>
   <script defer src="nickname-rules.js?v=20260924nick"></script>
-  <script defer src="app.js?v=20260928aud"></script>
+  <script defer src="app.js?v=20260928vg"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

@@ -3040,6 +3040,27 @@ function countryAllowed(prefs, otherCountryCode) {
   return true;
 }
 
+// The only values a client's voice check may report; anything else is dropped.
+function sanitizeVoiceGender(v) {
+  if (!v || (v.label !== 'male' && v.label !== 'female')) return null;
+  const confidence = Number(v.confidence);
+  if (!(confidence >= 0.85 && confidence <= 1)) return null;
+  return { label: v.label, confidence };
+}
+
+// Voice-checked: opted in, and the voice agreed with the gender they picked.
+// A voice that reads differently never changes anyone's gender - they are
+// simply not "voice-checked", exactly like someone who never turned it on.
+function voiceChecked(p) {
+  return !!(p.voiceGender && p.voiceGender.label === p.gender);
+}
+
+function genderPrefMet(seeker, candidate) {
+  if (!seeker.prefGender || seeker.prefGender === 'any') return true;
+  if (candidate.gender !== seeker.prefGender) return false;
+  return !seeker.prefVoiceChecked || voiceChecked(candidate);
+}
+
 // Returns true if candidate's profile satisfies seeker's filters, and vice versa.
 function mutuallyCompatible(seeker, candidate) {
   // Never match a user with themselves (e.g. two tabs of the same browser).
@@ -3065,12 +3086,8 @@ function mutuallyCompatible(seeker, candidate) {
   // near-empty site.
   if (pairOnCooldown(seeker.clientId, candidate.clientId, true)) return false;
 
-  if (seeker.prefGender && seeker.prefGender !== 'any' && candidate.gender !== seeker.prefGender) {
-    return false;
-  }
-  if (candidate.prefGender && candidate.prefGender !== 'any' && seeker.gender !== candidate.prefGender) {
-    return false;
-  }
+  if (!genderPrefMet(seeker, candidate)) return false;
+  if (!genderPrefMet(candidate, seeker)) return false;
   if (!countryAllowed(seeker, candidate.country)) return false;
   if (!countryAllowed(candidate, seeker.country)) return false;
   return true;
@@ -4138,6 +4155,14 @@ io.on('connection', (socket) => {
       ageGroup: audience.normAge(data.ageGroup),
       device: audience.parseUA(socket.handshake.headers['user-agent']).device,
       prefGender: premium ? (data.prefGender || 'any') : 'any',
+      // "Voice-checked only": with a gender preference, match only people whose
+      // on-device voice check agreed with the gender they picked themselves.
+      prefVoiceChecked: premium && data.prefVoiceChecked === true,
+      // Opt-in result of voice-gender.js, which runs on the person's own
+      // device. Kept in memory for this socket only, never stored, never sent
+      // to anyone else, and only ever used to confirm the self-declared gender.
+      voiceGender: data.voiceCheck === true ? sanitizeVoiceGender(data.voiceGender) : null,
+      voiceCheck: data.voiceCheck === true,
       includeCountries: sanitizeCountryList(data.includeCountries),
       excludeCountries: sanitizeCountryList(data.excludeCountries),
       randomFallbackActive: false,
@@ -4586,6 +4611,15 @@ io.on('connection', (socket) => {
   // incident to the dashboard transcript store (no email). Rate-limited per
   // socket so a hostile client can't spam the log.
   let lastModerationAlert = 0;
+  // voice-gender.js reached a confident verdict on this person's own voice.
+  // Ignored unless they opted in to Voice check for this profile.
+  socket.on('voice-gender', (data) => {
+    const p = profiles.get(socket.id);
+    if (!p || !p.voiceCheck) return;
+    const v = sanitizeVoiceGender(data);
+    if (v) p.voiceGender = v;
+  });
+
   socket.on('moderation-alert', ({ type, detail, transcript } = {}) => {
     const now = Date.now();
     if (now - lastModerationAlert < 30000) return;

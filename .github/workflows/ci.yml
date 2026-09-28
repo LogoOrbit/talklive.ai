@@ -43,6 +43,9 @@ jobs:
       - name: Test compression and call-safe ads
         run: node --test scripts/test-compression.js scripts/test-ad-lifecycle.js scripts/test-age-assurance.js
 
+      - name: Test voice check
+        run: npm run test:voice-gender
+
       - name: Audit generated SEO
         run: npm run audit:seo
 

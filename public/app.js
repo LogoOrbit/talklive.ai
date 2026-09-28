@@ -614,6 +614,71 @@ const includeCountries = new Set(); // draft "Interested Countries" - only match
 const excludeCountries = new Set(); // draft "Non Interested Countries" - never match these
 
 let localStream = null;
+
+// --- Voice check (opt-in; the analysis itself is voice-gender.js) ---
+// Off by default. When on, the person's own device compares their voice with
+// the gender they picked; only the verdict is kept (here and on the server
+// for this connection) and it only feeds "Voice-checked only" matching.
+// Turning it off forgets the verdict.
+const VOICE_CHECK_KEY = 'talklive_voice_check';
+const VOICE_RESULT_KEY = 'talklive_voice_result';
+const voiceCheckToggle = document.getElementById('voiceCheckToggle');
+const voiceCheckStatus = document.getElementById('voiceCheckStatus');
+let voiceCheckEnabled = false;
+let voiceResult = null;
+try {
+  voiceCheckEnabled = localStorage.getItem(VOICE_CHECK_KEY) === 'on';
+  voiceResult = voiceCheckEnabled ? JSON.parse(localStorage.getItem(VOICE_RESULT_KEY) || 'null') : null;
+} catch (_) { voiceResult = null; }
+
+function renderVoiceCheck() {
+  if (voiceCheckToggle) voiceCheckToggle.checked = voiceCheckEnabled;
+  if (!voiceCheckStatus) return;
+  let key = '';
+  if (voiceCheckEnabled) {
+    if (!voiceResult) key = 'voiceCheckPending';
+    else key = voiceResult.label === genderGroup.dataset.value ? 'voiceCheckConfirmed' : 'voiceCheckUnconfirmed';
+  }
+  voiceCheckStatus.textContent = key ? t(key) : '';
+  voiceCheckStatus.hidden = !key;
+}
+
+// Loaded on demand: only people who turn Voice check on download it.
+let voiceGenderLoad = null;
+function loadVoiceGender() {
+  if (window.VoiceGender) return Promise.resolve();
+  if (!voiceGenderLoad) {
+    voiceGenderLoad = new Promise((resolve, reject) => {
+      const el = document.createElement('script');
+      el.src = 'voice-gender.js?v=20260928a';
+      el.onload = resolve;
+      el.onerror = () => { voiceGenderLoad = null; reject(); };
+      document.head.appendChild(el);
+    });
+  }
+  return voiceGenderLoad;
+}
+
+function startVoiceCheck() {
+  if (!voiceCheckEnabled || voiceResult) return;
+  if (!window.VoiceGender) {
+    // Start once loaded, if a call is still up by then.
+    loadVoiceGender().then(() => { if (pc && window.VoiceGender) startVoiceCheck(); }).catch(() => {});
+    return;
+  }
+  if (!localStream) return;
+  window.VoiceGender.start(localStream, (result) => {
+    if (!voiceCheckEnabled) return;
+    voiceResult = result;
+    try { localStorage.setItem(VOICE_RESULT_KEY, JSON.stringify(result)); } catch (_) { /* storage blocked */ }
+    socket.emit('voice-gender', result);
+    renderVoiceCheck();
+  });
+}
+
+function stopVoiceCheck() {
+  if (window.VoiceGender) window.VoiceGender.stop();
+}
 let pc = null;
 let isMuted = false;
 let isSearching = false;
@@ -1115,7 +1180,22 @@ genderGroup.addEventListener('click', (e) => {
     localStorage.setItem('talklive_gender_asked', 'yes');
   } catch (_) { /* storage blocked */ }
   registerProfile();
+  renderVoiceCheck();
 });
+renderVoiceCheck();
+if (voiceCheckToggle) {
+  voiceCheckToggle.addEventListener('change', () => {
+    voiceCheckEnabled = voiceCheckToggle.checked;
+    try {
+      localStorage.setItem(VOICE_CHECK_KEY, voiceCheckEnabled ? 'on' : 'off');
+      if (!voiceCheckEnabled) localStorage.removeItem(VOICE_RESULT_KEY);
+    } catch (_) { /* storage blocked */ }
+    if (voiceCheckEnabled) startVoiceCheck();
+    else { voiceResult = null; stopVoiceCheck(); }
+    registerProfile();
+    renderVoiceCheck();
+  });
+}
 // Age group: optional, self-reported, only used in aggregate analytics.
 const ageGroupEl = document.getElementById('ageGroup');
 initPillGroup(ageGroupEl);
@@ -1126,7 +1206,13 @@ ageGroupEl.addEventListener('click', (e) => {
   registerProfile();
 });
 initPillGroup(prefGenderGroup);
-prefGenderGroup.addEventListener('click', () => syncFilterReadout());
+prefGenderGroup.addEventListener('click', () => { syncFilterReadout(); syncVoiceCheckedRow(); });
+const prefVoiceCheckedRow = document.getElementById('prefVoiceCheckedRow');
+const prefVoiceCheckedBox = document.getElementById('prefVoiceChecked');
+// "Voice-checked only" narrows a gender preference, so it only shows with one.
+function syncVoiceCheckedRow() {
+  if (prefVoiceCheckedRow) prefVoiceCheckedRow.hidden = prefGenderGroup.dataset.value === 'any';
+}
 initPillGroup(themeGroup);
 
 autoCallCheckbox.checked = autoCallEnabled;
@@ -1502,7 +1588,7 @@ function openQuickSettings() {
         syncSaveNameBtn();
         saveTempNameBtn.click();
       },
-      onGender: (g) => { setPillGroupValue(genderGroup, g || 'unspecified'); registerProfile(); },
+      onGender: (g) => { setPillGroupValue(genderGroup, g || 'unspecified'); registerProfile(); renderVoiceCheck(); },
       onAge: (a) => { setPillGroupValue(ageGroupEl, a || 'unspecified'); registerProfile(); },
       onTheme: (theme) => applyTheme(theme),
       onSound: (on) => flip(soundToggle, on),
@@ -1582,7 +1668,7 @@ filtersOverlay.addEventListener('click', closeFilters);
 // what was last saved here. Uses sessionStorage (not localStorage) so a
 // reload keeps the saved filters, but closing the tab/browser clears them. ---
 const FILTERS_STORAGE_KEY = 'talklive_filters';
-let appliedFilters = { prefGender: 'any', includeCountries: [], excludeCountries: [], interests: [] };
+let appliedFilters = { prefGender: 'any', prefVoiceChecked: false, includeCountries: [], excludeCountries: [], interests: [] };
 
 (function loadAppliedFilters() {
   try {
@@ -1599,6 +1685,8 @@ let appliedFilters = { prefGender: 'any', includeCountries: [], excludeCountries
 
 function syncFilterDraftUiFromApplied() {
   setPillGroupValue(prefGenderGroup, appliedFilters.prefGender);
+  if (prefVoiceCheckedBox) prefVoiceCheckedBox.checked = !!appliedFilters.prefVoiceChecked;
+  syncVoiceCheckedRow();
   includeCountries.clear();
   (appliedFilters.includeCountries || []).forEach((c) => includeCountries.add(c));
   excludeCountries.clear();
@@ -1615,6 +1703,7 @@ syncFilterDraftUiFromApplied();
 saveFiltersBtn.addEventListener('click', () => {
   appliedFilters = {
     prefGender: prefGenderGroup.dataset.value,
+    prefVoiceChecked: prefGenderGroup.dataset.value !== 'any' && !!(prefVoiceCheckedBox && prefVoiceCheckedBox.checked),
     includeCountries: Array.from(includeCountries),
     excludeCountries: Array.from(excludeCountries),
     interests: Array.from(selectedInterests),
@@ -1628,6 +1717,8 @@ saveFiltersBtn.addEventListener('click', () => {
 
 clearFiltersBtn.addEventListener('click', () => {
   setPillGroupValue(prefGenderGroup, 'any');
+  if (prefVoiceCheckedBox) prefVoiceCheckedBox.checked = false;
+  syncVoiceCheckedRow();
   includeCountries.clear();
   excludeCountries.clear();
   includeCountryWidget.renderChips();
@@ -7257,6 +7348,7 @@ async function startCall(initiator, generation) {
   if (stale()) return;
   pc = createPeerConnection(initiator);
   try { if (window.Moderation) window.Moderation.start(localStream, socket); } catch (_) { /* never break the call */ }
+  try { startVoiceCheck(); } catch (_) { /* never break the call */ }
   if (initiator) {
     const peer = pc;
     const offer = await peer.createOffer();
@@ -7352,6 +7444,7 @@ async function handleSignal(data) {
 
 function teardownPeer() {
   try { if (window.Moderation) window.Moderation.stop(); } catch (_) { /* never break teardown */ }
+  try { stopVoiceCheck(); } catch (_) { /* never break teardown */ }
   recordCallHistory();
   // Invalidate any startCall() still sitting on an await for this call, so it
   // cannot finish building a peer after the call it belongs to is gone.
@@ -7470,6 +7563,9 @@ function registerProfile() {
     gender: genderGroup.dataset.value,
     ageGroup: ageGroupEl.dataset.value,
     prefGender: appliedFilters.prefGender,
+    prefVoiceChecked: !!appliedFilters.prefVoiceChecked,
+    voiceCheck: voiceCheckEnabled,
+    voiceGender: voiceCheckEnabled && voiceResult ? voiceResult : undefined,
     includeCountries: appliedFilters.includeCountries,
     excludeCountries: appliedFilters.excludeCountries,
     interests: appliedFilters.interests,
@@ -10073,6 +10169,7 @@ socket.on('connect', () => {
 // Static HTML is handled by applyI18n() in i18n.js via data-i18n attributes;
 // this covers text that was set from JS with t() and needs a fresh render.
 window.addEventListener('i18n-changed', () => {
+  renderVoiceCheck();
   if (lastStatusMsg) statusText.textContent = t(lastStatusMsg.key, lastStatusMsg.vars);
   if (lastSubMsg) subText.textContent = t(lastSubMsg.key, lastSubMsg.vars);
   if (lastConn) connectionLabel.textContent = t(lastConn.labelKey);

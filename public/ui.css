@@ -1713,6 +1713,16 @@
   color: var(--muted);
 }
 .tl-filter-note a { color: inherit; text-decoration: underline; white-space: nowrap; }
+.tl-filter-check {
+  display: flex;
+  align-items: center;
+  gap: var(--tl-s2);
+  margin: var(--tl-s2) 0 0;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+.tl-filter-check[hidden] { display: none; }
+.tl-filter-check input { width: 16px; height: 16px; margin: 0; accent-color: currentColor; }
 .tl-filter-optional { font-size: 12.5px; font-weight: 500; color: var(--muted); }
 .tl-filter-premium { margin-inline-start: auto; font-size: 11.5px; text-decoration: none; }
 
