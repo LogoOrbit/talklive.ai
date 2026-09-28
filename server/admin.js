@@ -586,9 +586,10 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned }) {
   });
 
   router.get('/api/reports', (req, res) => {
+    const counts = store.reportCounts();
     const withCounts = store.data.reports.slice(0, 300).map((r) => ({
       ...r,
-      totalReportsOnUser: r.reported ? store.reportCountFor(r.reported.clientId) : 0,
+      totalReportsOnUser: r.reported ? counts.get(r.reported.clientId) || 0 : 0,
       activeBan: r.reported ? !!store.findActiveBan(r.reported.clientId, r.reported.ip) : false,
     }));
     res.json({ reports: withCounts });

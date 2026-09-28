@@ -1149,6 +1149,18 @@ function reportCountFor(clientId) {
   return data.reports.filter((r) => r.reported && r.reported.clientId === clientId).length;
 }
 
+// clientId -> report count in one pass, for callers that need the count of
+// many users at once (the dashboard's online list and report table) and would
+// otherwise rescan every report per row.
+function reportCounts() {
+  const out = new Map();
+  for (const r of data.reports) {
+    const id = r.reported && r.reported.clientId;
+    if (id) out.set(id, (out.get(id) || 0) + 1);
+  }
+  return out;
+}
+
 function addFeedback(entry) {
   const rec = { id: crypto.randomUUID(), ts: Date.now(), ...entry };
   data.feedback.unshift(rec);
@@ -2034,6 +2046,7 @@ module.exports = {
   addTranscript,
   addReport,
   reportCountFor,
+  reportCounts,
   addFeedback,
   addError,
   activeBans,

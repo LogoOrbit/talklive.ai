@@ -69,9 +69,15 @@ input:focus,textarea:focus{border-color:var(--accent)}
 .anim:nth-child(2){animation-delay:.04s}.anim:nth-child(3){animation-delay:.08s}.anim:nth-child(4){animation-delay:.12s}
 .anim:nth-child(5){animation-delay:.16s}.anim:nth-child(6){animation-delay:.2s}.anim:nth-child(7){animation-delay:.24s}.anim:nth-child(8){animation-delay:.28s}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+/* A refresh of the section already on screen repaints in place, without
+   replaying the entrance animation. */
+.quiet .anim{animation:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.9rem;padding:28px 4px}
+.spin{width:18px;height:18px;border-radius:50%;border:2px solid var(--ring);border-top-color:var(--accent);animation:spin .8s linear infinite;flex:none}
 
 /* auth */
-.auth{max-width:400px;margin:8vh auto;padding:30px 28px;background:var(--surface);backdrop-filter:blur(18px);border:1px solid var(--ring);border-radius:22px;animation:pop .4s ease both}
+.auth{width:min(400px,calc(100% - 32px));margin:8vh auto;padding:30px 28px;background:var(--surface);backdrop-filter:blur(18px);border:1px solid var(--ring);border-radius:22px;animation:pop .4s ease both}
 .auth .logo{display:flex;align-items:center;gap:10px;margin-bottom:14px}
 .auth h1{font-size:1.25rem}
 .auth p{color:var(--ink2);font-size:.9rem;margin-bottom:14px;line-height:1.5}
@@ -159,6 +165,39 @@ main{padding:18px 22px;min-width:0;padding-bottom:calc(84px + env(safe-area-inse
   .tabbar button.on{color:var(--text);font-weight:700}
   .tabbar button.on .ic{transform:translateY(-2px) scale(1.12)}
   .tabbar .badge{position:absolute;top:0;right:4px;margin:0}
+  .tabbar button{min-height:48px;flex:1 1 0;min-width:0}
+  /* Blurring the page behind every card is what made scrolling stutter on
+     phones; over a flat background it bought nothing visible. */
+  .tile,.card,header,.tabbar{backdrop-filter:none}
+  header,.tabbar{background:var(--bg-1)}
+  body{background-attachment:scroll}
+  /* Theme lives in Settings on a phone; the header has no room for it. */
+  #themeBtn{display:none}
+  header .hbtn{padding:9px 10px}
+  /* Anything under 16px makes iOS zoom into the field on focus. */
+  input,select,textarea{font-size:16px!important}
+  .rowbtns button,.seg button,.tzbar button,.lnk{min-height:38px}
+  .rowbtns button{padding:7px 13px;font-size:.82rem}
+  .lnk{display:inline-flex;align-items:center}
+  .tbar input,.tbar select{min-width:0;flex:1 1 150px}
+  .tbar .seg{flex:1 1 100%}
+  .tbar .seg button{flex:1 0 auto}
+  .tzbar button{flex:1 1 auto}
+  .tzbar select,.tzbar input{min-width:0;width:100%!important;flex:1 1 100%}
+  .tzbar span[style*="margin-left"]{margin-left:0!important}
+  .searchbar{max-width:none}
+  .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .tile{padding:12px 13px}
+  .tile:hover{transform:none}
+  .card{padding:14px 13px;border-radius:16px}
+  .card h2 span[style*="margin-left:auto"]{margin-left:0!important}
+  .phead{margin-bottom:10px}
+  .phead .stamp{margin-left:0;flex-basis:100%}
+  .overlay{padding:12px;padding-top:calc(12px + env(safe-area-inset-top))}
+  .sheet{max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px)}
+  .sitem{padding:12px 16px}
+  .cvlist,.cvthread{height:calc(100dvh - 300px);min-height:360px}
+  .cvb{max-width:86%}
 }
 
 /* cards & tiles */
@@ -377,6 +416,28 @@ th.sortable .ar{opacity:.5;font-size:.7rem}
 .crow .cn b{color:var(--text)}
 @media(max-width:640px){.crow{grid-template-columns:22px minmax(72px,110px) 1fr 80px;gap:7px;font-size:.8rem}}
 
+/* Tables become one card per row on a phone: each cell is labelled with its
+   column (set by stackTables()), so nothing needs sideways scrolling. */
+@media(max-width:640px){
+  table.stk{min-width:0}
+  table.stk,table.stk tbody,table.stk tr,table.stk td{display:block;width:100%}
+  table.stk tr.hdr{display:none}
+  table.stk tr.hdr.sorts{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+  table.stk tr.hdr.sorts th{width:auto;border:1px solid var(--ring);border-radius:99px;padding:6px 11px;background:var(--surface-2)}
+  table.stk tr.hdr.sorts th:empty{display:none}
+  table.stk tr:not(.hdr){border:1px solid var(--ring);border-radius:14px;background:var(--surface-2);padding:6px 12px;margin-bottom:8px}
+  table.stk td{border:0;padding:6px 0;text-align:right;display:flow-root;overflow-wrap:anywhere}
+  table.stk td+td{border-top:1px solid var(--grid)}
+  table.stk td[data-label]::before{content:attr(data-label);float:left;margin-right:12px;max-width:45%;text-align:left;color:var(--muted);font-size:.68rem;text-transform:uppercase;letter-spacing:.04em;padding-top:2px}
+  table.stk td:not([data-label]),table.stk td[colspan]{text-align:left}
+  table.stk td .rowbtns{justify-content:flex-end}
+  table.stk td:not([data-label]) .rowbtns{justify-content:flex-start}
+  table.stk td:empty{display:none}
+  table.stk tr.accdetail td>div>div{min-width:0!important}
+  .hrow[style]{grid-template-columns:minmax(78px,38%) 1fr auto!important}
+  .hrow .n{white-space:nowrap}
+}
+
 @media(max-width:640px){
   main{padding:12px;padding-bottom:calc(84px + env(safe-area-inset-bottom))}
   .tile .v{font-size:1.45rem}
@@ -385,8 +446,6 @@ th.sortable .ar{opacity:.5;font-size:.7rem}
   .msg .bubble{max-width:92%}
 }
 </style>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978"
-     crossorigin="anonymous"></script>
 </head>
 <body>
 
@@ -446,7 +505,7 @@ th.sortable .ar{opacity:.5;font-size:.7rem}
 <script>
 'use strict';
 const $=(s)=>document.querySelector(s);
-const api=async(p,opt)=>{const r=await fetch('/owner/api/'+p,{headers:{'Content-Type':'application/json'},...opt});if(r.status===401&&p!=='login'){show('login');throw new Error('auth');}const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'Request failed');return j;};
+const api=async(p,opt)=>{const r=await fetch('/owner/api/'+p,{headers:{'Content-Type':'application/json'},...opt});if(r.status===401&&p!=='login'){clearInterval(timer);show('login');throw new Error('auth');}const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'Request failed');return j;};
 const post=(p,body)=>api(p,{method:'POST',body:JSON.stringify(body||{})});
 const esc=(s)=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 /* For values placed inside a single-quoted JS string within an inline onclick=
@@ -457,6 +516,9 @@ const esc=(s)=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt
 const jsq=(s)=>String(s==null?'':s).replace(/[^A-Za-z0-9]/g,c=>{const h=c.charCodeAt(0);return h<256?'\\x'+h.toString(16).padStart(2,'0'):'\\u'+h.toString(16).padStart(4,'0');});
 const fmtTs=(ts)=>new Date(ts).toLocaleString();
 const ago=(ts)=>{const m=Math.round((Date.now()-ts)/60000);if(m<1)return'just now';if(m<60)return m+'m ago';if(m<1440)return Math.round(m/60)+'h ago';return Math.round(m/1440)+'d ago';};
+/* Time left until a future moment. ago() only reads the past: fed a ban's
+   expiry it rounded every future time down to "just now". */
+const until=(ts)=>{const m=Math.round((ts-Date.now())/60000);if(m<1)return'any moment';if(m<60)return'in '+m+'m';if(m<1440)return'in '+Math.round(m/60)+'h';return'in '+Math.round(m/1440)+'d';};
 const num=(n)=>Number(n||0).toLocaleString();
 /* Share of a total, rounded to one decimal below 10% so small countries don't all read as 0%. */
 const pctOf=(v,t)=>{if(!t)return'0%';const p=v/t*100;return(p<10?p.toFixed(1):Math.round(p))+'%';};
@@ -519,7 +581,7 @@ function countUp(el,target){
   const step=(now)=>{const p=Math.min(1,(now-start)/dur);el.textContent=num(Math.round(t*(1-Math.pow(1-p,3))));if(p<1)requestAnimationFrame(step);};
   requestAnimationFrame(step);
 }
-function animateCounters(){document.querySelectorAll('[data-count]').forEach(el=>countUp(el,el.dataset.count));}
+function animateCounters(){document.querySelectorAll('[data-count]').forEach(el=>quiet?(el.textContent=num(el.dataset.count)):countUp(el,el.dataset.count));}
 
 /* ---------- auth flow ---------- */
 function renderStorage(storage){
@@ -576,20 +638,46 @@ $('#loginBtn').onclick=async()=>{
   catch(e){$('#loginErr').textContent=e.message;}
 };
 document.querySelectorAll('.pwEye').forEach(b=>b.onclick=()=>{const i=b.previousElementSibling,show=i.type==='password';i.type=show?'text':'password';b.classList.toggle('on',show);b.setAttribute('aria-label',show?'Hide password':'Show password');b.title=b.getAttribute('aria-label');i.focus();});
+$('#loginPass').addEventListener('keydown',e=>{if(e.key==='Enter')$('#loginCode').focus();});
 $('#loginCode').addEventListener('keydown',e=>{if(e.key==='Enter')$('#loginBtn').click();});
-$('#logoutBtn').onclick=async()=>{await post('logout');location.reload();};
+$('#setupCode').addEventListener('keydown',e=>{if(e.key==='Enter')$('#setupConfirmBtn').click();});
+$('#logoutBtn').onclick=async()=>{try{await post('logout');}catch(e){}location.reload();};
 $('#themeBtn').onclick=cycleTheme;
 $('#helpBtn').onclick=openHelp;
 $('#searchBtn').onclick=openSearch;
 $('#refreshBtn').onclick=togglePause;
 $('#livePill').onclick=()=>go('live');
 
+/* Labels every data cell with its column heading so the phone layout can show
+   each row as a card. Runs on every change to #main, so views never have to
+   remember to call it. The gender x age grid stays a grid (it reads as one). */
+function stackTables(){
+  document.querySelectorAll('#main table:not(.heat):not(.stk)').forEach(t=>{
+    const rows=t.rows;if(!rows.length||!rows[0].querySelector('th'))return;
+    const head=rows[0];
+    const labels=[...head.cells].map(c=>c.textContent.replace(/[↕▲▼]/g,'').trim());
+    head.classList.add('hdr');
+    if(head.querySelector('th.sortable'))head.classList.add('sorts');
+    for(let i=1;i<rows.length;i++){
+      [...rows[i].cells].forEach((td,j)=>{if(td.colSpan===1&&labels[j])td.dataset.label=labels[j];});
+    }
+    t.classList.add('stk');
+  });
+}
+new MutationObserver(stackTables).observe($('#main'),{childList:true,subtree:true});
+
 /* ---------- charts (inline SVG) ---------- */
 let tipEl=null;
 function tip(show,x,y,html){
   if(!tipEl){tipEl=document.createElement('div');tipEl.className='tooltip hidden';document.body.appendChild(tipEl);}
   tipEl.classList.toggle('hidden',!show);
-  if(show){tipEl.innerHTML=html;tipEl.style.left=x+'px';tipEl.style.top=y+'px';}
+  if(show){
+    tipEl.innerHTML=html;
+    /* Centred on the finger/cursor, but never pushed off the side of a phone. */
+    const w=tipEl.offsetWidth;
+    tipEl.style.left=Math.min(Math.max(x,w/2+8),innerWidth-w/2-8)+'px';
+    tipEl.style.top=Math.max(y,tipEl.offsetHeight*1.3+8)+'px';
+  }
 }
 function lineChart(el,series,keys,colors,labels){
   const W=el.clientWidth||800,H=240,P={l:42,r:12,t:12,b:26};
@@ -612,14 +700,15 @@ function lineChart(el,series,keys,colors,labels){
   series.forEach((d,i)=>{if(i%Math.ceil(series.length/6)===0||i===series.length-1)lbls+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="10" fill="var(--muted)">${d.day.slice(5)}</text>`;});
   el.innerHTML=`<svg width="100%" viewBox="0 0 ${W} ${H}" style="display:block"><defs>${defs}</defs>${g}${paths}${lbls}<rect x="${P.l}" y="${P.t}" width="${W-P.l-P.r}" height="${H-P.t-P.b}" fill="transparent"/></svg>`;
   const svg=el.querySelector('svg');
-  svg.addEventListener('mousemove',(e)=>{
+  svg.addEventListener('pointermove',(e)=>{
     const r=svg.getBoundingClientRect();
     const relX=(e.clientX-r.left)/r.width*W;
     const i=Math.max(0,Math.min(series.length-1,Math.round((relX-P.l)/((W-P.l-P.r)/Math.max(1,series.length-1)))));
     const d=series[i];
     tip(true,e.clientX,e.clientY,`<b>${d.day}</b><br>`+keys.map((k,ki)=>`${labels[ki]}: ${num(d[k])}`).join('<br>'));
   });
-  svg.addEventListener('mouseleave',()=>tip(false));
+  svg.addEventListener('pointerleave',()=>tip(false));
+  svg.addEventListener('pointercancel',()=>tip(false));
 }
 function hbars(el,entries,color){
   const max=Math.max(1,...entries.map(e=>e[1]));
@@ -666,6 +755,12 @@ const groupOf=(id)=>(GROUPS.find(g=>g[1].some(t=>t[0]===id))||GROUPS[0])[0];
    every tab stays reachable from a phone instead of only these four. */
 const MOBILE_TABS=['overview','live','chats','reports'];
 let tab='overview',timer=null,counts={},paused=false,lastLoadTs=0,loadFailures=0;
+/* loadSeq: every load() takes a number and only the newest may paint, so a slow
+   answer for the tab you just left can never overwrite the one you opened.
+   renderedTab: which tab #main currently shows (null while loading one).
+   quiet: a repaint of the tab already on screen - no entrance animations and no
+   counters re-counting from zero every 12 seconds. */
+let loadSeq=0,renderedTab=null,quiet=false;
 const REFRESH_MS=()=>tab==='live'?5000:tab==='ai'?60000:12000;
 
 function navBadge(id){
@@ -673,21 +768,28 @@ function navBadge(id){
   if(id==='errors'&&counts.errors)return `<span class="badge" style="background:var(--serious)">${counts.errors}</span>`;
   return '';
 }
+/* Swapping the nav's DOM while a finger is on it swallows the tap (the button
+   that got the touchstart is gone by the click), and the Overview poll used to
+   rebuild it every 12s. So only write when the markup actually changed. */
+function setHtml(el,html){if(el&&el._html!==html){el.innerHTML=html;el._html=html;}}
 function renderNav(){
-  $('#nav').innerHTML=GROUPS.map(([g,items])=>`<div class="grp">${g}</div>`
-    +items.map(([id,l,ic])=>`<button data-t="${id}" class="${tab===id?'on':''}"><span class="ic">${ic}</span>${l}${navBadge(id)}</button>`).join('')).join('');
+  setHtml($('#nav'),GROUPS.map(([g,items])=>`<div class="grp">${g}</div>`
+    +items.map(([id,l,ic])=>`<button data-t="${id}" class="${tab===id?'on':''}"><span class="ic">${ic}</span>${l}${navBadge(id)}</button>`).join('')).join(''));
   const onMore=!MOBILE_TABS.includes(tab);
   const pending=(counts.unhandledReports||0)+(counts.errors||0);
-  $('#tabbar').innerHTML=MOBILE_TABS.map(id=>{const t=TABS.find(x=>x[0]===id);return `<button data-t="${id}" class="${tab===id?'on':''}"><span class="ic">${t[2]}</span>${t[1]}${navBadge(id)}</button>`;}).join('')
-    +`<button data-more="1" class="${onMore?'on':''}"><span class="ic">⋯</span>More${!onMore&&pending?`<span class="badge">${pending}</span>`:''}</button>`;
-  document.querySelectorAll('#nav button,#tabbar button[data-t]').forEach(b=>b.onclick=()=>go(b.dataset.t));
-  const more=document.querySelector('#tabbar button[data-more]');
-  if(more)more.onclick=openMore;
+  setHtml($('#tabbar'),MOBILE_TABS.map(id=>{const t=TABS.find(x=>x[0]===id);return `<button data-t="${id}" class="${tab===id?'on':''}"><span class="ic">${t[2]}</span>${t[1]}${navBadge(id)}</button>`;}).join('')
+    +`<button data-more="1" class="${onMore?'on':''}"><span class="ic">⋯</span>More${!onMore&&pending?`<span class="badge">${pending}</span>`:''}</button>`);
   renderPageHead();
 }
+/* One listener each, attached once, so re-rendering the buttons never leaves
+   them unwired. */
+['#nav','#tabbar'].forEach(sel=>$(sel).addEventListener('click',(e)=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.more)openMore();else if(b.dataset.t)go(b.dataset.t);
+}));
 function renderPageHead(){
   const t=TABS.find(x=>x[0]===tab)||TABS[0];
-  $('#phead').innerHTML=`<span class="crumb">${esc(groupOf(tab))}</span><h2>${t[2]} ${esc(t[1])}</h2><span class="stamp" id="updStamp"></span>`;
+  setHtml($('#phead'),`<span class="crumb">${esc(groupOf(tab))}</span><h2>${t[2]} ${esc(t[1])}</h2><span class="stamp" id="updStamp"></span>`);
 }
 function openMore(){
   modal('⋯ All sections',
@@ -798,13 +900,21 @@ function liveCardHtml(){
    button all land on the section the owner was actually looking at. */
 function go(id){
   if(!TAB_IDS.includes(id))id='overview';
-  tab=id;
+  closeModal();tip(false);
+  if(id!==tab){
+    tab=id;
+    /* Clear the old section straight away: before, it stayed on screen until
+       the new one had loaded, so a tap looked like it had done nothing. */
+    renderedTab=null;
+    const t=TABS.find(x=>x[0]===id);
+    $('#main').innerHTML=`<div class="loading"><span class="spin"></span>Loading ${esc(t[1])}…</div>`;
+  }
   if(location.hash.slice(1)!==id)location.hash=id;
   renderNav();load();window.scrollTo({top:0});
 }
 window.addEventListener('hashchange',()=>{
   const id=location.hash.slice(1);
-  if(TAB_IDS.includes(id)&&id!==tab){tab=id;renderNav();load();}
+  if(TAB_IDS.includes(id)&&id!==tab&&!$('#dash').classList.contains('hidden'))go(id);
 });
 
 function scheduleRefresh(){
@@ -834,12 +944,17 @@ function startDash(){
 async function load(force){
   scheduleRefresh();
   if(force===false){
-    const busy=overlayEl||(document.activeElement&&/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName))
-      /* Reading a transcript is the one view where a repaint is destructive:
-         it would reload the thread and throw away where you had scrolled to. */
-      ||(tab==='chats'&&chatOpen);
+    /* Nobody is looking: don't make the server build reports for a hidden tab. */
+    if(document.hidden)return;
+    /* Reading a transcript is the one view where a repaint is destructive:
+       it would reload the thread and throw away where you had scrolled to. */
+    if(tab==='chats'&&chatOpen)return;
+    const busy=overlayEl||(document.activeElement&&/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName));
     if(busy&&Date.now()-lastLoadTs<60000)return;
   }
+  const seq=++loadSeq,forTab=tab;
+  quiet=renderedTab===forTab;
+  $('#main').classList.toggle('quiet',quiet);
   try{
     if(tab==='overview')await viewOverview();
     else if(tab==='activity')await viewActivity();
@@ -857,19 +972,37 @@ async function load(force){
     else if(tab==='feedback')await viewFeedback();
     else if(tab==='audit')await viewAudit();
     else if(tab==='settings')await viewSettings();
+    if(seq!==loadSeq)return;
+    renderedTab=forTab;
+    /* Once the entrance animation has played, later repaints of this section
+       (filters, sort, window presets) stay quiet too. */
+    if(!quiet)setTimeout(()=>{if(seq===loadSeq){quiet=true;$('#main').classList.add('quiet');}},700);
     lastLoadTs=Date.now();loadFailures=0;
     paintLive(null);
     const sp=$('#liveSpark');if(sp)liveSpark(sp);
     stampUpdated();
   }catch(e){
-    if(e.message==='auth')return;
+    if(e.message==='auth'||seq!==loadSeq)return;
     loadFailures++;
     /* A blip while polling shouldn't wipe a screenful of data - only replace the
-       view if nothing was ever drawn, or the failure is persistent. */
-    if(!lastLoadTs||loadFailures>2)$('#main').innerHTML=`<div class="card"><h2>⚠️ Could not load this section</h2><div class="muted">${esc(e.message)}</div><div class="rowbtns" style="margin-top:12px"><button onclick="load()">Try again</button></div></div>`;
+       view if this section was never drawn, or the failure is persistent. */
+    if(renderedTab!==forTab||loadFailures>2)$('#main').innerHTML=`<div class="card"><h2>⚠️ Could not load this section</h2><div class="muted">${esc(e.message)}</div><div class="rowbtns" style="margin-top:12px"><button onclick="load()">Try again</button></div></div>`;
     else toast('Refresh failed',e.message+' - showing the last good data.','warn');
   }
 }
+/* Only the newest load may paint (see loadSeq). A view fetches through this; an
+   answer that arrives after the owner has moved on never resolves, so the view
+   simply stops instead of drawing over the section now on screen. */
+const STALE=new Promise(()=>{});
+async function vapi(p){
+  const s=loadSeq,t=tab;
+  const r=await api(p);
+  return s===loadSeq&&t===tab?r:STALE;
+}
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden&&!paused&&!$('#dash').classList.contains('hidden'))load(false);
+});
+
 /* A quiet "as of" line, so a number that hasn't moved in ten minutes is
    obviously stale rather than silently wrong. */
 function stampUpdated(){
@@ -893,7 +1026,17 @@ function onFilterInput(inp,set,render){
 }
 
 /* ---------- global search ---------- */
-let searchTimer=null;
+let searchTimer=null,searchSeq=0;
+/* Opening a search hit lands on its tab already filtered to what you typed,
+   instead of the unfiltered list you then had to search again. */
+function filterTabTo(kind,q){
+  if(kind==='accounts')accQ=q;
+  else if(kind==='live'){liveQ=q;liveStatus='';}
+  else if(kind==='chats'){chatQuery=q;chatOpen=null;}
+  else if(kind==='feedback')fbQ=q;
+  else if(kind==='reports')repFilter='all';
+  else if(kind==='bans')banFilter='all';
+}
 function openSearch(){
   modal('🔍 Search everything',
     `<input id="gq" placeholder="Username, country, IP, ban reason, message text…" autocomplete="off">
@@ -903,16 +1046,17 @@ function openSearch(){
       const inp=sheet.querySelector('#gq'),out=sheet.querySelector('#gres');
       inp.focus();
       const run=async()=>{
-        const q=inp.value.trim();
+        const q=inp.value.trim(),my=++searchSeq;
         if(q.length<2){out.innerHTML='<div class="sgroup">Type at least 2 characters</div>';return;}
         out.innerHTML='<div class="sgroup">Searching…</div>';
         try{
           const r=await api('search?q='+encodeURIComponent(q));
+          if(my!==searchSeq)return;
           out.innerHTML=r.groups.map(g=>`<div class="sgroup">${esc(g.label)} · ${g.items.length}</div>`
             +g.items.map(it=>`<button class="sitem" data-go="${esc(g.kind)}"><b>${esc(it.title)}</b><span class="s2">${esc(it.sub||'')}${it.ts?' · '+ago(it.ts):''}</span></button>`).join('')).join('')
             ||'<div class="sgroup">Nothing found</div>';
-          out.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{closeModal();go(b.dataset.go);});
-        }catch(e){out.innerHTML=`<div class="sgroup">Search failed: ${esc(e.message)}</div>`;}
+          out.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{filterTabTo(b.dataset.go,q);closeModal();go(b.dataset.go);});
+        }catch(e){if(my!==searchSeq)return;out.innerHTML=`<div class="sgroup">Search failed: ${esc(e.message)}</div>`;}
       };
       inp.addEventListener('input',()=>{clearTimeout(searchTimer);searchTimer=setTimeout(run,220);});
       inp.addEventListener('keydown',e=>{if(e.key==='Enter'){clearTimeout(searchTimer);run();}});
@@ -951,7 +1095,7 @@ function exportLink(kind,label){
 /* ---------- overview ---------- */
 async function viewOverview(){
   // Same timezone the Activity tab is showing, so the two never disagree.
-  const o=await api('overview?tz='+encodeURIComponent(actTz||browserTz()));
+  const o=await vapi('overview?tz='+encodeURIComponent(actTz||browserTz()));
   lastOverview=o;
   counts=o.counts;renderNav();
   const c=o.conclusion;
@@ -993,7 +1137,7 @@ async function viewOverview(){
     <div id="trafficChart"></div>
     ${o.humanSince?`<div class="muted" style="margin-top:8px;font-size:13px">ℹ️ From <b>${esc(o.humanSince)}</b>, visits and unique visitors count people only - search-engine crawlers, link-preview bots and browser prefetches are counted separately. Earlier days still include them, so a step down at that date is the measurement changing, not traffic falling.</div>`:''}</div>
   <div class="sechead">Audience &amp; usage · last 30 days</div>
-  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr))">
     <div class="card anim"><h2>📄 Where people land <span class="sub">human page views by area, last 30 days</span></h2><div id="sectionBars"></div></div>
     <div class="card anim"><h2>🕷️ Crawlers <span class="sub">bot page requests, last 30 days</span></h2><div id="crawlerBars"></div></div>
     <div class="card anim"><h2>🏆 Top features <span class="sub">times used, last 30 days</span></h2><div id="featBars"></div></div>
@@ -1042,7 +1186,7 @@ function shareBars(rows,color){
 }
 const entriesToShare=(list,labelFn)=>{const t=list.reduce((a,e)=>a+e[1],0);return list.map(([k,n])=>({label:labelFn?labelFn(k):k,n,pct:t?Math.round(n/t*1000)/10:0}));};
 const LANGS={en:'English',es:'Spanish',pt:'Portuguese',fr:'French',de:'German',it:'Italian',ru:'Russian',ar:'Arabic',hi:'Hindi',ur:'Urdu',bn:'Bengali',id:'Indonesian',tr:'Turkish',fa:'Persian',zh:'Chinese',ja:'Japanese',ko:'Korean',vi:'Vietnamese',th:'Thai',pl:'Polish',nl:'Dutch',uk:'Ukrainian',fil:'Filipino',tl:'Tagalog',ms:'Malay',sw:'Swahili'};
-async function fetchAudience(){audCache=await api('audience?range='+audRange);return audCache;}
+async function fetchAudience(){audCache=await vapi('audience?range='+audRange);return audCache;}
 
 async function viewAudience(){
   const r=await fetchAudience();
@@ -1065,7 +1209,7 @@ async function viewAudience(){
     <div class="tile"><div class="k">🟢 Online now</div><div class="v" data-count="${L.total}">0</div><div class="s">${liveKnown?pctOf(L.gender.female,liveKnown)+' female · '+pctOf(L.gender.male,liveKnown)+' male':'no stated genders online'}</div></div>
   </div>
 
-  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr))">
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr))">
     <div class="card anim"><h2>⚧ Gender <span class="sub">${rangeTxt} · self-reported, never verified</span></h2>
       <div class="sechead" style="margin-top:4px">All people (${num(p.personDays)})</div>
       ${stackBar(p.gender.map(x=>({label:G_LABEL[x.key],n:x.n,color:G_COLOR[x.key]})))}
@@ -1093,7 +1237,7 @@ async function viewAudience(){
     <div class="legend"><span><i style="background:var(--s1)"></i>Male</span><span><i style="background:var(--s5)"></i>Female</span><span><i style="background:var(--muted)"></i>Not stated</span></div>
     <div id="audTrend"></div></div>`:''}
 
-  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr))">
     <div class="card anim"><h2>🔁 New vs returning <span class="sub">how long ago each person first came</span></h2>
       ${shareBars(p.lifecycle.filter(l=>l.n||l.key!=='unknown').map(l=>({label:LC_LABEL[l.key],n:l.n,pct:l.pct})),'var(--s2)')}</div>
     <div class="card anim"><h2>📱 Devices</h2>${shareBars(entriesToShare(p.device,k=>({mobile:'📱 Phone',desktop:'💻 Desktop',tablet:'📟 Tablet'}[k]||k)),'var(--s1)')}</div>
@@ -1139,7 +1283,7 @@ async function viewExperience(){
     <div class="tile"><div class="k">🎯 Visitor → user</div><div class="v">${e.visitors?e.visitorToUserPct+'%':'-'}</div><div class="s">visitors who opened the app</div></div>
   </div>
 
-  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr))">
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr))">
     <div class="card anim"><h2>⏳ Time to match <span class="sub">per person, ${rangeTxt}</span></h2>${shareBars(e.wait.map(b=>({label:b.key,n:b.n,pct:b.pct})),'var(--s1)')}</div>
     <div class="card anim"><h2>⏱️ Conversation length <span class="sub">${rangeTxt}</span></h2>${shareBars(e.length.map(b=>({label:b.key,n:b.n,pct:b.pct})),'var(--s2)')}</div>
     <div class="card anim"><h2>👫 Who gets paired with whom <span class="sub">M = male · F = female · ? = not stated</span></h2>${shareBars(e.pairs.map(b=>({label:b.key,n:b.n,pct:b.pct})),'var(--s5)')}</div>
@@ -1147,7 +1291,7 @@ async function viewExperience(){
       ${e.ratings?shareBars(e.rateByLength.filter(b=>b.up+b.down).map(b=>({label:b.key+' ('+num(b.up+b.down)+')',n:b.up,pct:b.satisfaction,color:b.satisfaction>=75?'var(--good)':b.satisfaction>=50?'var(--warn)':'var(--crit)'})),'var(--good)'):'<div class="muted">No ratings yet. After a conversation of 20s or more, both people are asked "How was that conversation?" with a 👍 / 👎.</div>'}</div>
   </div>
 
-  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(360px,1fr))">
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(360px,100%),1fr))">
     <div class="card anim"><h2>⚧ Experience by gender <span class="sub">each person's calls, ${rangeTxt}</span></h2>${segTable(e.byGender,'Gender')}</div>
     <div class="card anim"><h2>🎂 Experience by age group <span class="sub">each person's calls, ${rangeTxt}</span></h2>${segTable(e.byAge,'Age group')}</div>
   </div>
@@ -1268,13 +1412,13 @@ function wireWindow(w,now){
 
 async function viewActivity(){
   if(!actTz)actTz=browserTz();
-  const r=await api('activity?tz='+encodeURIComponent(actTz));
+  const r=await vapi('activity?tz='+encodeURIComponent(actTz));
   actTz=r.timezone;
   if(!winFrom||!winTo)[winFrom,winTo]=defaultWindow(r.now);
   let w;
-  try{w=await api('window?tz='+encodeURIComponent(actTz)+'&startHour='+winStart+'&count=14&from='+encodeURIComponent(winFrom)+'&to='+encodeURIComponent(winTo));}
+  try{w=await vapi('window?tz='+encodeURIComponent(actTz)+'&startHour='+winStart+'&count=14&from='+encodeURIComponent(winFrom)+'&to='+encodeURIComponent(winTo));}
   catch(e){toast('Time window',e.message,'warn');[winFrom,winTo]=defaultWindow(r.now);
-    w=await api('window?tz='+encodeURIComponent(actTz)+'&startHour='+winStart+'&count=14&from='+encodeURIComponent(winFrom)+'&to='+encodeURIComponent(winTo));}
+    w=await vapi('window?tz='+encodeURIComponent(actTz)+'&startHour='+winStart+'&count=14&from='+encodeURIComponent(winFrom)+'&to='+encodeURIComponent(winTo));}
   const t=r.today,y=r.yesterday,ysf=r.yesterdaySoFar;
   const metricLabel=(ACT_METRICS.find(m=>m[0]===actMetric)||ACT_METRICS[0])[1];
   const estNote=r.estimatedDays.length
@@ -1414,7 +1558,7 @@ function renderBot(typing){
   el.lastElementChild&&el.lastElementChild.scrollIntoView({block:'end',behavior:'smooth'});
 }
 async function viewBot(){
-  if(!lastOverview)lastOverview=await api('overview');
+  if(!lastOverview)lastOverview=await vapi('overview?tz='+encodeURIComponent(actTz||browserTz()));
   if(!botLog.length)botLog.push({me:false,text:'Hey! 👋 I’m your TalkLive AI assistant. I watch everything happening on the app - traffic, matches, chats, reports, errors - and turn it into plain answers. Tap a question below.'});
   $('#main').innerHTML=`<div class="bot">
     <div class="card anim" style="margin-top:0"><h2>🤖 TalkLive AI Bot <span class="sub">answers from live app data · refreshes every minute</span></h2>
@@ -1468,7 +1612,7 @@ const liveStatusPill=(u)=>u.inCall
   ?(u.mode==='chat'?'<span class="pill good">⌨️ Text chat</span>':'<span class="pill good">🎙️ Voice call</span>')
   :u.waiting?`<span class="pill warn">Waiting · ${u.mode==='chat'?'text':'voice'}</span>`:'<span class="pill info">Idle</span>';
 async function viewLive(){
-  const r=await api('online');
+  const r=await vapi('online');
   if(r.live)onLive(r.live);
   const q=liveQ.toLowerCase();
   const by={chatting:0,waiting:0,idle:0};
@@ -1499,7 +1643,7 @@ async function viewLive(){
 
 let repFilter='open';
 async function viewReports(){
-  const r=await api('reports');
+  const r=await vapi('reports');
   const open=r.reports.filter(x=>!x.handled);
   const list=repFilter==='open'?open:r.reports;
   const repeat=r.reports.filter(x=>x.totalReportsOnUser>=3&&!x.activeBan);
@@ -1530,7 +1674,7 @@ window.markHandled=async(id)=>{try{await post('reports/'+id+'/handled');toast('R
 
 let banFilter='active';
 async function viewBans(){
-  const r=await api('bans');
+  const r=await vapi('bans');
   const state=(b)=>b.liftedAt?'lifted':b.expiresAt>r.now?'active':'expired';
   const active=r.bans.filter(b=>state(b)==='active');
   const list=banFilter==='active'?active:r.bans;
@@ -1542,7 +1686,7 @@ async function viewBans(){
   <table><tr><th>User</th><th>Reason</th><th>Banned</th><th>Expires</th><th>Status</th><th></th></tr>
   ${list.map(b=>{const st=state(b);
   return `<tr style="${st==='active'?'':'opacity:.55'}"><td><b>${esc(b.username)}</b><br><span class="muted">${esc(b.country)}${b.city?', '+esc(b.city):''} · ${esc((b.ip||''))}</span></td>
-  <td>${esc(b.reason)}</td><td>${fmtTs(b.createdAt)}</td><td>${fmtTs(b.expiresAt)}${st==='active'?`<br><span class="muted">${ago(b.expiresAt).replace(' ago',' from now').replace('just now','any moment')}</span>`:''}</td>
+  <td>${esc(b.reason)}</td><td>${fmtTs(b.createdAt)}</td><td>${fmtTs(b.expiresAt)}${st==='active'?`<br><span class="muted">${until(b.expiresAt)}</span>`:''}</td>
   <td>${st==='lifted'?'<span class="pill info">Lifted</span>':st==='active'?'<span class="pill crit">Active</span>':'<span class="pill good">Expired</span>'}</td>
   <td>${st==='active'?`<div class="rowbtns"><button onclick="unban('${jsq(b.id)}')">Lift ban</button></div>`:''}</td></tr>`;}).join('')||`<tr><td colspan="6" class="muted">${banFilter==='active'?'No active bans right now.':'No bans on record.'}</td></tr>`}</table></div>`;
   document.querySelectorAll('[data-bf]').forEach(b=>b.onclick=()=>{banFilter=b.dataset.bf;load();});
@@ -1596,7 +1740,7 @@ async function viewChats(){
   if(chatFlagged)params.set('flagged','1');
   if(chatSort!=='recent')params.set('sort',chatSort);
   const qs=params.toString();
-  const r=await api('transcripts'+(qs?'?'+qs:''));
+  const r=await vapi('transcripts'+(qs?'?'+qs:''));
   chatRows=r.conversations||[];
   /* A conversation that fell out of the current filter must not stay selected -
      the thread pane would keep showing something the list no longer offers. */
@@ -1658,8 +1802,10 @@ async function openConversation(pair,i){
   let c;
   try{
     const r=await api('transcripts?pair='+encodeURIComponent(pair));
+    if(chatOpen!==pair||!pane.isConnected)return;
     c=r.conversation;
   }catch(e){
+    if(chatOpen!==pair||!pane.isConnected)return;
     pane.innerHTML=`<div class="cvempty">Could not load this conversation.<br><span class="muted">${esc(e.message)}</span></div>`;
     return;
   }
@@ -1776,7 +1922,7 @@ function accSortTh(){
   return ACC_COLS.map(([k,l])=>`<th class="sortable" data-s="${k}">${l} <span class="ar">${accSort===k?(accDir<0?'▼':'▲'):'↕'}</span></th>`).join('');
 }
 async function viewAccounts(){
-  const r=await api('accounts');
+  const r=await vapi('accounts');
   const all=r.accounts||[];
 
   /* Country split is computed over every account, not just the filtered rows -
@@ -1864,7 +2010,7 @@ const TT_SORTS=[['most','Most talk time'],['least','Least talk time'],['calls','
 const TT_MIN=[[0,'Any length'],[60,'≥ 1 min'],[600,'≥ 10 min'],[1800,'≥ 30 min'],[3600,'≥ 1 hour']];
 const dur=(s)=>{s=Math.round(s||0);if(s<60)return s+'s';const m=Math.floor(s/60);if(m<60)return m+'m '+String(s%60).padStart(2,'0')+'s';const h=Math.floor(m/60);return h+'h '+String(m%60).padStart(2,'0')+'m';};
 async function viewTalkTime(){
-  const r=await api('talktime?range='+ttRange);
+  const r=await vapi('talktime?range='+ttRange);
   const all=r.rows||[];
   const totalS=all.reduce((a,x)=>a+x.seconds,0),totalC=all.reduce((a,x)=>a+x.calls,0);
   const q=ttQ.trim().toLowerCase();
@@ -1906,7 +2052,7 @@ async function viewTalkTime(){
 
 /* ---------- revenue: subscriptions, referrals, push reach ---------- */
 async function viewRevenue(){
-  const r=await api('premium');
+  const r=await vapi('premium');
   const t=r.totals,ref=r.referrals;
   const act=r.activations.slice(-14);
   const actMax=Math.max(1,...act.map(d=>Math.max(d.activated,d.cancelled)));
@@ -1921,7 +2067,7 @@ async function viewRevenue(){
     <div class="tile"><div class="k">Push reach</div><div class="v" data-count="${r.push.subscribers}">0</div><div class="s">${num(r.push.endpoints)} devices subscribed</div></div>
   </div>
 
-  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr))">
     <div class="card anim"><h2>📈 Plus activity <span class="sub">last 14 days</span></h2>
       <div class="legend"><span><i style="background:var(--good)"></i>Activated</span><span><i style="background:var(--crit)"></i>Cancelled</span></div>
       ${act.map(d=>`<div class="hrow"><div>${esc(d.day.slice(5))}</div>
@@ -1965,7 +2111,7 @@ function adRevenueNote(){
 }
 
 async function viewErrors(){
-  const r=await api('errors');
+  const r=await vapi('errors');
   $('#main').innerHTML=`<div class="card anim" style="margin-top:0"><h2>🐛 Bugs &amp; errors <span class="sub">client + server, duplicates collapsed</span>
   ${r.errors.length?`<button id="clearErrs" style="margin-left:auto;border:1px solid color-mix(in srgb,var(--crit) 45%,transparent);background:var(--surface-2);color:var(--crit);border-radius:9px;padding:6px 12px;font-size:.78rem">Clear all</button>`:''}</h2>
   <div class="muted" style="margin-bottom:10px">Records never expire on their own. Dismiss one after shipping a fix - if it comes back, it wasn't fixed.</div>
@@ -1981,7 +2127,7 @@ window.dismissError=async(id)=>{try{await post('errors/dismiss',{id});toast('Err
 
 let fbQ='';
 async function viewFeedback(){
-  const r=await api('feedback');
+  const r=await vapi('feedback');
   const q=fbQ.trim().toLowerCase();
   const list=q?r.feedback.filter(f=>[f.username,f.text,f.country].some(v=>String(v||'').toLowerCase().includes(q))):r.feedback;
   const week=r.feedback.filter(f=>Date.now()-f.ts<7*86400000).length;
@@ -1997,7 +2143,7 @@ async function viewFeedback(){
 }
 
 async function viewAudit(){
-  const r=await api('audit');
+  const r=await vapi('audit');
   const fails=r.audit.filter(a=>/fail|lockout/.test(a.action)).length;
   $('#main').innerHTML=`<div class="card anim" style="margin-top:0"><h2>🧾 Security audit log <span class="sub">every login, ban and admin action · ${r.audit.length} entries${fails?` · <b style="color:var(--crit)">${fails} failed sign-in event(s)</b>`:''}</span></h2>
   <table><tr><th>When</th><th>Action</th><th>IP</th><th>Detail</th></tr>
@@ -2005,7 +2151,7 @@ async function viewAudit(){
 }
 
 async function viewSettings(){
-  const o=await api('overview');
+  const o=await vapi('overview');
   const m=o.maintenance;
   const theme=currentTheme();
   $('#main').innerHTML=`<div class="card anim" style="margin-top:0"><h2>🛠️ Maintenance mode</h2>

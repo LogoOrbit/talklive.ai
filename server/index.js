@@ -848,6 +848,7 @@ function sendAppShell(res, file) {
 // Runtime snapshot handed to the dashboard: everything live, straight from memory.
 function getRuntime() {
   const users = [];
+  const reportCounts = store.reportCounts();
   for (const [sid, p] of profiles) {
     const sock = io.sockets.sockets.get(sid);
     if (!sock) continue;
@@ -866,7 +867,7 @@ function getRuntime() {
       mode: p.mode === 'chat' ? 'chat' : 'talk',
       account: socketAuth.get(sid) || null,
       premium: isPremium(p.clientId),
-      reports: store.reportCountFor(p.clientId),
+      reports: reportCounts.get(p.clientId) || 0,
     });
   }
   return {

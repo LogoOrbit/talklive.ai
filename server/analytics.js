@@ -35,13 +35,28 @@ function normalizeTimezone(tz, fallback = 'UTC') {
   return isValidTimezone(fallback) ? fallback : 'UTC';
 }
 
+// Building an Intl.DateTimeFormat costs far more than using one, and a report
+// calls localParts thousands of times (26 per stored day), so one formatter is
+// kept per zone. Without this a single overview blocked the event loop for
+// ~300ms - on every dashboard poll, stalling the whole app with it.
+const formatters = new Map();
+function formatterFor(tz) {
+  let f = formatters.get(tz);
+  if (!f) {
+    f = new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz,
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    });
+    if (formatters.size > 200) formatters.clear();
+    formatters.set(tz, f);
+  }
+  return f;
+}
+
 // Local calendar parts for an instant, via Intl so DST is handled for us.
 function localParts(ts, tz) {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: tz,
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', hour12: false,
-  }).formatToParts(new Date(ts));
+  const parts = formatterFor(tz).formatToParts(new Date(ts));
   const get = (type) => (parts.find((p) => p.type === type) || {}).value;
   return {
     day: `${get('year')}-${get('month')}-${get('day')}`,
@@ -99,6 +114,21 @@ function emptyDay(dayKey) {
 
 // Fold every stored UTC day/hour into local-day buckets. Returns a Map of
 // localDayKey -> bucket.
+// The stored hours never move, so where each one lands in a zone is memoised
+// across requests; a dashboard poll then folds from cache instead of re-running
+// Intl ~3000 times.
+const foldCache = new Map();
+function cachedLocalParts(ts, tz) {
+  const k = tz + '|' + ts;
+  let v = foldCache.get(k);
+  if (!v) {
+    if (foldCache.size > 50000) foldCache.clear();
+    v = localParts(ts, tz);
+    foldCache.set(k, v);
+  }
+  return v;
+}
+
 function foldToLocalDays(days, tz) {
   const out = new Map();
   const bucketFor = (key) => {
@@ -118,7 +148,7 @@ function foldToLocalDays(days, tz) {
         const src = hours[String(h)];
         if (!src) continue;
         // Probe mid-hour so a DST jump can never land us on a skipped instant.
-        const local = localParts(Date.UTC(y, mo, da, h, 30), tz);
+        const local = cachedLocalParts(Date.UTC(y, mo, da, h, 30), tz);
         const b = bucketFor(local.day);
         for (const m of HOUR_METRICS) b[m] += src[m] || 0;
         const slot = b.hours[local.hour];
@@ -128,7 +158,7 @@ function foldToLocalDays(days, tz) {
       }
     } else {
       // Legacy day: no hours to split on, so attribute it whole.
-      const local = localParts(Date.UTC(y, mo, da, 12), tz);
+      const local = cachedLocalParts(Date.UTC(y, mo, da, 12), tz);
       const b = bucketFor(local.day);
       for (const m of HOUR_METRICS) b[m] += d[m] || 0;
       b.peakOnline = Math.max(b.peakOnline, d.peakOnline || 0);
@@ -137,7 +167,7 @@ function foldToLocalDays(days, tz) {
 
     // Reports/errors/new accounts are only stored per UTC day. Attribute them
     // to the local day that holds most of that UTC day (its midpoint).
-    const midLocal = localParts(Date.UTC(y, mo, da, 12), tz);
+    const midLocal = cachedLocalParts(Date.UTC(y, mo, da, 12), tz);
     const mb = bucketFor(midLocal.day);
     for (const m of DAY_ONLY_METRICS) mb[m] += d[m] || 0;
   }
