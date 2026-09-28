@@ -220,6 +220,7 @@ table{width:100%;border-collapse:collapse;font-size:.85rem;min-width:560px}
 th{text-align:left;color:var(--muted);font-weight:600;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;padding:8px;border-bottom:1px solid var(--grid)}
 td{padding:9px 8px;border-bottom:1px solid var(--grid);vertical-align:top}
 td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+td.ipcell{min-width:120px;max-width:170px;word-break:break-all;font-size:.78rem}
 .pill{display:inline-block;font-size:.7rem;padding:2px 9px;border-radius:99px;font-weight:700}
 .pill.good{background:color-mix(in srgb,var(--good) 16%,transparent);color:var(--good)}
 .pill.warn{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
@@ -2088,7 +2089,7 @@ async function viewAccounts(){
   <td>${a.method==='google'?'<span class="pill info">Google</span>':'<span class="pill good">Password</span>'}</td>
   <td>${a.email?esc(a.email)+(a.google&&a.google.emailVerified?' <span class="pill good">verified</span>':''):'<span class="muted">-</span>'}</td>
   <td>${esc(a.country||'')}${a.city&&a.city!=='Unknown'?', '+esc(a.city):''}</td>
-  <td>${a.createdAt?fmtTs(a.createdAt):'-'}</td><td>${a.lastSeen?ago(a.lastSeen):'-'}</td><td class="muted">${esc(a.ip||'')}</td>
+  <td>${a.createdAt?fmtTs(a.createdAt):'-'}</td><td>${a.lastSeen?ago(a.lastSeen):'-'}</td><td class="muted ipcell">${esc(a.ip||'')}</td>
   <td><div class="rowbtns"><button class="lnk accToggle" data-k="${esc(a.key)}">${accOpen===a.key?'Hide':'Details'}</button>${warnBtn(a.clientId,a.key,a.username||a.key,a.country)}</div></td></tr>
   ${accOpen===a.key?accProfileRow(a):''}`).join('')||`<tr><td colspan="${ACC_COLS.length+1}" class="muted">${q?'No account matches that search.':'No accounts registered yet.'}</td></tr>`}</table></div>`;
   animateCounters();
