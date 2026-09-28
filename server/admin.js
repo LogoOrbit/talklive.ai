@@ -466,6 +466,29 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned }) {
     next();
   });
 
+  // Summing 30 days of per-country/city/feature maps was the most expensive
+  // part of the Overview (tens of thousands of keys, every 12s poll). Only
+  // today's UTC day is still being written, so the other 29 are summed once
+  // and cached until the day rolls over; today is added on top each time.
+  let aggCache = { sig: '', fields: {} };
+  function aggregateDays(days, keys, field) {
+    const done = keys.slice(0, -1);
+    const sig = done.join(',');
+    if (aggCache.sig !== sig) aggCache = { sig, fields: {} };
+    let base = aggCache.fields[field];
+    if (!base) {
+      base = new Map();
+      for (const k of done) {
+        for (const [name, n] of Object.entries(days[k][field] || {})) base.set(name, (base.get(name) || 0) + n);
+      }
+      aggCache.fields[field] = base;
+    }
+    const out = Object.fromEntries(base);
+    const last = keys[keys.length - 1];
+    if (last) for (const [name, n] of Object.entries(days[last][field] || {})) out[name] = (out[name] || 0) + n;
+    return out;
+  }
+
   router.get('/api/overview', (req, res) => {
     const runtime = getRuntime();
     const days = store.data.analytics.days;
@@ -479,13 +502,12 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned }) {
       bots: d.bots,
     }));
     const today = report.today;
-    const agg = (field) => keys.reduce((acc, k) => {
-      for (const [name, n] of Object.entries(days[k][field] || {})) acc[name] = (acc[name] || 0) + n;
-      return acc;
-    }, {});
+    const agg = (field) => aggregateDays(days, keys, field);
     const topics = Object.entries(store.data.analytics.topics).sort((a, b) => b[1] - a[1]).slice(0, 30);
     res.json({
-      runtime,
+      // Everyone online, with IPs, is the Live tab's job; the Overview only
+      // needs the counts, so don't ship (and serialise) the whole list here.
+      runtime: { ...runtime, users: undefined },
       timezone: report.timezone,
       offset: report.offset,
       todayWindow: report.todayWindow,

@@ -20,14 +20,23 @@ const HOUR_METRICS = ['visits', 'uniques', 'connections', 'matches', 'messages',
 // Counters only kept per UTC day; they follow the day's dominant local day.
 const DAY_ONLY_METRICS = ['reports', 'errors', 'newAccounts', 'feedback'];
 
+// Validity is fixed per zone name, and checking it means building a formatter,
+// so remember the answer (bounded: names come from request query strings).
+const validZones = new Map();
 function isValidTimezone(tz) {
   if (typeof tz !== 'string' || !tz) return false;
-  try {
-    new Intl.DateTimeFormat('en-US', { timeZone: tz });
-    return true;
-  } catch (_) {
-    return false;
+  let ok = validZones.get(tz);
+  if (ok === undefined) {
+    try {
+      new Intl.DateTimeFormat('en-US', { timeZone: tz });
+      ok = true;
+    } catch (_) {
+      ok = false;
+    }
+    if (validZones.size > 500) validZones.clear();
+    validZones.set(tz, ok);
   }
+  return ok;
 }
 
 function normalizeTimezone(tz, fallback = 'UTC') {
@@ -205,7 +214,12 @@ function pctChange(now, before) {
  */
 function buildReport(days, tz, now = Date.now()) {
   const zone = normalizeTimezone(tz);
-  const local = foldToLocalDays(days, zone);
+  // The report reaches back at most 8 weeks (the weekly table), so only fold
+  // the UTC days that can land in that range - not every retained day.
+  const oldest = addDays(new Date(now).toISOString().slice(0, 10), -60);
+  const recent = {};
+  for (const k of Object.keys(days || {})) if (k >= oldest) recent[k] = days[k];
+  const local = foldToLocalDays(recent, zone);
   const nowLocal = localParts(now, zone);
 
   const todayKey = nowLocal.day;
