@@ -254,7 +254,117 @@ function buildReport(days, tz, now = Date.now()) {
   };
 }
 
+// --- Custom time windows ------------------------------------------------------
+//
+// "How many visits from 7am until 7am the next day?" Answered from the UTC hour
+// buckets: every hour whose start falls inside [from, to) is counted. That
+// makes the window exact to the hour for any zone on a whole-hour offset; for
+// zones like UTC+05:30 each edge can be off by up to half an hour, and the
+// report says so. Unique visitors are deduped per UTC day only, so across a
+// window that crosses UTC midnight the figure can count one person twice - it
+// is labelled approximate.
+
+// Epoch ms of a local wall-clock time ('YYYY-MM-DDTHH:MM') in `tz`.
+function zonedToUtc(wall, tz) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(String(wall || ''));
+  if (!m) return NaN;
+  const asUtc = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]);
+  const offsetAt = (ts) => {
+    const p = localParts(ts, tz);
+    return Date.UTC(+p.day.slice(0, 4), +p.day.slice(5, 7) - 1, +p.day.slice(8, 10), p.hour, p.minute) - Math.floor(ts / 60000) * 60000;
+  };
+  // Two passes settle the offset across a DST change.
+  let ts = asUtc - offsetAt(asUtc);
+  ts = asUtc - offsetAt(ts);
+  return ts;
+}
+
+function wallLabel(ts, tz) {
+  const p = localParts(ts, tz);
+  return `${p.day} ${String(p.hour).padStart(2, '0')}:${String(p.minute).padStart(2, '0')}`;
+}
+
+const HOUR_MS = 3600000;
+
+// Sum the hour buckets in [from, to). `hours` lists each hour for charting.
+function windowTotals(days, from, to, tz) {
+  const totals = { peakOnline: 0 };
+  for (const m of HOUR_METRICS) totals[m] = 0;
+  const hours = [];
+  let legacy = false;
+  const now = Date.now();
+  for (let t = Math.ceil(from / HOUR_MS) * HOUR_MS; t < to && t <= now; t += HOUR_MS) {
+    const d = new Date(t);
+    const rec = days[d.toISOString().slice(0, 10)];
+    if (rec && (!rec.hours || !Object.keys(rec.hours).length) && (rec.visits || rec.connections)) legacy = true;
+    const src = (rec && rec.hours && rec.hours[String(d.getUTCHours())]) || {};
+    const row = { ts: t, label: wallLabel(t, tz) };
+    for (const m of HOUR_METRICS) { row[m] = src[m] || 0; totals[m] += row[m]; }
+    row.peakOnline = src.peakOnline || 0;
+    totals.peakOnline = Math.max(totals.peakOnline, row.peakOnline);
+    hours.push(row);
+  }
+  totals.hours = hours.length;
+  return { totals, hours, legacy };
+}
+
+const MAX_WINDOW_MS = 31 * 86400000;
+
+// One custom window, plus the window of equal length just before it.
+function windowReport(days, { from, to, tz }) {
+  const zone = normalizeTimezone(tz);
+  const start = zonedToUtc(from, zone);
+  const end = zonedToUtc(to, zone);
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return { error: 'Pick a valid start and end time.' };
+  if (end <= start) return { error: 'The end time must be after the start time.' };
+  if (end - start > MAX_WINDOW_MS) return { error: 'Windows are limited to 31 days.' };
+  const cur = windowTotals(days, start, end, zone);
+  const len = end - start;
+  const prev = windowTotals(days, start - len, start, zone);
+  const change = {};
+  for (const m of HOUR_METRICS) change[m] = pctChange(cur.totals[m], prev.totals[m]);
+  return {
+    timezone: zone,
+    offset: offsetLabel(start, zone),
+    from: wallLabel(start, zone),
+    to: wallLabel(end, zone),
+    hoursLong: Math.round(len / HOUR_MS * 10) / 10,
+    inProgress: end > Date.now(),
+    halfHourZone: new Date(start).getUTCMinutes() !== 0 || new Date(end).getUTCMinutes() !== 0,
+    totals: cur.totals,
+    hours: cur.hours,
+    legacy: cur.legacy,
+    previous: { from: wallLabel(start - len, zone), to: wallLabel(start, zone), totals: prev.totals },
+    change,
+  };
+}
+
+// "Business days" that start at `startHour` local time (7 -> 07:00 to 07:00
+// the next day), newest first. The newest one may still be running.
+function shiftedDays(days, { tz, startHour, count }, now = Date.now()) {
+  const zone = normalizeTimezone(tz);
+  const h = Math.min(23, Math.max(0, Math.floor(Number(startHour) || 0)));
+  const n = Math.min(60, Math.max(1, Math.floor(Number(count) || 14)));
+  const hh = String(h).padStart(2, '0');
+  const nowLocal = localParts(now, zone);
+  // The window that contains "now" started today at h, or yesterday if it is
+  // not yet h o'clock.
+  let firstDay = nowLocal.hour >= h ? nowLocal.day : addDays(nowLocal.day, -1);
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const day = addDays(firstDay, -i);
+    const start = zonedToUtc(`${day}T${hh}:00`, zone);
+    const end = zonedToUtc(`${addDays(day, 1)}T${hh}:00`, zone);
+    const w = windowTotals(days, start, end, zone);
+    out.push({ day, from: wallLabel(start, zone), to: wallLabel(end, zone), inProgress: end > now, ...w.totals, legacy: w.legacy });
+  }
+  return { timezone: zone, startHour: h, windows: out };
+}
+
 module.exports = {
+  zonedToUtc,
+  windowReport,
+  shiftedDays,
   HOUR_METRICS,
   DAY_ONLY_METRICS,
   isValidTimezone,

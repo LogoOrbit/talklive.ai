@@ -565,6 +565,17 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned }) {
     res.json(audienceReport(req));
   });
 
+  // Visits and activity between any two local times ("7am to 7am the next
+  // day"), or a run of such days starting at a chosen hour.
+  router.get('/api/window', (req, res) => {
+    const tz = String(req.query.tz || store.data.settings.timezone || 'UTC');
+    const shifted = analytics.shiftedDays(store.data.analytics.days, { tz, startHour: req.query.startHour, count: req.query.count });
+    if (!req.query.from && !req.query.to) return res.json({ shifted });
+    const report = analytics.windowReport(store.data.analytics.days, { from: String(req.query.from || ''), to: String(req.query.to || ''), tz });
+    if (report.error) return res.status(400).json({ error: report.error });
+    res.json({ ...report, shifted });
+  });
+
   router.post('/api/timezone', (req, res) => {
     const tz = (req.body || {}).timezone;
     if (!analytics.isValidTimezone(tz)) return res.status(400).json({ error: 'Unknown timezone.' });
