@@ -2360,7 +2360,20 @@ const ERROR_NOISE = [
   /The fetching process for the media resource was aborted/i,
   /play\(\) request was interrupted/i,
   /extension:\/\//i,
+  // Third-party ad code and scripts injected by in-app browsers, userscript
+  // managers and translate/highlight webviews - none of it is ours.
+  /googlesyndication\.com|adsbygoogle|boq-content-ads/i,
+  /user-script:|webkit-masked-url:/i,
+  /runtime\.sendMessage/i,
+  /recoverTranslate|MyApp_RemoveAllHighlights|extractFormsAndFormElements/,
 ];
+// Same rule as injectedOnly() in public/error-reporter.js: frames that all
+// point at the HTML page and never at a .js file are injected code.
+function isErrorNoise(message, stack) {
+  if (ERROR_NOISE.some((re) => re.test(message) || (stack && re.test(stack)))) return true;
+  const urls = stack ? stack.match(/https?:\/\/[^\s)]+/g) : null;
+  return !!urls && urls.every((u) => !/\.js([?:#]|$)/.test(u));
+}
 
 // socket.id -> { start, n } sliding 5s window for the chat bot-flood guard.
 const chatRate = new Map();
@@ -4599,13 +4612,14 @@ io.on('connection', (socket) => {
     // served immutable for a year: browsers still running a cached copy from
     // before that filter existed would otherwise keep filling the Errors tab
     // with browser-extension and in-app-webview noise.
-    if (ERROR_NOISE.some((re) => re.test(message))) return;
+    const stack = typeof payload.stack === 'string' ? payload.stack.slice(0, 1500) : '';
+    if (isErrorNoise(message, stack)) return;
     const p = profiles.get(socket.id);
     // Logged to the dashboard's Errors tab only; no email.
     store.addError({
       source: 'client',
       message,
-      stack: typeof payload.stack === 'string' ? payload.stack.slice(0, 1500) : '',
+      stack,
       url: typeof payload.url === 'string' ? payload.url.slice(0, 200) : '',
       username: p ? p.username : 'Unknown',
       country: p ? p.countryName : '',

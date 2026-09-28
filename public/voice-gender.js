@@ -20,6 +20,15 @@
 (function () {
   'use strict';
 
+  // Safari before 14.1 has no getFloatTimeDomainData, and calling it threw on
+  // every tick of the interval. Fall back to the byte version, rescaled to -1..1.
+  function readTimeDomain(analyser, buf) {
+    if (analyser.getFloatTimeDomainData) { analyser.getFloatTimeDomainData(buf); return; }
+    const bytes = new Uint8Array(buf.length);
+    analyser.getByteTimeDomainData(bytes);
+    for (let i = 0; i < buf.length; i++) buf[i] = (bytes[i] - 128) / 128;
+  }
+
   const TARGET_RATE = 12000;     // analyse at ~12 kHz: enough for F0 and F1-F3
   const TICK_MS = 100;           // one frame every 100 ms
   const MIN_VOICED = 80;         // ~8 s of voiced speech before any verdict
@@ -223,7 +232,7 @@
       const buf = new Float32Array(analyser.fftSize);
       timer = setInterval(() => {
         if (Date.now() - startedAt > MAX_RUN_MS) { stop(); return; }
-        analyser.getFloatTimeDomainData(buf);
+        readTimeDomain(analyser, buf);
         analyse(decimate(buf, factor), rate);
         const result = estimate(f0s, spacings);
         if (result && result.decided) {

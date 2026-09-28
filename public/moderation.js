@@ -10,6 +10,15 @@
 (function () {
   'use strict';
 
+  // Safari before 14.1 has no getFloatTimeDomainData, and calling it threw on
+  // every tick of the interval. Fall back to the byte version, rescaled to -1..1.
+  function readTimeDomain(analyser, buf) {
+    if (analyser.getFloatTimeDomainData) { analyser.getFloatTimeDomainData(buf); return; }
+    const bytes = new Uint8Array(buf.length);
+    analyser.getByteTimeDomainData(bytes);
+    for (let i = 0; i < buf.length; i++) buf[i] = (bytes[i] - 128) / 128;
+  }
+
   // --- Keyword filter -------------------------------------------------------
   // Normalized (lowercase, leetspeak-collapsed) substrings/words. Extend freely.
   const OFFENSIVE_WORDS = [
@@ -170,7 +179,7 @@
       source.connect(analyser);
       const buf = new Float32Array(analyser.fftSize);
       analyserTimer = setInterval(() => {
-        analyser.getFloatTimeDomainData(buf);
+        readTimeDomain(analyser, buf);
         let sum = 0;
         for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
         const rms = Math.sqrt(sum / buf.length);

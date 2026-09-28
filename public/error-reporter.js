@@ -28,13 +28,30 @@
     /The fetching process for the media resource was aborted/i,
     /play\(\) request was interrupted/i,
     /extension:\/\//i,
+    // Third-party ad code and scripts injected by in-app browsers, userscript
+    // managers and translate/highlight webviews - none of it is ours.
+    /googlesyndication\.com|adsbygoogle|boq-content-ads/i,
+    /user-script:|webkit-masked-url:/i,
+    /runtime\.sendMessage/i,
+    /recoverTranslate|MyApp_RemoveAllHighlights|extractFormsAndFormElements/,
   ];
 
   // Message and stack are tested separately so anchored patterns (like the
   // bare "Script error.") still match when there is a stack alongside them.
+  // A stack whose frames all point at the HTML page itself (".../chat:190:70")
+  // and never at a .js file is code a webview or extension evaluated against
+  // the document - our own logic lives in script files.
+  function injectedOnly(stack) {
+    var urls = String(stack || '').match(/https?:\/\/[^\s)]+/g);
+    if (!urls) return false;
+    for (var i = 0; i < urls.length; i++) if (/\.js([?:#]|$)/.test(urls[i])) return false;
+    return true;
+  }
+
   function isNoise(message, stack) {
     var msg = String(message || '').trim();
     var stk = String(stack || '').trim();
+    if (injectedOnly(stk)) return true;
     for (var i = 0; i < NOISE.length; i++) {
       if (NOISE[i].test(msg) || (stk && NOISE[i].test(stk))) return true;
     }

@@ -849,6 +849,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "errNoMic": "No microphone was found. Please connect a microphone and try again.",
     "errMicBusy": "Your microphone is already in use by another app or tab. Close it and try again.",
     "errMicRequired": "Microphone access is required to use TalkLive.",
+    "errNoWebRTC": "This browser can't make voice calls. Open TalkLive in Chrome, Safari, Firefox or Edge - in-app browsers (Instagram, Facebook, TikTok) often block calling.",
     "errCouldntConnect": "Couldn't connect to that person - finding someone new…",
     "errNetworkBlocksCalls": "Your network keeps blocking the audio connection. This is common on office, school and some mobile networks. Try a different Wi-Fi or your mobile data - it is not a problem with your microphone.",
     "errBanned": "You have been banned after repeated reports.",

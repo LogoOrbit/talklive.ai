@@ -657,7 +657,7 @@ function loadVoiceGender() {
   if (!voiceGenderLoad) {
     voiceGenderLoad = new Promise((resolve, reject) => {
       const el = document.createElement('script');
-      el.src = 'voice-gender.js?v=20260928a';
+      el.src = 'voice-gender.js?v=20260928err';
       el.onload = resolve;
       el.onerror = () => { voiceGenderLoad = null; reject(); };
       document.head.appendChild(el);
@@ -1294,7 +1294,7 @@ function playTone(freq, duration, type, volume, delay = 0) {
   if (!soundEnabled) return;
   try {
     const ctx = getSfxCtx();
-    if (ctx.state === 'suspended') ctx.resume();
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
     const t0 = ctx.currentTime + delay;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -2638,16 +2638,19 @@ if (devNoticeOverlay) {
 
   let devNoticeReturnFocus = null;
 
-  function closeDevNotice() {
+  // Function expressions, not declarations: Safari mishandles a function
+  // declared inside this if-block that closes over the block's const/let, and
+  // threw "Can't find variable: rememberDevNotice" on every close.
+  const closeDevNotice = () => {
     if (devNoticeOverlay.classList.contains('hidden')) return;
     devNoticeOverlay.classList.add('hidden');
     devNoticeOverlay.hidden = true;
     rememberDevNotice();
     if (devNoticeReturnFocus && document.body.contains(devNoticeReturnFocus)) devNoticeReturnFocus.focus();
     devNoticeReturnFocus = null;
-  }
+  };
 
-  function openDevNotice() {
+  const openDevNotice = () => {
     // Never over a live conversation: the notice is an introduction, and a
     // card that lands mid-call is an interruption. /call deep links and a
     // reload into a call both take this path.
@@ -2662,7 +2665,7 @@ if (devNoticeOverlay) {
     // everything they were just offered.
     const devNoticeCard = document.getElementById('devNotice');
     if (devNoticeCard) devNoticeCard.focus();
-  }
+  };
 
   devNoticeCloseBtn.addEventListener('click', closeDevNotice);
   devNoticeSkip.addEventListener('click', closeDevNotice);
@@ -7617,11 +7620,18 @@ async function micAlreadyGranted() {
     return status.state === 'granted';
   } catch (_) { return false; } // Firefox/Safari may not know the name
 }
+// In-app browsers and some locked-down webviews ship without WebRTC, and the
+// call then died inside createPeerConnection with no message to the user.
+function webrtcSupported() {
+  return typeof window.RTCPeerConnection === 'function'
+    && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+}
 async function begin() {
   if (beginInFlight) return;
+  clearError();
+  if (!webrtcSupported()) { showError(t('errNoWebRTC')); return; }
   beginInFlight = true;
   startBtn.disabled = true;
-  clearError();
   // One-time explainer before the browser's mic prompt so the permission
   // request doesn't come out of nowhere (biggest drop-off point on first use).
   // Skipped when the browser already granted the mic - there is no prompt
@@ -7865,8 +7875,9 @@ ageConsentModal.addEventListener('click', (e) => {
 let joinInviteInFlight = false;
 async function joinVoiceInvite() {
   if (joinInviteInFlight || !pendingInviteToken) return;
-  joinInviteInFlight = true;
   clearError();
+  if (!webrtcSupported()) { showError(t('errNoWebRTC')); return; }
+  joinInviteInFlight = true;
   try {
     await getMic();
   } catch (e) {

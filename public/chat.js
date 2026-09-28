@@ -139,7 +139,7 @@
         var AC = window.AudioContext || window.webkitAudioContext;
         if (AC) audioCtx = new AC();
       }
-      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+      if (audioCtx && audioCtx.state === 'suspended') { var r = audioCtx.resume(); if (r && r.catch) r.catch(function () {}); }
     } catch (e) { audioCtx = null; }
   }
   // A short two-note blip. freqs = [start, end] Hz; type = wave; vol = 0..1.
@@ -324,9 +324,13 @@
   // Consecutive messages from the same side inside a few minutes read as one
   // turn, so they tuck together instead of each floating on its own.
   function applyGrouping(el, who, ts) {
+    // who can carry extra classes ('system system-warn'); classList.contains
+    // throws on a token with a space, so compare the first class only.
+    who = String(who).split(' ')[0];
+    if (who === 'system') return;
     var prev = el.previousElementSibling;
     if (!prev || !prev.classList.contains('msg')) return;
-    if (!prev.classList.contains(who) || who === 'system') return;
+    if (!prev.classList.contains(who)) return;
     var prevTs = Number(prev.dataset.ts);
     if (prevTs && ts - prevTs > GROUP_WINDOW_MS) return;
     el.classList.add('is-grouped');
