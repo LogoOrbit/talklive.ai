@@ -10023,6 +10023,22 @@ socket.on('signal', (data) => {
   handleSignal(data);
 });
 
+// A warning from the owner about this person's behaviour. The notice script
+// loads only when one actually arrives.
+let ownerWarningLoad = null;
+socket.on('owner-warning', (w) => {
+  if (!ownerWarningLoad) {
+    ownerWarningLoad = new Promise((resolve) => {
+      const s = document.createElement('script');
+      s.src = '/owner-warning.js?v=1';
+      s.onload = resolve;
+      s.onerror = () => { ownerWarningLoad = null; };
+      document.head.appendChild(s);
+    });
+  }
+  ownerWarningLoad.then(() => window.TalkLiveWarning && window.TalkLiveWarning.show(socket, w));
+});
+
 // Post-call "how was it?" - the card loads only when first needed.
 socket.on('rate-prompt', (d) => {
   const show = () => window.TalkLiveRate && window.TalkLiveRate.show(socket, d);

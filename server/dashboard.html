@@ -231,6 +231,8 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .rowbtns button:hover{border-color:var(--accent)}
 .rowbtns button.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 18%,transparent);font-weight:700}
 .rowbtns button.danger{border-color:color-mix(in srgb,var(--crit) 45%,transparent);color:var(--crit)}
+.rowbtns button.warnb{border-color:color-mix(in srgb,var(--warn) 50%,transparent);color:var(--warn)}
+.rowbtns button:disabled{opacity:.5;cursor:default}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{background:var(--surface-2);border:1px solid var(--ring);border-radius:99px;padding:4px 13px;font-size:.82rem;color:var(--ink2)}
 .tooltip{position:fixed;pointer-events:none;background:var(--bg-2);color:var(--text);border:1px solid var(--ring);font-size:.75rem;padding:6px 9px;border-radius:9px;z-index:20;white-space:nowrap;transform:translate(-50%,-130%);box-shadow:0 6px 20px rgba(0,0,0,.35)}
@@ -743,7 +745,7 @@ function rankedBars(el,entries){
    fourteen peers in a row. Shortcut keys 1-9 follow this order. */
 const GROUPS=[
   ['Monitor',[['overview','Overview','📊'],['live','Live','🟢'],['activity','Activity','📅'],['experience','Experience','🩺'],['ai','AI Bot','🤖']]],
-  ['Moderation',[['reports','Reports','🚩'],['chats','Chats','💬'],['bans','Bans','⛔']]],
+  ['Moderation',[['reports','Reports','🚩'],['chats','Chats','💬'],['warnings','Warnings','⚠️'],['bans','Bans','⛔']]],
   ['People',[['audience','Audience','⚧'],['accounts','Accounts','👤'],['talktime','Talk time','⏱️'],['feedback','Feedback','⭐']]],
   ['Business',[['revenue','Revenue','💎']]],
   ['System',[['errors','Errors','🐛'],['audit','Audit log','🧾'],['settings','Settings','🛠️']]]
@@ -964,6 +966,7 @@ async function load(force){
     else if(tab==='live')await viewLive();
     else if(tab==='reports')await viewReports();
     else if(tab==='bans')await viewBans();
+    else if(tab==='warnings')await viewWarnings();
     else if(tab==='chats')await viewChats();
     else if(tab==='accounts')await viewAccounts();
     else if(tab==='talktime')await viewTalkTime();
@@ -1572,8 +1575,107 @@ async function viewBot(){
 const DUR=[['30','30 minutes'],['60','1 hour'],['360','6 hours'],['1440','1 day'],['4320','3 days'],['10080','7 days'],['43200','30 days'],['129600','90 days'],['525600','1 year'],['2628000','5 years']];
 const BAN_REASONS=['Nudity or sexual content','Harassment or abuse','Underage user','Spam or advertising','Scam or phishing','Hate speech','Repeated user reports','Owner ban'];
 function banButtons(u){
-  return `<div class="rowbtns"><button class="danger" onclick="banUser('${jsq(u.clientId)}','${jsq(u.ip||'')}','${jsq(u.username)}','${jsq(u.country||'')}','${jsq(u.city||'')}')">Ban…</button></div>`;
+  return `<div class="rowbtns">${warnBtn(u.clientId,u.account,u.username,u.country)}<button class="danger" onclick="banUser('${jsq(u.clientId)}','${jsq(u.ip||'')}','${jsq(u.username)}','${jsq(u.country||'')}','${jsq(u.city||'')}')">Ban…</button></div>`;
 }
+const warnBtn=(clientId,account,username,country,label)=>`<button class="warnb" onclick="warnUser('${jsq(clientId||'')}','${jsq(account||'')}','${jsq(username||'')}','${jsq(country||'')}')">${label||'Warn…'}</button>`;
+
+/* ---------- warnings: a message to one person about their behaviour ----------
+   Shown in the app as a notice they have to tap "I understand" on - straight
+   away if they are online, otherwise on their next visit - and tracked here
+   until they do. It blocks nothing; a ban stays the separate, heavier step. */
+const WARN_PRESETS=[
+  ['Harassment or abuse','Your recent behaviour toward other people was reported as harassment or abuse. Please be respectful to everyone you meet on TalkLive.'],
+  ['Sexual content','Sexual content and sexual requests are not allowed on TalkLive. Please keep your conversations appropriate for everyone.'],
+  ['Hate speech','Hateful or discriminatory language is not allowed on TalkLive. Please treat everyone with respect.'],
+  ['Spam or advertising','Spamming, advertising or repeatedly posting links is not allowed on TalkLive.'],
+  ['Asking for personal info','Please stop pressuring people to share their phone number, social media or other personal details.'],
+  ['Scam or money requests','Asking people for money, gifts or payments is not allowed on TalkLive.'],
+  ['Inappropriate name','Your display name breaks our community guidelines. Please change it to something appropriate.'],
+  ['Other',''],
+];
+const warnStatus=(w)=>w.withdrawnAt?'<span class="pill info">Withdrawn</span>'
+  :w.acknowledgedAt?`<span class="pill good" title="${esc(fmtTs(w.acknowledgedAt))}">✓ Seen · ${ago(w.acknowledgedAt)}</span>`
+  :w.deliveredAt?'<span class="pill warn" title="On their screen, not acknowledged yet">Shown · not acknowledged</span>'
+  :'<span class="pill warn" title="They are not online; it appears on their next visit">Waiting · next visit</span>';
+window.warnUser=(clientId,account,username,country)=>{
+  const who=username||account||clientId;
+  modal(`⚠️ Warn ${esc(who)}`,
+    `<div class="muted" style="font-size:.82rem">${esc([account?'account '+account:'',country==='Unknown'?'':country].filter(Boolean).join(' · ')||'Guest')}</div>
+     <div id="warnHist" class="muted" style="font-size:.8rem;margin-top:8px">Checking earlier warnings…</div>
+     <label>Reason</label>
+     <select id="warnReason">${WARN_PRESETS.map(([r])=>`<option>${esc(r)}</option>`).join('')}</select>
+     <label>Message they will see <span id="warnCount" style="text-transform:none;letter-spacing:0"></span></label>
+     <textarea id="warnMsg" rows="5" maxlength="600"></textarea>
+     <div class="muted" style="font-size:.78rem;margin-top:8px">Appears as a notice from "the TalkLive team" that they must tap <b>I understand</b> on. Delivered now if they are online, otherwise on their next visit.</div>
+     <div class="rowbtns" style="margin-top:16px">
+       <button class="warnb" id="warnGo" style="padding:9px 16px">Send warning</button>
+       <button id="warnCancel" style="padding:9px 16px">Cancel</button>
+     </div>`,
+    (sheet)=>{
+      const sel=sheet.querySelector('#warnReason'),msg=sheet.querySelector('#warnMsg'),cnt=sheet.querySelector('#warnCount');
+      let edited=false;
+      const fill=()=>{if(!edited){msg.value=(WARN_PRESETS.find(p=>p[0]===sel.value)||['',''])[1];}cnt.textContent=`(${msg.value.length}/600)`;};
+      sel.onchange=()=>{fill();if(sel.value==='Other'){edited=false;msg.value='';msg.focus();cnt.textContent='(0/600)';}};
+      msg.oninput=()=>{edited=msg.value.length>0;cnt.textContent=`(${msg.value.length}/600)`;};
+      fill();
+      sheet.querySelector('#warnCancel').onclick=closeModal;
+      const qs=new URLSearchParams();if(clientId)qs.set('clientId',clientId);if(account)qs.set('account',account);
+      api('warnings?'+qs).then(r=>{
+        const h=sheet.querySelector('#warnHist');if(!h)return;
+        const live=r.warnings.filter(w=>!w.withdrawnAt);
+        h.innerHTML=live.length
+          ?`<b style="color:var(--warn)">Warned ${live.length} time${live.length===1?'':'s'} before.</b> Last: ${esc(live[0].reason||'no reason')} · ${ago(live[0].ts)} · ${warnStatus(live[0])}`
+          :'No earlier warnings.';
+      }).catch(()=>{const h=sheet.querySelector('#warnHist');if(h)h.textContent='';});
+      const go=sheet.querySelector('#warnGo');
+      go.onclick=async()=>{
+        const text=msg.value.trim();
+        if(text.length<5){toast('Write the message','At least 5 characters.','warn');msg.focus();return;}
+        go.disabled=true;
+        try{
+          const r=await post('warn',{clientId,account,username,country,reason:sel.value==='Other'?'':sel.value,message:text});
+          closeModal();
+          toast('Warning sent to '+who,r.delivered?'They are online - it is on their screen now.':'They are offline - it will show on their next visit.','good');
+          if(tab==='warnings')load();
+        }catch(e){go.disabled=false;toast('Could not send warning',e.message,'bad');}
+      };
+    },{mid:true});
+};
+
+let warnFilter='all';
+async function viewWarnings(){
+  const r=await vapi('warnings');
+  const all=r.warnings;
+  const seen=all.filter(w=>w.acknowledgedAt).length;
+  const open=all.filter(w=>!w.acknowledgedAt&&!w.withdrawnAt);
+  const list=warnFilter==='open'?open:all;
+  $('#main').innerHTML=`<div class="grid tiles anim" style="margin-top:0">
+    <div class="tile"><div class="k">Warnings sent</div><div class="v" data-count="${all.length}">0</div><div class="s">all time</div></div>
+    <div class="tile"><div class="k">Seen</div><div class="v" style="color:var(--good)" data-count="${seen}">0</div><div class="s">tapped "I understand"</div></div>
+    <div class="tile"><div class="k">Not seen yet</div><div class="v" style="color:${open.length?'var(--warn)':'inherit'}" data-count="${open.length}">0</div><div class="s">shown or waiting for next visit</div></div>
+  </div>
+  <div class="card anim"><h2>⚠️ Warnings <span class="sub">send one from Live, Reports, Chats or Accounts with <b>Warn…</b></span></h2>
+  <div class="tbar"><div class="seg"><button data-wf="all" class="${warnFilter==='all'?'on':''}">All (${all.length})</button><button data-wf="open" class="${warnFilter==='open'?'on':''}">Not seen (${open.length})</button></div></div>
+  <table><tr><th>Sent</th><th>User</th><th>Reason</th><th>Message</th><th>Status</th><th></th></tr>
+  ${list.map(w=>`<tr style="${w.withdrawnAt?'opacity:.55':''}">
+    <td>${ago(w.ts)}<br><span class="muted">${fmtTs(w.ts)}</span></td>
+    <td><b>${esc(w.username||w.account||(w.clientId||'').slice(0,12))}</b>${w.account?`<br><span class="muted">account ${esc(w.account)}</span>`:''}${w.country?`<br><span class="muted">${esc(w.country)}</span>`:''}</td>
+    <td>${esc(w.reason||'-')}</td>
+    <td style="max-width:360px;white-space:pre-wrap;overflow-wrap:anywhere">${esc(w.message)}</td>
+    <td>${warnStatus(w)}</td>
+    <td><div class="rowbtns">
+      ${!w.acknowledgedAt&&!w.withdrawnAt?`<button onclick="withdrawWarning('${jsq(w.id)}')">Withdraw</button>`:''}
+      ${warnBtn(w.clientId,w.account,w.username,w.country,'Warn again…')}
+      ${w.clientId?`<button class="danger" onclick="banUser('${jsq(w.clientId)}','','${jsq(w.username||'')}','${jsq(w.country||'')}','')">Ban…</button>`:''}
+    </div></td></tr>`).join('')||`<tr><td colspan="6" class="muted">${warnFilter==='open'?'Every warning has been seen.':'No warnings sent yet. Use <b>Warn…</b> next to anyone in Live, Reports, Chats or Accounts.'}</td></tr>`}</table></div>`;
+  animateCounters();
+  document.querySelectorAll('[data-wf]').forEach(b=>b.onclick=()=>{warnFilter=b.dataset.wf;load();});
+}
+window.withdrawWarning=async(id)=>{
+  if(!confirm('Withdraw this warning? If they have not seen it yet, it will not be shown.'))return;
+  try{await post('warnings/'+encodeURIComponent(id)+'/withdraw');toast('Warning withdrawn','','good');load();}
+  catch(e){toast('Could not withdraw',e.message,'bad');}
+};
 /* Replaces the old prompt()/prompt() pair, which asked for a raw number of
    minutes and gave no way back once the first box was answered. */
 window.banUser=(clientId,ip,username,country,city)=>{
@@ -1665,6 +1767,7 @@ async function viewReports(){
   <td>${esc(rep.reporter.username)}<br><span class="muted">${esc(rep.reporter.country)}</span></td>
   <td class="num"><span class="pill ${rep.totalReportsOnUser>=3?'crit':rep.totalReportsOnUser>=2?'warn':'info'}">${rep.totalReportsOnUser}</span></td>
   <td><div class="rowbtns">
+    ${warnBtn(rep.reported.clientId,'',rep.reported.username,rep.reported.country)}
     ${rep.activeBan?'':`<button class="danger" onclick="banUser('${jsq(rep.reported.clientId)}','${jsq(rep.reported.ip||'')}','${jsq(rep.reported.username)}','${jsq(rep.reported.country||'')}','${jsq(rep.reported.city||'')}')">Ban…</button>`}
     ${rep.handled?'':`<button onclick="markHandled('${jsq(rep.id)}')">Mark handled</button>`}
   </div></td></tr>`).join('')||`<tr><td colspan="6" class="muted">${repFilter==='open'?'Nothing waiting - every report has been handled. 🎉':'No reports yet - good sign!'}</td></tr>`}</table></div>`;
@@ -1836,7 +1939,8 @@ async function openConversation(pair,i){
       <span class="t" title="${esc(fmtTs(m.ts))}">${clock(m.ts)}</span></div>`;
   }).join('');
 
-  const bans=c.people.map(p=>`<button class="danger" onclick="banUser('${jsq(p.clientId)}','','${jsq(p.name)}','${jsq(c.country||'')}','')">Ban ${esc(p.name)}&hellip;</button>`).join('');
+  const bans=c.people.map(p=>warnBtn(p.clientId,'',p.name,c.country,'Warn '+esc(p.name)+'&hellip;')
+    +`<button class="danger" onclick="banUser('${jsq(p.clientId)}','','${jsq(p.name)}','${jsq(c.country||'')}','')">Ban ${esc(p.name)}&hellip;</button>`).join('');
   pane.innerHTML=`<div class="cvthead">
     <button class="cvback" id="cvBack">&#8592; List</button>
     <h3>${c.people.map(p=>esc(p.name)).join(' &#8596; ')}
@@ -1985,7 +2089,7 @@ async function viewAccounts(){
   <td>${a.email?esc(a.email)+(a.google&&a.google.emailVerified?' <span class="pill good">verified</span>':''):'<span class="muted">-</span>'}</td>
   <td>${esc(a.country||'')}${a.city&&a.city!=='Unknown'?', '+esc(a.city):''}</td>
   <td>${a.createdAt?fmtTs(a.createdAt):'-'}</td><td>${a.lastSeen?ago(a.lastSeen):'-'}</td><td class="muted">${esc(a.ip||'')}</td>
-  <td><button class="lnk accToggle" data-k="${esc(a.key)}">${accOpen===a.key?'Hide':'Details'}</button></td></tr>
+  <td><div class="rowbtns"><button class="lnk accToggle" data-k="${esc(a.key)}">${accOpen===a.key?'Hide':'Details'}</button>${warnBtn(a.clientId,a.key,a.username||a.key,a.country)}</div></td></tr>
   ${accOpen===a.key?accProfileRow(a):''}`).join('')||`<tr><td colspan="${ACC_COLS.length+1}" class="muted">${q?'No account matches that search.':'No accounts registered yet.'}</td></tr>`}</table></div>`;
   animateCounters();
   const tg=$('#accCountryToggle');

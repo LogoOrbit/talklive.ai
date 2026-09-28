@@ -3209,6 +3209,22 @@
     return Math.floor(v / 1000) + 'k';
   }
 
+  // A warning from the owner about this person's behaviour; the notice script
+  // loads only when one actually arrives.
+  var ownerWarningLoad = null;
+  socket.on('owner-warning', function (w) {
+    if (!ownerWarningLoad) {
+      ownerWarningLoad = new Promise(function (resolve) {
+        var s = document.createElement('script');
+        s.src = '/owner-warning.js?v=1';
+        s.onload = resolve;
+        s.onerror = function () { ownerWarningLoad = null; };
+        document.head.appendChild(s);
+      });
+    }
+    ownerWarningLoad.then(function () { if (window.TalkLiveWarning) window.TalkLiveWarning.show(socket, w); });
+  });
+
   socket.on('rate-prompt', function (d) {
     function show() { if (window.TalkLiveRate) window.TalkLiveRate.show(socket, d); }
     if (window.TalkLiveRate) return show();

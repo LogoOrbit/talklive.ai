@@ -111,6 +111,10 @@ function defaults() {
     bans: [], // { id, clientId, ip, username, country, city, reason, createdAt, expiresAt, liftedAt }
     reports: [], // { id, ts, reporter, reported, reason, detail, handled }
     feedback: [], // { id, ts, username, country, text }
+    // Owner-sent behaviour warnings, newest first: { id, ts, clientId, account,
+    // username, country, reason, message, deliveredAt, acknowledgedAt,
+    // withdrawnAt }. Re-shown on every visit until the person acknowledges it.
+    warnings: [],
     errors: [], // { id, ts, source, message, stack, url, username, country, count }
     auditLog: [], // { ts, ip, action, detail }
     transcripts: [], // { ts, pair, from, fromClientId, to, toClientId, country, text, kind }
@@ -1219,6 +1223,74 @@ function addBan({ clientId, ip, username, country, city, reason, minutes }) {
   return rec;
 }
 
+// --- Owner warnings ---------------------------------------------------------
+const MAX_WARNINGS = 2000;
+// A warning nobody has seen after this long is stale; it stops being shown.
+const WARNING_TTL_MS = 30 * 86400000;
+
+function addWarning({ clientId, account, username, country, reason, message }) {
+  if (!Array.isArray(data.warnings)) data.warnings = [];
+  const rec = {
+    id: crypto.randomUUID(),
+    ts: Date.now(),
+    clientId: clientId || null,
+    account: account ? String(account).toLowerCase() : null,
+    username: username || null,
+    country: country || null,
+    reason: reason || null,
+    message,
+    deliveredAt: null,
+    acknowledgedAt: null,
+    withdrawnAt: null,
+  };
+  data.warnings.unshift(rec);
+  if (data.warnings.length > MAX_WARNINGS) data.warnings.length = MAX_WARNINGS;
+  save();
+  return rec;
+}
+
+// Warnings still waiting to be acknowledged by this person, oldest first so
+// they are read in the order they were sent. Matches the device (clientId) and,
+// when signed in, the account - so a warning follows someone to a new device.
+function pendingWarningsFor(clientId, account) {
+  const acct = account ? String(account).toLowerCase() : null;
+  const cutoff = Date.now() - WARNING_TTL_MS;
+  return (data.warnings || []).filter((w) => !w.acknowledgedAt && !w.withdrawnAt && w.ts > cutoff
+    && ((clientId && w.clientId === clientId) || (acct && w.account === acct))).reverse();
+}
+
+function markWarningDelivered(id) {
+  const w = (data.warnings || []).find((x) => x.id === id);
+  if (w && !w.deliveredAt) { w.deliveredAt = Date.now(); save(); }
+  return w || null;
+}
+
+// Only the person it was addressed to can acknowledge it.
+function acknowledgeWarning(id, clientId, account) {
+  const acct = account ? String(account).toLowerCase() : null;
+  const w = (data.warnings || []).find((x) => x.id === id);
+  if (!w || w.acknowledgedAt) return null;
+  if (!((clientId && w.clientId === clientId) || (acct && w.account === acct))) return null;
+  w.acknowledgedAt = Date.now();
+  if (!w.deliveredAt) w.deliveredAt = w.acknowledgedAt;
+  save();
+  return w;
+}
+
+function withdrawWarning(id) {
+  const w = (data.warnings || []).find((x) => x.id === id);
+  if (!w || w.acknowledgedAt || w.withdrawnAt) return null;
+  w.withdrawnAt = Date.now();
+  save();
+  return w;
+}
+
+function warningCountFor(clientId, account) {
+  const acct = account ? String(account).toLowerCase() : null;
+  return (data.warnings || []).filter((w) => !w.withdrawnAt
+    && ((clientId && w.clientId === clientId) || (acct && w.account === acct))).length;
+}
+
 function liftBan(banId) {
   const ban = data.bans.find((b) => b.id === banId);
   if (ban && !ban.liftedAt) {
@@ -2052,6 +2124,12 @@ module.exports = {
   activeBans,
   findActiveBan,
   addBan,
+  addWarning,
+  pendingWarningsFor,
+  markWarningDelivered,
+  acknowledgeWarning,
+  withdrawWarning,
+  warningCountFor,
   liftBan,
   upsertAccount,
   saveAccount,

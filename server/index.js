@@ -921,7 +921,36 @@ function kickBanned(clientId, ip, ban) {
   }
 }
 
-const admin = createAdmin({ io, getRuntime, getLiveCounts, kickBanned });
+// Owner warnings: shown as a notice the person has to acknowledge. Sent now to
+// every open tab of theirs (by device, or by account when signed in); if none
+// is open it waits and is shown on their next visit - see sendPendingWarnings.
+function warningPayload(w) {
+  return { id: w.id, ts: w.ts, reason: w.reason, message: w.message };
+}
+function deliverWarning(w) {
+  let sent = 0;
+  for (const [sid, p] of profiles) {
+    const sock = io.sockets.sockets.get(sid);
+    if (!sock) continue;
+    const acct = socketAuth.get(sid) || null;
+    if ((w.clientId && p.clientId === w.clientId) || (w.account && acct === w.account)) {
+      sock.emit('owner-warning', warningPayload(w));
+      sent++;
+    }
+  }
+  if (sent) store.markWarningDelivered(w.id);
+  return sent;
+}
+function sendPendingWarnings(socket) {
+  const p = profiles.get(socket.id);
+  if (!p) return;
+  for (const w of store.pendingWarningsFor(p.clientId, socketAuth.get(socket.id))) {
+    socket.emit('owner-warning', warningPayload(w));
+    store.markWarningDelivered(w.id);
+  }
+}
+
+const admin = createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning });
 app.use('/owner', admin.router);
 
 // Maintenance mode: when on, every non-dashboard page gets a friendly 503.
@@ -4223,6 +4252,11 @@ io.on('connection', (socket) => {
       plans: billing.plans(),
     });
     socket.emit('identity-token', { clientId, token: issuedIdentityToken });
+    // Unacknowledged owner warnings. Checked again shortly after, because a
+    // signed-in person's account is attached by its own event, which can land
+    // after 'join'; the page ignores a warning it is already showing.
+    sendPendingWarnings(socket);
+    setTimeout(() => { if (socket.connected) sendPendingWarnings(socket); }, 3000).unref?.();
 
     // Referrals. The code travels in ?ref= on the landing URL and is held in the
     // browser until registration, because the person clicking the link has no
@@ -4517,6 +4551,14 @@ io.on('connection', (socket) => {
 
   // Post-call thumbs up / down, answering a 'rate-prompt'. One answer per
   // prompt, only for a conversation this socket actually had.
+  // "I understand" on an owner warning. Only the person it was sent to can
+  // acknowledge it; anything else is ignored.
+  socket.on('owner-warning-ack', (payload = {}) => {
+    const p = profiles.get(socket.id);
+    if (!p || typeof payload.id !== 'string') return;
+    store.acknowledgeWarning(payload.id, p.clientId, socketAuth.get(socket.id));
+  });
+
   socket.on('rate-call', (payload = {}) => {
     const p = profiles.get(socket.id);
     const pending = p && p.pendingRating;

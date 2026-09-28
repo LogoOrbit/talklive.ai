@@ -22,6 +22,7 @@
     "test:voice-gender": "node scripts/test-voice-gender.js && node scripts/test-voice-filter.js",
     "test:durability": "node scripts/test-durability.js",
     "test:analytics": "node scripts/test-analytics-visits.js",
+    "test:warnings": "node scripts/test-owner-warning.js",
     "test:audience": "node scripts/test-audience.js",
     "test:gifs": "node scripts/test-gif-proxy.js",
     "seo:ping": "node scripts/ping-indexnow.js",

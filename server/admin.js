@@ -314,7 +314,7 @@ function generateConclusion(runtime, report) {
 }
 
 // --- Module wiring ---
-function createAdmin({ io, getRuntime, getLiveCounts, kickBanned }) {
+function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning }) {
   const router = express.Router();
   router.use(express.json({ limit: '64kb' }));
 
@@ -637,6 +637,45 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned }) {
     res.json({ ok: true, ban });
   });
 
+  // Send one person a warning about their behaviour. It appears in the app as a
+  // notice they must acknowledge - immediately if they are online, otherwise on
+  // their next visit. Nothing is blocked; a ban is still the separate step.
+  router.post('/api/warn', (req, res) => {
+    const b = req.body || {};
+    const clientId = typeof b.clientId === 'string' ? b.clientId.slice(0, 100) : '';
+    const account = typeof b.account === 'string' ? b.account.slice(0, 100) : '';
+    const message = String(b.message || '').trim().slice(0, 600);
+    const reason = String(b.reason || '').trim().slice(0, 80);
+    if (!clientId && !account) return res.status(400).json({ error: 'Pick a user to warn.' });
+    if (message.length < 5) return res.status(400).json({ error: 'Write the warning message (at least 5 characters).' });
+    const w = store.addWarning({
+      clientId, account,
+      username: String(b.username || '').slice(0, 60),
+      country: String(b.country || '').slice(0, 60),
+      reason, message,
+    });
+    const sentTo = deliverWarning ? deliverWarning(w) : 0;
+    store.audit('warn', reqIp(req), `Warned ${w.username || clientId || account}${reason ? ` (${reason})` : ''}${sentTo ? ' - delivered live' : ' - queued for next visit'}`);
+    res.json({ ok: true, warning: w, delivered: sentTo > 0 });
+  });
+
+  // Every warning, newest first, or one person's history when clientId /
+  // account is given (the send dialog shows it before you write another).
+  router.get('/api/warnings', (req, res) => {
+    const clientId = String(req.query.clientId || '');
+    const account = String(req.query.account || '').toLowerCase();
+    let list = store.data.warnings || [];
+    if (clientId || account) list = list.filter((w) => (clientId && w.clientId === clientId) || (account && w.account === account));
+    res.json({ warnings: list.slice(0, 500), total: list.length });
+  });
+
+  router.post('/api/warnings/:id/withdraw', (req, res) => {
+    const w = store.withdrawWarning(req.params.id);
+    if (!w) return res.status(404).json({ error: 'Already acknowledged, withdrawn or not found.' });
+    store.audit('warn_withdraw', reqIp(req), `Withdrew warning to ${w.username || w.clientId || w.account}`);
+    res.json({ ok: true });
+  });
+
   router.post('/api/unban', (req, res) => {
     const ban = store.liftBan((req.body || {}).banId);
     if (!ban) return res.status(404).json({ error: 'Ban not found or already lifted.' });
@@ -682,6 +721,7 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned }) {
         return {
           key,
           ...a,
+          clientId: cred.clientId || a.clientId || null,
           email: (g && g.email) || cred.email || a.email || null,
           google: g && {
             id: g.sub || null,
