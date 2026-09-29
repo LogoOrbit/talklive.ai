@@ -99,7 +99,7 @@ const TOOLS = [
   {
     name: 'get_reports',
     label: 'Checking user reports',
-    description: 'User reports, newest first: who was reported and by whom (username, clientId, country, IP), reason, detail, time, whether handled, how many total reports that user has, and whether they are banned now.',
+    description: 'User reports, newest first: who was reported and by whom (username, clientId, country, IP), reason, detail, time, whether handled, how many total reports that user has, and whether they are banned now. Also "top" (the most-reported users), counts by reason and the open count.',
     input_schema: obj({
       only_unhandled: { type: 'boolean', description: 'Only reports not yet marked handled.' },
       limit: int('Max reports (default 60).'),
