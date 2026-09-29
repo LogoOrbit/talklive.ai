@@ -1165,6 +1165,49 @@ function reportCounts() {
   return out;
 }
 
+// The people reported most often since `since` (ms epoch, 0 = all on record),
+// one row per reported clientId, most reports first. Reports are stored newest
+// first, so the first one seen for a person normally carries their latest name.
+function topReported({ since = 0, limit = 100 } = {}) {
+  const byId = new Map();
+  for (const r of data.reports) {
+    if (r.ts < since) continue;
+    const t = r.reported;
+    if (!t || !t.clientId) continue;
+    let row = byId.get(t.clientId);
+    if (!row) {
+      row = {
+        clientId: t.clientId, username: t.username || '', country: t.country || '', city: t.city || '', ip: t.ip || '',
+        count: 0, open: 0, lastTs: r.ts, firstTs: r.ts, reasons: {}, reporters: new Set(), latestDetail: '',
+      };
+      byId.set(t.clientId, row);
+    }
+    row.count += 1;
+    if (!r.handled) row.open += 1;
+    row.firstTs = Math.min(row.firstTs, r.ts);
+    row.lastTs = Math.max(row.lastTs, r.ts);
+    if (!row.ip && t.ip) row.ip = t.ip;
+    const reason = r.reason || 'Other';
+    row.reasons[reason] = (row.reasons[reason] || 0) + 1;
+    if (r.reporter && r.reporter.clientId) row.reporters.add(r.reporter.clientId);
+    if (!row.latestDetail && r.detail) row.latestDetail = r.detail;
+  }
+  return [...byId.values()]
+    .map((row) => ({ ...row, reporters: row.reporters.size, reasons: Object.entries(row.reasons).sort((a, b) => b[1] - a[1]) }))
+    .sort((a, b) => b.count - a.count || b.reporters - a.reporters || b.lastTs - a.lastTs)
+    .slice(0, limit);
+}
+
+// Mark every open report against one person handled; returns how many changed.
+function markReportsHandledFor(clientId) {
+  let n = 0;
+  for (const r of data.reports) {
+    if (!r.handled && r.reported && r.reported.clientId === clientId) { r.handled = true; n += 1; }
+  }
+  if (n) save();
+  return n;
+}
+
 function addFeedback(entry) {
   const rec = { id: crypto.randomUUID(), ts: Date.now(), ...entry };
   data.feedback.unshift(rec);
@@ -2119,6 +2162,8 @@ module.exports = {
   addReport,
   reportCountFor,
   reportCounts,
+  topReported,
+  markReportsHandledFor,
   addFeedback,
   addError,
   activeBans,
