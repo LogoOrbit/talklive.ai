@@ -206,10 +206,18 @@ fly secrets set \
   AD_DIRECT_LINK=...
 ```
 
+To turn on the owner dashboard's AI agent (the **AI Agent** tab), add an
+Anthropic API key. Without it the tab still shows the built-in quick reports.
+
+```sh
+fly secrets set ANTHROPIC_API_KEY=sk-ant-...
+```
+
 Full list of variables the code reads: `GOOGLE_CLIENT_ID`, `OWNER_EMAIL`,
 `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM_NAME`, `SMTP_USER`, `SMTP_PASS`, `DATABASE_URL`,
 `PREMIUM_CLIENT_IDS`, `TURN_*`, `METERED_*`, `AD_*`,
-`LANDING_HOST`, `REPORT_TZ`, `ENFORCE_CANONICAL`.
+`LANDING_HOST`, `REPORT_TZ`, `ENFORCE_CANONICAL`, `ANTHROPIC_API_KEY`,
+`AI_MODEL`, `AI_EFFORT`.
 
 ## 5. Deploy
 

@@ -7,6 +7,7 @@ const store = require('./store');
 const totp = require('./totp');
 const analytics = require('./analytics');
 const audience = require('./audience');
+const { createAgent } = require('./ai-agent');
 
 let QRCode = null;
 try { QRCode = require('qrcode'); } catch (_) { /* optional */ }
@@ -1112,6 +1113,46 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
   router.get('/api/audit', (req, res) => {
     res.json({ audit: store.data.auditLog.slice(0, 300) });
   });
+
+  // --- AI agent ---------------------------------------------------------------
+  // The agent's tools are this router's own GET endpoints, run in-process with
+  // the asking owner's cookie - so it passes the same session check, sees the
+  // same data, and has no way to reach anything that writes.
+  const AI_READ_BLOCK = /^(ai\/|live\/stream|export\/)/;
+  function readApi(pathQuery, req) {
+    return new Promise((resolve) => {
+      const u = new URL('/api/' + pathQuery, 'http://local');
+      const sub = u.pathname.slice(5);
+      if (AI_READ_BLOCK.test(sub)) return resolve({ status: 403, body: { error: 'Not readable by the agent.' } });
+      const fake = {
+        method: 'GET',
+        url: u.pathname + u.search,
+        headers: { cookie: req.headers.cookie || '', 'x-forwarded-for': req.headers['x-forwarded-for'] || '' },
+        query: Object.fromEntries(u.searchParams),
+        socket: req.socket,
+        connection: req.socket,
+        on() {},
+      };
+      let status = 200;
+      let done = false;
+      const finish = (body) => { if (!done) { done = true; resolve({ status, body }); } };
+      const res = {
+        headersSent: false,
+        setHeader() {}, getHeader() {}, removeHeader() {},
+        status(c) { status = c; return res; },
+        json: finish,
+        send: (b) => finish(typeof b === 'string' ? { text: b } : b),
+        end: () => finish(null),
+        write() { return true; },
+        sendFile: () => finish(null),
+      };
+      router.handle(fake, res, (err) => { status = err ? 500 : 404; finish({ error: err ? err.message : 'Not found' }); });
+    });
+  }
+  const agent = createAgent({ readApi, ownerTimezone: (tz) => reportTimezone({ query: { tz } }) });
+  router.get('/api/ai/status', (req, res) => res.json(agent.status()));
+  router.post('/api/ai/chat', (req, res) => { agent.chat(req, res); });
+  router.post('/api/ai/reset', (req, res) => { agent.reset((req.body || {}).conversationId); res.json({ ok: true }); });
 
   router.post('/api/maintenance', (req, res) => {
     const { on, message } = req.body || {};
