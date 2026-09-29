@@ -609,18 +609,51 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
 
   router.get('/api/reports', (req, res) => {
     const counts = store.reportCounts();
-    const withCounts = store.data.reports.slice(0, 300).map((r) => ({
+    // ?user=<clientId> returns every report on that one person, not just the
+    // newest 300, so the "Most reported" drill-down shows their full record.
+    const user = typeof req.query.user === 'string' ? req.query.user : '';
+    const source = user
+      ? store.data.reports.filter((r) => r.reported && r.reported.clientId === user)
+      : store.data.reports.slice(0, 300);
+    const withCounts = source.map((r) => ({
       ...r,
       totalReportsOnUser: r.reported ? counts.get(r.reported.clientId) || 0 : 0,
       activeBan: r.reported ? !!store.findActiveBan(r.reported.clientId, r.reported.ip) : false,
     }));
-    res.json({ reports: withCounts });
+    // Leaderboard of the most-reported people over the chosen window (days,
+    // 0 = everything on record), with their ban state for one-click action.
+    const days = Math.max(0, Math.min(Number(req.query.days) || 0, 3650));
+    const since = days ? Date.now() - days * 86400000 : 0;
+    const top = store.topReported({ since, limit: 100 }).map((u) => ({
+      ...u,
+      activeBan: !!store.findActiveBan(u.clientId, u.ip),
+    }));
+    const reasons = new Map();
+    for (const r of store.data.reports) {
+      if (r.ts < since) continue;
+      const k = r.reason || 'Other';
+      reasons.set(k, (reasons.get(k) || 0) + 1);
+    }
+    res.json({
+      reports: withCounts,
+      total: store.data.reports.length,
+      open: store.data.reports.filter((r) => !r.handled).length,
+      top,
+      days,
+      reasons: [...reasons.entries()].sort((a, b) => b[1] - a[1]),
+    });
   });
 
   router.post('/api/reports/:id/handled', (req, res) => {
     const rec = store.data.reports.find((r) => r.id === req.params.id);
     if (rec) { rec.handled = true; store.save(); }
     res.json({ ok: true });
+  });
+
+  router.post('/api/reports/user/:clientId/handled', (req, res) => {
+    const n = store.markReportsHandledFor(req.params.clientId);
+    store.audit('reports', reqIp(req), `Marked ${n} report(s) on ${req.params.clientId} handled`);
+    res.json({ ok: true, handled: n });
   });
 
   router.get('/api/bans', (req, res) => {

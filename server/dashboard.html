@@ -1038,7 +1038,7 @@ function filterTabTo(kind,q){
   else if(kind==='live'){liveQ=q;liveStatus='';}
   else if(kind==='chats'){chatQuery=q;chatOpen=null;}
   else if(kind==='feedback')fbQ=q;
-  else if(kind==='reports')repFilter='all';
+  else if(kind==='reports'){repFilter='all';repUser=null;repQ=q;}
   else if(kind==='bans')banFilter='all';
 }
 function openSearch(){
@@ -1744,36 +1744,98 @@ async function viewLive(){
   document.querySelectorAll('[data-ls]').forEach(b=>b.onclick=()=>{liveStatus=b.dataset.ls;load();});
 }
 
-let repFilter='open';
+/* Reports: the queue (unhandled / all), and a "Most reported" leaderboard of
+   the people reported most over a chosen window, each one a click away from
+   their full report history, a warning or a ban. */
+let repFilter='open',repQ='',repUser=null,repDays=30,repSort='count';
+const REP_RANGES=[[1,'24h'],[7,'7 days'],[30,'30 days'],[0,'All time']];
+const REP_SORTS=[['count','Most reports'],['reporters','Most reporters'],['open','Most unhandled'],['lastTs','Most recent']];
+const repPill=(n)=>`<span class="pill ${n>=3?'crit':n>=2?'warn':'info'}">${num(n)}</span>`;
+const repPlace=(u)=>esc(u.country||'')+(u.city&&u.city!=='Unknown'?', '+esc(u.city):'');
+const repBan=(u)=>`<button class="danger" onclick="banUser('${jsq(u.clientId)}','${jsq(u.ip||'')}','${jsq(u.username)}','${jsq(u.country||'')}','${jsq(u.city||'')}')">Ban…</button>`;
 async function viewReports(){
-  const r=await vapi('reports');
-  const open=r.reports.filter(x=>!x.handled);
-  const list=repFilter==='open'?open:r.reports;
-  const repeat=r.reports.filter(x=>x.totalReportsOnUser>=3&&!x.activeBan);
-  $('#main').innerHTML=`<div class="grid tiles anim" style="margin-top:0">
-    <div class="tile"><div class="k">Unhandled</div><div class="v" style="color:${open.length?'var(--crit)':'inherit'}">${num(open.length)}</div><div class="s">need a decision</div></div>
-    <div class="tile"><div class="k">All reports</div><div class="v">${num(r.reports.length)}</div><div class="s">stored on record</div></div>
-    <div class="tile"><div class="k">Repeat offenders</div><div class="v" style="color:${repeat.length?'var(--warn)':'inherit'}">${num(repeat.length)}</div><div class="s">3+ reports, not banned</div></div>
-  </div>
-  <div class="card anim"><h2>🚩 User reports <span class="sub">${list.length} shown · one-click ban with duration</span></h2>
-  <div class="tbar">
-    <div class="seg"><button data-f="open" class="${repFilter==='open'?'on':''}">Unhandled (${open.length})</button><button data-f="all" class="${repFilter==='all'?'on':''}">All (${r.reports.length})</button></div>
-    ${exportLink('reports','Export reports')}
-  </div>
-  <table><tr><th>When</th><th>Reported user</th><th>Reason</th><th>Reporter</th><th class="num">Total reports</th><th>Actions</th></tr>
-  ${list.map(rep=>`<tr style="${rep.handled?'opacity:.55':''}">
-  <td>${ago(rep.ts)}<br><span class="muted">${fmtTs(rep.ts)}</span></td>
-  <td><b>${esc(rep.reported.username)}</b><br><span class="muted">${esc(rep.reported.country)}${rep.reported.city&&rep.reported.city!=='Unknown'?', '+esc(rep.reported.city):''}</span>${rep.activeBan?'<br><span class="pill crit">BANNED</span>':''}</td>
-  <td>${esc(rep.reason)}${rep.detail?`<br><span class="muted">“${esc(rep.detail)}”</span>`:''}</td>
-  <td>${esc(rep.reporter.username)}<br><span class="muted">${esc(rep.reporter.country)}</span></td>
-  <td class="num"><span class="pill ${rep.totalReportsOnUser>=3?'crit':rep.totalReportsOnUser>=2?'warn':'info'}">${rep.totalReportsOnUser}</span></td>
-  <td><div class="rowbtns">
-    ${warnBtn(rep.reported.clientId,'',rep.reported.username,rep.reported.country)}
-    ${rep.activeBan?'':`<button class="danger" onclick="banUser('${jsq(rep.reported.clientId)}','${jsq(rep.reported.ip||'')}','${jsq(rep.reported.username)}','${jsq(rep.reported.country||'')}','${jsq(rep.reported.city||'')}')">Ban…</button>`}
-    ${rep.handled?'':`<button onclick="markHandled('${jsq(rep.id)}')">Mark handled</button>`}
-  </div></td></tr>`).join('')||`<tr><td colspan="6" class="muted">${repFilter==='open'?'Nothing waiting - every report has been handled. 🎉':'No reports yet - good sign!'}</td></tr>`}</table></div>`;
-  document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{repFilter=b.dataset.f;load();});
+  const qs=['days='+repDays];if(repUser)qs.push('user='+encodeURIComponent(repUser.clientId));
+  const r=await vapi('reports?'+qs.join('&'));
+  const q=repQ.toLowerCase();
+  const hit=(vals)=>!q||vals.some(v=>String(v||'').toLowerCase().includes(q));
+  const repeat=r.top.filter(u=>u.count>=3&&!u.activeBan);
+  const rangeTxt=(REP_RANGES.find(x=>x[0]===repDays)||[0,'All time'])[1];
+  const tiles=`<div class="grid tiles anim" style="margin-top:0">
+    <div class="tile"><div class="k">🚩 Unhandled</div><div class="v" style="color:${r.open?'var(--crit)':'inherit'}">${num(r.open)}</div><div class="s">need a decision</div></div>
+    <div class="tile"><div class="k">📚 All reports</div><div class="v">${num(r.total)}</div><div class="s">stored on record</div></div>
+    <div class="tile"><div class="k">👤 People reported</div><div class="v">${num(r.top.length)}${r.top.length>=100?'+':''}</div><div class="s">${esc(rangeTxt.toLowerCase())}</div></div>
+    <div class="tile" style="cursor:pointer" onclick="repShowTop()"><div class="k">🔁 Repeat offenders</div><div class="v" style="color:${repeat.length?'var(--warn)':'inherit'}">${num(repeat.length)}</div><div class="s">3+ reports, not banned</div></div>
+  </div>`;
+  const seg=`<div class="seg">
+    <button data-f="open" class="${repFilter==='open'?'on':''}">Unhandled (${num(r.open)})</button>
+    <button data-f="all" class="${repFilter==='all'?'on':''}">All (${num(r.total)})</button>
+    <button data-f="top" class="${repFilter==='top'?'on':''}">🏆 Most reported</button></div>`;
+  const search=`<input id="repQ" class="grow" placeholder="${repFilter==='top'?'Filter by name, country, IP, reason…':'Filter by name, reason, reporter, message…'}" value="${esc(repQ)}">${repQ?'<button class="lnk" id="repClear">Clear</button>':''}`;
+  let body;
+  if(repFilter==='top'){
+    const key=repSort;
+    const top=r.top.filter(u=>hit([u.username,u.country,u.city,u.ip,u.clientId,...u.reasons.map(x=>x[0])]))
+      .sort((a,b)=>b[key]-a[key]||b.count-a.count);
+    const max=Math.max(1,...top.map(u=>u.count));
+    const totalR=r.reasons.reduce((a,x)=>a+x[1],0);
+    body=`<div class="card anim"><h2>🏆 Most reported people <span class="sub">${esc(rangeTxt)} · ${num(top.length)} ${top.length===1?'person':'people'}</span></h2>
+    <div class="tbar">${seg}</div>
+    <div class="tbar">
+      <div class="seg">${REP_RANGES.map(([d,l])=>`<button data-rd="${d}" class="${repDays===d?'on':''}">${l}</button>`).join('')}</div>
+      <select id="repSort">${REP_SORTS.map(([k,l])=>`<option value="${k}"${repSort===k?' selected':''}>Sort: ${l}</option>`).join('')}</select>
+      ${search}
+    </div>
+    <table><tr><th>#</th><th>Person</th><th class="num">Reports</th><th class="num">Reporters</th><th class="num">Unhandled</th><th>Top reasons</th><th>Last reported</th><th>Actions</th></tr>
+    ${top.map((u,i)=>`<tr style="${u.activeBan?'opacity:.6':''}">
+      <td><b>${i<3&&repSort==='count'&&!q?['🥇','🥈','🥉'][i]:'#'+(i+1)}</b></td>
+      <td><b>${esc(u.username||'(no name)')}</b>${u.activeBan?' <span class="pill crit">BANNED</span>':''}<br><span class="muted">${repPlace(u)||'—'}</span>${u.latestDetail?`<br><span class="muted" style="font-size:.78rem">“${esc(u.latestDetail.slice(0,120))}”</span>`:''}</td>
+      <td class="num">${repPill(u.count)}<div style="height:5px;border-radius:99px;margin-top:6px;background:var(--grad);width:${Math.max(6,u.count/max*100)}%;margin-left:auto"></div></td>
+      <td class="num" title="Different people who reported them">${num(u.reporters)}</td>
+      <td class="num">${u.open?`<span class="pill warn">${num(u.open)}</span>`:'<span class="muted">0</span>'}</td>
+      <td>${u.reasons.slice(0,3).map(([k,n])=>`<span class="pill info" style="margin:0 4px 4px 0">${esc(k)} · ${n}</span>`).join('')}</td>
+      <td>${ago(u.lastTs)}<br><span class="muted">first ${ago(u.firstTs)}</span></td>
+      <td><div class="rowbtns">
+        <button onclick="repOpenUser(${i})">View ${u.count}</button>
+        ${warnBtn(u.clientId,'',u.username,u.country)}
+        ${u.activeBan?'':repBan(u)}
+        ${u.open?`<button onclick="markUserHandled('${jsq(u.clientId)}',${u.open})">Handle all</button>`:''}
+      </div></td></tr>`).join('')||`<tr><td colspan="8" class="muted">${q?'Nobody matches that filter.':'Nobody has been reported in this period. 🎉'}</td></tr>`}</table>
+    ${r.top.length>=100?'<div class="muted" style="margin-top:8px;font-size:.78rem">Showing the top 100.</div>':''}</div>
+    ${r.reasons.length?`<div class="card anim"><h2>📊 Why people get reported <span class="sub">${esc(rangeTxt)} · ${num(totalR)} reports</span></h2>
+      ${r.reasons.slice(0,8).map(([k,n])=>`<div class="hrow"><div title="${esc(k)}">${esc(k)}</div><div><div class="hbar" style="width:${Math.max(2,n/r.reasons[0][1]*100)}%;background:var(--grad)"></div></div><div class="n">${num(n)} · ${pctOf(n,totalR)}</div></div>`).join('')}</div>`:''}`;
+    window.repOpenUser=(i)=>{const u=top[i];repUser={clientId:u.clientId,username:u.username};repFilter='all';repQ='';load();};
+  }else{
+    const base=repFilter==='open'?r.reports.filter(x=>!x.handled):r.reports;
+    const list=base.filter(x=>hit([x.reported.username,x.reported.country,x.reported.city,x.reason,x.detail,x.reporter.username,x.reporter.country]));
+    const who=repUser?`<div class="tbar"><span class="pill info" style="font-size:.8rem;padding:6px 12px">👤 Only reports on <b>${esc(repUser.username||repUser.clientId.slice(0,12))}</b> · ${num(r.reports.length)} total</span><button class="lnk" id="repUserClear">Show everyone</button></div>`:'';
+    body=`<div class="card anim"><h2>🚩 User reports <span class="sub">${num(list.length)} shown · one-click ban with duration</span></h2>
+    <div class="tbar">${seg}${exportLink('reports','Export reports')}</div>
+    ${who}
+    <div class="tbar">${search}</div>
+    <table><tr><th>When</th><th>Reported user</th><th>Reason</th><th>Reporter</th><th class="num">Total reports</th><th>Actions</th></tr>
+    ${list.map(rep=>`<tr style="${rep.handled?'opacity:.55':''}">
+    <td>${ago(rep.ts)}<br><span class="muted">${fmtTs(rep.ts)}</span></td>
+    <td><b>${esc(rep.reported.username)}</b>${rep.activeBan?' <span class="pill crit">BANNED</span>':''}<br><span class="muted">${repPlace(rep.reported)}</span></td>
+    <td><b>${esc(rep.reason)}</b>${rep.detail?`<br><span class="muted">“${esc(rep.detail)}”</span>`:''}</td>
+    <td>${esc(rep.reporter.username)}<br><span class="muted">${esc(rep.reporter.country)}</span></td>
+    <td class="num">${repUser?repPill(rep.totalReportsOnUser):`<button class="lnk" style="background:none;cursor:pointer;padding:4px 8px" title="See every report on this person" onclick="repFocus('${jsq(rep.reported.clientId)}','${jsq(rep.reported.username)}')">${repPill(rep.totalReportsOnUser)}</button>`}</td>
+    <td><div class="rowbtns">
+      ${warnBtn(rep.reported.clientId,'',rep.reported.username,rep.reported.country)}
+      ${rep.activeBan?'':repBan(rep.reported)}
+      ${rep.handled?'':`<button onclick="markHandled('${jsq(rep.id)}')">Mark handled</button>`}
+    </div></td></tr>`).join('')||`<tr><td colspan="6" class="muted">${q?'No report matches that filter.':repFilter==='open'?'Nothing waiting - every report has been handled. 🎉':'No reports yet - good sign!'}</td></tr>`}</table></div>`;
+  }
+  $('#main').innerHTML=tiles+body;
+  document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{repFilter=b.dataset.f;if(repFilter==='top')repUser=null;load();});
+  document.querySelectorAll('[data-rd]').forEach(b=>b.onclick=()=>{repDays=Number(b.dataset.rd);load();});
+  const so=$('#repSort');if(so)so.onchange=()=>{repSort=so.value;viewReports();};
+  const inp=$('#repQ');if(inp)onFilterInput(inp,(v)=>{repQ=v;},()=>viewReports().then(()=>keepFocus('#repQ')));
+  const cl=$('#repClear');if(cl)cl.onclick=()=>{repQ='';viewReports();};
+  const uc=$('#repUserClear');if(uc)uc.onclick=()=>{repUser=null;load();};
 }
+window.repShowTop=()=>{repFilter='top';repUser=null;repSort='count';load();};
+window.repFocus=(clientId,username)=>{repUser={clientId,username};repFilter='all';repQ='';load();};
+window.markUserHandled=async(clientId,n)=>{try{await post('reports/user/'+encodeURIComponent(clientId)+'/handled');toast(`${n} report(s) marked handled`,'They stay on record.','good');load();}catch(e){toast('Could not update reports',e.message,'bad');}};
 window.markHandled=async(id)=>{try{await post('reports/'+id+'/handled');toast('Report marked handled','It stays on record, just greyed out.','good');load();}catch(e){toast('Could not update report',e.message,'bad');}};
 
 let banFilter='active';
