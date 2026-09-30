@@ -647,7 +647,9 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
 
   router.post('/api/reports/:id/handled', (req, res) => {
     const rec = store.data.reports.find((r) => r.id === req.params.id);
-    if (rec) { rec.handled = true; store.save(); }
+    if (!rec) return res.status(404).json({ error: 'Report not found.' });
+    rec.handled = true;
+    store.save();
     res.json({ ok: true });
   });
 
@@ -1148,27 +1150,34 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
   });
 
   // --- AI agent ---------------------------------------------------------------
-  // The agent's tools are this router's own GET endpoints, run in-process with
-  // the asking owner's cookie - so it passes the same session check, sees the
-  // same data, and has no way to reach anything that writes.
+  // The agent's tools are this router's own endpoints, run in-process with the
+  // asking owner's cookie - so they pass the same session check, validation and
+  // audit logging as a click in the dashboard. Reads go anywhere but the
+  // streams and exports; writes only to the moderation endpoints below, and
+  // only after the owner approves each one in the chat (see ai-agent.js).
   const AI_READ_BLOCK = /^(ai\/|live\/stream|export\/)/;
-  function readApi(pathQuery, req) {
+  const AI_WRITE_ALLOW = /^(reports\/[^/]+\/handled|reports\/user\/[^/]+\/handled|ban|unban|warn|warnings\/[^/]+\/withdraw|errors\/dismiss|maintenance)$/;
+  function callApi(method, pathQuery, body, req) {
     return new Promise((resolve) => {
       const u = new URL('/api/' + pathQuery, 'http://local');
       const sub = u.pathname.slice(5);
-      if (AI_READ_BLOCK.test(sub)) return resolve({ status: 403, body: { error: 'Not readable by the agent.' } });
+      const allowed = method === 'GET' ? !AI_READ_BLOCK.test(sub) : AI_WRITE_ALLOW.test(sub);
+      if (!allowed) return resolve({ status: 403, body: { error: 'Not available to the agent.' } });
       const fake = {
-        method: 'GET',
+        method,
         url: u.pathname + u.search,
         headers: { cookie: req.headers.cookie || '', 'x-forwarded-for': req.headers['x-forwarded-for'] || '' },
         query: Object.fromEntries(u.searchParams),
+        // Pre-parsed, so express.json() leaves it alone.
+        body: body || {},
+        _body: true,
         socket: req.socket,
         connection: req.socket,
         on() {},
       };
       let status = 200;
       let done = false;
-      const finish = (body) => { if (!done) { done = true; resolve({ status, body }); } };
+      const finish = (b) => { if (!done) { done = true; resolve({ status, body: b }); } };
       const res = {
         headersSent: false,
         setHeader() {}, getHeader() {}, removeHeader() {},
@@ -1182,7 +1191,11 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
       router.handle(fake, res, (err) => { status = err ? 500 : 404; finish({ error: err ? err.message : 'Not found' }); });
     });
   }
-  const agent = createAgent({ readApi, ownerTimezone: (tz) => reportTimezone({ query: { tz } }) });
+  const agent = createAgent({
+    callApi,
+    ownerTimezone: (tz) => reportTimezone({ query: { tz } }),
+    audit: (req, detail) => store.audit('ai_action', reqIp(req), detail),
+  });
   router.get('/api/ai/status', (req, res) => res.json(agent.status()));
   router.post('/api/ai/chat', (req, res) => { agent.chat(req, res); });
   router.post('/api/ai/reset', (req, res) => { agent.reset((req.body || {}).conversationId); res.json({ ok: true }); });

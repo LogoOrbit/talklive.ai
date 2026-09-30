@@ -321,6 +321,19 @@ table.heat{min-width:480px}table.heat td.num{border-radius:6px}
 .botsteps .step.on{color:var(--text);border-color:color-mix(in srgb,var(--accent) 50%,transparent)}
 .botsteps .spin{width:11px;height:11px;border-width:2px}
 .boterr{color:var(--crit);font-size:.84rem;margin-top:4px}
+.botconfirm{margin-top:10px;border:1px solid var(--ring);border-radius:14px;padding:10px 12px;background:var(--surface-2)}
+.botconfirm.open{border-color:color-mix(in srgb,var(--warn) 55%,transparent);background:color-mix(in srgb,var(--warn) 8%,var(--surface-2))}
+.botconfirm .ct{font-size:.74rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink2);margin-bottom:6px}
+.botconfirm .act{display:flex;gap:9px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--ring);font-size:.86rem;line-height:1.45;cursor:pointer}
+.botconfirm .act:first-of-type{border-top:0}
+.botconfirm .act input{width:16px;height:16px;min-width:0;padding:0;margin:3px 0 0;accent-color:var(--accent);flex:none}
+.botconfirm .atag{flex:none;font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;background:var(--surface);border:1px solid var(--ring);border-radius:6px;padding:2px 6px;margin-top:1px}
+.botconfirm .asum{flex:1;min-width:0;overflow-wrap:anywhere}
+.botconfirm .aerr{display:block;color:var(--crit);font-size:.78rem;margin-top:2px}
+.botconfirm .ast{flex:none}
+.botconfirm .cbtns{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.botconfirm .cbtns button{border-radius:99px;padding:7px 15px;font-size:.84rem;border:1px solid var(--ring);background:var(--surface);color:var(--text);cursor:pointer}
+.botconfirm .cbtns .approve{background:var(--grad);border:0;color:#fff;font-weight:700}
 .botacts{display:flex;gap:6px;margin-top:8px}
 .botacts button{background:none;border:0;color:var(--muted);font-size:.74rem;padding:2px 4px;cursor:pointer}.botacts button:hover{color:var(--text)}
 .botinput{display:flex;gap:8px;align-items:flex-end;margin-top:10px;background:var(--surface-2);border:1px solid var(--ring);border-radius:18px;padding:6px 6px 6px 14px;transition:border-color .15s}
@@ -1540,13 +1553,14 @@ async function viewActivity(){
 let lastOverview=null,botLog=[],botConv=null,botBusy=false,botStatus=null,botAbort=null;
 const BOT_KEY='tl_owner_ai_v2';
 try{const s=JSON.parse(localStorage.getItem(BOT_KEY)||'null');if(s&&Array.isArray(s.log)){botLog=s.log.slice(-60);botConv=s.conv||null;}}catch(_){}
-const botSave=()=>{try{localStorage.setItem(BOT_KEY,JSON.stringify({log:botLog.slice(-60).map(m=>({me:m.me,text:m.text,tools:m.tools,error:m.error})),conv:botConv}));}catch(_){}};
+const botSave=()=>{try{localStorage.setItem(BOT_KEY,JSON.stringify({log:botLog.slice(-60).map(m=>({me:m.me,text:m.text,tools:m.tools,error:m.error,confirm:m.confirm})),conv:botConv}));}catch(_){}};
 const BOT_SUGGEST=[
   ['📋','Give me a full health check of the site right now'],
   ['📈','How did traffic change this week vs last week, and why?'],
   ['🚨','Is anything wrong? Check reports, errors and bans'],
   ['💬','Scan recent chats for risky conversations and summarise them'],
   ['🌍','Where do my users come from and who are they?'],
+  ['🧹','Go through my open reports and handle them'],
   ['⏱️','Who are my most engaged users?'],
   ['⭐','What are users saying in feedback?'],
   ['💎','How is premium and referral revenue doing?']
@@ -1648,13 +1662,26 @@ function md(src){
   return out.join('');
 }
 
+/* Action approval card. Nothing the agent proposes runs until the owner ticks it
+   and presses Approve; the server executes exactly the ticked ones. */
+const ACT_STATE={ok:'<span class="pill good">✓ Done</span>',failed:'<span class="pill crit">Failed</span>',declined:'<span class="pill info">Declined</span>',running:'<span class="spin"></span>'};
+function confirmHtml(m,idx){
+  const c=m.confirm;if(!c)return '';
+  const open=!c.decided;
+  return `<div class="botconfirm ${open?'open':''}">
+    <div class="ct">${open?'🛡️ Approve before I do this':'🛡️ Actions'}</div>
+    ${c.actions.map((a,j)=>`<label class="act">${open?`<input type="checkbox" ${a.checked!==false?'checked':''} onchange="botTick(${idx},${j},this.checked)">`:''}
+      <span class="atag">${esc(a.label)}</span><span class="asum">${esc(a.summary)}${a.error?`<span class="aerr">${esc(a.error)}</span>`:''}</span>${open?'':`<span class="ast">${ACT_STATE[a.status]||''}</span>`}</label>`).join('')}
+    ${open?`<div class="cbtns"><button class="approve" onclick="botDecide(${idx},true)">✓ Approve${c.actions.length>1?' selected':''}</button><button onclick="botDecide(${idx},false)">Decline</button></div>`:''}
+  </div>`;
+}
 function botMsgHtml(m,idx){
   if(m.me)return `<div class="msg me"><div class="bubble">${esc(m.text)}</div></div>`;
   const tools=(m.tools||[]).length?`<div class="botsteps">${m.tools.map((t,j)=>`<span class="step ${m.pending&&j===m.tools.length-1&&!m.text?'on':''}">${m.pending&&j===m.tools.length-1&&!m.text?'<span class="spin"></span>':'✓'} ${esc(t)}</span>`).join('')}</div>`:'';
   const body=m.text?`<div class="md">${md(m.text)}</div>`:m.pending?(tools?'':'<div class="typing"><span></span><span></span><span></span></div>'):'';
   const err=m.error?`<div class="boterr">⚠️ ${esc(m.error)}</div>`:'';
   const acts=!m.pending&&m.text&&idx!=null?`<div class="botacts"><button onclick="botCopy(${idx})" title="Copy answer">⧉ Copy</button></div>`:'';
-  return `<div class="msg"><div class="avatar">🤖</div><div class="bubble">${tools}${body}${err}${acts}</div></div>`;
+  return `<div class="msg"><div class="avatar">🤖</div><div class="bubble">${tools}${body}${confirmHtml(m,idx)}${err}${acts}</div></div>`;
 }
 function renderBot(){
   const el=$('#botlog');if(!el)return;
@@ -1691,19 +1718,34 @@ window.askQuick=async(kind,label)=>{
   try{m.text=await botAnswer(kind);}catch(e){m.error='Could not fetch that: '+e.message;}
   m.pending=false;botSave();renderBot();
 };
-window.askBot=async(q)=>{
+const openConfirm=()=>botLog.find(m=>m.confirm&&!m.confirm.decided);
+window.botTick=(i,j,on)=>{const c=botLog[i]&&botLog[i].confirm;if(c&&c.actions[j])c.actions[j].checked=on;};
+window.botDecide=(i,approve)=>{
+  const c=botLog[i]&&botLog[i].confirm;if(!c||c.decided||botBusy)return;
+  const decisions={};
+  for(const a of c.actions){decisions[a.id]=approve&&a.checked!==false;a.status=decisions[a.id]?'running':'declined';}
+  c.decided=true;renderBot();
+  botRun({decisions});
+};
+window.askBot=(q)=>{
   q=String(q||'').trim();
   if(!q||botBusy)return;
   if(botStatus&&!botStatus.configured){toast('AI agent is off',botStatus.reason||'Set ANTHROPIC_API_KEY.','warn');return;}
   const inp=$('#botInput');if(inp){inp.value='';inp.style.height='';}
+  /* Typing instead of answering a pending card declines it (the server does the same). */
+  const pend=openConfirm();if(pend){pend.confirm.decided=true;pend.confirm.actions.forEach(a=>a.status='declined');}
   const history=botLog.filter(m=>m.text&&!m.error).map(m=>({role:m.me?'user':'assistant',text:m.text}));
   botLog.push({me:true,text:q});
+  botRun({message:q,history});
+};
+async function botRun(payload){
   const m={me:false,text:'',tools:[],pending:true};botLog.push(m);
   botBusy=true;renderBot();
   botAbort=new AbortController();
+  const actById=(id)=>{for(const x of botLog)if(x.confirm)for(const a of x.confirm.actions)if(a.id===id)return a;return null;};
   try{
     const r=await fetch('/owner/api/ai/chat',{method:'POST',headers:{'Content-Type':'application/json'},signal:botAbort.signal,
-      body:JSON.stringify({message:q,conversationId:botConv,history,tz:actTz||browserTz()})});
+      body:JSON.stringify({...payload,conversationId:botConv,tz:actTz||browserTz()})});
     if(r.status===401){clearInterval(timer);show('login');throw new Error('auth');}
     if(!r.ok){const j=await r.json().catch(()=>({}));throw new Error(j.error||'Request failed');}
     const reader=r.body.getReader(),dec=new TextDecoder();let buf='';
@@ -1718,6 +1760,13 @@ window.askBot=async(q)=>{
         else if(ev.type==='tool'){if(!m.tools.includes(ev.label))m.tools.push(ev.label);}
         else if(ev.type==='text')m.text+=ev.delta;
         else if(ev.type==='error')m.error=ev.error;
+        else if(ev.type==='confirm')m.confirm={actions:ev.actions.map(a=>({...a,checked:true}))};
+        else if(ev.type==='action'){
+          const a=actById(ev.id);
+          if(a){a.status=ev.ok?'ok':ev.declined?'declined':'failed';a.error=ev.error||null;}
+          if(ev.ok)counts={};
+          renderBot();continue;
+        }
         paintLast();
       }
     }
@@ -1725,11 +1774,13 @@ window.askBot=async(q)=>{
     if(e.name==='AbortError')m.text+=(m.text?'\n\n':'')+'_Stopped._';
     else if(e.message!=='auth')m.error=e.message;
   }
+  /* Anything still "running" never got a result back. */
+  for(const x of botLog)if(x.confirm)for(const a of x.confirm.actions)if(a.status==='running'){a.status='failed';a.error=a.error||'No result came back - check the Audit log.';}
   m.pending=false;botBusy=false;botAbort=null;
-  if(!m.text&&!m.error)m.error='No answer came back. Try again.';
+  if(!m.text&&!m.error&&!m.confirm)m.error='No answer came back. Try again.';
   botSave();renderBot();
   const i=$('#botInput');if(i&&window.matchMedia('(pointer:fine)').matches)i.focus();
-};
+}
 async function viewBot(){
   /* The chat is a live conversation: the 60s poll must never rebuild it. */
   if(quiet&&$('#botlog'))return;
@@ -1740,14 +1791,14 @@ async function viewBot(){
       <div class="bothead">
         <div class="avatar big">🤖</div>
         <div style="flex:1;min-width:0"><h2 style="margin:0">TalkLive AI Agent</h2>
-          <div class="sub">${on?`<span class="dot good"></span> Online · reads live data from every dashboard tab`:'<span class="dot"></span> Quick reports only'}</div></div>
+          <div class="sub">${on?`<span class="dot good"></span> Online · sees every dashboard tab · acts only with your approval`:'<span class="dot"></span> Quick reports only'}</div></div>
         <button class="ghostbtn" onclick="botNew()" title="Start a new conversation">＋ New chat</button>
       </div>
       ${on?'':`<div class="botnote">🔌 <b>Turn on the full AI agent:</b> set <code>ANTHROPIC_API_KEY</code> on the server (e.g. <code>fly secrets set ANTHROPIC_API_KEY=sk-ant-…</code>) and restart. Until then the quick reports below still work.</div>`}
       <div class="botscroll" id="botScroll">
         <div id="botEmpty" class="botempty">
           <div class="big">Ask me anything about TalkLive</div>
-          <div class="muted">Traffic, live users, matches, chats, reports, bans, accounts, feedback, errors, revenue - I look it up and explain it.</div>
+          <div class="muted">Traffic, live users, matches, chats, reports, bans, accounts, feedback, errors, revenue - I look it up and explain it. I can also handle reports, warn or ban people and more; every action waits for your approval.</div>
           ${on?`<div class="suggest">${BOT_SUGGEST.map(([ic,q])=>`<button onclick="askBot('${jsq(q)}')"><span>${ic}</span>${esc(q)}</button>`).join('')}</div>`:''}
         </div>
         <div class="botlog" id="botlog"></div>
@@ -1756,7 +1807,7 @@ async function viewBot(){
         <textarea id="botInput" rows="1" maxlength="4000" placeholder="Ask about your site… e.g. “Why did visits drop yesterday?”"></textarea>
         <button type="submit" id="botSend" class="sendbtn" title="Send">↑</button>
       </form>
-      <div class="muted bothint">Enter to send · Shift+Enter for a new line · Read-only: I can recommend actions, not take them.</div>`:''}
+      <div class="muted bothint">Enter to send · Shift+Enter for a new line · Actions always ask for your approval first.</div>`:''}
       <div class="quickq" style="margin-top:12px">${BOT_QS.map(([k,l])=>`<button onclick="askQuick('${k}','${jsq(l)}')">${l}</button>`).join('')}</div>
     </div></div>`;
   const f=$('#botForm');
