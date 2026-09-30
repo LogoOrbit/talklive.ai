@@ -148,7 +148,7 @@ function defaults() {
     // chatHistory: clientId -> [{ clientId, username, countryCode, ts }] - the
     // last few random chat partners, so a user can message someone back after
     // accidentally losing them (kept to the newest 10 per user).
-    social: { friends: {}, friendChats: {}, blocks: {}, chatHistory: {}, friendRequests: {}, sentRequests: {}, notifications: {}, lastSeen: {}, blockMeta: {}, chatClears: {}, declinedRequests: {}, mutedChats: {}, privacy: {} },
+    social: { friends: {}, friendChats: {}, blocks: {}, chatHistory: {}, friendRequests: {}, sentRequests: {}, notifications: {}, lastSeen: {}, blockMeta: {}, chatClears: {}, declinedRequests: {}, mutedChats: {}, privacy: {}, voiceConsent: {} },
     analytics: {
       totals: { visits: 0, connections: 0, matches: 0, messages: 0, reports: 0, accounts: 0, bots: 0 },
       // 'YYYY-MM-DD' (UTC) -> { visits, uniques, uniqueSet, connections, matches,
@@ -452,6 +452,23 @@ async function ensureSchema() {
   )`);
   await pgPool.query('CREATE INDEX IF NOT EXISTS password_resets_email_idx ON password_resets (email)');
   await pgPool.query('CREATE INDEX IF NOT EXISTS password_resets_token_idx ON password_resets (token_hash)');
+  // Friend voice notes: binary clips kept out of the document, which is
+  // rewritten whole on every save. Additive only - a failure here disables
+  // voice notes and must never be the reason the store fails to connect.
+  try {
+    await pgPool.query(`CREATE TABLE IF NOT EXISTS voice_notes (
+      id text PRIMARY KEY,
+      pair text NOT NULL,
+      from_client text NOT NULL,
+      mime text NOT NULL,
+      duration_ms integer NOT NULL,
+      bytes bytea NOT NULL,
+      created_at bigint NOT NULL
+    )`);
+    try { await pgPool.query('ALTER TABLE voice_notes ENABLE ROW LEVEL SECURITY'); } catch (_) { /* not the owner */ }
+  } catch (err) {
+    console.error('[store] voice_notes table unavailable:', err.message);
+  }
 }
 
 // Copy a document into owner_store_history. `sql` form copies the live row
@@ -1826,6 +1843,60 @@ async function consumePasswordResetToken(tokenHash) {
   return { username: rec.username, email: rec.email };
 }
 
+// --- Voice notes -------------------------------------------------------------
+//
+// Friend voice-note audio. Postgres table when DATABASE_URL is set, otherwise
+// one file per clip under DATA_DIR/voice-notes. The chat message itself only
+// carries { id, ms, mime }; the clip is fetched on demand. With DATABASE_URL
+// set but unreachable, nothing is written locally - same rule as the document.
+const VOICE_DIR = path.join(DATA_DIR, 'voice-notes');
+const voiceFile = (id) => path.join(VOICE_DIR, id.replace(/[^a-zA-Z0-9_-]/g, '') + '.bin');
+
+async function saveVoiceNote({ id, pair, from, mime, durationMs, bytes }) {
+  const now = Date.now();
+  if (pgPool) {
+    if (!pgLive()) throw new Error('database unavailable');
+    await pgPool.query(
+      `INSERT INTO voice_notes (id, pair, from_client, mime, duration_ms, bytes, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (id) DO NOTHING`,
+      [id, pair, from, mime, durationMs, bytes, now]
+    );
+    return;
+  }
+  await fs.promises.mkdir(VOICE_DIR, { recursive: true });
+  const meta = Buffer.from(JSON.stringify({ pair, from, mime, durationMs, createdAt: now }) + '\n');
+  await fs.promises.writeFile(voiceFile(id), Buffer.concat([meta, bytes]));
+}
+
+async function getVoiceNote(id) {
+  if (pgPool) {
+    if (!pgLive()) return null;
+    const res = await pgPool.query('SELECT pair, mime, bytes FROM voice_notes WHERE id = $1', [id]);
+    return res.rows.length ? { pair: res.rows[0].pair, mime: res.rows[0].mime, bytes: res.rows[0].bytes } : null;
+  }
+  let raw;
+  try { raw = await fs.promises.readFile(voiceFile(id)); } catch (_) { return null; }
+  const nl = raw.indexOf(10);
+  if (nl === -1) return null;
+  try {
+    const meta = JSON.parse(raw.subarray(0, nl).toString());
+    return { pair: meta.pair, mime: meta.mime, bytes: raw.subarray(nl + 1) };
+  } catch (_) { return null; }
+}
+
+// Only ever touches voice_notes rows: called when a voice message leaves its
+// thread (unsent, or pushed out by the per-thread message cap).
+async function deleteVoiceNotes(ids) {
+  const list = (ids || []).filter((id) => typeof id === 'string' && id);
+  if (!list.length) return;
+  if (pgPool) {
+    if (!pgLive()) return;
+    await pgPool.query('DELETE FROM voice_notes WHERE id = ANY($1::text[])', [list]);
+    return;
+  }
+  await Promise.all(list.map((id) => fs.promises.unlink(voiceFile(id)).catch(() => {})));
+}
+
 // --- Referrals ---------------------------------------------------------------
 //
 // A referral is only worth paying for once the invited person has actually had
@@ -2021,6 +2092,8 @@ function assignSocial(social) {
     // "Appear offline" and "no incoming calls", so both still hold while the
     // person is away after a deploy.
     privacy: social.privacy || {},
+    // Which friend pairs agreed to voice messages.
+    voiceConsent: social.voiceConsent || {},
   };
 }
 
@@ -2198,6 +2271,9 @@ module.exports = {
   markPasswordResetVerified,
   consumePasswordResetToken,
   purgePasswordResets,
+  saveVoiceNote,
+  getVoiceNote,
+  deleteVoiceNotes,
   createAuthSession,
   getAuthSessionUser,
   deleteAuthSession,

@@ -798,7 +798,7 @@ function rowStamp(ts) {
 // One line of the newest message in a conversation, for list rows.
 function previewText(last) {
   if (!last) return '';
-  const body = last.text || (last.gif ? t('gifMessage') : '');
+  const body = last.text || (last.gif ? t('gifMessage') : last.voice ? t('voiceMessage') : '');
   return last.mine ? t('youSaid', { text: body }) : body;
 }
 
@@ -815,7 +815,7 @@ function lastFromCache(clientId) {
   const cache = friendChatCache.get(clientId);
   const m = cache && cache[cache.length - 1];
   if (!m) return null;
-  return { id: m.id, mine: m.from === getClientId(), text: m.text || '', gif: !!m.gif, ts: m.ts, seen: !!m.seen };
+  return { id: m.id, mine: m.from === getClientId(), text: m.text || '', gif: !!m.gif, voice: !!m.voice, ts: m.ts, seen: !!m.seen };
 }
 let pendingCallBackFrom = null;
 
@@ -5112,6 +5112,7 @@ function renderFriendChatMessages(opts = {}) {
       body.textContent = m.text;
       el.appendChild(body);
     }
+    if (m.voice) appendVoicePlayer(el, m, activeFriendChatId);
     // My messages carry a delivery tick: faded while on its way, solid once
     // the server has stored it. "Seen" is the label under the thread.
     const meta = appendMessageMeta(el, ts, mine);
@@ -5131,7 +5132,7 @@ function renderFriendChatMessages(opts = {}) {
     }
     if (friendExtras) {
       friendExtras.decorate(el, {
-        id: m.id, mine, text: m.text, replyTo: m.replyTo, gif: m.gif,
+        id: m.id, mine, text: m.text, replyTo: m.replyTo, gif: m.gif, voice: m.voice,
         reactions: m.reactions, myClientId: myId,
       });
     }
@@ -5218,6 +5219,7 @@ function applyFriendChatLock() {
   const sendBtn = friendChatForm.querySelector('button[type="submit"]');
   if (sendBtn) sendBtn.disabled = locked;
   renderFriendChatGate();
+  renderVoiceGate();
 }
 
 // The chat header is just the person's name, as a messenger's is. A "message
@@ -5234,6 +5236,7 @@ function openFriendChat(friendClientId) {
   // The composer belongs to a conversation: text typed to one person used to
   // stay in the box when another chat was opened, and went to the wrong one.
   if (activeFriendChatId && activeFriendChatId !== friendClientId) saveFriendDraft();
+  if (voiceRecorder) voiceRecorder.cancel();
   activeFriendChatId = friendClientId;
   friendChatInput.value = friendDrafts.get(friendClientId) || '';
   const friend = friendsData.find((f) => f.clientId === friendClientId);
@@ -5260,6 +5263,7 @@ function openFriendChat(friendClientId) {
 
 closeFriendChatBtn.addEventListener('click', () => {
   saveFriendDraft();
+  if (voiceRecorder) voiceRecorder.cancel();
   closeSidePanel(friendChatModal, friendChatOverlay);
   activeFriendChatId = null;
 });
@@ -5451,6 +5455,239 @@ socket.on('friend-message-deleted', ({ chatWith, id } = {}) => {
   renderHistory();
 });
 
+// --- Voice messages (friends only, by mutual consent) ------------------------
+// Off for every friendship until one friend asks and the other agrees; both
+// see the voice-message policy before their first use. The clip is uploaded
+// with the message and fetched back only by the two people in the chat.
+// var, not const/let: the chat code above calls into this at run time and
+// must never hit a temporal dead zone if that happens early.
+var VoiceNotes = window.TalkLiveVoiceNotes || null;
+var friendVoiceState = new Map(); // clientId -> 'off' | 'sent' | 'received' | 'on'
+var voiceOutbox = new Map();      // msg id -> { toClientId, blob, mime, ms }
+const VOICE_POLICY_KEY = 'tl_voice_policy_v1';
+var voiceRecorder = null;
+
+function isFriendId(clientId) {
+  return !!clientId && friendsData.some((f) => f.clientId === clientId);
+}
+
+function voicePolicyPoints() {
+  return [
+    { icon: '🤝', text: t('vnPolicyConsent') },
+    { icon: '🚫', text: t('vnPolicyRules') },
+    { icon: '🔒', text: t('vnPolicyPrivate') },
+    { icon: '👂', text: t('vnPolicyReplay') },
+    { icon: '🗑️', text: t('vnPolicyUnsend') },
+    { icon: '🚩', text: t('vnPolicyReport') },
+  ];
+}
+const voicePolicyLink = () => ({ text: t('vnPolicyLink'), href: '/community-guidelines.html' });
+
+// The sender's side: shown once per device, before the first voice message.
+async function ensureVoicePolicy() {
+  try { if (localStorage.getItem(VOICE_POLICY_KEY)) return true; } catch (_) { /* storage blocked */ }
+  const ok = await VoiceNotes.dialog({
+    title: t('vnPolicyTitle'),
+    intro: t('vnPolicyIntro'),
+    points: voicePolicyPoints(),
+    link: voicePolicyLink(),
+    agree: t('vnPolicyAgree'),
+    ok: t('vnContinue'),
+    cancel: t('cancel'),
+  });
+  if (ok) { try { localStorage.setItem(VOICE_POLICY_KEY, String(Date.now())); } catch (_) { /* storage blocked */ } }
+  return ok;
+}
+
+// The receiving side: every request is its own decision, so this is shown
+// each time, with the warnings that matter to the person being sent audio.
+async function reviewVoiceRequest(fromClientId) {
+  const name = friendChatName(fromClientId) || t('someone');
+  const ok = await VoiceNotes.dialog({
+    title: t('vnAcceptTitle', { name }),
+    intro: t('vnAcceptIntro', { name }),
+    points: [
+      { icon: '🛡️', text: t('vnAcceptTrust') },
+      { icon: '💸', text: t('vnAcceptScams') },
+      { icon: '🚫', text: t('vnPolicyRules') },
+      { icon: '🔕', text: t('vnAcceptTurnOff', { name }) },
+      { icon: '🚩', text: t('vnPolicyReport') },
+    ],
+    link: voicePolicyLink(),
+    agree: t('vnAcceptAgree'),
+    ok: t('vnAcceptBtn'),
+    cancel: t('vnDeclineBtn'),
+  });
+  socket.emit('voice-note-respond', { fromClientId, accept: ok });
+  // Accepting also covers this side's own policy agreement.
+  if (ok) { try { localStorage.setItem(VOICE_POLICY_KEY, String(Date.now())); } catch (_) { /* storage blocked */ } }
+}
+
+// The strip above the composer: a pending request either way, or the switch
+// to turn voice messages back off.
+var friendVoiceGate = null;
+function renderVoiceGate() {
+  const id = activeFriendChatId;
+  const friend = isFriendId(id) && VoiceNotes && VoiceNotes.supported();
+  if (voiceRecorder) voiceRecorder.setVisible(friend);
+  if (!friendChatGate) return;
+  if (!friendVoiceGate) {
+    friendVoiceGate = document.createElement('div');
+    friendVoiceGate.className = 'vn-gate hidden';
+    friendVoiceGate.setAttribute('role', 'status');
+    friendChatGate.after(friendVoiceGate);
+    friendVoiceGate.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-vn-act]');
+      const who = activeFriendChatId;
+      if (!btn || !who) return;
+      const act = btn.dataset.vnAct;
+      if (act === 'review') reviewVoiceRequest(who);
+      else if (act === 'decline') socket.emit('voice-note-respond', { fromClientId: who, accept: false });
+      else if (act === 'off') socket.emit('voice-note-disable', { clientId: who });
+    });
+  }
+  const state = friend ? (friendVoiceState.get(id) || 'off') : 'off';
+  const name = escapeHtml(friendChatName(id) || t('someone'));
+  let html = '';
+  if (state === 'received') {
+    html = `<p>🎤 ${escapeHtml(t('vnGateReceived', { name: '\u0000' })).replace('\u0000', `<strong>${name}</strong>`)}</p>`
+      + `<div class="dm-gate-actions"><button type="button" class="btn btn-primary btn-sm" data-vn-act="review">${escapeHtml(t('vnReviewBtn'))}</button>`
+      + `<button type="button" class="btn btn-secondary btn-sm" data-vn-act="decline">${escapeHtml(t('vnDeclineBtn'))}</button></div>`;
+  } else if (state === 'sent') {
+    html = `<p>⏳ ${escapeHtml(t('vnGateSent', { name: '\u0000' })).replace('\u0000', `<strong>${name}</strong>`)}</p>`;
+  } else if (state === 'on') {
+    html = `<p class="vn-gate-on">🎤 ${escapeHtml(t('vnGateOn'))} <button type="button" class="vn-gate-link" data-vn-act="off">${escapeHtml(t('vnTurnOff'))}</button></p>`;
+  }
+  friendVoiceGate.classList.toggle('hidden', !html);
+  friendVoiceGate.innerHTML = html;
+}
+
+async function onVoiceMic() {
+  const id = activeFriendChatId;
+  if (!isFriendId(id)) { friendChatSystemNote(t('voiceFriendsOnly')); return; }
+  if (!(await ensureVoicePolicy()) || activeFriendChatId !== id) return;
+  const state = friendVoiceState.get(id) || 'off';
+  const name = friendChatName(id) || t('someone');
+  if (state === 'on') { voiceRecorder.start(); return; }
+  if (state === 'received') { reviewVoiceRequest(id); return; }
+  if (state === 'sent') { showToast(t('vnGateSent', { name }), 'neutral'); return; }
+  socket.emit('voice-note-request', { toClientId: id });
+  friendVoiceState.set(id, 'sent');
+  renderVoiceGate();
+  showToast(t('vnRequestSent', { name }), 'neutral');
+}
+
+socket.on('voice-note-state', ({ clientId, state, fromUsername, accepted, declined } = {}) => {
+  if (!clientId || !state) return;
+  const before = friendVoiceState.get(clientId);
+  friendVoiceState.set(clientId, state);
+  if (activeFriendChatId === clientId) renderVoiceGate();
+  const name = friendChatName(clientId) || labelForClientId(clientId, fromUsername) || t('someone');
+  if (state === 'received' && before !== 'received') {
+    showToast(t('vnGateReceived', { name }), 'social', () => openFriendChat(clientId));
+  } else if (accepted && state === 'on') {
+    showToast(t('vnAccepted', { name }), 'social', () => openFriendChat(clientId));
+  } else if (declined && state === 'off') {
+    showToast(t('vnDeclined', { name }), 'neutral');
+  }
+});
+
+function appendVoicePlayer(el, m, chatWith) {
+  if (!VoiceNotes) return;
+  el.classList.add('vn-has-voice');
+  const key = m.voice.id || m.id;
+  el.appendChild(VoiceNotes.renderPlayer({
+    key,
+    ms: m.voice.ms || 0,
+    labels: { play: t('voicePlay'), pause: t('voicePause'), unavailable: t('voiceUnavailable') },
+    load: () => new Promise((resolve, reject) => {
+      if (!m.voice.id) { reject(new Error('not uploaded')); return; }
+      socket.timeout(20000).emit('voice-note-get', { id: m.voice.id, chatWith }, (err, res) => {
+        if (err || !res || !res.ok || !res.data) { reject(err || new Error('unavailable')); return; }
+        resolve(new Blob([res.data], { type: res.mime || 'audio/webm' }));
+      });
+    }),
+  }));
+}
+
+function settleVoiceNote(id, voice) {
+  const entry = voiceOutbox.get(id);
+  voiceOutbox.delete(id);
+  const cache = entry ? friendChatCache.get(entry.toClientId) : null;
+  const msg = cache && cache.find((m) => m.id === id);
+  if (VoiceNotes && voice && voice.id) VoiceNotes.alias(id, voice.id);
+  if (msg) { msg.voice = voice; msg.pending = false; msg.failed = false; }
+}
+
+function emitVoiceNote(id) {
+  const entry = voiceOutbox.get(id);
+  const cache = entry && friendChatCache.get(entry.toClientId);
+  const msg = cache && cache.find((m) => m.id === id);
+  if (!entry || !msg) return;
+  msg.pending = true;
+  msg.failed = false;
+  repaintChat(entry.toClientId);
+  entry.blob.arrayBuffer().then((audio) => {
+    socket.timeout(45000).emit('friend-voice-note', {
+      toClientId: entry.toClientId, id, mime: entry.mime, ms: entry.ms, audio,
+    }, (err, res) => {
+      if (!err && res && res.ok) {
+        settleVoiceNote(id, res.voice);
+        msg.ts = res.ts || msg.ts;
+        repaintChat(entry.toClientId);
+        return;
+      }
+      const reason = res && res.reason;
+      if (reason === 'needs-consent' || reason === 'friends-only' || reason === 'invalid' || reason === 'unreachable') {
+        // Not something a retry fixes: take the bubble back and say why.
+        voiceOutbox.delete(id);
+        friendChatCache.set(entry.toClientId, cache.filter((m) => m.id !== id));
+        noteLastMessage(entry.toClientId, lastFromCache(entry.toClientId));
+        repaintChat(entry.toClientId);
+        renderFriendsList();
+        if (activeFriendChatId === entry.toClientId) {
+          friendChatSystemNote(t(reason === 'needs-consent' ? 'vnNeedsConsent' : reason === 'friends-only' ? 'voiceFriendsOnly' : 'voiceFailed'));
+        }
+        if (reason === 'needs-consent') socket.emit('get-friend-chat', { friendClientId: entry.toClientId });
+        return;
+      }
+      msg.pending = false;
+      msg.failed = true;
+      repaintChat(entry.toClientId);
+    });
+  });
+}
+
+function sendVoiceNote({ blob, mime, ms }) {
+  const toClientId = activeFriendChatId;
+  if (!toClientId || !isFriendId(toClientId)) return;
+  const id = newFriendMsgId();
+  VoiceNotes.remember(id, blob);
+  const cache = friendChatCache.get(toClientId) || [];
+  cache.push({ from: getClientId(), text: '', ts: Date.now(), id, voice: { id: null, ms, mime }, pending: true });
+  friendChatCache.set(toClientId, cache);
+  voiceOutbox.set(id, { toClientId, blob, mime, ms });
+  noteLastMessage(toClientId, { id, mine: true, text: '', voice: true, ts: Date.now() });
+  renderFriendChatMessages({ toBottom: true });
+  renderFriendsList();
+  renderHistory();
+  playSendSound();
+  emitVoiceNote(id);
+}
+
+if (VoiceNotes) {
+  voiceRecorder = VoiceNotes.createRecorder({
+    form: friendChatForm,
+    before: friendChatForm.querySelector('button[type="submit"]'),
+    labels: { record: t('recordVoice'), cancel: t('voiceCancel'), send: t('voiceSend') },
+    onMic: onVoiceMic,
+    onDone: sendVoiceNote,
+    onError: (key) => {
+      friendChatSystemNote(t(key === 'too-long' ? 'voiceTooLong' : key === 'denied' ? 'voiceMicDenied' : 'voiceFailed'));
+    },
+  });
+}
+
 function friendChatSystemNote(text) {
   const el = document.createElement('div');
   el.className = 'chat-msg system';
@@ -5542,7 +5779,9 @@ function dropFriendMessage(id) {
 
 friendChatMessages.addEventListener('click', (e) => {
   const retry = e.target.closest('.chat-msg-retry');
-  if (retry) retryFriendMessage(retry.dataset.retryId);
+  if (!retry) return;
+  if (voiceOutbox.has(retry.dataset.retryId)) emitVoiceNote(retry.dataset.retryId);
+  else retryFriendMessage(retry.dataset.retryId);
 });
 
 // Re-registered after a drop: anything still unacknowledged goes again.
@@ -5631,13 +5870,13 @@ socket.on('friend-reaction', ({ fromClientId, id, emoji, on } = {}) => {
   }
 });
 
-socket.on('friend-message', ({ fromClientId, text, ts, id, replyTo, gif }) => {
+socket.on('friend-message', ({ fromClientId, text, ts, id, replyTo, gif, voice }) => {
   const cache = friendChatCache.get(fromClientId) || [];
   // A history load that raced this delivery may already hold it.
   if (id && cache.some((m) => m.id === id)) return;
-  cache.push({ from: fromClientId, text, ts, id, replyTo, gif });
+  cache.push({ from: fromClientId, text, ts, id, replyTo, gif, voice });
   friendChatCache.set(fromClientId, cache);
-  noteLastMessage(fromClientId, { id, mine: false, text: text || '', gif: !!gif, ts });
+  noteLastMessage(fromClientId, { id, mine: false, text: text || '', gif: !!gif, voice: !!voice, ts });
   // The message is what they were typing.
   if (typingFrom.has(fromClientId)) setTyping(fromClientId, false);
   else renderFriendsList();
@@ -5658,7 +5897,7 @@ socket.on('chat-seen', ({ byClientId, ts } = {}) => {
   if (activeFriendChatId === byClientId) renderFriendChatMessages();
 });
 
-socket.on('friend-message-sent', ({ toClientId, text, ts, id, replyTo, gif }) => {
+socket.on('friend-message-sent', ({ toClientId, text, ts, id, replyTo, gif, voice }) => {
   settleFriendMessage(id);
   const cache = friendChatCache.get(toClientId) || [];
   const mine = id && cache.find((m) => m.id === id);
@@ -5668,12 +5907,13 @@ socket.on('friend-message-sent', ({ toClientId, text, ts, id, replyTo, gif }) =>
     mine.pending = false;
     mine.failed = false;
     mine.ts = ts || mine.ts;
+    if (voice) settleVoiceNote(id, voice);
     if (changed) repaintChat(toClientId);
     return;
   }
-  cache.push({ from: getClientId(), text, ts, id, replyTo, gif });
+  cache.push({ from: getClientId(), text, ts, id, replyTo, gif, voice });
   friendChatCache.set(toClientId, cache);
-  noteLastMessage(toClientId, { id, mine: true, text: text || '', gif: !!gif, ts });
+  noteLastMessage(toClientId, { id, mine: true, text: text || '', gif: !!gif, voice: !!voice, ts });
   renderFriendsList();
   renderHistory();
   if (activeFriendChatId === toClientId) renderFriendChatMessages();
@@ -5685,7 +5925,11 @@ socket.on('dm-gate', ({ clientId, gate } = {}) => {
   if (activeFriendChatId === clientId) applyFriendChatLock();
 });
 
-socket.on('friend-chat-history', ({ friendClientId, messages, gate }) => {
+socket.on('friend-chat-history', ({ friendClientId, messages, gate, voice }) => {
+  if (voice) {
+    friendVoiceState.set(friendClientId, voice);
+    if (activeFriendChatId === friendClientId) renderVoiceGate();
+  }
   if (gate) {
     dmGateOverrides.set(friendClientId, gate);
     if (activeFriendChatId === friendClientId) applyFriendChatLock();

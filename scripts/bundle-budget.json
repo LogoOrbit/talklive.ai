@@ -1,13 +1,13 @@
 {
   "pages": {
     "index.html": {
-      "jsKb": 216,
+      "jsKb": 226,
       "cssKb": 95,
       "htmlKb": 48
     },
     "chat.html": {
-      "jsKb": 126,
-      "cssKb": 67,
+      "jsKb": 128,
+      "cssKb": 68,
       "htmlKb": 16
     },
     "random-text-chat.html": {

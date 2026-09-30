@@ -1601,6 +1601,18 @@ const sentRequests = new Map();
 // request is accepted quietly on the sender's side ("Pending", exactly as
 // before) and never delivered. The sender is not told they were declined.
 const declinedRequests = new Map();
+// Voice messages between two friends are off until one asks and the other
+// agrees. pairKey -> { state: 'pending' | 'on', by: requesterClientId, ts }.
+// Ends with the friendship (see removeFriendPair), so a block or an unfriend
+// always turns it off and a later re-add has to be agreed again.
+const voiceConsent = new Map();
+// 'off' | 'sent' (I asked) | 'received' (they asked me) | 'on'
+function voiceStateFor(me, other) {
+  const c = voiceConsent.get(pairKey(me, other));
+  if (!c) return 'off';
+  if (c.state === 'on') return 'on';
+  return c.by === me ? 'sent' : 'received';
+}
 const DECLINE_HOLD_MS = 7 * 24 * 60 * 60000;
 
 function recentlyDeclined(fromClientId, targetClientId) {
@@ -1699,6 +1711,7 @@ function writeSocial() {
     blockMeta: mapOfMaps(blockMeta),
     chatClears: Object.fromEntries(chatClears),
     declinedRequests: Object.fromEntries(declinedRequests),
+    voiceConsent: Object.fromEntries(voiceConsent),
     mutedChats: Object.fromEntries(Array.from(mutedChats).filter(([, s]) => s.size).map(([cid, s]) => [cid, Array.from(s)])),
     privacy: privacyObj(),
   };
@@ -1767,6 +1780,9 @@ function hydrateFromStore() {
   }
   for (const [key, ts] of Object.entries(social.chatClears || {})) {
     if (typeof ts === 'number') chatClears.set(key, ts);
+  }
+  for (const [key, c] of Object.entries(social.voiceConsent || {})) {
+    if (c && (c.state === 'on' || c.state === 'pending') && typeof c.by === 'string') voiceConsent.set(key, c);
   }
   for (const [key, ts] of Object.entries(social.declinedRequests || {})) {
     if (typeof ts === 'number') declinedRequests.set(key, ts);
@@ -1951,6 +1967,7 @@ function lastMessageBetween(me, other) {
     mine: m.from === me,
     text: m.text ? m.text.slice(0, 80) : '',
     gif: !!m.gif,
+    voice: !!m.voice,
     ts: m.ts,
     seen: !!m.seen,
   };
@@ -1995,6 +2012,7 @@ function removeFriendPair(clientIdA, clientIdB) {
   if (a) a.delete(clientIdB);
   const b = friends.get(clientIdB);
   if (b) b.delete(clientIdA);
+  voiceConsent.delete(pairKey(clientIdA, clientIdB));
   persistSocial();
 }
 
@@ -2343,7 +2361,105 @@ function readChatPayload(raw) {
 // something meaningful instead of an empty row.
 function transcriptText(msg) {
   if (msg.text) return msg.text;
+  if (msg.voice) return '[Voice message] ' + Math.round(msg.voice.ms / 1000) + 's';
   return '[GIF] ' + (msg.gif.alt || msg.gif.url);
+}
+
+// A voice note as sent by the client. The audio arrives as a binary buffer;
+// its length is bounded by maxHttpBufferSize and again here, below what the
+// polling transport's base64 can carry.
+const VOICE_MAX_BYTES = 700 * 1024;
+const VOICE_MAX_MS = 60 * 1000;
+const VOICE_MIMES = new Set(['audio/webm', 'audio/ogg', 'audio/mp4', 'audio/aac', 'audio/mpeg']);
+function readVoicePayload(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const bytes = Buffer.isBuffer(raw.audio) ? raw.audio
+    : raw.audio instanceof ArrayBuffer ? Buffer.from(raw.audio) : null;
+  if (!bytes || bytes.length < 200 || bytes.length > VOICE_MAX_BYTES) return null;
+  const mime = typeof raw.mime === 'string' ? raw.mime.split(';')[0].trim().toLowerCase() : '';
+  if (!VOICE_MIMES.has(mime)) return null;
+  const ms = Math.round(Number(raw.ms));
+  if (!Number.isFinite(ms) || ms < 300 || ms > VOICE_MAX_MS + 1500) return null;
+  return { bytes, mime, ms: Math.min(ms, VOICE_MAX_MS), id: cleanMsgId(raw.id), replyTo: cleanMsgId(raw.replyTo) };
+}
+
+// Stores a direct message that has passed every check, and delivers it: the
+// thread, the transcript, the recipient's socket or push, and the sender's
+// acknowledgement. Shared by text/GIF messages and voice notes.
+function deliverFriendMessage(socket, me, toClientId, parsed, msgId) {
+  const friendInfo = (friends.get(me.clientId) || new Map()).get(toClientId);
+  store.addTranscript({
+    kind: 'friend',
+    pair: pairKey(me.clientId, toClientId),
+    from: me.username,
+    fromClientId: me.clientId,
+    to: friendInfo ? friendInfo.username : toClientId,
+    toClientId,
+    country: me.countryName,
+    text: transcriptText(parsed),
+    msgId: msgId || undefined,
+    replyTo: parsed.replyTo || undefined,
+  });
+  const key = pairKey(me.clientId, toClientId);
+  if (!friendChats.has(key)) friendChats.set(key, []);
+  // Stored ids are what replies and reactions point at after a reload, so a
+  // client that sent none gets one here rather than an unaddressable message.
+  const msg = {
+    from: me.clientId,
+    text: parsed.text,
+    ts: Date.now(),
+    id: msgId || 'm' + crypto.randomBytes(6).toString('hex'),
+  };
+  if (parsed.replyTo) msg.replyTo = parsed.replyTo;
+  if (parsed.gif) msg.gif = parsed.gif;
+  if (parsed.voice) msg.voice = parsed.voice;
+  const list = friendChats.get(key);
+  list.push(msg);
+  if (list.length > 200) {
+    const dropped = list.shift();
+    // The clip goes with the message it belonged to.
+    if (dropped && dropped.voice) store.deleteVoiceNotes([dropped.voice.id]).catch(() => {});
+  }
+  // Not friends: keep the conversation in both people's recent list.
+  let mineAdded = false;
+  let theirsAdded = false;
+  if (!isFriend(me.clientId, toClientId)) {
+    mineAdded = touchChatHistory(me.clientId, toClientId, snapshotOf(toClientId, me.clientId));
+    theirsAdded = touchChatHistory(toClientId, me.clientId, { username: me.username, countryCode: me.country, avatar: shownAvatar(me) });
+  }
+  persistSocial();
+  if (parsed.gif) store.recordFeature('chat_gif');
+  if (parsed.voice) store.recordFeature('chat_voice');
+  if (parsed.replyTo) store.recordFeature('chat_reply');
+
+  const wire = {
+    fromClientId: me.clientId,
+    text: msg.text,
+    ts: msg.ts,
+    id: msg.id,
+    replyTo: msg.replyTo || null,
+    gif: msg.gif || null,
+    voice: msg.voice || null,
+  };
+  const targetSocket = getSocketByClientId(toClientId);
+  if (targetSocket) {
+    targetSocket.emit('friend-message', wire);
+    if (theirsAdded) syncClientState(targetSocket, toClientId);
+  }
+  if (mineAdded) syncClientState(socket, me.clientId);
+
+  pushNotification(toClientId, {
+    type: 'message',
+    fromClientId: me.clientId,
+    username: me.username,
+    text: msg.text || (msg.voice ? '🎤 Voice message' : '[GIF]'),
+    msgId: msg.id,
+  });
+
+  socket.emit('friend-message-sent', {
+    toClientId, text: msg.text, ts: msg.ts, id: msg.id, replyTo: msg.replyTo || null, gif: msg.gif || null, voice: msg.voice || null,
+  });
+  return msg;
 }
 // Reported client errors that are not our code and not actionable: browser
 // extensions injecting into the page, in-app webviews tearing down their JS
@@ -5323,72 +5439,122 @@ io.on('connection', (socket) => {
     // Direct messages are stored and notified, so a flood costs the recipient
     // far more than one in a live chat does. Same human-speed ceiling.
     if (!socialRateOk('friend-message', me.clientId, 10, 5000)) return refuse('rate');
-    const friendInfo = (friends.get(me.clientId) || new Map()).get(toClientId);
-    store.addTranscript({
-      kind: 'friend',
-      pair: pairKey(me.clientId, toClientId),
-      from: me.username,
-      fromClientId: me.clientId,
-      to: friendInfo ? friendInfo.username : toClientId,
-      toClientId,
-      country: me.countryName,
-      text: transcriptText(parsed),
-      msgId: msgId || undefined,
-      replyTo: parsed.replyTo || undefined,
-    });
+    deliverFriendMessage(socket, me, toClientId, parsed, msgId);
+    if (gateBefore !== 'open') socket.emit('dm-gate', { clientId: toClientId, gate: dmGate(me.clientId, toClientId) });
+  });
+
+  // Voice notes: friends only - unlike text, not even the one message a
+  // pending friend request allows. The clip is stored first and the message
+  // only exists once it has been, so a message never points at missing audio.
+  // Acknowledged either way; the client's bubble waits on that answer.
+  socket.on('friend-voice-note', async (payload = {}, ack) => {
+    const reply = typeof ack === 'function' ? ack : () => {};
+    const me = profiles.get(socket.id);
+    const toClientId = validId(payload && payload.toClientId);
+    const note = readVoicePayload(payload);
+    if (!me || !toClientId || toClientId === me.clientId) return reply({ ok: false, reason: 'unreachable' });
+    if (!note) return reply({ ok: false, reason: 'invalid' });
+    if (!ageGate('friends').ok || ageAssurance.isRestricted(toClientId)) return reply({ ok: false, reason: 'unreachable' });
+    if (!isFriend(me.clientId, toClientId)) return reply({ ok: false, reason: 'friends-only' });
+    if (isBlockedPair(me.clientId, toClientId)) return reply({ ok: false, reason: 'unreachable' });
+    if (voiceStateFor(me.clientId, toClientId) !== 'on') return reply({ ok: false, reason: 'needs-consent' });
     const key = pairKey(me.clientId, toClientId);
-    if (!friendChats.has(key)) friendChats.set(key, []);
-    // Stored ids are what replies and reactions point at after a reload, so a
-    // client that sent none gets one here rather than an unaddressable message.
-    const msg = {
-      from: me.clientId,
-      text: trimmed,
-      ts: Date.now(),
-      id: msgId || 'm' + crypto.randomBytes(6).toString('hex'),
-    };
-    if (parsed.replyTo) msg.replyTo = parsed.replyTo;
-    if (parsed.gif) msg.gif = parsed.gif;
-    const list = friendChats.get(key);
-    list.push(msg);
-    if (list.length > 200) list.shift();
-    // Not friends: keep the conversation in both people's recent list.
-    let mineAdded = false;
-    let theirsAdded = false;
-    if (!isFriend(me.clientId, toClientId)) {
-      mineAdded = touchChatHistory(me.clientId, toClientId, snapshotOf(toClientId, me.clientId));
-      theirsAdded = touchChatHistory(toClientId, me.clientId, { username: me.username, countryCode: me.country, avatar: shownAvatar(me) });
+    // A resend after a lost acknowledgement: answer with what is stored.
+    const dup = note.id && (friendChats.get(key) || []).find((m) => m.id === note.id);
+    if (dup) {
+      if (dup.from !== me.clientId || !dup.voice) return reply({ ok: false, reason: 'invalid' });
+      reply({ ok: true, id: dup.id, ts: dup.ts, voice: dup.voice });
+      return;
+    }
+    if (!socialRateOk('friend-voice-note', me.clientId, 5, 60000)) return reply({ ok: false, reason: 'rate' });
+    const noteId = 'v' + crypto.randomBytes(12).toString('hex');
+    try {
+      await store.saveVoiceNote({
+        id: noteId, pair: key, from: me.clientId, mime: note.mime, durationMs: note.ms, bytes: note.bytes,
+      });
+    } catch (err) {
+      console.error('[voice-note] store failed:', err.message);
+      return reply({ ok: false, reason: 'store' });
+    }
+    // The upload took a moment; the socket may have gone or the friendship
+    // ended meanwhile. Then the clip is not a message, so it is not kept.
+    if (profiles.get(socket.id) !== me || !isFriend(me.clientId, toClientId) || isBlockedPair(me.clientId, toClientId)
+      || voiceStateFor(me.clientId, toClientId) !== 'on') {
+      store.deleteVoiceNotes([noteId]).catch(() => {});
+      return reply({ ok: false, reason: 'unreachable' });
+    }
+    const msg = deliverFriendMessage(socket, me, toClientId, {
+      text: '', gif: null, replyTo: note.replyTo, voice: { id: noteId, ms: note.ms, mime: note.mime },
+    }, note.id);
+    reply({ ok: true, id: msg.id, ts: msg.ts, voice: msg.voice });
+  });
+
+  // Asking a friend to turn voice messages on. Answered by that friend with
+  // 'voice-note-respond'; both sides are told every change of state.
+  const emitVoiceState = (a, b, extra) => {
+    const sa = getSocketByClientId(a);
+    if (sa) sa.emit('voice-note-state', { clientId: b, state: voiceStateFor(a, b), ...(extra && extra[a]) });
+    const sb = getSocketByClientId(b);
+    if (sb) sb.emit('voice-note-state', { clientId: a, state: voiceStateFor(b, a), ...(extra && extra[b]) });
+  };
+  socket.on('voice-note-request', ({ toClientId } = {}) => {
+    const me = profiles.get(socket.id);
+    toClientId = validId(toClientId);
+    if (!me || !toClientId || toClientId === me.clientId) return;
+    if (!ageGate('friends').ok || ageAssurance.isRestricted(toClientId)) return;
+    if (!isFriend(me.clientId, toClientId) || isBlockedPair(me.clientId, toClientId)) return;
+    const state = voiceStateFor(me.clientId, toClientId);
+    // Already on, already asked, or they asked first (answered with respond).
+    if (state !== 'off') return emitVoiceState(me.clientId, toClientId);
+    if (!socialRateOk('voice-note-request', me.clientId, 5, 60 * 60 * 1000)) return;
+    voiceConsent.set(pairKey(me.clientId, toClientId), { state: 'pending', by: me.clientId, ts: Date.now() });
+    persistSocial();
+    store.recordFeature('voice_request');
+    emitVoiceState(me.clientId, toClientId, { [toClientId]: { fromUsername: me.username } });
+  });
+
+  socket.on('voice-note-respond', ({ fromClientId, accept } = {}) => {
+    const me = profiles.get(socket.id);
+    fromClientId = validId(fromClientId);
+    if (!me || !fromClientId) return;
+    const key = pairKey(me.clientId, fromClientId);
+    const c = voiceConsent.get(key);
+    // Only the person who was asked can answer.
+    if (!c || c.state !== 'pending' || c.by !== fromClientId) return;
+    if (accept && isFriend(me.clientId, fromClientId) && !isBlockedPair(me.clientId, fromClientId)) {
+      voiceConsent.set(key, { state: 'on', by: fromClientId, ts: Date.now() });
+      store.recordFeature('voice_accept');
+    } else {
+      voiceConsent.delete(key);
     }
     persistSocial();
-    if (parsed.gif) store.recordFeature('chat_gif');
-    if (parsed.replyTo) store.recordFeature('chat_reply');
+    emitVoiceState(me.clientId, fromClientId, { [fromClientId]: accept ? { accepted: true } : { declined: true } });
+  });
 
-    const wire = {
-      fromClientId: me.clientId,
-      text: trimmed,
-      ts: msg.ts,
-      id: msg.id,
-      replyTo: msg.replyTo || null,
-      gif: msg.gif || null,
-    };
-    const targetSocket = getSocketByClientId(toClientId);
-    if (targetSocket) {
-      targetSocket.emit('friend-message', wire);
-      if (theirsAdded) syncClientState(targetSocket, toClientId);
+  // Either friend can turn voice messages off again at any time.
+  socket.on('voice-note-disable', ({ clientId: otherClientId } = {}) => {
+    const me = profiles.get(socket.id);
+    otherClientId = validId(otherClientId);
+    if (!me || !otherClientId) return;
+    if (!voiceConsent.delete(pairKey(me.clientId, otherClientId))) return;
+    persistSocial();
+    emitVoiceState(me.clientId, otherClientId);
+  });
+
+  // The audio behind a voice message, for either person in that conversation.
+  socket.on('voice-note-get', async ({ id, chatWith } = {}, ack) => {
+    const reply = typeof ack === 'function' ? ack : () => {};
+    const me = profiles.get(socket.id);
+    chatWith = validId(chatWith);
+    const noteId = typeof id === 'string' && /^v[a-f0-9]{24}$/.test(id) ? id : null;
+    if (!me || !chatWith || !noteId) return reply({ ok: false });
+    if (!socialRateOk('voice-note-get', me.clientId, 60, 60000)) return reply({ ok: false });
+    let rec = null;
+    try { rec = await store.getVoiceNote(noteId); } catch (err) {
+      console.error('[voice-note] read failed:', err.message);
     }
-    if (mineAdded) syncClientState(socket, me.clientId);
-
-    pushNotification(toClientId, {
-      type: 'message',
-      fromClientId: me.clientId,
-      username: me.username,
-      text: trimmed || '[GIF]',
-      msgId: msg.id,
-    });
-
-    socket.emit('friend-message-sent', {
-      toClientId, text: trimmed, ts: msg.ts, id: msg.id, replyTo: msg.replyTo || null, gif: msg.gif || null,
-    });
-    if (gateBefore !== 'open') socket.emit('dm-gate', { clientId: toClientId, gate: dmGate(me.clientId, toClientId) });
+    if (!rec || rec.pair !== pairKey(me.clientId, chatWith)) return reply({ ok: false });
+    reply({ ok: true, mime: rec.mime, data: rec.bytes });
   });
 
   // Reactions on a stored friend message. Unlike stranger reactions these are
@@ -5440,8 +5606,9 @@ io.on('connection', (socket) => {
     const list = friendChats.get(key);
     const idx = list ? list.findIndex((m) => m.id === msgId && m.from === me.clientId) : -1;
     if (idx === -1) return;
-    list.splice(idx, 1);
+    const [removed] = list.splice(idx, 1);
     if (!list.length) friendChats.delete(key);
+    if (removed.voice) store.deleteVoiceNotes([removed.voice.id]).catch(() => {});
     const unreadGone = removeNotificationsWhere(toClientId,
       (n) => n.type === 'message' && n.fromClientId === me.clientId && n.msgId === msgId);
     persistSocial();
@@ -5481,7 +5648,10 @@ io.on('connection', (socket) => {
     if (!me || !friendClientId || !canOpenThread(me.clientId, friendClientId)) return;
     if (isBlockedPair(me.clientId, friendClientId)) return;
     socket.emit('friend-chat-history', {
-      friendClientId, messages: visibleThread(me.clientId, friendClientId), gate: dmGate(me.clientId, friendClientId),
+      friendClientId,
+      messages: visibleThread(me.clientId, friendClientId),
+      gate: dmGate(me.clientId, friendClientId),
+      voice: voiceStateFor(me.clientId, friendClientId),
     });
   });
 

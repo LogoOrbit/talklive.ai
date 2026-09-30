@@ -790,7 +790,7 @@
         var rec = {
           el: node,
           mine: !!data.mine,
-          text: data.text || (data.gif ? 'GIF' : ''),
+          text: data.text || (data.gif ? 'GIF' : data.voice ? tr('voiceMessage', 'Voice message') : ''),
           plain: data.text || '',
         };
         index[id] = rec;
