@@ -97,6 +97,8 @@ async function browser(base, { path: p = '/', clientId = ID.ann, lang = 'en', in
         localStorage.setItem('talklive_identity_token', tok);
       }
       localStorage.setItem('talklive_lang', lang);
+      // The one-time what's-new dialog would sit over every flow under test.
+      if (!localStorage.getItem('tl_whatsnew_test_show')) localStorage.setItem('tl_whatsnew_voice_v1', '1');
     } catch (_) {}
   }, [clientId, lang, tokenFor(clientId)]);
   if (init) await ctx.addInitScript(init);

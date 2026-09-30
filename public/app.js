@@ -5464,7 +5464,8 @@ socket.on('friend-message-deleted', ({ chatWith, id } = {}) => {
 var VoiceNotes = window.TalkLiveVoiceNotes || null;
 var friendVoiceState = new Map(); // clientId -> 'off' | 'sent' | 'received' | 'on'
 var voiceOutbox = new Map();      // msg id -> { toClientId, blob, mime, ms }
-const VOICE_POLICY_KEY = 'tl_voice_policy_v1';
+// Bumped whenever the policy text changes in substance, so everyone reads it again.
+const VOICE_POLICY_KEY = 'tl_voice_policy_v2';
 var voiceRecorder = null;
 
 function isFriendId(clientId) {
@@ -5477,6 +5478,7 @@ function voicePolicyPoints() {
     { icon: '🚫', text: t('vnPolicyRules') },
     { icon: '🔒', text: t('vnPolicyPrivate') },
     { icon: '👂', text: t('vnPolicyReplay') },
+    { icon: '🛡️', text: t('vnPolicyModeration') },
     { icon: '🗑️', text: t('vnPolicyUnsend') },
     { icon: '🚩', text: t('vnPolicyReport') },
   ];
@@ -5510,6 +5512,7 @@ async function reviewVoiceRequest(fromClientId) {
       { icon: '🛡️', text: t('vnAcceptTrust') },
       { icon: '💸', text: t('vnAcceptScams') },
       { icon: '🚫', text: t('vnPolicyRules') },
+      { icon: '🛡️', text: t('vnPolicyModeration') },
       { icon: '🔕', text: t('vnAcceptTurnOff', { name }) },
       { icon: '🚩', text: t('vnPolicyReport') },
     ],

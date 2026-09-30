@@ -61,6 +61,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
      side-panel shell, Settings, Friends/History and the account dialog, and it
      does so with its own `tl-` class names so nothing above can reach it. -->
 <link rel="stylesheet" href="ui.css?v=20260928vg" />
+<link rel="stylesheet" href="whats-new.css?v=20260930wn" />
 <link rel="stylesheet" href="auth.css?v=20260924auth" />
 <!-- The top bar, shared with /chat. Loaded after everything else because it
      owns the header outright: one button language, one radius, one focus ring
@@ -2650,7 +2651,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
        browser finish parsing and paint the page first. -->
   <script defer src="/socket.io/socket.io.min.js"></script>
   <script defer src="countries.js?v=20260828fix"></script>
-  <script defer src="i18n.js?v=20260930vn"></script>
+  <script defer src="i18n.js?v=20260930vn2"></script>
   <script defer src="chat-time.js?v=20260916navbar"></script>
   <script defer src="animals.js?v=20260924animline"></script>
   <script defer src="social-kit.js?v=20260924id"></script>
@@ -2689,10 +2690,11 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
     })();
   </script>
   <script defer src="chat-extras.js?v=20260930vn"></script>
-  <script defer src="voice-notes.js?v=20260930vn"></script>
+  <script defer src="voice-notes.js?v=20260930vn2"></script>
+  <script defer src="whats-new.js?v=20260930wn"></script>
   <script defer src="games.js?v=20260924qa"></script>
   <script defer src="nickname-rules.js?v=20260924nick"></script>
-  <script defer src="app.js?v=20260930vn"></script>
+  <script defer src="app.js?v=20260930vn2"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

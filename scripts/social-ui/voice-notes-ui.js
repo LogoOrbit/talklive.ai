@@ -63,7 +63,7 @@ const { ok, wait, ID } = H;
     const off = H.once(ben, 'voice-note-state');
     ben.emit('voice-note-disable', { clientId: ID.ann });
     await off;
-    await page.evaluate(() => localStorage.removeItem('tl_voice_policy_v1'));
+    await page.evaluate(() => localStorage.removeItem('tl_voice_policy_v2'));
     ben.emit('voice-note-request', { toClientId: ID.ann });
     await page.waitForSelector('.vn-gate [data-vn-act="review"]', { timeout: 4000 });
     await shot('3-request-banner');

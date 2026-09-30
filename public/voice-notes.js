@@ -121,7 +121,8 @@
       cancel.addEventListener('click', function () { done(false); });
       ok.addEventListener('click', function () { if (!ok.disabled) done(true); });
       overlay.addEventListener('click', function (e) { if (e.target === overlay) done(false); });
-      (check || ok).focus();
+      (check || ok).focus({ preventScroll: true });
+      box.scrollTop = 0;
     });
   }
 
