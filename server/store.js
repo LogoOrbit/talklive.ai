@@ -179,6 +179,11 @@ function defaults() {
     // days: { 'YYYY-MM-DD': { s, n } } }. `days` keeps the last TALK_DAYS so the
     // dashboard can re-cut the totals to today / 7 / 30 days.
     talkTime: {},
+    // Mini-game analytics (see server/game-tracker.js). players: clientId ->
+    // { username, country, firstAt, lastAt, t, days: { 'YYYY-MM-DD': t },
+    // byGame: { ttt|dab: { r, s } } } where t is the counter set in
+    // GAME_FIELDS. log: the newest finished game sessions, newest first.
+    games: { players: {}, log: [] },
     settings: {
       maintenance: { on: false, message: 'TalkLive is under maintenance. We will be back shortly!' },
       banThreshold: 3,
@@ -209,6 +214,7 @@ function applyParsed(parsed) {
   data.referrals = { ...defaults().referrals, ...(parsed.referrals || {}) };
   data.push = parsed.push || {};
   data.talkTime = parsed.talkTime || {};
+  data.games = { players: {}, log: [], ...(parsed.games || {}) };
   data.accounts = parsed.accounts || {};
   data.googleIndex = parsed.googleIndex || {};
   data.authSessions = parsed.authSessions || {};
@@ -2066,6 +2072,112 @@ function recordTalkTime(clientId, seconds, info = {}) {
   save();
 }
 
+// --- Mini games --------------------------------------------------------------
+
+const GAME_DAYS = 30;
+const MAX_GAME_LOG = 300;
+// Per-person counters. s: seconds played, r: rounds, n: sessions that got to a
+// board, w/l/d: finished rounds won/lost/drawn, sent: invites sent, sAcc: sent
+// invites that were accepted, recv: invites received, acc/dec/ign: received
+// invites accepted / declined / never answered, can: own invites withdrawn.
+const GAME_FIELDS = ['s', 'r', 'n', 'w', 'l', 'd', 'sent', 'sAcc', 'recv', 'acc', 'dec', 'ign', 'can'];
+
+function emptyGameCounters() {
+  const t = {};
+  for (const f of GAME_FIELDS) t[f] = 0;
+  return t;
+}
+
+function gamePlayer(p, now) {
+  const players = data.games.players;
+  let rec = players[p.clientId];
+  if (!rec) rec = players[p.clientId] = { firstAt: now, t: emptyGameCounters(), days: {}, byGame: {} };
+  if (p.username) rec.username = String(p.username).slice(0, 40);
+  if (p.country) rec.country = String(p.country).slice(0, 60);
+  return rec;
+}
+
+// Add `delta` to a player's all-time and today's counters.
+function bumpGamePlayer(p, delta, now) {
+  const rec = gamePlayer(p, now);
+  const key = dayKey(now);
+  const days = rec.days || (rec.days = {});
+  const d = days[key] || (days[key] = emptyGameCounters());
+  for (const [f, v] of Object.entries(delta)) {
+    if (!v) continue;
+    rec.t[f] = (rec.t[f] || 0) + v;
+    d[f] = (d[f] || 0) + v;
+  }
+  const keys = Object.keys(days).sort();
+  while (keys.length > GAME_DAYS) delete days[keys.shift()];
+  return rec;
+}
+
+function dayGames() {
+  const d = day();
+  return d.games || (d.games = { inv: 0, acc: 0, dec: 0, ign: 0, can: 0, waitMs: 0, sess: 0, rounds: 0, fin: 0, draws: 0, secs: 0, byGame: {}, byMode: {} });
+}
+
+function gameSlot(obj, key) {
+  return obj[key] || (obj[key] = { inv: 0, acc: 0, sess: 0, rounds: 0, secs: 0 });
+}
+
+// One invite, settled: accepted | declined | ignored | cancelled.
+function recordGameInvite({ game, mode, from, to, outcome, waitMs }) {
+  const now = Date.now();
+  const g = dayGames();
+  const slot = gameSlot(g.byGame, game);
+  const m = gameSlot(g.byMode, mode);
+  g.inv += 1; slot.inv += 1; m.inv += 1;
+  if (outcome === 'accepted') { g.acc += 1; slot.acc += 1; m.acc += 1; g.waitMs += Math.max(0, Math.min(waitMs || 0, 600000)); }
+  else if (outcome === 'declined') g.dec += 1;
+  else if (outcome === 'cancelled') g.can += 1;
+  else g.ign += 1;
+  bumpGamePlayer(from, { sent: 1, sAcc: outcome === 'accepted' ? 1 : 0, can: outcome === 'cancelled' ? 1 : 0 }, now);
+  if (outcome !== 'cancelled') {
+    bumpGamePlayer(to, { recv: 1, acc: outcome === 'accepted' ? 1 : 0, dec: outcome === 'declined' ? 1 : 0, ign: outcome === 'ignored' ? 1 : 0 }, now);
+  }
+  save();
+}
+
+// One game session between a pair, ended. players[0] is the host (player 0 in
+// the game state); rounds is [{ ms, winner: 0|1|'draw'|null, finished }].
+function recordGameSession({ game, mode, players, startedAt, sessionMs, rounds }) {
+  if (!rounds || !rounds.length) return; // accepted, but no board was ever dealt
+  const now = Date.now();
+  const seconds = Math.round(rounds.reduce((a, r) => a + r.ms, 0) / 1000);
+  const finished = rounds.filter((r) => r.finished);
+  const draws = finished.filter((r) => r.winner === 'draw').length;
+  const g = dayGames();
+  g.sess += 1; g.rounds += rounds.length; g.fin += finished.length; g.draws += draws; g.secs += seconds;
+  for (const slot of [gameSlot(g.byGame, game), gameSlot(g.byMode, mode)]) {
+    slot.sess += 1; slot.rounds += rounds.length; slot.secs += seconds;
+  }
+  players.forEach((p, i) => {
+    const w = finished.filter((r) => r.winner === i).length;
+    const rec = bumpGamePlayer(p, { s: seconds, r: rounds.length, n: 1, w, l: finished.length - w - draws, d: draws }, now);
+    rec.lastAt = now;
+    const bg = rec.byGame[game] || (rec.byGame[game] = { r: 0, s: 0 });
+    bg.r += rounds.length;
+    bg.s += seconds;
+  });
+  const wins = [0, 1].map((i) => finished.filter((r) => r.winner === i).length);
+  data.games.log.unshift({
+    ts: now,
+    startedAt,
+    game,
+    mode,
+    seconds,
+    sessionSeconds: Math.round((sessionMs || 0) / 1000),
+    rounds: rounds.length,
+    finished: finished.length,
+    score: [wins[0], wins[1], draws],
+    players: players.map((p) => ({ clientId: p.clientId, username: String(p.username || '').slice(0, 40), country: String(p.country || '').slice(0, 60) })),
+  });
+  if (data.games.log.length > MAX_GAME_LOG) data.games.log.length = MAX_GAME_LOG;
+  save();
+}
+
 // --- Web push subscriptions --------------------------------------------------
 
 const MAX_PUSH_PER_CLIENT = 5;
@@ -2291,6 +2403,9 @@ module.exports = {
   recordPeakOnline,
   recordFeature,
   recordTalkTime,
+  recordGameInvite,
+  recordGameSession,
+  GAME_FIELDS,
   recordPerson,
   recordCallEnd,
   recordWait,

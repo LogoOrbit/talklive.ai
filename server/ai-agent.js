@@ -216,6 +216,18 @@ const TOOLS = [
     defaultLimit: 50,
   },
   {
+    name: 'get_games',
+    label: 'Checking mini games',
+    description: 'Mini games (Tic Tac Toe, Dots & Boxes): summary (players, % of people who talked that played, sessions, rounds, seconds played, invites sent/accepted/declined/ignored/cancelled, accept and decline rates), per-game and voice-vs-text split, 30-day daily trend, games live now, recent sessions, and per-person rows (play seconds, sessions, rounds, wins/losses/draws, invites sent/received/accepted/declined/ignored, favourite game).',
+    input_schema: obj({
+      range: { type: 'string', enum: ['today', '7d', '30d', 'all'], description: 'Window (default 7d).' },
+      limit: int('Max people (default 50).'),
+    }),
+    path: (i) => `games?range=${enc(i.range || '7d')}`,
+    list: 'rows',
+    defaultLimit: 50,
+  },
+  {
     name: 'get_revenue',
     label: 'Checking premium & revenue',
     description: 'TalkLive Plus / premium: totals (active, permanent, paying, expired, revoked, expiring in 7 days), active by source, daily activations and cancellations (30 days), subscription rows, referral program stats (codes, joined, qualified, rewarded days, top referrers), account count and web-push reach.',

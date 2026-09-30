@@ -316,7 +316,7 @@ function generateConclusion(runtime, report) {
 }
 
 // --- Module wiring ---
-function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning }) {
+function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning, getLiveGames }) {
   const router = express.Router();
   router.use(express.json({ limit: '64kb' }));
 
@@ -995,6 +995,138 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
     res.json({ rows: talkTimeRows(String(req.query.range || 'all')) });
   });
 
+  // --- Mini games: who played, for how long, and who turned invites down ------
+  const GAME_NAMES = { ttt: 'Tic Tac Toe', dab: 'Dots & Boxes' };
+  function rangeDays(range) {
+    const n = range === 'today' ? 1 : range === '7d' ? 7 : range === '30d' ? 30 : 0;
+    if (!n) return null; // all time
+    const out = [];
+    for (let i = n - 1; i >= 0; i--) out.push(store.dayKey(Date.now() - i * 86400000));
+    return out;
+  }
+  function gameCounters(rec, days) {
+    if (!days) return rec.t || {};
+    const t = {};
+    for (const k of days) {
+      const d = rec.days && rec.days[k];
+      if (d) for (const f of store.GAME_FIELDS) t[f] = (t[f] || 0) + (d[f] || 0);
+    }
+    return t;
+  }
+  function gameRows(range) {
+    const days = rangeDays(range);
+    const rows = [];
+    for (const [clientId, rec] of Object.entries((store.data.games || {}).players || {})) {
+      const t = gameCounters(rec, days);
+      if (!t.r && !t.sent && !t.recv) continue;
+      const key = store.findUsernameByClientId(clientId);
+      const acc = key ? (store.data.accountsRegistry[key] || {}) : null;
+      const bg = rec.byGame || {};
+      const fav = Object.keys(bg).sort((a, b) => (bg[b].r || 0) - (bg[a].r || 0))[0] || '';
+      const fin = (t.w || 0) + (t.l || 0) + (t.d || 0);
+      rows.push({
+        clientId,
+        username: rec.username || (acc && acc.username) || clientId,
+        account: acc ? (acc.username || key) : null,
+        country: rec.country || '',
+        seconds: t.s || 0,
+        sessions: t.n || 0,
+        rounds: t.r || 0,
+        wins: t.w || 0,
+        losses: t.l || 0,
+        draws: t.d || 0,
+        winRate: fin ? Math.round((t.w || 0) / fin * 100) : null,
+        invitesSent: t.sent || 0,
+        sentAccepted: t.sAcc || 0,
+        invitesReceived: t.recv || 0,
+        accepted: t.acc || 0,
+        declined: t.dec || 0,
+        ignored: t.ign || 0,
+        withdrawn: t.can || 0,
+        favorite: fav ? (GAME_NAMES[fav] || fav) : '',
+        firstAt: rec.firstAt || 0,
+        lastAt: rec.lastAt || 0,
+      });
+    }
+    return rows.sort((a, b) => b.seconds - a.seconds || b.rounds - a.rounds);
+  }
+  function gamesReport(range) {
+    const days = rangeDays(range);
+    const allDays = store.data.analytics.days || {};
+    const keys = days || Object.keys(allDays).sort();
+    const sum = { inv: 0, acc: 0, dec: 0, ign: 0, can: 0, waitMs: 0, sess: 0, rounds: 0, fin: 0, draws: 0, secs: 0 };
+    const byGame = {};
+    const byMode = {};
+    const addSlot = (to, from) => {
+      for (const [k, v] of Object.entries(from || {})) {
+        const o = to[k] || (to[k] = { inv: 0, acc: 0, sess: 0, rounds: 0, secs: 0 });
+        for (const f of Object.keys(o)) o[f] += v[f] || 0;
+      }
+    };
+    for (const k of keys) {
+      const g = allDays[k] && allDays[k].games;
+      if (!g) continue;
+      for (const f of Object.keys(sum)) sum[f] += g[f] || 0;
+      addSlot(byGame, g.byGame);
+      addSlot(byMode, g.byMode);
+    }
+    const rows = gameRows(range);
+    const players = rows.filter((r) => r.rounds > 0).length;
+    const talkers = talkTimeRows(range).length;
+    const pct = (a, b) => (b ? Math.round(a / b * 1000) / 10 : 0);
+    // Daily trend over the last 30 days, with unique players per day.
+    const trendKeys = rangeDays('30d');
+    const playersPerDay = {};
+    for (const rec of Object.values((store.data.games || {}).players || {})) {
+      for (const [k, d] of Object.entries(rec.days || {})) if (d.r) playersPerDay[k] = (playersPerDay[k] || 0) + 1;
+    }
+    const daily = trendKeys.map((k) => {
+      const g = (allDays[k] && allDays[k].games) || {};
+      return { day: k, invites: g.inv || 0, accepted: g.acc || 0, declined: g.dec || 0, ignored: g.ign || 0, sessions: g.sess || 0, rounds: g.rounds || 0, seconds: g.secs || 0, players: playersPerDay[k] || 0 };
+    });
+    const since = days ? Date.parse(days[0] + 'T00:00:00Z') : 0;
+    const log = ((store.data.games || {}).log || []).filter((x) => x.ts >= since).slice(0, 100)
+      .map((x) => ({ ...x, gameName: GAME_NAMES[x.game] || x.game }));
+    const notAccepted = sum.dec + sum.ign;
+    return {
+      range,
+      summary: {
+        players,
+        talkers,
+        playedPct: Math.min(100, pct(players, talkers)),
+        sessions: sum.sess,
+        rounds: sum.rounds,
+        finished: sum.fin,
+        draws: sum.draws,
+        seconds: sum.secs,
+        invites: sum.inv,
+        accepted: sum.acc,
+        declined: sum.dec,
+        ignored: sum.ign,
+        cancelled: sum.can,
+        notAccepted,
+        answered: sum.inv - sum.can,
+        acceptRate: pct(sum.acc, sum.inv - sum.can),
+        declineRate: pct(notAccepted, sum.inv - sum.can),
+        avgAcceptWait: sum.acc ? Math.round(sum.waitMs / sum.acc / 1000) : 0,
+        avgSession: sum.sess ? Math.round(sum.secs / sum.sess) : 0,
+        avgRound: sum.rounds ? Math.round(sum.secs / sum.rounds) : 0,
+        roundsPerSession: sum.sess ? Math.round(sum.rounds / sum.sess * 10) / 10 : 0,
+        avgPerPlayer: players ? Math.round(rows.reduce((a, r) => a + r.seconds, 0) / players) : 0,
+      },
+      byGame: Object.entries(byGame).map(([k, v]) => ({ game: k, name: GAME_NAMES[k] || k, ...v, acceptRate: pct(v.acc, v.inv), avgRound: v.rounds ? Math.round(v.secs / v.rounds) : 0 })),
+      byMode: Object.entries(byMode).map(([k, v]) => ({ mode: k, name: k === 'chat' ? 'Text chat' : 'Voice call', ...v, acceptRate: pct(v.acc, v.inv) })),
+      daily,
+      live: typeof getLiveGames === 'function' ? getLiveGames() : { sessions: [], pendingInvites: 0 },
+      log,
+      rows,
+    };
+  }
+
+  router.get('/api/games', (req, res) => {
+    res.json(gamesReport(String(req.query.range || '7d')));
+  });
+
   // Subscriptions, referrals and push reach - all read from existing records,
   // nothing here writes or removes anything.
   router.get('/api/premium', (req, res) => {
@@ -1170,6 +1302,9 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
     } else if (kind === 'talktime') {
       csv = toCsv(['username', 'account', 'client_id', 'country', 'talk_seconds', 'conversations', 'avg_seconds', 'longest_seconds', 'last_talked'],
         talkTimeRows(String(req.query.range || 'all')).map((r) => [r.username, r.account || '', r.clientId, r.country, r.seconds, r.calls, r.avg, r.longest, isoOr(r.lastAt)]));
+    } else if (kind === 'games') {
+      csv = toCsv(['username', 'account', 'client_id', 'country', 'play_seconds', 'sessions', 'rounds', 'wins', 'losses', 'draws', 'win_rate', 'invites_sent', 'sent_accepted', 'invites_received', 'accepted', 'declined', 'ignored', 'withdrawn', 'favorite_game', 'last_played'],
+        gameRows(String(req.query.range || 'all')).map((r) => [r.username, r.account || '', r.clientId, r.country, r.seconds, r.sessions, r.rounds, r.wins, r.losses, r.draws, r.winRate === null ? '' : r.winRate, r.invitesSent, r.sentAccepted, r.invitesReceived, r.accepted, r.declined, r.ignored, r.withdrawn, r.favorite, isoOr(r.lastAt)]));
     } else if (kind === 'premium') {
       csv = toCsv(['client_id', 'status', 'source', 'paying', 'permanent', 'activated', 'expires', 'revoked', 'last_event'],
         premiumRows().map((r) => [r.clientId, r.status, r.source, r.paying ? 'yes' : 'no', r.permanent ? 'yes' : 'no', isoOr(r.activatedAt), isoOr(r.expiresAt), isoOr(r.revokedAt), r.lastEvent]));

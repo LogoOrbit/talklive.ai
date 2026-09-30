@@ -33,6 +33,7 @@ const ageAssurance = require('./age-assurance');
 const mail = require('./mailer');
 const { botLabel, isPrefetch } = require('./bots');
 const { createAdmin, applyOwnerReset } = require('./admin');
+const { createGameTracker } = require('./game-tracker');
 const { isValidTimezone } = require('./analytics');
 const audience = require('./audience');
 
@@ -951,7 +952,8 @@ function sendPendingWarnings(socket) {
   }
 }
 
-const admin = createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning });
+const gameTracker = createGameTracker({ store, profileOf: (sid) => profiles.get(sid) });
+const admin = createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning, getLiveGames: () => gameTracker.live() });
 app.use('/owner', admin.router);
 
 // Maintenance mode: when on, every non-dashboard page gets a friendly 503.
@@ -3084,6 +3086,7 @@ function disconnectPartner(socketId, opts = {}) {
   if (!partnerId) return null;
   partners.delete(socketId);
   partners.delete(partnerId);
+  gameTracker.onPairEnd(socketId, partnerId);
 
   const profile = profiles.get(socketId);
   const partnerProfile = profiles.get(partnerId);
@@ -4930,6 +4933,7 @@ io.on('connection', (socket) => {
     try { size = JSON.stringify(data).length; } catch (_) { return; }
     if (size > 4096) return;
     if (data.type === 'invite') store.recordFeature('mini_game');
+    try { gameTracker.onEvent(socket.id, partnerId, data); } catch (err) { console.warn('[games] stats:', err.message); }
     io.to(partnerId).emit('game', data);
   });
 

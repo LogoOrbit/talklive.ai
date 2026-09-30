@@ -804,7 +804,7 @@ function rankedBars(el,entries){
 const GROUPS=[
   ['Monitor',[['overview','Overview','📊'],['live','Live','🟢'],['activity','Activity','📅'],['experience','Experience','🩺'],['ai','AI Agent','🤖']]],
   ['Moderation',[['reports','Reports','🚩'],['chats','Chats','💬'],['voicenotes','Voice notes','🎙️'],['warnings','Warnings','⚠️'],['bans','Bans','⛔']]],
-  ['People',[['audience','Audience','⚧'],['accounts','Accounts','👤'],['talktime','Talk time','⏱️'],['feedback','Feedback','⭐']]],
+  ['People',[['audience','Audience','⚧'],['accounts','Accounts','👤'],['talktime','Talk time','⏱️'],['games','Games','🎮'],['feedback','Feedback','⭐']]],
   ['Business',[['revenue','Revenue','💎']]],
   ['System',[['errors','Errors','🐛'],['audit','Audit log','🧾'],['settings','Settings','🛠️']]]
 ];
@@ -1031,6 +1031,7 @@ async function load(force){
     else if(tab==='voicenotes')await viewVoiceNotes();
     else if(tab==='accounts')await viewAccounts();
     else if(tab==='talktime')await viewTalkTime();
+    else if(tab==='games')await viewGames();
     else if(tab==='revenue')await viewRevenue();
     else if(tab==='errors')await viewErrors();
     else if(tab==='feedback')await viewFeedback();
@@ -2470,6 +2471,103 @@ async function viewTalkTime(){
   $('#ttSort').onchange=(e)=>{ttSort=e.target.value;viewTalkTime();};
   $('#ttMin').onchange=(e)=>{ttMin=Number(e.target.value);viewTalkTime();};
   onFilterInput($('#ttQ'),(v)=>{ttQ=v;},()=>viewTalkTime().then(()=>keepFocus('#ttQ')));
+}
+
+/* ---------- games: who played, how long, who said no ---------- */
+let gmRange='7d',gmSort='time',gmShow='played',gmQ='';
+const GM_SORTS=[['time','Most time played'],['rounds','Most games played'],['sessions','Most sessions'],['wins','Most wins'],['winrate','Best win rate (≥3 games)'],['declined','Most invites declined'],['ignored','Most invites ignored'],['sent','Most invites sent'],['recent','Recently played']];
+const GM_SHOW=[['played','Played at least once'],['refused','Declined or ignored an invite'],['inviters','Sent an invite'],['all','Everyone involved']];
+const pctTxt=(v)=>(v==null?'-':(Math.round(v*10)/10)+'%');
+async function viewGames(){
+  const r=await vapi('games?range='+gmRange);
+  const S=r.summary,all=r.rows||[];
+  const rangeTxt=gmRange==='all'?'all time':gmRange==='today'?'today':'last '+gmRange.replace('d',' days');
+  const q=gmQ.trim().toLowerCase();
+  let rows=all.filter(x=>(gmShow==='played'?x.rounds>0:gmShow==='refused'?(x.declined+x.ignored)>0:gmShow==='inviters'?x.invitesSent>0:true)
+    &&(!q||[x.username,x.account,x.country,x.clientId,x.favorite].some(v=>String(v||'').toLowerCase().includes(q))));
+  const cmp={time:(a,b)=>b.seconds-a.seconds||b.rounds-a.rounds,rounds:(a,b)=>b.rounds-a.rounds,sessions:(a,b)=>b.sessions-a.sessions,wins:(a,b)=>b.wins-a.wins,
+    winrate:(a,b)=>((b.wins+b.losses+b.draws>=3?b.winRate:-1)-(a.wins+a.losses+a.draws>=3?a.winRate:-1))||b.wins-a.wins,
+    declined:(a,b)=>b.declined-a.declined,ignored:(a,b)=>b.ignored-a.ignored,sent:(a,b)=>b.invitesSent-a.invitesSent,recent:(a,b)=>b.lastAt-a.lastAt}[gmSort];
+  rows.sort(cmp);
+  const shown=rows.slice(0,500);
+  const max=Math.max(1,...rows.map(x=>x.seconds));
+  const winners=all.filter(x=>x.wins+x.losses+x.draws>=3).sort((a,b)=>b.wins-a.wins||b.winRate-a.winRate).slice(0,8);
+  const refusers=all.filter(x=>x.declined+x.ignored>0).sort((a,b)=>(b.declined+b.ignored)-(a.declined+a.ignored)).slice(0,8);
+  const live=(r.live&&r.live.sessions)||[];
+  const answered=S.answered||0;
+  const funnel=[
+    {label:'✅ Accepted',n:S.accepted,pct:answered?Math.round(S.accepted/answered*1000)/10:0,color:'var(--good)'},
+    {label:'❌ Declined',n:S.declined,pct:answered?Math.round(S.declined/answered*1000)/10:0,color:'var(--crit)'},
+    {label:'🙈 Ignored (no answer)',n:S.ignored,pct:answered?Math.round(S.ignored/answered*1000)/10:0,color:'var(--warn)'},
+    {label:'↩️ Withdrawn by sender',n:S.cancelled,pct:null,color:'var(--muted)',dim:true}];
+  const person=(x)=>`<b>${esc(x.username)}</b>${x.account?` <span class="pill info" title="Registered account">${esc(x.account)}</span>`:''}`;
+  $('#main').innerHTML=`<div class="grid tiles anim" style="margin-top:0">
+    <div class="tile"><div class="k">People who played</div><div class="v" data-count="${S.players}">0</div><div class="s"><b>${pctTxt(S.playedPct)}</b> of ${num(S.talkers)} who talked · ${rangeTxt}</div></div>
+    <div class="tile"><div class="k">Time played</div><div class="v grad" style="font-size:1.4rem">${dur(S.seconds)}</div><div class="s">${(S.seconds/3600).toFixed(1)} hours · ${dur(S.avgPerPlayer)} per player</div></div>
+    <div class="tile"><div class="k">Games played</div><div class="v" data-count="${S.rounds}">0</div><div class="s">${num(S.finished)} finished · ${num(S.sessions)} sessions · ${num(S.draws)} draws</div></div>
+    <div class="tile"><div class="k">Game requests</div><div class="v" data-count="${S.invites}">0</div><div class="s">${num(S.accepted)} accepted · <b>${pctTxt(S.acceptRate)}</b> accept rate</div></div>
+    <div class="tile"><div class="k">Didn't accept</div><div class="v" data-count="${S.notAccepted}">0</div><div class="s">${num(S.declined)} declined · ${num(S.ignored)} ignored · <b>${pctTxt(S.declineRate)}</b></div></div>
+    <div class="tile"><div class="k">Avg session</div><div class="v" style="font-size:1.4rem">${dur(S.avgSession)}</div><div class="s">${S.roundsPerSession} games per session · ${dur(S.avgRound)} per game</div></div>
+    <div class="tile"><div class="k">Time to accept</div><div class="v" style="font-size:1.4rem">${S.accepted?dur(S.avgAcceptWait):'-'}</div><div class="s">avg from request to yes</div></div>
+    <div class="tile"><div class="k">Playing now</div><div class="v" data-count="${live.length}">0</div><div class="s">${num(live.length*2)} people · ${num((r.live&&r.live.pendingInvites)||0)} requests waiting</div></div>
+  </div>
+  <div class="tbar" style="margin:12px 0 0">
+    <div class="seg" id="gmRange">${[['today','Today'],['7d','7 days'],['30d','30 days'],['all','All time']].map(([k,l])=>`<button data-r="${k}" class="${gmRange===k?'on':''}">${l}</button>`).join('')}</div>
+    <span class="muted" style="font-size:.8rem">Days are UTC. A "game" is one round; a session is one pair playing until they stop.</span>
+  </div>
+  ${live.length?`<div class="card anim"><h2>🟢 Playing right now <span class="sub">${num(live.length)} ${live.length===1?'game':'games'}</span></h2>
+    <table><tr><th>Game</th><th>Players</th><th>Where</th><th class="num">Round</th><th>Playing for</th></tr>
+    ${live.map(g=>`<tr><td>${g.game==='dab'?'🔲 Dots & Boxes':'⭕ Tic Tac Toe'}</td><td>${g.players.map(p=>p?`<b>${esc(p.username)}</b> <span class="muted">${esc(p.country||'')}</span>`:'?').join(' vs ')}</td><td>${g.mode==='chat'?'Text chat':'Voice call'}</td><td class="num">${num(g.rounds)}</td><td>${dur(g.seconds)}</td></tr>`).join('')}</table></div>`:''}
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(360px,100%),1fr))">
+    <div class="card anim"><h2>📨 What happened to game requests <span class="sub">${num(S.invites)} sent, ${rangeTxt}</span></h2>${S.invites?shareBars(funnel,'var(--accent)'):'<div class="muted">No game requests yet in this window.</div>'}
+      <div class="muted" style="font-size:.8rem;margin-top:8px">Percentages are of requests that reached the other person (withdrawn ones excluded). "Ignored" means the pair ended or moved on before an answer.</div></div>
+    <div class="card anim"><h2>🎲 By game <span class="sub">${rangeTxt}</span></h2>
+      <table><tr><th>Game</th><th class="num">Requests</th><th class="num">Accept rate</th><th class="num">Games</th><th>Time played</th><th class="num">Avg game</th></tr>
+      ${(r.byGame||[]).map(g=>`<tr><td><b>${esc(g.name)}</b></td><td class="num">${num(g.inv)}</td><td class="num">${pctTxt(g.acceptRate)}</td><td class="num">${num(g.rounds)}</td><td>${dur(g.secs)}</td><td class="num">${dur(g.avgRound)}</td></tr>`).join('')||'<tr><td colspan="6" class="muted">No games yet.</td></tr>'}
+      </table>
+      <h2 style="margin-top:14px">🎧 Voice vs text</h2>
+      <table><tr><th>Where</th><th class="num">Requests</th><th class="num">Accept rate</th><th class="num">Games</th><th>Time played</th></tr>
+      ${(r.byMode||[]).map(g=>`<tr><td><b>${esc(g.name)}</b></td><td class="num">${num(g.inv)}</td><td class="num">${pctTxt(g.acceptRate)}</td><td class="num">${num(g.rounds)}</td><td>${dur(g.secs)}</td></tr>`).join('')||'<tr><td colspan="5" class="muted">No games yet.</td></tr>'}
+      </table></div>
+  </div>
+  <div class="card anim"><h2>📈 Daily games <span class="sub">last 30 days (UTC)</span></h2>
+    <div class="legend"><span><i style="background:var(--s1)"></i>Games played</span><span><i style="background:var(--s2)"></i>Players</span><span><i style="background:var(--s3)"></i>Requests</span><span><i style="background:var(--crit)"></i>Declined + ignored</span></div><div id="gmTrend"></div></div>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(360px,100%),1fr))">
+    <div class="card anim"><h2>🏆 Top winners <span class="sub">3+ finished games, ${rangeTxt}</span></h2>
+      <table><tr><th class="num">#</th><th>Player</th><th class="num">W / L / D</th><th class="num">Win rate</th></tr>
+      ${winners.map((x,i)=>`<tr><td class="num muted">${i+1}</td><td>${person(x)}</td><td class="num">${num(x.wins)} / ${num(x.losses)} / ${num(x.draws)}</td><td class="num"><b>${pctTxt(x.winRate)}</b></td></tr>`).join('')||'<tr><td colspan="4" class="muted">No one has finished 3 games yet.</td></tr>'}</table></div>
+    <div class="card anim"><h2>🙅 Most requests turned down <span class="sub">${rangeTxt}</span></h2>
+      <table><tr><th class="num">#</th><th>Person</th><th class="num">Received</th><th class="num">Declined</th><th class="num">Ignored</th><th class="num">Accepted</th></tr>
+      ${refusers.map((x,i)=>`<tr><td class="num muted">${i+1}</td><td>${person(x)}</td><td class="num">${num(x.invitesReceived)}</td><td class="num">${num(x.declined)}</td><td class="num">${num(x.ignored)}</td><td class="num">${num(x.accepted)}</td></tr>`).join('')||'<tr><td colspan="6" class="muted">Nobody has turned a request down.</td></tr>'}</table></div>
+  </div>
+  <div class="card anim"><h2>🎮 Who played <span class="sub">${rows.length===all.length?num(all.length)+' people':num(rows.length)+' of '+num(all.length)+' shown'}${rows.length>500?' · first 500':''}</span></h2>
+  <div class="tbar">
+    <select id="gmShow">${GM_SHOW.map(([k,l])=>`<option value="${k}"${gmShow===k?' selected':''}>${l}</option>`).join('')}</select>
+    <select id="gmSort">${GM_SORTS.map(([k,l])=>`<option value="${k}"${gmSort===k?' selected':''}>${l}</option>`).join('')}</select>
+    <input id="gmQ" class="grow" placeholder="Search name, account, country…" value="${esc(gmQ)}">
+    <a class="lnk" data-export="games" href="/owner/api/export/games.csv?range=${gmRange}" download>⬇ Export CSV</a>
+  </div>
+  <div style="overflow-x:auto"><table><tr><th class="num">#</th><th>User</th><th>Country</th><th>Time played</th><th class="num">Games</th><th class="num">Sessions</th><th class="num">W / L / D</th><th class="num">Requests sent</th><th class="num">Received · accepted / declined / ignored</th><th>Favourite</th><th>Last played</th></tr>
+  ${shown.map((x,i)=>`<tr><td class="num muted">${i+1}</td>
+    <td>${person(x)}</td><td>${esc(x.country||'')}</td>
+    <td style="min-width:150px"><div style="display:flex;align-items:center;gap:8px"><div class="cbar" style="height:10px;border-radius:99px;background:var(--accent);width:${Math.max(2,x.seconds/max*100)}%;max-width:100px"></div><b style="white-space:nowrap">${dur(x.seconds)}</b></div></td>
+    <td class="num">${num(x.rounds)}</td><td class="num">${num(x.sessions)}</td>
+    <td class="num">${num(x.wins)} / ${num(x.losses)} / ${num(x.draws)}${x.winRate!=null?` <span class="muted">(${x.winRate}%)</span>`:''}</td>
+    <td class="num">${num(x.invitesSent)}${x.invitesSent?` <span class="muted">(${num(x.sentAccepted)} yes)</span>`:''}</td>
+    <td class="num">${num(x.invitesReceived)} · ${num(x.accepted)} / ${num(x.declined)} / ${num(x.ignored)}</td>
+    <td>${esc(x.favorite||'-')}</td>
+    <td>${x.lastAt?ago(x.lastAt):'-'}</td></tr>`).join('')||`<tr><td colspan="11" class="muted">${all.length?'No one matches these filters.':'No games recorded yet. Game stats are counted from now on, as people invite each other and play.'}</td></tr>`}
+  </table></div></div>
+  <div class="card anim"><h2>🕹️ Recent games <span class="sub">newest first, ${rangeTxt}</span></h2>
+  <div style="overflow-x:auto"><table><tr><th>Ended</th><th>Game</th><th>Players</th><th class="num">Score</th><th class="num">Games</th><th>Time played</th><th>Where</th></tr>
+  ${(r.log||[]).map(g=>`<tr><td>${ago(g.ts)}</td><td>${esc(g.gameName)}</td><td>${g.players.map(p=>`<b>${esc(p.username)}</b> <span class="muted">${esc(p.country||'')}</span>`).join(' vs ')}</td><td class="num">${num(g.score[0])} – ${num(g.score[1])}${g.score[2]?` <span class="muted">(${num(g.score[2])} draw${g.score[2]>1?'s':''})</span>`:''}</td><td class="num">${num(g.rounds)}</td><td>${dur(g.seconds)}</td><td>${g.mode==='chat'?'Text chat':'Voice call'}</td></tr>`).join('')||'<tr><td colspan="7" class="muted">No finished game sessions in this window.</td></tr>'}
+  </table></div></div>`;
+  animateCounters();
+  const tr=$('#gmTrend');if(tr)lineChart(tr,(r.daily||[]).map(d=>({...d,refused:d.declined+d.ignored})),['rounds','players','invites','refused'],['var(--s1)','var(--s2)','var(--s3)','var(--crit)'],['Games played','Players','Requests','Declined + ignored']);
+  document.querySelectorAll('#gmRange button').forEach(b=>b.onclick=()=>{gmRange=b.dataset.r;viewGames();});
+  $('#gmSort').onchange=(e)=>{gmSort=e.target.value;viewGames();};
+  $('#gmShow').onchange=(e)=>{gmShow=e.target.value;viewGames();};
+  onFilterInput($('#gmQ'),(v)=>{gmQ=v;},()=>viewGames().then(()=>keepFocus('#gmQ')));
 }
 
 /* ---------- revenue: subscriptions, referrals, push reach ---------- */

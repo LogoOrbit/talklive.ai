@@ -31,7 +31,8 @@
     "test:discovery": "node scripts/test-discovery.js",
     "test:social-ui": "node scripts/social-ui/stress-call.js && node scripts/social-ui/stress-chat.js && node scripts/social-ui/stress-delivery.js && node scripts/social-ui/voice-notes-ui.js && node scripts/social-ui/whats-new-ui.js",
     "test:social-load": "node scripts/social-ui/load.js",
-    "test:voice-notes": "node scripts/test-voice-notes.js"
+    "test:voice-notes": "node scripts/test-voice-notes.js",
+    "test:games": "node scripts/test-games-stats.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.129.0",
