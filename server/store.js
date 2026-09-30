@@ -465,6 +465,15 @@ async function ensureSchema() {
       bytes bytea NOT NULL,
       created_at bigint NOT NULL
     )`);
+    // Moderation metadata, added after the table first shipped. ADD COLUMN IF
+    // NOT EXISTS only ever adds; it never touches rows already stored.
+    await pgPool.query(`ALTER TABLE voice_notes
+      ADD COLUMN IF NOT EXISTS from_name text,
+      ADD COLUMN IF NOT EXISTS to_client text,
+      ADD COLUMN IF NOT EXISTS to_name text,
+      ADD COLUMN IF NOT EXISTS transcript text,
+      ADD COLUMN IF NOT EXISTS tags jsonb`);
+    await pgPool.query('CREATE INDEX IF NOT EXISTS voice_notes_created_idx ON voice_notes (created_at DESC)');
     try { await pgPool.query('ALTER TABLE voice_notes ENABLE ROW LEVEL SECURITY'); } catch (_) { /* not the owner */ }
   } catch (err) {
     console.error('[store] voice_notes table unavailable:', err.message);
@@ -1852,20 +1861,77 @@ async function consumePasswordResetToken(tokenHash) {
 const VOICE_DIR = path.join(DATA_DIR, 'voice-notes');
 const voiceFile = (id) => path.join(VOICE_DIR, id.replace(/[^a-zA-Z0-9_-]/g, '') + '.bin');
 
-async function saveVoiceNote({ id, pair, from, mime, durationMs, bytes }) {
+async function saveVoiceNote({ id, pair, from, fromName, to, toName, mime, durationMs, bytes, transcript, tags }) {
   const now = Date.now();
   if (pgPool) {
     if (!pgLive()) throw new Error('database unavailable');
     await pgPool.query(
-      `INSERT INTO voice_notes (id, pair, from_client, mime, duration_ms, bytes, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (id) DO NOTHING`,
-      [id, pair, from, mime, durationMs, bytes, now]
+      `INSERT INTO voice_notes (id, pair, from_client, from_name, to_client, to_name, mime, duration_ms, bytes, transcript, tags, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) ON CONFLICT (id) DO NOTHING`,
+      [id, pair, from, fromName || null, to || null, toName || null, mime, durationMs, bytes, transcript || null, JSON.stringify(tags || null), now]
     );
     return;
   }
   await fs.promises.mkdir(VOICE_DIR, { recursive: true });
-  const meta = Buffer.from(JSON.stringify({ pair, from, mime, durationMs, createdAt: now }) + '\n');
-  await fs.promises.writeFile(voiceFile(id), Buffer.concat([meta, bytes]));
+  const meta = { pair, from, fromName, to, toName, mime, durationMs, transcript: transcript || '', tags: tags || null, createdAt: now };
+  await fs.promises.writeFile(voiceFile(id), Buffer.concat([Buffer.from(JSON.stringify(meta) + '\n'), bytes]));
+}
+
+// File backend: the JSON header line of one clip, without reading the audio.
+async function readVoiceHeader(file) {
+  let fh;
+  try {
+    fh = await fs.promises.open(file, 'r');
+    const buf = Buffer.alloc(16384);
+    const { bytesRead } = await fh.read(buf, 0, buf.length, 0);
+    const nl = buf.subarray(0, bytesRead).indexOf(10);
+    return nl === -1 ? null : JSON.parse(buf.subarray(0, nl).toString());
+  } catch (_) {
+    return null;
+  } finally {
+    if (fh) await fh.close().catch(() => {});
+  }
+}
+
+// Newest first, metadata only (no audio), for the owner dashboard.
+async function listVoiceNotes(limit = 300) {
+  const shape = (r) => ({
+    id: r.id, pair: r.pair, from: r.from, fromName: r.fromName || '', to: r.to || '', toName: r.toName || '',
+    mime: r.mime, ms: Number(r.durationMs) || 0, transcript: r.transcript || '', tags: r.tags || null, ts: Number(r.createdAt) || 0,
+  });
+  if (pgPool) {
+    if (!pgLive()) return [];
+    const res = await pgPool.query(
+      `SELECT id, pair, from_client, from_name, to_client, to_name, mime, duration_ms, transcript, tags, created_at
+       FROM voice_notes ORDER BY created_at DESC LIMIT $1`, [limit]);
+    return res.rows.map((r) => shape({
+      id: r.id, pair: r.pair, from: r.from_client, fromName: r.from_name, to: r.to_client, toName: r.to_name,
+      mime: r.mime, durationMs: r.duration_ms, transcript: r.transcript, tags: r.tags, createdAt: r.created_at,
+    }));
+  }
+  let names = [];
+  try { names = (await fs.promises.readdir(VOICE_DIR)).filter((n) => n.endsWith('.bin')); } catch (_) { return []; }
+  const rows = [];
+  for (const n of names) {
+    const meta = await readVoiceHeader(path.join(VOICE_DIR, n));
+    if (meta) rows.push(shape({ ...meta, id: n.slice(0, -4) }));
+  }
+  return rows.sort((a, b) => b.ts - a.ts).slice(0, limit);
+}
+
+async function setVoiceNoteTags(id, tags) {
+  if (pgPool) {
+    if (!pgLive()) return;
+    await pgPool.query('UPDATE voice_notes SET tags = $2 WHERE id = $1', [id, JSON.stringify(tags)]);
+    return;
+  }
+  let raw;
+  try { raw = await fs.promises.readFile(voiceFile(id)); } catch (_) { return; }
+  const nl = raw.indexOf(10);
+  if (nl === -1) return;
+  const meta = JSON.parse(raw.subarray(0, nl).toString());
+  meta.tags = tags;
+  await fs.promises.writeFile(voiceFile(id), Buffer.concat([Buffer.from(JSON.stringify(meta) + '\n'), raw.subarray(nl + 1)]));
 }
 
 async function getVoiceNote(id) {
@@ -2273,6 +2339,8 @@ module.exports = {
   purgePasswordResets,
   saveVoiceNote,
   getVoiceNote,
+  listVoiceNotes,
+  setVoiceNoteTags,
   deleteVoiceNotes,
   createAuthSession,
   getAuthSessionUser,

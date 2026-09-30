@@ -64,6 +64,27 @@ const voiceFiles = () => {
   try { return fs.readdirSync(path.join(DATA_DIR, 'voice-notes')); } catch (_) { return []; }
 };
 
+// Owner session: first-run setup, then a login with the TOTP code.
+const totp = require('../server/totp');
+const generateSync = (secret) => totp.totpCode(secret);
+async function ownerLogin() {
+  const setup = await (await fetch(BASE + '/owner/api/setup', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: 'correct horse battery staple 42' }),
+  })).json();
+  const secret = setup.secret || setup.totpSecret;
+  await fetch(BASE + '/owner/api/setup-confirm', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: generateSync(secret) }),
+  });
+  const r = await fetch(BASE + '/owner/api/login', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: 'correct horse battery staple 42', code: generateSync(secret) }),
+  });
+  const cookie = (r.headers.get('set-cookie') || '').split(';')[0];
+  if (!cookie) throw new Error('owner login failed: ' + r.status + ' ' + (await r.text()));
+  return cookie;
+}
+const ownerGet = async (cookie, p) => (await fetch(BASE + p, { headers: { cookie } })).json();
+
 (async () => {
   let srv = startServer();
   const done = (code) => {
@@ -126,7 +147,10 @@ const voiceFiles = () => {
 
     const incoming = once(b, 'friend-message');
     const audio = Buffer.from(Array.from({ length: 5000 }, (_, i) => i % 251));
-    res = await call(a, 'friend-voice-note', { toClientId: B, id: 'mvn5', mime: 'audio/webm;codecs=opus', ms: 3200, audio });
+    res = await call(a, 'friend-voice-note', {
+      toClientId: B, id: 'mvn5', mime: 'audio/webm;codecs=opus', ms: 3200, audio,
+      transcript: 'hey bravo I watched that movie on netflix, add me on whatsapp',
+    });
     ok('a voice message is stored once agreed', res && res.ok && res.voice && /^v[a-f0-9]{24}$/.test(res.voice.id), JSON.stringify(res));
     const msg = await incoming;
     ok('the friend receives it live', msg.id === 'mvn5' && msg.voice && msg.voice.id === res.voice.id && msg.voice.ms === 3200);
@@ -142,6 +166,24 @@ const voiceFiles = () => {
     ok('the sender can fetch it too', got && got.ok);
     got = await call(c, 'voice-note-get', { id: noteId, chatWith: A });
     ok('nobody else can fetch it', got && got.ok === false);
+
+    // --- Owner dashboard ------------------------------------------------------
+    const owner = await ownerLogin();
+    const listed = await ownerGet(owner, '/owner/api/voice-notes');
+    const row = listed.notes && listed.notes.find((n) => n.id === noteId);
+    ok('the owner sees the voice note with names', row && row.fromName === 'Alpha' && row.toName === 'Bravo', JSON.stringify(row));
+    ok('with its transcript', row && /netflix/.test(row.transcript));
+    ok('tagged with what was talked about', row && row.tags && row.tags.topics.includes('movies & tv'), JSON.stringify(row && row.tags));
+    ok('and flagged for moving off the site', row && row.tags.flags.includes('contact'));
+    const flaggedOnly = await ownerGet(owner, '/owner/api/voice-notes?flagged=1');
+    ok('the flagged filter keeps it', flaggedOnly.notes.some((n) => n.id === noteId));
+    const searched = await ownerGet(owner, '/owner/api/voice-notes?q=whatsapp');
+    ok('search finds words said', searched.notes.length === 1);
+    const audioRes = await fetch(`${BASE}/owner/api/voice-notes/${noteId}/audio`, { headers: { cookie: owner } });
+    ok('the owner can play the audio', audioRes.ok && Buffer.from(await audioRes.arrayBuffer()).equals(audio)
+      && audioRes.headers.get('content-type').startsWith('audio/webm'));
+    const anon = await fetch(`${BASE}/owner/api/voice-notes/${noteId}/audio`);
+    ok('nobody else can', anon.status === 401);
 
     const hist = once(b, 'friend-chat-history');
     b.emit('get-friend-chat', { friendClientId: A });

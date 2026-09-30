@@ -7,6 +7,7 @@ const store = require('./store');
 const totp = require('./totp');
 const analytics = require('./analytics');
 const audience = require('./audience');
+const modTags = require('./moderation-tags');
 const { createAgent } = require('./ai-agent');
 
 let QRCode = null;
@@ -790,23 +791,8 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
   // Patterns worth an operator's attention, cheapest and most specific first.
   // These are triage hints for a human, never an automated action - so they are
   // deliberately broad, and a false positive costs one glance.
-  const RISK_RULES = [
-    ['minor', /\b(?:i(?:'?m| am)|im)\s*(?:only\s*)?(?:1[0-7]|[89])\b|\b(?:1[0-7]|[89])\s*(?:yo|y\/o|years? old)\b|\b(?:what'?s? your |ur |how old)\s*(?:age|are you)\b/i],
-    ['sexual', /\b(nudes?|sext(?:ing)?|horny|dick\s*pic|boobs|naked|cam\s*sex|snapchat\s*nudes)\b/i],
-    ['contact', /\b(whats\s*app|whatsapp|telegram|snap(?:chat)?|insta(?:gram)?|discord|kik|@[a-z0-9._]{3,}|\+?\d[\d\s().-]{7,}\d)\b/i],
-    ['link', /(https?:\/\/|www\.|\b[a-z0-9-]+\.(?:com|net|org|io|xyz|ru|link|gg|me|app)\b)/i],
-    ['money', /\b(bitcoin|crypto|invest(?:ment)?|paypal|cash\s*app|gift\s*card|send\s*money|western\s*union)\b/i],
-    ['abuse', /\b(kill\s*your\s*self|kys|nigg|faggot|retard|rape|bitch|whore)\b/i],
-  ];
-  // Anything in these two is worth looking at first; the rest is context.
-  const SEVERE = new Set(['minor', 'sexual', 'abuse']);
-
-  function riskFlags(text) {
-    const s = String(text || '');
-    const out = [];
-    for (const [name, re] of RISK_RULES) if (re.test(s)) out.push(name);
-    return out;
-  }
+  // Shared with voice-message tagging, see moderation-tags.js.
+  const { SEVERE, riskFlags } = modTags;
 
   // Folds the flat transcript store into conversations, newest activity first.
   // `store.data.transcripts` is newest-first and capped at 5000, so this is a
@@ -923,6 +909,56 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
       conversations: list.slice(0, 250).map(conversationMeta),
       matched: list.length,
     });
+  });
+
+  // Friend voice messages, newest first, with their transcript and triage
+  // tags. Audio is fetched per clip, only when the owner presses play.
+  router.get('/api/voice-notes', async (req, res) => {
+    try {
+      const q = String(req.query.q || '').toLowerCase().trim();
+      const all = await store.listVoiceNotes(500);
+      let list = all;
+      if (req.query.flagged === '1') list = list.filter((n) => n.tags && n.tags.flags && n.tags.flags.length);
+      if (q) {
+        list = list.filter((n) => [n.fromName, n.toName, n.from, n.to, n.transcript,
+          ...((n.tags && n.tags.topics) || []), ...((n.tags && n.tags.flags) || [])]
+          .some((v) => String(v || '').toLowerCase().includes(q)));
+      }
+      const flagged = all.filter((n) => n.tags && n.tags.flags && n.tags.flags.length).length;
+      const severe = (n) => ((n.tags && n.tags.flags) || []).some((f) => SEVERE.has(f));
+      if (req.query.sort === 'risk') list = list.slice().sort((a, b) => (severe(b) - severe(a)) || (b.ts - a.ts));
+      res.json({
+        total: all.length,
+        flagged,
+        matched: list.length,
+        ai: modTags.aiConfigured(),
+        notes: list.slice(0, 200).map((n) => ({ ...n, severe: severe(n) })),
+      });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  const listenLog = new Map(); // id -> ts, so replays and range requests log once
+  router.get('/api/voice-notes/:id/audio', async (req, res) => {
+    const id = String(req.params.id || '');
+    if (!/^v[a-f0-9]{24}$/.test(id)) return res.status(404).json({ error: 'not found' });
+    try {
+      const rec = await store.getVoiceNote(id);
+      if (!rec) return res.status(404).json({ error: 'not found' });
+      // Listening to someone's voice message is logged, like any other
+      // moderation action.
+      const last = listenLog.get(id) || 0;
+      if (Date.now() - last > 10 * 60000) {
+        listenLog.set(id, Date.now());
+        store.audit('voice_listen', reqIp(req), id);
+      }
+      res.setHeader('Content-Type', rec.mime || 'audio/webm');
+      res.setHeader('Content-Length', rec.bytes.length);
+      res.end(rec.bytes);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
   });
 
   // Talk time per person, re-cut to a range: all | today | 7d | 30d.

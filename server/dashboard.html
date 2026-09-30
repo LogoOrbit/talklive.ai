@@ -501,6 +501,9 @@ th.sortable .ar{opacity:.5;font-size:.7rem}
   .hrow{grid-template-columns:minmax(70px,105px) 1fr 48px}
   .msg .bubble{max-width:92%}
 }
+.vnote audio{display:block;width:100%;max-width:420px;height:36px;margin:8px 0 6px}
+.vnote .vtags{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0 6px}
+.vnote.vsev{border-left:3px solid var(--crit)}
 </style>
 </head>
 <body>
@@ -800,7 +803,7 @@ function rankedBars(el,entries){
    fourteen peers in a row. Shortcut keys 1-9 follow this order. */
 const GROUPS=[
   ['Monitor',[['overview','Overview','📊'],['live','Live','🟢'],['activity','Activity','📅'],['experience','Experience','🩺'],['ai','AI Agent','🤖']]],
-  ['Moderation',[['reports','Reports','🚩'],['chats','Chats','💬'],['warnings','Warnings','⚠️'],['bans','Bans','⛔']]],
+  ['Moderation',[['reports','Reports','🚩'],['chats','Chats','💬'],['voicenotes','Voice notes','🎙️'],['warnings','Warnings','⚠️'],['bans','Bans','⛔']]],
   ['People',[['audience','Audience','⚧'],['accounts','Accounts','👤'],['talktime','Talk time','⏱️'],['feedback','Feedback','⭐']]],
   ['Business',[['revenue','Revenue','💎']]],
   ['System',[['errors','Errors','🐛'],['audit','Audit log','🧾'],['settings','Settings','🛠️']]]
@@ -1006,6 +1009,8 @@ async function load(force){
     /* Reading a transcript is the one view where a repaint is destructive:
        it would reload the thread and throw away where you had scrolled to. */
     if(tab==='chats'&&chatOpen)return;
+    /* Nor while a voice message is playing: the repaint would cut it off. */
+    if(tab==='voicenotes'&&[...document.querySelectorAll('#main audio')].some(a=>!a.paused))return;
     const busy=overlayEl||(document.activeElement&&/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName));
     if(busy&&Date.now()-lastLoadTs<60000)return;
   }
@@ -1023,6 +1028,7 @@ async function load(force){
     else if(tab==='bans')await viewBans();
     else if(tab==='warnings')await viewWarnings();
     else if(tab==='chats')await viewChats();
+    else if(tab==='voicenotes')await viewVoiceNotes();
     else if(tab==='accounts')await viewAccounts();
     else if(tab==='talktime')await viewTalkTime();
     else if(tab==='revenue')await viewRevenue();
@@ -2540,6 +2546,56 @@ async function viewErrors(){
   if(cb)cb.onclick=async()=>{if(confirm('Clear every error record?')){await post('errors/dismiss',{all:true});load();}};
 }
 window.dismissError=async(id)=>{try{await post('errors/dismiss',{id});toast('Error dismissed','If it happens again it comes straight back.');load();}catch(e){toast('Could not dismiss',e.message,'bad');}};
+
+let vnQ='',vnFlagged=false,vnSort='recent';
+function vnDur(ms){const s=Math.round((ms||0)/1000);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
+async function viewVoiceNotes(){
+  const params=new URLSearchParams();
+  if(vnQ)params.set('q',vnQ);
+  if(vnFlagged)params.set('flagged','1');
+  if(vnSort!=='recent')params.set('sort',vnSort);
+  const qs=params.toString();
+  const r=await vapi('voice-notes'+(qs?'?'+qs:''));
+  const note=n=>{
+    const t=n.tags||{};
+    const flags=(t.flags||[]).map(f=>`<span class="pill ${['minor','sexual','abuse'].includes(f)?'crit':'warn'}">⚑ ${esc(f)}</span>`).join(' ');
+    const topics=(t.topics||[]).map(x=>`<span class="pill info">${esc(x)}</span>`).join(' ');
+    const src=t.source==='ai'?'AI tags':t.source==='keywords'?'keyword tags':'';
+    return `<div class="fmsg vnote${n.severe?' vsev':''}">
+      <div class="top"><span><b>${esc(n.fromName||n.from)}</b> → <b>${esc(n.toName||n.to||'friend')}</b> · ${vnDur(n.ms)}</span><span>${ago(n.ts)} · ${fmtTs(n.ts)}</span></div>
+      <audio controls preload="none" src="/owner/api/voice-notes/${encodeURIComponent(n.id)}/audio"></audio>
+      ${flags||topics?`<div class="vtags">${flags} ${topics}${src?` <span class="muted" style="font-size:.72rem">${src}</span>`:''}</div>`:''}
+      ${t.summary?`<div class="txt"><b>Summary:</b> ${esc(t.summary)}</div>`:''}
+      <div class="txt ${n.transcript?'':'muted'}">${n.transcript?'“'+esc(n.transcript)+'”':'No transcript: recorded on a phone or in a browser without speech recognition. Listen to review.'}</div>
+    </div>`;
+  };
+  $('#main').innerHTML=`<div class="card anim" style="margin-top:0">
+  <h2>🎙️ Voice notes <span class="sub">${num(r.matched)} shown · ${num(r.total)} stored · ${num(r.flagged)} flagged · friends only, unsent ones are deleted${r.ai?' · AI tagging on':' · keyword tagging (set ANTHROPIC_API_KEY for AI tags)'}</span></h2>
+  <div class="searchbar">
+    <input id="vnQ" placeholder="Search by username, topic, flag or words said…" value="${esc(vnQ)}">
+    <button class="btn" id="vnQBtn">Search</button>
+  </div>
+  <div class="tbar">
+    <div class="seg">
+      <button data-vs="recent" class="${vnSort==='recent'?'on':''}">Recent</button>
+      <button data-vs="risk" class="${vnSort==='risk'?'on':''}">Needs review</button>
+    </div>
+    <div class="seg"><button id="vnFlagBtn" class="${vnFlagged?'on':''}">⚑ Flagged only (${num(r.flagged)})</button></div>
+    ${vnQ?'<button class="lnk" id="vnClear">Clear search</button>':''}
+  </div>
+  <div class="feed">${r.notes.map(note).join('')||`<div class="muted">${vnQ||vnFlagged?'No voice notes match.':'No voice notes yet.'}</div>`}</div>
+  </div>`;
+  const go=()=>{vnQ=$('#vnQ').value.trim();load();};
+  $('#vnQBtn').onclick=go;
+  $('#vnQ').addEventListener('keydown',e=>{if(e.key==='Enter')go();});
+  document.querySelectorAll('[data-vs]').forEach(b=>b.onclick=()=>{vnSort=b.dataset.vs;load();});
+  $('#vnFlagBtn').onclick=()=>{vnFlagged=!vnFlagged;load();};
+  const cl=$('#vnClear');if(cl)cl.onclick=()=>{vnQ='';load();};
+  /* One clip at a time. */
+  document.querySelectorAll('#main audio').forEach(a=>a.addEventListener('play',()=>{
+    document.querySelectorAll('#main audio').forEach(o=>{if(o!==a)o.pause();});
+  }));
+}
 
 let fbQ='';
 async function viewFeedback(){

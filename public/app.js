@@ -5632,7 +5632,7 @@ function emitVoiceNote(id) {
   repaintChat(entry.toClientId);
   entry.blob.arrayBuffer().then((audio) => {
     socket.timeout(45000).emit('friend-voice-note', {
-      toClientId: entry.toClientId, id, mime: entry.mime, ms: entry.ms, audio,
+      toClientId: entry.toClientId, id, mime: entry.mime, ms: entry.ms, audio, transcript: entry.transcript,
     }, (err, res) => {
       if (!err && res && res.ok) {
         settleVoiceNote(id, res.voice);
@@ -5661,7 +5661,7 @@ function emitVoiceNote(id) {
   });
 }
 
-function sendVoiceNote({ blob, mime, ms }) {
+function sendVoiceNote({ blob, mime, ms, transcript }) {
   const toClientId = activeFriendChatId;
   if (!toClientId || !isFriendId(toClientId)) return;
   const id = newFriendMsgId();
@@ -5669,7 +5669,7 @@ function sendVoiceNote({ blob, mime, ms }) {
   const cache = friendChatCache.get(toClientId) || [];
   cache.push({ from: getClientId(), text: '', ts: Date.now(), id, voice: { id: null, ms, mime }, pending: true });
   friendChatCache.set(toClientId, cache);
-  voiceOutbox.set(id, { toClientId, blob, mime, ms });
+  voiceOutbox.set(id, { toClientId, blob, mime, ms, transcript: transcript || '' });
   noteLastMessage(toClientId, { id, mine: true, text: '', voice: true, ts: Date.now() });
   renderFriendChatMessages({ toBottom: true });
   renderFriendsList();

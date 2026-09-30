@@ -32,6 +32,43 @@
   var ICON_SEND = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M3.4 20.4 21 12 3.4 3.6 3.4 10l12.6 2-12.6 2z"/></svg>';
   var ICON_X = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M18.3 5.7 12 12l6.3 6.3-1.4 1.4L10.6 13.4 4.3 19.7l-1.4-1.4L9.2 12 2.9 5.7l1.4-1.4 6.3 6.3 6.3-6.3z"/></svg>';
 
+  // Speech-to-text alongside the recording, for moderation tags. Desktop only:
+  // on phones the recognizer competes with the recorder for the microphone
+  // (and beeps), so a phone's voice message simply has no transcript.
+  function transcriber() {
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '')) return null;
+    var parts = [];
+    var sr;
+    try {
+      sr = new SR();
+      sr.continuous = true;
+      sr.interimResults = false;
+      sr.lang = document.documentElement.lang || navigator.language || 'en-US';
+      sr.onresult = function (e) {
+        for (var i = e.resultIndex; i < e.results.length; i++) {
+          if (e.results[i].isFinal) parts.push(e.results[i][0].transcript);
+        }
+      };
+      sr.onerror = function () { /* no transcript is fine */ };
+      sr.start();
+    } catch (_) { return null; }
+    return {
+      // Resolves with whatever was recognised, a moment after the recording
+      // stops (the last phrase is finalised on stop).
+      finish: function () {
+        return new Promise(function (resolve) {
+          var done = false;
+          function out() { if (!done) { done = true; resolve(parts.join(' ').trim()); } }
+          sr.onend = out;
+          try { sr.stop(); } catch (_) { out(); }
+          setTimeout(out, 1200);
+        });
+      },
+      abort: function () { try { sr.abort(); } catch (_) { /* gone */ } },
+    };
+  }
+
   function supported() {
     return !!(window.MediaRecorder && navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
   }
@@ -167,6 +204,7 @@
     }
     function cleanup() {
       if (!rec) return;
+      if (rec.stt && !rec.keep) rec.stt.abort();
       clearInterval(rec.timer);
       rec.stream.getTracks().forEach(function (tr) { tr.stop(); });
       rec = null;
@@ -192,7 +230,7 @@
         } catch (_) {
           mr = new MediaRecorder(stream);
         }
-        rec = { mr: mr, stream: stream, chunks: [], started: Date.now(), timer: null, keep: false };
+        rec = { mr: mr, stream: stream, chunks: [], started: Date.now(), timer: null, keep: false, stt: transcriber() };
         var mine = rec;
         mr.addEventListener('dataavailable', function (e) { if (e.data && e.data.size) mine.chunks.push(e.data); });
         mr.addEventListener('stop', function () {
@@ -200,11 +238,14 @@
           var type = (mr.mimeType || mime || 'audio/webm').split(';')[0];
           var blob = new Blob(mine.chunks, { type: type });
           var keep = mine.keep;
+          var stt = mine.stt;
           if (rec === mine) cleanup();
-          if (!keep) return;
-          if (ms < 500 || blob.size < 200) return;
-          if (blob.size > MAX_BYTES) { if (opts.onError) opts.onError('too-long'); return; }
-          opts.onDone({ blob: blob, mime: type, ms: Math.min(ms, MAX_MS) });
+          if (!keep || ms < 500 || blob.size < 200) { if (stt) stt.abort(); return; }
+          if (blob.size > MAX_BYTES) { if (stt) stt.abort(); if (opts.onError) opts.onError('too-long'); return; }
+          var send = function (transcript) {
+            opts.onDone({ blob: blob, mime: type, ms: Math.min(ms, MAX_MS), transcript: transcript || '' });
+          };
+          if (stt) stt.finish().then(send); else send('');
         });
         mr.start(250);
         time.textContent = '0:00';

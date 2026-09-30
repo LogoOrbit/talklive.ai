@@ -23,6 +23,7 @@ const NICK_ERRORS = {
   nickTooLong: `Display name can be at most ${Nick.MAX_LEN} characters.`,
 };
 const store = require('./store');
+const modTags = require('./moderation-tags');
 const compress = require('./compress');
 const billing = require('./billing');
 const push = require('./push');
@@ -2380,7 +2381,10 @@ function readVoicePayload(raw) {
   if (!VOICE_MIMES.has(mime)) return null;
   const ms = Math.round(Number(raw.ms));
   if (!Number.isFinite(ms) || ms < 300 || ms > VOICE_MAX_MS + 1500) return null;
-  return { bytes, mime, ms: Math.min(ms, VOICE_MAX_MS), id: cleanMsgId(raw.id), replyTo: cleanMsgId(raw.replyTo) };
+  // Speech-to-text from the sender's browser, where it has one: what the
+  // moderation tags are made from. Optional, and only ever a hint.
+  const transcript = typeof raw.transcript === 'string' ? raw.transcript.replace(/\s+/g, ' ').trim().slice(0, 2000) : '';
+  return { bytes, mime, ms: Math.min(ms, VOICE_MAX_MS), id: cleanMsgId(raw.id), replyTo: cleanMsgId(raw.replyTo), transcript };
 }
 
 // Stores a direct message that has passed every check, and delivers it: the
@@ -5468,9 +5472,13 @@ io.on('connection', (socket) => {
     }
     if (!socialRateOk('friend-voice-note', me.clientId, 5, 60000)) return reply({ ok: false, reason: 'rate' });
     const noteId = 'v' + crypto.randomBytes(12).toString('hex');
+    const friendInfo = (friends.get(me.clientId) || new Map()).get(toClientId);
     try {
       await store.saveVoiceNote({
-        id: noteId, pair: key, from: me.clientId, mime: note.mime, durationMs: note.ms, bytes: note.bytes,
+        id: noteId, pair: key, from: me.clientId, fromName: me.username,
+        to: toClientId, toName: friendInfo ? friendInfo.username : '',
+        mime: note.mime, durationMs: note.ms, bytes: note.bytes,
+        transcript: note.transcript, tags: modTags.quickTags(note.transcript),
       });
     } catch (err) {
       console.error('[voice-note] store failed:', err.message);
@@ -5487,6 +5495,12 @@ io.on('connection', (socket) => {
       text: '', gif: null, replyTo: note.replyTo, voice: { id: noteId, ms: note.ms, mime: note.mime },
     }, note.id);
     reply({ ok: true, id: msg.id, ts: msg.ts, voice: msg.voice });
+    // Better tags for the owner's review queue, off the request path.
+    if (note.transcript && modTags.aiConfigured()) {
+      modTags.tagTranscript(note.transcript)
+        .then((tags) => store.setVoiceNoteTags(noteId, tags))
+        .catch((err) => console.error('[voice-note] tagging failed:', err.message));
+    }
   });
 
   // Asking a friend to turn voice messages on. Answered by that friend with
