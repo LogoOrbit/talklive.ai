@@ -695,6 +695,21 @@ async function connectPg(atBoot) {
   writeMirror();
   console.log('[store] using Postgres backend (DATABASE_URL) -', backendStatus.host,
     '- mirrored to', DATA_FILE);
+
+  // A reconnect that swapped in the database copy leaves index.js holding the
+  // accounts and social graph it loaded at boot from the other copy, and the
+  // next save writes those back over what was just loaded. On 2026-10-01 that
+  // replaced 775 people's friends with the 4 made during the outage. Every
+  // in-memory view is built at boot, so boot again: exit non-zero and Fly
+  // restarts the machine, which then loads the database copy everywhere.
+  if (!atBoot && verdict !== 'push-local') {
+    restarting = true;
+    if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+    if (pgTimer) { clearTimeout(pgTimer); pgTimer = null; }
+    console.error('[store] the database copy replaced the one being served -',
+      'restarting so the whole app reloads from it');
+    setImmediate(() => process.exit(1));
+  }
 }
 
 // --- Wipe guard ---------------------------------------------------------------
@@ -830,10 +845,23 @@ function persistPgThrottled() {
   pgTimer.unref?.();
 }
 
+// Nothing is written until the store has loaded. Until then `data` is the
+// empty default document, and code that runs during a slow boot (timers,
+// module setup) used to save it over the mirror - on 2026-10-01 that left the
+// volume holding an empty store while Postgres hung. Changes made before the
+// load are discarded by the load anyway.
+let storeLoaded = false;
+let saveAfterLoad = false;
+// Set when this process is about to exit to reload from the database; nothing
+// it holds in memory may be written after that.
+let restarting = false;
+
 function persistNow(throttlePg) {
   // Everything is being written now, so a debounced save already queued has
   // nothing left to do.
   if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+  if (restarting) return;
+  if (!storeLoaded) { saveAfterLoad = true; return; }
   if (!throttlePg && pgTimer) { clearTimeout(pgTimer); pgTimer = null; }
   // The load failed, so `data` is not the real document. Writing it is exactly
   // the destructive act this guard exists to prevent.
@@ -2296,6 +2324,117 @@ function audit(action, ip, detail) {
   save();
 }
 
+// --- One-off restore: friends and friend chats lost on 2026-10-01 ------------
+//
+// After the Supabase outage the reconnect bug above wrote a near-empty social
+// graph over the real one. The volume's snapshot from 10:58 UTC, taken just
+// before an empty boot overwrote the mirror, is the last copy that has it.
+// Merge it into the current graph once - entries made since are kept, so
+// nobody loses a friend added after the outage - and record that it ran so
+// later boots never merge again (re-merging would resurrect unfriends and
+// deleted messages). The source is copied out of the rotating backups first,
+// because every boot pushes the oldest backup out.
+const RESTORE_ID = 'social-2026-10-01';
+const RESTORE_FROM = path.join(BACKUP_DIR, 'owner-data.2026-10-01T10-58-47-307Z.json');
+const RESTORE_KEEP = path.join(DATA_DIR, 'restore-source-social-2026-10-01.json');
+
+const MAX_RESTORED_CHAT = 200;
+const MAX_RESTORED_HISTORY = 20;
+const MAX_RESTORED_NOTIFICATIONS = 50;
+
+// Pure: the current graph wins wherever both have an entry.
+function mergeSocial(cur, old) {
+  cur = cur || {};
+  old = old || {};
+  const out = { ...old, ...cur };
+  const obj = (o) => (o && typeof o === 'object' && !Array.isArray(o) ? o : {});
+  const mapOfMaps = (k) => {
+    const res = { ...obj(old[k]) };
+    for (const [id, m] of Object.entries(obj(cur[k]))) res[id] = { ...obj(res[id]), ...obj(m) };
+    return res;
+  };
+  const latest = (k) => {
+    const res = { ...obj(old[k]) };
+    for (const [id, v] of Object.entries(obj(cur[k]))) {
+      res[id] = typeof res[id] === 'number' && typeof v === 'number' ? Math.max(res[id], v) : v;
+    }
+    return res;
+  };
+  const curWins = (k) => ({ ...obj(old[k]), ...obj(cur[k]) });
+  const lists = (k, keyOf, cap) => {
+    const res = {};
+    for (const id of new Set([...Object.keys(obj(old[k])), ...Object.keys(obj(cur[k]))])) {
+      const seen = new Map();
+      for (const e of [...(obj(old[k])[id] || []), ...(obj(cur[k])[id] || [])]) {
+        if (e && typeof e === 'object') seen.set(keyOf(e), e); // later (current) wins
+      }
+      const merged = [...seen.values()].sort((a, b) => (Number(a.ts) || 0) - (Number(b.ts) || 0));
+      if (merged.length) res[id] = merged.slice(-cap);
+    }
+    return res;
+  };
+  const sets = (k) => {
+    const res = {};
+    for (const id of new Set([...Object.keys(obj(old[k])), ...Object.keys(obj(cur[k]))])) {
+      const u = [...new Set([...(obj(old[k])[id] || []), ...(obj(cur[k])[id] || [])])];
+      if (u.length) res[id] = u;
+    }
+    return res;
+  };
+
+  out.friends = mapOfMaps('friends');
+  out.friendChats = lists('friendChats', (m) => m.id || `${m.ts}|${m.from}|${m.text}`, MAX_RESTORED_CHAT);
+  out.blocks = sets('blocks');
+  out.chatHistory = lists('chatHistory', (e) => e.clientId, MAX_RESTORED_HISTORY);
+  out.friendRequests = mapOfMaps('friendRequests');
+  out.sentRequests = mapOfMaps('sentRequests');
+  out.notifications = lists('notifications', (n) => n.id || JSON.stringify(n), MAX_RESTORED_NOTIFICATIONS);
+  out.lastSeen = latest('lastSeen');
+  out.blockMeta = mapOfMaps('blockMeta');
+  out.chatClears = latest('chatClears');
+  out.declinedRequests = latest('declinedRequests');
+  out.mutedChats = sets('mutedChats');
+  out.privacy = curWins('privacy');
+  out.voiceConsent = curWins('voiceConsent');
+  // A request between two people who are friends now is already answered.
+  for (const k of ['friendRequests', 'sentRequests']) {
+    for (const [cid, m] of Object.entries(out[k])) {
+      for (const other of Object.keys(m)) {
+        if (out.friends[cid] && out.friends[cid][other]) delete m[other];
+      }
+      if (!Object.keys(m).length) delete out[k][cid];
+    }
+  }
+  return out;
+}
+
+function restoreSocialOnce() {
+  if (persistBlocked || (pgPool && pgUnreachable && !runningOnMirror)) return;
+  if (data.restores && data.restores[RESTORE_ID]) return;
+  let src = null;
+  let srcFile = null;
+  for (const f of [RESTORE_KEEP, RESTORE_FROM]) {
+    try { src = JSON.parse(fs.readFileSync(f, 'utf8')); srcFile = f; break; } catch (_) { /* next */ }
+  }
+  if (!src) return;
+  try {
+    if (srcFile !== RESTORE_KEEP) fs.copyFileSync(srcFile, RESTORE_KEEP);
+  } catch (err) {
+    console.error('[store] restore: could not keep a copy of the source:', err.message);
+  }
+  if (lineageOf(src) && lineageOf(data) && lineageOf(src) !== lineageOf(data)) {
+    console.error('[store] restore: the snapshot belongs to a different store history - skipped');
+    return;
+  }
+  const before = census(data);
+  data.social = mergeSocial(data.social, src.social);
+  data.restores = { ...(data.restores || {}), [RESTORE_ID]: { at: Date.now(), from: path.basename(RESTORE_FROM), rev: revOf(src) } };
+  const after = census(data);
+  console.log('[store] restored the social graph from', path.basename(RESTORE_FROM),
+    `- people with friends ${before.friends} -> ${after.friends}, friend chats ${before.chats} -> ${after.chats}`);
+  save();
+}
+
 // Resolves once data is loaded; the server waits on this before listening so
 // requests never see a half-initialized store.
 const ready = (async () => {
@@ -2353,8 +2492,11 @@ const ready = (async () => {
   } else {
     loadFile();
   }
+  storeLoaded = true;
+  restoreSocialOnce();
   // The baseline the wipe guard compares the first save against.
   lastCensus = census(data);
+  if (saveAfterLoad) save();
 })();
 
 // Reconnect attempts, backing off to a minute. connectPg decides which copy
