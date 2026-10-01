@@ -234,6 +234,7 @@
     addFriendBtn.classList.toggle('hidden', !connected);
     // Mini-games need a live partner, same as Report and Add friend.
     if (gameBtn) gameBtn.classList.toggle('hidden', !connected);
+    if (games) games.sync();
     // While connected the header shows who you're talking to (name + country
     // + flag); idle shows the online counter next to the TalkLive brand.
     topDefault.classList.toggle('hidden', connected);
@@ -1221,6 +1222,15 @@
       if (!partnerHere || !games) return;
       initAudio();
       games.open(); // the menu closes itself on click
+    });
+  }
+  // The same, one tap from the message box rather than inside a menu.
+  var composerGameBtn = $('composerGameBtn');
+  if (composerGameBtn) {
+    composerGameBtn.addEventListener('click', function () {
+      if (!partnerHere || !games) return;
+      initAudio();
+      games.open();
     });
   }
 

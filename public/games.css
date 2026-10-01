@@ -504,3 +504,90 @@
   gap: 10px;
 }
 .game-invite-actions .btn { flex: 1; }
+
+/* --- In-conversation "challenge them" card --------------------------------
+   The games' front door. One compact row in the live call / chat: what it is,
+   then one tap per game straight to an invite. */
+.game-play-card {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 10px;
+  width: min(100%, 460px);
+  margin: 10px auto 4px;
+  padding: 10px 34px 10px 12px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 22%, transparent), color-mix(in srgb, var(--accent-2, var(--accent)) 16%, transparent));
+  border: 1px solid color-mix(in srgb, var(--accent-2, var(--accent)) 45%, transparent);
+  box-shadow: 0 6px 22px color-mix(in srgb, var(--accent) 22%, transparent);
+  color: var(--text);
+  animation: gamePlayIn 0.45s ease-out both;
+  box-sizing: border-box;
+}
+.game-play-card.hidden { display: none; }
+.game-play-icon { font-size: 22px; line-height: 1; animation: gamePlayBob 2.4s ease-in-out infinite; }
+.game-play-text { font-size: 14px; font-weight: 700; text-align: center; min-width: 0; }
+.game-play-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.game-play-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2, var(--accent)));
+  color: #fff;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--accent) 40%, transparent);
+  transition: transform 0.12s ease, filter 0.12s ease;
+}
+.game-play-btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.game-play-btn:active { transform: scale(0.96); }
+.game-play-dismiss {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted, var(--text));
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.game-play-dismiss:hover { color: var(--text); background: color-mix(in srgb, var(--text) 10%, transparent); }
+@keyframes gamePlayIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.97); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes gamePlayBob {
+  0%, 100% { transform: rotate(-8deg); }
+  50% { transform: rotate(8deg) scale(1.08); }
+}
+
+/* The top-bar game button: coloured like an offer, not a grey utility, and
+   it keeps its word on phones too. */
+#gameBtn.nav-btn {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2, var(--accent)));
+  color: #fff;
+  border-color: transparent;
+}
+#gameBtn.nav-btn svg rect,
+#gameBtn.nav-btn svg circle { fill: var(--accent); }
+@media (max-width: 860px) and (min-width: 400px) {
+  #gameBtn.nav-btn-tool { width: auto; padding: 0 12px 0 10px; }
+  #gameBtn.nav-btn-tool .nav-btn-label { display: inline; }
+}
+.composer-game-btn { font-size: 18px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .game-play-card, .game-play-icon { animation: none; }
+}

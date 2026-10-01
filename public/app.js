@@ -6608,6 +6608,7 @@ function setCallState(state) {
     if (connected) scheduleGameNudge();
     else stopGameNudge();
   }
+  syncGamePlayCard();
   if (typeof syncChatHeader === 'function') syncChatHeader();
   syncWakeLock();
 }
@@ -8663,6 +8664,8 @@ const games = window.TalkLiveGames ? window.TalkLiveGames.attach({
 // Thin wrappers so the rest of app.js reads the same as it did before the
 // games moved into their own file.
 function resetGame() { if (games) games.reset(); }
+// Can run before `games` exists (early call-state changes), hence the guard.
+function syncGamePlayCard() { try { if (games) games.sync(); } catch (_) { /* not attached yet */ } }
 function markGamePartnerGone() { if (games) games.partnerGone(); }
 function attemptCloseGame() { return games ? games.attemptClose() : true; }
 function gameIsInProgress() { return !!games && (games.isPlaying() || games.isNegotiating()); }
@@ -9826,6 +9829,7 @@ function revealPartner() {
   }
 
   reactionBar.classList.remove('hidden');
+  syncGamePlayCard();
   if (!callStartedAt) startCallTimer();
 }
 

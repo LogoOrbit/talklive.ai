@@ -56,7 +56,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 <link rel="preload" as="font" type="font/woff2" href="/fonts/plus-jakarta-sans-latin.woff2?v=20260922type" crossorigin />
 <link rel="stylesheet" href="style.css?v=20260927b" />
 <link rel="stylesheet" href="chat-extras.css?v=20261001mic" />
-<link rel="stylesheet" href="games.css?v=20260916settings" />
+<link rel="stylesheet" href="games.css?v=20261001play" />
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
      side-panel shell, Settings, Friends/History and the account dialog, and it
      does so with its own `tl-` class names so nothing above can reach it. -->
@@ -2014,6 +2014,19 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
         </div>
         <div id="reactionOverlay" class="reaction-overlay" aria-hidden="true"></div>
 
+        <!-- The games' front door: offered in the conversation itself, one tap
+             from an invite. The top-bar button alone went unnoticed. Shown by
+             games.js while a partner is here and no game is afoot. -->
+        <div id="gamePlayCard" class="game-play-card hidden" role="group" data-i18n-aria="playGames" aria-label="Play a game">
+          <span class="game-play-icon" aria-hidden="true">🎮</span>
+          <span id="gamePlayText" class="game-play-text">Pick a game to challenge them!</span>
+          <span class="game-play-actions">
+            <button type="button" class="game-play-btn" data-game="ttt"><span aria-hidden="true">✕◯</span> <span data-i18n="gameTtt">Tic Tac Toe</span></button>
+            <button type="button" class="game-play-btn" data-game="dab"><span aria-hidden="true">⊡</span> <span data-i18n="gameDab">Dots &amp; Boxes</span></button>
+          </span>
+          <button type="button" id="gamePlayDismiss" class="game-play-dismiss" data-i18n-aria="close" aria-label="Close">&times;</button>
+        </div>
+
         <!-- ===============================================================
              THE CONTROLS. One row, four circles of the same size, each with
              its word underneath. They are the four things you do to a call
@@ -2692,9 +2705,9 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   <script defer src="chat-extras.js?v=20260930vn"></script>
   <script defer src="voice-notes.js?v=20261001mic"></script>
   <script defer src="whats-new.js?v=20260930wn"></script>
-  <script defer src="games.js?v=20260924qa"></script>
+  <script defer src="games.js?v=20261001play"></script>
   <script defer src="nickname-rules.js?v=20260924nick"></script>
-  <script defer src="app.js?v=20261001mic"></script>
+  <script defer src="app.js?v=20261001play"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

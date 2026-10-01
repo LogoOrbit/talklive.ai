@@ -36,7 +36,7 @@
 </script>
 <link rel="stylesheet" href="/chat.css?v=20260928aud" />
 <link rel="stylesheet" href="/chat-extras.css?v=20260925dm" />
-<link rel="stylesheet" href="/games.css?v=20260916navbar" />
+<link rel="stylesheet" href="/games.css?v=20261001play" />
 <link rel="stylesheet" href="/ui.css?v=20260927b" />
 <!-- The top bar, shared with / and /call: one button language, one radius,
      one focus ring on every screen of the product. -->
@@ -309,6 +309,18 @@
         <div id="viewLive" class="chat-view chat-view-live hidden" aria-hidden="true">
           <div id="msgs" class="msgs" aria-live="polite"></div>
           <p id="typing" class="typing hidden"><span data-i18n="strangerTyping">Stranger is typing</span><span class="typing-dots" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span></p>
+          <!-- The games' front door: offered in the conversation itself, one tap
+               from an invite. The top-bar button alone went unnoticed. Shown by
+               games.js while a partner is here and no game is afoot. -->
+          <div id="gamePlayCard" class="game-play-card hidden" role="group" data-i18n-aria="playGames" aria-label="Play a game">
+            <span class="game-play-icon" aria-hidden="true">🎮</span>
+            <span id="gamePlayText" class="game-play-text">Pick a game to challenge them!</span>
+            <span class="game-play-actions">
+              <button type="button" class="game-play-btn" data-game="ttt"><span aria-hidden="true">✕◯</span> <span data-i18n="gameTtt">Tic Tac Toe</span></button>
+              <button type="button" class="game-play-btn" data-game="dab"><span aria-hidden="true">⊡</span> <span data-i18n="gameDab">Dots &amp; Boxes</span></button>
+            </span>
+            <button type="button" id="gamePlayDismiss" class="game-play-dismiss" data-i18n-aria="close" aria-label="Close">&times;</button>
+          </div>
           <!-- No ad slot here, deliberately.
                A 468x60 / 320x50 strip used to sit between the messages and the
                composer during a live text chat. It was the lowest-CPM shape in
@@ -335,6 +347,7 @@
         <div class="composer-field">
           <input id="msgInput" type="text" maxlength="1000" data-i18n-placeholder="typeMessage" data-i18n-aria="typeMessage" placeholder="Type a message…" autocomplete="off" />
           <button type="button" id="icebreakBtn" class="cx-btn icebreak-btn" data-i18n-aria="icebreakIdeas" aria-label="Question ideas">💡</button>
+          <button type="button" id="composerGameBtn" class="cx-btn composer-game-btn" data-i18n-aria="playGames" data-i18n-title="playGames" aria-label="Play a game" title="Play a game">🎮</button>
         </div>
         <button type="submit" class="send-btn" data-i18n-aria="send" aria-label="Send">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.4 20.4 22 12 3.4 3.6 3.4 10l13 2-13 2z"/></svg>
@@ -792,9 +805,9 @@
   <script defer src="/social-kit.js?v=20260924id"></script>
   <script defer src="/error-reporter.js?v=20260928err"></script>
   <script defer src="/chat-extras.js?v=20260924tidy"></script>
-  <script defer src="/games.js?v=20260924qa"></script>
+  <script defer src="/games.js?v=20261001play"></script>
   <script defer src="/icebreakers.js?v=20260923ice"></script>
-  <script defer src="/chat.js?v=20260928err"></script>
+  <script defer src="/chat.js?v=20261001play"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

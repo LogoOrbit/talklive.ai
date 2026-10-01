@@ -60,6 +60,13 @@
     const gameInviteText = document.getElementById('gameInviteText');
     const gameInviteAcceptBtn = document.getElementById('gameInviteAcceptBtn');
     const gameInviteDeclineBtn = document.getElementById('gameInviteDeclineBtn');
+    // The in-call "challenge them" card: the games' front door. A button in
+    // the top bar went unnoticed by nearly everyone, so the offer sits in the
+    // conversation itself, one tap from an invite. Optional per page.
+    const playCard = document.getElementById('gamePlayCard');
+    const playCardText = document.getElementById('gamePlayText');
+    const playCardDismiss = document.getElementById('gamePlayDismiss');
+    let playCardDismissed = false; // closed for this partner
 
 
     // All 8 ways to win on a 3x3 board.
@@ -506,6 +513,27 @@
         gameBtnBadge.classList.remove('is-move');
       }
       tttWasMyTurn = mine;
+      syncPlayCard();
+    }
+
+    // Shown while there is a partner and nothing game-related is going on.
+    function syncPlayCard() {
+      if (!playCard) return;
+      const show = opts.isConnected() && tttStage === 'idle' && !playCardDismissed
+        && gameOverlay.classList.contains('hidden');
+      if (show && playCardText) playCardText.textContent = t('gamePickPrompt', { name: opts.partnerName() || t('chat') });
+      playCard.classList.toggle('hidden', !show);
+    }
+
+    // Send an invite straight away and show the "waiting for them" screen.
+    function sendInvite(game) {
+      if (!opts.isConnected() || tttStage !== 'idle') return;
+      inviteGame = game === 'dab' ? 'dab' : 'ttt';
+      tttStage = 'inviting';
+      sound('invite');
+      opts.socket.emit('game', { type: 'invite', game: inviteGame });
+      openGameOverlay();
+      updateGameUI();
     }
 
     let tttOverAnnounced = false;
@@ -548,11 +576,13 @@
       gameOverlay.classList.remove('hidden');
       gameBtnBadge.classList.add('hidden');
       gameBtnBadge.classList.remove('is-move', 'is-invite');
+      syncPlayCard();
     }
     function closeGameOverlay() {
       gameOverlay.classList.add('hidden');
       stopDabLoop();
       opts.closeModal(tttEndConfirmModal);
+      syncPlayCard();
     }
     function resetGame() {
       hideInvitePopup();
@@ -674,13 +704,21 @@
     // Picking a game from the picker sends the invite for that game.
     gamePicker.addEventListener('click', (e) => {
       const card = e.target.closest('.game-pick-card');
-      if (!card || !opts.isConnected() || tttStage !== 'idle') return;
-      inviteGame = card.dataset.game === 'dab' ? 'dab' : 'ttt';
-      tttStage = 'inviting';
-      sound('invite');
-      opts.socket.emit('game', { type: 'invite', game: inviteGame });
-      updateGameUI();
+      if (card) sendInvite(card.dataset.game);
     });
+    if (playCard) {
+      playCard.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-game]');
+        if (btn) sendInvite(btn.dataset.game);
+      });
+    }
+    if (playCardDismiss) {
+      playCardDismiss.addEventListener('click', (e) => {
+        e.stopPropagation();
+        playCardDismissed = true;
+        syncPlayCard();
+      });
+    }
     gameCancelBtn.addEventListener('click', () => {
       opts.socket.emit('game', { type: 'decline' });
       tttStage = 'idle';
@@ -763,7 +801,9 @@
 
     return {
       // Back to "no game", e.g. a new partner or the call ended.
-      reset: resetGame,
+      reset: () => { playCardDismissed = false; resetGame(); },
+      // The page's connection state changed: show or hide the play card.
+      sync: syncPlayCard,
       // The connection itself dropped mid-game (call hung up / partner left).
       partnerGone: markGamePartnerGone,
       partnerLeft: markGamePartnerLeft,
