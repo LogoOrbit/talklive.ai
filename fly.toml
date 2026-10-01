@@ -1,12 +1,14 @@
 # Must match the app created by `fly launch` - see `fly apps list`.
 app = 'talklive-ai'
 
-# Mumbai: the largest share of visitors is South Asia (India, Pakistan,
-# Bangladesh ~34%), with the Middle East and Egypt next, and the Supabase
-# database is in ap-south-1 (Mumbai) - so saves and boots stay in-region.
-# Moved from 'iad' on 2026-10-01 by .github/workflows/move-region.yml; the old
-# iad volume is kept, unattached, as a backup.
-primary_region = 'iad'
+# Singapore: the largest share of visitors is South Asia (India, Pakistan,
+# Bangladesh ~34%), and the Supabase database is in ap-south-1 (Mumbai).
+# Fly has no Mumbai region any more ('bom' is gone - Asia is sin, nrt, syd),
+# and sin is the closest to both: ~50-90ms to South Asia and ~60ms to the
+# database, against ~230ms and ~200ms from iad. Moved from 'iad' on
+# 2026-10-01 by .github/workflows/move-region.yml; the old iad volume is kept,
+# unattached, as a backup.
+primary_region = 'sin'
 
 # Shutdown writes the latest store to Postgres before exiting (see
 # SHUTDOWN_PG_WAIT_MS in server/store.js, 25s). The default 5s cut that short.
