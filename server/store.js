@@ -627,10 +627,13 @@ function preserveConflict(doc, reason) {
 // change nothing, because the server is already serving the mirror and the
 // retry loop owns reconciling the two copies.
 let bootAbandoned = false;
-// Long enough for a healthy boot from Fly (iad) to Supabase (ap-south-1): the
-// schema check plus reading a ~5MB document across that distance took over
-// 30s on 2026-10-01 and sent routine deploys onto the mirror.
-const PG_BOOT_TIMEOUT_MS = Number(process.env.PG_BOOT_TIMEOUT_MS) || 60000;
+// The server does not listen until this resolves, so every second here is a
+// second of outage on each deploy. A full connect from Fly (iad) to Supabase
+// (ap-south-1) with a ~5MB document can take a minute, and waiting 60s on
+// 2026-10-01 meant ~60s of downtime per deploy. The mirror on the volume is
+// written before Postgres on every save (single machine), so it is never
+// behind: boot on it quickly and let the background reconnect push it up.
+const PG_BOOT_TIMEOUT_MS = Number(process.env.PG_BOOT_TIMEOUT_MS) || 10000;
 
 async function connectPg(atBoot) {
   const giveUpIfAbandoned = () => {
