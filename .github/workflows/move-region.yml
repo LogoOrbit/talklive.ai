@@ -65,7 +65,26 @@ jobs:
             # proxy restarts a stopped machine within seconds (it did on the
             # first attempt). Turn that off for this machine first; the update
             # restarts it once, gracefully.
+            UPDATED=$(date -u +%Y-%m-%dT%H:%M:%SZ)
             flyctl machine update "$id" -a "$APP" --autostart=false --yes
+            # That restart boots on the volume copy and reconnects to Postgres
+            # in the background (30-40s from iad). Stopping before then leaves
+            # Postgres behind - the second attempt did exactly that and
+            # correctly aborted - so wait for the reconnect first.
+            SYNCED=""
+            for i in $(seq 1 60); do
+              if flyctl logs -a "$APP" -m "$id" --no-tail 2>/dev/null \
+                  | sed 's/\x1b\[[0-9;]*m//g' \
+                  | grep -E "both copies are in step again|using Postgres backend" \
+                  | awk -v t="$UPDATED" '$1 >= t { found = 1 } END { exit !found }'; then SYNCED=1; break; fi
+              sleep 5
+            done
+            if [ -z "$SYNCED" ]; then
+              echo "The machine did not reconnect to Postgres within 5 minutes - not stopping it."
+              flyctl machine update "$id" -a "$APP" --autostart=true --yes || true
+              exit 1
+            fi
+            echo "machine $id is connected to Postgres"
             # Only a confirmation logged after this point counts: earlier
             # restarts of the same machine logged the same line.
             SINCE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
