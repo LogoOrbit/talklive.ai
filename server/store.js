@@ -651,20 +651,26 @@ async function connectPg(atBoot) {
   const n = (o) => Object.keys(o || {}).length;
 
   backendStatus.seededFromFile = false;
+  // The version this call leaves in Postgres. While the app is serving the
+  // mirror it keeps saving during the awaits below, which moves `data` on, so
+  // checks must compare against what was sent, not against `data`.
+  let confirmedRev = 0;
 
   if (verdict === 'push-local') {
     if (atBoot) applyParsed(local);
     stampMeta();
+    const sent = JSON.stringify(data);
+    confirmedRev = revOf(data);
     await pgPool.query(
       'INSERT INTO owner_store (id, doc, updated_at) VALUES (1, $1, now()) ON CONFLICT (id) DO UPDATE SET doc = $1, updated_at = now()',
-      [JSON.stringify(data)]
+      [sent]
     );
     // Read it back: this is the one moment the data exists in a place nobody
     // has checked yet.
     const back = await pgPool.query('SELECT doc FROM owner_store WHERE id = 1');
     const got = back.rows[0] && back.rows[0].doc;
     giveUpIfAbandoned();
-    if (revOf(got) !== revOf(data)) throw new Error('wrote the store to Postgres but read back a different version');
+    if (revOf(got) !== confirmedRev) throw new Error('wrote the store to Postgres but read back a different version');
     const fresh = isEmptyDoc(pgDoc);
     backendStatus.seededFromFile = fresh;
     console.log('[store] ------------------------------------------------------------');
@@ -685,14 +691,16 @@ async function connectPg(atBoot) {
     applyParsed(pgDoc || {});
   }
 
-  pgConfirmedRev = revOf(data);
+  pgConfirmedRev = confirmedRev || revOf(data);
   pgUnreachable = false;
   runningOnMirror = false;
   pgConflict = false;
   backendStatus.mode = 'postgres';
   backendStatus.error = null;
-  // From here the mirror is exactly the database copy again.
+  // From here the mirror holds the database copy, plus any saves made while
+  // the push above was in flight; the next save sends those up.
   writeMirror();
+  if (revOf(data) !== pgConfirmedRev) save();
   console.log('[store] using Postgres backend (DATABASE_URL) -', backendStatus.host,
     '- mirrored to', DATA_FILE);
 
