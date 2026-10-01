@@ -61,6 +61,11 @@ jobs:
         run: |
           set -euo pipefail
           for id in ${{ steps.plan.outputs.old }}; do
+            # fly.toml has auto_start_machines = true, so with live traffic the
+            # proxy restarts a stopped machine within seconds (it did on the
+            # first attempt). Turn that off for this machine first; the update
+            # restarts it once, gracefully.
+            flyctl machine update "$id" -a "$APP" --autostart=false --yes
             # Only a confirmation logged after this point counts: earlier
             # restarts of the same machine logged the same line.
             SINCE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
@@ -71,10 +76,15 @@ jobs:
               sleep 3
             done
             echo "machine $id: ${STATE:-unknown}"
+            if [ "$STATE" != "stopped" ]; then
+              echo "The machine did not stay stopped - not touching it further."
+              flyctl machine update "$id" -a "$APP" --autostart=true --yes || true
+              exit 1
+            fi
             # The server logs this line once the store is in Postgres.
             FOUND=""
             for i in $(seq 1 10); do
-              if flyctl logs -a "$APP" -i "$id" --no-tail 2>/dev/null \
+              if flyctl logs -a "$APP" -m "$id" --no-tail 2>/dev/null \
                   | sed 's/\x1b\[[0-9;]*m//g' \
                   | grep "final save done" \
                   | awk -v t="$SINCE" '$1 >= t { found = 1 } END { exit !found }'; then FOUND=1; break; fi
@@ -82,8 +92,9 @@ jobs:
             done
             if [ -z "$FOUND" ]; then
               echo "Could not confirm the final save reached Postgres - restarting the old machine and stopping here."
-              flyctl logs -a "$APP" -i "$id" --no-tail | tail -30 || true
-              flyctl machine start "$id" -a "$APP"
+              flyctl logs -a "$APP" -m "$id" --no-tail | tail -30 || true
+              # Restores autostart and starts it again.
+              flyctl machine update "$id" -a "$APP" --autostart=true --yes
               exit 1
             fi
             echo "final save confirmed for $id"
