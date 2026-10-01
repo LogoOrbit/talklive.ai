@@ -264,7 +264,31 @@
       });
     }
 
-    mic.addEventListener('click', function () { if (!rec && opts.onMic) opts.onMic(); });
+    // Nobody found the mic, so it calls attention to itself when a chat opens:
+    // a pop and a few pulses, and until the first tap it keeps pulsing.
+    var USED_KEY = 'tl-vn-mic-used';
+    function micUsed() { try { return !!localStorage.getItem(USED_KEY); } catch (_) { return false; } }
+    var nudgeTimer = null;
+    function stopNudge() {
+      clearTimeout(nudgeTimer);
+      mic.classList.remove('vn-nudge', 'vn-nudge-loop');
+    }
+    function nudge() {
+      stopNudge();
+      // after the chat panel has slid in, or the pop is missed
+      nudgeTimer = setTimeout(function () {
+        if (mic.hidden || rec) return;
+        void mic.offsetWidth; // restart the animation
+        mic.classList.add('vn-nudge');
+        if (!micUsed()) mic.classList.add('vn-nudge-loop');
+      }, 350);
+    }
+
+    mic.addEventListener('click', function () {
+      stopNudge();
+      try { localStorage.setItem(USED_KEY, '1'); } catch (_) { /* storage blocked */ }
+      if (!rec && opts.onMic) opts.onMic();
+    });
     cancelBtn.addEventListener('click', function () { finish(false); });
     sendBtn.addEventListener('click', function () { finish(true); });
 
@@ -274,8 +298,9 @@
       recording: function () { return !!rec; },
       setVisible: function (on) {
         mic.hidden = !(on && supported());
-        if (!on) finish(false);
+        if (!on) { stopNudge(); finish(false); }
       },
+      nudge: nudge,
     };
   }
 

@@ -5253,6 +5253,7 @@ function openFriendChat(friendClientId) {
   renderNotifications();
   renderFriendChatMessages({ toBottom: true });
   applyFriendChatLock();
+  if (voiceRecorder) voiceRecorder.nudge();
   // Whoever is online right now is the baseline; only a drop from here is news.
   friendChatWasOnline = !!(friend && friend.online);
   friendChatPresence.classList.add('hidden');
