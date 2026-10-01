@@ -614,9 +614,15 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
     // ?user=<clientId> returns every report on that one person, not just the
     // newest 300, so the "Most reported" drill-down shows their full record.
     const user = typeof req.query.user === 'string' ? req.query.user : '';
-    const source = user
+    // ?status=open|handled filters before the 300 cap so older handled
+    // reports are still reachable.
+    const status = req.query.status;
+    let source = user
       ? store.data.reports.filter((r) => r.reported && r.reported.clientId === user)
-      : store.data.reports.slice(0, 300);
+      : store.data.reports;
+    if (status === 'handled') source = source.filter((r) => r.handled);
+    else if (status === 'open') source = source.filter((r) => !r.handled);
+    if (!user) source = source.slice(0, 300);
     const withCounts = source.map((r) => ({
       ...r,
       totalReportsOnUser: r.reported ? counts.get(r.reported.clientId) || 0 : 0,
@@ -640,6 +646,7 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
       reports: withCounts,
       total: store.data.reports.length,
       open: store.data.reports.filter((r) => !r.handled).length,
+      handled: store.data.reports.filter((r) => r.handled).length,
       top,
       days,
       reasons: [...reasons.entries()].sort((a, b) => b[1] - a[1]),

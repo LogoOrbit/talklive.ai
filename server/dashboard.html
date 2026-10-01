@@ -2000,7 +2000,7 @@ async function viewLive(){
   document.querySelectorAll('[data-ls]').forEach(b=>b.onclick=()=>{liveStatus=b.dataset.ls;load();});
 }
 
-/* Reports: the queue (unhandled / all), and a "Most reported" leaderboard of
+/* Reports: the queue (unhandled / handled / all), and a "Most reported" leaderboard of
    the people reported most over a chosen window, each one a click away from
    their full report history, a warning or a ban. */
 let repFilter='open',repQ='',repUser=null,repDays=30,repSort='count';
@@ -2011,6 +2011,7 @@ const repPlace=(u)=>esc(u.country||'')+(u.city&&u.city!=='Unknown'?', '+esc(u.ci
 const repBan=(u)=>`<button class="danger" onclick="banUser('${jsq(u.clientId)}','${jsq(u.ip||'')}','${jsq(u.username)}','${jsq(u.country||'')}','${jsq(u.city||'')}')">Ban…</button>`;
 async function viewReports(){
   const qs=['days='+repDays];if(repUser)qs.push('user='+encodeURIComponent(repUser.clientId));
+  if(repFilter==='open'||repFilter==='handled')qs.push('status='+repFilter);
   const r=await vapi('reports?'+qs.join('&'));
   const q=repQ.toLowerCase();
   const hit=(vals)=>!q||vals.some(v=>String(v||'').toLowerCase().includes(q));
@@ -2024,6 +2025,7 @@ async function viewReports(){
   </div>`;
   const seg=`<div class="seg">
     <button data-f="open" class="${repFilter==='open'?'on':''}">Unhandled (${num(r.open)})</button>
+    <button data-f="handled" class="${repFilter==='handled'?'on':''}">Handled (${num(r.handled)})</button>
     <button data-f="all" class="${repFilter==='all'?'on':''}">All (${num(r.total)})</button>
     <button data-f="top" class="${repFilter==='top'?'on':''}">🏆 Most reported</button></div>`;
   const search=`<input id="repQ" class="grow" placeholder="${repFilter==='top'?'Filter by name, country, IP, reason…':'Filter by name, reason, reporter, message…'}" value="${esc(repQ)}">${repQ?'<button class="lnk" id="repClear">Clear</button>':''}`;
@@ -2061,7 +2063,7 @@ async function viewReports(){
       ${r.reasons.slice(0,8).map(([k,n])=>`<div class="hrow"><div title="${esc(k)}">${esc(k)}</div><div><div class="hbar" style="width:${Math.max(2,n/r.reasons[0][1]*100)}%;background:var(--grad)"></div></div><div class="n">${num(n)} · ${pctOf(n,totalR)}</div></div>`).join('')}</div>`:''}`;
     window.repOpenUser=(i)=>{const u=top[i];repUser={clientId:u.clientId,username:u.username};repFilter='all';repQ='';load();};
   }else{
-    const base=repFilter==='open'?r.reports.filter(x=>!x.handled):r.reports;
+    const base=repFilter==='open'?r.reports.filter(x=>!x.handled):repFilter==='handled'?r.reports.filter(x=>x.handled):r.reports;
     const list=base.filter(x=>hit([x.reported.username,x.reported.country,x.reported.city,x.reason,x.detail,x.reporter.username,x.reporter.country]));
     const who=repUser?`<div class="tbar"><span class="pill info" style="font-size:.8rem;padding:6px 12px">👤 Only reports on <b>${esc(repUser.username||repUser.clientId.slice(0,12))}</b> · ${num(r.reports.length)} total</span><button class="lnk" id="repUserClear">Show everyone</button></div>`:'';
     body=`<div class="card anim"><h2>🚩 User reports <span class="sub">${num(list.length)} shown · one-click ban with duration</span></h2>
@@ -2079,7 +2081,7 @@ async function viewReports(){
       ${warnBtn(rep.reported.clientId,'',rep.reported.username,rep.reported.country)}
       ${rep.activeBan?'':repBan(rep.reported)}
       ${rep.handled?'':`<button onclick="markHandled('${jsq(rep.id)}')">Mark handled</button>`}
-    </div></td></tr>`).join('')||`<tr><td colspan="6" class="muted">${q?'No report matches that filter.':repFilter==='open'?'Nothing waiting - every report has been handled. 🎉':'No reports yet - good sign!'}</td></tr>`}</table></div>`;
+    </div></td></tr>`).join('')||`<tr><td colspan="6" class="muted">${q?'No report matches that filter.':repFilter==='open'?'Nothing waiting - every report has been handled. 🎉':repFilter==='handled'?'No handled reports yet.':'No reports yet - good sign!'}</td></tr>`}</table></div>`;
   }
   $('#main').innerHTML=tiles+body;
   document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{repFilter=b.dataset.f;if(repFilter==='top')repUser=null;load();});
