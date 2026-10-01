@@ -88,8 +88,9 @@ jobs:
             # Only a confirmation logged after this point counts: earlier
             # restarts of the same machine logged the same line.
             SINCE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-            flyctl machine stop "$id" -a "$APP" --timeout 35
-            for i in $(seq 1 30); do
+            # Matches kill_timeout in fly.toml: the final save may need ~100s.
+            flyctl machine stop "$id" -a "$APP" --timeout 120
+            for i in $(seq 1 60); do
               STATE=$(flyctl machines list -a "$APP" --json | jq -r --arg id "$id" '.[] | select(.id == $id) | .state')
               [ "$STATE" = "stopped" ] && break
               sleep 3

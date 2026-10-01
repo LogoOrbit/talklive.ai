@@ -11,14 +11,18 @@ app = 'talklive-ai'
 primary_region = 'sin'
 
 # Shutdown writes the latest store to Postgres before exiting (see
-# SHUTDOWN_PG_WAIT_MS in server/store.js, 25s). The default 5s cut that short.
-kill_timeout = 30
+# SHUTDOWN_PG_WAIT_MS below). The default 5s cut that short, and from iad a
+# full write to the Mumbai database took over 25s on 2026-10-01.
+kill_timeout = 120
 
 [build]
 
 [env]
   NODE_ENV = 'production'
   PORT = '8080'
+  # How long shutdown waits for the final Postgres save (must stay under
+  # kill_timeout above).
+  SHUTDOWN_PG_WAIT_MS = '100000'
   DATA_DIR = '/data'
   # Must match the domain the site actually canonicalises to. Every canonical
   # tag, the sitemap and robots.txt in public/ point at talklive.app, and any
