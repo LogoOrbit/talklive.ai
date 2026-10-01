@@ -16,11 +16,9 @@
  *
  * Rules this file enforces, beyond loading a tag:
  *
- * 1. NO GOOGLE ADS ON APP SCREENS. Slots inside .ad-card-app (the start,
- *    matchmaking, call and chat screens) are never filled. Those screens are
- *    mostly controls and waiting states, which AdSense treats as screens
- *    without publisher content, and an ad beside the call buttons invites
- *    accidental clicks. The CSS hides those cards too.
+ * 1. NO ADS ON THE HOMEPAGE START SCREEN. Slots inside .ad-card-app are never
+ *    filled; the CSS hides those cards too. The /call and /chat slots
+ *    (.ad-card-inapp) do load, in reserved space clear of the controls.
  * 2. NOT INTERRUPTING A LIVE CONVERSATION. While a call or chat is live,
  *    nothing starts loading or collapses, so nothing moves under a
  *    conversation. See callIsLive.

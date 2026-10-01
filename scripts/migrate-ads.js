@@ -17,15 +17,10 @@ const AD_LABEL = 'Advertisement';
 // precisely when there is no network, so an ad tag on it can only fail, and it
 // must stay self-contained.
 const adFreePages = new Set(['pricing.html', 'offline.html']);
-// Pages that are only the app - no publisher content for an ad to sit beside -
-// so they carry no AdSense loader, which keeps Auto ads off them too.
-// index.html is not here: it carries the app and the site's main content, and
-// AdSense verification looks for the tag on the homepage.
-const appOnlyPages = new Set(['chat.html']);
-// No AdSense loader at all: the app-only pages, plus the pages kept ad-free
-// above (the offline page cannot load it anyway, and Auto ads on the pricing
-// page would contradict the ad-free plan it is selling).
-const noLoaderPages = new Set([...appOnlyPages, ...adFreePages]);
+// No AdSense loader at all on the pages kept ad-free above (the offline page
+// cannot load it anyway, and Auto ads on the pricing page would contradict the
+// ad-free plan it is selling). chat.html carries it so its fixed slots fill.
+const noLoaderPages = adFreePages;
 
 // No Google ads on the geo cluster: /countries/, /cities/ and /languages/.
 // These pages come from one template and, measured on 5-word shingles in

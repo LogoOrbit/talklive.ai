@@ -817,26 +817,27 @@ function sendPage(res, file) {
 // which URL wins; `noindex` keeps it from spending a crawl on them at all.
 // The header is the only way to say so, since the shell is one shared file.
 //
-// They are also served without the AdSense loader. /login, /signup, /settings
-// and /call are controls and forms with no publisher content, and /login and
-// /signup are the "pages behind a login" AdSense reviews flag; with the loader
-// in the head, Auto ads would place ads on them. The homepage keeps it - it is
-// served by the static middleware, not here.
+// /login, /signup and /settings are also served without the AdSense loader:
+// they are controls and forms with no publisher content, and /login and
+// /signup are the "pages behind a login" AdSense reviews flag. /call keeps
+// the loader so its fixed slots (see public/ads.js) can fill.
 const ADSENSE_LOADER_TAG = /<script\b[^>]*pagead2\.googlesyndication\.com[^>]*>\s*<\/script>\s*/gi;
 const appShellCache = new Map();
-function appShellHtml(file) {
+function appShellHtml(file, ads) {
+  const key = `${file}|${ads ? 'ads' : 'no-ads'}`;
   const full = path.join(PUBLIC_DIR, file);
   const mtime = fs.statSync(full).mtimeMs;
-  const cached = appShellCache.get(file);
+  const cached = appShellCache.get(key);
   if (cached && cached.mtime === mtime) return cached.html;
-  const html = fs.readFileSync(full, 'utf8').replace(ADSENSE_LOADER_TAG, '');
-  appShellCache.set(file, { mtime, html });
+  const raw = fs.readFileSync(full, 'utf8');
+  const html = ads ? raw : raw.replace(ADSENSE_LOADER_TAG, '');
+  appShellCache.set(key, { mtime, html });
   return html;
 }
-function sendAppShell(res, file) {
+function sendAppShell(res, file, { ads = false } = {}) {
   res.setHeader('X-Robots-Tag', 'noindex, follow');
   res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
-  res.type('html').send(appShellHtml(file));
+  res.type('html').send(appShellHtml(file, ads));
 }
 
 // The three app-screen routes (/call, /chat, /settings) used to be registered
@@ -1077,7 +1078,7 @@ app.use((req, res, next) => {
 // The voice-call screen is its own URL (reached via history.replaceState once
 // the user taps Talk) but shares the main single-page shell.
 app.get('/call', (req, res) => {
-  sendAppShell(res, 'index.html');
+  sendAppShell(res, 'index.html', { ads: true });
 });
 
 // A shareable "add me" link (/add/K7MX29QP). It lands on the app with the ID

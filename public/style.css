@@ -6957,13 +6957,11 @@ html.perf-lite .side-panel { box-shadow: none; }
 }
 
 
-/* No Google ads on the app screens (start, matchmaking, call, chat): AdSense
-   treats them as screens without publisher content, and a unit beside the
-   call controls invites accidental clicks. ads.js never fills these either. */
+/* No Google ads on the homepage's start screen, which already carries Auto
+   ads. ads.js never fills these either. The call screen's slots
+   (.ad-card-inapp) do load: beside the call on desktop, under the controls on
+   a phone, in reserved space so nothing moves, and never mid-call. */
 .ad-card-app { display: none !important; }
-/* ...so the desktop call screen's ad column (ui.css) is always empty: give
-   its width back, or the call card sits left of a 334px void. */
-.call-panel:has(.tl-call-ad.ad-card-app) { --tl-call-ad-col: 0px; --tl-call-gap: 0px; }
 
 /* --- Public friend ID: yours, and add someone by theirs ------------------ */
 .friend-id-card {
