@@ -627,7 +627,10 @@ function preserveConflict(doc, reason) {
 // change nothing, because the server is already serving the mirror and the
 // retry loop owns reconciling the two copies.
 let bootAbandoned = false;
-const PG_BOOT_TIMEOUT_MS = Number(process.env.PG_BOOT_TIMEOUT_MS) || 30000;
+// Long enough for a healthy boot from Fly (iad) to Supabase (ap-south-1): the
+// schema check plus reading a ~5MB document across that distance took over
+// 30s on 2026-10-01 and sent routine deploys onto the mirror.
+const PG_BOOT_TIMEOUT_MS = Number(process.env.PG_BOOT_TIMEOUT_MS) || 60000;
 
 async function connectPg(atBoot) {
   const giveUpIfAbandoned = () => {

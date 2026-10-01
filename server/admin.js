@@ -393,7 +393,11 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
         ephemeral: b.mode !== 'postgres' && b.ephemeral === true,
         // Data will not survive: either the configured database is unreachable,
         // or the fallback file store is sitting on disposable storage.
-        atRisk: (b.configured && b.mode !== 'postgres')
+        // The database is unreachable but the server is serving and saving the
+        // copy on the Fly volume, which it pushes up when the database is back.
+        // Nothing is being lost, so this is a notice, not an alarm.
+        offline: b.mode === 'postgres-offline',
+        atRisk: (b.configured && b.mode !== 'postgres' && b.mode !== 'postgres-offline')
           || (b.mode !== 'postgres' && b.ephemeral === true),
       },
     });

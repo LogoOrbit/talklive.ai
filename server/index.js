@@ -6208,6 +6208,30 @@ function warnIfStorageIsEphemeral() {
   const status = store.backendStatus;
   if (status.mode === 'postgres') return;
 
+  // Serving the copy on the volume while the database is slow or down: every
+  // save lands on disk and goes up when the database answers, so nothing is
+  // at risk. Boots in this state are routine (a slow database at deploy time)
+  // and reconnect within a minute, so only email if it lasts.
+  if (status.mode === 'postgres-offline') {
+    console.warn(`[storage] database unreachable (${status.error || 'unknown'}) - serving and saving the copy in ${status.dataDir}; it is pushed up when the database answers.`);
+    setTimeout(() => {
+      const st = store.backendStatus;
+      if (st.mode === 'postgres') return;
+      admin.sendAlertEmail(
+        'database-offline',
+        'TalkLive: database unreachable for 10+ minutes (nothing lost)',
+        `The server has not been able to reach the database (${st.host}) for over 10 minutes.\n`
+        + `Last error: ${st.error || 'unknown'}\n\n`
+        + `Nothing is being lost: the app is running on the copy of the data kept on the Fly volume `
+        + `and saves every change there. It retries the database every minute and copies `
+        + `everything up as soon as it answers.\n\n`
+        + `Worth checking: the Supabase project status and dashboard.\n\n`
+        + `Dashboard: https://${CANONICAL_HOST}/owner`
+      );
+    }, 10 * 60 * 1000).unref();
+    return;
+  }
+
   // Warn only when the data is genuinely at risk: either the configured
   // database is unreachable, or the file store is on disposable storage. A
   // file backend on a properly mounted volume is a supported setup and must
@@ -6239,6 +6263,19 @@ function warnIfStorageIsEphemeral() {
 
   // One email, so this is visible to the owner without reading boot logs.
   // sendAlertEmail is throttled per topic and is a no-op when SMTP is unset.
+  if (dbBroken) {
+    admin.sendAlertEmail(
+      'database-unreachable',
+      'TalkLive: database unreachable - new changes are not being saved',
+      `${configured}\n\n`
+      + `The data in the database is untouched, but this server has no copy of it on its disk, `
+      + `so it is not saving anything until the database answers. It retries every minute and `
+      + `loads the data as soon as it does.\n\n`
+      + `Worth checking: the Supabase project status, and the DATABASE_URL secret.\n\n`
+      + `Dashboard: https://${CANONICAL_HOST}/owner`
+    );
+    return;
+  }
   admin.sendAlertEmail(
     'ephemeral-storage',
     'TalkLive: stored data is being lost on every deploy',

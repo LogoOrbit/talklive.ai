@@ -646,9 +646,14 @@ function animateCounters(){document.querySelectorAll('[data-count]').forEach(el=
 function renderStorage(storage){
   const s=storage||{};
   let html='';
-  if(s.configured && s.atRisk){
-    html=`<div class="stbox bad"><b>⚠️ Database not connected - data will be lost on restart</b>
-      Your <code>DATABASE_URL</code> is set but the server could not connect to it, so it fell back to temporary storage. That is why your login keeps resetting. Fix the connection string with <code>fly secrets set DATABASE_URL=...</code> and redeploy.<br><br>
+  if(s.offline){
+    html=`<div class="stbox warn"><b>ℹ️ Database temporarily unreachable - nothing is lost</b>
+      The server is running on the copy of your data kept on its disk, and keeps saving there. It retries the database every minute and copies everything up once it answers - no action needed.<br><br>
+      Host: <code>${esc(s.host||'?')}</code><br>
+      Last error: <code>${esc(s.error||'unknown')}</code></div>`;
+  } else if(s.configured && s.atRisk){
+    html=`<div class="stbox bad"><b>⚠️ Database not connected - new changes are not being saved</b>
+      Your <code>DATABASE_URL</code> is set but the server could not connect to it and has no copy of the data on its disk, so it is not saving anything until the database answers. Your data in the database is untouched. If this lasts, check the database and the connection string (<code>fly secrets set DATABASE_URL=...</code>).<br><br>
       Host tried: <code>${esc(s.host||'?')}</code><br>
       Error: <code>${esc(s.error||'unknown')}</code></div>`;
   } else if(s.ephemeral){

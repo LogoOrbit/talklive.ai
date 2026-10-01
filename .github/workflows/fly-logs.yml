@@ -1,0 +1,24 @@
+# Read-only: the machine's recent events and logs, for questions like "why did
+# the app restart?" without flyctl on anyone's machine.
+name: Fly logs
+
+on:
+  workflow_dispatch:
+
+jobs:
+  logs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Machines and recent events
+        continue-on-error: true
+        run: |
+          flyctl machines list -a talklive-ai
+          for id in $(flyctl machines list -a talklive-ai -q); do flyctl machine status "$id" -a talklive-ai -d; done
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      - name: Recent logs
+        run: flyctl logs -a talklive-ai --no-tail
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
