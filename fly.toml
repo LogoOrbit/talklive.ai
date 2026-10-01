@@ -76,7 +76,11 @@ primary_region = 'iad'
 #
 # Do not set both `memory` and `memory_mb` here - the generated config set
 # memory = '1gb' and memory_mb = 256, and the smaller value won.
+#
+# Raised to 1GB on 2026-10-01: the store grew to ~5MB and every save holds
+# several serialized copies at once (mirror, Postgres payload, driver buffer),
+# and node was OOM-killed at 406MB RSS. 512MB no longer had headroom.
 [[vm]]
   cpu_kind = 'shared'
   cpus = 1
-  memory = '512mb'
+  memory = '1gb'
