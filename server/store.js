@@ -622,7 +622,17 @@ function preserveConflict(doc, reason) {
 // Connect, decide which copy wins, and leave both copies identical. Used at
 // boot (local = the mirror on disk) and on reconnect after an outage (local =
 // what this process has been serving from the mirror meanwhile).
+// Set when boot stops waiting for a database that connects but does not answer
+// (see ready below). The boot attempt may still finish later; it must then
+// change nothing, because the server is already serving the mirror and the
+// retry loop owns reconciling the two copies.
+let bootAbandoned = false;
+const PG_BOOT_TIMEOUT_MS = Number(process.env.PG_BOOT_TIMEOUT_MS) || 30000;
+
 async function connectPg(atBoot) {
+  const giveUpIfAbandoned = () => {
+    if (atBoot && bootAbandoned) throw new Error('boot stopped waiting for the database');
+  };
   // Which database user and which schema the unqualified table names below
   // resolve to. They depend on the login in DATABASE_URL: a role with its own
   // search_path reads and writes a different owner_store from the default
@@ -634,6 +644,7 @@ async function connectPg(atBoot) {
   console.log(`[store] database login ${backendStatus.dbUser}, schema ${backendStatus.dbSchema}`);
   await ensureSchema();
   const res = await pgPool.query('SELECT doc FROM owner_store WHERE id = 1');
+  giveUpIfAbandoned();
   const pgDoc = res.rows.length ? res.rows[0].doc : null;
   const local = atBoot ? bootLocal() : (runningOnMirror ? data : null);
   const verdict = decide(pgDoc, local);
@@ -652,6 +663,7 @@ async function connectPg(atBoot) {
     // has checked yet.
     const back = await pgPool.query('SELECT doc FROM owner_store WHERE id = 1');
     const got = back.rows[0] && back.rows[0].doc;
+    giveUpIfAbandoned();
     if (revOf(got) !== revOf(data)) throw new Error('wrote the store to Postgres but read back a different version');
     const fresh = isEmptyDoc(pgDoc);
     backendStatus.seededFromFile = fresh;
@@ -666,6 +678,7 @@ async function connectPg(atBoot) {
     console.log('[store] ------------------------------------------------------------');
   } else if (verdict === 'conflict') {
     await pgHistory('conflict', local);
+    giveUpIfAbandoned();
     preserveConflict(local, 'the mirror and the database hold different histories');
     applyParsed(pgDoc);
   } else {
@@ -2288,7 +2301,26 @@ function audit(action, ip, detail) {
 const ready = (async () => {
   if (pgPool) {
     try {
-      await connectPg(true);
+      // The pool's connect timeout covers a database that is down, not one
+      // that accepts the connection and then takes minutes per query (an
+      // exhausted Supabase IO budget). Without a deadline the server never
+      // listens, Fly's health check fails and the deploy is rolled out dead.
+      const attempt = connectPg(true);
+      let timer;
+      const deadline = new Promise((_, reject) => {
+        timer = setTimeout(() => {
+          bootAbandoned = true;
+          reject(new Error(`no answer from the database within ${PG_BOOT_TIMEOUT_MS / 1000}s`));
+        }, PG_BOOT_TIMEOUT_MS);
+      });
+      attempt.catch((err) => {
+        if (bootAbandoned) console.error('[store] abandoned boot attempt ended:', err.message);
+      });
+      try {
+        await Promise.race([attempt, deadline]);
+      } finally {
+        clearTimeout(timer);
+      }
     } catch (err) {
       backendStatus.error = String(err.message || err);
       pgUnreachable = true;
