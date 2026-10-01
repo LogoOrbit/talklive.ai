@@ -118,6 +118,9 @@ function defaults() {
     errors: [], // { id, ts, source, message, stack, url, username, country, count }
     auditLog: [], // { ts, ip, action, detail }
     transcripts: [], // { ts, pair, from, fromClientId, to, toClientId, country, text, kind }
+    // Transcripts not yet confirmed in the chat_transcripts table (Postgres
+    // only; see addTranscript). Kept in the document so they survive a restart.
+    transcriptQueue: [],
     accountsRegistry: {}, // usernameLower -> details (analytics metadata)
     // Durable account credentials so signed-in users keep their account across
     // restarts/deploys. usernameLower -> { passwordHash, salt, nickname,
@@ -208,6 +211,10 @@ let clientIdIndex = new Map();
 
 function applyParsed(parsed) {
   data = { ...defaults(), ...parsed };
+  data.transcriptQueue = Array.isArray(parsed.transcriptQueue) ? parsed.transcriptQueue : [];
+  // A freshly loaded document holds its transcripts itself until they are
+  // confirmed in the table again (syncTranscripts).
+  transcriptsInTable = false;
   data.analytics = { ...defaults().analytics, ...(parsed.analytics || {}) };
   data.settings = { ...defaults().settings, ...(parsed.settings || {}) };
   data.social = { ...defaults().social, ...(parsed.social || {}) };
@@ -484,6 +491,20 @@ async function ensureSchema() {
   } catch (err) {
     console.error('[store] voice_notes table unavailable:', err.message);
   }
+  // Text-chat transcripts: the largest part of the document (5000 messages,
+  // ~1.6MB) and the one that changes on every chat message. Additive only - if
+  // this fails, transcripts simply stay in the document as before.
+  try {
+    await pgPool.query(`CREATE TABLE IF NOT EXISTS chat_transcripts (
+      id text PRIMARY KEY,
+      ts bigint NOT NULL,
+      doc jsonb NOT NULL
+    )`);
+    await pgPool.query('CREATE INDEX IF NOT EXISTS chat_transcripts_ts_idx ON chat_transcripts (ts DESC)');
+    try { await pgPool.query('ALTER TABLE chat_transcripts ENABLE ROW LEVEL SECURITY'); } catch (_) { /* not the owner */ }
+  } catch (err) {
+    console.error('[store] chat_transcripts table unavailable:', err.message);
+  }
 }
 
 // Copy a document into owner_store_history. `sql` form copies the live row
@@ -634,6 +655,10 @@ let bootAbandoned = false;
 // written before Postgres on every save (single machine), so it is never
 // behind: boot on it quickly and let the background reconnect push it up.
 const PG_BOOT_TIMEOUT_MS = Number(process.env.PG_BOOT_TIMEOUT_MS) || 10000;
+// With no copy on the volume (a new machine, a new region) there is nothing
+// to serve but an empty store, which is worse than waiting: wait for the
+// database much longer. Fly's deploy health wait is 5 minutes.
+const PG_BOOT_TIMEOUT_NO_COPY_MS = Number(process.env.PG_BOOT_TIMEOUT_NO_COPY_MS) || 4 * 60 * 1000;
 
 async function connectPg(atBoot) {
   const giveUpIfAbandoned = () => {
@@ -707,6 +732,7 @@ async function connectPg(atBoot) {
   // the push above was in flight; the next save sends those up.
   writeMirror();
   if (revOf(data) !== pgConfirmedRev) save();
+  if (!(!atBoot && verdict !== 'push-local')) syncTranscripts();
   console.log('[store] using Postgres backend (DATABASE_URL) -', backendStatus.host,
     '- mirrored to', DATA_FILE);
 
@@ -1216,11 +1242,116 @@ function recordTopics(text) {
 
 // Full text-chat transcripts, kept for owner moderation (disclosed in the
 // privacy policy). Voice is peer-to-peer and never passes through the server.
+//
+// With DATABASE_URL set they live in the chat_transcripts table instead of the
+// document, which is rewritten whole on every save: at 5000 messages they were
+// a third of it, and the part that changed with every chat message.
+// `data.transcripts` stays the newest-first list the owner dashboard reads; in
+// table mode it is a non-enumerable cache, so the document never serializes
+// it. A new message waits in `data.transcriptQueue` (which is saved) until the
+// table has it. Row ids are derived from the message, so a retried insert can
+// never duplicate one.
 const MAX_TRANSCRIPT = 5000;
+const MAX_TRANSCRIPT_QUEUE = 5000;
+let transcriptsInTable = false;
+let transcriptAdds = 0;
 function addTranscript(entry) {
-  data.transcripts.unshift({ ts: Date.now(), ...entry });
+  const row = { ts: Date.now(), ...entry };
+  transcriptAdds += 1;
+  data.transcripts.unshift(row);
   if (data.transcripts.length > MAX_TRANSCRIPT) data.transcripts.pop();
+  if (transcriptsInTable) {
+    data.transcriptQueue.push(row);
+    if (data.transcriptQueue.length > MAX_TRANSCRIPT_QUEUE) data.transcriptQueue.shift();
+    scheduleTranscriptFlush();
+  }
   save();
+}
+
+const transcriptId = (row) => 't' + crypto.createHash('sha1').update(JSON.stringify(row)).digest('hex').slice(0, 24);
+
+async function insertTranscriptRows(rows) {
+  if (!rows.length) return;
+  const payload = rows.map((r) => ({ id: transcriptId(r), ts: Number(r.ts) || 0, doc: r }));
+  await pgPool.query(
+    `INSERT INTO chat_transcripts (id, ts, doc)
+     SELECT e->>'id', (e->>'ts')::bigint, e->'doc' FROM jsonb_array_elements($1::jsonb) e
+     ON CONFLICT (id) DO NOTHING`,
+    [JSON.stringify(payload)]
+  );
+}
+
+// Move whatever the document holds into the table, then serve the table's
+// newest messages. Runs after every successful connect; a no-op once done.
+let transcriptSync = null;
+function syncTranscripts() {
+  if (!pgLive() || transcriptsInTable || restarting) return Promise.resolve();
+  if (transcriptSync) return transcriptSync;
+  transcriptSync = (async () => {
+    const docRef = data;
+    const addsBefore = transcriptAdds;
+    const legacy = data.transcripts.slice();
+    const queued = data.transcriptQueue.slice();
+    await insertTranscriptRows([...legacy, ...queued]);
+    const res = await pgPool.query(
+      `SELECT doc FROM chat_transcripts ORDER BY ts DESC, id DESC LIMIT ${MAX_TRANSCRIPT}`
+    );
+    // The document was replaced while this ran (a reconnect swapped it, and
+    // the process is restarting): leave the new one alone.
+    if (data !== docRef || restarting) return;
+    // Messages that arrived during the awaits are at the front of the list
+    // and not in the table yet.
+    const arrived = data.transcripts.slice(0, Math.min(transcriptAdds - addsBefore, data.transcripts.length));
+    const done = new Set(queued);
+    data.transcriptQueue = data.transcriptQueue.filter((r) => !done.has(r)).concat(arrived);
+    const list = [...arrived, ...res.rows.map((r) => r.doc)].slice(0, MAX_TRANSCRIPT);
+    Object.defineProperty(data, 'transcripts', { value: list, writable: true, enumerable: false, configurable: true });
+    transcriptsInTable = true;
+    console.log(`[store] chat transcripts are in their own table (${list.length} loaded`
+      + (legacy.length ? `, ${legacy.length} moved out of the document` : '') + ')');
+    // The next save writes the document without them.
+    if (legacy.length) save();
+    if (data.transcriptQueue.length) scheduleTranscriptFlush();
+  })().catch((err) => {
+    console.error('[store] chat transcripts stay in the document for now:', err.message);
+  }).finally(() => { transcriptSync = null; });
+  return transcriptSync;
+}
+
+let transcriptFlushTimer = null;
+let transcriptFlushing = false;
+let lastTranscriptPruneAt = 0;
+function scheduleTranscriptFlush(delay = 1000) {
+  if (transcriptFlushTimer) return;
+  transcriptFlushTimer = setTimeout(flushTranscripts, delay);
+  transcriptFlushTimer.unref?.();
+}
+async function flushTranscripts() {
+  transcriptFlushTimer = null;
+  if (transcriptFlushing || !transcriptsInTable || restarting) return;
+  if (!pgLive()) { if (data.transcriptQueue.length) scheduleTranscriptFlush(30000); return; }
+  const batch = data.transcriptQueue.slice(0, 500);
+  if (!batch.length) return;
+  transcriptFlushing = true;
+  let retry = 1000;
+  try {
+    await insertTranscriptRows(batch);
+    const done = new Set(batch);
+    // Dropped from the saved queue by the next ordinary save; if that never
+    // comes, a re-insert after restart is a no-op thanks to the ids.
+    data.transcriptQueue = data.transcriptQueue.filter((r) => !done.has(r));
+    if (Date.now() - lastTranscriptPruneAt > 10 * 60 * 1000) {
+      lastTranscriptPruneAt = Date.now();
+      await pgPool.query(`DELETE FROM chat_transcripts WHERE ts < (
+        SELECT ts FROM chat_transcripts ORDER BY ts DESC OFFSET ${MAX_TRANSCRIPT - 1} LIMIT 1)`);
+    }
+  } catch (err) {
+    console.error('[store] chat transcript insert failed (kept for retry):', err.message);
+    retry = 30000;
+  } finally {
+    transcriptFlushing = false;
+    if (data.transcriptQueue.length) scheduleTranscriptFlush(retry);
+  }
 }
 
 // --- Reports / feedback / errors ---
@@ -2458,13 +2589,29 @@ const ready = (async () => {
       // that accepts the connection and then takes minutes per query (an
       // exhausted Supabase IO budget). Without a deadline the server never
       // listens, Fly's health check fails and the deploy is rolled out dead.
-      const attempt = connectPg(true);
+      const haveCopy = !!bootLocal() && !mirrorBlocked;
+      const bootWait = haveCopy ? PG_BOOT_TIMEOUT_MS : PG_BOOT_TIMEOUT_NO_COPY_MS;
+      const bootStart = Date.now();
+      // With a copy to fall back on, one attempt; without one, keep trying
+      // until the deadline - a refused connection fails fast, and serving an
+      // empty store would be worse than waiting.
+      const attempt = (async () => {
+        for (;;) {
+          try {
+            return await connectPg(true);
+          } catch (err) {
+            if (haveCopy || bootAbandoned || Date.now() - bootStart > bootWait - 3000) throw err;
+            console.error('[store] no copy on this volume and the database is not answering yet - retrying:', err.message);
+            await new Promise((r) => setTimeout(r, 3000));
+          }
+        }
+      })();
       let timer;
       const deadline = new Promise((_, reject) => {
         timer = setTimeout(() => {
           bootAbandoned = true;
-          reject(new Error(`no answer from the database within ${PG_BOOT_TIMEOUT_MS / 1000}s`));
-        }, PG_BOOT_TIMEOUT_MS);
+          reject(new Error(`no answer from the database within ${bootWait / 1000}s`));
+        }, bootWait);
       });
       attempt.catch((err) => {
         if (bootAbandoned) console.error('[store] abandoned boot attempt ended:', err.message);
@@ -2539,6 +2686,7 @@ process.on('exit', () => { if (!shuttingDown && saveTimer) persistNow(); });
 // so a signup seconds before a deploy is never lost: the mirror first (it is
 // instant), then wait for Postgres, but not past Fly's kill timeout.
 let shuttingDown = false;
+const SHUTDOWN_PG_WAIT_MS = Number(process.env.SHUTDOWN_PG_WAIT_MS) || 25000;
 async function flushAndExit(signal) {
   if (shuttingDown) return;
   shuttingDown = true;
@@ -2546,12 +2694,24 @@ async function flushAndExit(signal) {
   // Same rule on the way out as on every other write: a document we never
   // successfully loaded must not be the last thing written over a good one.
   if (persistBlocked || (pgPool && pgUnreachable && !runningOnMirror)) {
-    console.error(`[store] ${signal}: not saving -`, persistBlocked || 'no copy of the store is loaded');
+    fs.writeSync(2, `[store] ${signal}: not saving - ${persistBlocked || 'no copy of the store is loaded'}\n`);
     process.exit(0);
   }
   try {
     persistNow();
-    await Promise.race([pgChain, new Promise((r) => setTimeout(r, 4000))]);
+    // The mirror already has everything; this is for the database copy, which
+    // a machine in another region (or one whose volume is lost) starts from.
+    // Must stay under fly.toml's kill_timeout.
+    let done = false;
+    await Promise.race([pgChain.then(() => { done = true; }), new Promise((r) => setTimeout(r, SHUTDOWN_PG_WAIT_MS))]);
+    // "final save done" is what move-region.yml waits for before it destroys
+    // this machine, so it is only ever logged when Postgres has the store.
+    // Written synchronously: console output to a pipe can be lost on exit.
+    fs.writeSync(1, (!pgLive() || pgConflict
+      ? `[store] ${signal}: not connected to the database - only the copy on the volume has the latest`
+      : done
+        ? `[store] ${signal}: final save done`
+        : `[store] ${signal}: database save still running after ${SHUTDOWN_PG_WAIT_MS / 1000}s - the copy on the volume has it`) + '\n');
   } catch (err) {
     console.error(`[store] final save on ${signal} failed:`, err.message);
   }
