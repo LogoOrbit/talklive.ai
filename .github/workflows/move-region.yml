@@ -1,0 +1,105 @@
+# One-off: move the app's single machine to primary_region in fly.toml.
+#
+# A machine cannot change region and a volume cannot move, so: stop the old
+# machine (on SIGTERM the server writes the latest store to Postgres), confirm
+# that save finished, destroy the machine, and deploy - which creates a new
+# machine in the primary region on a fresh volume there. The new machine has no
+# copy on its volume, so it boots from Postgres.
+#
+# The old volume is left in place, unattached, as a backup. To roll back: set
+# primary_region back in fly.toml and run this workflow again (the deploy step
+# reattaches the existing volume in that region).
+name: Move to primary region
+
+on:
+  workflow_dispatch:
+
+# Never alongside a deploy.
+concurrency:
+  group: fly-deploy
+  cancel-in-progress: false
+
+jobs:
+  move:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      APP: talklive-ai
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Plan
+        id: plan
+        run: |
+          set -euo pipefail
+          REGION=$(sed -n "s/^primary_region = '\(.*\)'/\1/p" fly.toml)
+          echo "region=$REGION" >> "$GITHUB_OUTPUT"
+          flyctl machines list -a "$APP"
+          flyctl volumes list -a "$APP"
+          MACHINES=$(flyctl machines list -a "$APP" --json)
+          OLD=$(echo "$MACHINES" | jq -r --arg r "$REGION" '[.[] | select(.region != $r) | .id] | join(" ")')
+          HERE=$(echo "$MACHINES" | jq -r --arg r "$REGION" '[.[] | select(.region == $r)] | length')
+          if [ -z "$OLD" ]; then echo "Nothing to move: already in $REGION."; fi
+          if [ -n "$OLD" ] && [ "$HERE" != "0" ]; then
+            echo "A machine already runs in $REGION as well - two writers on one store. Stopping."; exit 1
+          fi
+          echo "old=$OLD" >> "$GITHUB_OUTPUT"
+
+      - name: Volume in the new region
+        if: steps.plan.outputs.old != ''
+        run: |
+          set -euo pipefail
+          R=${{ steps.plan.outputs.region }}
+          if ! flyctl volumes list -a "$APP" --json | jq -e --arg r "$R" '.[] | select(.name == "talklive_data" and .region == $r)' >/dev/null; then
+            flyctl volumes create talklive_data -a "$APP" -r "$R" -n 1 -s 1 -y
+          fi
+
+      - name: Stop the old machine and confirm its final save
+        if: steps.plan.outputs.old != ''
+        run: |
+          set -euo pipefail
+          for id in ${{ steps.plan.outputs.old }}; do
+            flyctl machine stop "$id" -a "$APP" --timeout 35
+            for i in $(seq 1 30); do
+              STATE=$(flyctl machines list -a "$APP" --json | jq -r --arg id "$id" '.[] | select(.id == $id) | .state')
+              [ "$STATE" = "stopped" ] && break
+              sleep 3
+            done
+            echo "machine $id: ${STATE:-unknown}"
+            # The server logs this line once the store is in Postgres.
+            FOUND=""
+            for i in $(seq 1 10); do
+              if flyctl logs -a "$APP" -i "$id" --no-tail 2>/dev/null | grep -q "final save done"; then FOUND=1; break; fi
+              sleep 3
+            done
+            if [ -z "$FOUND" ]; then
+              echo "Could not confirm the final save reached Postgres - restarting the old machine and stopping here."
+              flyctl logs -a "$APP" -i "$id" --no-tail | tail -30 || true
+              flyctl machine start "$id" -a "$APP"
+              exit 1
+            fi
+            echo "final save confirmed for $id"
+          done
+
+      - name: Remove the old machine (its volume stays as a backup)
+        if: steps.plan.outputs.old != ''
+        run: |
+          set -euo pipefail
+          for id in ${{ steps.plan.outputs.old }}; do flyctl machine destroy "$id" -a "$APP" --force; done
+
+      - name: Deploy in the new region
+        if: steps.plan.outputs.old != ''
+        run: flyctl deploy --remote-only -a "$APP" --ha=false
+
+      - name: Check
+        if: always()
+        run: |
+          flyctl machines list -a "$APP" || true
+          flyctl volumes list -a "$APP" || true
+          for i in $(seq 1 20); do
+            if curl -fsS -m 10 https://talklive.app/healthz; then echo; echo "healthy"; break; fi
+            sleep 6
+          done
+          flyctl logs -a "$APP" --no-tail | tail -40 || true

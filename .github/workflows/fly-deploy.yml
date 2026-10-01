@@ -64,12 +64,15 @@ jobs:
       # outright if the volume named there does not exist yet. Volumes cannot be
       # created from the Fly dashboard, so create it here (once) instead of
       # requiring someone to run the CLI by hand.
+      # In the primary region from fly.toml: a volume elsewhere (the old iad one
+      # is kept as a backup) cannot be mounted by a machine here.
       - name: Ensure the data volume exists
         run: |
-          if flyctl volumes list -a talklive-ai | grep -q talklive_data; then
-            echo "talklive_data already exists"
+          REGION=$(sed -n "s/^primary_region = '\(.*\)'/\1/p" fly.toml)
+          if flyctl volumes list -a talklive-ai --json | jq -e --arg r "$REGION" '.[] | select(.name == "talklive_data" and .region == $r)' >/dev/null; then
+            echo "talklive_data already exists in $REGION"
           else
-            flyctl volumes create talklive_data -a talklive-ai -r iad -n 1 -s 1 -y
+            flyctl volumes create talklive_data -a talklive-ai -r "$REGION" -n 1 -s 1 -y
           fi
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
