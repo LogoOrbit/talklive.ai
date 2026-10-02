@@ -598,8 +598,11 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
   router.get('/api/window', (req, res) => {
     const tz = String(req.query.tz || store.data.settings.timezone || 'UTC');
     const shifted = analytics.shiftedDays(store.data.analytics.days, { tz, startHour: req.query.startHour, count: req.query.count });
-    if (!req.query.from && !req.query.to) return res.json({ shifted });
-    const report = analytics.windowReport(store.data.analytics.days, { from: String(req.query.from || ''), to: String(req.query.to || ''), tz });
+    if (!req.query.preset && !req.query.from && !req.query.to) return res.json({ shifted });
+    const report = analytics.windowReport(store.data.analytics.days, {
+      from: String(req.query.from || ''), to: String(req.query.to || ''), tz,
+      preset: req.query.preset ? String(req.query.preset) : '', startHour: req.query.startHour,
+    });
     if (report.error) return res.status(400).json({ error: report.error });
     res.json({ ...report, shifted });
   });

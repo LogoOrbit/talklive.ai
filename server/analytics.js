@@ -354,11 +354,41 @@ function windowTotals(days, from, to, tz) {
 
 const MAX_WINDOW_MS = 31 * 86400000;
 
+function wallInput(ts, tz) {
+  return wallLabel(ts, tz).replace(' ', 'T');
+}
+
+// Preset windows, computed on the server so they always use the server's "now".
+// `today`/`yesterday` follow the business-day start hour; `Nh` covers the
+// current hour plus the N-1 whole hours before it.
+function presetRange(preset, zone, startHour, now = Date.now()) {
+  const h = Math.min(23, Math.max(0, Math.floor(Number(startHour) || 0)));
+  const hh = String(h).padStart(2, '0');
+  const nowLocal = localParts(now, zone);
+  const dayKey = nowLocal.hour >= h ? nowLocal.day : addDays(nowLocal.day, -1);
+  const dayStart = zonedToUtc(`${dayKey}T${hh}:00`, zone);
+  if (preset === 'today') return [dayStart, now];
+  if (preset === 'yesterday') return [zonedToUtc(`${addDays(dayKey, -1)}T${hh}:00`, zone), dayStart];
+  const m = /^(\d{1,3})h$/.exec(String(preset || ''));
+  if (m && +m[1] >= 1 && +m[1] <= 744) {
+    const hourStart = Math.floor(now / HOUR_MS) * HOUR_MS;
+    return [hourStart - (+m[1] - 1) * HOUR_MS, now];
+  }
+  return null;
+}
+
 // One custom window, plus the window of equal length just before it.
-function windowReport(days, { from, to, tz }) {
+function windowReport(days, { from, to, tz, preset, startHour }) {
   const zone = normalizeTimezone(tz);
-  const start = zonedToUtc(from, zone);
-  const end = zonedToUtc(to, zone);
+  let start, end;
+  if (preset) {
+    const r = presetRange(preset, zone, startHour);
+    if (!r) return { error: 'Unknown preset.' };
+    [start, end] = r;
+  } else {
+    start = zonedToUtc(from, zone);
+    end = zonedToUtc(to, zone);
+  }
   if (!Number.isFinite(start) || !Number.isFinite(end)) return { error: 'Pick a valid start and end time.' };
   if (end <= start) return { error: 'The end time must be after the start time.' };
   if (end - start > MAX_WINDOW_MS) return { error: 'Windows are limited to 31 days.' };
@@ -370,11 +400,15 @@ function windowReport(days, { from, to, tz }) {
   return {
     timezone: zone,
     offset: offsetLabel(start, zone),
+    preset: preset || null,
     from: wallLabel(start, zone),
     to: wallLabel(end, zone),
+    fromInput: wallInput(start, zone),
+    toInput: wallInput(end, zone),
     hoursLong: Math.round(len / HOUR_MS * 10) / 10,
-    inProgress: end > Date.now(),
-    halfHourZone: new Date(start).getUTCMinutes() !== 0 || new Date(end).getUTCMinutes() !== 0,
+    inProgress: end >= Date.now() - 60000,
+    // Hour buckets are UTC, so only zones with a non-whole-hour offset get rounded edges.
+    halfHourZone: !/^UTC[+-]\d\d:00$|^UTC$/.test(offsetLabel(start, zone)),
     totals: cur.totals,
     hours: cur.hours,
     legacy: cur.legacy,

@@ -1403,27 +1403,22 @@ function hourBars(el,hours,metric,upToHour){
 }
 
 /* ---------- custom time window: "7am until 7am the next day" ---------- */
-let winFrom='',winTo='',winMetric='visits';
+/* Either a server-side preset (winPreset) or a custom from/to (winFrom/winTo). */
+let winPreset='yesterday',winFrom='',winTo='',winMetric='visits';
 let winStart=(()=>{try{const s=localStorage.getItem('tl_day_start');const v=Number(s);return s!==null&&s!==''&&v>=0&&v<=23?v:7;}catch(e){return 7;}})();
-const dayAdd=(k,n)=>new Date(Date.UTC(+k.slice(0,4),+k.slice(5,7)-1,+k.slice(8,10))+n*86400000).toISOString().slice(0,10);
 const hh=(h)=>String(h).padStart(2,'0');
-/* Latest finished window that starts at the business-day hour. */
-function defaultWindow(now){
-  const end=now.hour>=winStart?now.day:dayAdd(now.day,-1);
-  return [dayAdd(end,-1)+'T'+hh(winStart)+':00',end+'T'+hh(winStart)+':00'];
-}
-function winPresets(now){
-  const nowStr=now.day+'T'+hh(now.hour)+':'+hh(now.minute);
-  const todayStart=(now.hour>=winStart?now.day:dayAdd(now.day,-1))+'T'+hh(winStart)+':00';
-  const [pf,pt]=defaultWindow(now);
-  const back=(hrs)=>{const t=new Date(Date.UTC(+now.day.slice(0,4),+now.day.slice(5,7)-1,+now.day.slice(8,10),now.hour,now.minute)-hrs*3600000).toISOString();return t.slice(0,16);};
+function winPresets(){
   return [
-    [`Last full day (${hh(winStart)}:00 → ${hh(winStart)}:00)`,pf,pt],
-    [`Current day since ${hh(winStart)}:00`,todayStart,nowStr],
-    ['Last 24 hours',back(24),nowStr],
-    ['Last 12 hours',back(12),nowStr],
-    ['Last 6 hours',back(6),nowStr],
+    ['yesterday',`Yesterday (${hh(winStart)}:00 → ${hh(winStart)}:00)`],
+    ['today',`Today since ${hh(winStart)}:00`],
+    ['24h','Last 24 hours'],
+    ['12h','Last 12 hours'],
+    ['6h','Last 6 hours'],
   ];
+}
+function winQuery(){
+  const base='window?tz='+encodeURIComponent(actTz)+'&startHour='+winStart+'&count=14';
+  return winPreset?base+'&preset='+encodeURIComponent(winPreset):base+'&from='+encodeURIComponent(winFrom)+'&to='+encodeURIComponent(winTo);
 }
 function windowBars(el,hours,metric){
   if(!hours.length){el.innerHTML='<div class="muted">No hours in this window yet.</div>';return;}
@@ -1432,20 +1427,20 @@ function windowBars(el,hours,metric){
   el.innerHTML=`<div class="hours" style="grid-template-columns:repeat(${hours.length},1fr)">${hours.map(x=>`<div class="hcol" title="${esc(x.label)} - ${num(x[metric])}"><div class="hfill" style="height:${Math.max(1,(x[metric]||0)/max*100)}%"></div></div>`).join('')}</div>
   <div class="hourlbl" style="grid-template-columns:repeat(${hours.length},1fr)">${hours.map((x,i)=>`<span>${i%step===0?esc(x.label.slice(11,13)):''}</span>`).join('')}</div>`;
 }
-function windowCardHtml(w,now){
-  const presets=winPresets(now);
+function windowCardHtml(w){
+  const presets=winPresets();
   const s=w.shifted;
   const t=w.totals,c=w.change;
   const box=(k,label,note)=>`<div class="box"><div class="k">${label}</div><div class="v">${num(t[k])}</div><div class="s">${k==='peakOnline'?'most at once':deltaHtml(c[k])+' vs previous '+w.hoursLong+'h · '+num(w.previous.totals[k])}${note||''}</div></div>`;
   return `<div class="card anim"><h2>🕖 Custom time window <span class="sub">visits between any two times, in ${esc(w.timezone)}</span></h2>
     <div class="tzbar">
-      <span>From</span><input type="datetime-local" id="winFrom" value="${esc(winFrom)}" style="width:auto">
-      <span>to</span><input type="datetime-local" id="winTo" value="${esc(winTo)}" style="width:auto">
+      <span>From</span><input type="datetime-local" id="winFrom" value="${esc(w.fromInput)}" style="width:auto">
+      <span>to</span><input type="datetime-local" id="winTo" value="${esc(w.toInput)}" style="width:auto">
       <button id="winGo">Show</button>
       <span style="margin-left:auto">Day starts at</span>
       <select id="winStart" style="min-width:0">${Array.from({length:24},(_,i)=>`<option value="${i}"${i===winStart?' selected':''}>${hh(i)}:00</option>`).join('')}</select>
     </div>
-    <div class="rowbtns" style="margin-top:10px">${presets.map(([l,f,to],i)=>`<button class="${f===winFrom&&to===winTo?'on':''}" data-wp="${i}">${esc(l)}</button>`).join('')}</div>
+    <div class="rowbtns" style="margin-top:10px">${presets.map(([k,l])=>`<button class="${k===w.preset?'on':''}" data-wp="${k}">${esc(l)}</button>`).join('')}</div>
     <div class="window" style="margin-top:10px">Showing <b>${esc(w.from)} → ${esc(w.to)}</b> (${w.hoursLong} hours, ${esc(w.offset)})${w.inProgress?' · <span class="pill info">still running</span>':''}${w.halfHourZone?' · edges rounded to whole UTC hours':''}</div>
     <div class="cmp" style="margin-top:10px">
       ${box('visits','Visits')}
@@ -1469,26 +1464,24 @@ function windowCardHtml(w,now){
       <td class="num">${num(d.visits)}</td><td class="num">${num(d.uniques)}</td><td class="num">${num(d.connections)}</td><td class="num">${num(d.matches)}</td>
       <td class="num">${num(d.messages)}</td><td class="num">${num(d.peakOnline)}</td><td class="num muted">${num(d.bots)}</td></tr>`).join('')}</table></div></div>`;
 }
-function wireWindow(w,now){
-  const presets=winPresets(now);
+function wireWindow(w){
   windowBars($('#winHours'),w.hours,winMetric);
-  $('#winGo').onclick=()=>{const f=$('#winFrom').value,t=$('#winTo').value;if(!f||!t)return toast('Pick both times','Choose a start and an end.','warn');winFrom=f;winTo=t;viewActivity();};
-  document.querySelectorAll('[data-wp]').forEach(b=>b.onclick=()=>{const p=presets[+b.dataset.wp];winFrom=p[1];winTo=p[2];viewActivity();});
-  document.querySelectorAll('[data-wr]').forEach(r=>r.onclick=()=>{const [f,t]=r.dataset.wr.split('|');winFrom=f.replace(' ','T');winTo=t.replace(' ','T');viewActivity().then(()=>$('#winFrom').scrollIntoView({block:'center',behavior:'smooth'}));});
+  $('#winGo').onclick=()=>{const f=$('#winFrom').value,t=$('#winTo').value;if(!f||!t)return toast('Pick both times','Choose a start and an end.','warn');winPreset='';winFrom=f;winTo=t;viewActivity();};
+  document.querySelectorAll('[data-wp]').forEach(b=>b.onclick=()=>{winPreset=b.dataset.wp;viewActivity();});
+  document.querySelectorAll('[data-wr]').forEach(r=>r.onclick=()=>{const [f,t]=r.dataset.wr.split('|');winPreset='';winFrom=f.replace(' ','T');winTo=t.replace(' ','T');viewActivity().then(()=>$('#winFrom').scrollIntoView({block:'center',behavior:'smooth'}));});
   $('#winMetric').onchange=(e)=>{winMetric=e.target.value;windowBars($('#winHours'),w.hours,winMetric);};
   $('#winStart').onchange=(e)=>{winStart=+e.target.value;try{localStorage.setItem('tl_day_start',String(winStart));}catch(_){}
-    [winFrom,winTo]=defaultWindow(now);viewActivity();};
+    if(!winPreset)winPreset='yesterday';viewActivity();};
 }
 
 async function viewActivity(){
   if(!actTz)actTz=browserTz();
   const r=await vapi('activity?tz='+encodeURIComponent(actTz));
   actTz=r.timezone;
-  if(!winFrom||!winTo)[winFrom,winTo]=defaultWindow(r.now);
+  if(!winPreset&&(!winFrom||!winTo))winPreset='yesterday';
   let w;
-  try{w=await vapi('window?tz='+encodeURIComponent(actTz)+'&startHour='+winStart+'&count=14&from='+encodeURIComponent(winFrom)+'&to='+encodeURIComponent(winTo));}
-  catch(e){toast('Time window',e.message,'warn');[winFrom,winTo]=defaultWindow(r.now);
-    w=await vapi('window?tz='+encodeURIComponent(actTz)+'&startHour='+winStart+'&count=14&from='+encodeURIComponent(winFrom)+'&to='+encodeURIComponent(winTo));}
+  try{w=await vapi(winQuery());}
+  catch(e){toast('Time window',e.message,'warn');winPreset='yesterday';w=await vapi(winQuery());}
   const t=r.today,y=r.yesterday,ysf=r.yesterdaySoFar;
   const metricLabel=(ACT_METRICS.find(m=>m[0]===actMetric)||ACT_METRICS[0])[1];
   const estNote=r.estimatedDays.length
