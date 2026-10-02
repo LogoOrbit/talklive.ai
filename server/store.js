@@ -429,6 +429,30 @@ const PG_HISTORY_BUDGET_BYTES = 150 * 1024 * 1024; // of a 500MB free database
 let lastPgHistoryAt = 0;
 
 async function ensureSchema() {
+  // What already exists, in one cheap catalog read. ALTER TABLE ... ENABLE ROW
+  // LEVEL SECURITY and ADD COLUMN take an exclusive lock even when there is
+  // nothing to change, so on a slow database a fresh boot queued behind the
+  // previous process's in-flight query and every other query queued behind
+  // it (2026-10-02). Statements whose effect is already in place are skipped.
+  const st = (await pgPool.query(`SELECT
+    (SELECT coalesce(json_object_agg(c.relname, c.relrowsecurity), '{}'::json) FROM pg_class c
+       JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = current_schema() AND c.relkind = 'r') AS tables,
+    (SELECT coalesce(json_agg(c.relname), '[]'::json) FROM pg_class c
+       JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = current_schema() AND c.relkind = 'i') AS indexes,
+    (SELECT count(*) FROM information_schema.columns
+      WHERE table_schema = current_schema() AND table_name = 'voice_notes'
+        AND column_name IN ('from_name', 'to_client', 'to_name', 'transcript', 'tags'))::int AS vn_cols`)).rows[0];
+  const tables = st.tables || {};
+  const indexes = new Set(st.indexes || []);
+  const enableRls = async (t) => {
+    if (tables[t] === true) return;
+    try { await pgPool.query(`ALTER TABLE ${t} ENABLE ROW LEVEL SECURITY`); } catch (_) { /* not the owner */ }
+  };
+  const createIndex = async (name, sql) => {
+    if (!indexes.has(name)) await pgPool.query(sql);
+  };
   await pgPool.query(
     'CREATE TABLE IF NOT EXISTS owner_store (id int PRIMARY KEY, doc jsonb NOT NULL, updated_at timestamptz NOT NULL DEFAULT now())'
   );
@@ -444,9 +468,7 @@ async function ensureSchema() {
   // and it holds password hashes and private messages, so that matters.
   // Best effort: a role that is not the owner cannot ALTER, and that must
   // never be the reason the store fails to connect.
-  for (const t of ['owner_store', 'owner_store_history']) {
-    try { await pgPool.query(`ALTER TABLE ${t} ENABLE ROW LEVEL SECURITY`); } catch (_) { /* see above */ }
-  }
+  for (const t of ['owner_store', 'owner_store_history']) await enableRls(t);
   // Password-reset OTPs get a real table instead of a corner of the document:
   // they are written and deleted constantly, expire on their own schedule, and
   // rewriting the whole document for each one would be wasteful. Created here
@@ -464,8 +486,11 @@ async function ensureSchema() {
     used_at bigint,
     created_at bigint NOT NULL
   )`);
-  await pgPool.query('CREATE INDEX IF NOT EXISTS password_resets_email_idx ON password_resets (email)');
-  await pgPool.query('CREATE INDEX IF NOT EXISTS password_resets_token_idx ON password_resets (token_hash)');
+  await createIndex('password_resets_email_idx', 'CREATE INDEX IF NOT EXISTS password_resets_email_idx ON password_resets (email)');
+  await createIndex('password_resets_token_idx', 'CREATE INDEX IF NOT EXISTS password_resets_token_idx ON password_resets (token_hash)');
+  // Reset codes are as sensitive as the store: closed to Supabase's public API
+  // like the other tables (the server's own login owns the table).
+  await enableRls('password_resets');
   // Friend voice notes: binary clips kept out of the document, which is
   // rewritten whole on every save. Additive only - a failure here disables
   // voice notes and must never be the reason the store fails to connect.
@@ -481,14 +506,14 @@ async function ensureSchema() {
     )`);
     // Moderation metadata, added after the table first shipped. ADD COLUMN IF
     // NOT EXISTS only ever adds; it never touches rows already stored.
-    await pgPool.query(`ALTER TABLE voice_notes
+    if (st.vn_cols < 5) await pgPool.query(`ALTER TABLE voice_notes
       ADD COLUMN IF NOT EXISTS from_name text,
       ADD COLUMN IF NOT EXISTS to_client text,
       ADD COLUMN IF NOT EXISTS to_name text,
       ADD COLUMN IF NOT EXISTS transcript text,
       ADD COLUMN IF NOT EXISTS tags jsonb`);
-    await pgPool.query('CREATE INDEX IF NOT EXISTS voice_notes_created_idx ON voice_notes (created_at DESC)');
-    try { await pgPool.query('ALTER TABLE voice_notes ENABLE ROW LEVEL SECURITY'); } catch (_) { /* not the owner */ }
+    await createIndex('voice_notes_created_idx', 'CREATE INDEX IF NOT EXISTS voice_notes_created_idx ON voice_notes (created_at DESC)');
+    await enableRls('voice_notes');
   } catch (err) {
     console.error('[store] voice_notes table unavailable:', err.message);
   }
@@ -501,8 +526,8 @@ async function ensureSchema() {
       ts bigint NOT NULL,
       doc jsonb NOT NULL
     )`);
-    await pgPool.query('CREATE INDEX IF NOT EXISTS chat_transcripts_ts_idx ON chat_transcripts (ts DESC)');
-    try { await pgPool.query('ALTER TABLE chat_transcripts ENABLE ROW LEVEL SECURITY'); } catch (_) { /* not the owner */ }
+    await createIndex('chat_transcripts_ts_idx', 'CREATE INDEX IF NOT EXISTS chat_transcripts_ts_idx ON chat_transcripts (ts DESC)');
+    await enableRls('chat_transcripts');
   } catch (err) {
     console.error('[store] chat_transcripts table unavailable:', err.message);
   }
