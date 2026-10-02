@@ -215,37 +215,6 @@
     <img class="page-art page-art-hero" src="/illustrations/audio-conversation.svg" width="922" height="384" alt="" decoding="async" />
   </section>
 
-  <section class="demo reveal" aria-labelledby="demoTitle">
-    <h2 id="demoTitle">See it in action</h2>
-    <p>Pick a spirit animal, tap once, and you're talking to someone new - by voice or text.</p>
-    <div class="demo-frame">
-      <video id="demoVideo" muted loop playsinline preload="none" poster="/media/talklive-ad-poster.jpg?v=20260923ad" width="540" height="960" aria-label="TalkLive in action: picking a spirit animal, matching, a live voice call and a text chat">
-        <source src="/media/talklive-ad-540.mp4?v=20260923ad" type="video/mp4" />
-        <source src="/media/talklive-ad-540.webm?v=20260923ad" type="video/webm" />
-      </video>
-      <button type="button" class="demo-sound" id="demoSound" aria-pressed="false">Sound off</button>
-    </div>
-  </section>
-  <script>
-  (function () {
-    var v = document.getElementById('demoVideo'), b = document.getElementById('demoSound');
-    if (!v) return;
-    // Download and play only once the video scrolls into view, pause when it leaves.
-    var still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (still) { v.controls = true; b.hidden = true; }
-    else if ('IntersectionObserver' in window) {
-      new IntersectionObserver(function (es) {
-        es.forEach(function (e) { if (e.isIntersecting) { var p = v.play(); if (p && p.catch) p.catch(function () {}); } else v.pause(); });
-      }, { threshold: 0.35 }).observe(v);
-    } else { v.preload = 'metadata'; v.controls = true; }
-    b.addEventListener('click', function () {
-      v.muted = !v.muted;
-      if (!v.muted && v.paused) v.play();
-      b.textContent = v.muted ? 'Sound off' : 'Sound on';
-      b.setAttribute('aria-pressed', String(!v.muted));
-    });
-  })();
-  </script>
 
   <section class="features">
     <div class="card feature reveal"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></span><h3>Instant matching</h3><p>Tap once and you're paired with a waiting stranger in seconds.</p></div>
