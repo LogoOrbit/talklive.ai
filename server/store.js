@@ -870,7 +870,13 @@ function persistPg() {
 // takes every one. Boot pushes a newer mirror up, so a hard kill inside the
 // window loses nothing. Explicit persistNow() calls (admin actions, shutdown,
 // crash) still write through immediately.
-const PG_SAVE_EVERY_MS = Math.max(0, Number(process.env.PG_SAVE_EVERY_MS) || 60 * 1000);
+//
+// 15 minutes, not 1: each save sends the whole document (~12MB of JSON) out of
+// Fly, and in September 2026 that was 874GB of egress - $17.49 of a $21.36
+// bill. Every change still lands on the volume within seconds, shutdown still
+// sends a final save, and boot pushes a newer volume copy up, so this only
+// matters if the volume itself is destroyed.
+const PG_SAVE_EVERY_MS = Math.max(0, Number(process.env.PG_SAVE_EVERY_MS) || 15 * 60 * 1000);
 let lastPgSaveAt = 0;
 let pgTimer = null;
 function persistPgThrottled() {
