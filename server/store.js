@@ -79,6 +79,7 @@ let pgPool = null;
 // can both see it regardless of evaluation order.
 let pgUnreachable = false;
 let pgRetryDelay = 5000;
+let schemaReady = false;
 if (DATABASE_URL) {
   const { Pool } = require('pg');
   pgPool = new Pool({
@@ -673,12 +674,30 @@ async function connectPg(atBoot) {
   backendStatus.dbUser = who.rows[0].u;
   backendStatus.dbSchema = who.rows[0].s;
   console.log(`[store] database login ${backendStatus.dbUser}, schema ${backendStatus.dbSchema}`);
-  await ensureSchema();
-  const res = await pgPool.query('SELECT doc FROM owner_store WHERE id = 1');
-  giveUpIfAbandoned();
-  const pgDoc = res.rows.length ? res.rows[0].doc : null;
+  // A dozen statements, some taking table locks: once per process is enough,
+  // not once per reconnect attempt against a database that is already slow.
+  if (!schemaReady) {
+    await ensureSchema();
+    schemaReady = true;
+  }
   const local = atBoot ? bootLocal() : (runningOnMirror ? data : null);
-  const verdict = decide(pgDoc, local);
+  // Read the version stamp first. When the database holds an older version of
+  // the same history - the usual case after an outage or a restart - that is
+  // all the decision needs, and the ~12MB document is not downloaded at all.
+  const metaRes = await pgPool.query(`SELECT doc->'_meta' AS meta FROM owner_store WHERE id = 1`);
+  giveUpIfAbandoned();
+  const pgMeta = metaRes.rows.length ? (metaRes.rows[0].meta || {}) : null;
+  let pgDoc;
+  let verdict;
+  if (pgMeta && hasAnything(local) && pgMeta.lineage && pgMeta.lineage === lineageOf(local)
+      && revOf(local) > (Number(pgMeta.rev) || 0)) {
+    verdict = 'push-local';
+  } else {
+    const res = await pgPool.query('SELECT doc FROM owner_store WHERE id = 1');
+    giveUpIfAbandoned();
+    pgDoc = res.rows.length ? res.rows[0].doc : null;
+    verdict = decide(pgDoc, local);
+  }
   const n = (o) => Object.keys(o || {}).length;
 
   backendStatus.seededFromFile = false;
@@ -692,26 +711,34 @@ async function connectPg(atBoot) {
     stampMeta();
     const sent = JSON.stringify(data);
     confirmedRev = revOf(data);
+    const counts = {
+      accounts: n(data.accounts),
+      friends: n((data.social || {}).friends),
+      chats: n((data.social || {}).friendChats),
+      sessions: n(data.authSessions),
+    };
     await pgPool.query(
       'INSERT INTO owner_store (id, doc, updated_at) VALUES (1, $1, now()) ON CONFLICT (id) DO UPDATE SET doc = $1, updated_at = now()',
       [sent]
     );
     // Read it back: this is the one moment the data exists in a place nobody
-    // has checked yet.
-    const back = await pgPool.query('SELECT doc FROM owner_store WHERE id = 1');
-    const got = back.rows[0] && back.rows[0].doc;
+    // has checked yet. The version stamp is enough to prove the write landed.
+    const back = await pgPool.query(`SELECT doc->'_meta'->>'rev' AS rev FROM owner_store WHERE id = 1`);
     giveUpIfAbandoned();
-    if (revOf(got) !== confirmedRev) throw new Error('wrote the store to Postgres but read back a different version');
-    const fresh = isEmptyDoc(pgDoc);
+    if (!back.rows.length || Number(back.rows[0].rev) !== confirmedRev) {
+      throw new Error('wrote the store to Postgres but read back a different version');
+    }
+    // pgDoc is only fetched when the version stamp could not decide alone.
+    const fresh = pgDoc !== undefined && isEmptyDoc(pgDoc);
     backendStatus.seededFromFile = fresh;
     console.log('[store] ------------------------------------------------------------');
     console.log(fresh
       ? `[store] FIRST RUN ON POSTGRES - copied the store up from ${DATA_FILE}`
       : '[store] Postgres was behind the mirror - brought it up to date');
-    console.log('[store]  accounts:', n(got.accounts),
-      '· people with friends:', n((got.social || {}).friends),
-      '· friend chats:', n((got.social || {}).friendChats),
-      '· logged-in sessions:', n(got.authSessions));
+    console.log('[store]  accounts:', counts.accounts,
+      '· people with friends:', counts.friends,
+      '· friend chats:', counts.chats,
+      '· logged-in sessions:', counts.sessions);
     console.log('[store] ------------------------------------------------------------');
   } else if (verdict === 'conflict') {
     await pgHistory('conflict', local);
@@ -2678,7 +2705,9 @@ function retryPg() {
       console.log('[store] the database is back - both copies are in step again.');
     } catch (err) {
       backendStatus.error = String(err.message || err);
-      pgRetryDelay = Math.min(pgRetryDelay * 2, 60000);
+      // Up to 5 minutes: the app serves the volume copy meanwhile, and a
+      // struggling database recovers faster without a reconnect every minute.
+      pgRetryDelay = Math.min(pgRetryDelay * 2, 5 * 60 * 1000);
       retryPg();
     }
   }, pgRetryDelay).unref();
