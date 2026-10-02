@@ -10302,6 +10302,21 @@ socket.on('owner-warning', (w) => {
   ownerWarningLoad.then(() => window.TalkLiveWarning && window.TalkLiveWarning.show(socket, w));
 });
 
+// The owner's reply to feedback this person sent; loaded only when one arrives.
+let feedbackReplyLoad = null;
+socket.on('feedback-reply', (r) => {
+  if (!feedbackReplyLoad) {
+    feedbackReplyLoad = new Promise((resolve) => {
+      const s = document.createElement('script');
+      s.src = '/feedback-reply.js?v=1';
+      s.onload = resolve;
+      s.onerror = () => { feedbackReplyLoad = null; };
+      document.head.appendChild(s);
+    });
+  }
+  feedbackReplyLoad.then(() => window.TalkLiveFeedbackReply && window.TalkLiveFeedbackReply.show(socket, r));
+});
+
 // Post-call "how was it?" - the card loads only when first needed.
 socket.on('rate-prompt', (d) => {
   const show = () => window.TalkLiveRate && window.TalkLiveRate.show(socket, d);

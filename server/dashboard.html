@@ -354,6 +354,7 @@ table.heat{min-width:480px}table.heat td.num{border-radius:6px}
 .fmsg .top{display:flex;justify-content:space-between;gap:10px;font-size:.76rem;color:var(--muted);margin-bottom:4px;flex-wrap:wrap;align-items:center}
 .fmsg .top b{color:var(--text);font-size:.85rem}
 .fmsg .txt{font-size:.9rem;line-height:1.5;overflow-wrap:anywhere}
+.fbreply{margin-top:8px;padding:8px 11px;border-left:3px solid var(--accent-2);background:var(--surface);border-radius:0 10px 10px 0}
 .searchbar{display:flex;gap:8px;margin-bottom:12px;max-width:460px}
 .searchbar .btn{width:auto;margin:0;padding:9px 16px}
 
@@ -2705,11 +2706,44 @@ async function viewFeedback(){
   <div class="tbar"><input id="fbQ" class="grow" placeholder="Search feedback…" value="${esc(fbQ)}">${fbQ?'<button class="lnk" id="fbClear">Clear</button>':''}${exportLink('feedback','Export feedback')}</div>
   <div class="feed">
   ${list.map(f=>`<div class="fmsg"><div class="top"><span><b>${esc(f.username)}</b>${f.country?` · ${esc(f.country)}`:''}${f.source==='dev-notice'?' · <span class="pill info">landing notice</span>':''}</span><span>${ago(f.ts)} · ${fmtTs(f.ts)}</span></div>
-  <div class="txt">${esc(f.text)}</div></div>`).join('')||`<div class="muted">${q?'No feedback matches that search.':'No feedback yet.'}</div>`}
+  <div class="txt">${esc(f.text)}</div>
+  ${f.reply?`<div class="fbreply"><div class="top"><span><b>Your reply</b> · <span class="pill ${f.reply.seenAt?'good':f.reply.deliveredAt?'info':'warn'}">${f.reply.seenAt?'Seen '+ago(f.reply.seenAt):f.reply.deliveredAt?'Delivered, not dismissed yet':'Waiting for their next visit'}</span></span><span>${ago(f.reply.ts)}</span></div><div class="txt">${esc(f.reply.text)}</div></div>`:''}
+  ${f.canReply?`<div style="margin-top:6px"><button class="lnk" data-fbreply="${esc(f.id)}">${f.reply?'Edit reply':'↩ Reply'}</button></div>`:''}</div>`).join('')||`<div class="muted">${q?'No feedback matches that search.':'No feedback yet.'}</div>`}
   </div></div>`;
+  document.querySelectorAll('[data-fbreply]').forEach(b=>{b.onclick=()=>replyFeedback(r.feedback.find(f=>f.id===b.dataset.fbreply));});
   const inp=$('#fbQ');
   onFilterInput(inp,(v)=>{fbQ=v;},()=>viewFeedback().then(()=>keepFocus('#fbQ')));
   const cl=$('#fbClear');if(cl)cl.onclick=()=>{fbQ='';viewFeedback();};
+}
+
+function replyFeedback(f){
+  if(!f)return;
+  modal(`↩ Reply to ${esc(f.username||'user')}`,
+    `<div class="fmsg" style="margin-bottom:12px"><div class="txt">${esc(f.text)}</div></div>
+     <label>Your reply <span id="fbrCount" style="text-transform:none;letter-spacing:0"></span></label>
+     <textarea id="fbrMsg" rows="5" maxlength="1000">${esc(f.reply?f.reply.text:'')}</textarea>
+     <div class="muted" style="font-size:.78rem;margin-top:8px">Shown in the app as a reply from "the TalkLive team" next to their feedback. Delivered now if they are online, otherwise the next time they open TalkLive.${f.reply?' Saving replaces your earlier reply and shows it to them again.':''}</div>
+     <div class="rowbtns" style="margin-top:16px">
+       <button id="fbrGo" style="padding:9px 16px">Send reply</button>
+       <button id="fbrCancel" style="padding:9px 16px">Cancel</button>
+     </div>`,
+    (sheet)=>{
+      const msg=sheet.querySelector('#fbrMsg'),cnt=sheet.querySelector('#fbrCount'),go=sheet.querySelector('#fbrGo');
+      const upd=()=>{cnt.textContent=`(${msg.value.length}/1000)`;};
+      msg.oninput=upd;upd();msg.focus();
+      sheet.querySelector('#fbrCancel').onclick=closeModal;
+      go.onclick=async()=>{
+        const text=msg.value.trim();
+        if(text.length<2){toast('Write the reply','It cannot be empty.','warn');msg.focus();return;}
+        go.disabled=true;
+        try{
+          const r=await post('feedback/'+encodeURIComponent(f.id)+'/reply',{message:text});
+          closeModal();
+          toast('Reply sent to '+(f.username||'user'),r.delivered?'They are online - it is on their screen now.':'They will see it the next time they open TalkLive.','good');
+          if(tab==='feedback')load();
+        }catch(e){go.disabled=false;toast('Could not send reply',e.message,'bad');}
+      };
+    },{mid:true});
 }
 
 async function viewAudit(){

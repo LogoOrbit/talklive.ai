@@ -3239,6 +3239,21 @@
     ownerWarningLoad.then(function () { if (window.TalkLiveWarning) window.TalkLiveWarning.show(socket, w); });
   });
 
+  // The owner's reply to feedback this person sent; loaded only when one arrives.
+  var feedbackReplyLoad = null;
+  socket.on('feedback-reply', function (r) {
+    if (!feedbackReplyLoad) {
+      feedbackReplyLoad = new Promise(function (resolve) {
+        var s = document.createElement('script');
+        s.src = '/feedback-reply.js?v=1';
+        s.onload = resolve;
+        s.onerror = function () { feedbackReplyLoad = null; };
+        document.head.appendChild(s);
+      });
+    }
+    feedbackReplyLoad.then(function () { if (window.TalkLiveFeedbackReply) window.TalkLiveFeedbackReply.show(socket, r); });
+  });
+
   socket.on('rate-prompt', function (d) {
     function show() { if (window.TalkLiveRate) window.TalkLiveRate.show(socket, d); }
     if (window.TalkLiveRate) return show();

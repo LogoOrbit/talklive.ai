@@ -111,7 +111,9 @@ function defaults() {
     sessions: [], // { token, createdAt, expiresAt, ip }
     bans: [], // { id, clientId, ip, username, country, city, reason, createdAt, expiresAt, liftedAt }
     reports: [], // { id, ts, reporter, reported, reason, detail, handled }
-    feedback: [], // { id, ts, username, country, text }
+    // { id, ts, username, country, text, clientId, account, reply }; reply is
+    // the owner's answer: { text, ts, deliveredAt, seenAt } (see setFeedbackReply).
+    feedback: [],
     // Owner-sent behaviour warnings, newest first: { id, ts, clientId, account,
     // username, country, reason, message, deliveredAt, acknowledgedAt,
     // withdrawnAt }. Re-shown on every visit until the person acknowledges it.
@@ -1493,6 +1495,46 @@ function addFeedback(entry) {
   return rec;
 }
 
+// --- Feedback replies ---------------------------------------------------
+// The owner answers a feedback message from the dashboard. Like a warning it is
+// shown to the sender immediately if they are online, otherwise on their next
+// visit, until they dismiss it. Feedback sent before replies existed carries no
+// clientId/account and cannot be answered.
+const REPLY_TTL_MS = 30 * 86400000;
+
+function setFeedbackReply(id, text) {
+  const f = data.feedback.find((x) => x.id === id);
+  if (!f || (!f.clientId && !f.account)) return null;
+  f.reply = { text, ts: Date.now(), deliveredAt: null, seenAt: null };
+  save();
+  return f;
+}
+
+function pendingFeedbackRepliesFor(clientId, account) {
+  const acct = account ? String(account).toLowerCase() : null;
+  const cutoff = Date.now() - REPLY_TTL_MS;
+  return data.feedback.filter((f) => f.reply && !f.reply.seenAt && f.reply.ts > cutoff
+    && ((clientId && f.clientId === clientId) || (acct && f.account === acct))).reverse();
+}
+
+function markFeedbackReplyDelivered(id) {
+  const f = data.feedback.find((x) => x.id === id);
+  if (f && f.reply && !f.reply.deliveredAt) { f.reply.deliveredAt = Date.now(); save(); }
+  return f || null;
+}
+
+// Only the person who sent the feedback can dismiss the reply.
+function acknowledgeFeedbackReply(id, clientId, account) {
+  const acct = account ? String(account).toLowerCase() : null;
+  const f = data.feedback.find((x) => x.id === id);
+  if (!f || !f.reply || f.reply.seenAt) return null;
+  if (!((clientId && f.clientId === clientId) || (acct && f.account === acct))) return null;
+  f.reply.seenAt = Date.now();
+  if (!f.reply.deliveredAt) f.reply.deliveredAt = f.reply.seenAt;
+  save();
+  return f;
+}
+
 function addError(entry) {
   // Collapse duplicates (same source+message) into a counter.
   const existing = data.errors.find((e) => e.source === entry.source && e.message === entry.message);
@@ -2827,6 +2869,10 @@ module.exports = {
   topReported,
   markReportsHandledFor,
   addFeedback,
+  setFeedbackReply,
+  pendingFeedbackRepliesFor,
+  markFeedbackReplyDelivered,
+  acknowledgeFeedbackReply,
   addError,
   activeBans,
   findActiveBan,

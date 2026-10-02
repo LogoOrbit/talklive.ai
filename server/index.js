@@ -970,8 +970,36 @@ function sendPendingWarnings(socket) {
   }
 }
 
+// Owner replies to feedback: same delivery as warnings - live to every open tab
+// of the sender, otherwise on their next visit until they dismiss it.
+function feedbackReplyPayload(f) {
+  return { id: f.id, ts: f.reply.ts, feedback: f.text, message: f.reply.text };
+}
+function deliverFeedbackReply(f) {
+  let sent = 0;
+  for (const [sid, p] of profiles) {
+    const sock = io.sockets.sockets.get(sid);
+    if (!sock) continue;
+    const acct = socketAuth.get(sid) || null;
+    if ((f.clientId && p.clientId === f.clientId) || (f.account && acct === f.account)) {
+      sock.emit('feedback-reply', feedbackReplyPayload(f));
+      sent++;
+    }
+  }
+  if (sent) store.markFeedbackReplyDelivered(f.id);
+  return sent;
+}
+function sendPendingFeedbackReplies(socket) {
+  const p = profiles.get(socket.id);
+  if (!p) return;
+  for (const f of store.pendingFeedbackRepliesFor(p.clientId, socketAuth.get(socket.id))) {
+    socket.emit('feedback-reply', feedbackReplyPayload(f));
+    store.markFeedbackReplyDelivered(f.id);
+  }
+}
+
 const gameTracker = createGameTracker({ store, profileOf: (sid) => profiles.get(sid) });
-const admin = createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning, getLiveGames: () => gameTracker.live() });
+const admin = createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning, deliverFeedbackReply, getLiveGames: () => gameTracker.live() });
 app.use('/owner', admin.router);
 
 // Maintenance mode: when on, every non-dashboard page gets a friendly 503.
@@ -4411,7 +4439,12 @@ io.on('connection', (socket) => {
     // signed-in person's account is attached by its own event, which can land
     // after 'join'; the page ignores a warning it is already showing.
     sendPendingWarnings(socket);
-    setTimeout(() => { if (socket.connected) sendPendingWarnings(socket); }, 3000).unref?.();
+    sendPendingFeedbackReplies(socket);
+    setTimeout(() => {
+      if (!socket.connected) return;
+      sendPendingWarnings(socket);
+      sendPendingFeedbackReplies(socket);
+    }, 3000).unref?.();
 
     // Referrals. The code travels in ?ref= on the landing URL and is held in the
     // browser until registration, because the person clicking the link has no
@@ -4714,6 +4747,13 @@ io.on('connection', (socket) => {
     store.acknowledgeWarning(payload.id, p.clientId, socketAuth.get(socket.id));
   });
 
+  // "Got it" on an owner reply to this person's feedback.
+  socket.on('feedback-reply-ack', (payload = {}) => {
+    const p = profiles.get(socket.id);
+    if (!p || typeof payload.id !== 'string') return;
+    store.acknowledgeFeedbackReply(payload.id, p.clientId, socketAuth.get(socket.id));
+  });
+
   socket.on('rate-call', (payload = {}) => {
     const p = profiles.get(socket.id);
     const pending = p && p.pendingRating;
@@ -4741,7 +4781,11 @@ io.on('connection', (socket) => {
     const source = payload.source === 'dev-notice' ? 'dev-notice' : 'settings';
     console.log(`[feedback:${source}] from ${who}: ${text}`);
     store.recordFeature('feedback');
-    store.addFeedback({ username: p ? p.username : 'Unknown', country: p ? p.countryName : '', city: p ? p.city : '', text, source });
+    // clientId/account are what let the owner reply from the dashboard.
+    store.addFeedback({
+      username: p ? p.username : 'Unknown', country: p ? p.countryName : '', city: p ? p.city : '', text, source,
+      clientId: p ? p.clientId : null, account: socketAuth.get(socket.id) || null,
+    });
     // No email alert for user feedback, same as user reports above: it is
     // recorded and reviewable in the owner dashboard at /owner instead.
   });

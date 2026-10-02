@@ -316,7 +316,7 @@ function generateConclusion(runtime, report) {
 }
 
 // --- Module wiring ---
-function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning, getLiveGames }) {
+function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning, deliverFeedbackReply, getLiveGames }) {
   const router = express.Router();
   router.use(express.json({ limit: '64kb' }));
 
@@ -757,7 +757,24 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
   });
 
   router.get('/api/feedback', (req, res) => {
-    res.json({ feedback: store.data.feedback.slice(0, 300) });
+    // clientId/account stay server-side; the dashboard only needs to know
+    // whether a reply is possible.
+    res.json({
+      feedback: store.data.feedback.slice(0, 300).map(({ clientId, account, ...f }) => ({ ...f, canReply: !!(clientId || account) })),
+    });
+  });
+
+  // Reply to one feedback message. Shown in the app to whoever sent it - now if
+  // they are online, otherwise on their next visit. Replying again replaces it.
+  router.post('/api/feedback/:id/reply', (req, res) => {
+    const text = String((req.body || {}).message || '').trim().slice(0, 1000);
+    if (text.length < 2) return res.status(400).json({ error: 'Write the reply first.' });
+    const f = store.setFeedbackReply(req.params.id, text);
+    if (!f) return res.status(404).json({ error: 'Feedback not found, or sent before replies were supported.' });
+    const sentTo = deliverFeedbackReply ? deliverFeedbackReply(f) : 0;
+    store.audit('feedback-reply', reqIp(req), `Replied to feedback from ${f.username || 'unknown'}${sentTo ? ' - delivered live' : ' - queued for next visit'}`);
+    const { clientId, account, ...out } = f;
+    res.json({ ok: true, feedback: { ...out, canReply: true }, delivered: sentTo > 0 });
   });
 
   router.get('/api/accounts', (req, res) => {
