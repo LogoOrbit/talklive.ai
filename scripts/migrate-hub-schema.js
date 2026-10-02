@@ -37,8 +37,6 @@ const SITE = 'https://talklive.app';
 
 // Each hub, and the URL prefix its member pages share.
 const HUBS = [
-  { file: 'countries/index.html', prefix: '/countries/', name: 'Countries you can chat with on TalkLive' },
-  { file: 'cities/index.html', prefix: '/cities/', name: 'Cities you can chat with on TalkLive' },
   { file: 'languages/index.html', prefix: '/languages/', name: 'Languages you can practise on TalkLive' },
 ];
 

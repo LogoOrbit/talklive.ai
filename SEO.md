@@ -11,8 +11,10 @@ not hand-edit those files - run `npm run build:seo` and edit the source:
 |---|---|
 | `scripts/build-seo.js` | the page/blog/locale templates, all schema, sitemaps, RSS, `llms.txt` |
 | `scripts/data/geo.js` | country + city + language facts |
-| `scripts/geo-pages.js` | `/countries/*`, `/cities/*`, `/languages/*` and their hubs |
+| `scripts/region-pages.js` | `/regions/` and the five regional guides (replaced `/countries/*` and `/cities/*`, which now 301 here) |
+| `scripts/geo-pages.js` | orphaned; once produced `/countries/*`, `/cities/*`, `/languages/*` |
 | `scripts/pages-extra.js`, `pages-extra2.js` | hand-written landing pages |
+| `scripts/migrate-regions.js` | rewrites links to retired country/city/alternative URLs in pages on disk |
 | `scripts/blog-extra.js`, `blog-extra2.js` | hand-written articles |
 | `scripts/locales.js` | the 16 localized homepages |
 | `scripts/seo-lastmod.json` | committed `lastmod` manifest (see below) |
@@ -65,6 +67,13 @@ being followed.
 ---
 
 ## What is on the site
+
+> **October 2026:** the 45 country pages, 113 city pages and nine thinner
+> "X alternative" pages (Chatspin, Shagle, Camsurf, ChatHub, Azar, Holla,
+> Tinychat, Wakie, Free4Talk) were removed after AdSense rejected the site for
+> low-value content. Their facts now live in five regional guides under
+> `/regions/`, and `server/index.js` 301s every old URL to the page that holds
+> its content. The table below predates that change.
 
 | Cluster | URLs | Sitemap |
 |---|---|---|

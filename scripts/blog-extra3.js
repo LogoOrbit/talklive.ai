@@ -276,7 +276,7 @@ module.exports = [
       ]},
       { h: 'Which language, and where the people are', ps: [
         'English is the easy case: on any large random platform a substantial share of conversations happen in English by default, between people for whom it is a second language on both sides. That is genuinely useful practice and often less intimidating than talking to a native speaker.',
-        'For other languages, a country preference improves the odds without guaranteeing anything. TalkLive has pages for the languages people most often practise this way - <a href="/languages/">the language index</a> lists them - and a <a href="/countries/">country index</a> if you would rather aim at a region.',
+        'For other languages, a country preference improves the odds without guaranteeing anything. TalkLive has pages for the languages people most often practise this way - <a href="/languages/">the language index</a> lists them - and <a href="/regions/">regional guides</a> if you would rather aim at a part of the world.',
         'Time zones matter more than most people realise. Aim at the evening in the place you want to reach, not yours.',
       ]},
       { h: 'What this is not', ps: [

@@ -43,7 +43,7 @@ module.exports = [
     prose: [
       { h: 'Start with the kind of help you need', body: [
         `For privacy controls, recording limits and reporting guidance, begin at the <a href="/safety">Safety Center</a>. For a plain-language explanation of matching, signalling, encrypted WebRTC audio and TalkLive's production TURN relay, read <a href="/how-it-works">How TalkLive Works</a>. Those two hubs explain the product before asking you to trust it.`,
-        `If your goal is discovery, use the <a href="/languages/">Languages hub</a> for translated interfaces and speaking-practice guidance, the <a href="/countries/">Countries hub</a> for honest information about country preferences, or the <a href="/alternatives">Alternatives guide</a> to compare chat formats without pretending every service is interchangeable.`,
+        `If your goal is discovery, use the <a href="/languages/">Languages hub</a> for translated interfaces and speaking-practice guidance, the <a href="/regions/">regional guides</a> for honest information about country preferences, or the <a href="/alternatives">Alternatives guide</a> to compare chat formats without pretending every service is interchangeable.`,
       ]},
       { h: 'Prepare for the conversation, not a performance', body: [
         `The <a href="/blog/how-to-start-a-conversation-with-a-stranger">conversation opener guide</a> is useful when the first ten seconds feel awkward. The <a href="/blog/how-to-end-a-conversation-politely">polite exit guide</a> is just as important: a short, clear goodbye is better than staying in a conversation neither person wants.`,
@@ -118,7 +118,7 @@ module.exports = [
         `Do not share authentication codes, recovery phrases, banking details, identity documents or intimate material. Avoid links sent by strangers; if a conversation becomes a request for money, investment, emergency assistance or account access, leave and report it.`,
       ]},
       { h: 'Country preferences are not identity checks', body: [
-        `A country label or matching preference is not proof of nationality, residence, language or location. Availability changes with the live queue, and choosing a country does not guarantee that a match from that country will be available. Learn more in the <a href="/countries/">Countries hub</a>.`,
+        `A country label or matching preference is not proof of nationality, residence, language or location. Availability changes with the live queue, and choosing a country does not guarantee that a match from that country will be available. Learn more in the <a href="/regions/">regional guides</a>.`,
         `TalkLive is not a crisis line, counselling service or emergency service. If you or another person may be in immediate danger, contact local emergency services or a qualified crisis resource in the relevant country rather than relying on a random match.`,
       ]},
     ],
@@ -174,7 +174,7 @@ module.exports = [
         `Voice mode asks for microphone permission; text mode does not need a microphone. TalkLive does not record voice calls, although another participant may record on their own device. Typed messages and report context may be retained as explained in the <a href="/privacy">Privacy Policy</a>.`,
       ]},
       { h: 'Use competitor pages as fit guides', body: [
-        `People arriving from Omegle-style products can start with the <a href="/omegle-alternative">Omegle alternative guide</a>. There are also focused pages for people comparing <a href="/ometv-alternative">OmeTV and TalkLive</a> or <a href="/chatroulette-alternative">Chatroulette and TalkLive</a>. If you arrived from a language-practice service built around public group rooms rather than video, the <a href="/free4talk-alternative">group rooms versus one-to-one calls</a> comparison is the relevant one. These pages should be read as format comparisons, not promises that TalkLive reproduces every competitor feature.`,
+        `People arriving from Omegle-style products can start with the <a href="/omegle-alternative">Omegle alternative guide</a>. There are also focused pages for people comparing <a href="/ometv-alternative">OmeTV and TalkLive</a> or <a href="/chatroulette-alternative">Chatroulette and TalkLive</a>. These pages should be read as format comparisons, not promises that TalkLive reproduces every competitor feature.`,
         `Features and prices change. Before making a decision, verify a competitor's current details on its official pages and verify TalkLive limits on <a href="/pricing">Pricing</a>. A useful comparison says who should not choose TalkLive as clearly as who may prefer it.`,
       ]},
       { h: 'A practical format checklist', body: [
@@ -183,7 +183,7 @@ module.exports = [
       ]},
       { h: 'Filters guide a queue; they do not reserve a person', body: [
         `TalkLive offers optional country and interest preferences. They can narrow a search but cannot guarantee a person from a particular country, with a particular identity or speaking a particular language. Availability changes from moment to moment, and matching may broaden when a preferred match is unavailable.`,
-        `If country discovery is your main goal, read the <a href="/countries/">Countries hub</a>. If speaking practice is the goal, use the <a href="/languages/">Languages hub</a> and begin each call by confirming which language both people want to use.`,
+        `If country discovery is your main goal, read the <a href="/regions/">regional guides</a>. If speaking practice is the goal, use the <a href="/languages/">Languages hub</a> and begin each call by confirming which language both people want to use.`,
       ]},
     ],
     faq: [
@@ -198,7 +198,7 @@ module.exports = [
     ctaBandP: 'Try one short voice or text match and decide from the experience, not a ranking.',
     cluster: 'comparisons',
     primaryIntent: 'random chat alternatives and voice versus video chat comparison',
-    relatedPages: ['omegle-alternative', 'ometv-alternative', 'chatroulette-alternative', 'free4talk-alternative', 'safety', 'language-chat-guide', 'country-chat-guide'],
+    relatedPages: ['omegle-alternative', 'ometv-alternative', 'chatroulette-alternative', 'monkey-app-alternative', 'emerald-chat-alternative', 'safety', 'language-chat-guide', 'country-chat-guide'],
     updated: '2026-08-14',
     posts: ['best-random-chat-apps-2026', 'voice-chat-vs-video-chat', 'best-omegle-alternatives'],
   },
@@ -363,7 +363,7 @@ module.exports = [
     prose: [
       { h: 'Matching comes before media', body: [
         `When you start a search, TalkLive places the session in the queue for the mode you selected. The matcher looks for another available participant with compatible settings. Optional country and interest preferences can guide the search, but a selected country, interest, identity or language is not guaranteed.`,
-        `If a narrow preference cannot be fulfilled, matching may broaden so the queue does not wait forever. The <a href="/countries/">Countries hub</a> explains why a live preference cannot reserve a person from a particular place.`,
+        `If a narrow preference cannot be fulfilled, matching may broaden so the queue does not wait forever. The <a href="/regions/">regional guides</a> explains why a live preference cannot reserve a person from a particular place.`,
       ]},
       { h: 'Voice uses WebRTC plus signalling', body: [
         `After a voice pair is selected, the server relays signalling messages that let the two browsers negotiate formats, encryption and the relayed network path. The signalling channel coordinates the connection; it is not an audio recording channel.`,

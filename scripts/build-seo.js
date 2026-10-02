@@ -145,7 +145,7 @@ function footerHtml() {
       { slug: 'resources', label: 'Resource Hub' },
       { slug: 'alternatives', label: 'Alternatives' },
       { slug: 'languages/', label: 'Languages' },
-      { slug: 'countries/', label: 'Countries' },
+      { slug: 'regions/', label: 'Chat by Region' },
       { slug: 'how-it-works', label: 'How It Works' },
       { slug: 'safety', label: 'Safety Center' },
     ] },
@@ -184,8 +184,8 @@ const PAGE_CLUSTERS = {
   voice: ['random-call', 'random-voice-chat', 'free-voice-chat', 'voice-chat-rooms', 'call-random-people', 'free-online-calls', 'international-calls', 'random-video-chat', 'random-video-call', 'stranger-video-call'],
   text: ['random-text-chat', 'text-chat-with-strangers', 'online-chat-rooms'],
   discovery: ['talk-to-strangers', 'random-chat', 'anonymous-chat', 'meet-new-people', 'make-friends-online', 'late-night-chat', 'talk-to-someone', 'pakistani-chat'],
-  language: ['practice-english-speaking', 'language-exchange', 'language-chat-guide', 'country-chat-guide', 'free4talk-alternative'],
-  alternatives: ['omegle-alternative', 'ometv-alternative', 'chatroulette-alternative', 'emerald-chat-alternative', 'monkey-app-alternative', 'chatspin-alternative', 'shagle-alternative', 'camsurf-alternative', 'chathub-alternative', 'azar-alternative', 'holla-alternative', 'tinychat-alternative', 'wakie-alternative', 'alternatives'],
+  language: ['practice-english-speaking', 'language-exchange', 'language-chat-guide', 'country-chat-guide'],
+  alternatives: ['omegle-alternative', 'ometv-alternative', 'chatroulette-alternative', 'emerald-chat-alternative', 'monkey-app-alternative', 'alternatives'],
   trust: ['safety', 'how-it-works', 'resources'],
 };
 
@@ -1610,7 +1610,7 @@ const CORE_PAGES = [
 
 // Additional landing pages live in their own module so this file stays
 // navigable as the SEO surface grows. Same shape as CORE_PAGES.
-const PAGES = CORE_PAGES.concat(require('./pages-extra'), require('./pages-extra3'), require('./search-hubs'));
+const PAGES = CORE_PAGES.concat(require('./pages-extra'), require('./search-hubs'), require('./region-pages'));
 
 // --- Blog -------------------------------------------------------------------
 // Long-form SEO articles targeting long-tail keywords, published under /blog/.
@@ -2317,7 +2317,10 @@ ${alternates}
 
 let count = 0;
 PAGES.forEach((p, i) => {
-  fs.writeFileSync(path.join(PUBLIC, `${p.slug}.html`), page(p, i));
+  // A slug ending in "/" is a directory hub (regions/ -> regions/index.html).
+  const file = path.join(PUBLIC, p.slug.endsWith('/') ? `${p.slug}index.html` : `${p.slug}.html`);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, page(p, i));
   count++;
 });
 
@@ -2596,13 +2599,14 @@ function sitemapCluster(loc) {
   if (p.startsWith('/countries')) return 'countries';
   if (p.startsWith('/cities')) return 'cities';
   if (p.startsWith('/languages')) return 'languages';
+  if (p.startsWith('/regions')) return 'regions';
   if (p.startsWith('/blog')) return 'blog';
   if (MAIN_PATHS.has(p) || LOCALE_HOMES.has(p)) return 'main';
   return 'pages';
 }
 
 // Declaration order in the index, most important cluster first.
-const SITEMAP_CLUSTERS = ['main', 'pages', 'countries', 'cities', 'languages', 'blog'];
+const SITEMAP_CLUSTERS = ['main', 'pages', 'regions', 'languages', 'blog'];
 
 /*
  * Every indexable URL as a {loc, lastmod, xml} record, from both sources: the

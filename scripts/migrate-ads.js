@@ -27,14 +27,14 @@ const appOnlyPages = new Set(['chat.html']);
 // page would contradict the ad-free plan it is selling).
 const noLoaderPages = new Set([...appOnlyPages, ...adFreePages]);
 
-// No Google ads on the geo cluster: /countries/, /cities/ and /languages/.
-// These pages come from one template and, measured on 5-word shingles in
-// <main>, only ~17% (languages) to ~25% (countries) of their text is unique to
-// the page; the 113 city pages are already noindexed as thin. AdSense does not
+// No Google ads on the language cluster (/languages/). These pages come from
+// one template and, measured on 5-word shingles in <main>, only ~17% of their
+// text is unique to the page. (The country and city pages that had the same
+// problem were merged into /regions/ - see scripts/region-pages.js.) AdSense does not
 // allow Google ads on low-value or templated content, and one flagged section
 // can hold up approval for the whole site. The pages stay published and
 // indexed as before - they just carry no ad code and no ad slots.
-const NO_AD_DIRS = ['countries', 'cities', 'languages'];
+const NO_AD_DIRS = ['languages'];
 // Same treatment for two short pages that are about the site rather than
 // content for a reader: /contact (a list of email addresses) and /refund (a
 // policy for a plan that is not on sale). AdSense asks for no ad code on pages
