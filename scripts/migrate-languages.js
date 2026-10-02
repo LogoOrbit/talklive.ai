@@ -15,8 +15,8 @@
  * for each language disagree, which is what keeps "supported" honest:
  *   - public/i18n/<code>.js for every non-English language
  *   - a scripts/locales.js entry for every non-English language
- *   - public/languages/<slug>.html for every language
- *     (create a missing one with scripts/add-language-page.js)
+ * (Each language is a section of the /languages/ feature, built by
+ * scripts/journal/languages.js, which fails the build if one lacks content.)
  *
  * Idempotent: a second run rewrites nothing.
  */
@@ -44,7 +44,6 @@ for (const loc of LOCALES) {
 }
 for (const l of SUPPORTED_LANGUAGES) {
   if (!LANGUAGE_CONTENT.some(c => c.slug === l.slug)) problems.push(`scripts/data/geo.js LANGUAGES has no "${l.slug}" entry`);
-  if (!fs.existsSync(path.join(PUBLIC, 'languages', `${l.slug}.html`))) problems.push(`public/languages/${l.slug}.html is missing (node scripts/add-language-page.js ${l.slug})`);
 }
 if (problems.length) {
   console.error('[languages] scripts/data/languages.js disagrees with the repo:');
@@ -109,23 +108,11 @@ rewrite('index.html', (html) => {
   html = region(html, 'count', String(COUNT), f);
   html = region(html, 'faq', esc(languagesAnswer()), f);
   html = region(html, 'links', '\n' + SUPPORTED_LANGUAGES
-    .map(l => `        <a href="/languages/${l.slug}">${esc(content(l.slug).name)} chat</a>`).join('\n'), f);
+    .map(l => `        <a href="/languages/#${l.slug}">${esc(content(l.slug).name)}</a>`).join('\n'), f);
   // The JSON-LD twin of the visible FAQ answer.
   return once(html,
     /("name": "What languages does TalkLive support\?", "acceptedAnswer": \{ "@type": "Answer", "text": )"(?:[^"\\]|\\.)*"/,
     (_, head) => head + JSON.stringify(languagesAnswer()), f);
-});
-
-// 3. The /languages/ hub: its visible list and every count on it.
-rewrite(path.join('languages', 'index.html'), (html) => {
-  const f = 'languages/index.html';
-  const list = SUPPORTED_LANGUAGES.map((l) => {
-    const c = content(l.slug);
-    return `<strong><a href="/languages/${l.slug}">${esc(c.name)}</a></strong> (${esc(c.native)}, “${esc(c.hello)}”) - ${esc(c.speakers)}.`;
-  }).join('<br />');
-  html = once(html, /(<h2>Every language with a practice page<\/h2><p>)[\s\S]*?(<\/p>)/, `$1${list}$2`, f);
-  html = html.replace(/\b\d+ languages with real native speakers/g, `${COUNT} languages with real native speakers`);
-  return html.replace(/these \d+ pages are about/g, `these ${COUNT} pages are about`);
 });
 
 console.log(`Languages: ${COUNT} supported, ${changed} file(s) rewritten.`);

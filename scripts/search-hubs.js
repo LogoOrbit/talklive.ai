@@ -46,8 +46,8 @@ module.exports = [
         `If your goal is discovery, use the <a href="/languages/">Languages hub</a> for translated interfaces and speaking-practice guidance, the <a href="/regions/">regional guides</a> for honest information about country preferences, or the <a href="/alternatives">Alternatives guide</a> to compare chat formats without pretending every service is interchangeable.`,
       ]},
       { h: 'Prepare for the conversation, not a performance', body: [
-        `The <a href="/blog/how-to-start-a-conversation-with-a-stranger">conversation opener guide</a> is useful when the first ten seconds feel awkward. The <a href="/blog/how-to-end-a-conversation-politely">polite exit guide</a> is just as important: a short, clear goodbye is better than staying in a conversation neither person wants.`,
-        `Language learners can pair the <a href="/practice-english-speaking">English speaking page</a> with the <a href="/blog/practice-english-speaking-online-free">practice routine</a>. A random match is practice with a real person, not a lesson: fluency, patience and willingness to correct you will vary.`,
+        `The <a href="/blog/what-to-talk-about-with-a-stranger">conversation opener guide</a> is useful when the first ten seconds feel awkward. The <a href="/blog/how-to-be-a-good-listener">guide to listening</a> is just as important: a short, clear goodbye is better than staying in a conversation neither person wants.`,
+        `Language learners can pair the <a href="/practice-english-speaking">English speaking page</a> with the <a href="/blog/how-to-practise-a-language-by-speaking">practice routine</a>. A random match is practice with a real person, not a lesson: fluency, patience and willingness to correct you will vary.`,
       ]},
       { h: 'Use factual product information', body: [
         `TalkLive does not record or store voice audio. WebRTC encrypts audio in transit, and TalkLive uses a TURN relay in production for connectivity. Typed messages, reports and related operational data may be retained for a limited period as described in the <a href="/privacy">Privacy Policy</a>.`,
@@ -106,7 +106,7 @@ module.exports = [
     ],
     prose: [
       { h: 'No stranger-chat service can promise complete safety', body: [
-        `TalkLive reduces some forms of exposure by offering voice and text without requiring video. That does not verify the identity, intentions or truthfulness of the person on the other side. Read the <a href="/blog/random-chat-safety-tips">practical safety rules</a> before your first match and treat pressure as useful information, not something you have to negotiate with.`,
+        `TalkLive reduces some forms of exposure by offering voice and text without requiring video. That does not verify the identity, intentions or truthfulness of the person on the other side. Read the <a href="/blog/how-to-spot-a-bot-or-scam-in-random-chat">practical safety rules</a> before your first match and treat pressure as useful information, not something you have to negotiate with.`,
         `The fastest safety control is leaving. Next, block and report exist so you can act without debating whether someone has crossed a precise line. The <a href="/community-guidelines">Community Guidelines</a> and <a href="/terms">Terms</a> explain prohibited behaviour; they do not require you to stay until a violation is proven.`,
       ]},
       { h: 'What happens to voice and text', body: [
@@ -170,11 +170,11 @@ module.exports = [
     ],
     prose: [
       { h: 'What TalkLive is - and is not', body: [
-        `TalkLive is a browser-based random voice and text service for adults. It does not provide random video calls or public multi-person rooms. If seeing the other participant or joining a large group is your main goal, another format is the better fit. The <a href="/blog/voice-chat-vs-video-chat">voice-versus-video guide</a> explains the exposure and bandwidth trade-off in more detail.`,
+        `TalkLive is a browser-based random voice and text service for adults. It does not provide random video calls or public multi-person rooms. If seeing the other participant or joining a large group is your main goal, another format is the better fit. The <a href="/blog/why-talking-to-strangers-feels-easier">essay on why voice feels easier</a> explains the exposure and bandwidth trade-off in more detail.`,
         `Voice mode asks for microphone permission; text mode does not need a microphone. TalkLive does not record voice calls, although another participant may record on their own device. Typed messages and report context may be retained as explained in the <a href="/privacy">Privacy Policy</a>.`,
       ]},
       { h: 'Use competitor pages as fit guides', body: [
-        `People arriving from Omegle-style products can start with the <a href="/omegle-alternative">Omegle alternative guide</a>. There are also focused pages for people comparing <a href="/ometv-alternative">OmeTV and TalkLive</a> or <a href="/chatroulette-alternative">Chatroulette and TalkLive</a>. These pages should be read as format comparisons, not promises that TalkLive reproduces every competitor feature.`,
+        `If you are wondering how Omegle-style sites got here, the Journal's report on <a href="/blog/what-happened-to-omegle">the rise and fall of Omegle</a> covers the history and the trade-offs every stranger-chat service still faces.`,
         `Features and prices change. Before making a decision, verify a competitor's current details on its official pages and verify TalkLive limits on <a href="/pricing">Pricing</a>. A useful comparison says who should not choose TalkLive as clearly as who may prefer it.`,
       ]},
       { h: 'A practical format checklist', body: [
@@ -198,9 +198,9 @@ module.exports = [
     ctaBandP: 'Try one short voice or text match and decide from the experience, not a ranking.',
     cluster: 'comparisons',
     primaryIntent: 'random chat alternatives and voice versus video chat comparison',
-    relatedPages: ['omegle-alternative', 'ometv-alternative', 'chatroulette-alternative', 'monkey-app-alternative', 'emerald-chat-alternative', 'safety', 'language-chat-guide', 'country-chat-guide'],
+    relatedPages: ['safety', 'language-chat-guide', 'country-chat-guide'],
     updated: '2026-08-14',
-    posts: ['best-random-chat-apps-2026', 'voice-chat-vs-video-chat', 'best-omegle-alternatives'],
+    posts: ['what-happened-to-omegle', 'how-to-spot-a-bot-or-scam-in-random-chat', 'how-random-matchmaking-works'],
   },
 
   {
@@ -242,7 +242,7 @@ module.exports = [
         `Start each session with a simple agreement: which language, how long, and whether corrections are welcome. If the match is not suitable, use Next without blaming the other person; they joined for their own conversation goal too.`,
       ]},
       { h: 'Build a repeatable practice habit', body: [
-        `For English, begin with <a href="/practice-english-speaking">Practice English Speaking</a> and the <a href="/blog/practice-english-speaking-online-free">30-day speaking routine</a>. The broader <a href="/language-exchange">Language Exchange guide</a> explains how to make the practice mutual rather than treating a stranger as an unpaid tutor.`,
+        `For English, begin with <a href="/practice-english-speaking">Practice English Speaking</a> and the <a href="/blog/how-to-practise-a-language-by-speaking">four-week speaking routine</a>. The broader <a href="/language-exchange">Language Exchange guide</a> explains how to make the practice mutual rather than treating a stranger as an unpaid tutor.`,
         `A useful session can be five minutes: introduce yourself without identifying details, ask two open questions, notice one phrase you want to reuse, and finish with a clear thank-you. Consistency matters more than forcing every random match into a long lesson.`,
       ]},
       { h: 'Practise safely across languages', body: [
@@ -375,7 +375,7 @@ module.exports = [
       ]},
       { h: 'What “not recorded” does and does not mean', body: [
         `TalkLive does not create voice recordings. That statement does not prevent the other participant from recording sound after their browser plays it. They control their endpoint, and no media protocol can stop a separate recorder in the room.`,
-        `The service still handles operational information required to run and protect the platform, such as network connections, matching state and reports. Read the <a href="/safety">Safety Center</a> for practical boundaries and the <a href="/blog/how-anonymous-voice-chat-works">technical WebRTC guide</a> for a deeper explanation.`,
+        `The service still handles operational information required to run and protect the platform, such as network connections, matching state and reports. Read the <a href="/safety">Safety Center</a> for practical boundaries and the <a href="/blog/how-random-matchmaking-works">explainer on matching and WebRTC</a> for a deeper explanation.`,
       ]},
       { h: 'Ending and moderation are part of the design', body: [
         `A call or chat continues only while both sessions remain connected. Hang up ends it; Next requests another match. Blocking is for preventing unwanted contact, while reporting supplies moderation information about behaviour that may violate the rules.`,

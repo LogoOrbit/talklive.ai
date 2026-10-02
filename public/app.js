@@ -10722,13 +10722,16 @@ socket.on('friend-online', ({ clientId, username, countryCode, country } = {}) =
   if (!card || !titleEl || !blurbEl) return;
 
   const ARTICLES = [
-    { slug: 'science-of-talking-to-strangers', title: 'The Science of Talking to Strangers (And Why It Makes You Happier)', blurb: 'Research keeps finding the same thing: conversations with strangers boost mood and reduce loneliness.' },
-    { slug: 'psychological-benefits-of-talking-to-strangers', title: 'The Psychological Benefits of Talking to Strangers Every Day', blurb: 'How a daily voice chat can lift your mood, ease loneliness, and build real confidence over time.' },
-    { slug: 'how-to-start-a-conversation-with-a-stranger', title: 'How to Start a Conversation With a Stranger: 25 Openers That Actually Work', blurb: 'Never freeze at "hello" again - openers, follow-ups and graceful exits that work.' },
-    { slug: 'is-talklive-safe', title: 'Is TalkLive Safe? How Our Anonymous Voice Chat Actually Works', blurb: 'A transparent look at what we can see, what we cannot, and how bad actors are handled.' },
-    { slug: 'voice-chat-vs-video-chat', title: 'Voice Chat vs Video Chat: Why Audio-Only Wins for Meeting Strangers', blurb: 'Why removing the camera makes stranger chat safer, deeper and less awkward.' },
-    { slug: 'practice-english-speaking-online-free', title: 'How to Practice Speaking English Online for Free - With Real Humans', blurb: 'A free 30-day speaking routine using live conversation instead of flashcards.' },
-    { slug: 'best-omegle-alternatives', title: 'The 10 Best Omegle Alternatives in 2026', blurb: 'What actually matters in a stranger-chat app in 2026, and how the options compare.' },
+    { slug: 'science-of-talking-to-strangers', title: 'We Are Bad at Predicting How Talking to Strangers Will Feel', blurb: 'Six studies on why conversations with strangers go better than we expect.' },
+    { slug: 'why-talking-to-strangers-feels-easier', title: 'Why It Is Sometimes Easier to Tell a Stranger the Truth', blurb: 'A sociologist noticed it in 1908. What is going on, and where it stops working.' },
+    { slug: 'what-happened-to-omegle', title: 'The Rise and Fall of Omegle', blurb: 'Fourteen years of talking to strangers, and the question it left behind.' },
+    { slug: 'loneliness-what-actually-helps', title: 'Loneliness Is Not the Same as Being Alone', blurb: 'Why loneliness makes people pull away, and which kinds of help work best.' },
+    { slug: 'how-random-matchmaking-works', title: 'What Happens in the Two Seconds After You Press Start', blurb: 'Queues, filters, and the relay that carries your voice.' },
+    { slug: 'how-to-be-a-good-listener', title: 'Listening Is a Skill. Most of Us Were Never Taught It.', blurb: 'Ten questions about the underrated half of every conversation.' },
+    { slug: 'phone-anxiety-how-to-get-comfortable-talking', title: 'Why Does My Heart Race Every Time the Phone Rings?', blurb: 'Why calls really are harder, and a ladder out of the fear.' },
+    { slug: 'how-to-practise-a-language-by-speaking', title: 'Why You Understand More Than You Can Say', blurb: 'Notes on the speaking gap, and a four-week routine.' },
+    { slug: 'how-to-spot-a-bot-or-scam-in-random-chat', title: 'A Field Guide to the Scams That Start With "Hi"', blurb: 'Seven common scams and the one rule that defeats them.' },
+    { slug: 'what-to-talk-about-with-a-stranger', title: '30 Questions That Get Past Small Talk', blurb: 'The 45-minute experiment, and thirty questions in three tiers.' },
   ];
 
   const dayNumber = Math.floor(Date.now() / 86400000); // whole days since epoch, changes every 24h UTC

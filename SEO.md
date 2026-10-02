@@ -14,7 +14,7 @@ not hand-edit those files - run `npm run build:seo` and edit the source:
 | `scripts/region-pages.js` | `/regions/` and the five regional guides (replaced `/countries/*` and `/cities/*`, which now 301 here) |
 | `scripts/geo-pages.js` | orphaned; once produced `/countries/*`, `/cities/*`, `/languages/*` |
 | `scripts/pages-extra.js`, `pages-extra2.js` | hand-written landing pages |
-| `scripts/migrate-regions.js` | rewrites links to retired country/city/alternative URLs in pages on disk |
+| `scripts/migrate-retired-links.js` | rewrites links to retired country/city/alternative URLs in pages on disk |
 | `scripts/blog-extra.js`, `blog-extra2.js` | hand-written articles |
 | `scripts/locales.js` | the 16 localized homepages |
 | `scripts/seo-lastmod.json` | committed `lastmod` manifest (see below) |
@@ -68,6 +68,14 @@ being followed.
 
 ## What is on the site
 
+> **October 2026 (2):** the blog is now the TalkLive Journal - ten hand-designed
+> articles and the `/languages/` feature, built by `scripts/journal/` (each
+> article has its own typography; fonts are self-hosted in `public/fonts/mag/`
+> because the CSP blocks Google Fonts). The 17 per-language pages, 25 older
+> posts and the remaining five competitor pages were retired. Every retired URL
+> and its new home is listed in `scripts/data/retired.js`, which drives both the
+> server's 301s and `scripts/migrate-retired-links.js`.
+>
 > **October 2026:** the 45 country pages, 113 city pages and nine thinner
 > "X alternative" pages (Chatspin, Shagle, Camsurf, ChatHub, Azar, Holla,
 > Tinychat, Wakie, Free4Talk) were removed after AdSense rejected the site for

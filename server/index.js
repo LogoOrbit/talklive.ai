@@ -287,31 +287,21 @@ app.use((req, res, next) => {
   next();
 });
 /*
- * Retired URLs. The 45 country and 113 city pages were merged into five
- * regional guides (scripts/region-pages.js), and the thinner "X alternative"
- * pages into /alternatives. Each old URL 301s to the page that now holds its
- * content, so links and search equity carry over.
+ * Retired URLs: the country and city pages (merged into /regions/), the
+ * competitor "-alternative" pages, the per-language pages (merged into the
+ * /languages/ feature) and the blog posts the Journal replaced. Each 301s to
+ * the page that now holds its content. The map lives in scripts/data/retired.js
+ * so the build's link rewriter uses exactly the same targets.
  */
-const { REGION_OF_COUNTRY, REGION_OF_CITY } = require('../scripts/region-pages');
-const RETIRED_ALTERNATIVES = new Set([
-  'chatspin', 'shagle', 'camsurf', 'chathub', 'azar', 'holla', 'tinychat', 'wakie', 'free4talk',
-].map((name) => `/${name}-alternative`));
-
-function retiredTarget(pathname) {
-  const p = pathname.replace(/\.html$/i, '').replace(/\/index$/i, '/');
-  if (RETIRED_ALTERNATIVES.has(p)) return '/alternatives';
-  const geo = /^\/(countries|cities)(?:\/([a-z0-9-]*))?\/?$/i.exec(p);
-  if (!geo) return null;
-  const slug = (geo[2] || '').toLowerCase();
-  const region = geo[1].toLowerCase() === 'countries' ? REGION_OF_COUNTRY[slug] : REGION_OF_CITY[slug];
-  return region ? `/regions/${region}` : '/regions/';
-}
+const { retiredTarget } = require('../scripts/data/retired');
 
 app.use((req, res, next) => {
   if (req.method !== 'GET' && req.method !== 'HEAD') return next();
   const target = retiredTarget(req.path);
   if (!target) return next();
-  res.redirect(301, target + originalQuery(req));
+  // The query belongs before any #fragment (/languages/?x=1#urdu).
+  const [base, hash] = target.split('#');
+  res.redirect(301, base + originalQuery(req) + (hash ? `#${hash}` : ''));
 });
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
