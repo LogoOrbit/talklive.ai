@@ -1,40 +1,17 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Why South Asia Talks After Midnight: India, Pakistan and Bangladesh | TalkLive Journal</title>
-<meta name="description" content="One time zone stretched across India, three scripts that are slow to type, and a shared spoken language split by a border. Why conversation in South Asia happens late, and out loud." />
-<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
-<meta name="theme-color" content="#f3ebdd" />
-<meta name="author" content="TalkLive Journal" />
-<link rel="canonical" href="https://talklive.app/regions/south-asia" />
-<link rel="alternate" type="application/rss+xml" title="TalkLive Journal" href="https://talklive.app/blog/feed.xml" />
-<meta property="og:type" content="article" />
-<meta property="og:site_name" content="TalkLive" />
-<meta property="og:title" content="Why South Asia Talks After Midnight" />
-<meta property="og:description" content="One time zone stretched across India, three scripts that are slow to type, and a shared spoken language split by a border. Why conversation in South Asia happens late, and out loud." />
-<meta property="og:url" content="https://talklive.app/regions/south-asia" />
-<meta property="og:image" content="https://talklive.app/og-image.png?v=2" />
-<meta property="og:image:width" content="1200" />
-<meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="Why South Asia Talks After Midnight - TalkLive Journal" />
-<meta property="og:locale" content="en_US" />
-<meta property="article:published_time" content="2026-10-03" />
-<meta property="article:modified_time" content="2026-10-03" />
-<meta property="article:section" content="Region" />
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Why South Asia Talks After Midnight" />
-<meta name="twitter:description" content="One time zone stretched across India, three scripts that are slow to type, and a shared spoken language split by a border. Why conversation in South Asia happens late, and out loud." />
-<meta name="twitter:image" content="https://talklive.app/og-image.png?v=2" />
-<meta name="twitter:image:alt" content="Why South Asia Talks After Midnight - TalkLive Journal" />
-<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-<link rel="apple-touch-icon" href="/favicon-192.png" />
-<link rel="manifest" href="/site.webmanifest" />
-<link rel="preload" href="/fonts/mag/fraunces-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin />
-<link rel="preload" href="/fonts/mag/literata-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
-<link rel="stylesheet" href="/journal.css?v=20261002journal" />
-<style>
+'use strict';
+// South Asia: a night-clock feature. Fraunces + Literata on warm paper, a
+// vertical 9pm-3am timeline down the left, terracotta and indigo.
+module.exports = {
+  slug: 'south-asia',
+  path: '/regions/south-asia',
+  tag: 'Region',
+  h1: 'Why South Asia Talks After Midnight',
+  title: 'Why South Asia Talks After Midnight: India, Pakistan and Bangladesh | TalkLive Journal',
+  description: 'One time zone stretched across India, three scripts that are slow to type, and a shared spoken language split by a border. Why conversation in South Asia happens late, and out loud.',
+  date: '2026-10-03',
+  theme: '#f3ebdd',
+  preload: ['fraunces-latin-700-normal', 'literata-latin-400-normal'],
+  css: `
 :root{--paper:#f3ebdd;--ink:#2a1f1a;--rule:#d9c9b0;--terra:#b5532a;--indigo:#2d2f6b}
 body{font-family:"Literata",Georgia,serif}
 .sa-hero{max-width:1120px;margin:0 auto;padding:70px 20px 30px;display:grid;grid-template-columns:1fr 280px;gap:40px;align-items:end}
@@ -58,20 +35,8 @@ body{font-family:"Literata",Georgia,serif}
 .sa-box h3{font:700 20px/1.2 "Fraunces",serif;margin:0 0 8px;color:#f0b48f}
 .sa-box p{margin:0 0 .7em}
 @media (max-width:820px){.sa-hero{grid-template-columns:1fr}.sa-clock{width:200px}.sa-grid{grid-template-columns:1fr;gap:0}.sa-time{text-align:left;padding:0 0 10px}.sa-time::after{display:none}.sa-block{margin-left:0;padding-left:18px}.sa-voices{grid-template-columns:1fr}}
-</style>
-<script defer src="/pwa.js?v=20260908pwa"></script>
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://talklive.app/#organization","name":"TalkLive","url":"https://talklive.app/","logo":{"@type":"ImageObject","url":"https://talklive.app/favicon-192.png","width":192,"height":192}},{"@type":"Article","@id":"https://talklive.app/regions/south-asia#article","headline":"Why South Asia Talks After Midnight","description":"One time zone stretched across India, three scripts that are slow to type, and a shared spoken language split by a border. Why conversation in South Asia happens late, and out loud.","datePublished":"2026-10-03","dateModified":"2026-10-03","inLanguage":"en","mainEntityOfPage":"https://talklive.app/regions/south-asia","image":"https://talklive.app/og-image.png?v=2","wordCount":854,"author":{"@type":"Organization","name":"TalkLive Journal","url":"https://talklive.app/blog/"},"publisher":{"@id":"https://talklive.app/#organization"},"articleSection":"Region"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://talklive.app/"},{"@type":"ListItem","position":2,"name":"Journal","item":"https://talklive.app/blog/"},{"@type":"ListItem","position":3,"name":"Why South Asia Talks After Midnight","item":"https://talklive.app/regions/south-asia"}]}]}</script>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978"
-     crossorigin="anonymous"></script>
-<script defer src="/ads.js?v=20260923adsense2"></script>
-</head>
-<body class="">
-<a class="skip" href="#story">Skip to the article</a>
-<header class="j-mast">
-  <a class="j-brand" href="/blog/">TalkLive Journal</a>
-  <nav aria-label="Journal"><a href="/blog/">All stories</a><a href="/languages/">Languages</a><a href="/about">About</a><a href="/">TalkLive</a></nav>
-</header>
-<main id="story">
+`,
+  body: (ctx) => `<main id="story">
 <header class="sa-hero">
   <h1>Why South Asia talks <span>after midnight</span></h1>
   <div class="sa-clock" aria-hidden="true"><div><b>1:00</b>a.m. in Lahore, and the evening is only halfway done</div></div>
@@ -116,26 +81,7 @@ body{font-family:"Literata",Georgia,serif}
 <p style="margin-top:1.4em">Which leaves a question worth sitting with: if two people can understand each other perfectly but cannot read each other's writing, are they speaking one language or two?</p>
 </section>
 </div>
-<div class="ad-card"><span class="ad-card-label">Advertisement</span><div data-ad="native"></div></div>
-<aside class="j-more" aria-label="More from the Journal"><h2>More from the Journal</h2><ul><li><a href="/blog/why-talking-to-strangers-feels-easier">Why It Is Sometimes Easier to Tell a Stranger the Truth</a></li><li><a href="/blog/what-happened-to-omegle">The Rise and Fall of Omegle: Fourteen Years of Talking to Strangers</a></li><li><a href="/blog/science-of-talking-to-strangers">We Are Bad at Predicting How Talking to Strangers Will Feel</a></li></ul></aside>
-</main>
-<footer class="j-foot">
-  <nav aria-label="Site"><a href="/about">About</a><a href="/contact">Contact</a><a href="/privacy">Privacy Policy</a><a href="/terms">Terms</a><a href="/community-guidelines">Community Guidelines</a><a href="/safety">Safety</a><a href="/">TalkLive home</a></nav>
-  <p>&copy; 2026 TalkLive. The Journal is written by the TalkLive team. Corrections: info@talklive.app</p>
-</footer>
-<!-- Google tag (gtag.js) - see scripts/migrate-analytics.js -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-713E3C1RH1"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('consent', 'default', {
-    ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: 'denied',
-    region: ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'IS', 'LI', 'NO', 'GB', 'CH'],
-    wait_for_update: 500
-  });
-  gtag('set', 'ads_data_redaction', true);
-  gtag('js', new Date());
-  gtag('config', 'G-713E3C1RH1');
-</script>
-</body>
-</html>
+${ctx.ad()}
+${ctx.more}
+</main>`,
+};

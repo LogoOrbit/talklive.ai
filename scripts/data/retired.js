@@ -5,12 +5,27 @@
  * Used by server/index.js (301 redirects) and scripts/migrate-retired-links.js
  * (rewrites internal links on disk), so the two cannot disagree.
  *
- *   /countries/*, /cities/*     -> the regional guide that covers them
+ *   /countries/*, /cities/*     -> the regional feature that covers them,
+ *                                  or /languages/ where none does
+ *   /regions/ hub, two regions  -> /blog/ and /languages/
  *   competitor "-alternative"   -> /alternatives
  *   /languages/<slug>           -> its section of the /languages/ feature
  *   retired /blog/ posts        -> the closest surviving Journal article
  */
-const { REGION_OF_COUNTRY, REGION_OF_CITY } = require('../region-pages');
+const { COUNTRIES } = require('./geo');
+
+// Countries covered by one of the three regional features. Every other
+// country (and every city in it) points at the /languages/ feature.
+const FEATURED = {
+  'south-asia': ['india', 'pakistan', 'bangladesh'],
+  europe: ['united-kingdom', 'ireland', 'portugal', 'spain', 'france', 'netherlands', 'germany', 'italy', 'sweden', 'norway', 'poland', 'greece', 'romania', 'ukraine', 'turkey', 'russia'],
+  americas: ['united-states', 'canada', 'mexico', 'brazil', 'colombia', 'argentina'],
+};
+const REGION_OF_COUNTRY = {};
+for (const [region, list] of Object.entries(FEATURED)) for (const c of list) REGION_OF_COUNTRY[c] = region;
+const REGION_OF_CITY = {};
+for (const c of COUNTRIES) for (const city of c.cities) REGION_OF_CITY[city.slug] = REGION_OF_COUNTRY[c.slug];
+const RETIRED_REGIONS = { 'asia-pacific': '/languages/', 'middle-east-africa': '/languages/' };
 
 const RETIRED_ALTERNATIVES = [
   'chatspin', 'shagle', 'camsurf', 'chathub', 'azar', 'holla', 'tinychat', 'wakie', 'free4talk',
@@ -58,8 +73,13 @@ function retiredTarget(pathname) {
   if (m) {
     const slug = (m[2] || '').toLowerCase();
     const region = m[1].toLowerCase() === 'countries' ? REGION_OF_COUNTRY[slug] : REGION_OF_CITY[slug];
-    return region ? `/regions/${region}` : '/regions/';
+    return region ? `/regions/${region}` : '/languages/';
   }
+
+  // The /regions/ hub and two of the five regional pages were retired.
+  if (/^\/regions\/?$/i.test(p)) return '/blog/';
+  m = /^\/regions\/([a-z0-9-]+)\/?$/i.exec(p);
+  if (m && RETIRED_REGIONS[m[1].toLowerCase()]) return RETIRED_REGIONS[m[1].toLowerCase()];
 
   m = /^\/languages\/([a-z0-9-]+)\/?$/i.exec(p);
   if (m) return `/languages/#${m[1].toLowerCase()}`;

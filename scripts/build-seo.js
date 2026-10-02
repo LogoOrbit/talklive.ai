@@ -140,7 +140,9 @@ function footerHtml() {
       { slug: 'resources', label: 'Resource Hub' },
       { slug: 'alternatives', label: 'Alternatives' },
       { slug: 'languages/', label: 'Languages' },
-      { slug: 'regions/', label: 'Chat by Region' },
+      { slug: 'regions/south-asia', label: 'South Asia' },
+      { slug: 'regions/europe', label: 'Europe' },
+      { slug: 'regions/americas', label: 'The Americas' },
       { slug: 'how-it-works', label: 'How It Works' },
       { slug: 'safety', label: 'Safety Center' },
     ] },
@@ -1360,7 +1362,7 @@ const CORE_PAGES = [
 
 // Additional landing pages live in their own module so this file stays
 // navigable as the SEO surface grows. Same shape as CORE_PAGES.
-const PAGES = CORE_PAGES.concat(require('./pages-extra'), require('./search-hubs'), require('./region-pages'));
+const PAGES = CORE_PAGES.concat(require('./pages-extra'), require('./search-hubs'));
 
 // --- Journal ----------------------------------------------------------------
 // /blog/ is the TalkLive Journal: ten hand-designed long-form articles plus the

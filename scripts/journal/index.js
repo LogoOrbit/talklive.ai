@@ -15,6 +15,10 @@ const ARTICLES = fs.readdirSync(path.join(__dirname, 'articles'))
   .filter(f => f.endsWith('.js')).sort()
   .map(f => require(path.join(__dirname, 'articles', f)));
 
+// Regional features: hand-written, each with its own design. Published at
+// /regions/<slug>; there is deliberately no /regions/ hub.
+const REGIONS = ['south-asia', 'europe', 'americas'].map(s => require(`./regions/${s}`));
+
 function list(items) {
   if (items.length < 2) return items.join('');
   return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
@@ -27,6 +31,11 @@ function ctxFor(slug) {
 function renderArticle(a) {
   const inner = a.body(ctxFor(a.slug));
   return S.page({ ...a, path: `/blog/${a.slug}`, crumb: a.h1, article: true, wordCount: S.words(inner) }, inner);
+}
+
+function renderRegion(r) {
+  const inner = r.body(ctxFor(r.slug));
+  return S.page({ ...r, crumb: r.h1, article: true, wordCount: S.words(inner) }, inner);
 }
 
 function renderLanguages() {
@@ -77,6 +86,9 @@ function renderIndex() {
 <section class="x-grid" aria-label="All stories">
 ${rest.map(a => `<article class="x-item"><a href="/blog/${a.slug}"><span class="x-tag">${S.esc(a.tag)}</span><h3>${S.esc(a.h1)}</h3><p>${S.esc(a.description)}</p></a></article>`).join('\n')}
 </section>
+<section class="x-grid" aria-label="Regions">
+${REGIONS.map(r => `<article class="x-item"><a href="${r.path}"><span class="x-tag">${S.esc(r.tag)}</span><h3>${S.esc(r.h1)}</h3><p>${S.esc(r.description)}</p></a></article>`).join('\n')}
+</section>
 ${S.ad()}
 <p class="x-about">The Journal is written by the people who build TalkLive. We try to cite our sources, say what the evidence does not show, and leave you with a better question than the one you arrived with.</p>
 </main>`;
@@ -92,7 +104,8 @@ function build() {
   S.write('blog/index.html', renderIndex());
   for (const a of ARTICLES) S.write(`blog/${a.slug}.html`, renderArticle(a));
   S.write('languages/index.html', renderLanguages());
-  return ARTICLES.length + 2;
+  for (const r of REGIONS) S.write(`${r.path.slice(1)}.html`, renderRegion(r));
+  return ARTICLES.length + REGIONS.length + 2;
 }
 
-module.exports = { ARTICLES, build, LANGUAGES_META: languages.meta };
+module.exports = { ARTICLES, REGIONS, build, LANGUAGES_META: languages.meta };

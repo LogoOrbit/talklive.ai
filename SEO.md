@@ -11,7 +11,6 @@ not hand-edit those files - run `npm run build:seo` and edit the source:
 |---|---|
 | `scripts/build-seo.js` | the page/blog/locale templates, all schema, sitemaps, RSS, `llms.txt` |
 | `scripts/data/geo.js` | country + city + language facts |
-| `scripts/region-pages.js` | `/regions/` and the five regional guides (replaced `/countries/*` and `/cities/*`, which now 301 here) |
 | `scripts/geo-pages.js` | orphaned; once produced `/countries/*`, `/cities/*`, `/languages/*` |
 | `scripts/pages-extra.js`, `pages-extra2.js` | hand-written landing pages |
 | `scripts/migrate-retired-links.js` | rewrites links to retired country/city/alternative URLs in pages on disk |
@@ -68,6 +67,11 @@ being followed.
 
 ## What is on the site
 
+> **October 2026 (3):** `/regions/` is now three hand-written Journal features
+> (`scripts/journal/regions/`): South Asia, Europe and the Americas. The hub,
+> Asia-Pacific and Middle East & Africa pages were retired; see
+> `scripts/data/retired.js` for where they redirect.
+>
 > **October 2026 (2):** the blog is now the TalkLive Journal - ten hand-designed
 > articles and the `/languages/` feature, built by `scripts/journal/` (each
 > article has its own typography; fonts are self-hosted in `public/fonts/mag/`

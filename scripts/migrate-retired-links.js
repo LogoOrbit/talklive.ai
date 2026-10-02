@@ -23,7 +23,7 @@ const { retiredTarget, RETIRED_ALTERNATIVES } = require('./data/retired');
 const PUBLIC = path.join(__dirname, '..', 'public');
 const ALT = `(?:${RETIRED_ALTERNATIVES.join('|')})`;
 // A link to one member page whose list entry is better dropped than repointed.
-const MEMBER = `/(?:(?:countries|cities|languages)/[a-z0-9-]+|${ALT})`;
+const MEMBER = `/(?:(?:countries|cities|languages)/[a-z0-9-]+|regions/(?:asia-pacific|middle-east-africa)|${ALT})`;
 
 function migrate(html) {
   let out = html;
@@ -33,8 +33,11 @@ function migrate(html) {
   // Link clouds: adjacent anchors with no text between them.
   out = out.replace(new RegExp(`(</a>|<div class="link-cloud">|<nav[^>]*>)\\s*<a href="${MEMBER}"[^>]*>[^<]*</a>(?=\\s*(<a |</div>|</nav>))`, 'g'), '$1');
   // Hub pair -> one regional link.
-  out = out.replace(/<a href="\/countries\/">[^<]*<\/a>\s*<a href="\/cities\/">[^<]*<\/a>/g, '<a href="/regions/">Chat by region</a>');
-  out = out.replace(/<li><a href="\/countries\/">[^<]*<\/a><\/li>\s*<li><a href="\/cities\/">[^<]*<\/a><\/li>/g, '<li><a href="/regions/">Chat by region</a></li>');
+  out = out.replace(/<a href="\/countries\/">[^<]*<\/a>\s*<a href="\/cities\/">[^<]*<\/a>/g, '');
+  out = out.replace(/<li><a href="\/countries\/">[^<]*<\/a><\/li>\s*<li><a href="\/cities\/">[^<]*<\/a><\/li>/g, '');
+  // The retired /regions/ hub and its "Chat by region" links.
+  out = out.replace(/<li><a href="\/regions\/">[^<]*<\/a><\/li>/g, '');
+  out = out.replace(/(<\/a>|<div class="link-cloud">|<nav[^>]*>)\s*<a href="\/regions\/">[^<]*<\/a>/g, '$1');
   out = out.replace(/<li><a href="\/cities\/">[^<]*<\/a><\/li>/g, '');
   // Anything left is in prose: keep the words, retarget the link.
   out = out.replace(/href="(\/[a-z0-9/-]*)"/g, (all, href) => {
