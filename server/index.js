@@ -1044,6 +1044,13 @@ app.use((req, res, next) => {
  * So: count on `finish`, only a 200 that actually returned HTML, at any depth,
  * and put crawlers in their own bucket.
  */
+const traffic = require('./traffic');
+// Hostnames that are this site, so a referrer from one of them is internal
+// navigation rather than an arrival. The request's own Host is added per
+// request, which covers localhost and preview hosts too.
+const OWN_HOSTS = new Set([CANONICAL_HOST, ...ALIAS_HOSTS, process.env.LANDING_HOST || '']
+  .filter(Boolean).map((h) => h.toLowerCase().replace(/^www\./, '')));
+
 const ACQUISITION_SOURCES = new Set([
   'member_share', 'seo', 'blog', 'google', 'bing', 'reddit', 'youtube',
   'tiktok', 'instagram', 'facebook', 'x', 'producthunt', 'app',
@@ -1091,6 +1098,9 @@ app.use((req, res, next) => {
   const pathname = req.path;
   const source = String(req.query.utm_source || '').toLowerCase();
   const invited = req.query.ref === 'invite';
+  const referer = String(headers.referer || headers.referrer || '');
+  const query = req.query;
+  const requestHost = String(headers.host || '').toLowerCase().split(':')[0].replace(/^www\./, '');
 
   res.on('finish', () => {
     // Only a page that was actually delivered. This is what keeps redirects,
@@ -1112,6 +1122,12 @@ app.use((req, res, next) => {
     store.recordVisit(ip, geo.countryName, geo.city);
     store.recordSection(pageSection(pathname));
     if (ACQUISITION_SOURCES.has(source)) store.recordFeature(`acq_${source}`);
+    // Per-page views, and where each outside arrival came from (traffic.js).
+    const page = traffic.normalizePath(pathname);
+    store.recordPageView(page);
+    const ownHosts = requestHost && !OWN_HOSTS.has(requestHost) ? new Set([...OWN_HOSTS, requestHost]) : OWN_HOSTS;
+    const arrival = traffic.classifyArrival({ referer, ownHosts, query });
+    if (arrival && !traffic.isRepeatArrival(ip, page)) store.recordArrival({ ...arrival, path: page });
     if (invited) store.recordFeature('invite_arrival');
   });
 

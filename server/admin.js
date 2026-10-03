@@ -13,6 +13,7 @@ const { createAgent } = require('./ai-agent');
 let QRCode = null;
 try { QRCode = require('qrcode'); } catch (_) { /* optional */ }
 const mail = require('./mailer');
+const searchConsole = require('./search-console');
 
 const SESSION_HOURS = 12;
 const OWNER_EMAIL = process.env.OWNER_EMAIL || '';
@@ -1154,6 +1155,53 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
     };
   }
 
+  /*
+   * Traffic: where visitors came from, the page they landed on, and the search
+   * terms known for them (server/traffic.js), over UTC days. ?range=today|7d|
+   * 30d|90d. Search Console keywords are a separate call (/api/search-console)
+   * because they come from Google and take a moment.
+   */
+  const TRAFFIC_MEDIUMS = ['search', 'ai', 'social', 'referral', 'campaign', 'app', 'direct'];
+  function trafficReport(range) {
+    const days = store.data.analytics.days;
+    const n = { today: 1, '7d': 7, '30d': 30, '90d': 90 }[range] || 30;
+    const keys = Object.keys(days).sort().slice(-n);
+    const sum = (field) => {
+      const out = {};
+      for (const k of keys) for (const [name, v] of Object.entries(days[k][field] || {})) out[name] = (out[name] || 0) + v;
+      return Object.entries(out).sort((a, b) => b[1] - a[1]);
+    };
+    const tracked = Object.keys(days).sort().find((k) => days[k].sources && Object.keys(days[k].sources).length);
+    const mediums = sum('mediums');
+    return {
+      range: range in { today: 1, '7d': 1, '30d': 1, '90d': 1 } ? range : '30d',
+      since: tracked || null,
+      arrivals: mediums.reduce((a, [, v]) => a + v, 0),
+      pageViews: sum('pages').reduce((a, [, v]) => a + v, 0),
+      mediums,
+      sources: sum('sources'),
+      landings: sum('landings'),
+      pages: sum('pages'),
+      sourcePages: sum('sourcePages').slice(0, 100),
+      searchTerms: sum('searchTerms').slice(0, 200),
+      termPages: sum('termPages').slice(0, 200),
+      daily: keys.map((k) => {
+        const m = days[k].mediums || {};
+        const row = { day: k };
+        for (const x of TRAFFIC_MEDIUMS) row[x] = m[x] || 0;
+        return row;
+      }),
+    };
+  }
+
+  router.get('/api/traffic', (req, res) => {
+    res.json(trafficReport(String(req.query.range || '30d')));
+  });
+
+  router.get('/api/search-console', async (req, res) => {
+    res.json(await searchConsole.report(req.query.days));
+  });
+
   router.get('/api/games', (req, res) => {
     res.json(gamesReport(String(req.query.range || '7d')));
   });
@@ -1285,6 +1333,15 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
               g.locale || '', g.hostedDomain || '', isoOr(g.linkedAt),
               a.country || '', a.city || '', a.ip || '', isoOr(a.createdAt), isoOr(a.lastSeen)];
           }));
+    } else if (kind === 'traffic') {
+      const t = trafficReport(String(req.query.range || '30d'));
+      const rows = [];
+      for (const [k, v] of t.sources) rows.push(['source', k, v]);
+      for (const [k, v] of t.landings) rows.push(['landing_page', k, v]);
+      for (const [k, v] of t.sourcePages) rows.push(['source_to_page', k, v]);
+      for (const [k, v] of t.searchTerms) rows.push(['search_term', k, v]);
+      for (const [k, v] of t.pages) rows.push(['page_views', k, v]);
+      csv = toCsv(['kind', 'name', 'count'], rows);
     } else if (kind === 'daily') {
       const report = activityReport(req);
       csv = toCsv(['day', 'unique_visitors', 'visits', 'crawler_hits', 'connections', 'matches', 'messages', 'peak_online', 'new_accounts', 'reports', 'errors'],

@@ -1028,6 +1028,16 @@ function day(ts = Date.now()) {
       // pages and the localized homepages is visible as itself rather than
       // folded into one site-wide total.
       sections: {},
+      // Traffic attribution (server/traffic.js): path -> human page views,
+      // and for arrivals from outside the site: source, medium, landing page,
+      // "source → page", and search term (+ "term → page") when one is known.
+      pages: {},
+      sources: {},
+      mediums: {},
+      landings: {},
+      sourcePages: {},
+      searchTerms: {},
+      termPages: {},
     };
     // Trim old days so the file never grows unbounded.
     const keys = Object.keys(data.analytics.days).sort();
@@ -1119,6 +1129,43 @@ function recordSection(name) {
   const d = day();
   if (!d.sections) d.sections = {};
   d.sections[name] = (d.sections[name] || 0) + 1;
+  save();
+}
+
+// Distinct keys a day may hold per traffic map. Paths, referring domains and
+// search terms all come from requests, so each map is capped; anything past
+// the cap is counted under "(other)" rather than dropped or left to grow.
+const TRAFFIC_KEY_CAP = { pages: 300, sources: 150, mediums: 20, landings: 300, sourcePages: 400, searchTerms: 400, termPages: 400 };
+
+function bumpTraffic(d, field, key) {
+  if (!key) return;
+  if (!d[field]) d[field] = {};
+  const map = d[field];
+  if (map[key] === undefined && Object.keys(map).length >= (TRAFFIC_KEY_CAP[field] || 300)) key = '(other)';
+  map[key] = (map[key] || 0) + 1;
+}
+
+// One human page view of `path` (every page, not only arrivals).
+function recordPageView(path) {
+  bumpTraffic(day(), 'pages', path);
+  save();
+}
+
+/*
+ * One arrival from outside the site (see server/traffic.js): which source and
+ * medium sent the visitor, the page they landed on, and the search term when
+ * the referrer carried one. Aggregate counts only - nothing about who.
+ */
+function recordArrival({ source, medium, term, path }) {
+  const d = day();
+  bumpTraffic(d, 'sources', source);
+  bumpTraffic(d, 'mediums', medium);
+  bumpTraffic(d, 'landings', path);
+  bumpTraffic(d, 'sourcePages', `${source} \u2192 ${path}`);
+  if (term) {
+    bumpTraffic(d, 'searchTerms', term);
+    bumpTraffic(d, 'termPages', `${term} \u2192 ${path}`);
+  }
   save();
 }
 
@@ -2849,6 +2896,8 @@ module.exports = {
   recordVisit,
   visitorsLast24h,
   recordSection,
+  recordPageView,
+  recordArrival,
   recordConnection,
   recordPeakOnline,
   recordFeature,

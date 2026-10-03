@@ -808,7 +808,7 @@ function rankedBars(el,entries){
    "watch → act on people → understand users → money → the machine" instead of
    fourteen peers in a row. Shortcut keys 1-9 follow this order. */
 const GROUPS=[
-  ['Monitor',[['overview','Overview','📊'],['live','Live','🟢'],['activity','Activity','📅'],['experience','Experience','🩺'],['ai','AI Agent','🤖']]],
+  ['Monitor',[['overview','Overview','📊'],['live','Live','🟢'],['activity','Activity','📅'],['traffic','Traffic','🔎'],['experience','Experience','🩺'],['ai','AI Agent','🤖']]],
   ['Moderation',[['reports','Reports','🚩'],['chats','Chats','💬'],['voicenotes','Voice notes','🎙️'],['warnings','Warnings','⚠️'],['bans','Bans','⛔']]],
   ['People',[['audience','Audience','⚧'],['accounts','Accounts','👤'],['talktime','Talk time','⏱️'],['games','Games','🎮'],['feedback','Feedback','⭐']]],
   ['Business',[['revenue','Revenue','💎']]],
@@ -1026,6 +1026,7 @@ async function load(force){
   try{
     if(tab==='overview')await viewOverview();
     else if(tab==='activity')await viewActivity();
+    else if(tab==='traffic')await viewTraffic();
     else if(tab==='ai')await viewBot();
     else if(tab==='audience')await viewAudience();
     else if(tab==='experience')await viewExperience();
@@ -2569,6 +2570,92 @@ async function viewGames(){
   $('#gmSort').onchange=(e)=>{gmSort=e.target.value;viewGames();};
   $('#gmShow').onchange=(e)=>{gmShow=e.target.value;viewGames();};
   onFilterInput($('#gmQ'),(v)=>{gmQ=v;},()=>viewGames().then(()=>keepFocus('#gmQ')));
+}
+
+/* ---------- traffic: where visitors come from and what they searched ----------
+   Two sources, side by side. "On this site" is counted by the server on every
+   arrival (referrer + landing page; server/traffic.js). Google never passes the
+   search query to a site, so what people actually typed into Google comes from
+   Search Console (server/search-console.js) when it is connected. */
+let tfRange='30d',gscDays=28;
+const MEDIUM_LABEL={search:'🔎 Search engines',ai:'🤖 AI assistants',social:'📣 Social',referral:'🔗 Other websites',campaign:'🏷️ Campaign links',app:'📱 Installed app',direct:'⌨️ Direct / typed / bookmark'};
+const MEDIUM_COLOR={search:'var(--s1)',ai:'var(--accent)',social:'var(--s2)',referral:'var(--s3)',campaign:'var(--warn)',app:'var(--good)',direct:'var(--muted)'};
+const pct1=(x)=>(Math.round(x*1000)/10)+'%';
+function gscCard(g){
+  if(!g||!g.configured)return `<div class="card anim"><h2>🔎 Google searches <span class="sub">Search Console - not connected</span></h2>
+    <div class="muted" style="line-height:1.6">Google hides the search words from websites, so they can only be read from Google Search Console. To show them here:
+    <ol style="margin:8px 0 0 18px;padding:0">
+      <li>Google Cloud Console → create a project → enable the <b>Google Search Console API</b>.</li>
+      <li>IAM → Service accounts → create one → Keys → add a <b>JSON</b> key.</li>
+      <li>Search Console → Settings → Users and permissions → add the service account's email (Restricted is enough).</li>
+      <li>Set the secrets and redeploy: <code style="word-break:break-all">fly secrets set GSC_CREDENTIALS="$(base64 -w0 key.json)" GSC_SITE_URL=sc-domain:talklive.app</code></li>
+    </ol></div></div>`;
+  if(g.error)return `<div class="card anim"><h2>🔎 Google searches <span class="sub">${esc(g.site)}</span></h2>
+    <div class="stbox bad" style="padding:10px;border-radius:12px">Search Console refused the request: ${esc(g.error)}</div>
+    <div class="muted" style="margin-top:8px">Check that <b>${esc(g.serviceAccount||'')}</b> is added as a user on the <b>${esc(g.site)}</b> property and that the Search Console API is enabled.</div></div>`;
+  const T=g.totals||{};
+  const qRow=(r)=>`<tr><td>${esc(r.query)}</td><td class="num">${num(r.clicks)}</td><td class="num">${num(r.impressions)}</td><td class="num">${pct1(r.ctr)}</td><td class="num">${r.position.toFixed(1)}</td></tr>`;
+  return `<div class="card anim"><h2>🔎 What people searched on Google <span class="sub">${esc(g.range.startDate)} → ${esc(g.range.endDate)} · Search Console</span>
+      <span style="margin-left:auto" class="seg" id="gscDays">${[[7,'7d'],[28,'28d'],[90,'90d']].map(([k,l])=>`<button data-d="${k}" class="${gscDays===k?'on':''}">${l}</button>`).join('')}</span></h2>
+    <div class="muted" style="margin-bottom:10px">${num(T.clicks)} clicks from ${num(T.impressions)} search impressions · CTR ${pct1(T.ctr||0)} · average position ${(T.position||0).toFixed(1)}</div>
+    <div style="overflow-x:auto;max-height:520px;overflow-y:auto"><table><tr><th>Search term</th><th class="num">Clicks</th><th class="num">Shown</th><th class="num">CTR</th><th class="num">Position</th></tr>
+    ${(g.queries||[]).map(qRow).join('')||'<tr><td colspan="5" class="muted">No search data in this window yet.</td></tr>'}</table></div></div>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(360px,100%),1fr))">
+    <div class="card anim"><h2>🎯 Search term → page it landed on <span class="sub">Google</span></h2>
+      <div style="overflow-x:auto;max-height:420px;overflow-y:auto"><table><tr><th>Search term</th><th>Page</th><th class="num">Clicks</th><th class="num">Shown</th></tr>
+      ${(g.queryPages||[]).map(r=>`<tr><td>${esc(r.query)}</td><td><a class="lnk" href="${esc(r.page)}" target="_blank" rel="noopener">${esc(r.page)}</a></td><td class="num">${num(r.clicks)}</td><td class="num">${num(r.impressions)}</td></tr>`).join('')||'<tr><td colspan="4" class="muted">No data.</td></tr>'}</table></div></div>
+    <div class="card anim"><h2>📄 Pages Google sends people to</h2>
+      <div style="overflow-x:auto;max-height:420px;overflow-y:auto"><table><tr><th>Page</th><th class="num">Clicks</th><th class="num">Shown</th><th class="num">Position</th></tr>
+      ${(g.pages||[]).map(r=>`<tr><td><a class="lnk" href="${esc(r.page)}" target="_blank" rel="noopener">${esc(r.page)}</a></td><td class="num">${num(r.clicks)}</td><td class="num">${num(r.impressions)}</td><td class="num">${r.position.toFixed(1)}</td></tr>`).join('')||'<tr><td colspan="4" class="muted">No data.</td></tr>'}</table></div></div>
+    <div class="card anim"><h2>🌍 Google clicks by country</h2><div id="gscCountries"></div></div>
+    <div class="card anim"><h2>📱 Google clicks by device</h2><div id="gscDevices"></div></div>
+  </div>`;
+}
+async function viewTraffic(){
+  const [t,g]=await Promise.all([vapi('traffic?range='+tfRange),vapi('search-console?days='+gscDays).catch(()=>null)]);
+  const rangeTxt=tfRange==='today'?'today (UTC)':'last '+tfRange.replace('d',' days');
+  const med=Object.fromEntries(t.mediums);
+  const top=(list)=>list[0]?`${esc(list[0][0])} · ${num(list[0][1])}`:'-';
+  $('#main').innerHTML=`<div class="grid tiles anim" style="margin-top:0">
+    <div class="tile"><div class="k">Arrivals from outside</div><div class="v" data-count="${t.arrivals}">0</div><div class="s">${num(t.pageViews)} page views in total · ${rangeTxt}</div></div>
+    <div class="tile"><div class="k">From search engines</div><div class="v" data-count="${med.search||0}">0</div><div class="s">${t.arrivals?pct1((med.search||0)/t.arrivals):'-'} of arrivals</div></div>
+    <div class="tile"><div class="k">Top source</div><div class="v" style="font-size:1.15rem">${top(t.sources)}</div><div class="s">who sends the most visitors</div></div>
+    <div class="tile"><div class="k">Top landing page</div><div class="v" style="font-size:1.15rem;word-break:break-all">${top(t.landings)}</div><div class="s">first page people see</div></div>
+  </div>
+  <div class="tbar" style="margin:12px 0 0">
+    <div class="seg" id="tfRange">${[['today','Today'],['7d','7 days'],['30d','30 days'],['90d','90 days']].map(([k,l])=>`<button data-r="${k}" class="${tfRange===k?'on':''}">${l}</button>`).join('')}</div>
+    <span class="muted" style="font-size:.8rem">${t.since?`Tracking since ${esc(t.since)}. `:'No arrivals recorded yet - tracking starts with this deploy. '}An arrival is a visit that came from outside the site; reloads within 30 min are not counted twice.</span>
+    <span style="margin-left:auto">${exportLink('traffic','Export CSV').replace('traffic.csv','traffic.csv?range='+tfRange)}</span>
+  </div>
+  ${gscCard(g)}
+  <div class="card anim"><h2>📈 Arrivals by channel <span class="sub">per UTC day</span></h2>
+    <div class="legend">${Object.keys(MEDIUM_LABEL).map(k=>`<span><i style="background:${MEDIUM_COLOR[k]}"></i>${MEDIUM_LABEL[k].replace(/^\S+ /,'')}</span>`).join('')}</div>
+    <div id="tfTrend"></div></div>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr))">
+    <div class="card anim"><h2>🧭 Channels <span class="sub">${rangeTxt}</span></h2>${shareBars(t.mediums.map(([k,n])=>({label:MEDIUM_LABEL[k]||k,n,pct:t.arrivals?Math.round(n/t.arrivals*1000)/10:0,color:MEDIUM_COLOR[k]})),'var(--s1)')}</div>
+    <div class="card anim"><h2>🚪 Sources <span class="sub">site, app or engine that sent them</span></h2><div id="tfSources"></div></div>
+    <div class="card anim"><h2>🛬 Landing pages <span class="sub">first page of each arrival</span></h2><div id="tfLandings"></div></div>
+    <div class="card anim"><h2>👀 Most viewed pages <span class="sub">all human page views</span></h2><div id="tfPages"></div></div>
+  </div>
+  <div class="card anim"><h2>🔗 Source → landing page <span class="sub">what made them land where they did</span></h2>
+    <div style="overflow-x:auto;max-height:460px;overflow-y:auto"><table><tr><th>Source</th><th>Landing page</th><th class="num">Arrivals</th><th class="num">Share</th></tr>
+    ${t.sourcePages.map(([k,n])=>{const i=k.indexOf(' \u2192 ');const src=i<0?k:k.slice(0,i),pg=i<0?'':k.slice(i+3);
+      return `<tr><td>${esc(src)}</td><td>${pg?`<a class="lnk" href="${esc(pg)}" target="_blank" rel="noopener">${esc(pg)}</a>`:''}</td><td class="num">${num(n)}</td><td class="num">${t.arrivals?pct1(n/t.arrivals):'-'}</td></tr>`;}).join('')||'<tr><td colspan="4" class="muted">No arrivals yet.</td></tr>'}</table></div></div>
+  <div class="card anim"><h2>🔤 Search terms seen on this site <span class="sub">${rangeTxt}</span></h2>
+    <div class="muted" style="margin-bottom:8px">Only from engines and links that still pass the words (Bing, Yandex, Baidu, YouTube, utm_term on ad links). Google never does - its search terms are in the Search Console card above.</div>
+    <div style="overflow-x:auto;max-height:420px;overflow-y:auto"><table><tr><th>Search term → page</th><th class="num">Arrivals</th></tr>
+    ${t.termPages.map(([k,n])=>`<tr><td>${esc(k)}</td><td class="num">${num(n)}</td></tr>`).join('')||'<tr><td colspan="2" class="muted">None yet.</td></tr>'}</table></div></div>`;
+  animateCounters();
+  const tr=$('#tfTrend');if(tr)lineChart(tr,t.daily,Object.keys(MEDIUM_LABEL),Object.values(MEDIUM_COLOR),Object.values(MEDIUM_LABEL).map(l=>l.replace(/^\S+ /,'')));
+  hbars($('#tfSources'),t.sources.slice(0,20),'var(--s1)');
+  hbars($('#tfLandings'),t.landings.slice(0,20),'var(--s2)');
+  hbars($('#tfPages'),t.pages.slice(0,20),'var(--s3)');
+  if(g&&g.configured&&!g.error){
+    hbars($('#gscCountries'),(g.countries||[]).map(r=>[r.country,r.clicks]),'var(--s1)');
+    hbars($('#gscDevices'),(g.devices||[]).map(r=>[r.device,r.clicks]),'var(--s2)');
+  }
+  document.querySelectorAll('#tfRange button').forEach(b=>b.onclick=()=>{tfRange=b.dataset.r;viewTraffic();});
+  document.querySelectorAll('#gscDays button').forEach(b=>b.onclick=()=>{gscDays=+b.dataset.d;viewTraffic();});
 }
 
 /* ---------- revenue: subscriptions, referrals, push reach ---------- */
