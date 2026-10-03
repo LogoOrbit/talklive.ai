@@ -11,6 +11,7 @@
  *   competitor "-alternative"   -> /alternatives
  *   /languages/<slug>           -> its section of the /languages/ feature
  *   retired /blog/ posts        -> the closest surviving Journal article
+ *   keyword-variant landings    -> the one page that covers the topic
  */
 const { COUNTRIES } = require('./geo');
 
@@ -57,6 +58,32 @@ const RETIRED_POSTS = {
   'voice-chat-vs-text-chat': 'why-talking-to-strangers-feels-easier',
   'voice-chat-vs-video-chat': 'why-talking-to-strangers-feels-easier',
 };
+// Landing pages that targeted a keyword variant of a page that already exists
+// ("free voice chat" vs "random voice chat"), or promised features TalkLive
+// does not have (video, chat rooms). Thin near-duplicates and misleading
+// titles are what get a site rejected as low-value content, so each one now
+// 301s to the single page that honestly covers the topic.
+const RETIRED_PAGES = {
+  'random-video-chat': '/voice-chat-vs-video-chat',
+  'random-video-call': '/voice-chat-vs-video-chat',
+  'stranger-video-call': '/voice-chat-vs-video-chat',
+  'text-chat-with-strangers': '/random-text-chat',
+  'free-voice-chat': '/random-voice-chat',
+  'voice-chat-rooms': '/random-voice-chat',
+  'online-chat-rooms': '/random-text-chat',
+  'call-random-people': '/random-call',
+  'free-online-calls': '/random-call',
+  'international-calls': '/random-call',
+  'random-chat': '/talk-to-strangers',
+  'meet-new-people': '/make-friends-online',
+  'someone-to-talk-to': '/talk-to-someone',
+  'im-bored': '/talk-to-strangers',
+  'cant-sleep': '/late-night-chat',
+  'chat-without-registration': '/anonymous-chat',
+  'pakistani-chat': '/regions/south-asia',
+  'omegle-vs-chatroulette': '/alternatives',
+};
+
 // is-talklive-safe answered a product question, so it goes to the product page.
 const RETIRED_POST_PAGES = { 'is-talklive-safe': '/safety' };
 
@@ -66,7 +93,10 @@ const RETIRED_POST_PAGES = { 'is-talklive-safe': '/safety' };
  */
 function retiredTarget(pathname) {
   const p = String(pathname || '').replace(/\.html$/i, '').replace(/\/index$/i, '/');
-  let m = /^\/([a-z0-9-]+-alternative)$/i.exec(p);
+  let m = /^\/([a-z0-9-]+)\/?$/i.exec(p);
+  if (m && RETIRED_PAGES[m[1].toLowerCase()]) return RETIRED_PAGES[m[1].toLowerCase()];
+
+  m = /^\/([a-z0-9-]+-alternative)$/i.exec(p);
   if (m && RETIRED_ALTERNATIVES.includes(m[1].toLowerCase())) return '/alternatives';
 
   m = /^\/(countries|cities)(?:\/([a-z0-9-]*))?\/?$/i.exec(p);
@@ -94,4 +124,4 @@ function retiredTarget(pathname) {
   return null;
 }
 
-module.exports = { retiredTarget, RETIRED_ALTERNATIVES, RETIRED_POSTS };
+module.exports = { retiredTarget, RETIRED_ALTERNATIVES, RETIRED_POSTS, RETIRED_PAGES };

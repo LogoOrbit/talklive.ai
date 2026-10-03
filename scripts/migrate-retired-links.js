@@ -18,10 +18,10 @@
  */
 const fs = require('fs');
 const path = require('path');
-const { retiredTarget, RETIRED_ALTERNATIVES } = require('./data/retired');
+const { retiredTarget, RETIRED_ALTERNATIVES, RETIRED_PAGES } = require('./data/retired');
 
 const PUBLIC = path.join(__dirname, '..', 'public');
-const ALT = `(?:${RETIRED_ALTERNATIVES.join('|')})`;
+const ALT = `(?:${RETIRED_ALTERNATIVES.concat(Object.keys(RETIRED_PAGES)).join('|')})`;
 // A link to one member page whose list entry is better dropped than repointed.
 const MEMBER = `/(?:(?:countries|cities|languages)/[a-z0-9-]+|regions/(?:asia-pacific|middle-east-africa)|${ALT})`;
 

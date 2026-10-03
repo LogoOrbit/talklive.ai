@@ -54,13 +54,13 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
      system face a beat later. Only the latin subset is preloaded - latin-ext
      is fetched on demand by the unicode-range in style.css. -->
 <link rel="preload" as="font" type="font/woff2" href="/fonts/plus-jakarta-sans-latin.woff2?v=20260922type" crossorigin />
-<link rel="stylesheet" href="style.css?v=20260927b" />
+<link rel="stylesheet" href="style.css?v=20261003" />
 <link rel="stylesheet" href="chat-extras.css?v=20261001mic" />
 <link rel="stylesheet" href="games.css?v=20261001play" />
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
      side-panel shell, Settings, Friends/History and the account dialog, and it
      does so with its own `tl-` class names so nothing above can reach it. -->
-<link rel="stylesheet" href="ui.css?v=20260928vg" />
+<link rel="stylesheet" href="ui.css?v=20261003" />
 <link rel="stylesheet" href="auth.css?v=20260924auth" />
 <!-- The top bar, shared with /chat. Loaded after everything else because it
      owns the header outright: one button language, one radius, one focus ring
@@ -2344,31 +2344,21 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
         <a href="/talk-to-strangers">Talk to strangers online</a>
         <a href="/random-voice-chat">Random voice chat</a>
         <a href="/random-text-chat">Random text chat</a>
-        <a href="/text-chat-with-strangers">Text chat with strangers</a>
         <a href="/random-call">Random call app</a>
         <a href="/anonymous-chat">Anonymous chat</a>
-        <a href="/meet-new-people">Meet new people</a>
-        <a href="/international-calls">Free international calls</a>
-        <a href="/pakistani-chat">Pakistani voice chat</a>
-        <a href="/random-chat">Random chat</a>
-        <a href="/free-voice-chat">Free voice chat</a>
-        <a href="/voice-chat-rooms">Voice chat rooms</a>
-        <a href="/online-chat-rooms">Online chat rooms</a>
-        <a href="/call-random-people">Call random people</a>
         <a href="/language-exchange">Language exchange</a>
         <a href="/practice-english-speaking">Practice English speaking</a>
         <a href="/make-friends-online">Make friends online</a>
         <a href="/late-night-chat">Late night chat</a>
         <a href="/talk-to-someone">Someone to talk to</a>
-        <a href="/free-online-calls">Free online calls</a>
-        <a href="/random-video-chat">Random video chat</a>
-        <a href="/random-video-call">Random video call</a>
-        <a href="/stranger-video-call">Stranger video call</a>
         <a href="/blog/">Blog &amp; guides</a>
       </nav>
 
       <h3>Switching from another app?</h3>
       <nav class="seo-links" aria-label="Alternatives to other chat apps">
+        <a href="/alternatives">Compare random chat apps</a>
+        <a href="/voice-chat-vs-video-chat">Voice chat vs video chat</a>
+        <a href="/blog/what-happened-to-omegle">What happened to Omegle</a>
       </nav>
 
       <!-- Regional and language guides: the homepage is the crawl path into them. -->

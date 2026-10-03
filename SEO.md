@@ -72,6 +72,12 @@ being followed.
 > Asia-Pacific and Middle East & Africa pages were retired; see
 > `scripts/data/retired.js` for where they redirect.
 >
+> **October 2026 (3):** for AdSense review, 18 keyword-variant landing pages
+> were retired (`RETIRED_PAGES` in `scripts/data/retired.js`): near-duplicates
+> such as `/free-voice-chat` and `/call-random-people`, and pages promising
+> features TalkLive does not have (`/random-video-chat`, `/voice-chat-rooms`).
+> The affiliate VPN/tutoring blocks were removed from all landing pages.
+>
 > **October 2026 (2):** the blog is now the TalkLive Journal - ten hand-designed
 > articles and the `/languages/` feature, built by `scripts/journal/` (each
 > article has its own typography; fonts are self-hosted in `public/fonts/mag/`
@@ -459,7 +465,7 @@ correct action is to not create one.
 Nothing in this repo affects off-site authority, and it is the largest remaining
 lever. `marketing/LAUNCH-PLAN.md` and `marketing/POST-KIT.md` cover the
 channels. The pages most likely to earn links on merit are the researched ones -
-`/blog/what-happened-to-omegle`, `/omegle-vs-chatroulette`,
+`/blog/what-happened-to-omegle`, `/alternatives`,
 `/blog/how-random-matchmaking-works`, `/blog/science-of-talking-to-strangers` -
 rather than the commercial landing pages.
 

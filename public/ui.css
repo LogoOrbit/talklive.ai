@@ -1423,7 +1423,9 @@
 @media (min-width: 720px) {
   .setup-panel .tap-choice-row {
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    align-items: center;
+    /* Stretch, not center: when one caption wraps ("Anonymous text chat ·
+       no mic") the two cards would otherwise sit at different heights. */
+    align-items: stretch;
   }
   .setup-panel .tap-choice-divider {
     flex-direction: column;

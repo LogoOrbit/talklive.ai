@@ -1,7 +1,7 @@
 {
   "/": {
-    "hash": "da3610a0d56a0371",
-    "date": "2026-10-02",
+    "hash": "0f75be195092745a",
+    "date": "2026-10-03",
     "v": 3
   },
   "/about": {
@@ -10,13 +10,13 @@
     "v": 3
   },
   "/alternatives": {
-    "hash": "f063022bb4c69bde",
-    "date": "2026-10-02",
+    "hash": "2a5342a833e4b7a5",
+    "date": "2026-10-03",
     "v": 3
   },
   "/anonymous-chat": {
-    "hash": "1a3bc76fdc04ae4a",
-    "date": "2026-10-02",
+    "hash": "c5015347f23b38de",
+    "date": "2026-10-03",
     "v": 3
   },
   "/ar/": {
@@ -84,21 +84,6 @@
     "date": "2026-10-02",
     "v": 3
   },
-  "/call-random-people": {
-    "hash": "4296c1da6232f16b",
-    "date": "2026-10-02",
-    "v": 3
-  },
-  "/cant-sleep": {
-    "hash": "5b067ae382ebb6b8",
-    "date": "2026-10-02",
-    "v": 3
-  },
-  "/chat-without-registration": {
-    "hash": "a1c0f074dd12138d",
-    "date": "2026-10-02",
-    "v": 3
-  },
   "/community-guidelines": {
     "hash": "60db2f2fec26f4ef",
     "date": "2026-10-02",
@@ -110,8 +95,8 @@
     "v": 3
   },
   "/country-chat-guide": {
-    "hash": "d798970ce769d64d",
-    "date": "2026-10-02",
+    "hash": "a771bffa43ab62ca",
+    "date": "2026-10-03",
     "v": 3
   },
   "/de/": {
@@ -134,19 +119,9 @@
     "date": "2026-10-02",
     "v": 3
   },
-  "/free-online-calls": {
-    "hash": "82c761344d11f002",
-    "date": "2026-10-02",
-    "v": 3
-  },
-  "/free-voice-chat": {
-    "hash": "ffbd8174c6c89f74",
-    "date": "2026-10-02",
-    "v": 3
-  },
   "/guides/": {
-    "hash": "92f9618924dfd7c0",
-    "date": "2026-10-02",
+    "hash": "d5e14eb1b99cdb30",
+    "date": "2026-10-03",
     "v": 3
   },
   "/hi/": {
@@ -155,22 +130,12 @@
     "v": 3
   },
   "/how-it-works": {
-    "hash": "bb9a1ac22379fa93",
-    "date": "2026-10-02",
+    "hash": "e873f398110f0444",
+    "date": "2026-10-03",
     "v": 3
   },
   "/id/": {
     "hash": "dd848854d22f56d5",
-    "date": "2026-10-02",
-    "v": 3
-  },
-  "/im-bored": {
-    "hash": "72e4c272a47c5cf6",
-    "date": "2026-10-02",
-    "v": 3
-  },
-  "/international-calls": {
-    "hash": "f33fc6bd7d163e67",
     "date": "2026-10-02",
     "v": 3
   },
@@ -190,13 +155,13 @@
     "v": 3
   },
   "/language-chat-guide": {
-    "hash": "dd19b856b18eda82",
-    "date": "2026-10-02",
+    "hash": "705d449a4a3e09b1",
+    "date": "2026-10-03",
     "v": 3
   },
   "/language-exchange": {
-    "hash": "3e323dc98bcf4d52",
-    "date": "2026-10-02",
+    "hash": "e3903cf8432fc543",
+    "date": "2026-10-03",
     "v": 3
   },
   "/languages/": {
@@ -205,38 +170,18 @@
     "v": 3
   },
   "/late-night-chat": {
-    "hash": "1ea706c1dcbb8b3e",
-    "date": "2026-10-02",
+    "hash": "edcea098ca516fea",
+    "date": "2026-10-03",
     "v": 3
   },
   "/make-friends-online": {
-    "hash": "d36d49982d142db8",
-    "date": "2026-10-02",
-    "v": 3
-  },
-  "/meet-new-people": {
-    "hash": "34c7a848947c1a84",
-    "date": "2026-10-02",
-    "v": 3
-  },
-  "/omegle-vs-chatroulette": {
-    "hash": "a6c5f7ae872cd5fc",
-    "date": "2026-10-02",
-    "v": 3
-  },
-  "/online-chat-rooms": {
-    "hash": "3a0a6b14763b63a2",
-    "date": "2026-10-02",
-    "v": 3
-  },
-  "/pakistani-chat": {
-    "hash": "b6abb047aa068189",
-    "date": "2026-10-02",
+    "hash": "2103caf9da8cb0be",
+    "date": "2026-10-03",
     "v": 3
   },
   "/practice-english-speaking": {
-    "hash": "8772c4aa15e37bb3",
-    "date": "2026-10-02",
+    "hash": "0343857aa84f648d",
+    "date": "2026-10-03",
     "v": 3
   },
   "/pricing": {
@@ -255,33 +200,18 @@
     "v": 3
   },
   "/random-call": {
-    "hash": "6a24a79f8c10c13b",
-    "date": "2026-10-02",
-    "v": 3
-  },
-  "/random-chat": {
-    "hash": "71e5c6dcd637a07a",
-    "date": "2026-10-02",
+    "hash": "2118fe01a4f2323f",
+    "date": "2026-10-03",
     "v": 3
   },
   "/random-text-chat": {
-    "hash": "b031e7092954f063",
-    "date": "2026-10-02",
-    "v": 3
-  },
-  "/random-video-call": {
-    "hash": "c77025b1b04a1815",
-    "date": "2026-10-02",
-    "v": 3
-  },
-  "/random-video-chat": {
-    "hash": "508ce5ce58289721",
-    "date": "2026-10-02",
+    "hash": "c37ef1d9aa352884",
+    "date": "2026-10-03",
     "v": 3
   },
   "/random-voice-chat": {
-    "hash": "3342858967c822ef",
-    "date": "2026-10-02",
+    "hash": "c78f40d31d1ce54a",
+    "date": "2026-10-03",
     "v": 3
   },
   "/refund": {
@@ -305,8 +235,8 @@
     "v": 3
   },
   "/resources": {
-    "hash": "a00202370dbc99e7",
-    "date": "2026-10-02",
+    "hash": "46a7aad2971da0de",
+    "date": "2026-10-03",
     "v": 3
   },
   "/ru/": {
@@ -315,37 +245,22 @@
     "v": 3
   },
   "/safety": {
-    "hash": "fa68abe88181e2fa",
-    "date": "2026-10-02",
-    "v": 3
-  },
-  "/someone-to-talk-to": {
-    "hash": "baa848ca98849271",
-    "date": "2026-10-02",
-    "v": 3
-  },
-  "/stranger-video-call": {
-    "hash": "5522152adb820555",
-    "date": "2026-10-02",
+    "hash": "8f1a25d3a6c7f67e",
+    "date": "2026-10-03",
     "v": 3
   },
   "/talk-to-someone": {
-    "hash": "2df45c05b6552831",
-    "date": "2026-10-02",
+    "hash": "b1d40e3a63889311",
+    "date": "2026-10-03",
     "v": 3
   },
   "/talk-to-strangers": {
-    "hash": "f424f06dd8939638",
-    "date": "2026-10-02",
+    "hash": "2ed7c2d75898f118",
+    "date": "2026-10-03",
     "v": 3
   },
   "/terms": {
     "hash": "9a6ae955e8bdae39",
-    "date": "2026-10-02",
-    "v": 3
-  },
-  "/text-chat-with-strangers": {
-    "hash": "c00f7fc63ada387d",
     "date": "2026-10-02",
     "v": 3
   },
@@ -359,14 +274,9 @@
     "date": "2026-10-02",
     "v": 3
   },
-  "/voice-chat-rooms": {
-    "hash": "79008d96e45c21ba",
-    "date": "2026-10-02",
-    "v": 3
-  },
   "/voice-chat-vs-video-chat": {
-    "hash": "d27b0edb1686169f",
-    "date": "2026-10-02",
+    "hash": "6f6ef78e9187420c",
+    "date": "2026-10-03",
     "v": 3
   },
   "/zh/": {

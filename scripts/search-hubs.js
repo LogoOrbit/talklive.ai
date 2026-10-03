@@ -302,7 +302,7 @@ module.exports = [
         `The country shown for a participant is not identity verification. Do not use it as proof of nationality, residence, citizenship or language, and do not pressure someone to reveal a city or more precise location.`,
       ]},
       { h: 'Begin with the country content that exists', body: [
-        `The current focused guide is <a href="/pakistani-chat">Pakistani Chat</a>, supported by the <a href="/ur/">Urdu</a> and <a href="/hi/">Hindi</a> localized entry pages for users who prefer those interfaces. The broader <a href="/languages/">Languages hub</a> lists every supported localized homepage.`,
+        `The current focused guide is <a href="/regions/south-asia">South Asia</a>, supported by the <a href="/ur/">Urdu</a> and <a href="/hi/">Hindi</a> localized entry pages for users who prefer those interfaces. The broader <a href="/languages/">Languages hub</a> lists every supported localized homepage.`,
         `Future country guides should be added only when they contain genuinely useful language, cultural, safety and product information. Replacing one place name with another does not help a user and does not establish a local TalkLive presence.`,
       ]},
       { h: 'Keep cross-cultural conversation respectful', body: [
@@ -326,7 +326,7 @@ module.exports = [
     ctaBandP: 'Use a country preference when it matters, or choose global matching for the widest live queue.',
     cluster: 'countries-and-regions',
     primaryIntent: 'country voice chat preferences and global stranger chat',
-    relatedPages: ['pakistani-chat', 'language-chat-guide', 'safety', 'random-voice-chat', 'random-text-chat', 'pricing'],
+    relatedPages: ['language-chat-guide', 'safety', 'random-voice-chat', 'random-text-chat', 'pricing'],
     updated: '2026-08-14',
     posts: ['science-of-talking-to-strangers', 'random-chat-safety-tips', 'how-to-start-a-conversation-with-a-stranger'],
   },
