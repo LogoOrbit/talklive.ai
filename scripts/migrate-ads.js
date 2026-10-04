@@ -34,7 +34,10 @@ const noLoaderPages = new Set([...appOnlyPages, ...adFreePages]);
 // allow Google ads on low-value or templated content, and one flagged section
 // can hold up approval for the whole site. The pages stay published and
 // indexed as before - they just carry no ad code and no ad slots.
-const NO_AD_DIRS = ['languages'];
+// The localized homepages (/es/, /ja/ ...) get the same treatment: they are a
+// short translated welcome (150-500 words) in front of the app, too thin to
+// carry ads on their own.
+const NO_AD_DIRS = ['languages'].concat(require('./locales').map((l) => l.code));
 // Same treatment for two short pages that are about the site rather than
 // content for a reader: /contact (a list of email addresses) and /refund (a
 // policy for a plan that is not on sale). AdSense asks for no ad code on pages

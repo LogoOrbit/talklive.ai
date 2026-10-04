@@ -192,7 +192,12 @@ function accountsOf(file) {
     store.upsertAccount('mallory', { country: 'US' });
     store.persistNow();
     console.log(JSON.stringify({ mode: store.backendStatus.mode }));
-  `, { DATABASE_URL: 'postgres://u:p@127.0.0.1:1/db' });
+  `, {
+    DATABASE_URL: 'postgres://u:p@127.0.0.1:1/db',
+    // With no local copy the store keeps retrying for its full production
+    // boot window (4 minutes); the outcome is the same after a few seconds.
+    PG_BOOT_TIMEOUT_NO_COPY_MS: '5000',
+  });
   const got = JSON.parse(out.trim().split('\n').pop());
   ok('the backend reports itself unreachable rather than "file"', got.mode === 'postgres-unreachable', got);
   ok('nothing is written to the local file while the database is down', !fs.existsSync(DATA(dir)), fs.readdirSync(dir));

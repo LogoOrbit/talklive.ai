@@ -83,9 +83,10 @@ html, body {
   color: var(--text);
   overflow: hidden; /* a conversation never scrolls - only the message list does */
 }
-/* Form controls reset word-spacing to normal in the UA stylesheet, so every
-   button kept the narrow gap ("Callinstead", "Gotit"). */
-button, input, select, textarea { word-spacing: inherit; }
+/* Form controls reset word-spacing and font-family in the UA stylesheet, so
+   every button kept the narrow gap ("Callinstead", "Gotit") and the start
+   button rendered in Arial. */
+button, input, select, textarea { word-spacing: inherit; font-family: inherit; }
 
 /* ...but the start screen is a landing page, and a landing page scrolls. With
    the lock on in every state, everything below the fold was unreachable: on

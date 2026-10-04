@@ -67,6 +67,13 @@ being followed.
 
 ## What is on the site
 
+> **October 2026 (5):** third AdSense pass. The 16 localized homepages carry no
+> ad code (150-500 words each - too thin for ads; `NO_AD_DIRS` in
+> `scripts/migrate-ads.js`) and no longer claim "millions of conversations".
+> The never-filled ad markup on the app screens (start, call, chat) is gone,
+> and the homepage's second slot moved from under the app into the content
+> section.
+>
 > **October 2026 (4):** a second AdSense pass. Five more templated pages were
 > retired - `/talk-to-strangers`, `/random-call`, `/anonymous-chat`,
 > `/talk-to-someone` (keyword variants of the voice, text and late-night pages)

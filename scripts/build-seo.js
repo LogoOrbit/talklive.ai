@@ -355,7 +355,7 @@ function page(p, index) {
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<link rel="stylesheet" href="/seo.css?v=20260923art" />
+<link rel="stylesheet" href="/seo.css?v=20261004cta" />
 <title>${esc(p.title)}</title>
 <meta name="description" content="${esc(p.description)}" />
 <meta name="robots" content="${p.noindex ? 'noindex, follow' : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1'}" />
@@ -783,7 +783,7 @@ function localeHome(loc) {
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<link rel="stylesheet" href="/seo.css?v=20260923art" />
+<link rel="stylesheet" href="/seo.css?v=20261004cta" />
 <title>${esc(loc.title)}</title>
 <meta name="description" content="${esc(loc.description)}" />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
@@ -813,8 +813,6 @@ ${alternates}
 <link rel="manifest" href="/site.webmanifest" />
 <script defer src="/pwa.js?v=20260908pwa"></script>
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978"
-     crossorigin="anonymous"></script>
 </head>
 <body>
 <!-- Every locale already carries a translated skip link in scripts/locales.js;
@@ -825,7 +823,7 @@ ${alternates}
 <header class="site-header">
   <div class="wrap">
     <a class="logo" href="/${loc.code}/"><img src="/favicon.svg" width="30" height="30" alt="TalkLive logo" /><span class="logo-name">Talk<span class="logo-live">Live</span></span></a>
-    <span style="display:inline-flex;gap:8px">
+    <span class="head-cta" style="display:inline-flex;gap:8px">
       <a class="btn btn-talk" href="${appVoice}" style="padding:10px 18px;font-size:15px">🎙 ${loc.ctaTalk}</a>
       <a class="btn btn-chat" href="${appChat}" style="padding:10px 18px;font-size:15px">💬 ${loc.ctaChat}</a>
     </span>
@@ -858,14 +856,12 @@ ${alternates}
       <div class="steps">${steps}</div>
     </div>
   </section>
-  ${adSlot('native')}
   <section class="faq">
     <div class="wrap">
       <h2>${loc.faqH}</h2>
       <div class="faq-layout"><div>${faqHtml}</div>${artImg('question-answered', { cls: 'art art-faq' })}</div>
     </div>
   </section>
-  ${leaderboardAd()}
   <div class="wrap">
     <div class="cta-band">
       ${artImg('walking-together', { cls: 'art art-cta' })}
@@ -878,8 +874,6 @@ ${alternates}
     </div>
   </div>
   <div class="wrap">${languageSwitcher(loc.code)}</div>
-
-  ${nativeAd()}
 </main>
 <footer class="site-footer">
   <div class="wrap">

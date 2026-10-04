@@ -54,7 +54,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
      system face a beat later. Only the latin subset is preloaded - latin-ext
      is fetched on demand by the unicode-range in style.css. -->
 <link rel="preload" as="font" type="font/woff2" href="/fonts/plus-jakarta-sans-latin.woff2?v=20260922type" crossorigin />
-<link rel="stylesheet" href="style.css?v=20261003" />
+<link rel="stylesheet" href="style.css?v=20261004b" />
 <link rel="stylesheet" href="chat-extras.css?v=20261004glow" />
 <link rel="stylesheet" href="games.css?v=20261001play" />
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
@@ -1266,23 +1266,6 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
           </div>
           <p id="setupErrorText" class="error-text hidden" role="alert"></p>
         </div>
-        <!-- Ad shown only on this pre-call screen; hidden with the whole
-             panel once a call or chat starts. Framed like the rest of the UI
-             so a creative never reads as a pop-up over the app.
-
-             The unit is chosen per width rather than hidden: ads.js sizes a
-             "leaderboard" from the viewport, so on a phone this became a
-             320x50 - the lowest-CPM shape in the inventory, sitting in the
-             best slot on the site. The phone gets a 300x250 instead, which
-             is the shape that actually fits and actually pays. -->
-        <div class="ad-card ad-card-app ad-card-desk">
-          <span class="ad-card-label" data-i18n="sponsored">Advertisement</span>
-          <div data-ad="leaderboard"></div>
-        </div>
-        <div class="ad-card ad-card-app ad-card-phone">
-          <span class="ad-card-label" data-i18n="sponsored">Advertisement</span>
-          <div data-ad="box"></div>
-        </div>
       </section>
 
       <!-- SETTINGS, as a screen at /settings. Desktop: your card and the
@@ -1801,7 +1784,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
             <p class="account-hint">This is a summary. The complete documents are the <a href="/terms" target="_blank" rel="noopener">Terms &amp; Conditions</a>, the <a href="/community-guidelines" target="_blank" rel="noopener">Community Guidelines</a>, the <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a> and the <a href="/safety" target="_blank" rel="noopener">Safety Center</a>.</p>
 
             <h3>How TalkLive Works</h3>
-            <p>TalkLive connects you with a random stranger for a live, audio-only conversation. There's no sign-up - tap "Start," allow microphone access, and you'll be paired with someone automatically. Tap "Next" any time to end the current call and get matched with someone new, or "Hang Up" to leave entirely. You can optionally set a gender preference, a country, and interest tags from the settings menu to help find a better match.</p>
+            <p>TalkLive connects you with a random person for a live, audio-only conversation. There's no sign-up - tap "Start," allow microphone access, and you'll be paired with someone automatically. Tap "Next" any time to end the current call and get matched with someone new, or "Hang Up" to leave entirely. You can optionally set a gender preference, a country, and interest tags from the settings menu to help find a better match.</p>
 
             <h3>Quick Tips</h3>
             <ul>
@@ -1811,13 +1794,13 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
               <li>If a call feels unsafe or inappropriate, tap "Report" - this immediately ends the call and blocks that person from being matched with you again.</li>
             </ul>
 
-            <h3>Community Guidelines - Be a Good Stranger</h3>
+            <h3>Community Guidelines - Be a Good Conversation Partner</h3>
             <p>TalkLive only works if people treat each other with basic respect. Please:</p>
             <ul>
               <li>Be kind. Treat the person on the other end the way you'd want to be treated.</li>
-              <li>Keep things audio-only and consensual - don't pressure others into topics, content, or behavior they haven't agreed to.</li>
+              <li>Keep conversations respectful - don't pressure others into topics, content, or behavior they haven't agreed to.</li>
               <li>Respect a "no" or a hang-up. If someone ends the call or asks you to stop, let it go.</li>
-              <li>Assume you're talking to a real stranger, possibly a minor despite the age requirement below - act accordingly.</li>
+              <li>Keep every conversation appropriate for a general audience, and leave any conversation that is not.</li>
               <li>Use the Report button if something feels wrong. Reporting helps keep this usable for everyone.</li>
             </ul>
 
@@ -1841,7 +1824,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 
             <h3>Terms &amp; Conditions</h3>
             <p><strong>Eligibility.</strong> You must be at least 18 years old to use TalkLive. By using the service you represent that you meet this requirement.</p>
-            <p><strong>Nature of the service.</strong> TalkLive provides random, unmoderated-in-real-time audio pairing between users. We do not pre-screen who you will be matched with, cannot verify any user's identity, age, or intentions, and are not responsible for the conduct, statements, or actions of any user. You use the service, and interact with strangers through it, entirely at your own risk.</p>
+            <p><strong>Nature of the service.</strong> TalkLive provides random audio pairing between users. Conversations are not monitored live and we do not pre-screen who you will be matched with; we cannot verify any user's identity, age, or intentions, and are not responsible for the conduct, statements, or actions of any user. You use the service, and interact with other users through it, entirely at your own risk.</p>
             <p><strong>No warranty.</strong> TalkLive is provided "as is" and "as available," without warranties of any kind, express or implied, including fitness for a particular purpose, uninterrupted availability, or error-free operation.</p>
             <p><strong>Limitation of liability.</strong> To the maximum extent permitted by law, TalkLive and its operators are not liable for any indirect, incidental, special, or consequential damages, or for any conduct of any user, arising from your use of the service.</p>
             <p><strong>Acceptable use.</strong> You agree not to engage in any of the Prohibited Conduct listed above, and not to use the service for any unlawful purpose.</p>
@@ -2122,49 +2105,6 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
              have earned little while reading as an ad wall. -->
 
         </div><!-- /.tl-call -->
-
-        <!-- Moved up from below the conversation guide: this is the slot that
-             is now beside the call instead of under it. ads.js will not start,
-             retry or collapse it while a call is live, so it fills during the
-             search and then holds completely still.
-
-             Two columns only. A 300x250 is the right shape for the empty half
-             of a desktop window and the wrong one for a phone, where it was
-             250px of rectangle stacked under a call screen that already did
-             not fit - so the phone gets the strip below instead, and this card
-             is display:none there. A hidden slot never enters the viewport, so
-             ads.js never loads it and it costs no slot budget. -->
-        <div class="ad-card ad-card-app ad-card-wide tl-call-ad tl-call-ad-wide">
-          <span class="ad-card-label" data-i18n="sponsored">Advertisement</span>
-          <div data-ad="box"></div>
-        </div>
-
-        <!-- The phone's ad: one strip, its own reserved height, directly under
-             the controls and clear of them. It is a leaderboard, so it resolves
-             to a 320x50 on a phone and a 728x90 on a tablet - the shapes that
-             actually fit one column - and the space is reserved before anything
-             loads, so a creative arriving never moves the call controls. It is
-             kept out of the desktop layout, where the card above is beside the
-             call instead. -->
-        <!-- Two phone slots, one shown at a time, chosen by how much height
-             there is. Removing the back chevron and its header row gave this
-             part of the screen 70-110px back, which is the difference between
-             a 320x50 strip and a 300x250 - the highest-CPM unit in the
-             inventory, and the one worth having in the only ad slot on a
-             phone with a guaranteed position. Short phones keep the strip,
-             because there a rectangle would be back to pushing the call
-             controls under the tab bar.
-
-             A display:none slot never enters the viewport, so ads.js never
-             loads the one that is not in use and it spends no slot budget. -->
-        <div class="ad-card ad-card-app tl-call-ad-phone tl-call-ad-tall">
-          <span class="ad-card-label" data-i18n="sponsored">Advertisement</span>
-          <div data-ad="box"></div>
-        </div>
-        <div class="ad-card ad-card-app tl-call-ad-phone tl-call-ad-short">
-          <span class="ad-card-label" data-i18n="sponsored">Advertisement</span>
-          <div data-ad="leaderboard"></div>
-        </div>
         </div><!-- /.tl-call-row -->
 
         <div class="call-music-row">
@@ -2189,9 +2129,6 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
             <li data-i18n="convoTip6">Relax and have fun.</li>
           </ul>
         </section>
-
-        <!-- High-value rectangle between the guide and the free-service note. -->
-        <div class="ad-card ad-card-app"><span class="ad-card-label" data-i18n="sponsored">Advertisement</span><div data-ad="box" style="margin:24px auto;text-align:center"></div></div>
 
         <!-- A warm, simple note at the bottom of the call screen: why TalkLive
              is free and the care that goes into it. Plain English on purpose,
@@ -2251,12 +2188,6 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
           </form>
         </div>
       </aside>
-
-
-
-  <div style="margin:28px auto">
-    <div class="ad-card"><span class="ad-card-label" data-i18n="sponsored">Advertisement</span><div data-ad="native"></div></div>
-  </div>
 </main>
       <!-- =================================================================
            THE ACTIVITY RAIL.
@@ -2395,6 +2326,10 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
         <span class="daily-article-cta">Read now →</span>
       </a>
 
+      <div style="margin:28px auto">
+        <div class="ad-card"><span class="ad-card-label" data-i18n="sponsored">Advertisement</span><div data-ad="native"></div></div>
+      </div>
+
       <h3>How TalkLive works</h3>
       <p>TalkLive uses encrypted WebRTC audio through a production TURN relay. TalkLive does not record or store voice audio, although another participant can record on their own device. Typed messages and related context may be retained for a limited rolling period under the Privacy Policy. If both people choose, the optional friends feature can help them reconnect without exchanging phone numbers.</p>
 
@@ -2420,8 +2355,8 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   <footer class="footer">
     <a href="/blog/" class="footer-blog-btn" data-i18n="readOurBlog">📖 Read our blog</a>
     <div class="footer-links">
-      <button type="button" id="openTermsLinkFooter" class="link-btn" data-i18n="termsLink">Terms &amp; Community Guidelines</button>
       <a href="/about" class="link-btn" data-i18n="aboutLink">About</a>
+      <a href="/safety" class="link-btn">Safety Center</a>
       <a href="/contact" class="link-btn" data-i18n="contactLink">Contact</a>
       <a href="/pricing" class="link-btn" data-i18n="pricingLink">Pricing</a>
       <a href="/terms" class="link-btn" data-i18n="termsPageLink">Terms &amp; Conditions</a>

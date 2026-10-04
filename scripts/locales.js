@@ -37,7 +37,7 @@ module.exports = [
       { q: '¿Es anónimo?', a: 'Sí. Usas un nombre temporal y las llamadas son de audio entre pares que nunca se graban.' },
     ],
     ctaH: '¿Listo para conocer a alguien nuevo?',
-    ctaP: 'Millones de conversaciones empiezan con un solo toque. La tuya también puede.',
+    ctaP: 'Cada buena conversación empieza con un toque. La tuya puede empezar ahora.',
   },
   {
     code: 'pt', name: 'Português', dir: 'ltr', ogLocale: 'pt_BR',
@@ -69,7 +69,7 @@ module.exports = [
       { q: 'É anônimo?', a: 'Sim. Você usa um nome temporário e as chamadas são de áudio ponto a ponto, nunca gravadas.' },
     ],
     ctaH: 'Pronto para conhecer alguém novo?',
-    ctaP: 'Milhões de conversas começam com um único toque. A sua também pode.',
+    ctaP: 'Toda boa conversa começa com um toque. A sua pode começar agora.',
   },
   {
     code: 'fr', name: 'Français', dir: 'ltr', ogLocale: 'fr_FR',
@@ -101,7 +101,7 @@ module.exports = [
       { q: 'Est-ce anonyme ?', a: 'Oui. Vous utilisez un pseudo temporaire et les appels audio pair-à-pair ne sont jamais enregistrés.' },
     ],
     ctaH: 'Prêt à rencontrer quelqu’un de nouveau ?',
-    ctaP: 'Des millions de conversations commencent par un simple appui. La vôtre aussi.',
+    ctaP: 'Chaque belle conversation commence par un simple appui. La vôtre peut commencer maintenant.',
   },
   {
     code: 'de', name: 'Deutsch', dir: 'ltr', ogLocale: 'de_DE',
@@ -133,7 +133,7 @@ module.exports = [
       { q: 'Ist es anonym?', a: 'Ja. Du nutzt einen temporären Namen, und die Peer-to-Peer-Audioanrufe werden nie aufgezeichnet.' },
     ],
     ctaH: 'Bereit, jemand Neues kennenzulernen?',
-    ctaP: 'Millionen Gespräche beginnen mit einem einzigen Tipp. Deins auch.',
+    ctaP: 'Jedes gute Gespräch beginnt mit einem Tipp. Deins kann jetzt beginnen.',
   },
   {
     code: 'ru', name: 'Русский', dir: 'ltr', ogLocale: 'ru_RU',
@@ -165,7 +165,7 @@ module.exports = [
       { q: 'Это анонимно?', a: 'Да. Вы используете временное имя, а аудиозвонки идут напрямую между устройствами и никогда не записываются.' },
     ],
     ctaH: 'Готовы познакомиться с кем-то новым?',
-    ctaP: 'Миллионы разговоров начинаются с одного нажатия. Ваш - тоже.',
+    ctaP: 'Каждый хороший разговор начинается с одного нажатия. Ваш может начаться прямо сейчас.',
   },
   {
     code: 'tr', name: 'Türkçe', dir: 'ltr', ogLocale: 'tr_TR',
@@ -197,7 +197,7 @@ module.exports = [
       { q: 'Anonim mi?', a: 'Evet. Geçici bir ad kullanırsın ve eşler arası sesli aramalar asla kaydedilmez.' },
     ],
     ctaH: 'Yeni biriyle tanışmaya hazır mısın?',
-    ctaP: 'Milyonlarca sohbet tek bir dokunuşla başlıyor. Seninki de başlayabilir.',
+    ctaP: 'Her güzel sohbet tek bir dokunuşla başlar. Seninki şimdi başlayabilir.',
   },
   {
     code: 'ar', name: 'العربية', dir: 'rtl', ogLocale: 'ar_AR',
@@ -229,7 +229,7 @@ module.exports = [
       { q: 'هل هو مجهول الهوية؟', a: 'نعم. تستخدم اسمًا مؤقتًا، والمكالمات الصوتية تتم مباشرة بين الأجهزة ولا تُسجَّل أبدًا.' },
     ],
     ctaH: 'مستعد للتعرف على شخص جديد؟',
-    ctaP: 'ملايين المحادثات تبدأ بضغطة واحدة. ومحادثتك أيضًا.',
+    ctaP: 'كل محادثة جميلة تبدأ بضغطة واحدة. ومحادثتك يمكن أن تبدأ الآن.',
   },
   {
     code: 'hi', name: 'हिन्दी', dir: 'ltr', ogLocale: 'hi_IN',
@@ -261,7 +261,7 @@ module.exports = [
       { q: 'क्या यह गुमनाम है?', a: 'हाँ। आप अस्थायी नाम इस्तेमाल करते हैं और पीयर-टू-पीयर ऑडियो कॉल कभी रिकॉर्ड नहीं होतीं।' },
     ],
     ctaH: 'किसी नए व्यक्ति से मिलने को तैयार?',
-    ctaP: 'लाखों बातचीत एक टैप से शुरू होती हैं। आपकी भी हो सकती है।',
+    ctaP: 'हर अच्छी बातचीत एक टैप से शुरू होती है। आपकी अभी शुरू हो सकती है।',
   },
   {
     code: 'ur', name: 'اردو', dir: 'rtl', ogLocale: 'ur_PK',
@@ -293,7 +293,7 @@ module.exports = [
       { q: 'کیا یہ گمنام ہے؟', a: 'جی ہاں۔ آپ عارضی نام استعمال کرتے ہیں اور پیئر ٹو پیئر آڈیو کالز کبھی ریکارڈ نہیں ہوتیں۔' },
     ],
     ctaH: 'کسی نئے شخص سے ملنے کو تیار؟',
-    ctaP: 'لاکھوں گفتگوئیں ایک ٹیپ سے شروع ہوتی ہیں۔ آپ کی بھی ہو سکتی ہے۔',
+    ctaP: 'ہر اچھی گفتگو ایک ٹیپ سے شروع ہوتی ہے۔ آپ کی ابھی شروع ہو سکتی ہے۔',
   },
   {
     code: 'id', name: 'Bahasa Indonesia', dir: 'ltr', ogLocale: 'id_ID',
@@ -325,7 +325,7 @@ module.exports = [
       { q: 'Apakah anonim?', a: 'Ya. Kamu memakai nama sementara dan panggilan audio peer-to-peer tidak pernah direkam.' },
     ],
     ctaH: 'Siap bertemu orang baru?',
-    ctaP: 'Jutaan percakapan dimulai dari sekali ketuk. Milikmu juga bisa.',
+    ctaP: 'Setiap obrolan seru dimulai dari sekali ketuk. Obrolanmu bisa dimulai sekarang.',
   },
   {
     code: 'zh', name: '中文', dir: 'ltr', ogLocale: 'zh_CN',
@@ -357,7 +357,7 @@ module.exports = [
       { q: '是匿名的吗？', a: '是的。你使用临时昵称，点对点音频通话绝不录音。' },
     ],
     ctaH: '准备好认识新朋友了吗？',
-    ctaP: '数百万段对话都始于轻轻一点。你的也可以。',
+    ctaP: '每一段美好的对话都始于轻轻一点。你的对话现在就可以开始。',
   },
   {
     code: 'ja', name: '日本語', dir: 'ltr', ogLocale: 'ja_JP',
@@ -389,7 +389,7 @@ module.exports = [
       { q: '匿名ですか？', a: 'はい。一時的な表示名を使い、P2P音声通話は一切録音されません。' },
     ],
     ctaH: '新しい誰かと出会う準備はできた？',
-    ctaP: '何百万もの会話がワンタップから始まっています。あなたの会話も。',
+    ctaP: 'すてきな会話は、いつもワンタップから。あなたの会話も今すぐ始められます。',
   },
   {
     code: 'ko', name: '한국어', dir: 'ltr', ogLocale: 'ko_KR',
@@ -421,7 +421,7 @@ module.exports = [
       { q: '익명인가요?', a: '네. 임시 닉네임을 사용하며, P2P 음성 통화는 절대 녹음되지 않습니다.' },
     ],
     ctaH: '새로운 사람을 만날 준비 되셨나요?',
-    ctaP: '수백만 개의 대화가 탭 한 번으로 시작됩니다. 당신의 대화도요.',
+    ctaP: '좋은 대화는 언제나 탭 한 번으로 시작됩니다. 당신의 대화도 지금 시작할 수 있어요.',
   },
   {
     code: 'it', name: 'Italiano', dir: 'ltr', ogLocale: 'it_IT',
@@ -453,7 +453,7 @@ module.exports = [
       { q: 'È anonimo?', a: 'Sì. Usi un nome temporaneo e le chiamate audio peer-to-peer non vengono mai registrate.' },
     ],
     ctaH: 'Pronto a conoscere qualcuno di nuovo?',
-    ctaP: 'Milioni di conversazioni iniziano con un solo tocco. Anche la tua.',
+    ctaP: 'Ogni bella conversazione inizia con un tocco. La tua può iniziare adesso.',
   },
   {
     code: 'fa', name: 'فارسی', dir: 'rtl', ogLocale: 'fa_IR',
@@ -485,7 +485,7 @@ module.exports = [
       { q: 'آیا ناشناس است؟', a: 'بله. از یک نام موقت استفاده می‌کنید و تماس‌های صوتی نظیر‌به‌نظیر هرگز ضبط نمی‌شوند.' },
     ],
     ctaH: 'آماده‌اید با یک نفر جدید آشنا شوید؟',
-    ctaP: 'میلیون‌ها گفت‌وگو با یک ضربه شروع می‌شوند. گفت‌وگوی شما هم می‌تواند.',
+    ctaP: 'هر گفت‌وگوی خوب با یک ضربه شروع می‌شود. گفت‌وگوی شما همین حالا می‌تواند شروع شود.',
   },
   {
     code: 'bn', name: 'বাংলা', dir: 'ltr', ogLocale: 'bn_BD',
@@ -517,6 +517,6 @@ module.exports = [
       { q: 'এটা কি বেনামি?', a: 'হ্যাঁ। আপনি অস্থায়ী নাম ব্যবহার করেন এবং পিয়ার-টু-পিয়ার অডিও কল কখনও রেকর্ড হয় না।' },
     ],
     ctaH: 'নতুন কারও সাথে পরিচিত হতে প্রস্তুত?',
-    ctaP: 'লক্ষ লক্ষ কথোপকথন শুরু হয় এক ট্যাপে। আপনারটাও হতে পারে।',
+    ctaP: 'প্রতিটি ভালো কথোপকথন শুরু হয় এক ট্যাপে। আপনারটাও এখনই শুরু হতে পারে।',
   },
 ];

@@ -69,6 +69,10 @@ img { max-width: 100%; height: auto; }
   border-bottom: 1px solid var(--border);
 }
 .site-header .wrap { display: flex; align-items: center; justify-content: space-between; height: 64px; gap: 16px; }
+/* Header CTAs on the localized homepages: translated labels are long, so on a
+   phone they wrapped onto three lines over the logo. The hero repeats both. */
+.head-cta .btn { white-space: nowrap; }
+@media (max-width: 640px) { .head-cta { display: none !important; } }
 .logo { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; color: var(--text); }
 .logo:hover { text-decoration: none; }
 /* "Live" in the brand cyan, exactly as the logo artwork sets it. */

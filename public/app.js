@@ -44,7 +44,6 @@ const closeFiltersBtn = document.getElementById('closeFiltersBtn');
 const termsModal = document.getElementById('termsModal');
 const closeTermsBtn = document.getElementById('closeTermsBtn');
 const openTermsLink = document.getElementById('openTermsLink');
-const openTermsLinkFooter = document.getElementById('openTermsLinkFooter');
 
 const genderGroup = document.getElementById('genderGroup');
 const prefGenderGroup = document.getElementById('prefGenderGroup');
@@ -2120,7 +2119,6 @@ function closeModal(modal) {
 }
 
 openTermsLink.addEventListener('click', () => openModal(termsModal));
-openTermsLinkFooter.addEventListener('click', () => openModal(termsModal));
 closeTermsBtn.addEventListener('click', () => closeModal(termsModal));
 
 [termsModal].forEach((modal) => {
