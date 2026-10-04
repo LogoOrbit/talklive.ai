@@ -1553,6 +1553,8 @@
   line-height: 1.45;
   color: var(--muted);
 }
+/* "Tap anyone..." under an empty list pointed at nobody. */
+.tl-rail-list:has(> .tl-rail-empty) + .tl-rail-foot { display: none; }
 .tl-rail-person .tl-rail-row-icon { background: color-mix(in srgb, var(--text) 7%, transparent); }
 .tl-rail-person .tl-animal-icon { width: 22px; height: 22px; }
 

@@ -414,7 +414,7 @@
   background: var(--accent-soft, rgba(108, 92, 231, 0.16));
   animation: vnPop 0.5s ease-out, vnPulse 1.6s ease-out 0.5s 3;
 }
-.vn-mic-btn.vn-nudge-loop { animation: vnPop 0.5s ease-out, vnPulse 1.6s ease-out 0.5s infinite; }
+.vn-mic-btn.vn-nudge-loop { animation: vnPop 0.5s ease-out, vnPulse 1.6s ease-out 0.5s 3, vnGlow 2.4s ease-out 5.3s infinite; }
 @keyframes vnPop {
   0% { transform: scale(1); }
   40% { transform: scale(1.3); }
@@ -426,6 +426,12 @@
   15% { transform: scale(1.1); }
   30% { transform: scale(1); }
   100% { box-shadow: 0 0 0 12px transparent; transform: scale(1); }
+}
+/* The open-ended reminder only glows: a button that keeps changing size is
+   a moving target for the finger trying to press it. */
+@keyframes vnGlow {
+  0% { box-shadow: 0 0 0 0 rgba(108, 92, 231, 0.45); box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent); }
+  100% { box-shadow: 0 0 0 10px transparent; }
 }
 @media (prefers-reduced-motion: reduce) {
   .vn-mic-btn.vn-nudge, .vn-mic-btn.vn-nudge-loop { animation: none; }

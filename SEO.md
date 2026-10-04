@@ -67,6 +67,16 @@ being followed.
 
 ## What is on the site
 
+> **October 2026 (4):** a second AdSense pass. Five more templated pages were
+> retired - `/talk-to-strangers`, `/random-call`, `/anonymous-chat`,
+> `/talk-to-someone` (keyword variants of the voice, text and late-night pages)
+> and `/alternatives` (duplicated `/voice-chat-vs-video-chat`) - plus the stale
+> hand-kept `/guides/` list, which titled several links after retired posts.
+> Titles, descriptions and H1s across the product pages and the 16 localized
+> homepages no longer lead with "strangers" / "anonymous"; the Journal's
+> editorial articles keep their wording. Fixed ad slots are capped at 3 a page
+> (`maxSlotsPerPage` in `public/ads-config.json`).
+>
 > **October 2026 (3):** `/regions/` is now three hand-written Journal features
 > (`scripts/journal/regions/`): South Asia, Europe and the Americas. The hub,
 > Asia-Pacific and Middle East & Africa pages were retired; see
@@ -465,7 +475,7 @@ correct action is to not create one.
 Nothing in this repo affects off-site authority, and it is the largest remaining
 lever. `marketing/LAUNCH-PLAN.md` and `marketing/POST-KIT.md` cover the
 channels. The pages most likely to earn links on merit are the researched ones -
-`/blog/what-happened-to-omegle`, `/alternatives`,
+`/blog/what-happened-to-omegle`, `/voice-chat-vs-video-chat`,
 `/blog/how-random-matchmaking-works`, `/blog/science-of-talking-to-strangers` -
 rather than the commercial landing pages.
 

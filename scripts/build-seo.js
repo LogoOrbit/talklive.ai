@@ -44,16 +44,12 @@ function esc(s) {
 // Every landing page appears in the global nav/footer so link equity flows
 // between them and back to the app. `slug: ''` is the home app.
 const NAV = [
-  { slug: 'talk-to-strangers', label: 'Talk to Strangers' },
-  { slug: 'random-voice-chat', label: 'Random Voice Chat' },
-  { slug: 'random-text-chat', label: 'Random Text Chat' },
-  { slug: 'random-call', label: 'Random Call' },
-  { slug: 'anonymous-chat', label: 'Anonymous Chat' },
-  { slug: 'talk-to-someone', label: 'Talk to Someone' },
+  { slug: 'random-voice-chat', label: 'Voice Chat' },
+  { slug: 'random-text-chat', label: 'Text Chat' },
+  { slug: 'language-exchange', label: 'Language Exchange' },
   { slug: 'practice-english-speaking', label: 'Practice English Speaking' },
   { slug: 'make-friends-online', label: 'Make Friends Online' },
   { slug: 'late-night-chat', label: 'Late Night Chat' },
-  { slug: 'language-exchange', label: 'Language Exchange' },
 ];
 
 function url(slug) { return slug ? `${SITE}/${slug}` : `${SITE}/`; }
@@ -100,9 +96,9 @@ function icon(name) {
 
 function headerHtml(currentSlug) {
   const primary = [
-    { slug: 'random-call', label: 'Random Call' },
     { slug: 'random-voice-chat', label: 'Voice Chat' },
     { slug: 'random-text-chat', label: 'Text Chat' },
+    { slug: 'language-exchange', label: 'Languages' },
     { slug: 'safety', label: 'Safety' },
     { slug: 'resources', label: 'Resources' },
   ];
@@ -125,7 +121,7 @@ function footerHtml() {
     { h: 'Talk', items: NAV.slice(0, 4) },
     { h: 'Discover', items: [
       { slug: 'resources', label: 'Resource Hub' },
-      { slug: 'alternatives', label: 'Alternatives' },
+      { slug: 'voice-chat-vs-video-chat', label: 'Voice vs Video' },
       { slug: 'languages/', label: 'Languages' },
       { slug: 'regions/south-asia', label: 'South Asia' },
       { slug: 'regions/europe', label: 'Europe' },
@@ -140,7 +136,7 @@ function footerHtml() {
       <div class="cols">
         <div style="max-width:280px">
           <a class="logo" href="/"><img src="/favicon.svg" width="28" height="28" alt="TalkLive logo" /><span class="logo-name">Talk<span class="logo-live">Live</span></span></a>
-          <p style="margin-top:12px">Free random voice &amp; text chat with strangers around the world. Tap to Talk or Tap to Chat - anonymous, no sign-up, just real live conversations.</p>
+          <p style="margin-top:12px">Free one-to-one voice and text conversations with people around the world. Tap to Talk or Tap to Chat - no sign-up, adults 18+, with block and report on every screen.</p>
         </div>
         ${colHtml}
         <div><h4>App</h4><ul>
@@ -165,11 +161,10 @@ function footerHtml() {
 }
 
 const PAGE_CLUSTERS = {
-  voice: ['random-call', 'random-voice-chat', 'voice-chat-vs-video-chat'],
+  voice: ['random-voice-chat', 'voice-chat-vs-video-chat'],
   text: ['random-text-chat'],
-  discovery: ['talk-to-strangers', 'anonymous-chat', 'make-friends-online', 'late-night-chat', 'talk-to-someone'],
+  discovery: ['make-friends-online', 'late-night-chat'],
   language: ['practice-english-speaking', 'language-exchange', 'language-chat-guide', 'country-chat-guide'],
-  alternatives: ['alternatives'],
   trust: ['safety', 'how-it-works', 'resources'],
 };
 
@@ -185,7 +180,7 @@ function linkCloud(currentSlug) {
   const sameCluster = PAGES
     .filter((pageModel) => pageModel.slug !== currentSlug && pageCluster(pageModel) === pageCluster(current))
     .map((pageModel) => pageModel.slug);
-  const fallback = ['resources', 'safety', 'how-it-works', 'random-call', 'random-voice-chat', 'random-text-chat', 'talk-to-strangers'];
+  const fallback = ['resources', 'safety', 'how-it-works', 'random-voice-chat', 'random-text-chat', 'make-friends-online', 'language-exchange'];
   const slugs = [];
   for (const slug of explicit.concat(sameCluster, fallback)) {
     if (!slug || slug === currentSlug || slugs.includes(slug)) continue;
@@ -377,13 +372,13 @@ function page(p, index) {
 <meta property="og:image:type" content="image/png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="TalkLive - free random voice calls and text chat with strangers worldwide" />
+<meta property="og:image:alt" content="TalkLive - free one-to-one voice calls and text chat with people worldwide" />
 <meta property="og:locale" content="en_US" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="${esc(p.title)}" />
 <meta name="twitter:description" content="${esc(p.description)}" />
 <meta name="twitter:image" content="${OG_IMAGE}" />
-<meta name="twitter:image:alt" content="TalkLive random voice and text chat" />
+<meta name="twitter:image:alt" content="TalkLive voice and text chat" />
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="/favicon-192.png" />
 <link rel="manifest" href="/site.webmanifest" />
@@ -480,62 +475,13 @@ ${footerHtml()}
 
 const CORE_PAGES = [
   {
-    slug: 'talk-to-strangers',
-    crumb: 'Talk to Strangers',
-    eyebrow: 'Live voice chat',
-    title: 'Talk to Strangers Online - Free Random Voice Chat | TalkLive',
-    description: 'Talk to strangers online for free with TalkLive. One tap connects you to a random person for a live, anonymous voice conversation. No sign-up, audio only, worldwide.',
-    keywords: 'talk to strangers, talk to strangers online, chat with strangers, stranger chat, talk to strangers app, random stranger chat, free stranger chat',
-    h1: 'Talk to Strangers Online - Instantly, for Free',
-    lede: 'Tap once and TalkLive pairs you with a random person somewhere in the world for a live voice conversation. No profiles, no sign-up, no pressure - just real people and real talk.',
-    cta: 'Talk to a Stranger',
-    featuresH: 'Why people love talking to strangers on TalkLive',
-    featuresIntro: 'Everything is built for spontaneous, judgment-free conversations that actually feel human.',
-    features: [
-      { icon: 'bolt', h: 'One-tap matching', p: 'Skip the forms. Press Tap to Talk and you are connected to a waiting stranger in seconds.' },
-      { icon: 'shield', h: 'Stay anonymous', p: 'No real names, photos, or phone numbers required. Share only what you want to share.' },
-      { icon: 'globe', h: 'People worldwide', p: 'Get matched with strangers from dozens of countries, or filter to the regions you prefer.' },
-      { icon: 'next', h: 'Next in a tap', p: 'Not clicking? Hit Next Stranger and you are instantly matched with someone new.' },
-      { icon: 'mic', h: 'Voice-first', p: 'Hearing a real voice builds a connection that typing never could. Mute anytime.' },
-      { icon: 'lock', h: 'Safe by design', p: 'Block and report tools, plus repeated-report bans, keep conversations respectful.' },
-    ],
-    stepsH: 'How to talk to strangers on TalkLive',
-    stepsIntro: 'From landing here to your first hello takes under ten seconds.',
-    steps: [
-      { h: 'Open TalkLive', p: 'Load the app in any browser on your phone or computer. Nothing to install.' },
-      { h: 'Tap to Talk', p: 'Allow microphone access and press the big button to join the queue.' },
-      { h: 'Meet a stranger', p: 'We instantly pair you with another person who wants to talk right now.' },
-      { h: 'Talk or skip', p: 'Enjoy the conversation, add a friend, or tap Next for someone new.' },
-    ],
-    prose: [
-      { h: 'A better way to talk to strangers', body: [
-        'For as long as the internet has existed, people have wanted a simple way to talk to strangers - to hear a new voice, swap stories, practice a language, or just beat boredom at 2 a.m. TalkLive strips that experience down to its essence: one button, one stranger, one live conversation.',
-        'Unlike endless text threads that fizzle out, a voice call carries tone, laughter, and personality. That is why a two-minute chat with a stranger on TalkLive often feels more real than hours of messaging elsewhere.' ] },
-      { h: 'Who you will meet', body: [
-        'TalkLive connects students, night-shift workers, travelers, language learners, and curious people from every continent. Some want a deep late-night talk, others want a quick laugh before moving on. Both are welcome, and the Next button means you are never stuck.',
-        'Prefer to keep it local or go global? Optional filters let you widen or narrow who you meet without ever compromising your anonymity.' ] },
-      { h: 'Respect and safety come first', body: [
-        'Great conversations need to feel safe. Every user must be 18 or older, and one tap lets you block or report anyone who breaks the rules - which ends the call immediately. Repeated reports lead to bans, so the community stays friendly.' ] },
-    ],
-    faq: [
-      { q: 'Is talking to strangers on TalkLive free?', a: 'Core random voice and text matching is free and needs no credit card. Matching is instant for everyone; optional Premium adds advanced filters.' },
-      { q: 'Do I need to create an account?', a: 'No. You can start talking to strangers instantly without signing up. An optional free account lets you keep friends and history, but it is never required.' },
-      { q: 'Is it anonymous?', a: 'Yes. You are identified only by a temporary display name. No phone number, email, or real name is needed to talk.' },
-      { q: 'Can I choose who I talk to?', a: 'You can apply optional filters such as gender and country preferences. If no match is found quickly, TalkLive connects you with any available stranger so you never wait long.' },
-      { q: 'What if someone is rude?', a: 'Tap report or block. The call ends instantly, that person can no longer reach you, and repeated reports can get them banned.' },
-    ],
-    ctaBandH: 'Ready to talk to a stranger?',
-    ctaBandP: 'Open the live queue and see who is available for a voice or text conversation.',
-    posts: ['what-happened-to-omegle', 'how-to-start-a-conversation-with-a-stranger', 'science-of-talking-to-strangers'],
-  },
-  {
     slug: 'random-voice-chat',
     crumb: 'Random Voice Chat',
     eyebrow: 'Audio only',
-    title: 'Random Voice Chat with Strangers - Free, No Camera | TalkLive',
+    title: 'Random Voice Chat - Free, Audio Only, No Camera | TalkLive',
     description: 'Free random voice chat for adults. TalkLive uses audio only - no camera or account required. Match availability varies with the live queue.',
-    keywords: 'random voice chat, voice chat, random audio chat, live voice chat, voice chat with strangers, free voice chat, random voice call, anonymous voice chat',
-    h1: 'Random Voice Chat with Strangers - Free & No Camera',
+    keywords: 'random voice chat, voice chat, live voice chat, free voice chat, random voice call, audio chat',
+    h1: 'Random Voice Chat - Free, Audio Only, No Camera',
     lede: 'Press one button to join the live voice queue and, when another adult is available, talk voice to voice. No video, typing or account is required. Identity, age and location are not verified.',
     cta: 'Start Random Voice Chat',
     featuresH: 'Random voice chat, done right',
@@ -579,11 +525,11 @@ const CORE_PAGES = [
     slug: 'random-text-chat',
     crumb: 'Random Text Chat',
     eyebrow: 'Text only · no mic',
-    title: 'Random Text Chat - Free Anonymous Chat | TalkLive',
-    description: 'Free random text chat with strangers worldwide. Tap to Chat and get paired with a random person instantly - anonymous, no mic, no sign-up.',
-    keywords: 'random text chat, text chat, random chat, anonymous text chat, text chat with strangers, free text chat, stranger text chat, chat without mic, random chat no sign up',
-    h1: 'Random Text Chat with Strangers - Instant & Anonymous',
-    lede: 'Not in the mood to talk out loud? Tap to Chat and TalkLive pairs you with a random stranger for a live, anonymous text conversation. No microphone, no sign-up, no video - just fast, private messaging with a real person.',
+    title: 'Random Text Chat - Free, No Mic, No Sign-Up | TalkLive',
+    description: 'Free one-to-one text chat with people worldwide. Tap to Chat and get paired with someone new in seconds - no mic, no sign-up, adults 18+.',
+    keywords: 'random text chat, text chat, free text chat, chat without mic, online text chat',
+    h1: 'Random Text Chat - Instant, Private, No Mic',
+    lede: 'Not in the mood to talk out loud? Tap to Chat and TalkLive pairs you with someone new for a live, one-to-one text conversation. No microphone, no sign-up, no video - just fast, private messaging with a real person.',
     cta: 'Tap to Talk',
     ctaChat: 'Start Text Chat',
     featuresH: 'Text chat, stripped to the fun part',
@@ -625,156 +571,12 @@ const CORE_PAGES = [
     ctaBandP: 'Tap the blue button and say hi - no mic, no sign-up, no waiting.',
   },
   {
-    slug: 'random-call',
-    crumb: 'Random Call',
-    eyebrow: 'Instant calls',
-    title: 'Random Call App - Free Live Calls with Strangers | TalkLive',
-    description: 'Make a random call to a stranger for free with TalkLive. Instant live calls, anonymous and audio-only, no number or sign-up needed. Start a random call in seconds.',
-    keywords: 'random call, random call app, live call, call strangers, random phone call, free random call, stranger call, random voice call online',
-    h1: 'Random Call App - Call a Stranger Instantly',
-    lede: 'TalkLive turns your browser into a random call machine. One tap places a live call to a stranger somewhere in the world - no phone number, no contacts, no sign-up. Just press and connect.',
-    cta: 'Make a Random Call',
-    featuresH: 'Everything a great random call needs',
-    featuresIntro: 'The simplicity of a phone call with the surprise of meeting someone brand new.',
-    features: [
-      { icon: 'phone', h: 'Call in one tap', p: 'No dialing, no numbers. Tap to Talk places a live call to a random stranger instantly.' },
-      { icon: 'lock', h: 'No number needed', p: 'Your phone number stays private. Random calls happen entirely inside the app.' },
-      { icon: 'next', h: 'Redial the world', p: 'Not feeling it? Hang up and place a new random call with a single tap.' },
-      { icon: 'globe', h: 'Reach any country', p: 'Random calls connect you across borders - or filter to specific regions if you like.' },
-      { icon: 'shield', h: 'Safe and reportable', p: 'Block and report tools end bad calls instantly and keep the community clean.' },
-      { icon: 'heart', h: 'Call friends back', p: 'Met someone great? Add them and call each other back later - no numbers exchanged.' },
-    ],
-    stepsH: 'How to make a random call',
-    stepsIntro: 'It works like a phone call, minus the contacts and the cost.',
-    steps: [
-      { h: 'Open the app', p: 'Load TalkLive in any browser. There is nothing to download or install.' },
-      { h: 'Tap to call', p: 'Allow your mic and press the call button to place a random call.' },
-      { h: 'Talk live', p: 'You are connected to a real person on the line. Mute or use chat whenever you want.' },
-      { h: 'Hang up or reconnect', p: 'End the call and tap again to reach a new stranger, or add them as a friend.' },
-    ],
-    prose: [
-      { h: 'The thrill of a random call', body: [
-        'There is something exciting about a call when you have no idea who will pick up. TalkLive brings back that spontaneity in a safe, modern way. Every random call is a tiny adventure - a new accent, a new story, a new person who happened to tap the button at the same moment you did.',
-        'Because it is browser-based, there is no app store detour and no phone number to hand out. You are one tap from a live call and one tap from ending it.' ] },
-      { h: 'Random calls without the risks', body: [
-        'Traditional calling means sharing your number and hoping for the best. TalkLive uses temporary display names and encrypted WebRTC audio relayed through TURN in production. If a call goes sideways, blocking or reporting ends it immediately.' ] },
-      { h: 'Perfect for quick connections', body: [
-        'Waiting for a bus, taking a break, or winding down at night - a random call is the perfect length of company. Talk for two minutes or two hours, then move on whenever you like.' ] },
-    ],
-    faq: [
-      { q: 'Does a random call cost anything?', a: 'Core random calls have no per-minute TalkLive charge. They use your internet connection, so provider data charges may apply; optional Premium features are separate.' },
-      { q: 'Do I have to share my phone number?', a: 'Never. Random calls happen inside the app using a temporary display name, so your real number stays private.' },
-      { q: 'Can I call the same person again?', a: 'Yes, if you both add each other as friends you can call each other back later - still without sharing numbers.' },
-      { q: 'What devices work?', a: 'Any device with a modern browser and a microphone: phones, tablets, laptops, and desktops.' },
-      { q: 'Is it safe to call strangers here?', a: 'TalkLive is 18+, anonymous, and includes instant block and report tools plus automatic bans for repeat offenders.' },
-    ],
-    ctaBandH: 'Place your first random call now',
-    ctaBandP: 'Someone out there is ready to pick up. Tap to connect.',
-  },
-  {
-    slug: 'anonymous-chat',
-    crumb: 'Anonymous Chat',
-    eyebrow: 'Private by design',
-    title: 'Anonymous Chat with Strangers - Free & Private | TalkLive',
-    description: 'Anonymous chat with strangers on TalkLive - live voice calls or instant text chat. No name, number, or sign-up. Talk or type privately with people worldwide, free.',
-    keywords: 'anonymous chat, anonymous voice chat, anonymous text chat, anonymous calls, chat anonymously, private chat with strangers, no sign up chat, anonymous stranger chat',
-    h1: 'Anonymous Chat with Strangers - No Names, No Sign-Up',
-    lede: 'TalkLive is anonymous by design, both ways: Tap to Talk for a live voice call or Tap to Chat for pure text. No name, number, or email - share only what you choose, and disappear whenever you want.',
-    cta: 'Start Anonymous Chat',
-    ctaChat: 'Anonymous Text Chat',
-    featuresH: 'Privacy built into every conversation',
-    featuresIntro: 'Anonymity is not a feature we bolt on - it is how TalkLive works from the ground up.',
-    features: [
-      { icon: 'lock', h: 'No personal details', p: 'No email, phone number, or real name required to start chatting anonymously.' },
-      { icon: 'shield', h: 'Temporary identity', p: 'You appear as a random display name that leaves no trail once you close the tab.' },
-      { icon: 'mic', h: 'Voice is not stored', p: 'TalkLive does not record or store voice audio. Calls use encrypted WebRTC over a production TURN relay.' },
-      { icon: 'next', h: 'Vanish anytime', p: 'Tap Next or close the app and the conversation is gone - no history left behind.' },
-      { icon: 'chat', h: 'Voice or text - your pick', p: 'Tap to Talk for a live call, or Tap to Chat for anonymous text with no microphone at all.' },
-      { icon: 'users', h: 'Optional friends', p: 'Choose to add someone as a friend, or stay completely anonymous. Your call.' },
-    ],
-    stepsH: 'How anonymous chat works',
-    stepsIntro: 'You stay in control of your identity at every step.',
-    steps: [
-      { h: 'Open TalkLive', p: 'No registration screen - just the app and a big Tap to Talk button.' },
-      { h: 'Get a random name', p: 'You are given a temporary display name so no real identity is ever exposed.' },
-      { h: 'Chat freely', p: 'Speak with a random stranger while your personal information stays private.' },
-      { h: 'Leave no trace', p: 'Close the tab and your session ends - nothing personal is kept.' },
-    ],
-    prose: [
-      { h: 'Why anonymous chat matters', body: [
-        'Sometimes the best conversations happen when nobody knows who you are. Anonymity removes the fear of judgment and lets people be honest, silly, vulnerable, or curious. On TalkLive you can talk about anything with a stranger you will never have to see again unless you both choose to.',
-        'That freedom is exactly why anonymous chat has stayed popular for decades - and TalkLive brings it to live voice, which feels far more human than anonymous text.' ] },
-      { h: 'Anonymous does not mean unsafe', body: [
-        'Anonymity and safety go together here. Everyone is 18 or older, and powerful block and report tools mean you are always in control. Reporting someone ends the call instantly and can trigger an automatic ban, so being anonymous never means being unprotected.' ] },
-      { h: 'How your privacy is protected', body: [
-        'A basic match does not require a real name or phone number. Voice audio uses encrypted WebRTC over a production TURN relay, and TalkLive does not record or store it. Your IP address and operational information may still be processed as the Privacy Policy explains.' ] },
-    ],
-    faq: [
-      { q: 'Is TalkLive really anonymous?', a: 'Yes. You do not provide a name, email, or phone number. You are identified only by a temporary display name that disappears when you leave.' },
-      { q: 'Can people find out who I am?', a: 'No. TalkLive never collects your identity, so there is nothing to reveal. You share personal details only if you choose to.' },
-      { q: 'Are anonymous calls recorded?', a: 'TalkLive does not record or store voice audio. Another participant can still record on their own device.' },
-      { q: 'Do I need an account for anonymous chat?', a: 'No account is needed. An optional free account only exists if you want to keep friends between visits.' },
-      { q: 'Is anonymous chat safe?', a: 'Yes. Everyone must be 18+, and instant block and report tools plus automatic bans keep conversations respectful.' },
-    ],
-    ctaBandH: 'Say anything, anonymously',
-    ctaBandP: 'Start a private, anonymous voice chat with a stranger right now.',
-  },
-  {
-    slug: 'talk-to-someone',
-    crumb: 'Talk to Someone',
-    eyebrow: 'Someone is always awake',
-    title: 'Need Someone to Talk To? Talk Now, Free | TalkLive',
-    description: 'Need someone to talk to right now? TalkLive connects you with a real, friendly person in seconds - free voice call or text chat, anonymous, no sign-up, day or night.',
-    keywords: 'someone to talk to, i need someone to talk to, talk to someone, need to talk to someone, talk to someone online free, someone to talk to online, talk to someone right now, free someone to talk to',
-    h1: 'Need Someone to Talk To? Someone Is Here Right Now',
-    lede: 'Some nights you just need another human. Tap once and TalkLive connects you with a real person for a live voice call - or a text chat if you would rather type. Free, anonymous, no sign-up, and someone is always online, whatever the hour.',
-    cta: 'Talk to Someone Now',
-    ctaChat: 'Chat with Someone',
-    featuresH: 'A real person, whenever you need one',
-    featuresIntro: 'Not a bot, not a feed - a live human who also felt like talking right now.',
-    features: [
-      { icon: 'users', h: 'Worldwide queue', p: 'People may join from different time zones, but a match is never guaranteed at a particular moment.' },
-      { icon: 'heart', h: 'Judgment-free', p: 'A stranger has no history with you. Say what is really on your mind - vent, ramble, or just chat.' },
-      { icon: 'lock', h: 'Completely anonymous', p: 'No name, number, or email. Share only what you choose and leave whenever you want.' },
-      { icon: 'chat', h: 'Voice or text - your mood', p: 'Tap to Talk when you want to hear a voice, Tap to Chat when typing feels easier.' },
-      { icon: 'bolt', h: 'No forms, no waiting', p: 'You are talking to someone within seconds. No profile, no sign-up, no queue of screens.' },
-      { icon: 'shield', h: 'Respectful by design', p: 'Strictly 18+, with one-tap block and report tools that end a bad conversation instantly.' },
-    ],
-    stepsH: 'How to find someone to talk to right now',
-    stepsIntro: 'From this page to a live conversation in under ten seconds.',
-    steps: [
-      { h: 'Open TalkLive', p: 'Works in any browser on any device. Nothing to install, nobody to register with.' },
-      { h: 'Pick voice or text', p: 'Tap the green button to talk out loud, or the blue one to chat by text.' },
-      { h: 'Meet a real person', p: 'You are matched with someone who also wants a conversation right now.' },
-      { h: 'Talk as long as you like', p: 'Two minutes or two hours - end anytime, or tap Next to meet someone new.' },
-    ],
-    prose: [
-      { h: 'Sometimes you just need to talk', body: [
-        'Loneliness does not keep office hours. It shows up at 3 a.m., on quiet weekends, in new cities, after long shifts. What usually helps is not advice or a feed to scroll - it is another human voice saying "yeah, I get it." TalkLive exists for exactly that moment: one tap, and there is a real person on the line.',
-        'People come here to vent about their day, think out loud about a decision, share good news that nobody around them cares about yet, or simply hear another voice while making dinner. There is no topic requirement and no pressure - it is just a conversation.' ] },
-      { h: 'Why a stranger is sometimes the easiest person to talk to', body: [
-        'Talking to friends and family can carry weight: their expectations, their worry, the fear of being judged or becoming a burden. A friendly stranger carries none of that. They do not know your boss, your ex, or your family - which is precisely why honesty comes easier. Psychologists call it the "strangers on a train" effect, and anyone who has had a great late-night conversation with a stranger knows it is real.',
-        'And when the conversation clicks, it does not have to end: add each other as friends on TalkLive and you can talk again tomorrow - still without sharing a number or a real name.' ] },
-      { h: 'A caring note', body: [
-        'TalkLive is real people keeping each other company - it is not a counseling service, and strangers are not a substitute for professional support. If you are in crisis or having thoughts of harming yourself, please reach out to a local crisis line or emergency services right away (in the US, call or text 988; in the UK and Ireland, Samaritans at 116 123). For everyday loneliness, boredom, and the simple need to be heard - we are here, and it is free.' ] },
-    ],
-    faq: [
-      { q: 'Is there someone to talk to right now?', a: 'Availability depends on the live queue and selected preferences. Open TalkLive to check; a particular wait time or match is not guaranteed.' },
-      { q: 'Is it free to talk to someone?', a: 'Core random voice and text matching is free and needs no credit card. Matching is instant for everyone; optional Premium adds extra controls.' },
-      { q: 'Do I have to use my voice?', a: 'No. Tap to Chat pairs you with someone for a pure text conversation - no microphone or camera needed.' },
-      { q: 'Will anyone know who I am?', a: 'No. You appear as a temporary display name. No phone number, email, or real name is ever required.' },
-      { q: 'Is this a counseling or therapy service?', a: 'No. TalkLive is friendly strangers keeping each other company, not professional help. If you are in crisis, please contact a local crisis line (988 in the US, 116 123 in the UK/Ireland) or emergency services.' },
-    ],
-    ctaBandH: 'You do not have to sit with it alone',
-    ctaBandP: 'A friendly stranger is online right now. Tap to talk or chat - free and anonymous.',
-  },
-  {
     slug: 'practice-english-speaking',
     crumb: 'Practice English Speaking',
     eyebrow: 'Language practice',
     title: 'Practice English Speaking Online - Free | TalkLive',
     description: 'Practice English speaking online free with real people. TalkLive starts live voice conversations in seconds - no classes, no fees, no sign-up.',
-    keywords: 'practice english speaking, english speaking practice, practice english online free, speak english with strangers, english conversation practice, improve spoken english, talk in english online, free english speaking practice app',
+    keywords: 'practice english speaking, english speaking practice, practice english online free, english conversation practice, improve spoken english, talk in english online, free english speaking practice app',
     h1: 'Practice English Speaking with Real People - Free',
     lede: 'Speaking with different people can complement structured language study. TalkLive offers free random voice matching, but it does not guarantee a fluent speaker, teacher, language, country or availability.',
     cta: 'Practice Speaking Now',
@@ -822,7 +624,7 @@ const CORE_PAGES = [
     crumb: 'Make Friends Online',
     eyebrow: 'Real friendships',
     title: 'Make Friends Online - Find Friends by Voice | TalkLive',
-    description: 'Make friends online through real conversations, not profiles. TalkLive matches you with people worldwide for live voice or text chat - free, anonymous, no sign-up.',
+    description: 'Make friends online through real conversations, not profiles. TalkLive matches you with people worldwide for live voice or text chat - free, private, no sign-up.',
     keywords: 'make friends online, how to make friends online, find friends online, online friends app, make new friends, friend finder, apps to make friends, make friends as an adult',
     h1: 'Make Friends Online - Through Real Conversations',
     lede: 'Friendship starts with a conversation, not a profile picture. TalkLive drops you straight into live voice or text chats with people around the world - and when you click with someone, one tap keeps them as a friend.',
@@ -870,8 +672,8 @@ const CORE_PAGES = [
     crumb: 'Late Night Chat',
     eyebrow: 'Open all night',
     title: 'Late Night Chat - Talk to Someone Any Hour | TalkLive',
-    description: 'Can\'t sleep and need someone to talk to? TalkLive is late night chat with real people worldwide - live voice or text, anonymous and free, at 1am, 3am or any hour.',
-    keywords: 'late night chat, talk to someone at night, 3am chat, can\'t sleep need to talk, night chat with strangers, someone to talk to at 2am, midnight chat, night owls chat',
+    description: 'Can\'t sleep and need someone to talk to? TalkLive is late night chat with real people worldwide - live voice or text, private and free, at 1am, 3am or any hour.',
+    keywords: 'late night chat, talk to someone at night, 3am chat, can\'t sleep need to talk, someone to talk to at 2am, midnight chat, night owls chat',
     h1: 'Late Night Chat - Check the Live Worldwide Queue',
     lede: 'It is 2am, your friends are asleep, and your brain will not switch off. Somewhere on the other side of the planet it is the middle of the afternoon - and TalkLive connects you to that person in one tap, by voice or text.',
     cta: 'Talk to Someone Now',

@@ -1,32 +1,22 @@
 {
   "/": {
-    "hash": "94655c0c8a8fceb3",
-    "date": "2026-10-03",
+    "hash": "3d2b36fb25b8a827",
+    "date": "2026-10-04",
     "v": 3
   },
   "/about": {
-    "hash": "69acc71b5621f671",
-    "date": "2026-10-02",
-    "v": 3
-  },
-  "/alternatives": {
-    "hash": "2a5342a833e4b7a5",
-    "date": "2026-10-03",
-    "v": 3
-  },
-  "/anonymous-chat": {
-    "hash": "c5015347f23b38de",
-    "date": "2026-10-03",
+    "hash": "c1879611c539969a",
+    "date": "2026-10-04",
     "v": 3
   },
   "/ar/": {
-    "hash": "a53eb5fc0eb9b89c",
-    "date": "2026-10-02",
+    "hash": "52f04b95a979cf58",
+    "date": "2026-10-04",
     "v": 3
   },
   "/blog/": {
-    "hash": "ac3878f93e52c4d5",
-    "date": "2026-10-02",
+    "hash": "9785bdbc47196f6a",
+    "date": "2026-10-04",
     "v": 3
   },
   "/blog/how-random-matchmaking-works": {
@@ -45,8 +35,8 @@
     "v": 3
   },
   "/blog/how-to-spot-a-bot-or-scam-in-random-chat": {
-    "hash": "90461f1cfc9f132a",
-    "date": "2026-10-02",
+    "hash": "e78c61971765c3c0",
+    "date": "2026-10-04",
     "v": 3
   },
   "/blog/loneliness-what-actually-helps": {
@@ -80,8 +70,8 @@
     "v": 3
   },
   "/bn/": {
-    "hash": "d31eee791cb784f9",
-    "date": "2026-10-02",
+    "hash": "7d26326c1a0d56e1",
+    "date": "2026-10-04",
     "v": 3
   },
   "/community-guidelines": {
@@ -95,73 +85,68 @@
     "v": 3
   },
   "/country-chat-guide": {
-    "hash": "a771bffa43ab62ca",
-    "date": "2026-10-03",
+    "hash": "670e9a0e4e795bf1",
+    "date": "2026-10-04",
     "v": 3
   },
   "/de/": {
-    "hash": "5b9243d3aa6c4072",
-    "date": "2026-10-02",
+    "hash": "9294f818f9ba1625",
+    "date": "2026-10-04",
     "v": 3
   },
   "/es/": {
-    "hash": "d727e4205a4a3ee3",
-    "date": "2026-10-02",
+    "hash": "27369a657744a6e1",
+    "date": "2026-10-04",
     "v": 3
   },
   "/fa/": {
-    "hash": "2e9280eeb1ce33f2",
-    "date": "2026-10-02",
+    "hash": "6ae8c26a410790c2",
+    "date": "2026-10-04",
     "v": 3
   },
   "/fr/": {
-    "hash": "c1ca5a795380b905",
-    "date": "2026-10-02",
-    "v": 3
-  },
-  "/guides/": {
-    "hash": "d5e14eb1b99cdb30",
-    "date": "2026-10-03",
+    "hash": "fee99a91eb401aee",
+    "date": "2026-10-04",
     "v": 3
   },
   "/hi/": {
-    "hash": "52da438e54bb9c2a",
-    "date": "2026-10-02",
+    "hash": "30cee9b52007bec4",
+    "date": "2026-10-04",
     "v": 3
   },
   "/how-it-works": {
-    "hash": "e873f398110f0444",
-    "date": "2026-10-03",
+    "hash": "84ddb6bedcac9ec1",
+    "date": "2026-10-04",
     "v": 3
   },
   "/id/": {
-    "hash": "dd848854d22f56d5",
-    "date": "2026-10-02",
+    "hash": "00acce3c1e6fba14",
+    "date": "2026-10-04",
     "v": 3
   },
   "/it/": {
-    "hash": "2b66e3199d85e475",
-    "date": "2026-10-02",
+    "hash": "b72a9c2766b3561e",
+    "date": "2026-10-04",
     "v": 3
   },
   "/ja/": {
-    "hash": "e5d7e3996ba7bc63",
-    "date": "2026-10-02",
+    "hash": "40562b77e1164d4f",
+    "date": "2026-10-04",
     "v": 3
   },
   "/ko/": {
-    "hash": "516d18ff50d1ef51",
-    "date": "2026-10-02",
+    "hash": "891a44fc3fee65bc",
+    "date": "2026-10-04",
     "v": 3
   },
   "/language-chat-guide": {
-    "hash": "705d449a4a3e09b1",
-    "date": "2026-10-03",
+    "hash": "2954ce680d4d6919",
+    "date": "2026-10-04",
     "v": 3
   },
   "/language-exchange": {
-    "hash": "e3903cf8432fc543",
-    "date": "2026-10-03",
+    "hash": "30306754dfa26eb6",
+    "date": "2026-10-04",
     "v": 3
   },
   "/languages/": {
@@ -170,18 +155,18 @@
     "v": 3
   },
   "/late-night-chat": {
-    "hash": "edcea098ca516fea",
-    "date": "2026-10-03",
+    "hash": "477a838411082b9f",
+    "date": "2026-10-04",
     "v": 3
   },
   "/make-friends-online": {
-    "hash": "2103caf9da8cb0be",
-    "date": "2026-10-03",
+    "hash": "ea11edca0681af6e",
+    "date": "2026-10-04",
     "v": 3
   },
   "/practice-english-speaking": {
-    "hash": "0343857aa84f648d",
-    "date": "2026-10-03",
+    "hash": "6d3f1d19aa2ebc05",
+    "date": "2026-10-04",
     "v": 3
   },
   "/pricing": {
@@ -195,23 +180,18 @@
     "v": 3
   },
   "/pt/": {
-    "hash": "51d0520ba46d127c",
-    "date": "2026-10-02",
-    "v": 3
-  },
-  "/random-call": {
-    "hash": "2118fe01a4f2323f",
-    "date": "2026-10-03",
+    "hash": "286ed4e23cf4dc5c",
+    "date": "2026-10-04",
     "v": 3
   },
   "/random-text-chat": {
-    "hash": "c37ef1d9aa352884",
-    "date": "2026-10-03",
+    "hash": "846e49a6aeefbe02",
+    "date": "2026-10-04",
     "v": 3
   },
   "/random-voice-chat": {
-    "hash": "c78f40d31d1ce54a",
-    "date": "2026-10-03",
+    "hash": "a2077b1464dcea0c",
+    "date": "2026-10-04",
     "v": 3
   },
   "/refund": {
@@ -235,28 +215,18 @@
     "v": 3
   },
   "/resources": {
-    "hash": "46a7aad2971da0de",
-    "date": "2026-10-03",
+    "hash": "60067efb410755bf",
+    "date": "2026-10-04",
     "v": 3
   },
   "/ru/": {
-    "hash": "2ff77d31d4cf003e",
-    "date": "2026-10-02",
+    "hash": "da2aef0768ba3725",
+    "date": "2026-10-04",
     "v": 3
   },
   "/safety": {
-    "hash": "8f1a25d3a6c7f67e",
-    "date": "2026-10-03",
-    "v": 3
-  },
-  "/talk-to-someone": {
-    "hash": "b1d40e3a63889311",
-    "date": "2026-10-03",
-    "v": 3
-  },
-  "/talk-to-strangers": {
-    "hash": "2ed7c2d75898f118",
-    "date": "2026-10-03",
+    "hash": "a21048c681c8ecf9",
+    "date": "2026-10-04",
     "v": 3
   },
   "/terms": {
@@ -265,23 +235,23 @@
     "v": 3
   },
   "/tr/": {
-    "hash": "5eb09d12c99321d7",
-    "date": "2026-10-02",
+    "hash": "2cf8419e025859f1",
+    "date": "2026-10-04",
     "v": 3
   },
   "/ur/": {
-    "hash": "c6e98866f7047f1d",
-    "date": "2026-10-02",
+    "hash": "614a083d6543c44c",
+    "date": "2026-10-04",
     "v": 3
   },
   "/voice-chat-vs-video-chat": {
-    "hash": "6f6ef78e9187420c",
-    "date": "2026-10-03",
+    "hash": "ac3cf41fdc020b17",
+    "date": "2026-10-04",
     "v": 3
   },
   "/zh/": {
-    "hash": "241e61dedb7334ca",
-    "date": "2026-10-02",
+    "hash": "02ac72c06d8a12c4",
+    "date": "2026-10-04",
     "v": 3
   }
 }

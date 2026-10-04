@@ -7,7 +7,9 @@ const { ok, wait, ID } = H;
   await wait(2500);
   const q = (fn, arg) => page.evaluate(fn, arg);
   const snap = () => q(() => {
-    const txt = (e) => e.innerText.replace(/\s+/g, ' ').trim();
+    // textContent, not innerText: closed side panels are visibility:hidden,
+    // and innerText of a hidden element is empty.
+    const txt = (e) => e.textContent.replace(/\s+/g, ' ').trim();
     const badge = document.getElementById('friendsMsgBadge');
     return {
       badge: badge.classList.contains('hidden') ? 0 : Number(badge.textContent),

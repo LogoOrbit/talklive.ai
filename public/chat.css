@@ -1103,7 +1103,9 @@ img { max-width: 100%; }
 .animal-picker-title { margin: 0; font-size: 15px; font-weight: 700; }
 .animal-picker-hint { margin: 4px 0 12px; font-size: 12px; color: var(--muted); }
 
-.animal-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+/* Eight tiles (seven animals and More): one row of eight, or two of four
+   on a phone - never a row of six with two stragglers. */
+.animal-grid { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 8px; }
 
 .animal-option {
   display: flex; flex-direction: column; align-items: center; gap: 4px;

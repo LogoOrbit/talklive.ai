@@ -2,7 +2,7 @@
   "_comment": "Ad density and behaviour for Google AdSense, read at runtime by public/ads.js. server/index.js serves GET /ads-config.json and merges the ADS_CONFIG environment variable over the top, so this can be retuned with one Fly secret and no deploy. The AdSense loader itself (client ca-pub-5162304231095978) is in every page head and enables Auto ads, which are configured in the AdSense account, not here.",
   "enabled": true,
   "_maxSlotsPerPage": "Ceiling on how many fixed slots load on one page, in the order the visitor reaches them. 0 disables the fixed slots (Auto ads are unaffected).",
-  "maxSlotsPerPage": 6,
+  "maxSlotsPerPage": 3,
   "_types": "Per-format kill switch for the fixed slots. banner follows leaderboard.",
   "types": {
     "native": true,
@@ -33,7 +33,7 @@
         "where": "content",
         "icon": "💬",
         "title": "Prefer to type?",
-        "body": "Random text chat with a stranger. No mic, no camera, no sign-up.",
+        "body": "One-to-one text chat with someone new. No mic, no camera, no sign-up.",
         "cta": "Start chatting free",
         "href": "/chat"
       },
@@ -42,7 +42,7 @@
         "where": "content",
         "icon": "🎙",
         "title": "Talk to someone now",
-        "body": "One tap and you are in a live voice call with a random person.",
+        "body": "One tap and you are in a live voice call with someone new.",
         "cta": "Start talking free",
         "href": "/"
       },

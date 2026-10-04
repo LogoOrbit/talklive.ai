@@ -6,7 +6,7 @@ module.exports = {
   tag: 'Safety',
   h1: 'A Field Guide to the Scams That Start With "Hi"',
   title: 'How to Spot a Bot or Scam in Random Chat: A Field Guide | TalkLive Journal',
-  description: 'Romance-to-crypto schemes, sextortion, the "send me the code" trick and the bots that never answer a question. Seven common specimens, how to recognise each, and the one rule that defeats nearly all of them.',
+  description: 'Romance-to-crypto schemes, image blackmail, the "send me the code" trick and the bots that never answer a question. Seven common specimens, how to recognise each, and the one rule that defeats nearly all of them.',
   date: '2026-10-02',
   theme: '#17181a',
   preload: ['archivo-black-latin-400-normal', 'archivo-latin-400-normal'],
@@ -73,8 +73,8 @@ body{font-family:"Archivo",system-ui,sans-serif}
 <dt>The tell</dt><dd>That code is a login or verification code for <em>your</em> account somewhere, or for an account they are creating in your name. Reading it out hands over the key.</dd>
 <dt>What to do</dt><dd>Never share a code sent to your phone or email. No legitimate person ever needs it.</dd></dl></section>
 
-<section class="g-card"><span class="g-no">Specimen 06</span><h2>The sextortionist</h2><dl>
-<dt>How it appears</dt><dd>Flirting that escalates fast, pressure to share intimate images, then a threat: pay, or the images go to your contacts.</dd>
+<section class="g-card"><span class="g-no">Specimen 06</span><h2>The blackmailer</h2><dl>
+<dt>How it appears</dt><dd>Attention that escalates fast, pressure to share private photos, then a threat: pay, or the images go to your contacts.</dd>
 <dt>The tell</dt><dd>Speed and pressure. Real interest does not need a photo in the first ten minutes.</dd>
 <dt>What to do</dt><dd>If it happens: stop replying, do not pay (paying usually leads to more demands), keep the evidence, report it. The FBI and similar agencies have warned that this targets young men and teenagers in particular. It is a crime against you, not your fault.</dd></dl></section>
 

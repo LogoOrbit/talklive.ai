@@ -8,7 +8,7 @@
  *   /countries/*, /cities/*     -> the regional feature that covers them,
  *                                  or /languages/ where none does
  *   /regions/ hub, two regions  -> /blog/ and /languages/
- *   competitor "-alternative"   -> /alternatives
+ *   competitor "-alternative"   -> /voice-chat-vs-video-chat
  *   /languages/<slug>           -> its section of the /languages/ feature
  *   retired /blog/ posts        -> the closest surviving Journal article
  *   keyword-variant landings    -> the one page that covers the topic
@@ -71,17 +71,28 @@ const RETIRED_PAGES = {
   'free-voice-chat': '/random-voice-chat',
   'voice-chat-rooms': '/random-voice-chat',
   'online-chat-rooms': '/random-text-chat',
-  'call-random-people': '/random-call',
-  'free-online-calls': '/random-call',
-  'international-calls': '/random-call',
-  'random-chat': '/talk-to-strangers',
+  'call-random-people': '/random-voice-chat',
+  'free-online-calls': '/random-voice-chat',
+  'international-calls': '/random-voice-chat',
+  'random-chat': '/random-voice-chat',
   'meet-new-people': '/make-friends-online',
-  'someone-to-talk-to': '/talk-to-someone',
-  'im-bored': '/talk-to-strangers',
+  'someone-to-talk-to': '/late-night-chat',
+  'im-bored': '/random-voice-chat',
   'cant-sleep': '/late-night-chat',
-  'chat-without-registration': '/anonymous-chat',
+  'chat-without-registration': '/random-text-chat',
   'pakistani-chat': '/regions/south-asia',
-  'omegle-vs-chatroulette': '/alternatives',
+  'omegle-vs-chatroulette': '/voice-chat-vs-video-chat',
+  // Second round: four more templated keyword variants of the voice and text
+  // pages, and a format comparison that duplicated voice-chat-vs-video-chat.
+  'talk-to-strangers': '/random-voice-chat',
+  'random-call': '/random-voice-chat',
+  'anonymous-chat': '/random-text-chat',
+  'talk-to-someone': '/late-night-chat',
+  'alternatives': '/voice-chat-vs-video-chat',
+  // A hand-kept list of article titles that had since been retired, several
+  // pointing at one post under a headline it does not carry. The Journal
+  // index is the maintained list.
+  'guides': '/blog/',
 };
 
 // is-talklive-safe answered a product question, so it goes to the product page.
@@ -97,7 +108,7 @@ function retiredTarget(pathname) {
   if (m && RETIRED_PAGES[m[1].toLowerCase()]) return RETIRED_PAGES[m[1].toLowerCase()];
 
   m = /^\/([a-z0-9-]+-alternative)$/i.exec(p);
-  if (m && RETIRED_ALTERNATIVES.includes(m[1].toLowerCase())) return '/alternatives';
+  if (m && RETIRED_ALTERNATIVES.includes(m[1].toLowerCase())) return '/voice-chat-vs-video-chat';
 
   m = /^\/(countries|cities)(?:\/([a-z0-9-]*))?\/?$/i.exec(p);
   if (m) {

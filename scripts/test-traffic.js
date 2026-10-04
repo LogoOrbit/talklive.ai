@@ -102,11 +102,11 @@ const c = (referer, query) => classifyArrival({ referer, ownHosts: OWN, query: q
   });
   try {
     for (let i = 0; i < 60 && (await get('/healthz')) === 0; i++) await new Promise((r) => setTimeout(r, 250));
-    await get('/random-call', { referer: 'https://www.google.com/', 'x-forwarded-for': '203.0.113.1' });
-    await get('/random-call', { referer: 'https://www.google.com/', 'x-forwarded-for': '203.0.113.1' }); // reload
-    await get('/talk-to-strangers', { referer: 'https://www.bing.com/search?q=talk+to+strangers', 'x-forwarded-for': '203.0.113.2' });
+    await get('/random-voice-chat', { referer: 'https://www.google.com/', 'x-forwarded-for': '203.0.113.1' });
+    await get('/random-voice-chat', { referer: 'https://www.google.com/', 'x-forwarded-for': '203.0.113.1' }); // reload
+    await get('/random-text-chat', { referer: 'https://www.bing.com/search?q=random+text+chat', 'x-forwarded-for': '203.0.113.2' });
     await get('/', { 'x-forwarded-for': '203.0.113.3' });
-    await get('/chat?utm_source=seo', { referer: `http://127.0.0.1:${port}/random-call`, 'x-forwarded-for': '203.0.113.1' });
+    await get('/chat?utm_source=seo', { referer: `http://127.0.0.1:${port}/random-voice-chat`, 'x-forwarded-for': '203.0.113.1' });
     server.kill('SIGTERM');
     await new Promise((r) => server.on('exit', r));
     const doc = JSON.parse(fs.readFileSync(path.join(dataDir, 'owner-data.json'), 'utf8'));
@@ -115,15 +115,15 @@ const c = (referer, query) => classifyArrival({ referer, ownHosts: OWN, query: q
       assert.strictEqual((day.sources || {}).Google, 1, JSON.stringify(day.sources));
       assert.strictEqual(day.sources.Bing, 1);
       assert.strictEqual(day.sources.Direct, 1);
-      assert.strictEqual(day.landings['/random-call'], 1);
-      assert.strictEqual(day.searchTerms['talk to strangers'], 1);
-      assert.strictEqual(day.sourcePages['Google → /random-call'], 1);
+      assert.strictEqual(day.landings['/random-voice-chat'], 1);
+      assert.strictEqual(day.searchTerms['random text chat'], 1);
+      assert.strictEqual(day.sourcePages['Google → /random-voice-chat'], 1);
       assert.strictEqual(day.mediums.search, 2);
     });
     await test('internal navigation counts as a page view, not an arrival', () => {
       assert.strictEqual(day.pages['/chat'], 1);
       assert.strictEqual(day.landings['/chat'], undefined);
-      assert.strictEqual(day.pages['/random-call'], 2);
+      assert.strictEqual(day.pages['/random-voice-chat'], 2);
     });
   } finally {
     if (server.exitCode === null) server.kill('SIGKILL');

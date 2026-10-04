@@ -55,12 +55,12 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
      is fetched on demand by the unicode-range in style.css. -->
 <link rel="preload" as="font" type="font/woff2" href="/fonts/plus-jakarta-sans-latin.woff2?v=20260922type" crossorigin />
 <link rel="stylesheet" href="style.css?v=20261003" />
-<link rel="stylesheet" href="chat-extras.css?v=20261001mic" />
+<link rel="stylesheet" href="chat-extras.css?v=20261004glow" />
 <link rel="stylesheet" href="games.css?v=20261001play" />
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
      side-panel shell, Settings, Friends/History and the account dialog, and it
      does so with its own `tl-` class names so nothing above can reach it. -->
-<link rel="stylesheet" href="ui.css?v=20261003" />
+<link rel="stylesheet" href="ui.css?v=20261004rail" />
 <link rel="stylesheet" href="auth.css?v=20260924auth" />
 <!-- The top bar, shared with /chat. Loaded after everything else because it
      owns the header outright: one button language, one radius, one focus ring
@@ -75,8 +75,8 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
 
 <meta name="impact-site-verification" content="c12db422-3008-4ecd-a5c6-679fa382c00e" />
-<title>TalkLive - Free Random Voice & Text Chat with Strangers</title>
-<meta name="description" content="TalkLive offers free core random voice and text matching for adults. Meet a stranger without video or sign-up, with clear leave, block and report controls." />
+<title>TalkLive - Free Voice & Text Chat with People Worldwide</title>
+<meta name="description" content="TalkLive is free one-to-one voice and text chat for adults. Meet someone new, practise a language or make a friend - no video, no sign-up, with block and report on every screen." />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
 <meta name="author" content="TalkLive" />
 <meta name="application-name" content="TalkLive" />
@@ -110,7 +110,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="TalkLive" />
-<meta property="og:title" content="TalkLive - Free Random Voice & Text Chat with Strangers" />
+<meta property="og:title" content="TalkLive - Free Voice & Text Chat with People Worldwide" />
 <meta property="og:description" content="Free core random voice and text matching for adults, without video or required sign-up. Leave, block or report at any time." />
 <meta property="og:url" content="https://talklive.app/" />
 <meta property="og:image" content="https://talklive.app/og-image.png?v=2" />
@@ -118,7 +118,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 <meta property="og:image:type" content="image/png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="TalkLive - free random voice calls and text chat with strangers worldwide" />
+<meta property="og:image:alt" content="TalkLive - free one-to-one voice calls and text chat with people worldwide" />
 <meta property="og:locale" content="en_US" />
 <meta property="og:locale:alternate" content="es_ES" />
 <meta property="og:locale:alternate" content="pt_BR" />
@@ -137,10 +137,10 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 <meta property="og:locale:alternate" content="fa_IR" />
 <meta property="og:locale:alternate" content="bn_BD" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="TalkLive - Free Random Voice & Text Chat with Strangers" />
+<meta name="twitter:title" content="TalkLive - Free Voice & Text Chat with People Worldwide" />
 <meta name="twitter:description" content="Free core random voice and text matching for adults, without video or required sign-up." />
 <meta name="twitter:image" content="https://talklive.app/og-image.png?v=2" />
-<meta name="twitter:image:alt" content="TalkLive - free random voice calls and text chat with strangers worldwide" />
+<meta name="twitter:image:alt" content="TalkLive - free one-to-one voice calls and text chat with people worldwide" />
 
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="icon" href="/favicon-48.png" type="image/png" sizes="48x48" />
@@ -209,10 +209,10 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
       "audience": { "@type": "PeopleAudience", "suggestedMinAge": 18 },
       "description": "Random voice and text matching for adults, with free core access and no required account.",
       "featureList": [
-        "Tap to Talk - one-tap anonymous voice calls",
+        "Tap to Talk - one-tap voice calls, no camera",
         "Tap to Chat - random text chat, no microphone needed",
         "One-tap random matchmaking",
-        "Next Stranger to start a new search",
+        "Next to start a new search",
         "Optional country, interest and account-tier filters",
         "Add friends and call back",
         "Responsive browser interface",
@@ -224,7 +224,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
       "@type": "WebPage",
       "@id": "https://talklive.app/#webpage",
       "url": "https://talklive.app/",
-      "name": "TalkLive - Free Random Voice & Text Chat with Strangers",
+      "name": "TalkLive - Free Voice & Text Chat with People Worldwide",
       "description": "Free core random voice and text matching for adults, without video or required sign-up.",
       "dateModified": "2026-08-14",
       "inLanguage": "en",
@@ -237,7 +237,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
       "@id": "https://talklive.app/#faq",
       "mainEntity": [
         { "@type": "Question", "name": "Is TalkLive free?", "acceptedAnswer": { "@type": "Answer", "text": "Core random voice and text matching is free, supported by a few ads - never a paywall. Wait time depends on compatible people in the live queue; optional Premium adds advanced filters." } },
-        { "@type": "Question", "name": "Do I need to sign up to talk to strangers?", "acceptedAnswer": { "@type": "Answer", "text": "No account is required for a basic random voice or text match. An optional account can keep friends and history between visits." } },
+        { "@type": "Question", "name": "Do I need to sign up?", "acceptedAnswer": { "@type": "Answer", "text": "No account is required for a basic random voice or text match. An optional account can keep friends and history between visits." } },
         { "@type": "Question", "name": "Is TalkLive anonymous?", "acceptedAnswer": { "@type": "Answer", "text": "A basic match does not require a real name, email or phone number. TalkLive still processes operational data described in its Privacy Policy, and another participant may record on their own device." } },
         { "@type": "Question", "name": "Can I chat by text instead of calling?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Tap to Chat starts a random text match without microphone permission. Typed messages and related context may be retained for a limited rolling period under the Privacy Policy." } },
         { "@type": "Question", "name": "Does TalkLive use video?", "acceptedAnswer": { "@type": "Answer", "text": "No. TalkLive is voice and text only, which keeps it private, low-bandwidth, and pressure-free. You connect through conversation, not appearance." } },
@@ -1230,7 +1230,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
               </span>
               <span class="tl-action-body">
                 <strong data-i18n="tapToChat">Tap to Chat</strong>
-                <small data-i18n="tapChatCaption">Anonymous text chat &middot; no mic</small>
+                <small data-i18n="tapChatCaption">Text chat &middot; no mic</small>
               </span>
               <span class="tl-action-go" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
@@ -2322,42 +2322,38 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   <section class="seo-section" aria-labelledby="seoHeading">
     <div class="seo-inner">
       <img src="/illustrations/connected-world.svg" width="1177" height="874" alt="" loading="lazy" decoding="async" style="display:block;width:100%;max-width:360px;height:auto;margin:0 auto 24px" />
-      <h2 id="seoHeading">Free random voice &amp; text chat with strangers, worldwide</h2>
+      <h2 id="seoHeading">Free voice &amp; text conversations with people worldwide</h2>
       <p>TalkLive is a browser-based random chat service for adults. Tap to Talk searches for a live voice match; Tap to Chat searches for a text match without microphone permission. Core matching is free and needs no install or account. Availability, identity, country and language are not guaranteed, so keep personal information private and leave any conversation that feels wrong.</p>
 
       <h3>Why people choose TalkLive</h3>
       <ul class="seo-list">
-        <li><strong>Two ways to connect</strong> - Tap to Talk for a live voice call, or Tap to Chat for anonymous text chat with no mic at all.</li>
+        <li><strong>Two ways to connect</strong> - Tap to Talk for a live voice call, or Tap to Chat for a text conversation with no mic at all.</li>
         <li><strong>One-tap random matching</strong> - press either button to join the live queue; wait time depends on availability and your preferences.</li>
         <li><strong>Private by default</strong> - no real name, email, or phone number is required for a basic match. Operational data is handled under the Privacy Policy.</li>
         <li><strong>No camera, ever</strong> - no video pressure, low bandwidth, and real connection through voice or words.</li>
         <li><strong>Light enough for any phone</strong> - text chat runs smoothly even on 1GB devices and slow networks.</li>
-        <li><strong>Next Stranger</strong> - not clicking? Skip to a new person in a single tap.</li>
+        <li><strong>Next</strong> - not clicking? Move on to a new person in a single tap.</li>
         <li><strong>Worldwide reach</strong> - talk to people across dozens of countries, or filter to the regions you prefer.</li>
-        <li><strong>Safety controls</strong> - intended for adults, with leave, block and report tools. No stranger-chat service can guarantee safety.</li>
+        <li><strong>Safety controls</strong> - intended for adults, with leave, block and report tools. No online chat service can guarantee safety.</li>
         <li><!-- langs:bullet --><strong>17 languages</strong> - the whole app is translated, including right-to-left Arabic, Persian and Urdu.<!-- /langs:bullet --></li>
       </ul>
 
       <h3>Popular ways to use TalkLive</h3>
       <nav class="seo-links" aria-label="Explore TalkLive">
-        <a href="/talk-to-strangers">Talk to strangers online</a>
-        <a href="/random-voice-chat">Random voice chat</a>
-        <a href="/random-text-chat">Random text chat</a>
-        <a href="/random-call">Random call app</a>
-        <a href="/anonymous-chat">Anonymous chat</a>
+        <a href="/random-voice-chat">Voice chat</a>
+        <a href="/random-text-chat">Text chat</a>
         <a href="/language-exchange">Language exchange</a>
         <a href="/practice-english-speaking">Practice English speaking</a>
         <a href="/make-friends-online">Make friends online</a>
         <a href="/late-night-chat">Late night chat</a>
-        <a href="/talk-to-someone">Someone to talk to</a>
-        <a href="/blog/">Blog &amp; guides</a>
+        <a href="/blog/">Journal &amp; guides</a>
       </nav>
 
-      <h3>Switching from another app?</h3>
-      <nav class="seo-links" aria-label="Alternatives to other chat apps">
-        <a href="/alternatives">Compare random chat apps</a>
+      <h3>Choosing a format</h3>
+      <nav class="seo-links" aria-label="Choosing a chat format">
         <a href="/voice-chat-vs-video-chat">Voice chat vs video chat</a>
-        <a href="/blog/what-happened-to-omegle">What happened to Omegle</a>
+        <a href="/how-it-works">How matching works</a>
+        <a href="/safety">Safety center</a>
       </nav>
 
       <!-- Regional and language guides: the homepage is the crawl path into them. -->
@@ -2555,7 +2551,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
        browser finish parsing and paint the page first. -->
   <script defer src="/socket.io/socket.io.min.js"></script>
   <script defer src="countries.js?v=20260828fix"></script>
-  <script defer src="i18n.js?v=20260930vn2"></script>
+  <script defer src="i18n.js?v=20261004copy"></script>
   <script defer src="chat-time.js?v=20260916navbar"></script>
   <script defer src="animals.js?v=20260924animline"></script>
   <script defer src="social-kit.js?v=20260924id"></script>
