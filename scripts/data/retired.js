@@ -15,11 +15,11 @@
  *
  * Restored in October 2026 (no longer retired): /talk-to-strangers,
  * /anonymous-chat, /random-call, /talk-to-someone, /omegle-alternative and
- * the eight country guides in scripts/country-pages.js. Retired URLs on the
+ * the eight country guides in scripts/countries/. Retired URLs on the
  * same topic now point at them instead of at a broader page.
  */
 const { COUNTRIES } = require('./geo');
-const { COUNTRY_SLUGS } = require('../country-pages');
+const { SLUGS: COUNTRY_SLUGS } = require('../countries');
 
 // Countries covered by one of the three regional features. Every other
 // country (and every city in it) points at the /languages/ feature.

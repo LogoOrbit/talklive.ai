@@ -732,10 +732,12 @@ const CORE_PAGES = [
 
 // Additional landing pages live in their own module so this file stays
 // navigable as the SEO surface grows. Same shape as CORE_PAGES.
-// pages-restored and country-pages bring back, at their original URLs, the
-// landing and country pages that held search rankings before October 2026.
+// pages-restored brings back, at their original URLs, the landing pages that
+// held search rankings before October 2026. The country guides that came back
+// with them are hand-designed pages built by scripts/countries/.
 const PAGES = CORE_PAGES.concat(require('./pages-extra'), require('./pages-extra2'), require('./search-hubs'),
-  require('./pages-restored'), require('./country-pages'));
+  require('./pages-restored'));
+const COUNTRY_GUIDES = require('./countries');
 
 // --- Journal ----------------------------------------------------------------
 // /blog/ is the TalkLive Journal: ten hand-designed long-form articles plus the
@@ -922,6 +924,9 @@ for (const loc of LOCALES) {
 // Journal: /blog/, its articles, /languages/ and /journal.css.
 const BLOG_DIR = path.join(PUBLIC, 'blog');
 count += JOURNAL.build();
+
+// Country guides: /countries/<slug>, each designed on its own.
+count += COUNTRY_GUIDES.build();
 
 // Sitemap with hreflang alternates for the home + all landing pages.
 const latestBlogUpdate = BLOG.reduce((latest, post) => {
@@ -1321,6 +1326,9 @@ Key facts: voice-only or text-only modes; optional country and interest preferen
 ## Main pages
 - [TalkLive app](${SITE}/): Start a random voice or text chat instantly.
 ${landing}
+
+## Country guides
+${COUNTRY_GUIDES.COUNTRIES.map(c => `- [${c.name}](${SITE}/countries/${c.slug}): ${c.description}`).join('\n')}
 
 ## Languages
 The app UI and a localized homepage are available in: English plus ${LOCALES.map(l => `[${l.name}](${SITE}/${l.code}/)`).join(', ')}.

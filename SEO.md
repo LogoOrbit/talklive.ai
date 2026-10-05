@@ -74,7 +74,7 @@ being followed.
 > `/talk-to-strangers`, `/anonymous-chat`, `/random-call`, `/talk-to-someone`
 > and `/omegle-alternative` (`scripts/pages-restored.js`), and country guides
 > for India, Pakistan, Bangladesh, the United States, the United Kingdom,
-> Egypt, Nigeria and Indonesia (`scripts/country-pages.js`, sitemap
+> Egypt, Nigeria and Indonesia (`scripts/countries/`, each hand-designed; sitemap
 > `sitemap-countries.xml`). Retired URLs on the same topics (city pages in
 > those countries, `/pakistani-chat`, `/alternatives`, OmeTV/Chatroulette
 > alternatives, `/random-chat`, ...) now 301 to them. The homepage title leads

@@ -1,57 +1,19 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Talk to Strangers in Indonesia - Free Indonesian Voice Chat | TalkLive</title>
-<meta name="description" content="Free voice and text chat with people in Indonesia - Bahasa Indonesia or English, no sign-up, no app to install, no camera, with an Indonesian interface. Basa-basi, nongkrong, and when Indonesia is online (WIB)." />
-<meta name="keywords" content="talk to strangers indonesia, indonesian chat, ngobrol dengan orang asing, chat indonesia, indonesian voice chat, random chat indonesia, teman ngobrol online" />
-<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
-<meta name="theme-color" content="#1f3a5f" />
-<meta name="author" content="TalkLive" />
-<link rel="canonical" href="https://talklive.app/countries/indonesia" />
-<meta property="og:type" content="website" />
-<meta property="og:site_name" content="TalkLive" />
-<meta property="og:title" content="Talk to Strangers in Indonesia - Free Indonesian Voice Chat | TalkLive" />
-<meta property="og:description" content="Free voice and text chat with people in Indonesia - Bahasa Indonesia or English, no sign-up, no app to install, no camera, with an Indonesian interface. Basa-basi, nongkrong, and when Indonesia is online (WIB)." />
-<meta property="og:url" content="https://talklive.app/countries/indonesia" />
-<meta property="og:image" content="https://talklive.app/og-image.png?v=2" />
-<meta property="og:image:width" content="1200" />
-<meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="Talk to Strangers in Indonesia" />
-<meta property="og:locale" content="en_US" />
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Talk to Strangers in Indonesia - Free Indonesian Voice Chat | TalkLive" />
-<meta name="twitter:description" content="Free voice and text chat with people in Indonesia - Bahasa Indonesia or English, no sign-up, no app to install, no camera, with an Indonesian interface. Basa-basi, nongkrong, and when Indonesia is online (WIB)." />
-<meta name="twitter:image" content="https://talklive.app/og-image.png?v=2" />
-<meta name="twitter:image:alt" content="Talk to Strangers in Indonesia" />
-<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-<link rel="apple-touch-icon" href="/favicon-192.png" />
-<link rel="manifest" href="/site.webmanifest" />
-<link rel="preload" href="/fonts/mag/instrument-serif-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
-<link rel="preload" href="/fonts/mag/nunito-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
-<link rel="stylesheet" href="/journal.css?v=20261005countries" />
-<style>
-.c-bar{display:flex;align-items:center;justify-content:space-between;gap:14px;max-width:1180px;margin:0 auto;padding:12px 20px;font:600 13px/1.2 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.02em}
-.c-bar a{text-decoration:none}
-.c-bar .c-brand{font-weight:700;letter-spacing:.06em}
-.c-bar nav{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
-.c-bar nav a{opacity:.8}.c-bar nav a:hover{opacity:1;text-decoration:underline}
-.c-bar .c-bar-talk{opacity:1;padding:7px 14px;border:1.5px solid currentColor;border-radius:999px}
-.c-ctas{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
-.c-ctas a{display:inline-flex;align-items:center;gap:8px;text-decoration:none}
-.c-faq details{border-top:1px solid var(--rule,rgba(0,0,0,.15));padding:14px 0}
-.c-faq summary{cursor:pointer;list-style:none}
-.c-faq summary::-webkit-details-marker{display:none}
-.c-faq summary::after{content:"+";float:right;margin-left:12px}
-.c-faq details[open] summary::after{content:"\2212"}
-.c-faq details p{margin:10px 0 0}
-.c-guides{max-width:1180px;margin:64px auto 0;padding:0 20px}
-.c-guides h2{font:600 12px/1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.16em;text-transform:uppercase;margin:0 0 12px;opacity:.75}
-.c-guides ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px 22px;font:500 15px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
-.c-guides a{text-decoration:none;border-bottom:1px solid currentColor}
-@media (max-width:640px){.c-bar{font-size:12px}.c-bar nav{gap:12px;flex-wrap:nowrap}.c-bar nav a:nth-child(1),.c-bar nav a:nth-child(2),.c-bar nav a:nth-child(4){display:none}}
-
+'use strict';
+// Indonesia: "Sudah Makan?". Basa-basi - Indonesian small talk - as the
+// structure: every section opens with a chat-bubble exchange, set over a
+// kawung batik pattern in indigo and soga brown. Instrument Serif for display,
+// Nunito to read.
+module.exports = {
+  slug: 'indonesia',
+  name: 'Indonesia',
+  date: '2026-10-05',
+  title: 'Talk to Strangers in Indonesia - Free Indonesian Voice Chat | TalkLive',
+  description: 'Free voice and text chat with people in Indonesia - Bahasa Indonesia or English, no sign-up, no app to install, no camera, with an Indonesian interface. Basa-basi, nongkrong, and when Indonesia is online (WIB).',
+  keywords: 'talk to strangers indonesia, indonesian chat, ngobrol dengan orang asing, chat indonesia, indonesian voice chat, random chat indonesia, teman ngobrol online',
+  h1: 'Talk to Strangers in Indonesia',
+  theme: '#1f3a5f',
+  preload: ['instrument-serif-latin-400-normal', 'nunito-latin-400-normal'],
+  css: `
 :root{--paper:#fbf6ee;--ink:#1d2433;--rule:#e3d6c2;--indigo:#1f3a5f;--soga:#8a5a2b;--coral:#e46b4c;--mast:#fbf6ee}
 body{font-family:"Nunito",system-ui,sans-serif;background:var(--paper)}
 .c-bar{background:var(--indigo);color:var(--mast);max-width:none}
@@ -106,26 +68,22 @@ body{font-family:"Nunito",system-ui,sans-serif;background:var(--paper)}
 .id-end .c-ctas{justify-content:center}
 .c-guides a{color:var(--soga)}
 @media (max-width:860px){.id-hero-in{grid-template-columns:1fr}.id-zones{grid-template-columns:1fr}.id-thread .id-b{max-width:88%}}
-</style>
-<script defer src="/pwa.js?v=20260908pwa"></script>
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://talklive.app/#organization","name":"TalkLive","url":"https://talklive.app/","logo":{"@type":"ImageObject","url":"https://talklive.app/favicon-192.png","width":192,"height":192}},{"@type":"WebPage","@id":"https://talklive.app/countries/indonesia#webpage","url":"https://talklive.app/countries/indonesia","name":"Talk to Strangers in Indonesia - Free Indonesian Voice Chat | TalkLive","description":"Free voice and text chat with people in Indonesia - Bahasa Indonesia or English, no sign-up, no app to install, no camera, with an Indonesian interface. Basa-basi, nongkrong, and when Indonesia is online (WIB).","inLanguage":"en","datePublished":"2026-10-05","dateModified":"2026-10-05","wordCount":1503,"about":{"@type":"Country","name":"Indonesia"},"isPartOf":{"@id":"https://talklive.app/#website"},"publisher":{"@id":"https://talklive.app/#organization"},"primaryImageOfPage":{"@type":"ImageObject","url":"https://talklive.app/og-image.png?v=2","width":1200,"height":630}},{"@type":"BreadcrumbList","@id":"https://talklive.app/countries/indonesia#breadcrumb","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://talklive.app/"},{"@type":"ListItem","position":2,"name":"Countries","item":"https://talklive.app/country-chat-guide"},{"@type":"ListItem","position":3,"name":"Indonesia","item":"https://talklive.app/countries/indonesia"}]},{"@type":"FAQPage","@id":"https://talklive.app/countries/indonesia#faq","mainEntity":[{"@type":"Question","name":"Is TalkLive free in Indonesia?","acceptedAnswer":{"@type":"Answer","text":"Yes. Voice and text chat are free and need no account and no app. Normal data charges apply on mobile data."}},{"@type":"Question","name":"Can I use TalkLive in Bahasa Indonesia?","acceptedAnswer":{"@type":"Answer","text":"Yes. The whole interface is available in Indonesian at talklive.app/id/, and you can talk in any language you and your match share."}},{"@type":"Question","name":"Do I need to download an app?","acceptedAnswer":{"@type":"Answer","text":"No. TalkLive runs in the browser on Android and iPhone. You can add it to your home screen if you want an icon."}},{"@type":"Question","name":"When is the best time to find someone?","acceptedAnswer":{"@type":"Answer","text":"TalkLive as a whole is busiest from about 10 pm to 4 am WIB; other Indonesians are often online in the early evening too. If a search takes a while, try text chat."}},{"@type":"Question","name":"Will I always be matched with someone in Indonesia?","acceptedAnswer":{"@type":"Answer","text":"Not always. Preferring Indonesia in Filters steers matching, but it depends on who is searching at that moment."}},{"@type":"Question","name":"Does anyone see my WhatsApp or phone number?","acceptedAnswer":{"@type":"Answer","text":"No. Calls run in the browser over the internet, so no number or messaging account is shared, and there is no camera."}}]}]}</script>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978"
-     crossorigin="anonymous"></script>
-<script defer src="/ads.js?v=20260923adsense2"></script>
-</head>
-<body class="c-page c-indonesia">
-<a class="skip" href="#story">Skip to the guide</a>
-<header class="c-bar">
-  <a class="c-brand" href="/">TalkLive</a>
-  <nav aria-label="Site"><a href="/random-voice-chat">Voice chat</a><a href="/random-text-chat">Text chat</a><a href="/country-chat-guide">Countries</a><a href="/safety">Safety</a><a class="c-bar-talk" href="/?utm_source=seo">Talk now</a></nav>
-</header>
-<main id="story">
+`,
+  faq: [
+    { q: 'Is TalkLive free in Indonesia?', a: 'Yes. Voice and text chat are free and need no account and no app. Normal data charges apply on mobile data.' },
+    { q: 'Can I use TalkLive in Bahasa Indonesia?', a: 'Yes. The whole interface is available in Indonesian at talklive.app/id/, and you can talk in any language you and your match share.' },
+    { q: 'Do I need to download an app?', a: 'No. TalkLive runs in the browser on Android and iPhone. You can add it to your home screen if you want an icon.' },
+    { q: 'When is the best time to find someone?', a: 'TalkLive as a whole is busiest from about 10 pm to 4 am WIB; other Indonesians are often online in the early evening too. If a search takes a while, try text chat.' },
+    { q: 'Will I always be matched with someone in Indonesia?', a: 'Not always. Preferring Indonesia in Filters steers matching, but it depends on who is searching at that moment.' },
+    { q: 'Does anyone see my WhatsApp or phone number?', a: 'No. Calls run in the browser over the internet, so no number or messaging account is shared, and there is no camera.' },
+  ],
+  body: (c) => `<main id="story">
 <section class="id-hero id-batik">
   <div class="id-hero-in">
     <div>
       <h1>Talk to strangers in <i>Indonesia</i></h1>
       <p class="id-dek">From Aceh to Papua, seventeen thousand islands share one language for talking to people you have never met - and a whole ritual of small talk to go with it. Join in by voice or by text, free, right in your browser: no app to install, no account and no camera.</p>
-      <div class="c-ctas"><a class="c-talk" href="/?utm_source=seo">Tap to Talk</a><a class="c-chat" href="/chat?utm_source=seo">Tap to Chat</a></div>
+      ${c.ctas('Tap to Talk', 'Tap to Chat')}
     </div>
     <div class="id-phone" aria-label="An example of basa-basi">
       <div class="id-phone-top">Basa-basi, the Indonesian way</div>
@@ -200,32 +158,12 @@ body{font-family:"Nunito",system-ui,sans-serif;background:var(--paper)}
   </section>
 </div>
 
-<section class="c-faq" aria-labelledby="faq-h"><h2 id="faq-h">Tanya jawab</h2><details><summary>Is TalkLive free in Indonesia?</summary><p>Yes. Voice and text chat are free and need no account and no app. Normal data charges apply on mobile data.</p></details><details><summary>Can I use TalkLive in Bahasa Indonesia?</summary><p>Yes. The whole interface is available in Indonesian at talklive.app/id/, and you can talk in any language you and your match share.</p></details><details><summary>Do I need to download an app?</summary><p>No. TalkLive runs in the browser on Android and iPhone. You can add it to your home screen if you want an icon.</p></details><details><summary>When is the best time to find someone?</summary><p>TalkLive as a whole is busiest from about 10 pm to 4 am WIB; other Indonesians are often online in the early evening too. If a search takes a while, try text chat.</p></details><details><summary>Will I always be matched with someone in Indonesia?</summary><p>Not always. Preferring Indonesia in Filters steers matching, but it depends on who is searching at that moment.</p></details><details><summary>Does anyone see my WhatsApp or phone number?</summary><p>No. Calls run in the browser over the internet, so no number or messaging account is shared, and there is no camera.</p></details></section>
-<div class="ad-card"><span class="ad-card-label">Advertisement</span><div data-ad="native"></div></div>
+${c.faq('Tanya jawab')}
+${c.ad()}
 <section class="id-end id-batik">
   <h2>Ayo ngobrol.</h2>
   <p>Someone in Surabaya, Makassar or Medan just asked if you have eaten yet.</p>
-  <div class="c-ctas"><a class="c-talk" href="/?utm_source=seo">Tap to Talk</a><a class="c-chat" href="/chat?utm_source=seo">Tap to Chat</a></div>
+  ${c.ctas('Tap to Talk', 'Tap to Chat')}
 </section>
-</main>
-<aside class="c-guides" aria-label="Other country guides"><h2>Other country guides</h2><ul><li><a href="/countries/india">India</a></li><li><a href="/countries/pakistan">Pakistan</a></li><li><a href="/countries/bangladesh">Bangladesh</a></li><li><a href="/countries/united-states">United States</a></li><li><a href="/countries/united-kingdom">United Kingdom</a></li><li><a href="/countries/egypt">Egypt</a></li><li><a href="/countries/nigeria">Nigeria</a></li><li><a href="/country-chat-guide">How country matching works</a></li></ul></aside>
-<footer class="j-foot">
-  <nav aria-label="Legal"><a href="/about">About</a><a href="/contact">Contact</a><a href="/privacy">Privacy Policy</a><a href="/terms">Terms</a><a href="/community-guidelines">Community Guidelines</a><a href="/safety">Safety</a><a href="/blog/">Journal</a><a href="/">TalkLive home</a></nav>
-  <p>&copy; 2026 TalkLive. Free one-to-one voice and text chat for adults 18+. Nobody's identity, age or location is verified. Corrections: info@talklive.app</p>
-</footer>
-<!-- Google tag (gtag.js) - see scripts/migrate-analytics.js -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-713E3C1RH1"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('consent', 'default', {
-    ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: 'denied',
-    region: ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'IS', 'LI', 'NO', 'GB', 'CH'],
-    wait_for_update: 500
-  });
-  gtag('set', 'ads_data_redaction', true);
-  gtag('js', new Date());
-  gtag('config', 'G-713E3C1RH1');
-</script>
-</body>
-</html>
+</main>`,
+};

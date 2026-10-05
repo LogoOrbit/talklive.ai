@@ -1,57 +1,18 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Talk to Strangers in Pakistan - Free Urdu and English Voice Chat | TalkLive</title>
-<meta name="description" content="Free voice and text chat with people in Pakistan - Urdu, Punjabi or English, no sign-up, no camera, with an Urdu interface. Why Pakistan talks late, and when it is online (PKT)." />
-<meta name="keywords" content="talk to strangers pakistan, pakistani chat, pakistan voice chat, urdu voice chat, chat with pakistanis, random chat pakistan, urdu chat room" />
-<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
-<meta name="theme-color" content="#0a241d" />
-<meta name="author" content="TalkLive" />
-<link rel="canonical" href="https://talklive.app/countries/pakistan" />
-<meta property="og:type" content="website" />
-<meta property="og:site_name" content="TalkLive" />
-<meta property="og:title" content="Talk to Strangers in Pakistan - Free Urdu and English Voice Chat | TalkLive" />
-<meta property="og:description" content="Free voice and text chat with people in Pakistan - Urdu, Punjabi or English, no sign-up, no camera, with an Urdu interface. Why Pakistan talks late, and when it is online (PKT)." />
-<meta property="og:url" content="https://talklive.app/countries/pakistan" />
-<meta property="og:image" content="https://talklive.app/og-image.png?v=2" />
-<meta property="og:image:width" content="1200" />
-<meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="Talk to Strangers in Pakistan" />
-<meta property="og:locale" content="en_US" />
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Talk to Strangers in Pakistan - Free Urdu and English Voice Chat | TalkLive" />
-<meta name="twitter:description" content="Free voice and text chat with people in Pakistan - Urdu, Punjabi or English, no sign-up, no camera, with an Urdu interface. Why Pakistan talks late, and when it is online (PKT)." />
-<meta name="twitter:image" content="https://talklive.app/og-image.png?v=2" />
-<meta name="twitter:image:alt" content="Talk to Strangers in Pakistan" />
-<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-<link rel="apple-touch-icon" href="/favicon-192.png" />
-<link rel="manifest" href="/site.webmanifest" />
-<link rel="preload" href="/fonts/mag/abril-fatface-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
-<link rel="preload" href="/fonts/mag/lora-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
-<link rel="stylesheet" href="/journal.css?v=20261005countries" />
-<style>
-.c-bar{display:flex;align-items:center;justify-content:space-between;gap:14px;max-width:1180px;margin:0 auto;padding:12px 20px;font:600 13px/1.2 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.02em}
-.c-bar a{text-decoration:none}
-.c-bar .c-brand{font-weight:700;letter-spacing:.06em}
-.c-bar nav{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
-.c-bar nav a{opacity:.8}.c-bar nav a:hover{opacity:1;text-decoration:underline}
-.c-bar .c-bar-talk{opacity:1;padding:7px 14px;border:1.5px solid currentColor;border-radius:999px}
-.c-ctas{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
-.c-ctas a{display:inline-flex;align-items:center;gap:8px;text-decoration:none}
-.c-faq details{border-top:1px solid var(--rule,rgba(0,0,0,.15));padding:14px 0}
-.c-faq summary{cursor:pointer;list-style:none}
-.c-faq summary::-webkit-details-marker{display:none}
-.c-faq summary::after{content:"+";float:right;margin-left:12px}
-.c-faq details[open] summary::after{content:"\2212"}
-.c-faq details p{margin:10px 0 0}
-.c-guides{max-width:1180px;margin:64px auto 0;padding:0 20px}
-.c-guides h2{font:600 12px/1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.16em;text-transform:uppercase;margin:0 0 12px;opacity:.75}
-.c-guides ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px 22px;font:500 15px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
-.c-guides a{text-decoration:none;border-bottom:1px solid currentColor}
-@media (max-width:640px){.c-bar{font-size:12px}.c-bar nav{gap:12px;flex-wrap:nowrap}.c-bar nav a:nth-child(1),.c-bar nav a:nth-child(2),.c-bar nav a:nth-child(4){display:none}}
-
+'use strict';
+// Pakistan: "Bol". Built around Faiz Ahmed Faiz's poem - speak, your tongue is
+// still your own. Midnight green, gold and cream, framed with bands borrowed
+// from Pakistani truck art. Abril Fatface for display, Lora to read.
+module.exports = {
+  slug: 'pakistan',
+  name: 'Pakistan',
+  date: '2026-10-05',
+  title: 'Talk to Strangers in Pakistan - Free Urdu and English Voice Chat | TalkLive',
+  description: 'Free voice and text chat with people in Pakistan - Urdu, Punjabi or English, no sign-up, no camera, with an Urdu interface. Why Pakistan talks late, and when it is online (PKT).',
+  keywords: 'talk to strangers pakistan, pakistani chat, pakistan voice chat, urdu voice chat, chat with pakistanis, random chat pakistan, urdu chat room',
+  h1: 'Talk to Strangers in Pakistan',
+  theme: '#0a241d',
+  preload: ['abril-fatface-latin-400-normal', 'lora-latin-400-normal'],
+  css: `
 :root{--paper:#0a241d;--ink:#f3ead6;--rule:#24493d;--gold:#e7b54a;--rose:#e2577a;--teal:#2fb3a5;--red:#d8432f;--mast:#f3ead6}
 body{font-family:"Lora",Georgia,serif;background:var(--paper);color:var(--ink)}
 .c-bar{color:var(--ink)}
@@ -99,27 +60,23 @@ body{font-family:"Lora",Georgia,serif;background:var(--paper);color:var(--ink)}
 .ad-card{border-top-color:var(--rule)}
 .c-guides a{color:var(--gold)}
 @media (max-width:820px){.pk-panel{grid-template-columns:1fr;gap:6px;padding:36px 0}.pk-num{text-align:left;font-size:80px}.pk-times,.pk-steps{grid-template-columns:1fr}}
-</style>
-<script defer src="/pwa.js?v=20260908pwa"></script>
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://talklive.app/#organization","name":"TalkLive","url":"https://talklive.app/","logo":{"@type":"ImageObject","url":"https://talklive.app/favicon-192.png","width":192,"height":192}},{"@type":"WebPage","@id":"https://talklive.app/countries/pakistan#webpage","url":"https://talklive.app/countries/pakistan","name":"Talk to Strangers in Pakistan - Free Urdu and English Voice Chat | TalkLive","description":"Free voice and text chat with people in Pakistan - Urdu, Punjabi or English, no sign-up, no camera, with an Urdu interface. Why Pakistan talks late, and when it is online (PKT).","inLanguage":"en","datePublished":"2026-10-05","dateModified":"2026-10-05","wordCount":1279,"about":{"@type":"Country","name":"Pakistan"},"isPartOf":{"@id":"https://talklive.app/#website"},"publisher":{"@id":"https://talklive.app/#organization"},"primaryImageOfPage":{"@type":"ImageObject","url":"https://talklive.app/og-image.png?v=2","width":1200,"height":630}},{"@type":"BreadcrumbList","@id":"https://talklive.app/countries/pakistan#breadcrumb","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://talklive.app/"},{"@type":"ListItem","position":2,"name":"Countries","item":"https://talklive.app/country-chat-guide"},{"@type":"ListItem","position":3,"name":"Pakistan","item":"https://talklive.app/countries/pakistan"}]},{"@type":"FAQPage","@id":"https://talklive.app/countries/pakistan#faq","mainEntity":[{"@type":"Question","name":"Is there a free Pakistani chat site with voice calls?","acceptedAnswer":{"@type":"Answer","text":"Yes. TalkLive is free for voice and text, needs no account, and lets you prefer Pakistan in the country filter at no cost."}},{"@type":"Question","name":"Can I use TalkLive in Urdu?","acceptedAnswer":{"@type":"Answer","text":"Yes. The whole interface is available in Urdu, right to left, at talklive.app/ur/. You can speak Urdu, Punjabi, English or any language you and your match share."}},{"@type":"Question","name":"When is Pakistan busiest on TalkLive?","acceptedAnswer":{"@type":"Answer","text":"From about 8 pm to 2 am Pakistan time (PKT), and Pakistani users often stay later. The quietest stretch is about 5 to 10 am."}},{"@type":"Question","name":"Will I always be matched with someone in Pakistan?","acceptedAnswer":{"@type":"Answer","text":"Not always. A country preference steers matching, but it depends on who is searching at that moment, and it widens after a short wait."}},{"@type":"Question","name":"Will anyone see my phone number or CNIC?","acceptedAnswer":{"@type":"Answer","text":"No. Calls run in the browser over the internet, nothing identifying is needed, and you appear under a generated name."}},{"@type":"Question","name":"Is TalkLive for under-18s?","acceptedAnswer":{"@type":"Answer","text":"No. TalkLive is for adults aged 18 and over only."}}]}]}</script>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978"
-     crossorigin="anonymous"></script>
-<script defer src="/ads.js?v=20260923adsense2"></script>
-</head>
-<body class="c-page c-pakistan">
-<a class="skip" href="#story">Skip to the guide</a>
-<header class="c-bar">
-  <a class="c-brand" href="/">TalkLive</a>
-  <nav aria-label="Site"><a href="/random-voice-chat">Voice chat</a><a href="/random-text-chat">Text chat</a><a href="/country-chat-guide">Countries</a><a href="/safety">Safety</a><a class="c-bar-talk" href="/?utm_source=seo">Talk now</a></nav>
-</header>
-<main id="story">
+`,
+  faq: [
+    { q: 'Is there a free Pakistani chat site with voice calls?', a: 'Yes. TalkLive is free for voice and text, needs no account, and lets you prefer Pakistan in the country filter at no cost.' },
+    { q: 'Can I use TalkLive in Urdu?', a: 'Yes. The whole interface is available in Urdu, right to left, at talklive.app/ur/. You can speak Urdu, Punjabi, English or any language you and your match share.' },
+    { q: 'When is Pakistan busiest on TalkLive?', a: 'From about 8 pm to 2 am Pakistan time (PKT), and Pakistani users often stay later. The quietest stretch is about 5 to 10 am.' },
+    { q: 'Will I always be matched with someone in Pakistan?', a: 'Not always. A country preference steers matching, but it depends on who is searching at that moment, and it widens after a short wait.' },
+    { q: 'Will anyone see my phone number or CNIC?', a: 'No. Calls run in the browser over the internet, nothing identifying is needed, and you appear under a generated name.' },
+    { q: 'Is TalkLive for under-18s?', a: 'No. TalkLive is for adults aged 18 and over only.' },
+  ],
+  body: (c) => `<main id="story">
 <div class="pk-band" aria-hidden="true"></div>
 <section class="pk-hero">
   <p class="pk-urdu" lang="ur" dir="rtl">بول</p>
   <p class="pk-tr">Bol - speak.</p>
   <h1>Talk to strangers in <em>Pakistan</em></h1>
   <p class="pk-dek">Pakistan is one of TalkLive's largest audiences, and a famously late-night one. At one in the morning in Lahore the evening is only halfway done. Join it - in Urdu, Punjabi, English or all three in one sentence - by voice or by text, with no account, no number and no camera.</p>
-  <div class="c-ctas"><a class="c-talk" href="/?utm_source=seo">Tap to Talk</a><a class="c-chat" href="/chat?utm_source=seo">Tap to Chat</a></div>
+  ${c.ctas('Tap to Talk', 'Tap to Chat')}
 </section>
 <div class="pk-band" aria-hidden="true"></div>
 
@@ -195,33 +152,13 @@ body{font-family:"Lora",Georgia,serif;background:var(--paper);color:var(--ink)}
   </section>
 </div>
 
-<section class="c-faq" aria-labelledby="faq-h"><h2 id="faq-h">Sawal jawab - questions</h2><details><summary>Is there a free Pakistani chat site with voice calls?</summary><p>Yes. TalkLive is free for voice and text, needs no account, and lets you prefer Pakistan in the country filter at no cost.</p></details><details><summary>Can I use TalkLive in Urdu?</summary><p>Yes. The whole interface is available in Urdu, right to left, at talklive.app/ur/. You can speak Urdu, Punjabi, English or any language you and your match share.</p></details><details><summary>When is Pakistan busiest on TalkLive?</summary><p>From about 8 pm to 2 am Pakistan time (PKT), and Pakistani users often stay later. The quietest stretch is about 5 to 10 am.</p></details><details><summary>Will I always be matched with someone in Pakistan?</summary><p>Not always. A country preference steers matching, but it depends on who is searching at that moment, and it widens after a short wait.</p></details><details><summary>Will anyone see my phone number or CNIC?</summary><p>No. Calls run in the browser over the internet, nothing identifying is needed, and you appear under a generated name.</p></details><details><summary>Is TalkLive for under-18s?</summary><p>No. TalkLive is for adults aged 18 and over only.</p></details></section>
-<div class="ad-card"><span class="ad-card-label">Advertisement</span><div data-ad="native"></div></div>
+${c.faq('Sawal jawab - questions')}
+${c.ad()}
 <div class="pk-band" aria-hidden="true"></div>
 <section class="pk-end">
   <h2>Bol. Someone is listening.</h2>
   <p>Karachi, Lahore, Islamabad, Peshawar - and Pakistanis everywhere else - are a tap away.</p>
-  <div class="c-ctas"><a class="c-talk" href="/?utm_source=seo">Tap to Talk</a><a class="c-chat" href="/chat?utm_source=seo">Tap to Chat</a></div>
+  ${c.ctas('Tap to Talk', 'Tap to Chat')}
 </section>
-</main>
-<aside class="c-guides" aria-label="Other country guides"><h2>Other country guides</h2><ul><li><a href="/countries/india">India</a></li><li><a href="/countries/bangladesh">Bangladesh</a></li><li><a href="/countries/united-states">United States</a></li><li><a href="/countries/united-kingdom">United Kingdom</a></li><li><a href="/countries/egypt">Egypt</a></li><li><a href="/countries/nigeria">Nigeria</a></li><li><a href="/countries/indonesia">Indonesia</a></li><li><a href="/country-chat-guide">How country matching works</a></li></ul></aside>
-<footer class="j-foot">
-  <nav aria-label="Legal"><a href="/about">About</a><a href="/contact">Contact</a><a href="/privacy">Privacy Policy</a><a href="/terms">Terms</a><a href="/community-guidelines">Community Guidelines</a><a href="/safety">Safety</a><a href="/blog/">Journal</a><a href="/">TalkLive home</a></nav>
-  <p>&copy; 2026 TalkLive. Free one-to-one voice and text chat for adults 18+. Nobody's identity, age or location is verified. Corrections: info@talklive.app</p>
-</footer>
-<!-- Google tag (gtag.js) - see scripts/migrate-analytics.js -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-713E3C1RH1"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('consent', 'default', {
-    ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: 'denied',
-    region: ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'IS', 'LI', 'NO', 'GB', 'CH'],
-    wait_for_update: 500
-  });
-  gtag('set', 'ads_data_redaction', true);
-  gtag('js', new Date());
-  gtag('config', 'G-713E3C1RH1');
-</script>
-</body>
-</html>
+</main>`,
+};

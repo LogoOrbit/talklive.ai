@@ -1,57 +1,18 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Talk to Strangers in Nigeria - Free Nigerian Voice Chat | TalkLive</title>
-<meta name="description" content="Free voice and text chat with people in Nigeria - English, Pidgin, Yoruba, Igbo or Hausa, no sign-up, no camera, light on data. Achebe on conversation, and when Nigeria is online (WAT)." />
-<meta name="keywords" content="talk to strangers nigeria, nigerian chat, nigeria voice chat, chat with nigerians, random chat nigeria, talk to someone nigeria, pidgin chat" />
-<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
-<meta name="theme-color" content="#ffcc00" />
-<meta name="author" content="TalkLive" />
-<link rel="canonical" href="https://talklive.app/countries/nigeria" />
-<meta property="og:type" content="website" />
-<meta property="og:site_name" content="TalkLive" />
-<meta property="og:title" content="Talk to Strangers in Nigeria - Free Nigerian Voice Chat | TalkLive" />
-<meta property="og:description" content="Free voice and text chat with people in Nigeria - English, Pidgin, Yoruba, Igbo or Hausa, no sign-up, no camera, light on data. Achebe on conversation, and when Nigeria is online (WAT)." />
-<meta property="og:url" content="https://talklive.app/countries/nigeria" />
-<meta property="og:image" content="https://talklive.app/og-image.png?v=2" />
-<meta property="og:image:width" content="1200" />
-<meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="Talk to Strangers in Nigeria" />
-<meta property="og:locale" content="en_US" />
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Talk to Strangers in Nigeria - Free Nigerian Voice Chat | TalkLive" />
-<meta name="twitter:description" content="Free voice and text chat with people in Nigeria - English, Pidgin, Yoruba, Igbo or Hausa, no sign-up, no camera, light on data. Achebe on conversation, and when Nigeria is online (WAT)." />
-<meta name="twitter:image" content="https://talklive.app/og-image.png?v=2" />
-<meta name="twitter:image:alt" content="Talk to Strangers in Nigeria" />
-<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-<link rel="apple-touch-icon" href="/favicon-192.png" />
-<link rel="manifest" href="/site.webmanifest" />
-<link rel="preload" href="/fonts/mag/anton-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
-<link rel="preload" href="/fonts/mag/bricolage-grotesque-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
-<link rel="stylesheet" href="/journal.css?v=20261005countries" />
-<style>
-.c-bar{display:flex;align-items:center;justify-content:space-between;gap:14px;max-width:1180px;margin:0 auto;padding:12px 20px;font:600 13px/1.2 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.02em}
-.c-bar a{text-decoration:none}
-.c-bar .c-brand{font-weight:700;letter-spacing:.06em}
-.c-bar nav{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
-.c-bar nav a{opacity:.8}.c-bar nav a:hover{opacity:1;text-decoration:underline}
-.c-bar .c-bar-talk{opacity:1;padding:7px 14px;border:1.5px solid currentColor;border-radius:999px}
-.c-ctas{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
-.c-ctas a{display:inline-flex;align-items:center;gap:8px;text-decoration:none}
-.c-faq details{border-top:1px solid var(--rule,rgba(0,0,0,.15));padding:14px 0}
-.c-faq summary{cursor:pointer;list-style:none}
-.c-faq summary::-webkit-details-marker{display:none}
-.c-faq summary::after{content:"+";float:right;margin-left:12px}
-.c-faq details[open] summary::after{content:"\2212"}
-.c-faq details p{margin:10px 0 0}
-.c-guides{max-width:1180px;margin:64px auto 0;padding:0 20px}
-.c-guides h2{font:600 12px/1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.16em;text-transform:uppercase;margin:0 0 12px;opacity:.75}
-.c-guides ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px 22px;font:500 15px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
-.c-guides a{text-decoration:none;border-bottom:1px solid currentColor}
-@media (max-width:640px){.c-bar{font-size:12px}.c-bar nav{gap:12px;flex-wrap:nowrap}.c-bar nav a:nth-child(1),.c-bar nav a:nth-child(2),.c-bar nav a:nth-child(4){display:none}}
-
+'use strict';
+// Nigeria: "How Far?". A Lagos danfo as a design: yellow and black stripes,
+// stickers slapped on at angles, loud condensed headlines and a conductor
+// calling the stops. Anton for display, Bricolage Grotesque to read.
+module.exports = {
+  slug: 'nigeria',
+  name: 'Nigeria',
+  date: '2026-10-05',
+  title: 'Talk to Strangers in Nigeria - Free Nigerian Voice Chat | TalkLive',
+  description: 'Free voice and text chat with people in Nigeria - English, Pidgin, Yoruba, Igbo or Hausa, no sign-up, no camera, light on data. Achebe on conversation, and when Nigeria is online (WAT).',
+  keywords: 'talk to strangers nigeria, nigerian chat, nigeria voice chat, chat with nigerians, random chat nigeria, talk to someone nigeria, pidgin chat',
+  h1: 'Talk to Strangers in Nigeria',
+  theme: '#ffcc00',
+  preload: ['anton-latin-400-normal', 'bricolage-grotesque-latin-400-normal'],
+  css: `
 :root{--paper:#fffdf5;--ink:#111;--rule:#111;--y:#ffcc00;--g:#008751;--mast:#111}
 body{font-family:"Bricolage Grotesque",system-ui,sans-serif;background:var(--paper)}
 .c-bar{background:var(--y);max-width:none;border-bottom:4px solid var(--ink)}
@@ -100,27 +61,23 @@ body{font-family:"Bricolage Grotesque",system-ui,sans-serif;background:var(--pap
 .ng-end .c-ctas{justify-content:center}
 .c-guides a{color:var(--g)}
 @media (max-width:900px){.ng-stop{grid-template-columns:1fr}.ng-sticker{position:static;transform:rotate(4deg);margin-top:20px;width:150px;height:150px;font-size:24px}.ng-big{grid-template-columns:1fr}}
-</style>
-<script defer src="/pwa.js?v=20260908pwa"></script>
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://talklive.app/#organization","name":"TalkLive","url":"https://talklive.app/","logo":{"@type":"ImageObject","url":"https://talklive.app/favicon-192.png","width":192,"height":192}},{"@type":"WebPage","@id":"https://talklive.app/countries/nigeria#webpage","url":"https://talklive.app/countries/nigeria","name":"Talk to Strangers in Nigeria - Free Nigerian Voice Chat | TalkLive","description":"Free voice and text chat with people in Nigeria - English, Pidgin, Yoruba, Igbo or Hausa, no sign-up, no camera, light on data. Achebe on conversation, and when Nigeria is online (WAT).","inLanguage":"en","datePublished":"2026-10-05","dateModified":"2026-10-05","wordCount":1288,"about":{"@type":"Country","name":"Nigeria"},"isPartOf":{"@id":"https://talklive.app/#website"},"publisher":{"@id":"https://talklive.app/#organization"},"primaryImageOfPage":{"@type":"ImageObject","url":"https://talklive.app/og-image.png?v=2","width":1200,"height":630}},{"@type":"BreadcrumbList","@id":"https://talklive.app/countries/nigeria#breadcrumb","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://talklive.app/"},{"@type":"ListItem","position":2,"name":"Countries","item":"https://talklive.app/country-chat-guide"},{"@type":"ListItem","position":3,"name":"Nigeria","item":"https://talklive.app/countries/nigeria"}]},{"@type":"FAQPage","@id":"https://talklive.app/countries/nigeria#faq","mainEntity":[{"@type":"Question","name":"Is TalkLive free in Nigeria?","acceptedAnswer":{"@type":"Answer","text":"Yes. Voice and text chat are free and need no account. Normal data charges apply on mobile data, and audio-only calls keep that low."}},{"@type":"Question","name":"Can I chat in Pidgin, Yoruba, Igbo or Hausa?","acceptedAnswer":{"@type":"Answer","text":"Yes. Speak whichever language you and your match share - TalkLive does not limit what language you talk in."}},{"@type":"Question","name":"When is Nigeria busiest on TalkLive?","acceptedAnswer":{"@type":"Answer","text":"Roughly 4 pm to 10 pm West Africa Time, which lines up with TalkLive's busiest hours worldwide. The quietest stretch is about 1 am to 6 am."}},{"@type":"Question","name":"Will I always match with someone in Nigeria?","acceptedAnswer":{"@type":"Answer","text":"Not always. Preferring Nigeria in Filters steers matching, but it depends on who is searching at that moment."}},{"@type":"Question","name":"How much data does a call use?","acceptedAnswer":{"@type":"Answer","text":"Far less than video. TalkLive is audio-only, and text chat uses less still, so it is the cheaper option when your bundle is low."}},{"@type":"Question","name":"Does anyone see my phone number?","acceptedAnswer":{"@type":"Answer","text":"No. Calls run in the browser over the internet; no number is exchanged and there is no camera."}}]}]}</script>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978"
-     crossorigin="anonymous"></script>
-<script defer src="/ads.js?v=20260923adsense2"></script>
-</head>
-<body class="c-page c-nigeria">
-<a class="skip" href="#story">Skip to the guide</a>
-<header class="c-bar">
-  <a class="c-brand" href="/">TalkLive</a>
-  <nav aria-label="Site"><a href="/random-voice-chat">Voice chat</a><a href="/random-text-chat">Text chat</a><a href="/country-chat-guide">Countries</a><a href="/safety">Safety</a><a class="c-bar-talk" href="/?utm_source=seo">Talk now</a></nav>
-</header>
-<main id="story">
+`,
+  faq: [
+    { q: 'Is TalkLive free in Nigeria?', a: 'Yes. Voice and text chat are free and need no account. Normal data charges apply on mobile data, and audio-only calls keep that low.' },
+    { q: 'Can I chat in Pidgin, Yoruba, Igbo or Hausa?', a: 'Yes. Speak whichever language you and your match share - TalkLive does not limit what language you talk in.' },
+    { q: 'When is Nigeria busiest on TalkLive?', a: 'Roughly 4 pm to 10 pm West Africa Time, which lines up with TalkLive\'s busiest hours worldwide. The quietest stretch is about 1 am to 6 am.' },
+    { q: 'Will I always match with someone in Nigeria?', a: 'Not always. Preferring Nigeria in Filters steers matching, but it depends on who is searching at that moment.' },
+    { q: 'How much data does a call use?', a: 'Far less than video. TalkLive is audio-only, and text chat uses less still, so it is the cheaper option when your bundle is low.' },
+    { q: 'Does anyone see my phone number?', a: 'No. Calls run in the browser over the internet; no number is exchanged and there is no camera.' },
+  ],
+  body: (c) => `<main id="story">
 <div class="ng-stripe" aria-hidden="true"></div>
 <section class="ng-hero">
   <div class="ng-hero-in">
     <span class="ng-route">Route: Anywhere - Everywhere &middot; Wole, wole!</span>
     <h1>Talk to strangers <span>in Nigeria</span></h1>
     <p class="ng-dek">How far? Nigeria is Africa's most populous country, one of the youngest on earth, and very possibly the most talkative. Chat by voice or text in English, Pidgin, Yoruba, Igbo or Hausa - free, with no account, no number, no camera and very little data.</p>
-    <div class="c-ctas"><a class="c-talk" href="/?utm_source=seo">Tap to Talk</a><a class="c-chat" href="/chat?utm_source=seo">Tap to Chat</a></div>
+    ${c.ctas('Tap to Talk', 'Tap to Chat')}
     <div class="ng-sticker" aria-hidden="true"><div>No wahala<small>Free. 18+. No sign-up.</small></div></div>
   </div>
 </section>
@@ -191,33 +148,13 @@ body{font-family:"Bricolage Grotesque",system-ui,sans-serif;background:var(--pap
   </section>
 </div>
 
-<section class="c-faq" aria-labelledby="faq-h"><h2 id="faq-h">Wetin people dey ask</h2><details><summary>Is TalkLive free in Nigeria?</summary><p>Yes. Voice and text chat are free and need no account. Normal data charges apply on mobile data, and audio-only calls keep that low.</p></details><details><summary>Can I chat in Pidgin, Yoruba, Igbo or Hausa?</summary><p>Yes. Speak whichever language you and your match share - TalkLive does not limit what language you talk in.</p></details><details><summary>When is Nigeria busiest on TalkLive?</summary><p>Roughly 4 pm to 10 pm West Africa Time, which lines up with TalkLive's busiest hours worldwide. The quietest stretch is about 1 am to 6 am.</p></details><details><summary>Will I always match with someone in Nigeria?</summary><p>Not always. Preferring Nigeria in Filters steers matching, but it depends on who is searching at that moment.</p></details><details><summary>How much data does a call use?</summary><p>Far less than video. TalkLive is audio-only, and text chat uses less still, so it is the cheaper option when your bundle is low.</p></details><details><summary>Does anyone see my phone number?</summary><p>No. Calls run in the browser over the internet; no number is exchanged and there is no camera.</p></details></section>
-<div class="ad-card"><span class="ad-card-label">Advertisement</span><div data-ad="native"></div></div>
+${c.faq('Wetin people dey ask')}
+${c.ad()}
 <section class="ng-end">
   <h2>Wole! Get in.</h2>
   <p>Lagos, Abuja, Ibadan, Kano, Port Harcourt - the bus is loading.</p>
-  <div class="c-ctas"><a class="c-talk" href="/?utm_source=seo">Tap to Talk</a><a class="c-chat" href="/chat?utm_source=seo">Tap to Chat</a></div>
+  ${c.ctas('Tap to Talk', 'Tap to Chat')}
 </section>
 <div class="ng-stripe" aria-hidden="true"></div>
-</main>
-<aside class="c-guides" aria-label="Other country guides"><h2>Other country guides</h2><ul><li><a href="/countries/india">India</a></li><li><a href="/countries/pakistan">Pakistan</a></li><li><a href="/countries/bangladesh">Bangladesh</a></li><li><a href="/countries/united-states">United States</a></li><li><a href="/countries/united-kingdom">United Kingdom</a></li><li><a href="/countries/egypt">Egypt</a></li><li><a href="/countries/indonesia">Indonesia</a></li><li><a href="/country-chat-guide">How country matching works</a></li></ul></aside>
-<footer class="j-foot">
-  <nav aria-label="Legal"><a href="/about">About</a><a href="/contact">Contact</a><a href="/privacy">Privacy Policy</a><a href="/terms">Terms</a><a href="/community-guidelines">Community Guidelines</a><a href="/safety">Safety</a><a href="/blog/">Journal</a><a href="/">TalkLive home</a></nav>
-  <p>&copy; 2026 TalkLive. Free one-to-one voice and text chat for adults 18+. Nobody's identity, age or location is verified. Corrections: info@talklive.app</p>
-</footer>
-<!-- Google tag (gtag.js) - see scripts/migrate-analytics.js -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-713E3C1RH1"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('consent', 'default', {
-    ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: 'denied',
-    region: ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'IS', 'LI', 'NO', 'GB', 'CH'],
-    wait_for_update: 500
-  });
-  gtag('set', 'ads_data_redaction', true);
-  gtag('js', new Date());
-  gtag('config', 'G-713E3C1RH1');
-</script>
-</body>
-</html>
+</main>`,
+};

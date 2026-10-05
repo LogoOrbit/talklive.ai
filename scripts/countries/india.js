@@ -1,57 +1,19 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Talk to Strangers in India - Free Voice Chat in Hindi and English | TalkLive</title>
-<meta name="description" content="Free voice and text chat with people in India - Hindi, English or Hinglish, no sign-up, no camera. Why India talks to strangers like it talks on a long train, and when India is online (IST)." />
-<meta name="keywords" content="talk to strangers india, indian voice chat, chat with indians, hindi voice chat, random chat india, talk to indian people online, hinglish chat" />
-<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
-<meta name="theme-color" content="#0b1320" />
-<meta name="author" content="TalkLive" />
-<link rel="canonical" href="https://talklive.app/countries/india" />
-<meta property="og:type" content="website" />
-<meta property="og:site_name" content="TalkLive" />
-<meta property="og:title" content="Talk to Strangers in India - Free Voice Chat in Hindi and English | TalkLive" />
-<meta property="og:description" content="Free voice and text chat with people in India - Hindi, English or Hinglish, no sign-up, no camera. Why India talks to strangers like it talks on a long train, and when India is online (IST)." />
-<meta property="og:url" content="https://talklive.app/countries/india" />
-<meta property="og:image" content="https://talklive.app/og-image.png?v=2" />
-<meta property="og:image:width" content="1200" />
-<meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="Talk to Strangers in India" />
-<meta property="og:locale" content="en_US" />
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Talk to Strangers in India - Free Voice Chat in Hindi and English | TalkLive" />
-<meta name="twitter:description" content="Free voice and text chat with people in India - Hindi, English or Hinglish, no sign-up, no camera. Why India talks to strangers like it talks on a long train, and when India is online (IST)." />
-<meta name="twitter:image" content="https://talklive.app/og-image.png?v=2" />
-<meta name="twitter:image:alt" content="Talk to Strangers in India" />
-<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-<link rel="apple-touch-icon" href="/favicon-192.png" />
-<link rel="manifest" href="/site.webmanifest" />
-<link rel="preload" href="/fonts/mag/big-shoulders-display-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin />
-<link rel="preload" href="/fonts/mag/ibm-plex-serif-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
-<link rel="stylesheet" href="/journal.css?v=20261005countries" />
-<style>
-.c-bar{display:flex;align-items:center;justify-content:space-between;gap:14px;max-width:1180px;margin:0 auto;padding:12px 20px;font:600 13px/1.2 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.02em}
-.c-bar a{text-decoration:none}
-.c-bar .c-brand{font-weight:700;letter-spacing:.06em}
-.c-bar nav{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
-.c-bar nav a{opacity:.8}.c-bar nav a:hover{opacity:1;text-decoration:underline}
-.c-bar .c-bar-talk{opacity:1;padding:7px 14px;border:1.5px solid currentColor;border-radius:999px}
-.c-ctas{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
-.c-ctas a{display:inline-flex;align-items:center;gap:8px;text-decoration:none}
-.c-faq details{border-top:1px solid var(--rule,rgba(0,0,0,.15));padding:14px 0}
-.c-faq summary{cursor:pointer;list-style:none}
-.c-faq summary::-webkit-details-marker{display:none}
-.c-faq summary::after{content:"+";float:right;margin-left:12px}
-.c-faq details[open] summary::after{content:"\2212"}
-.c-faq details p{margin:10px 0 0}
-.c-guides{max-width:1180px;margin:64px auto 0;padding:0 20px}
-.c-guides h2{font:600 12px/1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.16em;text-transform:uppercase;margin:0 0 12px;opacity:.75}
-.c-guides ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px 22px;font:500 15px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
-.c-guides a{text-decoration:none;border-bottom:1px solid currentColor}
-@media (max-width:640px){.c-bar{font-size:12px}.c-bar nav{gap:12px;flex-wrap:nowrap}.c-bar nav a:nth-child(1),.c-bar nav a:nth-child(2),.c-bar nav a:nth-child(4){display:none}}
-
+'use strict';
+// India: "The Berth Opposite". Indian Railways after dark - a split-flap
+// departure board for the hero and the timetable, cream ticket paper for the
+// reading column, a track line running down the margin. Big Shoulders Display
+// for the board, IBM Plex Serif to read, JetBrains Mono for the board rows.
+module.exports = {
+  slug: 'india',
+  name: 'India',
+  date: '2026-10-05',
+  title: 'Talk to Strangers in India - Free Voice Chat in Hindi and English | TalkLive',
+  description: 'Free voice and text chat with people in India - Hindi, English or Hinglish, no sign-up, no camera. Why India talks to strangers like it talks on a long train, and when India is online (IST).',
+  keywords: 'talk to strangers india, indian voice chat, chat with indians, hindi voice chat, random chat india, talk to indian people online, hinglish chat',
+  h1: 'Talk to Strangers in India',
+  theme: '#0b1320',
+  preload: ['big-shoulders-display-latin-800-normal', 'ibm-plex-serif-latin-400-normal'],
+  css: `
 :root{--paper:#f4ecd8;--ink:#1d1a16;--rule:#d6c7a5;--board:#0b1320;--amber:#ffb200;--rail:#7a2e1d;--mast:#f4ecd8}
 body{font-family:"IBM Plex Serif",Georgia,serif;background:var(--paper)}
 .c-bar{color:#f4ecd8;background:var(--board);max-width:none;border-bottom:1px solid #22304a}
@@ -113,27 +75,23 @@ body{font-family:"IBM Plex Serif",Georgia,serif;background:var(--paper)}
 .c-guides,.j-foot{color:var(--ink)}
 @media (max-width:1000px){.in-wrap{grid-template-columns:60px minmax(0,1fr)}.in-side{grid-column:1/-1;padding-top:30px}.in-ticket{position:static}.in-track::before{left:22px}.in-stop{width:20px;font-size:0}.in-quote{margin:32px 0;padding:26px}}
 @media (max-width:820px){.in-board-in{grid-template-columns:1fr}.in-wrap{grid-template-columns:1fr}.in-track{display:none}.in-body{grid-column:1;padding-top:40px}}
-</style>
-<script defer src="/pwa.js?v=20260908pwa"></script>
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://talklive.app/#organization","name":"TalkLive","url":"https://talklive.app/","logo":{"@type":"ImageObject","url":"https://talklive.app/favicon-192.png","width":192,"height":192}},{"@type":"WebPage","@id":"https://talklive.app/countries/india#webpage","url":"https://talklive.app/countries/india","name":"Talk to Strangers in India - Free Voice Chat in Hindi and English | TalkLive","description":"Free voice and text chat with people in India - Hindi, English or Hinglish, no sign-up, no camera. Why India talks to strangers like it talks on a long train, and when India is online (IST).","inLanguage":"en","datePublished":"2026-10-05","dateModified":"2026-10-05","wordCount":1642,"about":{"@type":"Country","name":"India"},"isPartOf":{"@id":"https://talklive.app/#website"},"publisher":{"@id":"https://talklive.app/#organization"},"primaryImageOfPage":{"@type":"ImageObject","url":"https://talklive.app/og-image.png?v=2","width":1200,"height":630}},{"@type":"BreadcrumbList","@id":"https://talklive.app/countries/india#breadcrumb","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://talklive.app/"},{"@type":"ListItem","position":2,"name":"Countries","item":"https://talklive.app/country-chat-guide"},{"@type":"ListItem","position":3,"name":"India","item":"https://talklive.app/countries/india"}]},{"@type":"FAQPage","@id":"https://talklive.app/countries/india#faq","mainEntity":[{"@type":"Question","name":"Can I talk to people in India for free?","acceptedAnswer":{"@type":"Answer","text":"Yes. Voice calls and text chats on TalkLive are free, need no account, and preferring India in the country filter is free too."}},{"@type":"Question","name":"What is the best time to find someone from India?","acceptedAnswer":{"@type":"Answer","text":"Evenings and late nights in India Standard Time. TalkLive is busiest between about 8:30 pm and 2:30 am IST and quietest between about 5:30 and 10:30 am IST."}},{"@type":"Question","name":"Can I speak Hindi, or a mix of Hindi and English?","acceptedAnswer":{"@type":"Answer","text":"Yes. Speak whatever you and your match share - Hindi, English, Hinglish, Tamil, Bengali or anything else. The interface is also available in Hindi at talklive.app/hi/."}},{"@type":"Question","name":"Will I definitely be matched with someone in India?","acceptedAnswer":{"@type":"Answer","text":"Not always. A country preference steers matching, but it depends on who is searching at that moment, and matching widens after a short wait rather than leaving you stuck."}},{"@type":"Question","name":"Does TalkLive work on Indian mobile data?","acceptedAnswer":{"@type":"Answer","text":"Yes. Calls are audio-only and light on data. On networks that block direct connections, calls are relayed through TalkLive's TURN server automatically."}},{"@type":"Question","name":"Will the other person see my number or face?","acceptedAnswer":{"@type":"Answer","text":"No. There is no video, and calls run in the browser, so no phone number is exchanged."}}]}]}</script>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978"
-     crossorigin="anonymous"></script>
-<script defer src="/ads.js?v=20260923adsense2"></script>
-</head>
-<body class="c-page c-india">
-<a class="skip" href="#story">Skip to the guide</a>
-<header class="c-bar">
-  <a class="c-brand" href="/">TalkLive</a>
-  <nav aria-label="Site"><a href="/random-voice-chat">Voice chat</a><a href="/random-text-chat">Text chat</a><a href="/country-chat-guide">Countries</a><a href="/safety">Safety</a><a class="c-bar-talk" href="/?utm_source=seo">Talk now</a></nav>
-</header>
-<main id="story">
+`,
+  faq: [
+    { q: 'Can I talk to people in India for free?', a: 'Yes. Voice calls and text chats on TalkLive are free, need no account, and preferring India in the country filter is free too.' },
+    { q: 'What is the best time to find someone from India?', a: 'Evenings and late nights in India Standard Time. TalkLive is busiest between about 8:30 pm and 2:30 am IST and quietest between about 5:30 and 10:30 am IST.' },
+    { q: 'Can I speak Hindi, or a mix of Hindi and English?', a: 'Yes. Speak whatever you and your match share - Hindi, English, Hinglish, Tamil, Bengali or anything else. The interface is also available in Hindi at talklive.app/hi/.' },
+    { q: 'Will I definitely be matched with someone in India?', a: 'Not always. A country preference steers matching, but it depends on who is searching at that moment, and matching widens after a short wait rather than leaving you stuck.' },
+    { q: 'Does TalkLive work on Indian mobile data?', a: 'Yes. Calls are audio-only and light on data. On networks that block direct connections, calls are relayed through TalkLive\'s TURN server automatically.' },
+    { q: 'Will the other person see my number or face?', a: 'No. There is no video, and calls run in the browser, so no phone number is exchanged.' },
+  ],
+  body: (c) => `<main id="story">
 <section class="in-board">
   <div class="in-board-in">
     <div>
       <span class="in-kicker">Platform 1 &middot; All of India &middot; Departing now</span>
       <h1>Talk to strangers in <span>India</span></h1>
       <p class="in-dek">Everybody who has taken an overnight train in India knows how this goes. By the time the lights are dimmed, the family on the berth opposite knows where you are going, what you do, and whether you are married yet. TalkLive is that compartment, without the train: one tap, one stranger, in Hindi, English or both.</p>
-      <div class="c-ctas"><a class="c-talk" href="/?utm_source=seo">Tap to Talk - voice</a><a class="c-chat" href="/chat?utm_source=seo">Tap to Chat - text</a></div>
+      ${c.ctas('Tap to Talk - voice', 'Tap to Chat - text')}
     </div>
     <div class="in-flap" aria-label="When India is online">
       <div class="in-flap-h"><span>TIME IST</span><span>STATUS</span><span>WAIT</span></div>
@@ -201,42 +159,22 @@ body{font-family:"IBM Plex Serif",Georgia,serif;background:var(--paper)}
     </ol>
     <p>If you would like the wider story of why India, Pakistan and Bangladesh share one long evening, the Journal's <a href="/regions/south-asia">Why South Asia Talks After Midnight</a> is the long read. Our neighbouring guides cover <a href="/countries/pakistan">Pakistan</a> and <a href="/countries/bangladesh">Bangladesh</a>, and the whole app is available <a href="/hi/">in Hindi</a>.</p>
 
-    <section class="c-faq" aria-labelledby="faq-h"><h2 id="faq-h">Questions at the ticket window</h2><details><summary>Can I talk to people in India for free?</summary><p>Yes. Voice calls and text chats on TalkLive are free, need no account, and preferring India in the country filter is free too.</p></details><details><summary>What is the best time to find someone from India?</summary><p>Evenings and late nights in India Standard Time. TalkLive is busiest between about 8:30 pm and 2:30 am IST and quietest between about 5:30 and 10:30 am IST.</p></details><details><summary>Can I speak Hindi, or a mix of Hindi and English?</summary><p>Yes. Speak whatever you and your match share - Hindi, English, Hinglish, Tamil, Bengali or anything else. The interface is also available in Hindi at talklive.app/hi/.</p></details><details><summary>Will I definitely be matched with someone in India?</summary><p>Not always. A country preference steers matching, but it depends on who is searching at that moment, and matching widens after a short wait rather than leaving you stuck.</p></details><details><summary>Does TalkLive work on Indian mobile data?</summary><p>Yes. Calls are audio-only and light on data. On networks that block direct connections, calls are relayed through TalkLive's TURN server automatically.</p></details><details><summary>Will the other person see my number or face?</summary><p>No. There is no video, and calls run in the browser, so no phone number is exchanged.</p></details></section>
+    ${c.faq('Questions at the ticket window')}
   </article>
   <aside class="in-side">
     <div class="in-ticket">
       <h3>Ticket: anywhere</h3>
       <dl><dt>Class</dt><dd>Voice or text</dd><dt>Fare</dt><dd>Free</dd><dt>Sign-up</dt><dd>None</dd><dt>Camera</dt><dd>Never</dd><dt>Ages</dt><dd>18+ only</dd></dl>
       <div class="in-perf"></div>
-      <div class="c-ctas"><a class="c-talk" href="/?utm_source=seo">Talk now</a><a class="c-chat" href="/chat?utm_source=seo">Chat now</a></div>
+      ${c.ctas('Talk now', 'Chat now')}
     </div>
   </aside>
 </div>
-<div class="ad-card"><span class="ad-card-label">Advertisement</span><div data-ad="native"></div></div>
+${c.ad()}
 <section class="in-end">
   <h2>Your berth is ready</h2>
   <p>Someone in Lucknow, Kochi or Guwahati is pressing the same button right now. Say hello.</p>
-  <div class="c-ctas"><a class="c-talk" href="/?utm_source=seo">Tap to Talk</a><a class="c-chat" href="/chat?utm_source=seo">Tap to Chat</a></div>
+  ${c.ctas('Tap to Talk', 'Tap to Chat')}
 </section>
-</main>
-<aside class="c-guides" aria-label="Other country guides"><h2>Other country guides</h2><ul><li><a href="/countries/pakistan">Pakistan</a></li><li><a href="/countries/bangladesh">Bangladesh</a></li><li><a href="/countries/united-states">United States</a></li><li><a href="/countries/united-kingdom">United Kingdom</a></li><li><a href="/countries/egypt">Egypt</a></li><li><a href="/countries/nigeria">Nigeria</a></li><li><a href="/countries/indonesia">Indonesia</a></li><li><a href="/country-chat-guide">How country matching works</a></li></ul></aside>
-<footer class="j-foot">
-  <nav aria-label="Legal"><a href="/about">About</a><a href="/contact">Contact</a><a href="/privacy">Privacy Policy</a><a href="/terms">Terms</a><a href="/community-guidelines">Community Guidelines</a><a href="/safety">Safety</a><a href="/blog/">Journal</a><a href="/">TalkLive home</a></nav>
-  <p>&copy; 2026 TalkLive. Free one-to-one voice and text chat for adults 18+. Nobody's identity, age or location is verified. Corrections: info@talklive.app</p>
-</footer>
-<!-- Google tag (gtag.js) - see scripts/migrate-analytics.js -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-713E3C1RH1"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('consent', 'default', {
-    ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: 'denied',
-    region: ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'IS', 'LI', 'NO', 'GB', 'CH'],
-    wait_for_update: 500
-  });
-  gtag('set', 'ads_data_redaction', true);
-  gtag('js', new Date());
-  gtag('config', 'G-713E3C1RH1');
-</script>
-</body>
-</html>
+</main>`,
+};

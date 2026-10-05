@@ -1,57 +1,19 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Talk to Strangers in the UK - Free British Voice Chat | TalkLive</title>
-<meta name="description" content="Free voice and text chat with people in the UK - no sign-up, no camera, no phone number. Why British evenings are TalkLive's busiest hours, the weather-talk ritual, and how to get chatting." />
-<meta name="keywords" content="talk to strangers uk, british voice chat, chat with british people, uk random chat, talk to someone uk, uk voice chat, chat rooms uk" />
-<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
-<meta name="theme-color" content="#e7edf0" />
-<meta name="author" content="TalkLive" />
-<link rel="canonical" href="https://talklive.app/countries/united-kingdom" />
-<meta property="og:type" content="website" />
-<meta property="og:site_name" content="TalkLive" />
-<meta property="og:title" content="Talk to Strangers in the UK - Free British Voice Chat | TalkLive" />
-<meta property="og:description" content="Free voice and text chat with people in the UK - no sign-up, no camera, no phone number. Why British evenings are TalkLive's busiest hours, the weather-talk ritual, and how to get chatting." />
-<meta property="og:url" content="https://talklive.app/countries/united-kingdom" />
-<meta property="og:image" content="https://talklive.app/og-image.png?v=2" />
-<meta property="og:image:width" content="1200" />
-<meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="Talk to Strangers in the UK" />
-<meta property="og:locale" content="en_US" />
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Talk to Strangers in the UK - Free British Voice Chat | TalkLive" />
-<meta name="twitter:description" content="Free voice and text chat with people in the UK - no sign-up, no camera, no phone number. Why British evenings are TalkLive's busiest hours, the weather-talk ritual, and how to get chatting." />
-<meta name="twitter:image" content="https://talklive.app/og-image.png?v=2" />
-<meta name="twitter:image:alt" content="Talk to Strangers in the UK" />
-<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-<link rel="apple-touch-icon" href="/favicon-192.png" />
-<link rel="manifest" href="/site.webmanifest" />
-<link rel="preload" href="/fonts/mag/dm-serif-display-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
-<link rel="preload" href="/fonts/mag/dm-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
-<link rel="stylesheet" href="/journal.css?v=20261005countries" />
-<style>
-.c-bar{display:flex;align-items:center;justify-content:space-between;gap:14px;max-width:1180px;margin:0 auto;padding:12px 20px;font:600 13px/1.2 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.02em}
-.c-bar a{text-decoration:none}
-.c-bar .c-brand{font-weight:700;letter-spacing:.06em}
-.c-bar nav{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
-.c-bar nav a{opacity:.8}.c-bar nav a:hover{opacity:1;text-decoration:underline}
-.c-bar .c-bar-talk{opacity:1;padding:7px 14px;border:1.5px solid currentColor;border-radius:999px}
-.c-ctas{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
-.c-ctas a{display:inline-flex;align-items:center;gap:8px;text-decoration:none}
-.c-faq details{border-top:1px solid var(--rule,rgba(0,0,0,.15));padding:14px 0}
-.c-faq summary{cursor:pointer;list-style:none}
-.c-faq summary::-webkit-details-marker{display:none}
-.c-faq summary::after{content:"+";float:right;margin-left:12px}
-.c-faq details[open] summary::after{content:"\2212"}
-.c-faq details p{margin:10px 0 0}
-.c-guides{max-width:1180px;margin:64px auto 0;padding:0 20px}
-.c-guides h2{font:600 12px/1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.16em;text-transform:uppercase;margin:0 0 12px;opacity:.75}
-.c-guides ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px 22px;font:500 15px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
-.c-guides a{text-decoration:none;border-bottom:1px solid currentColor}
-@media (max-width:640px){.c-bar{font-size:12px}.c-bar nav{gap:12px;flex-wrap:nowrap}.c-bar nav a:nth-child(1),.c-bar nav a:nth-child(2),.c-bar nav a:nth-child(4){display:none}}
-
+'use strict';
+// United Kingdom: "Talkative, Becoming Very Talkative". The Shipping Forecast
+// as a design idea: sea-grey paper, navy ink, signal orange, a two-column
+// broadsheet body and forecast bulletins in small caps. DM Serif Display for
+// headlines, DM Sans to read.
+module.exports = {
+  slug: 'united-kingdom',
+  name: 'United Kingdom',
+  date: '2026-10-05',
+  title: 'Talk to Strangers in the UK - Free British Voice Chat | TalkLive',
+  description: 'Free voice and text chat with people in the UK - no sign-up, no camera, no phone number. Why British evenings are TalkLive\'s busiest hours, the weather-talk ritual, and how to get chatting.',
+  keywords: 'talk to strangers uk, british voice chat, chat with british people, uk random chat, talk to someone uk, uk voice chat, chat rooms uk',
+  h1: 'Talk to Strangers in the UK',
+  theme: '#e7edf0',
+  preload: ['dm-serif-display-latin-400-normal', 'dm-sans-latin-400-normal'],
+  css: `
 :root{--paper:#e7edf0;--ink:#10263b;--rule:#b9c7d0;--sig:#f05a28;--sea:#2f6f73;--mast:#10263b}
 body{font-family:"DM Sans",system-ui,sans-serif;background:var(--paper);color:var(--ink)}
 .c-bar{border-bottom:3px solid var(--ink)}
@@ -103,27 +65,23 @@ body{font-family:"DM Sans",system-ui,sans-serif;background:var(--paper);color:va
 .uk-end p{margin:10px 0 0;color:#b9c7d0;font-size:17px}
 .uk-end .c-chat{color:#e7edf0;border-color:#e7edf0}
 @media (max-width:860px){.uk-lede,.uk-end-in{grid-template-columns:1fr}.uk-bulletin{grid-template-columns:1fr}.uk-bulletin div{border-right:0;border-bottom:1px solid var(--ink)}.uk-steps{grid-template-columns:1fr 1fr}}
-</style>
-<script defer src="/pwa.js?v=20260908pwa"></script>
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://talklive.app/#organization","name":"TalkLive","url":"https://talklive.app/","logo":{"@type":"ImageObject","url":"https://talklive.app/favicon-192.png","width":192,"height":192}},{"@type":"WebPage","@id":"https://talklive.app/countries/united-kingdom#webpage","url":"https://talklive.app/countries/united-kingdom","name":"Talk to Strangers in the UK - Free British Voice Chat | TalkLive","description":"Free voice and text chat with people in the UK - no sign-up, no camera, no phone number. Why British evenings are TalkLive's busiest hours, the weather-talk ritual, and how to get chatting.","inLanguage":"en","datePublished":"2026-10-05","dateModified":"2026-10-05","wordCount":1410,"about":{"@type":"Country","name":"United Kingdom"},"isPartOf":{"@id":"https://talklive.app/#website"},"publisher":{"@id":"https://talklive.app/#organization"},"primaryImageOfPage":{"@type":"ImageObject","url":"https://talklive.app/og-image.png?v=2","width":1200,"height":630}},{"@type":"BreadcrumbList","@id":"https://talklive.app/countries/united-kingdom#breadcrumb","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://talklive.app/"},{"@type":"ListItem","position":2,"name":"Countries","item":"https://talklive.app/country-chat-guide"},{"@type":"ListItem","position":3,"name":"United Kingdom","item":"https://talklive.app/countries/united-kingdom"}]},{"@type":"FAQPage","@id":"https://talklive.app/countries/united-kingdom#faq","mainEntity":[{"@type":"Question","name":"Can I talk to people in the UK for free?","acceptedAnswer":{"@type":"Answer","text":"Yes. Voice and text chat on TalkLive are free and need no account. Preferring the United Kingdom in the country filter is free too."}},{"@type":"Question","name":"When is TalkLive busiest in the UK?","acceptedAnswer":{"@type":"Answer","text":"Roughly 4 pm to 10 pm in British Summer Time, and 3 pm to 9 pm GMT after the clocks go back - the British afternoon and evening."}},{"@type":"Question","name":"Does TalkLive use my phone number or camera?","acceptedAnswer":{"@type":"Answer","text":"Neither. Calls run in the browser, there is no video, and no phone number is exchanged."}},{"@type":"Question","name":"Can I find people who speak Welsh, Urdu, Punjabi or Polish in the UK?","acceptedAnswer":{"@type":"Answer","text":"Often, yes. Prefer the UK and ask - many people in Britain speak another language at home and are happy to switch."}},{"@type":"Question","name":"Is TalkLive suitable for under-18s?","acceptedAnswer":{"@type":"Answer","text":"No. TalkLive is for adults aged 18 and over only."}},{"@type":"Question","name":"Is TalkLive a replacement for Samaritans or a counsellor?","acceptedAnswer":{"@type":"Answer","text":"No. The people you meet are ordinary adults. If you are struggling, Samaritans answer free on 116 123, day or night."}}]}]}</script>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978"
-     crossorigin="anonymous"></script>
-<script defer src="/ads.js?v=20260923adsense2"></script>
-</head>
-<body class="c-page c-united-kingdom">
-<a class="skip" href="#story">Skip to the guide</a>
-<header class="c-bar">
-  <a class="c-brand" href="/">TalkLive</a>
-  <nav aria-label="Site"><a href="/random-voice-chat">Voice chat</a><a href="/random-text-chat">Text chat</a><a href="/country-chat-guide">Countries</a><a href="/safety">Safety</a><a class="c-bar-talk" href="/?utm_source=seo">Talk now</a></nav>
-</header>
-<main id="story">
+`,
+  faq: [
+    { q: 'Can I talk to people in the UK for free?', a: 'Yes. Voice and text chat on TalkLive are free and need no account. Preferring the United Kingdom in the country filter is free too.' },
+    { q: 'When is TalkLive busiest in the UK?', a: 'Roughly 4 pm to 10 pm in British Summer Time, and 3 pm to 9 pm GMT after the clocks go back - the British afternoon and evening.' },
+    { q: 'Does TalkLive use my phone number or camera?', a: 'Neither. Calls run in the browser, there is no video, and no phone number is exchanged.' },
+    { q: 'Can I find people who speak Welsh, Urdu, Punjabi or Polish in the UK?', a: 'Often, yes. Prefer the UK and ask - many people in Britain speak another language at home and are happy to switch.' },
+    { q: 'Is TalkLive suitable for under-18s?', a: 'No. TalkLive is for adults aged 18 and over only.' },
+    { q: 'Is TalkLive a replacement for Samaritans or a counsellor?', a: 'No. The people you meet are ordinary adults. If you are struggling, Samaritans answer free on 116 123, day or night.' },
+  ],
+  body: (c) => `<main id="story">
 <header class="uk-head">
   <div class="uk-dateline"><span>The TalkLive forecast</span><span>England &middot; Scotland &middot; Wales &middot; Northern Ireland</span><span>Issued daily</span></div>
   <h1>Talk to strangers in the <i>UK</i></h1>
   <div class="uk-lede">
     <div>
       <p>Britain is supposed to be the country where nobody talks to anybody on the train. It is also the country that keeps a national radio bulletin about wind in the North Sea because people find it soothing, and that appointed a government minister for loneliness. Both things are true. TalkLive is for the second Britain: one tap, one stranger, by voice or text - free, with no account, no number and no camera.</p>
-      <div class="c-ctas"><a class="c-talk" href="/?utm_source=seo">Tap to Talk</a><a class="c-chat" href="/chat?utm_source=seo">Tap to Chat</a></div>
+      ${c.ctas('Tap to Talk', 'Tap to Chat')}
     </div>
     <aside class="uk-fc" aria-label="Today's forecast">
       <h2>The forecast for conversation</h2>
@@ -200,31 +158,11 @@ body{font-family:"DM Sans",system-ui,sans-serif;background:var(--paper);color:va
   </section>
 </div>
 
-<section class="c-faq" aria-labelledby="faq-h"><h2 id="faq-h">Questions from listeners</h2><details><summary>Can I talk to people in the UK for free?</summary><p>Yes. Voice and text chat on TalkLive are free and need no account. Preferring the United Kingdom in the country filter is free too.</p></details><details><summary>When is TalkLive busiest in the UK?</summary><p>Roughly 4 pm to 10 pm in British Summer Time, and 3 pm to 9 pm GMT after the clocks go back - the British afternoon and evening.</p></details><details><summary>Does TalkLive use my phone number or camera?</summary><p>Neither. Calls run in the browser, there is no video, and no phone number is exchanged.</p></details><details><summary>Can I find people who speak Welsh, Urdu, Punjabi or Polish in the UK?</summary><p>Often, yes. Prefer the UK and ask - many people in Britain speak another language at home and are happy to switch.</p></details><details><summary>Is TalkLive suitable for under-18s?</summary><p>No. TalkLive is for adults aged 18 and over only.</p></details><details><summary>Is TalkLive a replacement for Samaritans or a counsellor?</summary><p>No. The people you meet are ordinary adults. If you are struggling, Samaritans answer free on 116 123, day or night.</p></details></section>
-<div class="ad-card"><span class="ad-card-label">Advertisement</span><div data-ad="native"></div></div>
+${c.faq('Questions from listeners')}
+${c.ad()}
 <section class="uk-end"><div class="uk-end-in">
   <div><h2>Talkative, becoming very talkative.</h2><p>Someone in Cardiff, Carlisle or Coleraine is about to press the button too.</p></div>
-  <div class="c-ctas"><a class="c-talk" href="/?utm_source=seo">Tap to Talk</a><a class="c-chat" href="/chat?utm_source=seo">Tap to Chat</a></div>
+  ${c.ctas('Tap to Talk', 'Tap to Chat')}
 </div></section>
-</main>
-<aside class="c-guides" aria-label="Other country guides"><h2>Other country guides</h2><ul><li><a href="/countries/india">India</a></li><li><a href="/countries/pakistan">Pakistan</a></li><li><a href="/countries/bangladesh">Bangladesh</a></li><li><a href="/countries/united-states">United States</a></li><li><a href="/countries/egypt">Egypt</a></li><li><a href="/countries/nigeria">Nigeria</a></li><li><a href="/countries/indonesia">Indonesia</a></li><li><a href="/country-chat-guide">How country matching works</a></li></ul></aside>
-<footer class="j-foot">
-  <nav aria-label="Legal"><a href="/about">About</a><a href="/contact">Contact</a><a href="/privacy">Privacy Policy</a><a href="/terms">Terms</a><a href="/community-guidelines">Community Guidelines</a><a href="/safety">Safety</a><a href="/blog/">Journal</a><a href="/">TalkLive home</a></nav>
-  <p>&copy; 2026 TalkLive. Free one-to-one voice and text chat for adults 18+. Nobody's identity, age or location is verified. Corrections: info@talklive.app</p>
-</footer>
-<!-- Google tag (gtag.js) - see scripts/migrate-analytics.js -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-713E3C1RH1"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('consent', 'default', {
-    ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: 'denied',
-    region: ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'IS', 'LI', 'NO', 'GB', 'CH'],
-    wait_for_update: 500
-  });
-  gtag('set', 'ads_data_redaction', true);
-  gtag('js', new Date());
-  gtag('config', 'G-713E3C1RH1');
-</script>
-</body>
-</html>
+</main>`,
+};

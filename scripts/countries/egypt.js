@@ -1,57 +1,19 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Talk to Strangers in Egypt - Free Arabic Voice Chat | TalkLive</title>
-<meta name="description" content="Free voice and text chat with people in Egypt - Egyptian Arabic or English, no sign-up, no camera, with an Arabic interface. Umm Kulthum, the ahwa, and when Egypt is online in Cairo time." />
-<meta name="keywords" content="talk to strangers egypt, egyptian chat, arabic voice chat, chat with egyptians, random chat egypt, egypt voice chat, شات مصري" />
-<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
-<meta name="theme-color" content="#5a0f1b" />
-<meta name="author" content="TalkLive" />
-<link rel="canonical" href="https://talklive.app/countries/egypt" />
-<meta property="og:type" content="website" />
-<meta property="og:site_name" content="TalkLive" />
-<meta property="og:title" content="Talk to Strangers in Egypt - Free Arabic Voice Chat | TalkLive" />
-<meta property="og:description" content="Free voice and text chat with people in Egypt - Egyptian Arabic or English, no sign-up, no camera, with an Arabic interface. Umm Kulthum, the ahwa, and when Egypt is online in Cairo time." />
-<meta property="og:url" content="https://talklive.app/countries/egypt" />
-<meta property="og:image" content="https://talklive.app/og-image.png?v=2" />
-<meta property="og:image:width" content="1200" />
-<meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="Talk to Strangers in Egypt" />
-<meta property="og:locale" content="en_US" />
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Talk to Strangers in Egypt - Free Arabic Voice Chat | TalkLive" />
-<meta name="twitter:description" content="Free voice and text chat with people in Egypt - Egyptian Arabic or English, no sign-up, no camera, with an Arabic interface. Umm Kulthum, the ahwa, and when Egypt is online in Cairo time." />
-<meta name="twitter:image" content="https://talklive.app/og-image.png?v=2" />
-<meta name="twitter:image:alt" content="Talk to Strangers in Egypt" />
-<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-<link rel="apple-touch-icon" href="/favicon-192.png" />
-<link rel="manifest" href="/site.webmanifest" />
-<link rel="preload" href="/fonts/mag/playfair-display-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin />
-<link rel="preload" href="/fonts/mag/cormorant-garamond-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin />
-<link rel="stylesheet" href="/journal.css?v=20261005countries" />
-<style>
-.c-bar{display:flex;align-items:center;justify-content:space-between;gap:14px;max-width:1180px;margin:0 auto;padding:12px 20px;font:600 13px/1.2 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.02em}
-.c-bar a{text-decoration:none}
-.c-bar .c-brand{font-weight:700;letter-spacing:.06em}
-.c-bar nav{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
-.c-bar nav a{opacity:.8}.c-bar nav a:hover{opacity:1;text-decoration:underline}
-.c-bar .c-bar-talk{opacity:1;padding:7px 14px;border:1.5px solid currentColor;border-radius:999px}
-.c-ctas{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
-.c-ctas a{display:inline-flex;align-items:center;gap:8px;text-decoration:none}
-.c-faq details{border-top:1px solid var(--rule,rgba(0,0,0,.15));padding:14px 0}
-.c-faq summary{cursor:pointer;list-style:none}
-.c-faq summary::-webkit-details-marker{display:none}
-.c-faq summary::after{content:"+";float:right;margin-left:12px}
-.c-faq details[open] summary::after{content:"\2212"}
-.c-faq details p{margin:10px 0 0}
-.c-guides{max-width:1180px;margin:64px auto 0;padding:0 20px}
-.c-guides h2{font:600 12px/1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.16em;text-transform:uppercase;margin:0 0 12px;opacity:.75}
-.c-guides ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px 22px;font:500 15px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
-.c-guides a{text-decoration:none;border-bottom:1px solid currentColor}
-@media (max-width:640px){.c-bar{font-size:12px}.c-bar nav{gap:12px;flex-wrap:nowrap}.c-bar nav a:nth-child(1),.c-bar nav a:nth-child(2),.c-bar nav a:nth-child(4){display:none}}
-
+'use strict';
+// Egypt: "The First Thursday". Umm Kulthum's monthly concerts and the Cairo
+// coffeehouse, told as a programme in acts. Art-deco cinema poster: crimson,
+// gold sunburst, ivory. Playfair Display for display, Cormorant Garamond to
+// read.
+module.exports = {
+  slug: 'egypt',
+  name: 'Egypt',
+  date: '2026-10-05',
+  title: 'Talk to Strangers in Egypt - Free Arabic Voice Chat | TalkLive',
+  description: 'Free voice and text chat with people in Egypt - Egyptian Arabic or English, no sign-up, no camera, with an Arabic interface. Umm Kulthum, the ahwa, and when Egypt is online in Cairo time.',
+  keywords: 'talk to strangers egypt, egyptian chat, arabic voice chat, chat with egyptians, random chat egypt, egypt voice chat, شات مصري',
+  h1: 'Talk to Strangers in Egypt',
+  theme: '#5a0f1b',
+  preload: ['playfair-display-latin-700-normal', 'cormorant-garamond-latin-500-normal'],
+  css: `
 :root{--paper:#f8f0e3;--ink:#2a1414;--rule:#dcc8a8;--crim:#5a0f1b;--gold:#d9a441;--mast:#f8f0e3}
 body{font-family:"Cormorant Garamond",Georgia,serif;background:var(--paper)}
 .c-bar{color:var(--mast);background:var(--crim);max-width:none}
@@ -100,27 +62,23 @@ body{font-family:"Cormorant Garamond",Georgia,serif;background:var(--paper)}
 .eg-end h2{font:700 clamp(36px,6vw,66px)/1 "Playfair Display",serif;margin:0 0 12px}
 .eg-end p{font:500 21px/1.5 "Cormorant Garamond",serif;margin:0 auto 26px;max-width:560px;color:#f2e3cb}
 @media (max-width:760px){.eg-bill,.eg-phr{grid-template-columns:1fr}.eg-bill div{border-right:0;border-bottom:1px solid var(--crim)}}
-</style>
-<script defer src="/pwa.js?v=20260908pwa"></script>
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://talklive.app/#organization","name":"TalkLive","url":"https://talklive.app/","logo":{"@type":"ImageObject","url":"https://talklive.app/favicon-192.png","width":192,"height":192}},{"@type":"WebPage","@id":"https://talklive.app/countries/egypt#webpage","url":"https://talklive.app/countries/egypt","name":"Talk to Strangers in Egypt - Free Arabic Voice Chat | TalkLive","description":"Free voice and text chat with people in Egypt - Egyptian Arabic or English, no sign-up, no camera, with an Arabic interface. Umm Kulthum, the ahwa, and when Egypt is online in Cairo time.","inLanguage":"en","datePublished":"2026-10-05","dateModified":"2026-10-05","wordCount":1301,"about":{"@type":"Country","name":"Egypt"},"isPartOf":{"@id":"https://talklive.app/#website"},"publisher":{"@id":"https://talklive.app/#organization"},"primaryImageOfPage":{"@type":"ImageObject","url":"https://talklive.app/og-image.png?v=2","width":1200,"height":630}},{"@type":"BreadcrumbList","@id":"https://talklive.app/countries/egypt#breadcrumb","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://talklive.app/"},{"@type":"ListItem","position":2,"name":"Countries","item":"https://talklive.app/country-chat-guide"},{"@type":"ListItem","position":3,"name":"Egypt","item":"https://talklive.app/countries/egypt"}]},{"@type":"FAQPage","@id":"https://talklive.app/countries/egypt#faq","mainEntity":[{"@type":"Question","name":"Can I voice chat in Arabic on TalkLive?","acceptedAnswer":{"@type":"Answer","text":"Yes. Speak whichever language you and your match share, and use the Arabic interface at talklive.app/ar/ if you prefer."}},{"@type":"Question","name":"Is TalkLive free in Egypt?","acceptedAnswer":{"@type":"Answer","text":"Yes. Voice and text chat are free, need no account, and preferring Egypt in the country filter is free."}},{"@type":"Question","name":"When is Egypt busiest on TalkLive?","acceptedAnswer":{"@type":"Answer","text":"In the Cairo evening: about 6 pm to midnight while summer time is in force, and 5 pm to 11 pm in winter. The quietest hours are the early morning."}},{"@type":"Question","name":"Can I practise Egyptian Arabic here?","acceptedAnswer":{"@type":"Answer","text":"Yes. Prefer Egypt in Filters, tell your match you are learning, and keep it relaxed. Voice is ideal, because the dialect is rarely written formally."}},{"@type":"Question","name":"Will I always be matched with someone in Egypt?","acceptedAnswer":{"@type":"Answer","text":"Not always. A country preference steers matching, but it depends on who is searching at that moment."}},{"@type":"Question","name":"Does anyone see my phone number?","acceptedAnswer":{"@type":"Answer","text":"No. Calls run in the browser over the internet; no number is exchanged and there is no video."}}]}]}</script>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978"
-     crossorigin="anonymous"></script>
-<script defer src="/ads.js?v=20260923adsense2"></script>
-</head>
-<body class="c-page c-egypt">
-<a class="skip" href="#story">Skip to the guide</a>
-<header class="c-bar">
-  <a class="c-brand" href="/">TalkLive</a>
-  <nav aria-label="Site"><a href="/random-voice-chat">Voice chat</a><a href="/random-text-chat">Text chat</a><a href="/country-chat-guide">Countries</a><a href="/safety">Safety</a><a class="c-bar-talk" href="/?utm_source=seo">Talk now</a></nav>
-</header>
-<main id="story">
+`,
+  faq: [
+    { q: 'Can I voice chat in Arabic on TalkLive?', a: 'Yes. Speak whichever language you and your match share, and use the Arabic interface at talklive.app/ar/ if you prefer.' },
+    { q: 'Is TalkLive free in Egypt?', a: 'Yes. Voice and text chat are free, need no account, and preferring Egypt in the country filter is free.' },
+    { q: 'When is Egypt busiest on TalkLive?', a: 'In the Cairo evening: about 6 pm to midnight while summer time is in force, and 5 pm to 11 pm in winter. The quietest hours are the early morning.' },
+    { q: 'Can I practise Egyptian Arabic here?', a: 'Yes. Prefer Egypt in Filters, tell your match you are learning, and keep it relaxed. Voice is ideal, because the dialect is rarely written formally.' },
+    { q: 'Will I always be matched with someone in Egypt?', a: 'Not always. A country preference steers matching, but it depends on who is searching at that moment.' },
+    { q: 'Does anyone see my phone number?', a: 'No. Calls run in the browser over the internet; no number is exchanged and there is no video.' },
+  ],
+  body: (c) => `<main id="story">
 <section class="eg-poster">
   <div class="eg-record" aria-hidden="true">Thursday</div>
   <span class="eg-presents">TalkLive presents</span>
   <h1>Talk to strangers in <i>Egypt</i></h1>
   <p class="eg-ar" lang="ar" dir="rtl">اتكلم مع ناس جديدة</p>
   <p class="eg-dek">Egyptian Arabic is the voice the whole Arab world grew up hearing - in the cinema, on the radio, in the songs of Umm Kulthum. That makes Egypt one of the easiest places on earth to start an Arabic conversation. Start one tonight, by voice or by text, free, with no account, no number and no camera.</p>
-  <div class="c-ctas"><a class="c-talk" href="/?utm_source=seo">Tap to Talk</a><a class="c-chat" href="/chat?utm_source=seo">Tap to Chat</a></div>
+  ${c.ctas('Tap to Talk', 'Tap to Chat')}
 </section>
 
 <div class="eg-prog">
@@ -175,32 +133,12 @@ body{font-family:"Cormorant Garamond",Georgia,serif;background:var(--paper)}
 </div>
 
 <p class="eg-inter">Intermission</p>
-<div class="ad-card"><span class="ad-card-label">Advertisement</span><div data-ad="native"></div></div>
-<section class="c-faq" aria-labelledby="faq-h"><h2 id="faq-h">Questions from the audience</h2><details><summary>Can I voice chat in Arabic on TalkLive?</summary><p>Yes. Speak whichever language you and your match share, and use the Arabic interface at talklive.app/ar/ if you prefer.</p></details><details><summary>Is TalkLive free in Egypt?</summary><p>Yes. Voice and text chat are free, need no account, and preferring Egypt in the country filter is free.</p></details><details><summary>When is Egypt busiest on TalkLive?</summary><p>In the Cairo evening: about 6 pm to midnight while summer time is in force, and 5 pm to 11 pm in winter. The quietest hours are the early morning.</p></details><details><summary>Can I practise Egyptian Arabic here?</summary><p>Yes. Prefer Egypt in Filters, tell your match you are learning, and keep it relaxed. Voice is ideal, because the dialect is rarely written formally.</p></details><details><summary>Will I always be matched with someone in Egypt?</summary><p>Not always. A country preference steers matching, but it depends on who is searching at that moment.</p></details><details><summary>Does anyone see my phone number?</summary><p>No. Calls run in the browser over the internet; no number is exchanged and there is no video.</p></details></section>
+${c.ad()}
+${c.faq('Questions from the audience')}
 <section class="eg-end">
   <h2>Tonight's programme: you</h2>
   <p>Cairo, Alexandria, Mansoura, Aswan - someone is pulling up a chair. Yalla.</p>
-  <div class="c-ctas"><a class="c-talk" href="/?utm_source=seo">Tap to Talk</a><a class="c-chat" href="/chat?utm_source=seo">Tap to Chat</a></div>
+  ${c.ctas('Tap to Talk', 'Tap to Chat')}
 </section>
-</main>
-<aside class="c-guides" aria-label="Other country guides"><h2>Other country guides</h2><ul><li><a href="/countries/india">India</a></li><li><a href="/countries/pakistan">Pakistan</a></li><li><a href="/countries/bangladesh">Bangladesh</a></li><li><a href="/countries/united-states">United States</a></li><li><a href="/countries/united-kingdom">United Kingdom</a></li><li><a href="/countries/nigeria">Nigeria</a></li><li><a href="/countries/indonesia">Indonesia</a></li><li><a href="/country-chat-guide">How country matching works</a></li></ul></aside>
-<footer class="j-foot">
-  <nav aria-label="Legal"><a href="/about">About</a><a href="/contact">Contact</a><a href="/privacy">Privacy Policy</a><a href="/terms">Terms</a><a href="/community-guidelines">Community Guidelines</a><a href="/safety">Safety</a><a href="/blog/">Journal</a><a href="/">TalkLive home</a></nav>
-  <p>&copy; 2026 TalkLive. Free one-to-one voice and text chat for adults 18+. Nobody's identity, age or location is verified. Corrections: info@talklive.app</p>
-</footer>
-<!-- Google tag (gtag.js) - see scripts/migrate-analytics.js -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-713E3C1RH1"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('consent', 'default', {
-    ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: 'denied',
-    region: ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'IS', 'LI', 'NO', 'GB', 'CH'],
-    wait_for_update: 500
-  });
-  gtag('set', 'ads_data_redaction', true);
-  gtag('js', new Date());
-  gtag('config', 'G-713E3C1RH1');
-</script>
-</body>
-</html>
+</main>`,
+};

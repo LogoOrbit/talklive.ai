@@ -18,10 +18,18 @@ const path = require('path');
 const SITE = 'https://talklive.app';
 const PUBLIC = path.join(__dirname, '..', '..', 'public');
 const OG_IMAGE = `${SITE}/og-image.png?v=2`;
-const CSS_VERSION = '20261002journal';
+const CSS_VERSION = '20261005countries';
 
 // family -> [ [weight, style, file] ]
 const FONTS = {
+  'Abril Fatface': [[400, 'normal', 'abril-fatface-latin-400-normal']],
+  'Anton': [[400, 'normal', 'anton-latin-400-normal']],
+  'Bebas Neue': [[400, 'normal', 'bebas-neue-latin-400-normal']],
+  'Big Shoulders Display': [[600, 'normal', 'big-shoulders-display-latin-600-normal'], [800, 'normal', 'big-shoulders-display-latin-800-normal']],
+  'Bricolage Grotesque': [[400, 'normal', 'bricolage-grotesque-latin-400-normal'], [700, 'normal', 'bricolage-grotesque-latin-700-normal']],
+  'Courier Prime': [[400, 'normal', 'courier-prime-latin-400-normal'], [700, 'normal', 'courier-prime-latin-700-normal']],
+  'Instrument Serif': [[400, 'normal', 'instrument-serif-latin-400-normal'], [400, 'italic', 'instrument-serif-latin-400-italic']],
+  'Nunito': [[400, 'normal', 'nunito-latin-400-normal'], [800, 'normal', 'nunito-latin-800-normal']],
   'Archivo Black': [[400, 'normal', 'archivo-black-latin-400-normal']],
   'Archivo': [[400, 'normal', 'archivo-latin-400-normal'], [600, 'normal', 'archivo-latin-600-normal']],
   'Caveat': [[500, 'normal', 'caveat-latin-500-normal']],
