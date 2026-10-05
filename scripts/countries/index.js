@@ -58,9 +58,9 @@ function cta(href, cls, label) {
 const ctx = {
   esc: S.esc,
   ad: S.ad,
-  talk: (label = 'Tap to Talk', cls = 'c-talk') => cta('/', cls, label),
-  chat: (label = 'Tap to Chat', cls = 'c-chat') => cta('/chat', cls, label),
-  ctas: (talkLabel, chatLabel) => `<div class="c-ctas">${cta('/', 'c-talk', talkLabel)}${cta('/chat', 'c-chat', chatLabel)}</div>`,
+  talk: (label) => S.ctaTalk('seo', label),
+  chat: (label) => S.ctaChat('seo', label),
+  ctas: (talkLabel, chatLabel) => `<div class="c-ctas tl-go-row">${S.ctaTalk('seo', talkLabel)}${S.ctaChat('seo', chatLabel)}</div>`,
 };
 
 function faqHtml(c, heading) {

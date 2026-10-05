@@ -77,7 +77,7 @@ body{font-family:"Literata",Georgia,serif;background:var(--paper);color:var(--in
   <div class="vc-hero-grid">
     <div>
       <p class="vc-dek">Press one button and talk, voice to voice, with another adult somewhere in the world. No camera, no typing, no account. It sounds old-fashioned. It turns out to be the format that carries the most of a person, and this page makes the case.</p>
-      ${c.ctas('Start a voice chat', 'Prefer to type?')}
+      ${c.ctas('Start a voice chat', 'Text someone now')}
     </div>
     <ul class="vc-specs">
       <li><span>Format</span><span>Live voice, one to one</span></li>

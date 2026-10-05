@@ -91,7 +91,7 @@ body{font-family:"IBM Plex Serif",Georgia,serif;background:var(--paper)}
       <span class="in-kicker">Platform 1 &middot; All of India &middot; Departing now</span>
       <h1>Talk to strangers in <span>India</span></h1>
       <p class="in-dek">Everybody who has taken an overnight train in India knows how this goes. By the time the lights are dimmed, the family on the berth opposite knows where you are going, what you do, and whether you are married yet. TalkLive is that compartment, without the train: one tap, one stranger, in Hindi, English or both.</p>
-      ${c.ctas('Tap to Talk - voice', 'Tap to Chat - text')}
+      ${c.ctas('Tap to Talk', 'Tap to Chat')}
     </div>
     <div class="in-flap" aria-label="When India is online">
       <div class="in-flap-h"><span>TIME IST</span><span>STATUS</span><span>WAIT</span></div>

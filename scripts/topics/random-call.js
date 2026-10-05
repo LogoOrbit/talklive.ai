@@ -75,7 +75,7 @@ body{font-family:"Inter",system-ui,sans-serif;background:var(--paper)}
     <div>
       <h1>Random <span>call</span></h1>
       <p class="rc-dek">A phone call where you do not choose who picks up. It runs in your browser over Wi-Fi or mobile data, so there is no phone number to share, no calling credit to spend and no app to install. One tap, and somewhere in the world, another adult's line rings.</p>
-      ${c.ctas('Place a random call', 'Text instead')}
+      ${c.ctas('Place a random call', 'Text someone now')}
     </div>
     <div class="rc-board" aria-hidden="true">
       <div class="rc-jacks">${'<i></i>'.repeat(24)}</div>

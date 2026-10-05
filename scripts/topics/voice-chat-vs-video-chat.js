@@ -67,8 +67,8 @@ body{font-family:"Source Serif 4",Georgia,serif;background:var(--paper)}
 .c-faq summary{font:600 18px/1.4 "Source Serif 4",serif}
 .c-faq p{font-size:17px;line-height:1.65}
 .vv-end{display:grid;grid-template-columns:1fr 1fr;margin-top:56px}
-.vv-end div{padding:46px 26px;color:#fff;text-align:center}
-.vv-end div:first-child{background:var(--blue)}.vv-end div:last-child{background:var(--ink)}
+.vv-end>div{padding:46px 26px;color:#fff;text-align:center}
+.vv-end>div:first-child{background:var(--blue)}.vv-end>div:last-child{background:var(--ink)}
 .vv-end .c-ctas{justify-content:center}
 .vv-end h2{font:800 clamp(32px,5vw,60px)/.95 "Big Shoulders Display",sans-serif;text-transform:uppercase;margin:0 0 16px}
 .vv-end .c-talk{background:#fff;color:var(--blue)}.vv-end .c-chat{background:var(--gold);color:var(--ink)}
@@ -94,7 +94,7 @@ body{font-family:"Source Serif 4",Georgia,serif;background:var(--paper)}
 <section class="vv-intro">
   <h1>Voice chat vs video chat</h1>
   <p>Video looks like the richer format, and with people you know it often is. With strangers, the fight goes the other way. Here it is round by round, scored fairly - video wins some - followed by why TalkLive chose voice and text and left the camera out entirely.</p>
-  ${c.ctas('Try voice chat', 'Or try text')}
+  ${c.ctas('Try voice chat', 'Text someone now')}
 </section>
 
 <section class="vv-card">

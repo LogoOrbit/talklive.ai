@@ -21,8 +21,8 @@ const path = require('path');
 const SITE = 'https://talklive.app';
 const PUBLIC = path.join(__dirname, '..', '..', 'public');
 const OG_IMAGE = `${SITE}/og-image.png?v=2`;
-const CSS_VERSION = '20261006themed';
-const CTA_JS_VERSION = '20261006nolive';
+const CSS_VERSION = '20261006callbtn';
+const CTA_JS_VERSION = '20261006callbtn';
 
 // family -> [ [weight, style, file] ]
 const FONTS = {
@@ -94,30 +94,37 @@ a{color:inherit}
 .tl-go h2.tl-go-h{margin:0 0 6px;font-family:inherit;font-weight:700;font-size:clamp(22px,3vw,28px);line-height:1.2;color:inherit;letter-spacing:-.005em}
 .tl-go p.tl-go-sub{margin:0 auto 16px;max-width:560px;font-size:16px;line-height:1.5;opacity:.78}
 .tl-go .tl-go-row{display:flex;gap:12px;flex-wrap:wrap}
-.tl-go a.tl-go-btn,.tl-dock a.tl-go-btn{position:relative;flex:1 1 220px;display:flex;align-items:center;justify-content:center;gap:12px;min-height:66px;padding:12px 22px;border-radius:999px;border:0;text-decoration:none!important;font:700 20px/1.1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:-.005em;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;transition:transform .12s ease,box-shadow .2s ease,filter .2s ease}
-.tl-go-btn svg{width:26px;height:26px;flex:none}
-.tl-go-btn small{display:block;font:500 12px/1.2 system-ui,-apple-system,sans-serif;opacity:.85;margin-top:3px}
+a.tl-go-btn{position:relative;flex:1 1 220px;display:flex!important;align-items:center;justify-content:center;gap:12px;min-height:66px!important;padding:12px 22px!important;margin:0;border-radius:999px!important;border:0!important;outline:0;text-decoration:none!important;text-transform:none!important;font:700 20px/1.1 system-ui,-apple-system,"Segoe UI",sans-serif!important;letter-spacing:-.005em!important;opacity:1!important;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;transition:transform .12s ease,box-shadow .2s ease,filter .2s ease}
+.tl-go-btn svg{width:26px;height:26px;flex:none;overflow:visible}
+.tl-go-btn small{display:block;font:500 12px/1.2 system-ui,-apple-system,sans-serif;opacity:.85;margin-top:3px;letter-spacing:0;text-transform:none}
 .tl-go-btn .tl-go-txt{text-align:left}
 .tl-go-btn .tl-go-arr{margin-left:auto;transition:transform .2s ease}
-.tl-go-talk{background:var(--cta-talk,#1f8a4c);color:var(--cta-talk-ink,#fff)!important;box-shadow:0 8px 22px -10px var(--cta-talk,#1f8a4c)}
-.tl-go-chat{background:var(--cta-chat,#2b2b2b);color:var(--cta-chat-ink,#fff)!important;box-shadow:0 8px 22px -10px var(--cta-chat,#2b2b2b)}
+a.tl-go-talk{background:var(--cta-talk,#1f8a4c)!important;color:var(--cta-talk-ink,#fff)!important;box-shadow:0 8px 22px -10px var(--cta-talk,#1f8a4c)!important}
+a.tl-go-chat{background:var(--cta-chat,#2b2b2b)!important;color:var(--cta-chat-ink,#fff)!important;box-shadow:0 8px 22px -10px var(--cta-chat,#2b2b2b)!important}
 .tl-go-talk::before{content:"";position:absolute;inset:0;border-radius:inherit;animation:tlPulse 2.2s infinite;pointer-events:none}
-.tl-go-btn:hover{filter:brightness(1.07);transform:translateY(-2px)}
+.tl-go-talk svg{transform-origin:50% 50%;animation:tlRing 2.6s infinite}
+.tl-go-chat .tl-dot{fill:var(--cta-chat,#2b2b2b);animation:tlType 1.3s infinite}
+.tl-go-chat .tl-dot:nth-of-type(2){animation-delay:.18s}.tl-go-chat .tl-dot:nth-of-type(3){animation-delay:.36s}
+a.tl-go-btn:hover{filter:brightness(1.07);transform:translateY(-2px)}
 .tl-go-btn:hover .tl-go-arr{transform:translateX(4px)}
-.tl-go-btn:active,.tl-go-btn.is-press{transform:scale(.96);filter:brightness(.95)}
-.tl-go-btn:focus-visible{outline:3px solid currentColor;outline-offset:3px}
+a.tl-go-btn:active,a.tl-go-btn.is-press{transform:scale(.96);filter:brightness(.95)}
+a.tl-go-btn:focus-visible{outline:3px solid currentColor;outline-offset:3px}
+.c-ctas.tl-go-row{display:flex!important;flex-direction:row!important;flex-wrap:wrap!important;align-items:stretch!important;gap:12px;width:100%;max-width:640px;padding:0!important;background:none!important;border:0!important;box-shadow:none!important}
+.c-ctas.tl-go-row a.tl-go-btn{flex:1 1 220px!important}
 .tl-go p.tl-go-fine{margin:12px 0 0;font:500 12.5px/1.4 system-ui,-apple-system,sans-serif;opacity:.6}
 .tl-dock{position:fixed;left:0;right:0;bottom:0;z-index:60;display:flex;gap:10px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:var(--paper,#fff);border-top:1px solid var(--rule,rgba(0,0,0,.12));box-shadow:0 -8px 24px -18px rgba(0,0,0,.35);transform:translateY(115%);transition:transform .28s cubic-bezier(.2,.8,.2,1)}
 .tl-dock.is-on{transform:none}
-.tl-dock a.tl-go-btn{flex:1 1 0;min-width:0;min-height:52px;padding:8px 12px;font-size:17px;gap:8px}
+.tl-dock a.tl-go-btn{flex:1 1 0;min-width:0;min-height:52px!important;padding:8px 12px!important;font-size:17px!important;gap:8px}
 .tl-dock .tl-go-btn svg{width:22px;height:22px}
 .tl-dock .tl-go-btn small,.tl-dock .tl-go-arr{display:none}
 .tl-dock .tl-go-txt{white-space:nowrap}
 body.tl-has-dock{padding-bottom:80px}
 @media (min-width:900px){.tl-dock{left:50%;right:auto;bottom:18px;width:520px;transform:translate(-50%,140%);border-radius:999px;border:1px solid var(--rule,rgba(0,0,0,.12));padding:8px;box-shadow:0 14px 36px -16px rgba(0,0,0,.4)}.tl-dock.is-on{transform:translate(-50%,0)}body.tl-has-dock{padding-bottom:0}}
-@media (max-width:480px){.tl-go{margin:26px auto;padding:0 16px}.tl-go-btn{flex-basis:100%;min-height:62px;font-size:19px}}
+@media (max-width:480px){.tl-go{margin:26px auto;padding:0 16px}.tl-go a.tl-go-btn,.c-ctas a.tl-go-btn{flex-basis:100%;min-height:62px!important;font-size:19px!important}}
 @keyframes tlPulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--cta-talk,#1f8a4c) 55%,transparent)}70%{box-shadow:0 0 0 14px color-mix(in srgb,var(--cta-talk,#1f8a4c) 0%,transparent)}100%{box-shadow:0 0 0 0 transparent}}
-@media (prefers-reduced-motion:reduce){.tl-go-talk::before{animation:none}.tl-go-btn,.tl-dock{transition:none}}
+@keyframes tlRing{0%,62%,100%{transform:rotate(0)}66%{transform:rotate(-16deg)}70%{transform:rotate(14deg)}74%{transform:rotate(-12deg)}78%{transform:rotate(10deg)}82%{transform:rotate(-4deg)}86%{transform:rotate(0)}}
+@keyframes tlType{0%,60%,100%{opacity:.35;transform:translateY(0)}30%{opacity:1;transform:translateY(-1.2px)}}
+@media (prefers-reduced-motion:reduce){.tl-go-talk::before,.tl-go-talk svg,.tl-go-chat .tl-dot{animation:none}.tl-go-btn,.tl-dock{transition:none}}
 `;
 }
 
@@ -227,7 +234,9 @@ function ad() {
 }
 
 // Per-page button colours: Call is always a green that belongs to the page's
-// palette, Chat takes the page's own accent. [talk, talkInk, chat, chatInk].
+// palette, Chat takes the page's own accent. [talk, talkInk, chat, chatInk,
+// optional CSS re-colouring the buttons inside a section whose background
+// would swallow them].
 const CTA_THEMES = {
   // Journal
   'blog': ['#2f6b3f', '#fff', '#8a2b1e', '#fff'],
@@ -251,37 +260,37 @@ const CTA_THEMES = {
   'languages': ['#2a7f5f', '#fff', '#c8553d', '#fff'],
   // Country guides
   'bangladesh': ['#006a4e', '#fff', '#e0293c', '#fff'],
-  'egypt': ['#2f7d4f', '#fff', '#5a0f1b', '#f8f0e3'],
-  'india': ['#1f7a4a', '#fff', '#0b1320', '#ffb200'],
-  'indonesia': ['#2f8a5a', '#fff', '#1f3a5f', '#fff'],
+  'egypt': ['#2f7d4f', '#fff', '#d9a441', '#5a0f1b'],
+  'india': ['#1f7a4a', '#fff', '#ffb200', '#0b1320'],
+  'indonesia': ['#2f8a5a', '#fff', '#e46b4c', '#fff'],
   'nigeria': ['#008751', '#fff', '#111', '#ffcc00'],
   'pakistan': ['#3cc77e', '#0a241d', '#e7b54a', '#0a241d'],
-  'united-kingdom': ['#2b7a52', '#fff', '#10263b', '#fff'],
-  'united-states': ['#1f8a4c', '#fff', '#1d3d8f', '#fff'],
+  'united-kingdom': ['#2b7a52', '#fff', '#10263b', '#fff', '.uk-fc,.uk-end-in{--cta-chat:#e7edf0;--cta-chat-ink:#10263b}'],
+  'united-states': ['#1f8a4c', '#fff', '#1d3d8f', '#fff', '.us-end{--cta-chat:#fff;--cta-chat-ink:#1d3d8f}'],
   // Topic guides
   'anonymous-chat': ['#2f6b3f', '#fff', '#b3261e', '#fff'],
   'country-chat-guide': ['#1f8a4c', '#fff', '#1a1a1a', '#f5f3ee'],
   'how-it-works': ['#3ddc84', '#06210f', '#ffd166', '#123a6b'],
   'language-chat-guide': ['#1f8a4c', '#fff', '#1f1b16', '#fbf7ef'],
-  'language-exchange': ['#1d7a55', '#fff', '#f08a24', '#1d2423'],
+  'language-exchange': ['#1d7a55', '#fff', '#f08a24', '#1d2423', '.lx-end>div:first-child{--cta-talk:#3ee08f;--cta-talk-ink:#06231a}.lx-end>div:last-child{--cta-chat:#1d2423;--cta-chat-ink:#fff}'],
   'late-night-chat': ['#4fd68b', '#07091a', '#9a8cf0', '#07091a'],
   'make-friends-online': ['#2f9a5a', '#fff', '#ef6a4c', '#fff'],
-  'omegle-alternative': ['#1a7f4b', '#fff', '#1f6feb', '#fff'],
+  'omegle-alternative': ['#1a7f4b', '#fff', '#1f6feb', '#fff', '.om-end-in{--cta-chat:#fff;--cta-chat-ink:#1f6feb}'],
   'practice-english-speaking': ['#2e8b57', '#fff', '#1d4fbf', '#fff'],
   'random-call': ['#3f8a5a', '#fff', '#c8372d', '#fff'],
   'random-text-chat': ['#39ff88', '#0a0f0b', '#ffcf5c', '#0a0f0b'],
   'random-voice-chat': ['#3ee08f', '#0d1b2e', '#e8eef6', '#0d1b2e'],
   'resources': ['#3f7a4a', '#fff', '#6b4a2b', '#fff'],
-  'safety': ['#0a7d4f', '#fff', '#14231c', '#fff'],
+  'safety': ['#0a7d4f', '#fff', '#14231c', '#fff', '.sf-end-in{--cta-chat:#fff;--cta-chat-ink:#14231c}'],
   'talk-to-someone': ['#3f8a5f', '#fff', '#6b4c7a', '#fff'],
-  'talk-to-strangers': ['#c6f432', '#111', '#111', '#c6f432'],
+  'talk-to-strangers': ['#c6f432', '#111', '#111', '#c6f432', '.ts-hero,.ts-end{--cta-chat:#f6f5f0;--cta-chat-ink:#111}'],
   'voice-chat-vs-video-chat': ['#1f8a4c', '#fff', '#2457c5', '#fff'],
 };
 
 function ctaVars(slug) {
   const t = CTA_THEMES[slug];
   if (!t) return '';
-  return `:root{--cta-talk:${t[0]};--cta-talk-ink:${t[1]};--cta-chat:${t[2]};--cta-chat-ink:${t[3]}}`;
+  return `:root{--cta-talk:${t[0]};--cta-talk-ink:${t[1]};--cta-chat:${t[2]};--cta-chat-ink:${t[3]}}${t[4] || ''}`;
 }
 
 // --- Start talking: the call-to-action component -----------------------------
@@ -290,13 +299,23 @@ function ctaVars(slug) {
 // nofollow because they are actions, not pages - every query-string variant of
 // / that Google crawls is one more duplicate filed against the real homepage.
 const PHONE_SVG = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>';
-const CHAT_SVG = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM7 9.5h10a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2zm0-3.5h10a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2zm0 7h6a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2z"/></svg>';
+const CHAT_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 3h16a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H9.5L5 21.6V18H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><circle class="tl-dot" cx="7.5" cy="10.5" r="1.6"/><circle class="tl-dot" cx="12" cy="10.5" r="1.6"/><circle class="tl-dot" cx="16.5" cy="10.5" r="1.6"/></svg>';
 const ARROW_SVG = '<svg class="tl-go-arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
+
+const TALK_SUB = 'Live voice call with a real person';
+const CHAT_SUB = 'Live text chat with a real person';
+
+function ctaTalk(src, label, sub) {
+  return `<a class="tl-go-btn tl-go-talk" href="/?talk=1&amp;utm_source=${src}" rel="nofollow" data-tl-go="talk">${PHONE_SVG}<span class="tl-go-txt">${esc(label || 'Tap to Talk')}<small>${esc(sub || TALK_SUB)}</small></span>${ARROW_SVG}</a>`;
+}
+
+function ctaChat(src, label, sub) {
+  return `<a class="tl-go-btn tl-go-chat" href="/chat?go=1&amp;utm_source=${src}" rel="nofollow" data-tl-go="chat">${CHAT_SVG}<span class="tl-go-txt">${esc(label || 'Tap to Chat')}<small>${esc(sub || CHAT_SUB)}</small></span>${ARROW_SVG}</a>`;
+}
 
 function ctaButtons(src, talk, chat) {
   const t = talk || {}, c = chat || {};
-  return `<a class="tl-go-btn tl-go-talk" href="/?talk=1&amp;utm_source=${src}" rel="nofollow" data-tl-go="talk">${PHONE_SVG}<span class="tl-go-txt">${esc(t.label || 'Tap to Talk')}<small>${esc(t.sub || 'Live voice call · no camera')}</small></span>${ARROW_SVG}</a>`
-    + `<a class="tl-go-btn tl-go-chat" href="/chat?go=1&amp;utm_source=${src}" rel="nofollow" data-tl-go="chat">${CHAT_SVG}<span class="tl-go-txt">${esc(c.label || 'Tap to Chat')}<small>${esc(c.sub || 'Text chat · no mic needed')}</small></span>${ARROW_SVG}</a>`;
+  return ctaTalk(src, t.label, t.sub) + ctaChat(src, c.label, c.sub);
 }
 
 // The block itself. `o.title` / `o.sub` are the page's own words for it;
@@ -342,4 +361,4 @@ function write(rel, html) {
   fs.writeFileSync(file, html);
 }
 
-module.exports = { SITE, PUBLIC, CSS_VERSION, ctaVars, CTA_THEMES, esc, words, page, ad, moreStories, write, journalCss, ctaHero, ctaDock, ctaButtons };
+module.exports = { SITE, PUBLIC, CSS_VERSION, ctaVars, CTA_THEMES, ctaTalk, ctaChat, esc, words, page, ad, moreStories, write, journalCss, ctaHero, ctaDock, ctaButtons };

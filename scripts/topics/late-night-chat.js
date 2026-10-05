@@ -82,7 +82,7 @@ body{font-family:"Inter",system-ui,sans-serif;background:var(--paper) linear-gra
   <div class="ln-in">
     <h1>Late night <i>chat</i></h1>
     <p class="ln-dek">It is two in the morning, the house is quiet, and you are wide awake. Somewhere in the world it is a perfectly reasonable hour for a conversation. TalkLive connects you with another adult for a free voice call or a silent text chat - no account, no camera, no waking anyone up.</p>
-    ${c.ctas('Talk to someone now', 'Text quietly')}
+    ${c.ctas('Talk to someone now', 'Text someone now')}
   </div>
 </section>
 

@@ -57,14 +57,14 @@ body{font-family:"Manrope",system-ui,sans-serif;background:var(--paper)}
 .c-faq summary{font:700 17px/1.4 "Manrope",sans-serif}
 .c-faq p{font-size:16.5px;line-height:1.65}
 .lx-end{display:grid;grid-template-columns:1fr 1fr;margin-top:56px}
-.lx-end div{padding:46px 30px;color:#fff}
-.lx-end div:first-child{background:var(--teal);text-align:right}
-.lx-end div:last-child{background:var(--tang)}
+.lx-end>div{padding:46px 30px;color:#fff}
+.lx-end>div:first-child{background:var(--teal);text-align:right}
+.lx-end>div:last-child{background:var(--tang)}
 .lx-end h2{font:700 clamp(30px,4.6vw,54px)/1 "Playfair Display",serif;margin:0 0 16px}
-.lx-end div:first-child .c-ctas{justify-content:flex-end}
+.lx-end>div:first-child .c-ctas{justify-content:flex-end}
 .lx-end .c-talk{background:#fff;color:var(--teal)}
 .lx-end .c-chat{background:#1d2423}
-@media (max-width:760px){.lx-hero,.lx-end{grid-template-columns:1fr}.lx-half{padding:40px 20px}.lx-half.a,.lx-end div:first-child{text-align:left}.lx-half.a p{margin-left:0}.lx-end div:first-child .c-ctas{justify-content:flex-start}.lx-rules{grid-template-columns:1fr}}
+@media (max-width:760px){.lx-hero,.lx-end{grid-template-columns:1fr}.lx-half{padding:40px 20px}.lx-half.a,.lx-end>div:first-child{text-align:left}.lx-half.a p{margin-left:0}.lx-end>div:first-child .c-ctas{justify-content:flex-start}.lx-rules{grid-template-columns:1fr}}
 `,
   faq: [
     { q: 'Is language exchange on TalkLive free?', a: 'Yes. Voice calls and text chats are free and need no account.' },
