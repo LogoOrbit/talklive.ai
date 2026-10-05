@@ -1049,6 +1049,7 @@ function day(ts = Date.now()) {
       const d = data.analytics.days[k];
       if (d && d.uniqueSet && Object.keys(d.uniqueSet).length) d.uniqueSet = {};
       if (d && d.peopleSet) delete d.peopleSet;
+      if (d && d.registeredSet) delete d.registeredSet;
     }
   }
   const d = data.analytics.days[key];
@@ -1214,6 +1215,20 @@ function recordFeature(name) {
   d.features[name] = (d.features[name] || 0) + 1;
   if (name === 'match') { d.matches += 1; hour().matches += 1; data.analytics.totals.matches += 1; }
   if (name === 'chat_message') { d.messages += 1; hour().messages += 1; data.analytics.totals.messages += 1; }
+  save();
+}
+
+// A signed-in account seen today, counted once per UTC day (the Daily log's
+// "registered" column). Only a hash of the username is kept, and only for the
+// last UNIQUE_SET_DAYS days.
+function recordSignedIn(usernameLower) {
+  if (!usernameLower) return;
+  const d = day();
+  const set = d.registeredSet || (d.registeredSet = {});
+  const h = crypto.createHash('sha256').update('talklive-rg:' + usernameLower).digest('hex').slice(0, 12);
+  if (set[h]) return;
+  set[h] = 1;
+  d.registered = (d.registered || 0) + 1;
   save();
 }
 
@@ -2906,6 +2921,7 @@ module.exports = {
   recordGameSession,
   GAME_FIELDS,
   recordPerson,
+  recordSignedIn,
   recordCallEnd,
   recordWait,
   recordQueueAbandon,

@@ -453,6 +453,9 @@ table.heat{min-width:480px}table.heat td.num{border-radius:6px}
 
 /* toolbar above tables */
 .tbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.dlrow{padding:10px 2px;border-top:1px solid var(--ring);display:grid;gap:3px;font-size:.86rem}
+.dlrow.today{background:color-mix(in srgb,var(--accent) 7%,transparent);border-radius:10px;padding:10px 8px}
+.dlrow .dls{font-size:.76rem}
 .tbar input,.tbar select{width:auto;min-width:170px;padding:8px 11px;font-size:.84rem}
 .tbar .grow{flex:1;min-width:170px}
 .seg{display:flex;gap:0;border:1px solid var(--ring);border-radius:10px;overflow-x:auto;max-width:100%}
@@ -808,7 +811,7 @@ function rankedBars(el,entries){
    "watch → act on people → understand users → money → the machine" instead of
    fourteen peers in a row. Shortcut keys 1-9 follow this order. */
 const GROUPS=[
-  ['Monitor',[['overview','Overview','📊'],['live','Live','🟢'],['activity','Activity','📅'],['traffic','Traffic','🔎'],['experience','Experience','🩺'],['ai','AI Agent','🤖']]],
+  ['Monitor',[['overview','Overview','📊'],['live','Live','🟢'],['activity','Activity','📅'],['daily','Daily log','📋'],['traffic','Traffic','🔎'],['experience','Experience','🩺'],['ai','AI Agent','🤖']]],
   ['Moderation',[['reports','Reports','🚩'],['chats','Chats','💬'],['voicenotes','Voice notes','🎙️'],['warnings','Warnings','⚠️'],['bans','Bans','⛔']]],
   ['People',[['audience','Audience','⚧'],['accounts','Accounts','👤'],['talktime','Talk time','⏱️'],['games','Games','🎮'],['feedback','Feedback','⭐']]],
   ['Business',[['revenue','Revenue','💎']]],
@@ -1026,6 +1029,7 @@ async function load(force){
   try{
     if(tab==='overview')await viewOverview();
     else if(tab==='activity')await viewActivity();
+    else if(tab==='daily')await viewDaily();
     else if(tab==='traffic')await viewTraffic();
     else if(tab==='ai')await viewBot();
     else if(tab==='audience')await viewAudience();
@@ -2473,6 +2477,40 @@ async function viewTalkTime(){
   $('#ttSort').onchange=(e)=>{ttSort=e.target.value;viewTalkTime();};
   $('#ttMin').onchange=(e)=>{ttMin=Number(e.target.value);viewTalkTime();};
   onFilterInput($('#ttQ'),(v)=>{ttQ=v;},()=>viewTalkTime().then(()=>keepFocus('#ttQ')));
+}
+
+/* ---------- daily log: one line per day, every counter we keep ---------- */
+let dlRange='all';
+async function viewDaily(){
+  const r=await vapi('daily');
+  const n=dlRange==='all'?Infinity:Number(dlRange);
+  const rows=(r.rows||[]).slice(0,n);
+  const sum=(k)=>rows.reduce((a,x)=>a+(x[k]||0),0);
+  const hrs=(s)=>{const h=s/3600;return h>=10?Math.round(h).toLocaleString():h.toFixed(1);};
+  const fmtDay=(k)=>new Date(k+'T12:00:00Z').toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',year:'numeric',timeZone:'UTC'});
+  const est=(x,k,v)=>x.est.includes(k)?`<span title="Estimated: this day predates the exact counter">~${v}</span>`:v;
+  const line=(x)=>`<div class="dlrow${x.day===r.today?' today':''}">
+    <div class="dld"><b>${fmtDay(x.day)}</b>${x.day===r.today?' <span class="pill good">today, so far</span>':''}</div>
+    <div class="dlv"><b>${num(x.visits)} visitors</b> <span class="muted">(${num(x.uniques)} unique · ${num(x.repeat)} repeated · ${est(x,'registered',num(x.registered))} registered)</span></div>
+    <div class="dlm">${est(x,'talk',hrs(x.talkSeconds))} hours talked · ${est(x,'calls',num(x.calls))} calls · ${num(x.messages)} messages · ${num(x.clicks)} clicks · ${est(x,'games',num(x.games))} games · ${num(x.voiceNotes)} voice notes</div>
+    <div class="dls muted">${num(x.people)} opened the app (${num(x.newPeople)} new · ${num(x.returningPeople)} returning) · ${num(x.signups)} sign-ups · peak ${num(x.peakOnline)} online</div>
+  </div>`;
+  $('#main').innerHTML=`<div class="grid tiles anim" style="margin-top:0">
+    <div class="tile"><div class="k">Visitors</div><div class="v" data-count="${sum('visits')}">0</div><div class="s">${num(sum('uniques'))} unique · ${num(sum('repeat'))} repeated</div></div>
+    <div class="tile"><div class="k">Hours talked</div><div class="v" style="font-size:1.4rem">${hrs(sum('talkSeconds'))}</div><div class="s">${num(sum('calls'))} calls</div></div>
+    <div class="tile"><div class="k">Messages</div><div class="v" data-count="${sum('messages')}">0</div><div class="s">${num(sum('voiceNotes'))} voice notes</div></div>
+    <div class="tile"><div class="k">Days logged</div><div class="v" data-count="${rows.length}">0</div><div class="s">${rows.length?fmtDay(rows[rows.length-1].day)+' →':'no data yet'}</div></div>
+  </div>
+  <div class="card anim"><h2>📋 Visitors each day <span class="sub">UTC days, newest first · ~ = estimated from older counters</span></h2>
+  <div class="tbar">
+    <div class="seg" id="dlRange">${[['7','7 days'],['30','30 days'],['90','90 days'],['all','All']].map(([k,l])=>`<button data-r="${k}" class="${dlRange===k?'on':''}">${l}</button>`).join('')}</div>
+    <span class="grow"></span>${exportLink('daily-log')}
+  </div>
+  ${rows.map(line).join('')||'<div class="muted">No days recorded yet.</div>'}
+  <div class="muted" style="font-size:.76rem;margin-top:10px">Visitors are human page views; unique = distinct visitors that day; repeated = the rest. Registered = signed-in accounts seen that day. Clicks = every tracked tap or action.</div>
+  </div>`;
+  animateCounters();
+  document.querySelectorAll('#dlRange button').forEach(b=>b.onclick=()=>{dlRange=b.dataset.r;viewDaily();});
 }
 
 /* ---------- games: who played, how long, who said no ---------- */

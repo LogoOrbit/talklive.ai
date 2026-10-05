@@ -1027,6 +1027,78 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
     res.json({ rows: talkTimeRows(String(req.query.range || 'all')) });
   });
 
+  // --- Daily log: one row per UTC day, from every counter the store keeps ------
+  // Newer counters (calls, games, signed-in users) didn't exist on the oldest
+  // days; those cells fall back to the closest older counter and are listed in
+  // `est` so the dashboard can mark them as estimates.
+  function dailyRows() {
+    const days = store.data.analytics.days || {};
+    // Talk time per day from the per-person records (last 30 days). Each call
+    // is recorded once per side, so the sum is halved.
+    const talkByDay = {};
+    for (const rec of Object.values(store.data.talkTime || {})) {
+      for (const [k, d] of Object.entries(rec.days || {})) talkByDay[k] = (talkByDay[k] || 0) + (d.s || 0) / 2;
+    }
+    // Every day from the first record to today, so a day with no traffic shows
+    // as a zero row instead of silently missing from the list.
+    const keys = [];
+    const first = Object.keys(days).sort()[0];
+    for (let t = Date.now(); first && store.dayKey(t) >= first; t -= 86400000) keys.push(store.dayKey(t));
+    const rows = [];
+    for (const key of keys) {
+      const d = days[key] || {};
+      const f = d.features || {};
+      const est = [];
+      const visits = d.visits || 0;
+      const uniques = Math.min(d.uniques || 0, visits);
+      const life = (d.people && d.people.lifecycle) || {};
+      let registered = d.registered;
+      if (registered === undefined) {
+        registered = (f.login || 0) + (f.google_signin || 0) + (f.signup || 0);
+        if (registered) est.push('registered');
+      }
+      let calls = d.calls ? d.calls.n : undefined;
+      if (calls === undefined) {
+        calls = (f.conversation_real || 0) + (f.conversation_brief || 0) || (d.matches || 0) + (f.chat_match || 0);
+        if (calls) est.push('calls');
+      }
+      let talkSeconds = d.calls ? d.calls.s : undefined;
+      if (talkSeconds === undefined) {
+        talkSeconds = Math.round(talkByDay[key] || 0);
+        if (talkSeconds) est.push('talk');
+      }
+      let games = d.games ? d.games.sess : undefined;
+      if (games === undefined) {
+        games = f.mini_game || 0;
+        if (games) est.push('games');
+      }
+      rows.push({
+        day: key,
+        visits,
+        uniques,
+        repeat: visits - uniques,
+        registered,
+        people: (d.people && d.people.n) || 0,
+        newPeople: life.new || 0,
+        returningPeople: (life['1-7d'] || 0) + (life['8-30d'] || 0) + (life['30d+'] || 0),
+        talkSeconds,
+        calls,
+        messages: d.messages || 0,
+        clicks: Object.values(f).reduce((a, v) => a + (v || 0), 0),
+        games,
+        voiceNotes: f.chat_voice || 0,
+        signups: d.newAccounts || 0,
+        peakOnline: d.peakOnline || 0,
+        est,
+      });
+    }
+    return rows;
+  }
+
+  router.get('/api/daily', (req, res) => {
+    res.json({ rows: dailyRows(), today: store.dayKey() });
+  });
+
   // --- Mini games: who played, for how long, and who turned invites down ------
   const GAME_NAMES = { ttt: 'Tic Tac Toe', dab: 'Dots & Boxes' };
   function rangeDays(range) {
@@ -1390,6 +1462,9 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
     } else if (kind === 'talktime') {
       csv = toCsv(['username', 'account', 'client_id', 'country', 'talk_seconds', 'conversations', 'avg_seconds', 'longest_seconds', 'last_talked'],
         talkTimeRows(String(req.query.range || 'all')).map((r) => [r.username, r.account || '', r.clientId, r.country, r.seconds, r.calls, r.avg, r.longest, isoOr(r.lastAt)]));
+    } else if (kind === 'daily-log') {
+      csv = toCsv(['day_utc', 'visits', 'unique_visitors', 'repeat_visits', 'registered_users', 'app_people', 'new_people', 'returning_people', 'talk_seconds', 'calls', 'messages', 'clicks', 'games', 'voice_notes', 'signups', 'peak_online', 'estimated'],
+        dailyRows().map((r) => [r.day, r.visits, r.uniques, r.repeat, r.registered, r.people, r.newPeople, r.returningPeople, r.talkSeconds, r.calls, r.messages, r.clicks, r.games, r.voiceNotes, r.signups, r.peakOnline, r.est.join(' ')]));
     } else if (kind === 'games') {
       csv = toCsv(['username', 'account', 'client_id', 'country', 'play_seconds', 'sessions', 'rounds', 'wins', 'losses', 'draws', 'win_rate', 'invites_sent', 'sent_accepted', 'invites_received', 'accepted', 'declined', 'ignored', 'withdrawn', 'favorite_game', 'last_played'],
         gameRows(String(req.query.range || 'all')).map((r) => [r.username, r.account || '', r.clientId, r.country, r.seconds, r.sessions, r.rounds, r.wins, r.losses, r.draws, r.winRate === null ? '' : r.winRate, r.invitesSent, r.sentAccepted, r.invitesReceived, r.accepted, r.declined, r.ignored, r.withdrawn, r.favorite, isoOr(r.lastAt)]));

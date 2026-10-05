@@ -1602,6 +1602,12 @@ function clearWaitFallbackTimer(socketId) {
 // across restarts and deploys. socketAuth stays in-memory (per-connection).
 const accounts = new Map(); // username (lowercase) -> { passwordHash, salt, nickname, googleId, email, google }
 const socketAuth = new Map(); // socketId -> logged-in username (lowercase)
+// Every sign-in path (password, Google, signup, resume, reset) goes through
+// set(), so the day's signed-in user count is recorded here once.
+socketAuth.set = function set(socketId, usernameLower) {
+  if (usernameLower) store.recordSignedIn(usernameLower);
+  return Map.prototype.set.call(this, socketId, usernameLower);
+};
 const googleAccounts = new Map(); // Google "sub" id -> username (lowercase)
 
 // --- Linking an account to the profile that holds the friends --------------
