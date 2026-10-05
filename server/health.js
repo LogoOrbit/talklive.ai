@@ -87,15 +87,23 @@ async function psiPage(path, strategy) {
   };
 }
 
-const pageSpeed = cached(PSI_TTL, async () => {
-  const pages = [];
-  for (const path of PSI_PAGES) {
-    for (const strategy of ['mobile', 'desktop']) {
-      try { pages.push(await psiPage(path, strategy)); } catch (err) { pages.push({ path, strategy, error: String(err.message || err).slice(0, 200) }); }
-    }
-  }
-  return { pages, keyed: Boolean(process.env.PSI_API_KEY) };
+const psiRun = cached(PSI_TTL, async () => {
+  const jobs = PSI_PAGES.flatMap((path) => ['mobile', 'desktop'].map((strategy) =>
+    psiPage(path, strategy).catch((err) => ({ path, strategy, error: String(err.message || err).slice(0, 200) }))));
+  return { pages: await Promise.all(jobs), keyed: Boolean(process.env.PSI_API_KEY) };
 });
+
+// PageSpeed takes up to a minute, so it never holds up the tab: the first
+// request starts it in the background and the page polls until it lands.
+let psiLast = null;
+let psiBusy = false;
+function pageSpeed(force) {
+  if (!psiBusy && (force || !psiLast || Date.now() - Date.parse(psiLast.fetchedAt) > PSI_TTL)) {
+    psiBusy = true;
+    psiRun(force).then((v) => { psiLast = v; }).finally(() => { psiBusy = false; });
+  }
+  return psiLast ? { ...psiLast, running: psiBusy } : { running: true, pages: [] };
+}
 
 // --- Google Analytics 4 Data API ---------------------------------------------
 
@@ -171,7 +179,7 @@ const uptime = cached(UPTIME_TTL, async () => {
 
 async function report(store, { refresh } = {}) {
   const [psi, gaData, up] = await Promise.all([
-    pageSpeed(refresh),
+    Promise.resolve(pageSpeed(refresh)),
     ga ? analytics(refresh) : Promise.resolve(null),
     process.env.UPTIMEROBOT_API_KEY ? uptime(refresh) : Promise.resolve(null),
   ]);

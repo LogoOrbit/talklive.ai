@@ -2674,6 +2674,7 @@ function hlQuality(q){
 }
 function hlSpeed(p){
   if(!p)return '';
+  if(p.running&&!p.fetchedAt)return `<div class="card anim"><h2>⚡ Page speed</h2><div class="muted">Google is testing 8 pages - about a minute. This box fills in by itself.</div></div>`;
   if(p.error)return `<div class="card anim"><h2>⚡ Page speed</h2><div class="stbox bad" style="padding:10px;border-radius:12px">${esc(p.error)}</div></div>`;
   if(!p.keyed&&p.pages.every(r=>r.error))return hlSetup('⚡ Page speed (Core Web Vitals)',[
     'Google Cloud Console (same project) → APIs &amp; Services → Library → enable <b>PageSpeed Insights API</b>.',
@@ -2728,6 +2729,9 @@ async function viewHealth(refresh){
   $('#main').innerHTML=`<div class="muted" style="margin-bottom:12px">Call quality, page speed, Google Analytics and uptime - the things the other tabs can't see.</div>
     ${hlQuality(h.callQuality)}${hlSpeed(h.pageSpeed)}${hlGa(h.analytics)}${hlUptime(h.uptime)}`;
   const b=$('#hlRefresh');if(b)b.onclick=()=>{b.disabled=true;b.textContent='Checking (up to a minute)...';viewHealth(true);};
+  if(b&&h.pageSpeed.running){b.disabled=true;b.textContent='Checking...';}
+  clearTimeout(viewHealth.t);
+  if(h.pageSpeed.running)viewHealth.t=setTimeout(()=>{if(location.hash==='#health')viewHealth();},10000);
 }
 async function viewTraffic(){
   const [t,g]=await Promise.all([vapi('traffic?range='+tfRange),vapi('search-console?days='+gscDays).catch(()=>null)]);
