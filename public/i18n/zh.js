@@ -137,6 +137,7 @@
   "chatAutoHint": "聊天结束后自动为我连接新的人",
   "chatAutoOn": "自动连接已开启：将自动为你重新匹配",
   "chatAutoOff": "自动连接已关闭",
+  "chatAutoLabel": "自动连接",
   "callInviteWaitTitle": "正在呼叫…",
   "callInviteWaitBody": "正在邀请对方开始语音通话。对方接受后此窗口会自动关闭。",
   "callInviteIncomingTitle": "语音来电",

@@ -137,6 +137,7 @@
   "chatAutoHint": "Mich automatisch mit einer neuen Person verbinden, wenn ein Chat endet",
   "chatAutoOn": "Auto-Verbinden ist AN – du wirst automatisch neu verbunden",
   "chatAutoOff": "Auto-Verbinden ist AUS",
+  "chatAutoLabel": "Auto-Verbinden",
   "callInviteWaitTitle": "Anruf läuft…",
   "callInviteWaitBody": "Wir fragen, ob sie einen Sprachanruf starten möchten. Das schließt sich automatisch, wenn angenommen wird.",
   "callInviteIncomingTitle": "Eingehender Sprachanruf",

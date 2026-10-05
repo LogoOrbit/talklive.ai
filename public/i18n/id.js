@@ -137,6 +137,7 @@
   "chatAutoHint": "Hubungkan aku otomatis ke orang baru saat obrolan berakhir",
   "chatAutoOn": "Sambung otomatis AKTIF, kamu akan dicocokkan lagi otomatis",
   "chatAutoOff": "Sambung otomatis NONAKTIF",
+  "chatAutoLabel": "Sambung otomatis",
   "callInviteWaitTitle": "Memanggil…",
   "callInviteWaitBody": "Meminta mereka memulai panggilan suara. Ini tertutup otomatis jika diterima.",
   "callInviteIncomingTitle": "Panggilan suara masuk",

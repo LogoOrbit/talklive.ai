@@ -137,6 +137,7 @@
   "chatAutoHint": "채팅이 끝나면 자동으로 새로운 사람과 연결",
   "chatAutoOn": "자동 연결 켜짐: 자동으로 다시 매칭돼요",
   "chatAutoOff": "자동 연결 꺼짐",
+  "chatAutoLabel": "자동 연결",
   "callInviteWaitTitle": "전화 거는 중…",
   "callInviteWaitBody": "상대에게 음성 통화를 요청하는 중이에요. 수락하면 자동으로 닫혀요.",
   "callInviteIncomingTitle": "음성 통화 수신",

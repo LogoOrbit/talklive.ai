@@ -137,6 +137,7 @@
   "chatAutoHint": "چیٹ ختم ہونے پر مجھے خود بخود کسی نئے شخص سے جوڑیں",
   "chatAutoOn": "آٹو کنیکٹ آن ہے، آپ خود بخود دوبارہ میچ ہوں گے",
   "chatAutoOff": "آٹو کنیکٹ آف ہے",
+  "chatAutoLabel": "آٹو کنیکٹ",
   "callInviteWaitTitle": "کال ہو رہی ہے…",
   "callInviteWaitBody": "انہیں وائس کال شروع کرنے کا کہا جا رہا ہے۔ قبول ہونے پر یہ خود بند ہو جائے گا۔",
   "callInviteIncomingTitle": "آنے والی وائس کال",
