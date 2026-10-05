@@ -2634,7 +2634,7 @@ function gscCard(g){
   const T=g.totals||{};
   const qRow=(r)=>`<tr><td>${esc(r.query)}</td><td class="num">${num(r.clicks)}</td><td class="num">${num(r.impressions)}</td><td class="num">${pct1(r.ctr)}</td><td class="num">${r.position.toFixed(1)}</td></tr>`;
   return `<div class="card anim"><h2>🔎 What people searched on Google <span class="sub">${esc(g.range.startDate)} → ${esc(g.range.endDate)} · Search Console</span>
-      <span style="margin-left:auto" class="seg" id="gscDays">${[[7,'7d'],[28,'28d'],[90,'90d']].map(([k,l])=>`<button data-d="${k}" class="${gscDays===k?'on':''}">${l}</button>`).join('')}</span></h2>
+      <span style="margin-left:auto" class="seg" id="gscDays">${[[7,'7d'],[28,'28d'],[90,'3m'],[180,'6m'],[365,'12m'],[480,'16m']].map(([k,l])=>`<button data-d="${k}" class="${gscDays===k?'on':''}">${l}</button>`).join('')}</span></h2>
     <div class="muted" style="margin-bottom:10px">${num(T.clicks)} clicks from ${num(T.impressions)} search impressions · CTR ${pct1(T.ctr||0)} · average position ${(T.position||0).toFixed(1)}</div>
     <div style="overflow-x:auto;max-height:520px;overflow-y:auto"><table><tr><th>Search term</th><th class="num">Clicks</th><th class="num">Shown</th><th class="num">CTR</th><th class="num">Position</th></tr>
     ${(g.queries||[]).map(qRow).join('')||'<tr><td colspan="5" class="muted">No search data in this window yet.</td></tr>'}</table></div></div>
