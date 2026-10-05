@@ -1284,6 +1284,47 @@ function dayCalls() {
   return d.calls || (d.calls = emptyCalls());
 }
 
+/*
+ * Call quality, as each browser measured it during a voice call (see
+ * reportCallQuality in public/app.js): sums for averages, plus a three-way
+ * verdict per call. Daily, like everything else here, and anonymous.
+ */
+function recordCallQuality({ rttMs, lossPct, jitterMs, poorShare, relay }) {
+  const d = day();
+  const q = d.quality || (d.quality = { n: 0, rtt: 0, rttN: 0, loss: 0, jit: 0, jitN: 0, relay: 0, good: 0, fair: 0, poor: 0 });
+  q.n += 1;
+  if (rttMs != null) { q.rtt += rttMs; q.rttN += 1; }
+  q.loss += lossPct;
+  if (jitterMs != null) { q.jit += jitterMs; q.jitN += 1; }
+  if (relay) q.relay += 1;
+  const verdict = poorShare > 0.25 || lossPct > 5 || (rttMs != null && rttMs > 500) ? 'poor'
+    : (lossPct > 2 || (rttMs != null && rttMs > 300) ? 'fair' : 'good');
+  q[verdict] += 1;
+  save();
+}
+
+function callQualityReport(days = 30) {
+  const keys = Object.keys(data.analytics.days).sort().slice(-days);
+  const sum = { n: 0, rtt: 0, rttN: 0, loss: 0, jit: 0, jitN: 0, relay: 0, good: 0, fair: 0, poor: 0 };
+  const daily = [];
+  for (const k of keys) {
+    const q = data.analytics.days[k].quality;
+    if (!q) continue;
+    for (const f of Object.keys(sum)) sum[f] += q[f] || 0;
+    daily.push({ day: k, calls: q.n, poorPct: q.n ? Math.round((q.poor / q.n) * 1000) / 10 : 0, rttMs: q.rttN ? Math.round(q.rtt / q.rttN) : null, lossPct: q.n ? Math.round((q.loss / q.n) * 100) / 100 : 0 });
+  }
+  return {
+    days,
+    calls: sum.n,
+    avgRttMs: sum.rttN ? Math.round(sum.rtt / sum.rttN) : null,
+    avgLossPct: sum.n ? Math.round((sum.loss / sum.n) * 100) / 100 : null,
+    avgJitterMs: sum.jitN ? Math.round(sum.jit / sum.jitN) : null,
+    relayPct: sum.n ? Math.round((sum.relay / sum.n) * 1000) / 10 : null,
+    verdicts: { good: sum.good, fair: sum.fair, poor: sum.poor },
+    daily,
+  };
+}
+
 /**
  * One finished conversation. `sides` is [{ gender, age }, { gender, age }];
  * each participant's segment gets the call, so "how long do women's calls
@@ -2923,6 +2964,8 @@ module.exports = {
   recordPerson,
   recordSignedIn,
   recordCallEnd,
+  recordCallQuality,
+  callQualityReport,
   recordWait,
   recordQueueAbandon,
   recordRating,
