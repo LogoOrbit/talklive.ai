@@ -1,57 +1,19 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Talk to Strangers - Free Voice and Text Chat, No Sign-Up | TalkLive</title>
-<meta name="description" content="Talk to strangers by voice or text, free and without an account. What the first five minutes of a conversation with someone new are really like, minute by minute, and what research says about each one." />
-<meta name="keywords" content="talk to strangers, talk to strangers online, chat with strangers, stranger chat, talk to random people, how to talk to strangers" />
-<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
-<meta name="theme-color" content="#111111" />
-<meta name="author" content="TalkLive" />
-<link rel="canonical" href="https://talklive.app/talk-to-strangers" />
-<meta property="og:type" content="website" />
-<meta property="og:site_name" content="TalkLive" />
-<meta property="og:title" content="Talk to Strangers - Free Voice and Text Chat, No Sign-Up | TalkLive" />
-<meta property="og:description" content="Talk to strangers by voice or text, free and without an account. What the first five minutes of a conversation with someone new are really like, minute by minute, and what research says about each one." />
-<meta property="og:url" content="https://talklive.app/talk-to-strangers" />
-<meta property="og:image" content="https://talklive.app/og-image.png?v=2" />
-<meta property="og:image:width" content="1200" />
-<meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="Talk to Strangers" />
-<meta property="og:locale" content="en_US" />
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Talk to Strangers - Free Voice and Text Chat, No Sign-Up | TalkLive" />
-<meta name="twitter:description" content="Talk to strangers by voice or text, free and without an account. What the first five minutes of a conversation with someone new are really like, minute by minute, and what research says about each one." />
-<meta name="twitter:image" content="https://talklive.app/og-image.png?v=2" />
-<meta name="twitter:image:alt" content="Talk to Strangers" />
-<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-<link rel="apple-touch-icon" href="/favicon-192.png" />
-<link rel="manifest" href="/site.webmanifest" />
-<link rel="preload" href="/fonts/mag/syne-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin />
-<link rel="preload" href="/fonts/mag/source-serif-4-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
-<link rel="stylesheet" href="/journal.css?v=20261005countries" />
-<style>
-.c-bar{display:flex;align-items:center;justify-content:space-between;gap:14px;max-width:1180px;margin:0 auto;padding:12px 20px;font:600 13px/1.2 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.02em}
-.c-bar a{text-decoration:none}
-.c-bar .c-brand{font-weight:700;letter-spacing:.06em}
-.c-bar nav{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
-.c-bar nav a{opacity:.8}.c-bar nav a:hover{opacity:1;text-decoration:underline}
-.c-bar .c-bar-talk{opacity:1;padding:7px 14px;border:1.5px solid currentColor;border-radius:999px}
-.c-ctas{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
-.c-ctas a{display:inline-flex;align-items:center;gap:8px;text-decoration:none}
-.c-faq details{border-top:1px solid var(--rule,rgba(0,0,0,.15));padding:14px 0}
-.c-faq summary{cursor:pointer;list-style:none}
-.c-faq summary::-webkit-details-marker{display:none}
-.c-faq summary::after{content:"+";float:right;margin-left:12px}
-.c-faq details[open] summary::after{content:"\2212"}
-.c-faq details p{margin:10px 0 0}
-.c-guides{max-width:1180px;margin:64px auto 0;padding:0 20px}
-.c-guides h2{font:600 12px/1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.16em;text-transform:uppercase;margin:0 0 12px;opacity:.75}
-.c-guides ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px 22px;font:500 15px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
-.c-guides a{text-decoration:none;border-bottom:1px solid currentColor}
-@media (max-width:640px){.c-bar{font-size:12px}.c-bar nav{gap:12px;flex-wrap:nowrap}.c-bar nav a:nth-child(1),.c-bar nav a:nth-child(2),.c-bar nav a:nth-child(4){display:none}}
-
+'use strict';
+// /talk-to-strangers: "The First Five Minutes". A conversation with a stranger
+// minute by minute, laid out on a stopwatch rail: off-white, black and a lime
+// signal colour. Syne for display, Source Serif 4 to read.
+module.exports = {
+  slug: 'talk-to-strangers',
+  name: 'Talk to Strangers',
+  date: '2026-10-05',
+  about: { '@type': 'Thing', name: 'Talking to strangers' },
+  title: 'Talk to Strangers - Free Voice and Text Chat, No Sign-Up | TalkLive',
+  description: 'Talk to strangers by voice or text, free and without an account. What the first five minutes of a conversation with someone new are really like, minute by minute, and what research says about each one.',
+  keywords: 'talk to strangers, talk to strangers online, chat with strangers, stranger chat, talk to random people, how to talk to strangers',
+  h1: 'Talk to Strangers',
+  theme: '#111111',
+  preload: ['syne-latin-800-normal', 'source-serif-4-latin-400-normal'],
+  css: `
 :root{--paper:#f6f5f0;--ink:#111;--rule:#d8d6cc;--lime:#c6f432;--mast:#f6f5f0}
 body{font-family:"Source Serif 4",Georgia,serif;background:var(--paper)}
 .c-bar{background:var(--ink);color:var(--mast);max-width:none}
@@ -94,27 +56,23 @@ body{font-family:"Source Serif 4",Georgia,serif;background:var(--paper)}
 .ts-end p{font-size:19px;color:#bdbcb4;margin:0 auto 26px;max-width:540px}
 .ts-end .c-ctas{justify-content:center}
 @media (max-width:860px){.ts-hero-grid,.ts-min{grid-template-columns:1fr}.ts-min{gap:16px;padding:40px 0}.ts-clock{position:static;width:96px;height:96px;font-size:26px}.ts-ruler{grid-template-columns:repeat(3,1fr)}.ts-rules{grid-template-columns:1fr}.ts-rules div{border-right:0;border-bottom:2px solid var(--ink)}}
-</style>
-<script defer src="/pwa.js?v=20260908pwa"></script>
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://talklive.app/#organization","name":"TalkLive","url":"https://talklive.app/","logo":{"@type":"ImageObject","url":"https://talklive.app/favicon-192.png","width":192,"height":192}},{"@type":"WebPage","@id":"https://talklive.app/talk-to-strangers#webpage","url":"https://talklive.app/talk-to-strangers","name":"Talk to Strangers - Free Voice and Text Chat, No Sign-Up | TalkLive","description":"Talk to strangers by voice or text, free and without an account. What the first five minutes of a conversation with someone new are really like, minute by minute, and what research says about each one.","inLanguage":"en","datePublished":"2026-10-05","dateModified":"2026-10-05","wordCount":1516,"about":{"@type":"Thing","name":"Talking to strangers"},"isPartOf":{"@id":"https://talklive.app/#website"},"publisher":{"@id":"https://talklive.app/#organization"},"primaryImageOfPage":{"@type":"ImageObject","url":"https://talklive.app/og-image.png?v=2","width":1200,"height":630}},{"@type":"BreadcrumbList","@id":"https://talklive.app/talk-to-strangers#breadcrumb","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://talklive.app/"},{"@type":"ListItem","position":2,"name":"Talk to Strangers","item":"https://talklive.app/talk-to-strangers"}]},{"@type":"FAQPage","@id":"https://talklive.app/talk-to-strangers#faq","mainEntity":[{"@type":"Question","name":"Is it free to talk to strangers on TalkLive?","acceptedAnswer":{"@type":"Answer","text":"Yes. Random voice calls and text chats are free, and no account is needed for a basic match. The site is supported by ads."}},{"@type":"Question","name":"Do I need to make an account?","acceptedAnswer":{"@type":"Answer","text":"No. You can be matched straight away. An optional account lets you keep friends and call them back on another visit."}},{"@type":"Question","name":"Will the stranger see my face or my number?","acceptedAnswer":{"@type":"Answer","text":"No. TalkLive has no video at all, and calls run in the browser, so no phone number is exchanged in either direction."}},{"@type":"Question","name":"Who will I be matched with?","acceptedAnswer":{"@type":"Answer","text":"Another adult who is searching at the same moment. Country and other preferences can steer matching, but nobody's identity, age or location is verified."}},{"@type":"Question","name":"What if a stranger is rude or inappropriate?","acceptedAnswer":{"@type":"Answer","text":"Tap Report or Block on the call or chat screen. Blocked people are not matched with you again, and reports are reviewed by the TalkLive team."}},{"@type":"Question","name":"Is TalkLive for teenagers?","acceptedAnswer":{"@type":"Answer","text":"No. TalkLive is for adults aged 18 and over only."}}]}]}</script>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978"
-     crossorigin="anonymous"></script>
-<script defer src="/ads.js?v=20260923adsense2"></script>
-</head>
-<body class="c-page c-talk-to-strangers">
-<a class="skip" href="#story">Skip to the guide</a>
-<header class="c-bar">
-  <a class="c-brand" href="/">TalkLive</a>
-  <nav aria-label="Site"><a href="/random-voice-chat">Voice chat</a><a href="/random-text-chat">Text chat</a><a href="/country-chat-guide">Countries</a><a href="/safety">Safety</a><a class="c-bar-talk" href="/?utm_source=seo">Talk now</a></nav>
-</header>
-<main id="story">
+`,
+  faq: [
+    { q: 'Is it free to talk to strangers on TalkLive?', a: 'Yes. Random voice calls and text chats are free, and no account is needed for a basic match. The site is supported by ads.' },
+    { q: 'Do I need to make an account?', a: 'No. You can be matched straight away. An optional account lets you keep friends and call them back on another visit.' },
+    { q: 'Will the stranger see my face or my number?', a: 'No. TalkLive has no video at all, and calls run in the browser, so no phone number is exchanged in either direction.' },
+    { q: 'Who will I be matched with?', a: 'Another adult who is searching at the same moment. Country and other preferences can steer matching, but nobody\'s identity, age or location is verified.' },
+    { q: 'What if a stranger is rude or inappropriate?', a: 'Tap Report or Block on the call or chat screen. Blocked people are not matched with you again, and reports are reviewed by the TalkLive team.' },
+    { q: 'Is TalkLive for teenagers?', a: 'No. TalkLive is for adults aged 18 and over only.' },
+  ],
+  body: (c) => `<main id="story">
 <section class="ts-hero">
   <div class="ts-hero-in">
     <h1>Talk to <span>strangers</span></h1>
     <div class="ts-hero-grid">
       <div>
         <p class="ts-dek">Almost everyone expects a conversation with a stranger to go worse than it does. Here is what actually happens in the first five minutes - minute by minute, with what the research says about each one - and a button to find out for yourself, by voice or text, free and without an account.</p>
-        <div class="c-ctas"><a class="c-talk" href="/?utm_source=seo">Talk to someone new</a><a class="c-chat" href="/chat?utm_source=seo">Text someone new</a></div>
+        ${c.ctas('Talk to someone new', 'Text someone new')}
       </div>
       <p class="ts-fact"><b>One tap. One person. No camera.</b>TalkLive pairs you with another adult who pressed the same button, for a one-to-one voice call or text chat. Leave whenever you want.</p>
     </div>
@@ -190,32 +148,12 @@ body{font-family:"Source Serif 4",Georgia,serif;background:var(--paper)}
   </section>
 </div>
 
-<section class="c-faq" aria-labelledby="faq-h"><h2 id="faq-h">Before you press the button</h2><details><summary>Is it free to talk to strangers on TalkLive?</summary><p>Yes. Random voice calls and text chats are free, and no account is needed for a basic match. The site is supported by ads.</p></details><details><summary>Do I need to make an account?</summary><p>No. You can be matched straight away. An optional account lets you keep friends and call them back on another visit.</p></details><details><summary>Will the stranger see my face or my number?</summary><p>No. TalkLive has no video at all, and calls run in the browser, so no phone number is exchanged in either direction.</p></details><details><summary>Who will I be matched with?</summary><p>Another adult who is searching at the same moment. Country and other preferences can steer matching, but nobody's identity, age or location is verified.</p></details><details><summary>What if a stranger is rude or inappropriate?</summary><p>Tap Report or Block on the call or chat screen. Blocked people are not matched with you again, and reports are reviewed by the TalkLive team.</p></details><details><summary>Is TalkLive for teenagers?</summary><p>No. TalkLive is for adults aged 18 and over only.</p></details></section>
-<div class="ad-card"><span class="ad-card-label">Advertisement</span><div data-ad="native"></div></div>
+${c.faq('Before you press the button')}
+${c.ad()}
 <section class="ts-end">
   <h2>Start the clock</h2>
   <p>The worst part was the thirty seconds before you pressed the button. That part is over.</p>
-  <div class="c-ctas"><a class="c-talk" href="/?utm_source=seo">Tap to Talk</a><a class="c-chat" href="/chat?utm_source=seo">Tap to Chat</a></div>
+  ${c.ctas('Tap to Talk', 'Tap to Chat')}
 </section>
-</main>
-<aside class="c-guides" aria-label="Other guides"><h2>More guides</h2><ul><li><a href="/anonymous-chat">Anonymous Chat</a></li><li><a href="/random-call">Random Call</a></li><li><a href="/talk-to-someone">Talk to Someone</a></li><li><a href="/omegle-alternative">Omegle Alternative</a></li><li><a href="/country-chat-guide">Guides by country</a></li><li><a href="/safety">Safety Center</a></li></ul></aside>
-<footer class="j-foot">
-  <nav aria-label="Legal"><a href="/about">About</a><a href="/contact">Contact</a><a href="/privacy">Privacy Policy</a><a href="/terms">Terms</a><a href="/community-guidelines">Community Guidelines</a><a href="/safety">Safety</a><a href="/blog/">Journal</a><a href="/">TalkLive home</a></nav>
-  <p>&copy; 2026 TalkLive. Free one-to-one voice and text chat for adults 18+. Nobody's identity, age or location is verified. Corrections: info@talklive.app</p>
-</footer>
-<!-- Google tag (gtag.js) - see scripts/migrate-analytics.js -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-713E3C1RH1"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('consent', 'default', {
-    ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: 'denied',
-    region: ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'IS', 'LI', 'NO', 'GB', 'CH'],
-    wait_for_update: 500
-  });
-  gtag('set', 'ads_data_redaction', true);
-  gtag('js', new Date());
-  gtag('config', 'G-713E3C1RH1');
-</script>
-</body>
-</html>
+</main>`,
+};

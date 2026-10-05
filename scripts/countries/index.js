@@ -72,7 +72,7 @@ function guidesHtml(slug) {
 }
 
 function head(c, wordCount) {
-  const canonical = `${SITE}/countries/${c.slug}`;
+  const canonical = `${SITE}${c.path}`;
   const ld = {
     '@context': 'https://schema.org',
     '@graph': [
@@ -83,17 +83,14 @@ function head(c, wordCount) {
       {
         '@type': 'WebPage', '@id': `${canonical}#webpage`, url: canonical, name: c.title, description: c.description,
         inLanguage: 'en', datePublished: c.date, dateModified: c.updated || c.date, wordCount,
-        about: { '@type': 'Country', name: c.name },
+        about: c.about || { '@type': 'Country', name: c.name },
         isPartOf: { '@id': `${SITE}/#website` }, publisher: { '@id': `${SITE}/#organization` },
         primaryImageOfPage: { '@type': 'ImageObject', url: OG_IMAGE, width: 1200, height: 630 },
       },
       {
         '@type': 'BreadcrumbList', '@id': `${canonical}#breadcrumb`,
-        itemListElement: [
-          { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE}/` },
-          { '@type': 'ListItem', position: 2, name: 'Countries', item: `${SITE}/country-chat-guide` },
-          { '@type': 'ListItem', position: 3, name: c.name, item: canonical },
-        ],
+        itemListElement: [{ name: 'Home', url: '/' }].concat(c.crumbs || [], [{ name: c.name, url: c.path }])
+          .map((crumb, i) => ({ '@type': 'ListItem', position: i + 1, name: crumb.name, item: `${SITE}${crumb.url}` })),
       },
       {
         '@type': 'FAQPage', '@id': `${canonical}#faq`,
@@ -137,10 +134,10 @@ ${preloads}
 <style>${BASE_CSS}${c.css}</style>
 <script defer src="/pwa.js?v=20260908pwa"></script>
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978"
+${c.noAds ? '' : `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978"
      crossorigin="anonymous"></script>
 <script defer src="/ads.js?v=20260923adsense2"></script>
-</head>`;
+`}</head>`;
 }
 
 function bar() {
@@ -151,29 +148,39 @@ function bar() {
 </header>`;
 }
 
-function footer(slug) {
-  return `${guidesHtml(slug)}
+function footer(aside) {
+  return `${aside}
 <footer class="j-foot">
   <nav aria-label="Legal"><a href="/about">About</a><a href="/contact">Contact</a><a href="/privacy">Privacy Policy</a><a href="/terms">Terms</a><a href="/community-guidelines">Community Guidelines</a><a href="/safety">Safety</a><a href="/blog/">Journal</a><a href="/">TalkLive home</a></nav>
   <p>&copy; ${new Date().getFullYear()} TalkLive. Free one-to-one voice and text chat for adults 18+. Nobody's identity, age or location is verified. Corrections: info@talklive.app</p>
 </footer>`;
 }
 
-function render(c) {
-  const inner = c.body({ ...ctx, faq: (heading) => faqHtml(c, heading) });
+/*
+ * Renders one hand-designed page. `c.path` is its URL, `c.crumbs` the
+ * breadcrumb between Home and the page, `aside` the "other guides" block.
+ * `c.noAds` leaves out the ad loader and the ad slot entirely.
+ */
+function render(c, aside) {
+  const pageCtx = { ...ctx, ad: c.noAds ? () => '' : S.ad, faq: (heading) => faqHtml(c, heading) };
+  const inner = c.body(pageCtx);
   return `${head(c, S.words(inner))}
 <body class="c-page c-${c.slug}">
 ${bar()}
 ${inner}
-${footer(c.slug)}
+${footer(aside)}
 </body>
 </html>
 `;
 }
 
+const COUNTRY_CRUMBS = [{ name: 'Countries', url: '/country-chat-guide' }];
+
 function build() {
-  for (const c of COUNTRIES) S.write(`countries/${c.slug}.html`, render(c));
+  for (const c of COUNTRIES) {
+    S.write(`countries/${c.slug}.html`, render({ ...c, path: `/countries/${c.slug}`, crumbs: COUNTRY_CRUMBS }, guidesHtml(c.slug)));
+  }
   return COUNTRIES.length;
 }
 
-module.exports = { build, COUNTRIES, SLUGS };
+module.exports = { build, render, COUNTRIES, SLUGS };

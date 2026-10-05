@@ -732,11 +732,11 @@ const CORE_PAGES = [
 
 // Additional landing pages live in their own module so this file stays
 // navigable as the SEO surface grows. Same shape as CORE_PAGES.
-// pages-restored brings back, at their original URLs, the landing pages that
-// held search rankings before October 2026. The country guides that came back
-// with them are hand-designed pages built by scripts/countries/.
-const PAGES = CORE_PAGES.concat(require('./pages-extra'), require('./pages-extra2'), require('./search-hubs'),
-  require('./pages-restored'));
+const PAGES = CORE_PAGES.concat(require('./pages-extra'), require('./pages-extra2'), require('./search-hubs'));
+// Hand-designed pages, each with its own layout and type rather than the
+// template above: the topic guides restored in October 2026 and the country
+// guides.
+const TOPIC_GUIDES = require('./topics');
 const COUNTRY_GUIDES = require('./countries');
 
 // --- Journal ----------------------------------------------------------------
@@ -925,7 +925,8 @@ for (const loc of LOCALES) {
 const BLOG_DIR = path.join(PUBLIC, 'blog');
 count += JOURNAL.build();
 
-// Country guides: /countries/<slug>, each designed on its own.
+// Topic and country guides, each designed on its own.
+count += TOPIC_GUIDES.build();
 count += COUNTRY_GUIDES.build();
 
 // Sitemap with hreflang alternates for the home + all landing pages.
@@ -1326,6 +1327,9 @@ Key facts: voice-only or text-only modes; optional country and interest preferen
 ## Main pages
 - [TalkLive app](${SITE}/): Start a random voice or text chat instantly.
 ${landing}
+
+## Guides
+${TOPIC_GUIDES.TOPICS.map(t => `- [${t.name}](${SITE}/${t.slug}): ${t.description}`).join('\n')}
 
 ## Country guides
 ${COUNTRY_GUIDES.COUNTRIES.map(c => `- [${c.name}](${SITE}/countries/${c.slug}): ${c.description}`).join('\n')}

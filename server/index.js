@@ -3248,7 +3248,8 @@ function publicProfile(p) {
     username: p.username,
     country: p.countryName,
     countryCode: p.country,
-    city: p.city,
+    // City is deliberately not sent: it is estimated from the IP address,
+    // nothing on the call screen shows it, and a stranger has no use for it.
     interests: p.interests,
     animal: p.animal || null,
     // IANA zone the partner's browser reported, so the call screen can show

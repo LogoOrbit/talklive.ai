@@ -42,7 +42,9 @@ const NO_AD_DIRS = ['languages'].concat(require('./locales').map((l) => l.code))
 // content for a reader: /contact (a list of email addresses) and /refund (a
 // policy for a plan that is not on sale). AdSense asks for no ad code on pages
 // with little original content.
-const NO_AD_PAGES = new Set(['contact.html', 'refund.html']);
+// /talk-to-someone sits beside suicide and crisis-line information; ads have
+// no place next to that, so it carries no ad code at all.
+const NO_AD_PAGES = new Set(['contact.html', 'refund.html', 'talk-to-someone.html']);
 function isNoAdPage(file) {
   const rel = path.relative(publicDir, file).split(path.sep);
   if (rel.length === 1) return NO_AD_PAGES.has(rel[0]);

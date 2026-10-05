@@ -18,11 +18,13 @@ Key facts: voice-only or text-only modes; optional country and interest preferen
 - [Languages](https://talklive.app/language-chat-guide): Open TalkLive in a supported language, practise real conversation responsibly, understand matching limits and find language-learning guides for voice or text chat.
 - [Countries](https://talklive.app/country-chat-guide): Learn how TalkLive country preferences work, why a specific country match cannot be guaranteed, and how to chat respectfully with people across regions and languages.
 - [How It Works](https://talklive.app/how-it-works): See how TalkLive matches two people, establishes encrypted WebRTC voice calls over its production TURN relay, delivers text chat and handles privacy and moderation data.
-- [Talk to Strangers](https://talklive.app/talk-to-strangers): Talk to strangers online for free by voice or text. One tap pairs you with another adult for a one-to-one conversation - no camera, no account, leave any time.
-- [Anonymous Chat](https://talklive.app/anonymous-chat): Anonymous voice and text chat with no account, phone number or camera. Exactly what TalkLive does and does not know about you, in plain English.
-- [Random Call](https://talklive.app/random-call): Make a free random call to another adult from your browser. No phone number, no app, no credit - just a voice call over Wi-Fi or mobile data. How it works and what it uses.
-- [Talk to Someone](https://talklive.app/talk-to-someone): Need to talk to someone right now? Have a free, anonymous conversation by voice or text with another adult. No sign-up. Plus where to find real support if it is urgent.
-- [Omegle Alternative](https://talklive.app/omegle-alternative): Omegle shut down on 8 November 2023. TalkLive is a free alternative for adults: random one-to-one voice and text chat, no camera, no sign-up, with block and report on every screen.
+
+## Guides
+- [Talk to Strangers](https://talklive.app/talk-to-strangers): Talk to strangers by voice or text, free and without an account. What the first five minutes of a conversation with someone new are really like, minute by minute, and what research says about each one.
+- [Anonymous Chat](https://talklive.app/anonymous-chat): Anonymous voice and text chat with no account, phone number or camera. Exactly what the other person sees, what they never see, and what TalkLive keeps - item by item, in plain English.
+- [Random Call](https://talklive.app/random-call): Make a free random call to another adult from your browser: no phone number, no app, no calling credit. How the call is connected, how much data it uses, and how to fix the usual problems.
+- [Talk to Someone](https://talklive.app/talk-to-someone): Need someone to talk to right now? Have a free, anonymous conversation by voice or text with another adult, with no sign-up - and where to find trained support if it is urgent.
+- [Omegle Alternative](https://talklive.app/omegle-alternative): Omegle closed on 8 November 2023. How to judge any Omegle alternative before you trust it - six checks - and how TalkLive, a free voice and text chat for adults with no camera, measures up.
 
 ## Country guides
 - [India](https://talklive.app/countries/india): Free voice and text chat with people in India - Hindi, English or Hinglish, no sign-up, no camera. Why India talks to strangers like it talks on a long train, and when India is online (IST).
