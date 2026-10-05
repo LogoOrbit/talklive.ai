@@ -562,6 +562,7 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
       topics,
       conclusion: generateConclusion(runtime, report),
       maintenance: store.data.settings.maintenance,
+      devBanner: store.data.settings.devBanner,
       counts: {
         reports: store.data.reports.length,
         unhandledReports: store.data.reports.filter((r) => !r.handled).length,
@@ -1574,6 +1575,16 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
     store.persistNow();
     if (on) io.emit('maintenance', { message: store.data.settings.maintenance.message });
     res.json({ ok: true, maintenance: store.data.settings.maintenance });
+  });
+
+  router.post('/api/dev-banner', (req, res) => {
+    const on = !!(req.body || {}).on;
+    const prev = store.data.settings.devBanner || {};
+    store.data.settings.devBanner = { on, since: on ? Date.now() : prev.since || 0 };
+    store.audit('dev_banner', reqIp(req), on ? 'Development notice ON' : 'Development notice OFF');
+    store.persistNow();
+    io.emit('devBanner', store.data.settings.devBanner);
+    res.json({ ok: true, devBanner: store.data.settings.devBanner });
   });
 
   return { router, sendAlertEmail };

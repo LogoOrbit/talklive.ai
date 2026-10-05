@@ -3812,6 +3812,7 @@ io.on('connection', (socket) => {
     socket.disconnect(true);
     return;
   }
+  socket.emit('devBanner', store.data.settings.devBanner || { on: false });
 
   // Banned by IP: refuse service entirely until the ban expires or is lifted.
   const ipBan = store.findActiveBan(null, ip);

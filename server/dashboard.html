@@ -3032,6 +3032,7 @@ async function viewAudit(){
 async function viewSettings(){
   const o=await vapi('overview');
   const m=o.maintenance;
+  const db=o.devBanner||{on:false};
   const theme=currentTheme();
   $('#main').innerHTML=`<div class="card anim" style="margin-top:0"><h2>🛠️ Maintenance mode</h2>
   <p class="muted" style="margin-bottom:12px">When on, visitors see a friendly maintenance page and nobody can connect. Your dashboard stays available.</p>
@@ -3040,6 +3041,13 @@ async function viewSettings(){
   <textarea id="maintMsg" rows="3">${esc(m.message)}</textarea>
   <div class="rowbtns" style="margin-top:12px">
     <button class="${m.on?'':'danger'}" id="maintBtn">${m.on?'✅ Bring site back online':'⛔ Take site into maintenance'}</button>
+  </div></div>
+
+  <div class="card anim"><h2>🚧 Development notice</h2>
+  <p class="muted" style="margin-bottom:12px">The “still under development, you may notice brief delays or glitches” strip at the top of the site, in every language. Turning it on shows it again to everyone, including people who closed it.</p>
+  <div class="switch"><b>Status:</b> ${db.on?'<span class="pill warn">Notice is SHOWING to visitors</span>':'<span class="pill good">Notice is OFF</span>'}</div>
+  <div class="rowbtns" style="margin-top:12px">
+    <button id="devBannerBtn">${db.on?'🙈 Hide the notice':'📢 Show the notice everywhere'}</button>
   </div></div>
 
   <div class="card anim"><h2>🎨 Appearance</h2>
@@ -3062,6 +3070,13 @@ async function viewSettings(){
       toast(m.on?'Site is live again':'Maintenance mode ON',m.on?'Users can connect.':'Visitors now see your maintenance message.',m.on?'good':'warn');
       load();
     }catch(e){toast('Could not change maintenance mode',e.message,'bad');}
+  };
+  $('#devBannerBtn').onclick=async()=>{
+    try{
+      await post('dev-banner',{on:!db.on});
+      toast(db.on?'Notice hidden':'Notice is showing',db.on?'Visitors no longer see it.':'Every visitor sees it now, in their language.','good');
+      load();
+    }catch(e){toast('Could not change the notice',e.message,'bad');}
   };
   document.querySelectorAll('[data-theme-set]').forEach(b=>b.onclick=()=>{
     const t=b.dataset.themeSet;

@@ -102,21 +102,28 @@
   <a href="#chatStage" class="skip-link" data-i18n="skipToContent">Skip to main content</a>
   <div class="app">
     <!-- "Still under development" strip: an apology for the occasional delay
-         or glitch while TalkLive is being built. Dismissed once per browser;
-         bump the key's date to show it to everyone again. -->
+         or glitch while TalkLive is being built. Switched on and off from the
+         owner dashboard (Settings); the server sends the state over the socket. -->
     <div id="devBanner" class="tl-devbanner" role="status" hidden>
       <span class="tl-devbanner-text" data-i18n="devBanner">Sorry! TalkLive is still under development, so you may notice brief delays or small glitches. Nothing to worry about - we're on it.</span>
       <button type="button" class="tl-devbanner-close" data-i18n-aria="dismiss" data-i18n-title="dismiss" aria-label="Dismiss" title="Dismiss">&times;</button>
     </div>
     <script>
     (function () {
-      var KEY = 'talklive_devbanner_2026-10';
       var bar = document.getElementById('devBanner');
-      try { if (localStorage.getItem(KEY) === '1') return; } catch (e) { /* storage blocked - show it */ }
-      bar.hidden = false;
+      var key = '';
+      // Called with the server's { on, since } on connect and whenever the
+      // owner flips it. Closing it is remembered per switch-on (`since`).
+      window.tlDevBanner = function (s) {
+        var on = !!(s && s.on);
+        key = 'talklive_devbanner_' + ((s && s.since) || 0);
+        var closed = false;
+        try { closed = localStorage.getItem(key) === '1'; } catch (e) { /* storage blocked - show it */ }
+        bar.hidden = !on || closed;
+      };
       bar.querySelector('button').addEventListener('click', function () {
         bar.hidden = true;
-        try { localStorage.setItem(KEY, '1'); } catch (e) { /* nothing to do */ }
+        try { localStorage.setItem(key, '1'); } catch (e) { /* nothing to do */ }
       });
     })();
     </script>
@@ -811,7 +818,7 @@
   <script defer src="/chat-extras.js?v=20260924tidy"></script>
   <script defer src="/games.js?v=20261001play"></script>
   <script defer src="/icebreakers.js?v=20260923ice"></script>
-  <script defer src="/chat.js?v=20261002fbreply"></script>
+  <script defer src="/chat.js?v=20261005devbn"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

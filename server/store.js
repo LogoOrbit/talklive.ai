@@ -192,6 +192,10 @@ function defaults() {
     games: { players: {}, log: [] },
     settings: {
       maintenance: { on: false, message: 'TalkLive is under maintenance. We will be back shortly!' },
+      // The "still under development" strip on / and /chat, switched from the
+      // dashboard. `since` changes on every switch-on, so visitors who closed
+      // the last one see it again.
+      devBanner: { on: true, since: 0 },
       banThreshold: 3,
       autoBanMinutes: 30,
       // IANA zone the owner dashboard reports "today"/"yesterday" in. Analytics

@@ -9951,6 +9951,10 @@ socket.on('banned', (info) => {
   resetUI();
 });
 
+// The "still under development" strip at the top of the page, switched from
+// the owner dashboard (see the inline script beside #devBanner).
+socket.on('devBanner', (s) => { if (window.tlDevBanner) window.tlDevBanner(s); });
+
 socket.on('maintenance', (info) => {
   showError((info && info.message) || 'TalkLive is under maintenance. Please come back soon!');
   socket.io.reconnection(false);
