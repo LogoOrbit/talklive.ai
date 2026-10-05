@@ -12,8 +12,14 @@
  *   /languages/<slug>           -> its section of the /languages/ feature
  *   retired /blog/ posts        -> the closest surviving Journal article
  *   keyword-variant landings    -> the one page that covers the topic
+ *
+ * Restored in October 2026 (no longer retired): /talk-to-strangers,
+ * /anonymous-chat, /random-call, /talk-to-someone, /omegle-alternative and
+ * the eight country guides in scripts/country-pages.js. Retired URLs on the
+ * same topic now point at them instead of at a broader page.
  */
 const { COUNTRIES } = require('./geo');
+const { COUNTRY_SLUGS } = require('../country-pages');
 
 // Countries covered by one of the three regional features. Every other
 // country (and every city in it) points at the /languages/ feature.
@@ -25,17 +31,25 @@ const FEATURED = {
 const REGION_OF_COUNTRY = {};
 for (const [region, list] of Object.entries(FEATURED)) for (const c of list) REGION_OF_COUNTRY[c] = region;
 const REGION_OF_CITY = {};
-for (const c of COUNTRIES) for (const city of c.cities) REGION_OF_CITY[city.slug] = REGION_OF_COUNTRY[c.slug];
+const COUNTRY_OF_CITY = {};
+for (const c of COUNTRIES) {
+  for (const city of c.cities) {
+    REGION_OF_CITY[city.slug] = REGION_OF_COUNTRY[c.slug];
+    COUNTRY_OF_CITY[city.slug] = c.slug;
+  }
+}
 const RETIRED_REGIONS = { 'asia-pacific': '/languages/', 'middle-east-africa': '/languages/' };
 
+// Competitor pages, all retired except /omegle-alternative. Omegle's two
+// closest relatives (same format, same audience) point at it; the rest at the
+// voice-vs-video comparison.
 const RETIRED_ALTERNATIVES = [
   'chatspin', 'shagle', 'camsurf', 'chathub', 'azar', 'holla', 'tinychat', 'wakie', 'free4talk',
-  'omegle', 'ometv', 'chatroulette', 'monkey-app', 'emerald-chat',
+  'ometv', 'chatroulette', 'monkey-app', 'emerald-chat',
 ].map((name) => `${name}-alternative`);
+const OMEGLE_LIKE = new Set(['ometv-alternative', 'chatroulette-alternative']);
 
 const RETIRED_POSTS = {
-  'best-omegle-alternatives': 'what-happened-to-omegle',
-  'best-random-chat-apps-2026': 'what-happened-to-omegle',
   'what-happened-to-chatroulette': 'what-happened-to-omegle',
   'best-time-to-use-random-chat': 'how-random-matchmaking-works',
   'how-anonymous-voice-chat-works': 'how-random-matchmaking-works',
@@ -71,32 +85,31 @@ const RETIRED_PAGES = {
   'free-voice-chat': '/random-voice-chat',
   'voice-chat-rooms': '/random-voice-chat',
   'online-chat-rooms': '/random-text-chat',
-  'call-random-people': '/random-voice-chat',
-  'free-online-calls': '/random-voice-chat',
-  'international-calls': '/random-voice-chat',
-  'random-chat': '/random-voice-chat',
+  'call-random-people': '/random-call',
+  'free-online-calls': '/random-call',
+  'international-calls': '/random-call',
+  'random-chat': '/talk-to-strangers',
   'meet-new-people': '/make-friends-online',
-  'someone-to-talk-to': '/late-night-chat',
+  'someone-to-talk-to': '/talk-to-someone',
   'im-bored': '/random-voice-chat',
   'cant-sleep': '/late-night-chat',
-  'chat-without-registration': '/random-text-chat',
-  'pakistani-chat': '/regions/south-asia',
-  'omegle-vs-chatroulette': '/voice-chat-vs-video-chat',
-  // Second round: four more templated keyword variants of the voice and text
-  // pages, and a format comparison that duplicated voice-chat-vs-video-chat.
-  'talk-to-strangers': '/random-voice-chat',
-  'random-call': '/random-voice-chat',
-  'anonymous-chat': '/random-text-chat',
-  'talk-to-someone': '/late-night-chat',
-  'alternatives': '/voice-chat-vs-video-chat',
+  'chat-without-registration': '/anonymous-chat',
+  'pakistani-chat': '/countries/pakistan',
+  'omegle-vs-chatroulette': '/omegle-alternative',
+  // A comparison list of other apps; the Omegle page is the one that answers it.
+  'alternatives': '/omegle-alternative',
   // A hand-kept list of article titles that had since been retired, several
   // pointing at one post under a headline it does not carry. The Journal
   // index is the maintained list.
   'guides': '/blog/',
 };
 
-// is-talklive-safe answered a product question, so it goes to the product page.
-const RETIRED_POST_PAGES = { 'is-talklive-safe': '/safety' };
+// Posts that answered a product question go to the product page.
+const RETIRED_POST_PAGES = {
+  'is-talklive-safe': '/safety',
+  'best-omegle-alternatives': '/omegle-alternative',
+  'best-random-chat-apps-2026': '/omegle-alternative',
+};
 
 /*
  * Where a retired path now lives, or null if the path is not retired.
@@ -108,12 +121,23 @@ function retiredTarget(pathname) {
   if (m && RETIRED_PAGES[m[1].toLowerCase()]) return RETIRED_PAGES[m[1].toLowerCase()];
 
   m = /^\/([a-z0-9-]+-alternative)$/i.exec(p);
-  if (m && RETIRED_ALTERNATIVES.includes(m[1].toLowerCase())) return '/voice-chat-vs-video-chat';
+  if (m && RETIRED_ALTERNATIVES.includes(m[1].toLowerCase())) {
+    return OMEGLE_LIKE.has(m[1].toLowerCase()) ? '/omegle-alternative' : '/voice-chat-vs-video-chat';
+  }
 
   m = /^\/(countries|cities)(?:\/([a-z0-9-]*))?\/?$/i.exec(p);
   if (m) {
+    const kind = m[1].toLowerCase();
     const slug = (m[2] || '').toLowerCase();
-    const region = m[1].toLowerCase() === 'countries' ? REGION_OF_COUNTRY[slug] : REGION_OF_CITY[slug];
+    // A restored country guide is live, not retired: only its trailing-slash
+    // spelling redirects, to the canonical URL.
+    if (kind === 'countries' && COUNTRY_SLUGS.includes(slug)) {
+      return /\/$/.test(p) ? `/countries/${slug}` : null;
+    }
+    if (!slug) return '/country-chat-guide';
+    const country = kind === 'countries' ? slug : COUNTRY_OF_CITY[slug];
+    if (COUNTRY_SLUGS.includes(country)) return `/countries/${country}`;
+    const region = kind === 'countries' ? REGION_OF_COUNTRY[slug] : REGION_OF_CITY[slug];
     return region ? `/regions/${region}` : '/languages/';
   }
 

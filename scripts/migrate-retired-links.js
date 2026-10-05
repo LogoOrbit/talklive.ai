@@ -25,13 +25,22 @@ const ALT = `(?:${RETIRED_ALTERNATIVES.concat(Object.keys(RETIRED_PAGES)).join('
 // A link to one member page whose list entry is better dropped than repointed.
 const MEMBER = `/(?:(?:countries|cities|languages)/[a-z0-9-]+|regions/(?:asia-pacific|middle-east-africa)|${ALT})`;
 
+// MEMBER matches the shape of a member URL; only one that is actually retired
+// is dropped. The restored country guides (/countries/india, ...) share the
+// shape and must survive.
+const MEMBER_HREF = new RegExp(`href="(${MEMBER})"`);
+const dropIfRetired = (keep) => (all, ...groups) => {
+  const m = MEMBER_HREF.exec(all);
+  return m && retiredTarget(m[1]) ? keep(groups) : all;
+};
+
 function migrate(html) {
   let out = html;
   // Whole list items / standalone link lines that exist only to link a member.
-  out = out.replace(new RegExp(`<li>\\s*<a href="${MEMBER}"[^>]*>[^<]*</a>\\s*</li>`, 'g'), '');
-  out = out.replace(new RegExp(`^[ \\t]*<a href="${MEMBER}"[^>]*>[^<]*</a>[ \\t]*\\r?\\n`, 'gm'), '');
+  out = out.replace(new RegExp(`<li>\\s*<a href="${MEMBER}"[^>]*>[^<]*</a>\\s*</li>`, 'g'), dropIfRetired(() => ''));
+  out = out.replace(new RegExp(`^[ \\t]*<a href="${MEMBER}"[^>]*>[^<]*</a>[ \\t]*\\r?\\n`, 'gm'), dropIfRetired(() => ''));
   // Link clouds: adjacent anchors with no text between them.
-  out = out.replace(new RegExp(`(</a>|<div class="link-cloud">|<nav[^>]*>)\\s*<a href="${MEMBER}"[^>]*>[^<]*</a>(?=\\s*(<a |</div>|</nav>))`, 'g'), '$1');
+  out = out.replace(new RegExp(`(</a>|<div class="link-cloud">|<nav[^>]*>)\\s*<a href="${MEMBER}"[^>]*>[^<]*</a>(?=\\s*(<a |</div>|</nav>))`, 'g'), dropIfRetired((g) => g[0]));
   // Hub pair -> one regional link.
   out = out.replace(/<a href="\/countries\/">[^<]*<\/a>\s*<a href="\/cities\/">[^<]*<\/a>/g, '');
   out = out.replace(/<li><a href="\/countries\/">[^<]*<\/a><\/li>\s*<li><a href="\/cities\/">[^<]*<\/a><\/li>/g, '');

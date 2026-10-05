@@ -67,6 +67,20 @@ being followed.
 
 ## What is on the site
 
+> **October 2026 (6):** restored search pages. Arrivals from search into the
+> app halved within a day of the October retirements, and the countries that
+> lost their pages fell hardest. These URLs come back, rewritten by hand, at
+> their original addresses (so they keep their search history):
+> `/talk-to-strangers`, `/anonymous-chat`, `/random-call`, `/talk-to-someone`
+> and `/omegle-alternative` (`scripts/pages-restored.js`), and country guides
+> for India, Pakistan, Bangladesh, the United States, the United Kingdom,
+> Egypt, Nigeria and Indonesia (`scripts/country-pages.js`, sitemap
+> `sitemap-countries.xml`). Retired URLs on the same topics (city pages in
+> those countries, `/pakistani-chat`, `/alternatives`, OmeTV/Chatroulette
+> alternatives, `/random-chat`, ...) now 301 to them. The homepage title leads
+> with "Talk to Strangers" again. `migrate-retired-links.js` now drops only
+> links that are actually retired, so restored `/countries/*` links survive.
+
 > **October 2026 (5):** third AdSense pass. The 16 localized homepages carry no
 > ad code (150-500 words each - too thin for ads; `NO_AD_DIRS` in
 > `scripts/migrate-ads.js`) and no longer claim "millions of conversations".

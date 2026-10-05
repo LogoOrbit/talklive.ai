@@ -44,6 +44,7 @@ function esc(s) {
 // Every landing page appears in the global nav/footer so link equity flows
 // between them and back to the app. `slug: ''` is the home app.
 const NAV = [
+  { slug: 'talk-to-strangers', label: 'Talk to Strangers' },
   { slug: 'random-voice-chat', label: 'Voice Chat' },
   { slug: 'random-text-chat', label: 'Text Chat' },
   { slug: 'language-exchange', label: 'Language Exchange' },
@@ -128,6 +129,18 @@ function footerHtml() {
       { slug: 'regions/americas', label: 'The Americas' },
       { slug: 'how-it-works', label: 'How It Works' },
       { slug: 'safety', label: 'Safety Center' },
+    ] },
+    // Every page links every country guide, so each one is one hop from
+    // anywhere on the site rather than buried under a hub.
+    { h: 'Countries', items: [
+      { slug: 'countries/india', label: 'India' },
+      { slug: 'countries/pakistan', label: 'Pakistan' },
+      { slug: 'countries/bangladesh', label: 'Bangladesh' },
+      { slug: 'countries/united-states', label: 'United States' },
+      { slug: 'countries/united-kingdom', label: 'United Kingdom' },
+      { slug: 'countries/egypt', label: 'Egypt' },
+      { slug: 'countries/nigeria', label: 'Nigeria' },
+      { slug: 'countries/indonesia', label: 'Indonesia' },
     ] },
   ];
   const colHtml = cols.map(c => `<div><h4>${c.h}</h4><ul>${c.items.map(i => `<li><a href="/${i.slug}">${i.label}</a></li>`).join('')}</ul></div>`).join('');
@@ -671,7 +684,7 @@ const CORE_PAGES = [
     slug: 'late-night-chat',
     crumb: 'Late Night Chat',
     eyebrow: 'Open all night',
-    title: 'Late Night Chat - Talk to Someone Any Hour | TalkLive',
+    title: 'Late Night Chat - Voice and Text Chat After Midnight | TalkLive',
     description: 'Can\'t sleep and need someone to talk to? TalkLive is late night chat with real people worldwide - live voice or text, private and free, at 1am, 3am or any hour.',
     keywords: 'late night chat, talk to someone at night, 3am chat, can\'t sleep need to talk, someone to talk to at 2am, midnight chat, night owls chat',
     h1: 'Late Night Chat - Check the Live Worldwide Queue',
@@ -719,7 +732,10 @@ const CORE_PAGES = [
 
 // Additional landing pages live in their own module so this file stays
 // navigable as the SEO surface grows. Same shape as CORE_PAGES.
-const PAGES = CORE_PAGES.concat(require('./pages-extra'), require('./pages-extra2'), require('./search-hubs'));
+// pages-restored and country-pages bring back, at their original URLs, the
+// landing and country pages that held search rankings before October 2026.
+const PAGES = CORE_PAGES.concat(require('./pages-extra'), require('./pages-extra2'), require('./search-hubs'),
+  require('./pages-restored'), require('./country-pages'));
 
 // --- Journal ----------------------------------------------------------------
 // /blog/ is the TalkLive Journal: ten hand-designed long-form articles plus the
@@ -1173,7 +1189,7 @@ function sitemapCluster(loc) {
 }
 
 // Declaration order in the index, most important cluster first.
-const SITEMAP_CLUSTERS = ['main', 'pages', 'regions', 'languages', 'blog'];
+const SITEMAP_CLUSTERS = ['main', 'pages', 'countries', 'regions', 'languages', 'blog'];
 
 /*
  * Every indexable URL as a {loc, lastmod, xml} record, from both sources: the

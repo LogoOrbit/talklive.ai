@@ -35,6 +35,7 @@ const PAGE_ART = {
   'how-it-works': 'connection',
   'resources': 'reading',
   'alternatives': 'people-search',
+  'omegle-alternative': 'people-search',
   'guides/': 'reading',
   'countries/': 'world',
   'cities/': 'city-life',

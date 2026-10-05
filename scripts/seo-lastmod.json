@@ -1,12 +1,17 @@
 {
   "/": {
-    "hash": "8b11911bb548816b",
-    "date": "2026-10-04",
+    "hash": "5e596830a1a2aa4e",
+    "date": "2026-10-05",
     "v": 3
   },
   "/about": {
     "hash": "c1879611c539969a",
     "date": "2026-10-04",
+    "v": 3
+  },
+  "/anonymous-chat": {
+    "hash": "1be8075c710c2934",
+    "date": "2026-10-05",
     "v": 3
   },
   "/ar/": {
@@ -84,9 +89,49 @@
     "date": "2026-10-02",
     "v": 3
   },
+  "/countries/bangladesh": {
+    "hash": "7655334ca99dea04",
+    "date": "2026-10-05",
+    "v": 3
+  },
+  "/countries/egypt": {
+    "hash": "65ddb2ede4fcfad1",
+    "date": "2026-10-05",
+    "v": 3
+  },
+  "/countries/india": {
+    "hash": "4497b7b54ce27ae8",
+    "date": "2026-10-05",
+    "v": 3
+  },
+  "/countries/indonesia": {
+    "hash": "f83cd348b6c2daa6",
+    "date": "2026-10-05",
+    "v": 3
+  },
+  "/countries/nigeria": {
+    "hash": "7d9dbd75b2f5e6af",
+    "date": "2026-10-05",
+    "v": 3
+  },
+  "/countries/pakistan": {
+    "hash": "cbf61d2912149c5e",
+    "date": "2026-10-05",
+    "v": 3
+  },
+  "/countries/united-kingdom": {
+    "hash": "7db6df080ab24dc3",
+    "date": "2026-10-05",
+    "v": 3
+  },
+  "/countries/united-states": {
+    "hash": "a27cbedbfd59a43a",
+    "date": "2026-10-05",
+    "v": 3
+  },
   "/country-chat-guide": {
-    "hash": "670e9a0e4e795bf1",
-    "date": "2026-10-04",
+    "hash": "c928c12a93476c73",
+    "date": "2026-10-05",
     "v": 3
   },
   "/de/": {
@@ -115,8 +160,8 @@
     "v": 3
   },
   "/how-it-works": {
-    "hash": "84ddb6bedcac9ec1",
-    "date": "2026-10-04",
+    "hash": "e53fb0f2b75bcf01",
+    "date": "2026-10-05",
     "v": 3
   },
   "/id/": {
@@ -140,13 +185,13 @@
     "v": 3
   },
   "/language-chat-guide": {
-    "hash": "2954ce680d4d6919",
-    "date": "2026-10-04",
+    "hash": "c3f9521aef31ad38",
+    "date": "2026-10-05",
     "v": 3
   },
   "/language-exchange": {
-    "hash": "30306754dfa26eb6",
-    "date": "2026-10-04",
+    "hash": "3543005797ca73a6",
+    "date": "2026-10-05",
     "v": 3
   },
   "/languages/": {
@@ -155,18 +200,23 @@
     "v": 3
   },
   "/late-night-chat": {
-    "hash": "477a838411082b9f",
-    "date": "2026-10-04",
+    "hash": "fbb27937eaa81238",
+    "date": "2026-10-05",
     "v": 3
   },
   "/make-friends-online": {
-    "hash": "ea11edca0681af6e",
-    "date": "2026-10-04",
+    "hash": "2e2439bdeb630364",
+    "date": "2026-10-05",
+    "v": 3
+  },
+  "/omegle-alternative": {
+    "hash": "41f84d1047924f54",
+    "date": "2026-10-05",
     "v": 3
   },
   "/practice-english-speaking": {
-    "hash": "6d3f1d19aa2ebc05",
-    "date": "2026-10-04",
+    "hash": "98408971e8ee369c",
+    "date": "2026-10-05",
     "v": 3
   },
   "/pricing": {
@@ -184,14 +234,19 @@
     "date": "2026-10-04",
     "v": 3
   },
+  "/random-call": {
+    "hash": "4f90b35817fdc850",
+    "date": "2026-10-05",
+    "v": 3
+  },
   "/random-text-chat": {
-    "hash": "846e49a6aeefbe02",
-    "date": "2026-10-04",
+    "hash": "740bab302bb18d73",
+    "date": "2026-10-05",
     "v": 3
   },
   "/random-voice-chat": {
-    "hash": "a2077b1464dcea0c",
-    "date": "2026-10-04",
+    "hash": "e56cad2397e4eab7",
+    "date": "2026-10-05",
     "v": 3
   },
   "/refund": {
@@ -200,23 +255,23 @@
     "v": 3
   },
   "/regions/americas": {
-    "hash": "294c2d64d81dea93",
-    "date": "2026-10-02",
+    "hash": "fb273b7839a2f455",
+    "date": "2026-10-05",
     "v": 3
   },
   "/regions/europe": {
-    "hash": "ce8859b87d693e4d",
-    "date": "2026-10-02",
+    "hash": "7a2485c57fca998d",
+    "date": "2026-10-05",
     "v": 3
   },
   "/regions/south-asia": {
-    "hash": "b4082d39feb58a9b",
-    "date": "2026-10-02",
+    "hash": "c317dc85502d0a50",
+    "date": "2026-10-05",
     "v": 3
   },
   "/resources": {
-    "hash": "60067efb410755bf",
-    "date": "2026-10-04",
+    "hash": "61239b004c9373c5",
+    "date": "2026-10-05",
     "v": 3
   },
   "/ru/": {
@@ -225,8 +280,18 @@
     "v": 3
   },
   "/safety": {
-    "hash": "a21048c681c8ecf9",
-    "date": "2026-10-04",
+    "hash": "06fbb538c78b1590",
+    "date": "2026-10-05",
+    "v": 3
+  },
+  "/talk-to-someone": {
+    "hash": "b145521d4a444e82",
+    "date": "2026-10-05",
+    "v": 3
+  },
+  "/talk-to-strangers": {
+    "hash": "28a8738cb689e9e2",
+    "date": "2026-10-05",
     "v": 3
   },
   "/terms": {
@@ -245,8 +310,8 @@
     "v": 3
   },
   "/voice-chat-vs-video-chat": {
-    "hash": "ac3cf41fdc020b17",
-    "date": "2026-10-04",
+    "hash": "32d5a0bb04c42b33",
+    "date": "2026-10-05",
     "v": 3
   },
   "/zh/": {

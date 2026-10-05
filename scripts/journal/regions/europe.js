@@ -100,7 +100,7 @@ ${ZONES.map(z => `<div class="eu-band"><b>${z.off}<small>${z.label}</small></b><
 </figure>
 
 <div class="eu-body">
-<div class="eu-note">On TalkLive you can set country preferences, but they are not guarantees: country is estimated from a network connection and not verified, and matching broadens after a few seconds if nobody from your chosen countries is waiting.</div>
+<div class="eu-note">On TalkLive you can set country preferences, but they are not guarantees: country is estimated from a network connection and not verified, and matching broadens after a few seconds if nobody from your chosen countries is waiting. For the UK specifically, see our <a href="/countries/united-kingdom">United Kingdom guide</a>.</div>
 <p>Europe spent much of the last century redrawing borders and is still, in small ways, arguing about what time it is. Here is a question it has never settled: should clocks follow the sun, or the neighbours?</p>
 </div>
 ${ctx.ad()}

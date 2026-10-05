@@ -83,6 +83,7 @@ body{font-family:"Libre Caslon Text",Georgia,serif}
 <p>Argentina and Uruguay use "vos" instead of "tú" for "you", with its own verb forms: "vos sabés" rather than "tú sabes". Combined with a distinctive "sh" sound for the letters "ll" and "y", it makes Rioplatense Spanish recognisable in a sentence or two. Colombia's capital, Bogotá, has a reputation among learners for a clear, measured accent. Mexican Spanish is the variety many courses teach.</p>
 <p>None of these is more correct than the others. But they are different enough that a learner who has only ever heard one can be thrown by another, which is exactly why conversation with real people from different places is so useful. Textbooks have one accent; a continent has dozens.</p>
 <p>On TalkLive you can set country preferences to favour a particular place. They are preferences, not guarantees: country is estimated from a network connection and not verified, and matching broadens after a few seconds if nobody from your chosen countries is waiting.</p>
+<p>Calling the United States? Our <a href="/countries/united-states">United States guide</a> explains when Americans are online across six time zones.</p>
 <p>So here is a small question to take with you: when you learned your first words of another language, whose accent were they in, and have you ever heard them said any other way?</p>
 </div>
 ${ctx.ad()}

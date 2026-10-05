@@ -237,9 +237,9 @@ module.exports = [
         `Random matching depends on who is actively searching at the same moment and whether both participants' settings are compatible. Choosing a country can narrow that search, but it cannot create an available participant. If a preferred match is not available, TalkLive may broaden matching rather than leave the queue waiting indefinitely.`,
         `The country shown for a participant is not identity verification. Do not use it as proof of nationality, residence, citizenship or language, and do not pressure someone to reveal a city or more precise location.`,
       ]},
-      { h: 'Begin with the country content that exists', body: [
-        `The current focused guide is <a href="/regions/south-asia">South Asia</a>, supported by the <a href="/ur/">Urdu</a> and <a href="/hi/">Hindi</a> localized entry pages for users who prefer those interfaces. The broader <a href="/languages/">Languages hub</a> lists every supported localized homepage.`,
-        `Future country guides should be added only when they contain genuinely useful language, cultural, safety and product information. Replacing one place name with another does not help a user and does not establish a local TalkLive presence.`,
+      { h: 'Country guides', body: [
+        `TalkLive has hand-written guides for the eight countries that bring it the most people: <a href="/countries/india">India</a>, <a href="/countries/pakistan">Pakistan</a>, <a href="/countries/bangladesh">Bangladesh</a>, <a href="/countries/united-states">the United States</a>, <a href="/countries/united-kingdom">the United Kingdom</a>, <a href="/countries/egypt">Egypt</a>, <a href="/countries/nigeria">Nigeria</a> and <a href="/countries/indonesia">Indonesia</a>. Each covers the languages people there actually use, when TalkLive is busiest in local time, conversation openers and the safety advice that applies locally.`,
+        `For a wider view, the Journal's regional features cover <a href="/regions/south-asia">South Asia</a>, <a href="/regions/europe">Europe</a> and <a href="/regions/americas">the Americas</a>, and the <a href="/languages/">Languages hub</a> lists every supported localized homepage. A country gets its own guide only when there is genuinely useful, specific information to put in it.`,
       ]},
       { h: 'Keep cross-cultural conversation respectful', body: [
         `Ask broad, curious questions instead of testing stereotypes: what is a normal weekend like, which food would you recommend, or what do outsiders usually misunderstand? Let the other person decide how specific to be and accept that they may not want to discuss politics, religion or personal relationships.`,
@@ -256,14 +256,14 @@ module.exports = [
       { q: 'Is a country preference also a language filter?', a: 'No. Countries are multilingual, and individuals may speak different languages. Confirm the language politely at the start of a conversation.' },
       { q: 'Why was I matched outside my preference?', a: 'Availability changes continuously, and matching may broaden rather than keep you waiting. Review your applied filters and the current product behaviour.' },
       { q: 'Does TalkLive have offices or local branches in these countries?', a: 'This hub describes an online global service and matching preferences. It does not claim a physical local office, branch or guaranteed local user community.' },
-      { q: 'Should TalkLive create city pages?', a: 'Only if a page can provide genuine, distinct local utility. Generic city-name substitutions or claims of local presence would be misleading.' },
+      { q: 'Which countries have their own guide?', a: 'India, Pakistan, Bangladesh, the United States, the United Kingdom, Egypt, Nigeria and Indonesia - the eight countries that bring TalkLive the most people.' },
     ],
     ctaBandH: 'Open the world without over-narrowing it',
     ctaBandP: 'Use a country preference when it matters, or choose global matching for the widest live queue.',
     cluster: 'countries-and-regions',
     primaryIntent: 'country voice chat preferences and global conversation',
-    relatedPages: ['language-chat-guide', 'safety', 'random-voice-chat', 'random-text-chat', 'pricing'],
-    updated: '2026-08-14',
+    relatedPages: ['countries/india', 'countries/pakistan', 'countries/bangladesh', 'countries/united-states', 'countries/united-kingdom', 'countries/egypt', 'countries/nigeria', 'countries/indonesia', 'language-chat-guide', 'safety'],
+    updated: '2026-10-05',
     posts: ['science-of-talking-to-strangers', 'random-chat-safety-tips', 'how-to-start-a-conversation-with-a-stranger'],
   },
 
