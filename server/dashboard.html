@@ -453,9 +453,26 @@ table.heat{min-width:480px}table.heat td.num{border-radius:6px}
 
 /* toolbar above tables */
 .tbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
-.dlrow{padding:10px 2px;border-top:1px solid var(--ring);display:grid;gap:3px;font-size:.86rem}
-.dlrow.today{background:color-mix(in srgb,var(--accent) 7%,transparent);border-radius:10px;padding:10px 8px}
-.dlrow .dls{font-size:.76rem}
+.dltable tr.dlr{cursor:pointer}
+.dltable tr.dlr:hover td{box-shadow:inset 0 0 0 999px color-mix(in srgb,var(--text) 4%,transparent)}
+.dltable tr.today td:first-child{box-shadow:inset 3px 0 0 var(--good)}
+.dltable td.num{white-space:nowrap}.dltable td.num .delta{margin-left:4px;font-size:.68rem}
+.dlcaret{color:var(--muted);font-size:.7rem;display:inline-block;width:10px}
+.dldetail td{background:var(--surface-2);padding:12px}
+.dlgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.dlgrid div{display:flex;flex-direction:column;gap:1px}
+.dlgrid span{font-size:.66rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.dlgrid b{font-size:1rem;font-variant-numeric:tabular-nums}
+.dlgrid small{font-size:.74rem;color:var(--ink2)}
+@media(max-width:640px){
+  table.dltable.stk tr.dlr{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:8px}
+  table.dltable.stk tr.dlr td{display:flex;flex-direction:column;align-items:flex-start;padding:5px 7px;border:0;border-radius:8px;text-align:left;box-shadow:none}
+  table.dltable.stk tr.dlr td[data-label]::before{float:none;margin:0;max-width:none;font-size:.58rem;padding:0}
+  table.dltable.stk tr.dlr td:first-child{grid-column:1/-1;flex-direction:row;align-items:center;gap:4px}
+  table.dltable.stk tr.dlr td:first-child::before{display:none}
+  table.dltable.stk tr.today{border-color:var(--good)}
+  table.dltable.stk tr.dldetail{padding:0;margin-top:-6px}
+}
 .tbar input,.tbar select{width:auto;min-width:170px;padding:8px 11px;font-size:.84rem}
 .tbar .grow{flex:1;min-width:170px}
 .seg{display:flex;gap:0;border:1px solid var(--ring);border-radius:10px;overflow-x:auto;max-width:100%}
@@ -2482,38 +2499,85 @@ async function viewTalkTime(){
   onFilterInput($('#ttQ'),(v)=>{ttQ=v;},()=>viewTalkTime().then(()=>keepFocus('#ttQ')));
 }
 
-/* ---------- daily log: one line per day, every counter we keep ---------- */
-let dlRange='all';
+/* ---------- daily log: one row per day, every counter we keep ---------- */
+let dlRange='30',dlSort='day',dlDir=-1,dlMetric='visits';
+const dlOpen=new Set();
+const DL_COLS=[ // key, heading, colour for the heat tint ('' = none)
+  ['day','Day',''],['visits','Visitors','var(--s1)'],['uniques','Unique','var(--s1)'],['talkHours','Hours talked','var(--s2)'],
+  ['calls','Calls','var(--s2)'],['messages','Messages','var(--s5)'],['games','Games','var(--s3)'],
+  ['signups','Sign-ups','var(--good)'],['people','App opens','var(--s5)'],['peakOnline','Peak online','var(--s3)']];
+const DL_METRICS=[['visits','Visitors'],['uniques','Unique'],['talkHours','Hours talked'],['calls','Calls'],['messages','Messages'],['signups','Sign-ups'],['people','App opens'],['peakOnline','Peak online']];
 async function viewDaily(){
   const r=await vapi('daily');
-  const n=dlRange==='all'?Infinity:Number(dlRange);
-  const rows=(r.rows||[]).slice(0,n);
-  const sum=(k)=>rows.reduce((a,x)=>a+(x[k]||0),0);
-  const hrs=(s)=>{const h=s/3600;return h>=10?Math.round(h).toLocaleString():h.toFixed(1);};
-  const fmtDay=(k)=>new Date(k+'T12:00:00Z').toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',year:'numeric',timeZone:'UTC'});
-  const est=(x,k,v)=>x.est.includes(k)?`<span title="Estimated: this day predates the exact counter">~${v}</span>`:v;
-  const line=(x)=>`<div class="dlrow${x.day===r.today?' today':''}">
-    <div class="dld"><b>${fmtDay(x.day)}</b>${x.day===r.today?' <span class="pill good">today, so far</span>':''}</div>
-    <div class="dlv"><b>${num(x.visits)} visitors</b> <span class="muted">(${num(x.uniques)} unique · ${num(x.repeat)} repeated · ${est(x,'registered',num(x.registered))} registered)</span></div>
-    <div class="dlm">${est(x,'talk',hrs(x.talkSeconds))} hours talked · ${est(x,'calls',num(x.calls))} calls · ${num(x.messages)} messages · ${num(x.clicks)} clicks · ${est(x,'games',num(x.games))} games · ${num(x.voiceNotes)} voice notes</div>
-    <div class="dls muted">${num(x.people)} opened the app (${num(x.newPeople)} new · ${num(x.returningPeople)} returning) · ${num(x.signups)} sign-ups · peak ${num(x.peakOnline)} online</div>
-  </div>`;
-  $('#main').innerHTML=`<div class="grid tiles anim" style="margin-top:0">
-    <div class="tile"><div class="k">Visitors</div><div class="v" data-count="${sum('visits')}">0</div><div class="s">${num(sum('uniques'))} unique · ${num(sum('repeat'))} repeated</div></div>
-    <div class="tile"><div class="k">Hours talked</div><div class="v" style="font-size:1.4rem">${hrs(sum('talkSeconds'))}</div><div class="s">${num(sum('calls'))} calls</div></div>
-    <div class="tile"><div class="k">Messages</div><div class="v" data-count="${sum('messages')}">0</div><div class="s">${num(sum('voiceNotes'))} voice notes</div></div>
-    <div class="tile"><div class="k">Days logged</div><div class="v" data-count="${rows.length}">0</div><div class="s">${rows.length?fmtDay(rows[rows.length-1].day)+' →':'no data yet'}</div></div>
-  </div>
-  <div class="card anim"><h2>📋 Visitors each day <span class="sub">UTC days, newest first · ~ = estimated from older counters</span></h2>
-  <div class="tbar">
+  const all=(r.rows||[]).map(x=>({...x,talkHours:Math.round(x.talkSeconds/360)/10}));
+  const n=dlRange==='all'?all.length:Number(dlRange);
+  const rows=all.slice(0,n);
+  const hrs=(h)=>h>=10?Math.round(h).toLocaleString():h.toFixed(1);
+  const fmtDay=(k)=>new Date(k+'T12:00:00Z').toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',timeZone:'UTC'});
+  const fmtFull=(k)=>new Date(k+'T12:00:00Z').toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',year:'numeric',timeZone:'UTC'});
+  const sum=(arr,k)=>arr.reduce((a,x)=>a+(x[k]||0),0);
+  const fmtV=(k,v)=>k==='talkHours'?hrs(v):num(v);
+  const delta=(cur,prev)=>{if(!prev)return'';const p=Math.round((cur-prev)/prev*100);
+    return `<span class="delta ${p>0?'up':p<0?'down':'flat'}">${p>0?'▲':p<0?'▼':'•'} ${Math.abs(p)}%</span>`;};
+  /* Tiles compare complete days only (today is still filling), against the
+     same number of days just before. */
+  const done=all.filter(x=>x.day!==r.today);
+  const span=dlRange==='all'?0:n;
+  const cur=span?done.slice(0,span):done,prev=span?done.slice(span,span*2):[];
+  const cmpOk=span&&prev.length===span;
+  const tile=(label,k,sub)=>{const tot=sum(rows,k),avg=cur.length?sum(cur,k)/cur.length:0;
+    return `<div class="tile"><div class="k">${label}</div><div class="v">${fmtV(k,tot)}</div>
+    <div class="s">${fmtV(k,k==='talkHours'?avg:Math.round(avg))}/day ${cmpOk?delta(sum(cur,k),sum(prev,k)):''}</div>${sub?`<div class="s muted">${sub}</div>`:''}</div>`;};
+  const best=rows.reduce((b,x)=>x.visits>(b?b.visits:-1)?x:b,null);
+  const rangeTxt=dlRange==='all'?'all time':`last ${n} days`;
+  /* Sorting + heat tint: each column is shaded against its own busiest day. */
+  const sorted=rows.slice().sort((a,b)=>dlSort==='day'?dlDir*(a.day<b.day?-1:1):dlDir*((a[dlSort]||0)-(b[dlSort]||0))||(a.day<b.day?1:-1));
+  const lo={},hi={};DL_COLS.forEach(([k])=>{const v=rows.map(x=>x[k]||0);lo[k]=Math.min(...v);hi[k]=Math.max(...v);});
+  const idx=new Map(all.map((x,i)=>[x.day,i]));
+  const EST={talkHours:'talk',calls:'calls',games:'games'};
+  const est=(x,k)=>EST[k]&&x.est.includes(EST[k]);
+  const cell=(x,[k,,c])=>{
+    if(k==='day'){const wk=[0,6].includes(new Date(x.day+'T12:00:00Z').getUTCDay());
+      return `<td style="white-space:nowrap"><span class="dlcaret">${dlOpen.has(x.day)?'▾':'▸'}</span> <b${wk?' style="opacity:.6" title="Weekend"':''}>${fmtDay(x.day)}</b>${x.day===r.today?' <span class="pill good">today</span>':''}${best&&x.day===best.day&&rows.length>1?' <span class="pill info">best</span>':''}</td>`;}
+    const v=x[k]||0,a=v&&hi[k]>lo[k]?Math.round(4+(v-lo[k])/(hi[k]-lo[k])*30):v?12:0;
+    const prevDay=all[idx.get(x.day)+1];
+    const dd=k==='visits'&&x.day!==r.today&&prevDay?' '+delta(v,prevDay.visits):'';
+    return `<td class="num" style="${a?`background:color-mix(in srgb,${c} ${a}%,transparent)`:''}">${est(x,k)?'<span class="muted" title="Estimated from older counters">~</span>':''}${v?fmtV(k,v):'<span class="muted">0</span>'}${dd}</td>`;};
+  const detail=(x)=>`<tr class="dldetail"><td colspan="${DL_COLS.length}"><div class="dlgrid">
+    <div><span>Visitors</span><b>${num(x.visits)}</b><small>${num(x.uniques)} unique · ${num(x.repeat)} repeated</small></div>
+    <div><span>Registered seen</span><b>${x.est.includes('registered')?'~':''}${num(x.registered)}</b><small>${num(x.signups)} new sign-ups</small></div>
+    <div><span>Opened the app</span><b>${num(x.people)}</b><small>${num(x.newPeople)} new · ${num(x.returningPeople)} returning</small></div>
+    <div><span>Talk</span><b>${hrs(x.talkHours)} h</b><small>${num(x.calls)} calls${x.calls?' · avg '+Math.round(x.talkSeconds/x.calls/60*10)/10+' min':''}</small></div>
+    <div><span>Messages</span><b>${num(x.messages)}</b><small>${num(x.voiceNotes)} voice notes</small></div>
+    <div><span>Engagement</span><b>${num(x.clicks)} clicks</b><small>${num(x.games)} games · peak ${num(x.peakOnline)} online</small></div>
+  </div><div class="muted" style="margin-top:6px;font-size:.74rem">${fmtFull(x.day)}${x.est.length?' · ~ = estimated, this day predates the exact counter':''}</div></td></tr>`;
+  const head=DL_COLS.map(([k,l])=>`<th class="sortable${k==='day'?'':' num'}" data-s="${k}">${l} <span class="ar">${dlSort===k?(dlDir<0?'▼':'▲'):'↕'}</span></th>`).join('');
+  $('#main').innerHTML=`<div class="tbar" style="margin-bottom:10px">
     <div class="seg" id="dlRange">${[['7','7 days'],['30','30 days'],['90','90 days'],['all','All']].map(([k,l])=>`<button data-r="${k}" class="${dlRange===k?'on':''}">${l}</button>`).join('')}</div>
     <span class="grow"></span>${exportLink('daily-log')}
   </div>
-  ${rows.map(line).join('')||'<div class="muted">No days recorded yet.</div>'}
-  <div class="muted" style="font-size:.76rem;margin-top:10px">Visitors are human page views; unique = distinct visitors that day; repeated = the rest. Registered = signed-in accounts seen that day. Clicks = every tracked tap or action.</div>
+  <div class="grid tiles anim" style="margin-top:0">
+    ${tile('Visitors','visits',num(sum(rows,'uniques'))+' unique')}
+    ${tile('Hours talked','talkHours',num(sum(rows,'calls'))+' calls')}
+    ${tile('Messages','messages',num(sum(rows,'voiceNotes'))+' voice notes')}
+    ${tile('Sign-ups','signups',num(sum(rows,'people'))+' app opens')}
+    <div class="tile"><div class="k">Best day</div><div class="v" style="font-size:1.15rem">${best?fmtDay(best.day):'-'}</div><div class="s">${best?num(best.visits)+' visitors':'no data yet'}</div><div class="s muted">${rows.length} days · ${rangeTxt}</div></div>
+  </div>
+  ${cmpOk?`<div class="muted" style="font-size:.74rem;margin-top:6px">Per-day averages use complete days; ▲▼ = vs the ${n} days before.</div>`:''}
+  <div class="card anim"><h2>📈 Trend <span class="sub">${rangeTxt}</span></h2>
+    <div class="rowbtns" id="dlMetric" style="margin-bottom:8px">${DL_METRICS.map(([k,l])=>`<button data-m="${k}" class="${dlMetric===k?'on':''}">${l}</button>`).join('')}</div>
+    <div id="dlChart"></div>
+  </div>
+  <div class="card anim"><h2>📋 Day by day <span class="sub">UTC days · tap a day for details · tap a heading to sort · darker = busier</span></h2>
+    ${rows.length?`<table class="dltable"><tr>${head}</tr>${sorted.map(x=>`<tr class="dlr${x.day===r.today?' today':''}" data-d="${x.day}">${DL_COLS.map(c=>cell(x,c)).join('')}</tr>${dlOpen.has(x.day)?detail(x):''}`).join('')}</table>`:'<div class="muted">No days recorded yet.</div>'}
+    <div class="muted" style="font-size:.74rem;margin-top:10px">Visitors are human page views; unique = distinct visitors that day. App opens = people who opened the app. ~ = estimated from older counters.</div>
   </div>`;
-  animateCounters();
+  const ch=$('#dlChart');
+  if(ch&&rows.length)lineChart(ch,rows.slice().reverse(),[dlMetric],['var(--s1)'],[DL_METRICS.find(m=>m[0]===dlMetric)[1]]);
   document.querySelectorAll('#dlRange button').forEach(b=>b.onclick=()=>{dlRange=b.dataset.r;viewDaily();});
+  document.querySelectorAll('#dlMetric button').forEach(b=>b.onclick=()=>{dlMetric=b.dataset.m;viewDaily();});
+  document.querySelectorAll('.dltable th.sortable').forEach(th=>th.onclick=()=>{const k=th.dataset.s;dlDir=dlSort===k?-dlDir:-1;dlSort=k;viewDaily();});
+  document.querySelectorAll('.dltable tr.dlr').forEach(tr=>tr.onclick=()=>{const d=tr.dataset.d;dlOpen.has(d)?dlOpen.delete(d):dlOpen.add(d);viewDaily();});
 }
 
 /* ---------- games: who played, how long, who said no ---------- */
