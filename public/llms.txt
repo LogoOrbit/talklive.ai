@@ -6,25 +6,25 @@ Key facts: voice-only or text-only modes; optional country and interest preferen
 
 ## Main pages
 - [TalkLive app](https://talklive.app/): Start a random voice or text chat instantly.
-- [Random Voice Chat](https://talklive.app/random-voice-chat): Free random voice chat for adults. TalkLive uses audio only - no camera or account required. Match availability varies with the live queue.
-- [Random Text Chat](https://talklive.app/random-text-chat): Free one-to-one text chat with people worldwide. Tap to Chat and get paired with someone new in seconds - no mic, no sign-up, adults 18+.
-- [Practice English Speaking](https://talklive.app/practice-english-speaking): Practice English speaking online free with real people. TalkLive starts live voice conversations in seconds - no classes, no fees, no sign-up.
-- [Make Friends Online](https://talklive.app/make-friends-online): Make friends online through real conversations, not profiles. TalkLive matches you with people worldwide for live voice or text chat - free, private, no sign-up.
-- [Late Night Chat](https://talklive.app/late-night-chat): Can't sleep and need someone to talk to? TalkLive is late night chat with real people worldwide - live voice or text, private and free, at 1am, 3am or any hour.
-- [Language Exchange](https://talklive.app/language-exchange): Free core voice matching for language practice with people worldwide. No sign-up; language, fluency, availability and learning outcomes are not guaranteed.
-- [Voice vs Video Chat](https://talklive.app/voice-chat-vs-video-chat): Voice chat vs video chat compared: privacy, bandwidth, safety, and which one actually produces better conversations with someone new. An honest look at both.
-- [Resources](https://talklive.app/resources): Explore practical TalkLive resources for safer online chat, better conversations, language practice, privacy, country preferences and choosing the right chat format.
-- [Safety Center](https://talklive.app/safety): Understand TalkLive voice privacy, encrypted WebRTC and TURN relay use, text retention, reporting, blocking, identity boundaries and practical online chat safety.
-- [Languages](https://talklive.app/language-chat-guide): Open TalkLive in a supported language, practise real conversation responsibly, understand matching limits and find language-learning guides for voice or text chat.
-- [Countries](https://talklive.app/country-chat-guide): Learn how TalkLive country preferences work, why a specific country match cannot be guaranteed, and how to chat respectfully with people across regions and languages.
-- [How It Works](https://talklive.app/how-it-works): See how TalkLive matches two people, establishes encrypted WebRTC voice calls over its production TURN relay, delivers text chat and handles privacy and moderation data.
 
 ## Guides
 - [Talk to Strangers](https://talklive.app/talk-to-strangers): Talk to strangers by voice or text, free and without an account. What the first five minutes of a conversation with someone new are really like, minute by minute, and what research says about each one.
+- [Random Voice Chat](https://talklive.app/random-voice-chat): Free random voice chat for adults: one tap to talk with someone new, audio only, no camera or account. Why a voice carries more than text or video, according to the research.
+- [Random Text Chat](https://talklive.app/random-text-chat): Free one-to-one text chat with people worldwide: tap to chat and get paired with someone new, no microphone and no sign-up, adults 18+. Why typing to a stranger works, from IRC to now.
 - [Anonymous Chat](https://talklive.app/anonymous-chat): Anonymous voice and text chat with no account, phone number or camera. Exactly what the other person sees, what they never see, and what TalkLive keeps - item by item, in plain English.
 - [Random Call](https://talklive.app/random-call): Make a free random call to another adult from your browser: no phone number, no app, no calling credit. How the call is connected, how much data it uses, and how to fix the usual problems.
 - [Talk to Someone](https://talklive.app/talk-to-someone): Need someone to talk to right now? Have a free, anonymous conversation by voice or text with another adult, with no sign-up - and where to find trained support if it is urgent.
+- [Late Night Chat](https://talklive.app/late-night-chat): Can't sleep? Late night voice and text chat with people around the world, free and without an account. Where it is still evening when it is 2 a.m. for you, and how to look after yourself at night.
+- [Make Friends Online](https://talklive.app/make-friends-online): Make friends online through real conversations, not profiles. What research says about how many hours a friendship takes, and how TalkLive helps you keep the people you click with - free, no sign-up to start.
+- [Practice English Speaking](https://talklive.app/practice-english-speaking): Practise speaking English for free in real conversations with people around the world. Why speaking (not just listening) builds fluency, a phrase bank for real calls, and how to make five minutes count.
+- [Language Exchange](https://talklive.app/language-exchange): Free language exchange by voice or text: trade ten minutes of your language for ten of theirs with someone new. The tandem method's two rules, a ready-made script, and how to correct each other well.
+- [Voice Chat vs Video Chat](https://talklive.app/voice-chat-vs-video-chat): Voice chat vs video chat, round by round: privacy, data, fatigue, safety with strangers, emotion and identity. An honest scorecard - including where video wins - and why TalkLive chose voice.
 - [Omegle Alternative](https://talklive.app/omegle-alternative): Omegle closed on 8 November 2023. How to judge any Omegle alternative before you trust it - six checks - and how TalkLive, a free voice and text chat for adults with no camera, measures up.
+- [How TalkLive Works](https://talklive.app/how-it-works): How TalkLive connects two strangers: the live queues, how matching and preferences work, how WebRTC and the TURN relay carry encrypted audio, how text is delivered, and what "not recorded" does and does not mean.
+- [Safety Center](https://talklive.app/safety): How to stay safe on TalkLive: five rules, what to do if a conversation goes wrong, what TalkLive records and does not record, how reporting and blocking work, and where to get help.
+- [Languages](https://talklive.app/language-chat-guide): Use TalkLive in 17 languages, including right-to-left Arabic, Persian and Urdu. How the interface language works, how to find people who speak your language, and tips for talking across languages.
+- [Countries](https://talklive.app/country-chat-guide): Guides to talking with people in India, Pakistan, Bangladesh, the United States, the United Kingdom, Egypt, Nigeria and Indonesia - plus how TalkLive's country preferences really work.
+- [All Guides](https://talklive.app/resources): Every TalkLive guide in one place: talking to strangers, voice and text chat, safety and privacy, making friends, languages and country guides - and the editorial standards they are written to.
 
 ## Country guides
 - [India](https://talklive.app/countries/india): Free voice and text chat with people in India - Hindi, English or Hinglish, no sign-up, no camera. Why India talks to strangers like it talks on a long train, and when India is online (IST).

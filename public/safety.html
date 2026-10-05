@@ -3,168 +3,180 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<link rel="stylesheet" href="/seo.css?v=20261004cta" />
-<title>TalkLive Safety Center - Privacy, Reporting &amp; Blocking</title>
-<meta name="description" content="Understand TalkLive voice privacy, encrypted WebRTC and TURN relay use, text retention, reporting, blocking, identity boundaries and practical online chat safety." />
-<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-<meta name="theme-color" content="#0b0f1a" />
+<title>TalkLive Safety Center - Privacy, Reporting and Blocking</title>
+<meta name="description" content="How to stay safe on TalkLive: five rules, what to do if a conversation goes wrong, what TalkLive records and does not record, how reporting and blocking work, and where to get help." />
+<meta name="keywords" content="talklive safety, is talklive safe, random chat safety, voice chat safety tips, report and block, online chat safety" />
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+<meta name="theme-color" content="#ffffff" />
 <meta name="author" content="TalkLive" />
 <link rel="canonical" href="https://talklive.app/safety" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="TalkLive" />
-<meta property="og:title" content="TalkLive Safety Center - Privacy, Reporting &amp; Blocking" />
-<meta property="og:description" content="Understand TalkLive voice privacy, encrypted WebRTC and TURN relay use, text retention, reporting, blocking, identity boundaries and practical online chat safety." />
+<meta property="og:title" content="TalkLive Safety Center - Privacy, Reporting and Blocking" />
+<meta property="og:description" content="How to stay safe on TalkLive: five rules, what to do if a conversation goes wrong, what TalkLive records and does not record, how reporting and blocking work, and where to get help." />
 <meta property="og:url" content="https://talklive.app/safety" />
 <meta property="og:image" content="https://talklive.app/og-image.png?v=2" />
-<meta property="og:image:secure_url" content="https://talklive.app/og-image.png?v=2" />
-<meta property="og:image:type" content="image/png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="TalkLive - free one-to-one voice calls and text chat with people worldwide" />
+<meta property="og:image:alt" content="Safety Center" />
 <meta property="og:locale" content="en_US" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="TalkLive Safety Center - Privacy, Reporting &amp; Blocking" />
-<meta name="twitter:description" content="Understand TalkLive voice privacy, encrypted WebRTC and TURN relay use, text retention, reporting, blocking, identity boundaries and practical online chat safety." />
+<meta name="twitter:title" content="TalkLive Safety Center - Privacy, Reporting and Blocking" />
+<meta name="twitter:description" content="How to stay safe on TalkLive: five rules, what to do if a conversation goes wrong, what TalkLive records and does not record, how reporting and blocking work, and where to get help." />
 <meta name="twitter:image" content="https://talklive.app/og-image.png?v=2" />
-<meta name="twitter:image:alt" content="TalkLive voice and text chat" />
+<meta name="twitter:image:alt" content="Safety Center" />
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="/favicon-192.png" />
 <link rel="manifest" href="/site.webmanifest" />
+<link rel="preload" href="/fonts/mag/ibm-plex-serif-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/fonts/mag/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="stylesheet" href="/journal.css?v=20261005countries" />
+<style>
+.c-bar{display:flex;align-items:center;justify-content:space-between;gap:14px;max-width:1180px;margin:0 auto;padding:12px 20px;font:600 13px/1.2 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.02em}
+.c-bar a{text-decoration:none}
+.c-bar .c-brand{font-weight:700;letter-spacing:.06em}
+.c-bar nav{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+.c-bar nav a{opacity:.8}.c-bar nav a:hover{opacity:1;text-decoration:underline}
+.c-bar .c-bar-talk{opacity:1;padding:7px 14px;border:1.5px solid currentColor;border-radius:999px}
+.c-ctas{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.c-ctas a{display:inline-flex;align-items:center;gap:8px;text-decoration:none}
+.c-faq details{border-top:1px solid var(--rule,rgba(0,0,0,.15));padding:14px 0}
+.c-faq summary{cursor:pointer;list-style:none}
+.c-faq summary::-webkit-details-marker{display:none}
+.c-faq summary::after{content:"+";float:right;margin-left:12px}
+.c-faq details[open] summary::after{content:"\2212"}
+.c-faq details p{margin:10px 0 0}
+.c-guides{max-width:1180px;margin:64px auto 0;padding:0 20px}
+.c-guides h2{font:600 12px/1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.16em;text-transform:uppercase;margin:0 0 12px;opacity:.75}
+.c-guides ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px 22px;font:500 15px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
+.c-guides a{text-decoration:none;border-bottom:1px solid currentColor}
+@media (max-width:640px){.c-bar{font-size:12px}.c-bar nav{gap:12px;flex-wrap:nowrap}.c-bar nav a:nth-child(1),.c-bar nav a:nth-child(2),.c-bar nav a:nth-child(4){display:none}}
+
+:root{--paper:#ffffff;--ink:#14231c;--rule:#dfe6e2;--green:#0a7d4f;--amber:#b86e00;--tint:#eef7f2;--mast:#14231c}
+body{font-family:"Inter",system-ui,sans-serif;background:var(--paper)}
+.c-bar{border-bottom:1px solid var(--rule)}
+.sf-hero{background:var(--tint);border-bottom:1px solid var(--rule)}
+.sf-hero-in{max-width:1100px;margin:0 auto;padding:50px 20px 40px;display:grid;grid-template-columns:1.2fr 1fr;gap:40px;align-items:center}
+.sf-badge{display:inline-flex;align-items:center;gap:8px;font:600 13px/1 "Inter",sans-serif;color:var(--green);background:#fff;border:1px solid #bfe0cf;border-radius:999px;padding:8px 14px}
+.sf-hero h1{font:600 clamp(44px,7vw,84px)/1 "IBM Plex Serif",serif;margin:16px 0 16px;letter-spacing:-.02em}
+.sf-hero p{font-size:19px;line-height:1.6;margin:0 0 22px}
+.sf-rules{list-style:none;margin:0;padding:0;background:#fff;border:1px solid var(--rule);border-radius:14px;counter-reset:r}
+.sf-rules li{counter-increment:r;display:grid;grid-template-columns:44px 1fr;gap:6px;padding:14px 18px;border-bottom:1px solid var(--rule);font-size:16px;line-height:1.45}
+.sf-rules li:last-child{border-bottom:0}
+.sf-rules li::before{content:counter(r);display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--green);color:#fff;font:600 15px/1 "Inter",sans-serif}
+.sf-rules b{display:block}
+.c-ctas a{font:600 15px/1 "Inter",sans-serif;padding:14px 20px;border-radius:8px}
+.c-talk{background:var(--green);color:#fff}
+.c-chat{background:#fff;color:var(--ink);border:1px solid var(--rule)}
+.sf-main{max-width:1100px;margin:0 auto;padding:10px 20px 0}
+.sf-sec{padding:42px 0;border-bottom:1px solid var(--rule)}
+.sf-sec h2{font:600 clamp(28px,3.6vw,40px)/1.1 "IBM Plex Serif",serif;margin:0 0 14px;letter-spacing:-.01em}
+.sf-sec>p{font-size:18px;line-height:1.7;margin:0 0 1em;max-width:760px}
+.sf-sec a{color:var(--green)}
+.sf-cases{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin:20px 0}
+.sf-case{border:1px solid var(--rule);border-left:6px solid var(--amber);border-radius:10px;padding:16px 18px}
+.sf-case h3{font:600 17px/1.35 "Inter",sans-serif;margin:0 0 6px}
+.sf-case p{margin:0;font-size:15.5px;line-height:1.55;color:#33443b}
+.sf-case:last-child{border-left-color:var(--green)}
+.sf-table{width:100%;border-collapse:collapse;font-size:15.5px;margin:16px 0}
+.sf-table th,.sf-table td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.5}
+.sf-table thead th{background:var(--tint);font-weight:600}
+.sf-table td:first-child{font-weight:600;width:220px}
+.sf-scroll{overflow-x:auto}
+.sf-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:18px 0}
+.sf-steps div{background:var(--tint);border-radius:12px;padding:16px;font-size:15.5px;line-height:1.55}
+.sf-steps b{font:600 19px/1.2 "IBM Plex Serif",serif;display:block;margin-bottom:6px}
+.c-faq{max-width:1100px;margin:0 auto;padding:40px 20px 0}
+.c-faq h2{font:600 34px/1.1 "IBM Plex Serif",serif;margin:0 0 12px}
+.c-faq summary{font:600 17px/1.4 "Inter",sans-serif}
+.c-faq p{font-size:16px;line-height:1.65;color:#33443b}
+.sf-end{max-width:1100px;margin:46px auto 0;padding:0 20px}
+.sf-end-in{background:var(--ink);color:#fff;border-radius:16px;padding:36px 30px;display:grid;grid-template-columns:1.3fr 1fr;gap:20px;align-items:center}
+.sf-end h2{font:600 clamp(26px,3.6vw,38px)/1.15 "IBM Plex Serif",serif;margin:0}
+.sf-end p{margin:8px 0 0;color:#b8cbc1}
+.sf-end .c-chat{background:transparent;color:#fff;border-color:#4b5f55}
+@media (max-width:860px){.sf-hero-in,.sf-end-in{grid-template-columns:1fr}.sf-cases,.sf-steps{grid-template-columns:1fr}.sf-table td:first-child{width:auto}}
+</style>
 <script defer src="/pwa.js?v=20260908pwa"></script>
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://talklive.app/#organization","name":"TalkLive","alternateName":["Talk Live","TalkLive App"],"url":"https://talklive.app/","logo":{"@type":"ImageObject","url":"https://talklive.app/favicon-192.png","width":192,"height":192},"email":"info@talklive.app"},{"@type":"WebSite","@id":"https://talklive.app/#website","name":"TalkLive","alternateName":["Talk Live","TalkLive App"],"url":"https://talklive.app/","inLanguage":["en","es","pt","fr","de","ru","tr","ar","hi","ur","id","zh","ja","ko","it","fa","bn"],"publisher":{"@id":"https://talklive.app/#organization"}},{"@type":"WebApplication","@id":"https://talklive.app/#app","name":"TalkLive","url":"https://talklive.app/","applicationCategory":"CommunicationApplication","operatingSystem":"Any device with a modern web browser","browserRequirements":"JavaScript; microphone permission is required only for voice calls","isAccessibleForFree":true,"brand":{"@type":"Brand","name":"TalkLive"},"offers":{"@type":"Offer","price":"0","priceCurrency":"USD","description":"Core random voice and text matching","availability":"https://schema.org/InStock","url":"https://talklive.app/","hasMerchantReturnPolicy":{"@type":"MerchantReturnPolicy","applicableCountry":["AE","AR","AU","BD","BR","CA","CN","CO","DE","EG","ES","FR","GB","GR","ID","IE","IL","IN","IR","IT","JP","KE","KR","MA","MX","MY","NG","NL","NO","NZ","PH","PK","PL","PT","RO","RU","SA","SE","SG","TH","TR","UA","US","VN","ZA"],"returnPolicyCategory":"https://schema.org/MerchantReturnNotPermitted","merchantReturnLink":"https://talklive.app/refund"},"shippingDetails":{"@type":"OfferShippingDetails","shippingRate":{"@type":"MonetaryAmount","value":"0","currency":"USD"},"shippingDestination":{"@type":"DefinedRegion","addressCountry":["AE","AR","AU","BD","BR","CA","CN","CO","DE","EG","ES","FR","GB","GR","ID","IE","IL","IN","IR","IT","JP","KE","KR","MA","MX","MY","NG","NL","NO","NZ","PH","PK","PL","PT","RO","RU","SA","SE","SG","TH","TR","UA","US","VN","ZA"]},"deliveryTime":{"@type":"ShippingDeliveryTime","handlingTime":{"@type":"QuantitativeValue","minValue":0,"maxValue":0,"unitCode":"DAY"},"transitTime":{"@type":"QuantitativeValue","minValue":0,"maxValue":0,"unitCode":"DAY"}}}},"inLanguage":["en","es","pt","fr","de","ru","tr","ar","hi","ur","id","zh","ja","ko","it","fa","bn"],"audience":{"@type":"PeopleAudience","suggestedMinAge":18},"publisher":{"@id":"https://talklive.app/#organization"}},{"@type":"WebPage","@id":"https://talklive.app/safety#webpage","url":"https://talklive.app/safety","name":"TalkLive Safety Center - Privacy, Reporting & Blocking","description":"Understand TalkLive voice privacy, encrypted WebRTC and TURN relay use, text retention, reporting, blocking, identity boundaries and practical online chat safety.","dateModified":"2026-08-14","inLanguage":"en","isPartOf":{"@id":"https://talklive.app/#website"},"about":{"@id":"https://talklive.app/#app"},"primaryImageOfPage":{"@type":"ImageObject","url":"https://talklive.app/og-image.png?v=2","width":1200,"height":630}},{"@type":"BreadcrumbList","@id":"https://talklive.app/safety#breadcrumb","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://talklive.app/"},{"@type":"ListItem","position":2,"name":"Safety Center","item":"https://talklive.app/safety"}]},{"@type":"FAQPage","@id":"https://talklive.app/safety#faq","mainEntity":[{"@type":"Question","name":"Is TalkLive completely safe?","acceptedAnswer":{"@type":"Answer","text":"No stranger-chat service can guarantee that. TalkLive provides privacy, exit, block and report controls, while users still need to protect personal information and leave unsafe conversations."}},{"@type":"Question","name":"Does TalkLive record voice calls?","acceptedAnswer":{"@type":"Answer","text":"No. TalkLive does not record or store voice audio. WebRTC encrypts the connection and uses a TURN relay in production."}},{"@type":"Question","name":"Could the other person record me?","acceptedAnswer":{"@type":"Answer","text":"Yes. Any call participant can potentially record sound on their own device or with another device. Do not say anything you would be harmed by having saved or shared."}},{"@type":"Question","name":"Are text messages saved?","acceptedAnswer":{"@type":"Answer","text":"Typed messages, reports and related context may be retained for a limited period for delivery, moderation and safety. See the current Privacy Policy for details."}},{"@type":"Question","name":"What does reporting do?","acceptedAnswer":{"@type":"Answer","text":"It ends the unwanted interaction and supplies a moderation signal. Reports should be accurate; immediate danger or suspected crime should also be taken to the relevant local authority."}},{"@type":"Question","name":"Does a country filter verify someone's location?","acceptedAnswer":{"@type":"Answer","text":"No. A filter is a matching preference, not identity or residence verification, and a specific country match is not guaranteed."}}]},{"@type":"HowTo","@id":"https://talklive.app/safety#how","name":"A safer routine for every match","description":"Make the decision to protect your information before a conversation gets interesting.","step":[{"@type":"HowToStep","position":1,"name":"Set a privacy boundary","text":"Decide in advance which personal details, links, images, payments and off-platform accounts you will not share.","url":"https://talklive.app/safety#how"},{"@type":"HowToStep","position":2,"name":"Start with low-stakes topics","text":"Use general interests and broad locations rather than information that can identify your home, work or routine.","url":"https://talklive.app/safety#how"},{"@type":"HowToStep","position":3,"name":"Notice pressure early","text":"Requests for money, secrets, urgent links, explicit content or a quick move to another app are reasons to leave.","url":"https://talklive.app/safety#how"},{"@type":"HowToStep","position":4,"name":"End, block or report","text":"Use the control that fits the situation. For immediate danger or crime, contact the appropriate local authority.","url":"https://talklive.app/safety#how"}]}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://talklive.app/#organization","name":"TalkLive","url":"https://talklive.app/","logo":{"@type":"ImageObject","url":"https://talklive.app/favicon-192.png","width":192,"height":192}},{"@type":"WebPage","@id":"https://talklive.app/safety#webpage","url":"https://talklive.app/safety","name":"TalkLive Safety Center - Privacy, Reporting and Blocking","description":"How to stay safe on TalkLive: five rules, what to do if a conversation goes wrong, what TalkLive records and does not record, how reporting and blocking work, and where to get help.","inLanguage":"en","datePublished":"2026-10-05","dateModified":"2026-10-05","wordCount":1046,"about":{"@type":"Thing","name":"Safety on TalkLive"},"isPartOf":{"@id":"https://talklive.app/#website"},"publisher":{"@id":"https://talklive.app/#organization"},"primaryImageOfPage":{"@type":"ImageObject","url":"https://talklive.app/og-image.png?v=2","width":1200,"height":630}},{"@type":"BreadcrumbList","@id":"https://talklive.app/safety#breadcrumb","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://talklive.app/"},{"@type":"ListItem","position":2,"name":"Safety Center","item":"https://talklive.app/safety"}]},{"@type":"FAQPage","@id":"https://talklive.app/safety#faq","mainEntity":[{"@type":"Question","name":"Is TalkLive safe?","acceptedAnswer":{"@type":"Answer","text":"No chat with strangers can be made completely safe. TalkLive removes video, needs no personal details, keeps adults only, and puts Report and Block on every screen. Your own choices - especially keeping personal details private - matter most."}},{"@type":"Question","name":"Does TalkLive record calls?","acceptedAnswer":{"@type":"Answer","text":"No. Call audio is never recorded or stored. Automated safety checks run on your own microphone during a call and keep a short record only when abuse is detected. The other person could record on their own device."}},{"@type":"Question","name":"What happens when I report someone?","acceptedAnswer":{"@type":"Answer","text":"The conversation ends, the report is reviewed by the TalkLive team, and depending on what happened the person may be warned or banned. Bans apply to the device and network."}},{"@type":"Question","name":"What does blocking do?","acceptedAnswer":{"@type":"Answer","text":"It ends the conversation and stops that person being matched with you again."}},{"@type":"Question","name":"How old do I have to be?","acceptedAnswer":{"@type":"Answer","text":"TalkLive is for adults aged 18 and over only."}},{"@type":"Question","name":"Is TalkLive a crisis service?","acceptedAnswer":{"@type":"Answer","text":"No. If you are in danger or thinking about harming yourself, contact a crisis line such as 988 in the US or Samaritans on 116 123 in the UK and Ireland, or your local emergency number."}}]}]}</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978"
      crossorigin="anonymous"></script>
 <script defer src="/ads.js?v=20260923adsense2"></script>
 </head>
-<body>
-<a class="skip-link" href="#main-content">Skip to main content</a>
-<header class="site-header">
-    <div class="wrap">
-      <a class="logo" href="/"><img src="/favicon.svg" width="30" height="30" alt="TalkLive logo" /><span class="logo-name">Talk<span class="logo-live">Live</span></span></a>
-      <nav class="nav" aria-label="Primary"><a href="/random-voice-chat">Voice Chat</a><a href="/random-text-chat">Text Chat</a><a href="/language-exchange">Languages</a><a href="/resources">Resources</a></nav>
-      <span style="display:inline-flex;gap:8px">
-        <a class="btn btn-talk" href="/?utm_source=seo" style="padding:10px 18px;font-size:15px">🎙 Talk</a>
-        <a class="btn btn-chat" href="/chat?utm_source=seo" style="padding:10px 18px;font-size:15px">💬 Chat</a>
-      </span>
-    </div>
-  </header>
-<main id="main-content">
-  <section class="hero">
-    <div class="wrap hero-split">
-      <div class="hero-copy">
-      <span class="eyebrow"><span class="dot"></span> Privacy, boundaries and control</span>
-      <h1>TalkLive Safety Center</h1>
-      <p class="lede">Stranger chat is never risk-free. This center explains the controls TalkLive provides, the limits technology cannot remove, and the habits that keep you in charge of every conversation.</p>
-      <div class="cta-row">
-        <a class="btn btn-talk" href="/?utm_source=seo">🎙 Talk with Safety Controls</a>
-        <a class="btn btn-chat" href="/chat?utm_source=seo">💬 Start a Text Chat</a>
-        <a class="btn btn-ghost" href="#how">How it works</a>
-      </div>
-      <p class="hero-meta">Core matching is free · Ad-supported · No sign-up required · Voice &amp; text · Adults 18+ · Leave any time</p>
-      </div>
-      <div class="hero-art"><img class="art" src="/illustrations/security.svg" width="598" height="519" alt="" decoding="async" /></div>
-    </div>
-  </section>
-
-  <section id="features">
-    <div class="wrap center">
-      <h2>What safety means on TalkLive</h2>
-      <p class="section-intro">Useful safety information separates platform controls from choices only you can make.</p>
-      <div class="grid"><div class="card"><div class="ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="22"/></svg></div><h3>Voice is not recorded</h3><p>TalkLive does not record or store voice audio. WebRTC encrypts it in transit through the production TURN relay.</p></div><div class="card"><div class="ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-4 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/></svg></div><h3>Text may be retained</h3><p>Typed messages, reports and related context may be kept for a limited period for delivery, safety and moderation as described in the Privacy Policy.</p></div><div class="card"><div class="ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4v16M9 12h11M9 12l4-4M9 12l4 4"/></svg></div><h3>Leave immediately</h3><p>You do not owe a stranger an explanation. End the conversation or choose Next as soon as you feel uncomfortable.</p></div><div class="card"><div class="ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6l-7-3z"/></svg></div><h3>Report and block</h3><p>Reporting or blocking ends unwanted contact and gives the platform a signal it can use against repeated abuse.</p></div><div class="card"><div class="ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div><h3>Share less by default</h3><p>Keep real names, exact location, workplace, school, financial details, passwords and private contact information out of stranger chat.</p></div><div class="card"><div class="ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><circle cx="17" cy="9" r="2.6"/><path d="M15.5 15.5c2.7.4 5 2.2 5 4.5"/></svg></div><h3>Adults only</h3><p>TalkLive is restricted to people aged 18 or older. An age rule does not replace caution or identity verification.</p></div></div>
-    </div>
-  </section>
-
-  <section id="how">
-    <div class="wrap">
-      <h2>A safer routine for every match</h2>
-      <p class="section-intro">Make the decision to protect your information before a conversation gets interesting.</p>
-      <div class="steps"><div class="step"><h3>Set a privacy boundary</h3><p>Decide in advance which personal details, links, images, payments and off-platform accounts you will not share.</p></div><div class="step"><h3>Start with low-stakes topics</h3><p>Use general interests and broad locations rather than information that can identify your home, work or routine.</p></div><div class="step"><h3>Notice pressure early</h3><p>Requests for money, secrets, urgent links, explicit content or a quick move to another app are reasons to leave.</p></div><div class="step"><h3>End, block or report</h3><p>Use the control that fits the situation. For immediate danger or crime, contact the appropriate local authority.</p></div></div>
-    </div>
-  </section>
-
-
-
-  <section>
-    <div class="wrap prose"><h2>No stranger-chat service can promise complete safety</h2><p>TalkLive reduces some forms of exposure by offering voice and text without requiring video. That does not verify the identity, intentions or truthfulness of the person on the other side. Read the <a href="/blog/how-to-spot-a-bot-or-scam-in-random-chat">practical safety rules</a> before your first match and treat pressure as useful information, not something you have to negotiate with.</p><p>The fastest safety control is leaving. Next, block and report exist so you can act without debating whether someone has crossed a precise line. The <a href="/community-guidelines">Community Guidelines</a> and <a href="/terms">Terms</a> explain prohibited behaviour; they do not require you to stay until a violation is proven.</p><h2>What happens to voice and text</h2><p>TalkLive does not record or store voice audio. Automated safety checks run on your own microphone during a call (speech-to-text on desktop browsers only) and keep a short record only when abuse is detected - see the <a href="/privacy#voice-safety-checks">Privacy Policy</a>. As explained in <a href="/how-it-works">How TalkLive Works</a>, WebRTC encrypts audio in transit and TalkLive uses a TURN relay in production for connectivity. Relaying encrypted packets is not the same as creating an audio recording.</p><p>Typed chat is different. Messages, reports and supporting operational information may be retained for a limited, rolling period so the service can deliver features and respond to misuse. The current details and retention wording live in the <a href="/privacy">Privacy Policy</a>, which should be treated as the source of truth.</p><h2>The other participant controls their device</h2><p>A person who can hear a call can use device software or another physical device to record it. No browser protocol can prevent an endpoint from capturing sound after it has been decrypted for playback. Speak as though the other participant could keep what you say, even though TalkLive itself does not record the call.</p><p>Do not share authentication codes, recovery phrases, banking details, identity documents or intimate material. Avoid links sent by strangers; if a conversation becomes a request for money, investment, emergency assistance or account access, leave and report it.</p><h2>Country preferences are not identity checks</h2><p>A country label or matching preference is not proof of nationality, residence, language or location. Availability changes with the live queue, and choosing a country does not guarantee that a match from that country will be available. Learn more in the regional features on <a href="/regions/south-asia">South Asia</a>, <a href="/regions/europe">Europe</a> and <a href="/regions/americas">the Americas</a>.</p><p>TalkLive is not a crisis line, counselling service or emergency service. If you or another person may be in immediate danger, contact local emergency services or a qualified crisis resource in the relevant country rather than relying on a random match.</p></div>
-  </section>
-
-  <div class="wrap"><div class="ad-card"><span class="ad-card-label">Advertisement</span><div data-ad="native"></div></div></div>
-
-  <section class="faq">
-    <div class="wrap">
-      <h2>Frequently asked questions</h2>
-      <div class="faq-layout"><div><details><summary>Is TalkLive completely safe?</summary><p>No stranger-chat service can guarantee that. TalkLive provides privacy, exit, block and report controls, while users still need to protect personal information and leave unsafe conversations.</p></details><details><summary>Does TalkLive record voice calls?</summary><p>No. TalkLive does not record or store voice audio. WebRTC encrypts the connection and uses a TURN relay in production.</p></details><details><summary>Could the other person record me?</summary><p>Yes. Any call participant can potentially record sound on their own device or with another device. Do not say anything you would be harmed by having saved or shared.</p></details><details><summary>Are text messages saved?</summary><p>Typed messages, reports and related context may be retained for a limited period for delivery, moderation and safety. See the current Privacy Policy for details.</p></details><details><summary>What does reporting do?</summary><p>It ends the unwanted interaction and supplies a moderation signal. Reports should be accurate; immediate danger or suspected crime should also be taken to the relevant local authority.</p></details><details><summary>Does a country filter verify someone's location?</summary><p>No. A filter is a matching preference, not identity or residence verification, and a specific country match is not guaranteed.</p></details></div><img class="art art-faq" src="/illustrations/question-answered.svg" width="960" height="821" alt="" loading="lazy" decoding="async" /></div>
-    </div>
-  </section>
-
-  <div class="wrap"><div class="ad-card"><span class="ad-card-label">Advertisement</span><div data-ad="leaderboard"></div></div></div>
-
-  <section>
-    <div class="wrap">
-      <h2>Read more from the TalkLive blog</h2>
-      <div class="grid"><a class="card card-with-art" href="/blog/how-random-matchmaking-works" style="display:block;text-decoration:none;color:inherit">
-      <div class="card-art"><img class="art" src="/illustrations/connection.svg" width="867" height="673" alt="" loading="lazy" decoding="async" /></div>
-      <p style="margin:0 0 8px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;opacity:.7">Explainer</p>
-      <h3 style="margin:0 0 10px">What Actually Happens in the Two Seconds After You Press &quot;Start&quot;</h3><p>A plain-English tour of a random voice match: the waiting queue, why filters make you wait, the handshake that connects two browsers, and the relay that carries the audio when a direct line is impossible.</p></a><a class="card card-with-art" href="/blog/phone-anxiety-how-to-get-comfortable-talking" style="display:block;text-decoration:none;color:inherit">
-      <div class="card-art"><img class="art" src="/illustrations/phone-call.svg" width="880" height="537" alt="" loading="lazy" decoding="async" /></div>
-      <p style="margin:0 0 8px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;opacity:.7">Advice</p>
-      <h3 style="margin:0 0 10px">&quot;Why Does My Heart Race Every Time the Phone Rings?&quot;</h3><p>A reader cannot make or answer phone calls without dread. Our reply on why calls are genuinely harder than texting, the habit that keeps the fear alive, and a step-by-step ladder out of it.</p></a><a class="card card-with-art" href="/blog/how-to-practise-a-language-by-speaking" style="display:block;text-decoration:none;color:inherit">
-      <div class="card-art"><img class="art" src="/illustrations/online-learning.svg" width="692" height="500" alt="" loading="lazy" decoding="async" /></div>
-      <p style="margin:0 0 8px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;opacity:.7">Languages</p>
-      <h3 style="margin:0 0 10px">Why You Understand More Than You Can Say</h3><p>Most learners can follow far more than they can say. A linguist called this out in 1985. Field notes on why speaking is its own skill, the fear that blocks it, and a four-week routine.</p></a></div>
-      <p style="margin-top:18px"><a href="/blog/">Browse all articles →</a></p>
-    </div>
-  </section>
-
-  <section>
-    <div class="wrap">
-      <h2>Explore more ways to connect</h2>
-      <p class="section-intro">TalkLive is one app with many ways to meet people. Jump into whichever fits your mood.</p>
-      <nav class="link-cloud" aria-label="Related TalkLive guides"><a href="/how-it-works">How It Works</a><a href="/country-chat-guide">Countries</a><a href="/resources">Resources</a><a href="/random-voice-chat">Random Voice Chat</a><a href="/random-text-chat">Random Text Chat</a><a href="/make-friends-online">Make Friends Online</a><a href="/language-exchange">Language Exchange</a></nav>
-    </div>
-  </section>
-
-  <div class="wrap">
-    <div class="cta-band">
-      <img class="art art-cta" src="/illustrations/walking-together.svg" width="538" height="509" alt="" loading="lazy" decoding="async" />
-      <h2>Stay in control from the first hello</h2>
-      <p>Share less, trust pressure signals, and leave or report the moment a conversation stops feeling right.</p>
-      <div class="cta-row">
-        <a class="btn btn-talk" href="/?utm_source=seo">🎙 Talk with Safety Controls</a>
-        <a class="btn btn-chat" href="/chat?utm_source=seo">💬 Start a Text Chat</a>
-      </div>
-    </div>
+<body class="c-page c-safety">
+<a class="skip" href="#story">Skip to the guide</a>
+<header class="c-bar">
+  <a class="c-brand" href="/">TalkLive</a>
+  <nav aria-label="Site"><a href="/random-voice-chat">Voice chat</a><a href="/random-text-chat">Text chat</a><a href="/country-chat-guide">Countries</a><a href="/safety">Safety</a><a class="c-bar-talk" href="/?utm_source=seo">Talk now</a></nav>
+</header>
+<main id="story">
+<section class="sf-hero"><div class="sf-hero-in">
+  <div>
+    <span class="sf-badge">&#9679; Adults 18+ &middot; No camera &middot; Report and Block on every screen</span>
+    <h1>Safety Center</h1>
+    <p>No service that connects strangers can promise complete safety, and we will not pretend otherwise. What we can do is tell you exactly how TalkLive works, what it does and does not keep, and what to do the moment a conversation goes wrong. Read the five rules. They cover almost everything.</p>
+    <div class="c-ctas"><a class="c-talk" href="/?utm_source=seo">Start a voice chat</a><a class="c-chat" href="/chat?utm_source=seo">Start a text chat</a></div>
   </div>
+  <ol class="sf-rules" aria-label="Five rules">
+    <li><span><b>Keep personal details private.</b>No surname, address, school, workplace, social handles or photos with someone you just met.</span></li>
+    <li><span><b>Never send money or codes.</b>Not for an emergency, an investment or a "verification". Ever.</span></li>
+    <li><span><b>Leave whenever you want.</b>You owe a stranger no explanation. Next is always one tap away.</span></li>
+    <li><span><b>Report and Block freely.</b>You do not need proof that a rule was broken. If it feels wrong, act.</span></li>
+    <li><span><b>Assume you could be recorded.</b>TalkLive does not record calls, but the other person controls their own device.</span></li>
+  </ol>
+</div></section>
 
-  <div class="wrap"><div class="ad-card"><span class="ad-card-label">Advertisement</span><div data-ad="native"></div></div></div>
-</main>
-<footer class="site-footer">
-    <div class="wrap">
-      <div class="cols">
-        <div style="max-width:280px">
-          <a class="logo" href="/"><img src="/favicon.svg" width="28" height="28" alt="TalkLive logo" /><span class="logo-name">Talk<span class="logo-live">Live</span></span></a>
-          <p style="margin-top:12px">Free one-to-one voice and text conversations with people around the world. Tap to Talk or Tap to Chat - no sign-up, adults 18+, with block and report on every screen.</p>
-        </div>
-        <div><h4>Talk</h4><ul><li><a href="/talk-to-strangers">Talk to Strangers</a></li><li><a href="/random-voice-chat">Voice Chat</a></li><li><a href="/random-text-chat">Text Chat</a></li><li><a href="/language-exchange">Language Exchange</a></li></ul></div><div><h4>Discover</h4><ul><li><a href="/resources">Resource Hub</a></li><li><a href="/voice-chat-vs-video-chat">Voice vs Video</a></li><li><a href="/languages/">Languages</a></li><li><a href="/regions/south-asia">South Asia</a></li><li><a href="/regions/europe">Europe</a></li><li><a href="/regions/americas">The Americas</a></li><li><a href="/how-it-works">How It Works</a></li><li><a href="/safety">Safety Center</a></li></ul></div><div><h4>Countries</h4><ul><li><a href="/countries/india">India</a></li><li><a href="/countries/pakistan">Pakistan</a></li><li><a href="/countries/bangladesh">Bangladesh</a></li><li><a href="/countries/united-states">United States</a></li><li><a href="/countries/united-kingdom">United Kingdom</a></li><li><a href="/countries/egypt">Egypt</a></li><li><a href="/countries/nigeria">Nigeria</a></li><li><a href="/countries/indonesia">Indonesia</a></li></ul></div>
-        <div><h4>App</h4><ul>
-          <li><a href="/">Open TalkLive</a></li>
-          <li><a href="/blog/">Blog</a></li>
-          <li><a href="/pricing">Pricing</a></li>
-          <li><a href="/about">About</a></li>
-          <li><a href="/contact">Contact</a></li>
-          <li><a href="/privacy">Privacy Policy</a></li>
-          <li><a href="/terms">Terms</a></li>
-          <li><a href="/community-guidelines">Community Guidelines</a></li>
-          <li><a href="/refund">Refund Policy</a></li>
-        </ul></div>
-      </div>
-      <div class="legal">
-        <span>&copy; 2026 TalkLive. All rights reserved.</span>
-        <span>Made for people who love to talk. 18+ only.</span>
-        <span><a href="/contact">Support</a></span>
-      </div>
+<div class="sf-main">
+  <section class="sf-sec">
+    <h2>If this happens, do this</h2>
+    <div class="sf-cases"><div class="sf-case"><h3>Someone asks for money, gift cards, crypto or a code</h3><p>It is a scam, whatever the story - an emergency, an investment, a prize, a "verification". Do not pay, do not share the code. Block, report, Next.</p></div><div class="sf-case"><h3>Someone asks for photos or to move to another app</h3><p>You never have to. People who push for either in the first minutes are rarely looking for conversation. Say no, or simply leave.</p></div><div class="sf-case"><h3>Someone is sexual, threatening or cruel</h3><p>End it immediately - you do not need to wait until a rule is "clearly" broken. Report it so the team can act, and Block so you are never matched again.</p></div><div class="sf-case"><h3>Someone seems to be under 18</h3><p>TalkLive is for adults only. End the conversation and report it, so it can be reviewed.</p></div><div class="sf-case"><h3>Someone threatens to share something about you</h3><p>Do not pay and do not negotiate. Stop replying, keep any evidence you can, report it here, and report it to the police where you live.</p></div><div class="sf-case"><h3>You are struggling, or thinking about hurting yourself</h3><p>Please talk to someone trained. Call or text 988 in the US, Samaritans on 116 123 in the UK and Ireland, Tele-MANAS on 14416 in India, or find a helpline at findahelpline.com.</p></div></div>
+  </section>
+
+  <section class="sf-sec">
+    <h2>What TalkLive keeps, and what it doesn't</h2>
+    <p>Privacy claims are only useful if they are specific. Here is the short version; the <a href="/privacy">Privacy Policy</a> is the full and authoritative one.</p>
+    <div class="sf-scroll"><table class="sf-table">
+      <thead><tr><th scope="col">What</th><th scope="col">What happens to it</th></tr></thead>
+      <tbody>
+        <tr><td>Call audio</td><td>Never recorded or stored. Calls are encrypted in transit by WebRTC and may pass through TalkLive's TURN relay, which carries encrypted packets without recording them.</td></tr>
+        <tr><td>Automated safety checks</td><td>While a call is connected, checks run on your own microphone to detect abuse: a loudness check on every device, and speech-to-text on desktop browsers. Only a short record is kept, and only when a check is triggered.</td></tr>
+        <tr><td>Typed messages</td><td>Delivered through TalkLive's servers and kept for a short, rolling period so reports can be reviewed, then they expire.</td></tr>
+        <tr><td>Friend voice messages</td><td>Only between people who added each other: stored so they can be played back, with a transcript where supported, and may be reviewed for safety.</td></tr>
+        <tr><td>Technical data</td><td>IP address and device information, used to run the service, estimate a country, count visits and enforce bans. Your match never sees your IP address.</td></tr>
+        <tr><td>What your match sees</td><td>A display name, spirit animal, any interests you added, an estimated country and your local time. Not your name, email, number, IP address or city.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="sf-sec">
+    <h2>How reporting and blocking work</h2>
+    <div class="sf-steps">
+      <div><b>1. You report</b>Tap Report on the call or chat screen. The conversation ends at once, and the other person is not told who reported them.</div>
+      <div><b>2. We review</b>Reports are reviewed by the TalkLive team alongside the context the report includes.</div>
+      <div><b>3. We act</b>Depending on what happened: a warning, or a ban. Bans apply to the device and network, not a username that can be changed.</div>
     </div>
-  </footer>
+    <p>Blocking is separate and instant: it ends the conversation and stops that person being matched with you again. Use both freely. The <a href="/community-guidelines">Community Guidelines</a> and <a href="/terms">Terms</a> set out what is not allowed - but you never have to wait until a line is clearly crossed before you leave.</p>
+  </section>
+
+  <section class="sf-sec">
+    <h2>Things no chat service can promise</h2>
+    <p>TalkLive cannot verify who anyone is. The country shown for a match is estimated from their network and is not proof of where they live; a display name is not a real name; and an 18+ rule, while enforced through reports and bans, is not identity verification. Treat everyone you meet as exactly what they are - a stranger - until you have good reason not to.</p>
+    <p>For the common scam scripts and how to spot them, read the Journal's <a href="/blog/how-to-spot-a-bot-or-scam-in-random-chat">field guide to the scams that start with "Hi"</a>. For what anonymity does and does not cover, see <a href="/anonymous-chat">anonymous chat</a>; for the technical side, <a href="/how-it-works">how TalkLive works</a>. Local emergency and helpline numbers are listed in each of our <a href="/country-chat-guide">country guides</a>.</p>
+  </section>
+</div>
+
+<section class="c-faq" aria-labelledby="faq-h"><h2 id="faq-h">Safety questions</h2><details><summary>Is TalkLive safe?</summary><p>No chat with strangers can be made completely safe. TalkLive removes video, needs no personal details, keeps adults only, and puts Report and Block on every screen. Your own choices - especially keeping personal details private - matter most.</p></details><details><summary>Does TalkLive record calls?</summary><p>No. Call audio is never recorded or stored. Automated safety checks run on your own microphone during a call and keep a short record only when abuse is detected. The other person could record on their own device.</p></details><details><summary>What happens when I report someone?</summary><p>The conversation ends, the report is reviewed by the TalkLive team, and depending on what happened the person may be warned or banned. Bans apply to the device and network.</p></details><details><summary>What does blocking do?</summary><p>It ends the conversation and stops that person being matched with you again.</p></details><details><summary>How old do I have to be?</summary><p>TalkLive is for adults aged 18 and over only.</p></details><details><summary>Is TalkLive a crisis service?</summary><p>No. If you are in danger or thinking about harming yourself, contact a crisis line such as 988 in the US or Samaritans on 116 123 in the UK and Ireland, or your local emergency number.</p></details></section>
+<div class="ad-card"><span class="ad-card-label">Advertisement</span><div data-ad="native"></div></div>
+<section class="sf-end"><div class="sf-end-in">
+  <div><h2>Ready when you are</h2><p>Know the five rules, and Report and Block are always one tap away.</p></div>
+  <div class="c-ctas"><a class="c-talk" href="/?utm_source=seo">Tap to Talk</a><a class="c-chat" href="/chat?utm_source=seo">Tap to Chat</a></div>
+</div></section>
+</main>
+<aside class="c-guides" aria-label="Other guides"><h2>More guides</h2><ul><li><a href="/talk-to-strangers">Talk to Strangers</a></li><li><a href="/random-voice-chat">Random Voice Chat</a></li><li><a href="/random-text-chat">Random Text Chat</a></li><li><a href="/anonymous-chat">Anonymous Chat</a></li><li><a href="/random-call">Random Call</a></li><li><a href="/talk-to-someone">Talk to Someone</a></li><li><a href="/late-night-chat">Late Night Chat</a></li><li><a href="/make-friends-online">Make Friends Online</a></li><li><a href="/practice-english-speaking">Practice English Speaking</a></li><li><a href="/language-exchange">Language Exchange</a></li><li><a href="/voice-chat-vs-video-chat">Voice Chat vs Video Chat</a></li><li><a href="/omegle-alternative">Omegle Alternative</a></li><li><a href="/how-it-works">How TalkLive Works</a></li><li><a href="/language-chat-guide">Languages</a></li><li><a href="/country-chat-guide">Countries</a></li><li><a href="/resources">All Guides</a></li></ul></aside>
+<footer class="j-foot">
+  <nav aria-label="Legal"><a href="/about">About</a><a href="/contact">Contact</a><a href="/privacy">Privacy Policy</a><a href="/terms">Terms</a><a href="/community-guidelines">Community Guidelines</a><a href="/safety">Safety</a><a href="/blog/">Journal</a><a href="/">TalkLive home</a></nav>
+  <p>&copy; 2026 TalkLive. Free one-to-one voice and text chat for adults 18+. Nobody's identity, age or location is verified. Corrections: info@talklive.app</p>
+</footer>
 <!-- Google tag (gtag.js) - see scripts/migrate-analytics.js -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-713E3C1RH1"></script>
 <script>

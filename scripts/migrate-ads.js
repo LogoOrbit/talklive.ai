@@ -44,7 +44,9 @@ const NO_AD_DIRS = ['languages'].concat(require('./locales').map((l) => l.code))
 // with little original content.
 // /talk-to-someone sits beside suicide and crisis-line information; ads have
 // no place next to that, so it carries no ad code at all.
-const NO_AD_PAGES = new Set(['contact.html', 'refund.html', 'talk-to-someone.html']);
+// The guide hubs are mostly links to other pages; AdSense does not allow ads
+// on screens used mainly for navigation.
+const NO_AD_PAGES = new Set(['contact.html', 'refund.html', 'talk-to-someone.html', 'resources.html', 'language-chat-guide.html', 'country-chat-guide.html']);
 function isNoAdPage(file) {
   const rel = path.relative(publicDir, file).split(path.sep);
   if (rel.length === 1) return NO_AD_PAGES.has(rel[0]);

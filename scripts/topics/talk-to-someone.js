@@ -17,7 +17,7 @@ module.exports = {
   preload: ['fraunces-latin-400-normal', 'literata-latin-400-normal'],
   css: `
 :root{--paper:#fbf4ee;--ink:#2d2433;--rule:#e6d7cf;--plum:#6b4c7a;--peach:#f2b8a0;--mast:#2d2433}
-body{font-family:"Literata",Georgia,serif;background:linear-gradient(180deg,#f7e3d6 0,#efe0ef 520px,var(--paper) 1100px)}
+body{font-family:"Literata",Georgia,serif;background:var(--paper) linear-gradient(180deg,#f7e3d6 0,#efe0ef 520px,var(--paper) 1100px) no-repeat}
 .so-wrap{max-width:720px;margin:0 auto;padding:60px 20px 0}
 .so-wrap h1{font:400 clamp(52px,9vw,96px)/.95 "Fraunces",serif;letter-spacing:-.02em;margin:0 0 18px}
 .so-wrap h1 i{color:var(--plum)}

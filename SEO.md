@@ -12,7 +12,7 @@ not hand-edit those files - run `npm run build:seo` and edit the source:
 | `scripts/build-seo.js` | the page/blog/locale templates, all schema, sitemaps, RSS, `llms.txt` |
 | `scripts/data/geo.js` | country + city + language facts |
 | `scripts/geo-pages.js` | orphaned; once produced `/countries/*`, `/cities/*`, `/languages/*` |
-| `scripts/pages-extra.js`, `pages-extra2.js` | hand-written landing pages |
+| `scripts/topics/`, `scripts/countries/` | hand-designed landing pages and hubs, one module each |
 | `scripts/migrate-retired-links.js` | rewrites links to retired country/city/alternative URLs in pages on disk |
 | `scripts/blog-extra.js`, `blog-extra2.js` | hand-written articles |
 | `scripts/locales.js` | the 16 localized homepages |
@@ -66,6 +66,14 @@ being followed.
 ---
 
 ## What is on the site
+
+> **October 2026 (7):** the landing-page template is retired. Every landing
+> page and hub (`scripts/topics/`, 17 pages) and every country guide
+> (`scripts/countries/`, 8 pages) is written and designed on its own, with its
+> own layout and typefaces, real sources and TalkLive's own data where used.
+> AdSense: at most one ad slot per page, below the content; no ad code at all
+> on `/talk-to-someone` (crisis-line information) or on the navigation hubs
+> `/resources`, `/language-chat-guide` and `/country-chat-guide`.
 
 > **October 2026 (6):** restored search pages. Arrivals from search into the
 > app halved within a day of the October retirements, and the countries that
