@@ -474,6 +474,29 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
     next();
   });
 
+  // Reports are rebuilt from the whole store on every poll, and each open
+  // dashboard tab polls on its own. Identical GETs within a few seconds share
+  // one answer; any write (ban, delete, settings...) clears it so actions
+  // show up at once. Streams, audio and exports are never cached.
+  const REPORT_TTL = 5000;
+  const reportCache = new Map();
+  router.use('/api', (req, res, next) => {
+    if (req.method !== 'GET') { reportCache.clear(); return next(); }
+    if (/^\/(live\/stream|status|export\/|voice-notes\/.+\/audio)/.test(req.path)) return next();
+    const key = req.originalUrl;
+    const hit = reportCache.get(key);
+    if (hit && Date.now() - hit.at < REPORT_TTL) return res.json(hit.body);
+    const json = res.json.bind(res);
+    res.json = (body) => {
+      if (res.statusCode === 200) {
+        if (reportCache.size > 200) reportCache.clear();
+        reportCache.set(key, { at: Date.now(), body });
+      }
+      return json(body);
+    };
+    next();
+  });
+
   // Summing 30 days of per-country/city/feature maps was the most expensive
   // part of the Overview (tens of thousands of keys, every 12s poll). Only
   // today's UTC day is still being written, so the other 29 are summed once

@@ -830,7 +830,9 @@ let tab='overview',timer=null,counts={},paused=false,lastLoadTs=0,loadFailures=0
    quiet: a repaint of the tab already on screen - no entrance animations and no
    counters re-counting from zero every 12 seconds. */
 let loadSeq=0,renderedTab=null,quiet=false;
-const REFRESH_MS=()=>tab==='live'?5000:tab==='ai'?60000:12000;
+/* Health and Traffic show Google data cached for 30+ minutes; polling them
+   every 12s only repaints the same numbers. */
+const REFRESH_MS=()=>tab==='live'?5000:(tab==='ai'||tab==='health'||tab==='traffic'||tab==='settings'||tab==='audit')?60000:12000;
 
 function navBadge(id){
   if(id==='reports'&&counts.unhandledReports)return `<span class="badge">${counts.unhandledReports}</span>`;
