@@ -163,6 +163,69 @@ function toCsv(headers, rows) {
 }
 const isoOr = (ts) => (ts ? new Date(ts).toISOString() : '');
 
+// --- ZIP ---------------------------------------------------------------------
+// Minimal ZIP writer (deflate, no zip64) for the "download everything" export,
+// so it needs no dependency. files: [{ name, data: Buffer }].
+const CRC_TABLE = Array.from({ length: 256 }, (_, n) => {
+  let c = n;
+  for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+  return c >>> 0;
+});
+function crc32(buf) {
+  let c = 0xffffffff;
+  for (let i = 0; i < buf.length; i++) c = CRC_TABLE[(c ^ buf[i]) & 0xff] ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+}
+function zipFiles(files) {
+  const zlib = require('zlib');
+  const now = new Date();
+  const dosTime = (now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1);
+  const dosDate = ((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate();
+  const locals = [];
+  const centrals = [];
+  let offset = 0;
+  for (const f of files) {
+    const name = Buffer.from(f.name, 'utf8');
+    const body = zlib.deflateRawSync(f.data);
+    const crc = crc32(f.data);
+    const local = Buffer.alloc(30);
+    local.writeUInt32LE(0x04034b50, 0);
+    local.writeUInt16LE(20, 4);
+    local.writeUInt16LE(0x0800, 6); // UTF-8 names
+    local.writeUInt16LE(8, 8);
+    local.writeUInt16LE(dosTime, 10);
+    local.writeUInt16LE(dosDate, 12);
+    local.writeUInt32LE(crc, 14);
+    local.writeUInt32LE(body.length, 18);
+    local.writeUInt32LE(f.data.length, 22);
+    local.writeUInt16LE(name.length, 26);
+    const central = Buffer.alloc(46);
+    central.writeUInt32LE(0x02014b50, 0);
+    central.writeUInt16LE(20, 4);
+    central.writeUInt16LE(20, 6);
+    central.writeUInt16LE(0x0800, 8);
+    central.writeUInt16LE(8, 10);
+    central.writeUInt16LE(dosTime, 12);
+    central.writeUInt16LE(dosDate, 14);
+    central.writeUInt32LE(crc, 16);
+    central.writeUInt32LE(body.length, 20);
+    central.writeUInt32LE(f.data.length, 24);
+    central.writeUInt16LE(name.length, 28);
+    central.writeUInt32LE(offset, 42);
+    locals.push(local, name, body);
+    centrals.push(central, name);
+    offset += local.length + name.length + body.length;
+  }
+  const cdSize = centrals.reduce((n, b) => n + b.length, 0);
+  const end = Buffer.alloc(22);
+  end.writeUInt32LE(0x06054b50, 0);
+  end.writeUInt16LE(files.length, 8);
+  end.writeUInt16LE(files.length, 10);
+  end.writeUInt32LE(cdSize, 12);
+  end.writeUInt32LE(offset, 16);
+  return Buffer.concat([...locals, ...centrals, end]);
+}
+
 // --- Feature ranking -----------------------------------------------------------
 // store.recordFeature() counts every tracked event: product features, but also
 // plumbing (searches, logins, acquisition sources, billing steps, password
@@ -1417,10 +1480,33 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
 
   // CSV downloads. Every one is a projection of records that stay exactly where
   // they are - exporting never mutates or clears anything.
-  router.get('/api/export/:kind', (req, res) => {
-    const kind = String(req.params.kind).replace(/\.csv$/i, '');
+  function buildCsv(kind, req) {
     let csv = null;
-    if (kind === 'accounts') {
+    if (kind === 'overview') {
+      // Everything the Overview tab shows, flattened to metric/key/value.
+      const days = store.data.analytics.days;
+      const keys = Object.keys(days).sort().slice(-30);
+      const agg = (field) => aggregateDays(days, keys, field);
+      const rows = [];
+      for (const [k, v] of Object.entries(store.data.analytics.totals || {})) rows.push(['total_all_time', k, v]);
+      rows.push(['count', 'accounts', Object.keys(store.data.accountsRegistry).length]);
+      rows.push(['count', 'premium_active', premiumRows().filter((r) => r.status === 'active').length]);
+      rows.push(['count', 'active_bans', store.activeBans().length]);
+      rows.push(['count', 'reports', store.data.reports.length]);
+      rows.push(['count', 'unhandled_reports', store.data.reports.filter((r) => !r.handled).length]);
+      rows.push(['count', 'feedback', store.data.feedback.length]);
+      rows.push(['count', 'errors', store.data.errors.length]);
+      for (const [k, v] of Object.entries(agg('countries')).sort((a, b) => b[1] - a[1])) rows.push(['country_visits_30d', k, v]);
+      for (const [k, v] of Object.entries(agg('cities')).sort((a, b) => b[1] - a[1])) rows.push(['city_visits_30d', k, v]);
+      for (const [k, v] of rankFeatures(agg('features'))) rows.push(['feature_use_30d', k, v]);
+      for (const [k, v] of Object.entries(agg('sections')).sort((a, b) => b[1] - a[1])) rows.push(['site_section_views_30d', k, v]);
+      for (const [k, v] of Object.entries(agg('crawlers')).sort((a, b) => b[1] - a[1])) rows.push(['crawler_hits_30d', k, v]);
+      for (const [k, v] of Object.entries(store.data.analytics.topics || {}).sort((a, b) => b[1] - a[1])) rows.push(['chat_topic', k, v]);
+      csv = toCsv(['metric', 'key', 'value'], rows);
+    } else if (kind === 'traffic-daily') {
+      const t = trafficReport(String(req.query.range || '90d'));
+      csv = toCsv(['day_utc', ...TRAFFIC_MEDIUMS], t.daily.map((d) => [d.day, ...TRAFFIC_MEDIUMS.map((m) => d[m])]));
+    } else if (kind === 'accounts') {
       csv = toCsv(['username', 'nickname', 'method', 'email', 'email_verified', 'google_id', 'full_name',
         'given_name', 'family_name', 'avatar_url', 'google_locale', 'workspace_domain', 'google_linked',
         'country', 'city', 'ip', 'created', 'last_seen'],
@@ -1502,6 +1588,49 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
       csv = toCsv(['client_id', 'status', 'source', 'paying', 'permanent', 'activated', 'expires', 'revoked', 'last_event'],
         premiumRows().map((r) => [r.clientId, r.status, r.source, r.paying ? 'yes' : 'no', r.permanent ? 'yes' : 'no', isoOr(r.activatedAt), isoOr(r.expiresAt), isoOr(r.revokedAt), r.lastEvent]));
     }
+    return csv;
+  }
+
+  // Every dataset in one ZIP of clean CSVs, at the widest range each report
+  // supports, plus a README describing each file.
+  const BUNDLE = [
+    ['01-daily-log', 'daily-log', {}, 'One row per UTC day, full history: visits, uniques, people, calls, talk time, messages, games, signups, peak online. "estimated" lists cells derived from older counters.'],
+    ['02-daily-activity', 'daily', {}, 'Last 30 days cut on the dashboard timezone: visitors, crawler hits, connections, matches, messages, reports, errors.'],
+    ['03-overview', 'overview', {}, 'All-time totals, current counts, and last-30-day breakdowns (countries, cities, features, site sections, crawlers, chat topics).'],
+    ['04-traffic-sources', 'traffic', { range: '90d' }, 'Last 90 days: sources, landing pages, source->page, search terms, page views.'],
+    ['05-traffic-daily', 'traffic-daily', { range: '90d' }, 'Last 90 days: arrivals per day by medium (search, ai, social, referral, campaign, app, direct).'],
+    ['06-countries', 'countries', {}, 'Visits per country (last 30 days) and registered accounts per country.'],
+    ['07-audience', 'audience', { range: '30' }, 'Last 30 days: gender, age, device, OS, browser, language, new vs returning, call length, wait time, ratings.'],
+    ['08-talk-time', 'talktime', { range: 'all' }, 'Per person, all time: talk seconds, conversations, average and longest call.'],
+    ['09-games', 'games', { range: 'all' }, 'Per player, all time: play time, sessions, rounds, results, invites.'],
+    ['10-accounts', 'accounts', {}, 'Registered accounts with sign-in method, location and timestamps. Contains personal data.'],
+    ['11-subscriptions', 'premium', {}, 'Plus subscriptions: status, source, activation and expiry.'],
+    ['12-reports', 'reports', {}, 'User reports with reason and handled state.'],
+    ['13-bans', 'bans', {}, 'Bans with reason, expiry and lift time.'],
+    ['14-feedback', 'feedback', {}, 'User feedback messages.'],
+  ];
+
+  router.get('/api/export/all.zip', (req, res) => {
+    const stamp = new Date().toISOString();
+    const files = [];
+    const readme = [`TalkLive dashboard export`, `Generated: ${stamp}`, `Timezone for "daily-activity": ${reportTimezone(req)}`,
+      `All timestamps are ISO 8601 UTC. CSVs are UTF-8 with BOM, comma-separated, one header row.`, ``, `Files:`];
+    for (const [name, kind, query, about] of BUNDLE) {
+      const csv = buildCsv(kind, { query: { ...req.query, ...query } });
+      if (csv === null) continue;
+      files.push({ name: `${name}.csv`, data: Buffer.from('﻿' + csv, 'utf8') });
+      readme.push(`  ${name}.csv - ${about}`);
+    }
+    files.unshift({ name: 'README.txt', data: Buffer.from(readme.join('\r\n') + '\r\n', 'utf8') });
+    store.audit('export', reqIp(req), 'Exported all dashboard data (zip)');
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="talklive-data-${stamp.slice(0, 10)}.zip"`);
+    res.send(zipFiles(files));
+  });
+
+  router.get('/api/export/:kind', (req, res) => {
+    const kind = String(req.params.kind).replace(/\.csv$/i, '');
+    const csv = buildCsv(kind, req);
     if (csv === null) return res.status(404).json({ error: 'Unknown export.' });
     store.audit('export', reqIp(req), `Exported ${kind}.csv`);
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
