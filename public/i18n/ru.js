@@ -800,6 +800,7 @@
   "filtersTrimmedFree": "Пол и другие страны — только в Plus",
   "friendIdCopied": "ID скопирован",
   "friendIdLinkCopied": "Ссылка скопирована",
-  "loggedOutToast": "Вы вышли"
+  "loggedOutToast": "Вы вышли",
+  "devBanner": "Извините! TalkLive ещё в разработке, поэтому возможны небольшие задержки или сбои. Не волнуйтесь — мы над этим работаем."
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("ru");

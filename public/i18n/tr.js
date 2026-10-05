@@ -800,6 +800,7 @@
   "filtersTrimmedFree": "Cinsiyet ve ek ülkeler Plus gerektirir",
   "friendIdCopied": "ID kopyalandı",
   "friendIdLinkCopied": "Bağlantı kopyalandı",
-  "loggedOutToast": "Çıkış yapıldı"
+  "loggedOutToast": "Çıkış yapıldı",
+  "devBanner": "Üzgünüz! TalkLive hâlâ geliştirme aşamasında, bu yüzden kısa gecikmeler veya küçük aksaklıklar fark edebilirsiniz. Endişelenecek bir şey yok, üzerinde çalışıyoruz."
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("tr");

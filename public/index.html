@@ -28,7 +28,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   root.classList.add('i18n-pending');
   setTimeout(function () { root.classList.remove('i18n-pending'); }, 1500);
   var s = document.createElement('script');
-  s.src = '/i18n/' + lang + '.js?v=20260927b';
+  s.src = '/i18n/' + lang + '.js?v=20261005dev';
   s.async = true;
   s.setAttribute('data-i18n-lang', lang);
   s.onerror = function () { root.classList.remove('i18n-pending'); };
@@ -65,7 +65,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 <!-- The top bar, shared with /chat. Loaded after everything else because it
      owns the header outright: one button language, one radius, one focus ring
      on every screen of the product. -->
-<link rel="stylesheet" href="nav.css?v=20260927auto" />
+<link rel="stylesheet" href="nav.css?v=20261005dev" />
 <script defer src="/config.js"></script>
 <!-- Google Identity Services, deferred so it never blocks first paint. app.js
      waits for it (and for /config.js) before rendering the sign-in buttons. -->
@@ -415,6 +415,25 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 
   <a href="#main" class="skip-link" data-i18n="skipToContent">Skip to main content</a>
   <div class="app">
+    <!-- "Still under development" strip: an apology for the occasional delay
+         or glitch while TalkLive is being built. Dismissed once per browser;
+         bump the key's date to show it to everyone again. -->
+    <div id="devBanner" class="tl-devbanner" role="status" hidden>
+      <span class="tl-devbanner-text" data-i18n="devBanner">Sorry! TalkLive is still under development, so you may notice brief delays or small glitches. Nothing to worry about - we're on it.</span>
+      <button type="button" class="tl-devbanner-close" data-i18n-aria="dismiss" data-i18n-title="dismiss" aria-label="Dismiss" title="Dismiss">&times;</button>
+    </div>
+    <script>
+    (function () {
+      var KEY = 'talklive_devbanner_2026-10';
+      var bar = document.getElementById('devBanner');
+      try { if (localStorage.getItem(KEY) === '1') return; } catch (e) { /* storage blocked - show it */ }
+      bar.hidden = false;
+      bar.querySelector('button').addEventListener('click', function () {
+        bar.hidden = true;
+        try { localStorage.setItem(KEY, '1'); } catch (e) { /* nothing to do */ }
+      });
+    })();
+    </script>
     <!-- The top bar. Three zones, in the same order at every width: the lockup,
          the middle (search where there is room for it), and the actions.
          Everything on the right is a real button with a surface and, wherever
@@ -2502,7 +2521,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
        browser finish parsing and paint the page first. -->
   <script defer src="/socket.io/socket.io.min.js"></script>
   <script defer src="countries.js?v=20260828fix"></script>
-  <script defer src="i18n.js?v=20261004copy"></script>
+  <script defer src="i18n.js?v=20261005dev"></script>
   <script defer src="chat-time.js?v=20260916navbar"></script>
   <script defer src="animals.js?v=20260924animline"></script>
   <script defer src="social-kit.js?v=20260924id"></script>

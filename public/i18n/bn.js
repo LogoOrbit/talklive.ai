@@ -800,6 +800,7 @@
   "filtersTrimmedFree": "লিঙ্গ ও অতিরিক্ত দেশের জন্য Plus লাগবে",
   "friendIdCopied": "আইডি কপি হয়েছে",
   "friendIdLinkCopied": "লিংক কপি হয়েছে",
-  "loggedOutToast": "লগ আউট হয়েছে"
+  "loggedOutToast": "লগ আউট হয়েছে",
+  "devBanner": "দুঃখিত! TalkLive এখনও তৈরির পর্যায়ে আছে, তাই সাময়িক দেরি বা ছোটখাটো সমস্যা দেখা দিতে পারে। চিন্তার কিছু নেই - আমরা কাজ করছি।"
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("bn");

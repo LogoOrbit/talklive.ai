@@ -800,6 +800,7 @@
   "filtersTrimmedFree": "性别和更多国家需 Plus",
   "friendIdCopied": "ID 已复制",
   "friendIdLinkCopied": "链接已复制",
-  "loggedOutToast": "已退出登录"
+  "loggedOutToast": "已退出登录",
+  "devBanner": "抱歉！TalkLive 仍在开发中，您可能会遇到短暂的延迟或小故障。无需担心，我们正在处理。"
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("zh");

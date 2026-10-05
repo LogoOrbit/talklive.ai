@@ -800,6 +800,7 @@
   "filtersTrimmedFree": "Geschlecht & mehr Länder brauchen Plus",
   "friendIdCopied": "ID kopiert",
   "friendIdLinkCopied": "Link kopiert",
-  "loggedOutToast": "Abgemeldet"
+  "loggedOutToast": "Abgemeldet",
+  "devBanner": "Entschuldigung! TalkLive befindet sich noch in der Entwicklung, daher kann es zu kurzen Verzögerungen oder kleinen Fehlern kommen. Kein Grund zur Sorge – wir arbeiten daran."
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("de");

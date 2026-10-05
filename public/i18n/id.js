@@ -800,6 +800,7 @@
   "filtersTrimmedFree": "Gender & negara tambahan butuh Plus",
   "friendIdCopied": "ID disalin",
   "friendIdLinkCopied": "Link disalin",
-  "loggedOutToast": "Kamu sudah keluar"
+  "loggedOutToast": "Kamu sudah keluar",
+  "devBanner": "Maaf! TalkLive masih dalam tahap pengembangan, jadi kamu mungkin mengalami sedikit keterlambatan atau gangguan kecil. Tidak perlu khawatir - kami sedang menanganinya."
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("id");

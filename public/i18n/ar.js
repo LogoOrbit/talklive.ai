@@ -800,6 +800,7 @@
   "filtersTrimmedFree": "الجنس والدول الإضافية تتطلب Plus",
   "friendIdCopied": "تم نسخ المعرّف",
   "friendIdLinkCopied": "تم نسخ الرابط",
-  "loggedOutToast": "تم تسجيل الخروج"
+  "loggedOutToast": "تم تسجيل الخروج",
+  "devBanner": "نعتذر! لا يزال TalkLive قيد التطوير، لذا قد تلاحظ تأخيرًا مؤقتًا أو أعطالًا بسيطة. لا داعي للقلق، نحن نعمل على ذلك."
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("ar");

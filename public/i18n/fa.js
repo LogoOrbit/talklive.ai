@@ -800,6 +800,7 @@
   "filtersTrimmedFree": "جنسیت و کشورهای بیشتر نیاز به Plus دارد",
   "friendIdCopied": "شناسه کپی شد",
   "friendIdLinkCopied": "لینک کپی شد",
-  "loggedOutToast": "از حساب خارج شدید"
+  "loggedOutToast": "از حساب خارج شدید",
+  "devBanner": "پوزش می‌خواهیم! TalkLive هنوز در حال توسعه است، بنابراین ممکن است تأخیرهای کوتاه یا اشکالات کوچکی ببینید. جای نگرانی نیست، در حال رفع آن هستیم."
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("fa");

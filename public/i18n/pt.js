@@ -800,6 +800,7 @@
   "filtersTrimmedFree": "Gênero e mais países exigem Plus",
   "friendIdCopied": "ID copiado",
   "friendIdLinkCopied": "Link copiado",
-  "loggedOutToast": "Sessão encerrada"
+  "loggedOutToast": "Sessão encerrada",
+  "devBanner": "Desculpe! O TalkLive ainda está em desenvolvimento, então você pode notar pequenos atrasos ou falhas. Nada com que se preocupar - estamos cuidando disso."
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("pt");

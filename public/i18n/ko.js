@@ -800,6 +800,7 @@
   "filtersTrimmedFree": "성별·추가 국가는 Plus 전용",
   "friendIdCopied": "ID 복사됨",
   "friendIdLinkCopied": "링크 복사됨",
-  "loggedOutToast": "로그아웃됨"
+  "loggedOutToast": "로그아웃됨",
+  "devBanner": "죄송합니다! TalkLive는 아직 개발 중이라 일시적인 지연이나 작은 오류가 있을 수 있습니다. 걱정하지 마세요. 해결 중입니다."
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("ko");

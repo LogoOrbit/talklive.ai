@@ -826,3 +826,31 @@ html.perf-lite .nav-btn-primary { box-shadow: none; }
 }
 
 [data-theme="light"] .nav-btn-primary { color: #fff; }
+
+/* --- "Still under development" strip (above the top bar) ----------------- */
+.tl-devbanner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px 8px 16px;
+  background: color-mix(in srgb, var(--accent) 14%, var(--bg-1));
+  border-bottom: 1px solid var(--line);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.4;
+}
+.tl-devbanner[hidden] { display: none; }
+.tl-devbanner-text { flex: 1; min-width: 0; }
+.tl-devbanner-close {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.tl-devbanner-close:hover { background: color-mix(in srgb, var(--text) 10%, transparent); }

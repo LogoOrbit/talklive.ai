@@ -171,6 +171,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "someone": "Someone",
     "catBilling": "Coins & Billing",
     "skipToContent": "Skip to main content",
+    "devBanner": "Sorry! TalkLive is still under development, so you may notice brief delays or small glitches. Nothing to worry about - we're on it.",
     "menuAria": "Open settings menu",
     "online": "Online",
     "onlineAria": "Number of people online now",
@@ -1118,7 +1119,7 @@ function applyI18n() {
 // Non-English dictionaries load on demand from /i18n/<lang>.js. Until the file
 // arrives t() falls back to English, then the UI re-translates once it lands.
 // Keep in step with the preload snippet in the <head> of index.html/chat.html.
-const I18N_VERSION = '20260927b';
+const I18N_VERSION = '20261005dev';
 const i18nLoading = {};
 window.__i18nLangLoaded = function (lang) {
   delete i18nLoading[lang];
