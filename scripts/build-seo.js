@@ -679,6 +679,10 @@ ${COUNTRY_GUIDES.COUNTRIES.map(c => `- [${c.name}](${SITE}/countries/${c.slug}):
 ## Languages
 The app UI and a localized homepage are available in: English plus ${LOCALES.map(l => `[${l.name}](${SITE}/${l.code}/)`).join(', ')}.
 
+## Regional and language features
+${JOURNAL.REGIONS.map(r => `- [${r.h1}](${SITE}${r.path}): ${r.description}`).join('\n')}
+- [${JOURNAL.LANGUAGES_META.h1}](${SITE}/languages/): ${JOURNAL.LANGUAGES_META.description}
+
 ## Blog
 ${posts}
 

@@ -118,6 +118,7 @@ function body(ctx) {
   <div class="v-eye">TalkLive Journal &middot; Feature &middot; Languages</div>
   <h1>Seventeen ways to say <em>hello</em></h1>
   <p class="v-dek">Every language on this page is spoken by someone on TalkLive. Some take an English speaker six months to learn, some take nearly two years, and all of them share the same strange problem: understanding comes long before speaking.</p>
+${ctx.cta({ wide: true, title: 'Practise any of these 17 languages out loud, right now', sub: 'Understanding comes before speaking, so skip ahead. One tap connects you with a real person, usually within seconds.' })}
   <nav class="v-wall" aria-label="Jump to a language">${L.map(l => `<a href="#${l.slug}" title="${ctx.esc(l.english)}">${greet(l)}</a>`).join('')}</nav>
   <div class="v-by">By the TalkLive Journal &middot; Sources listed at the end</div>
 </div></header>
@@ -167,6 +168,7 @@ ${L.map(l => `<article class="v-card" id="${l.slug}">
   <p class="v-data">Hello: ${greet(l)} &middot; ${ctx.esc(l.speakers)}${l.fsi ? ` &middot; FSI ${l.fsi} weeks` : ' &middot; FSI baseline'}</p>
 </article>`).join('\n')}
 </div>
+${ctx.cta({ wide: true, title: 'Say your first sentence today', sub: 'Pick voice to speak or text to type. A real person, matched in seconds, no account needed.' })}
 
 <h2 class="v-h2"><small>Analysis</small>What the numbers leave out</h2>
 <div class="v-prose" style="padding-top:0">

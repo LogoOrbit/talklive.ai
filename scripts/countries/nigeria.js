@@ -142,7 +142,7 @@ body{font-family:"Bricolage Grotesque",system-ui,sans-serif;background:var(--pap
       <h2>Talk free, keep your details</h2>
       <p>Your full name, address, BVN, NIN, bank details and one-time codes are not for anyone you meet in a chat - not in the first conversation, not in the tenth. Be careful with anyone who asks for photos, offers a "business opportunity" that needs money up front, or wants you on WhatsApp within five minutes. Our <a href="/blog/how-to-spot-a-bot-or-scam-in-random-chat">field guide to chat scams</a> lists the common scripts.</p>
       <p>Every TalkLive call and chat has Report and Block; blocked people are not matched with you again. TalkLive is for adults 18 and over only. In an emergency in Nigeria, call <strong>112</strong>. If you are struggling, <a href="https://findahelpline.com" rel="noopener">findahelpline.com</a> lists free, confidential helplines.</p>
-      <p>More guides: <a href="/countries/egypt">Egypt</a>, <a href="/countries/united-kingdom">the United Kingdom</a>, and our <a href="/practice-english-speaking">English speaking practice</a> page for learners who want to keep up with Lagos English.</p>
+      <p>For the continent-wide story, read <a href="/regions/africa">Africa Reinvented the Phone Call</a>. More guides: <a href="/countries/egypt">Egypt</a>, <a href="/countries/united-kingdom">the United Kingdom</a>, and our <a href="/practice-english-speaking">English speaking practice</a> page for learners who want to keep up with Lagos English.</p>
     </div>
     <aside class="ng-card alt"><h3>No wahala, but no nonsense</h3><p>Harassment, threats, scams and sexual content without consent lead to bans. Report it and move on - you do not owe anyone your time.</p></aside>
   </section>

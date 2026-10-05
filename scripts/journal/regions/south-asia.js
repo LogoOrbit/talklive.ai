@@ -34,13 +34,14 @@ body{font-family:"Literata",Georgia,serif}
 .sa-box{background:var(--indigo);color:#f3ebdd;padding:22px 24px;font-size:17px;line-height:1.6;margin:10px 0 0}
 .sa-box h3{font:700 20px/1.2 "Fraunces",serif;margin:0 0 8px;color:#f0b48f}
 .sa-box p{margin:0 0 .7em}
-@media (max-width:820px){.sa-hero{grid-template-columns:1fr}.sa-clock{width:200px}.sa-grid{grid-template-columns:1fr;gap:0}.sa-time{text-align:left;padding:0 0 10px}.sa-time::after{display:none}.sa-block{margin-left:0;padding-left:18px}.sa-voices{grid-template-columns:1fr}}
+@media (max-width:820px){.sa-hero{grid-template-columns:1fr;padding:28px 20px 6px}.sa-clock{display:none}.sa-dek{padding-top:10px}.sa-grid{grid-template-columns:1fr;gap:0}.sa-time{text-align:left;padding:0 0 10px}.sa-time::after{display:none}.sa-block{margin-left:0;padding-left:18px}.sa-voices{grid-template-columns:1fr}}
 `,
   body: (ctx) => `<main id="story">
 <header class="sa-hero">
   <h1>Why South Asia talks <span>after midnight</span></h1>
   <div class="sa-clock" aria-hidden="true"><div><b>1:00</b>a.m. in Lahore, and the evening is only halfway done</div></div>
 </header>
+${ctx.cta({ title: 'Join the late-night conversation', sub: 'Speak Hindi, Urdu, Bengali, English or all four at once. One tap connects you with a real person, usually within seconds.' })}
 <div class="sa-dek"><p>India, Pakistan and Bangladesh are home to roughly a quarter of humanity. Many of them do their talking late, and out loud rather than in text. There are reasons for both, and they are more interesting than "people stay up late".</p></div>
 
 <div class="sa-grid">
@@ -81,6 +82,7 @@ body{font-family:"Literata",Georgia,serif}
 <p style="margin-top:1.4em">Which leaves a question worth sitting with: if two people can understand each other perfectly but cannot read each other's writing, are they speaking one language or two?</p>
 </section>
 </div>
+${ctx.cta({ title: 'Your turn: say hello', sub: 'Kya haal hai, kemon acho, or plain hello. Someone is up and waiting to talk.' })}
 ${ctx.ad()}
 ${ctx.more}
 </main>`,

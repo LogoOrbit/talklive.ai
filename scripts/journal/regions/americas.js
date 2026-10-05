@@ -57,6 +57,7 @@ body{font-family:"Libre Caslon Text",Georgia,serif}
   <div class="am-k">The Americas &middot; A feature</div>
   <h1>One evening, <em>two continents</em></h1>
   <p>The Americas are stacked north to south, not spread east to west. That simple fact means Toronto and Buenos Aires, almost nine thousand kilometres apart, wind down for the night at nearly the same time.</p>
+${ctx.cta({ title: 'Talk to someone across the Americas', sub: 'English, Spanish or Portuguese. One tap connects you with a real person, usually within seconds.' })}
   <div class="am-strip" role="img" aria-label="Local times across eight cities at the same moment in July">
   ${CLOCK.map(([city, t, ap, note]) => `<div><b>${t}<small>${ap}</small></b><span>${city}</span><i>${note}</i></div>`).join('')}
   </div>
@@ -86,6 +87,7 @@ body{font-family:"Libre Caslon Text",Georgia,serif}
 <p>Calling the United States? Our <a href="/countries/united-states">United States guide</a> explains when Americans are online across six time zones.</p>
 <p>So here is a small question to take with you: when you learned your first words of another language, whose accent were they in, and have you ever heard them said any other way?</p>
 </div>
+${ctx.cta({ title: 'Your turn: say hello', sub: 'Hi, hola or oi. Someone on the same evening as you is waiting to talk.' })}
 ${ctx.ad()}
 ${ctx.more}
 </main>`,

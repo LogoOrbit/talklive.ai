@@ -97,7 +97,7 @@ ${CARDS.map(([slug, name, hook, busy, bg, fg, ff, fw, up]) => `<a class="at-card
   <section class="at-sec">
     <h2>Talking across borders, well</h2>
     <p>Curiosity travels; stereotypes do not. Ask broad, open questions - what is a normal weekend like, what should I eat if I visit, what do outsiders usually get wrong about where you live - and let the other person decide how specific to be. Politics, religion and relationships can be wonderful conversations, but let your match lead into them. And the same privacy rules apply everywhere: talking about a country never requires sharing your city, neighbourhood, school, workplace or daily routine.</p>
-    <p>For the wider picture, the Journal's regional features cover <a href="/regions/south-asia">South Asia</a>, <a href="/regions/europe">Europe</a> and <a href="/regions/americas">the Americas</a>, and <a href="/language-chat-guide">TalkLive in 17 languages</a> covers using the app in your own language.</p>
+    <p>For the wider picture, the Journal's regional features cover <a href="/regions/south-asia">South Asia</a>, <a href="/regions/middle-east">the Middle East</a>, <a href="/regions/southeast-asia">Southeast Asia</a>, <a href="/regions/africa">Africa</a>, <a href="/regions/europe">Europe</a> and <a href="/regions/americas">the Americas</a>, and <a href="/language-chat-guide">TalkLive in 17 languages</a> covers using the app in your own language.</p>
   </section>
 </div>
 

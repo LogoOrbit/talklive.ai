@@ -93,7 +93,7 @@ ${DRAWERS.map(([name, range, cards]) => `<div class="rs-drawer"><div class="rs-l
 <div class="rs-main">
   <section class="rs-sec">
     <h2>The Journal</h2>
-    <p>For longer reading, the <a href="/blog/">TalkLive Journal</a> publishes essays, reporting and research digests: on why talking to strangers feels easier than we expect, what happened to Omegle, loneliness, listening, phone anxiety, learning a language by speaking, and the scams that start with "Hi". Its regional features look at <a href="/regions/south-asia">South Asia</a>, <a href="/regions/europe">Europe</a> and <a href="/regions/americas">the Americas</a>, and <a href="/languages/">Seventeen Ways to Say Hello</a> introduces every language TalkLive is available in.</p>
+    <p>For longer reading, the <a href="/blog/">TalkLive Journal</a> publishes essays, reporting and research digests: on why talking to strangers feels easier than we expect, what happened to Omegle, loneliness, listening, phone anxiety, learning a language by speaking, and the scams that start with "Hi". Its regional features look at <a href="/regions/south-asia">South Asia</a>, <a href="/regions/middle-east">the Middle East</a>, <a href="/regions/southeast-asia">Southeast Asia</a>, <a href="/regions/africa">Africa</a>, <a href="/regions/europe">Europe</a> and <a href="/regions/americas">the Americas</a>, and <a href="/languages/">Seventeen Ways to Say Hello</a> introduces every language TalkLive is available in.</p>
   </section>
 
   <section class="rs-sec">

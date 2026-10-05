@@ -10581,6 +10581,14 @@ try {
   if (params.get('mode') === 'chat') {
     location.replace('/chat');
   }
+  // ?talk=1: the visitor already pressed "Tap to Talk" on a landing page, so
+  // start the call flow instead of showing them a second button to press. The
+  // same gates run (age consent, avatar, mic explainer); only the repeat tap
+  // is gone - the voice twin of /chat?go=1.
+  if (params.get('talk') === '1') {
+    history.replaceState(history.state, '', '/');
+    setTimeout(() => { if (!startBtn.disabled) startBtn.click(); }, 0);
+  }
   if (openSocialDeepLink(params)) history.replaceState(history.state, '', '/');
   // The account screens live here, so /chat's Settings rows link to them
   // rather than the chat app carrying its own copy of the account stack.

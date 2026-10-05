@@ -17,7 +17,7 @@ const ARTICLES = fs.readdirSync(path.join(__dirname, 'articles'))
 
 // Regional features: hand-written, each with its own design. Published at
 // /regions/<slug>; there is deliberately no /regions/ hub.
-const REGIONS = ['south-asia', 'europe', 'americas'].map(s => require(`./regions/${s}`));
+const REGIONS = ['south-asia', 'middle-east', 'southeast-asia', 'africa', 'europe', 'americas'].map(s => require(`./regions/${s}`));
 
 function list(items) {
   if (items.length < 2) return items.join('');
@@ -25,7 +25,7 @@ function list(items) {
 }
 
 function ctxFor(slug) {
-  return { ad: S.ad, esc: S.esc, list, more: S.moreStories(ARTICLES, slug) };
+  return { ad: S.ad, esc: S.esc, list, cta: S.ctaHero, more: S.moreStories(ARTICLES, slug) };
 }
 
 function renderArticle(a) {
@@ -33,8 +33,16 @@ function renderArticle(a) {
   return S.page({ ...a, path: `/blog/${a.slug}`, crumb: a.h1, article: true, wordCount: S.words(inner) }, inner);
 }
 
+// Every region feature links the others, so a reader who arrives on one (most
+// of them from an AI assistant's answer) can find the region they meant.
+function otherRegions(slug) {
+  return `<aside class="j-more" aria-label="Other regions"><h2>Other regions</h2><ul>${REGIONS.filter(r => r.slug !== slug)
+    .map(r => `<li><a href="${r.path}">${S.esc(r.h1)}</a></li>`).join('')}<li><a href="/languages/">${S.esc(languages.meta.h1)}</a></li></ul></aside>`;
+}
+
 function renderRegion(r) {
-  const inner = r.body(ctxFor(r.slug));
+  const ctx = ctxFor(r.slug);
+  const inner = r.body({ ...ctx, more: otherRegions(r.slug) + ctx.more });
   return S.page({ ...r, crumb: r.h1, article: true, wordCount: S.words(inner) }, inner);
 }
 

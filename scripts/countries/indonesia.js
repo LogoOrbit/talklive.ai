@@ -154,7 +154,7 @@ body{font-family:"Nunito",system-ui,sans-serif;background:var(--paper)}
       <li><span>3</span>Tap to Talk for voice, or Tap to Chat to type.</li>
       <li><span>4</span>"Halo, dari mana?" - and tap Next whenever you like.</li>
     </ol>
-    <p>See also our guides to <a href="/countries/india">India</a> and <a href="/countries/pakistan">Pakistan</a>, two of the places you are most likely to be matched with late at night.</p>
+    <p>For the wider region, read <a href="/regions/southeast-asia">Southeast Asia Runs an Hour Ahead of the Sun</a>. See also our guides to <a href="/countries/india">India</a> and <a href="/countries/pakistan">Pakistan</a>, two of the places you are most likely to be matched with late at night.</p>
   </section>
 </div>
 

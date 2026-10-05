@@ -60,6 +60,7 @@ body{font-family:"Source Serif 4",Georgia,serif}
 <h1>Europe runs on four clocks and argues about all of them</h1>
 <p class="eu-dek">Sixteen countries, more than a dozen languages, and an evening that is shared almost everywhere at once. The reasons are partly geography and partly history, some of it surprisingly recent.</p>
 <div class="eu-by">The TalkLive Journal &middot; Figures as of 2026</div>
+${ctx.cta({ title: 'Talk to someone in Europe tonight', sub: 'Four clocks, one shared evening. One tap connects you with a real person, usually within seconds.' })}
 
 <div class="eu-num">
   <div><b>4</b><span>time zones cover the sixteen countries in this piece, from Lisbon to Moscow</span></div>
@@ -103,6 +104,7 @@ ${ZONES.map(z => `<div class="eu-band"><b>${z.off}<small>${z.label}</small></b><
 <div class="eu-note">On TalkLive you can set country preferences, but they are not guarantees: country is estimated from a network connection and not verified, and matching broadens after a few seconds if nobody from your chosen countries is waiting. For the UK specifically, see our <a href="/countries/united-kingdom">United Kingdom guide</a>.</div>
 <p>Europe spent much of the last century redrawing borders and is still, in small ways, arguing about what time it is. Here is a question it has never settled: should clocks follow the sun, or the neighbours?</p>
 </div>
+${ctx.cta({ title: 'Your turn: say hello', sub: 'Hola, bonjour, hallo, ciao or privet. Someone is waiting to talk.' })}
 ${ctx.ad()}
 ${ctx.more}
 </main>`;

@@ -1089,6 +1089,14 @@ app.use((req, res, next) => {
   if (req.method !== 'GET') return next();
   if (req.path.startsWith('/owner') || req.path.startsWith('/socket.io/')) return next();
   if (ASSET_PATH_RE.test(req.path)) return next();
+  // /offline is only ever fetched by the service worker precaching it on
+  // install (a person who is really offline gets the cached copy and never
+  // reaches us), and any other fetch() of an HTML page - Sec-Fetch-Dest
+  // "empty" - is a script, not someone viewing a page. Counting these made
+  // /offline look like the third most-viewed page on the site.
+  if (req.path === '/offline') return next();
+  const dest = req.headers['sec-fetch-dest'];
+  if (dest && dest !== 'document' && dest !== 'iframe' && dest !== 'frame') return next();
 
   // Captured now because Express rewrites req.url as it routes, and the socket
   // the IP is read from may be gone by the time `finish` fires. Headers are

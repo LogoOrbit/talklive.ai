@@ -10,7 +10,10 @@
  * public/fonts/mag/ (the site CSP allows fonts from 'self' only, so Google
  * Fonts cannot be used).
  *
- * The pages deliberately carry no "Talk now" buttons. They are reading pages.
+ * Every page also carries the start-talking component (ctaHero / ctaDock):
+ * readers who arrive from ChatGPT or search on a region or language feature
+ * are mostly looking for someone to talk to, so the way in has to be the
+ * first thing they see and never more than a thumb away.
  */
 const fs = require('fs');
 const path = require('path');
@@ -18,7 +21,8 @@ const path = require('path');
 const SITE = 'https://talklive.app';
 const PUBLIC = path.join(__dirname, '..', '..', 'public');
 const OG_IMAGE = `${SITE}/og-image.png?v=2`;
-const CSS_VERSION = '20261005countries';
+const CSS_VERSION = '20261005go';
+const CTA_JS_VERSION = '20261005go';
 
 // family -> [ [weight, style, file] ]
 const FONTS = {
@@ -82,6 +86,40 @@ a{color:inherit}
 .ad-card{max-width:728px;margin:48px auto;padding:10px 0 0;border-top:1px solid var(--rule,rgba(0,0,0,.12));text-align:center}
 .ad-card-label{display:block;font:500 10px/1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.18em;text-transform:uppercase;opacity:.5;margin-bottom:8px}
 @media (max-width:640px){.j-mast{flex-wrap:wrap;gap:8px 14px;font-size:12px}.j-mast nav{gap:14px}}
+.tl-go{position:relative;max-width:720px;margin:30px auto;padding:22px 20px 18px;border-radius:24px;background:radial-gradient(120% 140% at 0% 0%,#1d2a3a 0%,#0d1117 60%);color:#f4f6fb;text-align:center;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;box-shadow:0 18px 50px -18px rgba(12,18,30,.55);overflow:hidden}
+.tl-go-wide{max-width:1080px}
+.tl-go .tl-go-live,.tl-dock .tl-go-live{display:inline-flex;align-items:center;gap:8px;margin:0 0 10px;padding:5px 12px;border-radius:999px;background:rgba(46,212,122,.14);color:#7ff0b0;font:600 13px/1.2 system-ui,-apple-system,sans-serif}
+.tl-go-live i{width:8px;height:8px;border-radius:50%;background:#2ed47a;box-shadow:0 0 0 0 rgba(46,212,122,.7);animation:tlBlink 1.6s infinite}
+.tl-go h2.tl-go-h{margin:0 0 4px;font:800 clamp(22px,3.4vw,30px)/1.15 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:-.01em;color:#fff}
+.tl-go p.tl-go-sub{margin:0 0 16px;font:400 15px/1.45 system-ui,-apple-system,sans-serif;color:#b7c0cf}
+.tl-go .tl-go-row{display:flex;gap:12px;flex-wrap:wrap}
+.tl-go a.tl-go-btn,.tl-dock a.tl-go-btn{position:relative;flex:1 1 220px;display:flex;align-items:center;justify-content:center;gap:12px;min-height:68px;padding:12px 22px;border-radius:999px;text-decoration:none!important;font:800 20px/1.1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:-.005em;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;transition:transform .12s ease,box-shadow .2s ease,filter .2s ease}
+.tl-go-btn svg{width:26px;height:26px;flex:none}
+.tl-go-btn small{display:block;font:600 12px/1.2 system-ui,-apple-system,sans-serif;opacity:.78;margin-top:3px;letter-spacing:.01em}
+.tl-go-btn .tl-go-txt{text-align:left}
+.tl-go-btn .tl-go-arr{margin-left:auto;transition:transform .2s ease}
+.tl-go-talk{background:linear-gradient(135deg,#3be38a 0%,#17a862 100%);color:#04210f!important;box-shadow:0 10px 26px -8px rgba(23,168,98,.75),inset 0 1px 0 rgba(255,255,255,.35)}
+.tl-go-chat{background:linear-gradient(135deg,#8f7dff 0%,#5a48e0 100%);color:#fff!important;box-shadow:0 10px 26px -8px rgba(90,72,224,.75),inset 0 1px 0 rgba(255,255,255,.25)}
+.tl-go-talk::before{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:0 0 0 0 rgba(59,227,138,.55);animation:tlPulse 2s infinite;pointer-events:none}
+.tl-go-btn:hover{filter:brightness(1.06);transform:translateY(-2px)}
+.tl-go-btn:hover .tl-go-arr{transform:translateX(4px)}
+.tl-go-btn:active,.tl-go-btn.is-press{transform:scale(.95);filter:brightness(.96)}
+.tl-go-btn:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.tl-go p.tl-go-fine{margin:12px 0 0;font:500 12.5px/1.4 system-ui,-apple-system,sans-serif;color:#94a0b4;letter-spacing:.01em}
+.tl-dock{position:fixed;left:0;right:0;bottom:0;z-index:60;display:flex;gap:10px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:rgba(13,17,23,.94);-webkit-backdrop-filter:saturate(1.4) blur(12px);backdrop-filter:saturate(1.4) blur(12px);border-top:1px solid rgba(255,255,255,.08);transform:translateY(115%);transition:transform .28s cubic-bezier(.2,.8,.2,1);font-family:system-ui,-apple-system,sans-serif}
+.tl-dock.is-on{transform:none}
+.tl-dock a.tl-go-btn{flex:1 1 0;min-width:0;min-height:54px;padding:8px 12px;font-size:17px;gap:8px}
+.tl-dock .tl-go-btn svg{width:22px;height:22px}
+.tl-dock .tl-go-btn small,.tl-dock .tl-go-arr{display:none}
+.tl-dock .tl-go-txt{white-space:nowrap}
+[data-tl-live][hidden]{display:none!important}
+.tl-dock-live{position:absolute;left:50%;top:-13px;transform:translateX(-50%);padding:3px 10px;border-radius:999px;background:#0d1117;border:1px solid rgba(46,212,122,.45);color:#7ff0b0;font:700 11px/1.2 system-ui,-apple-system,sans-serif;white-space:nowrap}
+body.tl-has-dock{padding-bottom:84px}
+@media (min-width:900px){.tl-dock{left:50%;right:auto;bottom:18px;width:560px;transform:translate(-50%,140%);border-radius:999px;border:1px solid rgba(255,255,255,.1);padding:8px;box-shadow:0 20px 50px -14px rgba(0,0,0,.55)}.tl-dock.is-on{transform:translate(-50%,0)}body.tl-has-dock{padding-bottom:0}}
+@media (max-width:480px){.tl-go{margin:22px 12px;padding:18px 14px 14px;border-radius:20px}.tl-go-btn{flex-basis:100%;min-height:64px;font-size:19px}}
+@keyframes tlPulse{0%{box-shadow:0 0 0 0 rgba(59,227,138,.55)}70%{box-shadow:0 0 0 16px rgba(59,227,138,0)}100%{box-shadow:0 0 0 0 rgba(59,227,138,0)}}
+@keyframes tlBlink{0%{box-shadow:0 0 0 0 rgba(46,212,122,.7)}70%{box-shadow:0 0 0 7px rgba(46,212,122,0)}100%{box-shadow:0 0 0 0 rgba(46,212,122,0)}}
+@media (prefers-reduced-motion:reduce){.tl-go-talk::before,.tl-go-live i{animation:none}.tl-go-btn,.tl-dock{transition:none}}
 `;
 }
 
@@ -190,6 +228,40 @@ function ad() {
   return `<div class="ad-card"><span class="ad-card-label">Advertisement</span><div data-ad="native"></div></div>`;
 }
 
+// --- Start talking: the call-to-action component -----------------------------
+// Links go straight into a match: /?talk=1 starts the voice flow and
+// /chat?go=1 the text one, so the tap on this page is the only tap. They are
+// nofollow because they are actions, not pages - every query-string variant of
+// / that Google crawls is one more duplicate filed against the real homepage.
+const PHONE_SVG = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>';
+const CHAT_SVG = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM7 9.5h10a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2zm0-3.5h10a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2zm0 7h6a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2z"/></svg>';
+const ARROW_SVG = '<svg class="tl-go-arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
+
+function ctaButtons(src, talk, chat) {
+  const t = talk || {}, c = chat || {};
+  return `<a class="tl-go-btn tl-go-talk" href="/?talk=1&amp;utm_source=${src}" rel="nofollow" data-tl-go="talk">${PHONE_SVG}<span class="tl-go-txt">${esc(t.label || 'Tap to Talk')}<small>${esc(t.sub || 'Live voice call · no camera')}</small></span>${ARROW_SVG}</a>`
+    + `<a class="tl-go-btn tl-go-chat" href="/chat?go=1&amp;utm_source=${src}" rel="nofollow" data-tl-go="chat">${CHAT_SVG}<span class="tl-go-txt">${esc(c.label || 'Tap to Chat')}<small>${esc(c.sub || 'Text chat · no mic needed')}</small></span>${ARROW_SVG}</a>`;
+}
+
+// The block itself. `o.title` / `o.sub` are the page's own words for it;
+// `o.src` the utm_source the server counts (blog | seo).
+function ctaHero(o = {}) {
+  return `<section class="tl-go${o.wide ? ' tl-go-wide' : ''}" aria-label="Start a conversation">
+<p class="tl-go-live" data-tl-live hidden><i></i><span>People online now</span></p>
+<h2 class="tl-go-h">${esc(o.title || 'Talk to someone right now')}</h2>
+<p class="tl-go-sub">${esc(o.sub || 'One tap and you are matched with a real person, usually in seconds.')}</p>
+<div class="tl-go-row">${ctaButtons(o.src || 'blog', o.talk, o.chat)}</div>
+<p class="tl-go-fine">Free &middot; No sign-up &middot; No camera &middot; Adults 18+</p>
+</section>`;
+}
+
+// Fixed bottom bar, shown by /cta.js once the page's own block has scrolled
+// out of view, so a way in is always one thumb away while reading.
+function ctaDock(src = 'blog') {
+  return `<nav class="tl-dock" aria-label="Start a conversation" data-tl-dock><span class="tl-dock-live" data-tl-live hidden><span>online now</span></span>${ctaButtons(src)}</nav>
+<script defer src="/cta.js?v=${CTA_JS_VERSION}"></script>`;
+}
+
 function moreStories(all, slug) {
   const self = all.findIndex(a => a.slug === slug);
   const picks = [1, 2, 3].map(k => all[(self + k) % all.length]);
@@ -203,6 +275,7 @@ function page(p, inner) {
 ${masthead()}
 ${inner}
 ${footer()}
+${ctaDock(p.ctaSrc || 'blog')}
 </body>
 </html>
 `;
@@ -214,4 +287,4 @@ function write(rel, html) {
   fs.writeFileSync(file, html);
 }
 
-module.exports = { SITE, PUBLIC, esc, words, page, ad, moreStories, write, journalCss };
+module.exports = { SITE, PUBLIC, CSS_VERSION, esc, words, page, ad, moreStories, write, journalCss, ctaHero, ctaDock, ctaButtons };

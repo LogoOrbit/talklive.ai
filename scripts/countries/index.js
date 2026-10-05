@@ -48,8 +48,11 @@ const BASE_CSS = `
 @media (max-width:640px){.c-bar{font-size:12px}.c-bar nav{gap:12px;flex-wrap:nowrap}.c-bar nav a:nth-child(1),.c-bar nav a:nth-child(2),.c-bar nav a:nth-child(4){display:none}}
 `;
 
+// Straight into a match: /?talk=1 starts the voice flow, /chat?go=1 the text
+// one (see scripts/journal/shared.js ctaButtons for why they are nofollow).
+const START = { '/': '/?talk=1&amp;utm_source=seo', '/chat': '/chat?go=1&amp;utm_source=seo' };
 function cta(href, cls, label) {
-  return `<a class="${cls}" href="${href}?utm_source=seo">${label}</a>`;
+  return `<a class="${cls}" href="${START[href] || `${href}?utm_source=seo`}" rel="nofollow">${label}</a>`;
 }
 
 const ctx = {
@@ -130,7 +133,7 @@ function head(c, wordCount) {
 <link rel="apple-touch-icon" href="/favicon-192.png" />
 <link rel="manifest" href="/site.webmanifest" />
 ${preloads}
-<link rel="stylesheet" href="/journal.css?v=20261005countries" />
+<link rel="stylesheet" href="/journal.css?v=${S.CSS_VERSION}" />
 <style>${BASE_CSS}${c.css}</style>
 <script defer src="/pwa.js?v=20260908pwa"></script>
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
@@ -169,6 +172,7 @@ function render(c, aside) {
 ${bar()}
 ${inner}
 ${footer(aside)}
+${S.ctaDock('seo')}
 </body>
 </html>
 `;
