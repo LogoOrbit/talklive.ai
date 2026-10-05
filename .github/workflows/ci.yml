@@ -49,6 +49,9 @@ jobs:
       - name: Test voice check
         run: npm run test:voice-gender
 
+      - name: Test store saves (durability and fast saves)
+        run: npm run test:durability && npm run test:fast-save
+
       - name: Audit generated SEO
         run: npm run audit:seo
 

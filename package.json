@@ -21,6 +21,7 @@
     "test:matchmaking": "node scripts/test-matchmaking.js",
     "test:voice-gender": "node scripts/test-voice-gender.js && node scripts/test-voice-filter.js",
     "test:durability": "node scripts/test-durability.js",
+    "test:fast-save": "node scripts/test-fast-save.js",
     "test:analytics": "node scripts/test-analytics-visits.js",
     "test:warnings": "node scripts/test-owner-warning.js",
     "test:feedback-reply": "node scripts/test-feedback-reply.js",

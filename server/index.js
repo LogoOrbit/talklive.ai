@@ -23,6 +23,7 @@ const NICK_ERRORS = {
   nickTooLong: `Display name can be at most ${Nick.MAX_LEN} characters.`,
 };
 const store = require('./store');
+const { TrackedMap } = require('./doc-json');
 const modTags = require('./moderation-tags');
 const compress = require('./compress');
 const billing = require('./billing');
@@ -1723,8 +1724,8 @@ function clearRequestPair(fromClientId, targetClientId) {
   }
 }
 const notifications = new Map(); // clientId -> Array<notification>
-const friendChats = new Map(); // pairKey -> Array<{ from, text, ts }>
-const chatHistory = new Map(); // clientId -> Array<{ clientId, username, countryCode, mode, ts }> (newest last)
+const friendChats = new TrackedMap(); // pairKey -> Array<{ from, text, ts }>
+const chatHistory = new TrackedMap(); // clientId -> Array<{ clientId, username, countryCode, mode, ts }> (newest last)
 // When each person was last connected: clientId -> ts. Only kept for people
 // someone could be looking for (friends, recent matches) - see the sweep.
 const lastSeen = new Map();
@@ -1796,7 +1797,7 @@ function writeSocial() {
     privacy: privacyObj(),
   };
 }
-store.setSocialProvider(writeSocial);
+store.setSocialProvider(writeSocial, { friendChats, chatHistory });
 
 // "Appear offline" and "no incoming calls" are persisted with the graph. In
 // memory only, a restart forgot them until the person next connected - and in

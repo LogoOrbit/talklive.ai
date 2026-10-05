@@ -17,6 +17,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const docJson = require('./doc-json');
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
 const DATA_FILE = path.join(DATA_DIR, 'owner-data.json');
@@ -850,19 +851,85 @@ function stampMeta() {
   };
 }
 
+// Routine saves serialize only the friend chats and match histories that
+// changed (server/doc-json.js) and write the file in the background; every
+// FULL_SAVE_EVERY_MS, and on every explicit save (admin actions, shutdown,
+// crash, reconnect), the whole document is serialized fresh and written
+// synchronously, exactly as before.
+const FULL_SAVE_EVERY_MS = 60 * 1000;
+let lastFullSaveAt = 0;
+let socialCaches = null;
+function serializeData(full) {
+  if (full || !socialCaches) lastFullSaveAt = Date.now();
+  const s = docJson.serialize(data, 'social', socialCaches, full || !socialCaches);
+  if (socialCaches) {
+    const misses = socialCaches.friendChats.misses + socialCaches.chatHistory.misses;
+    if (misses && misses !== backendStatus.saveCacheMisses) {
+      console.error('[store] fast save reused', misses, 'stale chat list(s) - a full save corrected them; a change is not being tracked');
+    }
+    backendStatus.saveCacheMisses = misses;
+  }
+  return s;
+}
+
+// Every mirror write takes a sequence number, and a file only replaces the
+// live one if nothing newer has been renamed into place first - so a slow
+// background write can never put an older document over a newer one.
 let mirrorPrimed = false;
-function writeMirror(shrinking) {
+let mirrorSeq = 0;
+let mirrorDoneSeq = 0;
+let mirrorBusy = false;
+let mirrorAgain = false;
+function writeMirror(shrinking, background) {
   if (mirrorBlocked) return false;
+  const full = !background || Date.now() - lastFullSaveAt >= FULL_SAVE_EVERY_MS;
   try {
     fs.mkdirSync(DATA_DIR, { recursive: true });
     // Whatever was on disk before this process first writes is kept as a
     // snapshot - it may be a store from an earlier life of the app - and so
     // is the previous state ahead of any save the wipe guard flagged.
     if ((!mirrorPrimed || shrinking) && fs.existsSync(DATA_FILE)) writeBackup();
+    if (!mirrorPrimed) {
+      // Half-written background files left by a hard kill.
+      const base = path.basename(DATA_FILE) + '.tmp-';
+      for (const f of fs.readdirSync(DATA_DIR)) {
+        if (f.startsWith(base)) fs.unlink(path.join(DATA_DIR, f), () => {});
+      }
+    }
     mirrorPrimed = true;
+    if (background && !shrinking) {
+      // One background write at a time; a save that lands meanwhile is
+      // written once this one finishes, with whatever `data` is by then.
+      if (mirrorBusy) { mirrorAgain = true; return true; }
+      const seq = ++mirrorSeq;
+      const tmp = `${DATA_FILE}.tmp-${process.pid}-${seq}`;
+      const payload = serializeData(full);
+      mirrorBusy = true;
+      fs.promises.writeFile(tmp, payload)
+        .then(() => {
+          if (seq > mirrorDoneSeq) {
+            fs.renameSync(tmp, DATA_FILE);
+            mirrorDoneSeq = seq;
+            if (Date.now() - lastBackupAt >= BACKUP_EVERY_MS) writeBackup();
+          } else {
+            fs.unlink(tmp, () => {});
+          }
+        })
+        .catch((err) => {
+          console.error('[store] failed to save to disk:', err.message);
+          fs.unlink(tmp, () => {});
+        })
+        .finally(() => {
+          mirrorBusy = false;
+          if (mirrorAgain) { mirrorAgain = false; save(); }
+        });
+      return true;
+    }
+    const seq = ++mirrorSeq;
     const tmp = DATA_FILE + '.tmp';
-    fs.writeFileSync(tmp, JSON.stringify(data));
+    fs.writeFileSync(tmp, serializeData(true));
     fs.renameSync(tmp, DATA_FILE);
+    mirrorDoneSeq = seq;
   } catch (err) {
     console.error('[store] failed to save to disk:', err.message);
     return false;
@@ -977,7 +1044,7 @@ function persistNow(throttlePg) {
   stampMeta();
   const shrinking = checkShrink();
   if (shrinking) pendingShrinkSnapshot = true;
-  writeMirror(shrinking);
+  writeMirror(shrinking, throttlePg);
   if (!pgLive()) return;
   if (throttlePg && !shrinking) persistPgThrottled();
   else { lastPgSaveAt = Date.now(); persistPg(); }
@@ -2621,7 +2688,15 @@ function pushSubscriberCount() {
 // marks the graph dirty; the (debounced) write asks for it once.
 let socialProvider = null;
 let socialDirty = false;
-function setSocialProvider(fn) { socialProvider = fn; }
+// `tracked` names the TrackedMaps behind social.friendChats and
+// social.chatHistory, which lets routine saves skip the lists that did not
+// change (see writeMirror).
+function setSocialProvider(fn, tracked) {
+  socialProvider = fn;
+  socialCaches = tracked && tracked.friendChats && tracked.chatHistory
+    ? { friendChats: docJson.listCache(tracked.friendChats), chatHistory: docJson.listCache(tracked.chatHistory) }
+    : null;
+}
 function markSocialDirty() {
   socialDirty = true;
   save();

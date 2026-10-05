@@ -2796,6 +2796,7 @@ async function viewHealth(refresh){
   const h=await vapi('health'+(refresh?'?refresh=1':''));
   if(h===STALE)return;
   $('#main').innerHTML=`<div class="muted" style="margin-bottom:12px">Call quality, page speed, Google Analytics and uptime - the things the other tabs can't see.</div>
+    ${h.saveMisses?`<div class="stbox bad" style="padding:10px;border-radius:12px;margin-bottom:12px"><b>Chat save check: ${num(h.saveMisses)} missed change(s).</b> The once-a-minute full save wrote them correctly, so they were saved within a minute - but tell Claude, so the code path can be fixed.</div>`:''}
     ${hlQuality(h.callQuality)}${hlSpeed(h.pageSpeed)}${hlGa(h.analytics)}${hlUptime(h.uptime)}`;
   const b=$('#hlRefresh');if(b)b.onclick=()=>{b.disabled=true;b.textContent='Checking (up to a minute)...';viewHealth(true);};
   if(b&&h.pageSpeed.running){b.disabled=true;b.textContent='Checking...';}

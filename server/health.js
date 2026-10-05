@@ -185,6 +185,10 @@ async function report(store, { refresh } = {}) {
   ]);
   return {
     callQuality: store.callQualityReport(30),
+    // Fast saves (server/doc-json.js): chat lists a quick save reused although
+    // they had changed. A full save fixes them within a minute; anything above
+    // 0 means a code path changes chats without the tracking seeing it.
+    saveMisses: Number(store.backendStatus.saveCacheMisses) || 0,
     pageSpeed: psi,
     analytics: ga ? { configured: true, serviceAccount: ga.email, property: process.env.GA4_PROPERTY_ID, ...gaData }
       : { configured: false, serviceAccount: gaServiceAccount() },
