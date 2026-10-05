@@ -21,7 +21,6 @@
       .then(function (d) {
         if (!d || !d.visitors) { line.hidden = true; return; }
         var s = compact(d.visitors) + (d.visitors === 1 ? ' person' : ' people') + ' visited today';
-        if (d.online > 1) s += ' · ' + compact(d.online) + ' online now';
         text.textContent = s;
         line.classList.add('is-on');
       })

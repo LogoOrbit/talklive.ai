@@ -1,28 +1,11 @@
 // The start-talking component on the Journal, region, language, country and
 // topic pages (markup: scripts/journal/shared.js ctaHero / ctaDock).
 //
-// Three small jobs, all decoration over links that already work without it:
-// a live "N online now" line, the bottom dock that appears once the page's own
-// block has scrolled away, and a press that feels like a press.
+// Two small jobs, both decoration over links that already work without it:
+// the bottom dock, and a press that feels like a press. No live online count:
+// on a quiet hour "4 people online now" sells the app short.
 (function () {
   'use strict';
-
-  // --- Live count: real numbers or nothing. ----------------------------------
-  var live = document.querySelectorAll('[data-tl-live]');
-  if (live.length && window.fetch) {
-    fetch('/api/live', { credentials: 'same-origin' })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (d) {
-        if (!d || !(d.online > 1)) return;
-        var n = d.online >= 1000 ? (Math.floor(d.online / 100) / 10) + 'k' : String(d.online);
-        for (var i = 0; i < live.length; i++) {
-          var el = live[i];
-          el.querySelector('span').textContent = n + (el.classList.contains('tl-dock-live') ? ' online now' : ' people online now');
-          el.hidden = false;
-        }
-      })
-      .catch(function () {});
-  }
 
   // --- Dock: on screen from the first paint, stepping aside only while one of
   // the page's own start blocks is in view, so there is never a moment on the

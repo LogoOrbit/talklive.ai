@@ -21,8 +21,8 @@ const path = require('path');
 const SITE = 'https://talklive.app';
 const PUBLIC = path.join(__dirname, '..', '..', 'public');
 const OG_IMAGE = `${SITE}/og-image.png?v=2`;
-const CSS_VERSION = '20261005go';
-const CTA_JS_VERSION = '20261005go';
+const CSS_VERSION = '20261006nolive';
+const CTA_JS_VERSION = '20261006nolive';
 
 // family -> [ [weight, style, file] ]
 const FONTS = {
@@ -88,8 +88,6 @@ a{color:inherit}
 @media (max-width:640px){.j-mast{flex-wrap:wrap;gap:8px 14px;font-size:12px}.j-mast nav{gap:14px}}
 .tl-go{position:relative;max-width:720px;margin:30px auto;padding:22px 20px 18px;border-radius:24px;background:radial-gradient(120% 140% at 0% 0%,#1d2a3a 0%,#0d1117 60%);color:#f4f6fb;text-align:center;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;box-shadow:0 18px 50px -18px rgba(12,18,30,.55);overflow:hidden}
 .tl-go-wide{max-width:1080px}
-.tl-go .tl-go-live,.tl-dock .tl-go-live{display:inline-flex;align-items:center;gap:8px;margin:0 0 10px;padding:5px 12px;border-radius:999px;background:rgba(46,212,122,.14);color:#7ff0b0;font:600 13px/1.2 system-ui,-apple-system,sans-serif}
-.tl-go-live i{width:8px;height:8px;border-radius:50%;background:#2ed47a;box-shadow:0 0 0 0 rgba(46,212,122,.7);animation:tlBlink 1.6s infinite}
 .tl-go h2.tl-go-h{margin:0 0 4px;font:800 clamp(22px,3.4vw,30px)/1.15 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:-.01em;color:#fff}
 .tl-go p.tl-go-sub{margin:0 0 16px;font:400 15px/1.45 system-ui,-apple-system,sans-serif;color:#b7c0cf}
 .tl-go .tl-go-row{display:flex;gap:12px;flex-wrap:wrap}
@@ -112,14 +110,11 @@ a{color:inherit}
 .tl-dock .tl-go-btn svg{width:22px;height:22px}
 .tl-dock .tl-go-btn small,.tl-dock .tl-go-arr{display:none}
 .tl-dock .tl-go-txt{white-space:nowrap}
-[data-tl-live][hidden]{display:none!important}
-.tl-dock-live{position:absolute;left:50%;top:-13px;transform:translateX(-50%);padding:3px 10px;border-radius:999px;background:#0d1117;border:1px solid rgba(46,212,122,.45);color:#7ff0b0;font:700 11px/1.2 system-ui,-apple-system,sans-serif;white-space:nowrap}
 body.tl-has-dock{padding-bottom:84px}
 @media (min-width:900px){.tl-dock{left:50%;right:auto;bottom:18px;width:560px;transform:translate(-50%,140%);border-radius:999px;border:1px solid rgba(255,255,255,.1);padding:8px;box-shadow:0 20px 50px -14px rgba(0,0,0,.55)}.tl-dock.is-on{transform:translate(-50%,0)}body.tl-has-dock{padding-bottom:0}}
 @media (max-width:480px){.tl-go{margin:22px 12px;padding:18px 14px 14px;border-radius:20px}.tl-go-btn{flex-basis:100%;min-height:64px;font-size:19px}}
 @keyframes tlPulse{0%{box-shadow:0 0 0 0 rgba(59,227,138,.55)}70%{box-shadow:0 0 0 16px rgba(59,227,138,0)}100%{box-shadow:0 0 0 0 rgba(59,227,138,0)}}
-@keyframes tlBlink{0%{box-shadow:0 0 0 0 rgba(46,212,122,.7)}70%{box-shadow:0 0 0 7px rgba(46,212,122,0)}100%{box-shadow:0 0 0 0 rgba(46,212,122,0)}}
-@media (prefers-reduced-motion:reduce){.tl-go-talk::before,.tl-go-live i{animation:none}.tl-go-btn,.tl-dock{transition:none}}
+@media (prefers-reduced-motion:reduce){.tl-go-talk::before{animation:none}.tl-go-btn,.tl-dock{transition:none}}
 `;
 }
 
@@ -247,7 +242,6 @@ function ctaButtons(src, talk, chat) {
 // `o.src` the utm_source the server counts (blog | seo).
 function ctaHero(o = {}) {
   return `<section class="tl-go${o.wide ? ' tl-go-wide' : ''}" aria-label="Start a conversation">
-<p class="tl-go-live" data-tl-live hidden><i></i><span>People online now</span></p>
 <h2 class="tl-go-h">${esc(o.title || 'Talk to someone right now')}</h2>
 <p class="tl-go-sub">${esc(o.sub || 'One tap and you are matched with a real person, usually in seconds.')}</p>
 <div class="tl-go-row">${ctaButtons(o.src || 'blog', o.talk, o.chat)}</div>
@@ -258,7 +252,7 @@ function ctaHero(o = {}) {
 // Fixed bottom bar, shown by /cta.js once the page's own block has scrolled
 // out of view, so a way in is always one thumb away while reading.
 function ctaDock(src = 'blog') {
-  return `<nav class="tl-dock" aria-label="Start a conversation" data-tl-dock><span class="tl-dock-live" data-tl-live hidden><span>online now</span></span>${ctaButtons(src)}</nav>
+  return `<nav class="tl-dock" aria-label="Start a conversation" data-tl-dock>${ctaButtons(src)}</nav>
 <script defer src="/cta.js?v=${CTA_JS_VERSION}"></script>`;
 }
 
