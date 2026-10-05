@@ -134,7 +134,7 @@ function head(c, wordCount) {
 <link rel="manifest" href="/site.webmanifest" />
 ${preloads}
 <link rel="stylesheet" href="/journal.css?v=${S.CSS_VERSION}" />
-<style>${BASE_CSS}${c.css}</style>
+<style>${BASE_CSS}${c.css}${S.ctaVars(c.slug)}</style>
 <script defer src="/pwa.js?v=20260908pwa"></script>
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
 ${c.noAds ? '' : `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978"
