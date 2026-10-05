@@ -801,6 +801,9 @@
   "friendIdCopied": "ID kopyalandı",
   "friendIdLinkCopied": "Bağlantı kopyalandı",
   "loggedOutToast": "Çıkış yapıldı",
-  "devBanner": "Üzgünüz! TalkLive hâlâ geliştirme aşamasında, bu yüzden kısa gecikmeler veya küçük aksaklıklar fark edebilirsiniz. Endişelenecek bir şey yok, üzerinde çalışıyoruz."
+  "devBanner": "Üzgünüz! TalkLive hâlâ geliştirme aşamasında, bu yüzden kısa gecikmeler veya küçük aksaklıklar fark edebilirsiniz. Endişelenecek bir şey yok, üzerinde çalışıyoruz.",
+  "modeMembersOnly": "Şu anda yalnızca üyeler sohbet başlatabilir. Devam etmek için giriş yap veya kaydol.",
+  "modeVoicePaused": "Sesli aramalar kısa bir süreliğine durduruldu. Yazılı sohbet /chat adresinde açık.",
+  "modeSignupsPaused": "Yeni kayıtlar şu anda durduruldu. Lütfen daha sonra tekrar dene."
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("tr");

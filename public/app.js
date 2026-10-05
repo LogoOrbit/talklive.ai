@@ -3575,13 +3575,13 @@ if (document.readyState === 'loading') {
 // After the rest of this script has run, so the /login page is already open.
 setTimeout(consumeRedirectedGoogleCredential, 0);
 
-socket.on('google-auth-result', ({ ok, nickname, email, error, sessionToken: token, profileClientId, identityToken }) => {
+socket.on('google-auth-result', ({ ok, nickname, email, error, errorKey, sessionToken: token, profileClientId, identityToken }) => {
   endAccountRequest();
   if (!ok) {
     // Let the user try a different Google account instead of being stuck with
     // the one the failed attempt remembered.
     if (googleReady) window.google.accounts.id.disableAutoSelect();
-    return showAccountStatus(error || t('errGoogleSignIn'), 'error');
+    return showAccountStatus(errorKey ? t(errorKey) : (error || t('errGoogleSignIn')), 'error');
   }
   storeLogin(nickname, token, profileClientId, identityToken);
   storeAccountEmail(email);
@@ -3788,10 +3788,10 @@ socket.on('login-result', ({ ok, nickname, email, error, sessionToken: token, pr
   finishAuth(t('authWelcomeBack', { name: nickname }));
 });
 
-socket.on('signup-result', ({ ok, nickname, email, error, sessionToken: token, profileClientId, identityToken }) => {
+socket.on('signup-result', ({ ok, nickname, email, error, errorKey, sessionToken: token, profileClientId, identityToken }) => {
   endAccountRequest();
   if (!ok) {
-    showAccountStatus(error, 'error');
+    showAccountStatus(errorKey === 'modeSignupsPaused' ? t(errorKey) : error, 'error');
     // Point at the field the server is complaining about.
     const about = /email/i.test(error || '') ? signupEmail
       : /password/i.test(error || '') && !/username/i.test(error || '') ? signupPassword
@@ -9954,6 +9954,14 @@ socket.on('banned', (info) => {
 // The "still under development" strip at the top of the page, switched from
 // the owner dashboard (see the inline script beside #devBanner).
 socket.on('devBanner', (s) => { if (window.tlDevBanner) window.tlDevBanner(s); });
+// Owner site modes (dashboard Settings): the announcement strip, and searches
+// the server turned away (members-only, voice paused).
+socket.on('siteModes', (m) => { if (window.tlSiteModes) window.tlSiteModes(m); });
+socket.on('search-refused', ({ reason } = {}) => {
+  markSearchAcked();
+  goIdleOnCallScreen();
+  showError(t(reason || 'modeVoicePaused'));
+});
 
 socket.on('maintenance', (info) => {
   showError((info && info.message) || 'TalkLive is under maintenance. Please come back soon!');

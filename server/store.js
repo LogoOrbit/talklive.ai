@@ -197,6 +197,18 @@ function defaults() {
       // dashboard. `since` changes on every switch-on, so visitors who closed
       // the last one see it again.
       devBanner: { on: true, since: 0 },
+      // Site-wide switches on the dashboard's Settings tab. Read through
+      // siteModes() in server/index.js, which fills in any key missing here.
+      //   announce       owner-written strip at the top of / and /chat
+      //   signupsPaused  no new accounts (password or Google); logins still work
+      //   membersOnly    raid shield: only logged-in accounts can be matched
+      //   voicePaused    voice calls off, text chat still matches
+      modes: {
+        announce: { on: false, text: '', since: 0 },
+        signupsPaused: false,
+        membersOnly: false,
+        voicePaused: false,
+      },
       banThreshold: 3,
       autoBanMinutes: 30,
       // IANA zone the owner dashboard reports "today"/"yesterday" in. Analytics
@@ -3015,7 +3027,21 @@ function getOrCreateSecret(name) {
   return data.secrets[name];
 }
 
+// The dashboard's site modes, with any key a saved copy predates filled in.
+function siteModes() {
+  const saved = data.settings.modes || {};
+  return { ...defaults().settings.modes, ...saved, announce: { ...defaults().settings.modes.announce, ...(saved.announce || {}) } };
+}
+
+// What the browser is told on connect and on every change.
+function publicModes() {
+  const m = siteModes();
+  return { announce: m.announce, membersOnly: !!m.membersOnly, voicePaused: !!m.voicePaused, signupsPaused: !!m.signupsPaused };
+}
+
 module.exports = {
+  siteModes,
+  publicModes,
   // Resolves when every save queued so far has reached the database (or
   // failed and been kept on disk). Shutdown uses the same chain.
   whenPersisted: () => pgChain,

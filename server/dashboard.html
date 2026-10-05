@@ -3037,6 +3037,7 @@ async function viewSettings(){
   const o=await vapi('overview');
   const m=o.maintenance;
   const db=o.devBanner||{on:false};
+  const md=o.modes||{};const an=md.announce||{on:false,text:''};
   const theme=currentTheme();
   $('#main').innerHTML=`<div class="card anim" style="margin-top:0"><h2>🛠️ Maintenance mode</h2>
   <p class="muted" style="margin-bottom:12px">When on, visitors see a friendly maintenance page and nobody can connect. Your dashboard stays available.</p>
@@ -3052,6 +3053,22 @@ async function viewSettings(){
   <div class="switch"><b>Status:</b> ${db.on?'<span class="pill warn">Notice is SHOWING to visitors</span>':'<span class="pill good">Notice is OFF</span>'}</div>
   <div class="rowbtns" style="margin-top:12px">
     <button id="devBannerBtn">${db.on?'🙈 Hide the notice':'📢 Show the notice everywhere'}</button>
+  </div></div>
+
+  <div class="card anim"><h2>🎛️ Site modes <span class="sub">take effect instantly for everyone online</span></h2>
+  ${[
+    ['membersOnly','🛡️ Members-only matching','Raid shield: guests cannot start or skip to a stranger call or chat until they log in. Use it during a bot or spam wave.'],
+    ['voicePaused','🔇 Pause voice calls','Stranger voice calls stop; text chat at /chat keeps working. Use it if calls are failing or relay costs spike. Friend call-backs are not affected.'],
+    ['signupsPaused','✋ Pause new sign-ups','No new accounts (password or Google). Existing members log in as usual.'],
+  ].map(([k,label,help])=>`<div class="switch" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+    <div class="rowbtns" style="margin:0"><button data-mode="${k}" class="${md[k]?'danger':''}" style="min-width:110px">${md[k]?'Turn OFF':'Turn ON'}</button></div>
+    <div style="flex:1;min-width:200px"><b>${label}</b> ${md[k]?'<span class="pill warn">ON</span>':'<span class="pill good">off</span>'}<div class="muted" style="font-size:.82rem">${help}</div></div>
+  </div>`).join('')}
+  <label style="display:block;margin:14px 0 6px;font-size:.85rem;color:var(--ink2)">📣 Announcement strip <span class="muted">(shown exactly as written, top of every page${an.on?' · <span class="pill warn">SHOWING</span>':''})</span></label>
+  <textarea id="announceText" rows="2" maxlength="280" placeholder="e.g. New: voice notes are here! · Short break tonight at 11pm">${esc(an.text||'')}</textarea>
+  <div class="rowbtns" style="margin-top:10px">
+    <button id="announceOn">📣 ${an.on?'Update announcement':'Show announcement'}</button>
+    ${an.on?'<button id="announceOff">🙈 Hide announcement</button>':''}
   </div></div>
 
   <div class="card anim"><h2>🎨 Appearance</h2>
@@ -3075,6 +3092,21 @@ async function viewSettings(){
       load();
     }catch(e){toast('Could not change maintenance mode',e.message,'bad');}
   };
+  const setModes=async(body,ok)=>{
+    try{await post('modes',body);toast('Site mode updated',ok,'good');load();}
+    catch(e){toast('Could not change the site mode',e.message,'bad');}
+  };
+  document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{
+    const k=b.dataset.mode,on=!md[k];
+    if(on&&!confirm('Turn this on for everyone now?'))return;
+    setModes({[k]:on},on?'It is on for everyone now.':'Back to normal.');
+  });
+  $('#announceOn').onclick=()=>{
+    const text=$('#announceText').value.trim();
+    if(!text)return toast('Write the announcement first','','bad');
+    setModes({announce:{on:true,text}},'Everyone online sees it now.');
+  };
+  if($('#announceOff'))$('#announceOff').onclick=()=>setModes({announce:{on:false}},'Announcement hidden.');
   $('#devBannerBtn').onclick=async()=>{
     try{
       await post('dev-banner',{on:!db.on});

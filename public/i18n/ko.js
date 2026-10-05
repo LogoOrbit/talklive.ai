@@ -801,6 +801,9 @@
   "friendIdCopied": "ID 복사됨",
   "friendIdLinkCopied": "링크 복사됨",
   "loggedOutToast": "로그아웃됨",
-  "devBanner": "죄송합니다! TalkLive는 아직 개발 중이라 일시적인 지연이나 작은 오류가 있을 수 있습니다. 걱정하지 마세요. 해결 중입니다."
+  "devBanner": "죄송합니다! TalkLive는 아직 개발 중이라 일시적인 지연이나 작은 오류가 있을 수 있습니다. 걱정하지 마세요. 해결 중입니다.",
+  "modeMembersOnly": "지금은 회원만 채팅을 시작할 수 있습니다. 로그인하거나 가입해 주세요.",
+  "modeVoicePaused": "음성 통화가 잠시 중단되었습니다. 텍스트 채팅은 /chat에서 계속 이용할 수 있습니다.",
+  "modeSignupsPaused": "현재 신규 가입이 일시 중단되었습니다. 나중에 다시 시도해 주세요."
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("ko");

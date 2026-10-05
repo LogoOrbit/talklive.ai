@@ -801,6 +801,9 @@
   "friendIdCopied": "IDをコピーしました",
   "friendIdLinkCopied": "リンクをコピーしました",
   "loggedOutToast": "ログアウトしました",
-  "devBanner": "申し訳ありません。TalkLiveは現在開発中のため、一時的な遅延や小さな不具合が発生する場合があります。ご心配なく、対応中です。"
+  "devBanner": "申し訳ありません。TalkLiveは現在開発中のため、一時的な遅延や小さな不具合が発生する場合があります。ご心配なく、対応中です。",
+  "modeMembersOnly": "現在、チャットを開始できるのはメンバーのみです。ログインまたは登録してください。",
+  "modeVoicePaused": "音声通話は一時的に停止中です。テキストチャットは /chat で引き続きご利用いただけます。",
+  "modeSignupsPaused": "現在、新規登録を一時停止しています。しばらくしてからもう一度お試しください。"
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("ja");

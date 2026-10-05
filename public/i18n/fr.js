@@ -801,6 +801,9 @@
   "friendIdCopied": "ID copié",
   "friendIdLinkCopied": "Lien copié",
   "loggedOutToast": "Déconnecté",
-  "devBanner": "Désolés ! TalkLive est encore en développement : vous pourriez remarquer de brefs ralentissements ou de petits bugs. Rien d'inquiétant, nous nous en occupons."
+  "devBanner": "Désolés ! TalkLive est encore en développement : vous pourriez remarquer de brefs ralentissements ou de petits bugs. Rien d'inquiétant, nous nous en occupons.",
+  "modeMembersOnly": "Pour le moment, seuls les membres peuvent lancer une discussion. Connectez-vous ou inscrivez-vous pour continuer.",
+  "modeVoicePaused": "Les appels vocaux sont en pause pour un moment. Le chat écrit reste ouvert sur /chat.",
+  "modeSignupsPaused": "Les nouvelles inscriptions sont en pause pour le moment. Réessayez plus tard."
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("fr");

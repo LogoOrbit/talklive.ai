@@ -801,6 +801,9 @@
   "friendIdCopied": "ID disalin",
   "friendIdLinkCopied": "Link disalin",
   "loggedOutToast": "Kamu sudah keluar",
-  "devBanner": "Maaf! TalkLive masih dalam tahap pengembangan, jadi kamu mungkin mengalami sedikit keterlambatan atau gangguan kecil. Tidak perlu khawatir - kami sedang menanganinya."
+  "devBanner": "Maaf! TalkLive masih dalam tahap pengembangan, jadi kamu mungkin mengalami sedikit keterlambatan atau gangguan kecil. Tidak perlu khawatir - kami sedang menanganinya.",
+  "modeMembersOnly": "Saat ini hanya anggota yang bisa memulai obrolan. Masuk atau daftar untuk melanjutkan.",
+  "modeVoicePaused": "Panggilan suara dijeda sebentar. Obrolan teks tetap terbuka di /chat.",
+  "modeSignupsPaused": "Pendaftaran baru sedang dijeda. Silakan coba lagi nanti."
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("id");

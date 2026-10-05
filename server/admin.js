@@ -626,6 +626,7 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
       conclusion: generateConclusion(runtime, report),
       maintenance: store.data.settings.maintenance,
       devBanner: store.data.settings.devBanner,
+      modes: store.siteModes(),
       counts: {
         reports: store.data.reports.length,
         unhandledReports: store.data.reports.filter((r) => !r.handled).length,
@@ -1714,6 +1715,34 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
     store.persistNow();
     io.emit('devBanner', store.data.settings.devBanner);
     res.json({ ok: true, devBanner: store.data.settings.devBanner });
+  });
+
+  // Site modes: any subset of { announce: { on, text }, signupsPaused,
+  // membersOnly, voicePaused }. Pushed to every open page at once.
+  const MODE_LABEL = { signupsPaused: 'Pause sign-ups', membersOnly: 'Members-only matching', voicePaused: 'Voice calls paused' };
+  router.post('/api/modes', (req, res) => {
+    const body = req.body || {};
+    const cur = store.data.settings.modes = store.siteModes();
+    for (const k of Object.keys(MODE_LABEL)) {
+      if (typeof body[k] === 'boolean' && body[k] !== !!cur[k]) {
+        cur[k] = body[k];
+        store.audit('site_mode', reqIp(req), `${MODE_LABEL[k]} ${body[k] ? 'ON' : 'OFF'}`);
+      }
+    }
+    if (body.announce && typeof body.announce === 'object') {
+      const prev = cur.announce || { on: false, text: '', since: 0 };
+      const text = typeof body.announce.text === 'string' ? body.announce.text.trim().slice(0, 280) : prev.text;
+      const on = !!body.announce.on && !!text;
+      // A new `since` re-shows the strip to people who closed the last one.
+      const since = on && (!prev.on || text !== prev.text) ? Date.now() : prev.since || 0;
+      cur.announce = { on, text, since };
+      if (on !== !!prev.on || text !== prev.text) {
+        store.audit('site_mode', reqIp(req), on ? `Announcement ON: "${text}"` : 'Announcement OFF');
+      }
+    }
+    store.persistNow();
+    io.emit('siteModes', store.publicModes());
+    res.json({ ok: true, modes: cur });
   });
 
   return { router, sendAlertEmail };

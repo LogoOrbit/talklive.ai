@@ -2831,6 +2831,15 @@ function googleProfileFrom(payload) {
 }
 
 // Verifies a Google ID token and finds-or-creates the account it belongs to.
+// Owner site modes that stop a stranger search before it reaches the queue.
+// Returns the i18n key the client shows, or null when the search may go on.
+function modeRefusal(socket, mode) {
+  const m = store.siteModes();
+  if (m.membersOnly && !socketAuth.get(socket.id)) return 'modeMembersOnly';
+  if (m.voicePaused && mode !== 'chat') return 'modeVoicePaused';
+  return null;
+}
+
 async function findOrCreateGoogleAccount(idToken) {
   const ticket = await googleClient.verifyIdToken({ idToken, audience: GOOGLE_CLIENT_ID });
   const payload = ticket.getPayload();
@@ -2846,6 +2855,9 @@ async function findOrCreateGoogleAccount(idToken) {
   const googleEmail = normalizeEmail(payload.email);
   let username = googleAccounts.get(googleId);
 
+  if (!username && store.siteModes().signupsPaused) {
+    throw Object.assign(new Error('New sign-ups are paused'), { errorKey: 'modeSignupsPaused' });
+  }
   if (!username) {
     username = uniqueUsernameFromBase((payload.email || 'user').split('@')[0]);
     const nickname = Nick.clean(payload.name) || Nick.clean(username) || username.slice(0, Nick.MAX_LEN);
@@ -3814,6 +3826,7 @@ io.on('connection', (socket) => {
     return;
   }
   socket.emit('devBanner', store.data.settings.devBanner || { on: false });
+  socket.emit('siteModes', store.publicModes());
 
   // Banned by IP: refuse service entirely until the ban expires or is lifted.
   const ipBan = store.findActiveBan(null, ip);
@@ -3839,6 +3852,9 @@ io.on('connection', (socket) => {
   socket.on('signup', async ({ username, password, nickname, email } = {}) => {
     const gate = ageGate('account');
     if (!gate.ok) return socket.emit('signup-result', { ok: false, error: gate.message, ageCheck: gate.reason });
+    if (store.siteModes().signupsPaused) {
+      return socket.emit('signup-result', { ok: false, error: 'New sign-ups are paused right now. Please try again later.', errorKey: 'modeSignupsPaused' });
+    }
     if (typeof username !== 'string' || typeof password !== 'string'
       || !username || !password || username.length < 3 || password.length < 4) {
       return socket.emit('signup-result', { ok: false, error: 'Username/password too short (min 3/4 chars).' });
@@ -4015,6 +4031,7 @@ io.on('connection', (socket) => {
         ...linkAccountProfile(username.toLowerCase(), socket.id),
       });
     } catch (err) {
+      if (err.errorKey) return socket.emit('google-auth-result', { ok: false, error: 'New sign-ups are paused right now. Please try again later.', errorKey: err.errorKey });
       console.error('[google-auth] verification failed:', err.message);
       socket.emit('google-auth-result', { ok: false, error: 'Google sign-in failed. Please try again.' });
     }
@@ -4578,6 +4595,8 @@ io.on('connection', (socket) => {
       socket.emit('age-restricted', { feature: 'voice' });
       mode = 'chat';
     }
+    const refused = modeRefusal(socket, mode);
+    if (refused) return socket.emit('search-refused', { reason: refused });
 
     // The client re-sends its search when one goes unanswered (a socket that
     // reconnected, a registration that had not landed). If this socket is
@@ -4623,6 +4642,8 @@ io.on('connection', (socket) => {
     disconnectPartner(socket.id, { failed });
     const profile = profiles.get(socket.id);
     if (profile) profile.randomFallbackActive = false;
+    const refused = modeRefusal(socket, (profile && profile.mode) || 'talk');
+    if (refused) return socket.emit('search-refused', { reason: refused });
     // Everyone skips straight to the next stranger. The free tier used to be
     // held back ~5s here, which cost far more than it earned: the client also
     // emits 'skip' for involuntary advances (a call whose media never arrived,

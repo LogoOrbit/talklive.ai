@@ -801,6 +801,9 @@
   "friendIdCopied": "ID kopiert",
   "friendIdLinkCopied": "Link kopiert",
   "loggedOutToast": "Abgemeldet",
-  "devBanner": "Entschuldigung! TalkLive befindet sich noch in der Entwicklung, daher kann es zu kurzen Verzögerungen oder kleinen Fehlern kommen. Kein Grund zur Sorge – wir arbeiten daran."
+  "devBanner": "Entschuldigung! TalkLive befindet sich noch in der Entwicklung, daher kann es zu kurzen Verzögerungen oder kleinen Fehlern kommen. Kein Grund zur Sorge – wir arbeiten daran.",
+  "modeMembersOnly": "Gerade können nur Mitglieder einen Chat starten. Bitte melde dich an oder registriere dich.",
+  "modeVoicePaused": "Sprachanrufe sind kurz pausiert. Der Text-Chat ist weiterhin unter /chat offen.",
+  "modeSignupsPaused": "Neue Registrierungen sind gerade pausiert. Bitte versuche es später erneut."
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("de");

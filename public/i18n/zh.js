@@ -801,6 +801,9 @@
   "friendIdCopied": "ID 已复制",
   "friendIdLinkCopied": "链接已复制",
   "loggedOutToast": "已退出登录",
-  "devBanner": "抱歉！TalkLive 仍在开发中，您可能会遇到短暂的延迟或小故障。无需担心，我们正在处理。"
+  "devBanner": "抱歉！TalkLive 仍在开发中，您可能会遇到短暂的延迟或小故障。无需担心，我们正在处理。",
+  "modeMembersOnly": "目前仅限会员发起聊天。请登录或注册后继续。",
+  "modeVoicePaused": "语音通话暂时暂停。文字聊天仍可在 /chat 使用。",
+  "modeSignupsPaused": "新用户注册暂时暂停，请稍后再试。"
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("zh");

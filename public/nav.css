@@ -854,3 +854,30 @@ html.perf-lite .nav-btn-primary { box-shadow: none; }
   cursor: pointer;
 }
 .tl-devbanner-close:hover { background: color-mix(in srgb, var(--text) 10%, transparent); }
+
+/* Owner announcement (dashboard → Site modes): same strip, stronger accent. */
+.tl-announce {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+.tl-announce .tl-devbanner-close:hover { background: rgba(255, 255, 255, .18); }
+
+/* A search the server turned away (members-only, voice paused) on /chat. */
+.tl-site-toast {
+  position: fixed;
+  inset-inline: 16px;
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  z-index: 9999;
+  max-width: 480px;
+  margin-inline: auto;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: var(--text);
+  color: var(--bg-1);
+  font-size: 14px;
+  line-height: 1.4;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .25);
+}
+.tl-site-toast[hidden] { display: none; }
