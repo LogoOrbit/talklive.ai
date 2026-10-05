@@ -811,7 +811,7 @@ function rankedBars(el,entries){
    "watch → act on people → understand users → money → the machine" instead of
    fourteen peers in a row. Shortcut keys 1-9 follow this order. */
 const GROUPS=[
-  ['Monitor',[['overview','Overview','📊'],['live','Live','🟢'],['activity','Activity','📅'],['daily','Daily log','📋'],['traffic','Traffic','🔎'],['experience','Experience','🩺'],['ai','AI Agent','🤖']]],
+  ['Monitor',[['overview','Overview','📊'],['live','Live','🟢'],['activity','Activity','📅'],['daily','Daily log','📋'],['traffic','Traffic','🔎'],['health','Health','❤️'],['experience','Experience','🩺'],['ai','AI Agent','🤖']]],
   ['Moderation',[['reports','Reports','🚩'],['chats','Chats','💬'],['voicenotes','Voice notes','🎙️'],['warnings','Warnings','⚠️'],['bans','Bans','⛔']]],
   ['People',[['audience','Audience','⚧'],['accounts','Accounts','👤'],['talktime','Talk time','⏱️'],['games','Games','🎮'],['feedback','Feedback','⭐']]],
   ['Business',[['revenue','Revenue','💎']]],
@@ -1031,6 +1031,7 @@ async function load(force){
     else if(tab==='activity')await viewActivity();
     else if(tab==='daily')await viewDaily();
     else if(tab==='traffic')await viewTraffic();
+    else if(tab==='health')await viewHealth();
     else if(tab==='ai')await viewBot();
     else if(tab==='audience')await viewAudience();
     else if(tab==='experience')await viewExperience();
@@ -2648,6 +2649,85 @@ function gscCard(g){
     <div class="card anim"><h2>🌍 Google clicks by country</h2><div id="gscCountries"></div></div>
     <div class="card anim"><h2>📱 Google clicks by device</h2><div id="gscDevices"></div></div>
   </div>`;
+}
+/* ---------- health: call quality, page speed, Google Analytics, uptime ----------
+   server/health.js. Call quality comes from the browsers themselves; the other
+   three are outside services, each optional and each showing its own setup
+   steps until it is connected. */
+const HL_RATING={fast:'good',good:'good',average:'warn',needs_improvement:'warn',slow:'bad',poor:'bad'};
+const hlBadge=(txt,kind)=>`<span class="stbox ${kind||''}" style="padding:2px 8px;border-radius:8px;font-size:12px">${esc(txt)}</span>`;
+function hlSetup(title,steps){return `<div class="card anim"><h2>${title} <span class="sub">not connected</span></h2><ol class="muted" style="margin:6px 0 0 18px;padding:0;line-height:1.7">${steps.map(x=>`<li>${x}</li>`).join('')}</ol></div>`;}
+function hlQuality(q){
+  if(!q||!q.calls)return `<div class="card anim"><h2>📞 Call quality <span class="sub">last ${q?q.days:30} days</span></h2><div class="muted">No measured calls yet. Every voice call reports its quality when it ends, so numbers appear after the next few calls.</div></div>`;
+  const v=q.verdicts,tot=v.good+v.fair+v.poor||1,bar=(n,c)=>`<div style="flex:${n};background:${c}"></div>`;
+  return `<div class="card anim"><h2>📞 Call quality <span class="sub">${num(q.calls)} measured voice calls · last ${q.days} days</span></h2>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-bottom:12px">
+      <div class="tile"><div class="k">Delay (round trip)</div><div class="v">${q.avgRttMs==null?'-':q.avgRttMs+' ms'}</div><div class="s">under 150 ms feels instant</div></div>
+      <div class="tile"><div class="k">Lost audio</div><div class="v">${q.avgLossPct==null?'-':q.avgLossPct+'%'}</div><div class="s">over 3% sounds choppy</div></div>
+      <div class="tile"><div class="k">Jitter</div><div class="v">${q.avgJitterMs==null?'-':q.avgJitterMs+' ms'}</div><div class="s">under 30 ms is smooth</div></div>
+      <div class="tile"><div class="k">Through TURN relay</div><div class="v">${q.relayPct==null?'-':q.relayPct+'%'}</div><div class="s">calls that needed the relay</div></div>
+    </div>
+    <div style="display:flex;height:14px;border-radius:7px;overflow:hidden">${bar(v.good,'var(--good)')}${bar(v.fair,'var(--warn)')}${bar(v.poor,'var(--bad)')}</div>
+    <div class="muted" style="margin-top:6px">Good ${pct1(v.good/tot)} · Fair ${pct1(v.fair/tot)} · Poor ${pct1(v.poor/tot)}</div>
+    <div style="overflow-x:auto;margin-top:12px"><table><tr><th>Day (UTC)</th><th class="num">Calls</th><th class="num">Poor</th><th class="num">Delay</th><th class="num">Lost audio</th></tr>
+    ${q.daily.slice().reverse().map(d=>`<tr><td>${esc(d.day)}</td><td class="num">${num(d.calls)}</td><td class="num">${d.poorPct}%</td><td class="num">${d.rttMs==null?'-':d.rttMs+' ms'}</td><td class="num">${d.lossPct}%</td></tr>`).join('')}</table></div></div>`;
+}
+function hlSpeed(p){
+  if(!p)return '';
+  if(p.error)return `<div class="card anim"><h2>⚡ Page speed</h2><div class="stbox bad" style="padding:10px;border-radius:12px">${esc(p.error)}</div></div>`;
+  if(!p.keyed&&p.pages.every(r=>r.error))return hlSetup('⚡ Page speed (Core Web Vitals)',[
+    'Google Cloud Console (same project) → APIs &amp; Services → Library → enable <b>PageSpeed Insights API</b>.',
+    'APIs &amp; Services → Credentials → <b>Create credentials → API key</b>. Restrict it to the PageSpeed Insights API.',
+    'Fly dashboard → talklive-ai → Secrets → add <code>PSI_API_KEY</code> with that key.']);
+  const fmt=(k,v)=>v==null?'-':(k==='cls'?(k==='cls'&&v>1?(v/100).toFixed(2):Number(v).toFixed(2)):(v>=1000?(v/1000).toFixed(1)+' s':Math.round(v)+' ms'));
+  const cell=(f,k)=>f&&f[k]?`${fmt(k,k==='cls'?f[k].p75/100:f[k].p75)} ${hlBadge(f[k].rating.replace('_',' '),HL_RATING[f[k].rating])}`:'<span class="muted">-</span>';
+  const rows=p.pages.map(r=>r.error?`<tr><td>${esc(r.path)}</td><td>${esc(r.strategy)}</td><td colspan="5" class="muted">${esc(r.error)}</td></tr>`
+    :`<tr><td><a class="lnk" href="${esc(r.path)}" target="_blank" rel="noopener">${esc(r.path)}</a></td><td>${r.strategy==='mobile'?'📱':'🖥️'}</td>
+      <td class="num">${r.score==null?'-':hlBadge(r.score,r.score>=90?'good':r.score>=50?'warn':'bad')}</td><td>${cell(r.field,'lcp')}</td><td>${cell(r.field,'inp')}</td><td>${cell(r.field,'cls')}</td><td>${cell(r.field,'ttfb')}</td></tr>`).join('');
+  return `<div class="card anim"><h2>⚡ Page speed <span class="sub">Google PageSpeed Insights · checked ${esc(new Date(p.fetchedAt).toLocaleString())}</span>
+      <span style="margin-left:auto"><button class="btn" id="hlRefresh">Re-check now</button></span></h2>
+    <div class="muted" style="margin-bottom:8px">Score is Google's lab test (0-100). LCP, INP and CLS are real visitors' experience from Chrome over the last 28 days (75th percentile) - the numbers Google uses for ranking. "-" means Google doesn't have enough real visits to that page yet.</div>
+    <div style="overflow-x:auto"><table><tr><th>Page</th><th></th><th class="num">Score</th><th>Loading (LCP)</th><th>Response (INP)</th><th>Layout shift (CLS)</th><th>Server (TTFB)</th></tr>${rows}</table></div></div>`;
+}
+function hlGa(g){
+  if(!g.configured)return hlSetup('📈 Google Analytics',[
+    'Google Cloud Console (same project as Search Console) → APIs &amp; Services → Library → enable <b>Google Analytics Data API</b>.',
+    `Google Analytics → Admin → Property access management → add <b>${esc(g.serviceAccount||'your Search Console service account email')}</b> as <b>Viewer</b>.`,
+    'Google Analytics → Admin → Property details → copy the <b>Property ID</b> (a number, not the G-... code).',
+    'Fly dashboard → talklive-ai → Secrets → add <code>GA4_PROPERTY_ID</code> with that number.']);
+  if(g.error)return `<div class="card anim"><h2>📈 Google Analytics <span class="sub">property ${esc(g.property)}</span></h2><div class="stbox bad" style="padding:10px;border-radius:12px">${esc(g.error)}</div>
+    <div class="muted" style="margin-top:8px">Check that <b>${esc(g.serviceAccount)}</b> is a Viewer on this property and the Google Analytics Data API is enabled.</div></div>`;
+  const T=g.totals||{},secs=(x)=>`${Math.floor((x||0)/60)}m ${Math.round((x||0)%60)}s`;
+  return `<div class="card anim"><h2>📈 Google Analytics <span class="sub">last 28 days · property ${esc(g.property)}</span></h2>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-bottom:12px">
+      <div class="tile"><div class="k">Right now</div><div class="v">${g.realtimeUsers==null?'-':num(g.realtimeUsers)}</div><div class="s">active users (GA realtime)</div></div>
+      <div class="tile"><div class="k">Users</div><div class="v">${num(T.users)}</div><div class="s">${num(T.newUsers)} new</div></div>
+      <div class="tile"><div class="k">Sessions</div><div class="v">${num(T.sessions)}</div><div class="s">${(T.pagesPerSession||0).toFixed(1)} pages each</div></div>
+      <div class="tile"><div class="k">Engaged</div><div class="v">${pct1(T.engagementRate||0)}</div><div class="s">of sessions</div></div>
+      <div class="tile"><div class="k">Avg session</div><div class="v">${secs(T.avgSession)}</div><div class="s">time on site</div></div>
+    </div>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr))">
+      <div><h3 style="margin:0 0 6px">Channels</h3><table><tr><th>Channel</th><th class="num">Sessions</th><th class="num">Engaged</th></tr>${(g.channels||[]).map(c=>`<tr><td>${esc(c.channel)}</td><td class="num">${num(c.sessions)}</td><td class="num">${pct1(c.engagementRate)}</td></tr>`).join('')}</table></div>
+      <div><h3 style="margin:0 0 6px">Landing pages</h3><div style="max-height:360px;overflow:auto"><table><tr><th>Page</th><th class="num">Sessions</th><th class="num">Engaged</th><th class="num">Avg time</th></tr>${(g.pages||[]).map(r=>`<tr><td>${esc(r.page)}</td><td class="num">${num(r.sessions)}</td><td class="num">${pct1(r.engagementRate)}</td><td class="num">${secs(r.avgSession)}</td></tr>`).join('')}</table></div></div>
+    </div></div>`;
+}
+function hlUptime(u){
+  if(!u.configured)return hlSetup('🛰️ Uptime (checked from outside)',[
+    'Sign up free at <b>uptimerobot.com</b> → Add New Monitor → type <b>HTTP(s)</b> → URL <code>https://talklive.app/healthz</code> (or <code>https://talklive.app/</code>) → every 5 minutes.',
+    'My Settings → API Settings → create a <b>Read-Only API Key</b>.',
+    'Fly dashboard → talklive-ai → Secrets → add <code>UPTIMEROBOT_API_KEY</code> with that key.']);
+  if(u.error)return `<div class="card anim"><h2>🛰️ Uptime</h2><div class="stbox bad" style="padding:10px;border-radius:12px">${esc(u.error)}</div></div>`;
+  return `<div class="card anim"><h2>🛰️ Uptime <span class="sub">UptimeRobot · checked from outside</span></h2>
+    <div style="overflow-x:auto"><table><tr><th>Monitor</th><th>Status</th><th class="num">24h</th><th class="num">7d</th><th class="num">30d</th><th class="num">Avg response</th><th>Recent outages</th></tr>
+    ${(u.monitors||[]).map(m=>`<tr><td>${esc(m.name)}</td><td>${hlBadge(m.status,m.status==='up'?'good':m.status==='paused'?'':'bad')}</td><td class="num">${m.uptime.d1}%</td><td class="num">${m.uptime.d7}%</td><td class="num">${m.uptime.d30}%</td><td class="num">${m.avgResponseMs?m.avgResponseMs+' ms':'-'}</td>
+      <td>${m.incidents.length?m.incidents.slice(0,3).map(i=>`${esc(new Date(i.at).toLocaleString())} (${i.minutes} min)`).join('<br>'):'<span class="muted">none</span>'}</td></tr>`).join('')}</table></div></div>`;
+}
+async function viewHealth(refresh){
+  const h=await vapi('health'+(refresh?'?refresh=1':''));
+  if(h===STALE)return;
+  $('#main').innerHTML=`<div class="muted" style="margin-bottom:12px">Call quality, page speed, Google Analytics and uptime - the things the other tabs can't see.</div>
+    ${hlQuality(h.callQuality)}${hlSpeed(h.pageSpeed)}${hlGa(h.analytics)}${hlUptime(h.uptime)}`;
+  const b=$('#hlRefresh');if(b)b.onclick=()=>{b.disabled=true;b.textContent='Checking (up to a minute)...';viewHealth(true);};
 }
 async function viewTraffic(){
   const [t,g]=await Promise.all([vapi('traffic?range='+tfRange),vapi('search-console?days='+gscDays).catch(()=>null)]);

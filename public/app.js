@@ -6662,8 +6662,28 @@ function setQualityLevel(level) {
     : t('qualityPoor');
 }
 
+// Per-call totals behind the owner dashboard's call-quality card: averaged
+// round-trip time, loss, jitter, how much of the call was "poor", and whether
+// the audio went through the TURN relay. Sent once when the call ends.
+let qualitySummary = null;
+
+function reportCallQuality() {
+  const q = qualitySummary;
+  qualitySummary = null;
+  if (!q || q.samples < 3 || !socket) return;
+  socket.emit('call-quality', {
+    samples: q.samples,
+    rttMs: q.rttN ? Math.round((q.rtt / q.rttN) * 1000) : null,
+    lossPct: Math.round((q.lost / Math.max(1, q.lost + q.recv)) * 10000) / 100,
+    jitterMs: q.jitN ? Math.round((q.jit / q.jitN) * 1000) : null,
+    poorShare: q.poor / q.samples,
+    relay: q.relay,
+  });
+}
+
 function startQualityMonitor() {
   stopQualityMonitor();
+  qualitySummary = { samples: 0, rtt: 0, rttN: 0, jit: 0, jitN: 0, lost: 0, recv: 0, poor: 0, relay: false };
   qualityIndicator.classList.remove('hidden');
   setQualityLevel(3);
   qualityInterval = setInterval(async () => {
@@ -6673,20 +6693,34 @@ function startQualityMonitor() {
       let rtt = null;
       let lost = 0;
       let received = 0;
+      let jitter = null;
+      let localCandidate = null;
       stats.forEach((r) => {
         if (r.type === 'candidate-pair' && r.state === 'succeeded' && r.currentRoundTripTime != null) {
           rtt = r.currentRoundTripTime;
+          localCandidate = r.localCandidateId;
         }
         if (r.type === 'inbound-rtp' && r.kind === 'audio') {
           lost = r.packetsLost || 0;
           received = r.packetsReceived || 0;
+          if (r.jitter != null) jitter = r.jitter;
         }
       });
+      const relayed = Boolean(localCandidate && stats.get(localCandidate) && stats.get(localCandidate).candidateType === 'relay');
       let lossRate = 0;
       if (lastQualityStats) {
         const dLost = Math.max(0, lost - lastQualityStats.lost);
         const dRecv = Math.max(0, received - lastQualityStats.received);
         lossRate = dLost + dRecv > 0 ? dLost / (dLost + dRecv) : 0;
+      }
+      if (qualitySummary && lastQualityStats) {
+        const qs = qualitySummary;
+        qs.samples += 1;
+        if (rtt != null) { qs.rtt += rtt; qs.rttN += 1; }
+        if (jitter != null) { qs.jit += jitter; qs.jitN += 1; }
+        qs.lost += Math.max(0, lost - lastQualityStats.lost);
+        qs.recv += Math.max(0, received - lastQualityStats.received);
+        if (relayed) qs.relay = true;
       }
       lastQualityStats = { lost, received };
 
@@ -6700,6 +6734,7 @@ function startQualityMonitor() {
       else if (lossRate > 0.03) level = Math.min(level, 2);
       else if (lossRate > 0.01) level = Math.min(level, 3);
       setQualityLevel(level);
+      if (qualitySummary && level <= 1) qualitySummary.poor += 1;
     } catch (e) {
       // getStats can fail transiently while the connection is torn down
     }
@@ -6707,6 +6742,7 @@ function startQualityMonitor() {
 }
 
 function stopQualityMonitor() {
+  reportCallQuality();
   clearInterval(qualityInterval);
   qualityInterval = null;
   lastQualityStats = null;

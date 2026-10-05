@@ -14,6 +14,7 @@ let QRCode = null;
 try { QRCode = require('qrcode'); } catch (_) { /* optional */ }
 const mail = require('./mailer');
 const searchConsole = require('./search-console');
+const health = require('./health');
 
 const SESSION_HOURS = 12;
 const OWNER_EMAIL = process.env.OWNER_EMAIL || '';
@@ -1272,6 +1273,12 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
 
   router.get('/api/search-console', async (req, res) => {
     res.json(await searchConsole.report(req.query.days));
+  });
+
+  // Health tab: call quality, page speed, Google Analytics and uptime
+  // (server/health.js). ?refresh=1 bypasses the caches.
+  router.get('/api/health', async (req, res) => {
+    res.json(await health.report(store, { refresh: req.query.refresh === '1' }));
   });
 
   router.get('/api/games', (req, res) => {

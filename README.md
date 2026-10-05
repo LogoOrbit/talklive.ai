@@ -169,6 +169,10 @@ A secured owner dashboard lives at **`/owner`** (e.g. `https://talklive.app/owne
 | `GIPHY_API_KEY` | Giphy API key, enabling the GIF picker in text chat. Optional: with it unset, `/api/gifs/config` reports the feature off and both clients never render the GIF button at all, so nothing dead is shown. Get one at [developers.giphy.com](https://developers.giphy.com/) &rarr; Create an App. Requests are proxied through `/api/gifs` so the key never reaches a browser, results are cached 30 minutes per query, and `rating=g` (Giphy's most restrictive) is always sent. **Was Tenor** until Google shut that API down to external developers on 2026-06-30. |
 | `GSC_CREDENTIALS` | Google service-account JSON key (raw or base64) for reading search keywords from Search Console into the dashboard's Traffic tab. Optional |
 | `GSC_SITE_URL` | The Search Console property, default `sc-domain:<CANONICAL_HOST>`. Use `https://talklive.app/` for a URL-prefix property |
+| `GA4_PROPERTY_ID` | Google Analytics 4 property ID (a number). With the Search Console service account added as a Viewer, the Health tab shows GA users, sessions, engagement, channels and landing pages. Optional |
+| `GA_CREDENTIALS` | A separate service-account key for GA4, if you don't want to reuse `GSC_CREDENTIALS`. Optional |
+| `PSI_API_KEY` | Google API key with the PageSpeed Insights API enabled, for the Health tab's Core Web Vitals. Optional |
+| `UPTIMEROBOT_API_KEY` | UptimeRobot read-only API key, for the Health tab's outside uptime checks. Optional |
 | `GIPHY_HOURLY_BUDGET` | Max upstream Giphy calls per hour (default `90`). A free "beta" Giphy key allows 100/hour **for the whole key**, not per user, and exceeding it returns errors rather than degrading; past the budget the proxy serves stale cache instead of calling out. Raise it once the key is upgraded to production. |
 
 ### Premium (TalkLive Plus)

@@ -4777,6 +4777,25 @@ io.on('connection', (socket) => {
     store.acknowledgeFeedbackReply(payload.id, p.clientId, socketAuth.get(socket.id));
   });
 
+  // One quality summary per voice call, measured by the browser (see
+  // reportCallQuality in public/app.js). Numbers only, clamped; at most one per
+  // 20 seconds per connection so a tampered client cannot flood the totals.
+  socket.on('call-quality', (q = {}) => {
+    const now = Date.now();
+    if (socket.data.lastQualityAt && now - socket.data.lastQualityAt < 20000) return;
+    const n = (v, max) => (Number.isFinite(Number(v)) ? Math.min(max, Math.max(0, Number(v))) : null);
+    const samples = n(q.samples, 100000);
+    if (!samples || samples < 3) return;
+    socket.data.lastQualityAt = now;
+    store.recordCallQuality({
+      rttMs: n(q.rttMs, 10000),
+      lossPct: n(q.lossPct, 100) || 0,
+      jitterMs: n(q.jitterMs, 10000),
+      poorShare: n(q.poorShare, 1) || 0,
+      relay: q.relay === true,
+    });
+  });
+
   socket.on('rate-call', (payload = {}) => {
     const p = profiles.get(socket.id);
     const pending = p && p.pendingRating;
