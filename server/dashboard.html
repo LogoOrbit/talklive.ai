@@ -1206,6 +1206,9 @@ async function viewOverview(){
     </div></div>`:''}
   ${liveCardHtml()}
 
+  <div class="card anim" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><div style="flex:1;min-width:220px"><b>⬇️ Download all dashboard data</b><div class="muted" style="font-size:13px">One ZIP of clean CSVs (daily log, traffic, audience, talk time, games, accounts, subscriptions, reports, bans, feedback) with a README. Nothing is removed from the server.</div></div>
+    <div class="rowbtns"><button onclick="location.href='/owner/api/export/all.zip?tz='+encodeURIComponent(actTz||browserTz())">⬇ Download all data (.zip)</button></div></div>
+
   <div class="sechead">Today · ${esc(o.todayWindow)} · <a href="#" onclick="go('activity');return false" style="color:var(--accent-2);text-transform:none;letter-spacing:0">change timezone →</a></div>
   <div class="grid tiles">
     <div class="tile anim"><div class="k">Visitors today</div><div class="v grad" data-count="${o.today.uniques}">0</div><div class="s">${num(o.today.visits)} visits · ${deltaHtml(o.changeVsYesterday.uniques)} vs same time yesterday</div></div>
