@@ -521,7 +521,7 @@
       if (!playCard) return;
       const show = opts.isConnected() && tttStage === 'idle' && !playCardDismissed
         && gameOverlay.classList.contains('hidden');
-      if (show && playCardText) playCardText.textContent = t('gamePickPrompt', { name: opts.partnerName() || t('chat') });
+      if (show && playCardText) playCardText.textContent = t('playGames');
       playCard.classList.toggle('hidden', !show);
     }
 
