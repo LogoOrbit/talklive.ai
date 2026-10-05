@@ -27,10 +27,39 @@ const SLUGS = [
 ];
 const TOPICS = SLUGS.map((slug) => require(`./${slug}`));
 
+// Journal pieces that go deeper on each guide's question. Contextual links
+// from the guides that already rank are how new articles get found.
+const READING = {
+  'talk-to-strangers': ['science-of-talking-to-strangers', 'how-to-end-a-conversation', 'introvert-guide-to-talking-to-strangers'],
+  'random-voice-chat': ['why-a-call-beats-texting', 'phone-anxiety-how-to-get-comfortable-talking'],
+  'random-text-chat': ['why-a-call-beats-texting', 'how-to-spot-a-bot-or-scam-in-random-chat'],
+  'random-call': ['why-a-call-beats-texting', 'phone-anxiety-how-to-get-comfortable-talking'],
+  'anonymous-chat': ['why-talking-to-strangers-feels-easier', 'how-to-spot-a-bot-or-scam-in-random-chat'],
+  'talk-to-someone': ['loneliness-what-actually-helps', 'why-am-i-so-bored', 'lonely-after-moving-abroad'],
+  'late-night-chat': ['why-am-i-so-bored', 'loneliness-what-actually-helps'],
+  'make-friends-online': ['lonely-after-moving-abroad', 'introvert-guide-to-talking-to-strangers', 'what-to-talk-about-with-a-stranger'],
+  'practice-english-speaking': ['how-to-practise-a-language-by-speaking', 'small-talk-around-the-world'],
+  'language-exchange': ['small-talk-around-the-world', 'how-to-practise-a-language-by-speaking'],
+  'language-chat-guide': ['small-talk-around-the-world', 'how-to-practise-a-language-by-speaking'],
+  'country-chat-guide': ['small-talk-around-the-world', 'lonely-after-moving-abroad'],
+  'omegle-alternative': ['what-happened-to-omegle', 'how-to-spot-a-bot-or-scam-in-random-chat'],
+  'voice-chat-vs-video-chat': ['why-a-call-beats-texting', 'phone-anxiety-how-to-get-comfortable-talking'],
+  'safety': ['how-to-spot-a-bot-or-scam-in-random-chat', 'how-to-end-a-conversation'],
+  'how-it-works': ['how-random-matchmaking-works', 'how-to-end-a-conversation'],
+};
+
+function readingFor(slug) {
+  const { ARTICLES } = require('../journal');
+  const picks = (READING[slug] || []).map((s) => ARTICLES.find((a) => a.slug === s)).filter(Boolean);
+  if (!picks.length) return '';
+  return `<aside class="c-guides" aria-label="From the Journal"><h2>Read more in the Journal</h2><ul>${picks
+    .map((a) => `<li><a href="/blog/${a.slug}">${S.esc(a.h1)}</a></li>`).join('')}</ul></aside>`;
+}
+
 function asideFor(slug) {
   const items = TOPICS.filter((t) => t.slug !== slug)
     .map((t) => `<li><a href="/${t.slug}">${S.esc(t.name)}</a></li>`).join('');
-  return `<aside class="c-guides" aria-label="Other guides"><h2>More guides</h2><ul>${items}</ul></aside>`;
+  return `${readingFor(slug)}<aside class="c-guides" aria-label="Other guides"><h2>More guides</h2><ul>${items}</ul></aside>`;
 }
 
 function build() {

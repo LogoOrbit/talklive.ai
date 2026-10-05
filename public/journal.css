@@ -76,6 +76,14 @@ a{color:inherit}
 .j-more li{border-top:1px solid var(--rule,rgba(0,0,0,.12));padding-top:10px}
 .j-more a{text-decoration:none;font:inherit}
 .j-more a:hover{text-decoration:underline}
+.j-faq{max-width:700px;margin:48px auto 0;padding:0 20px}
+.j-faq h2{font-family:inherit;font-size:26px;line-height:1.2;margin:0 0 10px}
+.j-faq details{border-top:1px solid var(--rule,rgba(0,0,0,.15));padding:14px 0}
+.j-faq summary{cursor:pointer;list-style:none;font-weight:700;font-size:18px;line-height:1.4}
+.j-faq summary::-webkit-details-marker{display:none}
+.j-faq summary::after{content:"+";float:right;margin-left:12px;opacity:.6}
+.j-faq details[open] summary::after{content:"\2212"}
+.j-faq details p{margin:10px 0 0;font-size:17px;line-height:1.65}
 .ad-card{max-width:728px;margin:48px auto;padding:10px 0 0;border-top:1px solid var(--rule,rgba(0,0,0,.12));text-align:center}
 .ad-card-label{display:block;font:500 10px/1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.18em;text-transform:uppercase;opacity:.5;margin-bottom:8px}
 @media (max-width:640px){.j-mast{flex-wrap:wrap;gap:8px 14px;font-size:12px}.j-mast nav{gap:14px}}

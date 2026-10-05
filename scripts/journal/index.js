@@ -29,7 +29,7 @@ function ctxFor(slug) {
 }
 
 function renderArticle(a) {
-  const inner = a.body(ctxFor(a.slug));
+  const inner = a.body({ ...ctxFor(a.slug), faq: (heading) => S.faqHtml(a.faq, heading) });
   return S.page({ ...a, path: `/blog/${a.slug}`, crumb: a.h1, article: true, wordCount: S.words(inner) }, inner);
 }
 

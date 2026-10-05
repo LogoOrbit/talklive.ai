@@ -1,6 +1,6 @@
 {
   "/": {
-    "hash": "5e596830a1a2aa4e",
+    "hash": "4e2bab366c44ea8b",
     "date": "2026-10-05",
     "v": 3
   },
@@ -10,7 +10,7 @@
     "v": 3
   },
   "/anonymous-chat": {
-    "hash": "aeb6d19b13cc1f8f",
+    "hash": "5b1a9dc36befa656",
     "date": "2026-10-05",
     "v": 3
   },
@@ -20,7 +20,7 @@
     "v": 3
   },
   "/blog/": {
-    "hash": "0c2338f5b1631306",
+    "hash": "3c44051d8c655d19",
     "date": "2026-10-05",
     "v": 3
   },
@@ -34,18 +34,33 @@
     "date": "2026-10-05",
     "v": 3
   },
+  "/blog/how-to-end-a-conversation": {
+    "hash": "99599b620a2ea538",
+    "date": "2026-10-05",
+    "v": 3
+  },
   "/blog/how-to-practise-a-language-by-speaking": {
-    "hash": "c9c9239e0017ee12",
+    "hash": "47844fa6a78f5468",
     "date": "2026-10-05",
     "v": 3
   },
   "/blog/how-to-spot-a-bot-or-scam-in-random-chat": {
-    "hash": "12757a7e8d1cf26e",
+    "hash": "bbe4fdb571f20f0c",
+    "date": "2026-10-05",
+    "v": 3
+  },
+  "/blog/introvert-guide-to-talking-to-strangers": {
+    "hash": "8d87c9cc16cc2471",
     "date": "2026-10-05",
     "v": 3
   },
   "/blog/loneliness-what-actually-helps": {
     "hash": "7ed453fda73924b7",
+    "date": "2026-10-05",
+    "v": 3
+  },
+  "/blog/lonely-after-moving-abroad": {
+    "hash": "54fcae9e9de8c877",
     "date": "2026-10-05",
     "v": 3
   },
@@ -59,13 +74,28 @@
     "date": "2026-10-05",
     "v": 3
   },
+  "/blog/small-talk-around-the-world": {
+    "hash": "517c9eb1ad48bef9",
+    "date": "2026-10-05",
+    "v": 3
+  },
   "/blog/what-happened-to-omegle": {
     "hash": "76eb8ed55f4c8322",
     "date": "2026-10-05",
     "v": 3
   },
   "/blog/what-to-talk-about-with-a-stranger": {
-    "hash": "056dffee23a1ed5d",
+    "hash": "edb9fcbe0f9a3403",
+    "date": "2026-10-05",
+    "v": 3
+  },
+  "/blog/why-a-call-beats-texting": {
+    "hash": "98a59b1751c101d0",
+    "date": "2026-10-05",
+    "v": 3
+  },
+  "/blog/why-am-i-so-bored": {
+    "hash": "0259baf949ce5477",
     "date": "2026-10-05",
     "v": 3
   },
@@ -90,47 +120,47 @@
     "v": 3
   },
   "/countries/bangladesh": {
-    "hash": "6e90ffe2ac9c9a2b",
+    "hash": "c3b4c93d2a62defa",
     "date": "2026-10-05",
     "v": 3
   },
   "/countries/egypt": {
-    "hash": "53e194bfeed4b991",
+    "hash": "c98585cd55ac6fdc",
     "date": "2026-10-05",
     "v": 3
   },
   "/countries/india": {
-    "hash": "e33ffcdd3f3817e0",
+    "hash": "fc0c9ff85c909df3",
     "date": "2026-10-05",
     "v": 3
   },
   "/countries/indonesia": {
-    "hash": "7aa13920f7397a7e",
+    "hash": "6e2e7cdb6b6db1d2",
     "date": "2026-10-05",
     "v": 3
   },
   "/countries/nigeria": {
-    "hash": "7e8683d59f5a2983",
+    "hash": "1d1bf90b2f1608f3",
     "date": "2026-10-05",
     "v": 3
   },
   "/countries/pakistan": {
-    "hash": "b05bb28b945abc7e",
+    "hash": "1ba2e273c39af498",
     "date": "2026-10-05",
     "v": 3
   },
   "/countries/united-kingdom": {
-    "hash": "91e2644a9a847039",
+    "hash": "d4df751d3f9442b4",
     "date": "2026-10-05",
     "v": 3
   },
   "/countries/united-states": {
-    "hash": "7727a557d9076c99",
+    "hash": "17edb5592430d315",
     "date": "2026-10-05",
     "v": 3
   },
   "/country-chat-guide": {
-    "hash": "d51d1ba590e04959",
+    "hash": "b58e6882219c6f8c",
     "date": "2026-10-05",
     "v": 3
   },
@@ -160,7 +190,7 @@
     "v": 3
   },
   "/how-it-works": {
-    "hash": "38c0154f9154d36c",
+    "hash": "389b4d3b3f5656b0",
     "date": "2026-10-05",
     "v": 3
   },
@@ -185,12 +215,12 @@
     "v": 3
   },
   "/language-chat-guide": {
-    "hash": "b14d19af708ba12c",
+    "hash": "53d77b9be8e0a191",
     "date": "2026-10-05",
     "v": 3
   },
   "/language-exchange": {
-    "hash": "bc8417046f5e1bf4",
+    "hash": "1ddce98ffa52cba5",
     "date": "2026-10-05",
     "v": 3
   },
@@ -200,22 +230,22 @@
     "v": 3
   },
   "/late-night-chat": {
-    "hash": "aa722b16b2355565",
+    "hash": "2319bb65d2e43078",
     "date": "2026-10-05",
     "v": 3
   },
   "/make-friends-online": {
-    "hash": "b360769910e1f1e0",
+    "hash": "c3a8b1f38ed52ed5",
     "date": "2026-10-05",
     "v": 3
   },
   "/omegle-alternative": {
-    "hash": "6823abf315244059",
+    "hash": "7f95289e6041a4c5",
     "date": "2026-10-05",
     "v": 3
   },
   "/practice-english-speaking": {
-    "hash": "2090aac63b96ade3",
+    "hash": "d16c57ede45336d6",
     "date": "2026-10-05",
     "v": 3
   },
@@ -235,17 +265,17 @@
     "v": 3
   },
   "/random-call": {
-    "hash": "fd6462085ca1946b",
+    "hash": "04b8341563b8ab5a",
     "date": "2026-10-05",
     "v": 3
   },
   "/random-text-chat": {
-    "hash": "94a5d3a08c62e61f",
+    "hash": "55a52d931892ba2e",
     "date": "2026-10-05",
     "v": 3
   },
   "/random-voice-chat": {
-    "hash": "139fbf2d80fc3360",
+    "hash": "50fd51591610b5e2",
     "date": "2026-10-05",
     "v": 3
   },
@@ -295,17 +325,17 @@
     "v": 3
   },
   "/safety": {
-    "hash": "18f15c2643cc3ff7",
+    "hash": "26753ea947858424",
     "date": "2026-10-05",
     "v": 3
   },
   "/talk-to-someone": {
-    "hash": "13fb0091b30c01a1",
+    "hash": "44e1b066f7b13f48",
     "date": "2026-10-05",
     "v": 3
   },
   "/talk-to-strangers": {
-    "hash": "a2cb6d40fa232e7d",
+    "hash": "b5a2caaaa67389e0",
     "date": "2026-10-05",
     "v": 3
   },
@@ -325,7 +355,7 @@
     "v": 3
   },
   "/voice-chat-vs-video-chat": {
-    "hash": "2a213291b29bed69",
+    "hash": "d0598addf0c8272e",
     "date": "2026-10-05",
     "v": 3
   },

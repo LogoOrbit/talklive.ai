@@ -71,7 +71,8 @@ function faqHtml(c, heading) {
 function guidesHtml(slug) {
   const items = COUNTRIES.filter((c) => c.slug !== slug)
     .map((c) => `<li><a href="/countries/${c.slug}">${S.esc(c.name)}</a></li>`).join('');
-  return `<aside class="c-guides" aria-label="Other country guides"><h2>Other country guides</h2><ul>${items}<li><a href="/country-chat-guide">How country matching works</a></li></ul></aside>`;
+  return `<aside class="c-guides" aria-label="Other country guides"><h2>Other country guides</h2><ul>${items}<li><a href="/country-chat-guide">How country matching works</a></li></ul></aside>`
+    + '<aside class="c-guides" aria-label="From the Journal"><h2>Read more in the Journal</h2><ul><li><a href="/blog/small-talk-around-the-world">Small Talk Around the World: What to Say, and What Not to Ask</a></li><li><a href="/blog/lonely-after-moving-abroad">New City, No One to Call: Loneliness After Moving Abroad</a></li></ul></aside>';
 }
 
 function head(c, wordCount) {

@@ -21,7 +21,7 @@ const path = require('path');
 const SITE = 'https://talklive.app';
 const PUBLIC = path.join(__dirname, '..', '..', 'public');
 const OG_IMAGE = `${SITE}/og-image.png?v=2`;
-const CSS_VERSION = '20261006callbtn';
+const CSS_VERSION = '20261006journal';
 const CTA_JS_VERSION = '20261006callbtn';
 
 // family -> [ [weight, style, file] ]
@@ -83,6 +83,14 @@ a{color:inherit}
 .j-more li{border-top:1px solid var(--rule,rgba(0,0,0,.12));padding-top:10px}
 .j-more a{text-decoration:none;font:inherit}
 .j-more a:hover{text-decoration:underline}
+.j-faq{max-width:700px;margin:48px auto 0;padding:0 20px}
+.j-faq h2{font-family:inherit;font-size:26px;line-height:1.2;margin:0 0 10px}
+.j-faq details{border-top:1px solid var(--rule,rgba(0,0,0,.15));padding:14px 0}
+.j-faq summary{cursor:pointer;list-style:none;font-weight:700;font-size:18px;line-height:1.4}
+.j-faq summary::-webkit-details-marker{display:none}
+.j-faq summary::after{content:"+";float:right;margin-left:12px;opacity:.6}
+.j-faq details[open] summary::after{content:"\\2212"}
+.j-faq details p{margin:10px 0 0;font-size:17px;line-height:1.65}
 .ad-card{max-width:728px;margin:48px auto;padding:10px 0 0;border-top:1px solid var(--rule,rgba(0,0,0,.12));text-align:center}
 .ad-card-label{display:block;font:500 10px/1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.18em;text-transform:uppercase;opacity:.5;margin-bottom:8px}
 @media (max-width:640px){.j-mast{flex-wrap:wrap;gap:8px 14px;font-size:12px}.j-mast nav{gap:14px}}
@@ -161,6 +169,12 @@ function head(p) {
         '@type': 'CollectionPage', '@id': `${canonical}#webpage`, name: p.title, description: p.description, url: canonical,
         publisher: { '@id': `${SITE}/#organization` },
       },
+      // Articles that answer common questions carry them as FAQPage too, the
+      // same Q&A the reader sees on the page (ctx.faq renders it).
+      ...(p.faq && p.faq.length ? [{
+        '@type': 'FAQPage', '@id': `${canonical}#faq`,
+        mainEntity: p.faq.map(f => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+      }] : []),
       {
         '@type': 'BreadcrumbList',
         itemListElement: [
@@ -250,6 +264,12 @@ const CTA_THEMES = {
   'how-to-practise-a-language-by-speaking': ['#2e8b57', '#fff', '#2f5d8a', '#fff'],
   'how-to-spot-a-bot-or-scam-in-random-chat': ['#3ddc84', '#0b1a10', '#ffd23f', '#17181a'],
   'what-to-talk-about-with-a-stranger': ['#1a9b4b', '#fff', '#e10600', '#fff'],
+  'why-am-i-so-bored': ['#2f7d4f', '#fff', '#c2410c', '#fff'],
+  'how-to-end-a-conversation': ['#0a7d3b', '#fff', '#121614', '#fff'],
+  'introvert-guide-to-talking-to-strangers': ['#4f9d7e', '#fff', '#6a4c93', '#fff'],
+  'small-talk-around-the-world': ['#2e7d32', '#fff', '#14213d', '#f4f1ea', '.pp-cover{--cta-chat:#c9a227;--cta-chat-ink:#14213d}'],
+  'why-a-call-beats-texting': ['#3ee08f', '#06231a', '#ffc65c', '#0f1720'],
+  'lonely-after-moving-abroad': ['#2f7d4f', '#fff', '#1e4f7a', '#fff'],
   // Regions and the languages feature
   'africa': ['#0f7b4a', '#fff', '#c2522d', '#fff'],
   'americas': ['#2a8f5c', '#fff', '#1d2a4a', '#fff'],
@@ -336,6 +356,12 @@ function ctaDock(src = 'blog') {
 <script defer src="/cta.js?v=${CTA_JS_VERSION}"></script>`;
 }
 
+function faqHtml(list, heading) {
+  if (!list || !list.length) return '';
+  return `<section class="j-faq" aria-labelledby="faq-h"><h2 id="faq-h">${esc(heading || 'Questions people ask')}</h2>${list
+    .map(f => `<details><summary>${esc(f.q)}</summary><p>${esc(f.a)}</p></details>`).join('')}</section>`;
+}
+
 function moreStories(all, slug) {
   const self = all.findIndex(a => a.slug === slug);
   const picks = [1, 2, 3].map(k => all[(self + k) % all.length]);
@@ -361,4 +387,4 @@ function write(rel, html) {
   fs.writeFileSync(file, html);
 }
 
-module.exports = { SITE, PUBLIC, CSS_VERSION, ctaVars, CTA_THEMES, ctaTalk, ctaChat, esc, words, page, ad, moreStories, write, journalCss, ctaHero, ctaDock, ctaButtons };
+module.exports = { SITE, PUBLIC, faqHtml, CSS_VERSION, ctaVars, CTA_THEMES, ctaTalk, ctaChat, esc, words, page, ad, moreStories, write, journalCss, ctaHero, ctaDock, ctaButtons };
