@@ -137,6 +137,7 @@
   "chatAutoHint": "Conectar automaticamente com outra pessoa quando uma conversa terminar",
   "chatAutoOn": "Conexão automática LIGADA: você será pareado de novo automaticamente",
   "chatAutoOff": "Conexão automática DESLIGADA",
+  "chatAutoLabel": "Conexão automática",
   "callInviteWaitTitle": "Chamando…",
   "callInviteWaitBody": "Pedindo para iniciar uma chamada de voz. Fecha sozinho se a pessoa aceitar.",
   "callInviteIncomingTitle": "Chamada de voz recebida",

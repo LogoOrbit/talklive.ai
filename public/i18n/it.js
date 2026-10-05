@@ -137,6 +137,7 @@
   "chatAutoHint": "Collegami automaticamente a una nuova persona quando una chat finisce",
   "chatAutoOn": "Connessione automatica ATTIVA: verrai abbinato di nuovo automaticamente",
   "chatAutoOff": "Connessione automatica DISATTIVATA",
+  "chatAutoLabel": "Connessione automatica",
   "callInviteWaitTitle": "Chiamata in corso…",
   "callInviteWaitBody": "Stiamo chiedendo di avviare una chiamata vocale. Si chiude da solo se accetta.",
   "callInviteIncomingTitle": "Chiamata vocale in arrivo",

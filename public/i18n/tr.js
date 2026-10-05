@@ -137,6 +137,7 @@
   "chatAutoHint": "Sohbet bitince beni otomatik olarak yeni biriyle bağla",
   "chatAutoOn": "Otomatik bağlanma AÇIK: otomatik olarak yeniden eşleşeceksin",
   "chatAutoOff": "Otomatik bağlanma KAPALI",
+  "chatAutoLabel": "Otomatik bağlanma",
   "callInviteWaitTitle": "Aranıyor…",
   "callInviteWaitBody": "Sesli arama başlatması isteniyor. Kabul ederse bu pencere kendiliğinden kapanır.",
   "callInviteIncomingTitle": "Gelen sesli arama",

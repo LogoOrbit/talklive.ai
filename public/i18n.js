@@ -268,6 +268,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "chatAutoHint": "Auto-connect me to a new person when a chat ends",
     "chatAutoOn": "Auto-connect is ON - you'll be matched again automatically",
     "chatAutoOff": "Auto-connect is OFF",
+    "chatAutoLabel": "Auto-connect",
     "callInviteWaitTitle": "Calling…",
     "callInviteWaitBody": "Asking them to start a voice call. This closes automatically if they accept.",
     "callInviteIncomingTitle": "Incoming voice call",

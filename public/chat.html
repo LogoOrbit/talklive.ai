@@ -220,13 +220,14 @@
             <span id="moreDot" class="nav-dot hidden" aria-hidden="true"></span>
           </button>
           <div id="topMenu" class="nav-menu hidden" role="menu" aria-labelledby="moreBtn">
-            <!-- Auto-connect as a spelled-out on/off switch. A bare "Auto" pill
-                 in the bar read as nothing to most people. -->
-            <button type="button" id="autoBtn" class="nav-menu-item nav-menu-switch" role="menuitemcheckbox" aria-checked="false">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 0 1 14.6-5.9L20.5 8.5"/><polyline points="20.5 3.6 20.5 8.5 15.6 8.5"/><path d="M20.5 12a8.5 8.5 0 0 1-14.6 5.9L3.5 15.5"/><polyline points="3.5 20.4 3.5 15.5 8.4 15.5"/></svg>
-              <span class="nav-menu-switch-label" data-i18n="chatAutoHint">Auto-connect me to a new person when a chat ends</span>
+            <!-- Auto-connect on/off. Short label; the full meaning lives in the
+                 tooltip and in the chat message shown when it is toggled. -->
+            <button type="button" id="autoBtn" class="nav-menu-item nav-menu-switch" role="menuitemcheckbox" aria-checked="false" data-i18n-title="chatAutoHint" title="Auto-connect me to a new person when a chat ends">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 0 1 14.6-5.9L20.5 8.5"/><polyline points="20.5 3.6 20.5 8.5 15.6 8.5"/><path d="M20.5 12a8.5 8.5 0 0 1-14.6 5.9L3.5 15.5"/><polyline points="3.5 20.4 3.5 15.5 8.4 15.5"/></svg>
+              <span class="nav-menu-switch-label" data-i18n="chatAutoLabel">Auto-connect</span>
               <span class="nav-switch" aria-hidden="true"></span>
             </button>
+            <div class="nav-menu-sep" role="separator"></div>
             <button type="button" id="settingsMenuItem" class="nav-menu-item nav-menu-phone" role="menuitem" data-i18n-aria="settings" aria-label="Settings">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span data-i18n="settings">Settings</span>
             </button>
