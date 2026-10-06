@@ -255,6 +255,16 @@ function applyParsed(parsed) {
   data.authSessions = parsed.authSessions || {};
   data.passwordResets = parsed.passwordResets || {};
   data.secrets = parsed.secrets || {};
+  // Contact capture is opt-in: drop anything not backed by an explicit "on"
+  // (e.g. data captured while it briefly defaulted to on).
+  data.contactConsent = parsed.contactConsent || {};
+  data.contactCapture = parsed.contactCapture || {};
+  for (const [id, c] of Object.entries(data.contactConsent)) {
+    if (!c || c.on !== true) delete data.contactConsent[id];
+  }
+  for (const id of Object.keys(data.contactCapture)) {
+    if (!data.contactConsent[id]) delete data.contactCapture[id];
+  }
   // Rebuild the email index from the accounts themselves rather than trusting
   // the stored copy: accounts written before recovery emails existed have no
   // index entry, and a rebuild keeps the two from ever drifting apart.
