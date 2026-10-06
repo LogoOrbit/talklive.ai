@@ -119,9 +119,16 @@
     if (hit && Date.now() - hit.at < CACHE_MS) return cb(hit.films);
     if (waiting[key]) return waiting[key].push(cb);
     waiting[key] = [cb];
-    // No answer (offline, not registered yet): let the next open ask again.
-    setTimeout(function () { delete waiting[key]; }, 8000);
-    sock.emit('get-fav-films', clientId ? { clientId: clientId } : {});
+    // The server ignores the request until this page's socket has registered,
+    // which right after a page load (or a reconnect) can be a moment later -
+    // so keep asking, more slowly each time, until an answer clears the wait.
+    var tries = 0;
+    (function ask() {
+      if (!waiting[key]) return;
+      if (++tries > 6) { delete waiting[key]; return; }
+      sock.emit('get-fav-films', clientId ? { clientId: clientId } : {});
+      setTimeout(ask, 1500 * tries);
+    })();
   }
 
   // One poster. Someone else's links to its Apple page; your own opens the
@@ -169,6 +176,13 @@
       bind(sock);
       style();
       box.classList.add('tlf');
+      // Placeholder slots until the list arrives, so the section is never a
+      // blank gap - but not tappable yet, or a pick could overwrite a list
+      // that has not loaded.
+      if (!box.querySelector('.tlf-row')) {
+        box.innerHTML = '<p class="tlf-h">' + esc(tr('favFilmsMine')) + '</p><div class="tlf-row">' +
+          '<div class="tlf-slot"><span class="tlf-empty" style="opacity:.4"></span></div>'.repeat(MAX) + '</div>';
+      }
       load(sock, null, function (films) { paint(box, sock, films.slice()); });
     });
   }

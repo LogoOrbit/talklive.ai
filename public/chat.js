@@ -2789,7 +2789,7 @@
     if (!filmsLoading) {
       filmsLoading = new Promise(function (resolve, reject) {
         var s = document.createElement('script');
-        s.src = '/fav-films.js?v=20261006apple';
+        s.src = '/fav-films.js?v=20261007retry';
         s.async = true;
         s.onload = resolve;
         s.onerror = function () { filmsLoading = null; reject(); };
