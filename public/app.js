@@ -2405,7 +2405,7 @@ function renderPasses() {
     const on = p.id === selectedPassId;
     const tier = document.createElement('button');
     tier.type = 'button';
-    tier.className = 'pass-row' + (on ? ' is-selected' : '');
+    tier.className = 'pass-row pass-' + p.id + (on ? ' is-selected' : '');
     tier.setAttribute('role', 'radio');
     tier.setAttribute('aria-checked', on ? 'true' : 'false');
     tier.innerHTML = `
