@@ -438,6 +438,8 @@ img { max-width: 100%; }
 }
 .gate-note { margin: 18px 0 0; color: var(--muted); font-size: 12px; }
 .gate-age-opt { min-height: 36px; padding: 6px 12px; border-radius: 99px; border: 1px solid color-mix(in srgb, var(--text) 16%, transparent); background: transparent; color: var(--muted); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+/* Five chips on one row even on a 360px phone, instead of four and a lonely "55+". */
+@media (max-width: 420px) { #gateAgeOptions { flex-wrap: nowrap !important; gap: 4px !important; } .gate-age-opt { flex: 1 1 0; min-width: 0; padding: 6px 2px; font-size: 12px; } }
 .gate-age-opt.selected { color: var(--text); border-color: var(--accent, #6c5ce7); background: color-mix(in srgb, var(--accent, #6c5ce7) 18%, transparent); }
 .gate-option-neutral .gate-option-icon { color: var(--muted); }
 

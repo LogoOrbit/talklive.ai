@@ -49,6 +49,9 @@ jobs:
       - name: Test voice check
         run: npm run test:voice-gender
 
+      - name: Test malformed socket packets cannot crash the server
+        run: npm run test:malformed
+
       - name: Test store saves (durability and fast saves)
         run: npm run test:durability && npm run test:fast-save
 

@@ -3812,9 +3812,38 @@ const HOLD_UNTIL_REGISTERED = new Set([
 const MAX_HELD_EVENTS = 40;
 const HELD_EVENTS_TTL_MS = 20 * 1000;
 
+// A socket handler that throws is a bug in that one event, not a reason to
+// restart: logged for the Errors tab, capped so a client hammering the same
+// broken event cannot flood the store.
+const handlerErrorLog = { windowStart: 0, count: 0 };
+function reportHandlerError(event, err) {
+  console.error(`[socket:${event}]`, err);
+  const now = Date.now();
+  if (now - handlerErrorLog.windowStart > 60000) { handlerErrorLog.windowStart = now; handlerErrorLog.count = 0; }
+  if (++handlerErrorLog.count > 20) return;
+  store.addError({ source: 'server', message: `socket '${event}': ${String((err && err.message) || err).slice(0, 360)}`, stack: String((err && err.stack) || '').slice(0, 1500), url: '', username: '', country: '' });
+}
+
 io.on('connection', (socket) => {
   const ip = getClientIp(socket);
   const geo = lookupGeo(ip);
+
+  // One malformed packet must never take the whole server down. Handlers
+  // destructure their payload (`({ token } = {}) =>`), and a default only
+  // covers `undefined`: a client sending `null` threw, the throw reached the
+  // uncaughtException handler, and that exits the process - a single emit from
+  // anyone dropped every call on the site. Null arguments are passed on as
+  // undefined, and whatever a handler still throws is logged, not fatal.
+  const listen = socket.on.bind(socket);
+  socket.on = (event, handler) => listen(event, (...args) => {
+    for (let i = 0; i < args.length; i++) if (args[i] === null) args[i] = undefined;
+    try {
+      const result = handler(...args);
+      if (result && typeof result.catch === 'function') result.catch((err) => reportHandlerError(event, err));
+    } catch (err) {
+      reportHandlerError(event, err);
+    }
+  });
 
   // Per-socket event rate limiter (token bucket): a hostile or buggy client
   // can otherwise emit unlimited events and flood the server, spam friend
@@ -4459,12 +4488,14 @@ io.on('connection', (socket) => {
       country: geo.country,
       countryName: geo.countryName,
       city: geo.city,
-      gender: data.gender || 'unspecified',
+      // Echoed to other people (online list, owner dashboard) and compared in
+      // matching, so only the three values the UI offers are kept.
+      gender: audience.normGender(data.gender),
       // Self-reported in Settings, never verified; only used for the owner's
       // aggregate audience analytics.
       ageGroup: audience.normAge(data.ageGroup),
       device: audience.parseUA(socket.handshake.headers['user-agent']).device,
-      prefGender: premium ? (data.prefGender || 'any') : 'any',
+      prefGender: premium && (data.prefGender === 'male' || data.prefGender === 'female') ? data.prefGender : 'any',
       // "Voice-checked only": with a gender preference, match only people whose
       // on-device voice check agreed with the gender they picked themselves.
       prefVoiceChecked: premium && flags.isOn('voiceCheck') && data.prefVoiceChecked === true,
