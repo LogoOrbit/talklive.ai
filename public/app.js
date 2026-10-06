@@ -1583,7 +1583,7 @@ var filmsLoading = null;
 function withFilms(cb) {
   filmsLoading = filmsLoading || new Promise((ok, fail) => {
     const s = document.createElement('script');
-    s.src = '/fav-films.js?v=20261006films';
+    s.src = '/fav-films.js?v=20261006apple';
     s.onload = ok;
     s.onerror = () => { filmsLoading = null; fail(); };
     document.head.appendChild(s);

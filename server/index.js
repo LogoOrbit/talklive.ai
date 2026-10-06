@@ -1485,112 +1485,34 @@ app.get('/api/gifs', async (req, res) => {
   }
 });
 
-// --- Favourite films (TMDB) -------------------------------------------------
+// --- Favourite films ---------------------------------------------------------
 //
-// "Top 3 films or shows" on a profile. Same shape as the GIF proxy: the key
-// stays here, searches are cached and trimmed to a few fields, and without
-// TMDB_API_KEY /api/films/config reports the feature off so no UI is shown.
-// Posters are never proxied: the browser loads them straight from TMDB's image
-// CDN at a small fixed width, so they cost this server nothing.
+// "Top 3 films or shows" on a profile. Searching happens entirely in the
+// visitor's browser (public/fav-films.js: Wikidata finds films, Apple finds
+// shows, Apple supplies every poster), so this server makes no upstream calls
+// and needs no API key - it only checks and stores the three picks.
 //
-// TMDB_API_KEY may be either the v3 "API Key" or the v4 "API Read Access
-// Token" (a long eyJ... string); both are on themoviedb.org > Settings > API.
-const TMDB_KEY = process.env.TMDB_API_KEY || '';
-const TMDB_BASE = process.env.TMDB_API_BASE || 'https://api.themoviedb.org/3/';
+// Posters are Apple's promotional artwork, which Apple allows only to promote
+// its store: every poster links to its Apple TV / iTunes page.
 const FILM_MAX = 3;
-const FILM_SEARCH_LIMIT = 8;
-const FILM_CACHE_TTL = 6 * 60 * 60 * 1000;
-const filmSearchCache = new Map(); // query -> { expires, body }
-const filmItemCache = new Map(); // 'movie:123' -> item
-const POSTER_RE = /^\/[A-Za-z0-9_-]{1,64}\.(?:jpg|jpeg|png)$/;
+const FILM_ART_RE = /^https:\/\/is\d{1,2}-ssl\.mzstatic\.com\/image\/thumb\/[A-Za-z0-9._/%-]{1,300}\/\d{2,4}x\d{2,4}bb\.(?:jpg|png|webp)$/;
+const FILM_URL_RE = /^https:\/\/(?:itunes|tv)\.apple\.com\/[A-Za-z0-9._/%?=&-]{1,300}$/;
 
-function lruSet(map, key, value, max) {
-  map.delete(key);
-  map.set(key, value);
-  while (map.size > max) map.delete(map.keys().next().value);
+// One pick from the client, or null. The poster and link must point at Apple,
+// and the title is cleaned and screened like any other text shown to others.
+function cleanFilm(f) {
+  if (!f || (f.t !== 'movie' && f.t !== 'tv')) return null;
+  const id = Number(f.id);
+  if (!Number.isInteger(id) || id <= 0 || id > 1e12) return null;
+  const title = typeof f.title === 'string'
+    ? f.title.normalize('NFKC').replace(/[\p{Cc}\p{Cf}\p{Co}\p{Cn}]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 80)
+    : '';
+  if (!title || containsLink(title) || UNSAFE_RE.test(title)) return null;
+  if (typeof f.art !== 'string' || !FILM_ART_RE.test(f.art)) return null;
+  if (typeof f.url !== 'string' || !FILM_URL_RE.test(f.url)) return null;
+  const year = /^\d{4}$/.test(String(f.year)) ? String(f.year) : '';
+  return { t: f.t, id, title, year, art: f.art, url: f.url };
 }
-
-// A TMDB result reduced to what a poster tile needs. Anything adult, untitled
-// or without a poster is dropped: a profile row of grey boxes helps nobody.
-function tmdbItem(r, type) {
-  const t = type || r.media_type;
-  if (!r || (t !== 'movie' && t !== 'tv') || r.adult) return null;
-  const id = Number(r.id);
-  const title = String(r.title || r.name || '').trim().slice(0, 80);
-  const year = String(r.release_date || r.first_air_date || '').slice(0, 4);
-  const poster = String(r.poster_path || '');
-  if (!Number.isInteger(id) || id <= 0 || !title || !POSTER_RE.test(poster)) return null;
-  const item = { t, id, title, year: /^\d{4}$/.test(year) ? year : '', p: poster };
-  lruSet(filmItemCache, `${t}:${id}`, item, 5000);
-  return item;
-}
-
-async function tmdbFetch(endpoint, params = {}) {
-  const url = new URL(TMDB_BASE + endpoint);
-  const headers = { accept: 'application/json' };
-  if (TMDB_KEY.startsWith('eyJ')) headers.authorization = `Bearer ${TMDB_KEY}`;
-  else url.searchParams.set('api_key', TMDB_KEY);
-  for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
-  const ctl = new AbortController();
-  const timer = setTimeout(() => ctl.abort(), 6000);
-  try {
-    const resp = await fetch(url, { headers, signal: ctl.signal });
-    if (resp.status === 404) return null;
-    if (!resp.ok) throw new Error('tmdb ' + resp.status);
-    return await resp.json();
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-// Title and poster for one pick, from cache or TMDB. The client only ever sends
-// a type and an id, so nobody can put their own text or image on a profile.
-async function resolveFilm(t, id) {
-  const hit = filmItemCache.get(`${t}:${id}`);
-  if (hit) return hit;
-  const json = await tmdbFetch(`${t}/${id}`, { language: 'en-US' });
-  return json ? tmdbItem(json, t) : null;
-}
-
-const filmRate = new Map(); // ip -> { start, n }
-setInterval(() => {
-  const cutoff = Date.now() - 120000;
-  for (const [ip, rl] of filmRate) if (rl.start < cutoff) filmRate.delete(ip);
-}, 120000).unref();
-
-app.get('/api/films/config', (req, res) => {
-  res.set('Cache-Control', 'public, max-age=300');
-  res.json({ enabled: !!TMDB_KEY });
-});
-
-app.get('/api/films/search', async (req, res) => {
-  if (!TMDB_KEY) return res.status(503).json({ enabled: false, results: [] });
-  const ip = clientIp(req);
-  const now = Date.now();
-  let rl = filmRate.get(ip);
-  if (!rl || now - rl.start > 60000) { rl = { start: now, n: 0 }; filmRate.set(ip, rl); }
-  if (++rl.n > 40) return res.status(429).json({ results: [] });
-  const q = String(req.query.q || '').trim().replace(/\s+/g, ' ').slice(0, 60);
-  if (q.length < 2) return res.json({ results: [] });
-  const key = q.toLowerCase();
-  const cached = filmSearchCache.get(key);
-  if (cached && cached.expires > now) {
-    res.set('Cache-Control', 'public, max-age=3600');
-    return res.json(cached.body);
-  }
-  try {
-    const json = await tmdbFetch('search/multi', { query: q, include_adult: 'false', language: 'en-US', page: '1' });
-    const results = ((json && json.results) || []).map((r) => tmdbItem(r)).filter(Boolean).slice(0, FILM_SEARCH_LIMIT);
-    const body = { results };
-    lruSet(filmSearchCache, key, { expires: now + FILM_CACHE_TTL, body }, 1000);
-    res.set('Cache-Control', 'public, max-age=3600');
-    res.json(body);
-  } catch (err) {
-    console.warn('[films] search failed:', err.message);
-    if (cached) return res.json(cached.body);
-    res.status(502).json({ results: [] });
-  }
-});
 
 // Minified copies of the scripts (scripts/minify-assets.js, run in CI), each
 // served only while it still matches the source in public/.
@@ -4896,30 +4818,22 @@ io.on('connection', (socket) => {
     socket.emit('fav-films', { clientId: target, films, self: target === me.clientId });
   });
 
-  socket.on('set-fav-films', async ({ films } = {}) => {
+  socket.on('set-fav-films', ({ films } = {}) => {
     const me = profiles.get(socket.id);
     const reply = (r) => socket.emit('set-fav-films-result', r);
     if (!me) return;
-    if (!TMDB_KEY) return reply({ ok: false, error: 'Favourite films are not available right now.' });
     if (!socialRateOk('set-fav-films', me.clientId, 30, 10 * 60000)) {
       return reply({ ok: false, error: 'Too many changes. Try again later.' });
     }
     const picks = [];
     for (const f of Array.isArray(films) ? films.slice(0, 10) : []) {
       if (picks.length === FILM_MAX) break;
-      const t = f && (f.t === 'movie' || f.t === 'tv') ? f.t : null;
-      const id = f && Number(f.id);
-      if (t && Number.isInteger(id) && id > 0 && id < 1e9 && !picks.some((p) => p.t === t && p.id === id)) picks.push({ t, id });
+      const film = cleanFilm(f);
+      if (film && !picks.some((p) => p.t === film.t && p.id === film.id)) picks.push(film);
     }
-    try {
-      const resolved = (await Promise.all(picks.map((p) => resolveFilm(p.t, p.id)))).filter(Boolean);
-      store.setFavFilms(me.clientId, resolved);
-      store.recordFeature('fav_films');
-      reply({ ok: true, films: resolved });
-    } catch (err) {
-      console.warn('[films] save failed:', err.message);
-      reply({ ok: false, error: 'Could not save right now. Try again.' });
-    }
+    store.setFavFilms(me.clientId, picks);
+    store.recordFeature('fav_films');
+    reply({ ok: true, films: picks });
   });
 
   // Settings > Privacy > "Save contact info I share". Opt-in; off erases.

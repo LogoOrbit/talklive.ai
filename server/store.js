@@ -200,9 +200,9 @@ function defaults() {
     // updatedAt, items: [{ type, value, source, firstAt, lastAt, count }] }.
     contactCapture: {},
     // "Top 3 films" on a person's profile: clientId -> [{ t: 'movie'|'tv', id,
-    // title, year, p }], where p is a TMDB poster path (the image itself is
-    // served by TMDB's CDN, never by us). Titles and posters are resolved on
-    // the server from TMDB, never taken from the client.
+    // title, year, art, url }]: an Apple id, Apple poster URL and Apple store
+    // link (checked by cleanFilm in server/index.js). Images are served by
+    // Apple's CDN, never by us.
     favFilms: {},
     settings: {
       maintenance: { on: false, message: 'TalkLive is under maintenance. We will be back shortly!' },
