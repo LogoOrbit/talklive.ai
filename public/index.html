@@ -67,9 +67,8 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
      on every screen of the product. -->
 <link rel="stylesheet" href="nav.css?v=20261005modes" />
 <script defer src="/config.js"></script>
-<!-- Google Identity Services, deferred so it never blocks first paint. app.js
-     waits for it (and for /config.js) before rendering the sign-in buttons. -->
-<script defer src="https://accounts.google.com/gsi/client"></script>
+<!-- Google Identity Services is not loaded here: app.js fetches it when the
+     Log in / Sign up page opens (loadGoogleSignIn). -->
 
 <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
 <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
@@ -432,7 +431,12 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
     <script>
     (function () {
       var bar = document.getElementById('devBanner');
-      var key = '';
+      var key = 'talklive_devbanner_' + (bar.getAttribute('data-since') || 0);
+      // The server renders the strip already shown when it is switched on, so
+      // it is in place from the first paint instead of pushing the page down
+      // when the socket connects (a layout shift on every cold visit). A
+      // visitor who closed this switch-on has it hidden here, before paint.
+      if (!bar.hidden) { try { if (localStorage.getItem(key) === '1') bar.hidden = true; } catch (e) { /* storage blocked - show it */ } }
       // Called with the server's { on, since } on connect and whenever the
       // owner flips it. Closing it is remembered per switch-on (`since`).
       window.tlDevBanner = function (s) {
@@ -450,7 +454,9 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
     (function () {
       var bar = document.getElementById('siteAnnounce');
       var toast = document.getElementById('siteToast');
-      var key = '';
+      var key = 'talklive_announce_' + (bar.getAttribute('data-since') || 0);
+      // Server-rendered like #devBanner above, for the same reason.
+      if (!bar.hidden) { try { if (localStorage.getItem(key) === '1') bar.hidden = true; } catch (e) { /* storage blocked - show it */ } }
       window.tlSiteModes = function (m) {
         var a = (m && m.announce) || {};
         key = 'talklive_announce_' + (a.since || 0);
@@ -1259,7 +1265,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
                - one object per decision instead of three stacked pieces - and
                it is a far bigger tap target at the same width. -->
           <div class="tap-choice-row">
-            <button id="startBtn" class="tl-action tl-action-voice" data-i18n-aria="startAria" aria-label="Start a call with a random person">
+            <button id="startBtn" class="tl-action tl-action-voice">
               <span class="tl-action-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="currentColor">
                   <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
@@ -1279,7 +1285,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
             <!-- ?go=1: this button says "Tap to Chat", so it starts the chat.
                  It used to land on /chat's own start screen, where a second
                  button had to be pressed to do the thing the first one named. -->
-            <a id="startChatBtn" href="/chat?go=1" class="tl-action tl-action-chat" data-i18n-aria="startChatAria" aria-label="Start a text chat with a random person">
+            <a id="startChatBtn" href="/chat?go=1" class="tl-action tl-action-chat">
               <span class="tl-action-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="currentColor">
                   <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM7 9.5h10a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2zm0-3.5h10a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2zm0 7h6a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2z"/>

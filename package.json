@@ -52,6 +52,7 @@
     "node": ">=18"
   },
   "devDependencies": {
+    "csso": "^5.0.5",
     "socket.io-client": "^4.8.3",
     "terser": "^5.51.2"
   }

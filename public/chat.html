@@ -118,7 +118,12 @@
     <script>
     (function () {
       var bar = document.getElementById('devBanner');
-      var key = '';
+      var key = 'talklive_devbanner_' + (bar.getAttribute('data-since') || 0);
+      // The server renders the strip already shown when it is switched on, so
+      // it is in place from the first paint instead of pushing the page down
+      // when the socket connects (a layout shift on every cold visit). A
+      // visitor who closed this switch-on has it hidden here, before paint.
+      if (!bar.hidden) { try { if (localStorage.getItem(key) === '1') bar.hidden = true; } catch (e) { /* storage blocked - show it */ } }
       // Called with the server's { on, since } on connect and whenever the
       // owner flips it. Closing it is remembered per switch-on (`since`).
       window.tlDevBanner = function (s) {
@@ -136,7 +141,9 @@
     (function () {
       var bar = document.getElementById('siteAnnounce');
       var toast = document.getElementById('siteToast');
-      var key = '';
+      var key = 'talklive_announce_' + (bar.getAttribute('data-since') || 0);
+      // Server-rendered like #devBanner above, for the same reason.
+      if (!bar.hidden) { try { if (localStorage.getItem(key) === '1') bar.hidden = true; } catch (e) { /* storage blocked - show it */ } }
       window.tlSiteModes = function (m) {
         var a = (m && m.announce) || {};
         key = 'talklive_announce_' + (a.since || 0);

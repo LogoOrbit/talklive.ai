@@ -287,6 +287,8 @@ const googleBtnSignup = document.getElementById('googleBtnSignup');
 // `let` further down would still be in its temporal dead zone at that point
 // and throw, taking the rest of app.js (every button handler) with it.
 let googleReady = false;
+// Same reason: openAuthPage() can run during start-up (a direct /login load).
+let googleScriptRequested = false;
 const logoutBtn = document.getElementById('logoutBtn');
 const currentPasswordInput = document.getElementById('currentPasswordInput');
 const newPasswordInput = document.getElementById('newPasswordInput');
@@ -3012,6 +3014,7 @@ function syncAuthTitle() {
 function openAuthPage(tab) {
   // Signed in, there is nothing to log in to: the account lives in Settings.
   if (accountNickname) { openAppSettings('profile'); return; }
+  loadGoogleSignIn();
   const wasOpen = authPageIsOpen();
   if (!wasOpen) {
     authPrevTitle = document.title;
@@ -3566,13 +3569,22 @@ function consumeRedirectedGoogleCredential() {
   }
 }
 
-// Both /config.js and Google's client are `defer`red, so they are guaranteed to
-// have run by DOMContentLoaded; the readyState check covers app.js being loaded
-// late (cached/slow) and the load event already having fired.
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initGoogleSignIn);
-} else {
-  initGoogleSignIn();
+// Google's client is only needed on the Log in / Sign up page, so it is fetched
+// when that page opens (openAuthPage, which a direct /login load also goes
+// through) rather than on every visit. Loaded from <head> it cost every
+// visitor its script, iframe and network chatter, and was one of the largest
+// third-party items in PageSpeed's mobile Total Blocking Time. Its button
+// already fades in once drawn, so arriving a moment later is not visible.
+function loadGoogleSignIn() {
+  if (googleScriptRequested || !window.GOOGLE_CLIENT_ID) return;
+  googleScriptRequested = true;
+  const script = document.createElement('script');
+  script.src = 'https://accounts.google.com/gsi/client';
+  script.async = true;
+  script.onload = initGoogleSignIn;
+  // Blocked or offline: allow another try the next time the page opens.
+  script.onerror = () => { googleScriptRequested = false; script.remove(); };
+  document.head.appendChild(script);
 }
 // After the rest of this script has run, so the /login page is already open.
 setTimeout(consumeRedirectedGoogleCredential, 0);

@@ -1,6 +1,7 @@
 'use strict';
 /*
- * Serves the minified scripts scripts/minify-assets.js writes to build/min/.
+ * Serves the minified scripts and stylesheets scripts/minify-assets.js writes
+ * to build/min/.
  *
  * A minified copy is served only when build/min/manifest.json says it was made
  * from exactly the bytes now in public/ (SHA-256). Anything else - no build
@@ -34,14 +35,14 @@ function loadMinified(publicDir, minDir) {
 // so caching behaves identically for the minified and readable files.
 function minifiedScripts(publicDir, minDir, setHeaders) {
   const files = loadMinified(publicDir, minDir);
-  if (files.size) console.log(`[minified] serving ${files.size} minified script(s) from ${path.relative(process.cwd(), minDir) || minDir}`);
+  if (files.size) console.log(`[minified] serving ${files.size} minified file(s) from ${path.relative(process.cwd(), minDir) || minDir}`);
   return (req, res, next) => {
     if (!files.size || (req.method !== 'GET' && req.method !== 'HEAD')) return next();
     let rel;
     try { rel = decodeURIComponent(req.path).replace(/^\/+/, ''); } catch (_) { return next(); }
     const file = files.get(rel);
     if (!file) return next();
-    res.type('application/javascript');
+    res.type(rel.endsWith('.css') ? 'text/css' : 'application/javascript');
     if (setHeaders) setHeaders(res, file);
     // cacheControl: false keeps the Cache-Control setHeaders chose.
     res.sendFile(file, { cacheControl: false }, (err) => { if (err && !res.headersSent) next(); });

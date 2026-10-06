@@ -843,19 +843,46 @@ function sendPage(res, file) {
 // served by the static middleware, not here.
 const ADSENSE_LOADER_TAG = /<script\b[^>]*pagead2\.googlesyndication\.com[^>]*>\s*<\/script>\s*/gi;
 const appShellCache = new Map();
-function appShellHtml(file) {
+function appShellHtml(file, { keepAdsense = false } = {}) {
   const full = path.join(PUBLIC_DIR, file);
   const mtime = fs.statSync(full).mtimeMs;
-  const cached = appShellCache.get(file);
-  if (cached && cached.mtime === mtime) return cached.html;
-  const html = fs.readFileSync(full, 'utf8').replace(ADSENSE_LOADER_TAG, '');
-  appShellCache.set(file, { mtime, html });
-  return html;
+  const cacheKey = `${file}|${keepAdsense}`;
+  const cached = appShellCache.get(cacheKey);
+  if (cached && cached.mtime === mtime) return withSiteStrips(cached.html);
+  let html = fs.readFileSync(full, 'utf8');
+  if (!keepAdsense) html = html.replace(ADSENSE_LOADER_TAG, '');
+  appShellCache.set(cacheKey, { mtime, html });
+  return withSiteStrips(html);
 }
 function sendAppShell(res, file) {
   res.setHeader('X-Robots-Tag', 'noindex, follow');
   res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
   res.type('html').send(appShellHtml(file));
+}
+
+// The two strips above the top bar (#devBanner, #siteAnnounce) in index.html
+// and chat.html. They used to ship `hidden` and be switched on by the socket
+// once the page was up, so with the dev banner on (its default) every cold
+// visit drew the app, then pushed all of it ~70px down - PageSpeed's Cumulative
+// Layout Shift, ~0.1 on mobile. Their state is written into the HTML instead,
+// so a strip that is on is there from the first paint; the inline script
+// beside them hides one the visitor already closed before anything is drawn.
+function withSiteStrips(html) {
+  const dev = store.data.settings.devBanner || { on: false };
+  const ann = store.siteModes().announce || {};
+  if (dev.on) {
+    html = html.replace(
+      '<div id="devBanner" class="tl-devbanner" role="status" hidden>',
+      `<div id="devBanner" class="tl-devbanner" role="status" data-since="${Number(dev.since) || 0}">`
+    );
+  }
+  if (ann.on && ann.text) {
+    html = html.replace(
+      /<div id="siteAnnounce" class="tl-devbanner tl-announce" role="status" hidden>(\s*)<span class="tl-devbanner-text"><\/span>/,
+      (m, gap) => `<div id="siteAnnounce" class="tl-devbanner tl-announce" role="status" data-since="${Number(ann.since) || 0}">${gap}<span class="tl-devbanner-text">${escapeHtmlText(ann.text)}</span>`
+    );
+  }
+  return html;
 }
 
 // The three app-screen routes (/call, /chat, /settings) used to be registered
@@ -1165,7 +1192,8 @@ app.get('/add/:code', (req, res) => {
 // code is loaded here at all, so the two sub-apps can never bleed into each
 // other and it stays fast on weak phones.
 app.get('/chat', (req, res) => {
-  sendPage(res, 'chat.html');
+  res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+  res.type('html').send(appShellHtml('chat.html', { keepAdsense: true }));
 });
 
 // Settings is a screen inside the same single-page shell, at its own URL, so
@@ -1193,7 +1221,10 @@ app.get('/', (req, res, next) => {
   if (LANDING_HOST && host === LANDING_HOST) {
     return res.sendFile(path.join(__dirname, '..', 'public', 'landing.html'));
   }
-  next();
+  // The homepage keeps its AdSense loader and stays indexable; it only goes
+  // through here for the banner state (see withSiteStrips).
+  res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+  res.type('html').send(appShellHtml('index.html', { keepAdsense: true }));
 });
 
 // ads.txt. An ads.txt that exists but lists nobody is the worst of both
