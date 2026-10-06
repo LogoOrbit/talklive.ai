@@ -1,0 +1,135 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:Unb;src:url(../../../public/fonts/mag/unbounded-latin-800-normal.woff2);font-weight:800}
+@font-face{font-family:Jak;src:url(../../../public/fonts/plus-jakarta-sans-latin.woff2);font-weight:200 800}
+@font-face{font-family:Mono;src:url(../../../public/fonts/mag/jetbrains-mono-latin-400-normal.woff2)}
+:root{--bg:#070a14;--t:#f2f4ff;--m:#9aa3c7;--card:#10172b;--line:#1f2a48;--grad:linear-gradient(90deg,#1f5cff,#22e3e8)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#222;font-family:Jak,sans-serif;color:var(--t)}
+.post{width:1080px;height:1080px;position:relative;overflow:hidden;background:var(--bg);margin:0 0 20px}
+.glow{position:absolute;width:760px;height:760px;border-radius:50%;filter:blur(140px);opacity:.38;right:-260px;top:-260px}
+.chip{position:absolute;left:72px;top:72px;font-family:Mono;font-size:26px;letter-spacing:.14em;padding:12px 22px;border-radius:999px;border:1px solid}
+.title{position:absolute;left:72px;right:72px;top:150px;font-family:Unb;font-weight:800;font-size:78px;line-height:1.04;letter-spacing:-.02em}
+.acc{-webkit-background-clip:text;background-clip:text;color:transparent}
+.art{position:absolute;left:72px;right:72px;top:370px;height:430px;display:flex;align-items:center;justify-content:center}
+.sub{position:absolute;left:72px;right:72px;top:830px;font-size:36px;font-weight:600;line-height:1.35;color:#cfd6f5}
+.foot{position:absolute;left:72px;right:72px;bottom:52px;display:flex;align-items:center;justify-content:space-between;font-weight:700;font-size:28px;color:var(--m)}
+.foot .b{display:flex;align-items:center;gap:14px;color:var(--t)}
+.foot img{width:48px;height:48px}
+.foot .u{font-family:Unb;font-weight:800;font-size:30px;background:var(--grad);-webkit-background-clip:text;color:transparent}
+.card{background:var(--card);border:1px solid var(--line);border-radius:36px}
+.btn{border-radius:999px;font-weight:800;text-align:center}
+.row{display:flex;align-items:center}
+svg.tl-animal-icon{display:block}
+</style></head><body>
+<div id="root"></div>
+<script src="../../../public/animals.js"></script>
+<script>
+const A = window.TalkLiveAnimals; A.installSprite();
+const ic = (id, s) => A.icon(id, s);
+const LOGO = '../../TalkLive Mark Transparent.png';
+const wave = (n, h, c) => Array.from({length:n},(_,i)=>`<i style="display:block;width:10px;border-radius:6px;background:${c};height:${Math.round((Math.abs(Math.sin(i*.55)*Math.cos(i*.17))*.85+.12)*h)}px"></i>`).join('');
+const check = c => `<svg width="34" height="34" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="${c}"/><path d="M7 12.5l3.2 3.2L17 9" stroke="#04101d" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+// Each feature: id, accent colors [a,b], title (with <em> for accent part), art HTML, sub line
+const F = [
+{ id:'f01-one-tap', c:['#1f5cff','#22e3e8'], t:'Talk to a stranger<br>in <em>one tap.</em>',
+  art:`<div class="card" style="width:820px;padding:50px;text-align:center">
+    <div class="row" style="justify-content:center;gap:10px;height:120px">${wave(40,120,'linear-gradient(#1f5cff,#22e3e8)')}</div>
+    <div style="font-size:30px;color:var(--m);margin-top:24px;font-weight:700">Connected · say hi 👋</div>
+    <div class="btn" style="margin:34px auto 0;width:420px;padding:28px;font-size:40px;background:var(--grad);color:#04101d">Start talking</div></div>`,
+  s:'Random voice calls with real people around the world. No download, no sign-up. Free.' },
+{ id:'f02-next', c:['#ff4d6d','#ff9f43'], t:'Not clicking?<br>Hit <em>Next.</em>',
+  art:`<div class="row" style="gap:40px">
+    <div class="card" style="width:330px;padding:40px;text-align:center;opacity:.45">${'<div style="width:130px;height:130px;margin:0 auto;border-radius:50%;background:#3a2a1a;display:grid;place-items:center">'+ic('bear',100)+'</div>'}<div style="font-size:30px;font-weight:800;margin-top:20px">Bear</div></div>
+    <div class="btn" style="width:190px;padding:30px 0;font-size:40px;background:linear-gradient(90deg,#ff4d6d,#ff9f43);color:#1a0508">Next →</div>
+    <div class="card" style="width:330px;padding:40px;text-align:center;border-color:#ff9f43">${'<div style="width:130px;height:130px;margin:0 auto;border-radius:50%;background:#1d2f3a;display:grid;place-items:center">'+ic('dolphin',100)+'</div>'}<div style="font-size:30px;font-weight:800;margin-top:20px">Dolphin</div></div></div>`,
+  s:'Skip to someone new in a second. No awkward goodbyes, no waiting between calls.' },
+{ id:'f03-text-chat', c:['#6c5ce7','#a78bfa'], t:'Somewhere quiet?<br><em>Text instead.</em>',
+  art:`<div style="width:800px;display:flex;flex-direction:column;gap:20px;font-size:34px;font-weight:600">
+    <div style="align-self:flex-start;background:#1a2238;padding:22px 32px;border-radius:32px 32px 32px 8px">hey! where are you from?</div>
+    <div style="align-self:flex-end;background:linear-gradient(90deg,#6c5ce7,#8b7cf6);padding:22px 32px;border-radius:32px 32px 8px 32px">japan! and you?</div>
+    <div style="align-self:flex-start;background:#1a2238;padding:22px 32px;border-radius:32px 32px 32px 8px">kenya. what time is it there?</div>
+    <div style="align-self:flex-start;background:#1a2238;padding:18px 30px;border-radius:32px;color:var(--m)">typing…</div></div>`,
+  s:'Text chat with random strangers. Perfect for the bus, the library, or 2am.' },
+{ id:'f04-spirit-animal', c:['#f0a92c','#fb923c'], t:'Pick your<br><em>spirit animal.</em>',
+  art:`<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:18px;width:900px">${['lion','fox','owl','wolf','panda','cat','penguin','koala','eagle','turtle'].map(id=>`<div class="card" style="padding:18px 0;border-radius:26px;display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:110px;height:110px;border-radius:50%;background:${A.get(id).color}22;display:grid;place-items:center">${ic(id,88)}</div><div style="font-size:24px;font-weight:800">${A.get(id).name}</div></div>`).join('')}</div>`,
+  s:'The stranger sees it the second you connect, so you always have something to say first.' },
+{ id:'f05-games', c:['#22e3e8','#2ed47a'], t:'Play games<br><em>while you talk.</em>',
+  art:`<div class="row" style="gap:50px">
+    <div style="width:340px;height:340px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;background:#1c2a3a;border-radius:30px;padding:10px">${['X','','O','','X','O','','','X'].map(v=>`<div style="background:var(--bg);border-radius:18px;display:grid;place-items:center;font-family:Unb;font-weight:800;font-size:72px;color:${v==='O'?'#ff4d6d':'#22e3e8'}">${v}</div>`).join('')}</div>
+    <svg width="340" height="340" viewBox="0 0 380 380"><rect width="380" height="380" rx="30" fill="#10172b"/><rect x="70" y="70" width="120" height="120" fill="#2ed47a" opacity=".35"/><g stroke-linecap="round" stroke-width="10"><path d="M70 70H190M70 70V190M190 70V190M70 190H190" stroke="#2ed47a"/><path d="M190 70H310M310 70V190" stroke="#ff4d6d"/><path d="M70 190V310M190 310H310" stroke="#22e3e8"/></g><g fill="#f2f4ff">${[70,190,310].flatMap(x=>[70,190,310].map(y=>`<circle cx="${x}" cy="${y}" r="12"/>`)).join('')}</g></svg></div>`,
+  s:'Tic Tac Toe and Dots and Boxes, right inside the call. Goodbye, awkward silence.' },
+{ id:'f06-countries', c:['#2ed47a','#22e3e8'], t:'Pick where<br>they\'re <em>from.</em>',
+  art:`<div class="card" style="width:860px;padding:44px">
+    <div style="font-size:26px;color:var(--m);font-weight:800;letter-spacing:.08em">MEET PEOPLE FROM</div>
+    <div class="row" style="gap:16px;margin-top:18px;flex-wrap:wrap">${['Japan','Brazil'].map(c=>`<span class="btn" style="padding:18px 30px;font-size:32px;background:#123a2a;color:#2ed47a;border:2px solid #2ed47a">✓ ${c}</span>`).join('')}</div>
+    <div style="font-size:26px;color:var(--m);font-weight:800;letter-spacing:.08em;margin-top:36px">SKIP PEOPLE FROM</div>
+    <div class="row" style="gap:16px;margin-top:18px">${['Country A','Country B'].map(c=>`<span class="btn" style="padding:18px 30px;font-size:32px;background:#2a1220;color:#ff4d6d;border:2px solid #ff4d6d">✕ ${c}</span>`).join('')}</div></div>`,
+  s:'Pick countries you want to meet and ones to skip. Free with an account.' },
+{ id:'f07-friends', c:['#ff6bb5','#a78bfa'], t:'Clicked?<br><em>Add a friend.</em>',
+  art:`<div class="card" style="width:820px;padding:30px 40px">${[['fox','Fox · Brazil','online now','#2ed47a',1],['owl','Owl · India','“that story was hilarious 😂”','#9aa3c7',0],['dolphin','Dolphin · Canada','called you back','#9aa3c7',0]].map(([id,n,s,c,p],i)=>`<div class="row" style="gap:26px;padding:22px 0;${i?'border-top:1px solid var(--line)':''}"><div style="width:96px;height:96px;border-radius:50%;background:${A.get(id).color}22;display:grid;place-items:center">${ic(id,76)}</div><div style="flex:1"><div style="font-size:34px;font-weight:800">${n}${p?' <span style="color:#ff6bb5">📌</span>':''}</div><div style="font-size:26px;color:${c};font-weight:600;margin-top:4px">${s}</div></div><div class="btn" style="padding:16px 26px;font-size:26px;background:#2a1830;color:#ff6bb5">Call</div></div>`).join('')}</div>`,
+  s:'Save the people you click with. Message them, call them back, pin your favourites.' },
+{ id:'f08-notifications', c:['#ffd166','#ff9f43'], t:'Never miss<br><em>a friend.</em>',
+  art:`<div style="width:820px;display:flex;flex-direction:column;gap:22px">${[['Owl sent you a message','“are you free to talk?”'],['Fox wants to call you back','Tap to answer'],['New friend request','Panda from your last call']].map(([a,b],i)=>`<div style="background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.14);border-radius:34px;padding:28px 34px;display:flex;gap:24px;align-items:center;opacity:${1-i*.18}"><img src="${LOGO}" style="width:64px;height:64px;background:#fff;border-radius:16px;padding:6px"><div style="flex:1"><div style="font-size:32px;font-weight:800">${a}</div><div style="font-size:26px;color:#cfd6f5;margin-top:4px">${b}</div></div><div style="font-size:24px;color:var(--m)">now</div></div>`).join('')}</div>`,
+  s:'Turn on notifications and get pinged when a friend messages or calls, even with the tab closed.' },
+{ id:'f09-install', c:['#1f5cff','#6c5ce7'], t:'An app,<br><em>no app store.</em>',
+  art:`<div class="row" style="gap:60px">
+    <div style="width:300px;height:420px;border-radius:50px;border:6px solid #2a3558;background:linear-gradient(160deg,#0f1630,#0a0f1f);padding:40px 30px;display:grid;grid-template-columns:repeat(3,1fr);gap:22px;align-content:start">${Array.from({length:8},(_,i)=>`<div style="aspect-ratio:1;border-radius:20px;background:#1a2340"></div>`).join('')}<div style="aspect-ratio:1;border-radius:20px;background:#fff;display:grid;place-items:center;box-shadow:0 0 0 4px #6c5ce7"><img src="${LOGO}" style="width:70%"></div></div>
+    <div style="display:flex;flex-direction:column;gap:22px;font-size:34px;font-weight:700">${['Add to Home Screen','Opens full screen','Tiny, loads fast','Works on any phone'].map(x=>`<div class="row" style="gap:16px">${check('#8b7cf6')}${x}</div>`).join('')}</div></div>`,
+  s:'Install TalkLive from your browser in two taps. Android, iPhone and desktop.' },
+{ id:'f10-privacy', c:['#22e3e8','#1f5cff'], t:'Your call is<br><em>yours alone.</em>',
+  art:`<svg width="900" height="260" viewBox="0 0 900 260"><defs><linearGradient id="lg" x1="0" x2="1"><stop offset="0" stop-color="#1f5cff"/><stop offset="1" stop-color="#22e3e8"/></linearGradient></defs>
+    <circle cx="110" cy="130" r="95" fill="#10172b" stroke="url(#lg)" stroke-width="5"/><text x="110" y="143" fill="#f2f4ff" font-family="Jak" font-weight="800" font-size="38" text-anchor="middle">You</text>
+    <circle cx="790" cy="130" r="95" fill="#10172b" stroke="url(#lg)" stroke-width="5"/><text x="790" y="143" fill="#f2f4ff" font-family="Jak" font-weight="800" font-size="38" text-anchor="middle">Them</text>
+    <path d="M215 130 H685" stroke="url(#lg)" stroke-width="8" stroke-dasharray="2 22" stroke-linecap="round"/>
+    <rect x="335" y="20" width="230" height="60" rx="30" fill="#1a0f18" stroke="#ff4d6d" stroke-width="3"/><text x="450" y="60" fill="#ff4d6d" font-family="Jak" font-weight="800" font-size="26" text-anchor="middle">NOT RECORDED</text>
+    <text x="450" y="210" fill="#9aa3c7" font-family="Jak" font-weight="700" font-size="28" text-anchor="middle">direct, peer-to-peer</text></svg>`,
+  s:'Audio goes straight from your device to theirs. No camera, no recordings, mute anytime.' },
+{ id:'f11-safety', c:['#2ed47a','#1f5cff'], t:'Safe by<br><em>design.</em>',
+  art:`<div style="display:grid;grid-template-columns:1fr 1fr;gap:22px;width:900px">${[['18+ only','Adults only, always'],['Report','One tap, from any call'],['Block','Never match them again'],['No camera','Nothing to screenshot']].map(([a,b])=>`<div class="card" style="padding:34px 36px"><div class="row" style="gap:16px;font-size:38px;font-weight:800">${check('#2ed47a')}${a}</div><div style="font-size:28px;color:var(--m);margin-top:10px;font-weight:600">${b}</div></div>`).join('')}</div>`,
+  s:'Bad call? Report or block in one tap and get a new stranger instantly.' },
+{ id:'f12-languages', c:['#ff9f43','#ff4d6d'], t:'Speaks<br><em>your language.</em>',
+  art:`<div style="display:flex;flex-wrap:wrap;gap:16px;justify-content:center;width:900px">${['English','Español','Português','Français','Deutsch','Русский','Türkçe','العربية','हिन्दी','اردو','Bahasa','中文','日本語','한국어','Italiano','فارسی','বাংলা'].map((l,i)=>`<span class="btn" style="padding:18px 30px;font-size:32px;font-family:system-ui,Jak,sans-serif;background:${i%3===0?'#2a1a12':'var(--card)'};border:1px solid ${i%3===0?'#ff9f43':'var(--line)'};color:${i%3===0?'#ffb36b':'var(--t)'}">${l}</span>`).join('')}</div>`,
+  s:'TalkLive works in 17 languages. Practice a new one with native speakers, free.' },
+{ id:'f13-invite', c:['#ffd166','#2ed47a'], t:'Invite a friend.<br><em>You both win.</em>',
+  art:`<div class="row" style="gap:36px">
+    <div class="card" style="width:330px;padding:40px;text-align:center"><div style="width:120px;height:120px;margin:0 auto;border-radius:50%;background:#3a2a1a;display:grid;place-items:center">${ic('lion',96)}</div><div style="font-size:30px;font-weight:800;margin-top:18px">You</div><div class="btn" style="margin-top:18px;padding:14px;font-size:26px;background:#123a2a;color:#2ed47a">+7 days Plus</div></div>
+    <div style="font-family:Unb;font-weight:800;font-size:70px;color:#ffd166">+</div>
+    <div class="card" style="width:330px;padding:40px;text-align:center"><div style="width:120px;height:120px;margin:0 auto;border-radius:50%;background:#1d2a3a;display:grid;place-items:center">${ic('penguin',96)}</div><div style="font-size:30px;font-weight:800;margin-top:18px">Your friend</div><div class="btn" style="margin-top:18px;padding:14px;font-size:26px;background:#123a2a;color:#2ed47a">+7 days Plus</div></div></div>`,
+  s:'Share your invite link. When your friend has their first real chat, you both get a week of Plus.' },
+{ id:'f14-plus', c:['#ffd166','#f0a92c'], t:'Want more?<br><em>TalkLive Plus.</em>',
+  art:`<div class="row" style="gap:28px;align-items:stretch">
+    <div class="card" style="width:420px;padding:40px"><div style="font-size:28px;color:var(--m);font-weight:800;letter-spacing:.08em">FREE</div><div style="display:flex;flex-direction:column;gap:18px;margin-top:24px;font-size:30px;font-weight:700">${['Unlimited calls','Text chat','Games','2 countries','5 friends'].map(x=>`<div class="row" style="gap:14px">${check('#9aa3c7')}${x}</div>`).join('')}</div></div>
+    <div class="card" style="width:440px;padding:40px;border:2px solid #ffd166;background:linear-gradient(160deg,#2a2210,#10172b)"><div style="font-size:28px;color:#ffd166;font-weight:800;letter-spacing:.08em">PLUS ★</div><div style="display:flex;flex-direction:column;gap:18px;margin-top:24px;font-size:30px;font-weight:700">${['All free features','Gender filter','Unlimited countries','Unlimited friends','No ads'].map(x=>`<div class="row" style="gap:14px">${check('#ffd166')}${x}</div>`).join('')}</div></div></div>`,
+  s:'The core app is free. Plus is for people who want more control.' },
+];
+
+// Cover post: all features at a glance
+const cover = { id:'f00-everything', html:`
+  <div class="glow" style="background:#1f5cff;opacity:.5"></div>
+  <div class="glow" style="background:#6c5ce7;left:-300px;right:auto;top:auto;bottom:-300px;opacity:.35"></div>
+  <div class="chip" style="color:#22e3e8;border-color:#22e3e8">SWIPE → ALL FEATURES</div>
+  <div class="title" style="font-size:84px">Everything<br><span class="acc" style="background-image:var(--grad)">TalkLive</span> can do</div>
+  <div style="position:absolute;left:72px;right:72px;top:400px;display:grid;grid-template-columns:1fr 1fr;gap:28px 40px;font-size:36px;font-weight:700">
+    ${['One-tap voice calls','Next in a second','Text chat mode','Spirit animals','Games mid-call','Country filter','Friends & call-backs','Notifications','Install as an app','Private, not recorded','Report & block','17 languages'].map(x=>`<div class="row" style="gap:16px">${check('#22e3e8')}${x}</div>`).join('')}
+  </div>
+  <div class="foot"><div class="b"><img src="${LOGO}">Free · No sign-up</div><div class="u">talklive.app</div></div>` };
+
+const total = F.length;
+document.getElementById('root').innerHTML =
+  `<section class="post" id="${cover.id}">${cover.html}</section>` +
+  F.map((f, i) => {
+    const g = `linear-gradient(90deg,${f.c[0]},${f.c[1]})`;
+    return `<section class="post" id="${f.id}">
+      <div class="glow" style="background:${f.c[0]}"></div>
+      <div class="chip" style="color:${f.c[1]};border-color:${f.c[1]}">FEATURE ${String(i+1).padStart(2,'0')} / ${total}</div>
+      <div class="title">${f.t.replace('<em>', `<span class="acc" style="background-image:${g}">`).replace('</em>','</span>')}</div>
+      <div class="art">${f.art}</div>
+      <div class="sub">${f.s}</div>
+      <div class="foot"><div class="b"><img src="${LOGO}">TalkLive</div><div class="u">talklive.app</div></div>
+    </section>`;
+  }).join('');
+</script>
+</body></html>

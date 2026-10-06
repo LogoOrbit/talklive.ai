@@ -62,3 +62,29 @@ These pages get indexed by Google and send backlinks or referral traffic:
 10. **Threads, Bluesky, X** — reshare images; quick indexing, good for brand searches.
 11. **Tumblr / Flipboard** — cheap extra indexed links to blog posts.
 12. **Directories:** SaaSHub, Slant, BetaList, StartupBase, Crunchbase — one-time listings with backlinks.
+
+## Feature series (`features/`)
+
+15 posts explaining every feature. Post them as one **Instagram/Facebook carousel**
+(cover first, then 01–14), or one per day as a series. Render with:
+`NODE_PATH=$(npm root -g) node marketing/social-1080/src/render.js features.html features`
+
+| Image | Caption |
+|---|---|
+| f00-everything | Everything TalkLive can do, in one swipe 👉 Free, no sign-up: talklive.app |
+| f01-one-tap | One tap. A real person. Somewhere in the world. 🌍 |
+| f02-next | Not vibing? Next. No awkward goodbyes. |
+| f03-text-chat | Can't talk out loud? Text a stranger instead. |
+| f04-spirit-animal | Which spirit animal are you? Comment below 👇 |
+| f05-games | Awkward silence? Challenge them to Tic Tac Toe. 🎮 |
+| f06-countries | Want to talk to someone from Japan tonight? Pick the countries you want to meet. |
+| f07-friends | Met someone great? Add them as a friend and call them back anytime. |
+| f08-notifications | Get notified when a friend messages or calls you back. |
+| f09-install | No app store needed. Add TalkLive to your home screen in two taps. |
+| f10-privacy | Your call goes straight from you to them. Not recorded. No camera. |
+| f11-safety | 18+ only. Report or block anyone in one tap. |
+| f12-languages | TalkLive speaks 17 languages. Which one is yours? |
+| f13-invite | Invite a friend. When they have their first chat, you both get a week of Plus. |
+| f14-plus | Free has everything you need. Plus adds a gender filter, unlimited countries and friends, no ads. |
+
+Use hashtag set A from above on all of these (add set C to f12).
