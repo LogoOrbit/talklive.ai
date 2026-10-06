@@ -24,6 +24,10 @@
   // chat, whose avatar is never shown, the spirit animal they picked.
   function face(avatarId, size, animal) {
     size = size || 30;
+    if (typeof avatarId === 'string' && avatarId.slice(0, 2) === 'c:' && window.TalkLiveCharacters) {
+      var ch = window.TalkLiveCharacters.html(avatarId.slice(2), size);
+      if (ch) return ch;
+    }
     if (typeof avatarId === 'string' && avatarId.slice(0, 2) === 'a:') {
       var a = animalHtml(avatarId.slice(2), size);
       if (a) return a;

@@ -3095,6 +3095,7 @@ function sanitizeAvatar(value) {
   if (typeof value !== 'string') return null;
   if (/^[mf][1-5]$/.test(value)) return value;
   if (value.slice(0, 2) === 'a:' && ANIMAL_IDS.has(value.slice(2))) return value;
+  if (value.slice(0, 2) === 'c:' && CHARACTER_IDS.has(value.slice(2))) return value;
   return null;
 }
 
@@ -3433,6 +3434,11 @@ const ANIMAL_IDS = new Set([
   'lion', 'tiger', 'wolf', 'fox', 'cat', 'dog',
   'bear', 'panda', 'rabbit', 'owl', 'penguin', 'dolphin',
   'elephant', 'koala', 'monkey', 'frog', 'deer', 'turtle', 'horse', 'eagle',
+]);
+// Movie-character avatars (public/characters.js holds the artwork), `c:<id>`.
+const CHARACTER_IDS = new Set([
+  'wizard', 'pirate', 'detective', 'hero', 'cowboy', 'robot', 'vampire',
+  'ninja', 'astronaut', 'zombie', 'alien', 'knight', 'queen', 'warrior',
 ]);
 function sanitizeAnimal(value) {
   return typeof value === 'string' && ANIMAL_IDS.has(value) ? value : null;

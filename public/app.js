@@ -387,7 +387,15 @@ const AVATAR_IDS = {
   get animal() {
     return (window.TalkLiveAnimals ? window.TalkLiveAnimals.ids : []).map((id) => ANIMAL_AVATAR_PREFIX + id);
   },
+  // Movie characters (characters.js), stored as `c:<id>`.
+  get character() {
+    return (window.TalkLiveCharacters ? window.TalkLiveCharacters.ids : []).map((id) => 'c:' + id);
+  },
 };
+function characterAvatarId(id) {
+  return typeof id === 'string' && id.slice(0, 2) === 'c:' && window.TalkLiveCharacters
+    && window.TalkLiveCharacters.has(id.slice(2)) ? id.slice(2) : null;
+}
 
 function isAnimalAvatar(id) {
   return typeof id === 'string' && id.slice(0, 2) === ANIMAL_AVATAR_PREFIX;
@@ -396,6 +404,7 @@ function animalAvatarId(id) {
   return isAnimalAvatar(id) ? id.slice(2) : null;
 }
 function validAvatarId(id) {
+  if (characterAvatarId(id)) return true;
   if (isAnimalAvatar(id)) {
     return !!(window.TalkLiveAnimals && window.TalkLiveAnimals.has(animalAvatarId(id)));
   }
@@ -419,6 +428,8 @@ const AVATAR_STYLES = {
 // friends list, the rail - goes through this, so adding a kind of avatar is a
 // change in one function rather than in eight call sites.
 function avatarFaceHtml(id, size = 36) {
+  const character = characterAvatarId(id);
+  if (character) return window.TalkLiveCharacters.html(character, size);
   const animal = animalAvatarId(id);
   if (animal && window.TalkLiveAnimals && window.TalkLiveAnimals.has(animal)) {
     window.TalkLiveAnimals.installSprite();
@@ -449,6 +460,8 @@ function genderIcon(avatarId, size = 30) {
   // An animal avatar is a picture in its own right, not a gender to infer -
   // and the lists that call this are exactly where someone's chosen animal
   // should show up.
+  const character = characterAvatarId(avatarId);
+  if (character) return window.TalkLiveCharacters.html(character, size);
   const animal = animalAvatarId(avatarId);
   if (animal && window.TalkLiveAnimals && window.TalkLiveAnimals.has(animal)) {
     window.TalkLiveAnimals.installSprite();
@@ -1564,7 +1577,7 @@ function closeQuickSettings() {
 // page over its size budget); it is fetched once the page is idle, or on the
 // first tap of the gear if that comes sooner.
 // It also brings settings.css, which the screen waits for (html.tl-set-css).
-var SETTINGS_PANEL_SRC = '/settings-panel.js?v=20261006data';
+var SETTINGS_PANEL_SRC = '/settings-panel.js?v=20261006chars';
 // Top 3 films on profiles (fav-films.js), loaded when a profile first opens.
 var filmsLoading = null;
 function withFilms(cb) {
@@ -2815,17 +2828,18 @@ function renderAvatarGrid() {
   // start on every tap; keep the user where they were.
   const keepScroll = avatarGrid.scrollLeft;
   avatarGrid.innerHTML = '';
-  AVATAR_IDS.male.concat(AVATAR_IDS.female, AVATAR_IDS.animal).forEach((id) => {
+  AVATAR_IDS.male.concat(AVATAR_IDS.female, AVATAR_IDS.character, AVATAR_IDS.animal).forEach((id) => {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = `avatar-option${pendingAvatar === id ? ' selected' : ''}`;
     btn.dataset.avatar = id;
     const animal = animalAvatarId(id);
-    btn.setAttribute('aria-label', animal && window.TalkLiveAnimals
-      ? window.TalkLiveAnimals.name(animal)
-      : t('avatar'));
+    const character = characterAvatarId(id);
+    const label = character ? window.TalkLiveCharacters.name(character)
+      : (animal && window.TalkLiveAnimals ? window.TalkLiveAnimals.name(animal) : '');
+    btn.setAttribute('aria-label', label || t('avatar'));
     btn.innerHTML = avatarFaceHtml(id, 52)
-      + (animal ? `<span class="avatar-option-name">${escapeHtml(window.TalkLiveAnimals.name(animal))}</span>` : '');
+      + (label ? `<span class="avatar-option-name">${escapeHtml(label)}</span>` : '');
     avatarGrid.appendChild(btn);
   });
   avatarGrid.scrollLeft = keepScroll;

@@ -305,7 +305,7 @@
     langSelect: 'translate translation',
     soundToggle: 'audio mute volume ring',
     vibrationToggle: 'haptic haptics',
-    avatarGrid: 'picture photo face animal image',
+    avatarGrid: 'picture photo face animal image movie character',
     acceptCallsCheckbox: 'ring incoming',
     statusVisibilityToggle: 'invisible hidden presence last seen',
     messageSeenToggle: 'read receipts',
