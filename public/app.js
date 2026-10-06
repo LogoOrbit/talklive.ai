@@ -1565,6 +1565,18 @@ function closeQuickSettings() {
 // first tap of the gear if that comes sooner.
 // It also brings settings.css, which the screen waits for (html.tl-set-css).
 var SETTINGS_PANEL_SRC = '/settings-panel.js?v=20261006data';
+// Top 3 films on profiles (fav-films.js), loaded when a profile first opens.
+var filmsLoading = null;
+function withFilms(cb) {
+  filmsLoading = filmsLoading || new Promise((ok, fail) => {
+    const s = document.createElement('script');
+    s.src = '/fav-films.js?v=20261006films';
+    s.onload = ok;
+    s.onerror = () => { filmsLoading = null; fail(); };
+    document.head.appendChild(s);
+  });
+  filmsLoading.then(() => cb(window.TalkLiveFilms), () => {});
+}
 var settingsPanelLoading = null; // var: openAppSettings can run before this line on /settings
 function loadSettingsPanel() {
   if (window.TalkLiveSettingsPanel) return window.TalkLiveSettingsPanel.ready;
@@ -3293,6 +3305,7 @@ function buildMyProfileSheet() {
             <button type="button" class="btn btn-secondary my-profile-copy"></button>
             <button type="button" class="btn btn-primary my-profile-share"></button>
           </div>
+          <div class="my-profile-films" hidden></div>
         </div>
         <div class="my-profile-body">
           <div class="tl-set-group my-profile-controls"></div>
@@ -3388,6 +3401,7 @@ function openMyProfile() {
     return { el, spot };
   });
   renderMyProfileCard();
+  withFilms((F) => F.editor(myProfileSheet.querySelector('.my-profile-films'), socket));
   myProfileSheet.querySelector('.my-profile-scroll').scrollTop = 0;
   myProfileSheet.classList.add('shown');
   requestAnimationFrame(() => requestAnimationFrame(() => myProfileSheet.classList.add('open')));
@@ -4346,6 +4360,7 @@ function openUserProfile(person) {
   const metLine = met ? historySubline(met, { long: true }) : '';
   friendProfileMet.textContent = metLine;
   friendProfileMet.classList.toggle('hidden', !metLine);
+  renderProfileFilms(person.clientId);
 
   // "Really <their own name>" - only when this account has renamed them, so a
   // friend you gave a private label to is still identifiable by the name they
@@ -4383,6 +4398,14 @@ function openUserProfile(person) {
   profileBackToFriends = friendsDropdown.classList.contains('open') || (profileBackToFriends && friendProfileModal.classList.contains('open'));
   closeSidePanel(friendsDropdown, friendsOverlay);
   openSidePanel(friendProfileModal, friendProfileOverlay);
+}
+
+let profileFilmsBox = null;
+function renderProfileFilms(clientId) {
+  if (!profileFilmsBox) friendProfileMet.after(profileFilmsBox = document.createElement('div'));
+  profileFilmsBox.hidden = true;
+  profileFilmsBox.dataset.for = clientId;
+  withFilms((F) => F.show(profileFilmsBox, clientId, socket));
 }
 
 let profileBackToFriends = false;

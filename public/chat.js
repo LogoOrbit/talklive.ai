@@ -1448,6 +1448,7 @@
           '<div class="my-profile-face"></div><h2 id="myProfileName" class="my-profile-name"></h2><p class="my-profile-sub"></p>' +
           '<div class="my-profile-id"><span class="my-profile-id-label"></span><strong class="my-profile-id-value"></strong>' +
             '<button type="button" class="btn btn-secondary" data-act="copy"></button><button type="button" class="btn btn-primary" data-act="share"></button></div>' +
+          '<div class="my-profile-films" hidden></div>' +
           '<div class="my-profile-actions"><button type="button" class="btn btn-secondary" data-act="edit"></button><button type="button" class="btn btn-secondary" data-act="more"></button></div>' +
         '</section>';
       document.body.appendChild(myProfileSheet);
@@ -1488,6 +1489,7 @@
     q('[data-act="edit"]').textContent = t('settings');
     q('[data-act="more"]').textContent = t('moreProfileSettings');
     q('.my-profile-close').setAttribute('aria-label', t('close'));
+    withFilms(function (F) { F.editor(q('.my-profile-films'), socket); });
     myProfileSheet.classList.add('shown');
     requestAnimationFrame(function () { requestAnimationFrame(function () { myProfileSheet.classList.add('open'); }); });
     try { q('.my-profile-sheet').focus({ preventScroll: true }); } catch (e) {}
@@ -2779,6 +2781,23 @@
   function psBtn(act, label, cls, icon) {
     return '<button type="button" class="btn ' + (cls || 'btn-secondary') + '" data-act="' + act + '">' + (icon || '') + '<span>' + escapeHtml(label) + '</span></button>';
   }
+  // Top 3 films on profiles (/fav-films.js, shared with the call app):
+  // fetched the first time a profile opens, never on page load.
+  var filmsLoading = null;
+  function withFilms(cb) {
+    if (window.TalkLiveFilms) return cb(window.TalkLiveFilms);
+    if (!filmsLoading) {
+      filmsLoading = new Promise(function (resolve, reject) {
+        var s = document.createElement('script');
+        s.src = '/fav-films.js?v=20261006films';
+        s.async = true;
+        s.onload = resolve;
+        s.onerror = function () { filmsLoading = null; reject(); };
+        document.head.appendChild(s);
+      });
+    }
+    filmsLoading.then(function () { cb(window.TalkLiveFilms); }).catch(function () {});
+  }
   function closeProfile() {
     if (profileBox) closeModal(profileBox);
     profileId = null;
@@ -2792,7 +2811,7 @@
         '<div class="modal-box profile-sheet" role="dialog" aria-modal="true" aria-labelledby="psName">' +
           '<div class="modal-header"><span></span><button type="button" class="modal-close" data-act="close">&times;</button></div>' +
           '<div class="modal-body"><div class="ps-face"></div><h2 id="psName" class="ps-name"></h2>' +
-          '<p class="ps-id hidden"></p><p class="ps-real hidden"></p><p class="ps-status"></p>' +
+          '<p class="ps-id hidden"></p><p class="ps-real hidden"></p><p class="ps-status"></p><div class="ps-films" hidden></div>' +
           '<div class="ps-row ps-main"></div><div class="ps-row ps-manage"></div><div class="ps-row ps-safety"></div></div></div>';
       document.body.appendChild(profileBox);
       profileBox.addEventListener('click', function (e) {
@@ -2803,6 +2822,10 @@
     }
     profileId = clientId;
     renderProfile();
+    var films = profileBox.querySelector('.ps-films');
+    films.hidden = true;
+    films.dataset.for = clientId;
+    withFilms(function (F) { F.show(films, clientId, socket); });
     openModal(profileBox);
   }
   function renderProfile() {

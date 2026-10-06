@@ -29,6 +29,7 @@
     "test:feedback-reply": "node scripts/test-feedback-reply.js",
     "test:audience": "node scripts/test-audience.js",
     "test:gifs": "node scripts/test-gif-proxy.js",
+    "test:films": "node scripts/test-fav-films.js",
     "seo:ping": "node scripts/ping-indexnow.js",
     "test:social": "node scripts/test-social.js && node scripts/test-social-safety.js && node scripts/test-social-delivery.js && node scripts/test-social-extras.js && node scripts/test-social-privacy.js",
     "test:friend-id": "node scripts/test-friend-id.js",

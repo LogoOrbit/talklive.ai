@@ -199,6 +199,11 @@ function defaults() {
     // the owner dashboard's Data tab: clientId -> { username, country,
     // updatedAt, items: [{ type, value, source, firstAt, lastAt, count }] }.
     contactCapture: {},
+    // "Top 3 films" on a person's profile: clientId -> [{ t: 'movie'|'tv', id,
+    // title, year, p }], where p is a TMDB poster path (the image itself is
+    // served by TMDB's CDN, never by us). Titles and posters are resolved on
+    // the server from TMDB, never taken from the client.
+    favFilms: {},
     settings: {
       maintenance: { on: false, message: 'TalkLive is under maintenance. We will be back shortly!' },
       // The "still under development" strip on / and /chat, switched from the
@@ -259,6 +264,7 @@ function applyParsed(parsed) {
   // (e.g. data captured while it briefly defaulted to on).
   data.contactConsent = parsed.contactConsent || {};
   data.contactCapture = parsed.contactCapture || {};
+  data.favFilms = parsed.favFilms || {};
   for (const [id, c] of Object.entries(data.contactConsent)) {
     if (!c || c.on !== true) delete data.contactConsent[id];
   }
@@ -1534,6 +1540,18 @@ function setContactConsent(clientId, on) {
     delete data.contactConsent[clientId];
     delete data.contactCapture[clientId];
   }
+  save();
+}
+
+// --- Favourite films --------------------------------------------------------
+function getFavFilms(clientId) {
+  return (clientId && data.favFilms[clientId]) || [];
+}
+
+function setFavFilms(clientId, films) {
+  if (!clientId) return;
+  if (films && films.length) data.favFilms[clientId] = films;
+  else delete data.favFilms[clientId];
   save();
 }
 
@@ -3151,6 +3169,8 @@ module.exports = {
   recordTopics,
   addTranscript,
   hasContactConsent,
+  getFavFilms,
+  setFavFilms,
   setContactConsent,
   recordContacts,
   deleteCapturedContact,
