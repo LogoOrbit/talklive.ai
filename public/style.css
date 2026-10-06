@@ -6265,11 +6265,6 @@ html.perf-lite .side-panel { box-shadow: none; }
   border-radius: 50%;
 }
 
-.pass-row.is-selected .pass-radio {
-  border-color: var(--accent-2);
-  background: radial-gradient(circle, var(--accent-2) 45%, transparent 50%);
-}
-
 .pass-row-main {
   flex: 1;
   display: flex;
@@ -6284,76 +6279,52 @@ html.perf-lite .side-panel { box-shadow: none; }
 }
 
 .pass-badge {
-  --c: #ffd24a;
-  position: relative;
-  overflow: hidden;
   margin-left: 8px;
-  padding: 2px 9px;
-  border: 1px solid var(--c);
+  padding: 2px 8px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--c) 18%, transparent);
+  background: color-mix(in srgb, var(--c) 16%, transparent);
   color: var(--c);
   font-size: 10.5px;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 700;
 }
 
-/* A light sweep across every badge so the deal catches the eye. */
-.pass-badge::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.55) 50%, transparent 65%);
-  transform: translateX(-120%);
-  animation: pass-shine 2.8s ease-in-out infinite;
+.pass-d1 { --c: #9aa4c0; }
+.pass-d5 { --c: #f0b24a; }
+.pass-d14 { --c: #9b8cff; }
+.pass-d30 { --c: #4fd1a1; }
+
+/* One quiet cue: the recommended pass breathes. */
+.pass-d14 .pass-badge { animation: pass-pulse 2.4s ease-in-out infinite; }
+
+@keyframes pass-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--c) 40%, transparent); }
+  50% { box-shadow: 0 0 0 4px transparent; }
 }
 
-.pass-d1 { --c: #ffd24a; }
-.pass-d5 { --c: #ff9f43; }
-.pass-d14 { --c: #ff5c8a; }
-.pass-d30 { --c: #3ddc97; }
+@media (prefers-reduced-motion: reduce) {
+  .pass-d14 .pass-badge { animation: none; }
+}
 
-.pass-d1 .pass-badge::after { animation-delay: 0s; }
-.pass-d5 .pass-badge { animation: pass-pulse 1.8s ease-in-out infinite; }
-.pass-d14 .pass-badge { animation: pass-pulse 1.3s ease-in-out infinite; }
-.pass-d30 .pass-badge { animation: pass-pulse 1.8s ease-in-out infinite; }
-.pass-d5 .pass-badge::after { animation-delay: .5s; }
-.pass-d14 .pass-badge::after { animation-delay: 1s; }
-.pass-d30 .pass-badge::after { animation-delay: 1.5s; }
+.pass-row-sub {
+  font-size: 12px;
+  color: var(--muted);
+}
 
-.pass-row .pass-badge,
-.pass-row .pass-row-sub { transition: filter .2s; }
-
-.pass-row[class*='pass-d'] .pass-row-sub { color: var(--c); }
-.pass-row[class*='pass-d'] .pass-row-price strong { color: var(--c); }
+.pass-row {
+  padding-left: 8px;
+  padding-right: 8px;
+  border-radius: 12px;
+  transition: background .15s;
+}
 
 .pass-row.is-selected {
-  background: linear-gradient(90deg, color-mix(in srgb, var(--c) 14%, transparent), transparent);
-  box-shadow: inset 3px 0 0 var(--c);
+  background: color-mix(in srgb, var(--c) 10%, transparent);
 }
 
 .pass-row.is-selected .pass-radio {
   border-color: var(--c);
   background: radial-gradient(circle, var(--c) 45%, transparent 50%);
-}
-
-@keyframes pass-shine {
-  0%, 55% { transform: translateX(-120%); }
-  100% { transform: translateX(120%); }
-}
-
-@keyframes pass-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--c) 55%, transparent); }
-  50% { box-shadow: 0 0 10px 2px color-mix(in srgb, var(--c) 55%, transparent); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .pass-badge, .pass-badge::after { animation: none; }
-}
-
-.pass-row-sub {
-  font-size: 12px;
-  color: var(--accent-2);
 }
 
 .pass-row-price {
@@ -6378,11 +6349,11 @@ html.perf-lite .side-panel { box-shadow: none; }
   padding: 13px 14px;
   border: 0;
   border-radius: 14px;
-  background: var(--accent-2);
+  background: #6c5ce7;
   color: #fff;
   font-size: 15px;
   font-weight: 700;
-  opacity: 0.55;
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
