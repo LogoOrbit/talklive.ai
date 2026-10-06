@@ -3042,6 +3042,10 @@
     touch-action: pan-y;
   }
   .side-panel.chat-side-panel.open { transform: translateY(0); }
+  /* With no call behind it there is nothing to keep in view above the sheet,
+     and at 62% a friend's chat showed three or four messages under a strip of
+     the home page. Off a call it takes the screen, minus room for the grip. */
+  body:not(:has(.stage.call-live)) #friendChatModal { height: min(88dvh, 760px); }
 
   /* The handle. It is what makes a sheet look draggable and, more usefully,
      what makes it obvious the call is still behind it. It is also the grab

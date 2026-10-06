@@ -102,6 +102,13 @@
     try { sessionStorage.setItem(FILTERS_KEY, JSON.stringify(filters)); } catch (e) {}
   }
 
+  // Shortens a preview to max characters, marking the cut with an ellipsis
+  // rather than stopping mid-word with no sign anything is missing.
+  function clipText(str, max) {
+    var s = String(str || '').replace(/\s+/g, ' ').trim();
+    return s.length > max ? s.slice(0, max - 1).replace(/\s+$/, '') + '\u2026' : s;
+  }
+
   function escapeHtml(str) {
     return String(str).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
@@ -2130,7 +2137,7 @@
         soundReceive(); vibrate(20);
         // Who it is from, not just a dot on the menu - tap to open the chat.
         var from = findPerson(n.fromClientId) || { clientId: n.fromClientId, username: n.username };
-        var preview = n.text === '[GIF]' ? 'GIF' : String(n.text || '').slice(0, 60);
+        var preview = n.text === '[GIF]' ? 'GIF' : clipText(n.text, 60);
         socialToast(preview ? who + ': ' + preview : who, 'social', function () { openFriendChat(from); });
       }
     }

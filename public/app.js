@@ -820,6 +820,13 @@ function lastFromCache(clientId) {
 }
 let pendingCallBackFrom = null;
 
+// Shortens a preview to max characters, marking the cut with an ellipsis
+// rather than stopping mid-word with no sign anything is missing.
+function clipText(str, max) {
+  const s = String(str || '').replace(/\s+/g, ' ').trim();
+  return s.length > max ? s.slice(0, max - 1).trimEnd() + '\u2026' : s;
+}
+
 function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, (c) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
@@ -4154,7 +4161,8 @@ function renderFriendsList() {
     // Laid out like a messenger inbox: presence rides on the avatar, the name
     // has its line to itself (beside two actions it was cut to three letters),
     // and the second line is the conversation - or, before there is one, where
-    // they are - with when they last spoke.
+    // they are. When they last spoke sits beside the name, so the preview
+    // keeps the full width of its line rather than five letters of it.
     const stamp = f.last && f.last.ts ? rowStamp(f.last.ts) : '';
     const second = preview
       ? `<span class="friend-item-preview${unread > 0 ? ' is-unread' : ''}${typing ? ' is-typing' : ''}">${escapeHtml(preview)}</span>`
@@ -4164,10 +4172,10 @@ function renderFriendsList() {
       <div class="friend-item-info friend-row-main" data-id="${escapeHtml(f.clientId)}" role="button" tabindex="0" aria-label="${escapeHtml(t('chatWith', { name: friendLabel(f) }))}${f.online ? ' - ' + escapeHtml(t('online')) : ''}">
         <span class="friend-item-line">
           <span class="friend-item-name">${getFlagImg(f.countryCode)} <span class="friend-item-label">${escapeHtml(friendLabel(f))}</span>${f.pinned ? PIN_SVG : ''}${mutedIds.has(f.clientId) ? MUTE_SVG : ''}</span>
+          ${stamp ? `<span class="friend-item-time${unread > 0 ? ' is-unread' : ''}">${escapeHtml(stamp)}</span>` : ''}
         </span>
         <span class="friend-item-line">
           ${second}
-          ${stamp ? `<span class="friend-item-time${unread > 0 ? ' is-unread' : ''}">${escapeHtml(stamp)}</span>` : ''}
           ${unread > 0 ? `<span class="unread-badge">${unread > 99 ? '99+' : unread}</span>` : ''}
         </span>
       </div>
@@ -5113,7 +5121,7 @@ socket.on('notification', (n) => {
       // A chime and a badge said something arrived, not who from - and the
       // Friends list is hidden on the call screen. Tap to open the chat.
       const who = labelForClientId(n.fromClientId, n.username);
-      const preview = n.text === '[GIF]' ? 'GIF' : String(n.text || '').slice(0, 60);
+      const preview = n.text === '[GIF]' ? 'GIF' : clipText(n.text, 60);
       showToast(preview ? `${who}: ${preview}` : who, 'social', () => openFriendChat(n.fromClientId));
     }
   } else if (n.type === 'friend_request' || n.type === 'friend_accepted') {
