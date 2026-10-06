@@ -19,7 +19,7 @@ All 1080×1920 (9:16), 30 fps, 15–21 s, H.264 + AAC. They're ready for Reels, 
 
 **1. Win the first 1–2 seconds.** About 70% of viewers decide whether to swipe within ~2 s. Reels gives you roughly 1.0–1.5 s. Moving bold text in the first two seconds lifts 3-second retention by up to ~50% compared with a static opener. → Every reel has headline text and motion on frame 0. No logo intro, and no "Hi guys".
 
-**2. Design for sound-off, reward sound-on.** More than half of viewers watch muted. → Word-by-word captions are synced to the voiceover from TTS word timestamps, and the spoken word lights up yellow ("Hormozi style"). The captions sit in y 1270–1490, clear of the Reels/TikTok header, side buttons and description overlay. With sound on, there's a voiceover, a ducked music bed and a synthesised SFX layer. Every cut has a whoosh, every slammed word a hit, plus pops, a notification chime, a shutter and a flatline beep.
+**2. Design for sound-off, reward sound-on.** More than half of viewers watch muted. → Word-by-word captions are synced to the voiceover from TTS word timestamps, and the spoken word lights up yellow ("Hormozi style"). The captions sit in y 1270–1490, clear of the Reels/TikTok header, side buttons and description overlay. The audio is the voiceover only: no music or sound effects. That leaves room to add a trending sound inside the app when posting.
 
 **3. Pattern interrupt plus an open loop.** Break the viewer's prediction (a funeral, caution tape, a glitch), then leave a question open that gets answered later. → In reel 1, "Omegle died" opens on "…but talking to strangers never died". In reel 4 the countdown is the open loop.
 
@@ -53,12 +53,13 @@ pip install edge-tts                                   # neural TTS (free)
 SSL_CERT_FILE=/path/to/ca.crt node build.js [reel]     # voiceover + word timings -> vo/  (SSL_CERT_FILE only behind a TLS proxy)
 npx http-server -p 6910 -s .                           # from repo root
 node render.js preview <reel>                          # one frame per beat -> prev/
-node render.js video [reel ...]                        # MP4s -> ../TalkLive-Reel-NN-<reel>.mp4
+node render.js video [reel ...]                        # MP4s -> ../TalkLive-Reel-NN-<reel>.mp4 (voiceover only)
+node render.js audio [reel ...]                        # re-voice existing MP4s without re-rendering frames
 ```
 
 - `reels.js`: the 10 scripts. One beat = one VO line + one scene. `at: 'word'` fires an animation on that spoken word.
 - `reel.html`: the scene library (slam, list, tomb, radar, countdown, chat, roulette, clocks, button, wave, versus, glitch, counter, scroll, hello, ttt, notif, caution, outro), plus captions, camera shake and cut transitions.
-- `audio.js`: the synthesised SFX kit (no licensed samples) and the WAV helpers.
+- `audio.js`: decode/WAV helpers, plus an optional synthesised SFX kit. The renders don't use it.
 - Voices: Andrew, Ava, Brian, Emma (Microsoft neural voices via edge-tts). Swap the `voice` field per reel to A/B male vs female narration.
 
 Sources: [jellymarketing.ca](https://jellymarketing.ca/blog/stop-the-scroll-in-3-seconds-secrets-to-high-performing-short-form-video-hooks/), [tlinky.com](https://tlinky.com/3-second-hook/), [nestscale.com](https://nestscale.com/blog/increase-tiktok-hook-rate.html), [adstellar.ai](https://www.adstellar.ai/blog/video-ad-hooks), [seo-day.de](https://www.seo-day.de/news/article/how-to-build-curiosity-into-high-performing-social-ads?lang=en), [lottiefiles.com](https://lottiefiles.com/blog/design-inspiration/the-key-advantages-of-kinetic-typography-in-design), [thedrum.com](https://www.thedrum.com/news/2025/02/25/duolingo-s-tiktok-mastermind-its-unhinged-social-strategy-and-killing-its-mascot), [socialsamosa.com](https://www.socialsamosa.com/experts-speak/fuss-about-unhinged-marketing-4488283), [eathealthy365.com: Monkey app history](https://eathealthy365.com/the-history-of-the-monkey-app/).
