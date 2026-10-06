@@ -2394,7 +2394,7 @@ const SHOP_PASSES = [
   { id: 'd14', days: 14, price: '$14.99', was: '$34.99', tierKey: 'passTierHighest', tagKey: 'passTagPopular' },
   { id: 'd30', days: 30, price: '$24.99', was: '$59.99', tierKey: 'passTierLongest', tagKey: 'passTagMax' },
 ];
-let selectedPassId = 'd5';
+let selectedPassId = 'd1';
 
 function renderPasses() {
   const wrap = document.getElementById('passTiers');
@@ -2405,16 +2405,16 @@ function renderPasses() {
     const on = p.id === selectedPassId;
     const tier = document.createElement('button');
     tier.type = 'button';
-    tier.className = 'pass-tier' + (on ? ' is-selected' : '');
+    tier.className = 'pass-row' + (on ? ' is-selected' : '');
     tier.setAttribute('role', 'radio');
     tier.setAttribute('aria-checked', on ? 'true' : 'false');
     tier.innerHTML = `
-      <span class="pass-tier-tag">${escapeHtml(t(p.tagKey))}</span>
-      <span class="pass-tier-days">${p.days}</span>
-      <span class="pass-tier-unit">${escapeHtml(t(p.days === 1 ? 'passDay' : 'passDays'))}</span>
-      <span class="pass-tier-was">${escapeHtml(p.was)}</span>
-      <span class="pass-tier-price">${escapeHtml(p.price)}</span>
-      <span class="pass-tier-note">${escapeHtml(t(p.tierKey))}</span>
+      <span class="pass-radio" aria-hidden="true"></span>
+      <span class="pass-row-main">
+        <span class="pass-row-title">${escapeHtml(t('passName', { days: p.days }))}<em class="pass-badge">${escapeHtml(t(p.tagKey))}</em></span>
+        <span class="pass-row-sub">${escapeHtml(t(p.tierKey))}</span>
+      </span>
+      <span class="pass-row-price"><s>${escapeHtml(p.was)}</s><strong>${escapeHtml(p.price)}</strong></span>
     `;
     tier.addEventListener('click', () => {
       selectedPassId = p.id;
@@ -2424,7 +2424,7 @@ function renderPasses() {
   });
   if (buy) {
     const p = SHOP_PASSES.find((x) => x.id === selectedPassId);
-    buy.textContent = `${t('passBuy', { days: p.days, price: p.price })} · ${t('comingSoon')}`;
+    buy.textContent = t('passBuy', { days: p.days, price: p.price });
   }
 }
 
