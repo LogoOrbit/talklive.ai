@@ -378,6 +378,32 @@ setInterval(() => {
   for (const [key, rec] of httpHits) if (rec.resetAt <= now) httpHits.delete(key);
 }, 10 * 60000).unref();
 
+// Contact form on /contact. Delivered by email to the support inbox; the
+// visitor's address goes in Reply-To so replying answers them directly.
+const CONTACT_TO = process.env.CONTACT_TO || 'info@talklive.app';
+app.post('/contact', httpRateLimit('contact', 5, 10 * 60000), express.json({ limit: '16kb' }), async (req, res) => {
+  const b = req.body || {};
+  // Honeypot: real users never see or fill this field.
+  if (b.website) return res.json({ ok: true });
+  const name = String(b.name || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 100);
+  const email = String(b.email || '').trim().slice(0, 200);
+  const topic = String(b.topic || 'General').replace(/[\r\n]+/g, ' ').trim().slice(0, 50);
+  const message = String(b.message || '').trim().slice(0, 5000);
+  if (!name) return res.status(400).json({ error: 'Please enter your name.' });
+  if (!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(email)) return res.status(400).json({ error: 'Please enter a valid email address.' });
+  if (message.length < 10) return res.status(400).json({ error: 'Please write a message (at least 10 characters).' });
+  if (!mail.configured()) return res.status(503).json({ error: `Messaging is unavailable right now. Please email ${CONTACT_TO} directly.` });
+  const sent = await mail.sendMail({
+    to: CONTACT_TO,
+    subject: `[Contact] ${topic} - ${name}`,
+    text: `From: ${name} <${email}>\nTopic: ${topic}\nIP: ${clientIp(req)}\n\n${message}`,
+    html: `<p><b>From:</b> ${escapeHtmlText(name)} &lt;${escapeHtmlText(email)}&gt;<br><b>Topic:</b> ${escapeHtmlText(topic)}</p><p style="white-space:pre-wrap">${escapeHtmlText(message)}</p>`,
+    replyTo: `"${name.replace(/"/g, '')}" <${email}>`,
+  });
+  if (!sent) return res.status(502).json({ error: `We could not send your message. Please email ${CONTACT_TO} directly.` });
+  res.json({ ok: true });
+});
+
 billing.warnIfHalfConfigured();
 
 app.post('/billing/checkout', httpRateLimit('checkout', 10, 60000), express.json({ limit: '2kb' }), async (req, res) => {
