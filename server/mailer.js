@@ -33,12 +33,13 @@ function configured() {
 // Resolves true when the message was handed to the SMTP server, false when
 // mail is not configured or the send failed. Never rejects: no caller should
 // have to wrap a notification in a try/catch.
-async function sendMail({ to, subject, text, html, fromName }) {
+async function sendMail({ to, subject, text, html, fromName, replyTo }) {
   if (!transport || !to) return false;
   try {
     await transport.sendMail({
       from: `"${fromName || FROM_NAME}" <${SMTP_USER}>`,
       to,
+      ...(replyTo ? { replyTo } : {}),
       subject,
       text,
       ...(html ? { html } : {}),
