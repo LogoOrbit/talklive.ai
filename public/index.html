@@ -1625,6 +1625,21 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
                  nobody can pay - the banner says so before the first number
                  is read, and every buy button is disabled. -->
             <p class="shop-note" data-i18n="shopFreeNote">Everything on TalkLive is free right now. Coins and Boosts are still being built - nothing here can be bought yet.</p>
+            <section class="pass-panel" aria-labelledby="passTitle">
+              <div class="pass-head">
+                <h3 id="passTitle" data-i18n="passTitle">Match Pass</h3>
+                <p data-i18n="passSub">Pick who you talk to and get matched sooner.</p>
+              </div>
+              <div id="passTiers" class="pass-tiers" role="radiogroup" aria-labelledby="passTitle"></div>
+              <ul class="pass-perks">
+                <li><strong data-i18n="passPerkGender">Gender filter</strong><span data-i18n="passPerkGenderSub">Choose who you want to match with.</span></li>
+                <li><strong data-i18n="passPerkPriority">Queue priority</strong><span data-i18n="passPerkPrioritySub">Longer passes get a bigger boost when it is busy.</span></li>
+                <li><strong data-i18n="passPerkWindow">Full access window</strong><span data-i18n="passPerkWindowSub">Every perk stays on until your pass runs out.</span></li>
+              </ul>
+              <button type="button" id="passBuyBtn" class="pass-buy" disabled></button>
+              <p class="pass-foot" data-i18n="passFoot">One-time payment. No subscription.</p>
+            </section>
+            <h3 class="shop-section-title" data-i18n="shopCoinsTitle">Coins</h3>
             <div id="shopGrid" class="shop-grid"></div>
             <div class="tl-soon-cta">
               <button type="button" class="tl-notify-btn" data-notify="shop">

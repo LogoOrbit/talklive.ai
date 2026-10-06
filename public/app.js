@@ -2385,7 +2385,51 @@ function renderShop() {
   if (shopBalanceNum) shopBalanceNum.textContent = '0';
 }
 
+// Match Pass: time-boxed Gender filter + queue priority, one-time payment.
+// Same rule as the coin packs - selectable so the shape is visible, never
+// purchasable.
+const SHOP_PASSES = [
+  { id: 'd1', days: 1, price: '$4.99', was: '$6.99', tierKey: 'passTierQuick', tagKey: 'passTagEntry' },
+  { id: 'd5', days: 5, price: '$8.99', was: '$19.99', tierKey: 'passTierHigher', tagKey: 'passTagDeal' },
+  { id: 'd14', days: 14, price: '$14.99', was: '$34.99', tierKey: 'passTierHighest', tagKey: 'passTagPopular' },
+  { id: 'd30', days: 30, price: '$24.99', was: '$59.99', tierKey: 'passTierLongest', tagKey: 'passTagMax' },
+];
+let selectedPassId = 'd5';
+
+function renderPasses() {
+  const wrap = document.getElementById('passTiers');
+  const buy = document.getElementById('passBuyBtn');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  SHOP_PASSES.forEach((p) => {
+    const on = p.id === selectedPassId;
+    const tier = document.createElement('button');
+    tier.type = 'button';
+    tier.className = 'pass-tier' + (on ? ' is-selected' : '');
+    tier.setAttribute('role', 'radio');
+    tier.setAttribute('aria-checked', on ? 'true' : 'false');
+    tier.innerHTML = `
+      <span class="pass-tier-tag">${escapeHtml(t(p.tagKey))}</span>
+      <span class="pass-tier-days">${p.days}</span>
+      <span class="pass-tier-unit">${escapeHtml(t(p.days === 1 ? 'passDay' : 'passDays'))}</span>
+      <span class="pass-tier-was">${escapeHtml(p.was)}</span>
+      <span class="pass-tier-price">${escapeHtml(p.price)}</span>
+      <span class="pass-tier-note">${escapeHtml(t(p.tierKey))}</span>
+    `;
+    tier.addEventListener('click', () => {
+      selectedPassId = p.id;
+      renderPasses();
+    });
+    wrap.appendChild(tier);
+  });
+  if (buy) {
+    const p = SHOP_PASSES.find((x) => x.id === selectedPassId);
+    buy.textContent = `${t('passBuy', { days: p.days, price: p.price })} · ${t('comingSoon')}`;
+  }
+}
+
 function openShop() {
+  renderPasses();
   renderShop();
   openModal(shopModal);
 }
