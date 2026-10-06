@@ -85,6 +85,18 @@ a { color: var(--accent-2); }
   padding: 8px 18px !important;
   font-weight: 700;
 }
+.nav-cta { transition: filter .15s ease, transform .15s ease; box-shadow: 0 6px 20px -8px var(--accent); }
+.nav-cta:hover { filter: brightness(1.1); transform: translateY(-1px); }
+/* Phones: brand and "Start Talking" share the first row; the text links sit on
+   one scrollable row under them instead of wrapping into a ragged block. */
+@media (max-width: 560px) {
+  .page-header { position: relative; padding-top: 12px; padding-bottom: 8px; row-gap: 6px; }
+  .page-header .brand { min-height: 38px; }
+  .page-nav { order: 3; width: 100%; flex-wrap: nowrap; gap: 4px 16px; overflow-x: auto; scrollbar-width: none; }
+  .page-nav::-webkit-scrollbar { display: none; }
+  .page-nav a { white-space: nowrap; }
+  .page-nav .nav-cta { position: absolute; top: 12px; right: clamp(16px, 5vw, 48px); padding: 8px 16px !important; }
+}
 main.page-main {
   flex: 1;
   width: 100%;

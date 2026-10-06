@@ -4,7 +4,8 @@
 <meta name='impact-site-verification' value='c12db422-3008-4ecd-a5c6-679fa382c00e'>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<link rel="stylesheet" href="/pages.css?v=20260923art" />
+<meta name="theme-color" content="#0b0f1a" />
+<link rel="stylesheet" href="/pages.css?v=20261006hdr" />
 <script>document.documentElement.classList.add('js-reveal');setTimeout(function(){if(!window.TLLanding)document.documentElement.classList.remove('js-reveal')},3000);</script>
 <script src="/loading.js"></script>
 <script defer src="/ads.js?v=20260923adsense2"></script>
@@ -15,6 +16,8 @@
 <meta name="twitter:card" content="summary_large_image" />
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <meta property="og:type" content="website" />
+<meta property="og:site_name" content="TalkLive" />
+<meta property="og:url" content="https://talklive.app/" />
 <meta property="og:title" content="TalkLive - Free Random Voice &amp; Text Chat Worldwide" />
 <meta property="og:description" content="Tap to Talk for a live voice call, or Tap to Chat for instant text chat with someone new anywhere in the world." />
 <meta property="og:image" content="https://talklive.app/og-image.png?v=2" />
@@ -25,42 +28,70 @@
 }
 .hero h1 {
   font-size: clamp(2rem, 6vw, 3.4rem);
-  margin: 0 auto 0.4em;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  margin: 0 auto 0.45em;
   max-width: 760px;
-  background: linear-gradient(120deg, var(--text) 30%, var(--accent-2));
+  color: var(--text);
+}
+.hero h1 .grad {
+  background: linear-gradient(120deg, var(--accent-2), #8f7dff);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
-.hero p.sub { max-width: 560px; margin: 0 auto 34px; font-size: 1.12rem; color: var(--muted); }
+.hero p.sub { max-width: 560px; margin: 0 auto 30px; font-size: 1.12rem; color: var(--muted); }
+/* The two start buttons: one tap goes straight into a call or a chat (the
+   app reads ?talk=1 / ?go=1), so they carry a subtitle saying exactly what
+   happens next, the same pair the app's home screen shows. */
 .hero-cta-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
-  justify-content: center;
-  flex-wrap: wrap;
+  max-width: 560px;
+  margin: 0 auto;
 }
 .hero-cta {
-  display: inline-block;
-  background: linear-gradient(120deg, #17c964, #0fa958);
-  color: #fff;
-  font-size: 1.15rem;
-  font-weight: 800;
-  border-radius: 999px;
-  padding: 18px 42px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 74px;
+  padding: 12px 18px 12px 14px;
+  border-radius: 20px;
+  text-align: left;
   text-decoration: none;
-  box-shadow: 0 8px 40px rgba(23, 201, 100, 0.35);
-  animation: pulse 2.4s ease-in-out infinite;
+  color: #fff;
+  background: linear-gradient(135deg, #22d36f, #0f9f52);
+  box-shadow: 0 10px 34px -8px rgba(23, 201, 100, 0.55), inset 0 1px 0 rgba(255,255,255,.22);
+  transition: transform .15s ease, box-shadow .2s ease, filter .2s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 .hero-cta.chat {
-  background: linear-gradient(120deg, #7cb3ff, #2f66f4);
-  box-shadow: 0 8px 40px rgba(63, 118, 244, 0.35);
-  animation: none;
+  background: linear-gradient(135deg, #8a7dff, #5b45e0);
+  box-shadow: 0 10px 34px -8px rgba(108, 92, 231, 0.6), inset 0 1px 0 rgba(255,255,255,.22);
 }
-@keyframes pulse { 50% { transform: scale(1.04); } }
-.hero-cta { transition: transform .15s ease, box-shadow .2s ease; }
-.hero-cta:hover { transform: translateY(-2px); }
+.hero-cta .cta-ico {
+  flex: none; width: 46px; height: 46px; border-radius: 14px;
+  display: grid; place-items: center; background: rgba(255,255,255,.2);
+}
+.hero-cta .cta-ico svg { width: 24px; height: 24px; }
+.hero-cta .cta-txt { display: flex; flex-direction: column; min-width: 0; }
+.hero-cta .cta-txt b { font-size: 1.15rem; font-weight: 800; line-height: 1.2; white-space: nowrap; }
+.hero-cta .cta-txt small { font-size: .82rem; font-weight: 600; opacity: .88; line-height: 1.3; }
+.hero-cta .cta-arr { margin-left: auto; flex: none; width: 20px; height: 20px; opacity: .9; transition: transform .2s ease; }
+.hero-cta:not(.chat)::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  animation: cta-ring 2.4s ease-out infinite;
+}
+@keyframes cta-ring { 0% { box-shadow: 0 0 0 0 rgba(34,211,111,.45); } 70%, 100% { box-shadow: 0 0 0 14px rgba(34,211,111,0); } }
+.hero-cta:hover { transform: translateY(-2px); filter: brightness(1.06); }
+.hero-cta:hover .cta-arr { transform: translateX(3px); }
 .hero-cta:active { transform: scale(.97); }
-.hero-cta svg { width: 20px; height: 20px; vertical-align: -4px; margin-right: 6px; }
+.hero-cta:focus-visible { outline: 3px solid var(--accent-2); outline-offset: 3px; }
+@media (max-width: 520px) {
+  .hero-cta-row { grid-template-columns: 1fr; max-width: 380px; }
+}
 /* The live line: real numbers from /api/live, hidden until they arrive. */
 .live-line {
   display: inline-flex; align-items: center; gap: 8px;
@@ -117,11 +148,22 @@
 .js-reveal .reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
 .js-reveal .reveal.is-in { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) {
-  .hero-cta, .live-dot, .match-link i { animation: none !important; }
+  .hero-cta::before, .live-dot, .match-link i { animation: none !important; }
   .js-reveal .reveal { opacity: 1; transform: none; transition: none; }
   .match-av, .feature { transition: none; }
 }
-.hero-note { color: var(--muted); font-size: 0.86rem; margin-top: 16px; }
+.faq { max-width: 760px; margin: 10px auto 0; padding: 20px; }
+.faq h2 { text-align: center; }
+.faq details { border: 1px solid rgba(138,144,168,.22); border-radius: 14px; background: rgba(255,255,255,.03); margin: 0 0 10px; }
+.faq summary { cursor: pointer; list-style: none; padding: 16px 44px 16px 18px; font-weight: 700; position: relative; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; position: absolute; right: 18px; top: 50%; transform: translateY(-50%); font-size: 1.3rem; color: var(--accent-2); transition: transform .2s ease; }
+.faq details[open] summary::after { transform: translateY(-50%) rotate(45deg); }
+.page-main .faq details p { margin: 0; padding: 0 18px 16px; color: var(--muted); }
+.final-cta { text-align: center; max-width: 760px; margin: 30px auto 20px; padding: 36px 20px; border-radius: 22px; background: radial-gradient(120% 140% at 50% 0%, rgba(108,92,231,.22), rgba(0,212,255,.05) 60%, transparent); border: 1px solid rgba(138,144,168,.18); }
+.final-cta h2 { margin: 0 0 6px; }
+.final-cta p.sub { color: var(--muted); margin: 0 auto 22px; }
+.hero p.hero-note { color: var(--muted); font-size: 0.86rem; margin: 18px auto 0; max-width: 520px; line-height: 1.6; }
 .features {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
@@ -181,6 +223,7 @@
 }
 </style>
 <script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebApplication","name":"TalkLive","url":"https://talklive.app/","applicationCategory":"CommunicationApplication","operatingSystem":"Web, Android, iOS","offers":{"@type":"Offer","price":"0","priceCurrency":"USD","availability":"https://schema.org/InStock","url":"https://talklive.app/","hasMerchantReturnPolicy":{"@type":"MerchantReturnPolicy","applicableCountry":["AE","AR","AU","BD","BR","CA","CN","CO","DE","EG","ES","FR","GB","GR","ID","IE","IL","IN","IR","IT","JP","KE","KR","MA","MX","MY","NG","NL","NO","NZ","PH","PK","PL","PT","RO","RU","SA","SE","SG","TH","TR","UA","US","VN","ZA"],"returnPolicyCategory":"https://schema.org/MerchantReturnNotPermitted","merchantReturnLink":"https://talklive.app/refund"},"shippingDetails":{"@type":"OfferShippingDetails","shippingRate":{"@type":"MonetaryAmount","value":"0","currency":"USD"},"shippingDestination":{"@type":"DefinedRegion","addressCountry":["AE","AR","AU","BD","BR","CA","CN","CO","DE","EG","ES","FR","GB","GR","ID","IE","IL","IN","IR","IT","JP","KE","KR","MA","MX","MY","NG","NL","NO","NZ","PH","PK","PL","PT","RO","RU","SA","SE","SG","TH","TR","UA","US","VN","ZA"]},"deliveryTime":{"@type":"ShippingDeliveryTime","handlingTime":{"@type":"QuantitativeValue","minValue":0,"maxValue":0,"unitCode":"DAY"},"transitTime":{"@type":"QuantitativeValue","minValue":0,"maxValue":0,"unitCode":"DAY"}}}},"isAccessibleForFree":true,"publisher":{"@type":"Organization","name":"TalkLive","url":"https://talklive.app","logo":"https://talklive.app/favicon.svg"},"description":"Free one-to-one voice and text chat with people worldwide. No sign-up, no video, voice never recorded.","brand":{"@type":"Brand","name":"TalkLive"}}]</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is TalkLive really free?","acceptedAnswer":{"@type":"Answer","text":"Yes. Random voice calls and text chats are free, with no sign-up. A few ads keep it running; an optional Premium plan for extra filters is on the way."}},{"@type":"Question","name":"Do I need an account or a camera?","acceptedAnswer":{"@type":"Answer","text":"No. Tap once and you are matched. There is no video at all - just your voice or your keyboard - and no real name, email or phone number is needed."}},{"@type":"Question","name":"Are calls recorded?","acceptedAnswer":{"@type":"Answer","text":"No. Voice calls run peer-to-peer between the two browsers and are never recorded or stored by TalkLive."}},{"@type":"Question","name":"What if someone is rude?","acceptedAnswer":{"@type":"Answer","text":"Tap Next to leave instantly, or report and block them in one tap. Reports are reviewed, repeat offenders are banned automatically, and TalkLive is strictly 18+."}}]}</script>
 <script defer src="/pwa.js?v=20260908pwa"></script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978"
      crossorigin="anonymous"></script>
@@ -198,12 +241,12 @@
 
 <main class="page-main wide" style="padding-top:0">
   <section class="hero">
-    <h1>Talk or text with someone new, anywhere in the world, in one tap.</h1>
+    <h1>Talk or text with someone new, <span class="grad">anywhere in the world</span>, in one tap.</h1>
     <p class="sub">TalkLive is free random voice &amp; text chat. No sign-up, no video, no pressure - just a live, private conversation with a real person, spoken or typed.</p>
     <p class="live-line" id="liveLine" aria-live="polite"><span class="live-dot" aria-hidden="true"></span><span id="liveText"></span></p>
     <div class="hero-cta-row">
-      <a class="hero-cta" href="/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Tap to Talk</a>
-      <a class="hero-cta chat" href="/chat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>Tap to Chat</a>
+      <a class="hero-cta" href="/?talk=1" data-cta="talk"><span class="cta-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span><span class="cta-txt"><b>Tap to Talk</b><small>Live voice call</small></span><svg class="cta-arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></a>
+      <a class="hero-cta chat" href="/chat?go=1" data-cta="chat"><span class="cta-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg></span><span class="cta-txt"><b>Tap to Chat</b><small>Text chat, no mic</small></span><svg class="cta-arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></a>
     </div>
     <p class="hero-note">No account needed · Voice &amp; text · Strictly 18+ · 100% free, supported by a few ads</p>
     <div class="match" id="matchDemo" data-state="search" aria-hidden="true">
@@ -249,6 +292,23 @@
       <a href="/make-friends-online">Make Friends Online</a> &middot;
       <a href="/regions/south-asia">South Asia</a>
     </p>
+  </section>
+
+  <section class="faq reveal" aria-labelledby="faqTitle">
+    <h2 id="faqTitle">Questions, answered</h2>
+    <details><summary>Is TalkLive really free?</summary><p>Yes. Random voice calls and text chats are free, with no sign-up. A few ads keep it running; an optional Premium plan for extra filters is on the way.</p></details>
+    <details><summary>Do I need an account or a camera?</summary><p>No. Tap once and you are matched. There is no video at all - just your voice or your keyboard - and no real name, email or phone number is needed.</p></details>
+    <details><summary>Are calls recorded?</summary><p>No. Voice calls run peer-to-peer between the two browsers and are never recorded or stored by TalkLive.</p></details>
+    <details><summary>What if someone is rude?</summary><p>Tap Next to leave instantly, or report and block them in one tap. Reports are reviewed, repeat offenders are banned automatically, and TalkLive is strictly 18+.</p></details>
+  </section>
+
+  <section class="final-cta reveal">
+    <h2>Someone is waiting to say hi.</h2>
+    <p class="sub">One tap. No sign-up. Leave whenever you like.</p>
+    <div class="hero-cta-row">
+      <a class="hero-cta" href="/?talk=1" data-cta="talk-bottom"><span class="cta-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span><span class="cta-txt"><b>Tap to Talk</b><small>Live voice call</small></span><svg class="cta-arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></a>
+      <a class="hero-cta chat" href="/chat?go=1" data-cta="chat-bottom"><span class="cta-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg></span><span class="cta-txt"><b>Tap to Chat</b><small>Text chat, no mic</small></span><svg class="cta-arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></a>
+    </div>
   </section>
 <div class="wrap" style="margin:28px auto;text-align:center"><div class="ad-card"><span class="ad-card-label">Advertisement</span><div data-ad="native"></div></div></div>
 </main>

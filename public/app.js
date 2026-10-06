@@ -7206,6 +7206,15 @@ function attemptIceRestart(peer) {
     .then(() => socket.emit('signal', { type: 'offer', sdp: peer.localDescription }))
     .catch(() => { /* the reconnect window will auto-advance if this fails */ });
 }
+// Back online (Wi-Fi to mobile data, a lift, a tunnel): retry a dropped call at
+// once rather than waiting out the throttle, while the recovery window is open.
+window.addEventListener('online', () => {
+  if (!pc || callState === 'idle' || callState === 'searching') return;
+  const s = pc.iceConnectionState;
+  if (s !== 'disconnected' && s !== 'failed') return;
+  lastIceRestartAt = 0;
+  attemptIceRestart(pc);
+});
 
 // --- Loudspeaker routing -----------------------------------------------------
 // A phone treats a live microphone capture as a phone call. Chrome on Android
