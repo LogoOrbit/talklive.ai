@@ -808,7 +808,10 @@ body.panel-open .game-overlay {
   justify-content: center;
   margin: 6px auto 0;
 }
-.call-music-btn {
+/* Two classes: `.video-banner__music` below has the same specificity and comes
+   later, so on its own this lost and the button floated to the page's top-right
+   corner - straight over the banner's dismiss button. */
+.video-banner__music.call-music-btn {
   position: static;
   top: auto;
   right: auto;

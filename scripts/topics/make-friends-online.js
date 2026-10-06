@@ -58,6 +58,7 @@ body{font-family:"Manrope",system-ui,sans-serif;background:var(--paper)}
 .fr-end p{font-size:18px;margin:0 0 22px}
 .fr-end .c-ctas{justify-content:center}
 @media (max-width:860px){.fr-hero{grid-template-columns:1fr}.fr-polas{height:300px;max-width:360px}.fr-main{grid-template-columns:1fr}.fr-meter{display:none}.fr-hours,.fr-how{grid-template-columns:1fr}}
+@media (max-width:420px){.fr-pola{width:170px}.fr-p2{left:auto;right:4px}.fr-p3{left:50px;top:140px}}
 `,
   faq: [
     { q: 'Can you really make friends on a random chat?', a: 'You can meet people you click with, and research suggests friendship comes from time spent together. TalkLive\'s friends feature lets you keep talking to the people you meet, which is how a good conversation can become a friendship.' },

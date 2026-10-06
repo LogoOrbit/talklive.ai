@@ -2317,6 +2317,8 @@
 
   function appendFriendMsg(text, who, meta) {
     var ts = (meta && meta.ts) || Date.now();
+    var placeholder = friendChatMsgs.querySelector('.friend-chat-empty');
+    if (placeholder) placeholder.remove();
     // A stored friend chat can span weeks, which is where day separators earn
     // their keep.
     appendDayDivider(friendChatMsgs, ts);
@@ -3028,6 +3030,14 @@
       appendFriendMsg(entry.payload.text, 'me', { id: id, replyTo: entry.payload.replyTo, gif: entry.payload.gif });
       paintOutboxState(id, entry.failed ? 'failed' : 'pending');
     });
+    // A new friend's chat used to open as a blank panel, which reads as
+    // "still loading" or "broken" rather than "say something".
+    if (!friendChatMsgs.querySelector('.msg')) {
+      var empty = document.createElement('div');
+      empty.className = 'msg system friend-chat-empty';
+      empty.textContent = t('noMessagesYet');
+      friendChatMsgs.appendChild(empty);
+    }
     renderSeenLabel();
   });
   function onScreen(id) {

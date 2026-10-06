@@ -19,6 +19,7 @@
     "test:reset": "node scripts/test-password-reset.js",
     "test:chat": "node scripts/test-chat-extras.js && node scripts/test-chat-away.js",
     "test:matchmaking": "node scripts/test-matchmaking.js",
+    "test:malformed": "node scripts/test-malformed-packets.js",
     "test:voice-gender": "node scripts/test-voice-gender.js && node scripts/test-voice-filter.js",
     "test:durability": "node scripts/test-durability.js",
     "test:fast-save": "node scripts/test-fast-save.js",

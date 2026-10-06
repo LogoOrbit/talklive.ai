@@ -2436,7 +2436,15 @@ function placeToast() {
   const pillUp = callingPill && callingPill.classList.contains('show');
   // offsetTop ignores the pill's slide-in transform, so this is where it lands,
   // not where it is mid-animation (still above the screen).
-  el.style.top = pillUp ? `${callingPill.offsetTop + callingPill.offsetHeight + 8}px` : '';
+  if (pillUp) { el.style.top = `${callingPill.offsetTop + callingPill.offsetHeight + 8}px`; return; }
+  // The dev / announcement strip sits at the very top of the page, which is
+  // exactly where toasts land: "Friend request sent" was printed on top of the
+  // banner's text. Drop below whichever strip is still on screen.
+  let below = 0;
+  document.querySelectorAll('.tl-devbanner:not([hidden])').forEach((bar) => {
+    below = Math.max(below, bar.getBoundingClientRect().bottom);
+  });
+  el.style.top = below > 0 ? `${Math.round(below) + 8}px` : '';
 }
 
 // tone: success | info | warn | error | social | plus | neutral (default).
