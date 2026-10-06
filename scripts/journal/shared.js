@@ -303,7 +303,7 @@ const CTA_THEMES = {
   'resources': ['#3f7a4a', '#fff', '#6b4a2b', '#fff'],
   'safety': ['#0a7d4f', '#fff', '#14231c', '#fff', '.sf-end-in{--cta-chat:#fff;--cta-chat-ink:#14231c}'],
   'talk-to-someone': ['#3f8a5f', '#fff', '#6b4c7a', '#fff'],
-  'talk-to-strangers': ['#c6f432', '#111', '#111', '#c6f432', '.ts-hero,.ts-end{--cta-chat:#f6f5f0;--cta-chat-ink:#111}'],
+  'talk-to-strangers': ['#5b3df5', '#fff', '#17142b', '#fff', '.tz-end{--cta-talk:#fff;--cta-talk-ink:#17142b;--cta-chat:#2e2a47;--cta-chat-ink:#fff}'],
   'voice-chat-vs-video-chat': ['#1f8a4c', '#fff', '#2457c5', '#fff'],
 };
 
