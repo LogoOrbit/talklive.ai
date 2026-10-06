@@ -1,0 +1,545 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>TalkLive Reels</title>
+<!-- One voiced motion-graphic reel, 1080x1920: reel.html?r=<key of REELS in reels.js>.
+     render(t) is a pure function of time, so render.js can step it frame by frame.
+     Layout keeps scenes in y 220-1220 and captions in y 1260-1480: clear of the
+     Reels/TikTok header, side buttons and bottom caption overlay. -->
+<style>
+@font-face{font-family:PJS;src:url(../../public/fonts/plus-jakarta-sans-latin.woff2) format('woff2');font-weight:200 800}
+:root{--bg:#070a18;--cy:#22d3ee;--gr:#2ed47a;--pu:#a78bfa;--rd:#f87171;--ye:#ffd60a;--mu:#8a90a8;--card:rgba(22,26,52,.9)}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:var(--bg);font-family:PJS,'Noto Color Emoji',sans-serif;color:#f2f4ff}
+#stage{position:absolute;inset:0;overflow:hidden}
+#world{position:absolute;inset:0}
+.glow{position:absolute;border-radius:50%;filter:blur(130px);opacity:.5}
+#g1{width:900px;height:900px;background:#4c3fd6;left:-320px;top:-220px}
+#g2{width:820px;height:820px;background:#0e7490;right:-320px;bottom:-80px}
+#g3{width:620px;height:620px;background:#6c5ce7;left:230px;top:700px;opacity:.22}
+#grain{position:absolute;inset:0;opacity:.05;background-image:radial-gradient(#fff 1px,transparent 1px);background-size:4px 4px}
+#vig{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,transparent 45%,rgba(0,0,0,.55) 100%)}
+#flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+.sc{position:absolute;inset:0;display:none;transform-origin:540px 720px}
+.cy{color:var(--cy)}.gr{color:var(--gr)}.pu{color:var(--pu)}.rd{color:var(--rd)}.ye{color:var(--ye)}.mu{color:var(--mu)}
+.mid{position:absolute;left:60px;right:60px;top:220px;height:1000px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+/* slam */
+.slam .ln{font-weight:800;font-size:178px;letter-spacing:-7px;line-height:1.02;position:relative;white-space:nowrap}
+.slam .ln.s{font-size:116px;letter-spacing:-4px}
+.slam .ln.xs{font-size:56px;letter-spacing:-1px;font-weight:700;color:#b8bdd6;margin-bottom:10px}
+/* captions */
+#cap{position:absolute;left:70px;right:110px;top:1270px;height:220px;display:flex;flex-wrap:wrap;align-content:center;justify-content:center;gap:0 30px;text-align:center}
+#cap .w{display:inline-block;font-weight:800;font-size:84px;letter-spacing:-2px;line-height:1.08;text-transform:uppercase;color:#fff;
+  text-shadow:0 0 2px #000,4px 4px 0 #000,-4px 4px 0 #000,4px -4px 0 #000,-4px -4px 0 #000,0 6px 0 #000,0 -5px 0 #000,6px 0 0 #000,-6px 0 0 #000,0 18px 40px rgba(0,0,0,.6)}
+#cap .w.on{color:var(--ye)}
+/* list */
+.list{gap:34px;align-items:stretch}
+.list .ttl{font-weight:800;font-size:74px;letter-spacing:-2px;text-align:left;margin-bottom:16px}
+.list .ttl.wn{color:#111;background:var(--ye);padding:18px 34px;border-radius:24px;align-self:flex-start;font-size:62px}
+.row{display:flex;align-items:center;gap:36px;padding:34px 44px;border-radius:40px;background:var(--card);border:2px solid rgba(255,255,255,.1);box-shadow:0 24px 60px rgba(0,0,0,.45);text-align:left}
+.row .ic{flex:none;width:112px;height:112px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:66px;font-weight:800;background:rgba(255,255,255,.08)}
+.row .ic.x{background:rgba(248,113,113,.18);color:var(--rd);border:3px solid var(--rd)}
+.row .ic.w{background:var(--ye);color:#111;border-radius:22px;transform:rotate(45deg)}.row .ic.w span{transform:rotate(-45deg)}
+.row .tx{font-weight:800;font-size:76px;letter-spacing:-2.5px}
+.list.big .row{padding:44px 54px}.list.big .row .tx{font-size:110px;letter-spacing:-4px}.list.big .row .ic{width:150px;height:150px;font-size:96px}
+/* tomb */
+.tomb .stone{position:absolute;left:250px;top:330px;width:580px;height:760px;border-radius:290px 290px 26px 26px;
+  background:linear-gradient(160deg,#6b7183,#3a3f4f 60%,#2a2e3a);box-shadow:inset 0 -30px 60px rgba(0,0,0,.4),inset 10px 10px 30px rgba(255,255,255,.12),0 60px 120px rgba(0,0,0,.7);
+  display:flex;flex-direction:column;align-items:center;padding-top:150px;color:#1d2030;text-shadow:0 2px 0 rgba(255,255,255,.18)}
+.tomb .rip{font-weight:800;font-size:120px;letter-spacing:4px}
+.tomb .nm{font-weight:800;font-size:110px;letter-spacing:-3px;margin-top:20px}
+.tomb .yr{font-weight:700;font-size:58px;margin-top:20px}
+.tomb .ep{font-weight:600;font-size:40px;margin-top:44px;font-style:italic}
+.tomb .ground{position:absolute;left:-50px;right:-50px;top:1060px;height:400px;background:linear-gradient(180deg,#0d1222,#070a18);border-radius:50% 50% 0 0/80px 80px 0 0}
+.tomb .fog{position:absolute;left:-200px;right:-200px;top:900px;height:320px;background:radial-gradient(ellipse at center,rgba(200,210,255,.18),transparent 70%);filter:blur(30px)}
+.tomb i{position:absolute;width:6px;height:6px;border-radius:50%;background:#cfd6ff}
+/* radar */
+.rad{position:absolute;left:0;right:0;top:220px;height:1000px}
+.rad .ring{position:absolute;left:540px;top:560px;border-radius:50%;border:4px solid var(--cy)}
+.av{position:absolute;width:250px;height:250px;margin:-125px 0 0 -125px;border-radius:50%;background:linear-gradient(160deg,#262b58,#151935);border:5px solid rgba(255,255,255,.18);
+  display:flex;align-items:center;justify-content:center;box-shadow:0 30px 80px rgba(0,0,0,.55)}
+.av svg{width:190px;height:190px}
+.rad .st{position:absolute;left:0;right:0;top:120px;text-align:center;font-weight:800;font-size:76px;letter-spacing:-2px}
+.rad .fl{position:absolute;font-size:72px;margin:-36px 0 0 -36px}
+.rad .bars{position:absolute;left:390px;top:560px;width:300px;height:0;display:flex;align-items:center;justify-content:space-between}
+.rad .bars b,.wv .bars b{display:block;width:12px;border-radius:6px;background:linear-gradient(180deg,var(--cy),var(--pu))}
+.chip{display:inline-flex;align-items:center;gap:16px;padding:22px 38px;border-radius:999px;font-weight:700;font-size:48px;background:var(--card);border:2px solid rgba(255,255,255,.14);box-shadow:0 20px 50px rgba(0,0,0,.5);white-space:nowrap}
+.rad .chip{position:absolute;left:50%;top:820px;transform:translateX(-50%)}
+/* countdown */
+.cd svg{position:absolute;left:190px;top:330px;width:700px;height:700px;transform:rotate(-90deg)}
+.cd .num{position:absolute;left:0;right:0;top:500px;text-align:center;font-weight:800;font-size:300px;letter-spacing:-12px;line-height:1}
+.cd .lbl{position:absolute;left:0;right:0;top:820px;text-align:center;font-weight:700;font-size:48px;color:#b8bdd6}
+.cd .steps{position:absolute;left:60px;right:60px;top:1100px;display:flex;justify-content:center;gap:20px}
+.cd .steps .chip{font-size:40px;padding:18px 30px}
+/* chat */
+.chat{position:absolute;left:90px;right:90px;top:240px;height:960px;display:flex;flex-direction:column;justify-content:flex-end;gap:26px}
+.chat .hd{position:absolute;top:0;left:50%;transform:translateX(-50%)}
+.chat .hd svg{width:64px;height:64px}
+.bub{max-width:760px;padding:30px 42px;border-radius:48px;font-weight:600;font-size:56px;line-height:1.25;box-shadow:0 20px 50px rgba(0,0,0,.4)}
+.bub.l{align-self:flex-start;background:#22284d;border-bottom-left-radius:14px}
+.bub.r{align-self:flex-end;background:linear-gradient(135deg,#6c5ce7,#0ea5e9);border-bottom-right-radius:14px}
+.bub.typ{display:flex;gap:14px;padding:36px 42px}.bub.typ i{width:20px;height:20px;border-radius:50%;background:#aab3c8}
+/* roulette */
+.roul{position:absolute;left:220px;top:300px;width:640px;height:860px;border-radius:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:linear-gradient(160deg,#1d2146,#12152e);border:3px solid rgba(255,255,255,.12);box-shadow:0 50px 120px rgba(0,0,0,.6)}
+.roul .ico svg{width:420px;height:420px}
+.roul .nm{font-weight:800;font-size:110px;letter-spacing:-3px}
+.roul .tr{font-weight:600;font-size:42px;color:#b8bdd6;margin-top:6px}
+.roul .rec{position:absolute;top:-56px;left:50%;transform:translateX(-50%);background:#ef4444;color:#fff;font-weight:800;font-size:46px;padding:18px 34px;border-radius:999px;white-space:nowrap;box-shadow:0 0 50px rgba(239,68,68,.6)}
+.burst{position:absolute;left:540px;top:730px}.burst i{position:absolute;width:24px;height:24px;border-radius:50%;margin:-12px}
+/* clocks */
+.clocks{position:absolute;left:80px;right:80px;top:280px;display:flex;flex-direction:column;gap:28px}
+.clk{display:flex;align-items:center;gap:28px;padding:30px 44px;border-radius:40px;background:var(--card);border:2px solid rgba(255,255,255,.1);box-shadow:0 20px 50px rgba(0,0,0,.45)}
+.clk .f{font-size:66px}.clk .c{font-size:56px;font-weight:700;flex:1}.clk .tm{font-size:62px;font-weight:800;letter-spacing:-2px}.clk .i{font-size:56px}
+.clk.me{border-color:rgba(167,139,250,.75)}.clk.me .tm{color:var(--pu)}.clk small{display:block;font-size:30px;font-weight:600;color:var(--mu)}
+/* button */
+.btn{position:absolute;left:290px;top:470px;width:500px;height:500px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;
+  background:radial-gradient(circle at 35% 30%,#5eead4,#22c55e 55%,#15803d);font-weight:800;font-size:96px;letter-spacing:-3px;color:#04130a;box-shadow:0 0 120px rgba(34,197,94,.55),0 40px 90px rgba(0,0,0,.5)}
+.btn small{font-size:40px;letter-spacing:0;font-weight:700;opacity:.75}
+.pulse{position:absolute;left:540px;top:720px;border-radius:50%;border:5px solid rgba(46,212,122,.8)}
+.fin{position:absolute;width:110px;height:110px;margin:-55px;border-radius:50%;background:rgba(255,255,255,.35);border:4px solid rgba(255,255,255,.9);box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.after{position:absolute;left:0;right:0;top:1080px;text-align:center;font-weight:700;font-size:56px;color:#b8bdd6}
+/* wave */
+.wv .h{position:absolute;left:60px;right:60px;top:250px;text-align:center;font-weight:800;font-size:150px;letter-spacing:-6px;line-height:1.02}
+.wv .bars{position:absolute;left:90px;right:90px;top:900px;height:0;display:flex;align-items:center;justify-content:space-between}
+.wv .bars b{width:16px;border-radius:8px}
+/* versus */
+.vs{position:absolute;left:50px;right:50px;top:250px;display:grid;grid-template-columns:1fr 1fr;gap:26px}
+.vs .hd{padding:28px;border-radius:32px;text-align:center;font-weight:800;font-size:58px;letter-spacing:-1.5px}
+.vs .hd.a{background:rgba(248,113,113,.14);color:var(--rd);border:2px solid rgba(248,113,113,.4)}
+.vs .hd.b{background:rgba(46,212,122,.16);color:var(--gr);border:2px solid rgba(46,212,122,.5)}
+.vs .cell{display:flex;align-items:center;gap:20px;padding:36px 28px;border-radius:32px;background:var(--card);font-weight:700;font-size:48px;letter-spacing:-1px;min-height:190px;position:relative}
+.vs .cell b{flex:none;width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:44px}
+.vs .cell.a b{background:rgba(248,113,113,.2);color:var(--rd)}.vs .cell.b b{background:var(--gr);color:#04130a}
+.vs .cell.b{border:3px solid rgba(46,212,122,.6);box-shadow:0 0 50px rgba(46,212,122,.2)}
+/* glitch */
+.gl{position:absolute;left:60px;right:60px;top:220px;height:1000px;display:flex;align-items:center;justify-content:center}
+.gl div{position:absolute;left:0;right:0;text-align:center;font-weight:800;font-size:150px;letter-spacing:-6px;line-height:1.02}
+.gl .r{color:#ff2d55;mix-blend-mode:screen}.gl .c{color:#00e5ff;mix-blend-mode:screen}
+/* counter */
+.ctr{position:absolute;left:0;right:0;top:250px;height:960px;display:flex;flex-direction:column;justify-content:center;gap:110px;text-align:center}
+.ctr .lbl{font-weight:700;font-size:56px;color:#b8bdd6}.ctr .n{font-weight:800;font-size:270px;letter-spacing:-12px;line-height:1}
+/* scroll */
+.feed{position:absolute;left:170px;width:740px;top:0;display:flex;flex-direction:column;gap:30px}
+.post{height:560px;border-radius:40px;background:#141936;border:2px solid rgba(255,255,255,.08);padding:30px;display:flex;flex-direction:column;gap:22px}
+.post .top{display:flex;align-items:center;gap:20px}.post .top svg{width:76px;height:76px;border-radius:50%;background:#262b58}
+.post .ln{height:22px;border-radius:11px;background:rgba(255,255,255,.14)}
+.post .img{flex:1;border-radius:26px}
+.sclab{position:absolute;left:60px;right:60px;top:240px;text-align:center;padding:30px;border-radius:40px;background:rgba(7,10,24,.88);border:2px solid rgba(255,255,255,.12);box-shadow:0 30px 70px rgba(0,0,0,.6)}
+.sclab .l{font-weight:700;font-size:48px;color:#b8bdd6}.sclab .n{font-weight:800;font-size:180px;letter-spacing:-8px;line-height:1.05}
+/* hello */
+.hel{position:absolute;left:0;right:0;top:220px;height:1000px}
+.hel .g{position:absolute;left:0;right:0;top:300px;text-align:center}
+.hel .g .f{font-size:180px;line-height:1}.hel .g .t{font-weight:800;font-size:170px;letter-spacing:-7px;line-height:1.1}
+/* ttt */
+.ttt .hd{position:absolute;left:0;right:0;top:240px;text-align:center}
+.ttt svg.bd{position:absolute;left:210px;top:420px;width:660px;height:660px}
+.ttt .res{position:absolute;left:0;right:0;top:1110px;text-align:center;font-weight:800;font-size:90px;letter-spacing:-3px}
+/* notif */
+.lock .tm{position:absolute;left:0;right:0;top:270px;text-align:center;font-weight:700;font-size:250px;letter-spacing:-8px;line-height:1}
+.lock .dt{position:absolute;left:0;right:0;top:250px;text-align:center;font-weight:600;font-size:48px;color:#c9cde0}
+.ntf{position:absolute;left:70px;right:70px;top:640px;padding:34px 38px;border-radius:44px;background:rgba(40,44,70,.82);border:2px solid rgba(255,255,255,.14);backdrop-filter:blur(20px);box-shadow:0 30px 80px rgba(0,0,0,.55);display:flex;gap:28px}
+.ntf img{width:104px;height:104px;border-radius:24px;background:#0b0f1a;padding:10px;flex:none}
+.ntf .a{font-weight:700;font-size:36px;color:#b8bdd6;display:flex;justify-content:space-between}
+.ntf .h{font-weight:800;font-size:52px;margin-top:6px}.ntf .b{font-weight:500;font-size:42px;color:#dfe3f5;margin-top:6px;line-height:1.3}
+/* outro */
+.out{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding-bottom:160px}
+.out img{width:270px;height:270px;filter:drop-shadow(0 0 60px rgba(34,211,238,.45))}
+.out .wd{font-weight:800;font-size:150px;letter-spacing:-5px;margin-top:6px}
+.out .tg{font-weight:800;font-size:84px;letter-spacing:-2.5px;margin-top:36px;line-height:1.1;padding:0 60px}
+.out .ct{margin-top:70px;padding:34px 74px;border-radius:999px;font-weight:800;font-size:64px;background:linear-gradient(90deg,#2ed47a,#16a34a);color:#04130a}
+.out .fn{margin-top:40px;font-weight:600;font-size:38px;color:#b8bdd6}
+/* caution */
+.tape{position:absolute;left:-200px;width:1480px;height:130px;background:repeating-linear-gradient(-45deg,#ffd60a 0 60px,#111 60px 120px);display:flex;align-items:center;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.tape span{white-space:nowrap;font-weight:800;font-size:66px;color:#111;background:#ffd60a;padding:0 30px;letter-spacing:2px}
+.warn{position:absolute;left:0;right:0;top:470px;text-align:center}
+.warn .tri{font-size:200px;line-height:1}
+.warn .h{font-weight:800;font-size:150px;letter-spacing:-6px;line-height:1.02;margin-top:20px}
+</style></head><body>
+<div id="stage"><div id="world">
+  <div class="glow" id="g1"></div><div class="glow" id="g2"></div><div class="glow" id="g3"></div><div id="grain"></div>
+  <div id="scenes"></div><div id="vig"></div>
+</div><div id="cap"></div><div id="flash"></div></div>
+<script src="../../public/animals.js"></script>
+<script src="reels.js"></script>
+<script>
+const $ = (s, el = document) => el.querySelector(s);
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const prog = (t, a, b) => clamp((t - a) / (b - a));
+const eo = (x) => 1 - Math.pow(1 - x, 3);
+const eio = (x) => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const back = (x) => { const c = 1.7; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+const lerp = (a, b, x) => a + (b - a) * x;
+const hash = (n) => { const s = Math.sin(n * 12.9898 + 78.233) * 43758.5453; return s - Math.floor(s); };
+const norm = (w) => w.toLowerCase().replace(/[^a-z0-9à-ÿ']/g, '');
+const ID = new URLSearchParams(location.search).get('r') || 'rip-omegle';
+const R = REELS[ID];
+const A = (id, px) => TalkLiveAnimals.icon(id, px);
+let TL, B, SFX = [], ENV = [];
+const env = (t) => ENV[clamp(Math.floor(t * 30), 0, ENV.length - 1)] || 0;
+const show = (el, on) => { el.style.display = on ? '' : 'none'; };
+
+// Time a word is spoken in a beat: number = seconds into the beat, string = first word starting with it.
+function W(b, key) {
+  if (key == null) return b.s; if (typeof key === 'number') return b.s + key;
+  const k = norm(key); const w = b.words.find((x) => norm(x[2]).startsWith(k)); return w ? w[0] : b.s;
+}
+const sfx = (t, type) => SFX.push([+t.toFixed(3), type]);
+
+// ------------------------------------------------------------------ scenes
+const SC = {
+  slam: {
+    build(el, b) {
+      el.innerHTML = `<div class="mid slam">${b.scene.lines.map((l) => `<div class="ln ${l.c || ''}">${l.h}</div>`).join('')}</div>`;
+      b.scene.lines.forEach((l, i) => { l.T = b.i === 0 && i === 0 ? 0 : W(b, l.at); sfx(l.T, l.c === 'xs' ? 'pop' : 'hit'); });
+    },
+    at(el, b, t) {
+      el.querySelectorAll('.ln').forEach((ln, i) => { const l = b.scene.lines[i]; const p = prog(t, l.T, l.T + .26);
+        ln.style.opacity = clamp(p * 4); ln.style.transform = `scale(${lerp(1.9, 1, eo(p))})`; ln.style.filter = `blur(${(1 - p) * 10}px)`; });
+    },
+  },
+  list: {
+    build(el, b) {
+      const s = b.scene;
+      el.innerHTML = `<div class="mid list ${s.big ? 'big' : ''}">${s.title ? `<div class="ttl ${s.warn ? 'wn' : ''}">${s.title}</div>` : ''}${s.rows.map((r) =>
+        `<div class="row"><div class="ic ${r.ic === 'x' ? 'x' : r.ic === '!' ? 'w' : ''}">${r.ic === 'x' ? '✕' : r.ic === '!' ? '<span>!</span>' : r.ic}</div><div class="tx">${r.h}</div></div>`).join('')}</div>`;
+      s.rows.forEach((r) => { r.T = W(b, r.at) - .05; sfx(r.T, r.ic === 'x' ? 'glitch' : 'pop'); });
+    },
+    at(el, b, t) {
+      const ttl = $('.ttl', el); if (ttl) { const p = eo(prog(t, b.s, b.s + .35)); ttl.style.opacity = p; ttl.style.transform = `translateY(${(1 - p) * -40}px)`; }
+      el.querySelectorAll('.row').forEach((row, i) => { const T = b.scene.rows[i].T; const p = back(prog(t, T, T + .4));
+        row.style.opacity = clamp(prog(t, T, T + .12)); row.style.transform = `translateX(${(1 - p) * 700}px) rotate(${(1 - p) * 4}deg)`; });
+    },
+  },
+  tomb: {
+    build(el, b) {
+      el.innerHTML = `<div class="tomb"><div class="fog"></div><div class="stone"><div class="rip">R.I.P.</div><div class="nm">Omegle</div><div class="yr">2009 – 2023</div><div class="ep">&ldquo;Talk to strangers!&rdquo;</div></div><div class="ground"></div>${Array.from({ length: 26 }, () => '<i></i>').join('')}</div>`;
+      sfx(0, 'boom'); b.T23 = W(b, '2023');
+    },
+    at(el, b, t) {
+      const p = eo(prog(t, -.25, 1.0)); const st = $('.stone', el);
+      st.style.transform = `translateY(${(1 - p) * 560}px) rotate(${(1 - p) * -3 + Math.sin(t * 1.4) * .4}deg)`;
+      const y = $('.yr', el); const q = eo(prog(t, b.T23, b.T23 + .3)); y.style.opacity = q; y.style.transform = `scale(${lerp(1.6, 1, q)})`;
+      $('.fog', el).style.transform = `translateX(${Math.sin(t * .6) * 80}px)`;
+      el.querySelectorAll('i').forEach((d, k) => { const x = hash(k) * 1080, sp = 30 + hash(k + 9) * 60; const yy = 1200 - ((t * sp + hash(k + 3) * 900) % 900);
+        d.style.left = x + Math.sin(t + k) * 20 + 'px'; d.style.top = yy + 'px'; d.style.opacity = .15 + .35 * hash(k + 5); });
+    },
+  },
+  radar: {
+    build(el, b) {
+      const s = b.scene; const flags = ['🇺🇸', '🇧🇷', '🇯🇵', '🇮🇳', '🇬🇧', '🇩🇪', '🇵🇰', '🇳🇬'];
+      el.innerHTML = `<div class="rad">${[0, 1, 2].map(() => '<div class="ring"></div>').join('')}${flags.map((f) => `<div class="fl">${f}</div>`).join('')}
+        <div class="st"></div><div class="av me">${A(s.me, 190)}</div><div class="av them">${A(s.them, 190)}</div>
+        <div class="bars">${Array.from({ length: 13 }, () => '<b></b>').join('')}</div><div class="chip"><b style="width:20px;height:20px;border-radius:50%;background:#2ed47a;display:inline-block"></b>${s.place}</div></div>`;
+      b.C = s.connect === 0 ? b.s : W(b, s.connect); sfx(b.C, 'ding'); if (b.C - b.s > .5) sfx(b.s + .05, 'rise');
+    },
+    at(el, b, t) {
+      const c = prog(t, b.C, b.C + .5), ce = back(c), on = t >= b.C;
+      el.querySelectorAll('.ring').forEach((r, k) => { const ph = ((t - b.s) * .8 + k / 3) % 1; const R = 140 + ph * 420;
+        Object.assign(r.style, { width: 2 * R + 'px', height: 2 * R + 'px', marginLeft: -R + 'px', marginTop: -R + 'px', opacity: (1 - ph) * .6 * (1 - c) }); });
+      el.querySelectorAll('.fl').forEach((f, k) => { const a = k / 8 * Math.PI * 2 + (t - b.s) * .9; const R = 360 + 30 * Math.sin(t * 2 + k);
+        f.style.left = 540 + Math.cos(a) * R + 'px'; f.style.top = 560 + Math.sin(a) * R * .9 + 'px'; f.style.opacity = 1 - c; f.style.transform = `scale(${1 - .5 * c})`; });
+      const me = $('.me', el), th = $('.them', el);
+      me.style.left = lerp(540, 300, eio(c)) + 'px'; me.style.top = '560px'; me.style.transform = `scale(${1 + (on ? 0 : .05 * Math.sin(t * 6))})`;
+      th.style.left = '780px'; th.style.top = '560px'; th.style.opacity = clamp(c * 3); th.style.transform = `scale(${lerp(.2, 1, ce)})`;
+      me.style.borderColor = th.style.borderColor = on ? 'rgba(46,212,122,.9)' : 'rgba(255,255,255,.18)';
+      $('.st', el).innerHTML = on ? '<span class="gr">● Connected</span>' : `Finding someone${'.'.repeat(1 + Math.floor((t * 3) % 3))}`;
+      const bars = $('.bars', el); bars.style.opacity = c; bars.style.left = '420px'; bars.style.width = '240px';
+      bars.querySelectorAll('b').forEach((x, k) => { const v = env(t - Math.abs(k - 6) * .03); x.style.height = 10 + 120 * v * (.6 + .4 * Math.sin(k * 1.7 + t * 11)) + 'px'; });
+      const ch = $('.chip', el); const q = eo(prog(t, b.C + .25, b.C + .65)); ch.style.opacity = q; ch.style.transform = `translateX(-50%) translateY(${(1 - q) * 40}px)`;
+    },
+  },
+  countdown: {
+    build(el, b) {
+      const s = b.scene;
+      el.innerHTML = `<div class="cd"><svg viewBox="0 0 700 700"><circle cx="350" cy="350" r="320" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="30"/>
+        <circle class="pr" cx="350" cy="350" r="320" fill="none" stroke="#22d3ee" stroke-width="30" stroke-linecap="round" stroke-dasharray="2011" /></svg>
+        <div class="num"></div><div class="lbl"></div><div class="steps"><div class="chip">✓ No sign-up</div><div class="chip">✓ No camera</div></div></div>`;
+      b.STOP = W(b, s.stop) + .35; b.S1 = W(b, 'sign'); b.S2 = W(b, 'camera');
+      for (let k = 0; b.s + k < b.STOP; k++) sfx(b.s + k, 'tick'); sfx(b.STOP, 'hit');
+    },
+    at(el, b, t) {
+      const s = b.scene, done = t >= b.STOP, e = Math.min(t, b.STOP) - b.s;
+      const n = Math.max(0, s.from - Math.floor(e)); const num = $('.num', el), pr = $('.pr', el);
+      pr.style.strokeDashoffset = done ? 0 : 2011 * (e / s.from); pr.style.stroke = done ? '#2ed47a' : '#22d3ee';
+      num.innerHTML = done ? '<span class="gr">✓</span>' : n; const fp = (e % 1); num.style.transform = `scale(${done ? back(prog(t, b.STOP, b.STOP + .4)) : 1 + .12 * (1 - eo(clamp(fp * 3)))})`;
+      $('.lbl', el).innerHTML = done ? `<span class="gr" style="font-size:64px;font-weight:800">Connected in ${(b.STOP - b.s).toFixed(1)}s</span>` : s.label;
+      el.querySelectorAll('.steps .chip').forEach((c, k) => { const T = k ? b.S2 : b.S1; const p = back(prog(t, T, T + .35)); c.style.opacity = clamp(prog(t, T, T + .1)); c.style.transform = `scale(${lerp(.4, 1, p)})`; });
+    },
+  },
+  chat: {
+    build(el, b) {
+      const s = b.scene;
+      el.innerHTML = `<div class="chat"><div class="hd chip">${A(s.who[0], 64)}${s.who[1]}</div>${s.msgs.map((m) => `<div class="bub typ l"><i></i><i></i><i></i></div><div class="bub ${m.s}">${m.h}</div>`).join('')}</div>`;
+      s.msgs.forEach((m, i) => { m.T = W(b, m.at) + (typeof m.at === 'number' ? .35 : -.1); sfx(m.T, 'pop'); });
+    },
+    at(el, b, t) {
+      const s = b.scene; const typ = el.querySelectorAll('.typ'), bub = el.querySelectorAll('.bub:not(.typ)');
+      s.msgs.forEach((m, i) => {
+        const tOn = m.s === 'l' && t >= m.T - .6 && t < m.T; show(typ[i], tOn);
+        if (tOn) typ[i].querySelectorAll('i').forEach((d, k) => { d.style.transform = `translateY(${Math.sin(t * 12 - k) * 8}px)`; });
+        show(bub[i], t >= m.T); const p = back(prog(t, m.T, m.T + .3));
+        bub[i].style.transform = `scale(${lerp(.3, 1, p)})`; bub[i].style.transformOrigin = m.s === 'l' ? '0 100%' : '100% 100%';
+      });
+      const hd = $('.hd', el); const p = eo(prog(t, b.s, b.s + .4)); hd.style.opacity = p;
+    },
+  },
+  roulette: {
+    build(el, b) {
+      el.innerHTML = `<div class="roul"><div class="rec">● SCREENSHOT NOW</div><div class="ico"></div><div class="nm"></div><div class="tr"></div></div>
+        <div class="burst">${Array.from({ length: 22 }, (_, k) => `<i style="background:${['#22d3ee', '#a78bfa', '#2ed47a', '#ffd60a'][k % 4]}"></i>`).join('')}</div>`;
+      b.L = W(b, b.scene.land) + .25; b.last = null;
+      for (let f = Math.ceil(b.s * 12); f / 12 < b.L; f++) if (f % 2 === 0) sfx(f / 12, 'tick');
+      sfx(b.L, 'shutter'); sfx(b.L + .05, 'ding');
+    },
+    at(el, b, t) {
+      const ids = TalkLiveAnimals.list.map((a) => a.id); const landed = t >= b.L;
+      const id = landed ? b.scene.final : ids[Math.floor(hash(Math.floor(t * 12)) * ids.length)];
+      if (id !== b.last) { b.last = id; const a = TalkLiveAnimals.get(id); $('.ico', el).innerHTML = A(id, 420); $('.nm', el).textContent = a.name; $('.tr', el).textContent = a.trait; }
+      $('.rec', el).style.opacity = landed ? 0 : (Math.floor(t * 4) % 2 ? 1 : .55);
+      const r = $('.roul', el); const pop = landed ? 1 + .1 * Math.sin(Math.PI * prog(t, b.L, b.L + .3)) : 1;
+      r.style.transform = `scale(${lerp(.6, 1, back(prog(t, b.s - .2, b.s + .3))) * pop})`;
+      r.style.boxShadow = landed ? `0 50px 120px rgba(0,0,0,.6),0 0 ${140 * (1 - prog(t, b.L, b.L + 1.5))}px rgba(167,139,250,.9)` : '0 50px 120px rgba(0,0,0,.6)';
+      const d = eo(prog(t, b.L, b.L + .9)); el.querySelectorAll('.burst i').forEach((p, k) => { const a = k / 22 * Math.PI * 2, R = 200 + 560 * d;
+        p.style.transform = `translate(${Math.cos(a) * R}px,${Math.sin(a) * R}px) scale(${1 - d})`; p.style.opacity = landed ? 1 - d : 0; });
+      FLASH = Math.max(FLASH, landed ? .9 * (1 - prog(t, b.L, b.L + .25)) : 0);
+    },
+  },
+  clocks: {
+    build(el, b) {
+      el.innerHTML = `<div class="clocks">${b.scene.rows.map(([f, c, tm, i, me]) => `<div class="clk ${me ? 'me' : ''}"><span class="f">${f}</span><span class="c">${c}${me ? '<small>You, wide awake</small>' : ''}</span><span class="tm">${tm}</span><span class="i">${i}</span></div>`).join('')}</div>`;
+      b.scene.rows.forEach((_, k) => sfx(b.s + .1 + k * .3, 'pop'));
+    },
+    at(el, b, t) { el.querySelectorAll('.clk').forEach((c, k) => { const p = eo(prog(t, b.s + .1 + k * .3, b.s + .5 + k * .3)); c.style.opacity = p; c.style.transform = `translateX(${(1 - p) * (k % 2 ? 400 : -400)}px)`; }); },
+  },
+  button: {
+    build(el, b) {
+      el.innerHTML = `<div class="pulse"></div><div class="pulse"></div><div class="btn">${b.scene.label || 'Start'}<small>${b.scene.label ? 'skip anytime' : 'talk now'}</small></div><div class="fin"></div><div class="after"></div>`;
+      b.TAP = W(b, b.scene.tap) + .05; sfx(b.TAP, 'pop');
+    },
+    at(el, b, t) {
+      const fin = $('.fin', el), a = prog(t, b.TAP - .5, b.TAP), d = prog(t, b.TAP, b.TAP + .4);
+      fin.style.left = lerp(860, 600, eo(a)) + 'px'; fin.style.top = lerp(1150, 760, eo(a)) + 'px'; fin.style.opacity = t < b.TAP ? eo(prog(t, b.TAP - .7, b.TAP - .4)) : 1 - d;
+      fin.style.transform = `scale(${t < b.TAP ? 1 : .8 + .2 * d})`;
+      const btn = $('.btn', el); btn.style.transform = `scale(${(t >= b.TAP && t < b.TAP + .15 ? .9 : 1) * (1 + .03 * Math.sin(t * 5))})`;
+      el.querySelectorAll('.pulse').forEach((p, k) => { const ph = t < b.TAP ? ((t * .9 + k * .5) % 1) : prog(t, b.TAP, b.TAP + .6 + k * .2); const R = 250 + ph * (t < b.TAP ? 160 : 500);
+        Object.assign(p.style, { width: 2 * R + 'px', height: 2 * R + 'px', marginLeft: -R + 'px', marginTop: -R + 'px', opacity: (1 - ph) * .7 }); });
+      const af = $('.after', el); af.textContent = b.scene.label ? 'New stranger in 1 tap' : 'Searching worldwide…'; af.style.opacity = eo(prog(t, b.TAP + .2, b.TAP + .5));
+    },
+  },
+  wave: {
+    build(el, b) {
+      el.innerHTML = `<div class="wv"><div class="h">${b.scene.h}</div><div class="bars">${Array.from({ length: 34 }, () => '<b></b>').join('')}</div></div>`;
+      b.H = b.scene.at ? W(b, b.scene.at) - .6 : b.s; b.F = b.scene.flat ? W(b, b.scene.flat) : null; if (b.F) sfx(b.F, 'beep');
+    },
+    at(el, b, t) {
+      const h = $('.h', el); const p = eo(prog(t, b.H, b.H + .4)); h.style.opacity = p; h.style.transform = `translateY(${(1 - p) * 60}px)`;
+      const flat = b.F != null && t >= b.F, fp = b.F != null ? eio(prog(t, b.F, b.F + .35)) : 0;
+      if (b.F != null) h.style.opacity = 1 - fp;
+      el.querySelectorAll('.bars b').forEach((x, k) => {
+        const c = Math.abs(k - 16.5) / 17; const v = .25 + .75 * env(t - c * .15);
+        const hgt = (20 + 380 * v * (1 - c * .7) * (.55 + .45 * Math.sin(k * 2.3 + t * 9))) * (1 - fp) + 6 * fp;
+        x.style.height = hgt + 'px'; x.style.background = flat ? '#f87171' : '';
+        x.style.boxShadow = flat ? '0 0 20px rgba(248,113,113,.8)' : '';
+      });
+      if (flat) { h.innerHTML = b.scene.h; }
+    },
+  },
+  versus: {
+    build(el, b) {
+      el.innerHTML = `<div class="vs"><div class="hd a">Other apps</div><div class="hd b">TalkLive</div>${b.scene.rows.map(([l, , r]) =>
+        `<div class="cell a"><b>✕</b>${l}</div><div class="cell b"><b>✓</b>${r}</div>`).join('')}</div>`;
+      b.scene.rows.forEach((r) => { r.LT = W(b, r[1]) - .05; r.RT = W(b, r[3]) - .05; sfx(r.LT, 'glitch'); sfx(r.RT, 'pop'); });
+    },
+    at(el, b, t) {
+      const hd = el.querySelectorAll('.hd'); hd.forEach((h, k) => { const p = eo(prog(t, b.s + k * .15, b.s + .4 + k * .15)); h.style.opacity = p; h.style.transform = `translateY(${(1 - p) * -40}px)`; });
+      const cells = el.querySelectorAll('.cell');
+      b.scene.rows.forEach((r, i) => {
+        const L = cells[i * 2], Rr = cells[i * 2 + 1]; const pl = back(prog(t, r.LT, r.LT + .35)), pr = back(prog(t, r.RT, r.RT + .35));
+        L.style.opacity = clamp(prog(t, r.LT, r.LT + .1)) * (t > r.RT ? .45 : 1); L.style.transform = `translateX(${(1 - pl) * -500}px)`;
+        Rr.style.opacity = clamp(prog(t, r.RT, r.RT + .1)); Rr.style.transform = `scale(${lerp(.5, 1, pr)})`;
+      });
+    },
+  },
+  glitch: {
+    build(el, b) { el.innerHTML = `<div class="gl"><div class="r">${b.scene.h}</div><div class="c">${b.scene.h}</div><div class="w">${b.scene.h}</div></div>`; sfx(b.s, 'glitch'); },
+    at(el, b, t) {
+      const f = Math.floor(t * 30), burst = (f % 14) < 2 || t - b.s < .2; const j = (k) => burst ? (hash(f * 3 + k) - .5) * 16 : 0;
+      const [r, c, w] = el.querySelectorAll('.gl div');
+      r.style.transform = `translate(${j(1) - 5}px,${j(2)}px)`; c.style.transform = `translate(${j(3) + 5}px,${j(4)}px)`;
+      const top = hash(f) * 80, bot = hash(f + 1) * 80;
+      w.style.clipPath = burst ? `inset(${top}% 0 ${Math.max(0, 100 - top - 30 - bot)}% 0)` : 'none';
+      w.style.transform = `translateX(${j(5)}px)`; w.style.opacity = burst ? .9 : 1;
+    },
+  },
+  counter: {
+    build(el, b) {
+      el.innerHTML = `<div class="ctr">${b.scene.rows.map((r) => `<div class="cr"><div class="lbl">${r.lbl}</div><div class="n ${r.c || ''}"></div></div>`).join('')}</div>`;
+      b.scene.rows.forEach((r) => { r.T = W(b, r.at); sfx(r.T, r.shake ? 'hit' : 'pop'); });
+    },
+    at(el, b, t) {
+      el.querySelectorAll('.cr').forEach((c, i) => { const r = b.scene.rows[i]; const p = eo(prog(t, r.T, r.T + .35));
+        c.style.opacity = p; c.style.transform = `translateY(${(1 - p) * 80}px) translateX(${r.shake && t > r.T && t < r.T + .5 ? Math.sin(t * 90) * 26 * (1 - prog(t, r.T, r.T + .5)) : 0}px)`;
+        $('.n', c).textContent = Math.round(lerp(r.from ?? 0, r.to, eio(prog(t, r.T, r.T + .8)))); });
+    },
+  },
+  scroll: {
+    build(el, b) {
+      const ids = ['lion', 'fox', 'cat', 'owl', 'panda', 'dog', 'penguin', 'tiger'];
+      el.innerHTML = `<div class="feed">${Array.from({ length: 14 }, (_, k) => `<div class="post"><div class="top">${A(ids[k % 8], 76)}<div style="flex:1;display:flex;flex-direction:column;gap:12px"><div class="ln" style="width:${40 + hash(k) * 40}%"></div><div class="ln" style="width:${20 + hash(k + 4) * 20}%;opacity:.6"></div></div></div>
+        <div class="img" style="background:linear-gradient(${hash(k) * 360}deg,hsl(${hash(k + 2) * 360},55%,38%),hsl(${hash(k + 7) * 360},60%,22%))"></div><div class="ln" style="width:${50 + hash(k + 1) * 40}%"></div></div>`).join('')}</div>
+        <div class="sclab"><div class="l">Strangers you scrolled past today</div><div class="n">0</div></div>`;
+      sfx(b.s, 'whoosh'); for (let k = 1; k < 9; k++) sfx(b.s + k * (b.e - b.s) / 10, 'tick');
+    },
+    at(el, b, t) {
+      const x = prog(t, b.s, b.e), dist = 590 * 12 * (x * x * .6 + x * .4);
+      const feed = $('.feed', el); feed.style.transform = `translateY(${600 - (dist % (590 * 8))}px)`; feed.style.filter = `blur(${clamp(x * 6, 0, 4)}px)`;
+      $('.sclab .n', el).textContent = Math.round(b.scene.to * eio(prog(t, b.s + .2, b.e - .3)));
+    },
+  },
+  hello: {
+    build(el, b) {
+      const cols = ['#22d3ee', '#a78bfa', '#2ed47a', '#ffd60a', '#f472b6', '#fb923c', '#60a5fa'];
+      el.innerHTML = `<div class="hel">${b.scene.words.map(([w, f], i) => `<div class="g"><div class="f">${f}</div><div class="t" style="color:${cols[i % 7]}">${w}</div></div>`).join('')}</div>`;
+      b.scene.words.forEach((w, i) => { w.T = i === 0 ? 0 : (b.words[i] ? b.words[i][0] : b.s + i * .7) - .05; sfx(w.T, 'hit'); });
+    },
+    at(el, b, t) {
+      const g = el.querySelectorAll('.g'); const W_ = b.scene.words;
+      W_.forEach((w, i) => { const nx = W_[i + 1] ? W_[i + 1].T : 1e9; const on = t >= w.T && t < nx + .25; show(g[i], on); if (!on) return;
+        const p = back(prog(t, w.T, w.T + .3)), o = eio(prog(t, nx, nx + .25));
+        g[i].style.transform = `scale(${lerp(.3, 1, p) * (1 + .2 * o)}) rotate(${(1 - p) * (i % 2 ? 8 : -8)}deg) translateY(${-200 * o}px)`; g[i].style.opacity = 1 - o; g[i].style.filter = `blur(${o * 10}px)`; });
+    },
+  },
+  ttt: {
+    build(el, b) {
+      const s = b.scene; const cell = (i) => [110 + (i % 3) * 220, 110 + Math.floor(i / 3) * 220];
+      const mark = (i, m) => { const [x, y] = cell(i); return m === 'X'
+        ? `<g class="mk"><path d="M${x - 62} ${y - 62}L${x + 62} ${y + 62}" /><path d="M${x + 62} ${y - 62}L${x - 62} ${y + 62}" /></g>`.replace(/<path/g, '<path stroke="#22d3ee" stroke-width="26" stroke-linecap="round" fill="none" pathLength="1" stroke-dasharray="1"')
+        : `<g class="mk"><circle cx="${x}" cy="${y}" r="66" stroke="#a78bfa" stroke-width="24" fill="none" pathLength="1" stroke-dasharray="1"/></g>`; };
+      const pre = (s.start || []).map(([i, m]) => mark(i, m)).join(''), mv = s.moves.map(([i, m]) => mark(i, m)).join('');
+      let win = ''; if (s.win) { const [a, , c] = s.win.map(cell); win = `<path class="win" d="M${a[0]} ${a[1]}L${c[0]} ${c[1]}" stroke="#2ed47a" stroke-width="22" stroke-linecap="round" pathLength="1" stroke-dasharray="1" style="filter:drop-shadow(0 0 18px #2ed47a)"/>`; }
+      el.innerHTML = `<div class="ttt"><div class="hd"><div class="chip">🎮 Tic Tac Toe · vs ${A('fox', 56)} Stranger</div></div>
+        <svg class="bd" viewBox="0 0 660 660"><g stroke="rgba(255,255,255,.25)" stroke-width="10" stroke-linecap="round"><path class="gl" pathLength="1" stroke-dasharray="1" d="M220 20V640M440 20V640M20 220H640M20 440H640"/></g><g class="pre">${pre}</g><g class="mv">${mv}</g>${win}</svg>
+        <div class="res gr">X wins! 🏆</div></div>`;
+      s.moves.forEach((m) => { m.T = W(b, m[2]); sfx(m.T, 'pop'); }); if (s.win) { b.WT = W(b, s.winAt); sfx(b.WT, 'ding'); }
+      b.first = !s.start;
+    },
+    at(el, b, t) {
+      const gl = $('.gl', el); gl.style.strokeDashoffset = b.first ? 1 - eo(prog(t, b.s, b.s + .6)) : 0;
+      el.querySelectorAll('.mv .mk').forEach((g, i) => { const T = b.scene.moves[i].T; g.querySelectorAll('path,circle').forEach((p, k) => { p.style.strokeDashoffset = 1 - eo(prog(t, T + k * .12, T + .25 + k * .12)); }); });
+      const w = $('.win', el); if (w) w.style.strokeDashoffset = 1 - eo(prog(t, b.WT, b.WT + .4));
+      const r = $('.res', el); const p = b.WT ? back(prog(t, b.WT + .2, b.WT + .6)) : 0; r.style.opacity = b.WT && t > b.WT + .2 ? 1 : 0; r.style.transform = `scale(${lerp(.4, 1, p)})`;
+    },
+  },
+  notif: {
+    build(el, b) {
+      el.innerHTML = `<div class="lock"><div class="dt">Tuesday, 7 October</div><div class="tm" style="top:310px">${b.scene.time}</div>${b.scene.items.map((n) =>
+        `<div class="ntf"><img src="../TalkLive%20Mark%20Transparent.png"><div style="flex:1"><div class="a"><span>${n.app.toUpperCase()}</span><span>now</span></div><div class="h">${n.h}</div><div class="b">${n.b}</div></div></div>`).join('')}</div>`;
+      b.scene.items.forEach((n) => { n.T = W(b, n.at) - .1; sfx(n.T, 'notif'); });
+    },
+    at(el, b, t) {
+      el.querySelectorAll('.ntf').forEach((n, i) => { const T = b.scene.items[i].T; const p = back(prog(t, T, T + .45)); n.style.opacity = clamp(prog(t, T, T + .12)); n.style.transform = `translateY(${(1 - p) * -500}px) scale(${lerp(.9, 1, p)})`; });
+      $('.tm', el).style.opacity = .9 + .1 * Math.sin(t * 2);
+    },
+  },
+  caution: {
+    build(el, b) {
+      const txt = Array(8).fill('CAUTION · DO NOT USE · ').join('');
+      el.innerHTML = `<div class="tape" style="top:290px;transform:rotate(-9deg)"><span>${txt}</span></div><div class="tape" style="top:1080px;transform:rotate(7deg)"><span>${txt}</span></div>
+        <div class="warn"><div class="tri">⚠️</div><div class="h">${b.scene.h}</div></div>`;
+      sfx(0, 'alarm'); b.N = W(b, b.scene.at);
+    },
+    at(el, b, t) {
+      el.querySelectorAll('.tape span').forEach((s, k) => { s.style.transform = `translateX(${(k ? 1 : -1) * ((t * 220) % 600) - 300}px)`; });
+      const w = $('.warn', el); const p = back(prog(t, b.s - .12, b.s + .2)); w.style.transform = `scale(${lerp(.5, 1, p)})`;
+      $('.tri', el).style.transform = `scale(${1 + .12 * Math.abs(Math.sin(t * 7))})`;
+      $('.h .rd', el).style.textShadow = t > b.N ? `0 0 ${40 + 30 * Math.sin(t * 14)}px rgba(248,113,113,.9)` : 'none';
+    },
+  },
+  outro: {
+    build(el, b) {
+      el.innerHTML = `<div class="out"><img src="../TalkLive%20Mark%20Transparent.png"><div class="wd">Talk<span class="cy">Live</span></div><div class="tg">${b.scene.tag}</div><div class="ct">talklive.app</div><div class="fn">Free · No sign-up · Voice &amp; text · 18+</div></div>`;
+      sfx(b.s, 'boom');
+    },
+    at(el, b, t) {
+      const O = b.s, m = back(prog(t, O, O + .5)); const img = $('img', el);
+      img.style.opacity = prog(t, O, O + .2); img.style.transform = `scale(${lerp(.3, 1, m)}) rotate(${(1 - m) * -20}deg)`;
+      [['.wd', .25], ['.tg', .5], ['.ct', .9], ['.fn', 1.2]].forEach(([s, d]) => { const p = eo(prog(t, O + d, O + d + .4)); const e = $(s, el); e.style.opacity = p; e.style.transform = `translateY(${(1 - p) * 60}px)`; });
+      const pr = t > O + 1.4 ? ((t - O - 1.4) % 1.1) / 1.1 : 0; $('.ct', el).style.boxShadow = `0 0 0 ${pr * 40}px rgba(46,212,122,${.55 * (1 - pr)}),0 20px 60px rgba(46,212,122,.35)`;
+    },
+  },
+};
+
+// ------------------------------------------------------------------ captions
+let CH = [];
+function buildCaptions() {
+  const all = [];
+  B.forEach((b) => { if (b.cap === false || b.scene.type === 'outro') return;
+    // TTS word boundaries drop punctuation; recover it from the script so chunks break on sentences
+    const toks = b.vo.split(/\s+/); let ti = 0;
+    const ws = b.words.map(([s, e, w]) => { const k = norm(w); let p = /[.,!?:]$/.test(w);
+      for (let j = ti; j < toks.length; j++) if (norm(toks[j]).startsWith(k.slice(0, 3)) || k.startsWith(norm(toks[j]))) { p = p || /[.,!?:]$/.test(toks[j]); ti = j + 1; break; }
+      return [s, e, w.replace(/[.,!?]+$/, '').replace(/^"|"$/g, ''), p, b.e]; });
+    // merge spelled-out letters (P O V, A M) and the brand name
+    for (let i = 0; i < ws.length; i++) {
+      while (i + 1 < ws.length && ((/^[A-Z]$/.test(ws[i][2].slice(-1)) && /^[A-Z]$/.test(ws[i + 1][2]) && /^[A-Z]+$/.test(ws[i][2])) || (ws[i][2] === 'Talk' && ws[i + 1][2] === 'Live'))) {
+        ws[i][2] = ws[i][2] + ws[i + 1][2]; ws[i][1] = ws[i + 1][1]; ws[i][3] = ws[i + 1][3]; ws.splice(i + 1, 1); }
+    }
+    all.push(...ws.map((w) => (w.push(b), w)));
+  });
+  let cur = [];
+  const flush = () => { if (cur.length) CH.push(cur); cur = []; };
+  all.forEach((w, i) => { if (cur.length && cur[0][5] !== w[5]) flush(); cur.push(w); const chars = cur.map((x) => x[2]).join(' ').length;
+    if (w[3] || cur.length >= 3 || chars > 14) flush(); });
+  flush();
+  CH = CH.map((c, i) => ({ ws: c, a: c[0][0] - .05, b: Math.min(c[c.length - 1][4], CH[i + 1] && CH[i + 1][0][5] === c[0][5] ? CH[i + 1][0][0] - .05 : c[c.length - 1][1] + .5) }));
+}
+let lastChunk = -1;
+function capAt(t) {
+  const el = $('#cap'); const k = CH.findIndex((c) => t >= c.a && t < c.b);
+  if (k !== lastChunk) { lastChunk = k; el.innerHTML = k < 0 ? '' : CH[k].ws.map((w) => `<span class="w">${w[2]}</span>`).join(''); }
+  if (k < 0) return; const c = CH[k]; const p = back(prog(t, c.a, c.a + .16));
+  el.style.transform = `scale(${lerp(.75, 1, p)})`; el.style.opacity = clamp(prog(t, c.a, c.a + .06));
+  el.querySelectorAll('.w').forEach((s, i) => { const on = t >= c.ws[i][0] - .03 && (i === c.ws.length - 1 || t < c.ws[i + 1][0] - .03); s.classList.toggle('on', on);
+    s.style.transform = on ? `scale(${1.04 + .03 * env(t)}) rotate(${(i % 2 ? 1 : -1) * 1.5}deg)` : 'none'; });
+}
+
+// ------------------------------------------------------------------ frame
+let FLASH = 0;
+function render(t) {
+  FLASH = 0;
+  $('#g1').style.transform = `translate(${Math.sin(t * .5) * 120}px,${Math.cos(t * .4) * 90}px)`;
+  $('#g2').style.transform = `translate(${Math.cos(t * .45) * 110}px,${Math.sin(t * .35) * 120}px)`;
+  $('#g3').style.transform = `translate(${Math.sin(t * .3) * 160}px,${Math.cos(t * .55) * 140}px) scale(${1 + .15 * Math.sin(t)})`;
+  let shake = 0, sx = 0, sy = 0;
+  B.forEach((b, i) => {
+    const el = $('#sc' + i); const on = (t >= b.s || i === 0) && (t < b.e || i === B.length - 1); el.style.display = on ? 'block' : 'none'; if (!on) return;
+    const p = i === 0 ? 1 : prog(t, b.s, b.s + .28); const drift = 1 + .035 * prog(t, b.s, b.e);
+    el.style.transform = `scale(${lerp(1.14, 1, eo(p)) * drift})`; el.style.filter = p < 1 ? `blur(${(1 - p) * 18}px)` : 'none'; el.style.opacity = clamp(p * 3);
+    SC[b.scene.type].at(el, b, t);
+    if (i > 0) FLASH = Math.max(FLASH, .18 * (1 - prog(t, b.s, b.s + .14)));
+    for (const T of b.P) if (t >= T && t < T + .45) { const d = t - T, a = 22 * Math.exp(-d * 9); sx += a * Math.sin(d * 70); sy += a * Math.cos(d * 57); shake = Math.max(shake, Math.exp(-d * 10)); }
+  });
+  $('#world').style.transform = `translate(${sx}px,${sy}px) scale(${1 + .04 * shake})`;
+  $('#flash').style.opacity = FLASH;
+  capAt(t);
+}
+
+window.preload = async () => {
+  TL = await fetch(`vo/${ID}.json`).then((r) => r.json());
+  ENV = TL.env; window.DURATION = TL.duration; window.MUSIC = R.music;
+  TalkLiveAnimals.installSprite();
+  B = R.beats.map((b, i) => ({ ...b, ...TL.beats[i], i, scene: JSON.parse(JSON.stringify(b.scene)) }));
+  $('#scenes').innerHTML = B.map((b, i) => `<div class="sc" id="sc${i}"></div>`).join('');
+  B.forEach((b, i) => {
+    SC[b.scene.type].build($('#sc' + i), b);
+    if (i > 0) sfx(b.s - .2, 'whoosh');
+    b.P = (b.punch || []).map((w) => W(b, w)); b.P.forEach((T) => sfx(T, 'hit'));
+  });
+  buildCaptions();
+  window.SFX = SFX.sort((a, b) => a[0] - b[0]);
+  await Promise.all([...document.images].map((i) => (i.complete ? 0 : new Promise((r) => { i.onload = i.onerror = r; }))));
+  await document.fonts.load('800 80px PJS'); await document.fonts.load('600 40px PJS'); await document.fonts.ready;
+};
+window.render = render;
+if (!navigator.webdriver) preload().then(() => { const t0 = performance.now(); const loop = () => { render(((performance.now() - t0) / 1000) % DURATION); requestAnimationFrame(loop); }; loop(); });
+</script>
+</body></html>
