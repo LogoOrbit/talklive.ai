@@ -62,8 +62,17 @@ function asideFor(slug) {
   return `${readingFor(slug)}<aside class="c-guides" aria-label="Other guides"><h2>More guides</h2><ul>${items}</ul></aside>`;
 }
 
+// Pages whose voice button should start the search with an interest already
+// picked, so the people who arrive from them meet each other first. The value
+// must be one of QUICK_INTERESTS in public/app.js.
+const START_INTEREST = { 'practice-english-speaking': 'english' };
+
 function build() {
-  for (const t of TOPICS) S.write(`${t.slug}.html`, render({ ...t, path: `/${t.slug}`, crumbs: [] }, asideFor(t.slug)));
+  for (const t of TOPICS) {
+    let html = render({ ...t, path: `/${t.slug}`, crumbs: [] }, asideFor(t.slug));
+    if (START_INTEREST[t.slug]) html = html.split('/?talk=1&amp;').join(`/?talk=1&amp;interest=${START_INTEREST[t.slug]}&amp;`);
+    S.write(`${t.slug}.html`, html);
+  }
   return TOPICS.length;
 }
 

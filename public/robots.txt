@@ -1,7 +1,21 @@
 # robots.txt for TalkLive - https://talklive.app
 # All well-behaved crawlers are welcome to index the public site.
 
+# AI search and answer engines are welcome too: assistants are the
+# second-largest source of visitors, so they are named explicitly.
 User-agent: *
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: GPTBot
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+User-agent: Claude-SearchBot
+User-agent: Claude-User
+User-agent: ClaudeBot
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+User-agent: DuckAssistBot
+User-agent: MistralAI-User
 Allow: /
 Disallow: /config.js
 Disallow: /socket.io/

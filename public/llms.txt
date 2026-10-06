@@ -4,6 +4,19 @@
 
 Key facts: voice-only or text-only modes; optional country and interest preferences do not guarantee a specific match; matching is instant for everyone; optional Premium is announced but not yet available for purchase; no video chat; 18+ policy; leave, block and report controls. Participant identity, age, location and intent are not verified.
 
+## Common uses
+- Talking to someone new by voice without a camera, phone number or app install (works in any mobile or desktop browser).
+- Practising spoken English (or another language) with real people: see [Practice English Speaking](https://talklive.app/practice-english-speaking) and [Language Exchange](https://talklive.app/language-exchange).
+- A free, voice-first [Omegle alternative](https://talklive.app/omegle-alternative) for adults, with text chat for people who prefer typing.
+- Late-night conversation when friends are asleep: see [Late Night Chat](https://talklive.app/late-night-chat).
+- Keeping in touch with people you click with through the built-in Friends feature, without exchanging phone numbers.
+
+## Who uses TalkLive (as of October 2026)
+- Visitors from about 170 countries in a typical month. The largest groups are from India, the United States, Pakistan, China, Egypt, Bangladesh, the United Kingdom, Nigeria, Germany and Saudi Arabia.
+- About 70% of visitors are on a phone. Most conversations are in English; Chinese, Arabic, French, Spanish, Russian and German are the next most common interface languages.
+- Matching prefers people with shared interests and then people using the same interface language, but never makes anyone wait for a match.
+- Text chat is used more than voice; mini games (Tic Tac Toe, Dots & Boxes), reactions, GIFs and a friends list are built in.
+
 ## Main pages
 - [TalkLive app](https://talklive.app/): Start a random voice or text chat instantly.
 

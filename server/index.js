@@ -3392,6 +3392,22 @@ function pruneQueue() {
   }
 }
 
+// Feedback keeps asking for the same thing in many languages: "can't speak
+// English", "someone who speaks French", "Tamil people please". A shared
+// interface or browser language is a cheap, honest signal of a language both
+// people can talk in, so it breaks ties. It is worth less than one shared
+// interest and is never a filter, so nobody waits longer because of it.
+function matchLang(chosen, acceptLanguage) {
+  const pick = String(chosen || '').toLowerCase();
+  if (/^[a-z]{2}$/.test(pick)) return pick;
+  const parsed = audience.parseLang(acceptLanguage);
+  return /^[a-z]{2}$/.test(parsed) ? parsed : null;
+}
+
+function matchScore(a, b) {
+  return sharedInterestCount(a, b) * 2 + (a.lang && a.lang === b.lang ? 1 : 0);
+}
+
 function findBestMatch(socketId) {
   const seeker = profiles.get(socketId);
   if (!seeker) return -1;
@@ -3430,7 +3446,7 @@ function findBestMatch(socketId) {
     if (!candidate || !io.sockets.sockets.get(candidateId)) continue;
     if (!mutuallyCompatible(seeker, candidate)) continue;
 
-    const score = sharedInterestCount(seeker, candidate);
+    const score = matchScore(seeker, candidate);
     if (score > bestScore) {
       bestScore = score;
       bestIdx = i;
@@ -4442,6 +4458,9 @@ io.on('connection', (socket) => {
       // Echoed to partners, so only a short, real IANA zone is kept.
       timezone: typeof data.timezone === 'string' && data.timezone.length <= 64
         && isValidTimezone(data.timezone) ? data.timezone : null,
+      // The interface language the person chose (or their browser's), used only
+      // to break ties in matching - see matchScore().
+      lang: matchLang(data.lang, socket.handshake.headers['accept-language']),
     });
     clientSockets.set(clientId, socket.id);
     {

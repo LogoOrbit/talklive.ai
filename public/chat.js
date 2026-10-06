@@ -386,6 +386,16 @@
   var UNSAFE_RE = /\b(child\s*porn|cp\s*trade|loli(?:con)?|jailbait|sell(?:ing)?\s+(?:drugs|guns|weapons)|buy\s+(?:drugs|cocaine|heroin|meth|fentanyl)|hire\s*(?:a\s*)?hitman|credit\s*card\s*numbers?|send\s+nudes|onlyfans|escort\s*service)\b/i;
   var LINK_RE = /(https?:\/\/|www\.|\b[a-z0-9-]+\.(?:com|net|org|io|xyz|ru|link|gg)\b)/i;
   var lastIn = '', repeat = 0, botWarned = false;
+  // "Add me on WhatsApp / send your number" is the most common way a good
+  // conversation leaves TalkLive for good (and the first step of most scams).
+  // Once per page session, point at Add friend instead - nothing is blocked.
+  var CONTACT_RE = /\b(whats\s*app|telegram|insta(?:gram)?|snap(?:chat)?|discord|wechat|weixin|line\s*id|my\s+(?:number|num|no)|your\s+(?:number|num|no))\b|\+?\d[\d\s().-]{7,}\d/i;
+  var contactTipShown = false;
+  function maybeContactTip(text) {
+    if (contactTipShown || !text || !CONTACT_RE.test(text)) return;
+    contactTipShown = true;
+    addMessage(t('contactShareTip'), 'system');
+  }
   function checkIncoming(text) {
     if (text === lastIn) repeat++; else { lastIn = text; repeat = 0; }
     if (!botWarned && (repeat >= 2 || UNSAFE_RE.test(text))) {
@@ -580,6 +590,8 @@
       // a reconnect instead of quietly reverting to visible.
       hideStatus: localStorage.getItem('talklive_status_visible') === 'off',
       signedIn: !!sessionToken,
+      // Interface language: a soft matchmaking hint, never a filter.
+      lang: (typeof I18N_STATE !== 'undefined' && I18N_STATE.lang) || undefined,
       freshSession: freshAppSession,
     });
     freshAppSession = false;
@@ -911,6 +923,7 @@
     addMessage(text, 'me', payload);
     soundSend();
     hideIcebreakers();
+    maybeContactTip(text);
     return true;
   }
 
@@ -3337,7 +3350,7 @@
     clearTimeout(typingHideTimer);
     addMessage(text, 'them', { id: data.id, replyTo: data.replyTo, gif: data.gif, ts: data.ts });
     soundReceive();
-    if (text) checkIncoming(text);
+    if (text) { checkIncoming(text); maybeContactTip(text); }
   });
 
   var typingHideTimer = null;

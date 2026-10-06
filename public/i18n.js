@@ -278,6 +278,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "callInviteDeclined": "They declined the voice call.",
     "callInviteNoAnswer": "No answer - they didn't respond to the call request.",
     "chatBotWarning": "⚠️ This user looks like a bot or spammer. Don't share personal info - tap Next to move on.",
+    "contactShareTip": "💡 Want to stay in touch? Use “Add friend” - you can message and call each other here any time, without sharing your number or moving to another app.",
     "errUnsafeMessage": "That message can't be sent - it looks unsafe or against our rules.",
     "friendReqTitle": "Add friend",
     "friendReqTo": "Send a friend request to",
@@ -810,6 +811,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "neverFromTitle": "Never from these countries",
     "neverFromHint": "Anyone here is skipped, even if the list above allows them.",
     "interestsHint": "We try to pair you with someone who typed something similar. It never blocks a match.",
+    "interest_english": "English practice",
     "interest_music": "music",
     "interest_gaming": "gaming",
     "interest_movies": "movies",
@@ -1123,7 +1125,7 @@ function applyI18n() {
 // Non-English dictionaries load on demand from /i18n/<lang>.js. Until the file
 // arrives t() falls back to English, then the UI re-translates once it lands.
 // Keep in step with the preload snippet in the <head> of index.html/chat.html.
-const I18N_VERSION = '20261005modes';
+const I18N_VERSION = '20261006grow';
 const i18nLoading = {};
 window.__i18nLangLoaded = function (lang) {
   delete i18nLoading[lang];

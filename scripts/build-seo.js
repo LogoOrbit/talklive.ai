@@ -400,7 +400,7 @@ function contentFingerprint(html) {
     // does not change a word of what the page says, so it must not restamp
     // `lastmod` any more than the ad or PWA tags do. Normalizing both the
     // tagged and the untagged form to the same string keeps every date put.
-    .replace(/([?&]|&amp;)(?:utm_[a-z_]+|lang)=[^"'&\s>]*/gi, '$1')
+    .replace(/([?&]|&amp;)(?:utm_[a-z_]+|lang|interest)=[^"'&\s>]*/gi, '$1')
     .replace(/\?(?:&amp;|&)+/g, '?')
     .replace(/(?:&amp;|&)+(?=&amp;|&)/g, '')
     .replace(/[?&](?:&amp;)*(?=["'\s>])/g, '')
@@ -666,6 +666,19 @@ function buildLlmsTxt() {
 > TalkLive (${SITE}) is a browser-based random chat service for adults, offering one-to-one voice calls and text chat. Core matching is free and does not require an account. Voice uses encrypted WebRTC over a TURN relay in production and is not recorded or stored by TalkLive. Typed messages and related context may be retained for a limited rolling period as described in the Privacy Policy.
 
 Key facts: voice-only or text-only modes; optional country and interest preferences do not guarantee a specific match; matching is instant for everyone; optional Premium is announced but not yet available for purchase; no video chat; 18+ policy; leave, block and report controls. Participant identity, age, location and intent are not verified.
+
+## Common uses
+- Talking to someone new by voice without a camera, phone number or app install (works in any mobile or desktop browser).
+- Practising spoken English (or another language) with real people: see [Practice English Speaking](${SITE}/practice-english-speaking) and [Language Exchange](${SITE}/language-exchange).
+- A free, voice-first [Omegle alternative](${SITE}/omegle-alternative) for adults, with text chat for people who prefer typing.
+- Late-night conversation when friends are asleep: see [Late Night Chat](${SITE}/late-night-chat).
+- Keeping in touch with people you click with through the built-in Friends feature, without exchanging phone numbers.
+
+## Who uses TalkLive (as of October 2026)
+- Visitors from about 170 countries in a typical month. The largest groups are from India, the United States, Pakistan, China, Egypt, Bangladesh, the United Kingdom, Nigeria, Germany and Saudi Arabia.
+- About 70% of visitors are on a phone. Most conversations are in English; Chinese, Arabic, French, Spanish, Russian and German are the next most common interface languages.
+- Matching prefers people with shared interests and then people using the same interface language, but never makes anyone wait for a match.
+- Text chat is used more than voice; mini games (Tic Tac Toe, Dots & Boxes), reactions, GIFs and a friends list are built in.
 
 ## Main pages
 - [TalkLive app](${SITE}/): Start a random voice or text chat instantly.

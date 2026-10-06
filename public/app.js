@@ -1038,7 +1038,9 @@ var filtersReady = false;
 // the ones that come up most in a random-chat queue, so the first tap is
 // usually right there. Anything else is still one search away.
 const QUICK_COUNTRIES = ['US', 'GB', 'CA', 'IN', 'PK', 'DE', 'BR', 'PH'];
-const QUICK_INTERESTS = ['music', 'gaming', 'movies', 'travel', 'football', 'coding', 'books', 'anime'];
+// 'english' leads: practising spoken English is the commonest reason people
+// give for being here, and learners do best when they meet each other.
+const QUICK_INTERESTS = ['english', 'music', 'gaming', 'movies', 'travel', 'football', 'coding', 'books', 'anime'];
 
 // Everything below looks its elements up on use rather than capturing them in
 // consts up here. The country widgets are built ABOVE this point and render
@@ -6274,7 +6276,13 @@ function myTimezone() {
 }
 
 function registerClient(payload) {
-  payload = { ...payload, timezone: myTimezone() || undefined };
+  payload = {
+    ...payload,
+    timezone: myTimezone() || undefined,
+    // Interface language: a soft matchmaking hint so people who chose the
+    // same language tend to meet first. Never a filter.
+    lang: (typeof I18N_STATE !== 'undefined' && I18N_STATE.lang) || undefined,
+  };
   lastRegisterPayload = { ...payload, freshSession: false };
   socket.emit('register', { ...payload, freshSession: freshAppSession });
   freshAppSession = false;
@@ -8705,6 +8713,17 @@ function attemptCloseGame() { return games ? games.attemptClose() : true; }
 function gameIsInProgress() { return !!games && (games.isPlaying() || games.isNegotiating()); }
 
 
+// "Add me on WhatsApp / send your number" is the most common way a good
+// conversation leaves TalkLive for good (and the first step of most scams).
+// Once per page session, point at Add friend instead - nothing is blocked.
+const CONTACT_SHARE_RE = /\b(whats\s*app|telegram|insta(?:gram)?|snap(?:chat)?|discord|wechat|weixin|line\s*id|my\s+(?:number|num|no)|your\s+(?:number|num|no))\b|\+?\d[\d\s().-]{7,}\d/i;
+let contactTipShown = false;
+function maybeContactTip(text) {
+  if (contactTipShown || !text || !CONTACT_SHARE_RE.test(text)) return;
+  contactTipShown = true;
+  addChatMessage(t('contactShareTip'), 'system');
+}
+
 // Shared send path for both the in-call side panel and the /chat page.
 // Blocks links (mirrors the server) and clearly unsafe content before it
 // ever leaves the device.
@@ -8732,6 +8751,7 @@ function sendStrangerChat(text, meta) {
   // message has left the client (the relay is fire-and-forget server-side).
   const ticks = el.querySelector('.chat-msg-ticks');
   if (ticks) setTimeout(() => ticks.classList.replace('sending', 'sent'), 220);
+  maybeContactTip(text);
   return true;
 }
 
@@ -10459,6 +10479,7 @@ socket.on('chat-message', ({ text, id, replyTo, gif, ts } = {}) => {
   typingIndicator.classList.add('hidden');
   clearTimeout(typingHideTimeout);
   addChatMessage(text || '', 'them', { id, replyTo, gif, ts });
+  maybeContactTip(text);
   playMessageSound();
   vibrate(20);
   if (!chatOpen) {
@@ -10628,6 +10649,18 @@ try {
   const params = new URLSearchParams(location.search);
   if (params.get('mode') === 'chat') {
     location.replace('/chat');
+  }
+  // ?interest=english (from /practice-english-speaking): add that quick-pick
+  // interest before the search starts. Only quick-pick values are accepted.
+  const deepInterest = String(params.get('interest') || '').toLowerCase();
+  if (QUICK_INTERESTS.includes(deepInterest)) {
+    const current = appliedFilters.interests || [];
+    if (!current.some((i) => String(i).toLowerCase() === deepInterest)) {
+      appliedFilters = Object.assign({}, appliedFilters, { interests: [deepInterest].concat(current) });
+      persistAppliedFilters();
+      syncFilterDraftUiFromApplied();
+      if (socket.connected) registerProfile();
+    }
   }
   // ?talk=1: the visitor already pressed "Tap to Talk" on a landing page, so
   // start the call flow instead of showing them a second button to press. The
