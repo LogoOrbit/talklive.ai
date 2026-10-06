@@ -7,7 +7,8 @@
  *
  *   /countries/*, /cities/*     -> the regional feature that covers them,
  *                                  or /languages/ where none does
- *   /regions/ hub, two regions  -> /blog/ and /languages/
+ *   /regions/ hub, two regions  -> /country-chat-guide and the regions that
+ *                                  replaced them
  *   competitor "-alternative"   -> /voice-chat-vs-video-chat
  *   /languages/<slug>           -> its section of the /languages/ feature
  *   retired /blog/ posts        -> the closest surviving Journal article
@@ -21,12 +22,15 @@
 const { COUNTRIES } = require('./geo');
 const { SLUGS: COUNTRY_SLUGS } = require('../countries');
 
-// Countries covered by one of the three regional features. Every other
+// Countries covered by one of the six regional features. Every other
 // country (and every city in it) points at the /languages/ feature.
 const FEATURED = {
   'south-asia': ['india', 'pakistan', 'bangladesh'],
   europe: ['united-kingdom', 'ireland', 'portugal', 'spain', 'france', 'netherlands', 'germany', 'italy', 'sweden', 'norway', 'poland', 'greece', 'romania', 'ukraine', 'turkey', 'russia'],
   americas: ['united-states', 'canada', 'mexico', 'brazil', 'colombia', 'argentina'],
+  'middle-east': ['saudi-arabia', 'united-arab-emirates', 'iran', 'morocco'],
+  africa: ['south-africa', 'kenya'],
+  'southeast-asia': ['philippines', 'vietnam', 'thailand', 'malaysia', 'singapore'],
 };
 const REGION_OF_COUNTRY = {};
 for (const [region, list] of Object.entries(FEATURED)) for (const c of list) REGION_OF_COUNTRY[c] = region;
@@ -38,7 +42,10 @@ for (const c of COUNTRIES) {
     COUNTRY_OF_CITY[city.slug] = c.slug;
   }
 }
-const RETIRED_REGIONS = { 'asia-pacific': '/languages/', 'middle-east-africa': '/languages/' };
+// The two retired regional pages point at the features that now cover the
+// same ground, not at the language hub: a redirect to a page on another topic
+// loses the old URL's rankings instead of passing them on.
+const RETIRED_REGIONS = { 'asia-pacific': '/regions/southeast-asia', 'middle-east-africa': '/regions/middle-east' };
 
 // Competitor pages, all retired except /omegle-alternative. Omegle's two
 // closest relatives (same format, same audience) point at it; the rest at the
@@ -141,8 +148,9 @@ function retiredTarget(pathname) {
     return region ? `/regions/${region}` : '/languages/';
   }
 
-  // The /regions/ hub and two of the five regional pages were retired.
-  if (/^\/regions\/?$/i.test(p)) return '/blog/';
+  // The /regions/ hub and two of the original regional pages were retired.
+  // The hub's job - "pick a part of the world" - is the country guide's now.
+  if (/^\/regions\/?$/i.test(p)) return '/country-chat-guide';
   m = /^\/regions\/([a-z0-9-]+)\/?$/i.exec(p);
   if (m && RETIRED_REGIONS[m[1].toLowerCase()]) return RETIRED_REGIONS[m[1].toLowerCase()];
 

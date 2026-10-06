@@ -8,7 +8,7 @@ module.exports = {
   name: 'Practice English Speaking',
   date: '2026-10-05',
   about: { '@type': 'Thing', name: 'English speaking practice' },
-  title: 'Practice English Speaking Online - Free Conversations | TalkLive',
+  title: 'Practice English Speaking Online Free - Talk to Real People | TalkLive',
   description: 'Practise speaking English for free in real conversations with people around the world. Why speaking (not just listening) builds fluency, a phrase bank for real calls, and how to make five minutes count.',
   keywords: 'practice english speaking, english speaking practice online free, speak english with strangers, english conversation practice, improve spoken english',
   h1: 'Practice English Speaking',

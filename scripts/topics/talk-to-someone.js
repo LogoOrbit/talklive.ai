@@ -9,7 +9,7 @@ module.exports = {
   date: '2026-10-05',
   noAds: true,
   about: { '@type': 'Thing', name: 'Finding someone to talk to' },
-  title: 'Talk to Someone Now - Free, Anonymous Voice or Text Chat | TalkLive',
+  title: 'Need Someone to Talk To? Talk to Someone Now, Free | TalkLive',
   description: 'Need someone to talk to right now? Have a free, anonymous conversation by voice or text with another adult, with no sign-up - and where to find trained support if it is urgent.',
   keywords: 'talk to someone, someone to talk to, need to talk to someone, talk to someone now, someone to listen, talk to someone online free',
   h1: 'Talk to Someone',

@@ -1,5 +1,5 @@
 'use strict';
-// /country-chat-guide: "The Atlas". The hub for the eight country guides:
+// /country-chat-guide: "The Atlas". The hub for the fourteen country guides:
 // each card is a small preview of its guide, in that guide's own colours and
 // typeface, followed by how country preferences really work. A navigation
 // hub, so it carries no ads (noAds). Inter for the frame around the cards.
@@ -12,6 +12,12 @@ const CARDS = [
   ['egypt', 'Egypt', 'The first Thursday', 'Busiest 6 pm - midnight, summer', '#5a0f1b', '#d9a441', 'Playfair Display', 700, false],
   ['nigeria', 'Nigeria', 'How far? Wole!', 'Busiest 4 pm - 10 pm WAT', '#ffcc00', '#111111', 'Anton', 400, true],
   ['indonesia', 'Indonesia', 'Sudah makan?', 'Busiest 10 pm - 4 am WIB', '#1f3a5f', '#f2c48d', 'Instrument Serif', 400, false],
+  ['germany', 'Germany', 'Feierabend', 'Busiest 5 pm - 11 pm CEST', '#f2c230', '#111111', 'Syne', 800, true],
+  ['saudi-arabia', 'Saudi Arabia', 'The majlis', 'Busiest 6 pm - midnight AST', '#141a33', '#e8c98f', 'Literata', 700, false],
+  ['united-arab-emirates', 'UAE', 'A country of arrivals', 'Busiest 7 pm - 1 am GST', '#0b0b0c', '#ffb627', 'JetBrains Mono', 400, true],
+  ['morocco', 'Morocco', 'Three glasses of tea', 'Busiest 4 pm - 10 pm', '#12406b', '#e3a21a', 'Fraunces', 700, false],
+  ['canada', 'Canada', 'Six time zones', 'Busiest 11 am - 5 pm ET', '#b3121f', '#ffffff', 'Unbounded', 800, false],
+  ['philippines', 'Philippines', 'Kwentuhan tayo', 'Busiest 11 pm - 5 am PHT', '#0038a8', '#fcd116', 'Nunito', 800, false],
 ];
 
 module.exports = {
@@ -20,8 +26,8 @@ module.exports = {
   date: '2026-10-05',
   noAds: true,
   about: { '@type': 'Thing', name: 'Country guides and country preferences on TalkLive' },
-  title: 'TalkLive Countries - Talk to People in India, Pakistan, the US, UK and More',
-  description: 'Guides to talking with people in India, Pakistan, Bangladesh, the United States, the United Kingdom, Egypt, Nigeria and Indonesia - plus how TalkLive\'s country preferences really work.',
+  title: 'Talk to Strangers by Country - 14 Country Guides | TalkLive',
+  description: 'Guides to talking with people in India, Pakistan, Bangladesh, the US, the UK, Egypt, Nigeria, Indonesia, Germany, Saudi Arabia, the UAE, Morocco, Canada and the Philippines - plus how country preferences really work.',
   keywords: 'talk to people from other countries, country voice chat, international voice chat, chat with people worldwide, country chat preferences',
   h1: 'Talk to People Around the World',
   theme: '#f5f3ee',
@@ -39,7 +45,7 @@ body{font-family:"Inter",system-ui,sans-serif;background:var(--paper)}
 .at-card{display:flex;flex-direction:column;justify-content:space-between;min-height:230px;padding:20px;border-radius:14px;background:var(--bg);color:var(--fg);text-decoration:none;border:1px solid rgba(0,0,0,.08);transition:transform .15s}
 .at-card:hover{transform:translateY(-4px)}
 .at-card small{font:600 12px/1.3 "Inter",sans-serif;letter-spacing:.12em;text-transform:uppercase;opacity:.85}
-.at-card b{display:block;font-family:var(--ff);font-weight:var(--fw);font-size:38px;line-height:.95;margin:10px 0 8px}
+.at-card b{display:block;font-family:var(--ff);font-weight:var(--fw);font-size:clamp(28px,2.9vw,38px);overflow-wrap:anywhere;line-height:.95;margin:10px 0 8px}
 .at-card b.up{text-transform:uppercase}
 .at-card span{font-size:14.5px;line-height:1.45;opacity:.9}
 .at-card i{font-style:normal;font:600 13px/1 "Inter",sans-serif;margin-top:16px;display:block}
@@ -66,13 +72,13 @@ body{font-family:"Inter",system-ui,sans-serif;background:var(--paper)}
     { q: 'Does the country label verify where someone lives?', a: 'No. It is estimated from the network connection and is not proof of nationality, residence or language.' },
     { q: 'Is a country preference a language filter?', a: 'No. Countries are multilingual, and individuals speak different languages. Ask at the start of a conversation.' },
     { q: 'How many countries can I choose for free?', a: 'The free plan allows up to two preferred and two avoided countries.' },
-    { q: 'Why are there guides for only eight countries?', a: 'They are the eight countries that bring TalkLive the most people, and each guide is written by hand with information specific to that country. We add a guide only when there is something genuinely useful to say.' },
+    { q: 'Why are there guides for only fourteen countries?', a: 'They are the countries that bring TalkLive the most people, and each guide is written by hand with information specific to that country. We add a guide only when there is something genuinely useful to say.' },
   ],
   body: (c) => `<main id="story">
 <section class="at-head">
   <h1>Talk to people around the world</h1>
   <div>
-    <p>In a typical month, people come to TalkLive from more than 150 countries. Eight of them bring us the most people, and each has its own guide - its languages, its late nights, what people talk about, when they are online in local time, and the safety advice that applies there.</p>
+    <p>In a typical month, people come to TalkLive from more than 150 countries. The fourteen that bring us the most people each have their own guide - its languages, its late nights, what people talk about, when they are online in local time, and the safety advice that applies there.</p>
     ${c.ctas('Talk to the world', 'Text the world')}
   </div>
 </section>

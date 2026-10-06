@@ -8,7 +8,7 @@ module.exports = {
   name: 'Random Call',
   date: '2026-10-05',
   about: { '@type': 'Thing', name: 'Random voice calls over the internet' },
-  title: 'Random Call - Call a Random Person Online for Free | TalkLive',
+  title: 'Random Call App - Free Live Calls with Strangers | TalkLive',
   description: 'Make a free random call to another adult from your browser: no phone number, no app, no calling credit. How the call is connected, how much data it uses, and how to fix the usual problems.',
   keywords: 'random call, random call app, call random people, random phone call online, free random call, call a stranger online',
   h1: 'Random Call',

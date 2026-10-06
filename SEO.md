@@ -67,6 +67,27 @@ being followed.
 
 ## What is on the site
 
+> **October 2026 (8):** traffic recovery, from the dashboard export of
+> 6 October. Daily unique visitors held at about 1,400-1,900; the fall in
+> "visits" is mostly the 5 October counting fix. Search and AI arrivals did
+> fall after the retirements (search 649 -> 536 -> 438 a day, AI 418 -> 331 ->
+> 240), so:
+> - **Keywords back in titles.** The 15 localized homepages get back the
+>   "strangers" title, description and H1 that held their rankings
+>   (desconocidos, Fremden, inconnus, अजनबियों...); `/zh/` keeps 匿名聊天,
+>   which Bing ranks, and adds 陌生人. Ten product pages lead with their
+>   search phrase again ("Random Voice Chat with Strangers", "Random Call
+>   App", "Best Omegle Alternative"...).
+> - **Six more country guides**, picked from the countries sending the most
+>   visitors without one: Germany, Saudi Arabia, the UAE, Morocco, Canada
+>   and the Philippines. Each is hand-designed like the first eight, and
+>   their old `/countries/*` and `/cities/*` URLs now 301 to them.
+> - **Redirects that match the topic.** Retired country and city URLs in
+>   regions that gained a Journal feature on 5 October (Middle East, Africa,
+>   Southeast Asia) now go there, not to `/languages/`; `/regions/asia-pacific`
+>   and `/regions/middle-east-africa` go to their successors, and `/regions/`
+>   to `/country-chat-guide` instead of `/blog/`.
+
 > **October 2026 (7):** the landing-page template is retired. Every landing
 > page and hub (`scripts/topics/`, 17 pages) and every country guide
 > (`scripts/countries/`, 8 pages) is written and designed on its own, with its

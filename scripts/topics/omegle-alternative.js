@@ -8,7 +8,7 @@ module.exports = {
   name: 'Omegle Alternative',
   date: '2026-10-05',
   about: { '@type': 'Thing', name: 'Alternatives to Omegle' },
-  title: 'Omegle Alternative - Free Voice and Text Chat Without a Camera | TalkLive',
+  title: 'Best Omegle Alternative - Free Voice & Text Chat, No Camera | TalkLive',
   description: 'Omegle closed on 8 November 2023. How to judge any Omegle alternative before you trust it - six checks - and how TalkLive, a free voice and text chat for adults with no camera, measures up.',
   keywords: 'omegle alternative, sites like omegle, apps like omegle, omegle replacement, omegle without camera, omegle voice chat',
   h1: 'Omegle Alternative',

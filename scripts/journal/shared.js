@@ -287,6 +287,12 @@ const CTA_THEMES = {
   'pakistan': ['#3cc77e', '#0a241d', '#e7b54a', '#0a241d'],
   'united-kingdom': ['#2b7a52', '#fff', '#10263b', '#fff', '.uk-fc,.uk-end-in{--cta-chat:#e7edf0;--cta-chat-ink:#10263b}'],
   'united-states': ['#1f8a4c', '#fff', '#1d3d8f', '#fff', '.us-end{--cta-chat:#fff;--cta-chat-ink:#1d3d8f}'],
+  'germany': ['#1f8a4c', '#fff', '#1f4fa3', '#fff', '.de-end-in{--cta-chat:#f2c230;--cta-chat-ink:#111}'],
+  'saudi-arabia': ['#2e7d5b', '#fff', '#e8c98f', '#141a33'],
+  'morocco': ['#0e6b55', '#fff', '#12406b', '#fff'],
+  'united-arab-emirates': ['#1f8a4c', '#fff', '#ffb627', '#0b0b0c'],
+  'canada': ['#1f7a4a', '#fff', '#b3121f', '#fff'],
+  'philippines': ['#2f8f5b', '#fff', '#fcd116', '#1a1a2e'],
   // Topic guides
   'anonymous-chat': ['#2f6b3f', '#fff', '#b3261e', '#fff'],
   'country-chat-guide': ['#1f8a4c', '#fff', '#1a1a1a', '#f5f3ee'],

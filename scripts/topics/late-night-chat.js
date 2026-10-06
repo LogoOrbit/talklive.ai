@@ -21,7 +21,7 @@ module.exports = {
   name: 'Late Night Chat',
   date: '2026-10-05',
   about: { '@type': 'Thing', name: 'Late night chat' },
-  title: 'Late Night Chat - Voice and Text Chat After Midnight | TalkLive',
+  title: 'Late Night Chat - Talk to Someone at Any Hour, Free | TalkLive',
   description: 'Can\'t sleep? Late night voice and text chat with people around the world, free and without an account. Where it is still evening when it is 2 a.m. for you, and how to look after yourself at night.',
   keywords: 'late night chat, chat at night, can\'t sleep chat, talk to someone at night, 3am chat, night chat online',
   h1: 'Late Night Chat',

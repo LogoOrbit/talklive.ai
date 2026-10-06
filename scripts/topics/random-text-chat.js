@@ -8,7 +8,7 @@ module.exports = {
   name: 'Random Text Chat',
   date: '2026-10-05',
   about: { '@type': 'Thing', name: 'Random text chat' },
-  title: 'Random Text Chat - Free, No Mic, No Sign-Up | TalkLive',
+  title: 'Random Text Chat with Strangers - Free, No Sign-Up | TalkLive',
   description: 'Free one-to-one text chat with people worldwide: tap to chat and get paired with someone new, no microphone and no sign-up, adults 18+. Why typing to a stranger works, from IRC to now.',
   keywords: 'random text chat, text chat, free text chat, chat without mic, online text chat, text chat with strangers',
   h1: 'Random Text Chat',

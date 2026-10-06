@@ -9,7 +9,7 @@ module.exports = {
   date: '2026-10-05',
   updated: '2026-10-06',
   about: { '@type': 'Thing', name: 'Talking to strangers' },
-  title: 'Talk to Strangers - Free Voice and Text Chat, No Sign-Up | TalkLive',
+  title: 'Talk to Strangers Online - Free Random Voice & Text Chat | TalkLive',
   description: 'Talk to strangers by voice or text, free and without an account. What the first five minutes of a conversation with someone new are really like, minute by minute, and what research says about each one.',
   keywords: 'talk to strangers, talk to strangers online, chat with strangers, stranger chat, talk to random people, how to talk to strangers',
   h1: 'Talk to Strangers',

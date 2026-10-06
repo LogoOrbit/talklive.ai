@@ -8,7 +8,7 @@ module.exports = {
   name: 'Make Friends Online',
   date: '2026-10-05',
   about: { '@type': 'Thing', name: 'Making friends online' },
-  title: 'Make Friends Online - Through Real Conversations | TalkLive',
+  title: 'Make Friends Online - Meet New People by Voice, Free | TalkLive',
   description: 'Make friends online through real conversations, not profiles. What research says about how many hours a friendship takes, and how TalkLive helps you keep the people you click with - free, no sign-up to start.',
   keywords: 'make friends online, how to make friends online, find friends online, online friends, meet new people online, make new friends',
   h1: 'Make Friends Online',
