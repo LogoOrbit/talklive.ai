@@ -376,8 +376,6 @@
   "avatarHint": "Scegli il tuo avatar.",
   "saveAvatar": "Salva avatar",
   "growthAria": "Abbonamento e condivisione TalkLive",
-  "playMusic": "Riproduci musica",
-  "pauseMusic": "Metti in pausa la musica",
   "noteFreeTitle": "Gratis, pensato per te",
   "noteFreeBody": "Parlare su TalkLive è gratis al 100% - sostenuto da qualche annuncio, mai un paywall su chat vocale o testuale. Nessun limite di tempo, nessun trucco.",
   "genderFilterNote": "Il genere lo sceglie ciascuno. Viene verificato con la voce solo per chi attiva la Verifica vocale, e sul proprio dispositivo.",

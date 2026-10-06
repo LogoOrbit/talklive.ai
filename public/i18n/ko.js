@@ -376,8 +376,6 @@
   "avatarHint": "아바타를 고르세요.",
   "saveAvatar": "아바타 저장",
   "growthAria": "TalkLive 멤버십 및 공유",
-  "playMusic": "음악 재생",
-  "pauseMusic": "음악 일시정지",
   "noteFreeTitle": "당신을 위해, 무료로",
   "noteFreeBody": "TalkLive에서의 대화는 100% 무료예요. 약간의 광고로 운영되며, 음성·텍스트 채팅에 유료 장벽은 절대 없어요. 시간 제한도, 꼼수도 없어요.",
   "genderFilterNote": "성별은 각자 직접 고릅니다. 음성 확인을 켠 사람만 목소리로 확인하며, 본인 기기에서만 이뤄집니다.",

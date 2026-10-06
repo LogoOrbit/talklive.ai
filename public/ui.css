@@ -2756,11 +2756,6 @@
   /* The label keeps the site's size: a smaller disclosure to buy two pixels is
      not a trade worth making. */
   .tl-call-ad-phone .ad-card-label { margin-bottom: 2px; line-height: 1.2; }
-
-  /* The music button and the conversation guide are below the fold during a
-     call anyway; keeping them tight means the ad is the last thing on the
-     first screen rather than the first thing on the second. */
-  .stage.call-live .call-music-row { margin-top: var(--tl-s3); }
 }
 
 /* Three ways of saying the same thing, on the screen with the least room to
@@ -2932,7 +2927,7 @@
 }
 
 /* Everything below the call - the conversation guide, the notes, the ad
-   between them, the music row - stands in the call's own column: the same
+   between them - stands in the call's own column: the same
    left edge as the call card, the same width, directly under it.
 
    It used to be capped at the full width of the row and centred in it, while

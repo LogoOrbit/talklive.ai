@@ -376,8 +376,6 @@
   "avatarHint": "Avatarını seç.",
   "saveAvatar": "Avatarı kaydet",
   "growthAria": "TalkLive üyelik ve paylaşım",
-  "playMusic": "Müziği çal",
-  "pauseMusic": "Müziği duraklat",
   "noteFreeTitle": "Ücretsiz, sadece senin için",
   "noteFreeBody": "TalkLive'da konuşmak %100 ücretsiz - birkaç reklamla desteklenir, sesli veya yazılı sohbette asla ödeme duvarı yok. Süre sınırı yok, hile yok.",
   "genderFilterNote": "Cinsiyeti herkes kendisi seçer. Yalnızca Ses kontrolünü açanlarda sesle kontrol edilir ve bu kendi cihazlarında yapılır.",

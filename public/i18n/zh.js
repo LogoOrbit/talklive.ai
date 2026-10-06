@@ -376,8 +376,6 @@
   "avatarHint": "选择你的头像。",
   "saveAvatar": "保存头像",
   "growthAria": "TalkLive 会员与分享",
-  "playMusic": "播放音乐",
-  "pauseMusic": "暂停音乐",
   "noteFreeTitle": "免费，只为你",
   "noteFreeBody": "在 TalkLive 聊天 100% 免费——由少量广告支持，语音和文字聊天永远不设付费墙。没有时间限制，没有套路。",
   "genderFilterNote": "性别由每个人自己选择。只有开启“声音验证”的人才会通过声音核对，且只在其本人设备上进行。",

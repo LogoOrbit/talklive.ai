@@ -597,8 +597,6 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "avatarHint": "Pick your avatar.",
     "saveAvatar": "Save avatar",
     "growthAria": "TalkLive membership and sharing",
-    "playMusic": "Play music",
-    "pauseMusic": "Pause music",
     "noteFreeTitle": "Made free, just for you",
     "noteFreeBody": "TalkLive is 100% free to talk - supported by a few ads, never a paywall on voice or text chat. No time limits, no tricks.",
     "genderFilterNote": "Gender is what each person picks for themselves. It is only checked by voice for people who turn on Voice check, and that check runs on their own device.",

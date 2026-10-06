@@ -376,8 +376,6 @@
   "avatarHint": "Pilih avatarmu.",
   "saveAvatar": "Simpan avatar",
   "growthAria": "Keanggotaan dan berbagi TalkLive",
-  "playMusic": "Putar musik",
-  "pauseMusic": "Jeda musik",
   "noteFreeTitle": "Gratis, khusus untukmu",
   "noteFreeBody": "Mengobrol di TalkLive 100% gratis - didukung oleh beberapa iklan, tidak pernah ada paywall untuk obrolan suara atau teks. Tanpa batas waktu, tanpa trik.",
   "genderFilterNote": "Gender dipilih sendiri oleh setiap orang. Gender hanya dicek lewat suara bagi yang menyalakan Cek suara, dan itu berjalan di perangkat mereka sendiri.",
