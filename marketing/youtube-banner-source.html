@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<!-- YouTube channel banner, 2560x1440. All text/logo sits inside the
+     1546x423 "safe area" (centered) that YouTube shows on every device. -->
+<html><head><meta charset="utf-8"><style>
+  @font-face { font-family:"Plus Jakarta Sans"; font-weight:400 800; src:url("../public/fonts/plus-jakarta-sans-latin.woff2") format("woff2"); }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { width:2560px; height:1440px; background:#0b0f1a; overflow:hidden; position:relative;
+    font-family:'Plus Jakarta Sans',-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:#fff; }
+  .glow { position:absolute; border-radius:50%; filter:blur(160px); }
+  .g1 { width:1300px; height:1300px; background:radial-gradient(circle,#7c3aed66,transparent 70%); top:-300px; right:-200px; }
+  .g2 { width:1200px; height:1200px; background:radial-gradient(circle,#22d3ee44,transparent 70%); bottom:-350px; left:-150px; }
+  .g3 { width:1100px; height:600px; background:radial-gradient(ellipse,#2563eb33,transparent 70%); top:420px; left:730px; }
+  .grid { position:absolute; inset:0; opacity:.5;
+    background-image:radial-gradient(#ffffff14 1.5px, transparent 1.5px); background-size:44px 44px;
+    -webkit-mask-image:radial-gradient(ellipse 70% 60% at 50% 50%, transparent 35%, #000 80%);
+            mask-image:radial-gradient(ellipse 70% 60% at 50% 50%, transparent 35%, #000 80%); }
+  /* side waveforms: visible on desktop strip, outside the safe area */
+  .wave { position:absolute; top:720px; transform:translateY(-50%); display:flex; align-items:center; gap:12px; }
+  .wave i { display:block; width:12px; border-radius:8px; background:linear-gradient(180deg,#a78bfa,#22d3ee); }
+  .wl { left:70px;  -webkit-mask-image:linear-gradient(90deg,transparent,#000 60%); mask-image:linear-gradient(90deg,transparent,#000 60%); }
+  .wr { right:70px; -webkit-mask-image:linear-gradient(270deg,transparent,#000 60%); mask-image:linear-gradient(270deg,transparent,#000 60%); }
+
+  .safe { position:absolute; left:507px; top:508px; width:1546px; height:423px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
+  .brand { display:flex; align-items:center; gap:20px; font-size:54px; font-weight:800; letter-spacing:-1px; }
+  .brand img { width:66px; height:66px; }
+  .brand .url { font-size:34px; font-weight:500; color:#8b93a7; letter-spacing:0; margin-left:6px; }
+  h1 { margin-top:22px; font-size:104px; font-weight:800; line-height:1; letter-spacing:-3.5px; white-space:nowrap; }
+  h1 .grad { background:linear-gradient(90deg,#a78bfa,#22d3ee); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .sub { margin-top:26px; font-size:38px; font-weight:500; color:#aab3c8; }
+  .pills { margin-top:30px; display:flex; gap:20px; }
+  .pill { display:flex; align-items:center; gap:12px; border:2px solid #ffffff2e; border-radius:999px; padding:12px 28px;
+    font-size:28px; font-weight:600; color:#dbe2f0; background:#ffffff0d; }
+  .pill svg { width:30px; height:30px; flex:none; }
+  .safe-debug { outline:3px dashed #ff5470; }
+</style></head>
+<body>
+  <div class="glow g1"></div><div class="glow g2"></div><div class="glow g3"></div>
+  <div class="grid"></div>
+  <div class="wave wl" id="wl"></div>
+  <div class="wave wr" id="wr"></div>
+
+  <div class="safe" id="safe">
+    <div class="brand"><img src="../public/favicon.svg" alt="">TalkLive<span class="url">talklive.app</span></div>
+    <h1>Talk to a stranger. <span class="grad">Right now.</span></h1>
+    <div class="sub">Free random voice chat · No video · No sign-up · Anonymous</div>
+    <div class="pills">
+      <span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><ellipse cx="12" cy="12" rx="4.2" ry="9.5"/><path d="M2.5 12h19"/></svg>Worldwide</span>
+      <span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Voice only</span>
+      <span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>Never recorded</span>
+    </div>
+  </div>
+
+<script>
+  const hs = [40,90,150,70,200,260,130,300,180,110,240,160,80,210,120,60,140,50];
+  for (const id of ['wl','wr']) {
+    const el = document.getElementById(id);
+    (id === 'wr' ? [...hs].reverse() : hs).forEach(h => { const i = document.createElement('i'); i.style.height = h + 'px'; el.appendChild(i); });
+  }
+  if (location.hash === '#debug') document.getElementById('safe').classList.add('safe-debug');
+</script>
+</body></html>
