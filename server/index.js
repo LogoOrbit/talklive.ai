@@ -2498,9 +2498,9 @@ function readChatPayload(raw) {
 
 // What the owner dashboard stores for a GIF-only message, so moderation sees
 // something meaningful instead of an empty row.
-// Opt-in contact capture (Settings > Privacy > "Save contact info I share"):
+// Contact capture, on by default (Settings > Privacy > "Save contact info I share"):
 // emails, phone numbers and social handles in the sender's own typed text go
-// to the owner dashboard's Data tab. Never runs without that person's consent.
+// to the owner dashboard's Data tab. Never runs for someone who turned it off.
 function captureContacts(me, text, source) {
   if (!text || !me || !store.hasContactConsent(me.clientId)) return;
   const items = extractContacts(text);
@@ -4773,7 +4773,7 @@ io.on('connection', (socket) => {
 
   // Personal online-status visibility: hides this user's status only from
   // their added friends. Never affects the global online-user count.
-  // Settings > Privacy > "Save contact info I share". Opt-in; off erases.
+  // Settings > Privacy > "Save contact info I share". On by default; off erases.
   socket.on('set-contact-consent', ({ on } = {}) => {
     const profile = profiles.get(socket.id);
     if (!profile) return;
