@@ -2458,8 +2458,8 @@ async function viewAccounts(){
 }
 
 /* ---------- data: everything held about each person ----------
-   Account details joined with the contact details people shared in chat while
-   it was on (Settings > Privacy > "Save contact info I share"). */
+   Account details joined with the contact details people shared in chat after
+   opting in (Settings > Privacy > "Save contact info I share"). */
 let dataQ='',dataType='',dataOnlyShared=false;
 const DATA_TYPES=[['','All types'],['email','Email'],['phone','Phone'],['social','Social']];
 const contactIcon=(t)=>t==='email'?'✉️':t==='phone'?'📞':'🔗';
@@ -2483,14 +2483,14 @@ async function viewData(){
   $('#main').innerHTML=`<div class="grid tiles anim" style="margin-top:0">
     <div class="tile"><div class="k">People</div><div class="v grad" data-count="${all.length}">0</div><div class="s">accounts + opted-in guests</div></div>
     <div class="tile"><div class="k">Account emails</div><div class="v" data-count="${withEmail}">0</div><div class="s">${pctOf(withEmail,all.length)} of people</div></div>
-    <div class="tile"><div class="k">Capture on</div><div class="v" data-count="${consented}">0</div><div class="s">save contact info they share</div></div>
+    <div class="tile"><div class="k">Opted in</div><div class="v" data-count="${consented}">0</div><div class="s">save contact info they share</div></div>
     <div class="tile"><div class="k">Shared emails</div><div class="v" data-count="${nEmail}">0</div><div class="s">found in chat</div></div>
     <div class="tile"><div class="k">Shared phones</div><div class="v" data-count="${nPhone}">0</div><div class="s">found in chat</div></div>
     <div class="tile"><div class="k">Shared socials</div><div class="v" data-count="${nSocial}">0</div><div class="s">Instagram, Snapchat, Telegram…</div></div>
   </div>
   <div class="card anim"><h2>🗂️ User data <span class="sub">${rows.length===all.length?num(all.length)+(all.length===1?' person':' people'):rows.length+' of '+all.length+' shown'}</span>
   <span style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">${exportLink('user-data','People CSV')}${exportLink('contacts','Shared contacts CSV')}<a class="lnk" href="/owner/api/export/all.zip" download>⬇ Everything (ZIP)</a></span></h2>
-  <div class="muted" style="font-size:.8rem;margin-bottom:10px">Chat contact details are captured unless people turn off <b>Save contact info I share</b> in Settings (on by default). Turning it off deletes what was captured for them. Every download is written to the Audit log.</div>
+  <div class="muted" style="font-size:.8rem;margin-bottom:10px">Chat contact details are only captured from people who turned on <b>Save contact info I share</b> in Settings. Turning it off deletes what was captured for them. Every download is written to the Audit log.</div>
   <div class="tbar">
     <input id="dataQ" class="grow" placeholder="Search name, email, phone, handle, country…" value="${esc(dataQ)}">
     <select id="dataType">${DATA_TYPES.map(([v,l])=>`<option value="${v}"${dataType===v?' selected':''}>${l}</option>`).join('')}</select>
@@ -2501,7 +2501,7 @@ async function viewData(){
     <td><b>${esc(x.username)}</b>${x.name&&x.name!==x.username?`<div class="muted" style="font-size:.78rem">${esc(x.name)}</div>`:''}<div>${x.method==='google'?'<span class="pill info">Google</span>':x.method==='guest'?'<span class="pill">Guest</span>':'<span class="pill good">Password</span>'}</div></td>
     <td>${x.email?`${esc(x.email)}${x.emailVerified?' <span class="pill good">verified</span>':''}`:'<span class="muted">-</span>'}</td>
     <td>${esc(x.country||'')}${x.city&&x.city!=='Unknown'?', '+esc(x.city):''}</td>
-    <td>${x.consent&&x.consent.on?`<span class="pill good" title="${x.consent.at?`since ${esc(fmtTs(x.consent.at))}`:'default'}">on</span>`:'<span class="muted">off</span>'}</td>
+    <td>${x.consent&&x.consent.on?`<span class="pill good" title="since ${esc(fmtTs(x.consent.at))}">on</span>`:'<span class="muted">off</span>'}</td>
     <td>${x.contacts.filter(typeOk).map(c=>`<div style="display:flex;gap:6px;align-items:center;margin:2px 0"><span>${contactIcon(c.type)}</span><span class="muted" style="font-size:.75rem">${esc(c.type)}</span><b style="word-break:break-all">${esc(c.value)}</b>${c.count>1?`<span class="muted" style="font-size:.75rem">×${c.count}</span>`:''}<button class="lnk dataDel" title="Delete" data-c="${esc(x.clientId)}" data-t="${esc(c.type)}" data-v="${esc(c.value)}">✕</button></div>`).join('')||'<span class="muted">-</span>'}</td>
     <td>${x.lastSeen?ago(x.lastSeen):'-'}</td>
     <td><div class="rowbtns">${x.clientId||x.account?`<a class="lnk" href="/owner/api/data/user/${encodeURIComponent(x.clientId||x.account)}.json" download>⬇ JSON</a>`:''}${x.contacts.length?`<button class="lnk dataDelAll" data-c="${esc(x.clientId)}" data-n="${esc(x.username)}">Delete shared</button>`:''}</div></td>

@@ -37,7 +37,7 @@
     statusHint: "Friends can see when you're online",
     seenHint: "Show people when you've read their messages",
     contactSave: "Save contact info I share",
-    contactSaveHint: "Emails, phone numbers and social handles you type in chats are saved to your profile so TalkLive can personalize your experience. On by default; turning it off deletes what was saved.",
+    contactSaveHint: "Emails, phone numbers and social handles you type in chats are saved to your profile so TalkLive can personalize your experience. Off by default; turning it off deletes what was saved.",
     setSaved: "Saved",
     setAppearance: "Appearance",
     setAlerts: "Alerts",

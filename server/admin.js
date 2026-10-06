@@ -938,15 +938,13 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
       const row = byClient.get(clientId);
       if (row) row.consent = c;
     }
-    // No stored choice means the default (on).
-    for (const row of rows) if (row.clientId && !row.consent) row.consent = { on: true, at: null };
     for (const [clientId, rec] of Object.entries(store.data.contactCapture || {})) {
       let row = byClient.get(clientId);
       if (!row) {
         row = {
           clientId, account: null, username: rec.username || clientId, name: '', method: 'guest',
           email: '', emailVerified: false, picture: '', locale: '', country: rec.country || '', city: '', ip: '',
-          createdAt: null, lastSeen: rec.updatedAt || null, consent: consent[clientId] || { on: true, at: null }, contacts: [],
+          createdAt: null, lastSeen: rec.updatedAt || null, consent: consent[clientId] || null, contacts: [],
         };
         rows.push(row);
         byClient.set(clientId, row);

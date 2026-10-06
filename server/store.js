@@ -191,9 +191,9 @@ function defaults() {
     // byGame: { ttt|dab: { r, s } } } where t is the counter set in
     // GAME_FIELDS. log: the newest finished game sessions, newest first.
     games: { players: {}, log: [] },
-    // "Save contact info I share" (Settings > Privacy), on by default per
-    // profile: clientId -> { on, at }. Only an explicit choice is stored (no
-    // record means on); turning it off also deletes everything captured.
+    // "Save contact info I share" (Settings > Privacy), opt-in per profile:
+    // clientId -> { on, at }. Only the current choice is kept; turning it off
+    // also deletes everything captured for that person.
     contactConsent: {},
     // Contact details found in the chat messages of people who opted in, for
     // the owner dashboard's Data tab: clientId -> { username, country,
@@ -1507,21 +1507,23 @@ function recordTopics(text) {
 // never duplicate one.
 const MAX_TRANSCRIPT = 5000;
 const MAX_TRANSCRIPT_QUEUE = 5000;
-// --- Contact capture (on by default) ---------------------------------------
+// --- Contact capture (opt-in) -----------------------------------------------
 // See contactConsent / contactCapture in defaults(). Nothing is captured for a
-// profile that turned it off, and turning it off erases the data.
+// profile without a current "on" consent, and withdrawing it erases the data.
 const MAX_CAPTURED_PER_USER = 100;
 
 function hasContactConsent(clientId) {
-  if (!clientId) return false;
-  const c = data.contactConsent[clientId];
-  return !c || c.on !== false;
+  const c = clientId && data.contactConsent[clientId];
+  return !!(c && c.on);
 }
 
 function setContactConsent(clientId, on) {
   if (!clientId) return;
-  data.contactConsent[clientId] = { on: !!on, at: Date.now() };
-  if (!on) delete data.contactCapture[clientId];
+  if (on) data.contactConsent[clientId] = { on: true, at: Date.now() };
+  else {
+    delete data.contactConsent[clientId];
+    delete data.contactCapture[clientId];
+  }
   save();
 }
 
