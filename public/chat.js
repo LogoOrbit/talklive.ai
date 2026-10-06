@@ -1335,7 +1335,7 @@
     if (!settingsPanelLoading) {
       settingsPanelLoading = [];
       var s = document.createElement('script');
-      s.src = '/settings-panel.js?v=20260928aud';
+      s.src = '/settings-panel.js?v=20261006data';
       s.async = true;
       s.onload = function () {
         window.TalkLiveSettingsPanel.ready.then(function () {

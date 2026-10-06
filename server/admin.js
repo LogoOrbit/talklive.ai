@@ -540,12 +540,12 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
   // Reports are rebuilt from the whole store on every poll, and each open
   // dashboard tab polls on its own. Identical GETs within a few seconds share
   // one answer; any write (ban, delete, settings...) clears it so actions
-  // show up at once. Streams, audio and exports are never cached.
+  // show up at once. Streams, audio, exports and the Data tab are never cached.
   const REPORT_TTL = 5000;
   const reportCache = new Map();
   router.use('/api', (req, res, next) => {
     if (req.method !== 'GET') { reportCache.clear(); return next(); }
-    if (/^\/(live\/stream|status|export\/|voice-notes\/.+\/audio)/.test(req.path)) return next();
+    if (/^\/(live\/stream|status|export\/|voice-notes\/.+\/audio|data(\/|$))/.test(req.path)) return next();
     const key = req.originalUrl;
     const hit = reportCache.get(key);
     if (hit && Date.now() - hit.at < REPORT_TTL) return res.json(hit.body);
@@ -898,6 +898,86 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
       })
       .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
     res.json({ accounts });
+  });
+
+  // --- Data tab ---------------------------------------------------------------
+  // One row per person: account details (email, Google profile, location) joined
+  // with the contact details captured from their chats, which only exist for
+  // people who opted in (Settings > Privacy). Guests appear only once they have
+  // opted in and shared something.
+  function dataRows() {
+    const rows = [];
+    const byClient = new Map();
+    for (const [key, a] of Object.entries(store.data.accountsRegistry)) {
+      const cred = (store.data.accounts || {})[key] || {};
+      const g = cred.google || {};
+      const clientId = cred.clientId || a.clientId || null;
+      const row = {
+        clientId,
+        account: key,
+        username: a.username || key,
+        name: g.name || a.nickname || '',
+        method: a.method || '',
+        email: g.email || cred.email || a.email || '',
+        emailVerified: !!(g.email && g.emailVerified),
+        picture: g.picture || '',
+        locale: g.locale || '',
+        country: a.country || '',
+        city: a.city || '',
+        ip: a.ip || '',
+        createdAt: a.createdAt || null,
+        lastSeen: a.lastSeen || null,
+        consent: null,
+        contacts: [],
+      };
+      rows.push(row);
+      if (clientId) byClient.set(clientId, row);
+    }
+    const consent = store.data.contactConsent || {};
+    for (const [clientId, c] of Object.entries(consent)) {
+      const row = byClient.get(clientId);
+      if (row) row.consent = c;
+    }
+    for (const [clientId, rec] of Object.entries(store.data.contactCapture || {})) {
+      let row = byClient.get(clientId);
+      if (!row) {
+        row = {
+          clientId, account: null, username: rec.username || clientId, name: '', method: 'guest',
+          email: '', emailVerified: false, picture: '', locale: '', country: rec.country || '', city: '', ip: '',
+          createdAt: null, lastSeen: rec.updatedAt || null, consent: consent[clientId] || null, contacts: [],
+        };
+        rows.push(row);
+        byClient.set(clientId, row);
+      }
+      row.contacts = rec.items.slice();
+      row.capturedAt = rec.updatedAt || null;
+    }
+    return rows.sort((a, b) => (b.capturedAt || b.lastSeen || 0) - (a.capturedAt || a.lastSeen || 0));
+  }
+
+  router.get('/api/data', (req, res) => {
+    res.json({ rows: dataRows() });
+  });
+
+  // Everything held about one person, as a JSON file.
+  router.get('/api/data/user/:id', (req, res) => {
+    const id = String(req.params.id).replace(/\.json$/i, '');
+    const row = dataRows().find((r) => r.clientId === id || r.account === id);
+    if (!row) return res.status(404).json({ error: 'Not found.' });
+    store.audit('export', reqIp(req), `Downloaded data for ${row.username}`);
+    const safe = String(row.username).replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 40) || 'user';
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="talklive-user-${safe}.json"`);
+    res.send(JSON.stringify({ exportedAt: new Date().toISOString(), ...row }, null, 2));
+  });
+
+  router.post('/api/data/delete', (req, res) => {
+    const { clientId, type, value } = req.body || {};
+    if (!clientId) return res.status(400).json({ error: 'clientId required.' });
+    const ok = store.deleteCapturedContact(String(clientId), type ? String(type) : null, value ? String(value) : null);
+    if (!ok) return res.status(404).json({ error: 'Nothing to delete.' });
+    store.audit('data-delete', reqIp(req), type ? `Deleted captured ${type} for ${clientId}` : `Deleted all captured contacts for ${clientId}`);
+    res.json({ ok: true });
   });
 
   // --- Chat transcripts -----------------------------------------------------
@@ -1586,6 +1666,20 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
     } else if (kind === 'games') {
       csv = toCsv(['username', 'account', 'client_id', 'country', 'play_seconds', 'sessions', 'rounds', 'wins', 'losses', 'draws', 'win_rate', 'invites_sent', 'sent_accepted', 'invites_received', 'accepted', 'declined', 'ignored', 'withdrawn', 'favorite_game', 'last_played'],
         gameRows(String(req.query.range || 'all')).map((r) => [r.username, r.account || '', r.clientId, r.country, r.seconds, r.sessions, r.rounds, r.wins, r.losses, r.draws, r.winRate === null ? '' : r.winRate, r.invitesSent, r.sentAccepted, r.invitesReceived, r.accepted, r.declined, r.ignored, r.withdrawn, r.favorite, isoOr(r.lastAt)]));
+    } else if (kind === 'contacts') {
+      const rows = [];
+      for (const r of dataRows()) {
+        for (const c of r.contacts) rows.push([r.username, r.account || '', r.clientId || '', r.email, r.country, c.type, c.value, c.source, c.count, isoOr(c.firstAt), isoOr(c.lastAt)]);
+      }
+      csv = toCsv(['username', 'account', 'client_id', 'account_email', 'country', 'type', 'value', 'source', 'times_shared', 'first_shared', 'last_shared'], rows);
+    } else if (kind === 'user-data') {
+      csv = toCsv(['username', 'account', 'client_id', 'name', 'method', 'email', 'email_verified', 'country', 'city', 'ip', 'created', 'last_seen', 'contact_consent', 'consent_since', 'emails_shared', 'phones_shared', 'socials_shared'],
+        dataRows().map((r) => {
+          const of = (pred) => r.contacts.filter(pred).map((c) => (c.type === 'email' || c.type === 'phone' ? c.value : `${c.type}:${c.value}`)).join(' ');
+          return [r.username, r.account || '', r.clientId || '', r.name, r.method, r.email, r.email ? (r.emailVerified ? 'yes' : 'no') : '',
+            r.country, r.city, r.ip, isoOr(r.createdAt), isoOr(r.lastSeen), r.consent && r.consent.on ? 'yes' : 'no', isoOr(r.consent && r.consent.at),
+            of((c) => c.type === 'email'), of((c) => c.type === 'phone'), of((c) => c.type !== 'email' && c.type !== 'phone')];
+        }));
     } else if (kind === 'premium') {
       csv = toCsv(['client_id', 'status', 'source', 'paying', 'permanent', 'activated', 'expires', 'revoked', 'last_event'],
         premiumRows().map((r) => [r.clientId, r.status, r.source, r.paying ? 'yes' : 'no', r.permanent ? 'yes' : 'no', isoOr(r.activatedAt), isoOr(r.expiresAt), isoOr(r.revokedAt), r.lastEvent]));
@@ -1610,6 +1704,8 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
     ['12-reports', 'reports', {}, 'User reports with reason and handled state.'],
     ['13-bans', 'bans', {}, 'Bans with reason, expiry and lift time.'],
     ['14-feedback', 'feedback', {}, 'User feedback messages.'],
+    ['15-user-data', 'user-data', {}, 'One row per person: account email, Google profile, location, contact-capture consent and the contact details they shared. Contains personal data.'],
+    ['16-shared-contacts', 'contacts', {}, 'One row per contact detail (email, phone, social handle) shared in chat by people who opted in. Contains personal data.'],
   ];
 
   router.get('/api/export/all.zip', (req, res) => {
@@ -1650,7 +1746,8 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
   // audit logging as a click in the dashboard. Reads go anywhere but the
   // streams and exports; writes only to the moderation endpoints below, and
   // only after the owner approves each one in the chat (see ai-agent.js).
-  const AI_READ_BLOCK = /^(ai\/|live\/stream|export\/)/;
+  // The Data tab is personal contact data; it stays out of the AI agent.
+  const AI_READ_BLOCK = /^(ai\/|live\/stream|export\/|data(\/|$))/;
   const AI_WRITE_ALLOW = /^(reports\/[^/]+\/handled|reports\/user\/[^/]+\/handled|ban|unban|warn|warnings\/[^/]+\/withdraw|errors\/dismiss|maintenance)$/;
   function callApi(method, pathQuery, body, req) {
     return new Promise((resolve) => {

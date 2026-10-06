@@ -191,6 +191,14 @@ function defaults() {
     // byGame: { ttt|dab: { r, s } } } where t is the counter set in
     // GAME_FIELDS. log: the newest finished game sessions, newest first.
     games: { players: {}, log: [] },
+    // "Save contact info I share" (Settings > Privacy), opt-in per profile:
+    // clientId -> { on, at }. Only the current choice is kept; turning it off
+    // also deletes everything captured for that person.
+    contactConsent: {},
+    // Contact details found in the chat messages of people who opted in, for
+    // the owner dashboard's Data tab: clientId -> { username, country,
+    // updatedAt, items: [{ type, value, source, firstAt, lastAt, count }] }.
+    contactCapture: {},
     settings: {
       maintenance: { on: false, message: 'TalkLive is under maintenance. We will be back shortly!' },
       // The "still under development" strip on / and /chat, switched from the
@@ -1499,6 +1507,62 @@ function recordTopics(text) {
 // never duplicate one.
 const MAX_TRANSCRIPT = 5000;
 const MAX_TRANSCRIPT_QUEUE = 5000;
+// --- Contact capture (opt-in) -----------------------------------------------
+// See contactConsent / contactCapture in defaults(). Nothing is captured for a
+// profile without a current "on" consent, and withdrawing it erases the data.
+const MAX_CAPTURED_PER_USER = 100;
+
+function hasContactConsent(clientId) {
+  const c = clientId && data.contactConsent[clientId];
+  return !!(c && c.on);
+}
+
+function setContactConsent(clientId, on) {
+  if (!clientId) return;
+  if (on) data.contactConsent[clientId] = { on: true, at: Date.now() };
+  else {
+    delete data.contactConsent[clientId];
+    delete data.contactCapture[clientId];
+  }
+  save();
+}
+
+// items: [{ type, value }] from contact-capture.js. Returns how many were new.
+function recordContacts(clientId, meta, items, source) {
+  if (!hasContactConsent(clientId) || !items || !items.length) return 0;
+  const now = Date.now();
+  let rec = data.contactCapture[clientId];
+  if (!rec) rec = data.contactCapture[clientId] = { username: '', country: '', updatedAt: now, items: [] };
+  if (meta.username) rec.username = meta.username;
+  if (meta.country) rec.country = meta.country;
+  rec.updatedAt = now;
+  let added = 0;
+  for (const { type, value } of items) {
+    const hit = rec.items.find((x) => x.type === type && x.value === value);
+    if (hit) { hit.lastAt = now; hit.count++; continue; }
+    rec.items.unshift({ type, value, source: source || 'chat', firstAt: now, lastAt: now, count: 1 });
+    added++;
+  }
+  if (rec.items.length > MAX_CAPTURED_PER_USER) rec.items.length = MAX_CAPTURED_PER_USER;
+  save();
+  return added;
+}
+
+// Removes one captured item, or (no type/value) everything for that person.
+function deleteCapturedContact(clientId, type, value) {
+  const rec = data.contactCapture[clientId];
+  if (!rec) return false;
+  if (!type) delete data.contactCapture[clientId];
+  else {
+    const before = rec.items.length;
+    rec.items = rec.items.filter((x) => !(x.type === type && x.value === value));
+    if (rec.items.length === before) return false;
+    if (!rec.items.length) delete data.contactCapture[clientId];
+  }
+  save();
+  return true;
+}
+
 let transcriptsInTable = false;
 let transcriptAdds = 0;
 function addTranscript(entry) {
@@ -3076,6 +3140,10 @@ module.exports = {
   recordRating,
   recordTopics,
   addTranscript,
+  hasContactConsent,
+  setContactConsent,
+  recordContacts,
+  deleteCapturedContact,
   addReport,
   reportCountFor,
   reportCounts,

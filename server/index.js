@@ -37,6 +37,7 @@ const { createAdmin, applyOwnerReset } = require('./admin');
 const { createGameTracker } = require('./game-tracker');
 const { isValidTimezone } = require('./analytics');
 const audience = require('./audience');
+const { extractContacts } = require('./contact-capture');
 
 const app = express();
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
@@ -2471,6 +2472,15 @@ function readChatPayload(raw) {
 
 // What the owner dashboard stores for a GIF-only message, so moderation sees
 // something meaningful instead of an empty row.
+// Opt-in contact capture (Settings > Privacy > "Save contact info I share"):
+// emails, phone numbers and social handles in the sender's own typed text go
+// to the owner dashboard's Data tab. Never runs without that person's consent.
+function captureContacts(me, text, source) {
+  if (!text || !me || !store.hasContactConsent(me.clientId)) return;
+  const items = extractContacts(text);
+  if (items.length) store.recordContacts(me.clientId, { username: me.username, country: me.countryName }, items, source);
+}
+
 function transcriptText(msg) {
   if (msg.text) return msg.text;
   if (msg.voice) return '[Voice message] ' + Math.round(msg.voice.ms / 1000) + 's';
@@ -4525,6 +4535,7 @@ io.on('connection', (socket) => {
       lang: matchLang(data.lang, socket.handshake.headers['accept-language']),
     });
     clientSockets.set(clientId, socket.id);
+    socket.emit('contact-consent', { on: store.hasContactConsent(clientId) });
     {
       const p = profiles.get(socket.id);
       const ua = audience.parseUA(socket.handshake.headers['user-agent']);
@@ -4736,6 +4747,14 @@ io.on('connection', (socket) => {
 
   // Personal online-status visibility: hides this user's status only from
   // their added friends. Never affects the global online-user count.
+  // Settings > Privacy > "Save contact info I share". Opt-in; off erases.
+  socket.on('set-contact-consent', ({ on } = {}) => {
+    const profile = profiles.get(socket.id);
+    if (!profile) return;
+    store.setContactConsent(profile.clientId, on === true);
+    socket.emit('contact-consent', { on: store.hasContactConsent(profile.clientId) });
+  });
+
   socket.on('set-status-visibility', ({ hidden } = {}) => {
     const profile = profiles.get(socket.id);
     if (!profile) return;
@@ -5055,6 +5074,8 @@ io.on('connection', (socket) => {
     if (!msg) return;
     // A GIF carries a giphy.com URL by definition, so the link filter only
     // applies to what the user actually typed.
+    // Before the link filter, as for friend messages (see captureContacts).
+    captureContacts(profiles.get(socket.id), msg.text, 'stranger');
     if (msg.text && containsLink(msg.text)) {
       return socket.emit('chat-blocked', { reason: 'link' });
     }
@@ -5634,6 +5655,9 @@ io.on('connection', (socket) => {
     // Friends can message each other any time - no call required. If the friend
     // is offline the message is still stored and a notification is queued, so it
     // reaches them the next time they come online.
+    // Before the link filter: an email typed into a blocked message is still
+    // what this (opted-in) person chose to share.
+    captureContacts(me, parsed.text, 'friend');
     if (parsed.text && containsLink(parsed.text)) return refuse('link');
     if (parsed.text && UNSAFE_RE.test(parsed.text)) return refuse('unsafe');
     const trimmed = parsed.text;

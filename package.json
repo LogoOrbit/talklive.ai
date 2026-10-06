@@ -25,6 +25,7 @@
     "test:fast-save": "node scripts/test-fast-save.js",
     "test:analytics": "node scripts/test-analytics-visits.js",
     "test:warnings": "node scripts/test-owner-warning.js",
+    "test:contacts": "node scripts/test-contact-capture.js",
     "test:feedback-reply": "node scripts/test-feedback-reply.js",
     "test:audience": "node scripts/test-audience.js",
     "test:gifs": "node scripts/test-gif-proxy.js",

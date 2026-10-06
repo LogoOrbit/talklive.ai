@@ -1291,6 +1291,18 @@ statusVisibilityToggle.addEventListener('change', () => {
   socket.emit('set-status-visibility', { hidden: !statusVisible });
 });
 
+// --- "Save contact info I share": opt-in, stored on the server per profile
+// (the server's answer on connect is the source of truth for the switch). ---
+const contactSaveToggle = document.getElementById('contactSaveToggle');
+if (contactSaveToggle) {
+  contactSaveToggle.addEventListener('change', () => {
+    socket.emit('set-contact-consent', { on: contactSaveToggle.checked });
+  });
+}
+socket.on('contact-consent', ({ on } = {}) => {
+  if (contactSaveToggle) contactSaveToggle.checked = !!on;
+});
+
 // --- Sound effects (small synthesized tones, no audio files needed) ---
 let soundEnabled = localStorage.getItem('talklive_sound') !== 'off';
 let sfxCtx = null;
@@ -1552,7 +1564,7 @@ function closeQuickSettings() {
 // page over its size budget); it is fetched once the page is idle, or on the
 // first tap of the gear if that comes sooner.
 // It also brings settings.css, which the screen waits for (html.tl-set-css).
-var SETTINGS_PANEL_SRC = '/settings-panel.js?v=20260928aud';
+var SETTINGS_PANEL_SRC = '/settings-panel.js?v=20261006data';
 var settingsPanelLoading = null; // var: openAppSettings can run before this line on /settings
 function loadSettingsPanel() {
   if (window.TalkLiveSettingsPanel) return window.TalkLiveSettingsPanel.ready;
