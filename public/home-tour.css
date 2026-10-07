@@ -1,0 +1,98 @@
+/* Home page tour: the tutorial, feature showcase and reading links below the
+   app. Loaded without blocking render (it is all below the fold), so nothing
+   here may affect layout above #tour. Colours come from the theme tokens in
+   style.css, so light/ocean/sunset themes follow automatically. */
+.tt { --tt-sky: var(--accent-2, #38bdf8); --tt-vio: #8b7bff; border-top: 1px solid var(--line); padding: 72px 20px 24px; color: var(--muted); font-family: var(--font-sans); }
+.tt-in { max-width: 1120px; margin: 0 auto; }
+.tt img { display: block; width: 100%; height: auto; }
+.tt-eyebrow { display: inline-flex; align-items: center; gap: 10px; font-size: 12.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--tt-sky); }
+.tt-eyebrow::before { content: ""; width: 26px; height: 2px; border-radius: 2px; background: linear-gradient(90deg, var(--tt-sky), var(--tt-vio)); }
+.tt-h2 { color: var(--text); font-family: var(--font-display); font-size: clamp(30px, 4.4vw, 48px); line-height: 1.08; letter-spacing: -.03em; font-weight: 800; margin: 12px 0 12px; }
+.tt-grad { background: linear-gradient(90deg, var(--tt-sky), var(--tt-vio)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.tt-lede { font-size: 17px; line-height: 1.65; max-width: 640px; margin: 0; }
+.tt-head { text-align: center; margin-bottom: 40px; }
+.tt-head .tt-lede { margin: 0 auto; }
+
+/* Tutorial: step list + stage. */
+.tt-tut { display: grid; grid-template-columns: 1fr 1.05fr; gap: 48px; align-items: center; }
+.tt-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; counter-reset: tt; }
+.tt-step { counter-increment: tt; border: 1px solid var(--line); border-radius: 18px; background: color-mix(in srgb, var(--bg-2) 70%, transparent); transition: border-color .25s, background .25s, box-shadow .25s; }
+.tt-step button { all: unset; box-sizing: border-box; cursor: pointer; display: grid; grid-template-columns: 44px 1fr; gap: 4px 16px; width: 100%; padding: 18px 20px; border-radius: 18px; }
+.tt-step button:focus-visible { outline: 2px solid var(--tt-sky); outline-offset: 2px; }
+.tt-step button::before { content: "0" counter(tt); grid-row: span 2; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; font-weight: 800; font-size: 15px; color: var(--text); background: color-mix(in srgb, var(--text) 8%, transparent); transition: background .25s, color .25s; }
+.tt-step strong { color: var(--text); font-size: 17.5px; font-weight: 700; align-self: center; }
+.tt-step span { font-size: 15px; line-height: 1.55; }
+.tt-step.is-on { border-color: color-mix(in srgb, var(--tt-sky) 55%, transparent); box-shadow: 0 18px 50px -24px color-mix(in srgb, var(--tt-vio) 70%, transparent); }
+.tt-step.is-on button::before { color: #fff; background: linear-gradient(135deg, var(--tt-sky), var(--tt-vio)); }
+.tt-bar { grid-column: 2; height: 3px; margin-top: 10px; border-radius: 3px; background: var(--line); overflow: hidden; display: none; }
+.tt-step.is-on .tt-bar { display: block; }
+.tt-bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--tt-sky), var(--tt-vio)); }
+.tt-step.is-on.is-auto .tt-bar i { animation: tt-fill var(--tt-dur, 6s) linear forwards; }
+@keyframes tt-fill { to { width: 100%; } }
+.js-tt .tt-step:not(.is-on) span { display: none; }
+.tt-stage { position: relative; aspect-ratio: 1; border-radius: 26px; overflow: hidden; border: 1px solid var(--line); background: #0e1324; box-shadow: 0 40px 100px -40px rgba(124, 92, 255, .55); }
+.tt-stage figure { margin: 0; position: absolute; inset: 0; transition: opacity .5s ease, transform .6s cubic-bezier(.2, .7, .2, 1); }
+.js-tt .tt-stage figure { opacity: 0; transform: scale(1.03); }
+.js-tt .tt-stage figure.is-on { opacity: 1; transform: none; }
+.tt-stage figure + figure { display: none; }
+.js-tt .tt-stage figure + figure { display: block; }
+
+/* Features: alternating rows. */
+.tt-feats { margin-top: 110px; }
+.tt-feat { display: grid; grid-template-columns: 1.15fr 1fr; gap: 56px; align-items: center; padding: 44px 0; }
+.tt-feat:nth-child(even) .tt-feat-img { order: 2; }
+.tt-feat-img { border-radius: 22px; overflow: hidden; border: 1px solid var(--line); background: #0e1324; box-shadow: 0 30px 80px -36px rgba(0, 0, 0, .8); transition: transform .5s cubic-bezier(.2, .7, .2, 1); }
+.tt-feat-img:hover { transform: translateY(-5px); }
+.tt-ico { display: inline-grid; place-items: center; width: 46px; height: 46px; border-radius: 14px; font-size: 22px; background: color-mix(in srgb, var(--tt-vio) 18%, transparent); border: 1px solid color-mix(in srgb, var(--tt-vio) 35%, transparent); }
+.tt-feat h3 { color: var(--text); font-size: clamp(24px, 3vw, 32px); letter-spacing: -.02em; line-height: 1.15; font-weight: 800; margin: 16px 0 12px; }
+.tt-feat p { font-size: 16.5px; line-height: 1.7; margin: 0 0 14px; }
+.tt-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+.tt-tags span { padding: 7px 13px; border-radius: 999px; font-size: 13.5px; font-weight: 600; color: var(--text); background: color-mix(in srgb, var(--text) 6%, transparent); border: 1px solid var(--line); }
+
+/* Story card + guides. */
+.tt-story { display: grid; grid-template-columns: 1.2fr 1fr; align-items: center; gap: 0; margin: 90px 0 0; border-radius: 26px; overflow: hidden; border: 1px solid var(--line); text-decoration: none; color: inherit;
+  background: radial-gradient(500px 300px at 100% 0%, color-mix(in srgb, var(--tt-vio) 22%, transparent), transparent 70%), var(--bg-2); transition: transform .3s, box-shadow .3s; }
+.tt-story:hover { transform: translateY(-4px); box-shadow: 0 30px 80px -40px rgba(124, 92, 255, .6); }
+.tt-story-body { padding: 36px 40px; }
+.tt-story-body h3 { color: var(--text); font-size: clamp(24px, 3vw, 34px); letter-spacing: -.02em; font-weight: 800; margin: 12px 0 10px; line-height: 1.12; }
+.tt-story-body p { margin: 0 0 18px; line-height: 1.65; }
+.tt-more { color: var(--tt-sky); font-weight: 700; }
+.tt-guides { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 18px; }
+.tt-guide { display: flex; flex-direction: column; gap: 10px; padding: 22px; border-radius: 18px; border: 1px solid var(--line); text-decoration: none; color: var(--muted); background: color-mix(in srgb, var(--bg-2) 70%, transparent); transition: border-color .2s, transform .2s; }
+.tt-guide:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--tt-sky) 50%, transparent); }
+.tt-guide b { color: var(--text); font-size: 16px; line-height: 1.35; }
+.tt-guide small { font-size: 13px; margin-top: auto; color: var(--tt-sky); font-weight: 700; }
+
+.tt-cta { text-align: center; margin: 90px 0 30px; }
+.tt-cta .tt-h2 { margin-bottom: 22px; }
+.tt-btns { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; }
+.tt-btn { display: inline-flex; align-items: center; gap: 10px; padding: 15px 24px; border-radius: 16px; font-weight: 700; font-size: 16.5px; color: #fff; text-decoration: none; border: 0; cursor: pointer; font-family: inherit; transition: transform .2s; }
+.tt-btn:hover { transform: translateY(-2px); }
+.tt-btn.talk { background: linear-gradient(135deg, #34d399, #16a34a); box-shadow: 0 14px 34px -12px rgba(52, 211, 153, .6); }
+.tt-btn.chat { background: linear-gradient(135deg, #8b7bff, #6d4dff); box-shadow: 0 14px 34px -12px rgba(139, 123, 255, .6); }
+
+/* Reveal on scroll (content is visible without JS). */
+.js-tt .tt-rv { opacity: 0; transform: translateY(26px); transition: opacity .7s ease, transform .7s cubic-bezier(.2, .7, .2, 1); }
+.js-tt .tt-rv.in { opacity: 1; transform: none; }
+
+@media (max-width: 900px) {
+  .tt { padding-top: 56px; }
+  .tt-tut { grid-template-columns: 1fr; gap: 22px; }
+  .tt-stage { order: -1; max-width: 520px; width: 100%; margin: 0 auto; }
+  .tt-feats { margin-top: 70px; }
+  .tt-feat { grid-template-columns: 1fr; gap: 22px; padding: 30px 0; }
+  .tt-feat:nth-child(even) .tt-feat-img { order: 0; }
+  .tt-story { grid-template-columns: 1fr; margin-top: 60px; }
+  .tt-story-body { padding: 26px 22px 30px; }
+  .tt-guides { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 520px) {
+  .tt { padding-left: 16px; padding-right: 16px; }
+  .tt-guides { grid-template-columns: 1fr; }
+  .tt-step button { padding: 14px 16px; gap: 2px 14px; }
+  .tt-btn { width: 100%; justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tt *, .js-tt .tt-rv, .js-tt .tt-stage figure { transition: none !important; animation: none !important; }
+  .js-tt .tt-rv { opacity: 1; transform: none; }
+}

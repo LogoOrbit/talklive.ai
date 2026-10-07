@@ -1319,6 +1319,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
             <span data-i18n="consentPrefix">By tapping Call you agree to our</span>
             <button type="button" id="openTermsLink" class="link-btn" data-i18n="termsLink">Terms &amp; Community Guidelines</button>
           </p>
+          <p style="margin:6px 0 0;text-align:center"><a href="#tour" style="color:var(--accent-2);font-weight:600;font-size:14px;text-decoration:none">New here? See how TalkLive works ↓</a></p>
           <div class="setup-growth" data-i18n-aria="growthAria" aria-label="TalkLive membership and sharing">
             <a class="setup-growth-card setup-growth-premium" href="/pricing?utm_source=app">
               <span class="setup-growth-icon" aria-hidden="true">💎</span>
@@ -2311,6 +2312,116 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
       </aside>
     </div>
 
+
+  <!-- Home tour: a five-step tutorial and the feature showcase, below the app.
+       Its stylesheet loads without blocking first paint (all of this is below
+       the fold); the inline script at the end drives the stepper. -->
+  <link rel="preload" href="/home-tour.css?v=20261007tour" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript><link rel="stylesheet" href="/home-tour.css?v=20261007tour" /></noscript>
+  <section id="tour" class="tt" aria-labelledby="ttTitle">
+    <div class="tt-in">
+      <header class="tt-head tt-rv">
+        <span class="tt-eyebrow">Tutorial</span>
+        <h2 class="tt-h2" id="ttTitle">How to use TalkLive <span class="tt-grad">in 5 steps</span></h2>
+        <p class="tt-lede">From opening the page to your first hello takes under a minute. No download, no account.</p>
+      </header>
+
+      <div class="tt-tut">
+        <ol class="tt-steps" id="ttSteps">
+          <li class="tt-step is-on"><button type="button" aria-controls="ttStage"><strong>Pick your spirit animal</strong><span>It is your identity on TalkLive - no name, no photo. The other person sees your animal and its personality.</span><b class="tt-bar"><i></i></b></button></li>
+          <li class="tt-step"><button type="button" aria-controls="ttStage"><strong>Tap to Talk or Tap to Chat</strong><span>Talk starts a live voice call with your mic on. Chat starts a text conversation with no mic at all.</span><b class="tt-bar"><i></i></b></button></li>
+          <li class="tt-step"><button type="button" aria-controls="ttStage"><strong>Agree to the house rules</strong><span>TalkLive is 18+ only. Confirm once, be respectful, and keep every conversation consensual.</span><b class="tt-bar"><i></i></b></button></li>
+          <li class="tt-step"><button type="button" aria-controls="ttStage"><strong>Say hello</strong><span>You are matched with a real person in seconds. You see their spirit animal, their local time and a live call timer.</span><b class="tt-bar"><i></i></b></button></li>
+          <li class="tt-step"><button type="button" aria-controls="ttStage"><strong>Add a friend, or move on</strong><span>Enjoyed it? Tap Add friend to talk again later. Not a fit? Hang up - auto next finds someone new.</span><b class="tt-bar"><i></i></b></button></li>
+        </ol>
+        <div class="tt-stage tt-rv" id="ttStage" aria-live="polite">
+          <figure class="is-on"><img src="/images/home-tour/step-1-animal.webp" width="1000" height="1000" alt="TalkLive home screen with the Fox spirit animal selected" loading="lazy" decoding="async" /></figure>
+          <figure><img src="/images/home-tour/step-2-start.webp" width="1000" height="1000" alt="Tap to Talk and Tap to Chat buttons highlighted" loading="lazy" decoding="async" /></figure>
+          <figure><img src="/images/home-tour/step-3-rules.webp" width="1000" height="1000" alt="The 18+ agreement and the house rules screens" loading="lazy" decoding="async" /></figure>
+          <figure><img src="/images/home-tour/step-4-connected.webp" width="1000" height="1000" alt="A connected TalkLive voice call showing the other person's spirit animal" loading="lazy" decoding="async" /></figure>
+          <figure><img src="/images/home-tour/step-5-next.webp" width="1000" height="1000" alt="Add friend button and the auto next toggle during a call" loading="lazy" decoding="async" /></figure>
+        </div>
+      </div>
+
+      <div class="tt-feats">
+        <header class="tt-head tt-rv">
+          <span class="tt-eyebrow">Features</span>
+          <h2 class="tt-h2">More than a <span class="tt-grad">random call</span></h2>
+        </header>
+        <article class="tt-feat tt-rv">
+          <div class="tt-feat-img"><img src="/images/home-tour/feat-chat-in-call.webp" width="1200" height="900" alt="Text messages sent during a live TalkLive voice call" loading="lazy" decoding="async" /></div>
+          <div><span class="tt-ico" aria-hidden="true">💬</span><h3>Talk and text at the same time</h3><p>Open the chat during any call to share a word you cannot pronounce, a link or an emoji. Send quick reactions without interrupting.</p><div class="tt-tags"><span>In-call chat</span><span>👍 😊 ❤️ reactions</span><span>Their local time</span></div></div>
+        </article>
+        <article class="tt-feat tt-rv">
+          <div class="tt-feat-img"><img src="/images/home-tour/feat-games.webp" width="1200" height="900" alt="Tic Tac Toe being played during a TalkLive call" loading="lazy" decoding="async" /></div>
+          <div><span class="tt-ico" aria-hidden="true">🎮</span><h3>Play games while you talk</h3><p>Silence is easier with something to do. Challenge the other person to a game without leaving the call.</p><div class="tt-tags"><span>Tic Tac Toe</span><span>Dots &amp; Boxes</span></div></div>
+        </article>
+        <article class="tt-feat tt-rv">
+          <div class="tt-feat-img"><img src="/images/home-tour/feat-text-chat.webp" width="1200" height="900" alt="A TalkLive text chat used for English practice" loading="lazy" decoding="async" /></div>
+          <div><span class="tt-ico" aria-hidden="true">⌨️</span><h3>Text chat, no mic needed</h3><p>For late nights, shared rooms and shy days. Text chat is light enough for any phone and slow networks - and great for language practice.</p><div class="tt-tags"><span>No microphone</span><span>Next in one tap</span><span>17 languages</span></div></div>
+        </article>
+        <article class="tt-feat tt-rv">
+          <div class="tt-feat-img"><img src="/images/home-tour/feat-friends.webp" width="1200" height="900" alt="An incoming friend request and the Friends panel" loading="lazy" decoding="async" /></div>
+          <div><span class="tt-ico" aria-hidden="true">🤝</span><h3>Keep the people you click with</h3><p>Add a friend mid-call and call or message them later, without ever swapping phone numbers. Share your Friend ID to be found.</p><div class="tt-tags"><span>Friend requests</span><span>Friend ID</span><span>Call back</span></div></div>
+        </article>
+        <article class="tt-feat tt-rv">
+          <div class="tt-feat-img"><img src="/images/home-tour/feat-filters.webp" width="1200" height="900" alt="Match filters and call history panels" loading="lazy" decoding="async" /></div>
+          <div><span class="tt-ico" aria-hidden="true">🌍</span><h3>Filters and call history</h3><p>Choose countries you would like to meet, or never meet, and find recent conversations in your call history. Premium, coming soon, adds gender filters and removes ads.</p><div class="tt-tags"><span>Country filters</span><span>Call history</span><span>Premium soon</span></div></div>
+        </article>
+        <article class="tt-feat tt-rv">
+          <div class="tt-feat-img"><img src="/images/home-tour/feat-safety.webp" width="1200" height="900" alt="Report and mute controls and the TalkLive house rules" loading="lazy" decoding="async" /></div>
+          <div><span class="tt-ico" aria-hidden="true">🛡️</span><h3>Built for safe conversations</h3><p>Mute, hang up or report in one tap. Automatic safety checks run during calls, calls are never recorded by TalkLive, and the whole service is 18+. <a href="/safety">Safety center</a></p><div class="tt-tags"><span>Report &amp; block</span><span>Not recorded</span><span>18+ only</span></div></div>
+        </article>
+      </div>
+
+      <a class="tt-story tt-rv" href="/what-is-talklive">
+        <img src="/images/what-is-talklive/cover.webp" width="1600" height="900" alt="TalkLive on desktop and phone" loading="lazy" decoding="async" />
+        <div class="tt-story-body"><span class="tt-eyebrow">The TalkLive story</span><h3>What is TalkLive?</h3><p>The why behind one-tap voice chat, spirit animals and a camera-free internet.</p><span class="tt-more">Read the article →</span></div>
+      </a>
+      <div class="tt-guides tt-rv">
+        <a class="tt-guide" href="/blog/what-to-talk-about-with-a-stranger"><b>Questions that get past small talk</b><small>Read guide →</small></a>
+        <a class="tt-guide" href="/blog/introvert-guide-to-talking-to-strangers"><b>The introvert's guide to talking to strangers</b><small>Read guide →</small></a>
+        <a class="tt-guide" href="/blog/how-to-practise-a-language-by-speaking"><b>Why you understand more than you can say</b><small>Read guide →</small></a>
+        <a class="tt-guide" href="/blog/how-to-spot-a-bot-or-scam-in-random-chat"><b>The scams that start with "hi"</b><small>Read guide →</small></a>
+      </div>
+
+      <div class="tt-cta tt-rv">
+        <h2 class="tt-h2">Someone is waiting <span class="tt-grad">to say hello.</span></h2>
+        <div class="tt-btns"><button type="button" class="tt-btn talk" id="ttTalk">🎙️ Tap to Talk</button><a class="tt-btn chat" href="/chat?go=1">💬 Tap to Chat</a></div>
+      </div>
+    </div>
+  </section>
+  <script>
+  (function () {
+    var root = document.getElementById('tour'); if (!root || !('IntersectionObserver' in window)) return;
+    root.classList.add('js-tt');
+    var steps = root.querySelectorAll('.tt-step'), figs = root.querySelectorAll('#ttStage figure');
+    var cur = 0, timer = null, auto = !matchMedia('(prefers-reduced-motion: reduce)').matches, DUR = 6000;
+    function show(i) {
+      cur = (i + steps.length) % steps.length;
+      for (var k = 0; k < steps.length; k++) {
+        steps[k].classList.toggle('is-on', k === cur); figs[k].classList.toggle('is-on', k === cur);
+        steps[k].querySelector('button').setAttribute('aria-current', k === cur ? 'step' : 'false');
+        var bar = steps[k].querySelector('.tt-bar i'); bar.style.animation = 'none'; void bar.offsetWidth; bar.style.animation = '';
+      }
+    }
+    function play() { stop(); if (!auto) return; steps[cur].classList.add('is-auto'); timer = setTimeout(function () { show(cur + 1); play(); }, DUR); }
+    function stop() { clearTimeout(timer); for (var k = 0; k < steps.length; k++) steps[k].classList.remove('is-auto'); }
+    steps.forEach(function (s, i) { s.querySelector('button').addEventListener('click', function () { auto = false; stop(); show(i); }); });
+    show(0);
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        if (e.target.id === 'ttStage') { if (e.isIntersecting) { e.target.classList.add('in'); play(); } else stop(); }
+        else if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+      });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.12 });
+    root.querySelectorAll('.tt-rv').forEach(function (el) { io.observe(el); });
+    io.observe(document.getElementById('ttStage'));
+    document.getElementById('ttTalk').addEventListener('click', function () {
+      var b = document.getElementById('startBtn'); scrollTo({ top: 0, behavior: 'smooth' }); if (b) setTimeout(function () { b.click(); }, 350);
+    });
+  })();
+  </script>
 
   <!-- Crawlable content region: gives search engines a rich, indexable
        description of TalkLive and links out to the keyword landing pages.
