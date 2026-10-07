@@ -307,9 +307,7 @@ img { max-width: 100%; }
 .composer-field .cx-btn { order: 2; min-width: 34px; height: 34px; padding: 0 4px; font-size: 18px; }
 .composer-field .cx-emoji-btn { order: 0; }
 .composer-field .cx-gif-btn { font-size: 12px; }
-.composer-field .icebreak-btn { order: 3; }
-.composer-field:has(#msgInput:not(:placeholder-shown)) .cx-gif-btn,
-.composer-field:has(#msgInput:not(:placeholder-shown)) .icebreak-btn { display: none; }
+.composer-field:has(#msgInput:not(:placeholder-shown)) .cx-gif-btn { display: none; }
 .send-btn {
   flex: 0 0 auto; width: 44px; height: 44px; border: none; border-radius: 50%; cursor: pointer; color: #fff;
   background: var(--accent);
@@ -1450,6 +1448,8 @@ summary:active {
 .icebreak { align-self: center; width: 100%; max-width: 560px; margin: 10px auto 6px; text-align: center; animation: msgIn 0.2s ease both; }
 .icebreak-head { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px; font-size: 11.5px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
 .icebreak-shuffle { border: 0; background: none; color: var(--accent); font: inherit; letter-spacing: 0.04em; text-transform: none; font-size: 12.5px; cursor: pointer; padding: 4px 6px; border-radius: 8px; }
+.icebreak-close { border: 0; background: none; color: var(--muted); font-size: 18px; line-height: 1; cursor: pointer; padding: 2px 8px; border-radius: 8px; }
+.icebreak-close:hover { color: var(--text); background: var(--accent-soft, rgba(108, 92, 231, 0.12)); }
 .icebreak-shuffle:hover { background: var(--accent-soft, rgba(108, 92, 231, 0.12)); }
 .icebreak-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 .icebreak-chip {
@@ -1462,7 +1462,6 @@ summary:active {
 .icebreak-chip:hover { border-color: var(--accent); }
 .icebreak-chip:active { transform: scale(0.96); }
 .icebreak-emoji { font-size: 16px; line-height: 1; }
-.icebreak-btn:disabled { opacity: 0.4; cursor: default; }
 @media (prefers-reduced-motion: reduce) { .icebreak { animation: none; } }
 
 /* Direct messages on their way to the server, and ones that never got there. */

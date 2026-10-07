@@ -241,6 +241,7 @@
     addFriendBtn.classList.toggle('hidden', !connected);
     // Mini-games need a live partner, same as Report and Add friend.
     if (gameBtn) gameBtn.classList.toggle('hidden', !connected);
+    if (icebreakBtn) icebreakBtn.classList.toggle('hidden', !connected || !Icebreakers);
     if (games) games.sync();
     // While connected the header shows who you're talking to (name + country
     // + flag); idle shows the online counter next to the TalkLive brand.
@@ -937,17 +938,15 @@
   // --- Break the ice --------------------------------------------------------
   // A new stranger and an empty box is where most chats die. A row of ready-made
   // questions (icebreakers.js) goes under the "you're now chatting with" line
-  // and one tap sends it. It stands down once you have said something; the 💡
-  // in the composer brings back a fresh batch at any point.
+  // and one tap sends it. It stands down once you have said something; the ×
+  // on the card hides it and "Question ideas" in the ⋯ menu brings it back.
   var Icebreakers = window.TalkLiveIcebreakers || null;
   var icebreakBtn = $('icebreakBtn');
   var icebreakCard = null;
-  if (icebreakBtn && !Icebreakers) icebreakBtn.classList.add('hidden');
 
   function hideIcebreakers() {
     if (icebreakCard && icebreakCard.parentNode) icebreakCard.parentNode.removeChild(icebreakCard);
     icebreakCard = null;
-    if (icebreakBtn) icebreakBtn.classList.remove('on');
   }
 
   function fillIcebreakers(list) {
@@ -986,8 +985,15 @@
     shuffleBtn.type = 'button';
     shuffleBtn.className = 'icebreak-shuffle';
     shuffleBtn.textContent = '🔀 ' + t('icebreakShuffle');
+    var closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'icebreak-close';
+    closeBtn.setAttribute('aria-label', t('close'));
+    closeBtn.textContent = '×';
+    closeBtn.addEventListener('click', function () { vibrate(8); hideIcebreakers(); });
     head.appendChild(title);
     head.appendChild(shuffleBtn);
+    head.appendChild(closeBtn);
     var list = document.createElement('div');
     list.className = 'icebreak-list';
     shuffleBtn.addEventListener('click', function () { vibrate(8); fillIcebreakers(list); });
@@ -996,14 +1002,13 @@
     card.appendChild(list);
     msgs.appendChild(card);
     icebreakCard = card;
-    if (icebreakBtn) icebreakBtn.classList.add('on');
     msgs.scrollTop = msgs.scrollHeight;
   }
 
   if (icebreakBtn) {
     icebreakBtn.addEventListener('click', function () {
       vibrate(8);
-      if (icebreakCard) hideIcebreakers(); else showIcebreakers();
+      showIcebreakers(); // the menu closes itself on click
     });
   }
 
@@ -1242,15 +1247,6 @@
       if (!partnerHere || !games) return;
       initAudio();
       games.open(); // the menu closes itself on click
-    });
-  }
-  // The same, one tap from the message box rather than inside a menu.
-  var composerGameBtn = $('composerGameBtn');
-  if (composerGameBtn) {
-    composerGameBtn.addEventListener('click', function () {
-      if (!partnerHere || !games) return;
-      initAudio();
-      games.open();
     });
   }
 
@@ -3368,7 +3364,6 @@
       }
       msgs.scrollTop = msgs.scrollHeight;
     }
-    if (icebreakBtn) icebreakBtn.disabled = false;
     showIcebreakers();
     // Matched while this tab is in the background: tell them straight away.
     if (document.visibilityState === 'hidden') reportAway();
@@ -3445,7 +3440,6 @@
     partnerHere = false;
     hideIcebreakers();
     awayLine = null;
-    if (icebreakBtn) icebreakBtn.disabled = true;
     // Surface the drop on an open board (grey it out) instead of yanking it away.
     if (games) { if (games.isPlaying() || games.isNegotiating()) games.partnerLeft(); else games.reset(); }
     typingEl.classList.add('hidden');

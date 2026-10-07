@@ -587,7 +587,6 @@
   #gameBtn.nav-btn-tool { width: auto; padding: 0 12px 0 10px; }
   #gameBtn.nav-btn-tool .nav-btn-label { display: inline; }
 }
-.composer-game-btn { font-size: 18px; }
 
 @media (prefers-reduced-motion: reduce) {
   .game-play-card { animation: none; }
