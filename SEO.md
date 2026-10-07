@@ -381,7 +381,25 @@ goes up before it goes down as Google works through URLs it already queued.
 It will not reach zero and does not need to - `/?utm_source=seo`,
 `/?mode=chat`, `/pricing?utm_source=app` and the other functional variants are
 duplicates Google is *supposed* to resolve with our canonical, and this status
-is informational, not an error.
+is informational, not an error. Do not press "Validate fix" on it: validation
+fails by design while those functional variants exist.
+
+### Page with redirect - only links to the destination
+
+The seven hand-maintained pages (`/about`, `/pricing`, `/contact`, `/terms`,
+`/refund`, `/community-guidelines`, `/landing`) linked "Home" to `/landing`,
+which 301s to `/` on the canonical host. They now link `/` (which also serves
+the landing page on `LANDING_HOST`). `audit-seo.js` fails if an internal link
+points at anything the server redirects: `/landing`, `*.html`,
+`*/index.html` or a retired URL. What remains in the report is retired URLs,
+the alias domains and `http://`/`www.` variants - redirects working as
+intended.
+
+A crawl of the local server (7 October 2026) and of all 313 URLs that ever
+appeared in a sitemap or as a page on disk found no 404s and no redirect
+chains; the only 404 is `/sitemap-cities.xml`, a removed sitemap, which is the
+correct response. If Search Console's single "Not found (404)" URL is not that,
+it is an external link to a URL that never existed - open the row to see it.
 
 ---
 
