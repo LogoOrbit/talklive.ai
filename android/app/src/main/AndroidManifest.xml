@@ -24,6 +24,7 @@
         android:roundIcon="@mipmap/ic_launcher"
         android:label="${launcherName}"
         android:supportsRtl="true"
+        android:manageSpaceActivity="com.google.androidbrowserhelper.trusted.ManageDataLauncherActivity"
         android:theme="@style/Theme.LauncherActivity">
 
         <meta-data
@@ -79,6 +80,17 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="${hostName}" />
             </intent-filter>
+        </activity>
+
+        <!-- Required: LauncherActivity enables this on every launch (for the
+             "Site settings" shortcut and Settings > Storage > Manage space),
+             and the app crashes at start if it is not declared. -->
+        <activity
+            android:name="com.google.androidbrowserhelper.trusted.ManageDataLauncherActivity"
+            android:exported="false">
+            <meta-data
+                android:name="android.support.customtabs.trusted.MANAGE_SPACE_URL"
+                android:value="${defaultUrl}" />
         </activity>
 
         <activity android:name="com.google.androidbrowserhelper.trusted.FocusActivity" />
