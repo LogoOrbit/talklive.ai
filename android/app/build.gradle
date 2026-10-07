@@ -28,8 +28,10 @@ android {
             defaultUrl: "https://${siteHost}/?utm_source=android",
             launcherName: 'TalkLive',
         ]
+        // Quotes are escaped for the XML resource (\"), or aapt strips them and
+        // the statement is no longer JSON.
         resValue 'string', 'asset_statements',
-            "[{\"relation\":[\"delegate_permission/common.handle_all_urls\"],\"target\":{\"namespace\":\"web\",\"site\":\"https://${siteHost}\"}}]"
+            '[{\\"relation\\":[\\"delegate_permission/common.handle_all_urls\\"],\\"target\\":{\\"namespace\\":\\"web\\",\\"site\\":\\"https://' + siteHost + '\\"}}]'
     }
 
     signingConfigs {
