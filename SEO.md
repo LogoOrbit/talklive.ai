@@ -522,17 +522,17 @@ Then watch the per-sitemap coverage: the country and city clusters are the ones
 worth monitoring, because if Google decides they are thin it will show up there
 first as "Crawled - currently not indexed".
 
-### 2. `sameAs` - social profiles
+### 2. `sameAs` - social profiles (done)
 
-The single strongest entity signal available, and it is deliberately **absent**
-from the schema. `sameAs` must point at profiles that genuinely belong to us,
-and inventing plausible URLs would assert ownership of accounts we do not
-control.
-
-Create real profiles (X, Instagram, TikTok, YouTube, Reddit, LinkedIn - the
-first three are where this category's audience actually is; see
-`marketing/GLOBAL-GROWTH.md`), then add them to `entityGraph()` in
-`scripts/build-seo.js` and to the `Organization` block in `public/index.html`.
+TalkLive's real profiles - Instagram, Facebook, X, TikTok, YouTube and
+Pinterest - live in `scripts/data/social.js`. That file feeds the
+Organization `sameAs` in every generator, `llms.txt`, and
+`scripts/migrate-social.js`, the sweep that adds a "Follow TalkLive" row to
+every page footer and `twitter:site` to every page. The hand-maintained
+`index.html`, `about.html` and `contact.html` carry the same list in their
+JSON-LD. `contentFingerprint()` ignores the row, the tag and `sameAs`, so the
+change did not restamp `lastmod`. Add a new account to `social.js` only once
+it really exists and belongs to TalkLive.
 
 ### 3. Google Business Profile - not applicable, and that is the right answer
 

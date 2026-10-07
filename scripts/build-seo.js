@@ -18,6 +18,7 @@ const LOCALES = require('./locales');
 // Brand + Offer shape for the app node. See scripts/data/commerce.js for why
 // a free web app needs return and shipping fields at all.
 const { BRAND, freeOffer } = require('./data/commerce');
+const SOCIAL = require('./data/social');
 const { languagesAnswer } = require('./data/languages');
 const { artImg } = require('./illustrations');
 const LANGS = ['en'].concat(LOCALES.map((locale) => locale.code));
@@ -123,7 +124,7 @@ function localeHome(loc) {
   const ld = {
     '@context': 'https://schema.org',
     '@graph': [
-      { '@type': 'Organization', '@id': ORGANIZATION_ID, name: 'TalkLive', alternateName: ['Talk Live', 'TalkLive App'], url: `${SITE}/`, logo: { '@type': 'ImageObject', url: LOGO_IMAGE, width: 192, height: 192 } },
+      { '@type': 'Organization', '@id': ORGANIZATION_ID, name: 'TalkLive', alternateName: ['Talk Live', 'TalkLive App'], url: `${SITE}/`, logo: { '@type': 'ImageObject', url: LOGO_IMAGE, width: 192, height: 192 }, sameAs: SOCIAL.SAME_AS },
       { '@type': 'WebSite', '@id': WEBSITE_ID, name: 'TalkLive', alternateName: ['Talk Live', 'TalkLive App'], url: `${SITE}/`, inLanguage: LANGS, publisher: { '@id': ORGANIZATION_ID } },
       { '@type': 'WebApplication', '@id': APP_ID, name: 'TalkLive', url: `${SITE}/`, applicationCategory: 'CommunicationApplication', operatingSystem: 'Any device with a modern web browser', isAccessibleForFree: true, brand: BRAND, offers: freeOffer(), audience: { '@type': 'PeopleAudience', suggestedMinAge: 18 }, publisher: { '@id': ORGANIZATION_ID } },
       {
@@ -387,6 +388,13 @@ function contentFingerprint(html) {
     // search engines everything was rewritten when nothing was, which is the
     // exact signal a site should not send.
     .replace(/<script\b[^>]*\bsrc=["'][^"']*(?:ads|pwa)\.js[^"']*["'][^>]*><\/script>/gi, '')
+    // The sitewide social-profile footer row and twitter:site tag
+    // (scripts/migrate-social.js): site furniture, not page content.
+    .replace(/<nav class="tl-social"[^>]*>[\s\S]*?<\/nav>/g, '')
+    .replace(/<meta name="twitter:site"[^>]*>/g, '')
+    // The Organization's sameAs list: one entity fact repeated on every page,
+    // not a change to what any page says.
+    .replace(/,?\s*"sameAs"\s*:\s*\[[^\]]*\]/g, '')
     // The Consent Mode default scripts/migrate-analytics.js adds to the
     // analytics tag - infrastructure, not content.
     .replace(/\s*gtag\('consent', 'default'[\s\S]*?gtag\('set', 'ads_data_redaction', true\);/g, '')
@@ -682,6 +690,10 @@ Key facts: voice-only or text-only modes; optional country and interest preferen
 
 ## Main pages
 - [TalkLive app](${SITE}/): Start a random voice or text chat instantly.
+
+## Official accounts
+${SOCIAL.PROFILES.map(p => `- ${p.name} (${p.handle}): ${p.url}`).join('\n')}
+- Email: ${SOCIAL.EMAIL}
 
 ## Guides
 ${TOPIC_GUIDES.TOPICS.map(t => `- [${t.name}](${SITE}/${t.slug}): ${t.description}`).join('\n')}

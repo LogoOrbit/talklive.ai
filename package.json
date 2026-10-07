@@ -7,7 +7,7 @@
     "start": "node server/index.js",
     "dev": "node server/index.js",
     "build:usernames": "node scripts/build-username-words.js",
-    "build:seo": "node scripts/build-seo.js && node scripts/migrate-retired-links.js && node scripts/migrate-schema.js && node scripts/migrate-languages.js && node scripts/migrate-pwa.js && node scripts/migrate-ads.js && node scripts/migrate-analytics.js && node scripts/migrate-internal-utm.js",
+    "build:seo": "node scripts/build-seo.js && node scripts/migrate-retired-links.js && node scripts/migrate-schema.js && node scripts/migrate-languages.js && node scripts/migrate-pwa.js && node scripts/migrate-ads.js && node scripts/migrate-analytics.js && node scripts/migrate-internal-utm.js && node scripts/migrate-social.js",
     "ads:migrate": "node scripts/migrate-ads.js",
     "audit:seo": "node scripts/audit-seo.js",
     "check:bundle": "node scripts/check-bundle-size.js",

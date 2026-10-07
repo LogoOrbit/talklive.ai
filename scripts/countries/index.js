@@ -19,6 +19,7 @@
  * because the CSP allows fonts from 'self' only.
  */
 const S = require('../journal/shared');
+const SOCIAL = require('../data/social');
 
 const SLUGS = [
   'india', 'pakistan', 'bangladesh', 'united-states', 'united-kingdom', 'egypt', 'nigeria', 'indonesia',
@@ -49,6 +50,8 @@ const BASE_CSS = `
 .c-guides h2{font:600 12px/1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.16em;text-transform:uppercase;margin:0 0 12px;opacity:.75}
 .c-guides ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px 22px;font:500 15px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
 .c-guides a{text-decoration:none;border-bottom:1px solid currentColor}
+/* --mast is the top bar's text colour, often white; the footer sits on the page background. */
+.c-page .j-foot{color:var(--ink,#111)}
 @media (max-width:640px){.c-bar{font-size:12px}.c-bar nav{gap:12px;flex-wrap:nowrap}.c-bar nav a:nth-child(1),.c-bar nav a:nth-child(2),.c-bar nav a:nth-child(4){display:none}}
 `;
 
@@ -85,7 +88,7 @@ function head(c, wordCount) {
     '@context': 'https://schema.org',
     '@graph': [
       {
-        '@type': 'Organization', '@id': `${SITE}/#organization`, name: 'TalkLive', url: `${SITE}/`,
+        '@type': 'Organization', '@id': `${SITE}/#organization`, name: 'TalkLive', url: `${SITE}/`, sameAs: SOCIAL.SAME_AS,
         logo: { '@type': 'ImageObject', url: `${SITE}/favicon-192.png`, width: 192, height: 192 },
       },
       {

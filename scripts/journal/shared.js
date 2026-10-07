@@ -17,6 +17,7 @@
  */
 const fs = require('fs');
 const path = require('path');
+const SOCIAL = require('../data/social');
 
 const SITE = 'https://talklive.app';
 const PUBLIC = path.join(__dirname, '..', '..', 'public');
@@ -155,7 +156,7 @@ function head(p) {
     '@context': 'https://schema.org',
     '@graph': [
       {
-        '@type': 'Organization', '@id': `${SITE}/#organization`, name: 'TalkLive', url: `${SITE}/`,
+        '@type': 'Organization', '@id': `${SITE}/#organization`, name: 'TalkLive', url: `${SITE}/`, sameAs: SOCIAL.SAME_AS,
         logo: { '@type': 'ImageObject', url: `${SITE}/favicon-192.png`, width: 192, height: 192 },
       },
       p.article ? {
