@@ -5,7 +5,7 @@ Copy these into Play Console. Graphics are in `store/`.
 ## Main store listing
 
 **App name** (30 max)
-TalkLive: Talk to Strangers
+TalkLive
 
 **Short description** (80 max)
 Free voice calls and text chat with new people worldwide. No sign-up, no camera.
