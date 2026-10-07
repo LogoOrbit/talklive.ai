@@ -2050,18 +2050,6 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
         </div>
         <div id="reactionOverlay" class="reaction-overlay" aria-hidden="true"></div>
 
-        <!-- The games' front door: offered in the conversation itself, one tap
-             from an invite. The top-bar button alone went unnoticed. Shown by
-             games.js while a partner is here and no game is afoot. -->
-        <div id="gamePlayCard" class="game-play-card hidden" role="group" data-i18n-aria="playGames" aria-label="Play a game">
-          <span class="game-play-icon" aria-hidden="true">🎮</span>
-          <span id="gamePlayText" class="game-play-text" data-i18n="playGames">Play a game</span>
-          <span class="game-play-actions">
-            <button type="button" class="game-play-btn" data-game="ttt"><span aria-hidden="true">✕◯</span> <span data-i18n="gameTtt">Tic Tac Toe</span></button>
-            <button type="button" class="game-play-btn" data-game="dab"><span aria-hidden="true">⊡</span> <span data-i18n="gameDab">Dots &amp; Boxes</span></button>
-          </span>
-          <button type="button" id="gamePlayDismiss" class="game-play-dismiss" data-i18n-aria="close" aria-label="Close">&times;</button>
-        </div>
 
         <!-- ===============================================================
              THE CONTROLS. One row, four circles of the same size, each with

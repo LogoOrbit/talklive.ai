@@ -3506,11 +3506,28 @@
     if (topMenu.classList.contains('hidden')) return;
     topMenu.classList.add('hidden');
     moreBtn.setAttribute('aria-expanded', 'false');
+    setGameNudge(false); // seen it; the next reminder comes 20s later
   }
   function openMenu() {
     topMenu.classList.remove('hidden');
     moreBtn.setAttribute('aria-expanded', 'true');
+    gameNudge = false; // the dot moves from ⋯ onto the "Play a game" row
+    syncMoreDot();
   }
+
+  // Games live in the ⋯ menu, so every 20s while connected and no game is
+  // afoot a dot on ⋯ (and on the "Play a game" row) reminds people they exist.
+  var gameNudge = false;
+  function setGameNudge(on) {
+    gameNudge = on;
+    if (gameBtn) gameBtn.classList.toggle('game-nudge', on);
+    syncMoreDot();
+  }
+  setInterval(function () {
+    var idle = partnerHere && games && !games.isOpen() && !games.isPlaying() && !games.isNegotiating();
+    if (!idle) { if (gameNudge) setGameNudge(false); return; }
+    if (topMenu.classList.contains('hidden')) setGameNudge(true);
+  }, 20000);
 
   moreBtn.addEventListener('click', function (e) {
     e.stopPropagation();
@@ -3530,7 +3547,7 @@
   // that state onto the button as a dot - otherwise folding Friends away
   // would silently hide notifications.
   function syncMoreDot() {
-    moreDot.classList.toggle('hidden', friendsBadge.classList.contains('hidden'));
+    moreDot.classList.toggle('hidden', friendsBadge.classList.contains('hidden') && !gameNudge);
   }
   new MutationObserver(syncMoreDot).observe(friendsBadge, {
     attributes: true, attributeFilter: ['class'],

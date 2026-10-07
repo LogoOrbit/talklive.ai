@@ -1673,3 +1673,9 @@ summary:active {
   .msg.system.system-animal-match { font-size: 13px; }
   .msg.system .msg-time { display: none; }
 }
+
+/* Reminder dot on the "Play a game" menu row (see setGameNudge in chat.js). */
+#gameBtn.game-nudge::after {
+  content: ''; width: 8px; height: 8px; margin-left: auto; border-radius: 50%;
+  background: var(--accent); flex: 0 0 auto;
+}
