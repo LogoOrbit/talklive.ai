@@ -35,7 +35,7 @@ let updated = 0;
 for (const file of htmlFiles(publicDir)) {
   if (skipPages.has(path.basename(file))) continue;
   const before = fs.readFileSync(file, 'utf8');
-  let html = before.replace(/<nav class="tl-social"[^>]*>[\s\S]*?<\/nav>/g, '');
+  let html = before.replace(/\n*<nav class="tl-social"[^>]*>[\s\S]*?<\/nav>\n?/g, '');
   html = html.replace(/\s*<meta name="twitter:site"[^>]*>/g, '');
 
   const end = html.lastIndexOf('</footer>');
