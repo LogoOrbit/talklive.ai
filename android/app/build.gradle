@@ -1,0 +1,63 @@
+plugins {
+    id 'com.android.application'
+}
+
+// The site this app opens. It must serve /.well-known/assetlinks.json listing
+// this package and its signing certificate (server/assetlinks.json), or
+// Android shows the app with a browser URL bar instead of full screen.
+def siteHost = 'talklive.app'
+
+// Signing for release builds comes from the environment so the keystore and
+// its passwords never enter the repo. See android/README.md.
+def keystorePath = System.getenv('TALKLIVE_KEYSTORE')
+
+android {
+    namespace 'app.talklive'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'app.talklive'
+        minSdk 24
+        targetSdk 36
+        // Bump both for every upload to Google Play.
+        versionCode 1
+        versionName '1.0.0'
+
+        manifestPlaceholders = [
+            hostName: siteHost,
+            defaultUrl: "https://${siteHost}/?utm_source=android",
+            launcherName: 'TalkLive',
+        ]
+        resValue 'string', 'asset_statements',
+            "[{\"relation\":[\"delegate_permission/common.handle_all_urls\"],\"target\":{\"namespace\":\"web\",\"site\":\"https://${siteHost}\"}}]"
+    }
+
+    signingConfigs {
+        release {
+            if (keystorePath) {
+                storeFile file(keystorePath)
+                storePassword System.getenv('TALKLIVE_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('TALKLIVE_KEY_ALIAS') ?: 'upload'
+                keyPassword System.getenv('TALKLIVE_KEY_PASSWORD') ?: System.getenv('TALKLIVE_KEYSTORE_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
+            if (keystorePath) signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.4'
+    implementation 'androidx.appcompat:appcompat:1.7.1'
+}

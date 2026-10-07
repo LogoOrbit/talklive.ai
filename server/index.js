@@ -1265,6 +1265,30 @@ app.get('/ads.txt', (req, res) => {
   res.type('text').set('Cache-Control', 'public, max-age=3600').send(ADS_TXT + '\n');
 });
 
+// Digital Asset Links for the Android app (android/). Android only opens the
+// site full screen, without a browser URL bar, when this file lists the app's
+// package and signing certificate. The certificates are committed in
+// server/assetlinks.json; ANDROID_CERT_SHA256 (comma-separated) adds more
+// without a code change, e.g. the Play app signing key once it is known.
+// Served by a route because express.static skips dot-directories.
+const ASSET_LINKS = (() => {
+  try {
+    const cfg = JSON.parse(fs.readFileSync(path.join(__dirname, 'assetlinks.json'), 'utf8'));
+    const extra = String(process.env.ANDROID_CERT_SHA256 || '').split(',').map((s) => s.trim()).filter(Boolean);
+    const fingerprints = [...new Set([...(cfg.sha256 || []), ...extra].map((s) => s.toUpperCase()))];
+    return JSON.stringify([{
+      relation: ['delegate_permission/common.handle_all_urls'],
+      target: { namespace: 'android_app', package_name: cfg.package, sha256_cert_fingerprints: fingerprints },
+    }]);
+  } catch (err) {
+    console.error('assetlinks.json unreadable:', err.message);
+    return '[]';
+  }
+})();
+app.get('/.well-known/assetlinks.json', (req, res) => {
+  res.type('application/json').set('Cache-Control', 'public, max-age=3600').send(ASSET_LINKS);
+});
+
 // --- Ad density config -------------------------------------------------------
 //
 // public/ads.js reads its density and behaviour from here rather than having

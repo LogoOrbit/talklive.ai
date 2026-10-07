@@ -1,0 +1,7 @@
+{
+  "_comment": "Signing certificates allowed to open talklive.app full screen as the Android app (package app.talklive). Served at /.well-known/assetlinks.json. List the upload key AND the Google Play app signing key (Play Console > Test and release > App integrity > App signing); without the Play key, installs from the store show a browser URL bar.",
+  "package": "app.talklive",
+  "sha256": [
+    "67:83:9A:F9:D2:F2:72:A5:3C:BA:6C:5D:8C:ED:5B:9E:D0:85:A4:3D:14:10:FF:8E:BA:A4:47:AA:D8:8F:B6:F7"
+  ]
+}

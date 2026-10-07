@@ -10,3 +10,6 @@ marketing
 .replit
 DEPLOY-FLY.md
 README.md
+
+# The Android app (android/) is built separately, never served.
+android
