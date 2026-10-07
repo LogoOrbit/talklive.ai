@@ -693,6 +693,7 @@ Key facts: voice-only or text-only modes; optional country and interest preferen
 
 ## Official accounts
 ${SOCIAL.PROFILES.map(p => `- ${p.name} (${p.handle}): ${p.url}`).join('\n')}
+${SOCIAL.LISTINGS.map(p => `- ${p.name}: ${p.url}`).join('\n')}
 - Email: ${SOCIAL.EMAIL}
 
 ## Guides

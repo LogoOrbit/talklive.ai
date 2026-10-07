@@ -530,7 +530,9 @@ Organization `sameAs` in every generator, `llms.txt`, and
 `scripts/migrate-social.js`, the sweep that adds a "Follow TalkLive" row to
 every page footer and `twitter:site` to every page. The hand-maintained
 `index.html`, `about.html` and `contact.html` carry the same list in their
-JSON-LD. `contentFingerprint()` ignores the row, the tag and `sameAs`, so the
+JSON-LD, and the sweep also sets the full `sameAs` list - the six profiles plus
+the Crunchbase listing - on every TalkLive Organization node on every page,
+nested ones included. `contentFingerprint()` ignores the row, the tag and `sameAs`, so the
 change did not restamp `lastmod`. Add a new account to `social.js` only once
 it really exists and belongs to TalkLive.
 

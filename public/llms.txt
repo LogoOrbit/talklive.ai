@@ -27,6 +27,7 @@ Key facts: voice-only or text-only modes; optional country and interest preferen
 - TikTok (@talkliveapp): https://www.tiktok.com/@talkliveapp
 - YouTube (@talkliveapp): https://www.youtube.com/@talkliveapp
 - Pinterest (@talklive.app): https://www.pinterest.com/talklive.app/
+- Crunchbase: https://www.crunchbase.com/organization/talklive
 - Email: info@talklive.app
 
 ## Guides
