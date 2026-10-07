@@ -88,7 +88,7 @@ ${CLOCKS.map(([c, z, t]) => `<div><b>${t}</b><span>${ctx.esc(c)}</span><small>${
 <p class="af-cap">The same moment, p.m., in four cities. No daylight saving in any of them.</p>
 <p>Greetings deserve their own note. In many African cultures, launching straight into business without asking after someone's health, family and day is rude, not efficient. If a conversation starts with several rounds of "how are you" before anything else, that is the conversation working as intended.</p>
 
-<div class="af-box"><h3>How country matching works on TalkLive</h3><p>Country preferences are preferences, not guarantees. Country is estimated from a person's network connection and is not verified, and if nobody from your chosen countries is waiting, matching broadens after a few seconds.</p><p>For local busy hours, safety advice and helplines, see the <a href="/countries/nigeria">Nigeria guide</a> and the <a href="/countries/egypt">Egypt guide</a>.</p></div>
+<div class="af-box"><h3>How country matching works on TalkLive</h3><p>Country preferences are preferences, not guarantees. Country is estimated from a person's network connection and is not verified, and if nobody from your chosen countries is waiting, matching broadens after a few seconds.</p><p>For local busy hours, safety advice and helplines, see the <a href="/countries/nigeria">Nigeria</a>, <a href="/countries/kenya">Kenya</a>, <a href="/countries/south-africa">South Africa</a> and <a href="/countries/egypt">Egypt</a> guides.</p></div>
 <p>So when you meet someone from Accra or Nairobi, try asking the obvious question nobody asks: do you still flash people?</p>
 </div>
 ${ctx.cta({ title: 'Your turn: say hello', sub: 'How far, habari or sawubona. Someone is waiting to talk.' })}

@@ -67,6 +67,15 @@ being followed.
 
 ## What is on the site
 
+> **October 2026 (9):** seven more hand-designed country guides - China,
+> Turkey, Brazil, Mexico, Malaysia, Kenya and South Africa - taking the set to
+> 21. China is among the largest visitor sources (see `llms.txt`); the others
+> are the biggest remaining markets whose old `/countries/*` and `/cities/*`
+> URLs still carried search history, and those URLs now 301 to the new guides
+> instead of to a regional feature. The `/country-chat-guide` atlas lists all
+> 21, and the Europe, Americas, Africa, Middle East and Southeast Asia features
+> now link to the guides for their countries.
+
 > **October 2026 (8):** traffic recovery, from the dashboard export of
 > 6 October. Daily unique visitors held at about 1,400-1,900; the fall in
 > "visits" is mostly the 5 October counting fix. Search and AI arrivals did

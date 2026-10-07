@@ -1,7 +1,7 @@
 {
   "/": {
-    "hash": "80e06ae616586151",
-    "date": "2026-10-06",
+    "hash": "9c04fdff1d9b6f98",
+    "date": "2026-10-07",
     "v": 3
   },
   "/about": {
@@ -120,78 +120,113 @@
     "v": 3
   },
   "/countries/bangladesh": {
-    "hash": "6a2fc85a9be94bee",
-    "date": "2026-10-06",
+    "hash": "d44a48bd9f7003c1",
+    "date": "2026-10-07",
+    "v": 3
+  },
+  "/countries/brazil": {
+    "hash": "8c28db3376b525e9",
+    "date": "2026-10-07",
     "v": 3
   },
   "/countries/canada": {
-    "hash": "639a53a5a31d5906",
-    "date": "2026-10-06",
+    "hash": "89bbace7b872cdd3",
+    "date": "2026-10-07",
+    "v": 3
+  },
+  "/countries/china": {
+    "hash": "e3a3ab116385a566",
+    "date": "2026-10-07",
     "v": 3
   },
   "/countries/egypt": {
-    "hash": "1e7051b28aa45637",
-    "date": "2026-10-06",
+    "hash": "255b0890d28a6de3",
+    "date": "2026-10-07",
     "v": 3
   },
   "/countries/germany": {
-    "hash": "2f7a9002a8d244d1",
-    "date": "2026-10-06",
+    "hash": "9059ebaa379b5a29",
+    "date": "2026-10-07",
     "v": 3
   },
   "/countries/india": {
-    "hash": "f8c194800708a918",
-    "date": "2026-10-06",
+    "hash": "fa2e1bb06d2a7290",
+    "date": "2026-10-07",
     "v": 3
   },
   "/countries/indonesia": {
-    "hash": "ae12bacaec958442",
-    "date": "2026-10-06",
+    "hash": "c373e13508a9b867",
+    "date": "2026-10-07",
+    "v": 3
+  },
+  "/countries/kenya": {
+    "hash": "34600bc306277693",
+    "date": "2026-10-07",
+    "v": 3
+  },
+  "/countries/malaysia": {
+    "hash": "7afbef03d19fbb0d",
+    "date": "2026-10-07",
+    "v": 3
+  },
+  "/countries/mexico": {
+    "hash": "734b0dd492e61c60",
+    "date": "2026-10-07",
     "v": 3
   },
   "/countries/morocco": {
-    "hash": "4a53cc4fafcf422f",
-    "date": "2026-10-06",
+    "hash": "06d2aa0dcec70ea1",
+    "date": "2026-10-07",
     "v": 3
   },
   "/countries/nigeria": {
-    "hash": "af6da607ee0ab56f",
-    "date": "2026-10-06",
+    "hash": "546059e0ba8d4d23",
+    "date": "2026-10-07",
     "v": 3
   },
   "/countries/pakistan": {
-    "hash": "84bd7cf8f06aea44",
-    "date": "2026-10-06",
+    "hash": "90b96f603ff8f5de",
+    "date": "2026-10-07",
     "v": 3
   },
   "/countries/philippines": {
-    "hash": "9c39f9bf203d48c0",
-    "date": "2026-10-06",
+    "hash": "1c23148c7326eb8b",
+    "date": "2026-10-07",
     "v": 3
   },
   "/countries/saudi-arabia": {
-    "hash": "fd267d3b83ce2494",
-    "date": "2026-10-06",
+    "hash": "75dff556c48f7a2b",
+    "date": "2026-10-07",
+    "v": 3
+  },
+  "/countries/south-africa": {
+    "hash": "ccb28d51f1817f69",
+    "date": "2026-10-07",
+    "v": 3
+  },
+  "/countries/turkey": {
+    "hash": "a1579b422c239c97",
+    "date": "2026-10-07",
     "v": 3
   },
   "/countries/united-arab-emirates": {
-    "hash": "c59e72d9d01d135b",
-    "date": "2026-10-06",
+    "hash": "a43d60f302c56e77",
+    "date": "2026-10-07",
     "v": 3
   },
   "/countries/united-kingdom": {
-    "hash": "bbd720d400bef9de",
-    "date": "2026-10-06",
+    "hash": "de6c5548c4475656",
+    "date": "2026-10-07",
     "v": 3
   },
   "/countries/united-states": {
-    "hash": "54d4338352e64494",
-    "date": "2026-10-06",
+    "hash": "7ca296c663655efa",
+    "date": "2026-10-07",
     "v": 3
   },
   "/country-chat-guide": {
-    "hash": "b3e990ef06faf181",
-    "date": "2026-10-06",
+    "hash": "3b2ae642108fe4e5",
+    "date": "2026-10-07",
     "v": 3
   },
   "/de/": {
@@ -315,23 +350,23 @@
     "v": 3
   },
   "/regions/africa": {
-    "hash": "bff1dc09944c37f0",
-    "date": "2026-10-05",
+    "hash": "3c88fd264708bbb8",
+    "date": "2026-10-07",
     "v": 3
   },
   "/regions/americas": {
-    "hash": "933e321577e9bfd9",
-    "date": "2026-10-05",
+    "hash": "f9f2dba6b79fb61c",
+    "date": "2026-10-07",
     "v": 3
   },
   "/regions/europe": {
-    "hash": "ea2d1c8a4024eb1d",
-    "date": "2026-10-05",
+    "hash": "885b40f4f0291e8c",
+    "date": "2026-10-07",
     "v": 3
   },
   "/regions/middle-east": {
-    "hash": "dda992ff5fbd3610",
-    "date": "2026-10-05",
+    "hash": "c1cde5eb86583507",
+    "date": "2026-10-07",
     "v": 3
   },
   "/regions/south-asia": {
@@ -340,8 +375,8 @@
     "v": 3
   },
   "/regions/southeast-asia": {
-    "hash": "b30e9da350f401fb",
-    "date": "2026-10-05",
+    "hash": "de593a2ddd56bb03",
+    "date": "2026-10-07",
     "v": 3
   },
   "/resources": {

@@ -86,7 +86,7 @@ ${ctx.cta({ title: 'Talk to someone in Southeast Asia tonight', sub: 'English, T
 </div>
 <p>Two of the region's big languages are tonal, which matters if you are learning by speaking. Thai has five tones; northern Vietnamese has six. The same syllable said with a different pitch is a different word, which is why reading a phrasebook gets a learner only so far and talking to a real person gets them much further.</p>
 
-<div class="sx-box"><h3>How country matching works on TalkLive</h3><p>Country preferences are preferences, not guarantees. Country is estimated from a person's network connection and is not verified, and if nobody from your chosen countries is waiting, matching broadens after a few seconds.</p><p>For local times, busy hours and safety advice, see the <a href="/countries/indonesia">Indonesia guide</a>, and <a href="/languages/#indonesian">Indonesian</a> in the languages feature.</p></div>
+<div class="sx-box"><h3>How country matching works on TalkLive</h3><p>Country preferences are preferences, not guarantees. Country is estimated from a person's network connection and is not verified, and if nobody from your chosen countries is waiting, matching broadens after a few seconds.</p><p>For local times, busy hours and safety advice, see the <a href="/countries/indonesia">Indonesia</a>, <a href="/countries/malaysia">Malaysia</a> and <a href="/countries/philippines">Philippines</a> guides, and <a href="/languages/#indonesian">Indonesian</a> in the languages feature.</p></div>
 <p>So if you meet someone from Kuala Lumpur at what feels like dusk, check the clock before you say good evening. Is it still daytime there?</p>
 </div>
 ${ctx.cta({ title: 'Your turn: say hello', sub: 'Halo, kumusta, xin chào or sawasdee. Someone is waiting to talk.' })}

@@ -2,7 +2,7 @@
 /*
  * Country guides at /countries/<slug>.
  *
- * Fourteen countries - the ones that send TalkLive the most people - each with
+ * Twenty-one countries - the ones that send TalkLive the most people - each with
  * a page written and designed on its own: its own concept, layout, palette and
  * typography, in the manner of the Journal features. Nothing here is a
  * template with a name swapped in. Each module in this folder supplies the
@@ -23,6 +23,7 @@ const S = require('../journal/shared');
 const SLUGS = [
   'india', 'pakistan', 'bangladesh', 'united-states', 'united-kingdom', 'egypt', 'nigeria', 'indonesia',
   'germany', 'saudi-arabia', 'morocco', 'united-arab-emirates', 'canada', 'philippines',
+  'china', 'turkey', 'brazil', 'mexico', 'malaysia', 'kenya', 'south-africa',
 ];
 const COUNTRIES = SLUGS.map((slug) => require(`./${slug}`));
 const SITE = S.SITE;

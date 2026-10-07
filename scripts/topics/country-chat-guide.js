@@ -1,5 +1,5 @@
 'use strict';
-// /country-chat-guide: "The Atlas". The hub for the fourteen country guides:
+// /country-chat-guide: "The Atlas". The hub for the twenty-one country guides:
 // each card is a small preview of its guide, in that guide's own colours and
 // typeface, followed by how country preferences really work. A navigation
 // hub, so it carries no ads (noAds). Inter for the frame around the cards.
@@ -18,6 +18,13 @@ const CARDS = [
   ['morocco', 'Morocco', 'Three glasses of tea', 'Busiest 4 pm - 10 pm', '#12406b', '#e3a21a', 'Fraunces', 700, false],
   ['canada', 'Canada', 'Six time zones', 'Busiest 11 am - 5 pm ET', '#b3121f', '#ffffff', 'Unbounded', 800, false],
   ['philippines', 'Philippines', 'Kwentuhan tayo', 'Busiest 11 pm - 5 am PHT', '#0038a8', '#fcd116', 'Nunito', 800, false],
+  ['china', 'China', 'Five time zones, one clock', 'Busiest 11 pm - 5 am Beijing', '#f6f0e4', '#b8231b', 'Source Serif 4', 600, false],
+  ['turkey', 'Turkey', 'Over a glass of çay', 'Busiest 6 pm - midnight TRT', '#7a1d12', '#e0a43a', 'Cormorant Garamond', 700, false],
+  ['brazil', 'Brazil', 'Bora bater um papo?', 'Busiest noon - 6 pm BRT', '#ffdf00', '#002776', 'Bricolage Grotesque', 700, false],
+  ['mexico', 'Mexico', 'La plática', 'Busiest 9 am - 3 pm CDMX', '#0f3b2e', '#f6a000', 'Archivo Black', 400, true],
+  ['malaysia', 'Malaysia', 'Mamak at midnight', 'Busiest 11 pm - 5 am MYT', '#06302e', '#ffd23f', 'Big Shoulders Display', 800, true],
+  ['kenya', 'Kenya', 'Sasa? Poa.', 'Busiest 6 pm - midnight EAT', '#000000', '#ffffff', 'Space Grotesk', 700, false],
+  ['south-africa', 'South Africa', 'Howzit, in twelve languages', 'Busiest 5 pm - 11 pm SAST', '#007a4d', '#ffffff', 'Archivo', 600, true],
 ];
 
 module.exports = {
@@ -26,8 +33,8 @@ module.exports = {
   date: '2026-10-05',
   noAds: true,
   about: { '@type': 'Thing', name: 'Country guides and country preferences on TalkLive' },
-  title: 'Talk to Strangers by Country - 14 Country Guides | TalkLive',
-  description: 'Guides to talking with people in India, Pakistan, Bangladesh, the US, the UK, Egypt, Nigeria, Indonesia, Germany, Saudi Arabia, the UAE, Morocco, Canada and the Philippines - plus how country preferences really work.',
+  title: 'Talk to Strangers by Country - 21 Country Guides | TalkLive',
+  description: 'Guides to talking with people in 21 countries - India, the US, Pakistan, China, Egypt, the UK, Nigeria, Germany, Brazil, Mexico, Turkey and more - and how country matching works.',
   keywords: 'talk to people from other countries, country voice chat, international voice chat, chat with people worldwide, country chat preferences',
   h1: 'Talk to People Around the World',
   theme: '#f5f3ee',
@@ -72,13 +79,13 @@ body{font-family:"Inter",system-ui,sans-serif;background:var(--paper)}
     { q: 'Does the country label verify where someone lives?', a: 'No. It is estimated from the network connection and is not proof of nationality, residence or language.' },
     { q: 'Is a country preference a language filter?', a: 'No. Countries are multilingual, and individuals speak different languages. Ask at the start of a conversation.' },
     { q: 'How many countries can I choose for free?', a: 'The free plan allows up to two preferred and two avoided countries.' },
-    { q: 'Why are there guides for only fourteen countries?', a: 'They are the countries that bring TalkLive the most people, and each guide is written by hand with information specific to that country. We add a guide only when there is something genuinely useful to say.' },
+    { q: 'Why are there guides for only twenty-one countries?', a: 'They are the countries that bring TalkLive the most people, and each guide is written by hand with information specific to that country. We add a guide only when there is something genuinely useful to say.' },
   ],
   body: (c) => `<main id="story">
 <section class="at-head">
   <h1>Talk to people around the world</h1>
   <div>
-    <p>In a typical month, people come to TalkLive from more than 150 countries. The fourteen that bring us the most people each have their own guide - its languages, its late nights, what people talk about, when they are online in local time, and the safety advice that applies there.</p>
+    <p>In a typical month, people come to TalkLive from more than 150 countries. The twenty-one that bring us the most people each have their own guide - its languages, its late nights, what people talk about, when they are online in local time, and the safety advice that applies there.</p>
     ${c.ctas('Talk to the world', 'Text the world')}
   </div>
 </section>
