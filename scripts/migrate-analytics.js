@@ -41,6 +41,13 @@ const publicDir = path.join(__dirname, '..', 'public');
 // the totals wrong in both.
 const MEASUREMENT_ID = 'G-713E3C1RH1';
 
+// Google Ads conversion tracking. It rides on the same gtag.js load as GA4 -
+// Google's instructions for a site that already has the Google tag are to add
+// this one 'config' command to every instance of it, not a second loader.
+const ADS_ID = 'AW-18500257801';
+const GA_CONFIG = `gtag('config', '${MEASUREMENT_ID}');`;
+const ADS_CONFIG = `gtag('config', '${ADS_ID}');`;
+
 /*
  * Loaded at the end of <body>, matching public/index.html.
  *
@@ -62,7 +69,8 @@ const SNIPPET = `<!-- Google tag (gtag.js) - see scripts/migrate-analytics.js --
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-  gtag('config', '${MEASUREMENT_ID}');
+  ${GA_CONFIG}
+  ${ADS_CONFIG}
 </script>
 `;
 
@@ -85,6 +93,7 @@ const CONSENT_DEFAULT = `
   gtag('set', 'ads_data_redaction', true);`;
 const GTAG_STUB = /function gtag\(\)\{dataLayer\.push\(arguments\);\}/;
 let consented = 0;
+let adsTagged = 0;
 
 function htmlFiles(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -125,7 +134,13 @@ for (const file of htmlFiles(publicDir)) {
     if (withConsent !== html) { html = withConsent; consented += 1; }
   }
 
+  // Ads config on every tagged page, hand-written tags included.
+  if (html.includes(GA_CONFIG) && !html.includes(ADS_CONFIG)) {
+    html = html.replace(GA_CONFIG, `${GA_CONFIG}\n  ${ADS_CONFIG}`);
+    adsTagged += 1;
+  }
+
   if (html !== before) fs.writeFileSync(file, html);
 }
 
-console.log(`Analytics: tagged ${updated} HTML files (${skipped} already had it); consent default added to ${consented}.`);
+console.log(`Analytics: tagged ${updated} HTML files (${skipped} already had it); consent default added to ${consented}; Ads config added to ${adsTagged}.`);
