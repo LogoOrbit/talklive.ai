@@ -3311,9 +3311,19 @@
     s.onload = show;
     document.head.appendChild(s);
   });
+  // Google Ads conversion: a visitor actually connected to someone. Once per
+  // page load, so a long session of chats counts as one converted visitor.
+  var adsConversionSent = false;
+  function sendAdsConversion() {
+    if (adsConversionSent || typeof window.gtag !== 'function') return;
+    adsConversionSent = true;
+    window.gtag('event', 'conversion', { send_to: 'AW-18500257801/LPruCP3u4ZQdEImQzvVE' });
+  }
+
   socket.on('matched', function (data) {
     if (data.mode && data.mode !== 'chat') return; // safety: ignore stray voice matches
     searchAcked = true;
+    sendAdsConversion();
     currentPartner = data.partner;
     partnerHere = true;
     // Before anything else: a disabled input cannot take focus, and the box is

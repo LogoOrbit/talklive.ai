@@ -9904,8 +9904,18 @@ socket.on('random-fallback', () => {
   setSubText(filtered ? 'subFiltersFallback' : 'subHangTight');
 });
 
+// Google Ads conversion: a visitor actually connected to someone. Once per
+// page load, so a long session of calls counts as one converted visitor.
+let adsConversionSent = false;
+function sendAdsConversion() {
+  if (adsConversionSent || typeof window.gtag !== 'function') return;
+  adsConversionSent = true;
+  window.gtag('event', 'conversion', { send_to: 'AW-18500257801/LPruCP3u4ZQdEImQzvVE' });
+}
+
 socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
   markSearchAcked();
+  sendAdsConversion();
   endedNoticeUntil = 0;
   currentCallIsCallback = !!callback;
   clearOutgoingCallBack();
