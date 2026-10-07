@@ -12,6 +12,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { retiredTarget } = require('./data/retired');
 
 const ROOT = path.resolve(__dirname, '..');
 const PUBLIC = path.join(ROOT, 'public');
@@ -206,6 +207,17 @@ function auditInternalLinks(html, pageScope) {
       } else if (name.toLowerCase() === 'lang') {
         report(pageScope, `internal link carries unread "lang" parameter: "${href}"`);
       }
+    }
+
+    // A link to a URL the server 301s (server/index.js) costs a crawl and shows
+    // up in Search Console as "Page with redirect". Link the destination.
+    const redirectsTo = target.pathname === '/landing' ? '/'
+      : /\/index\.html$/i.test(target.pathname) ? target.pathname.slice(0, -'index.html'.length)
+        : /\.html$/i.test(target.pathname) ? target.pathname.slice(0, -'.html'.length)
+          : retiredTarget(target.pathname);
+    if (redirectsTo) {
+      report(pageScope, `internal link points at a redirect: "${href}" (link "${redirectsTo}")`);
+      continue;
     }
 
     if (target.pathname === '/') continue; // app home, including query/hash CTAs
