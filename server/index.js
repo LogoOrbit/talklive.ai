@@ -1554,7 +1554,10 @@ function staticHeaders(res, filePath) {
   if (/\.html$/i.test(filePath)) {
     // HTML changes with deploys - revalidate so updates show up fast.
     res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
-  } else if (/\.(css|js|svg|png|jpg|jpeg|webp|ico|woff2?|mp4|webm|m4a|mp3)$/i.test(filePath)) {
+  } else if (/\.(css|js|svg|png|jpg|jpeg|webp|avif|ico|woff2?|mp4|webm|m4a|mp3)$/i.test(filePath)) {
+    // The bundled mime table predates AVIF and would send it as
+    // application/octet-stream; send() keeps a Content-Type set here.
+    if (/\.avif$/i.test(filePath)) res.setHeader('Content-Type', 'image/avif');
     // Assets requested with a ?v= cache buster get a brand new URL on every
     // deploy, so the bytes behind a given URL never change - cache them for
     // a year. Everything else keeps the conservative one-day window.
