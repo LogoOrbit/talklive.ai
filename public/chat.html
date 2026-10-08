@@ -104,13 +104,6 @@
 <body>
   <a href="#chatStage" class="skip-link" data-i18n="skipToContent">Skip to main content</a>
   <div class="app">
-    <!-- Public beta strip: tells visitors TalkLive is in beta and improving
-         every week. Switched on and off from the
-         owner dashboard (Settings); the server sends the state over the socket. -->
-    <div id="devBanner" class="tl-devbanner" role="status" hidden>
-      <span class="tl-devbanner-text" data-i18n="devBanner">TalkLive is in public beta - we ship improvements every week. Thanks for helping us shape it.</span>
-      <button type="button" class="tl-devbanner-close" data-i18n-aria="dismiss" data-i18n-title="dismiss" aria-label="Dismiss" title="Dismiss">&times;</button>
-    </div>
     <!-- Owner announcement: text typed on the dashboard (Settings → Site modes),
          shown as written. Same strip, accent colour. -->
     <div id="siteAnnounce" class="tl-devbanner tl-announce" role="status" hidden>
@@ -120,32 +113,11 @@
     <div id="siteToast" class="tl-site-toast" role="alert" hidden></div>
     <script>
     (function () {
-      var bar = document.getElementById('devBanner');
-      var key = 'talklive_devbanner_' + (bar.getAttribute('data-since') || 0);
-      // The server renders the strip already shown when it is switched on, so
-      // it is in place from the first paint instead of pushing the page down
-      // when the socket connects (a layout shift on every cold visit). A
-      // visitor who closed this switch-on has it hidden here, before paint.
-      if (!bar.hidden) { try { if (localStorage.getItem(key) === '1') bar.hidden = true; } catch (e) { /* storage blocked - show it */ } }
-      // Called with the server's { on, since } on connect and whenever the
-      // owner flips it. Closing it is remembered per switch-on (`since`).
-      window.tlDevBanner = function (s) {
-        var on = !!(s && s.on);
-        key = 'talklive_devbanner_' + ((s && s.since) || 0);
-        var closed = false;
-        try { closed = localStorage.getItem(key) === '1'; } catch (e) { /* storage blocked - show it */ }
-        bar.hidden = !on || closed;
-      };
-      bar.querySelector('button').addEventListener('click', function () {
-        bar.hidden = true;
-        try { localStorage.setItem(key, '1'); } catch (e) { /* nothing to do */ }
-      });
-    })();
-    (function () {
       var bar = document.getElementById('siteAnnounce');
       var toast = document.getElementById('siteToast');
       var key = 'talklive_announce_' + (bar.getAttribute('data-since') || 0);
-      // Server-rendered like #devBanner above, for the same reason.
+      // The server renders the strip already shown when it is on, so it is in
+      // place from the first paint; a visitor who closed it has it hidden here.
       if (!bar.hidden) { try { if (localStorage.getItem(key) === '1') bar.hidden = true; } catch (e) { /* storage blocked - show it */ } }
       window.tlSiteModes = function (m) {
         var a = (m && m.announce) || {};

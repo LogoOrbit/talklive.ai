@@ -3488,7 +3488,6 @@
   socket.on('banned', function (data) {
     stage.innerHTML = '<div class="chat-blocked-full"><h1>' + escapeHtml(t('bannedTitle')) + '</h1><p>' + escapeHtml(t('bannedBody')) + '</p></div>';
   });
-  socket.on('devBanner', function (s) { if (window.tlDevBanner) window.tlDevBanner(s); });
   socket.on('siteModes', function (m) { if (window.tlSiteModes) window.tlSiteModes(m); });
   socket.on('search-refused', function (data) {
     goStart();

@@ -916,22 +916,13 @@ function sendAppShell(res, file) {
   res.type('html').send(appShellHtml(file));
 }
 
-// The two strips above the top bar (#devBanner, #siteAnnounce) in index.html
-// and chat.html. They used to ship `hidden` and be switched on by the socket
-// once the page was up, so with the dev banner on (its default) every cold
-// visit drew the app, then pushed all of it ~70px down - PageSpeed's Cumulative
-// Layout Shift, ~0.1 on mobile. Their state is written into the HTML instead,
-// so a strip that is on is there from the first paint; the inline script
-// beside them hides one the visitor already closed before anything is drawn.
+// The announcement strip above the top bar (#siteAnnounce) in index.html and
+// chat.html. Switched on by the socket once the page was up, it would push the
+// whole app ~70px down on a cold visit (Cumulative Layout Shift). Its state is
+// written into the HTML instead, so a strip that is on is there from the first
+// paint; the inline script beside it hides one the visitor already closed.
 function withSiteStrips(html) {
-  const dev = store.data.settings.devBanner || { on: false };
   const ann = store.siteModes().announce || {};
-  if (dev.on) {
-    html = html.replace(
-      '<div id="devBanner" class="tl-devbanner" role="status" hidden>',
-      `<div id="devBanner" class="tl-devbanner" role="status" data-since="${Number(dev.since) || 0}">`
-    );
-  }
   if (ann.on && ann.text) {
     html = html.replace(
       /<div id="siteAnnounce" class="tl-devbanner tl-announce" role="status" hidden>(\s*)<span class="tl-devbanner-text"><\/span>/,
@@ -4030,7 +4021,6 @@ io.on('connection', (socket) => {
     socket.disconnect(true);
     return;
   }
-  socket.emit('devBanner', store.data.settings.devBanner || { on: false });
   socket.emit('siteModes', store.publicModes());
 
   // Banned by IP: refuse service entirely until the ban expires or is lifted.

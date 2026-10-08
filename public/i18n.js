@@ -171,7 +171,6 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "someone": "Someone",
     "catBilling": "Coins & Billing",
     "skipToContent": "Skip to main content",
-    "devBanner": "TalkLive is in public beta - we ship improvements every week. Thanks for helping us shape it.",
     "modeMembersOnly": "Only members can start a chat right now. Please log in or sign up to continue.",
     "modeVoicePaused": "Voice calls are paused for a short while. Text chat is still open at /chat.",
     "modeSignupsPaused": "New sign-ups are paused right now. Please try again later.",
@@ -769,15 +768,6 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "feedbackThanks": "Thanks for the feedback!",
     "feedbackEmpty": "Please write something first.",
 
-    // The public beta notice on the landing screen.
-    "devNoticeEyebrow": "Public beta",
-    "devNoticeTitle": "Welcome to the TalkLive beta",
-    "devNoticeBody": "TalkLive is live and getting better every week. As an early member, your feedback directly shapes what we build next.",
-    "devNoticeLabel": "Have a suggestion? We read every one.",
-    "devNoticePlaceholder": "What would make TalkLive better for you?",
-    "devNoticeSend": "Send feedback",
-    "devNoticeSkip": "No thanks",
-    "devNoticeThanks": "Thank you - that helps more than you think.",
 
     // The nav rail / bottom tab bar and the activity rail.
     "navAria": "TalkLive sections",

@@ -418,13 +418,6 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 
   <a href="#main" class="skip-link" data-i18n="skipToContent">Skip to main content</a>
   <div class="app">
-    <!-- Public beta strip: tells visitors TalkLive is in beta and improving
-         every week. Switched on and off from the
-         owner dashboard (Settings); the server sends the state over the socket. -->
-    <div id="devBanner" class="tl-devbanner" role="status" hidden>
-      <span class="tl-devbanner-text" data-i18n="devBanner">TalkLive is in public beta - we ship improvements every week. Thanks for helping us shape it.</span>
-      <button type="button" class="tl-devbanner-close" data-i18n-aria="dismiss" data-i18n-title="dismiss" aria-label="Dismiss" title="Dismiss">&times;</button>
-    </div>
     <!-- Owner announcement: text typed on the dashboard (Settings → Site modes),
          shown as written. Same strip, accent colour. -->
     <div id="siteAnnounce" class="tl-devbanner tl-announce" role="status" hidden>
@@ -434,32 +427,11 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
     <div id="siteToast" class="tl-site-toast" role="alert" hidden></div>
     <script>
     (function () {
-      var bar = document.getElementById('devBanner');
-      var key = 'talklive_devbanner_' + (bar.getAttribute('data-since') || 0);
-      // The server renders the strip already shown when it is switched on, so
-      // it is in place from the first paint instead of pushing the page down
-      // when the socket connects (a layout shift on every cold visit). A
-      // visitor who closed this switch-on has it hidden here, before paint.
-      if (!bar.hidden) { try { if (localStorage.getItem(key) === '1') bar.hidden = true; } catch (e) { /* storage blocked - show it */ } }
-      // Called with the server's { on, since } on connect and whenever the
-      // owner flips it. Closing it is remembered per switch-on (`since`).
-      window.tlDevBanner = function (s) {
-        var on = !!(s && s.on);
-        key = 'talklive_devbanner_' + ((s && s.since) || 0);
-        var closed = false;
-        try { closed = localStorage.getItem(key) === '1'; } catch (e) { /* storage blocked - show it */ }
-        bar.hidden = !on || closed;
-      };
-      bar.querySelector('button').addEventListener('click', function () {
-        bar.hidden = true;
-        try { localStorage.setItem(key, '1'); } catch (e) { /* nothing to do */ }
-      });
-    })();
-    (function () {
       var bar = document.getElementById('siteAnnounce');
       var toast = document.getElementById('siteToast');
       var key = 'talklive_announce_' + (bar.getAttribute('data-since') || 0);
-      // Server-rendered like #devBanner above, for the same reason.
+      // The server renders the strip already shown when it is on, so it is in
+      // place from the first paint; a visitor who closed it has it hidden here.
       if (!bar.hidden) { try { if (localStorage.getItem(key) === '1') bar.hidden = true; } catch (e) { /* storage blocked - show it */ } }
       window.tlSiteModes = function (m) {
         var a = (m && m.announce) || {};
@@ -981,78 +953,6 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
       </div>
     </aside>
 
-  <!-- ===================================================================
-       "We are still building this" notice.
-       ---------------------------------------------------------------
-       Shown once per browser on the landing screen. TalkLive is live but
-       still under active development, and a visitor who hits a rough edge
-       with no warning reads it as a broken site rather than an unfinished
-       one - so the app says so itself, up front, and uses the same breath
-       to ask for the one thing that fixes rough edges fastest: a sentence
-       from the person who just hit one.
-
-       The feedback box posts through the existing `feedback` socket event,
-       so suggestions land in the owner dashboard next to the ones sent from
-       Settings - one inbox, not two. Dismissal is remembered in
-       localStorage under a versioned key, so bumping TL_DEV_NOTICE_VERSION
-       in app.js is all it takes to show a new notice to everyone again.
-       =================================================================== -->
-  <div id="devNoticeOverlay" class="tl-devnotice-overlay hidden" hidden>
-    <section
-      id="devNotice"
-      class="tl-devnotice"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="devNoticeTitle"
-      aria-describedby="devNoticeBody"
-      tabindex="-1"
-    >
-      <button
-        type="button"
-        id="devNoticeClose"
-        class="tl-devnotice-close"
-        data-i18n-aria="close"
-        data-i18n-title="close"
-        aria-label="Close"
-        title="Close"
-      >&times;</button>
-
-      <div class="tl-devnotice-head">
-        <span class="tl-devnotice-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M14.7 6.3a3.6 3.6 0 0 0 4.8 4.8l-8 8a2.4 2.4 0 0 1-3.4-3.4z"/>
-            <path d="M6.5 3.2 7.4 5l1.8.9-1.8.9-.9 1.8-.9-1.8L3.8 5.9 5.6 5z"/>
-            <path d="M18.6 14.6l.7 1.4 1.4.7-1.4.7-.7 1.4-.7-1.4-1.4-.7 1.4-.7z"/>
-          </svg>
-        </span>
-        <div class="tl-devnotice-headtext">
-          <p class="tl-devnotice-eyebrow" data-i18n="devNoticeEyebrow">Public beta</p>
-          <h2 id="devNoticeTitle" data-i18n="devNoticeTitle">Welcome to the TalkLive beta</h2>
-        </div>
-      </div>
-
-      <p id="devNoticeBody" class="tl-devnotice-body" data-i18n="devNoticeBody">
-        TalkLive is live and getting better every week. As an early member, your feedback directly shapes what we build next.
-      </p>
-
-      <form id="devNoticeForm" class="tl-devnotice-form">
-        <label class="tl-devnotice-label" for="devNoticeInput" data-i18n="devNoticeLabel">Have a suggestion? We read every one.</label>
-        <textarea
-          id="devNoticeInput"
-          class="tl-devnotice-input"
-          rows="3"
-          maxlength="1000"
-          data-i18n-placeholder="devNoticePlaceholder"
-          placeholder="What would make TalkLive better for you?"
-        ></textarea>
-        <p id="devNoticeStatus" class="tl-devnotice-status" role="status" aria-live="polite"></p>
-        <div class="tl-devnotice-actions">
-          <button type="button" id="devNoticeSkip" class="tl-devnotice-btn tl-devnotice-btn-ghost" data-i18n="devNoticeSkip">No thanks</button>
-          <button type="submit" id="devNoticeSend" class="tl-devnotice-btn tl-devnotice-btn-primary" data-i18n="devNoticeSend">Send feedback</button>
-        </div>
-      </form>
-    </section>
-  </div>
 
     <!-- ===================================================================
          THE APP FRAME - nav rail, stage, activity rail.
