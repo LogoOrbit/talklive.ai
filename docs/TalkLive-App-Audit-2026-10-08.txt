@@ -1,0 +1,448 @@
+# TalkLive app audit and implementation brief
+
+**Audited:** 8 October 2026. **Repository:** `LogoOrbit/talklive.ai`. **Commit:** `878bdcf8caf8d5b0c4aa6f21adf810a4ea8c6266`.
+
+**Purpose:** Give the implementation agent a concrete plan to improve user experience, qualified organic traffic, activation, and retention. This is an audit, not an implementation or production deployment.
+
+## 1. Conclusion and recommended direction
+
+TalkLive has a credible foundation: a clear voice/text choice, usable mobile layouts, complete static HTML for search engines, working text matching, and substantial automated coverage. A framework rewrite, another visual redesign, or mass production of keyword pages would be a poor first investment.
+
+The most valuable work is to help more visitors reach a successful conversation. Fix the broken voice error state, make dialogs keyboard accessible, preserve language and intent from localized landing pages, and measure the complete visitor-to-conversation funnel. Then simplify first use, verify production audio reliability, and grow the topics and communities that actually produce compatible people online at the same time.
+
+There is no honest guarantee of “perfect SEO” or maximum traffic. The practical goal is **more relevant visitors who successfully converse and return**, with search visibility, performance, and trust supporting that outcome.
+
+### Fix order
+
+| Order | Work | Why it comes first |
+|---|---|---|
+| 1 | UX-01: repair voice failure/recovery; UX-02: dialog accessibility | Reproduced failures prevent or obstruct use. |
+| 2 | UX-03: preserve locale and start intent | Existing international traffic currently encounters an avoidable language switch and extra start step. |
+| 3 | SEO-01: restrict retirement redirects | Invented URLs are incorrectly treated as real retired content. |
+| 4 | DATA-01 and QA-01: trustworthy funnel and browser checks | Improvements cannot be judged reliably from pageviews or tests that bypass failed clicks. |
+| 5 | REL-01: verify real production audio and queue behavior | A successful WebSocket match is insufficient for a voice product. Complete before materially increasing acquisition spend. |
+| 6 | UX-04/05 and TRUST-01: simplify first use and correct claims | Reduce unnecessary decisions and align promises with actual behavior. |
+| 7 | PERF-01, SEO-02/03, GROWTH-01 | Optimize proven bottlenecks and acquire more of the users the product serves well. |
+| 8 | RET-01 and OPS-01 | Strengthen return visits and prepare capacity as usage warrants. |
+
+**Priority legend:** P1 = fix in the next delivery cycle; P2 = planned improvement/experiment; P3 = later hardening. “Launch gate” means verify before scaling acquisition, not a claim that production is currently broken. Effort S/M/L indicates relative implementation size, not a delivery promise.
+
+## 2. Evidence and limits
+
+### What was actually inspected and tested
+
+- Repository source, HTML, generated-page sources, SEO scripts, asset budget checks, deployment configuration, analytics, and relevant test harnesses.
+- Chromium with the app running locally from the audited checkout; third-party requests deliberately blocked for deterministic browser checks.
+- Ten page/view combinations: home at 390×844 and 1440×900; mobile chat, pricing, random voice chat landing page, Arabic landing page, Urdu landing page, signup, settings, and safety.
+- First-use voice and text dialogs, keyboard navigation, microphone-denied and unsupported-WebRTC cases.
+- Two independent browser contexts matched for text and exchanged messages in both directions.
+- Two synthetic voice clients negotiated remote audio tracks, but both still showed “Connecting…” at the nine-second observation point. Inbound media delivery was **not established**. This environment has no configured TURN relay; this observation does not diagnose production calling.
+- Local HTTP crawl of all 87 URLs referenced by the sitemap index, plus redirect, unknown-URL, and app-route checks.
+- Axe-core 4.14 accessibility checks using WCAG A/AA tags, plus manual keyboard and screenshot inspection.
+- A small throttled local performance probe and the existing social UI suite.
+
+### What remains unknown
+
+The environment's egress proxy refused the connection to `https://talklive.app/` with HTTP 403 before reaching the website. That is an **audit access restriction**, not evidence that visitors or Google receive a 403. Production HTML, deployment parity, real advertisements/CMP behavior, TLS/alias redirects, production TURN, real-device audio, Search Console, GA4, CrUX, backlinks, and conversion/retention rates were not verified.
+
+The report therefore makes no claims about current rankings, organic traffic totals, live bounce rate, real-user Core Web Vitals, or the production database. Earlier setup checks are not substituted for those measurements.
+
+### Observed results
+
+| Check | Result | Interpretation |
+|---|---|---|
+| `npm run audit:seo` | Passed: 87 sitemap pages and 2,002 unique internal page links | Strong structural baseline; not proof of ranking or production indexation. |
+| Independent local sitemap crawl | 87/87 returned 200, one H1, expected canonical, no detected noindex | Submitted local URLs are internally consistent. |
+| Duplicate sitemap titles / JSON-LD parsing | No duplicate titles or parse errors found | Parsing does not establish rich-result eligibility or factual correctness. |
+| Clean URL examples | `/index.html`, `.html` and trailing-slash topic variants returned expected 301s | Preserve these working redirects. |
+| Unknown ordinary URL | Returned 404 | General 404 handling works; retirement routing has a separate defect. |
+| `npm run check:bundle` | Passed | Existing budget is a regression ceiling, not a speed score. |
+| Inspected page/view combinations | No first-party HTTP errors or JavaScript page errors observed; no horizontal overflow at tested widths | Does not cover every breakpoint, interaction, or browser. |
+| Accessibility | 7 offending elements across 4 page/view combinations, plus manual modal-focus failures | Automated pass on other pages is not a full accessibility certification. |
+| Text pair | Bidirectional messages delivered | Core local text matching works. |
+| `npm run test:social-ui` | Exit 0; 109 PASS lines; no FAIL lines | Four failed real clicks were replaced by JavaScript clicks by the harness. See QA-01. |
+
+Existing privacy/safety, moderation, blocked-user, consent, and authentication behavior must be preserved during changes.
+
+## 3. Reproduced defects and implementation tickets
+
+### UX-01 — Voice failure can leave a permanent loading state and hide recovery
+
+**P1 · S/M · Confirmed browser reproduction and source evidence.**
+
+With prior consent and an animal selected, simulate a browser without `RTCPeerConnection`, then press “Tap to Talk.” The unsupported-browser error appears in the DOM, but `#startBtn` retains `is-connecting`. The click handler ignores further clicks while that class is present. At 390×844, the error is below the initial viewport, leaving the visitor looking at a spinner.
+
+Microphone denial correctly clears the loading class, but its error is also below the initial viewport. It tells people to change browser settings and reload, without an adjacent text-chat recovery action.
+
+**Source:** `public/app.js` around `begin()` (7968), `startCallFlow()` (8105), the `startBtn` handler (8170), and `showError()` (6919); `public/index.html` contains `#setupErrorText` below the animal, terms and growth content; translations in `public/i18n.js` and `public/i18n/`.
+
+**Implement:**
+
+1. Centralize completion/cancellation/failure cleanup of the start state; clear `is-connecting`, `disabled`, and any in-flight flag on every exit, including unsupported WebRTC.
+2. Place a persistent inline error and recovery controls next to the initiating action. Announce it accessibly and make it visible without hunting below the fold.
+3. Offer “Chat by text” and suitable microphone help. Show “Try again” where retry can work; do not suggest that retry repairs missing browser APIs.
+4. Avoid a forced page reload when a renewed permission request can recover. Preserve the visitor's preferences and consent state.
+5. Translate new messages and labels.
+
+**Acceptance:** Browser tests cover no WebRTC, permission denied, no microphone, microphone busy, dismissed explainer, and successful retry. Every failed/cancelled attempt ends the spinner. At 320px and 390px widths the failure and a useful next action are visible. Keyboard and screen-reader users receive equivalent feedback. No microphone is requested for text chat.
+
+### UX-02 — Modal focus handling is incomplete
+
+**P1 · M · Confirmed keyboard reproduction.**
+
+On voice first-use terms, focus initially moves into the dialog, but tabbing past its controls reaches background controls; there is no effective focus trap. On `/chat?go=1`, the gender dialog opens while focus remains on the document; the first eight Tab presses visited controls behind the modal. The text `openModal()` function only toggles CSS classes. `aria-modal="true"` alone does not enforce modal behavior.
+
+**Source:** `public/app.js:2162` and `2175`; `public/chat.js:1211`; modal markup in `public/index.html` and `public/chat.html`.
+
+**Implement:** Use a shared, tested dialog primitive or native `<dialog>` where compatible with existing nested panels. Move focus into the active dialog, contain Tab/Shift+Tab, make background content inert, return focus to the trigger, and close only the topmost eligible layer with Escape/Back. Ensure text-first gender/animal steps have a clear visible way to cancel.
+
+**Acceptance:** Voice/text onboarding, report, confirmation, profile, and nested dialogs pass real keyboard tests. No background controls can receive focus or activation while modal. Closing restores a sensible focus target. Required consent remains required; keyboard fixes must not bypass it. Test touch navigation and a screen reader, not only Axe.
+
+### UX-03 — Localized landing CTAs lose language and do not start the advertised action
+
+**P1 · S/M · Confirmed in Arabic and Urdu; shared template defect.**
+
+In a fresh English-language browser, clicking the visible text CTA on `/ar/` or `/ur/` navigated to `/chat?utm_source=seo`. The resulting page was English, left-to-right, with the start screen visible and no onboarding dialog open. The visitor must press another start button. The voice CTA similarly omits the voice-start intent.
+
+**Source:** `scripts/build-seo.js:117` (`localeHome()` builds `appHref('/', 'seo')` and `appHref('/chat', 'seo')`); generated `public/ar/index.html:77` and `78`, and equivalent locale pages. The app already supports `lang`, `talk=1`, and text `go=1` entry paths.
+
+**Implement:** Generate locale-preserving action URLs, using the existing supported route contracts: for example `/?talk=1&lang=ar` and `/chat?go=1&lang=ar`, with any necessary attribution retained appropriately. Use locale template values rather than editing all generated HTML by hand. Preserve explicit user language choice consistently, with a documented precedence rule. Do not auto-grant consent or microphone permission.
+
+**Acceptance:** For every supported non-English landing page, both CTAs enter the requested flow in the requested language. Test fresh en-US browsers, previously stored different languages, browser Back, direct links, and RTL. Text requires no extra mode-selection click. With JavaScript disabled, links still reach a valid app page. Regeneration keeps fixes intact.
+
+### SEO-01 — Invented geographic/language URLs redirect instead of returning 404
+
+**P1 · S/M · Confirmed HTTP reproduction.**
+
+Observed locally:
+
+| Request | Current response |
+|---|---|
+| `/countries/not-a-real-country` | 301 → `/languages/` |
+| `/cities/not-a-real-city` | 301 → `/languages/` |
+| `/languages/not-a-real-language` | 301 → `/languages/#not-a-real-language` |
+
+These names were never real retired pages. Broad pattern matching creates unlimited apparent redirect URLs and, for the last case, a nonexistent destination section. Unrelated redirect targets risk poor visitor outcomes and soft-404 treatment; a Google penalty or an existing indexation loss has not been demonstrated.
+
+**Source:** `scripts/data/retired.js:125–160`, consumed by `server/index.js` retirement middleware around line 300.
+
+**Implement:** Redirect only recognized historical slugs from finite source datasets/maps. Unknown slugs must fall through to the existing genuine 404. Use 410 only for deliberately removed known resources where appropriate. Preserve legitimate historical URLs and choose the nearest genuinely equivalent replacement; do not blanket-redirect to an unrelated hub.
+
+**Acceptance:** Automated GET and HEAD tests cover known active URLs, known retired URLs, random invalid slugs, `.html`/slash variants, query preservation, and language anchors. Unknown examples above return 404. Valid redirects terminate at relevant 200 pages without loops. Existing sitemap audit still passes. Check production Search Console soft-404/redirect reports after deployment, without assuming immediate recrawl.
+
+### A11Y-01 — Search semantics and several labels fail accessibility checks
+
+**P1 · S/M · Confirmed Axe findings.**
+
+| Surface | Element | Finding |
+|---|---|---|
+| Desktop home | `#headerSearchInput` | `aria-expanded` is unsupported on its current implicit role; suggestions need a coherent combobox pattern. |
+| Mobile text start | `.pref-partner-opt` | Contrast 3.89:1, below 4.5:1 for this 13px normal text. |
+| Mobile signup | `.tl-optional` | Contrast 4.07:1, below 4.5:1. |
+| Safety page | Two green CTA captions | Contrast 4.21:1, below 4.5:1. |
+| Safety page | `.ad-card-label` | Contrast 3.22:1, below 4.5:1. |
+| Safety page | Footer paragraph | Contrast 4.36:1, below 4.5:1. |
+
+**Source:** `public/index.html:495`; `public/chat.css:490`; `public/auth.css:116`; safety-page style/source under `scripts/` (locate the generator before editing generated output).
+
+**Implement:** Correct the search role, controlled-list semantics and keyboard interaction together; do not just suppress an ARIA warning. Adjust foreground/background/opacity tokens to meet contrast in all supported themes. Increase genuinely cramped standalone controls after checking their actual hit area; inline links can have accessibility exceptions and should not all be labelled failures solely from their height.
+
+**Acceptance:** Listed Axe violations resolved, normal text ≥4.5:1 and large text ≥3:1; search suggestions usable with keyboard and screen reader; visible focus indicators; controls meet WCAG 2.2 target-size requirements or a documented exception. Test 320px, 390px, desktop, 200% zoom, RTL, and reduced motion. Target about 44px for primary touch controls as a usability goal.
+
+### TRUST-01 — Product and localization copy describe inconsistent capabilities
+
+**P1/P2 · M · Confirmed copy inconsistencies; business claims require owner verification.**
+
+Examples:
+
+- Home promotion says Premium offers “instant rematching”; pricing already lists free “Instant matching — no wait between calls.”
+- Desktop Premium promotion says “A safer experience,” although no defined additional safety guarantee is established by that copy. Core safety should not appear contingent on buying a future plan.
+- Pricing repeatedly states Premium is not on sale, while prominent home/sidebar promotions consume first-visit attention.
+- Arabic and Urdu landing copy promises instant connection and broad anonymity/safety; the English home correctly qualifies availability and privacy. Locale promises have drifted from the more careful English version.
+- “New today” appears on a daily rotating article card even when its selected article has a publication date of 2 October 2026. The feature rotates recommendations, not publication dates.
+- The home consent line says “By tapping Call,” whereas the primary action says “Tap to Talk” and text has a separate path.
+
+**Source:** `public/index.html:1123`, `1226`, `1219`, `2415`; `public/pricing.html:128–175`; `scripts/locales.js`; `public/app.js:10890`; `scripts/journal/articles/05-matchmaking.js:10`.
+
+**Implement:** Establish one capability/limits source for pricing and app copy. Distinguish current, unavailable, and planned features. Describe Premium with specific controls, not unsubstantiated safety or speed guarantees. Replace the rotating badge with “Today's pick” or show the real publication date. Review translations with fluent speakers and maintain the same substantive promises in every locale. Keep privacy distinctions explicit: live calls, text messages, voice notes, and desktop speech-recognition processing are different.
+
+**Acceptance:** Pricing, homepage, onboarding, translated pages, policy summaries and structured data agree. No guaranteed instant match, verified identity, anonymity, or safety claim exceeds actual behavior. No invented review ratings, usage counters, publication dates, or author credentials. Business policy changes are reviewed by the owner; the agent should not invent them.
+
+### QA-01 — Browser tests conceal failures to interact through the real UI
+
+**P1 · M · Confirmed test execution and source.**
+
+The existing social UI command completed successfully with 109 PASS lines. Four Playwright clicks timed out; the helpers caught those failures and invoked `element.click()` inside page JavaScript. A hidden or obstructed control can therefore pass behavior assertions while remaining unusable through the actual interface.
+
+**Source:** `scripts/social-ui/stress-call.js:34`; `scripts/social-ui/stress-chat.js:23`. Current log: `/workspace/audit-talklive/social-ui.log`.
+
+**Implement:** Remove programmatic-click fallback from tests intended to prove usability. Navigate through the real visible menus/layers. Distinguish lower-level state tests, which may intentionally invoke code, from user-journey tests. Capture trace/screenshot on failure and investigate each failed selector rather than increasing timeouts indiscriminately.
+
+**Acceptance:** First-time and returning-user journeys pass using real accessible clicks/keyboard input on mobile and desktop, with zero fallback clicks. Include UX-01/02/03 regressions and online → offline → reconnect. Existing assertions remain meaningful. Add the reliable small browser smoke set to CI; retain larger stress tests separately if needed.
+
+## 4. Improvements that need measurement or production verification
+
+### DATA-01 — Connect acquisition to successful conversations
+
+**P1 · M/L · Confirmed gap in current aggregate event contract.**
+
+There is useful existing measurement: `server/traffic.js` records source/channel/landing aggregates, `server/health.js` can read PSI/CrUX/GA4 and call-quality summaries, and `public/app.js` emits voice-funnel events. Reuse these systems.
+
+However, `trackGrowthEvent()` sends only `{event}` to `/events`; the endpoint increments an aggregate feature counter. That contract cannot join a particular acquisition session to a completed funnel, measure queue-time distributions, or attribute retention to its entry page. The allowed event vocabulary has no equivalent complete text activation funnel. There is no dedicated browser Core Web Vitals collector located in the inspected public code.
+
+**Implement:**
+
+- Define a minimal event schema: entry view, mode intent, consent completion/cancel, microphone outcome, queue entry/exit, match found, actual media start, first text sent/received, meaningful conversation, next/end reason, friend request/accept, and return visit.
+- Add bounded dimensions that serve decisions: entry-page category, acquisition channel, chosen mode, interface language, device class, coarse region, app version, and a short-lived attempt identifier. Use privacy-appropriate session measurement and consent controls; no message text, contacts, raw audio, or raw IPs in growth analytics.
+- Deduplicate client/server/reconnect emissions. Separate user sessions from conversation pairs so one two-person conversation is not accidentally treated as two distinct pair conversions.
+- Measure queue p50/p90, matched-to-media success, permission-denial recovery, bidirectional text activation, and D1/D7 return where measurement is appropriate. Treat absent consent/blocked tags as missing coverage, not “no engagement.”
+- Keep existing first-party aggregate fallbacks and internal-UTM exclusion. Do not create a second competing source of traffic truth.
+- Protect the public event endpoint with bounded payloads, vocabulary/dimension allowlists, abuse controls and rate limits. The current fixed vocabulary is a useful starting point; do not allow arbitrary metric keys.
+- Extend the existing Health/Traffic dashboards; configure existing Search Console/GA4 integrations securely where available.
+
+**Acceptance:** A staged voice and text session can be followed through the intended funnel without sensitive content. Duplicate retries do not inflate conversion. Dashboard denominators are documented. Compare device/language/entry-page cohorts and report unknown coverage. Sample real-user LCP, INP and CLS by page type if the chosen consent/measurement approach supports it.
+
+**Recommended metrics:**
+
+| Metric | Definition |
+|---|---|
+| Voice activation | Eligible user sessions with verified inbound audio / eligible sessions intending voice. |
+| Text activation | Eligible sessions with messages sent and received / sessions intending text. |
+| Meaningful conversation | Initially define voice as ≥30 seconds **after media starts**; text as a bidirectional exchange above an agreed small threshold. Validate the definition against satisfaction. |
+| Waiting abandonment | Queue entries ended before a match / queue entries, separated by mode and population. |
+| Organic activation | Organic landing sessions that reach meaningful conversation / measured organic landing sessions. |
+| Retention | Activated cohorts returning on day 1/day 7, with coverage caveats. |
+| Guardrails | Reports/blocks per conversation, failed media, crashes, unwanted notifications, performance, and consent failures. |
+
+Do not infer unique conversion rates by dividing unrelated daily counters. Establish a baseline before promising percentage improvements.
+
+### REL-01 — Prove production audio reliability and handle low availability honestly
+
+**P1 launch gate · M · Production verification outstanding.**
+
+Local text works. Local voice negotiation alone did not establish usable media, and no TURN is configured in this audit instance. Existing code already waits for inbound audio bytes before declaring media success and has media-failure events/watchdogs. Preserve and build on that rather than replacing it with a Socket.IO “matched” signal.
+
+**Implement/verify:**
+
+1. Use authorized access to inspect the deployed revision and `/ice-servers`; never expose relay credentials in reports.
+2. Run the repository relay check against the deployed endpoint and verify a real relay allocation. Then test browser-to-browser media; allocation alone is not a full call test.
+3. Cover iOS Safari and Android Chrome on separate Wi-Fi/mobile networks, a restricted-network/relay-only scenario, deny/regrant mic, Bluetooth/speaker routing, screen lock, tab backgrounding, and reconnect.
+4. Display distinct “Finding someone,” “Connecting audio,” and recoverable failure states. Keep Stop/Next/Report accessible.
+5. Use truthful mode-compatible queue availability. A visitor count is not the number of people available to talk. Offer an easy mode switch or an honest “Nobody available yet” state when relevant. Never invent people or a precise ETA without sufficient data.
+6. Assess filters and fallback behavior at low concurrency. Any broadening should be understandable and respect hard exclusions and block rules.
+
+**Acceptance:** Both peers receive increasing inbound audio bytes; media start/timeout events are correct; forced-relay case succeeds on an authorized real deployment; failure does not trap a visitor in repeated silent calls. Record success and queue distributions before choosing SLOs. A reasonable initial engineering target is ≥95% matched-to-media success for supported-device sessions with granted microphones, but adopt it only after reviewing baseline and failure eligibility.
+
+### UX-04 — Reduce first-use decisions without removing required consent
+
+**P2 · M · Verified flow; conversion benefit is a hypothesis to test.**
+
+Text first-use currently asks gender/optional age → animal → rules before searching. Voice asks terms → animal → microphone explanation/permission where needed. The desktop first visit also includes friends/history/shop/settings and empty sidebar modules. The mobile primary voice/text choices are already visually clear.
+
+A `progressiveDisclosure` flag already exists in `server/flags.js` and defaults off. Its measurement currently needs DATA-01 to support a useful outcome comparison.
+
+**Implement as a controlled experiment:** Preserve adult/terms acknowledgement, offer a default random animal editable later, and move nonessential gender/age/preferences behind customization. Put the two primary modes and a concise “18+ · no account required” explanation ahead of secondary features. Reuse the existing flag after auditing what it actually hides; always retain discoverable safety controls. Ask for microphone access only in response to voice intent. Defer account and install prompts until there is a clear benefit.
+
+**Acceptance:** Measure fewer interactions to first queue entry and better meaningful-conversation activation, not just more button presses. Returning users retain preferences. Back/cancel works at every stage. Report/leave remains available. Do not interpret an underpowered experiment as a winner; start with a small safe rollout and compare equivalent traffic cohorts.
+
+### UX-05 — Make free, planned and paid controls coherent
+
+**P2 · S/M · Verified unavailable-plan promotion; commercial behavior unverified live.**
+
+Prominent Premium/Shop surfaces distract from getting a first conversation, while pricing says the plan is not for sale. It is legitimate to collect demand, but this should be secondary and explicit.
+
+**Implement:** Reduce pre-activation upgrade emphasis. Label unavailable plans consistently. If a waitlist remains, provide a real consented notification mechanism and clear success state; if it is only an interest counter, say so. Do not imply something was purchased or reserved. When checkout becomes active, derive pricing and limits from the backend and reconcile the static FAQ rather than leaving “nothing charges you” visible alongside checkout.
+
+**Acceptance:** Every displayed plan CTA has an honest, working outcome. Free capabilities agree with server enforcement. No benefit already free is sold as an exclusive advantage. Checkout tests run only in a configured test-payment environment.
+
+### PERF-01 — Trim startup work and measure real mobile performance
+
+**P2 · M/L · Measured local baseline; production impact unverified.**
+
+The home has roughly 3,314 DOM elements, many belonging to hidden features. The static budget script reports source gzip estimates of 233.9 KB JS, 97.2 KB CSS and 47.6 KB HTML for home; chat is 135.2/67.5/15 KB. These pass their current budgets. The script reads source files, while the server serves hash-validated minified copies; it also excludes third parties, fonts and runtime loads. Do not present those values as actual production transfer totals.
+
+A diagnostic Chromium probe used 390×844, a configured 4× CPU slowdown, 150ms latency, 1.6Mbps download and third-party blocking. Home LCP was 1.104/1.156/1.268 seconds, CLS about 0.029, and summed long-task time beyond 50ms was 291/322/591ms. Single chat and topic-page probes were faster. This is a local diagnostic, **not Lighthouse TBT, INP, a CrUX result, or evidence that live mobile performance passes**. Ads, production latency and real devices can materially change it.
+
+**Implement:** Capture an authorized production trace first. Then lazily load/construct rarely used games, shop, large pickers, secondary social dialogs and settings where safe; split voice-only code from basic startup work; reduce unused CSS and repeated overrides incrementally. Preserve static marketing text, accessible fallbacks, shared state correctness, current minification/compression and font behavior. Use content-derived asset versions or enforce version updates so long-lived HTTP/service-worker caches cannot serve stale fixes.
+
+**Acceptance:** At equivalent conditions, reduce actual critical resources and long tasks without regressing text/call startup. Track mobile p75 field LCP ≤2.5s, INP ≤200ms, CLS ≤0.1 where a sufficient sample exists. Set route-specific lab/transfer budgets after the baseline; do not loosen existing checks just to pass. Test warm-cache upgrades and service-worker updates. Do not pursue a score at the cost of functioning calls.
+
+### ADS-01 — Verify Auto ads and consent on real app states
+
+**P1 verification / P2 changes · M · Code risk, not a reproduced live ad violation.**
+
+Custom slot code prevents fills on app surfaces and pauses during calls, and tests cover that. But the homepage includes the independent AdSense loader; entering `/call` through client-side history does not unload it. `/chat` explicitly uses `keepAdsense: true`. The custom slot tests do not establish what account-configured Auto ads do.
+
+Regional denied consent defaults exist in the analytics snippet, and code expects Google's configured CMP. Its live configuration and choice/revocation behavior were not visible in this audit.
+
+**Implement/verify:** Inspect AdSense page exclusions and all formats on homepage → call, search, text live, reconnect, login, settings and pricing. Ensure no interstitial/overlay, accidental-click placement, or layout movement interrupts a conversation. Verify actual consent states and reopening of preferences in applicable regions; do not disable defaults to improve analytics coverage. Measure qualified conversation activation and CLS alongside revenue.
+
+**Acceptance:** Real approved test browsing shows app controls and conversations free of interfering ads; marketing placements remain stable. Consent accept/reject/change flows work. Do not click live advertisements to test them. Evidence must include real integration behavior, not only mocked slot tests.
+
+### RET-01 — Strengthen return visits after a good interaction
+
+**P2 · M · Product experiment, not a missing-feature claim.**
+
+Friends, callbacks, voice notes, referrals, install and push facilities already exist. Improve their timing and comprehension before adding more features.
+
+**Implement:** After a meaningful conversation, make “Add friend” or an opt-in return action the primary next step when appropriate. Explain what a guest browser identity retains and what clearing storage loses; offer an optional account to preserve valuable relationships. Prompt for install/push only after the visitor understands the benefit. Respect dismissals, notification preferences, blocks and consent. Measure referral recipients reaching useful conversations, not just share-sheet opens.
+
+**Acceptance:** Users can understand and recover their identity across the intended devices, requests do not duplicate, notifications do not expose unnecessary private content, and opt-outs persist. Retention improves without increasing complaints or first-use abandonment. Keep report/block/leave available and verify moderation response workflows as traffic grows.
+
+### OPS-01 — Scale the real-time architecture deliberately
+
+**P2 before horizontal expansion · L · Confirmed architecture, no production saturation claim.**
+
+`server/index.js` holds waiting queues, partner mappings and substantial live state in process-local arrays/maps. `fly.toml` declares a single-region app, one shared CPU, 1GB RAM, and a mounted data volume. `server/store.js` persists substantial shared document state. A database connection alone does not turn in-memory matchmaking into a safe multi-instance system.
+
+**Implement:** Measure concurrency, event-loop lag, RSS, queue/match latency, save duration and reconnect behavior under realistic staging load. Verify database/volume backup restoration and graceful deploy shutdown. Before adding instances, design cross-instance matching, socket delivery, shared identity/auth, rate limits and conflict-safe persistence; account for state ownership and storage concurrency. A Socket.IO adapter alone is not the whole solution.
+
+**Acceptance:** Document tested sustainable concurrency and failure behavior. A deployment or restart preserves durable data and gives affected users a useful recovery path. Backups have a restore test. Do not horizontally scale the existing process-local matcher blindly or load-test production without separate operational authorization.
+
+## 5. SEO and traffic plan
+
+### Preserve the good foundations
+
+The app's marketing content is static HTML. It does not need a framework migration, SSR rewrite, or paid prerendering to become crawlable. Maintain:
+
+- Canonical `https://talklive.app` identity and path normalization.
+- Crawlable marketing pages with intentional noindex on app/account screens. `/chat` carries its noindex in HTML rather than the header; absence of an X-Robots-Tag alone is not a defect.
+- Valid sitemap organization, accurate modification dates, existing structured data and relevant internal links.
+- Compression, generated asset checks, no video requirement and no mandatory account for core matching.
+- Useful original guides and the existing research article's source/limitations sections. Improve sourcing where needed instead of assuming all current content is thin.
+
+### SEO-02 — Verify production search coverage and prioritize by intent
+
+**P1 baseline / P2 optimization · M.**
+
+Using authorized Search Console access, collect the last 28 and 90 days by query, landing page, country and device, plus indexed/excluded URLs, user-selected vs Google-selected canonical, soft 404s, crawl errors, sitemap status and Core Web Vitals. Compare the deployed revision to this audit. Check HTTPS/www/alias redirects at the edge, not just in local Express.
+
+Create an intent-to-primary-URL map before adding pages:
+
+| Intent | Primary existing destination to evaluate | Appropriate next step |
+|---|---|---|
+| Brand / broad stranger chat | `/`, `/talk-to-strangers` with distinct purposes | Clear voice/text choice. |
+| Voice-specific | `/random-voice-chat` | Voice start with expected consent/permission. |
+| Text-specific | `/random-text-chat` | Text start with no microphone. |
+| Language practice | `/language-exchange`, `/practice-english-speaking` | Honest practice guidance and mode entry; do not promise a tutor/native speaker. |
+| Comparison | `/omegle-alternative`, `/voice-chat-vs-video-chat` | Factual comparison followed by the relevant mode. |
+| Local/language interest | Existing country guides and localized homepages | Preserve interface language; distinguish preferences from guaranteed partner supply. |
+| Informational | Existing Journal guides | Answer the query fully, then offer one useful next action. |
+
+Similar topics are not automatically keyword cannibalization. Merge or redirect only after comparing intent, content, impressions/clicks and ranking URLs. Prioritize pages with useful impressions and weak click-through at comparable positions, or clicks with poor activation. Search volume was not available; do not invent it.
+
+**Acceptance:** A measured URL/query inventory, justified priorities, live indexability checks, and a tracking plan exist. Titles describe the page naturally; H1/title need not be identical. Avoid clickbait and guaranteed ranking claims. Record changes so later traffic differences can be interpreted.
+
+### SEO-03 — Improve content value and distribution, not page count
+
+**P2 · Ongoing.**
+
+1. Improve the best existing high-intent pages first: explain exactly what happens after Start, privacy distinctions, who the service is for, likely waiting behavior and device requirements. Use genuine product screenshots or diagrams where useful.
+2. Add original value: reviewed conversation exercises, browser/microphone troubleshooting, well-sourced comparisons, and privacy-preserving aggregate insights only where data is valid and publication is appropriate.
+3. Cite accessible primary sources for research claims. Maintain honest organizational authorship or real contributor profiles; do not invent expertise, lived experience, reviews or success statistics. Keep wellbeing claims modest and do not position random chat as professional treatment.
+4. Keep language quality and factual claims synchronized. Prioritize locales supported by demand and operational capacity rather than shipping hundreds of machine-translated pages.
+5. Preserve relevant internal links among guides, mode pages and useful supporting articles. Every indexable page needs a reason to exist beyond swapping a country or keyword.
+6. Improve editorial/navigation consistency where it helps readers, while retaining the existing brand. Avoid a giant redesign project before conversion fixes.
+7. Build legitimate discovery through useful community participation, relevant language-learning partnerships, factual demos and editorial mentions. Obtain permission before publishing messages, outreach or partner commitments. Do not buy ranking links, spam forums, manufacture testimonials or mass-create doorway pages.
+8. Treat `llms.txt`, crawler permissions and additional schema as supporting hygiene, not traffic guarantees. FAQ markup alone does not guarantee a Google rich result. Validate the structured data type's actual eligibility and visible content.
+
+**Acceptance:** Each content brief names a real audience need, an existing or proposed canonical URL, original contribution, verified claims, a contextual action, internal links and success metric. Publish fewer useful pages rather than duplicating the current topic set. Evaluate qualified activation alongside clicks.
+
+### GROWTH-01 — Build compatible supply at the same time as demand
+
+**P2 · Business experiment; requires baseline.**
+
+Random chat is a two-sided availability problem. Ten times more scattered visitors does not necessarily mean ten times more successful conversations. New campaigns can underperform if people arrive in incompatible modes, languages or time windows.
+
+Start with one or two cohorts chosen from real acquisition and queue data. Test opt-in scheduled conversation windows, language-practice sessions, or creator/community referrals that bring enough relevant adults concurrently. Only advertise schedules and experiences that can actually be supported. Do not claim country/language matching is guaranteed when it is a preference.
+
+Use a small controlled acquisition budget only after REL-01 and DATA-01. Track cost per activated or retained user rather than cost per click. Compare cohort waiting time, meaningful-conversation rate, return rate and moderation burden. Scale the cohorts with evidence; stop campaigns that acquire clicks without conversations.
+
+## 6. Proposed delivery sequence
+
+### First delivery cycle: unblock people and establish truth
+
+- Reproduce and fix UX-01, UX-02, UX-03 and A11Y-01.
+- Fix SEO-01 and add route regressions.
+- Correct obvious TRUST-01 copy mismatches and the misleading rotating badge.
+- Make QA-01 browser tests honest.
+- Start DATA-01 with a small documented event schema; collect the production baseline with authorized access.
+
+### Second delivery cycle: activation and reliability
+
+- Complete production voice/device/TURN checks and diagnose real failures.
+- Verify ADS-01 and consent behavior.
+- Run the first-use simplification experiment using the existing flag, after its exposure and outcome tracking are reliable.
+- Trim obvious startup work indicated by traces, with regression tests for calls and messaging.
+
+### Following cycles: compounding growth
+
+- Improve the highest-opportunity existing search pages; fix locale parity.
+- Run one focused community/availability experiment.
+- Improve return prompts after successful interactions and measure cohorts.
+- Expand only the content, campaigns and capacity supported by observed demand.
+
+Traffic outcomes need observation after deployment and recrawl; a coding agent cannot honestly conclude that SEO or retention improved from passing local tests alone.
+
+## 7. Production verification checklist for the owner/agent
+
+These items were unavailable here. They are prerequisites for the corresponding conclusions, not reasons to delay independent fixes:
+
+- Read-only live-site access; deployed commit/version; inspect main, mobile, locale and error routes.
+- Search Console and GA4 read access or exports, via secure integration/settings. Reuse existing integrations; never paste keys or service-account JSON into chat or reports.
+- Real browser/device pair for iOS Safari, Android Chrome and desktop, including separate networks and a restricted relay test.
+- AdSense/CMP configuration and consent/Auto-ad state checks.
+- Read-only operational metrics, backup/restore evidence and recent deploy failure information.
+- Business decision on Premium availability, actual waitlist behavior and approved product promises.
+
+## 8. Copy/paste brief for the implementation agent
+
+> Work in the existing `LogoOrbit/talklive.ai` checkout. Read this audit and current repository instructions, confirm the current HEAD, and reproduce each issue before editing. The audit baseline is commit `878bdcf8caf8d5b0c4aa6f21adf810a4ea8c6266`; some issues may already be fixed by the time you start.
+>
+> Implement the confirmed fixes first: UX-01, UX-02, UX-03, SEO-01, A11Y-01, obvious TRUST-01 corrections, and QA-01. Use small reviewable changes with browser/HTTP regressions appropriate to each issue. Preserve current matchmaking, privacy, identity, no-account entry, safety controls, translation behavior, and durable storage. Do not bypass age/terms or microphone consent to reduce clicks.
+>
+> Edit SEO generator/content sources rather than only generated HTML. Regenerate using repository scripts in the implementation task, inspect generated diffs, and run the existing SEO and bundle checks. Maintain relevant historical redirects; do not bulk-delete pages or add broad unrelated redirects.
+>
+> Extend the existing analytics/health/traffic modules for DATA-01; do not duplicate them or send conversation content into growth analytics. Correct browser test helpers that silently replace failed real interactions. Keep lower-level state tests separate from user-journey proof.
+>
+> Then validate production reliability and ad/consent behavior using authorized access. Mark unavailable access and unrun tests explicitly. A local audio track or passing voice-analysis unit test is not proof of a working two-person voice call.
+>
+> Run targeted tests plus the existing applicable CI checks. Provide a change summary, evidence, before/after screenshots where relevant, exact pass/fail/skip results, rollout/rollback notes, and remaining external verification. Keep experimental UX changes behind controlled flags where appropriate. Do not deploy, send outreach, enable billing, change live ad settings, buy traffic, or change production secrets without the authorization required for that task.
+>
+> Do not promise rankings or maximum traffic. Measure improvement through successful conversations, qualified search clicks, queue experience and returning-user cohorts.
+
+## 9. Audit artifacts and reproducibility
+
+Current-workspace evidence is under `/workspace/audit-talklive/` (these files are outside the Git checkout and must be copied separately if needed in another environment):
+
+| File | Contents |
+|---|---|
+| `browser-results.json` | Page text, requests, DOM counts and full Axe findings for ten page/view combinations. |
+| `home-mobile.png`, `home-desktop.png` | Initial layout snapshots. |
+| `unsupported.png`, `mic-denied.png` | Mobile voice error-state evidence. |
+| `journeys.json` | Onboarding steps and modal Tab-focus observations. |
+| `error-flows.json` | Unsupported-WebRTC and mic-denied state checks. |
+| `locale-cta.json` | Arabic/Urdu CTA language and intent loss reproduction. |
+| `seo-crawl.json` | All sitemap results and extra redirect/error routes. |
+| `perf-results.json` | Local diagnostic timings and navigation entries; not field metrics. |
+| `pair-flows.json` | Successful two-way text exchange and limited synthetic voice observations. |
+| `social-ui.log` | Existing test outcome and four real-click fallback warnings. |
+| `*.cjs` | Audit scripts; local app expected on port 5000. |
+
+The app was started with `NODE_ENV=development DATA_DIR=/workspace/audit-talklive/runtime PORT=5000 npm start`. Browser tooling used the available Playwright and system Chromium, with audit-only `axe-core` installed outside the checkout. No application source or configuration was changed by this audit. Only this report is added to the repository.
+
+`docs/seo-audit.md` describes an older commit and an older advertising/page structure. Use it as historical context, not the current baseline. This report takes precedence for the evidence observed on the audited revision.
+
+## 10. Reference standards for implementation review
+
+These are the official reference documents to consult during implementation; they are not evidence of TalkLive's live rankings or compliance:
+
+- Google Search Essentials: https://developers.google.com/search/docs/essentials
+- Google spam policies, including scaled-content and doorway abuse: https://developers.google.com/search/docs/essentials/spam-policies
+- Google redirects and search: https://developers.google.com/search/docs/crawling-indexing/301-redirects
+- Google localized versions and hreflang: https://developers.google.com/search/docs/specialty/international/localized-versions
+- Google people-first content guidance: https://developers.google.com/search/docs/fundamentals/creating-helpful-content
+- Core Web Vitals definitions and thresholds: https://web.dev/articles/vitals
+- WAI modal dialog pattern: https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/
+- WAI combobox pattern: https://www.w3.org/WAI/ARIA/apg/patterns/combobox/
+- WCAG 2.2: https://www.w3.org/TR/WCAG22/
