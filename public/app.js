@@ -9827,7 +9827,7 @@ function sendAdsConversion() {
   window.gtag('event', 'conversion', { send_to: 'AW-18500257801/LPruCP3u4ZQdEImQzvVE' });
 }
 
-socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
+socket.on('matched', async ({ initiator, partner, rematched, callback, samePersonality }) => {
   markSearchAcked();
   sendAdsConversion();
   endedNoticeUntil = 0;
@@ -9877,6 +9877,8 @@ socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
   // Stash everything needed to reveal the partner once media actually flows.
   currentPartner = partner;
   currentPartnerInterests = partner.interests || [];
+  currentSamePersonality = samePersonality || null;
+  twinNoticeFor = null;
   partnerCard.classList.add('hidden');
   renderPartnerAnimal(null); // never let the last stranger's animal linger
   sharedInterestNote.classList.add('hidden');
@@ -9901,6 +9903,21 @@ socket.on('matched', async ({ initiator, partner, rematched, callback }) => {
   }
 });
 
+// Same spirit animal and/or same personality avatar: worth saying out loud,
+// once per match, the moment the two of you are actually connected.
+let currentSamePersonality = null;
+let twinNoticeFor = null;
+function twinMatchMessage(partner, characterId) {
+  const animal = partner && partner.animal && Animals && Animals.has(partner.animal) && partner.animal === myAnimal
+    ? Animals.name(partner.animal) : '';
+  const character = characterId && window.TalkLiveCharacters && window.TalkLiveCharacters.has(characterId)
+    && myAvatar === 'c:' + characterId ? window.TalkLiveCharacters.name(characterId) : '';
+  if (animal && character) return t('twinSameBoth', { animal, character });
+  if (character) return t('personalitySameMatch', { character });
+  if (animal) return t('animalSameMatch', { animal });
+  return '';
+}
+
 // Populate + reveal the stranger's card only once the connection is confirmed.
 function revealPartner() {
   const partner = currentPartner;
@@ -9918,6 +9935,11 @@ function revealPartner() {
   partnerMeta.classList.toggle('hidden', !countryName);
   renderPartnerAnimal(partner.animal);
   startPartnerClock(partner.timezone);
+  if (twinNoticeFor !== partner) {
+    twinNoticeFor = partner;
+    const twin = twinMatchMessage(partner, currentSamePersonality);
+    if (twin) { showToast(twin, 'success'); vibrate([20, 40, 20]); }
+  }
 
   partnerInterests.innerHTML = '';
   currentPartnerInterests.forEach((i) => {

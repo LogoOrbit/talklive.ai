@@ -38,7 +38,8 @@
     "test:social-load": "node scripts/social-ui/load.js",
     "test:voice-notes": "node scripts/test-voice-notes.js",
     "test:games": "node scripts/test-games-stats.js",
-    "test:traffic": "node scripts/test-traffic.js"
+    "test:traffic": "node scripts/test-traffic.js",
+    "test:twins": "node scripts/test-twin-match.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.129.0",

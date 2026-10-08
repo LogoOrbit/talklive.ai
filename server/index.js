@@ -3422,6 +3422,14 @@ function sanitizeAnimal(value) {
 // apparent through conversation. The spirit animal is safe to include: it is
 // self-chosen, says nothing about who you are, and exists purely to give two
 // strangers something to open with.
+// Both people wearing the same personality avatar (`c:<id>`). Avatars are
+// friends-only, so only the match itself is sent, never the partner's avatar:
+// the id it carries is the one the receiver already chose.
+function sharedPersonality(a, b) {
+  const x = a && a.avatar;
+  return typeof x === 'string' && x.slice(0, 2) === 'c:' && b && x === b.avatar ? x.slice(2) : null;
+}
+
 function publicProfile(p) {
   return {
     clientId: p.clientId,
@@ -3652,8 +3660,9 @@ function tryMatch(socketId) {
 
     const mode = seekerProfile.mode || 'talk';
     store.recordFeature(mode === 'chat' ? 'chat_match' : 'match');
-    partnerSocket.emit('matched', { initiator: true, partner: publicProfile(seekerProfile), rematched, mode });
-    seekerSocket.emit('matched', { initiator: false, partner: publicProfile(partnerProfile), rematched, mode });
+    const samePersonality = sharedPersonality(seekerProfile, partnerProfile);
+    partnerSocket.emit('matched', { initiator: true, partner: publicProfile(seekerProfile), rematched, mode, samePersonality });
+    seekerSocket.emit('matched', { initiator: false, partner: publicProfile(partnerProfile), rematched, mode, samePersonality });
 
     // Remember each other so either side can message back, call back, add or
     // report later. This used to happen for text matches only, which left every
@@ -6286,8 +6295,9 @@ io.on('connection', (socket) => {
     // Call-backs are always voice calls, whatever pool either side was in.
     me.mode = 'talk';
     requesterProfile.mode = 'talk';
-    requesterSocket.emit('matched', { initiator: true, partner: publicProfile(me), rematched: false, callback: true, mode: 'talk' });
-    socket.emit('matched', { initiator: false, partner: publicProfile(requesterProfile), rematched: false, callback: true, mode: 'talk' });
+    const samePersonality = sharedPersonality(me, requesterProfile);
+    requesterSocket.emit('matched', { initiator: true, partner: publicProfile(me), rematched: false, callback: true, mode: 'talk', samePersonality });
+    socket.emit('matched', { initiator: false, partner: publicProfile(requesterProfile), rematched: false, callback: true, mode: 'talk', samePersonality });
     rememberPairing(socket, me, requesterSocket, requesterProfile);
   });
 
@@ -6392,8 +6402,9 @@ io.on('connection', (socket) => {
     otherProfile.matchedAt = me.matchedAt;
     me.mode = 'talk';
     otherProfile.mode = 'talk';
-    otherSocket.emit('matched', { initiator: true, partner: publicProfile(me), rematched: false, callback: true, mode: 'talk' });
-    socket.emit('matched', { initiator: false, partner: publicProfile(otherProfile), rematched: false, callback: true, mode: 'talk' });
+    const samePersonality = sharedPersonality(me, otherProfile);
+    otherSocket.emit('matched', { initiator: true, partner: publicProfile(me), rematched: false, callback: true, mode: 'talk', samePersonality });
+    socket.emit('matched', { initiator: false, partner: publicProfile(otherProfile), rematched: false, callback: true, mode: 'talk', samePersonality });
     rememberPairing(socket, me, otherSocket, otherProfile);
   });
 

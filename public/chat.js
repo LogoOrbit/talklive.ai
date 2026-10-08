@@ -3374,6 +3374,13 @@
       }
       msgs.scrollTop = msgs.scrollHeight;
     }
+    // Same personality avatar: the server only says so when both wear it.
+    var C = window.TalkLiveCharacters;
+    if (data.samePersonality && C && C.has(data.samePersonality)
+      && localStorage.getItem('talklive_avatar') === 'c:' + data.samePersonality) {
+      addMessage(t('personalitySameMatch', { character: C.name(data.samePersonality) }), 'system system-animal-match');
+      msgs.scrollTop = msgs.scrollHeight;
+    }
     showIcebreakers();
     // Matched while this tab is in the background: tell them straight away.
     if (document.visibilityState === 'hidden') reportAway();

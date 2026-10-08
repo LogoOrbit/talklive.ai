@@ -989,6 +989,8 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "animalClear": "Remove",
     "partnerAnimalLabel": "Their spirit animal",
     "animalSameMatch": "You both picked the {animal}!",
+    "personalitySameMatch": "Same personality! You are both the {character}.",
+    "twinSameBoth": "Twins! You both picked the {animal} and the {character}.",
     "chatAnimalLine": "{name} picked the {animal}. {trait}. Ask why!",
     "animalLion": "Lion",
     "animalLionTrait": "Bold and big-hearted",
