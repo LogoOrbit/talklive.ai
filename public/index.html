@@ -418,11 +418,11 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 
   <a href="#main" class="skip-link" data-i18n="skipToContent">Skip to main content</a>
   <div class="app">
-    <!-- "Still under development" strip: an apology for the occasional delay
-         or glitch while TalkLive is being built. Switched on and off from the
+    <!-- Public beta strip: tells visitors TalkLive is in beta and improving
+         every week. Switched on and off from the
          owner dashboard (Settings); the server sends the state over the socket. -->
     <div id="devBanner" class="tl-devbanner" role="status" hidden>
-      <span class="tl-devbanner-text" data-i18n="devBanner">Sorry! TalkLive is still under development, so you may notice brief delays or small glitches. Nothing to worry about - we're on it.</span>
+      <span class="tl-devbanner-text" data-i18n="devBanner">TalkLive is in public beta - we ship improvements every week. Thanks for helping us shape it.</span>
       <button type="button" class="tl-devbanner-close" data-i18n-aria="dismiss" data-i18n-title="dismiss" aria-label="Dismiss" title="Dismiss">&times;</button>
     </div>
     <!-- Owner announcement: text typed on the dashboard (Settings → Site modes),
@@ -1026,13 +1026,13 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
           </svg>
         </span>
         <div class="tl-devnotice-headtext">
-          <p class="tl-devnotice-eyebrow" data-i18n="devNoticeEyebrow">Heads up</p>
-          <h2 id="devNoticeTitle" data-i18n="devNoticeTitle">TalkLive is still under development</h2>
+          <p class="tl-devnotice-eyebrow" data-i18n="devNoticeEyebrow">Public beta</p>
+          <h2 id="devNoticeTitle" data-i18n="devNoticeTitle">Welcome to the TalkLive beta</h2>
         </div>
       </div>
 
       <p id="devNoticeBody" class="tl-devnotice-body" data-i18n="devNoticeBody">
-        We are building in the open, so you may run into a rough edge or two while you talk. Thank you for bearing with us - your support is what keeps this running and getting smoother.
+        TalkLive is live and getting better every week. As an early member, your feedback directly shapes what we build next.
       </p>
 
       <form id="devNoticeForm" class="tl-devnotice-form">
