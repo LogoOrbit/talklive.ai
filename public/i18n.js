@@ -171,7 +171,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "someone": "Someone",
     "catBilling": "Coins & Billing",
     "skipToContent": "Skip to main content",
-    "devBanner": "Sorry! TalkLive is still under development, so you may notice brief delays or small glitches. Nothing to worry about - we're on it.",
+    "devBanner": "TalkLive is in public beta - we ship improvements every week. Thanks for helping us shape it.",
     "modeMembersOnly": "Only members can start a chat right now. Please log in or sign up to continue.",
     "modeVoicePaused": "Voice calls are paused for a short while. Text chat is still open at /chat.",
     "modeSignupsPaused": "New sign-ups are paused right now. Please try again later.",
@@ -769,10 +769,10 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "feedbackThanks": "Thanks for the feedback!",
     "feedbackEmpty": "Please write something first.",
 
-    // The "still under development" notice on the landing screen.
-    "devNoticeEyebrow": "Heads up",
-    "devNoticeTitle": "TalkLive is still under development",
-    "devNoticeBody": "We are building in the open, so you may run into a rough edge or two while you talk. Thank you for bearing with us - your support is what keeps this running and getting smoother.",
+    // The public beta notice on the landing screen.
+    "devNoticeEyebrow": "Public beta",
+    "devNoticeTitle": "Welcome to the TalkLive beta",
+    "devNoticeBody": "TalkLive is live and getting better every week. As an early member, your feedback directly shapes what we build next.",
     "devNoticeLabel": "Have a suggestion? We read every one.",
     "devNoticePlaceholder": "What would make TalkLive better for you?",
     "devNoticeSend": "Send feedback",
