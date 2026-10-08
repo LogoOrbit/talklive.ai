@@ -8,12 +8,12 @@
 <script src="/loading.js"></script>
 <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
 <title>Pricing - TalkLive Premium</title>
-<meta name="description" content="TalkLive is free to talk, supported by a few ads. Friends are unlimited and free. TalkLive Premium - all filters and an ad-free experience - is coming soon." />
+<meta name="description" content="TalkLive is free to talk, supported by a few ads. Friends are unlimited and free. TalkLive Premium - all filters and an ad-free experience - is not on sale." />
 <link rel="canonical" href="https://talklive.app/pricing" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="TalkLive" />
 <meta property="og:title" content="Pricing - TalkLive Premium" />
-<meta property="og:description" content="TalkLive is free to talk, supported by a few ads. Friends are unlimited and free. TalkLive Premium - all filters and an ad-free experience - is coming soon." />
+<meta property="og:description" content="TalkLive is free to talk, supported by a few ads. Friends are unlimited and free. TalkLive Premium - all filters and an ad-free experience - is not on sale." />
 <meta property="og:url" content="https://talklive.app/pricing" />
 <meta property="og:image" content="https://talklive.app/og-image.png?v=2" />
 <meta property="og:image:width" content="1200" />
@@ -22,7 +22,7 @@
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:site" content="@talkliveapp" />
 <meta name="twitter:title" content="Pricing - TalkLive Premium" />
-<meta name="twitter:description" content="TalkLive is free to talk, supported by a few ads. Friends are unlimited and free. TalkLive Premium - all filters and an ad-free experience - is coming soon." />
+<meta name="twitter:description" content="TalkLive is free to talk, supported by a few ads. Friends are unlimited and free. TalkLive Premium - all filters and an ad-free experience - is not on sale." />
 <meta name="twitter:image" content="https://talklive.app/og-image.png?v=2" />
 <meta name="twitter:image:alt" content="TalkLive Premium pricing" />
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -126,7 +126,7 @@
   <section class="pricing-hero">
     <img class="page-art page-art-center" src="/illustrations/gift.svg" width="930" height="610" alt="" decoding="async" />
     <h1>Simple, honest pricing</h1>
-    <p>Core matching is free, and it stays free. TalkLive Premium - advanced filters, no between-call wait and an ad-free experience - is still being built and is not on sale yet.</p>
+    <p>Core matching is free, and it stays free. TalkLive Premium - advanced filters, no between-call wait and an ad-free experience - is not on sale.</p>
   </section>
 
   <div id="premiumActiveNote" class="status-note ok" hidden>You already have TalkLive Premium - everything is unlocked. Enjoy!</div>
@@ -149,20 +149,18 @@
     </div>
 
     <div class="card plan premium">
-      <span class="badge-popular">COMING SOON</span>
-      <span class="soon-flag">🚧 Not on sale yet</span>
       <h2>TalkLive Premium</h2>
-      <div class="price price-soon">Coming soon</div>
-      <span class="per">pricing announced at launch</span>
+      <div class="price price-soon">Not on sale</div>
+      <span class="per">no price set</span>
       <ul>
         <li><strong>All filters unlocked</strong> - gender preference &amp; unlimited country lists</li>
         <li><strong>No ads</strong> - ever</li>
       </ul>
-      <button type="button" id="upgradeBtn" class="upgrade-btn" disabled>Coming soon</button>
+      <button type="button" id="upgradeBtn" class="upgrade-btn" disabled>Not on sale</button>
     </div>
   </section>
 
-  <p class="guarantee-note">Premium is not available for purchase yet - nothing is being charged. Everything on TalkLive is free in the meantime.</p>
+  <p class="guarantee-note">Premium is not on sale - nothing is being charged. Everything on TalkLive is free.</p>
 
   <section class="faq">
     <h2>Frequently asked questions</h2>
@@ -225,7 +223,7 @@
     }
   }
 
-  // Turn the disabled "Coming soon" button into a real checkout, but only when
+  // Turn the disabled "Not on sale" button into a real checkout, but only when
   // the server says a payment processor is actually configured. A button that
   // cannot charge anyone is worse than an honest "not on sale yet".
   function enableCheckout(plans) {

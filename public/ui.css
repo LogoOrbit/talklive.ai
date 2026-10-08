@@ -500,18 +500,6 @@
 }
 .tl-nav-label-short { display: none; }
 
-.tl-nav-soon {
-  flex: 0 0 auto;
-  padding: 3px 8px;
-  border-radius: var(--tl-r-pill);
-  background: color-mix(in srgb, var(--accent-2) 16%, transparent);
-  color: var(--accent-2);
-  font-size: 10.5px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
 /* Unread messages. The badge markup is the one that used to sit on the header
    glyph, so it keeps its ID and app.js keeps writing to it. */
 .tl-nav-item .notif-badge {
@@ -832,10 +820,9 @@
   .tl-nav-label-long { display: none; }
   .tl-nav-label-short { display: block; }
 
-  /* No room for a "Soon" chip or a promo card on a tab bar - and no room for
-     a sixth tab either. Shop is the one destination nobody can act on yet, so
-     it is the one that goes; it is still in the drawer behind More. */
-  .tl-nav-soon,
+  /* No room for a promo card on a tab bar - and no room for a sixth tab
+     either. Shop is the one destination nobody can act on yet, so it is the
+     one that goes; it is still in the drawer behind More. */
   .tl-nav-promo,
   .tl-nav-item-wide { display: none; }
 
@@ -2072,7 +2059,6 @@
   color: var(--muted);
 }
 .tl-drawer-icon svg { width: 21px; height: 21px; }
-.tl-drawer-item .tl-nav-soon { margin-inline-start: auto; display: inline-block; }
 
 .tl-drawer-theme {
   margin-top: auto;
