@@ -206,10 +206,6 @@ function defaults() {
     favFilms: {},
     settings: {
       maintenance: { on: false, message: 'TalkLive is under maintenance. We will be back shortly!' },
-      // The "still under development" strip on / and /chat, switched from the
-      // dashboard. `since` changes on every switch-on, so visitors who closed
-      // the last one see it again.
-      devBanner: { on: true, since: 0 },
       // Site-wide switches on the dashboard's Settings tab. Read through
       // siteModes() in server/index.js, which fills in any key missing here.
       //   announce       owner-written strip at the top of / and /chat

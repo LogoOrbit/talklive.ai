@@ -916,22 +916,13 @@ function sendAppShell(res, file) {
   res.type('html').send(appShellHtml(file));
 }
 
-// The two strips above the top bar (#devBanner, #siteAnnounce) in index.html
-// and chat.html. They used to ship `hidden` and be switched on by the socket
-// once the page was up, so with the dev banner on (its default) every cold
-// visit drew the app, then pushed all of it ~70px down - PageSpeed's Cumulative
-// Layout Shift, ~0.1 on mobile. Their state is written into the HTML instead,
-// so a strip that is on is there from the first paint; the inline script
-// beside them hides one the visitor already closed before anything is drawn.
+// The announcement strip above the top bar (#siteAnnounce) in index.html and
+// chat.html. Switched on by the socket once the page was up, it would push the
+// whole app ~70px down on a cold visit (Cumulative Layout Shift). Its state is
+// written into the HTML instead, so a strip that is on is there from the first
+// paint; the inline script beside it hides one the visitor already closed.
 function withSiteStrips(html) {
-  const dev = store.data.settings.devBanner || { on: false };
   const ann = store.siteModes().announce || {};
-  if (dev.on) {
-    html = html.replace(
-      '<div id="devBanner" class="tl-devbanner" role="status" hidden>',
-      `<div id="devBanner" class="tl-devbanner" role="status" data-since="${Number(dev.since) || 0}">`
-    );
-  }
   if (ann.on && ann.text) {
     html = html.replace(
       /<div id="siteAnnounce" class="tl-devbanner tl-announce" role="status" hidden>(\s*)<span class="tl-devbanner-text"><\/span>/,
@@ -1607,7 +1598,7 @@ function staticHeaders(res, filePath) {
 // Friendly 404 for unknown pages: correct status code (so search engines drop
 // dead URLs) plus links back into the site instead of Express's plain text.
 app.use((req, res) => {
-  res.status(404).type('html').send(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Page not found - TalkLive</title><meta name="robots" content="noindex"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><style>body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#0b0f1a;color:#eef1f9;display:flex;align-items:center;justify-content:center;min-height:100vh;min-height:100dvh;text-align:center;padding:24px;padding-left:calc(24px + env(safe-area-inset-left));padding-right:calc(24px + env(safe-area-inset-right))}h1{font-size:2rem;margin:.4em 0}p{color:#9aa3b8;max-width:420px;margin:0 auto 20px;line-height:1.5}a.btn{display:inline-block;background:#4f7cff;color:#fff;text-decoration:none;padding:12px 26px;border-radius:999px;font-weight:600}a{color:#8fb0ff}nav{margin-top:18px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap;font-size:14px}img{display:block;width:100%;max-width:320px;height:auto;margin:0 auto 8px}</style></head><body><div><img src="/illustrations/page-not-found.svg" width="860" height="571" alt=""><h1>404 - page not found</h1><p>That page doesn't exist, but thousands of people are online talking right now.</p><a class="btn" href="/">Start Talking Free</a><nav><a href="/random-voice-chat">Voice Chat</a><a href="/random-text-chat">Text Chat</a><a href="/blog/">Blog</a><a href="/contact">Contact</a></nav></div></body></html>`);
+  res.status(404).type('html').send(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Page not found - TalkLive</title><meta name="robots" content="noindex"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><style>body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#0b0f1a;color:#eef1f9;display:flex;align-items:center;justify-content:center;min-height:100vh;min-height:100dvh;text-align:center;padding:24px;padding-left:calc(24px + env(safe-area-inset-left));padding-right:calc(24px + env(safe-area-inset-right))}h1{font-size:2rem;margin:.4em 0}p{color:#9aa3b8;max-width:420px;margin:0 auto 20px;line-height:1.5}a.btn{display:inline-block;background:#4f7cff;color:#fff;text-decoration:none;padding:12px 26px;border-radius:999px;font-weight:600}a{color:#8fb0ff}nav{margin-top:18px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap;font-size:14px}img{display:block;width:100%;max-width:320px;height:auto;margin:0 auto 8px}</style></head><body><div><img src="/illustrations/page-not-found.svg" width="860" height="571" alt=""><h1>404 - page not found</h1><p>That page doesn't exist. Start a free call, or try one of the pages below.</p><a class="btn" href="/">Start Talking Free</a><nav><a href="/random-voice-chat">Voice Chat</a><a href="/random-text-chat">Text Chat</a><a href="/blog/">Blog</a><a href="/contact">Contact</a></nav></div></body></html>`);
 });
 
 // --- State ---
@@ -4030,7 +4021,6 @@ io.on('connection', (socket) => {
     socket.disconnect(true);
     return;
   }
-  socket.emit('devBanner', store.data.settings.devBanner || { on: false });
   socket.emit('siteModes', store.publicModes());
 
   // Banned by IP: refuse service entirely until the ban expires or is lifted.
