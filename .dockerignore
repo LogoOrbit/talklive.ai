@@ -11,5 +11,5 @@ marketing
 DEPLOY-FLY.md
 README.md
 
-# The Android app (android/) is built separately, never served.
-android
+# The mobile app (mobile/) is built separately, never served.
+mobile

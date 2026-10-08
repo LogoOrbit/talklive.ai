@@ -1,0 +1,19 @@
+{
+  "name": "talklive-mobile",
+  "private": true,
+  "description": "TalkLive for Android and iOS: a Capacitor shell around https://talklive.app with native push, calls and sign-in. See README.md.",
+  "scripts": {
+    "sync": "cap sync",
+    "android:bundle": "cap sync android && cd android && ./gradlew bundleRelease assembleRelease"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/core": "8.5.3",
+    "@capacitor/ios": "8.5.3",
+    "@capacitor/push-notifications": "8.1.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.3"
+  }
+}

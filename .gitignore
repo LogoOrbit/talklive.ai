@@ -11,11 +11,8 @@ node_modules/
 # Minified scripts written by scripts/minify-assets.js (CI builds them).
 /build/
 
-# Android build output and signing keys (android/README.md). Keys never go in
-# the repo.
-/android/.gradle/
-/android/build/
-/android/app/build/
-/android/local.properties
+# Mobile app (mobile/README.md): dependencies and build output. Signing keys
+# never go in the repo.
+/mobile/node_modules/
 *.jks
 *.keystore

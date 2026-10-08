@@ -121,6 +121,11 @@
    * context is denied, and Chrome's denials do not expire.
    */
   function maybeAskForPush(reason) {
+    // In the mobile app, notifications are the app's own (public/native.js).
+    var cap = window.Capacitor;
+    if (cap && cap.isNativePlatform && cap.isNativePlatform()) {
+      return window.TalkLiveNative ? window.TalkLiveNative.askForPush() : undefined;
+    }
     if (!('Notification' in window) || !('PushManager' in window)) return;
     if (Notification.permission !== 'default') return;
     var asked = Number(readLS(PUSH_ASKED_KEY, '0')) || 0;

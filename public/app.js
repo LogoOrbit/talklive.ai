@@ -282,6 +282,15 @@ const signupEmail = document.getElementById('signupEmail');
 const signupSubmitBtn = document.getElementById('signupSubmitBtn');
 const googleBtnLogin = document.getElementById('googleBtnLogin');
 const googleBtnSignup = document.getElementById('googleBtnSignup');
+// Inside the mobile app (mobile/) public/native.js does what a WebView cannot:
+// keep calls alive, push, and Google sign-in. It loads only in the app, and may
+// arrive after this script, so calls into it wait for it.
+const IN_APP = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+function withNative(fn) {
+  if (window.TalkLiveNative) fn(window.TalkLiveNative);
+  else window.addEventListener('tl-native-ready', () => fn(window.TalkLiveNative), { once: true });
+}
+
 // Declared up here, not next to the Google sign-in code below: applyTheme()
 // runs during start-up and calls renderGoogleButtons(), which reads this. A
 // `let` further down would still be in its temporal dead zone at that point
@@ -3675,6 +3684,12 @@ function consumeRedirectedGoogleCredential() {
 // third-party items in PageSpeed's mobile Total Blocking Time. Its button
 // already fades in once drawn, so arriving a moment later is not visible.
 function loadGoogleSignIn() {
+  // Google refuses its web sign-in inside apps; the app signs in natively.
+  if (IN_APP) {
+    withNative((n) => n.mountGoogleButtons([googleBtnLogin, googleBtnSignup], handleGoogleCredential,
+      () => showAccountStatus(t('errGoogleSignIn'), 'error')));
+    return;
+  }
   if (googleScriptRequested || !window.GOOGLE_CLIENT_ID) return;
   googleScriptRequested = true;
   const script = document.createElement('script');
@@ -6681,6 +6696,8 @@ let callState = 'idle';
 
 function setCallState(state) {
   callState = state;
+  // In the mobile app, keeps the call alive when the user leaves the app.
+  if (IN_APP) withNative((n) => n.callState(state));
   const connected = state === 'connected';
   // Leaving the connected state cancels any pending "are you sure?".
   if (!connected) clearHangupConfirm();

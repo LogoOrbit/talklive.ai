@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- theme_color / background_color in public/site.webmanifest -->
-    <color name="brand_dark">#0B0F1A</color>
-</resources>

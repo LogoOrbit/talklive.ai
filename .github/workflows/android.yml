@@ -1,17 +1,19 @@
 name: Android app
 
-# Builds the signed Google Play bundle (android/) on demand: Actions >
-# Android app > Run workflow, then download "talklive-android" from the run.
-# Bump versionCode in android/app/build.gradle before each Play upload.
+# Builds the signed Google Play bundle for the Capacitor app (mobile/) on
+# demand: Actions > Android app > Run workflow, then download
+# "talklive-android" from the run. Bump versionCode in
+# mobile/android/app/build.gradle before each Play upload.
 #
-# Needs two repository secrets (Settings > Secrets and variables > Actions):
+# Repository secrets (Settings > Secrets and variables > Actions):
 #   ANDROID_KEYSTORE_BASE64    the upload keystore, base64-encoded
 #   ANDROID_KEYSTORE_PASSWORD  its password
-# Without them the bundle is built unsigned, which Play will not accept.
+#   GOOGLE_SERVICES_JSON       Firebase config for push (optional; without it
+#                              the app works but has no push notifications)
 on:
   workflow_dispatch:
   pull_request:
-    paths: ['android/**', '.github/workflows/android.yml']
+    paths: ['mobile/**', '.github/workflows/android.yml']
 
 permissions:
   contents: read
@@ -19,15 +21,31 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
 
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 21
           cache: gradle
+
+      - name: Install and sync Capacitor
+        working-directory: mobile
+        run: npm ci && npx cap sync android
+
+      - name: Firebase config
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        if: env.GOOGLE_SERVICES_JSON != ''
+        run: echo "$GOOGLE_SERVICES_JSON" > mobile/android/app/google-services.json
 
       - name: Restore the upload keystore
         env:
@@ -38,7 +56,7 @@ jobs:
           echo "TALKLIVE_KEYSTORE=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
 
       - name: Build bundle and APK
-        working-directory: android
+        working-directory: mobile/android
         env:
           TALKLIVE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: ./gradlew --no-daemon bundleRelease assembleRelease
@@ -48,5 +66,5 @@ jobs:
         with:
           name: talklive-android
           path: |
-            android/app/build/outputs/bundle/release/app-release.aab
-            android/app/build/outputs/apk/release/app-release.apk
+            mobile/android/app/build/outputs/bundle/release/app-release.aab
+            mobile/android/app/build/outputs/apk/release/app-release.apk

@@ -25,6 +25,7 @@
  */
 
 const webpush = require('web-push');
+const { GoogleAuth } = require('google-auth-library');
 const store = require('./store');
 
 const PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || '';
@@ -41,6 +42,77 @@ if (PUBLIC_KEY && PRIVATE_KEY) {
   } catch (err) {
     console.error('[push] VAPID keys are set but invalid, push disabled:', err.message);
   }
+}
+
+// --- Native app push (Firebase Cloud Messaging) -------------------------------
+//
+// The Android/iOS app (mobile/) registers an FCM token instead of a web push
+// subscription. It is stored in the same per-client list, with the endpoint
+// `fcm:<token>`, so throttling, the device cap and cleanup are shared.
+//
+// Env-gated on FCM_SERVICE_ACCOUNT: the Firebase service-account JSON (Firebase
+// console > Project settings > Service accounts > Generate new private key),
+// either raw or base64-encoded. Without it, app installs simply get no push.
+const FCM_PREFIX = 'fcm:';
+let fcm = null; // { projectId, auth }
+(function initFcm() {
+  const raw = process.env.FCM_SERVICE_ACCOUNT || '';
+  if (!raw) return;
+  try {
+    const json = raw.trim().startsWith('{') ? raw : Buffer.from(raw, 'base64').toString('utf8');
+    const credentials = JSON.parse(json);
+    if (!credentials.project_id || !credentials.client_email || !credentials.private_key) throw new Error('incomplete service account');
+    fcm = {
+      projectId: credentials.project_id,
+      auth: new GoogleAuth({ credentials, scopes: ['https://www.googleapis.com/auth/firebase.messaging'] }),
+    };
+  } catch (err) {
+    console.error('[push] FCM_SERVICE_ACCOUNT is set but unusable, app push disabled:', err.message);
+  }
+})();
+
+function fcmConfigured() {
+  return !!fcm;
+}
+
+// Android channels created by the app (mobile/android Notifications.java).
+const CHANNEL_FOR_KIND = { call: 'calls', message: 'messages' };
+
+async function sendFcm(token, { title, body, url, tag, kind }) {
+  const accessToken = await fcm.auth.getAccessToken();
+  const call = kind === 'call';
+  const res = await fetch(`https://fcm.googleapis.com/v1/projects/${fcm.projectId}/messages:send`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      message: {
+        token,
+        notification: { title, body },
+        data: { url: url || '/' },
+        android: {
+          priority: 'high',
+          // A request to talk is stale within a minute; a message can wait.
+          ttl: call ? '60s' : '3600s',
+          notification: {
+            channel_id: CHANNEL_FOR_KIND[kind] || 'messages',
+            tag: tag || 'talklive',
+            sound: 'default',
+            default_vibrate_timings: !call,
+          },
+        },
+        apns: {
+          headers: { 'apns-priority': '10', 'apns-collapse-id': String(tag || 'talklive').slice(0, 64) },
+          payload: { aps: { sound: 'default' } },
+        },
+      },
+    }),
+  });
+  if (res.ok) return 'ok';
+  const err = await res.json().catch(() => ({}));
+  const code = (((err.error || {}).details || []).find((d) => d.errorCode) || {}).errorCode;
+  // The app was uninstalled or the token rotated: stop pushing to it.
+  if (res.status === 404 || code === 'UNREGISTERED' || code === 'INVALID_ARGUMENT') return 'gone';
+  throw Object.assign(new Error(code || `HTTP ${res.status}`), { statusCode: res.status });
 }
 
 function configured() {
@@ -78,8 +150,8 @@ setInterval(() => {
  * `topic` collapses repeats: ten messages from the same friend while the tab is
  * closed is one notification, not ten. Returns the number of devices reached.
  */
-async function send(clientId, { topic, title, body, url, tag }) {
-  if (!ready || !clientId) return 0;
+async function send(clientId, { topic, title, body, url, tag, kind }) {
+  if ((!ready && !fcm) || !clientId) return 0;
   if (throttled(clientId, topic || title)) return 0;
   const subs = store.pushSubscriptions(clientId);
   if (!subs.length) return 0;
@@ -95,6 +167,18 @@ async function send(clientId, { topic, title, body, url, tag }) {
 
   let delivered = 0;
   await Promise.all(subs.map(async (sub) => {
+    if (sub.endpoint.startsWith(FCM_PREFIX)) {
+      if (!fcm) return;
+      try {
+        const outcome = await sendFcm(sub.endpoint.slice(FCM_PREFIX.length), { title, body, url, tag: tag || topic, kind });
+        if (outcome === 'gone') store.removePushSubscription(clientId, sub.endpoint);
+        else delivered += 1;
+      } catch (err) {
+        console.error('[push] FCM send failed:', err.message);
+      }
+      return;
+    }
+    if (!ready) return;
     try {
       await webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, payload, { TTL: 3600 });
       delivered += 1;
@@ -113,4 +197,4 @@ async function send(clientId, { topic, title, body, url, tag }) {
   return delivered;
 }
 
-module.exports = { configured, publicKey, send };
+module.exports = { configured, fcmConfigured, publicKey, send, FCM_PREFIX };

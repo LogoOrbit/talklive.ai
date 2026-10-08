@@ -147,6 +147,8 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 <link rel="icon" href="/favicon-16.png" type="image/png" sizes="16x16" />
 <link rel="apple-touch-icon" href="/favicon-192.png" />
 <link rel="manifest" href="/site.webmanifest" />
+<!-- Mobile app only (mobile/): load the native bridge. A no-op in browsers, which never download it. -->
+<script>if(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform()){var s=document.createElement('script');s.src='/native.js?v=20261008app';s.async=false;document.head.appendChild(s);}</script>
 <script defer src="/pwa.js?v=20260908pwa"></script>
 <link rel="preconnect" href="https://flagcdn.com" crossorigin />
 <link rel="dns-prefetch" href="https://flagcdn.com" />

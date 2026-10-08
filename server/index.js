@@ -469,7 +469,8 @@ app.post('/billing/webhook', express.raw({ type: 'application/json', limit: '1mb
 // subscription. Public half of the VAPID pair, safe to expose.
 app.get('/push/key', (req, res) => {
   res.setHeader('Cache-Control', 'public, max-age=3600');
-  res.json({ key: push.publicKey(), enabled: push.configured() });
+  // `app`: whether the mobile app can register for push (FCM is configured).
+  res.json({ key: push.publicKey(), enabled: push.configured(), app: push.fcmConfigured() });
 });
 
 app.post('/push/subscribe', httpRateLimit('push', 20, 60000), express.json({ limit: '4kb' }), (req, res) => {
@@ -495,6 +496,34 @@ app.post('/push/unsubscribe', httpRateLimit('push', 20, 60000), express.json({ l
     return res.status(403).json({ error: 'Unrecognised client.' });
   }
   store.removePushSubscription(String(clientId), String(endpoint || ''));
+  res.status(204).end();
+});
+
+// The mobile app (mobile/) registers its Firebase token here instead of a web
+// push subscription; push.send delivers to both kinds.
+app.post('/push/native-subscribe', httpRateLimit('push', 20, 60000), express.json({ limit: '4kb' }), (req, res) => {
+  if (!push.fcmConfigured()) return res.status(503).json({ error: 'Push is not available.' });
+  const { clientId, identityToken, token, platform } = req.body || {};
+  if (!clientId || !validIdentityToken(String(clientId), String(identityToken || ''))) {
+    return res.status(403).json({ error: 'Unrecognised client.' });
+  }
+  if (typeof token !== 'string' || !/^[\w:.-]{20,4096}$/.test(token)) {
+    return res.status(400).json({ error: 'Invalid token.' });
+  }
+  store.savePushSubscription(String(clientId), {
+    endpoint: push.FCM_PREFIX + token,
+    keys: { platform: platform === 'ios' ? 'ios' : 'android' },
+  }, req.headers['user-agent']);
+  store.recordFeature('push_subscribed');
+  res.status(204).end();
+});
+
+app.post('/push/native-unsubscribe', httpRateLimit('push', 20, 60000), express.json({ limit: '4kb' }), (req, res) => {
+  const { clientId, identityToken, token } = req.body || {};
+  if (!clientId || !validIdentityToken(String(clientId), String(identityToken || ''))) {
+    return res.status(403).json({ error: 'Unrecognised client.' });
+  }
+  store.removePushSubscription(String(clientId), push.FCM_PREFIX + String(token || ''));
   res.status(204).end();
 });
 
@@ -1109,6 +1138,8 @@ const OWN_HOSTS = new Set([CANONICAL_HOST, ...ALIAS_HOSTS, process.env.LANDING_H
 const ACQUISITION_SOURCES = new Set([
   'member_share', 'seo', 'blog', 'google', 'bing', 'reddit', 'youtube',
   'tiktok', 'instagram', 'facebook', 'x', 'producthunt', 'app',
+  // Launches of the Android/iOS app (mobile/capacitor.config.json).
+  'mobile_app',
 ]);
 
 /*
@@ -2226,13 +2257,13 @@ function pushCopyFor(notif) {
     case 'message':
       // Each lands where the tap meant to go: the conversation itself, or the
       // request waiting for an answer - not a panel to hunt through.
-      return { topic: `msg:${notif.fromClientId}`, title: `${notif.username} messaged you`, body: 'Open TalkLive to read it.', url: `/?open=chat&with=${encodeURIComponent(notif.fromClientId)}` };
+      return { topic: `msg:${notif.fromClientId}`, title: `${notif.username} messaged you`, body: 'Open TalkLive to read it.', url: `/?open=chat&with=${encodeURIComponent(notif.fromClientId)}`, kind: 'message' };
     case 'friend_request':
-      return { topic: `req:${notif.fromClientId}`, title: `${notif.username} wants to be friends`, body: 'Tap to accept or decline.', url: '/?open=requests' };
+      return { topic: `req:${notif.fromClientId}`, title: `${notif.username} wants to be friends`, body: 'Tap to accept or decline.', url: '/?open=requests', kind: 'message' };
     case 'friend_accepted':
-      return { topic: `acc:${notif.byClientId}`, title: `${notif.username} accepted your friend request`, body: 'Say hello - you can message them any time.', url: `/?open=chat&with=${encodeURIComponent(notif.byClientId)}` };
+      return { topic: `acc:${notif.byClientId}`, title: `${notif.username} accepted your friend request`, body: 'Say hello - you can message them any time.', url: `/?open=chat&with=${encodeURIComponent(notif.byClientId)}`, kind: 'message' };
     case 'call_back_request':
-      return { topic: `call:${notif.fromClientId}`, title: `${notif.username} wants to talk`, body: 'They asked you to call back.', url: '/?open=requests' };
+      return { topic: `call:${notif.fromClientId}`, title: `${notif.username} wants to talk`, body: 'They asked you to call back.', url: '/?open=requests', kind: 'call' };
     default:
       return null;
   }
