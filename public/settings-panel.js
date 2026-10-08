@@ -15,7 +15,7 @@
 (function () {
   'use strict';
 
-  const CSS_HREF = '/settings.css?v=20260928aud';
+  const CSS_HREF = '/settings.css?v=20261008avatars';
   const THEMES = ['dark', 'light', 'ocean', 'sunset'];
   const AGE_GROUPS = ['18-24', '25-34', '35-44', '45-54', '55+'];
   const CHEVRON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>';

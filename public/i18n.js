@@ -594,6 +594,8 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "showOnlineStatus": "Show my online status to friends",
     "avatar": "Avatar",
     "avatarHint": "Pick your avatar.",
+    "avatarBasic": "Basic",
+    "avatarPersonality": "Personality",
     "saveAvatar": "Save avatar",
     "growthAria": "TalkLive membership and sharing",
     "noteFreeTitle": "Made free, just for you",

@@ -618,8 +618,18 @@ html:not(.tl-set-css) .tl-set-page { visibility: hidden; }
 .tl-set-group .settings-lang-wrap .lang-select:focus { border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent); outline: none; }
 
 /* --- Avatar picker ------------------------------------------------------- */
-/* One row that scrolls sideways - a full grid of every face was a tall block
-   of scrolling on its own. */
+/* One labelled row per category, each scrolling sideways - a full grid of
+   every face was a tall block of scrolling on its own. */
+.avatar-groups { display: flex; flex-direction: column; gap: 12px; }
+.avatar-group { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.avatar-group-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim, var(--text));
+  opacity: 0.75;
+}
 .avatar-grid.avatar-grid-all {
   position: relative;
   grid-auto-flow: column;

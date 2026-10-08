@@ -391,8 +391,10 @@ function getFlagImg(code, size = 20) {
 // something wrong.
 const ANIMAL_AVATAR_PREFIX = 'a:';
 const AVATAR_IDS = {
-  male: ['m1', 'm2', 'm3', 'm4', 'm5'],
-  female: ['f1', 'f2', 'f3', 'f4', 'f5'],
+  // One plain man and one plain woman; m2-m5 / f2-f5 were recolours of the
+  // same bust. Their styles stay below so friends who still wear one render.
+  male: ['m1'],
+  female: ['f1'],
   get animal() {
     return (window.TalkLiveAnimals ? window.TalkLiveAnimals.ids : []).map((id) => ANIMAL_AVATAR_PREFIX + id);
   },
@@ -489,6 +491,11 @@ function genderIcon(avatarId, size = 30) {
 
 let myAvatar = localStorage.getItem('talklive_avatar');
 if (myAvatar && !validAvatarId(myAvatar)) myAvatar = null;
+// The retired recolours fold into the one face of the same kind.
+if (/^[mf][2-5]$/.test(myAvatar || '')) {
+  myAvatar = myAvatar[0] + '1';
+  try { localStorage.setItem('talklive_avatar', myAvatar); } catch (err) { /* storage blocked */ }
+}
 // --- Spirit animal -----------------------------------------------------------
 // Unlike the avatar (private, gendered, friends-only) this is the one thing the
 // stranger DOES see: it is self-chosen, says nothing about who you are, and
@@ -1586,7 +1593,7 @@ function closeQuickSettings() {
 // page over its size budget); it is fetched once the page is idle, or on the
 // first tap of the gear if that comes sooner.
 // It also brings settings.css, which the screen waits for (html.tl-set-css).
-var SETTINGS_PANEL_SRC = '/settings-panel.js?v=20261006chars';
+var SETTINGS_PANEL_SRC = '/settings-panel.js?v=20261008avatars';
 // Top 3 films on profiles (fav-films.js), loaded when a profile first opens.
 var filmsLoading = null;
 function withFilms(cb) {
@@ -2717,37 +2724,57 @@ let pendingAvatar = myAvatar;
 
 function renderAvatarGrid() {
   if (!avatarGrid) return;
-  // Rebuilding empties the grid, which would throw its scroll back to the
+  // Rebuilding empties each row, which would throw its scroll back to the
   // start on every tap; keep the user where they were.
-  const keepScroll = avatarGrid.scrollLeft;
+  const keepScroll = {};
+  avatarGrid.querySelectorAll('.avatar-grid').forEach((row) => { keepScroll[row.dataset.cat] = row.scrollLeft; });
   avatarGrid.innerHTML = '';
-  AVATAR_IDS.male.concat(AVATAR_IDS.female, AVATAR_IDS.character, AVATAR_IDS.animal).forEach((id) => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = `avatar-option${pendingAvatar === id ? ' selected' : ''}`;
-    btn.dataset.avatar = id;
-    const animal = animalAvatarId(id);
-    const character = characterAvatarId(id);
-    const label = character ? window.TalkLiveCharacters.name(character)
-      : (animal && window.TalkLiveAnimals ? window.TalkLiveAnimals.name(animal) : '');
-    btn.setAttribute('aria-label', label || t('avatar'));
-    btn.innerHTML = avatarFaceHtml(id, 52)
-      + (label ? `<span class="avatar-option-name">${escapeHtml(label)}</span>` : '');
-    avatarGrid.appendChild(btn);
+  [
+    ['basic', 'avatarBasic', AVATAR_IDS.male.concat(AVATAR_IDS.female)],
+    ['personality', 'avatarPersonality', AVATAR_IDS.character],
+    ['animals', 'animals', AVATAR_IDS.animal],
+  ].forEach(([cat, labelKey, ids]) => {
+    if (!ids.length) return;
+    const section = document.createElement('div');
+    section.className = 'avatar-group';
+    const heading = document.createElement('span');
+    heading.className = 'avatar-group-label';
+    heading.textContent = t(labelKey);
+    const row = document.createElement('div');
+    row.className = 'avatar-grid avatar-grid-all';
+    row.dataset.cat = cat;
+    ids.forEach((id) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `avatar-option${pendingAvatar === id ? ' selected' : ''}`;
+      btn.dataset.avatar = id;
+      const animal = animalAvatarId(id);
+      const character = characterAvatarId(id);
+      const label = character ? window.TalkLiveCharacters.name(character)
+        : (animal && window.TalkLiveAnimals ? window.TalkLiveAnimals.name(animal) : '');
+      btn.setAttribute('aria-label', label || t('avatar'));
+      btn.innerHTML = avatarFaceHtml(id, 52)
+        + (label ? `<span class="avatar-option-name">${escapeHtml(label)}</span>` : '');
+      row.appendChild(btn);
+    });
+    section.append(heading, row);
+    avatarGrid.appendChild(section);
+    if (keepScroll[cat]) row.scrollLeft = keepScroll[cat];
   });
-  avatarGrid.scrollLeft = keepScroll;
   syncSaveAvatarBtn();
 }
 
-// Opening the picker scrolls your current face into view inside the grid.
+// Opening the picker scrolls your current face into view inside its row.
 function revealSelectedAvatar() {
   if (!avatarGrid) return;
+  avatarGrid.querySelectorAll('.avatar-grid').forEach((row) => { row.scrollLeft = 0; });
   const sel = avatarGrid.querySelector('.avatar-option.selected');
-  if (!sel) { avatarGrid.scrollLeft = 0; return; }
+  if (!sel) return;
+  const row = sel.parentElement;
   // Measured from the rects so it lands right in RTL too, where scrollLeft
   // runs negative.
-  avatarGrid.scrollLeft += sel.getBoundingClientRect().left
-    - avatarGrid.getBoundingClientRect().left - 8;
+  row.scrollLeft += sel.getBoundingClientRect().left
+    - row.getBoundingClientRect().left - 8;
 }
 
 function syncSaveAvatarBtn() {

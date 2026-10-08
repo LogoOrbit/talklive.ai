@@ -1333,7 +1333,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
                 <span class="tl-set-label" data-i18n="avatar">Avatar</span>
                 <div class="tl-avatar-picker">
                   <p class="tl-field-note" data-i18n="avatarHint">Pick your avatar.</p>
-                  <div id="avatarGrid" class="avatar-grid avatar-grid-all"></div>
+                  <div id="avatarGrid" class="avatar-groups"></div>
                   <div class="tl-set-field tl-avatar-save">
                     <button type="button" id="saveAvatarBtn" data-i18n="saveAvatar" disabled>Save avatar</button>
                   </div>
@@ -2578,7 +2578,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
        browser finish parsing and paint the page first. -->
   <script defer src="/socket.io/socket.io.min.js"></script>
   <script defer src="countries.js?v=20260828fix"></script>
-  <script defer src="i18n.js?v=20261006grow"></script>
+  <script defer src="i18n.js?v=20261008avatars"></script>
   <script defer src="chat-time.js?v=20260916navbar"></script>
   <script defer src="animals.js?v=20260924animline"></script>
   <script defer src="characters.js?v=20261006chars"></script>
@@ -2589,7 +2589,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   <script defer src="voice-notes.js?v=20261001mic"></script>
   <script defer src="games.js?v=20261005min"></script>
   <script defer src="nickname-rules.js?v=20260924nick"></script>
-  <script defer src="app.js?v=20261007ads"></script>
+  <script defer src="app.js?v=20261008avatars"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the
