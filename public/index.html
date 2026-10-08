@@ -60,7 +60,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
      side-panel shell, Settings, Friends/History and the account dialog, and it
      does so with its own `tl-` class names so nothing above can reach it. -->
-<link rel="stylesheet" href="ui.css?v=20261006polish" />
+<link rel="stylesheet" href="ui.css?v=20261008col" />
 <link rel="stylesheet" href="auth.css?v=20260924auth" />
 <!-- The top bar, shared with /chat. Loaded after everything else because it
      owns the header outright: one button language, one radius, one focus ring
@@ -2155,69 +2155,12 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
         </div>
       </aside>
 </main>
-      <!-- =================================================================
-           THE ACTIVITY RAIL.
-           -----------------------------------------------------------------
-           Everything here is real. TalkLive matches strangers at random and
-           keeps no public directory of who is online, so this rail shows the
-           three things the app genuinely knows: how many people are in the
-           queue right now, the calls you have had this session, and the
-           friends you made. It deliberately does NOT list browsable
-           strangers - that would be a different product and a worse promise
-           about privacy than the one on the front page.
-
-           Desktop only. On a phone the same information lives one tap away
-           in the History and Friends panels the bottom bar opens.
-           ================================================================= -->
-      <aside class="tl-rail" data-i18n-aria="railAria" aria-label="Your activity">
-
-        <section class="tl-rail-card">
-          <div class="tl-rail-head">
-            <span class="tl-rail-head-dot" aria-hidden="true"></span>
-            <h2 data-i18n="railOnlineNow">Online Now</h2>
-            <span class="tl-rail-count" id="railOnlineCount" role="status" aria-live="polite">&mdash;</span>
-          </div>
-          <div id="railOnlineList" class="tl-rail-list"></div>
-          <p class="tl-rail-foot" data-i18n="railOnlineFoot">Tap anyone to look for a match in their country.</p>
-        </section>
-
-        <section class="tl-rail-card">
-          <div class="tl-rail-head">
-            <span class="tl-rail-head-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.2 2"/></svg>
-            </span>
-            <h2 data-i18n="railRecent">Recent calls</h2>
-            <button type="button" class="tl-rail-more" data-opens="historyBtn" data-i18n="seeAll">See all</button>
-          </div>
-          <div id="railHistoryList" class="tl-rail-list"></div>
-        </section>
-
-        <section class="tl-rail-card">
-          <div class="tl-rail-head">
-            <span class="tl-rail-head-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.1"/><path d="M3.6 19a5.4 5.4 0 0 1 10.8 0"/><circle cx="17.2" cy="9" r="2.5"/><path d="M15.7 13.7A4.8 4.8 0 0 1 21 18.4"/></svg>
-            </span>
-            <h2 data-i18n="friends">Friends</h2>
-            <button type="button" class="tl-rail-more" data-opens="friendsBtn" data-i18n="seeAll">See all</button>
-          </div>
-          <div id="railFriendsList" class="tl-rail-list"></div>
-        </section>
-
-        <section class="tl-rail-card tl-rail-invite">
-          <h2 data-i18n="railInviteTitle">Bring more people online</h2>
-          <p data-i18n="railInviteBody">Every match needs someone on the other end. Invite a friend and the queue gets shorter for everyone.</p>
-          <button type="button" class="tl-rail-invite-btn js-share-talklive" data-i18n="railInviteCta">Invite a friend</button>
-        </section>
-
-      </aside>
-    </div>
-
-
-  <!-- Home tour: a five-step tutorial and the feature showcase, below the app.
-       Its stylesheet loads without blocking first paint (all of this is below
+  <!-- Home tour: a five-step tutorial and the feature showcase, under the
+       stage in the middle column, so it starts right below the hero instead of
+       below the (taller) activity rail. Its stylesheet loads without blocking first paint (all of this is below
        the fold); the inline script at the end drives the stepper. -->
-  <link rel="preload" href="/home-tour.css?v=20261007b" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-  <noscript><link rel="stylesheet" href="/home-tour.css?v=20261007b" /></noscript>
+  <link rel="preload" href="/home-tour.css?v=20261008col" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript><link rel="stylesheet" href="/home-tour.css?v=20261008col" /></noscript>
   <section id="tour" class="tt" aria-labelledby="ttTitle">
     <div class="tt-in">
       <header class="tt-head tt-rv">
@@ -2322,6 +2265,64 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
     });
   })();
   </script>
+      <!-- =================================================================
+           THE ACTIVITY RAIL.
+           -----------------------------------------------------------------
+           Everything here is real. TalkLive matches strangers at random and
+           keeps no public directory of who is online, so this rail shows the
+           three things the app genuinely knows: how many people are in the
+           queue right now, the calls you have had this session, and the
+           friends you made. It deliberately does NOT list browsable
+           strangers - that would be a different product and a worse promise
+           about privacy than the one on the front page.
+
+           Desktop only. On a phone the same information lives one tap away
+           in the History and Friends panels the bottom bar opens.
+           ================================================================= -->
+      <aside class="tl-rail" data-i18n-aria="railAria" aria-label="Your activity">
+
+        <section class="tl-rail-card">
+          <div class="tl-rail-head">
+            <span class="tl-rail-head-dot" aria-hidden="true"></span>
+            <h2 data-i18n="railOnlineNow">Online Now</h2>
+            <span class="tl-rail-count" id="railOnlineCount" role="status" aria-live="polite">&mdash;</span>
+          </div>
+          <div id="railOnlineList" class="tl-rail-list"></div>
+          <p class="tl-rail-foot" data-i18n="railOnlineFoot">Tap anyone to look for a match in their country.</p>
+        </section>
+
+        <section class="tl-rail-card">
+          <div class="tl-rail-head">
+            <span class="tl-rail-head-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.2 2"/></svg>
+            </span>
+            <h2 data-i18n="railRecent">Recent calls</h2>
+            <button type="button" class="tl-rail-more" data-opens="historyBtn" data-i18n="seeAll">See all</button>
+          </div>
+          <div id="railHistoryList" class="tl-rail-list"></div>
+        </section>
+
+        <section class="tl-rail-card">
+          <div class="tl-rail-head">
+            <span class="tl-rail-head-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.1"/><path d="M3.6 19a5.4 5.4 0 0 1 10.8 0"/><circle cx="17.2" cy="9" r="2.5"/><path d="M15.7 13.7A4.8 4.8 0 0 1 21 18.4"/></svg>
+            </span>
+            <h2 data-i18n="friends">Friends</h2>
+            <button type="button" class="tl-rail-more" data-opens="friendsBtn" data-i18n="seeAll">See all</button>
+          </div>
+          <div id="railFriendsList" class="tl-rail-list"></div>
+        </section>
+
+        <section class="tl-rail-card tl-rail-invite">
+          <h2 data-i18n="railInviteTitle">Bring more people online</h2>
+          <p data-i18n="railInviteBody">Every match needs someone on the other end. Invite a friend and the queue gets shorter for everyone.</p>
+          <button type="button" class="tl-rail-invite-btn js-share-talklive" data-i18n="railInviteCta">Invite a friend</button>
+        </section>
+
+      </aside>
+    </div>
+
+
 
   <!-- Crawlable content region: gives search engines a rich, indexable
        description of TalkLive and links out to the keyword landing pages.
@@ -2580,8 +2581,8 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   <script defer src="countries.js?v=20260828fix"></script>
   <script defer src="i18n.js?v=20261008avatars"></script>
   <script defer src="chat-time.js?v=20260916navbar"></script>
-  <script defer src="animals.js?v=20260924animline"></script>
-  <script defer src="characters.js?v=20261006chars"></script>
+  <script defer src="animals.js?v=20261008more"></script>
+  <script defer src="characters.js?v=20261008more"></script>
   <script defer src="social-kit.js?v=20261006chars"></script>
   <script defer src="moderation.js?v=20260928err"></script>
   <script defer src="error-reporter.js?v=20260928err"></script>
@@ -2589,7 +2590,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   <script defer src="voice-notes.js?v=20261001mic"></script>
   <script defer src="games.js?v=20261005min"></script>
   <script defer src="nickname-rules.js?v=20260924nick"></script>
-  <script defer src="app.js?v=20261008avatars"></script>
+  <script defer src="app.js?v=20261008more"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

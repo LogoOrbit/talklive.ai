@@ -870,6 +870,12 @@
     justify-content: flex-start;
     padding: 0 0 var(--tl-s5);
   }
+  /* The tour sits under the stage in the middle column, and the rails span
+     both rows. Otherwise the row is as tall as the activity rail and a short
+     hero leaves a screen of nothing before the tour starts. */
+  .tl-frame { grid-template-rows: auto 1fr; }
+  .tl-nav, .tl-rail { grid-row: 1 / span 2; }
+  .tl-frame > .tt { grid-column: 2; grid-row: 2; padding-inline: 0; }
 }
 
 /* --- Wide: the activity rail joins. -------------------------------------- */
@@ -879,6 +885,7 @@
   }
   .tl-rail {
     display: block;
+    grid-column: 3;
     position: sticky;
     top: calc(64px + var(--tl-s4));
   }

@@ -2,7 +2,7 @@
    app. Loaded without blocking render (it is all below the fold), so nothing
    here may affect layout above #tour. Colours come from the theme tokens in
    style.css, so light/ocean/sunset themes follow automatically. */
-.tt { --tt-sky: var(--accent-2, #38bdf8); --tt-vio: #8b7bff; border-top: 1px solid var(--line); padding: 72px 20px 24px; color: var(--muted); font-family: var(--font-sans); }
+.tt { container: tt / inline-size; --tt-sky: var(--accent-2, #38bdf8); --tt-vio: #8b7bff; border-top: 1px solid var(--line); padding: 72px 20px 24px; color: var(--muted); font-family: var(--font-sans); }
 .tt-in { max-width: 1120px; margin: 0 auto; }
 .tt img { display: block; width: 100%; height: auto; }
 .tt picture { display: contents; }
@@ -76,8 +76,10 @@
 .js-tt .tt-rv { opacity: 0; transform: translateY(26px); transition: opacity .7s ease, transform .7s cubic-bezier(.2, .7, .2, 1); }
 .js-tt .tt-rv.in { opacity: 1; transform: none; }
 
-@media (max-width: 900px) {
-  .tt { padding-top: 56px; }
+/* Sized by the column the tour sits in, not the window: on a desktop it
+   shares the screen with both rails. */
+@media (max-width: 900px) { .tt { padding-top: 56px; } }
+@container tt (max-width: 900px) {
   .tt-tut { grid-template-columns: 1fr; gap: 22px; }
   .tt-stage { order: -1; max-width: 520px; width: 100%; margin: 0 auto; }
   .tt-feats { margin-top: 70px; }
@@ -87,8 +89,8 @@
   .tt-story-body { padding: 26px 22px 30px; }
   .tt-guides { grid-template-columns: 1fr 1fr; }
 }
-@media (max-width: 520px) {
-  .tt { padding-left: 16px; padding-right: 16px; }
+@media (max-width: 520px) { .tt { padding-left: 16px; padding-right: 16px; } }
+@container tt (max-width: 520px) {
   .tt-guides { grid-template-columns: 1fr; }
   .tt-step button { padding: 14px 16px; gap: 2px 14px; }
   .tt-btn { width: 100%; justify-content: center; }

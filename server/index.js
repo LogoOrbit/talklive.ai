@@ -3405,11 +3405,13 @@ const ANIMAL_IDS = new Set([
   'lion', 'tiger', 'wolf', 'fox', 'cat', 'dog',
   'bear', 'panda', 'rabbit', 'owl', 'penguin', 'dolphin',
   'elephant', 'koala', 'monkey', 'frog', 'deer', 'turtle', 'horse', 'eagle',
+  'unicorn', 'dragon', 'shark', 'octopus', 'parrot', 'raccoon', 'sloth', 'pig', 'giraffe', 'hedgehog',
 ]);
 // Movie-character avatars (public/characters.js holds the artwork), `c:<id>`.
 const CHARACTER_IDS = new Set([
   'wizard', 'pirate', 'detective', 'hero', 'cowboy', 'robot', 'vampire',
   'ninja', 'astronaut', 'zombie', 'alien', 'knight', 'queen', 'warrior',
+  'chef', 'doctor', 'scientist', 'artist', 'rockstar', 'firefighter', 'gamer', 'king', 'viking', 'witch', 'elf', 'clown',
 ]);
 function sanitizeAnimal(value) {
   return typeof value === 'string' && ANIMAL_IDS.has(value) ? value : null;
