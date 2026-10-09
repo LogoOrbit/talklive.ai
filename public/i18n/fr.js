@@ -285,7 +285,7 @@
   "codeSent": "Si cet e-mail correspond à un compte, un code à 6 chiffres est en route.",
   "codeVerified": "Code vérifié : choisissez un nouveau mot de passe.",
   "resetExpired": "Cette réinitialisation a expiré. Veuillez recommencer.",
-  "passwordTooShort": "Le nouveau mot de passe doit contenir au moins 4 caractères.",
+  "passwordTooShort": "Le nouveau mot de passe doit contenir au moins 8 caractères.",
   "statusPasswordRestored": "Mot de passe réinitialisé : bon retour, {name} !",
   "callHistory": "Historique des appels",
   "callHistoryHint": "Les dernières personnes avec qui vous avez parlé, à la voix ou par écrit. Écrivez-leur, ou touchez le bouton vert pour les rappeler si elles sont en ligne.",

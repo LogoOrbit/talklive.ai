@@ -9,6 +9,7 @@ const analytics = require('./analytics');
 const audience = require('./audience');
 const modTags = require('./moderation-tags');
 const { createAgent } = require('./ai-agent');
+const { clientIpFrom } = require('./client-ip');
 
 let QRCode = null;
 try { QRCode = require('qrcode'); } catch (_) { /* optional */ }
@@ -18,6 +19,7 @@ const health = require('./health');
 
 const SESSION_HOURS = 12;
 const OWNER_EMAIL = process.env.OWNER_EMAIL || '';
+const SETUP_TOKEN = process.env.OWNER_SETUP_TOKEN || '';
 
 // --- Email alerts (shared SMTP transport, see mailer.js) ---
 const emailThrottle = new Map(); // key -> last sent ts
@@ -107,8 +109,7 @@ function noteFailedLogin(ip) {
 }
 
 function reqIp(req) {
-  const fwd = req.headers['x-forwarded-for'];
-  return ((fwd ? String(fwd).split(',')[0].trim() : req.socket.remoteAddress) || '').replace('::ffff:', '');
+  return clientIpFrom(req.headers, req.socket.remoteAddress);
 }
 
 // The timezone the dashboard cuts its days on. Owner-configurable; everything
@@ -439,17 +440,17 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
   // First-run setup: only available while no admin exists.
   router.get('/api/status', (req, res) => {
     const b = store.backendStatus;
+    const authed = validSession(req);
     res.json({
       setupDone: !!store.data.admin,
-      authed: validSession(req),
+      authed,
       // Backend health, so a misconfigured DB is visible on the login screen
-      // without needing server logs. No secrets - host only, never the URL.
+      // without needing server logs. Anyone can reach this page, so the host,
+      // error text and data path are shown only to a signed-in owner.
       storage: {
         configured: b.configured,
         mode: b.mode,
-        host: b.host,
-        error: b.error,
-        dataDir: b.dataDir,
+        ...(authed ? { host: b.host, error: b.error, dataDir: b.dataDir } : {}),
         // File backend on storage that is not a mounted volume: everything
         // stored is discarded by the next deploy. This is the case that has
         // actually been losing data, and atRisk below used to miss it
@@ -468,8 +469,20 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
     });
   });
 
+  // First-run setup must not be claimable by whoever reaches /owner first. The
+  // owner sets OWNER_SETUP_TOKEN on the server and types it into the setup form.
+  // Once an admin exists these routes refuse anyway, so this never affects an
+  // existing dashboard.
+  const setupRefused = (body) => {
+    if (store.data.admin) return 'Setup already completed.';
+    if (!SETUP_TOKEN) return 'Set OWNER_SETUP_TOKEN on the server, then restart it, before setting up the dashboard.';
+    if (!safeEqual(String((body || {}).setupToken || ''), SETUP_TOKEN)) return 'Wrong setup token.';
+    return null;
+  };
+
   router.post('/api/setup', async (req, res) => {
-    if (store.data.admin) return res.status(403).json({ error: 'Setup already completed.' });
+    const refused = setupRefused(req.body);
+    if (refused) return res.status(403).json({ error: refused });
     const { password } = req.body || {};
     if (!password || password.length < 10) {
       return res.status(400).json({ error: 'Password must be at least 10 characters.' });
@@ -486,7 +499,8 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
 
   let pendingSetup = null;
   router.post('/api/setup-confirm', (req, res) => {
-    if (store.data.admin) return res.status(403).json({ error: 'Setup already completed.' });
+    const refused = setupRefused(req.body);
+    if (refused) return res.status(403).json({ error: refused });
     if (!pendingSetup) return res.status(400).json({ error: 'Run setup first.' });
     const { code } = req.body || {};
     if (!totp.verifyCode(pendingSetup.totpSecret, code)) {
@@ -1757,7 +1771,11 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
       const fake = {
         method,
         url: u.pathname + u.search,
-        headers: { cookie: req.headers.cookie || '', 'x-forwarded-for': req.headers['x-forwarded-for'] || '' },
+        headers: {
+          cookie: req.headers.cookie || '',
+          'fly-client-ip': req.headers['fly-client-ip'] || '',
+          'x-forwarded-for': req.headers['x-forwarded-for'] || '',
+        },
         query: Object.fromEntries(u.searchParams),
         // Pre-parsed, so express.json() leaves it alone.
         body: body || {},

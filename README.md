@@ -135,7 +135,7 @@ still need credentials - are in **[SEO.md](SEO.md)**.
 
 A secured owner dashboard lives at **`/owner`** (e.g. `https://talklive.app/owner`).
 
-- **Security:** admin password (min 10 chars) + Google Authenticator (TOTP) 2FA. First visit runs a one-time setup where you scan a QR code. 5 failed logins lock the IP out for 15 minutes; every login and admin action lands in the Audit Log tab.
+- **Security:** admin password (min 10 chars) + Google Authenticator (TOTP) 2FA. First visit runs a one-time setup where you scan a QR code; it asks for the `OWNER_SETUP_TOKEN` value, so nobody else can claim the dashboard first. 5 failed logins lock the IP out for 15 minutes; every login and admin action lands in the Audit Log tab.
 - **Analytics:** live online users (with country/city/IP), visits, unique visitors, daily 24h users, matches, 30-day traffic chart, top countries/cities, "where people land" by area of the site, crawler traffic by crawler, feature-usage graph (most → least), anonymous "what users talk about" keyword aggregate, searchable text-chat transcripts (Chats tab; disclosed in the privacy policy - voice is never recorded), and a rule-based AI conclusion on how the site is doing.
 
   **What counts as a visit.** A visit is one HTML page that was actually delivered (a 200 that returned HTML), on any path - the blog, the country/city/language pages and the localized homepages included. Redirects, 404s and static assets are not visits. Search-engine crawlers, link-preview bots, scripts and browser prefetches are identified by user agent (`server/bots.js`) and counted in their own **crawler hits** bucket, never as visitors: on a site with a submitted sitemap they are routinely most of all HTML traffic, they arrive from hundreds of IPs, and letting them into `uniques` makes a crawl-budget swing look exactly like losing an audience. The dashboard marks the day this split started, because days recorded before it still have the two mixed together and the step between them is bookkeeping, not traffic. Verify with `npm run test:analytics`.
@@ -151,10 +151,11 @@ A secured owner dashboard lives at **`/owner`** (e.g. `https://talklive.app/owne
 | Var | Purpose |
 |---|---|
 | `OWNER_EMAIL` | Where report/feedback/error alert emails go |
-| `OWNER_RESET` | Forgot the /owner password: set to any new value and restart. The owner login is cleared once and /owner shows setup again. Reusing the same value does nothing |
+| `OWNER_SETUP_TOKEN` | Required to run first-time `/owner` setup (and setup after `OWNER_RESET`). Any long random string; you type it into the setup form. Not needed once the dashboard is set up |
+| `OWNER_RESET` | Forgot the /owner password: set to any new value and restart. The owner login is cleared once and /owner shows setup again (set `OWNER_SETUP_TOKEN` too). Reusing the same value does nothing |
 | `SMTP_USER` / `SMTP_PASS` | Gmail address + **app password** (Google Account → Security → 2-Step Verification → App passwords). Also sends users their password-reset codes |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_FROM_NAME` | Optional SMTP overrides (default `smtp.gmail.com`, `465`, `TalkLive`) |
-| `DATA_DIR` | Directory for the JSON store (default `./data`). In production `fly.toml` sets it to `/data`, but **no volume is mounted there**, so it is an ordinary directory inside the container and everything in it is destroyed on each deploy. The server detects this at boot, logs it prominently, emails the owner and flags it on the `/owner` screen. The fix is `DATABASE_URL` (Postgres) - see `DEPLOY-FLY.md` and `CODEX-HANDOFF.md`. |
+| `DATA_DIR` | Directory for the JSON store (default `./data`). In production `fly.toml` sets it to `/data`, which is the mounted Fly volume `talklive_data`, so the store survives deploys. If it is ever not a volume, the server detects this at boot, logs it prominently, emails the owner and flags it on the `/owner` screen. `DATABASE_URL` (Postgres) takes precedence when set - see `DEPLOY-FLY.md`. |
 | `PREMIUM_CLIENT_IDS` | Comma-separated clientIds to grant premium manually (testing) |
 | `LANDING_HOST` | Optional subdomain (e.g. `start.talklive.app`) whose root serves the marketing landing page (`/landing`) |
 | `ALIAS_HOSTS` | Comma-separated domains we own that 301 to `CANONICAL_HOST` (e.g. `talklive.xyz,talklive.site`). Each needs its own Fly certificate |

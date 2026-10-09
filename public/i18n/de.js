@@ -285,7 +285,7 @@
   "codeSent": "Wenn diese E-Mail zu einem Konto gehört, ist ein 6-stelliger Code unterwegs.",
   "codeVerified": "Code bestätigt – wähle ein neues Passwort.",
   "resetExpired": "Dieses Zurücksetzen ist abgelaufen. Bitte fang von vorn an.",
-  "passwordTooShort": "Das neue Passwort muss mindestens 4 Zeichen haben.",
+  "passwordTooShort": "Das neue Passwort muss mindestens 8 Zeichen haben.",
   "statusPasswordRestored": "Passwort zurückgesetzt – willkommen zurück, {name}!",
   "callHistory": "Anrufverlauf",
   "callHistoryHint": "Die letzten Personen, mit denen du gesprochen oder geschrieben hast. Schreib ihnen oder tippe auf den grünen Knopf, um zurückzurufen, wenn sie online sind.",

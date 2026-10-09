@@ -285,7 +285,7 @@
   "codeSent": "Bu e-posta bir hesaba aitse 6 haneli bir kod yolda.",
   "codeVerified": "Kod doğrulandı, yeni bir şifre seç.",
   "resetExpired": "Bu sıfırlamanın süresi doldu. Lütfen baştan başla.",
-  "passwordTooShort": "Yeni şifre en az 4 karakter olmalı.",
+  "passwordTooShort": "Yeni şifre en az 8 karakter olmalı.",
   "statusPasswordRestored": "Şifre sıfırlandı, tekrar hoş geldin {name}!",
   "callHistory": "Arama Geçmişi",
   "callHistoryHint": "Sesle ya da yazıyla konuştuğun son kişiler. Onlara mesaj at ya da çevrimiçiyseler geri aramak için yeşil düğmeye dokun.",

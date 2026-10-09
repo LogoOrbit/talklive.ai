@@ -38,6 +38,7 @@ const { createGameTracker } = require('./game-tracker');
 const { isValidTimezone } = require('./analytics');
 const audience = require('./audience');
 const { extractContacts } = require('./contact-capture');
+const { clientIpFrom } = require('./client-ip');
 
 const app = express();
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
@@ -326,8 +327,10 @@ function isPremium(clientId) {
   return envPremiumClients.has(clientId) || store.isPremiumClient(clientId);
 }
 
-// Lets the pricing page (a separate static page) confirm activation.
-app.get('/premium-status', (req, res) => {
+// Lets the pricing page (a separate static page) confirm activation. It answers
+// for any clientId, so it is rate limited to stop anyone sweeping through ids;
+// the pricing page itself asks at most 11 times.
+app.get('/premium-status', httpRateLimit('premium-status', 60, 60000), (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   const clientId = String(req.query.clientId || '');
   res.json({
@@ -345,12 +348,10 @@ app.get('/premium-status', (req, res) => {
 
 // --- Billing -----------------------------------------------------------------
 
-// Fly terminates TLS at its edge and forwards the real client address in
-// X-Forwarded-For, so req.socket.remoteAddress is the proxy on every production
-// request. The first entry is the closest thing to the origin address we have.
+// Fly terminates TLS at its edge, so req.socket.remoteAddress is the proxy on
+// every production request. See server/client-ip.js for which header is trusted.
 function clientIp(req) {
-  const fwd = req.headers['x-forwarded-for'];
-  return ((fwd ? String(fwd).split(',')[0].trim() : req.socket.remoteAddress) || '').replace('::ffff:', '');
+  return clientIpFrom(req.headers, req.socket.remoteAddress);
 }
 
 // A crude fixed-window limiter for the handful of unauthenticated POST routes
@@ -2879,49 +2880,62 @@ function noteSignup(ip) {
   signupAttempts.set(ip, rec);
 }
 
-// Per-username and per-IP login throttle. Signup was already rate limited but
-// login was not, and the socket token bucket still allows ~25 events/second -
-// roughly 1,500 password guesses a minute per socket, with no cap on sockets.
-// That is enough to brute-force a 4-character password, which is the minimum
-// this app accepts.
+// Login throttle. The socket token bucket allows ~25 events/second, so without
+// a login limit one socket could try ~1,500 passwords a minute, and sockets are
+// not capped.
 //
-// The two thresholds are deliberately very different. A per-account limit can
-// be strict, because 8 wrong passwords for one username is already abnormal.
-// A per-IP limit cannot: a large share of this app's users share one public
-// address behind a university, office or mobile-carrier CGNAT, so a strict IP
-// rule would let any one person's fumbled logins lock every other user on that
-// network out of their account. The IP ceiling is therefore set high enough to
-// be invisible to shared networks while still stopping one host from spraying
-// thousands of guesses across many accounts.
+// The thresholds are deliberately different. Per address and account, 8 wrong
+// passwords is already abnormal, so that pair locks. Per IP alone the limit
+// stays high: many people share one public address behind a university, office
+// or mobile-carrier CGNAT, and a strict IP rule would let one person's typos
+// lock everyone else on that network out.
 const LOGIN_LIMIT_USER = 8;
+// New passwords only. Existing accounts keep signing in with whatever they
+// chose before; login never checks length.
+const PASSWORD_MIN = 8;
 const LOGIN_LIMIT_IP = 60;
+const LOGIN_LIMIT_ACCOUNT = 40; // all IPs together, per hour
 const LOGIN_WINDOW_MS = 15 * 60000;
+const LOGIN_ACCOUNT_WINDOW_MS = 60 * 60000;
 const LOGIN_LOCKOUT_MS = 15 * 60000;
-const loginAttempts = new Map(); // "ip:<ip>" | "user:<name>" -> { first, count, until }
+const loginAttempts = new Map(); // "ip:<ip>" | "pair:<name>|<ip>" | "user:<name>" -> { first, count, until }
+
+// Failures are counted per IP, per account-and-IP pair, and per account. The
+// pair key locks only the person failing; the account key stops one attacker
+// spreading guesses across many addresses. Nobody can lock a stranger out from
+// a single address.
+function loginRules(ip, usernameLower) {
+  return [
+    { key: `ip:${ip}`, limit: LOGIN_LIMIT_IP, windowMs: LOGIN_WINDOW_MS },
+    { key: `pair:${usernameLower}|${ip}`, limit: LOGIN_LIMIT_USER, windowMs: LOGIN_WINDOW_MS },
+    { key: `user:${usernameLower}`, limit: LOGIN_LIMIT_ACCOUNT, windowMs: LOGIN_ACCOUNT_WINDOW_MS },
+  ];
+}
 
 function loginLockedOut(ip, usernameLower) {
   const now = Date.now();
-  for (const key of [`ip:${ip}`, `user:${usernameLower}`]) {
+  return loginRules(ip, usernameLower).some(({ key }) => {
     const rec = loginAttempts.get(key);
-    if (rec && rec.until && rec.until > now) return true;
-  }
-  return false;
+    return !!(rec && rec.until && rec.until > now);
+  });
 }
 
 function noteLoginFailure(ip, usernameLower) {
   const now = Date.now();
-  for (const [key, limit] of [[`ip:${ip}`, LOGIN_LIMIT_IP], [`user:${usernameLower}`, LOGIN_LIMIT_USER]]) {
+  for (const { key, limit, windowMs } of loginRules(ip, usernameLower)) {
     let rec = loginAttempts.get(key);
-    if (!rec || now - rec.first > LOGIN_WINDOW_MS) rec = { first: now, count: 0, until: 0 };
+    if (!rec || now - rec.first > windowMs) rec = { first: now, count: 0, until: 0 };
     rec.count += 1;
     if (rec.count >= limit) rec.until = now + LOGIN_LOCKOUT_MS;
     loginAttempts.set(key, rec);
   }
 }
 
+// A good password clears this address's own failures. The account-wide count
+// is left alone, so guesses from elsewhere still count toward the hourly cap.
 function noteLoginSuccess(ip, usernameLower) {
   loginAttempts.delete(`ip:${ip}`);
-  loginAttempts.delete(`user:${usernameLower}`);
+  loginAttempts.delete(`pair:${usernameLower}|${ip}`);
 }
 
 async function verifyAccount(username, password) {
@@ -3033,9 +3047,7 @@ async function findOrCreateGoogleAccount(idToken) {
 }
 
 function getClientIp(socket) {
-  const forwarded = socket.handshake.headers['x-forwarded-for'];
-  const ip = (forwarded ? forwarded.split(',')[0].trim() : socket.handshake.address) || '';
-  return ip.replace('::ffff:', '');
+  return clientIpFrom(socket.handshake.headers, socket.handshake.address);
 }
 
 function lookupGeo(ip) {
@@ -4062,8 +4074,8 @@ io.on('connection', (socket) => {
       return socket.emit('signup-result', { ok: false, error: 'New sign-ups are paused right now. Please try again later.', errorKey: 'modeSignupsPaused' });
     }
     if (typeof username !== 'string' || typeof password !== 'string'
-      || !username || !password || username.length < 3 || password.length < 4) {
-      return socket.emit('signup-result', { ok: false, error: 'Username/password too short (min 3/4 chars).' });
+      || !username || !password || username.length < 3 || password.length < PASSWORD_MIN) {
+      return socket.emit('signup-result', { ok: false, error: `Username/password too short (min 3/${PASSWORD_MIN} chars).` });
     }
     // The recovery email is optional, but if something was typed it has to be
     // a usable address - silently dropping a typo would leave the account
@@ -4276,8 +4288,8 @@ io.on('connection', (socket) => {
     if (loginLockedOut(ip, authedUsername)) {
       return socket.emit('change-password-result', { ok: false, error: 'Too many failed attempts. Please try again in 15 minutes.' });
     }
-    if (typeof newPassword !== 'string' || newPassword.length < 4) {
-      return socket.emit('change-password-result', { ok: false, error: 'New password must be at least 4 characters.' });
+    if (typeof newPassword !== 'string' || newPassword.length < PASSWORD_MIN) {
+      return socket.emit('change-password-result', { ok: false, error: `New password must be at least ${PASSWORD_MIN} characters.` });
     }
     if (!(await verifyAccount(authedUsername, currentPassword))) {
       noteLoginFailure(ip, authedUsername);
@@ -4455,8 +4467,8 @@ io.on('connection', (socket) => {
 
   // Step 3: spend the token, set the new password, and sign this device in.
   socket.on('reset-password', async ({ resetToken, newPassword } = {}) => {
-    if (typeof newPassword !== 'string' || newPassword.length < 4) {
-      return socket.emit('reset-password-result', { ok: false, error: 'New password must be at least 4 characters.' });
+    if (typeof newPassword !== 'string' || newPassword.length < PASSWORD_MIN) {
+      return socket.emit('reset-password-result', { ok: false, error: `New password must be at least ${PASSWORD_MIN} characters.` });
     }
     if (typeof resetToken !== 'string' || !/^[a-f0-9]{64}$/.test(resetToken)) {
       return socket.emit('reset-password-result', { ok: false, error: 'This reset has expired. Please start again.' });
@@ -5220,6 +5232,12 @@ io.on('connection', (socket) => {
     if (!partnerId) return;
     const msg = readChatPayload(raw);
     if (!msg) return;
+    // Bot-flood guard: humans don't send 8+ messages in 5 seconds. Checked
+    // first, so a flood is dropped before it reaches contact capture or storage.
+    const now = Date.now();
+    let rl = chatRate.get(socket.id);
+    if (!rl || now - rl.start > 5000) { rl = { start: now, n: 0 }; chatRate.set(socket.id, rl); }
+    if (++rl.n > 8) return;
     // A GIF carries a giphy.com URL by definition, so the link filter only
     // applies to what the user actually typed.
     // Before the link filter, as for friend messages (see captureContacts).
@@ -5230,11 +5248,6 @@ io.on('connection', (socket) => {
     if (msg.text && UNSAFE_RE.test(msg.text)) {
       return socket.emit('chat-blocked', { reason: 'unsafe' });
     }
-    // Bot-flood guard: humans don't send 8+ messages in 5 seconds.
-    const now = Date.now();
-    let rl = chatRate.get(socket.id);
-    if (!rl || now - rl.start > 5000) { rl = { start: now, n: 0 }; chatRate.set(socket.id, rl); }
-    if (++rl.n > 8) return;
     store.recordFeature('chat_message');
     if (msg.gif) store.recordFeature('chat_gif');
     if (msg.replyTo) store.recordFeature('chat_reply');

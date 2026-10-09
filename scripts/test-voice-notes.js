@@ -40,7 +40,7 @@ function connect(name) {
 
 function startServer() {
   return spawn(process.execPath, [path.join(__dirname, '..', 'server', 'index.js')], {
-    env: { ...process.env, PORT: String(PORT), DATA_DIR, NODE_ENV: 'development', GIPHY_API_KEY: '', DATABASE_URL: '' },
+    env: { ...process.env, PORT: String(PORT), DATA_DIR, NODE_ENV: 'development', OWNER_SETUP_TOKEN: 'test-setup-token', GIPHY_API_KEY: '', DATABASE_URL: '' },
     stdio: ['ignore', 'ignore', 'ignore'],
   });
 }
@@ -69,11 +69,11 @@ const totp = require('../server/totp');
 const generateSync = (secret) => totp.totpCode(secret);
 async function ownerLogin() {
   const setup = await (await fetch(BASE + '/owner/api/setup', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: 'correct horse battery staple 42' }),
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: 'correct horse battery staple 42', setupToken: 'test-setup-token' }),
   })).json();
   const secret = setup.secret || setup.totpSecret;
   await fetch(BASE + '/owner/api/setup-confirm', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: generateSync(secret) }),
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: generateSync(secret), setupToken: 'test-setup-token' }),
   });
   const r = await fetch(BASE + '/owner/api/login', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },

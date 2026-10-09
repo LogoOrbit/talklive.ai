@@ -285,7 +285,7 @@
   "codeSent": "如果该邮箱已注册账号，6 位验证码正在发送中。",
   "codeVerified": "验证成功，请设置新密码。",
   "resetExpired": "此次重置已过期，请重新开始。",
-  "passwordTooShort": "新密码至少需要 4 个字符。",
+  "passwordTooShort": "新密码至少需要 8 个字符。",
   "statusPasswordRestored": "密码已重置，欢迎回来，{name}！",
   "callHistory": "通话记录",
   "callHistoryHint": "最近和你语音或文字聊过的人。给他们发消息，或在对方在线时点绿色按钮回拨。",

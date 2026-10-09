@@ -1,5 +1,12 @@
 # TalkLive - remaining setup tasks
 
+> **Partly out of date (checked against `fly.toml` on 2026-10-09).** The app
+> now runs in region `sin`, not `iad`, and `/data` is a mounted Fly volume
+> (`talklive_data`), so the file store survives deploys. The "no volume, data
+> destroyed on every deploy" warnings below no longer describe the config in
+> the repo. Whether `DATABASE_URL` is set in production was not checked.
+> First-time `/owner` setup now also needs `OWNER_SETUP_TOKEN` (see README).
+
 Handoff for a fresh agent. Everything here is blocked on credentials that
 cannot be read from a sandbox; the code and infrastructure work is done.
 

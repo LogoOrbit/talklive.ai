@@ -285,7 +285,7 @@
   "codeSent": "해당 이메일이 계정에 등록되어 있다면 6자리 코드가 발송됩니다.",
   "codeVerified": "코드가 확인됐어요. 새 비밀번호를 정하세요.",
   "resetExpired": "재설정이 만료됐어요. 처음부터 다시 시작하세요.",
-  "passwordTooShort": "새 비밀번호는 4자 이상이어야 해요.",
+  "passwordTooShort": "새 비밀번호는 8자 이상이어야 해요.",
   "statusPasswordRestored": "비밀번호를 재설정했어요. 다시 오신 걸 환영해요, {name} 님!",
   "callHistory": "통화 기록",
   "callHistoryHint": "최근 목소리나 텍스트로 대화한 사람들이에요. 메시지를 보내거나, 온라인이면 초록 버튼으로 다시 전화하세요.",

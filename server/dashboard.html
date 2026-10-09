@@ -534,6 +534,8 @@ th.sortable .ar{opacity:.5;font-size:.7rem}
   <div id="setupStorage"></div>
   <p>First-time setup. Create your admin password, then scan the QR code with <strong>Google Authenticator</strong>.</p>
   <div id="setupStep1">
+    <label>Setup token (the OWNER_SETUP_TOKEN value set on the server)</label>
+    <input id="setupToken" type="password" autocomplete="off">
     <label>Admin password (min 10 characters)</label>
     <div class="pwWrap"><input id="setupPass" type="password" autocomplete="new-password"><button type="button" class="pwEye" aria-label="Show password" title="Show password"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/><line class="slash" x1="3" y1="3" x2="21" y2="21"/></svg></button></div>
     <label>Repeat password</label>
@@ -670,13 +672,13 @@ function renderStorage(storage){
   if(s.offline){
     html=`<div class="stbox warn"><b>ℹ️ Database temporarily unreachable - nothing is lost</b>
       The server is running on the copy of your data kept on its disk, and keeps saving there. It retries the database every minute and copies everything up once it answers - no action needed.<br><br>
-      Host: <code>${esc(s.host||'?')}</code><br>
-      Last error: <code>${esc(s.error||'unknown')}</code></div>`;
+      Host: <code>${esc(s.host||'shown after sign-in')}</code><br>
+      Last error: <code>${esc(s.error||'shown after sign-in')}</code></div>`;
   } else if(s.configured && s.atRisk){
     html=`<div class="stbox bad"><b>⚠️ Database not connected - new changes are not being saved</b>
       Your <code>DATABASE_URL</code> is set but the server could not connect to it and has no copy of the data on its disk, so it is not saving anything until the database answers. Your data in the database is untouched. If this lasts, check the database and the connection string (<code>fly secrets set DATABASE_URL=...</code>).<br><br>
-      Host tried: <code>${esc(s.host||'?')}</code><br>
-      Error: <code>${esc(s.error||'unknown')}</code></div>`;
+      Host tried: <code>${esc(s.host||'shown after sign-in')}</code><br>
+      Error: <code>${esc(s.error||'shown after sign-in')}</code></div>`;
   } else if(s.ephemeral){
     // This box used to say the file store "lives on the Fly volume at /data and
     // survives deploys and restarts". No volume is mounted, so that was exactly
@@ -706,7 +708,8 @@ $('#setupBtn').onclick=async()=>{
   if(p.length<10)return $('#setupErr').textContent='Password must be at least 10 characters.';
   if(p!==p2)return $('#setupErr').textContent='Passwords do not match.';
   try{
-    const r=await post('setup',{password:p});
+    const r=await post('setup',{password:p,setupToken:$('#setupToken').value});
+    window.setupToken=$('#setupToken').value;
     $('#setupStep1').classList.add('hidden');$('#setupStep2').classList.remove('hidden');
     if(r.qr)$('#qrImg').src=r.qr;else $('#qrImg').remove();
     $('#secretText').textContent=r.secret;
@@ -714,7 +717,7 @@ $('#setupBtn').onclick=async()=>{
 };
 $('#setupConfirmBtn').onclick=async()=>{
   $('#setupErr').textContent='';
-  try{await post('setup-confirm',{code:$('#setupCode').value});show('dash');startDash();}
+  try{await post('setup-confirm',{code:$('#setupCode').value,setupToken:window.setupToken||''});show('dash');startDash();}
   catch(e){$('#setupErr').textContent=e.message;}
 };
 $('#loginBtn').onclick=async()=>{

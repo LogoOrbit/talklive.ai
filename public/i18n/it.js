@@ -285,7 +285,7 @@
   "codeSent": "Se quell'email appartiene a un account, un codice a 6 cifre è in arrivo.",
   "codeVerified": "Codice verificato: scegli una nuova password.",
   "resetExpired": "Questa reimpostazione è scaduta. Ricomincia.",
-  "passwordTooShort": "La nuova password deve avere almeno 4 caratteri.",
+  "passwordTooShort": "La nuova password deve avere almeno 8 caratteri.",
   "statusPasswordRestored": "Password reimpostata: bentornato, {name}!",
   "callHistory": "Cronologia chiamate",
   "callHistoryHint": "Le ultime persone con cui hai parlato, a voce o per iscritto. Scrivi loro o tocca il pulsante verde per richiamarle se sono online.",

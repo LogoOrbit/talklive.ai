@@ -213,7 +213,14 @@ Anthropic API key. Without it the tab still shows the built-in quick reports.
 fly secrets set ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-Full list of variables the code reads: `GOOGLE_CLIENT_ID`, `OWNER_EMAIL`,
+First-time `/owner` setup (or setup after `OWNER_RESET`) needs a setup token,
+which you then type into the setup form:
+
+```sh
+fly secrets set OWNER_SETUP_TOKEN="$(openssl rand -hex 24)"
+```
+
+Full list of variables the code reads: `GOOGLE_CLIENT_ID`, `OWNER_EMAIL`, `OWNER_SETUP_TOKEN`, `OWNER_RESET`,
 `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM_NAME`, `SMTP_USER`, `SMTP_PASS`, `DATABASE_URL`,
 `PREMIUM_CLIENT_IDS`, `TURN_*`, `METERED_*`, `AD_*`,
 `LANDING_HOST`, `REPORT_TZ`, `ENFORCE_CANONICAL`, `ANTHROPIC_API_KEY`,

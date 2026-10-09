@@ -39,7 +39,8 @@
     "test:voice-notes": "node scripts/test-voice-notes.js",
     "test:games": "node scripts/test-games-stats.js",
     "test:traffic": "node scripts/test-traffic.js",
-    "test:twins": "node scripts/test-twin-match.js"
+    "test:twins": "node scripts/test-twin-match.js",
+    "test:client-ip": "node scripts/test-client-ip.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.129.0",

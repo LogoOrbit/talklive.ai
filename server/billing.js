@@ -96,7 +96,8 @@ async function stripeRequest(method, path, body) {
  * id in both.
  */
 async function createCheckout({ clientId, plan, origin }) {
-  const price = PRICES[plan];
+  // Own keys only: `plan` is user input, and PRICES['constructor'] is truthy.
+  const price = Object.prototype.hasOwnProperty.call(PRICES, plan) ? PRICES[plan] : '';
   if (!price) throw Object.assign(new Error('Unknown plan.'), { status: 400 });
   if (!clientId) throw Object.assign(new Error('Missing client id.'), { status: 400 });
   const session = await stripeRequest('POST', '/checkout/sessions', {

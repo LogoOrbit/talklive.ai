@@ -46,7 +46,13 @@ function codeFromLog(email) {
   const username = `reset${stamp}`;
   const email = `reset${stamp}@example.com`;
   const socket = connect();
-  await new Promise((r) => socket.on('connect', r));
+  // This test drives an already-running server (see the header). Without one
+  // it used to wait forever; say what is missing instead.
+  await new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(
+      `no server at ${URL} - start one first (see the comment at the top of this file)`)), 5000);
+    socket.on('connect', () => { clearTimeout(timer); resolve(); });
+  });
 
   // --- Sign up with a recovery email ---------------------------------------
   const signup = await ask(socket, 'signup', { username, password: 'first-pass', email }, 'signup-result');

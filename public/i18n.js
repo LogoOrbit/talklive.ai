@@ -74,7 +74,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "authWelcome": "Welcome, {name}!",
     "authWelcomeBack": "Welcome back, {name}!",
     "authFillBoth": "Enter your username (or email) and password.",
-    "authPasswordShort": "Password must be at least 4 characters.",
+    "authPasswordShort": "Password must be at least 8 characters.",
     "usernameOrEmail": "Username or email",
     "usernameRules": "3-24 letters, numbers, dots, dashes or underscores.",
     "showPassword": "Show password",
@@ -454,7 +454,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "codeSent": "If that email is on an account, a 6-digit code is on its way.",
     "codeVerified": "Code verified - choose a new password.",
     "resetExpired": "This reset has expired. Please start again.",
-    "passwordTooShort": "New password must be at least 4 characters.",
+    "passwordTooShort": "New password must be at least 8 characters.",
     "statusPasswordRestored": "Password restored - welcome back, {name}!",
     "callHistory": "Call History",
     // Not "historyHint": /chat defines that key too, further down, and the

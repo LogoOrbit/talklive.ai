@@ -285,7 +285,7 @@
   "codeSent": "Jika email itu terdaftar di sebuah akun, kode 6 digit sedang dikirim.",
   "codeVerified": "Kode terverifikasi, pilih kata sandi baru.",
   "resetExpired": "Reset ini sudah kedaluwarsa. Silakan mulai lagi.",
-  "passwordTooShort": "Kata sandi baru minimal 4 karakter.",
+  "passwordTooShort": "Kata sandi baru minimal 8 karakter.",
   "statusPasswordRestored": "Kata sandi dipulihkan, selamat datang kembali, {name}!",
   "callHistory": "Riwayat Panggilan",
   "callHistoryHint": "Orang-orang yang terakhir kamu ajak bicara lewat suara atau teks. Kirim pesan, atau ketuk tombol hijau untuk menelepon balik jika mereka online.",

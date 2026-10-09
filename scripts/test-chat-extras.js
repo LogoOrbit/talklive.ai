@@ -53,7 +53,7 @@ function connect(name) {
 
 (async () => {
   const srv = spawn(process.execPath, [path.join(__dirname, '..', 'server', 'index.js')], {
-    env: { ...process.env, PORT: String(PORT), DATA_DIR, NODE_ENV: 'development', GIPHY_API_KEY: '' },
+    env: { ...process.env, PORT: String(PORT), DATA_DIR, NODE_ENV: 'development', OWNER_SETUP_TOKEN: 'test-setup-token', GIPHY_API_KEY: '' },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   const logs = [];
@@ -211,11 +211,11 @@ function connect(name) {
       if (setCookie) jar.push(setCookie.split(';')[0]);
       return { status: res.status, body: await res.json().catch(() => ({})) };
     };
-    const setup = await call('setup', { method: 'POST', body: JSON.stringify({ password: 'a-long-test-password' }) });
+    const setup = await call('setup', { method: 'POST', body: JSON.stringify({ password: 'a-long-test-password', setupToken: 'test-setup-token' }) });
     ok('dashboard setup starts', !!setup.body.secret, JSON.stringify(setup.body));
     const confirm = await call('setup-confirm', {
       method: 'POST',
-      body: JSON.stringify({ code: totp.totpCode(setup.body.secret) }),
+      body: JSON.stringify({ code: totp.totpCode(setup.body.secret), setupToken: 'test-setup-token' }),
     });
     ok('dashboard setup confirms', confirm.body.ok === true, JSON.stringify(confirm.body));
 

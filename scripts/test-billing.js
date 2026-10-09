@@ -38,5 +38,11 @@ ok('no clientId ignored', r.action === 'ignore');
 r = d(JSON.stringify({ type: 'ping', data: { object: { metadata: { clientId: 'c' } } } }));
 ok('unknown type ignored', r.action === 'ignore');
 ok('form encode nested', b._formEncode({ a: 1, b: { c: 'd e' } }).join('&') === 'a=1&b%5Bc%5D=d%20e');
-console.log(failed ? `\n${failed} FAILED` : '\nall passed');
-process.exit(failed ? 1 : 0);
+(async () => {
+  // An inherited key is not a plan: refused locally, never sent to Stripe.
+  let status = null;
+  try { await b.createCheckout({ clientId: 'c', plan: 'constructor', origin: 'https://x' }); } catch (err) { status = err.status; }
+  ok('inherited key is not a plan', status === 400);
+  console.log(failed ? `\n${failed} FAILED` : '\nall passed');
+  process.exit(failed ? 1 : 0);
+})();

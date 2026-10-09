@@ -285,7 +285,7 @@
   "codeSent": "Si ese correo pertenece a una cuenta, te llegará un código de 6 dígitos.",
   "codeVerified": "Código verificado: elige una contraseña nueva.",
   "resetExpired": "Este restablecimiento ha caducado. Empieza de nuevo.",
-  "passwordTooShort": "La contraseña nueva debe tener al menos 4 caracteres.",
+  "passwordTooShort": "La contraseña nueva debe tener al menos 8 caracteres.",
   "statusPasswordRestored": "Contraseña restablecida. ¡Bienvenido de nuevo, {name}!",
   "callHistory": "Historial de llamadas",
   "callHistoryHint": "Las últimas personas con las que hablaste, por voz o texto. Escríbeles o toca el botón verde para devolver la llamada si están en línea.",

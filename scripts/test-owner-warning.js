@@ -47,7 +47,7 @@ function connect(id) {
 
 (async () => {
   const srv = spawn(process.execPath, [path.join(__dirname, '..', 'server', 'index.js')], {
-    env: { ...process.env, PORT: String(PORT), DATA_DIR, NODE_ENV: 'development', DATABASE_URL: '' },
+    env: { ...process.env, PORT: String(PORT), DATA_DIR, NODE_ENV: 'development', OWNER_SETUP_TOKEN: 'test-setup-token', DATABASE_URL: '' },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   const logs = [];
@@ -68,8 +68,8 @@ function connect(id) {
 
     // Dashboard session: first-run setup, confirmed with a real TOTP code.
     const json = { 'Content-Type': 'application/json' };
-    const setup = await (await fetch(BASE + '/owner/api/setup', { method: 'POST', headers: json, body: JSON.stringify({ password: 'correct horse battery' }) })).json();
-    const conf = await fetch(BASE + '/owner/api/setup-confirm', { method: 'POST', headers: json, body: JSON.stringify({ code: totp.totpCode(setup.secret) }) });
+    const setup = await (await fetch(BASE + '/owner/api/setup', { method: 'POST', headers: json, body: JSON.stringify({ password: 'correct horse battery', setupToken: 'test-setup-token' }) })).json();
+    const conf = await fetch(BASE + '/owner/api/setup-confirm', { method: 'POST', headers: json, body: JSON.stringify({ code: totp.totpCode(setup.secret), setupToken: 'test-setup-token' }) });
     const cookie = String(conf.headers.get('set-cookie') || '').split(';')[0];
     ok('dashboard session created', conf.ok && cookie.startsWith('tl_owner='));
     const owner = { ...json, cookie };

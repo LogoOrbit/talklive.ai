@@ -285,7 +285,7 @@
   "codeSent": "Se esse e-mail pertencer a uma conta, um código de 6 dígitos está a caminho.",
   "codeVerified": "Código verificado: escolha uma nova senha.",
   "resetExpired": "Esta redefinição expirou. Comece de novo.",
-  "passwordTooShort": "A nova senha precisa ter pelo menos 4 caracteres.",
+  "passwordTooShort": "A nova senha precisa ter pelo menos 8 caracteres.",
   "statusPasswordRestored": "Senha redefinida. Bem-vindo de volta, {name}!",
   "callHistory": "Histórico de chamadas",
   "callHistoryHint": "As últimas pessoas com quem você falou, por voz ou texto. Mande mensagem ou toque no botão verde para retornar a ligação se estiverem online.",

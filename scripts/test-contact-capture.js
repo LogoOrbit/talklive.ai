@@ -54,7 +54,7 @@ ok('ordinary words after a platform are not handles', extractContacts('fb is not
 
 (async () => {
   const srv = spawn(process.execPath, [path.join(__dirname, '..', 'server', 'index.js')], {
-    env: { ...process.env, PORT: String(PORT), DATA_DIR, NODE_ENV: 'development', DATABASE_URL: '' },
+    env: { ...process.env, PORT: String(PORT), DATA_DIR, NODE_ENV: 'development', OWNER_SETUP_TOKEN: 'test-setup-token', DATABASE_URL: '' },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   const logs = [];
@@ -74,8 +74,8 @@ ok('ordinary words after a platform are not handles', extractContacts('fb is not
     }
     const json = { 'Content-Type': 'application/json' };
     ok('Data API needs a dashboard session', (await fetch(BASE + '/owner/api/data')).status === 401);
-    const setup = await (await fetch(BASE + '/owner/api/setup', { method: 'POST', headers: json, body: JSON.stringify({ password: 'correct horse battery' }) })).json();
-    const conf = await fetch(BASE + '/owner/api/setup-confirm', { method: 'POST', headers: json, body: JSON.stringify({ code: totp.totpCode(setup.secret) }) });
+    const setup = await (await fetch(BASE + '/owner/api/setup', { method: 'POST', headers: json, body: JSON.stringify({ password: 'correct horse battery', setupToken: 'test-setup-token' }) })).json();
+    const conf = await fetch(BASE + '/owner/api/setup-confirm', { method: 'POST', headers: json, body: JSON.stringify({ code: totp.totpCode(setup.secret), setupToken: 'test-setup-token' }) });
     const owner = { ...json, cookie: String(conf.headers.get('set-cookie') || '').split(';')[0] };
     const rows = async () => (await (await fetch(BASE + '/owner/api/data', { headers: owner })).json()).rows;
     const rowOf = async (name) => (await rows()).find((r) => r.clientId === 'c_test_' + name);

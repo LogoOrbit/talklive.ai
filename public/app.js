@@ -3455,7 +3455,7 @@ signupSubmitBtn.addEventListener('click', () => {
     markInvalidField(signupUsername);
     return;
   }
-  if (signupPassword.value.length < 4) {
+  if (signupPassword.value.length < 8) {
     showAccountStatus(t('authPasswordShort'), 'error');
     markInvalidField(signupPassword);
     return;
@@ -3699,7 +3699,7 @@ forgotVerifyBtn.addEventListener('click', () => {
 
 forgotResetBtn.addEventListener('click', () => {
   if (!resetToken) return showAccountStatus(t('resetExpired'), 'error');
-  if (forgotNewPassword.value.length < 4) return showAccountStatus(t('passwordTooShort'), 'error');
+  if (forgotNewPassword.value.length < 8) return showAccountStatus(t('passwordTooShort'), 'error');
   forgotResetBtn.disabled = true;
   socket.emit('reset-password', { resetToken, newPassword: forgotNewPassword.value });
 });
