@@ -108,7 +108,7 @@ body{font-family:"Inter",system-ui,sans-serif;background:var(--paper)}
       <tbody>
         <tr><td>Call audio</td><td>Never recorded or stored. Calls are encrypted in transit by WebRTC and may pass through TalkLive's TURN relay, which carries encrypted packets without recording them.</td></tr>
         <tr><td>Automated safety checks</td><td>While a call is connected, checks run on your own microphone to detect abuse: a loudness check on every device, and speech-to-text on desktop browsers. Only a short record is kept, and only when a check is triggered.</td></tr>
-        <tr><td>Typed messages</td><td>Delivered through TalkLive's servers and kept for a short, rolling period so reports can be reviewed, then they expire.</td></tr>
+        <tr><td>Typed messages</td><td>Delivered through TalkLive's servers and kept in a moderation log so reports can be reviewed; it holds the newest 5,000 messages across the site and deletes older ones as new ones arrive.</td></tr>
         <tr><td>Friend voice messages</td><td>Only between people who added each other: stored so they can be played back, with a transcript where supported, and may be reviewed for safety.</td></tr>
         <tr><td>Technical data</td><td>IP address and device information, used to run the service, estimate a country, count visits and enforce bans. Your match never sees your IP address.</td></tr>
         <tr><td>What your match sees</td><td>A display name, spirit animal, any interests you added, an estimated country and your local time. Not your name, email, number, IP address or city.</td></tr>

@@ -59,7 +59,7 @@ body{font-family:"Inter",system-ui,sans-serif;background:var(--paper);color:var(
   faq: [
     { q: 'Is random text chat free?', a: 'Yes. Text chat on TalkLive is free and needs no account. You can be chatting within seconds at busy times.' },
     { q: 'Do I need a microphone?', a: 'No. Tap to Chat never asks for microphone permission. If you add each other as friends, you can call by voice another time.' },
-    { q: 'Are text chats stored?', a: 'Typed messages are kept for a short, rolling period so reports can be reviewed, then they expire. The details are in the Privacy Policy.' },
+    { q: 'Are text chats stored?', a: 'Typed messages are kept in a moderation log so reports can be reviewed; it holds the newest 5,000 messages across the site and deletes older ones as new ones arrive. The details are in the Privacy Policy.' },
     { q: 'Will the other person see who I am?', a: 'No. They see a display name, a spirit-animal avatar, any interests you added, an estimated country and your local time - not your name, email, number or IP address.' },
     { q: 'Is text chat suitable for under-18s?', a: 'No. TalkLive is for adults aged 18 and over only.' },
   ],
@@ -115,7 +115,7 @@ body{font-family:"Inter",system-ui,sans-serif;background:var(--paper);color:var(
   <section class="tx-sec">
     <p class="tx-cmd">$ cat privacy.txt</p>
     <h2>What happens to what you type</h2>
-    <p>Your match sees your display name, spirit animal, any interests you added, a country estimated from your network and your local time. They do not see your name, email, phone number, IP address or city. Typed messages are delivered through TalkLive's servers and kept for a short, rolling period so that reports can be reviewed, and then they expire; the <a href="/privacy">Privacy Policy</a> has the details. The other person can always screenshot, so type as though what you send could be kept.</p>
+    <p>Your match sees your display name, spirit animal, any interests you added, a country estimated from your network and your local time. They do not see your name, email, phone number, IP address or city. Typed messages are delivered through TalkLive's servers and kept in a moderation log so that reports can be reviewed - it holds the newest 5,000 messages across the site and deletes older ones as new ones arrive; the <a href="/privacy">Privacy Policy</a> has the details. The other person can always screenshot, so type as though what you send could be kept.</p>
     <p>TalkLive is for adults 18 and over. Harassment, threats, scams and sexual content without consent lead to bans, and every chat has Report and Block. If you would like to know exactly what anonymity does and does not cover, our <a href="/anonymous-chat">anonymous chat</a> page opens the file.</p>
   </section>
 </div>

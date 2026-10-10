@@ -104,7 +104,7 @@ body{font-family:"Literata",Georgia,serif;color:var(--ink);background-color:var(
   <section class="bp-sec">
     <h2><span>3</span>Audio flows, encrypted</h2>
     <p>For voice, the two browsers use WebRTC - the open standard built into every modern browser - to agree a route and start sending audio, compressed with the Opus codec. WebRTC encrypts that audio in transit. Many networks, including most mobile carriers and office or university Wi-Fi, block direct connections between devices, so TalkLive runs a TURN relay: a server that forwards the encrypted audio when a direct route is not possible. Forwarding encrypted packets is not the same as recording them. A relayed call also keeps each person's network address from the other.</p>
-    <p>For text, messages travel through TalkLive's server to the other person. That is why typed messages can be kept for a short, rolling period - so that reports can be reviewed - while call audio is not.</p>
+    <p>For text, messages travel through TalkLive's server to the other person. That is why typed messages can be kept in a moderation log - so that reports can be reviewed - while call audio is not.</p>
   </section>
 
   <section class="bp-sec">

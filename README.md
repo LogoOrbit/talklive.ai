@@ -151,7 +151,7 @@ A secured owner dashboard lives at **`/owner`** (e.g. `https://talklive.app/owne
 | Var | Purpose |
 |---|---|
 | `OWNER_EMAIL` | Where report/feedback/error alert emails go |
-| `OWNER_SETUP_TOKEN` | Required to run first-time `/owner` setup (and setup after `OWNER_RESET`). Any long random string; you type it into the setup form. Not needed once the dashboard is set up |
+| `OWNER_SETUP_TOKEN` | Required to run first-time `/owner` setup (and setup after `OWNER_RESET`). Any long random string you keep a copy of (Fly secrets cannot be read back; see `DEPLOY-FLY.md`); you type it into the setup form. Not needed once the dashboard is set up |
 | `OWNER_RESET` | Forgot the /owner password: set to any new value and restart. The owner login is cleared once and /owner shows setup again (set `OWNER_SETUP_TOKEN` too). Reusing the same value does nothing |
 | `SMTP_USER` / `SMTP_PASS` | Gmail address + **app password** (Google Account → Security → 2-Step Verification → App passwords). Also sends users their password-reset codes |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_FROM_NAME` | Optional SMTP overrides (default `smtp.gmail.com`, `465`, `TalkLive`) |

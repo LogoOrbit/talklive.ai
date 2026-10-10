@@ -17,7 +17,7 @@ const os = require('os');
 const path = require('path');
 const { io } = require('socket.io-client');
 const totp = require('../server/totp');
-const { clientIpFrom } = require('../server/client-ip');
+const { clientIpFrom, ipBucket } = require('../server/client-ip');
 
 const PORT = 3000 + Math.floor(Math.random() * 2000) + 4000;
 const BASE = `http://localhost:${PORT}`;
@@ -60,6 +60,14 @@ ok('no proxy headers falls back to the socket address',
   clientIpFrom({}, '::ffff:127.0.0.1') === '127.0.0.1');
 ok('empty Fly-Client-IP is ignored',
   clientIpFrom({ 'fly-client-ip': '', 'x-forwarded-for': '5.5.5.5' }, '10.0.0.1') === '5.5.5.5');
+
+// --- Unit: rate-limit buckets ------------------------------------------------
+ok('IPv4 is its own bucket', ipBucket('203.0.113.9') === '203.0.113.9');
+ok('IPv6 buckets by /64', ipBucket('2001:db8:1:1::1') === '2001:db8:1:1::/64'
+  && ipBucket('2001:db8:1:1:aaaa:bbbb:cccc:dddd') === '2001:db8:1:1::/64');
+ok('IPv6 leading zeros normalise', ipBucket('2001:0db8:0001:0001::5') === '2001:db8:1:1::/64');
+ok('IPv6 short and zoned forms', ipBucket('::1') === '0:0:0:0::/64' && ipBucket('fe80::1%eth0') === 'fe80:0:0:0::/64');
+ok('IPv6 with :: inside the prefix', ipBucket('2001:db8::1') === '2001:db8:0:0::/64');
 
 (async () => {
   const srv = spawn(process.execPath, [path.join(__dirname, '..', 'server', 'index.js')], {
@@ -123,23 +131,58 @@ ok('empty Fly-Client-IP is ignored',
     await once(a, 'connect');
     const short = await ask(a, 'signup', { username: 'iptestshort', password: 'abcd' }, 'signup-result');
     ok('a 4-character password is refused', short.ok === false, JSON.stringify(short));
-    const made = await ask(a, 'signup', { username: 'iptestuser', password: 'longenough1' }, 'signup-result');
+    const made = await ask(a, 'signup',
+      { username: 'iptestuser', password: 'longenough1', email: 'iptest@example.com' }, 'signup-result');
     ok('an 8+ character password is accepted', made.ok === true, JSON.stringify(made));
 
+    const login = async (from, password) => {
+      const s = connectFrom(from);
+      socks.push(s);
+      await once(s, 'connect');
+      return ask(s, 'login', { username: 'iptestuser', password }, 'login-result');
+    };
+    const fail = async (from, n) => {
+      const s = connectFrom(from);
+      socks.push(s);
+      await once(s, 'connect');
+      for (let i = 0; i < n; i++) await ask(s, 'login', { username: 'iptestuser', password: 'wrong-guess' }, 'login-result');
+    };
+    const locked = (r) => r.ok === false && /Too many/.test(r.error || '');
+
     // --- Lockout is per address ----------------------------------------------
-    const attacker = connectFrom('198.51.100.66');
-    socks.push(attacker);
-    await once(attacker, 'connect');
-    for (let i = 0; i < 8; i++) {
-      await ask(attacker, 'login', { username: 'iptestuser', password: 'wrong-guess' }, 'login-result');
-    }
-    const blocked = await ask(attacker, 'login', { username: 'iptestuser', password: 'longenough1' }, 'login-result');
-    ok('the failing address is locked out', blocked.ok === false && /Too many/.test(blocked.error || ''), JSON.stringify(blocked));
-    const owner = connectFrom('198.51.100.2');
-    socks.push(owner);
-    await once(owner, 'connect');
-    const mine = await ask(owner, 'login', { username: 'iptestuser', password: 'longenough1' }, 'login-result');
-    ok('the real owner can still sign in from their own address', mine.ok === true, JSON.stringify(mine));
+    await fail('198.51.100.66', 8);
+    let res = await login('198.51.100.66', 'longenough1');
+    ok('the failing address is locked out', locked(res), JSON.stringify(res));
+
+    // --- IPv6 counts per /64 -------------------------------------------------
+    for (let i = 1; i <= 8; i++) await fail(`2001:db8:1:1::${i}`, 1);
+    res = await login('2001:db8:1:1::99', 'longenough1');
+    ok('rotating addresses inside one IPv6 /64 still locks that /64', locked(res), JSON.stringify(res));
+    res = await login('2001:db8:1:2::1', 'longenough1');
+    ok('a different /64 is not affected', res.ok === true, JSON.stringify(res));
+    res = await login('198.51.100.2', 'longenough1');
+    ok('the real owner can still sign in from their own address', res.ok === true, JSON.stringify(res));
+
+    // --- Account-wide cap, and the owner's own network ------------------------
+    // 16 failures so far; 24 more from three addresses reach the cap of 40.
+    for (const from of ['198.51.100.71', '198.51.100.72', '198.51.100.73']) await fail(from, 8);
+    res = await login('198.51.100.150', 'longenough1');
+    ok('guesses spread over many addresses lock the account for new addresses', locked(res), JSON.stringify(res));
+    res = await login('198.51.100.2', 'longenough1');
+    ok('the address the account last signed in from is exempt from that lock', res.ok === true, JSON.stringify(res));
+
+    // --- A completed password reset lifts every lock -------------------------
+    const r1 = connectFrom('198.51.100.151');
+    socks.push(r1);
+    await once(r1, 'connect');
+    const forgot = await ask(r1, 'forgot-password', { email: 'iptest@example.com' }, 'forgot-password-result');
+    await wait(200);
+    const m = [...logs.join('').matchAll(/reset code for iptest@example\.com is (\d{6})/g)].pop();
+    const verified = await ask(r1, 'verify-reset-code', { email: 'iptest@example.com', code: m && m[1] }, 'verify-reset-code-result');
+    const reset = await ask(r1, 'reset-password', { resetToken: verified.resetToken, newPassword: 'brand-new-pass' }, 'reset-password-result');
+    ok('password reset completes while the account is locked', forgot.ok && verified.ok && reset.ok === true, JSON.stringify(reset));
+    res = await login('198.51.100.152', 'brand-new-pass');
+    ok('after the reset, the new password works from any address', res.ok === true, JSON.stringify(res));
   } catch (err) {
     ok('harness', false, err.message + '\n' + logs.join('').slice(-2000));
   }

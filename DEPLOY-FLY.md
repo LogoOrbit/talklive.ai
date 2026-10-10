@@ -214,11 +214,18 @@ fly secrets set ANTHROPIC_API_KEY=sk-ant-...
 ```
 
 First-time `/owner` setup (or setup after `OWNER_RESET`) needs a setup token,
-which you then type into the setup form:
+which you then type into the setup form. Fly secrets cannot be read back, so
+print the value before setting it and keep it:
 
 ```sh
-fly secrets set OWNER_SETUP_TOKEN="$(openssl rand -hex 24)"
+TOKEN=$(openssl rand -hex 24); echo "$TOKEN"
+fly secrets set OWNER_SETUP_TOKEN="$TOKEN"
 ```
+
+Resetting a forgotten owner password? Set both in one call, so there is only
+one restart: `fly secrets set OWNER_RESET=<new value> OWNER_SETUP_TOKEN="$TOKEN"`.
+Lost the token? Read it from the running machine with
+`fly ssh console -C 'printenv OWNER_SETUP_TOKEN'`, or set a new one.
 
 Full list of variables the code reads: `GOOGLE_CLIENT_ID`, `OWNER_EMAIL`, `OWNER_SETUP_TOKEN`, `OWNER_RESET`,
 `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM_NAME`, `SMTP_USER`, `SMTP_PASS`, `DATABASE_URL`,

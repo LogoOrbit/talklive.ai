@@ -60,7 +60,7 @@ body{font-family:"Inter",system-ui,sans-serif;background:var(--paper) repeating-
 `,
   faq: [
     { q: 'Is TalkLive really anonymous?', a: 'Other users cannot see your name, email, phone number, IP address or city, and no account is needed. TalkLive itself processes technical data such as your IP address to run the service and enforce bans, as described in the Privacy Policy.' },
-    { q: 'Are anonymous chats recorded?', a: 'Call audio is never recorded or stored by TalkLive. Automated safety checks run on your own microphone during a call and keep a short record only when abuse is detected. Typed messages are kept for a short rolling period for moderation and then expire. The other participant could still record or screenshot on their own device.' },
+    { q: 'Are anonymous chats recorded?', a: 'Call audio is never recorded or stored by TalkLive. Automated safety checks run on your own microphone during a call and keep a short record only when abuse is detected. Typed messages are kept in a moderation log that holds the newest 5,000 messages across the site, with older ones deleted as new ones arrive. The other participant could still record or screenshot on their own device.' },
     { q: 'Can someone find out who I am?', a: 'Not from TalkLive. The other person only sees your display name, spirit animal, any interests you added, an estimated country and your local time - plus anything you choose to tell them.' },
     { q: 'Can I chat anonymously without a microphone?', a: 'Yes. Tap to Chat starts a text conversation and never asks for microphone permission, so your voice is never part of it.' },
     { q: 'Does anonymous mean anything goes?', a: 'No. TalkLive is for adults 18+ and has community guidelines. Harassment, threats, scams and sexual content without consent lead to bans.' },
@@ -113,7 +113,7 @@ body{font-family:"Inter",system-ui,sans-serif;background:var(--paper) repeating-
     <p>Being anonymous to the person you are talking to is not the same as a service knowing nothing at all. Running a chat service - and keeping people who abuse it out - means processing some data. Here it is, without euphemism:</p>
     <div class="an-kept"><h3>On file</h3><dl>
       <dt>IP address and device info</dt><dd>Received when you connect, as on almost every website. Used to route the conversation, count visits, estimate a country and enforce bans so a banned person cannot simply reload.</dd>
-      <dt>Typed messages</dt><dd>Kept for a short, rolling period so reports can be reviewed, then they expire.</dd>
+      <dt>Typed messages</dt><dd>Kept in a moderation log so reports can be reviewed; it holds the newest 5,000 messages across the site and deletes older ones as new ones arrive.</dd>
       <dt>Call audio</dt><dd>Never recorded, stored or archived. When a call ends, nothing of it is left on TalkLive's servers.</dd>
       <dt>Automated safety checks</dt><dd>While a call is connected, checks run on your own microphone to detect abuse - a loudness check on every device, and speech-to-text on desktop browsers. A short record is kept only when a check is triggered.</dd>
       <dt>Voice messages to friends</dt><dd>Only between people who added each other as friends: stored so they can be played back, with a transcript where the browser supports it, and may be reviewed for safety.</dd>

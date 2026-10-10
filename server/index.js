@@ -38,7 +38,7 @@ const { createGameTracker } = require('./game-tracker');
 const { isValidTimezone } = require('./analytics');
 const audience = require('./audience');
 const { extractContacts } = require('./contact-capture');
-const { clientIpFrom } = require('./client-ip');
+const { clientIpFrom, ipBucket } = require('./client-ip');
 
 const app = express();
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
@@ -360,7 +360,7 @@ function clientIp(req) {
 const httpHits = new Map(); // `${route}:${ip}` -> { count, resetAt }
 function httpRateLimit(route, max, windowMs) {
   return (req, res, next) => {
-    const key = `${route}:${clientIp(req)}`;
+    const key = `${route}:${ipBucket(clientIp(req))}`;
     const now = Date.now();
     const rec = httpHits.get(key);
     if (!rec || rec.resetAt <= now) {
@@ -2855,7 +2855,7 @@ const resetRequests = new Map(); // "ip:<ip>" | "email:<addr>" -> { first, count
 
 function resetThrottled(ip, email) {
   const now = Date.now();
-  for (const [key, limit] of [[`ip:${ip}`, RESET_LIMIT_IP], [`email:${email}`, RESET_LIMIT_EMAIL]]) {
+  for (const [key, limit] of [[`ip:${ipBucket(ip)}`, RESET_LIMIT_IP], [`email:${email}`, RESET_LIMIT_EMAIL]]) {
     const rec = resetRequests.get(key);
     if (!rec) continue;
     if (now - rec.first > RESET_WINDOW_MS) { resetRequests.delete(key); continue; }
@@ -2866,7 +2866,7 @@ function resetThrottled(ip, email) {
 
 function noteResetRequest(ip, email) {
   const now = Date.now();
-  for (const key of [`ip:${ip}`, `email:${email}`]) {
+  for (const key of [`ip:${ipBucket(ip)}`, `email:${email}`]) {
     const rec = resetRequests.get(key);
     if (!rec || now - rec.first > RESET_WINDOW_MS) resetRequests.set(key, { first: now, count: 1 });
     else rec.count += 1;
@@ -2927,15 +2927,17 @@ const pendingSignups = new Set();
 // the first, leaving an account whose reset codes go somewhere else.
 const pendingEmails = new Set();
 function signupThrottled(ip) {
-  const rec = signupAttempts.get(ip);
+  const net = ipBucket(ip);
+  const rec = signupAttempts.get(net);
   if (!rec) return false;
-  if (Date.now() - rec.first > SIGNUP_WINDOW_MS) { signupAttempts.delete(ip); return false; }
+  if (Date.now() - rec.first > SIGNUP_WINDOW_MS) { signupAttempts.delete(net); return false; }
   return rec.count >= SIGNUP_LIMIT;
 }
 function noteSignup(ip) {
-  const rec = signupAttempts.get(ip) || { first: Date.now(), count: 0 };
+  const net = ipBucket(ip);
+  const rec = signupAttempts.get(net) || { first: Date.now(), count: 0 };
   rec.count += 1;
-  signupAttempts.set(ip, rec);
+  signupAttempts.set(net, rec);
 }
 
 // Login throttle. The socket token bucket allows ~25 events/second, so without
@@ -2958,21 +2960,34 @@ const LOGIN_ACCOUNT_WINDOW_MS = 60 * 60000;
 const LOGIN_LOCKOUT_MS = 15 * 60000;
 const loginAttempts = new Map(); // "ip:<ip>" | "pair:<name>|<ip>" | "user:<name>" -> { first, count, until }
 
-// Failures are counted per IP, per account-and-IP pair, and per account. The
-// pair key locks only the person failing; the account key stops one attacker
-// spreading guesses across many addresses. Nobody can lock a stranger out from
-// a single address.
+// Failures are counted per address, per account-and-address pair, and per
+// account. The pair key locks only the person failing; the account key stops
+// one attacker spreading guesses across many addresses. IPv6 addresses count
+// per /64 (see ipBucket), so one machine cannot rotate through its block.
 function loginRules(ip, usernameLower) {
+  const net = ipBucket(ip);
   return [
-    { key: `ip:${ip}`, limit: LOGIN_LIMIT_IP, windowMs: LOGIN_WINDOW_MS },
-    { key: `pair:${usernameLower}|${ip}`, limit: LOGIN_LIMIT_USER, windowMs: LOGIN_WINDOW_MS },
-    { key: `user:${usernameLower}`, limit: LOGIN_LIMIT_ACCOUNT, windowMs: LOGIN_ACCOUNT_WINDOW_MS },
+    { key: `ip:${net}`, limit: LOGIN_LIMIT_IP, windowMs: LOGIN_WINDOW_MS },
+    { key: `pair:${usernameLower}|${net}`, limit: LOGIN_LIMIT_USER, windowMs: LOGIN_WINDOW_MS },
+    { key: `user:${usernameLower}`, limit: LOGIN_LIMIT_ACCOUNT, windowMs: LOGIN_ACCOUNT_WINDOW_MS, accountWide: true },
   ];
+}
+
+// The account-wide lock exists to stop guesses spread across many addresses,
+// so it must not shut the owner out of their own network: the address the
+// account last signed in from is exempt from it. That address still has its
+// own per-address limits.
+function signsInFromHere(ip, usernameLower) {
+  const reg = store.data.accountsRegistry;
+  const known = Object.prototype.hasOwnProperty.call(reg, usernameLower) ? reg[usernameLower] : null;
+  return !!(known && known.ip && ipBucket(known.ip) === ipBucket(ip));
 }
 
 function loginLockedOut(ip, usernameLower) {
   const now = Date.now();
-  return loginRules(ip, usernameLower).some(({ key }) => {
+  const home = signsInFromHere(ip, usernameLower);
+  return loginRules(ip, usernameLower).some(({ key, accountWide }) => {
+    if (accountWide && home) return false;
     const rec = loginAttempts.get(key);
     return !!(rec && rec.until && rec.until > now);
   });
@@ -2982,7 +2997,9 @@ function noteLoginFailure(ip, usernameLower) {
   const now = Date.now();
   for (const { key, limit, windowMs } of loginRules(ip, usernameLower)) {
     let rec = loginAttempts.get(key);
-    if (!rec || now - rec.first > windowMs) rec = { first: now, count: 0, until: 0 };
+    // windowMs rides on the record so the periodic sweep keeps each key for
+    // its own window rather than the shortest one.
+    if (!rec || now - rec.first > windowMs) rec = { first: now, count: 0, until: 0, windowMs };
     rec.count += 1;
     if (rec.count >= limit) rec.until = now + LOGIN_LOCKOUT_MS;
     loginAttempts.set(key, rec);
@@ -2992,8 +3009,16 @@ function noteLoginFailure(ip, usernameLower) {
 // A good password clears this address's own failures. The account-wide count
 // is left alone, so guesses from elsewhere still count toward the hourly cap.
 function noteLoginSuccess(ip, usernameLower) {
-  loginAttempts.delete(`ip:${ip}`);
-  loginAttempts.delete(`pair:${usernameLower}|${ip}`);
+  const net = ipBucket(ip);
+  loginAttempts.delete(`ip:${net}`);
+  loginAttempts.delete(`pair:${usernameLower}|${net}`);
+}
+
+// Proving control of the recovery email is stronger than any password guess,
+// so a completed reset lifts every lock on the account, account-wide included.
+function clearLoginLocks(ip, usernameLower) {
+  noteLoginSuccess(ip, usernameLower);
+  loginAttempts.delete(`user:${usernameLower}`);
 }
 
 async function verifyAccount(username, password) {
@@ -4549,8 +4574,8 @@ io.on('connection', (socket) => {
       // access: a reset only means anything if it ends every other session.
       store.deleteAuthSessionsForUser(usernameLower, null);
       // The failed-login lockout would otherwise keep the real owner out with
-      // the password they just chose.
-      noteLoginSuccess(ip, usernameLower);
+      // the password they just chose, on this device and every other one.
+      clearLoginLocks(ip, usernameLower);
       store.recordFeature('password_reset_complete');
       if (!io.sockets.sockets.has(socket.id)) return;
       socketAuth.set(socket.id, usernameLower);
@@ -6558,7 +6583,8 @@ function sweepEphemeralState() {
     if (now - rec.first > SIGNUP_WINDOW_MS) signupAttempts.delete(key);
   }
   for (const [key, rec] of loginAttempts) {
-    if (now - rec.first > LOGIN_WINDOW_MS && (!rec.until || rec.until < now)) loginAttempts.delete(key);
+    // Each key keeps its own window: the account-wide count lasts an hour.
+    if (now - rec.first > (rec.windowMs || LOGIN_WINDOW_MS) && (!rec.until || rec.until < now)) loginAttempts.delete(key);
   }
   for (const [key, rec] of resetRequests) {
     if (now - rec.first > RESET_WINDOW_MS) resetRequests.delete(key);

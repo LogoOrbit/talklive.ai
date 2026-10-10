@@ -9,7 +9,7 @@ const analytics = require('./analytics');
 const audience = require('./audience');
 const modTags = require('./moderation-tags');
 const { createAgent } = require('./ai-agent');
-const { clientIpFrom } = require('./client-ip');
+const { clientIpFrom, ipBucket } = require('./client-ip');
 
 let QRCode = null;
 try { QRCode = require('qrcode'); } catch (_) { /* optional */ }
@@ -19,7 +19,7 @@ const health = require('./health');
 
 const SESSION_HOURS = 12;
 const OWNER_EMAIL = process.env.OWNER_EMAIL || '';
-const SETUP_TOKEN = process.env.OWNER_SETUP_TOKEN || '';
+const SETUP_TOKEN = (process.env.OWNER_SETUP_TOKEN || '').trim();
 
 // --- Email alerts (shared SMTP transport, see mailer.js) ---
 const emailThrottle = new Map(); // key -> last sent ts
@@ -90,18 +90,21 @@ function validSession(req) {
   return store.data.sessions.some((s) => s.expiresAt > now && safeEqual(s.token, match[1]));
 }
 
-// Brute-force protection: 5 attempts per 15 minutes per IP, then lockout.
+// Brute-force protection: 5 attempts per 15 minutes per IP (per /64 for IPv6,
+// see ipBucket), then lockout.
 const loginAttempts = new Map();
 function rateLimited(ip) {
-  const rec = loginAttempts.get(ip);
+  const net = ipBucket(ip);
+  const rec = loginAttempts.get(net);
   if (!rec) return false;
-  if (Date.now() - rec.first > 15 * 60000) { loginAttempts.delete(ip); return false; }
+  if (Date.now() - rec.first > 15 * 60000) { loginAttempts.delete(net); return false; }
   return rec.count >= 5;
 }
 function noteFailedLogin(ip) {
-  const rec = loginAttempts.get(ip) || { first: Date.now(), count: 0 };
+  const net = ipBucket(ip);
+  const rec = loginAttempts.get(net) || { first: Date.now(), count: 0 };
   rec.count += 1;
-  loginAttempts.set(ip, rec);
+  loginAttempts.set(net, rec);
   if (rec.count === 5) {
     store.audit('login_lockout', ip, 'Too many failed dashboard login attempts');
     sendAlertEmail('lockout', 'Security: dashboard login lockout', `IP ${ip} was locked out after 5 failed dashboard login attempts.`);
@@ -476,7 +479,7 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
   const setupRefused = (body) => {
     if (store.data.admin) return 'Setup already completed.';
     if (!SETUP_TOKEN) return 'Set OWNER_SETUP_TOKEN on the server, then restart it, before setting up the dashboard.';
-    if (!safeEqual(String((body || {}).setupToken || ''), SETUP_TOKEN)) return 'Wrong setup token.';
+    if (!safeEqual(String((body || {}).setupToken || '').trim(), SETUP_TOKEN)) return 'Wrong setup token.';
     return null;
   };
 
@@ -529,7 +532,7 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
       store.audit('login_failed', ip, passOk ? 'bad TOTP code' : 'bad password');
       return res.status(401).json({ error: 'Invalid password or authenticator code.' });
     }
-    loginAttempts.delete(ip);
+    loginAttempts.delete(ipBucket(ip));
     store.audit('login', ip, 'Dashboard login');
     const token = createSession(ip);
     res.setHeader('Set-Cookie', `tl_owner=${token}; HttpOnly; Path=/owner; SameSite=Strict; Max-Age=${SESSION_HOURS * 3600}${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`);

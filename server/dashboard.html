@@ -578,7 +578,7 @@ th.sortable .ar{opacity:.5;font-size:.7rem}
 </header>
 <div class="shell">
   <nav class="side" id="nav" aria-label="Sections"></nav>
-  <main><div class="phead" id="phead"></div><div id="main"></div></main>
+  <main><div id="dashStorage"></div><div class="phead" id="phead"></div><div id="main"></div></main>
 </div>
 <nav class="tabbar" id="tabbar"></nav>
 </div>
@@ -692,6 +692,11 @@ function renderStorage(storage){
   }
   const a=document.getElementById('setupStorage'),b=document.getElementById('loginStorage');
   if(a)a.innerHTML=html; if(b)b.innerHTML=html;
+  // Signed in, the server also sends the host, error and path. Only a problem
+  // is worth a banner above the dashboard; the plain "file store" note is not.
+  const problem=s.offline||(s.configured&&s.atRisk)||s.ephemeral;
+  const d=document.getElementById('dashStorage');
+  if(d)d.innerHTML=problem?html:'';
 }
 async function boot(){
   try{
@@ -1028,6 +1033,8 @@ function startDash(){
   const hash=location.hash.slice(1);
   if(TAB_IDS.includes(hash))tab=hash;
   renderNav();load();scheduleRefresh();startLiveStream();
+  // Now signed in, so the status carries the storage host and error text.
+  api('status').then(st=>renderStorage(st.storage)).catch(()=>{});
 }
 /* `force` defaults to true so every click and keypress repaints immediately;
    the poll timer passes false, because typing into a filter box or having a
