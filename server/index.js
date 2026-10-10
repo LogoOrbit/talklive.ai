@@ -2261,6 +2261,64 @@ function pushCopyFor(notif) {
   }
 }
 
+// How much two people actually talk: stored messages, plus time spent on calls
+// and times met. Pinning someone is the owner saying it outright.
+function talkScore(ownerClientId, otherClientId, info) {
+  const chat = friendChats.get(pairKey(ownerClientId, otherClientId));
+  let score = chat ? chat.length : 0;
+  const hist = chatHistory.get(ownerClientId);
+  const entry = hist && hist.find((e) => e.clientId === otherClientId);
+  if (entry) score += Math.round((entry.durationSeconds || 0) / 30) + (entry.met || 0) * 2;
+  if (info && info.pinned) score += 1000;
+  return score;
+}
+
+// "Your closest friends" for online alerts: the few people this owner talks to
+// most. Everyone else coming online stays an in-app dot, never a phone buzz.
+const TOP_CONTACTS = 3;
+function isTopContact(ownerClientId, otherClientId) {
+  const mine = friends.get(ownerClientId);
+  if (!mine || !mine.has(otherClientId)) return false;
+  const target = talkScore(ownerClientId, otherClientId, mine.get(otherClientId));
+  if (target <= 0) return false;
+  let ahead = 0;
+  for (const [fid, info] of mine) {
+    if (fid === otherClientId) continue;
+    if (talkScore(ownerClientId, fid, info) > target && ++ahead >= TOP_CONTACTS) return false;
+  }
+  return true;
+}
+
+// At most one "<name> is online" push per pair in this window: someone whose
+// connection comes and goes all evening is still one alert.
+const ONLINE_PUSH_COOLDOWN_MS = 6 * 60 * 60 * 1000;
+const onlinePushSent = new Map(); // `${owner}>${other}` -> ts
+setInterval(() => {
+  const cutoff = Date.now() - ONLINE_PUSH_COOLDOWN_MS;
+  for (const [key, ts] of onlinePushSent) if (ts < cutoff) onlinePushSent.delete(key);
+}, 60 * 60000).unref();
+
+function pushTopContactOnline(clientId, username) {
+  for (const [fid] of friends.get(clientId) || new Map()) {
+    // A friend looking at the tab already got the in-app toast.
+    const sock = getSocketByClientId(fid);
+    const prof = sock && profiles.get(sock.id);
+    if (prof && !prof.hidden) continue;
+    if (isMuted(fid, clientId) || isBlockedPair(fid, clientId)) continue;
+    if (!isTopContact(fid, clientId)) continue;
+    const key = `${fid}>${clientId}`;
+    if (Date.now() - (onlinePushSent.get(key) || 0) < ONLINE_PUSH_COOLDOWN_MS) continue;
+    onlinePushSent.set(key, Date.now());
+    push.send(fid, {
+      topic: `online:${clientId}`,
+      title: `${username} is online`,
+      body: 'One of the people you talk to most just came online.',
+      url: `/?open=chat&with=${encodeURIComponent(clientId)}`,
+      kind: 'message',
+    }).catch(() => {});
+  }
+}
+
 function pushNotification(clientId, notif) {
   if (!notifications.has(clientId)) notifications.set(clientId, []);
   const list = notifications.get(clientId);
@@ -4765,6 +4823,8 @@ io.on('connection', (socket) => {
           country: me.countryName,
         });
       }
+      // Friends who are away and talk to this user the most get a push.
+      if (awayFor >= FRIEND_ONLINE_QUIET_MS) pushTopContactOnline(clientId, me.username);
       // Flip the dot on for friends and for anyone who has them in their
       // recent matches, so "message back" shows them online.
       resyncWatchers(clientId);
@@ -6162,6 +6222,15 @@ io.on('connection', (socket) => {
       // The peer is offline: don't yank the caller off their screen. Let the
       // client keep its calling-back panel and offer to queue the request for
       // later (delivered as a notification when the peer comes back online).
+      // Their phone still rings: a push alone, so the inbox only gets a row
+      // if the caller chooses to queue one.
+      push.send(targetClientId, {
+        topic: `call:${me.clientId}`,
+        title: `${me.username} is calling you`,
+        body: 'Open TalkLive to pick up.',
+        url: `/?open=chat&with=${encodeURIComponent(me.clientId)}`,
+        kind: 'call',
+      }).catch(() => {});
       return socket.emit('call-back-request-result', { ok: false, reason: 'offline', canQueue: true });
     }
     // Deliver even if the target is currently on a call: they get the banner and

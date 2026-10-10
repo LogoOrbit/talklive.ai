@@ -135,8 +135,8 @@
       if (!cfg || !cfg.enabled || !cfg.key) return;
       showCard({
         id: 'tlNotifyCard',
-        title: text('notifyTitle', 'Get notified when a friend messages'),
-        body: text('notifyBody', 'We will only notify you about friend messages and call-backs. Never marketing.'),
+        title: text('notifyTitle', 'Get notified about messages and calls'),
+        body: text('notifyBody', 'Messages, friend requests, calls, and when the friends you talk to most come online. Never marketing.'),
         confirm: text('notifyBtn', 'Turn on'),
         dismiss: text('notifyLater', 'No thanks'),
         onConfirm: function () {
