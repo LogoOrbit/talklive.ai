@@ -2106,7 +2106,7 @@ async function viewReports(){
     const list=base.filter(x=>hit([x.reported.username,x.reported.country,x.reported.city,x.reason,x.detail,x.reporter.username,x.reporter.country]));
     const who=repUser?`<div class="tbar"><span class="pill info" style="font-size:.8rem;padding:6px 12px">👤 Only reports on <b>${esc(repUser.username||repUser.clientId.slice(0,12))}</b> · ${num(r.reports.length)} total</span><button class="lnk" id="repUserClear">Show everyone</button></div>`:'';
     body=`<div class="card anim"><h2>🚩 User reports <span class="sub">${num(list.length)} shown · one-click ban with duration</span></h2>
-    <div class="tbar">${seg}${exportLink('reports','Export reports')}</div>
+    <div class="tbar">${seg}${exportLink('reports','Export reports')}${r.open?`<button id="repClearAll" onclick="markAllHandled(${r.open})">Mark all ${num(r.open)} handled</button>`:''}</div>
     ${who}
     <div class="tbar">${search}</div>
     <table><tr><th>When</th><th>Reported user</th><th>Reason</th><th>Reporter</th><th class="num">Total reports</th><th>Actions</th></tr>
@@ -2134,6 +2134,7 @@ window.repShowTop=()=>{repFilter='top';repUser=null;repSort='count';load();};
 window.repFocus=(clientId,username)=>{repUser={clientId,username};repFilter='all';repQ='';load();};
 window.markUserHandled=async(clientId,n)=>{try{await post('reports/user/'+encodeURIComponent(clientId)+'/handled');toast(`${n} report(s) marked handled`,'They stay on record.','good');load();}catch(e){toast('Could not update reports',e.message,'bad');}};
 window.markHandled=async(id)=>{try{await post('reports/'+id+'/handled');toast('Report marked handled','It stays on record, just greyed out.','good');load();}catch(e){toast('Could not update report',e.message,'bad');}};
+window.markAllHandled=async(n)=>{if(!confirm(`Mark all ${n} unhandled reports as handled? They stay on record (Handled filter) but leave the queue.`))return;try{const x=await post('reports/handled-all');toast(`${x.handled} report(s) marked handled`,'They stay on record.','good');load();}catch(e){toast('Could not update reports',e.message,'bad');}};
 
 let banFilter='active';
 async function viewBans(){

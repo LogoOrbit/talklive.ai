@@ -780,6 +780,14 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
     res.json({ ok: true, handled: n });
   });
 
+  // Clears the whole unhandled queue in one step. Only flips the flag; every
+  // report stays on record under the Handled filter.
+  router.post('/api/reports/handled-all', (req, res) => {
+    const n = store.markAllReportsHandled();
+    store.audit('reports', reqIp(req), `Marked all ${n} open report(s) handled`);
+    res.json({ ok: true, handled: n });
+  });
+
   router.get('/api/bans', (req, res) => {
     res.json({ bans: store.data.bans.slice(0, 300), now: Date.now() });
   });
