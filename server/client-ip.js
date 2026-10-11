@@ -16,7 +16,10 @@ function clientIpFrom(headers = {}, remoteAddress = '') {
     const hops = fwd ? String(fwd).split(',').map((s) => s.trim()).filter(Boolean) : [];
     ip = hops.length ? hops[hops.length - 1] : String(remoteAddress || '');
   }
-  return ip.replace('::ffff:', '');
+  // Only a whole IPv4-mapped address loses its prefix; "::ffff:" can also
+  // appear inside an ordinary IPv6 address, which must stay intact.
+  const mapped = /^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i.exec(ip);
+  return mapped ? mapped[1] : ip;
 }
 
 // The bucket an address is counted in for rate limits and lockouts. An IPv6

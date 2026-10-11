@@ -2988,6 +2988,14 @@ function knownLoginNetwork(ip, usernameLower) {
   const entry = registryEntry(usernameLower);
   return !!(entry && Array.isArray(entry.loginNets) && entry.loginNets.includes(ipBucket(ip)));
 }
+// Accounts from before loginNets existed start with the network they were last
+// seen on, so their owners are not locked out of it by a stranger's guesses
+// before they next sign in with a password. Runs once per account.
+function seedLoginNetworks() {
+  for (const entry of Object.values(store.data.accountsRegistry)) {
+    if (entry && !Array.isArray(entry.loginNets) && entry.ip) entry.loginNets = [ipBucket(entry.ip)];
+  }
+}
 function rememberLoginNetwork(ip, usernameLower) {
   const entry = registryEntry(usernameLower);
   if (!entry || !ip) return;
@@ -2996,12 +3004,13 @@ function rememberLoginNetwork(ip, usernameLower) {
   store.upsertAccount(usernameLower, { loginNets: [net, ...prev].slice(0, KNOWN_LOGIN_NETS) });
 }
 
-// `signingIn` is true only for the password sign-in itself. Changing the
-// password or recovery email from a signed-in session never gets the
-// exemption, since that session may not be the owner's.
-function loginLockedOut(ip, usernameLower, { signingIn = false } = {}) {
+// `allowKnownNetwork` lets a known network past the account-wide lock for the
+// checks that prove the password (sign-in, change password, change recovery
+// email). A stolen session token cannot use it: a resumed session never
+// records a network.
+function loginLockedOut(ip, usernameLower, { allowKnownNetwork = false } = {}) {
   const now = Date.now();
-  const known = signingIn && knownLoginNetwork(ip, usernameLower);
+  const known = allowKnownNetwork && knownLoginNetwork(ip, usernameLower);
   return loginRules(ip, usernameLower).some(({ key, accountWide }) => {
     if (accountWide && known) return false;
     const rec = loginAttempts.get(key);
@@ -3028,6 +3037,24 @@ function noteLoginSuccess(ip, usernameLower) {
   const net = ipBucket(ip);
   loginAttempts.delete(`ip:${net}`);
   loginAttempts.delete(`pair:${usernameLower}|${net}`);
+}
+
+// Checking a password awaits scrypt, so attempts fired at once would all pass
+// the lock check before any of them was counted. Each attempt is therefore
+// counted as a failure up front, synchronously, and refunded if it succeeds.
+function reserveLoginAttempt(ip, usernameLower) {
+  const rec = loginAttempts.get(`user:${usernameLower}`);
+  const untilBefore = rec ? rec.until : 0;
+  noteLoginFailure(ip, usernameLower);
+  return untilBefore;
+}
+function loginAttemptSucceeded(ip, usernameLower, untilBefore) {
+  noteLoginSuccess(ip, usernameLower);
+  const rec = loginAttempts.get(`user:${usernameLower}`);
+  if (!rec) return;
+  rec.count = Math.max(0, rec.count - 1);
+  // Undo a lock that only this (correct) attempt's own reservation set.
+  if (rec.count < LOGIN_LIMIT_ACCOUNT) rec.until = untilBefore || 0;
 }
 
 // Proving control of the recovery email is stronger than any password guess,
@@ -3059,7 +3086,7 @@ function uniqueUsernameFromBase(base) {
   const cleanBase = base.replace(/[^a-zA-Z0-9]/g, '').slice(0, 16) || 'user';
   let candidate = cleanBase;
   let suffix = 1;
-  while (accounts.has(candidate.toLowerCase())) {
+  while (accounts.has(candidate.toLowerCase()) || store.RESERVED_KEYS.has(candidate.toLowerCase())) {
     candidate = `${cleanBase}${suffix}`;
     suffix += 1;
   }
@@ -4203,6 +4230,11 @@ io.on('connection', (socket) => {
     if (!/^[A-Za-z0-9_.-]{3,24}$/.test(username)) {
       return socket.emit('signup-result', { ok: false, error: 'Username may only contain letters, numbers, dot, dash or underscore (3-24 chars).' });
     }
+    // Account records are keyed by username in plain objects, where these
+    // names reach Object.prototype instead of an account of their own.
+    if (store.RESERVED_KEYS.has(username.toLowerCase())) {
+      return socket.emit('signup-result', { ok: false, error: 'That username is already taken.' });
+    }
     if (signupThrottled(ip)) {
       return socket.emit('signup-result', { ok: false, error: 'Too many accounts created from this network. Please try again later.' });
     }
@@ -4258,15 +4290,15 @@ io.on('connection', (socket) => {
     // recovery email - people remember that far more often than the handle.
     if (username.includes('@')) username = store.findUsernameByEmail(normalizeEmail(username)) || username;
     const usernameLower = username.toLowerCase();
-    if (loginLockedOut(ip, usernameLower, { signingIn: true })) {
+    if (loginLockedOut(ip, usernameLower, { allowKnownNetwork: true })) {
       return socket.emit('login-result', { ok: false, error: 'Too many failed attempts. Please try again in 15 minutes.' });
     }
+    const reserved = reserveLoginAttempt(ip, usernameLower);
     const account = await verifyAccount(username, password);
     if (!account) {
-      noteLoginFailure(ip, usernameLower);
       return socket.emit('login-result', { ok: false, error: 'Invalid username or password.' });
     }
-    noteLoginSuccess(ip, usernameLower);
+    loginAttemptSucceeded(ip, usernameLower, reserved);
     if (!io.sockets.sockets.has(socket.id)) return;
     socketAuth.set(socket.id, (username || '').toLowerCase());
     store.recordFeature('login');
@@ -4391,17 +4423,17 @@ io.on('connection', (socket) => {
     // Guessing the current password is a login by another name, so it is bound
     // by the same lockout - otherwise a hijacked session becomes an unmetered
     // oracle for the account's password.
-    if (loginLockedOut(ip, authedUsername)) {
+    if (loginLockedOut(ip, authedUsername, { allowKnownNetwork: true })) {
       return socket.emit('change-password-result', { ok: false, error: 'Too many failed attempts. Please try again in 15 minutes.' });
     }
     if (typeof newPassword !== 'string' || newPassword.length < PASSWORD_MIN) {
       return socket.emit('change-password-result', { ok: false, error: `New password must be at least ${PASSWORD_MIN} characters.` });
     }
+    const reserved = reserveLoginAttempt(ip, authedUsername);
     if (!(await verifyAccount(authedUsername, currentPassword))) {
-      noteLoginFailure(ip, authedUsername);
       return socket.emit('change-password-result', { ok: false, error: 'Current password is incorrect.' });
     }
-    noteLoginSuccess(ip, authedUsername);
+    loginAttemptSucceeded(ip, authedUsername, reserved);
     const account = accounts.get(authedUsername);
     if (!account) return socket.emit('change-password-result', { ok: false, error: 'Not logged in.' });
     const salt = crypto.randomBytes(16).toString('hex');
@@ -4432,14 +4464,14 @@ io.on('connection', (socket) => {
     }
 
     if (account.passwordHash) {
-      if (loginLockedOut(ip, authedUsername)) {
+      if (loginLockedOut(ip, authedUsername, { allowKnownNetwork: true })) {
         return socket.emit('update-recovery-email-result', { ok: false, error: 'Too many failed attempts. Please try again in 15 minutes.' });
       }
+      const reserved = reserveLoginAttempt(ip, authedUsername);
       if (!(await verifyAccount(authedUsername, typeof currentPassword === 'string' ? currentPassword : ''))) {
-        noteLoginFailure(ip, authedUsername);
         return socket.emit('update-recovery-email-result', { ok: false, error: 'Current password is incorrect.' });
       }
-      noteLoginSuccess(ip, authedUsername);
+      loginAttemptSucceeded(ip, authedUsername, reserved);
     }
 
     const live = accounts.get(authedUsername);
@@ -6823,6 +6855,7 @@ store.ready.then(() => {
   // returning users can log in and see their friends/chats immediately.
   applyOwnerReset();
   hydrateFromStore();
+  seedLoginNetworks();
   console.log(`[accounts] restored ${accounts.size} account(s) from the store`);
   warnIfStorageIsEphemeral();
   server.listen(PORT, '0.0.0.0', () => {

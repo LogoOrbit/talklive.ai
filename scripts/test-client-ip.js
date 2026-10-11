@@ -72,6 +72,10 @@ ok('IPv4:port keeps the whole IPv4 address', ipBucket('203.0.113.5:51234') === '
   && ipBucket('203.9.9.9:51234') === '203.9.9.9');
 ok('bracketed IPv6, with or without a port', ipBucket('[2001:db8:1:1::1]:443') === '2001:db8:1:1::/64');
 ok('anything that is not an IP passes through', ipBucket('garbage:x') === 'garbage:x' && ipBucket('') === '');
+ok('an IPv4-mapped address loses only its prefix', clientIpFrom({}, '::FFFF:1.2.3.4') === '1.2.3.4');
+ok('"::ffff:" inside an ordinary IPv6 address is left alone',
+  clientIpFrom({ 'fly-client-ip': '2a01:db8:1:2::ffff:1' }) === '2a01:db8:1:2::ffff:1'
+  && ipBucket(clientIpFrom({ 'fly-client-ip': '2a01:db8:1:2::ffff:1' })) === '2a01:db8:1:2::/64');
 
 (async () => {
   const srv = spawn(process.execPath, [path.join(__dirname, '..', 'server', 'index.js')], {
@@ -138,6 +142,27 @@ ok('anything that is not an IP passes through', ipBucket('garbage:x') === 'garba
     const made = await ask(a, 'signup',
       { username: 'iptestuser', password: 'longenough1', email: 'iptest@example.com' }, 'signup-result');
     ok('an 8+ character password is accepted', made.ok === true, JSON.stringify(made));
+
+    const proto = await ask(a, 'signup', { username: '__proto__', password: 'longenough1' }, 'signup-result');
+    ok('a reserved username like __proto__ is refused', proto.ok === false, JSON.stringify(proto));
+    ok('refusing it left Object.prototype untouched', ({}).username === undefined && ({}).nickname === undefined);
+
+    // --- Guesses fired all at once are still counted -------------------------
+    const racer = connectFrom('198.51.100.30');
+    socks.push(racer);
+    await once(racer, 'connect');
+    const raceMade = await ask(racer, 'signup', { username: 'iptestrace', password: 'race-correct-1' }, 'signup-result');
+    const burst = connectFrom('198.51.100.31');
+    socks.push(burst);
+    await once(burst, 'connect');
+    const replies = [];
+    burst.on('login-result', (r) => replies.push(r));
+    for (let i = 0; i < 20; i++) burst.emit('login', { username: 'iptestrace', password: `wrong-${i}` });
+    burst.emit('login', { username: 'iptestrace', password: 'race-correct-1' });
+    for (let i = 0; i < 100 && replies.length < 21; i++) await wait(100);
+    const checked = replies.filter((r) => !/Too many/.test(r.error || '')).length;
+    ok('20 simultaneous guesses from one address get at most 8 checked, the rest refused',
+      raceMade.ok && replies.length === 21 && checked <= 8, `replies=${replies.length} checked=${checked}`);
 
     const login = async (from, password) => {
       const s = connectFrom(from);

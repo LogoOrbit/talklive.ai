@@ -1938,8 +1938,14 @@ function liftBan(banId) {
 
 // --- Accounts registry (persists account metadata across restarts) ---
 
+// Usernames are keys of plain objects here; these would write to
+// Object.prototype instead of an account of their own. Signup refuses them.
+const RESERVED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
 function upsertAccount(usernameLower, details) {
-  const existing = data.accountsRegistry[usernameLower];
+  if (RESERVED_KEYS.has(usernameLower)) return;
+  const existing = Object.prototype.hasOwnProperty.call(data.accountsRegistry, usernameLower)
+    ? data.accountsRegistry[usernameLower] : null;
   if (!existing) {
     data.accountsRegistry[usernameLower] = { createdAt: Date.now(), ...details };
     day().newAccounts += 1;
@@ -2018,6 +2024,7 @@ function premiumExpiry(clientId) {
 // account creation, nickname change and password change so a signed-in user's
 // login keeps working after a restart or deploy.
 function saveAccount(usernameLower, account) {
+  if (RESERVED_KEYS.has(usernameLower)) return;
   const previous = data.accounts[usernameLower] || {};
   const email = account.email ? String(account.email).toLowerCase() : null;
   // A changed recovery email must release the old address, or the old one keeps
@@ -3128,6 +3135,7 @@ function publicModes() {
 }
 
 module.exports = {
+  RESERVED_KEYS,
   siteModes,
   publicModes,
   // Resolves when every save queued so far has reached the database (or
