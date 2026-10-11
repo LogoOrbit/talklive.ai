@@ -1760,6 +1760,16 @@ function markReportsHandledFor(clientId) {
   return n;
 }
 
+// Flips the flag on every open report; the records stay (see the Handled filter).
+function markAllReportsHandled() {
+  let n = 0;
+  for (const r of data.reports) {
+    if (!r.handled) { r.handled = true; n += 1; }
+  }
+  if (n) save();
+  return n;
+}
+
 function addFeedback(entry) {
   const rec = { id: crypto.randomUUID(), ts: Date.now(), ...entry };
   data.feedback.unshift(rec);
@@ -3175,6 +3185,7 @@ module.exports = {
   reportCounts,
   topReported,
   markReportsHandledFor,
+  markAllReportsHandled,
   addFeedback,
   setFeedbackReply,
   pendingFeedbackRepliesFor,
