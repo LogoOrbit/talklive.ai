@@ -204,6 +204,11 @@ function defaults() {
     // link (checked by cleanFilm in server/index.js). Images are served by
     // Apple's CDN, never by us.
     favFilms: {},
+    // Promotional email (server/broadcast.js). emailOptOut: lowercased email ->
+    // when they unsubscribed; never mailed again. broadcasts: campaign id ->
+    // { subject, sent: { email: ts }, failed, startedAt, finishedAt }.
+    emailOptOut: {},
+    broadcasts: {},
     settings: {
       maintenance: { on: false, message: 'TalkLive is under maintenance. We will be back shortly!' },
       // Site-wide switches on the dashboard's Settings tab. Read through

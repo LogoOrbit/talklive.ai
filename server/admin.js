@@ -16,6 +16,7 @@ try { QRCode = require('qrcode'); } catch (_) { /* optional */ }
 const mail = require('./mailer');
 const searchConsole = require('./search-console');
 const health = require('./health');
+const broadcast = require('./broadcast');
 
 const SESSION_HOURS = 12;
 const OWNER_EMAIL = process.env.OWNER_EMAIL || '';
@@ -994,6 +995,36 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="talklive-user-${safe}.json"`);
     res.send(JSON.stringify({ exportedAt: new Date().toISOString(), ...row }, null, 2));
+  });
+
+  // --- Promotional email (server/broadcast.js) ---------------------------------
+  router.get('/api/broadcast', (req, res) => {
+    res.json(broadcast.status());
+  });
+
+  router.get('/api/broadcast/preview', (req, res) => {
+    res.type('html').send(broadcast.render({ email: 'preview@example.com', name: 'there' }).html);
+  });
+
+  router.post('/api/broadcast/test', async (req, res) => {
+    const to = String((req.body || {}).to || OWNER_EMAIL || '').trim();
+    try {
+      await broadcast.sendTest(to);
+      store.audit('broadcast-test', reqIp(req), `Sent test of ${broadcast.CAMPAIGN.id} to ${to}`);
+      res.json({ ok: true, to });
+    } catch (err) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  router.post('/api/broadcast/send', (req, res) => {
+    try {
+      const run = broadcast.startSend();
+      store.audit('broadcast', reqIp(req), `Started ${broadcast.CAMPAIGN.id} to ${run.total} account emails`);
+      res.json({ ok: true, total: run.total });
+    } catch (err) {
+      res.status(400).json({ error: err.message });
+    }
   });
 
   router.post('/api/data/delete', (req, res) => {

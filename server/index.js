@@ -27,6 +27,7 @@ const { TrackedMap } = require('./doc-json');
 const modTags = require('./moderation-tags');
 const compress = require('./compress');
 const billing = require('./billing');
+const broadcast = require('./broadcast');
 const push = require('./push');
 const flags = require('./flags');
 const { minifiedScripts } = require('./minified');
@@ -404,6 +405,23 @@ app.post('/contact', httpRateLimit('contact', 5, 10 * 60000), express.json({ lim
   });
   if (!sent) return res.status(502).json({ error: `We could not send your message. Please email ${CONTACT_TO} directly.` });
   res.json({ ok: true });
+});
+
+// Unsubscribe from promotional email (server/broadcast.js). GET only shows a
+// button, so mail scanners that prefetch links can't unsubscribe anyone; the
+// POST is the button and also the one-click List-Unsubscribe-Post from inboxes.
+const unsubPage = (body) => `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Unsubscribe - TalkLive</title><meta name="robots" content="noindex"><style>body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#0b0f1a;color:#eef1f9;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:24px}p{color:#9aa3b8;max-width:420px;margin:0 auto 20px;line-height:1.5}button,a.btn{background:#4f7cff;color:#fff;border:0;text-decoration:none;padding:12px 26px;border-radius:999px;font-weight:600;font-size:1rem;cursor:pointer}</style></head><body><div>${body}</div></body></html>`;
+app.get('/unsubscribe', (req, res) => {
+  const e = String(req.query.e || '');
+  const t = String(req.query.t || '');
+  if (!broadcast.validUnsubToken(e, t)) return res.status(400).type('html').send(unsubPage('<h1>Link not valid</h1><p>This unsubscribe link is incomplete. Email info@talklive.app and we will remove you.</p>'));
+  res.type('html').send(unsubPage(`<h1>Unsubscribe?</h1><p>Stop TalkLive emails to <b>${escapeHtmlText(e)}</b>. Password reset codes you ask for will still arrive.</p><form method="post"><button type="submit">Unsubscribe</button></form>`));
+});
+app.post('/unsubscribe', httpRateLimit('unsubscribe', 20, 60000), express.urlencoded({ extended: false, limit: '2kb' }), (req, res) => {
+  const e = String(req.query.e || '');
+  if (!broadcast.validUnsubToken(e, req.query.t)) return res.status(400).type('html').send(unsubPage('<h1>Link not valid</h1><p>Email info@talklive.app and we will remove you.</p>'));
+  broadcast.optOut(e);
+  res.type('html').send(unsubPage('<h1>You\'re unsubscribed</h1><p>You won\'t get TalkLive emails any more. You can still chat any time.</p><a class="btn" href="/">Go to TalkLive</a>'));
 });
 
 billing.warnIfHalfConfigured();

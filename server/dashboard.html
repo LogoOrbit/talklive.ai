@@ -2500,6 +2500,7 @@ async function viewData(){
     <div class="tile"><div class="k">Shared phones</div><div class="v" data-count="${nPhone}">0</div><div class="s">found in chat</div></div>
     <div class="tile"><div class="k">Shared socials</div><div class="v" data-count="${nSocial}">0</div><div class="s">Instagram, Snapchat, Telegram…</div></div>
   </div>
+  <div class="card anim" id="bcCard"><h2>📣 Email everyone <span class="sub" id="bcSub">loading…</span></h2><div id="bcBody" class="muted" style="font-size:.85rem">Loading…</div></div>
   <div class="card anim"><h2>🗂️ User data <span class="sub">${rows.length===all.length?num(all.length)+(all.length===1?' person':' people'):rows.length+' of '+all.length+' shown'}</span>
   <span style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">${exportLink('user-data','People CSV')}${exportLink('contacts','Shared contacts CSV')}<a class="lnk" href="/owner/api/export/all.zip" download>⬇ Everything (ZIP)</a></span></h2>
   <div class="muted" style="font-size:.8rem;margin-bottom:10px">Chat contact details are only captured from people who turned on <b>Save contact info I share</b> in Settings. Turning it off deletes what was captured for them. Every download is written to the Audit log.</div>
@@ -2523,6 +2524,7 @@ async function viewData(){
   onFilterInput($('#dataQ'),(v)=>{dataQ=v;},()=>viewData().then(()=>keepFocus('#dataQ')));
   $('#dataType').onchange=(e)=>{dataType=e.target.value;viewData();};
   $('#dataShared').onchange=(e)=>{dataOnlyShared=e.target.checked;viewData();};
+  renderBroadcast();
   document.querySelectorAll('.dataDel').forEach(b=>b.onclick=async()=>{
     if(!confirm(`Delete ${b.dataset.t} "${b.dataset.v}"?`))return;
     try{await post('data/delete',{clientId:b.dataset.c,type:b.dataset.t,value:b.dataset.v});toast('Deleted','');viewData();}catch(e){toast('Delete failed',e.message,'bad');}
@@ -2531,6 +2533,31 @@ async function viewData(){
     if(!confirm(`Delete every contact detail captured for ${b.dataset.n}?`))return;
     try{await post('data/delete',{clientId:b.dataset.c});toast('Deleted','');viewData();}catch(e){toast('Delete failed',e.message,'bad');}
   });
+}
+
+/* ---------- promotional email to every account email (Resend) ---------- */
+let bcPoll=null;
+async function renderBroadcast(){
+  clearTimeout(bcPoll);
+  if(!$('#bcBody'))return;
+  let s;try{s=await api('broadcast');}catch(e){$('#bcBody').textContent='Could not load: '+e.message;return;}
+  if(!$('#bcBody'))return;
+  const r=s.running;
+  $('#bcSub').textContent=`${num(s.recipients)} account emails · ${num(s.optedOut)} unsubscribed`;
+  $('#bcBody').innerHTML=`<div style="margin-bottom:8px">Campaign <b>${esc(s.campaign)}</b> from <b>${esc(s.from)}</b><br>Subject: <b>${esc(s.subject)}</b></div>
+  <div style="margin-bottom:10px">${num(s.sent)} sent · ${num(s.pending)} still to send${s.finishedAt?' · last run '+ago(s.finishedAt):''}${r?` · <b>${r.finished?'finished':'sending'}: ${num(r.done)}/${num(r.total)}</b>${r.failed?` · <span style="color:var(--danger)">${num(r.failed)} failed${r.error?' ('+esc(r.error)+')':''}</span>`:''}`:''}</div>
+  ${s.configured?'':'<div style="color:var(--danger);margin-bottom:10px">Set the <b>RESEND_API_KEY</b> secret and verify talklive.app in Resend to enable sending.</div>'}
+  <div class="tbar"><a class="lnk" href="/owner/api/broadcast/preview" target="_blank">👁 Preview</a>
+  <input id="bcTo" class="grow" placeholder="Test address (defaults to OWNER_EMAIL)">
+  <button class="btn ghost" id="bcTest"${s.configured?'':' disabled'}>Send test</button>
+  <button class="btn" id="bcSend"${s.configured&&s.pending&&!(r&&!r.finished)?'':' disabled'}>Send to ${num(s.pending)}</button></div>
+  <div style="margin-top:6px">Account emails only (Google + recovery). Emails shared in chat are never mailed. Each address gets this campaign once; unsubscribes are skipped.</div>`;
+  $('#bcTest').onclick=async()=>{try{const j=await post('broadcast/test',{to:$('#bcTo').value.trim()});toast('Test sent','To '+j.to,'good');}catch(e){toast('Test failed',e.message,'bad');}};
+  $('#bcSend').onclick=async()=>{
+    if(!confirm(`Send "${s.subject}" to ${s.pending} people from ${s.from}? This cannot be undone.`))return;
+    try{const j=await post('broadcast/send',{});toast('Sending',`${j.total} emails queued`,'good');renderBroadcast();}catch(e){toast('Send failed',e.message,'bad');}
+  };
+  if(r&&!r.finished)bcPoll=setTimeout(renderBroadcast,3000);
 }
 
 /* ---------- talk time: who talked for how long ---------- */
@@ -2813,7 +2840,7 @@ function hlQuality(q){
       <div class="tile"><div class="k">Jitter</div><div class="v">${q.avgJitterMs==null?'-':q.avgJitterMs+' ms'}</div><div class="s">under 30 ms is smooth</div></div>
       <div class="tile"><div class="k">Through TURN relay</div><div class="v">${q.relayPct==null?'-':q.relayPct+'%'}</div><div class="s">calls that needed the relay</div></div>
     </div>
-    <div style="display:flex;height:14px;border-radius:7px;overflow:hidden">${bar(v.good,'var(--good)')}${bar(v.fair,'var(--warn)')}${bar(v.poor,'var(--bad)')}</div>
+    <div style="display:flex;height:14px;border-radius:7px;overflow:hidden">${bar(v.good,'var(--good)')}${bar(v.fair,'var(--warn)')}${bar(v.poor,'var(--danger)')}</div>
     <div class="muted" style="margin-top:6px">Good ${pct1(v.good/tot)} · Fair ${pct1(v.fair/tot)} · Poor ${pct1(v.poor/tot)}</div>
     <div style="overflow-x:auto;margin-top:12px"><table><tr><th>Day (UTC)</th><th class="num">Calls</th><th class="num">Poor</th><th class="num">Delay</th><th class="num">Lost audio</th></tr>
     ${q.daily.slice().reverse().map(d=>`<tr><td>${esc(d.day)}</td><td class="num">${num(d.calls)}</td><td class="num">${d.poorPct}%</td><td class="num">${d.rttMs==null?'-':d.rttMs+' ms'}</td><td class="num">${d.lossPct}%</td></tr>`).join('')}</table></div></div>`;
