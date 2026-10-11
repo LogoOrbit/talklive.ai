@@ -101,7 +101,6 @@
   "tapChatCaption": "گمنام ٹیکسٹ چیٹ · بغیر مائیک",
   "statusChatSearching": "چیٹ کے لیے کسی کو تلاش کر رہے ہیں…",
   "statusChatConnected": "آپ {name} سے چیٹ کر رہے ہیں",
-  "subChatSayHi": "ہیلو کہیں! پیغامات لائیو ہیں اور کبھی محفوظ نہیں ہوتے۔",
   "statusChatEnded": "اجنبی چیٹ چھوڑ گیا",
   "statusYouLeftChat": "آپ نے چیٹ چھوڑ دی",
   "statusReadyToChat": "چیٹ کے لیے تیار - کسی نئے سے ملنے کے لیے بٹن دبائیں",

@@ -68,6 +68,10 @@ ok('IPv6 buckets by /64', ipBucket('2001:db8:1:1::1') === '2001:db8:1:1::/64'
 ok('IPv6 leading zeros normalise', ipBucket('2001:0db8:0001:0001::5') === '2001:db8:1:1::/64');
 ok('IPv6 short and zoned forms', ipBucket('::1') === '0:0:0:0::/64' && ipBucket('fe80::1%eth0') === 'fe80:0:0:0::/64');
 ok('IPv6 with :: inside the prefix', ipBucket('2001:db8::1') === '2001:db8:0:0::/64');
+ok('IPv4:port keeps the whole IPv4 address', ipBucket('203.0.113.5:51234') === '203.0.113.5'
+  && ipBucket('203.9.9.9:51234') === '203.9.9.9');
+ok('bracketed IPv6, with or without a port', ipBucket('[2001:db8:1:1::1]:443') === '2001:db8:1:1::/64');
+ok('anything that is not an IP passes through', ipBucket('garbage:x') === 'garbage:x' && ipBucket('') === '');
 
 (async () => {
   const srv = spawn(process.execPath, [path.join(__dirname, '..', 'server', 'index.js')], {
@@ -172,6 +176,8 @@ ok('IPv6 with :: inside the prefix', ipBucket('2001:db8::1') === '2001:db8:0:0::
     ok('the address the account last signed in from is exempt from that lock', res.ok === true, JSON.stringify(res));
 
     // --- A completed password reset lifts every lock -------------------------
+    // The owner's phone has also locked itself out with typos.
+    await fail('198.51.100.160', 8);
     const r1 = connectFrom('198.51.100.151');
     socks.push(r1);
     await once(r1, 'connect');
@@ -183,6 +189,8 @@ ok('IPv6 with :: inside the prefix', ipBucket('2001:db8::1') === '2001:db8:0:0::
     ok('password reset completes while the account is locked', forgot.ok && verified.ok && reset.ok === true, JSON.stringify(reset));
     res = await login('198.51.100.152', 'brand-new-pass');
     ok('after the reset, the new password works from any address', res.ok === true, JSON.stringify(res));
+    res = await login('198.51.100.160', 'brand-new-pass');
+    ok('after the reset, a device that had locked itself out can sign in too', res.ok === true, JSON.stringify(res));
   } catch (err) {
     ok('harness', false, err.message + '\n' + logs.join('').slice(-2000));
   }

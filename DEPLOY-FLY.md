@@ -222,9 +222,17 @@ TOKEN=$(openssl rand -hex 24); echo "$TOKEN"
 fly secrets set OWNER_SETUP_TOKEN="$TOKEN"
 ```
 
-Resetting a forgotten owner password? Set both in one call, so there is only
-one restart: `fly secrets set OWNER_RESET=<new value> OWNER_SETUP_TOKEN="$TOKEN"`.
-Lost the token? Read it from the running machine with
+Resetting a forgotten owner password? `OWNER_RESET` wipes the owner login on
+restart, so have a token you can type before you set it. Make a fresh one and
+set both in one call, so there is only one restart:
+
+```sh
+TOKEN=$(openssl rand -hex 24); echo "$TOKEN"
+fly secrets set OWNER_RESET="reset-$(date +%s)" OWNER_SETUP_TOKEN="$TOKEN"
+```
+
+Check the printed token is not empty before running the second line. Lost the
+token? Read it from the running machine with
 `fly ssh console -C 'printenv OWNER_SETUP_TOKEN'`, or set a new one.
 
 Full list of variables the code reads: `GOOGLE_CLIENT_ID`, `OWNER_EMAIL`, `OWNER_SETUP_TOKEN`, `OWNER_RESET`,

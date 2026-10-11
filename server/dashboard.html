@@ -1033,14 +1033,15 @@ function startDash(){
   const hash=location.hash.slice(1);
   if(TAB_IDS.includes(hash))tab=hash;
   renderNav();load();scheduleRefresh();startLiveStream();
-  // Now signed in, so the status carries the storage host and error text.
-  api('status').then(st=>renderStorage(st.storage)).catch(()=>{});
 }
 /* `force` defaults to true so every click and keypress repaints immediately;
    the poll timer passes false, because typing into a filter box or having a
    dialog open must not be interrupted by a repaint underneath. */
 async function load(force){
   scheduleRefresh();
+  /* Signed in, the status carries the storage host and error text. Checked on
+     every refresh so a database problem shows up, and clears, while you watch. */
+  if(!document.hidden)api('status').then(st=>renderStorage(st.storage)).catch(()=>{});
   if(force===false){
     /* Nobody is looking: don't make the server build reports for a hidden tab. */
     if(document.hidden)return;

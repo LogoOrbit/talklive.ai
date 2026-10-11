@@ -101,7 +101,6 @@
   "tapChatCaption": "匿名文字聊天 · 无需麦克风",
   "statusChatSearching": "正在寻找聊天对象…",
   "statusChatConnected": "你正在与 {name} 聊天",
-  "subChatSayHi": "打个招呼吧！消息实时传送，聊天结束后不会保存。",
   "statusChatEnded": "对方离开了聊天",
   "statusYouLeftChat": "你离开了聊天",
   "statusReadyToChat": "准备好聊天了 - 点击按钮认识新朋友",

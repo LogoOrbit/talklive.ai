@@ -101,7 +101,6 @@
   "tapChatCaption": "دردشة نصية مجهولة · بدون مايك",
   "statusChatSearching": "نبحث عن شخص للدردشة معه…",
   "statusChatConnected": "أنت تدردش مع {name}",
-  "subChatSayHi": "قل مرحباً! الرسائل مباشرة ولا يتم حفظها أبداً.",
   "statusChatEnded": "غادر الغريب الدردشة",
   "statusYouLeftChat": "غادرت الدردشة",
   "statusReadyToChat": "جاهز للدردشة - اضغط الزر للتعرف على شخص جديد",

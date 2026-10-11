@@ -101,7 +101,6 @@
   "tapChatCaption": "गुमनाम टेक्स्ट चैट · बिना माइक",
   "statusChatSearching": "चैट के लिए किसी को ढूंढ रहे हैं…",
   "statusChatConnected": "आप {name} से चैट कर रहे हैं",
-  "subChatSayHi": "हैलो कहें! मैसेज लाइव हैं और कभी सेव नहीं होते।",
   "statusChatEnded": "अजनबी ने चैट छोड़ दी",
   "statusYouLeftChat": "आपने चैट छोड़ दी",
   "statusReadyToChat": "चैट के लिए तैयार - किसी नए से मिलने के लिए बटन दबाएं",

@@ -101,7 +101,6 @@
   "tapChatCaption": "Chat teks anonim · tanpa mik",
   "statusChatSearching": "Mencari seseorang untuk diajak chat…",
   "statusChatConnected": "Kamu sedang chat dengan {name}",
-  "subChatSayHi": "Sapa dia! Pesan berlangsung live dan tidak pernah disimpan.",
   "statusChatEnded": "Orang asing meninggalkan chat",
   "statusYouLeftChat": "Kamu keluar dari chat",
   "statusReadyToChat": "Siap chat - ketuk tombol untuk bertemu orang baru",

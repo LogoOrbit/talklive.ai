@@ -101,7 +101,6 @@
   "tapChatCaption": "Chat testuale anonima · senza microfono",
   "statusChatSearching": "Cerco qualcuno con cui chattare…",
   "statusChatConnected": "Stai chattando con {name}",
-  "subChatSayHi": "Saluta! I messaggi sono in diretta e non vengono mai salvati dopo la fine della chat.",
   "statusChatEnded": "Lo sconosciuto ha lasciato la chat",
   "statusYouLeftChat": "Hai lasciato la chat",
   "statusReadyToChat": "Pronto a chattare - tocca il pulsante per conoscere qualcuno di nuovo",

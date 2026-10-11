@@ -1,3 +1,5 @@
+const net = require('net');
+
 // The real address of the person connected, for rate limits, bans and logs.
 //
 // Fly's edge sets Fly-Client-IP itself and overwrites whatever the client sent,
@@ -22,8 +24,13 @@ function clientIpFrom(headers = {}, remoteAddress = '') {
 // let one machine rotate through millions of them; IPv6 counts per /64 instead.
 // IPv4 addresses are their own bucket.
 function ipBucket(ip) {
-  const s = String(ip || '').split('%')[0];
-  if (!s.includes(':')) return s;
+  let s = String(ip || '').trim();
+  // Some proxies append "1.2.3.4:5678" or "[2001:db8::1]:5678".
+  const bracketed = /^\[([^\]]+)\](?::\d+)?$/.exec(s);
+  if (bracketed) s = bracketed[1];
+  else if (/^\d{1,3}(\.\d{1,3}){3}:\d+$/.test(s)) s = s.slice(0, s.lastIndexOf(':'));
+  s = s.split('%')[0];
+  if (net.isIP(s) !== 6) return s;
   const [head, tail] = s.split('::');
   const h = head ? head.split(':') : [];
   const t = tail ? tail.split(':') : [];

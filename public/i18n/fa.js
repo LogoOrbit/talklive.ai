@@ -101,7 +101,6 @@
   "tapChatCaption": "چت متنی ناشناس · بدون میکروفون",
   "statusChatSearching": "در حال یافتن هم‌چت…",
   "statusChatConnected": "در حال چت با {name} هستید",
-  "subChatSayHi": "سلام کنید! پیام‌ها فقط زنده هستند و پس از پایان چت هرگز ذخیره نمی‌شوند.",
   "statusChatEnded": "غریبه چت را ترک کرد",
   "statusYouLeftChat": "شما چت را ترک کردید",
   "statusReadyToChat": "آماده چت - برای آشنایی با فرد جدید دکمه را بزنید",

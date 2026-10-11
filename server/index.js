@@ -2974,20 +2974,36 @@ function loginRules(ip, usernameLower) {
 }
 
 // The account-wide lock exists to stop guesses spread across many addresses,
-// so it must not shut the owner out of their own network: the address the
-// account last signed in from is exempt from it. That address still has its
-// own per-address limits.
-function signsInFromHere(ip, usernameLower) {
+// so it must not shut the owner out of the networks they really use. The last
+// few networks the account proved its password (or recovery email) from are
+// exempt from it when signing in; each still has its own per-address limits.
+// Only password sign-in, signup and reset record a network: a resumed session
+// does not, or a stolen session token could exempt the thief's own address.
+const KNOWN_LOGIN_NETS = 5;
+function registryEntry(usernameLower) {
   const reg = store.data.accountsRegistry;
-  const known = Object.prototype.hasOwnProperty.call(reg, usernameLower) ? reg[usernameLower] : null;
-  return !!(known && known.ip && ipBucket(known.ip) === ipBucket(ip));
+  return Object.prototype.hasOwnProperty.call(reg, usernameLower) ? reg[usernameLower] : null;
+}
+function knownLoginNetwork(ip, usernameLower) {
+  const entry = registryEntry(usernameLower);
+  return !!(entry && Array.isArray(entry.loginNets) && entry.loginNets.includes(ipBucket(ip)));
+}
+function rememberLoginNetwork(ip, usernameLower) {
+  const entry = registryEntry(usernameLower);
+  if (!entry || !ip) return;
+  const net = ipBucket(ip);
+  const prev = Array.isArray(entry.loginNets) ? entry.loginNets.filter((n) => n !== net) : [];
+  store.upsertAccount(usernameLower, { loginNets: [net, ...prev].slice(0, KNOWN_LOGIN_NETS) });
 }
 
-function loginLockedOut(ip, usernameLower) {
+// `signingIn` is true only for the password sign-in itself. Changing the
+// password or recovery email from a signed-in session never gets the
+// exemption, since that session may not be the owner's.
+function loginLockedOut(ip, usernameLower, { signingIn = false } = {}) {
   const now = Date.now();
-  const home = signsInFromHere(ip, usernameLower);
+  const known = signingIn && knownLoginNetwork(ip, usernameLower);
   return loginRules(ip, usernameLower).some(({ key, accountWide }) => {
-    if (accountWide && home) return false;
+    if (accountWide && known) return false;
     const rec = loginAttempts.get(key);
     return !!(rec && rec.until && rec.until > now);
   });
@@ -3015,10 +3031,15 @@ function noteLoginSuccess(ip, usernameLower) {
 }
 
 // Proving control of the recovery email is stronger than any password guess,
-// so a completed reset lifts every lock on the account, account-wide included.
+// so a completed reset lifts every lock on the account: the account-wide one
+// and the per-address one on every other device the owner was failing from.
 function clearLoginLocks(ip, usernameLower) {
   noteLoginSuccess(ip, usernameLower);
   loginAttempts.delete(`user:${usernameLower}`);
+  const pairPrefix = `pair:${usernameLower}|`;
+  for (const key of loginAttempts.keys()) {
+    if (key.startsWith(pairPrefix)) loginAttempts.delete(key);
+  }
 }
 
 async function verifyAccount(username, password) {
@@ -4214,6 +4235,7 @@ io.on('connection', (socket) => {
       ip,
       lastSeen: Date.now(),
     });
+    rememberLoginNetwork(ip, username.toLowerCase());
     socket.emit('signup-result', {
       ok: true,
       username,
@@ -4236,7 +4258,7 @@ io.on('connection', (socket) => {
     // recovery email - people remember that far more often than the handle.
     if (username.includes('@')) username = store.findUsernameByEmail(normalizeEmail(username)) || username;
     const usernameLower = username.toLowerCase();
-    if (loginLockedOut(ip, usernameLower)) {
+    if (loginLockedOut(ip, usernameLower, { signingIn: true })) {
       return socket.emit('login-result', { ok: false, error: 'Too many failed attempts. Please try again in 15 minutes.' });
     }
     const account = await verifyAccount(username, password);
@@ -4251,6 +4273,7 @@ io.on('connection', (socket) => {
     store.upsertAccount((username || '').toLowerCase(), {
       username, nickname: account.nickname, country: geo.countryName, city: geo.city, ip, lastSeen: Date.now(),
     });
+    rememberLoginNetwork(ip, usernameLower);
     socket.emit('login-result', {
       ok: true,
       username,
@@ -4582,6 +4605,7 @@ io.on('connection', (socket) => {
       store.upsertAccount(usernameLower, {
         nickname: account.nickname, country: geo.countryName, city: geo.city, ip, lastSeen: Date.now(),
       });
+      rememberLoginNetwork(ip, usernameLower);
       socket.emit('reset-password-result', {
         ok: true,
         username: usernameLower,

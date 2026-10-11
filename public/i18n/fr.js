@@ -101,7 +101,6 @@
   "tapChatCaption": "Chat écrit anonyme · sans micro",
   "statusChatSearching": "Recherche de quelqu’un avec qui chatter…",
   "statusChatConnected": "Vous discutez avec {name}",
-  "subChatSayHi": "Dites bonjour ! Les messages sont en direct et jamais conservés.",
   "statusChatEnded": "L’inconnu a quitté le chat",
   "statusYouLeftChat": "Vous avez quitté le chat",
   "statusReadyToChat": "Prêt à chatter - appuyez sur le bouton pour rencontrer quelqu’un",

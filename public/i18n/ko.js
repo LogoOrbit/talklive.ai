@@ -101,7 +101,6 @@
   "tapChatCaption": "익명 문자 채팅 · 마이크 불필요",
   "statusChatSearching": "채팅 상대를 찾는 중…",
   "statusChatConnected": "{name}님과 채팅 중",
-  "subChatSayHi": "인사해 보세요! 메시지는 실시간 전용이며 채팅 종료 후 절대 저장되지 않습니다.",
   "statusChatEnded": "상대방이 채팅을 나갔습니다",
   "statusYouLeftChat": "채팅에서 나갔습니다",
   "statusReadyToChat": "채팅 준비 완료 - 버튼을 탭해 새로운 사람을 만나보세요",

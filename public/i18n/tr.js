@@ -101,7 +101,6 @@
   "tapChatCaption": "Anonim yazılı sohbet · mikrofonsuz",
   "statusChatSearching": "Sohbet edecek biri aranıyor…",
   "statusChatConnected": "{name} ile sohbet ediyorsun",
-  "subChatSayHi": "Merhaba de! Mesajlar canlıdır ve asla saklanmaz.",
   "statusChatEnded": "Yabancı sohbetten ayrıldı",
   "statusYouLeftChat": "Sohbetten ayrıldın",
   "statusReadyToChat": "Sohbete hazır - biriyle tanışmak için butona dokun",

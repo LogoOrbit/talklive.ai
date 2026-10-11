@@ -220,7 +220,6 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "tapChatCaption": "Text chat · no mic",
     "statusChatSearching": "Looking for someone to chat with…",
     "statusChatConnected": "You're chatting with {name}",
-    "subChatSayHi": "Say hi! Typed messages may be kept for a limited rolling period for delivery and moderation.",
     "statusChatEnded": "Stranger left the chat",
     "statusYouLeftChat": "You left the chat",
     "statusReadyToChat": "Ready to chat - tap the button to meet someone new",

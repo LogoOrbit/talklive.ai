@@ -101,7 +101,6 @@
   "tapChatCaption": "Анонимный текстовый чат · без микрофона",
   "statusChatSearching": "Ищем собеседника для чата…",
   "statusChatConnected": "Вы общаетесь с {name}",
-  "subChatSayHi": "Скажите привет! Сообщения не сохраняются после чата.",
   "statusChatEnded": "Собеседник покинул чат",
   "statusYouLeftChat": "Вы вышли из чата",
   "statusReadyToChat": "Готовы к чату - нажмите кнопку, чтобы найти собеседника",

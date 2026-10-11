@@ -671,7 +671,7 @@ function buildLlmsTxt() {
   const posts = BLOG.map(b => `- [${b.h1}](${blogUrl(b.slug)}): ${b.description}`).join('\n');
   return `# TalkLive
 
-> TalkLive (${SITE}) is a browser-based random chat service for adults, offering one-to-one voice calls and text chat. Core matching is free and does not require an account. Voice uses encrypted WebRTC over a TURN relay in production and is not recorded or stored by TalkLive. Typed messages and related context may be retained for a limited rolling period as described in the Privacy Policy.
+> TalkLive (${SITE}) is a browser-based random chat service for adults, offering one-to-one voice calls and text chat. Core matching is free and does not require an account. Voice uses encrypted WebRTC over a TURN relay in production and is not recorded or stored by TalkLive. Typed messages are kept in a moderation log (the newest 5,000 messages across the site), and direct-message conversations keep their newest 200 messages, as described in the Privacy Policy.
 
 Key facts: voice-only or text-only modes; optional country and interest preferences do not guarantee a specific match; matching is instant for everyone; optional Premium is announced but not yet available for purchase; no video chat; 18+ policy; leave, block and report controls. Participant identity, age, location and intent are not verified.
 

@@ -114,6 +114,7 @@ body{font-family:"Inter",system-ui,sans-serif;background:var(--paper) repeating-
     <div class="an-kept"><h3>On file</h3><dl>
       <dt>IP address and device info</dt><dd>Received when you connect, as on almost every website. Used to route the conversation, count visits, estimate a country and enforce bans so a banned person cannot simply reload.</dd>
       <dt>Typed messages</dt><dd>Kept in a moderation log so reports can be reviewed; it holds the newest 5,000 messages across the site and deletes older ones as new ones arrive.</dd>
+      <dt>Direct messages</dt><dd>Also kept in the conversation so both people can read it back: the newest 200 messages per conversation, with no time limit. Backup copies are kept for a time; see the Privacy Policy.</dd>
       <dt>Call audio</dt><dd>Never recorded, stored or archived. When a call ends, nothing of it is left on TalkLive's servers.</dd>
       <dt>Automated safety checks</dt><dd>While a call is connected, checks run on your own microphone to detect abuse - a loudness check on every device, and speech-to-text on desktop browsers. A short record is kept only when a check is triggered.</dd>
       <dt>Voice messages to friends</dt><dd>Only between people who added each other as friends: stored so they can be played back, with a transcript where the browser supports it, and may be reviewed for safety.</dd>

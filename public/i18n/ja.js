@@ -101,7 +101,6 @@
   "tapChatCaption": "匿名テキストチャット · マイク不要",
   "statusChatSearching": "チャット相手を探しています…",
   "statusChatConnected": "{name} とチャット中",
-  "subChatSayHi": "挨拶しましょう！メッセージはライブのみで、チャット終了後に保存されることはありません。",
   "statusChatEnded": "相手がチャットを退出しました",
   "statusYouLeftChat": "チャットを退出しました",
   "statusReadyToChat": "チャット準備完了 - ボタンをタップして新しい相手と出会おう",

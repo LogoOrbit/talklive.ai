@@ -885,7 +885,8 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
 
   router.get('/api/accounts', (req, res) => {
     const accounts = Object.entries(store.data.accountsRegistry)
-      .map(([key, a]) => {
+      // loginNets only feeds the login lockout; it is not dashboard data.
+      .map(([key, { loginNets, ...a }]) => {
         // The credentials record holds the Google profile the user consented to
         // share; the registry holds the analytics metadata. The dashboard wants
         // both on one row, so join them here (credentials win - they are

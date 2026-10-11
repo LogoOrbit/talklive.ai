@@ -101,7 +101,6 @@
   "tapChatCaption": "Chat de texto anónimo · sin micro",
   "statusChatSearching": "Buscando a alguien para chatear…",
   "statusChatConnected": "Estás chateando con {name}",
-  "subChatSayHi": "¡Di hola! Los mensajes son en vivo y nunca se guardan.",
   "statusChatEnded": "El desconocido dejó el chat",
   "statusYouLeftChat": "Saliste del chat",
   "statusReadyToChat": "Listo para chatear - toca el botón para conocer a alguien nuevo",
