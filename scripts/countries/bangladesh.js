@@ -6,14 +6,24 @@
 module.exports = {
   slug: 'bangladesh',
   name: 'Bangladesh',
+  updated: '2026-10-12',
   date: '2026-10-05',
   title: 'Talk to Strangers in Bangladesh - Free Bangla Voice Chat | TalkLive',
   description: 'Free voice and text chat with people in Bangladesh and Bangla speakers worldwide - no sign-up, no camera, with a Bangla interface. On adda, the language people died for, and when Bangladesh is online.',
-  keywords: 'talk to strangers bangladesh, bangladeshi chat, bangla voice chat, bengali voice chat, chat with bangladeshi, random chat bangladesh, bangla adda online',
+  keywords: 'talk to strangers bangladesh, bangladeshi chat, bangla voice chat, bengali voice chat, chat with bangladeshi, random chat bangladesh, bangla adda online, অচেনা মানুষের সাথে কথা, বাংলা চ্যাট, free bangla chat, talk to random people',
   h1: 'Talk to Strangers in Bangladesh',
   theme: '#f7f1e3',
   preload: ['old-standard-tt-latin-700-normal', 'libre-caslon-text-latin-400-normal'],
-  css: `
+  css: `.bd-lx{max-width:760px;margin:44px auto 0;padding:0 20px}
+.bd-lx h2{font:700 clamp(30px,4.4vw,46px)/1.05 "Old Standard TT",serif;margin:0 0 12px;color:var(--green)}
+.bd-lx p{font-size:18px;line-height:1.75;margin:0 0 1em}
+.bd-lx-cols{columns:2;column-gap:26px;column-rule:1px solid var(--rule);margin:18px 0}
+.bd-lx-cols p{break-inside:avoid;font-size:16px;line-height:1.5}
+.bd-lx-cols b{font:700 21px/1.1 "Old Standard TT",serif;color:var(--red);display:block}
+.bd-lx-meme{border-top:4px double var(--ink);border-bottom:4px double var(--ink);padding:16px 0;margin:20px 0;font-size:17px;line-height:1.5}
+.bd-lx-meme b{font:700 22px/1.2 "Old Standard TT",serif;display:block;margin-bottom:6px}
+@media (max-width:640px){.bd-lx-cols{columns:1}}
+
 :root{--paper:#f7f1e3;--ink:#22201b;--rule:#d9cfb9;--green:#006a4e;--red:#e0293c;--mast:#22201b}
 body{font-family:"Libre Caslon Text",Georgia,serif;background:var(--paper)}
 .c-bar{border-bottom:1px solid var(--rule)}
@@ -142,6 +152,21 @@ body{font-family:"Libre Caslon Text",Georgia,serif;background:var(--paper)}
 
   ${c.faq('Questions, briefly')}
 </div>
+<section class="bd-lx" aria-labelledby="bd-lx-h">
+  <h2 id="bd-lx-h">The adda dictionary</h2>
+  <p>Bengalis invented the <em>adda</em>, the long, lazy, no-agenda chat with friends that can go on for hours. TalkLive is basically an adda with a stranger. Here is the vocabulary.</p>
+  <div class="bd-lx-cols">
+    <p><b>Ki obostha?</b>What&apos;s up, how&apos;s it going.</p>
+    <p><b>Kemon acho?</b>How are you? The polite version.</p>
+    <p><b>Mama</b>Dude, bro. Dhaka slang, not your uncle.</p>
+    <p><b>Joss</b>Awesome, amazing. &quot;Joss hoise!&quot;</p>
+    <p><b>Pera nai</b>No stress, chill. Pera = tension.</p>
+    <p><b>Cha khabi?</b>Want tea? Also: want to keep talking?</p>
+  </div>
+  <p>Gen Z bonus: if a song slaps it is <em>fire</em>, if someone overreacts it is <em>overacting</em>, and everything cute is <em>cutie pie</em>, unironically.</p>
+  <div class="bd-lx-meme" aria-label="Meme: Dhaka traffic"><b>POV: you left home for a &quot;10 minute&quot; ride in Dhaka</b>Season 2 is out by the time you arrive. Good thing you can chat the whole way. &#x1F697;&#x1F6A6;&#x1F6A6;&#x1F6A6;</div>
+</section>
+
 ${c.ad()}
 <section class="bd-end">
   <h2>Cha is ready. Who is coming?</h2>

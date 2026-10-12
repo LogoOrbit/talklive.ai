@@ -6,14 +6,25 @@
 module.exports = {
   slug: 'egypt',
   name: 'Egypt',
+  updated: '2026-10-12',
   date: '2026-10-05',
   title: 'Talk to Strangers in Egypt - Free Arabic Voice Chat | TalkLive',
   description: 'Free voice and text chat with people in Egypt - Egyptian Arabic or English, no sign-up, no camera, with an Arabic interface. Umm Kulthum, the ahwa, and when Egypt is online in Cairo time.',
-  keywords: 'talk to strangers egypt, egyptian chat, arabic voice chat, chat with egyptians, random chat egypt, egypt voice chat, شات مصري',
+  keywords: 'talk to strangers egypt, egyptian chat, arabic voice chat, chat with egyptians, random chat egypt, egypt voice chat, شات مصري, دردشة مصرية, شات صوتي, دردشة بدون تسجيل',
   h1: 'Talk to Strangers in Egypt',
   theme: '#5a0f1b',
   preload: ['playfair-display-latin-700-normal', 'cormorant-garamond-latin-500-normal'],
-  css: `
+  css: `.eg-lx{max-width:760px;margin:44px auto 0;padding:0 20px}
+.eg-lx h2{font:700 clamp(30px,4.4vw,46px)/1.05 "Playfair Display",serif;margin:0 0 12px;color:var(--crim)}
+.eg-lx p{font-size:18px;line-height:1.7;margin:0 0 1em}
+.eg-lx-chat{display:flex;flex-direction:column;gap:8px;margin:18px 0}
+.eg-lx-chat div{max-width:78%;padding:10px 14px;border-radius:16px 16px 16px 4px;background:#fff;border:1px solid var(--rule);font-size:15.5px;line-height:1.45}
+.eg-lx-chat div:nth-child(even){align-self:flex-end;border-radius:16px 16px 4px 16px;background:var(--crim);color:#f8f0e3;border-color:var(--crim)}
+.eg-lx-chat b{font:700 18px/1.2 "Playfair Display",serif;margin-right:6px}
+.eg-lx-chat span{font-size:18px;margin-left:6px}
+.eg-lx-meme{background:var(--gold);color:#2a1414;padding:18px 20px;margin:20px 0;font-size:17px;line-height:1.5}
+.eg-lx-meme b{display:block;font:700 22px/1.2 "Playfair Display",serif;margin-bottom:6px}
+
 :root{--paper:#f8f0e3;--ink:#2a1414;--rule:#dcc8a8;--crim:#5a0f1b;--gold:#d9a441;--mast:#f8f0e3}
 body{font-family:"Cormorant Garamond",Georgia,serif;background:var(--paper)}
 .c-bar{color:var(--mast);background:var(--crim);max-width:none}
@@ -133,6 +144,20 @@ body{font-family:"Cormorant Garamond",Georgia,serif;background:var(--paper)}
 </div>
 
 <p class="eg-inter">Intermission</p>
+<section class="eg-lx" aria-labelledby="eg-lx-h">
+  <h2 id="eg-lx-h">Masri, the way it&apos;s spoken</h2>
+  <p>Egyptian Arabic is the one the whole Arab world understands, thanks to decades of Egyptian films and, now, Egyptian memes. Here is the chat starter pack.</p>
+  <div class="eg-lx-chat">
+    <div><b>Ezayak? / Ezayek?</b>How are you (to a guy / to a girl) <span lang="ar">إزيك؟</span></div>
+    <div><b>Tamam</b>Okay, fine, all good <span lang="ar">تمام</span></div>
+    <div><b>Gamed awi</b>Really awesome <span lang="ar">جامد قوي</span></div>
+    <div><b>Ya basha</b>Boss, chief. Friendly respect <span lang="ar">يا باشا</span></div>
+    <div><b>Fokak</b>Forget it, chill <span lang="ar">فكك</span></div>
+    <div><b>Ya3ni</b>Like, I mean, so. Filler of champions <span lang="ar">يعني</span></div>
+  </div>
+  <div class="eg-lx-meme" aria-label="Meme: five minutes"><b>When an Egyptian says &quot;khamas da2aye2&quot; (five minutes)</b>Make a tea. Watch a film. Learn a language. They will arrive in about an hour, with a big smile. &#x23F3;&#x1F602;</div>
+</section>
+
 ${c.ad()}
 ${c.faq('Questions from the audience')}
 <section class="eg-end">

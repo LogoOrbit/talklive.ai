@@ -32,14 +32,24 @@ function chart() {
 module.exports = {
   slug: 'united-states',
   name: 'United States',
+  updated: '2026-10-12',
   date: '2026-10-05',
   title: 'Talk to Strangers in the USA - Free American Voice Chat | TalkLive',
   description: 'Free voice and text chat with people in the United States - no sign-up, no camera, no phone number. America\'s long love affair with talking to strangers, and when Americans are online in every time zone.',
-  keywords: 'talk to strangers usa, american voice chat, chat with americans, talk to americans online, random chat usa, us voice chat, talk to someone in america',
+  keywords: 'talk to strangers usa, american voice chat, chat with americans, talk to americans online, random chat usa, us voice chat, talk to someone in america, talk to random people, talk with randoms no sign up, voice calls without registration, apps to call people, omegle alternative',
   h1: 'Talk to Strangers in the USA',
   theme: '#fbfaf6',
   preload: ['bebas-neue-latin-400-normal', 'archivo-latin-400-normal'],
-  css: `
+  css: `.us-lx{max-width:760px;margin:44px auto 0;padding:0 20px}
+.us-lx h2{font:400 clamp(40px,6vw,64px)/.95 "Bebas Neue",sans-serif;margin:0 0 12px;color:var(--blue)}
+.us-lx p{font-size:18px;line-height:1.7;margin:0 0 1em}
+.us-lx-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:3px solid var(--ink);margin:18px 0}
+.us-lx-grid div{padding:14px;border:1px solid var(--rule);font-size:15px;line-height:1.4}
+.us-lx-grid b{display:block;font:400 28px/1 "Bebas Neue",sans-serif;color:var(--red)}
+.us-lx-meme{background:var(--blue);color:#fff;padding:18px 20px;margin:20px 0;font-size:17px;line-height:1.5}
+.us-lx-meme b{display:block;font:400 30px/1 "Bebas Neue",sans-serif;margin-bottom:6px}
+@media (max-width:640px){.us-lx-grid{grid-template-columns:1fr 1fr}}
+
 :root{--paper:#fbfaf6;--ink:#151515;--rule:#dedbd2;--red:#d7261e;--blue:#1d3d8f;--mast:#151515}
 body{font-family:"Archivo",system-ui,sans-serif;background:var(--paper)}
 .us-hero{max-width:1180px;margin:0 auto;padding:40px 20px 30px}
@@ -187,6 +197,23 @@ body{font-family:"Archivo",system-ui,sans-serif;background:var(--paper)}
 </div>
 
 ${c.faq('Listener questions')}
+<section class="us-lx" aria-labelledby="us-lx-h">
+  <h2 id="us-lx-h">The slang check, no cap</h2>
+  <p>American internet slang moves fast. Here is what people are actually saying on calls right now.</p>
+  <div class="us-lx-grid">
+    <div><b>No cap</b>For real, no lie.</div>
+    <div><b>Rizz</b>Charm, game. You either have it or you don&apos;t.</div>
+    <div><b>Lowkey</b>Kinda, secretly. Highkey = very openly.</div>
+    <div><b>Bet</b>Okay, deal, let&apos;s go.</div>
+    <div><b>Mid</b>Average. The harshest review possible.</div>
+    <div><b>It&apos;s giving</b>It has the vibe of. It&apos;s giving main character.</div>
+    <div><b>Delulu</b>Delusional, but optimistic about it.</div>
+    <div><b>The ick</b>That one tiny thing that ruins it.</div>
+    <div><b>Touch grass</b>Go outside. Or, you know, talk to a human.</div>
+  </div>
+  <div class="us-lx-meme" aria-label="Meme: one quick call"><b>Me: &quot;just one quick call&quot;</b>Also me at 2 a.m.: &quot;okay but what&apos;s your zodiac sign and your most controversial food opinion&quot; &#x1F319;</div>
+</section>
+
 ${c.ad()}
 <section class="us-end">
   <h2>Caller, you're on the air</h2>

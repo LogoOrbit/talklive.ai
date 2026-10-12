@@ -15,14 +15,26 @@ const GLASSES = [
 module.exports = {
   slug: 'turkey',
   name: 'Turkey',
+  updated: '2026-10-12',
   date: '2026-10-07',
   title: 'Talk to Strangers in Turkey - Free Voice Chat | TalkLive',
   description: 'Free voice and text chat with people in Turkey - in Turkish or English, no sign-up, no camera. Tea, football, dizi, two continents and when Turkey is online.',
-  keywords: 'talk to strangers turkey, turkey chat, turkish voice chat, chat with turkish people, random chat turkey, istanbul chat, yabancılarla sohbet, sesli sohbet',
+  keywords: 'talk to strangers turkey, turkey chat, turkish voice chat, chat with turkish people, random chat turkey, istanbul chat, yabancılarla sohbet, sesli sohbet, rastgele sohbet, ücretsiz sesli sohbet, anonim sohbet',
   h1: 'Talk to Strangers in Turkey',
   theme: '#7a1d12',
   preload: ['cormorant-garamond-latin-700-normal', 'manrope-latin-400-normal'],
-  css: `
+  css: `.tr-lx{max-width:760px;margin:44px auto 0;padding:0 20px}
+.tr-lx h2{font:700 clamp(30px,4.4vw,46px)/1.02 "Cormorant Garamond",serif;margin:0 0 12px}
+.tr-lx h2 em{color:var(--red);font-style:italic}
+.tr-lx p{font-size:18px;line-height:1.75;margin:0 0 1em}
+.tr-lx-evil{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:18px 0}
+.tr-lx-evil div{display:grid;grid-template-columns:44px 1fr;gap:12px;align-items:center;background:#fff;border:1px solid var(--rule);padding:12px 14px;font-size:15px;line-height:1.4}
+.tr-lx-evil i{width:44px;height:44px;border-radius:50%;background:radial-gradient(circle,#111 0 5px,#5bb3e8 6px 11px,#fff 12px 16px,#1d4fa3 17px)}
+.tr-lx-evil b{display:block;font:700 22px/1.05 "Cormorant Garamond",serif}
+.tr-lx-meme{background:var(--deep);color:var(--paper);padding:18px 20px;margin:20px 0;font-size:17px;line-height:1.5}
+.tr-lx-meme b{display:block;font:700 italic 24px/1.2 "Cormorant Garamond",serif;color:var(--gold);margin-bottom:6px}
+@media (max-width:640px){.tr-lx-evil{grid-template-columns:1fr}}
+
 :root{--paper:#fbf5ea;--ink:#2a1610;--rule:#e6d6bd;--red:#c8102e;--tea:#a4471b;--deep:#7a1d12;--gold:#e0a43a;--mast:#fbf5ea}
 body{font-family:"Manrope",system-ui,sans-serif;background:var(--paper);color:var(--ink)}
 .c-bar{color:var(--mast);background:var(--deep);max-width:none}
@@ -115,6 +127,20 @@ ${GLASSES.map(([t, what], i) => `<div class="tr-glass"><i style="--f:${30 + i * 
     <p style="margin-top:20px">Getting started: open TalkLive in your browser (no app, no sign-up), prefer Turkey in Filters if you like (two preferred countries are free), and Tap to Talk or Tap to Chat. For neighbours and context, read our <a href="/countries/germany">Germany guide</a> - home to the largest Turkish community outside Turkey - and the Journal's <a href="/regions/europe">Europe feature</a>.</p>
   </section>
 </div>
+
+<section class="tr-lx" aria-labelledby="tr-lx-h">
+  <h2 id="tr-lx-h">Gençler gibi konuş, <em>kanka</em></h2>
+  <p>Beyond merhaba and teşekkürler, here is the Turkish you will hear from anyone under 30.</p>
+  <div class="tr-lx-evil">
+    <div><i aria-hidden="true"></i><span><b>Kanka</b>Bro, bestie. Short for kan kardeş.</span></div>
+    <div><i aria-hidden="true"></i><span><b>Aynen</b>Exactly, totally, yep.</span></div>
+    <div><i aria-hidden="true"></i><span><b>Moruk</b>Dude. Started as &quot;old man&quot;.</span></div>
+    <div><i aria-hidden="true"></i><span><b>Valla</b>I swear, honestly.</span></div>
+    <div><i aria-hidden="true"></i><span><b>Efsane</b>Legendary. The highest praise.</span></div>
+    <div><i aria-hidden="true"></i><span><b>Yok artık</b>No way! Get out!</span></div>
+  </div>
+  <div class="tr-lx-meme" aria-label="Meme: Turkish mom"><b>Turkish mom: &quot;Ben sana demedim mi?&quot;</b>&quot;Didn&apos;t I tell you?&quot; She did. She always did. And if you argue, the terlik (slipper) is already in the air. Ask your match for their best terlik story. &#x1FA74;&#x1F605;</div>
+</section>
 
 ${c.ad()}
 ${c.faq('Sorular - questions people ask')}

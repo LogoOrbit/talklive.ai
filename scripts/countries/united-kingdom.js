@@ -6,14 +6,24 @@
 module.exports = {
   slug: 'united-kingdom',
   name: 'United Kingdom',
+  updated: '2026-10-12',
   date: '2026-10-05',
   title: 'Talk to Strangers in the UK - Free British Voice Chat | TalkLive',
   description: 'Free voice and text chat with people in the UK - no sign-up, no camera, no phone number. Why British evenings are TalkLive\'s busiest hours, the weather-talk ritual, and how to get chatting.',
-  keywords: 'talk to strangers uk, british voice chat, chat with british people, uk random chat, talk to someone uk, uk voice chat, chat rooms uk',
+  keywords: 'talk to strangers uk, british voice chat, chat with british people, uk random chat, talk to someone uk, uk voice chat, chat rooms uk, talk to random people uk, chat with strangers no sign up, omegle alternative uk, free voice chat uk',
   h1: 'Talk to Strangers in the UK',
   theme: '#e7edf0',
   preload: ['dm-serif-display-latin-400-normal', 'dm-sans-latin-400-normal'],
-  css: `
+  css: `.uk-lx{max-width:760px;margin:44px auto 0;padding:0 20px}
+.uk-lx h2{font:400 clamp(32px,4.8vw,50px)/1.02 "DM Serif Display",serif;margin:0 0 12px}
+.uk-lx p{font-size:18px;line-height:1.7;margin:0 0 1em}
+.uk-lx-signs{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:18px 0}
+.uk-lx-signs div{background:var(--ink);color:#fff;border-radius:6px;padding:12px 14px;font-size:15px;line-height:1.4;border-left:8px solid var(--sig)}
+.uk-lx-signs b{display:block;font:400 22px/1.1 "DM Serif Display",serif;color:#fff}
+.uk-lx-meme{background:#fff;border:2px solid var(--ink);padding:18px 20px;margin:20px 0;font-size:17px;line-height:1.55}
+.uk-lx-meme b{font:400 22px/1.2 "DM Serif Display",serif;display:block;margin-bottom:6px;color:var(--sea)}
+@media (max-width:640px){.uk-lx-signs{grid-template-columns:1fr}}
+
 :root{--paper:#e7edf0;--ink:#10263b;--rule:#b9c7d0;--sig:#f05a28;--sea:#2f6f73;--mast:#10263b}
 body{font-family:"DM Sans",system-ui,sans-serif;background:var(--paper);color:var(--ink)}
 .c-bar{border-bottom:3px solid var(--ink)}
@@ -159,6 +169,22 @@ body{font-family:"DM Sans",system-ui,sans-serif;background:var(--paper);color:va
 </div>
 
 ${c.faq('Questions from listeners')}
+<section class="uk-lx" aria-labelledby="uk-lx-h">
+  <h2 id="uk-lx-h">Proper British, innit</h2>
+  <p>From London roadman to northern nan, British slang has range. A few you will hear on a call:</p>
+  <div class="uk-lx-signs">
+    <div><b>Innit</b>Isn&apos;t it. Also: right? Also: yeah.</div>
+    <div><b>Wagwan</b>What&apos;s going on. London hello.</div>
+    <div><b>Bare</b>Loads. &quot;Bare people online tonight.&quot;</div>
+    <div><b>Peng</b>Really good. Usually food.</div>
+    <div><b>Chuffed</b>Properly pleased.</div>
+    <div><b>Knackered</b>Completely exhausted.</div>
+    <div><b>Gutted</b>Devastated, usually about football.</div>
+    <div><b>Allow it</b>Stop, leave it, not today.</div>
+  </div>
+  <div class="uk-lx-meme" aria-label="Meme: how are you"><b>Brits when asked &quot;how are you?&quot;</b>&quot;Yeah not bad, you?&quot; Meanwhile: the boiler&apos;s broken, it&apos;s been raining for nine days and the train got cancelled. Still not bad though. &#x2615;&#x1F327;</div>
+</section>
+
 ${c.ad()}
 <section class="uk-end"><div class="uk-end-in">
   <div><h2>Talkative, becoming very talkative.</h2><p>Someone in Cardiff, Carlisle or Coleraine is about to press the button too.</p></div>

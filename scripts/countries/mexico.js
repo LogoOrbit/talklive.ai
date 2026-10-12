@@ -16,14 +16,25 @@ const WORDS = [
 module.exports = {
   slug: 'mexico',
   name: 'Mexico',
+  updated: '2026-10-12',
   date: '2026-10-07',
   title: 'Talk to Strangers in Mexico - Free Voice Chat | TalkLive',
   description: 'Free voice and text chat with people in Mexico - platica in Spanish or English, no sign-up, no camera. Slang, food, football and when Mexico is online.',
-  keywords: 'talk to strangers mexico, mexico chat, chat mexico, hablar con extraños, platicar con desconocidos, random chat mexico, mexican voice chat, chat de voz',
+  keywords: 'talk to strangers mexico, mexico chat, chat mexico, hablar con extraños, platicar con desconocidos, random chat mexico, mexican voice chat, chat de voz, chat aleatorio, chat anónimo gratis, hablar con desconocidos',
   h1: 'Talk to Strangers in Mexico',
   theme: '#0f3b2e',
   preload: ['archivo-black-latin-400-normal', 'source-serif-4-latin-400-normal'],
-  css: `
+  css: `.mx-lx{max-width:760px;margin:44px auto 0;padding:0 20px}
+.mx-lx h2{font:400 clamp(26px,3.8vw,40px)/1.05 "Archivo Black",sans-serif;letter-spacing:-.02em;margin:0 0 12px}
+.mx-lx p{font-size:18px;line-height:1.75;margin:0 0 1em}
+.mx-lx-papel{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}
+.mx-lx-papel div{background:var(--c);color:#fff;padding:18px 12px 22px;text-align:center;font-size:14.5px;line-height:1.4;clip-path:polygon(0 0,100% 0,100% 88%,90% 100%,80% 88%,70% 100%,60% 88%,50% 100%,40% 88%,30% 100%,20% 88%,10% 100%,0 88%)}
+.mx-lx-papel b{display:block;font:400 19px/1.1 "Archivo Black",sans-serif;margin-bottom:4px}
+.mx-lx-meme{border:4px solid var(--pink);background:#fff;padding:18px 20px;margin:20px 0;font-size:17px;line-height:1.5}
+.mx-lx-meme b{display:block;font:400 19px/1.2 "Archivo Black",sans-serif;color:var(--pink);margin-bottom:6px}
+.mx-lx-meme li{margin:4px 0}
+@media (max-width:640px){.mx-lx-papel{grid-template-columns:1fr 1fr}}
+
 :root{--paper:#fdf8f1;--ink:#1c1410;--rule:#ecdccb;--pink:#e4007c;--gold:#f6a000;--teal:#00a19a;--green:#0f3b2e;--mast:#fdf8f1}
 body{font-family:"Source Serif 4",Georgia,serif;background:var(--paper);color:var(--ink)}
 .c-bar{color:var(--mast);background:var(--green);max-width:none}
@@ -110,6 +121,20 @@ ${WORDS.map(([w, m]) => `      <div><b>${w}</b><span>${m}</span></div>`).join('\
     <p style="margin-top:20px">Getting started: open TalkLive in your browser (no app, no sign-up), prefer Mexico in Filters if you like (two preferred countries are free), and Tap to Talk or Tap to Chat. See also our <a href="/countries/united-states">United States guide</a> for the neighbours, our <a href="/countries/brazil">Brazil guide</a>, and the Journal's <a href="/regions/americas">Americas feature</a>.</p>
   </section>
 </div>
+
+<section class="mx-lx" aria-labelledby="mx-lx-h">
+  <h2 id="mx-lx-h">Habla como chilango, wey</h2>
+  <p>Mexican Spanish has the best slang in the Spanish-speaking world, and everyone else knows it from the memes.</p>
+  <div class="mx-lx-papel">
+    <div style="--c:#e4007c"><b>¿Qué onda?</b>What&apos;s up?</div>
+    <div style="--c:#00a19a"><b>Wey / güey</b>Dude. Every sentence.</div>
+    <div style="--c:#f6a000"><b>Chido</b>Cool, great.</div>
+    <div style="--c:#0f3b2e"><b>No manches</b>No way! Seriously?</div>
+    <div style="--c:#e4007c"><b>Neta</b>For real, truth.</div>
+    <div style="--c:#00a19a"><b>Me late</b>I like it, I&apos;m in.</div>
+  </div>
+  <div class="mx-lx-meme" aria-label="Meme: ahorita"><b>The official meanings of &quot;ahorita&quot;</b><ul><li>Right now</li><li>In a minute</li><li>In an hour</li><li>Tomorrow</li><li>Never, but said with love &#x1F643;</li></ul></div>
+</section>
 
 ${c.ad()}
 ${c.faq('Preguntas - questions people ask')}

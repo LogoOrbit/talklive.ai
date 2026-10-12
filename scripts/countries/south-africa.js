@@ -26,14 +26,27 @@ const SLANG = [
 module.exports = {
   slug: 'south-africa',
   name: 'South Africa',
+  updated: '2026-10-12',
   date: '2026-10-07',
   title: 'Talk to Strangers in South Africa - Free Voice Chat | TalkLive',
   description: 'Free voice and text chat with people in South Africa - howzit in any of twelve languages, no sign-up, no camera. Slang, rugby, the braai and when SA is online.',
-  keywords: 'talk to strangers south africa, south africa chat, sa chat, south african voice chat, chat with south africans, random chat south africa, johannesburg chat, cape town chat',
+  keywords: 'talk to strangers south africa, south africa chat, sa chat, south african voice chat, chat with south africans, random chat south africa, johannesburg chat, cape town chat, talk to random people, random call app south africa',
   h1: 'Talk to Strangers in South Africa',
   theme: '#007a4d',
   preload: ['archivo-latin-600-normal', 'literata-latin-400-normal'],
-  css: `
+  css: `.za-lx{max-width:760px;margin:44px auto 0;padding:0 20px}
+.za-lx h2{font:600 clamp(26px,3.8vw,40px)/1.02 Archivo,sans-serif;letter-spacing:-.03em;text-transform:uppercase;margin:0 0 12px}
+.za-lx p{font-size:18px;line-height:1.75;margin:0 0 1em}
+.za-lx-taxi{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:18px 0}
+.za-lx-taxi div{background:#fff;border:2px solid var(--ink);border-radius:10px;padding:12px 14px;font-size:15px;line-height:1.4;position:relative;overflow:hidden}
+.za-lx-taxi div::before{content:"";position:absolute;left:0;top:0;bottom:0;width:8px;background:linear-gradient(var(--green) 33%,var(--gold) 33% 66%,var(--red) 66%)}
+.za-lx-taxi b{display:block;font:600 20px/1.1 Archivo,sans-serif;text-transform:uppercase;padding-left:6px}
+.za-lx-taxi span{display:block;padding-left:6px}
+.za-lx-meme{background:var(--blue);color:#fff;border-radius:12px;padding:18px 20px;margin:20px 0;font-size:17px;line-height:1.5}
+.za-lx-meme b{display:block;font:600 20px/1.2 Archivo,sans-serif;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
+.za-lx-meme li{margin:3px 0}
+@media (max-width:640px){.za-lx-taxi{grid-template-columns:1fr}}
+
 :root{--paper:#faf8f3;--ink:#121212;--rule:#e0dacd;--green:#007a4d;--gold:#ffb612;--red:#de3831;--blue:#002395;--mast:#fff}
 body{font-family:"Literata",Georgia,serif;background:var(--paper);color:var(--ink)}
 .c-bar{color:var(--mast);background:var(--green);max-width:none}
@@ -124,6 +137,20 @@ ${SLANG.map(([w, m]) => `      <div><b>${w}</b><span>${m}</span></div>`).join('\
     <p style="margin-top:20px">Getting started: open TalkLive in your browser (no app, no sign-up), prefer South Africa in Filters if you like (two preferred countries are free), and Tap to Talk or Tap to Chat. Our <a href="/countries/kenya">Kenya</a> and <a href="/countries/nigeria">Nigeria</a> guides and the Journal's <a href="/regions/africa">Africa feature</a> cover the rest of the continent.</p>
   </section>
 </div>
+
+<section class="za-lx" aria-labelledby="za-lx-h">
+  <h2 id="za-lx-h">Howzit? Mzansi slang</h2>
+  <p>Eleven official languages and a slang that borrows from all of them. You will hear these on any call with a South African.</p>
+  <div class="za-lx-taxi">
+    <div><b>Howzit</b><span>Hi, how are you, all in one.</span></div>
+    <div><b>Lekker</b><span>Nice, great, delicious.</span></div>
+    <div><b>Eish</b><span>Oh no, wow, ugh. Pure feeling.</span></div>
+    <div><b>Sharp sharp</b><span>Cool, okay, bye. Very versatile.</span></div>
+    <div><b>Shame</b><span>Aww, how cute, or how sad.</span></div>
+    <div><b>Braai</b><span>A barbecue, but a whole religion.</span></div>
+  </div>
+  <div class="za-lx-meme" aria-label="Meme: now now"><b>South African time, explained</b><ul><li><em>Now:</em> sometime soon, maybe</li><li><em>Just now:</em> later. Much later</li><li><em>Now now:</em> actually soon, promise</li></ul>So if your match says &quot;call you back now now&quot;, you might actually get a call. &#x1F552;&#x1F1FF;&#x1F1E6;</div>
+</section>
 
 ${c.ad()}
 ${c.faq('Questions, eish')}

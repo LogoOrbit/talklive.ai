@@ -6,14 +6,25 @@
 module.exports = {
   slug: 'morocco',
   name: 'Morocco',
+  updated: '2026-10-12',
   date: '2026-10-06',
   title: 'Talk to Strangers in Morocco - Free Darija & French Voice Chat | TalkLive',
   description: 'Free voice and text chat with people in Morocco - in Darija, French, Arabic or English, no sign-up, no camera. Mint tea, the language that borrows from everyone, and when Morocco is online.',
-  keywords: 'talk to strangers morocco, moroccan chat, darija voice chat, chat with moroccans, random chat morocco, chat maroc, tchat maroc, شات مغربي',
+  keywords: 'talk to strangers morocco, moroccan chat, darija voice chat, chat with moroccans, random chat morocco, chat maroc, tchat maroc, شات مغربي, دردشة مغربية, chat vocal maroc',
   h1: 'Talk to Strangers in Morocco',
   theme: '#12406b',
   preload: ['fraunces-latin-700-normal', 'source-serif-4-latin-400-normal'],
-  css: `
+  css: `.ma-lx{max-width:760px;margin:44px auto 0;padding:0 20px}
+.ma-lx h2{font:700 clamp(30px,4.4vw,46px)/1.05 Fraunces,serif;color:var(--cobalt);margin:0 0 12px}
+.ma-lx p{font-size:18px;line-height:1.75;margin:0 0 1em}
+.ma-lx-star{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:18px 0}
+.ma-lx-star div{background:#fff;padding:22px 14px;text-align:center;font-size:14.5px;line-height:1.4;clip-path:polygon(30% 0,70% 0,100% 30%,100% 70%,70% 100%,30% 100%,0 70%,0 30%);border:0;box-shadow:inset 0 0 0 3px var(--emer)}
+.ma-lx-star b{display:block;font:700 21px/1.1 Fraunces,serif;color:var(--terra)}
+.ma-lx-star span{display:block;font-size:19px;color:var(--emer);margin:2px 0}
+.ma-lx-meme{background:var(--emer);color:#fbf6ec;border-radius:12px;padding:18px 20px;margin:20px 0;font-size:17px;line-height:1.5}
+.ma-lx-meme b{display:block;font:700 21px/1.2 Fraunces,serif;color:var(--saff);margin-bottom:6px}
+@media (max-width:640px){.ma-lx-star{grid-template-columns:1fr 1fr}}
+
 :root{--paper:#fbf6ec;--ink:#24170f;--rule:#e6d6bb;--cobalt:#12406b;--emer:#0e6b55;--saff:#e3a21a;--terra:#b5532f;--mast:#fbf6ec}
 body{font-family:"Source Serif 4",Georgia,serif;background:var(--paper);color:var(--ink)}
 .c-bar{color:var(--mast);background:var(--cobalt);max-width:none}
@@ -140,6 +151,20 @@ body{font-family:"Source Serif 4",Georgia,serif;background:var(--paper);color:va
     </div>
   </section>
 </div>
+
+<section class="ma-lx" aria-labelledby="ma-lx-h">
+  <h2 id="ma-lx-h">Darija, bla stress</h2>
+  <p>Moroccan Darija mixes Arabic, Amazigh, French and a bit of Spanish, sometimes in the same sentence. The basics:</p>
+  <div class="ma-lx-star">
+    <div><span lang="ar">لاباس؟</span><b>Labas?</b>All good?</div>
+    <div><span lang="ar">واخا</span><b>Wakha</b>Okay, sure</div>
+    <div><span lang="ar">صافي</span><b>Safi</b>Enough, done, fine</div>
+    <div><span lang="ar">بزاف</span><b>Bzaf</b>A lot</div>
+    <div><span lang="ar">زوين</span><b>Zwin</b>Nice, beautiful</div>
+    <div><span lang="ar">خويا</span><b>Khoya</b>Bro. Khti = sis</div>
+  </div>
+  <div class="ma-lx-meme" aria-label="Meme: daba"><b>Moroccan mom: &quot;Daba nji&quot; (coming now)</b>Three hours, two pots of atay and one tajine later... daba. Time in Morocco is a feeling, not a number. &#x1FAD6;&#x1F570;&#xFE0F;</div>
+</section>
 
 ${c.ad()}
 ${c.faq('Questions over tea')}

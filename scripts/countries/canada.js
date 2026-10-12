@@ -15,14 +15,24 @@ const ZONES = [
 module.exports = {
   slug: 'canada',
   name: 'Canada',
+  updated: '2026-10-12',
   date: '2026-10-06',
   title: 'Talk to Strangers in Canada - Free Voice Chat in English & French | TalkLive',
   description: 'Free voice and text chat with people in Canada - in English or French, no sign-up, no camera. Six time zones, two official languages, a country of newcomers, and when Canada is online.',
-  keywords: 'talk to strangers canada, canada chat, canadian voice chat, chat with canadians, random chat canada, toronto chat, quebec chat, clavarder avec des inconnus',
+  keywords: 'talk to strangers canada, canada chat, canadian voice chat, chat with canadians, random chat canada, toronto chat, quebec chat, clavarder avec des inconnus, chat vocal gratuit, parler à des inconnus, talk to random people canada',
   h1: 'Talk to Strangers in Canada',
   theme: '#b3121f',
   preload: ['unbounded-latin-800-normal', 'lora-latin-400-normal'],
-  css: `
+  css: `.ca-lx{max-width:760px;margin:44px auto 0;padding:0 20px}
+.ca-lx h2{font:800 clamp(24px,3.6vw,38px)/1.12 Unbounded,sans-serif;letter-spacing:-.02em;margin:0 0 12px}
+.ca-lx p{font-size:18px;line-height:1.75;margin:0 0 1em}
+.ca-lx-cup{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:18px 0}
+.ca-lx-cup div{background:#fff;border:2px solid var(--red);border-radius:6px 6px 22px 22px;padding:14px 16px;font-size:15.5px;line-height:1.45}
+.ca-lx-cup b{display:block;font:800 17px/1.2 Unbounded,sans-serif;color:var(--red);margin-bottom:4px}
+.ca-lx-meme{background:var(--pine);color:#fff;border-radius:12px;padding:18px 20px;margin:20px 0;font-size:17px;line-height:1.5}
+.ca-lx-meme b{display:block;font:800 17px/1.3 Unbounded,sans-serif;margin-bottom:6px}
+@media (max-width:640px){.ca-lx-cup{grid-template-columns:1fr}}
+
 :root{--paper:#fbfaf7;--ink:#1b1b1b;--rule:#e2ddd3;--red:#b3121f;--deep:#6e0b13;--snow:#fff;--pine:#1f4d3a;--mast:#fff}
 body{font-family:"Lora",Georgia,serif;background:var(--paper);color:var(--ink)}
 .c-bar{color:var(--mast);background:var(--deep);max-width:none}
@@ -131,6 +141,20 @@ ${ZONES.map(([city, zone, busy]) => `<div class="ca-zone"><small>${zone}</small>
     <p style="margin-top:20px">Getting started: open TalkLive in your browser (no app, no sign-up), optionally prefer Canada in Filters (two preferred countries are free), and Tap to Talk or Tap to Chat. Our <a href="/countries/united-states">United States guide</a> covers the neighbours, and the Journal's <a href="/regions/americas">Americas feature</a> the rest of the hemisphere.</p>
   </section>
 </div>
+
+<section class="ca-lx" aria-labelledby="ca-lx-h">
+  <h2 id="ca-lx-h">Canadian, eh?</h2>
+  <p>Canadian English sounds American until it really, really doesn&apos;t. A few words that give it away:</p>
+  <div class="ca-lx-cup">
+    <div><b>Eh</b>Right? Agree? Ends sentences, starts friendships.</div>
+    <div><b>Double-double</b>Coffee with two cream, two sugar. Timmies order.</div>
+    <div><b>Toque</b>A winter beanie. Essential from October.</div>
+    <div><b>Loonie / toonie</b>The one and two dollar coins.</div>
+    <div><b>Give&apos;r</b>Go all out. &quot;Just give&apos;r!&quot;</div>
+    <div><b>C&apos;est le fun</b>Québec for &quot;that&apos;s fun&quot;. Tiguidou = perfect.</div>
+  </div>
+  <div class="ca-lx-meme" aria-label="Meme: sorry"><b>Canadian bumps into a door</b>&quot;Oh, sorry!&quot; Then apologises to the person behind them for apologising. Then holds the door for 40 seconds. Nicest call you will ever have, guaranteed. &#x1F341;&#x1F64F;</div>
+</section>
 
 ${c.ad()}
 ${c.faq('Questions, eh?')}

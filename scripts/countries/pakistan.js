@@ -5,14 +5,23 @@
 module.exports = {
   slug: 'pakistan',
   name: 'Pakistan',
+  updated: '2026-10-12',
   date: '2026-10-05',
   title: 'Talk to Strangers in Pakistan - Free Urdu and English Voice Chat | TalkLive',
   description: 'Free voice and text chat with people in Pakistan - Urdu, Punjabi or English, no sign-up, no camera, with an Urdu interface. Why Pakistan talks late, and when it is online (PKT).',
-  keywords: 'talk to strangers pakistan, pakistani chat, pakistan voice chat, urdu voice chat, chat with pakistanis, random chat pakistan, urdu chat room',
+  keywords: 'talk to strangers pakistan, pakistani chat, pakistan voice chat, urdu voice chat, chat with pakistanis, random chat pakistan, urdu chat room, ajnabi se baat, اجنبی سے بات, urdu chat room free, talk to random people pakistan',
   h1: 'Talk to Strangers in Pakistan',
   theme: '#0a241d',
   preload: ['abril-fatface-latin-400-normal', 'lora-latin-400-normal'],
-  css: `
+  css: `.pk-lx{max-width:760px;margin:44px auto 0;padding:0 20px}
+.pk-lx h2{font:400 clamp(32px,4.8vw,50px)/1.02 "Abril Fatface",serif;color:var(--gold);margin:0 0 12px}
+.pk-lx p{font-size:18px;line-height:1.7;margin:0 0 1em}
+.pk-lx-truck{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}
+.pk-lx-truck span{border:2px solid var(--gold);border-radius:14px 2px 14px 2px;padding:10px 14px;font-size:15px;line-height:1.35;background:rgba(231,181,74,.08)}
+.pk-lx-truck b{display:block;font:400 20px/1.1 "Abril Fatface",serif;color:var(--rose)}
+.pk-lx-meme{background:var(--teal);color:#06231d;border-radius:16px;padding:18px 20px;margin:20px 0;font-size:17px;line-height:1.5}
+.pk-lx-meme b{display:block;font:400 21px/1.2 "Abril Fatface",serif;margin-bottom:6px}
+
 :root{--paper:#0a241d;--ink:#f3ead6;--rule:#24493d;--gold:#e7b54a;--rose:#e2577a;--teal:#2fb3a5;--red:#d8432f;--mast:#f3ead6}
 body{font-family:"Lora",Georgia,serif;background:var(--paper);color:var(--ink)}
 .c-bar{color:var(--ink)}
@@ -153,6 +162,21 @@ body{font-family:"Lora",Georgia,serif;background:var(--paper);color:var(--ink)}
 </div>
 
 ${c.faq('Sawal jawab - questions')}
+<section class="pk-lx" aria-labelledby="pk-lx-h">
+  <h2 id="pk-lx-h">Bolo jaise local bolte hain</h2>
+  <p>Roman Urdu with a bit of English, a bit of Punjabi and a lot of attitude. Here is what you will hear on a call.</p>
+  <div class="pk-lx-truck">
+    <span><b>Kya scene hai?</b>What&apos;s up, what&apos;s the plan</span>
+    <span><b>Yaar</b>Friend, man. In every second sentence</span>
+    <span><b>Set hai</b>It&apos;s sorted, all good</span>
+    <span><b>Jani</b>Darling, buddy. Very Lahori</span>
+    <span><b>Oye hoye</b>Ooh, nice! Said with a grin</span>
+    <span><b>Masla kya hai?</b>What&apos;s the problem? Half joking, mostly</span>
+  </div>
+  <p>Gen Z bonus: anything amazing is <em>fire</em>, anyone flirting is <em>rizzing</em>, and a guy acting too cool is pure <em>sigma</em> energy.</p>
+  <div class="pk-lx-meme" aria-label="Meme: cricket and load-shedding"><b>Every Pakistan match: &quot;Iss baar pakka jeetenge&quot;</b>Also every Pakistani: on a two hour call when the light goes. Load-shedding, the true final boss. &#x1F4F1;&#x1F4A1;</div>
+</section>
+
 ${c.ad()}
 <div class="pk-band" aria-hidden="true"></div>
 <section class="pk-end">

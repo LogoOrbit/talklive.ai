@@ -6,14 +6,24 @@
 module.exports = {
   slug: 'philippines',
   name: 'Philippines',
+  updated: '2026-10-12',
   date: '2026-10-06',
   title: 'Talk to Strangers in the Philippines - Free Filipino Voice Chat | TalkLive',
   description: 'Free voice and text chat with people in the Philippines - in Filipino, English, Taglish or Bisaya, no sign-up, no camera. Kwentuhan, the night shift, and when the Philippines is online.',
-  keywords: 'talk to strangers philippines, filipino chat, pinoy voice chat, chat with filipinos, random chat philippines, tagalog chat, makipag-usap sa estranghero, pinoy chat',
+  keywords: 'talk to strangers philippines, filipino chat, pinoy voice chat, chat with filipinos, random chat philippines, tagalog chat, makipag-usap sa estranghero, pinoy chat, kausap online, random call pinoy, chat with strangers ph',
   h1: 'Talk to Strangers in the Philippines',
   theme: '#0038a8',
   preload: ['nunito-latin-800-normal', 'nunito-latin-400-normal'],
-  css: `
+  css: `.ph-lx{max-width:760px;margin:44px auto 0;padding:0 20px}
+.ph-lx h2{font:800 clamp(30px,4.6vw,48px)/1.02 Nunito,sans-serif;margin:0 0 12px;color:var(--blue)}
+.ph-lx p{font-size:18px;line-height:1.7;margin:0 0 1em}
+.ph-lx-jeep{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}
+.ph-lx-jeep span{background:var(--sun);border:3px solid var(--ink);border-radius:12px;padding:10px 14px;font-size:15px;line-height:1.35;box-shadow:0 4px 0 var(--red)}
+.ph-lx-jeep span:nth-child(even){background:var(--sky)}
+.ph-lx-jeep b{display:block;font:800 19px/1.1 Nunito,sans-serif}
+.ph-lx-meme{background:var(--red);color:#fff;border-radius:16px;padding:18px 20px;margin:22px 0;font-size:17px;line-height:1.5}
+.ph-lx-meme b{display:block;font:800 21px/1.2 Nunito,sans-serif;margin-bottom:6px}
+
 :root{--paper:#fffdf6;--ink:#1a1a2e;--rule:#e9e2cf;--blue:#0038a8;--red:#ce1126;--sun:#fcd116;--sky:#5bc0eb;--mast:#fff}
 body{font-family:"Nunito",system-ui,sans-serif;background:var(--paper);color:var(--ink)}
 .c-bar{color:var(--mast);background:var(--blue);max-width:none}
@@ -135,6 +145,22 @@ body{font-family:"Nunito",system-ui,sans-serif;background:var(--paper);color:var
     <p style="margin-top:20px">For the wider region, read the Journal's <a href="/regions/southeast-asia">Southeast Asia feature</a> and our guide to <a href="/countries/indonesia">Indonesia</a>; for the Gulf, where so many Filipinos work, see <a href="/countries/united-arab-emirates">the UAE</a> and <a href="/countries/saudi-arabia">Saudi Arabia</a>.</p>
   </section>
 </div>
+
+<section class="ph-lx" aria-labelledby="ph-lx-h">
+  <h2 id="ph-lx-h">Taglish starter pack</h2>
+  <p>Filipinos switch between English and Filipino mid-sentence, so you will too after one call. Ganern.</p>
+  <div class="ph-lx-jeep">
+    <span><b>Sana all</b>I wish that were me too</span>
+    <span><b>Charot / char</b>Just kidding!</span>
+    <span><b>Lodi</b>Idol, backwards. Respect.</span>
+    <span><b>Petmalu</b>Awesome, malupit backwards</span>
+    <span><b>Beshie</b>Bestie, bes</span>
+    <span><b>Marites</b>The gossip who knows everything</span>
+    <span><b>G na</b>Game na. I&apos;m in, let&apos;s go</span>
+    <span><b>Awit</b>Ouch, that hurts, sad</span>
+  </div>
+  <div class="ph-lx-meme" aria-label="Meme: OTW"><b>Filipino time: &quot;OTW na ako!&quot;</b>Translation: still in the shower, hair wet, hasn&apos;t picked an outfit. Arrives in an hour with snacks for everyone though. &#x1F6BF;&#x1F606;</div>
+</section>
 
 ${c.ad()}
 ${c.faq('May tanong? Questions')}

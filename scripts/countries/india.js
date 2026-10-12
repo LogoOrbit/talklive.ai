@@ -6,14 +6,24 @@
 module.exports = {
   slug: 'india',
   name: 'India',
+  updated: '2026-10-12',
   date: '2026-10-05',
   title: 'Talk to Strangers in India - Free Voice Chat in Hindi and English | TalkLive',
   description: 'Free voice and text chat with people in India - Hindi, English or Hinglish, no sign-up, no camera. Why India talks to strangers like it talks on a long train, and when India is online (IST).',
-  keywords: 'talk to strangers india, indian voice chat, chat with indians, hindi voice chat, random chat india, talk to indian people online, hinglish chat',
+  keywords: 'talk to strangers india, indian voice chat, chat with indians, hindi voice chat, random chat india, talk to indian people online, hinglish chat, ajnabi se baat karo, अजनबी से बात, hindi chat room, talk to random people, free live call chat',
   h1: 'Talk to Strangers in India',
   theme: '#0b1320',
   preload: ['big-shoulders-display-latin-800-normal', 'ibm-plex-serif-latin-400-normal'],
-  css: `
+  css: `.in-lx{max-width:760px;margin:44px auto 0;padding:0 20px}
+.in-lx h2{font:800 clamp(30px,4.6vw,48px)/1 "Big Shoulders Display",sans-serif;text-transform:uppercase;margin:0 0 12px}
+.in-lx p{font-size:18px;line-height:1.7;margin:0 0 1em}
+.in-lx-board{background:var(--board);color:var(--amber);border-radius:6px;padding:12px;margin:18px 0}
+.in-lx-row{display:grid;grid-template-columns:170px 1fr;gap:12px;padding:10px 8px;border-bottom:1px solid rgba(255,178,0,.18);font-size:15px;color:#f4ecd8}
+.in-lx-row b{font:800 22px/1 "Big Shoulders Display",sans-serif;text-transform:uppercase;color:var(--amber);letter-spacing:.04em}
+.in-lx-meme{border:3px solid var(--ink);background:#fff;padding:18px 20px;margin:20px 0;font-size:17px;line-height:1.5}
+.in-lx-meme b{display:block;font:800 22px/1.1 "Big Shoulders Display",sans-serif;text-transform:uppercase;margin-bottom:8px;color:var(--rail)}
+@media (max-width:640px){.in-lx-row{grid-template-columns:1fr;gap:4px}}
+
 :root{--paper:#f4ecd8;--ink:#1d1a16;--rule:#d6c7a5;--board:#0b1320;--amber:#ffb200;--rail:#7a2e1d;--mast:#f4ecd8}
 body{font-family:"IBM Plex Serif",Georgia,serif;background:var(--paper)}
 .c-bar{color:#f4ecd8;background:var(--board);max-width:none;border-bottom:1px solid #22304a}
@@ -170,6 +180,21 @@ body{font-family:"IBM Plex Serif",Georgia,serif;background:var(--paper)}
     </div>
   </aside>
 </div>
+<section class="in-lx" aria-labelledby="in-lx-h">
+  <h2 id="in-lx-h">Platform lingo: talk like a local</h2>
+  <p>Hinglish is basically the national language of Indian chats. Drop a few of these and nobody will believe you learned English from a textbook.</p>
+  <div class="in-lx-board">
+    <div class="in-lx-row"><b>Scene kya hai?</b>What&apos;s the plan, what&apos;s going on.</div>
+    <div class="in-lx-row"><b>Jugaad</b>A clever hack that somehow works. A whole lifestyle.</div>
+    <div class="in-lx-row"><b>Bindaas</b>Carefree, chill, no tension.</div>
+    <div class="in-lx-row"><b>Pakka</b>For sure, 100 percent.</div>
+    <div class="in-lx-row"><b>Timepass</b>Just passing time. Also what you tell your parents a call is.</div>
+    <div class="in-lx-row"><b>Arre yaar</b>Oh man. Works for good news, bad news and everything between.</div>
+  </div>
+  <p>Gen Z bonus: someone with game has <em>rizz</em>, someone dreaming big is <em>delulu</em>, and when something flops it is very <em>moye moye</em>.</p>
+  <div class="in-lx-meme" aria-label="Meme: Sharma ji ka beta"><b>Mom: &quot;Sharma ji ka beta made 5 new friends today&quot;</b>Sharma ji ka beta: was on TalkLive the whole time. Your turn now. &#x1F60F;</div>
+</section>
+
 ${c.ad()}
 <section class="in-end">
   <h2>Your berth is ready</h2>

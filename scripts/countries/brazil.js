@@ -15,14 +15,25 @@ const SLANG = [
 module.exports = {
   slug: 'brazil',
   name: 'Brazil',
+  updated: '2026-10-12',
   date: '2026-10-07',
   title: 'Talk to Strangers in Brazil - Free Voice Chat | TalkLive',
   description: 'Free voice and text chat with people in Brazil - bate-papo in Portuguese or English, no sign-up, no camera. Slang, football, music and when Brazil is online.',
-  keywords: 'talk to strangers brazil, brazil chat, bate-papo, chat brasil, conversar com estranhos, random chat brazil, brazilian voice chat, chat de voz',
+  keywords: 'talk to strangers brazil, brazil chat, bate-papo, chat brasil, conversar com estranhos, random chat brazil, brazilian voice chat, chat de voz, chat aleatório, conversar com desconhecidos, chat anônimo',
   h1: 'Talk to Strangers in Brazil',
   theme: '#009c3b',
   preload: ['bricolage-grotesque-latin-700-normal', 'dm-sans-latin-400-normal'],
-  css: `
+  css: `.br-lx{max-width:760px;margin:44px auto 0;padding:0 20px}
+.br-lx h2{font:700 clamp(28px,4vw,44px)/1.04 "Bricolage Grotesque",sans-serif;letter-spacing:-.03em;margin:0 0 12px}
+.br-lx p{font-size:18px;line-height:1.7;margin:0 0 1em}
+.br-lx-wave{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0}
+.br-lx-wave div{background:var(--green);color:#fff;border-radius:24px 4px 24px 4px;padding:14px 16px;font-size:15px;line-height:1.4}
+.br-lx-wave div:nth-child(even){background:var(--blue)}
+.br-lx-wave b{display:block;font:700 22px/1.05 "Bricolage Grotesque",sans-serif;color:var(--yellow)}
+.br-lx-meme{background:var(--yellow);color:var(--ink);border-radius:18px;padding:18px 20px;margin:20px 0;font-size:17px;line-height:1.5}
+.br-lx-meme b{display:block;font:700 22px/1.2 "Bricolage Grotesque",sans-serif;margin-bottom:6px}
+@media (max-width:640px){.br-lx-wave{grid-template-columns:1fr 1fr}}
+
 :root{--paper:#fffdf3;--ink:#0d1b2a;--rule:#e9e3c6;--green:#009c3b;--yellow:#ffdf00;--blue:#002776;--mast:#fff}
 body{font-family:"DM Sans",system-ui,sans-serif;background:var(--paper);color:var(--ink)}
 .c-bar{color:var(--mast);background:var(--green);max-width:none}
@@ -117,6 +128,21 @@ ${SLANG.map(([w, m]) => `      <div><b>${w}</b><span>${m}</span></div>`).join('\
     <p style="margin-top:20px">Getting started: open TalkLive in your browser (no app, no sign-up), prefer Brazil in Filters if you like (two preferred countries are free), and Tap to Talk or Tap to Chat. The Journal's <a href="/regions/americas">Americas feature</a> covers the rest of the hemisphere, and our <a href="/countries/mexico">Mexico guide</a> the other giant of Latin America.</p>
   </section>
 </div>
+
+<section class="br-lx" aria-labelledby="br-lx-h">
+  <h2 id="br-lx-h">Fala como brasileiro, mano</h2>
+  <p>Brazilian Portuguese online is pure vibe. Learn these and you are basically from São Paulo.</p>
+  <div class="br-lx-wave">
+    <div><b>Mano / mana</b>Bro, sis.</div>
+    <div><b>Bora</b>Let&apos;s go! Bora conversar?</div>
+    <div><b>Massa</b>Cool, awesome.</div>
+    <div><b>Tá ligado?</b>You know what I mean?</div>
+    <div><b>Valeu</b>Thanks, cheers.</div>
+    <div><b>Sextou</b>It&apos;s Friday! Party mode on.</div>
+  </div>
+  <p>Gen Z bonus: fishing for compliments is <em>biscoitar</em>, and something lame is <em>paia</em>.</p>
+  <div class="br-lx-meme" aria-label="Meme: kkkkk"><b>How Brazilians rate a joke in chat</b>kk = polite. kkkkk = funny. kkkkkkkkkkkkkkkkkk = they fell off the chair. On a call you just hear the laugh, which is even better. &#x1F602;&#x1F1E7;&#x1F1F7;</div>
+</section>
 
 ${c.ad()}
 ${c.faq('Perguntas - questions people ask')}

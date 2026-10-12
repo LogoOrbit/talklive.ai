@@ -12,14 +12,26 @@ const GREETINGS = [
 module.exports = {
   slug: 'kenya',
   name: 'Kenya',
+  updated: '2026-10-12',
   date: '2026-10-07',
   title: 'Talk to Strangers in Kenya - Free Voice Chat | TalkLive',
   description: 'Free voice and text chat with people in Kenya - in English, Kiswahili or Sheng, no sign-up, no camera. Greetings, topics, safety and when Kenya is online.',
-  keywords: 'talk to strangers kenya, kenya chat, kenyan voice chat, chat with kenyans, random chat kenya, nairobi chat, ongea na watu, sheng',
+  keywords: 'talk to strangers kenya, kenya chat, kenyan voice chat, chat with kenyans, random chat kenya, nairobi chat, ongea na watu, sheng, talk to random people kenya, free voice chat kenya',
   h1: 'Talk to Strangers in Kenya',
   theme: '#0b0b0b',
   preload: ['space-grotesk-latin-700-normal', 'ibm-plex-serif-latin-400-normal'],
-  css: `
+  css: `.ke-lx{max-width:760px;margin:44px auto 0;padding:0 20px}
+.ke-lx h2{font:700 clamp(26px,3.8vw,40px)/1.05 "Space Grotesk",sans-serif;letter-spacing:-.03em;margin:0 0 12px}
+.ke-lx p{font-size:18px;line-height:1.75;margin:0 0 1em}
+.ke-lx-mat{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin:18px 0;border:3px solid var(--ink)}
+.ke-lx-mat div{padding:14px 12px;font-size:15px;line-height:1.4;background:#fff;border:1.5px solid var(--ink)}
+.ke-lx-mat div:nth-child(odd){background:var(--ink);color:#fff}
+.ke-lx-mat b{display:block;font:700 22px/1.05 "Space Grotesk",sans-serif;color:var(--red)}
+.ke-lx-mat div:nth-child(odd) b{color:#7fd17f}
+.ke-lx-meme{background:var(--green);color:#fff;padding:18px 20px;margin:20px 0;font-size:17px;line-height:1.5;border-left:10px solid var(--red)}
+.ke-lx-meme b{display:block;font:700 21px/1.2 "Space Grotesk",sans-serif;margin-bottom:6px}
+@media (max-width:640px){.ke-lx-mat{grid-template-columns:1fr 1fr}}
+
 :root{--paper:#f7f4ee;--ink:#111;--rule:#ddd6c8;--red:#bb0000;--green:#006600;--mast:#fff}
 body{font-family:"IBM Plex Serif",Georgia,serif;background:var(--paper);color:var(--ink)}
 .c-bar{color:var(--mast);background:#000;max-width:none}
@@ -106,6 +118,20 @@ ${GREETINGS.map(([q, a, note]) => `<div class="ke-g"><b>${q}</b><em>${a}</em><sp
     <p style="margin-top:20px">Getting started: open TalkLive in your browser (no app, no sign-up), prefer Kenya in Filters if you like (two preferred countries are free), and Tap to Talk or Tap to Chat. Our <a href="/countries/nigeria">Nigeria guide</a> covers West Africa, and the Journal's <a href="/regions/africa">Africa feature</a> the continent.</p>
   </section>
 </div>
+
+<section class="ke-lx" aria-labelledby="ke-lx-h">
+  <h2 id="ke-lx-h">Sheng 101, maze</h2>
+  <p>Sheng is Nairobi&apos;s street mix of Swahili and English, and it changes every year. These are safe bets on any call.</p>
+  <div class="ke-lx-mat">
+    <div><b>Niaje?</b>What&apos;s up?</div>
+    <div><b>Poa</b>Cool, fine. Answer to niaje.</div>
+    <div><b>Sawa</b>Okay, alright.</div>
+    <div><b>Fiti</b>Good, all fine.</div>
+    <div><b>Maze</b>Man, dude. &quot;Maze, imagine!&quot;</div>
+    <div><b>Rada</b>The info, the plan. Rada ni gani?</div>
+  </div>
+  <div class="ke-lx-meme" aria-label="Meme: matatu"><b>Matatu ride, 7 a.m.</b>Music louder than the engine, graffiti on every inch, and the conductor hanging out the door. Best place to start a conversation in Kenya, honestly. Second best: TalkLive. &#x1F68C;&#x1F3B6;</div>
+</section>
 
 ${c.ad()}
 ${c.faq('Maswali - questions people ask')}

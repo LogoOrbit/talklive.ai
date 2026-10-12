@@ -16,14 +16,27 @@ const PHRASES = [
 module.exports = {
   slug: 'china',
   name: 'China',
+  updated: '2026-10-12',
   date: '2026-10-07',
   title: 'Talk to Strangers in China - 和陌生人聊天 | TalkLive',
   description: 'Free voice and text chat with people in China - in Mandarin or English, no sign-up, no camera. Phrases, topics, safety and when China is online on Beijing time.',
-  keywords: 'talk to strangers china, china chat, chinese voice chat, chat with chinese people, practice mandarin, 和陌生人聊天, 匿名聊天, 语音聊天',
+  keywords: 'talk to strangers china, china chat, chinese voice chat, chat with chinese people, practice mandarin, 和陌生人聊天, 匿名聊天, 语音聊天, 免费匿名聊天网站, 在线聊天, 匿名聊天网址, 外国人聊天软件免费',
   h1: 'Talk to Strangers in China',
   theme: '#b8231b',
   preload: ['source-serif-4-latin-600-normal', 'inter-latin-400-normal'],
-  css: `
+  css: `.cn-lx{max-width:760px;margin:44px auto 0;padding:0 20px}
+.cn-lx h2{font:600 clamp(28px,4vw,42px)/1.05 "Source Serif 4",serif;letter-spacing:-.02em;margin:0 0 12px}
+.cn-lx p{font-size:18px;line-height:1.75;margin:0 0 1em}
+.cn-lx-seals{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0}
+.cn-lx-seals div{border:2px solid var(--seal);padding:14px 10px;text-align:center;font-size:13.5px;line-height:1.4;background:#fffaf1}
+.cn-lx-seals span{display:block;font-size:26px;color:var(--seal);font-weight:700;margin-bottom:2px}
+.cn-lx-seals b{display:block;font:600 15px/1.2 "Source Serif 4",serif;margin-bottom:4px}
+.cn-lx-meme{display:grid;grid-template-columns:1fr 1fr;border:2px solid var(--ink);margin:20px 0}
+.cn-lx-meme div{padding:16px;font-size:16px;line-height:1.5}
+.cn-lx-meme div:last-child{background:var(--jade);color:#fff}
+.cn-lx-meme b{display:block;font:600 19px/1.2 "Source Serif 4",serif;margin-bottom:4px}
+@media (max-width:640px){.cn-lx-seals{grid-template-columns:1fr 1fr}.cn-lx-meme{grid-template-columns:1fr}}
+
 :root{--paper:#f6f0e4;--ink:#1a1714;--rule:#ddd0b8;--seal:#b8231b;--jade:#2f6f5e;--mast:#f6f0e4}
 body{font-family:"Inter",system-ui,sans-serif;background:var(--paper);color:var(--ink)}
 .c-bar{color:var(--mast);background:var(--ink);max-width:none}
@@ -119,6 +132,25 @@ ${PHRASES.map(([zh, py, en]) => `<div><b lang="zh">${zh}</b><small>${py}</small>
     <p style="margin-top:20px">Getting started: open TalkLive in your browser (no app, no sign-up), prefer China in Filters if you like (two preferred countries are free), and Tap to Talk or Tap to Chat. Our <a href="/late-night-chat">late-night chat guide</a> is for the hours after midnight, and the Journal's <a href="/regions/southeast-asia">Southeast Asia feature</a> covers the neighbours to the south.</p>
   </section>
 </div>
+
+<section class="cn-lx" aria-labelledby="cn-lx-h">
+  <h2 id="cn-lx-h">网络用语: internet Chinese</h2>
+  <p>Chinese internet slang is fast, funny and full of numbers. If your match is from China, these will come up.</p>
+  <div class="cn-lx-seals">
+    <div><span lang="zh">yyds</span><b>永远的神</b>The GOAT, forever the best</div>
+    <div><span lang="zh">绝绝子</span><b>juéjuézi</b>Absolutely amazing</div>
+    <div><span lang="zh">666</span><b>liùliùliù</b>Nice one, skilled</div>
+    <div><span lang="zh">躺平</span><b>tǎngpíng</b>Lying flat, opting out of the grind</div>
+    <div><span lang="zh">内卷</span><b>nèijuǎn</b>The endless rat race</div>
+    <div><span lang="zh">破防</span><b>pòfáng</b>Emotionally hit, defences down</div>
+    <div><span lang="zh">打工人</span><b>dǎgōngrén</b>Working people, all of us</div>
+    <div><span lang="zh">社恐</span><b>shèkǒng</b>Socially anxious</div>
+  </div>
+  <div class="cn-lx-meme" aria-label="Meme: shekong">
+    <div><b>社恐 me, before the call</b>&quot;What if they&apos;re awkward? What if I&apos;m awkward?&quot; &#x1F630;</div>
+    <div><b>话痨 me, ten minutes in</b>Telling a stranger my whole life story. 绝绝子. &#x1F5E3;&#xFE0F;</div>
+  </div>
+</section>
 
 ${c.ad()}
 ${c.faq('常见问题 - questions people ask')}

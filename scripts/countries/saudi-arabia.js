@@ -6,14 +6,25 @@
 module.exports = {
   slug: 'saudi-arabia',
   name: 'Saudi Arabia',
+  updated: '2026-10-12',
   date: '2026-10-06',
   title: 'Talk to Strangers in Saudi Arabia - Free Arabic Voice Chat | TalkLive',
   description: 'Free voice and text chat with people in Saudi Arabia - in Arabic or English, no sign-up, no camera, with an Arabic interface. The majlis, Saudi coffee, Ramadan nights and when the Kingdom is online.',
-  keywords: 'talk to strangers saudi arabia, saudi chat, arabic voice chat, chat with saudis, random chat saudi, voice chat riyadh, شات سعودي, دردشة سعودية',
+  keywords: 'talk to strangers saudi arabia, saudi chat, arabic voice chat, chat with saudis, random chat saudi, voice chat riyadh, شات سعودي, دردشة سعودية, دردشة صوتية, شات بدون تسجيل',
   h1: 'Talk to Strangers in Saudi Arabia',
   theme: '#141a33',
   preload: ['literata-latin-700-normal', 'literata-latin-400-normal'],
-  css: `
+  css: `.sa-lx{max-width:760px;margin:44px auto 0;padding:0 20px}
+.sa-lx h2{font:700 clamp(30px,4.4vw,46px)/1.1 "Literata",serif;color:var(--night);margin:0 0 12px}
+.sa-lx p{font-size:18px;line-height:1.75;margin:0 0 1em}
+.sa-lx-cups{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0}
+.sa-lx-cups div{background:var(--night);color:var(--sand);border-radius:0 0 40px 40px;padding:16px 14px 22px;text-align:center;font-size:14.5px;line-height:1.4}
+.sa-lx-cups b{display:block;font:700 20px/1.1 "Literata",serif;color:#fff}
+.sa-lx-cups span{display:block;font-size:20px;margin:4px 0;color:var(--sand)}
+.sa-lx-meme{border:3px solid var(--sadu);background:#fff;padding:18px 20px;margin:20px 0;font-size:17px;line-height:1.5}
+.sa-lx-meme b{display:block;font:700 21px/1.2 "Literata",serif;color:var(--sadu);margin-bottom:6px}
+@media (max-width:640px){.sa-lx-cups{grid-template-columns:1fr 1fr}}
+
 :root{--paper:#f6efe2;--ink:#231a14;--rule:#dfd0b8;--night:#141a33;--coffee:#6b4226;--sadu:#a3262a;--sand:#e8c98f;--mast:#f6efe2}
 body{font-family:"Literata",Georgia,serif;background:var(--paper);color:var(--ink)}
 .c-bar{color:var(--mast);background:var(--night);max-width:none}
@@ -142,6 +153,20 @@ body{font-family:"Literata",Georgia,serif;background:var(--paper);color:var(--in
     <p style="margin-top:20px">For the wider region - weekends, Arabic and Ramadan nights from Morocco to the Gulf - read the Journal's <a href="/regions/middle-east">Middle East feature</a>, and our guides to <a href="/countries/united-arab-emirates">the UAE</a> and <a href="/countries/egypt">Egypt</a>.</p>
   </section>
 </div>
+
+<section class="sa-lx" aria-labelledby="sa-lx-h">
+  <h2 id="sa-lx-h">Speak Saudi, over gahwa</h2>
+  <p>Saudi dialects change from Najd to Hijaz to the Eastern Province, but these words travel everywhere.</p>
+  <div class="sa-lx-cups">
+    <div><span lang="ar">هلا</span><b>Hala</b>Hi, welcome</div>
+    <div><span lang="ar">أبشر</span><b>Abshir</b>Consider it done</div>
+    <div><span lang="ar">يا رجّال</span><b>Ya rajjal</b>Come on, man</div>
+    <div><span lang="ar">زين</span><b>Zain</b>Good, okay</div>
+    <div><span lang="ar">وش</span><b>Wesh</b>What? What&apos;s up?</div>
+    <div><span lang="ar">يلا</span><b>Yalla</b>Let&apos;s go</div>
+  </div>
+  <div class="sa-lx-meme" aria-label="Meme: Saudi summer"><b>Saudi summer: &quot;Only 46 today, the weather is nice&quot;</b>Then everyone stays inside with the AC and the phone until midnight. Which is exactly when TalkLive gets busy. &#x2600;&#xFE0F;&#x1F976;</div>
+</section>
 
 ${c.ad()}
 ${c.faq('Questions from the majlis')}

@@ -19,14 +19,25 @@ const MANGLISH = [
 module.exports = {
   slug: 'malaysia',
   name: 'Malaysia',
+  updated: '2026-10-12',
   date: '2026-10-07',
   title: 'Talk to Strangers in Malaysia - Free Voice Chat | TalkLive',
   description: 'Free voice and text chat with people in Malaysia - in Malay, English, Mandarin or Tamil, no sign-up, no camera. Mamak nights, Manglish and when Malaysia is online.',
-  keywords: 'talk to strangers malaysia, malaysia chat, malaysian voice chat, chat with malaysians, random chat malaysia, kuala lumpur chat, borak dengan orang asing, sembang',
+  keywords: 'talk to strangers malaysia, malaysia chat, malaysian voice chat, chat with malaysians, random chat malaysia, kuala lumpur chat, borak dengan orang asing, sembang, chat rawak, sembang dengan orang asing',
   h1: 'Talk to Strangers in Malaysia',
   theme: '#06302e',
   preload: ['big-shoulders-display-latin-600-normal', 'libre-caslon-text-latin-400-normal'],
-  css: `
+  css: `.my-lx{max-width:780px;margin:44px auto 0;padding:0 20px}
+.my-lx h2{font:800 clamp(32px,4.8vw,52px)/.95 "Big Shoulders Display",sans-serif;text-transform:uppercase;margin:0 0 12px;color:var(--night)}
+.my-lx p{font-size:18px;line-height:1.75;margin:0 0 1em}
+.my-lx-neon{background:var(--night);border-radius:10px;padding:16px;margin:18px 0;display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.my-lx-neon div{border:2px solid var(--mint);border-radius:8px;padding:10px 12px;color:#e9fff8;font-size:15px;line-height:1.4;box-shadow:0 0 12px rgba(79,227,193,.35)}
+.my-lx-neon div:nth-child(3n){border-color:var(--pink);box-shadow:0 0 12px rgba(255,79,123,.35)}
+.my-lx-neon b{display:block;font:800 24px/1 "Big Shoulders Display",sans-serif;text-transform:uppercase;color:var(--neon)}
+.my-lx-meme{background:var(--neon);color:var(--night);border-radius:10px;padding:18px 20px;margin:20px 0;font-size:17px;line-height:1.5}
+.my-lx-meme b{display:block;font:800 26px/1 "Big Shoulders Display",sans-serif;text-transform:uppercase;margin-bottom:6px}
+@media (max-width:640px){.my-lx-neon{grid-template-columns:1fr}}
+
 :root{--paper:#f8f5ee;--ink:#14201f;--rule:#ddd5c4;--night:#06302e;--neon:#ffd23f;--pink:#ff4f7b;--mint:#4fe3c1;--mast:#f8f5ee}
 body{font-family:"Libre Caslon Text",Georgia,serif;background:var(--paper);color:var(--ink)}
 .c-bar{color:var(--mast);background:var(--night);max-width:none}
@@ -116,6 +127,20 @@ ${MANGLISH.map(([w, m]) => `      <div><b>${w}</b><span>${m}</span></div>`).join
     <p style="margin-top:20px">Getting started: open TalkLive in your browser (no app, no sign-up), prefer Malaysia in Filters if you like (two preferred countries are free), and Tap to Talk or Tap to Chat. The Journal's <a href="/regions/southeast-asia">Southeast Asia feature</a> covers the neighbours, and our <a href="/late-night-chat">late-night chat guide</a> is for the hours after the mamak.</p>
   </section>
 </div>
+
+<section class="my-lx" aria-labelledby="my-lx-h">
+  <h2 id="my-lx-h">Manglish, boleh?</h2>
+  <p>Malay, English, Hokkien, Cantonese and Tamil, all mixed. That is Malaysian chatting, and it is the best.</p>
+  <div class="my-lx-neon">
+    <div><b>Jom</b>Let&apos;s go. Jom chat!</div>
+    <div><b>Syok</b>Fun, so good.</div>
+    <div><b>Alamak</b>Oh no! Oops!</div>
+    <div><b>Tapau</b>Take away. Food, obviously.</div>
+    <div><b>Kantoi</b>Caught red-handed.</div>
+    <div><b>Cun</b>Nice, pretty, perfect.</div>
+  </div>
+  <div class="my-lx-meme" aria-label="Meme: mamak at 2am"><b>Mamak, 2 a.m.</b>&quot;Boss, satu teh tarik, satu roti canai.&quot; Everyone at the table: on their phones, talking to someone else. Sounds about right lah. &#x1F95E;&#x2615;</div>
+</section>
 
 ${c.ad()}
 ${c.faq('Soalan - questions people ask')}

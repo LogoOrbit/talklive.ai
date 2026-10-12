@@ -15,14 +15,24 @@ const BOARD = [
 module.exports = {
   slug: 'united-arab-emirates',
   name: 'United Arab Emirates',
+  updated: '2026-10-12',
   date: '2026-10-06',
   title: 'Talk to Strangers in the UAE - Free Voice Chat in Dubai & Abu Dhabi | TalkLive',
   description: 'Free voice and text chat with people in the UAE - in English, Arabic, Hindi, Urdu, Tagalog or Malayalam, no sign-up, no camera. Who lives in Dubai and Abu Dhabi, and when the Emirates are online.',
-  keywords: 'talk to strangers uae, dubai chat, uae voice chat, chat with people in dubai, random chat dubai, abu dhabi chat, dubai voice chat, شات الامارات',
+  keywords: 'talk to strangers uae, dubai chat, uae voice chat, chat with people in dubai, random chat dubai, abu dhabi chat, dubai voice chat, شات الامارات, دردشة صوتية, free voice chat dubai',
   h1: 'Talk to Strangers in the UAE',
   theme: '#0b0b0c',
   preload: ['jetbrains-mono-latin-400-normal', 'ibm-plex-serif-latin-400-normal'],
-  css: `
+  css: `.ae-lx{max-width:780px;margin:44px auto 0;padding:0 20px}
+.ae-lx h2{font:400 clamp(26px,4vw,40px)/1.1 "JetBrains Mono",monospace;margin:0 0 12px;text-transform:uppercase;letter-spacing:.02em}
+.ae-lx p{font-size:18px;line-height:1.7;margin:0 0 1em}
+.ae-lx-flap{background:var(--board);border-radius:8px;padding:10px;margin:18px 0;font-family:"JetBrains Mono",monospace}
+.ae-lx-flap div{display:grid;grid-template-columns:150px 1fr;gap:12px;padding:9px 8px;border-bottom:1px solid #222;color:#e9e6dd;font-size:14px}
+.ae-lx-flap b{background:var(--flap);color:var(--amber);padding:3px 6px;border-radius:3px;font-weight:400;text-transform:uppercase;letter-spacing:.06em}
+.ae-lx-meme{border:2px dashed var(--teal);background:#fff;padding:18px 20px;margin:20px 0;font-size:17px;line-height:1.5}
+.ae-lx-meme b{display:block;font:400 18px/1.3 "JetBrains Mono",monospace;color:var(--teal);margin-bottom:6px;text-transform:uppercase}
+@media (max-width:640px){.ae-lx-flap div{grid-template-columns:1fr}}
+
 :root{--paper:#f3f1ec;--ink:#17171a;--rule:#d8d4ca;--board:#0b0b0c;--flap:#1c1c20;--amber:#ffb627;--teal:#007a78;--mast:#f3f1ec}
 body{font-family:"IBM Plex Serif",Georgia,serif;background:var(--paper);color:var(--ink)}
 .c-bar{color:var(--mast);background:var(--board);max-width:none}
@@ -153,6 +163,20 @@ body{font-family:"IBM Plex Serif",Georgia,serif;background:var(--paper);color:va
     <p style="margin-top:20px">For the wider region, read the Journal's <a href="/regions/middle-east">Middle East feature</a> and our guide to <a href="/countries/saudi-arabia">Saudi Arabia</a>; for the countries many residents call home, see <a href="/countries/india">India</a>, <a href="/countries/pakistan">Pakistan</a> and <a href="/countries/philippines">the Philippines</a>.</p>
   </section>
 </div>
+
+<section class="ae-lx" aria-labelledby="ae-lx-h">
+  <h2 id="ae-lx-h">Arrivals: UAE vocabulary</h2>
+  <p>Two hundred nationalities, one shared dictionary. Whether your match is Emirati or expat, you will hear these.</p>
+  <div class="ae-lx-flap">
+    <div><b>Yalla</b>Let&apos;s go, hurry up, come on.</div>
+    <div><b>Habibi</b>My dear. Said to friends, cousins, taxi drivers.</div>
+    <div><b>Khalas</b>Done, enough, finished.</div>
+    <div><b>Shu?</b>What? Shu fi? = what&apos;s up?</div>
+    <div><b>Mafi mushkil</b>No problem at all.</div>
+    <div><b>Inshallah</b>If God wills. Also: maybe. Also: probably not.</div>
+  </div>
+  <div class="ae-lx-meme" aria-label="Meme: Dubai summer"><b>Dubai in August: walking from the car to the mall</b>Boss level. 30 seconds outside, full sauna. So everyone stays in, orders karak and chats until 2 a.m. Very relatable, habibi. &#x1F975;&#x1F3D9;&#xFE0F;</div>
+</section>
 
 ${c.ad()}
 ${c.faq('Questions at the gate')}

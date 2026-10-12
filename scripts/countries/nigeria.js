@@ -5,14 +5,26 @@
 module.exports = {
   slug: 'nigeria',
   name: 'Nigeria',
+  updated: '2026-10-12',
   date: '2026-10-05',
   title: 'Talk to Strangers in Nigeria - Free Nigerian Voice Chat | TalkLive',
   description: 'Free voice and text chat with people in Nigeria - English, Pidgin, Yoruba, Igbo or Hausa, no sign-up, no camera, light on data. Achebe on conversation, and when Nigeria is online (WAT).',
-  keywords: 'talk to strangers nigeria, nigerian chat, nigeria voice chat, chat with nigerians, random chat nigeria, talk to someone nigeria, pidgin chat',
+  keywords: 'talk to strangers nigeria, nigerian chat, nigeria voice chat, chat with nigerians, random chat nigeria, talk to someone nigeria, pidgin chat, talk to random people, free live call chat, nigeria chat room free',
   h1: 'Talk to Strangers in Nigeria',
   theme: '#ffcc00',
   preload: ['anton-latin-400-normal', 'bricolage-grotesque-latin-400-normal'],
-  css: `
+  css: `.ng-lx{max-width:780px;margin:44px auto 0;padding:0 20px}
+.ng-lx h2{font:400 clamp(40px,6vw,66px)/.95 Anton,sans-serif;text-transform:uppercase;margin:0 0 12px}
+.ng-lx p{font-size:18px;line-height:1.7;margin:0 0 1em}
+.ng-lx-stick{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0}
+.ng-lx-stick div{background:var(--y);border:3px solid var(--ink);padding:14px;font-size:15px;line-height:1.4;box-shadow:5px 5px 0 var(--g)}
+.ng-lx-stick div:nth-child(3n+2){transform:rotate(-1.5deg)}
+.ng-lx-stick div:nth-child(3n){transform:rotate(1.5deg)}
+.ng-lx-stick b{display:block;font:400 26px/1 Anton,sans-serif;text-transform:uppercase;margin-bottom:4px}
+.ng-lx-meme{background:var(--g);color:#fff;border:3px solid var(--ink);padding:18px 20px;margin:22px 0;font-size:17px;line-height:1.5}
+.ng-lx-meme b{display:block;font:400 30px/1 Anton,sans-serif;text-transform:uppercase;margin-bottom:6px;color:var(--y)}
+@media (max-width:640px){.ng-lx-stick{grid-template-columns:1fr 1fr}}
+
 :root{--paper:#fffdf5;--ink:#111;--rule:#111;--y:#ffcc00;--g:#008751;--mast:#111}
 body{font-family:"Bricolage Grotesque",system-ui,sans-serif;background:var(--paper)}
 .c-bar{background:var(--y);max-width:none;border-bottom:4px solid var(--ink)}
@@ -149,6 +161,21 @@ body{font-family:"Bricolage Grotesque",system-ui,sans-serif;background:var(--pap
 </div>
 
 ${c.faq('Wetin people dey ask')}
+<section class="ng-lx" aria-labelledby="ng-lx-h">
+  <h2 id="ng-lx-h">How far? Naija lingo</h2>
+  <p>Pidgin, Lagos slang and fresh Gen Z words all in one sentence. If your match is Nigerian, expect these.</p>
+  <div class="ng-lx-stick">
+    <div><b>How far?</b>What&apos;s up. Answer: I dey.</div>
+    <div><b>Wahala</b>Trouble, drama. No wahala = no problem.</div>
+    <div><b>Abeg</b>Please. Also: abeg, leave it.</div>
+    <div><b>Omo</b>Wow, oh man. Works for any feeling.</div>
+    <div><b>Japa</b>To leave the country for good.</div>
+    <div><b>Sapa</b>Being broke. Sapa no get respect.</div>
+  </div>
+  <p>Gen Z bonus: someone killing it is an <em>Odogwu</em>, anything wild makes everyone shout <em>e choke</em>, and <em>gbas gbos</em> means it is getting heated.</p>
+  <div class="ng-lx-meme" aria-label="Meme: NEPA"><b>Light came back mid-call</b>The whole street: &quot;UP NEPA!&quot; &#x1F4A1; You: still talking, because your phone has been on power bank since morning.</div>
+</section>
+
 ${c.ad()}
 <section class="ng-end">
   <h2>Wole! Get in.</h2>

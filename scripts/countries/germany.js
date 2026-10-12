@@ -6,14 +6,26 @@
 module.exports = {
   slug: 'germany',
   name: 'Germany',
+  updated: '2026-10-12',
   date: '2026-10-06',
   title: 'Talk to Strangers in Germany - Free German Voice Chat | TalkLive',
   description: 'Free voice and text chat with people in Germany - in German or English, no sign-up, no camera, with a German interface. Feierabend, du or Sie, and when Germany is online in German time.',
-  keywords: 'talk to strangers germany, german chat, german voice chat, chat with germans, random chat germany, practice german speaking, mit fremden chatten, chat mit fremden',
+  keywords: 'talk to strangers germany, german chat, german voice chat, chat with germans, random chat germany, practice german speaking, mit fremden chatten, chat mit fremden, anonymer chat, kostenloser voice chat, chatten ohne anmeldung',
   h1: 'Talk to Strangers in Germany',
   theme: '#d62718',
   preload: ['syne-latin-800-normal', 'space-grotesk-latin-400-normal'],
-  css: `
+  css: `.de-lx{max-width:780px;margin:44px auto 0;padding:0 20px}
+.de-lx h2{font:800 clamp(30px,4.6vw,50px)/1 Syne,sans-serif;margin:0 0 12px;letter-spacing:-.02em}
+.de-lx p{font-size:18px;line-height:1.7;margin:0 0 1em}
+.de-lx-blocks{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:3px solid var(--ink);margin:18px 0}
+.de-lx-blocks div{padding:14px 12px;border:1.5px solid var(--ink);font-size:14.5px;line-height:1.4;background:#fff}
+.de-lx-blocks div:nth-child(4n+1){background:var(--yel)}
+.de-lx-blocks div:nth-child(4n+3){background:var(--blu);color:#fff}
+.de-lx-blocks b{display:block;font:800 20px/1.05 Syne,sans-serif;margin-bottom:4px}
+.de-lx-meme{background:var(--red);color:#fff;border:3px solid var(--ink);padding:18px 20px;margin:20px 0;font-size:17px;line-height:1.5}
+.de-lx-meme b{display:block;font:800 22px/1.15 Syne,sans-serif;margin-bottom:6px}
+@media (max-width:700px){.de-lx-blocks{grid-template-columns:1fr 1fr}}
+
 :root{--paper:#f4f0e6;--ink:#111;--rule:#111;--red:#d62718;--yel:#f2c230;--blu:#1f4fa3;--mast:#111}
 body{font-family:"Space Grotesk",system-ui,sans-serif;background:var(--paper);color:var(--ink)}
 .c-bar{border-bottom:3px solid var(--ink);max-width:none}
@@ -158,6 +170,22 @@ body{font-family:"Space Grotesk",system-ui,sans-serif;background:var(--paper);co
     </div>
   </section>
 </div>
+
+<section class="de-lx" aria-labelledby="de-lx-h">
+  <h2 id="de-lx-h">Sprich wie die Gen Z</h2>
+  <p>German youth slang loves English words and a lot of attitude. What you will hear on a call:</p>
+  <div class="de-lx-blocks">
+    <div><b>Digga</b>Bro, mate. Every sentence.</div>
+    <div><b>Krass</b>Wild, intense, amazing.</div>
+    <div><b>Lost</b>Clueless, totally confused.</div>
+    <div><b>Läuft bei dir</b>You&apos;re doing great.</div>
+    <div><b>Gönn dir</b>Treat yourself, go for it.</div>
+    <div><b>Ehrenmann</b>A real one, a legend.</div>
+    <div><b>Sheesh</b>Wow, respect.</div>
+    <div><b>Aura</b>Youth word of the year 2024. You have it or not.</div>
+  </div>
+  <div class="de-lx-meme" aria-label="Meme: Deutsche Bahn"><b>Deutsche Bahn: &quot;Your train is 5 minutes late&quot;</b>45 minutes later, still on the platform. Perfect time for a call, honestly. The DB delay is the most reliable thing in Germany. &#x1F686;&#x231B;</div>
+</section>
 
 ${c.ad()}
 ${c.faq('Fragen? Questions')}

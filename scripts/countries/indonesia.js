@@ -6,14 +6,24 @@
 module.exports = {
   slug: 'indonesia',
   name: 'Indonesia',
+  updated: '2026-10-12',
   date: '2026-10-05',
   title: 'Talk to Strangers in Indonesia - Free Indonesian Voice Chat | TalkLive',
   description: 'Free voice and text chat with people in Indonesia - Bahasa Indonesia or English, no sign-up, no app to install, no camera, with an Indonesian interface. Basa-basi, nongkrong, and when Indonesia is online (WIB).',
-  keywords: 'talk to strangers indonesia, indonesian chat, ngobrol dengan orang asing, chat indonesia, indonesian voice chat, random chat indonesia, teman ngobrol online',
+  keywords: 'talk to strangers indonesia, indonesian chat, ngobrol dengan orang asing, chat indonesia, indonesian voice chat, random chat indonesia, teman ngobrol online, ngobrol random, teman curhat online, chat anonim',
   h1: 'Talk to Strangers in Indonesia',
   theme: '#1f3a5f',
   preload: ['instrument-serif-latin-400-normal', 'nunito-latin-400-normal'],
-  css: `
+  css: `.id-lx{max-width:760px;margin:44px auto 0;padding:0 20px}
+.id-lx h2{font:400 clamp(36px,5vw,54px)/1.02 "Instrument Serif",serif;color:var(--indigo);margin:0 0 12px}
+.id-lx p{font-size:18px;line-height:1.75;margin:0 0 1em}
+.id-lx-batik{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:18px 0}
+.id-lx-batik div{background:#fff;border-radius:18px;padding:14px 16px;font-size:15.5px;line-height:1.45;border:2px solid var(--soga);background-image:radial-gradient(circle at 92% 18%,rgba(228,107,76,.18) 0 18px,transparent 19px)}
+.id-lx-batik b{display:block;font:400 26px/1 "Instrument Serif",serif;color:var(--coral)}
+.id-lx-meme{background:var(--indigo);color:#fbf6ee;border-radius:18px;padding:18px 20px;margin:20px 0;font-size:17px;line-height:1.5}
+.id-lx-meme b{display:block;font:400 26px/1.1 "Instrument Serif",serif;margin-bottom:6px}
+@media (max-width:640px){.id-lx-batik{grid-template-columns:1fr}}
+
 :root{--paper:#fbf6ee;--ink:#1d2433;--rule:#e3d6c2;--indigo:#1f3a5f;--soga:#8a5a2b;--coral:#e46b4c;--mast:#fbf6ee}
 body{font-family:"Nunito",system-ui,sans-serif;background:var(--paper)}
 .c-bar{background:var(--indigo);color:var(--mast);max-width:none}
@@ -159,6 +169,21 @@ body{font-family:"Nunito",system-ui,sans-serif;background:var(--paper)}
 </div>
 
 ${c.faq('Tanya jawab')}
+<section class="id-lx" aria-labelledby="id-lx-h">
+  <h2 id="id-lx-h">Bahasa gaul, biar nggak kaku</h2>
+  <p>Indonesian slang changes every few months on TikTok, but these are everywhere right now.</p>
+  <div class="id-lx-batik">
+    <div><b>Gabut</b>Bored, nothing to do. Perfect time for a call.</div>
+    <div><b>Mager</b>Too lazy to move. Chat from the bed then.</div>
+    <div><b>Santuy</b>Relaxed, chill. Santai, but cooler.</div>
+    <div><b>Gaskeun</b>Let&apos;s go! Gas!</div>
+    <div><b>Baper</b>Feeling it too much. Careful with sad songs.</div>
+    <div><b>Wkwkwk</b>LOL. The longer, the funnier.</div>
+  </div>
+  <p>Gen Z bonus: someone hopelessly in love is <em>bucin</em>, a nosy friend is <em>kepo</em>, and going out to relax after a hard week is <em>healing</em>.</p>
+  <div class="id-lx-meme" aria-label="Meme: gabut and mager"><b>Gabut + mager = TalkLive</b>No need to go anywhere, no need to get up, just tap and talk. Kaum rebahan approved. &#x1F6CF;&#xFE0F;&#x1F4F1;</div>
+</section>
+
 ${c.ad()}
 <section class="id-end id-batik">
   <h2>Ayo ngobrol.</h2>
