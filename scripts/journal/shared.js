@@ -271,6 +271,9 @@ const CTA_THEMES = {
   'small-talk-around-the-world': ['#2e7d32', '#fff', '#14213d', '#f4f1ea', '.pp-cover{--cta-chat:#c9a227;--cta-chat-ink:#14213d}'],
   'why-a-call-beats-texting': ['#3ee08f', '#06231a', '#ffc65c', '#0f1720'],
   'lonely-after-moving-abroad': ['#2f7d4f', '#fff', '#1e4f7a', '#fff'],
+  'why-we-dont-give-compliments': ['#2f7d4f', '#fff', '#b4475b', '#fff'],
+  'spotlight-effect-nobody-noticed': ['#4fd68b', '#0b140e', '#f3d27a', '#121014'],
+  'why-we-laugh-in-conversation': ['#1f7a45', '#fff', '#2d5bff', '#fff'],
   // Regions and the languages feature
   'africa': ['#0f7b4a', '#fff', '#c2522d', '#fff'],
   'americas': ['#2a8f5c', '#fff', '#1d2a4a', '#fff'],
