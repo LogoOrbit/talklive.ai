@@ -90,6 +90,16 @@ if (DATABASE_URL) {
     connectionTimeoutMillis: 12000,
     idleTimeoutMillis: 30000,
     keepAlive: true,
+    // Notice a dead socket in seconds, not the OS default of hours.
+    keepAliveInitialDelayMillis: 10000,
+    // A query on a connection the database dropped (it crashed or restarted
+    // mid-query) otherwise never settles: it holds a pool slot forever, and
+    // with every slot held, the reconnect loop waits forever too. On
+    // 2026-10-12 Supabase restarted mid-boot and the app sat on the volume
+    // copy with zero connection attempts until it was redeployed. Supabase
+    // cancels statements at 2 minutes, so a live query never gets this far;
+    // the client is destroyed on timeout and the next query gets a fresh one.
+    query_timeout: Number(process.env.PG_QUERY_TIMEOUT_MS) || 150000,
     // Hosted Postgres (Supabase etc.) requires TLS but presents a cert Node
     // can't always chain; local/dev databases usually have no TLS at all.
     ssl: /localhost|127\.0\.0\.1|sslmode=disable/.test(DATABASE_URL)
