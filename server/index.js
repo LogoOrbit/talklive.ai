@@ -1243,7 +1243,9 @@ app.get('/add/:code', (req, res) => {
 // other and it stays fast on weak phones.
 app.get('/chat', (req, res) => {
   res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
-  res.type('html').send(appShellHtml('chat.html', { keepAdsense: true }));
+  // No AdSense loader: this screen is a live private chat, where AdSense does
+  // not allow Google ads, and Auto ads would otherwise be free to place some.
+  res.type('html').send(appShellHtml('chat.html'));
 });
 
 // Settings is a screen inside the same single-page shell, at its own URL, so
