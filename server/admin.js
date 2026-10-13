@@ -981,7 +981,11 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
   }
 
   router.get('/api/data', (req, res) => {
-    res.json({ rows: dataRows() });
+    const subs = Object.values(store.data.subscribers || {});
+    res.json({ rows: dataRows(), subscribers: {
+      confirmed: subs.filter((x) => x.status === 'confirmed').length,
+      pending: subs.filter((x) => x.status === 'pending').length,
+    } });
   });
 
   // Everything held about one person, as a JSON file.
@@ -1708,6 +1712,12 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
     } else if (kind === 'premium') {
       csv = toCsv(['client_id', 'status', 'source', 'paying', 'permanent', 'activated', 'expires', 'revoked', 'last_event'],
         premiumRows().map((r) => [r.clientId, r.status, r.source, r.paying ? 'yes' : 'no', r.permanent ? 'yes' : 'no', isoOr(r.activatedAt), isoOr(r.expiresAt), isoOr(r.revokedAt), r.lastEvent]));
+    } else if (kind === 'subscribers') {
+      // Confirmed double opt-in sign-ups only: the list that is safe to mail.
+      csv = toCsv(['email', 'country', 'source', 'signed_up', 'confirmed'],
+        Object.values(store.data.subscribers || {}).filter((s) => s.status === 'confirmed')
+          .sort((a, b) => (b.confirmedAt || 0) - (a.confirmedAt || 0))
+          .map((s) => [s.email, s.country || '', s.source || '', isoOr(s.createdAt), isoOr(s.confirmedAt)]));
     }
     return csv;
   }
@@ -1731,6 +1741,7 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
     ['14-feedback', 'feedback', {}, 'User feedback messages.'],
     ['15-user-data', 'user-data', {}, 'One row per person: account email, Google profile, location, contact-capture consent and the contact details they shared. Contains personal data.'],
     ['16-shared-contacts', 'contacts', {}, 'One row per contact detail (email, phone, social handle) shared in chat by people who opted in. Contains personal data.'],
+    ['17-email-subscribers', 'subscribers', {}, 'Confirmed (double opt-in) "Get email updates" sign-ups from the site footer: the list that is safe to email. Contains personal data.'],
   ];
 
   router.get('/api/export/all.zip', (req, res) => {

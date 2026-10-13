@@ -221,7 +221,7 @@ ${p.article ? `<meta property="article:published_time" content="${p.date}" />
 ${preloads(p.preload)}
 <link rel="stylesheet" href="/journal.css?v=${CSS_VERSION}" />
 <style>${p.css}${ctaVars(p.slug || (p.path === '/blog/' ? 'blog' : ''))}</style>
-<script defer src="/pwa.js?v=20260908pwa"></script>
+<script defer src="/pwa.js?v=20261013sub"></script>
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978"
      crossorigin="anonymous"></script>

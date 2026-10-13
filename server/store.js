@@ -214,6 +214,12 @@ function defaults() {
     // link (checked by cleanFilm in server/index.js). Images are served by
     // Apple's CDN, never by us.
     favFilms: {},
+    // "Get email updates" sign-ups from the public site footer, double opt-in:
+    // lowercased email -> { email, status: 'pending'|'confirmed', tokenHash,
+    // createdAt, confirmedAt, source, country }. Only 'confirmed' rows are
+    // ever exported for mailing; sending and unsubscribes happen in the email
+    // service the owner sends from.
+    subscribers: {},
     settings: {
       maintenance: { on: false, message: 'TalkLive is under maintenance. We will be back shortly!' },
       // Site-wide switches on the dashboard's Settings tab. Read through
@@ -271,6 +277,7 @@ function applyParsed(parsed) {
   data.contactConsent = parsed.contactConsent || {};
   data.contactCapture = parsed.contactCapture || {};
   data.favFilms = parsed.favFilms || {};
+  data.subscribers = parsed.subscribers || {};
   for (const [id, c] of Object.entries(data.contactConsent)) {
     if (!c || c.on !== true) delete data.contactConsent[id];
   }
@@ -1547,6 +1554,52 @@ function setContactConsent(clientId, on) {
     delete data.contactCapture[clientId];
   }
   save();
+}
+
+// --- Email-update subscribers -----------------------------------------------
+
+// Pending sign-ups older than this are dropped by the next sign-up, so a
+// confirmation link stops working after a week and the list does not fill up
+// with addresses typed by someone other than their owner.
+const SUBSCRIBER_PENDING_TTL = 7 * 24 * 3600 * 1000;
+
+function prunePendingSubscribers(now) {
+  for (const [k, s] of Object.entries(data.subscribers)) {
+    if (s.status === 'pending' && now - (s.createdAt || 0) > SUBSCRIBER_PENDING_TTL) delete data.subscribers[k];
+  }
+}
+
+// Records (or refreshes) a pending sign-up. Returns 'confirmed' when the
+// address is already on the list, so no second confirmation email goes out,
+// and 'pending' otherwise.
+function addPendingSubscriber(email, tokenHash, { source = '', country = '' } = {}) {
+  const key = String(email || '').toLowerCase();
+  if (!key || RESERVED_KEYS.has(key)) return null;
+  const now = Date.now();
+  prunePendingSubscribers(now);
+  const cur = Object.prototype.hasOwnProperty.call(data.subscribers, key) ? data.subscribers[key] : null;
+  if (cur && cur.status === 'confirmed') return 'confirmed';
+  data.subscribers[key] = { email: key, status: 'pending', tokenHash, createdAt: now, source: String(source).slice(0, 200), country: String(country).slice(0, 8) };
+  save();
+  return 'pending';
+}
+
+// Confirms the sign-up whose link carried this token. Returns the email, or
+// null for an unknown or expired token.
+function confirmSubscriber(tokenHash) {
+  if (!tokenHash) return null;
+  const now = Date.now();
+  for (const s of Object.values(data.subscribers)) {
+    if (s.tokenHash !== tokenHash) continue;
+    if (s.status === 'confirmed') return s.email;
+    if (now - (s.createdAt || 0) > SUBSCRIBER_PENDING_TTL) return null;
+    s.status = 'confirmed';
+    s.confirmedAt = now;
+    delete s.tokenHash;
+    save();
+    return s.email;
+  }
+  return null;
 }
 
 // --- Favourite films --------------------------------------------------------
@@ -3162,6 +3215,8 @@ module.exports = {
   // failed and been kept on disk). Shutdown uses the same chain.
   whenPersisted: () => pgChain,
   getOrCreateSecret,
+  addPendingSubscriber,
+  confirmSubscriber,
   get data() { return data; },
   get backendStatus() { return backendStatus; },
   ready,

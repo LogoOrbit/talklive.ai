@@ -253,6 +253,92 @@
     requestAnimationFrame(function () { card.classList.add('show'); });
   }
 
+  // 5. "Get email updates" row in the page footer. Double opt-in on the server
+  //    (POST /subscribe mails a confirmation link), so nothing joins the list
+  //    until its owner clicks that link. Hidden once this browser has signed up.
+  var SUB_KEY = 'tl_subscribed_at';
+  function addSubscribeForm() {
+    var footer = document.querySelector('footer');
+    if (!footer || footer.querySelector('[data-subscribe]')) return;
+    try { if (localStorage.getItem(SUB_KEY)) return; } catch (_) { /* storage blocked */ }
+
+    var form = document.createElement('form');
+    form.setAttribute('data-subscribe', '');
+    form.setAttribute('novalidate', '');
+    form.style.cssText = 'max-width:420px;margin:14px auto 4px;padding:0 12px;font-size:14px;line-height:1.5;color:inherit;text-align:center';
+    var label = document.createElement('label');
+    label.htmlFor = 'tlSubEmail';
+    label.textContent = 'Get the occasional email from TalkLive';
+    label.style.cssText = 'display:block;font-weight:600;margin-bottom:6px';
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:6px;justify-content:center';
+    var input = document.createElement('input');
+    input.type = 'email';
+    input.id = 'tlSubEmail';
+    input.name = 'email';
+    input.required = true;
+    input.autocomplete = 'email';
+    input.placeholder = 'you@example.com';
+    input.style.cssText = 'flex:1;min-width:0;padding:9px 12px;border-radius:999px;border:1px solid rgba(127,127,127,.45);background:transparent;color:inherit;font:inherit';
+    // Honeypot: hidden from people, filled in by naive bots.
+    var hp = document.createElement('input');
+    hp.type = 'text';
+    hp.name = 'website';
+    hp.tabIndex = -1;
+    hp.autocomplete = 'off';
+    hp.setAttribute('aria-hidden', 'true');
+    hp.style.cssText = 'position:absolute;left:-9999px;width:1px;height:1px;opacity:0';
+    var btn = document.createElement('button');
+    btn.type = 'submit';
+    btn.textContent = 'Sign up';
+    btn.style.cssText = 'padding:9px 16px;border-radius:999px;border:0;background:#16a34a;color:#fff;font:inherit;font-weight:700;cursor:pointer';
+    var note = document.createElement('div');
+    note.textContent = 'No spam. Unsubscribe anytime.';
+    note.style.cssText = 'margin-top:6px;font-size:12px;opacity:.7';
+    note.setAttribute('aria-live', 'polite');
+
+    row.appendChild(input);
+    row.appendChild(btn);
+    form.appendChild(label);
+    form.appendChild(row);
+    form.appendChild(hp);
+    form.appendChild(note);
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var email = input.value.trim();
+      if (!/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(email)) {
+        note.textContent = 'Please enter a valid email address.';
+        input.focus();
+        return;
+      }
+      btn.disabled = true;
+      note.textContent = 'Sending…';
+      fetch('/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email, website: hp.value, source: location.pathname }),
+      }).then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (d) {
+          if (!r.ok) throw new Error(d.error || 'Something went wrong. Please try again.');
+        });
+      }).then(function () {
+        try { localStorage.setItem(SUB_KEY, String(Date.now())); } catch (_) { /* storage blocked */ }
+        row.remove();
+        label.textContent = 'Almost done ✉️';
+        note.textContent = 'Check your inbox and tap the link to confirm.';
+      }).catch(function (err) {
+        btn.disabled = false;
+        note.textContent = err.message || 'Something went wrong. Please try again.';
+      });
+    });
+
+    var social = footer.querySelector('[data-social]');
+    if (social) footer.insertBefore(form, social);
+    else footer.appendChild(form);
+  }
+  addSubscribeForm();
+
   // app.js calls this once the user has done something that makes push worth
   // asking about.
   window.TalkLivePWA = {

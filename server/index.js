@@ -406,6 +406,51 @@ app.post('/contact', httpRateLimit('contact', 5, 10 * 60000), express.json({ lim
   res.json({ ok: true });
 });
 
+// "Get email updates" form, injected into every page footer by pwa.js. Double
+// opt-in: the address joins the list only after its owner clicks the link we
+// mail to it, so the list never holds an address someone else typed. The
+// response is the same whether or not the address was already on the list,
+// so the form cannot be used to find out who is subscribed.
+app.post('/subscribe', httpRateLimit('subscribe', 5, 10 * 60000), express.json({ limit: '2kb' }), async (req, res) => {
+  const b = req.body || {};
+  const fetchSite = String(req.headers['sec-fetch-site'] || 'same-origin');
+  if (fetchSite !== 'same-origin' && fetchSite !== 'none') return res.status(403).json({ error: 'Cross-site request rejected.' });
+  if (b.website) return res.json({ ok: true });
+  const email = normalizeEmail(b.email);
+  if (!email) return res.status(400).json({ error: 'Please enter a valid email address.' });
+  if (!mail.configured() && process.env.NODE_ENV === 'production') {
+    return res.status(503).json({ error: 'Sign-up is not available right now. Please try again later.' });
+  }
+  const token = crypto.randomBytes(24).toString('base64url');
+  const source = String(b.source || '').replace(/[\r\n]+/g, ' ').slice(0, 200);
+  const state = store.addPendingSubscriber(email, hashToken(token), { source, country: lookupGeo(clientIp(req)).country || '' });
+  if (state !== 'pending') return res.json({ ok: true });
+  const link = `https://${CANONICAL_HOST}/subscribe/confirm?t=${token}`;
+  if (!mail.configured()) {
+    console.log(`[subscribe] confirmation link for ${email}: ${link}`);
+    return res.json({ ok: true });
+  }
+  const sent = await mail.sendMail({
+    to: email,
+    subject: 'Confirm your TalkLive email updates',
+    text: `Hi,\n\nSomeone (hopefully you) asked for occasional emails from TalkLive at this address. To confirm, open this link:\n\n${link}\n\nIf it wasn't you, just ignore this email and you won't hear from us.\n\nTalkLive · info@talklive.app`,
+    html: `<p>Hi,</p><p>Someone (hopefully you) asked for occasional emails from TalkLive at this address. To confirm, tap the link below:</p><p><a href="${escapeHtmlText(link)}">Yes, send me TalkLive updates</a></p><p>If it wasn't you, just ignore this email and you won't hear from us.</p><p style="color:#888;font-size:12px">TalkLive · info@talklive.app</p>`,
+  });
+  if (!sent) return res.status(502).json({ error: 'We could not send the confirmation email. Please try again later.' });
+  res.json({ ok: true });
+});
+
+app.get('/subscribe/confirm', httpRateLimit('subscribe-confirm', 30, 10 * 60000), (req, res) => {
+  const token = String(req.query.t || '').slice(0, 100);
+  const email = token ? store.confirmSubscriber(hashToken(token)) : null;
+  const msg = email
+    ? `<h1>You're in 🎉</h1><p>${escapeHtmlText(email)} will get the occasional email from TalkLive. Every email has an unsubscribe link.</p>`
+    : '<h1>This link has expired</h1><p>Confirmation links work for 7 days. You can sign up again from the bottom of any TalkLive page.</p>';
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('X-Robots-Tag', 'noindex');
+  res.status(email ? 200 : 410).type('html').send(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TalkLive email updates</title><style>body{font-family:system-ui,sans-serif;background:#0b0d12;color:#e6e8ee;margin:0;padding:48px 16px;text-align:center}main{max-width:480px;margin:0 auto}a{display:inline-block;margin-top:16px;padding:12px 22px;border-radius:999px;background:#16a34a;color:#fff;text-decoration:none;font-weight:700}</style></head><body><main>${msg}<a href="/">Start talking</a></main></body></html>`);
+});
+
 billing.warnIfHalfConfigured();
 
 app.post('/billing/checkout', httpRateLimit('checkout', 10, 60000), express.json({ limit: '2kb' }), async (req, res) => {
@@ -2823,9 +2868,11 @@ async function createAccount(username, password, nickname, email) {
 }
 
 // --- Recovery email --------------------------------------------------------
-// An account is username + password; the email is optional and exists for one
-// purpose only - proving you own the account when the password is gone. It is
-// never shown to other users and never used for marketing.
+// An account is username + password; the email is optional and is mainly for
+// proving you own the account when the password is gone. It is never shown to
+// other users. The owner may also send occasional emails about TalkLive to
+// account emails, each with an unsubscribe link (privacy policy, "Email
+// Updates").
 //
 // Deliberately permissive: this only has to reject text that is obviously not
 // an address. A stricter regex would bounce real addresses, and the address is

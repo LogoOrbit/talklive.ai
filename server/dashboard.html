@@ -2499,9 +2499,10 @@ async function viewData(){
     <div class="tile"><div class="k">Shared emails</div><div class="v" data-count="${nEmail}">0</div><div class="s">found in chat</div></div>
     <div class="tile"><div class="k">Shared phones</div><div class="v" data-count="${nPhone}">0</div><div class="s">found in chat</div></div>
     <div class="tile"><div class="k">Shared socials</div><div class="v" data-count="${nSocial}">0</div><div class="s">Instagram, Snapchat, Telegram…</div></div>
+    <div class="tile"><div class="k">Email subscribers</div><div class="v" data-count="${(r.subscribers||{}).confirmed||0}">0</div><div class="s">confirmed · ${num((r.subscribers||{}).pending||0)} pending · ${exportLink('subscribers','CSV')}</div></div>
   </div>
   <div class="card anim"><h2>🗂️ User data <span class="sub">${rows.length===all.length?num(all.length)+(all.length===1?' person':' people'):rows.length+' of '+all.length+' shown'}</span>
-  <span style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">${exportLink('user-data','People CSV')}${exportLink('contacts','Shared contacts CSV')}<a class="lnk" href="/owner/api/export/all.zip" download>⬇ Everything (ZIP)</a></span></h2>
+  <span style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">${exportLink('user-data','People CSV')}${exportLink('contacts','Shared contacts CSV')}${exportLink('subscribers','Email subscribers CSV')}<a class="lnk" href="/owner/api/export/all.zip" download>⬇ Everything (ZIP)</a></span></h2>
   <div class="muted" style="font-size:.8rem;margin-bottom:10px">Chat contact details are only captured from people who turned on <b>Save contact info I share</b> in Settings. Turning it off deletes what was captured for them. Every download is written to the Audit log.</div>
   <div class="tbar">
     <input id="dataQ" class="grow" placeholder="Search name, email, phone, handle, country…" value="${esc(dataQ)}">
