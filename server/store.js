@@ -905,7 +905,12 @@ function stampMeta() {
 // FULL_SAVE_EVERY_MS, and on every explicit save (admin actions, shutdown,
 // crash, reconnect), the whole document is serialized fresh and written
 // synchronously, exactly as before.
-const FULL_SAVE_EVERY_MS = 60 * 1000;
+//
+// Every 10 minutes in production, not every minute: a full save of the ~25MB
+// document took ~0.8s of CPU, and on Fly's shared CPU that overran the
+// machine's quota until it was throttled - see SAVE_DEBOUNCE_MS.
+const FULL_SAVE_EVERY_MS = Number(process.env.FULL_SAVE_EVERY_MS)
+  || (process.env.NODE_ENV === 'production' ? 10 * 60 * 1000 : 60 * 1000);
 let lastFullSaveAt = 0;
 let socialCaches = null;
 function serializeData(full) {
@@ -1099,12 +1104,24 @@ function persistNow(throttlePg) {
   else { lastPgSaveAt = Date.now(); persistPg(); }
 }
 
+// How long routine changes wait before the document is written. Every visit
+// counts as a change, so with traffic this is simply how often the store is
+// written. At 2s, with the document at ~25MB (October 2026), rebuilding and
+// serializing it cost ~0.3s of CPU every 2s - far above the ~6% of a core a
+// Fly shared-cpu-1x machine may use before it is throttled. Once throttled, a
+// save froze the server for 5-25s at a time: Fly's health check failed every
+// few minutes, pages hung and calls and chats dropped. 15s cuts that CPU by
+// ~7x. Shutdown, admin actions and the wipe guard still write immediately, so
+// only a hard crash can lose the last few seconds. Tests keep the 2s default.
+const SAVE_DEBOUNCE_MS = Number(process.env.SAVE_DEBOUNCE_MS)
+  || (process.env.NODE_ENV === 'production' ? 15000 : 2000);
+
 function save() {
   if (saveTimer) return;
   saveTimer = setTimeout(() => {
     saveTimer = null;
     persistNow(true);
-  }, 2000);
+  }, SAVE_DEBOUNCE_MS);
 }
 
 function dayKey(ts = Date.now()) {
