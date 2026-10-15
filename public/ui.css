@@ -866,6 +866,18 @@
     /* Under the sticky header, not behind it. */
     top: calc(64px + var(--tl-s4));
   }
+  /* A pinned column taller than the window used to stay pinned with its
+     bottom cut off: on a 768px screen the rail (918px) never showed Friends
+     or "Bring more people online", however far the page scrolled. Each column
+     is capped at the window and scrolls on its own when it does not fit. */
+  .tl-nav, .tl-rail {
+    align-self: start;
+    max-height: calc(100vh - 64px - 2 * var(--tl-s4));
+    max-height: calc(100dvh - 64px - 2 * var(--tl-s4));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
   .tl-frame > .stage {
     justify-content: flex-start;
     padding: 0 0 var(--tl-s5);

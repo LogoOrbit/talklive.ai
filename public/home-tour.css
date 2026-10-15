@@ -37,6 +37,11 @@
 .js-tt .tt-stage figure.is-on { opacity: 1; transform: none; }
 .tt-stage figure + figure { display: none; }
 .js-tt .tt-stage figure + figure { display: block; }
+/* Only the step on screen and the one after it are in the layout, so the
+   other screenshots are not downloaded until the tour reaches them. */
+.js-tt .tt-stage figure:not(.is-on):not(.is-next) { display: none; }
+/* Data saver or a 2G connection: the tour is text only. */
+.tt-lite .tt-stage, .tt-lite .tt-feat-img, .tt-lite .tt-story picture { display: none; }
 
 /* Features: alternating rows. */
 .tt-feats { margin-top: 110px; }

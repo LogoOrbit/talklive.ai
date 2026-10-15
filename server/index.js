@@ -1917,11 +1917,17 @@ const lastSeen = new Map();
 // Voice and text matches both land here, so it is sized for a session of
 // skipping: ten was gone after a few minutes of "next", taking with it the one
 // person worth calling back.
-const MAX_CHAT_HISTORY = 20;
+// Ten since October 2026: the client shows the last 10 calls (5 on the home
+// rail), so the rest was stored for nobody. Rows also expire after a day
+// (CHAT_HISTORY_TTL_MS).
+const MAX_CHAT_HISTORY = 10;
 const MAX_NOTIFICATIONS = 50;
 // Pending requests and queued notifications older than this are dead weight:
 // nobody acts on a month-old "wants to talk".
 const SOCIAL_INBOX_TTL_MS = 30 * 24 * 60 * 60000;
+// A friend request ("You asked" for the sender, "Waiting on you" for the
+// other person) lapses after a day. It is one request, so both sides go.
+const FRIEND_REQUEST_TTL_MS = 24 * 60 * 60000;
 
 // Serialize the live social Maps back to plain JSON and persist them, so users'
 // friends and their chat history ("memories") survive restarts. Debounced by
@@ -6771,18 +6777,19 @@ function sweepEphemeralState() {
     }
     if (!m.size) pendingCallBacks.delete(target);
   }
-  // Month-old requests and inbox rows: expire them on both indexes together.
+  // Day-old friend requests and month-old inbox rows: requests expire on both
+  // indexes together.
   let socialChanged = false;
   for (const [target, inbox] of friendRequests) {
     for (const [from, req] of inbox) {
-      if (now - (req.ts || 0) > SOCIAL_INBOX_TTL_MS) { clearRequestPair(from, target); socialChanged = true; }
+      if (now - (req.ts || 0) > FRIEND_REQUEST_TTL_MS) { clearRequestPair(from, target); socialChanged = true; }
     }
   }
   // Outbox rows with no inbox row behind them (a request held after a
   // decline) expire on their own clock.
   for (const [from, outbox] of sentRequests) {
     for (const [target, req] of outbox) {
-      if (now - (req.ts || 0) > SOCIAL_INBOX_TTL_MS) { clearRequestPair(from, target); socialChanged = true; }
+      if (now - (req.ts || 0) > FRIEND_REQUEST_TTL_MS) { clearRequestPair(from, target); socialChanged = true; }
     }
   }
   for (const [key, ts] of declinedRequests) {

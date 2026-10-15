@@ -4942,7 +4942,7 @@ function renderSentRequests() {
     return;
   }
   sentRequestsList.innerHTML = '';
-  sentRequestsData.forEach((r) => {
+  [...sentRequestsData].sort((a, b) => (b.ts || 0) - (a.ts || 0)).slice(0, SENT_REQUESTS_MAX).forEach((r) => {
     const item = document.createElement('div');
     item.className = 'tl-sent-item';
     item.dataset.profileId = r.clientId;
@@ -4991,8 +4991,9 @@ function setTabCount(el, n) {
 }
 
 function syncFriendsTabCounts() {
-  // Messages from people you've met are listed on this tab too, so they count here.
-  const unreadFromFriends = totalUnreadMessages();
+  // Only friends are listed on this tab; unread messages from people you met
+  // show on their row in Call History instead.
+  const unreadFromFriends = friendsData.reduce((n, f) => n + unreadCountFor(f.clientId), 0);
   // Two numbers side by side on one tab ("Friends 2 2") read as a typo, so
   // while there is something unread the red count stands in for the total.
   setTabCount(friendsTabCount, unreadFromFriends ? 0 : friendsData.length);
@@ -5999,6 +6000,12 @@ socket.on('friend-chat-history', ({ friendClientId, messages, gate, voice }) => 
 // This session's calls (which know how long they lasted) merged with the
 // server's memory of recent matches (which survives a reload and includes text
 // chats), one row per person, newest first.
+// Call history is the last 10 calls (the server keeps the same 10 for a day);
+// the home rail shows the newest 5 of them, and "You asked" the newest 5.
+const HISTORY_MAX = 10;
+const RAIL_HISTORY_MAX = 5;
+const SENT_REQUESTS_MAX = 5;
+
 function historyEntries() {
   const live = new Map(serverHistory.map((h) => [h.clientId, h]));
   const byId = new Map();
@@ -6016,7 +6023,7 @@ function historyEntries() {
     byId.set(h.clientId, h);
     out.push(h);
   });
-  return out.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  return out.sort((a, b) => (b.ts || 0) - (a.ts || 0)).slice(0, HISTORY_MAX);
 }
 
 // When, how long, and how often. Only this session's calls knew their length
@@ -6153,6 +6160,8 @@ function recordCallHistory() {
     ts: Date.now(),
     durationSeconds,
   });
+  // Only the last HISTORY_MAX calls are ever shown, so only those are kept.
+  if (callHistory.length > HISTORY_MAX) callHistory.splice(0, callHistory.length - HISTORY_MAX);
   renderHistory();
   if (durationSeconds >= 30) trackGrowthEvent('quality_call');
   if (!maybeShowFriendPrompt(currentPartner, durationSeconds)) maybeShowSharePrompt(durationSeconds);
@@ -9591,7 +9600,7 @@ function renderRailHistory() {
     return;
   }
   railHistoryList.innerHTML = '';
-  entries.slice(0, 4).forEach((entry) => {
+  entries.slice(0, RAIL_HISTORY_MAX).forEach((entry) => {
     const row = document.createElement('button');
     row.type = 'button';
     row.className = 'tl-rail-row history-profile-btn';
