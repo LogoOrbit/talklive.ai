@@ -2167,6 +2167,41 @@ function dropFromChatHistory(ownerClientId, otherClientId) {
   if (left.length) chatHistory.set(ownerClientId, left); else chatHistory.delete(ownerClientId);
 }
 
+// Recent people (the call and chat history) is kept for one day. It used to
+// keep the last 20 partners forever, for everyone who ever visited: 15,000
+// lists and ~10MB of the store by October 2026, rewritten on every save.
+const CHAT_HISTORY_TTL_MS = 24 * 60 * 60 * 1000;
+
+// Drop history rows older than a day, then the conversations nobody can open
+// any more: one between two people who are not friends is reached only from
+// their recent lists, so once it has left both lists it is unreachable (and
+// can never be sent to again without a new match). A pending friend request
+// between them keeps it. Returns true when anything was removed.
+function pruneChatHistory(now = Date.now()) {
+  let changed = false;
+  for (const [cid, list] of chatHistory) {
+    const fresh = list.filter((e) => now - (e.ts || 0) <= CHAT_HISTORY_TTL_MS);
+    if (fresh.length === list.length) continue;
+    changed = true;
+    if (fresh.length) chatHistory.set(cid, fresh); else chatHistory.delete(cid);
+  }
+  const inHistory = (owner, other) => (chatHistory.get(owner) || []).some((e) => e.clientId === other);
+  const requested = (to, from) => !!(friendRequests.get(to) && friendRequests.get(to).has(from));
+  for (const [key, list] of friendChats) {
+    const cut = key.indexOf('|');
+    const a = key.slice(0, cut);
+    const b = key.slice(cut + 1);
+    if (isFriend(a, b) || isFriend(b, a)) continue;
+    if (inHistory(a, b) || inHistory(b, a)) continue;
+    if (requested(a, b) || requested(b, a)) continue;
+    friendChats.delete(key);
+    const clips = list.filter((m) => m && m.voice && m.voice.id).map((m) => m.voice.id);
+    if (clips.length) store.deleteVoiceNotes(clips).catch(() => {});
+    changed = true;
+  }
+  return changed;
+}
+
 // Both sides of a fresh pairing remember each other - whether it was a random
 // match, an accepted call-back or an in-chat voice invite - so either can
 // message, call back, add or report the other afterwards.
@@ -6759,6 +6794,7 @@ function sweepEphemeralState() {
     socialChanged = true;
     if (fresh.length) notifications.set(cid, fresh); else notifications.delete(cid);
   }
+  if (pruneChatHistory(now)) socialChanged = true;
   for (const cid of lastSeen.keys()) {
     if (friends.has(cid) || chatHistory.has(cid)) continue;
     lastSeen.delete(cid);
@@ -6904,6 +6940,8 @@ store.ready.then(() => {
   // returning users can log in and see their friends/chats immediately.
   applyOwnerReset();
   hydrateFromStore();
+  // Expired history goes at once, not ten minutes after a deploy.
+  if (pruneChatHistory()) persistSocial();
   seedLoginNetworks();
   console.log(`[accounts] restored ${accounts.size} account(s) from the store`);
   warnIfStorageIsEphemeral();

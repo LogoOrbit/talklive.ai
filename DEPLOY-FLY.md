@@ -170,6 +170,18 @@ project - loses nobody's account.
 Every save is stamped with `_meta` (a lineage id, a version number and the
 writing process), so which copy is newer is decided, never guessed.
 
+**Friend chats have their own table.** In Postgres the store row holds
+everything except friend chats; each conversation is a row of `friend_chats`,
+and a save writes only the conversations that changed, in the same
+transaction as the row (`_meta.chatsTable` marks a row written this way). The
+mirror on the volume and the `owner_store_history` snapshots still hold the
+whole store, chats included. Do not roll the app back to a version from
+before 15 October 2026: it would read the row without its chats.
+
+**Recent people last 24 hours.** Call and chat history rows older than a day
+are dropped (at boot and every 10 minutes), along with conversations between
+non-friends that are no longer in either person's history.
+
 **Free Supabase projects have no backups you can restore.** So the database
 keeps its own: `owner_store_history` holds a snapshot every six hours (up to a
 week, sized to stay under 150MB) plus every conflict and pre-drop copy for 90

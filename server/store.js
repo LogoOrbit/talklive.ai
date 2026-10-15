@@ -587,6 +587,15 @@ async function ensureSchema() {
   } catch (err) {
     console.error('[store] chat_transcripts table unavailable:', err.message);
   }
+  // Friend chats, one row per conversation (see pgWriteStore). Not wrapped in
+  // a try like the two above: once a document says its chats live here, a
+  // missing table means missing chats, so failing loudly is the safe outcome.
+  if (!('friend_chats' in tables)) await pgPool.query(`CREATE TABLE IF NOT EXISTS friend_chats (
+    pair text PRIMARY KEY,
+    msgs jsonb NOT NULL,
+    updated_at timestamptz NOT NULL DEFAULT now()
+  )`);
+  await enableRls('friend_chats');
 }
 
 // Copy a document into owner_store_history. `sql` form copies the live row
@@ -596,8 +605,13 @@ async function pgHistory(kind, doc) {
     await pgPool.query('INSERT INTO owner_store_history (kind, rev, doc) VALUES ($1, $2, $3)',
       [kind, revOf(doc), JSON.stringify(doc)]);
   } else {
+    // The row no longer holds the friend chats (they have their own table), so
+    // they are folded back in: a snapshot is the whole store or it is no use.
     await pgPool.query(`INSERT INTO owner_store_history (kind, rev, doc)
-      SELECT $1, COALESCE((doc->'_meta'->>'rev')::bigint, 0), doc FROM owner_store WHERE id = 1`, [kind]);
+      SELECT $1, COALESCE((doc->'_meta'->>'rev')::bigint, 0),
+        CASE WHEN (doc->'_meta'->>'chatsTable')::boolean THEN jsonb_set(doc, '{social,friendChats}',
+          (SELECT coalesce(jsonb_object_agg(pair, msgs), '{}'::jsonb) FROM friend_chats)) ELSE doc END
+      FROM owner_store WHERE id = 1`, [kind]);
   }
 }
 
@@ -777,6 +791,8 @@ async function connectPg(atBoot) {
     const res = await pgPool.query('SELECT doc FROM owner_store WHERE id = 1');
     giveUpIfAbandoned();
     pgDoc = res.rows.length ? res.rows[0].doc : null;
+    await attachPgChats(pgDoc);
+    giveUpIfAbandoned();
     verdict = decide(pgDoc, local);
   }
   const n = (o) => Object.keys(o || {}).length;
@@ -790,7 +806,6 @@ async function connectPg(atBoot) {
   if (verdict === 'push-local') {
     if (atBoot) applyParsed(local);
     stampMeta();
-    const sent = JSON.stringify(data);
     confirmedRev = revOf(data);
     const counts = {
       accounts: n(data.accounts),
@@ -798,10 +813,9 @@ async function connectPg(atBoot) {
       chats: n((data.social || {}).friendChats),
       sessions: n(data.authSessions),
     };
-    await pgPool.query(
-      'INSERT INTO owner_store (id, doc, updated_at) VALUES (1, $1, now()) ON CONFLICT (id) DO UPDATE SET doc = $1, updated_at = now()',
-      [sent]
-    );
+    // Whatever the table holds came from some other process: replace it all.
+    pgChatsSent = null;
+    await pgWriteStore(null);
     // Read it back: this is the one moment the data exists in a place nobody
     // has checked yet. The version stamp is enough to prove the write landed.
     const back = await pgPool.query(`SELECT doc->'_meta'->>'rev' AS rev FROM owner_store WHERE id = 1`);
@@ -830,6 +844,9 @@ async function connectPg(atBoot) {
     applyParsed(pgDoc || {});
   }
 
+  // The table matches what was just loaded, but the first save cannot tell
+  // which rows those are, so it compares nothing and writes them all.
+  if (verdict !== 'push-local') pgChatsSent = null;
   pgConfirmedRev = confirmedRev || revOf(data);
   pgUnreachable = false;
   runningOnMirror = false;
@@ -1002,7 +1019,6 @@ function persistPg() {
   pgChain = pgChain.then(async () => {
     pgQueued = false;
     if (!pgLive() || pgConflict) return;
-    const payload = JSON.stringify(data);
     const rev = revOf(data);
     try {
       if (pendingShrinkSnapshot) {
@@ -1013,14 +1029,8 @@ function persistPg() {
       // newer than the version we last confirmed. Anything else means a second
       // copy of the app is writing too, and interleaving two of them would
       // silently lose whichever wrote first.
-      const r = await pgPool.query(
-        `INSERT INTO owner_store (id, doc, updated_at) VALUES (1, $1, now())
-         ON CONFLICT (id) DO UPDATE SET doc = $1, updated_at = now()
-         WHERE owner_store.doc->'_meta'->>'writer' = $3
-            OR COALESCE((owner_store.doc->'_meta'->>'rev')::bigint, 0) <= $2`,
-        [payload, pgConfirmedRev, WRITER]
-      );
-      if (r.rowCount === 0) {
+      const { rowCount, bytes } = await pgWriteStore({ confirmedRev: pgConfirmedRev });
+      if (rowCount === 0) {
         pgConflict = true;
         backendStatus.mode = 'postgres-conflict';
         backendStatus.conflict = { at: new Date().toISOString(), reason: 'another process wrote to the database' };
@@ -1035,13 +1045,111 @@ function persistPg() {
       if (Date.now() - lastPgHistoryAt >= PG_HISTORY_EVERY_MS) {
         lastPgHistoryAt = Date.now();
         await pgHistory('periodic');
-        await prunePgHistory(payload.length);
+        await prunePgHistory(bytes);
       }
     } catch (err) {
       // The mirror already has this save; the next one retries Postgres.
       console.error('[store] pg save failed (kept on disk):', err.message);
     }
   });
+}
+
+// --- Friend chats in their own table -----------------------------------------
+//
+// Friend chats were ~6.6MB of the ~25MB document (October 2026), and every
+// Postgres save sent the whole document. The database (a t4g.nano) froze for
+// half an hour under one such write on 2026-10-15. Now the row carries
+// everything except the chats, and each conversation is one row of
+// friend_chats, written only when it changed since the last save. The volume
+// mirror still holds the whole document, chats included.
+//
+// The two are written in one transaction, so the row and the table can never
+// describe different moments. `_meta.chatsTable` on the row says its chats live
+// in the table; a row without it (written before this change) still carries
+// its own chats and is read exactly as before.
+
+// pair -> JSON last confirmed in friend_chats. null: unknown, so the next write
+// sends every conversation and removes rows for any that no longer exist.
+let pgChatsSent = null;
+
+// Fill a document read from the row with the chats from the table.
+async function attachPgChats(doc) {
+  if (!doc || !doc._meta || !doc._meta.chatsTable) return;
+  const res = await pgPool.query('SELECT pair, msgs FROM friend_chats');
+  const chats = {};
+  for (const row of res.rows) chats[row.pair] = row.msgs;
+  doc.social = { ...(doc.social || {}), friendChats: chats };
+}
+
+// Write `data` to Postgres: the row (without the chats) and the conversations
+// that changed. With `guard`, the row is only replaced if it is ours (see
+// persistPg); a refused write changes nothing at all. Everything sent is
+// serialized before the first await, so it is one consistent moment of `data`.
+async function pgWriteStore(guard) {
+  const social = data.social || {};
+  const { friendChats: chats = {}, ...socialRest } = social;
+  const payload = JSON.stringify({
+    ...data,
+    social: socialRest,
+    _meta: { ...(data._meta || {}), chatsTable: true },
+  });
+  const full = !pgChatsSent;
+  const sentNow = new Map();
+  const upPairs = [];
+  const upMsgs = [];
+  let chatBytes = 0;
+  for (const pair of Object.keys(chats)) {
+    const json = JSON.stringify(chats[pair]);
+    if (json === undefined) continue;
+    sentNow.set(pair, json);
+    chatBytes += json.length;
+    if (full || pgChatsSent.get(pair) !== json) { upPairs.push(pair); upMsgs.push(json); }
+  }
+  const gone = full ? null : [...pgChatsSent.keys()].filter((p) => !sentNow.has(p));
+
+  const client = await pgPool.connect();
+  let rowCount = 0;
+  try {
+    await client.query('BEGIN');
+    const r = guard
+      ? await client.query(
+        `INSERT INTO owner_store (id, doc, updated_at) VALUES (1, $1, now())
+         ON CONFLICT (id) DO UPDATE SET doc = $1, updated_at = now()
+         WHERE owner_store.doc->'_meta'->>'writer' = $3
+            OR COALESCE((owner_store.doc->'_meta'->>'rev')::bigint, 0) <= $2`,
+        [payload, guard.confirmedRev, WRITER])
+      : await client.query(
+        'INSERT INTO owner_store (id, doc, updated_at) VALUES (1, $1, now()) ON CONFLICT (id) DO UPDATE SET doc = $1, updated_at = now()',
+        [payload]);
+    rowCount = r.rowCount;
+    if (rowCount === 0) {
+      await client.query('ROLLBACK');
+      return { rowCount, bytes: payload.length + chatBytes };
+    }
+    if (full) {
+      await client.query('DELETE FROM friend_chats WHERE NOT (pair = ANY($1::text[]))', [[...sentNow.keys()]]);
+    } else if (gone.length) {
+      await client.query('DELETE FROM friend_chats WHERE pair = ANY($1::text[])', [gone]);
+    }
+    // Batched so no single statement carries megabytes.
+    for (let i = 0; i < upPairs.length; i += 300) {
+      await client.query(
+        `INSERT INTO friend_chats (pair, msgs, updated_at)
+         SELECT p, m::jsonb, now() FROM unnest($1::text[], $2::text[]) AS t(p, m)
+         ON CONFLICT (pair) DO UPDATE SET msgs = EXCLUDED.msgs, updated_at = now()`,
+        [upPairs.slice(i, i + 300), upMsgs.slice(i, i + 300)]);
+    }
+    await client.query('COMMIT');
+    pgChatsSent = sentNow;
+  } catch (err) {
+    try { await client.query('ROLLBACK'); } catch (_) { /* connection gone */ }
+    // A failure part-way leaves the table's state unknown to us.
+    pgChatsSent = null;
+    throw err;
+  } finally {
+    client.release();
+  }
+  return { rowCount, bytes: payload.length + chatBytes };
 }
 
 // Every Postgres save rewrites the whole document (megabytes, plus WAL), so

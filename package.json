@@ -23,6 +23,7 @@
     "test:voice-gender": "node scripts/test-voice-gender.js && node scripts/test-voice-filter.js",
     "test:durability": "node scripts/test-durability.js",
     "test:fast-save": "node scripts/test-fast-save.js",
+    "test:history": "node scripts/test-history-ttl.js",
     "test:analytics": "node scripts/test-analytics-visits.js",
     "test:warnings": "node scripts/test-owner-warning.js",
     "test:contacts": "node scripts/test-contact-capture.js",

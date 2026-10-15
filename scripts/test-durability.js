@@ -234,7 +234,7 @@ if (!TEST_DB) {
 } else {
   const { execFileSync: run } = require('child_process');
   const psql = (sql) => run('psql', [TEST_DB, '-tAc', sql], { encoding: 'utf8' }).trim();
-  const reset = () => psql('DROP TABLE IF EXISTS owner_store');
+  const reset = () => psql('DROP TABLE IF EXISTS owner_store; DROP TABLE IF EXISTS friend_chats');
   const pgAccounts = () => psql("SELECT coalesce(count(*),0) FROM jsonb_object_keys((SELECT doc->'accounts' FROM owner_store WHERE id=1))");
 
   // The real situation: a populated volume and a database holding the empty
@@ -328,6 +328,46 @@ if (!TEST_DB) {
     ok('the database keeps a history snapshot of its own', histCount('periodic') >= 1, histCount('periodic'));
     ok('the history table is closed to the public API (RLS on)',
       psql("SELECT relrowsecurity FROM pg_class WHERE relname='owner_store_history'") === 't');
+
+    // Friend chats live in their own table, one row per conversation, so a
+    // save does not send megabytes of unchanged chats every time.
+    const chatRows = () => psql("SELECT coalesce(string_agg(pair || '=' || jsonb_array_length(msgs)::text, ',' ORDER BY pair), '') FROM friend_chats");
+    ok('friend chats are written to their own table', chatRows() === 'client-a|client-b=1', chatRows());
+    ok('and not into the store row', !(db.social || {}).friendChats && db._meta.chatsTable === true, Object.keys(db.social || {}));
+    ok('the disk copy still holds them', !!disk.social.friendChats['client-a|client-b']);
+    ok('the friend_chats table is closed to the public API (RLS on)',
+      psql("SELECT relrowsecurity FROM pg_class WHERE relname='friend_chats'") === 't');
+    // Only what changed is written: an unchanged conversation keeps its row.
+    psql("UPDATE friend_chats SET updated_at = '2000-01-01'");
+    inStore(dir, `
+      const s = store.data.social;
+      store.saveSocial({ ...s, friendChats: {
+        'client-a|client-b': s.friendChats['client-a|client-b'],
+        'client-c|client-d': [{ from: 'client-c', text: 'hi', ts: 2 }, { from: 'client-d', text: 'yo', ts: 3 }],
+      } });
+      store.persistNow();
+      await store.whenPersisted();
+      const s2 = store.data.social;
+      store.saveSocial({ ...s2, friendChats: { ...s2.friendChats, 'client-a|client-b': [...s2.friendChats['client-a|client-b'], { from: 'client-b', text: 'back', ts: 4 }] } });
+      store.persistNow();
+      await store.whenPersisted();
+      const s3 = store.data.social;
+      const { ['client-c|client-d']: _gone, ...rest } = s3.friendChats;
+      store.saveSocial({ ...s3, friendChats: rest });
+      store.persistNow();
+      await store.whenPersisted();
+    `, { DATABASE_URL: TEST_DB });
+    ok('a changed conversation is updated and a deleted one removed', chatRows() === 'client-a|client-b=2', chatRows());
+    // A boot that serves the database copy (no volume) gets the chats back.
+    const fresh = tmpDir();
+    const loaded = inStore(fresh, `console.log(JSON.stringify(store.data.social.friendChats));`, { DATABASE_URL: TEST_DB });
+    const chats = JSON.parse(loaded.trim().split('\n').pop());
+    ok('loading from the database brings the chats back',
+      Object.keys(chats).join() === 'client-a|client-b' && chats['client-a|client-b'][1].text === 'back', chats);
+    psql("DELETE FROM owner_store_history WHERE kind='periodic'");
+    inStore(dir, `store.saveAccount('fay', { passwordHash: 'f', salt: 'f', nickname: 'Fay', createdAt: 6 }); store.persistNow(); await store.whenPersisted();`, { DATABASE_URL: TEST_DB });
+    ok('a history snapshot still includes the chats',
+      psql("SELECT jsonb_array_length(doc->'social'->'friendChats'->'client-a|client-b') FROM owner_store_history WHERE kind='periodic' ORDER BY id DESC LIMIT 1") === '2');
 
     // An outage, then the database comes back: what was saved meanwhile goes up.
     inStore(dir, `
