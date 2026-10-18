@@ -1,0 +1,41 @@
+# Read-only traffic export (scripts/traffic-report.js), for investigating a
+# change in visits. This repository is public, so the report is never printed:
+# it is encrypted on the runner to the RSA public key passed as input, and only
+# the ciphertext reaches the log. Whoever holds the matching private key
+# decrypts it.
+name: Traffic report (encrypted)
+
+on:
+  workflow_dispatch:
+    inputs:
+      pubkey:
+        description: Base64-encoded PEM RSA public key to encrypt the report to
+        required: true
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Collect and encrypt
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          PUBKEY: ${{ inputs.pubkey }}
+        run: |
+          umask 077
+          mkdir out
+          flyctl ssh console -a talklive-ai -C "node /app/scripts/traffic-report.js" > out/report.json 2> out/ssh.err || echo "report step exited non-zero"
+          flyctl releases -a talklive-ai --json > out/releases.json 2>/dev/null || true
+          flyctl status -a talklive-ai --json > out/status.json 2>/dev/null || true
+          echo "report bytes: $(wc -c < out/report.json)"
+          tar czf bundle.tgz out
+          printf '%s' "$PUBKEY" | base64 -d > pub.pem
+          openssl rand -out key.bin 32
+          openssl enc -aes-256-cbc -pbkdf2 -salt -in bundle.tgz -out bundle.enc -pass file:key.bin
+          openssl pkeyutl -encrypt -pubin -inkey pub.pem -pkeyopt rsa_padding_mode:oaep -in key.bin -out key.enc
+          rm -rf out bundle.tgz key.bin
+          echo "KEY_BEGIN $(base64 -w0 key.enc) KEY_END"
+          echo "DATA_BEGIN"
+          base64 -w 2000 bundle.enc
+          echo "DATA_END"
