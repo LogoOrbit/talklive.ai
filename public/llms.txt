@@ -46,7 +46,7 @@ Key facts: voice-only or text-only modes; optional country and interest preferen
 - [How TalkLive Works](https://talklive.app/how-it-works): How TalkLive connects two strangers: the live queues, how matching and preferences work, how WebRTC and the TURN relay carry encrypted audio, how text is delivered, and what "not recorded" does and does not mean.
 - [Safety Center](https://talklive.app/safety): How to stay safe on TalkLive: five rules, what to do if a conversation goes wrong, what TalkLive records and does not record, how reporting and blocking work, and where to get help.
 - [Languages](https://talklive.app/language-chat-guide): Use TalkLive in 17 languages, including right-to-left Arabic, Persian and Urdu. How the interface language works, how to find people who speak your language, and tips for talking across languages.
-- [Countries](https://talklive.app/country-chat-guide): Guides to talking with people in 21 countries - India, the US, Pakistan, China, Egypt, the UK, Nigeria, Germany, Brazil, Mexico, Turkey and more - and how country matching works.
+- [Countries](https://talklive.app/country-chat-guide): Guides to talking with people in 30 countries - India, the US, Pakistan, China, Egypt, the UK, Nigeria, Germany, Brazil, Mexico, Turkey and more - and how country matching works.
 - [All Guides](https://talklive.app/resources): Every TalkLive guide in one place: talking to strangers, voice and text chat, safety and privacy, making friends, languages and country guides - and the editorial standards they are written to.
 
 ## Country guides
@@ -79,6 +79,7 @@ Key facts: voice-only or text-only modes; optional country and interest preferen
 - [Australia](https://talklive.app/countries/australia): Free random voice and text chat with people in Australia and around the world. No account, no camera, no app. Aussie slang, the best hours to call and how to keep it safe.
 - [Iraq](https://talklive.app/countries/iraq): دردشة عراقية مجانية. Free voice and text chat with people in Iraq, in Iraqi Arabic, Kurdish or English. No account, no camera. Iraqi slang, best hours and safety tips.
 - [Netherlands](https://talklive.app/countries/netherlands): Chatten met vreemden, gratis en zonder account. Free voice and text chat with people in the Netherlands, in Dutch or English. Slang, best hours and gezellige conversation starters.
+- [Japan](https://talklive.app/countries/japan): Free voice and text chat with people in Japan - in Japanese or English, no sign-up, no camera. Phrases, aizuchi, what to talk about, safety, and when Japan is online on JST.
 
 ## Languages
 The app UI and a localized homepage are available in: English plus [Español](https://talklive.app/es/), [Português](https://talklive.app/pt/), [Français](https://talklive.app/fr/), [Deutsch](https://talklive.app/de/), [Русский](https://talklive.app/ru/), [Türkçe](https://talklive.app/tr/), [العربية](https://talklive.app/ar/), [हिन्दी](https://talklive.app/hi/), [اردو](https://talklive.app/ur/), [Bahasa Indonesia](https://talklive.app/id/), [中文](https://talklive.app/zh/), [日本語](https://talklive.app/ja/), [한국어](https://talklive.app/ko/), [Italiano](https://talklive.app/it/), [فارسی](https://talklive.app/fa/), [বাংলা](https://talklive.app/bn/).

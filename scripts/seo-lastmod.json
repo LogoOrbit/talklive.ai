@@ -145,153 +145,158 @@
     "v": 3
   },
   "/countries/algeria": {
-    "hash": "db1334ce208c9743",
-    "date": "2026-10-12",
+    "hash": "c5f067d88dd64543",
+    "date": "2026-10-18",
     "v": 3
   },
   "/countries/australia": {
-    "hash": "1234468a4c7e7b07",
-    "date": "2026-10-12",
+    "hash": "c61283be85837150",
+    "date": "2026-10-18",
     "v": 3
   },
   "/countries/bangladesh": {
-    "hash": "e25fe2a73706d54f",
-    "date": "2026-10-12",
+    "hash": "ae9be09e2491cff5",
+    "date": "2026-10-18",
     "v": 3
   },
   "/countries/brazil": {
-    "hash": "25a985ed23bb3b51",
-    "date": "2026-10-12",
+    "hash": "48c28c52746c220e",
+    "date": "2026-10-18",
     "v": 3
   },
   "/countries/canada": {
-    "hash": "775d80042ceb2b2b",
-    "date": "2026-10-12",
+    "hash": "7daeba92371e92f6",
+    "date": "2026-10-18",
     "v": 3
   },
   "/countries/china": {
-    "hash": "3ab591f9aa6d2630",
-    "date": "2026-10-12",
+    "hash": "d38598023989a63f",
+    "date": "2026-10-18",
     "v": 3
   },
   "/countries/egypt": {
-    "hash": "3e1ddd6851cc70af",
-    "date": "2026-10-12",
+    "hash": "ae1052acf5859e32",
+    "date": "2026-10-18",
     "v": 3
   },
   "/countries/france": {
-    "hash": "26db216d00e94094",
-    "date": "2026-10-12",
+    "hash": "98fdc3b58aa79f89",
+    "date": "2026-10-18",
     "v": 3
   },
   "/countries/germany": {
-    "hash": "03504629f986956b",
-    "date": "2026-10-12",
+    "hash": "5baa5b58744e3da3",
+    "date": "2026-10-18",
     "v": 3
   },
   "/countries/india": {
-    "hash": "034f38d2abe3544b",
-    "date": "2026-10-12",
+    "hash": "e4fde88f0d29fd67",
+    "date": "2026-10-18",
     "v": 3
   },
   "/countries/indonesia": {
-    "hash": "4e660fa390734d63",
-    "date": "2026-10-12",
+    "hash": "1c309dc565b0da51",
+    "date": "2026-10-18",
     "v": 3
   },
   "/countries/iran": {
-    "hash": "437a0aa71224ddce",
-    "date": "2026-10-12",
+    "hash": "33b0124b01b2fb5c",
+    "date": "2026-10-18",
     "v": 3
   },
   "/countries/iraq": {
-    "hash": "359aeba2d2a8a20e",
-    "date": "2026-10-12",
+    "hash": "d587f0e6d1b6e892",
+    "date": "2026-10-18",
     "v": 3
   },
   "/countries/italy": {
-    "hash": "6f4ea8092fee7d18",
-    "date": "2026-10-12",
+    "hash": "a5f48fa8d06ccd94",
+    "date": "2026-10-18",
+    "v": 3
+  },
+  "/countries/japan": {
+    "hash": "3f5c2f316c5288a9",
+    "date": "2026-10-18",
     "v": 3
   },
   "/countries/kenya": {
-    "hash": "27261fa2876e0912",
-    "date": "2026-10-12",
+    "hash": "9d4748bacbf31fe3",
+    "date": "2026-10-18",
     "v": 3
   },
   "/countries/malaysia": {
-    "hash": "d704247fc625a2ab",
-    "date": "2026-10-12",
+    "hash": "6d0cd6179afb43f8",
+    "date": "2026-10-18",
     "v": 3
   },
   "/countries/mexico": {
-    "hash": "532ff197c5f82a48",
-    "date": "2026-10-12",
+    "hash": "f25b9633fd5fbc8a",
+    "date": "2026-10-18",
     "v": 3
   },
   "/countries/morocco": {
-    "hash": "303ac81d84d41304",
-    "date": "2026-10-12",
+    "hash": "f88a1e61a439d15c",
+    "date": "2026-10-18",
     "v": 3
   },
   "/countries/netherlands": {
-    "hash": "a3e5efd3da6c15a6",
-    "date": "2026-10-12",
+    "hash": "0c77e2000a72ed1d",
+    "date": "2026-10-18",
     "v": 3
   },
   "/countries/nigeria": {
-    "hash": "5d876ca420d8cb52",
-    "date": "2026-10-12",
+    "hash": "d2fc55a111e876a5",
+    "date": "2026-10-18",
     "v": 3
   },
   "/countries/pakistan": {
-    "hash": "9158218eabb6e5b1",
-    "date": "2026-10-12",
+    "hash": "3eba6f994d5f1956",
+    "date": "2026-10-18",
     "v": 3
   },
   "/countries/philippines": {
-    "hash": "ce9bea696e990f66",
-    "date": "2026-10-12",
+    "hash": "8c7e552817c0b719",
+    "date": "2026-10-18",
     "v": 3
   },
   "/countries/saudi-arabia": {
-    "hash": "b8c8f249d1d3fb63",
-    "date": "2026-10-12",
+    "hash": "9d084ddf06c498a6",
+    "date": "2026-10-18",
     "v": 3
   },
   "/countries/singapore": {
-    "hash": "4cceb0fee71be367",
-    "date": "2026-10-12",
+    "hash": "9be946dad45c7656",
+    "date": "2026-10-18",
     "v": 3
   },
   "/countries/south-africa": {
-    "hash": "2425a1f38562df9c",
-    "date": "2026-10-12",
+    "hash": "406b67f90a44f42f",
+    "date": "2026-10-18",
     "v": 3
   },
   "/countries/turkey": {
-    "hash": "d464d61c2178962e",
-    "date": "2026-10-12",
+    "hash": "525373d0b53ee577",
+    "date": "2026-10-18",
     "v": 3
   },
   "/countries/united-arab-emirates": {
-    "hash": "f2e62315fbefa663",
-    "date": "2026-10-12",
+    "hash": "8110c752c42d6198",
+    "date": "2026-10-18",
     "v": 3
   },
   "/countries/united-kingdom": {
-    "hash": "deb75169642843ea",
-    "date": "2026-10-12",
+    "hash": "86bf5cf011046cc6",
+    "date": "2026-10-18",
     "v": 3
   },
   "/countries/united-states": {
-    "hash": "bcc3f119c900b7ed",
-    "date": "2026-10-12",
+    "hash": "0d1894eac32edac9",
+    "date": "2026-10-18",
     "v": 3
   },
   "/country-chat-guide": {
-    "hash": "cb107e3ef002acbc",
-    "date": "2026-10-07",
+    "hash": "32974cd61d69caad",
+    "date": "2026-10-18",
     "v": 3
   },
   "/de/": {

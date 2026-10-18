@@ -313,6 +313,7 @@ const CTA_THEMES = {
   'france': ['#2f7d4f', '#fff', '#0055a4', '#fff', '.fr-slate,.fr-end-in{--cta-chat:#f6d06b;--cta-chat-ink:#1f2a24}'],
   'italy': ['#009246', '#fff', '#1d5d8f', '#fff', '.it-end-in{--cta-talk:#fff;--cta-talk-ink:#009246;--cta-chat:#1d5d8f;--cta-chat-ink:#fff}'],
   'netherlands': ['#2f7d4f', '#fff', '#1d3f8f', '#fff'],
+  'japan': ['#2fbf71', '#0b1a12', '#ffb000', '#14171f', '.jp-end{--cta-talk:#ffb000;--cta-talk-ink:#14171f;--cta-chat:#fff;--cta-chat-ink:#14171f}'],
   'australia': ['#1f8a4c', '#fff', '#0b5d8a', '#fff', '.au-end{--cta-talk:#ffd23f;--cta-talk-ink:#13202b;--cta-chat:#13202b;--cta-chat-ink:#fff}'],
   'singapore': ['#1f8a4c', '#fff', '#1c1c1c', '#fff', '.sg-sign{--cta-chat:#ffcf33;--cta-chat-ink:#1c1c1c}.sg-end{--cta-talk:#fff;--cta-talk-ink:#ef3340;--cta-chat:#1c1c1c;--cta-chat-ink:#fff}'],
   'algeria': ['#006233', '#fff', '#d21034', '#fff', '.dz-end{--cta-talk:#fff;--cta-talk-ink:#006233}'],
