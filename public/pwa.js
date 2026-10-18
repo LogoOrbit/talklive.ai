@@ -291,7 +291,7 @@
     var btn = document.createElement('button');
     btn.type = 'submit';
     btn.textContent = 'Sign up';
-    btn.style.cssText = 'padding:9px 16px;border-radius:999px;border:0;background:#16a34a;color:#fff;font:inherit;font-weight:700;cursor:pointer';
+    btn.style.cssText = 'padding:9px 16px;border-radius:999px;border:0;background:#15803d;color:#fff;font:inherit;font-weight:700;cursor:pointer';
     var note = document.createElement('div');
     note.textContent = 'No spam. Unsubscribe anytime.';
     note.style.cssText = 'margin-top:6px;font-size:12px;opacity:.7';

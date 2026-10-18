@@ -65,6 +65,7 @@ body{font-family:"Literata",Georgia,serif;background:var(--paper);color:var(--in
 `,
   faq: [
     { q: 'Is TalkLive voice chat free?', a: 'Yes. Random voice matching is free and needs no account. Wait time depends on who is in the live queue and any filters you set.' },
+    { q: 'What is random audio chat?', a: 'Another name for random voice chat: a live, audio-only call with a person matched at random. On TalkLive you tap Talk, get paired with someone from the live queue, and tap Next to meet someone else. No camera and no account are needed.' },
     { q: 'Do I need headphones?', a: 'They are recommended because they prevent echo and improve sound, but they are not required.' },
     { q: 'Is there video?', a: 'No. TalkLive is intentionally audio-only: no camera, no face, far less data.' },
     { q: 'Are my calls recorded?', a: 'TalkLive does not record or store call audio. Automated safety checks run on your own microphone during a call and keep a short record only when abuse is detected. The other participant could record on their own device, so do not share sensitive information.' },

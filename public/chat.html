@@ -37,7 +37,7 @@
 <link rel="stylesheet" href="/chat.css?v=20261007nudge" />
 <link rel="stylesheet" href="/chat-extras.css?v=20261004glow" />
 <link rel="stylesheet" href="/games.css?v=20261007menu" />
-<link rel="stylesheet" href="/ui.css?v=20261015rail" />
+<link rel="stylesheet" href="/ui.css?v=20261019seo" />
 <!-- The top bar, shared with / and /call: one button language, one radius,
      one focus ring on every screen of the product. -->
 <link rel="stylesheet" href="/nav.css?v=20261005modes" />
@@ -97,8 +97,8 @@
 <link rel="manifest" href="/site.webmanifest" />
 <!-- Mobile app only (mobile/): load the native bridge. A no-op in browsers, which never download it. -->
 <script>if(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform()){var s=document.createElement('script');s.src='/native.js?v=20261008app';s.async=false;document.head.appendChild(s);}</script>
-<script defer src="/pwa.js?v=20261013sub"></script>
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebApplication","name":"TalkLive Chat","url":"https://talklive.app/chat","applicationCategory":"CommunicationApplication","operatingSystem":"Web, Android, iOS","offers":{"@type":"Offer","price":"0","priceCurrency":"USD","availability":"https://schema.org/InStock","url":"https://talklive.app/","hasMerchantReturnPolicy":{"@type":"MerchantReturnPolicy","applicableCountry":["AE","AR","AU","BD","BR","CA","CN","CO","DE","EG","ES","FR","GB","GR","ID","IE","IL","IN","IR","IT","JP","KE","KR","MA","MX","MY","NG","NL","NO","NZ","PH","PK","PL","PT","RO","RU","SA","SE","SG","TH","TR","UA","US","VN","ZA"],"returnPolicyCategory":"https://schema.org/MerchantReturnNotPermitted","merchantReturnLink":"https://talklive.app/refund"},"shippingDetails":{"@type":"OfferShippingDetails","shippingRate":{"@type":"MonetaryAmount","value":"0","currency":"USD"},"shippingDestination":{"@type":"DefinedRegion","addressCountry":["AE","AR","AU","BD","BR","CA","CN","CO","DE","EG","ES","FR","GB","GR","ID","IE","IL","IN","IR","IT","JP","KE","KR","MA","MX","MY","NG","NL","NO","NZ","PH","PK","PL","PT","RO","RU","SA","SE","SG","TH","TR","UA","US","VN","ZA"]},"deliveryTime":{"@type":"ShippingDeliveryTime","handlingTime":{"@type":"QuantitativeValue","minValue":0,"maxValue":0,"unitCode":"DAY"},"transitTime":{"@type":"QuantitativeValue","minValue":0,"maxValue":0,"unitCode":"DAY"}}}},"isAccessibleForFree":true,"publisher":{"@type":"Organization","name":"TalkLive","url":"https://talklive.app","logo":"https://talklive.app/favicon.svg","sameAs":["https://www.instagram.com/talklive.app/","https://www.facebook.com/people/TalkLive/61591751700039/","https://x.com/talkliveapp","https://www.tiktok.com/@talkliveapp","https://www.youtube.com/@talkliveapp","https://www.pinterest.com/talklive.app/","https://www.crunchbase.com/organization/talklive"]},"description":"TalkLive text chat - one-to-one conversations with people around the world.","brand":{"@type":"Brand","name":"TalkLive"}}]</script>
+<script defer src="/pwa.js?v=20261019seo"></script>
+<script type="application/ld+json">[{"@type":"Service","@context":"https://schema.org","name":"TalkLive Chat","url":"https://talklive.app/chat","description":"TalkLive text chat - one-to-one conversations with people around the world.","brand":{"@type":"Brand","name":"TalkLive"},"offers":{"@type":"Offer","price":"0","priceCurrency":"USD","availability":"https://schema.org/InStock","url":"https://talklive.app/"},"additionalType":"https://schema.org/WebApplication","serviceType":"Random voice and text chat","category":"CommunicationApplication","provider":{"@type":"Organization","name":"TalkLive","url":"https://talklive.app","logo":"https://talklive.app/favicon.svg","sameAs":["https://www.instagram.com/talklive.app/","https://www.facebook.com/people/TalkLive/61591751700039/","https://x.com/talkliveapp","https://www.tiktok.com/@talkliveapp","https://www.youtube.com/@talkliveapp","https://www.pinterest.com/talklive.app/","https://www.crunchbase.com/organization/talklive"]},"areaServed":"Worldwide","availableChannel":{"@type":"ServiceChannel","serviceUrl":"https://talklive.app/chat"}}]</script>
 <script defer src="/ads.js?v=20260923adsense2"></script>
 </head>
 <body>
@@ -155,7 +155,7 @@
       <div class="nav-brand">
         <a class="nav-logo" id="brandHome" href="/" data-i18n-title="goHome" data-i18n-aria="goHome" aria-label="TalkLive home" title="TalkLive home">
           <span class="brand-logo" aria-hidden="true">
-            <img src="/favicon.svg?v=20260923logo" width="30" height="30" alt="" decoding="async" />
+            <img src="/favicon.svg?v=20260923logo" width="30" height="30" alt="TalkLive logo" decoding="async" />
             <!-- Network status, wired in chat.js exactly as it is in app.js. -->
             <span id="brandDot" class="brand-dot is-online" data-i18n-title="netOnline" title="You are online"></span>
           </span>
@@ -463,7 +463,7 @@
     <div class="modal-box gate-box" role="dialog" aria-modal="true" aria-labelledby="genderGateTitle">
       <div class="modal-body gate-body">
         <span class="gate-mark" aria-hidden="true">
-          <img src="/favicon.svg?v=20260923logo" width="62" height="62" alt="" decoding="async" />
+          <img src="/favicon.svg?v=20260923logo" width="62" height="62" alt="TalkLive logo" decoding="async" />
         </span>
         <h2 id="genderGateTitle" class="gate-title" data-i18n="chooseGenderTitle">Choose your gender</h2>
         <p class="gate-sub" data-i18n="chooseGenderSub">Required for matching. It keeps gender preferences accurate and helps build safer conversations.</p>
@@ -813,7 +813,7 @@
 
   <script defer src="/socket.io/socket.io.min.js"></script>
   <script defer src="/countries.js?v=20260828fix"></script>
-  <script defer src="/i18n.js?v=20261010secure"></script>
+  <script defer src="/i18n.js?v=20261019seo"></script>
   <script defer src="/chat-time.js?v=20260916navbar"></script>
   <script defer src="/animals.js?v=20261008more"></script>
   <script defer src="/characters.js?v=20261008more"></script>
@@ -822,7 +822,7 @@
   <script defer src="/chat-extras.js?v=20260924tidy"></script>
   <script defer src="/games.js?v=20261005min"></script>
   <script defer src="/icebreakers.js?v=20260923ice"></script>
-  <script defer src="/chat.js?v=20261010secure"></script>
+  <script defer src="/chat.js?v=20261019seo"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

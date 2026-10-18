@@ -45,7 +45,7 @@ body{font-family:"Manrope",system-ui,sans-serif}
 .pp-grid{max-width:1100px;margin:30px auto;padding:0 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:18px}
 .pp-stamp{--c:#14213d;background:#fffdf8;border:3px double var(--c);border-radius:14px;padding:18px 18px 16px;position:relative;font-size:15px;line-height:1.5}
 .pp-stamp:nth-child(3n+1){transform:rotate(-.6deg)}.pp-stamp:nth-child(3n+2){transform:rotate(.5deg)}
-.pp-stamp h3{font:800 20px/1.1 "Syne",sans-serif;color:var(--c);margin:0 0 4px;text-transform:uppercase;letter-spacing:.02em}
+.pp-stamp h2{font:800 20px/1.1 "Syne",sans-serif;color:var(--c);margin:0 0 4px;text-transform:uppercase;letter-spacing:.02em}
 .pp-hi{font-weight:700;margin:0 0 10px}
 .pp-stamp dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 10px}
 .pp-stamp dt{font:700 11px/1.9 "Manrope",sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--c)}
@@ -69,7 +69,7 @@ body{font-family:"Manrope",system-ui,sans-serif}
 
 <section class="pp-grid" aria-label="Twelve countries">
 ${STAMPS.map(s => `<article class="pp-stamp" style="--c:${s.col}">
-<h3>${ctx.esc(s.c)}</h3>
+<h2>${ctx.esc(s.c)}</h2>
 <p class="pp-hi">${ctx.esc(s.hi)}</p>
 <dl><dt>Try</dt><dd>${ctx.esc(s.ok)}</dd><dt>Save</dt><dd>${ctx.esc(s.no)}</dd></dl>
 <p class="pp-note">${ctx.esc(s.note)}</p>

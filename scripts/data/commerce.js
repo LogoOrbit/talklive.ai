@@ -2,6 +2,10 @@
 /*
  * The commerce half of TalkLive's structured data.
  *
+ * October 2026: the app node is now a Service (scripts/migrate-schema.js), so
+ * its free offer is a plain Offer (freeOffer below). What follows is why the
+ * merchant fields existed, and they still apply to any Product node.
+ *
  * Every page carries a `WebApplication` node whose `offers` advertises the
  * free tier at $0. Google reads any price-bearing offer as a merchant listing
  * and validates it against the Product/Offer rules, which is why Search
@@ -75,14 +79,20 @@ function merchantOfferFields() {
   };
 }
 
-// The free-tier offer as it appears on generated pages.
+// The free-tier offer as it appears on generated pages. It hangs off the
+// TalkLive Service node (see scripts/migrate-schema.js), and Google only runs
+// merchant-listing checks on Product-like nodes, so the shipping and return
+// fields above are not needed on it; they cost ~2.5KB of country codes on
+// every page that carried them. merchantOfferFields() stays for any Product
+// or rated app node that ever appears.
 function freeOffer() {
   return {
     '@type': 'Offer',
     price: '0',
     priceCurrency: 'USD',
     description: 'Core random voice and text matching',
-    ...merchantOfferFields(),
+    availability: 'https://schema.org/InStock',
+    url: `${SITE}/`,
   };
 }
 

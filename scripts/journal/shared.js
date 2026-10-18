@@ -18,6 +18,7 @@
 const fs = require('fs');
 const path = require('path');
 const SOCIAL = require('../data/social');
+const { snippet } = require('../data/serp');
 
 const SITE = 'https://talklive.app';
 const PUBLIC = path.join(__dirname, '..', '..', 'public');
@@ -156,7 +157,9 @@ function preloads(files) {
   return (files || []).map(f => `<link rel="preload" href="/fonts/mag/${f}.woff2" as="font" type="font/woff2" crossorigin />`).join('\n');
 }
 
-function head(p) {
+function head(page) {
+  // Search-result title and description; the long ones stay on the page.
+  const p = { ...page, ...snippet(page.path, page.title, page.description) };
   const canonical = `${SITE}${p.path}`;
   const ld = {
     '@context': 'https://schema.org',
@@ -227,7 +230,7 @@ ${p.article ? `<meta property="article:published_time" content="${p.date}" />
 ${preloads(p.preload)}
 <link rel="stylesheet" href="/journal.css?v=${CSS_VERSION}" />
 <style>${p.css}${ctaVars(p.slug || (p.path === '/blog/' ? 'blog' : ''))}</style>
-<script defer src="/pwa.js?v=20261013sub"></script>
+<script defer src="/pwa.js?v=20261019seo"></script>
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978"
      crossorigin="anonymous"></script>

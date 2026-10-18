@@ -67,6 +67,48 @@ being followed.
 
 ## What is on the site
 
+> **October 2026 (11):** a pass over eight third-party audits (Yoast, Rank
+> Math, SEOptimer, Sitechecker, Backlinko/Semrush, HubSpot Website Grader,
+> Semrush Site Audit, websiteseochecker) - every finding either fixed or
+> explained below.
+> - **Search snippets.** 65 titles ran past 60 characters (39 past 70, which
+>   Semrush flags) and 76 descriptions past 160. Short versions live in
+>   `scripts/data/serp.js`; the long editorial copy stays where people read it
+>   (Journal teasers, `llms.txt`). `audit-seo.js` now fails a sitemap page
+>   whose title is over 60, whose description is outside 70-160, or that
+>   duplicates another page's description.
+> - **Structured data.** The `#app` node was a `WebApplication`, which Google
+>   only accepts with `aggregateRating` or `review` - Semrush counted it as 21
+>   invalid items. It is now a `Service` with `additionalType`
+>   `https://schema.org/WebApplication` (same facts, no required rating), and
+>   without the shipping/return blocks that only merchant listings need. The
+>   sweep in `migrate-schema.js` converts any unrated app node it finds; the
+>   audit fails if one comes back.
+> - **hreflang conflicts.** `/signup`, `/login`, `/call` and `/settings` serve
+>   the homepage shell; they no longer carry its hreflang set
+>   (`appShellHtml()` in `server/index.js`), which contradicted their
+>   canonical.
+> - **Homepage.** The ~50 app-screen titles (Settings, Shop, modals) are
+>   `<div role="heading" aria-level>` (class `ui-h2`/`ui-h3`), so the page's
+>   outline starts at its `<h1>` instead of 29 `<h2>`s; screen readers get the
+>   same headings and computed styles were verified identical. The H1 is
+>   "Talk to strangers by voice or text"; `i18n.js` no longer replaces the
+>   English `<title>` with its own; the skip link is the first element; links
+>   to all 30 country guides and 6 regional features; FAQs for "Is TalkLive
+>   safe?" and "Is TalkLive the same as Talkliv?" (brand confusion in the
+>   keyword data).
+> - **Images.** Every image has alt text (localized on the 16 language
+>   homepages); the audit fails an empty one unless it is `aria-hidden`.
+> - **Thin pages.** More FAQ content on `/zh/`, `/ja/`, `/ko/`, `/contact`
+>   and `/pricing`. Word counts on Chinese and Japanese pages stay "low" in
+>   tools that count spaces - a false positive.
+> - **Redirects.** `force_https` is off in `fly.toml`; the server upgrades
+>   plain HTTP itself, so `http://www.talklive.app` reaches
+>   `https://talklive.app` in one hop instead of two.
+> - **Performance/a11y.** `content-visibility: auto` on the homepage's
+>   below-the-fold sections; the footer "Sign up" button meets 4.5:1 contrast
+>   (Lighthouse accessibility 96 -> 100).
+
 > **October 2026 (10):** a "visits down 22%" alert turned out to be the
 > 5 October change in what counts as a visit; unique visitors were flat and
 > Google clicks doubled. Two Journal articles
@@ -230,7 +272,12 @@ Breadcrumbs are emitted **twice** - as `BreadcrumbList` and as visible markup -
 because structured data describing navigation the user cannot see is the exact
 mismatch Google's guidelines warn about.
 
-### Merchant listings: why a free app carries shipping and return fields
+### Merchant listings: why a free app carried shipping and return fields
+
+> Superseded in October 2026: `#app` is now a `Service` (see "What is on the
+> site"), which Google does not treat as a merchant listing, so its offer no
+> longer carries the shipping and return fields. The history below explains
+> why they were added.
 
 The `#app` node advertises the free tier as an `Offer` at $0. Google reads any
 price-bearing offer as a **merchant listing** and validates it against the
@@ -508,9 +555,9 @@ node server/index.js            # then, against it:
 - **hreflang reciprocity** - if A lists B, B must list A.
 - **Sitemap parity** - every indexable page in exactly one sitemap, and no
   `noindex` page in any of them. `/chat` is `noindex` and correctly excluded.
-- **SERP budgets** - titles ≤ 60 chars, descriptions ≤ 158. `fitTitle` and
-  `fitDescription` in `build-seo.js` enforce this at emit time, trimming at the
-  brand suffix, then a dash clause, then a sentence, then a word.
+- **SERP budgets** - titles ≤ 60 chars, descriptions 70-160, both unique.
+  Hand-written pages set short versions in `scripts/data/serp.js`;
+  `audit-seo.js` enforces the limits on every sitemap page.
 - **Accessibility** - skip link, one `h1`, no heading-level jumps, `<main>`
   landmark, accessible names on all links and buttons, no duplicate ids.
 - **JSON-LD** - all blocks must parse. Paste a page into

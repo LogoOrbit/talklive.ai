@@ -107,6 +107,24 @@ function jsonLdBlocks(html) {
   return blocks;
 }
 
+// Search-result budgets (see scripts/data/serp.js). Google cuts titles at
+// about 600px and descriptions at about 160 characters; Semrush flags titles
+// over 70 and every other checker over 60.
+const TITLE_MAX = 60;
+const DESCRIPTION_MIN = 70;
+const DESCRIPTION_MAX = 160;
+const APP_TYPES = new Set(['SoftwareApplication', 'WebApplication', 'MobileApplication']);
+
+// An app node Google cannot validate: SoftwareApplication and its subtypes
+// need aggregateRating or review, which TalkLive does not have.
+function unratedAppNode(value) {
+  if (Array.isArray(value)) return value.some(unratedAppNode);
+  if (!value || typeof value !== 'object') return false;
+  const types = [].concat(value['@type'] || []);
+  if (types.some((t) => APP_TYPES.has(t)) && !value.aggregateRating && !value.review) return true;
+  return Object.values(value).some(unratedAppNode);
+}
+
 function containsAggregateRating(value) {
   if (!value || typeof value !== 'object') return false;
   if (Array.isArray(value)) return value.some(containsAggregateRating);
@@ -306,6 +324,7 @@ if (!fs.existsSync(SITEMAP)) {
   const seenSitemapUrls = new Set();
   const canonicalOwners = new Map();
   const titleOwners = new Map();
+  const descriptionOwners = new Map();
 
   for (const location of locations) {
     const scope = `sitemap:${location}`;
@@ -336,6 +355,7 @@ if (!fs.existsSync(SITEMAP)) {
 
     const title = titleText(html);
     if (!title) report(pageScope, 'missing non-empty <title>');
+    else if ([...title].length > TITLE_MAX) report(pageScope, `title is ${[...title].length} characters (max ${TITLE_MAX}); add a shorter one to scripts/data/serp.js`);
 
     const canonical = canonicalHref(html);
     if (!canonical) {
@@ -351,6 +371,21 @@ if (!fs.existsSync(SITEMAP)) {
 
     const description = metaContent(html, 'name', 'description');
     if (!description) report(pageScope, 'missing non-empty meta description');
+    else {
+      const length = [...description].length;
+      if (length > DESCRIPTION_MAX || length < DESCRIPTION_MIN) {
+        report(pageScope, `meta description is ${length} characters (want ${DESCRIPTION_MIN}-${DESCRIPTION_MAX}); see scripts/data/serp.js`);
+      }
+      const owner = descriptionOwners.get(description.toLowerCase());
+      if (owner) report(pageScope, `meta description duplicates ${owner}`);
+      else descriptionOwners.set(description.toLowerCase(), pageScope);
+    }
+
+    for (const tag of openingTags(markup, 'img')) {
+      const attrs = parseAttributes(tag);
+      const decorative = attrs['aria-hidden'] === 'true' || attrs.role === 'presentation';
+      if (!decorative && !String(attrs.alt || '').trim()) report(pageScope, `<img src="${attrs.src || ''}"> needs alt text (or aria-hidden="true" if decorative)`);
+    }
 
     const robots = metaContent(html, 'name', 'robots').toLowerCase();
     if (robots.split(/[\s,]+/).includes('noindex')) report(pageScope, 'sitemap page is marked noindex');
@@ -383,6 +418,9 @@ if (!fs.existsSync(SITEMAP)) {
       } catch (error) {
         report(pageScope, `JSON-LD block ${i + 1} is invalid: ${error.message}`);
         continue;
+      }
+      if (unratedAppNode(data)) {
+        report(pageScope, `JSON-LD block ${i + 1} has a SoftwareApplication/WebApplication node without aggregateRating or review (invalid for Google); use a Service`);
       }
       if (containsAggregateRating(data)) {
         report(pageScope, `JSON-LD block ${i + 1} contains forbidden AggregateRating markup`);

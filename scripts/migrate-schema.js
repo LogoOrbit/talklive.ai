@@ -1,6 +1,7 @@
 'use strict';
 /*
- * Completes the merchant-listing fields on every JSON-LD Offer in public/.
+ * Completes the merchant-listing fields on every JSON-LD Offer of a Product
+ * (or rated app) node in public/, and keeps them off Service offers.
  *
  * scripts/build-seo.js emits the corrected shape itself, so for the pages it
  * still owns this script is a no-op. It exists because three page sets are no
@@ -27,6 +28,14 @@
  *
  * What gets added, and why those values are honest rather than invented, is
  * documented in scripts/data/commerce.js.
+ *
+ * It also re-types the TalkLive app node. Google (and Semrush, which counts
+ * these as "structured data items are invalid") only accepts a
+ * SoftwareApplication / WebApplication node that carries `aggregateRating` or
+ * `review`, and TalkLive has no rating data to put there (see SEO.md). So an
+ * app node without either becomes a `Service`, keeping the app type as
+ * `additionalType`: the same facts, in a type with no required rating. A node
+ * that does have real ratings is left alone.
  */
 
 const fs = require('fs');
@@ -60,6 +69,32 @@ function completeOffer(offer) {
 
 // Anything carrying `offers` is what Google reads as the merchant listing, so
 // that is where `brand` has to sit - wherever in the graph it turns up.
+const APP_TYPES = ['SoftwareApplication', 'WebApplication', 'MobileApplication'];
+const ORGANIZATION = { '@id': 'https://talklive.app/#organization' };
+// Kept as they are; every other app-only property is dropped or remapped.
+const SERVICE_KEEPS = ['@context', '@id', 'name', 'alternateName', 'url', 'description', 'brand', 'offers', 'audience', 'logo', 'image', 'sameAs', 'termsOfService'];
+
+function appAsService(node) {
+  const types = [].concat(node['@type'] || []);
+  const appType = types.find((t) => APP_TYPES.includes(t));
+  if (!appType || node.aggregateRating || node.review) return false;
+  const service = { '@type': 'Service' };
+  for (const key of SERVICE_KEEPS) if (node[key] !== undefined) service[key] = node[key];
+  service.additionalType = `https://schema.org/${appType}`;
+  service.serviceType = 'Random voice and text chat';
+  if (node.applicationCategory) service.category = node.applicationCategory;
+  service.provider = node.provider || node.publisher || ORGANIZATION;
+  service.areaServed = 'Worldwide';
+  service.availableChannel = {
+    '@type': 'ServiceChannel',
+    serviceUrl: node.url || 'https://talklive.app/',
+    ...(node.inLanguage ? { availableLanguage: node.inLanguage } : {}),
+  };
+  for (const key of Object.keys(node)) delete node[key];
+  Object.assign(node, service);
+  return true;
+}
+
 function walk(node) {
   let changed = false;
   if (Array.isArray(node)) {
@@ -67,6 +102,7 @@ function walk(node) {
     return changed;
   }
   if (!node || typeof node !== 'object') return false;
+  changed = appAsService(node) || changed;
 
   if (node.offers) {
     if (node.brand === undefined) {
@@ -74,7 +110,19 @@ function walk(node) {
       changed = true;
     }
     const offers = Array.isArray(node.offers) ? node.offers : [node.offers];
-    for (const offer of offers) changed = completeOffer(offer) || changed;
+    const types = [].concat(node['@type'] || []);
+    if (types.includes('Product') || types.some((t) => APP_TYPES.includes(t))) {
+      // A merchant listing: Google wants shipping and returns on its offers.
+      for (const offer of offers) changed = completeOffer(offer) || changed;
+    } else {
+      // A Service is not a merchant listing; the shipping and return blocks
+      // were only there for the app node it replaced.
+      for (const offer of offers) {
+        for (const key of ['hasMerchantReturnPolicy', 'shippingDetails']) {
+          if (offer && offer[key] !== undefined) { delete offer[key]; changed = true; }
+        }
+      }
+    }
   }
 
   for (const value of Object.values(node)) {
@@ -112,4 +160,4 @@ for (const file of htmlFiles(PUBLIC)) {
   }
 }
 
-console.log(`Completed merchant listing fields in ${updated} HTML files.`);
+console.log(`Structured data: completed offers / re-typed app nodes in ${updated} HTML files.`);

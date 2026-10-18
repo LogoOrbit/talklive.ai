@@ -211,6 +211,15 @@ app.use((req, res, next) => {
   // as the canonical domain, so they are duplicate content if crawled. Keep
   // them reachable for previews and health checks, but keep them out of the
   // index.
+  // Any other plain-HTTP request that came through Fly's proxy (a preview
+  // hostname): upgrade it in place. fly.toml leaves force_https off so that
+  // the redirects above can take http://www.talklive.app straight to
+  // https://talklive.app in one hop; with Fly upgrading first it took two
+  // (http://www -> https://www -> https://apex), which PageSpeed reports as
+  // "Avoid multiple page redirects". /healthz is answered before this runs.
+  if (req.headers['x-forwarded-proto'] === 'http') {
+    return res.redirect(301, 'https://' + host + req.originalUrl);
+  }
   if (!isCanonicalHost && !(wantsWww && host.slice(4) === CANONICAL_HOST)) {
     res.setHeader('X-Robots-Tag', 'noindex, nofollow');
   }
@@ -944,6 +953,7 @@ function sendPage(res, file) {
 // in the head, Auto ads would place ads on them. The homepage keeps it - it is
 // served by the static middleware, not here.
 const ADSENSE_LOADER_TAG = /<script\b[^>]*pagead2\.googlesyndication\.com[^>]*>\s*<\/script>\s*/gi;
+const HREFLANG_LINK_TAG = /<link\b[^>]*\bhreflang=[^>]*>\s*/gi;
 const appShellCache = new Map();
 function appShellHtml(file, { keepAdsense = false } = {}) {
   const full = path.join(PUBLIC_DIR, file);
@@ -952,7 +962,14 @@ function appShellHtml(file, { keepAdsense = false } = {}) {
   const cached = appShellCache.get(cacheKey);
   if (cached && cached.mtime === mtime) return withSiteStrips(cached.html);
   let html = fs.readFileSync(full, 'utf8');
-  if (!keepAdsense) html = html.replace(ADSENSE_LOADER_TAG, '');
+  if (!keepAdsense) {
+    html = html.replace(ADSENSE_LOADER_TAG, '');
+    // The homepage's hreflang set says "this URL is the English homepage".
+    // On /signup or /login that contradicts the canonical (which points at
+    // /), and Semrush reports it as an hreflang conflict. Screens are not
+    // part of the language cluster, so they carry none.
+    html = html.replace(HREFLANG_LINK_TAG, '');
+  }
   appShellCache.set(cacheKey, { mtime, html });
   return withSiteStrips(html);
 }

@@ -15,13 +15,14 @@ for (const file of fs.readdirSync(DIR)) {
   if (m) SIZES[file.slice(0, -4)] = [Math.round(+m[1]), Math.round(+m[2])];
 }
 
-// <img> for one illustration. Decorative by default (alt=""): the art sits
-// next to a heading that already says what the section is about.
+// <img> for one illustration. Pass a short description in the page's
+// language as `alt`; scripts/audit-seo.js fails a page with an empty one.
 function artImg(name, { cls = 'art', alt = '', eager = false } = {}) {
   if (!SIZES[name]) throw new Error(`Unknown illustration: ${name}`);
+  const escAlt = String(alt).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
   const [w, h] = SIZES[name];
   const load = eager ? '' : ' loading="lazy"';
-  return `<img class="${cls}" src="/illustrations/${name}.svg" width="${w}" height="${h}" alt="${alt}"${load} decoding="async" />`;
+  return `<img class="${cls}" src="/illustrations/${name}.svg" width="${w}" height="${h}" alt="${escAlt}"${load} decoding="async" />`;
 }
 
 module.exports = { artImg };

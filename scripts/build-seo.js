@@ -113,6 +113,28 @@ function languageSwitcher(current) {
   return `<nav class="lang-switcher" aria-label="Languages" style="padding:28px 0;text-align:center;font-size:14px;line-height:2">${links}</nav>`;
 }
 
+// Alt text for the three illustrations on each localized homepage, in that
+// page's language. Every SEO checker flags empty alt, and the art does say
+// something: people connected by calls, a question answered, two friends.
+const ART_ALT = {
+  es: ["Personas de todo el mundo conectadas por llamadas de voz", "Una persona recibe la respuesta a su pregunta", "Dos amigos caminando y charlando juntos"],
+  pt: ["Pessoas do mundo todo conectadas por chamadas de voz", "Uma pessoa recebendo a resposta para sua pergunta", "Dois amigos caminhando e conversando juntos"],
+  fr: ["Des personnes du monde entier reliées par des appels vocaux", "Une personne qui obtient la réponse à sa question", "Deux amis qui marchent en discutant"],
+  de: ["Menschen auf der ganzen Welt, verbunden durch Sprachanrufe", "Eine Person bekommt eine Antwort auf ihre Frage", "Zwei Freunde gehen spazieren und unterhalten sich"],
+  ru: ["Люди со всего мира, связанные голосовыми звонками", "Человек получает ответ на свой вопрос", "Двое друзей гуляют и разговаривают"],
+  tr: ["Sesli aramalarla birbirine bağlanan dünyanın dört bir yanındaki insanlar", "Sorusuna yanıt alan bir kişi", "Birlikte yürüyüp sohbet eden iki arkadaş"],
+  ar: ["أشخاص من حول العالم متصلون عبر مكالمات صوتية", "شخص يحصل على إجابة لسؤاله", "صديقان يمشيان ويتحدثان معًا"],
+  hi: ["आवाज़ कॉल से जुड़े दुनिया भर के लोग", "अपने सवाल का जवाब पाता एक व्यक्ति", "साथ टहलते और बातें करते दो दोस्त"],
+  ur: ["وائس کالز کے ذریعے جڑے دنیا بھر کے لوگ", "اپنے سوال کا جواب پاتا ایک شخص", "ساتھ چلتے اور باتیں کرتے دو دوست"],
+  id: ["Orang-orang di seluruh dunia terhubung lewat panggilan suara", "Seseorang mendapat jawaban atas pertanyaannya", "Dua teman berjalan sambil mengobrol"],
+  zh: ["通过语音通话连接起来的世界各地的人", "一个人得到了问题的答案", "两个朋友边走边聊"],
+  ja: ["音声通話でつながる世界中の人々", "質問の答えを見つけた人", "並んで歩きながら話す二人の友人"],
+  ko: ["음성 통화로 연결된 전 세계 사람들", "질문에 대한 답을 얻은 사람", "함께 걸으며 이야기하는 두 친구"],
+  it: ["Persone di tutto il mondo collegate da chiamate vocali", "Una persona riceve la risposta alla sua domanda", "Due amici che camminano e chiacchierano insieme"],
+  fa: ["مردمی از سراسر جهان که با تماس صوتی به هم وصل شده‌اند", "کسی که پاسخ پرسشش را می‌گیرد", "دو دوست که با هم قدم می‌زنند و حرف می‌زنند"],
+  bn: ["ভয়েস কলে যুক্ত সারা বিশ্বের মানুষ", "প্রশ্নের উত্তর পাচ্ছেন এমন একজন", "একসাথে হাঁটতে হাঁটতে গল্প করা দুই বন্ধু"],
+};
+
 function localeHome(loc) {
   const canonical = `${SITE}/${loc.code}/`;
   const appVoice = appHref('/', 'seo');
@@ -126,7 +148,9 @@ function localeHome(loc) {
     '@graph': [
       { '@type': 'Organization', '@id': ORGANIZATION_ID, name: 'TalkLive', alternateName: ['Talk Live', 'TalkLive App'], url: `${SITE}/`, logo: { '@type': 'ImageObject', url: LOGO_IMAGE, width: 192, height: 192 }, sameAs: SOCIAL.SAME_AS },
       { '@type': 'WebSite', '@id': WEBSITE_ID, name: 'TalkLive', alternateName: ['Talk Live', 'TalkLive App'], url: `${SITE}/`, inLanguage: LANGS, publisher: { '@id': ORGANIZATION_ID } },
-      { '@type': 'WebApplication', '@id': APP_ID, name: 'TalkLive', url: `${SITE}/`, applicationCategory: 'CommunicationApplication', operatingSystem: 'Any device with a modern web browser', isAccessibleForFree: true, brand: BRAND, offers: freeOffer(), audience: { '@type': 'PeopleAudience', suggestedMinAge: 18 }, publisher: { '@id': ORGANIZATION_ID } },
+      // A Service, not a WebApplication: Google requires aggregateRating or
+      // review on app nodes and TalkLive has no ratings (scripts/migrate-schema.js).
+      { '@type': 'Service', '@id': APP_ID, name: 'TalkLive', url: `${SITE}/`, brand: BRAND, offers: freeOffer(), audience: { '@type': 'PeopleAudience', suggestedMinAge: 18 }, additionalType: 'https://schema.org/WebApplication', serviceType: 'Random voice and text chat', category: 'CommunicationApplication', provider: { '@id': ORGANIZATION_ID }, areaServed: 'Worldwide', availableChannel: { '@type': 'ServiceChannel', serviceUrl: `${SITE}/`, availableLanguage: LANGS } },
       {
         '@type': 'WebPage',
         '@id': `${canonical}#webpage`,
@@ -180,7 +204,7 @@ ${alternates}
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="/favicon-192.png" />
 <link rel="manifest" href="/site.webmanifest" />
-<script defer src="/pwa.js?v=20261013sub"></script>
+<script defer src="/pwa.js?v=20261019seo"></script>
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
 </head>
 <body>
@@ -210,7 +234,7 @@ ${alternates}
       </div>
       <p class="hero-meta">${loc.heroMeta}</p>
       </div>
-      <div class="hero-art">${artImg('connected-world', { eager: true })}</div>
+      <div class="hero-art">${artImg('connected-world', { eager: true, alt: ART_ALT[loc.code][0] })}</div>
     </div>
   </section>
   <section id="features">
@@ -228,13 +252,13 @@ ${alternates}
   <section class="faq">
     <div class="wrap">
       <h2>${loc.faqH}</h2>
-      <div class="faq-layout"><div>${faqHtml}</div>${artImg('question-answered', { cls: 'art art-faq' })}</div>
+      <div class="faq-layout"><div>${faqHtml}</div>${artImg('question-answered', { cls: 'art art-faq', alt: ART_ALT[loc.code][1] })}</div>
     </div>
   </section>
   ${loc.read ? `<section class="read-more"><div class="wrap center"><h2>${loc.read.h}</h2><p>${loc.read.p}</p><p><a href="${loc.read.href}">${loc.read.label}</a></p></div></section>
   ` : ''}<div class="wrap">
     <div class="cta-band">
-      ${artImg('walking-together', { cls: 'art art-cta' })}
+      ${artImg('walking-together', { cls: 'art art-cta', alt: ART_ALT[loc.code][2] })}
       <h2>${loc.ctaH}</h2>
       <p>${loc.ctaP}</p>
       <div class="cta-row">

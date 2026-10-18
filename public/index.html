@@ -54,13 +54,13 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
      system face a beat later. Only the latin subset is preloaded - latin-ext
      is fetched on demand by the unicode-range in style.css. -->
 <link rel="preload" as="font" type="font/woff2" href="/fonts/plus-jakarta-sans-latin.woff2?v=20260922type" crossorigin />
-<link rel="stylesheet" href="style.css?v=20261006fix" />
+<link rel="stylesheet" href="style.css?v=20261019seo" />
 <link rel="stylesheet" href="chat-extras.css?v=20261004glow" />
 <link rel="stylesheet" href="games.css?v=20261006fix" />
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
      side-panel shell, Settings, Friends/History and the account dialog, and it
      does so with its own `tl-` class names so nothing above can reach it. -->
-<link rel="stylesheet" href="ui.css?v=20261015rail" />
+<link rel="stylesheet" href="ui.css?v=20261019seo" />
 <link rel="stylesheet" href="auth.css?v=20260924auth" />
 <!-- The top bar, shared with /chat. Loaded after everything else because it
      owns the header outright: one button language, one radius, one focus ring
@@ -75,7 +75,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 
 <meta name="impact-site-verification" content="c12db422-3008-4ecd-a5c6-679fa382c00e" />
 <title>TalkLive - Talk to Strangers: Free Random Voice & Text Chat</title>
-<meta name="description" content="Talk to strangers by voice or text, free. TalkLive pairs you with another adult for a one-to-one call or chat - no camera, no sign-up, with block and report on every screen." />
+<meta name="description" content="Talk to strangers free by voice or text. TalkLive pairs you with another adult for a one-to-one call or chat: no camera, no sign-up, block and report anytime." />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
 <meta name="author" content="TalkLive" />
 <meta name="application-name" content="TalkLive" />
@@ -149,7 +149,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 <link rel="manifest" href="/site.webmanifest" />
 <!-- Mobile app only (mobile/): load the native bridge. A no-op in browsers, which never download it. -->
 <script>if(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform()){var s=document.createElement('script');s.src='/native.js?v=20261008app';s.async=false;document.head.appendChild(s);}</script>
-<script defer src="/pwa.js?v=20261013sub"></script>
+<script defer src="/pwa.js?v=20261019seo"></script>
 <link rel="preconnect" href="https://flagcdn.com" crossorigin />
 <link rel="dns-prefetch" href="https://flagcdn.com" />
 
@@ -179,49 +179,23 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
       "inLanguage": ["en","es","pt","fr","de","it","ru","tr","ar","fa","hi","ur","bn","id","zh","ja","ko"]
     },
     {
-      "@type": "WebApplication",
+      "@type": "Service",
       "@id": "https://talklive.app/#app",
+      "additionalType": "https://schema.org/WebApplication",
       "name": "TalkLive",
       "url": "https://talklive.app/",
-      "applicationCategory": "CommunicationApplication",
-      "operatingSystem": "Any device with a modern web browser",
-      "browserRequirements": "Requires a modern browser; microphone only needed for voice calls",
+      "serviceType": "Random voice and text chat",
+      "category": "CommunicationApplication",
+      "areaServed": "Worldwide",
+      "availableChannel": { "@type": "ServiceChannel", "serviceUrl": "https://talklive.app/", "availableLanguage": ["en","es","pt","fr","de","it","ru","tr","ar","fa","hi","ur","bn","id","zh","ja","ko"] },
       "brand": { "@type": "Brand", "name": "TalkLive" },
       "offers": {
         "@type": "Offer", "price": "0", "priceCurrency": "USD", "description": "Core random voice and text matching",
-        "availability": "https://schema.org/InStock", "url": "https://talklive.app/",
-        "hasMerchantReturnPolicy": {
-          "@type": "MerchantReturnPolicy",
-          "applicableCountry": ["AE","AR","AU","BD","BR","CA","CN","CO","DE","EG","ES","FR","GB","GR","ID","IE","IL","IN","IR","IT","JP","KE","KR","MA","MX","MY","NG","NL","NO","NZ","PH","PK","PL","PT","RO","RU","SA","SE","SG","TH","TR","UA","US","VN","ZA"],
-          "returnPolicyCategory": "https://schema.org/MerchantReturnNotPermitted",
-          "merchantReturnLink": "https://talklive.app/refund"
-        },
-        "shippingDetails": {
-          "@type": "OfferShippingDetails",
-          "shippingRate": { "@type": "MonetaryAmount", "value": "0", "currency": "USD" },
-          "shippingDestination": { "@type": "DefinedRegion", "addressCountry": ["AE","AR","AU","BD","BR","CA","CN","CO","DE","EG","ES","FR","GB","GR","ID","IE","IL","IN","IR","IT","JP","KE","KR","MA","MX","MY","NG","NL","NO","NZ","PH","PK","PL","PT","RO","RU","SA","SE","SG","TH","TR","UA","US","VN","ZA"] },
-          "deliveryTime": {
-            "@type": "ShippingDeliveryTime",
-            "handlingTime": { "@type": "QuantitativeValue", "minValue": 0, "maxValue": 0, "unitCode": "DAY" },
-            "transitTime": { "@type": "QuantitativeValue", "minValue": 0, "maxValue": 0, "unitCode": "DAY" }
-          }
-        }
+        "availability": "https://schema.org/InStock", "url": "https://talklive.app/"
       },
-      "isAccessibleForFree": true,
-      "inLanguage": ["en","es","pt","fr","de","it","ru","tr","ar","fa","hi","ur","bn","id","zh","ja","ko"],
       "audience": { "@type": "PeopleAudience", "suggestedMinAge": 18 },
-      "description": "Random voice and text matching for adults, with free core access and no required account.",
-      "featureList": [
-        "Tap to Talk - one-tap voice calls, no camera",
-        "Tap to Chat - random text chat, no microphone needed",
-        "One-tap random matchmaking",
-        "Next to start a new search",
-        "Optional country, interest and account-tier filters",
-        "Add friends and call back",
-        "Responsive browser interface",
-        "17-language interface with RTL support"
-      ],
-      "publisher": { "@id": "https://talklive.app/#organization" }
+      "description": "Random voice and text matching for adults in a web browser, with free core access and no required account: one-tap voice calls with no camera, text chat with no microphone, optional filters, friends and a 17-language interface.",
+      "provider": { "@id": "https://talklive.app/#organization" }
     },
     {
       "@type": "WebPage",
@@ -246,6 +220,8 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
         { "@type": "Question", "name": "Does TalkLive use video?", "acceptedAnswer": { "@type": "Answer", "text": "No. TalkLive is voice and text only, which keeps it private, low-bandwidth, and pressure-free. You connect through conversation, not appearance." } },
         { "@type": "Question", "name": "Can I choose who I talk to?", "acceptedAnswer": { "@type": "Answer", "text": "Optional preferences can guide matching, but they do not verify or guarantee a person's gender, country, identity, language or availability." } },
         { "@type": "Question", "name": "What languages does TalkLive support?", "acceptedAnswer": { "@type": "Answer", "text": "TalkLive is available in 17 languages: English, Spanish, Portuguese, French, German, Russian, Turkish, Arabic, Persian, Hindi, Bengali, Urdu, Indonesian, Italian, Japanese, Korean and Chinese. Right-to-left languages (Arabic, Persian and Urdu) are fully supported." } },
+        { "@type": "Question", "name": "Is TalkLive safe?", "acceptedAnswer": { "@type": "Answer", "text": "TalkLive is for adults 18+. You can leave any conversation in one tap, and block or report the other person from every screen; reports are reviewed and lead to bans. No service that pairs strangers can guarantee safety, so never share personal details, money or codes." } },
+        { "@type": "Question", "name": "Is TalkLive the same as Talkliv?", "acceptedAnswer": { "@type": "Answer", "text": "No. TalkLive is the free voice and text chat at talklive.app. It is not connected to other apps or sites with similar names." } },
         { "@type": "Question", "name": "Is TalkLive a dating app?", "acceptedAnswer": { "@type": "Answer", "text": "No. TalkLive is a random social conversation service for adults, not a dating or matchmaking service." } },
         { "@type": "Question", "name": "Do I need a TalkLive login?", "acceptedAnswer": { "@type": "Answer", "text": "No login is required for a basic random match. Sign-in is optional for account features such as keeping friends between visits." } }
       ]
@@ -259,6 +235,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
      crossorigin="anonymous"></script>
 </head>
 <body>
+<a href="#main" class="skip-link" data-i18n="skipToContent">Skip to main content</a>
 <!-- Log in / Sign up, as pages of their own at /login and /signup. Full
      screen over the app rather than a dialog on top of it, with the brand
      beside the form on a wide screen. A direct load of either URL shows it
@@ -267,7 +244,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 <section id="authPage" class="tl-authpage hidden" aria-labelledby="authTitle">
   <aside class="tl-authpage-aside" aria-hidden="true">
     <div class="tl-authpage-aside-in">
-      <span class="tl-authpage-logo"><img src="/favicon.svg?v=20260923logo" width="44" height="44" alt="" decoding="async" /></span>
+      <span class="tl-authpage-logo"><img src="/favicon.svg?v=20260923logo" width="44" height="44" alt="TalkLive logo" decoding="async" /></span>
       <p class="tl-authpage-pitch" data-i18n="authAsideTitle">Talk to the world. Keep the people you meet.</p>
       <ul class="tl-authpage-perks">
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span data-i18n="authPerkFriends">Your friends and chats, saved</span></li>
@@ -281,7 +258,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
     <header class="tl-authpage-top">
       <a href="/" id="authHomeLink" class="tl-authpage-brand" data-i18n-aria="authBackHome" aria-label="Back to TalkLive">
         <svg class="tl-authpage-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
-        <img src="/favicon.svg?v=20260923logo" width="28" height="28" alt="" decoding="async" />
+        <img src="/favicon.svg?v=20260923logo" width="28" height="28" alt="TalkLive logo" aria-hidden="true" decoding="async" />
         <span>Talk<span class="brand-name-live">Live</span></span>
       </a>
       <button type="button" id="closeAccountBtn" class="tl-panel-close" data-i18n-aria="close" aria-label="Close">&times;</button>
@@ -289,7 +266,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 
     <div class="tl-authpage-body">
       <div id="accountLoggedOut" class="tl-auth-card">
-        <h2 id="authTitle" class="tl-authpage-title" data-i18n="authLoginTitle">Welcome back</h2>
+        <div role="heading" aria-level="2" id="authTitle" class="ui-h2 tl-authpage-title" data-i18n="authLoginTitle">Welcome back</div>
         <p id="authSub" class="tl-authpage-sub" data-i18n="authLoginSub">Log in to pick up your friends, chats and name on any device.</p>
 
         <p id="accountStatus" class="account-status hidden" role="alert"></p>
@@ -407,7 +384,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
       <!-- Signed in: a clear moment of success before the home screen. -->
       <div id="authDone" class="tl-authpage-done hidden" role="status" aria-live="polite">
         <span class="tl-authpage-check" aria-hidden="true"><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24" fill="none"/><path fill="none" d="M15 27l7 7 15-15"/></svg></span>
-        <h2 id="authDoneTitle" class="tl-authpage-title"></h2>
+        <div role="heading" aria-level="2" id="authDoneTitle" class="ui-h2 tl-authpage-title"></div>
         <p class="tl-authpage-sub" data-i18n="authTakingHome">Taking you home…</p>
       </div>
     </div>
@@ -416,7 +393,6 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   </div>
 </section>
 
-  <a href="#main" class="skip-link" data-i18n="skipToContent">Skip to main content</a>
   <div class="app">
     <!-- Owner announcement: text typed on the dashboard (Settings → Site modes),
          shown as written. Same strip, accent colour. -->
@@ -471,7 +447,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
       <div class="nav-brand">
         <button type="button" id="brandHome" class="nav-logo" data-i18n-title="goHome" data-i18n-aria="goHome" aria-label="TalkLive home" title="TalkLive home">
           <span class="brand-logo" aria-hidden="true">
-            <img src="/favicon.svg?v=20260923logo" width="30" height="30" alt="" decoding="async" />
+            <img src="/favicon.svg?v=20260923logo" width="30" height="30" alt="TalkLive logo" decoding="async" />
             <span id="brandDot" class="brand-dot is-online" data-i18n-title="netOnline" title="You are online"></span>
           </span>
           <span class="brand-name">Talk<span class="brand-name-live">Live</span></span>
@@ -579,7 +555,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
     <div id="settingsPanelOverlay" class="side-panel-overlay hidden"></div>
     <aside id="settingsPanel" class="side-panel side-panel-right tl-panel settings-quick" role="dialog" data-i18n-aria="settings" aria-label="Settings">
       <div class="tl-panel-head">
-        <h2 data-i18n="settings">Settings</h2>
+        <div role="heading" aria-level="2" class="ui-h2" data-i18n="settings">Settings</div>
         <button type="button" id="settingsPanelClose" class="tl-panel-close" data-i18n-aria="close" aria-label="Close">&times;</button>
       </div>
       <div class="side-panel-body">
@@ -590,7 +566,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
     <div id="friendsOverlay" class="side-panel-overlay hidden"></div>
     <aside id="friendsDropdown" class="side-panel side-panel-right tl-panel friends-dropdown" role="dialog" data-i18n-aria="friends" aria-label="Friends">
       <div class="tl-panel-head">
-        <h2 data-i18n="friends">Friends</h2>
+        <div role="heading" aria-level="2" class="ui-h2" data-i18n="friends">Friends</div>
         <button type="button" id="closeFriendsBtn" class="tl-panel-close" data-i18n-aria="close" aria-label="Close">&times;</button>
       </div>
       <div class="side-panel-body">
@@ -671,7 +647,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
     <div id="historyOverlay" class="side-panel-overlay hidden"></div>
     <aside id="historyPanel" class="side-panel side-panel-right tl-panel" role="dialog" aria-labelledby="historyPanelTitle">
       <div class="tl-panel-head">
-        <h2 id="historyPanelTitle" data-i18n="callHistory">Call History</h2>
+        <div role="heading" aria-level="2" class="ui-h2" id="historyPanelTitle" data-i18n="callHistory">Call History</div>
         <button type="button" id="closeHistoryBtn" class="tl-panel-close" data-i18n-aria="close" aria-label="Close">&times;</button>
       </div>
       <div class="side-panel-body">
@@ -688,7 +664,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
          friend entry, call history or a chat header. -->
     <div id="friendProfileOverlay" class="side-panel-overlay profile-dialog-overlay hidden"></div>
     <div id="friendProfileModal" class="profile-dialog" role="dialog" aria-modal="true" aria-labelledby="friendProfileName">
-      <h2 id="friendProfileTitle" class="sr-only" data-i18n="profile">Profile</h2>
+      <div role="heading" aria-level="2" id="friendProfileTitle" class="ui-h2 sr-only" data-i18n="profile">Profile</div>
       <button type="button" id="closeFriendProfileBtn" class="profile-dialog-close" data-i18n-aria="close" aria-label="Close">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
       </button>
@@ -764,7 +740,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
         <!-- Tapping who you are talking to opens their profile, as in any
              messenger: that is where add, block and report live. -->
         <div class="chat-head-who" id="friendChatWho" role="button" tabindex="0" data-i18n-title="openProfile" title="Open profile">
-          <h2 id="friendChatTitle" data-i18n="chat">Chat</h2>
+          <div role="heading" aria-level="2" class="ui-h2" id="friendChatTitle" data-i18n="chat">Chat</div>
           <span id="friendChatStatus" class="chat-head-status" aria-live="polite"></span>
         </div>
         <div class="chat-header-actions">
@@ -827,7 +803,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
          =================================================================== -->
     <aside id="filtersPanel" class="side-panel side-panel-right tl-panel" role="dialog" data-i18n-aria="filters" aria-label="Filters">
       <div class="tl-panel-head">
-        <h2 data-i18n="filters">Filters</h2>
+        <div role="heading" aria-level="2" class="ui-h2" data-i18n="filters">Filters</div>
         <button type="button" id="closeFiltersBtn" class="tl-panel-close" data-i18n-aria="close" aria-label="Close">&times;</button>
       </div>
       <div class="side-panel-body">
@@ -857,10 +833,10 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 
           <!-- 1. Who -->
           <section class="tl-filter-block">
-            <h3 class="tl-filter-legend" id="prefGenderGroupLabel">
+            <div role="heading" aria-level="3" class="ui-h3 tl-filter-legend" id="prefGenderGroupLabel">
               <span data-i18n="matchMeWith">Match me with</span>
               <a href="/pricing" class="tl-filter-premium premium-lock hidden" data-i18n="premiumBadge">💎 Premium</a>
-            </h3>
+            </div>
             <div class="tl-seg pill-group" id="prefGenderGroup" data-value="any" role="group" aria-labelledby="prefGenderGroupLabel">
               <button type="button" class="tl-seg-opt pill" data-value="any"><span class="pill-dot pill-dot-neutral" aria-hidden="true"></span><span data-i18n="anyone">Anyone</span></button>
               <button type="button" class="tl-seg-opt pill" data-value="male"><span class="pill-dot pill-dot-male" aria-hidden="true"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="14" r="6"/><line x1="14.5" y1="9.5" x2="20" y2="4"/><polyline points="14.5 4 20 4 20 9.5"/></svg><span data-i18n="male">Male</span></button>
@@ -881,13 +857,13 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 
           <!-- 2. Where - only. Green, a tick, and its own count. -->
           <section class="tl-filter-block tl-filter-country tl-filter-only">
-            <h3 class="tl-filter-legend">
+            <div role="heading" aria-level="3" class="ui-h3 tl-filter-legend">
               <span class="tl-filter-mark" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
               </span>
               <span data-i18n="onlyFromTitle">Only from these countries</span>
               <span class="tl-filter-count" id="includeCountryCount"></span>
-            </h3>
+            </div>
             <p class="tl-filter-hint" data-i18n="onlyFromHint">Leave this empty to be matched with the whole world.</p>
             <div class="country-multiselect">
               <div class="country-search-wrap">
@@ -901,13 +877,13 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 
           <!-- 3. Where - never. Red, a cross, and its own count. -->
           <section class="tl-filter-block tl-filter-country tl-filter-never">
-            <h3 class="tl-filter-legend">
+            <div role="heading" aria-level="3" class="ui-h3 tl-filter-legend">
               <span class="tl-filter-mark" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10M17 7 7 17"/></svg>
               </span>
               <span data-i18n="neverFromTitle">Never from these countries</span>
               <span class="tl-filter-count" id="excludeCountryCount"></span>
-            </h3>
+            </div>
             <p class="tl-filter-hint" data-i18n="neverFromHint">Anyone here is skipped, even if the list above allows them.</p>
             <div class="country-multiselect">
               <div class="country-search-wrap">
@@ -920,10 +896,10 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 
           <!-- 4. What about -->
           <section class="tl-filter-block">
-            <h3 class="tl-filter-legend">
+            <div role="heading" aria-level="3" class="ui-h3 tl-filter-legend">
               <span data-i18n="interests">Interests</span>
               <span class="tl-filter-optional" data-i18n="optional">(optional)</span>
-            </h3>
+            </div>
             <p class="tl-filter-hint" data-i18n="interestsHint">We try to pair you with someone who typed something similar. It never blocks a match.</p>
             <div class="interests-picker">
               <div class="interest-input-wrap">
@@ -973,7 +949,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
     <aside id="navDrawer" class="tl-drawer hidden" role="dialog" data-i18n-aria="more" aria-label="More">
       <header class="tl-drawer-head">
         <span class="tl-drawer-brand">
-          <img src="/favicon.svg?v=20260923logo" width="26" height="26" alt="" decoding="async" />
+          <img src="/favicon.svg?v=20260923logo" width="26" height="26" alt="TalkLive logo" aria-hidden="true" decoding="async" />
           <span>Talk<span class="brand-name-live">Live</span></span>
         </span>
         <button type="button" id="closeNavDrawerBtn" class="tl-panel-close" data-i18n-aria="close" aria-label="Close">&times;</button>
@@ -1148,7 +1124,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
             <path class="tl-hero-near" d="M0 214 96 160 190 206 300 146 404 200 512 152 628 210 740 158 852 204 960 162 1072 208 1200 168V260H0z"/>
           </svg>
         </div>
-        <h1 class="setup-title" data-i18n="heroTitle">Meet someone new by voice or text</h1>
+        <h1 class="setup-title" data-i18n="heroTitle">Talk to strangers by voice or text</h1>
         <p class="tl-hero-sub" data-i18n="heroSub">Real people. Genuine conversations. No sign-up required.</p>
         <div id="tapToTalk" class="tap-to-talk">
           <!-- Two cards, not two circles.
@@ -1201,7 +1177,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
                call. The icons are vectors from /animals.js (an SVG sprite),
                not emoji, so they look the same on every device. -->
           <section class="animal-picker" aria-labelledby="animalPickerTitle">
-            <h2 class="animal-picker-title" id="animalPickerTitle" data-i18n="pickAnimal">Pick your spirit animal</h2>
+            <div role="heading" aria-level="2" class="ui-h2 animal-picker-title" id="animalPickerTitle" data-i18n="pickAnimal">Pick your spirit animal</div>
             <p class="animal-picker-hint" data-i18n="pickAnimalHint">Whoever you connect with sees it - an easy way to start talking.</p>
             <div class="animal-grid" id="animalGrid" role="radiogroup" data-i18n-aria="pickAnimal" aria-label="Pick your spirit animal"></div>
             <p class="animal-chosen" id="animalChosen" aria-live="polite"></p>
@@ -1238,7 +1214,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>
           </button>
           <!-- h2: the hero headline is this document's one H1. -->
-          <h2 id="settingsPageTitle" data-i18n="settings">Settings</h2>
+          <div role="heading" aria-level="2" class="ui-h2" id="settingsPageTitle" data-i18n="settings">Settings</div>
         </header>
 
         <div class="tl-set-layout">
@@ -1289,7 +1265,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
           <div class="tl-set-content" id="settingsContent">
         <div id="settingsPane-profile" class="tl-set-pane" data-settings-pane="profile" role="tabpanel">
           <section>
-            <h3 class="tl-set-legend" data-i18n="catProfile">Profile</h3>
+            <div role="heading" aria-level="3" class="ui-h3 tl-set-legend" data-i18n="catProfile">Profile</div>
             <div class="tl-set-group">
               <div class="tl-set-control tl-set-control-stack">
                 <label class="tl-set-label" for="tempUsernameInput" data-i18n="tempUsername">Display name</label>
@@ -1335,7 +1311,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
           </section>
 
           <section class="tl-set-account">
-            <h3 class="tl-set-legend" data-i18n="myAccount">My Account</h3>
+            <div role="heading" aria-level="3" class="ui-h3 tl-set-legend" data-i18n="myAccount">My Account</div>
             <div class="tl-set-foot" id="sidePanelAuth">
               <span class="tl-set-ico i-cloud" aria-hidden="true"></span>
               <p class="tl-field-note tl-set-foot-note" data-i18n="accountGuestHint">Sign in to keep your name, avatar and friends on any device.</p>
@@ -1383,7 +1359,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
         </div>
         <div id="settingsPane-app" class="tl-set-pane hidden" data-settings-pane="app" role="tabpanel">
           <section>
-            <h3 class="tl-set-legend" data-i18n-set="setAppearance">Appearance</h3>
+            <div role="heading" aria-level="3" class="ui-h3 tl-set-legend" data-i18n-set="setAppearance">Appearance</div>
             <div class="tl-set-group">
               <div class="tl-set-control tl-set-control-stack">
                 <span class="tl-set-label" id="themeGroupLabel" data-i18n="theme">Theme</span>
@@ -1404,7 +1380,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
             </div>
           </section>
           <section>
-            <h3 class="tl-set-legend" data-i18n-set="setAlerts">Alerts</h3>
+            <div role="heading" aria-level="3" class="ui-h3 tl-set-legend" data-i18n-set="setAlerts">Alerts</div>
             <div class="tl-set-group">
               <label class="tl-set-control tl-set-toggle" for="soundToggle">
                 <span class="tl-set-ico i-sound" aria-hidden="true"></span>
@@ -1421,7 +1397,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
         </div>
         <div id="settingsPane-privacy" class="tl-set-pane hidden" data-settings-pane="privacy" role="tabpanel">
           <section>
-            <h3 class="tl-set-legend" data-i18n="catPrivacy">Privacy &amp; Safety</h3>
+            <div role="heading" aria-level="3" class="ui-h3 tl-set-legend" data-i18n="catPrivacy">Privacy &amp; Safety</div>
             <div class="tl-set-group">
               <label id="voiceCheckRow" class="tl-set-control tl-set-toggle" for="voiceCheckToggle" hidden>
                 <span class="tl-set-ico i-dot" aria-hidden="true"></span>
@@ -1451,7 +1427,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
             </div>
           </section>
           <section>
-            <h3 class="tl-set-legend" data-i18n="blockedPeople">Blocked people</h3>
+            <div role="heading" aria-level="3" class="ui-h3 tl-set-legend" data-i18n="blockedPeople">Blocked people</div>
             <p class="tl-hint" data-i18n="blockedPeopleHint">They can't message you, call you or be matched with you.</p>
             <div id="blockedList" class="tl-set-group blocked-list">
               <p class="tl-empty" data-i18n="noBlockedPeople">You haven't blocked anyone.</p>
@@ -1460,7 +1436,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
         </div>
         <div id="settingsPane-billing" class="tl-set-pane hidden" data-settings-pane="billing" role="tabpanel">
           <section>
-            <h3 class="tl-set-legend" data-i18n="catBilling">Coins &amp; Billing</h3>
+            <div role="heading" aria-level="3" class="ui-h3 tl-set-legend" data-i18n="catBilling">Coins &amp; Billing</div>
             <div class="tl-set-group">
               <button type="button" id="settingsShopRow" class="tl-set-row">
                 <span class="tl-set-ico i-bag" aria-hidden="true"></span>
@@ -1478,7 +1454,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
         </div>
         <div id="settingsPane-about" class="tl-set-pane hidden" data-settings-pane="about" role="tabpanel">
           <section>
-            <h3 class="tl-set-legend" data-i18n="catAbout">Help &amp; About</h3>
+            <div role="heading" aria-level="3" class="ui-h3 tl-set-legend" data-i18n="catAbout">Help &amp; About</div>
             <div class="tl-set-group tl-set-links">
               <button type="button" id="feedbackBtn" class="i-chat" data-i18n="feedback">Feedback for Improvement</button>
               <button type="button" id="settingsTermsBtn" class="i-rules" data-i18n="termsLink">Terms &amp; Community Guidelines</button>
@@ -1488,7 +1464,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
             </div>
           </section>
           <section>
-            <h3 class="tl-set-legend" data-i18n-set="setLegal">Legal</h3>
+            <div role="heading" aria-level="3" class="ui-h3 tl-set-legend" data-i18n-set="setLegal">Legal</div>
             <div class="tl-set-group tl-set-links">
               <a href="/terms" class="i-doc" data-i18n="termsPageLink">Terms &amp; Conditions</a>
               <a href="/privacy" class="i-lock" data-i18n="privacyPolicy">Privacy Policy</a>
@@ -1510,7 +1486,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
       <div id="shopModal" class="modal-overlay hidden">
         <div class="modal-box shop-box" role="dialog" aria-modal="true" aria-labelledby="shopModalTitle">
           <div class="modal-header">
-            <h2 id="shopModalTitle" data-i18n="shopTitle">Shop</h2>
+            <div role="heading" aria-level="2" class="ui-h2" id="shopModalTitle" data-i18n="shopTitle">Shop</div>
             <div class="shop-header-right">
               <span class="shop-balance" id="shopBalance" aria-live="polite">
                 <span class="shop-coin" aria-hidden="true"></span><span id="shopBalanceNum">0</span>
@@ -1526,20 +1502,20 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
                  is read, and every buy button is disabled. -->
             <p class="shop-note" data-i18n="shopFreeNote">Everything on TalkLive is free. Coins and Boosts are not on sale.</p>
             <section class="pass-panel" aria-labelledby="passTitle">
-              <h3 id="passTitle" data-i18n="passTitle">Choose your pass</h3>
+              <div role="heading" aria-level="3" class="ui-h3" id="passTitle" data-i18n="passTitle">Choose your pass</div>
               <div id="passTiers" class="pass-tiers" role="radiogroup" aria-labelledby="passTitle"></div>
               <button type="button" id="passBuyBtn" class="pass-buy" disabled></button>
               <p class="pass-foot" data-i18n="passFoot">One-time payment. No subscription.</p>
             </section>
             <section class="pass-panel" aria-labelledby="passIncTitle">
-              <h3 id="passIncTitle" data-i18n="passIncluded">Included with every pass</h3>
+              <div role="heading" aria-level="3" class="ui-h3" id="passIncTitle" data-i18n="passIncluded">Included with every pass</div>
               <ul class="pass-perks">
                 <li><strong data-i18n="passPerkGender">Gender filter</strong><span data-i18n="passPerkGenderSub">Choose who you want to match with.</span></li>
                 <li><strong data-i18n="passPerkPriority">Queue priority</strong><span data-i18n="passPerkPrioritySub">A queue boost when traffic is active.</span></li>
                 <li><strong data-i18n="passPerkWindow">Full access</strong><span data-i18n="passPerkWindowSub">Every perk stays on until your pass ends.</span></li>
               </ul>
             </section>
-            <h3 class="shop-section-title" data-i18n="shopCoinsTitle">Coins</h3>
+            <div role="heading" aria-level="3" class="ui-h3 shop-section-title" data-i18n="shopCoinsTitle">Coins</div>
             <div id="shopGrid" class="shop-grid"></div>
             <div class="tl-soon-cta">
               <button type="button" class="tl-notify-btn" data-notify="shop">
@@ -1563,7 +1539,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
       <div id="billingModal" class="modal-overlay hidden">
         <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="billingModalTitle">
           <div class="modal-header">
-            <h2 id="billingModalTitle" data-i18n="billingTitle">Billing</h2>
+            <div role="heading" aria-level="2" class="ui-h2" id="billingModalTitle" data-i18n="billingTitle">Billing</div>
             <button type="button" id="closeBillingBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
           </div>
           <div class="modal-body">
@@ -1603,7 +1579,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
       <div id="confirmModal" class="modal-overlay hidden">
         <div class="modal-box modal-box-narrow" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
           <div class="modal-header">
-            <h2 id="confirmModalTitle"></h2>
+            <div role="heading" aria-level="2" class="ui-h2" id="confirmModalTitle"></div>
           </div>
           <div class="modal-body">
             <p id="confirmModalText" class="consent-modal-text"></p>
@@ -1621,7 +1597,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
       <div id="renameFriendModal" class="modal-overlay hidden">
         <div class="modal-box modal-box-narrow" role="dialog" aria-modal="true" aria-labelledby="renameFriendTitle">
           <div class="modal-header">
-            <h2 id="renameFriendTitle" data-i18n="renameFriendTitle">Rename friend</h2>
+            <div role="heading" aria-level="2" class="ui-h2" id="renameFriendTitle" data-i18n="renameFriendTitle">Rename friend</div>
             <button type="button" id="renameFriendCloseBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
           </div>
           <div class="modal-body">
@@ -1639,7 +1615,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
       <div id="feedbackModal" class="modal-overlay hidden">
         <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="feedbackModalTitle">
           <div class="modal-header">
-            <h2 id="feedbackModalTitle" data-i18n="feedbackTitle">Feedback for Improvement</h2>
+            <div role="heading" aria-level="2" class="ui-h2" id="feedbackModalTitle" data-i18n="feedbackTitle">Feedback for Improvement</div>
             <button type="button" id="closeFeedbackBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
           </div>
           <div class="modal-body">
@@ -1654,7 +1630,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
       <div id="reportModal" class="modal-overlay hidden">
         <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="reportModalTitle">
           <div class="modal-header">
-            <h2 id="reportModalTitle" data-i18n="reportTitle">Report this person</h2>
+            <div role="heading" aria-level="2" class="ui-h2" id="reportModalTitle" data-i18n="reportTitle">Report this person</div>
             <button type="button" id="closeReportBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
           </div>
           <div class="modal-body">
@@ -1688,7 +1664,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
       <div id="animalGateModal" class="modal-overlay hidden">
         <div class="modal-box modal-box-wide" role="dialog" aria-modal="true" aria-labelledby="animalGateTitle">
           <div class="modal-header">
-            <h2 id="animalGateTitle" data-i18n="pickAnimal">Pick your spirit animal</h2>
+            <div role="heading" aria-level="2" class="ui-h2" id="animalGateTitle" data-i18n="pickAnimal">Pick your spirit animal</div>
             <button type="button" id="closeAnimalGateBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
           </div>
           <div class="modal-body">
@@ -1709,7 +1685,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
       <div id="ageConsentModal" class="modal-overlay hidden">
         <div class="modal-box modal-box-wide" role="dialog" aria-modal="true" aria-labelledby="ageConsentTitle">
           <div class="modal-header">
-            <h2 id="ageConsentTitle" data-i18n="beforeYouStart">Before You Start</h2>
+            <div role="heading" aria-level="2" class="ui-h2" id="ageConsentTitle" data-i18n="beforeYouStart">Before You Start</div>
             <!-- The one modal in the app with no way out: no close control, not
                  in the Escape handler, not dismissable on the backdrop. Tapping
                  the green button by accident dropped you into a wall of legal
@@ -1745,7 +1721,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
       <div id="termsModal" class="modal-overlay hidden">
         <div class="modal-box modal-box-wide" role="dialog" aria-modal="true" aria-labelledby="termsModalTitle">
           <div class="modal-header">
-            <h2 id="termsModalTitle" data-i18n="termsLink">Terms &amp; Community Guidelines</h2>
+            <div role="heading" aria-level="2" class="ui-h2" id="termsModalTitle" data-i18n="termsLink">Terms &amp; Community Guidelines</div>
             <button type="button" id="closeTermsBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
           </div>
           <div class="modal-body policy-body">
@@ -1761,10 +1737,10 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
             <p class="account-hint" data-i18n="termsEnglishNote">The full rules below are provided in English.</p>
             <p class="account-hint">This is a summary. The complete documents are the <a href="/terms" target="_blank" rel="noopener">Terms &amp; Conditions</a>, the <a href="/community-guidelines" target="_blank" rel="noopener">Community Guidelines</a>, the <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a> and the <a href="/safety" target="_blank" rel="noopener">Safety Center</a>.</p>
 
-            <h3>How TalkLive Works</h3>
+            <div role="heading" aria-level="3" class="ui-h3">How TalkLive Works</div>
             <p>TalkLive connects you with a random person for a live, audio-only conversation. There's no sign-up - tap "Start," allow microphone access, and you'll be paired with someone automatically. Tap "Next" any time to end the current call and get matched with someone new, or "Hang Up" to leave entirely. You can optionally set a gender preference, a country, and interest tags from the settings menu to help find a better match.</p>
 
-            <h3>Quick Tips</h3>
+            <div role="heading" aria-level="3" class="ui-h3">Quick Tips</div>
             <ul>
               <li>Use headphones to avoid echo/feedback for both you and your match.</li>
               <li>You can mute your mic at any time with the microphone button.</li>
@@ -1772,7 +1748,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
               <li>If a call feels unsafe or inappropriate, tap "Report" - this immediately ends the call and blocks that person from being matched with you again.</li>
             </ul>
 
-            <h3>Community Guidelines - Be a Good Conversation Partner</h3>
+            <div role="heading" aria-level="3" class="ui-h3">Community Guidelines - Be a Good Conversation Partner</div>
             <p>TalkLive only works if people treat each other with basic respect. Please:</p>
             <ul>
               <li>Be kind. Treat the person on the other end the way you'd want to be treated.</li>
@@ -1782,7 +1758,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
               <li>Use the Report button if something feels wrong. Reporting helps keep this usable for everyone.</li>
             </ul>
 
-            <h3>Prohibited Conduct</h3>
+            <div role="heading" aria-level="3" class="ui-h3">Prohibited Conduct</div>
             <p>The following will get you reported and banned, and may be referred to law enforcement where applicable:</p>
             <ul>
               <li>Sexual content, sexual harassment, or solicitation of any kind.</li>
@@ -1797,10 +1773,10 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
               <li>Any activity that is illegal in your jurisdiction.</li>
             </ul>
 
-            <h3>Ban Policy - Read This</h3>
+            <div role="heading" aria-level="3" class="ui-h3">Ban Policy - Read This</div>
             <p><strong>Reports are taken seriously.</strong> If you're reported for prohibited conduct, the reporting user is permanently blocked from being matched with you again, and repeated or severe reports can result in your access to TalkLive being suspended or permanently banned, with no entitlement to a refund of any kind (TalkLive is free, but this applies to any future paid features). We reserve the right to ban any user, at any time, for any reason connected to abuse of the service or harm to other users, without prior notice. Attempting to evade a ban (new device, new network, new account signal) is itself a violation and may result in a permanent IP-level block.</p>
 
-            <h3>Terms &amp; Conditions</h3>
+            <div role="heading" aria-level="3" class="ui-h3">Terms &amp; Conditions</div>
             <p><strong>Eligibility.</strong> You must be at least 18 years old to use TalkLive. By using the service you represent that you meet this requirement.</p>
             <p><strong>Nature of the service.</strong> TalkLive provides random audio pairing between users. Conversations are not monitored live and we do not pre-screen who you will be matched with; we cannot verify any user's identity, age, or intentions, and are not responsible for the conduct, statements, or actions of any user. You use the service, and interact with other users through it, entirely at your own risk.</p>
             <p><strong>No warranty.</strong> TalkLive is provided "as is" and "as available," without warranties of any kind, express or implied, including fitness for a particular purpose, uninterrupted availability, or error-free operation.</p>
@@ -1810,7 +1786,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
             <p><strong>Changes to these terms.</strong> We may update these terms from time to time. Continued use of TalkLive after changes are posted constitutes acceptance of the revised terms.</p>
             <p><strong>Governing law.</strong> These terms are governed by the laws of the jurisdiction in which TalkLive operates, without regard to conflict-of-law principles.</p>
 
-            <h3>Privacy Note</h3>
+            <div role="heading" aria-level="3" class="ui-h3">Privacy Note</div>
             <p>A basic match does not require an account, email, or phone number. Voice uses encrypted WebRTC through a production TURN relay and is not recorded or stored by TalkLive; automated safety checks run on your own microphone during calls (speech-to-text on desktop browsers only) and keep a short record only when abuse is detected. Typed messages, reports and related context are kept for delivery, safety and moderation: a moderation log holds the newest 5,000 messages across the site, and each direct-message conversation its newest 200. TalkLive also processes IP address, approximate location and operational information as described in the full <a href="/privacy">Privacy Policy</a>, Gender is what you choose in Settings and is used for gender filters. If you turn on the optional Voice check, your own device compares your voice with the gender you picked; no audio leaves your device and only the yes/no result is used, for “Voice-checked only” matching.</p>
 
           </div>
@@ -2077,7 +2053,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
              and a list - rather than a bordered card full of emoji roundels.
              It is advice, and advice reads better as text than as a widget. -->
         <section id="convoGuide" class="note">
-          <h3 class="note-title" data-i18n="convoGuideTitle">How to have a great talk</h3>
+          <div role="heading" aria-level="3" class="ui-h3 note-title" data-i18n="convoGuideTitle">How to have a great talk</div>
           <ul class="note-list">
             <li data-i18n="convoTip1">Smile first - it changes your voice.</li>
             <li data-i18n="convoTip2">Ask where they're from.</li>
@@ -2093,7 +2069,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
              and plain typography to match - the tinted box and the emoji in the
              heading made a sincere note read like a promo banner. -->
         <section id="madeForYou" class="note">
-          <h3 class="note-title" data-i18n="noteFreeTitle">Made free, just for you</h3>
+          <div role="heading" aria-level="3" class="ui-h3 note-title" data-i18n="noteFreeTitle">Made free, just for you</div>
           <p data-i18n="noteFreeBody">TalkLive is 100% free to talk - supported by a few ads, never a paywall on voice or text chat. No time limits, no tricks.</p>
           <p data-i18n="noteFreeCare">We work on it every day to make this the smoothest, cleanest way to talk to new people anywhere in the world - fast connections and a simple design, built with care.</p>
           <p class="note-sign" data-i18n="noteFreeSign">Enjoy your talks. - The TalkLive team</p>
@@ -2129,7 +2105,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
                moment either side says anything. -->
           <div id="chatEmpty" class="chat-empty">
             <span id="chatEmptyAvatar" class="chat-empty-avatar" aria-hidden="true"></span>
-            <h3 id="chatEmptyTitle" class="chat-empty-title"></h3>
+            <div role="heading" aria-level="3" id="chatEmptyTitle" class="ui-h3 chat-empty-title"></div>
             <p class="chat-empty-body" data-i18n="chatEmptyBody">You are both here right now. Break the ice - the first message is the hard one.</p>
             <div class="chat-empty-chips" id="chatEmptyChips">
               <button type="button" class="chat-ice-chip" data-ice="iceHi" data-i18n="iceHi">Hey! 👋</button>
@@ -2280,7 +2256,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
         <section class="tl-rail-card">
           <div class="tl-rail-head">
             <span class="tl-rail-head-dot" aria-hidden="true"></span>
-            <h2 data-i18n="railOnlineNow">Online Now</h2>
+            <div role="heading" aria-level="2" class="ui-h2" data-i18n="railOnlineNow">Online Now</div>
             <span class="tl-rail-count" id="railOnlineCount" role="status" aria-live="polite">&mdash;</span>
           </div>
           <div id="railOnlineList" class="tl-rail-list"></div>
@@ -2292,7 +2268,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
             <span class="tl-rail-head-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.2 2"/></svg>
             </span>
-            <h2 data-i18n="railRecent">Recent calls</h2>
+            <div role="heading" aria-level="2" class="ui-h2" data-i18n="railRecent">Recent calls</div>
           </div>
           <div id="railHistoryList" class="tl-rail-list"></div>
         </section>
@@ -2302,14 +2278,14 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
             <span class="tl-rail-head-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.1"/><path d="M3.6 19a5.4 5.4 0 0 1 10.8 0"/><circle cx="17.2" cy="9" r="2.5"/><path d="M15.7 13.7A4.8 4.8 0 0 1 21 18.4"/></svg>
             </span>
-            <h2 data-i18n="friends">Friends</h2>
+            <div role="heading" aria-level="2" class="ui-h2" data-i18n="friends">Friends</div>
             <button type="button" class="tl-rail-more" data-opens="friendsBtn" data-i18n="seeAll">See all</button>
           </div>
           <div id="railFriendsList" class="tl-rail-list"></div>
         </section>
 
         <section class="tl-rail-card tl-rail-invite">
-          <h2 data-i18n="railInviteTitle">Bring more people online</h2>
+          <div role="heading" aria-level="2" class="ui-h2" data-i18n="railInviteTitle">Bring more people online</div>
           <p data-i18n="railInviteBody">Every match needs someone on the other end. Invite a friend and the queue gets shorter for everyone.</p>
           <button type="button" class="tl-rail-invite-btn js-share-talklive" data-i18n="railInviteCta">Invite a friend</button>
         </section>
@@ -2324,7 +2300,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
        Sits below the app so it never interferes with the call experience. -->
   <section class="seo-section" aria-labelledby="seoHeading">
     <div class="seo-inner">
-      <img src="/illustrations/connected-world.svg" width="1177" height="874" alt="" loading="lazy" decoding="async" style="display:block;width:100%;max-width:360px;height:auto;margin:0 auto 24px" />
+      <img src="/illustrations/connected-world.svg" width="1177" height="874" alt="People around the world connected by voice calls on TalkLive" loading="lazy" decoding="async" style="display:block;width:100%;max-width:360px;height:auto;margin:0 auto 24px" />
       <h2 id="seoHeading">Talk to strangers: free random voice &amp; text chat, worldwide</h2>
       <p>TalkLive is a browser-based random chat service for adults. Tap to Talk searches for a live voice match; Tap to Chat searches for a text match without microphone permission. Core matching is free and needs no install or account. Availability, identity, country and language are not guaranteed, so keep personal information private and leave any conversation that feels wrong.</p>
 
@@ -2366,7 +2342,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 
       <!-- Regional and language guides: the homepage is the crawl path into them. -->
       <h3>Countries, regions and languages</h3>
-      <p>Guides to the eight countries TalkLive hears from most, three long reads on how different parts of the world talk, and one feature on the <!-- langs:count -->17<!-- /langs:count --> languages TalkLive is available in.</p>
+      <p>Guides to the 30 countries TalkLive hears from most, six long reads on how different parts of the world talk, and one feature on the <!-- langs:count -->17<!-- /langs:count --> languages TalkLive is available in. <a href="/country-chat-guide">All country guides</a>.</p>
 
       <nav class="seo-links" aria-label="Country guides">
         <a href="/countries/india">India</a>
@@ -2377,10 +2353,35 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
         <a href="/countries/egypt">Egypt</a>
         <a href="/countries/nigeria">Nigeria</a>
         <a href="/countries/indonesia">Indonesia</a>
+        <a href="/countries/germany">Germany</a>
+        <a href="/countries/saudi-arabia">Saudi Arabia</a>
+        <a href="/countries/morocco">Morocco</a>
+        <a href="/countries/united-arab-emirates">United Arab Emirates</a>
+        <a href="/countries/canada">Canada</a>
+        <a href="/countries/philippines">Philippines</a>
+        <a href="/countries/china">China</a>
+        <a href="/countries/turkey">Turkey</a>
+        <a href="/countries/brazil">Brazil</a>
+        <a href="/countries/mexico">Mexico</a>
+        <a href="/countries/malaysia">Malaysia</a>
+        <a href="/countries/kenya">Kenya</a>
+        <a href="/countries/south-africa">South Africa</a>
+        <a href="/countries/france">France</a>
+        <a href="/countries/iran">Iran</a>
+        <a href="/countries/italy">Italy</a>
+        <a href="/countries/algeria">Algeria</a>
+        <a href="/countries/singapore">Singapore</a>
+        <a href="/countries/australia">Australia</a>
+        <a href="/countries/iraq">Iraq</a>
+        <a href="/countries/netherlands">Netherlands</a>
+        <a href="/countries/japan">Japan</a>
       </nav>
 
       <nav class="seo-links" aria-label="Regional features">
         <a href="/regions/south-asia">Why South Asia talks after midnight</a>
+        <a href="/regions/southeast-asia">How Southeast Asia talks</a>
+        <a href="/regions/middle-east">The Middle East and North Africa</a>
+        <a href="/regions/africa">How Africa talks</a>
         <a href="/regions/europe">Europe runs on four clocks</a>
         <a href="/regions/americas">One evening, two continents</a>
         <a href="/languages/">Seventeen ways to say hello</a>
@@ -2428,6 +2429,9 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
         <p><strong>Is it anonymous?</strong> A basic match needs no real name or phone number, but TalkLive processes operational data and another participant may record on their own device.</p>
         <p><strong>Can I chat without talking?</strong> Yes. Tap to Chat uses text without microphone permission. Typed messages may be retained under the Privacy Policy.</p>
         <p><strong>Is there video?</strong> No. TalkLive is intentionally voice-and-text only for privacy and comfort.</p>
+        <p><strong>Is TalkLive safe?</strong> TalkLive is for adults 18+. You can leave any conversation in one tap, and block or report the other person from every screen; reports are reviewed and lead to bans. No service that pairs strangers can guarantee safety, so never share personal details, money or codes. See the <a href="/safety">Safety Center</a>.</p>
+        <p><strong>Is TalkLive a dating app?</strong> No. It is a random voice and text chat for conversation, not a dating or matchmaking service.</p>
+        <p><strong>Is TalkLive the same as Talkliv?</strong> No. TalkLive is the free voice and text chat at talklive.app. It is not connected to other apps or sites with similar names.</p>
         <p><strong>Which languages are supported?</strong> <!-- langs:faq -->TalkLive is available in 17 languages: English, Spanish, Portuguese, French, German, Russian, Turkish, Arabic, Persian, Hindi, Bengali, Urdu, Indonesian, Italian, Japanese, Korean and Chinese. Right-to-left languages (Arabic, Persian and Urdu) are fully supported.<!-- /langs:faq --></p>
       </div>
 
@@ -2486,7 +2490,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   <div id="gameOverlay" class="game-overlay hidden">
     <div class="game-modal" role="dialog" aria-label="Games">
       <div class="game-modal-header">
-        <h2 class="game-title" id="gameTitle">Games</h2>
+        <div role="heading" aria-level="2" class="ui-h2 game-title" id="gameTitle">Games</div>
         <button type="button" id="closeGameBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
       </div>
 
@@ -2554,7 +2558,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   <div id="tttEndConfirmModal" class="modal-overlay hidden">
     <div class="modal-box modal-box-narrow" role="dialog" aria-modal="true" aria-labelledby="tttEndConfirmTitle">
       <div class="modal-header">
-        <h2 id="tttEndConfirmTitle" data-i18n="tttEndConfirmTitle">End this game?</h2>
+        <div role="heading" aria-level="2" class="ui-h2" id="tttEndConfirmTitle" data-i18n="tttEndConfirmTitle">End this game?</div>
       </div>
       <div class="modal-body">
         <p class="consent-modal-text" data-i18n="tttEndConfirmText">Are you sure you want to end this game?</p>
@@ -2574,7 +2578,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
        browser finish parsing and paint the page first. -->
   <script defer src="/socket.io/socket.io.min.js"></script>
   <script defer src="countries.js?v=20260828fix"></script>
-  <script defer src="i18n.js?v=20261010secure"></script>
+  <script defer src="i18n.js?v=20261019seo"></script>
   <script defer src="chat-time.js?v=20260916navbar"></script>
   <script defer src="animals.js?v=20261008more"></script>
   <script defer src="characters.js?v=20261008more"></script>
@@ -2585,7 +2589,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   <script defer src="voice-notes.js?v=20261001mic"></script>
   <script defer src="games.js?v=20261005min"></script>
   <script defer src="nickname-rules.js?v=20260924nick"></script>
-  <script defer src="app.js?v=20261015lean"></script>
+  <script defer src="app.js?v=20261019seo"></script>
 
 <!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

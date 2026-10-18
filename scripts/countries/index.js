@@ -20,6 +20,7 @@
  */
 const S = require('../journal/shared');
 const SOCIAL = require('../data/social');
+const { snippet } = require('../data/serp');
 
 const SLUGS = [
   'india', 'pakistan', 'bangladesh', 'united-states', 'united-kingdom', 'egypt', 'nigeria', 'indonesia',
@@ -84,7 +85,9 @@ function guidesHtml(slug) {
     + '<aside class="c-guides" aria-label="From the Journal"><h2>Read more in the Journal</h2><ul><li><a href="/blog/small-talk-around-the-world">Small Talk Around the World: What to Say, and What Not to Ask</a></li><li><a href="/blog/lonely-after-moving-abroad">New City, No One to Call: Loneliness After Moving Abroad</a></li></ul></aside>';
 }
 
-function head(c, wordCount) {
+function head(page, wordCount) {
+  // Search-result title and description; the long ones stay on the page.
+  const c = { ...page, ...snippet(page.path, page.title, page.description) };
   const canonical = `${SITE}${c.path}`;
   const ld = {
     '@context': 'https://schema.org',
@@ -145,7 +148,7 @@ function head(c, wordCount) {
 ${preloads}
 <link rel="stylesheet" href="/journal.css?v=${S.CSS_VERSION}" />
 <style>${BASE_CSS}${c.css}${S.ctaVars(c.slug)}</style>
-<script defer src="/pwa.js?v=20261013sub"></script>
+<script defer src="/pwa.js?v=20261019seo"></script>
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
 ${c.noAds ? '' : `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978"
      crossorigin="anonymous"></script>

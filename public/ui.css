@@ -63,7 +63,7 @@
   background: var(--bg-2);
   border-bottom: 1px solid var(--tl-line);
 }
-.tl-panel-head h2 {
+.tl-panel-head h2, .tl-panel-head .ui-h2 {
   margin: 0;
   font-size: 18px;
   font-weight: 800;
@@ -578,7 +578,7 @@
   gap: var(--tl-s2);
   margin-bottom: var(--tl-s3);
 }
-.tl-rail-head h2 {
+.tl-rail-head h2, .tl-rail-head .ui-h2 {
   margin: 0;
   font-size: 14px;
   font-weight: 800;
@@ -713,7 +713,7 @@
   color: var(--muted);
 }
 
-.tl-rail-invite h2 { margin: 0; font-size: 14px; font-weight: 800; }
+.tl-rail-invite h2, .tl-rail-invite .ui-h2 { margin: 0; font-size: 14px; font-weight: 800; }
 .tl-rail-invite p {
   margin: var(--tl-s2) 0 0;
   font-size: 12.5px;
@@ -2702,7 +2702,7 @@
   .animal-picker-hint { font-size: 13.5px; }
 
   .tl-rail-card { padding: var(--tl-s5); }
-  .tl-rail-head h2 { font-size: 15px; }
+  .tl-rail-head h2, .tl-rail-head .ui-h2 { font-size: 15px; }
   .tl-rail-row-text strong { font-size: 14.5px; }
   .tl-rail-row-text small { font-size: 12.5px; }
   .tl-rail-row-icon { width: 38px; height: 38px; }

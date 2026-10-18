@@ -39,7 +39,12 @@ kill_timeout = 120
 
 [http_service]
   internal_port = 8080
-  force_https = true
+  # Off on purpose: server/index.js redirects every plain-HTTP request itself,
+  # and sends http://www.talklive.app (and the alias domains) to
+  # https://talklive.app in a single 301. With Fly upgrading to HTTPS first,
+  # those took two redirects. HSTS (also set by the server) keeps browsers on
+  # HTTPS after the first visit.
+  force_https = false
 
   # The whole point of the move off Render's free tier: never sleep. Leaving
   # auto_stop_machines on would reintroduce the cold starts that cost crawl

@@ -53,7 +53,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "notifyLater": "No thanks",
     "notifyOn": "Notifications are on.",
     "appTitle": "TalkLive - Free Random Voice & Text Chat with Strangers",
-    "heroTitle": "Meet someone new by voice or text",
+    "heroTitle": "Talk to strangers by voice or text",
     "logInOrSignUp": "Log in or sign up",
     "authLoginTitle": "Welcome back",
     "authLoginSub": "Log in to pick up your friends, chats and name on any device.",
@@ -1107,12 +1107,18 @@ function getCountryName(code) {
   return (typeof COUNTRIES !== 'undefined' && COUNTRIES[code]) || code;
 }
 
+// The <title> the server sent. In English it stays: it is the title search
+// engines index (Google renders JavaScript), and each page has its own. Only a
+// visitor reading another language gets the translated app title.
+let i18nPageTitle = null;
+
 function applyI18n() {
   const lang = I18N_STATE.lang;
   const meta = I18N_LANGS[lang] || I18N_LANGS.en;
   document.documentElement.lang = lang;
   document.documentElement.dir = meta.dir;
-  document.title = t('appTitle');
+  if (i18nPageTitle === null) i18nPageTitle = document.title;
+  document.title = lang === 'en' && i18nPageTitle ? i18nPageTitle : t('appTitle');
 
   document.querySelectorAll('[data-i18n]').forEach((el) => {
     el.textContent = t(el.dataset.i18n);
