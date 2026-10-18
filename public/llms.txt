@@ -113,7 +113,7 @@ The app UI and a localized homepage are available in: English plus [Español](ht
 - [Nobody Noticed: The Spotlight Effect](https://talklive.app/blog/spotlight-effect-nobody-noticed): You stumble over a word on a call and feel it echo for an hour. Classic experiments show other people notice our slips, nerves and accents far less than we think, and knowing that can make you calmer.
 - [Why We Laugh in Conversation (It Is Rarely the Jokes)](https://talklive.app/blog/why-we-laugh-in-conversation): Most laughter does not follow anything funny. Studies of real conversations show we laugh to connect, that speakers laugh more than listeners, and that people across the world can hear friendship in a laugh.
 - [How Many Hours Does It Take to Make a Friend?](https://talklive.app/blog/how-many-hours-to-make-a-friend): About 50 hours together turns an acquaintance into a casual friend, about 90 into a friend and more than 200 into a close friend, according to research by Jeffrey Hall. What counts, what does not, and how adults can make friends faster.
-- [怎样免费练英语口语：和外国陌生人说话的实用指南](https://talklive.app/blog/english-speaking-practice-guide-zh): 背了很多单词却开不了口？研究表明，开口说才是练口语的关键。本文介绍每天10分钟的练习方法、开场白和救场句、和各国人聊天的最佳时间，以及在线和陌生人聊天时如何保护自己。
+- [怎样免费练英语口语：和外国陌生人说话的实用指南](https://talklive.app/blog/english-speaking-practice-guide-zh): 想找可以和外国人聊天的网站练英语口语？背了很多单词却开不了口，研究表明开口说才是关键。本文介绍每天10分钟的练习方法、开场白和救场句、和各国人聊天的最佳时间，以及在线和陌生人聊天时如何保护自己。
 
 ## Policies
 - [About](https://talklive.app/about)

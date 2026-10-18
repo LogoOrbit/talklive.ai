@@ -10,6 +10,32 @@ campaign adds outside traffic now while the content work compounds.
 Every link below carries a `utm_source` the server counts (`acq_<source>` in
 the owner dashboard). Do not change the values, or the visits are not counted.
 
+## Bing Webmaster data (exported 18 October)
+
+- **Bing is not where the drop is.** Clicks 10-16 Oct: 1,919, against 1,822
+  for 3-9 Oct (+5%). Bing sends about 250-330 visits a day, roughly 12% of
+  the ~2,300 daily visits, so the lost ~650 visits a day came from another
+  source. Compare last week with the week before in the owner dashboard's
+  arrivals by source (Google, direct, ChatGPT) and check whether the Google
+  Ads campaign (tag added 7 October) is still running and funded.
+- Impressions peaked at 5,595 (9 Oct) and settled near 4,000 from 13 Oct,
+  but clicks held up, so the impressions lost were low-click ones.
+- **AI citations keep rising:** 237 a day in late August, 700-930 a day in
+  mid-October. The number of pages cited fell from about 21 to 13-14, so
+  more answers now draw on fewer pages.
+- Biggest queries: `voice chat` (10,130 impressions, position 5, 2% CTR),
+  `匿名聊天` (6,331 impressions, 635 clicks), `talklive` (4,281, position 3.8:
+  other products named TalkLive outrank us on our own name), `голосовой чат`
+  (599, position 5.8). `可以和外国人聊天的网站`, `外国人连麦网站` and
+  `和外国人聊天的网站` click through at 49-71%.
+- Acted on: the `/ru/` title now says `голосовой чат`; the Chinese guide's
+  title leads with `可以和外国人聊天的网站`.
+- The "missing title tag" and "missing ALT" recommendations in the exported
+  SEO report were for cinegmafilms.com. TalkLive has neither problem (all
+  pages and live app routes checked). "Not enough inbound links from
+  high-quality domains" does apply, and the directory listings and outreach
+  below are the fix.
+
 ## Shipped with this campaign
 
 | What | URL |
