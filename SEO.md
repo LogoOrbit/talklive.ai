@@ -67,6 +67,14 @@ being followed.
 
 ## What is on the site
 
+> **October 2026 (10):** visits fell 22% week over week to 16,296 with no
+> technical cause found (audit clean, live site healthy). Two Journal articles
+> were added: `/blog/how-many-hours-to-make-a-friend` (Hall's 50/90/200-hour
+> research) and the first Chinese article,
+> `/blog/english-speaking-practice-guide-zh`, linked from `/zh/` (the Journal
+> shell now takes a per-article `lang`/`ogLocale`). Promotion plan and
+> counted UTM sources: `marketing/campaign-2026-10-recovery.md`.
+
 > **October 2026 (9):** seven more hand-designed country guides - China,
 > Turkey, Brazil, Mexico, Malaysia, Kenya and South Africa - taking the set to
 > 21. China is among the largest visitor sources (see `llms.txt`); the others

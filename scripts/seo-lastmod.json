@@ -20,8 +20,18 @@
     "v": 3
   },
   "/blog/": {
-    "hash": "83985f7a35f1bf65",
-    "date": "2026-10-12",
+    "hash": "6403b703beee141e",
+    "date": "2026-10-18",
+    "v": 3
+  },
+  "/blog/english-speaking-practice-guide-zh": {
+    "hash": "5a2d27f4ed624013",
+    "date": "2026-10-18",
+    "v": 3
+  },
+  "/blog/how-many-hours-to-make-a-friend": {
+    "hash": "c899c82654c21242",
+    "date": "2026-10-18",
     "v": 3
   },
   "/blog/how-random-matchmaking-works": {
@@ -80,8 +90,8 @@
     "v": 3
   },
   "/blog/spotlight-effect-nobody-noticed": {
-    "hash": "5143463eff73246f",
-    "date": "2026-10-12",
+    "hash": "1f0f0014c8693808",
+    "date": "2026-10-18",
     "v": 3
   },
   "/blog/what-happened-to-omegle": {
@@ -110,13 +120,13 @@
     "v": 3
   },
   "/blog/why-we-dont-give-compliments": {
-    "hash": "3e875ff9f6ea04b2",
-    "date": "2026-10-12",
+    "hash": "68ac2ef38d6bd4fd",
+    "date": "2026-10-18",
     "v": 3
   },
   "/blog/why-we-laugh-in-conversation": {
-    "hash": "49411a642d5dae06",
-    "date": "2026-10-12",
+    "hash": "bd527dad3693444d",
+    "date": "2026-10-18",
     "v": 3
   },
   "/bn/": {
@@ -485,8 +495,8 @@
     "v": 3
   },
   "/zh/": {
-    "hash": "e9a8a23f1b1c9c0d",
-    "date": "2026-10-06",
+    "hash": "49f44e74ed929311",
+    "date": "2026-10-18",
     "v": 3
   }
 }

@@ -45,7 +45,8 @@ const PUBLIC = path.join(__dirname, '..', 'public');
 // that reach a counter. Anything else is a tag nothing reads.
 const RECORDED_SOURCES = new Set([
   'member_share', 'seo', 'blog', 'google', 'bing', 'reddit', 'youtube',
-  'tiktok', 'instagram', 'facebook', 'x', 'producthunt', 'app',
+  'tiktok', 'instagram', 'facebook', 'x', 'producthunt', 'app', 'mobile_app',
+  'alternativeto', 'pinterest', 'telegram', 'email', 'zhihu', 'xiaohongshu',
 ]);
 
 const DROPPED_PARAM = /^(?:utm_[a-z_]+|lang)$/i;

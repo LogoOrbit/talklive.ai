@@ -1177,6 +1177,8 @@ const ACQUISITION_SOURCES = new Set([
   'tiktok', 'instagram', 'facebook', 'x', 'producthunt', 'app',
   // Launches of the Android/iOS app (mobile/capacitor.config.json).
   'mobile_app',
+  // Outside channels in marketing/campaign-2026-10-recovery.md.
+  'alternativeto', 'pinterest', 'telegram', 'email', 'zhihu', 'xiaohongshu',
 ]);
 
 /*

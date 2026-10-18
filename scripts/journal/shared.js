@@ -141,8 +141,14 @@ function esc(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-function words(html) {
-  return html.replace(/<style[\s\S]*?<\/style>/g, '').replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length;
+// Chinese text has no spaces between words, so a Chinese article counts each
+// CJK character as one word. Other pages keep the plain count, so their
+// wordCount (and lastmod) does not move.
+function words(html, lang) {
+  const text = html.replace(/<style[\s\S]*?<\/style>/g, '').replace(/<[^>]+>/g, ' ');
+  if (!/^zh/.test(lang || '')) return text.split(/\s+/).filter(Boolean).length;
+  const cjk = /[\u3400-\u9fff]/g;
+  return (text.match(cjk) || []).length + text.replace(cjk, ' ').split(/\s+/).filter(Boolean).length;
 }
 
 // Preload only the faces the page leads with, so the headline does not swap.
@@ -161,7 +167,7 @@ function head(p) {
       },
       p.article ? {
         '@type': 'Article', '@id': `${canonical}#article`, headline: p.h1, description: p.description,
-        datePublished: p.date, dateModified: p.updated || p.date, inLanguage: 'en',
+        datePublished: p.date, dateModified: p.updated || p.date, inLanguage: p.lang || 'en',
         mainEntityOfPage: canonical, image: OG_IMAGE, wordCount: p.wordCount,
         author: { '@type': 'Organization', name: 'TalkLive Journal', url: `${SITE}/blog/` },
         publisher: { '@id': `${SITE}/#organization` },
@@ -186,7 +192,7 @@ function head(p) {
     ],
   };
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="${p.lang || 'en'}">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -206,7 +212,7 @@ function head(p) {
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta property="og:image:alt" content="${esc(p.h1)} - TalkLive Journal" />
-<meta property="og:locale" content="en_US" />
+<meta property="og:locale" content="${p.ogLocale || 'en_US'}" />
 ${p.article ? `<meta property="article:published_time" content="${p.date}" />
 <meta property="article:modified_time" content="${p.updated || p.date}" />
 <meta property="article:section" content="${esc(p.tag)}" />
@@ -370,7 +376,7 @@ function ctaHero(o = {}) {
 <h2 class="tl-go-h">${esc(o.title || 'Talk to someone right now')}</h2>
 <p class="tl-go-sub">${esc(o.sub || 'One tap and you are matched with a real person, usually in seconds.')}</p>
 <div class="tl-go-row">${ctaButtons(o.src || 'blog', o.talk, o.chat)}</div>
-<p class="tl-go-fine">Free &middot; No sign-up &middot; No camera &middot; Adults 18+</p>
+<p class="tl-go-fine">${o.fine ? esc(o.fine) : 'Free &middot; No sign-up &middot; No camera &middot; Adults 18+'}</p>
 </section>`;
 }
 

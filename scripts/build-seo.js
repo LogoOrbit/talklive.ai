@@ -231,7 +231,8 @@ ${alternates}
       <div class="faq-layout"><div>${faqHtml}</div>${artImg('question-answered', { cls: 'art art-faq' })}</div>
     </div>
   </section>
-  <div class="wrap">
+  ${loc.read ? `<section class="read-more"><div class="wrap center"><h2>${loc.read.h}</h2><p>${loc.read.p}</p><p><a href="${loc.read.href}">${loc.read.label}</a></p></div></section>
+  ` : ''}<div class="wrap">
     <div class="cta-band">
       ${artImg('walking-together', { cls: 'art art-cta' })}
       <h2>${loc.ctaH}</h2>
