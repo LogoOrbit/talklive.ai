@@ -226,6 +226,22 @@ app.use((req, res, next) => {
   next();
 });
 
+// Search-engine ownership files (Yandex Webmaster, ...), served byte for byte
+// at the site root. They live in server/verification/ rather than public/ so
+// the build sweeps never inject ad/analytics/PWA tags into them, and they are
+// answered before the clean-URL redirect below, which would otherwise 301
+// /yandex_*.html to /yandex_* and fail the check. Delete a file and the site
+// is un-verified, so leave them in place.
+const VERIFICATION_DIR = path.join(__dirname, 'verification');
+const VERIFICATION_FILES = new Set(
+  fs.existsSync(VERIFICATION_DIR) ? fs.readdirSync(VERIFICATION_DIR).filter((f) => /^[\w-]+\.(html|txt)$/.test(f)) : []
+);
+app.get('/:file', (req, res, next) => {
+  if (!VERIFICATION_FILES.has(req.params.file)) return next();
+  res.setHeader('Cache-Control', 'public, max-age=300');
+  res.sendFile(path.join(VERIFICATION_DIR, req.params.file));
+});
+
 // Keep one crawlable URL for every static HTML page. Express's `extensions`
 // option serves both `/guide` and `/guide.html`, while directory indexes also
 // make `/blog/index.html` and `/blog/` equivalent. Redirect only paths that map
