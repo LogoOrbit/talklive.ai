@@ -1,11 +1,15 @@
 # Traffic recovery campaign - from 19 October 2026
 
-Visits fell 22% week over week (16,296 vs 20,835). Nothing on the site is
-broken: `robots.txt`, canonicals, sitemaps and the SEO audit are all clean,
-and the 15 October release only touched the app UI. The fall continues the
-search and AI decline that followed the October page retirements
-(`docs/traffic-analysis-2026-10.md`). New pages take weeks to rank, so this
-campaign adds outside traffic now while the content work compounds.
+**Update 18 October, after reading the production data:** there was no real
+fall. "Visits" are page views. Between 21 September and 5 October they also
+counted the service worker's `/offline` precache and script fetches, which
+pushed them to ~7,000-8,000 a day; the 5 October fix took those out and
+visits dropped to ~2,500 overnight. Unique visitors stayed at ~1,300-1,900 a
+day throughout (9,969 vs 9,978 in the two weeks the alert compared), and
+Google clicks doubled. The real, smaller problems were server freezes in
+early October (fixed 15 October), which cut calls and ChatGPT referrals for a
+week. The alert now follows unique visitors. This campaign is still worth
+running as growth, not recovery.
 
 Every link below carries a `utm_source` the server counts (`acq_<source>` in
 the owner dashboard). Do not change the values, or the visits are not counted.

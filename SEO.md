@@ -67,8 +67,9 @@ being followed.
 
 ## What is on the site
 
-> **October 2026 (10):** visits fell 22% week over week to 16,296 with no
-> technical cause found (audit clean, live site healthy). Two Journal articles
+> **October 2026 (10):** a "visits down 22%" alert turned out to be the
+> 5 October change in what counts as a visit; unique visitors were flat and
+> Google clicks doubled. Two Journal articles
 > were added: `/blog/how-many-hours-to-make-a-friend` (Hall's 50/90/200-hour
 > research) and the first Chinese article,
 > `/blog/english-speaking-practice-guide-zh`, linked from `/zh/` (the Journal
