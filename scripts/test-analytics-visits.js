@@ -327,5 +327,40 @@ test('a site with no bot data yet reads exactly as it did before', () => {
   assert.ok(!/Crawlers and bots/.test(text), 'invented a crawler line with no crawler data:\n' + text);
 });
 
+// 21 days ending `end`, with page views and people given per day.
+function octoberSummary(end, visitsFor, uniquesFor) {
+  const days = {};
+  for (let i = 20; i >= 0; i--) {
+    const k = new Date(Date.UTC(...end) - i * 86400000).toISOString().slice(0, 10);
+    const v = visitsFor(k), u = uniquesFor(k);
+    days[k] = {
+      visits: v, uniques: u, bots: 100, connections: 400, matches: 120, messages: 50, reports: 0, feedback: 0,
+      errors: 0, newAccounts: 1, peakOnline: 12, countries: { India: 50 }, cities: {}, features: {},
+      crawlers: { Bing: 100 }, sections: { home: 20 },
+      hours: { 12: { visits: v, uniques: u, bots: 100, connections: 400, matches: 120, messages: 50, peakOnline: 12 } },
+    };
+  }
+  store.data.analytics.days = days;
+  store.data.analytics.humanSince = '2026-09-21';
+  const report = analytics.buildReport(days, 'UTC', Date.UTC(...end, 23, 0));
+  return generateConclusion(RUNTIME, report).summary.join('\n');
+}
+
+test('the 5 October counting change is not reported as a fall in traffic', () => {
+  // Visits drop from 7,000 to 2,500 a day on 6 October; people stay at 1,400.
+  const text = octoberSummary([2026, 9, 17], (k) => (k < '2026-10-06' ? 7000 : 2500), () => 1400);
+  assert.ok(!/Traffic is declining/.test(text), 'claimed a decline across the 5 October change:\n' + text);
+  assert.ok(/background fetches/.test(text), 'did not explain the change:\n' + text);
+  assert.ok(/resume from 2026-10-20/.test(text), 'did not say when comparisons resume:\n' + text);
+});
+
+test('the headline follows people, not page views', () => {
+  // Both weeks after the change: fewer page views, the same people.
+  const text = octoberSummary([2026, 9, 27], (k) => (k < '2026-10-21' ? 3000 : 2400), () => 1400);
+  assert.ok(/Traffic is stable\. Unique visitors are up 0%/.test(text), 'headline did not follow unique visitors:\n' + text);
+  const fewer = octoberSummary([2026, 9, 27], () => 2500, (k) => (k < '2026-10-21' ? 1400 : 1000));
+  assert.ok(/Traffic is declining\. Unique visitors are down 29%/.test(fewer), 'missed a real fall in people:\n' + fewer);
+});
+
 console.log(`\n${passed} passed, ${failed} failed\n`);
 process.exit(failed ? 1 : 0);

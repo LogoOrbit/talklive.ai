@@ -255,6 +255,16 @@ function rankFeatures(raw) {
     .sort((a, b) => b[1] - a[1]);
 }
 
+// Days from which the meaning of a "visit" changed, after the crawler split
+// (`humanSince`). A week compared across one measures bookkeeping, not people.
+const VISIT_DEFINITION_CHANGES = [
+  // 5 October 2026, 14:49 UTC: the service worker's /offline precache and
+  // script-initiated fetches of HTML pages stopped counting. From 21 September
+  // they made up most of the ~7,000 daily visits; visits fell to ~2,500
+  // overnight while unique visitors held at ~1,400. First full day: 6 October.
+  { day: '2026-10-06', note: 'Since 5 October, background fetches by the service worker and scripts no longer count as visits' },
+];
+
 // --- Rule-based "AI" conclusion over the last 7 days of real metrics ---
 // `report` is an analytics.buildReport() result, so "the last 7 days" means
 // seven of the owner's local days - not seven UTC days.
@@ -285,16 +295,33 @@ function generateConclusion(runtime, report) {
    */
   const humanSince = store.data.analytics.humanSince || null;
   const prevWeekStart = report.daily.length >= 14 ? report.daily[report.daily.length - 14].day : null;
-  const weekComparable = !humanSince || !prevWeekStart || prevWeekStart >= humanSince;
+  const lastDay = report.daily.length ? report.daily[report.daily.length - 1].day : null;
+  const crawlersComparable = !humanSince || !prevWeekStart || prevWeekStart >= humanSince;
+  // Later changes to what counts as a visit, once the data reaches them.
+  const definitionChange = VISIT_DEFINITION_CHANGES
+    .filter((c) => prevWeekStart && lastDay && c.day > prevWeekStart && c.day <= lastDay)
+    .pop() || null;
+  const weekComparable = crawlersComparable && !definitionChange;
 
-  if (!weekComparable) {
+  // The headline follows unique visitors - people - rather than visits, which
+  // are page views: one person reading three pages is three visits, and a
+  // change in what counts as a page view moves visits without anyone arriving
+  // or leaving. The 22% "decline" of 18 October 2026 was exactly that.
+  const people = report.last7.uniques;
+  const prevPeople = report.prev7.uniques;
+  if (!crawlersComparable) {
     lines.push(`Visitor counts now exclude search-engine crawlers and bots; days before ${humanSince} still include them. Week-over-week traffic comparisons become meaningful again from ${analytics.addDays(humanSince, 14)}.`);
     lines.push(`${visits} human visits in the last 7 days${report.last7.bots ? `, plus ${report.last7.bots} crawler page views` : ''}.`);
-  } else if (prevVisits > 0) {
-    const change = Math.round(((visits - prevVisits) / prevVisits) * 100);
-    if (change >= 10) lines.push(`Traffic is growing: visits are up ${change}% versus the previous week (${visits} vs ${prevVisits}).`);
-    else if (change <= -10) { lines.push(`Traffic is declining: visits are down ${Math.abs(change)}% versus the previous week (${visits} vs ${prevVisits}). Consider promotion or SEO work.`); health = 'warning'; }
-    else lines.push(`Traffic is stable week-over-week (${visits} visits in the last 7 days).`);
+  } else if (definitionChange) {
+    lines.push(`${definitionChange.note}, so the previous week is not like-for-like. Week-over-week comparisons resume from ${analytics.addDays(definitionChange.day, 14)}.`);
+    lines.push(`${people} unique visitors and ${visits} page views in the last 7 days.`);
+  } else if (prevPeople > 0) {
+    const change = Math.round(((people - prevPeople) / prevPeople) * 100);
+    const views = `page views ${visits} vs ${prevVisits}`;
+    const trend = `Unique visitors are ${change >= 0 ? 'up' : 'down'} ${Math.abs(change)}% versus the previous week (${people} vs ${prevPeople}; ${views}).`;
+    if (change >= 10) lines.push(`Traffic is growing. ${trend}`);
+    else if (change <= -10) { lines.push(`Traffic is declining. ${trend} Check where arrivals come from before acting.`); health = 'warning'; }
+    else lines.push(`Traffic is stable. ${trend}`);
   } else {
     lines.push(`${visits} visits recorded in the last 7 days.`);
   }
@@ -373,9 +400,8 @@ function generateConclusion(runtime, report) {
   if (busiest && busiest.peakOnline) lines.push(`Busiest day of the week: ${busiest.day}, peaking at ${busiest.peakOnline} users online at once.`);
   // Same caveat as the visits comparison above: a week of people measured
   // against a week of people-plus-crawlers is not a trend.
-  if (report.changeVsLastWeek.uniques !== null && weekComparable) {
-    lines.push(`Unique visitors are ${report.changeVsLastWeek.uniques >= 0 ? 'up' : 'down'} ${Math.abs(report.changeVsLastWeek.uniques)}% week-over-week (${report.last7.uniques} vs ${report.prev7.uniques}).`);
-  } else if (report.last7.uniques) {
+  // When the weeks compare, the headline above already gives the change.
+  if (!crawlersComparable && report.last7.uniques) {
     lines.push(`${report.last7.uniques} unique human visitors in the last 7 days. Week-over-week comparison resumes once both weeks exclude crawlers.`);
   }
 
