@@ -26,7 +26,19 @@ async function loadAnalytics() {
     const pool = new Pool({ connectionString: url, max: 1, ssl: /localhost|127\.0\.0\.1|sslmode=disable/.test(url) ? false : { rejectUnauthorized: false } });
     try {
       const r = await pool.query(`SELECT doc->'analytics' AS a, updated_at FROM owner_store WHERE id = 1`);
-      return { source: 'postgres', updatedAt: r.rows[0] && r.rows[0].updated_at, analytics: (r.rows[0] && r.rows[0].a) || {} };
+      // Byte sizes of the document's parts (never their contents), to see
+      // what makes each save expensive.
+      const size = async (sql) => (await pool.query(sql)).rows;
+      const sizes = {
+        total: await size(`SELECT octet_length(doc::text) AS bytes FROM owner_store WHERE id = 1`),
+        topLevel: await size(`SELECT k.key, octet_length(k.value::text) AS bytes FROM owner_store, jsonb_each(doc) k WHERE id = 1 ORDER BY 2 DESC`),
+        secondLevel: await size(`SELECT a.key AS parent, b.key, octet_length(b.value::text) AS bytes, CASE WHEN jsonb_typeof(b.value) = 'object' THEN (SELECT count(*) FROM jsonb_object_keys(b.value)) WHEN jsonb_typeof(b.value) = 'array' THEN jsonb_array_length(b.value) END AS items
+          FROM owner_store, jsonb_each(doc) a, jsonb_each(CASE WHEN jsonb_typeof(a.value) = 'object' THEN a.value ELSE '{}'::jsonb END) b
+          WHERE id = 1 AND a.key <> 'analytics' ORDER BY 3 DESC LIMIT 40`),
+        analyticsFields: await size(`SELECT f.key, sum(octet_length(f.value::text)) AS bytes FROM owner_store, jsonb_each(doc->'analytics'->'days') d, jsonb_each(d.value) f WHERE id = 1 GROUP BY 1 ORDER BY 2 DESC`),
+        tables: await size(`SELECT relname, pg_total_relation_size(c.oid) AS bytes FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = current_schema() AND c.relkind = 'r' ORDER BY 2 DESC`),
+      };
+      return { source: 'postgres', updatedAt: r.rows[0] && r.rows[0].updated_at, analytics: (r.rows[0] && r.rows[0].a) || {}, sizes };
     } finally { await pool.end(); }
   }
   const file = path.join(process.env.DATA_DIR || '/data', 'owner-data.json');
@@ -78,11 +90,11 @@ async function gsc() {
 }
 
 (async () => {
-  const { source, updatedAt, analytics } = await loadAnalytics();
+  const { source, updatedAt, analytics, sizes } = await loadAnalytics();
   const days = analytics.days || {};
   const report = {
     generatedAt: new Date().toISOString(),
-    store: { source, updatedAt },
+    store: { source, updatedAt, sizes: sizes || null },
     analyticsKeys: Object.keys(analytics),
     humanSince: analytics.humanSince || null,
     totals: analytics.totals || {},
