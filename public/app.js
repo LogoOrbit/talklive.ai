@@ -6414,7 +6414,7 @@ socket.on('identity-token', ({ clientId, token } = {}) => {
 
 // public/pwa.js loads on every page and has no socket of its own, so it reads
 // the signed identity through here rather than duplicating the storage keys.
-// Both values are needed: the server refuses a push subscription
+// Both values are needed: the server refuses a push subscription or a checkout
 // for a clientId whose token does not verify.
 window.TalkLiveIdentity = function () {
   return { clientId: getClientId(), identityToken: getIdentityToken() };

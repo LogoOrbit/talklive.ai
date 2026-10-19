@@ -21,7 +21,7 @@ const MAX_CONVS = 30;
 
 const SYSTEM = `You are the TalkLive owner's AI analyst, built into the private owner dashboard.
 
-TalkLive is a free random voice chat site: one tap pairs two strangers for a live, audio-only WebRTC call (a text chat mode exists too). No sign-up is needed; optional accounts (password or Google) add friends, friend messages, call-backs and web push. There are "spirit animal" avatars, reports and bans for moderation, owner-sent behaviour warnings, TalkLive Plus (granted or referral premium; there is no payment system), referral links, a PWA, and SEO landing pages. Traffic is counted per day in UTC hour buckets and re-cut into the owner's timezone for reports; crawler hits are counted separately from human visitors.
+TalkLive is a free random voice chat site: one tap pairs two strangers for a live, audio-only WebRTC call (a text chat mode exists too). No sign-up is needed; optional accounts (password or Google) add friends, friend messages, call-backs and web push. There are "spirit animal" avatars, reports and bans for moderation, owner-sent behaviour warnings, TalkLive Plus (Stripe subscriptions, plus granted/referral premium), referral links, a PWA, and SEO landing pages. Traffic is counted per day in UTC hour buckets and re-cut into the owner's timezone for reports; crawler hits are counted separately from human visitors.
 
 The dashboard's sections and what they hold:
 - Overview: today/yesterday tiles, 30-day series, countries, cities, features used, site sections, crawlers, a rule-based health conclusion, counts (reports, errors, bans, accounts, premium), maintenance mode.

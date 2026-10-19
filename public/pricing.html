@@ -225,19 +225,74 @@
     }
   }
 
-  // The server is the source of truth for who already has premium.
+  // Turn the disabled "Not on sale" button into a real checkout, but only when
+  // the server says a payment processor is actually configured. A button that
+  // cannot charge anyone is worse than an honest "not on sale yet".
+  function enableCheckout(plans) {
+    upgradeBtn.disabled = false;
+    upgradeBtn.textContent = 'Get TalkLive Plus';
+    upgradeBtn.addEventListener('click', function () {
+      track('premium_checkout_click');
+      upgradeBtn.disabled = true;
+      upgradeBtn.textContent = 'Opening checkout...';
+      // The clientId premium is keyed to is browser-visible, so the server
+      // will not start a checkout for one without the signed token the app
+      // issues. Someone who has never opened the app has no token yet, which
+      // is why this falls back to sending them there rather than failing.
+      var token = localStorage.getItem('talklive_identity_token');
+      if (!token) { location.href = '/?upgrade=1'; return; }
+      fetch('/billing/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientId: getClientId(),
+          identityToken: token,
+          plan: plans.indexOf('monthly') !== -1 ? 'monthly' : plans[0],
+        }),
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (d && d.url) { location.href = d.url; return; }
+          throw new Error('no url');
+        })
+        .catch(function () {
+          upgradeBtn.disabled = false;
+          upgradeBtn.textContent = 'Could not open checkout - try again';
+        });
+    });
+  }
+
+  // The server is the source of truth for both who already has premium and
+  // whether it can be bought at all.
   fetch('/premium-status?clientId=' + encodeURIComponent(getClientId()))
     .then(function (r) { return r.json(); })
     .then(function (d) {
       if (!d) return;
-      if (d.premium) markActive(d.expiresAt);
+      if (d.premium) { markActive(d.expiresAt); return; }
+      if (d.checkout && d.plans && d.plans.length) enableCheckout(d.plans);
     })
     .catch(function () {});
 
+  // Coming back from Stripe: the webhook that grants premium can land a moment
+  // after the redirect, so poll briefly rather than telling a paying customer
+  // they are not premium.
+  if (/[?&]checkout=success/.test(location.search)) {
+    var tries = 0;
+    var poll = setInterval(function () {
+      tries += 1;
+      fetch('/premium-status?clientId=' + encodeURIComponent(getClientId()))
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (d && d.premium) { clearInterval(poll); markActive(d.expiresAt); }
+          else if (tries >= 10) clearInterval(poll);
+        })
+        .catch(function () { if (tries >= 10) clearInterval(poll); });
+    }, 1500);
+  }
 })();
 </script>
 
-<!-- Analytics tag, deliberately last: they are async, so their position
+<!-- Analytics + ad tags, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the
      page's own assets for bandwidth on a slow mobile connection. -->
 <!-- Google tag (gtag.js) -->

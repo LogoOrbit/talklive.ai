@@ -76,7 +76,7 @@ self.addEventListener('fetch', (event) => {
   // Anything that reports live state (online counts, premium, ICE credentials,
   // push keys) must never come from a cache: stale TURN credentials produce a
   // call that connects and carries no audio.
-  if (/^\/(ice-servers|premium-status|events|config\.js|push|owner)/.test(url.pathname)) return;
+  if (/^\/(ice-servers|premium-status|events|config\.js|push|billing|owner)/.test(url.pathname)) return;
 
   if (request.mode === 'navigate') {
     event.respondWith(

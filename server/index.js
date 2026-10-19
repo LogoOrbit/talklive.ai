@@ -26,6 +26,7 @@ const store = require('./store');
 const { TrackedMap } = require('./doc-json');
 const modTags = require('./moderation-tags');
 const compress = require('./compress');
+const billing = require('./billing');
 const push = require('./push');
 const flags = require('./flags');
 const { minifiedScripts } = require('./minified');
@@ -334,8 +335,9 @@ const FREE_LIMITS = {
   countries: 2, // max countries per preferred/not-preferred list
 };
 // Premium registry lives in the persistent store (Postgres/file) so grants
-// survive restarts and deploys. Grants come from a referral reward or a manual
-// grant (PREMIUM_CLIENT_IDS / store.setPremium) for testing and support.
+// survive restarts and deploys. Grants come from three places now: a Stripe
+// subscription (server/billing.js), a referral reward, or a manual grant
+// (PREMIUM_CLIENT_IDS / store.setPremium) for testing and support.
 const envPremiumClients = new Set(
   (process.env.PREMIUM_CLIENT_IDS || '').split(',').map((s) => s.trim()).filter(Boolean)
 );
@@ -354,8 +356,15 @@ app.get('/premium-status', httpRateLimit('premium-status', 60, 60000), (req, res
     // null when the grant is permanent (manual/env) - the client renders
     // "Plus is active" rather than a renewal date.
     expiresAt: envPremiumClients.has(clientId) ? null : store.premiumExpiry(clientId),
+    // The pricing page swaps its "coming soon" card for real buttons based on
+    // this, so a deployment with no Stripe keys keeps the honest copy it has
+    // today instead of showing a button that cannot charge anyone.
+    checkout: billing.configured(),
+    plans: billing.plans(),
   });
 });
+
+// --- Billing -----------------------------------------------------------------
 
 // Fly terminates TLS at its edge, so req.socket.remoteAddress is the proxy on
 // every production request. See server/client-ip.js for which header is trusted.
@@ -458,6 +467,64 @@ app.get('/subscribe/confirm', httpRateLimit('subscribe-confirm', 30, 10 * 60000)
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('X-Robots-Tag', 'noindex');
   res.status(email ? 200 : 410).type('html').send(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TalkLive email updates</title><style>body{font-family:system-ui,sans-serif;background:#0b0d12;color:#e6e8ee;margin:0;padding:48px 16px;text-align:center}main{max-width:480px;margin:0 auto}a{display:inline-block;margin-top:16px;padding:12px 22px;border-radius:999px;background:#16a34a;color:#fff;text-decoration:none;font-weight:700}</style></head><body><main>${msg}<a href="/">Start talking</a></main></body></html>`);
+});
+
+billing.warnIfHalfConfigured();
+
+app.post('/billing/checkout', httpRateLimit('checkout', 10, 60000), express.json({ limit: '2kb' }), async (req, res) => {
+  if (!billing.configured()) return res.status(503).json({ error: 'Checkout is not available yet.' });
+  const clientId = String((req.body && req.body.clientId) || '');
+  const token = String((req.body && req.body.identityToken) || '');
+  // The clientId decides who gets premium, so an unproven one would let anyone
+  // buy a subscription onto someone else's browser id - or, more usefully to an
+  // attacker, discover which ids exist. Same HMAC the socket layer uses.
+  if (!clientId || !validIdentityToken(clientId, token)) {
+    return res.status(403).json({ error: 'Unrecognised client.' });
+  }
+  // Age-assurance gate (fix list 3.1). A no-op while the flag is off.
+  const ageGate = ageAssurance.check('premium', { clientId, country: lookupGeo(clientIp(req)).country });
+  if (!ageGate.ok) return res.status(403).json({ error: ageGate.message, ageCheck: ageGate.reason });
+  try {
+    const url = await billing.createCheckout({
+      clientId,
+      plan: String((req.body && req.body.plan) || 'monthly'),
+      origin: `https://${CANONICAL_HOST}`,
+    });
+    store.recordFeature('premium_checkout_start');
+    res.json({ url });
+  } catch (err) {
+    console.error('[billing] checkout failed:', err.message);
+    res.status(err.status === 400 ? 400 : 502).json({ error: 'Could not start checkout.' });
+  }
+});
+
+// Stripe signs the exact bytes it sent, so this route must see the raw body -
+// hence express.raw here rather than the express.json used everywhere else.
+app.post('/billing/webhook', express.raw({ type: 'application/json', limit: '1mb' }), (req, res) => {
+  const event = billing.verifyWebhook(req.body && req.body.toString('utf8'), req.headers['stripe-signature']);
+  // A bad signature is either a misconfigured secret or a forgery. Either way
+  // Stripe should retry rather than believe it was accepted.
+  if (!event) return res.status(400).send('invalid signature');
+
+  const decision = billing.decide(event);
+  if (decision.action === 'grant') {
+    store.setPremium(decision.clientId, {
+      // No period end on the checkout event itself; a day covers the gap until
+      // the first invoice arrives (usually seconds later) so a paying customer
+      // is never left without what they just bought.
+      expiresAt: decision.until || Date.now() + 24 * 60 * 60000,
+      lastEvent: decision.reason,
+      subscriptionId: decision.subscriptionId || undefined,
+      source: 'stripe',
+    });
+    store.recordFeature('premium_activated');
+  } else if (decision.action === 'revoke') {
+    store.revokePremium(decision.clientId, { lastEvent: decision.reason });
+    store.recordFeature('premium_cancelled');
+  }
+  // Anything unhandled is still a 200: replying non-2xx makes Stripe retry an
+  // event we have deliberately ignored, forever.
+  res.json({ received: true });
 });
 
 // --- Web push ----------------------------------------------------------------
@@ -3409,7 +3476,9 @@ function settleReferral(clientId) {
 }
 
 // Re-send premium state to every live socket belonging to a clientId. Used
-// whenever a grant changes outside registration (a referral reward).
+// whenever a grant changes outside registration (a referral reward now; a
+// Stripe webhook is the same shape of event, though that user is usually on the
+// Stripe-hosted page rather than connected at the time).
 function emitPremiumStatus(clientId) {
   for (const [sid, profile] of profiles) {
     if (profile.clientId !== clientId) continue;
@@ -3419,6 +3488,8 @@ function emitPremiumStatus(clientId) {
       premium: isPremium(clientId),
       expiresAt: envPremiumClients.has(clientId) ? null : store.premiumExpiry(clientId),
       limits: FREE_LIMITS,
+      checkout: billing.configured(),
+      plans: billing.plans(),
     });
   }
 }
@@ -4817,6 +4888,8 @@ io.on('connection', (socket) => {
       premium,
       expiresAt: envPremiumClients.has(clientId) ? null : store.premiumExpiry(clientId),
       limits: FREE_LIMITS,
+      checkout: billing.configured(),
+      plans: billing.plans(),
     });
     socket.emit('identity-token', { clientId, token: issuedIdentityToken });
     // Unacknowledged owner warnings. Checked again shortly after, because a

@@ -2934,7 +2934,7 @@ async function viewRevenue(){
   const t=r.totals,ref=r.referrals;
   const act=r.activations.slice(-14);
   const actMax=Math.max(1,...act.map(d=>Math.max(d.activated,d.cancelled)));
-  const srcColor={referral:'var(--s1)',client:'var(--s3)',unknown:'var(--muted)'};
+  const srcColor={stripe:'var(--good)',referral:'var(--s1)',client:'var(--s3)',unknown:'var(--muted)'};
   const expiringSoon=r.rows.filter(x=>x.status==='active'&&x.expiresAt&&x.expiresAt-Date.now()<7*86400000);
   $('#main').innerHTML=`<div class="grid tiles anim">
     <div class="tile"><div class="k">💎 Active Plus</div><div class="v grad" data-count="${t.active}">0</div><div class="s">${num(t.paying)} paying · ${num(t.permanent)} permanent</div></div>
@@ -2956,7 +2956,7 @@ async function viewRevenue(){
     </div>
     <div class="card anim"><h2>🏷️ Where Plus comes from <span class="sub">active grants by source</span></h2>
       ${r.bySource.map(([src,n])=>`<div class="hrow"><div>${esc(src)}</div><div><div class="hbar" style="width:${Math.max(2,n/Math.max(1,t.active)*100)}%;background:${srcColor[src]||'var(--s5)'}"></div></div><div class="n">${num(n)}</div></div>`).join('')||'<div class="muted">Nobody is on Plus yet.</div>'}
-      <div class="muted" style="margin-top:10px">referral = invite reward · client = granted for testing or support</div>
+      <div class="muted" style="margin-top:10px">stripe = paid · referral = invite reward · client = granted for testing or support</div>
     </div>
   </div>
 
@@ -2978,7 +2978,7 @@ async function viewRevenue(){
   <td>${esc(x.source)}${x.paying?' <span class="pill info">paid</span>':''}</td>
   <td>${x.activatedAt?fmtTs(x.activatedAt):'-'}</td>
   <td>${x.expiresAt?fmtTs(x.expiresAt):x.status==='active'?'<span class="muted">never</span>':'-'}</td>
-  <td class="muted">${esc(x.lastEvent||'')}</td></tr>`).join('')||'<tr><td colspan="6" class="muted">No subscriptions yet. Referral rewards and manual grants show up here.</td></tr>'}</table></div>`;
+  <td class="muted">${esc(x.lastEvent||'')}</td></tr>`).join('')||'<tr><td colspan="6" class="muted">No subscriptions yet. Once Stripe checkout or a referral reward runs, it shows up here.</td></tr>'}</table></div>`;
   animateCounters();
 }
 

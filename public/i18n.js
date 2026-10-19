@@ -396,6 +396,9 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "billingEmailKicker": "BILLING EMAIL",
     "billingEmailNone": "No email linked yet",
     "billingEmailHint": "Link an email to your account and receipts will have somewhere to go once Boosts exist.",
+    "billingCardsKicker": "SAVED PAYMENT METHODS",
+    "billingCardsValue": "Not stored by TalkLive",
+    "billingCardsHint": "Payments will be handled through Stripe Checkout. Card details are never stored on TalkLive servers.",
     "billingBoostKicker": "CURRENT BOOST",
     "billingBoostValue": "No active Boost",
     "billingBoostHint": "Every feature is free. You have not been charged for anything.",
@@ -1136,7 +1139,7 @@ function applyI18n() {
 // Non-English dictionaries load on demand from /i18n/<lang>.js. Until the file
 // arrives t() falls back to English, then the UI re-translates once it lands.
 // Keep in step with the preload snippet in the <head> of index.html/chat.html.
-const I18N_VERSION = '20261019noads';
+const I18N_VERSION = '20261019stripe';
 const i18nLoading = {};
 window.__i18nLangLoaded = function (lang) {
   delete i18nLoading[lang];

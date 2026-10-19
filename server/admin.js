@@ -141,7 +141,7 @@ function premiumRows() {
       clientId,
       status,
       permanent: status === 'active' && !p.expiresAt,
-      source: p.source || 'unknown',
+      source: p.source || (p.subscriptionId ? 'stripe' : 'unknown'),
       activatedAt: p.activatedAt || null,
       updatedAt: p.updatedAt || null,
       expiresAt: p.expiresAt || null,
