@@ -1163,6 +1163,19 @@ body.panel-open .game-overlay {
   max-width: 420px;
 }
 
+#setupErrorText { margin: 14px auto 0; }
+
+.error-alt-link {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--accent, #7c5cff);
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+}
+
 .footer {
   text-align: center;
   font-size: 12px;
@@ -3010,6 +3023,14 @@ body.panel-open .game-overlay {
   line-height: 1.5;
   color: var(--text);
   cursor: pointer;
+}
+
+.consent-statement {
+  display: block;
+  margin: 0;
+  text-align: center;
+  color: var(--muted, var(--text));
+  cursor: default;
 }
 
 .consent-checkbox-row input[type="checkbox"] {

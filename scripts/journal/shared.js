@@ -23,7 +23,7 @@ const { snippet } = require('../data/serp');
 const SITE = 'https://talklive.app';
 const PUBLIC = path.join(__dirname, '..', '..', 'public');
 const OG_IMAGE = `${SITE}/og-image.png?v=2`;
-const CSS_VERSION = '20261019noads';
+const CSS_VERSION = '20261019tap';
 const CTA_JS_VERSION = '20261006callbtn';
 
 // family -> [ [weight, style, file] ]
@@ -74,6 +74,7 @@ a{color:inherit}
 .j-mast a{text-decoration:none}
 .j-mast .j-brand{font-weight:600;text-transform:uppercase;letter-spacing:.14em;white-space:nowrap}
 .j-mast nav{display:flex;gap:18px;flex-wrap:wrap}
+.j-mast nav a,.j-mast .j-brand,.j-foot nav a,.c-bar nav a,.c-bar .c-brand{display:inline-block;padding-top:6px;padding-bottom:6px}
 .j-mast nav a{opacity:.75}.j-mast nav a:hover{opacity:1;text-decoration:underline}
 .j-foot{max-width:1120px;margin:72px auto 0;padding:28px 20px 40px;border-top:1px solid var(--rule,rgba(0,0,0,.12));font:400 13px/1.7 system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--mast,currentColor)}
 .j-foot nav{display:flex;flex-wrap:wrap;gap:6px 18px;margin-bottom:10px}

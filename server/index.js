@@ -623,7 +623,7 @@ const GROWTH_EVENTS = new Set([
   // Voice funnel counters. These expose where users drop without recording
   // identity, country, message content or microphone data.
   'call_start_intent',
-  'call_mic_denied',
+  'call_mic_denied', 'mic_fallback_text_chat',
   'call_partner_found',
   // Install and notification funnels. Installed users and push opt-ins are the
   // only two things that bring an anonymous visitor back without an email

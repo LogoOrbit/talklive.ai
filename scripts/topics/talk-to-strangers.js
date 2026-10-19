@@ -69,7 +69,7 @@ h1,h2,h3{font-family:"Bricolage Grotesque",sans-serif;font-weight:700;letter-spa
 /* Section heads */
 .tz-sec{padding:88px 0 0}
 .tz-head{max-width:720px;margin:0 0 36px}
-.tz-kicker{display:block;font:600 13px/1 "Inter",sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--coral);margin-bottom:12px}
+.tz-kicker{display:block;font:600 13px/1 "Inter",sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#c2410c;margin-bottom:12px}
 .tz-head h2{font-size:clamp(32px,4.4vw,52px);line-height:1.04;margin:0 0 14px}
 .tz-head p{margin:0;color:var(--muted);font-size:18px}
 

@@ -146,7 +146,9 @@ try {
     if (s !== stuck) { stuck = s; nav.classList.toggle('is-stuck', s); }
   };
   window.addEventListener('scroll', onScroll, { passive: true });
-  onScroll();
+  // Not called synchronously: reading scrollY while app.js is still being
+  // evaluated forces a full style + layout of the page mid-parse.
+  requestAnimationFrame(onScroll);
 })();
 
 // Call history. Same button in the header rail, but it opens the same
@@ -6327,8 +6329,13 @@ let freshAppSession = (() => {
 })();
 // This device's IANA zone, sent at registration so a partner can see what
 // time it is here. Empty when the browser will not say.
+// Cached: the first Intl.DateTimeFormat() costs ~60ms on a slow phone, and
+// this runs on every (re)registration.
+let cachedTimezone = null;
 function myTimezone() {
-  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (_) { return ''; }
+  if (cachedTimezone !== null) return cachedTimezone;
+  try { cachedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (_) { cachedTimezone = ''; }
+  return cachedTimezone;
 }
 
 function registerClient(payload) {
@@ -6990,11 +6997,30 @@ reactionBar.addEventListener('click', (e) => {
   showReactionFloat(reaction);
 });
 
-function showError(msg) {
+function showError(msg, opts) {
   // On the Tap-to-Talk landing the callPanel is hidden, so surface errors there.
   const target = setupPanel.classList.contains('hidden') ? errorText : setupErrorText;
   target.textContent = msg;
+  // Without a working mic a voice call cannot happen, but a text chat can:
+  // offer it right in the message instead of leaving a dead end.
+  if (opts && opts.textChatFallback) {
+    const link = document.createElement('a');
+    link.href = '/chat?go=1';
+    link.className = 'error-alt-link';
+    link.textContent = `${t('tapToChat')} →`;
+    link.addEventListener('click', () => trackGrowthEvent('mic_fallback_text_chat'));
+    target.append(document.createElement('br'), link);
+  }
   target.classList.remove('hidden');
+  if (target === setupErrorText) {
+    // Manual, not scrollIntoView: that is a no-op here (the root clips
+    // overflow-x) and knows nothing about the fixed bottom nav on phones.
+    requestAnimationFrame(() => {
+      const r = target.getBoundingClientRect();
+      const overflow = r.bottom - (window.innerHeight - 120);
+      if (overflow > 0) window.scrollBy({ top: Math.min(overflow, Math.max(0, r.top - 80)), behavior: 'smooth' });
+    });
+  }
 }
 
 function clearError() {
@@ -8071,14 +8097,15 @@ async function begin() {
     startBtn.disabled = false;
     startBtn.classList.remove('is-connecting');
     setButtonMode('call');
+    const fallback = { textChatFallback: true };
     if (e.name === 'NotAllowedError' || e.name === 'SecurityError') {
-      showError(t('errMicBlocked'));
+      showError(t('errMicBlocked'), fallback);
     } else if (e.name === 'NotFoundError') {
-      showError(t('errNoMic'));
+      showError(t('errNoMic'), fallback);
     } else if (e.name === 'NotReadableError') {
-      showError(t('errMicBusy'));
+      showError(t('errMicBusy'), fallback);
     } else {
-      showError(t('errMicRequired'));
+      showError(t('errMicRequired'), fallback);
     }
     return;
   }
@@ -8099,7 +8126,6 @@ async function begin() {
 
 const ageConsentModal = document.getElementById('ageConsentModal');
 const ageAgreeBtn = document.getElementById('ageAgreeBtn');
-const ageAgreeCheckbox = document.getElementById('ageAgreeCheckbox');
 const closeAgeConsentBtn = document.getElementById('closeAgeConsentBtn');
 const CONSENT_KEY = 'talklive_age_consent';
 
@@ -8183,15 +8209,9 @@ function startCallFlow() {
   if (localStorage.getItem(CONSENT_KEY) === 'yes') {
     requireAnimal(begin);
   } else {
-    ageAgreeCheckbox.checked = false;
-    ageAgreeBtn.disabled = true;
     openModal(ageConsentModal);
   }
 }
-
-ageAgreeCheckbox.addEventListener('change', () => {
-  ageAgreeBtn.disabled = !ageAgreeCheckbox.checked;
-});
 
 // --- Landing "Tap to Talk" feedback: ripple + press + connecting spinner so
 // the user gets instant confirmation and can't fire off repeated taps. ---
@@ -8322,8 +8342,6 @@ if (pendingInviteToken) {
   if (localStorage.getItem(CONSENT_KEY) === 'yes') {
     requireAnimal(joinVoiceInvite);
   } else {
-    ageAgreeCheckbox.checked = false;
-    ageAgreeBtn.disabled = true;
     openModal(ageConsentModal);
   }
 }
@@ -9088,6 +9106,26 @@ primeBackGuard();
 // longer open. Re-deriving it on restore is the cheap way to never hand
 // somebody back a page they cannot scroll.
 window.addEventListener('pageshow', updateScrollLock);
+
+// Back/forward cache: an open WebSocket makes the page ineligible, so going
+// Home -> a guide -> Back reloaded the whole app. When nothing is live, close
+// the socket as the page is hidden and reopen it if the page is restored; the
+// 'connect' handler re-registers, so the restored page carries on as normal.
+let socketClosedForBfcache = false;
+window.addEventListener('pagehide', (e) => {
+  if (!e.persisted) return;
+  const live = callState === 'connected' || callState === 'connecting'
+    || callState === 'reconnecting' || callState === 'searching';
+  if (live || (games && games.isPlaying())) return;
+  socketClosedForBfcache = true;
+  socket.disconnect();
+});
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted && socketClosedForBfcache) {
+    socketClosedForBfcache = false;
+    socket.connect();
+  }
+});
 
 // Guard against an *accidental* tab close, refresh, or navigation away while the
 // user is actively engaged - a live/searching call or a game in progress. The
