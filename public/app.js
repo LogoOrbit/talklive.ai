@@ -6666,6 +6666,7 @@ function setCallState(state) {
 
   if (state === 'searching') startSearchTicker();
   else stopSearchTicker();
+  syncCallIcebreaker(state);
   if (!connected) stopQualityMonitor();
   // Nudge the user toward the game only while a call is live.
   if (typeof scheduleGameNudge === 'function') {
@@ -6675,6 +6676,74 @@ function setCallState(state) {
   syncGamePlayCard();
   if (typeof syncChatHeader === 'function') syncChatHeader();
   syncWakeLock();
+}
+
+// --- Opening question for a voice call -------------------------------------
+// Most calls that end badly end in the first ten seconds, often because
+// neither person knows what to say. For the first 40 seconds of each call the
+// partner card offers one question to open with; tapping it shows another.
+// Shown once per call: a reconnect inside the same call does not bring it back.
+const callIcebreakerEl = document.getElementById('callIcebreaker');
+const callIcebreakerText = document.getElementById('callIcebreakerText');
+const CALL_ICEBREAKER_MS = 40000;
+let callIcebreakerTimer = null;
+let callIcebreakerUsed = false;
+let callIcebreakerLoading = false;
+
+// icebreakers.js is only needed once someone is on the line, so it is fetched
+// then rather than on every page load.
+function loadIcebreakers(done) {
+  if (window.TalkLiveIcebreakers) { done(); return; }
+  if (callIcebreakerLoading) return;
+  callIcebreakerLoading = true;
+  const s = document.createElement('script');
+  s.src = '/icebreakers.js?v=20260923ice';
+  s.async = true;
+  s.onload = () => { callIcebreakerLoading = false; done(); };
+  s.onerror = () => { callIcebreakerLoading = false; };
+  document.head.appendChild(s);
+}
+
+function showNextCallIcebreaker() {
+  if (!callIcebreakerEl || !window.TalkLiveIcebreakers) return;
+  const q = window.TalkLiveIcebreakers.draw(1)[0];
+  if (!q) return;
+  callIcebreakerText.textContent = q.emoji + ' ' + q.text;
+}
+
+function hideCallIcebreaker() {
+  clearTimeout(callIcebreakerTimer);
+  callIcebreakerTimer = null;
+  if (callIcebreakerEl) callIcebreakerEl.classList.add('hidden');
+}
+
+function syncCallIcebreaker(state) {
+  if (!callIcebreakerEl) return;
+  if (state === 'reconnecting') return; // same call - leave it as it is
+  if (state !== 'connected') {
+    hideCallIcebreaker();
+    if (state === 'searching' || state === 'idle' || state === 'disconnected') callIcebreakerUsed = false;
+    return;
+  }
+  if (callIcebreakerUsed) return;
+  callIcebreakerUsed = true;
+  loadIcebreakers(() => {
+    if (callState !== 'connected') return;
+    showNextCallIcebreaker();
+    callIcebreakerEl.classList.remove('hidden');
+    clearTimeout(callIcebreakerTimer);
+    callIcebreakerTimer = setTimeout(hideCallIcebreaker, CALL_ICEBREAKER_MS);
+  });
+}
+
+if (callIcebreakerEl) {
+  callIcebreakerEl.addEventListener('click', (e) => {
+    // The card around it opens the partner's profile; this button does not.
+    e.stopPropagation();
+    showNextCallIcebreaker();
+    clearTimeout(callIcebreakerTimer);
+    callIcebreakerTimer = setTimeout(hideCallIcebreaker, CALL_ICEBREAKER_MS);
+  });
 }
 
 // --- Searching entertainment ticker: rotates fun facts, icebreakers, tips and

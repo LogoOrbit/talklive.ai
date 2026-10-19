@@ -556,6 +556,8 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "subTapCall": "Tap the green Call button whenever you are ready",
     "statusConnectingRandom": "Connecting to someone random…",
     "reassureLine": "Don't feel bad if someone skips you or hangs up - it happens to everyone, just move on to the next chat.",
+    "callTryAsking": "Try asking",
+    "callTryAskingNext": "Show another question",
     "connectionQuality": "Connection quality",
     "qualityExcellent": "Excellent",
     "qualityGood": "Good",
