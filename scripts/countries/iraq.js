@@ -71,7 +71,7 @@ body{font-family:"Source Serif 4",Georgia,serif;background:var(--paper);color:va
 .iq-end h2{font:400 clamp(36px,6vw,60px)/1 "Abril Fatface",serif;margin:0 0 10px}
 .iq-end p{font-size:18px;line-height:1.55;margin:0 auto 24px;max-width:540px}
 .iq-end .c-ctas{justify-content:center;margin:0 auto}
-@media (max-width:820px){.iq-hero{grid-template-columns:1fr}.iq-shelf{height:220px}.iq-page{padding:26px 20px 18px}.iq-gloss div{grid-template-columns:1fr;gap:2px}}
+@media (max-width:820px){.iq-hero{grid-template-columns:minmax(0,1fr)}.iq-spine{min-width:0;overflow:hidden}.iq-shelf{height:220px}.iq-page{padding:26px 20px 18px}.iq-gloss div{grid-template-columns:1fr;gap:2px}}
 `,
   faq: [
     { q: 'Is TalkLive free in Iraq?', a: 'Yes. Voice and text chat are free, with no account, no phone number and no camera. Choosing Iraq as a preferred country is free too.' },

@@ -265,13 +265,13 @@
     var form = document.createElement('form');
     form.setAttribute('data-subscribe', '');
     form.setAttribute('novalidate', '');
-    form.style.cssText = 'max-width:420px;margin:14px auto 4px;padding:0 12px;font-size:14px;line-height:1.5;color:inherit;text-align:center';
+    form.style.cssText = 'box-sizing:border-box;width:100%;max-width:420px;margin:14px auto 4px;padding:0 12px;font-size:14px;line-height:1.5;color:inherit;text-align:center';
     var label = document.createElement('label');
     label.htmlFor = 'tlSubEmail';
     label.textContent = 'Get the occasional email from TalkLive';
     label.style.cssText = 'display:block;font-weight:600;margin-bottom:6px';
     var row = document.createElement('div');
-    row.style.cssText = 'display:flex;gap:6px;justify-content:center';
+    row.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;justify-content:center';
     var input = document.createElement('input');
     input.type = 'email';
     input.id = 'tlSubEmail';
@@ -279,7 +279,7 @@
     input.required = true;
     input.autocomplete = 'email';
     input.placeholder = 'you@example.com';
-    input.style.cssText = 'flex:1;min-width:0;padding:9px 12px;border-radius:999px;border:1px solid rgba(127,127,127,.45);background:transparent;color:inherit;font:inherit';
+    input.style.cssText = 'flex:1 1 160px;min-width:0;padding:9px 12px;border-radius:999px;border:1px solid rgba(127,127,127,.45);background:transparent;color:inherit;font:inherit;font-size:16px';
     // Honeypot: hidden from people, filled in by naive bots.
     var hp = document.createElement('input');
     hp.type = 'text';
@@ -287,11 +287,11 @@
     hp.tabIndex = -1;
     hp.autocomplete = 'off';
     hp.setAttribute('aria-hidden', 'true');
-    hp.style.cssText = 'position:absolute;left:-9999px;width:1px;height:1px;opacity:0';
+    hp.style.cssText = 'position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;opacity:0';
     var btn = document.createElement('button');
     btn.type = 'submit';
     btn.textContent = 'Sign up';
-    btn.style.cssText = 'padding:9px 16px;border-radius:999px;border:0;background:#15803d;color:#fff;font:inherit;font-weight:700;cursor:pointer';
+    btn.style.cssText = 'flex:none;padding:9px 16px;border-radius:999px;border:0;background:#15803d;color:#fff;font:inherit;font-weight:700;cursor:pointer';
     var note = document.createElement('div');
     note.textContent = 'No spam. Unsubscribe anytime.';
     note.style.cssText = 'margin-top:6px;font-size:12px;opacity:.7';

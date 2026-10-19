@@ -37,7 +37,7 @@
 <link rel="stylesheet" href="/chat.css?v=20261007nudge" />
 <link rel="stylesheet" href="/chat-extras.css?v=20261004glow" />
 <link rel="stylesheet" href="/games.css?v=20261007menu" />
-<link rel="stylesheet" href="/ui.css?v=20261019seo" />
+<link rel="stylesheet" href="/ui.css?v=20261019mob" />
 <!-- The top bar, shared with / and /call: one button language, one radius,
      one focus ring on every screen of the product. -->
 <link rel="stylesheet" href="/nav.css?v=20261005modes" />
@@ -97,7 +97,7 @@
 <link rel="manifest" href="/site.webmanifest" />
 <!-- Mobile app only (mobile/): load the native bridge. A no-op in browsers, which never download it. -->
 <script>if(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform()){var s=document.createElement('script');s.src='/native.js?v=20261008app';s.async=false;document.head.appendChild(s);}</script>
-<script defer src="/pwa.js?v=20261019seo"></script>
+<script defer src="/pwa.js?v=20261019mob"></script>
 <script type="application/ld+json">[{"@type":"Service","@context":"https://schema.org","name":"TalkLive Chat","url":"https://talklive.app/chat","description":"TalkLive text chat - one-to-one conversations with people around the world.","brand":{"@type":"Brand","name":"TalkLive"},"offers":{"@type":"Offer","price":"0","priceCurrency":"USD","availability":"https://schema.org/InStock","url":"https://talklive.app/"},"additionalType":"https://schema.org/WebApplication","serviceType":"Random voice and text chat","category":"CommunicationApplication","provider":{"@type":"Organization","name":"TalkLive","url":"https://talklive.app","logo":"https://talklive.app/favicon.svg","sameAs":["https://www.instagram.com/talklive.app/","https://www.facebook.com/people/TalkLive/61591751700039/","https://x.com/talkliveapp","https://www.tiktok.com/@talkliveapp","https://www.youtube.com/@talkliveapp","https://www.pinterest.com/talklive.app/","https://www.crunchbase.com/organization/talklive"]},"areaServed":"Worldwide","availableChannel":{"@type":"ServiceChannel","serviceUrl":"https://talklive.app/chat"}}]</script>
 <script defer src="/ads.js?v=20260923adsense2"></script>
 </head>
@@ -828,7 +828,7 @@
      does not change whether they run, only when they start competing with the
      page's own assets for bandwidth on a slow mobile connection. -->
 <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-713E3C1RH1"></script>
+<script>(function(){function g(){var s=document.createElement('script');s.async=true;s.src='https://www.googletagmanager.com/gtag/js?id=G-713E3C1RH1';document.head.appendChild(s);}function i(){(window.requestIdleCallback||function(f){setTimeout(f,200);})(g,{timeout:3000});}if(document.readyState==='complete')i();else addEventListener('load',i);})();</script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}

@@ -3243,3 +3243,28 @@
   #friendChatModal .chat-header-actions .chat-clear-btn svg { width: 18px; height: 18px; }
   #friendChatModal .chat-header-actions .modal-close { min-width: 32px; width: 32px; }
 }
+
+/* ===========================================================================
+ * PHONES IN LANDSCAPE
+ * ---------------------------------------------------------------------------
+ * At 844x390 the header and tab bar leave about 250px between them, and the
+ * hero's title and subtitle used all of it: Tap to Talk / Tap to Chat sat
+ * under the tab bar, so the page opened with no visible way to start. On
+ * short landscape screens the hero is tightened until both buttons fit.
+ * ======================================================================== */
+@media (orientation: landscape) and (max-height: 500px) and (max-width: 979px) {
+  #setupPanel { margin-top: -14px; }
+  #setupPanel .setup-title { font-size: clamp(24px, 7vh, 30px); line-height: 1.1; }
+  #setupPanel .tl-hero-sub { margin-top: 6px; font-size: 14px; line-height: 1.35; }
+  #setupPanel #tapToTalk { margin-top: 14px; }
+  #setupPanel .tl-action { padding-top: 10px; padding-bottom: 10px; }
+}
+
+/* iOS Safari zooms the whole page in when a focused field's text is under
+   16px, and leaves it zoomed after the keyboard closes. iOS only, so the
+   denser desktop and Android sizing is untouched. */
+@supports (-webkit-touch-callout: none) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
+  textarea,
+  select { font-size: max(16px, 1em) !important; }
+}

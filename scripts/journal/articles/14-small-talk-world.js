@@ -42,7 +42,7 @@ body{font-family:"Manrope",system-ui,sans-serif}
 .pp-body{max-width:700px;margin:0 auto;padding:36px 20px 0;font-size:18px;line-height:1.75}
 .pp-body p{margin:0 0 1.1em}
 .pp-body h2{font:800 28px/1.15 "Syne",sans-serif;margin:1.7em 0 .5em}
-.pp-grid{max-width:1100px;margin:30px auto;padding:0 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:18px}
+.pp-grid{max-width:1100px;margin:30px auto;padding:0 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(310px,100%),1fr));gap:18px}
 .pp-stamp{--c:#14213d;background:#fffdf8;border:3px double var(--c);border-radius:14px;padding:18px 18px 16px;position:relative;font-size:15px;line-height:1.5}
 .pp-stamp:nth-child(3n+1){transform:rotate(-.6deg)}.pp-stamp:nth-child(3n+2){transform:rotate(.5deg)}
 .pp-stamp h2{font:800 20px/1.1 "Syne",sans-serif;color:var(--c);margin:0 0 4px;text-transform:uppercase;letter-spacing:.02em}

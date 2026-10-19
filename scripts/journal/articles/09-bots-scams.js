@@ -21,7 +21,7 @@ body{font-family:"Archivo",system-ui,sans-serif}
 .g-intro p{margin:0 0 1.1em}
 .g-rule{background:var(--y);color:#17181a;padding:26px 28px;margin:40px 0;font:400 clamp(22px,3vw,32px)/1.2 "Archivo Black",sans-serif;text-transform:uppercase}
 .g-rule small{display:block;font:600 15px/1.5 "Archivo",sans-serif;text-transform:none;margin-top:10px}
-.g-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px;margin:28px 0}
+.g-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:18px;margin:28px 0}
 .g-card{border:1px solid var(--rule);padding:22px 22px 18px;background:#1e2023}
 .g-card .g-no{font:400 13px/1 "Archivo Black",sans-serif;color:var(--y);letter-spacing:.14em}
 .g-card h2{font:400 24px/1.1 "Archivo Black",sans-serif;text-transform:uppercase;margin:10px 0 14px}

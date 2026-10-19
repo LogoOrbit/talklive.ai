@@ -60,7 +60,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 body{margin:0;background:var(--paper,#fff);color:var(--ink,#111);text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased}
 img,svg{max-width:100%;height:auto}
 a{color:inherit}
-.skip{position:absolute;left:-9999px}.skip:focus{left:12px;top:12px;background:#fff;color:#000;padding:8px 12px;z-index:9}
+.skip{position:absolute;left:12px;top:-200px}.skip:focus{top:12px;background:#fff;color:#000;padding:8px 12px;z-index:9}
 .j-mast{display:flex;align-items:center;justify-content:space-between;gap:16px;max-width:1120px;margin:0 auto;padding:14px 20px;font:500 13px/1.2 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.04em;color:var(--mast,currentColor);border-bottom:1px solid var(--rule,rgba(0,0,0,.12))}
 .j-mast a{text-decoration:none}
 .j-mast .j-brand{font-weight:600;text-transform:uppercase;letter-spacing:.14em;white-space:nowrap}
@@ -122,6 +122,7 @@ a.tl-go-btn:focus-visible{outline:3px solid currentColor;outline-offset:3px}
 body.tl-has-dock{padding-bottom:80px}
 @media (min-width:900px){.tl-dock{left:50%;right:auto;bottom:18px;width:520px;transform:translate(-50%,140%);border-radius:999px;border:1px solid var(--rule,rgba(0,0,0,.12));padding:8px;box-shadow:0 14px 36px -16px rgba(0,0,0,.4)}.tl-dock.is-on{transform:translate(-50%,0)}body.tl-has-dock{padding-bottom:0}}
 @media (max-width:480px){.tl-go{margin:26px auto;padding:0 16px}.tl-go a.tl-go-btn,.c-ctas a.tl-go-btn{flex-basis:100%;min-height:62px!important;font-size:19px!important}}
+@media (max-width:480px){body{overflow-wrap:anywhere}.tl-go-btn{min-width:0!important;max-width:100%}img,video,iframe{max-width:100%}}
 @keyframes tlPulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--cta-talk,#1f8a4c) 55%,transparent)}70%{box-shadow:0 0 0 14px color-mix(in srgb,var(--cta-talk,#1f8a4c) 0%,transparent)}100%{box-shadow:0 0 0 0 transparent}}
 @keyframes tlRing{0%,62%,100%{transform:rotate(0)}66%{transform:rotate(-16deg)}70%{transform:rotate(14deg)}74%{transform:rotate(-12deg)}78%{transform:rotate(10deg)}82%{transform:rotate(-4deg)}86%{transform:rotate(0)}}
 @keyframes tlType{0%,60%,100%{opacity:.35;transform:translateY(0)}30%{opacity:1;transform:translateY(-1.2px)}}

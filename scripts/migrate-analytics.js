@@ -63,8 +63,21 @@ const ADS_CONFIG = `gtag('config', '${ADS_ID}');`;
  * analytics latency. The homepage preconnects because it is a much heavier
  * document; these pages are not.
  */
+/*
+ * gtag.js is ~170KB, and with the Ads config it fetches a second ~150KB
+ * container. Loaded as a plain async tag it ran in the middle of page start-up
+ * and was the largest blocker of the main thread on every page (Lighthouse
+ * mobile: ~540ms of blocking time on /random-voice-chat, more on /). So it now
+ * starts only after the page's own load event, when the browser is idle (or
+ * 3s later at most). The gtag() stub below queues every command until then,
+ * so nothing is lost; only a visitor who leaves before the page has finished
+ * loading goes uncounted by GA (the first-party /events count still has them).
+ */
+const ASYNC_TAG = `<script async src="https://www.googletagmanager.com/gtag/js?id=${MEASUREMENT_ID}"></script>`;
+const DEFERRED_TAG = `<script>(function(){function g(){var s=document.createElement('script');s.async=true;s.src='https://www.googletagmanager.com/gtag/js?id=${MEASUREMENT_ID}';document.head.appendChild(s);}function i(){(window.requestIdleCallback||function(f){setTimeout(f,200);})(g,{timeout:3000});}if(document.readyState==='complete')i();else addEventListener('load',i);})();</script>`;
+
 const SNIPPET = `<!-- Google tag (gtag.js) - see scripts/migrate-analytics.js -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=${MEASUREMENT_ID}"></script>
+${DEFERRED_TAG}
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
@@ -94,6 +107,7 @@ const CONSENT_DEFAULT = `
 const GTAG_STUB = /function gtag\(\)\{dataLayer\.push\(arguments\);\}/;
 let consented = 0;
 let adsTagged = 0;
+let deferred = 0;
 
 function htmlFiles(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -128,6 +142,13 @@ for (const file of htmlFiles(publicDir)) {
     updated += 1;
   }
 
+  // Older pages and the hand-maintained ones load the tag as a plain async
+  // script; switch them to the deferred loader.
+  if (html.includes(ASYNC_TAG)) {
+    html = html.split(ASYNC_TAG).join(DEFERRED_TAG);
+    deferred += 1;
+  }
+
   // Consent Mode default on every tagged page, hand-written tags included.
   if (!html.includes("gtag('consent', 'default'")) {
     const withConsent = html.replace(GTAG_STUB, (stub) => stub + CONSENT_DEFAULT);
@@ -143,4 +164,4 @@ for (const file of htmlFiles(publicDir)) {
   if (html !== before) fs.writeFileSync(file, html);
 }
 
-console.log(`Analytics: tagged ${updated} HTML files (${skipped} already had it); consent default added to ${consented}; Ads config added to ${adsTagged}.`);
+console.log(`Analytics: tagged ${updated} HTML files (${skipped} already had it); consent default added to ${consented}; Ads config added to ${adsTagged}; tag deferred on ${deferred}.`);

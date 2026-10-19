@@ -20,7 +20,7 @@ body{font-family:"Manrope",system-ui,sans-serif;background:var(--paper)}
 .c-bar{border-bottom:1px solid var(--rule)}
 .om-hero{max-width:1100px;margin:0 auto;padding:46px 20px 30px;display:grid;grid-template-columns:1.25fr 1fr;gap:40px;align-items:start}
 .om-tag{display:inline-block;font:700 12px/1 "Manrope",sans-serif;letter-spacing:.12em;text-transform:uppercase;background:var(--ink);color:#fff;padding:8px 12px;border-radius:4px}
-.om-hero h1{font:400 clamp(46px,7.4vw,92px)/.95 "Archivo Black",sans-serif;letter-spacing:-.03em;margin:18px 0 18px}
+.om-hero h1{font:400 clamp(34px,7.4vw,92px)/.95 "Archivo Black",sans-serif;overflow-wrap:break-word;letter-spacing:-.03em;margin:18px 0 18px}
 .om-dek{font-size:20px;line-height:1.6;margin:0 0 24px}
 .om-card{background:#fff;border:1px solid var(--rule);border-radius:14px;padding:22px;box-shadow:0 10px 30px rgba(20,32,43,.06)}
 .om-card h2{font:400 18px/1.2 "Archivo Black",sans-serif;margin:0 0 12px}
@@ -67,7 +67,8 @@ body{font-family:"Manrope",system-ui,sans-serif;background:var(--paper)}
 .om-end p{margin:10px 0 0;color:#dbe8ff}
 .om-end .c-talk{background:#fff;color:var(--accent)}
 .om-end .c-chat{background:transparent;color:#fff;border-color:#8db4f5}
-@media (max-width:860px){.om-hero,.om-end-in{grid-template-columns:1fr}.om-checks{grid-template-columns:1fr}}
+@media (max-width:860px){.om-hero,.om-end-in{grid-template-columns:minmax(0,1fr)}.om-checks{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:380px){.om-dek{font-size:18px}.om-end-in{padding:32px 20px}}
 `,
   faq: [
     { q: 'Is Omegle coming back?', a: 'There has been no announcement. Omegle closed on 8 November 2023 and its homepage now shows only the founder\'s farewell letter. Sites using the Omegle name today are not affiliated with the original.' },
