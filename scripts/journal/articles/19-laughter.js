@@ -82,7 +82,6 @@ body{font-family:Literata,Georgia,serif}
 </div>
 ${ctx.faq('Questions about laughter')}
 ${ctx.cta({ title: 'Find someone to laugh with', sub: 'One tap connects you with a real person. You do not need jokes, just a friendly hello.' })}
-${ctx.ad()}
 ${ctx.more}
 </main>`,
 };

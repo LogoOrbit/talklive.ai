@@ -92,7 +92,6 @@ ${CLOCKS.map(([c, z, t]) => `<div><b>${t}</b><span>${ctx.esc(c)}</span><small>${
 <p>So when you meet someone from Accra or Nairobi, try asking the obvious question nobody asks: do you still flash people?</p>
 </div>
 ${ctx.cta({ title: 'Your turn: say hello', sub: 'How far, habari or sawubona. Someone is waiting to talk.' })}
-${ctx.ad()}
 ${ctx.more}
 </main>`,
 };

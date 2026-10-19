@@ -88,7 +88,6 @@ body{font-family:"DM Sans",system-ui,sans-serif}
 </div>
 ${ctx.faq('Questions about ending conversations')}
 ${ctx.cta({ title: 'Practise the easy part: saying hello', sub: 'Every conversation you start is a chance to practise a good goodbye too. One tap, matched in seconds.' })}
-${ctx.ad()}
 ${ctx.more}
 </main>`,
 };

@@ -84,8 +84,6 @@ a{color:inherit}
 .j-faq summary::after{content:"+";float:right;margin-left:12px;opacity:.6}
 .j-faq details[open] summary::after{content:"\2212"}
 .j-faq details p{margin:10px 0 0;font-size:17px;line-height:1.65}
-.ad-card{max-width:728px;margin:48px auto;padding:10px 0 0;border-top:1px solid var(--rule,rgba(0,0,0,.12));text-align:center}
-.ad-card-label{display:block;font:500 10px/1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.18em;text-transform:uppercase;opacity:.5;margin-bottom:8px}
 @media (max-width:640px){.j-mast{flex-wrap:wrap;gap:8px 14px;font-size:12px}.j-mast nav{gap:14px}}
 /* Start-talking buttons. No box of their own: they sit on the page's paper in
    the page's type, so they read as part of the article rather than an ad.

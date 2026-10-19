@@ -128,7 +128,6 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--paper);color:var(--
   </section>
 </div>
 
-${c.ad()}
 ${c.faq('Domande frequenti')}
 <section class="it-end"><div class="it-end-in">
   <h2>Dai, facciamo due chiacchiere</h2>

@@ -89,9 +89,8 @@ html, body {
 button, input, select, textarea { word-spacing: inherit; font-family: inherit; }
 
 /* ...but the start screen is a landing page, and a landing page scrolls. With
-   the lock on in every state, everything below the fold was unreachable: on
-   an 820px phone that was the bottom half of this page's only ad, rendered
-   and impossible to reach. Set from setView(), and dropped again the moment
+   the lock on in every state, everything below the fold was unreachable.
+   Set from setView(), and dropped again the moment
    a search starts. */
 body.page-scrolls,
 body.page-scrolls > .app { height: auto; min-height: 100%; overflow: visible; }
@@ -141,8 +140,8 @@ img { max-width: 100%; }
  * Plain `justify-content: center` overflows in BOTH directions once the
  * content is taller than the stage, and this page never scrolls, so the top of
  * the start view - the "Chat with a stranger" heading - was pushed up behind
- * the top bar and printed straight through it, while the ad card at the
- * bottom was clipped away entirely. `safe center` refuses to overflow the
+ * the top bar and printed straight through it, while the bottom of the view
+ * was clipped away entirely. `safe center` refuses to overflow the
  * start edge, and overflow-y gives the rest somewhere to go. The unprefixed
  * declaration stays first as the fallback for engines without `safe`. */
 .chat-view {
@@ -892,174 +891,6 @@ img { max-width: 100%; }
   .side-panel { transition: none; }
 }
 
-/* --- Ad placements ------------------------------------------------------- */
-
-/* Slim strip between the message list and the composer on the live view. */
-.chat-live-ad {
-  flex: 0 0 auto;
-  margin: 8px auto 0;
-  text-align: center;
-  max-width: 100%;
-  overflow: hidden;
-}
-
-/* Ads sit inside a framed card that matches the rest of the UI: a labelled,
-   rounded panel in the page flow. The old version was a bare creative pinned
-   to the right edge of the viewport, which read as a pop-up rather than as
-   part of the product. The card collapses on its own when ads.js hides an
-   unfilled slot, so no empty frame is ever left behind. */
-.ad-card {
-  /* width:100%, not fit-content: ads.js sizes a banner from the slot's measured
-     width, and a shrink-to-fit card reported ~300px and downgraded every
-     leaderboard to a 320x50. The 780px cap keeps the slot above the
-     744px threshold ads.js uses to pick a 728x90. */
-  width: 100%;
-  max-width: 780px;
-  margin: 22px auto 0;
-  padding: 8px 8px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.028);
-  text-align: center;
-}
-.ad-card-label {
-  display: block;
-  margin: 0 0 7px;
-  font-size: 0.62rem;
-  font-weight: 600;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--muted, #8b93a7);
-  opacity: 0.75;
-}
-@media (max-height: 760px) {
-  #viewSearch .ad-card { display: none; }
-}
-
-/* Below the breakpoint the live strip is the only in-app slot, so keep it
-   from ever eating more than a sliver of a short viewport. */
-@media (max-height: 620px) {
-  .chat-live-ad { display: none; }
-}
-
-/* --- Ad slot dimension reservation ---------------------------------------
- *
- * Every [data-ad] slot reserves the height its creative will occupy BEFORE
- * public/ads.js loads anything into it. Without this the slot is 0px tall
- * until the iframe lands, and everything below it jumps down by 50-250px -
- * which is Cumulative Layout Shift, and it was happening on all 1,000+ slots
- * on this site.
- *
- * The breakpoints below mirror sizeFor() in public/ads.js exactly. Keep them
- * in step: if the two disagree, the page shifts by the difference.
- *
- * One deliberate asymmetry. ads.js picks a size from the SLOT's width; CSS can
- * only ask about the VIEWPORT, which is always the larger of the two. Because
- * the sizes are monotonic in width (320x50 -> 468x60 -> 728x90), reserving on
- * viewport width always reserves at least as much as ads.js will use. The cost
- * is a few pixels of whitespace near a breakpoint. The alternative -
- * under-reserving - is a visible jump, so the trade is the right way round.
- *
- * This block is duplicated verbatim in seo.css, style.css and chat.css. It is
- * not extracted into its own stylesheet on purpose: the 265 generated pages
- * load exactly one render-blocking stylesheet, and a second request to save
- * 30 lines of CSS would be a bad trade.
- */
-[data-ad] {
-  display: block;
-  /* Fallback for a slot type with no rule below. */
-  min-height: 50px;
-}
-
-/* 300x250 medium rectangle - one size at every width. */
-[data-ad="box"], [data-ad="300x250"] { min-height: 250px; }
-
-/* Responsive banners: 320x50 -> 468x60 -> 728x90. */
-[data-ad="leaderboard"], [data-ad="banner"], [data-ad="320x50"] { min-height: 50px; }
-[data-ad="468x60"] { min-height: 60px; }
-[data-ad="728x90"] { min-height: 90px; }
-@media (min-width: 484px) {
-  [data-ad="leaderboard"], [data-ad="banner"] { min-height: 60px; }
-}
-@media (min-width: 744px) {
-  [data-ad="leaderboard"] { min-height: 90px; }
-}
-
-/* Skyscrapers switch on viewport width in ads.js, so these agree exactly. */
-[data-ad="skyscraper"], [data-ad="160x300"] { min-height: 300px; }
-[data-ad="160x600"] { min-height: 600px; }
-@media (min-width: 1024px) {
-  [data-ad="skyscraper"] { min-height: 600px; }
-}
-
-/* The one approximate reservation. A native banner's height depends on how
- * many recommendation cards the network returns and how they wrap, so it
- * cannot be derived the way a fixed banner size can. These values are a
- * deliberate over-estimate: too much reserved space is whitespace, too little
- * is a jump. Tune once real field CLS data exists - see docs/action-plan.md. */
-[data-ad="native"] { min-height: 250px; }
-@media (min-width: 744px) {
-  [data-ad="native"] { min-height: 180px; }
-}
-
-/* A slot that never filled while the user was looking at it keeps its
- * reserved space - collapsing it would move the page just as surely as
- * expanding it did. It only loses the frame and the "Sponsored" label, so it
- * reads as spacing rather than as a hole. ads.js still collapses slots that
- * are off screen, where nothing visible can move. */
-/* The frame and its label only appear once a creative is actually on the page.
- *
- * ads.js sets data-ad-filled when a tag has put something in the slot. Until
- * then the card is invisible: reserved space and nothing else. An empty
- * labelled panel announcing an advertisement that does not exist is worse than
- * no frame at all, and on a connection with an ad blocker or a filtering
- * resolver - a lot of this audience - that is what every slot would otherwise
- * be. Only colour and visibility change here, never size, so revealing the
- * frame cannot shift the page. */
-.ad-card {
-  border-color: transparent;
-  background: transparent;
-}
-.ad-card .ad-card-label { visibility: hidden; }
-.ad-card[data-ad-filled] {
-  border-color: rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.028);
-}
-.ad-card[data-ad-filled] .ad-card-label { visibility: visible; }
-
-/* --- House promo ----------------------------------------------------------
- *
- * What fills a slot the ad network never served - almost always because the
- * visitor blocks ads. Built entirely from markup and CSS already on the page:
- * no image, font, script or beacon is fetched, so there is no request for a
- * blocker to stop.
- *
- * Styled as one of our own cards and deliberately NOT as an advertisement. The
- * .ad-card chrome and its "Sponsored" label stay off (they only switch on for
- * data-ad-filled), because these link to our own pages and labelling them
- * sponsored would be a false disclosure.
- */
-.house-ad {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 14px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.04);
-  color: inherit;
-  text-align: left;
-  text-decoration: none;
-  transition: border-color 0.15s ease, transform 0.15s ease;
-}
-.house-ad:hover { border-color: var(--accent-2, var(--accent)); transform: translateY(-1px); }
-.house-ad-icon { font-size: 1.6rem; line-height: 1; flex: 0 0 auto; }
-.house-ad-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.house-ad-title { font-size: 0.95rem; font-weight: 700; }
-.house-ad-body { font-size: 0.82rem; color: var(--muted, #8b93a7); line-height: 1.45; }
-.house-ad-cta { font-size: 0.8rem; font-weight: 600; color: var(--accent-2, #00d4ff); margin-top: 4px; }
-
 /* Install / notification prompts (public/pwa.js). Kept identical across every
    stylesheet the site loads, because pwa.js runs on every page and the card
    must not be unstyled anywhere. Mirrors the block in style.css. */
@@ -1167,7 +998,6 @@ img { max-width: 100%; }
     transition: none; animation: none;
   }
 }
-
 
 /* ---------------------------------------------------------------------------
    Friend chat header, lifted verbatim from the call app (style.css) so an
@@ -1438,11 +1268,6 @@ summary:active {
 }
 .chat-block-btn:hover { opacity: 1; }
 .chat-block-btn.confirm { background: var(--danger, #e5484d); color: #fff; opacity: 1; }
-
-/* No Google ads on the app screens (start, matchmaking, call, chat): AdSense
-   treats them as screens without publisher content, and a unit beside the
-   call controls invites accidental clicks. ads.js never fills these either. */
-.ad-card-app { display: none !important; }
 
 /* "Break the ice": tap-to-send starter questions under the match line. */
 .icebreak { align-self: center; width: 100%; max-width: 560px; margin: 10px auto 6px; text-align: center; animation: msgIn 0.2s ease both; }

@@ -24,8 +24,8 @@
  * disk and Google crawls them, but no template change can reach them. SEO.md
  * documents why reviving those generators destroys 14-18% of the pages' visible
  * text, so the established pattern for anything sitewide is a sweep over
- * public/**\/*.html. scripts/migrate-schema.js and scripts/migrate-ads.js
- * both work this way and this follows them.
+ * public/**\/*.html. scripts/migrate-schema.js works this way and this
+ * follows it.
  *
  * Idempotent: a page that already carries the tag is skipped, so on a correct
  * site this reports 0 files.
@@ -89,9 +89,8 @@ ${DEFERRED_TAG}
 
 /*
  * Google Consent Mode v2 default: in the EEA, the UK and Switzerland, Google
- * tags start with every storage type denied and wait up to half a second for
- * the consent message (AdSense Privacy & messaging, a Google-certified CMP) to
- * report the visitor's choice, which it passes to these tags. Everywhere else
+ * tags run with every storage type denied (no cookies). The site has no
+ * consent message, so it stays that way for those visitors. Everywhere else
  * the defaults are unchanged. It must run before gtag('config'), so it is
  * inserted straight after the gtag() stub on every page.
  */

@@ -118,7 +118,6 @@ body{font-family:Lora,Georgia,serif;background:var(--paper);color:var(--ink)}
   </section>
 </div>
 
-${c.ad()}
 ${c.faq('Veelgestelde vragen')}
 <section class="nl-end">
   <h2>Even bellen?</h2>

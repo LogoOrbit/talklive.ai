@@ -2934,9 +2934,9 @@ async function viewRevenue(){
   const t=r.totals,ref=r.referrals;
   const act=r.activations.slice(-14);
   const actMax=Math.max(1,...act.map(d=>Math.max(d.activated,d.cancelled)));
-  const srcColor={stripe:'var(--good)',referral:'var(--s1)',client:'var(--s3)',unknown:'var(--muted)'};
+  const srcColor={referral:'var(--s1)',client:'var(--s3)',unknown:'var(--muted)'};
   const expiringSoon=r.rows.filter(x=>x.status==='active'&&x.expiresAt&&x.expiresAt-Date.now()<7*86400000);
-  $('#main').innerHTML=adRevenueNote()+`<div class="grid tiles anim">
+  $('#main').innerHTML=`<div class="grid tiles anim">
     <div class="tile"><div class="k">💎 Active Plus</div><div class="v grad" data-count="${t.active}">0</div><div class="s">${num(t.paying)} paying · ${num(t.permanent)} permanent</div></div>
     <div class="tile"><div class="k">Expiring in 7 days</div><div class="v" style="color:${t.expiringIn7Days?'var(--warn)':'inherit'}" data-count="${t.expiringIn7Days}">0</div><div class="s">renew or lapse</div></div>
     <div class="tile"><div class="k">Lapsed</div><div class="v" data-count="${t.expired}">0</div><div class="s">${num(t.revoked)} cancelled</div></div>
@@ -2956,7 +2956,7 @@ async function viewRevenue(){
     </div>
     <div class="card anim"><h2>🏷️ Where Plus comes from <span class="sub">active grants by source</span></h2>
       ${r.bySource.map(([src,n])=>`<div class="hrow"><div>${esc(src)}</div><div><div class="hbar" style="width:${Math.max(2,n/Math.max(1,t.active)*100)}%;background:${srcColor[src]||'var(--s5)'}"></div></div><div class="n">${num(n)}</div></div>`).join('')||'<div class="muted">Nobody is on Plus yet.</div>'}
-      <div class="muted" style="margin-top:10px">stripe = paid · referral = invite reward · client = granted for testing or support</div>
+      <div class="muted" style="margin-top:10px">referral = invite reward · client = granted for testing or support</div>
     </div>
   </div>
 
@@ -2978,14 +2978,8 @@ async function viewRevenue(){
   <td>${esc(x.source)}${x.paying?' <span class="pill info">paid</span>':''}</td>
   <td>${x.activatedAt?fmtTs(x.activatedAt):'-'}</td>
   <td>${x.expiresAt?fmtTs(x.expiresAt):x.status==='active'?'<span class="muted">never</span>':'-'}</td>
-  <td class="muted">${esc(x.lastEvent||'')}</td></tr>`).join('')||'<tr><td colspan="6" class="muted">No subscriptions yet. Once Stripe checkout or a referral reward runs, it shows up here.</td></tr>'}</table></div>`;
+  <td class="muted">${esc(x.lastEvent||'')}</td></tr>`).join('')||'<tr><td colspan="6" class="muted">No subscriptions yet. Referral rewards and manual grants show up here.</td></tr>'}</table></div>`;
   animateCounters();
-}
-
-/* Ad revenue lives in Google AdSense; there is no reporting API wired in here. */
-function adRevenueNote(){
-  return `<div class="card anim" style="margin-top:0"><h2>📢 Ad revenue <span class="sub">Google AdSense</span></h2>
-    <div class="muted">Ads are served by Google AdSense only. Earnings, impressions and RPM are in <a href="https://adsense.google.com/adsense/u/0/pub-5162304231095978/reports" target="_blank" rel="noopener">AdSense → Reports</a>.</div></div>`;
 }
 
 async function viewErrors(){

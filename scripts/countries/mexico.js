@@ -136,7 +136,6 @@ ${WORDS.map(([w, m]) => `      <div><b>${w}</b><span>${m}</span></div>`).join('\
   <div class="mx-lx-meme" aria-label="Meme: ahorita"><b>The official meanings of &quot;ahorita&quot;</b><ul><li>Right now</li><li>In a minute</li><li>In an hour</li><li>Tomorrow</li><li>Never, but said with love &#x1F643;</li></ul></div>
 </section>
 
-${c.ad()}
 ${c.faq('Preguntas - questions people ask')}
 <section class="mx-end">
   <div class="mx-flags" aria-hidden="true">${BUNTING.map((col) => `<i style="--c:${col}"></i>`).join('')}</div>

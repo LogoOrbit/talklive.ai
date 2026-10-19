@@ -59,7 +59,6 @@ body{font-family:"Literata",Georgia,serif;background:var(--paper);color:var(--in
 .vc-end h2{font:700 clamp(40px,7vw,86px)/.92 "Space Grotesk",sans-serif;letter-spacing:-.05em;margin:0 0 16px}
 .vc-end p{color:var(--soft);font-size:18px;margin:0 0 24px}
 .vc-end .c-ctas{justify-content:center}
-.ad-card{border-top-color:var(--rule)}
 .c-guides a{color:var(--cyan)}
 @media (max-width:900px){.vc-hero-grid,.vc-sec{grid-template-columns:1fr}.vc-sec{gap:14px}.vc-sec h2{position:static}.vc-grid{grid-template-columns:1fr}}
 `,
@@ -134,7 +133,6 @@ ${wave(64, 1)}
 </div>
 ${wave(64, 4)}
 ${c.faq('Questions about voice chat')}
-${c.ad()}
 <section class="vc-end">
   <h2>Say hello out loud</h2>
   <p>Somebody is listening for a voice right now.</p>

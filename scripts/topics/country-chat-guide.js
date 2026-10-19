@@ -1,8 +1,8 @@
 'use strict';
 // /country-chat-guide: "The Atlas". The hub for the thirty country guides:
 // each card is a small preview of its guide, in that guide's own colours and
-// typeface, followed by how country preferences really work. A navigation
-// hub, so it carries no ads (noAds). Inter for the frame around the cards.
+// typeface, followed by how country preferences really work. Inter for the
+// frame around the cards.
 const CARDS = [
   ['india', 'India', 'The berth opposite', 'Busiest 8:30 pm - 2:30 am IST', '#0b1320', '#ffb200', 'Big Shoulders Display', 800, true],
   ['pakistan', 'Pakistan', 'Bol - speak', 'Busiest 8 pm - 2 am PKT', '#0a241d', '#e7b54a', 'Abril Fatface', 400, false],
@@ -40,7 +40,6 @@ module.exports = {
   slug: 'country-chat-guide',
   name: 'Countries',
   date: '2026-10-05',
-  noAds: true,
   about: { '@type': 'Thing', name: 'Country guides and country preferences on TalkLive' },
   title: 'Talk to Strangers by Country - 30 Country Guides | TalkLive',
   description: 'Guides to talking with people in 30 countries - India, the US, Pakistan, China, Egypt, the UK, Nigeria, Germany, Brazil, Mexico, Turkey and more - and how country matching works.',

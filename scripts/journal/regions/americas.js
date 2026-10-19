@@ -88,7 +88,6 @@ ${ctx.cta({ title: 'Talk to someone across the Americas', sub: 'English, Spanish
 <p>So here is a small question to take with you: when you learned your first words of another language, whose accent were they in, and have you ever heard them said any other way?</p>
 </div>
 ${ctx.cta({ title: 'Your turn: say hello', sub: 'Hi, hola or oi. Someone on the same evening as you is waiting to talk.' })}
-${ctx.ad()}
 ${ctx.more}
 </main>`,
 };

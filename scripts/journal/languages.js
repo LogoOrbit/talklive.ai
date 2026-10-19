@@ -144,7 +144,6 @@ ${ranked.map(l => `<div class="v-row"><span>${ctx.esc(l.english)}</span><div cla
 </div>
 <p class="v-cap">Full-time class weeks for a native English speaker to reach professional working proficiency. Source: US Foreign Service Institute. Red: the FSI's hardest category. The FSI flags Japanese as harder still within it.</p>
 
-${ctx.ad()}
 
 <h2 class="v-h2"><small>Table 1</small>The shape of each language</h2>
 <div class="v-scroll"><table class="v-table">

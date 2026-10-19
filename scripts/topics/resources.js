@@ -2,7 +2,7 @@
 // /resources: "The Card Catalogue". Every TalkLive guide, filed like a
 // library's card catalogue - oak drawers with brass label holders, typed index
 // cards - followed by the editorial standards the guides are written to.
-// A navigation hub, so it carries no ads (noAds). Libre Caslon Text to read,
+// Libre Caslon Text to read,
 // Courier Prime for the cards.
 const DRAWERS = [
   ['Start here', 'A - C', [
@@ -35,7 +35,6 @@ module.exports = {
   slug: 'resources',
   name: 'All Guides',
   date: '2026-10-05',
-  noAds: true,
   about: { '@type': 'Thing', name: 'TalkLive guides' },
   title: 'TalkLive Guides - Every Guide to Voice Chat, Safety and Conversation',
   description: 'Every TalkLive guide in one place: talking to strangers, voice and text chat, safety and privacy, making friends, languages and country guides - and the editorial standards they are written to.',

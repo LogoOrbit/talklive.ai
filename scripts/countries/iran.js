@@ -118,7 +118,6 @@ body{font-family:Manrope,system-ui,sans-serif;background:var(--paper);color:var(
   </section>
 </div>
 
-${c.ad()}
 ${c.faq('Questions people ask')}
 <section class="ir-end"><div class="ir-end-in">
   <h2>Ye chai bokhorim, ye gap bezanim?</h2>

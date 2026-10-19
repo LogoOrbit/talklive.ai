@@ -168,7 +168,6 @@ body{font-family:"Literata",Georgia,serif;background:var(--paper);color:var(--in
   <div class="sa-lx-meme" aria-label="Meme: Saudi summer"><b>Saudi summer: &quot;Only 46 today, the weather is nice&quot;</b>Then everyone stays inside with the AC and the phone until midnight. Which is exactly when TalkLive gets busy. &#x2600;&#xFE0F;&#x1F976;</div>
 </section>
 
-${c.ad()}
 ${c.faq('Questions from the majlis')}
 <section class="sa-end">
   <h2>Ahlan wa sahlan</h2>

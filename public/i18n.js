@@ -396,9 +396,6 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "billingEmailKicker": "BILLING EMAIL",
     "billingEmailNone": "No email linked yet",
     "billingEmailHint": "Link an email to your account and receipts will have somewhere to go once Boosts exist.",
-    "billingCardsKicker": "SAVED PAYMENT METHODS",
-    "billingCardsValue": "Not stored by TalkLive",
-    "billingCardsHint": "Payments will be handled through Stripe Checkout. Card details are never stored on TalkLive servers.",
     "billingBoostKicker": "CURRENT BOOST",
     "billingBoostValue": "No active Boost",
     "billingBoostHint": "Every feature is free. You have not been charged for anything.",
@@ -600,7 +597,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "saveAvatar": "Save avatar",
     "growthAria": "TalkLive membership and sharing",
     "noteFreeTitle": "Made free, just for you",
-    "noteFreeBody": "TalkLive is 100% free to talk - supported by a few ads, never a paywall on voice or text chat. No time limits, no tricks.",
+    "noteFreeBody": "TalkLive is 100% free to talk - never a paywall on voice or text chat. No time limits, no tricks.",
     "genderFilterNote": "Gender is what each person picks for themselves. It is only checked by voice for people who turn on Voice check, and that check runs on their own device.",
     "voiceCheck": "Voice check",
     "voiceCheckHint": "During calls your device checks your voice against the gender you picked. No audio leaves your device and nobody you talk to sees the result.",
@@ -617,9 +614,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "callSafetyLink": "How it works",
     "noteFreeCare": "We work on it every day to make this the smoothest, cleanest way to talk to new people anywhere in the world - fast connections and a simple design, built with care.",
     "noteFreeSign": "Enjoy your talks. - The TalkLive team",
-    "filtersPremiumBody": "Free includes up to 3 countries per list. Premium will unlock gender filters, unlimited country lists, instant rematching and no ads.",
-    "adAria": "Sponsored advertisement",
-    "adHide": "Hide advertisement for 24 hours",
+    "filtersPremiumBody": "Free includes up to 3 countries per list. Premium will unlock gender filters, unlimited country lists and instant rematching.",
     "accountGuestHint": "Sign in to keep your name, avatar and friends on any device.",
     "avatarSaved": "Avatar updated.",
     "updatePassword": "Update Password",
@@ -780,7 +775,6 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "navPremiumSub": "More control. Better matches. A safer experience.",
     "navPremiumCta": "See Premium plans",
     "premiumPerkGender": "Gender & country filters",
-    "premiumPerkAds": "No ads",
     "notifyMe": "Notify me",
     "notifyDone": "We will tell you",
     "notifyNoted": "Noted - thank you",
@@ -957,7 +951,6 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "guideChat": "Use the chat button to send text messages during a call.",
     "footerText": "Be respectful. You may be paired with anyone in the world. No video; TalkLive does not record voice audio. 18+ only.",
     "privacyPolicy": "Privacy Policy",
-    "sponsored": "Advertisement",
     "premiumBadge": "💎 Premium",
     "filtersPremiumTitle": "Filters are a Premium feature",
     "filtersPremiumText": "Free plan: up to 2 countries per list. Gender filter locked.",
@@ -973,7 +966,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "premiumUpsellGo": "See Premium plans",
     "premiumSeeSoon": "SEE PREMIUM",
     "growthPremiumTitle": "Premium plan",
-    "growthPremiumSub": "All filters, instant rematching and no ads",
+    "growthPremiumSub": "All filters and instant rematching",
     "premiumComingSoon": "Premium is not on sale, and everything on TalkLive is free.",
     "premiumGenderLocked": "The gender filter is a Premium feature.",
     "premiumCountryLimit": "The free plan allows up to {n} countries per list.",
@@ -1143,7 +1136,7 @@ function applyI18n() {
 // Non-English dictionaries load on demand from /i18n/<lang>.js. Until the file
 // arrives t() falls back to English, then the UI re-translates once it lands.
 // Keep in step with the preload snippet in the <head> of index.html/chat.html.
-const I18N_VERSION = '20261010secure';
+const I18N_VERSION = '20261019noads';
 const i18nLoading = {};
 window.__i18nLangLoaded = function (lang) {
   delete i18nLoading[lang];

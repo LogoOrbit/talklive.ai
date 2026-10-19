@@ -34,7 +34,6 @@ body{font-family:"Archivo",system-ui,sans-serif}
 .g-sec ul{padding-left:20px}
 .g-sec li{margin-bottom:8px}
 .g-src{font-size:13px;color:#8f8e88;border-top:1px solid var(--rule);padding-top:14px;margin-top:40px}
-.ad-card .ad-card-label{color:#bdbcb6}
 `,
   body: (ctx) => `<main id="story" class="g-wrap">
 <span class="g-tape">Field guide &middot; Safety</span>
@@ -84,7 +83,6 @@ body{font-family:"Archivo",system-ui,sans-serif}
 <dt>What to do</dt><dd>Move on. Your time is the thing they are farming.</dd></dl></section>
 </div>
 
-${ctx.ad()}
 
 <section class="g-sec">
 <h2>Why smart people fall for this</h2>

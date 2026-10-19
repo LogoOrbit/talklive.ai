@@ -105,7 +105,6 @@ ${ZONES.map(z => `<div class="eu-band"><b>${z.off}<small>${z.label}</small></b><
 <p>Europe spent much of the last century redrawing borders and is still, in small ways, arguing about what time it is. Here is a question it has never settled: should clocks follow the sun, or the neighbours?</p>
 </div>
 ${ctx.cta({ title: 'Your turn: say hello', sub: 'Hola, bonjour, hallo, ciao or privet. Someone is waiting to talk.' })}
-${ctx.ad()}
 ${ctx.more}
 </main>`;
   },

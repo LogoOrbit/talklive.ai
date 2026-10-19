@@ -104,7 +104,6 @@ body{font-family:"Lora",Georgia,serif;background:var(--paper)}
 </article>
 
 ${c.faq('Questions from learners')}
-${c.ad()}
 <section class="en-end">
   <h2>Class is open</h2>
   <p>no homework, no grades - just talk</p>

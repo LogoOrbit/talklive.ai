@@ -134,7 +134,6 @@ ${PHRASES.map(([jp, ro, en]) => `      <div class="jp-sign"><b lang="ja">${jp}<s
   <div class="jp-ic"><b>IC card balance: &yen;120</b>Missed the last train. Taxi costs more than the hotel. The conbini is open, the karaoke box is open, and somehow it is 3 a.m. and you are on a call with someone in Lagos who is just having dinner. <span lang="ja">まあ、いっか</span> - oh well.</div>
 </section>
 
-${c.ad()}
 ${c.faq('Questions people ask - よくある質問')}
 <section class="jp-end">
   <h2>Next departure: now</h2>

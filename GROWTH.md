@@ -135,6 +135,9 @@ did before, so nothing here can break production on deploy.
 
 ### Payments - `server/billing.js`
 
+> **Removed in October 2026.** Stripe billing and all ad code were taken out;
+> the notes below are kept as history.
+
 Stripe Checkout with a signed webhook, no `stripe` npm dependency (two REST
 calls and an HMAC).
 
@@ -230,7 +233,7 @@ referral and push subscription written today is destroyed on the next deploy.**
 Shipping billing on top of an ephemeral store would mean charging people and
 losing the record of it. See Task 2 in [CODEX-HANDOFF.md](CODEX-HANDOFF.md).
 
-### P1 - Turn on billing
+### P1 - Turn on billing (obsolete: billing was removed in October 2026)
 
 Create the Stripe product, then set the four secrets in one command (§5). Price
 at **$4.99/month with an annual plan at ~$29.99**. Reasons: it undercuts the

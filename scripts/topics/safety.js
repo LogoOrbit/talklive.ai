@@ -135,7 +135,6 @@ body{font-family:"Inter",system-ui,sans-serif;background:var(--paper)}
 </div>
 
 ${c.faq('Safety questions')}
-${c.ad()}
 <section class="sf-end"><div class="sf-end-in">
   <div><h2>Ready when you are</h2><p>Know the five rules, and Report and Block are always one tap away.</p></div>
   ${c.ctas('Tap to Talk', 'Tap to Chat')}

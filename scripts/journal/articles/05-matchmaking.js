@@ -94,7 +94,6 @@ body{font-family:"Space Grotesk",system-ui,sans-serif;background-image:linear-gr
   <div class="t-spec"><h3>Rule of thumb</h3><dl><dt>Short wait?</dt><dd>Fewer filters, busier hours.</dd><dt>Call won't connect?</dt><dd>Try another network; strict Wi-Fi often blocks direct paths.</dd></dl></div>
 </aside>
 </div>
-${ctx.ad()}
 ${ctx.more}
 </main>`,
 };

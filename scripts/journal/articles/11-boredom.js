@@ -90,7 +90,6 @@ ${ctx.faq('Questions about boredom')}
 ${ctx.cta({ title: 'Bored right now? Talk to someone new', sub: 'Five minutes with a real person beats fifty minutes of scrolling. One tap, matched in seconds.' })}
 </div>
 </div>
-${ctx.ad()}
 ${ctx.more}
 </main>`,
 };

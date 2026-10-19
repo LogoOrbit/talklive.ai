@@ -74,7 +74,7 @@ body{font-family:"Manrope",system-ui,sans-serif;background:var(--paper)}
     { q: 'Is Omegle coming back?', a: 'There has been no announcement. Omegle closed on 8 November 2023 and its homepage now shows only the founder\'s farewell letter. Sites using the Omegle name today are not affiliated with the original.' },
     { q: 'Is TalkLive affiliated with Omegle?', a: 'No. TalkLive is an independent service. It shares the idea of random one-to-one conversation, not ownership, code or users.' },
     { q: 'Does TalkLive have video like Omegle?', a: 'No. TalkLive is voice and text only, by design. Removing the camera removes the kind of misuse that made random video chat so hard to keep safe.' },
-    { q: 'Is TalkLive free like Omegle was?', a: 'Yes. Random voice and text matching is free and does not require an account. The site is supported by ads.' },
+    { q: 'Is TalkLive free like Omegle was?', a: 'Yes. Random voice and text matching is free and does not require an account.' },
     { q: 'Can I use TalkLive on my phone?', a: 'Yes. It runs in the browser on Android and iPhone, with nothing to install, and you can add it to your home screen.' },
   ],
   body: (c) => `<main id="story">
@@ -144,7 +144,6 @@ body{font-family:"Manrope",system-ui,sans-serif;background:var(--paper)}
 </div>
 
 ${c.faq('Common questions')}
-${c.ad()}
 <section class="om-end"><div class="om-end-in">
   <div><h2>The good part of Omegle, without the camera</h2><p>One button. One stranger. Adults only, with Block on every screen.</p></div>
   ${c.ctas('Tap to Talk', 'Tap to Chat')}

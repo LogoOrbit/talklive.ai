@@ -195,7 +195,6 @@ body{font-family:"IBM Plex Serif",Georgia,serif;background:var(--paper)}
   <div class="in-lx-meme" aria-label="Meme: Sharma ji ka beta"><b>Mom: &quot;Sharma ji ka beta made 5 new friends today&quot;</b>Sharma ji ka beta: was on TalkLive the whole time. Your turn now. &#x1F60F;</div>
 </section>
 
-${c.ad()}
 <section class="in-end">
   <h2>Your berth is ready</h2>
   <p>Someone in Lucknow, Kochi or Guwahati is pressing the same button right now. Say hello.</p>

@@ -121,7 +121,6 @@ h1,h2,h3{font-family:"Bricolage Grotesque",sans-serif;font-weight:700;letter-spa
 .tz-end p{font-size:18px;color:#cfcbe0;margin:0 auto 30px;max-width:520px}
 .tz-end .c-ctas{margin:0 auto;justify-content:center}
 .tz-end a.tl-go-chat{box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.35)!important}
-.ad-card{margin:64px auto 0}
 .c-guides{margin-top:72px}
 .c-guides a{color:var(--ink)}
 .j-foot{color:var(--muted)}
@@ -151,7 +150,7 @@ h1,h2,h3{font-family:"Bricolage Grotesque",sans-serif;font-weight:700;letter-spa
 @media (max-width:480px){.tz-bubble{font-size:13px;padding:9px 12px}.tz-b1{top:96px;left:-6px}.tz-b2{right:-6px;bottom:84px}.tz-hero h1{font-size:46px}.tz-dek{font-size:17.5px}}
 `,
   faq: [
-    { q: 'Is it free to talk to strangers on TalkLive?', a: 'Yes. Random voice calls and text chats are free, and no account is needed for a basic match. The site is supported by ads.' },
+    { q: 'Is it free to talk to strangers on TalkLive?', a: 'Yes. Random voice calls and text chats are free, and no account is needed for a basic match.' },
     { q: 'Do I need to make an account?', a: 'No. You can be matched straight away. An optional account lets you keep friends and call them back on another visit.' },
     { q: 'Will the stranger see my face or my number?', a: 'No. TalkLive has no video at all, and calls run in the browser, so no phone number is exchanged in either direction.' },
     { q: 'Who will I be matched with?', a: 'Another adult who is searching at the same moment. Country and other preferences can steer matching, but nobody\'s identity, age or location is verified.' },
@@ -253,7 +252,6 @@ h1,h2,h3{font-family:"Bricolage Grotesque",sans-serif;font-weight:700;letter-spa
 </section>
 
 ${c.faq('Before you press the button')}
-${c.ad()}
 <section class="tz-end">
   <div class="tz-end-in">
     <h2>Start the clock</h2>

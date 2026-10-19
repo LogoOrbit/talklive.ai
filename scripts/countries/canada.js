@@ -156,7 +156,6 @@ ${ZONES.map(([city, zone, busy]) => `<div class="ca-zone"><small>${zone}</small>
   <div class="ca-lx-meme" aria-label="Meme: sorry"><b>Canadian bumps into a door</b>&quot;Oh, sorry!&quot; Then apologises to the person behind them for apologising. Then holds the door for 40 seconds. Nicest call you will ever have, guaranteed. &#x1F341;&#x1F64F;</div>
 </section>
 
-${c.ad()}
 ${c.faq('Questions, eh?')}
 <section class="ca-end ca-plaid"><div class="ca-card">
   <h2>Coast to coast to coast</h2>

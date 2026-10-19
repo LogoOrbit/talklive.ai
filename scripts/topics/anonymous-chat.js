@@ -145,6 +145,5 @@ body{font-family:"Inter",system-ui,sans-serif;background:var(--paper) repeating-
     ${c.ctas('Tap to Talk', 'Tap to Chat')}
   </section>
 </article>
-${c.ad()}
 </main>`,
 };

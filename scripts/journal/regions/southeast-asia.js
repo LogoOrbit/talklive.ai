@@ -90,7 +90,6 @@ ${ctx.cta({ title: 'Talk to someone in Southeast Asia tonight', sub: 'English, T
 <p>So if you meet someone from Kuala Lumpur at what feels like dusk, check the clock before you say good evening. Is it still daytime there?</p>
 </div>
 ${ctx.cta({ title: 'Your turn: say hello', sub: 'Halo, kumusta, xin chào or sawasdee. Someone is waiting to talk.' })}
-${ctx.ad()}
 ${ctx.more}
 </main>`,
 };

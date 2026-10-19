@@ -185,7 +185,6 @@ ${c.faq('Questions from listeners')}
   <div class="uk-lx-meme" aria-label="Meme: how are you"><b>Brits when asked &quot;how are you?&quot;</b>&quot;Yeah not bad, you?&quot; Meanwhile: the boiler&apos;s broken, it&apos;s been raining for nine days and the train got cancelled. Still not bad though. &#x2615;&#x1F327;</div>
 </section>
 
-${c.ad()}
 <section class="uk-end"><div class="uk-end-in">
   <div><h2>Talkative, becoming very talkative.</h2><p>Someone in Cardiff, Carlisle or Coleraine is about to press the button too.</p></div>
   ${c.ctas('Tap to Talk', 'Tap to Chat')}

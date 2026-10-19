@@ -91,7 +91,6 @@ body{font-family:"Inter",Helvetica,Arial,sans-serif}
 </ol></section>
 </div>
 
-${ctx.ad()}
 
 <section class="s-end"><h2>Use with care</h2><p>Deep questions are an invitation, not an obligation. If someone answers briefly, take the hint and step back a tier. And notice something odd about the Aron study: the strangers who felt closest were not the ones who were charming. They were simply the ones who took turns being honest. Which makes you wonder how many of the people you have made small talk with for years you have never actually met.</p></section>
 ${ctx.more}

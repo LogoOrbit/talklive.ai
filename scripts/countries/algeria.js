@@ -148,7 +148,6 @@ body{font-family:"IBM Plex Serif",Georgia,serif;background:var(--paper);color:va
   </section>
 </div>
 
-${c.ad()}
 ${c.faq('Questions fréquentes')}
 <section class="dz-end">
   <h2>Yallah, on parle ?</h2>

@@ -1,13 +1,12 @@
 'use strict';
 // /talk-to-someone: "Someone to Talk To". Quiet and warm: a dawn wash from
 // peach to lavender, a single letter-like column, handwritten margin notes.
-// Crisis lines come first. Deliberately carries no ads at all (noAds).
+// Crisis lines come first.
 // Fraunces for display, Literata to read, Caveat for the notes.
 module.exports = {
   slug: 'talk-to-someone',
   name: 'Talk to Someone',
   date: '2026-10-05',
-  noAds: true,
   about: { '@type': 'Thing', name: 'Finding someone to talk to' },
   title: 'Need Someone to Talk To? Talk to Someone Now, Free | TalkLive',
   description: 'Need someone to talk to right now? Have a free, anonymous conversation by voice or text with another adult, with no sign-up - and where to find trained support if it is urgent.',

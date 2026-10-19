@@ -84,7 +84,6 @@ body{font-family:"Libre Caslon Text",Georgia,serif}
   <div class="n-box"><strong>Worth knowing</strong>Sites using the Omegle name today have no connection to the original service. Treat any of them as an unknown website.</div>
 </aside>
 </div>
-${ctx.ad()}
 ${ctx.more}
 </main>`,
 };

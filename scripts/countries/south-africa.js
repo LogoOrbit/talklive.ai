@@ -152,7 +152,6 @@ ${SLANG.map(([w, m]) => `      <div><b>${w}</b><span>${m}</span></div>`).join('\
   <div class="za-lx-meme" aria-label="Meme: now now"><b>South African time, explained</b><ul><li><em>Now:</em> sometime soon, maybe</li><li><em>Just now:</em> later. Much later</li><li><em>Now now:</em> actually soon, promise</li></ul>So if your match says &quot;call you back now now&quot;, you might actually get a call. &#x1F552;&#x1F1FF;&#x1F1E6;</div>
 </section>
 
-${c.ad()}
 ${c.faq('Questions, eish')}
 <section class="za-end"><div class="za-end-in">
   <h2>Howzit? Let's talk.</h2>

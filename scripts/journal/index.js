@@ -25,7 +25,7 @@ function list(items) {
 }
 
 function ctxFor(slug) {
-  return { ad: S.ad, esc: S.esc, list, cta: S.ctaHero, more: S.moreStories(ARTICLES, slug) };
+  return { esc: S.esc, list, cta: S.ctaHero, more: S.moreStories(ARTICLES, slug) };
 }
 
 function renderArticle(a) {
@@ -97,7 +97,6 @@ ${rest.map(a => `<article class="x-item"><a href="/blog/${a.slug}"><span class="
 <section class="x-grid" aria-label="Regions">
 ${REGIONS.map(r => `<article class="x-item"><a href="${r.path}"><span class="x-tag">${S.esc(r.tag)}</span><h3>${S.esc(r.h1)}</h3><p>${S.esc(r.description)}</p></a></article>`).join('\n')}
 </section>
-${S.ad()}
 <p class="x-about">The Journal is written by the people who build TalkLive. We try to cite our sources, say what the evidence does not show, and leave you with a better question than the one you arrived with.</p>
 </main>`;
   return S.page({

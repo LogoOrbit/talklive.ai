@@ -100,7 +100,6 @@ body{font-family:"IBM Plex Serif",Georgia,serif}
 </div>
 ${ctx.faq('Questions about calling and texting')}
 ${ctx.cta({ title: 'Hear a real voice in the next minute', sub: 'No number, no account, no camera. Just a voice on the other end, usually within seconds.' })}
-${ctx.ad()}
 ${ctx.more}
 </main>`;
   },

@@ -128,7 +128,6 @@ body{font-family:"Source Serif 4",Georgia,serif;background:var(--paper);color:va
   </article>
 </div>
 
-${c.ad()}
 ${c.faq('Questions people ask')}
 <section class="iq-end">
   <span class="iq-glass" aria-hidden="true">\u{1FAD6}</span>

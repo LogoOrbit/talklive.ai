@@ -122,7 +122,6 @@ body{font-family:"Manrope",system-ui,sans-serif;background:var(--paper)}
 </div>
 
 ${c.faq('Friendly questions')}
-${c.ad()}
 <section class="fr-end">
   <h2>Hour one starts now</h2>
   <p>Someone you have not met yet could be someone you call every week.</p>

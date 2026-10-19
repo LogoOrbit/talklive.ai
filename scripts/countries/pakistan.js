@@ -66,7 +66,6 @@ body{font-family:"Lora",Georgia,serif;background:var(--paper);color:var(--ink)}
 .pk-end{text-align:center;padding:64px 20px;margin-top:56px;background:#071a15}
 .pk-end h2{font:400 clamp(38px,6vw,70px)/1 "Abril Fatface",serif;margin:0 0 14px}
 .pk-end p{font-size:19px;color:#cfe3d9;margin:0 auto 26px;max-width:560px;line-height:1.6}
-.ad-card{border-top-color:var(--rule)}
 .c-guides a{color:var(--gold)}
 @media (max-width:820px){.pk-panel{grid-template-columns:1fr;gap:6px;padding:36px 0}.pk-num{text-align:left;font-size:80px}.pk-times,.pk-steps{grid-template-columns:1fr}}
 `,
@@ -177,7 +176,6 @@ ${c.faq('Sawal jawab - questions')}
   <div class="pk-lx-meme" aria-label="Meme: cricket and load-shedding"><b>Every Pakistan match: &quot;Iss baar pakka jeetenge&quot;</b>Also every Pakistani: on a two hour call when the light goes. Load-shedding, the true final boss. &#x1F4F1;&#x1F4A1;</div>
 </section>
 
-${c.ad()}
 <div class="pk-band" aria-hidden="true"></div>
 <section class="pk-end">
   <h2>Bol. Someone is listening.</h2>

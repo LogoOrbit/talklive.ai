@@ -91,7 +91,6 @@ body{font-family:Lora,Georgia,serif}
 </div>
 ${ctx.faq('Questions about compliments')}
 ${ctx.cta({ title: 'Make someone’s day, right now', sub: 'One tap connects you with a real person. Ask a good question, and if they give a good answer, tell them.' })}
-${ctx.ad()}
 ${ctx.more}
 </main>`,
 };

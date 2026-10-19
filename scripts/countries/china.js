@@ -152,7 +152,6 @@ ${PHRASES.map(([zh, py, en]) => `<div><b lang="zh">${zh}</b><small>${py}</small>
   </div>
 </section>
 
-${c.ad()}
 ${c.faq('常见问题 - questions people ask')}
 <section class="cn-end">
   <h2>聊聊吧 - let's talk</h2>

@@ -66,7 +66,6 @@ body{font-family:"Source Serif 4",Georgia,serif}
 <p>One useful thing a conversation with a stranger can do is act as a rehearsal. You hear yourself say the sentence. The sky does not fall. The person on the other end does not recoil. And then, occasionally, you find that you can say a version of it to someone who will still be there tomorrow.</p>
 <p class="e-end">So here is the question to leave with: what is the thing you would only tell a stranger, and who in your life would most need to hear it?</p>
 </article>
-${ctx.ad()}
 ${ctx.more}
 </main>`,
 };

@@ -167,7 +167,6 @@ body{font-family:"Libre Caslon Text",Georgia,serif;background:var(--paper)}
   <div class="bd-lx-meme" aria-label="Meme: Dhaka traffic"><b>POV: you left home for a &quot;10 minute&quot; ride in Dhaka</b>Season 2 is out by the time you arrive. Good thing you can chat the whole way. &#x1F697;&#x1F6A6;&#x1F6A6;&#x1F6A6;</div>
 </section>
 
-${c.ad()}
 <section class="bd-end">
   <h2>Cha is ready. Who is coming?</h2>
   <p>Someone, somewhere, wants to argue about Tagore tonight.</p>

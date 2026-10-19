@@ -109,7 +109,6 @@ ${WEEKS.map(w => `<div class="me-row"><b>${ctx.esc(w.name)}${w.note ? `<small>${
 <p>Which raises a question worth asking anyone you meet from the region: when you say "the weekend", which two days do you mean?</p>
 </div>
 ${ctx.cta({ title: 'Your turn: say marhaba', sub: 'Marhaba, salam or merhaba. Someone is up and waiting to talk.' })}
-${ctx.ad()}
 ${ctx.more}
 </main>`,
 };

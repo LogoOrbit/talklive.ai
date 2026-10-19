@@ -2,7 +2,7 @@
 // /language-chat-guide: "Seventeen Doors". The hub for using TalkLive in your
 // own language: a wall of coloured doors, one per interface language, each
 // greeting you in its own script; then how languages actually work in the app.
-// A navigation hub, so it carries no ads (noAds). Bricolage Grotesque for
+// Bricolage Grotesque for
 // display, Literata to read.
 const LOCALES = require('../locales');
 
@@ -21,7 +21,6 @@ module.exports = {
   slug: 'language-chat-guide',
   name: 'Languages',
   date: '2026-10-05',
-  noAds: true,
   about: { '@type': 'Thing', name: 'Using TalkLive in different languages' },
   title: 'TalkLive in 17 Languages - Chat in Your Own Language',
   description: 'Use TalkLive in 17 languages, including right-to-left Arabic, Persian and Urdu. How the interface language works, how to find people who speak your language, and tips for talking across languages.',

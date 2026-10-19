@@ -131,7 +131,6 @@ body{font-family:"DM Sans",system-ui,sans-serif;background:var(--paper);color:va
   </section>
 </div>
 
-${c.ad()}
 ${c.faq('Questions fréquentes')}
 <section class="fr-end"><div class="fr-end-in">
   <h2>Allez, on se capte ?</h2>

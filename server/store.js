@@ -2159,8 +2159,7 @@ function upsertAccount(usernameLower, details) {
 // A grant carries an optional `expiresAt` (epoch ms). Without one it is
 // permanent, which is what every grant made before billing existed looks like -
 // so old records keep working untouched. With one it lapses on its own, which
-// is what a cancelled Stripe subscription, a referral reward and an
-// ad-for-a-pass grant all need: nothing has to run a sweeper for a user to stop
+// is what a referral reward needs: nothing has to run a sweeper for a user to stop
 // being premium, because the check is evaluated at read time.
 
 function setPremium(clientId, info = {}) {

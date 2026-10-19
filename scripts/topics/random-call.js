@@ -152,7 +152,6 @@ body{font-family:"Inter",system-ui,sans-serif;background:var(--paper)}
 </div>
 
 ${c.faq('Calls to the exchange')}
-${c.ad()}
 <section class="rc-end">
   <h2>Your line is open</h2>
   <p>No number to dial. No credit to buy. Just hello.</p>

@@ -23,7 +23,7 @@ const { snippet } = require('../data/serp');
 const SITE = 'https://talklive.app';
 const PUBLIC = path.join(__dirname, '..', '..', 'public');
 const OG_IMAGE = `${SITE}/og-image.png?v=2`;
-const CSS_VERSION = '20261019mob';
+const CSS_VERSION = '20261019noads';
 const CTA_JS_VERSION = '20261006callbtn';
 
 // family -> [ [weight, style, file] ]
@@ -93,8 +93,6 @@ a{color:inherit}
 .j-faq summary::after{content:"+";float:right;margin-left:12px;opacity:.6}
 .j-faq details[open] summary::after{content:"\\2212"}
 .j-faq details p{margin:10px 0 0;font-size:17px;line-height:1.65}
-.ad-card{max-width:728px;margin:48px auto;padding:10px 0 0;border-top:1px solid var(--rule,rgba(0,0,0,.12));text-align:center}
-.ad-card-label{display:block;font:500 10px/1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.18em;text-transform:uppercase;opacity:.5;margin-bottom:8px}
 @media (max-width:640px){.j-mast{flex-wrap:wrap;gap:8px 14px;font-size:12px}.j-mast nav{gap:14px}}
 /* Start-talking buttons. No box of their own: they sit on the page's paper in
    the page's type, so they read as part of the article rather than an ad.
@@ -233,9 +231,6 @@ ${preloads(p.preload)}
 <style>${p.css}${ctaVars(p.slug || (p.path === '/blog/' ? 'blog' : ''))}</style>
 <script defer src="/pwa.js?v=20261019seo"></script>
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978"
-     crossorigin="anonymous"></script>
-<script defer src="/ads.js?v=20260923adsense2"></script>
 </head>`;
 }
 
@@ -252,10 +247,6 @@ function footer() {
   <nav aria-label="Site"><a href="/about">About</a><a href="/contact">Contact</a><a href="/privacy">Privacy Policy</a><a href="/terms">Terms</a><a href="/community-guidelines">Community Guidelines</a><a href="/safety">Safety</a><a href="/">TalkLive home</a></nav>
   <p>&copy; ${new Date().getFullYear()} TalkLive. The Journal is written by the TalkLive team. Corrections: info@talklive.app</p>
 </footer>`;
-}
-
-function ad() {
-  return `<div class="ad-card"><span class="ad-card-label">Advertisement</span><div data-ad="native"></div></div>`;
 }
 
 // Per-page button colours: Call is always a green that belongs to the page's
@@ -423,4 +414,4 @@ function write(rel, html) {
   fs.writeFileSync(file, html);
 }
 
-module.exports = { SITE, PUBLIC, faqHtml, CSS_VERSION, ctaVars, CTA_THEMES, ctaTalk, ctaChat, esc, words, page, ad, moreStories, write, journalCss, ctaHero, ctaDock, ctaButtons };
+module.exports = { SITE, PUBLIC, faqHtml, CSS_VERSION, ctaVars, CTA_THEMES, ctaTalk, ctaChat, esc, words, page, moreStories, write, journalCss, ctaHero, ctaDock, ctaButtons };

@@ -28,7 +28,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   root.classList.add('i18n-pending');
   setTimeout(function () { root.classList.remove('i18n-pending'); }, 1500);
   var s = document.createElement('script');
-  s.src = '/i18n/' + lang + '.js?v=20261010secure';
+  s.src = '/i18n/' + lang + '.js?v=20261019noads';
   s.async = true;
   s.setAttribute('data-i18n-lang', lang);
   s.onerror = function () { root.classList.remove('i18n-pending'); };
@@ -54,13 +54,13 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
      system face a beat later. Only the latin subset is preloaded - latin-ext
      is fetched on demand by the unicode-range in style.css. -->
 <link rel="preload" as="font" type="font/woff2" href="/fonts/plus-jakarta-sans-latin.woff2?v=20260922type" crossorigin />
-<link rel="stylesheet" href="style.css?v=20261019seo" />
+<link rel="stylesheet" href="style.css?v=20261019noads" />
 <link rel="stylesheet" href="chat-extras.css?v=20261004glow" />
 <link rel="stylesheet" href="games.css?v=20261006fix" />
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
      side-panel shell, Settings, Friends/History and the account dialog, and it
      does so with its own `tl-` class names so nothing above can reach it. -->
-<link rel="stylesheet" href="ui.css?v=20261019ice" />
+<link rel="stylesheet" href="ui.css?v=20261019noads" />
 <link rel="stylesheet" href="auth.css?v=20260924auth" />
 <!-- The top bar, shared with /chat. Loaded after everything else because it
      owns the header outright: one button language, one radius, one focus ring
@@ -213,7 +213,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
       "@type": "FAQPage",
       "@id": "https://talklive.app/#faq",
       "mainEntity": [
-        { "@type": "Question", "name": "Is TalkLive free?", "acceptedAnswer": { "@type": "Answer", "text": "Core random voice and text matching is free, supported by a few ads - never a paywall. Wait time depends on compatible people in the live queue; optional Premium adds advanced filters." } },
+        { "@type": "Question", "name": "Is TalkLive free?", "acceptedAnswer": { "@type": "Answer", "text": "Core random voice and text matching is free - never a paywall. Wait time depends on compatible people in the live queue; optional Premium adds advanced filters." } },
         { "@type": "Question", "name": "Do I need to sign up to talk to strangers?", "acceptedAnswer": { "@type": "Answer", "text": "No account is required for a basic random voice or text match. An optional account can keep friends and history between visits." } },
         { "@type": "Question", "name": "Is TalkLive anonymous?", "acceptedAnswer": { "@type": "Answer", "text": "A basic match does not require a real name, email or phone number. TalkLive still processes operational data described in its Privacy Policy, and another participant may record on their own device." } },
         { "@type": "Question", "name": "Can I chat by text instead of calling?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Tap to Chat starts a random text match without microphone permission. Typed messages are kept in a moderation log (the newest 5,000 messages across the site), and direct-message conversations keep their newest 200 messages; see the Privacy Policy." } },
@@ -230,9 +230,6 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 }
 </script>
 
-<script defer src="/ads.js?v=20260923adsense2"></script>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978"
-     crossorigin="anonymous"></script>
 </head>
 <body>
 <a href="#main" class="skip-link" data-i18n="skipToContent">Skip to main content</a>
@@ -825,7 +822,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
               <span class="fpb-diamond" aria-hidden="true">💎</span>
               <span class="fpb-title" data-i18n="filtersPremiumTitle">Filters are a Premium feature</span>
             </div>
-            <p class="fpb-text" data-i18n="filtersPremiumBody">Free includes up to 3 countries per list. Premium will unlock gender filters, unlimited country lists, instant rematching and no ads.</p>
+            <p class="fpb-text" data-i18n="filtersPremiumBody">Free includes up to 3 countries per list. Premium will unlock gender filters, unlimited country lists and instant rematching.</p>
             <a id="filtersUpgradeBtn" class="upgrade-cta-btn" href="/pricing?utm_source=app">
               <span class="upgrade-diamond" aria-hidden="true">💎</span><span data-i18n="premiumSeeSoon">SEE PREMIUM</span>
             </a>
@@ -1091,7 +1088,6 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
           <small data-i18n="navPremiumSub">More control. Better matches. A safer experience.</small>
           <ul class="tl-soon-list">
             <li data-i18n="premiumPerkGender">Gender &amp; country filters</li>
-            <li data-i18n="premiumPerkAds">No ads</li>
           </ul>
           <button type="button" class="tl-notify-btn tl-nav-promo-cta" data-notify="premium">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 16V11a6 6 0 1 0-12 0v5l-1.6 2.4h15.2z"/><path d="M10 20.2a2.2 2.2 0 0 0 4 0"/></svg>
@@ -1191,7 +1187,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
           <div class="setup-growth" data-i18n-aria="growthAria" aria-label="TalkLive membership and sharing">
             <a class="setup-growth-card setup-growth-premium" href="/pricing?utm_source=app">
               <span class="setup-growth-icon" aria-hidden="true">💎</span>
-              <span><strong data-i18n="growthPremiumTitle">Premium plan</strong><small data-i18n="growthPremiumSub">All filters, instant rematching and no ads</small></span>
+              <span><strong data-i18n="growthPremiumTitle">Premium plan</strong><small data-i18n="growthPremiumSub">All filters and instant rematching</small></span>
             </a>
             <button type="button" id="shareTalkLiveBtn" class="setup-growth-card setup-growth-share">
               <span class="setup-growth-icon" aria-hidden="true">↗</span>
@@ -1550,11 +1546,6 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
                 <p class="billing-hint" data-i18n="billingEmailHint">Link an email to your account and receipts will have somewhere to go once Boosts exist.</p>
               </div>
               <div class="billing-item">
-                <p class="billing-kicker" data-i18n="billingCardsKicker">SAVED PAYMENT METHODS</p>
-                <p class="billing-value" data-i18n="billingCardsValue">Not stored by TalkLive</p>
-                <p class="billing-hint" data-i18n="billingCardsHint">Payments will be handled through Stripe Checkout. Card details are never stored on TalkLive servers.</p>
-              </div>
-              <div class="billing-item">
                 <p class="billing-kicker" data-i18n="billingBoostKicker">CURRENT BOOST</p>
                 <p class="billing-value" data-i18n="billingBoostValue">No active Boost</p>
                 <p class="billing-hint" data-i18n="billingBoostHint">Every feature is free. You have not been charged for anything.</p>
@@ -1884,17 +1875,6 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
         <!-- Short reassurance shown during an active call -->
         <p id="reassureLine" class="reassure-line hidden" data-i18n="reassureLine">Don't feel bad if someone skips you or hangs up - it happens to everyone, just move on to the next chat.</p>
 
-        <!-- No ad slot here, deliberately.
-             A banner used to sit between the call status and the Call /
-             Hang-up / Mute / Report row. Three things were wrong with it: it
-             was inside the live call UI, which is the one place nothing should
-             ever move or compete for attention; a creative directly above a
-             hang-up button is an accidental-click layout, and invalid-traffic
-             ratios are what get publisher accounts closed; and it was a
-             468x60 / 320x50, the lowest-CPM shape on offer, spending the
-             highest-attention moment on the site for the least money.
-             The slots further down this panel stay, and public/ads.js will not
-             let them load or change while a call is live. -->
 
         <div id="partnerCard" class="partner-card hidden">
           <div class="partner-animal tl-profile-link hidden" id="partnerAnimal" aria-live="polite"></div>
@@ -2036,24 +2016,6 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 
         <p id="errorText" class="error-text hidden" role="alert"></p>
 
-        <!-- The ambient looping video banner used to sit here. It is now the
-             call screen's best-paying ad slot.
-
-             Why native rather than a banner: native is the highest-CPM format
-             in our inventory (roughly 3x a 728x90/468x60 on the same traffic),
-             and it is the only one that actually fits. This box is
-             min(560px, 92%) wide, so ads.js would size a "leaderboard" here
-             down to a 468x60 - the lowest-paying shape we have - and leave
-             most of the space empty.
-
-             Why it is safe in the live call panel: ads.js will not start,
-             retry or collapse a slot while a call is up. This one fills during
-             the search, then holds completely still for the whole call.
-
-             The leaderboard that used to sit directly beneath the banner is
-             gone with it - a native and a leaderboard back to back is the
-             stacked pair that was removed from 271 other pages, and it would
-             have earned little while reading as an ad wall. -->
 
         </div><!-- /.tl-call -->
         </div><!-- /.tl-call-row -->
@@ -2079,7 +2041,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
              heading made a sincere note read like a promo banner. -->
         <section id="madeForYou" class="note">
           <div role="heading" aria-level="3" class="ui-h3 note-title" data-i18n="noteFreeTitle">Made free, just for you</div>
-          <p data-i18n="noteFreeBody">TalkLive is 100% free to talk - supported by a few ads, never a paywall on voice or text chat. No time limits, no tricks.</p>
+          <p data-i18n="noteFreeBody">TalkLive is 100% free to talk - never a paywall on voice or text chat. No time limits, no tricks.</p>
           <p data-i18n="noteFreeCare">We work on it every day to make this the smoothest, cleanest way to talk to new people anywhere in the world - fast connections and a simple design, built with care.</p>
           <p class="note-sign" data-i18n="noteFreeSign">Enjoy your talks. - The TalkLive team</p>
         </section>
@@ -2186,7 +2148,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
         </article>
         <article class="tt-feat tt-rv">
           <div class="tt-feat-img"><picture><source type="image/avif" srcset="/images/home-tour/feat-filters-640.avif?v=20261007a 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" /><img src="/images/home-tour/feat-filters-640.webp?v=20261007a" srcset="/images/home-tour/feat-filters-640.webp?v=20261007a 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" width="1200" height="900" alt="Match filters and call history panels" loading="lazy" decoding="async" /></picture></div>
-          <div><span class="tt-ico" aria-hidden="true">🌍</span><h3>Filters and call history</h3><p>Choose countries you would like to meet, or never meet, and find recent conversations in your call history. A planned Premium plan adds gender filters and removes ads.</p><div class="tt-tags"><span>Country filters</span><span>Call history</span><span>Premium soon</span></div></div>
+          <div><span class="tt-ico" aria-hidden="true">🌍</span><h3>Filters and call history</h3><p>Choose countries you would like to meet, or never meet, and find recent conversations in your call history. A planned Premium plan adds gender filters.</p><div class="tt-tags"><span>Country filters</span><span>Call history</span><span>Premium soon</span></div></div>
         </article>
         <article class="tt-feat tt-rv">
           <div class="tt-feat-img"><picture><source type="image/avif" srcset="/images/home-tour/feat-safety-640.avif?v=20261007a 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" /><img src="/images/home-tour/feat-safety-640.webp?v=20261007a" srcset="/images/home-tour/feat-safety-640.webp?v=20261007a 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" width="1200" height="900" alt="Report and mute controls and the TalkLive house rules" loading="lazy" decoding="async" /></picture></div>
@@ -2424,16 +2386,13 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
         <span class="daily-article-cta">Read now →</span>
       </a>
 
-      <div style="margin:28px auto">
-        <div class="ad-card"><span class="ad-card-label" data-i18n="sponsored">Advertisement</span><div data-ad="native"></div></div>
-      </div>
 
       <h3>How TalkLive works</h3>
       <p>TalkLive uses encrypted WebRTC audio through a production TURN relay. TalkLive does not record or store voice audio, although another participant can record on their own device. Typed messages are kept in a moderation log (the newest 5,000 messages across the site), and direct-message conversations keep their newest 200 messages; see the Privacy Policy. If both people choose, the optional friends feature can help them reconnect without exchanging phone numbers.</p>
 
       <h3>Frequently asked questions</h3>
       <div class="seo-faq">
-        <p><strong>Is TalkLive free?</strong> Core random voice and text matching is free, supported by a few ads - never a paywall. Wait time depends on compatible people in the live queue; optional Premium adds extra controls.</p>
+        <p><strong>Is TalkLive free?</strong> Core random voice and text matching is free - never a paywall. Wait time depends on compatible people in the live queue; optional Premium adds extra controls.</p>
         <p><strong>Do I need an account?</strong> No. A basic random match is account-free; an optional account keeps friends and history between visits.</p>
         <p><strong>Is it anonymous?</strong> A basic match needs no real name or phone number, but TalkLive processes operational data and another participant may record on their own device.</p>
         <p><strong>Can I chat without talking?</strong> Yes. Tap to Chat uses text without microphone permission. Typed messages may be retained under the Privacy Policy.</p>
@@ -2445,9 +2404,6 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
       </div>
 
 
-      <div style="margin:28px auto;text-align:center">
-        <div class="ad-card"><span class="ad-card-label" data-i18n="sponsored">Advertisement</span><div data-ad="leaderboard"></div></div>
-      </div>
     </div>
   </section>
 
@@ -2587,7 +2543,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
        browser finish parsing and paint the page first. -->
   <script defer src="/socket.io/socket.io.min.js"></script>
   <script defer src="countries.js?v=20260828fix"></script>
-  <script defer src="i18n.js?v=20261019ice"></script>
+  <script defer src="i18n.js?v=20261019noads"></script>
   <script defer src="chat-time.js?v=20260916navbar"></script>
   <script defer src="animals.js?v=20261008more"></script>
   <script defer src="characters.js?v=20261008more"></script>
@@ -2598,9 +2554,9 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   <script defer src="voice-notes.js?v=20261001mic"></script>
   <script defer src="games.js?v=20261005min"></script>
   <script defer src="nickname-rules.js?v=20260924nick"></script>
-  <script defer src="app.js?v=20261019ice"></script>
+  <script defer src="app.js?v=20261019noads"></script>
 
-<!-- Analytics + ad tags, deliberately last: they are async, so their position
+<!-- Analytics tag, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the
      page's own assets for bandwidth on a slow mobile connection. -->
 <script>(function(){function g(){var s=document.createElement('script');s.async=true;s.src='https://www.googletagmanager.com/gtag/js?id=G-713E3C1RH1';document.head.appendChild(s);}function i(){(window.requestIdleCallback||function(f){setTimeout(f,200);})(g,{timeout:3000});}if(document.readyState==='complete')i();else addEventListener('load',i);})();</script>

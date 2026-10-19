@@ -105,7 +105,6 @@ body{font-family:"IBM Plex Serif",Georgia,serif}
 ${ctx.cta({ title: 'Start hour one', sub: 'Meet someone new by voice or text. If you click, add them as a friend and keep talking.' })}
 ${ctx.faq()}
 <p class="ts-src">Sources: J. A. Hall (2019, published online 2018), "How many hours does it take to make a friend?", <em>Journal of Social and Personal Relationships</em> 36(4). L. Festinger, S. Schachter and K. Back (1950), <em>Social Pressures in Informal Groups</em>. R. I. M. Dunbar (2018), "The anatomy of friendship", <em>Trends in Cognitive Sciences</em> 22(1). E. J. Boothby, G. Cooney, G. M. Sandstrom and M. S. Clark (2018), "The liking gap in conversations", <em>Psychological Science</em> 29(11). The figures are averages from survey research; any one friendship can grow faster or slower.</p>
-${ctx.ad()}
 ${ctx.more}
 </div>
 </main>`,

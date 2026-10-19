@@ -2149,7 +2149,7 @@ function loadPolicyText(modal) {
         const main = doc.querySelector('main');
         if (!main) throw new Error('no <main>');
         // The page's own furniture has no place inside the dialog.
-        main.querySelectorAll('h1, .page-art, .blog-cta, .ad-card, [data-ad], script').forEach((el) => el.remove());
+        main.querySelectorAll('h1, .page-art, .blog-cta, script').forEach((el) => el.remove());
         const frag = document.createDocumentFragment();
         [...main.childNodes].forEach((node) => frag.appendChild(document.importNode(node, true)));
         slot.replaceChildren(frag);
@@ -6414,7 +6414,7 @@ socket.on('identity-token', ({ clientId, token } = {}) => {
 
 // public/pwa.js loads on every page and has no socket of its own, so it reads
 // the signed identity through here rather than duplicating the storage keys.
-// Both values are needed: the server refuses a push subscription or a checkout
+// Both values are needed: the server refuses a push subscription
 // for a clientId whose token does not verify.
 window.TalkLiveIdentity = function () {
   return { clientId: getClientId(), identityToken: getIdentityToken() };
@@ -6624,10 +6624,6 @@ function setCallState(state) {
   // Call state gates friend-chat DMs - keep an open chat's composer in sync.
   if (activeFriendChatId && friendChatModal.classList.contains('open')) applyFriendChatLock();
 
-  // Published on the button so ads.js can tell searching apart from the other
-  // states that share the 'loading' button mode. Searching is a still screen
-  // with a waiting user; connecting and reconnecting belong to the call.
-  callMainBtn.dataset.callState = state;
 
   let mode;
   if (connected) mode = hangupConfirm ? 'confirm' : 'hangup';

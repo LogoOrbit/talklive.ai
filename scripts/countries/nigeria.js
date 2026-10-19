@@ -176,7 +176,6 @@ ${c.faq('Wetin people dey ask')}
   <div class="ng-lx-meme" aria-label="Meme: NEPA"><b>Light came back mid-call</b>The whole street: &quot;UP NEPA!&quot; &#x1F4A1; You: still talking, because your phone has been on power bank since morning.</div>
 </section>
 
-${c.ad()}
 <section class="ng-end">
   <h2>Wole! Get in.</h2>
   <p>Lagos, Abuja, Ibadan, Kano, Port Harcourt - the bus is loading.</p>

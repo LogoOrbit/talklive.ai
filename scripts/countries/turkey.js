@@ -142,7 +142,6 @@ ${GLASSES.map(([t, what], i) => `<div class="tr-glass"><i style="--f:${30 + i * 
   <div class="tr-lx-meme" aria-label="Meme: Turkish mom"><b>Turkish mom: &quot;Ben sana demedim mi?&quot;</b>&quot;Didn&apos;t I tell you?&quot; She did. She always did. And if you argue, the terlik (slipper) is already in the air. Ask your match for their best terlik story. &#x1FA74;&#x1F605;</div>
 </section>
 
-${c.ad()}
 ${c.faq('Sorular - questions people ask')}
 <section class="tr-end">
   <h2>Bir çay daha?</h2>

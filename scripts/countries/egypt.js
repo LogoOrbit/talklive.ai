@@ -158,7 +158,6 @@ body{font-family:"Cormorant Garamond",Georgia,serif;background:var(--paper)}
   <div class="eg-lx-meme" aria-label="Meme: five minutes"><b>When an Egyptian says &quot;khamas da2aye2&quot; (five minutes)</b>Make a tea. Watch a film. Learn a language. They will arrive in about an hour, with a big smile. &#x23F3;&#x1F602;</div>
 </section>
 
-${c.ad()}
 ${c.faq('Questions from the audience')}
 <section class="eg-end">
   <h2>Tonight's programme: you</h2>

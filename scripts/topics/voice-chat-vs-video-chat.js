@@ -132,7 +132,6 @@ body{font-family:"Source Serif 4",Georgia,serif;background:var(--paper)}
 </div>
 
 ${c.faq('Ringside questions')}
-${c.ad()}
 <section class="vv-end">
   <div><h2>Pick voice</h2><div class="c-ctas">${c.talk('Tap to Talk')}</div></div>
   <div><h2>Or keep it quiet</h2><div class="c-ctas">${c.chat('Tap to Chat')}</div></div>

@@ -111,7 +111,6 @@ body{font-family:"PingFang SC","Hiragino Sans GB","Noto Sans SC","Source Han San
 ${ctx.cta({ title: '今天就开口说', sub: '轻点一下，几秒钟内和一位真人用英语聊天。', fine: '免费 · 无需注册 · 无需摄像头 · 仅限18岁以上', talk: { label: '语音聊天', sub: '和真人实时通话' }, chat: { label: '文字聊天', sub: '先打字热身' } })}
 ${ctx.faq('常见问题')}
 <p class="nb-src">参考资料：M. Swain (1985), “Communicative competence: Some roles of comprehensible input and comprehensible output in its development”, 收录于 S. Gass 与 C. Madden 编《Input in Second Language Acquisition》。E. K. Horwitz, M. B. Horwitz, J. Cope (1986), “Foreign Language Classroom Anxiety”, <em>The Modern Language Journal</em> 70(2)。时区为大致换算，仅供参考。</p>
-${ctx.ad()}
 ${ctx.more}
 </div>
 </main>`,

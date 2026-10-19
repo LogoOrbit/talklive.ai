@@ -162,7 +162,6 @@ body{font-family:"Nunito",system-ui,sans-serif;background:var(--paper);color:var
   <div class="ph-lx-meme" aria-label="Meme: OTW"><b>Filipino time: &quot;OTW na ako!&quot;</b>Translation: still in the shower, hair wet, hasn&apos;t picked an outfit. Arrives in an hour with snacks for everyone though. &#x1F6BF;&#x1F606;</div>
 </section>
 
-${c.ad()}
 ${c.faq('May tanong? Questions')}
 <section class="ph-end">
   <h2>Sakay na!</h2>

@@ -166,7 +166,6 @@ body{font-family:"Source Serif 4",Georgia,serif;background:var(--paper);color:va
   <div class="ma-lx-meme" aria-label="Meme: daba"><b>Moroccan mom: &quot;Daba nji&quot; (coming now)</b>Three hours, two pots of atay and one tajine later... daba. Time in Morocco is a feeling, not a number. &#x1FAD6;&#x1F570;&#xFE0F;</div>
 </section>
 
-${c.ad()}
 ${c.faq('Questions over tea')}
 <section class="ma-end ma-zel"><div class="ma-end-in">
   <h2>Marhba bik</h2>

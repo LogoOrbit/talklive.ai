@@ -133,7 +133,6 @@ ${GREETINGS.map(([q, a, note]) => `<div class="ke-g"><b>${q}</b><em>${a}</em><sp
   <div class="ke-lx-meme" aria-label="Meme: matatu"><b>Matatu ride, 7 a.m.</b>Music louder than the engine, graffiti on every inch, and the conductor hanging out the door. Best place to start a conversation in Kenya, honestly. Second best: TalkLive. &#x1F68C;&#x1F3B6;</div>
 </section>
 
-${c.ad()}
 ${c.faq('Maswali - questions people ask')}
 <section class="ke-end">
   <div class="ke-flag" role="presentation"></div>

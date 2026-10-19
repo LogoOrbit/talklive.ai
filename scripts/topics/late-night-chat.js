@@ -65,7 +65,6 @@ body{font-family:"Inter",system-ui,sans-serif;background:var(--paper) linear-gra
 .ln-end h2{font:400 clamp(44px,7vw,84px)/1 "Instrument Serif",serif;margin:0 0 12px}
 .ln-end p{color:#a9a6cc;font-size:18px;margin:0 0 24px}
 .ln-end .c-ctas{justify-content:center}
-.ad-card{border-top-color:var(--rule)}
 .c-guides a{color:var(--moon)}
 @media (max-width:760px){.ln-moon{width:70px;height:70px;right:20px;top:30px}.ln-cards{grid-template-columns:1fr}}
 `,
@@ -126,7 +125,6 @@ body{font-family:"Inter",system-ui,sans-serif;background:var(--paper) linear-gra
 </div>
 
 ${c.faq('Questions at night')}
-${c.ad()}
 <section class="ln-end">
   <h2>The night is long. Share it.</h2>
   <p>Someone, somewhere, is awake too.</p>

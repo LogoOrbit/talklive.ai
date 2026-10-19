@@ -132,7 +132,6 @@ body{font-family:Nunito,system-ui,sans-serif;background:var(--paper);color:var(-
   </section>
 </div>
 
-${c.ad()}
 ${c.faq('Got questions ah?')}
 <section class="sg-end">
   <h2>Jom, chat a bit?</h2>

@@ -89,7 +89,6 @@ body{font-family:"Source Serif 4",Georgia,serif}
 </div>
 ${ctx.faq('Questions about the spotlight effect')}
 ${ctx.cta({ title: 'Nobody is watching. Just talk.', sub: 'One tap connects you with a real person for a voice call or a text chat. No camera, no profile, no audience.' })}
-${ctx.ad()}
 ${ctx.more}
 </main>`;
   },

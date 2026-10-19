@@ -83,7 +83,6 @@ ${ctx.cta({ title: 'Join the late-night conversation', sub: 'Speak Hindi, Urdu, 
 </section>
 </div>
 ${ctx.cta({ title: 'Your turn: say hello', sub: 'Kya haal hai, kemon acho, or plain hello. Someone is up and waiting to talk.' })}
-${ctx.ad()}
 ${ctx.more}
 </main>`,
 };

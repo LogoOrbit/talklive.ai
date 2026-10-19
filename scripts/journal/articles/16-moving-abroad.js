@@ -106,7 +106,6 @@ body{font-family:"Libre Caslon Text",Georgia,serif}
 </div>
 ${ctx.faq('Questions about life abroad')}
 ${ctx.cta({ title: 'An empty evening abroad? Talk to someone', sub: 'In your own language or the local one. One tap connects you with a real person, usually within seconds.' })}
-${ctx.ad()}
 ${ctx.more}
 </main>`,
 };

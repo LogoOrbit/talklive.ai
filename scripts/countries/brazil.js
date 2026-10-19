@@ -144,7 +144,6 @@ ${SLANG.map(([w, m]) => `      <div><b>${w}</b><span>${m}</span></div>`).join('\
   <div class="br-lx-meme" aria-label="Meme: kkkkk"><b>How Brazilians rate a joke in chat</b>kk = polite. kkkkk = funny. kkkkkkkkkkkkkkkkkk = they fell off the chair. On a call you just hear the laugh, which is even better. &#x1F602;&#x1F1E7;&#x1F1F7;</div>
 </section>
 
-${c.ad()}
 ${c.faq('Perguntas - questions people ask')}
 <div class="br-wave" role="presentation"></div>
 <section class="br-end">

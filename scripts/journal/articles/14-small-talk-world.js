@@ -90,7 +90,6 @@ ${STAMPS.map(s => `<article class="pp-stamp" style="--c:${s.col}">
 </div>
 ${ctx.faq('Questions about talking across cultures')}
 ${ctx.cta({ wide: true, title: 'Try one of these on a real person tonight', sub: 'Someone in another country, another time zone, another script. One tap, matched in seconds.' })}
-${ctx.ad()}
 ${ctx.more}
 </main>`,
 };

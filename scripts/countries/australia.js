@@ -144,7 +144,6 @@ body{font-family:Archivo,system-ui,sans-serif;background:var(--paper);color:var(
   </section>
 </div>
 
-${c.ad()}
 ${c.faq('Questions, mate')}
 <section class="au-end">
   <h2>Keen for a yarn?</h2>

@@ -67,6 +67,12 @@ being followed.
 
 ## What is on the site
 
+> **October 2026 (12):** every ad was removed: the AdSense loader, `ads.js`,
+> `ads-config.json`, `/ads.txt`, all ad slots and their CSS, and the
+> `migrate-ads.js` sweep. Copy that said the site is "supported by ads" and the
+> policies' advertising sections were rewritten. The AdSense notes below are
+> history.
+
 > **October 2026 (11):** a pass over eight third-party audits (Yoast, Rank
 > Math, SEOptimer, Sitechecker, Backlinko/Semrush, HubSpot Website Grader,
 > Semrush Site Audit, websiteseochecker) - every finding either fixed or

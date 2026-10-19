@@ -178,7 +178,6 @@ body{font-family:"IBM Plex Serif",Georgia,serif;background:var(--paper);color:va
   <div class="ae-lx-meme" aria-label="Meme: Dubai summer"><b>Dubai in August: walking from the car to the mall</b>Boss level. 30 seconds outside, full sauna. So everyone stays in, orders karak and chats until 2 a.m. Very relatable, habibi. &#x1F975;&#x1F3D9;&#xFE0F;</div>
 </section>
 
-${c.ad()}
 ${c.faq('Questions at the gate')}
 <section class="ae-end">
   <h2>Now boarding: you</h2>

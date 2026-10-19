@@ -27,7 +27,6 @@ body{font-family:"Cormorant Garamond",Garamond,Georgia,serif}
 .l-list li::before{content:"\\2014";position:absolute;left:0;color:var(--gold)}
 .l-small{font-size:17px;color:#a9a294;line-height:1.55;border-top:1px solid var(--rule);padding-top:18px;margin-top:60px}
 .l-help{border:1px solid var(--rule);padding:18px 20px;font-size:18px;line-height:1.55;margin-top:2em}
-.ad-card{opacity:.95}
 `,
   body: (ctx) => `<main id="story" class="l-wrap">
 <h1>Loneliness is not the same as <em>being alone.</em></h1>
@@ -68,7 +67,6 @@ body{font-family:"Cormorant Garamond",Garamond,Georgia,serif}
 <div class="l-help">If loneliness has turned into hopelessness, or thoughts of harming yourself, please talk to someone trained to help. In the US you can call or text 988. In the UK and Ireland, Samaritans answer on 116 123. Elsewhere, findahelpline.com lists free services by country.</div>
 <p class="l-small">Sources: Office of the US Surgeon General, <em>Our Epidemic of Loneliness and Isolation</em> (2023); Holt-Lunstad, Smith &amp; Layton, <em>PLoS Medicine</em> (2010); Masi, Chen, Hawkley &amp; Cacioppo, <em>Personality and Social Psychology Review</em> (2011); Cacioppo &amp; Patrick, <em>Loneliness</em> (2008).</p>
 </div>
-${ctx.ad()}
 ${ctx.more}
 </main>`,
 };

@@ -4,16 +4,16 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <meta name="theme-color" content="#0b0f1a" />
-<link rel="stylesheet" href="/pages.css?v=20261019seo" />
+<link rel="stylesheet" href="/pages.css?v=20261019noads" />
 <script src="/loading.js"></script>
 <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
 <title>TalkLive Pricing: Free Voice & Text Chat for Everyone</title>
-<meta name="description" content="TalkLive is free to talk, supported by a few ads. Friends are unlimited and free. TalkLive Premium - all filters and an ad-free experience - is not on sale." />
+<meta name="description" content="TalkLive is free to talk. Friends are unlimited and free. TalkLive Premium - all filters - is not on sale." />
 <link rel="canonical" href="https://talklive.app/pricing" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="TalkLive" />
 <meta property="og:title" content="TalkLive Pricing: Free Voice & Text Chat for Everyone" />
-<meta property="og:description" content="TalkLive is free to talk, supported by a few ads. Friends are unlimited and free. TalkLive Premium - all filters and an ad-free experience - is not on sale." />
+<meta property="og:description" content="TalkLive is free to talk. Friends are unlimited and free. TalkLive Premium - all filters - is not on sale." />
 <meta property="og:url" content="https://talklive.app/pricing" />
 <meta property="og:image" content="https://talklive.app/og-image.png?v=2" />
 <meta property="og:image:width" content="1200" />
@@ -22,7 +22,7 @@
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:site" content="@talkliveapp" />
 <meta name="twitter:title" content="TalkLive Pricing: Free Voice & Text Chat for Everyone" />
-<meta name="twitter:description" content="TalkLive is free to talk, supported by a few ads. Friends are unlimited and free. TalkLive Premium - all filters and an ad-free experience - is not on sale." />
+<meta name="twitter:description" content="TalkLive is free to talk. Friends are unlimited and free. TalkLive Premium - all filters - is not on sale." />
 <meta name="twitter:image" content="https://talklive.app/og-image.png?v=2" />
 <meta name="twitter:image:alt" content="TalkLive Premium pricing" />
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -126,7 +126,7 @@
   <section class="pricing-hero">
     <img class="page-art page-art-center" src="/illustrations/gift.svg" width="930" height="610" alt="A gift box: core TalkLive matching is free" decoding="async" />
     <h1>Simple, honest pricing</h1>
-    <p>Core matching is free, and it stays free. TalkLive Premium - advanced filters, no between-call wait and an ad-free experience - is not on sale.</p>
+    <p>Core matching is free, and it stays free. TalkLive Premium - advanced filters and no between-call wait - is not on sale.</p>
   </section>
 
   <div id="premiumActiveNote" class="status-note ok" hidden>You already have TalkLive Premium - everything is unlocked. Enjoy!</div>
@@ -143,7 +143,6 @@
         <li><strong>Unlimited friends</strong></li>
         <li class="na">Gender filter</li>
         <li>Instant matching - no wait between calls</li>
-        <li class="na">Ad-free experience</li>
       </ul>
       <a class="btn btn-outline" href="/">Start talking free</a>
     </div>
@@ -154,7 +153,6 @@
       <span class="per">no price set</span>
       <ul>
         <li><strong>All filters unlocked</strong> - gender preference &amp; unlimited country lists</li>
-        <li><strong>No ads</strong> - ever</li>
       </ul>
       <button type="button" id="upgradeBtn" class="upgrade-btn" disabled>Not on sale</button>
     </div>
@@ -172,8 +170,6 @@
     <p>No. Free random voice and text matching stays free, with the limits listed above.</p>
     <h3>Will Premium need an account?</h3>
     <p>No. It will be tied to the unique TalkLive ID stored in your browser (shown in Settings), the same as everything else on the site.</p>
-    <h3>Why are there ads?</h3>
-    <p>Ads pay for the servers and the relay that carries calls, which is how voice and text matching stays free for everyone. Ads are kept out of live calls and chats.</p>
     <h3>Do calls cost anything?</h3>
     <p>TalkLive never charges for a call or a message. Your mobile plan still counts the data: a voice call uses roughly tens of megabytes an hour, and text chat almost nothing. There is no phone number involved, so there are no call charges from your carrier. See <a href="/random-call">how a random call works</a>.</p>
     <h3>What happens if I already paid for something?</h3>
@@ -229,74 +225,19 @@
     }
   }
 
-  // Turn the disabled "Not on sale" button into a real checkout, but only when
-  // the server says a payment processor is actually configured. A button that
-  // cannot charge anyone is worse than an honest "not on sale yet".
-  function enableCheckout(plans) {
-    upgradeBtn.disabled = false;
-    upgradeBtn.textContent = 'Get TalkLive Plus';
-    upgradeBtn.addEventListener('click', function () {
-      track('premium_checkout_click');
-      upgradeBtn.disabled = true;
-      upgradeBtn.textContent = 'Opening checkout...';
-      // The clientId premium is keyed to is browser-visible, so the server
-      // will not start a checkout for one without the signed token the app
-      // issues. Someone who has never opened the app has no token yet, which
-      // is why this falls back to sending them there rather than failing.
-      var token = localStorage.getItem('talklive_identity_token');
-      if (!token) { location.href = '/?upgrade=1'; return; }
-      fetch('/billing/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          clientId: getClientId(),
-          identityToken: token,
-          plan: plans.indexOf('monthly') !== -1 ? 'monthly' : plans[0],
-        }),
-      })
-        .then(function (r) { return r.json(); })
-        .then(function (d) {
-          if (d && d.url) { location.href = d.url; return; }
-          throw new Error('no url');
-        })
-        .catch(function () {
-          upgradeBtn.disabled = false;
-          upgradeBtn.textContent = 'Could not open checkout - try again';
-        });
-    });
-  }
-
-  // The server is the source of truth for both who already has premium and
-  // whether it can be bought at all.
+  // The server is the source of truth for who already has premium.
   fetch('/premium-status?clientId=' + encodeURIComponent(getClientId()))
     .then(function (r) { return r.json(); })
     .then(function (d) {
       if (!d) return;
-      if (d.premium) { markActive(d.expiresAt); return; }
-      if (d.checkout && d.plans && d.plans.length) enableCheckout(d.plans);
+      if (d.premium) markActive(d.expiresAt);
     })
     .catch(function () {});
 
-  // Coming back from Stripe: the webhook that grants premium can land a moment
-  // after the redirect, so poll briefly rather than telling a paying customer
-  // they are not premium.
-  if (/[?&]checkout=success/.test(location.search)) {
-    var tries = 0;
-    var poll = setInterval(function () {
-      tries += 1;
-      fetch('/premium-status?clientId=' + encodeURIComponent(getClientId()))
-        .then(function (r) { return r.json(); })
-        .then(function (d) {
-          if (d && d.premium) { clearInterval(poll); markActive(d.expiresAt); }
-          else if (tries >= 10) clearInterval(poll);
-        })
-        .catch(function () { if (tries >= 10) clearInterval(poll); });
-    }, 1500);
-  }
 })();
 </script>
 
-<!-- Analytics + ad tags, deliberately last: they are async, so their position
+<!-- Analytics tag, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the
      page's own assets for bandwidth on a slow mobile connection. -->
 <!-- Google tag (gtag.js) -->

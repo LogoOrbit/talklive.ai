@@ -87,7 +87,6 @@ ${bat.map(([l, v]) => `<div class="iv-row"><span>${ctx.esc(l)}</span><div class=
 </div>
 ${ctx.faq('Questions introverts ask')}
 ${ctx.cta({ title: 'A quiet, one-to-one conversation', sub: 'Start with text if you like, switch to voice when you are ready, leave whenever you want.', talk: { label: 'Tap to Talk' }, chat: { label: 'Start with text' } })}
-${ctx.ad()}
 ${ctx.more}
 </main>`;
   },

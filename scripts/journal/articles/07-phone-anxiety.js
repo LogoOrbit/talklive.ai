@@ -70,7 +70,6 @@ body{font-family:"Lora",Georgia,serif}
 <p>One last thought. You say you are funny over text. That person does not disappear when you pick up the phone; they are just behind a door that fear has been holding shut. What would it feel like to let them talk out loud?</p>
 <p class="a-sign2">&mdash; The Journal</p>
 </div>
-${ctx.ad()}
 ${ctx.more}
 </main>`,
 };

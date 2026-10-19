@@ -52,7 +52,6 @@ body{font-family:"Inter",system-ui,sans-serif;background:var(--paper);color:var(
 .tx-end h2{font:400 clamp(28px,4.4vw,48px)/1.1 "JetBrains Mono",monospace;margin:0 0 10px;color:#f1fff4}
 .tx-end p{color:var(--dim);margin:0 0 22px}
 .tx-end .c-ctas{justify-content:center}
-.ad-card{border-top-color:var(--rule)}
 .c-guides a{color:var(--green)}
 @media (max-width:860px){.tx-hero{grid-template-columns:1fr}.tx-when{grid-template-columns:1fr}}
 `,
@@ -121,7 +120,6 @@ body{font-family:"Inter",system-ui,sans-serif;background:var(--paper);color:var(
 </div>
 
 ${c.faq('Frequently typed questions')}
-${c.ad()}
 <section class="tx-end">
   <h2>$ say hello</h2>
   <p>Someone is staring at a blinking cursor, waiting for a first message.</p>

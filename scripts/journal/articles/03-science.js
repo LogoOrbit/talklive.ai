@@ -80,7 +80,6 @@ sup a{font:500 11px/1 "IBM Plex Sans",sans-serif;color:var(--blue);text-decorati
 </li>
 </ol>
 
-${ctx.ad()}
 
 <h2>Why our predictions are wrong</h2>
 <p>The common thread is not that strangers are wonderful. It is that our forecasts are skewed in a predictable direction. We overestimate how awkward the start will be, underestimate how interested the other person is, and assume everyone else prefers silence. Because we act on those forecasts, by staying quiet, we rarely collect the evidence that would correct them. It is a self-sealing mistake.</p>

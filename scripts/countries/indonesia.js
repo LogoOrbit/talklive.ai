@@ -184,7 +184,6 @@ ${c.faq('Tanya jawab')}
   <div class="id-lx-meme" aria-label="Meme: gabut and mager"><b>Gabut + mager = TalkLive</b>No need to go anywhere, no need to get up, just tap and talk. Kaum rebahan approved. &#x1F6CF;&#xFE0F;&#x1F4F1;</div>
 </section>
 
-${c.ad()}
 <section class="id-end id-batik">
   <h2>Ayo ngobrol.</h2>
   <p>Someone in Surabaya, Makassar or Medan just asked if you have eaten yet.</p>

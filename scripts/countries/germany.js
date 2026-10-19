@@ -187,7 +187,6 @@ body{font-family:"Space Grotesk",system-ui,sans-serif;background:var(--paper);co
   <div class="de-lx-meme" aria-label="Meme: Deutsche Bahn"><b>Deutsche Bahn: &quot;Your train is 5 minutes late&quot;</b>45 minutes later, still on the platform. Perfect time for a call, honestly. The DB delay is the most reliable thing in Germany. &#x1F686;&#x231B;</div>
 </section>
 
-${c.ad()}
 ${c.faq('Fragen? Questions')}
 <section class="de-end"><div class="de-end-in">
   <h2>Schönen Feierabend</h2>

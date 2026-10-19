@@ -214,7 +214,6 @@ ${c.faq('Listener questions')}
   <div class="us-lx-meme" aria-label="Meme: one quick call"><b>Me: &quot;just one quick call&quot;</b>Also me at 2 a.m.: &quot;okay but what&apos;s your zodiac sign and your most controversial food opinion&quot; &#x1F319;</div>
 </section>
 
-${c.ad()}
 <section class="us-end">
   <h2>Caller, you're on the air</h2>
   <p>Somebody in Ohio, Oregon or Oklahoma is waiting for the line to connect.</p>

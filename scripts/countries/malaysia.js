@@ -142,7 +142,6 @@ ${MANGLISH.map(([w, m]) => `      <div><b>${w}</b><span>${m}</span></div>`).join
   <div class="my-lx-meme" aria-label="Meme: mamak at 2am"><b>Mamak, 2 a.m.</b>&quot;Boss, satu teh tarik, satu roti canai.&quot; Everyone at the table: on their phones, talking to someone else. Sounds about right lah. &#x1F95E;&#x2615;</div>
 </section>
 
-${c.ad()}
 ${c.faq('Soalan - questions people ask')}
 <section class="my-end">
   <h2>Jom borak!</h2>

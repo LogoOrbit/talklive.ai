@@ -44,7 +44,6 @@ body{font-family:"Literata",Georgia,serif;color:var(--ink);background-color:var(
 .bp-end{max-width:860px;margin:50px auto 0;padding:34px 20px;border:2px solid var(--line);text-align:center}
 .bp-end h2{font:700 clamp(30px,4.6vw,50px)/1 "Space Grotesk",sans-serif;letter-spacing:-.03em;margin:0 0 14px}
 .bp-end .c-ctas{justify-content:center}
-.ad-card{border-top-color:var(--rule)}
 .c-guides a,.j-foot a{color:var(--ink)}
 `,
   faq: [
@@ -121,7 +120,6 @@ body{font-family:"Literata",Georgia,serif;color:var(--ink);background-color:var(
 </div>
 
 ${c.faq('Technical questions')}
-${c.ad()}
 <section class="bp-end">
   <h2>Now see it working</h2>
   ${c.ctas('Tap to Talk', 'Tap to Chat')}

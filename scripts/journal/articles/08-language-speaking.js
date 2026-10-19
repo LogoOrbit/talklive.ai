@@ -70,7 +70,6 @@ body{font-family:"Literata",Georgia,serif}
 <p class="f-hand">&rarr; next entry: the words I couldn't find this week.</p>
 </div>
 </div>
-${ctx.ad()}
 ${ctx.more}
 </main>`,
 };

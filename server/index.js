@@ -26,7 +26,6 @@ const store = require('./store');
 const { TrackedMap } = require('./doc-json');
 const modTags = require('./moderation-tags');
 const compress = require('./compress');
-const billing = require('./billing');
 const push = require('./push');
 const flags = require('./flags');
 const { minifiedScripts } = require('./minified');
@@ -97,27 +96,20 @@ app.disable('x-powered-by');
 // X-Frame-Options stop the site being embedded for clickjacking; nosniff stops
 // MIME-confusion attacks. 'unsafe-inline' is required by the existing inline
 // scripts/handlers and styles. 'unsafe-eval' is kept for third-party runtimes
-// (Google sign-in, analytics, ads) and is limited to this host-restricted list.
+// (Google sign-in, analytics) and is limited to this host-restricted list.
 // The CSP remains defense-in-depth on top of the output-escaping fixes rather
 // than the sole XSS barrier.
 const CSP = [
   "default-src 'self'",
-  // Google AdSense and analytics origins must be allowlisted
-  // explicitly or the browser silently drops the ad scripts and the slots stay
-  // empty. Ad creatives render inside cross-origin iframes, and their tracking
-  // pixels/beacons go to arbitrary ad-exchange hosts, so frame-src/img-src/
-  // connect-src need broad https: - script execution on the page itself is
-  // still restricted to the named script-src hosts.
+  // Google sign-in, analytics and Google Ads conversion measurement origins
+  // are allowlisted explicitly. Script execution on the page is restricted to
+  // the named script-src hosts.
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com"
     + ' https://www.googletagmanager.com'
     + ' https://*.gstatic.com'
     + ' https://www.google.com'
-    // Google AdSense loader plus the ad/fraud-check scripts it pulls in.
-    + ' https://pagead2.googlesyndication.com https://*.googlesyndication.com'
-    + ' https://*.doubleclick.net https://*.adtrafficquality.google'
-    + ' https://*.googleadservices.com'
-    // Google's consent (CMP) message for EEA/UK/CH visitors.
-    + ' https://fundingchoicesmessages.google.com',
+    // Google Ads conversion measurement (the AW- config in the gtag snippet).
+    + ' https://www.googleadservices.com https://*.doubleclick.net',
   // Google Identity Services injects its own stylesheet from accounts.google.com
   // to render the Sign-In button; without it listed the browser blocks the
   // sheet and the button renders unstyled.
@@ -125,7 +117,7 @@ const CSP = [
   "img-src 'self' data: https:",
   "font-src 'self' data:",
   "connect-src 'self' ws: wss: https:",
-  // https: covers the AdSense creative frames and Google's consent message.
+  // https: covers Google sign-in's frame.
   "frame-src 'self' https:",
   "media-src 'self' blob:",
   // Both would fall back to default-src 'self' anyway, but stated explicitly so
@@ -342,9 +334,8 @@ const FREE_LIMITS = {
   countries: 2, // max countries per preferred/not-preferred list
 };
 // Premium registry lives in the persistent store (Postgres/file) so grants
-// survive restarts and deploys. Grants come from three places now: a Stripe
-// subscription (server/billing.js), a referral reward, or a manual grant
-// (PREMIUM_CLIENT_IDS / store.setPremium) for testing and support.
+// survive restarts and deploys. Grants come from a referral reward or a manual
+// grant (PREMIUM_CLIENT_IDS / store.setPremium) for testing and support.
 const envPremiumClients = new Set(
   (process.env.PREMIUM_CLIENT_IDS || '').split(',').map((s) => s.trim()).filter(Boolean)
 );
@@ -363,15 +354,8 @@ app.get('/premium-status', httpRateLimit('premium-status', 60, 60000), (req, res
     // null when the grant is permanent (manual/env) - the client renders
     // "Plus is active" rather than a renewal date.
     expiresAt: envPremiumClients.has(clientId) ? null : store.premiumExpiry(clientId),
-    // The pricing page swaps its "coming soon" card for real buttons based on
-    // this, so a deployment with no Stripe keys keeps the honest copy it has
-    // today instead of showing a button that cannot charge anyone.
-    checkout: billing.configured(),
-    plans: billing.plans(),
   });
 });
-
-// --- Billing -----------------------------------------------------------------
 
 // Fly terminates TLS at its edge, so req.socket.remoteAddress is the proxy on
 // every production request. See server/client-ip.js for which header is trusted.
@@ -474,64 +458,6 @@ app.get('/subscribe/confirm', httpRateLimit('subscribe-confirm', 30, 10 * 60000)
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('X-Robots-Tag', 'noindex');
   res.status(email ? 200 : 410).type('html').send(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TalkLive email updates</title><style>body{font-family:system-ui,sans-serif;background:#0b0d12;color:#e6e8ee;margin:0;padding:48px 16px;text-align:center}main{max-width:480px;margin:0 auto}a{display:inline-block;margin-top:16px;padding:12px 22px;border-radius:999px;background:#16a34a;color:#fff;text-decoration:none;font-weight:700}</style></head><body><main>${msg}<a href="/">Start talking</a></main></body></html>`);
-});
-
-billing.warnIfHalfConfigured();
-
-app.post('/billing/checkout', httpRateLimit('checkout', 10, 60000), express.json({ limit: '2kb' }), async (req, res) => {
-  if (!billing.configured()) return res.status(503).json({ error: 'Checkout is not available yet.' });
-  const clientId = String((req.body && req.body.clientId) || '');
-  const token = String((req.body && req.body.identityToken) || '');
-  // The clientId decides who gets premium, so an unproven one would let anyone
-  // buy a subscription onto someone else's browser id - or, more usefully to an
-  // attacker, discover which ids exist. Same HMAC the socket layer uses.
-  if (!clientId || !validIdentityToken(clientId, token)) {
-    return res.status(403).json({ error: 'Unrecognised client.' });
-  }
-  // Age-assurance gate (fix list 3.1). A no-op while the flag is off.
-  const ageGate = ageAssurance.check('premium', { clientId, country: lookupGeo(clientIp(req)).country });
-  if (!ageGate.ok) return res.status(403).json({ error: ageGate.message, ageCheck: ageGate.reason });
-  try {
-    const url = await billing.createCheckout({
-      clientId,
-      plan: String((req.body && req.body.plan) || 'monthly'),
-      origin: `https://${CANONICAL_HOST}`,
-    });
-    store.recordFeature('premium_checkout_start');
-    res.json({ url });
-  } catch (err) {
-    console.error('[billing] checkout failed:', err.message);
-    res.status(err.status === 400 ? 400 : 502).json({ error: 'Could not start checkout.' });
-  }
-});
-
-// Stripe signs the exact bytes it sent, so this route must see the raw body -
-// hence express.raw here rather than the express.json used everywhere else.
-app.post('/billing/webhook', express.raw({ type: 'application/json', limit: '1mb' }), (req, res) => {
-  const event = billing.verifyWebhook(req.body && req.body.toString('utf8'), req.headers['stripe-signature']);
-  // A bad signature is either a misconfigured secret or a forgery. Either way
-  // Stripe should retry rather than believe it was accepted.
-  if (!event) return res.status(400).send('invalid signature');
-
-  const decision = billing.decide(event);
-  if (decision.action === 'grant') {
-    store.setPremium(decision.clientId, {
-      // No period end on the checkout event itself; a day covers the gap until
-      // the first invoice arrives (usually seconds later) so a paying customer
-      // is never left without what they just bought.
-      expiresAt: decision.until || Date.now() + 24 * 60 * 60000,
-      lastEvent: decision.reason,
-      subscriptionId: decision.subscriptionId || undefined,
-      source: 'stripe',
-    });
-    store.recordFeature('premium_activated');
-  } else if (decision.action === 'revoke') {
-    store.revokePremium(decision.clientId, { lastEvent: decision.reason });
-    store.recordFeature('premium_cancelled');
-  }
-  // Anything unhandled is still a 200: replying non-2xx makes Stripe retry an
-  // event we have deliberately ignored, forever.
-  res.json({ received: true });
 });
 
 // --- Web push ----------------------------------------------------------------
@@ -962,24 +888,16 @@ function sendPage(res, file) {
 // canonical tag" bucket in Search Console. The canonical already tells Google
 // which URL wins; `noindex` keeps it from spending a crawl on them at all.
 // The header is the only way to say so, since the shell is one shared file.
-//
-// They are also served without the AdSense loader. /login, /signup, /settings
-// and /call are controls and forms with no publisher content, and /login and
-// /signup are the "pages behind a login" AdSense reviews flag; with the loader
-// in the head, Auto ads would place ads on them. The homepage keeps it - it is
-// served by the static middleware, not here.
-const ADSENSE_LOADER_TAG = /<script\b[^>]*pagead2\.googlesyndication\.com[^>]*>\s*<\/script>\s*/gi;
 const HREFLANG_LINK_TAG = /<link\b[^>]*\bhreflang=[^>]*>\s*/gi;
 const appShellCache = new Map();
-function appShellHtml(file, { keepAdsense = false } = {}) {
+function appShellHtml(file, { keepHreflang = false } = {}) {
   const full = path.join(PUBLIC_DIR, file);
   const mtime = fs.statSync(full).mtimeMs;
-  const cacheKey = `${file}|${keepAdsense}`;
+  const cacheKey = `${file}|${keepHreflang}`;
   const cached = appShellCache.get(cacheKey);
   if (cached && cached.mtime === mtime) return withSiteStrips(cached.html);
   let html = fs.readFileSync(full, 'utf8');
-  if (!keepAdsense) {
-    html = html.replace(ADSENSE_LOADER_TAG, '');
+  if (!keepHreflang) {
     // The homepage's hreflang set says "this URL is the English homepage".
     // On /signup or /login that contradicts the canonical (which points at
     // /), and Semrush reports it as an hreflang conflict. Screens are not
@@ -1323,8 +1241,6 @@ app.get('/add/:code', (req, res) => {
 // other and it stays fast on weak phones.
 app.get('/chat', (req, res) => {
   res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
-  // No AdSense loader: this screen is a live private chat, where AdSense does
-  // not allow Google ads, and Auto ads would otherwise be free to place some.
   res.type('html').send(appShellHtml('chat.html'));
 });
 
@@ -1353,21 +1269,10 @@ app.get('/', (req, res, next) => {
   if (LANDING_HOST && host === LANDING_HOST) {
     return res.sendFile(path.join(__dirname, '..', 'public', 'landing.html'));
   }
-  // The homepage keeps its AdSense loader and stays indexable; it only goes
+  // The homepage keeps its hreflang set and stays indexable; it only goes
   // through here for the banner state (see withSiteStrips).
   res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
-  res.type('html').send(appShellHtml('index.html', { keepAdsense: true }));
-});
-
-// ads.txt. An ads.txt that exists but lists nobody is the worst of both
-// worlds: crawlers read it as "no seller is authorised to sell this
-// inventory", so programmatic demand stops bidding and the CPM collapses.
-// Google AdSense is the only ad network, so Google is the only authorised
-// seller. Nothing else is listed: an ads.txt line for a network that no longer
-// serves here would authorise it to sell this inventory.
-const ADS_TXT = 'google.com, pub-5162304231095978, DIRECT, f08c47fec0942fa0';
-app.get('/ads.txt', (req, res) => {
-  res.type('text').set('Cache-Control', 'public, max-age=3600').send(ADS_TXT + '\n');
+  res.type('html').send(appShellHtml('index.html', { keepHreflang: true }));
 });
 
 // Digital Asset Links for the Android app (android/). Android only opens the
@@ -1392,59 +1297,6 @@ const ASSET_LINKS = (() => {
 })();
 app.get('/.well-known/assetlinks.json', (req, res) => {
   res.type('application/json').set('Cache-Control', 'public, max-age=3600').send(ASSET_LINKS);
-});
-
-// --- Ad density config -------------------------------------------------------
-//
-// public/ads.js reads its density and behaviour from here rather than having
-// them compiled into 282 pages of markup. The committed defaults live in
-// public/ads-config.json; ADS_CONFIG (a JSON object) is merged over the top.
-//
-// The point of the env layer is that ad density is the setting most likely to
-// need changing on evidence, and changing it should not mean editing a
-// generator, rebuilding every page, and waiting on a deploy. `fly secrets set
-// ADS_CONFIG='{"maxSlotsPerPage":2}'` restarts the machine with the new value
-// and touches no code. Setting {"enabled":false} is the kill switch if a
-// creative ever misbehaves.
-//
-// Defaults are read once at boot and the env is parsed once. A malformed
-// ADS_CONFIG is logged and ignored rather than thrown: bad JSON in an
-// environment variable must not take the site down, and falling back to the
-// committed defaults is always safe.
-const ADS_CONFIG_DEFAULTS = (() => {
-  try {
-    return JSON.parse(fs.readFileSync(path.join(PUBLIC_DIR, 'ads-config.json'), 'utf8'));
-  } catch (err) {
-    console.warn('[ads-config] public/ads-config.json is missing or invalid:', err.message);
-    return {};
-  }
-})();
-
-const ADS_CONFIG = (() => {
-  const merged = { ...ADS_CONFIG_DEFAULTS };
-  if (!process.env.ADS_CONFIG) return merged;
-  try {
-    const override = JSON.parse(process.env.ADS_CONFIG);
-    if (!override || typeof override !== 'object' || Array.isArray(override)) {
-      throw new Error('ADS_CONFIG must be a JSON object');
-    }
-    // One level deep, so {"types":{"native":false}} replaces the whole types
-    // object rather than merging into it. Shallow is the predictable choice
-    // here: a partial types object would silently leave formats enabled that
-    // the operator thought they had listed exhaustively.
-    Object.assign(merged, override);
-  } catch (err) {
-    console.warn('[ads-config] ignoring malformed ADS_CONFIG:', err.message);
-  }
-  return merged;
-})();
-
-app.get('/ads-config.json', (req, res) => {
-  // Short cache: this is the one file an operator changes to react to a bad
-  // day's revenue or a misbehaving creative, and a long TTL would leave stale
-  // densities in browser caches for hours after the fix.
-  res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=3600');
-  res.json(ADS_CONFIG);
 });
 
 // --- GIF search (Giphy) ------------------------------------------------------
@@ -3557,9 +3409,7 @@ function settleReferral(clientId) {
 }
 
 // Re-send premium state to every live socket belonging to a clientId. Used
-// whenever a grant changes outside registration (a referral reward now; a
-// Stripe webhook is the same shape of event, though that user is usually on the
-// Stripe-hosted page rather than connected at the time).
+// whenever a grant changes outside registration (a referral reward).
 function emitPremiumStatus(clientId) {
   for (const [sid, profile] of profiles) {
     if (profile.clientId !== clientId) continue;
@@ -3569,8 +3419,6 @@ function emitPremiumStatus(clientId) {
       premium: isPremium(clientId),
       expiresAt: envPremiumClients.has(clientId) ? null : store.premiumExpiry(clientId),
       limits: FREE_LIMITS,
-      checkout: billing.configured(),
-      plans: billing.plans(),
     });
   }
 }
@@ -4969,8 +4817,6 @@ io.on('connection', (socket) => {
       premium,
       expiresAt: envPremiumClients.has(clientId) ? null : store.premiumExpiry(clientId),
       limits: FREE_LIMITS,
-      checkout: billing.configured(),
-      plans: billing.plans(),
     });
     socket.emit('identity-token', { clientId, token: issuedIdentityToken });
     // Unacknowledged owner warnings. Checked again shortly after, because a

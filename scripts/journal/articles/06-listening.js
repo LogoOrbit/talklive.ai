@@ -74,7 +74,6 @@ body{font-family:"DM Sans",system-ui,sans-serif}
 <p>The strange thing is how often people say afterwards that they enjoyed the conversations more, even though they talked less. Which raises a fair question: how much of what we call "being interesting" is really just being interested?</p></div>
 
 </div>
-${ctx.ad()}
 ${ctx.more}
 </main>`,
 };

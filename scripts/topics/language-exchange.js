@@ -120,7 +120,6 @@ body{font-family:"Manrope",system-ui,sans-serif;background:var(--paper)}
 </div>
 
 ${c.faq('Questions, in any language')}
-${c.ad()}
 <section class="lx-end">
   <div><h2>Your language</h2><div class="c-ctas">${c.talk('Tap to Talk')}</div></div>
   <div><h2>for theirs</h2><div class="c-ctas">${c.chat('Tap to Chat')}</div></div>

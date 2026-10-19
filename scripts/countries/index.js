@@ -67,7 +67,6 @@ function cta(href, cls, label) {
 
 const ctx = {
   esc: S.esc,
-  ad: S.ad,
   talk: (label) => S.ctaTalk('seo', label),
   chat: (label) => S.ctaChat('seo', label),
   ctas: (talkLabel, chatLabel) => `<div class="c-ctas tl-go-row">${S.ctaTalk('seo', talkLabel)}${S.ctaChat('seo', chatLabel)}</div>`,
@@ -150,10 +149,7 @@ ${preloads}
 <style>${BASE_CSS}${c.css}${S.ctaVars(c.slug)}</style>
 <script defer src="/pwa.js?v=20261019seo"></script>
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
-${c.noAds ? '' : `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5162304231095978"
-     crossorigin="anonymous"></script>
-<script defer src="/ads.js?v=20260923adsense2"></script>
-`}</head>`;
+</head>`;
 }
 
 function bar() {
@@ -175,10 +171,9 @@ function footer(aside) {
 /*
  * Renders one hand-designed page. `c.path` is its URL, `c.crumbs` the
  * breadcrumb between Home and the page, `aside` the "other guides" block.
- * `c.noAds` leaves out the ad loader and the ad slot entirely.
  */
 function render(c, aside) {
-  const pageCtx = { ...ctx, ad: c.noAds ? () => '' : S.ad, faq: (heading) => faqHtml(c, heading) };
+  const pageCtx = { ...ctx, faq: (heading) => faqHtml(c, heading) };
   const inner = c.body(pageCtx);
   return `${head(c, S.words(inner))}
 <body class="c-page c-${c.slug}">

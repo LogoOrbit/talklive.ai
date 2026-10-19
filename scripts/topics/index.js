@@ -10,11 +10,6 @@
  * variant of another. They share the country guides' renderer
  * (scripts/countries/index.js): head, structured data, site bar, FAQ and
  * footer.
- *
- * AdSense: one ad slot at most, always below substantial content. Pages with
- * `noAds` carry no ad code at all: /talk-to-someone (beside crisis-line
- * information) and the navigation hubs (resources, languages, countries),
- * since ads are not allowed on screens used mainly for navigation.
  */
 const S = require('../journal/shared');
 const { render } = require('../countries');

@@ -176,7 +176,7 @@ function localeHome(loc) {
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<link rel="stylesheet" href="/seo.css?v=20261004cta" />
+<link rel="stylesheet" href="/seo.css?v=20261019noads" />
 <title>${esc(loc.title)}</title>
 <meta name="description" content="${esc(loc.description)}" />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
@@ -383,9 +383,8 @@ function walkHtml(dir, out = []) {
  * none: it spends the site's credibility on nothing.
  *
  * The hash deliberately ignores the parts of a page that change on every
- * build without the content changing - asset cache-buster versions and the
- * ad markup scripts/migrate-ads.js rewrites afterwards. Without that,
- * every page would look modified on every deploy, which is the same lie in
+ * build without the content changing - asset cache-buster versions and
+ * site-wide script tags. Without that, every page would look modified on every deploy, which is the same lie in
  * the opposite direction.
  */
 const LEDGER_PATH = path.join(__dirname, 'seo-lastmod.json');
@@ -407,12 +406,11 @@ try {
 
 function contentFingerprint(html) {
   const normalized = html
-    // Infrastructure script tags: the ad loader and the PWA/service-worker
-    // registration. Neither is page content, and adding or reversioning one
-    // must not restamp `lastmod` on all 169 pages the same day - that tells
+    // Infrastructure script tag: the PWA/service-worker registration. It is
+    // not page content, and adding or reversioning it must not restamp `lastmod` on all 169 pages the same day - that tells
     // search engines everything was rewritten when nothing was, which is the
     // exact signal a site should not send.
-    .replace(/<script\b[^>]*\bsrc=["'][^"']*(?:ads|pwa)\.js[^"']*["'][^>]*><\/script>/gi, '')
+    .replace(/<script\b[^>]*\bsrc=["'][^"']*pwa\.js[^"']*["'][^>]*><\/script>/gi, '')
     // The sitewide social-profile footer row and twitter:site tag
     // (scripts/migrate-social.js): site furniture, not page content.
     .replace(/<nav class="tl-social"[^>]*>[\s\S]*?<\/nav>/g, '')
@@ -423,15 +421,13 @@ function contentFingerprint(html) {
     // The Consent Mode default scripts/migrate-analytics.js adds to the
     // analytics tag - infrastructure, not content.
     .replace(/\s*gtag\('consent', 'default'[\s\S]*?gtag\('set', 'ads_data_redaction', true\);/g, '')
-    // Empty ad slots, inserted and moved by scripts/migrate-ads.js.
-    .replace(/<div\b[^>]*\bdata-ad=[^>]*>\s*<\/div>/gi, '')
     // Cache-buster query strings: ?v=20260828fix is not a content change.
     .replace(/([?&])v=[^"'&\s>]*/g, '$1v=')
     // Tracking parameters on internal links. Dropping `utm_medium`,
     // `utm_campaign` and `lang` from 277 pages of CTAs (see
     // scripts/migrate-internal-utm.js) removes duplicate crawl targets; it
     // does not change a word of what the page says, so it must not restamp
-    // `lastmod` any more than the ad or PWA tags do. Normalizing both the
+    // `lastmod` any more than the PWA tag does. Normalizing both the
     // tagged and the untagged form to the same string keeps every date put.
     .replace(/([?&]|&amp;)(?:utm_[a-z_]+|lang|interest)=[^"'&\s>]*/gi, '$1')
     .replace(/\?(?:&amp;|&)+/g, '?')
