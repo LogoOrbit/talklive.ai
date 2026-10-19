@@ -24,3 +24,18 @@ node marketing/video-ad/render.js video omegle    # one of the 15s ads
 ```
 
 Edit timing, captions and camera moves in `compose.html`, or per ad in the `ADS` object in `ads.html`.
+
+## Headphones explainer (28s, 1440×2560, 60fps)
+
+`../TalkLive-Ad-headphones.mp4`: "Your most boring minutes could be the best part of your day." Bus, back seat, bed and break scenes, then headphones on → talklive.app → Tap to Talk → the world. Illustrated motion graphics (`headphones.html`), Kokoro TTS voiceover, and music + sound effects synthesized from scratch (`audio/mix_headphones.py`).
+
+```bash
+npx http-server -p 6910 -s .                                   # static server, from repo root
+node marketing/video-ad/render-headphones.js preview 2.5 13 18  # spot-check frames -> prev/
+node marketing/video-ad/render-headphones.js events             # sound cue sheet -> audio/events.json
+python marketing/video-ad/audio/make_vo.py kokoro-v1.0.onnx voices-v1.0.bin vo/   # voiceover lines
+python marketing/video-ad/audio/mix_headphones.py vo/ mix.wav   # music + sfx + voice
+node marketing/video-ad/render-headphones.js video 4            # silent video -> out/
+ffmpeg -i out/headphones-silent.mp4 -i mix.wav -map 0:v -map 1:a -c:v copy \
+  -af loudnorm=I=-14:TP=-1.5:LRA=11 -c:a aac -b:a 256k -ar 48000 -movflags +faststart ../TalkLive-Ad-headphones.mp4
+```
