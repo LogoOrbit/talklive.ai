@@ -1,8 +1,9 @@
-"""Synthesizes the music and sound effects for headphones.html and mixes them with the voiceover.
+"""Synthesizes the music and sound effects for earphones.html and mixes them with the voiceover.
 
-    python mix_headphones.py <vo_dir> <out.wav>
+    python mix_earphones.py <vo_dir> <out.wav>
 
-<vo_dir> holds 00.wav .. 10.wav from make_vo.py. Cue times come from events.json (node render-headphones.js events).
+<vo_dir> holds 00.wav .. 10.wav from make_vo.py. Line times come from vo_timing.json (vo_timing.py),
+cue times from events.json (node render-earphones.js events).
 Every sound here is generated from scratch: no samples.
 """
 import json, sys, os
@@ -17,8 +18,10 @@ DUR = cues['duration']
 N = int(DUR * SR)
 rng = np.random.default_rng(11)
 BEAT = 0.5
-SNAP = 12.88
-VO_AT = [0.35, 3.55, 5.55, 7.5, 9.45, 12.0, 13.9, 15.75, 16.85, 19.6, 22.4]
+MU = next(e for e in cues['events'] if e['type'] == 'music')
+SNAP, BUD_L, START, DROP, END, G0 = MU['snap'], MU['budL'], MU['start'], MU['drop'], MU['end'], MU['grid']
+GAP = MU['gap']
+VO_AT = [l['at'] for l in json.load(open(os.path.join(HERE, 'vo_timing.json')))]
 
 
 def T(d): return np.arange(int(d * SR)) / SR
@@ -97,7 +100,7 @@ def bell(m, d=1.2, ratio=3.5, idx=2.2):
     return np.sin(2 * np.pi * f * t + idx * np.exp(-t * 4) * np.sin(2 * np.pi * f * ratio * t)) * np.exp(-t * 3.2) * np.minimum(1, t / 0.003) * 0.3
 
 # ---------------- music ----------------
-PROG = [  # (pad voicing, bass root, arp/lead tones) per 2s bar; bars start at -0.5 + 2k
+PROG = [  # (pad voicing, bass root, arp/lead tones) per 2s bar; bars start at G0 + 2k
     ([53, 57, 60, 64, 67], 41, [65, 69, 72, 76, 79]),   # Fmaj9
     ([52, 57, 60, 64, 67], 45, [64, 69, 72, 76, 79]),   # Am7
     ([50, 53, 57, 60, 64], 38, [62, 65, 69, 72, 76]),   # Dm9
@@ -106,21 +109,21 @@ PROG = [  # (pad voicing, bass root, arp/lead tones) per 2s bar; bars start at -
 LEAD = [[(0, 69), (1, 72), (1.5, 77), (2.5, 76)], [(0, 76), (1, 72), (1.5, 69), (2.5, 67)],
         [(0, 77), (1, 76), (1.5, 74), (2.5, 69)], [(0, 74), (1, 72), (1.5, 69), (2.5, 65)]]
 def bars(t0, t1):
-    b = int(np.floor((t0 + 0.5) / 2))
-    while -0.5 + 2 * b < t1:
-        yield b, -0.5 + 2 * b; b += 1
+    b = int(np.floor((t0 - G0) / 2))
+    while G0 + 2 * b < t1:
+        yield b, G0 + 2 * b; b += 1
 
 hookpad = np.zeros((N, 2)); groove = np.zeros((N, 2)); drums = np.zeros((N, 2)); lead = np.zeros((N, 2))
 kicks = []
 K, C, HC, HO = kick(), clap(), hat(), hat(True)
-for b, s in bars(-0.5, DUR):
+for b, s in bars(-2, DUR):
     pad, root, tones = PROG[b % 4]
-    if s < 3.5: add(hookpad, pad_chord(pad, 2.3), max(s, 0) if s < 0 else s, 1.0)
-    if 3.0 <= s < 25.5: add(groove, pad_chord(pad, 2.2), s, 0.9)
+    if s < START: add(hookpad, pad_chord(pad, 2.3), s, 1.0)
+    if START - 0.5 <= s < END: add(groove, pad_chord(pad, 2.2), s, 0.9)
     for beat in range(4):
         tb = s + beat * BEAT
-        if tb < 3.5 or tb >= 25.5: continue
-        if 16.2 <= tb < 16.6: continue  # gap before the drop
+        if tb < START - 0.01 or tb >= END: continue
+        if GAP[0] - 0.01 <= tb < GAP[1] - 0.01: continue  # gap before the drop
         add(drums, K, tb, 1.0); kicks.append(tb)
         if beat in (1, 3): add(drums, C, tb, 0.8, 0.05)
         add(drums, HO, tb + 0.25, 0.7, 0.25)
@@ -129,24 +132,24 @@ for b, s in bars(-0.5, DUR):
         for e in (0.25,):  # off-beat bass
             add(groove, bass_note(root + (12 if beat == 3 else 0), 0.22), tb + e, 1.0)
     # arpeggio after the headphones go on
-    if s + 2 > SNAP and s < 27.5:
+    if s + 2 > SNAP and s < DUR - 0.5:
         pat = [0, 1, 2, 3, 4, 3, 2, 1, 0, 2, 4, 2, 1, 3, 4, 3]
         for i, k in enumerate(pat):
             tn = s + i * 0.125
-            if tn < SNAP or tn >= 27.4: continue
-            slow = tn >= 25.5
+            if tn < SNAP or tn >= DUR - 0.6: continue
+            slow = tn >= END
             if slow and i % 2: continue
-            add(lead if tn >= 16.6 else groove, pluck(tones[k], 0.5 if not slow else 0.9), tn, 0.55, -0.35 + 0.7 * (i % 2))
+            add(lead if tn >= DROP else groove, pluck(tones[k], 0.5 if not slow else 0.9), tn, 0.55, -0.35 + 0.7 * (i % 2))
     # lead bell in the world / good time / outro
-    if 16.6 <= s + 2 and s < 25.5:
+    if DROP <= s + 2 and s < END:
         for off, m in LEAD[b % 4]:
             tn = s + off * BEAT
-            if 16.6 <= tn < 25.5: add(lead, bell(m + 12, 1.0), tn, 0.5, 0.15)
+            if DROP <= tn < END: add(lead, bell(m + 12, 1.0), tn, 0.5, 0.15)
 # drum fill into the first downbeat, and the final chord
-for i in range(8): add(drums, C, 3.0 + i * 0.0625, 0.15 + 0.08 * i, 0.05)
-add(groove, pad_chord(PROG[0][0] + [72], 3.0), 25.5, 1.4)
-for i, m in enumerate([65, 69, 72, 76, 81]): add(lead, bell(m, 2.6, 2.0, 1.2), 25.5 + i * 0.05, 0.4, -0.4 + 0.2 * i)
-add(drums, K, 25.5, 1.0)
+for i in range(8): add(drums, C, START - 0.5 + i * 0.0625, 0.15 + 0.08 * i, 0.05)
+add(groove, pad_chord(PROG[0][0] + [72], DUR - END), END, 1.4)
+for i, m in enumerate([65, 69, 72, 76, 81]): add(lead, bell(m, 2.6, 2.0, 1.2), END + i * 0.05, 0.4, -0.4 + 0.2 * i)
+add(drums, K, END, 1.0)
 
 # sidechain pump on pad + bass
 sc = np.ones(N); tt = np.arange(N) / SR
@@ -159,12 +162,13 @@ lead = reverb(lead, 0.35)
 # muffled until the headphones go on, then it opens up
 muff = filt(groove.mean(axis=1, keepdims=True).repeat(2, axis=1), 'low', 750, 4) * 1.15
 mid = filt(groove, 'low', 2600, 2)
-x = np.clip((tt - 12.1) / (SNAP - 12.1), 0, 1)
+x = np.clip((tt - (BUD_L - 0.15)) / (SNAP - BUD_L + 0.15), 0, 1)
 wm, wd, wf = (1 - x) ** 2, 2 * x * (1 - x), x ** 2
 wf[tt >= SNAP] = 1; wm[tt >= SNAP] = 0; wd[tt >= SNAP] = 0
 music = muff * wm[:, None] * 0.75 + mid * wd[:, None] * 0.9 + groove * wf[:, None]
 hp_dull = filt(hookpad, "low", 520, 2) * 3.0
-bright = np.clip((tt - 2.42) / 0.2, 0, 1)[:, None]
+BEST = next(e['t'] for e in cues['events'] if e['type'] == 'burst')
+bright = np.clip((tt - BEST) / 0.2, 0, 1)[:, None]
 music += hp_dull * (1 - bright) + reverb(hookpad, 0.4) * bright * 0.9
 music += lead
 fade = np.clip((DUR - tt) / 1.4, 0, 1) ** 1.5
@@ -227,7 +231,6 @@ for e in cues['events']:
     elif ty == 'ambNight': add(sfx, stereo(crickets(e['dur']), -0.5), t0); add(sfx, stereo(crickets(e['dur'] - 0.3) * 0.7, 0.5), t0 + 0.3)
     elif ty == 'fall': add(sfx, whoosh(e['dur'], 1800, 300, 0.18, up=True), t0)
     elif ty == 'snap':
-        add(sfx, click(2600, 0.03, 0.6), t0); add(sfx, click(1800, 0.03, 0.4), t0 + 0.018)
         add(sfx, pop(160, 80, 0.2, 0.6), t0); add(sfx, sparkle(0.35, 10, 88, 100, 0.25), t0 + 0.05)
     elif ty == 'key': add(sfx, S(click(2200 + 900 * rng.random(), 0.025, 0.28), pop(380, 260, 0.03, 0.12)), t0, 1, -0.1 + 0.2 * rng.random())
     elif ty == 'enter': add(sfx, S(click(1600, 0.04, 0.4), pop(300, 180, 0.05, 0.2)), t0)
@@ -244,6 +247,9 @@ for e in cues['events']:
     elif ty == 'pop': add(sfx, pop(250, 750, 0.12, 0.45), t0, 1, [-0.5, 0.5, -0.5, 0.5][e['n']])
     elif ty == 'confetti': add(sfx, sparkle(0.9, 30, 88, 106, 0.3), t0)
     elif ty == 'bubble': add(sfx, pop(800 + 60 * e['n'], 1300 + 60 * e['n'], 0.06, 0.18), t0, 1, -0.6 + 0.17 * e['n'])
+    elif ty == 'caseOpen': add(sfx, S(click(1200, 0.05, 0.5), pop(220, 120, 0.12, 0.35)), t0)
+    elif ty == 'budFly': add(sfx, whoosh(e['dur'], 600, 3500, 0.16, up=True), t0, 1, 0.0)
+    elif ty == 'budIn': add(sfx, S(click(3000, 0.03, 0.55), pop(900, 500, 0.05, 0.25)), t0, 1, -0.5 if t0 < SNAP - 0.05 else 0.5)
     elif ty == 'logo': add(sfx, impact(0.5, 55), t0); add(sfx, sparkle(0.7, 16, 84, 100, 0.3), t0); add(sfx, riser(0.4, 0.15)[::-1].copy(), t0 - 0.4)
     elif ty == 'cta': add(sfx, pop(300, 900, 0.12, 0.4), t0); add(sfx, reverb(S(bell(84, 1.2, 2.0, 1.2), bell(91, 1.2, 2.0, 1.2)), 0.3), t0 + 0.04, 0.6)
     elif ty == 'shine':

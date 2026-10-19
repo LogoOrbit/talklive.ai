@@ -1,8 +1,8 @@
-// Renders headphones.html frame by frame at 1440x2560, 60fps.
+// Renders earphones.html frame by frame at 1440x2560, 60fps.
 //
-//   node render-headphones.js preview 1 4.5 13      spot-check frames -> prev/
-//   node render-headphones.js events                write the sound cue sheet -> audio/events.json
-//   node render-headphones.js video [workers]       silent video -> out/headphones-silent.mp4
+//   node render-earphones.js preview 1 4.5 13      spot-check frames -> prev/
+//   node render-earphones.js events                write the sound cue sheet -> audio/events.json
+//   node render-earphones.js video [workers]       silent video -> out/earphones-silent.mp4
 //
 // Needs global Playwright, ffmpeg and a static server on the repo root (npx http-server -p 6910 -s .).
 const { chromium } = require(require('child_process').execSync('npm root -g').toString().trim() + '/playwright');
@@ -18,7 +18,7 @@ async function open(b) {
   const p = await b.newPage({ viewport: { width: 1080, height: 1920 }, deviceScaleFactor: SCALE });
   p.on('console', (m) => console.log('page:', m.text()));
   p.on('pageerror', (e) => console.log('pageerror:', e.message));
-  await p.goto(STATIC + '/marketing/video-ad/headphones.html');
+  await p.goto(STATIC + '/marketing/video-ad/earphones.html');
   await p.evaluate(() => preload());
   return p;
 }
@@ -45,7 +45,7 @@ async function segment(b, from, to, file) {
     const p = await open(b);
     for (const t of args.map(Number)) {
       await p.evaluate((t) => render(t), t);
-      await p.screenshot({ path: `prev/hp-${t.toFixed(2)}.jpg`, type: 'jpeg', quality: 80, scale: 'css' });
+      await p.screenshot({ path: `prev/ea-${t.toFixed(2)}.jpg`, type: 'jpeg', quality: 80, scale: 'css' });
     }
   } else if (mode === 'events') {
     const p = await open(b);
@@ -63,8 +63,8 @@ async function segment(b, from, to, file) {
       return segment(b, i * per, Math.min(N, (i + 1) * per), file);
     }));
     fs.writeFileSync('out/list.txt', parts.map((f) => `file '${f.replace('out/', '')}'`).join('\n'));
-    execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', 'out/list.txt', '-c', 'copy', 'out/headphones-silent.mp4'], { stdio: 'inherit' });
-    console.log('wrote out/headphones-silent.mp4');
+    execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', 'out/list.txt', '-c', 'copy', 'out/earphones-silent.mp4'], { stdio: 'inherit' });
+    console.log('wrote out/earphones-silent.mp4');
   }
   await b.close();
 })();

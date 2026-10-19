@@ -25,17 +25,19 @@ node marketing/video-ad/render.js video omegle    # one of the 15s ads
 
 Edit timing, captions and camera moves in `compose.html`, or per ad in the `ADS` object in `ads.html`.
 
-## Headphones explainer (28s, 1440×2560, 60fps)
+## Earphones explainer (45s, 1440×2560, 60fps)
 
-`../TalkLive-Ad-headphones.mp4`: "Your most boring minutes could be the best part of your day." Bus, back seat, bed and break scenes, then headphones on → talklive.app → Tap to Talk → the world. Illustrated motion graphics (`headphones.html`), Kokoro TTS voiceover, and music + sound effects synthesized from scratch (`audio/mix_headphones.py`).
+`../TalkLive-Ad-earphones.mp4`: "Your most boring minutes could be the best part of your day." Bus, back seat, bed at night (phone glowing in the dark) and break scenes, then earbuds in → talklive.app → Tap to Talk → the world → late-night call on TalkLive. Illustrated motion graphics (`earphones.html`), Kokoro TTS voiceover, and music + sound effects synthesized from scratch (`audio/mix_earphones.py`).
 
 ```bash
-npx http-server -p 6910 -s .                                   # static server, from repo root
-node marketing/video-ad/render-headphones.js preview 2.5 13 18  # spot-check frames -> prev/
-node marketing/video-ad/render-headphones.js events             # sound cue sheet -> audio/events.json
-python marketing/video-ad/audio/make_vo.py kokoro-v1.0.onnx voices-v1.0.bin vo/   # voiceover lines
-python marketing/video-ad/audio/mix_headphones.py vo/ mix.wav   # music + sfx + voice
-node marketing/video-ad/render-headphones.js video 4            # silent video -> out/
-ffmpeg -i out/headphones-silent.mp4 -i mix.wav -map 0:v -map 1:a -c:v copy \
-  -af loudnorm=I=-14:TP=-1.5:LRA=11 -c:a aac -b:a 256k -ar 48000 -movflags +faststart ../TalkLive-Ad-headphones.mp4
+npx http-server -p 6910 -s .                                            # static server, from repo root
+cd marketing/video-ad/audio
+python make_vo.py kokoro-v1.0.onnx voices-v1.0.bin vo/                   # voiceover lines (script in make_vo_lines.py)
+python vo_timing.py vo/                                                  # line + word times -> vo_timing.json
+cd .. && node render-earphones.js preview 2.5 18.9 32                    # spot-check frames -> prev/
+node render-earphones.js events                                          # sound cue sheet -> audio/events.json
+python audio/mix_earphones.py audio/vo/ mix.wav                          # music + sfx + voice
+node render-earphones.js video 4                                         # silent video -> out/
+ffmpeg -i out/earphones-silent.mp4 -i mix.wav -map 0:v -map 1:a -c:v copy \
+  -af loudnorm=I=-14:TP=-1.5:LRA=11 -c:a aac -b:a 256k -ar 48000 -movflags +faststart ../TalkLive-Ad-earphones.mp4
 ```
