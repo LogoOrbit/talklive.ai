@@ -1030,7 +1030,7 @@ function getRuntime() {
     });
   }
   return {
-    online: io.engine.clientsCount,
+    online: onlineCount(),
     inCall: partners.size,
     waiting: waitingQueue.length,
     live: getLiveCounts(),
@@ -1057,7 +1057,7 @@ function getLiveCounts() {
     if (p && p.mode === 'chat') waitingText++;
   }
   return {
-    online: io.engine.clientsCount,
+    online: onlineCount(),
     chatting: voice + text,
     voice,
     text,
@@ -1487,7 +1487,7 @@ async function giphyFetch(endpoint, params) {
 // socket, and opening one per marketing visit to print a number is waste.
 app.get('/api/live', (req, res) => {
   res.set('Cache-Control', 'public, max-age=30');
-  res.json({ visitors: visitorCount(), online: io.engine.clientsCount });
+  res.json({ visitors: visitorCount(), online: onlineCount() });
 });
 
 app.get('/api/gifs/config', (req, res) => {
@@ -3257,8 +3257,19 @@ function sanitizeAvatar(value) {
   return null;
 }
 
+// People online, not sockets: several tabs (or a reconnect whose old socket is
+// still closing) from one browser count once. A socket that has not registered
+// yet has no clientId, so it counts as one person until it does.
+function onlineCount() {
+  const people = new Set();
+  for (const p of profiles.values()) people.add(p.clientId);
+  return people.size + Math.max(0, io.engine.clientsCount - profiles.size);
+}
+
+let lastOnlineCountSent = -1;
 function broadcastOnlineCount() {
-  io.emit('online-count', io.engine.clientsCount);
+  lastOnlineCountSent = onlineCount();
+  io.emit('online-count', lastOnlineCountSent);
   broadcastVisitorCount();
   broadcastOnlinePeople();
 }
@@ -3278,7 +3289,7 @@ function visitorCount() {
   // Everyone connected right now visited today. The cached figure lags by up
   // to a minute (and reads 0 straight after a deploy), which put "0 visitors"
   // in the header of a page whose own "Online now" rail said 3.
-  return Math.max(visitorCountCache.value, io.engine.clientsCount);
+  return Math.max(visitorCountCache.value, onlineCount());
 }
 
 let lastVisitorCountSent = -1;
@@ -3364,6 +3375,13 @@ function onlinePeopleList() {
 // tick regardless of the churn underneath.
 let lastOnlinePeopleJson = '';
 function broadcastOnlinePeople() {
+  // A second tab registering merges into an existing person without a
+  // connect or disconnect, so the count is rechecked here too.
+  const count = onlineCount();
+  if (count !== lastOnlineCountSent) {
+    lastOnlineCountSent = count;
+    io.emit('online-count', count);
+  }
   const list = onlinePeopleList();
   const json = JSON.stringify(list);
   if (json === lastOnlinePeopleJson) return;
@@ -3376,7 +3394,7 @@ setInterval(broadcastOnlinePeople, 4000).unref();
 // joiner always gets correct initial state immediately, independent of the
 // broadcast (initial-state sync, not just incremental updates).
 function sendOnlineCountTo(socket) {
-  socket.emit('online-count', io.engine.clientsCount);
+  socket.emit('online-count', onlineCount());
   socket.emit('visitor-count', visitorCount());
   socket.emit('online-people', onlinePeopleList());
 }
@@ -3823,7 +3841,7 @@ function findBestMatch(socketId) {
 }
 
 function estimatedWaitSeconds() {
-  const online = io.engine.clientsCount || 1;
+  const online = onlineCount() || 1;
   return Math.max(2, Math.min(20, Math.round(12 / Math.sqrt(online))));
 }
 
@@ -4249,7 +4267,7 @@ io.on('connection', (socket) => {
   }
 
   store.recordConnection();
-  store.recordPeakOnline(io.engine.clientsCount);
+  store.recordPeakOnline(onlineCount());
   // A browser that says it is signed in waits for 'resume-session' before it
   // is given an ID; this records that the resume came back refused.
   let resumeRefused = false;
