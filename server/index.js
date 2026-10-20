@@ -3313,12 +3313,29 @@ setInterval(broadcastVisitorCount, VISITOR_COUNT_TTL).unref();
 const ONLINE_PEOPLE_CAP = 24;
 
 function onlinePeopleList() {
-  const out = [];
+  // Profiles are per socket, so one person with several tabs (or a reconnect
+  // whose old socket has not dropped yet) would be listed once per socket.
+  // Collapse to one row per person; anyone in a call on any tab is busy.
+  const busy = new Set();
   for (const [socketId, p] of profiles) {
-    if (out.length >= ONLINE_PEOPLE_CAP) break;
-    if (partners.has(socketId)) continue;              // mid-call
+    if (partners.has(socketId)) busy.add(p.clientId);
+  }
+  const out = [];
+  const byClient = new Map();
+  const seenLabel = new Set();
+  for (const [socketId, p] of profiles) {
+    if (busy.has(p.clientId)) continue;                // mid-call
     if (statusHidden.get(p.clientId)) continue;        // "appear offline"
-    out.push({
+    const waiting = waitingQueue.includes(socketId);
+    const existing = byClient.get(p.clientId);
+    if (existing) { if (waiting) existing.waiting = true; continue; }
+    // Two rows with the same name and flag read as a glitch even when they
+    // are different people, so the first one stands for both.
+    const label = `${p.username}|${p.country}`;
+    if (seenLabel.has(label)) continue;
+    if (out.length >= ONLINE_PEOPLE_CAP) break;
+    seenLabel.add(label);
+    const row = {
       username: p.username,
       countryCode: p.country,
       country: p.countryName,
@@ -3329,8 +3346,10 @@ function onlinePeopleList() {
       // listing a few here reveals nothing a match would not - and it is what
       // lets search and "you both like" work on this list.
       interests: (p.interests || []).slice(0, 5),
-      waiting: waitingQueue.includes(socketId),
-    });
+      waiting,
+    };
+    byClient.set(p.clientId, row);
+    out.push(row);
   }
   return out;
 }

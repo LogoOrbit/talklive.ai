@@ -9787,7 +9787,14 @@ let onlinePeople = [];
 // thing on this list that makes a conversation more likely to go somewhere.
 function onlineOthers() {
   const myName = myProfile && myProfile.username;
-  return myName ? onlinePeople.filter((p) => p.username !== myName) : onlinePeople;
+  const seen = new Set();
+  return onlinePeople.filter((p) => {
+    if (myName && p.username === myName) return false;
+    const key = `${p.username}|${p.countryCode}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function filteredOnlinePeople() {
