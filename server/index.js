@@ -4823,6 +4823,11 @@ io.on('connection', (socket) => {
         })
         : false;
 
+      // The ping can take 2.5s. A socket that dropped meanwhile has already
+      // run its disconnect cleanup, so a profile set now would never be
+      // removed and would count as someone online forever.
+      if (!socket.connected) return;
+
       if (!tokenOk || incumbentAlive) {
         // `reason` lets the client say something true instead of retrying into
         // a loop: the foreground tab re-registers with takeover, the background
