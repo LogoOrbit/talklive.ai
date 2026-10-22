@@ -32,7 +32,7 @@ const flags = require('./flags');
 const { minifiedScripts } = require('./minified');
 const ageAssurance = require('./age-assurance');
 const mail = require('./mailer');
-const { botLabel, isPrefetch } = require('./bots');
+const { botLabel, isPrefetch, isBotUserAgent } = require('./bots');
 const { createAdmin, applyOwnerReset } = require('./admin');
 const { createGameTracker } = require('./game-tracker');
 const { isValidTimezone } = require('./analytics');
@@ -3259,11 +3259,24 @@ function sanitizeAvatar(value) {
 
 // People online, not sockets: several tabs (or a reconnect whose old socket is
 // still closing) from one browser count once. A socket that has not registered
-// yet has no clientId, so it counts as one person until it does.
+// yet has no clientId, so it counts as one person until it does. Crawlers and
+// headless browsers that run the page's JS open a socket too; they are not
+// people, so they are left out.
 function onlineCount() {
   const people = new Set();
-  for (const p of profiles.values()) people.add(p.clientId);
-  return people.size + Math.max(0, io.engine.clientsCount - profiles.size);
+  let unregistered = 0;
+  for (const [id, s] of io.of('/').sockets) {
+    if (s.data.bot) continue;
+    const p = profiles.get(id);
+    if (p) people.add(p.clientId);
+    else unregistered++;
+  }
+  return people.size + unregistered;
+}
+
+function isBotSocket(socketId) {
+  const s = io.of('/').sockets.get(socketId);
+  return !!(s && s.data.bot);
 }
 
 let lastOnlineCountSent = -1;
@@ -3337,6 +3350,7 @@ function onlinePeopleList() {
   for (const [socketId, p] of profiles) {
     if (busy.has(p.clientId)) continue;                // mid-call
     if (statusHidden.get(p.clientId)) continue;        // "appear offline"
+    if (isBotSocket(socketId)) continue;               // crawler
     const waiting = waitingQueue.includes(socketId);
     const existing = byClient.get(p.clientId);
     if (existing) { if (waiting) existing.waiting = true; continue; }
@@ -4182,6 +4196,8 @@ function reportHandlerError(event, err) {
 io.on('connection', (socket) => {
   const ip = getClientIp(socket);
   const geo = lookupGeo(ip);
+  // Kept out of the online count and the Online Now rail.
+  socket.data.bot = isBotUserAgent(socket.handshake.headers['user-agent']);
 
   // One malformed packet must never take the whole server down. Handlers
   // destructure their payload (`({ token } = {}) =>`), and a default only
