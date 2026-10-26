@@ -54,13 +54,13 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
      system face a beat later. Only the latin subset is preloaded - latin-ext
      is fetched on demand by the unicode-range in style.css. -->
 <link rel="preload" as="font" type="font/woff2" href="/fonts/plus-jakarta-sans-latin.woff2?v=20260922type" crossorigin />
-<link rel="stylesheet" href="style.css?v=20261019perf" />
+<link rel="stylesheet" href="style.css?v=20261026filters" />
 <link rel="stylesheet" href="chat-extras.css?v=20261004glow" />
 <link rel="stylesheet" href="games.css?v=20261006fix" />
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
      side-panel shell, Settings, Friends/History and the account dialog, and it
      does so with its own `tl-` class names so nothing above can reach it. -->
-<link rel="stylesheet" href="ui.css?v=20261019noads" />
+<link rel="stylesheet" href="ui.css?v=20261026filters" />
 <link rel="stylesheet" href="auth.css?v=20260924auth" />
 <!-- The top bar, shared with /chat. Loaded after everything else because it
      owns the header outright: one button language, one radius, one focus ring
@@ -817,17 +817,6 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
             </span>
           </div>
 
-          <div class="filters-premium-banner premium-lock hidden">
-            <div class="fpb-head">
-              <span class="fpb-diamond" aria-hidden="true">💎</span>
-              <span class="fpb-title" data-i18n="filtersPremiumTitle">Filters are a Premium feature</span>
-            </div>
-            <p class="fpb-text" data-i18n="filtersPremiumBody">Free includes up to 3 countries per list. Premium will unlock gender filters, unlimited country lists and instant rematching.</p>
-            <a id="filtersUpgradeBtn" class="upgrade-cta-btn" href="/pricing?utm_source=app">
-              <span class="upgrade-diamond" aria-hidden="true">💎</span><span data-i18n="premiumSeeSoon">SEE PREMIUM</span>
-            </a>
-          </div>
-
           <!-- 1. Who -->
           <section class="tl-filter-block">
             <div role="heading" aria-level="3" class="ui-h3 tl-filter-legend" id="prefGenderGroupLabel">
@@ -839,15 +828,14 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
               <button type="button" class="tl-seg-opt pill" data-value="male"><span class="pill-dot pill-dot-male" aria-hidden="true"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="14" r="6"/><line x1="14.5" y1="9.5" x2="20" y2="4"/><polyline points="14.5 4 20 4 20 9.5"/></svg><span data-i18n="male">Male</span></button>
               <button type="button" class="tl-seg-opt pill" data-value="female"><span class="pill-dot pill-dot-female" aria-hidden="true"></span><svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="9" r="6"/><line x1="12" y1="15" x2="12" y2="21"/><line x1="9" y1="18" x2="15" y2="18"/></svg><span data-i18n="female">Female</span></button>
             </div>
-            <!-- Just-in-time disclosure, shown the first time the filters open
-                 (see openFilters in app.js): what the gender filter matches on
-                 and what it does not. One line, not another dialog. -->
             <label class="tl-filter-check" id="prefVoiceCheckedRow" hidden>
               <input type="checkbox" id="prefVoiceChecked" />
               <span data-i18n="voiceCheckedOnly">Voice-checked only</span>
             </label>
-            <p class="tl-filter-note" id="genderFilterNote" hidden>
-              <span data-i18n="genderFilterNote">Gender is what each person picks for themselves. It is only checked by voice for people who turn on Voice check, and that check runs on their own device.</span>
+            <!-- What the gender filter matches on: one small link, the detail
+                 is a tap away rather than a paragraph in the way. -->
+            <p class="tl-filter-note" id="genderFilterNote">
+              <span class="sr-only" data-i18n="genderFilterNote">Gender is what each person picks for themselves. It is only checked by voice for people who turn on Voice check, and that check runs on their own device.</span>
               <a href="/privacy#gender" target="_blank" rel="noopener" data-i18n="genderFilterNoteLink">How this works</a>
             </p>
           </section>
@@ -861,7 +849,6 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
               <span data-i18n="onlyFromTitle">Only from these countries</span>
               <span class="tl-filter-count" id="includeCountryCount"></span>
             </div>
-            <p class="tl-filter-hint" data-i18n="onlyFromHint">Leave this empty to be matched with the whole world.</p>
             <div class="country-multiselect">
               <div class="country-search-wrap">
                 <input type="text" id="includeCountrySearch" class="tl-filter-input" data-i18n-placeholder="searchCountry" data-i18n-aria="onlyFromTitle" placeholder="Search country…" autocomplete="off" />
@@ -872,16 +859,16 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
             </div>
           </section>
 
-          <!-- 3. Where - never. Red, a cross, and its own count. -->
-          <section class="tl-filter-block tl-filter-country tl-filter-never">
-            <div role="heading" aria-level="3" class="ui-h3 tl-filter-legend">
+          <!-- 3. Where - never. Red, a cross; folded away until it is wanted. -->
+          <details class="tl-filter-block tl-filter-country tl-filter-never" id="excludeCountryBlock">
+            <summary class="ui-h3 tl-filter-legend">
               <span class="tl-filter-mark" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10M17 7 7 17"/></svg>
               </span>
               <span data-i18n="neverFromTitle">Never from these countries</span>
               <span class="tl-filter-count" id="excludeCountryCount"></span>
-            </div>
-            <p class="tl-filter-hint" data-i18n="neverFromHint">Anyone here is skipped, even if the list above allows them.</p>
+              <span class="tl-filter-caret" aria-hidden="true"></span>
+            </summary>
             <div class="country-multiselect">
               <div class="country-search-wrap">
                 <input type="text" id="excludeCountrySearch" class="tl-filter-input" data-i18n-placeholder="searchCountry" data-i18n-aria="neverFromTitle" placeholder="Search country…" autocomplete="off" />
@@ -889,7 +876,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
               </div>
               <div id="excludeCountryChips" class="interest-tags tl-filter-chips"></div>
             </div>
-          </section>
+          </details>
 
           <!-- 4. What about -->
           <section class="tl-filter-block">
@@ -897,7 +884,6 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
               <span data-i18n="interests">Interests</span>
               <span class="tl-filter-optional" data-i18n="optional">(optional)</span>
             </div>
-            <p class="tl-filter-hint" data-i18n="interestsHint">We try to pair you with someone who typed something similar. It never blocks a match.</p>
             <div class="interests-picker">
               <div class="interest-input-wrap">
                 <input type="text" id="interestInput" class="tl-filter-input" data-i18n-placeholder="interestPlaceholder" data-i18n-aria="interests" placeholder="Type an interest…" name="tl-interest-nofill" autocomplete="one-time-code" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" maxlength="20" />
@@ -2562,7 +2548,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   <script defer src="voice-notes.js?v=20261001mic"></script>
   <script defer src="games.js?v=20261005min"></script>
   <script defer src="nickname-rules.js?v=20260924nick"></script>
-  <script defer src="app.js?v=20261019perf"></script>
+  <script defer src="app.js?v=20261026filters"></script>
 
 <!-- Analytics tag, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

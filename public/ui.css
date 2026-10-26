@@ -1501,13 +1501,38 @@
 }
 .tl-filter-summary-text strong {
   display: block;
-  margin-top: 3px;
-  font-size: 14.5px;
+  margin-top: 2px;
+  font-size: 14px;
   font-weight: 700;
   line-height: 1.45;
 }
 
-.tl-filter-block { margin-top: var(--tl-s5); }
+/* Each question is its own card, so the panel reads as four short steps. */
+.tl-filter-block {
+  margin-top: 0;
+  padding: var(--tl-s3);
+  border: 1px solid var(--tl-line);
+  border-radius: var(--tl-r-md);
+  background: color-mix(in srgb, var(--text) 3%, transparent);
+}
+.tl-filter-only { border-color: color-mix(in srgb, var(--green) 30%, var(--tl-line)); }
+.tl-filter-never { border-color: color-mix(in srgb, var(--danger) 26%, var(--tl-line)); }
+
+/* The never list is a <details>: one tappable row until it is wanted. */
+summary.tl-filter-legend { margin: 0; cursor: pointer; list-style: none; user-select: none; }
+summary.tl-filter-legend::-webkit-details-marker { display: none; }
+.tl-filter-never[open] > summary.tl-filter-legend { margin-bottom: var(--tl-s2); }
+.tl-filter-caret {
+  width: 8px;
+  height: 8px;
+  margin-inline-start: auto;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform 0.18s ease;
+}
+.tl-filter-count:not(:empty) + .tl-filter-caret { margin-inline-start: var(--tl-s2); }
+.tl-filter-never[open] .tl-filter-caret { transform: rotate(-135deg) translateY(-2px); }
 .tl-filter-legend {
   display: flex;
   align-items: center;
@@ -1519,11 +1544,12 @@
 }
 .tl-filter-note {
   margin: var(--tl-s2) 0 0;
-  font-size: 12.5px;
-  line-height: 1.45;
+  font-size: 12px;
+  line-height: 1.4;
   color: var(--muted);
 }
 .tl-filter-note a { color: inherit; text-decoration: underline; white-space: nowrap; }
+.tl-filter-note a::before { content: "\24D8\00A0"; text-decoration: none; display: inline-block; }
 .tl-filter-check {
   display: flex;
   align-items: center;
@@ -1582,7 +1608,7 @@
 .tl-filter-input {
   width: 100%;
   box-sizing: border-box;
-  min-height: 46px;
+  min-height: 42px;
   padding: 0 var(--tl-s3);
   border: 1px solid var(--tl-line-strong);
   border-radius: var(--tl-r-md);
@@ -1604,14 +1630,14 @@
 .tl-filter-quick {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--tl-s2);
-  margin-top: var(--tl-s3);
+  gap: 6px;
+  margin-top: var(--tl-s2);
 }
 .tl-quick-chip {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  min-height: 34px;
+  min-height: 32px;
   padding: 0 var(--tl-s3);
   border: 1px dashed var(--tl-line-strong);
   border-radius: var(--tl-r-pill);
@@ -1625,13 +1651,13 @@
 .tl-quick-chip:hover { border-style: solid; color: var(--text); background: color-mix(in srgb, var(--text) 8%, transparent); }
 .tl-filter-only .tl-quick-chip:hover { border-color: var(--green); }
 
-.tl-filter-chips { margin-top: var(--tl-s3); }
+.tl-filter-chips { margin-top: var(--tl-s2); }
 .tl-filter-chips:empty { margin-top: 0; }
 
 .interest-input-wrap { display: flex; gap: var(--tl-s2); }
 .tl-filter-add {
   flex: 0 0 auto;
-  min-height: 46px;
+  min-height: 42px;
   padding: 0 var(--tl-s4);
   border: 1px solid var(--tl-line-strong);
   border-radius: var(--tl-r-md);

@@ -1077,7 +1077,7 @@ var filtersReady = false;
 // The countries people actually reach for. Not a ranking of anything - just
 // the ones that come up most in a random-chat queue, so the first tap is
 // usually right there. Anything else is still one search away.
-const QUICK_COUNTRIES = ['US', 'GB', 'CA', 'IN', 'PK', 'DE', 'BR', 'PH'];
+const QUICK_COUNTRIES = ['US', 'GB', 'CA', 'IN', 'PK', 'DE'];
 // 'english' leads: practising spoken English is the commonest reason people
 // give for being here, and learners do best when they meet each other.
 const QUICK_INTERESTS = ['english', 'music', 'gaming', 'movies', 'travel', 'football', 'coding', 'books', 'anime'];
@@ -1128,6 +1128,9 @@ function syncFilterReadout() {
     excludeCountryCountEl.textContent = excludeCountries.size ? countText(excludeCountries.size) : '';
     excludeCountryCountEl.classList.toggle('is-full', !!cap && excludeCountries.size >= cap);
   }
+  // The never list stays folded until it is used, so it never hides a choice.
+  const excludeBlock = document.getElementById('excludeCountryBlock');
+  if (excludeBlock && excludeCountries.size > 0) excludeBlock.open = true;
   renderQuickPicks();
 }
 
@@ -1147,7 +1150,7 @@ function renderQuickPicks() {
   }
   if (interestQuickEl) {
     interestQuickEl.innerHTML = '';
-    QUICK_INTERESTS.filter((i) => !selectedInterests.has(i)).forEach((interest) => {
+    QUICK_INTERESTS.filter((i) => !selectedInterests.has(i)).slice(0, 6).forEach((interest) => {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'tl-quick-chip';
@@ -1704,22 +1707,7 @@ if (settingsBackBtn) {
 }
 
 // --- Filters side panel: who you get matched with ---
-// The first time the filters open, say plainly what the gender filter matches
-// on. Stays up for the rest of that visit; later visits get a clean panel.
-const GENDER_NOTE_KEY = 'tl_gender_note_seen';
-const genderFilterNote = document.getElementById('genderFilterNote');
-let genderNoteShownThisVisit = false;
-
 function openFilters() {
-  if (genderFilterNote && !genderNoteShownThisVisit) {
-    let seen = false;
-    try { seen = localStorage.getItem(GENDER_NOTE_KEY) === '1'; } catch (_) {}
-    if (!seen) {
-      genderFilterNote.hidden = false;
-      genderNoteShownThisVisit = true;
-      try { localStorage.setItem(GENDER_NOTE_KEY, '1'); } catch (_) {}
-    }
-  }
   filtersPanel.classList.add('open');
   filtersOverlay.classList.remove('hidden');
   updateScrollLock();

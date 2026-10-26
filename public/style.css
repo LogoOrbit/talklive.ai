@@ -5135,40 +5135,6 @@ summary:active {
 }
 a.premium-lock:hover { background: rgba(108, 92, 231, 0.22); }
 
-/* Premium explainer banner at the top of the Filters panel. */
-.filters-premium-banner {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 14px;
-  border-radius: 14px;
-  border: 1px solid rgba(108, 92, 231, 0.35);
-  background: linear-gradient(160deg, rgba(108, 92, 231, 0.14), rgba(0, 212, 255, 0.06));
-  /* Override the chip styling inherited from .premium-lock - this is a card. */
-  font-size: inherit;
-  font-weight: inherit;
-  color: inherit;
-  letter-spacing: normal;
-  vertical-align: baseline;
-}
-.fpb-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.fpb-diamond { font-size: 18px; }
-.fpb-title {
-  font-size: 13.5px;
-  font-weight: 700;
-  color: var(--text);
-}
-.fpb-text {
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.45;
-  color: var(--muted);
-}
-
 /* Each filter group is its own card, matching the Settings accordion look,
    so the panel reads as a short list of clear sections. */
 #filtersPanel .pill-row {
@@ -5189,10 +5155,6 @@ a.premium-lock:hover { background: rgba(108, 92, 231, 0.22); }
 #filtersPanel .pill { padding: 6px 12px; }
 #filtersPanel .pill-group { gap: 6px; }
 #filtersPanel .interest-tags:not(:empty) { margin-bottom: 6px; }
-#filtersPanel .filters-premium-banner {
-  padding: 9px 12px;
-  gap: 5px;
-}
 #filtersPanel .side-panel-header { padding-bottom: 8px; }
 #filtersPanel .side-panel-footer { padding-top: 10px; margin-top: 0; }
 /* Tighten the gap between header / body / footer (default 18px) so the three
@@ -5209,8 +5171,7 @@ a.premium-lock:hover { background: rgba(108, 92, 231, 0.22); }
 }
 [data-theme="light"] #filtersPanel .pill-row,
 [data-theme="light"] .acc-item,
-[data-theme="light"] .temp-name-block,
-[data-theme="light"] .filters-premium-banner {
+[data-theme="light"] .temp-name-block {
   border-color: rgba(20, 30, 70, 0.12);
   background: rgba(20, 30, 70, 0.04);
 }
