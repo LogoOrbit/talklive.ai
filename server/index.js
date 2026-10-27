@@ -651,6 +651,8 @@ const GROWTH_EVENTS = new Set([
   // demand signal the app has for a thing that does not exist yet: it is a
   // person asking to be told when it does.
   'premium_notify_click',
+  // The Premium card was shown, and the engagement features (engage.js).
+  'premium_upsell_view', 'likes_locked_tap', 'passport_share', 'trial_started',
   // Progressive disclosure (fix list 2.3). One exposure event per first-time
   // session, per arm, and one event per surface opened within the first two
   // minutes of it. "on" is the flag's arm, "off" is everyone else's first
@@ -1779,6 +1781,9 @@ function pairOnCooldown(clientIdA, clientIdB, soft) {
 // 'voice-invite-join' pairs the two token holders there in talk mode.
 const voiceInvites = new Map(); // token -> { clients: [clientIdA, clientIdB], joined: Map<clientId, socketId>, timer }
 const VOICE_INVITE_TTL_MS = 2 * 60 * 1000; // plenty for two page loads; then it's dead
+
+// How long after a skip "Undo skip" can still bring that person back.
+const UNDO_SKIP_MS = 15000;
 
 // If a search takes longer than this, we drop ALL matching filters for the
 // current search (gender + country preferences, everything except blocks) and
@@ -3613,6 +3618,24 @@ function settleReferral(clientId) {
   emitPremiumStatus(settled.referred);
 }
 
+// Free trial: a day of Premium after someone's third real conversation, once
+// per person. People pay for what they have already enjoyed.
+const TRIAL_AFTER_CALLS = Number(process.env.TRIAL_AFTER_CALLS) || 3;
+const TRIAL_DAYS = 1;
+function noteGoodCall(clientId) {
+  const n = store.noteGoodCall(clientId);
+  if (n < TRIAL_AFTER_CALLS || store.trialUsed(clientId) || isPremium(clientId)) return;
+  store.markTrialUsed(clientId);
+  store.extendPremium(clientId, TRIAL_DAYS, { source: 'trial', lastEvent: 'free trial after real calls' });
+  store.recordFeature('trial_started');
+  for (const [sid, profile] of profiles) {
+    if (profile.clientId !== clientId) continue;
+    const sock = io.sockets.sockets.get(sid);
+    if (sock) sock.emit('trial-started', { hours: TRIAL_DAYS * 24, calls: TRIAL_AFTER_CALLS });
+  }
+  emitPremiumStatus(clientId);
+}
+
 // Re-send premium state to every live socket belonging to a clientId. Used
 // whenever a grant changes outside registration (a referral reward now; a
 // Stripe webhook is the same shape of event, though that user is usually on the
@@ -3660,6 +3683,8 @@ function disconnectPartner(socketId, opts = {}) {
     if (ms >= REAL_CONVERSATION_MS) {
       if (profile) settleReferral(profile.clientId);
       if (partnerProfile) settleReferral(partnerProfile.clientId);
+      if (profile) noteGoodCall(profile.clientId);
+      if (partnerProfile) noteGoodCall(partnerProfile.clientId);
     }
   }
   if (profile) profile.matchedAt = 0;
@@ -3773,6 +3798,8 @@ function publicProfile(p) {
     timezone: p.timezone || null,
     // Interface language, so the partner can see "Speaks your language".
     lang: p.lang || null,
+    // Premium badge next to the name.
+    premium: !!p.premium,
   };
 }
 
@@ -3997,6 +4024,44 @@ function estimatedWaitSeconds() {
   return Math.max(2, Math.min(20, Math.round(12 / Math.sqrt(online))));
 }
 
+// Put two sockets in a call. Both must be live and out of the queue already.
+function pairSockets(socketId, partnerId, opts = {}) {
+  const seekerSocket = io.sockets.sockets.get(socketId);
+  const partnerSocket = io.sockets.sockets.get(partnerId);
+  partners.set(socketId, partnerId);
+  partners.set(partnerId, socketId);
+
+  const seekerProfile = profiles.get(socketId);
+  const partnerProfile = profiles.get(partnerId);
+  const key = pairKey(seekerProfile.clientId, partnerProfile.clientId);
+  const rematched = hearts.has(key) && hearts.get(key).size === 2;
+  hearts.delete(key);
+
+  // Stamped on both sides so disconnectPartner can measure how long the
+  // conversation actually lasted, whichever side ends it.
+  seekerProfile.matchedAt = Date.now();
+  partnerProfile.matchedAt = seekerProfile.matchedAt;
+  // Time each side spent searching, for the dashboard's wait-time view.
+  for (const p of [seekerProfile, partnerProfile]) {
+    const since = p.searchSince || p.queuedAt || 0;
+    const waited = since ? Math.max(0, Math.round((p.matchedAt - since) / 1000)) : 0;
+    store.recordWait(waited, audience.bucketOf(audience.WAIT_BUCKETS, waited));
+    p.searchSince = 0;
+  }
+
+  const mode = seekerProfile.mode || 'talk';
+  store.recordFeature(mode === 'chat' ? 'chat_match' : 'match');
+  const samePersonality = sharedPersonality(seekerProfile, partnerProfile);
+  partnerSocket.emit('matched', { initiator: true, partner: publicProfile(seekerProfile), rematched, mode, samePersonality, undo: opts.undo ? 'them' : undefined });
+  seekerSocket.emit('matched', { initiator: false, partner: publicProfile(partnerProfile), rematched, mode, samePersonality, undo: opts.undo ? 'me' : undefined });
+
+  // Remember each other so either side can message back, call back, add or
+  // report later. This used to happen for text matches only, which left every
+  // voice-call partner unknown to the server: calling one back from the call
+  // history, messaging them, or reporting them from their profile was refused.
+  rememberPairing(seekerSocket, seekerProfile, partnerSocket, partnerProfile);
+}
+
 function tryMatch(socketId) {
   disconnectPartner(socketId);
   clearFromQueue(socketId);
@@ -4013,38 +4078,7 @@ function tryMatch(socketId) {
     const partnerSocket = io.sockets.sockets.get(partnerId);
     if (!partnerSocket) return tryMatch(socketId);
 
-    partners.set(socketId, partnerId);
-    partners.set(partnerId, socketId);
-
-    const seekerProfile = profiles.get(socketId);
-    const partnerProfile = profiles.get(partnerId);
-    const key = pairKey(seekerProfile.clientId, partnerProfile.clientId);
-    const rematched = hearts.has(key) && hearts.get(key).size === 2;
-    hearts.delete(key);
-
-    // Stamped on both sides so disconnectPartner can measure how long the
-    // conversation actually lasted, whichever side ends it.
-    seekerProfile.matchedAt = Date.now();
-    partnerProfile.matchedAt = seekerProfile.matchedAt;
-    // Time each side spent searching, for the dashboard's wait-time view.
-    for (const p of [seekerProfile, partnerProfile]) {
-      const since = p.searchSince || p.queuedAt || 0;
-      const waited = since ? Math.max(0, Math.round((p.matchedAt - since) / 1000)) : 0;
-      store.recordWait(waited, audience.bucketOf(audience.WAIT_BUCKETS, waited));
-      p.searchSince = 0;
-    }
-
-    const mode = seekerProfile.mode || 'talk';
-    store.recordFeature(mode === 'chat' ? 'chat_match' : 'match');
-    const samePersonality = sharedPersonality(seekerProfile, partnerProfile);
-    partnerSocket.emit('matched', { initiator: true, partner: publicProfile(seekerProfile), rematched, mode, samePersonality });
-    seekerSocket.emit('matched', { initiator: false, partner: publicProfile(partnerProfile), rematched, mode, samePersonality });
-
-    // Remember each other so either side can message back, call back, add or
-    // report later. This used to happen for text matches only, which left every
-    // voice-call partner unknown to the server: calling one back from the call
-    // history, messaging them, or reporting them from their profile was refused.
-    rememberPairing(seekerSocket, seekerProfile, partnerSocket, partnerProfile);
+    pairSockets(socketId, partnerId);
   } else {
     waitingQueue.push(socketId);
     const seekerProfile = profiles.get(socketId);
@@ -5277,8 +5311,12 @@ io.on('connection', (socket) => {
     // it says a lot: keep the two of them apart instead of looping them
     // through the same dead connection.
     const failed = !!(opts && opts.failed);
+    const skippedId = partners.get(socket.id);
+    const skipped = skippedId ? profiles.get(skippedId) : null;
     disconnectPartner(socket.id, { failed });
     const profile = profiles.get(socket.id);
+    // For Premium "Undo skip": who was just skipped, and when.
+    if (profile) profile.lastSkipped = !failed && skipped ? { clientId: skipped.clientId, at: Date.now() } : null;
     if (profile) profile.randomFallbackActive = false;
     const refused = modeRefusal(socket, (profile && profile.mode) || 'talk');
     if (refused) return socket.emit('search-refused', { reason: refused });
@@ -5289,6 +5327,54 @@ io.on('connection', (socket) => {
     // ones whose calls were already failing - a 20s watchdog and then another
     // 5s of dead air before they could even try again.
     tryMatch(socket.id);
+  });
+
+  // Premium "Undo skip": bring back the person just skipped, if they are still
+  // looking for someone. Answers with the reason when it cannot.
+  socket.on('undo-skip', (ack) => {
+    const reply = typeof ack === 'function' ? ack : () => {};
+    const me = profiles.get(socket.id);
+    if (!me) return reply({ ok: false, reason: 'gone' });
+    if (!isPremium(me.clientId)) return reply({ ok: false, reason: 'premium' });
+    const last = me.lastSkipped;
+    if (!last || Date.now() - last.at > UNDO_SKIP_MS) return reply({ ok: false, reason: 'expired' });
+    const otherId = clientSockets.get(last.clientId);
+    const other = otherId ? profiles.get(otherId) : null;
+    if (!other || !waitingQueue.includes(otherId) || partners.has(otherId)
+      || (other.mode || 'talk') !== (me.mode || 'talk')
+      || isBlockedPair(me.clientId, other.clientId)) {
+      return reply({ ok: false, reason: 'busy' });
+    }
+    me.lastSkipped = null;
+    disconnectPartner(socket.id);
+    clearFromQueue(socket.id);
+    clearFromQueue(otherId);
+    clearWaitFallbackTimer(socket.id);
+    clearWaitFallbackTimer(otherId);
+    store.recordFeature('undo_skip');
+    pairSockets(socket.id, otherId, { undo: true });
+    reply({ ok: true });
+  });
+
+  // People who hearted you. Premium sees who; everyone else sees how many.
+  socket.on('get-likes', (ack) => {
+    if (typeof ack !== 'function') return;
+    const me = profiles.get(socket.id);
+    if (!me) return ack({ count: 0, list: [] });
+    const list = store.likesFor(me.clientId);
+    if (!isPremium(me.clientId)) {
+      return ack({ count: list.length, locked: true, countries: list.slice(0, 5).map((l) => l.country) });
+    }
+    ack({
+      count: list.length,
+      list: list.slice(0, 30).map((l) => ({
+        clientId: l.from,
+        username: l.username,
+        countryCode: l.country,
+        at: l.at,
+        online: clientSockets.has(l.from) && !statusHidden.get(l.from),
+      })),
+    });
   });
 
   // Personal online-status visibility: hides this user's status only from
@@ -5352,6 +5438,11 @@ io.on('connection', (socket) => {
   });
 
   socket.on('leave', () => {
+    // Hanging up is a skip too, as far as "Undo skip" is concerned.
+    const leftId = partners.get(socket.id);
+    const left = leftId ? profiles.get(leftId) : null;
+    const me = profiles.get(socket.id);
+    if (me && left) me.lastSkipped = { clientId: left.clientId, at: Date.now() };
     disconnectPartner(socket.id);
     noteSearchAbandoned(socket.id);
     clearFromQueue(socket.id);
@@ -5565,11 +5656,19 @@ io.on('connection', (socket) => {
       const key = pairKey(seeker.clientId, partner.clientId);
       if (!hearts.has(key)) hearts.set(key, new Set());
       const set = hearts.get(key);
+      const wasMutual = set.size === 2;
       set.add(seeker.clientId);
       // Stamped so the sweeper can retire it. A heart is only consumed if the
       // pair actually meets again; without an expiry, every one-sided heart
       // that never got reciprocated stayed in memory for the process's life.
       set.ts = Date.now();
+      // "Who liked you": kept per person, shown in full to Premium.
+      store.addLike(partner.clientId, seeker.clientId, { username: seeker.username, country: seeker.country });
+      if (!wasMutual && set.size === 2) {
+        store.recordFeature('heart_mutual');
+        socket.emit('mutual-heart', { partner: publicProfile(partner) });
+        io.to(partnerId).emit('mutual-heart', { partner: publicProfile(seeker) });
+      }
     }
   });
 

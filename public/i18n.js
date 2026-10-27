@@ -830,6 +830,13 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "neverFromHint": "We skip people from here.",
     "interestsHint": "We pair you with people who like the same things.",
     "filtersNote": "No filters = fully random. If no one fits for a while, we match you with anyone, but avoided countries stay blocked.",
+    "upsellLikesTitle": "See who liked you",
+    "upsellUndoTitle": "Bring them back",
+    "upsellTrialTitle": "Premium is yours for a day 🎉",
+    "upsellTrialBadge": "Free for 24h",
+    "upsellTrialCta": "Try the filters",
+    "upsellPerkLikes": "See who liked you",
+    "upsellPerkUndo": "Undo a skip",
     "upsellComingSoon": "Coming soon",
     "upsellCountriesTitle": "Want more countries?",
     "upsellGenderTitle": "Choose who you talk to",
@@ -1180,7 +1187,7 @@ function applyI18n() {
 // Non-English dictionaries load on demand from /i18n/<lang>.js. Until the file
 // arrives t() falls back to English, then the UI re-translates once it lands.
 // Keep in step with the preload snippet in the <head> of index.html/chat.html.
-const I18N_VERSION = '20261019stripe';
+const I18N_VERSION = '20261028engage';
 const i18nLoading = {};
 window.__i18nLangLoaded = function (lang) {
   delete i18nLoading[lang];

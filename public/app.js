@@ -6363,6 +6363,7 @@ function recordCallHistory() {
   if (callHistory.length > HISTORY_MAX) callHistory.splice(0, callHistory.length - HISTORY_MAX);
   renderHistory();
   if (durationSeconds >= 30) trackGrowthEvent('quality_call');
+  if (window.TalkLiveEngage) window.TalkLiveEngage.onCall(currentPartner, durationSeconds);
   if (!maybeShowFriendPrompt(currentPartner, durationSeconds)) maybeShowSharePrompt(durationSeconds);
 }
 
@@ -8581,7 +8582,9 @@ callMainBtn.addEventListener('click', () => {
     // Second press confirms the hang-up.
     clearHangupConfirm();
     playHangupSound();
+    const hadCall = callState === 'connected';
     socket.emit('leave');
+    if (hadCall && window.TalkLiveEngage) setTimeout(() => window.TalkLiveEngage.offerUndo(), 0);
     if (autoCallEnabled && !currentCallIsCallback) {
       findNextPerson('statusFindingNew');
     } else {
@@ -10378,6 +10381,7 @@ function revealPartner() {
   partnerMeta.classList.toggle('hidden', !countryName);
   renderPartnerAnimal(partner.animal);
   startPartnerClock(partner.timezone);
+  if (window.TalkLiveEngage) window.TalkLiveEngage.onReveal(partner);
   if (twinNoticeFor !== partner) {
     twinNoticeFor = partner;
     const twin = twinMatchMessage(partner, currentSamePersonality);
@@ -11305,20 +11309,28 @@ updatePremiumUi();
 // The Premium dialog: what limit was hit, what Premium adds (the perk that was
 // reached for is lit up), and the launch alert - Premium is not on sale yet.
 const premiumUpsellModal = document.getElementById('premiumUpsellModal');
+const UPSELL_TITLES = { gender: 'upsellGenderTitle', likes: 'upsellLikesTitle', undo: 'upsellUndoTitle', trial: 'upsellTrialTitle' };
+// perk 'trial' is the "a day of Premium, on us" card: everything lit up, and
+// the button tries it rather than asking for anything.
 function showPremiumUpsell(message, perk = 'countries') {
-  document.getElementById('puTitle').textContent = t(perk === 'gender' ? 'upsellGenderTitle' : 'upsellCountriesTitle');
+  const trial = perk === 'trial';
+  premiumUpsellModal.dataset.mode = trial ? 'trial' : 'upsell';
+  document.getElementById('puTitle').textContent = t(UPSELL_TITLES[perk] || 'upsellCountriesTitle');
   document.getElementById('puReason').textContent = message;
-  premiumUpsellModal.querySelectorAll('[data-perk]').forEach((li) => li.classList.toggle('is-hit', li.dataset.perk === perk));
+  document.getElementById('puSoon').textContent = t(trial ? 'upsellTrialBadge' : 'upsellComingSoon');
+  premiumUpsellModal.querySelectorAll('[data-perk]').forEach((li) => li.classList.toggle('is-hit', trial || li.dataset.perk === perk));
   // Already on the list: nothing more to sign up for, so the plans are next.
   const signedUp = notifySignedUp('premium');
-  document.getElementById('puNotifyLabel').textContent = t(signedUp ? 'upsellSeePlans' : 'upsellNotify');
-  document.getElementById('puPlansLink').classList.toggle('hidden', signedUp);
+  document.getElementById('puNotifyLabel').textContent = t(trial ? 'upsellTrialCta' : signedUp ? 'upsellSeePlans' : 'upsellNotify');
+  document.getElementById('puPlansLink').classList.toggle('hidden', signedUp || trial);
+  document.getElementById('puFree').classList.toggle('hidden', trial);
   trackGrowthEvent('premium_upsell_view');
   openModal(premiumUpsellModal);
 }
 document.getElementById('puNotifyBtn').addEventListener('click', () => {
   trackGrowthEvent('premium_upsell_click');
   closeModal(premiumUpsellModal);
+  if (premiumUpsellModal.dataset.mode === 'trial') { openFilters(); return; }
   if (notifySignedUp('premium')) {
     location.href = '/pricing?utm_source=app&utm_medium=upsell&utm_campaign=premium';
     return;
@@ -11347,8 +11359,19 @@ socket.on('friend-online', ({ clientId, username, countryCode, country } = {}) =
   const where = (countryCode && countryCode !== 'XX') ? (getCountryName(countryCode) || country || '') : '';
   // A friend you renamed comes online under the name you gave them.
   const name = labelForClientId(clientId, username);
-  showToast(where ? t('friendOnlineToast', { name, country: where }) : t('friendOnlineToastNoCountry', { name }), 'social');
+  // Tap the toast to ring them.
+  showToast(where ? t('friendOnlineToast', { name, country: where }) : t('friendOnlineToastNoCountry', { name }), 'social',
+    () => requestCallBack(clientId, name));
   vibrate([30, 40, 30]);
+});
+
+// Streaks, passport, who liked you, undo skip (engage.js). Not needed to place
+// a call, so it loads once the page is up and stays out of the first paint.
+window.addEventListener('load', () => {
+  const s = document.createElement('script');
+  s.src = '/engage.js?v=20261028engage';
+  s.async = true;
+  document.head.appendChild(s);
 });
 
 // --- Daily featured blog article: rotates once every 24 hours so the SEO

@@ -226,6 +226,11 @@ function defaults() {
     // ever exported for mailing; sending and unsubscribes happen in the email
     // service the owner sends from.
     subscribers: {},
+    // "Who liked you": clientId (the one hearted) -> [{ from, username,
+    // country, at }], newest first, at most LIKES_MAX and LIKES_TTL_MS old.
+    likes: {},
+    // Free-trial bookkeeping: clientId -> { n: real calls, trialAt }.
+    goodCalls: {},
     settings: {
       maintenance: { on: false, message: 'TalkLive is under maintenance. We will be back shortly!' },
       // Site-wide switches on the dashboard's Settings tab. Read through
@@ -2224,6 +2229,43 @@ function revokePremium(clientId, info = {}) {
   return existing;
 }
 
+// --- Who liked you ---
+const LIKES_MAX = 50;
+const LIKES_TTL_MS = 30 * 24 * 60 * 60000;
+function addLike(toClientId, fromClientId, info = {}) {
+  if (!toClientId || !fromClientId || toClientId === fromClientId) return;
+  const now = Date.now();
+  const list = (data.likes[toClientId] || []).filter((l) => l.from !== fromClientId && now - l.at < LIKES_TTL_MS);
+  list.unshift({
+    from: fromClientId,
+    username: String(info.username || '').slice(0, 40),
+    country: /^[A-Z]{2}$/.test(info.country || '') ? info.country : 'XX',
+    at: now,
+  });
+  data.likes[toClientId] = list.slice(0, LIKES_MAX);
+  save();
+}
+function likesFor(clientId) {
+  const now = Date.now();
+  return (data.likes[clientId] || []).filter((l) => now - l.at < LIKES_TTL_MS);
+}
+
+// --- Free trial ---
+function noteGoodCall(clientId) {
+  const rec = data.goodCalls[clientId] || (data.goodCalls[clientId] = { n: 0, trialAt: 0 });
+  rec.n += 1;
+  save();
+  return rec.n;
+}
+function trialUsed(clientId) {
+  return !!(data.goodCalls[clientId] && data.goodCalls[clientId].trialAt);
+}
+function markTrialUsed(clientId) {
+  const rec = data.goodCalls[clientId] || (data.goodCalls[clientId] = { n: 0, trialAt: 0 });
+  rec.trialAt = Date.now();
+  save();
+}
+
 function isPremiumClient(clientId) {
   const rec = data.premium[clientId];
   if (!rec || rec.revokedAt) return false;
@@ -3488,6 +3530,11 @@ module.exports = {
   extendPremium,
   revokePremium,
   isPremiumClient,
+  addLike,
+  likesFor,
+  noteGoodCall,
+  trialUsed,
+  markTrialUsed,
   premiumExpiry,
   referralCodeFor,
   referralStats,

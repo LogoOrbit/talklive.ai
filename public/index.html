@@ -28,7 +28,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   root.classList.add('i18n-pending');
   setTimeout(function () { root.classList.remove('i18n-pending'); }, 1500);
   var s = document.createElement('script');
-  s.src = '/i18n/' + lang + '.js?v=20261019stripe';
+  s.src = '/i18n/' + lang + '.js?v=20261028engage';
   s.async = true;
   s.setAttribute('data-i18n-lang', lang);
   s.onerror = function () { root.classList.remove('i18n-pending'); };
@@ -54,13 +54,13 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
      system face a beat later. Only the latin subset is preloaded - latin-ext
      is fetched on demand by the unicode-range in style.css. -->
 <link rel="preload" as="font" type="font/woff2" href="/fonts/plus-jakarta-sans-latin.woff2?v=20260922type" crossorigin />
-<link rel="stylesheet" href="style.css?v=20261027upsell" />
+<link rel="stylesheet" href="style.css?v=20261028engage" />
 <link rel="stylesheet" href="chat-extras.css?v=20261004glow" />
 <link rel="stylesheet" href="games.css?v=20261006fix" />
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
      side-panel shell, Settings, Friends/History and the account dialog, and it
      does so with its own `tl-` class names so nothing above can reach it. -->
-<link rel="stylesheet" href="ui.css?v=20261027upsell" />
+<link rel="stylesheet" href="ui.css?v=20261028engage" />
 <link rel="stylesheet" href="auth.css?v=20260924auth" />
 <!-- The top bar, shared with /chat. Loaded after everything else because it
      owns the header outright: one button language, one radius, one focus ring
@@ -1617,12 +1617,14 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M6 3h12l3 6-9 12L3 9z"/><path d="M3 9h18M9 3l3 18 3-18"/></svg>
             </span>
           </div>
-          <span class="pu-soon" data-i18n="upsellComingSoon">Coming soon</span>
+          <span class="pu-soon" id="puSoon">Coming soon</span>
           <div role="heading" aria-level="2" class="pu-title" id="puTitle">Want more countries?</div>
           <p class="pu-reason" id="puReason"></p>
           <ul class="pu-perks">
             <li data-perk="countries"><span class="pu-ico" aria-hidden="true">🌍</span><span data-i18n="upsellPerkCountries">Unlimited countries &amp; regions</span></li>
             <li data-perk="gender"><span class="pu-ico" aria-hidden="true">💬</span><span data-i18n="upsellPerkGender">Match with men or women</span></li>
+            <li data-perk="likes"><span class="pu-ico" aria-hidden="true">❤️</span><span data-i18n="upsellPerkLikes">See who liked you</span></li>
+            <li data-perk="undo"><span class="pu-ico" aria-hidden="true">↩️</span><span data-i18n="upsellPerkUndo">Undo a skip</span></li>
             <li data-perk="rematch"><span class="pu-ico" aria-hidden="true">⚡</span><span data-i18n="upsellPerkRematch">Instant rematch: skip the queue</span></li>
           </ul>
           <button type="button" id="puNotifyBtn" class="pu-cta">
@@ -1630,7 +1632,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
             <span id="puNotifyLabel" data-i18n="upsellNotify">Notify me at launch</span>
           </button>
           <a id="puPlansLink" class="pu-link" href="/pricing?utm_source=app&amp;utm_medium=upsell&amp;utm_campaign=premium" data-i18n="upsellSeePlans">See what's included</a>
-          <p class="pu-free" data-i18n="upsellFree">Everything you use today stays free.</p>
+          <p class="pu-free" id="puFree" data-i18n="upsellFree">Everything you use today stays free.</p>
         </div>
       </div>
 
