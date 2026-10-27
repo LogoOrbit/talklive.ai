@@ -196,6 +196,12 @@ function defaults() {
     // days: { 'YYYY-MM-DD': { s, n } } }. `days` keeps the last TALK_DAYS so the
     // dashboard can re-cut the totals to today / 7 / 30 days.
     talkTime: {},
+    // Chat messages each person has sent, for the owner's Users tab:
+    // users: clientId -> { u: username, s: stranger messages, f: friend
+    // messages, t: last sent }. Counted live from `since`; `base` is the
+    // history from before then (counted once from friend chats and the
+    // transcript log, see setMsgBase) so existing users are not shown as zero.
+    msgCounts: { since: 0, users: {}, base: null },
     // Mini-game analytics (see server/game-tracker.js). players: clientId ->
     // { username, country, firstAt, lastAt, t, days: { 'YYYY-MM-DD': t },
     // byGame: { ttt|dab: { r, s } } } where t is the counter set in
@@ -266,6 +272,9 @@ function applyParsed(parsed) {
   data.referrals = { ...defaults().referrals, ...(parsed.referrals || {}) };
   data.push = parsed.push || {};
   data.talkTime = parsed.talkTime || {};
+  data.msgCounts = parsed.msgCounts && parsed.msgCounts.users
+    ? parsed.msgCounts
+    : { since: Date.now(), users: {}, base: null };
   data.games = { players: {}, log: [], ...(parsed.games || {}) };
   data.accounts = parsed.accounts || {};
   data.googleIndex = parsed.googleIndex || {};
@@ -1779,6 +1788,7 @@ let transcriptsInTable = false;
 let transcriptAdds = 0;
 function addTranscript(entry) {
   const row = { ts: Date.now(), ...entry };
+  countMessage(row);
   transcriptAdds += 1;
   data.transcripts.unshift(row);
   if (data.transcripts.length > MAX_TRANSCRIPT) data.transcripts.pop();
@@ -2837,6 +2847,29 @@ function recordTalkTime(clientId, seconds, info = {}) {
   save();
 }
 
+// --- Messages sent per person ------------------------------------------------
+
+function countMessage(row) {
+  if (!row.fromClientId || (row.kind !== 'stranger' && row.kind !== 'friend')) return;
+  const users = data.msgCounts.users;
+  const rec = users[row.fromClientId] || (users[row.fromClientId] = { s: 0, f: 0 });
+  if (row.kind === 'friend') rec.f += 1; else rec.s += 1;
+  if (row.from) rec.u = String(row.from).slice(0, 40);
+  rec.t = row.ts;
+}
+
+// The transcript log is in memory and complete (newest MAX_TRANSCRIPT) once
+// it has been read back from its table, or when there is no table.
+function transcriptsReady() {
+  return storeLoaded && (transcriptsInTable || !pgLive());
+}
+
+// Saved once: the counts of messages sent before live counting began.
+function setMsgBase(base) {
+  data.msgCounts.base = { at: Date.now(), users: base };
+  save();
+}
+
 // --- Mini games --------------------------------------------------------------
 
 const GAME_DAYS = 30;
@@ -3359,6 +3392,8 @@ module.exports = {
   recordPeakOnline,
   recordFeature,
   recordTalkTime,
+  transcriptsReady,
+  setMsgBase,
   recordGameInvite,
   recordGameSession,
   GAME_FIELDS,

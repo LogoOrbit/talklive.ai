@@ -1138,7 +1138,44 @@ function sendPendingFeedbackReplies(socket) {
 }
 
 const gameTracker = createGameTracker({ store, profileOf: (sid) => profiles.get(sid) });
-const admin = createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning, deliverFeedbackReply, getLiveGames: () => gameTracker.live() });
+// For the owner's Users tab: per person, how many friends they have, the
+// avatar others see for them, whether they are online, and (when `since` is
+// given) how many friend messages they sent before that time.
+function getUserStats(since) {
+  const out = new Map();
+  const get = (cid) => {
+    let r = out.get(cid);
+    if (!r) out.set(cid, r = { friends: 0, avatar: null, online: false, friendMsgs: 0 });
+    return r;
+  };
+  for (const [cid, m] of friends) {
+    let n = 0;
+    for (const [fid, info] of m) {
+      if (!info || info.temporary) continue;
+      n++;
+      if (info.avatar) get(fid).avatar = info.avatar;
+    }
+    if (n) get(cid).friends = n;
+  }
+  for (const list of chatHistory.values()) {
+    for (const e of list || []) if (e && e.clientId && e.avatar && !(out.get(e.clientId) || {}).avatar) get(e.clientId).avatar = e.avatar;
+  }
+  for (const p of profiles.values()) {
+    if (!p || !p.clientId) continue;
+    const r = get(p.clientId);
+    r.online = true;
+    const a = shownAvatar(p);
+    if (a) r.avatar = a;
+  }
+  if (since) {
+    for (const list of friendChats.values()) {
+      for (const m of list || []) if (m && m.from && (m.ts || 0) < since) get(m.from).friendMsgs++;
+    }
+  }
+  return out;
+}
+
+const admin = createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning, deliverFeedbackReply, getUserStats, getLiveGames: () => gameTracker.live() });
 app.use('/owner', admin.router);
 
 // Maintenance mode: when on, every non-dashboard page gets a friendly 503.
