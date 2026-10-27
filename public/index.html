@@ -28,7 +28,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   root.classList.add('i18n-pending');
   setTimeout(function () { root.classList.remove('i18n-pending'); }, 1500);
   var s = document.createElement('script');
-  s.src = '/i18n/' + lang + '.js?v=20261028whatsnew';
+  s.src = '/i18n/' + lang + '.js?v=20261028avatar';
   s.async = true;
   s.setAttribute('data-i18n-lang', lang);
   s.onerror = function () { root.classList.remove('i18n-pending'); };
@@ -60,7 +60,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
      side-panel shell, Settings, Friends/History and the account dialog, and it
      does so with its own `tl-` class names so nothing above can reach it. -->
-<link rel="stylesheet" href="ui.css?v=20261028whatsnew" />
+<link rel="stylesheet" href="ui.css?v=20261028avatar" />
 <link rel="stylesheet" href="auth.css?v=20260924auth" />
 <!-- The top bar, shared with /chat. Loaded after everything else because it
      owns the header outright: one button language, one radius, one focus ring
@@ -1173,9 +1173,9 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
                call. The icons are vectors from /animals.js (an SVG sprite),
                not emoji, so they look the same on every device. -->
           <section class="animal-picker" aria-labelledby="animalPickerTitle">
-            <div role="heading" aria-level="2" class="ui-h2 animal-picker-title" id="animalPickerTitle" data-i18n="pickAnimal">Pick your spirit animal</div>
-            <p class="animal-picker-hint" data-i18n="pickAnimalHint">Whoever you connect with sees it - an easy way to start talking.</p>
-            <div class="animal-grid" id="animalGrid" role="radiogroup" data-i18n-aria="pickAnimal" aria-label="Pick your spirit animal"></div>
+            <div role="heading" aria-level="2" class="ui-h2 animal-picker-title" id="animalPickerTitle" data-i18n="pickAnimal">Your avatar</div>
+            <p class="animal-picker-hint" data-i18n="pickAnimalHint">Everyone you talk to sees it - an easy way to start talking.</p>
+            <div class="animal-grid" id="animalGrid" role="radiogroup" data-i18n-aria="pickAnimal" aria-label="Your avatar"></div>
             <p class="animal-chosen" id="animalChosen" aria-live="polite"></p>
           </section>
 
@@ -1712,11 +1712,11 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
       <div id="animalGateModal" class="modal-overlay hidden">
         <div class="modal-box modal-box-wide" role="dialog" aria-modal="true" aria-labelledby="animalGateTitle">
           <div class="modal-header">
-            <div role="heading" aria-level="2" class="ui-h2" id="animalGateTitle" data-i18n="pickAnimal">Pick your spirit animal</div>
+            <div role="heading" aria-level="2" class="ui-h2" id="animalGateTitle" data-i18n="pickAnimal">Your avatar</div>
             <button type="button" id="closeAnimalGateBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
           </div>
           <div class="modal-body">
-            <p class="animal-gate-hint" data-i18n="pickAnimalHint">Whoever you connect with sees it - an easy way to start talking.</p>
+            <p class="animal-gate-hint" data-i18n="pickAnimalHint">Everyone you talk to sees it - an easy way to start talking.</p>
             <!-- A way past the question for whoever does not care which animal
                  it is. The gate exists so nobody arrives faceless, not so
                  everybody reads twenty names - one tap satisfies it either
@@ -1725,7 +1725,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
                  phone, and an escape hatch you have to scroll the whole wall
                  to find is not one. -->
             <button type="button" id="animalSurpriseBtn" class="gate-skip-btn" data-i18n="surpriseMe">Surprise me</button>
-            <div id="animalGateGrid" class="animal-grid animal-gate-grid" role="radiogroup" data-i18n-aria="pickAnimal" aria-label="Pick your spirit animal"></div>
+            <div id="animalGateGrid" class="animal-grid animal-gate-grid" role="radiogroup" data-i18n-aria="pickAnimal" aria-label="Your avatar"></div>
           </div>
         </div>
       </div>
@@ -2041,9 +2041,9 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
           </label>
 
           <div class="tl-call-quiet">
-            <button type="button" id="callMoreBtn" class="tl-call-quiet-btn" data-i18n-title="pickAnimal" data-i18n-aria="pickAnimal" title="Pick your spirit animal" aria-label="Pick your spirit animal" aria-expanded="false">
+            <button type="button" id="callMoreBtn" class="tl-call-quiet-btn" data-i18n-title="pickAnimal" data-i18n-aria="pickAnimal" title="Pick your spirit animal" aria-label="Your avatar" aria-expanded="false">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 10.5h.01M15.5 10.5h.01"/><path d="M9 15c1.8 1.4 4.2 1.4 6 0"/></svg>
-              <span data-i18n="animalShort">Animal</span>
+              <span data-i18n="animalShort">Avatar</span>
             </button>
           </div>
         </div>
@@ -2066,8 +2066,8 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
                list, same storage, same server call as the landing picker;
                this is a second view of it, not a second copy. -->
           <div class="tl-call-animals">
-            <p class="tl-call-animals-label" data-i18n="pickAnimal">Pick your spirit animal</p>
-            <div id="callAnimalGrid" class="animal-grid tl-call-animal-grid" role="radiogroup" data-i18n-aria="pickAnimal" aria-label="Pick your spirit animal"></div>
+            <p class="tl-call-animals-label" data-i18n="pickAnimal">Your avatar</p>
+            <div id="callAnimalGrid" class="animal-grid tl-call-animal-grid" role="radiogroup" data-i18n-aria="pickAnimal" aria-label="Your avatar"></div>
           </div>
 
         </div>
@@ -2169,7 +2169,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 
       <div class="tt-tut">
         <ol class="tt-steps" id="ttSteps">
-          <li class="tt-step is-on"><button type="button" aria-controls="ttStage"><strong>Pick your spirit animal</strong><span>It is your identity on TalkLive - no name, no photo. The other person sees your animal and its personality.</span><b class="tt-bar"><i></i></b></button></li>
+          <li class="tt-step is-on"><button type="button" aria-controls="ttStage"><strong>Your avatar</strong><span>It is your identity on TalkLive - no name, no photo. The other person sees your animal and its personality.</span><b class="tt-bar"><i></i></b></button></li>
           <li class="tt-step"><button type="button" aria-controls="ttStage"><strong>Tap to Talk or Tap to Chat</strong><span>Talk starts a live voice call with your mic on. Chat starts a text conversation with no mic at all.</span><b class="tt-bar"><i></i></b></button></li>
           <li class="tt-step"><button type="button" aria-controls="ttStage"><strong>Agree to the house rules</strong><span>TalkLive is 18+ only. Confirm once, be respectful, and keep every conversation consensual.</span><b class="tt-bar"><i></i></b></button></li>
           <li class="tt-step"><button type="button" aria-controls="ttStage"><strong>Say hello</strong><span>You are matched with a real person in seconds. You see their spirit animal, their local time and a live call timer.</span><b class="tt-bar"><i></i></b></button></li>
@@ -2613,7 +2613,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   <script defer src="voice-notes.js?v=20261001mic"></script>
   <script defer src="games.js?v=20261005min"></script>
   <script defer src="nickname-rules.js?v=20260924nick"></script>
-  <script defer src="app.js?v=20261028whatsnew"></script>
+  <script defer src="app.js?v=20261028avatar"></script>
 
 <!-- Analytics tag, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

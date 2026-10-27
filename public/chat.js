@@ -423,10 +423,36 @@
   // row costs no rebuild and no reflow of the page behind it.
   // ---------------------------------------------------------------------------
   var Animals = window.TalkLiveAnimals;
+  var Characters = window.TalkLiveCharacters;
   var myAnimal = Animals ? Animals.stored() : null;
+
+  // One face, shared with the call page: the avatar ('a:<animal>', 'c:<character>'
+  // or a plain face). The animal only says which animal, if the avatar is one;
+  // when the two disagree (older visits), the saved avatar wins.
+  function storedAvatar() {
+    try { return localStorage.getItem('talklive_avatar') || null; } catch (_) { return null; }
+  }
+  function animalOf(id) { return id && id.slice(0, 2) === 'a:' && Animals && Animals.has(id.slice(2)) ? id.slice(2) : null; }
+  function characterOf(id) { return id && id.slice(0, 2) === 'c:' && Characters && Characters.has(id.slice(2)) ? id.slice(2) : null; }
+  (function reconcileFace() {
+    var av = storedAvatar();
+    if (av) {
+      var a = animalOf(av);
+      if (a !== myAnimal && (a || characterOf(av) || /^[mf]\d$/.test(av))) { myAnimal = a; if (Animals) Animals.store(a); }
+    } else if (myAnimal) {
+      try { localStorage.setItem('talklive_avatar', 'a:' + myAnimal); } catch (_) { /* storage blocked */ }
+    }
+  })();
+  function hasFace() { return !!(storedAvatar() || myAnimal); }
 
   function renderAnimalChoiceLine() {
     if (!animalChosenText) return;
+    var ch = characterOf(storedAvatar());
+    if (!myAnimal && ch) {
+      animalChosenText.textContent = t('avatarChosenCharacter', { name: Characters.name(ch) });
+      animalChosenText.classList.add('is-chosen');
+      return;
+    }
     if (!myAnimal) {
       animalChosenText.textContent = t('animalNoneChosen');
       animalChosenText.classList.remove('is-chosen');
@@ -450,47 +476,61 @@
   var ANIMAL_PREVIEW_COUNT = 7;
   var animalPickerExpanded = false;
 
+  // Animals and movie characters in one row, as avatar ids.
+  function allFaceIds() {
+    var a = Animals ? Animals.list.map(function (x) { return 'a:' + x.id; }) : [];
+    var c = Characters ? Characters.ids.map(function (id) { return 'c:' + id; }) : [];
+    return a.concat(c);
+  }
   function animalPreviewIds() {
-    var ids = Animals.list.map(function (a) { return a.id; }).slice(0, ANIMAL_PREVIEW_COUNT);
-    if (myAnimal && ids.indexOf(myAnimal) === -1) ids[ids.length - 1] = myAnimal;
+    var a = Animals ? Animals.list.map(function (x) { return 'a:' + x.id; }).slice(0, 4) : [];
+    var c = Characters ? Characters.ids.slice(0, ANIMAL_PREVIEW_COUNT - 4).map(function (id) { return 'c:' + id; }) : [];
+    var ids = a.concat(c);
+    var mine = storedAvatar();
+    if (mine && (animalOf(mine) || characterOf(mine)) && ids.indexOf(mine) === -1) ids[ids.length - 1] = mine;
     return ids;
+  }
+  function faceTile(id) {
+    var mine = storedAvatar();
+    var an = animalOf(id), ch = characterOf(id);
+    if (!an && !ch) return null;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'animal-option' + (mine === id ? ' selected' : '');
+    btn.dataset.avatar = id;
+    btn.setAttribute('role', 'radio');
+    btn.setAttribute('aria-checked', mine === id ? 'true' : 'false');
+    if (an) {
+      btn.style.setProperty('--animal-color', Animals.color(an));
+      btn.innerHTML = Animals.icon(an, 44) + '<span class="animal-option-name">' + escapeHtml(Animals.name(an)) + '</span>';
+    } else {
+      btn.innerHTML = Characters.icon(ch, 44) + '<span class="animal-option-name">' + escapeHtml(Characters.name(ch)) + '</span>';
+    }
+    return btn;
   }
 
   function renderAnimalPicker() {
     if (!animalGrid || !Animals) return;
     Animals.installSprite();
     animalGrid.innerHTML = '';
-    var shown = animalPickerExpanded
-      ? Animals.list.map(function (a) { return a.id; })
-      : animalPreviewIds();
+    if (Characters) Characters.installSprite();
+    var shown = animalPickerExpanded ? allFaceIds() : animalPreviewIds();
     var frag = document.createDocumentFragment();
     shown.forEach(function (id) {
-      var animal = Animals.get(id);
-      if (!animal) return;
-      var btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'animal-option' + (myAnimal === animal.id ? ' selected' : '');
-      btn.dataset.animal = animal.id;
-      btn.style.setProperty('--animal-color', animal.color);
-      btn.setAttribute('role', 'radio');
-      btn.setAttribute('aria-checked', myAnimal === animal.id ? 'true' : 'false');
-      btn.innerHTML = Animals.icon(animal.id, 44)
-        + '<span class="animal-option-name">' + escapeHtml(Animals.name(animal.id)) + '</span>';
-      frag.appendChild(btn);
+      var btn = faceTile(id);
+      if (btn) frag.appendChild(btn);
     });
 
-    if (Animals.list.length > ANIMAL_PREVIEW_COUNT) {
-      var more = document.createElement('button');
-      more.type = 'button';
-      more.className = 'animal-option animal-option-more';
-      more.dataset.animalMore = '1';
-      more.innerHTML = '<span class="animal-more-glyph" aria-hidden="true">'
-        + (animalPickerExpanded ? '&minus;' : '+') + '</span>'
-        + '<span class="animal-option-name">'
-        + escapeHtml(t(animalPickerExpanded ? 'animalLess' : 'animalMore'))
-        + '</span>';
-      frag.appendChild(more);
-    }
+    var more = document.createElement('button');
+    more.type = 'button';
+    more.className = 'animal-option animal-option-more';
+    more.dataset.animalMore = '1';
+    more.innerHTML = '<span class="animal-more-glyph" aria-hidden="true">'
+      + (animalPickerExpanded ? '&minus;' : '+') + '</span>'
+      + '<span class="animal-option-name">'
+      + escapeHtml(t(animalPickerExpanded ? 'animalLess' : 'animalMore'))
+      + '</span>';
+    frag.appendChild(more);
 
     animalGrid.appendChild(frag);
     renderAnimalChoiceLine();
@@ -501,13 +541,19 @@
     renderAnimalPicker();
   }
 
-  function setMyAnimal(id) {
-    var next = myAnimal === id ? null : id; // tapping the chosen one clears it
-    myAnimal = next;
-    Animals.store(next);
+  // Kept for callers that pick an animal by its bare id (the gate's "surprise me").
+  function setMyAnimal(id) { if (id) setMyAvatarChoice('a:' + id); }
+
+  // The face changes here: the avatar is saved and the animal follows it
+  // (or clears, for a character), the same as on the call page.
+  function setMyAvatarChoice(id) {
+    if (!id || (!animalOf(id) && !characterOf(id))) return;
+    try { localStorage.setItem('talklive_avatar', id); } catch (_) { /* storage blocked */ }
+    myAnimal = animalOf(id);
+    if (Animals) Animals.store(myAnimal);
     var options = document.querySelectorAll('#animalGrid .animal-option, #animalGateGrid .animal-option');
     for (var i = 0; i < options.length; i++) {
-      var on = options[i].dataset.animal === next;
+      var on = options[i].dataset.avatar === id;
       options[i].classList.toggle('selected', on);
       options[i].setAttribute('aria-checked', on ? 'true' : 'false');
     }
@@ -527,17 +573,10 @@
     Animals.installSprite();
     animalGateGrid.innerHTML = '';
     var frag = document.createDocumentFragment();
-    Animals.list.forEach(function (animal) {
-      var btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'animal-option' + (myAnimal === animal.id ? ' selected' : '');
-      btn.dataset.animal = animal.id;
-      btn.style.setProperty('--animal-color', animal.color);
-      btn.setAttribute('role', 'radio');
-      btn.setAttribute('aria-checked', myAnimal === animal.id ? 'true' : 'false');
-      btn.innerHTML = Animals.icon(animal.id, 44)
-        + '<span class="animal-option-name">' + escapeHtml(Animals.name(animal.id)) + '</span>';
-      frag.appendChild(btn);
+    if (Characters) Characters.installSprite();
+    allFaceIds().forEach(function (id) {
+      var btn = faceTile(id);
+      if (btn) frag.appendChild(btn);
     });
     animalGateGrid.appendChild(frag);
   }
@@ -552,14 +591,21 @@
         renderAnimalPicker();
         return;
       }
-      setMyAnimal(option.dataset.animal);
+      setMyAvatarChoice(option.dataset.avatar);
     });
     renderAnimalPicker();
   }
 
   // The stranger's animal, next to their name in the top bar.
-  function renderTopPartnerAnimal(animalId) {
+  function renderTopPartnerAnimal(animalId, characterId) {
     if (!topPartnerAnimal) return;
+    if (!animalId && characterId && Characters && Characters.has(characterId)) {
+      Characters.installSprite();
+      topPartnerAnimal.innerHTML = Characters.icon(characterId, 22);
+      topPartnerAnimal.title = Characters.name(characterId);
+      topPartnerAnimal.classList.remove('hidden');
+      return;
+    }
     if (!animalId || !Animals || !Animals.has(animalId)) {
       topPartnerAnimal.classList.add('hidden');
       topPartnerAnimal.innerHTML = '';
@@ -689,7 +735,7 @@
   // to meet" - and it is the half they actually see.
   function requestStart() {
     if (!genderAnswered()) { openGenderGate(); return; }
-    if (!myAnimal && animalModal && Animals) { openAnimalGate(); return; }
+    if (!hasFace() && animalModal && Animals) { openAnimalGate(); return; }
     if (localStorage.getItem(CONSENT_KEY) !== 'yes') { openRulesGate(); return; }
     goSearch(true);
   }
@@ -697,11 +743,9 @@
   if (animalGateGrid) {
     animalGateGrid.addEventListener('click', function (ev) {
       var option = ev.target.closest('.animal-option');
-      if (!option || !option.dataset.animal) return;
+      if (!option || !option.dataset.avatar) return;
       vibrate(10);
-      // Never a toggle here: this gate exists to end with one chosen, and
-      // tapping the selected one to clear it would close it with none.
-      if (myAnimal !== option.dataset.animal) setMyAnimal(option.dataset.animal);
+      setMyAvatarChoice(option.dataset.avatar);
       refreshAnimalLabels(); // the start view's picker wears it too
       // A beat so the tick is visibly on the one just tapped before the panel
       // swaps, rather than the tap appearing to skip past the question.
@@ -758,7 +802,7 @@
     // than the tap appearing to skip straight past the question.
     setTimeout(function () {
       closeModal(genderModal);
-      if (!myAnimal && animalModal && Animals) { openAnimalGate(); return; }
+      if (!hasFace() && animalModal && Animals) { openAnimalGate(); return; }
       if (localStorage.getItem(CONSENT_KEY) === 'yes') goSearch(true);
       else openRulesGate();
     }, 180);
@@ -3361,7 +3405,7 @@
       html = html.replace(escapeHtml(countryName), escapeHtml(countryName) + ' ' + getFlagImg(data.partner.countryCode, 15));
     }
     line.innerHTML = html;
-    renderTopPartnerAnimal(data.partner.animal);
+    renderTopPartnerAnimal(data.partner.animal, data.partner.character);
     // A ready-made opener: their animal, what it says about them, and a nudge
     // to ask about it. Both picking the same one is worth its own line.
     if (data.partner.animal && Animals && Animals.has(data.partner.animal)) {
@@ -3513,7 +3557,7 @@
   window.addEventListener('i18n-changed', function () {
     if (!nextArmed) nextBtn.querySelector('span').textContent = t('chatNext');
     refreshAnimalLabels();
-    if (currentPartner) renderTopPartnerAnimal(currentPartner.animal);
+    if (currentPartner) renderTopPartnerAnimal(currentPartner.animal, currentPartner.character);
   });
 
   // --- Overflow menu -------------------------------------------------------

@@ -797,7 +797,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "notifyShopFoot": "Be the first to know when it goes live.",
     "helpSupport": "Help & Support",
     "animals": "Animals",
-    "animalShort": "Animal",
+    "animalShort": "Avatar",
     "autoConnectTitle": "Auto-connect",
     "autoConnectOnToast": "Auto-connect on",
     "autoConnectOffToast": "Auto-connect off.",
@@ -830,6 +830,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "neverFromHint": "We skip people from here.",
     "interestsHint": "We pair you with people who like the same things.",
     "filtersNote": "No filters = fully random. If no one fits for a while, we match you with anyone, but avoided countries stay blocked.",
+    "avatarChosenCharacter": "You are the {name}",
     "upsellLikesTitle": "See who liked you",
     "upsellUndoTitle": "Bring them back",
     "upsellTrialTitle": "Premium is yours for a day 🎉",
@@ -1026,13 +1027,13 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "micPromptTitle": "Allow microphone access",
     "micPromptBody": "TalkLive needs your microphone for a voice call. Your browser will ask for permission next. TalkLive does not record or store voice audio.",
     "micPromptOk": "Got it",
-    "pickAnimal": "Pick your spirit animal",
-    "pickAnimalHint": "Whoever you connect with sees it - an easy way to start talking.",
+    "pickAnimal": "Your avatar",
+    "pickAnimalHint": "Everyone you talk to sees it - an easy way to start talking.",
     "surpriseMe": "Surprise me",
     "animalChosen": "You are the {animal} - {trait}",
-    "animalNoneChosen": "No animal yet - tap one to pick.",
+    "animalNoneChosen": "No avatar yet - tap one to pick.",
     "animalClear": "Remove",
-    "partnerAnimalLabel": "Their spirit animal",
+    "partnerAnimalLabel": "Their avatar",
     "animalSameMatch": "You both picked the {animal}!",
     "personalitySameMatch": "Same personality! You are both the {character}.",
     "twinSameBoth": "Twins! You both picked the {animal} and the {character}.",
@@ -1187,7 +1188,7 @@ function applyI18n() {
 // Non-English dictionaries load on demand from /i18n/<lang>.js. Until the file
 // arrives t() falls back to English, then the UI re-translates once it lands.
 // Keep in step with the preload snippet in the <head> of index.html/chat.html.
-const I18N_VERSION = '20261028whatsnew';
+const I18N_VERSION = '20261028avatar';
 const i18nLoading = {};
 window.__i18nLangLoaded = function (lang) {
   delete i18nLoading[lang];

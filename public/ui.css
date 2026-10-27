@@ -3431,7 +3431,7 @@ summary.tl-filter-legend::-webkit-details-marker { display: none; }
 
 /* What's new sheet (engage.js) */
 button.tl-engage-news { width: 100%; color: var(--text); font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; }
-.tl-engage-new {
+.tl-engage-banner .tl-engage-new {
   flex: 0 0 auto;
   padding: 2px 8px;
   border-radius: 999px;

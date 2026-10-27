@@ -508,6 +508,17 @@ const animalGrid = document.getElementById('animalGrid');
 const animalChosenText = document.getElementById('animalChosen');
 const partnerAnimalEl = document.getElementById('partnerAnimal');
 let myAnimal = Animals ? Animals.stored() : null;
+// One face: the avatar. The animal is only "which animal, if your avatar is
+// one". Older visits could leave the two disagreeing (an animal picked on the
+// landing screen, then a different avatar saved in Settings); the avatar was
+// always the later, deliberate choice, so it wins.
+if (myAvatar) {
+  const fromAvatar = animalAvatarId(myAvatar);
+  if (fromAvatar !== myAnimal) { myAnimal = fromAvatar; if (Animals) Animals.store(myAnimal); }
+} else if (myAnimal) {
+  myAvatar = ANIMAL_AVATAR_PREFIX + myAnimal;
+  try { localStorage.setItem('talklive_avatar', myAvatar); } catch (err) { /* storage blocked */ }
+}
 
 // --- No links of any kind in chat. Mirrors the server-side filter. ---
 const LINK_RE = new RegExp(
@@ -2999,17 +3010,13 @@ if (saveAvatarBtn) {
     // made from the other picker. Keeping them apart meant the animal on your
     // own profile and the animal the person you called saw could be two
     // different creatures.
+    // A character or a plain face is no animal, so it clears the old one.
     const pickedAnimal = animalAvatarId(myAvatar);
-    if (pickedAnimal && Animals && Animals.has(pickedAnimal) && myAnimal !== pickedAnimal) {
+    if (myAnimal !== pickedAnimal) {
       myAnimal = pickedAnimal;
-      Animals.store(pickedAnimal);
-      document.querySelectorAll('#animalGrid .animal-option, #callAnimalGrid .animal-option, #animalGateGrid .animal-option').forEach((btn) => {
-        const on = btn.dataset.animal === pickedAnimal;
-        btn.classList.toggle('selected', on);
-        btn.setAttribute('aria-checked', on ? 'true' : 'false');
-      });
-      renderAnimalChoiceLine();
+      if (Animals) Animals.store(pickedAnimal);
     }
+    renderAnimalPicker();
     renderAvatarGrid();
     renderAccountState();
     renderHeaderAccountFace();   // the corner wears it once it is saved
@@ -3021,21 +3028,22 @@ if (saveAvatarBtn) {
   });
 }
 
-// --- Spirit animal picker ----------------------------------------------------
-// Built once on load, then never rebuilt: selection is a class toggle on two
-// buttons (the old one and the new one), so tapping through the row costs no
-// layout of the grid and nothing to garbage-collect. One delegated listener
-// handles all twelve.
-// The picker opens on one row and grows on request. There are twenty animals
-// now, and a wall of twenty is a thing to get past on the way to the call
-// button rather than a thing to enjoy picking from. The row you land on is
-// never missing your own choice: a pick from further down is pulled into it.
+// --- Avatar picker (home screen, call screen, gate) ---------------------------
+// One face for everything: the animals and the movie characters, picked from
+// the same row wherever it appears, saved the moment it is tapped. It used to
+// be "your spirit animal" here and "your avatar" in Settings, and picking an
+// animal before a call quietly replaced the avatar chosen in Settings.
+// The home row shows a few and grows on request; your own pick is always in it.
 const ANIMAL_PREVIEW_COUNT = 7;
+const PREVIEW_ANIMALS = 4;
 let animalPickerExpanded = false;
 
+function pickerAnimals() { return Animals ? Animals.list.map((a) => ANIMAL_AVATAR_PREFIX + a.id) : []; }
+function pickerCharacters() { return AVATAR_IDS.character; }
 function animalPreviewIds() {
-  const ids = Animals.list.map((a) => a.id).slice(0, ANIMAL_PREVIEW_COUNT);
-  if (myAnimal && !ids.includes(myAnimal)) ids[ids.length - 1] = myAnimal;
+  const ids = pickerAnimals().slice(0, PREVIEW_ANIMALS)
+    .concat(pickerCharacters().slice(0, ANIMAL_PREVIEW_COUNT - PREVIEW_ANIMALS));
+  if (myAvatar && (isAnimalAvatar(myAvatar) || characterAvatarId(myAvatar)) && !ids.includes(myAvatar)) ids[ids.length - 1] = myAvatar;
   return ids;
 }
 
@@ -3053,29 +3061,39 @@ function renderAnimalPicker() {
   renderAnimalChoiceLine();
 }
 
+function avatarTileArt(id) {
+  const animal = animalAvatarId(id);
+  if (animal) return { art: Animals.icon(animal, 44), name: Animals.name(animal), color: Animals.color(animal) };
+  const ch = characterAvatarId(id);
+  if (ch) return { art: window.TalkLiveCharacters.icon(ch, 44), name: window.TalkLiveCharacters.name(ch), color: '' };
+  return null;
+}
+
 function paintAnimalPicker(grid, limitIds) {
   if (!grid || !Animals) return;
   Animals.installSprite();
+  if (window.TalkLiveCharacters) window.TalkLiveCharacters.installSprite();
   grid.innerHTML = '';
-  const shown = limitIds || Animals.list.map((a) => a.id);
+  const shown = limitIds || pickerAnimals().concat(pickerCharacters());
   const frag = document.createDocumentFragment();
   shown.forEach((id) => {
-    const animal = Animals.get(id);
-    if (!animal) return;
+    const tile = avatarTileArt(id);
+    if (!tile) return;
+    const on = myAvatar === id;
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = `animal-option${myAnimal === animal.id ? ' selected' : ''}`;
-    btn.dataset.animal = animal.id;
-    btn.style.setProperty('--animal-color', animal.color);
+    btn.className = `animal-option${on ? ' selected' : ''}`;
+    btn.dataset.avatar = id;
+    if (tile.color) btn.style.setProperty('--animal-color', tile.color);
     btn.setAttribute('role', 'radio');
-    btn.setAttribute('aria-checked', myAnimal === animal.id ? 'true' : 'false');
-    btn.innerHTML = `${Animals.icon(animal.id, 44)}<span class="animal-option-name">${escapeHtml(Animals.name(animal.id))}</span>`;
+    btn.setAttribute('aria-checked', on ? 'true' : 'false');
+    btn.innerHTML = `${tile.art}<span class="animal-option-name">${escapeHtml(tile.name)}</span>`;
     frag.appendChild(btn);
   });
 
   // The "More" tile only belongs on a grid that is actually holding something
   // back. The call screen shows the full set, so it never gets one.
-  if (limitIds && Animals.list.length > ANIMAL_PREVIEW_COUNT) {
+  if (limitIds) {
     const more = document.createElement('button');
     more.type = 'button';
     more.className = 'animal-option animal-option-more';
@@ -3100,55 +3118,48 @@ function refreshAnimalLabels() {
 
 function renderAnimalChoiceLine() {
   if (!animalChosenText) return;
-  if (!myAnimal) {
+  const ch = characterAvatarId(myAvatar);
+  if (myAnimal) {
+    animalChosenText.textContent = t('animalChosen', { animal: Animals.name(myAnimal), trait: Animals.trait(myAnimal) });
+  } else if (ch) {
+    animalChosenText.textContent = t('avatarChosenCharacter', { name: window.TalkLiveCharacters.name(ch) });
+  } else {
     animalChosenText.textContent = t('animalNoneChosen');
     animalChosenText.classList.remove('is-chosen');
     return;
   }
-  animalChosenText.textContent = t('animalChosen', {
-    animal: Animals.name(myAnimal),
-    trait: Animals.trait(myAnimal),
-  });
   animalChosenText.classList.add('is-chosen');
 }
 
-function setMyAnimal(id) {
-  const next = myAnimal === id ? null : id; // tapping the chosen one clears it
-  myAnimal = next;
-  Animals.store(next);
-  document.querySelectorAll('#animalGrid .animal-option, #callAnimalGrid .animal-option, #animalGateGrid .animal-option').forEach((btn) => {
-    const on = btn.dataset.animal === next;
-    btn.classList.toggle('selected', on);
-    btn.setAttribute('aria-checked', on ? 'true' : 'false');
-  });
-  // Your animal IS your face. It used to be two separate choices - a private
-  // avatar your friends saw and a spirit animal only the stranger saw - so
-  // picking a lion left the corner of your own screen showing the grey
-  // silhouette of a person you had never chosen. One pick, one face,
-  // everywhere: the header, the settings row, the friends list, the profile
-  // your friends open, and the card the person you are calling looks at.
-  if (next) {
-    myAvatar = ANIMAL_AVATAR_PREFIX + next;
-    // The settings grid shows a pending pick; this pick is already committed,
-    // so it is the pending one too - otherwise Save would offer to undo it.
-    pendingAvatar = myAvatar;
-    try { localStorage.setItem('talklive_avatar', myAvatar); } catch (e) { /* storage blocked */ }
-    renderAvatarGrid();
-    renderAccountState();
-    renderHeaderAccountFace();
-  }
-  renderAnimalChoiceLine();
+// The one way the face changes from a picker row: the avatar is saved, and the
+// animal follows it (or clears, for a character). Everywhere re-renders.
+function setMyAvatarChoice(id) {
+  if (!validAvatarId(id) || id === myAvatar) return;
+  myAvatar = id;
+  pendingAvatar = id;
+  try { localStorage.setItem('talklive_avatar', id); } catch (e) { /* storage blocked */ }
+  myAnimal = animalAvatarId(id);
+  if (Animals) Animals.store(myAnimal);
+  renderAnimalPicker();
+  renderAvatarGrid();
+  renderAccountState();
+  renderHeaderAccountFace();
   // The Settings profile row wears this avatar, so it re-renders with it.
   renderSettingsProfileRow();
-  registerProfile(); // so a search already queued picks the new animal up
+  registerProfile(); // so a search already queued picks the new face up
+}
+
+// Kept for callers that pick an animal by its bare id.
+function setMyAnimal(id) {
+  if (id) setMyAvatarChoice(ANIMAL_AVATAR_PREFIX + id);
 }
 
 if (callAnimalGrid) {
   callAnimalGrid.addEventListener('click', (e) => {
     const option = e.target.closest('.animal-option');
-    if (!option || !option.dataset.animal) return;
+    if (!option || !option.dataset.avatar) return;
     vibrate(8);
-    setMyAnimal(option.dataset.animal);
+    setMyAvatarChoice(option.dataset.avatar);
   });
 }
 
@@ -3162,15 +3173,32 @@ if (animalGrid) {
       renderAnimalPicker();
       return;
     }
-    setMyAnimal(option.dataset.animal);
+    setMyAvatarChoice(option.dataset.avatar);
   });
   renderAnimalPicker();
 }
 
 // The stranger's animal, shown on their card once the call is actually
 // connected (same moment as their name - never before, see revealPartner).
-function renderPartnerAnimal(animalId) {
+function renderPartnerAnimal(animalId, characterId) {
   if (!partnerAnimalEl) return;
+  // Their avatar is a movie character rather than an animal: same card, the
+  // character's art and name, no trait line.
+  const Ch = window.TalkLiveCharacters;
+  if (!animalId && characterId && Ch && Ch.has(characterId)) {
+    Ch.installSprite();
+    const same = myAvatar === 'c:' + characterId;
+    partnerAnimalEl.style.removeProperty('--animal-color');
+    partnerAnimalEl.innerHTML = `
+    <span class="partner-animal-art">${Ch.icon(characterId, 46)}</span>
+    <span class="partner-animal-text">
+      <span class="partner-animal-label">${escapeHtml(t('partnerAnimalLabel'))}</span>
+      <strong class="partner-animal-name">${escapeHtml(Ch.name(characterId))}</strong>
+      ${same ? `<span class="partner-animal-same">${escapeHtml(t('personalitySameMatch', { character: Ch.name(characterId) }))}</span>` : ''}
+    </span>`;
+    partnerAnimalEl.classList.remove('hidden');
+    return;
+  }
   if (!animalId || !Animals || !Animals.has(animalId)) {
     partnerAnimalEl.classList.add('hidden');
     partnerAnimalEl.innerHTML = '';
@@ -8346,7 +8374,9 @@ let afterAnimalGate = null;
 // otherwise after the gate has been answered. Returns true when it waited, so
 // callers can stop and let the gate drive.
 function requireAnimal(next) {
-  if (myAnimal || !animalGateModal || !Animals) { next(); return false; }
+  // Any face will do - an animal, a character or a plain one. Only someone with
+  // none at all is asked, so a choice made in Settings is never overwritten.
+  if (myAvatar || !animalGateModal || !Animals) { next(); return false; }
   afterAnimalGate = next;
   renderAnimalPicker();
   openModal(animalGateModal);
@@ -8363,11 +8393,9 @@ function closeAnimalGate(run) {
 if (animalGateGrid) {
   animalGateGrid.addEventListener('click', (e) => {
     const option = e.target.closest('.animal-option');
-    if (!option || !option.dataset.animal) return;
+    if (!option || !option.dataset.avatar) return;
     vibrate(8);
-    // Never a toggle here: this gate exists to end with an animal chosen, and
-    // tapping the already-selected one to clear it would close it with none.
-    if (myAnimal !== option.dataset.animal) setMyAnimal(option.dataset.animal);
+    setMyAvatarChoice(option.dataset.avatar);
     // A beat so the tick is visibly on the one just tapped before the panel
     // goes, rather than the tap appearing to skip straight past the question.
     setTimeout(() => closeAnimalGate(true), 180);
@@ -10379,7 +10407,7 @@ function revealPartner() {
   partnerMeta.innerHTML = countryName
     ? `${getFlagImg(partner.countryCode)}<span>${escapeHtml(countryName)}</span>` : '';
   partnerMeta.classList.toggle('hidden', !countryName);
-  renderPartnerAnimal(partner.animal);
+  renderPartnerAnimal(partner.animal, partner.character);
   startPartnerClock(partner.timezone);
   if (window.TalkLiveEngage) window.TalkLiveEngage.onReveal(partner);
   if (twinNoticeFor !== partner) {
@@ -11082,7 +11110,7 @@ window.addEventListener('i18n-changed', () => {
   excludeCountryWidget.renderChips();
   renderInterestTags();
   refreshAnimalLabels();
-  if (currentPartner && !partnerCard.classList.contains('hidden')) renderPartnerAnimal(currentPartner.animal);
+  if (currentPartner && !partnerCard.classList.contains('hidden')) renderPartnerAnimal(currentPartner.animal, currentPartner.character);
 
   if (activeFriendChatId) {
     friendChatTitle.textContent = friendChatName(activeFriendChatId) || t('chat');
