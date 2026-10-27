@@ -61,7 +61,7 @@ body{font-family:"Inter",system-ui,sans-serif;background:var(--paper) repeating-
   faq: [
     { q: 'Is TalkLive really anonymous?', a: 'Other users cannot see your name, email, phone number, IP address or city, and no account is needed. TalkLive itself processes technical data such as your IP address to run the service and enforce bans, as described in the Privacy Policy.' },
     { q: 'Are anonymous chats recorded?', a: 'Call audio is never recorded or stored by TalkLive. Automated safety checks run on your own microphone during a call and keep a short record only when abuse is detected. Typed messages are kept in a moderation log that holds the newest 5,000 messages across the site, with older ones deleted as new ones arrive. The other participant could still record or screenshot on their own device.' },
-    { q: 'Can someone find out who I am?', a: 'Not from TalkLive. The other person only sees your display name, spirit animal, any interests you added, an estimated country and your local time - plus anything you choose to tell them.' },
+    { q: 'Can someone find out who I am?', a: 'Not from TalkLive. The other person only sees your display name, avatar, any interests you added, an estimated country and your local time - plus anything you choose to tell them.' },
     { q: 'Can I chat anonymously without a microphone?', a: 'Yes. Tap to Chat starts a text conversation and never asks for microphone permission, so your voice is never part of it.' },
     { q: 'Does anonymous mean anything goes?', a: 'No. TalkLive is for adults 18+ and has community guidelines. Harassment, threats, scams and sexual content without consent lead to bans.' },
   ],
@@ -88,7 +88,7 @@ body{font-family:"Inter",system-ui,sans-serif;background:var(--paper) repeating-
     <div class="an-two">
       <div class="an-seen"><h3>Shown to your match</h3><ul>
         <li>A display name (generated for you unless you change it)</li>
-        <li>Your spirit-animal avatar</li>
+        <li>Your avatar (an animal or a movie character)</li>
         <li>Any interests you chose to add</li>
         <li>A country, estimated from your network - not verified</li>
         <li>Your local time, so they know if it is 3 am for you</li>

@@ -198,8 +198,6 @@ const settingsShopRow = document.getElementById('settingsShopRow');
 const settingsBillingRow = document.getElementById('settingsBillingRow');
 const shopModal = document.getElementById('shopModal');
 const closeShopBtn = document.getElementById('closeShopBtn');
-const shopGrid = document.getElementById('shopGrid');
-const shopBalanceNum = document.getElementById('shopBalanceNum');
 const billingModal = document.getElementById('billingModal');
 const closeBillingBtn = document.getElementById('closeBillingBtn');
 const billingEmailValue = document.getElementById('billingEmailValue');
@@ -1648,7 +1646,7 @@ function closeQuickSettings() {
 // page over its size budget); it is fetched once the page is idle, or on the
 // first tap of the gear if that comes sooner.
 // It also brings settings.css, which the screen waits for (html.tl-set-css).
-var SETTINGS_PANEL_SRC = '/settings-panel.js?v=20261019seo';
+var SETTINGS_PANEL_SRC = '/settings-panel.js?v=20261028nocoins';
 // Top 3 films on profiles (fav-films.js), loaded when a profile first opens.
 var filmsLoading = null;
 function withFilms(cb) {
@@ -2613,54 +2611,14 @@ function renderSettingsProfileRow() {
 }
 
 // --- Shop ------------------------------------------------------------------
-// Coins and Boosts are not built yet and nothing here can be bought: TalkLive
-// is free. The screen exists so the shape of it is visible (and so the price
-// of finding that out later is paid now), which is why every card is disabled
-// and labelled rather than wired to checkout.
-const SHOP_PACKS = [
-  { id: 'drop', coins: 500, price: '$4.99', tagKey: 'shopTagEntry' },
-  { id: 'stack', coins: 1100, bonus: 150, price: '$9.99', tagKey: 'shopTagValue' },
-  { id: 'basket', coins: 2500, bonus: 400, price: '$19.99', tagKey: 'shopTagPopular' },
-  { id: 'cache', coins: 4700, bonus: 800, price: '$34.99', tagKey: 'shopTagBest' },
-  { id: 'chest', coins: 8800, bonus: 1600, price: '$59.99', tagKey: 'shopTagPower' },
-  { id: 'hoard', coins: 16000, bonus: 3500, price: '$99.99', tagKey: 'shopTagMax' },
-];
-
-function formatCoins(n) {
-  try {
-    return n.toLocaleString();
-  } catch (e) {
-    return String(n);
-  }
-}
-
-function renderShop() {
-  if (!shopGrid) return;
-  shopGrid.innerHTML = '';
-  SHOP_PACKS.forEach((pack) => {
-    const card = document.createElement('div');
-    card.className = 'shop-card';
-    card.innerHTML = `
-      <span class="shop-card-tag">${escapeHtml(t(pack.tagKey))}</span>
-      <span class="shop-card-coin" aria-hidden="true"></span>
-      <strong class="shop-card-name">${escapeHtml(t('shopPack_' + pack.id))}</strong>
-      <span class="shop-card-amount">${escapeHtml(t('shopCoinsAmount', { count: formatCoins(pack.coins) }))}</span>
-      ${pack.bonus ? `<span class="shop-card-bonus">${escapeHtml(t('shopBonus', { count: formatCoins(pack.bonus) }))}</span>` : ''}
-      <span class="shop-card-price">${escapeHtml(pack.price)}</span>
-      <button type="button" class="shop-card-btn" disabled>${escapeHtml(t('comingSoon'))}</button>
-    `;
-    shopGrid.appendChild(card);
-  });
-  // No coins exist yet, so the balance is the truth rather than a placeholder.
-  if (shopBalanceNum) shopBalanceNum.textContent = '0';
-}
-
+// Match passes are not on sale and nothing here can be bought: TalkLive is
+// free. The screen exists so the shape of it is visible, which is why every
+// tier is selectable but the buy button stays disabled.
 // Match Pass: time-boxed Gender filter + queue priority, one-time payment.
-// Same rule as the coin packs - selectable so the shape is visible, never
-// purchasable.
+// Selectable so the shape is visible, never purchasable.
 const SHOP_PASSES = [
   { id: 'd1', days: 1, price: '$4.99', was: '$6.99', tierKey: 'passTierQuick', tagKey: 'passTagEntry' },
-  { id: 'd5', days: 5, price: '$8.99', was: '$19.99', tierKey: 'passTierHigher', tagKey: 'passTagDeal' },
+  { id: 'd7', days: 7, price: '$8.99', was: '$19.99', tierKey: 'passTierHigher', tagKey: 'passTagDeal' },
   { id: 'd14', days: 14, price: '$14.99', was: '$34.99', tierKey: 'passTierHighest', tagKey: 'passTagPopular' },
   { id: 'd30', days: 30, price: '$24.99', was: '$59.99', tierKey: 'passTierLongest', tagKey: 'passTagMax' },
 ];
@@ -2700,7 +2658,6 @@ function renderPasses() {
 
 function openShop() {
   renderPasses();
-  renderShop();
   openModal(shopModal);
 }
 
@@ -9655,7 +9612,7 @@ document.querySelectorAll('[data-opens]').forEach((el) => {
 // The rail's green CTA is the hero's voice card, said again at the point where
 // someone has just finished reading who is online.
 // --- "Notify me" -------------------------------------------------------------
-// Premium and the coin shop are announced, not on sale, so the only honest
+// Premium and match passes are announced, not on sale, so the only honest
 // button on either card is one that does something today. This one asks for
 // push permission through the flow that already exists (pwa.js owns the
 // service worker, the VAPID key and the /push/subscribe call), and records the

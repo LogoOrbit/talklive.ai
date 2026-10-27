@@ -5781,7 +5781,7 @@ html.perf-lite .side-panel { box-shadow: none; }
 
 /* --- Settings rows: profile, Shop, Billing ---------------------------------
    Three tap targets at the top of Settings. Nothing they lead to can be
-   bought: coins and Boosts are still being built, so the Shop row wears a
+   bought: match passes are still being built, so the Shop row wears a
    "Coming soon" badge before it is ever opened. */
 
 .settings-rows {
@@ -5904,33 +5904,6 @@ html.perf-lite .side-panel { box-shadow: none; }
   max-width: 680px;
 }
 
-.shop-header-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.shop-balance {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 4px 12px 4px 6px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.05);
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.shop-coin {
-  display: inline-block;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: linear-gradient(145deg, #ffd868, #e5a43a);
-  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.35);
-}
-
 .shop-note {
   margin: 0 0 16px;
   padding: 10px 12px;
@@ -5949,13 +5922,11 @@ html.perf-lite .side-panel { box-shadow: none; }
   background: rgba(255, 255, 255, 0.04);
 }
 
-.pass-panel h3, .shop-section-title, .pass-panel .ui-h3 {
+.pass-panel h3, .pass-panel .ui-h3 {
   margin: 0 0 6px;
   font-size: 15px;
   font-weight: 800;
 }
-
-.shop-section-title { margin: 20px 0 10px; }
 
 .pass-row {
   display: flex;
@@ -6007,7 +5978,7 @@ html.perf-lite .side-panel { box-shadow: none; }
 }
 
 .pass-d1 { --c: #9aa4c0; }
-.pass-d5 { --c: #f0b24a; }
+.pass-d7 { --c: #f0b24a; }
 .pass-d14 { --c: #9b8cff; }
 .pass-d30 { --c: #4fd1a1; }
 
@@ -6102,81 +6073,6 @@ html.perf-lite .side-panel { box-shadow: none; }
 .pass-perks span {
   font-size: 12.5px;
   color: var(--muted);
-}
-
-.shop-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-
-@media (max-width: 620px) {
-  .shop-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-
-.shop-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-  padding: 14px 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.04);
-  text-align: center;
-}
-
-.shop-card-tag {
-  font-size: 10.5px;
-  font-weight: 700;
-  color: var(--muted);
-}
-
-.shop-card-coin {
-  width: 48px;
-  height: 48px;
-  margin: 4px 0 2px;
-  border-radius: 50%;
-  background: linear-gradient(145deg, #ffd868, #e5a43a);
-  box-shadow: inset 0 0 0 4px rgba(255, 255, 255, 0.3);
-}
-
-.shop-card-name {
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.shop-card-amount {
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.shop-card-bonus {
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
-  font-size: 10.5px;
-  font-weight: 700;
-}
-
-.shop-card-price {
-  margin-top: 4px;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--muted);
-}
-
-.shop-card-btn {
-  width: 100%;
-  margin-top: 8px;
-  padding: 8px 10px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--muted);
-  font-size: 12.5px;
-  font-weight: 700;
-  cursor: not-allowed;
 }
 
 .shop-fine {

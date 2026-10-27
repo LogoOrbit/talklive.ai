@@ -30,7 +30,7 @@
     setDescProfile: "Name, avatar, ID and account",
     setDescApp: "Language, theme and sounds",
     setDescPrivacy: "Calls, online status and blocking",
-    setDescBilling: "Coins, Boosts and receipts",
+    setDescBilling: "Passes and receipts",
     setDescAbout: "Feedback, policies and contact",
     soundHint: "Play a sound for matches and messages",
     vibrationHint: "Buzz when you connect or get a message",

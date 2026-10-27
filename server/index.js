@@ -453,7 +453,7 @@ app.post('/subscribe', httpRateLimit('subscribe', 5, 10 * 60000), express.json({
   }
   // "Notify me" sign-ups are waiting for one launch; say so, so the email
   // they get makes sense.
-  const launch = /^notify:/.test(source) ? (source === 'notify:shop' ? 'the TalkLive coin shop' : 'TalkLive Premium') : '';
+  const launch = /^notify:/.test(source) ? (source === 'notify:shop' ? 'TalkLive match passes' : 'TalkLive Premium') : '';
   if (launch) {
     const sentLaunch = await mail.sendMail({
       to: email,
@@ -647,7 +647,7 @@ const GROWTH_EVENTS = new Set([
   'pwa_install_click',
   'pwa_installed',
   'push_optin',
-  // Someone tapped "Notify me" on Premium or the coin shop. The clearest
+  // Someone tapped "Notify me" on Premium or the pass shop. The clearest
   // demand signal the app has for a thing that does not exist yet: it is a
   // person asking to be told when it does.
   'premium_notify_click',

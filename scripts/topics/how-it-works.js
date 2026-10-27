@@ -97,7 +97,7 @@ body{font-family:"Literata",Georgia,serif;color:var(--ink);background-color:var(
 
   <section class="bp-sec">
     <h2><span>2</span>The server introduces you</h2>
-    <p>Once a pair is chosen, both browsers are told about the match, and TalkLive's server passes "signalling" messages between them - the technical details each browser needs to reach the other, such as which audio formats it supports and which network routes it might use. Signalling sets the call up; it does not carry the call. Your match is shown a display name, spirit animal, any interests you added, an estimated country and your local time - never your name, email, number, IP address or city.</p>
+    <p>Once a pair is chosen, both browsers are told about the match, and TalkLive's server passes "signalling" messages between them - the technical details each browser needs to reach the other, such as which audio formats it supports and which network routes it might use. Signalling sets the call up; it does not carry the call. Your match is shown a display name, avatar, any interests you added, an estimated country and your local time - never your name, email, number, IP address or city.</p>
   </section>
 
   <section class="bp-sec">
