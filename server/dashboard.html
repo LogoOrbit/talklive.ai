@@ -221,6 +221,10 @@ th{text-align:left;color:var(--muted);font-weight:600;font-size:.72rem;text-tran
 td{padding:9px 8px;border-bottom:1px solid var(--grid);vertical-align:top}
 td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 td.ipcell{min-width:120px;max-width:170px;word-break:break-all;font-size:.78rem}
+.uface{display:inline-grid;place-items:center;flex:none;border-radius:50%;overflow:hidden;background:var(--surface-2);font-weight:700;color:var(--muted)}
+.uface img,.uface svg{width:100%;height:100%;object-fit:cover}
+.ucell{display:flex;align-items:center;gap:10px;min-width:180px}
+.ucell .on-dot{width:8px;height:8px;border-radius:50%;background:var(--good);display:inline-block;margin-left:4px}
 .pill{display:inline-block;font-size:.7rem;padding:2px 9px;border-radius:99px;font-weight:700}
 .pill.good{background:color-mix(in srgb,var(--good) 16%,transparent);color:var(--good)}
 .pill.warn{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
@@ -584,6 +588,8 @@ th.sortable .ar{opacity:.5;font-size:.7rem}
 </div>
 <div class="toasts" id="toasts"></div>
 
+<script src="/animals.js" defer></script>
+<script src="/characters.js" defer></script>
 <script>
 'use strict';
 const $=(s)=>document.querySelector(s);
@@ -838,7 +844,7 @@ function rankedBars(el,entries){
 const GROUPS=[
   ['Monitor',[['overview','Overview','📊'],['live','Live','🟢'],['activity','Activity','📅'],['daily','Daily log','📋'],['traffic','Traffic','🔎'],['health','Health','❤️'],['experience','Experience','🩺'],['ai','AI Agent','🤖']]],
   ['Moderation',[['reports','Reports','🚩'],['chats','Chats','💬'],['voicenotes','Voice notes','🎙️'],['warnings','Warnings','⚠️'],['bans','Bans','⛔']]],
-  ['People',[['audience','Audience','⚧'],['accounts','Accounts','👤'],['data','Data','🗂️'],['talktime','Talk time','⏱️'],['games','Games','🎮'],['feedback','Feedback','⭐']]],
+  ['People',[['users','Users','🧑‍🤝‍🧑'],['audience','Audience','⚧'],['accounts','Accounts','👤'],['data','Data','🗂️'],['talktime','Talk time','⏱️'],['games','Games','🎮'],['feedback','Feedback','⭐']]],
   ['Business',[['revenue','Revenue','💎']]],
   ['System',[['errors','Errors','🐛'],['audit','Audit log','🧾'],['settings','Settings','🛠️']]]
 ];
@@ -1071,6 +1077,7 @@ async function load(force){
     else if(tab==='warnings')await viewWarnings();
     else if(tab==='chats')await viewChats();
     else if(tab==='voicenotes')await viewVoiceNotes();
+    else if(tab==='users')await viewUsers();
     else if(tab==='accounts')await viewAccounts();
     else if(tab==='data')await viewData();
     else if(tab==='talktime')await viewTalkTime();
@@ -2469,6 +2476,98 @@ async function viewAccounts(){
   });
 }
 
+/* ---------- users: every person with their profile and activity ---------- */
+let usrQ='',usrWho='accounts',usrSort='talkSeconds',usrDir=-1,usrOpen='';
+const USR_COLS=[['username','User'],['email','Email'],['friends','Friends'],['calls','Calls'],['talkSeconds','Talk time'],['messages','Messages'],['lastSeen','Last seen']];
+const hrs=(s)=>{const h=(s||0)/3600;return h>=10?Math.round(h)+' h':h>=0.1?h.toFixed(1)+' h':'0 h';};
+function userFace(x,size){
+  const box=(inner,extra)=>`<span class="uface" style="width:${size}px;height:${size}px;${extra||''}">${inner}</span>`;
+  if(x.picture)return box(`<img src="${esc(x.picture)}" alt="" referrerpolicy="no-referrer" loading="lazy">`);
+  const a=String(x.avatar||'');
+  if(a.slice(0,2)==='c:'&&window.TalkLiveCharacters&&TalkLiveCharacters.has(a.slice(2))){TalkLiveCharacters.installSprite();return box(TalkLiveCharacters.icon(a.slice(2),size));}
+  if(a.slice(0,2)==='a:'&&window.TalkLiveAnimals&&TalkLiveAnimals.has(a.slice(2))){TalkLiveAnimals.installSprite();return box(TalkLiveAnimals.icon(a.slice(2),size));}
+  if(/^[mf][1-5]$/.test(a))return box(a[0]==='f'?'👩':'👨',`font-size:${Math.round(size*.6)}px`);
+  return box(esc(String(x.name||x.username||'?').trim().charAt(0).toUpperCase()||'?'),`font-size:${Math.round(size*.45)}px`);
+}
+function userProfileRow(x){
+  const fields=[
+    ['Username',x.username],['Name',x.name],['Email',x.email?(x.email+(x.emailVerified?' (verified)':'')):null],
+    ['Account',x.account],['Sign-up method',x.method],['Profile ID',x.clientId],
+    ['Location',[x.city&&x.city!=='Unknown'?x.city:'',x.country].filter(Boolean).join(', ')],
+    ['Plus member',x.plus?'Yes':null],
+    ['Friends',num(x.friends)],
+    ['Calls / chats',num(x.calls)],
+    ['Talk time',dur(x.talkSeconds)+' ('+hrs(x.talkSeconds)+')'],
+    ['Longest call',x.longestCall?dur(x.longestCall):null],
+    ['Last talked',x.lastTalkAt?fmtTs(x.lastTalkAt):null],
+    ['Messages sent',num(x.messages)+' ('+num(x.strangerMessages)+' to strangers, '+num(x.friendMessages)+' to friends)'],
+    ['Last message',x.lastMessageAt?fmtTs(x.lastMessageAt):null],
+    ['Account created',x.createdAt?fmtTs(x.createdAt):null],
+    ['Last seen',x.online?'Online now':x.lastSeen?fmtTs(x.lastSeen):null],
+  ].filter(([,v])=>v!==null&&v!==undefined&&v!=='');
+  return `<tr class="accdetail"><td colspan="${USR_COLS.length+1}">
+    <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;padding:6px 2px">
+      ${userFace(x,72)}
+      <div style="flex:1;min-width:240px;display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:.82rem">
+        ${fields.map(([k,v])=>`<div class="muted">${esc(k)}</div><div style="word-break:break-word">${esc(String(v))}</div>`).join('')}
+      </div>
+    </div>
+  </td></tr>`;
+}
+async function viewUsers(){
+  const r=await vapi('users?who='+usrWho);
+  const all=r.rows||[];
+  const sum=(k)=>all.reduce((a,x)=>a+(x[k]||0),0);
+  const q=usrQ.trim().toLowerCase();
+  const rows=q?all.filter(x=>[x.username,x.name,x.email,x.account,x.country,x.city,x.clientId].some(v=>String(v||'').toLowerCase().includes(q))):all.slice();
+  rows.sort((a,b)=>{
+    const va=a[usrSort],vb=b[usrSort];
+    if(typeof va==='number'||typeof vb==='number')return ((va||0)-(vb||0))*usrDir;
+    return String(va||'').localeCompare(String(vb||''))*usrDir;
+  });
+  const shown=rows.slice(0,500);
+  const th=USR_COLS.map(([k,l])=>`<th class="sortable${['friends','calls','talkSeconds','messages'].includes(k)?' num':''}" data-us="${k}">${l} <span class="ar">${usrSort===k?(usrDir<0?'▼':'▲'):'↕'}</span></th>`).join('');
+  const since=r.msgSince&&!r.msgHistory?` Messages are counted from ${esc(fmtTs(r.msgSince))}; older ones are added once the chat log has loaded.`:'';
+  $('#main').innerHTML=`<div class="grid tiles anim" style="margin-top:0">
+    <div class="tile"><div class="k">${usrWho==='all'?'People':'Accounts'}</div><div class="v grad" data-count="${all.length}">0</div><div class="s">${usrWho==='all'?'accounts + active guests':'registered users'}</div></div>
+    <div class="tile"><div class="k">Online now</div><div class="v" data-count="${all.filter(x=>x.online).length}">0</div><div class="s">of these</div></div>
+    <div class="tile"><div class="k">Calls</div><div class="v" data-count="${sum('calls')}">0</div><div class="s">calls and chats they had</div></div>
+    <div class="tile"><div class="k">Hours talked</div><div class="v" style="font-size:1.4rem">${hrs(sum('talkSeconds'))}</div><div class="s">${dur(sum('talkSeconds'))}</div></div>
+    <div class="tile"><div class="k">Messages</div><div class="v" data-count="${sum('messages')}">0</div><div class="s">sent by them</div></div>
+    <div class="tile"><div class="k">With friends</div><div class="v" data-count="${all.filter(x=>x.friends).length}">0</div><div class="s">${pctOf(all.filter(x=>x.friends).length,all.length)} have at least one</div></div>
+  </div>
+  <div class="card anim"><h2>🧑‍🤝‍🧑 Users <span class="sub">${rows.length===all.length?num(all.length)+' total':num(rows.length)+' of '+num(all.length)+' shown'}${rows.length>500?' · first 500':''} · click a heading to sort, a row for the profile</span></h2>
+  <div class="tbar">
+    <div class="seg" id="usrWho">${[['accounts','Accounts'],['all','Everyone']].map(([k,l])=>`<button data-w="${k}" class="${usrWho===k?'on':''}">${l}</button>`).join('')}</div>
+    <input id="usrQ" class="grow" placeholder="Search name, email, username, country…" value="${esc(usrQ)}">
+    ${usrQ?'<button class="lnk" id="usrClear">Clear</button>':''}
+  </div>
+  <div class="muted" style="font-size:.78rem;margin-bottom:10px">Talk time and calls are counted when a call or chat ends. Messages are the chat messages they sent, to strangers and friends.${since}${usrWho==='all'&&r.guestsTotal>r.guestsCap?` Showing the ${num(r.guestsCap)} most active of ${num(r.guestsTotal)} guests.`:''}</div>
+  <table><tr>${th}<th></th></tr>
+  ${shown.map(x=>{const id=x.account||x.clientId;return `<tr class="usrRow" data-k="${esc(id)}" style="cursor:pointer">
+    <td><div class="ucell">${userFace(x,36)}<div><b>${esc(x.username)}</b>${x.online?'<span class="on-dot" title="Online now"></span>':''}${x.name&&x.name!==x.username?`<div class="muted" style="font-size:.78rem">${esc(x.name)}</div>`:''}
+      <div>${x.method==='google'?'<span class="pill info">Google</span>':x.method==='guest'?'<span class="pill">Guest</span>':'<span class="pill good">Password</span>'}${x.plus?' <span class="pill warn">Plus</span>':''}</div></div></div></td>
+    <td>${x.email?esc(x.email)+(x.emailVerified?' <span class="pill good">verified</span>':''):'<span class="muted">-</span>'}</td>
+    <td class="num">${num(x.friends)}</td>
+    <td class="num">${num(x.calls)}</td>
+    <td class="num" style="white-space:nowrap"><b>${hrs(x.talkSeconds)}</b><div class="muted" style="font-size:.75rem">${dur(x.talkSeconds)}</div></td>
+    <td class="num">${num(x.messages)}</td>
+    <td>${x.online?'<span class="pill good">online</span>':x.lastSeen?ago(x.lastSeen):'-'}</td>
+    <td><button class="lnk">${usrOpen===id?'Hide':'Profile'}</button></td></tr>
+    ${usrOpen===id?userProfileRow(x):''}`;}).join('')||`<tr><td colspan="${USR_COLS.length+1}" class="muted">${q?'No user matches that search.':'No users yet.'}</td></tr>`}
+  </table></div>`;
+  animateCounters();
+  document.querySelectorAll('#usrWho button').forEach(b=>b.onclick=()=>{usrWho=b.dataset.w;viewUsers();});
+  onFilterInput($('#usrQ'),(v)=>{usrQ=v;},()=>viewUsers().then(()=>keepFocus('#usrQ')));
+  const cl=$('#usrClear');if(cl)cl.onclick=()=>{usrQ='';viewUsers();};
+  document.querySelectorAll('.usrRow').forEach(tr=>tr.onclick=()=>{usrOpen=usrOpen===tr.dataset.k?'':tr.dataset.k;viewUsers();});
+  document.querySelectorAll('th[data-us]').forEach(th=>th.onclick=()=>{
+    const k=th.dataset.us;
+    if(usrSort===k)usrDir=-usrDir; else {usrSort=k;usrDir=(k==='username'||k==='email')?1:-1;}
+    viewUsers();
+  });
+}
+
 /* ---------- data: everything held about each person ----------
    Account details joined with the contact details people shared in chat after
    opting in (Settings > Privacy > "Save contact info I share"). */
@@ -2499,6 +2598,7 @@ async function viewData(){
     <div class="tile"><div class="k">Shared emails</div><div class="v" data-count="${nEmail}">0</div><div class="s">found in chat</div></div>
     <div class="tile"><div class="k">Shared phones</div><div class="v" data-count="${nPhone}">0</div><div class="s">found in chat</div></div>
     <div class="tile"><div class="k">Shared socials</div><div class="v" data-count="${nSocial}">0</div><div class="s">Instagram, Snapchat, Telegram…</div></div>
+    <div class="tile"><div class="k">Launch waitlist</div><div class="v" data-count="${(r.subscribers||{}).waitlist||0}">0</div><div class="s">"Notify me" · confirmed · ${num((r.subscribers||{}).waitlistPending||0)} pending</div></div>
     <div class="tile"><div class="k">Email subscribers</div><div class="v" data-count="${(r.subscribers||{}).confirmed||0}">0</div><div class="s">confirmed · ${num((r.subscribers||{}).pending||0)} pending · ${exportLink('subscribers','CSV')}</div></div>
   </div>
   <div class="card anim"><h2>🗂️ User data <span class="sub">${rows.length===all.length?num(all.length)+(all.length===1?' person':' people'):rows.length+' of '+all.length+' shown'}</span>

@@ -1606,6 +1606,29 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
         </div>
       </div>
 
+      <!-- "Notify me": email sign-up for the launch of Premium / the shop -->
+      <div id="notifyModal" class="modal-overlay hidden">
+        <div class="modal-box modal-box-narrow" role="dialog" aria-modal="true" aria-labelledby="notifyModalTitle">
+          <div class="modal-header">
+            <div role="heading" aria-level="2" class="ui-h2" id="notifyModalTitle" data-i18n="notifyEmailTitle">Get notified at launch</div>
+            <button type="button" id="notifyCloseBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
+          </div>
+          <div class="modal-body">
+            <form id="notifyForm" novalidate>
+              <p class="consent-modal-text" data-i18n="notifyEmailHint">Leave your email and we will tell you the moment it goes live.</p>
+              <input type="email" id="notifyEmailInput" class="search-input" maxlength="254" data-i18n-placeholder="notifyEmailPlaceholder" placeholder="you@example.com" autocomplete="email" inputmode="email" required />
+              <input type="text" id="notifyHp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" class="notify-hp" />
+              <p id="notifyStatus" class="notify-status" aria-live="polite"></p>
+              <div class="confirm-actions rename-actions">
+                <button type="button" id="notifyPushBtn" class="btn btn-secondary" data-i18n="notifyPushInstead">Browser alert</button>
+                <button type="submit" id="notifySubmitBtn" class="btn btn-save" data-i18n="notifySubmit">Notify me</button>
+              </div>
+              <p class="notify-fine" data-i18n="notifyEmailFine">No spam. One email to confirm, then only launch news. Unsubscribe anytime.</p>
+            </form>
+          </div>
+        </div>
+      </div>
+
       <!-- Feedback for Improvement dialog -->
       <div id="feedbackModal" class="modal-overlay hidden">
         <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="feedbackModalTitle">

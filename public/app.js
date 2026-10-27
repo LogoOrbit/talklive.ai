@@ -9621,28 +9621,93 @@ function markNotified(btn, key) {
   if (label) label.textContent = t(key);
 }
 
+// "Notify me" opens an email sign-up: the address joins the same double
+// opt-in list as the footer form (POST /subscribe), tagged with what the person
+// is waiting for, so the owner can email them when it launches. A browser
+// notification is still offered as the alternative.
+const notifyModal = document.getElementById('notifyModal');
+const notifyForm = document.getElementById('notifyForm');
+const notifyEmailInput = document.getElementById('notifyEmailInput');
+const notifyStatus = document.getElementById('notifyStatus');
+const notifySubmitBtn = document.getElementById('notifySubmitBtn');
+const NOTIFY_KEY = 'talklive_notify_email';
+let notifyBtn = null;
+
+function notifySignedUp(what) {
+  try { return !!JSON.parse(localStorage.getItem(NOTIFY_KEY) || '{}')[what]; } catch (_) { return false; }
+}
+function rememberNotify(what) {
+  try {
+    const m = JSON.parse(localStorage.getItem(NOTIFY_KEY) || '{}');
+    m[what] = Date.now();
+    localStorage.setItem(NOTIFY_KEY, JSON.stringify(m));
+  } catch (_) { /* storage blocked */ }
+}
+function setNotifyStatus(text, kind) {
+  notifyStatus.textContent = text || '';
+  notifyStatus.classList.toggle('is-error', kind === 'error');
+  notifyStatus.classList.toggle('is-ok', kind === 'ok');
+}
+
 document.querySelectorAll('[data-notify]').forEach((btn) => {
-  btn.addEventListener('click', async () => {
+  if (notifySignedUp(btn.dataset.notify)) markNotified(btn, 'notifyEmailDone');
+  btn.addEventListener('click', () => {
     trackGrowthEvent('premium_notify_click');
     vibrate(15);
-    const pwa = window.TalkLivePWA;
-    if (!pwa || typeof pwa.askForPush !== 'function' || !('Notification' in window)) {
-      // No push on this browser at all. The interest is still recorded, and
-      // the button says what actually happened rather than pretending.
-      markNotified(btn, 'notifyNoted');
-      showToast(t('notifyNotedToast'), 'success');
-      return;
-    }
-    try { await pwa.askForPush(); } catch (_) { /* denied or unavailable */ }
-    if (Notification.permission === 'granted') {
-      markNotified(btn, 'notifyDone');
-      showToast(t('notifyDoneToast'), 'success');
-    } else {
-      markNotified(btn, 'notifyNoted');
-      showToast(t('notifyNotedToast'), 'success');
-    }
+    notifyBtn = btn;
+    setNotifyStatus('');
+    notifySubmitBtn.disabled = false;
+    if (!notifyEmailInput.value) notifyEmailInput.value = accountEmail || '';
+    openModal(notifyModal);
   });
 });
+
+notifyForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = notifyEmailInput.value.trim();
+  if (!/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(email)) {
+    setNotifyStatus(t('notifyEmailInvalid'), 'error');
+    notifyEmailInput.focus();
+    return;
+  }
+  const what = (notifyBtn && notifyBtn.dataset.notify) || 'premium';
+  notifySubmitBtn.disabled = true;
+  setNotifyStatus(t('notifySending'));
+  try {
+    const r = await fetch('/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, website: document.getElementById('notifyHp').value, source: `notify:${what}` }),
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || t('notifyEmailError'));
+    trackGrowthEvent('premium_notify_email');
+    rememberNotify(what);
+    document.querySelectorAll(`[data-notify="${what}"]`).forEach((b) => markNotified(b, 'notifyEmailDone'));
+    setNotifyStatus(t('notifyEmailSent'), 'ok');
+  } catch (err) {
+    notifySubmitBtn.disabled = false;
+    setNotifyStatus(err.message || t('notifyEmailError'), 'error');
+  }
+});
+
+// The old one-tap path: ask for push permission through pwa.js.
+document.getElementById('notifyPushBtn').addEventListener('click', async () => {
+  closeModal(notifyModal);
+  const btn = notifyBtn;
+  const pwa = window.TalkLivePWA;
+  if (!pwa || typeof pwa.askForPush !== 'function' || !('Notification' in window)) {
+    if (btn) markNotified(btn, 'notifyNoted');
+    showToast(t('notifyNotedToast'), 'success');
+    return;
+  }
+  try { await pwa.askForPush(); } catch (_) { /* denied or unavailable */ }
+  const granted = Notification.permission === 'granted';
+  if (btn) markNotified(btn, granted ? 'notifyDone' : 'notifyNoted');
+  showToast(t(granted ? 'notifyDoneToast' : 'notifyNotedToast'), 'success');
+});
+document.getElementById('notifyCloseBtn').addEventListener('click', () => closeModal(notifyModal));
+notifyModal.addEventListener('click', (e) => { if (e.target === notifyModal) closeModal(notifyModal); });
 
 // --- Header search ----------------------------------------------------------
 // "Search people, countries or interests" has to mean something concrete on an

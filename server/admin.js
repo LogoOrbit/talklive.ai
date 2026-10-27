@@ -411,7 +411,7 @@ function generateConclusion(runtime, report) {
 }
 
 // --- Module wiring ---
-function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning, deliverFeedbackReply, getLiveGames }) {
+function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning, deliverFeedbackReply, getLiveGames, getUserStats }) {
   const router = express.Router();
   router.use(express.json({ limit: '64kb' }));
 
@@ -951,6 +951,113 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
     res.json({ accounts });
   });
 
+  // --- Users tab --------------------------------------------------------------
+  // One row per person with their profile and activity: friends, calls, talk
+  // time and messages sent. Registered accounts always; guests only with
+  // ?who=all, and only those who did something (called, messaged, befriended).
+  const USERS_MAX_GUESTS = 3000;
+  function userRows(who) {
+    const mc = store.data.msgCounts || { since: 0, users: {}, base: null };
+    // The history from before live counting began is counted once, as soon as
+    // the transcript log is fully loaded, and saved - the log only keeps the
+    // newest messages, so counting it again later would come out lower.
+    const needBase = !mc.base && mc.since && store.transcriptsReady();
+    const stats = getUserStats ? getUserStats(needBase ? mc.since : 0) : new Map();
+    if (needBase) {
+      const base = {};
+      for (const [cid, r] of stats) if (r.friendMsgs) base[cid] = { f: r.friendMsgs, s: 0 };
+      for (const m of store.data.transcripts) {
+        if (m.kind !== 'stranger' || !m.fromClientId || !(m.ts < mc.since)) continue;
+        (base[m.fromClientId] || (base[m.fromClientId] = { f: 0, s: 0 })).s += 1;
+      }
+      store.setMsgBase(base);
+    }
+    const baseUsers = (mc.base && mc.base.users) || {};
+    const talk = store.data.talkTime || {};
+    const lastSeenMap = (store.data.social && store.data.social.lastSeen) || {};
+    const activity = (cid) => {
+      const t = talk[cid] || {};
+      const live = mc.users[cid] || {};
+      const b = baseUsers[cid] || {};
+      const st = stats.get(cid) || {};
+      const strangerMessages = (live.s || 0) + (b.s || 0);
+      const friendMessages = (live.f || 0) + (b.f || 0);
+      return {
+        friends: st.friends || 0,
+        avatar: st.avatar || null,
+        online: !!st.online,
+        calls: t.calls || 0,
+        talkSeconds: t.seconds || 0,
+        longestCall: t.longest || 0,
+        lastTalkAt: t.lastAt || null,
+        messages: strangerMessages + friendMessages,
+        strangerMessages,
+        friendMessages,
+        lastMessageAt: live.t || null,
+        plus: store.isPremiumClient ? !!store.isPremiumClient(cid) : false,
+      };
+    };
+    const rows = [];
+    const seen = new Set();
+    for (const [key, a] of Object.entries(store.data.accountsRegistry)) {
+      const cred = (store.data.accounts || {})[key] || {};
+      const g = cred.google || {};
+      const clientId = cred.clientId || a.clientId || null;
+      if (clientId) seen.add(clientId);
+      rows.push({
+        clientId,
+        account: key,
+        username: a.username || key,
+        name: g.name || a.nickname || '',
+        method: a.method || '',
+        email: g.email || cred.email || a.email || '',
+        emailVerified: !!(g.email && g.emailVerified),
+        picture: g.picture || '',
+        country: a.country || '',
+        city: a.city || '',
+        createdAt: a.createdAt || null,
+        lastSeen: a.lastSeen || lastSeenMap[clientId] || null,
+        ...(clientId ? activity(clientId) : activity('')),
+      });
+    }
+    if (who === 'all') {
+      const guests = new Set([...Object.keys(talk), ...Object.keys(mc.users), ...Object.keys(baseUsers)]);
+      for (const [cid, st] of stats) if (st.friends) guests.add(cid);
+      const extra = [];
+      for (const cid of guests) {
+        if (seen.has(cid)) continue;
+        const act = activity(cid);
+        if (!act.calls && !act.messages && !act.friends) continue;
+        const t = talk[cid] || {};
+        extra.push({
+          clientId: cid, account: null,
+          username: t.username || (mc.users[cid] || {}).u || cid,
+          name: '', method: 'guest', email: '', emailVerified: false, picture: '',
+          country: t.country || '', city: '', createdAt: null,
+          lastSeen: lastSeenMap[cid] || t.lastAt || (mc.users[cid] || {}).t || null,
+          ...act,
+        });
+      }
+      extra.sort((x, y) => (y.talkSeconds - x.talkSeconds) || (y.messages - x.messages) || (y.friends - x.friends));
+      rows.push(...extra.slice(0, USERS_MAX_GUESTS));
+      return { rows, guestsTotal: extra.length };
+    }
+    return { rows, guestsTotal: null };
+  }
+
+  router.get('/api/users', (req, res) => {
+    const { rows, guestsTotal } = userRows(req.query.who === 'all' ? 'all' : 'accounts');
+    const mc = store.data.msgCounts || {};
+    res.json({
+      rows,
+      guestsTotal,
+      guestsCap: USERS_MAX_GUESTS,
+      // When live message counting began, and whether older messages are in.
+      msgSince: mc.since || null,
+      msgHistory: !!mc.base,
+    });
+  });
+
   // --- Data tab ---------------------------------------------------------------
   // One row per person: account details (email, Google profile, location) joined
   // with the contact details captured from their chats, which only exist for
@@ -1008,9 +1115,13 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
 
   router.get('/api/data', (req, res) => {
     const subs = Object.values(store.data.subscribers || {});
+    const wait = subs.filter((x) => /^notify:/.test(x.source || ''));
     res.json({ rows: dataRows(), subscribers: {
       confirmed: subs.filter((x) => x.status === 'confirmed').length,
       pending: subs.filter((x) => x.status === 'pending').length,
+      // "Notify me" sign-ups for the Premium / shop launch.
+      waitlist: wait.filter((x) => x.status === 'confirmed').length,
+      waitlistPending: wait.filter((x) => x.status === 'pending').length,
     } });
   });
 

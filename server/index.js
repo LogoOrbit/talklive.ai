@@ -448,6 +448,19 @@ app.post('/subscribe', httpRateLimit('subscribe', 5, 10 * 60000), express.json({
     console.log(`[subscribe] confirmation link for ${email}: ${link}`);
     return res.json({ ok: true });
   }
+  // "Notify me" sign-ups are waiting for one launch; say so, so the email
+  // they get makes sense.
+  const launch = /^notify:/.test(source) ? (source === 'notify:shop' ? 'the TalkLive coin shop' : 'TalkLive Premium') : '';
+  if (launch) {
+    const sentLaunch = await mail.sendMail({
+      to: email,
+      subject: `Confirm: get notified when ${launch} launches`,
+      text: `Hi,\n\nSomeone (hopefully you) asked to be told when ${launch} goes live. To confirm, open this link:\n\n${link}\n\nIf it wasn't you, just ignore this email and you won't hear from us.\n\nTalkLive · info@talklive.app`,
+      html: `<p>Hi,</p><p>Someone (hopefully you) asked to be told when ${launch} goes live. To confirm, tap the link below:</p><p><a href="${escapeHtmlText(link)}">Yes, tell me when it launches</a></p><p>If it wasn't you, just ignore this email and you won't hear from us.</p><p style="color:#888;font-size:12px">TalkLive · info@talklive.app</p>`,
+    });
+    if (!sentLaunch) return res.status(502).json({ error: 'We could not send the confirmation email. Please try again later.' });
+    return res.json({ ok: true });
+  }
   const sent = await mail.sendMail({
     to: email,
     subject: 'Confirm your TalkLive email updates',
@@ -1138,7 +1151,44 @@ function sendPendingFeedbackReplies(socket) {
 }
 
 const gameTracker = createGameTracker({ store, profileOf: (sid) => profiles.get(sid) });
-const admin = createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning, deliverFeedbackReply, getLiveGames: () => gameTracker.live() });
+// For the owner's Users tab: per person, how many friends they have, the
+// avatar others see for them, whether they are online, and (when `since` is
+// given) how many friend messages they sent before that time.
+function getUserStats(since) {
+  const out = new Map();
+  const get = (cid) => {
+    let r = out.get(cid);
+    if (!r) out.set(cid, r = { friends: 0, avatar: null, online: false, friendMsgs: 0 });
+    return r;
+  };
+  for (const [cid, m] of friends) {
+    let n = 0;
+    for (const [fid, info] of m) {
+      if (!info || info.temporary) continue;
+      n++;
+      if (info.avatar) get(fid).avatar = info.avatar;
+    }
+    if (n) get(cid).friends = n;
+  }
+  for (const list of chatHistory.values()) {
+    for (const e of list || []) if (e && e.clientId && e.avatar && !(out.get(e.clientId) || {}).avatar) get(e.clientId).avatar = e.avatar;
+  }
+  for (const p of profiles.values()) {
+    if (!p || !p.clientId) continue;
+    const r = get(p.clientId);
+    r.online = true;
+    const a = shownAvatar(p);
+    if (a) r.avatar = a;
+  }
+  if (since) {
+    for (const list of friendChats.values()) {
+      for (const m of list || []) if (m && m.from && (m.ts || 0) < since) get(m.from).friendMsgs++;
+    }
+  }
+  return out;
+}
+
+const admin = createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning, deliverFeedbackReply, getUserStats, getLiveGames: () => gameTracker.live() });
 app.use('/owner', admin.router);
 
 // Maintenance mode: when on, every non-dashboard page gets a friendly 503.
