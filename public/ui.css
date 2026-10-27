@@ -1758,7 +1758,7 @@ summary.tl-filter-legend::-webkit-details-marker { display: none; }
 /* Searching with filters: keep them instead of widening to everyone. */
 .tl-keep-filters {
   display: block;
-  margin: 0 auto 16px;
+  margin: 10px auto 14px;
   min-height: 36px;
   padding: 0 16px;
   border: 1px solid var(--tl-line-strong);
@@ -3412,7 +3412,7 @@ summary.tl-filter-legend::-webkit-details-marker { display: none; }
 
 .tl-undo-skip {
   display: block;
-  margin: 0 auto 16px;
+  margin: 10px auto 14px;
   min-height: 36px;
   padding: 0 16px;
   border: 1px solid color-mix(in srgb, var(--accent-2) 55%, transparent);
