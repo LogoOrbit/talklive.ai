@@ -1251,7 +1251,7 @@ function dayKey(ts = Date.now()) {
 const UNIQUE_SET_DAYS = 2;
 
 function newHour() {
-  return { visits: 0, uniques: 0, connections: 0, matches: 0, messages: 0, peakOnline: 0, bots: 0 };
+  return { visits: 0, uniques: 0, connections: 0, matches: 0, messages: 0, peakOnline: 0, peakVoice: 0, peakText: 0, bots: 0 };
 }
 
 function day(ts = Date.now()) {
@@ -1269,6 +1269,8 @@ function day(ts = Date.now()) {
       errors: 0,
       newAccounts: 0,
       peakOnline: 0,
+      peakVoice: 0,
+      peakText: 0,
       countries: {},
       cities: {},
       features: {},
@@ -1461,6 +1463,18 @@ function recordPeakOnline(count) {
   let changed = false;
   if (count > d.peakOnline) { d.peakOnline = count; changed = true; }
   if (count > hr.peakOnline) { hr.peakOnline = count; changed = true; }
+  if (changed) save();
+}
+
+// Most people in voice calls / text chats at the same moment, per day and hour.
+function recordPeakLive(voice, text) {
+  const d = day();
+  const hr = hour();
+  let changed = false;
+  if (voice > (d.peakVoice || 0)) { d.peakVoice = voice; changed = true; }
+  if (voice > (hr.peakVoice || 0)) { hr.peakVoice = voice; changed = true; }
+  if (text > (d.peakText || 0)) { d.peakText = text; changed = true; }
+  if (text > (hr.peakText || 0)) { hr.peakText = text; changed = true; }
   if (changed) save();
 }
 
@@ -3390,6 +3404,7 @@ module.exports = {
   recordArrival,
   recordConnection,
   recordPeakOnline,
+  recordPeakLive,
   recordFeature,
   recordTalkTime,
   transcriptsReady,

@@ -1081,6 +1081,12 @@ function getLiveCounts() {
   };
 }
 
+// Today's peak of people in voice calls and in text chats, sampled every 2s.
+setInterval(() => {
+  const c = getLiveCounts();
+  store.recordPeakLive(c.voice, c.text);
+}, 2000).unref();
+
 // Force-disconnect a freshly banned user so a ban takes effect instantly.
 function kickBanned(clientId, ip, ban) {
   for (const [sid, p] of profiles) {

@@ -19,6 +19,9 @@
 const HOUR_METRICS = ['visits', 'uniques', 'connections', 'matches', 'messages', 'bots'];
 // Counters only kept per UTC day; they follow the day's dominant local day.
 const DAY_ONLY_METRICS = ['reports', 'errors', 'newAccounts', 'feedback'];
+// Most at once (not sums): people online, in voice calls, in text chats.
+const PEAK_METRICS = ['peakOnline', 'peakVoice', 'peakText'];
+const emptyPeaks = () => ({ peakOnline: 0, peakVoice: 0, peakText: 0 });
 
 // Validity is fixed per zone name, and checking it means building a formatter,
 // so remember the answer (bounded: names come from request query strings).
@@ -109,9 +112,9 @@ function startOfWeek(dayKey) {
 function emptyDay(dayKey) {
   const b = {
     day: dayKey,
-    peakOnline: 0,
+    ...emptyPeaks(),
     // 24 slots of the *local* day, index = local hour.
-    hours: Array.from({ length: 24 }, () => ({ visits: 0, uniques: 0, connections: 0, matches: 0, messages: 0, bots: 0, peakOnline: 0 })),
+    hours: Array.from({ length: 24 }, () => ({ visits: 0, uniques: 0, connections: 0, matches: 0, messages: 0, bots: 0, ...emptyPeaks() })),
     // True when some of this day's numbers come from a pre-hourly record and
     // could not be split on the local day boundary.
     estimated: false,
@@ -162,15 +165,17 @@ function foldToLocalDays(days, tz) {
         for (const m of HOUR_METRICS) b[m] += src[m] || 0;
         const slot = b.hours[local.hour];
         for (const m of HOUR_METRICS) slot[m] += src[m] || 0;
-        slot.peakOnline = Math.max(slot.peakOnline, src.peakOnline || 0);
-        b.peakOnline = Math.max(b.peakOnline, src.peakOnline || 0);
+        for (const m of PEAK_METRICS) {
+          slot[m] = Math.max(slot[m], src[m] || 0);
+          b[m] = Math.max(b[m], src[m] || 0);
+        }
       }
     } else {
       // Legacy day: no hours to split on, so attribute it whole.
       const local = cachedLocalParts(Date.UTC(y, mo, da, 12), tz);
       const b = bucketFor(local.day);
       for (const m of HOUR_METRICS) b[m] += d[m] || 0;
-      b.peakOnline = Math.max(b.peakOnline, d.peakOnline || 0);
+      for (const m of PEAK_METRICS) b[m] = Math.max(b[m], d[m] || 0);
       b.estimated = true;
     }
 
@@ -186,14 +191,14 @@ function foldToLocalDays(days, tz) {
 
 function sumDays(buckets) {
   const total = {
-    peakOnline: 0,
+    ...emptyPeaks(),
     days: buckets.length,
     estimated: buckets.some((b) => b.estimated),
   };
   for (const m of HOUR_METRICS.concat(DAY_ONLY_METRICS)) total[m] = 0;
   for (const b of buckets) {
     for (const m of HOUR_METRICS.concat(DAY_ONLY_METRICS)) total[m] += b[m] || 0;
-    total.peakOnline = Math.max(total.peakOnline, b.peakOnline || 0);
+    for (const m of PEAK_METRICS) total[m] = Math.max(total[m], b[m] || 0);
   }
   return total;
 }
@@ -262,11 +267,11 @@ function buildReport(days, tz, now = Date.now()) {
   // Compare like-for-like: today has only run `nowLocal.hour` hours so far, so
   // put yesterday's same window next to it instead of its full-day total.
   const hoursElapsed = nowLocal.hour + 1;
-  const yesterdaySoFar = { visits: 0, uniques: 0, connections: 0, matches: 0, messages: 0, bots: 0, peakOnline: 0 };
+  const yesterdaySoFar = { visits: 0, uniques: 0, connections: 0, matches: 0, messages: 0, bots: 0, ...emptyPeaks() };
   for (let h = 0; h < hoursElapsed; h++) {
     const slot = yesterday.hours[h];
     for (const m of HOUR_METRICS) yesterdaySoFar[m] += slot[m];
-    yesterdaySoFar.peakOnline = Math.max(yesterdaySoFar.peakOnline, slot.peakOnline);
+    for (const m of PEAK_METRICS) yesterdaySoFar[m] = Math.max(yesterdaySoFar[m], slot[m]);
   }
 
   return {
@@ -332,7 +337,7 @@ const HOUR_MS = 3600000;
 
 // Sum the hour buckets in [from, to). `hours` lists each hour for charting.
 function windowTotals(days, from, to, tz) {
-  const totals = { peakOnline: 0 };
+  const totals = emptyPeaks();
   for (const m of HOUR_METRICS) totals[m] = 0;
   const hours = [];
   let legacy = false;
@@ -344,8 +349,7 @@ function windowTotals(days, from, to, tz) {
     const src = (rec && rec.hours && rec.hours[String(d.getUTCHours())]) || {};
     const row = { ts: t, label: wallLabel(t, tz) };
     for (const m of HOUR_METRICS) { row[m] = src[m] || 0; totals[m] += row[m]; }
-    row.peakOnline = src.peakOnline || 0;
-    totals.peakOnline = Math.max(totals.peakOnline, row.peakOnline);
+    for (const m of PEAK_METRICS) { row[m] = src[m] || 0; totals[m] = Math.max(totals[m], row[m]); }
     hours.push(row);
   }
   totals.hours = hours.length;

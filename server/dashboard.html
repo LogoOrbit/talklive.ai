@@ -105,22 +105,41 @@ header .spacer{flex:1;min-width:0}
 .dot{width:9px;height:9px;border-radius:50%;background:var(--good);display:inline-block;flex:none;animation:pulse 2s infinite;box-shadow:0 0 10px var(--good)}
 .dot.off{background:var(--muted);box-shadow:none;animation:none}
 .badge{background:var(--crit);color:#fff;border-radius:9px;font-size:.66rem;padding:1px 6px;margin-left:5px;font-weight:700;vertical-align:1px}
-.shell{display:grid;grid-template-columns:212px minmax(0,1fr);max-width:1440px;margin:0 auto}
-.side{position:sticky;top:56px;align-self:start;height:calc(100vh - 56px);height:calc(100dvh - 56px);overflow-y:auto;padding:10px 10px 24px;border-right:1px solid var(--grid)}
-.side .grp{font-size:.64rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);padding:14px 10px 5px;font-weight:700}
-.side .grp:first-child{padding-top:6px}
-.side button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:transparent;border:0;color:var(--ink2);padding:8px 10px;border-radius:10px;font-size:.86rem;transition:background .15s,color .15s}
-.side button .ic{width:20px;text-align:center;flex:none}
+.shell{--side-w:220px;display:grid;grid-template-columns:var(--side-w) minmax(0,1fr);max-width:1480px;margin:0 auto;transition:grid-template-columns .2s ease}
+.side{position:sticky;top:56px;align-self:start;height:calc(100vh - 56px);height:calc(100dvh - 56px);overflow-y:auto;overflow-x:hidden;padding:10px 10px 24px;border-right:1px solid var(--grid);overscroll-behavior:contain}
+.side .dhead{display:none}
+.side .grp{font-size:.64rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);padding:14px 10px 5px;font-weight:700;white-space:nowrap}
+.side .grp.g0{padding-top:6px}
+.side button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:transparent;border:0;color:var(--ink2);padding:9px 10px;border-radius:10px;font-size:.88rem;transition:background .15s,color .15s;white-space:nowrap;position:relative}
+.side button .ic{width:22px;text-align:center;flex:none;font-size:1rem}
+.side button .nl{overflow:hidden;text-overflow:ellipsis}
 .side button:hover{background:var(--surface-2);color:var(--text)}
 .side button.on{background:var(--surface-2);color:var(--text);font-weight:700;box-shadow:inset 3px 0 0 var(--accent)}
 .side .badge{margin-left:auto}
+/* Collapsed desktop sidebar: an icon rail, labels as tooltips. */
+.shell.rail{--side-w:66px}
+.shell.rail .side{padding:10px 8px 24px}
+.shell.rail .side .grp{font-size:0;padding:8px 0 4px;margin:6px 8px 0;border-top:1px solid var(--grid)}
+.shell.rail .side .grp.g0{border-top:0;margin-top:0;padding-top:0}
+.shell.rail .side button{justify-content:center;padding:10px 0}
+.shell.rail .side button .nl{display:none}
+.shell.rail .side button .ic{font-size:1.15rem}
+.shell.rail .side .badge{position:absolute;top:2px;right:3px;margin:0;font-size:.58rem;padding:0 4px}
 main{padding:18px 22px;min-width:0;padding-bottom:calc(84px + env(safe-area-inset-bottom))}
 @media(min-width:761px){main{padding-bottom:32px}}
-@media(max-width:1000px) and (min-width:761px){.shell{grid-template-columns:180px minmax(0,1fr)}}
+.menubtn{font-size:1.05rem!important;padding:7px 10px!important}
 .phead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:14px}
 .phead h2{font-size:1.25rem;font-weight:800;display:flex;align-items:center;gap:9px}
 .phead .crumb{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
 .phead .stamp{margin-left:auto;font-size:.74rem;color:var(--muted)}
+/* Sub-sections of a merged section, e.g. Users · Accounts · Talk time. */
+.subtabs{flex-basis:100%;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-top:4px;padding-bottom:2px}
+.subtabs::-webkit-scrollbar{display:none}
+.subtabs button{flex:none;display:flex;align-items:center;gap:6px;border:1px solid var(--ring);background:var(--surface);color:var(--ink2);border-radius:99px;padding:7px 14px;font-size:.82rem;white-space:nowrap;transition:border-color .15s,background .15s,color .15s}
+.subtabs button:hover{border-color:var(--accent);color:var(--text)}
+.subtabs button.on{background:color-mix(in srgb,var(--accent) 20%,transparent);border-color:var(--accent);color:var(--text);font-weight:700}
+.subtabs .badge{margin-left:2px}
+.scrim{display:none}
 
 /* realtime "people chatting" pill in the header */
 .livepill{display:flex;align-items:center;gap:8px;border:1px solid color-mix(in srgb,var(--good) 40%,transparent);background:color-mix(in srgb,var(--good) 10%,transparent);color:var(--text);border-radius:99px;padding:6px 13px;font-size:.84rem;white-space:nowrap;transition:border-color .15s}
@@ -148,7 +167,18 @@ main{padding:18px 22px;min-width:0;padding-bottom:calc(84px + env(safe-area-inse
 .tabbar{display:none}
 @media(max-width:760px){
   .shell{display:block}
-  .side{display:none}
+  /* The sidebar becomes a slide-in drawer opened from ☰ or "More". */
+  .side{position:fixed;z-index:40;top:0;left:0;bottom:0;height:auto;width:min(300px,86vw);background:var(--bg-2);border-right:1px solid var(--ring);
+    padding:calc(10px + env(safe-area-inset-top)) 10px calc(24px + env(safe-area-inset-bottom));transform:translateX(-102%);transition:transform .22s cubic-bezier(.2,.7,.3,1);box-shadow:8px 0 40px rgba(0,0,0,.4);visibility:hidden}
+  body.drawer .side{transform:none;visibility:visible}
+  .side .dhead{display:flex;align-items:center;gap:10px;padding:6px 6px 10px;font-weight:800;border-bottom:1px solid var(--grid);margin-bottom:4px}
+  .side .dhead .x{margin-left:auto;background:transparent;border:0;color:var(--muted);font-size:1.2rem;width:40px;height:40px;border-radius:10px}
+  .side button{padding:12px 12px;font-size:.95rem;min-height:46px}
+  .scrim{display:block;position:fixed;inset:0;z-index:39;background:rgba(4,7,16,.55);opacity:0;pointer-events:none;transition:opacity .2s}
+  body.drawer .scrim{opacity:1;pointer-events:auto}
+  body.drawer{overflow:hidden}
+  .subtabs{margin:2px -12px 0;padding:0 12px 2px}
+  .subtabs button{min-height:38px}
   header{gap:6px;padding-left:12px;padding-right:12px}
   header h1 .grad-text{display:none}
   .livepill .lpsub{display:none}
@@ -211,6 +241,8 @@ main{padding:18px 22px;min-width:0;padding-bottom:calc(84px + env(safe-area-inse
 .tile .v{font-size:1.75rem;font-weight:800;margin-top:5px;font-variant-numeric:tabular-nums}
 .tile .v.grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
 .tile .s{font-size:.76rem;color:var(--ink2);margin-top:3px}
+.tiles.peaks{grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr))}
+.tiles.peaks .tile .v{font-size:2.1rem}
 .card{background:var(--surface);backdrop-filter:blur(12px);border:1px solid var(--ring);border-radius:18px;padding:16px;margin-top:12px;overflow-x:auto}
 .card h2{font-size:.95rem;margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .card h2 .sub{font-weight:400;color:var(--muted);font-size:.78rem}
@@ -571,6 +603,7 @@ th.sortable .ar{opacity:.5;font-size:.7rem}
 
 <div id="dash" class="hidden">
 <header>
+  <button class="hbtn menubtn" id="menuBtn" title="Show or hide the menu ( [ )" aria-label="Menu" aria-controls="nav">☰</button>
   <h1><img class="mark" src="/favicon.svg" alt="TalkLive" style="width:28px;height:28px"><span class="grad-text">TalkLive</span></h1>
   <button class="livepill stale" id="livePill" title="People in a voice call or text chat right now - updates in real time"><span class="dot off" id="lpDot"></span><b id="lpChat">-</b> chatting<span class="lpsub">&nbsp;· <span id="lpOnline">-</span> online</span></button>
   <span class="spacer"></span>
@@ -582,6 +615,7 @@ th.sortable .ar{opacity:.5;font-size:.7rem}
 </header>
 <div class="shell">
   <nav class="side" id="nav" aria-label="Sections"></nav>
+  <div class="scrim" id="scrim"></div>
   <main><div id="dashStorage"></div><div class="phead" id="phead"></div><div id="main"></div></main>
 </div>
 <nav class="tabbar" id="tabbar"></nav>
@@ -838,21 +872,44 @@ function rankedBars(el,entries){
 }
 
 /* ---------- dashboard shell ---------- */
-/* Sections are grouped by the job they serve, so the sidebar reads as
-   "watch → act on people → understand users → money → the machine" instead of
-   fourteen peers in a row. Shortcut keys 1-9 follow this order. */
-const GROUPS=[
-  ['Monitor',[['overview','Overview','📊'],['live','Live','🟢'],['activity','Activity','📅'],['daily','Daily log','📋'],['traffic','Traffic','🔎'],['health','Health','❤️'],['experience','Experience','🩺'],['ai','AI Agent','🤖']]],
-  ['Moderation',[['reports','Reports','🚩'],['chats','Chats','💬'],['voicenotes','Voice notes','🎙️'],['warnings','Warnings','⚠️'],['bans','Bans','⛔']]],
-  ['People',[['users','Users','🧑‍🤝‍🧑'],['audience','Audience','⚧'],['accounts','Accounts','👤'],['data','Data','🗂️'],['talktime','Talk time','⏱️'],['games','Games','🎮'],['feedback','Feedback','⭐']]],
-  ['Business',[['revenue','Revenue','💎']]],
-  ['System',[['errors','Errors','🐛'],['audit','Audit log','🧾'],['settings','Settings','🛠️']]]
+/* Sections are grouped by the job they serve. Pages that answer the same
+   question share one section and switch with sub-tabs (Users · Accounts ·
+   Talk time), so the sidebar is 15 entries instead of 24. Every page keeps its
+   own id, so links, bookmarks and #hash routes still land on the right page.
+   Shortcut keys 1-9 follow the section order. */
+const NAV=[
+  ['Monitor',[
+    ['overview','Overview','📊',[['overview','Overview','📊']]],
+    ['live','Live','🟢',[['live','Live','🟢']]],
+    ['activity','Activity','📅',[['activity','Today & trends','📅'],['daily','Daily log','📋']]],
+    ['traffic','Traffic','🔎',[['traffic','Traffic','🔎']]],
+    ['audience','Audience','⚧',[['audience','Who uses it','⚧'],['experience','Experience','🩺']]],
+    ['ai','AI Agent','🤖',[['ai','AI Agent','🤖']]]]],
+  ['Moderation',[
+    ['reports','Reports','🚩',[['reports','Reports','🚩']]],
+    ['chats','Messages','💬',[['chats','Chats','💬'],['voicenotes','Voice notes','🎙️']]],
+    ['bans','Bans & warnings','⛔',[['bans','Bans','⛔'],['warnings','Warnings','⚠️']]],
+    ['feedback','Feedback','⭐',[['feedback','Feedback','⭐']]]]],
+  ['People',[
+    ['users','Users','🧑‍🤝‍🧑',[['users','All users','🧑‍🤝‍🧑'],['accounts','Accounts','👤'],['talktime','Talk time','⏱️'],['data','User data','🗂️']]],
+    ['games','Games','🎮',[['games','Games','🎮']]]]],
+  ['Business',[
+    ['revenue','Revenue','💎',[['revenue','Revenue','💎']]]]],
+  ['System',[
+    ['health','Health','❤️',[['health','Site health','❤️'],['errors','Errors','🐛']]],
+    ['settings','Settings','🛠️',[['settings','Settings','🛠️'],['audit','Audit log','🧾']]]]]
 ];
-const TABS=GROUPS.flatMap(g=>g[1]);
+const SECTIONS=NAV.flatMap(([g,secs])=>secs.map(([id,l,ic,subs])=>({id,label:l,ic,subs,group:g})));
+/* Every page as [id,label,icon], for loading text, search and routing. */
+const TABS=SECTIONS.flatMap(sec=>sec.subs);
 const TAB_IDS=TABS.map(t=>t[0]);
-const groupOf=(id)=>(GROUPS.find(g=>g[1].some(t=>t[0]===id))||GROUPS[0])[0];
-/* Four fit the bottom bar on a small phone; the fifth slot is a "More" sheet so
-   every tab stays reachable from a phone instead of only these four. */
+const sectionOf=(id)=>SECTIONS.find(sec=>sec.subs.some(t=>t[0]===id))||SECTIONS[0];
+const groupOf=(id)=>sectionOf(id).group;
+/* Remember the sub-tab last open in each section, so clicking "Users" again
+   returns to Talk time if that's where you were. */
+const lastSub={};
+/* Bottom bar on a phone: the four most used sections, then "More" opens the
+   full menu as a drawer. */
 const MOBILE_TABS=['overview','live','chats','reports'];
 let tab='overview',timer=null,counts={},paused=false,lastLoadTs=0,loadFailures=0;
 /* loadSeq: every load() takes a number and only the newest may paint, so a slow
@@ -870,35 +927,58 @@ function navBadge(id){
   if(id==='errors'&&counts.errors)return `<span class="badge" style="background:var(--serious)">${counts.errors}</span>`;
   return '';
 }
+const secBadge=(sec)=>sec.subs.map(t=>navBadge(t[0])).join('');
 /* Swapping the nav's DOM while a finger is on it swallows the tap (the button
    that got the touchstart is gone by the click), and the Overview poll used to
    rebuild it every 12s. So only write when the markup actually changed. */
 function setHtml(el,html){if(el&&el._html!==html){el.innerHTML=html;el._html=html;}}
 function renderNav(){
-  setHtml($('#nav'),GROUPS.map(([g,items])=>`<div class="grp">${g}</div>`
-    +items.map(([id,l,ic])=>`<button data-t="${id}" class="${tab===id?'on':''}"><span class="ic">${ic}</span>${l}${navBadge(id)}</button>`).join('')).join(''));
-  const onMore=!MOBILE_TABS.includes(tab);
+  const cur=sectionOf(tab).id;
+  setHtml($('#nav'),`<div class="dhead"><img class="mark" src="/favicon.svg" alt="" style="width:26px;height:26px">TalkLive<button class="x" data-close="1" aria-label="Close menu">✕</button></div>`
+    +NAV.map(([g,secs],gi)=>`<div class="grp${gi?'':' g0'}">${g}</div>`
+    +secs.map(([id,l,ic,subs])=>{const sec=SECTIONS.find(x=>x.id===id),b=secBadge(sec);
+      return `<button data-t="${id}" class="${cur===id?'on':''}" title="${esc(l)}${subs.length>1?' - '+esc(subs.map(x=>x[1]).join(', ')):''}"><span class="ic">${ic}</span><span class="nl">${l}</span>${b}</button>`;}).join('')).join(''));
+  const onMore=!MOBILE_TABS.includes(cur);
   const pending=(counts.unhandledReports||0)+(counts.errors||0);
-  setHtml($('#tabbar'),MOBILE_TABS.map(id=>{const t=TABS.find(x=>x[0]===id);return `<button data-t="${id}" class="${tab===id?'on':''}"><span class="ic">${t[2]}</span>${t[1]}${navBadge(id)}</button>`;}).join('')
-    +`<button data-more="1" class="${onMore?'on':''}"><span class="ic">⋯</span>More${!onMore&&pending?`<span class="badge">${pending}</span>`:''}</button>`);
+  setHtml($('#tabbar'),MOBILE_TABS.map(id=>{const sec=SECTIONS.find(x=>x.id===id);return `<button data-t="${id}" class="${cur===id?'on':''}"><span class="ic">${sec.ic}</span>${esc(sec.label)}${secBadge(sec)}</button>`;}).join('')
+    +`<button data-more="1" class="${onMore?'on':''}"><span class="ic">☰</span>More${!onMore&&(counts.errors||0)?`<span class="badge">${counts.errors}</span>`:''}</button>`);
   renderPageHead();
 }
 /* One listener each, attached once, so re-rendering the buttons never leaves
-   them unwired. */
+   them unwired. A section button opens the sub-tab last used in it. */
 ['#nav','#tabbar'].forEach(sel=>$(sel).addEventListener('click',(e)=>{
   const b=e.target.closest('button');if(!b)return;
-  if(b.dataset.more)openMore();else if(b.dataset.t)go(b.dataset.t);
+  if(b.dataset.close){closeDrawer();return;}
+  if(b.dataset.more){openDrawer();return;}
+  if(b.dataset.t){const sec=SECTIONS.find(x=>x.id===b.dataset.t);closeDrawer();go(sec.subs.some(t=>t[0]===tab)?tab:(lastSub[sec.id]||sec.subs[0][0]));}
 }));
 function renderPageHead(){
-  const t=TABS.find(x=>x[0]===tab)||TABS[0];
-  setHtml($('#phead'),`<span class="crumb">${esc(groupOf(tab))}</span><h2>${t[2]} ${esc(t[1])}</h2><span class="stamp" id="updStamp"></span>`);
+  const sec=sectionOf(tab);
+  setHtml($('#phead'),`<span class="crumb">${esc(sec.group)}</span><h2>${sec.ic} ${esc(sec.label)}</h2><span class="stamp" id="updStamp"></span>`
+    +(sec.subs.length>1?`<div class="subtabs" role="tablist">${sec.subs.map(([id,l,ic])=>`<button role="tab" aria-selected="${id===tab}" data-sub="${id}" class="${id===tab?'on':''}">${ic} ${esc(l)}${navBadge(id)}</button>`).join('')}</div>`:''));
+  stampUpdated();
 }
-function openMore(){
-  modal('⋯ All sections',
-    `<div class="sres">${GROUPS.map(([g,items])=>`<div class="sgroup">${g}</div>`
-      +items.map(([id,l,ic])=>`<button class="sitem" data-go="${id}">${ic} ${l}${navBadge(id)}${id===tab?' <span class="pill info">current</span>':''}</button>`).join('')).join('')}</div>`,
-    (sheet)=>{sheet.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{closeModal();go(b.dataset.go);});});
+$('#phead').addEventListener('click',(e)=>{const b=e.target.closest('[data-sub]');if(b)go(b.dataset.sub);});
+/* Desktop: ☰ folds the sidebar into an icon rail (remembered). Phone: ☰ opens
+   it as a drawer over the page. */
+const isPhone=()=>matchMedia('(max-width:760px)').matches;
+function setRail(on){
+  $('.shell').classList.toggle('rail',on);
+  try{localStorage.setItem('tl_rail',on?'1':'0');}catch(e){}
 }
+(function(){let v=null;try{v=localStorage.getItem('tl_rail');}catch(e){}
+  $('.shell').classList.toggle('rail',v==='1'||(v===null&&innerWidth<=1100&&innerWidth>760));})();
+function openDrawer(){document.body.classList.add('drawer');const cur=$('#nav button.on');if(cur)cur.scrollIntoView({block:'center'});}
+function closeDrawer(){document.body.classList.remove('drawer');}
+function toggleMenu(){if(isPhone())document.body.classList.contains('drawer')?closeDrawer():openDrawer();else setRail(!$('.shell').classList.contains('rail'));}
+$('#menuBtn').onclick=toggleMenu;
+$('#scrim').onclick=closeDrawer;
+/* Swipe the drawer left to close it. */
+(function(){let x0=null;const n=$('#nav');
+  n.addEventListener('touchstart',e=>{x0=e.touches[0].clientX;},{passive:true});
+  n.addEventListener('touchend',e=>{if(x0!==null&&e.changedTouches[0].clientX-x0<-60)closeDrawer();x0=null;},{passive:true});})();
+try{matchMedia('(max-width:760px)').addEventListener('change',()=>closeDrawer());}catch(e){}
+function openMore(){openDrawer();}
 
 /* ---------- realtime: people chatting right now ----------
    The server pushes a frame over Server-Sent Events whenever the number of
@@ -1002,7 +1082,8 @@ function liveCardHtml(){
    button all land on the section the owner was actually looking at. */
 function go(id){
   if(!TAB_IDS.includes(id))id='overview';
-  closeModal();tip(false);
+  closeModal();closeDrawer();tip(false);
+  lastSub[sectionOf(id).id]=id;
   if(id!==tab){
     tab=id;
     /* Clear the old section straight away: before, it stayed on screen until
@@ -1154,39 +1235,49 @@ function filterTabTo(kind,q){
 }
 function openSearch(){
   modal('🔍 Search everything',
-    `<input id="gq" placeholder="Username, country, IP, ban reason, message text…" autocomplete="off">
-     <div class="muted" style="margin-top:8px;font-size:.78rem">Looks across accounts, live users, bans, reports, feedback and chat messages.</div>
+    `<input id="gq" placeholder="A page, username, country, IP, message text…" autocomplete="off">
+     <div class="muted" style="margin-top:8px;font-size:.78rem">Jumps to any dashboard page, and looks across accounts, live users, bans, reports, feedback and chat messages.</div>
      <div id="gres" class="sres" style="margin:8px -16px 0"></div>`,
     (sheet)=>{
       const inp=sheet.querySelector('#gq'),out=sheet.querySelector('#gres');
       inp.focus();
+      /* Pages whose name (or section name) matches, shown above data hits. */
+      const pagesHtml=(q)=>{
+        const ql=q.toLowerCase();
+        const hits=TABS.filter(([id,l])=>{const sec=sectionOf(id);return (l+' '+sec.label+' '+sec.group+' '+id).toLowerCase().includes(ql);}).slice(0,6);
+        return hits.length?`<div class="sgroup">Go to page</div>`+hits.map(([id,l,ic])=>{const sec=sectionOf(id);return `<button class="sitem" data-page="${id}">${ic} <b>${esc(l)}</b><span class="s2">${esc(sec.group)}${sec.label!==l?' · '+esc(sec.label):''}</span></button>`;}).join(''):'';
+      };
+      const wirePages=()=>out.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>{closeModal();go(b.dataset.page);});
       const run=async()=>{
         const q=inp.value.trim(),my=++searchSeq;
-        if(q.length<2){out.innerHTML='<div class="sgroup">Type at least 2 characters</div>';return;}
-        out.innerHTML='<div class="sgroup">Searching…</div>';
+        const pg=q?pagesHtml(q):TABS.map(([id,l,ic])=>`<button class="sitem" data-page="${id}">${ic} ${esc(l)}<span class="s2">${esc(sectionOf(id).group)}</span></button>`).join('');
+        if(q.length<2){out.innerHTML=(q?pg:'<div class="sgroup">All pages</div>'+pg)+(q?'<div class="sgroup">Type 2+ characters to search data</div>':'');wirePages();return;}
+        out.innerHTML=pg+'<div class="sgroup">Searching…</div>';wirePages();
         try{
           const r=await api('search?q='+encodeURIComponent(q));
           if(my!==searchSeq)return;
-          out.innerHTML=r.groups.map(g=>`<div class="sgroup">${esc(g.label)} · ${g.items.length}</div>`
+          out.innerHTML=pg+r.groups.map(g=>`<div class="sgroup">${esc(g.label)} · ${g.items.length}</div>`
             +g.items.map(it=>`<button class="sitem" data-go="${esc(g.kind)}"><b>${esc(it.title)}</b><span class="s2">${esc(it.sub||'')}${it.ts?' · '+ago(it.ts):''}</span></button>`).join('')).join('')
-            ||'<div class="sgroup">Nothing found</div>';
+            +(r.groups.length||pg?'':'<div class="sgroup">Nothing found</div>');
+          wirePages();
           out.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{filterTabTo(b.dataset.go,q);closeModal();go(b.dataset.go);});
-        }catch(e){if(my!==searchSeq)return;out.innerHTML=`<div class="sgroup">Search failed: ${esc(e.message)}</div>`;}
+        }catch(e){if(my!==searchSeq)return;out.innerHTML=pg+`<div class="sgroup">Search failed: ${esc(e.message)}</div>`;wirePages();}
       };
+      run();
       inp.addEventListener('input',()=>{clearTimeout(searchTimer);searchTimer=setTimeout(run,220);});
       inp.addEventListener('keydown',e=>{if(e.key==='Enter'){clearTimeout(searchTimer);run();}});
     });
 }
 
 /* ---------- keyboard shortcuts ---------- */
-const SHORTCUTS=[['/ or Ctrl K','Search everything'],['1 - 9','Jump to a section'],['r','Refresh now'],['p','Pause / resume auto-refresh'],['t','Switch theme'],['e','Export the current tab as CSV'],['?','This help'],['Esc','Close a dialog']];
+const SHORTCUTS=[['/ or Ctrl K','Search everything and jump to any page'],['1 - 9','Jump to a section'],['[','Collapse / expand the menu'],['r','Refresh now'],['p','Pause / resume auto-refresh'],['t','Switch theme'],['e','Export the current tab as CSV'],['?','This help'],['Esc','Close a dialog']];
 function openHelp(){
   modal('⌨️ Keyboard shortcuts',
     `<div class="kbdlist">${SHORTCUTS.map(([k,d])=>`<kbd>${esc(k)}</kbd><span>${esc(d)}</span>`).join('')}</div>`,
     null,{mid:true});
 }
 document.addEventListener('keydown',(e)=>{
-  if(e.key==='Escape'){closeModal();return;}
+  if(e.key==='Escape'){closeModal();closeDrawer();return;}
   const t=e.target;
   const typing=t&&(/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)||t.isContentEditable);
   if((e.key==='k'||e.key==='K')&&(e.metaKey||e.ctrlKey)){e.preventDefault();if(!$('#dash').classList.contains('hidden'))openSearch();return;}
@@ -1198,7 +1289,8 @@ document.addEventListener('keydown',(e)=>{
   else if(e.key==='p')togglePause();
   else if(e.key==='t')cycleTheme();
   else if(e.key==='e'){const l=document.querySelector('#main a[data-export]');if(l)l.click();else toast('Nothing to export','This section has no CSV export.','warn');}
-  else if(/^[1-9]$/.test(e.key)){const t2=TABS[Number(e.key)-1];if(t2)go(t2[0]);}
+  else if(e.key==='[')toggleMenu();
+  else if(/^[1-9]$/.test(e.key)){const sec=SECTIONS[Number(e.key)-1];if(sec)go(lastSub[sec.id]||sec.subs[0][0]);}
 });
 
 /* A download link rather than a fetch: the dashboard cookie is already scoped
@@ -1208,6 +1300,8 @@ function exportLink(kind,label){
 }
 
 /* ---------- overview ---------- */
+/* " around 14:00" for the local hour a peak happened in. */
+const peakAt=(h)=>h==null?'':` around ${String(h).padStart(2,'0')}:00`;
 async function viewOverview(){
   // Same timezone the Activity tab is showing, so the two never disagree.
   const o=await vapi('overview?tz='+encodeURIComponent(actTz||browserTz()));
@@ -1228,10 +1322,17 @@ async function viewOverview(){
   <div class="card anim" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><div style="flex:1;min-width:220px"><b>⬇️ Download all dashboard data</b><div class="muted" style="font-size:13px">One ZIP of clean CSVs (daily log, traffic, audience, talk time, games, accounts, subscriptions, reports, bans, feedback) with a README. Nothing is removed from the server.</div></div>
     <div class="rowbtns"><button onclick="location.href='/owner/api/export/all.zip?tz='+encodeURIComponent(actTz||browserTz())">⬇ Download all data (.zip)</button></div></div>
 
+  <div class="sechead">Peaks today · most at the same moment</div>
+  <div class="grid tiles peaks">
+    <div class="tile anim"><div class="k">🟢 Peak online today</div><div class="v" data-count="${o.today.peakOnline}">0</div><div class="s">most at once · yesterday ${num(o.yesterday.peakOnline)}</div></div>
+    <div class="tile anim"><div class="k">🎙️ Peak calls today</div><div class="v" style="color:var(--s1)" data-count="${Math.floor((o.today.peakVoice||0)/2)}">0</div><div class="s">${num(o.today.peakVoice)} people in voice calls at once${peakAt(o.today.peakVoiceHour)} · yesterday ${num(Math.floor((o.yesterday.peakVoice||0)/2))}</div></div>
+    <div class="tile anim"><div class="k">⌨️ Peak texting today</div><div class="v" style="color:var(--s2)" data-count="${Math.floor((o.today.peakText||0)/2)}">0</div><div class="s">text chats at once · ${num(o.today.peakText)} people${peakAt(o.today.peakTextHour)} · yesterday ${num(Math.floor((o.yesterday.peakText||0)/2))}</div></div>
+  </div>
+
   <div class="sechead">Today · ${esc(o.todayWindow)} · <a href="#" onclick="go('activity');return false" style="color:var(--accent-2);text-transform:none;letter-spacing:0">change timezone →</a></div>
   <div class="grid tiles">
     <div class="tile anim"><div class="k">Visitors today</div><div class="v grad" data-count="${o.today.uniques}">0</div><div class="s">${num(o.today.visits)} visits · ${deltaHtml(o.changeVsYesterday.uniques)} vs same time yesterday</div></div>
-    <div class="tile anim"><div class="k">Peak online today</div><div class="v" data-count="${o.today.peakOnline}">0</div><div class="s">most at once · yesterday ${num(o.yesterday.peakOnline)}</div></div>
+    <div class="tile anim"><div class="k">💬 Messages today</div><div class="v" data-count="${o.today.messages||0}">0</div><div class="s">chat messages sent · yesterday ${num(o.yesterday.messages)}</div></div>
     <div class="tile anim"><div class="k">Matches today</div><div class="v" data-count="${o.today.matches}">0</div><div class="s">${deltaHtml(o.changeVsYesterday.matches)} vs same time yesterday</div></div>
     <div class="tile anim"><div class="k">Visitors yesterday</div><div class="v" data-count="${o.yesterday.uniques}">0</div><div class="s">${num(o.yesterday.visits)} visits · full day</div></div>
     <div class="tile anim"><div class="k">🕷️ Crawler hits today</div><div class="v" data-count="${o.today.bots||0}">0</div><div class="s">bots · not counted as visitors</div></div>

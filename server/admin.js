@@ -626,6 +626,12 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
     return out;
   }
 
+  function peakHour(dayBucket, field) {
+    let best = null;
+    (dayBucket.hours || []).forEach((h, i) => { if ((h[field] || 0) > 0 && (best === null || h[field] > dayBucket.hours[best][field])) best = i; });
+    return best;
+  }
+
   router.get('/api/overview', (req, res) => {
     const runtime = getRuntime();
     const days = store.data.analytics.days;
@@ -649,8 +655,14 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
       offset: report.offset,
       todayWindow: report.todayWindow,
       yesterdayWindow: report.yesterdayWindow,
-      today: { day: today.day, visits: today.visits, uniques: today.uniques, connections: today.connections, matches: today.matches, peakOnline: today.peakOnline, bots: today.bots },
-      yesterday: { day: report.yesterday.day, visits: report.yesterday.visits, uniques: report.yesterday.uniques, connections: report.yesterday.connections, matches: report.yesterday.matches, peakOnline: report.yesterday.peakOnline, bots: report.yesterday.bots },
+      today: {
+        day: today.day, visits: today.visits, uniques: today.uniques, connections: today.connections, matches: today.matches,
+        messages: today.messages, peakOnline: today.peakOnline, bots: today.bots,
+        peakVoice: today.peakVoice || 0, peakText: today.peakText || 0,
+        // Local hour (0-23) each peak happened in, or null when there was none.
+        peakVoiceHour: peakHour(today, 'peakVoice'), peakTextHour: peakHour(today, 'peakText'),
+      },
+      yesterday: { day: report.yesterday.day, visits: report.yesterday.visits, uniques: report.yesterday.uniques, connections: report.yesterday.connections, matches: report.yesterday.matches, messages: report.yesterday.messages, peakOnline: report.yesterday.peakOnline, peakVoice: report.yesterday.peakVoice || 0, peakText: report.yesterday.peakText || 0, bots: report.yesterday.bots },
       yesterdaySoFar: report.yesterdaySoFar,
       changeVsYesterday: report.changeVsYesterday,
       totals: store.data.analytics.totals,
