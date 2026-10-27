@@ -54,13 +54,13 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
      system face a beat later. Only the latin subset is preloaded - latin-ext
      is fetched on demand by the unicode-range in style.css. -->
 <link rel="preload" as="font" type="font/woff2" href="/fonts/plus-jakarta-sans-latin.woff2?v=20260922type" crossorigin />
-<link rel="stylesheet" href="style.css?v=20261027filters2" />
+<link rel="stylesheet" href="style.css?v=20261027upsell" />
 <link rel="stylesheet" href="chat-extras.css?v=20261004glow" />
 <link rel="stylesheet" href="games.css?v=20261006fix" />
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
      side-panel shell, Settings, Friends/History and the account dialog, and it
      does so with its own `tl-` class names so nothing above can reach it. -->
-<link rel="stylesheet" href="ui.css?v=20261027filters2" />
+<link rel="stylesheet" href="ui.css?v=20261027upsell" />
 <link rel="stylesheet" href="auth.css?v=20260924auth" />
 <!-- The top bar, shared with /chat. Loaded after everything else because it
      owns the header outright: one button language, one radius, one focus ring
@@ -1606,6 +1606,34 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
         </div>
       </div>
 
+      <!-- Premium upsell: shown when a free limit is hit. Says what you hit,
+           what Premium adds (the perk you reached for is lit up), and - since
+           Premium is not on sale yet - offers the launch alert, not a checkout. -->
+      <div id="premiumUpsellModal" class="modal-overlay hidden">
+        <div class="pu-box" role="dialog" aria-modal="true" aria-labelledby="puTitle">
+          <button type="button" id="puCloseBtn" class="pu-close" data-i18n-aria="close" aria-label="Close">&times;</button>
+          <div class="pu-hero" aria-hidden="true">
+            <span class="pu-gem">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M6 3h12l3 6-9 12L3 9z"/><path d="M3 9h18M9 3l3 18 3-18"/></svg>
+            </span>
+          </div>
+          <span class="pu-soon" data-i18n="upsellComingSoon">Coming soon</span>
+          <div role="heading" aria-level="2" class="pu-title" id="puTitle">Want more countries?</div>
+          <p class="pu-reason" id="puReason"></p>
+          <ul class="pu-perks">
+            <li data-perk="countries"><span class="pu-ico" aria-hidden="true">🌍</span><span data-i18n="upsellPerkCountries">Unlimited countries &amp; regions</span></li>
+            <li data-perk="gender"><span class="pu-ico" aria-hidden="true">💬</span><span data-i18n="upsellPerkGender">Match with men or women</span></li>
+            <li data-perk="rematch"><span class="pu-ico" aria-hidden="true">⚡</span><span data-i18n="upsellPerkRematch">Instant rematch, no waiting</span></li>
+          </ul>
+          <button type="button" id="puNotifyBtn" class="pu-cta">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 16V11a6 6 0 1 0-12 0v5l-1.6 2.4h15.2z"/><path d="M10 20.2a2.2 2.2 0 0 0 4 0"/></svg>
+            <span id="puNotifyLabel" data-i18n="upsellNotify">Notify me at launch</span>
+          </button>
+          <a id="puPlansLink" class="pu-link" href="/pricing?utm_source=app&amp;utm_medium=upsell&amp;utm_campaign=premium" data-i18n="upsellSeePlans">See what's included</a>
+          <p class="pu-free" data-i18n="upsellFree">Everything you use today stays free.</p>
+        </div>
+      </div>
+
       <!-- "Notify me": email sign-up for the launch of Premium / the shop -->
       <div id="notifyModal" class="modal-overlay hidden">
         <div class="modal-box modal-box-narrow" role="dialog" aria-modal="true" aria-labelledby="notifyModalTitle">
@@ -2583,7 +2611,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   <script defer src="voice-notes.js?v=20261001mic"></script>
   <script defer src="games.js?v=20261005min"></script>
   <script defer src="nickname-rules.js?v=20260924nick"></script>
-  <script defer src="app.js?v=20261027filters2"></script>
+  <script defer src="app.js?v=20261027upsell"></script>
 
 <!-- Analytics tag, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

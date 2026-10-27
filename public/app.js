@@ -11283,21 +11283,33 @@ function updatePremiumUi() {
 }
 updatePremiumUi();
 
-// Custom in-app dialog (reuses the shared confirm modal) instead of the
-// browser's native confirm() popup.
-async function showPremiumUpsell(message) {
-  confirmModalTitle.textContent = t('premiumUpsellTitle');
-  confirmModalText.textContent = message + ' ' + t('premiumComingSoon');
-  confirmOkBtn.textContent = t('premiumUpsellGo');
-  confirmCancelBtn.textContent = t('cancel');
-  confirmOkBtn.className = 'btn btn-save';
-  openModal(confirmModal);
-  const ok = await new Promise((resolve) => { confirmOnOk = resolve; });
-  if (ok) {
-    trackGrowthEvent('premium_upsell_click');
-    location.href = '/pricing?utm_source=app&utm_medium=upsell&utm_campaign=premium';
-  }
+// The Premium dialog: what limit was hit, what Premium adds (the perk that was
+// reached for is lit up), and the launch alert - Premium is not on sale yet.
+const premiumUpsellModal = document.getElementById('premiumUpsellModal');
+function showPremiumUpsell(message, perk = 'countries') {
+  document.getElementById('puTitle').textContent = t(perk === 'gender' ? 'upsellGenderTitle' : 'upsellCountriesTitle');
+  document.getElementById('puReason').textContent = message;
+  premiumUpsellModal.querySelectorAll('[data-perk]').forEach((li) => li.classList.toggle('is-hit', li.dataset.perk === perk));
+  // Already on the list: nothing more to sign up for, so the plans are next.
+  const signedUp = notifySignedUp('premium');
+  document.getElementById('puNotifyLabel').textContent = t(signedUp ? 'upsellSeePlans' : 'upsellNotify');
+  document.getElementById('puPlansLink').classList.toggle('hidden', signedUp);
+  trackGrowthEvent('premium_upsell_view');
+  openModal(premiumUpsellModal);
 }
+document.getElementById('puNotifyBtn').addEventListener('click', () => {
+  trackGrowthEvent('premium_upsell_click');
+  closeModal(premiumUpsellModal);
+  if (notifySignedUp('premium')) {
+    location.href = '/pricing?utm_source=app&utm_medium=upsell&utm_campaign=premium';
+    return;
+  }
+  // The rail's own Notify me button runs the sign-up and marks itself done.
+  const notify = document.querySelector('[data-notify="premium"]');
+  if (notify) notify.click();
+});
+document.getElementById('puCloseBtn').addEventListener('click', () => closeModal(premiumUpsellModal));
+premiumUpsellModal.addEventListener('click', (e) => { if (e.target === premiumUpsellModal) closeModal(premiumUpsellModal); });
 
 // Gender preference is premium-only. Intercept taps on Male/Female in the
 // capture phase so the pill never flips for free users.
@@ -11306,7 +11318,7 @@ prefGenderGroup.addEventListener('click', (e) => {
   if (!pill || isPremiumUser || pill.dataset.value === 'any') return;
   e.stopPropagation();
   e.preventDefault();
-  showPremiumUpsell(t('premiumGenderLocked'));
+  showPremiumUpsell(t('premiumGenderLocked'), 'gender');
 }, true);
 
 // --- "James from UK is online" - friend came online notification -------------
