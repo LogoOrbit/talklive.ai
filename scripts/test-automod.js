@@ -126,5 +126,20 @@ const actions = (am) => am._state().log.map((l) => l.action);
   ok('report straight back counts for little', w <= 0.3, w);
 }
 
+// 10. free chat check (no AI key)
+{
+  const { am, store } = setup('live');
+  const pair = (a, b) => [a, b].sort().join('|');
+  const now = Date.now();
+  store.data.transcripts = [
+    { ts: now, kind: 'stranger', pair: pair('C1', 'q'), fromClientId: 'C1', text: 'send nudes now' },
+    ...Array.from({ length: 7 }, (_, i) => ({ ts: now - i - 1, kind: 'stranger', pair: pair('C2', 'q'), fromClientId: 'C2', text: 'hey where are you from ' + i })),
+  ];
+  report(am, 'C1', 'q');
+  report(am, 'C2', 'q');
+  ok('flagged chat backs the report', person(am, 'C1').events[0].weight > 1, person(am, 'C1').events[0]);
+  ok('clean chat weakens the report', person(am, 'C2').events[0].weight <= 0.5, person(am, 'C2').events[0].weight);
+}
+
 console.log(failed ? `${failed} failed` : 'All automod checks passed');
 process.exit(failed ? 1 : 0);

@@ -2060,7 +2060,7 @@ function amEvents(evs){
   return evs.map(e=>`<div style="padding:7px 0;border-top:1px solid var(--grid);font-size:.8rem${e.cleared?';opacity:.5':''}">
     <b>${AM_EV[e.type]||e.type}</b> · counts <b>${e.pending?'…checking':e.weight}</b> · ${ago(e.ts)}${e.reason?` · ${esc(e.reason)}`:''}${e.cleared?' · cleared':''}
     ${e.detail?`<div class="muted" style="font-size:.78rem">“${esc(e.detail)}”</div>`:''}
-    ${e.ai?`<div style="font-size:.78rem"><span class="pill ${e.ai.verdict==='violation'?'crit':e.ai.verdict==='no_violation'?'good':'info'}">AI: ${esc(e.ai.verdict.replace('_',' '))}${e.ai.severity&&e.ai.severity!=='none'?' · '+esc(e.ai.severity):''}</span> ${esc(e.ai.summary||'')}</div>`:''}
+    ${e.ai?`<div style="font-size:.78rem"><span class="pill ${e.ai.verdict==='violation'?'crit':e.ai.verdict==='no_violation'?'good':'info'}">${e.ai.source==='ai'?'AI':'Chat check'}: ${esc(e.ai.verdict.replace('_',' '))}${e.ai.severity&&e.ai.severity!=='none'?' · '+esc(e.ai.severity):''}</span> ${esc(e.ai.summary||'')}</div>`:''}
     ${e.why&&e.why.length?`<div class="muted" style="font-size:.74rem">${e.why.map(esc).join(' · ')}</div>`:''}</div>`).join('')||'<div class="muted">No events.</div>';
 }
 const amLevel=(l)=>['clean','warned','final warning','in review'][Math.min(3,l||0)];
@@ -2083,7 +2083,7 @@ async function viewAutomod(){
       <button onclick="amSimulate()">🔬 Test the rules on past reports</button>
     </div>
     <div class="muted" style="margin-top:10px;font-size:.78rem">
-      🤖 AI checks: ${r.aiConfigured?(st.ai?`<b style="color:var(--good)">on</b> · ${num(r.aiCallsLastHour)} this hour`:'off in Rules'):'not set up (add <code>ANTHROPIC_API_KEY</code> to the server)'} ·
+      🔎 Chat checks: ${r.aiConfigured&&st.ai?`<b style="color:var(--good)">AI</b> · ${num(r.aiCallsLastHour)} this hour`:'<b style="color:var(--good)">free keyword rules</b> (no AI cost)'} ·
       ✉️ Email alerts for the review queue: ${r.emailAlerts?'<b style="color:var(--good)">on</b>':'not set up (OWNER_EMAIL + SMTP)'} ·
       ${num(r.tracked)} people tracked</div>
   </div>
@@ -2130,7 +2130,7 @@ async function viewAutomod(){
   <div class="card anim"><h2>ℹ️ How it decides</h2><ul class="muted" style="line-height:1.7;padding-left:18px;font-size:.84rem">
     <li>Each person who reports counts <b>once</b>. Reporters on the same network count once between them.</li>
     <li>Reports count for less when the reporter files many reports a day, often gets cleared by you, is heavily reported themselves, or reports straight back at someone who just reported them.</li>
-    <li>For typed chats, AI reads the conversation: a confirmed report counts 1.5×, a report with nothing wrong in the chat counts ¼. If the reporter was the one breaking rules, they get the strike instead.</li>
+    <li>For typed chats, the reported conversation is checked for free with keyword rules: a flagged message from them makes the report count 1.3×; a real chat with nothing flagged makes it count ½. If the reporter used slurs or threats, they get the strike. Voice calls can't be read, so those rely on the reporter checks above.</li>
     <li>Slurs and threats typed in chat count like a report (once per chat partner per day). Sexual messages to someone who said they're under 18 go straight to you.</li>
     <li>Nobody is warned unless reports are unusual for how much they chat: at least ${(st.minRate*100).toFixed(0)}% of their conversations in the last ${st.windowDays} days.</li>
     <li>Score ${st.warn1} → warning · ${st.warn2} (with new reports) → final warning · ${st.review} → your review queue. Warnings fade after ${st.strikeDays} quiet days.</li>
@@ -2155,7 +2155,7 @@ async function amRules(){
     ${f('windowDays','Look back (days)','Reports older than this stop counting.')}
     ${f('minRate','Minimum report rate (%)','Share of their conversations that got a genuine report. Keeps busy, normal users safe.',0.5)}
     ${f('strikeDays','Warnings fade after (days)','With no new reports.')}
-    ${b('ai','Use AI to read reported text chats')}
+    ${b('ai','Use AI for chat checks if an ANTHROPIC_API_KEY is ever added (costs money; free keyword rules otherwise)')}
     ${b('keywordStrikes','Count slurs and threats typed in chat')}
     ${b('autoLive','Go live automatically when the dry run ends')}
     <button class="btn" id="amSave">Save rules</button>`,(sh)=>{
@@ -2169,7 +2169,7 @@ async function amRules(){
 async function amSimulate(){
   const r=await api('automod/simulate');
   modal('🔬 Rules tested on past reports',`
-    <div class="muted" style="margin-bottom:10px">The last ${r.windowDays} days: <b>${num(r.reports)}</b> reports on <b>${num(r.people)}</b> people. Without AI checks, so real results will be stricter about what counts.</div>
+    <div class="muted" style="margin-bottom:10px">The last ${r.windowDays} days: <b>${num(r.reports)}</b> reports on <b>${num(r.people)}</b> people. Without the chat checks, so real results will be stricter about what counts.</div>
     <div class="grid" style="grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px">
       <div class="tile"><div class="k">Old rule would ban</div><div class="v" style="color:var(--crit)">${num(r.oldRuleBans)}</div><div class="s">3 reporters = 30 min ban</div></div>
       <div class="tile"><div class="k">New rules would warn</div><div class="v" style="color:var(--warn)">${num(r.warn1)}</div><div class="s">${num(r.reviewPossible)} could reach review later</div></div>

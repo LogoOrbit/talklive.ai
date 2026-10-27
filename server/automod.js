@@ -216,6 +216,28 @@ function createAutomod({ store, deliverWarning, kickBanned }) {
     return rows.reverse();
   }
 
+  // Free check used when no AI key is set: reads the same chat with the
+  // keyword rules. A flagged message from the reported person backs the
+  // report; a real conversation with nothing flagged from them weakens it.
+  const BAD_FLAGS = ['abuse', 'sexual', 'money'];
+  function ruleJudge({ reportedId, reporterId }) {
+    const pair = [reportedId, reporterId].sort().join('|');
+    const rows = recentChat(pair, Date.now() - 6 * 3600000);
+    const theirs = rows.filter((m) => m.fromClientId === reportedId && m.kind !== 'moderation');
+    const mine = rows.filter((m) => m.fromClientId === reporterId && m.kind !== 'moderation');
+    const flagged = (list) => list.map((m) => ({ m, f: modTags.riskFlags(m.text).filter((x) => BAD_FLAGS.includes(x)) })).filter((x) => x.f.length);
+    const hit = flagged(theirs);
+    const reporterHit = flagged(mine);
+    const strikeReporter = mine.some((m) => STRIKE_RE.test(m.text || ''));
+    if (hit.length) {
+      return { verdict: 'violation', severity: 'high', category: hit[0].f[0], reporter_violation: strikeReporter, summary: `Flagged message from them: "${String(hit[0].m.text).slice(0, 120)}"`, source: 'rules' };
+    }
+    if (theirs.length >= 6 && !rows.some((m) => m.kind === 'moderation')) {
+      return { verdict: 'no_violation', severity: 'none', category: 'clean chat', reporter_violation: strikeReporter, summary: `${theirs.length} messages from them, nothing flagged${reporterHit.length ? '; the reporter\'s own messages were flagged' : ''}.`, source: 'rules' };
+    }
+    return null; // too little text to tell (usually a voice call)
+  }
+
   async function aiJudge({ reportedId, reporterId, reason, detail }) {
     const c = client();
     if (!c || !settings().ai) return null;
@@ -293,6 +315,20 @@ function createAutomod({ store, deliverWarning, kickBanned }) {
         store.save();
         schedule(p);
       });
+    } else if (weight > 0) {
+      const v = ruleJudge({ reportedId: tgt.clientId, reporterId: rep.clientId });
+      if (v) {
+        ev.ai = v;
+        if (v.verdict === 'violation') { ev.weight = Math.min(1.5, Math.max(ev.weight, 1) * 1.3); ev.why.push('chat check: flagged ' + v.category); }
+        else { ev.weight = Math.round(ev.weight * 0.5 * 100) / 100; ev.why.push('chat check: nothing wrong in their messages'); }
+        if (v.reporter_violation) {
+          const other = person(rep.clientId, rep.account, rep);
+          pushEvent(other, { ts: Date.now(), type: 'keyword', source: tgt.clientId, weight: 1, why: ['reporter used slurs or threats in this chat'], detail: '' });
+          schedule(other);
+        }
+        store.save();
+      }
+      schedule(p);
     } else {
       schedule(p);
     }
