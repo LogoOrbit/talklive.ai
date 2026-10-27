@@ -1089,34 +1089,10 @@ const QUICK_INTERESTS = ['english', 'music', 'gaming', 'movies', 'travel', 'foot
 // still in its temporal dead zone when it is read, and reading it throws and
 // takes the rest of app.js down with it.
 
-function countryListSentence(set) {
-  const names = Array.from(set).map(getCountryName);
-  if (names.length === 0) return '';
-  if (names.length === 1) return names[0];
-  if (names.length === 2) return t('joinTwo', { a: names[0], b: names[1] });
-  return t('joinMore', { first: names.slice(0, -1).join(', '), last: names[names.length - 1] });
-}
-
-// Reads back the draft - what is on screen right now, not what was last
-// saved - because the point of it is to check your edit before you commit it.
+// Updates the per-list counts and quick picks from the draft on screen.
 function syncFilterReadout() {
-  const filterSummaryEl = document.getElementById('filterSummary');
-  if (!filterSummaryEl) return;
   const includeCountryCountEl = document.getElementById('includeCountryCount');
   const excludeCountryCountEl = document.getElementById('excludeCountryCount');
-
-  const who = prefGenderGroup && prefGenderGroup.dataset.value === 'male' ? t('summaryMen')
-    : prefGenderGroup && prefGenderGroup.dataset.value === 'female' ? t('summaryWomen')
-    : t('summaryAnyone');
-  const only = countryListSentence(includeCountries);
-  const never = countryListSentence(excludeCountries);
-
-  let sentence = only ? t('summaryIn', { who, where: only }) : t('summaryAnywhere', { who });
-  if (never) sentence += t('summaryExcept', { where: never });
-  if (selectedInterests.size > 0) {
-    sentence += t('summaryInterests', { interests: Array.from(selectedInterests).join(', ') });
-  }
-  filterSummaryEl.textContent = sentence;
 
   const cap = isPremiumUser ? null : freeLimits.countries;
   const countText = (n) => (cap ? t('countOfCap', { n, cap }) : String(n));
@@ -1139,7 +1115,7 @@ function renderQuickPicks() {
   const interestQuickEl = document.getElementById('interestQuick');
   if (includeCountryQuickEl) {
     includeCountryQuickEl.innerHTML = '';
-    QUICK_COUNTRIES.filter((code) => !includeCountries.has(code)).forEach((code) => {
+    QUICK_COUNTRIES.filter((code) => !includeCountries.has(code)).slice(0, 3).forEach((code) => {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'tl-quick-chip';

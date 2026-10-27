@@ -1599,8 +1599,8 @@ summary.tl-filter-legend::-webkit-details-marker { display: none; }
 }
 
 .tl-filter-hint {
-  margin: 0 0 var(--tl-s3);
-  font-size: 12.5px;
+  margin: -2px 0 var(--tl-s2);
+  font-size: 12px;
   line-height: 1.5;
   color: var(--muted);
 }
@@ -1685,6 +1685,17 @@ summary.tl-filter-legend::-webkit-details-marker { display: none; }
 .tl-filter-btn-ghost:hover { background: color-mix(in srgb, var(--text) 8%, transparent); color: var(--text); }
 .tl-filter-btn-primary { flex: 2 1 0; background: var(--accent); color: #fff; }
 .tl-filter-btn-primary:hover { filter: brightness(1.08); }
+
+.tl-filter-foot {
+  margin: 0;
+  padding: 0 var(--tl-s1);
+  font-size: 12px;
+  font-style: italic;
+  line-height: 1.45;
+  color: var(--muted);
+}
+/* Three options on a narrow panel: keep each label on one line. */
+#filtersPanel .tl-seg-opt { white-space: nowrap; min-width: 0; padding-inline: 6px; }
 
 /* An empty count is no count, not a blank pill. */
 .tl-filter-count:empty { display: none; }
