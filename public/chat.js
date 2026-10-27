@@ -60,6 +60,8 @@
   var viewLive = $('viewLive');
   var composer = $('composer');
   var input = $('msgInput');
+  // The safety model (tens of KB) only loads once someone starts typing.
+  if (input) input.addEventListener('focus', function () { if (window.TalkGuard) window.TalkGuard.load(); }, { once: true });
   var msgs = $('msgs');
   var startBtn = $('startBtn');
   var cancelBtn = $('cancelBtn');
@@ -922,6 +924,9 @@
     if (!text && !payload.gif) return false;
     if (text && LINK_RE.test(text)) { addMessage(t('chatLinkBlocked'), 'system'); return false; }
     if (text && UNSAFE_RE.test(text)) { addMessage(t('chatBotWarning'), 'system'); return false; }
+    // "Are you sure?" before something that reads as abusive (TalkGuard, on
+    // this device). Pressing send again with the same text sends it.
+    if (text && window.TalkGuard && window.TalkGuard.shouldHold(text)) { addMessage(window.TalkGuard.nudgeText, 'system'); return false; }
     socket.emit('chat-message', {
       text: text.slice(0, 1000),
       id: payload.id,

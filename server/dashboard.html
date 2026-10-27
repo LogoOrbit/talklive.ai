@@ -888,7 +888,7 @@ const NAV=[
   ['Moderation',[
     ['reports','Reports','🚩',[['reports','Reports','🚩']]],
     ['chats','Messages','💬',[['chats','Chats','💬'],['voicenotes','Voice notes','🎙️']]],
-    ['automod','Safety','🛡️',[['automod','Auto-mod','🛡️'],['bans','Bans','⛔'],['warnings','Warnings','⚠️']]],
+    ['automod','Safety','🛡️',[['automod','Auto-mod','🛡️'],['aiguard','AI guard','🧠'],['bans','Bans','⛔'],['warnings','Warnings','⚠️']]],
     ['feedback','Feedback','⭐',[['feedback','Feedback','⭐']]]]],
   ['People',[
     ['users','Users','🧑‍🤝‍🧑',[['users','All users','🧑‍🤝‍🧑'],['accounts','Accounts','👤'],['talktime','Talk time','⏱️'],['data','User data','🗂️']]],
@@ -1158,6 +1158,7 @@ async function load(force){
     else if(tab==='bans')await viewBans();
     else if(tab==='warnings')await viewWarnings();
     else if(tab==='automod')await viewAutomod();
+    else if(tab==='aiguard')await viewAiGuard();
     else if(tab==='chats')await viewChats();
     else if(tab==='voicenotes')await viewVoiceNotes();
     else if(tab==='users')await viewUsers();
@@ -2055,13 +2056,14 @@ let warnFilter='all';
    they look (and checked by AI when the chat was typed); the ladder is
    warning -> final warning -> owner review. Logic lives in server/automod.js. */
 const AM_ACT={warn1:['⚠️ Warning','warn'],warn2:['🟧 Final warning','warn'],review:['🧑‍⚖️ Sent to review','info'],severe:['🚨 Urgent review','crit'],skip:['✅ Not acted on','good'],owner_ban:['⛔ You banned','crit'],owner_clear:['🧹 You cleared','good'],owner_warn:['⚠️ You warned','warn'],live:['🟢 Went live','good']};
-const AM_EV={report:'🚩 Report',keyword:'🔤 Chat words',ai:'🤖 AI'};
+const AM_EV={report:'🚩 Report',keyword:'🔤 Slur or threat',model:'🧠 TalkGuard',voice:'🎙️ Said on a call',pattern:'📈 Spam pattern',ai:'🤖 AI'};
 function amEvents(evs){
   return evs.map(e=>`<div style="padding:7px 0;border-top:1px solid var(--grid);font-size:.8rem${e.cleared?';opacity:.5':''}">
     <b>${AM_EV[e.type]||e.type}</b> · counts <b>${e.pending?'…checking':e.weight}</b> · ${ago(e.ts)}${e.reason?` · ${esc(e.reason)}`:''}${e.cleared?' · cleared':''}
     ${e.detail?`<div class="muted" style="font-size:.78rem">“${esc(e.detail)}”</div>`:''}
     ${e.ai?`<div style="font-size:.78rem"><span class="pill ${e.ai.verdict==='violation'?'crit':e.ai.verdict==='no_violation'?'good':'info'}">${e.ai.source==='ai'?'AI':'Chat check'}: ${esc(e.ai.verdict.replace('_',' '))}${e.ai.severity&&e.ai.severity!=='none'?' · '+esc(e.ai.severity):''}</span> ${esc(e.ai.summary||'')}</div>`:''}
-    ${e.why&&e.why.length?`<div class="muted" style="font-size:.74rem">${e.why.map(esc).join(' · ')}</div>`:''}</div>`).join('')||'<div class="muted">No events.</div>';
+    ${e.why&&e.why.length?`<div class="muted" style="font-size:.74rem">${e.why.map(esc).join(' · ')}</div>`:''}
+    ${e.evidence&&e.evidence.length&&e.type==='report'?`<div style="font-size:.76rem;margin-top:3px">${e.evidence.map(t=>`<div>💬 “${esc(t)}”</div>`).join('')}</div>`:''}</div>`).join('')||'<div class="muted">No events.</div>';
 }
 const amLevel=(l)=>['clean','warned','final warning','in review'][Math.min(3,l||0)];
 async function viewAutomod(){
@@ -2131,7 +2133,8 @@ async function viewAutomod(){
     <li>Each person who reports counts <b>once</b>. Reporters on the same network count once between them.</li>
     <li>Reports count for less when the reporter files many reports a day, often gets cleared by you, is heavily reported themselves, or reports straight back at someone who just reported them.</li>
     <li>For typed chats, the reported conversation is checked for free with keyword rules: a flagged message from them makes the report count 1.3×; a real chat with nothing flagged makes it count ½. If the reporter used slurs or threats, they get the strike. Voice calls can't be read, so those rely on the reporter checks above.</li>
-    <li>Slurs and threats typed in chat count like a report (once per chat partner per day). Sexual messages to someone who said they're under 18 go straight to you.</li>
+    <li>Slurs and threats count like a report, once per chat partner per day, whether typed, said on a call (desktop browsers) or said in a voice message. If TalkGuard is confident a message is abusive, it counts as half a report. Sexual messages to someone who said they're under 18 go straight to you.</li>
+    <li>The same spammy message copy-pasted to 5+ strangers in an hour counts as a report.</li>
     <li>Nobody is warned unless reports are unusual for how much they chat: at least ${(st.minRate*100).toFixed(0)}% of their conversations in the last ${st.windowDays} days.</li>
     <li>Score ${st.warn1} → warning · ${st.warn2} (with new reports) → final warning · ${st.review} → your review queue. Warnings fade after ${st.strikeDays} quiet days.</li>
   </ul></div>`;
@@ -2177,6 +2180,68 @@ async function amSimulate(){
     <div style="max-height:45vh;overflow:auto"><table style="min-width:0"><tr><th>User</th><th class="num">Reports</th><th class="num">Reporters</th><th class="num">Score</th><th class="num">Convs</th></tr>
     ${r.top.map(x=>`<tr${x.rateOk?'':' style="opacity:.55" title="Report rate is normal for how much they chat"'}><td>${esc(x.username||x.clientId)}</td><td class="num">${x.reports}</td><td class="num">${x.reporters}</td><td class="num">${x.score}</td><td class="num">${x.conversations||'-'}</td></tr>`).join('')||'<tr><td colspan="5" class="muted">No reports in this window.</td></tr>'}</table></div>`);
 }
+
+/* ---------- AI guard: TalkLive's own model + behaviour patterns ----------
+   TalkGuard (server/talkguard.js, public/talkguard.js) is a small model trained
+   on this server from a starter set plus every label given here. Free: it runs
+   on the server and in users' browsers, no outside AI. */
+const TG_HEADS=[['abuse','Abuse','var(--crit)'],['sexual','Sexual','var(--s5)'],['spam','Spam','var(--warn)']];
+const tgPills=(sc)=>TG_HEADS.map(([k,l,c])=>{const v=(sc&&sc[k])||0;return `<span class="pill" style="background:color-mix(in srgb,${c} ${v>=.6?22:8}%,transparent);color:${v>=.6?c:'var(--muted)'}">${l} ${Math.round(v*100)}%</span>`;}).join(' ');
+const tgQ=(q)=>q==null?'-':q+'%';
+async function viewAiGuard(){
+  const r=await vapi('talkguard');
+  const m=r.model||{},P=r.patterns||{copyPaste:[],fastSkipped:[],crowdedIps:[]};
+  const today=(m.days&&m.days[0])?m.days[0][1]:{scanned:0,flagged:0};
+  $('#main').innerHTML=`
+  <div class="card anim" style="margin-top:0"><h2>🧠 TalkGuard <span class="sub">TalkLive's own safety model · free, no outside AI</span>
+    <span style="margin-left:auto" class="rowbtns"><button onclick="tgRetrain()">↻ Retrain now</button></span></h2>
+    <div class="muted" style="font-size:.84rem;line-height:1.6">Reads every chat message, voice message transcript and flagged voice-call speech. It nudges people before they send something hurtful, gives the auto-mod evidence, and gets better each time you teach it below.</div>
+    <div class="grid tiles" style="margin-top:12px">
+      <div class="tile"><div class="k">Version</div><div class="v">v${num(m.version)}</div><div class="s">trained ${m.trainedAt?ago(m.trainedAt):'-'} in ${num(m.ms)} ms</div></div>
+      <div class="tile"><div class="k">Learned from you</div><div class="v grad">${num(m.ownerExamples)}</div><div class="s">+ ${num(m.seedExamples)} starter examples</div></div>
+      <div class="tile"><div class="k">Checked today</div><div class="v">${num(today.scanned)}</div><div class="s">${num(today.flagged)} flagged for a look</div></div>
+    </div>
+    <table style="margin-top:12px;min-width:0"><tr><th>Detects</th><th class="num">Right when it flags</th><th class="num">Catches</th><th class="num">False alarms</th></tr>
+    ${TG_HEADS.map(([k,l])=>{const q=(m.quality||{})[k]||{};return `<tr><td>${l}</td><td class="num">${tgQ(q.precision)}</td><td class="num">${tgQ(q.recall)}</td><td class="num">${q.falseAlarms==null?'-':q.falseAlarms+'%'}</td></tr>`;}).join('')}</table>
+    <div class="muted" style="font-size:.74rem;margin-top:6px">Measured on starter examples it wasn't trained on. Low "Catches" for spam means it needs more examples - mark spam you see below.</div>
+  </div>
+
+  <div class="card anim"><h2>🧪 Try it <span class="sub">type anything to see how it scores</span></h2>
+    <input id="tgTry" placeholder="e.g. you are such a loser" autocomplete="off"><div id="tgOut" style="margin-top:8px">${tgPills(null)}</div>
+    <div class="rowbtns" style="margin-top:8px" id="tgTeachTry">${[...TG_HEADS.map(([k,l])=>[k,'Teach: '+l]),['fine','Teach: Fine']].map(([k,l])=>`<button data-l="${k}">${l}</button>`).join('')}</div>
+  </div>
+
+  <div class="card anim"><h2>🎓 Teach it <span class="sub">${num((m.candidates||[]).length)} flagged messages waiting · each answer retrains it</span></h2>
+    ${(m.candidates||[]).slice(0,25).map(c=>`<div style="border-top:1px solid var(--grid);padding:9px 0">
+      <div style="font-size:.88rem">“${esc(c.t)}”</div>
+      <div class="muted" style="font-size:.74rem;margin:3px 0 6px">${esc(c.from||'')} · ${esc(c.source||'')} · ${ago(c.ts)} · ${tgPills(c.scores)}</div>
+      <div class="rowbtns">${TG_HEADS.map(([k,l])=>`<button class="danger" onclick="tgLabel('${jsq(c.id)}','${k}')">${l}</button>`).join('')}<button onclick="tgLabel('${jsq(c.id)}','fine')">✅ Fine</button><button onclick="tgLabel('${jsq(c.id)}','skip')">Skip</button></div></div>`).join('')||'<div class="muted">Nothing to review. Messages it is unsure or worried about will appear here.</div>'}
+  </div>
+
+  <div class="sechead">Behaviour patterns · last 24 hours · counting only, nothing is read</div>
+  <div class="card anim" style="margin-top:0"><h2>📋 Copy-paste messages <span class="sub">same message to 5+ strangers in an hour · spammy ones count as a strike</span></h2>
+    <table><tr><th>User</th><th>Message</th><th class="num">Sent to</th><th>Counts?</th><th>When</th></tr>
+    ${P.copyPaste.map(x=>`<tr><td>${esc(x.username||x.clientId)}</td><td style="max-width:360px">${esc(x.text)}</td><td class="num">${x.partners}+</td><td>${x.spammy?'<span class="pill crit">spam strike</span>':'<span class="pill good">shown only</span>'}</td><td>${ago(x.ts)}</td></tr>`).join('')||'<tr><td colspan="5" class="muted">No copy-paste messages today.</td></tr>'}</table></div>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(380px,100%),1fr))">
+    <div class="card anim"><h2>⏩ Skipped fast <span class="sub">most partners leave within 5 seconds · shown only</span></h2>
+      <table style="min-width:0"><tr><th>User</th><th class="num">Matches</th><th class="num">Left in 5s</th></tr>
+      ${P.fastSkipped.map(x=>`<tr><td>${esc(x.username||x.clientId)}</td><td class="num">${x.matches}</td><td class="num">${x.pct}%</td></tr>`).join('')||'<tr><td colspan="3" class="muted">Nobody stands out.</td></tr>'}</table>
+      <div class="muted" style="font-size:.74rem;margin-top:6px">Often a bad mic, silence or a filter mismatch - worth a listen, not a ban.</div></div>
+    <div class="card anim"><h2>🌐 Shared networks <span class="sub">8+ devices on one IP, or a device next to a flagged person · shown only</span></h2>
+      <table style="min-width:0"><tr><th>Network</th><th class="num">Devices</th><th>Who</th></tr>
+      ${P.crowdedIps.map(x=>`<tr><td>${esc(x.ip)}</td><td class="num">${x.devices}</td><td style="font-size:.78rem">${x.names.map(esc).join(', ')}${x.flagged.length?`<div><span class="pill crit">possible alt of ${x.flagged.map(esc).join(', ')}</span></div>`:''}</td></tr>`).join('')||'<tr><td colspan="3" class="muted">Nothing unusual.</td></tr>'}</table>
+      <div class="muted" style="font-size:.74rem;margin-top:6px">Schools, offices and mobile carriers share IPs, so this is a hint only.</div></div>
+  </div>
+
+  <div class="card anim"><h2>📚 Recently learned <span class="sub">your last labels</span></h2>
+    ${(m.recentExamples||[]).map(e=>`<div style="font-size:.82rem;padding:4px 0;border-top:1px solid var(--grid)">${Object.entries(e.y).filter(([,v])=>v).map(([k])=>`<span class="pill crit">${k}</span>`).join(' ')||'<span class="pill good">fine</span>'} “${esc(e.t)}” <span class="muted">· ${esc(e.by)} · ${ago(e.ts)}</span></div>`).join('')||'<div class="muted">Nothing yet. Labels you give above, and your review-queue decisions, appear here.</div>'}
+  </div>`;
+  const inp=$('#tgTry'),out=$('#tgOut');let tm=null;
+  inp.oninput=()=>{clearTimeout(tm);tm=setTimeout(async()=>{try{const r2=await post('talkguard/score',{text:inp.value});out.innerHTML=tgPills(r2.scores);}catch(e){}},200);};
+  $('#tgTeachTry').querySelectorAll('[data-l]').forEach(b=>b.onclick=async()=>{const t=inp.value.trim();if(!t)return toast('Type something first','','warn');try{await post('talkguard/label',{text:t,label:b.dataset.l});toast('Learned','It retrains in a few seconds.','good');inp.value='';}catch(e){toast('Failed',e.message,'bad');}});
+}
+async function tgLabel(id,label){try{await post('talkguard/label',{id,label});toast(label==='skip'?'Skipped':'Learned',label==='skip'?'':'It retrains in a few seconds.','good');load();}catch(e){toast('Failed',e.message,'bad');}}
+async function tgRetrain(){try{const r=await post('talkguard/retrain');toast('Retrained','v'+r.stats.version+' in '+r.stats.ms+' ms','good');load();}catch(e){toast('Failed',e.message,'bad');}}
 
 async function viewWarnings(){
   const r=await vapi('warnings');

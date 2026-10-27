@@ -81,7 +81,7 @@
     lastAlertAt[type] = now;
     if (socketRef) {
       socketRef.emit('moderation-alert', {
-        type, // 'keyword' | 'sentiment' | 'shouting'
+        type, // 'keyword' | 'sentiment' | 'shouting' | 'model'
         detail: String(detail).slice(0, 200),
         transcript: String(transcript || '').slice(0, 500),
       });
@@ -99,6 +99,13 @@
         sendAlert('keyword', word, text);
         break;
       }
+    }
+
+    // 1b) TalkGuard (public/talkguard.js) - catches abuse the word list
+    // misses. The server re-scores the text itself before anything counts.
+    if (window.TalkGuard && window.TalkGuard.ready()) {
+      const sc = window.TalkGuard.score(text);
+      if (sc.abuse >= 0.85) sendAlert('model', 'abuse ' + Math.round(sc.abuse * 100) + '%', text);
     }
 
     // 2) Sentiment - score words against the negative lexicon and keep a
@@ -201,6 +208,16 @@
     start(stream, socket) {
       if (running) return;
       running = true;
+      // TalkLive's own text model, scored on what this side says. Loaded on
+      // demand: the page does not ship it up front.
+      if (window.TalkGuard) window.TalkGuard.load();
+      else if (!document.getElementById('tgjs')) {
+        const s = document.createElement('script');
+        s.id = 'tgjs';
+        s.src = '/talkguard.js?v=20261027tg';
+        s.onload = () => { if (window.TalkGuard) window.TalkGuard.load(); };
+        document.head.appendChild(s);
+      }
       socketRef = socket;
       sentimentEvents = [];
       loudSince = 0;

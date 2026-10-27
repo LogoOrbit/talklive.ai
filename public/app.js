@@ -9078,6 +9078,12 @@ function sendStrangerChat(text, meta) {
     addChatMessage(t('errUnsafeMessage'), 'system');
     return false;
   }
+  // "Are you sure?" before something that reads as abusive (TalkGuard, on
+  // this device). Pressing send again with the same text sends it.
+  if (text && window.TalkGuard && window.TalkGuard.shouldHold(text)) {
+    addChatMessage(window.TalkGuard.nudgeText, 'system');
+    return false;
+  }
   const el = addChatMessage(text, 'me', meta);
   playSendSound();
   vibrate(15);
@@ -9123,6 +9129,19 @@ strangerExtras = window.TalkLiveChatExtras ? window.TalkLiveChatExtras.attach({
   send: (payload) => sendStrangerChat(payload.text || '', payload),
   react: (id, emoji, on) => socket.emit('chat-reaction', { id, emoji, on }),
 }) : null;
+
+// The safety model (public/talkguard.js + tens of KB of weights) only loads
+// once someone starts typing, so it never weighs on the first page load.
+function loadTalkGuard() {
+  if (window.TalkGuard) { window.TalkGuard.load(); return; }
+  if (document.getElementById('tgjs')) return;
+  const s = document.createElement('script');
+  s.id = 'tgjs';
+  s.src = '/talkguard.js?v=20261027tg';
+  s.onload = () => { if (window.TalkGuard) window.TalkGuard.load(); };
+  document.head.appendChild(s);
+}
+chatInput.addEventListener('focus', loadTalkGuard, { once: true });
 
 chatForm.addEventListener('submit', (e) => {
   e.preventDefault();

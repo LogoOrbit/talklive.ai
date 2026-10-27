@@ -26,6 +26,8 @@ const store = require('./store');
 const { TrackedMap } = require('./doc-json');
 const modTags = require('./moderation-tags');
 const { createAutomod } = require('./automod');
+const { createTalkGuard } = require('./talkguard');
+const { createPatterns } = require('./patterns');
 const compress = require('./compress');
 const billing = require('./billing');
 const push = require('./push');
@@ -1197,8 +1199,26 @@ function getUserStats(since) {
 
 // Automatic warnings and the owner's review queue (server/automod.js). It
 // never bans on its own; the review queue has the ban button.
-const automod = createAutomod({ store, deliverWarning, kickBanned });
-const admin = createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning, deliverFeedbackReply, getUserStats, automod, getLiveGames: () => gameTracker.live() });
+// TalkGuard is TalkLive's own text-safety model (server/talkguard.js); its
+// weights are served to browsers so the same model runs there for free.
+const talkguard = createTalkGuard({ store });
+const automod = createAutomod({ store, deliverWarning, kickBanned, talkguard });
+const accountOfClient = (clientId) => { const sk = getSocketByClientId(clientId); return sk ? socketAuth.get(sk.id) || null : null; };
+const patterns = createPatterns({
+  talkguard,
+  onSpam: (x) => automod.onPattern({ ...x, account: accountOfClient(x.clientId) }),
+  isFlagged: (clientId) => automod.isFlagged(clientId),
+});
+app.get('/talkguard/model.json', (req, res) => {
+  const m = talkguard.modelJson();
+  if (!m) return res.status(503).json({ error: 'not ready' });
+  const tag = '"tg' + m.v + '"';
+  res.setHeader('Cache-Control', 'public, max-age=900');
+  res.setHeader('ETag', tag);
+  if (req.headers['if-none-match'] === tag) return res.status(304).end();
+  res.json(m);
+});
+const admin = createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning, deliverFeedbackReply, getUserStats, automod, talkguard, patterns, getLiveGames: () => gameTracker.live() });
 app.use('/owner', admin.router);
 
 // Maintenance mode: when on, every non-dashboard page gets a friendly 503.
@@ -2793,8 +2813,9 @@ function deliverFriendMessage(socket, me, toClientId, parsed, msgId) {
   if (parsed.text) {
     automod.onChatText({
       from: { clientId: me.clientId, account: socketAuth.get(socket.id) || null, ip: getClientIp(socket), username: me.username, country: me.countryName },
-      to: toClientId, pair: pairKey(me.clientId, toClientId), text: parsed.text,
+      to: toClientId, pair: pairKey(me.clientId, toClientId), text: parsed.text, kind: 'chat',
     });
+    patterns.onMessage({ from: me.clientId, to: toClientId, text: parsed.text, username: me.username });
   }
   const key = pairKey(me.clientId, toClientId);
   if (!friendChats.has(key)) friendChats.set(key, []);
@@ -3649,6 +3670,7 @@ function disconnectPartner(socketId, opts = {}) {
     // A pairing whose media never came up was not a conversation.
     if (startedAt && !opts.failed) {
       const seconds = Math.round((Date.now() - startedAt) / 1000);
+      patterns.onPairEnd({ left: partnerProfile.clientId, leftName: partnerProfile.username, seconds });
       noteCallForAnalytics(socketId, profile, partnerId, partnerProfile, seconds);
       store.recordTalkTime(profile.clientId, seconds, { username: profile.username, country: profile.countryName || profile.country });
       store.recordTalkTime(partnerProfile.clientId, seconds, { username: partnerProfile.username, country: partnerProfile.countryName || partnerProfile.country });
@@ -4981,6 +5003,7 @@ io.on('connection', (socket) => {
     const countryCap = premium ? 50 : FREE_LIMITS.countries;
     const sanitizeCountryList = (list) => (Array.isArray(list) ? list.filter((c) => typeof c === 'string').slice(0, countryCap) : []);
     const prev = profiles.get(socket.id);
+    patterns.onConnect({ ip: getClientIp(socket), clientId, username: Nick.clean(data.nickname) || '' });
     profiles.set(socket.id, {
       clientId,
       // A name saved before the nickname rules is tidied rather than refused.
@@ -5571,7 +5594,7 @@ io.on('connection', (socket) => {
   // shouting triggers detected from the local mic's live transcript. Log the
   // incident to the dashboard transcript store (no email). Rate-limited per
   // socket so a hostile client can't spam the log.
-  let lastModerationAlert = 0;
+  const lastModerationAlert = {};
   // voice-gender.js reached a confident verdict on this person's own voice.
   // Ignored unless they opted in to Voice check for this profile.
   socket.on('voice-gender', (data) => {
@@ -5583,9 +5606,10 @@ io.on('connection', (socket) => {
 
   socket.on('moderation-alert', ({ type, detail, transcript } = {}) => {
     const now = Date.now();
-    if (now - lastModerationAlert < 30000) return;
-    if (!['keyword', 'sentiment', 'shouting'].includes(type)) return;
-    lastModerationAlert = now;
+    if (!['keyword', 'sentiment', 'shouting', 'model'].includes(type)) return;
+    // Throttled per kind, so a shouting alert can't hide what was said.
+    if (now - (lastModerationAlert[type] || 0) < 30000) return;
+    lastModerationAlert[type] = now;
     const me = profiles.get(socket.id);
     const partnerId = partners.get(socket.id);
     const them = partnerId ? profiles.get(partnerId) : null;
@@ -5602,6 +5626,14 @@ io.on('connection', (socket) => {
         country: me.countryName,
         text: `[${type}] ${detailStr}${transcriptStr ? ` - "${transcriptStr}"` : ''}`,
       });
+      // What they said is re-scored here: the browser's verdict is only the
+      // reason it was sent, never trusted on its own.
+      if (them && transcriptStr && type !== 'shouting') {
+        automod.onChatText({
+          from: { clientId: me.clientId, account: socketAuth.get(socket.id) || null, ip: getClientIp(socket), username: me.username, country: me.countryName },
+          to: them.clientId, pair: pairKey(me.clientId, them.clientId), text: transcriptStr, kind: 'voice',
+        });
+      }
     }
   });
 
@@ -5655,8 +5687,9 @@ io.on('connection', (socket) => {
       if (msg.text) {
         automod.onChatText({
           from: { clientId: me.clientId, account: socketAuth.get(socket.id) || null, ip: getClientIp(socket), username: me.username, country: me.countryName },
-          to: them.clientId, pair: pairKey(me.clientId, them.clientId), text: msg.text,
+          to: them.clientId, pair: pairKey(me.clientId, them.clientId), text: msg.text, kind: 'chat',
         });
+        patterns.onMessage({ from: me.clientId, to: them.clientId, text: msg.text, username: me.username });
       }
     }
     // The server's clock is the only one both sides agree on, so it stamps the
@@ -6292,6 +6325,12 @@ io.on('connection', (socket) => {
       text: '', gif: null, replyTo: note.replyTo, voice: { id: noteId, ms: note.ms, mime: note.mime },
     }, note.id);
     reply({ ok: true, id: msg.id, ts: msg.ts, voice: msg.voice });
+    if (note.transcript) {
+      automod.onChatText({
+        from: { clientId: me.clientId, account: socketAuth.get(socket.id) || null, ip: getClientIp(socket), username: me.username, country: me.countryName },
+        to: toClientId, pair: pairKey(me.clientId, toClientId), text: note.transcript, kind: 'voice-note',
+      });
+    }
     // Better tags for the owner's review queue, off the request path.
     if (note.transcript && modTags.aiConfigured()) {
       modTags.tagTranscript(note.transcript)

@@ -411,7 +411,7 @@ function generateConclusion(runtime, report) {
 }
 
 // --- Module wiring ---
-function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning, deliverFeedbackReply, getLiveGames, getUserStats, automod }) {
+function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning, deliverFeedbackReply, getLiveGames, getUserStats, automod, talkguard, patterns }) {
   if (automod) automod.setAlert(sendAlertEmail);
   const router = express.Router();
   router.use(express.json({ limit: '64kb' }));
@@ -865,6 +865,29 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
     const out = automod ? automod.undo(req.params.id, reqIp(req)) : { error: 'Auto-mod is not running.' };
     if (out.error) return res.status(400).json(out);
     res.json(out);
+  });
+
+  // --- TalkGuard model + behaviour patterns ---------------------------------
+  router.get('/api/talkguard', (req, res) => {
+    if (!talkguard) return res.status(503).json({ error: 'TalkGuard is not running.' });
+    res.json({ model: talkguard.summary(), patterns: patterns ? patterns.summary() : null });
+  });
+  router.post('/api/talkguard/score', (req, res) => {
+    const text = String((req.body || {}).text || '').slice(0, 600);
+    res.json({ scores: talkguard ? talkguard.score(text) : null });
+  });
+  router.post('/api/talkguard/label', (req, res) => {
+    const b = req.body || {};
+    const lbl = String(b.label || '');
+    if (!['abuse', 'sexual', 'spam', 'fine', 'skip'].includes(lbl)) return res.status(400).json({ error: 'Unknown label.' });
+    const ok = b.id ? talkguard.label(String(b.id), lbl) : talkguard.addExample(String(b.text || ''), lbl, 'owner');
+    if (!ok) return res.status(404).json({ error: 'Not found.' });
+    res.json({ ok: true });
+  });
+  router.post('/api/talkguard/retrain', (req, res) => {
+    const st = talkguard.retrain();
+    store.audit('talkguard', reqIp(req), `Retrained TalkGuard (v${st.version})`);
+    res.json({ ok: true, stats: st });
   });
 
   // Send one person a warning about their behaviour. It appears in the app as a

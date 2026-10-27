@@ -82,7 +82,7 @@ const SCHEMA = {
   additionalProperties: false,
 };
 
-function createAutomod({ store, deliverWarning, kickBanned }) {
+function createAutomod({ store, deliverWarning, kickBanned, talkguard }) {
   let alert = () => {};
   let aiClient = null;
   const aiCalls = [];
@@ -225,12 +225,20 @@ function createAutomod({ store, deliverWarning, kickBanned }) {
     const rows = recentChat(pair, Date.now() - 6 * 3600000);
     const theirs = rows.filter((m) => m.fromClientId === reportedId && m.kind !== 'moderation');
     const mine = rows.filter((m) => m.fromClientId === reporterId && m.kind !== 'moderation');
-    const flagged = (list) => list.map((m) => ({ m, f: modTags.riskFlags(m.text).filter((x) => BAD_FLAGS.includes(x)) })).filter((x) => x.f.length);
+    // Keyword flags, plus TalkGuard when it is confident.
+    const flagged = (list) => list.map((m) => {
+      const f = modTags.riskFlags(m.text).filter((x) => BAD_FLAGS.includes(x));
+      if (talkguard) {
+        const sc = talkguard.score(m.text);
+        for (const h of ['abuse', 'sexual', 'spam']) if (sc[h] >= 0.85 && !f.includes(h)) f.push(h);
+      }
+      return { m, f };
+    }).filter((x) => x.f.length);
     const hit = flagged(theirs);
     const reporterHit = flagged(mine);
     const strikeReporter = mine.some((m) => STRIKE_RE.test(m.text || ''));
     if (hit.length) {
-      return { verdict: 'violation', severity: 'high', category: hit[0].f[0], reporter_violation: strikeReporter, summary: `Flagged message from them: "${String(hit[0].m.text).slice(0, 120)}"`, source: 'rules' };
+      return { verdict: 'violation', severity: 'high', category: hit[0].f[0], reporter_violation: strikeReporter, summary: `Flagged message from them: "${String(hit[0].m.text).slice(0, 120)}"`, source: 'rules', evidence: hit.slice(0, 5).map((x) => String(x.m.text).slice(0, 300)) };
     }
     if (theirs.length >= 6 && !rows.some((m) => m.kind === 'moderation')) {
       return { verdict: 'no_violation', severity: 'none', category: 'clean chat', reporter_violation: strikeReporter, summary: `${theirs.length} messages from them, nothing flagged${reporterHit.length ? '; the reporter\'s own messages were flagged' : ''}.`, source: 'rules' };
@@ -319,6 +327,7 @@ function createAutomod({ store, deliverWarning, kickBanned }) {
       const v = ruleJudge({ reportedId: tgt.clientId, reporterId: rep.clientId });
       if (v) {
         ev.ai = v;
+        if (v.evidence) { ev.evidence = v.evidence; delete v.evidence; }
         if (v.verdict === 'violation') { ev.weight = Math.min(1.5, Math.max(ev.weight, 1) * 1.3); ev.why.push('chat check: flagged ' + v.category); }
         else { ev.weight = Math.round(ev.weight * 0.5 * 100) / 100; ev.why.push('chat check: nothing wrong in their messages'); }
         if (v.reporter_violation) {
@@ -334,26 +343,47 @@ function createAutomod({ store, deliverWarning, kickBanned }) {
     }
   }
 
-  // Every stranger/friend chat message (text). Unmistakable slurs and threats
-  // count like one report per partner per day; sexual talk with someone who
-  // said they are a minor goes to the review queue.
-  function onChatText({ from, to, pair, text }) {
-    if (off() || !text || !from || !from.clientId) return;
+  // Every stranger/friend chat message, voice-note transcript and (from the
+  // speaker's own browser) voice-call transcript. Unmistakable slurs and
+  // threats count like one report per partner per day; TalkGuard's confident
+  // "abusive" counts as half of one (it can be wrong, and the owner teaches it).
+  // Sexual talk after someone said they are a minor goes to the review queue.
+  // kind: 'chat' | 'voice-note' | 'voice'
+  function onChatText({ from, to, pair, text, kind = 'chat' }) {
+    if (off() || !text || !from || !from.clientId) return null;
     const flags = modTags.riskFlags(text);
+    const sc = talkguard ? talkguard.check(text, { source: kind, from: from.username, fromClientId: from.clientId }) : { abuse: 0, sexual: 0, spam: 0 };
     const now = Date.now();
     if (flags.includes('minor')) minorPairs.set(pair, now);
     if (minorPairs.size > 5000) for (const [k, t] of minorPairs) if (now - t > 2 * 3600000) minorPairs.delete(k);
-    const strike = settings().keywordStrikes && STRIKE_RE.test(text);
-    const sexualWithMinor = flags.includes('sexual') && now - (minorPairs.get(pair) || 0) < 2 * 3600000;
-    if (!strike && !sexualWithMinor) return;
+    const th = talkguard ? talkguard.thresholds() : { strike: 0.9 };
+    const hard = settings().keywordStrikes && STRIKE_RE.test(text);
+    const soft = !hard && settings().keywordStrikes && sc.abuse >= th.strike;
+    const sexual = flags.includes('sexual') || sc.sexual >= 0.85;
+    const sexualWithMinor = sexual && now - (minorPairs.get(pair) || 0) < 2 * 3600000;
+    if (!hard && !soft && !sexualWithMinor) return sc;
     const p = person(from.clientId, from.account, from);
-    if (strike) {
+    if (hard || soft) {
       const dayAgo = now - DAY;
-      if (!p.events.some((e) => e.type === 'keyword' && e.source === to && e.ts > dayAgo)) {
-        pushEvent(p, { ts: now, type: 'keyword', source: to, weight: 1, why: ['slur or threat in chat'], detail: String(text).slice(0, 160) });
-      }
+      const type = kind === 'voice' ? 'voice' : hard ? 'keyword' : 'model';
+      const already = p.events.find((e) => (e.type === 'keyword' || e.type === 'model' || e.type === 'voice') && e.source === to && e.ts > dayAgo);
+      const weight = hard ? 1 : 0.5;
+      const why = [(hard ? 'slur or threat' : `TalkGuard: abusive (${Math.round(sc.abuse * 100)}%)`) + (kind === 'voice' ? ' said on a voice call' : kind === 'voice-note' ? ' in a voice message' : ' in chat')];
+      if (!already) pushEvent(p, { ts: now, type, source: to, weight, why, detail: String(text).slice(0, 160), evidence: [String(text).slice(0, 300)] });
+      else if (already.weight < weight) Object.assign(already, { weight, why, type, detail: String(text).slice(0, 160), evidence: [String(text).slice(0, 300)] });
     }
     if (sexualWithMinor) flagSevere(p, 'Sexual message in a chat where someone said they are under 18: "' + String(text).slice(0, 120) + '"');
+    store.save();
+    schedule(p);
+    return sc;
+  }
+
+  // Copy-pasted spam to many strangers (server/patterns.js). Once a day.
+  function onPattern({ clientId, account, username, text, partners }) {
+    if (off() || !clientId) return;
+    const p = person(clientId, account, { username });
+    if (p.events.some((e) => e.type === 'pattern' && e.ts > Date.now() - DAY)) return;
+    pushEvent(p, { ts: Date.now(), type: 'pattern', source: 'spam:' + new Date().toISOString().slice(0, 10), weight: 1, why: [`same spammy message to ${partners} strangers within an hour`], detail: String(text).slice(0, 160), evidence: [String(text).slice(0, 300)] });
     store.save();
     schedule(p);
   }
@@ -442,6 +472,9 @@ function createAutomod({ store, deliverWarning, kickBanned }) {
     if (!p) return { error: 'Not found.' };
     const evs = p.events.filter((e) => !e.cleared);
     const reporters = new Set(evs.filter((e) => e.type === 'report').map((e) => e.source));
+    // The flagged messages behind this case teach TalkGuard either way.
+    const evidence = [...new Set(evs.flatMap((e) => e.evidence || []))].slice(0, 20);
+    if (talkguard && evidence.length && (action === 'ban' || action === 'warn' || action === 'clear')) talkguard.learnFromDecision(evidence, action !== 'clear');
     if (action === 'ban') {
       const mins = Math.min(Math.max(Number(minutes) || 1440, 30), 5 * 365 * 24 * 60);
       const cid = p.clientIds[p.clientIds.length - 1];
@@ -579,7 +612,7 @@ function createAutomod({ store, deliverWarning, kickBanned }) {
       key: p.key, username: p.username, account: p.account, clientId: p.clientIds[p.clientIds.length - 1], country: p.country,
       level: p.level, score: Math.round(sc.score * 10) / 10, sources: sc.sources, conversations: convs,
       rate: convs ? Math.round(sc.sources / convs * 1000) / 10 : null, review: p.review,
-      events: p.events.slice(-15).reverse().map((e) => ({ ts: e.ts, type: e.type, weight: e.weight, why: e.why, reason: e.reason, detail: e.detail, ai: e.ai, cleared: !!e.cleared, pending: !!e.pending })),
+      events: p.events.slice(-15).reverse().map((e) => ({ ts: e.ts, type: e.type, weight: e.weight, why: e.why, reason: e.reason, detail: e.detail, ai: e.ai, evidence: e.evidence, cleared: !!e.cleared, pending: !!e.pending })),
       warnings: p.warnings,
     };
   }
@@ -626,8 +659,10 @@ function createAutomod({ store, deliverWarning, kickBanned }) {
   }
 
   return {
-    onReport, onChatText, decide, undo, updateSettings, summary, simulate,
+    onReport, onChatText, onPattern, decide, undo, updateSettings, summary, simulate,
     setAlert(fn) { alert = typeof fn === 'function' ? fn : () => {}; },
+    // A device that belongs to someone in review or with a warning level.
+    isFlagged: (clientId) => Object.values(state().people).some((p) => p.clientIds.includes(clientId) && (p.level >= 2 || (p.review && p.review.status !== 'cleared' && p.review.status !== 'dismissed'))),
     openReviews: () => Object.values(state().people).filter((p) => p.review && p.review.status === 'open').length,
     _evaluate: evaluate, _state: state,
   };
