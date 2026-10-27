@@ -652,7 +652,7 @@ const GROWTH_EVENTS = new Set([
   // person asking to be told when it does.
   'premium_notify_click',
   // The Premium card was shown, and the engagement features (engage.js).
-  'premium_upsell_view', 'likes_locked_tap', 'passport_share', 'trial_started',
+  'premium_upsell_view', 'likes_locked_tap', 'passport_share', 'trial_started', 'whats_new_open',
   // Progressive disclosure (fix list 2.3). One exposure event per first-time
   // session, per arm, and one event per surface opened within the first two
   // minutes of it. "on" is the flag's arm, "off" is everyone else's first

@@ -3428,3 +3428,45 @@ summary.tl-filter-legend::-webkit-details-marker { display: none; }
 .tl-undo-skip.hidden { display: none; }
 .tl-undo-gem { font-size: 12px; }
 .tl-plus-badge { margin-inline-start: 6px; font-size: 0.8em; vertical-align: 1px; }
+
+/* What's new sheet (engage.js) */
+button.tl-engage-news { width: 100%; color: var(--text); font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; }
+.tl-engage-new {
+  flex: 0 0 auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+.tl-wn { list-style: none; margin: 0 0 16px; padding: 0; display: grid; gap: 6px; text-align: start; }
+.tl-wn li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 1px solid var(--tl-line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+}
+.tl-wn-ico { flex: 0 0 auto; font-size: 22px; width: 28px; text-align: center; }
+.tl-wn-body { flex: 1; display: grid; gap: 1px; min-width: 0; }
+.tl-wn-body b { font-size: 14px; }
+.tl-wn-body small { font-size: 12px; color: var(--muted); line-height: 1.35; }
+.tl-wn-plus { font-size: 11px; }
+.tl-wn-go {
+  flex: 0 0 auto;
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--accent-2) 55%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent-2) 12%, transparent);
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.tl-engage-dialog:focus { outline: none; }

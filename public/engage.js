@@ -21,8 +21,30 @@
   // English for the strings below lives here rather than in i18n.js, so it is
   // not in the first page load; other languages carry them in /i18n/<lang>.js.
   var EN = {
+    fxTitle: "What's new on TalkLive",
+    fxSub: "Fresh this week. Tap one to try it.",
+    fxChip: "What's new on TalkLive · Tap to see",
+    fxStreak: "Daily streaks",
+    fxStreakSub: "Talk 30 seconds a day to keep your 🔥 going.",
+    fxPassport: "Country passport",
+    fxPassportSub: "Every country you talk to gets a stamp.",
+    fxQuestion: "Question of the day",
+    fxQuestionSub: "A new opener for everyone, every day.",
+    fxLikes: "Who liked you",
+    fxLikesSub: "See how many people ❤️ your calls. Premium shows who.",
+    fxUndo: "Undo skip",
+    fxUndoSub: "Skipped by mistake? Premium brings them back.",
+    fxFilms: "Top 3 films on your profile",
+    fxFilmsSub: "Show your favourite movies and shows. An easy thing to talk about.",
+    fxAvatars: "New movie-character avatars",
+    fxAvatarsSub: "Be the wizard, the pirate or the detective. {n} new faces.",
+    fxTrial: "24h of Premium, free",
+    fxTrialSub: "Have 3 real conversations and it unlocks by itself.",
+    fxOpen: "Open",
+    fxAdd: "Add mine",
+    fxPick: "Pick one",
+    fxGotIt: "Let's talk",
     engageAria: "Your TalkLive",
-    engageNews: "New: daily streaks, a country passport and see who liked you.",
     engageRecap: "Last week: {calls} calls · {countries} countries · longest {minutes} min",
     engageStreakLabel: "day streak",
     engageStreakDone: "Done for today ✓",
@@ -67,7 +89,7 @@
     Object.keys(EN).forEach(function (k) { if (!(k in I18N_STRINGS.en)) I18N_STRINGS.en[k] = EN[k]; });
   }
 
-  var KEY = { streak: 'tl_streak', passport: 'tl_passport', week: 'tl_week_stats', news: 'tl_news_engage1', question: 'tl_daily_q_seen' };
+  var KEY = { streak: 'tl_streak', passport: 'tl_passport', week: 'tl_week_stats', whatsNew: 'tl_whats_new_seen', question: 'tl_daily_q_seen' };
   var GOOD_CALL_S = 30;
   var UNDO_MS = 15000;
 
@@ -207,9 +229,9 @@
     var w = weekStats();
     var today = s.last === dayKey();
     var html = '';
-    if (!read(KEY.news, false)) {
-      html += '<div class="tl-engage-banner tl-engage-news"><span>✨ ' + esc(t('engageNews')) + '</span>'
-        + '<button type="button" class="tl-engage-x" data-act="news" aria-label="' + esc(t('close')) + '">&times;</button></div>';
+    if (whatsNewLive()) {
+      html += '<button type="button" class="tl-engage-banner tl-engage-news" data-act="whatsnew"><span>✨ ' + esc(t('fxChip')) + '</span>'
+        + '<span class="tl-engage-new" aria-hidden="true">NEW</span></button>';
     } else if (w.prev && w.recapShown !== w.prev.week) {
       html += '<div class="tl-engage-banner tl-engage-recap"><span>📊 ' + esc(t('engageRecap', {
         calls: w.prev.calls, countries: w.prev.countries, minutes: Math.max(1, Math.round(w.prev.longest / 60)),
@@ -237,7 +259,7 @@
     var b = e.target.closest('[data-act]');
     if (!b) return;
     var act = b.dataset.act;
-    if (act === 'news') { write(KEY.news, true); render(); return; }
+    if (act === 'whatsnew') { openWhatsNew(); return; }
     if (act === 'recap') { var w = weekStats(); w.recapShown = w.prev ? w.prev.week : ''; write(KEY.week, w); render(); return; }
     if (act === 'streak') { showToast(t('engageStreakHow'), 'success'); return; }
     if (act === 'passport') { openPassport(); return; }
@@ -255,9 +277,11 @@
       });
       document.body.appendChild(m);
     }
-    m.innerHTML = '<div class="pu-box tl-engage-dialog" role="dialog" aria-modal="true">'
+    m.innerHTML = '<div class="pu-box tl-engage-dialog" role="dialog" aria-modal="true" tabindex="-1">'
       + '<button type="button" class="pu-close" aria-label="' + esc(t('close')) + '">&times;</button>' + inner + '</div>';
     openModal(m);
+    // Focus the dialog, not its close button, so it opens without a focus ring.
+    m.firstChild.focus({ preventScroll: true });
     return m;
   }
 
@@ -331,6 +355,63 @@
         if (typeof requestCallBack === 'function') requestCallBack(b.dataset.call, b.dataset.name);
       });
     });
+  }
+
+  // --- What's new ----------------------------------------------------------------
+  // The launch announcement: opens by itself once, then stays one tap away on
+  // the home screen until WHATS_NEW_UNTIL. Bump WHATS_NEW_ID for the next one.
+  var WHATS_NEW_ID = 'wn-2026-10';
+  var WHATS_NEW_UNTIL = new Date(2026, 9, 31).getTime(); // through 30 Oct, local
+  function whatsNewLive() { return Date.now() < WHATS_NEW_UNTIL; }
+  function characterCount() {
+    var c = window.TalkLiveCharacters;
+    return (c && c.ids && c.ids.length) || 26;
+  }
+
+  function openWhatsNew() {
+    if (typeof trackGrowthEvent === 'function') trackGrowthEvent('whats_new_open');
+    write(KEY.whatsNew, WHATS_NEW_ID);
+    var items = [
+      ['🎬', 'fxFilms', 'fxFilmsSub', 'profile', 'fxAdd'],
+      ['🧙', 'fxAvatars', 'fxAvatarsSub', 'profile', 'fxPick'],
+      ['🔥', 'fxStreak', 'fxStreakSub'],
+      ['🌍', 'fxPassport', 'fxPassportSub', 'passport', 'fxOpen'],
+      ['💬', 'fxQuestion', 'fxQuestionSub'],
+      ['❤️', 'fxLikes', 'fxLikesSub', 'likes', 'fxOpen'],
+      ['↩️', 'fxUndo', 'fxUndoSub', null, null, true],
+      ['🎁', 'fxTrial', 'fxTrialSub'],
+    ];
+    var list = '<ul class="tl-wn">' + items.map(function (it) {
+      return '<li><span class="tl-wn-ico" aria-hidden="true">' + it[0] + '</span>'
+        + '<span class="tl-wn-body"><b>' + esc(t(it[1])) + (it[5] ? ' <span class="tl-wn-plus">💎</span>' : '') + '</b>'
+        + '<small>' + esc(t(it[2], { n: characterCount() })) + '</small></span>'
+        + (it[3] ? '<button type="button" class="tl-wn-go" data-go="' + it[3] + '">' + esc(t(it[4])) + '</button>' : '')
+        + '</li>';
+    }).join('') + '</ul>';
+    var m = dialog('whatsNewModal',
+      '<div class="pu-hero" aria-hidden="true"><span class="pu-gem">✨</span></div>'
+      + '<div class="pu-title">' + esc(t('fxTitle')) + '</div>'
+      + '<p class="pu-reason">' + esc(t('fxSub')) + '</p>' + list
+      + '<button type="button" class="pu-cta" data-go="close">' + esc(t('fxGotIt')) + '</button>');
+    m.querySelectorAll('[data-go]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var go = b.dataset.go;
+        closeModal(m);
+        if (go === 'profile' && typeof openMyProfile === 'function') openMyProfile();
+        else if (go === 'passport') openPassport();
+        else if (go === 'likes') openLikes();
+      });
+    });
+  }
+
+  // Once per visitor, on the home screen, when nothing else is in the way.
+  function maybeAutoOpenWhatsNew() {
+    if (!whatsNewLive() || read(KEY.whatsNew, '') === WHATS_NEW_ID) return;
+    setTimeout(function () {
+      var onHome = document.getElementById('callPanel') && document.getElementById('callPanel').classList.contains('hidden');
+      var busy = document.querySelector('.modal-overlay:not(.hidden)');
+      if (onHome && !busy) openWhatsNew();
+    }, 2500);
   }
 
   // --- Undo skip ----------------------------------------------------------------
@@ -421,4 +502,5 @@
   window.addEventListener('i18n-changed', render);
   buildStrip();
   refreshLikes();
+  maybeAutoOpenWhatsNew();
 })();
