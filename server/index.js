@@ -36,6 +36,7 @@ const { minifiedScripts } = require('./minified');
 const ageAssurance = require('./age-assurance');
 const mail = require('./mailer');
 const { botLabel, isPrefetch, isBotUserAgent } = require('./bots');
+const Engage = require('./engage');
 const { createAdmin, applyOwnerReset } = require('./admin');
 const { createGameTracker } = require('./game-tracker');
 const { isValidTimezone } = require('./analytics');
@@ -1810,6 +1811,9 @@ function identityHasState(clientId) {
   if (friends.has(clientId) || chatHistory.has(clientId) || notifications.has(clientId)
     || friendRequests.has(clientId) || sentRequests.has(clientId) || blocks.has(clientId)
     || mutedChats.has(clientId) || isPremium(clientId)) return true;
+  // A streak or passport is something to lose, too.
+  const engaged = store.engageGet(clientId);
+  if (engaged && ((engaged.passport && engaged.passport.length) || (engaged.streak && engaged.streak.best))) return true;
   for (const acc of Object.values(store.data.accounts || {})) {
     if (acc && acc.clientId === clientId) return true;
   }
@@ -1863,6 +1867,12 @@ function linkAccountProfile(usernameLower, socketId) {
   // Nothing linked and nothing to link (the socket authenticated before it
   // registered a profile): leave the browser on the clientId it already has.
   if (!linked || linked === currentClientId) return {};
+  // Signing in moves this browser onto the account's profile. Whatever streak
+  // and stamps it earned as a guest go with it rather than staying behind.
+  const guest = currentClientId && store.engageGet(currentClientId);
+  if (guest) {
+    store.engageSet(linked, Engage.merge(store.engageGet(linked), guest, { trusted: true, tz: profile && profile.timezone }));
+  }
   return { profileClientId: linked, identityToken: signIdentity(linked) };
 }
 
@@ -3618,6 +3628,22 @@ function settleReferral(clientId) {
   emitPremiumStatus(settled.referred);
 }
 
+// Streak and passport, counted where the call ended and saved with the
+// profile. Every open tab of that person hears about it.
+function emitToClient(clientId, event, payload) {
+  for (const [sid, p] of profiles) {
+    if (p.clientId !== clientId) continue;
+    const sock = io.sockets.sockets.get(sid);
+    if (sock) sock.emit(event, payload);
+  }
+}
+function recordEngageCall(profile, country, seconds) {
+  if (!profile || !profile.clientId || seconds < Engage.GOOD_CALL_SECONDS) return;
+  const { rec, bump, stamp } = Engage.noteCall(store.engageGet(profile.clientId), { country, seconds, tz: profile.timezone });
+  store.engageSet(profile.clientId, rec);
+  emitToClient(profile.clientId, 'engage-update', { state: Engage.view(rec, { tz: profile.timezone }), bump, stamp });
+}
+
 // Free trial: a day of Premium after someone's third real conversation, once
 // per person. People pay for what they have already enjoyed.
 const TRIAL_AFTER_CALLS = Number(process.env.TRIAL_AFTER_CALLS) || 3;
@@ -3697,6 +3723,8 @@ function disconnectPartner(socketId, opts = {}) {
       const seconds = Math.round((Date.now() - startedAt) / 1000);
       patterns.onPairEnd({ left: partnerProfile.clientId, leftName: partnerProfile.username, seconds });
       noteCallForAnalytics(socketId, profile, partnerId, partnerProfile, seconds);
+      recordEngageCall(profile, partnerProfile.country, seconds);
+      recordEngageCall(partnerProfile, profile.country, seconds);
       store.recordTalkTime(profile.clientId, seconds, { username: profile.username, country: profile.countryName || profile.country });
       store.recordTalkTime(partnerProfile.clientId, seconds, { username: partnerProfile.username, country: partnerProfile.countryName || partnerProfile.country });
       const a = noteConversationLength(profile.clientId, partnerProfile.clientId, seconds);
@@ -5133,6 +5161,7 @@ io.on('connection', (socket) => {
       plans: billing.plans(),
     });
     socket.emit('identity-token', { clientId, token: issuedIdentityToken });
+    socket.emit('engage-state', Engage.view(store.engageGet(clientId), { tz: profiles.get(socket.id).timezone }));
     // Unacknowledged owner warnings. Checked again shortly after, because a
     // signed-in person's account is attached by its own event, which can land
     // after 'join'; the page ignores a warning it is already showing.
@@ -5357,6 +5386,21 @@ io.on('connection', (socket) => {
     store.recordFeature('undo_skip');
     pairSockets(socket.id, otherId, { undo: true });
     reply({ ok: true });
+  });
+
+  // A browser's own streak and passport from before they lived here, carried
+  // over once per profile (capped: see Engage.merge).
+  socket.on('engage-merge', (local = {}) => {
+    const me = profiles.get(socket.id);
+    if (!me) return;
+    const current = Engage.normalise(store.engageGet(me.clientId));
+    if (current.merged) return socket.emit('engage-state', Engage.view(current, { tz: me.timezone }));
+    const rec = Engage.merge(current, local, { tz: me.timezone });
+    // Only a browser that actually had something spends the one carry-over.
+    const had = (local.passport && local.passport.length) || (local.streak && local.streak.count);
+    if (had) rec.merged = true;
+    store.engageSet(me.clientId, rec);
+    socket.emit('engage-state', Engage.view(rec, { tz: me.timezone }));
   });
 
   // People who hearted you. Premium sees who; everyone else sees how many.

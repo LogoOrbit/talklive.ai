@@ -12,8 +12,8 @@
 //
 // Loaded after app.js once the page is up (it is not needed to place a call)
 // and reads app.js's globals: socket, t, showToast, isPremiumUser...
-// Everything here is kept on this device; only likes and the trial live on the
-// server.
+// Streak, passport, weekly stats, likes and the trial live on the server, with
+// the profile; this device only remembers what it has already shown.
 // ============================================================================
 (function () {
   'use strict';
@@ -89,8 +89,7 @@
     Object.keys(EN).forEach(function (k) { if (!(k in I18N_STRINGS.en)) I18N_STRINGS.en[k] = EN[k]; });
   }
 
-  var KEY = { streak: 'tl_streak', passport: 'tl_passport', week: 'tl_week_stats', whatsNew: 'tl_whats_new_seen', question: 'tl_daily_q_seen' };
-  var GOOD_CALL_S = 30;
+  var KEY = { streak: 'tl_streak', passport: 'tl_passport', server: 'tl_engage_state', recap: 'tl_recap_seen', whatsNew: 'tl_whats_new_seen', question: 'tl_daily_q_seen' };
   var UNDO_MS = 15000;
 
   function read(k, d) {
@@ -116,12 +115,6 @@
     var p = key.split('-');
     return Math.round(new Date(+p[0], +p[1] - 1, +p[2]).getTime() / 86400000);
   }
-  // The Monday that starts this week, as a day key.
-  function weekKey(d) {
-    d = d ? new Date(d) : new Date();
-    d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
-    return dayKey(d);
-  }
   function flag(code) {
     return /^[A-Z]{2}$/.test(code || '') && code !== 'XX'
       ? String.fromCodePoint.apply(null, code.split('').map(function (c) { return 0x1f1a5 + c.charCodeAt(0); })) : '';
@@ -130,61 +123,30 @@
     return (typeof getCountryName === 'function' && getCountryName(code)) || code;
   }
 
-  // --- Streak ---------------------------------------------------------------
-  function streak() {
-    var s = read(KEY.streak, { count: 0, best: 0, last: '', freezeWeek: '' });
-    // Lapsed: show 0 rather than a number that can no longer be kept.
-    if (s.last) {
-      var gap = dayNum(dayKey()) - dayNum(s.last);
-      var freezeLeft = s.freezeWeek !== weekKey();
-      if (gap > 2 || (gap === 2 && !freezeLeft)) s.count = 0;
-    }
-    return s;
+  // --- Streak, passport and week: kept on the server ------------------------
+  // The server counts real calls and saves the result with the profile, so it
+  // follows a signed-in person to every device and lasts for good. This keeps
+  // its last answer for an instant first paint; a browser's own pre-server
+  // progress (KEY.streak / KEY.passport) is handed over once and then dropped.
+  var state = read(KEY.server, null) || { streak: { count: 0, best: 0, doneToday: false }, passport: [], prevWeek: null };
+  function setState(next) {
+    if (!next || !next.streak) return;
+    state = next;
+    write(KEY.server, next);
+    render();
   }
-  function bumpStreak() {
-    var s = read(KEY.streak, { count: 0, best: 0, last: '', freezeWeek: '' });
-    var today = dayKey();
-    if (s.last === today) return null;
-    var gap = s.last ? dayNum(today) - dayNum(s.last) : 0;
-    var saved = false;
-    if (gap === 1) s.count += 1;
-    else if (gap === 2 && s.freezeWeek !== weekKey()) { s.count += 1; s.freezeWeek = weekKey(); saved = true; }
-    else s.count = 1;
-    s.best = Math.max(s.best || 0, s.count);
-    s.last = today;
-    write(KEY.streak, s);
-    return { count: s.count, saved: saved };
-  }
+  function streak() { return state.streak; }
+  function passport() { return { codes: state.passport || [] }; }
 
-  // --- Passport and weekly stats -------------------------------------------
-  function passport() { return read(KEY.passport, { codes: [] }); }
-  function stamp(code) {
-    if (!code || code === 'XX' || !/^[A-Z]{2}$/.test(code)) return false;
-    var p = passport();
-    if (p.codes.indexOf(code) !== -1) return false;
-    p.codes.push(code);
-    write(KEY.passport, p);
-    return true;
+  function legacyProgress() {
+    var s = read(KEY.streak, null);
+    var p = read(KEY.passport, null);
+    if (!s && !p) return {};
+    return { streak: s || undefined, passport: (p && p.codes) || [] };
   }
-  function weekStats() {
-    var w = read(KEY.week, null);
-    var now = weekKey();
-    if (!w) w = { week: now, calls: 0, countries: [], longest: 0, prev: null, recapShown: '' };
-    if (w.week !== now) {
-      // Roll over: last week becomes the recap, only if it was last week.
-      var lastWeek = weekKey(new Date(Date.now() - 7 * 86400000));
-      w.prev = w.week === lastWeek && w.calls > 0 ? { week: w.week, calls: w.calls, countries: w.countries.length, longest: w.longest } : null;
-      w.week = now; w.calls = 0; w.countries = []; w.longest = 0;
-      write(KEY.week, w);
-    }
-    return w;
-  }
-  function noteWeekCall(code, seconds) {
-    var w = weekStats();
-    w.calls += 1;
-    if (code && code !== 'XX' && w.countries.indexOf(code) === -1) w.countries.push(code);
-    w.longest = Math.max(w.longest || 0, seconds);
-    write(KEY.week, w);
+  function syncWithServer() {
+    if (!socket || !socket.connected) return;
+    socket.emit('engage-merge', legacyProgress());
   }
 
   // --- Today's question ------------------------------------------------------
@@ -226,15 +188,15 @@
     if (!strip) return;
     var s = streak();
     var p = passport();
-    var w = weekStats();
-    var today = s.last === dayKey();
+    var prev = state.prevWeek;
+    var today = !!s.doneToday;
     var html = '';
     if (whatsNewLive()) {
       html += '<button type="button" class="tl-engage-banner tl-engage-news" data-act="whatsnew"><span>✨ ' + esc(t('fxChip')) + '</span>'
         + '<span class="tl-engage-new" aria-hidden="true">NEW</span></button>';
-    } else if (w.prev && w.recapShown !== w.prev.week) {
+    } else if (prev && read(KEY.recap, '') !== prev.week) {
       html += '<div class="tl-engage-banner tl-engage-recap"><span>📊 ' + esc(t('engageRecap', {
-        calls: w.prev.calls, countries: w.prev.countries, minutes: Math.max(1, Math.round(w.prev.longest / 60)),
+        calls: prev.calls, countries: prev.countries, minutes: Math.max(1, Math.round(prev.longest / 60)),
       })) + '</span><button type="button" class="tl-engage-x" data-act="recap" aria-label="' + esc(t('close')) + '">&times;</button></div>';
     }
     html += '<div class="tl-engage-tiles">'
@@ -260,7 +222,7 @@
     if (!b) return;
     var act = b.dataset.act;
     if (act === 'whatsnew') { openWhatsNew(); return; }
-    if (act === 'recap') { var w = weekStats(); w.recapShown = w.prev ? w.prev.week : ''; write(KEY.week, w); render(); return; }
+    if (act === 'recap') { write(KEY.recap, state.prevWeek ? state.prevWeek.week : ''); render(); return; }
     if (act === 'streak') { showToast(t('engageStreakHow'), 'success'); return; }
     if (act === 'passport') { openPassport(); return; }
     if (act === 'likes') openLikes();
@@ -449,17 +411,20 @@
 
   // --- Hooks app.js calls ---------------------------------------------------
   // A call ended: count it if it was a real one.
-  function onCall(partner, seconds) {
-    if (!partner || seconds < GOOD_CALL_S) return;
-    var bump = bumpStreak();
-    var fresh = stamp(partner.countryCode);
-    noteWeekCall(partner.countryCode, seconds);
+  // A call ended. The server counts it and answers with 'engage-update'; this
+  // hook stays for app.js and has nothing left to do on the page.
+  function onCall() {}
+
+  // The server's answer to a counted call: new numbers, and what to say.
+  function onEngageUpdate(msg) {
+    if (!msg) return;
+    setState(msg.state);
+    var bump = msg.bump;
     var parts = [];
     if (bump && bump.count > 1) parts.push(t(bump.saved ? 'engageStreakSaved' : 'engageStreakUp', { n: bump.count }));
     else if (bump) parts.push(t('engageStreakStart'));
-    if (fresh) parts.push(t('engageStamp', { flag: flag(partner.countryCode), country: countryName(partner.countryCode), n: passport().codes.length }));
+    if (msg.stamp) parts.push(t('engageStamp', { flag: flag(msg.stamp.country), country: countryName(msg.stamp.country), n: msg.stamp.total }));
     if (parts.length) showToast(parts.join(' · '), 'success');
-    render();
   }
 
   // The partner is on the line: Premium badge, and today's question once a day.
@@ -479,6 +444,16 @@
   }
 
   // ---- Server events ------------------------------------------------------------
+  socket.on('engage-state', function (next) {
+    setState(next);
+    // Handed over: the browser's own copy is no longer the truth.
+    if (next && next.merged) {
+      try { localStorage.removeItem(KEY.streak); localStorage.removeItem(KEY.passport); localStorage.removeItem('tl_week_stats'); } catch (_) { /* storage blocked */ }
+    }
+  });
+  socket.on('engage-update', onEngageUpdate);
+  socket.on('connect', function () { setTimeout(syncWithServer, 800); });
+
   socket.on('mutual-heart', function () {
     var add = document.getElementById('addFriendBtn');
     showToast(t('engageMutual'), 'success', function () {
@@ -502,5 +477,6 @@
   window.addEventListener('i18n-changed', render);
   buildStrip();
   refreshLikes();
+  syncWithServer();
   maybeAutoOpenWhatsNew();
 })();

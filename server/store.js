@@ -231,6 +231,9 @@ function defaults() {
     likes: {},
     // Free-trial bookkeeping: clientId -> { n: real calls, trialAt }.
     goodCalls: {},
+    // Streak, passport and weekly stats per profile (see server/engage.js):
+    // clientId -> { streak, passport, week, prevWeek, merged }. Kept for good.
+    engage: {},
     settings: {
       maintenance: { on: false, message: 'TalkLive is under maintenance. We will be back shortly!' },
       // Site-wide switches on the dashboard's Settings tab. Read through
@@ -2250,6 +2253,16 @@ function likesFor(clientId) {
   return (data.likes[clientId] || []).filter((l) => now - l.at < LIKES_TTL_MS);
 }
 
+// --- Streak and passport ---
+function engageGet(clientId) {
+  return data.engage[clientId] || null;
+}
+function engageSet(clientId, rec) {
+  if (!clientId || !rec) return;
+  data.engage[clientId] = rec;
+  save();
+}
+
 // --- Free trial ---
 function noteGoodCall(clientId) {
   const rec = data.goodCalls[clientId] || (data.goodCalls[clientId] = { n: 0, trialAt: 0 });
@@ -3533,6 +3546,8 @@ module.exports = {
   addLike,
   likesFor,
   noteGoodCall,
+  engageGet,
+  engageSet,
   trialUsed,
   markTrialUsed,
   premiumExpiry,

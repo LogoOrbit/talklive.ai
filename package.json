@@ -21,6 +21,7 @@
     "test:matchmaking": "node scripts/test-matchmaking.js",
     "test:filters": "node scripts/test-filters.js",
     "test:perks": "node scripts/test-premium-perks.js",
+    "test:engage": "node scripts/test-engage.js",
     "test:malformed": "node scripts/test-malformed-packets.js",
     "test:voice-gender": "node scripts/test-voice-gender.js && node scripts/test-voice-filter.js",
     "test:durability": "node scripts/test-durability.js",
