@@ -835,7 +835,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "upsellGenderTitle": "Choose who you talk to",
     "upsellPerkCountries": "Unlimited countries & regions",
     "upsellPerkGender": "Match with men or women",
-    "upsellPerkRematch": "Instant rematch, no waiting",
+    "upsellPerkRematch": "Instant rematch: skip the queue",
     "upsellNotify": "Notify me at launch",
     "upsellSeePlans": "See what's included",
     "upsellFree": "Everything you use today stays free.",

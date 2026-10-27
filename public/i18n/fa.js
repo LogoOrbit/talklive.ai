@@ -580,7 +580,7 @@
   "upsellGenderTitle": "انتخاب کن با چه کسی حرف بزنی",
   "upsellPerkCountries": "کشورها و مناطق نامحدود",
   "upsellPerkGender": "با مردها یا زن‌ها جفت شو",
-  "upsellPerkRematch": "جفت جدید فوری، بدون انتظار",
+  "upsellPerkRematch": "جفت فوری: از صف جلو بزن",
   "upsellNotify": "هنگام عرضه خبرم کن",
   "upsellSeePlans": "چه چیزهایی دارد",
   "upsellFree": "هر چه امروز استفاده می‌کنی رایگان می‌ماند.",

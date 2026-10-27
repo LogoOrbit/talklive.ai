@@ -3583,10 +3583,12 @@ function settleReferral(clientId) {
 function emitPremiumStatus(clientId) {
   for (const [sid, profile] of profiles) {
     if (profile.clientId !== clientId) continue;
+    // Queue priority follows the grant straight away, not at the next register.
+    profile.premium = isPremium(clientId);
     const sock = io.sockets.sockets.get(sid);
     if (!sock) continue;
     sock.emit('premium-status', {
-      premium: isPremium(clientId),
+      premium: profile.premium,
       expiresAt: envPremiumClients.has(clientId) ? null : store.premiumExpiry(clientId),
       limits: FREE_LIMITS,
       checkout: billing.configured(),
@@ -3880,8 +3882,15 @@ function matchLang(chosen, acceptLanguage) {
   return /^[a-z]{2}$/.test(parsed) ? parsed : null;
 }
 
+// Premium "instant rematch": a Premium member waiting in the queue is the first
+// pick for whoever searches next, ahead of any interest or language score.
+// It only reorders compatible candidates - filters, blocks and modes still
+// decide who can be matched at all, so nobody else waits longer than a turn.
+const PREMIUM_QUEUE_BONUS = 1000;
+
 function matchScore(a, b) {
-  return sharedInterestCount(a, b) * 2 + (a.lang && a.lang === b.lang ? 1 : 0);
+  return sharedInterestCount(a, b) * 2 + (a.lang && a.lang === b.lang ? 1 : 0)
+    + (b.premium ? PREMIUM_QUEUE_BONUS : 0);
 }
 
 function findBestMatch(socketId) {
@@ -4035,7 +4044,10 @@ function tryMatch(socketId) {
 const QUEUE_SWEEP_MS = 3000;
 function sweepQueue() {
   pruneQueue();
-  for (const socketId of [...waitingQueue]) {
+  // Premium waiters pick first (see PREMIUM_QUEUE_BONUS); otherwise queue order.
+  const order = [...waitingQueue].sort((x, y) =>
+    (profiles.get(y)?.premium ? 1 : 0) - (profiles.get(x)?.premium ? 1 : 0));
+  for (const socketId of order) {
     // Matched by an earlier iteration of this same pass.
     if (!waitingQueue.includes(socketId)) continue;
     const p = profiles.get(socketId);
@@ -4997,6 +5009,8 @@ io.on('connection', (socket) => {
       lang: matchLang(data.lang, socket.handshake.headers['accept-language']),
       // "Speaks" filter: match only people whose language is this one.
       prefLang: typeof data.prefLang === 'string' && /^[a-z]{2}$/.test(data.prefLang) ? data.prefLang : null,
+      // Premium members jump the matching queue (see PREMIUM_QUEUE_BONUS).
+      premium,
       // "Keep waiting" survives a re-register mid-search (saving filters).
       keepFilters: !!(prev && prev.keepFilters),
     });

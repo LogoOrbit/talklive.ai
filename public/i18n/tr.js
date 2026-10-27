@@ -580,7 +580,7 @@
   "upsellGenderTitle": "Kiminle konuşacağını seç",
   "upsellPerkCountries": "Sınırsız ülke ve bölge",
   "upsellPerkGender": "Erkeklerle ya da kadınlarla eşleş",
-  "upsellPerkRematch": "Anında yeni eşleşme, bekleme yok",
+  "upsellPerkRematch": "Anında eşleşme: sırayı atla",
   "upsellNotify": "Çıkınca bana haber ver",
   "upsellSeePlans": "Neler dahil",
   "upsellFree": "Bugün kullandığın her şey ücretsiz kalır.",

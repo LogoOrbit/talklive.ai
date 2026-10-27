@@ -580,7 +580,7 @@
   "upsellGenderTitle": "Wähle, mit wem du sprichst",
   "upsellPerkCountries": "Unbegrenzt Länder & Regionen",
   "upsellPerkGender": "Mit Männern oder Frauen sprechen",
-  "upsellPerkRematch": "Sofort neues Match, kein Warten",
+  "upsellPerkRematch": "Sofort-Match: überspring die Warteschlange",
   "upsellNotify": "Zum Start benachrichtigen",
   "upsellSeePlans": "Was ist enthalten?",
   "upsellFree": "Alles, was du heute nutzt, bleibt kostenlos.",

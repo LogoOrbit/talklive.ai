@@ -580,7 +580,7 @@
   "upsellGenderTitle": "اختر من تتحدث معه",
   "upsellPerkCountries": "دول ومناطق بلا حدود",
   "upsellPerkGender": "تحدّث مع رجال أو نساء",
-  "upsellPerkRematch": "مطابقة جديدة فورًا بلا انتظار",
+  "upsellPerkRematch": "مطابقة فورية: تخطَّ الطابور",
   "upsellNotify": "أخبرني عند الإطلاق",
   "upsellSeePlans": "ما الذي يتضمنه",
   "upsellFree": "كل ما تستخدمه اليوم يبقى مجانيًا.",

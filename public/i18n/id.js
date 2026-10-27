@@ -580,7 +580,7 @@
   "upsellGenderTitle": "Pilih teman bicaramu",
   "upsellPerkCountries": "Negara & wilayah tanpa batas",
   "upsellPerkGender": "Ngobrol dengan pria atau wanita",
-  "upsellPerkRematch": "Pasangan baru instan, tanpa menunggu",
+  "upsellPerkRematch": "Cocok instan: lewati antrean",
   "upsellNotify": "Kabari saya saat rilis",
   "upsellSeePlans": "Lihat isinya",
   "upsellFree": "Semua yang kamu pakai hari ini tetap gratis.",

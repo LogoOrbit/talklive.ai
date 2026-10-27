@@ -580,7 +580,7 @@
   "upsellGenderTitle": "چنیں کہ کس سے بات کریں",
   "upsellPerkCountries": "لامحدود ممالک اور خطے",
   "upsellPerkGender": "مردوں یا خواتین سے بات کریں",
-  "upsellPerkRematch": "فوری نیا میچ، کوئی انتظار نہیں",
+  "upsellPerkRematch": "فوری میچ: قطار سے آگے",
   "upsellNotify": "لانچ پر مجھے بتائیں",
   "upsellSeePlans": "اس میں کیا شامل ہے",
   "upsellFree": "جو کچھ آپ آج استعمال کرتے ہیں وہ مفت رہے گا۔",

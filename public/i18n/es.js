@@ -580,7 +580,7 @@
   "upsellGenderTitle": "Elige con quién hablas",
   "upsellPerkCountries": "Países y regiones ilimitados",
   "upsellPerkGender": "Habla con hombres o mujeres",
-  "upsellPerkRematch": "Nueva pareja al instante, sin esperas",
+  "upsellPerkRematch": "Nueva pareja al instante: sáltate la cola",
   "upsellNotify": "Avísame en el lanzamiento",
   "upsellSeePlans": "Ver qué incluye",
   "upsellFree": "Todo lo que usas hoy sigue siendo gratis.",

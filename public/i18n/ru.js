@@ -580,7 +580,7 @@
   "upsellGenderTitle": "Выбирайте, с кем говорить",
   "upsellPerkCountries": "Без ограничений по странам и регионам",
   "upsellPerkGender": "Общайтесь с мужчинами или женщинами",
-  "upsellPerkRematch": "Мгновенный новый собеседник",
+  "upsellPerkRematch": "Мгновенный подбор: без очереди",
   "upsellNotify": "Сообщить о запуске",
   "upsellSeePlans": "Что входит",
   "upsellFree": "Всё, чем вы пользуетесь сейчас, останется бесплатным.",

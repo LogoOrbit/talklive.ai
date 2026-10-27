@@ -580,7 +580,7 @@
   "upsellGenderTitle": "কার সাথে কথা বলবেন বেছে নিন",
   "upsellPerkCountries": "সীমাহীন দেশ ও অঞ্চল",
   "upsellPerkGender": "পুরুষ বা নারীর সাথে কথা বলুন",
-  "upsellPerkRematch": "সাথে সাথে নতুন ম্যাচ, অপেক্ষা নেই",
+  "upsellPerkRematch": "তাৎক্ষণিক ম্যাচ: লাইন এড়িয়ে যান",
   "upsellNotify": "লঞ্চে আমাকে জানান",
   "upsellSeePlans": "কী কী থাকছে",
   "upsellFree": "আজ যা ব্যবহার করছেন তা ফ্রি-ই থাকবে।",

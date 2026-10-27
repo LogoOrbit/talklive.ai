@@ -3,17 +3,23 @@
 //   1. an avoided country is never matched, not even after the fallback
 //   2. a soft filter (here "Speaks") gives way after the fallback
 //   3. "Keep my filters" stops the fallback, and 'waiting' says so
+//   4. Premium "instant rematch": a Premium waiter is picked before an
+//      earlier free one
 //
 //   node scripts/test-filters.js
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { spawn } = require('child_process');
+const crypto = require('crypto');
 const { io } = require('socket.io-client');
 
 const PORT = 5999 + Math.floor(Math.random() * 300);
 const BASE = `http://127.0.0.1:${PORT}`;
 const DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'tl-filters-'));
+// Known secret, so the test can sign the Premium identity like a real browser.
+const IDENTITY_SECRET = crypto.randomBytes(32).toString('hex');
+const sign = (clientId) => crypto.createHmac('sha256', IDENTITY_SECRET).update(clientId).digest('hex');
 
 let failed = 0;
 const ok = (name, cond, extra) => {
@@ -40,7 +46,7 @@ function connect(name, extra) {
 
 (async () => {
   const srv = spawn(process.execPath, [path.join(__dirname, '..', 'server', 'index.js')], {
-    env: { ...process.env, PORT: String(PORT), DATA_DIR, NODE_ENV: 'development' },
+    env: { ...process.env, PORT: String(PORT), DATA_DIR, NODE_ENV: 'development', PREMIUM_CLIENT_IDS: 'c_filt_Plus', IDENTITY_SECRET },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   const socks = [];
@@ -102,8 +108,33 @@ function connect(name, extra) {
     const keptMatch = await maybe(e, 'matched', 13000);
     ok('kept filters are not dropped by the fallback', keptMatch === null);
 
+    e.close(); f.close();
+    await wait(500);
+
+    // 4. Premium jumps the queue. Both waiters want German speakers and keep
+    // their filters, so they cannot match each other; the German speaker who
+    // arrives last could take either, and must take the Premium one.
+    const free = connect('FreeWaiter', { prefLang: 'de' });
+    const plus = connect('Plus', { prefLang: 'de', identityToken: sign('c_filt_Plus') });
+    socks.push(free, plus);
+    await wait(500);
+    free.emit('find-partner', { mode: 'talk' });
+    await wait(200);
+    free.emit('keep-filters');
+    await wait(300);
+    plus.emit('find-partner', { mode: 'talk' });
+    await wait(200);
+    plus.emit('keep-filters');
+    await wait(300);
+    const german = connect('German', { lang: 'de' });
+    socks.push(german);
+    await wait(500);
+    const plusMatched = maybe(plus, 'matched', 4000);
+    german.emit('find-partner', { mode: 'talk' });
+    ok('a Premium waiter is matched ahead of an earlier free one', !!(await plusMatched));
+
     // Country counts answer with an object.
-    const counts = await new Promise((r) => f.emit('country-counts', r));
+    const counts = await new Promise((r) => free.emit('country-counts', r));
     ok('country-counts answers', counts && typeof counts === 'object');
   } catch (err) {
     console.error(err);

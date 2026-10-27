@@ -580,7 +580,7 @@
   "upsellGenderTitle": "대화 상대를 직접 골라요",
   "upsellPerkCountries": "국가·지역 무제한",
   "upsellPerkGender": "남성 또는 여성과 매칭",
-  "upsellPerkRematch": "기다림 없는 즉시 재매칭",
+  "upsellPerkRematch": "즉시 매칭: 대기열 건너뛰기",
   "upsellNotify": "출시되면 알림 받기",
   "upsellSeePlans": "포함 내용 보기",
   "upsellFree": "지금 쓰는 기능은 모두 계속 무료예요.",

@@ -580,7 +580,7 @@
   "upsellGenderTitle": "話す相手を選べる",
   "upsellPerkCountries": "国と地域を無制限に",
   "upsellPerkGender": "男性または女性とマッチ",
-  "upsellPerkRematch": "待たずにすぐ次の相手へ",
+  "upsellPerkRematch": "すぐにマッチ：順番待ちをスキップ",
   "upsellNotify": "リリース時に通知",
   "upsellSeePlans": "内容を見る",
   "upsellFree": "今使っている機能はすべて無料のままです。",

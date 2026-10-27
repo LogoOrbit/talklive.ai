@@ -580,7 +580,7 @@
   "upsellGenderTitle": "选择和谁聊天",
   "upsellPerkCountries": "国家和地区不限",
   "upsellPerkGender": "与男生或女生匹配",
-  "upsellPerkRematch": "即时重新匹配，无需等待",
+  "upsellPerkRematch": "即时匹配：免排队",
   "upsellNotify": "上线时通知我",
   "upsellSeePlans": "查看包含内容",
   "upsellFree": "你现在用的一切仍然免费。",
