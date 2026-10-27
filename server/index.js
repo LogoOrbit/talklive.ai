@@ -448,6 +448,19 @@ app.post('/subscribe', httpRateLimit('subscribe', 5, 10 * 60000), express.json({
     console.log(`[subscribe] confirmation link for ${email}: ${link}`);
     return res.json({ ok: true });
   }
+  // "Notify me" sign-ups are waiting for one launch; say so, so the email
+  // they get makes sense.
+  const launch = /^notify:/.test(source) ? (source === 'notify:shop' ? 'the TalkLive coin shop' : 'TalkLive Premium') : '';
+  if (launch) {
+    const sentLaunch = await mail.sendMail({
+      to: email,
+      subject: `Confirm: get notified when ${launch} launches`,
+      text: `Hi,\n\nSomeone (hopefully you) asked to be told when ${launch} goes live. To confirm, open this link:\n\n${link}\n\nIf it wasn't you, just ignore this email and you won't hear from us.\n\nTalkLive · info@talklive.app`,
+      html: `<p>Hi,</p><p>Someone (hopefully you) asked to be told when ${launch} goes live. To confirm, tap the link below:</p><p><a href="${escapeHtmlText(link)}">Yes, tell me when it launches</a></p><p>If it wasn't you, just ignore this email and you won't hear from us.</p><p style="color:#888;font-size:12px">TalkLive · info@talklive.app</p>`,
+    });
+    if (!sentLaunch) return res.status(502).json({ error: 'We could not send the confirmation email. Please try again later.' });
+    return res.json({ ok: true });
+  }
   const sent = await mail.sendMail({
     to: email,
     subject: 'Confirm your TalkLive email updates',

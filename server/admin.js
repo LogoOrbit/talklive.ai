@@ -1115,9 +1115,13 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
 
   router.get('/api/data', (req, res) => {
     const subs = Object.values(store.data.subscribers || {});
+    const wait = subs.filter((x) => /^notify:/.test(x.source || ''));
     res.json({ rows: dataRows(), subscribers: {
       confirmed: subs.filter((x) => x.status === 'confirmed').length,
       pending: subs.filter((x) => x.status === 'pending').length,
+      // "Notify me" sign-ups for the Premium / shop launch.
+      waitlist: wait.filter((x) => x.status === 'confirmed').length,
+      waitlistPending: wait.filter((x) => x.status === 'pending').length,
     } });
   });
 

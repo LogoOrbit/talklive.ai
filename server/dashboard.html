@@ -2598,6 +2598,7 @@ async function viewData(){
     <div class="tile"><div class="k">Shared emails</div><div class="v" data-count="${nEmail}">0</div><div class="s">found in chat</div></div>
     <div class="tile"><div class="k">Shared phones</div><div class="v" data-count="${nPhone}">0</div><div class="s">found in chat</div></div>
     <div class="tile"><div class="k">Shared socials</div><div class="v" data-count="${nSocial}">0</div><div class="s">Instagram, Snapchat, Telegram…</div></div>
+    <div class="tile"><div class="k">Launch waitlist</div><div class="v" data-count="${(r.subscribers||{}).waitlist||0}">0</div><div class="s">"Notify me" · confirmed · ${num((r.subscribers||{}).waitlistPending||0)} pending</div></div>
     <div class="tile"><div class="k">Email subscribers</div><div class="v" data-count="${(r.subscribers||{}).confirmed||0}">0</div><div class="s">confirmed · ${num((r.subscribers||{}).pending||0)} pending · ${exportLink('subscribers','CSV')}</div></div>
   </div>
   <div class="card anim"><h2>🗂️ User data <span class="sub">${rows.length===all.length?num(all.length)+(all.length===1?' person':' people'):rows.length+' of '+all.length+' shown'}</span>
