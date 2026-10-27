@@ -25,6 +25,7 @@ const NICK_ERRORS = {
 const store = require('./store');
 const { TrackedMap } = require('./doc-json');
 const modTags = require('./moderation-tags');
+const { createAutomod } = require('./automod');
 const compress = require('./compress');
 const billing = require('./billing');
 const push = require('./push');
@@ -1194,7 +1195,10 @@ function getUserStats(since) {
   return out;
 }
 
-const admin = createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning, deliverFeedbackReply, getUserStats, getLiveGames: () => gameTracker.live() });
+// Automatic warnings and the owner's review queue (server/automod.js). It
+// never bans on its own; the review queue has the ban button.
+const automod = createAutomod({ store, deliverWarning, kickBanned });
+const admin = createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning, deliverFeedbackReply, getUserStats, automod, getLiveGames: () => gameTracker.live() });
 app.use('/owner', admin.router);
 
 // Maintenance mode: when on, every non-dashboard page gets a friendly 503.
@@ -2786,6 +2790,12 @@ function deliverFriendMessage(socket, me, toClientId, parsed, msgId) {
     msgId: msgId || undefined,
     replyTo: parsed.replyTo || undefined,
   });
+  if (parsed.text) {
+    automod.onChatText({
+      from: { clientId: me.clientId, account: socketAuth.get(socket.id) || null, ip: getClientIp(socket), username: me.username, country: me.countryName },
+      to: toClientId, pair: pairKey(me.clientId, toClientId), text: parsed.text,
+    });
+  }
   const key = pairKey(me.clientId, toClientId);
   if (!friendChats.has(key)) friendChats.set(key, []);
   // Stored ids are what replies and reactions point at after a reload, so a
@@ -5343,7 +5353,7 @@ io.on('connection', (socket) => {
       const partnerSocket = io.sockets.sockets.get(partnerId);
       const reportedIp = partnerSocket ? getClientIp(partnerSocket) : null;
       store.recordFeature('report');
-      store.addReport({
+      const rec = store.addReport({
         reporter: { clientId: seeker.clientId, username: seeker.username, country: seeker.countryName, city: seeker.city },
         reported: { clientId: partner.clientId, username: partner.username, country: partner.countryName, city: partner.city, ip: reportedIp },
         reason,
@@ -5354,31 +5364,16 @@ io.on('connection', (socket) => {
       // No email alert for user reports: they arrive far too often to be useful
       // in an inbox. Every report is still recorded above and reviewable in the
       // owner dashboard at /owner.
-      // Auto-ban after the configured threshold - a real persisted ban (default
-      // 30 minutes) so they can't reconnect by refreshing. The owner can extend
-      // or lift it from the dashboard.
-      const distinctReporters = new Set((store.data.reports || [])
-        .filter((r) => r.reported && r.reported.clientId === partner.clientId)
-        .map((r) => r.reporter && r.reporter.clientId)
-        .filter(Boolean));
-      if (totalReports >= (store.data.settings.banThreshold || 3)
-        && distinctReporters.size >= (store.data.settings.banThreshold || 3)
-        && !store.findActiveBan(partner.clientId, reportedIp)) {
-        const ban = store.addBan({
-          clientId: partner.clientId,
-          ip: reportedIp,
-          username: partner.username,
-          country: partner.countryName,
-          city: partner.city,
-          reason: `Auto-ban after ${totalReports} reports`,
-          minutes: store.data.settings.autoBanMinutes || 30,
-        });
-        console.log(`[ban] ${partner.username} auto-banned after ${totalReports} reports`);
-        if (partnerSocket) {
-          partnerSocket.emit('banned', { until: ban.expiresAt, reason: ban.reason });
-          partnerSocket.disconnect(true);
-        }
-      }
+      // The old "3 reports = 30-minute ban" rule is gone: reports now go
+      // through the auto-mod, which weighs how genuine each one is and only
+      // ever warns; bans are the owner's call from its review queue.
+      automod.onReport({
+        reportId: rec.id,
+        reporter: { clientId: seeker.clientId, account: socketAuth.get(socket.id) || null, ip: getClientIp(socket), username: seeker.username, country: seeker.countryName },
+        reported: { clientId: partner.clientId, account: socketAuth.get(partnerId) || null, ip: reportedIp, username: partner.username, country: partner.countryName },
+        reason, detail,
+        seconds: partner.matchedAt ? Math.round((Date.now() - partner.matchedAt) / 1000) : null,
+      });
     }
     disconnectPartner(socket.id);
     tryMatch(socket.id);
@@ -5414,7 +5409,7 @@ io.on('connection', (socket) => {
     const targetSocket = targetSocketId ? io.sockets.sockets.get(targetSocketId) : null;
     const targetProfile = targetSocketId ? profiles.get(targetSocketId) : null;
     store.recordFeature('report');
-    store.addReport({
+    const rec = store.addReport({
       reporter: { clientId: me.clientId, username: me.username, country: me.countryName, city: me.city },
       reported: {
         clientId: targetClientId,
@@ -5427,6 +5422,15 @@ io.on('connection', (socket) => {
       detail: typeof detail === 'string' ? detail.slice(0, 300) : '',
     });
     console.log(`[report] ${me.username} reported ${targetClientId} from a profile (total reports: ${store.reportCountFor(targetClientId)})`);
+    automod.onReport({
+      reportId: rec.id,
+      reporter: { clientId: me.clientId, account: socketAuth.get(socket.id) || null, ip: getClientIp(socket), username: me.username, country: me.countryName },
+      reported: {
+        clientId: targetClientId, account: targetSocketId ? socketAuth.get(targetSocketId) || null : null,
+        ip: targetSocket ? getClientIp(targetSocket) : null, username: rec.reported.username, country: rec.reported.country,
+      },
+      reason: rec.reason, detail: rec.detail, seconds: null,
+    });
     syncClientState(socket, me.clientId);
     // The other side's friends list has lost someone too.
     if (targetSocket) syncClientState(targetSocket, targetClientId);
@@ -5648,6 +5652,12 @@ io.on('connection', (socket) => {
         msgId: msg.id || undefined,
         replyTo: msg.replyTo || undefined,
       });
+      if (msg.text) {
+        automod.onChatText({
+          from: { clientId: me.clientId, account: socketAuth.get(socket.id) || null, ip: getClientIp(socket), username: me.username, country: me.countryName },
+          to: them.clientId, pair: pairKey(me.clientId, them.clientId), text: msg.text,
+        });
+      }
     }
     // The server's clock is the only one both sides agree on, so it stamps the
     // message rather than letting each browser date it by its own (often

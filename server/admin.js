@@ -411,7 +411,8 @@ function generateConclusion(runtime, report) {
 }
 
 // --- Module wiring ---
-function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning, deliverFeedbackReply, getLiveGames, getUserStats }) {
+function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning, deliverFeedbackReply, getLiveGames, getUserStats, automod }) {
+  if (automod) automod.setAlert(sendAlertEmail);
   const router = express.Router();
   router.use(express.json({ limit: '64kb' }));
 
@@ -684,6 +685,7 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
       counts: {
         reports: store.data.reports.length,
         unhandledReports: store.data.reports.filter((r) => !r.handled).length,
+        autoReview: automod ? automod.openReviews() : 0,
         errors: store.data.errors.length,
         feedback: store.data.feedback.length,
         activeBans: store.activeBans().length,
@@ -838,6 +840,31 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
     store.audit('ban', reqIp(req), `Banned ${username || clientId || ip} for ${mins} min - ${reason || 'no reason'}`);
     kickBanned(clientId, ip, ban);
     res.json({ ok: true, ban });
+  });
+
+  // --- Auto-mod (server/automod.js) ------------------------------------------
+  router.get('/api/automod', (req, res) => {
+    if (!automod) return res.status(503).json({ error: 'Auto-mod is not running.' });
+    res.json({ ...automod.summary(), emailAlerts: !!(mail.configured() && OWNER_EMAIL) });
+  });
+  router.get('/api/automod/simulate', (req, res) => {
+    if (!automod) return res.status(503).json({ error: 'Auto-mod is not running.' });
+    res.json(automod.simulate());
+  });
+  router.post('/api/automod/settings', (req, res) => {
+    if (!automod) return res.status(503).json({ error: 'Auto-mod is not running.' });
+    res.json({ ok: true, settings: automod.updateSettings(req.body || {}, reqIp(req)) });
+  });
+  router.post('/api/automod/decide', (req, res) => {
+    const b = req.body || {};
+    const out = automod ? automod.decide(String(b.key || ''), String(b.action || ''), { minutes: b.minutes, ip: reqIp(req) }) : { error: 'Auto-mod is not running.' };
+    if (out.error) return res.status(400).json(out);
+    res.json(out);
+  });
+  router.post('/api/automod/undo/:id', (req, res) => {
+    const out = automod ? automod.undo(req.params.id, reqIp(req)) : { error: 'Auto-mod is not running.' };
+    if (out.error) return res.status(400).json(out);
+    res.json(out);
   });
 
   // Send one person a warning about their behaviour. It appears in the app as a

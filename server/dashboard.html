@@ -888,7 +888,7 @@ const NAV=[
   ['Moderation',[
     ['reports','Reports','🚩',[['reports','Reports','🚩']]],
     ['chats','Messages','💬',[['chats','Chats','💬'],['voicenotes','Voice notes','🎙️']]],
-    ['bans','Bans & warnings','⛔',[['bans','Bans','⛔'],['warnings','Warnings','⚠️']]],
+    ['automod','Safety','🛡️',[['automod','Auto-mod','🛡️'],['bans','Bans','⛔'],['warnings','Warnings','⚠️']]],
     ['feedback','Feedback','⭐',[['feedback','Feedback','⭐']]]]],
   ['People',[
     ['users','Users','🧑‍🤝‍🧑',[['users','All users','🧑‍🤝‍🧑'],['accounts','Accounts','👤'],['talktime','Talk time','⏱️'],['data','User data','🗂️']]],
@@ -924,6 +924,7 @@ const REFRESH_MS=()=>tab==='live'?5000:(tab==='ai'||tab==='health'||tab==='traff
 
 function navBadge(id){
   if(id==='reports'&&counts.unhandledReports)return `<span class="badge">${counts.unhandledReports}</span>`;
+  if(id==='automod'&&counts.autoReview)return `<span class="badge">${counts.autoReview}</span>`;
   if(id==='errors'&&counts.errors)return `<span class="badge" style="background:var(--serious)">${counts.errors}</span>`;
   return '';
 }
@@ -1156,6 +1157,7 @@ async function load(force){
     else if(tab==='reports')await viewReports();
     else if(tab==='bans')await viewBans();
     else if(tab==='warnings')await viewWarnings();
+    else if(tab==='automod')await viewAutomod();
     else if(tab==='chats')await viewChats();
     else if(tab==='voicenotes')await viewVoiceNotes();
     else if(tab==='users')await viewUsers();
@@ -1310,9 +1312,10 @@ async function viewOverview(){
   const c=o.conclusion;
   if(!live&&o.runtime.live)onLive(o.runtime.live);
   $('#main').innerHTML=`
-  ${(o.counts.unhandledReports||o.maintenance.on||o.counts.errors)?`<div class="card anim" style="margin:0 0 12px;border-color:color-mix(in srgb,var(--warn) 40%,transparent)"><h2>🔔 Needs your attention</h2>
+  ${(o.counts.unhandledReports||o.maintenance.on||o.counts.errors||o.counts.autoReview)?`<div class="card anim" style="margin:0 0 12px;border-color:color-mix(in srgb,var(--warn) 40%,transparent)"><h2>🔔 Needs your attention</h2>
     <div class="rowbtns">
     ${o.maintenance.on?`<button class="danger" onclick="go('settings')">🛠️ Site is in MAINTENANCE - bring it back</button>`:''}
+    ${o.counts.autoReview?`<button class="danger" onclick="go('automod')">🛡️ ${num(o.counts.autoReview)} user(s) waiting for your review</button>`:''}
     ${o.counts.unhandledReports?`<button class="danger" onclick="go('reports')">🚩 ${num(o.counts.unhandledReports)} unhandled report(s)</button>`:''}
     ${o.counts.errors?`<button onclick="go('errors')">🐛 ${num(o.counts.errors)} logged error(s)</button>`:''}
     ${o.counts.activeBans?`<button onclick="go('bans')">⛔ ${num(o.counts.activeBans)} active ban(s)</button>`:''}
@@ -2047,6 +2050,134 @@ window.warnUser=(clientId,account,username,country)=>{
 };
 
 let warnFilter='all';
+/* ---------- auto-mod ----------
+   Warnings first, never an automatic ban. Reports are weighted by how genuine
+   they look (and checked by AI when the chat was typed); the ladder is
+   warning -> final warning -> owner review. Logic lives in server/automod.js. */
+const AM_ACT={warn1:['⚠️ Warning','warn'],warn2:['🟧 Final warning','warn'],review:['🧑‍⚖️ Sent to review','info'],severe:['🚨 Urgent review','crit'],skip:['✅ Not acted on','good'],owner_ban:['⛔ You banned','crit'],owner_clear:['🧹 You cleared','good'],owner_warn:['⚠️ You warned','warn'],live:['🟢 Went live','good']};
+const AM_EV={report:'🚩 Report',keyword:'🔤 Chat words',ai:'🤖 AI'};
+function amEvents(evs){
+  return evs.map(e=>`<div style="padding:7px 0;border-top:1px solid var(--grid);font-size:.8rem${e.cleared?';opacity:.5':''}">
+    <b>${AM_EV[e.type]||e.type}</b> · counts <b>${e.pending?'…checking':e.weight}</b> · ${ago(e.ts)}${e.reason?` · ${esc(e.reason)}`:''}${e.cleared?' · cleared':''}
+    ${e.detail?`<div class="muted" style="font-size:.78rem">“${esc(e.detail)}”</div>`:''}
+    ${e.ai?`<div style="font-size:.78rem"><span class="pill ${e.ai.verdict==='violation'?'crit':e.ai.verdict==='no_violation'?'good':'info'}">AI: ${esc(e.ai.verdict.replace('_',' '))}${e.ai.severity&&e.ai.severity!=='none'?' · '+esc(e.ai.severity):''}</span> ${esc(e.ai.summary||'')}</div>`:''}
+    ${e.why&&e.why.length?`<div class="muted" style="font-size:.74rem">${e.why.map(esc).join(' · ')}</div>`:''}</div>`).join('')||'<div class="muted">No events.</div>';
+}
+const amLevel=(l)=>['clean','warned','final warning','in review'][Math.min(3,l||0)];
+async function viewAutomod(){
+  const r=await vapi('automod');
+  const st=r.settings,c=r.counts||{};
+  const isDry=st.mode==='dryrun',isLive=st.mode==='live';
+  const would=isDry?'Would have ':'';
+  const modeCard=isLive?`<span class="pill good" style="font-size:.85rem">● LIVE</span> Sending warnings and filling your review queue. It never bans anyone on its own.`
+    :isDry?`<span class="pill warn" style="font-size:.85rem">DRY RUN</span> Watching and logging what it <i>would</i> do; nobody is warned. ${st.autoLive?`Goes live automatically <b>${until(st.dryRunUntil)}</b> (${esc(fmtTs(st.dryRunUntil))}).`:'Stays in dry run until you switch it on.'}`
+    :`<span class="pill crit" style="font-size:.85rem">OFF</span> Reports are recorded but not scored.`;
+  $('#main').innerHTML=`
+  <div class="card anim" style="margin-top:0"><h2>🛡️ Automatic moderation</h2>
+    <div style="line-height:1.6">${modeCard}</div>
+    <div class="rowbtns" style="margin-top:10px">
+      ${!isLive?`<button onclick="amSet({mode:'live'},'Auto-mod is live')">🟢 Go live now</button>`:''}
+      ${!isDry?`<button onclick="amSet({extendDryRun:true},'Back in dry run for 7 days')">🧪 Dry run for 7 days</button>`:`<button onclick="amSet({extendDryRun:true},'Dry run extended')">🧪 Restart the 7-day dry run</button>`}
+      ${st.mode!=='off'?`<button class="danger" onclick="amSet({mode:'off'},'Auto-mod is off')">⏻ Turn off</button>`:''}
+      <button onclick="amRules()">⚙️ Rules</button>
+      <button onclick="amSimulate()">🔬 Test the rules on past reports</button>
+    </div>
+    <div class="muted" style="margin-top:10px;font-size:.78rem">
+      🤖 AI checks: ${r.aiConfigured?(st.ai?`<b style="color:var(--good)">on</b> · ${num(r.aiCallsLastHour)} this hour`:'off in Rules'):'not set up (add <code>ANTHROPIC_API_KEY</code> to the server)'} ·
+      ✉️ Email alerts for the review queue: ${r.emailAlerts?'<b style="color:var(--good)">on</b>':'not set up (OWNER_EMAIL + SMTP)'} ·
+      ${num(r.tracked)} people tracked</div>
+  </div>
+
+  <div class="sechead">Last 7 days${isDry?' · dry run, nothing was sent':''}</div>
+  <div class="grid tiles">
+    <div class="tile anim"><div class="k">${would}warned</div><div class="v" data-count="${c.warn1||0}">0</div><div class="s">first warning</div></div>
+    <div class="tile anim"><div class="k">${would}final warnings</div><div class="v" data-count="${c.warn2||0}">0</div><div class="s">reported again after a warning</div></div>
+    <div class="tile anim"><div class="k">Sent to you</div><div class="v" style="color:${(c.review||0)+(c.severe||0)?'var(--warn)':'inherit'}" data-count="${(c.review||0)+(c.severe||0)}">0</div><div class="s">${num(c.severe||0)} urgent · review queue</div></div>
+    <div class="tile anim"><div class="k">Reports ignored</div><div class="v" style="color:var(--good)" data-count="${c.skip||0}">0</div><div class="s">normal for how much they chat</div></div>
+  </div>
+
+  <div class="card anim"><h2>🧑‍⚖️ Waiting for your decision <span class="sub">${r.review.length?r.review.length+' open':'nothing waiting'} · auto-mod never bans by itself</span></h2>
+    ${r.review.map(p=>`<div style="border:1px solid ${p.review.severe?'var(--crit)':'var(--ring)'};border-radius:14px;padding:12px;margin-bottom:10px;background:var(--surface-2)">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b>${esc(p.username||p.clientId)}</b>${p.account?` <span class="pill info">account</span>`:''}${p.review.severe?' <span class="pill crit">URGENT</span>':''}${p.review.dry?' <span class="pill warn">dry run</span>':''}
+        <span class="muted">${esc(p.country||'')} · score ${p.score} · ${p.sources} source(s) · ${num(p.conversations)} conversations${p.rate!=null?' · '+p.rate+'% reported':''} · ${ago(p.review.ts)}</span></div>
+      <div style="margin:6px 0;font-size:.85rem">${esc(p.review.why||'')}</div>
+      <div class="rowbtns">
+        <button class="danger" onclick="amDecide('${jsq(p.key)}','ban',1440)">⛔ Ban 1 day</button>
+        <button class="danger" onclick="amDecide('${jsq(p.key)}','ban',10080)">⛔ Ban 7 days</button>
+        <button class="warnb" onclick="amDecide('${jsq(p.key)}','warn')">⚠️ Warn instead</button>
+        <button onclick="amDecide('${jsq(p.key)}','clear')">🧹 Not genuine - clear</button>
+      </div>
+      <details style="margin-top:8px"><summary class="muted" style="cursor:pointer">Evidence (${p.events.length})</summary>${amEvents(p.events)}</details>
+    </div>`).join('')||'<div class="muted">Nobody needs a decision. People only land here after a warning <i>and</i> a final warning, or for something urgent (threats, sexual talk with a minor).</div>'}
+  </div>
+
+  <div class="card anim"><h2>👀 Watch list <span class="sub">people with genuine-looking reports in the last ${st.windowDays} days</span></h2>
+    <table><tr><th>User</th><th>Status</th><th class="num">Score</th><th class="num">Sources</th><th class="num">Conversations</th><th class="num">Reported</th><th>Evidence</th></tr>
+    ${r.watch.map(p=>`<tr><td><b>${esc(p.username||p.clientId)}</b><div class="muted" style="font-size:.72rem">${esc(p.country||'')}</div></td>
+      <td><span class="pill ${p.level>=3?'crit':p.level?'warn':'good'}">${amLevel(p.level)}</span></td>
+      <td class="num"><b>${p.score}</b></td><td class="num">${p.sources}</td><td class="num">${num(p.conversations)}</td><td class="num">${p.rate==null?'-':p.rate+'%'}</td>
+      <td><details><summary class="muted" style="cursor:pointer">${p.events.length} event(s)</summary>${amEvents(p.events)}</details></td></tr>`).join('')||`<tr><td colspan="7" class="muted">No one has genuine-looking reports right now.</td></tr>`}</table>
+  </div>
+
+  <div class="card anim"><h2>🧾 What it did <span class="sub">newest first · undo takes back an unread warning</span></h2>
+    <table><tr><th>When</th><th>User</th><th>Action</th><th>Why</th><th></th></tr>
+    ${r.log.slice(0,100).map(l=>{const a=AM_ACT[l.action]||[l.action,'info'];return `<tr style="${l.undone?'opacity:.5':''}"><td>${ago(l.ts)}</td><td>${esc(l.username||'-')}</td>
+      <td><span class="pill ${a[1]}">${l.dry&&!/^owner|live/.test(l.action)?'Would: ':''}${a[0]}</span>${l.undone?' <span class="muted">undone</span>':''}</td>
+      <td class="muted" style="font-size:.78rem">${esc(l.detail)}</td>
+      <td>${!l.undone&&/^(warn1|warn2|review|severe)$/.test(l.action)?`<div class="rowbtns"><button onclick="amUndo('${jsq(l.id)}')">↩ Undo</button></div>`:''}</td></tr>`;}).join('')||'<tr><td colspan="5" class="muted">Nothing yet. Every report from now on is scored here.</td></tr>'}</table>
+  </div>
+
+  <div class="card anim"><h2>ℹ️ How it decides</h2><ul class="muted" style="line-height:1.7;padding-left:18px;font-size:.84rem">
+    <li>Each person who reports counts <b>once</b>. Reporters on the same network count once between them.</li>
+    <li>Reports count for less when the reporter files many reports a day, often gets cleared by you, is heavily reported themselves, or reports straight back at someone who just reported them.</li>
+    <li>For typed chats, AI reads the conversation: a confirmed report counts 1.5×, a report with nothing wrong in the chat counts ¼. If the reporter was the one breaking rules, they get the strike instead.</li>
+    <li>Slurs and threats typed in chat count like a report (once per chat partner per day). Sexual messages to someone who said they're under 18 go straight to you.</li>
+    <li>Nobody is warned unless reports are unusual for how much they chat: at least ${(st.minRate*100).toFixed(0)}% of their conversations in the last ${st.windowDays} days.</li>
+    <li>Score ${st.warn1} → warning · ${st.warn2} (with new reports) → final warning · ${st.review} → your review queue. Warnings fade after ${st.strikeDays} quiet days.</li>
+  </ul></div>`;
+  animateCounters();
+}
+async function amSet(patch,msg){try{await post('automod/settings',patch);toast(msg||'Saved','', 'good');load();}catch(e){toast('Could not save',e.message,'bad');}}
+async function amDecide(key,action,minutes){
+  const label={ban:'Ban this user for '+(minutes>=10080?'7 days':'1 day'),warn:'Send a warning',clear:'Clear them and trust these reporters less'}[action];
+  if(!confirm(label+'?'))return;
+  try{await post('automod/decide',{key,action,minutes});toast('Done',label,'good');load();}catch(e){toast('Failed',e.message,'bad');}
+}
+async function amUndo(id){if(!confirm('Undo this? An unread warning is withdrawn and their level steps down.'))return;try{await post('automod/undo/'+encodeURIComponent(id));toast('Undone','','good');load();}catch(e){toast('Failed',e.message,'bad');}}
+async function amRules(){
+  const r=await api('automod');const st=r.settings;
+  const f=(k,l,h,step)=>`<label>${l}</label><input type="number" id="am_${k}" value="${k==='minRate'?st[k]*100:st[k]}" step="${step||1}" min="0"><div class="muted" style="font-size:.74rem;margin-top:3px">${h}</div>`;
+  const b=(k,l)=>`<label style="display:flex;gap:8px;align-items:center;text-transform:none;letter-spacing:0;font-size:.86rem;color:var(--text)"><input type="checkbox" id="am_${k}" style="width:auto" ${st[k]?'checked':''}>${l}</label>`;
+  modal('⚙️ Auto-mod rules',`
+    ${f('warn1','Score for a warning','About this many genuine, different reporters.')}
+    ${f('warn2','Score for a final warning','Needs new reports after the first warning.')}
+    ${f('review','Score to send to you for review','Never an automatic ban - you decide.')}
+    ${f('windowDays','Look back (days)','Reports older than this stop counting.')}
+    ${f('minRate','Minimum report rate (%)','Share of their conversations that got a genuine report. Keeps busy, normal users safe.',0.5)}
+    ${f('strikeDays','Warnings fade after (days)','With no new reports.')}
+    ${b('ai','Use AI to read reported text chats')}
+    ${b('keywordStrikes','Count slurs and threats typed in chat')}
+    ${b('autoLive','Go live automatically when the dry run ends')}
+    <button class="btn" id="amSave">Save rules</button>`,(sh)=>{
+      sh.querySelector('#amSave').onclick=async()=>{
+        const g=(k)=>sh.querySelector('#am_'+k);
+        const patch={warn1:+g('warn1').value,warn2:+g('warn2').value,review:+g('review').value,windowDays:+g('windowDays').value,minRate:+g('minRate').value/100,strikeDays:+g('strikeDays').value,ai:g('ai').checked,keywordStrikes:g('keywordStrikes').checked,autoLive:g('autoLive').checked};
+        closeModal();amSet(patch,'Rules saved');
+      };
+    });
+}
+async function amSimulate(){
+  const r=await api('automod/simulate');
+  modal('🔬 Rules tested on past reports',`
+    <div class="muted" style="margin-bottom:10px">The last ${r.windowDays} days: <b>${num(r.reports)}</b> reports on <b>${num(r.people)}</b> people. Without AI checks, so real results will be stricter about what counts.</div>
+    <div class="grid" style="grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px">
+      <div class="tile"><div class="k">Old rule would ban</div><div class="v" style="color:var(--crit)">${num(r.oldRuleBans)}</div><div class="s">3 reporters = 30 min ban</div></div>
+      <div class="tile"><div class="k">New rules would warn</div><div class="v" style="color:var(--warn)">${num(r.warn1)}</div><div class="s">${num(r.reviewPossible)} could reach review later</div></div>
+    </div>
+    <div style="max-height:45vh;overflow:auto"><table style="min-width:0"><tr><th>User</th><th class="num">Reports</th><th class="num">Reporters</th><th class="num">Score</th><th class="num">Convs</th></tr>
+    ${r.top.map(x=>`<tr${x.rateOk?'':' style="opacity:.55" title="Report rate is normal for how much they chat"'}><td>${esc(x.username||x.clientId)}</td><td class="num">${x.reports}</td><td class="num">${x.reporters}</td><td class="num">${x.score}</td><td class="num">${x.conversations||'-'}</td></tr>`).join('')||'<tr><td colspan="5" class="muted">No reports in this window.</td></tr>'}</table></div>`);
+}
+
 async function viewWarnings(){
   const r=await vapi('warnings');
   const all=r.warnings;
