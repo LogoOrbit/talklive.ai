@@ -54,13 +54,13 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
      system face a beat later. Only the latin subset is preloaded - latin-ext
      is fetched on demand by the unicode-range in style.css. -->
 <link rel="preload" as="font" type="font/woff2" href="/fonts/plus-jakarta-sans-latin.woff2?v=20260922type" crossorigin />
-<link rel="stylesheet" href="style.css?v=20261027filters" />
+<link rel="stylesheet" href="style.css?v=20261027filters2" />
 <link rel="stylesheet" href="chat-extras.css?v=20261004glow" />
 <link rel="stylesheet" href="games.css?v=20261006fix" />
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
      side-panel shell, Settings, Friends/History and the account dialog, and it
      does so with its own `tl-` class names so nothing above can reach it. -->
-<link rel="stylesheet" href="ui.css?v=20261027filters" />
+<link rel="stylesheet" href="ui.css?v=20261027filters2" />
 <link rel="stylesheet" href="auth.css?v=20260924auth" />
 <!-- The top bar, shared with /chat. Loaded after everything else because it
      owns the header outright: one button language, one radius, one focus ring
@@ -803,6 +803,11 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
       <div class="side-panel-body">
         <div class="tl-panel-body">
 
+          <!-- Saved presets: one tap to switch a whole set of filters. Built by
+               renderFilterPresets() in app.js; empty until there is something
+               worth saving. -->
+          <div id="filterPresets" class="tl-presets"></div>
+
           <!-- 1. Who -->
           <section class="tl-filter-block">
             <div role="heading" aria-level="3" class="ui-h3 tl-filter-legend" id="prefGenderGroupLabel">
@@ -826,7 +831,16 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
             </p>
           </section>
 
-          <!-- 2. Where - only. Green, a tick, and its own count. -->
+          <!-- 2. Speaks -->
+          <section class="tl-filter-block">
+            <label class="ui-h3 tl-filter-legend" for="prefLangSelect">
+              <span data-i18n="speaks">Speaks</span>
+            </label>
+            <p class="tl-filter-hint" data-i18n="speaksHint">Match with people who use TalkLive in this language.</p>
+            <select id="prefLangSelect" class="tl-filter-input tl-filter-select"></select>
+          </section>
+
+          <!-- 3. Where - preferred. Green, a tick, and its own count. -->
           <section class="tl-filter-block tl-filter-country tl-filter-only">
             <div role="heading" aria-level="3" class="ui-h3 tl-filter-legend">
               <span class="tl-filter-mark" aria-hidden="true">
@@ -841,12 +855,14 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
                 <input type="text" id="includeCountrySearch" class="tl-filter-input" data-i18n-placeholder="searchCountry" data-i18n-aria="onlyFromTitle" placeholder="Search country…" autocomplete="off" />
                 <div id="includeCountryResults" class="search-results hidden"></div>
               </div>
+              <div id="regionQuick" class="tl-filter-quick"></div>
               <div id="includeCountryQuick" class="tl-filter-quick"></div>
               <div id="includeCountryChips" class="interest-tags tl-filter-chips"></div>
+              <p class="tl-filter-limit" id="includeCountryLimit" hidden></p>
             </div>
           </section>
 
-          <!-- 3. Where - never. Red, a cross; folded away until it is wanted. -->
+          <!-- 4. Where - avoided. Red, a cross; folded away until it is wanted. -->
           <details class="tl-filter-block tl-filter-country tl-filter-never" id="excludeCountryBlock">
             <summary class="ui-h3 tl-filter-legend">
               <span class="tl-filter-mark" aria-hidden="true">
@@ -863,10 +879,11 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
                 <div id="excludeCountryResults" class="search-results hidden"></div>
               </div>
               <div id="excludeCountryChips" class="interest-tags tl-filter-chips"></div>
+              <p class="tl-filter-limit" id="excludeCountryLimit" hidden></p>
             </div>
           </details>
 
-          <!-- 4. What about -->
+          <!-- 5. What about -->
           <section class="tl-filter-block">
             <div role="heading" aria-level="3" class="ui-h3 tl-filter-legend">
               <span data-i18n="interests">Interests</span>
@@ -890,7 +907,8 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
       <div class="side-panel-footer">
         <div class="filters-actions">
           <button type="button" id="clearFiltersBtn" class="tl-filter-btn tl-filter-btn-ghost" data-i18n="clearAll">Clear all</button>
-          <button type="button" id="saveFiltersBtn" class="tl-filter-btn tl-filter-btn-primary" data-i18n="saveFilters">Save filters</button>
+          <!-- Every change applies as it is made; this only closes the panel. -->
+          <button type="button" id="saveFiltersBtn" class="tl-filter-btn tl-filter-btn-primary" data-i18n="filtersDone">Done</button>
         </div>
       </div>
     </aside>
@@ -1021,6 +1039,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="11" cy="18" r="2" fill="currentColor" stroke="none"/></svg>
             </span>
             <span class="tl-nav-label" data-i18n="filters">Filters</span>
+            <span id="filtersBadge" class="notif-badge tl-filters-badge hidden" aria-hidden="true">0</span>
           </button>
 
           <!-- Shop is real markup behind a real dialog, but nothing in it is
@@ -1824,6 +1843,8 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 
         <p id="statusText" class="status-text" aria-live="polite">Tap the green button to talk to a random person</p>
         <p id="subText" class="sub-text">Voice only · No sign up needed</p>
+        <!-- While searching with filters: stop the random fallback (or undo it). -->
+        <button type="button" id="keepFiltersBtn" class="tl-keep-filters hidden" data-i18n="keepMyFilters">Keep my filters</button>
 
         <!-- Connection state, in the middle of the column with the lines it
              belongs to. It used to sit in a header row of its own in the top
@@ -2539,7 +2560,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   <script defer src="voice-notes.js?v=20261001mic"></script>
   <script defer src="games.js?v=20261005min"></script>
   <script defer src="nickname-rules.js?v=20260924nick"></script>
-  <script defer src="app.js?v=20261027filters"></script>
+  <script defer src="app.js?v=20261027filters2"></script>
 
 <!-- Analytics tag, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

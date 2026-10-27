@@ -1627,6 +1627,7 @@ summary.tl-filter-legend::-webkit-details-marker { display: none; }
 
 /* Quick-picks: the common case, without typing. They disappear as they are
    used, so the row is always "what you could still add". */
+.tl-filter-quick:empty { display: none; }
 .tl-filter-quick {
   display: flex;
   flex-wrap: wrap;
@@ -1696,6 +1697,81 @@ summary.tl-filter-legend::-webkit-details-marker { display: none; }
 }
 /* Three options on a narrow panel: keep each label on one line. */
 #filtersPanel .tl-seg-opt { white-space: nowrap; min-width: 0; padding-inline: 6px; }
+
+/* Filters on: the badge on the nav button is the accent, not the alarm red. */
+.tl-nav-item .tl-filters-badge { background: var(--accent); }
+
+.tl-filter-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-inline-end: 34px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+.tl-filter-select option { color: #111; }
+
+.tl-quick-count { color: var(--green); font-weight: 700; font-size: 11.5px; }
+.tl-region-chip { border-style: solid; }
+
+.tl-filter-limit {
+  margin: var(--tl-s2) 0 0;
+  font-size: 12px;
+  color: var(--accent-2);
+}
+.tl-filter-limit[hidden] { display: none; }
+.tl-filter-limit a { color: inherit; font-weight: 700; }
+
+/* Saved presets: a row of one-tap chips above the filters. */
+.tl-presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.tl-presets.hidden, .tl-presets:empty { display: none; }
+.tl-preset {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--tl-line-strong);
+  border-radius: var(--tl-r-pill);
+  overflow: hidden;
+}
+.tl-preset.is-active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); }
+.tl-preset button, .tl-preset-add {
+  min-height: 32px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tl-preset-use { padding: 0 6px 0 12px; }
+.tl-preset-del { padding: 0 10px 0 4px; color: var(--muted) !important; }
+.tl-preset-add {
+  padding: 0 12px;
+  border: 1px dashed var(--tl-line-strong);
+  border-radius: var(--tl-r-pill);
+  color: var(--muted);
+}
+.tl-preset-add:hover, .tl-preset-use:hover { color: var(--text); }
+
+/* Searching with filters: keep them instead of widening to everyone. */
+.tl-keep-filters {
+  display: block;
+  margin: 0 auto 16px;
+  min-height: 36px;
+  padding: 0 16px;
+  border: 1px solid var(--tl-line-strong);
+  border-radius: var(--tl-r-pill);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.tl-keep-filters.hidden { display: none; }
+.tl-keep-filters:hover { background: color-mix(in srgb, var(--text) 8%, transparent); }
 
 /* An empty count is no count, not a blank pill. */
 .tl-filter-count:empty { display: none; }

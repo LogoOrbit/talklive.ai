@@ -1043,7 +1043,21 @@ function makeCountryMultiSelect(searchInput, resultsEl, chipsEl, set, getOther) 
     return true;
   }
 
-  return { renderChips, renderResults, add, set };
+  function addMany(codes) {
+    const fresh = codes.filter((c) => COUNTRIES[c] && !set.has(c));
+    if (!fresh.length) return;
+    if (!isPremiumUser && set.size + fresh.length > freeLimits.countries) {
+      showPremiumUpsell(t('premiumCountryLimit', { n: freeLimits.countries }));
+      return;
+    }
+    const other = getOther();
+    let otherChanged = false;
+    fresh.forEach((c) => { set.add(c); if (other.set.delete(c)) otherChanged = true; });
+    if (otherChanged) other.renderChips();
+    renderChips();
+  }
+
+  return { renderChips, renderResults, add, addMany, set };
 }
 
 const includeCountryWidget = makeCountryMultiSelect(
@@ -1078,6 +1092,17 @@ var filtersReady = false;
 // the ones that come up most in a random-chat queue, so the first tap is
 // usually right there. Anything else is still one search away.
 const QUICK_COUNTRIES = ['US', 'GB', 'CA', 'IN', 'PK', 'DE'];
+// One tap for a whole part of the world. Premium only: a region is more
+// countries than the free plan holds.
+const FILTER_REGIONS = {
+  europe: { icon: '🇪🇺', key: 'regionEurope', codes: ['GB', 'DE', 'FR', 'ES', 'IT', 'NL', 'PL', 'PT', 'SE', 'IE', 'BE', 'AT', 'CH', 'GR', 'RO'] },
+  southAsia: { icon: '🌏', key: 'regionSouthAsia', codes: ['IN', 'PK', 'BD', 'LK', 'NP'] },
+  middleEast: { icon: '🕌', key: 'regionMiddleEast', codes: ['AE', 'SA', 'EG', 'TR', 'IR', 'IQ', 'JO', 'KW', 'QA', 'MA'] },
+  americas: { icon: '🌎', key: 'regionAmericas', codes: ['US', 'CA', 'MX', 'BR', 'AR', 'CO', 'CL', 'PE'] },
+  eastAsia: { icon: '🗾', key: 'regionEastAsia', codes: ['JP', 'KR', 'CN', 'PH', 'ID', 'MY', 'TH', 'VN', 'SG'] },
+};
+// People online per country, asked for each time the panel opens.
+var filterCountryCounts = null;
 // 'english' leads: practising spoken English is the commonest reason people
 // give for being here, and learners do best when they meet each other.
 const QUICK_INTERESTS = ['english', 'music', 'gaming', 'movies', 'travel', 'football', 'coding', 'books', 'anime'];
@@ -1104,6 +1129,14 @@ function syncFilterReadout() {
     excludeCountryCountEl.textContent = excludeCountries.size ? countText(excludeCountries.size) : '';
     excludeCountryCountEl.classList.toggle('is-full', !!cap && excludeCountries.size >= cap);
   }
+  [['includeCountryLimit', includeCountries], ['excludeCountryLimit', excludeCountries]].forEach(([id, set]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const full = !!cap && set.size >= cap;
+    el.hidden = !full;
+    if (full) el.innerHTML = `${escapeHtml(t('freeCountryLimit', { n: cap }))} <a href="/pricing?utm_source=app&utm_medium=filters">${escapeHtml(t('getPremiumShort'))}</a>`;
+  });
+  scheduleFilterAutosave();
   // The never list stays folded until it is used, so it never hides a choice.
   const excludeBlock = document.getElementById('excludeCountryBlock');
   if (excludeBlock && excludeCountries.size > 0) excludeBlock.open = true;
@@ -1113,15 +1146,39 @@ function syncFilterReadout() {
 function renderQuickPicks() {
   const includeCountryQuickEl = document.getElementById('includeCountryQuick');
   const interestQuickEl = document.getElementById('interestQuick');
+  const regionQuickEl = document.getElementById('regionQuick');
   if (includeCountryQuickEl) {
     includeCountryQuickEl.innerHTML = '';
-    QUICK_COUNTRIES.filter((code) => !includeCountries.has(code)).slice(0, 3).forEach((code) => {
+    // Busiest countries right now first, so a pick is likely to match fast;
+    // the usual favourites fill in while the counts are unknown.
+    const counts = filterCountryCounts || {};
+    const busiest = Object.keys(counts).filter((c) => COUNTRIES[c]).sort((a, b) => counts[b] - counts[a]);
+    // A full list has no room for a suggestion.
+    const full = !isPremiumUser && includeCountries.size >= freeLimits.countries;
+    const picks = full ? [] : Array.from(new Set(busiest.concat(QUICK_COUNTRIES)))
+      .filter((code) => !includeCountries.has(code) && !excludeCountries.has(code))
+      .slice(0, 3);
+    picks.forEach((code) => {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'tl-quick-chip';
       btn.dataset.country = code;
-      btn.innerHTML = `${getFlagImg(code, 15)} ${escapeHtml(getCountryName(code))}`;
+      const n = counts[code] || 0;
+      btn.innerHTML = `${getFlagImg(code, 15)} ${escapeHtml(getCountryName(code))}`
+        + (n ? ` <span class="tl-quick-count">${escapeHtml(t('onlineShort', { n }))}</span>` : '');
       includeCountryQuickEl.appendChild(btn);
+    });
+  }
+  if (regionQuickEl) {
+    regionQuickEl.innerHTML = '';
+    // A region is more countries than the free plan holds, so Premium only.
+    if (isPremiumUser) Object.keys(FILTER_REGIONS).forEach((id) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'tl-quick-chip tl-region-chip';
+      btn.dataset.region = id;
+      btn.textContent = `${FILTER_REGIONS[id].icon} ${t(FILTER_REGIONS[id].key)}`;
+      regionQuickEl.appendChild(btn);
     });
   }
   if (interestQuickEl) {
@@ -1139,6 +1196,12 @@ function renderQuickPicks() {
 
 // Delegated from the panel, so the handlers survive every re-render of the
 // chip rows without being re-attached.
+if (document.getElementById('regionQuick')) {
+  document.getElementById('regionQuick').addEventListener('click', (e) => {
+    const chip = e.target.closest('.tl-region-chip');
+    if (chip) includeCountryWidget.addMany(FILTER_REGIONS[chip.dataset.region].codes);
+  });
+}
 if (document.getElementById('includeCountryQuick')) {
   document.getElementById('includeCountryQuick').addEventListener('click', (e) => {
     const chip = e.target.closest('.tl-quick-chip');
@@ -1683,16 +1746,36 @@ if (settingsBackBtn) {
 }
 
 // --- Filters side panel: who you get matched with ---
+// What the filters were when the panel opened, for "Tap to undo" on close.
+var filtersAtOpen = null;
 function openFilters() {
+  filtersAtOpen = JSON.stringify(appliedFilters);
+  // Fresh "N online" counts for the suggestion chips; the panel works without.
+  if (socket && socket.connected) {
+    socket.emit('country-counts', (counts) => {
+      filterCountryCounts = counts && typeof counts === 'object' ? counts : null;
+      renderQuickPicks();
+    });
+  }
   filtersPanel.classList.add('open');
   filtersOverlay.classList.remove('hidden');
   updateScrollLock();
 }
 
 function closeFilters() {
+  const wasOpen = filtersPanel.classList.contains('open');
   filtersPanel.classList.remove('open');
   filtersOverlay.classList.add('hidden');
   updateScrollLock();
+  if (!wasOpen || filtersAtOpen === null) return;
+  flushFilterAutosave();
+  const before = filtersAtOpen;
+  filtersAtOpen = null;
+  if (filterKey(JSON.parse(before)) === filterKey(appliedFilters)) return;
+  showToast(t('filtersSavedUndo'), 'success', () => {
+    applyFilters(JSON.parse(before));
+    syncFilterDraftUiFromApplied();
+  });
 }
 
 filtersBtn.addEventListener('click', openFilters);
@@ -1704,7 +1787,7 @@ filtersOverlay.addEventListener('click', closeFilters);
 // what was last saved here. Uses sessionStorage (not localStorage) so a
 // reload keeps the saved filters, but closing the tab/browser clears them. ---
 const FILTERS_STORAGE_KEY = 'talklive_filters';
-let appliedFilters = { prefGender: 'any', prefVoiceChecked: false, includeCountries: [], excludeCountries: [], interests: [] };
+let appliedFilters = { prefGender: 'any', prefVoiceChecked: false, prefLang: '', includeCountries: [], excludeCountries: [], interests: [] };
 
 (function loadAppliedFilters() {
   try {
@@ -1719,7 +1802,29 @@ let appliedFilters = { prefGender: 'any', prefVoiceChecked: false, includeCountr
   appliedFilters.excludeCountries = (appliedFilters.excludeCountries || []).filter((c) => !only.has(c));
 })();
 
+// "Speaks": any, or one of the interface languages.
+const prefLangSelect = document.getElementById('prefLangSelect');
+function renderPrefLangOptions() {
+  if (!prefLangSelect) return;
+  const current = prefLangSelect.value || appliedFilters.prefLang || '';
+  prefLangSelect.innerHTML = '';
+  const any = document.createElement('option');
+  any.value = '';
+  any.textContent = t('anyLanguage');
+  prefLangSelect.appendChild(any);
+  Object.keys(I18N_LANGS).forEach((code) => {
+    const opt = document.createElement('option');
+    opt.value = code;
+    opt.textContent = I18N_LANGS[code].name;
+    prefLangSelect.appendChild(opt);
+  });
+  prefLangSelect.value = current;
+}
+renderPrefLangOptions();
+if (prefLangSelect) prefLangSelect.addEventListener('change', () => syncFilterReadout());
+
 function syncFilterDraftUiFromApplied() {
+  if (prefLangSelect) prefLangSelect.value = appliedFilters.prefLang || '';
   setPillGroupValue(prefGenderGroup, appliedFilters.prefGender);
   if (prefVoiceCheckedBox) prefVoiceCheckedBox.checked = !!appliedFilters.prefVoiceChecked;
   syncVoiceCheckedRow();
@@ -1736,22 +1841,150 @@ function syncFilterDraftUiFromApplied() {
 
 syncFilterDraftUiFromApplied();
 
-saveFiltersBtn.addEventListener('click', () => {
-  appliedFilters = {
+// The panel's controls as filters. Every change is applied as it is made
+// (debounced), so there is no Save step to forget.
+function readFilterDraft() {
+  return {
     prefGender: prefGenderGroup.dataset.value,
     prefVoiceChecked: voiceCheckAvailable && prefGenderGroup.dataset.value !== 'any' && !!(prefVoiceCheckedBox && prefVoiceCheckedBox.checked),
+    prefLang: (prefLangSelect && prefLangSelect.value) || '',
     includeCountries: Array.from(includeCountries),
     excludeCountries: Array.from(excludeCountries),
     interests: Array.from(selectedInterests),
   };
-  sessionStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(appliedFilters));
+}
+
+function applyFilters(next) {
+  appliedFilters = Object.assign({ prefLang: '' }, next);
+  persistAppliedFilters();
   registerProfile();
-  closeFilters();
+  renderFilterPresets();
   // Who online shares an interest just changed.
   renderRailOnline();
+}
+
+var filterAutosaveTimer = null;
+function scheduleFilterAutosave() {
+  clearTimeout(filterAutosaveTimer);
+  filterAutosaveTimer = setTimeout(flushFilterAutosave, 500);
+}
+function flushFilterAutosave() {
+  clearTimeout(filterAutosaveTimer);
+  filterAutosaveTimer = null;
+  if (typeof appliedFilters === 'undefined') return;
+  const draft = readFilterDraft();
+  if (filterKey(draft) === filterKey(appliedFilters)) { renderFilterPresets(); return; }
+  applyFilters(draft);
+}
+
+// How many filters are on, on the Filters button, so a slow search is never
+// a mystery.
+function activeFilterCount(f) {
+  return (f.prefGender && f.prefGender !== 'any' ? 1 : 0)
+    + (f.prefLang ? 1 : 0)
+    + ((f.includeCountries || []).length ? 1 : 0)
+    + ((f.excludeCountries || []).length ? 1 : 0)
+    + ((f.interests || []).length ? 1 : 0);
+}
+function updateFiltersBadge() {
+  const el = document.getElementById('filtersBadge');
+  if (!el) return;
+  const n = activeFilterCount(appliedFilters);
+  el.textContent = String(n);
+  el.classList.toggle('hidden', n === 0);
+}
+
+// --- Saved presets (this device only) ---
+const FILTER_PRESETS_KEY = 'talklive_filter_presets';
+const FILTER_PRESETS_MAX = 5;
+function loadFilterPresets() {
+  try {
+    const list = JSON.parse(localStorage.getItem(FILTER_PRESETS_KEY) || '[]');
+    return Array.isArray(list) ? list.filter((p) => p && p.f).slice(0, FILTER_PRESETS_MAX) : [];
+  } catch (_) { return []; }
+}
+function storeFilterPresets(list) {
+  try { localStorage.setItem(FILTER_PRESETS_KEY, JSON.stringify(list)); } catch (_) { /* storage blocked */ }
+}
+// Comparable form: order does not matter inside a list.
+function filterKey(f) {
+  const sorted = (a) => (a || []).slice().sort();
+  return JSON.stringify([f.prefGender || 'any', !!f.prefVoiceChecked, f.prefLang || '',
+    sorted(f.includeCountries), sorted(f.excludeCountries), sorted((f.interests || []).map((i) => String(i).toLowerCase()))]);
+}
+// A name from what is in it, so saving needs no typing: "🇺🇸🇬🇧 · English · music".
+function presetLabel(f) {
+  const parts = [];
+  if (f.prefGender === 'female') parts.push('♀');
+  else if (f.prefGender === 'male') parts.push('♂');
+  const inc = f.includeCountries || [];
+  if (inc.length) parts.push(inc.slice(0, 3).map(countryFlagEmoji).join('') + (inc.length > 3 ? '+' : ''));
+  if (f.prefLang && I18N_LANGS[f.prefLang]) parts.push(I18N_LANGS[f.prefLang].name);
+  if ((f.interests || []).length) parts.push(f.interests[0] + (f.interests.length > 1 ? '…' : ''));
+  if (!parts.length && (f.excludeCountries || []).length) parts.push('✕ ' + f.excludeCountries.slice(0, 3).map(countryFlagEmoji).join(''));
+  return parts.join(' · ');
+}
+function countryFlagEmoji(code) {
+  return /^[A-Z]{2}$/.test(code) ? String.fromCodePoint(...[...code].map((c) => 0x1f1a5 + c.charCodeAt(0))) : '';
+}
+function renderFilterPresets() {
+  const el = document.getElementById('filterPresets');
+  if (!el || typeof appliedFilters === 'undefined') return;
+  const presets = loadFilterPresets();
+  const nowKey = filterKey(appliedFilters);
+  el.innerHTML = '';
+  presets.forEach((p, i) => {
+    const chip = document.createElement('span');
+    chip.className = 'tl-preset' + (filterKey(p.f) === nowKey ? ' is-active' : '');
+    const use = document.createElement('button');
+    use.type = 'button';
+    use.className = 'tl-preset-use';
+    use.textContent = presetLabel(p.f) || '…';
+    use.addEventListener('click', () => {
+      applyFilters(Object.assign({}, p.f));
+      syncFilterDraftUiFromApplied();
+    });
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'tl-preset-del';
+    del.setAttribute('aria-label', t('remove'));
+    del.textContent = '×';
+    del.addEventListener('click', () => {
+      const list = loadFilterPresets();
+      list.splice(i, 1);
+      storeFilterPresets(list);
+      renderFilterPresets();
+    });
+    chip.append(use, del);
+    el.appendChild(chip);
+  });
+  const saved = presets.some((p) => filterKey(p.f) === nowKey);
+  if (activeFilterCount(appliedFilters) > 0 && !saved && presets.length < FILTER_PRESETS_MAX) {
+    const add = document.createElement('button');
+    add.type = 'button';
+    add.className = 'tl-preset-add';
+    add.textContent = t('presetSave');
+    add.addEventListener('click', () => {
+      flushFilterAutosave();
+      const list = loadFilterPresets();
+      list.push({ f: JSON.parse(JSON.stringify(appliedFilters)) });
+      storeFilterPresets(list.slice(-FILTER_PRESETS_MAX));
+      renderFilterPresets();
+      showToast(t('presetSaved'), 'success');
+    });
+    el.appendChild(add);
+  }
+  el.classList.toggle('hidden', el.childElementCount === 0);
+}
+
+saveFiltersBtn.addEventListener('click', () => {
+  flushFilterAutosave();
+  closeFilters();
 });
+if (prefVoiceCheckedBox) prefVoiceCheckedBox.addEventListener('change', () => syncFilterReadout());
 
 clearFiltersBtn.addEventListener('click', () => {
+  if (prefLangSelect) prefLangSelect.value = '';
   setPillGroupValue(prefGenderGroup, 'any');
   if (prefVoiceCheckedBox) prefVoiceCheckedBox.checked = false;
   syncVoiceCheckedRow();
@@ -6514,6 +6747,7 @@ function setConnection(color, labelKey) {
 
 function hideConnection() {
   connectionIndicator.classList.add('hidden');
+  hideKeepFilters();
 }
 
 // --- Network status: the brand dot next to "TalkLive" turns green when the
@@ -7970,6 +8204,7 @@ function goIdleOnCallScreen(statusKey) {
 }
 
 function registerProfile() {
+  updateFiltersBadge();
   registerClient({
     clientId: getClientId(),
     identityToken: getIdentityToken(),
@@ -7982,6 +8217,7 @@ function registerProfile() {
     includeCountries: appliedFilters.includeCountries,
     excludeCountries: appliedFilters.excludeCountries,
     interests: appliedFilters.interests,
+    prefLang: appliedFilters.prefLang || undefined,
     nickname: accountNickname || tempUsername || undefined,
     avatar: myAvatar || undefined,
     animal: myAnimal || undefined,
@@ -9873,7 +10109,41 @@ function formatVisitorCount(count) {
   return Math.floor(n / 1000) + 'k';
 }
 
-socket.on('waiting', ({ estimatedSeconds, predicted } = {}) => {
+// --- "Widening in Ns" / Keep my filters ---------------------------------------
+// With filters on, the wait says when they will give way, and offers to keep
+// them instead. The same button undoes a fallback that already happened.
+// `var`s: hideConnection() can run before this point is reached.
+var keepFiltersBtn = document.getElementById('keepFiltersBtn');
+var wideningTimer = null;
+function stopWideningCountdown() {
+  clearInterval(wideningTimer);
+  wideningTimer = null;
+}
+function hideKeepFilters() {
+  stopWideningCountdown();
+  if (keepFiltersBtn) keepFiltersBtn.classList.add('hidden');
+}
+function startWideningCountdown(seconds) {
+  stopWideningCountdown();
+  let left = Math.max(1, seconds);
+  setSubText('subWidening', { s: left });
+  if (keepFiltersBtn) keepFiltersBtn.classList.remove('hidden');
+  wideningTimer = setInterval(() => {
+    left -= 1;
+    if (left <= 0) { stopWideningCountdown(); return; }
+    setSubText('subWidening', { s: left });
+  }, 1000);
+}
+if (keepFiltersBtn) {
+  keepFiltersBtn.addEventListener('click', () => {
+    hideKeepFilters();
+    socket.emit('keep-filters');
+    setStatusText('statusSearching');
+    setSubText('subKeepingFilters');
+  });
+}
+
+socket.on('waiting', ({ estimatedSeconds, predicted, fallbackInSeconds, keepingFilters } = {}) => {
   markSearchAcked();
   setState('waiting');
   if (Date.now() < endedNoticeUntil) return;
@@ -9885,7 +10155,10 @@ socket.on('waiting', ({ estimatedSeconds, predicted } = {}) => {
   } else {
     setStatusText('statusSearching');
   }
-  if (estimatedSeconds) setSubText('subUsuallyMatches', { s: estimatedSeconds });
+  hideKeepFilters();
+  if (typeof fallbackInSeconds === 'number' && fallbackInSeconds > 0) startWideningCountdown(fallbackInSeconds);
+  else if (keepingFilters) setSubText('subKeepingFilters');
+  else if (estimatedSeconds) setSubText('subUsuallyMatches', { s: estimatedSeconds });
   else setSubText('subHangTight');
 });
 
@@ -9897,8 +10170,10 @@ socket.on('random-fallback', () => {
   const f = appliedFilters;
   const filtered = (f.prefGender && f.prefGender !== 'any' && isPremiumUser)
     || (f.includeCountries || []).length || (f.excludeCountries || []).length;
+  stopWideningCountdown();
   setStatusText('statusConnectingRandom');
   setSubText(filtered ? 'subFiltersFallback' : 'subHangTight');
+  if (keepFiltersBtn) keepFiltersBtn.classList.toggle('hidden', !(filtered || appliedFilters.prefLang));
 });
 
 // Google Ads conversion: a visitor actually connected to someone. Once per
@@ -9912,6 +10187,7 @@ function sendAdsConversion() {
 
 socket.on('matched', async ({ initiator, partner, rematched, callback, samePersonality }) => {
   markSearchAcked();
+  hideKeepFilters();
   sendAdsConversion();
   endedNoticeUntil = 0;
   currentCallIsCallback = !!callback;
@@ -10033,13 +10309,17 @@ function revealPartner() {
   });
   partnerCard.classList.remove('hidden');
 
+  // Why these two were matched, so the filters are seen to work and there is
+  // something to open with.
+  const reasons = [];
   const shared = sharedInterests(currentPartnerInterests);
-  if (shared.length > 0) {
-    sharedInterestNote.textContent = t('bothLike', { list: shared.join(', ') });
-    sharedInterestNote.classList.remove('hidden');
-  } else {
-    sharedInterestNote.classList.add('hidden');
+  if (shared.length > 0) reasons.push(t('bothLike', { list: shared.join(', ') }));
+  if ((appliedFilters.includeCountries || []).includes(partner.countryCode)) reasons.push(t('reasonPreferredCountry'));
+  if (appliedFilters.prefLang && partner.lang === appliedFilters.prefLang && I18N_LANGS[partner.lang]) {
+    reasons.push(t('reasonSpeaks', { lang: I18N_LANGS[partner.lang].name }));
   }
+  sharedInterestNote.textContent = reasons.join(' · ');
+  sharedInterestNote.classList.toggle('hidden', reasons.length === 0);
 
   reactionBar.classList.remove('hidden');
   syncGamePlayCard();
@@ -10694,6 +10974,8 @@ socket.on('connect', () => {
 // this covers text that was set from JS with t() and needs a fresh render.
 window.addEventListener('i18n-changed', () => {
   renderVoiceCheck();
+  renderPrefLangOptions();
+  if (filtersReady) syncFilterReadout();
   if (lastStatusMsg) statusText.textContent = t(lastStatusMsg.key, lastStatusMsg.vars);
   if (lastSubMsg) subText.textContent = t(lastSubMsg.key, lastSubMsg.vars);
   if (lastConn) connectionLabel.textContent = t(lastConn.labelKey);
@@ -10889,6 +11171,8 @@ let freeLimits = { countries: 2 };
 // in renderChips); this is just the first paint.
 filtersReady = true;
 syncFilterReadout();
+updateFiltersBadge();
+renderFilterPresets();
 
 socket.on('premium-status', ({ premium, limits } = {}) => {
   isPremiumUser = !!premium;
@@ -10930,6 +11214,7 @@ function dropLockedFilters() {
 function updatePremiumUi() {
   // "👑 Premium" locks/hints show only on the free tier.
   document.querySelectorAll('.premium-lock').forEach((el) => el.classList.toggle('hidden', isPremiumUser));
+  if (filtersReady) syncFilterReadout();
 }
 updatePremiumUi();
 

@@ -3681,19 +3681,44 @@ function publicProfile(p) {
     // IANA zone the partner's browser reported, so the call screen can show
     // what time it is where they are. Null when missing or not a real zone.
     timezone: p.timezone || null,
+    // Interface language, so the partner can see "Speaks your language".
+    lang: p.lang || null,
   };
 }
 
-// "Non Interested Countries" is a hard block. "Interested Countries" narrows
-// matches to just those countries. Both are dropped entirely once the
-// random-match fallback kicks in (see mutuallyCompatible).
+// "Avoided countries" is a hard block that survives the random fallback:
+// people who chose never to meet a country read a match from it as a bug.
+function countryAvoided(prefs, otherCountryCode) {
+  return !!(prefs.excludeCountries && prefs.excludeCountries.includes(otherCountryCode));
+}
+
+// "Preferred countries" narrows matches to just those countries, until the
+// random fallback relaxes it (see mutuallyCompatible).
 function countryAllowed(prefs, otherCountryCode) {
-  if (prefs.excludeCountries && prefs.excludeCountries.includes(otherCountryCode)) return false;
+  if (countryAvoided(prefs, otherCountryCode)) return false;
   if (prefs.includeCountries && prefs.includeCountries.length
     && !prefs.includeCountries.includes(otherCountryCode)) {
     return false;
   }
   return true;
+}
+
+// "Speaks": the other person's interface (or browser) language. Relaxed by the
+// random fallback like the other soft filters.
+function langAllowed(prefs, other) {
+  return !prefs.prefLang || prefs.prefLang === other.lang;
+}
+
+// Everything one side asked for about the other, short of the hard gates.
+function prefsMet(a, b) {
+  return genderPrefMet(a, b) && countryAllowed(a, b.country) && langAllowed(a, b);
+}
+
+// Any soft filter set, i.e. whether the random fallback would change anything.
+function hasSoftFilters(p) {
+  return (p.prefGender && p.prefGender !== 'any')
+    || (p.includeCountries && p.includeCountries.length > 0)
+    || !!p.prefLang;
 }
 
 // The only values a client's voice check may report; anything else is dropped.
@@ -3733,19 +3758,21 @@ function mutuallyCompatible(seeker, candidate) {
   // back to each other only costs both of them another failed connect.
   if (pairOnCooldown(seeker.clientId, candidate.clientId, false)) return false;
 
-  // After a long wait either side falls back to "match me with anyone random":
-  // every preference filter is dropped, only blocks still apply.
-  if (seeker.randomFallbackActive || candidate.randomFallbackActive) return true;
+  // Avoided countries are a hard gate on both sides, fallback or not.
+  if (countryAvoided(seeker, candidate.country)) return false;
+  if (countryAvoided(candidate, seeker.country)) return false;
 
   // Just parted voluntarily - give them someone new first. Soft, so the random
-  // fallback above can still reunite them rather than leave anyone waiting on a
+  // fallback can still reunite them rather than leave anyone waiting on a
   // near-empty site.
-  if (pairOnCooldown(seeker.clientId, candidate.clientId, true)) return false;
+  const relaxed = seeker.randomFallbackActive || candidate.randomFallbackActive;
+  if (!relaxed && pairOnCooldown(seeker.clientId, candidate.clientId, true)) return false;
 
-  if (!genderPrefMet(seeker, candidate)) return false;
-  if (!genderPrefMet(candidate, seeker)) return false;
-  if (!countryAllowed(seeker, candidate.country)) return false;
-  if (!countryAllowed(candidate, seeker.country)) return false;
+  // After a long wait a side falls back to "anyone random": its own soft
+  // filters are dropped. The other side's still apply, so someone who chose
+  // to keep their filters is never handed a match outside them.
+  if (!seeker.randomFallbackActive && !prefsMet(seeker, candidate)) return false;
+  if (!candidate.randomFallbackActive && !prefsMet(candidate, seeker)) return false;
   return true;
 }
 
@@ -3854,6 +3881,20 @@ function findBestMatch(socketId) {
   return bestIdx;
 }
 
+// The fallback countdown is only worth showing when it would change anything:
+// soft filters set, not already relaxed, and not opted out with "keep waiting".
+function waitingPayload(socketId) {
+  const p = profiles.get(socketId);
+  const counting = p && !p.randomFallbackActive && !p.keepFilters && hasSoftFilters(p);
+  return {
+    estimatedSeconds: estimatedWaitSeconds(),
+    predicted: predictedMatch(socketId),
+    fallbackInSeconds: counting && p.queuedAt
+      ? Math.max(0, Math.ceil((RANDOM_FALLBACK_MS - (Date.now() - p.queuedAt)) / 1000)) : null,
+    keepingFilters: !!(p && p.keepFilters && hasSoftFilters(p)),
+  };
+}
+
 function estimatedWaitSeconds() {
   const online = onlineCount() || 1;
   return Math.max(2, Math.min(20, Math.round(12 / Math.sqrt(online))));
@@ -3916,16 +3957,13 @@ function tryMatch(socketId) {
       // search itself began.
       if (!seekerProfile.searchSince) seekerProfile.searchSince = seekerProfile.queuedAt;
     }
-    seekerSocket.emit('waiting', {
-      estimatedSeconds: estimatedWaitSeconds(),
-      predicted: predictedMatch(socketId),
-    });
+    seekerSocket.emit('waiting', waitingPayload(socketId));
 
-    if (seekerProfile && !seekerProfile.randomFallbackActive) {
+    if (seekerProfile && !seekerProfile.randomFallbackActive && !seekerProfile.keepFilters) {
       const timer = setTimeout(() => {
         waitFallbackTimers.delete(socketId);
         const p = profiles.get(socketId);
-        if (!p || !waitingQueue.includes(socketId)) return;
+        if (!p || p.keepFilters || !waitingQueue.includes(socketId)) return;
         p.randomFallbackActive = true;
         const sock = io.sockets.sockets.get(socketId);
         if (sock) sock.emit('random-fallback');
@@ -3952,7 +3990,7 @@ function sweepQueue() {
     if (!waitingQueue.includes(socketId)) continue;
     const p = profiles.get(socketId);
     if (!p) continue;
-    if (!p.randomFallbackActive && p.queuedAt && Date.now() - p.queuedAt >= RANDOM_FALLBACK_MS) {
+    if (!p.randomFallbackActive && !p.keepFilters && p.queuedAt && Date.now() - p.queuedAt >= RANDOM_FALLBACK_MS) {
       clearWaitFallbackTimer(socketId);
       p.randomFallbackActive = true;
       const sock = io.sockets.sockets.get(socketId);
@@ -4864,6 +4902,7 @@ io.on('connection', (socket) => {
     // beyond the free limit are premium-only.
     const countryCap = premium ? 50 : FREE_LIMITS.countries;
     const sanitizeCountryList = (list) => (Array.isArray(list) ? list.filter((c) => typeof c === 'string').slice(0, countryCap) : []);
+    const prev = profiles.get(socket.id);
     profiles.set(socket.id, {
       clientId,
       // A name saved before the nickname rules is tidied rather than refused.
@@ -4906,6 +4945,10 @@ io.on('connection', (socket) => {
       // The interface language the person chose (or their browser's), used only
       // to break ties in matching - see matchScore().
       lang: matchLang(data.lang, socket.handshake.headers['accept-language']),
+      // "Speaks" filter: match only people whose language is this one.
+      prefLang: typeof data.prefLang === 'string' && /^[a-z]{2}$/.test(data.prefLang) ? data.prefLang : null,
+      // "Keep waiting" survives a re-register mid-search (saving filters).
+      keepFilters: !!(prev && prev.keepFilters),
     });
     clientSockets.set(clientId, socket.id);
     socket.emit('contact-consent', { on: store.hasContactConsent(clientId) });
@@ -5072,10 +5115,7 @@ io.on('connection', (socket) => {
     // reset the random-match fallback clock, so a client re-asserting a healthy
     // search would keep starving itself. Just re-send the waiting state.
     if (waitingQueue.includes(socket.id) && (profile.mode || 'talk') === mode) {
-      socket.emit('waiting', {
-        estimatedSeconds: estimatedWaitSeconds(),
-        predicted: predictedMatch(socket.id),
-      });
+      socket.emit('waiting', waitingPayload(socket.id));
       return;
     }
 
@@ -5096,7 +5136,35 @@ io.on('connection', (socket) => {
     store.recordFeature(profile.mode === 'chat' ? 'chat_search' : 'search');
     // A fresh, explicit search starts with the full set of filters again.
     profile.randomFallbackActive = false;
+    profile.keepFilters = false;
     tryMatch(socket.id);
+  });
+
+  // "Keep my filters": stop (or undo) the random fallback for this search.
+  socket.on('keep-filters', () => {
+    const profile = profiles.get(socket.id);
+    if (!profile) return;
+    profile.keepFilters = true;
+    profile.randomFallbackActive = false;
+    clearWaitFallbackTimer(socket.id);
+    if (waitingQueue.includes(socket.id)) socket.emit('waiting', waitingPayload(socket.id));
+  });
+
+  // People online per country, for the filter panel's suggestion chips.
+  // Aggregate only, and crawlers and hidden people are left out.
+  socket.on('country-counts', (ack) => {
+    if (typeof ack !== 'function') return;
+    const me = profiles.get(socket.id);
+    if (!me || !socialRateOk('country-counts', me.clientId, 20, 60000)) return ack({});
+    const seen = new Set();
+    const counts = {};
+    for (const [socketId, p] of profiles) {
+      if (seen.has(p.clientId) || isBotSocket(socketId) || statusHidden.get(p.clientId)) continue;
+      seen.add(p.clientId);
+      if (!p.country || p.country === 'XX') continue;
+      counts[p.country] = (counts[p.country] || 0) + 1;
+    }
+    ack(counts);
   });
 
   socket.on('skip', (opts = {}) => {
