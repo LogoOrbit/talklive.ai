@@ -87,6 +87,16 @@
     '.cmp textarea{flex:1;max-height:110px;min-height:42px}' +
     '.cmp .btn{padding:0 16px;flex:none}' +
     '.hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}' +
+    '.promo{position:fixed;right:calc(18px + env(safe-area-inset-right));bottom:calc(var(--lift,0px) + 86px + env(safe-area-inset-bottom));width:270px;max-width:calc(100vw - 36px);' +
+      'background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:16px;padding:14px 14px 12px;box-shadow:0 14px 40px rgba(0,0,0,.35);display:none;animation:pop .25s ease-out}' +
+    '.promo.on{display:block}.promo:after{content:"";position:absolute;right:22px;bottom:-7px;width:12px;height:12px;background:var(--bg);border-right:1px solid var(--line);border-bottom:1px solid var(--line);transform:rotate(45deg)}' +
+    '.promo b{display:block;font-size:15px;margin:0 22px 4px 0}.promo p{margin:0 0 10px;font-size:13.5px;line-height:1.45;color:var(--mut)}' +
+    '.promo .tag{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.06em;color:#fff;background:#ff4d6d;border-radius:99px;padding:2px 7px;margin-bottom:6px}' +
+    '.promo .x{position:absolute;top:8px;right:8px;width:28px;height:28px;border:0;border-radius:50%;background:transparent;color:var(--mut);font-size:15px;cursor:pointer}' +
+    '.promo .btn{width:100%;padding:9px 14px}' +
+    '.fab.pulse:before{content:"";position:absolute;inset:0;border-radius:50%;background:var(--acc);animation:ring 1.8s ease-out infinite;z-index:-1}' +
+    '@keyframes ring{from{transform:scale(1);opacity:.6}to{transform:scale(1.7);opacity:0}}' +
+    '@media (prefers-reduced-motion:reduce){.fab.pulse:before,.promo{animation:none}}' +
     '.closed{font-size:12.5px;color:var(--mut);text-align:center;padding:6px 10px 0}' +
     '</style>' +
     '<div class="w">' +
@@ -95,13 +105,16 @@
         '<button class="x" type="button" aria-label="Close chat">✕</button></div>' +
         '<div class="view"></div>' +
       '</div>' +
+      '<div class="promo" role="status"><button class="x" type="button" aria-label="Dismiss">✕</button><span class="tag">NEW</span>' +
+        '<b>💬 Chat Support is here</b><p>Questions or problems? Chat with a real person from the TalkLive team. We reply fast.</p>' +
+        '<button class="btn" type="button">Chat with us</button></div>' +
       '<button class="fab" type="button" aria-label="Chat with support" title="Chat Support">' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 21 12z"/><path d="M8.5 10.5h7M8.5 13.5h4.5"/></svg>' +
         '<span class="dot"></span></button>' +
     '</div>';
 
   var $ = function (s) { return root.querySelector(s); };
-  var fab = $('.fab'), panel = $('.panel'), view = $('.view');
+  var fab = $('.fab'), panel = $('.panel'), view = $('.view'), promo = $('.promo');
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function time(ts) {
@@ -267,6 +280,7 @@
   }
 
   function open() {
+    endPromo();
     state.open = true;
     panel.classList.add('on');
     fab.setAttribute('aria-expanded', 'true');
@@ -301,11 +315,29 @@
     if (cmp && !cmp.classList.contains('hidden')) return true;
     return false;
   }
+  function popupOpen() {
+    var els = document.querySelectorAll('.modal-overlay, [role="dialog"][aria-modal="true"]');
+    for (var i = 0; i < els.length; i++) {
+      var e = els[i];
+      if (!e.getClientRects().length) continue;
+      // Some popups stay laid out and hide with opacity/visibility instead.
+      if (e.checkVisibility && !e.checkVisibility({ opacityProperty: true, visibilityProperty: true })) continue;
+      var cs = getComputedStyle(e);
+      if (cs.visibility === 'hidden' || cs.opacity === '0') continue;
+      return true;
+    }
+    return false;
+  }
   // Sit above a bottom tab bar (the app's .tl-nav on phones), and follow the
   // site's light/dark theme.
   var w = $('.w');
   function layout() {
-    fab.classList.toggle('hide', !state.open && busy());
+    var b = !state.open && busy();
+    fab.classList.toggle('hide', b);
+    // The callout waits while one of the site's own popups is open.
+    var promoOn = promoShown && !b && !state.open && !popupOpen();
+    if (promoOn && !promoTracked) { promoTracked = true; track('support_promo_view'); }
+    promo.classList.toggle('on', promoOn);
     w.classList.toggle('light', document.documentElement.getAttribute('data-theme') === 'light');
     var lift = 0;
     var bars = document.querySelectorAll('.tl-nav, [data-support-avoid]');
@@ -319,7 +351,33 @@
   setInterval(layout, 1000);
   addEventListener('resize', layout);
 
-  window.TLSupport = { open: open, close: close };
+  // --- "New: Chat Support" announcement ---------------------------------------
+  // Runs for a window the server sets (2 days from launch). Each visitor sees
+  // the callout once; dismissing it or opening the chat ends it for them.
+  var PROMO_KEY = 'tl_support_promo';
+  var promoUntil = 0, promoShown = false, promoTracked = false;
+  function promoLive() { return promoUntil > Date.now() && ls(PROMO_KEY) !== String(promoUntil); }
+  function endPromo() {
+    if (promoUntil) ls(PROMO_KEY, String(promoUntil));
+    promoShown = false;
+    promo.classList.remove('on');
+    fab.classList.remove('pulse');
+    try { window.dispatchEvent(new Event('tl-support-promo')); } catch (_) { /* old browser */ }
+  }
+  promo.querySelector('.x').addEventListener('click', function () { endPromo(); fab.focus(); });
+  function track(event) {
+    try { fetch('/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: event }), keepalive: true }).catch(function () {}); } catch (_) { /* ignore */ }
+  }
+  promo.querySelector('.btn').addEventListener('click', function () { track('support_promo_click'); open(); });
+  fetch(API + 'promo', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (r) {
+    promoUntil = Number(r.until) || 0;
+    try { window.dispatchEvent(new Event('tl-support-promo')); } catch (_) { /* old browser */ }
+    if (!promoLive() || state.open) return;
+    fab.classList.add('pulse');
+    setTimeout(function () { if (promoLive() && !state.open) { promoShown = true; layout(); } }, 2500);
+  }).catch(function () { /* no promo */ });
+
+  window.TLSupport = { open: open, close: close, promoLive: promoLive, endPromo: endPromo };
   document.body.appendChild(host);
 
   // A "Continue the chat" link from a reply email: #support=<id>.<key>

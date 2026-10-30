@@ -21,30 +21,8 @@
   // English for the strings below lives here rather than in i18n.js, so it is
   // not in the first page load; other languages carry them in /i18n/<lang>.js.
   var EN = {
-    fxTitle: "What's new on TalkLive",
-    fxSub: "Fresh this week. Tap one to try it.",
-    fxChip: "What's new on TalkLive · Tap to see",
-    fxStreak: "Daily streaks",
-    fxStreakSub: "Talk 30 seconds a day to keep your 🔥 going.",
-    fxPassport: "Country passport",
-    fxPassportSub: "Every country you talk to gets a stamp.",
-    fxQuestion: "Question of the day",
-    fxQuestionSub: "A new opener for everyone, every day.",
-    fxLikes: "Who liked you",
-    fxLikesSub: "See how many people ❤️ your calls. Premium shows who.",
-    fxUndo: "Undo skip",
-    fxUndoSub: "Skipped by mistake? Premium brings them back.",
-    fxFilms: "Top 3 films on your profile",
-    fxFilmsSub: "Show your favourite movies and shows. An easy thing to talk about.",
-    fxAvatars: "New movie-character avatars",
-    fxAvatarsSub: "Be the wizard, the pirate or the detective. {n} new faces.",
-    fxInvite: "Invite 3 friends, get 1 hour of Plus",
-    fxInviteSub: "When 3 friends sign up with your link and have their first chat, Plus is yours for an hour.",
-    fxInviteGo: "Invite",
-    fxOpen: "Open",
-    fxAdd: "Add mine",
-    fxPick: "Pick one",
-    fxGotIt: "Let's talk",
+    fxSupportChip: "New: Chat Support is here",
+    fxSupportGo: "Chat now",
     engageAria: "Your TalkLive",
     engageRecap: "Last week: {calls} calls · {countries} countries · longest {minutes} min",
     engageStreakLabel: "day streak",
@@ -89,7 +67,7 @@
     Object.keys(EN).forEach(function (k) { if (!(k in I18N_STRINGS.en)) I18N_STRINGS.en[k] = EN[k]; });
   }
 
-  var KEY = { streak: 'tl_streak', passport: 'tl_passport', server: 'tl_engage_state', recap: 'tl_recap_seen', whatsNew: 'tl_whats_new_seen', question: 'tl_daily_q_seen' };
+  var KEY = { streak: 'tl_streak', passport: 'tl_passport', server: 'tl_engage_state', recap: 'tl_recap_seen', question: 'tl_daily_q_seen' };
   var UNDO_MS = 15000;
 
   function read(k, d) {
@@ -191,9 +169,10 @@
     var prev = state.prevWeek;
     var today = !!s.doneToday;
     var html = '';
-    if (whatsNewLive()) {
-      html += '<button type="button" class="tl-engage-banner tl-engage-news" data-act="whatsnew"><span>✨ ' + esc(t('fxChip')) + '</span>'
-        + '<span class="tl-engage-new" aria-hidden="true">NEW</span></button>';
+    // The Chat Support launch (support-chat.js says whether it is running).
+    if (supportPromoLive()) {
+      html += '<button type="button" class="tl-engage-banner tl-engage-news" data-act="support"><span>🎧 ' + esc(t('fxSupportChip')) + '</span>'
+        + '<span class="tl-engage-new" aria-hidden="true">' + esc(t('fxSupportGo')) + '</span></button>';
     } else if (prev && read(KEY.recap, '') !== prev.week) {
       html += '<div class="tl-engage-banner tl-engage-recap"><span>📊 ' + esc(t('engageRecap', {
         calls: prev.calls, countries: prev.countries, minutes: Math.max(1, Math.round(prev.longest / 60)),
@@ -221,7 +200,11 @@
     var b = e.target.closest('[data-act]');
     if (!b) return;
     var act = b.dataset.act;
-    if (act === 'whatsnew') { openWhatsNew(); return; }
+    if (act === 'support') {
+      if (typeof trackGrowthEvent === 'function') trackGrowthEvent('support_promo_chip');
+      if (window.TLSupport) window.TLSupport.open();
+      return;
+    }
     if (act === 'recap') { write(KEY.recap, state.prevWeek ? state.prevWeek.week : ''); render(); return; }
     if (act === 'streak') { showToast(t('engageStreakHow'), 'success'); return; }
     if (act === 'passport') { openPassport(); return; }
@@ -319,63 +302,11 @@
     });
   }
 
-  // --- What's new ----------------------------------------------------------------
-  // The launch announcement: opens by itself once, then stays one tap away on
-  // the home screen until WHATS_NEW_UNTIL. Bump WHATS_NEW_ID for the next one.
-  var WHATS_NEW_ID = 'wn-2026-10';
-  var WHATS_NEW_UNTIL = new Date(2026, 9, 31).getTime(); // through 30 Oct, local
-  function whatsNewLive() { return Date.now() < WHATS_NEW_UNTIL; }
-  function characterCount() {
-    var c = window.TalkLiveCharacters;
-    return (c && c.ids && c.ids.length) || 26;
-  }
-
-  function openWhatsNew() {
-    if (typeof trackGrowthEvent === 'function') trackGrowthEvent('whats_new_open');
-    write(KEY.whatsNew, WHATS_NEW_ID);
-    var items = [
-      ['🎬', 'fxFilms', 'fxFilmsSub', 'profile', 'fxAdd'],
-      ['🧙', 'fxAvatars', 'fxAvatarsSub', 'profile', 'fxPick'],
-      ['🔥', 'fxStreak', 'fxStreakSub'],
-      ['🌍', 'fxPassport', 'fxPassportSub', 'passport', 'fxOpen'],
-      ['💬', 'fxQuestion', 'fxQuestionSub'],
-      ['❤️', 'fxLikes', 'fxLikesSub', 'likes', 'fxOpen'],
-      ['↩️', 'fxUndo', 'fxUndoSub', null, null, true],
-      ['🎁', 'fxInvite', 'fxInviteSub', 'invite', 'fxInviteGo'],
-    ];
-    var list = '<ul class="tl-wn">' + items.map(function (it) {
-      return '<li><span class="tl-wn-ico" aria-hidden="true">' + it[0] + '</span>'
-        + '<span class="tl-wn-body"><b>' + esc(t(it[1])) + (it[5] ? ' <span class="tl-wn-plus">💎</span>' : '') + '</b>'
-        + '<small>' + esc(t(it[2], { n: characterCount() })) + '</small></span>'
-        + (it[3] ? '<button type="button" class="tl-wn-go" data-go="' + it[3] + '">' + esc(t(it[4])) + '</button>' : '')
-        + '</li>';
-    }).join('') + '</ul>';
-    var m = dialog('whatsNewModal',
-      '<div class="pu-hero" aria-hidden="true"><span class="pu-gem">✨</span></div>'
-      + '<div class="pu-title">' + esc(t('fxTitle')) + '</div>'
-      + '<p class="pu-reason">' + esc(t('fxSub')) + '</p>' + list
-      + '<button type="button" class="pu-cta" data-go="close">' + esc(t('fxGotIt')) + '</button>');
-    m.querySelectorAll('[data-go]').forEach(function (b) {
-      b.addEventListener('click', function () {
-        var go = b.dataset.go;
-        closeModal(m);
-        if (go === 'profile' && typeof openMyProfile === 'function') openMyProfile();
-        else if (go === 'passport') openPassport();
-        else if (go === 'likes') openLikes();
-        else if (go === 'invite' && typeof showSharePrompt === 'function') showSharePrompt();
-      });
-    });
-  }
-
-  // Once per visitor, on the home screen, when nothing else is in the way.
-  function maybeAutoOpenWhatsNew() {
-    if (!whatsNewLive() || read(KEY.whatsNew, '') === WHATS_NEW_ID) return;
-    setTimeout(function () {
-      var onHome = document.getElementById('callPanel') && document.getElementById('callPanel').classList.contains('hidden');
-      var busy = document.querySelector('.modal-overlay:not(.hidden)');
-      if (onHome && !busy) openWhatsNew();
-    }, 2500);
-  }
+  // --- Chat Support launch chip --------------------------------------------------
+  // support-chat.js owns the announcement window; this only mirrors it on the
+  // home screen and repaints when it starts or ends.
+  function supportPromoLive() { return !!(window.TLSupport && window.TLSupport.promoLive && window.TLSupport.promoLive()); }
+  window.addEventListener('tl-support-promo', function () { render(); });
 
   // --- Undo skip ----------------------------------------------------------------
   var undoBtn = null;
@@ -474,5 +405,4 @@
   buildStrip();
   refreshLikes();
   syncWithServer();
-  maybeAutoOpenWhatsNew();
 })();

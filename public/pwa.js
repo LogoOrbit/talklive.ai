@@ -343,7 +343,7 @@
   // 6. Chat Support bubble (public/support-chat.js). Loaded once the page is
   //    idle so it never competes with the page's own first paint. A "Continue
   //    the chat" link from a reply email (#support=...) loads it straight away.
-  var SUPPORT_SRC = '/support-chat.js?v=20261030sup';
+  var SUPPORT_SRC = '/support-chat.js?v=20261030promo';
   function loadSupport() {
     if (window.TLSupport || document.querySelector('script[data-tl-support]')) return;
     var s = document.createElement('script');

@@ -110,6 +110,14 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     ok('pwa.js loads the support widget', pwa.includes('/support-chat.js?v='));
     ok('widget script is served', (await fetch(BASE + '/support-chat.js')).ok);
 
+    const promo1 = await (await fetch(BASE + '/support/api/promo')).json();
+    ok('launch announcement starts itself for ~2 days', promo1.until > Date.now() + 47 * 3600000 && promo1.until <= Date.now() + 48 * 3600000, promo1);
+    const promo2 = await (await fetch(BASE + '/support/api/promo')).json();
+    ok('announcement window stays fixed', promo2.until === promo1.until);
+    ok('owner can stop it', (await opost('support-promo', { hours: 0 })).ok && (await (await fetch(BASE + '/support/api/promo')).json()).until === 0);
+    ok('owner can rerun it', (await opost('support-promo', { hours: 48 })).ok && (await (await fetch(BASE + '/support/api/promo')).json()).until > Date.now());
+    ok('promo events are accepted', (await fetch(BASE + '/events', { method: 'POST', headers: json, body: JSON.stringify({ event: 'support_promo_view' }) })).status === 204);
+
     const del = await opost(`support/${id}/delete`);
     ok('owner deletes the conversation', del.ok && (await pub('thread', { id, key })).status === 404);
   } catch (err) {

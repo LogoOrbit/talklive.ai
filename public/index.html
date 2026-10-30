@@ -149,7 +149,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 <link rel="manifest" href="/site.webmanifest" />
 <!-- Mobile app only (mobile/): load the native bridge. A no-op in browsers, which never download it. -->
 <script>if(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform()){var s=document.createElement('script');s.src='/native.js?v=20261008app';s.async=false;document.head.appendChild(s);}</script>
-<script defer src="/pwa.js?v=20261030sup"></script>
+<script defer src="/pwa.js?v=20261030promo"></script>
 <link rel="preconnect" href="https://flagcdn.com" crossorigin />
 <link rel="dns-prefetch" href="https://flagcdn.com" />
 
@@ -2616,7 +2616,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   <script defer src="voice-notes.js?v=20261001mic"></script>
   <script defer src="games.js?v=20261005min"></script>
   <script defer src="nickname-rules.js?v=20260924nick"></script>
-  <script defer src="app.js?v=20261030invite"></script>
+  <script defer src="app.js?v=20261030sup"></script>
 
 <!-- Analytics tag, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

@@ -25,6 +25,10 @@ const OWNER_ONLINE_MS = 2 * 60000;
 // A reply is emailed to the user unless their chat window polled this recently.
 const USER_ACTIVE_MS = 90 * 1000;
 const OWNER_PUSH_ID = 'owner:support';
+// The launch announcement (callout by the bubble, chip on the app home) runs
+// this long from the first visit after the feature is deployed. The owner can
+// stop or rerun it from the dashboard.
+const PROMO_MS = 48 * 3600000;
 
 const DEFAULT_SETTINGS = {
   away: false,
@@ -183,6 +187,19 @@ function createSupport({ store, mail, push, contactTo, siteUrl, httpRateLimit, c
     const site = String(req.headers['sec-fetch-site'] || 'same-origin');
     if (req.method === 'POST' && site !== 'same-origin' && site !== 'none') return res.status(403).json({ error: 'Cross-site request rejected.' });
     next();
+  });
+
+  // Is the "New: Chat Support" announcement running? Starts itself on the
+  // first request after deploy (not at boot: the store may still be loading).
+  router.get('/promo', (req, res) => {
+    const st = state().settings;
+    if (st.promoUntil === undefined) {
+      st.promoStart = Date.now();
+      st.promoUntil = Date.now() + PROMO_MS;
+      store.save();
+    }
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    res.json({ until: st.promoUntil > Date.now() ? st.promoUntil : 0 });
   });
 
   router.post('/config', httpRateLimit('support-config', 60, 60000), (req, res) => {
@@ -381,6 +398,17 @@ function createSupport({ store, mail, push, contactTo, siteUrl, httpRateLimit, c
       s.settings = next;
       store.save();
       res.json({ ok: true, settings: next });
+    });
+
+    // Rerun (hours > 0) or stop (0) the launch announcement.
+    r.post('/api/support-promo', (req, res) => {
+      const hours = Math.max(0, Math.min(24 * 14, Number((req.body || {}).hours) || 0));
+      const st = state().settings;
+      st.promoStart = Date.now();
+      st.promoUntil = Date.now() + hours * 3600000;
+      store.save();
+      store.audit('support-promo', reqIp(req), hours ? `Chat Support announcement running for ${hours}h` : 'Chat Support announcement stopped');
+      res.json({ ok: true, promoUntil: st.promoUntil });
     });
 
     r.post('/api/support-push', (req, res) => {

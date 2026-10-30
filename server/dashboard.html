@@ -3566,7 +3566,7 @@ async function viewSupport(){
       <button class="lnk" id="spAway" title="Shown to visitors in the chat window">${st.away?'🌙 Away':'🟢 Available'}</button>
       <button class="lnk" id="spSettings">⚙️ Settings &amp; alerts</button>
     </div>
-    <div class="muted" style="font-size:.78rem;margin:-2px 0 10px">${r.emailAlerts?`📧 Email alerts go to <b>${esc(r.alertsTo)}</b> (new chats, and follow-ups while you're not on this dashboard).`:'⚠️ Email alerts are off: mail is not configured on the server (RESEND_API_KEY or SMTP).'} ${r.push.devices?`📱 Phone alerts on for ${r.push.devices} device(s).`:''}</div>
+    <div class="muted" style="font-size:.78rem;margin:-2px 0 10px">${r.emailAlerts?`📧 Email alerts go to <b>${esc(r.alertsTo)}</b> (new chats, and follow-ups while you're not on this dashboard).`:'⚠️ Email alerts are off: mail is not configured on the server (RESEND_API_KEY or SMTP).'} ${r.push.devices?`📱 Phone alerts on for ${r.push.devices} device(s).`:''}${st.promoUntil>Date.now()?` 📣 Launch announcement running ${until(st.promoUntil)}.`:''}</div>
     <div class="cvwrap${conv?' reading':''}" id="spWrap" data-sel="${esc(spSel||'')}">
       <div class="cvlist" id="spList">${listHtml}</div>
       <div class="cvthread sp">${conv?`
@@ -3641,6 +3641,8 @@ function spSettings(){
      <label style="margin-top:10px">Away message (shown when you're away or not on the dashboard)</label><textarea id="spAw" rows="2" maxlength="300">${esc(st.awayMessage)}</textarea>
      <label style="margin-top:10px">Quick replies (one per line)</label><textarea id="spQR" rows="6">${esc(st.quickReplies.join('\n'))}</textarea>
      <div class="muted" style="font-size:.78rem;margin-top:10px">Visitors see you as <b>online</b> while this dashboard is open on any device and you're not set to Away.</div>
+     <div class="fmsg" style="margin-top:12px"><b>📣 "New: Chat Support" announcement</b><div class="txt muted" style="font-size:.82rem">A callout next to the chat bubble on every page and a chip on the app home screen. Each visitor sees it until they dismiss it or open the chat. ${st.promoUntil>Date.now()?`<b style="color:var(--good)">Running</b> until ${fmtTs(st.promoUntil)} (${until(st.promoUntil)}).`:st.promoUntil?'Ended.':'Starts with the first visit after this deploy, for 2 days.'}</div>
+       <div class="rowbtns" style="margin-top:8px"><button data-sppromo="48">${st.promoUntil>Date.now()?'Restart for 2 days':'Run for 2 days'}</button>${st.promoUntil>Date.now()?'<button data-sppromo="0">Stop now</button>':''}</div></div>
      <div class="fmsg" style="margin-top:12px"><b>📱 Phone alerts</b><div class="txt muted" style="font-size:.82rem">A push notification on this device for every new support message. ${r.push.available?(r.push.devices?`On for ${r.push.devices} device(s).`:'Off.'):'Not available: VAPID keys are not set on the server.'}</div>
        <div class="rowbtns" style="margin-top:8px">${r.push.available?`<button id="spPushOn">Turn on for this device</button>`:''}${r.push.devices?`<button id="spPushOff">Turn off everywhere</button>`:''}</div></div>
      <div class="rowbtns" style="margin-top:16px"><button id="spSave" style="padding:9px 16px">Save</button><button id="spCancel" style="padding:9px 16px">Cancel</button></div>`,
@@ -3650,6 +3652,7 @@ function spSettings(){
         try{await post('support-settings',{greeting:sheet.querySelector('#spG').value,awayMessage:sheet.querySelector('#spAw').value,quickReplies:sheet.querySelector('#spQR').value.split('\n').map(x=>x.trim()).filter(Boolean)});
           closeModal();toast('Saved','','good');renderedTab=null;load();}catch(e){toast('Could not save',e.message,'bad');}
       };
+      sheet.querySelectorAll('[data-sppromo]').forEach(b=>b.onclick=async()=>{try{const h=+b.dataset.sppromo;await post('support-promo',{hours:h});toast(h?'Announcement running':'Announcement stopped',h?'Visitors see it for the next 2 days (the site caches this for up to 5 minutes).':'','good');closeModal();renderedTab=null;load();}catch(e){toast('Could not update',e.message,'bad');}});
       const on=sheet.querySelector('#spPushOn');if(on)on.onclick=async()=>{on.disabled=true;try{const x=await spEnablePush(r.push.key);toast('Phone alerts on',`${x.devices} device(s) will be notified.`,'good');closeModal();renderedTab=null;load();}catch(e){on.disabled=false;toast('Could not turn on alerts',e.message,'bad');}};
       const off=sheet.querySelector('#spPushOff');if(off)off.onclick=async()=>{try{await post('support-push/off');toast('Phone alerts off','','good');closeModal();renderedTab=null;load();}catch(e){toast('Could not turn off',e.message,'bad');}};
     },{mid:true});
