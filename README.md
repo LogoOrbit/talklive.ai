@@ -155,6 +155,7 @@ A secured owner dashboard lives at **`/owner`** (e.g. `https://talklive.app/owne
 | `OWNER_RESET` | Forgot the /owner password: set to any new value and restart. The owner login is cleared once and /owner shows setup again (set `OWNER_SETUP_TOKEN` too). Reusing the same value does nothing |
 | `SMTP_USER` / `SMTP_PASS` | Gmail address + **app password** (Google Account → Security → 2-Step Verification → App passwords). Also sends users their password-reset codes |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_FROM_NAME` | Optional SMTP overrides (default `smtp.gmail.com`, `465`, `TalkLive`) |
+| `RESEND_API_KEY` / `MAIL_FROM` | Send through Resend's API instead of SMTP (used first when set). `MAIL_FROM` defaults to `info@talklive.app` and must be on a domain verified in Resend |
 | `DATA_DIR` | Directory for the JSON store (default `./data`). In production `fly.toml` sets it to `/data`, which is the mounted Fly volume `talklive_data`, so the store survives deploys. If it is ever not a volume, the server detects this at boot, logs it prominently, emails the owner and flags it on the `/owner` screen. `DATABASE_URL` (Postgres) takes precedence when set - see `DEPLOY-FLY.md`. |
 | `PREMIUM_CLIENT_IDS` | Comma-separated clientIds to grant premium manually (testing) |
 | `LANDING_HOST` | Optional subdomain (e.g. `start.talklive.app`) whose root serves the marketing landing page (`/landing`) |
