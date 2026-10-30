@@ -168,7 +168,10 @@ main{padding:18px 22px;min-width:0;padding-bottom:calc(84px + env(safe-area-inse
 @media(max-width:760px){
   .shell{display:block}
   /* The sidebar becomes a slide-in drawer opened from ☰ or "More". */
-  .side{position:fixed;z-index:40;top:0;left:0;bottom:0;height:auto;width:min(300px,86vw);background:var(--bg-2);border-right:1px solid var(--ring);
+  /* align-self:auto undoes the desktop rail's start alignment: newer Chrome
+     applies it to fixed boxes too, which sized the drawer to its content
+     instead of the screen, so its bottom was cut off and it could not scroll. */
+  .side{position:fixed;z-index:40;top:0;left:0;bottom:0;height:100%;height:100dvh;max-height:100dvh;align-self:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;width:min(300px,86vw);background:var(--bg-2);border-right:1px solid var(--ring);
     padding:calc(10px + env(safe-area-inset-top)) 10px calc(24px + env(safe-area-inset-bottom));transform:translateX(-102%);transition:transform .22s cubic-bezier(.2,.7,.3,1);box-shadow:8px 0 40px rgba(0,0,0,.4);visibility:hidden}
   body.drawer .side{transform:none;visibility:visible}
   .side .dhead{display:flex;align-items:center;gap:10px;padding:6px 6px 10px;font-weight:800;border-bottom:1px solid var(--grid);margin-bottom:4px}
