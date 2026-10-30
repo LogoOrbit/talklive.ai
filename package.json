@@ -33,6 +33,7 @@
     "test:subscribe": "node scripts/test-subscribe.js",
     "test:feedback-reply": "node scripts/test-feedback-reply.js",
     "test:support": "node scripts/test-support.js",
+    "test:guard": "node scripts/test-guard-policy.js",
     "test:audience": "node scripts/test-audience.js",
     "test:gifs": "node scripts/test-gif-proxy.js",
     "test:films": "node scripts/test-fav-films.js",

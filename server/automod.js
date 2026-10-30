@@ -20,8 +20,23 @@
 //
 // In dry-run mode (the default for the first week) every decision is logged as
 // "would have" and nobody is told anything.
+//
+// Site rules (server/guard-policy.js), on their own switch (settings.policy) so
+// they run even while the report ladder is off. Typed chat only, never speech
+// transcripts. Flirting and sexual chat between adults are allowed, and so are
+// swearing and slurs used as slang between friends.
+//   money    1st ask: warning. 2nd: final warning. 3rd within 24 hours: ban
+//            (7 days, then 30, then a year). A burst of lines in one chat is one
+//            ask. Copy-pasting a money request to 5+ strangers: ban at once.
+//   links    a warning (at most one per 12 hours) and half a strike.
+//   pictures asking for pictures or videos: the same as links.
+//   harm     telling someone to kill themselves, real threats or murder talk:
+//            a warning and straight to the owner's review queue.
+//   illegal  selling drugs or other illegal services: a warning; a second one
+//            within 24 hours goes to the review queue.
 
 const modTags = require('./moderation-tags');
+const guardPolicy = require('./guard-policy');
 
 let Anthropic = null;
 try { Anthropic = require('@anthropic-ai/sdk'); Anthropic = Anthropic.default || Anthropic; } catch (_) { /* optional */ }
@@ -46,20 +61,33 @@ const DEFAULT_SETTINGS = {
   strikeDays: 30, // a warning level fades after this long with no new events
   ai: true,
   keywordStrikes: true,
+  policy: true, // money / links / picture-request rules (see above)
 };
 
-// Only what is unmistakable in any context. Everyday swearing is not here.
-const STRIKE_RE = /\b(nigg(?:a|er|ers|as)?|faggots?|kill\s*your\s*self|kys|go\s+die|i(?:'?ll| will)\s+(?:kill|rape|find)\s+you|rape\s+you)\b/i;
+const POLICY_TEXT = {
+  money1: 'Asking for money is not allowed on TalkLive. If you ask again you will get a final warning, and then a ban.',
+  money2: 'Final warning: asking for money is not allowed on TalkLive. Ask again and your account will be banned.',
+  link: 'Sending links or promoting your profiles is not allowed on TalkLive. Please keep the conversation here.',
+  pics: 'Asking people for pictures or videos is not allowed on TalkLive.',
+  harm: 'Telling people to hurt or kill themselves, and threatening people, is not allowed on TalkLive. Your account has been sent for review.',
+  illegal: 'Selling drugs or anything illegal is not allowed on TalkLive. Doing it again will send your account for review.',
+};
+const MONEY_BAN_MIN = [7 * 1440, 30 * 1440, 365 * 1440];
+const MONEY_ASK_GAP = 2 * 60000; // lines closer than this to the same person are one ask
+
+// Only what is unmistakable in any context. Everyday swearing is not here, and
+// neither are slurs: the owner allows them as slang between friends.
+const STRIKE_RE = /\b(kill\s*your\s*self|kys|go\s+die|i(?:'?ll| will)\s+(?:kill|rape|find)\s+you|rape\s+you)\b/i;
 
 const WARN_TEXT = {
-  warn1: 'Several people reported your recent conversations. Please keep TalkLive friendly: no harassment, hate, sexual content or pressure to move to other apps. Repeated reports can lead to a ban.',
+  warn1: 'Several people reported your recent conversations. Please keep TalkLive friendly: no harassment, hate, asking for money, links or asking for pictures. Repeated reports can lead to a ban.',
   warn2: 'Final warning: you were reported again after an earlier warning. If this continues your account will be reviewed and may be banned.',
 };
 
 const SYSTEM = `You review user reports for TalkLive, an anonymous random voice and text chat site for adults.
 You get the reporter's stated reason and the recent chat between the two people. Decide whether the REPORTED person broke the rules.
 
-Rules: no harassment or bullying, no hate speech or slurs, no threats, no sexual content or sexual pressure toward someone who did not want it, no sexual talk at all involving anyone who says they are under 18, no scams or requests for money, no spam or pushing people to other apps.
+Rules: flirting and sexual chat between consenting adults are ALLOWED and are not a violation. Swearing and rough slang (including slurs used casually) between people who are clearly joking or friendly are ALLOWED. Someone saying they feel suicidal themselves is NOT a violation. Not allowed: harassment or bullying, hateful attacks on someone, telling someone to kill or hurt themselves, real threats or genuine talk of murdering someone, selling drugs or any other illegal activity, continuing sexual talk after the other person said no or clearly did not want it, any sexual talk involving anyone who says they are under 18, asking for money (or selling content), sending links or promoting profiles, asking for pictures or videos.
 
 verdict:
 - violation: the transcript clearly shows the REPORTED person breaking a rule.
@@ -219,7 +247,8 @@ function createAutomod({ store, deliverWarning, kickBanned, talkguard }) {
   // Free check used when no AI key is set: reads the same chat with the
   // keyword rules. A flagged message from the reported person backs the
   // report; a real conversation with nothing flagged from them weakens it.
-  const BAD_FLAGS = ['abuse', 'sexual', 'money'];
+  // Sexual chat is allowed, so it never backs a report on its own.
+  const BAD_FLAGS = ['abuse', 'money', 'link', 'pics'];
   function ruleJudge({ reportedId, reporterId }) {
     const pair = [reportedId, reporterId].sort().join('|');
     const rows = recentChat(pair, Date.now() - 6 * 3600000);
@@ -230,7 +259,7 @@ function createAutomod({ store, deliverWarning, kickBanned, talkguard }) {
       const f = modTags.riskFlags(m.text).filter((x) => BAD_FLAGS.includes(x));
       if (talkguard) {
         const sc = talkguard.score(m.text);
-        for (const h of ['abuse', 'sexual', 'spam']) if (sc[h] >= 0.85 && !f.includes(h)) f.push(h);
+        for (const h of ['abuse', 'spam']) if (sc[h] >= 0.85 && !f.includes(h)) f.push(h);
       }
       return { m, f };
     }).filter((x) => x.f.length);
@@ -350,6 +379,7 @@ function createAutomod({ store, deliverWarning, kickBanned, talkguard }) {
   // Sexual talk after someone said they are a minor goes to the review queue.
   // kind: 'chat' | 'voice-note' | 'voice'
   function onChatText({ from, to, pair, text, kind = 'chat' }) {
+    if (text && from && from.clientId && kind === 'chat') policyCheck({ from, to, text });
     if (off() || !text || !from || !from.clientId) return null;
     const flags = modTags.riskFlags(text);
     const sc = talkguard ? talkguard.check(text, { source: kind, from: from.username, fromClientId: from.clientId }) : { abuse: 0, sexual: 0, spam: 0 };
@@ -378,8 +408,104 @@ function createAutomod({ store, deliverWarning, kickBanned, talkguard }) {
     return sc;
   }
 
+  // --- site rules: money, links, pictures ---------------------------------------
+  const policyOn = () => settings().policy !== false;
+  const policyDry = () => settings().mode === 'dryrun';
+
+  function policyCheck({ from, to, text }) {
+    if (!policyOn()) return;
+    const d = guardPolicy.detect(text);
+    if (!d.money && !d.link && !d.pics && !d.harm && !d.illegal) return;
+    const p = person(from.clientId, from.account, from);
+    const pol = p.policy || (p.policy = { money: [], warned: {}, bans: 0 });
+    const now = Date.now();
+    const evidence = [String(text).slice(0, 300)];
+    if (d.harm) {
+      if (pol.warned && pol.warned.harm > now - 3600000) return;
+      if (!pol.warned) pol.warned = {};
+      pol.warned.harm = now;
+      const what = d.suicideBait ? 'Told someone to kill or hurt themselves' : 'Threatened someone / talked about killing';
+      pushEvent(p, { ts: now, type: 'policy', source: to, weight: 1, why: [what.toLowerCase()], detail: String(text).slice(0, 160), evidence });
+      policyWarn(p, 'harm', what, text);
+      policyReview(p, `${what}: "${String(text).slice(0, 120)}"`, true);
+    } else if (d.illegal) {
+      pol.illegal = (pol.illegal || []).filter((x) => x && now - x.ts < DAY);
+      const lastIl = pol.illegal[pol.illegal.length - 1];
+      if (lastIl && lastIl.to === to && now - lastIl.ts < MONEY_ASK_GAP) { lastIl.ts = now; store.save(); return; }
+      pol.illegal.push({ ts: now, to });
+      pushEvent(p, { ts: now, type: 'policy', source: to, weight: 0.5, why: ['offered drugs or something illegal'], detail: String(text).slice(0, 160), evidence });
+      policyWarn(p, 'illegal', 'Selling drugs or something illegal', text);
+      if (pol.illegal.length >= 2) policyReview(p, `Offered drugs or something illegal ${pol.illegal.length} times in 24 hours: "${String(text).slice(0, 120)}"`, false);
+    } else if (d.money) {
+      pol.money = (pol.money || []).filter((a) => now - a.ts < DAY);
+      const last = pol.money[pol.money.length - 1];
+      if (last && last.to === to && now - last.ts < MONEY_ASK_GAP) { last.ts = now; store.save(); return; }
+      pol.money.push({ ts: now, to });
+      const n = pol.money.length;
+      pushEvent(p, { ts: now, type: 'policy', source: to, weight: 0.5, why: ['asked for money in chat'], detail: String(text).slice(0, 160), evidence });
+      if (n >= 3) policyBan(p, `Asked for money ${n} times in 24 hours`, text);
+      else policyWarn(p, n === 1 ? 'money1' : 'money2', 'Asked for money', text);
+    } else {
+      const k = d.pics ? 'pics' : 'link';
+      if (!pol.warned) pol.warned = {};
+      if (pol.warned[k] > now - 12 * 3600000) return;
+      pol.warned[k] = now;
+      pushEvent(p, { ts: now, type: 'policy', source: to, weight: 0.5, why: [k === 'pics' ? 'asked for pictures' : 'sent a link'], detail: String(text).slice(0, 160), evidence });
+      policyWarn(p, k, k === 'pics' ? 'Asked for pictures' : 'Sent a link', text);
+    }
+    store.save();
+  }
+
+  function policyWarn(p, key, reason, text) {
+    let warningId = null;
+    if (!policyDry()) {
+      const w = store.addWarning({ clientId: p.clientIds[p.clientIds.length - 1], account: p.account, username: p.username, country: p.country, reason: 'Auto: ' + reason, message: POLICY_TEXT[key] });
+      warningId = w.id;
+      try { deliverWarning(w); } catch (_) { /* queued for next visit */ }
+    }
+    log(p, 'policy_warn', `${reason}: "${String(text).slice(0, 120)}"`, { warningId, dry: policyDry() });
+  }
+
+  // Into the owner's review queue (you decide whether to ban), with an email
+  // even while the report ladder is off.
+  function policyReview(p, why, severe) {
+    if (p.review && p.review.status === 'open') {
+      p.review.severe = p.review.severe || severe;
+      p.review.notes = (p.review.notes || []).concat(why).slice(-6);
+      return;
+    }
+    p.review = { ts: Date.now(), status: 'open', severe: !!severe, dry: policyDry(), why, notes: [why] };
+    p.level = Math.max(p.level, 3);
+    log(p, severe ? 'severe' : 'review', why, { dry: policyDry() });
+    if (!policyDry()) alert(severe ? 'automod-severe' : 'automod-review', `${severe ? 'Urgent: ' : ''}${p.username || 'A user'} needs review`, `${why}\n\nOpen the dashboard -> Safety -> Auto-mod to ban, warn or clear.`);
+  }
+
+  function policyBan(p, why, text) {
+    const pol = p.policy;
+    const mins = MONEY_BAN_MIN[Math.min(pol.bans || 0, MONEY_BAN_MIN.length - 1)];
+    const days = Math.round(mins / 1440);
+    if (!policyDry()) {
+      const cid = p.clientIds[p.clientIds.length - 1];
+      // Device only, not the IP: mobile carriers put many people on one IP.
+      const ban = store.addBan({ clientId: cid, username: p.username, country: p.country, reason: 'Auto: ' + why, minutes: mins });
+      try { kickBanned(cid, null, ban); } catch (_) { /* offline */ }
+      store.audit('ban', '', `Auto-banned ${p.username || p.key} for ${days} days - ${why}`);
+      alert('automod-ban', `${p.username || 'A user'} was auto-banned for ${days} days`, `${why}.\nLast message: "${String(text).slice(0, 200)}"\n\nUndo from the dashboard -> Safety -> Bans.`);
+    }
+    pol.bans = (pol.bans || 0) + 1;
+    pol.money = [];
+    log(p, 'policy_ban', `${why} - ${days} day ban: "${String(text).slice(0, 120)}"`, { dry: policyDry() });
+    store.save();
+  }
+
   // Copy-pasted spam to many strangers (server/patterns.js). Once a day.
   function onPattern({ clientId, account, username, text, partners }) {
+    if (clientId && policyOn() && guardPolicy.detect(text).money) {
+      const p = person(clientId, account, { username });
+      if (!p.policy) p.policy = { money: [], warned: {}, bans: 0 };
+      policyBan(p, `Copy-pasted a money request to ${partners} strangers`, text);
+      return;
+    }
     if (off() || !clientId) return;
     const p = person(clientId, account, { username });
     if (p.events.some((e) => e.type === 'pattern' && e.ts > Date.now() - DAY)) return;
@@ -531,7 +657,7 @@ function createAutomod({ store, deliverWarning, kickBanned, talkguard }) {
     for (const [k, [lo, hi]] of Object.entries(nums)) if (patch[k] != null && Number.isFinite(Number(patch[k]))) st[k] = Math.min(hi, Math.max(lo, Number(patch[k])));
     if (st.warn2 <= st.warn1) st.warn2 = st.warn1 + 1;
     if (st.review <= st.warn2) st.review = st.warn2 + 1;
-    for (const k of ['ai', 'keywordStrikes', 'autoLive']) if (typeof patch[k] === 'boolean') st[k] = patch[k];
+    for (const k of ['ai', 'keywordStrikes', 'autoLive', 'policy']) if (typeof patch[k] === 'boolean') st[k] = patch[k];
     if (patch.extendDryRun) { st.mode = 'dryrun'; st.dryRunUntil = Date.now() + 7 * DAY; }
     if (before === 'dryrun' && st.mode === 'live') goLive();
     store.audit('automod', ownerIp, `Auto-mod settings: ${JSON.stringify(patch).slice(0, 200)}`);

@@ -98,13 +98,14 @@ const actions = (am) => am._state().log.map((l) => l.action);
   ok('no automatic ban', store.bans.length === 0);
   ok('owner can ban from review', am.decide('c:T7', 'ban', { minutes: 1440 }).ok && store.bans.length === 1);
 }
-// 7. slurs typed in chat count once per partner per day
+// 7. threats typed in chat count once per partner per day
 {
   const { am } = setup('live');
   for (const to of ['p1', 'p1', 'p2', 'p3']) am.onChatText({ from: { clientId: 'T8', username: 'T8' }, to, pair: 'x', text: 'kys loser' });
   am.onChatText({ from: { clientId: 'T9', username: 'T9' }, to: 'p1', pair: 'y', text: 'what the hell man' });
   evalNow(am, 'T8');
-  ok('slurs to 3 partners -> warning', person(am, 'T8').level === 1, person(am, 'T8').events.length);
+  // "kys" is suicide baiting under the site rules: a warning and urgent review.
+  ok('suicide baiting to 3 partners -> urgent review', person(am, 'T8').level >= 1 && person(am, 'T8').review && person(am, 'T8').review.severe, person(am, 'T8').events.length);
   ok('ordinary swearing ignored', !person(am, 'T9'));
 }
 // 8. owner clear: reporters trusted less afterwards

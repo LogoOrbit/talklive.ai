@@ -8,6 +8,7 @@
 let Anthropic = null;
 try { Anthropic = require('@anthropic-ai/sdk'); Anthropic = Anthropic.default || Anthropic; } catch (_) { /* optional */ }
 
+const guardPolicy = require('./guard-policy');
 const TAG_MODEL = process.env.AI_TAG_MODEL || process.env.AI_MODEL || 'claude-opus-5-5';
 
 // Patterns worth an operator's attention, cheapest and most specific first.
@@ -17,16 +18,26 @@ const RISK_RULES = [
   ['contact', /\b(whats\s*app|whatsapp|telegram|snap(?:chat)?|insta(?:gram)?|discord|kik|@[a-z0-9._]{3,}|\+?\d[\d\s().-]{7,}\d)\b/i],
   ['link', /(https?:\/\/|www\.|\b[a-z0-9-]+\.(?:com|net|org|io|xyz|ru|link|gg|me|app)\b)/i],
   ['money', /\b(bitcoin|crypto|invest(?:ment)?|paypal|cash\s*app|gift\s*card|send\s*money|western\s*union)\b/i],
+  // Asking for pictures or videos: matched in riskFlags by the site rules
+  // (server/guard-policy.js); listed here so it is a known flag name.
+  ['pics', /$^/],
   ['abuse', /\b(kill\s*your\s*self|kys|nigg|faggot|retard|rape|bitch|whore)\b/i],
 ];
-// Anything in these is worth looking at first; the rest is context.
-const SEVERE = new Set(['minor', 'sexual', 'abuse']);
+// Anything in these is worth looking at first; the rest is context. Sexual
+// chat between adults is allowed, so it is context, not a red flag.
+const SEVERE = new Set(['minor', 'abuse', 'money', 'pics']);
 const FLAGS = RISK_RULES.map(([name]) => name);
 
 function riskFlags(text) {
   const s = String(text || '');
   const out = [];
   for (const [name, re] of RISK_RULES) if (re.test(s)) out.push(name);
+  // The site rules catch money requests and picture requests the short
+  // keyword list misses ("send me 500 rs", "send your pic").
+  const d = guardPolicy.detect(s);
+  if (d.money && !out.includes('money')) out.push('money');
+  if (d.pics && !out.includes('pics')) out.push('pics');
+  if (d.link && !out.includes('link')) out.push('link');
   return out;
 }
 

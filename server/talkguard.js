@@ -9,14 +9,23 @@
 //     genuine" marks it fine
 // The owner's labels count three times as much as the starter set, so the
 // model drifts toward how this site is actually moderated.
+//
+// Flagged messages the site rules settle (server/guard-policy.js) are labelled
+// automatically instead of queued: money, links and picture requests as spam,
+// slurs and threats as abuse, sexual chat as sexual (allowed, but kept so the
+// under-18 check still recognises it), false alarms as fine. Only what the
+// rules leave open (insults, contact swaps) waits for the owner. Rule labels
+// count like starter examples, not like the owner's.
 
 const core = require('../public/talkguard');
 const seed = require('./talkguard-seed');
+const policy = require('./guard-policy');
 
 const { DIM, HEADS } = core;
 const MAX_EXAMPLES = 3000;
 const MAX_CANDIDATES = 300;
 const OWNER_WEIGHT = 3;
+const MAX_POLICY_EXAMPLES = 1500;
 
 function createTalkGuard({ store }) {
   let model = null; // { v, heads: { name: { b, w: Float32Array } } }
@@ -111,7 +120,7 @@ function createTalkGuard({ store }) {
   function train() {
     const s = state();
     const t0 = Date.now();
-    const rows = seedRows().concat(s.examples.map((e) => ({ t: e.t, y: e.y, w: OWNER_WEIGHT })));
+    const rows = seedRows().concat(s.examples.map((e) => ({ t: e.t, y: e.y, w: e.by === 'policy' ? 1 : OWNER_WEIGHT })));
     const heads = fit(rows);
     model = { v: s.version, heads, thresholds: {} };
     wire = encode(heads, s.version);
@@ -137,6 +146,9 @@ function createTalkGuard({ store }) {
     const s = state();
     const t = String(text || '').trim().slice(0, 300);
     if (t.length < 3 || s.candidates.some((c) => c.t === t) || s.examples.some((e) => e.t === t)) return;
+    const auto = policy.classify(t);
+    if (auto === 'skip') return;
+    if (auto) { addExample(t, auto, 'policy'); return; }
     s.candidates.unshift({ id: Math.random().toString(36).slice(2, 10), t, ts: Date.now(), source, from: from || '', fromClientId: fromClientId || '', scores: round(scores) });
     if (s.candidates.length > MAX_CANDIDATES) s.candidates.length = MAX_CANDIDATES;
   }
@@ -166,8 +178,14 @@ function createTalkGuard({ store }) {
     if (!t) return false;
     const y = { abuse: 0, sexual: 0, spam: 0 };
     if (label !== 'fine') { if (!HEADS.includes(label)) return false; y[label] = 1; }
+    // A rule never overrides a label the owner gave.
+    if (by === 'policy' && s.examples.some((e) => e.t === t && e.by !== 'policy')) return false;
     s.examples = s.examples.filter((e) => e.t !== t);
     s.examples.push({ t, y, ts: Date.now(), by: by || 'owner' });
+    if (by === 'policy') {
+      const auto = s.examples.filter((e) => e.by === 'policy');
+      if (auto.length > MAX_POLICY_EXAMPLES) { const drop = new Set(auto.slice(0, auto.length - MAX_POLICY_EXAMPLES)); s.examples = s.examples.filter((e) => !drop.has(e)); }
+    }
     if (s.examples.length > MAX_EXAMPLES) s.examples.splice(0, s.examples.length - MAX_EXAMPLES);
     s.candidates = s.candidates.filter((c) => c.t !== t);
     scheduleRetrain();
@@ -208,12 +226,29 @@ function createTalkGuard({ store }) {
     };
   }
 
+  // Answer what is already queued by the site rules; the rest stays for the owner.
+  function applyPolicy() {
+    const s = state();
+    const before = s.candidates.length;
+    const counts = {};
+    for (const c of s.candidates.slice()) {
+      const auto = policy.classify(c.t);
+      if (!auto) continue;
+      counts[auto] = (counts[auto] || 0) + 1;
+      // Skipped, or already labelled by the owner: just leave the queue.
+      if (auto === 'skip' || !addExample(c.t, auto, 'policy')) s.candidates = s.candidates.filter((x) => x !== c);
+    }
+    const done = before - s.candidates.length;
+    if (done) { store.save(); console.log(`[talkguard] site rules answered ${done} queued message(s):`, JSON.stringify(counts)); }
+    return { answered: done, left: s.candidates.length, counts };
+  }
+
   train();
   // The stored examples arrive with the store; pick them up once loaded.
-  setTimeout(() => { if (state().examples.length) train(); }, 15000).unref?.();
+  setTimeout(() => { applyPolicy(); if (state().examples.length) train(); }, 15000).unref?.();
 
   return {
-    score, check, addExample, label, learnFromDecision, summary,
+    score, check, addExample, label, learnFromDecision, summary, applyPolicy,
     modelJson: () => wire,
     version: () => (wire ? wire.v : 0),
     thresholds: () => (wire ? wire.thresholds : { nudge: 0.8, strike: 0.9, flag: 0.6 }),

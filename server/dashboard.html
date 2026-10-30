@@ -2067,8 +2067,8 @@ let warnFilter='all';
    Warnings first, never an automatic ban. Reports are weighted by how genuine
    they look (and checked by AI when the chat was typed); the ladder is
    warning -> final warning -> owner review. Logic lives in server/automod.js. */
-const AM_ACT={warn1:['⚠️ Warning','warn'],warn2:['🟧 Final warning','warn'],review:['🧑‍⚖️ Sent to review','info'],severe:['🚨 Urgent review','crit'],skip:['✅ Not acted on','good'],owner_ban:['⛔ You banned','crit'],owner_clear:['🧹 You cleared','good'],owner_warn:['⚠️ You warned','warn'],live:['🟢 Went live','good']};
-const AM_EV={report:'🚩 Report',keyword:'🔤 Slur or threat',model:'🧠 TalkGuard',voice:'🎙️ Said on a call',pattern:'📈 Spam pattern',ai:'🤖 AI'};
+const AM_ACT={warn1:['⚠️ Warning','warn'],warn2:['🟧 Final warning','warn'],review:['🧑‍⚖️ Sent to review','info'],severe:['🚨 Urgent review','crit'],skip:['✅ Not acted on','good'],owner_ban:['⛔ You banned','crit'],owner_clear:['🧹 You cleared','good'],owner_warn:['⚠️ You warned','warn'],live:['🟢 Went live','good'],policy_warn:['📏 Rule warning','warn'],policy_ban:['⛔ Auto-banned (money)','crit']};
+const AM_EV={report:'🚩 Report',keyword:'🔤 Threat',model:'🧠 TalkGuard',voice:'🎙️ Said on a call',pattern:'📈 Spam pattern',ai:'🤖 AI',policy:'📏 Site rule'};
 function amEvents(evs){
   return evs.map(e=>`<div style="padding:7px 0;border-top:1px solid var(--grid);font-size:.8rem${e.cleared?';opacity:.5':''}">
     <b>${AM_EV[e.type]||e.type}</b> · counts <b>${e.pending?'…checking':e.weight}</b> · ${ago(e.ts)}${e.reason?` · ${esc(e.reason)}`:''}${e.cleared?' · cleared':''}
@@ -2172,11 +2172,12 @@ async function amRules(){
     ${f('strikeDays','Warnings fade after (days)','With no new reports.')}
     ${b('ai','Use AI for chat checks if an ANTHROPIC_API_KEY is ever added (costs money; free keyword rules otherwise)')}
     ${b('keywordStrikes','Count slurs and threats typed in chat')}
+    ${b('policy','Site rules (own switch, runs even when auto-mod is off): money requests get a warning, a final warning, then a ban (7 days, 30, then a year); copy-pasted money requests are banned at once; links and picture requests get a warning. Flirting and sexual chat are allowed.')}
     ${b('autoLive','Go live automatically when the dry run ends')}
     <button class="btn" id="amSave">Save rules</button>`,(sh)=>{
       sh.querySelector('#amSave').onclick=async()=>{
         const g=(k)=>sh.querySelector('#am_'+k);
-        const patch={warn1:+g('warn1').value,warn2:+g('warn2').value,review:+g('review').value,windowDays:+g('windowDays').value,minRate:+g('minRate').value/100,strikeDays:+g('strikeDays').value,ai:g('ai').checked,keywordStrikes:g('keywordStrikes').checked,autoLive:g('autoLive').checked};
+        const patch={warn1:+g('warn1').value,warn2:+g('warn2').value,review:+g('review').value,windowDays:+g('windowDays').value,minRate:+g('minRate').value/100,strikeDays:+g('strikeDays').value,ai:g('ai').checked,keywordStrikes:g('keywordStrikes').checked,policy:g('policy').checked,autoLive:g('autoLive').checked};
         closeModal();amSet(patch,'Rules saved');
       };
     });
@@ -2208,6 +2209,7 @@ async function viewAiGuard(){
   <div class="card anim" style="margin-top:0"><h2>🧠 TalkGuard <span class="sub">TalkLive's own safety model · free, no outside AI</span>
     <span style="margin-left:auto" class="rowbtns"><button onclick="tgRetrain()">↻ Retrain now</button></span></h2>
     <div class="muted" style="font-size:.84rem;line-height:1.6">Reads every chat message, voice message transcript and flagged voice-call speech. It nudges people before they send something hurtful, gives the auto-mod evidence, and gets better each time you teach it below.</div>
+    <div class="fmsg" style="margin-top:10px;font-size:.82rem;line-height:1.55"><b>Site rules answer the queue for you.</b> Flirting and sexual chat are allowed (labelled "sexual" only so the under-18 check keeps working). Asking for money, sending links and asking for pictures are labelled spam; slurs and threats are abuse; false alarms are fine. Only insults and "add me on WhatsApp/IG" wait here for you.</div>
     <div class="grid tiles" style="margin-top:12px">
       <div class="tile"><div class="k">Version</div><div class="v">v${num(m.version)}</div><div class="s">trained ${m.trainedAt?ago(m.trainedAt):'-'} in ${num(m.ms)} ms</div></div>
       <div class="tile"><div class="k">Learned from you</div><div class="v grad">${num(m.ownerExamples)}</div><div class="s">+ ${num(m.seedExamples)} starter examples</div></div>
