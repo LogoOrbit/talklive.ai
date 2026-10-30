@@ -3299,7 +3299,6 @@ summary.tl-filter-legend::-webkit-details-marker { display: none; }
 #premiumUpsellModal .pu-perks { gap: 6px; }
 #premiumUpsellModal .pu-perks li { padding: 8px 12px; font-size: 13.5px; }
 .pu-free.hidden { display: none; }
-#premiumUpsellModal[data-mode="trial"] .pu-cta svg { display: none; }
 
 /* ===========================================================================
  * ENGAGE (engage.js): streak, passport, likes, today's question

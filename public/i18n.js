@@ -40,9 +40,9 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "sharePromptLater": "Not now",
     "shareText": "Talk to a stranger, right now - free anonymous voice chat, no video, no sign-up.",
     "shareLinkCopied": "Link copied",
-    "referralIncentive": "When they have their first real conversation, you both get {days} days of TalkLive Plus.",
-    "referralStats": "{joined} joined through your link, {qualified} already talked.",
-    "referralRewardToast": "+{days} days of Plus - thanks!",
+    "referralIncentive": "Invite 3 friends. When they sign up with your link and have their first chat, you get 1 hour of TalkLive Plus.",
+    "referralStats": "{n} of {needed} friends joined toward your next hour of Plus.",
+    "referralRewardToast": "3 friends joined - 1 hour of Plus is yours!",
     "installTitle": "Add TalkLive to your home screen",
     "installBody": "One tap to open, and it works like an app.",
     "installBtn": "Install",
@@ -417,6 +417,12 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "errNoConnection": "You are offline at the moment. The app is reconnecting - try again in a few seconds.",
     "errNoServerReply": "The server did not answer. Check your connection and try again.",
     "recoveryEmailHint": "Only used to send you a reset code if you forget your password. Never shown to anyone.",
+    "signupEmailHint": "We send a 6-digit code here to confirm it's you. Also used to reset your password. Never shown to anyone.",
+    "signupCodeSent": "We sent a 6-digit code to {email}. Enter it below to finish.",
+    "signupCodeLabel": "6-digit code",
+    "signupVerifyBtn": "Verify & create account",
+    "signupChangeEmail": "Change email",
+    "authEmailRequired": "Enter your email. We send it a code to confirm it's you.",
     "recoveryEmailSet": "Reset codes go to {email}.",
     "recoveryEmailMissing": "No recovery email yet - add one so you can never lose this account.",
     "saveRecoveryEmail": "Save Recovery Email",
@@ -817,9 +823,6 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "avatarChosenCharacter": "You are the {name}",
     "upsellLikesTitle": "See who liked you",
     "upsellUndoTitle": "Bring them back",
-    "upsellTrialTitle": "Premium is yours for a day 🎉",
-    "upsellTrialBadge": "Free for 24h",
-    "upsellTrialCta": "Try the filters",
     "upsellPerkLikes": "See who liked you",
     "upsellPerkUndo": "Undo a skip",
     "upsellComingSoon": "Coming soon",
@@ -870,7 +873,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "railNoCalls": "No calls yet. Your calls from this session show up here.",
     "railNoFriends": "No friends yet. Add someone you enjoyed talking to.",
     "railInviteTitle": "Bring more people online",
-    "railInviteBody": "Every match needs someone on the other end. Invite a friend and the queue gets shorter for everyone.",
+    "railInviteBody": "Invite 3 friends. When they sign up with your link, you get 1 hour of TalkLive Plus.",
     "railInviteCta": "Invite a friend",
     "heroSub": "Real people. Genuine conversations. No sign-up required.",
     "animalMore": "More",
@@ -1172,7 +1175,7 @@ function applyI18n() {
 // Non-English dictionaries load on demand from /i18n/<lang>.js. Until the file
 // arrives t() falls back to English, then the UI re-translates once it lands.
 // Keep in step with the preload snippet in the <head> of index.html/chat.html.
-const I18N_VERSION = '20261028nocoins';
+const I18N_VERSION = '20261030invite';
 const i18nLoading = {};
 window.__i18nLangLoaded = function (lang) {
   delete i18nLoading[lang];

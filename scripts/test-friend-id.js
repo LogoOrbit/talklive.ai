@@ -55,6 +55,24 @@ async function search(sock, friendId) {
   return res;
 }
 
+// Sign-up takes an emailed code. Without SMTP the development server prints
+// it, so read it back from the server's output.
+async function signUp(sock, srv, username, password) {
+  const email = `${username}@example.com`;
+  const sent = once(sock, 'signup-code-result');
+  sock.emit('signup-send-code', { username, email });
+  const r = await sent;
+  if (!r.ok) return r;
+  let code = '';
+  for (let i = 0; i < 40 && !code; i++) {
+    const m = new RegExp(`verification code for ${email.replace(/[.]/g, '\\.')} is (\\d{6})`).exec(srv.logs.join(''));
+    if (m) code = m[1]; else await wait(50);
+  }
+  const done = once(sock, 'signup-result');
+  sock.emit('signup', { username, password, email, code });
+  return done;
+}
+
 function startServer() {
   const srv = spawn(process.execPath, [path.join(__dirname, '..', 'server', 'index.js')], {
     env: { ...process.env, PORT: String(PORT), DATA_DIR, NODE_ENV: 'development', GIPHY_API_KEY: '' },
@@ -165,9 +183,7 @@ async function waitUp() {
     g.disconnect();
 
     // --- Accounts --------------------------------------------------------
-    const signedUp = once(a.sock, 'signup-result');
-    a.sock.emit('signup', { username: 'fidalpha', password: 'secret123' });
-    const account = await signedUp;
+    const account = await signUp(a.sock, srv, 'fidalpha', 'secret123');
     ok('signup works', account.ok, JSON.stringify(account));
     a.sock.disconnect();
     await wait(200);
@@ -204,9 +220,7 @@ async function waitUp() {
     ok('bad formats are explained', (await setId(aAfter.sock, 'a#1')).ok === false);
     ok('numbers or symbols in the name are refused', (await setId(aAfter.sock, 'alpha_1#0042')).ok === false && (await setId(aAfter.sock, 'al.pha#0042')).ok === false);
     ok('letters in the tag are refused', (await setId(aAfter.sock, 'alpha#00a2')).ok === false);
-    const bSignup = once(c.sock, 'signup-result');
-    c.sock.emit('signup', { username: 'fidcharlie', password: 'secret123' });
-    const bAcc = await bSignup;
+    const bAcc = await signUp(c.sock, srv, 'fidcharlie', 'secret123');
     c.sock.disconnect();
     await wait(200);
     const cSigned = await connect('c_fid_charlie', { signedIn: true, sessionToken: bAcc.sessionToken });

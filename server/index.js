@@ -653,7 +653,7 @@ const GROWTH_EVENTS = new Set([
   // person asking to be told when it does.
   'premium_notify_click',
   // The Premium card was shown, and the engagement features (engage.js).
-  'premium_upsell_view', 'likes_locked_tap', 'passport_share', 'trial_started', 'whats_new_open',
+  'premium_upsell_view', 'likes_locked_tap', 'passport_share', 'whats_new_open',
   // Progressive disclosure (fix list 2.3). One exposure event per first-time
   // session, per arm, and one event per surface opened within the first two
   // minutes of it. "on" is the flag's arm, "off" is everyone else's first
@@ -3060,6 +3060,60 @@ function otpEmail(nickname, code) {
   return { text, html };
 }
 
+// --- Sign-up email verification ---------------------------------------------
+// A username + password account needs a verified email: step 1 emails a
+// 6-digit code (signup-send-code), step 2 creates the account only if it
+// matches. Codes live in memory for RESET_CODE_TTL_MS; a restart just means
+// asking for a new one. Stored as hashes, one live code per address.
+const signupCodes = new Map(); // email -> { codeHash, username, expiresAt, attempts }
+
+function checkSignupCode(email, username, code) {
+  const digits = typeof code === 'string' ? code.replace(/\D/g, '') : '';
+  if (digits.length !== 6) return { ok: false, error: 'Enter the 6-digit code we emailed you.' };
+  const pending = signupCodes.get(email);
+  if (!pending || pending.expiresAt <= Date.now()
+    || pending.username !== String(username || '').toLowerCase()) {
+    if (pending && pending.expiresAt <= Date.now()) signupCodes.delete(email);
+    return { ok: false, error: 'That code is not valid or has expired. Request a new one.' };
+  }
+  const a = Buffer.from(hashToken(digits), 'hex');
+  const b = Buffer.from(pending.codeHash, 'hex');
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+    pending.attempts += 1;
+    // Six digits is only 20 bits: cap the guesses like the reset flow does.
+    if (pending.attempts >= RESET_MAX_ATTEMPTS) {
+      signupCodes.delete(email);
+      return { ok: false, error: 'Too many wrong codes. Please request a new one.' };
+    }
+    return { ok: false, error: `Incorrect code. ${RESET_MAX_ATTEMPTS - pending.attempts} attempt(s) left.` };
+  }
+  signupCodes.delete(email);
+  return { ok: true };
+}
+
+function signupOtpEmail(nickname, code) {
+  const minutes = Math.round(RESET_CODE_TTL_MS / 60000);
+  const text = [
+    `Hi ${nickname},`,
+    '',
+    `Your TalkLive verification code is: ${code}`,
+    '',
+    `Enter it to finish creating your account. It expires in ${minutes} minutes and can be used once.`,
+    'If you did not try to sign up, you can ignore this email.',
+    '',
+    '- TalkLive',
+  ].join('\n');
+  const html = `
+    <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#1b1b1f">
+      <h2 style="margin:0 0 8px;font-size:20px">Confirm your email</h2>
+      <p style="margin:0 0 20px;color:#55555f">Hi ${escapeHtmlText(nickname)}, enter this code to finish creating your TalkLive account.</p>
+      <div style="font-size:34px;font-weight:700;letter-spacing:10px;text-align:center;padding:18px;border-radius:12px;background:#f3f2f8">${code}</div>
+      <p style="margin:20px 0 0;color:#55555f">The code expires in ${minutes} minutes and can be used once.</p>
+      <p style="margin:12px 0 0;color:#8a8a94;font-size:13px">Didn't try to sign up? Ignore this email.</p>
+    </div>`;
+  return { text, html };
+}
+
 // Per-IP signup throttle: at most a handful of new accounts per IP per hour so
 // a script can't mass-create accounts to flood storage or evade bans.
 const SIGNUP_LIMIT = 5;
@@ -3290,6 +3344,7 @@ async function findOrCreateGoogleAccount(idToken) {
   // Google again. Skipped if another account already claims the address.
   const googleEmail = normalizeEmail(payload.email);
   let username = googleAccounts.get(googleId);
+  const created = !username;
 
   if (!username && store.siteModes().signupsPaused) {
     throw Object.assign(new Error('New sign-ups are paused'), { errorKey: 'modeSignupsPaused' });
@@ -3320,7 +3375,7 @@ async function findOrCreateGoogleAccount(idToken) {
     }
   }
 
-  return { username, account: accounts.get(username.toLowerCase()), profile };
+  return { username, account: accounts.get(username.toLowerCase()), profile, created };
 }
 
 function getClientIp(socket) {
@@ -3597,35 +3652,66 @@ function blockPair(clientIdA, clientIdB) {
 // Overridable so an end-to-end test does not have to hold a call open for a
 // full minute; production never sets it.
 const REAL_CONVERSATION_MS = Number(process.env.REAL_CONVERSATION_MS) || 60000;
-// Days of Plus each side gets when an invited person has their first real
-// conversation. Both sides on purpose: rewarding only the inviter makes the
-// link feel like spam to the person receiving it.
-const REFERRAL_REWARD_DAYS = 7;
+// Invite 3 friends, get 1 hour of Plus. Only the inviter is rewarded. See the
+// Referrals section of server/store.js for every rule an invite has to pass.
+const REFERRAL_REWARD_MS = 60 * 60000;
 
-// Pay out a referral once - and only once - for the person who was invited.
-// Called at the end of their first real conversation, never when they merely
-// open the link, so opening it in fifty tabs earns nothing.
+// The network an address belongs to, for telling one person's devices apart
+// from a friend's. IPv4 is grouped by /24 (stricter than the rate-limit
+// bucket), IPv6 by /64.
+function referralNet(ip) {
+  const bucket = ipBucket(ip);
+  const v4 = /^(\d{1,3}\.\d{1,3}\.\d{1,3})\.\d{1,3}$/.exec(bucket);
+  return v4 ? `${v4[1]}.0/24` : bucket;
+}
+
+// Every network the inviter is known to use: the ones their account signed in
+// from, its last seen address, and any tab they have open right now.
+function referralOwnerNets(ownerClientId) {
+  const nets = new Set();
+  const usernameLower = store.findUsernameByClientId(ownerClientId);
+  const entry = usernameLower ? registryEntry(usernameLower) : null;
+  if (entry) {
+    if (entry.ip) nets.add(referralNet(entry.ip));
+    for (const n of entry.loginNets || []) nets.add(referralNet(n));
+  }
+  for (const [sid, p] of profiles) {
+    if (p.clientId !== ownerClientId) continue;
+    const sock = io.sockets.sockets.get(sid);
+    if (sock) nets.add(referralNet(getClientIp(sock)));
+  }
+  return [...nets];
+}
+
+// A new account was just made on this socket's browser: if it came through an
+// invite link, that invite moves on to its last step (a real conversation).
+function noteNewAccountForReferral(usernameLower) {
+  const clientId = store.getAccountClientId(usernameLower);
+  if (!clientId) return;
+  const sock = getSocketByClientId(clientId);
+  store.noteReferralSignup(clientId, {
+    account: usernameLower,
+    net: sock ? referralNet(getClientIp(sock)) : '',
+  });
+}
+
+// Called after every real conversation. Counts the invite once it passes every
+// rule, and pays the inviter an hour for every third one.
 function settleReferral(clientId) {
   if (!clientId) return;
-  const settled = store.qualifyReferral(clientId);
+  const settled = store.verifyReferral(clientId, { ownerNetsFor: referralOwnerNets });
   if (!settled) return;
-  store.extendPremium(settled.owner, REFERRAL_REWARD_DAYS, { source: 'referral', lastEvent: 'referred a user' });
-  store.noteReferralReward(settled.owner, REFERRAL_REWARD_DAYS);
-  store.extendPremium(settled.referred, REFERRAL_REWARD_DAYS, { source: 'referral', lastEvent: 'joined via invite' });
   store.recordFeature('referral_qualified');
-  // The inviter is usually not the person on the call that just ended, so tell
-  // whichever of their sockets is connected rather than replying to this one.
-  for (const [sid, profile] of profiles) {
-    if (profile.clientId !== settled.owner) continue;
-    const sock = io.sockets.sockets.get(sid);
-    if (sock) sock.emit('referral-reward', { days: REFERRAL_REWARD_DAYS, ...store.referralStats(settled.owner) });
+  const owner = settled.owner;
+  if (settled.rewards) {
+    store.extendPremium(owner, settled.rewards * REFERRAL_REWARD_MS, { source: 'referral', lastEvent: '3 friends joined' });
+    store.recordFeature('referral_rewarded');
+    emitPremiumStatus(owner);
   }
-  // Premium was only read at registration, so without this both sides stay on a
-  // stale `premium: false` - the filters they were just given stay locked until
-  // they happen to reload. Push the new state to every socket either of them
-  // has open.
-  emitPremiumStatus(settled.owner);
-  emitPremiumStatus(settled.referred);
+  emitToClient(owner, settled.rewards ? 'referral-reward' : 'referral-status', {
+    ...store.referralStats(owner),
+    hours: settled.rewards,
+  });
 }
 
 // Streak and passport, counted where the call ended and saved with the
@@ -3642,24 +3728,6 @@ function recordEngageCall(profile, country, seconds) {
   const { rec, bump, stamp } = Engage.noteCall(store.engageGet(profile.clientId), { country, seconds, tz: profile.timezone });
   store.engageSet(profile.clientId, rec);
   emitToClient(profile.clientId, 'engage-update', { state: Engage.view(rec, { tz: profile.timezone }), bump, stamp });
-}
-
-// Free trial: a day of Premium after someone's third real conversation, once
-// per person. People pay for what they have already enjoyed.
-const TRIAL_AFTER_CALLS = Number(process.env.TRIAL_AFTER_CALLS) || 3;
-const TRIAL_DAYS = 1;
-function noteGoodCall(clientId) {
-  const n = store.noteGoodCall(clientId);
-  if (n < TRIAL_AFTER_CALLS || store.trialUsed(clientId) || isPremium(clientId)) return;
-  store.markTrialUsed(clientId);
-  store.extendPremium(clientId, TRIAL_DAYS, { source: 'trial', lastEvent: 'free trial after real calls' });
-  store.recordFeature('trial_started');
-  for (const [sid, profile] of profiles) {
-    if (profile.clientId !== clientId) continue;
-    const sock = io.sockets.sockets.get(sid);
-    if (sock) sock.emit('trial-started', { hours: TRIAL_DAYS * 24, calls: TRIAL_AFTER_CALLS });
-  }
-  emitPremiumStatus(clientId);
 }
 
 // Re-send premium state to every live socket belonging to a clientId. Used
@@ -3709,8 +3777,6 @@ function disconnectPartner(socketId, opts = {}) {
     if (ms >= REAL_CONVERSATION_MS) {
       if (profile) settleReferral(profile.clientId);
       if (partnerProfile) settleReferral(partnerProfile.clientId);
-      if (profile) noteGoodCall(profile.clientId);
-      if (partnerProfile) noteGoodCall(partnerProfile.clientId);
     }
   }
   if (profile) profile.matchedAt = 0;
@@ -4498,49 +4564,107 @@ io.on('connection', (socket) => {
     return ageAssurance.check(feature, { clientId: p && p.clientId, country: p && p.country });
   };
 
-  socket.on('signup', async ({ username, password, nickname, email } = {}) => {
+  // Everything a new username + email must pass, shared by both sign-up steps
+  // so a code is never sent for an account that could not be created.
+  // Returns { error, errorKey?, ageCheck? } or { nickname, email }.
+  const checkSignup = ({ username, password, nickname, email }, { needPassword }) => {
     const gate = ageGate('account');
-    if (!gate.ok) return socket.emit('signup-result', { ok: false, error: gate.message, ageCheck: gate.reason });
+    if (!gate.ok) return { error: gate.message, ageCheck: gate.reason };
     if (store.siteModes().signupsPaused) {
-      return socket.emit('signup-result', { ok: false, error: 'New sign-ups are paused right now. Please try again later.', errorKey: 'modeSignupsPaused' });
+      return { error: 'New sign-ups are paused right now. Please try again later.', errorKey: 'modeSignupsPaused' };
     }
-    if (typeof username !== 'string' || typeof password !== 'string'
-      || !username || !password || username.length < 3 || password.length < PASSWORD_MIN) {
-      return socket.emit('signup-result', { ok: false, error: `Username/password too short (min 3/${PASSWORD_MIN} chars).` });
+    if (typeof username !== 'string' || username.length < 3) {
+      return { error: 'Username too short (min 3 chars).' };
     }
-    // The recovery email is optional, but if something was typed it has to be
-    // a usable address - silently dropping a typo would leave the account
-    // unrecoverable exactly when it matters.
+    if (needPassword && (typeof password !== 'string' || password.length < PASSWORD_MIN)) {
+      return { error: `Password too short (min ${PASSWORD_MIN} chars).` };
+    }
+    // Email is required for a username + password account and is verified with
+    // a one-time code before the account exists. Google accounts skip this:
+    // Google has already verified the address.
     const signupEmail = normalizeEmail(email);
-    if (typeof email === 'string' && email.trim() && !signupEmail) {
-      return socket.emit('signup-result', { ok: false, error: 'That email address does not look valid.' });
+    if (!signupEmail) return { error: 'Enter a valid email address. We send it a code to confirm it is yours.' };
+    if (store.findUsernameByEmail(signupEmail) || pendingEmails.has(signupEmail)) {
+      return { error: 'That email is already used by another account.' };
     }
-    if (signupEmail && (store.findUsernameByEmail(signupEmail) || pendingEmails.has(signupEmail))) {
-      return socket.emit('signup-result', { ok: false, error: 'That email is already used by another account.' });
-    }
-    // Nickname is optional - creating an account is just username + password,
-    // and the display name defaults to the username (changeable later).
+    // Nickname is optional - the display name defaults to the username
+    // (changeable later).
+    let nick;
     if (typeof nickname === 'string' && nickname.trim()) {
-      const nick = Nick.check(nickname);
-      if (!nick.ok) return socket.emit('signup-result', { ok: false, error: NICK_ERRORS[nick.error], errorKey: nick.error });
-      nickname = nick.value;
+      const n = Nick.check(nickname);
+      if (!n.ok) return { error: NICK_ERRORS[n.error], errorKey: n.error };
+      nick = n.value;
     } else {
-      nickname = Nick.clean(username) || username.slice(0, Nick.MAX_LEN);
+      nick = Nick.clean(username) || username.slice(0, Nick.MAX_LEN);
     }
     if (!/^[A-Za-z0-9_.-]{3,24}$/.test(username)) {
-      return socket.emit('signup-result', { ok: false, error: 'Username may only contain letters, numbers, dot, dash or underscore (3-24 chars).' });
+      return { error: 'Username may only contain letters, numbers, dot, dash or underscore (3-24 chars).' };
     }
     // Account records are keyed by username in plain objects, where these
     // names reach Object.prototype instead of an account of their own.
     if (store.RESERVED_KEYS.has(username.toLowerCase())) {
-      return socket.emit('signup-result', { ok: false, error: 'That username is already taken.' });
+      return { error: 'That username is already taken.' };
     }
     if (signupThrottled(ip)) {
-      return socket.emit('signup-result', { ok: false, error: 'Too many accounts created from this network. Please try again later.' });
+      return { error: 'Too many accounts created from this network. Please try again later.' };
     }
     if (accounts.has(username.toLowerCase()) || pendingSignups.has(username.toLowerCase())) {
-      return socket.emit('signup-result', { ok: false, error: 'That username is already taken.' });
+      return { error: 'That username is already taken.' };
     }
+    return { nickname: nick, email: signupEmail };
+  };
+
+  // Sign-up step 1: check the details and email a 6-digit code.
+  socket.on('signup-send-code', async ({ username, nickname, email } = {}) => {
+    const reply = (r) => socket.emit('signup-code-result', r);
+    const checked = checkSignup({ username, nickname, email }, { needPassword: false });
+    if (checked.error) return reply({ ok: false, ...checked });
+    const address = checked.email;
+    // See forgot-password: without SMTP a code can only go to the console,
+    // which is fine in development and never allowed in production.
+    if (!mail.configured() && process.env.NODE_ENV === 'production') {
+      return reply({ ok: false, error: 'Email verification is not available right now. Try Google sign-up instead.' });
+    }
+    if (resetThrottled(ip, `signup:${address}`)) {
+      return reply({ ok: false, error: 'Too many codes requested. Please wait a while before trying again.' });
+    }
+    noteResetRequest(ip, `signup:${address}`);
+    const code = generateOtp();
+    signupCodes.set(address, {
+      codeHash: hashToken(code),
+      username: username.toLowerCase(),
+      expiresAt: Date.now() + RESET_CODE_TTL_MS,
+      attempts: 0,
+    });
+    let sent = false;
+    try {
+      const { text, html } = signupOtpEmail(checked.nickname, code);
+      if (mail.configured()) {
+        sent = await mail.sendMail({ to: address, subject: `${code} is your TalkLive verification code`, text, html });
+      } else {
+        console.log(`[signup] SMTP not configured; verification code for ${address} is ${code}`);
+        sent = true;
+      }
+    } catch (err) {
+      console.error('[signup-send-code] failed:', err.message);
+    }
+    if (!sent) {
+      signupCodes.delete(address);
+      return reply({ ok: false, error: 'We could not send the email just now. Please try again in a few minutes.' });
+    }
+    store.recordFeature('signup_code_sent');
+    reply({ ok: true, email: address });
+  });
+
+  // Sign-up step 2: the same details plus the emailed code. The account is
+  // only created once the code matches.
+  socket.on('signup', async ({ username, password, nickname, email, code } = {}) => {
+    const checked = checkSignup({ username, password, nickname, email }, { needPassword: true });
+    if (checked.error) return socket.emit('signup-result', { ok: false, ...checked });
+    nickname = checked.nickname;
+    const signupEmail = checked.email;
+    const verdict = checkSignupCode(signupEmail, username, code);
+    if (!verdict.ok) return socket.emit('signup-result', { ok: false, error: verdict.error, errorKey: 'signupCode' });
     noteSignup(ip);
     // Hashing yields the event loop, so two racing signups for the same name
     // would both pass the check above and the second would overwrite the first.
@@ -4562,20 +4686,24 @@ io.on('connection', (socket) => {
       username,
       nickname: nickname.slice(0, 24),
       method: 'password',
+      email: signupEmail,
+      emailVerified: true,
       country: geo.countryName,
       city: geo.city,
       ip,
       lastSeen: Date.now(),
     });
     rememberLoginNetwork(ip, username.toLowerCase());
+    // The brand-new account adopts the profile this browser has been using,
+    // so the friends made before signing up stay put.
+    const linked = linkAccountProfile(username.toLowerCase(), socket.id);
+    noteNewAccountForReferral(username.toLowerCase());
     socket.emit('signup-result', {
       ok: true,
       username,
       nickname: nickname.slice(0, 24),
-      email: signupEmail || '',
-      // The brand-new account adopts the profile this browser has been using,
-      // so the friends made before signing up stay put.
-      ...linkAccountProfile(username.toLowerCase(), socket.id),
+      email: signupEmail,
+      ...linked,
       // Durable session token: the browser stores it and stays signed in
       // across page reloads, server restarts and deploys.
       sessionToken: store.createAuthSession(username.toLowerCase()),
@@ -4661,7 +4789,7 @@ io.on('connection', (socket) => {
       return socket.emit('google-auth-result', { ok: false, error: 'Missing Google credential.' });
     }
     try {
-      const { username, account, profile } = await findOrCreateGoogleAccount(credential);
+      const { username, account, profile, created } = await findOrCreateGoogleAccount(credential);
       socketAuth.set(socket.id, username.toLowerCase());
       store.recordFeature('google_signin');
       store.upsertAccount(username.toLowerCase(), {
@@ -4678,13 +4806,15 @@ io.on('connection', (socket) => {
         hostedDomain: profile.hostedDomain,
         googleId: profile.sub,
       });
+      const linked = linkAccountProfile(username.toLowerCase(), socket.id);
+      if (created) noteNewAccountForReferral(username.toLowerCase());
       socket.emit('google-auth-result', {
         ok: true,
         username,
         nickname: account.nickname,
         email: account.email || '',
         sessionToken: store.createAuthSession(username.toLowerCase()),
-        ...linkAccountProfile(username.toLowerCase(), socket.id),
+        ...linked,
       });
     } catch (err) {
       if (err.errorKey) return socket.emit('google-auth-result', { ok: false, error: 'New sign-ups are paused right now. Please try again later.', errorKey: err.errorKey });
@@ -5176,16 +5306,14 @@ io.on('connection', (socket) => {
     // Referrals. The code travels in ?ref= on the landing URL and is held in the
     // browser until registration, because the person clicking the link has no
     // clientId until then. Claiming only records the attribution - the reward is
-    // paid later, once they have had a real conversation (see settleReferral).
+    // counted later, once they have made an account and had a real
+    // conversation (see settleReferral).
     const inviteCode = typeof data.referralCode === 'string' ? data.referralCode.slice(0, 16) : '';
     if (inviteCode) {
-      const owner = store.claimReferral(clientId, inviteCode);
+      const owner = store.claimReferral(clientId, inviteCode, { net: referralNet(ip) });
       if (owner) store.recordFeature('referral_claimed');
     }
-    socket.emit('referral-status', {
-      ...store.referralStats(clientId),
-      rewardDays: REFERRAL_REWARD_DAYS,
-    });
+    socket.emit('referral-status', store.referralStats(clientId));
     // Positive acknowledgement, not just the failure case: a client that was
     // mid-search when its socket dropped needs to know the new socket carries a
     // profile again before it re-enters the queue.
@@ -5236,10 +5364,7 @@ io.on('connection', (socket) => {
     if (!profile) return;
     const code = store.referralCodeFor(profile.clientId);
     if (!code) return;
-    socket.emit('referral-status', {
-      ...store.referralStats(profile.clientId),
-      rewardDays: REFERRAL_REWARD_DAYS,
-    });
+    socket.emit('referral-status', store.referralStats(profile.clientId));
   });
 
   // Give the just-connected client its initial count right away, then tell
@@ -7072,6 +7197,9 @@ function sweepEphemeralState() {
 
   for (const [key, rec] of signupAttempts) {
     if (now - rec.first > SIGNUP_WINDOW_MS) signupAttempts.delete(key);
+  }
+  for (const [email, rec] of signupCodes) {
+    if (rec.expiresAt <= now) signupCodes.delete(email);
   }
   for (const [key, rec] of loginAttempts) {
     // Each key keeps its own window: the account-wide count lasts an hour.

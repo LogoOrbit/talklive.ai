@@ -28,7 +28,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   root.classList.add('i18n-pending');
   setTimeout(function () { root.classList.remove('i18n-pending'); }, 1500);
   var s = document.createElement('script');
-  s.src = '/i18n/' + lang + '.js?v=20261028nocoins';
+  s.src = '/i18n/' + lang + '.js?v=20261030invite';
   s.async = true;
   s.setAttribute('data-i18n-lang', lang);
   s.onerror = function () { root.classList.remove('i18n-pending'); };
@@ -334,11 +334,22 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
             <p class="tl-caps hidden" data-i18n="capsLockOn">Caps Lock is on</p>
           </div>
           <div class="tl-field">
-            <label for="signupEmail"><span data-i18n="email">Email</span> <span class="tl-optional" data-i18n="optional">(optional)</span></label>
-            <input type="email" id="signupEmail" class="account-input" autocomplete="email" inputmode="email" autocapitalize="none" spellcheck="false" enterkeyhint="go" />
-            <p class="tl-field-note" data-i18n="recoveryEmailHint">Only used to send you a reset code if you forget your password. Never shown to anyone.</p>
+            <label for="signupEmail" data-i18n="email">Email</label>
+            <input type="email" id="signupEmail" class="account-input" autocomplete="email" inputmode="email" autocapitalize="none" spellcheck="false" enterkeyhint="go" required />
+            <p class="tl-field-note" data-i18n="signupEmailHint">We send a 6-digit code here to confirm it's you. Also used to reset your password. Never shown to anyone.</p>
           </div>
           <button type="button" id="signupSubmitBtn" class="tl-submit"><span data-i18n="createAccount">Create Account</span></button>
+          <!-- Step 2: the 6-digit code emailed to the address above. -->
+          <div id="signupStepCode" class="hidden">
+            <p id="signupCodeSentNote" class="tl-field-note" aria-live="polite"></p>
+            <div class="tl-field">
+              <label for="signupCode" data-i18n="signupCodeLabel">6-digit code</label>
+              <input type="text" id="signupCode" class="account-input otp-input" placeholder="000000" autocomplete="one-time-code" inputmode="numeric" maxlength="6" enterkeyhint="go" />
+            </div>
+            <button type="button" id="signupVerifyBtn" class="tl-submit"><span data-i18n="signupVerifyBtn">Verify &amp; create account</span></button>
+            <button type="button" id="signupResendBtn" class="tl-linkline" data-i18n="resendCode">Resend code</button>
+            <button type="button" id="signupChangeEmailBtn" class="tl-linkline" data-i18n="signupChangeEmail">Change email</button>
+          </div>
           <p class="tl-authpage-switch"><span data-i18n="authHaveAccount">Already have an account?</span> <a href="/login" class="tl-auth-go" data-go="login" data-i18n="logIn">Log In</a></p>
         </form>
 
@@ -2594,7 +2605,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
        browser finish parsing and paint the page first. -->
   <script defer src="/socket.io/socket.io.min.js"></script>
   <script defer src="countries.js?v=20260828fix"></script>
-  <script defer src="i18n.js?v=20261019stripe"></script>
+  <script defer src="i18n.js?v=20261030invite"></script>
   <script defer src="chat-time.js?v=20260916navbar"></script>
   <script defer src="animals.js?v=20261008more"></script>
   <script defer src="characters.js?v=20261008more"></script>
@@ -2605,7 +2616,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   <script defer src="voice-notes.js?v=20261001mic"></script>
   <script defer src="games.js?v=20261005min"></script>
   <script defer src="nickname-rules.js?v=20260924nick"></script>
-  <script defer src="app.js?v=20261028sync"></script>
+  <script defer src="app.js?v=20261030invite"></script>
 
 <!-- Analytics tag, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

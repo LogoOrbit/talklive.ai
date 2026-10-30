@@ -230,7 +230,7 @@ const TOOLS = [
   {
     name: 'get_revenue',
     label: 'Checking premium & revenue',
-    description: 'TalkLive Plus / premium: totals (active, permanent, paying, expired, revoked, expiring in 7 days), active by source, daily activations and cancellations (30 days), subscription rows, referral program stats (codes, joined, qualified, rewarded days, top referrers), account count and web-push reach.',
+    description: 'TalkLive Plus / premium: totals (active, permanent, paying, expired, revoked, expiring in 7 days), active by source, daily activations and cancellations (30 days), subscription rows, referral program stats (codes, links opened, counted invites, pending, rejected, reward hours, top referrers), account count and web-push reach.',
     input_schema: obj({ limit: int('Max subscription rows (default 60).') }),
     path: () => 'premium',
     list: 'rows',

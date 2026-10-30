@@ -3338,7 +3338,7 @@ async function viewRevenue(){
     <div class="tile"><div class="k">Expiring in 7 days</div><div class="v" style="color:${t.expiringIn7Days?'var(--warn)':'inherit'}" data-count="${t.expiringIn7Days}">0</div><div class="s">renew or lapse</div></div>
     <div class="tile"><div class="k">Lapsed</div><div class="v" data-count="${t.expired}">0</div><div class="s">${num(t.revoked)} cancelled</div></div>
     <div class="tile"><div class="k">Conversion</div><div class="v">${pctOf(t.active,r.accounts||0)}</div><div class="s">of ${num(r.accounts||0)} accounts</div></div>
-    <div class="tile"><div class="k">Referral signups</div><div class="v" data-count="${ref.joined}">0</div><div class="s">${num(ref.qualified)} qualified · ${num(ref.pendingClaims)} pending</div></div>
+    <div class="tile"><div class="k">Invite links opened</div><div class="v" data-count="${ref.joined}">0</div><div class="s">${num(ref.verified)} counted · ${num(ref.pendingClaims)} pending · ${num(ref.rejected)} rejected</div></div>
     <div class="tile"><div class="k">Push reach</div><div class="v" data-count="${r.push.subscribers}">0</div><div class="s">${num(r.push.endpoints)} devices subscribed</div></div>
   </div>
 
@@ -3361,10 +3361,10 @@ async function viewRevenue(){
   <table><tr><th>Client</th><th>Source</th><th>Expires</th><th>Last event</th></tr>
   ${expiringSoon.slice(0,25).map(x=>`<tr><td class="muted">${esc(x.clientId.slice(0,16))}…</td><td>${esc(x.source)}</td><td>${fmtTs(x.expiresAt)}</td><td class="muted">${esc(x.lastEvent||'')}</td></tr>`).join('')}</table></div>`:''}
 
-  <div class="card anim"><h2>🎁 Top referrers <span class="sub">${num(ref.codes)} codes issued · ${num(ref.rewardedDays)} reward days paid out</span></h2>
-  <table><tr><th>Code</th><th>Client</th><th class="num">Invited</th><th class="num">Qualified</th><th class="num">Reward days</th><th>Since</th></tr>
+  <div class="card anim"><h2>🎁 Top referrers <span class="sub">${num(ref.codes)} codes issued · ${num(ref.rewardedHours)} reward hours paid out</span></h2>
+  <table><tr><th>Code</th><th>Client</th><th class="num">Opened</th><th class="num">Counted</th><th class="num">Reward hours</th><th>Since</th></tr>
   ${ref.top.map(o=>`<tr><td><b>${esc(o.code)}</b></td><td class="muted">${esc(o.clientId.slice(0,14))}…</td>
-  <td class="num">${num(o.joined)}</td><td class="num">${num(o.qualified)}</td><td class="num">${num(o.rewardedDays)}</td>
+  <td class="num">${num(o.joined)}</td><td class="num">${num(o.verified)}</td><td class="num">${num(o.rewardedHours)}</td>
   <td>${o.createdAt?fmtTs(o.createdAt):'-'}</td></tr>`).join('')||'<tr><td colspan="6" class="muted">No referral codes used yet.</td></tr>'}</table></div>
 
   <div class="card anim"><h2>💎 All subscriptions <span class="sub">${num(t.all)} on record · newest change first</span>

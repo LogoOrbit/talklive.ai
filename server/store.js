@@ -229,8 +229,6 @@ function defaults() {
     // "Who liked you": clientId (the one hearted) -> [{ from, username,
     // country, at }], newest first, at most LIKES_MAX and LIKES_TTL_MS old.
     likes: {},
-    // Free-trial bookkeeping: clientId -> { n: real calls, trialAt }.
-    goodCalls: {},
     // Streak, passport and weekly stats per profile (see server/engage.js):
     // clientId -> { streak, passport, week, prevWeek, merged }. Kept for good.
     engage: {},
@@ -2208,12 +2206,12 @@ function setPremium(clientId, info = {}) {
   return data.premium[clientId];
 }
 
-// Extend a grant by `days` from whichever is later: now, or the time it would
+// Extend a grant by `ms` from whichever is later: now, or the time it would
 // otherwise have lapsed. Stacking rewards must never *shorten* an existing
 // subscription, and a reward earned two weeks after the last one expired must
 // not be backdated into the past.
-function extendPremium(clientId, days, info = {}) {
-  const ms = Math.max(0, Number(days) || 0) * 24 * 60 * 60000;
+function extendPremium(clientId, ms, info = {}) {
+  ms = Math.max(0, Number(ms) || 0);
   if (!ms) return data.premium[clientId] || null;
   const existing = data.premium[clientId];
   const active = existing && !existing.revokedAt;
@@ -2260,22 +2258,6 @@ function engageGet(clientId) {
 function engageSet(clientId, rec) {
   if (!clientId || !rec) return;
   data.engage[clientId] = rec;
-  save();
-}
-
-// --- Free trial ---
-function noteGoodCall(clientId) {
-  const rec = data.goodCalls[clientId] || (data.goodCalls[clientId] = { n: 0, trialAt: 0 });
-  rec.n += 1;
-  save();
-  return rec.n;
-}
-function trialUsed(clientId) {
-  return !!(data.goodCalls[clientId] && data.goodCalls[clientId].trialAt);
-}
-function markTrialUsed(clientId) {
-  const rec = data.goodCalls[clientId] || (data.goodCalls[clientId] = { n: 0, trialAt: 0 });
-  rec.trialAt = Date.now();
   save();
 }
 
@@ -2815,14 +2797,23 @@ async function deleteVoiceNotes(ids) {
 
 // --- Referrals ---------------------------------------------------------------
 //
-// A referral is only worth paying for once the invited person has actually had
-// a conversation, so a claim starts unqualified and is settled later by
-// qualifyReferral(). That ordering is the whole anti-abuse design: opening the
-// link, or opening it in fifty incognito windows, earns nothing.
+// Invite 3 friends, get 1 hour of Plus. Only the inviter is rewarded, and an
+// invite counts only once it passes every step below, in order:
+//
+//   1. claim    a browser with no account opens the link (claimReferral)
+//   2. signup   that same browser then creates a NEW account (noteReferralSignup)
+//   3. verify   that account has a real conversation with a stranger, from a
+//               different network than the inviter and than every invite
+//               already counted for them, and the inviter has an account of
+//               their own (verifyReferral)
+//
+// Opening the link, or making accounts without ever talking to anyone, or
+// making them all from one network, earns nothing.
 
 // Ambiguous glyphs are left out so a code read aloud on a call, or typed from a
 // screenshot, cannot land on the wrong one.
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const REFERRAL_FRIENDS_NEEDED = 3;
 
 function referralCodeFor(clientId) {
   if (!clientId) return '';
@@ -2837,57 +2828,98 @@ function referralCodeFor(clientId) {
   }
   if (!code) return '';
   data.referrals.codes[code] = clientId;
-  data.referrals.owners[clientId] = { code, joined: 0, qualified: 0, rewardedDays: 0, createdAt: Date.now() };
+  data.referrals.owners[clientId] = { code, joined: 0, verified: 0, rewards: 0, rewardedHours: 0, createdAt: Date.now() };
   save();
   return code;
 }
 
 function referralStats(clientId) {
-  const owner = data.referrals.owners[clientId];
+  const owner = data.referrals.owners[clientId] || {};
+  const verified = owner.verified || 0;
   return {
-    code: (owner && owner.code) || '',
-    joined: (owner && owner.joined) || 0,
-    qualified: (owner && owner.qualified) || 0,
-    rewardedDays: (owner && owner.rewardedDays) || 0,
+    code: owner.code || '',
+    verified,
+    // Progress toward the next reward, 0..needed-1.
+    progress: verified % REFERRAL_FRIENDS_NEEDED,
+    needed: REFERRAL_FRIENDS_NEEDED,
+    rewardedHours: owner.rewardedHours || 0,
   };
 }
 
 // Record that `clientId` arrived through `code`. Returns the owner's clientId
 // when the claim is new and legitimate, else null.
-function claimReferral(clientId, code) {
+function claimReferral(clientId, code, info = {}) {
   if (!clientId || !code) return null;
   const owner = data.referrals.codes[String(code).toUpperCase()];
   // Self-referral is the obvious exploit: share your own link, open it, repeat.
   if (!owner || owner === clientId) return null;
+  // Someone who already has an account is not a new friend.
+  if (clientIdIndex.has(clientId)) return null;
   // First claim wins. Re-attributing an existing user to whoever last sent them
   // a link would let anyone farm rewards off people who already use the site.
   if (data.referrals.claims[clientId]) return null;
-  data.referrals.claims[clientId] = { code: String(code).toUpperCase(), owner, ts: Date.now(), qualified: false };
+  data.referrals.claims[clientId] = {
+    code: String(code).toUpperCase(), owner, ts: Date.now(), net: info.net || '',
+  };
   const rec = data.referrals.owners[owner];
-  if (rec) rec.joined += 1;
+  if (rec) rec.joined = (rec.joined || 0) + 1;
   save();
   return owner;
 }
 
-// Settle a claim once the invited person has had a real conversation. Returns
-// { owner, referred } the first time, null afterwards, so the caller pays each
-// reward exactly once.
-function qualifyReferral(clientId) {
+// A brand-new account was just created on `clientId`. Only an account made
+// after the link was opened counts; signing in to an old one does not.
+function noteReferralSignup(clientId, info = {}) {
   const claim = data.referrals.claims[clientId];
-  if (!claim || claim.qualified) return null;
-  claim.qualified = true;
-  claim.qualifiedAt = Date.now();
-  const rec = data.referrals.owners[claim.owner];
-  if (rec) rec.qualified += 1;
+  if (!claim || claim.signedUpAt || claim.verifiedAt || claim.rejected) return;
+  claim.signedUpAt = Date.now();
+  claim.account = String(info.account || '').toLowerCase();
+  claim.signupNet = info.net || '';
   save();
-  return { owner: claim.owner, referred: clientId };
 }
 
-function noteReferralReward(clientId, days) {
-  const rec = data.referrals.owners[clientId];
-  if (!rec) return;
-  rec.rewardedDays = (rec.rewardedDays || 0) + days;
+// Called at the end of each real conversation. Counts the invite once every
+// rule holds. `ownerNetsFor(ownerClientId)` lists the networks the inviter is
+// known to use.
+// Returns { owner, rewards } the first time it counts (rewards = how many new
+// hours are due, usually 0 or 1), else null.
+function verifyReferral(clientId, { ownerNetsFor = () => [] } = {}) {
+  const claim = data.referrals.claims[clientId];
+  if (!claim || !claim.signedUpAt || claim.verifiedAt || claim.rejected) return null;
+  // The invited account must still exist and still be the one on this browser.
+  if (!claim.account || clientIdIndex.get(clientId) !== claim.account) return null;
+  // The inviter has to be a real account too. Left pending, not rejected, so
+  // it counts once the inviter signs up.
+  if (!clientIdIndex.has(claim.owner)) return null;
+  const nets = [claim.net, claim.signupNet].filter(Boolean);
+  const owned = new Set((ownerNetsFor(claim.owner) || []).filter(Boolean));
+  const used = new Set();
+  for (const c of Object.values(data.referrals.claims)) {
+    if (c !== claim && c.owner === claim.owner && c.verifiedAt) {
+      if (c.net) used.add(c.net);
+      if (c.signupNet) used.add(c.signupNet);
+    }
+  }
+  if (!nets.length) claim.rejected = 'no-network';
+  else if (nets.some((n) => owned.has(n))) claim.rejected = 'inviter-network';
+  else if (nets.some((n) => used.has(n))) claim.rejected = 'repeat-network';
+  if (claim.rejected) {
+    claim.rejectedAt = Date.now();
+    save();
+    return null;
+  }
+  claim.verifiedAt = Date.now();
+  const rec = data.referrals.owners[claim.owner];
+  if (!rec) { save(); return null; }
+  rec.verified = (rec.verified || 0) + 1;
+  const due = Math.floor(rec.verified / REFERRAL_FRIENDS_NEEDED) - (rec.rewards || 0);
+  const rewards = Math.max(0, due);
+  if (rewards) {
+    rec.rewards = (rec.rewards || 0) + rewards;
+    rec.rewardedHours = (rec.rewardedHours || 0) + rewards;
+  }
   save();
+  return { owner: claim.owner, rewards };
 }
 
 // --- Talk time -----------------------------------------------------------------
@@ -3545,17 +3577,14 @@ module.exports = {
   isPremiumClient,
   addLike,
   likesFor,
-  noteGoodCall,
   engageGet,
   engageSet,
-  trialUsed,
-  markTrialUsed,
   premiumExpiry,
   referralCodeFor,
   referralStats,
   claimReferral,
-  qualifyReferral,
-  noteReferralReward,
+  noteReferralSignup,
+  verifyReferral,
   savePushSubscription,
   pushSubscriptions,
   removePushSubscription,

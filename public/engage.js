@@ -8,11 +8,11 @@
 //   Who liked you     how many hearted you; Premium sees who, and calls back
 //   Undo skip         Premium brings back the person just skipped
 //   It's mutual       both hearted the call: one tap to add a friend
-//   Free trial        a day of Premium after a few real calls (server-side)
+//   Invite friends    3 friends sign up through your link: 1 hour of Plus
 //
 // Loaded after app.js once the page is up (it is not needed to place a call)
 // and reads app.js's globals: socket, t, showToast, isPremiumUser...
-// Streak, passport, weekly stats, likes and the trial live on the server, with
+// Streak, passport, weekly stats and likes live on the server, with
 // the profile; this device only remembers what it has already shown.
 // ============================================================================
 (function () {
@@ -38,8 +38,9 @@
     fxFilmsSub: "Show your favourite movies and shows. An easy thing to talk about.",
     fxAvatars: "New movie-character avatars",
     fxAvatarsSub: "Be the wizard, the pirate or the detective. {n} new faces.",
-    fxTrial: "24h of Premium, free",
-    fxTrialSub: "Have 3 real conversations and it unlocks by itself.",
+    fxInvite: "Invite 3 friends, get 1 hour of Plus",
+    fxInviteSub: "When 3 friends sign up with your link and have their first chat, Plus is yours for an hour.",
+    fxInviteGo: "Invite",
     fxOpen: "Open",
     fxAdd: "Add mine",
     fxPick: "Pick one",
@@ -83,7 +84,6 @@
     engageQuestionToast: "💬 Today's question: {q}",
     engageMutual: "💞 It's mutual! You both liked this call. Tap to add them as a friend.",
     engageUndoThem: "👋 They came back! Your last chat is back on.",
-    engageTrialReason: "You've had {n} great calls, so here are {h} hours of Premium, free. Everything below is unlocked.",
   };
   if (typeof I18N_STRINGS !== 'undefined' && I18N_STRINGS.en) {
     Object.keys(EN).forEach(function (k) { if (!(k in I18N_STRINGS.en)) I18N_STRINGS.en[k] = EN[k]; });
@@ -341,7 +341,7 @@
       ['💬', 'fxQuestion', 'fxQuestionSub'],
       ['❤️', 'fxLikes', 'fxLikesSub', 'likes', 'fxOpen'],
       ['↩️', 'fxUndo', 'fxUndoSub', null, null, true],
-      ['🎁', 'fxTrial', 'fxTrialSub'],
+      ['🎁', 'fxInvite', 'fxInviteSub', 'invite', 'fxInviteGo'],
     ];
     var list = '<ul class="tl-wn">' + items.map(function (it) {
       return '<li><span class="tl-wn-ico" aria-hidden="true">' + it[0] + '</span>'
@@ -362,6 +362,7 @@
         if (go === 'profile' && typeof openMyProfile === 'function') openMyProfile();
         else if (go === 'passport') openPassport();
         else if (go === 'likes') openLikes();
+        else if (go === 'invite' && typeof showSharePrompt === 'function') showSharePrompt();
       });
     });
   }
@@ -467,11 +468,6 @@
   });
   socket.on('premium-status', function () { setTimeout(refreshLikes, 300); });
   socket.on('connect', function () { setTimeout(refreshLikes, 1500); });
-  socket.on('trial-started', function (info) {
-    if (typeof trackGrowthEvent === 'function') trackGrowthEvent('trial_started');
-    var hours = (info && info.hours) || 24;
-    showPremiumUpsell(t('engageTrialReason', { n: (info && info.calls) || 3, h: hours }), 'trial');
-  });
 
   window.TalkLiveEngage = { onCall: onCall, onReveal: onReveal, offerUndo: offerUndo, render: render };
   window.addEventListener('i18n-changed', render);

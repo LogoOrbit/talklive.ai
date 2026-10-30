@@ -1690,8 +1690,8 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
     const bySource = {};
     for (const r of active) bySource[r.source] = (bySource[r.source] || 0) + 1;
     const owners = Object.entries(store.data.referrals.owners || {}).map(([clientId, o]) => ({
-      clientId, code: o.code, joined: o.joined || 0, qualified: o.qualified || 0,
-      rewardedDays: o.rewardedDays || 0, createdAt: o.createdAt || null,
+      clientId, code: o.code, joined: o.joined || 0, verified: o.verified || 0,
+      rewardedHours: o.rewardedHours || 0, createdAt: o.createdAt || null,
     }));
     const claims = Object.values(store.data.referrals.claims || {});
     const days = store.data.analytics.days;
@@ -1716,10 +1716,12 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
       referrals: {
         codes: Object.keys(store.data.referrals.codes || {}).length,
         joined: owners.reduce((a, o) => a + o.joined, 0),
-        qualified: owners.reduce((a, o) => a + o.qualified, 0),
-        rewardedDays: owners.reduce((a, o) => a + o.rewardedDays, 0),
-        pendingClaims: claims.filter((c) => !c.qualified).length,
-        top: owners.filter((o) => o.joined).sort((a, b) => b.qualified - a.qualified || b.joined - a.joined).slice(0, 15),
+        verified: owners.reduce((a, o) => a + o.verified, 0),
+        rewardedHours: owners.reduce((a, o) => a + o.rewardedHours, 0),
+        // Made an account through a link but not yet counted.
+        pendingClaims: claims.filter((c) => c.signedUpAt && !c.verifiedAt && !c.rejected).length,
+        rejected: claims.filter((c) => c.rejected).length,
+        top: owners.filter((o) => o.joined).sort((a, b) => b.verified - a.verified || b.joined - a.joined).slice(0, 15),
       },
       accounts: Object.keys(store.data.accountsRegistry).length,
       push: {

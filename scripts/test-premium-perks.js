@@ -4,7 +4,7 @@
 //   2. "who liked you" is a count for free users and a list for Premium
 //   3. Premium "Undo skip" brings back the person just skipped
 //   4. "Undo skip" is refused for free users
-//   5. a free trial starts after enough real conversations, once
+//   5. real conversations alone never unlock Premium (there is no free trial)
 //
 //   node scripts/test-premium-perks.js
 const fs = require('fs');
@@ -65,7 +65,7 @@ async function pair(a, b) {
   const srv = spawn(process.execPath, [path.join(__dirname, '..', 'server', 'index.js')], {
     env: {
       ...process.env, PORT: String(PORT), DATA_DIR, NODE_ENV: 'development', IDENTITY_SECRET,
-      PREMIUM_CLIENT_IDS: 'c_perk_Plus', REAL_CONVERSATION_MS: '300', TRIAL_AFTER_CALLS: '2',
+      PREMIUM_CLIENT_IDS: 'c_perk_Plus', REAL_CONVERSATION_MS: '300',
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
@@ -129,7 +129,7 @@ async function pair(a, b) {
     ok('the skipped person is brought back', backMsg && backMsg.partner.clientId === 'c_perk_Plus' && backMsg.undo === 'them', backMsg);
     ok('the partner profile carries the Premium badge', backMsg && backMsg.partner.premium === true, backMsg && backMsg.partner);
 
-    // 4. Free cannot undo. Someone new, below the trial bar.
+    // 4. Free cannot undo.
     const newbie = connect('Newbie');
     socks.push(newbie);
     await wait(500);
@@ -145,13 +145,13 @@ async function pair(a, b) {
     const freeUndo = await ask(newbie, 'undo-skip');
     ok('free users cannot undo a skip', freeUndo && freeUndo.ok === false && freeUndo.reason === 'premium', freeUndo);
 
-    // 5. Trial (TRIAL_AFTER_CALLS=2): two real calls in a row.
+    // 5. No free trial: several real calls in a row unlock nothing.
     const trialUser = connect('Skippee2');
     socks.push(trialUser);
     await wait(500);
     newbie.close();
     await wait(300);
-    const trial = maybe(trialUser, 'trial-started', 8000);
+    const trial = maybe(trialUser, 'trial-started', 4000);
     // Two different people: a voluntary parting keeps a pair apart for a while.
     const buddy = connect('Buddy');
     socks.push(buddy);
@@ -168,9 +168,9 @@ async function pair(a, b) {
       await wait(300);
     }
     const t = await trial;
-    ok('a free trial starts after enough real calls', t && t.hours === 24, t);
+    ok('real calls do not start a free trial', !t, t);
     const likesNow = await ask(trialUser, 'get-likes');
-    ok('the trial unlocks Premium perks', likesNow && !likesNow.locked, likesNow);
+    ok('Premium perks stay locked', likesNow && likesNow.locked, likesNow);
   } catch (err) {
     console.error(err);
     failed++;

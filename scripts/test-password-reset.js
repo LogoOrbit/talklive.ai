@@ -41,6 +41,16 @@ function codeFromLog(email) {
   return matches.length ? matches[matches.length - 1][1] : null;
 }
 
+// Sign-up now verifies the email first: ask for a code, read it from the log.
+async function signUpWithCode(socket, payload) {
+  const sent = await ask(socket, 'signup-send-code', { username: payload.username, email: payload.email }, 'signup-code-result');
+  if (!sent.ok) return sent;
+  await wait(200);
+  const log = fs.readFileSync(LOG, 'utf8');
+  const m = [...log.matchAll(new RegExp(`verification code for ${payload.email} is (\\d{6})`, 'g'))].pop();
+  return ask(socket, 'signup', { ...payload, code: m ? m[1] : '' }, 'signup-result');
+}
+
 (async () => {
   const stamp = Date.now().toString().slice(-8);
   const username = `reset${stamp}`;
@@ -55,7 +65,7 @@ function codeFromLog(email) {
   });
 
   // --- Sign up with a recovery email ---------------------------------------
-  const signup = await ask(socket, 'signup', { username, password: 'first-pass', email }, 'signup-result');
+  const signup = await signUpWithCode(socket, { username, password: 'first-pass', email });
   ok('signup with recovery email succeeds', signup.ok === true, signup);
   ok('signup echoes the recovery email', signup.email === email, signup);
 
@@ -63,8 +73,8 @@ function codeFromLog(email) {
     { username: `${username}b`, password: 'first-pass', email }, 'signup-result');
   ok('a second account cannot claim the same email', dupe.ok === false, dupe);
 
-  const badEmail = await ask(connect(), 'signup',
-    { username: `${username}c`, password: 'first-pass', email: 'not-an-email' }, 'signup-result');
+  const badEmail = await ask(connect(), 'signup-send-code',
+    { username: `${username}c`, email: 'not-an-email' }, 'signup-code-result');
   ok('a malformed email is rejected at signup', badEmail.ok === false, badEmail);
 
   // --- Request a code -------------------------------------------------------

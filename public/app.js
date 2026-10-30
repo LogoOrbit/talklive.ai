@@ -280,6 +280,10 @@ const signupUsername = document.getElementById('signupUsername');
 const signupPassword = document.getElementById('signupPassword');
 const signupEmail = document.getElementById('signupEmail');
 const signupSubmitBtn = document.getElementById('signupSubmitBtn');
+const signupStepCode = document.getElementById('signupStepCode');
+const signupCode = document.getElementById('signupCode');
+const signupVerifyBtn = document.getElementById('signupVerifyBtn');
+const signupCodeSentNote = document.getElementById('signupCodeSentNote');
 const googleBtnLogin = document.getElementById('googleBtnLogin');
 const googleBtnSignup = document.getElementById('googleBtnSignup');
 // Inside the mobile app (mobile/) public/native.js does what a WebView cannot:
@@ -3589,7 +3593,7 @@ function beginAccountRequest(button) {
 function endAccountRequest() {
   clearTimeout(accountReplyTimer);
   accountReplyTimer = null;
-  [loginSubmitBtn, signupSubmitBtn].forEach((btn) => {
+  [loginSubmitBtn, signupSubmitBtn, signupVerifyBtn].forEach((btn) => {
     btn.disabled = false;
     btn.classList.remove('is-busy');
   });
@@ -3610,48 +3614,114 @@ loginSubmitBtn.addEventListener('click', () => {
 // look valid" points at a box instead of leaving the user to guess which of
 // three identical rounded fields it means.
 function markInvalidField(input) {
-  [signupUsername, signupPassword, signupEmail, loginUsername, loginPassword]
+  [signupUsername, signupPassword, signupEmail, signupCode, loginUsername, loginPassword]
     .forEach((el) => el && el.classList.remove('is-invalid'));
   if (!input) return;
   input.classList.add('is-invalid');
   input.focus();
   input.select && input.select();
 }
-[signupUsername, signupPassword, signupEmail, loginUsername, loginPassword]
+[signupUsername, signupPassword, signupEmail, signupCode, loginUsername, loginPassword]
   .forEach((el) => el && el.addEventListener('input', () => el.classList.remove('is-invalid')));
 
-// Creating an account is just username + password - the display name defaults
-// to the username and can be changed later in My Account.
-signupSubmitBtn.addEventListener('click', () => {
+// Creating an account takes a username, password and email. The display name
+// defaults to the username and can be changed later in My Account. Step 1
+// emails a 6-digit code; step 2 sends it back with the details, and only then
+// does the server create the account.
+function signupDetailsOk() {
   const username = signupUsername.value.trim();
-  // The username box is first and the recovery email last, so an email typed
-  // into the first one is the obvious slip - and the server could only answer
-  // it with "username may only contain letters, numbers, dot, dash or
-  // underscore", which does not explain anything. Say what happened instead.
-  if (signupSubmitBtn.disabled) return;
+  // The username box is first and the email last, so an email typed into the
+  // first one is the obvious slip - and the server could only answer it with
+  // "username may only contain letters, numbers, dot, dash or underscore",
+  // which does not explain anything. Say what happened instead.
   if (username.includes('@')) {
     showAccountStatus(t('errUsernameIsEmail'), 'error');
     markInvalidField(signupUsername);
-    return;
+    return false;
   }
   if (!USERNAME_RE.test(username)) {
     showAccountStatus(t('usernameRules'), 'error');
     markInvalidField(signupUsername);
-    return;
+    return false;
   }
   if (signupPassword.value.length < 8) {
     showAccountStatus(t('authPasswordShort'), 'error');
     markInvalidField(signupPassword);
-    return;
+    return false;
   }
+  if (!/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(signupEmail.value.trim())) {
+    showAccountStatus(t('authEmailRequired'), 'error');
+    markInvalidField(signupEmail);
+    return false;
+  }
+  return true;
+}
+
+// Back to step 1, e.g. to fix a typo in the email.
+function resetSignupStep() {
+  signupStepCode.classList.add('hidden');
+  signupSubmitBtn.classList.remove('hidden');
+  [signupUsername, signupEmail].forEach((el) => { el.readOnly = false; });
+  signupCode.value = '';
+}
+
+function requestSignupCode() {
+  if (signupSubmitBtn.disabled || !signupDetailsOk()) return;
   if (!beginAccountRequest(signupSubmitBtn)) return;
-  socket.emit('signup', {
-    username,
-    password: signupPassword.value,
-    // Optional. Without it the account cannot be recovered, which is exactly
-    // what the field under it says.
+  socket.emit('signup-send-code', {
+    username: signupUsername.value.trim(),
     email: signupEmail.value.trim(),
   });
+}
+signupSubmitBtn.addEventListener('click', requestSignupCode);
+document.getElementById('signupResendBtn').addEventListener('click', () => {
+  if (!beginAccountRequest(signupVerifyBtn)) return;
+  socket.emit('signup-send-code', {
+    username: signupUsername.value.trim(),
+    email: signupEmail.value.trim(),
+  });
+});
+document.getElementById('signupChangeEmailBtn').addEventListener('click', () => {
+  resetSignupStep();
+  accountStatus.classList.add('hidden');
+  signupEmail.focus();
+});
+
+socket.on('signup-code-result', ({ ok, email, error, errorKey } = {}) => {
+  endAccountRequest();
+  if (!ok) {
+    showAccountStatus(errorKey === 'modeSignupsPaused' ? t(errorKey) : error, 'error');
+    const about = /email/i.test(error || '') ? signupEmail : /username/i.test(error || '') ? signupUsername : null;
+    if (about) { resetSignupStep(); markInvalidField(about); }
+    return;
+  }
+  // Lock the details the code was sent for, so the code always matches them.
+  [signupUsername, signupEmail].forEach((el) => { el.readOnly = true; });
+  signupSubmitBtn.classList.add('hidden');
+  signupStepCode.classList.remove('hidden');
+  signupCodeSentNote.textContent = t('signupCodeSent', { email: email || signupEmail.value.trim() });
+  accountStatus.classList.add('hidden');
+  signupCode.focus();
+});
+
+signupVerifyBtn.addEventListener('click', () => {
+  if (signupVerifyBtn.disabled) return;
+  if (signupCode.value.replace(/\D/g, '').length !== 6) {
+    showAccountStatus(t('signupCodeLabel'), 'error');
+    markInvalidField(signupCode);
+    return;
+  }
+  if (!signupDetailsOk()) return;
+  if (!beginAccountRequest(signupVerifyBtn)) return;
+  socket.emit('signup', {
+    username: signupUsername.value.trim(),
+    password: signupPassword.value,
+    email: signupEmail.value.trim(),
+    code: signupCode.value,
+  });
+});
+signupCode.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') signupVerifyBtn.click();
 });
 
 // --- Sign in / sign up with Google -----------------------------------------
@@ -3821,7 +3891,9 @@ loginPassword.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') loginSubmitBtn.click();
 });
 [signupUsername, signupPassword, signupEmail].forEach((el) => el.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') signupSubmitBtn.click();
+  if (e.key !== 'Enter') return;
+  if (signupStepCode.classList.contains('hidden')) signupSubmitBtn.click();
+  else signupVerifyBtn.click();
 }));
 
 // --- Forgot password: email -> 6-digit code -> new password ---------------
@@ -4015,6 +4087,9 @@ socket.on('signup-result', ({ ok, nickname, email, error, errorKey, sessionToken
   endAccountRequest();
   if (!ok) {
     showAccountStatus(errorKey === 'modeSignupsPaused' ? t(errorKey) : error, 'error');
+    if (errorKey === 'signupCode') { markInvalidField(signupCode); return; }
+    // Anything else is about the details, not the code: back to step 1.
+    resetSignupStep();
     // Point at the field the server is complaining about.
     const about = /email/i.test(error || '') ? signupEmail
       : /password/i.test(error || '') && !/username/i.test(error || '') ? signupPassword
@@ -4023,6 +4098,7 @@ socket.on('signup-result', ({ ok, nickname, email, error, errorKey, sessionToken
     markInvalidField(about);
     return;
   }
+  resetSignupStep();
   storeLogin(nickname, token, profileClientId, identityToken);
   storeAccountEmail(email);
   finishAuth(t('statusAccountCreated', { name: nickname }));
@@ -6357,7 +6433,7 @@ function recordCallHistory() {
 // most once per 24h so it never becomes nagging.
 const SHARE_PROMPT_KEY = 'tl_share_prompt_at';
 // Personalised when the server has issued this user a referral code, so the
-// invite is attributable and can pay both sides. Falls back to the plain
+// invite is attributable and counts toward their hour of Plus. Falls back to the plain
 // tracked link when it has not (the code is minted on demand, and the first
 // open of the share sheet can win the race with the round trip).
 function shareUrl() {
@@ -6405,8 +6481,7 @@ function showSharePrompt() {
       <button type="button" class="share-prompt-no"></button>
     </div>`;
   card.querySelector('h3').textContent = t('sharePromptTitle');
-  card.querySelector('p').textContent = t('sharePromptBody')
-    + ' ' + t('referralIncentive').replace('{days}', String(myReferral.rewardDays || 7));
+  card.querySelector('p').textContent = t('sharePromptBody') + ' ' + t('referralIncentive');
   renderReferralStats();
   const yes = card.querySelector('.share-prompt-yes');
   const no = card.querySelector('.share-prompt-no');
@@ -6540,11 +6615,12 @@ function registerClient(payload) {
 // clicked has no clientId until they register - and they may land on a
 // marketing page and click through to the app first. So the code is parked in
 // localStorage on arrival (public/pwa.js does that, since it loads on every
-// page) and handed to the server at registration. The server pays nothing at
-// that point: the reward is settled only after the invited person has had a
-// real conversation.
+// page) and handed to the server at registration. Nothing is paid at that
+// point: an invite counts only once the friend has made a verified account and
+// had a real conversation, and every 3 counted invites earn the inviter an
+// hour of Plus (see server/store.js).
 const REFERRAL_PENDING_KEY = 'tl_ref_code';
-let myReferral = { code: '', joined: 0, qualified: 0, rewardDays: 7 };
+let myReferral = { code: '', verified: 0, progress: 0, needed: 3, rewardedHours: 0 };
 
 function takePendingReferralCode() {
   try {
@@ -6575,7 +6651,7 @@ socket.on('referral-status', (info = {}) => {
 socket.on('referral-reward', (info = {}) => {
   myReferral = { ...myReferral, ...info };
   renderReferralStats();
-  showToast(t('referralRewardToast').replace('{days}', String(info.days || 7)), 'plus');
+  showToast(t('referralRewardToast'), 'plus');
 });
 
 // Shown on the invite card so the loop is visible: people share far more when
@@ -6583,10 +6659,10 @@ socket.on('referral-reward', (info = {}) => {
 function renderReferralStats() {
   const el = document.getElementById('referralStats');
   if (!el) return;
-  if (!myReferral.joined) { el.textContent = ''; return; }
+  if (!myReferral.code) { el.textContent = ''; return; }
   el.textContent = t('referralStats')
-    .replace('{joined}', String(myReferral.joined))
-    .replace('{qualified}', String(myReferral.qualified || 0));
+    .replace('{n}', String(myReferral.progress || 0))
+    .replace('{needed}', String(myReferral.needed || 3));
 }
 
 socket.on('profile', (profile) => {
@@ -11294,28 +11370,22 @@ updatePremiumUi();
 // The Premium dialog: what limit was hit, what Premium adds (the perk that was
 // reached for is lit up), and the launch alert - Premium is not on sale yet.
 const premiumUpsellModal = document.getElementById('premiumUpsellModal');
-const UPSELL_TITLES = { gender: 'upsellGenderTitle', likes: 'upsellLikesTitle', undo: 'upsellUndoTitle', trial: 'upsellTrialTitle' };
-// perk 'trial' is the "a day of Premium, on us" card: everything lit up, and
-// the button tries it rather than asking for anything.
+const UPSELL_TITLES = { gender: 'upsellGenderTitle', likes: 'upsellLikesTitle', undo: 'upsellUndoTitle' };
 function showPremiumUpsell(message, perk = 'countries') {
-  const trial = perk === 'trial';
-  premiumUpsellModal.dataset.mode = trial ? 'trial' : 'upsell';
   document.getElementById('puTitle').textContent = t(UPSELL_TITLES[perk] || 'upsellCountriesTitle');
   document.getElementById('puReason').textContent = message;
-  document.getElementById('puSoon').textContent = t(trial ? 'upsellTrialBadge' : 'upsellComingSoon');
-  premiumUpsellModal.querySelectorAll('[data-perk]').forEach((li) => li.classList.toggle('is-hit', trial || li.dataset.perk === perk));
+  document.getElementById('puSoon').textContent = t('upsellComingSoon');
+  premiumUpsellModal.querySelectorAll('[data-perk]').forEach((li) => li.classList.toggle('is-hit', li.dataset.perk === perk));
   // Already on the list: nothing more to sign up for, so the plans are next.
   const signedUp = notifySignedUp('premium');
-  document.getElementById('puNotifyLabel').textContent = t(trial ? 'upsellTrialCta' : signedUp ? 'upsellSeePlans' : 'upsellNotify');
-  document.getElementById('puPlansLink').classList.toggle('hidden', signedUp || trial);
-  document.getElementById('puFree').classList.toggle('hidden', trial);
+  document.getElementById('puNotifyLabel').textContent = t(signedUp ? 'upsellSeePlans' : 'upsellNotify');
+  document.getElementById('puPlansLink').classList.toggle('hidden', signedUp);
   trackGrowthEvent('premium_upsell_view');
   openModal(premiumUpsellModal);
 }
 document.getElementById('puNotifyBtn').addEventListener('click', () => {
   trackGrowthEvent('premium_upsell_click');
   closeModal(premiumUpsellModal);
-  if (premiumUpsellModal.dataset.mode === 'trial') { openFilters(); return; }
   if (notifySignedUp('premium')) {
     location.href = '/pricing?utm_source=app&utm_medium=upsell&utm_campaign=premium';
     return;
@@ -11354,7 +11424,7 @@ socket.on('friend-online', ({ clientId, username, countryCode, country } = {}) =
 // a call, so it loads once the page is up and stays out of the first paint.
 window.addEventListener('load', () => {
   const s = document.createElement('script');
-  s.src = '/engage.js?v=20261028sync';
+  s.src = '/engage.js?v=20261030invite';
   s.async = true;
   document.head.appendChild(s);
 });
