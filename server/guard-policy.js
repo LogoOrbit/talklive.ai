@@ -3,7 +3,8 @@
 //   Allowed:      flirting and sexual chat between adults; swearing and rough
 //                 slang between friends.
 //   Not allowed:  asking for money, sending links (or "visit/follow my
-//                 profile"), asking for pictures or videos, telling someone to
+//                 profile"), moving people to WhatsApp/Instagram/Snapchat or
+//                 sharing phone numbers, asking for pictures or videos, telling someone to
 //                 kill themselves, real threats or murder talk, selling drugs
 //                 or any other illegal activity. Someone saying they feel
 //                 suicidal themselves is NOT a violation - they need help.
@@ -14,11 +15,11 @@
 //
 // detect(text) says which rules a message breaks. classify(text) answers the
 // AI Guard's "Teach it" queue the way the owner would: 'spam' for money, links,
-// picture requests and drug/illegal selling, 'abuse' for suicide baiting and
+// contact swaps, picture requests and drug/illegal selling, 'abuse' for suicide baiting and
 // threats, 'sexual' for sexual chat
 // (allowed, but labelled so the minor check keeps working), 'fine' for false
 // alarms, 'skip' for plain swearing, or null to leave it for the owner
-// (insults and slurs, which can be friendly slang, and contact swaps).
+// (insults and slurs, which can be friendly slang).
 
 const MONEY = [
   /\b(pay\s*pal|cash\s*app|venmo|zelle|upi|paytm|g\s*pay|google\s*pay|phone\s*pe|easy\s*paisa|jazz\s*cash|g\s*cash|bkash|western\s*union|money\s*gram|gift\s*cards?|amazon\s*card|steam\s*card|bitcoin|btc|usdt|binance|bank\s*(?:details|account|transfer))\b/i,
@@ -67,8 +68,8 @@ const ILLEGAL = [
 const SLUR = /\b(nigg(?:a|er|ers|as)?|faggots?)\b/i;
 // Insults: rude, but context decides (role-play, talking about a third person).
 const INSULT = /\b(fuck\s+(?:you|u|off|your\s+(?:mom|mum|mother|sister|family))|fuck\s+yourself|bitch\w*|dumbass|asshole|stfu|shut\s+up|whore|slut|retard\w*|motherfucker|loser|idiot)\b/i;
-// Asking to move to another app. Not covered by the rules; the owner decides.
-const CONTACT = /\b(?:wh?ats?\s*app|wa\s*(?:number|no)|telegram|snap\s*chat|snap\s*id|discord|kik)\b|\b(?:your|ur|my|any|send)\s+(?:id|ig|insta|instagram|number|snap|whatsapp)\b|^\s*(?:ig|my\s+ig|ur\s+id|id)\s*[?!.]*\s*$/i;
+// Moving people to another app, or sharing a phone number: warned like links.
+const CONTACT = /\b(?:wh?ats?\s*app|wa\s*(?:number|no)|telegram|snap\s*chat|snap\s*id|discord|kik)\b|\b(?:your|ur|my|any|send)\s+(?:id|ig|insta|instagram|number|no|snap|whatsapp)\b|^\s*(?:ig|my\s+ig|ur\s+id|id)\s*[?!.]*\s*$|(?:^|[^\d$])\+?\d(?:[\s().-]?\d){9,13}(?!\d)/i;
 const SEXUAL = /\b(sex|sexy|sext\w*|dick\w*|cock|pussy|boobs?|tits?|horny|naked|nude|porn\w*|suck\w*|lick\w*|wet|cum\w*|balls|thighs?|doggy|finger\w*|naughty|dirty|blow\s*job|bj|orgasm|moan\w*|grop\w*|bend|kiss\w*|nipples?|clit|erect\w*|masturbat\w*)\b|\b(?:wanna|want\s+to|gonna|can\s+we|let'?s|i\s+will|i'?ll|to)\s+fuck\b|\bfuck\s+(?:me|her|him|hard|you\s+(?:hard|in))\b/i;
 const SEX_FUCK_YOU = /\b(?:will|wanna|want\s+to|gonna|let\s+me|i'?ll|can\s+i|to)\s+fuck\s+(?:you|u)\b/i;
 const SWEAR_ONLY = /^\W*(?:aa*h+\s+)?(?:the\s+)?(?:fuck|fucking|fck|fuk|shit)(?:\s+(?:no|yes|society|off|it|this|that|man))?\W*$/i;
@@ -96,13 +97,12 @@ function classify(text) {
   if (!t) return 'skip';
   const d = detect(t);
   if (d.harm) return 'abuse';
-  if (d.money || d.pics || d.link || d.illegal) return 'spam';
+  if (d.money || d.pics || d.link || d.contact || d.illegal) return 'spam';
   // Slurs and insults can be friendly slang: the owner decides.
   if (d.slur) return null;
   // "I will fuck you" is sexual chat, not an insult.
   if (SEX_FUCK_YOU.test(t)) return 'sexual';
   if (d.insult) return null;
-  if (d.contact) return null;
   if (d.sexual) return 'sexual';
   if (SWEAR_ONLY.test(t)) return 'skip';
   return 'fine';

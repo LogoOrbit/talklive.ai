@@ -8,7 +8,8 @@
  *   - suicide baiting and threats: warning + urgent review; drugs: warning,
  *     review on the second
  *   - the rules run while the report ladder is off, and not in dry run
- *   - TalkGuard answers its queue by the rules and leaves insults/slurs/contacts
+ *   - WhatsApp/IG swaps and phone numbers: a warning like links
+ *   - TalkGuard answers its queue by the rules and leaves insults/slurs
  */
 const { classify } = require('../server/guard-policy');
 const { createAutomod } = require('../server/automod');
@@ -36,7 +37,7 @@ const expect = {
   'Can u send me ur pic': 'spam', 'send me 500 rs': 'spam', 'check my site cheapdeals.shop': 'spam',
   'selling weed dm': 'spam', 'kys': 'abuse', 'I will kill you': 'abuse',
   'I want to fuck you': 'sexual', 'I am horny': 'sexual',
-  'nigga wassup': null, 'bitch please lol': null, 'WhatsApp me': null,
+  'nigga wassup': null, 'bitch please lol': null, 'WhatsApp me': 'spam', 'call me 03001234567': 'spam', 'trust issues ig': 'fine',
   'Okay baby': 'fine', 'I want to kill myself': 'fine', 'Young brother': 'fine', 'Fuck no': 'skip',
 };
 for (const [t, want] of Object.entries(expect)) ok(`classify "${t}" -> ${want}`, classify(t) === want, classify(t));
@@ -70,6 +71,8 @@ say('l', 'y', 'www.example.com again');
 ok('link: one warning per 12 hours', warnsFor('l').length === 1);
 say('p', 'x', 'send your pic');
 ok('picture request: warning', warnsFor('p').length === 1);
+say('w', 'x', 'add me on whatsapp');
+ok('WhatsApp swap: warning like links', warnsFor('w').length === 1 && /WhatsApp/.test(warnsFor('w')[0].message));
 
 say('h', 'x', 'just kys');
 const h = am._state().people['c:h'];
@@ -103,12 +106,12 @@ gs.data.talkguard = {
 const tg = createTalkGuard({ store: gs });
 const res = tg.applyPolicy();
 const left = gs.data.talkguard.candidates.map((c) => c.t).sort();
-ok('queue: rules answer what they settle', JSON.stringify(left) === JSON.stringify(['WhatsApp me', 'bitch please']), left);
+ok('queue: rules answer what they settle', JSON.stringify(left) === JSON.stringify(['bitch please']), left);
 const ex = (t) => gs.data.talkguard.examples.find((e) => e.t === t);
 ok('queue: picture request learned as spam', ex('send your pic') && ex('send your pic').y.spam === 1 && ex('send your pic').by === 'policy');
 ok('queue: sexual chat learned as sexual, not fine', ex('I am so horny') && ex('I am so horny').y.sexual === 1);
 ok('queue: a rule never overrides the owner', ex('Okay baby').by === 'owner' && ex('Okay baby').y.spam === 1);
-ok('queue: counts reported', res.answered === 6 && res.left === 2, res);
+ok('queue: counts reported', res.answered === 7 && res.left === 1, res);
 
 console.log(failed ? `\n${failed} check(s) failed` : '\nAll guard policy checks passed');
 process.exit(failed ? 1 : 0);

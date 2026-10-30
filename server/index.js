@@ -28,6 +28,7 @@ const modTags = require('./moderation-tags');
 const { createAutomod } = require('./automod');
 const { createTalkGuard } = require('./talkguard');
 const { createPatterns } = require('./patterns');
+const { createChatGuard } = require('./chat-guard');
 const compress = require('./compress');
 const billing = require('./billing');
 const push = require('./push');
@@ -2940,6 +2941,14 @@ function isErrorNoise(message, stack) {
 
 // socket.id -> { start, n } sliding 5s window for the chat bot-flood guard.
 const chatRate = new Map();
+// Spam guard for people: too fast, repeats, character walls, then a mute
+// (server/chat-guard.js).
+const chatGuard = createChatGuard();
+function chatSpam(clientId, text, opts) {
+  const hit = chatGuard.check(clientId, text, opts);
+  if (hit) store.recordFeature(hit.muted ? 'chat_spam_muted' : 'chat_spam_blocked');
+  return hit;
+}
 // Same shape, separate budget for reactions - a tap is not a message.
 const reactRate = new Map();
 // Every message public/games.js sends.
@@ -5941,6 +5950,8 @@ io.on('connection', (socket) => {
     let rl = chatRate.get(socket.id);
     if (!rl || now - rl.start > 5000) { rl = { start: now, n: 0 }; chatRate.set(socket.id, rl); }
     if (++rl.n > 8) return;
+    const spam = chatSpam((profiles.get(socket.id) || {}).clientId || socket.id, msg.text);
+    if (spam) return socket.emit('chat-blocked', { reason: spam.reason });
     // A GIF carries a giphy.com URL by definition, so the link filter only
     // applies to what the user actually typed.
     // Before the link filter, as for friend messages (see captureContacts).
@@ -6559,6 +6570,8 @@ io.on('connection', (socket) => {
     // Direct messages are stored and notified, so a flood costs the recipient
     // far more than one in a live chat does. Same human-speed ceiling.
     if (!socialRateOk('friend-message', me.clientId, 10, 5000)) return refuse('rate');
+    const spam = parsed.text ? chatSpam(me.clientId, parsed.text, { rate: false }) : null;
+    if (spam) return refuse(spam.reason);
     deliverFriendMessage(socket, me, toClientId, parsed, msgId);
     if (gateBefore !== 'open') socket.emit('dm-gate', { clientId: toClientId, gate: dmGate(me.clientId, toClientId) });
   });

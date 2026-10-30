@@ -2172,7 +2172,7 @@ async function amRules(){
     ${f('strikeDays','Warnings fade after (days)','With no new reports.')}
     ${b('ai','Use AI for chat checks if an ANTHROPIC_API_KEY is ever added (costs money; free keyword rules otherwise)')}
     ${b('keywordStrikes','Count slurs and threats typed in chat')}
-    ${b('policy','Site rules (own switch, runs even when auto-mod is off): money requests get a warning, a final warning, then a ban (7 days, 30, then a year); copy-pasted money requests are banned at once; links and picture requests get a warning. Flirting and sexual chat are allowed.')}
+    ${b('policy','Site rules (own switch, runs even when auto-mod is off): money requests get a warning, a final warning, then a ban (7 days, 30, then a year); copy-pasted money requests are banned at once; links, WhatsApp/IG/Snapchat swaps, phone numbers and picture requests get a warning; threats and suicide baiting go to your review queue. Flirting, sexual chat and friendly slang are allowed.')}
     ${b('autoLive','Go live automatically when the dry run ends')}
     <button class="btn" id="amSave">Save rules</button>`,(sh)=>{
       sh.querySelector('#amSave').onclick=async()=>{
@@ -2209,7 +2209,7 @@ async function viewAiGuard(){
   <div class="card anim" style="margin-top:0"><h2>🧠 TalkGuard <span class="sub">TalkLive's own safety model · free, no outside AI</span>
     <span style="margin-left:auto" class="rowbtns"><button onclick="tgRetrain()">↻ Retrain now</button></span></h2>
     <div class="muted" style="font-size:.84rem;line-height:1.6">Reads every chat message, voice message transcript and flagged voice-call speech. It nudges people before they send something hurtful, gives the auto-mod evidence, and gets better each time you teach it below.</div>
-    <div class="fmsg" style="margin-top:10px;font-size:.82rem;line-height:1.55"><b>Site rules answer the queue for you.</b> Flirting and sexual chat are allowed (labelled "sexual" only so the under-18 check keeps working). Asking for money, sending links and asking for pictures are labelled spam; slurs and threats are abuse; false alarms are fine. Only insults and "add me on WhatsApp/IG" wait here for you.</div>
+    <div class="fmsg" style="margin-top:10px;font-size:.82rem;line-height:1.55"><b>Site rules answer the queue for you.</b> Flirting and sexual chat are allowed (labelled "sexual" only so the under-18 check keeps working). Asking for money, sending links and asking for pictures are labelled spam; slurs and threats are abuse; false alarms are fine. Asking to move to WhatsApp/IG/Snapchat is spam too. Only insults and slurs (which can be friendly slang) wait here for you.</div>
     <div class="grid tiles" style="margin-top:12px">
       <div class="tile"><div class="k">Version</div><div class="v">v${num(m.version)}</div><div class="s">trained ${m.trainedAt?ago(m.trainedAt):'-'} in ${num(m.ms)} ms</div></div>
       <div class="tile"><div class="k">Learned from you</div><div class="v grad">${num(m.ownerExamples)}</div><div class="s">+ ${num(m.seedExamples)} starter examples</div></div>

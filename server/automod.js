@@ -28,7 +28,9 @@
 //   money    1st ask: warning. 2nd: final warning. 3rd within 24 hours: ban
 //            (7 days, then 30, then a year). A burst of lines in one chat is one
 //            ask. Copy-pasting a money request to 5+ strangers: ban at once.
-//   links    a warning (at most one per 12 hours) and half a strike.
+//   links    a warning (at most one per 12 hours) and half a strike. Asking
+//            to move to WhatsApp/Instagram/Snapchat or sharing a phone number
+//            is treated the same.
 //   pictures asking for pictures or videos: the same as links.
 //   harm     telling someone to kill themselves, real threats or murder talk:
 //            a warning and straight to the owner's review queue.
@@ -68,6 +70,7 @@ const POLICY_TEXT = {
   money1: 'Asking for money is not allowed on TalkLive. If you ask again you will get a final warning, and then a ban.',
   money2: 'Final warning: asking for money is not allowed on TalkLive. Ask again and your account will be banned.',
   link: 'Sending links or promoting your profiles is not allowed on TalkLive. Please keep the conversation here.',
+  contact: 'Asking people to move to WhatsApp, Instagram, Snapchat or other apps, or sharing phone numbers, is not allowed on TalkLive. Please keep the conversation here.',
   pics: 'Asking people for pictures or videos is not allowed on TalkLive.',
   harm: 'Telling people to hurt or kill themselves, and threatening people, is not allowed on TalkLive. Your account has been sent for review.',
   illegal: 'Selling drugs or anything illegal is not allowed on TalkLive. Doing it again will send your account for review.',
@@ -415,7 +418,7 @@ function createAutomod({ store, deliverWarning, kickBanned, talkguard }) {
   function policyCheck({ from, to, text }) {
     if (!policyOn()) return;
     const d = guardPolicy.detect(text);
-    if (!d.money && !d.link && !d.pics && !d.harm && !d.illegal) return;
+    if (!d.money && !d.link && !d.pics && !d.contact && !d.harm && !d.illegal) return;
     const p = person(from.clientId, from.account, from);
     const pol = p.policy || (p.policy = { money: [], warned: {}, bans: 0 });
     const now = Date.now();
@@ -446,12 +449,13 @@ function createAutomod({ store, deliverWarning, kickBanned, talkguard }) {
       if (n >= 3) policyBan(p, `Asked for money ${n} times in 24 hours`, text);
       else policyWarn(p, n === 1 ? 'money1' : 'money2', 'Asked for money', text);
     } else {
-      const k = d.pics ? 'pics' : 'link';
+      const k = d.pics ? 'pics' : d.link ? 'link' : 'contact';
+      const what = { pics: 'Asked for pictures', link: 'Sent a link', contact: 'Asked to move to another app' }[k];
       if (!pol.warned) pol.warned = {};
       if (pol.warned[k] > now - 12 * 3600000) return;
       pol.warned[k] = now;
-      pushEvent(p, { ts: now, type: 'policy', source: to, weight: 0.5, why: [k === 'pics' ? 'asked for pictures' : 'sent a link'], detail: String(text).slice(0, 160), evidence });
-      policyWarn(p, k, k === 'pics' ? 'Asked for pictures' : 'Sent a link', text);
+      pushEvent(p, { ts: now, type: 'policy', source: to, weight: 0.5, why: [what.toLowerCase()], detail: String(text).slice(0, 160), evidence });
+      policyWarn(p, k, what, text);
     }
     store.save();
   }
