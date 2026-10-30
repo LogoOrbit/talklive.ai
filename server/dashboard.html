@@ -3627,7 +3627,8 @@ async function spEnablePush(key){
   if(!('serviceWorker' in navigator)||!('PushManager' in window))throw new Error('This browser cannot receive push alerts. On iPhone, add talklive.app/owner to your Home Screen and open it from there.');
   if(!key)throw new Error('Push is not set up on the server (VAPID keys missing).');
   const perm=await Notification.requestPermission();
-  if(perm!=='granted')throw new Error('Notifications are blocked for this site in your browser settings.');
+  if(perm==='denied')throw new Error('Notifications are blocked for talklive.app. Chrome: ⋮ → Settings → Site settings → Notifications → talklive.app → Allow, then reload this page.');
+  if(perm!=='granted')throw new Error('The permission popup was closed. Tap the button again and choose Allow (Chrome may show it as a small bell in the address bar).');
   const reg=await navigator.serviceWorker.register('/sw.js');
   await navigator.serviceWorker.ready;
   let sub=await reg.pushManager.getSubscription();
