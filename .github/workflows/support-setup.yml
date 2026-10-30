@@ -1,0 +1,38 @@
+# One click from the Actions tab: prepares the live app for Chat Support.
+#   - Lists which mail/push secrets are set (names only, never values).
+#   - Creates the VAPID keypair for owner phone alerts and saves it as Fly
+#     secrets, but only if none exists yet: replacing existing keys would
+#     silently cut off every user's push notifications.
+# The private key is masked and never printed.
+name: Set up Chat Support alerts
+
+on:
+  workflow_dispatch:
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check secrets and add push keys if missing
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          NAMES=$(flyctl secrets list -a talklive-ai | awk 'NR>1 {print $1}')
+          has() { echo "$NAMES" | grep -qx "$1"; }
+          echo "Email:"
+          for n in RESEND_API_KEY SMTP_USER CONTACT_TO; do has "$n" && echo "  set      $n" || echo "  missing  $n"; done
+          if has VAPID_PRIVATE_KEY && has VAPID_PUBLIC_KEY; then
+            echo "Phone alerts: VAPID keys already set - nothing changed."
+            exit 0
+          fi
+          KEYS=$(npx -y web-push@3.6.7 generate-vapid-keys --json)
+          PUB=$(echo "$KEYS" | jq -r .publicKey)
+          PRIV=$(echo "$KEYS" | jq -r .privateKey)
+          echo "::add-mask::$PRIV"
+          flyctl secrets set -a talklive-ai VAPID_PUBLIC_KEY="$PUB" VAPID_PRIVATE_KEY="$PRIV"
+          echo "Phone alerts: VAPID keys created and saved. The app restarts with them now."
