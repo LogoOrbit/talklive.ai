@@ -12,18 +12,32 @@
 let nodemailer = null;
 try { nodemailer = require('nodemailer'); } catch (_) { /* optional */ }
 
-const SMTP_USER = process.env.SMTP_USER || '';
-const SMTP_PASS = process.env.SMTP_PASS || '';
+// Secrets pasted into a dashboard often pick up a trailing space, a newline or
+// wrapping quotes, and the mail server then rejects a password that is
+// otherwise right. Strip all of that.
+function cleanSecret(value) {
+  let v = String(value || '').trim();
+  if (v.length >= 2 && ((v[0] === '"' && v.endsWith('"')) || (v[0] === "'" && v.endsWith("'")))) v = v.slice(1, -1).trim();
+  return v;
+}
+
+const SMTP_USER = cleanSecret(process.env.SMTP_USER);
+const SMTP_PASS = cleanSecret(process.env.SMTP_PASS);
+const SMTP_HOST = cleanSecret(process.env.SMTP_HOST) || 'smtp.gmail.com';
+const SMTP_PORT = Number(cleanSecret(process.env.SMTP_PORT) || 465);
 const FROM_NAME = process.env.SMTP_FROM_NAME || 'TalkLive';
 
 let transport = null;
 if (nodemailer && SMTP_USER && SMTP_PASS) {
   transport = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: Number(process.env.SMTP_PORT || 465),
-    secure: true,
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    // 465 is TLS from the first byte; 587 and 25 upgrade with STARTTLS.
+    secure: SMTP_PORT === 465,
     auth: { user: SMTP_USER, pass: SMTP_PASS },
   });
+  // Enough to check the settings from the logs without printing the password.
+  console.log(`[mail] sending as ${SMTP_USER} via ${SMTP_HOST}:${SMTP_PORT} (password ${SMTP_PASS.length} chars)`);
 }
 
 function configured() {
