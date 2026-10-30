@@ -15,6 +15,7 @@
  *    and the prompt is spendable exactly once.
  * 4. Ask for notification permission - and only after the user has a reason to
  *    say yes. See maybeAskForPush.
+ * 5. The "Get email updates" footer form, and 6. the Chat Support bubble.
  *
  * The order matters: an install/notification prompt shown too early is not just
  * ignored, it is *denied*, and a denial is close to permanent. So both are
@@ -338,6 +339,32 @@
     else footer.appendChild(form);
   }
   addSubscribeForm();
+
+  // 6. Chat Support bubble (public/support-chat.js). Loaded once the page is
+  //    idle so it never competes with the page's own first paint. A "Continue
+  //    the chat" link from a reply email (#support=...) loads it straight away.
+  var SUPPORT_SRC = '/support-chat.js?v=20261030sup';
+  function loadSupport() {
+    if (window.TLSupport || document.querySelector('script[data-tl-support]')) return;
+    var s = document.createElement('script');
+    s.src = SUPPORT_SRC;
+    s.async = true;
+    s.setAttribute('data-tl-support', '');
+    document.head.appendChild(s);
+  }
+  if (/support=/.test(location.hash + location.search)) loadSupport();
+  else if (document.readyState === 'complete') setTimeout(loadSupport, 1500);
+  else window.addEventListener('load', function () { setTimeout(loadSupport, 1500); });
+  // A tap on "Help & Support" before the idle load has run.
+  document.addEventListener('click', function (e) {
+    if (window.TLSupport) return;
+    var t = e.target && e.target.closest && e.target.closest('[data-support-open]');
+    if (!t) return;
+    e.preventDefault();
+    loadSupport();
+    var tries = 0;
+    (function wait() { if (window.TLSupport) window.TLSupport.open(); else if (tries++ < 40) setTimeout(wait, 100); }());
+  });
 
   // app.js calls this once the user has done something that makes push worth
   // asking about.

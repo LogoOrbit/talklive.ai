@@ -38,6 +38,7 @@ const mail = require('./mailer');
 const { botLabel, isPrefetch, isBotUserAgent } = require('./bots');
 const Engage = require('./engage');
 const { createAdmin, applyOwnerReset } = require('./admin');
+const { createSupport } = require('./support');
 const { createGameTracker } = require('./game-tracker');
 const { isValidTimezone } = require('./analytics');
 const audience = require('./audience');
@@ -427,6 +428,18 @@ app.post('/contact', httpRateLimit('contact', 5, 10 * 60000), express.json({ lim
   if (!sent) return res.status(502).json({ error: `We could not send your message. Please email ${CONTACT_TO} directly.` });
   res.json({ ok: true });
 });
+
+// Chat Support: the help bubble on every page (public/support-chat.js). The
+// owner answers from /owner#support; see server/support.js.
+const support = createSupport({
+  store, mail, push,
+  contactTo: CONTACT_TO,
+  siteUrl: `https://${CANONICAL_HOST}`,
+  httpRateLimit,
+  clientIp,
+  geoOf: (ip) => lookupGeo(ip),
+});
+app.use('/support/api', support.router);
 
 // "Get email updates" form, injected into every page footer by pwa.js. Double
 // opt-in: the address joins the list only after its owner clicks the link we
@@ -1221,7 +1234,7 @@ app.get('/talkguard/model.json', (req, res) => {
   if (req.headers['if-none-match'] === tag) return res.status(304).end();
   res.json(m);
 });
-const admin = createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning, deliverFeedbackReply, getUserStats, automod, talkguard, patterns, getLiveGames: () => gameTracker.live() });
+const admin = createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning, deliverFeedbackReply, getUserStats, automod, talkguard, patterns, support, getLiveGames: () => gameTracker.live() });
 app.use('/owner', admin.router);
 
 // Maintenance mode: when on, every non-dashboard page gets a friendly 503.

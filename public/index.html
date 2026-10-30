@@ -149,7 +149,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 <link rel="manifest" href="/site.webmanifest" />
 <!-- Mobile app only (mobile/): load the native bridge. A no-op in browsers, which never download it. -->
 <script>if(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform()){var s=document.createElement('script');s.src='/native.js?v=20261008app';s.async=false;document.head.appendChild(s);}</script>
-<script defer src="/pwa.js?v=20261019mob"></script>
+<script defer src="/pwa.js?v=20261030sup"></script>
 <link rel="preconnect" href="https://flagcdn.com" crossorigin />
 <link rel="dns-prefetch" href="https://flagcdn.com" />
 
@@ -989,7 +989,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
           <span data-i18n="settings">Settings</span>
         </button>
 
-        <a class="tl-drawer-item" href="/contact">
+        <a class="tl-drawer-item" href="/contact" data-support-open>
           <span class="tl-drawer-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.8 9.4a2.3 2.3 0 1 1 3 2.2v1.2"/><path d="M12 16.6h.01"/></svg>
           </span>

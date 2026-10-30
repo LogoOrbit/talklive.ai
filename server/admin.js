@@ -411,7 +411,7 @@ function generateConclusion(runtime, report) {
 }
 
 // --- Module wiring ---
-function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning, deliverFeedbackReply, getLiveGames, getUserStats, automod, talkguard, patterns }) {
+function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning, deliverFeedbackReply, getLiveGames, getUserStats, automod, talkguard, patterns, support }) {
   if (automod) automod.setAlert(sendAlertEmail);
   const router = express.Router();
   router.use(express.json({ limit: '64kb' }));
@@ -589,7 +589,7 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
   const reportCache = new Map();
   router.use('/api', (req, res, next) => {
     if (req.method !== 'GET') { reportCache.clear(); return next(); }
-    if (/^\/(live\/stream|status|export\/|voice-notes\/.+\/audio|data(\/|$))/.test(req.path)) return next();
+    if (/^\/(live\/stream|status|export\/|voice-notes\/.+\/audio|data(\/|$)|support)/.test(req.path)) return next();
     const key = req.originalUrl;
     const hit = reportCache.get(key);
     if (hit && Date.now() - hit.at < REPORT_TTL) return res.json(hit.body);
@@ -603,6 +603,10 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
     };
     next();
   });
+
+  // Chat Support inbox (server/support.js). Its GETs skip the cache above so a
+  // new message shows on the next poll; its POSTs still clear it.
+  if (support) support.mountOwner(router, { reqIp });
 
   // Summing 30 days of per-country/city/feature maps was the most expensive
   // part of the Overview (tens of thousands of keys, every 12s poll). Only
@@ -689,6 +693,7 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
         errors: store.data.errors.length,
         feedback: store.data.feedback.length,
         activeBans: store.activeBans().length,
+        ...(support ? support.counts() : {}),
         accounts: Object.keys(store.data.accountsRegistry).length,
         premium: premiumRows().filter((r) => r.status === 'active').length,
       },

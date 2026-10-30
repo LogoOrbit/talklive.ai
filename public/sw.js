@@ -131,6 +131,15 @@ self.addEventListener('notificationclick', (event) => {
       // second socket connection for the same person, which the server would
       // treat as an identity takeover.
       const ours = clientList.filter((c) => c.url.startsWith(self.location.origin) && 'focus' in c);
+      // Owner alerts (Chat Support) belong in the dashboard, never the app.
+      if (target.startsWith('/owner')) {
+        const dash = ours.find((c) => new URL(c.url).pathname.startsWith('/owner'));
+        if (dash) {
+          if ('navigate' in dash) dash.navigate(target).catch(() => {});
+          return dash.focus();
+        }
+        return self.clients.openWindow(target);
+      }
       // The app itself is open: hand it the link rather than navigating, which
       // would reload the page and drop any call going on in it.
       const app = ours.find((c) => ['/', '/call', '/settings'].includes(new URL(c.url).pathname));

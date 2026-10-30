@@ -125,6 +125,10 @@ function defaults() {
     // { id, ts, username, country, text, clientId, account, reply }; reply is
     // the owner's answer: { text, ts, deliveredAt, seenAt } (see setFeedbackReply).
     feedback: [],
+    // Chat Support (server/support.js): { conversations: [{ id, keyHashes,
+    // email, name, account, status, messages: [{ id, from, text, ts }], ... }],
+    // settings: { away, greeting, awayMessage, quickReplies } }.
+    support: { conversations: [], settings: {} },
     // Owner-sent behaviour warnings, newest first: { id, ts, clientId, account,
     // username, country, reason, message, deliveredAt, acknowledgedAt,
     // withdrawnAt }. Re-shown on every visit until the person acknowledges it.
@@ -669,6 +673,7 @@ function hasAnything(doc) {
     || Object.keys(a.days || {}).length
     || (doc.reports || []).length
     || (doc.feedback || []).length
+    || ((doc.support || {}).conversations || []).length
     || (doc.errors || []).length));
 }
 

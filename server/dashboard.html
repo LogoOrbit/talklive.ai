@@ -439,6 +439,14 @@ table.heat{min-width:480px}table.heat td.num{border-radius:6px}
 .fl.minor,.fl.sexual,.fl.abuse{color:var(--crit)}
 .fl.contact,.fl.link,.fl.money{color:var(--warn)}
 
+/* Chat Support: the thread pane holds a fixed composer under a scrolling body. */
+.cvthread.sp{display:flex;flex-direction:column;overflow:hidden}
+.cvthread.sp .cvbody{flex:1;overflow-y:auto;overscroll-behavior:contain}
+.cvthread.sp .cvthead{position:static}
+.spcmp{border-top:1px solid var(--ring);padding:10px 12px;background:var(--surface-2);display:flex;flex-direction:column;gap:8px}
+.spcmp textarea{width:100%;min-height:64px;max-height:180px;resize:vertical}
+.spcmp .quickq button{padding:5px 11px;font-size:.76rem;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cvrow .spdot{width:9px;height:9px;border-radius:50%;background:var(--crit);display:inline-block}
 @media (max-width:1000px){
   .cvwrap{grid-template-columns:1fr}
   .cvwrap.reading .cvlist{display:none}
@@ -880,6 +888,7 @@ function rankedBars(el,entries){
 const NAV=[
   ['Monitor',[
     ['overview','Overview','📊',[['overview','Overview','📊']]],
+    ['support','Support','🎧',[['support','Chat Support','🎧']]],
     ['live','Live','🟢',[['live','Live','🟢']]],
     ['activity','Activity','📅',[['activity','Today & trends','📅'],['daily','Daily log','📋']]],
     ['traffic','Traffic','🔎',[['traffic','Traffic','🔎']]],
@@ -910,7 +919,7 @@ const groupOf=(id)=>sectionOf(id).group;
 const lastSub={};
 /* Bottom bar on a phone: the four most used sections, then "More" opens the
    full menu as a drawer. */
-const MOBILE_TABS=['overview','live','chats','reports'];
+const MOBILE_TABS=['overview','support','live','reports'];
 let tab='overview',timer=null,counts={},paused=false,lastLoadTs=0,loadFailures=0;
 /* loadSeq: every load() takes a number and only the newest may paint, so a slow
    answer for the tab you just left can never overwrite the one you opened.
@@ -920,9 +929,10 @@ let tab='overview',timer=null,counts={},paused=false,lastLoadTs=0,loadFailures=0
 let loadSeq=0,renderedTab=null,quiet=false;
 /* Health and Traffic show Google data cached for 30+ minutes; polling them
    every 12s only repaints the same numbers. */
-const REFRESH_MS=()=>tab==='live'?5000:(tab==='ai'||tab==='health'||tab==='traffic'||tab==='settings'||tab==='audit')?60000:12000;
+const REFRESH_MS=()=>(tab==='live'||tab==='support')?5000:(tab==='ai'||tab==='health'||tab==='traffic'||tab==='settings'||tab==='audit')?60000:12000;
 
 function navBadge(id){
+  if(id==='support'&&counts.supportWaiting)return `<span class="badge">${counts.supportWaiting}</span>`;
   if(id==='reports'&&counts.unhandledReports)return `<span class="badge">${counts.unhandledReports}</span>`;
   if(id==='automod'&&counts.autoReview)return `<span class="badge">${counts.autoReview}</span>`;
   if(id==='errors'&&counts.errors)return `<span class="badge" style="background:var(--serious)">${counts.errors}</span>`;
@@ -1139,7 +1149,7 @@ async function load(force){
     /* Nor while a voice message is playing: the repaint would cut it off. */
     if(tab==='voicenotes'&&[...document.querySelectorAll('#main audio')].some(a=>!a.paused))return;
     const busy=overlayEl||(document.activeElement&&/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName));
-    if(busy&&Date.now()-lastLoadTs<60000)return;
+    if(busy&&tab!=='support'&&Date.now()-lastLoadTs<60000)return;
   }
   const seq=++loadSeq,forTab=tab;
   quiet=renderedTab===forTab;
@@ -1169,6 +1179,7 @@ async function load(force){
     else if(tab==='revenue')await viewRevenue();
     else if(tab==='errors')await viewErrors();
     else if(tab==='feedback')await viewFeedback();
+    else if(tab==='support')await viewSupport();
     else if(tab==='audit')await viewAudit();
     else if(tab==='settings')await viewSettings();
     if(seq!==loadSeq)return;
@@ -1313,9 +1324,10 @@ async function viewOverview(){
   const c=o.conclusion;
   if(!live&&o.runtime.live)onLive(o.runtime.live);
   $('#main').innerHTML=`
-  ${(o.counts.unhandledReports||o.maintenance.on||o.counts.errors||o.counts.autoReview)?`<div class="card anim" style="margin:0 0 12px;border-color:color-mix(in srgb,var(--warn) 40%,transparent)"><h2>🔔 Needs your attention</h2>
+  ${(o.counts.supportWaiting||o.counts.unhandledReports||o.maintenance.on||o.counts.errors||o.counts.autoReview)?`<div class="card anim" style="margin:0 0 12px;border-color:color-mix(in srgb,var(--warn) 40%,transparent)"><h2>🔔 Needs your attention</h2>
     <div class="rowbtns">
     ${o.maintenance.on?`<button class="danger" onclick="go('settings')">🛠️ Site is in MAINTENANCE - bring it back</button>`:''}
+    ${o.counts.supportWaiting?`<button class="danger" onclick="go('support')">🎧 ${num(o.counts.supportWaiting)} support chat(s) waiting for your reply</button>`:''}
     ${o.counts.autoReview?`<button class="danger" onclick="go('automod')">🛡️ ${num(o.counts.autoReview)} user(s) waiting for your review</button>`:''}
     ${o.counts.unhandledReports?`<button class="danger" onclick="go('reports')">🚩 ${num(o.counts.unhandledReports)} unhandled report(s)</button>`:''}
     ${o.counts.errors?`<button onclick="go('errors')">🐛 ${num(o.counts.errors)} logged error(s)</button>`:''}
@@ -3491,6 +3503,155 @@ function replyFeedback(f){
           if(tab==='feedback')load();
         }catch(e){go.disabled=false;toast('Could not send reply',e.message,'bad');}
       };
+    },{mid:true});
+}
+
+/* ---------- Chat Support ----------
+   Messages from the help bubble on the site (server/support.js). Polls every
+   5s; a repaint updates the list and the open thread but never the reply box,
+   so a half-written answer survives. */
+let spSel=null,spFilter='waiting',spQ='',spData=null;
+/* Full repaint of the Support tab outside the poll (after a click or a send). */
+const spRefresh=()=>{renderedTab=null;return viewSupport().then(()=>{renderedTab='support';});};
+const spWho=(c)=>c.name?`${c.name}`:c.email;
+function spFiltered(list){
+  const q=spQ.trim().toLowerCase();
+  return list.filter(c=>spFilter==='all'?true:spFilter==='waiting'?c.waiting:spFilter==='open'?c.status==='open':c.status==='closed')
+    .filter(c=>!q||[c.email,c.name,c.account,c.last&&c.last.text].some(v=>String(v||'').toLowerCase().includes(q)));
+}
+function spRow(c){
+  return `<button class="cvrow${c.id===spSel?' on':''}" data-spc="${esc(c.id)}">
+    <div class="who">${c.unread?'<span class="spdot" title="Unread"></span>':''}${esc(spWho(c))}${c.verified?' <span class="pill good">account</span>':' <span class="pill info">guest</span>'}${c.status==='closed'?' <span class="pill">solved</span>':c.waiting?' <span class="pill warn">waiting</span>':''}</div>
+    <div class="prev">${c.last?(c.last.from==='owner'?'You: ':'')+esc(c.last.text):''}</div>
+    <div class="meta"><span>${ago(c.updatedAt)}</span>${c.name?`<span>${esc(c.email)}</span>`:''}${c.country&&c.country!=='Unknown'?`<span>${esc(c.country)}</span>`:''}<span>${num(c.count)} msg</span></div></button>`;
+}
+function spHead(c){
+  const where=[c.city,c.country].filter(v=>v&&v!=='Unknown').join(', ');
+  return `<button class="cvback lnk" id="spBack">&#8592; List</button>
+    <div><h3>${esc(spWho(c))} ${c.verified?'<span class="pill good">verified account</span>':'<span class="pill info">guest</span>'}</h3>
+    <span class="sub"><a href="mailto:${esc(c.email)}" style="color:var(--accent-2)">${esc(c.email)}</a>${c.account?` · @${esc(c.account)}`:''}${where?` · ${esc(where)}`:''}${c.page?` · from ${esc(c.page)}`:''}</span>
+    <span class="sub">${c.userActive?'🟢 Chat window open now - they will see your reply instantly':`Last active ${ago(c.userSeenAt||c.updatedAt)} - your reply will also be emailed`}</span></div>
+    <div class="rowbtns">${c.status==='closed'?`<button data-spst="open">↺ Reopen</button>`:`<button data-spst="closed">✓ Mark solved</button>`}<button class="danger" id="spDel" title="Delete conversation">🗑</button></div>`;
+}
+function spBody(c){
+  return c.messages.map(m=>`<div class="cvname${m.from==='owner'?' b':''}">${m.from==='owner'?'You':esc(spWho(c))}</div><div class="cvb ${m.from==='owner'?'b':'a'}">${esc(m.text).replace(/\n/g,'<br>')}<span class="t">${fmtTs(m.ts)}</span></div>`).join('')||'<div class="cvempty">No messages.</div>';
+}
+async function viewSupport(){
+  const r=await vapi('support');
+  spData=r;
+  counts.supportWaiting=r.conversations.filter(c=>c.waiting).length;renderNav();
+  const list=spFiltered(r.conversations);
+  let conv=null;
+  if(spSel){try{conv=(await vapi('support/'+encodeURIComponent(spSel))).conversation;}catch(e){spSel=null;}}
+  const st=r.settings,waitingN=counts.supportWaiting,openN=r.conversations.filter(c=>c.status==='open').length;
+  const listHtml=list.map(spRow).join('')||`<div class="cvempty">${spQ?'Nothing matches that search.':spFilter==='waiting'?'🎉 Nobody is waiting for a reply.':'No conversations here yet.'}</div>`;
+  const wrap=$('#spWrap');
+  /* Poll repaint: swap list + thread, keep the composer and its text. */
+  if(wrap&&renderedTab==='support'&&wrap.dataset.sel===(spSel||'')){
+    setHtml($('#spList'),listHtml);
+    $('#spSub').textContent=`${num(waitingN)} waiting · ${num(openN)} open · ${num(r.conversations.length)} total`;
+    if(conv){
+      setHtml($('#spHead'),spHead(conv));
+      const b=$('#spBody'),near=b.scrollHeight-b.scrollTop-b.clientHeight<80,html=spBody(conv);
+      if(b._html!==html){b.innerHTML=html;b._html=html;if(near)b.scrollTop=b.scrollHeight;}
+    }
+    spWire(conv);
+    return;
+  }
+  $('#main').innerHTML=`<div class="card anim" style="margin-top:0">
+    <h2>🎧 Chat Support <span class="sub" id="spSub">${num(waitingN)} waiting · ${num(openN)} open · ${num(r.conversations.length)} total</span></h2>
+    <div class="tbar">
+      <div class="seg" id="spSeg">${[['waiting','Waiting'],['open','Open'],['closed','Solved'],['all','All']].map(([k,l])=>`<button data-spf="${k}" class="${spFilter===k?'on':''}">${l}</button>`).join('')}</div>
+      <input id="spQ" class="grow" placeholder="Search email, name or message…" value="${esc(spQ)}">
+      <button class="lnk" id="spAway" title="Shown to visitors in the chat window">${st.away?'🌙 Away':'🟢 Available'}</button>
+      <button class="lnk" id="spSettings">⚙️ Settings &amp; alerts</button>
+    </div>
+    <div class="muted" style="font-size:.78rem;margin:-2px 0 10px">${r.emailAlerts?`📧 Email alerts go to <b>${esc(r.alertsTo)}</b> (new chats, and follow-ups while you're not on this dashboard).`:'⚠️ Email alerts are off: mail is not configured on the server (RESEND_API_KEY or SMTP).'} ${r.push.devices?`📱 Phone alerts on for ${r.push.devices} device(s).`:''}</div>
+    <div class="cvwrap${conv?' reading':''}" id="spWrap" data-sel="${esc(spSel||'')}">
+      <div class="cvlist" id="spList">${listHtml}</div>
+      <div class="cvthread sp">${conv?`
+        <div class="cvthead" id="spHead">${spHead(conv)}</div>
+        <div class="cvbody" id="spBody">${spBody(conv)}</div>
+        <div class="spcmp">
+          ${st.quickReplies.length?`<div class="quickq">${st.quickReplies.map((q,i)=>`<button data-spq="${i}" title="${esc(q)}">${esc(q)}</button>`).join('')}</div>`:''}
+          <textarea id="spMsg" maxlength="2000" placeholder="Write your reply… (Ctrl+Enter to send)"></textarea>
+          <div class="rowbtns"><button id="spSend">Send reply</button><button id="spSendClose">Send &amp; mark solved</button></div>
+        </div>`:`<div class="cvempty" style="margin-top:22vh">Pick a conversation to read and reply.</div>`}</div>
+    </div></div>`;
+  const b=$('#spBody');if(b){b._html=b.innerHTML;b.scrollTop=b.scrollHeight;}
+  document.querySelectorAll('[data-spf]').forEach(x=>x.onclick=()=>{spFilter=x.dataset.spf;spRefresh();});
+  onFilterInput($('#spQ'),(v)=>{spQ=v;},()=>spRefresh().then(()=>keepFocus('#spQ')));
+  $('#spAway').onclick=async()=>{try{await post('support-settings',{away:!st.away});renderedTab=null;load();}catch(e){toast('Could not save',e.message,'bad');}};
+  $('#spSettings').onclick=()=>spSettings();
+  if(conv){
+    const msg=$('#spMsg');
+    document.querySelectorAll('[data-spq]').forEach(x=>x.onclick=()=>{const q=st.quickReplies[+x.dataset.spq];msg.value=msg.value?msg.value.replace(/\s*$/,'\n')+q:q;msg.focus();});
+    const send=async(close)=>{
+      const text=msg.value.trim();
+      if(!text){msg.focus();return;}
+      $('#spSend').disabled=$('#spSendClose').disabled=true;
+      try{
+        const res=await post('support/'+encodeURIComponent(conv.id)+'/reply',{message:text,close:!!close});
+        msg.value='';
+        toast('Reply sent',res.emailed?'They are not on the site, so it was also emailed to them.':'Shown in their chat window.','good');
+        if(close&&spFilter==='waiting')spSel=null;
+        await spRefresh();
+      }catch(e){toast('Could not send',e.message,'bad');}
+      const a=$('#spSend'),c2=$('#spSendClose');if(a)a.disabled=false;if(c2)c2.disabled=false;
+    };
+    $('#spSend').onclick=()=>send(false);
+    $('#spSendClose').onclick=()=>send(true);
+    msg.addEventListener('keydown',(e)=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();send(false);}});
+    if(!isPhone())msg.focus();
+  }
+  spWire(conv);
+}
+/* Handlers on parts the poll repaints. */
+function spWire(conv){
+  document.querySelectorAll('[data-spc]').forEach(x=>x.onclick=()=>{spSel=x.dataset.spc;spRefresh();});
+  if(!conv)return;
+  const back=$('#spBack');if(back)back.onclick=()=>{spSel=null;spRefresh();};
+  document.querySelectorAll('[data-spst]').forEach(x=>x.onclick=async()=>{
+    try{await post('support/'+encodeURIComponent(conv.id)+'/status',{status:x.dataset.spst});
+      toast(x.dataset.spst==='closed'?'Marked solved':'Reopened','','good');
+      if(x.dataset.spst==='closed'&&spFilter==='waiting')spSel=null;
+      await spRefresh();}catch(e){toast('Could not update',e.message,'bad');}
+  });
+  const del=$('#spDel');if(del)del.onclick=async()=>{
+    if(!confirm('Delete this conversation for good? The user will no longer see it either.'))return;
+    try{await post('support/'+encodeURIComponent(conv.id)+'/delete');spSel=null;await spRefresh();toast('Conversation deleted','','good');}catch(e){toast('Could not delete',e.message,'bad');}
+  };
+}
+function spUrlB64(b64){const p='='.repeat((4-b64.length%4)%4);const raw=atob((b64+p).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from(raw,c=>c.charCodeAt(0));}
+async function spEnablePush(key){
+  if(!('serviceWorker' in navigator)||!('PushManager' in window))throw new Error('This browser cannot receive push alerts. On iPhone, add talklive.app/owner to your Home Screen and open it from there.');
+  if(!key)throw new Error('Push is not set up on the server (VAPID keys missing).');
+  const perm=await Notification.requestPermission();
+  if(perm!=='granted')throw new Error('Notifications are blocked for this site in your browser settings.');
+  const reg=await navigator.serviceWorker.register('/sw.js');
+  await navigator.serviceWorker.ready;
+  let sub=await reg.pushManager.getSubscription();
+  if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:spUrlB64(key)});
+  return post('support-push',{subscription:sub.toJSON()});
+}
+function spSettings(){
+  const r=spData;if(!r)return;const st=r.settings;
+  modal('⚙️ Chat Support settings',
+    `<label>Greeting (shown when you're available)</label><textarea id="spG" rows="2" maxlength="300">${esc(st.greeting)}</textarea>
+     <label style="margin-top:10px">Away message (shown when you're away or not on the dashboard)</label><textarea id="spAw" rows="2" maxlength="300">${esc(st.awayMessage)}</textarea>
+     <label style="margin-top:10px">Quick replies (one per line)</label><textarea id="spQR" rows="6">${esc(st.quickReplies.join('\n'))}</textarea>
+     <div class="muted" style="font-size:.78rem;margin-top:10px">Visitors see you as <b>online</b> while this dashboard is open on any device and you're not set to Away.</div>
+     <div class="fmsg" style="margin-top:12px"><b>📱 Phone alerts</b><div class="txt muted" style="font-size:.82rem">A push notification on this device for every new support message. ${r.push.available?(r.push.devices?`On for ${r.push.devices} device(s).`:'Off.'):'Not available: VAPID keys are not set on the server.'}</div>
+       <div class="rowbtns" style="margin-top:8px">${r.push.available?`<button id="spPushOn">Turn on for this device</button>`:''}${r.push.devices?`<button id="spPushOff">Turn off everywhere</button>`:''}</div></div>
+     <div class="rowbtns" style="margin-top:16px"><button id="spSave" style="padding:9px 16px">Save</button><button id="spCancel" style="padding:9px 16px">Cancel</button></div>`,
+    (sheet)=>{
+      sheet.querySelector('#spCancel').onclick=closeModal;
+      sheet.querySelector('#spSave').onclick=async()=>{
+        try{await post('support-settings',{greeting:sheet.querySelector('#spG').value,awayMessage:sheet.querySelector('#spAw').value,quickReplies:sheet.querySelector('#spQR').value.split('\n').map(x=>x.trim()).filter(Boolean)});
+          closeModal();toast('Saved','','good');renderedTab=null;load();}catch(e){toast('Could not save',e.message,'bad');}
+      };
+      const on=sheet.querySelector('#spPushOn');if(on)on.onclick=async()=>{on.disabled=true;try{const x=await spEnablePush(r.push.key);toast('Phone alerts on',`${x.devices} device(s) will be notified.`,'good');closeModal();renderedTab=null;load();}catch(e){on.disabled=false;toast('Could not turn on alerts',e.message,'bad');}};
+      const off=sheet.querySelector('#spPushOff');if(off)off.onclick=async()=>{try{await post('support-push/off');toast('Phone alerts off','','good');closeModal();renderedTab=null;load();}catch(e){toast('Could not turn off',e.message,'bad');}};
     },{mid:true});
 }
 
