@@ -48,7 +48,7 @@ const cleanText = (v) => String(v || '').replace(/\r\n?/g, '\n').trim().slice(0,
 const cleanLine = (v, n) => String(v || '').replace(/[\r\n]+/g, ' ').trim().slice(0, n);
 const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-function createSupport({ store, mail, push, contactTo, siteUrl, httpRateLimit, clientIp, geoOf }) {
+function createSupport({ store, mail, push, contactTo, siteUrl, ownerUrl, httpRateLimit, clientIp, geoOf }) {
   let ownerSeenAt = 0;
 
   function state() {
@@ -110,7 +110,7 @@ function createSupport({ store, mail, push, contactTo, siteUrl, httpRateLimit, c
   // --- Notifications -------------------------------------------------------
   function notifyOwner(c, m, isNew) {
     const who = c.name ? `${c.name} <${c.email}>` : c.email;
-    const link = `${siteUrl}/owner#support`;
+    const link = `${ownerUrl || siteUrl + '/owner'}#support`;
     push.send(OWNER_PUSH_ID, {
       topic: 'support:' + c.id,
       title: isNew ? `New support chat: ${c.name || c.email}` : `Support: ${c.name || c.email}`,

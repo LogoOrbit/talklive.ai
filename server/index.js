@@ -188,6 +188,38 @@ const ALIAS_HOSTS = new Set(
   (process.env.ALIAS_HOSTS || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean)
 );
 
+// The owner dashboard lives on its own subdomain (ADMIN_HOST, e.g.
+// admin.talklive.app) so the browser keeps it apart from the public site: a
+// script that ever got onto a talklive.app page could not reach the dashboard
+// as the owner. The admin host serves only the dashboard and the few static
+// files it loads; everything else goes back to the public site, and /owner on
+// the public site goes to the admin host. Unset, the dashboard stays at /owner
+// on every host, as before.
+const ADMIN_HOST = String(process.env.ADMIN_HOST || '').trim().toLowerCase();
+const OWNER_URL = `https://${ADMIN_HOST || CANONICAL_HOST}/owner`;
+const ADMIN_HOST_FILES = new Set(['/favicon.svg', '/characters.js', '/animals.js', '/sw.js', '/offline', '/robots.txt']);
+const isOwnerPath = (p) => p === '/owner' || p.startsWith('/owner/');
+app.use((req, res, next) => {
+  if (!ADMIN_HOST) return next();
+  const host = (req.headers.host || '').toLowerCase();
+  if (host === ADMIN_HOST) {
+    if (req.headers['x-forwarded-proto'] === 'http') {
+      return res.redirect(301, 'https://' + ADMIN_HOST + req.originalUrl);
+    }
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+    if (req.path === '/robots.txt') return res.type('text/plain').send('User-agent: *\nDisallow: /\n');
+    if (req.path === '/') return res.redirect(302, '/owner');
+    if (isOwnerPath(req.path) || ADMIN_HOST_FILES.has(req.path)) return next();
+    if (req.method !== 'GET' && req.method !== 'HEAD') return res.status(404).end();
+    return res.redirect(301, 'https://' + CANONICAL_HOST + req.originalUrl);
+  }
+  if (isOwnerPath(req.path)) {
+    if (req.method !== 'GET' && req.method !== 'HEAD') return res.status(404).end();
+    return res.redirect(301, 'https://' + ADMIN_HOST + req.originalUrl);
+  }
+  next();
+});
+
 // Consolidate link equity on a single canonical origin: force HTTPS and the
 // bare apex domain (drop www) so search engines index exactly one URL per page.
 app.use((req, res, next) => {
@@ -436,6 +468,7 @@ const support = createSupport({
   store, mail, push,
   contactTo: CONTACT_TO,
   siteUrl: `https://${CANONICAL_HOST}`,
+  ownerUrl: OWNER_URL,
   httpRateLimit,
   clientIp,
   geoOf: (ip) => lookupGeo(ip),
@@ -1286,7 +1319,7 @@ const traffic = require('./traffic');
 // Hostnames that are this site, so a referrer from one of them is internal
 // navigation rather than an arrival. The request's own Host is added per
 // request, which covers localhost and preview hosts too.
-const OWN_HOSTS = new Set([CANONICAL_HOST, ...ALIAS_HOSTS, process.env.LANDING_HOST || '']
+const OWN_HOSTS = new Set([CANONICAL_HOST, ...ALIAS_HOSTS, process.env.LANDING_HOST || '', ADMIN_HOST]
   .filter(Boolean).map((h) => h.toLowerCase().replace(/^www\./, '')));
 
 const ACQUISITION_SOURCES = new Set([
@@ -7326,12 +7359,12 @@ if (sweepTimer.unref) sweepTimer.unref();
 process.on('unhandledRejection', (err) => {
   console.error('[unhandledRejection]', err);
   store.addError({ source: 'server', message: String((err && err.message) || err).slice(0, 400), stack: String((err && err.stack) || '').slice(0, 1500), url: '', username: '', country: '' });
-  admin.sendAlertEmail('server-error', 'Server error on TalkLive', `Unhandled rejection: ${String((err && err.message) || err)}\n\nReview at https://${CANONICAL_HOST}/owner`);
+  admin.sendAlertEmail('server-error', 'Server error on TalkLive', `Unhandled rejection: ${String((err && err.message) || err)}\n\nReview at ${OWNER_URL}`);
 });
 process.on('uncaughtException', (err) => {
   console.error('[uncaughtException]', err);
   store.addError({ source: 'server', message: String(err.message || err).slice(0, 400), stack: String(err.stack || '').slice(0, 1500), url: '', username: '', country: '' });
-  admin.sendAlertEmail('server-error', 'CRITICAL: server crash on TalkLive', `Uncaught exception: ${String(err.message || err)}\n${String(err.stack || '')}\n\nThe server is restarting. Review at https://${CANONICAL_HOST}/owner`);
+  admin.sendAlertEmail('server-error', 'CRITICAL: server crash on TalkLive', `Uncaught exception: ${String(err.message || err)}\n${String(err.stack || '')}\n\nThe server is restarting. Review at ${OWNER_URL}`);
   store.persistNow();
   process.exit(1);
 });
@@ -7374,7 +7407,7 @@ function warnIfStorageIsEphemeral() {
         + `and saves every change there. It retries the database every minute and copies `
         + `everything up as soon as it answers.\n\n`
         + `Worth checking: the Supabase project status and dashboard.\n\n`
-        + `Dashboard: https://${CANONICAL_HOST}/owner`
+        + `Dashboard: ${OWNER_URL}`
       );
     }, 10 * 60 * 1000).unref();
     return;
@@ -7420,7 +7453,7 @@ function warnIfStorageIsEphemeral() {
       + `so it is not saving anything until the database answers. It retries every minute and `
       + `loads the data as soon as it does.\n\n`
       + `Worth checking: the Supabase project status, and the DATABASE_URL secret.\n\n`
-      + `Dashboard: https://${CANONICAL_HOST}/owner`
+      + `Dashboard: ${OWNER_URL}`
     );
     return;
   }
@@ -7435,7 +7468,7 @@ function warnIfStorageIsEphemeral() {
     + `${store.activeBans().length} active ban(s).\n\n`
     + `Fix: set DATABASE_URL to the Supabase connection string (see CODEX-HANDOFF.md, `
     + `task 2) so the data lives in Postgres instead.\n\n`
-    + `Dashboard: https://${CANONICAL_HOST}/owner`
+    + `Dashboard: ${OWNER_URL}`
   );
 }
 

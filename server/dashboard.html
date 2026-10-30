@@ -3629,7 +3629,7 @@ function spWire(conv){
 }
 function spUrlB64(b64){const p='='.repeat((4-b64.length%4)%4);const raw=atob((b64+p).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from(raw,c=>c.charCodeAt(0));}
 async function spEnablePush(key){
-  if(!('serviceWorker' in navigator)||!('PushManager' in window))throw new Error('This browser cannot receive push alerts. On iPhone, add talklive.app/owner to your Home Screen and open it from there.');
+  if(!('serviceWorker' in navigator)||!('PushManager' in window))throw new Error('This browser cannot receive push alerts. On iPhone, add this dashboard to your Home Screen and open it from there.');
   if(!key)throw new Error('Push is not set up on the server (VAPID keys missing).');
   const perm=await Notification.requestPermission();
   if(perm==='denied')throw new Error('Notifications are blocked for talklive.app. Chrome: ⋮ → Settings → Site settings → Notifications → talklive.app → Allow, then reload this page.');

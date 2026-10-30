@@ -1,0 +1,32 @@
+# Adds (if missing) and shows the TLS certificate for a hostname on the Fly
+# app, including the DNS records it needs. Safe to re-run: adding a hostname
+# that already has a certificate just reports it.
+name: Fly certificate
+
+on:
+  workflow_dispatch:
+    inputs:
+      hostname:
+        description: Hostname to serve from the app
+        required: true
+        default: admin.talklive.app
+
+jobs:
+  cert:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Add certificate
+        continue-on-error: true
+        run: flyctl certs add "$HOSTNAME" -a talklive-ai
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          HOSTNAME: ${{ inputs.hostname }}
+      - name: Show certificate and required DNS records
+        run: |
+          flyctl certs show "$HOSTNAME" -a talklive-ai
+          flyctl ips list -a talklive-ai
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          HOSTNAME: ${{ inputs.hostname }}
