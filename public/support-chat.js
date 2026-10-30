@@ -244,6 +244,7 @@
     var unread = !state.open && lastOwnerTs() > Number(ls(READ_KEY) || 0);
     fab.classList.toggle('unread', unread);
     fab.setAttribute('aria-label', unread ? 'Chat with support - new reply' : 'Chat with support');
+    layout();
   }
   function forget() { ls(STORE_KEY, null); state.conv = null; render(); }
 
@@ -331,11 +332,14 @@
   // Sit above a bottom tab bar (the app's .tl-nav on phones), and follow the
   // site's light/dark theme.
   var w = $('.w');
+  var phone = matchMedia('(max-width: 760px)');
   function layout() {
-    var b = !state.open && busy();
+    // Phones reach the chat from Help (data-support-open); the bubble only
+    // appears there to point at an unread reply.
+    var b = !state.open && (busy() || (phone.matches && !fab.classList.contains('unread')));
     fab.classList.toggle('hide', b);
     // The callout waits while one of the site's own popups is open.
-    var promoOn = promoShown && !b && !state.open && !popupOpen();
+    var promoOn = !!promoShown && !b && !state.open && !popupOpen();
     if (promoOn && !promoTracked) { promoTracked = true; track('support_promo_view'); }
     promo.classList.toggle('on', promoOn);
     w.classList.toggle('light', document.documentElement.getAttribute('data-theme') === 'light');

@@ -97,7 +97,7 @@
 <link rel="manifest" href="/site.webmanifest" />
 <!-- Mobile app only (mobile/): load the native bridge. A no-op in browsers, which never download it. -->
 <script>if(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform()){var s=document.createElement('script');s.src='/native.js?v=20261008app';s.async=false;document.head.appendChild(s);}</script>
-<script defer src="/pwa.js?v=20261030promo"></script>
+<script defer src="/pwa.js?v=20261030help"></script>
 <script type="application/ld+json">[{"@type":"Service","@context":"https://schema.org","name":"TalkLive Chat","url":"https://talklive.app/chat","description":"TalkLive text chat - one-to-one conversations with people around the world.","brand":{"@type":"Brand","name":"TalkLive"},"offers":{"@type":"Offer","price":"0","priceCurrency":"USD","availability":"https://schema.org/InStock","url":"https://talklive.app/"},"additionalType":"https://schema.org/WebApplication","serviceType":"Random voice and text chat","category":"CommunicationApplication","provider":{"@type":"Organization","name":"TalkLive","url":"https://talklive.app","logo":"https://talklive.app/favicon.svg","sameAs":["https://www.instagram.com/talklive.app/","https://www.facebook.com/people/TalkLive/61591751700039/","https://x.com/talkliveapp","https://www.tiktok.com/@talkliveapp","https://www.youtube.com/@talkliveapp","https://www.pinterest.com/talklive.app/","https://www.crunchbase.com/organization/talklive"]},"areaServed":"Worldwide","availableChannel":{"@type":"ServiceChannel","serviceUrl":"https://talklive.app/chat"}}]</script>
 </head>
 <body>
@@ -228,6 +228,9 @@
             <button type="button" id="friendsBtn" class="nav-menu-item" role="menuitem" data-i18n-aria="friends" aria-label="Friends">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.1"/><path d="M3.6 19a5.4 5.4 0 0 1 10.8 0"/><circle cx="17.2" cy="9" r="2.5"/><path d="M15.7 13.7A4.8 4.8 0 0 1 21 18.4"/></svg><span data-i18n="friends">Friends</span>
               <span id="friendsBadge" class="notif-badge hidden" aria-hidden="true">0</span>
+            </button>
+            <button type="button" class="nav-menu-item" role="menuitem" data-support-open aria-label="Help &amp; Support">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.8 9.4a2.3 2.3 0 1 1 3 2.2v1.2"/><path d="M12 16.6h.01"/></svg><span data-i18n="helpSupport">Help &amp; Support</span>
             </button>
             <button type="button" id="reportBtn" class="nav-menu-item nav-menu-item-danger hidden" role="menuitem" data-i18n-aria="report" aria-label="Report">
               <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="5" y1="3" x2="5" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M6 4h13l-3.5 4L19 12H6V4z" fill="currentColor"/></svg><span data-i18n="report">Report</span>
