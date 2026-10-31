@@ -1894,6 +1894,18 @@ function clearWaitFallbackTimer(socketId) {
 // across restarts and deploys. socketAuth stays in-memory (per-connection).
 const accounts = new Map(); // username (lowercase) -> { passwordHash, salt, nickname, googleId, email, google }
 const socketAuth = new Map(); // socketId -> logged-in username (lowercase)
+// A password change or reset ends every other session of the account,
+// including sockets that are connected right now - deleting the stored tokens
+// alone left an already-connected session signed in until it disconnected.
+// Both clients treat a refused resume as "signed out".
+function signOutOtherSockets(usernameLower, keepSocketId) {
+  for (const [sid, user] of socketAuth) {
+    if (user !== usernameLower || sid === keepSocketId) continue;
+    socketAuth.delete(sid);
+    const other = io.sockets.sockets.get(sid);
+    if (other) other.emit('resume-session-result', { ok: false, reason: 'signed-out' });
+  }
+}
 // Every sign-in path (password, Google, signup, resume, reset) goes through
 // set(), so the day's signed-in user count is recorded here once.
 socketAuth.set = function set(socketId, usernameLower) {
@@ -4955,6 +4967,7 @@ io.on('connection', (socket) => {
     // A password change signs out every other device; this one gets a fresh
     // durable token so it stays logged in.
     store.deleteAuthSessionsForUser(authedUsername, null);
+    signOutOtherSockets(authedUsername, socket.id);
     socket.emit('change-password-result', { ok: true, sessionToken: store.createAuthSession(authedUsername) });
   });
 
@@ -5140,6 +5153,7 @@ io.on('connection', (socket) => {
       // Whoever knew the old password (and any stale session anywhere) loses
       // access: a reset only means anything if it ends every other session.
       store.deleteAuthSessionsForUser(usernameLower, null);
+      signOutOtherSockets(usernameLower, socket.id);
       // The failed-login lockout would otherwise keep the real owner out with
       // the password they just chose, on this device and every other one.
       clearLoginLocks(ip, usernameLower);
