@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-11-01 — Help & Support
+
+- **No floating chat bubble** on any page or screen size.
+- **Help & Support** (menu, Settings, drawer) now opens a help centre:
+  29 answers in 7 topics (getting started, calls and sound, account,
+  friends and messages, safety, Plus and billing, notifications), with
+  search. **Chat with Support** comes last, under "Still need help?".
+  The Contact page's "Chat with us now" still goes straight to chat.
+- An unread reply from Support shows as a red dot on Help & Support, and a
+  banner at the top of the help centre.
+
 ## 2026-10-31 — follow-up
 
 ### Done

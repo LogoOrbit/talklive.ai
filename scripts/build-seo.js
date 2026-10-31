@@ -204,7 +204,7 @@ ${alternates}
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="/favicon-192.png" />
 <link rel="manifest" href="/site.webmanifest" />
-<script defer src="/pwa.js?v=20261031audit"></script>
+<script defer src="/pwa.js?v=20261101help"></script>
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
 </head>
 <body>

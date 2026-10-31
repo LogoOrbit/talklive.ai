@@ -723,7 +723,7 @@ const GROWTH_EVENTS = new Set([
   // The Premium card was shown, and the engagement features (engage.js).
   'premium_upsell_view', 'likes_locked_tap', 'passport_share', 'whats_new_open',
   // Chat Support launch announcement (support-chat.js, engage.js).
-  'support_promo_view', 'support_promo_click', 'support_promo_chip',
+  'support_promo_view', 'support_promo_click', 'support_promo_chip', 'support_chat_from_help',
   // Progressive disclosure (fix list 2.3). One exposure event per first-time
   // session, per arm, and one event per surface opened within the first two
   // minutes of it. "on" is the flag's arm, "off" is everyone else's first

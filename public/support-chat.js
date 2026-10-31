@@ -1,13 +1,18 @@
 /*
- * Chat Support bubble, loaded on every page by pwa.js.
+ * Help & Support panel, loaded on every page by pwa.js.
  *
- * Signed-in users chat straight away (their account email is verified);
+ * There is no floating bubble. Any element carrying data-support-open (the
+ * "Help & Support" menu items) opens the panel on the help centre: searchable
+ * answers to the common questions, and only after them a "Chat with Support"
+ * button. data-support-open="chat" (the Contact page) goes straight to chat.
+ *
+ * Chat: signed-in users chat straight away (their account email is verified);
  * guests give an email first. Replies come from the owner's dashboard and are
- * shown here, and emailed to the user if they have left the site.
+ * shown here, and emailed to the user if they have left the site. An unread
+ * reply puts a dot on every Help & Support entry point.
  *
  * Everything renders inside a shadow root so the site's CSS cannot reach it.
- * Open it from anywhere with window.TLSupport.open() or any element carrying
- * data-support-open.
+ * Open it with window.TLSupport.open() / open('chat').
  */
 (function () {
   'use strict';
@@ -41,7 +46,7 @@
     });
   }
 
-  var state = { open: false, conv: null, config: null, sending: false, pollT: null, online: false };
+  var state = { open: false, mode: 'help', conv: null, config: null, sending: false, pollT: null, online: false };
 
   // --- DOM ------------------------------------------------------------------
   var host = document.createElement('div');
@@ -53,15 +58,10 @@
     '*{box-sizing:border-box;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}' +
     '.w{--bg:#11162a;--bg2:#1a2140;--fg:#eef1f9;--mut:#9aa3b8;--line:rgba(255,255,255,.1);--acc:#4f7cff;--acc2:#7c5cff;--me:#4f7cff;--them:#232b4d;color:var(--fg)}' +
     '.w.light{--bg:#fff;--bg2:#f4f6fb;--fg:#141a2e;--mut:#5d667c;--line:rgba(0,0,0,.1);--them:#eef1f8}' +
-    '.fab{position:fixed;right:calc(18px + env(safe-area-inset-right));bottom:calc(var(--lift,0px) + 18px + env(safe-area-inset-bottom));width:56px;height:56px;border-radius:50%;border:0;cursor:pointer;color:#fff;' +
-      'background:linear-gradient(135deg,var(--acc),var(--acc2));box-shadow:0 8px 24px rgba(40,60,160,.45);display:flex;align-items:center;justify-content:center;transition:transform .15s}' +
-    '.fab:hover{transform:scale(1.06)}.fab:focus-visible{outline:3px solid #fff;outline-offset:2px}' +
-    '.fab svg{width:26px;height:26px}.fab .dot{position:absolute;top:4px;right:4px;width:14px;height:14px;border-radius:50%;background:#ff4d6d;border:2px solid #fff;display:none}' +
-    '.fab.unread .dot{display:block}.fab.hide{display:none}' +
-    '.panel{position:fixed;right:calc(18px + env(safe-area-inset-right));bottom:calc(var(--lift,0px) + 86px + env(safe-area-inset-bottom));width:360px;max-width:calc(100vw - 24px);height:min(560px,calc(100vh - 120px));' +
+    '.panel{position:fixed;right:calc(18px + env(safe-area-inset-right));bottom:calc(var(--lift,0px) + 18px + env(safe-area-inset-bottom));width:380px;max-width:calc(100vw - 24px);height:min(620px,calc(100vh - 40px));' +
       'background:var(--bg);border:1px solid var(--line);border-radius:18px;box-shadow:0 18px 50px rgba(0,0,0,.35);display:none;flex-direction:column;overflow:hidden}' +
     '.panel.on{display:flex;animation:pop .16s ease-out}@keyframes pop{from{opacity:0;transform:translateY(8px)}}' +
-    '@media (max-width:520px){.panel{inset:0;width:auto;max-width:none;height:auto;border-radius:0;border:0;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}.panel.on~.fab{display:none}}' +
+    '@media (max-width:520px){.panel{inset:0;width:auto;max-width:none;height:auto;border-radius:0;border:0;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}}' +
     '.hd{display:flex;align-items:center;gap:10px;padding:14px 14px 12px;background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff}' +
     '.hd .av{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:18px;flex:none}' +
     '.hd b{display:block;font-size:15px}.hd small{display:flex;align-items:center;gap:6px;font-size:12px;opacity:.9}' +
@@ -87,34 +87,37 @@
     '.cmp textarea{flex:1;max-height:110px;min-height:42px}' +
     '.cmp .btn{padding:0 16px;flex:none}' +
     '.hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}' +
-    '.promo{position:fixed;right:calc(18px + env(safe-area-inset-right));bottom:calc(var(--lift,0px) + 86px + env(safe-area-inset-bottom));width:270px;max-width:calc(100vw - 36px);' +
-      'background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:16px;padding:14px 14px 12px;box-shadow:0 14px 40px rgba(0,0,0,.35);display:none;animation:pop .25s ease-out}' +
-    '.promo.on{display:block}.promo:after{content:"";position:absolute;right:22px;bottom:-7px;width:12px;height:12px;background:var(--bg);border-right:1px solid var(--line);border-bottom:1px solid var(--line);transform:rotate(45deg)}' +
-    '.promo b{display:block;font-size:15px;margin:0 22px 4px 0}.promo p{margin:0 0 10px;font-size:13.5px;line-height:1.45;color:var(--mut)}' +
-    '.promo .tag{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.06em;color:#fff;background:#ff4d6d;border-radius:99px;padding:2px 7px;margin-bottom:6px}' +
-    '.promo .x{position:absolute;top:8px;right:8px;width:28px;height:28px;border:0;border-radius:50%;background:transparent;color:var(--mut);font-size:15px;cursor:pointer}' +
-    '.promo .btn{width:100%;padding:9px 14px}' +
-    '.fab.pulse:before{content:"";position:absolute;inset:0;border-radius:50%;background:var(--acc);animation:ring 1.8s ease-out infinite;z-index:-1}' +
-    '@keyframes ring{from{transform:scale(1);opacity:.6}to{transform:scale(1.7);opacity:0}}' +
-    '@media (prefers-reduced-motion:reduce){.fab.pulse:before,.promo{animation:none}}' +
     '.closed{font-size:12.5px;color:var(--mut);text-align:center;padding:6px 10px 0}' +
+    '.hd .bk{background:rgba(255,255,255,.15);border:0;color:#fff;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;line-height:1;flex:none}.hd .bk[hidden]{display:none}' +
+    '.help{flex:1;overflow-y:auto;padding:12px 14px 16px;display:flex;flex-direction:column;gap:12px;background:var(--bg)}' +
+    '.help .q{width:100%;font-size:15px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg2);color:var(--fg)}' +
+    '.help h3{margin:6px 0 2px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut)}' +
+    '.help details{border:1px solid var(--line);border-radius:12px;background:var(--bg2)}' +
+    '.help summary{cursor:pointer;list-style:none;padding:12px 36px 12px 12px;font-size:14.5px;font-weight:600;position:relative;min-height:44px;display:flex;align-items:center}' +
+    '.help summary::-webkit-details-marker{display:none}' +
+    '.help summary:after{content:"+";position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:18px;color:var(--mut)}' +
+    '.help details[open] summary:after{content:"\\2212"}' +
+    '.help .a{padding:0 12px 12px;font-size:14px;line-height:1.5;color:var(--fg)}.help .a p{margin:0 0 8px}.help .a p:last-child{margin:0}' +
+    '.help .a a{color:var(--acc)}.help .a b{font-weight:600}' +
+    '.help .none{color:var(--mut);font-size:14px;text-align:center;padding:8px 0}' +
+    '.help .more{margin-top:6px;padding:14px;border-radius:14px;background:var(--bg2);border:1px solid var(--line);text-align:center}' +
+    '.help .more b{display:block;font-size:15px;margin-bottom:4px}.help .more p{margin:0 0 10px;font-size:13.5px;color:var(--mut)}' +
+    '.help .more .btn{width:100%}' +
+    '.help .reply{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--acc);color:#fff;font-size:14px;border:0;cursor:pointer;text-align:left;width:100%}' +
+    '.help .reply span{flex:1}' +
+    '.w.light .hd .bk{background:rgba(255,255,255,.25)}' +
     '</style>' +
     '<div class="w">' +
       '<div class="panel" role="dialog" aria-modal="false" aria-label="Chat Support">' +
-        '<div class="hd"><div class="av" aria-hidden="true">🎧</div><div><b>TalkLive Support</b><small><i></i><span class="st">We reply as soon as we can</span></small></div>' +
+        '<div class="hd"><button class="bk" type="button" aria-label="Back to help" hidden>‹</button><div class="av" aria-hidden="true">🎧</div><div><b class="ttl">Help &amp; Support</b><small><i></i><span class="st">Answers to common questions</span></small></div>' +
         '<button class="x" type="button" aria-label="Close chat">✕</button></div>' +
         '<div class="view"></div>' +
       '</div>' +
-      '<div class="promo" role="status"><button class="x" type="button" aria-label="Dismiss">✕</button><span class="tag">NEW</span>' +
-        '<b>💬 Chat Support is here</b><p>Questions or problems? Chat with a real person from the TalkLive team. We reply fast.</p>' +
-        '<button class="btn" type="button">Chat with us</button></div>' +
-      '<button class="fab" type="button" aria-label="Chat with support" title="Chat Support">' +
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 21 12z"/><path d="M8.5 10.5h7M8.5 13.5h4.5"/></svg>' +
-        '<span class="dot"></span></button>' +
     '</div>';
 
   var $ = function (s) { return root.querySelector(s); };
-  var fab = $('.fab'), panel = $('.panel'), view = $('.view'), promo = $('.promo');
+  var panel = $('.panel'), view = $('.view'), backBtn = $('.hd .bk');
+  var lastOpener = null;
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function time(ts) {
@@ -226,8 +229,127 @@
     }).then(function () { state.sending = false; });
   }
 
+  // --- Help centre --------------------------------------------------------------
+  // Answers are written here, not fetched, so they show instantly and offline.
+  // HTML in answers is trusted (this file); keep them short and true to the app.
+  var FAQ = [
+    { t: 'Getting started', q: [
+      ['What is TalkLive?', '<p>Free voice and text chat with people around the world. Tap <b>Tap to Talk</b> for a voice call or <b>Tap to Chat</b> for text. You can start without an account. TalkLive is for adults 18+ only.</p>'],
+      ['Is TalkLive free?', '<p>Yes. Calls and messages are free. Your mobile plan still counts the data: a voice call uses roughly tens of megabytes an hour, text almost nothing.</p><p>TalkLive Plus adds extras. See <a href="/pricing">Pricing</a> for what is on offer right now.</p>'],
+      ['Do I need an account?', '<p>No. Without one, your friends and chats live in this browser only. Clearing it, or switching phones, loses them.</p><p>An account keeps your friends, chats and ID on every device and lets you recover them. Sign up with your email (we send a 6-digit code) or with Google.</p>'],
+      ['How do I start a call or skip someone?', '<p>Tap <b>Tap to Talk</b> and allow the microphone. To move on, tap <b>Next</b>. Turn on <b>Auto-connect</b> to be matched with someone new each time a call ends.</p>'],
+      ['How do filters work?', '<p>Open <b>Filters</b> to choose countries you prefer or want to avoid (2 of each on the free plan) and a language. The gender filter and more countries come with Plus. Strict filters can mean a longer wait.</p>'],
+    ] },
+    { t: 'Calls and sound', q: [
+      ['My microphone is not working', '<p><b>On a computer:</b> click the lock icon next to the address, set <b>Microphone</b> to <b>Allow</b>, then reload the page.</p><p><b>On a phone:</b> open your browser settings, then Site settings, Microphone, and allow talklive.app. Also allow the microphone for the browser itself in your phone settings.</p><p>Close other apps that may be using the mic (calls, recorders, video apps).</p>'],
+      ['I cannot hear the other person (or they cannot hear me)', '<p>Check your volume, that you have not tapped mute, and that headphones or Bluetooth are connected to the right device.</p><p>Some office, school and public Wi-Fi networks block calls. Try mobile data or another network.</p><p>If a call stays silent, TalkLive moves you to someone new automatically after about 20 seconds.</p>'],
+      ['It keeps saying "Searching"', '<p>Usually your filters are narrow or few people are online right now. Loosen or turn off filters, or keep the page open: you are matched the moment someone arrives. If nothing changes for a few minutes, reload the page.</p>'],
+      ['The call keeps dropping', '<p>That is almost always the network. TalkLive tries to reconnect for 30 seconds, and switching between Wi-Fi and mobile data is handled automatically. Move closer to your Wi-Fi or switch networks.</p>'],
+    ] },
+    { t: 'Account and sign-in', q: [
+      ['I did not get my verification code', '<p>Check your spam and promotions folders, and that the email address is spelled right. A code works for 10 minutes. You can ask for a new one, a few times an hour.</p><p>Or sign up with Google instead.</p>'],
+      ['I forgot my password', '<p>On the Log in screen tap <b>Forgot password?</b>, enter your account email, type the 6-digit code we send, and choose a new password. It signs you out everywhere else.</p>'],
+      ['How do I change my name, password or email?', '<p>Open <b>Settings</b>, then <b>Profile</b>. You need your current password to change the password or recovery email.</p>'],
+      ['My friends and chats are gone', '<p>If you were not signed in, they were stored in that browser, so clearing it or using another device does not show them. If you had an account, log in again with it and everything comes back.</p>'],
+      ['How do I delete my account or data?', '<p>Email <a href="mailto:info@talklive.app">info@talklive.app</a> from your account email, or chat with us below, and we will delete it.</p>'],
+    ] },
+    { t: 'Friends and messages', q: [
+      ['How do I add a friend?', '<p>After a call or chat, tap <b>Add friend</b>. You can also share <b>Your ID</b> (in Friends): the other person types it into <b>Add by ID</b> to find you. Once they accept, you can message and call each other any time.</p>'],
+      ['My message will not send', '<p>A few reasons:</p><p>• Links cannot be sent, to keep people safe from scams.<br>• If you are not friends yet, you can send one message until they accept your request.<br>• One of you may have blocked the other.</p><p>Messages written while you are offline are sent when you reconnect.</p>'],
+      ['How do voice messages work?', '<p>Voice messages are for friends only, and both of you agree first. Tap the mic button in a friend chat to ask.</p>'],
+      ['Can I hide that I am online or that I read a message?', '<p>Yes. Online status: <b>Settings</b>, <b>Privacy &amp; Safety</b>, <b>Show my online status to friends</b>. Read receipts: the switch at the top of a friend chat.</p>'],
+      ['What is the difference between unfriend and block?', '<p><b>Unfriend</b> removes them from your friends but keeps the conversation. <b>Block</b> stops them messaging, calling or being matched with you. Unblock any time in <b>Settings</b>, <b>Privacy &amp; Safety</b>, <b>Blocked people</b>.</p>'],
+    ] },
+    { t: 'Safety', q: [
+      ['How do I report someone?', '<p>Tap <b>Report</b> on the call or chat screen. The conversation ends at once, and they are not told who reported them. Our team reviews every report.</p>'],
+      ['Does TalkLive record calls?', '<p>No. Call audio is never recorded or stored. See the <a href="/safety">Safety Center</a> for what is kept and why.</p>'],
+      ['Someone asked for money, photos or my number', '<p>That is a scam or worse. Do not send anything, block them, and report them. TalkLive staff will never ask for your password or payment details in a chat.</p>'],
+      ['I was banned. Can I appeal?', '<p>Bans follow reports and break the <a href="/community-guidelines">Community Guidelines</a>. If you think it was a mistake, email <a href="mailto:info@talklive.app">info@talklive.app</a> with your username and what happened.</p>'],
+    ] },
+    { t: 'Plus and billing', q: [
+      ['What does TalkLive Plus include?', '<p>More filters (gender, more countries), no ads, seeing who liked you, undo skip and faster matching. <a href="/pricing">Pricing</a> shows whether it is on sale and the current price.</p>'],
+      ['Can I get Plus for free?', '<p>Yes. Share your invite link: every 3 friends who make a verified account with it and have a real conversation earn you 1 hour of Plus.</p>'],
+      ['I paid but Plus is not active', '<p>Wait a minute and reload. Plus belongs to the browser you paid on, so open TalkLive there. Still not active? Chat with us below and include your receipt.</p>'],
+      ['How do I cancel or get a refund?', '<p>You can cancel any time; Plus stays on until the end of the period you paid for. Your first payment has a 14-day money-back guarantee. Email <a href="mailto:info@talklive.app">info@talklive.app</a> from the address you paid with. Details: <a href="/refund">Refund Policy</a>.</p>'],
+    ] },
+    { t: 'Notifications and the app', q: [
+      ['I do not get notifications', '<p>Allow notifications for talklive.app in your browser settings (the lock icon next to the address, or Site settings on a phone).</p><p><b>iPhone:</b> add TalkLive to your Home Screen (Share button, then Add to Home Screen) and open it from there. iPhones only send web notifications to apps on the Home Screen.</p><p>Muted chats do not notify.</p>'],
+      ['Is there an app?', '<p>You can install TalkLive from your browser: use <b>Install</b> or <b>Add to Home Screen</b> in the browser menu. It opens like an app and gets notifications.</p>'],
+    ] },
+  ];
+
+  function hasUnread() { return lastOwnerTs() > Number(ls(READ_KEY) || 0); }
+
+  function renderHelp() {
+    var html = '<div class="help">';
+    if (state.conv && hasUnread()) {
+      html += '<button type="button" class="reply" data-go="chat"><span>💬 You have a new reply from Support</span><b>Open</b></button>';
+    }
+    html += '<input class="q" type="search" placeholder="Search help (e.g. microphone, password)" aria-label="Search help" autocomplete="off">';
+    FAQ.forEach(function (sec, si) {
+      html += '<section data-sec="' + si + '"><h3>' + esc(sec.t) + '</h3>';
+      sec.q.forEach(function (qa) {
+        html += '<details><summary>' + esc(qa[0]) + '</summary><div class="a">' + qa[1] + '</div></details>';
+      });
+      html += '</section>';
+    });
+    html += '<p class="none" hidden>No answers match that. Our team can help.</p>' +
+      '<div class="more"><b>Still need help?</b><p>' +
+      (state.conv ? 'Your conversation with our team is saved.' : 'Chat with a real person from the TalkLive team.') +
+      '</p><button class="btn" type="button" data-go="chat">' + (state.conv ? 'Open my support chat' : 'Chat with Support') + '</button></div></div>';
+    view.innerHTML = html;
+    var box = view.querySelector('.q');
+    box.addEventListener('input', function () {
+      var term = box.value.trim().toLowerCase();
+      var any = false;
+      view.querySelectorAll('section[data-sec]').forEach(function (sec) {
+        var shown = 0;
+        sec.querySelectorAll('details').forEach(function (d) {
+          var hit = !term || d.textContent.toLowerCase().indexOf(term) !== -1;
+          d.hidden = !hit;
+          if (hit) { shown++; if (term) d.open = true; }
+        });
+        sec.hidden = !shown;
+        if (shown) any = true;
+      });
+      view.querySelector('.none').hidden = any;
+    });
+    view.querySelectorAll('[data-go="chat"]').forEach(function (b) {
+      b.addEventListener('click', function () { track('support_chat_from_help'); showChat(); });
+    });
+  }
+
+  // Help is never redrawn while open (it would drop a search in progress);
+  // a reply that arrives meanwhile just adds the banner on top.
+  function showReplyBanner() {
+    if (state.mode !== 'help' || !state.conv || !hasUnread()) return;
+    var help = view.querySelector('.help');
+    if (!help || help.querySelector('.reply')) return;
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'reply';
+    b.innerHTML = '<span>💬 You have a new reply from Support</span><b>Open</b>';
+    b.addEventListener('click', function () { track('support_chat_from_help'); showChat(); });
+    help.insertBefore(b, help.firstChild);
+  }
+
+  function showChat() {
+    state.mode = 'chat';
+    render();
+    if (state.conv) markRead();
+  }
+  function showHelp() {
+    state.mode = 'help';
+    render();
+  }
+
   function render() {
-    setStatus();
+    var chat = state.mode === 'chat';
+    backBtn.hidden = !chat;
+    $('.ttl').textContent = chat ? 'TalkLive Support' : 'Help & Support';
+    $('.hd small i').style.display = chat ? '' : 'none';
+    if (chat) setStatus();
+    else $('.hd .st').textContent = 'Answers to common questions';
+    if (!chat) return renderHelp();
     if (state.conv) renderThread(false);
     else if (state.config) renderStart();
     else view.innerHTML = '<div class="form"><p>Loading…</p></div>';
@@ -240,11 +362,11 @@
     return t;
   }
   function markRead() { ls(READ_KEY, String(lastOwnerTs())); updateBadge(); }
+  // No bubble: an unread reply marks every Help & Support entry point instead.
   function updateBadge() {
-    var unread = !state.open && lastOwnerTs() > Number(ls(READ_KEY) || 0);
-    fab.classList.toggle('unread', unread);
-    fab.setAttribute('aria-label', unread ? 'Chat with support - new reply' : 'Chat with support');
-    layout();
+    var unread = !(state.open && state.mode === 'chat') && hasUnread();
+    var els = document.querySelectorAll('[data-support-open]');
+    for (var i = 0; i < els.length; i++) els[i].classList.toggle('tl-support-unread', unread);
   }
   function forget() { ls(STORE_KEY, null); state.conv = null; render(); }
 
@@ -262,7 +384,7 @@
         state.conv = r.conversation;
       }
       if (typeof r.online === 'boolean') state.online = r.online;
-      if (state.open) { markRead(); render(); } else updateBadge();
+      if (state.open && state.mode === 'chat') { markRead(); render(); } else { if (state.open) showReplyBanner(); updateBadge(); }
     }).catch(function (e) { if (e.status === 404 && c) forget(); });
   }
 
@@ -280,78 +402,52 @@
     }).catch(function () { state.config = state.config || { greeting: 'Send us a message and we\'ll reply here.' }; });
   }
 
-  function open() {
+  // mode: 'help' (default) or 'chat'.
+  function open(mode) {
     endPromo();
+    lastOpener = document.activeElement;
     state.open = true;
+    state.mode = mode === 'chat' ? 'chat' : 'help';
     panel.classList.add('on');
-    fab.setAttribute('aria-expanded', 'true');
     render();
-    Promise.all([loadConfig(), refresh()]).then(function () { render(); if (state.conv) markRead(); schedule(); });
+    Promise.all([loadConfig(), refresh()]).then(function () {
+      if (!state.open) return;
+      if (state.mode === 'chat') render(); else showReplyBanner();
+      if (state.mode === 'chat' && state.conv) markRead();
+      updateBadge();
+      schedule();
+    });
+    setTimeout(function () { var f = view.querySelector('.q'); if (f && state.open && state.mode === 'help' && !matchMedia('(max-width: 760px)').matches) f.focus(); }, 60);
   }
   function close() {
     state.open = false;
     panel.classList.remove('on');
-    fab.setAttribute('aria-expanded', 'false');
     updateBadge();
     schedule();
-    fab.focus();
+    if (lastOpener && lastOpener.focus) { try { lastOpener.focus(); } catch (_) { /* gone */ } }
   }
 
-  fab.addEventListener('click', function () { state.open ? close() : open(); });
+  backBtn.addEventListener('click', showHelp);
   $('.hd .x').addEventListener('click', close);
-  root.addEventListener('keydown', function (e) { if (e.key === 'Escape' && state.open) close(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && state.open) close(); });
   document.addEventListener('visibilitychange', function () { if (!document.hidden && state.open) refresh(); schedule(); });
   document.addEventListener('click', function (e) {
     var t = e.target && e.target.closest && e.target.closest('[data-support-open]');
     if (!t) return;
     e.preventDefault();
-    open();
+    open(t.getAttribute('data-support-open') === 'chat' ? 'chat' : 'help');
   });
 
-  // Keep the bubble out of the way during a voice call or a text chat.
-  function busy() {
-    var call = document.getElementById('callPanel');
-    if (call && !call.classList.contains('hidden')) return true;
-    var cmp = document.getElementById('composer');
-    if (cmp && !cmp.classList.contains('hidden')) return true;
-    // A friend chat docks bottom-right too, so the bubble sat on its Send and
-    // voice-message buttons and swallowed the tap.
-    // Closed side panels slide off-screen rather than hide, so check the form
-    // is actually inside the viewport.
-    var dm = document.getElementById('friendChatForm');
-    if (dm) {
-      var r = dm.getBoundingClientRect();
-      if (r.width && r.height && r.left < innerWidth && r.right > 0 && r.top < innerHeight && r.bottom > 0
-        && getComputedStyle(dm).visibility !== 'hidden') return true;
-    }
-    return false;
-  }
-  function popupOpen() {
-    var els = document.querySelectorAll('.modal-overlay, [role="dialog"][aria-modal="true"]');
-    for (var i = 0; i < els.length; i++) {
-      var e = els[i];
-      if (!e.getClientRects().length) continue;
-      // Some popups stay laid out and hide with opacity/visibility instead.
-      if (e.checkVisibility && !e.checkVisibility({ opacityProperty: true, visibilityProperty: true })) continue;
-      var cs = getComputedStyle(e);
-      if (cs.visibility === 'hidden' || cs.opacity === '0') continue;
-      return true;
-    }
-    return false;
-  }
+  // The unread dot on Help & Support links (they live outside the shadow root).
+  var dotCss = document.createElement('style');
+  dotCss.textContent = '[data-support-open].tl-support-unread{position:relative}'
+    + '[data-support-open].tl-support-unread::after{content:"";position:absolute;top:6px;right:6px;width:9px;height:9px;border-radius:50%;background:#ff4d6d;box-shadow:0 0 0 2px var(--bg,#11162a)}';
+  document.head.appendChild(dotCss);
+
   // Sit above a bottom tab bar (the app's .tl-nav on phones), and follow the
   // site's light/dark theme.
   var w = $('.w');
-  var phone = matchMedia('(max-width: 760px)');
   function layout() {
-    // Phones reach the chat from Help (data-support-open); the bubble only
-    // appears there to point at an unread reply.
-    var b = !state.open && (busy() || (phone.matches && !fab.classList.contains('unread')));
-    fab.classList.toggle('hide', b);
-    // The callout waits while one of the site's own popups is open.
-    var promoOn = !!promoShown && !b && !state.open && !popupOpen();
-    if (promoOn && !promoTracked) { promoTracked = true; track('support_promo_view'); }
-    promo.classList.toggle('on', promoOn);
     w.classList.toggle('light', document.documentElement.getAttribute('data-theme') === 'light');
     var lift = 0;
     var bars = document.querySelectorAll('.tl-nav, [data-support-avoid]');
@@ -362,33 +458,25 @@
     w.style.setProperty('--lift', lift + 'px');
   }
   layout();
-  setInterval(layout, 1000);
+  setInterval(function () { if (state.open) layout(); }, 1000);
   addEventListener('resize', layout);
 
   // --- "New: Chat Support" announcement ---------------------------------------
-  // Runs for a window the server sets (2 days from launch). Each visitor sees
-  // the callout once; dismissing it or opening the chat ends it for them.
+  // The server sets a window (2 days from launch). Only the home-screen chip in
+  // engage.js shows it now; opening help ends it for this visitor.
   var PROMO_KEY = 'tl_support_promo';
-  var promoUntil = 0, promoShown = false, promoTracked = false;
+  var promoUntil = 0;
   function promoLive() { return promoUntil > Date.now() && ls(PROMO_KEY) !== String(promoUntil); }
   function endPromo() {
     if (promoUntil) ls(PROMO_KEY, String(promoUntil));
-    promoShown = false;
-    promo.classList.remove('on');
-    fab.classList.remove('pulse');
     try { window.dispatchEvent(new Event('tl-support-promo')); } catch (_) { /* old browser */ }
   }
-  promo.querySelector('.x').addEventListener('click', function () { endPromo(); fab.focus(); });
   function track(event) {
     try { fetch('/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: event }), keepalive: true }).catch(function () {}); } catch (_) { /* ignore */ }
   }
-  promo.querySelector('.btn').addEventListener('click', function () { track('support_promo_click'); open(); });
   fetch(API + 'promo', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (r) {
     promoUntil = Number(r.until) || 0;
     try { window.dispatchEvent(new Event('tl-support-promo')); } catch (_) { /* old browser */ }
-    if (!promoLive() || state.open) return;
-    fab.classList.add('pulse');
-    setTimeout(function () { if (promoLive() && !state.open) { promoShown = true; layout(); } }, 2500);
   }).catch(function () { /* no promo */ });
 
   window.TLSupport = { open: open, close: close, promoLive: promoLive, endPromo: endPromo };
@@ -401,11 +489,11 @@
     post('claim', { id: m[1], key: m[2] }).then(function (r) {
       ls(STORE_KEY, JSON.stringify({ id: r.id, key: r.key }));
       state.conv = r.conversation;
-      open();
-    }).catch(function () { open(); });
+      open('chat');
+    }).catch(function () { open('chat'); });
   } else if (/[?&]support=open\b/.test(location.search) || location.hash === '#support') {
     open();
   } else {
-    refresh().then(schedule, schedule);
+    refresh().then(function () { updateBadge(); schedule(); }, schedule);
   }
 })();
