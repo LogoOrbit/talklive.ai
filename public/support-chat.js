@@ -314,6 +314,16 @@
     if (call && !call.classList.contains('hidden')) return true;
     var cmp = document.getElementById('composer');
     if (cmp && !cmp.classList.contains('hidden')) return true;
+    // A friend chat docks bottom-right too, so the bubble sat on its Send and
+    // voice-message buttons and swallowed the tap.
+    // Closed side panels slide off-screen rather than hide, so check the form
+    // is actually inside the viewport.
+    var dm = document.getElementById('friendChatForm');
+    if (dm) {
+      var r = dm.getBoundingClientRect();
+      if (r.width && r.height && r.left < innerWidth && r.right > 0 && r.top < innerHeight && r.bottom > 0
+        && getComputedStyle(dm).visibility !== 'hidden') return true;
+    }
     return false;
   }
   function popupOpen() {

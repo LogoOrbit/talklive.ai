@@ -23,7 +23,7 @@ const fs = require('fs');
 const path = require('path');
 
 const publicDir = path.join(__dirname, '..', 'public');
-const pwaVersion = '20261030help';
+const pwaVersion = '20261031audit';
 const TAG = `<script defer src="/pwa.js?v=${pwaVersion}"></script>`;
 
 // The offline page is served by the service worker precisely when there is no
