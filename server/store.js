@@ -2472,18 +2472,38 @@ function createAuthSession(usernameLower) {
     delete data.authSessions[mine.shift()[0]];
   }
   const token = crypto.randomBytes(32).toString('hex');
-  data.authSessions[token] = { u: usernameLower, createdAt: Date.now(), lastSeen: Date.now() };
+  data.authSessions[sessionKey(token)] = { u: usernameLower, createdAt: Date.now(), lastSeen: Date.now() };
   save();
   return token;
 }
 
+// Session tokens are stored hashed, like reset codes: a leaked store document
+// or volume snapshot must not be a list of working sign-ins. Keys made before
+// this were the raw token; they are re-keyed the first time they are used, so
+// nobody is signed out by the change.
+function sessionKey(token) {
+  return 'h:' + crypto.createHash('sha256').update(token).digest('hex');
+}
+function findSessionKey(token) {
+  if (typeof token !== 'string' || !/^[a-f0-9]{64}$/.test(token)) return null;
+  const key = sessionKey(token);
+  if (Object.prototype.hasOwnProperty.call(data.authSessions, key)) return key;
+  if (Object.prototype.hasOwnProperty.call(data.authSessions, token)) {
+    data.authSessions[key] = data.authSessions[token];
+    delete data.authSessions[token];
+    save();
+    return key;
+  }
+  return null;
+}
+
 // Returns the usernameLower for a valid token (refreshing its expiry), or null.
 function getAuthSessionUser(token) {
-  if (typeof token !== 'string' || !/^[a-f0-9]{64}$/.test(token)) return null;
-  const s = data.authSessions[token];
+  const key = findSessionKey(token);
+  const s = key && data.authSessions[key];
   if (!s) return null;
   if (Date.now() - (s.lastSeen || s.createdAt || 0) > SESSION_TTL_MS) {
-    delete data.authSessions[token];
+    delete data.authSessions[key];
     save();
     return null;
   }
@@ -2493,8 +2513,9 @@ function getAuthSessionUser(token) {
 }
 
 function deleteAuthSession(token) {
-  if (typeof token === 'string' && data.authSessions[token]) {
-    delete data.authSessions[token];
+  const key = findSessionKey(token);
+  if (key) {
+    delete data.authSessions[key];
     save();
   }
 }
@@ -2503,8 +2524,9 @@ function deleteAuthSession(token) {
 // keeping one token (the device that made the change) signed in.
 function deleteAuthSessionsForUser(usernameLower, exceptToken) {
   let changed = false;
+  const keep = exceptToken ? findSessionKey(exceptToken) : null;
   for (const [token, s] of Object.entries(data.authSessions)) {
-    if (s.u === usernameLower && token !== exceptToken) {
+    if (s && s.u === usernameLower && token !== keep) {
       delete data.authSessions[token];
       changed = true;
     }
