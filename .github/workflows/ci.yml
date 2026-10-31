@@ -20,7 +20,7 @@ jobs:
   check:
     name: Build, test and bundle budget
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -54,6 +54,11 @@ jobs:
 
       - name: Test store saves (durability and fast saves)
         run: npm run test:durability && npm run test:fast-save && npm run test:history
+
+      # Auth, payments, friends, messaging and signalling, end to end against
+      # a real server (scripts/run-tests.js). `npm test` runs every suite.
+      - name: Critical tests
+        run: npm run test:critical
 
       - name: Audit generated SEO
         run: npm run audit:seo

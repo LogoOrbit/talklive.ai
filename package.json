@@ -4,6 +4,9 @@
   "description": "TalkLive - free random voice chat to talk to strangers worldwide",
   "main": "server/index.js",
   "scripts": {
+    "test": "node scripts/run-tests.js",
+    "test:critical": "node scripts/run-tests.js --critical",
+    "test:auth": "node scripts/test-auth-sessions.js",
     "start": "node server/index.js",
     "dev": "node server/index.js",
     "build:usernames": "node scripts/build-username-words.js",
