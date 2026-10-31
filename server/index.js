@@ -7590,6 +7590,15 @@ function warnIfStorageIsEphemeral() {
 store.ready.then(() => {
   // Durable identity secret before anything can register.
   if (!process.env.IDENTITY_SECRET) IDENTITY_SECRET = store.getOrCreateSecret('identity');
+  else {
+    // A pinned secret that differs from the stored one invalidates every
+    // browser's identity token. Say so loudly rather than let users quietly
+    // lose their friends and chats.
+    const stored = store.data.secrets && store.data.secrets.identity;
+    if (stored && stored !== IDENTITY_SECRET) {
+      console.error('[identity] WARNING: IDENTITY_SECRET differs from the stored secret. Existing users will lose their identity. Unset it or set it to the stored value (see pin-identity-secret.yml).');
+    }
+  }
   // Restore durable accounts + social graph before accepting traffic so
   // returning users can log in and see their friends/chats immediately.
   applyOwnerReset();
