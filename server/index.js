@@ -61,8 +61,22 @@ const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 let IDENTITY_SECRET = process.env.IDENTITY_SECRET || crypto.randomBytes(32).toString('hex');
 const identityTokens = new Map(); // clientId -> signed token for this process
 const identityTokenSeen = new Map(); // clientId -> last registration, for the sweeper below
+// Version 0 is the original HMAC of the clientId, so every token issued
+// before versions existed stays valid. A password change/reset bumps the
+// version of the account's identity, which revokes every older token for it.
 function signIdentity(clientId) {
-  return crypto.createHmac('sha256', IDENTITY_SECRET).update(clientId).digest('hex');
+  const epoch = store.identityEpoch(clientId);
+  return crypto.createHmac('sha256', IDENTITY_SECRET).update(epoch ? `${clientId}:${epoch}` : clientId).digest('hex');
+}
+// Revoke the account's identity tokens and hand this socket the new one.
+function rotateAccountIdentity(usernameLower, socket) {
+  const clientId = store.getAccountClientId(usernameLower);
+  if (!clientId) return;
+  store.bumpIdentityEpoch(clientId);
+  const token = signIdentity(clientId);
+  identityTokens.set(clientId, token);
+  const p = profiles.get(socket.id);
+  if (p && p.clientId === clientId) socket.emit('identity-token', { clientId, token });
 }
 function validIdentityToken(clientId, token) {
   return typeof token === 'string' && /^[a-f0-9]{64}$/.test(token)
@@ -4974,6 +4988,7 @@ io.on('connection', (socket) => {
     // durable token so it stays logged in.
     store.deleteAuthSessionsForUser(authedUsername, null);
     signOutOtherSockets(authedUsername, socket.id);
+    rotateAccountIdentity(authedUsername, socket);
     socket.emit('change-password-result', { ok: true, sessionToken: store.createAuthSession(authedUsername) });
   });
 
@@ -5160,6 +5175,7 @@ io.on('connection', (socket) => {
       // access: a reset only means anything if it ends every other session.
       store.deleteAuthSessionsForUser(usernameLower, null);
       signOutOtherSockets(usernameLower, socket.id);
+      rotateAccountIdentity(usernameLower, socket);
       // The failed-login lockout would otherwise keep the real owner out with
       // the password they just chose, on this device and every other one.
       clearLoginLocks(ip, usernameLower);

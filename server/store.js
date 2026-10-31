@@ -159,6 +159,9 @@ function defaults() {
     // a rejected token makes the client rotate to a brand-new clientId - which
     // silently orphans that person's friends, friend chats and premium state.
     secrets: {},
+    // clientId -> version of its identity token (absent = 0, the original
+    // HMAC). Bumped after a password change/reset to revoke old tokens.
+    identityEpochs: {},
     // Durable login sessions: token -> { u: usernameLower, createdAt, lastSeen }.
     // Lets a signed-in user stay signed in across page reloads, server restarts
     // and deploys (sliding expiry, see SESSION_TTL_MS).
@@ -291,6 +294,7 @@ function applyParsed(parsed) {
   data.authSessions = parsed.authSessions || {};
   data.passwordResets = parsed.passwordResets || {};
   data.secrets = parsed.secrets || {};
+  data.identityEpochs = parsed.identityEpochs || {};
   // Contact capture is opt-in: drop anything not backed by an explicit "on"
   // (e.g. data captured while it briefly defaulted to on).
   data.contactConsent = parsed.contactConsent || {};
@@ -3481,6 +3485,18 @@ function getOrCreateSecret(name) {
   return data.secrets[name];
 }
 
+function identityEpoch(clientId) {
+  const e = data.identityEpochs || {};
+  return Object.prototype.hasOwnProperty.call(e, clientId) ? Number(e[clientId]) || 0 : 0;
+}
+function bumpIdentityEpoch(clientId) {
+  if (!data.identityEpochs) data.identityEpochs = {};
+  const next = identityEpoch(clientId) + 1;
+  data.identityEpochs[clientId] = next;
+  persistNow();
+  return next;
+}
+
 // The dashboard's site modes, with any key a saved copy predates filled in.
 function siteModes() {
   const saved = data.settings.modes || {};
@@ -3501,6 +3517,8 @@ module.exports = {
   // failed and been kept on disk). Shutdown uses the same chain.
   whenPersisted: () => pgChain,
   getOrCreateSecret,
+  identityEpoch,
+  bumpIdentityEpoch,
   addPendingSubscriber,
   confirmSubscriber,
   get data() { return data; },

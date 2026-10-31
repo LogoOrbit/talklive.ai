@@ -139,6 +139,23 @@ function storedSessions() {
     ok('the old token no longer resumes', (await ask(e, 'resume-session', { token }, 'resume-session-result')).ok === false);
     ok('the new token resumes', (await ask(e, 'resume-session', { token: changed.sessionToken }, 'resume-session-result')).ok === true);
 
+    // --- Password change revokes the account's identity token ----------------
+    const accountId = legacy.profileClientId;
+    const oldIdentity = legacy.identityToken;
+    ok('resume hands back the account profile and its identity token', !!accountId && /^[a-f0-9]{64}$/.test(oldIdentity || ''), legacy);
+    const thief = connect();
+    await once(thief, 'connect');
+    const stolen = await ask(thief, 'register', { clientId: accountId, identityToken: oldIdentity, nickname: 'x' }, 'register-result');
+    ok('the identity token from before the change is refused', stolen.ok === false && stolen.reason === 'unverified', stolen);
+    const h = await ready(connect());
+    const fresh = await ask(h, 'resume-session', { token: changed.sessionToken }, 'resume-session-result');
+    ok('signing in again hands out a different identity token', fresh.ok && fresh.identityToken && fresh.identityToken !== oldIdentity, fresh);
+    const owner = connect();
+    await once(owner, 'connect');
+    const back = await ask(owner, 'register', { clientId: accountId, identityToken: fresh.identityToken, nickname: 'x' }, 'register-result');
+    ok('and that new token proves the identity', back.ok === true, back);
+    owner.close();
+
     // --- Logout kills the stored token ----------------------------------------
     e.emit('logout', { token: changed.sessionToken });
     await wait(300);
