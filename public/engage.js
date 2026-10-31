@@ -155,9 +155,13 @@
   function buildStrip() {
     var anchor = document.querySelector('#setupPanel .animal-picker');
     if (!anchor || strip) return;
-    strip = el('section', 'tl-engage');
+    // index.html reserves the slot so filling it does not shift the page.
+    strip = document.getElementById('tlEngage');
+    if (!strip) {
+      strip = el('section', 'tl-engage');
+      anchor.parentNode.insertBefore(strip, anchor);
+    }
     strip.setAttribute('aria-label', t('engageAria'));
-    anchor.parentNode.insertBefore(strip, anchor);
     strip.addEventListener('click', onStripClick);
     render();
   }

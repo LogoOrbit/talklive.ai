@@ -3304,6 +3304,8 @@ summary.tl-filter-legend::-webkit-details-marker { display: none; }
  * ENGAGE (engage.js): streak, passport, likes, today's question
  * ======================================================================== */
 .tl-engage { margin: 18px 0 8px; display: grid; gap: 10px; }
+/* Space held for the strip until engage.js fills it (no layout shift). */
+.tl-engage:empty { min-height: 155px; }
 .tl-engage-banner {
   display: flex;
   align-items: center;

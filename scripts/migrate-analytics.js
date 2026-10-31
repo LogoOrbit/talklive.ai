@@ -68,13 +68,16 @@ const ADS_CONFIG = `gtag('config', '${ADS_ID}');`;
  * container. Loaded as a plain async tag it ran in the middle of page start-up
  * and was the largest blocker of the main thread on every page (Lighthouse
  * mobile: ~540ms of blocking time on /random-voice-chat, more on /). So it now
- * starts only after the page's own load event, when the browser is idle (or
- * 3s later at most). The gtag() stub below queues every command until then,
+ * starts only on the visitor's first interaction, or 3.5s after the page's own
+ * load event (then when idle). The gtag() stub below queues every command until then,
  * so nothing is lost; only a visitor who leaves before the page has finished
  * loading goes uncounted by GA (the first-party /events count still has them).
  */
 const ASYNC_TAG = `<script async src="https://www.googletagmanager.com/gtag/js?id=${MEASUREMENT_ID}"></script>`;
-const DEFERRED_TAG = `<script>(function(){function g(){var s=document.createElement('script');s.async=true;s.src='https://www.googletagmanager.com/gtag/js?id=${MEASUREMENT_ID}';document.head.appendChild(s);}function i(){(window.requestIdleCallback||function(f){setTimeout(f,200);})(g,{timeout:3000});}if(document.readyState==='complete')i();else addEventListener('load',i);})();</script>`;
+const IDLE_TAG = `<script>(function(){function g(){var s=document.createElement('script');s.async=true;s.src='https://www.googletagmanager.com/gtag/js?id=${MEASUREMENT_ID}';document.head.appendChild(s);}function i(){(window.requestIdleCallback||function(f){setTimeout(f,200);})(g,{timeout:3000});}if(document.readyState==='complete')i();else addEventListener('load',i);})();</script>`;
+// Waits for the visitor's first tap/key/scroll, or 3.5s after load (then idle),
+// whichever comes first, so the tag stays out of start-up entirely.
+const DEFERRED_TAG = `<script>(function(){var d=0;function g(){if(d)return;d=1;var s=document.createElement('script');s.async=true;s.src='https://www.googletagmanager.com/gtag/js?id=${MEASUREMENT_ID}';document.head.appendChild(s);}function i(){setTimeout(function(){(window.requestIdleCallback||function(f){setTimeout(f,200);})(g,{timeout:2000});},3500);}['pointerdown','keydown','scroll'].forEach(function(e){addEventListener(e,g,{once:true,passive:true});});if(document.readyState==='complete')i();else addEventListener('load',i);})();</script>`;
 
 const SNIPPET = `<!-- Google tag (gtag.js) - see scripts/migrate-analytics.js -->
 ${DEFERRED_TAG}
@@ -143,8 +146,8 @@ for (const file of htmlFiles(publicDir)) {
 
   // Older pages and the hand-maintained ones load the tag as a plain async
   // script; switch them to the deferred loader.
-  if (html.includes(ASYNC_TAG)) {
-    html = html.split(ASYNC_TAG).join(DEFERRED_TAG);
+  if (html.includes(ASYNC_TAG) || html.includes(IDLE_TAG)) {
+    html = html.split(ASYNC_TAG).join(DEFERRED_TAG).split(IDLE_TAG).join(DEFERRED_TAG);
     deferred += 1;
   }
 
