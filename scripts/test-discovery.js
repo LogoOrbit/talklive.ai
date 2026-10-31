@@ -33,7 +33,12 @@ const lastSync = new WeakMap();
 const lastOnline = new WeakMap();
 
 async function connect(clientId, extra = {}) {
-  const sock = io(BASE, { transports: ['websocket'], forceNew: true });
+  // A browser User-Agent: a client without one is taken for a bot and left
+  // off the Online now list this test reads.
+  const sock = io(BASE, {
+    transports: ['websocket'], forceNew: true,
+    extraHeaders: { 'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/130.0 Safari/537.36' },
+  });
   sock.on('state-sync', (s) => lastSync.set(sock, s));
   sock.on('online-people', (l) => lastOnline.set(sock, l));
   const registered = once(sock, 'register-result');

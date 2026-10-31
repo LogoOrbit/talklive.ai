@@ -617,3 +617,12 @@
 @media (prefers-reduced-motion: reduce) {
   .vn-rec, .vn-gate, .vn-rec-dot, .vn-rec-meter, .vn-dialog, .vn-dialog-overlay { animation: none; transition: none; }
 }
+
+/* "edited" beside the time on a message its author changed. */
+.chat-msg-edited {
+  font-size: 11px;
+  font-style: italic;
+  opacity: 0.7;
+  margin-right: 4px;
+}
+.cx-reply-bar.cx-editing { border-left-color: var(--accent, #7c5cff); }

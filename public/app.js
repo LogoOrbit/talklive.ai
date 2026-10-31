@@ -4369,9 +4369,10 @@ function renderFriendsList() {
     || Number(!!b.online) - Number(!!a.online)
     || lastTs(b) - lastTs(a)
   ));
-  // Matches the name shown, the name they chose, and their friend's country.
+  // Matches the name shown, the name they chose, their country and their
+  // friend ID (typed with or without the #).
   const shown = friendsFilter
-    ? sorted.filter((f) => [friendLabel(f), f.username, getCountryName(f.countryCode) || '']
+    ? sorted.filter((f) => [friendLabel(f), f.username, getCountryName(f.countryCode) || '', f.friendId || '', String(f.friendId || '').replace('#', '')]
       .some((s) => String(s || '').toLowerCase().includes(friendsFilter)))
     : sorted;
   if (!shown.length) {
@@ -5384,6 +5385,7 @@ socket.on('notification', (n) => {
 });
 
 // --- Friend-to-friend chat ---
+var lastRenderedFriendChat = null;
 function renderFriendChatMessages(opts = {}) {
   const messages = friendChatCache.get(activeFriendChatId) || [];
   const box = friendChatMessages;
@@ -5394,8 +5396,10 @@ function renderFriendChatMessages(opts = {}) {
   const prevTop = box.scrollTop;
   friendChatMessages.innerHTML = '';
   // The whole list is re-rendered, so every id the controller knows about is
-  // stale - drop them before the new bubbles register themselves.
-  if (friendExtras) friendExtras.reset();
+  // stale - drop them before the new bubbles register themselves. Same chat
+  // as last time: keep the reply/edit being typed.
+  if (friendExtras) friendExtras.reset({ keep: lastRenderedFriendChat === activeFriendChatId });
+  lastRenderedFriendChat = activeFriendChatId;
   if (messages.length === 0) {
     const empty = document.createElement('p');
     empty.className = 'tl-empty';
@@ -5424,6 +5428,12 @@ function renderFriendChatMessages(opts = {}) {
     // My messages carry a delivery tick: faded while on its way, solid once
     // the server has stored it. "Seen" is the label under the thread.
     const meta = appendMessageMeta(el, ts, mine);
+    if (m.edited) {
+      const ed = document.createElement('span');
+      ed.className = 'chat-msg-edited';
+      ed.textContent = t('editedLabel');
+      meta.insertBefore(ed, meta.firstChild);
+    }
     const ticks = meta.querySelector('.chat-msg-ticks');
     if (ticks && !m.pending) ticks.classList.replace('sending', 'sent');
     if (m.pending) el.classList.add('is-pending');
@@ -5441,7 +5451,7 @@ function renderFriendChatMessages(opts = {}) {
     if (friendExtras) {
       friendExtras.decorate(el, {
         id: m.id, mine, text: m.text, replyTo: m.replyTo, gif: m.gif, voice: m.voice,
-        reactions: m.reactions, myClientId: myId,
+        reactions: m.reactions, myClientId: myId, ts: m.pending ? 0 : m.ts,
       });
     }
   });
@@ -5543,8 +5553,12 @@ function friendChatName(clientId) {
 function openFriendChat(friendClientId) {
   // The composer belongs to a conversation: text typed to one person used to
   // stay in the box when another chat was opened, and went to the wrong one.
+  // A fresh open: drop any half-done edit or reply first, so the words of an
+  // edit are not saved as this chat's draft.
+  if (friendExtras) friendExtras.reset();
   if (activeFriendChatId && activeFriendChatId !== friendClientId) saveFriendDraft();
   if (voiceRecorder) voiceRecorder.cancel();
+  lastRenderedFriendChat = null;
   activeFriendChatId = friendClientId;
   friendChatInput.value = friendDrafts.get(friendClientId) || '';
   const friend = friendsData.find((f) => f.clientId === friendClientId);
@@ -5746,7 +5760,50 @@ friendExtras = window.TalkLiveChatExtras ? window.TalkLiveChatExtras.attach({
   unsend: (id) => {
     if (activeFriendChatId) socket.emit('friend-message-delete', { toClientId: activeFriendChatId, id });
   },
+  edit: editFriendMessage,
 }) : null;
+
+// Edit one of my own text messages. Shown at once; the server answers with
+// the stored copy either way, so a refused edit puts the old words back.
+function editFriendMessage(id, text) {
+  const toClientId = activeFriendChatId;
+  text = String(text || '').trim();
+  if (!toClientId || !id || !text) return false;
+  if (messageHasLink(text)) { friendChatSystemNote(t('errNoLinks')); return false; }
+  if (messageIsUnsafe(text)) { friendChatSystemNote(t('errUnsafeMessage')); return false; }
+  const cache = friendChatCache.get(toClientId) || [];
+  const m = cache.find((x) => x.id === id);
+  if (!m || m.pending) return false;
+  if (m.text !== text) {
+    m.text = text;
+    m.edited = Date.now();
+    socket.emit('friend-message-edit', { toClientId, id, text });
+    const row = friendsData.find((f) => f.clientId === toClientId) || serverHistory.find((h) => h.clientId === toClientId);
+    if (row && row.last && row.last.id === id) noteLastMessage(toClientId, { ...row.last, text });
+    renderFriendChatMessages();
+    renderFriendsList();
+  }
+  return true;
+}
+
+socket.on('friend-message-edited', ({ chatWith, id, text, edited, refused } = {}) => {
+  if (!chatWith || !id || typeof text !== 'string') return;
+  const cache = friendChatCache.get(chatWith);
+  const m = cache && cache.find((x) => x.id === id);
+  if (m) {
+    m.text = text;
+    if (edited) m.edited = edited; else delete m.edited;
+  }
+  const row = friendsData.find((f) => f.clientId === chatWith) || serverHistory.find((h) => h.clientId === chatWith);
+  if (row && row.last && row.last.id === id) noteLastMessage(chatWith, { ...row.last, text });
+  if (refused && activeFriendChatId === chatWith) {
+    const why = { link: 'errNoLinks', unsafe: 'errUnsafeMessage', 'too-old': 'editTooOld', rate: 'editRate' }[refused];
+    if (why) friendChatSystemNote(t(why));
+  }
+  if (activeFriendChatId === chatWith) renderFriendChatMessages();
+  renderFriendsList();
+  renderHistory();
+});
 
 socket.on('friend-message-deleted', ({ chatWith, id } = {}) => {
   const cache = friendChatCache.get(chatWith);

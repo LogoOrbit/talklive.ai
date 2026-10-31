@@ -2648,6 +2648,9 @@ function takePendingCallBack(fromClientId, targetClientId) {
 // An ask the caller is still ringing out on. The client gives up after 45s;
 // anything older was queued for later and the caller has since moved on.
 // Overridable so an end-to-end test need not wait a minute; production never sets it.
+// How long after sending a direct message its author can still edit it.
+const FRIEND_EDIT_WINDOW_MS = 15 * 60 * 1000;
+
 const CALL_BACK_LIVE_MS = Number(process.env.CALL_BACK_LIVE_MS) || 60 * 1000;
 
 // Whether this socket's page can take a voice call right now. /chat is text
@@ -3561,11 +3564,14 @@ function onlinePeopleList() {
   const out = [];
   const byClient = new Map();
   const seenLabel = new Set();
+  // A Set once, not waitingQueue.includes() per profile: that was
+  // profiles x queue on every tick of a busy server.
+  const waitingSet = new Set(waitingQueue);
   for (const [socketId, p] of profiles) {
     if (busy.has(p.clientId)) continue;                // mid-call
     if (statusHidden.get(p.clientId)) continue;        // "appear offline"
     if (isBotSocket(socketId)) continue;               // crawler
-    const waiting = waitingQueue.includes(socketId);
+    const waiting = waitingSet.has(socketId);
     const existing = byClient.get(p.clientId);
     if (existing) { if (waiting) existing.waiting = true; continue; }
     // Two rows with the same name and flag read as a glitch even when they
@@ -3617,6 +3623,18 @@ function broadcastOnlinePeople() {
   io.emit('online-people', list);
 }
 setInterval(broadcastOnlinePeople, 4000).unref();
+
+// Someone just registered: show them on the rail within a moment instead of
+// on the next 4s tick. Coalesced, so a burst of arrivals is one broadcast.
+let onlinePeopleSoonTimer = null;
+function broadcastOnlinePeopleSoon() {
+  if (onlinePeopleSoonTimer) return;
+  onlinePeopleSoonTimer = setTimeout(() => {
+    onlinePeopleSoonTimer = null;
+    broadcastOnlinePeople();
+  }, 300);
+  if (onlinePeopleSoonTimer.unref) onlinePeopleSoonTimer.unref();
+}
 
 // Push the current count straight to one freshly-connected socket so a late
 // joiner always gets correct initial state immediately, independent of the
@@ -5409,6 +5427,7 @@ io.on('connection', (socket) => {
       // recent matches, so "message back" shows them online.
       resyncWatchers(clientId);
     }
+    broadcastOnlinePeopleSoon();
     // Anything sent while this socket had no profile runs now, in order.
     socket.releaseHeldEvents();
   });
@@ -6803,6 +6822,54 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Edit: the author fixes a typo in a text message they sent recently. Same
+  // filters as sending. The moderation transcript keeps the original and gets
+  // the new wording as its own row, so an edit cannot launder what was said.
+  // A refused edit answers with the stored copy, so the sender's optimistic
+  // bubble goes back to what the other person actually sees.
+  socket.on('friend-message-edit', ({ toClientId, id, text } = {}) => {
+    const me = profiles.get(socket.id);
+    toClientId = validId(toClientId);
+    const msgId = cleanMsgId(id);
+    if (!me || !toClientId || !msgId || typeof text !== 'string') return;
+    const key = pairKey(me.clientId, toClientId);
+    const msg = (friendChats.get(key) || []).find((m) => m.id === msgId && m.from === me.clientId);
+    if (!msg || !msg.text || msg.voice) return;
+    const next = text.trim().slice(0, 1000);
+    const restore = (reason) => socket.emit('friend-message-edited', {
+      chatWith: toClientId, id: msgId, text: msg.text, edited: msg.edited || null, refused: reason,
+    });
+    if (!next) return restore('empty');
+    if (next === msg.text) return restore(null);
+    if (Date.now() - msg.ts > FRIEND_EDIT_WINDOW_MS) return restore('too-old');
+    if (!canOpenThread(me.clientId, toClientId) || isBlockedPair(me.clientId, toClientId)) return restore('unreachable');
+    if (containsLink(next)) return restore('link');
+    if (UNSAFE_RE.test(next)) return restore('unsafe');
+    if (!socialRateOk('friend-message-edit', me.clientId, 10, 60000)) return restore('rate');
+    msg.text = next;
+    msg.edited = Date.now();
+    const friendInfo = (friends.get(me.clientId) || new Map()).get(toClientId);
+    store.addTranscript({
+      kind: 'friend', pair: key, from: me.username, fromClientId: me.clientId,
+      to: friendInfo ? friendInfo.username : toClientId, toClientId,
+      country: me.countryName, text: '[edited] ' + next, msgId,
+    });
+    automod.onChatText({
+      from: { clientId: me.clientId, account: socketAuth.get(socket.id) || null, ip: getClientIp(socket), username: me.username, country: me.countryName },
+      to: toClientId, pair: key, text: next, kind: 'chat',
+    });
+    // An unread notification still quoting the old words shows the new ones.
+    for (const n of notifications.get(toClientId) || []) {
+      if (n.type === 'message' && n.fromClientId === me.clientId && n.msgId === msgId) n.text = next;
+    }
+    persistSocial();
+    store.recordFeature('chat_edit');
+    const wire = { id: msgId, text: next, edited: msg.edited };
+    socket.emit('friend-message-edited', { chatWith: toClientId, ...wire });
+    const targetSocket = getSocketByClientId(toClientId);
+    if (targetSocket) targetSocket.emit('friend-message-edited', { chatWith: me.clientId, ...wire });
+  });
+
   // "typing…" in a direct chat. Relayed only between people who could message
   // each other anyway, and never faster than a human types.
   socket.on('friend-typing', ({ toClientId } = {}) => {
@@ -7017,7 +7084,11 @@ io.on('connection', (socket) => {
       .some((n) => n.type === 'call_back_request' && n.fromClientId === fromClientId);
     const askedAt = takePendingCallBack(fromClientId, me.clientId);
     const wasAsked = !!askedAt || queued;
-    removeNotificationsWhere(me.clientId, (n) => n.type === 'call_back_request' && n.fromClientId === fromClientId);
+    // The badge is drawn from state-sync; without this it kept counting the
+    // answered ask until the next sync came along for some other reason.
+    if (removeNotificationsWhere(me.clientId, (n) => n.type === 'call_back_request' && n.fromClientId === fromClientId)) {
+      syncClientState(socket, me.clientId);
+    }
 
     const requesterSocketId = clientSockets.get(fromClientId);
     const requesterSocket = requesterSocketId ? io.sockets.sockets.get(requesterSocketId) : null;
@@ -7092,9 +7163,12 @@ io.on('connection', (socket) => {
     targetClientId = validId(targetClientId);
     if (!me || !targetClientId) return;
     const m = pendingCallBacks.get(targetClientId);
-    if (!m || !m.delete(me.clientId)) return;
-    if (!m.size) pendingCallBacks.delete(targetClientId);
-    removeNotificationsWhere(targetClientId, (n) => n.type === 'call_back_request' && n.fromClientId === me.clientId);
+    const live = !!(m && m.delete(me.clientId));
+    if (m && !m.size) pendingCallBacks.delete(targetClientId);
+    // The in-memory index does not outlive a restart but the inbox row does,
+    // so a cancel must still take a queued row back.
+    const queued = removeNotificationsWhere(targetClientId, (n) => n.type === 'call_back_request' && n.fromClientId === me.clientId);
+    if (!live && !queued) return;
     const targetSocket = getSocketByClientId(targetClientId);
     if (targetSocket) {
       targetSocket.emit('call-back-cancelled', { fromClientId: me.clientId });

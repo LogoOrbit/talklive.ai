@@ -130,6 +130,9 @@
   //   send(payload)          required - { text, gif, replyTo, id }
   //   react(id, emoji, on)   optional - omit to disable reactions
   //   unsend(id)             optional - offers "Unsend" on your own messages
+  //   edit(id, text)         optional - offers "Edit" on your own recent text
+  //                          messages; return false to keep the composer
+  //   editWindowMs           how long after sending "Edit" is offered
   //   msgSelector  CSS selector matching one message bubble ('.msg')
   //   gifs         false to force the GIF button off for this surface
   //
@@ -141,6 +144,9 @@
     var msgSelector = opts.msgSelector || '.msg';
     var canReact = typeof opts.react === 'function';
     var canUnsend = typeof opts.unsend === 'function';
+    var canEdit = typeof opts.edit === 'function';
+    var editWindowMs = opts.editWindowMs || 15 * 60 * 1000;
+    var editing = null;      // id currently being edited
 
     // id -> { el, text, mine }. Rebuilt whenever the host calls reset(), which
     // it does on every new conversation, so this never grows unbounded.
@@ -364,6 +370,7 @@
       var rec = index[id];
       if (!rec) return;
       if (!replyBar) buildReplyBar();
+      if (editing) stopEdit(true);
       replyTo = id;
       replyBar.querySelector('.cx-reply-to').textContent = rec.mine
         ? tr('replyToYou', 'Replying to you')
@@ -376,7 +383,36 @@
 
     function cancelReply() {
       replyTo = null;
+      if (editing) stopEdit(true);
       if (replyBar) replyBar.hidden = true;
+    }
+
+    // Editing reuses the reply bar: "Editing message" over the old words,
+    // with the words themselves in the composer.
+    function startEdit(id) {
+      var rec = index[id];
+      if (!rec || !rec.mine || !rec.plain) return;
+      if (!replyBar) buildReplyBar();
+      replyTo = null;
+      editing = id;
+      replyBar.classList.add('cx-editing');
+      replyBar.querySelector('.cx-reply-to').textContent = tr('editingMessage', 'Editing message');
+      replyBar.querySelector('.cx-reply-text').textContent = rec.plain;
+      replyBar.hidden = false;
+      input.value = rec.plain;
+      input.focus();
+      try { input.setSelectionRange(input.value.length, input.value.length); } catch (e) { /* not a text input */ }
+    }
+
+    function stopEdit(clearInput) {
+      editing = null;
+      if (replyBar) { replyBar.classList.remove('cx-editing'); replyBar.hidden = true; }
+      if (clearInput) input.value = '';
+    }
+
+    function canEditRec(rec) {
+      return canEdit && rec.mine && !!rec.plain && !rec.voice
+        && (!rec.ts || Date.now() - rec.ts < editWindowMs);
     }
 
     // --- long-press / right-click action menu --------------------------------
@@ -403,6 +439,7 @@
       };
       item('reply', tr('reply', 'Reply'));
       item('copy', tr('copyText', 'Copy'));
+      if (canEdit) item('edit', tr('editMessage', 'Edit'));
       if (canUnsend) item('unsend', tr('unsend', 'Unsend')).classList.add('cx-menu-danger');
       menu.addEventListener('click', function (e) {
         var btn = e.target.closest('button');
@@ -411,6 +448,7 @@
         if (act === 'reply') startReply(menuTarget);
         else if (act === 'copy') copyText(menuTarget);
         else if (act === 'unsend') opts.unsend(menuTarget);
+        else if (act === 'edit') startEdit(menuTarget);
         else if (btn.dataset.emoji) toggleReaction(menuTarget, btn.dataset.emoji);
         hideMenu();
       });
@@ -439,6 +477,8 @@
       if (copyBtn) copyBtn.hidden = !rec.plain;
       var unsendBtn = menu.querySelector('[data-act="unsend"]');
       if (unsendBtn) unsendBtn.hidden = !rec.mine;
+      var editBtn = menu.querySelector('[data-act="edit"]');
+      if (editBtn) editBtn.hidden = !canEditRec(rec);
       var btns = menu.querySelectorAll('.cx-menu-react');
       for (var i = 0; i < btns.length; i++) {
         btns[i].classList.toggle('on', !!(rec.mineReacts && rec.mineReacts[btns[i].dataset.emoji]));
@@ -696,7 +736,7 @@
       if (e.key !== 'Escape' && e.key !== 'Esc') return;
       if (menu && !menu.hidden) { hideMenu(); return; }
       if (panel && !panel.hidden) { closePanel(); return; }
-      if (replyTo) cancelReply();
+      if (replyTo || editing) cancelReply();
     });
 
     // --- reactions -----------------------------------------------------------
@@ -792,6 +832,8 @@
           mine: !!data.mine,
           text: data.text || (data.gif ? 'GIF' : data.voice ? tr('voiceMessage', 'Voice message') : ''),
           plain: data.text || '',
+          voice: !!data.voice,
+          ts: data.ts || 0,
         };
         index[id] = rec;
 
@@ -849,13 +891,23 @@
       // Builds the outgoing payload (id + current reply target) for a host that
       // sends from its own submit handler.
       compose: function (text) {
+        if (editing) {
+          var id = editing;
+          if (opts.edit(id, text) === false) return false;
+          stopEdit(false);
+          return { id: id, text: text, edited: true };
+        }
         return sendPayload({ text: text });
       },
+
+      editing: function () { return editing; },
+      cancelEdit: function () { if (editing) stopEdit(true); },
 
       // A message was taken back: forget it, and drop the reply if it was the
       // one being answered.
       forget: function (id) {
         if (replyTo === id) cancelReply();
+        if (editing === id) stopEdit(true);
         if (menuTarget === id) hideMenu();
         delete index[id];
       },
@@ -865,10 +917,18 @@
       closePanel: closePanel,
 
       // New conversation: drop every id, reply state and open panel.
-      reset: function () {
+      // { keep: true } is a re-render of the same conversation: the ids come
+      // back as the bubbles are redrawn, so a reply or edit being typed and
+      // an open emoji/GIF panel stay put instead of vanishing whenever the
+      // other person sends something.
+      reset: function (o) {
         index = {};
-        cancelReply();
-        closePanel();
+        var keep = !!(o && o.keep);
+        if (!keep) {
+          if (editing) stopEdit(true);
+          cancelReply();
+          closePanel();
+        }
         hideMenu();
         endSwipe(false);
         lastTapId = null;
