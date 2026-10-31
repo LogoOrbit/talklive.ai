@@ -230,7 +230,7 @@ ${p.article ? `<meta property="article:published_time" content="${p.date}" />
 ${preloads(p.preload)}
 <link rel="stylesheet" href="/journal.css?v=${CSS_VERSION}" />
 <style>${p.css}${ctaVars(p.slug || (p.path === '/blog/' ? 'blog' : ''))}</style>
-<script defer src="/pwa.js?v=20261030help"></script>
+<script defer src="/pwa.js?v=20261031audit"></script>
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
 </head>`;
 }
