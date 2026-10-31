@@ -12,11 +12,17 @@ const stored = String(((JSON.parse(fs.readFileSync(file, 'utf8')).secrets) || {}
 if (process.argv[2] === 'print') {
   process.stdout.write(stored);
 } else if (process.argv[2] === 'check') {
+  // PID 1 is Fly's init, not the app: find the node process running the server.
   let live = '';
-  try {
-    const line = fs.readFileSync('/proc/1/environ', 'utf8').split('\0').find((l) => l.startsWith('IDENTITY_SECRET='));
-    live = line ? line.slice('IDENTITY_SECRET='.length) : '';
-  } catch (_) { /* not readable */ }
+  for (const pid of fs.readdirSync('/proc').filter((d) => /^\d+$/.test(d))) {
+    try {
+      const argv = fs.readFileSync(`/proc/${pid}/cmdline`, 'utf8').split('\0');
+      if (Number(pid) === process.pid || !/(^|\/)node$/.test(argv[0]) || !argv.some((a) => /server\/index\.js$/.test(a))) continue;
+      const line = fs.readFileSync(`/proc/${pid}/environ`, 'utf8').split('\0').find((l) => l.startsWith('IDENTITY_SECRET='));
+      live = line ? line.slice('IDENTITY_SECRET='.length) : '';
+      break;
+    } catch (_) { /* gone or not readable */ }
+  }
   process.stdout.write(live && live === stored ? 'match' : (live ? 'MISMATCH' : 'UNSET'));
 } else {
   console.error('usage: identity-secret.js print|check');
