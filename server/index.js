@@ -564,28 +564,35 @@ app.post('/billing/checkout', httpRateLimit('checkout', 10, 60000), express.json
 
 // Stripe signs the exact bytes it sent, so this route must see the raw body -
 // hence express.raw here rather than the express.json used everywhere else.
-app.post('/billing/webhook', express.raw({ type: 'application/json', limit: '1mb' }), (req, res) => {
+app.post('/billing/webhook', express.raw({ type: 'application/json', limit: '1mb' }), async (req, res) => {
   const event = billing.verifyWebhook(req.body && req.body.toString('utf8'), req.headers['stripe-signature']);
   // A bad signature is either a misconfigured secret or a forgery. Either way
   // Stripe should retry rather than believe it was accepted.
   if (!event) return res.status(400).send('invalid signature');
+  if (billing.alreadyProcessed(event.id)) return res.json({ received: true, duplicate: true });
 
   const decision = billing.decide(event);
-  if (decision.action === 'grant') {
-    store.setPremium(decision.clientId, {
-      // No period end on the checkout event itself; a day covers the gap until
-      // the first invoice arrives (usually seconds later) so a paying customer
-      // is never left without what they just bought.
-      expiresAt: decision.until || Date.now() + 24 * 60 * 60000,
-      lastEvent: decision.reason,
-      subscriptionId: decision.subscriptionId || undefined,
-      source: 'stripe',
-    });
+  // Ordering, duplicate and "which subscription" rules live in billing.nextPremium.
+  const premium = store.data.premium;
+  const existing = decision.clientId && Object.prototype.hasOwnProperty.call(premium, decision.clientId)
+    ? premium[decision.clientId] : null;
+  const step = billing.nextPremium(existing, decision, Number(event.created) * 1000 || 0);
+  if (step.op === 'set') {
+    store.setPremium(decision.clientId, step.info);
     store.recordFeature('premium_activated');
-  } else if (decision.action === 'revoke') {
-    store.revokePremium(decision.clientId, { lastEvent: decision.reason });
+  } else if (step.op === 'revoke') {
+    store.revokePremium(decision.clientId, step.info);
     store.recordFeature('premium_cancelled');
+  } else if (decision.action !== 'ignore') {
+    console.log(`[billing] ${event.type} for ${decision.clientId} skipped: ${step.reason}`);
   }
+  if (step.op !== 'skip') {
+    // Write now, not on the 15s debounce: once Stripe has its 200 it will not
+    // send this event again, so a crash before the save would lose a payment.
+    store.persistNow();
+    await Promise.race([store.whenPersisted(), new Promise((r) => setTimeout(r, 8000))]);
+  }
+  billing.markProcessed(event.id);
   // Anything unhandled is still a 200: replying non-2xx makes Stripe retry an
   // event we have deliberately ignored, forever.
   res.json({ received: true });

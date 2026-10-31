@@ -230,8 +230,70 @@ function decide(event) {
   }
 }
 
+const DAY_MS = 24 * 60 * 60000;
+
+/**
+ * Work out what a decision does to the stored premium record.
+ *
+ * Stripe does not deliver events in order and may deliver one twice, so the
+ * decision alone is not enough:
+ *  - a late `checkout.session.completed` (no period end) must not cut an
+ *    already-granted month down to one day;
+ *  - an event older than the last one applied must not undo it;
+ *  - cancelling an old subscription must not revoke the current one;
+ *  - Stripe only manages what Stripe granted: a manual or permanent grant is
+ *    never revoked or turned into an expiring one by a webhook.
+ *
+ * Returns { op: 'set'|'revoke', info } or { op: 'skip', reason }.
+ */
+function nextPremium(existing, decision, eventCreatedMs, now = Date.now()) {
+  if (!decision || (decision.action !== 'grant' && decision.action !== 'revoke')) {
+    return { op: 'skip', reason: (decision && decision.reason) || 'ignored' };
+  }
+  const lastAt = (existing && existing.stripeEventAt) || 0;
+  if (eventCreatedMs && lastAt && eventCreatedMs < lastAt) return { op: 'skip', reason: 'stale event' };
+  const stripeEventAt = Math.max(lastAt, eventCreatedMs || 0) || undefined;
+
+  if (decision.action === 'revoke') {
+    if (!existing || existing.revokedAt) return { op: 'skip', reason: 'nothing to revoke' };
+    if (existing.source !== 'stripe') return { op: 'skip', reason: 'not a Stripe grant' };
+    if (existing.subscriptionId && decision.subscriptionId && existing.subscriptionId !== decision.subscriptionId) {
+      return { op: 'skip', reason: 'different subscription' };
+    }
+    return { op: 'revoke', info: { lastEvent: decision.reason, stripeEventAt } };
+  }
+
+  const active = !!existing && !existing.revokedAt && (!existing.expiresAt || existing.expiresAt > now);
+  const info = { lastEvent: decision.reason, stripeEventAt };
+  if (decision.subscriptionId) info.subscriptionId = decision.subscriptionId;
+  // Permanent grant: record the subscription, keep it permanent and keep its source.
+  if (active && !existing.expiresAt) return { op: 'set', info };
+  // No period end on the checkout event itself; a day covers the gap until the
+  // first invoice arrives (usually seconds later).
+  let expiresAt = decision.until || now + DAY_MS;
+  if (active) expiresAt = Math.max(expiresAt, existing.expiresAt);
+  return { op: 'set', info: { ...info, expiresAt, source: 'stripe' } };
+}
+
+// Event ids already applied by this process. Stripe retries and occasionally
+// double-delivers; the ordering rules above make replays harmless, this just
+// skips the work.
+const seenEvents = new Set();
+const SEEN_EVENTS_MAX = 2000;
+function alreadyProcessed(eventId) {
+  return typeof eventId === 'string' && seenEvents.has(eventId);
+}
+function markProcessed(eventId) {
+  if (typeof eventId !== 'string') return;
+  seenEvents.add(eventId);
+  if (seenEvents.size > SEEN_EVENTS_MAX) seenEvents.delete(seenEvents.values().next().value);
+}
+
 module.exports = {
   configured,
+  nextPremium,
+  alreadyProcessed,
+  markProcessed,
   plans,
   plansConfigured: PRICES,
   warnIfHalfConfigured,
