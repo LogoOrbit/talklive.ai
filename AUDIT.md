@@ -63,7 +63,7 @@ fix for each. Status of each fix is in `CHANGELOG.md`.
 | M3 | `server/index.js:719` `/events` | Unauthenticated write endpoint with no rate limit (inflates feature analytics, store churn). | `httpRateLimit`. |
 | M4 | `public/app.js:7605` | Network-type changes (Wi-Fi ↔ mobile data) often do not fire `online`, so a degraded call waits for the 5 s throttle / the answerer's 3 s timer. | Also listen to `navigator.connection` `change`. |
 | M5 | `server/store.js` (architecture) | Whole 25 MB document re-serialised every 15 s; CPU-bound on a shared-cpu-1x. | **Not changed** — splitting into tables is a data migration/rewrite on production data. Recommended as its own project (start with analytics days and transcripts). |
-| M6 | `server/index.js:61` | The identity token is a fixed HMAC of the `clientId`; it never rotates, so a leaked token gives permanent access to that identity's friends and DMs, and sign-out/reset cannot revoke it. | **Not changed** — rotating needs a versioned token and a client migration; the code comments document how a bad rotation orphans users. Recorded as a risk. |
+| M6 | `server/index.js:61` | The identity token is a fixed HMAC of the `clientId`; it never rotates, so a leaked token gives permanent access to that identity's friends and DMs, and sign-out/reset cannot revoke it. | **Fixed in follow-up**: versioned tokens (version 0 = the old HMAC, so no migration); password change/reset rotates the version. |
 
 ### Low
 

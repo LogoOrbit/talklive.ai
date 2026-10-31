@@ -1,5 +1,38 @@
 # Changelog
 
+## 2026-10-31 — follow-up
+
+### Done
+- **IDENTITY_SECRET pinned** in Fly, copied from the value the server
+  already stored (never a new one), via the new one-click workflow
+  `Pin identity secret`. It checked that the running app uses the same value.
+  The server now logs a loud warning at boot if the two ever differ.
+- **Identity tokens are revocable** (AUDIT M6). Tokens carry a per-identity
+  version; existing tokens are version 0 and stay valid. A password change
+  or reset rotates the account's identity: old tokens are refused, the
+  device that made the change gets the new one, other devices get it by
+  signing in. Tested in `test-auth-sessions.js`.
+- **Mobile performance:** homepage Lighthouse (mobile) **57 → 96**,
+  `/random-voice-chat` 100; accessibility, best practices and SEO 100.
+  Layout shift fixed by reserving the streak strip's space; Google tags now
+  load on first interaction or 3.5 s after load. GA may miss visitors who
+  leave within ~3.5 s without touching the page; TalkLive's own `/events`
+  count still has them.
+- **ESLint** added (`npm run lint`, runs in CI): 0 errors.
+- **README** corrected (unlimited friends, Stripe, current referral reward,
+  test commands).
+- **TURN:** GitHub's scheduled production TURN health check passes. It can't
+  be tested from the cloud sandbox, which blocks relay ports.
+- `inspect-store-files.js` now reports each part's size, to plan the
+  database split.
+
+### Still open
+- **Database split** (AUDIT M5): needs the size breakdown from production
+  first, then a staged migration. Not started; see the reply in chat.
+- **Stripe live checkout** needs a real card; only the owner can do it.
+- `test-push-alerts` failed once in a full run and passed on two re-runs
+  (timing flake).
+
 ## 2026-10-31 — audit and fix pass
 
 Full findings, with file:line references, are in [AUDIT.md](AUDIT.md).
