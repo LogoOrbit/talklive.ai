@@ -366,7 +366,7 @@ const REACTION_ICONS = {
 // --- Country code -> flag image (works consistently across all browsers/OSes,
 // unlike emoji regional-indicator flags which many platforms, e.g. Windows, render as plain letters) ---
 function getFlagImg(code, size = 20) {
-  if (!code || code.length !== 2 || code === 'XX') {
+  if (typeof code !== 'string' || !/^[A-Za-z]{2}$/.test(code) || code === 'XX') {
     return `<svg class="flag-icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><ellipse cx="12" cy="12" rx="4.2" ry="9.5"/><line x1="2.5" y1="12" x2="21.5" y2="12"/></svg>`;
   }
   const cc = code.toLowerCase();
@@ -7602,13 +7602,19 @@ function attemptIceRestart(peer) {
 }
 // Back online (Wi-Fi to mobile data, a lift, a tunnel): retry a dropped call at
 // once rather than waiting out the throttle, while the recovery window is open.
-window.addEventListener('online', () => {
+function retryDroppedCallNow() {
   if (!pc || callState === 'idle' || callState === 'searching') return;
   const s = pc.iceConnectionState;
   if (s !== 'disconnected' && s !== 'failed') return;
   lastIceRestartAt = 0;
   attemptIceRestart(pc);
-});
+}
+window.addEventListener('online', retryDroppedCallNow);
+// Switching between Wi-Fi and mobile data often never fires 'online' (the
+// device was never offline), so listen for the network type changing too.
+if (navigator.connection && typeof navigator.connection.addEventListener === 'function') {
+  navigator.connection.addEventListener('change', retryDroppedCallNow);
+}
 
 // --- Loudspeaker routing -----------------------------------------------------
 // A phone treats a live microphone capture as a phone call. Chrome on Android
