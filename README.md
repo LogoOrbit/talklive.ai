@@ -33,6 +33,9 @@ and what to do next - is in **[GROWTH.md](GROWTH.md)**.
 ```bash
 npm install
 npm start
+npm test              # every test suite (each starts its own server)
+npm run test:critical # auth, payments, friends, messaging, signalling
+npm run lint          # ESLint
 ```
 
 Then open http://localhost:5000 in two separate browser tabs/windows (or two devices) to be matched with each other.
@@ -179,7 +182,7 @@ A secured owner dashboard lives at **`/owner`** (e.g. `https://talklive.app/owne
 
 ### Premium (TalkLive Plus)
 
-Free tier limits (enforced server-side): max 2 preferred + 2 avoided countries, max 5 friends, and the gender filter locked. Premium unlocks all filters, unlimited friends, and no ads. The `/pricing` upgrade button sends buyers to the TalkLive Patreon join page.
+Free tier limits (enforced server-side): max 2 preferred + 2 avoided countries, and the gender filter locked. Friends are unlimited for everyone. Premium unlocks all filters and removes ads. The `/pricing` upgrade button starts a Stripe Checkout (see "Grants come from" below) when the Stripe env vars are set, and shows "coming soon" otherwise.
 
 Matching is instant for everyone. The free tier used to be held ~5s before the
 next search after a skip; that was removed because the client also emits `skip`
@@ -190,8 +193,8 @@ Premium is keyed to the browser's persistent `clientId` and is persisted in the 
 
 Grants come from three places:
 
-- **Stripe** (`server/billing.js`), when the Stripe env vars are set. The webhook grants and extends premium to Stripe's own `current_period_end`; a cancelled subscription lapses on its own with no cron, because grants now carry an `expiresAt`.
-- **Referrals**, 7 days to each side once an invited user has had a real conversation.
+- **Stripe** (`server/billing.js`), when the Stripe env vars are set. The webhook grants and extends premium to Stripe's own `current_period_end`; a cancelled subscription lapses on its own with no cron, because grants now carry an `expiresAt`. Webhooks may arrive out of order or twice; `billing.nextPremium` makes that safe (an active expiry is never shortened, stale events and revokes for another subscription are skipped, and manual or referral grants are never revoked by Stripe).
+- **Referrals**, 1 hour of Plus to the inviter for every 3 invited people who make an account and have a real conversation.
 - **Manual**, for testing and support: `PREMIUM_CLIENT_IDS`, or `store.setPremium(clientId)`. A manual grant has no `expiresAt`, so it is permanent - and `extendPremium` deliberately refuses to turn one into an expiring grant.
 
 Email alerts are throttled to one per topic per 10 minutes and are skipped entirely if SMTP is not configured.
