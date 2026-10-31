@@ -6,6 +6,7 @@
   "scripts": {
     "test": "node scripts/run-tests.js",
     "test:critical": "node scripts/run-tests.js --critical",
+    "lint": "eslint .",
     "test:auth": "node scripts/test-auth-sessions.js",
     "start": "node server/index.js",
     "dev": "node server/index.js",
@@ -70,6 +71,8 @@
   },
   "devDependencies": {
     "csso": "^5.0.5",
+    "eslint": "^9.39.5",
+    "globals": "^15.15.0",
     "socket.io-client": "^4.8.3",
     "terser": "^5.51.2"
   }
