@@ -21,6 +21,17 @@ function files(dir) {
 const n = (o) => Object.keys(o || {}).length;
 const iso = (ms) => (ms ? new Date(ms).toISOString().replace('T', ' ').slice(0, 16) : '-');
 
+function kb(v) { try { return Math.round(Buffer.byteLength(JSON.stringify(v) || '') / 1024); } catch (_) { return -1; } }
+function sizesOf(doc) {
+  const parts = {};
+  for (const [k, v] of Object.entries(doc)) {
+    if (k === 'social' || k === 'analytics') {
+      for (const [k2, v2] of Object.entries(v || {})) parts[`${k}.${k2}`] = kb(v2);
+    } else parts[k] = kb(v);
+  }
+  return Object.fromEntries(Object.entries(parts).filter(([, n]) => n > 0).sort((x, y) => y[1] - x[1]).slice(0, 25));
+}
+
 function census(file) {
   const st = fs.statSync(file);
   const row = { file: path.relative(DIR, file), kb: Math.round(st.size / 1024), modified: iso(st.mtimeMs) };
@@ -50,6 +61,9 @@ function census(file) {
     lastDay: days[days.length - 1] || '-',
     oldestAccount: created.length ? iso(Math.min(...created)) : '-',
     rev: (doc._meta && doc._meta.rev) || 0,
+    // Size of each part in KB (sizes only, never contents), largest first:
+    // where the document's weight is, for planning to move parts out of it.
+    sizes: sizesOf(doc),
   };
 }
 
