@@ -52,6 +52,7 @@ fix for each. Status of each fix is in `CHANGELOG.md`.
 | H2 | `server/store.js:2465` | Durable session tokens (365-day, full account access) are stored **in plaintext** in the store document and its disk mirror, unlike reset codes which are hashed. A leaked DB row or volume snapshot = takeover of every signed-in account. | Store `sha256(token)`; look up hashed first, upgrade legacy plaintext entries on first use (no forced sign-out). |
 | H3 | `server/index.js:4924`, `:5112` | `change-password` and `reset-password` delete durable sessions but leave every **live** socket of that account authenticated (`socketAuth`), so an attacker already connected keeps access until they disconnect. | Drop `socketAuth` for the account's other sockets and tell them (`resume-session-result {ok:false}`, which both clients already treat as "revoked"). |
 | H4 | `.github/workflows/ci.yml`, `package.json` | Auth, payments, friends and messaging tests never run in CI, and there is no `npm test`. A regression in those reaches `main` (= production). | Add `npm test` runner covering the critical suites; run it in CI. |
+| H5 | `public/support-chat.js:312` `busy()` | Found in Phase 3 (`scripts/social-ui/voice-notes-ui.js` had been failing since Chat Support shipped): on desktop the support bubble and its "New" callout sit exactly over the friend chat's Send / voice-message buttons and take the tap — an overlay blocking a core action. | Hide the bubble while a friend-chat composer is on screen, as it already does for calls and text chats. |
 
 ### Medium
 
