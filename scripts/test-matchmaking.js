@@ -88,6 +88,21 @@ function connect(name) {
     await pair;
     ok('two clients matched', true);
 
+    // --- Signalling relays only what WebRTC needs ---------------------------
+    let got = once(b, 'signal');
+    a.emit('signal', { type: 'offer', sdp: { type: 'offer', sdp: 'v=0\r\n', junk: 'x' }, extra: 'y'.repeat(1000) });
+    let sig = await got;
+    ok('offer is relayed with only type and sdp', sig.type === 'offer' && sig.sdp.sdp === 'v=0\r\n'
+      && !('extra' in sig) && !('junk' in sig.sdp), JSON.stringify(sig).slice(0, 120));
+    got = once(b, 'signal');
+    a.emit('signal', { type: 'ice-candidate', candidate: { candidate: 'candidate:1 1 udp 1 1.2.3.4 9 typ host', sdpMid: '0', sdpMLineIndex: 0, usernameFragment: 'abc', evil: 1 } });
+    sig = await got;
+    ok('ICE candidate keeps its WebRTC fields and drops the rest', sig.candidate.sdpMid === '0'
+      && sig.candidate.sdpMLineIndex === 0 && sig.candidate.usernameFragment === 'abc' && !('evil' in sig.candidate));
+    const none = maybe(b, 'signal', 600);
+    a.emit('signal', { type: 'bogus' });
+    ok('unknown signal types are dropped', (await none) === null);
+
     const bLeft = once(b, 'partner-left');
     a.emit('skip', { failed: true });
     const leftInfo = await bLeft;

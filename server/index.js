@@ -723,7 +723,7 @@ const GROWTH_EVENTS = new Set([
   'fv_on_open_more',
   'fv_on_friend_prompt', 'fv_on_friend_prompt_add',
 ]);
-app.post('/events', express.json({ limit: '2kb' }), (req, res) => {
+app.post('/events', httpRateLimit('events', 120, 60000), express.json({ limit: '2kb' }), (req, res) => {
   const event = req.body && req.body.event;
   if (!GROWTH_EVENTS.has(event)) return res.status(400).json({ error: 'Unknown event.' });
   const fetchSite = String(req.headers['sec-fetch-site'] || 'same-origin');
@@ -3348,9 +3348,15 @@ function clearLoginLocks(ip, usernameLower) {
   }
 }
 
+// Hashed against for unknown usernames, so a miss costs the same scrypt as a
+// wrong password and response time does not reveal which usernames exist.
+const DUMMY_SALT = crypto.randomBytes(16).toString('hex');
 async function verifyAccount(username, password) {
   const account = accounts.get(username.toLowerCase());
-  if (!account || !account.passwordHash) return null;
+  if (!account || !account.passwordHash) {
+    await hashPassword(String(password), DUMMY_SALT);
+    return null;
+  }
   const hash = await hashPassword(password, account.salt);
   // Compare in constant time. A plain !== short-circuits at the first differing
   // byte, so response latency leaks how much of the hash an attacker has
@@ -5955,7 +5961,19 @@ io.on('connection', (socket) => {
         || typeof data.candidate.candidate !== 'string'
         || data.candidate.candidate.length > 8192) return;
     } else return;
-    io.to(partnerId).emit('signal', data);
+    // Forward only the fields WebRTC needs, never whatever else the sender
+    // attached to the object.
+    let out;
+    if (data.type === 'ice-candidate') {
+      const c = data.candidate;
+      out = { type: data.type, candidate: { candidate: c.candidate } };
+      if (typeof c.sdpMid === 'string' && c.sdpMid.length <= 64) out.candidate.sdpMid = c.sdpMid;
+      if (Number.isInteger(c.sdpMLineIndex) && c.sdpMLineIndex >= 0 && c.sdpMLineIndex < 64) out.candidate.sdpMLineIndex = c.sdpMLineIndex;
+      if (typeof c.usernameFragment === 'string' && c.usernameFragment.length <= 256) out.candidate.usernameFragment = c.usernameFragment;
+    } else {
+      out = { type: data.type, sdp: { type: data.sdp.type, sdp: data.sdp.sdp } };
+    }
+    io.to(partnerId).emit('signal', out);
   });
 
   // Client-side call moderation (moderation.js): keyword / sentiment /
