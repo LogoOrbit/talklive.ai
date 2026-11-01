@@ -628,6 +628,8 @@
       // This page is text only: it must not be rung or force-paired for a
       // voice call-back, which it has no way to answer.
       surface: 'chat',
+      // Places this person when their IP address cannot (VPNs and the like).
+      timezone: (function () { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || undefined; } catch (_) { return undefined; } })(),
       // ...but it can ring for a direct call and answer it by moving to the
       // voice page (see the 'call-back-request' handler).
       ringable: true,

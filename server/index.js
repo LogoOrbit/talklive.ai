@@ -2718,6 +2718,14 @@ function refreshFriendSnapshots(clientId, profile) {
   if (changed) persistSocial();
 }
 
+// A row saved while someone's country was unknown picks it up once known.
+function liveCountryFor(clientId, saved) {
+  if (saved && saved !== 'XX') return saved;
+  const sock = getSocketByClientId(clientId);
+  const profile = sock ? profiles.get(sock.id) : null;
+  return (profile && profile.country) || saved || 'XX';
+}
+
 function liveAvatarFor(clientId, fallback) {
   const sock = getSocketByClientId(clientId);
   const profile = sock ? profiles.get(sock.id) : null;
@@ -2749,7 +2757,7 @@ function syncClientState(socket, clientId) {
     .map((e) => ({
       clientId: e.clientId,
       username: e.username,
-      countryCode: e.countryCode,
+      countryCode: liveCountryFor(e.clientId, e.countryCode),
       avatar: liveAvatarFor(e.clientId, e.avatar),
       mode: e.mode || 'chat',
       ts: e.ts,
@@ -3501,6 +3509,21 @@ function lookupGeo(ip) {
     countryName: COUNTRIES[code] || code || 'Unknown',
     city: geo.city || 'Unknown',
   };
+}
+
+// When the IP lookup cannot place someone (VPNs, newer IPv6 ranges), their
+// browser still knows where it is: its time zone (Asia/Kolkata -> IN), and
+// failing that the region in its language ("en-GB" -> GB). Returns {} when
+// neither says.
+const TZ_COUNTRY = require('./tz-country.json');
+function placeFromHints(timezone, acceptLanguage) {
+  let code = typeof timezone === 'string' ? TZ_COUNTRY[timezone] : null;
+  if (!code) {
+    const m = /^[a-z]{2,3}-([A-Z]{2})\b/i.exec(String(acceptLanguage || '').trim());
+    code = m ? m[1].toUpperCase() : null;
+  }
+  if (!code || !COUNTRIES[code] || code === 'XX') return {};
+  return { country: code, countryName: COUNTRIES[code], city: 'Unknown' };
 }
 
 // The picture friends and recent people see. Most people never pick an
@@ -5334,6 +5357,7 @@ io.on('connection', (socket) => {
       socket.disconnect(true);
       return;
     }
+    if (geo.country === 'XX') Object.assign(geo, placeFromHints(data.timezone, socket.handshake.headers['accept-language']));
     const premium = isPremium(clientId);
     // Free-tier caps enforced server-side: gender preference and country lists
     // beyond the free limit are premium-only.
