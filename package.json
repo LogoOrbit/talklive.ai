@@ -53,7 +53,8 @@
     "test:traffic": "node scripts/test-traffic.js",
     "test:twins": "node scripts/test-twin-match.js",
     "test:client-ip": "node scripts/test-client-ip.js",
-    "test:push": "node scripts/test-push-alerts.js"
+    "test:push": "node scripts/test-push-alerts.js",
+    "test:new-features": "node scripts/test-new-features.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.129.0",

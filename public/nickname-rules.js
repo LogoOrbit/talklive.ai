@@ -14,14 +14,28 @@
   const MAX_MARKS = 3;       // combining marks on one letter (Hindi, Thai... need a few)
   const MAX_REPEAT = 4;      // "aaaaaaaa" -> no
 
-  const INVISIBLE = /[\p{Cc}\p{Cf}\p{Co}\p{Cn}\u034F\u115F\u1160\u3164\uFFA0\uFE00-\uFE0F]/gu;
-  const ALLOWED = /^[\p{L}\p{M}\p{N} ._\-']+$/u;
-  const ALNUM = /[\p{L}\p{N}]/u;
+  // Built from strings: a \p{...} literal is a syntax error in browsers older
+  // than ~2018, which stopped this whole file (and the name check) loading.
+  // There the page check is skipped and the server, which always has it,
+  // still enforces the rules.
+  let unicodeOk = true;
+  function re(src, flags) {
+    try { return new RegExp(src, flags); } catch (_) { unicodeOk = false; return null; }
+  }
+  const INVISIBLE = re('[\\p{Cc}\\p{Cf}\\p{Co}\\p{Cn}\\u034F\\u115F\\u1160\\u3164\\uFFA0\\uFE00-\\uFE0F]', 'gu');
+  const ALLOWED = re("^[\\p{L}\\p{M}\\p{N} ._\\-']+$", 'u');
+  const ALNUM = re('[\\p{L}\\p{N}]', 'u');
+  const MARK = re('\\p{M}', 'u');
+  const NOT_ALLOWED = re("[^\\p{L}\\p{M}\\p{N} ._\\-']", 'gu');
 
   // Returns { ok, value, error }. `value` is the cleaned name to store; `error`
   // is an i18n key the page can show (English text lives in i18n.js).
   function check(raw) {
     if (typeof raw !== 'string') return { ok: false, value: '', error: 'nickEmpty' };
+    if (!unicodeOk) {
+      const t = raw.replace(/\s+/g, ' ').trim();
+      return t ? { ok: true, value: t.slice(0, MAX_LEN), error: null } : { ok: false, value: '', error: 'nickEmpty' };
+    }
     let s = raw.normalize('NFKC')          // 𝓐𝓼𝓪𝓭 / Ａｓａｄ -> Asad
       .replace(INVISIBLE, '')
       .replace(/\s+/g, ' ')
@@ -31,7 +45,7 @@
     if (new RegExp(`\\p{M}{${MAX_MARKS + 1},}`, 'u').test(s)) return { ok: false, value: s, error: 'nickBadChars' };
     const chars = Array.from(s);
     const last = chars[chars.length - 1];
-    if (!ALNUM.test(chars[0]) || (!ALNUM.test(last) && !/\p{M}/u.test(last))) {
+    if (!ALNUM.test(chars[0]) || (!ALNUM.test(last) && !MARK.test(last))) {
       return { ok: false, value: s, error: 'nickEdges' };
     }
     if (/[ ._\-']{2,}/u.test(s)) return { ok: false, value: s, error: 'nickSeparators' };
@@ -48,9 +62,9 @@
   function clean(raw) {
     const first = check(raw);
     if (first.ok) return first.value;
-    if (typeof raw !== 'string') return '';
+    if (typeof raw !== 'string' || !unicodeOk) return '';
     let s = raw.normalize('NFKC').replace(INVISIBLE, '')
-      .replace(/[^\p{L}\p{M}\p{N} ._\-']/gu, ' ')
+      .replace(NOT_ALLOWED, ' ')
       .replace(new RegExp(`(\\p{M}{${MAX_MARKS}})\\p{M}+`, 'gu'), '$1')
       .replace(new RegExp(`(.)\\1{${MAX_REPEAT},}`, 'gu'), (m, c) => c.repeat(MAX_REPEAT))
       .replace(/\s+/g, ' ')

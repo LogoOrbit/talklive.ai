@@ -5628,6 +5628,7 @@ io.on('connection', (socket) => {
     clearWaitFallbackTimer(socket.id);
     clearWaitFallbackTimer(otherId);
     store.recordFeature('undo_skip');
+    store.recordFeatureUser('undo_skip', me.clientId);
     pairSockets(socket.id, otherId, { undo: true });
     reply({ ok: true });
   });
@@ -5935,12 +5936,20 @@ io.on('connection', (socket) => {
     });
   });
 
+  // Only the four buttons on the call screen (public/index.html .reaction-btn).
+  const CALL_REACTIONS = new Set(['like', 'laugh', 'clap', 'heart']);
   socket.on('reaction', (reaction) => {
     const partnerId = partners.get(socket.id);
     const seeker = profiles.get(socket.id);
     const partner = partnerId ? profiles.get(partnerId) : null;
-    if (!partnerId || !seeker || !partner || typeof reaction !== 'string') return;
+    if (!partnerId || !seeker || !partner || !CALL_REACTIONS.has(reaction)) return;
+    // A held-down button or a script could flood the partner's screen and the
+    // feature counts; a person taps a few times a second at most.
+    const now = Date.now();
+    if (!seeker.reactWindow || now - seeker.reactWindow.at > 5000) seeker.reactWindow = { at: now, n: 0 };
+    if (++seeker.reactWindow.n > 12) return;
     store.recordFeature(reaction === 'heart' ? 'heart_reaction' : 'reaction');
+    if (reaction === 'heart') store.recordFeatureUser('heart_reaction', seeker.clientId);
     io.to(partnerId).emit('reaction', reaction);
 
     if (reaction === 'heart') {
@@ -5957,6 +5966,8 @@ io.on('connection', (socket) => {
       store.addLike(partner.clientId, seeker.clientId, { username: seeker.username, country: seeker.country });
       if (!wasMutual && set.size === 2) {
         store.recordFeature('heart_mutual');
+        store.recordFeatureUser('heart_mutual', seeker.clientId);
+        store.recordFeatureUser('heart_mutual', partner.clientId);
         socket.emit('mutual-heart', { partner: publicProfile(partner) });
         io.to(partnerId).emit('mutual-heart', { partner: publicProfile(seeker) });
       }
@@ -6919,6 +6930,7 @@ io.on('connection', (socket) => {
     }
     persistSocial();
     store.recordFeature('chat_edit');
+    store.recordFeatureUser('chat_edit', me.clientId);
     const wire = { id: msgId, text: next, edited: msg.edited };
     socket.emit('friend-message-edited', { chatWith: toClientId, ...wire });
     const targetSocket = getSocketByClientId(toClientId);

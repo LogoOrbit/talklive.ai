@@ -1686,6 +1686,93 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
     res.json(gamesReport(String(req.query.range || '7d')));
   });
 
+  // New features: how many people use streaks, passport, hearts / who liked
+  // you, undo skip and the rest, all-time and last 7 days. Distinct people
+  // come from the per-profile records; taps from the daily feature counts.
+  router.get('/api/new-features', (req, res) => {
+    const today = new Date().toISOString().slice(0, 10);
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    const st = { people: 0, any: 0, d2: 0, d3: 0, d7: 0, d14: 0, d30: 0, best: 0, alive: 0, today: 0, saved: 0 };
+    const pp = { any: 0, c5: 0, c10: 0, c25: 0, stamps: 0, max: 0 };
+    const topCountries = {};
+    for (const rec of Object.values(store.data.engage || {})) {
+      if (!rec || typeof rec !== 'object') continue;
+      st.people += 1;
+      const s = rec.streak || {};
+      const best = Number(s.best) || 0;
+      if (best >= 1) st.any += 1;
+      if (best >= 2) st.d2 += 1;
+      if (best >= 3) st.d3 += 1;
+      if (best >= 7) st.d7 += 1;
+      if (best >= 14) st.d14 += 1;
+      if (best >= 30) st.d30 += 1;
+      st.best = Math.max(st.best, best);
+      // Day keys are the person's local day, so "today" here is approximate.
+      if (s.last === today || s.last === yesterday) st.alive += 1;
+      if (s.last === today) st.today += 1;
+      if (s.freezeWeek) st.saved += 1;
+      const n = Array.isArray(rec.passport) ? rec.passport.length : 0;
+      if (n >= 1) pp.any += 1;
+      if (n >= 5) pp.c5 += 1;
+      if (n >= 10) pp.c10 += 1;
+      if (n >= 25) pp.c25 += 1;
+      pp.stamps += n;
+      pp.max = Math.max(pp.max, n);
+      if (n) for (const c of rec.passport) topCountries[c] = (topCountries[c] || 0) + 1;
+    }
+    const likes = store.data.likes || {};
+    const likers = new Set();
+    let liked = 0;
+    for (const list of Object.values(likes)) {
+      if (!Array.isArray(list) || !list.length) continue;
+      liked += 1;
+      for (const l of list) if (l && l.from) likers.add(l.from);
+    }
+    const fu = store.data.featureUsers || {};
+    const people = (k) => Object.keys(fu[k] || {}).length;
+    const days = store.data.analytics.days || {};
+    const keys = Object.keys(days).sort();
+    const last7 = keys.slice(-7);
+    const EVENTS = [
+      ['Undo skip', 'undo_skip', people('undo_skip')],
+      ['Hearts sent', 'heart_reaction', people('heart_reaction')],
+      ['Mutual hearts', 'heart_mutual', people('heart_mutual')],
+      ['"Who liked you" locked taps', 'likes_locked_tap', null],
+      ['Passport shared', 'passport_share', null],
+      ['Edited a DM', 'chat_edit', people('chat_edit')],
+      ['Top 3 films set', 'fav_films', null],
+      ['Free trial started (retired 30 Oct)', 'trial_started', null],
+      ['Invite reward claimed', 'referral_claimed', null],
+      ['Premium card shown', 'premium_upsell_view', null],
+      ['Premium card tapped', 'premium_upsell_click', null],
+      ['Premium "Notify me"', 'premium_notify_click', null],
+      ['Chat Support opened', 'support_chat', null],
+      ['Chat Support promo tapped', 'support_promo_click', null],
+      ["What's new opened", 'whats_new_open', null],
+    ].map(([label, key, ppl]) => {
+      let all = 0, week = 0, first = null;
+      const series = [];
+      for (const k of keys) {
+        const n = (days[k].features || {})[key] || 0;
+        if (n && !first) first = k;
+        all += n;
+        if (last7.includes(k)) week += n;
+      }
+      for (const k of keys.slice(-14)) series.push([k, (days[k].features || {})[key] || 0]);
+      return { label, key, all, week, first, people: ppl, series };
+    });
+    res.json({
+      streak: st,
+      passport: { ...pp, top: Object.entries(topCountries).sort((a, b) => b[1] - a[1]).slice(0, 10) },
+      likes: { liked, likers: likers.size, heartSenders: people('heart_reaction') },
+      events: EVENTS,
+      peopleSince: Object.values(fu).reduce((m, map) => {
+        for (const t of Object.values(map || {})) if (!m || t < m) m = t;
+        return m;
+      }, null),
+    });
+  });
+
   // Subscriptions, referrals and push reach - all read from existing records,
   // nothing here writes or removes anything.
   router.get('/api/premium', (req, res) => {

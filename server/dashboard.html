@@ -893,6 +893,7 @@ const NAV=[
     ['overview','Overview','📊',[['overview','Overview','📊']]],
     ['support','Support','🎧',[['support','Chat Support','🎧']]],
     ['live','Live','🟢',[['live','Live','🟢']]],
+    ['features','New features','✨',[['features','New features','✨']]],
     ['activity','Activity','📅',[['activity','Today & trends','📅'],['daily','Daily log','📋']]],
     ['traffic','Traffic','🔎',[['traffic','Traffic','🔎']]],
     ['audience','Audience','⚧',[['audience','Who uses it','⚧'],['experience','Experience','🩺']]],
@@ -1179,6 +1180,7 @@ async function load(force){
     else if(tab==='data')await viewData();
     else if(tab==='talktime')await viewTalkTime();
     else if(tab==='games')await viewGames();
+    else if(tab==='features')await viewNewFeatures();
     else if(tab==='revenue')await viewRevenue();
     else if(tab==='errors')await viewErrors();
     else if(tab==='feedback')await viewFeedback();
@@ -3073,6 +3075,32 @@ async function viewDaily(){
   document.querySelectorAll('#dlMetric button').forEach(b=>b.onclick=()=>{dlMetric=b.dataset.m;viewDaily();});
   document.querySelectorAll('.dltable th.sortable').forEach(th=>th.onclick=()=>{const k=th.dataset.s;dlDir=dlSort===k?-dlDir:-1;dlSort=k;viewDaily();});
   document.querySelectorAll('.dltable tr.dlr').forEach(tr=>tr.onclick=()=>{const d=tr.dataset.d;dlOpen.has(d)?dlOpen.delete(d):dlOpen.add(d);viewDaily();});
+}
+
+/* ---------- new features: streaks, passport, hearts, undo skip ---------- */
+async function viewNewFeatures(){
+  const r=await vapi('new-features');
+  const S=r.streak,P=r.passport,L=r.likes;
+  const pc=(a,b)=>b?Math.round(a/b*1000)/10+'%':'-';
+  const flag=(c)=>/^[A-Z]{2}$/.test(c)?String.fromCodePoint(...[...c].map(x=>127397+x.charCodeAt(0))):'';
+  const spark=(series)=>{const m=Math.max(1,...series.map(x=>x[1]));return `<span style="display:inline-flex;gap:2px;align-items:flex-end;height:18px">${series.map(([d,n])=>`<i title="${esc(d)}: ${num(n)}" style="display:block;width:5px;height:${Math.max(1,Math.round(n/m*18))}px;background:var(--s2);border-radius:1px;opacity:${n?1:.25}"></i>`).join('')}</span>`;};
+  const since=r.peopleSince?new Date(r.peopleSince).toLocaleDateString():'';
+  $('#main').innerHTML=`<div class="grid tiles anim" style="margin-top:0">
+    <div class="tile"><div class="k">🔥 Started a streak</div><div class="v" data-count="${S.any}">0</div><div class="s">${pc(S.any,S.people)} of ${num(S.people)} people with a good call (30s+)</div></div>
+    <div class="tile"><div class="k">🔥 Streak alive now</div><div class="v" data-count="${S.alive}">0</div><div class="s">${num(S.today)} already called today · best ever <b>${num(S.best)} days</b></div></div>
+    <div class="tile"><div class="k">🔥 2+ / 3+ / 7+ day streaks</div><div class="v" style="font-size:1.4rem">${num(S.d2)} / ${num(S.d3)} / ${num(S.d7)}</div><div class="s">14+: ${num(S.d14)} · 30+: ${num(S.d30)} · saved by freeze: ${num(S.saved)}</div></div>
+    <div class="tile"><div class="k">🌍 Passport stamps</div><div class="v" data-count="${P.any}">0</div><div class="s">people with 1+ country · ${num(P.stamps)} stamps total</div></div>
+    <div class="tile"><div class="k">🌍 5+ / 10+ / 25+ countries</div><div class="v" style="font-size:1.4rem">${num(P.c5)} / ${num(P.c10)} / ${num(P.c25)}</div><div class="s">most countries by one person: <b>${num(P.max)}</b></div></div>
+    <div class="tile"><div class="k">❤️ Hearts</div><div class="v" data-count="${L.heartSenders}">0</div><div class="s">people who sent one · ${num(L.liked)} people have likes waiting (last 30 days)</div></div>
+  </div>
+  <div class="card anim"><h2>✨ Every new feature <span class="sub">all time and last 7 days (UTC)</span></h2>
+    <div style="overflow-x:auto"><table><tr><th>Feature</th><th class="num">People</th><th class="num">Uses, all time</th><th class="num">Last 7 days</th><th>Last 14 days</th><th>First seen</th></tr>
+    ${r.events.map(e=>`<tr><td><b>${esc(e.label)}</b></td><td class="num">${e.people==null?'<span class="muted" title="Counted as taps only">-</span>':num(e.people)}</td><td class="num">${num(e.all)}</td><td class="num">${num(e.week)}</td><td>${spark(e.series)}</td><td>${e.first?esc(e.first):'<span class="muted">never</span>'}</td></tr>`).join('')}
+    </table></div>
+    <div class="muted" style="font-size:.8rem;margin-top:8px">Streak and passport numbers are distinct people, from each profile's saved record, since launch (27 Oct). "People" for other rows counts distinct profiles${since?` from ${esc(since)}`:''}; hearts include everyone who sent one since "Who liked you" launched. A dash means only taps are counted for that one.</div></div>
+  <div class="card anim"><h2>🌍 Most stamped countries <span class="sub">people who have talked to someone there</span></h2>
+    <table><tr><th>Country</th><th class="num">People</th></tr>${(P.top||[]).map(([c,n])=>`<tr><td>${flag(c)} ${esc(c)}</td><td class="num">${num(n)}</td></tr>`).join('')||'<tr><td colspan="2" class="muted">No stamps yet.</td></tr>'}</table></div>`;
+  animateCounters();
 }
 
 /* ---------- games: who played, how long, who said no ---------- */

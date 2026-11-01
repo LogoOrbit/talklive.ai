@@ -239,6 +239,10 @@ function defaults() {
     // Streak, passport and weekly stats per profile (see server/engage.js):
     // clientId -> { streak, passport, week, prevWeek, merged }. Kept for good.
     engage: {},
+    // Distinct people per new feature: feature -> { clientId: firstUsedAt }.
+    // Only for a few server-seen events (see FEATURE_USER_EVENTS), so the
+    // owner sees people, not just taps.
+    featureUsers: {},
     settings: {
       maintenance: { on: false, message: 'TalkLive is under maintenance. We will be back shortly!' },
       // Site-wide switches on the dashboard's Settings tab. Read through
@@ -275,6 +279,8 @@ let clientIdIndex = new Map();
 
 function applyParsed(parsed) {
   data = { ...defaults(), ...parsed };
+  if (!data.featureUsers || typeof data.featureUsers !== 'object') data.featureUsers = {};
+  backfillFeatureUsers();
   data.transcriptQueue = Array.isArray(parsed.transcriptQueue) ? parsed.transcriptQueue : [];
   // A freshly loaded document holds its transcripts itself until they are
   // confirmed in the table again (syncTranscripts).
@@ -2260,6 +2266,26 @@ function likesFor(clientId) {
   return (data.likes[clientId] || []).filter((l) => now - l.at < LIKES_TTL_MS);
 }
 
+// --- Distinct people per new feature ---
+const FEATURE_USER_EVENTS = new Set(['heart_reaction', 'heart_mutual', 'undo_skip', 'chat_edit']);
+function recordFeatureUser(name, clientId) {
+  if (!FEATURE_USER_EVENTS.has(name) || !clientId || typeof clientId !== 'string') return;
+  const map = data.featureUsers[name] || (data.featureUsers[name] = {});
+  if (map[clientId]) return;
+  map[clientId] = Date.now();
+  save();
+}
+// Hearts were already kept per sender in "Who liked you" since that shipped,
+// so the people who sent one before this count existed are carried in once.
+function backfillFeatureUsers() {
+  const hearts = data.featureUsers.heart_reaction || (data.featureUsers.heart_reaction = {});
+  for (const list of Object.values(data.likes || {})) {
+    for (const l of Array.isArray(list) ? list : []) {
+      if (l && l.from && !hearts[l.from]) hearts[l.from] = l.at || Date.now();
+    }
+  }
+}
+
 // --- Streak and passport ---
 function engageGet(clientId) {
   return data.engage[clientId] || null;
@@ -3622,6 +3648,7 @@ module.exports = {
   isPremiumClient,
   addLike,
   likesFor,
+  recordFeatureUser,
   engageGet,
   engageSet,
   premiumExpiry,

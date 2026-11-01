@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-11-01 — New-feature usage, fixes from production errors
+
+- **Owner dashboard → New features** (`/owner#features`): people with a
+  streak (2+/3+/7+ days, alive now, best ever), passport stamps (5+/10+/25+
+  countries, top countries), hearts, and every new feature's uses all-time,
+  last 7 days and per day. Numbers cover everything since launch.
+- Distinct people are now counted per feature (hearts, mutual hearts, undo
+  skip, DM edits). Hearts already saved in "Who liked you" are counted from
+  the first boot.
+- **Call reactions**: only the four real reactions are passed to the
+  partner, max 12 per 5 s. Any string of any size used to be relayed.
+- **Old phones**: the dots-and-boxes game no longer crashes where canvas
+  `roundRect` is missing (Safari < 16, Chrome < 99), and the name rules
+  script loads on browsers without `\p{...}` regex support (the server still
+  enforces the rules there).
+- Passport share: a refused clipboard no longer throws an uncaught error.
+
 ## 2026-11-01 — Help & Support
 
 - **No floating chat bubble** on any page or screen size.

@@ -296,7 +296,8 @@
         const rr = 7;
         const x = bx + inset, y = by + inset, w = step - inset * 2, h = step - inset * 2;
         ctx.beginPath();
-        ctx.roundRect(x, y, w, h, rr);
+        if (ctx.roundRect) ctx.roundRect(x, y, w, h, rr);
+        else ctx.rect(x, y, w, h); // Safari < 16, Chrome < 99
         ctx.fill();
         // Owner initial in the middle of the box.
         ctx.globalAlpha = ease * 0.95;

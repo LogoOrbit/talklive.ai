@@ -259,7 +259,7 @@
       return;
     }
     try {
-      navigator.clipboard.writeText(text + ' ' + url).then(function () { showToast(t('engageCopied'), 'success'); });
+      navigator.clipboard.writeText(text + ' ' + url).then(function () { showToast(t('engageCopied'), 'success'); }, function () { /* permission denied */ });
     } catch (_) { /* no clipboard */ }
   }
 
