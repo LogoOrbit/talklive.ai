@@ -100,6 +100,20 @@ const film = (id, extra = {}) => ({
     const mine = await once(a, 'fav-films');
     ok('own list is flagged as own', mine.self === true && mine.clientId === 'c_films_a');
 
+    // A match carries the partner's films and the ones both picked: same Apple
+    // id, or the same title + year under a different id.
+    const c = await connect('c_films_c');
+    const d = await connect('c_films_d');
+    await save(c, [film(1), film(5), film(7)]);
+    await save(d, [film(1), film(99, { title: 'Film 5' }), film(8)]);
+    const both = Promise.all([once(c, 'matched'), once(d, 'matched')]);
+    c.emit('find-partner', { mode: 'chat' });
+    d.emit('find-partner', { mode: 'chat' });
+    const [mc, md] = await both;
+    ok('the partner\'s films come with the match', mc.partner.films.length === 3 && md.partner.films.length === 3, JSON.stringify(mc.partner.films));
+    const titles = (m) => (m.sameFilms || []).map((f) => f.title).sort().join(',');
+    ok('films both picked are reported to both', titles(mc) === 'Film 1,Film 5' && titles(md) === 'Film 1,Film 5', titles(mc) + ' / ' + titles(md));
+
     a.emit('block-friend', { friendClientId: 'c_films_b' });
     await wait(300);
     b.emit('get-fav-films', { clientId: 'c_films_a' });

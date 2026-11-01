@@ -3997,6 +3997,19 @@ function sharedPersonality(a, b) {
   return typeof x === 'string' && x.slice(0, 2) === 'c:' && b && x === b.avatar ? x.slice(2) : null;
 }
 
+// Top 3 films both people picked, as the partner stored them. Same title is
+// matched by Apple id, or by type + title + year when the two picks came from
+// different Apple ids for the same film.
+function filmKey(f) {
+  return `${f.t}:${String(f.title || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '')}:${f.year || ''}`;
+}
+function sharedFilms(a, b) {
+  const mine = store.getFavFilms(a && a.clientId);
+  if (!mine.length) return [];
+  return store.getFavFilms(b && b.clientId).filter((f) => mine.some((m) =>
+    (m.t === f.t && m.id === f.id) || filmKey(m) === filmKey(f)));
+}
+
 function publicProfile(p) {
   return {
     clientId: p.clientId,
@@ -4017,6 +4030,8 @@ function publicProfile(p) {
     lang: p.lang || null,
     // Premium badge next to the name.
     premium: !!p.premium,
+    // Their top 3 films & shows, shown on the live chat and call screens.
+    films: store.getFavFilms(p.clientId).slice(0, FILM_MAX),
   };
 }
 
@@ -4269,8 +4284,8 @@ function pairSockets(socketId, partnerId, opts = {}) {
   const mode = seekerProfile.mode || 'talk';
   store.recordFeature(mode === 'chat' ? 'chat_match' : 'match');
   const samePersonality = sharedPersonality(seekerProfile, partnerProfile);
-  partnerSocket.emit('matched', { initiator: true, partner: publicProfile(seekerProfile), rematched, mode, samePersonality, undo: opts.undo ? 'them' : undefined });
-  seekerSocket.emit('matched', { initiator: false, partner: publicProfile(partnerProfile), rematched, mode, samePersonality, undo: opts.undo ? 'me' : undefined });
+  partnerSocket.emit('matched', { initiator: true, partner: publicProfile(seekerProfile), rematched, mode, samePersonality, sameFilms: sharedFilms(partnerProfile, seekerProfile), undo: opts.undo ? 'them' : undefined });
+  seekerSocket.emit('matched', { initiator: false, partner: publicProfile(partnerProfile), rematched, mode, samePersonality, sameFilms: sharedFilms(seekerProfile, partnerProfile), undo: opts.undo ? 'me' : undefined });
 
   // Remember each other so either side can message back, call back, add or
   // report later. This used to happen for text matches only, which left every
@@ -7227,8 +7242,8 @@ io.on('connection', (socket) => {
     me.mode = 'talk';
     requesterProfile.mode = 'talk';
     const samePersonality = sharedPersonality(me, requesterProfile);
-    requesterSocket.emit('matched', { initiator: true, partner: publicProfile(me), rematched: false, callback: true, mode: 'talk', samePersonality });
-    socket.emit('matched', { initiator: false, partner: publicProfile(requesterProfile), rematched: false, callback: true, mode: 'talk', samePersonality });
+    requesterSocket.emit('matched', { initiator: true, partner: publicProfile(me), rematched: false, callback: true, mode: 'talk', samePersonality, sameFilms: sharedFilms(requesterProfile, me) });
+    socket.emit('matched', { initiator: false, partner: publicProfile(requesterProfile), rematched: false, callback: true, mode: 'talk', samePersonality, sameFilms: sharedFilms(me, requesterProfile) });
     rememberPairing(socket, me, requesterSocket, requesterProfile);
   });
 
@@ -7337,8 +7352,8 @@ io.on('connection', (socket) => {
     me.mode = 'talk';
     otherProfile.mode = 'talk';
     const samePersonality = sharedPersonality(me, otherProfile);
-    otherSocket.emit('matched', { initiator: true, partner: publicProfile(me), rematched: false, callback: true, mode: 'talk', samePersonality });
-    socket.emit('matched', { initiator: false, partner: publicProfile(otherProfile), rematched: false, callback: true, mode: 'talk', samePersonality });
+    otherSocket.emit('matched', { initiator: true, partner: publicProfile(me), rematched: false, callback: true, mode: 'talk', samePersonality, sameFilms: sharedFilms(otherProfile, me) });
+    socket.emit('matched', { initiator: false, partner: publicProfile(otherProfile), rematched: false, callback: true, mode: 'talk', samePersonality, sameFilms: sharedFilms(me, otherProfile) });
     rememberPairing(socket, me, otherSocket, otherProfile);
   });
 

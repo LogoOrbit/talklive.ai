@@ -6,6 +6,10 @@
  *   TalkLiveFilms.ready                     -> Promise<boolean> (feature on?)
  *   TalkLiveFilms.show(box, clientId, sock) -> someone's row, read-only
  *   TalkLiveFilms.editor(box, sock)         -> this user's own row, editable
+ *   TalkLiveFilms.strip(box, films, opts)   -> a live partner's row, no fetch
+ *   TalkLiveFilms.sameLine(films)           -> "You both love X!" or ''
+ *
+ * Titles both people picked are marked "Both" on the poster.
  *
  * Search runs here in the browser, so it costs the server nothing and needs no
  * API key: Wikidata (free, CC0) finds films that have an Apple ID, Apple's
@@ -40,10 +44,15 @@
     favFilmsTv: 'Show',
     favFilmsCredit: 'Films via Wikidata · posters and shows via Apple',
     favFilmsBusy: 'Search is busy. Try again in a moment.',
+    favFilmsBoth: 'Both',
+    favFilmsTheirs: "{name}'s top films & shows",
+    favFilmsSame: 'You both love {list}!',
   };
-  function tr(key) {
+  function tr(key, vars) {
     var s = typeof window.t === 'function' ? window.t(key) : key;
-    return s && s !== key ? s : EN[key];
+    s = s && s !== key ? s : EN[key];
+    Object.keys(vars || {}).forEach(function (k) { s = s.split('{' + k + '}').join(vars[k]); });
+    return s;
   }
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -52,6 +61,22 @@
   }
 
   var ready = Promise.resolve(true);
+
+  // The same film or show, even when the two picks carry different Apple ids
+  // (a film has one per country's store): same type, title and year.
+  function key(f) {
+    return f.t + ':' + String(f.title || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '') + ':' + (f.year || '');
+  }
+  function same(a, b) { return a.t === b.t && (a.id === b.id || key(a) === key(b)); }
+  function inList(f, list) { return (list || []).some(function (g) { return same(f, g); }); }
+
+  // "You both love Inception!" / "You both love Inception and Dune!"
+  function sameLine(films) {
+    var names = (films || []).slice(0, MAX).map(function (f) { return f.title; }).filter(Boolean);
+    if (!names.length) return '';
+    var list = names.length === 1 ? names[0] : names.slice(0, -1).join(', ') + ' & ' + names[names.length - 1];
+    return tr('favFilmsSame', { list: list });
+  }
 
   // Apple artwork URLs end in a size ("/100x100bb.jpg") the CDN will render at
   // any other size. Films are 2:3 posters; a show's art is square season art.
@@ -72,6 +97,9 @@
     '.tlf-name{display:block;margin-top:5px;font-size:12px;font-weight:600;color:var(--text,#f2f4ff);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
     '.tlf-year{display:block;font-size:11px;color:var(--muted,#8a90a8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
     '.tlf-link{color:inherit;text-decoration:underline;text-underline-offset:2px}' +
+    '.tlf-slot.is-same .tlf-poster{box-shadow:0 0 0 2px var(--accent,#6c5ce7)}' +
+    '.tlf-same{position:absolute;top:5px;left:5px;padding:2px 7px;border-radius:999px;background:var(--accent,#6c5ce7);color:#fff;font-size:10px;font-weight:700;line-height:1.5;pointer-events:none}' +
+    '.tlf-match{margin:0 0 8px;font-size:12px;font-weight:600;color:var(--accent,#a29bfe)}' +
     '.tlf-x{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:0;background:rgba(0,0,0,.65);color:#fff;font-size:15px;line-height:22px;padding:0;cursor:pointer}' +
     '.tlf-pick{position:fixed;inset:0;z-index:10050;display:flex;align-items:flex-start;justify-content:center;padding:max(5vh,16px) 16px 16px;background:rgba(0,0,0,.55)}' +
     '.tlf-box{width:100%;max-width:420px;max-height:80vh;display:flex;flex-direction:column;border-radius:16px;background:var(--bg-2,#111729);color:var(--text,#f2f4ff);border:1px solid var(--line,rgba(255,255,255,.09));box-shadow:0 20px 50px rgba(0,0,0,.4);overflow:hidden}' +
@@ -133,16 +161,48 @@
 
   // One poster. Someone else's links to its Apple page; your own opens the
   // picker to replace it. Either way the "Apple TV" link sits under it.
-  function tile(f, editable, i) {
-    var img = '<img class="tlf-poster" src="' + esc(art(f, 154)) + '" alt="" width="154" height="231" loading="lazy" decoding="async">';
+  function tile(f, editable, i, isSame) {
+    var badge = isSame ? '<span class="tlf-same">' + esc(tr('favFilmsBoth')) + '</span>' : '';
+    var img = badge + '<img class="tlf-poster" src="' + esc(art(f, 154)) + '" alt="" width="154" height="231" loading="lazy" decoding="async">';
     var name = '<span class="tlf-name">' + esc(f.title) + '</span>';
     var out = ' href="' + esc(f.url) + '" target="_blank" rel="noopener noreferrer"';
     var under = '<span class="tlf-year">' + (f.year ? esc(f.year) + ' · ' : '') +
       '<a class="tlf-link"' + out + '>Apple TV</a></span>';
-    if (!editable) return '<div class="tlf-slot"><a class="tlf-pickbtn" title="' + esc(f.title) + '"' + out + '>' + img + name + '</a>' + under + '</div>';
+    if (!editable) return '<div class="tlf-slot' + (isSame ? ' is-same' : '') + '"><a class="tlf-pickbtn" title="' + esc(f.title) + '"' + out + '>' + img + name + '</a>' + under + '</div>';
     return '<div class="tlf-slot">' +
       '<button type="button" class="tlf-pickbtn" data-i="' + i + '" title="' + esc(f.title) + '">' + img + name + '</button>' + under +
       '<button type="button" class="tlf-x" data-x="' + i + '" aria-label="' + esc(tr('favFilmsRemove') + ' ' + f.title) + '">&times;</button></div>';
+  }
+
+  // A read-only row of someone's picks, with the ones you share marked.
+  function paintRow(box, films, mine, title, noMatchLine) {
+    style();
+    box.classList.add('tlf');
+    var shared = films.filter(function (f) { return inList(f, mine); });
+    box.innerHTML = '<p class="tlf-h">' + esc(title) + '</p>' +
+      (shared.length && !noMatchLine ? '<p class="tlf-match">' + esc(sameLine(shared)) + '</p>' : '') +
+      '<div class="tlf-row">' + films.slice(0, MAX).map(function (f) { return tile(f, false, 0, inList(f, mine)); }).join('') + '</div>';
+    box.hidden = false;
+  }
+
+  // The live partner's row, from the films that came with the match. Your own
+  // list is fetched (cached) only to mark what you share.
+  function strip(box, films, opts) {
+    if (!box) return;
+    opts = opts || {};
+    films = Array.isArray(films) ? films : [];
+    var token = String(Math.random());
+    box.dataset.for = token;
+    box.innerHTML = '';
+    box.hidden = true;
+    if (!films.length) return;
+    var title = opts.name ? tr('favFilmsTheirs', { name: opts.name }) : tr('favFilmsTitle');
+    paintRow(box, films, opts.same || [], title, opts.noMatchLine);
+    if (!opts.sock) return;
+    bind(opts.sock);
+    load(opts.sock, null, function (mine) {
+      if (box.dataset.for === token) paintRow(box, films, mine, title, opts.noMatchLine);
+    });
   }
 
   // Someone's row. Hidden when the feature is off or they picked nothing.
@@ -158,11 +218,11 @@
       load(sock, clientId, function (films) {
         if (box.dataset.for !== clientId) return; // a different profile is open now
         if (!films.length) return;
-        style();
-        box.classList.add('tlf');
-        box.innerHTML = '<p class="tlf-h">' + esc(tr('favFilmsTitle')) + '</p><div class="tlf-row">' +
-          films.slice(0, MAX).map(function (f) { return tile(f, false); }).join('') + '</div>';
-        box.hidden = false;
+        paintRow(box, films, [], tr('favFilmsTitle'));
+        if (clientId === myId) return;
+        load(sock, null, function (mine) {
+          if (box.dataset.for === clientId) paintRow(box, films, mine, tr('favFilmsTitle'));
+        });
       });
     });
   }
@@ -370,5 +430,5 @@
     setTimeout(function () { input.focus(); }, 0);
   }
 
-  window.TalkLiveFilms = { ready: ready, show: show, editor: editor };
+  window.TalkLiveFilms = { ready: ready, show: show, editor: editor, strip: strip, sameLine: sameLine };
 })();

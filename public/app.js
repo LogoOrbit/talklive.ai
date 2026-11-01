@@ -1656,7 +1656,7 @@ var filmsLoading = null;
 function withFilms(cb) {
   filmsLoading = filmsLoading || new Promise((ok, fail) => {
     const s = document.createElement('script');
-    s.src = '/fav-films.js?v=20261007retry';
+    s.src = '/fav-films.js?v=20261101same';
     s.onload = ok;
     s.onerror = () => { filmsLoading = null; fail(); };
     document.head.appendChild(s);
@@ -8270,6 +8270,7 @@ function teardownPeer() {
   partnerCard.classList.add('hidden');
   stopPartnerClock();
   sharedInterestNote.classList.add('hidden');
+  if (partnerFilmsBox) partnerFilmsBox.hidden = true;
   reactionBar.classList.add('hidden');
   stopQualityMonitor();
   stopCallTimer();
@@ -10396,7 +10397,7 @@ function sendAdsConversion() {
   window.gtag('event', 'conversion', { send_to: 'AW-18500257801/LPruCP3u4ZQdEImQzvVE' });
 }
 
-socket.on('matched', async ({ initiator, partner, rematched, callback, samePersonality }) => {
+socket.on('matched', async ({ initiator, partner, rematched, callback, samePersonality, sameFilms }) => {
   markSearchAcked();
   hideKeepFilters();
   sendAdsConversion();
@@ -10448,6 +10449,7 @@ socket.on('matched', async ({ initiator, partner, rematched, callback, samePerso
   currentPartner = partner;
   currentPartnerInterests = partner.interests || [];
   currentSamePersonality = samePersonality || null;
+  currentSameFilms = Array.isArray(sameFilms) ? sameFilms : [];
   twinNoticeFor = null;
   partnerCard.classList.add('hidden');
   renderPartnerAnimal(null); // never let the last stranger's animal linger
@@ -10476,6 +10478,19 @@ socket.on('matched', async ({ initiator, partner, rematched, callback, samePerso
 // Same spirit animal and/or same personality avatar: worth saying out loud,
 // once per match, the moment the two of you are actually connected.
 let currentSamePersonality = null;
+let currentSameFilms = [];
+// Partner's top films + "You both love X!" (fav-films.js).
+let partnerFilmsBox = null;
+function renderPartnerFilms(partner) {
+  if (!(partner.films || []).length) return;
+  withFilms((F) => {
+    if (currentPartner !== partner || !F.strip) return;
+    if (!partnerFilmsBox) sharedInterestNote.after(partnerFilmsBox = document.createElement('div'));
+    F.strip(partnerFilmsBox, partner.films, { name: partner.username, same: currentSameFilms, sock: socket });
+    const same = F.sameLine(currentSameFilms);
+    if (same) { showToast(`🎬 ${same}`, 'success'); vibrate([20, 40, 20]); }
+  });
+}
 let twinNoticeFor = null;
 function twinMatchMessage(partner, characterId) {
   const animal = partner && partner.animal && Animals && Animals.has(partner.animal) && partner.animal === myAnimal
@@ -10510,6 +10525,7 @@ function revealPartner() {
     twinNoticeFor = partner;
     const twin = twinMatchMessage(partner, currentSamePersonality);
     if (twin) { showToast(twin, 'success'); vibrate([20, 40, 20]); }
+    renderPartnerFilms(partner);
   }
 
   partnerInterests.innerHTML = '';
@@ -11262,8 +11278,7 @@ function openSocialDeepLink(params) {
     else socket.once('state-sync', () => setTimeout(ringWhenKnown, 0));
     return true;
   }
-  // "Answer" on the /chat ringing card: pick up here, where voice lives. The
-  // caller is still ringing, so the server pairs both sides straight away.
+  // Answer from /chat's ringing card.
   const answerFrom = open === 'answer' ? params.get('from') : null;
   if (answerFrom && /^[A-Za-z0-9_-]{8,64}$/.test(answerFrom)) {
     const answerWhenKnown = () => {

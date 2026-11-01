@@ -2881,7 +2881,7 @@
     if (!filmsLoading) {
       filmsLoading = new Promise(function (resolve, reject) {
         var s = document.createElement('script');
-        s.src = '/fav-films.js?v=20261007retry';
+        s.src = '/fav-films.js?v=20261101same';
         s.async = true;
         s.onload = resolve;
         s.onerror = function () { filmsLoading = null; reject(); };
@@ -2889,6 +2889,31 @@
       });
     }
     filmsLoading.then(function () { cb(window.TalkLiveFilms); }).catch(function () {});
+  }
+  // On a match: "You both love X!" when your top films overlap, and their
+  // posters right in the chat, so they are seen without opening a profile.
+  function showPartnerFilms(partner, sameFilms) {
+    var films = partner && Array.isArray(partner.films) ? partner.films : [];
+    var shared = Array.isArray(sameFilms) ? sameFilms : [];
+    if (!films.length) return;
+    // Placed now, so they sit with the other match lines; filled once loaded.
+    var sameLine = shared.length ? addMessage('', 'system system-animal-match') : null;
+    var line = addMessage('', 'system system-films');
+    if (sameLine) sameLine.hidden = true;
+    line.hidden = true;
+    var box = document.createElement('div');
+    line.appendChild(box);
+    withFilms(function (F) {
+      if (!F.strip) return;
+      F.strip(box, films, { name: partner.username, same: shared, sock: socket, noMatchLine: true });
+      line.hidden = box.hidden;
+      if (sameLine) {
+        sameLine.textContent = '🎬 ' + F.sameLine(shared);
+        sameLine.hidden = false;
+        vibrate([20, 40, 20]);
+      }
+      msgs.scrollTop = msgs.scrollHeight;
+    });
   }
   function closeProfile() {
     if (profileBox) closeModal(profileBox);
@@ -3477,6 +3502,7 @@
       addMessage(t('personalitySameMatch', { character: C.name(data.samePersonality) }), 'system system-animal-match');
       msgs.scrollTop = msgs.scrollHeight;
     }
+    showPartnerFilms(data.partner, data.sameFilms);
     showIcebreakers();
     // Matched while this tab is in the background: tell them straight away.
     if (document.visibilityState === 'hidden') reportAway();
