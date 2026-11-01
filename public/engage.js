@@ -97,6 +97,16 @@
     return /^[A-Z]{2}$/.test(code || '') && code !== 'XX'
       ? String.fromCodePoint.apply(null, code.split('').map(function (c) { return 0x1f1a5 + c.charCodeAt(0); })) : '';
   }
+  // A flag picture: emoji flags are blank letters on Windows ("IN"). If the
+  // image is blocked, the two-letter code shows in its place.
+  function flagImg(code, w) {
+    if (!/^[A-Z]{2}$/.test(code || '') || code === 'XX') return '';
+    var cc = code.toLowerCase();
+    return '<span class="tl-flag" data-cc="' + code + '" style="width:' + w + 'px;height:' + Math.round(w * 0.75) + 'px">'
+      + '<img src="https://flagcdn.com/w80/' + cc + '.png" srcset="https://flagcdn.com/w160/' + cc + '.png 2x" alt="" '
+      + 'width="' + w + '" height="' + Math.round(w * 0.75) + '" loading="lazy" decoding="async" '
+      + 'onerror="this.parentNode.classList.add(\'is-failed\');this.remove()"></span>';
+  }
   function countryName(code) {
     return (typeof getCountryName === 'function' && getCountryName(code)) || code;
   }
@@ -190,7 +200,7 @@
       + '<button type="button" class="tl-engage-tile" data-act="passport">'
       + '<span class="tl-engage-big">🌍 ' + p.codes.length + '</span>'
       + '<span class="tl-engage-label">' + esc(t('engagePassportLabel')) + '</span>'
-      + '<span class="tl-engage-sub">' + (p.codes.length ? p.codes.slice(-4).map(flag).join('') : esc(t('engagePassportEmpty'))) + '</span></button>'
+      + '<span class="tl-engage-sub tl-engage-flags">' + (p.codes.length ? p.codes.slice(-4).map(function (c) { return flagImg(c, 20); }).join('') : esc(t('engagePassportEmpty'))) + '</span></button>'
       + '<button type="button" class="tl-engage-tile tl-engage-likes" data-act="likes">'
       + '<span class="tl-engage-big">❤️ ' + likes.count + '</span>'
       + '<span class="tl-engage-label">' + esc(t('engageLikesLabel')) + '</span>'
@@ -237,8 +247,11 @@
   function openPassport() {
     var p = passport();
     var grid = p.codes.length
-      ? '<div class="tl-passport-grid">' + p.codes.map(function (c) {
-        return '<span class="tl-stamp"><b>' + flag(c) + '</b><small>' + esc(countryName(c)) + '</small></span>';
+      ? '<div class="tl-passport-grid">' + p.codes.map(function (c, i) {
+        // Each stamp sits at its own slight tilt and lands one after another.
+        var tilt = ((c.charCodeAt(0) * 7 + c.charCodeAt(1) * 3) % 9) - 4;
+        return '<span class="tl-stamp' + (i === p.codes.length - 1 ? ' is-newest' : '') + '" style="--tilt:' + tilt + 'deg;--i:' + Math.min(i, 20) + '">'
+          + flagImg(c, 44) + '<small>' + esc(countryName(c)) + '</small></span>';
       }).join('') + '</div>'
       : '<p class="pu-reason">' + esc(t('engagePassportEmptyLong')) + '</p>';
     var m = dialog('passportModal',
@@ -288,7 +301,7 @@
     }
     var rows = likes.list.length
       ? '<ul class="tl-likes">' + likes.list.map(function (l) {
-        return '<li><span class="tl-likes-who"><b>' + flag(l.countryCode) + ' ' + esc(l.username) + '</b><small>'
+        return '<li><span class="tl-likes-who"><b>' + flagImg(l.countryCode, 18) + ' ' + esc(l.username) + '</b><small>'
           + (l.online ? '<i class="tl-dot"></i>' + esc(t('engageOnline')) + ' · ' : '') + esc(ago(l.at)) + '</small></span>'
           + (l.online ? '<button type="button" class="tl-likes-call" data-call="' + esc(l.clientId) + '" data-name="' + esc(l.username) + '">📞 ' + esc(t('engageCallBack')) + '</button>' : '')
           + '</li>';

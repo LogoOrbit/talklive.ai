@@ -3376,13 +3376,28 @@ summary.tl-filter-legend::-webkit-details-marker { display: none; }
 }
 .tl-stamp {
   display: grid;
-  gap: 2px;
-  padding: 8px 4px;
-  border: 1px solid var(--tl-line);
+  justify-items: center;
+  gap: 6px;
+  padding: 10px 4px 8px;
+  border: 1.5px dashed color-mix(in srgb, var(--accent) 45%, var(--tl-line));
   border-radius: 12px;
   background: color-mix(in srgb, var(--text) 4%, transparent);
+  transform: rotate(var(--tilt, 0deg));
+  animation: tl-stamp-in 0.45s cubic-bezier(.2, 1.4, .4, 1) both;
+  animation-delay: calc(var(--i, 0) * 60ms);
 }
-.tl-stamp b { font-size: 24px; }
+.tl-stamp.is-newest { border-style: solid; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent); }
+.tl-stamp .tl-flag { border-radius: 5px; box-shadow: 0 2px 8px rgba(0, 0, 0, .35); }
+@keyframes tl-stamp-in {
+  from { opacity: 0; transform: scale(1.6) rotate(calc(var(--tilt, 0deg) - 12deg)); }
+  to { opacity: 1; transform: scale(1) rotate(var(--tilt, 0deg)); }
+}
+@media (prefers-reduced-motion: reduce) { .tl-stamp { animation: none; } }
+.tl-flag { display: inline-block; overflow: hidden; border-radius: 3px; vertical-align: -3px; flex: none; }
+.tl-flag img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.tl-flag.is-failed { display: inline-grid; place-items: center; overflow: visible; box-shadow: none; font-weight: 800; font-size: 13px; }
+.tl-flag.is-failed::before { content: attr(data-cc); }
+.tl-engage-flags { display: flex; gap: 4px; justify-content: center; }
 .tl-stamp small { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tl-likes { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; text-align: start; }
 .tl-likes li {
