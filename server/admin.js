@@ -19,18 +19,20 @@ const health = require('./health');
 
 const SESSION_HOURS = 12;
 const OWNER_EMAIL = process.env.OWNER_EMAIL || '';
+// Dashboard alert emails (auto-mod, etc.) go here, not to the owner's personal inbox.
+const ALERT_EMAIL = process.env.ALERT_EMAIL || 'info@talklive.app';
 const SETUP_TOKEN = (process.env.OWNER_SETUP_TOKEN || '').trim();
 
 // --- Email alerts (shared SMTP transport, see mailer.js) ---
 const emailThrottle = new Map(); // key -> last sent ts
 function sendAlertEmail(kind, subject, text) {
-  if (!mail.configured() || !OWNER_EMAIL) return;
+  if (!mail.configured() || !ALERT_EMAIL) return;
   // At most one email per kind per 10 minutes so a burst can't flood the inbox.
   const last = emailThrottle.get(kind) || 0;
   if (Date.now() - last < 10 * 60000) return;
   emailThrottle.set(kind, Date.now());
   mail.sendMail({
-    to: OWNER_EMAIL,
+    to: ALERT_EMAIL,
     subject: `[TalkLive] ${subject}`,
     text,
     fromName: 'TalkLive Dashboard',
@@ -850,7 +852,7 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
   // --- Auto-mod (server/automod.js) ------------------------------------------
   router.get('/api/automod', (req, res) => {
     if (!automod) return res.status(503).json({ error: 'Auto-mod is not running.' });
-    res.json({ ...automod.summary(), emailAlerts: !!(mail.configured() && OWNER_EMAIL) });
+    res.json({ ...automod.summary(), emailAlerts: !!(mail.configured() && ALERT_EMAIL) });
   });
   router.get('/api/automod/simulate', (req, res) => {
     if (!automod) return res.status(503).json({ error: 'Auto-mod is not running.' });

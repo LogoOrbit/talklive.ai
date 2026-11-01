@@ -2103,7 +2103,7 @@ async function viewAutomod(){
     </div>
     <div class="muted" style="margin-top:10px;font-size:.78rem">
       🔎 Chat checks: ${r.aiConfigured&&st.ai?`<b style="color:var(--good)">AI</b> · ${num(r.aiCallsLastHour)} this hour`:'<b style="color:var(--good)">free keyword rules</b> (no AI cost)'} ·
-      ✉️ Email alerts for the review queue: ${r.emailAlerts?'<b style="color:var(--good)">on</b>':'not set up (OWNER_EMAIL + SMTP)'} ·
+      ✉️ Email alerts for the review queue: ${r.emailAlerts?'<b style="color:var(--good)">on</b>':'not set up (SMTP)'} ·
       ${num(r.tracked)} people tracked</div>
   </div>
 
