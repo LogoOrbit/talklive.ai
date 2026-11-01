@@ -401,6 +401,8 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "leaveChatTitle": "Leave this chat?",
     "leaveChatForSettings": "Settings and your profile open on their own screen, which ends the chat you are in.",
     "leaveChatOk": "Leave chat",
+    "leaveChatEnds": "Leaving this page ends the chat you are in.",
+    "leaveChatForCall": "Calls open on the voice screen, which ends the chat you are in.",
     "nickEmpty": "Display name cannot be empty.",
     "nickBadChars": "Use letters, numbers, spaces and . _ - ' only. No emoji or symbols.",
     "nickEdges": "Start and end your display name with a letter or number.",

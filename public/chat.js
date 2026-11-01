@@ -1272,7 +1272,7 @@
     if (directCallFrom) {
       var from = directCallFrom;
       stopDirectRing();
-      location.href = '/?open=answer&from=' + encodeURIComponent(from);
+      goTo('/?open=answer&from=' + encodeURIComponent(from));
       return;
     }
     socket.emit('voice-invite-respond', { accept: true });
@@ -1289,7 +1289,7 @@
   socket.on('voice-invite-accepted', function (data) {
     var token = data && data.token;
     if (!token) return;
-    location.href = '/call?invite=' + encodeURIComponent(token);
+    goTo('/call?invite=' + encodeURIComponent(token));
   });
 
   // Tiny toast under the search line for transient errors.
@@ -1405,16 +1405,49 @@
   // call open (public/settings-panel.js), same keys, same values. "All
   // settings" and your face go to the full Settings screen and your profile,
   // which live on the landing page.
-  function leaveChatFor(url) {
+  // Anything that leaves this page mid-chat asks first: the chat ends with it.
+  var leavingPage = false;
+  function goTo(url) { leavingPage = true; location.href = url; }
+  function confirmLeave(textKey, onOk) {
     closeAllPanels();
-    if (!partnerHere) { location.href = url; return; }
+    if (!partnerHere) { onOk(); return; }
     askConfirm({
       title: t('leaveChatTitle'),
-      text: t('leaveChatForSettings'),
+      text: t(textKey),
       ok: t('leaveChatOk'),
       danger: false,
-    }, function () { location.href = url; });
+    }, onOk);
   }
+  function leaveChatFor(url, textKey) {
+    confirmLeave(textKey || 'leaveChatForSettings', function () { goTo(url); });
+  }
+  // The logo goes home, which ends the chat.
+  $('brandHome').addEventListener('click', function (e) {
+    if (!partnerHere) return;
+    e.preventDefault();
+    leaveChatFor(this.getAttribute('href') || '/', 'leaveChatEnds');
+  });
+  // Back: a history entry is added while a chat is live, so the first Back
+  // lands here and asks instead of leaving the page.
+  var backGuard = false;
+  function armBackGuard() {
+    if (backGuard) return;
+    backGuard = true;
+    history.pushState({ tlChatGuard: 1 }, '', location.href);
+  }
+  window.addEventListener('popstate', function () {
+    if (!backGuard) return;
+    backGuard = false;
+    if (!partnerHere || leavingPage) { history.back(); return; }
+    armBackGuard();
+    confirmLeave('leaveChatEnds', function () { leavingPage = true; backGuard = false; history.go(-2); });
+  });
+  // Closing or reloading the tab: the browser's own "Leave site?" prompt.
+  window.addEventListener('beforeunload', function (e) {
+    if (!partnerHere || leavingPage) return;
+    e.preventDefault();
+    e.returnValue = '';
+  });
   var settingsPanel = $('settingsPanel');
   var settingsOverlay = $('settingsPanelOverlay');
   var quickSettings = null;
@@ -2805,6 +2838,8 @@
     var ok = confirmBox.querySelector('[data-act="ok"]');
     ok.textContent = o.ok;
     ok.className = 'btn ' + (o.danger === false ? 'btn-primary' : 'btn-danger');
+    // Last in the page, so it opens above a profile sheet built after it.
+    document.body.appendChild(confirmBox);
     openModal(confirmBox);
     vibrate(15);
     confirmBox.querySelector('.btn-secondary').focus();
@@ -2985,7 +3020,7 @@
       case 'chat': closeProfile(); openFriendChat({ clientId: id, username: p.username }); break;
       case 'call':
         // Voice lives in the call app: it opens there, already ringing them.
-        location.href = '/?open=call&with=' + encodeURIComponent(id);
+        leaveChatFor('/?open=call&with=' + encodeURIComponent(id), 'leaveChatForCall');
         break;
       case 'add':
         if (isLivePartner(id)) { closeProfile(); addFriendBtn.click(); break; }
@@ -3452,6 +3487,7 @@
     $('topPartnerCountry').textContent = countryName;
     $('topPartnerFlag').innerHTML = countryName ? getFlagImg(data.partner.countryCode, 16) : '';
     showView('live');
+    armBackGuard();
     soundConnect();
     // "You're now chatting with X from Pakistan 🇵🇰" - the flag image goes right
     // after the country name inside the system line, so it's built as DOM.
