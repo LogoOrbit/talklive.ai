@@ -203,8 +203,30 @@ async function matchPair(a, b, mode = 'chat') {
     ok('the /chat page is not force-paired', !(await noMatch));
     await wait(100);
 
-    // --- Queued ask accepted while its sender is in another call --------
+    // --- A current /chat page rings, and answers from the voice page -----
     bChat.disconnect();
+    await wait(200);
+    const bRing = connect('Ben', { surface: 'chat', ringable: true });
+    await wait(400);
+    const rings = once(bRing, 'call-back-request');
+    a.emit('call-back-request', { targetClientId: B });
+    const ringing = await once(a, 'call-back-request-result');
+    ok('calling someone on a ringable /chat page rings', ringing.ok === true && ringing.pending === true, JSON.stringify(ringing));
+    ok('the /chat page gets the ring', (await rings).fromClientId === A);
+    // "Answer" moves Ben to the voice page, which accepts from there.
+    bRing.disconnect();
+    await wait(200);
+    const bVoice = connect('Ben');
+    await wait(400);
+    const paired = Promise.all([once(a, 'matched'), once(bVoice, 'matched')]);
+    bVoice.emit('call-back-respond', { fromClientId: A, accept: true });
+    const [mA, mB] = await paired;
+    ok('answering from the voice page connects both', mA.callback && mB.callback && mA.initiator && !mB.initiator);
+    a.emit('leave');
+    await wait(200);
+
+    // --- Queued ask accepted while its sender is in another call --------
+    bVoice.disconnect();
     await wait(200);
     const b2 = connect('Ben');
     const cat = connect('Cat');

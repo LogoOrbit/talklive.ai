@@ -2694,6 +2694,12 @@ function canTakeCall(profile) {
   return !!profile && profile.surface !== 'chat';
 }
 
+// Whether a socket can at least ring for a direct call: the voice page, or a
+// /chat page that answers by moving to the voice page.
+function canRing(profile) {
+  return canTakeCall(profile) || (!!profile && profile.ringable === true);
+}
+
 // Keep the name, avatar and country friends see for this person current. The
 // friend entry is a snapshot taken when the friendship began, so a later
 // nickname change or new avatar never reached anyone's list. The private
@@ -5353,6 +5359,9 @@ io.on('connection', (socket) => {
       // Which page this socket lives on. /chat is text only, and call-backs
       // must not ring or force-pair it (see canTakeCall).
       surface: data.surface === 'chat' ? 'chat' : 'call',
+      // A /chat page that can show a ringing call and hand the answer over to
+      // the voice page. Older cached /chat pages don't send it and are not rung.
+      ringable: data.surface === 'chat' && data.ringable === true,
       // Echoed to partners, so only a short, real IANA zone is kept.
       timezone: typeof data.timezone === 'string' && data.timezone.length <= 64
         && isValidTimezone(data.timezone) ? data.timezone : null,
@@ -7076,10 +7085,10 @@ io.on('connection', (socket) => {
     // rather than stacking another "wants to talk" row.
     removeNotificationsWhere(targetClientId, (n) => n.type === 'call_back_request' && n.fromClientId === me.clientId);
     notePendingCallBack(me.clientId, targetClientId);
-    // Online, but on the text-only page, which has no ringing banner: the
-    // caller used to ring into silence for 45s. Leave the ask in their inbox
-    // and tell the caller the truth straight away.
-    if (!canTakeCall(profiles.get(targetSocketId))) {
+    // Online, but on an old text-only page with no ringing UI: the caller
+    // used to ring into silence for 45s. Leave the ask in their inbox and tell
+    // the caller the truth straight away. Current /chat pages ring (canRing).
+    if (!canRing(profiles.get(targetSocketId))) {
       pushNotification(targetClientId, {
         type: 'call_back_request',
         fromClientId: me.clientId,
@@ -7128,7 +7137,7 @@ io.on('connection', (socket) => {
       countryCode: me.country,
     });
     const targetSocket = getSocketByClientId(targetClientId);
-    if (targetSocket && canTakeCall(profiles.get(targetSocket.id))) {
+    if (targetSocket && canRing(profiles.get(targetSocket.id))) {
       targetSocket.emit('call-back-request', {
         fromClientId: me.clientId,
         username: me.username,
@@ -7191,7 +7200,7 @@ io.on('connection', (socket) => {
         username: me.username,
         countryCode: me.country,
       });
-      if (canTakeCall(requesterProfile)) {
+      if (canRing(requesterProfile)) {
         requesterSocket.emit('call-back-request', { fromClientId: me.clientId, username: me.username, countryCode: me.country });
       }
       store.recordFeature('call_back_turned');

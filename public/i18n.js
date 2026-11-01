@@ -331,6 +331,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "friendCallsOff": "They are not taking calls right now.",
     "tapAgainToBlock": "Tap again to block",
     "callbackOnVoice": "{name} wants to talk. Open voice chat to call back.",
+    "missedCallFrom": "Missed call from {name}",
     "unreadMessagesCount": "{n} unread messages",
     "callbackAway": "They're texting - we've let them know",
     "callbackBusyQueued": "They're on a call - we've let them know",

@@ -628,6 +628,9 @@
       // This page is text only: it must not be rung or force-paired for a
       // voice call-back, which it has no way to answer.
       surface: 'chat',
+      // ...but it can ring for a direct call and answer it by moving to the
+      // voice page (see the 'call-back-request' handler).
+      ringable: true,
       clientId: getClientId(),
       // Both pages share one client id, and the server binds that id to a
       // signed token the first time it sees it. Registering without the token
@@ -1217,20 +1220,63 @@
   // ---------------------------------------------------------------------------
   var callIncomingModal = $('callIncomingModal'); // shown to the invited side
 
+  // A direct call from a friend or someone in History rings here too. Voice
+  // lives on the call page, so answering moves there and connects from it.
+  var directCallFrom = null;
+  var directRingTimer = null;
+  var directRingTone = null;
+  function stopDirectRing() {
+    directCallFrom = null;
+    clearTimeout(directRingTimer);
+    clearInterval(directRingTone);
+    directRingTimer = directRingTone = null;
+  }
+  socket.on('call-back-request', function (data) {
+    var from = data && data.fromClientId;
+    if (!from) return;
+    stopDirectRing();
+    directCallFrom = from;
+    var who = friendLabel(findPerson(from)) || (data && data.username) || t('someone');
+    $('callIncomingName').textContent = who;
+    $('callAcceptBtn').disabled = false;
+    openModal(callIncomingModal);
+    var ring = function () { vibrate([0, 300, 200, 300]); initAudio(); playBlip([880, 660], 0.35, 0.08); };
+    ring();
+    directRingTone = setInterval(ring, 2000);
+    // The caller gives up after 45s; stop ringing then too.
+    directRingTimer = setTimeout(function () { stopDirectRing(); closeModal(callIncomingModal); }, 45000);
+  });
+  socket.on('call-back-cancelled', function (data) {
+    if (!directCallFrom || !data || data.fromClientId !== directCallFrom) return;
+    var who = $('callIncomingName').textContent;
+    stopDirectRing();
+    closeModal(callIncomingModal);
+    socialToast(t('missedCallFrom', { name: who }), 'neutral');
+  });
+
   socket.on('voice-invite', function (data) {
     if (!partnerHere) return; // stray/late event from a chat we already left
+    stopDirectRing();
     vibrate([0, 40, 60, 40]);
     $('callIncomingName').textContent = (data && data.username) || t('somewhere');
     openModal(callIncomingModal);
   });
   $('callDeclineBtn').addEventListener('click', function () {
-    socket.emit('voice-invite-respond', { accept: false });
+    if (directCallFrom) socket.emit('call-back-respond', { fromClientId: directCallFrom, accept: false });
+    else socket.emit('voice-invite-respond', { accept: false });
+    stopDirectRing();
     closeModal(callIncomingModal);
   });
   $('callAcceptBtn').addEventListener('click', function () {
+    $('callAcceptBtn').disabled = true;
+    if (directCallFrom) {
+      var from = directCallFrom;
+      stopDirectRing();
+      location.href = '/?open=answer&from=' + encodeURIComponent(from);
+      return;
+    }
     socket.emit('voice-invite-respond', { accept: true });
     closeModal(callIncomingModal);
-    $('callAcceptBtn').disabled = true;
   });
 
   // Only ever reaches a page that sent an invite, which this one no longer
@@ -2198,7 +2244,8 @@
         openFriendChat(findPerson(n.byClientId) || { clientId: n.byClientId, username: n.username });
       });
     }
-    else if (n.type === 'call_back_request') socialToast(t('callbackOnVoice', { name: who }), 'social');
+    // Ringing already (see 'call-back-request'): the toast would only repeat it.
+    else if (n.type === 'call_back_request' && n.fromClientId !== directCallFrom) socialToast(t('callbackOnVoice', { name: who }), 'social');
     renderFriends();
     renderHistory();
   });
@@ -2245,8 +2292,8 @@
   }
 
   // --- Chat history: the last people you talked to at random, so you can
-  // message back someone you lost. Populated by 'state-sync'. Text only -
-  // deliberately no call-back button here. ---
+  // message back someone you lost. Populated by 'state-sync'. Calling opens
+  // the voice page, which rings them; a /chat page rings too. ---
   var historyPanel = $('historyPanel');
   var historyOverlay = $('historyOverlay');
   var historyList = $('historyList');
@@ -3516,7 +3563,7 @@
     renderTopPartnerAnimal(null); // never let the last stranger's animal linger
     if (topbar) topbar.classList.remove('connected');
     input.disabled = true;
-    closeModal(callIncomingModal);
+    if (!directCallFrom) closeModal(callIncomingModal);
     if (reason === 'blocked') {
       // This user blocked the person they were chatting with, from the
       // friends panel. Stay put rather than searching on: they may want to

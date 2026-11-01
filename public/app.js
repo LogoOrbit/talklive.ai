@@ -11262,6 +11262,18 @@ function openSocialDeepLink(params) {
     else socket.once('state-sync', () => setTimeout(ringWhenKnown, 0));
     return true;
   }
+  // "Answer" on the /chat ringing card: pick up here, where voice lives. The
+  // caller is still ringing, so the server pairs both sides straight away.
+  const answerFrom = open === 'answer' ? params.get('from') : null;
+  if (answerFrom && /^[A-Za-z0-9_-]{8,64}$/.test(answerFrom)) {
+    const answerWhenKnown = () => {
+      pendingCallBackName = friendChatName(answerFrom) || t('stranger');
+      acceptCallBack(answerFrom);
+    };
+    if (friendsSynced) answerWhenKnown();
+    else socket.once('state-sync', () => setTimeout(answerWhenKnown, 0));
+    return true;
+  }
   // A message notification opens that conversation. The lists that say who
   // this user may message arrive with the first state-sync, so it waits for
   // that (once) rather than opening a chat the server would refuse.
