@@ -6,7 +6,6 @@
  *   TalkLiveFilms.ready                     -> Promise<boolean> (feature on?)
  *   TalkLiveFilms.show(box, clientId, sock) -> someone's row, read-only
  *   TalkLiveFilms.editor(box, sock)         -> this user's own row, editable
- *   TalkLiveFilms.strip(box, films, opts)   -> a live partner's row, no fetch
  *   TalkLiveFilms.sameLine(films)           -> "You both love X!" or ''
  *
  * Titles both people picked are marked "Both" on the poster.
@@ -45,7 +44,6 @@
     favFilmsCredit: 'Films via Wikidata · posters and shows via Apple',
     favFilmsBusy: 'Search is busy. Try again in a moment.',
     favFilmsBoth: 'Both',
-    favFilmsTheirs: "{name}'s top films & shows",
     favFilmsSame: 'You both love {list}!',
   };
   function tr(key, vars) {
@@ -175,34 +173,14 @@
   }
 
   // A read-only row of someone's picks, with the ones you share marked.
-  function paintRow(box, films, mine, title, noMatchLine) {
+  function paintRow(box, films, mine, title) {
     style();
     box.classList.add('tlf');
     var shared = films.filter(function (f) { return inList(f, mine); });
     box.innerHTML = '<p class="tlf-h">' + esc(title) + '</p>' +
-      (shared.length && !noMatchLine ? '<p class="tlf-match">' + esc(sameLine(shared)) + '</p>' : '') +
+      (shared.length ? '<p class="tlf-match">' + esc(sameLine(shared)) + '</p>' : '') +
       '<div class="tlf-row">' + films.slice(0, MAX).map(function (f) { return tile(f, false, 0, inList(f, mine)); }).join('') + '</div>';
     box.hidden = false;
-  }
-
-  // The live partner's row, from the films that came with the match. Your own
-  // list is fetched (cached) only to mark what you share.
-  function strip(box, films, opts) {
-    if (!box) return;
-    opts = opts || {};
-    films = Array.isArray(films) ? films : [];
-    var token = String(Math.random());
-    box.dataset.for = token;
-    box.innerHTML = '';
-    box.hidden = true;
-    if (!films.length) return;
-    var title = opts.name ? tr('favFilmsTheirs', { name: opts.name }) : tr('favFilmsTitle');
-    paintRow(box, films, opts.same || [], title, opts.noMatchLine);
-    if (!opts.sock) return;
-    bind(opts.sock);
-    load(opts.sock, null, function (mine) {
-      if (box.dataset.for === token) paintRow(box, films, mine, title, opts.noMatchLine);
-    });
   }
 
   // Someone's row. Hidden when the feature is off or they picked nothing.
@@ -430,5 +408,5 @@
     setTimeout(function () { input.focus(); }, 0);
   }
 
-  window.TalkLiveFilms = { ready: ready, show: show, editor: editor, strip: strip, sameLine: sameLine };
+  window.TalkLiveFilms = { ready: ready, show: show, editor: editor, sameLine: sameLine };
 })();

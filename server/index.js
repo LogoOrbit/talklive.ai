@@ -4023,6 +4023,9 @@ function publicProfile(p) {
     // A movie-character avatar (`c:<id>`), shown on the partner card like an
     // animal. Only characters: the plain faces are gendered and stay private.
     character: typeof p.avatar === 'string' && p.avatar.slice(0, 2) === 'c:' ? p.avatar.slice(2) : null,
+    // The picture they chose (or their spirit animal), the same one their
+    // friends and recent people already see - so live chat faces match.
+    avatar: shownAvatar(p),
     // IANA zone the partner's browser reported, so the call screen can show
     // what time it is where they are. Null when missing or not a real zone.
     timezone: p.timezone || null,

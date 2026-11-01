@@ -4539,6 +4539,7 @@ function openUserProfile(person) {
   activeProfileRelation = relation;
   friendProfileAvatar.innerHTML = chatPersonFace(known, 72);
   friendProfileName.innerHTML = `${getFlagImg(known.countryCode)} ${escapeHtml(friendLabel(known))}`;
+  const countryName = getCountryName(known.countryCode);
   // Whichever list knows them best carries their ID (callers often pass a bare
   // name and clientId).
   renderProfileIdLine(known.friendId || person.friendId || personById(person.clientId).friendId || null);
@@ -4553,9 +4554,9 @@ function openUserProfile(person) {
   // found by their ID has never spoken to this user.
   const met = historyEntries().find((h) => h.clientId === person.clientId);
   const relationKey = relation === 'stranger' && !met ? 'profileRelation_new' : 'profileRelation_' + relation;
-  friendProfileStatus.innerHTML = relation === 'friend'
+  friendProfileStatus.innerHTML = (countryName ? `${escapeHtml(countryName)} · ` : '') + (relation === 'friend'
     ? presence
-    : `<span class="friend-relation-text">${escapeHtml(t(relationKey))}</span>${presence ? ' · ' + presence : ''}`;
+    : `<span class="friend-relation-text">${escapeHtml(t(relationKey))}</span>${presence ? ' · ' + presence : ''}`);
   // How you know them: the one thing a profile on an app of strangers can
   // usefully remind you of.
   const metLine = met ? historySubline(met, { long: true }) : '';
@@ -8270,7 +8271,6 @@ function teardownPeer() {
   partnerCard.classList.add('hidden');
   stopPartnerClock();
   sharedInterestNote.classList.add('hidden');
-  if (partnerFilmsBox) partnerFilmsBox.hidden = true;
   reactionBar.classList.add('hidden');
   stopQualityMonitor();
   stopCallTimer();
@@ -9238,12 +9238,12 @@ if (Social) {
   Social.attachMessageAvatars(chatMessages, {
     selector: '.chat-msg',
     them: 'them',
-    person: () => (currentPartner ? { animal: currentPartner.animal, name: currentPartner.username } : {}),
+    person: () => (currentPartner ? { avatar: currentPartner.avatar, animal: currentPartner.animal, name: currentPartner.username } : {}),
     face: (p) => chatPersonFace(p, 26),
     open: () => {
       if (!currentPartner || !currentPartner.clientId) return;
       openUserProfile(personById(currentPartner.clientId, {
-        username: currentPartner.username, countryCode: currentPartner.countryCode, animal: currentPartner.animal,
+        username: currentPartner.username, countryCode: currentPartner.countryCode, avatar: currentPartner.avatar, animal: currentPartner.animal,
       }));
     },
   });
@@ -10479,17 +10479,9 @@ socket.on('matched', async ({ initiator, partner, rematched, callback, samePerso
 // once per match, the moment the two of you are actually connected.
 let currentSamePersonality = null;
 let currentSameFilms = [];
-// Partner's top films + "You both love X!" (fav-films.js).
-let partnerFilmsBox = null;
-function renderPartnerFilms(partner) {
-  if (!(partner.films || []).length) return;
-  withFilms((F) => {
-    if (currentPartner !== partner || !F.strip) return;
-    if (!partnerFilmsBox) sharedInterestNote.after(partnerFilmsBox = document.createElement('div'));
-    F.strip(partnerFilmsBox, partner.films, { name: partner.username, same: currentSameFilms, sock: socket });
-    const same = F.sameLine(currentSameFilms);
-    if (same) { showToast(`🎬 ${same}`, 'success'); vibrate([20, 40, 20]); }
-  });
+// "You both love X!" - films themselves show on the profile (fav-films.js).
+function sameFilmsToast() {
+  if (currentSameFilms.length) withFilms((F) => F.sameLine && showToast(`🎬 ${F.sameLine(currentSameFilms)}`, 'success'));
 }
 let twinNoticeFor = null;
 function twinMatchMessage(partner, characterId) {
@@ -10525,7 +10517,7 @@ function revealPartner() {
     twinNoticeFor = partner;
     const twin = twinMatchMessage(partner, currentSamePersonality);
     if (twin) { showToast(twin, 'success'); vibrate([20, 40, 20]); }
-    renderPartnerFilms(partner);
+    sameFilmsToast();
   }
 
   partnerInterests.innerHTML = '';

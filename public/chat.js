@@ -2814,7 +2814,7 @@
   function personFor(clientId) {
     var pick = function (list) { return list.filter(function (x) { return x.clientId === clientId; })[0]; };
     var live = currentPartner && currentPartner.clientId === clientId
-      ? { clientId: clientId, username: currentPartner.username, countryCode: currentPartner.countryCode, animal: currentPartner.animal }
+      ? { clientId: clientId, username: currentPartner.username, countryCode: currentPartner.countryCode, avatar: currentPartner.avatar, animal: currentPartner.animal }
       : null;
     var hit = pick(friendsState.friends) || pick(friendsState.requests) || pick(friendsState.sent) || pick(historyState);
     if (hit && live) return Object.assign({}, live, hit);
@@ -2890,30 +2890,15 @@
     }
     filmsLoading.then(function () { cb(window.TalkLiveFilms); }).catch(function () {});
   }
-  // On a match: "You both love X!" when your top films overlap, and their
-  // posters right in the chat, so they are seen without opening a profile.
+  // On a match: "You both love X!" when your top films overlap. The posters
+  // themselves are on the profile.
   function showPartnerFilms(partner, sameFilms) {
-    var films = partner && Array.isArray(partner.films) ? partner.films : [];
     var shared = Array.isArray(sameFilms) ? sameFilms : [];
-    if (!films.length) return;
-    // Placed now, so they sit with the other match lines; filled once loaded.
-    var sameLine = shared.length ? addMessage('', 'system system-animal-match') : null;
-    var line = addMessage('', 'system system-films');
-    if (sameLine) sameLine.hidden = true;
-    line.hidden = true;
-    var box = document.createElement('div');
-    line.appendChild(box);
-    withFilms(function (F) {
-      if (!F.strip) return;
-      F.strip(box, films, { name: partner.username, same: shared, sock: socket, noMatchLine: true });
-      line.hidden = box.hidden;
-      if (sameLine) {
-        sameLine.textContent = '🎬 ' + F.sameLine(shared);
-        sameLine.hidden = false;
-        vibrate([20, 40, 20]);
-      }
-      msgs.scrollTop = msgs.scrollHeight;
-    });
+    if (!shared.length) return;
+    var names = shared.slice(0, 3).map(function (f) { return f.title; });
+    var list = names.length > 1 ? names.slice(0, -1).join(', ') + ' & ' + names[names.length - 1] : names[0];
+    addMessage('🎬 ' + t('favFilmsSame', { list: list }), 'system system-animal-match');
+    vibrate([20, 40, 20]);
   }
   function closeProfile() {
     if (profileBox) closeModal(profileBox);
@@ -2967,7 +2952,8 @@
     if (renamed) real.textContent = t('realName', { name: friend.username });
     var presence = ('online' in p || p.lastSeen) ? presenceText(p) : '';
     var status = rel === 'friend' ? presence : t('profileRelation_' + rel) + (presence ? ' · ' + presence : '');
-    profileBox.querySelector('.ps-status').textContent = status;
+    var countryName = getCountryName(p.countryCode);
+    profileBox.querySelector('.ps-status').textContent = (countryName ? countryName + (status ? ' · ' : '') : '') + status;
     profileBox.querySelector('.modal-close').setAttribute('aria-label', t('close'));
 
     var muted = mutedChats.indexOf(id) !== -1;
@@ -3126,7 +3112,7 @@
     Social.attachMessageAvatars(msgs, {
       selector: '.msg', them: 'them',
       person: function () {
-        return currentPartner ? { animal: currentPartner.animal, name: currentPartner.username } : {};
+        return currentPartner ? { avatar: currentPartner.avatar, animal: currentPartner.animal, name: currentPartner.username } : {};
       },
       open: function () { if (currentPartner && currentPartner.clientId) openProfile(currentPartner.clientId); },
     });
