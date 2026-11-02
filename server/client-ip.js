@@ -8,11 +8,6 @@ const net = require('net');
 // last. It must not be relied on behind Fly, whose last entry is the app's own
 // address. The leftmost entry is whatever the client typed, so it is never
 // used: a banned or rate-limited person could pick a new one on every request.
-//
-// Behind Cloudflare, Fly-Client-IP is a Cloudflare edge address, and the
-// visitor's is in CF-Connecting-IP. That header is only believed when the
-// connection really came from Cloudflare (its published ranges below), since
-// anyone hitting Fly directly could send it.
 function clientIpFrom(headers = {}, remoteAddress = '') {
   const flyIp = headers['fly-client-ip'];
   let ip = flyIp ? String(flyIp).trim() : '';
@@ -21,56 +16,11 @@ function clientIpFrom(headers = {}, remoteAddress = '') {
     const hops = fwd ? String(fwd).split(',').map((s) => s.trim()).filter(Boolean) : [];
     ip = hops.length ? hops[hops.length - 1] : String(remoteAddress || '');
   }
-  ip = unmap(ip);
-  const cfIp = headers['cf-connecting-ip'];
-  if (cfIp && net.isIP(unmap(String(cfIp).trim())) && fromCloudflare(ip)) {
-    ip = unmap(String(cfIp).trim());
-    rememberCfGeo(ip, headers);
-  }
-  return ip;
-}
-
-// Only a whole IPv4-mapped address loses its prefix; "::ffff:" can also
-// appear inside an ordinary IPv6 address, which must stay intact.
-function unmap(ip) {
+  // Only a whole IPv4-mapped address loses its prefix; "::ffff:" can also
+  // appear inside an ordinary IPv6 address, which must stay intact.
   const mapped = /^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i.exec(ip);
   return mapped ? mapped[1] : ip;
 }
-
-// https://www.cloudflare.com/ips/ (fetched 2026-11-02; changes are rare and
-// announced well ahead).
-const CLOUDFLARE = new net.BlockList();
-for (const r of ['173.245.48.0/20', '103.21.244.0/22', '103.22.200.0/22', '103.31.4.0/22',
-  '141.101.64.0/18', '108.162.192.0/18', '190.93.240.0/20', '188.114.96.0/20', '197.234.240.0/22',
-  '198.41.128.0/17', '162.158.0.0/15', '104.16.0.0/13', '104.24.0.0/14', '172.64.0.0/13', '131.0.72.0/22']) {
-  const [a, p] = r.split('/'); CLOUDFLARE.addSubnet(a, Number(p), 'ipv4');
-}
-for (const r of ['2400:cb00::/32', '2606:4700::/32', '2803:f800::/32', '2405:b500::/32',
-  '2405:8100::/32', '2a06:98c0::/29', '2c0f:f248::/32']) {
-  const [a, p] = r.split('/'); CLOUDFLARE.addSubnet(a, Number(p), 'ipv6');
-}
-function fromCloudflare(ip) {
-  const v = net.isIP(ip);
-  return v ? CLOUDFLARE.check(ip, v === 4 ? 'ipv4' : 'ipv6') : false;
-}
-
-// Cloudflare also says where the visitor is (CF-IPCountry always; CF-IPCity
-// with the "Add visitor location headers" managed transform on). Kept per IP so
-// the geo lookup, which only gets an address, can use it. Bounded: the oldest
-// entry goes first.
-const cfGeo = new Map();
-const CF_GEO_MAX = 20000;
-function rememberCfGeo(ip, headers) {
-  const country = String(headers['cf-ipcountry'] || '').trim().toUpperCase();
-  // XX = unknown, T1 = Tor.
-  if (!/^[A-Z]{2}$/.test(country) || country === 'XX' || country === 'T1') return;
-  let city = '';
-  try { city = decodeURIComponent(escape(String(headers['cf-ipcity'] || ''))).trim().slice(0, 80); } catch (_) { /* not latin1-encoded utf-8 */ }
-  cfGeo.delete(ip);
-  cfGeo.set(ip, { country, city });
-  if (cfGeo.size > CF_GEO_MAX) cfGeo.delete(cfGeo.keys().next().value);
-}
-const cfGeoFor = (ip) => cfGeo.get(ip) || null;
 
 // The bucket an address is counted in for rate limits and lockouts. An IPv6
 // host is usually given a whole /64, so counting each address separately would
@@ -93,4 +43,4 @@ function ipBucket(ip) {
   return groups.slice(0, 4).map((g) => (parseInt(g, 16) || 0).toString(16)).join(':') + '::/64';
 }
 
-module.exports = { clientIpFrom, ipBucket, cfGeoFor };
+module.exports = { clientIpFrom, ipBucket };

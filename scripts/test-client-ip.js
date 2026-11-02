@@ -17,7 +17,7 @@ const os = require('os');
 const path = require('path');
 const { io } = require('socket.io-client');
 const totp = require('../server/totp');
-const { clientIpFrom, ipBucket, cfGeoFor } = require('../server/client-ip');
+const { clientIpFrom, ipBucket } = require('../server/client-ip');
 
 const PORT = 3000 + Math.floor(Math.random() * 2000) + 4000;
 const BASE = `http://localhost:${PORT}`;
@@ -58,20 +58,6 @@ ok('rightmost X-Forwarded-For entry is used, not the forged first one',
   clientIpFrom({ 'x-forwarded-for': '1.2.3.4, 9.9.9.9' }, '10.0.0.1') === '9.9.9.9');
 ok('no proxy headers falls back to the socket address',
   clientIpFrom({}, '::ffff:127.0.0.1') === '127.0.0.1');
-ok('CF-Connecting-IP is used when the connection came from Cloudflare',
-  clientIpFrom({ 'fly-client-ip': '172.68.10.20', 'cf-connecting-ip': '203.0.113.9', 'cf-ipcountry': 'NP', 'cf-ipcity': 'Kathmandu' }) === '203.0.113.9');
-ok('Cloudflare location is remembered for that address',
-  JSON.stringify(cfGeoFor('203.0.113.9')) === JSON.stringify({ country: 'NP', city: 'Kathmandu' }));
-ok('CF-Connecting-IP over IPv6 Cloudflare edge',
-  clientIpFrom({ 'fly-client-ip': '2a06:98c0:3600::103', 'cf-connecting-ip': '2001:db8::7' }) === '2001:db8::7');
-ok('CF-Connecting-IP is ignored when the connection did not come from Cloudflare',
-  clientIpFrom({ 'fly-client-ip': '203.0.113.5', 'cf-connecting-ip': '1.1.1.99', 'cf-ipcountry': 'US' }) === '203.0.113.5'
-  && cfGeoFor('1.1.1.99') === null);
-ok('an invalid CF-Connecting-IP is ignored',
-  clientIpFrom({ 'fly-client-ip': '172.68.10.20', 'cf-connecting-ip': 'not-an-ip' }) === '172.68.10.20');
-ok('Tor / unknown Cloudflare country is not stored',
-  clientIpFrom({ 'fly-client-ip': '172.68.10.20', 'cf-connecting-ip': '203.0.113.10', 'cf-ipcountry': 'T1' }) === '203.0.113.10'
-  && cfGeoFor('203.0.113.10') === null);
 ok('empty Fly-Client-IP is ignored',
   clientIpFrom({ 'fly-client-ip': '', 'x-forwarded-for': '5.5.5.5' }, '10.0.0.1') === '5.5.5.5');
 

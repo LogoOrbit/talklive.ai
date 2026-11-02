@@ -9,7 +9,8 @@
  * Deliberately no `stripe` npm dependency. Two calls are needed (create a
  * Checkout Session, read a subscription) plus webhook signature verification;
  * all three are a fetch and an HMAC. A 4MB SDK to save thirty lines is not
- * worth the deploy weight on a 512MB machine.
+ * worth the deploy weight on a 512MB machine that already loads a 154MB geoip
+ * database at boot.
  *
  * The identity Stripe carries for us is the browser's persistent `clientId`,
  * passed as `client_reference_id` and mirrored into subscription metadata.

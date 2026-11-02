@@ -329,34 +329,6 @@ At your DNS provider:
 
 Leave the Render service running until this is confirmed - it is your rollback.
 
-### Cloudflare in front (cuts Fly bandwidth)
-
-Fly bills every byte sent to visitors (~$0.04/GB in Asia). Cloudflare's free
-plan caches images, scripts and styles at its edge (they already carry
-`Cache-Control: max-age=86400` or a year with `?v=`), so most of those bytes
-stop reaching Fly. The server already trusts `CF-Connecting-IP` and
-`CF-IPCountry`/`CF-IPCity`, but only from Cloudflare's address ranges (see
-`server/client-ip.js`), so bans, rate limits and countries keep working.
-
-1. Cloudflare dashboard → **Add a domain** → `talklive.app`, Free plan. Check
-   the imported DNS records match the current ones (A/AAAA to the Fly IPs, any
-   MX/TXT for email).
-2. **Before switching nameservers**, run `fly certs show talklive.app` (and
-   `www.talklive.app`) and add the `_acme-challenge` CNAME it lists, **DNS only
-   (grey cloud)**. Without it Fly cannot renew the certificate once Cloudflare
-   proxies the domain.
-3. Orange cloud (Proxied) on `talklive.app` and `www`. Anything that is not
-   HTTP - a TURN server hostname, mail - stays grey.
-4. **SSL/TLS → Overview → Full (strict).** "Flexible" sends plain HTTP to Fly,
-   which the app redirects to HTTPS - an infinite loop.
-5. **Rules → Settings → Managed Transforms → Add visitor location headers:
-   On.** That is where the city in the owner dashboard now comes from.
-6. **Speed → Optimization → Rocket Loader: Off** (it rewrites scripts).
-   WebSockets stay on (the default) - Socket.IO needs them.
-7. At the registrar, switch the nameservers to the two Cloudflare gives you.
-8. Verify: `curl -sI https://talklive.app/og-image.png | grep -i cf-cache-status`
-   shows `HIT` on the second request.
-
 ## 8. Decommission Render
 
 `render.yaml` has been removed from the repo. If you need it back as a
