@@ -15,6 +15,7 @@
 // every 15 minutes. Owner phone push is optional (dashboard > Support).
 const crypto = require('crypto');
 const express = require('express');
+const { renderEmail } = require('./email-layout');
 
 const MAX_CONVERSATIONS = 2000;
 const MAX_MESSAGES = 400;
@@ -168,10 +169,14 @@ function createSupport({ store, mail, push, contactTo, siteUrl, ownerUrl, httpRa
       to: c.email,
       subject: 'TalkLive Support replied to your message',
       text: `Hi${name},\n\nTalkLive Support replied:\n\n${m.text}\n\nContinue the chat: ${link}\n\nOr just reply to this email.\n\nTalkLive · ${contactTo}`,
-      html: `<p>Hi${escapeHtml(name)},</p><p>TalkLive Support replied:</p>`
-        + `<p style="padding:10px 12px;border-radius:10px;background:#eef2ff;white-space:pre-wrap">${escapeHtml(m.text)}</p>`
-        + `<p><a href="${escapeHtml(link)}" style="display:inline-block;background:#4f7cff;color:#fff;padding:10px 18px;border-radius:999px;text-decoration:none">Continue the chat</a></p>`
-        + `<p>Or just reply to this email.</p><p style="color:#888;font-size:12px">TalkLive · ${escapeHtml(contactTo)}</p>`,
+      html: renderEmail({
+        preheader: m.text.slice(0, 120),
+        title: 'TalkLive Support replied',
+        body: `Hi${escapeHtml(name)},<div style="margin-top:12px;padding:12px 14px;border-radius:10px;background:#f3f1fe;white-space:pre-wrap">${escapeHtml(m.text)}</div>`,
+        button: { label: 'Continue the chat', url: link },
+        note: 'Or just reply to this email.',
+        contact: contactTo,
+      }),
       fromName: 'TalkLive Support',
       replyTo: contactTo,
     }).catch(() => {});
