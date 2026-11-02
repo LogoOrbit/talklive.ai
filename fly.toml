@@ -84,7 +84,7 @@ kill_timeout = 120
   source = 'talklive_data'
   destination = '/data'
 
-# Sized against measured usage, not guesswork: geoip-lite eagerly loads a 154MB
+# Sized against measured usage, not guesswork: geoip-lite (now replaced) loaded a 154MB
 # database into memory at require time, which alone costs ~143MB of RSS. The
 # server idles at ~218MB and sits at ~225MB under light HTTP load, so the 256MB
 # the generated config asked for left ~30MB of headroom and the machine was
@@ -97,7 +97,12 @@ kill_timeout = 120
 # Raised to 1GB on 2026-10-01: the store grew to ~5MB and every save holds
 # several serialized copies at once (mirror, Postgres payload, driver buffer),
 # and node was OOM-killed at 406MB RSS. 512MB no longer had headroom.
+#
+# Back to 512MB on 2026-11-02 (RAM was ~$6 of a ~$13 monthly bill): geoip-lite
+# was swapped for geoip-country, which holds ~21MB instead of ~149MB, so the
+# 406MB peak above becomes ~280MB. If it is OOM-killed again (exit 137 in
+# `fly logs`), try 768mb before going back to 1gb.
 [[vm]]
   cpu_kind = 'shared'
   cpus = 1
-  memory = '1gb'
+  memory = '512mb'

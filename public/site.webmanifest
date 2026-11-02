@@ -47,16 +47,16 @@
   ],
   "screenshots": [
     {
-      "src": "/screenshots/app-narrow.png",
+      "src": "/screenshots/app-narrow.webp",
       "sizes": "390x844",
-      "type": "image/png",
+      "type": "image/webp",
       "form_factor": "narrow",
       "label": "Tap to Talk or Tap to Chat - one tap to meet a stranger"
     },
     {
-      "src": "/screenshots/app-wide.png",
+      "src": "/screenshots/app-wide.webp",
       "sizes": "1280x800",
-      "type": "image/png",
+      "type": "image/webp",
       "form_factor": "wide",
       "label": "TalkLive on desktop - anonymous random voice and text chat"
     }

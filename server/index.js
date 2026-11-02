@@ -4,7 +4,9 @@ const crypto = require('crypto');
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
-const geoip = require('geoip-lite');
+// Country only: geoip-lite's city database held ~150MB in memory, most of the
+// machine. City now comes from Cloudflare's headers (see client-ip.js).
+const geoip = require('geoip-country');
 const { OAuth2Client } = require('google-auth-library');
 const { generateUsername } = require('./usernames');
 // Shared with the browser: public/countries.js exports for Node and defines a
@@ -45,7 +47,7 @@ const { createGameTracker } = require('./game-tracker');
 const { isValidTimezone } = require('./analytics');
 const audience = require('./audience');
 const { extractContacts } = require('./contact-capture');
-const { clientIpFrom, ipBucket } = require('./client-ip');
+const { clientIpFrom, ipBucket, cfGeoFor } = require('./client-ip');
 
 const app = express();
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
@@ -3507,12 +3509,13 @@ function getClientIp(socket) {
 }
 
 function lookupGeo(ip) {
-  const geo = geoip.lookup(ip);
+  const cf = cfGeoFor(ip);
+  const geo = cf || geoip.lookup(ip);
   if (!geo) return { country: 'XX', countryName: 'Unknown', city: 'Unknown' };
   const code = geo.country || 'XX';
   return {
     country: code,
-    // geoip-lite only returns the two-letter code. This used to be stored as
+    // The lookup only returns the two-letter code. This used to be stored as
     // the country *name* verbatim, so the owner dashboard, the analytics
     // "top countries" table and every report/feedback alert email read "NP"
     // instead of "Nepal". Resolve it through the shared list, and keep the code
