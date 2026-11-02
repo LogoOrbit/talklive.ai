@@ -36,6 +36,7 @@ const flags = require('./flags');
 const { minifiedScripts } = require('./minified');
 const ageAssurance = require('./age-assurance');
 const mail = require('./mailer');
+const { renderEmail } = require('./email-layout');
 const { botLabel, isPrefetch, isBotUserAgent } = require('./bots');
 const Engage = require('./engage');
 const { createAdmin, applyOwnerReset } = require('./admin');
@@ -521,7 +522,13 @@ app.post('/subscribe', httpRateLimit('subscribe', 5, 10 * 60000), express.json({
       to: email,
       subject: `Confirm: get notified when ${launch} launches`,
       text: `Hi,\n\nSomeone (hopefully you) asked to be told when ${launch} goes live. To confirm, open this link:\n\n${link}\n\nIf it wasn't you, just ignore this email and you won't hear from us.\n\nTalkLive · info@talklive.app`,
-      html: `<p>Hi,</p><p>Someone (hopefully you) asked to be told when ${launch} goes live. To confirm, tap the link below:</p><p><a href="${escapeHtmlText(link)}">Yes, tell me when it launches</a></p><p>If it wasn't you, just ignore this email and you won't hear from us.</p><p style="color:#888;font-size:12px">TalkLive · info@talklive.app</p>`,
+      html: renderEmail({
+        preheader: `Confirm to hear when ${launch} launches`,
+        title: `Get notified when ${launch} launches`,
+        body: `Someone (hopefully you) asked to be told when ${launch} goes live. Tap below to confirm.`,
+        button: { label: 'Yes, tell me when it launches', url: link },
+        note: "If it wasn't you, just ignore this email and you won't hear from us.",
+      }),
     });
     if (!sentLaunch) return res.status(502).json({ error: 'We could not send the confirmation email. Please try again later.' });
     return res.json({ ok: true });
@@ -530,7 +537,13 @@ app.post('/subscribe', httpRateLimit('subscribe', 5, 10 * 60000), express.json({
     to: email,
     subject: 'Confirm your TalkLive email updates',
     text: `Hi,\n\nSomeone (hopefully you) asked for occasional emails from TalkLive at this address. To confirm, open this link:\n\n${link}\n\nIf it wasn't you, just ignore this email and you won't hear from us.\n\nTalkLive · info@talklive.app`,
-    html: `<p>Hi,</p><p>Someone (hopefully you) asked for occasional emails from TalkLive at this address. To confirm, tap the link below:</p><p><a href="${escapeHtmlText(link)}">Yes, send me TalkLive updates</a></p><p>If it wasn't you, just ignore this email and you won't hear from us.</p><p style="color:#888;font-size:12px">TalkLive · info@talklive.app</p>`,
+    html: renderEmail({
+      preheader: 'Confirm your TalkLive email updates',
+      title: 'Confirm your email updates',
+      body: 'Someone (hopefully you) asked for occasional emails from TalkLive at this address. Tap below to confirm.',
+      button: { label: 'Yes, send me TalkLive updates', url: link },
+      note: "If it wasn't you, just ignore this email and you won't hear from us.",
+    }),
   });
   if (!sent) return res.status(502).json({ error: 'We could not send the confirmation email. Please try again later.' });
   res.json({ ok: true });
@@ -3156,14 +3169,13 @@ function otpEmail(nickname, code) {
     '',
     '- TalkLive',
   ].join('\n');
-  const html = `
-    <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#1b1b1f">
-      <h2 style="margin:0 0 8px;font-size:20px">Reset your TalkLive password</h2>
-      <p style="margin:0 0 20px;color:#55555f">Hi ${escapeHtmlText(nickname)}, use this code to set a new password.</p>
-      <div style="font-size:34px;font-weight:700;letter-spacing:10px;text-align:center;padding:18px;border-radius:12px;background:#f3f2f8">${code}</div>
-      <p style="margin:20px 0 0;color:#55555f">The code expires in ${minutes} minutes and can be used once.</p>
-      <p style="margin:12px 0 0;color:#8a8a94;font-size:13px">Didn't ask for this? Ignore this email - your password has not changed.</p>
-    </div>`;
+  const html = renderEmail({
+    preheader: `Your password reset code is ${code}`,
+    title: 'Reset your TalkLive password',
+    body: `Hi ${escapeHtmlText(nickname)}, use this code to set a new password. It expires in ${minutes} minutes and can be used once.`,
+    code,
+    note: "Didn't ask for this? Ignore this email - your password has not changed.",
+  });
   return { text, html };
 }
 
@@ -3210,14 +3222,13 @@ function signupOtpEmail(nickname, code) {
     '',
     '- TalkLive',
   ].join('\n');
-  const html = `
-    <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#1b1b1f">
-      <h2 style="margin:0 0 8px;font-size:20px">Confirm your email</h2>
-      <p style="margin:0 0 20px;color:#55555f">Hi ${escapeHtmlText(nickname)}, enter this code to finish creating your TalkLive account.</p>
-      <div style="font-size:34px;font-weight:700;letter-spacing:10px;text-align:center;padding:18px;border-radius:12px;background:#f3f2f8">${code}</div>
-      <p style="margin:20px 0 0;color:#55555f">The code expires in ${minutes} minutes and can be used once.</p>
-      <p style="margin:12px 0 0;color:#8a8a94;font-size:13px">Didn't try to sign up? Ignore this email.</p>
-    </div>`;
+  const html = renderEmail({
+    preheader: `Your verification code is ${code}`,
+    title: 'Confirm your email',
+    body: `Hi ${escapeHtmlText(nickname)}, enter this code to finish creating your TalkLive account. It expires in ${minutes} minutes and can be used once.`,
+    code,
+    note: "Didn't try to sign up? Ignore this email.",
+  });
   return { text, html };
 }
 
