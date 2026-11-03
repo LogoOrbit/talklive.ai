@@ -87,7 +87,11 @@ import app.talklive.ui.components.TalkTextField
 import app.talklive.ui.theme.Danger
 
 @Composable
-fun ProfileScreen(onSignIn: () -> Unit, vm: ProfileViewModel = hiltViewModel()) {
+fun ProfileScreen(
+    onSignIn: () -> Unit,
+    vm: ProfileViewModel = hiltViewModel(),
+    engageVm: app.talklive.ui.engage.EngageViewModel = hiltViewModel(),
+) {
     val account by vm.account.collectAsStateWithLifecycle()
     val animal by vm.animal.collectAsStateWithLifecycle()
     val dark by vm.dark.collectAsStateWithLifecycle()
@@ -144,13 +148,12 @@ fun ProfileScreen(onSignIn: () -> Unit, vm: ProfileViewModel = hiltViewModel()) 
                 }
             }
 
-            val engageVm: app.talklive.ui.engage.EngageViewModel = hiltViewModel()
             val engage by engageVm.engage.collectAsStateWithLifecycle()
             val films by engageVm.films.collectAsStateWithLifecycle()
             val premium by engageVm.premium.collectAsStateWithLifecycle()
             var youSheet by remember { mutableStateOf<String?>(null) }
             Section(stringResource(R.string.section_you)) {
-                SettingRow(Icons.Rounded.Public, stringResource(R.string.passport), stringResource(R.string.passport_title, engage?.passport?.size ?: 0)) { youSheet = "passport" }
+                SettingRow(Icons.Rounded.Public, stringResource(R.string.passport), stringResource(R.string.passport_count, engage?.passport?.size ?: 0)) { youSheet = "passport" }
                 SettingRow(Icons.Rounded.Movie, stringResource(R.string.fav_films), if (films.isEmpty()) stringResource(R.string.not_set) else films.joinToString(", ") { it.title }) { youSheet = "films" }
                 SettingRow(Icons.Rounded.Favorite, stringResource(R.string.likes), null) { youSheet = "likes" }
                 SettingRow(Icons.Rounded.CardGiftcard, stringResource(R.string.invite_title), null) { youSheet = "invite" }

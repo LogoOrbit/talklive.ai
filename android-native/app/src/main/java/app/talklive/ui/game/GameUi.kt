@@ -81,6 +81,22 @@ fun GameSheet(
     onClose: () -> Unit,
 ) {
     ModalBottomSheet(onDismissRequest = onClose, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = MaterialTheme.colorScheme.background) {
+        GameContent(ui, partnerName, onInvite, onCell, onEdge, onRematch, onClose)
+    }
+}
+
+/** What the games sheet shows; separate so it can be previewed. */
+@Composable
+internal fun GameContent(
+    ui: GameUi,
+    partnerName: String,
+    onInvite: (GameKind) -> Unit,
+    onCell: (Int) -> Unit,
+    onEdge: (Char, Int) -> Unit,
+    onRematch: () -> Unit,
+    onClose: () -> Unit,
+) {
+    run {
         Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 20.dp).padding(bottom = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             AnimatedContent(targetState = ui.stage, transitionSpec = { (fadeIn() + scaleIn(initialScale = 0.95f)) togetherWith fadeOut() }, label = "stage") { stage ->
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
@@ -115,7 +131,7 @@ private fun Picker(declined: Boolean, partnerName: String, onInvite: (GameKind) 
     Spacer(Modifier.height(16.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         GameCard("❌⭕", stringResource(R.string.tic_tac_toe), Modifier.weight(1f)) { onInvite(GameKind.TicTacToe) }
-        GameCard("▫️▫️", stringResource(R.string.dots_boxes), Modifier.weight(1f)) { onInvite(GameKind.Dots) }
+        GameCard("🔳", stringResource(R.string.dots_boxes), Modifier.weight(1f)) { onInvite(GameKind.Dots) }
     }
 }
 

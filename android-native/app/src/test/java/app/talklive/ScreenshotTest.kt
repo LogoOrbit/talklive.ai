@@ -83,6 +83,7 @@ class ScreenshotTest {
         app.talklive.ui.profile.ProfileScreen(
             onSignIn = {},
             vm = app.talklive.ui.profile.ProfileViewModel(AuthRepository(ctx, socket, identity), identity, app.talklive.data.ThemeStore(ctx), app.talklive.data.PrivacyStore(ctx), socket, app.talklive.social.SocialRepository(socket, identity)),
+            engageVm = app.talklive.ui.engage.EngageViewModel(app.talklive.engage.EngageRepository(ctx, socket)),
         )
     }
     private fun socialVm(seed: app.talklive.social.SocialRepository.() -> Unit = {}): app.talklive.ui.social.SocialViewModel {
@@ -168,6 +169,38 @@ class ScreenshotTest {
         Box(Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.BottomCenter) {
             RateCard("Sofia", {}, {}, Modifier.padding(16.dp))
         }
+    }
+    @Test fun gameTtt() = shot("23_game_ttt") {
+        val b = app.talklive.game.Board(app.talklive.game.GameKind.TicTacToe, cells = listOf(0, null, 1, null, 0, null, 1, null, null), turn = 0)
+        app.talklive.ui.game.GameContent(app.talklive.game.GameUi(app.talklive.game.Stage.Playing, app.talklive.game.GameKind.TicTacToe, b, 0), "Sofia", {}, {}, { _, _ -> }, {}, {})
+    }
+    @Test fun gameDots() = shot("24_game_dots") {
+        var b = app.talklive.game.Board(app.talklive.game.GameKind.Dots)
+        with(app.talklive.game.Board) {
+            for ((p, k, i) in listOf(Triple(0, 'h', 0), Triple(1, 'h', 4), Triple(0, 'v', 0), Triple(1, 'v', 1), Triple(1, 'h', 9), Triple(0, 'v', 7))) b = b.dabMove(p, k, i) ?: b
+        }
+        app.talklive.ui.game.GameContent(app.talklive.game.GameUi(app.talklive.game.Stage.Playing, app.talklive.game.GameKind.Dots, b, 1), "Sofia", {}, {}, { _, _ -> }, {}, {})
+    }
+    @Test fun gamePicker() = shot("25_game_picker") {
+        app.talklive.ui.game.GameContent(app.talklive.game.GameUi(), "Sofia", {}, {}, { _, _ -> }, {}, {})
+    }
+    @Test fun homeStreak() = shot("26_home_streak") {
+        HomeScreen(true, 3412, "fox", "Sam", false, {}, {}, {},
+            engage = app.talklive.engage.Engage(app.talklive.engage.Streak(6, 9, true), listOf("ES", "JP", "BR", "DE"), app.talklive.engage.Week(12, 5, 640)),
+            filtersActive = 2)
+    }
+    @Test fun voiceChat() = shot("27_voice_chat") {
+        val vm = socialVm {
+            seedForPreview(
+                friends = listOf(p("a", "Sofia", "ES", "fox", true)),
+                threads = mapOf("a" to listOf(
+                    app.talklive.social.ChatMessage("1", false, "", now - 600_000, voiceMs = 14_000, voiceId = "v1"),
+                    app.talklive.social.ChatMessage("2", true, "Haha love that", now - 500_000, edited = true, theirReaction = "❤️"),
+                    app.talklive.social.ChatMessage("3", true, "", now - 60_000, voiceMs = 6_000, voiceId = "v2", status = app.talklive.social.MsgStatus.Seen),
+                )),
+            )
+        }
+        app.talklive.ui.social.ChatScreen(vm, "a") {}
     }
     @Test fun searching() = shot("08_searching") {
         CallScreen(CallState(phase = CallPhase.Searching(4)), true, "fox", { 0f }, onNext = {}, onEnd = {}, onMute = {}, onSpeaker = {}, onReport = {})
