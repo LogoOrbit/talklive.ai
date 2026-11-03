@@ -7,9 +7,9 @@ name: Android native app
 on:
   workflow_dispatch:
   push:
-    paths: ['android-native/**', '.github/workflows/android-native.yml']
+    paths: ['android-native/**', 'server/**', '.github/workflows/android-native.yml']
   pull_request:
-    paths: ['android-native/**', '.github/workflows/android-native.yml']
+    paths: ['android-native/**', 'server/**', '.github/workflows/android-native.yml']
 
 permissions:
   contents: read
@@ -20,6 +20,15 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+
+      # The end-to-end tests run the real server locally.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install server dependencies
+        run: npm ci
 
       - uses: actions/setup-java@v4
         with:
@@ -35,9 +44,20 @@ jobs:
         if: env.GOOGLE_SERVICES_JSON != ''
         run: echo "$GOOGLE_SERVICES_JSON" > android-native/app/google-services.json
 
+      - name: End-to-end tests (app against a local server)
+        working-directory: android-native
+        run: ./gradlew --no-daemon testDebugUnitTest --tests '*ServerE2ETest*'
+
       - name: Build debug APK
         working-directory: android-native
         run: ./gradlew --no-daemon assembleDebug
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-report
+          path: android-native/app/build/reports/tests/
+          retention-days: 7
 
       - uses: actions/upload-artifact@v4
         with:

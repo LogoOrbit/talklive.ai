@@ -29,7 +29,7 @@ import kotlin.coroutines.resume
 class TalkSocket @Inject constructor(private val identity: IdentityStore) {
 
     private val socket: Socket = IO.socket(
-        BuildConfig.SERVER_URL,
+        app.talklive.net.ServerConfig.url,
         IO.Options.builder()
             .setTransports(arrayOf(WebSocket.NAME))
             .setReconnection(true)

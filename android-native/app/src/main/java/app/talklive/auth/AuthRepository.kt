@@ -33,12 +33,16 @@ sealed interface AuthResult {
  * same socket events as the website, so one account works on both.
  */
 @Singleton
-class AuthRepository @Inject constructor(
-    @ApplicationContext context: Context,
+class AuthRepository(
+    context: Context,
     private val socket: TalkSocket,
     private val identity: IdentityStore,
+    prefsName: String,
 ) {
-    private val prefs = context.getSharedPreferences("account", Context.MODE_PRIVATE)
+    @Inject constructor(@ApplicationContext context: Context, socket: TalkSocket, identity: IdentityStore) :
+        this(context, socket, identity, "account")
+
+    private val prefs = context.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     private val _account = MutableStateFlow(loadAccount())
@@ -129,7 +133,7 @@ class AuthRepository @Inject constructor(
     /** The site's public Google web client ID, read from /config.js. */
     suspend fun googleClientId(): String? = withContext(Dispatchers.IO) {
         runCatching {
-            OkHttpClient().newCall(Request.Builder().url("${BuildConfig.SERVER_URL}/config.js").build()).execute().use {
+            OkHttpClient().newCall(Request.Builder().url("${app.talklive.net.ServerConfig.url}/config.js").build()).execute().use {
                 Regex("GOOGLE_CLIENT_ID = \"([^\"]+)\"").find(it.body?.string().orEmpty())?.groupValues?.get(1)
             }
         }.getOrNull()

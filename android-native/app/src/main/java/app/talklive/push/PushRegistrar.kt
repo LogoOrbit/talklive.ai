@@ -63,7 +63,7 @@ class PushRegistrar @Inject constructor(
             .put("platform", "android")
             .toString().toRequestBody("application/json".toMediaType())
         runCatching {
-            http.newCall(Request.Builder().url("${BuildConfig.SERVER_URL}/push/native-subscribe").post(body).build()).execute().use {
+            http.newCall(Request.Builder().url("${app.talklive.net.ServerConfig.url}/push/native-subscribe").post(body).build()).execute().use {
                 if (it.isSuccessful) prefs.edit().putString("sent", key).apply() else Log.w(TAG, "subscribe ${it.code}")
             }
         }.onFailure { Log.w(TAG, "subscribe failed", it) }

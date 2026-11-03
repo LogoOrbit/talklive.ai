@@ -15,8 +15,10 @@ import javax.inject.Singleton
  * refused, so both must survive app restarts.
  */
 @Singleton
-class IdentityStore @Inject constructor(@ApplicationContext context: Context) {
-    private val prefs = context.getSharedPreferences("identity", Context.MODE_PRIVATE)
+class IdentityStore(context: Context, name: String) {
+    @Inject constructor(@ApplicationContext context: Context) : this(context, "identity")
+
+    private val prefs = context.getSharedPreferences(name, Context.MODE_PRIVATE)
 
     val clientId: String
         get() = prefs.getString(KEY_CLIENT_ID, null) ?: newClientId()

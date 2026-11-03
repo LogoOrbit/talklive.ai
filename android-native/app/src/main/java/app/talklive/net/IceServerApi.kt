@@ -37,7 +37,7 @@ class IceServerApi @Inject constructor() {
 
     suspend fun fetch(): IceConfig = withContext(Dispatchers.IO) {
         runCatching {
-            http.newCall(Request.Builder().url("${BuildConfig.SERVER_URL}/ice-servers").build()).execute().use { res ->
+            http.newCall(Request.Builder().url("${app.talklive.net.ServerConfig.url}/ice-servers").build()).execute().use { res ->
                 val body = JSONObject(res.body?.string().orEmpty())
                 IceConfig(parse(body.optJSONArray("iceServers")), body.optString("iceTransportPolicy") == "relay")
             }

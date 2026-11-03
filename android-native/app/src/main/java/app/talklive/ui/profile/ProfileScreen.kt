@@ -85,7 +85,7 @@ fun ProfileScreen(onSignIn: () -> Unit, vm: ProfileViewModel = hiltViewModel()) 
     LaunchedEffect(vm.saved) {
         vm.saved?.let { snackbar.showSnackbar(it); vm.saved = null }
     }
-    fun open(page: String) = context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("${BuildConfig.SERVER_URL}/$page")))
+    fun open(page: String) = context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("${app.talklive.net.ServerConfig.url}/$page")))
 
     Box(Modifier.fillMaxSize()) {
         Column(
