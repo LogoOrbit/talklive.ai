@@ -78,7 +78,7 @@ import app.talklive.ui.theme.BrandViolet
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
 
-enum class AuthRoute { Welcome, Choose, Signup, Login }
+enum class AuthRoute { Welcome, Choose, Signup, Login, Reset }
 
 /** Welcome slides, then sign-in choices, then email sign-up or log-in. */
 @Composable
@@ -91,6 +91,7 @@ fun OnboardingFlow(vm: AuthViewModel, start: AuthRoute = AuthRoute.Welcome, onCl
         when (route) {
             AuthRoute.Signup -> if (!vm.back()) go(AuthRoute.Choose)
             AuthRoute.Login -> go(AuthRoute.Choose)
+            AuthRoute.Reset -> if (!vm.resetBack()) go(AuthRoute.Login)
             AuthRoute.Choose -> if (start == AuthRoute.Choose) onClose?.invoke() else go(AuthRoute.Welcome)
             AuthRoute.Welcome -> onClose?.invoke()
         }
@@ -114,7 +115,13 @@ fun OnboardingFlow(vm: AuthViewModel, start: AuthRoute = AuthRoute.Welcome, onCl
                 onClose = onClose,
             )
             AuthRoute.Signup -> SignupScreen(vm, onExit = { go(AuthRoute.Choose) })
-            AuthRoute.Login -> LoginScreen(vm, onBack = { go(AuthRoute.Choose) }, onSignup = { go(AuthRoute.Signup) })
+            AuthRoute.Login -> LoginScreen(
+                vm,
+                onBack = { go(AuthRoute.Choose) },
+                onSignup = { go(AuthRoute.Signup) },
+                onForgot = { vm.startReset(); go(AuthRoute.Reset) },
+            )
+            AuthRoute.Reset -> ResetScreen(vm, onExit = { go(AuthRoute.Login) })
         }
     }
 }
@@ -346,7 +353,7 @@ private fun ColumnScope.CodeStep(vm: AuthViewModel) {
 }
 
 @Composable
-internal fun LoginScreen(vm: AuthViewModel, onBack: () -> Unit, onSignup: () -> Unit) {
+internal fun LoginScreen(vm: AuthViewModel, onBack: () -> Unit, onSignup: () -> Unit, onForgot: () -> Unit = {}) {
     val context = LocalContext.current
     val focus = remember { FocusRequester() }
     val passFocus = remember { FocusRequester() }
@@ -363,6 +370,7 @@ internal fun LoginScreen(vm: AuthViewModel, onBack: () -> Unit, onSignup: () -> 
             value = vm.loginPassword, onValueChange = { vm.loginPassword = it }, label = stringResource(R.string.password),
             password = true, imeAction = ImeAction.Done, onIme = vm::login, focusRequester = passFocus,
         )
+        TextButton(onClick = onForgot, modifier = Modifier.align(Alignment.End)) { Text(stringResource(R.string.forgot_password)) }
         ErrorBanner(vm.error)
         Spacer(Modifier.height(24.dp))
         PrimaryButton(
@@ -382,6 +390,65 @@ internal fun LoginScreen(vm: AuthViewModel, onBack: () -> Unit, onSignup: () -> 
         Spacer(Modifier.height(12.dp))
         TextButton(onClick = onSignup, modifier = Modifier.align(Alignment.CenterHorizontally)) {
             Text(stringResource(R.string.no_account))
+        }
+    }
+}
+
+@Composable
+internal fun ResetScreen(vm: AuthViewModel, onExit: () -> Unit) {
+    FormScaffold(onBack = { if (!vm.resetBack()) onExit() }, progress = (vm.resetStep.ordinal + 1) / 3f) {
+        AnimatedContent(
+            targetState = vm.resetStep,
+            transitionSpec = {
+                val forward = targetState.ordinal > initialState.ordinal
+                (slideInHorizontally(tween(300)) { if (forward) it else -it } + fadeIn()) togetherWith
+                    (slideOutHorizontally(tween(300)) { if (forward) -it else it } + fadeOut())
+            },
+            label = "reset",
+        ) { step ->
+            Column {
+                when (step) {
+                    ResetStep.Email -> {
+                        val focus = remember { FocusRequester() }
+                        LaunchedEffect(Unit) { focus.requestFocus() }
+                        ScreenTitle(stringResource(R.string.reset_title), stringResource(R.string.reset_body))
+                        Spacer(Modifier.height(28.dp))
+                        TalkTextField(
+                            vm.resetEmail, { vm.resetEmail = it }, stringResource(R.string.email),
+                            keyboardType = KeyboardType.Email, imeAction = ImeAction.Done, onIme = vm::sendResetCode, focusRequester = focus,
+                        )
+                        ErrorBanner(vm.error)
+                        Spacer(Modifier.height(24.dp))
+                        PrimaryButton(stringResource(R.string.send_code), onClick = vm::sendResetCode, enabled = vm.resetEmail.contains('@'), loading = vm.busy)
+                    }
+                    ResetStep.Code -> {
+                        ScreenTitle(stringResource(R.string.reset_code_title), stringResource(R.string.signup_code_body, vm.resetEmail.trim()))
+                        Spacer(Modifier.height(28.dp))
+                        OtpField(vm.resetCode, { vm.resetCode = it; vm.clearError() }, onComplete = vm::verifyReset, error = vm.error != null)
+                        ErrorBanner(vm.error)
+                        Spacer(Modifier.height(24.dp))
+                        PrimaryButton(stringResource(R.string.continue_), onClick = { vm.verifyReset(vm.resetCode) }, enabled = vm.resetCode.length == 6, loading = vm.busy)
+                        TextButton(
+                            onClick = vm::sendResetCode, enabled = vm.resendIn == 0 && !vm.busy,
+                            modifier = Modifier.align(Alignment.CenterHorizontally),
+                        ) { Text(if (vm.resendIn > 0) stringResource(R.string.resend_in, vm.resendIn) else stringResource(R.string.resend)) }
+                    }
+                    ResetStep.Password -> {
+                        val focus = remember { FocusRequester() }
+                        LaunchedEffect(Unit) { focus.requestFocus() }
+                        ScreenTitle(stringResource(R.string.reset_new_title), stringResource(R.string.reset_new_body))
+                        Spacer(Modifier.height(28.dp))
+                        TalkTextField(
+                            vm.resetPassword, { vm.resetPassword = it }, stringResource(R.string.new_password),
+                            password = true, imeAction = ImeAction.Done, onIme = vm::finishReset, focusRequester = focus,
+                            supporting = stringResource(R.string.password_hint),
+                        )
+                        ErrorBanner(vm.error)
+                        Spacer(Modifier.height(24.dp))
+                        PrimaryButton(stringResource(R.string.set_password), onClick = vm::finishReset, enabled = vm.resetPassword.length >= 8, loading = vm.busy)
+                    }
+                }
+            }
         }
     }
 }

@@ -7,6 +7,8 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import app.talklive.ui.animals.AnimalAvatar
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,24 +17,19 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -61,15 +58,14 @@ import java.text.NumberFormat
 fun HomeScreen(
     connected: Boolean,
     online: Int?,
-    accountName: String?,
+    animal: String?,
+    name: String?,
+    dark: Boolean,
     onStart: () -> Unit,
-    onSignIn: () -> Unit,
-    onSignOut: () -> Unit,
-    dark: Boolean = false,
-    onToggleTheme: () -> Unit = {},
+    onToggleTheme: () -> Unit,
+    onProfile: () -> Unit,
 ) {
-    Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(horizontal = 24.dp, vertical = 16.dp)) {
-        // Top bar: logo and account.
+    Column(Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 24.dp, vertical = 16.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Image(painterResource(R.drawable.logo), null, Modifier.size(32.dp))
             Spacer(Modifier.size(10.dp))
@@ -82,11 +78,7 @@ fun HomeScreen(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            if (accountName == null) {
-                TextButton(onClick = onSignIn) { Text(stringResource(R.string.sign_in)) }
-            } else {
-                AccountChip(accountName, onSignOut)
-            }
+            AnimalAvatar(animal, name, 36.dp, Modifier.clip(CircleShape).clickable(onClick = onProfile))
         }
 
         Spacer(Modifier.weight(1f))
@@ -142,31 +134,5 @@ private fun MicOrb() {
             Modifier.size(112.dp).clip(CircleShape).background(BrandGradient),
             contentAlignment = Alignment.Center,
         ) { Icon(Icons.Rounded.Mic, null, tint = Color.White, modifier = Modifier.size(52.dp)) }
-    }
-}
-
-@Composable
-private fun AccountChip(name: String, onSignOut: () -> Unit) {
-    var open by remember { mutableStateOf(false) }
-    Box {
-        Surface(onClick = { open = true }, shape = CircleShape, color = MaterialTheme.colorScheme.surface) {
-            Row(Modifier.padding(start = 4.dp, end = 12.dp, top = 4.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    Modifier.size(28.dp).clip(CircleShape).background(BrandGradient),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(name.take(1).uppercase(), color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
-                }
-                Spacer(Modifier.size(8.dp))
-                Text(name, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
-            }
-        }
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.sign_out)) },
-                leadingIcon = { Icon(Icons.AutoMirrored.Rounded.Logout, null) },
-                onClick = { open = false; onSignOut() },
-            )
-        }
     }
 }

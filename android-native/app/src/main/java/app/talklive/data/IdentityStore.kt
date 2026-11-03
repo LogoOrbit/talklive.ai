@@ -2,6 +2,8 @@ package app.talklive.data
 
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -23,9 +25,15 @@ class IdentityStore @Inject constructor(@ApplicationContext context: Context) {
         get() = prefs.getString(KEY_TOKEN, null)
         set(value) = prefs.edit().putString(KEY_TOKEN, value).apply()
 
+    private val _animal = MutableStateFlow(prefs.getString(KEY_ANIMAL, null))
+    val animalFlow: StateFlow<String?> = _animal
+
     var animal: String?
-        get() = prefs.getString(KEY_ANIMAL, null)
-        set(value) = prefs.edit().putString(KEY_ANIMAL, value).apply()
+        get() = _animal.value
+        set(value) {
+            prefs.edit().putString(KEY_ANIMAL, value).apply()
+            _animal.value = value
+        }
 
     /** Switches to the profile an account owns, so its friends and history follow it to this phone. */
     fun adopt(clientId: String, token: String) {

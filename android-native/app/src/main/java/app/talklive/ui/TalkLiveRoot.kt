@@ -9,13 +9,18 @@ import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -28,10 +33,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -39,43 +46,56 @@ import app.talklive.R
 import app.talklive.call.CallNotice
 import app.talklive.call.CallPhase
 import app.talklive.call.CallService
+import app.talklive.ui.animals.AnimalSetupScreen
+import app.talklive.ui.main.EmptyTab
+import app.talklive.ui.main.MainTab
+import app.talklive.ui.main.TabBar
 import app.talklive.ui.onboarding.AuthRoute
 import app.talklive.ui.onboarding.AuthViewModel
 import app.talklive.ui.onboarding.OnboardingFlow
+import app.talklive.ui.profile.ProfileScreen
+
+private enum class RootScreen { Onboarding, SignIn, Animal, Main }
 
 @Composable
 fun TalkLiveRoot(vm: TalkViewModel = hiltViewModel()) {
     val onboarded by vm.onboarded.collectAsStateWithLifecycle()
     val account by vm.account.collectAsStateWithLifecycle()
+    val animal by vm.animal.collectAsStateWithLifecycle()
     var signingIn by remember { mutableStateOf(false) }
     LaunchedEffect(account) { if (account != null) signingIn = false }
 
     AnimatedContent(
         targetState = when {
-            !onboarded -> 0
-            signingIn -> 1
-            else -> 2
+            !onboarded -> RootScreen.Onboarding
+            signingIn -> RootScreen.SignIn
+            animal == null -> RootScreen.Animal
+            else -> RootScreen.Main
         },
-        transitionSpec = { fadeIn() togetherWith fadeOut() },
+        transitionSpec = { (fadeIn(tween(300)) + scaleIn(initialScale = 0.96f)) togetherWith fadeOut(tween(200)) },
         label = "root",
     ) { screen ->
         when (screen) {
-            0 -> OnboardingFlow(hiltViewModel<AuthViewModel>())
-            1 -> OnboardingFlow(hiltViewModel<AuthViewModel>(), start = AuthRoute.Choose, onClose = { signingIn = false })
-            else -> MainScreen(vm, accountName = account?.nickname, onSignIn = { signingIn = true })
+            RootScreen.Onboarding -> OnboardingFlow(hiltViewModel<AuthViewModel>())
+            RootScreen.SignIn -> OnboardingFlow(hiltViewModel<AuthViewModel>(), start = AuthRoute.Choose, onClose = { signingIn = false })
+            RootScreen.Animal -> AnimalSetupScreen(onDone = vm::setAnimal)
+            RootScreen.Main -> MainScreen(vm, onSignIn = { signingIn = true })
         }
     }
 }
 
 @Composable
-private fun MainScreen(vm: TalkViewModel, accountName: String?, onSignIn: () -> Unit) {
+private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     val context = LocalContext.current
     val state by vm.state.collectAsStateWithLifecycle()
     val connected by vm.connected.collectAsStateWithLifecycle()
     val online by vm.onlineCount.collectAsStateWithLifecycle()
     val dark by vm.dark.collectAsStateWithLifecycle()
+    val animal by vm.animal.collectAsStateWithLifecycle()
+    val account by vm.account.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     var micDenied by remember { mutableStateOf(false) }
+    var tab by rememberSaveable { mutableStateOf(MainTab.Talk) }
 
     fun begin() {
         CallService.start(context)
@@ -103,7 +123,7 @@ private fun MainScreen(vm: TalkViewModel, accountName: String?, onSignIn: () -> 
         if (needed.isEmpty()) begin() else permissions.launch(needed.toTypedArray())
     }
 
-    val leftMsg = state.notice?.let { n ->
+    val noticeText = state.notice?.let { n ->
         when (n) {
             is CallNotice.PartnerLeft -> stringResource(if (n.dropped) R.string.partner_dropped else R.string.partner_left, n.name)
             CallNotice.Banned -> stringResource(R.string.banned)
@@ -111,43 +131,66 @@ private fun MainScreen(vm: TalkViewModel, accountName: String?, onSignIn: () -> 
         }
     }
     LaunchedEffect(state.notice) {
-        if (leftMsg != null) {
-            snackbar.showSnackbar(leftMsg)
+        if (noticeText != null) {
+            snackbar.showSnackbar(noticeText)
             vm.dismissNotice()
         }
     }
 
+    val inCall = state.phase !is CallPhase.Idle
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbar) },
+        bottomBar = {
+            AnimatedVisibility(
+                visible = !inCall,
+                enter = slideInVertically { it } + fadeIn(),
+                exit = slideOutVertically { it } + fadeOut(),
+            ) { TabBar(selected = tab, onSelect = { tab = it }) }
+        },
     ) { pad ->
-        Box(Modifier.fillMaxSize().padding(pad)) {
+        Box(Modifier.fillMaxSize().padding(bottom = if (inCall) 0.dp else pad.calculateBottomPadding())) {
             AnimatedContent(
-                targetState = state.phase is CallPhase.Idle,
-                transitionSpec = { fadeIn() togetherWith fadeOut() },
-                label = "screen",
-            ) { idle ->
-                if (idle) {
-                    HomeScreen(
+                targetState = tab,
+                transitionSpec = { fadeIn(tween(220)) togetherWith fadeOut(tween(120)) },
+                label = "tab",
+            ) { t ->
+                when (t) {
+                    MainTab.Talk -> HomeScreen(
                         connected = connected,
                         online = online,
-                        accountName = accountName,
-                        onStart = onStart,
-                        onSignIn = onSignIn,
-                        onSignOut = vm::signOut,
+                        animal = animal,
+                        name = account?.nickname,
                         dark = dark,
+                        onStart = onStart,
                         onToggleTheme = vm::toggleTheme,
+                        onProfile = { tab = MainTab.Profile },
                     )
-                } else {
-                    CallScreen(
-                        state = state,
-                        onNext = vm::next,
-                        onEnd = vm::end,
-                        onMute = vm::toggleMute,
-                        onSpeaker = vm::toggleSpeaker,
-                        onReport = vm::report,
-                    )
+                    MainTab.Chats -> EmptyTab(MainTab.Chats, onStart = { tab = MainTab.Talk })
+                    MainTab.Friends -> EmptyTab(MainTab.Friends, onStart = { tab = MainTab.Talk })
+                    MainTab.Profile -> ProfileScreen(onSignIn = onSignIn)
                 }
+            }
+        }
+        AnimatedVisibility(
+            visible = inCall,
+            enter = slideInVertically(tween(380)) { it / 4 } + fadeIn(tween(300)),
+            exit = slideOutVertically(tween(300)) { it / 4 } + fadeOut(tween(220)),
+        ) {
+            val level by vm.remoteLevel.collectAsStateWithLifecycle()
+            Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+                CallScreen(
+                    state = state,
+                    connected = connected,
+                    myAnimal = animal,
+                    remoteLevel = { level },
+                    onNext = vm::next,
+                    onEnd = vm::end,
+                    onMute = vm::toggleMute,
+                    onSpeaker = vm::toggleSpeaker,
+                    onReport = vm::report,
+                )
             }
         }
     }
@@ -168,3 +211,4 @@ private fun MainScreen(vm: TalkViewModel, accountName: String?, onSignIn: () -> 
         )
     }
 }
+

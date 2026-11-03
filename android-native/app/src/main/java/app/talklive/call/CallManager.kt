@@ -1,6 +1,7 @@
 package app.talklive.call
 
 import android.util.Log
+import app.talklive.data.IdentityStore
 import app.talklive.net.IceServerApi
 import app.talklive.net.Partner
 import app.talklive.net.ServerEvent
@@ -37,12 +38,19 @@ sealed interface CallNotice {
     data class Refused(val reason: String) : CallNotice
 }
 
+enum class LinkQuality { Good, Fair, Poor }
+
 data class CallState(
     val phase: CallPhase = CallPhase.Idle,
     val muted: Boolean = false,
     val partnerMuted: Boolean = false,
     val speakerOn: Boolean = true,
     val notice: CallNotice? = null,
+    /** Media path wobbling (ICE disconnected); WebRTC is trying to recover. */
+    val unstable: Boolean = false,
+    /** A phone call or another app took the microphone. */
+    val onHold: Boolean = false,
+    val quality: LinkQuality = LinkQuality.Good,
 )
 
 /**
@@ -57,11 +65,17 @@ class CallManager @Inject constructor(
     private val iceApi: IceServerApi,
     private val rtc: RtcFactory,
     private val audio: AudioRouter,
+    private val identity: IdentityStore,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default.limitedParallelism(1))
 
     private val _state = MutableStateFlow(CallState())
     val state: StateFlow<CallState> = _state
+
+    /** The stranger's voice level, 0..1, for the speaking ring. Separate so it can update often. */
+    private val _remoteLevel = MutableStateFlow(0f)
+    val remoteLevel: StateFlow<Float> = _remoteLevel
+    private var statsJob: Job? = null
 
     private var session: RtcSession? = null
     private var initiator = false
@@ -71,6 +85,24 @@ class CallManager @Inject constructor(
 
     init {
         scope.launch { socket.events.collect(::onEvent) }
+        // A phone call takes the mic: hold this call (mic off) until it ends.
+        scope.launch {
+            audio.focusLost.collect { lost ->
+                if (_state.value.phase == CallPhase.Idle) return@collect
+                _state.update { it.copy(onHold = lost) }
+                session?.setMuted(lost || _state.value.muted)
+                socket.emit("mic-state", lost || _state.value.muted)
+            }
+        }
+        // Plugging in or pairing a headset moves the call to it.
+        scope.launch {
+            audio.headset.drop(1).collect { connected ->
+                if (_state.value.phase == CallPhase.Idle) return@collect
+                val speaker = !connected
+                audio.setSpeaker(speaker)
+                _state.update { it.copy(speakerOn = speaker) }
+            }
+        }
         // After a reconnect the server has forgotten our search (and our call):
         // start searching again so a network blip never strands the user.
         scope.launch {
@@ -114,7 +146,7 @@ class CallManager @Inject constructor(
 
     fun toggleMute() = scope.launch {
         val muted = !_state.value.muted
-        session?.setMuted(muted)
+        session?.setMuted(muted || _state.value.onHold)
         socket.emit("mic-state", muted)
         _state.update { it.copy(muted = muted) }
     }
@@ -129,7 +161,7 @@ class CallManager @Inject constructor(
 
     private fun search() {
         setPhase(CallPhase.Searching())
-        socket.emit("find-partner", JSONObject().put("mode", "talk"))
+        socket.emit("find-partner", searchOpts())
     }
 
     private suspend fun onEvent(e: ServerEvent) {
@@ -138,7 +170,7 @@ class CallManager @Inject constructor(
             is ServerEvent.Waiting -> if (phase is CallPhase.Searching) setPhase(CallPhase.Searching(e.estimatedSeconds))
             ServerEvent.NeedsRegister -> if (phase is CallPhase.Searching) {
                 delay(800)
-                socket.emit("find-partner", JSONObject().put("mode", "talk"))
+                socket.emit("find-partner", searchOpts())
             }
             is ServerEvent.Matched -> if (phase != CallPhase.Idle) onMatched(e)
             is ServerEvent.Signal -> onSignal(e.data)
@@ -190,8 +222,9 @@ class CallManager @Inject constructor(
             }
         })
         session = s
-        s.setMuted(_state.value.muted)
-        if (_state.value.muted) socket.emit("mic-state", true)
+        val silent = _state.value.muted || _state.value.onHold
+        s.setMuted(silent)
+        if (silent) socket.emit("mic-state", true)
 
         watchdog = scope.launch {
             delay(CONNECT_TIMEOUT_MS)
@@ -234,8 +267,13 @@ class CallManager @Inject constructor(
         when (state) {
             PeerConnection.PeerConnectionState.CONNECTED -> {
                 watchdog?.cancel()
-                if (_state.value.phase !is CallPhase.Connected) setPhase(CallPhase.Connected(partner, System.currentTimeMillis()))
+                _state.update { it.copy(unstable = false) }
+                if (_state.value.phase !is CallPhase.Connected) {
+                    setPhase(CallPhase.Connected(partner, System.currentTimeMillis()))
+                    startStats()
+                }
             }
+            PeerConnection.PeerConnectionState.DISCONNECTED -> _state.update { it.copy(unstable = true) }
             PeerConnection.PeerConnectionState.FAILED -> failAndRetry()
             else -> Unit
         }
@@ -248,7 +286,44 @@ class CallManager @Inject constructor(
         setPhase(CallPhase.Searching())
     }
 
+    /** Polls WebRTC stats: voice level for the ring, round-trip time and loss for the quality dot. */
+    private fun startStats() {
+        statsJob?.cancel()
+        val s = session ?: return
+        statsJob = scope.launch {
+            var lastLost = 0L
+            var lastReceived = 0L
+            var tick = 0
+            while (true) {
+                val st = runCatching { s.stats() }.getOrNull()
+                if (st != null) {
+                    _remoteLevel.value = if (_state.value.partnerMuted) 0f else st.remoteLevel
+                    // Quality every ~2 s, from loss and round trip over that window.
+                    if (++tick % 8 == 0) {
+                        val dl = st.packetsLost - lastLost
+                        val dr = st.packetsReceived - lastReceived
+                        lastLost = st.packetsLost
+                        lastReceived = st.packetsReceived
+                        val loss = if (dl + dr > 0) dl.toFloat() / (dl + dr) else 0f
+                        val rtt = st.rttMs ?: 0
+                        val q = when {
+                            loss > 0.08f || rtt > 600 -> LinkQuality.Poor
+                            loss > 0.02f || rtt > 300 -> LinkQuality.Fair
+                            else -> LinkQuality.Good
+                        }
+                        _state.update { it.copy(quality = q) }
+                    }
+                }
+                delay(250)
+            }
+        }
+    }
+
     private fun teardown() {
+        statsJob?.cancel()
+        statsJob = null
+        _remoteLevel.value = 0f
+        _state.update { it.copy(unstable = false, quality = LinkQuality.Good) }
         matchId++
         watchdog?.cancel()
         watchdog = null
@@ -256,6 +331,8 @@ class CallManager @Inject constructor(
         session?.close()
         session = null
     }
+
+    private fun searchOpts() = JSONObject().put("mode", "talk").apply { identity.animal?.let { put("animal", it) } }
 
     private fun setPhase(p: CallPhase) = _state.update { it.copy(phase = p) }
 

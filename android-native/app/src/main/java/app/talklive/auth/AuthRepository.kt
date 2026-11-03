@@ -80,6 +80,46 @@ class AuthRepository @Inject constructor(
     suspend fun google(idToken: String): AuthResult =
         call("google-auth", JSONObject().put("credential", idToken), "google-auth-result")
 
+    suspend fun updateNickname(nickname: String): AuthResult {
+        val (r, res) = callRaw("update-nickname", JSONObject().put("nickname", nickname.trim()), "update-nickname-result")
+        if (r == AuthResult.Ok) {
+            val nick = res.optString("nickname").ifBlank { nickname.trim() }
+            prefs.edit().putString(KEY_NICKNAME, nick).apply()
+            _account.value = _account.value?.copy(nickname = nick)
+        }
+        return r
+    }
+
+    suspend fun changePassword(current: String, new: String): AuthResult =
+        callRaw("change-password", JSONObject().put("currentPassword", current).put("newPassword", new), "change-password-result").first
+
+    suspend fun updateRecoveryEmail(email: String, currentPassword: String): AuthResult {
+        val (r, _) = callRaw(
+            "update-recovery-email",
+            JSONObject().put("email", email.trim()).put("currentPassword", currentPassword),
+            "update-recovery-email-result",
+        )
+        if (r == AuthResult.Ok) {
+            prefs.edit().putString(KEY_EMAIL, email.trim()).apply()
+            _account.value = _account.value?.copy(email = email.trim())
+        }
+        return r
+    }
+
+    /** Password reset, step 1: email a code. */
+    suspend fun forgotPassword(email: String): AuthResult =
+        callRaw("forgot-password", JSONObject().put("email", email.trim()), "forgot-password-result").first
+
+    /** Step 2: trade the code for a one-time reset token. */
+    suspend fun verifyResetCode(email: String, code: String): Pair<AuthResult, String?> {
+        val (r, res) = callRaw("verify-reset-code", JSONObject().put("email", email.trim()).put("code", code), "verify-reset-code-result")
+        return r to res.optString("resetToken").takeIf { it.isNotBlank() }
+    }
+
+    /** Step 3: set the new password; the server signs this device in. */
+    suspend fun resetPassword(resetToken: String, newPassword: String): AuthResult =
+        call("reset-password", JSONObject().put("resetToken", resetToken).put("newPassword", newPassword), "reset-password-result")
+
     fun logout() {
         socket.emit("logout", JSONObject().put("token", prefs.getString(KEY_TOKEN, null)))
         prefs.edit().remove(KEY_TOKEN).remove(KEY_USERNAME).remove(KEY_NICKNAME).remove(KEY_EMAIL).apply()
@@ -96,15 +136,22 @@ class AuthRepository @Inject constructor(
     }
 
     private suspend fun call(event: String, payload: JSONObject, result: String, signsIn: Boolean = true): AuthResult {
-        if (!socket.connected.value) return AuthResult.Error("No connection. Check your internet and try again.")
+        val (r, res) = callRaw(event, payload, result)
+        if (r == AuthResult.Ok && signsIn) onSignedIn(res)
+        return r
+    }
+
+    private suspend fun callRaw(event: String, payload: JSONObject, result: String): Pair<AuthResult, JSONObject> {
+        if (!socket.connected.value) return AuthResult.Error("No connection. Check your internet and try again.") to JSONObject()
         val res = try {
             socket.request(event, payload, result)
         } catch (_: TimeoutCancellationException) {
-            return AuthResult.Error("The server did not answer. Please try again.")
+            return AuthResult.Error("The server did not answer. Please try again.") to JSONObject()
         }
-        if (!res.optBoolean("ok")) return AuthResult.Error(res.optString("error").ifBlank { "Something went wrong. Please try again." })
-        if (signsIn) onSignedIn(res)
-        return AuthResult.Ok
+        if (!res.optBoolean("ok")) {
+            return AuthResult.Error(res.optString("error").ifBlank { "Something went wrong. Please try again." }) to res
+        }
+        return AuthResult.Ok to res
     }
 
     private fun onSignedIn(res: JSONObject) {

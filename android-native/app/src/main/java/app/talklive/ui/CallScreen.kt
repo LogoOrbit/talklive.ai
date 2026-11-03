@@ -1,11 +1,26 @@
 package app.talklive.ui
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,10 +29,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.VolumeUp
@@ -26,12 +41,15 @@ import androidx.compose.material.icons.rounded.Flag
 import androidx.compose.material.icons.rounded.Hearing
 import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.MicOff
+import androidx.compose.material.icons.rounded.PauseCircle
 import androidx.compose.material.icons.rounded.SkipNext
+import androidx.compose.material.icons.rounded.WifiOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -41,29 +59,40 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import app.talklive.R
 import app.talklive.call.CallPhase
 import app.talklive.call.CallState
+import app.talklive.call.LinkQuality
 import app.talklive.net.Partner
+import app.talklive.ui.animals.AnimalAvatar
+import app.talklive.ui.animals.animalById
 import app.talklive.ui.theme.BrandTeal
 import app.talklive.ui.theme.BrandViolet
 import app.talklive.ui.theme.Danger
+import app.talklive.ui.theme.Success
 import kotlinx.coroutines.delay
+
+private val Amber = Color(0xFFF59E0B)
 
 @Composable
 fun CallScreen(
     state: CallState,
+    connected: Boolean,
+    myAnimal: String?,
+    remoteLevel: () -> Float,
     onNext: () -> Unit,
     onEnd: () -> Unit,
     onMute: () -> Unit,
@@ -79,36 +108,77 @@ fun CallScreen(
     }
 
     Column(
-        Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(horizontal = 24.dp, vertical = 32.dp),
+        Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(horizontal = 24.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        // Status: the one thing that is wrong right now, if anything.
+        val banner = when {
+            !connected -> Banner(Icons.Rounded.WifiOff, R.string.reconnecting, Amber)
+            state.onHold -> Banner(Icons.Rounded.PauseCircle, R.string.on_hold, Amber)
+            state.unstable -> Banner(Icons.Rounded.WifiOff, R.string.unstable, Amber)
+            else -> null
+        }
+        Box(Modifier.fillMaxWidth().height(40.dp), contentAlignment = Alignment.Center) {
+            AnimatedContent(
+                targetState = banner ?: if (phase is CallPhase.Connected) QualityBanner(state.quality) else null,
+                transitionSpec = { (fadeIn() + scaleIn(initialScale = 0.9f)) togetherWith fadeOut() },
+                label = "banner",
+            ) { b -> if (b != null) StatusPill(b) }
+        }
+
         Spacer(Modifier.weight(1f))
-        Avatar(partner, pulsing = phase !is CallPhase.Connected)
+        AnimatedContent(
+            targetState = partner?.clientId,
+            transitionSpec = {
+                (scaleIn(spring(dampingRatio = 0.6f, stiffness = 300f), initialScale = 0.6f) + fadeIn()) togetherWith
+                    (scaleOut(targetScale = 0.8f) + fadeOut(tween(150)))
+            },
+            label = "who",
+        ) { id ->
+            if (id == null || partner == null) {
+                Radar { AnimalAvatar(myAnimal, null, 112.dp) }
+            } else {
+                SpeakingAvatar(partner, active = phase is CallPhase.Connected, level = remoteLevel)
+            }
+        }
         Spacer(Modifier.height(28.dp))
-        when (phase) {
-            is CallPhase.Searching -> {
-                Title(stringResource(R.string.searching))
-                phase.etaSeconds?.takeIf { it > 0 }?.let { Subtitle(stringResource(R.string.searching_eta, it)) }
-            }
-            is CallPhase.Connecting -> {
-                Title(phase.partner.username)
-                Subtitle(listOfNotNull(flag(phase.partner.countryCode), phase.partner.country).joinToString(" "))
-                Spacer(Modifier.height(6.dp))
-                Subtitle(stringResource(R.string.connecting_call))
-            }
-            is CallPhase.Connected -> {
-                Title(phase.partner.username)
-                Subtitle(listOfNotNull(flag(phase.partner.countryCode), phase.partner.country).joinToString(" "))
-                Spacer(Modifier.height(6.dp))
-                Elapsed(phase.sinceMs)
-                if (state.partnerMuted) {
-                    Spacer(Modifier.height(6.dp))
-                    Subtitle(stringResource(R.string.partner_muted))
+
+        AnimatedContent(
+            targetState = phase,
+            contentKey = { it::class },
+            transitionSpec = { fadeIn(tween(250)) togetherWith fadeOut(tween(150)) },
+            label = "text",
+        ) { p ->
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                when (p) {
+                    is CallPhase.Searching -> {
+                        Title(stringResource(R.string.searching))
+                        p.etaSeconds?.takeIf { it > 0 }?.let { Subtitle(stringResource(R.string.searching_eta, it)) }
+                    }
+                    is CallPhase.Connecting -> {
+                        PartnerInfo(p.partner)
+                        Spacer(Modifier.height(6.dp))
+                        Subtitle(stringResource(R.string.connecting_call))
+                    }
+                    is CallPhase.Connected -> {
+                        PartnerInfo(p.partner)
+                        Spacer(Modifier.height(6.dp))
+                        Elapsed(p.sinceMs)
+                    }
+                    CallPhase.Idle -> Unit
                 }
             }
-            CallPhase.Idle -> Unit
         }
-        Spacer(Modifier.weight(1.4f))
+        AnimatedVisibility(state.partnerMuted && partner != null, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
+            Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface, modifier = Modifier.padding(top = 10.dp)) {
+                Row(Modifier.padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Rounded.MicOff, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.size(6.dp))
+                    Text(stringResource(R.string.partner_muted), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+        Spacer(Modifier.weight(1.3f))
 
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.Top) {
             Control(
@@ -130,7 +200,7 @@ fun CallScreen(
                 onClick = { reporting = true },
             )
         }
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(24.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
             Control(Icons.Rounded.CallEnd, stringResource(R.string.end), container = Danger, size = 72, onClick = onEnd)
             Control(Icons.Rounded.SkipNext, stringResource(R.string.next), container = BrandTeal, size = 72, onClick = onNext)
@@ -162,27 +232,83 @@ fun CallScreen(
     }
 }
 
+private data class Banner(val icon: ImageVector?, val text: Int, val color: Color)
+
+private fun QualityBanner(q: LinkQuality) = when (q) {
+    LinkQuality.Good -> Banner(null, R.string.quality_good, Success)
+    LinkQuality.Fair -> Banner(null, R.string.quality_fair, Amber)
+    LinkQuality.Poor -> Banner(null, R.string.quality_poor, Danger)
+}
+
 @Composable
-private fun Avatar(partner: Partner?, pulsing: Boolean) {
-    val t = rememberInfiniteTransition(label = "pulse")
-    val s by t.animateFloat(1f, if (pulsing) 1.12f else 1f, infiniteRepeatable(tween(900), RepeatMode.Reverse), label = "s")
-    Box(
-        Modifier.size(150.dp).scale(s).clip(CircleShape)
-            .background(Brush.linearGradient(listOf(BrandViolet, BrandTeal))),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            partner?.username?.firstOrNull()?.uppercase() ?: "?",
-            fontSize = 60.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.White,
+private fun StatusPill(b: Banner) {
+    Surface(shape = CircleShape, color = b.color.copy(alpha = 0.14f)) {
+        Row(Modifier.padding(horizontal = 14.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (b.icon != null) Icon(b.icon, null, Modifier.size(16.dp), tint = b.color)
+            else Box(Modifier.size(8.dp).clip(CircleShape).background(b.color))
+            Spacer(Modifier.size(8.dp))
+            Text(stringResource(b.text), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onBackground)
+        }
+    }
+}
+
+/** Rings ripple out from your own animal while the app looks for someone. */
+@Composable
+private fun Radar(content: @Composable () -> Unit) {
+    val t = rememberInfiniteTransition(label = "radar")
+    val phases = (0 until 3).map { i ->
+        t.animateFloat(
+            0f, 1f,
+            infiniteRepeatable(tween(2400, delayMillis = 0, easing = LinearEasing), RepeatMode.Restart, initialStartOffset = androidx.compose.animation.core.StartOffset(i * 800)),
+            label = "ring$i",
         )
     }
+    Box(
+        Modifier.size(240.dp).drawBehind {
+            val base = 56.dp.toPx()
+            phases.forEach { p ->
+                val f = p.value
+                drawCircle(
+                    color = BrandViolet.copy(alpha = (1f - f) * 0.35f),
+                    radius = base + (size.minDimension / 2 - base) * f,
+                    style = Stroke(width = 2.dp.toPx()),
+                )
+            }
+        },
+        contentAlignment = Alignment.Center,
+    ) { content() }
+}
+
+/** The stranger's face, with a glow that swells as they talk. */
+@Composable
+private fun SpeakingAvatar(partner: Partner, active: Boolean, level: () -> Float) {
+    val smooth = remember { Animatable(0f) }
+    LaunchedEffect(active) {
+        if (!active) { smooth.snapTo(0f); return@LaunchedEffect }
+        snapshotFlow(level).collect { smooth.animateTo((it * 3f).coerceIn(0f, 1f), tween(200)) }
+    }
+    val ring by animateColorAsState(if (active) BrandTeal else BrandViolet, label = "ring")
+    Box(
+        Modifier.size(240.dp).drawBehind {
+            val v = smooth.value
+            val base = 76.dp.toPx()
+            drawCircle(ring.copy(alpha = 0.10f + 0.18f * v), radius = base + 34.dp.toPx() * v + 8.dp.toPx())
+            drawCircle(ring.copy(alpha = 0.55f * v + 0.15f), radius = base + 6.dp.toPx() + 10.dp.toPx() * v, style = Stroke(3.dp.toPx()))
+        },
+        contentAlignment = Alignment.Center,
+    ) { AnimalAvatar(partner.animal, partner.username, 152.dp) }
+}
+
+@Composable
+private fun PartnerInfo(p: Partner) {
+    Title(p.username)
+    val place = listOfNotNull(flag(p.countryCode), p.country).joinToString(" ").ifBlank { null }
+    Subtitle(listOfNotNull(place, animalById(p.animal)?.name).joinToString("  ·  "))
 }
 
 @Composable
 private fun Title(text: String) =
-    Text(text, fontSize = 24.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground)
+    Text(text, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onBackground)
 
 @Composable
 private fun Subtitle(text: String) =
@@ -208,16 +334,30 @@ private fun Control(
     container: Color? = null,
     size: Int = 60,
 ) {
+    val haptics = LocalHapticFeedback.current
+    val source = remember { MutableInteractionSource() }
+    val pressed by source.collectIsPressedAsState()
+    val scale by androidx.compose.animation.core.animateFloatAsState(
+        if (pressed) 0.88f else 1f, spring(dampingRatio = 0.5f, stiffness = 700f), label = "press",
+    )
+    val bg by animateColorAsState(
+        container ?: if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+        label = "bg",
+    )
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         FilledIconButton(
-            onClick = onClick,
+            onClick = {
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                onClick()
+            },
             enabled = enabled,
-            modifier = Modifier.size(size.dp),
+            interactionSource = source,
+            modifier = Modifier.size(size.dp).scale(scale),
             colors = IconButtonDefaults.filledIconButtonColors(
-                containerColor = container ?: if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+                containerColor = bg,
                 contentColor = if (container != null || active) Color.White else MaterialTheme.colorScheme.onSurface,
             ),
-        ) { Icon(icon, contentDescription = label, modifier = Modifier.size((size * 0.45).dp)) }
+        ) { Icon(icon, contentDescription = label, modifier = Modifier.size((size * 0.42).dp)) }
         Spacer(Modifier.height(6.dp))
         Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }

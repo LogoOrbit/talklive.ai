@@ -16,6 +16,8 @@ import javax.inject.Inject
 
 enum class SignupStep { Email, Account, Code }
 
+enum class ResetStep { Email, Code, Password }
+
 @HiltViewModel
 class AuthViewModel @Inject constructor(private val auth: AuthRepository) : ViewModel() {
     var busy by mutableStateOf(false); private set
@@ -29,6 +31,52 @@ class AuthViewModel @Inject constructor(private val auth: AuthRepository) : View
     var password by mutableStateOf("")
     var code by mutableStateOf("")
     var resendIn by mutableStateOf(0); private set
+
+    // Forgot password.
+    var resetStep by mutableStateOf(ResetStep.Email); internal set
+    var resetEmail by mutableStateOf("")
+    var resetCode by mutableStateOf("")
+    var resetPassword by mutableStateOf("")
+    private var resetToken: String? = null
+
+    fun startReset() {
+        error = null
+        resetStep = ResetStep.Email
+        resetEmail = loginUser.takeIf { it.contains('@') }.orEmpty()
+        resetCode = ""
+        resetPassword = ""
+    }
+
+    /** Returns false when there is no earlier reset step. */
+    fun resetBack(): Boolean {
+        error = null
+        resetStep = when (resetStep) {
+            ResetStep.Email -> return false
+            ResetStep.Code -> ResetStep.Email
+            ResetStep.Password -> ResetStep.Code
+        }
+        return true
+    }
+
+    fun sendResetCode() = run {
+        when (val r = auth.forgotPassword(resetEmail)) {
+            AuthResult.Ok -> { resetStep = ResetStep.Code; resetCode = ""; startResendTimer() }
+            is AuthResult.Error -> error = r.message
+        }
+    }
+
+    fun verifyReset(digits: String) = run {
+        val (r, token) = auth.verifyResetCode(resetEmail, digits)
+        when {
+            r is AuthResult.Error -> { error = r.message; resetCode = "" }
+            token != null -> { resetToken = token; resetStep = ResetStep.Password }
+        }
+    }
+
+    fun finishReset() = run {
+        val token = resetToken ?: return@run
+        (auth.resetPassword(token, resetPassword) as? AuthResult.Error)?.let { error = it.message }
+    }
 
     // Log-in form.
     var loginUser by mutableStateOf("")

@@ -15,6 +15,14 @@ import org.webrtc.SessionDescription
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
+/** A snapshot of the call link, read from WebRTC stats a few times a second. */
+data class LinkStats(
+    val remoteLevel: Float,
+    val rttMs: Int?,
+    val packetsLost: Long,
+    val packetsReceived: Long,
+)
+
 /** One audio-only peer connection to one stranger. */
 class RtcSession(
     factory: PeerConnectionFactory,
@@ -98,6 +106,29 @@ class RtcSession(
 
     fun addRemoteCandidate(c: IceCandidate) {
         if (pc.remoteDescription == null) pendingRemote += c else pc.addIceCandidate(c)
+    }
+
+    suspend fun stats(): LinkStats = suspendCancellableCoroutine { cont ->
+        pc.getStats { report ->
+            var level = 0f
+            var rtt: Int? = null
+            var lost = 0L
+            var received = 0L
+            for (st in report.statsMap.values) {
+                val m = st.members
+                when (st.type) {
+                    "inbound-rtp" -> if (m["kind"] == "audio") {
+                        (m["audioLevel"] as? Number)?.let { level = it.toFloat() }
+                        (m["packetsLost"] as? Number)?.let { lost = it.toLong() }
+                        (m["packetsReceived"] as? Number)?.let { received = it.toLong() }
+                    }
+                    "candidate-pair" -> if (m["state"] == "succeeded" && m["nominated"] == true) {
+                        (m["currentRoundTripTime"] as? Number)?.let { rtt = (it.toDouble() * 1000).toInt() }
+                    }
+                }
+            }
+            if (cont.isActive) cont.resume(LinkStats(level, rtt, lost, received))
+        }
     }
 
     fun close() {
