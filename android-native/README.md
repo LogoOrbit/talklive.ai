@@ -10,6 +10,16 @@ package id (`app.talklive`), so it ships as an update to the Play listing.
 2. Unzip, copy `app-debug.apk` to the phone and open it (allow "Install unknown apps").
 3. It installs as a separate app next to the Play Store version.
 
+## Push notifications (one-time setup)
+
+1. console.firebase.google.com > your TalkLive project > Project settings > Add app > Android:
+   add **app.talklive** (if not there yet) and **app.talklive.debug** (the test build).
+2. Download `google-services.json` (it now lists both) and save it as a GitHub secret named
+   `GOOGLE_SERVICES_JSON` (Settings > Secrets and variables > Actions). For local builds put it in `app/`.
+3. On the server, `FCM_SERVICE_ACCOUNT` must be set (see `mobile/README.md`), which the web push already uses.
+
+Without the file the app works normally, just without push.
+
 ## Build
 
 Needs JDK 17+ and the Android SDK (Android Studio is easiest: open this folder).
@@ -34,5 +44,5 @@ as `mobile/`) and run `./gradlew bundleRelease`.
 
 ## Status
 
-Done: onboarding, sign-up/log-in/Google, random voice calls (mute, speaker, next, end, report),
-background calls. Next: spirit animals, friends + chat, push (FCM), text chat mode, Play Billing.
+Done: onboarding, accounts, spirit animals, random voice calls, friends, chats, friend calls, push.
+Next: text chat mode, filters, games, streaks, Play Billing.

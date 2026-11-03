@@ -35,6 +35,23 @@
         </activity>
 
         <service
+            android:name=".push.TalkLiveMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="messages" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_talklive" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/brand_violet" />
+
+        <service
             android:name=".call.CallService"
             android:exported="false"
             android:foregroundServiceType="microphone" />

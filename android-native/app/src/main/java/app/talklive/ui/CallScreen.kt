@@ -39,6 +39,9 @@ import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.CallEnd
 import androidx.compose.material.icons.rounded.Flag
 import androidx.compose.material.icons.rounded.Hearing
+import androidx.compose.material.icons.rounded.HourglassTop
+import androidx.compose.material.icons.rounded.HowToReg
+import androidx.compose.material.icons.rounded.PersonAdd
 import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.MicOff
 import androidx.compose.material.icons.rounded.PauseCircle
@@ -87,12 +90,16 @@ import kotlinx.coroutines.delay
 
 private val Amber = Color(0xFFF59E0B)
 
+enum class FriendStatus { None, Requested, Friends }
+
 @Composable
 fun CallScreen(
     state: CallState,
     connected: Boolean,
     myAnimal: String?,
     remoteLevel: () -> Float,
+    friendStatus: FriendStatus = FriendStatus.None,
+    onAddFriend: () -> Unit = {},
     onNext: () -> Unit,
     onEnd: () -> Unit,
     onMute: () -> Unit,
@@ -192,6 +199,23 @@ fun CallScreen(
                 label = stringResource(R.string.speaker),
                 active = state.speakerOn,
                 onClick = onSpeaker,
+            )
+            Control(
+                icon = when (friendStatus) {
+                    FriendStatus.Friends -> Icons.Rounded.HowToReg
+                    FriendStatus.Requested -> Icons.Rounded.HourglassTop
+                    FriendStatus.None -> Icons.Rounded.PersonAdd
+                },
+                label = stringResource(
+                    when (friendStatus) {
+                        FriendStatus.Friends -> R.string.friends_label
+                        FriendStatus.Requested -> R.string.requested
+                        FriendStatus.None -> R.string.add_friend
+                    },
+                ),
+                active = friendStatus != FriendStatus.None,
+                enabled = partner != null && friendStatus == FriendStatus.None,
+                onClick = onAddFriend,
             )
             Control(
                 icon = Icons.Rounded.Flag,

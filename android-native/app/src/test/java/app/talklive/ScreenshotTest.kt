@@ -65,9 +65,9 @@ class ScreenshotTest {
     @Test fun home() = shot("07_home") { HomeScreen(true, 3412, "fox", "Sam", false, {}, {}, {}) }
     @Test fun homeDark() = shot("07b_home_dark", dark = true) { HomeScreen(true, 3412, "fox", "Sam", true, {}, {}, {}) }
     @Test fun animals() = shot("10_animals") { app.talklive.ui.animals.AnimalSetupScreen("owl") {} }
-    @Test fun chats() = shot("11_chats") { app.talklive.ui.main.EmptyTab(app.talklive.ui.main.MainTab.Chats) {} }
+    @Test fun chatsEmpty() = shot("11_chats") { app.talklive.ui.main.EmptyTab(app.talklive.ui.main.MainTab.Chats, onStart = {}) }
     @Test fun reconnecting() = shot("12_reconnecting") {
-        CallScreen(CallState(phase = CallPhase.Connected(partner, System.currentTimeMillis()), onHold = true), false, "fox", { 0f }, {}, {}, {}, {}, {})
+        CallScreen(CallState(phase = CallPhase.Connected(partner, System.currentTimeMillis()), onHold = true), false, "fox", { 0f }, onNext = {}, onEnd = {}, onMute = {}, onSpeaker = {}, onReport = {})
     }
     @Test fun loginDark() = shot("06b_login_dark", dark = true) { LoginScreen(vm(), {}, {}) }
     @Test fun profile() = shot("13_profile") {
@@ -79,10 +79,62 @@ class ScreenshotTest {
             vm = app.talklive.ui.profile.ProfileViewModel(AuthRepository(ctx, socket, identity), identity, app.talklive.data.ThemeStore(ctx)),
         )
     }
+    private fun socialVm(seed: app.talklive.social.SocialRepository.() -> Unit = {}): app.talklive.ui.social.SocialViewModel {
+        val ctx = ApplicationProvider.getApplicationContext<Application>()
+        val identity = IdentityStore(ctx)
+        val repo = app.talklive.social.SocialRepository(TalkSocket(identity), identity)
+        repo.seed()
+        return app.talklive.ui.social.SocialViewModel(repo)
+    }
+
+    private val now = System.currentTimeMillis()
+    private fun p(id: String, name: String, cc: String, animal: String, online: Boolean, last: String? = null, mine: Boolean = false, mins: Long = 5) =
+        app.talklive.social.Person(id, name, null, cc, animal, "$name#1234".lowercase(), online, now - 3_600_000,
+            last?.let { app.talklive.social.LastMessage(mine, it, false, false, now - mins * 60_000, true) })
+
+    @Test fun friends() = shot("14_friends") {
+        app.talklive.ui.social.FriendsScreen(socialVm {
+            seedForPreview(
+                friends = listOf(p("a", "Sofia", "ES", "fox", true), p("b", "Kenji", "JP", "panda", false), p("c", "Amara", "NG", "owl", true)),
+                requests = listOf(p("d", "Lucas", "BR", "dolphin", true)),
+                history = listOf(p("e", "Mia", "DE", "cat", true), p("f", "Omar", "EG", "lion", false)),
+            )
+        }, {}, {})
+    }
+    @Test fun chats() = shot("15_chats") {
+        app.talklive.ui.social.ChatsScreen(socialVm {
+            seedForPreview(
+                friends = listOf(
+                    p("a", "Sofia", "ES", "fox", true, "Haha that was so fun, talk tomorrow?", mins = 2),
+                    p("b", "Kenji", "JP", "panda", false, "See you!", mine = true, mins = 90),
+                ),
+                unread = mapOf("a" to 2),
+            )
+        }, {}, {})
+    }
+    @Test fun chat() = shot("16_chat") {
+        val vm = socialVm {
+            seedForPreview(
+                friends = listOf(p("a", "Sofia", "ES", "fox", true)),
+                threads = mapOf("a" to listOf(
+                    app.talklive.social.ChatMessage("1", false, "Hey! It was great talking earlier 😄", now - 600_000),
+                    app.talklive.social.ChatMessage("2", true, "Same! Your Spanish tips were gold", now - 540_000),
+                    app.talklive.social.ChatMessage("3", true, "Want to practise again tonight?", now - 530_000),
+                    app.talklive.social.ChatMessage("4", false, "Yes! 8pm my time?", now - 300_000, replyTo = "3"),
+                    app.talklive.social.ChatMessage("5", true, "Perfect, I'll call you", now - 60_000, status = app.talklive.social.MsgStatus.Seen),
+                )),
+                typing = setOf("a"),
+            )
+        }
+        app.talklive.ui.social.ChatScreen(vm, "a") {}
+    }
+    @Test fun incoming() = shot("17_incoming") {
+        app.talklive.ui.social.IncomingCallScreen(app.talklive.social.IncomingCall("a", "Sofia", "ES"), "fox", {}, {})
+    }
     @Test fun searching() = shot("08_searching") {
-        CallScreen(CallState(phase = CallPhase.Searching(4)), true, "fox", { 0f }, {}, {}, {}, {}, {})
+        CallScreen(CallState(phase = CallPhase.Searching(4)), true, "fox", { 0f }, onNext = {}, onEnd = {}, onMute = {}, onSpeaker = {}, onReport = {})
     }
     @Test fun inCall() = shot("09_in_call") {
-        CallScreen(CallState(phase = CallPhase.Connected(partner, System.currentTimeMillis() - 83_000)), true, "fox", { 0.2f }, {}, {}, {}, {}, {})
+        CallScreen(CallState(phase = CallPhase.Connected(partner, System.currentTimeMillis() - 83_000)), true, "fox", { 0.2f }, onNext = {}, onEnd = {}, onMute = {}, onSpeaker = {}, onReport = {})
     }
 }

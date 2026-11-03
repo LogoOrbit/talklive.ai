@@ -87,7 +87,7 @@ class TalkSocket @Inject constructor(private val identity: IdentityStore) {
         }
         socket.on("matched") { args ->
             val o = args.firstObject() ?: return@on
-            _events.tryEmit(ServerEvent.Matched(o.optBoolean("initiator"), Partner.from(o.optJSONObject("partner"))))
+            _events.tryEmit(ServerEvent.Matched(o.optBoolean("initiator"), Partner.from(o.optJSONObject("partner")), o.optBoolean("callback")))
         }
         socket.on("signal") { args -> args.firstObject()?.let { _events.tryEmit(ServerEvent.Signal(it)) } }
         socket.on("partner-left") { args ->
@@ -101,6 +101,11 @@ class TalkSocket @Inject constructor(private val identity: IdentityStore) {
             _events.tryEmit(ServerEvent.SearchRefused(args.firstObject()?.optString("reason").orEmpty()))
         }
         socket.on("banned") { _events.tryEmit(ServerEvent.Banned) }
+    }
+
+    /** Listens for any server event; used by the feature repositories. */
+    fun on(event: String, handler: (Array<out Any?>) -> Unit) {
+        socket.on(event) { args -> handler(args) }
     }
 
     fun connect() {

@@ -7,6 +7,14 @@ plugins {
     alias(libs.plugins.roborazzi)
 }
 
+// Push needs Firebase's config (google-services.json, from the Firebase
+// console). Without it the app builds and runs, just without push. The file
+// must list both app.talklive and app.talklive.debug.
+val firebaseConfig = file("google-services.json")
+if (firebaseConfig.exists() && firebaseConfig.readText().contains("\"app.talklive.debug\"")) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 android {
     namespace = "app.talklive"
     compileSdk = 36
@@ -92,6 +100,11 @@ dependencies {
     }
     implementation(libs.okhttp)
     implementation(libs.webrtc)
+    implementation(libs.coil.compose)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
+    implementation(libs.androidx.lifecycle.process)
+    implementation(libs.coil.gif)
     implementation(libs.credentials)
     implementation(libs.credentials.play)
     implementation(libs.googleid)

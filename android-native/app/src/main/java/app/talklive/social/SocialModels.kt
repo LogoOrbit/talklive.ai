@@ -1,0 +1,102 @@
+package app.talklive.social
+
+import app.talklive.net.optNullableString
+import org.json.JSONObject
+
+/** "a:fox" (the server's avatar field) to "fox". */
+internal fun animalOf(avatar: String?): String? = avatar?.takeIf { it.startsWith("a:") }?.substring(2)
+
+data class LastMessage(val mine: Boolean, val text: String, val gif: Boolean, val voice: Boolean, val ts: Long, val seen: Boolean) {
+    val preview: String get() = when {
+        voice -> "🎤 Voice message"
+        gif -> "GIF"
+        else -> text
+    }
+
+    companion object {
+        fun from(o: JSONObject?) = o?.let {
+            LastMessage(it.optBoolean("mine"), it.optString("text"), it.optBoolean("gif"), it.optBoolean("voice"), it.optLong("ts"), it.optBoolean("seen"))
+        }
+    }
+}
+
+data class Person(
+    val clientId: String,
+    val username: String,
+    /** The private name this user gave a friend, shown instead of their username. */
+    val nickname: String?,
+    val countryCode: String?,
+    val animal: String?,
+    val friendId: String?,
+    val online: Boolean,
+    val lastSeen: Long?,
+    val last: LastMessage?,
+    val pinned: Boolean = false,
+    /** Whether a message can be sent: "open"/"one" yes; "accept", "waiting", "request" not yet. */
+    val dm: String = "open",
+    val ts: Long = 0,
+) {
+    val displayName: String get() = nickname?.takeIf { it.isNotBlank() } ?: username.ifBlank { "Stranger" }
+    val canMessage: Boolean get() = dm == "open" || dm == "one"
+
+    companion object {
+        fun from(o: JSONObject) = Person(
+            clientId = o.optString("clientId"),
+            username = o.optString("username"),
+            nickname = o.optNullableString("nickname"),
+            countryCode = o.optNullableString("countryCode"),
+            animal = animalOf(o.optNullableString("avatar")),
+            friendId = o.optNullableString("friendId"),
+            online = o.optBoolean("online"),
+            lastSeen = if (o.isNull("lastSeen")) null else o.optLong("lastSeen").takeIf { it > 0 },
+            last = LastMessage.from(o.optJSONObject("last")),
+            pinned = o.optBoolean("pinned"),
+            dm = o.optString("dm", "open"),
+            ts = o.optLong("ts"),
+        )
+    }
+}
+
+enum class MsgStatus { Sending, Sent, Seen, Failed }
+
+data class ChatMessage(
+    val id: String,
+    val mine: Boolean,
+    val text: String,
+    val ts: Long,
+    val replyTo: String? = null,
+    val gifUrl: String? = null,
+    val voiceMs: Long? = null,
+    val status: MsgStatus = MsgStatus.Sent,
+    val failReason: String? = null,
+) {
+    companion object {
+        fun from(o: JSONObject, me: String) = ChatMessage(
+            id = o.optString("id"),
+            mine = o.optString("from") == me || o.optString("fromClientId") == me,
+            text = o.optString("text"),
+            ts = o.optLong("ts"),
+            replyTo = o.optNullableString("replyTo"),
+            gifUrl = o.optJSONObject("gif")?.optNullableString("url"),
+            voiceMs = o.optJSONObject("voice")?.optLong("ms"),
+            status = if (o.optBoolean("seen")) MsgStatus.Seen else MsgStatus.Sent,
+        )
+    }
+}
+
+/** Someone asking to talk to you (a friend calling). */
+data class IncomingCall(val fromClientId: String, val username: String, val countryCode: String?)
+
+/** Your call to a friend while it rings. */
+data class OutgoingCall(val person: Person, val status: String = "ringing")
+
+data class FoundUser(
+    val clientId: String,
+    val friendId: String,
+    val username: String,
+    val countryCode: String?,
+    val animal: String?,
+    val isFriend: Boolean,
+    val pending: Boolean,
+    val online: Boolean,
+)

@@ -1,7 +1,9 @@
 package app.talklive.call
 
 import android.util.Log
+import android.content.Context
 import app.talklive.data.IdentityStore
+import dagger.hilt.android.qualifiers.ApplicationContext
 import app.talklive.net.IceServerApi
 import app.talklive.net.Partner
 import app.talklive.net.ServerEvent
@@ -35,6 +37,7 @@ sealed interface CallPhase {
 sealed interface CallNotice {
     data class PartnerLeft(val name: String, val dropped: Boolean) : CallNotice
     data object Banned : CallNotice
+    data class CallEnded(val name: String) : CallNotice
     data class Refused(val reason: String) : CallNotice
 }
 
@@ -51,6 +54,8 @@ data class CallState(
     /** A phone call or another app took the microphone. */
     val onHold: Boolean = false,
     val quality: LinkQuality = LinkQuality.Good,
+    /** A call with a friend (started from Friends), not a random match. */
+    val friendCall: Boolean = false,
 )
 
 /**
@@ -66,6 +71,7 @@ class CallManager @Inject constructor(
     private val rtc: RtcFactory,
     private val audio: AudioRouter,
     private val identity: IdentityStore,
+    @ApplicationContext private val context: Context,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default.limitedParallelism(1))
 
@@ -126,6 +132,7 @@ class CallManager @Inject constructor(
         if (_state.value.phase == CallPhase.Idle) return@launch
         teardown()
         socket.emit("skip")
+        _state.update { it.copy(friendCall = false) }
         setPhase(CallPhase.Searching())
     }
 
@@ -172,13 +179,27 @@ class CallManager @Inject constructor(
                 delay(800)
                 socket.emit("find-partner", searchOpts())
             }
-            is ServerEvent.Matched -> if (phase != CallPhase.Idle) onMatched(e)
+            is ServerEvent.Matched -> when {
+                phase != CallPhase.Idle -> onMatched(e)
+                // A friend call connects from idle: bring the call up.
+                e.callback -> {
+                    runCatching { CallService.start(context) }
+                    _state.update { it.copy(notice = null, muted = false) }
+                    audio.start(_state.value.speakerOn)
+                    onMatched(e)
+                }
+            }
             is ServerEvent.Signal -> onSignal(e.data)
             is ServerEvent.PartnerMic -> _state.update { it.copy(partnerMuted = e.muted) }
             is ServerEvent.PartnerLeft -> if (phase is CallPhase.Connecting || phase is CallPhase.Connected) {
                 teardown()
-                _state.update { it.copy(notice = CallNotice.PartnerLeft(e.username.ifBlank { "Stranger" }, e.reason != "left")) }
-                search()
+                if (_state.value.friendCall) {
+                    audio.stop()
+                    _state.update { CallState(speakerOn = it.speakerOn, notice = CallNotice.CallEnded(e.username.ifBlank { "Your friend" })) }
+                } else {
+                    _state.update { it.copy(notice = CallNotice.PartnerLeft(e.username.ifBlank { "Stranger" }, e.reason != "left")) }
+                    search()
+                }
             }
             is ServerEvent.SearchRefused -> {
                 teardown()
@@ -198,7 +219,7 @@ class CallManager @Inject constructor(
         teardown()
         val id = ++matchId
         initiator = m.initiator
-        _state.update { it.copy(partnerMuted = false, notice = null) }
+        _state.update { it.copy(partnerMuted = false, notice = null, friendCall = m.callback) }
         setPhase(CallPhase.Connecting(m.partner))
 
         val ice = iceApi.fetch()

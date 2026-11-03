@@ -1,0 +1,6 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <!-- The TalkLive "T": a rounded bar and a leaf-shaped stem. -->
+    <path android:fillColor="#FFFFFFFF" android:pathData="M6,4h12a2.5,2.5 0 0,1 0,5H6a2.5,2.5 0 0,1 0,-5z"/>
+    <path android:fillColor="#FFFFFFFF" android:pathData="M10,10.2h4.8v4.6c0,1 -0.4,1.9 -1.2,2.5L9.6,20.6c-0.3,0.2 -0.6,0 -0.6,-0.3V12.2c0,-1.1 0.4,-2 1,-2z"/>
+</vector>

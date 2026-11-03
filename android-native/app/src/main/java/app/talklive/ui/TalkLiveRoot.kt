@@ -47,7 +47,14 @@ import app.talklive.call.CallNotice
 import app.talklive.call.CallPhase
 import app.talklive.call.CallService
 import app.talklive.ui.animals.AnimalSetupScreen
-import app.talklive.ui.main.EmptyTab
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import app.talklive.ui.social.ChatScreen
+import app.talklive.ui.social.ChatsScreen
+import app.talklive.ui.social.FriendsScreen
+import app.talklive.ui.social.IncomingCallScreen
+import app.talklive.ui.social.OutgoingCallScreen
+import app.talklive.ui.social.SocialViewModel
 import app.talklive.ui.main.MainTab
 import app.talklive.ui.main.TabBar
 import app.talklive.ui.onboarding.AuthRoute
@@ -97,19 +104,43 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     val snackbar = remember { SnackbarHostState() }
     var micDenied by remember { mutableStateOf(false) }
     var tab by rememberSaveable { mutableStateOf(MainTab.Talk) }
+    val social: SocialViewModel = hiltViewModel()
+    var openChat by rememberSaveable { mutableStateOf<String?>(null) }
+    val incoming by social.incoming.collectAsStateWithLifecycle()
+    val outgoing by social.outgoing.collectAsStateWithLifecycle()
+    val totalUnread by social.totalUnread.collectAsStateWithLifecycle()
+    val requests by social.requests.collectAsStateWithLifecycle()
+    val friends by social.friends.collectAsStateWithLifecycle()
+    val sent by social.sent.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) { social.toasts.collect { snackbar.showSnackbar(it) } }
+
+    // Ask once for notifications, so friends' messages and calls can reach this phone.
+    val notifPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
+    LaunchedEffect(Unit) {
+        val prefs = context.getSharedPreferences("ui", android.content.Context.MODE_PRIVATE)
+        if (Build.VERSION.SDK_INT >= 33 && !prefs.getBoolean("asked_notifications", false) &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            prefs.edit().putBoolean("asked_notifications", true).apply()
+            notifPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
 
     fun begin() {
         CallService.start(context)
         vm.start()
     }
 
+    // Whatever needs the microphone runs once it is allowed.
+    var afterMic by remember { mutableStateOf<(() -> Unit)?>(null) }
     val permissions = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
         val mic = result[Manifest.permission.RECORD_AUDIO]
             ?: (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
-        if (mic) begin() else micDenied = true
+        if (mic) afterMic?.invoke() else micDenied = true
+        afterMic = null
     }
 
-    val onStart = {
+    fun withMic(action: () -> Unit) {
         val needed = buildList {
             if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
                 add(Manifest.permission.RECORD_AUDIO)
@@ -121,14 +152,16 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                 ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED
             ) add(Manifest.permission.BLUETOOTH_CONNECT)
         }
-        if (needed.isEmpty()) begin() else permissions.launch(needed.toTypedArray())
+        if (needed.isEmpty()) action() else { afterMic = action; permissions.launch(needed.toTypedArray()) }
     }
+    val onStart = { withMic(::begin) }
 
     val noticeText = state.notice?.let { n ->
         when (n) {
             is CallNotice.PartnerLeft -> stringResource(if (n.dropped) R.string.partner_dropped else R.string.partner_left, n.name)
             CallNotice.Banned -> stringResource(R.string.banned)
             is CallNotice.Refused -> n.reason
+            is CallNotice.CallEnded -> stringResource(R.string.call_ended, n.name)
         }
     }
     LaunchedEffect(state.notice) {
@@ -148,7 +181,13 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                 visible = !inCall,
                 enter = slideInVertically { it } + fadeIn(),
                 exit = slideOutVertically { it } + fadeOut(),
-            ) { TabBar(selected = tab, onSelect = { tab = it }) }
+            ) {
+                TabBar(
+                    selected = tab,
+                    onSelect = { tab = it },
+                    badges = mapOf(MainTab.Chats to totalUnread, MainTab.Friends to requests.size),
+                )
+            }
         },
     ) { pad ->
         Box(Modifier.fillMaxSize().padding(bottom = if (inCall) 0.dp else pad.calculateBottomPadding())) {
@@ -168,8 +207,8 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                         onToggleTheme = vm::toggleTheme,
                         onProfile = { tab = MainTab.Profile },
                     )
-                    MainTab.Chats -> EmptyTab(MainTab.Chats, onStart = { tab = MainTab.Talk })
-                    MainTab.Friends -> EmptyTab(MainTab.Friends, onStart = { tab = MainTab.Talk })
+                    MainTab.Chats -> ChatsScreen(social, onOpenChat = { openChat = it }, onStartTalking = { tab = MainTab.Talk })
+                    MainTab.Friends -> FriendsScreen(social, onOpenChat = { openChat = it }, onStartTalking = { tab = MainTab.Talk })
                     MainTab.Profile -> ProfileScreen(onSignIn = onSignIn)
                 }
             }
@@ -181,11 +220,20 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
         ) {
             val level by vm.remoteLevel.collectAsStateWithLifecycle()
             Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+                val partnerId = (state.phase as? CallPhase.Connected)?.partner?.clientId
+                    ?: (state.phase as? CallPhase.Connecting)?.partner?.clientId
                 CallScreen(
                     state = state,
                     connected = connected,
                     myAnimal = animal,
                     remoteLevel = { level },
+                    friendStatus = when {
+                        partnerId == null -> FriendStatus.None
+                        friends.any { it.clientId == partnerId } -> FriendStatus.Friends
+                        partnerId in sent -> FriendStatus.Requested
+                        else -> FriendStatus.None
+                    },
+                    onAddFriend = { partnerId?.let { social.sendRequest(it) } },
                     onNext = vm::next,
                     onEnd = vm::end,
                     onMute = vm::toggleMute,
@@ -193,6 +241,36 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                     onReport = vm::report,
                 )
             }
+        }
+    }
+
+    // A conversation slides in over the tabs.
+    AnimatedVisibility(
+        visible = openChat != null && !inCall,
+        enter = slideInHorizontally(tween(320)) { it } + fadeIn(tween(200)),
+        exit = slideOutHorizontally(tween(260)) { it } + fadeOut(tween(200)),
+    ) {
+        var shown by remember { mutableStateOf(openChat) }
+        LaunchedEffect(openChat) { if (openChat != null) shown = openChat }
+        shown?.let { ChatScreen(social, it, onBack = { openChat = null }) }
+    }
+
+    // Friend calls ringing in or out cover everything.
+    AnimatedVisibility(
+        visible = (incoming != null || outgoing != null) && !inCall,
+        enter = fadeIn() + scaleIn(initialScale = 0.94f),
+        exit = fadeOut(),
+    ) {
+        val inc = incoming
+        val out = outgoing
+        when {
+            inc != null -> IncomingCallScreen(
+                inc,
+                animal = social.person(inc.fromClientId)?.animal,
+                onAccept = { withMic { social.answer(true) } },
+                onDecline = { social.answer(false) },
+            )
+            out != null -> OutgoingCallScreen(out, onCancel = social::cancelCall)
         }
     }
 

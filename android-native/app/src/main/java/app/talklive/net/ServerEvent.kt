@@ -27,7 +27,7 @@ sealed interface ServerEvent {
     data object Registered : ServerEvent
     data object NeedsRegister : ServerEvent
     data class Waiting(val estimatedSeconds: Int?) : ServerEvent
-    data class Matched(val initiator: Boolean, val partner: Partner) : ServerEvent
+    data class Matched(val initiator: Boolean, val partner: Partner, val callback: Boolean = false) : ServerEvent
     data class Signal(val data: JSONObject) : ServerEvent
     data class PartnerLeft(val reason: String, val username: String) : ServerEvent
     data class PartnerMic(val muted: Boolean) : ServerEvent

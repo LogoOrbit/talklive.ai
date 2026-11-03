@@ -20,6 +20,8 @@ import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.People
 import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -56,7 +58,7 @@ enum class MainTab(val label: Int, val icon: ImageVector, val selectedIcon: Imag
 }
 
 @Composable
-fun TabBar(selected: MainTab, onSelect: (MainTab) -> Unit) {
+fun TabBar(selected: MainTab, onSelect: (MainTab) -> Unit, badges: Map<MainTab, Int> = emptyMap()) {
     val haptics = LocalHapticFeedback.current
     NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {
         MainTab.entries.forEach { tab ->
@@ -67,7 +69,14 @@ fun TabBar(selected: MainTab, onSelect: (MainTab) -> Unit) {
                     if (!on) haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                     onSelect(tab)
                 },
-                icon = { BouncyIcon(if (on) tab.selectedIcon else tab.icon, on) },
+                icon = {
+                    val count = badges[tab] ?: 0
+                    BadgedBox(badge = {
+                        androidx.compose.animation.AnimatedVisibility(count > 0, enter = androidx.compose.animation.scaleIn(), exit = androidx.compose.animation.scaleOut()) {
+                            Badge(containerColor = MaterialTheme.colorScheme.primary) { Text(if (count > 99) "99+" else count.toString()) }
+                        }
+                    }) { BouncyIcon(if (on) tab.selectedIcon else tab.icon, on) }
+                },
                 label = { Text(stringResource(tab.label), style = MaterialTheme.typography.labelMedium) },
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = MaterialTheme.colorScheme.primary,
@@ -96,21 +105,23 @@ private fun BouncyIcon(icon: ImageVector, selected: Boolean) {
 
 /** Chats and Friends until Phase 2 fills them. */
 @Composable
-fun EmptyTab(tab: MainTab, onStart: () -> Unit) {
+fun EmptyTab(tab: MainTab, onStart: () -> Unit, showTitle: Boolean = true) {
     val (title, body) = when (tab) {
         MainTab.Chats -> R.string.chats_empty_title to R.string.chats_empty_body
         else -> R.string.friends_empty_title to R.string.friends_empty_body
     }
     Column(
-        Modifier.fillMaxSize().statusBarsPadding().padding(24.dp),
+        (if (showTitle) Modifier.fillMaxSize().statusBarsPadding() else Modifier.fillMaxSize()).padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(
-            stringResource(tab.label),
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.align(Alignment.Start).padding(top = 8.dp),
-        )
+        if (showTitle) {
+            Text(
+                stringResource(tab.label),
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.align(Alignment.Start).padding(top = 8.dp),
+            )
+        }
         Spacer(Modifier.weight(1f))
         Box(
             Modifier.size(132.dp).clip(CircleShape)

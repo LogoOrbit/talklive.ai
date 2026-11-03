@@ -2,4 +2,5 @@
 <resources>
     <color name="brand_dark">#0B0F1A</color>
     <color name="brand_light">#E3E7F1</color>
+    <color name="brand_violet">#6C5CE7</color>
 </resources>
