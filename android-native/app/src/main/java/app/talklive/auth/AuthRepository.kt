@@ -58,6 +58,9 @@ class AuthRepository(
         }
     }
 
+    /** The durable session token of a signed-in account, for HTTP APIs. */
+    val sessionToken: String? get() = prefs.getString(KEY_TOKEN, null)
+
     fun finishOnboarding() {
         prefs.edit().putBoolean(KEY_ONBOARDED, true).apply()
         _onboarded.value = true

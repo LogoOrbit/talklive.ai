@@ -379,6 +379,19 @@ class ServerE2ETest {
         check("host told the game ended") { host.ui.value.stage == app.talklive.game.Stage.Gone || host.ui.value.stage == app.talklive.game.Stage.Idle }
     }
 
+    @Test fun support_chat_start_send_refresh(): Unit = runBlocking {
+        val a = Client("a")
+        val support = app.talklive.support.SupportRepository(ctx, a.auth, a.identity)
+        assertNotNull(support.config())
+        val started = support.start("Hello from the Android app", "help.e2e@example.com").getOrThrow()
+        assertEquals("Hello from the Android app", started.messages.single().text)
+        val sent = support.send("One more thing").getOrThrow()
+        assertEquals(2, sent.messages.size)
+        val again = support.refresh()!!
+        assertEquals(listOf("Hello from the Android app", "One more thing"), again.messages.map { it.text })
+        assertTrue(again.messages.none { it.fromTeam })
+    }
+
     @Test fun signup_login_profile_and_password_reset(): Unit = runBlocking {
         val email = "android.e2e.${System.nanoTime()}@example.com"
         val user = "droid${(1000..9999).random()}"

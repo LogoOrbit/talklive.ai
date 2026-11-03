@@ -38,6 +38,7 @@ are also rendered in `ScreenshotTest`.
 | Undo skip (Plus) | Snackbar after Next | — (needs a Plus account) |
 | Mini-games: Tic Tac Toe, Dots and Boxes | 🎮 in calls and text chats | ✅ rules + e2e full game |
 | Feedback | Profile | ✅ e2e |
+| Help and support chat with the team | Profile → Help and support | ✅ e2e |
 | Moderator warnings, bans, maintenance | Dialog / screen | — |
 | Push notifications | FCM (needs google-services.json) | — |
 | Visitors today | Home | ✅ e2e |
@@ -51,4 +52,3 @@ are also rendered in `ScreenshotTest`.
 | Buying TalkLive Plus | Google Play requires Play Billing for in-app purchases; the server only knows Stripe. Needs a server endpoint that verifies Play purchases. Plus bought on the website works in the app. |
 | Languages other than English | The website has 17 languages (`public/i18n.js`); app strings are in `res/values/strings.xml`, ready to translate. |
 | Voice check (voice-based gender check) and client-side call moderation | Run on the web in the browser; need an on-device port. |
-| Support chat | The website's support widget; feedback form is in the app. |

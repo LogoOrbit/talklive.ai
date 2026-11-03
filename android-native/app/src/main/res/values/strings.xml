@@ -297,4 +297,12 @@
     <string name="shortcut_talk_long">Start a voice call</string>
     <string name="shortcut_chat">Text chat</string>
     <string name="shortcut_chat_long">Start a text chat</string>
+    <string name="support_title">Help and support</string>
+    <string name="support_row">Chat with the TalkLive team</string>
+    <string name="support_online">The team is online</string>
+    <string name="support_offline">We usually reply within a day, by email too</string>
+    <string name="support_greeting">Hi! How can we help? Tell us what happened and we will get back to you.</string>
+    <string name="support_email">Your email</string>
+    <string name="support_email_hint">So we can reply if you leave the app</string>
+    <string name="support_hint">Write a message</string>
 </resources>

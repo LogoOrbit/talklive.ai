@@ -31,6 +31,7 @@ import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.CardGiftcard
 import androidx.compose.material.icons.rounded.WorkspacePremium
 import androidx.compose.material.icons.rounded.Feedback
+import androidx.compose.material.icons.rounded.SupportAgent
 import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.Call
 import androidx.compose.material.icons.rounded.Tag
@@ -168,6 +169,10 @@ fun ProfileScreen(onSignIn: () -> Unit, vm: ProfileViewModel = hiltViewModel()) 
                 "likes" -> app.talklive.ui.engage.LikesSheet(engageVm) { youSheet = null }
                 "invite" -> app.talklive.ui.engage.InviteSheet(engageVm) { youSheet = null }
                 "feedback" -> app.talklive.ui.engage.FeedbackSheet(onSend = { engageVm.sendFeedback(it); vm.saved = context.getString(R.string.feedback_thanks) }) { youSheet = null }
+                "support" -> androidx.compose.ui.window.Dialog(
+                    onDismissRequest = { youSheet = null },
+                    properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
+                ) { app.talklive.ui.support.SupportScreen(onBack = { youSheet = null }) }
                 "plus" -> androidx.compose.material3.AlertDialog(
                     onDismissRequest = { youSheet = null },
                     icon = { Icon(Icons.Rounded.WorkspacePremium, null, tint = MaterialTheme.colorScheme.primary) },
@@ -215,6 +220,7 @@ fun ProfileScreen(onSignIn: () -> Unit, vm: ProfileViewModel = hiltViewModel()) 
             }
 
             Section(stringResource(R.string.section_safety)) {
+                SettingRow(Icons.Rounded.SupportAgent, stringResource(R.string.support_title), stringResource(R.string.support_row)) { youSheet = "support" }
                 SettingRow(Icons.Rounded.Feedback, stringResource(R.string.feedback_title), null) { youSheet = "feedback" }
                 SettingRow(Icons.Rounded.Shield, stringResource(R.string.safety_tips), null) { open("safety") }
                 SettingRow(Icons.Rounded.Groups, stringResource(R.string.community_guidelines), null) { open("community-guidelines") }
