@@ -36,6 +36,7 @@ android {
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
+            ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
             // Point a debug build at a local server with:
             //   ./gradlew installDebug -PserverUrl=http://10.0.2.2:5000
             (project.findProperty("serverUrl") as String?)?.let {

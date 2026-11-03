@@ -73,6 +73,7 @@ private fun MainScreen(vm: TalkViewModel, accountName: String?, onSignIn: () -> 
     val state by vm.state.collectAsStateWithLifecycle()
     val connected by vm.connected.collectAsStateWithLifecycle()
     val online by vm.onlineCount.collectAsStateWithLifecycle()
+    val dark by vm.dark.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     var micDenied by remember { mutableStateOf(false) }
 
@@ -134,6 +135,8 @@ private fun MainScreen(vm: TalkViewModel, accountName: String?, onSignIn: () -> 
                         onStart = onStart,
                         onSignIn = onSignIn,
                         onSignOut = vm::signOut,
+                        dark = dark,
+                        onToggleTheme = vm::toggleTheme,
                     )
                 } else {
                     CallScreen(

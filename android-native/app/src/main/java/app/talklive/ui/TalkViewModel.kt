@@ -3,6 +3,7 @@ package app.talklive.ui
 import androidx.lifecycle.ViewModel
 import app.talklive.auth.AuthRepository
 import app.talklive.call.CallManager
+import app.talklive.data.ThemeStore
 import app.talklive.net.TalkSocket
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -12,7 +13,9 @@ class TalkViewModel @Inject constructor(
     private val calls: CallManager,
     private val socket: TalkSocket,
     private val auth: AuthRepository,
+    private val theme: ThemeStore,
 ) : ViewModel() {
+    val dark = theme.dark
     val account = auth.account
     val onboarded = auth.onboarded
     val state = calls.state
@@ -31,4 +34,5 @@ class TalkViewModel @Inject constructor(
     fun report(reason: String) = calls.report(reason)
     fun dismissNotice() = calls.dismissNotice()
     fun signOut() = auth.logout()
+    fun toggleTheme() = theme.toggle()
 }

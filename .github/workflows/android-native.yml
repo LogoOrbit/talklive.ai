@@ -1,0 +1,38 @@
+name: Android native app
+
+# Builds an installable test APK of the native app (android-native/) on every
+# push that touches it, or on demand: Actions > Android native app > Run
+# workflow. Download "talklive-native-debug" from the run and install the APK
+# on a phone. It installs next to the Play Store app (id app.talklive.debug).
+on:
+  workflow_dispatch:
+  push:
+    paths: ['android-native/**', '.github/workflows/android-native.yml']
+  pull_request:
+    paths: ['android-native/**', '.github/workflows/android-native.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Build debug APK
+        working-directory: android-native
+        run: ./gradlew --no-daemon assembleDebug
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: talklive-native-debug
+          path: android-native/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14

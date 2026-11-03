@@ -73,4 +73,6 @@
     <string name="sign_out">Sign out</string>
     <string name="guest">Guest</string>
     <string name="hi_name">Hi, %1$s</string>
+    <string name="dark_mode">Dark mode</string>
+    <string name="light_mode">Light mode</string>
 </resources>

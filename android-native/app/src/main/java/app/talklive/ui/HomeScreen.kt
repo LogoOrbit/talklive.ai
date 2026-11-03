@@ -22,7 +22,10 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Logout
+import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material.icons.rounded.Mic
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -62,6 +65,8 @@ fun HomeScreen(
     onStart: () -> Unit,
     onSignIn: () -> Unit,
     onSignOut: () -> Unit,
+    dark: Boolean = false,
+    onToggleTheme: () -> Unit = {},
 ) {
     Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(horizontal = 24.dp, vertical = 16.dp)) {
         // Top bar: logo and account.
@@ -70,6 +75,13 @@ fun HomeScreen(
             Spacer(Modifier.size(10.dp))
             Text("TalkLive", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
             Spacer(Modifier.weight(1f))
+            IconButton(onClick = onToggleTheme) {
+                Icon(
+                    if (dark) Icons.Rounded.LightMode else Icons.Rounded.DarkMode,
+                    contentDescription = stringResource(if (dark) R.string.light_mode else R.string.dark_mode),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             if (accountName == null) {
                 TextButton(onClick = onSignIn) { Text(stringResource(R.string.sign_in)) }
             } else {

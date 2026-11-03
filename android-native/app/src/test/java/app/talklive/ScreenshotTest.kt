@@ -43,9 +43,9 @@ class ScreenshotTest {
         return AuthViewModel(AuthRepository(ctx, socket, identity))
     }
 
-    private fun shot(name: String, content: @Composable () -> Unit) =
+    private fun shot(name: String, dark: Boolean = false, content: @Composable () -> Unit) =
         captureRoboImage("build/screenshots/$name.png") {
-            TalkLiveTheme {
+            TalkLiveTheme(dark = dark) {
                 Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) { content() }
             }
         }
@@ -63,6 +63,7 @@ class ScreenshotTest {
     }
     @Test fun login() = shot("06_login") { LoginScreen(vm(), {}, {}) }
     @Test fun home() = shot("07_home") { HomeScreen(true, 1284, "Sam", {}, {}, {}) }
+    @Test fun homeDark() = shot("07b_home_dark", dark = true) { HomeScreen(true, 1284, "Sam", {}, {}, {}, dark = true) }
     @Test fun searching() = shot("08_searching") {
         CallScreen(CallState(phase = CallPhase.Searching(4)), {}, {}, {}, {}, {})
     }
