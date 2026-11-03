@@ -24,6 +24,7 @@ class TalkViewModel @Inject constructor(
     private val theme: ThemeStore,
     private val identity: IdentityStore,
     private val icebreakers: Icebreakers,
+    private val games: app.talklive.game.Games,
     @ApplicationContext context: Context,
 ) : ViewModel() {
     private val prefs = context.getSharedPreferences("ui", Context.MODE_PRIVATE)
@@ -57,10 +58,19 @@ class TalkViewModel @Inject constructor(
     fun typing() = calls.typing()
     fun reactToMessage(id: String, emoji: String) = calls.reactToMessage(id, emoji)
     fun react(type: String) = calls.react(type)
+    suspend fun undoSkip() = calls.undoSkip()
     fun rate(up: Boolean) = calls.rate(up)
     fun dismissRating() = calls.dismissRating()
     fun dismissMutualHeart() = calls.dismissMutualHeart()
     fun icebreakers(n: Int): List<Icebreaker> = icebreakers.draw(n)
+    val game = games.ui
+    fun inviteGame(k: app.talklive.game.GameKind) = games.invite(k)
+    fun acceptGame() = games.accept()
+    fun declineGame() = games.decline()
+    fun tapCell(i: Int) = games.tapCell(i)
+    fun drawEdge(k: Char, i: Int) = games.drawEdge(k, i)
+    fun rematch() = games.rematch()
+    fun leaveGame() = games.leave()
     fun next() = calls.next()
     fun end() = calls.end()
     fun toggleMute() = calls.toggleMute()

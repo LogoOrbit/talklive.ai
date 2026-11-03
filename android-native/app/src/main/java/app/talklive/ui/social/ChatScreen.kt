@@ -58,6 +58,8 @@ import androidx.compose.material.icons.rounded.Done
 import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.Mic
+import androidx.compose.material.icons.rounded.Pause
+import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
@@ -123,6 +125,33 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
     var menuOpen by remember { mutableStateOf(false) }
     var confirm by remember { mutableStateOf<String?>(null) }
     val mutedSet by vm.muted.collectAsStateWithLifecycle()
+    val playback by vm.playback.collectAsStateWithLifecycle()
+    val voiceStates by vm.voice.collectAsStateWithLifecycle()
+    val voiceState = voiceStates[clientId] ?: "off"
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val recorder = remember { app.talklive.voice.VoiceRecorder(context) }
+    var recording by remember { mutableStateOf(false) }
+    var recordMs by remember { mutableStateOf(0L) }
+    var askVoice by remember { mutableStateOf(false) }
+    LaunchedEffect(recording) {
+        while (recording) {
+            recordMs = recorder.elapsedMs
+            if (recordMs >= app.talklive.voice.VoiceRecorder.MAX_MS) {
+                recording = false
+                recorder.stop()?.let { (bytes, ms) -> vm.sendVoice(clientId, bytes, ms) }
+            }
+            kotlinx.coroutines.delay(100)
+        }
+    }
+    androidx.compose.runtime.DisposableEffect(Unit) { onDispose { recorder.cancel() } }
+    val micPermission = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+    ) { ok -> if (ok) recording = recorder.start() }
+    fun startRecording() {
+        val granted = androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.RECORD_AUDIO) ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (granted) recording = recorder.start() else micPermission.launch(android.Manifest.permission.RECORD_AUDIO)
+    }
     val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
@@ -193,6 +222,8 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
                         onReply = { replyTo = m },
                         onRetry = { vm.retry(clientId, m.id) },
                         onLongPress = { actionsFor = m },
+                        playback = playback,
+                        onPlay = { m.voiceId?.let { vm.play(clientId, it) } },
                     )
                 }
             }
@@ -201,6 +232,18 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
 
         // Composer.
         if (person.canMessage || isFriend) {
+            AnimatedVisibility(isFriend && voiceState == "received", enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
+                Row(
+                    Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.primaryContainer).padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(Icons.Rounded.Mic, null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(Modifier.width(10.dp))
+                    Text(stringResource(R.string.voice_asked, person.displayName), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.weight(1f))
+                    androidx.compose.material3.TextButton(onClick = { vm.respondVoice(clientId, false) }) { Text(stringResource(R.string.not_now)) }
+                    androidx.compose.material3.TextButton(onClick = { vm.respondVoice(clientId, true) }) { Text(stringResource(R.string.allow)) }
+                }
+            }
             AnimatedVisibility(editing != null, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
                 Row(
                     Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).padding(start = 16.dp, end = 4.dp, top = 8.dp),
@@ -232,7 +275,17 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
                 Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).navigationBarsPadding().padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.Bottom,
             ) {
-                Box(
+                if (recording) {
+                    RecordingBar(
+                        ms = recordMs,
+                        modifier = Modifier.weight(1f),
+                        onCancel = { recording = false; recorder.cancel() },
+                        onSend = {
+                            recording = false
+                            recorder.stop()?.let { (bytes, ms) -> vm.sendVoice(clientId, bytes, ms) }
+                        },
+                    )
+                } else Box(
                     Modifier.weight(1f).heightIn(min = 48.dp).clip(RoundedCornerShape(24.dp))
                         .background(MaterialTheme.colorScheme.background).padding(horizontal = 18.dp, vertical = 13.dp),
                     contentAlignment = Alignment.CenterStart,
@@ -250,7 +303,20 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
                 }
                 Spacer(Modifier.width(8.dp))
                 val canSend = draft.isNotBlank()
-                AnimatedVisibility(canSend, enter = scaleIn(spring(dampingRatio = 0.5f)) + fadeIn(), exit = scaleOut() + fadeOut()) {
+                AnimatedVisibility(!canSend && !recording && isFriend && editing == null, enter = scaleIn(spring(dampingRatio = 0.5f)) + fadeIn(), exit = scaleOut() + fadeOut()) {
+                    Box(
+                        Modifier.size(48.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer).clickable {
+                            when (voiceState) {
+                                "on" -> startRecording()
+                                "sent" -> askVoice = true
+                                "received" -> vm.respondVoice(clientId, true)
+                                else -> askVoice = true
+                            }
+                        },
+                        contentAlignment = Alignment.Center,
+                    ) { Icon(Icons.Rounded.Mic, stringResource(R.string.voice_record), tint = MaterialTheme.colorScheme.primary) }
+                }
+                AnimatedVisibility(canSend && !recording, enter = scaleIn(spring(dampingRatio = 0.5f)) + fadeIn(), exit = scaleOut() + fadeOut()) {
                     Box(
                         Modifier.size(48.dp).clip(CircleShape).background(BrandGradient).clickable {
                             val e = editing
@@ -280,6 +346,21 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
                 }
             }
         }
+    }
+
+    if (askVoice) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { askVoice = false },
+            icon = { Icon(Icons.Rounded.Mic, null) },
+            title = { Text(stringResource(R.string.voice_title)) },
+            text = { Text(stringResource(if (voiceState == "sent") R.string.voice_waiting else R.string.voice_ask_body, person.displayName)) },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = { if (voiceState != "sent") vm.requestVoice(clientId); askVoice = false }) {
+                    Text(stringResource(if (voiceState == "sent") R.string.ok else R.string.voice_ask))
+                }
+            },
+            dismissButton = { if (voiceState != "sent") androidx.compose.material3.TextButton(onClick = { askVoice = false }) { Text(stringResource(R.string.cancel)) } },
+        )
     }
 
     actionsFor?.let { m ->
@@ -331,6 +412,25 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
             },
             dismissButton = { androidx.compose.material3.TextButton(onClick = { confirm = null }) { Text(stringResource(R.string.cancel)) } },
         )
+    }
+}
+
+/** Red dot, timer, cancel and send while a voice message records. */
+@Composable
+private fun RecordingBar(ms: Long, modifier: Modifier, onCancel: () -> Unit, onSend: () -> Unit) {
+    val t = rememberInfiniteTransition(label = "rec")
+    val a by t.animateFloat(0.3f, 1f, infiniteRepeatable(tween(600), RepeatMode.Reverse), label = "dot")
+    Row(
+        modifier.heightIn(min = 48.dp).clip(RoundedCornerShape(24.dp)).background(MaterialTheme.colorScheme.background).padding(start = 8.dp, end = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = onCancel) { Icon(Icons.Rounded.Close, stringResource(R.string.cancel), tint = Danger) }
+        Box(Modifier.size(10.dp).clip(CircleShape).background(Danger.copy(alpha = a)))
+        Spacer(Modifier.width(10.dp))
+        Text("%d:%02d".format(ms / 60000, (ms / 1000) % 60), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
+        Box(Modifier.size(40.dp).clip(CircleShape).background(BrandGradient).clickable(onClick = onSend), contentAlignment = Alignment.Center) {
+            Icon(Icons.AutoMirrored.Rounded.Send, stringResource(R.string.send), tint = Color.White, modifier = Modifier.size(20.dp))
+        }
     }
 }
 
@@ -388,6 +488,8 @@ internal fun MessageBubble(
     onReply: () -> Unit,
     onRetry: () -> Unit,
     onLongPress: (() -> Unit)? = null,
+    playback: app.talklive.voice.Playback? = null,
+    onPlay: (() -> Unit)? = null,
 ) {
     val haptics = LocalHapticFeedback.current
     val density = LocalDensity.current
@@ -456,10 +558,29 @@ internal fun MessageBubble(
                             model = m.gifUrl, contentDescription = "GIF", contentScale = ContentScale.Crop,
                             modifier = Modifier.width(220.dp).heightIn(min = 120.dp, max = 220.dp).clip(RoundedCornerShape(12.dp)),
                         )
-                        m.voiceMs != null -> Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Rounded.Mic, null, tint = fg)
-                            Spacer(Modifier.width(6.dp))
-                            Text(stringResource(R.string.voice_message, (m.voiceMs / 1000).toInt()), color = fg, style = MaterialTheme.typography.bodyLarge)
+                        m.voiceMs != null -> Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.width(200.dp)) {
+                            val mine = playback?.takeIf { it.id == m.voiceId }
+                            Box(
+                                Modifier.size(36.dp).clip(CircleShape).background(fg.copy(alpha = 0.18f))
+                                    .then(if (onPlay != null && m.voiceId != null) Modifier.clickable(onClick = onPlay) else Modifier),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                when {
+                                    mine?.loading == true -> androidx.compose.material3.CircularProgressIndicator(Modifier.size(18.dp), color = fg, strokeWidth = 2.dp)
+                                    mine?.playing == true -> Icon(Icons.Rounded.Pause, null, tint = fg)
+                                    else -> Icon(Icons.Rounded.PlayArrow, null, tint = fg)
+                                }
+                            }
+                            Spacer(Modifier.width(10.dp))
+                            Column(Modifier.weight(1f)) {
+                                androidx.compose.material3.LinearProgressIndicator(
+                                    progress = { mine?.progress ?: 0f },
+                                    modifier = Modifier.fillMaxWidth().height(4.dp).clip(CircleShape),
+                                    color = fg, trackColor = fg.copy(alpha = 0.25f), drawStopIndicator = {},
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                Text("%d:%02d".format(m.voiceMs / 60000, (m.voiceMs / 1000) % 60), color = fg.copy(alpha = 0.8f), style = MaterialTheme.typography.labelMedium)
+                            }
                         }
                         else -> Text(m.text, color = fg, style = MaterialTheme.typography.bodyLarge)
                     }

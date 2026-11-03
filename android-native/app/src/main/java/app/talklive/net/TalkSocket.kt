@@ -147,6 +147,7 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
             )
         }
         socket.on("typing") { _events.tryEmit(ServerEvent.StrangerTyping) }
+        socket.on("game") { args -> args.firstObject()?.let { _events.tryEmit(ServerEvent.Game(it)) } }
         socket.on("chat-reaction") { args ->
             val o = args.firstObject() ?: return@on
             _events.tryEmit(ServerEvent.StrangerReaction(o.optString("id"), o.optString("emoji"), o.optBoolean("on")))
@@ -201,6 +202,17 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
         withTimeout(timeoutMs) {
             suspendCancellableCoroutine { cont ->
                 socket.emit(event, arrayOf(), io.socket.client.Ack { args ->
+                    if (cont.isActive) cont.resume(args.firstOrNull() as? JSONObject ?: JSONObject())
+                })
+            }
+        }
+    }.getOrNull()
+
+    /** Emits [event] with [payload] and waits for the acknowledgement callback. */
+    suspend fun askWith(event: String, payload: JSONObject, timeoutMs: Long = 20_000): JSONObject? = runCatching {
+        withTimeout(timeoutMs) {
+            suspendCancellableCoroutine { cont ->
+                socket.emit(event, arrayOf<Any>(payload), io.socket.client.Ack { args ->
                     if (cont.isActive) cont.resume(args.firstOrNull() as? JSONObject ?: JSONObject())
                 })
             }

@@ -70,6 +70,10 @@ class SocialRepository @Inject constructor(
     private val _outgoing = MutableStateFlow<OutgoingCall?>(null)
     val outgoing: StateFlow<OutgoingCall?> = _outgoing
 
+    private val _voice = MutableStateFlow<Map<String, String>>(emptyMap())
+    /** Voice-message permission per friend: off, sent, received or on. */
+    val voice: StateFlow<Map<String, String>> = _voice
+
     private val _blocked = MutableStateFlow<List<BlockedPerson>>(emptyList())
     val blocked: StateFlow<List<BlockedPerson>> = _blocked
 
@@ -128,6 +132,15 @@ class SocialRepository @Inject constructor(
                 updateThread(o.optString("fromClientId")) { list ->
                     list.map { if (it.id == o.optString("id")) it.copy(theirReaction = if (o.optBoolean("on")) o.optString("emoji") else null) else it }
                 }
+            }
+        }
+        socket.on("voice-note-state") { a ->
+            val o = a.firstOrNull() as? JSONObject ?: return@on
+            val who = o.optString("clientId")
+            _voice.update { it + (who to o.optString("state", "off")) }
+            when {
+                o.optBoolean("accepted") -> _toasts.tryEmit("Voice messages are on")
+                o.optBoolean("declined") -> _toasts.tryEmit("They'd rather keep to text for now")
             }
         }
         socket.on("unblock-result") { a ->
@@ -342,6 +355,42 @@ class SocialRepository @Inject constructor(
         socket.emit("clear-friend-chat", JSONObject().put("friendClientId", clientId))
     }
 
+    fun requestVoice(toClientId: String) = socket.emit("voice-note-request", JSONObject().put("toClientId", toClientId))
+    fun respondVoice(fromClientId: String, accept: Boolean) = socket.emit("voice-note-respond", JSONObject().put("fromClientId", fromClientId).put("accept", accept))
+    fun disableVoice(clientId: String) = socket.emit("voice-note-disable", JSONObject().put("clientId", clientId))
+
+    /** Sends a recorded voice message (AAC in MP4, up to 60 s). */
+    fun sendVoice(toClientId: String, audio: ByteArray, ms: Long) = scope.launch {
+        val msg = ChatMessage(id = newId(), mine = true, text = "", ts = System.currentTimeMillis(), voiceMs = ms, status = MsgStatus.Sending)
+        updateThread(toClientId) { it + msg }
+        val res = socket.askWith(
+            "friend-voice-note",
+            JSONObject().put("toClientId", toClientId).put("audio", audio).put("mime", "audio/mp4").put("ms", ms).put("id", msg.id),
+        )
+        updateThread(toClientId) { list ->
+            list.map {
+                if (it.id != msg.id) it
+                else if (res?.optBoolean("ok") == true) it.copy(status = MsgStatus.Sent, ts = res.optLong("ts", it.ts), voiceId = res.optJSONObject("voice")?.optString("id"))
+                else it.copy(
+                    status = MsgStatus.Failed,
+                    failReason = when (res?.optString("reason")) {
+                        "needs-consent" -> "They haven't allowed voice messages"
+                        "friends-only" -> "Voice messages are for friends"
+                        "rate" -> "Too many voice messages, wait a minute"
+                        else -> "Couldn't send"
+                    },
+                )
+            }
+        }
+    }
+
+    /** The audio of a voice note, as stored by the server. */
+    suspend fun fetchVoice(id: String, chatWith: String): ByteArray? {
+        val res = socket.askWith("voice-note-get", JSONObject().put("id", id).put("chatWith", chatWith)) ?: return null
+        if (!res.optBoolean("ok")) return null
+        return res.opt("data") as? ByteArray
+    }
+
     fun typing(toClientId: String) {
         val now = System.currentTimeMillis()
         if (now - lastTypingSent < 3000) return
@@ -457,6 +506,7 @@ class SocialRepository @Inject constructor(
 
     private fun onHistory(o: JSONObject) {
         val id = o.optString("friendClientId")
+        o.optString("voice").takeIf { it.isNotBlank() }?.let { v -> _voice.update { it + (id to v) } }
         val arr = o.optJSONArray("messages") ?: JSONArray()
         val fromServer = (0 until arr.length()).mapNotNull { arr.optJSONObject(it)?.let { m -> ChatMessage.from(m, identity.clientId) } }
         updateThread(id) { local ->

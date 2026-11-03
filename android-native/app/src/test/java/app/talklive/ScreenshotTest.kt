@@ -90,7 +90,7 @@ class ScreenshotTest {
         val identity = IdentityStore(ctx)
         val repo = app.talklive.social.SocialRepository(TalkSocket(identity), identity)
         repo.seed()
-        return app.talklive.ui.social.SocialViewModel(repo)
+        return app.talklive.ui.social.SocialViewModel(repo, app.talklive.voice.VoicePlayer(ctx))
     }
 
     private val now = System.currentTimeMillis()

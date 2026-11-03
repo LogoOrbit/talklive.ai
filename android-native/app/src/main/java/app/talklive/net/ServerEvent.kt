@@ -46,6 +46,8 @@ sealed interface ServerEvent {
     data class MutualHeart(val partner: Partner) : ServerEvent
     data class RatePrompt(val token: String, val seconds: Int) : ServerEvent
     data class StrangerChatBlocked(val reason: String) : ServerEvent
+    /** A mini-game message from the partner (public/games.js protocol). */
+    data class Game(val data: JSONObject) : ServerEvent
     data class Signal(val data: JSONObject) : ServerEvent
     data class PartnerLeft(val reason: String, val username: String) : ServerEvent
     data class PartnerMic(val muted: Boolean) : ServerEvent

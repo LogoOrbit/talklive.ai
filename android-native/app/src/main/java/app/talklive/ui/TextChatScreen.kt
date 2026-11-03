@@ -53,6 +53,7 @@ import androidx.compose.material.icons.rounded.HourglassTop
 import androidx.compose.material.icons.rounded.HowToReg
 import androidx.compose.material.icons.rounded.PersonAdd
 import androidx.compose.material.icons.rounded.SkipNext
+import androidx.compose.material.icons.rounded.SportsEsports
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
@@ -110,6 +111,7 @@ fun TextChatScreen(
     onReport: (String) -> Unit,
     onNext: () -> Unit,
     onEnd: () -> Unit,
+    onGames: (() -> Unit)? = null,
 ) {
     val partner = (state.phase as? CallPhase.Connected)?.partner
     var draft by remember { mutableStateOf("") }
@@ -165,6 +167,7 @@ fun TextChatScreen(
                             stringResource(R.string.add_friend),
                         )
                     }
+                    if (onGames != null) IconButton(onClick = onGames) { Icon(Icons.Rounded.SportsEsports, stringResource(R.string.games_title)) }
                     IconButton(onClick = { reporting = true }) { Icon(Icons.Rounded.Flag, stringResource(R.string.report)) }
                 }
                 FilledTonalIconButton(onClick = onNext) { Icon(Icons.Rounded.SkipNext, stringResource(R.string.next)) }

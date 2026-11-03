@@ -73,6 +73,8 @@ data class ChatMessage(
     val myReaction: String? = null,
     val theirReaction: String? = null,
     val edited: Boolean = false,
+    /** Server id of a voice note's audio (fetched with voice-note-get). */
+    val voiceId: String? = null,
 ) {
     companion object {
         fun from(o: JSONObject, me: String): ChatMessage {
@@ -96,6 +98,7 @@ data class ChatMessage(
             replyTo = o.optNullableString("replyTo"),
             gifUrl = o.optJSONObject("gif")?.optNullableString("url"),
             voiceMs = o.optJSONObject("voice")?.optLong("ms"),
+            voiceId = o.optJSONObject("voice")?.optString("id")?.takeIf { it.isNotBlank() },
             status = if (o.optBoolean("seen")) MsgStatus.Seen else MsgStatus.Sent,
         )
     }

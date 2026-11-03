@@ -41,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -197,6 +198,31 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     }
 
     val inCall = state.phase !is CallPhase.Idle
+    val game by vm.game.collectAsStateWithLifecycle()
+    var showGames by remember { mutableStateOf(false) }
+    // A game that starts opens the board on both phones.
+    LaunchedEffect(game.stage) {
+        if (game.stage == app.talklive.game.Stage.Playing || game.stage == app.talklive.game.Stage.Waiting) showGames = true
+        if (game.stage == app.talklive.game.Stage.Idle && !game.declined) showGames = false
+    }
+    LaunchedEffect(inCall) { if (!inCall) showGames = false }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    // Next, with Undo for Plus members (the server keeps the skipped person for 15 s).
+    val onNext: () -> Unit = {
+        val skipped = (state.phase as? CallPhase.Connected)?.partner?.username
+        vm.next()
+        if (premium.active && skipped != null) scope.launch {
+            val r = snackbar.showSnackbar(
+                context.getString(R.string.skipped_name, skipped), actionLabel = context.getString(R.string.undo),
+                duration = androidx.compose.material3.SnackbarDuration.Long,
+            )
+            if (r == androidx.compose.material3.SnackbarResult.ActionPerformed) {
+                vm.undoSkip()?.let { why ->
+                    snackbar.showSnackbar(context.getString(if (why == "busy") R.string.undo_busy else R.string.undo_gone))
+                }
+            }
+        }
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -271,8 +297,9 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                     onReact = vm::reactToMessage,
                     onAddFriend = { partnerId?.let { social.sendRequest(it) } },
                     onReport = vm::report,
-                    onNext = vm::next,
+                    onNext = onNext,
                     onEnd = vm::end,
+                    onGames = { showGames = true },
                 ) else CallScreen(
                     state = state,
                     connected = connected,
@@ -288,7 +315,8 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                     reactions = vm.reactions,
                     onReact = vm::react,
                     icebreaker = { vm.icebreakers(1).firstOrNull() },
-                    onNext = vm::next,
+                    onGames = { showGames = true },
+                    onNext = onNext,
                     onEnd = vm::end,
                     onMute = vm::toggleMute,
                     onSpeaker = vm::toggleSpeaker,
@@ -296,6 +324,18 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                 )
             }
         }
+    }
+
+    // Mini-games with the person on the call or chat.
+    val partnerName = (state.phase as? CallPhase.Connected)?.partner?.username ?: ""
+    if (inCall && showGames) {
+        app.talklive.ui.game.GameSheet(
+            ui = game, partnerName = partnerName,
+            onInvite = vm::inviteGame, onCell = vm::tapCell, onEdge = vm::drawEdge, onRematch = vm::rematch,
+            onClose = { vm.leaveGame(); showGames = false },
+        )
+    } else if (inCall && game.stage == app.talklive.game.Stage.Invited) {
+        app.talklive.ui.game.GameInviteDialog(game.kind, partnerName, onAccept = { vm.acceptGame(); showGames = true }, onDecline = vm::declineGame)
     }
 
     // After a call: how was it?

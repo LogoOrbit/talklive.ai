@@ -16,7 +16,19 @@ import javax.inject.Inject
 data class Conversation(val person: Person, val unread: Int, val typing: Boolean, val muted: Boolean, val isFriend: Boolean)
 
 @HiltViewModel
-class SocialViewModel @Inject constructor(private val repo: SocialRepository) : ViewModel() {
+class SocialViewModel @Inject constructor(
+    private val repo: SocialRepository,
+    private val player: app.talklive.voice.VoicePlayer,
+) : ViewModel() {
+    val voice = repo.voice
+    val playback = player.state
+    fun requestVoice(id: String) = repo.requestVoice(id)
+    fun respondVoice(id: String, accept: Boolean) = repo.respondVoice(id, accept)
+    fun disableVoice(id: String) = repo.disableVoice(id)
+    fun sendVoice(to: String, audio: ByteArray, ms: Long) = repo.sendVoice(to, audio, ms)
+    fun play(chatWith: String, voiceId: String) = player.toggle(voiceId) { repo.fetchVoice(voiceId, chatWith) }
+    override fun onCleared() { player.stop() }
+
     val friends = repo.friends
     val requests = repo.requests
     val sent = repo.sent

@@ -48,6 +48,7 @@ import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.MicOff
 import androidx.compose.material.icons.rounded.PauseCircle
 import androidx.compose.material.icons.rounded.SkipNext
+import androidx.compose.material.icons.rounded.SportsEsports
 import androidx.compose.material.icons.rounded.WifiOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilledIconButton
@@ -105,6 +106,7 @@ fun CallScreen(
     reactions: kotlinx.coroutines.flow.Flow<app.talklive.call.FloatingReaction> = kotlinx.coroutines.flow.emptyFlow(),
     onReact: (String) -> Unit = {},
     icebreaker: () -> app.talklive.data.Icebreaker? = { null },
+    onGames: (() -> Unit)? = null,
     onNext: () -> Unit,
     onEnd: () -> Unit,
     onMute: () -> Unit,
@@ -132,6 +134,11 @@ fun CallScreen(
             else -> null
         }
         Box(Modifier.fillMaxWidth().height(40.dp), contentAlignment = Alignment.Center) {
+            if (onGames != null && phase is CallPhase.Connected) {
+                Surface(onClick = onGames, shape = CircleShape, color = MaterialTheme.colorScheme.surface, modifier = Modifier.align(Alignment.CenterEnd).size(40.dp)) {
+                    Box(contentAlignment = Alignment.Center) { Icon(Icons.Rounded.SportsEsports, stringResource(R.string.games_title), tint = MaterialTheme.colorScheme.primary) }
+                }
+            }
             AnimatedContent(
                 targetState = banner ?: if (phase is CallPhase.Connected) QualityBanner(state.quality) else null,
                 transitionSpec = { (fadeIn() + scaleIn(initialScale = 0.9f)) togetherWith fadeOut() },

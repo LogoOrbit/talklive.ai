@@ -332,6 +332,53 @@ class ServerE2ETest {
         check("feedback stored") { server.logTail(200).contains("Love the Android app") || true }
     }
 
+    @Test fun voice_notes_need_consent_then_send_and_play(): Unit = runBlocking {
+        val a = Client("a"); val b = Client("b")
+        friends(a, b)
+        val aId = a.identity.clientId; val bId = b.identity.clientId
+        val audio = ByteArray(4000) { (it % 251).toByte() }
+        // Without consent the server refuses.
+        a.social.sendVoice(bId, audio, 2000)
+        check("refused without consent") { a.social.threads.value[bId]?.lastOrNull()?.status == MsgStatus.Failed }
+        a.social.requestVoice(bId)
+        check("b is asked") { b.social.voice.value[aId] == "received" }
+        check("a sees sent") { a.social.voice.value[bId] == "sent" }
+        b.social.respondVoice(aId, true)
+        check("on for both") { a.social.voice.value[bId] == "on" && b.social.voice.value[aId] == "on" }
+        a.social.sendVoice(bId, audio, 2000)
+        val note = waitFor("b receives the voice note") { b.social.threads.value[aId]?.firstOrNull { it.voiceMs == 2000L && it.voiceId != null } }
+        val bytes = b.social.fetchVoice(note.voiceId!!, aId)
+        assertTrue("audio round trip", bytes != null && bytes.contentEquals(audio))
+        a.social.disableVoice(bId)
+        check("turned off") { b.social.voice.value[aId] == "off" }
+    }
+
+    @Test fun mini_game_between_two_clients() {
+        val a = Client("a", withCalls = true); val b = Client("b", withCalls = true)
+        val ga = app.talklive.game.Games(a.socket, a.calls!!)
+        val gb = app.talklive.game.Games(b.socket, b.calls!!)
+        a.calls.start(CallMode.Chat); b.calls.start(CallMode.Chat)
+        check("matched") { a.calls.state.value.phase is CallPhase.Connected && b.calls.state.value.phase is CallPhase.Connected }
+        val (host, guest) = if (a.calls.state.value.isHost) ga to gb else gb to ga
+        guest.invite(app.talklive.game.GameKind.TicTacToe)
+        check("host is invited") { host.ui.value.stage == app.talklive.game.Stage.Invited }
+        host.accept()
+        check("both playing") { host.ui.value.stage == app.talklive.game.Stage.Playing && guest.ui.value.stage == app.talklive.game.Stage.Playing }
+        assertEquals(0, host.ui.value.me); assertEquals(1, guest.ui.value.me)
+        // Host wins along the top row; every move reaches the other side.
+        for ((g, cell) in listOf(host to 0, guest to 3, host to 1, guest to 4, host to 2)) {
+            val before = g.ui.value.board!!.cells.count { it != null }
+            g.tapCell(cell)
+            val other = if (g === host) guest else host
+            check("move $cell reaches the other side") { other.ui.value.board!!.cells.count { it != null } == before + 1 }
+        }
+        check("guest sees host win") { guest.ui.value.board!!.let { it.over && it.winner == 0 } }
+        guest.rematch()
+        check("fresh board") { host.ui.value.board!!.cells.all { it == null } && guest.ui.value.board!!.cells.all { it == null } }
+        guest.leave()
+        check("host told the game ended") { host.ui.value.stage == app.talklive.game.Stage.Gone || host.ui.value.stage == app.talklive.game.Stage.Idle }
+    }
+
     @Test fun signup_login_profile_and_password_reset(): Unit = runBlocking {
         val email = "android.e2e.${System.nanoTime()}@example.com"
         val user = "droid${(1000..9999).random()}"

@@ -46,7 +46,7 @@ jobs:
 
       - name: End-to-end tests (app against a local server)
         working-directory: android-native
-        run: ./gradlew --no-daemon testDebugUnitTest --tests '*ServerE2ETest*'
+        run: ./gradlew --no-daemon testDebugUnitTest --tests '*ServerE2ETest*' --tests '*GameRulesTest*'
 
       - name: Build debug APK
         working-directory: android-native

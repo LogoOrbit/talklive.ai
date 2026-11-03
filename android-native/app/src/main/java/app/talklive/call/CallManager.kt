@@ -76,6 +76,8 @@ data class CallState(
     /** Both sides tapped the heart. */
     val mutualHeart: Boolean = false,
     val ratePrompt: RatePrompt? = null,
+    /** The call initiator hosts mini-games (decides the board). */
+    val isHost: Boolean = false,
 )
 
 /**
@@ -212,6 +214,12 @@ class CallManager @Inject constructor(
         }
     }
 
+    /** Plus: bring back the person just skipped, if they are still free. Returns null on success, else why not. */
+    suspend fun undoSkip(): String? {
+        val res = socket.ask("undo-skip") ?: return "gone"
+        return if (res.optBoolean("ok")) null else res.optString("reason", "gone")
+    }
+
     fun dismissRating() = _state.update { it.copy(ratePrompt = null) }
     fun dismissMutualHeart() = _state.update { it.copy(mutualHeart = false) }
 
@@ -328,6 +336,7 @@ class CallManager @Inject constructor(
             is ServerEvent.Reaction -> if (phase is CallPhase.Connected) _reactions.tryEmit(FloatingReaction(e.type, mine = false))
             is ServerEvent.MutualHeart -> _state.update { it.copy(mutualHeart = true) }
             is ServerEvent.RatePrompt -> if (e.seconds >= 20) _state.update { it.copy(ratePrompt = RatePrompt(e.token, lastPartnerName)) }
+            is ServerEvent.Game -> Unit
             is ServerEvent.StrangerChatBlocked -> _chat.update { list ->
                 // Mark the latest of our messages that has not been answered as not delivered.
                 val i = list.indexOfLast { it.mine }
@@ -352,7 +361,7 @@ class CallManager @Inject constructor(
         lastPartnerName = m.partner.username
         resetPartnerState()
         _chat.value = emptyList()
-        _state.update { it.copy(partnerMuted = false, notice = null, friendCall = m.callback, ratePrompt = null) }
+        _state.update { it.copy(partnerMuted = false, notice = null, friendCall = m.callback, ratePrompt = null, isHost = m.initiator) }
         // A text chat has no audio to set up: it is live the moment it matches.
         if (m.mode == "chat") {
             _state.update { it.copy(mode = CallMode.Chat) }
