@@ -50,5 +50,5 @@ are also rendered in `ScreenshotTest`.
 | Website feature | Why |
 |---|---|
 | Buying TalkLive Plus | Google Play requires Play Billing for in-app purchases; the server only knows Stripe. Needs a server endpoint that verifies Play purchases. Plus bought on the website works in the app. |
-| More languages | The app has English, Spanish, Hindi, Arabic and Urdu (`tools/i18n/*.json`, built by `tools/i18n/build.py`); the website has 17. Add a JSON file per language and list it in `res/xml/locales_config.xml`. |
+| More languages | The app has English, Spanish, Portuguese, Hindi, Bengali, Urdu, Arabic and Indonesian (`tools/i18n/*.json`, built by `tools/i18n/build.py`); the website has 17. Add a JSON file per language and list it in `res/xml/locales_config.xml`. |
 | Voice check (voice-based gender check) and client-side call moderation | Run on the web in the browser; need an on-device port. |
