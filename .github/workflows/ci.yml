@@ -3,11 +3,15 @@ name: CI
 # Checks every pull request and every branch push before anything reaches
 # main (which deploys straight to production - see fly-deploy.yml). The same
 # checks run there too, but finding out on main is finding out in production.
+# Changes only to the native Android app (built by android-native.yml) do not
+# touch the website, so they skip these checks.
 on:
   pull_request:
+    paths-ignore: ['android-native/**', '.github/workflows/android-native.yml']
   push:
     branches-ignore:
       - main
+    paths-ignore: ['android-native/**', '.github/workflows/android-native.yml']
 
 permissions:
   contents: read
