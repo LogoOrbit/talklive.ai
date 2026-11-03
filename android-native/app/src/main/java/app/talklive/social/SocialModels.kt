@@ -69,6 +69,9 @@ data class ChatMessage(
     val voiceMs: Long? = null,
     val status: MsgStatus = MsgStatus.Sent,
     val failReason: String? = null,
+    /** Reactions on a text-chat message (stranger chat), by who left them. */
+    val myReaction: String? = null,
+    val theirReaction: String? = null,
 ) {
     companion object {
         fun from(o: JSONObject, me: String) = ChatMessage(

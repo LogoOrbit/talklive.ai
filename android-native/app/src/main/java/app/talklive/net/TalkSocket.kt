@@ -87,7 +87,9 @@ class TalkSocket @Inject constructor(private val identity: IdentityStore) {
         }
         socket.on("matched") { args ->
             val o = args.firstObject() ?: return@on
-            _events.tryEmit(ServerEvent.Matched(o.optBoolean("initiator"), Partner.from(o.optJSONObject("partner")), o.optBoolean("callback")))
+            _events.tryEmit(
+                ServerEvent.Matched(o.optBoolean("initiator"), Partner.from(o.optJSONObject("partner")), o.optBoolean("callback"), o.optString("mode", "talk")),
+            )
         }
         socket.on("signal") { args -> args.firstObject()?.let { _events.tryEmit(ServerEvent.Signal(it)) } }
         socket.on("partner-left") { args ->
@@ -101,6 +103,34 @@ class TalkSocket @Inject constructor(private val identity: IdentityStore) {
             _events.tryEmit(ServerEvent.SearchRefused(args.firstObject()?.optString("reason").orEmpty()))
         }
         socket.on("banned") { _events.tryEmit(ServerEvent.Banned) }
+        socket.on("chat-message") { args ->
+            val o = args.firstObject() ?: return@on
+            _events.tryEmit(
+                ServerEvent.StrangerMessage(
+                    id = o.optNullableString("id") ?: "s${System.nanoTime()}",
+                    text = o.optString("text"),
+                    gifUrl = o.optJSONObject("gif")?.optNullableString("url"),
+                    replyTo = o.optNullableString("replyTo"),
+                    ts = o.optLong("ts", System.currentTimeMillis()),
+                ),
+            )
+        }
+        socket.on("typing") { _events.tryEmit(ServerEvent.StrangerTyping) }
+        socket.on("chat-reaction") { args ->
+            val o = args.firstObject() ?: return@on
+            _events.tryEmit(ServerEvent.StrangerReaction(o.optString("id"), o.optString("emoji"), o.optBoolean("on")))
+        }
+        socket.on("partner-away") { args -> _events.tryEmit(ServerEvent.PartnerAway(args.firstObject()?.optBoolean("away") == true)) }
+        socket.on("reaction") { args -> (args.firstOrNull() as? String)?.let { _events.tryEmit(ServerEvent.Reaction(it)) } }
+        socket.on("mutual-heart") { args -> _events.tryEmit(ServerEvent.MutualHeart(Partner.from(args.firstObject()?.optJSONObject("partner")))) }
+        socket.on("rate-prompt") { args ->
+            val o = args.firstObject() ?: return@on
+            _events.tryEmit(ServerEvent.RatePrompt(o.optString("t"), o.optInt("s")))
+        }
+        socket.on("chat-blocked") { args ->
+            val o = args.firstObject() ?: return@on
+            if (o.optString("scope") != "friend") _events.tryEmit(ServerEvent.StrangerChatBlocked(o.optString("reason")))
+        }
     }
 
     /** Listens for any server event; used by the feature repositories. */

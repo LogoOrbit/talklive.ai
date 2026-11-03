@@ -164,4 +164,18 @@
     <string name="channel_calls_desc">When a friend wants to talk to you</string>
     <string name="channel_messages">Messages</string>
     <string name="channel_messages_desc">Friend messages and friend requests</string>
+    <string name="start_chatting">Start chatting</string>
+    <string name="mode_voice">Voice</string>
+    <string name="mode_text">Text</string>
+    <string name="searching_chat">Finding someone to chat with…</string>
+    <string name="partner_away">Switched away for a moment</string>
+    <string name="icebreaker_hint">Not sure what to say? Tap one to send it</string>
+    <string name="more_ideas">More ideas</string>
+    <string name="reply">Reply</string>
+    <string name="now_chatting_with">You are now chatting with %1$s</string>
+    <string name="need_icebreaker">Need an icebreaker?</string>
+    <string name="tap_another">Tap for another</string>
+    <string name="its_a_match">It is a match!</string>
+    <string name="match_body">You and %1$s both tapped the heart.</string>
+    <string name="how_was_it">How was your chat with %1$s?</string>
 </resources>

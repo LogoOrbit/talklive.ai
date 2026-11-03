@@ -14,7 +14,10 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import app.talklive.social.ChatMessage
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
@@ -43,6 +46,15 @@ sealed interface CallNotice {
 
 enum class LinkQuality { Good, Fair, Poor }
 
+/** Voice call or text chat with a stranger. */
+enum class CallMode(val wire: String) { Talk("talk"), Chat("chat") }
+
+/** "How was it?" after a call ends, answered with thumbs up or down. */
+data class RatePrompt(val token: String, val name: String)
+
+/** A reaction to animate on the call screen. */
+data class FloatingReaction(val type: String, val mine: Boolean, val id: Long = System.nanoTime())
+
 data class CallState(
     val phase: CallPhase = CallPhase.Idle,
     val muted: Boolean = false,
@@ -56,6 +68,14 @@ data class CallState(
     val quality: LinkQuality = LinkQuality.Good,
     /** A call with a friend (started from Friends), not a random match. */
     val friendCall: Boolean = false,
+    val mode: CallMode = CallMode.Talk,
+    val partnerTyping: Boolean = false,
+    /** The stranger switched to another app (text chat). */
+    val partnerAway: Boolean = false,
+    val heartSent: Boolean = false,
+    /** Both sides tapped the heart. */
+    val mutualHeart: Boolean = false,
+    val ratePrompt: RatePrompt? = null,
 )
 
 /**
@@ -82,6 +102,17 @@ class CallManager @Inject constructor(
     private val _remoteLevel = MutableStateFlow(0f)
     val remoteLevel: StateFlow<Float> = _remoteLevel
     private var statsJob: Job? = null
+
+    /** Messages in the current text chat with a stranger. */
+    private val _chat = MutableStateFlow<List<ChatMessage>>(emptyList())
+    val chat: StateFlow<List<ChatMessage>> = _chat
+
+    private val _reactions = MutableSharedFlow<FloatingReaction>(extraBufferCapacity = 16)
+    val reactions: SharedFlow<FloatingReaction> = _reactions
+
+    private var typingJob: Job? = null
+    private var lastTypingSent = 0L
+    private var lastPartnerName = "them"
 
     private var session: RtcSession? = null
     private var initiator = false
@@ -121,12 +152,61 @@ class CallManager @Inject constructor(
         }
     }
 
-    fun start() = scope.launch {
+    fun start(mode: CallMode = CallMode.Talk) = scope.launch {
         if (_state.value.phase != CallPhase.Idle) return@launch
-        _state.update { it.copy(notice = null, muted = false) }
-        audio.start(_state.value.speakerOn)
+        _state.update { it.copy(notice = null, muted = false, mode = mode) }
+        if (mode == CallMode.Talk) audio.start(_state.value.speakerOn)
         search()
     }
+
+    // --- Text chat ---------------------------------------------------------
+
+    fun sendChat(text: String, replyTo: String? = null) = scope.launch {
+        val body = text.trim().take(1000)
+        if (body.isEmpty() || _state.value.phase !is CallPhase.Connected) return@launch
+        val id = "a" + java.lang.Long.toString(System.nanoTime(), 36).takeLast(14)
+        _chat.update { it + ChatMessage(id, mine = true, text = body, ts = System.currentTimeMillis(), replyTo = replyTo) }
+        socket.emit("chat-message", JSONObject().put("text", body).put("id", id).apply { replyTo?.let { put("replyTo", it) } })
+    }
+
+    fun typing() {
+        val now = System.currentTimeMillis()
+        if (now - lastTypingSent < 2500) return
+        lastTypingSent = now
+        socket.emit("typing")
+    }
+
+    fun reactToMessage(id: String, emoji: String) = scope.launch {
+        var on = true
+        _chat.update { list ->
+            list.map {
+                if (it.id != id) it else {
+                    on = it.myReaction != emoji
+                    it.copy(myReaction = if (on) emoji else null)
+                }
+            }
+        }
+        socket.emit("chat-reaction", JSONObject().put("id", id).put("emoji", emoji).put("on", on))
+    }
+
+    // --- Voice call extras -------------------------------------------------
+
+    /** like / laugh / clap / heart. */
+    fun react(type: String) = scope.launch {
+        if (_state.value.phase !is CallPhase.Connected) return@launch
+        socket.emit("reaction", type)
+        _reactions.tryEmit(FloatingReaction(type, mine = true))
+        if (type == "heart") _state.update { it.copy(heartSent = true) }
+    }
+
+    fun rate(up: Boolean) = scope.launch {
+        val p = _state.value.ratePrompt ?: return@launch
+        socket.emit("rate-call", JSONObject().put("t", p.token).put("v", if (up) "up" else "down"))
+        _state.update { it.copy(ratePrompt = null) }
+    }
+
+    fun dismissRating() = _state.update { it.copy(ratePrompt = null) }
+    fun dismissMutualHeart() = _state.update { it.copy(mutualHeart = false) }
 
     fun next() = scope.launch {
         if (_state.value.phase == CallPhase.Idle) return@launch
@@ -140,7 +220,7 @@ class CallManager @Inject constructor(
         teardown()
         socket.emit("leave")
         audio.stop()
-        _state.update { CallState(speakerOn = it.speakerOn) }
+        _state.update { CallState(speakerOn = it.speakerOn, mode = it.mode, ratePrompt = it.ratePrompt) }
     }
 
     fun report(reason: String) = scope.launch {
@@ -173,6 +253,11 @@ class CallManager @Inject constructor(
         scope.launch(Dispatchers.Default) { runCatching { rtc.factory } }
         setPhase(CallPhase.Searching())
         socket.emit("find-partner", searchOpts())
+    }
+
+    private fun resetPartnerState() {
+        typingJob?.cancel()
+        _state.update { it.copy(partnerTyping = false, partnerAway = false, heartSent = false, mutualHeart = false) }
     }
 
     private suspend fun onEvent(e: ServerEvent) {
@@ -216,14 +301,58 @@ class CallManager @Inject constructor(
                 _state.update { CallState(notice = CallNotice.Banned) }
             }
             ServerEvent.Registered -> Unit
+            is ServerEvent.StrangerMessage -> if (phase is CallPhase.Connected) {
+                _chat.update { list ->
+                    if (list.any { it.id == e.id }) list
+                    else list + ChatMessage(e.id, mine = false, text = e.text, ts = e.ts, replyTo = e.replyTo, gifUrl = e.gifUrl)
+                }
+                typingJob?.cancel()
+                _state.update { it.copy(partnerTyping = false) }
+            }
+            ServerEvent.StrangerTyping -> if (phase is CallPhase.Connected) {
+                _state.update { it.copy(partnerTyping = true) }
+                typingJob?.cancel()
+                typingJob = scope.launch { delay(3500); _state.update { it.copy(partnerTyping = false) } }
+            }
+            is ServerEvent.StrangerReaction -> _chat.update { list ->
+                list.map { if (it.id == e.id) it.copy(theirReaction = if (e.on) e.emoji else null) else it }
+            }
+            is ServerEvent.PartnerAway -> _state.update { it.copy(partnerAway = e.away) }
+            is ServerEvent.Reaction -> if (phase is CallPhase.Connected) _reactions.tryEmit(FloatingReaction(e.type, mine = false))
+            is ServerEvent.MutualHeart -> _state.update { it.copy(mutualHeart = true) }
+            is ServerEvent.RatePrompt -> if (e.seconds >= 20) _state.update { it.copy(ratePrompt = RatePrompt(e.token, lastPartnerName)) }
+            is ServerEvent.StrangerChatBlocked -> _chat.update { list ->
+                // Mark the latest of our messages that has not been answered as not delivered.
+                val i = list.indexOfLast { it.mine }
+                if (i < 0) list else list.toMutableList().also {
+                    it[i] = it[i].copy(status = app.talklive.social.MsgStatus.Failed, failReason = blockedText(e.reason))
+                }
+            }
         }
+    }
+
+    private fun blockedText(reason: String) = when (reason) {
+        "link" -> "Links can't be sent"
+        "unsafe" -> "This message isn't allowed"
+        "rate", "flood" -> "You're sending messages too fast"
+        else -> "Couldn't send"
     }
 
     private suspend fun onMatched(m: ServerEvent.Matched) {
         teardown()
         val id = ++matchId
         initiator = m.initiator
-        _state.update { it.copy(partnerMuted = false, notice = null, friendCall = m.callback) }
+        lastPartnerName = m.partner.username
+        resetPartnerState()
+        _chat.value = emptyList()
+        _state.update { it.copy(partnerMuted = false, notice = null, friendCall = m.callback, ratePrompt = null) }
+        // A text chat has no audio to set up: it is live the moment it matches.
+        if (m.mode == "chat") {
+            _state.update { it.copy(mode = CallMode.Chat) }
+            setPhase(CallPhase.Connected(m.partner, System.currentTimeMillis()))
+            return
+        }
+        _state.update { it.copy(mode = CallMode.Talk) }
         setPhase(CallPhase.Connecting(m.partner))
 
         val ice = iceApi.get()
@@ -357,7 +486,7 @@ class CallManager @Inject constructor(
         session = null
     }
 
-    private fun searchOpts() = JSONObject().put("mode", "talk").apply { identity.animal?.let { put("animal", it) } }
+    private fun searchOpts() = JSONObject().put("mode", _state.value.mode.wire).apply { identity.animal?.let { put("animal", it) } }
 
     private fun setPhase(p: CallPhase) = _state.update { it.copy(phase = p) }
 

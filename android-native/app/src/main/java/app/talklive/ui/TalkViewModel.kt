@@ -2,7 +2,14 @@ package app.talklive.ui
 
 import androidx.lifecycle.ViewModel
 import app.talklive.auth.AuthRepository
+import android.content.Context
 import app.talklive.call.CallManager
+import app.talklive.call.CallMode
+import app.talklive.data.Icebreaker
+import app.talklive.data.Icebreakers
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import app.talklive.data.IdentityStore
 import app.talklive.data.ThemeStore
 import app.talklive.net.TalkSocket
@@ -16,7 +23,15 @@ class TalkViewModel @Inject constructor(
     private val auth: AuthRepository,
     private val theme: ThemeStore,
     private val identity: IdentityStore,
+    private val icebreakers: Icebreakers,
+    @ApplicationContext context: Context,
 ) : ViewModel() {
+    private val prefs = context.getSharedPreferences("ui", Context.MODE_PRIVATE)
+    private val _mode = MutableStateFlow(if (prefs.getString("mode", "talk") == "chat") CallMode.Chat else CallMode.Talk)
+    /** What "Start" does on the Talk tab: a voice call or a text chat. */
+    val mode: StateFlow<CallMode> = _mode
+    val chat = calls.chat
+    val reactions = calls.reactions
     val account = auth.account
     val onboarded = auth.onboarded
     val dark = theme.dark
@@ -30,7 +45,19 @@ class TalkViewModel @Inject constructor(
         socket.connect()
     }
 
-    fun start() = calls.start()
+    fun start() = calls.start(_mode.value)
+    fun setMode(m: CallMode) {
+        _mode.value = m
+        prefs.edit().putString("mode", m.wire).apply()
+    }
+    fun sendChat(text: String, replyTo: String? = null) = calls.sendChat(text, replyTo)
+    fun typing() = calls.typing()
+    fun reactToMessage(id: String, emoji: String) = calls.reactToMessage(id, emoji)
+    fun react(type: String) = calls.react(type)
+    fun rate(up: Boolean) = calls.rate(up)
+    fun dismissRating() = calls.dismissRating()
+    fun dismissMutualHeart() = calls.dismissMutualHeart()
+    fun icebreakers(n: Int): List<Icebreaker> = icebreakers.draw(n)
     fun next() = calls.next()
     fun end() = calls.end()
     fun toggleMute() = calls.toggleMute()

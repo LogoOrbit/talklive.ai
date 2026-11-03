@@ -19,6 +19,8 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -100,6 +102,9 @@ fun CallScreen(
     remoteLevel: () -> Float,
     friendStatus: FriendStatus = FriendStatus.None,
     onAddFriend: () -> Unit = {},
+    reactions: kotlinx.coroutines.flow.Flow<app.talklive.call.FloatingReaction> = kotlinx.coroutines.flow.emptyFlow(),
+    onReact: (String) -> Unit = {},
+    icebreaker: () -> app.talklive.data.Icebreaker? = { null },
     onNext: () -> Unit,
     onEnd: () -> Unit,
     onMute: () -> Unit,
@@ -114,6 +119,7 @@ fun CallScreen(
         else -> null
     }
 
+    Box(Modifier.fillMaxSize()) {
     Column(
         Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(horizontal = 24.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -171,6 +177,12 @@ fun CallScreen(
                         PartnerInfo(p.partner)
                         Spacer(Modifier.height(6.dp))
                         Elapsed(p.sinceMs)
+                        if (p.partner.interests.isNotEmpty()) {
+                            Spacer(Modifier.height(10.dp))
+                            InterestChips(p.partner.interests)
+                        }
+                        Spacer(Modifier.height(12.dp))
+                        IcebreakerCard(p.partner.clientId, icebreaker)
                     }
                     CallPhase.Idle -> Unit
                 }
@@ -187,6 +199,10 @@ fun CallScreen(
         }
         Spacer(Modifier.weight(1.3f))
 
+        AnimatedVisibility(phase is CallPhase.Connected, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
+            ReactionBar(heartSent = state.heartSent, onReact = onReact)
+        }
+        Spacer(Modifier.height(16.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.Top) {
             Control(
                 icon = if (state.muted) Icons.Rounded.MicOff else Icons.Rounded.Mic,
@@ -229,6 +245,9 @@ fun CallScreen(
             Control(Icons.Rounded.CallEnd, stringResource(R.string.end), container = Danger, size = 72, onClick = onEnd)
             Control(Icons.Rounded.SkipNext, stringResource(R.string.next), container = BrandTeal, size = 72, onClick = onNext)
         }
+    }
+
+    FloatingReactions(reactions)
     }
 
     if (reporting) {
@@ -326,8 +345,91 @@ private fun SpeakingAvatar(partner: Partner, active: Boolean, level: () -> Float
 @Composable
 private fun PartnerInfo(p: Partner) {
     Title(p.username)
-    val place = listOfNotNull(flag(p.countryCode), p.country).joinToString(" ").ifBlank { null }
-    Subtitle(listOfNotNull(place, animalById(p.animal)?.name).joinToString("  ·  "))
+    Subtitle(partnerLine(p).ifBlank { animalById(p.animal)?.name.orEmpty() })
+}
+
+private val REACTION_EMOJI = linkedMapOf("like" to "👍", "laugh" to "😂", "clap" to "👏", "heart" to "❤️")
+
+@Composable
+private fun ReactionBar(heartSent: Boolean, onReact: (String) -> Unit) {
+    val haptics = LocalHapticFeedback.current
+    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface) {
+        Row(Modifier.padding(horizontal = 8.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            REACTION_EMOJI.forEach { (type, emoji) ->
+                val source = remember { MutableInteractionSource() }
+                val pressed by source.collectIsPressedAsState()
+                val scale by androidx.compose.animation.core.animateFloatAsState(if (pressed) 1.35f else 1f, spring(dampingRatio = 0.4f), label = "r")
+                val hearted = type == "heart" && heartSent
+                Box(
+                    Modifier.size(48.dp).scale(scale).clip(CircleShape)
+                        .then(if (hearted) Modifier.background(app.talklive.ui.components.BrandGradient) else Modifier)
+                        .clickable(source, indication = null) {
+                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            onReact(type)
+                        },
+                    contentAlignment = Alignment.Center,
+                ) { Text(emoji, style = MaterialTheme.typography.headlineSmall) }
+            }
+        }
+    }
+}
+
+/** Emojis that float up the screen when either side reacts. */
+@Composable
+private fun FloatingReactions(reactions: kotlinx.coroutines.flow.Flow<app.talklive.call.FloatingReaction>) {
+    val live = remember { androidx.compose.runtime.mutableStateListOf<app.talklive.call.FloatingReaction>() }
+    LaunchedEffect(reactions) { reactions.collect { live += it; if (live.size > 12) live.removeAt(0) } }
+    Box(Modifier.fillMaxSize()) {
+        live.forEach { r ->
+            androidx.compose.runtime.key(r.id) {
+                val progress = remember { Animatable(0f) }
+                LaunchedEffect(Unit) {
+                    progress.animateTo(1f, tween(2200, easing = LinearEasing))
+                    live.remove(r)
+                }
+                val drift = remember { (-60..60).random() }
+                val p = progress.value
+                Text(
+                    REACTION_EMOJI[r.type] ?: "✨",
+                    fontSize = androidx.compose.ui.unit.TextUnit(if (r.mine) 34f else 44f, androidx.compose.ui.unit.TextUnitType.Sp),
+                    modifier = Modifier.align(if (r.mine) Alignment.BottomEnd else Alignment.BottomStart)
+                        .padding(horizontal = 48.dp, vertical = 180.dp)
+                        .graphicsLayer {
+                            translationY = -p * 900f
+                            translationX = drift * p * 2f
+                            alpha = 1f - p
+                            val sc = 0.6f + minOf(p * 4f, 1f) * 0.6f
+                            scaleX = sc; scaleY = sc
+                        },
+                )
+            }
+        }
+    }
+}
+
+/** "Need an icebreaker?" that opens into a question card for the call. */
+@Composable
+private fun IcebreakerCard(key: String, draw: () -> app.talklive.data.Icebreaker?) {
+    var q by remember(key) { mutableStateOf<app.talklive.data.Icebreaker?>(null) }
+    AnimatedContent(targetState = q, transitionSpec = { (fadeIn() + scaleIn(initialScale = 0.9f)) togetherWith fadeOut() }, label = "ice") { cur ->
+        if (cur == null) {
+            Surface(onClick = { q = draw() }, shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
+                Text(
+                    "💡  " + stringResource(R.string.need_icebreaker),
+                    style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                )
+            }
+        } else {
+            Surface(onClick = { q = draw() }, shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface) {
+                Column(Modifier.padding(horizontal = 20.dp, vertical = 14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("${cur.emoji}  ${cur.text}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                    Spacer(Modifier.height(4.dp))
+                    Text(stringResource(R.string.tap_another), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+    }
 }
 
 @Composable

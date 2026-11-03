@@ -45,7 +45,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.talklive.R
 import app.talklive.call.CallNotice
 import app.talklive.call.CallPhase
+import app.talklive.call.CallMode
 import app.talklive.call.CallService
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.ui.Alignment
 import app.talklive.ui.animals.AnimalSetupScreen
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
@@ -154,7 +158,9 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
         }
         if (needed.isEmpty()) action() else { afterMic = action; permissions.launch(needed.toTypedArray()) }
     }
-    val onStart = { withMic(::begin) }
+    val mode by vm.mode.collectAsStateWithLifecycle()
+    // A text chat needs no microphone and no call service.
+    val onStart: () -> Unit = { if (mode == CallMode.Chat) { vm.start() } else withMic(::begin) }
 
     val noticeText = state.notice?.let { n ->
         when (n) {
@@ -206,6 +212,8 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                         onStart = onStart,
                         onToggleTheme = vm::toggleTheme,
                         onProfile = { tab = MainTab.Profile },
+                        mode = mode,
+                        onMode = vm::setMode,
                     )
                     MainTab.Chats -> ChatsScreen(social, onOpenChat = { openChat = it }, onStartTalking = { tab = MainTab.Talk })
                     MainTab.Friends -> FriendsScreen(social, onOpenChat = { openChat = it }, onStartTalking = { tab = MainTab.Talk })
@@ -219,10 +227,30 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
             exit = slideOutVertically(tween(300)) { it / 4 } + fadeOut(tween(220)),
         ) {
             val level by vm.remoteLevel.collectAsStateWithLifecycle()
+            val chatMessages by vm.chat.collectAsStateWithLifecycle()
             Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
                 val partnerId = (state.phase as? CallPhase.Connected)?.partner?.clientId
                     ?: (state.phase as? CallPhase.Connecting)?.partner?.clientId
-                CallScreen(
+                val friendStatus = when {
+                    partnerId == null -> FriendStatus.None
+                    friends.any { it.clientId == partnerId } -> FriendStatus.Friends
+                    partnerId in sent -> FriendStatus.Requested
+                    else -> FriendStatus.None
+                }
+                if (state.mode == CallMode.Chat) TextChatScreen(
+                    state = state,
+                    messages = chatMessages,
+                    myAnimal = animal,
+                    friendStatus = friendStatus,
+                    icebreakers = vm::icebreakers,
+                    onSend = vm::sendChat,
+                    onTyping = vm::typing,
+                    onReact = vm::reactToMessage,
+                    onAddFriend = { partnerId?.let { social.sendRequest(it) } },
+                    onReport = vm::report,
+                    onNext = vm::next,
+                    onEnd = vm::end,
+                ) else CallScreen(
                     state = state,
                     connected = connected,
                     myAnimal = animal,
@@ -234,6 +262,9 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                         else -> FriendStatus.None
                     },
                     onAddFriend = { partnerId?.let { social.sendRequest(it) } },
+                    reactions = vm.reactions,
+                    onReact = vm::react,
+                    icebreaker = { vm.icebreakers(1).firstOrNull() },
                     onNext = vm::next,
                     onEnd = vm::end,
                     onMute = vm::toggleMute,
@@ -242,6 +273,34 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                 )
             }
         }
+    }
+
+    // After a call: how was it?
+    androidx.compose.animation.AnimatedVisibility(
+        visible = state.ratePrompt != null && state.phase !is CallPhase.Connected,
+        enter = slideInVertically { it } + fadeIn(),
+        exit = slideOutVertically { it } + fadeOut(),
+        modifier = Modifier.fillMaxSize().wrapContentHeight(Alignment.Bottom),
+    ) {
+        var shown by remember { mutableStateOf(state.ratePrompt) }
+        LaunchedEffect(state.ratePrompt) { if (state.ratePrompt != null) shown = state.ratePrompt }
+        shown?.let {
+            RateCard(
+                it.name, onRate = vm::rate, onDismiss = vm::dismissRating,
+                modifier = Modifier.navigationBarsPadding().padding(start = 16.dp, end = 16.dp, bottom = if (inCall) 150.dp else 96.dp),
+            )
+        }
+    }
+
+    // Both hearted each other.
+    if (state.mutualHeart) {
+        val p = (state.phase as? CallPhase.Connected)?.partner
+        MutualHeartOverlay(
+            name = p?.username ?: "them",
+            canAddFriend = p != null && friends.none { it.clientId == p.clientId } && p.clientId !in sent,
+            onAddFriend = { p?.let { social.sendRequest(it.clientId) } },
+            onDismiss = vm::dismissMutualHeart,
+        )
     }
 
     // A conversation slides in over the tabs.

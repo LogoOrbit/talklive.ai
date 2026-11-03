@@ -17,6 +17,7 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -246,8 +247,9 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
     }
 }
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun MessageBubble(
+internal fun MessageBubble(
     m: ChatMessage,
     quoted: ChatMessage?,
     firstInGroup: Boolean,
@@ -255,6 +257,7 @@ private fun MessageBubble(
     showStatus: Boolean,
     onReply: () -> Unit,
     onRetry: () -> Unit,
+    onLongPress: (() -> Unit)? = null,
 ) {
     val haptics = LocalHapticFeedback.current
     val density = LocalDensity.current
@@ -301,7 +304,15 @@ private fun MessageBubble(
                     .widthIn(max = 300.dp)
                     .clip(shape)
                     .then(if (m.mine) Modifier.background(BrandGradient) else Modifier.background(MaterialTheme.colorScheme.surface))
-                    .then(if (m.status == MsgStatus.Failed) Modifier.clickable(onClick = onRetry) else Modifier),
+                    .then(
+                        when {
+                            m.status == MsgStatus.Failed -> Modifier.clickable(onClick = onRetry)
+                            onLongPress != null -> Modifier.combinedClickable(onClick = {}, onLongClick = {
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress); onLongPress()
+                            })
+                            else -> Modifier
+                        },
+                    ),
             ) {
                 Column(Modifier.padding(horizontal = 14.dp, vertical = 9.dp)) {
                     val fg = if (m.mine) Color.White else MaterialTheme.colorScheme.onSurface
@@ -324,6 +335,13 @@ private fun MessageBubble(
                     }
                 }
             }
+        }
+        val reactions = listOfNotNull(m.theirReaction, m.myReaction)
+        if (reactions.isNotEmpty()) {
+            Row(
+                Modifier.padding(top = 2.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surface)
+                    .padding(horizontal = 8.dp, vertical = 2.dp),
+            ) { Text(reactions.distinct().joinToString(" "), style = MaterialTheme.typography.labelMedium) }
         }
         if (showStatus && m.mine) {
             Row(Modifier.padding(top = 3.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -353,7 +371,7 @@ private fun MessageBubble(
 }
 
 @Composable
-private fun TypingBubble() {
+internal fun TypingBubble() {
     val t = rememberInfiniteTransition(label = "typing")
     Row(
         Modifier.padding(top = 8.dp).clip(RoundedCornerShape(18.dp)).background(MaterialTheme.colorScheme.surface).padding(horizontal = 16.dp, vertical = 14.dp),
@@ -367,7 +385,7 @@ private fun TypingBubble() {
 }
 
 @Composable
-private fun DaySeparator(ts: Long) {
+internal fun DaySeparator(ts: Long) {
     Box(Modifier.fillMaxWidth().padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
         Text(
             dayLabel(ts),

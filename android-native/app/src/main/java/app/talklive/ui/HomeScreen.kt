@@ -19,6 +19,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.automirrored.rounded.Chat
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -65,6 +69,8 @@ fun HomeScreen(
     onStart: () -> Unit,
     onToggleTheme: () -> Unit,
     onProfile: () -> Unit,
+    mode: app.talklive.call.CallMode = app.talklive.call.CallMode.Talk,
+    onMode: (app.talklive.call.CallMode) -> Unit = {},
 ) {
     Column(Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 24.dp, vertical = 16.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -83,7 +89,7 @@ fun HomeScreen(
         }
 
         Spacer(Modifier.weight(1f))
-        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { MicOrb() }
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { MicOrb(mode == app.talklive.call.CallMode.Chat) }
         Spacer(Modifier.height(36.dp))
         Text(
             stringResource(R.string.tagline),
@@ -111,18 +117,20 @@ fun HomeScreen(
             }
         }
         Spacer(Modifier.weight(1f))
+        ModeSwitch(mode, onMode)
+        Spacer(Modifier.height(14.dp))
         PrimaryButton(
-            text = stringResource(R.string.start_talking),
+            text = stringResource(if (mode == app.talklive.call.CallMode.Chat) R.string.start_chatting else R.string.start_talking),
             onClick = onStart,
             enabled = connected,
-            icon = Icons.Rounded.Mic,
+            icon = if (mode == app.talklive.call.CallMode.Chat) Icons.AutoMirrored.Rounded.Chat else Icons.Rounded.Mic,
         )
     }
 }
 
 /** The breathing mic: soft halo rings behind a gradient disc. */
 @Composable
-private fun MicOrb() {
+private fun MicOrb(text: Boolean = false) {
     val t = rememberInfiniteTransition(label = "orb")
     val halo by t.animateFloat(0.9f, 1.15f, infiniteRepeatable(tween(1600), RepeatMode.Reverse), label = "halo")
     Box(contentAlignment = Alignment.Center) {
@@ -134,6 +142,51 @@ private fun MicOrb() {
         Box(
             Modifier.size(112.dp).clip(CircleShape).background(BrandGradient),
             contentAlignment = Alignment.Center,
-        ) { Icon(Icons.Rounded.Mic, null, tint = Color.White, modifier = Modifier.size(52.dp)) }
+        ) {
+            androidx.compose.animation.Crossfade(text, label = "orb-icon") { t ->
+                Icon(if (t) Icons.AutoMirrored.Rounded.Chat else Icons.Rounded.Mic, null, tint = Color.White, modifier = Modifier.size(52.dp))
+            }
+        }
+    }
+}
+
+/** Voice or Text, with a pill that slides between them. */
+@Composable
+private fun ModeSwitch(mode: app.talklive.call.CallMode, onMode: (app.talklive.call.CallMode) -> Unit) {
+    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
+    val modes = app.talklive.call.CallMode.entries
+    androidx.compose.foundation.layout.BoxWithConstraints(
+        Modifier.fillMaxWidth().height(48.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surface).padding(4.dp),
+    ) {
+        val w = maxWidth / modes.size
+        val x by androidx.compose.animation.core.animateDpAsState(
+            w * modes.indexOf(mode), androidx.compose.animation.core.spring(dampingRatio = 0.75f, stiffness = 500f), label = "pill",
+        )
+        Box(Modifier.offset(x = x).width(w).fillMaxHeight().clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer))
+        Row(Modifier.fillMaxSize()) {
+            modes.forEach { m ->
+                val on = m == mode
+                Row(
+                    Modifier.weight(1f).fillMaxHeight().clip(CircleShape).clickable {
+                        if (!on) haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                        onMode(m)
+                    },
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        if (m == app.talklive.call.CallMode.Chat) Icons.AutoMirrored.Rounded.Chat else Icons.Rounded.Mic, null,
+                        Modifier.size(18.dp),
+                        tint = if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.size(8.dp))
+                    Text(
+                        stringResource(if (m == app.talklive.call.CallMode.Chat) R.string.mode_text else R.string.mode_voice),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
     }
 }

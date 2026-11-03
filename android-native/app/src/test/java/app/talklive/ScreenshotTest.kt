@@ -16,6 +16,12 @@ import app.talklive.net.Partner
 import app.talklive.net.TalkSocket
 import app.talklive.ui.CallScreen
 import app.talklive.ui.HomeScreen
+import app.talklive.ui.TextChatScreen
+import app.talklive.ui.FriendStatus
+import app.talklive.ui.MutualHeartOverlay
+import app.talklive.ui.RateCard
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
 import app.talklive.ui.onboarding.AuthViewModel
 import app.talklive.ui.onboarding.ChooseScreen
 import app.talklive.ui.onboarding.LoginScreen
@@ -130,6 +136,38 @@ class ScreenshotTest {
     }
     @Test fun incoming() = shot("17_incoming") {
         app.talklive.ui.social.IncomingCallScreen(app.talklive.social.IncomingCall("a", "Sofia", "ES"), "fox", {}, {})
+    }
+    private val chatPartner = Partner("c_2", "Kenji", "Japan", "JP", "panda", false, "Asia/Tokyo", "en", listOf("anime", "music", "travel"))
+    private fun chatScreen(msgs: List<app.talklive.social.ChatMessage>, typing: Boolean = false) =
+        @androidx.compose.runtime.Composable {
+            TextChatScreen(
+                state = CallState(phase = CallPhase.Connected(chatPartner, now), mode = app.talklive.call.CallMode.Chat, partnerTyping = typing),
+                messages = msgs, myAnimal = "fox", friendStatus = FriendStatus.None,
+                icebreakers = { n -> listOf(app.talklive.data.Icebreaker("🎧", "What song is stuck in your head?"), app.talklive.data.Icebreaker("🍕", "Best pizza topping, go."), app.talklive.data.Icebreaker("🌍", "Where in the world are you?")).take(n) },
+                onSend = { _, _ -> }, onTyping = {}, onReact = { _, _ -> }, onAddFriend = {}, onReport = {}, onNext = {}, onEnd = {},
+            )
+        }
+    @Test fun textChatNew() = shot("18_text_new") { chatScreen(emptyList())() }
+    @Test fun textChat() = shot("19_text_chat") {
+        chatScreen(listOf(
+            app.talklive.social.ChatMessage("1", true, "What song is stuck in your head?", now - 90_000),
+            app.talklive.social.ChatMessage("2", false, "Haha, a Ghibli soundtrack, all day long", now - 60_000, theirReaction = null, myReaction = "😂"),
+            app.talklive.social.ChatMessage("3", false, "And yours?", now - 50_000),
+        ), typing = true)()
+    }
+    @Test fun homeText() = shot("20_home_text") {
+        HomeScreen(true, 3412, "fox", "Sam", false, {}, {}, {}, mode = app.talklive.call.CallMode.Chat)
+    }
+    @Test fun mutualHeart() = shot("21_match") {
+        Box(Modifier.fillMaxSize()) {
+            CallScreen(CallState(phase = CallPhase.Connected(partner, now)), true, "fox", { 0.2f }, onNext = {}, onEnd = {}, onMute = {}, onSpeaker = {}, onReport = {})
+            MutualHeartOverlay("Sofia", true, {}, {})
+        }
+    }
+    @Test fun rate() = shot("22_rate") {
+        Box(Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.BottomCenter) {
+            RateCard("Sofia", {}, {}, Modifier.padding(16.dp))
+        }
     }
     @Test fun searching() = shot("08_searching") {
         CallScreen(CallState(phase = CallPhase.Searching(4)), true, "fox", { 0f }, onNext = {}, onEnd = {}, onMute = {}, onSpeaker = {}, onReport = {})
