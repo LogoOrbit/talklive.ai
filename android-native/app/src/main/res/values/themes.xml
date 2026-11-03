@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.TalkLive" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/brand_light</item>
+    </style>
+    <style name="Theme.TalkLive.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/brand_light</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_logo</item>
+        <item name="postSplashScreenTheme">@style/Theme.TalkLive</item>
+    </style>
+</resources>

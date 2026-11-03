@@ -1,0 +1,271 @@
+package app.talklive.call
+
+import android.util.Log
+import app.talklive.net.IceServerApi
+import app.talklive.net.Partner
+import app.talklive.net.ServerEvent
+import app.talklive.net.TalkSocket
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import org.json.JSONObject
+import org.webrtc.IceCandidate
+import org.webrtc.PeerConnection
+import org.webrtc.SessionDescription
+import javax.inject.Inject
+import javax.inject.Singleton
+
+sealed interface CallPhase {
+    data object Idle : CallPhase
+    data class Searching(val etaSeconds: Int? = null) : CallPhase
+    data class Connecting(val partner: Partner) : CallPhase
+    data class Connected(val partner: Partner, val sinceMs: Long) : CallPhase
+}
+
+sealed interface CallNotice {
+    data class PartnerLeft(val name: String, val dropped: Boolean) : CallNotice
+    data object Banned : CallNotice
+    data class Refused(val reason: String) : CallNotice
+}
+
+data class CallState(
+    val phase: CallPhase = CallPhase.Idle,
+    val muted: Boolean = false,
+    val partnerMuted: Boolean = false,
+    val speakerOn: Boolean = true,
+    val notice: CallNotice? = null,
+)
+
+/**
+ * The random voice-call loop: search, match, WebRTC handshake, next, end.
+ * Mirrors the call flow in public/app.js so an app user and a website user
+ * can be matched with each other. All state changes run on one thread.
+ */
+@OptIn(ExperimentalCoroutinesApi::class)
+@Singleton
+class CallManager @Inject constructor(
+    private val socket: TalkSocket,
+    private val iceApi: IceServerApi,
+    private val rtc: RtcFactory,
+    private val audio: AudioRouter,
+) {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default.limitedParallelism(1))
+
+    private val _state = MutableStateFlow(CallState())
+    val state: StateFlow<CallState> = _state
+
+    private var session: RtcSession? = null
+    private var initiator = false
+    private var matchId = 0
+    private var watchdog: Job? = null
+    private val pendingSignals = mutableListOf<JSONObject>()
+
+    init {
+        scope.launch { socket.events.collect(::onEvent) }
+        // After a reconnect the server has forgotten our search (and our call):
+        // start searching again so a network blip never strands the user.
+        scope.launch {
+            socket.connected.drop(1).filter { it }.collect {
+                if (_state.value.phase != CallPhase.Idle) {
+                    teardown()
+                    search()
+                }
+            }
+        }
+    }
+
+    fun start() = scope.launch {
+        if (_state.value.phase != CallPhase.Idle) return@launch
+        _state.update { it.copy(notice = null, muted = false) }
+        audio.start(_state.value.speakerOn)
+        search()
+    }
+
+    fun next() = scope.launch {
+        if (_state.value.phase == CallPhase.Idle) return@launch
+        teardown()
+        socket.emit("skip")
+        setPhase(CallPhase.Searching())
+    }
+
+    fun end() = scope.launch {
+        teardown()
+        socket.emit("leave")
+        audio.stop()
+        _state.update { CallState(speakerOn = it.speakerOn) }
+    }
+
+    fun report(reason: String) = scope.launch {
+        if (_state.value.phase !is CallPhase.Connected && _state.value.phase !is CallPhase.Connecting) return@launch
+        teardown()
+        // The server blocks the pair and finds us someone new.
+        socket.emit("report", JSONObject().put("reason", reason))
+        setPhase(CallPhase.Searching())
+    }
+
+    fun toggleMute() = scope.launch {
+        val muted = !_state.value.muted
+        session?.setMuted(muted)
+        socket.emit("mic-state", muted)
+        _state.update { it.copy(muted = muted) }
+    }
+
+    fun toggleSpeaker() = scope.launch {
+        val on = !_state.value.speakerOn
+        audio.setSpeaker(on)
+        _state.update { it.copy(speakerOn = on) }
+    }
+
+    fun dismissNotice() = _state.update { it.copy(notice = null) }
+
+    private fun search() {
+        setPhase(CallPhase.Searching())
+        socket.emit("find-partner", JSONObject().put("mode", "talk"))
+    }
+
+    private suspend fun onEvent(e: ServerEvent) {
+        val phase = _state.value.phase
+        when (e) {
+            is ServerEvent.Waiting -> if (phase is CallPhase.Searching) setPhase(CallPhase.Searching(e.estimatedSeconds))
+            ServerEvent.NeedsRegister -> if (phase is CallPhase.Searching) {
+                delay(800)
+                socket.emit("find-partner", JSONObject().put("mode", "talk"))
+            }
+            is ServerEvent.Matched -> if (phase != CallPhase.Idle) onMatched(e)
+            is ServerEvent.Signal -> onSignal(e.data)
+            is ServerEvent.PartnerMic -> _state.update { it.copy(partnerMuted = e.muted) }
+            is ServerEvent.PartnerLeft -> if (phase is CallPhase.Connecting || phase is CallPhase.Connected) {
+                teardown()
+                _state.update { it.copy(notice = CallNotice.PartnerLeft(e.username.ifBlank { "Stranger" }, e.reason != "left")) }
+                search()
+            }
+            is ServerEvent.SearchRefused -> {
+                teardown()
+                audio.stop()
+                _state.update { CallState(speakerOn = it.speakerOn, notice = CallNotice.Refused(e.reason)) }
+            }
+            ServerEvent.Banned -> {
+                teardown()
+                audio.stop()
+                _state.update { CallState(notice = CallNotice.Banned) }
+            }
+            ServerEvent.Registered -> Unit
+        }
+    }
+
+    private suspend fun onMatched(m: ServerEvent.Matched) {
+        teardown()
+        val id = ++matchId
+        initiator = m.initiator
+        _state.update { it.copy(partnerMuted = false, notice = null) }
+        setPhase(CallPhase.Connecting(m.partner))
+
+        val ice = iceApi.fetch()
+        if (id != matchId) return // skipped while fetching
+        val s = RtcSession(rtc.factory, ice, object : RtcSession.Listener {
+            override fun onLocalCandidate(candidate: IceCandidate) {
+                socket.emit(
+                    "signal",
+                    JSONObject().put("type", "ice-candidate").put(
+                        "candidate",
+                        JSONObject()
+                            .put("candidate", candidate.sdp)
+                            .put("sdpMid", candidate.sdpMid)
+                            .put("sdpMLineIndex", candidate.sdpMLineIndex),
+                    ),
+                )
+            }
+
+            override fun onConnectionState(state: PeerConnection.PeerConnectionState) {
+                scope.launch { if (id == matchId) onConnectionState(state, m.partner) }
+            }
+        })
+        session = s
+        s.setMuted(_state.value.muted)
+        if (_state.value.muted) socket.emit("mic-state", true)
+
+        watchdog = scope.launch {
+            delay(CONNECT_TIMEOUT_MS)
+            if (id == matchId && _state.value.phase is CallPhase.Connecting) failAndRetry()
+        }
+
+        runCatching {
+            if (initiator) socket.emit("signal", sdpJson(s.createOffer()))
+            pendingSignals.toList().also { pendingSignals.clear() }.forEach { onSignal(it) }
+        }.onFailure { Log.w(TAG, "handshake failed", it); failAndRetry() }
+    }
+
+    private suspend fun onSignal(data: JSONObject) {
+        val s = session
+        if (s == null) {
+            if (_state.value.phase is CallPhase.Connecting && pendingSignals.size < 64) pendingSignals += data
+            return
+        }
+        runCatching {
+            when (data.optString("type")) {
+                "offer" -> {
+                    // Glare: the call initiator keeps its own outstanding offer.
+                    if (initiator && s.signalingState != PeerConnection.SignalingState.STABLE) return
+                    val sdp = data.getJSONObject("sdp").getString("sdp")
+                    val answer = s.acceptOffer(SessionDescription(SessionDescription.Type.OFFER, sdp))
+                    socket.emit("signal", sdpJson(answer))
+                }
+                "answer" -> s.acceptAnswer(
+                    SessionDescription(SessionDescription.Type.ANSWER, data.getJSONObject("sdp").getString("sdp")),
+                )
+                "ice-candidate" -> {
+                    val c = data.optJSONObject("candidate") ?: return
+                    s.addRemoteCandidate(IceCandidate(c.optString("sdpMid", "0"), c.optInt("sdpMLineIndex", 0), c.getString("candidate")))
+                }
+            }
+        }.onFailure { Log.w(TAG, "bad signal ${data.optString("type")}", it) }
+    }
+
+    private suspend fun onConnectionState(state: PeerConnection.PeerConnectionState, partner: Partner) {
+        when (state) {
+            PeerConnection.PeerConnectionState.CONNECTED -> {
+                watchdog?.cancel()
+                if (_state.value.phase !is CallPhase.Connected) setPhase(CallPhase.Connected(partner, System.currentTimeMillis()))
+            }
+            PeerConnection.PeerConnectionState.FAILED -> failAndRetry()
+            else -> Unit
+        }
+    }
+
+    /** Media never flowed: tell the server so it keeps this pair apart, then search again. */
+    private fun failAndRetry() {
+        teardown()
+        socket.emit("skip", JSONObject().put("failed", true))
+        setPhase(CallPhase.Searching())
+    }
+
+    private fun teardown() {
+        matchId++
+        watchdog?.cancel()
+        watchdog = null
+        pendingSignals.clear()
+        session?.close()
+        session = null
+    }
+
+    private fun setPhase(p: CallPhase) = _state.update { it.copy(phase = p) }
+
+    private fun sdpJson(d: SessionDescription): JSONObject {
+        val type = d.type.canonicalForm()
+        return JSONObject().put("type", type).put("sdp", JSONObject().put("type", type).put("sdp", d.description))
+    }
+
+    private companion object {
+        const val TAG = "CallManager"
+        const val CONNECT_TIMEOUT_MS = 20_000L
+    }
+}
