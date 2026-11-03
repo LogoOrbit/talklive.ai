@@ -154,9 +154,17 @@ class CallManager @Inject constructor(
         // start searching again so a network blip never strands the user.
         scope.launch {
             socket.connected.drop(1).filter { it }.collect {
-                if (_state.value.phase != CallPhase.Idle) {
-                    teardown()
-                    search()
+                val st = _state.value
+                when {
+                    st.phase == CallPhase.Idle -> Unit
+                    // A friend call cannot be resumed by searching: end it.
+                    st.friendCall && st.phase !is CallPhase.Searching -> {
+                        teardown()
+                        audio.stop()
+                        val name = (st.phase as? CallPhase.Connected)?.partner?.username ?: (st.phase as? CallPhase.Connecting)?.partner?.username
+                        _state.update { CallState(speakerOn = it.speakerOn, mode = it.mode, notice = CallNotice.CallEnded(name ?: "Your friend")) }
+                    }
+                    else -> { teardown(); search() }
                 }
             }
         }
@@ -410,7 +418,7 @@ class CallManager @Inject constructor(
 
         val ice = iceApi.get()
         if (id != matchId) return // skipped while fetching
-        val s = RtcSession(rtc.factory, ice, object : RtcSession.Listener {
+        val s = runCatching { RtcSession(rtc.factory, ice, object : RtcSession.Listener {
             override fun onLocalCandidate(candidate: IceCandidate) {
                 socket.emit(
                     "signal",
@@ -427,7 +435,12 @@ class CallManager @Inject constructor(
             override fun onConnectionState(state: PeerConnection.PeerConnectionState) {
                 scope.launch { if (id == matchId) onConnectionState(state, m.partner) }
             }
-        })
+        }) }.getOrElse {
+            // WebRTC could not start on this device right now: move on rather than crash.
+            Log.w(TAG, "peer connection failed", it)
+            failAndRetry()
+            return
+        }
         session = s
         val silent = _state.value.muted || _state.value.onHold
         s.setMuted(silent)
