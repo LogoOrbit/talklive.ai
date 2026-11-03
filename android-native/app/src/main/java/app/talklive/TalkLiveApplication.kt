@@ -7,6 +7,7 @@ import app.talklive.data.CrashReporter
 import app.talklive.net.TalkSocket
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
+import kotlinx.coroutines.launch
 
 @HiltAndroidApp
 class TalkLiveApplication : Application(), coil.ImageLoaderFactory {
@@ -14,6 +15,7 @@ class TalkLiveApplication : Application(), coil.ImageLoaderFactory {
     // Created at start so it hears the first state-sync after registering.
     @Inject lateinit var social: app.talklive.social.SocialRepository
     @Inject lateinit var push: app.talklive.push.PushRegistrar
+    @Inject lateinit var ice: app.talklive.net.IceServerApi
 
     override fun onCreate() {
         CrashReporter.install(this)
@@ -34,6 +36,7 @@ class TalkLiveApplication : Application(), coil.ImageLoaderFactory {
                 .apply { description = getString(R.string.channel_messages_desc) },
         )
         push.refresh()
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch { runCatching { ice.get() } }
     }
 
     /** Animated GIFs in chats. */

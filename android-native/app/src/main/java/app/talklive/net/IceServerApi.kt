@@ -21,13 +21,29 @@ class IceServerApi @Inject constructor() {
         .callTimeout(6, TimeUnit.SECONDS)
         .build()
 
+    @Volatile private var cached: IceConfig? = null
+    @Volatile private var fetchedAt = 0L
+
+    /**
+     * The ICE config, from cache when fresh. TURN credentials last an hour, so
+     * like the website a copy is kept for 45 minutes; a call never waits on
+     * the network for it after the first fetch.
+     */
+    suspend fun get(): IceConfig {
+        val c = cached
+        if (c != null && System.currentTimeMillis() - fetchedAt < MAX_AGE_MS) return c
+        return fetch()
+    }
+
     suspend fun fetch(): IceConfig = withContext(Dispatchers.IO) {
         runCatching {
             http.newCall(Request.Builder().url("${BuildConfig.SERVER_URL}/ice-servers").build()).execute().use { res ->
                 val body = JSONObject(res.body?.string().orEmpty())
                 IceConfig(parse(body.optJSONArray("iceServers")), body.optString("iceTransportPolicy") == "relay")
             }
-        }.getOrNull()?.takeIf { it.servers.isNotEmpty() } ?: FALLBACK
+        }.getOrNull()?.takeIf { it.servers.isNotEmpty() }
+            ?.also { cached = it; fetchedAt = System.currentTimeMillis() }
+            ?: cached ?: FALLBACK
     }
 
     private fun parse(arr: JSONArray?): List<PeerConnection.IceServer> {
@@ -40,14 +56,26 @@ class IceServerApi @Inject constructor() {
                 else -> return@mapNotNull null
             }.filter { it.isNotBlank() }
             if (urls.isEmpty()) return@mapNotNull null
-            PeerConnection.IceServer.builder(urls).apply {
-                o.optNullableString("username")?.let { setUsername(it) }
-                o.optNullableString("credential")?.let { setPassword(it) }
-            }.createIceServer()
+            listOf(urls to o)
+        }.flatMap { list ->
+            list.flatMap { (urls, o) ->
+                val user = o.optNullableString("username")
+                val pass = o.optNullableString("credential")
+                val stun = urls.filter { it.startsWith("stun", ignoreCase = true) }
+                val turn = urls.filter { it.startsWith("turn", ignoreCase = true) }
+                buildList {
+                    if (stun.isNotEmpty()) add(PeerConnection.IceServer.builder(stun).createIceServer())
+                    // A relay without credentials only makes WebRTC fail.
+                    if (turn.isNotEmpty() && user != null && pass != null) {
+                        add(PeerConnection.IceServer.builder(turn).setUsername(user).setPassword(pass).createIceServer())
+                    }
+                }
+            }
         }
     }
 
     private companion object {
+        const val MAX_AGE_MS = 45 * 60 * 1000L
         val FALLBACK = IceConfig(
             listOf(PeerConnection.IceServer.builder("stun:stun.l.google.com:19302").createIceServer()),
             relayOnly = false,

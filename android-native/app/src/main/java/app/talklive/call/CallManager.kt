@@ -167,6 +167,10 @@ class CallManager @Inject constructor(
     fun dismissNotice() = _state.update { it.copy(notice = null) }
 
     private fun search() {
+        // Get everything a call needs ready while we wait for a match, so the
+        // handshake can start the instant one arrives.
+        scope.launch(Dispatchers.IO) { runCatching { iceApi.get() } }
+        scope.launch(Dispatchers.Default) { runCatching { rtc.factory } }
         setPhase(CallPhase.Searching())
         socket.emit("find-partner", searchOpts())
     }
@@ -222,7 +226,7 @@ class CallManager @Inject constructor(
         _state.update { it.copy(partnerMuted = false, notice = null, friendCall = m.callback) }
         setPhase(CallPhase.Connecting(m.partner))
 
-        val ice = iceApi.fetch()
+        val ice = iceApi.get()
         if (id != matchId) return // skipped while fetching
         val s = RtcSession(rtc.factory, ice, object : RtcSession.Listener {
             override fun onLocalCandidate(candidate: IceCandidate) {
