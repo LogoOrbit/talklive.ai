@@ -221,12 +221,19 @@
       if (rec || starting) return;
       if (!supported()) { if (opts.onError) opts.onError('unsupported'); return; }
       starting = true;
-      navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }).then(function (stream) {
+      // Mono, no echo cancellation: nothing plays while recording, and on
+      // Android AEC switches the mic to the narrowband call path. Noise
+      // suppression stays off on mobile, where it is the aggressive call DSP.
+      var mobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
+      navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: false, noiseSuppression: !mobile, autoGainControl: true } }).then(function (stream) {
         starting = false;
         var mime = pickMime();
         var mr;
+        // 64 kbps Opus / 88 kbps AAC: clear speech that still fits a full
+        // minute under MAX_BYTES (88 kbps x 60 s = 660 KB).
+        var bps = /opus/.test(mime) ? 64000 : 88000;
         try {
-          mr = mime ? new MediaRecorder(stream, { mimeType: mime, audioBitsPerSecond: 32000 }) : new MediaRecorder(stream);
+          mr = mime ? new MediaRecorder(stream, { mimeType: mime, audioBitsPerSecond: bps }) : new MediaRecorder(stream);
         } catch (_) {
           mr = new MediaRecorder(stream);
         }
