@@ -601,7 +601,7 @@ internal fun MessageBubble(
                     MsgStatus.Failed -> {
                         Icon(Icons.Rounded.ErrorOutline, null, Modifier.size(14.dp), tint = Danger)
                         Spacer(Modifier.width(4.dp))
-                        Text((m.failReason ?: stringResource(R.string.not_sent)) + " · " + stringResource(R.string.tap_retry), style = MaterialTheme.typography.labelMedium, color = Danger)
+                        Text((m.failReason?.get() ?: stringResource(R.string.not_sent)) + " · " + stringResource(R.string.tap_retry), style = MaterialTheme.typography.labelMedium, color = Danger)
                     }
                     else -> {
                         Text(timeOf(m.ts), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -673,7 +673,7 @@ private fun sameDay(a: Long, b: Long): Boolean {
 }
 
 private fun dayLabel(ts: Long): String = when {
-    android.text.format.DateUtils.isToday(ts) -> "Today"
-    android.text.format.DateUtils.isToday(ts + android.text.format.DateUtils.DAY_IN_MILLIS) -> "Yesterday"
+    android.text.format.DateUtils.isToday(ts) || android.text.format.DateUtils.isToday(ts + android.text.format.DateUtils.DAY_IN_MILLIS) ->
+        android.text.format.DateUtils.getRelativeTimeSpanString(ts, System.currentTimeMillis(), android.text.format.DateUtils.DAY_IN_MILLIS).toString()
     else -> SimpleDateFormat("EEE, d MMM", Locale.getDefault()).format(Date(ts))
 }

@@ -68,7 +68,7 @@ data class ChatMessage(
     val gifUrl: String? = null,
     val voiceMs: Long? = null,
     val status: MsgStatus = MsgStatus.Sent,
-    val failReason: String? = null,
+    val failReason: app.talklive.data.UiText? = null,
     /** Reactions on a text-chat message (stranger chat), by who left them. */
     val myReaction: String? = null,
     val theirReaction: String? = null,

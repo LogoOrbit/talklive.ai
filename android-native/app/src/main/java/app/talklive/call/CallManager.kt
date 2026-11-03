@@ -388,12 +388,14 @@ class CallManager @Inject constructor(
         }
     }
 
-    private fun blockedText(reason: String) = when (reason) {
-        "link" -> "Links can't be sent"
-        "unsafe" -> "This message isn't allowed"
-        "rate", "flood" -> "You're sending messages too fast"
-        else -> "Couldn't send"
-    }
+    private fun blockedText(reason: String) = app.talklive.data.UiText.Res(
+        when (reason) {
+            "link" -> app.talklive.R.string.f_link
+            "unsafe" -> app.talklive.R.string.f_unsafe
+            "rate", "flood" -> app.talklive.R.string.f_rate
+            else -> app.talklive.R.string.f_couldnt_send
+        },
+    )
 
     private suspend fun onMatched(m: ServerEvent.Matched) {
         teardown()

@@ -39,19 +39,22 @@ fun shortTime(ts: Long): String {
     if (ts <= 0) return ""
     val diff = System.currentTimeMillis() - ts
     return when {
-        diff < 60_000 -> "now"
-        diff < 3_600_000 -> "${diff / 60_000}m"
+        diff < 3_600_000 -> DateUtils.getRelativeTimeSpanString(ts, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS, DateUtils.FORMAT_ABBREV_RELATIVE).toString()
         DateUtils.isToday(ts) -> SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(ts))
-        DateUtils.isToday(ts + DateUtils.DAY_IN_MILLIS) -> "Yesterday"
+        DateUtils.isToday(ts + DateUtils.DAY_IN_MILLIS) -> DateUtils.getRelativeTimeSpanString(ts, System.currentTimeMillis(), DateUtils.DAY_IN_MILLIS).toString()
         diff < 6 * DateUtils.DAY_IN_MILLIS -> SimpleDateFormat("EEE", Locale.getDefault()).format(Date(ts))
         else -> SimpleDateFormat("d MMM", Locale.getDefault()).format(Date(ts))
     }
 }
 
+@Composable
 fun presence(p: Person): String = when {
-    p.online -> "Online"
-    p.lastSeen != null -> "Last seen " + DateUtils.getRelativeTimeSpanString(p.lastSeen, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS).toString().lowercase()
-    else -> "Offline"
+    p.online -> androidx.compose.ui.res.stringResource(app.talklive.R.string.online)
+    p.lastSeen != null -> androidx.compose.ui.res.stringResource(
+        app.talklive.R.string.last_seen,
+        DateUtils.getRelativeTimeSpanString(p.lastSeen, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS).toString(),
+    )
+    else -> androidx.compose.ui.res.stringResource(app.talklive.R.string.offline)
 }
 
 /** ISO country code to its flag emoji. */

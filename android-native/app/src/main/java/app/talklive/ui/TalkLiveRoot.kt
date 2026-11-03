@@ -120,7 +120,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     val requests by social.requests.collectAsStateWithLifecycle()
     val friends by social.friends.collectAsStateWithLifecycle()
     val sent by social.sent.collectAsStateWithLifecycle()
-    LaunchedEffect(Unit) { social.toasts.collect { snackbar.showSnackbar(it) } }
+    LaunchedEffect(Unit) { social.toasts.collect { snackbar.showSnackbar(it.get(context)) } }
     val engageVm: app.talklive.ui.engage.EngageViewModel = hiltViewModel()
     val engage by engageVm.engage.collectAsStateWithLifecycle()
     val filters by engageVm.filters.collectAsStateWithLifecycle()

@@ -1,6 +1,8 @@
 package app.talklive.social
 
+import app.talklive.R
 import app.talklive.data.IdentityStore
+import app.talklive.data.UiText
 import app.talklive.net.ServerEvent
 import app.talklive.net.TalkSocket
 import app.talklive.net.optNullableString
@@ -81,9 +83,9 @@ class SocialRepository @Inject constructor(
     /** Missed friend calls and accepted requests, newest first. */
     val activity: StateFlow<List<ActivityItem>> = _activity
 
-    private val _toasts = MutableSharedFlow<String>(extraBufferCapacity = 8)
+    private val _toasts = MutableSharedFlow<UiText>(extraBufferCapacity = 8)
     /** Short messages for the user ("Friend request sent"). */
-    val toasts: SharedFlow<String> = _toasts
+    val toasts: SharedFlow<UiText> = _toasts
 
     /** The conversation on screen, so its messages do not count as unread. */
     @Volatile var openChat: String? = null
@@ -139,25 +141,25 @@ class SocialRepository @Inject constructor(
             val who = o.optString("clientId")
             _voice.update { it + (who to o.optString("state", "off")) }
             when {
-                o.optBoolean("accepted") -> _toasts.tryEmit("Voice messages are on")
-                o.optBoolean("declined") -> _toasts.tryEmit("They'd rather keep to text for now")
+                o.optBoolean("accepted") -> _toasts.tryEmit(UiText.Res(R.string.t_voice_on))
+                o.optBoolean("declined") -> _toasts.tryEmit(UiText.Res(R.string.t_voice_declined))
             }
         }
         socket.on("unblock-result") { a ->
             val o = a.firstOrNull() as? JSONObject ?: return@on
             if (o.optBoolean("ok")) {
                 _blocked.update { list -> list.filterNot { it.clientId == o.optString("targetClientId") } }
-                _toasts.tryEmit(if (o.optBoolean("friendRestored")) "Unblocked, and back in your friends" else "Unblocked")
+                _toasts.tryEmit(if (o.optBoolean("friendRestored")) UiText.Res(R.string.t_unblocked_friend) else UiText.Res(R.string.t_unblocked))
             }
         }
         socket.on("call-back-later-result") { a ->
             val o = a.firstOrNull() as? JSONObject ?: return@on
             _toasts.tryEmit(
                 when {
-                    o.optBoolean("ok") -> "We'll let them know you want to talk"
-                    o.optString("reason") == "calls-off" -> "They're not taking calls right now"
-                    o.optString("reason") == "rate" -> "You already asked recently"
-                    else -> "Couldn't send that right now"
+                    o.optBoolean("ok") -> UiText.Res(R.string.t_call_later_ok)
+                    o.optString("reason") == "calls-off" -> UiText.Res(R.string.t_calls_off)
+                    o.optString("reason") == "rate" -> UiText.Res(R.string.t_asked_recently)
+                    else -> UiText.Res(R.string.t_couldnt_send)
                 },
             )
         }
@@ -176,7 +178,7 @@ class SocialRepository @Inject constructor(
         socket.on("call-back-declined") { a ->
             val name = (a.firstOrNull() as? JSONObject)?.optString("username").orEmpty()
             _outgoing.value = null
-            _toasts.tryEmit(if (name.isBlank()) "They can't talk right now" else "$name can't talk right now")
+            _toasts.tryEmit(if (name.isBlank()) UiText.Res(R.string.t_cant_talk) else UiText.Res(R.string.t_name_cant_talk, listOf(name)))
         }
         socket.on("call-back-request-result") { a ->
             val o = a.firstOrNull() as? JSONObject ?: return@on
@@ -184,11 +186,11 @@ class SocialRepository @Inject constructor(
             _outgoing.value = null
             _toasts.tryEmit(
                 when (o.optString("reason")) {
-                    "offline", "away" -> "They're offline. We'll let them know you called."
-                    "busy-queued" -> "They're on another call. We'll let them know."
-                    "calls-off" -> "They're not taking calls right now"
-                    "rate" -> "Too many calls. Try again in a minute."
-                    else -> "Couldn't reach them right now"
+                    "offline", "away" -> UiText.Res(R.string.t_offline_told)
+                    "busy-queued" -> UiText.Res(R.string.t_busy_told)
+                    "calls-off" -> UiText.Res(R.string.t_calls_off)
+                    "rate" -> UiText.Res(R.string.t_too_many_calls)
+                    else -> UiText.Res(R.string.t_couldnt_reach)
                 },
             )
         }
@@ -207,9 +209,9 @@ class SocialRepository @Inject constructor(
             "friend-request-result",
         ) ?: return@launch
         when {
-            !res.optBoolean("ok") -> _toasts.tryEmit(res.optString("error").ifBlank { "Couldn't send the request" })
-            res.optBoolean("accepted") || res.optBoolean("alreadyFriends") -> _toasts.tryEmit("You're now friends")
-            else -> { _sent.update { it + targetClientId }; _toasts.tryEmit("Friend request sent") }
+            !res.optBoolean("ok") -> _toasts.tryEmit(res.optString("error").takeIf { it.isNotBlank() }?.let { UiText.Raw(it) } ?: UiText.Res(R.string.t_request_failed))
+            res.optBoolean("accepted") || res.optBoolean("alreadyFriends") -> _toasts.tryEmit(UiText.Res(R.string.t_now_friends))
+            else -> { _sent.update { it + targetClientId }; _toasts.tryEmit(UiText.Res(R.string.t_request_sent)) }
         }
     }
 
@@ -273,7 +275,7 @@ class SocialRepository @Inject constructor(
         _friends.update { list -> list.filterNot { it.clientId == targetClientId } }
         _history.update { list -> list.filterNot { it.clientId == targetClientId } }
         socket.emit("report-user", JSONObject().put("targetClientId", targetClientId).put("reason", reason).put("detail", detail))
-        _toasts.tryEmit("Reported. You won't be matched again.")
+        _toasts.tryEmit(UiText.Res(R.string.t_reported))
     }
 
     fun unblock(targetClientId: String) {
@@ -374,10 +376,10 @@ class SocialRepository @Inject constructor(
                 else it.copy(
                     status = MsgStatus.Failed,
                     failReason = when (res?.optString("reason")) {
-                        "needs-consent" -> "They haven't allowed voice messages"
-                        "friends-only" -> "Voice messages are for friends"
-                        "rate" -> "Too many voice messages, wait a minute"
-                        else -> "Couldn't send"
+                        "needs-consent" -> UiText.Res(R.string.f_needs_consent)
+                        "friends-only" -> UiText.Res(R.string.f_friends_only)
+                        "rate" -> UiText.Res(R.string.f_voice_rate)
+                        else -> UiText.Res(R.string.f_couldnt_send)
                     },
                 )
             }
@@ -494,12 +496,12 @@ class SocialRepository @Inject constructor(
         val to = o.optString("toClientId")
         val id = o.optNullableString("id") ?: return
         val reason = when (o.optString("reason")) {
-            "link" -> "Links can't be sent"
-            "unsafe" -> "This message isn't allowed"
-            "rate" -> "You're sending messages too fast"
-            "accept-first" -> "Accept their friend request first"
-            "awaiting-accept", "request-first" -> "Add them as a friend to message"
-            else -> "Couldn't send"
+            "link" -> UiText.Res(R.string.f_link)
+            "unsafe" -> UiText.Res(R.string.f_unsafe)
+            "rate" -> UiText.Res(R.string.f_rate)
+            "accept-first" -> UiText.Res(R.string.f_accept_first)
+            "awaiting-accept", "request-first" -> UiText.Res(R.string.f_request_first)
+            else -> UiText.Res(R.string.f_couldnt_send)
         }
         updateThread(to) { list -> list.map { if (it.id == id) it.copy(status = MsgStatus.Failed, failReason = reason) else it } }
     }

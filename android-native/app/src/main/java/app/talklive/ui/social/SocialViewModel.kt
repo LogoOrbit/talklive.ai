@@ -40,7 +40,7 @@ class SocialViewModel @Inject constructor(
     val myFriendId = repo.myFriendId
     val incoming = repo.incoming
     val outgoing = repo.outgoing
-    val toasts = repo.toasts
+    val toasts: kotlinx.coroutines.flow.SharedFlow<app.talklive.data.UiText> = repo.toasts
 
     /** Friends, then people met recently, sorted by the latest message. */
     val conversations: StateFlow<List<Conversation>> = combine(
