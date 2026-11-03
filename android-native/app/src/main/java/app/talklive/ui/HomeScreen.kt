@@ -29,6 +29,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material.icons.rounded.Mic
+import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -71,6 +72,10 @@ fun HomeScreen(
     onProfile: () -> Unit,
     mode: app.talklive.call.CallMode = app.talklive.call.CallMode.Talk,
     onMode: (app.talklive.call.CallMode) -> Unit = {},
+    engage: app.talklive.engage.Engage? = null,
+    filtersActive: Int = 0,
+    onStreak: () -> Unit = {},
+    onFilters: () -> Unit = {},
 ) {
     Column(Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 24.dp, vertical = 16.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -78,6 +83,7 @@ fun HomeScreen(
             Spacer(Modifier.size(10.dp))
             Text("TalkLive", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
             Spacer(Modifier.weight(1f))
+            app.talklive.ui.engage.StreakChip(engage, onStreak)
             IconButton(onClick = onToggleTheme) {
                 Icon(
                     if (dark) Icons.Rounded.LightMode else Icons.Rounded.DarkMode,
@@ -117,7 +123,17 @@ fun HomeScreen(
             }
         }
         Spacer(Modifier.weight(1f))
-        ModeSwitch(mode, onMode)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.weight(1f)) { ModeSwitch(mode, onMode) }
+            Spacer(Modifier.width(10.dp))
+            Surface(onClick = onFilters, shape = CircleShape, color = if (filtersActive > 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface, modifier = Modifier.size(48.dp)) {
+                Box(contentAlignment = Alignment.Center) {
+                    androidx.compose.material3.BadgedBox(badge = {
+                        if (filtersActive > 0) androidx.compose.material3.Badge(containerColor = MaterialTheme.colorScheme.primary) { Text(filtersActive.toString()) }
+                    }) { Icon(androidx.compose.material.icons.Icons.Rounded.Tune, androidx.compose.ui.res.stringResource(R.string.filters), tint = MaterialTheme.colorScheme.primary) }
+                }
+            }
+        }
         Spacer(Modifier.height(14.dp))
         PrimaryButton(
             text = stringResource(if (mode == app.talklive.call.CallMode.Chat) R.string.start_chatting else R.string.start_talking),

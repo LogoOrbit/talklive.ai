@@ -196,6 +196,20 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
             }
         }
 
+    /** Emits [event] and waits for the server's acknowledgement callback. */
+    suspend fun ask(event: String, timeoutMs: Long = 10_000): JSONObject? = runCatching {
+        withTimeout(timeoutMs) {
+            suspendCancellableCoroutine { cont ->
+                socket.emit(event, arrayOf(), io.socket.client.Ack { args ->
+                    if (cont.isActive) cont.resume(args.firstOrNull() as? JSONObject ?: JSONObject())
+                })
+            }
+        }
+    }.getOrNull()
+
+    /** Extra fields for registration (match filters). */
+    @Volatile var registerExtras: () -> JSONObject? = { null }
+
     /** Sends the registration again, e.g. after the spirit animal changed. */
     fun register(takeover: Boolean = false) {
         if (!socket.connected()) return
@@ -208,6 +222,7 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
             put("surface", "call")
             privacy?.let { put("hideStatus", it.hideStatus.value); put("acceptCalls", it.acceptCalls.value) }
             if (takeover) put("takeover", true)
+            registerExtras()?.let { extra -> extra.keys().forEach { k -> put(k, extra.get(k)) } }
         }
         socket.emit("register", payload)
     }

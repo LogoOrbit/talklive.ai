@@ -17,6 +17,8 @@ class TalkLiveApplication : Application(), coil.ImageLoaderFactory {
     @Inject lateinit var push: app.talklive.push.PushRegistrar
     @Inject lateinit var ice: app.talklive.net.IceServerApi
     @Inject lateinit var calls: app.talklive.call.CallManager
+    // Created at start: it hooks filters into registration and hears engage events.
+    @Inject lateinit var engage: app.talklive.engage.EngageRepository
 
     override fun onCreate() {
         CrashReporter.install(this)

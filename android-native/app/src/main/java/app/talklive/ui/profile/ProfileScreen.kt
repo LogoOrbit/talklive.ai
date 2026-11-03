@@ -25,6 +25,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.material.icons.rounded.Public
+import androidx.compose.material.icons.rounded.Movie
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.CardGiftcard
+import androidx.compose.material.icons.rounded.WorkspacePremium
+import androidx.compose.material.icons.rounded.Feedback
 import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.Call
 import androidx.compose.material.icons.rounded.Tag
@@ -137,6 +143,40 @@ fun ProfileScreen(onSignIn: () -> Unit, vm: ProfileViewModel = hiltViewModel()) 
                 }
             }
 
+            val engageVm: app.talklive.ui.engage.EngageViewModel = hiltViewModel()
+            val engage by engageVm.engage.collectAsStateWithLifecycle()
+            val films by engageVm.films.collectAsStateWithLifecycle()
+            val premium by engageVm.premium.collectAsStateWithLifecycle()
+            var youSheet by remember { mutableStateOf<String?>(null) }
+            Section(stringResource(R.string.section_you)) {
+                SettingRow(Icons.Rounded.Public, stringResource(R.string.passport), stringResource(R.string.passport_title, engage?.passport?.size ?: 0)) { youSheet = "passport" }
+                SettingRow(Icons.Rounded.Movie, stringResource(R.string.fav_films), if (films.isEmpty()) stringResource(R.string.not_set) else films.joinToString(", ") { it.title }) { youSheet = "films" }
+                SettingRow(Icons.Rounded.Favorite, stringResource(R.string.likes), null) { youSheet = "likes" }
+                SettingRow(Icons.Rounded.CardGiftcard, stringResource(R.string.invite_title), null) { youSheet = "invite" }
+                SettingRow(
+                    Icons.Rounded.WorkspacePremium, stringResource(R.string.plus),
+                    when {
+                        !premium.active -> stringResource(R.string.plus_inactive)
+                        premium.expiresAt != null -> stringResource(R.string.plus_until, java.text.DateFormat.getDateInstance().format(java.util.Date(premium.expiresAt!!)))
+                        else -> stringResource(R.string.plus_active)
+                    },
+                ) { youSheet = "plus" }
+            }
+            when (youSheet) {
+                "passport" -> engage?.let { app.talklive.ui.engage.StreakSheet(it) { youSheet = null } } ?: run { youSheet = null }
+                "films" -> app.talklive.ui.engage.FilmsSheet(engageVm, films) { youSheet = null }
+                "likes" -> app.talklive.ui.engage.LikesSheet(engageVm) { youSheet = null }
+                "invite" -> app.talklive.ui.engage.InviteSheet(engageVm) { youSheet = null }
+                "feedback" -> app.talklive.ui.engage.FeedbackSheet(onSend = { engageVm.sendFeedback(it); vm.saved = context.getString(R.string.feedback_thanks) }) { youSheet = null }
+                "plus" -> androidx.compose.material3.AlertDialog(
+                    onDismissRequest = { youSheet = null },
+                    icon = { Icon(Icons.Rounded.WorkspacePremium, null, tint = MaterialTheme.colorScheme.primary) },
+                    title = { Text(stringResource(R.string.plus)) },
+                    text = { Text(stringResource(if (premium.active) R.string.plus_dialog_active else R.string.plus_dialog)) },
+                    confirmButton = { androidx.compose.material3.TextButton(onClick = { youSheet = null }) { Text(stringResource(R.string.ok)) } },
+                )
+            }
+
             if (account != null) {
                 Section(stringResource(R.string.section_account)) {
                     SettingRow(Icons.Rounded.Person, stringResource(R.string.display_name), account?.nickname) { vm.open(ProfileSheet.Nickname) }
@@ -175,6 +215,7 @@ fun ProfileScreen(onSignIn: () -> Unit, vm: ProfileViewModel = hiltViewModel()) 
             }
 
             Section(stringResource(R.string.section_safety)) {
+                SettingRow(Icons.Rounded.Feedback, stringResource(R.string.feedback_title), null) { youSheet = "feedback" }
                 SettingRow(Icons.Rounded.Shield, stringResource(R.string.safety_tips), null) { open("safety") }
                 SettingRow(Icons.Rounded.Groups, stringResource(R.string.community_guidelines), null) { open("community-guidelines") }
                 SettingRow(Icons.Rounded.PrivacyTip, stringResource(R.string.privacy_policy), null) { open("privacy") }

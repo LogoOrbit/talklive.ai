@@ -119,6 +119,23 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     val friends by social.friends.collectAsStateWithLifecycle()
     val sent by social.sent.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { social.toasts.collect { snackbar.showSnackbar(it) } }
+    val engageVm: app.talklive.ui.engage.EngageViewModel = hiltViewModel()
+    val engage by engageVm.engage.collectAsStateWithLifecycle()
+    val filters by engageVm.filters.collectAsStateWithLifecycle()
+    val premium by engageVm.premium.collectAsStateWithLifecycle()
+    var showStreak by remember { mutableStateOf(false) }
+    var showFilters by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        engageVm.moments.collect { m ->
+            snackbar.showSnackbar(
+                when (m) {
+                    is app.talklive.engage.EngageMoment.StreakUp -> context.getString(R.string.moment_streak, m.days)
+                    is app.talklive.engage.EngageMoment.NewStamp ->
+                        context.getString(R.string.moment_stamp, app.talklive.ui.social.flag(m.countryCode) ?: "", app.talklive.ui.engage.countryName(m.countryCode))
+                },
+            )
+        }
+    }
 
     // Ask once for notifications, so friends' messages and calls can reach this phone.
     val notifPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
@@ -216,6 +233,10 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                         onProfile = { tab = MainTab.Profile },
                         mode = mode,
                         onMode = vm::setMode,
+                        engage = engage,
+                        filtersActive = filters.activeCount,
+                        onStreak = { showStreak = true },
+                        onFilters = { showFilters = true },
                     )
                     MainTab.Chats -> ChatsScreen(social, onOpenChat = { openChat = it }, onStartTalking = { tab = MainTab.Talk })
                     MainTab.Friends -> FriendsScreen(social, onOpenChat = { openChat = it }, onStartTalking = { tab = MainTab.Talk })
@@ -334,6 +355,9 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
             out != null -> OutgoingCallScreen(out, onCancel = social::cancelCall)
         }
     }
+
+    if (showStreak) engage?.let { app.talklive.ui.engage.StreakSheet(it, onDismiss = { showStreak = false }) }
+    if (showFilters) app.talklive.ui.engage.FiltersSheet(filters, premium.active, onApply = engageVm::setFilters, onDismiss = { showFilters = false })
 
     // A moderator's warning must be read and acknowledged.
     val warnings by vm.warnings.collectAsStateWithLifecycle()

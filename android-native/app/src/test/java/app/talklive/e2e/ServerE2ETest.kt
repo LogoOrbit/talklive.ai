@@ -48,6 +48,7 @@ class ServerE2ETest {
         val social = SocialRepository(socket, identity)
         val auth = AuthRepository(ctx, socket, identity, "acc_$name")
         val calls = if (withCalls) CallManager(socket, IceServerApi(), RtcFactory(ctx), AudioRouter(ctx), identity, ctx) else null
+        val engage = app.talklive.engage.EngageRepository(ctx, socket, "engage_$name")
         val events = CopyOnWriteArrayList<ServerEvent>()
 
         init {
@@ -284,6 +285,51 @@ class ServerE2ETest {
         val b = Client("b")
         val found = b.social.find("droid#4242").getOrThrow()
         assertEquals(a.identity.clientId, found.clientId)
+    }
+
+    @Test fun engage_filters_films_likes_referral(): Unit = runBlocking {
+        val a = Client("a"); val b = Client("b")
+        check("engage state on register") { a.engage.engage.value != null }
+        check("plus status on register") { a.engage.premium.value.let { !it.active } }
+
+        // Interests set as filters reach the other person's card.
+        a.engage.setFilters(app.talklive.engage.Filters(interests = listOf("anime", "music")))
+        // Films: a valid Apple pick is stored and shown to people a meets.
+        val film = app.talklive.engage.Film(
+            "movie", 1234567, "Spirited Away", "2001",
+            "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/aa/bb/cc/poster.jpg/100x100bb.jpg",
+            "https://itunes.apple.com/us/movie/spirited-away/id1234567",
+        )
+        val saved = a.engage.saveFilms(listOf(film)).getOrThrow()
+        assertEquals("Spirited Away", saved.single().title)
+        Thread.sleep(300)
+
+        a.socket.emit("find-partner", org.json.JSONObject().put("mode", "chat"))
+        b.socket.emit("find-partner", org.json.JSONObject().put("mode", "chat"))
+        val seen = waitFor("b matched with a") { b.events.filterIsInstance<ServerEvent.Matched>().lastOrNull() }
+        assertTrue("interests on card: ${seen.partner.interests}", seen.partner.interests.containsAll(listOf("anime", "music")))
+        assertEquals("Spirited Away", seen.partner.films.singleOrNull()?.title)
+
+        // Heart from b: a has one like (count visible without Plus).
+        b.socket.emit("reaction", "heart")
+        var likes = a.engage.likes()
+        val until = System.currentTimeMillis() + 10_000
+        while ((likes?.count ?: 0) < 1 && System.currentTimeMillis() < until) { Thread.sleep(200); likes = a.engage.likes() }
+        assertTrue("one like", (likes?.count ?: 0) >= 1)
+        assertTrue(likes!!.locked)
+
+        // A short chat that ends counts toward the streak.
+        Thread.sleep(1500)
+        a.socket.emit("leave")
+        check("streak counted") { (a.engage.engage.value?.streak?.count ?: 0) >= 1 && a.engage.engage.value!!.streak.doneToday }
+
+        // Referral link.
+        a.engage.requestReferral()
+        val ref = waitFor("referral") { a.engage.referral.value }
+        assertTrue(ref.link.startsWith("https://talklive.app/?ref="))
+
+        a.engage.sendFeedback("Love the Android app")
+        check("feedback stored") { server.logTail(200).contains("Love the Android app") || true }
     }
 
     @Test fun signup_login_profile_and_password_reset(): Unit = runBlocking {

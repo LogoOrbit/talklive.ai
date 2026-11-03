@@ -31,6 +31,8 @@ class LocalServer : AutoCloseable {
                 environment()["DATA_DIR"] = dataDir.absolutePath
                 environment()["NODE_ENV"] = "development"
                 environment()["GIPHY_API_KEY"] = ""
+                // A one-second chat counts toward the streak in tests.
+                environment()["ENGAGE_GOOD_CALL_SECONDS"] = "1"
                 // Never send real email, push or payments from tests: drop every
                 // credential the machine running them happens to have.
                 environment().keys.filter { k ->

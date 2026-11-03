@@ -12,6 +12,7 @@ data class Partner(
     val timezone: String? = null,
     val lang: String? = null,
     val interests: List<String> = emptyList(),
+    val films: List<app.talklive.engage.Film> = emptyList(),
 ) {
     companion object {
         fun from(json: JSONObject?) = Partner(
@@ -23,6 +24,7 @@ data class Partner(
             premium = json?.optBoolean("premium") ?: false,
             timezone = json?.optNullableString("timezone"),
             lang = json?.optNullableString("lang"),
+            films = app.talklive.engage.Film.list(json?.optJSONArray("films")),
             interests = json?.optJSONArray("interests")?.let { a -> (0 until a.length()).map { a.optString(it) }.filter { it.isNotBlank() } }.orEmpty(),
         )
     }

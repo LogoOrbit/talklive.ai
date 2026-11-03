@@ -181,6 +181,10 @@ fun CallScreen(
                             Spacer(Modifier.height(10.dp))
                             InterestChips(p.partner.interests)
                         }
+                        if (p.partner.films.isNotEmpty()) {
+                            Spacer(Modifier.height(10.dp))
+                            app.talklive.ui.engage.FilmPosters(p.partner.films, 44.dp)
+                        }
                         Spacer(Modifier.height(12.dp))
                         IcebreakerCard(p.partner.clientId, icebreaker)
                     }
