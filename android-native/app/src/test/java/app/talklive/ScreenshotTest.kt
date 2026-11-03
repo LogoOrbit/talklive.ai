@@ -202,6 +202,10 @@ class ScreenshotTest {
         }
         app.talklive.ui.social.ChatScreen(vm, "a") {}
     }
+    @Config(qualifiers = "ar-w400dp-h860dp-xxhdpi")
+    @Test fun homeArabic() = shot("28_home_ar") { HomeScreen(true, 3412, "fox", "Sam", false, {}, {}, {}) }
+    @Config(qualifiers = "hi-w400dp-h860dp-xxhdpi")
+    @Test fun chooseHindi() = shot("29_choose_hi") { ChooseScreen(vm(), {}, {}, null) }
     @Test fun searching() = shot("08_searching") {
         CallScreen(CallState(phase = CallPhase.Searching(4)), true, "fox", { 0f }, onNext = {}, onEnd = {}, onMute = {}, onSpeaker = {}, onReport = {})
     }
