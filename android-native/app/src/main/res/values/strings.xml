@@ -288,4 +288,13 @@
     <string name="end_game">End game</string>
     <string name="game_invite_title">%1$s wants to play</string>
     <string name="play">Play</string>
+    <string name="switch_to_voice">Switch to a voice call</string>
+    <string name="voice_invite_title">%1$s wants to switch to a voice call</string>
+    <string name="voice_invite_body">You will keep talking to the same person, out loud.</string>
+    <string name="voice_invite_sent">Asked to switch to voice…</string>
+    <string name="voice_invite_declined">They would rather keep texting</string>
+    <string name="shortcut_talk">Voice call</string>
+    <string name="shortcut_talk_long">Start a voice call</string>
+    <string name="shortcut_chat">Text chat</string>
+    <string name="shortcut_chat_long">Start a text chat</string>
 </resources>

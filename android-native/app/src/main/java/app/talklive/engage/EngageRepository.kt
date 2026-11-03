@@ -85,7 +85,9 @@ class EngageRepository(
             if (o.optBoolean("self")) _films.value = Film.list(o.optJSONArray("films"))
         }
         // Filters ride along with every registration.
-        socket.registerExtras = { filtersJson(_filters.value) }
+        socket.registerExtras = {
+            filtersJson(_filters.value).apply { prefs.getString("referral", null)?.let { put("referralCode", it) } }
+        }
         // Our own films once registered.
         scope.launch {
             socket.events.collect { if (it == app.talklive.net.ServerEvent.Registered) socket.emit("get-fav-films", JSONObject()) }
@@ -93,6 +95,14 @@ class EngageRepository(
     }
 
     fun requestReferral() = socket.emit("get-referral-link")
+
+    /** An invite code from a talklive.app/?ref= link; sent with the next registrations. */
+    fun setReferral(code: String) {
+        if (prefs.getString("referral", null) == null) {
+            prefs.edit().putString("referral", code).apply()
+            socket.register()
+        }
+    }
 
     suspend fun likes(): Likes? {
         val o = socket.ask("get-likes") ?: return null

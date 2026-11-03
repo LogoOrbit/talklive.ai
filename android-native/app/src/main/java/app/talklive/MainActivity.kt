@@ -7,6 +7,13 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.getValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -20,9 +27,12 @@ import javax.inject.Inject
 class MainActivity : ComponentActivity() {
     @Inject lateinit var themeStore: ThemeStore
 
+    @Inject lateinit var engage: app.talklive.engage.EngageRepository
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
+        handle(intent)
         setContent {
             val dark by themeStore.dark.collectAsStateWithLifecycle()
             LaunchedEffect(dark) {
@@ -31,7 +41,32 @@ class MainActivity : ComponentActivity() {
                 enableEdgeToEdge(bars, bars)
                 window.decorView.setBackgroundColor(if (dark) 0xFF0B0F1A.toInt() else 0xFFE3E7F1.toInt())
             }
-            TalkLiveTheme(dark = dark) { TalkLiveRoot() }
+            TalkLiveTheme(dark = dark) {
+                // Tablets and unfolded phones: keep the app a comfortable column, centred.
+                androidx.compose.foundation.layout.Box(
+                    Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+                    contentAlignment = androidx.compose.ui.Alignment.TopCenter,
+                ) {
+                    androidx.compose.foundation.layout.Box(
+                        Modifier.fillMaxHeight().widthIn(max = 720.dp),
+                    ) { TalkLiveRoot() }
+                }
+            }
         }
     }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        handle(intent)
+    }
+
+    /** Shortcuts start a call or chat; a talklive.app/?ref=CODE link is a referral. */
+    private fun handle(intent: android.content.Intent?) {
+        when (intent?.action) {
+            "app.talklive.START_TALK" -> app.talklive.data.LaunchActions.pending.value = app.talklive.data.LaunchActions.Action.Talk
+            "app.talklive.START_CHAT" -> app.talklive.data.LaunchActions.pending.value = app.talklive.data.LaunchActions.Action.Chat
+        }
+        intent?.data?.getQueryParameter("ref")?.takeIf { it.matches(Regex("^[A-Za-z0-9]{3,16}$")) }?.let { engage.setReferral(it) }
+    }
 }
+

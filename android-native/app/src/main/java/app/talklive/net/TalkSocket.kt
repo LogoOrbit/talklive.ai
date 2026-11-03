@@ -147,6 +147,9 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
             )
         }
         socket.on("typing") { _events.tryEmit(ServerEvent.StrangerTyping) }
+        socket.on("voice-invite") { args -> _events.tryEmit(ServerEvent.VoiceInvite(args.firstObject()?.optString("username").orEmpty())) }
+        socket.on("voice-invite-accepted") { args -> args.firstObject()?.optString("token")?.let { _events.tryEmit(ServerEvent.VoiceInviteAccepted(it)) } }
+        socket.on("voice-invite-declined") { args -> _events.tryEmit(ServerEvent.VoiceInviteDeclined(args.firstObject()?.optString("username").orEmpty())) }
         socket.on("game") { args -> args.firstObject()?.let { _events.tryEmit(ServerEvent.Game(it)) } }
         socket.on("chat-reaction") { args ->
             val o = args.firstObject() ?: return@on

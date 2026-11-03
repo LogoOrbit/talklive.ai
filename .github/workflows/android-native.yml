@@ -52,6 +52,30 @@ jobs:
         working-directory: android-native
         run: ./gradlew --no-daemon assembleDebug
 
+      # Play Store bundle, signed with the same upload key as the current app
+      # (secrets ANDROID_KEYSTORE_BASE64 / ANDROID_KEYSTORE_PASSWORD, as in
+      # android.yml). Only on manual runs: Actions > Android native app > Run workflow.
+      - name: Restore the upload keystore
+        if: github.event_name == 'workflow_dispatch' && env.KEYSTORE_BASE64 != ''
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+          echo "TALKLIVE_KEYSTORE=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+
+      - name: Build signed release bundle
+        if: env.TALKLIVE_KEYSTORE != ''
+        working-directory: android-native
+        env:
+          TALKLIVE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: ./gradlew --no-daemon bundleRelease
+
+      - uses: actions/upload-artifact@v4
+        if: env.TALKLIVE_KEYSTORE != ''
+        with:
+          name: talklive-native-release
+          path: android-native/app/build/outputs/bundle/release/app-release.aab
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:

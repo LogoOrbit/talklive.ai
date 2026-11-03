@@ -48,6 +48,10 @@ sealed interface ServerEvent {
     data class StrangerChatBlocked(val reason: String) : ServerEvent
     /** A mini-game message from the partner (public/games.js protocol). */
     data class Game(val data: JSONObject) : ServerEvent
+    /** The text-chat partner asks to switch to a voice call. */
+    data class VoiceInvite(val username: String) : ServerEvent
+    data class VoiceInviteAccepted(val token: String) : ServerEvent
+    data class VoiceInviteDeclined(val username: String) : ServerEvent
     data class Signal(val data: JSONObject) : ServerEvent
     data class PartnerLeft(val reason: String, val username: String) : ServerEvent
     data class PartnerMic(val muted: Boolean) : ServerEvent

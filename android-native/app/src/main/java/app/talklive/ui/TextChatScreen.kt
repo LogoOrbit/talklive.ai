@@ -48,6 +48,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Call
 import androidx.compose.material.icons.rounded.Flag
 import androidx.compose.material.icons.rounded.HourglassTop
 import androidx.compose.material.icons.rounded.HowToReg
@@ -112,6 +113,7 @@ fun TextChatScreen(
     onNext: () -> Unit,
     onEnd: () -> Unit,
     onGames: (() -> Unit)? = null,
+    onSwitchToVoice: (() -> Unit)? = null,
 ) {
     val partner = (state.phase as? CallPhase.Connected)?.partner
     var draft by remember { mutableStateOf("") }
@@ -166,6 +168,9 @@ fun TextChatScreen(
                             },
                             stringResource(R.string.add_friend),
                         )
+                    }
+                    if (onSwitchToVoice != null) IconButton(onClick = onSwitchToVoice, enabled = !state.voiceInviteSent) {
+                        Icon(Icons.Rounded.Call, stringResource(R.string.switch_to_voice))
                     }
                     if (onGames != null) IconButton(onClick = onGames) { Icon(Icons.Rounded.SportsEsports, stringResource(R.string.games_title)) }
                     IconButton(onClick = { reporting = true }) { Icon(Icons.Rounded.Flag, stringResource(R.string.report)) }

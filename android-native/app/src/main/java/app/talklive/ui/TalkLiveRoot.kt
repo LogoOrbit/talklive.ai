@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material.icons.rounded.Shield
+import androidx.compose.material.icons.rounded.Call
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -182,6 +183,17 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     // A text chat needs no microphone and no call service.
     val onStart: () -> Unit = { if (mode == CallMode.Chat) { vm.start() } else withMic(::begin) }
 
+    // A home-screen shortcut asked for a call or chat.
+    val launch by app.talklive.data.LaunchActions.pending.collectAsStateWithLifecycle()
+    LaunchedEffect(launch, connected) {
+        val a = launch ?: return@LaunchedEffect
+        if (!connected || state.phase !is CallPhase.Idle) return@LaunchedEffect
+        app.talklive.data.LaunchActions.pending.value = null
+        tab = MainTab.Talk
+        if (a == app.talklive.data.LaunchActions.Action.Chat) { vm.setMode(CallMode.Chat); vm.start() }
+        else { vm.setMode(CallMode.Talk); withMic(::begin) }
+    }
+
     val noticeText = state.notice?.let { n ->
         when (n) {
             is CallNotice.PartnerLeft -> stringResource(if (n.dropped) R.string.partner_dropped else R.string.partner_left, n.name)
@@ -300,6 +312,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                     onNext = onNext,
                     onEnd = vm::end,
                     onGames = { showGames = true },
+                    onSwitchToVoice = { withMic { vm.inviteVoice() } },
                 ) else CallScreen(
                     state = state,
                     connected = connected,
@@ -324,6 +337,22 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                 )
             }
         }
+    }
+
+    // Switching a text chat to voice.
+    state.voiceInviteFrom?.let { who ->
+        AlertDialog(
+            onDismissRequest = { vm.answerVoiceInvite(false) },
+            icon = { Icon(androidx.compose.material.icons.Icons.Rounded.Call, null, tint = MaterialTheme.colorScheme.primary) },
+            title = { Text(stringResource(R.string.voice_invite_title, who)) },
+            text = { Text(stringResource(R.string.voice_invite_body)) },
+            confirmButton = { TextButton(onClick = { withMic { vm.answerVoiceInvite(true) } }) { Text(stringResource(R.string.accept)) } },
+            dismissButton = { TextButton(onClick = { vm.answerVoiceInvite(false) }) { Text(stringResource(R.string.not_now)) } },
+        )
+    }
+    LaunchedEffect(state.voiceInviteSent) { if (state.voiceInviteSent) snackbar.showSnackbar(context.getString(R.string.voice_invite_sent)) }
+    LaunchedEffect(state.voiceInviteDeclined) {
+        if (state.voiceInviteDeclined) { snackbar.showSnackbar(context.getString(R.string.voice_invite_declined)); vm.clearVoiceInviteDeclined() }
     }
 
     // Mini-games with the person on the call or chat.

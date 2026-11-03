@@ -20,6 +20,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:label="@string/app_name"
         android:supportsRtl="true"
+        android:enableOnBackInvokedCallback="true"
         android:theme="@style/Theme.TalkLive">
 
         <activity
@@ -32,6 +33,21 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- talklive.app links open the app (verified by /.well-known/assetlinks.json). -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="talklive.app" android:pathPattern="/" />
+                <data android:scheme="https" android:host="talklive.app" android:pathPrefix="/call" />
+                <data android:scheme="https" android:host="talklive.app" android:pathPrefix="/chat" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="app.talklive.START_TALK" />
+                <action android:name="app.talklive.START_CHAT" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
         </activity>
 
         <service

@@ -78,6 +78,12 @@ data class CallState(
     val ratePrompt: RatePrompt? = null,
     /** The call initiator hosts mini-games (decides the board). */
     val isHost: Boolean = false,
+    /** The text-chat partner asked to switch to voice: their name. */
+    val voiceInviteFrom: String? = null,
+    /** We asked to switch to voice and are waiting. */
+    val voiceInviteSent: Boolean = false,
+    /** Set when the partner turned down switching to voice. */
+    val voiceInviteDeclined: Boolean = false,
 )
 
 /**
@@ -113,6 +119,8 @@ class CallManager @Inject constructor(
     val reactions: SharedFlow<FloatingReaction> = _reactions
 
     private var typingJob: Job? = null
+    /** True while the server re-pairs a text chat as a voice call. */
+    private var switchingToVoice = false
     private var lastTypingSent = 0L
     private var lastPartnerName = "them"
 
@@ -214,6 +222,20 @@ class CallManager @Inject constructor(
         }
     }
 
+    /** Ask the text-chat partner to switch to a voice call. */
+    fun inviteVoice() = scope.launch {
+        if (_state.value.phase !is CallPhase.Connected || _state.value.mode != CallMode.Chat) return@launch
+        socket.emit("voice-invite")
+        _state.update { it.copy(voiceInviteSent = true, voiceInviteDeclined = false) }
+    }
+
+    fun answerVoiceInvite(accept: Boolean) = scope.launch {
+        _state.update { it.copy(voiceInviteFrom = null) }
+        socket.emit("voice-invite-respond", JSONObject().put("accept", accept))
+    }
+
+    fun clearVoiceInviteDeclined() = _state.update { it.copy(voiceInviteDeclined = false) }
+
     /** Plus: bring back the person just skipped, if they are still free. Returns null on success, else why not. */
     suspend fun undoSkip(): String? {
         val res = socket.ask("undo-skip") ?: return "gone"
@@ -295,7 +317,7 @@ class CallManager @Inject constructor(
             }
             is ServerEvent.Signal -> onSignal(e.data)
             is ServerEvent.PartnerMic -> _state.update { it.copy(partnerMuted = e.muted) }
-            is ServerEvent.PartnerLeft -> if (phase is CallPhase.Connecting || phase is CallPhase.Connected) {
+            is ServerEvent.PartnerLeft -> if (!switchingToVoice && (phase is CallPhase.Connecting || phase is CallPhase.Connected)) {
                 teardown()
                 if (_state.value.friendCall) {
                     audio.stop()
@@ -337,6 +359,17 @@ class CallManager @Inject constructor(
             is ServerEvent.MutualHeart -> _state.update { it.copy(mutualHeart = true) }
             is ServerEvent.RatePrompt -> if (e.seconds >= 20) _state.update { it.copy(ratePrompt = RatePrompt(e.token, lastPartnerName)) }
             is ServerEvent.Game -> Unit
+            is ServerEvent.VoiceInvite -> if (phase is CallPhase.Connected) _state.update { it.copy(voiceInviteFrom = e.username.ifBlank { "They" }) }
+            is ServerEvent.VoiceInviteDeclined -> _state.update { it.copy(voiceInviteSent = false, voiceInviteDeclined = true) }
+            is ServerEvent.VoiceInviteAccepted -> {
+                // Both sides join with the token; the server re-pairs us as a voice call.
+                switchingToVoice = true
+                runCatching { CallService.start(context) }
+                audio.start(_state.value.speakerOn)
+                _state.update { it.copy(mode = CallMode.Talk, voiceInviteSent = false, voiceInviteFrom = null) }
+                socket.emit("voice-invite-join", JSONObject().put("token", e.token))
+                scope.launch { delay(15_000); switchingToVoice = false }
+            }
             is ServerEvent.StrangerChatBlocked -> _chat.update { list ->
                 // Mark the latest of our messages that has not been answered as not delivered.
                 val i = list.indexOfLast { it.mine }
@@ -358,10 +391,14 @@ class CallManager @Inject constructor(
         teardown()
         val id = ++matchId
         initiator = m.initiator
+        switchingToVoice = false
         lastPartnerName = m.partner.username
         resetPartnerState()
         _chat.value = emptyList()
-        _state.update { it.copy(partnerMuted = false, notice = null, friendCall = m.callback, ratePrompt = null, isHost = m.initiator) }
+        _state.update {
+            it.copy(partnerMuted = false, notice = null, friendCall = m.callback, ratePrompt = null, isHost = m.initiator,
+                voiceInviteFrom = null, voiceInviteSent = false, voiceInviteDeclined = false)
+        }
         // A text chat has no audio to set up: it is live the moment it matches.
         if (m.mode == "chat") {
             _state.update { it.copy(mode = CallMode.Chat) }
