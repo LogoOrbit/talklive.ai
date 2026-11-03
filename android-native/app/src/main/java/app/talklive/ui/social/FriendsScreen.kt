@@ -28,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Chat
 import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.Call
+import androidx.compose.material.icons.rounded.Flag
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.ContentCopy
@@ -93,6 +94,8 @@ fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalk
     val history by vm.history.collectAsStateWithLifecycle()
     val sent by vm.sent.collectAsStateWithLifecycle()
     var adding by rememberSaveable { mutableStateOf(false) }
+    var showActivity by rememberSaveable { mutableStateOf(false) }
+    val activity by vm.activity.collectAsStateWithLifecycle()
     var actionsFor by remember { mutableStateOf<Person?>(null) }
     val haptics = LocalHapticFeedback.current
 
@@ -104,6 +107,11 @@ fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalk
         Row(Modifier.fillMaxWidth().padding(start = 24.dp, end = 12.dp, top = 16.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(R.string.tab_friends), style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onBackground)
             Spacer(Modifier.weight(1f))
+            IconButton(onClick = { showActivity = true; vm.markActivitySeen() }) {
+                androidx.compose.material3.BadgedBox(badge = {
+                    if (activity.isNotEmpty()) androidx.compose.material3.Badge(containerColor = MaterialTheme.colorScheme.primary) { Text(activity.size.toString()) }
+                }) { Icon(Icons.Rounded.Notifications, stringResource(R.string.activity)) }
+            }
             FilledTonalIconButton(onClick = { adding = true }) { Icon(Icons.Rounded.PersonAdd, stringResource(R.string.add_friend)) }
         }
 
@@ -124,7 +132,11 @@ fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalk
                 item {
                     LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         items(met, key = { "m" + it.clientId }) { p ->
-                            MetCard(p, pending = p.clientId in sent, onAdd = { vm.sendRequest(p.clientId) }, onOpen = { onOpenChat(p.clientId) })
+                            MetCard(
+                                p, pending = p.clientId in sent,
+                                onAdd = { if (p.clientId in sent) vm.cancelRequest(p.clientId) else vm.sendRequest(p.clientId) },
+                                onOpen = { onOpenChat(p.clientId) },
+                            )
                         }
                     }
                 }
@@ -146,6 +158,7 @@ fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalk
         }
     }
 
+    if (showActivity) ActivitySheet(vm, friends, onDismiss = { showActivity = false }, onOpenChat = { showActivity = false; onOpenChat(it) })
     if (adding) AddFriendSheet(vm, onDismiss = { adding = false }, onOpenChat = { adding = false; onOpenChat(it) })
     actionsFor?.let { p -> FriendActionsSheet(vm, p, onDismiss = { actionsFor = null }, onOpenChat = { actionsFor = null; onOpenChat(p.clientId) }) }
 }
@@ -198,7 +211,7 @@ private fun MetCard(p: Person, pending: Boolean, onAdd: () -> Unit, onOpen: () -
             Box(
                 Modifier.clip(CircleShape)
                     .background(if (pending) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.primaryContainer)
-                    .combinedClickableCompat(if (pending) ({}) else onAdd)
+                    .combinedClickableCompat(onAdd)
                     .padding(horizontal = 14.dp, vertical = 6.dp),
             ) {
                 Text(
@@ -329,6 +342,7 @@ private fun FriendActionsSheet(vm: SocialViewModel, p: Person, onDismiss: () -> 
             Spacer(Modifier.height(8.dp))
             Action(Icons.AutoMirrored.Rounded.Chat, stringResource(R.string.message)) { onOpenChat() }
             if (p.online) Action(Icons.Rounded.Call, stringResource(R.string.call)) { vm.call(p); onDismiss() }
+            else Action(Icons.Rounded.Call, stringResource(R.string.call_later)) { vm.callLater(p.clientId); onDismiss() }
             Action(Icons.Rounded.PushPin, stringResource(if (p.pinned) R.string.unpin else R.string.pin)) { vm.setPinned(p.clientId, !p.pinned); onDismiss() }
             Action(Icons.Rounded.Edit, stringResource(R.string.rename)) { renaming = true }
             val isMuted = p.clientId in muted
@@ -336,6 +350,7 @@ private fun FriendActionsSheet(vm: SocialViewModel, p: Person, onDismiss: () -> 
                 vm.setMuted(p.clientId, !isMuted); onDismiss()
             }
             Action(Icons.Rounded.PersonRemove, stringResource(R.string.remove_friend), Danger) { confirm = "remove" }
+            Action(Icons.Rounded.Flag, stringResource(R.string.report), Danger) { confirm = "report" }
             Action(Icons.Rounded.Block, stringResource(R.string.block), Danger) { confirm = "block" }
         }
     }
@@ -352,13 +367,32 @@ private fun FriendActionsSheet(vm: SocialViewModel, p: Person, onDismiss: () -> 
     confirm?.let { what ->
         AlertDialog(
             onDismissRequest = { confirm = null },
-            title = { Text(stringResource(if (what == "block") R.string.block_title else R.string.remove_title, p.displayName)) },
-            text = { Text(stringResource(if (what == "block") R.string.block_body else R.string.remove_body)) },
+            title = {
+                Text(
+                    when (what) {
+                        "block" -> stringResource(R.string.block_title, p.displayName)
+                        "report" -> stringResource(R.string.report_title)
+                        else -> stringResource(R.string.remove_title, p.displayName)
+                    },
+                )
+            },
+            text = {
+                Text(
+                    stringResource(
+                        when (what) { "block" -> R.string.block_body; "report" -> R.string.report_body; else -> R.string.remove_body },
+                    ),
+                )
+            },
             confirmButton = {
                 TextButton(onClick = {
-                    if (what == "block") vm.block(p.clientId) else vm.remove(p.clientId)
+                    when (what) { "block" -> vm.block(p.clientId); "report" -> vm.report(p.clientId, "profile"); else -> vm.remove(p.clientId) }
                     confirm = null; onDismiss()
-                }) { Text(stringResource(if (what == "block") R.string.block else R.string.remove_friend), color = Danger) }
+                }) {
+                    Text(
+                        stringResource(when (what) { "block" -> R.string.block; "report" -> R.string.report; else -> R.string.remove_friend }),
+                        color = Danger,
+                    )
+                }
             },
             dismissButton = { TextButton(onClick = { confirm = null }) { Text(stringResource(R.string.cancel)) } },
         )
@@ -379,3 +413,39 @@ private fun Action(icon: ImageVector, label: String, tint: Color = MaterialTheme
 
 @OptIn(ExperimentalFoundationApi::class)
 private fun Modifier.combinedClickableCompat(onClick: () -> Unit) = this.combinedClickable(onClick = onClick)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ActivitySheet(vm: SocialViewModel, friends: List<Person>, onDismiss: () -> Unit, onOpenChat: (String) -> Unit) {
+    val activity by vm.activity.collectAsStateWithLifecycle()
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.background) {
+        Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 16.dp)) {
+            Text(stringResource(R.string.activity), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
+            if (activity.isEmpty()) {
+                Text(stringResource(R.string.activity_empty), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(24.dp))
+            }
+            activity.forEach { a ->
+                val friend = friends.firstOrNull { it.clientId == a.fromClientId }
+                Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    if (friend != null) PersonAvatar(friend, 44.dp) else AnimalAvatar(null, a.username, 44.dp)
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            stringResource(if (a.type == "call_back_request") R.string.activity_missed_call else R.string.activity_accepted, a.username),
+                            style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onBackground,
+                        )
+                        Text(shortTime(a.ts), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    if (friend != null) {
+                        if (a.type == "call_back_request" && friend.online) {
+                            FilledTonalIconButton(onClick = { vm.call(friend); vm.clearActivity(a.id); onDismiss() }) { Icon(Icons.Rounded.Call, stringResource(R.string.call)) }
+                        } else {
+                            IconButton(onClick = { vm.clearActivity(a.id); onOpenChat(friend.clientId) }) { Icon(Icons.AutoMirrored.Rounded.Chat, stringResource(R.string.message)) }
+                        }
+                    }
+                    IconButton(onClick = { vm.clearActivity(a.id) }) { Icon(Icons.Rounded.Close, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                }
+            }
+        }
+    }
+}

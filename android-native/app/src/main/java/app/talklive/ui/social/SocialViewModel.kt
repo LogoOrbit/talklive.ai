@@ -60,6 +60,19 @@ class SocialViewModel @Inject constructor(private val repo: SocialRepository) : 
     fun send(to: String, text: String, replyTo: String?) = repo.send(to, text, replyTo)
     fun retry(to: String, id: String) = repo.retry(to, id)
     fun typing(to: String) = repo.typing(to)
+    fun edit(to: String, id: String, text: String) = repo.edit(to, id, text)
+    fun delete(to: String, id: String) = repo.delete(to, id)
+    fun react(to: String, id: String, emoji: String) = repo.react(to, id, emoji)
+    fun clearChat(id: String) = repo.clearChat(id)
+    fun report(id: String, reason: String) = repo.report(id, reason)
+    fun cancelRequest(id: String) = repo.cancelRequest(id)
+    fun callLater(id: String) = repo.callLater(id)
+    val blocked = repo.blocked
+    val activity = repo.activity
+    fun unblock(id: String) = repo.unblock(id)
+    fun clearActivity(id: String) = repo.clearActivity(id)
+    fun markActivitySeen() = repo.markActivitySeen()
+    suspend fun setHandle(h: String) = repo.setHandle(h)
 
     fun call(p: Person) = repo.call(p)
     fun cancelCall() = repo.cancelCall()

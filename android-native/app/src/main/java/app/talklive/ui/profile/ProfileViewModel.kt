@@ -13,14 +13,42 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-enum class ProfileSheet { Animal, Nickname, Email, Password }
+enum class ProfileSheet { Animal, Nickname, Email, Password, Blocked, FriendId }
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val auth: AuthRepository,
     private val identity: IdentityStore,
     private val theme: ThemeStore,
+    private val privacy: app.talklive.data.PrivacyStore,
+    private val socket: app.talklive.net.TalkSocket,
+    private val social: app.talklive.social.SocialRepository,
 ) : ViewModel() {
+    val hideStatus = privacy.hideStatus
+    val acceptCalls = privacy.acceptCalls
+    val blocked = social.blocked
+    val myFriendId = social.myFriendId
+
+    fun setHideStatus(v: Boolean) {
+        privacy.setHideStatus(v)
+        socket.emit("set-status-visibility", org.json.JSONObject().put("hidden", v))
+    }
+
+    fun setAcceptCalls(v: Boolean) {
+        privacy.setAcceptCalls(v)
+        socket.emit("set-call-availability", org.json.JSONObject().put("accept", v))
+    }
+
+    fun unblock(id: String) = social.unblock(id)
+
+    fun saveFriendId(handle: String) {
+        if (busy) return
+        busy = true; error = null
+        viewModelScope.launch {
+            social.setHandle(handle).onSuccess { close(); saved = "Friend ID updated" }.onFailure { error = it.message }
+            busy = false
+        }
+    }
     val account = auth.account
     val animal = identity.animalFlow
     val dark = theme.dark

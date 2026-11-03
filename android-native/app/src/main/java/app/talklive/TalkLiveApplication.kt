@@ -16,6 +16,7 @@ class TalkLiveApplication : Application(), coil.ImageLoaderFactory {
     @Inject lateinit var social: app.talklive.social.SocialRepository
     @Inject lateinit var push: app.talklive.push.PushRegistrar
     @Inject lateinit var ice: app.talklive.net.IceServerApi
+    @Inject lateinit var calls: app.talklive.call.CallManager
 
     override fun onCreate() {
         CrashReporter.install(this)
@@ -36,6 +37,17 @@ class TalkLiveApplication : Application(), coil.ImageLoaderFactory {
                 .apply { description = getString(R.string.channel_messages_desc) },
         )
         push.refresh()
+        // Foreground/background: the server pushes to a backgrounded app, and a
+        // text-chat partner sees "switched away".
+        androidx.lifecycle.ProcessLifecycleOwner.get().lifecycle.addObserver(
+            androidx.lifecycle.LifecycleEventObserver { _, event ->
+                when (event) {
+                    androidx.lifecycle.Lifecycle.Event.ON_START -> { socket.hidden = false; calls.appVisible(true) }
+                    androidx.lifecycle.Lifecycle.Event.ON_STOP -> { socket.hidden = true; calls.appVisible(false) }
+                    else -> Unit
+                }
+            },
+        )
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch { runCatching { ice.get() } }
     }
 

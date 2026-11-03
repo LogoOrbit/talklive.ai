@@ -205,6 +205,13 @@ class CallManager @Inject constructor(
         _state.update { it.copy(ratePrompt = null) }
     }
 
+    /** The app went to the background or came back: a text-chat partner is told. */
+    fun appVisible(visible: Boolean) = scope.launch {
+        if (_state.value.mode == CallMode.Chat && _state.value.phase is CallPhase.Connected) {
+            socket.emit("chat-away", JSONObject().put("away", !visible))
+        }
+    }
+
     fun dismissRating() = _state.update { it.copy(ratePrompt = null) }
     fun dismissMutualHeart() = _state.update { it.copy(mutualHeart = false) }
 

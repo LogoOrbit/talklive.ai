@@ -82,7 +82,7 @@ class ScreenshotTest {
         val socket = TalkSocket(identity)
         app.talklive.ui.profile.ProfileScreen(
             onSignIn = {},
-            vm = app.talklive.ui.profile.ProfileViewModel(AuthRepository(ctx, socket, identity), identity, app.talklive.data.ThemeStore(ctx)),
+            vm = app.talklive.ui.profile.ProfileViewModel(AuthRepository(ctx, socket, identity), identity, app.talklive.data.ThemeStore(ctx), app.talklive.data.PrivacyStore(ctx), socket, app.talklive.social.SocialRepository(socket, identity)),
         )
     }
     private fun socialVm(seed: app.talklive.social.SocialRepository.() -> Unit = {}): app.talklive.ui.social.SocialViewModel {

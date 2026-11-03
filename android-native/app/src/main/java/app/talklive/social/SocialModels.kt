@@ -72,9 +72,23 @@ data class ChatMessage(
     /** Reactions on a text-chat message (stranger chat), by who left them. */
     val myReaction: String? = null,
     val theirReaction: String? = null,
+    val edited: Boolean = false,
 ) {
     companion object {
-        fun from(o: JSONObject, me: String) = ChatMessage(
+        fun from(o: JSONObject, me: String): ChatMessage {
+            // reactions: { emoji: [clientIds] }
+            var mine: String? = null
+            var theirs: String? = null
+            o.optJSONObject("reactions")?.let { r ->
+                r.keys().forEach { emoji ->
+                    val who = r.optJSONArray(emoji) ?: return@forEach
+                    for (i in 0 until who.length()) if (who.optString(i) == me) mine = emoji else theirs = emoji
+                }
+            }
+            return base(o, me).copy(myReaction = mine, theirReaction = theirs, edited = o.optBoolean("edited") || o.has("editedAt"))
+        }
+
+        private fun base(o: JSONObject, me: String) = ChatMessage(
             id = o.optString("id"),
             mine = o.optString("from") == me || o.optString("fromClientId") == me,
             text = o.optString("text"),
@@ -103,3 +117,9 @@ data class FoundUser(
     val pending: Boolean,
     val online: Boolean,
 )
+
+/** Someone this user blocked. */
+data class BlockedPerson(val clientId: String, val username: String, val wasFriend: Boolean)
+
+/** An item in the activity list: a missed friend call or an accepted request. */
+data class ActivityItem(val id: String, val type: String, val fromClientId: String, val username: String, val ts: Long)

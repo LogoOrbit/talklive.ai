@@ -25,6 +25,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.material.icons.rounded.Block
+import androidx.compose.material.icons.rounded.Call
+import androidx.compose.material.icons.rounded.Tag
+import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Gavel
 import androidx.compose.material.icons.rounded.Groups
@@ -143,6 +147,23 @@ fun ProfileScreen(onSignIn: () -> Unit, vm: ProfileViewModel = hiltViewModel()) 
                 }
             }
 
+            val hideStatus by vm.hideStatus.collectAsStateWithLifecycle()
+            val acceptCalls by vm.acceptCalls.collectAsStateWithLifecycle()
+            val blocked by vm.blocked.collectAsStateWithLifecycle()
+            val friendId by vm.myFriendId.collectAsStateWithLifecycle()
+            Section(stringResource(R.string.section_privacy)) {
+                SettingRow(Icons.Rounded.Tag, stringResource(R.string.your_friend_id), friendId ?: "…", onClick = { if (account != null) vm.open(ProfileSheet.FriendId) })
+                SettingRow(Icons.Rounded.Visibility, stringResource(R.string.show_online), stringResource(R.string.show_online_desc), onClick = { vm.setHideStatus(!hideStatus) }, trailing = {
+                    Switch(checked = !hideStatus, onCheckedChange = { vm.setHideStatus(!it) }, colors = SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primary))
+                })
+                SettingRow(Icons.Rounded.Call, stringResource(R.string.allow_calls), stringResource(R.string.allow_calls_desc), onClick = { vm.setAcceptCalls(!acceptCalls) }, trailing = {
+                    Switch(checked = acceptCalls, onCheckedChange = { vm.setAcceptCalls(it) }, colors = SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primary))
+                })
+                SettingRow(Icons.Rounded.Block, stringResource(R.string.blocked_people), if (blocked.isEmpty()) stringResource(R.string.none) else blocked.size.toString()) {
+                    vm.open(ProfileSheet.Blocked)
+                }
+            }
+
             Section(stringResource(R.string.section_appearance)) {
                 SettingRow(Icons.Rounded.DarkMode, stringResource(R.string.dark_mode), null, onClick = vm::toggleTheme, trailing = {
                     Switch(
@@ -250,6 +271,28 @@ private fun ProfileSheetHost(sheet: ProfileSheet, vm: ProfileViewModel, animal: 
                     )
                     AnimalCaption(pick, Modifier.padding(vertical = 12.dp))
                     PrimaryButton(stringResource(R.string.save), onClick = { pick?.let(vm::setAnimal) }, enabled = pick != null)
+                }
+                ProfileSheet.Blocked -> {
+                    val blocked by vm.blocked.collectAsStateWithLifecycle()
+                    SheetTitle(stringResource(R.string.blocked_people), stringResource(R.string.blocked_body))
+                    if (blocked.isEmpty()) Text(stringResource(R.string.none), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    blocked.forEach { b ->
+                        Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            AnimalAvatar(null, b.username, 40.dp)
+                            Spacer(Modifier.size(12.dp))
+                            Text(b.username, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.weight(1f))
+                            androidx.compose.material3.TextButton(onClick = { vm.unblock(b.clientId) }) { Text(stringResource(R.string.unblock)) }
+                        }
+                    }
+                }
+                ProfileSheet.FriendId -> {
+                    val current by vm.myFriendId.collectAsStateWithLifecycle()
+                    var handle by rememberSaveable { mutableStateOf(current.orEmpty()) }
+                    SheetTitle(stringResource(R.string.your_friend_id), stringResource(R.string.friend_id_body))
+                    TalkTextField(handle, { handle = it.take(21) }, stringResource(R.string.your_friend_id), imeAction = ImeAction.Done, onIme = { vm.saveFriendId(handle) })
+                    ErrorBanner(vm.error)
+                    Spacer(Modifier.height(16.dp))
+                    PrimaryButton(stringResource(R.string.save), onClick = { vm.saveFriendId(handle) }, enabled = handle.length >= 3, loading = vm.busy)
                 }
                 ProfileSheet.Nickname -> {
                     var nick by rememberSaveable { mutableStateOf(account?.nickname.orEmpty()) }

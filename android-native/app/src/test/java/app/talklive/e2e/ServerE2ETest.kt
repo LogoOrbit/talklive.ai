@@ -195,6 +195,97 @@ class ServerE2ETest {
         assertTrue(c.identity.identityToken != null)
     }
 
+    /** Two socket-level clients who met in a text chat and became friends. */
+    private fun friends(a: Client, b: Client) {
+        a.socket.emit("find-partner", org.json.JSONObject().put("mode", "chat"))
+        b.socket.emit("find-partner", org.json.JSONObject().put("mode", "chat"))
+        check("matched") { a.events.any { it is ServerEvent.Matched } && b.events.any { it is ServerEvent.Matched } }
+        a.social.sendRequest(b.identity.clientId)
+        check("request arrives") { b.social.requests.value.any { it.clientId == a.identity.clientId } }
+        b.social.respond(a.identity.clientId, true)
+        check("friends both ways") {
+            a.social.friends.value.any { it.clientId == b.identity.clientId } && b.social.friends.value.any { it.clientId == a.identity.clientId }
+        }
+        a.socket.emit("leave"); b.socket.emit("leave")
+    }
+
+    @Test fun dm_edit_delete_react_clear() {
+        val a = Client("a"); val b = Client("b")
+        friends(a, b)
+        val aId = a.identity.clientId; val bId = b.identity.clientId
+        a.social.send(bId, "first version")
+        val msg = waitFor("b gets it") { b.social.threads.value[aId]?.firstOrNull { it.text == "first version" } }
+        a.social.edit(bId, msg.id, "second version")
+        check("edit reaches b") { b.social.threads.value[aId]?.any { it.id == msg.id && it.text == "second version" && it.edited } == true }
+        b.social.react(aId, msg.id, "🔥")
+        check("reaction reaches a") { a.social.threads.value[bId]?.any { it.id == msg.id && it.theirReaction == "🔥" } == true }
+        // Reload from the server keeps the reaction, on the right side.
+        a.social.loadThread(bId)
+        check("reaction persisted") { a.social.threads.value[bId]?.any { it.id == msg.id && it.theirReaction == "🔥" && it.myReaction == null } == true }
+        a.social.delete(bId, msg.id)
+        check("delete reaches b") { b.social.threads.value[aId]?.none { it.id == msg.id } == true }
+        a.social.send(bId, "another")
+        check("arrives") { b.social.threads.value[aId]?.any { it.text == "another" } == true }
+        b.social.clearChat(aId)
+        b.social.loadThread(aId)
+        Thread.sleep(500)
+        check("cleared for b only") { b.social.threads.value[aId].isNullOrEmpty() }
+        check("a still has it") { a.social.threads.value[bId]?.any { it.text == "another" } == true }
+    }
+
+    @Test fun block_unblock_cancel_request_privacy_and_call_later() {
+        val a = Client("a"); val b = Client("b")
+        friends(a, b)
+        val bId = b.identity.clientId
+        // Privacy: b hides status, a sees b offline after the next sync.
+        check("b online for a") { a.social.friends.value.first { it.clientId == bId }.online }
+        b.socket.emit("set-status-visibility", org.json.JSONObject().put("hidden", true))
+        Thread.sleep(300)
+        a.socket.emit("get-friend-chat", org.json.JSONObject().put("friendClientId", bId))
+        a.socket.register()
+        check("b appears offline") { !a.social.friends.value.first { it.clientId == bId }.online }
+        b.socket.emit("set-status-visibility", org.json.JSONObject().put("hidden", false))
+
+        // Calls off: a's call is refused politely.
+        b.socket.emit("set-call-availability", org.json.JSONObject().put("accept", false))
+        Thread.sleep(300)
+        a.social.call(a.social.friends.value.first { it.clientId == bId })
+        check("call refused") { a.social.outgoing.value == null }
+        b.socket.emit("set-call-availability", org.json.JSONObject().put("accept", true))
+
+        // Block removes the friendship and shows in b's... a's blocked list; unblock restores it.
+        a.social.block(bId)
+        a.socket.register()
+        check("b in a's blocked list") { a.social.blocked.value.any { it.clientId == bId } }
+        check("not friends now") { a.social.friends.value.none { it.clientId == bId } }
+        a.social.unblock(bId)
+        check("unblocked") { a.social.blocked.value.none { it.clientId == bId } }
+
+        // A third person: request then cancel.
+        val c = Client("c")
+        a.socket.emit("find-partner", org.json.JSONObject().put("mode", "chat"))
+        c.socket.emit("find-partner", org.json.JSONObject().put("mode", "chat"))
+        check("a meets c") { c.events.any { it is ServerEvent.Matched } }
+        a.social.sendRequest(c.identity.clientId)
+        check("c has request") { c.social.requests.value.isNotEmpty() }
+        a.social.cancelRequest(c.identity.clientId)
+        c.socket.register()
+        check("request withdrawn") { c.social.requests.value.isEmpty() }
+    }
+
+    @Test fun custom_friend_id_for_accounts(): Unit = runBlocking {
+        val email = "id.e2e.${System.nanoTime()}@example.com"
+        val a = Client("a")
+        assertEquals(AuthResult.Ok, a.auth.sendSignupCode("idtester", email))
+        val code = waitFor("code") { server.findInLog(Regex("verification code for ${Regex.escape(email)} is (\\d{6})")) }
+        assertEquals(AuthResult.Ok, a.auth.signup("idtester", email, "secret123", code))
+        val id = a.social.setHandle("droid#4242").getOrThrow()
+        assertEquals("droid#4242", id)
+        val b = Client("b")
+        val found = b.social.find("droid#4242").getOrThrow()
+        assertEquals(a.identity.clientId, found.clientId)
+    }
+
     @Test fun signup_login_profile_and_password_reset(): Unit = runBlocking {
         val email = "android.e2e.${System.nanoTime()}@example.com"
         val user = "droid${(1000..9999).random()}"

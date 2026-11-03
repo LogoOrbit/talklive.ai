@@ -49,6 +49,10 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.Reply
 import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.rounded.Call
+import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Done
 import androidx.compose.material.icons.rounded.DoneAll
@@ -114,6 +118,12 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
     val typing = clientId in typingSet
     var draft by rememberSaveable(clientId) { mutableStateOf("") }
     var replyTo by remember { mutableStateOf<ChatMessage?>(null) }
+    var actionsFor by remember { mutableStateOf<ChatMessage?>(null) }
+    var editing by remember { mutableStateOf<ChatMessage?>(null) }
+    var menuOpen by remember { mutableStateOf(false) }
+    var confirm by remember { mutableStateOf<String?>(null) }
+    val mutedSet by vm.muted.collectAsStateWithLifecycle()
+    val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
 
@@ -140,7 +150,19 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
                 }
                 if (isFriend) {
                     FilledTonalIconButton(onClick = { vm.call(person) }, enabled = person.online) { Icon(Icons.Rounded.Call, stringResource(R.string.call)) }
-                    Spacer(Modifier.width(8.dp))
+                }
+                Box {
+                    IconButton(onClick = { menuOpen = true }) { Icon(Icons.Rounded.MoreVert, null) }
+                    androidx.compose.material3.DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                        val isMuted = clientId in mutedSet
+                        androidx.compose.material3.DropdownMenuItem(
+                            text = { Text(stringResource(if (isMuted) R.string.unmute_chat else R.string.mute_chat)) },
+                            onClick = { menuOpen = false; vm.setMuted(clientId, !isMuted) },
+                        )
+                        androidx.compose.material3.DropdownMenuItem(text = { Text(stringResource(R.string.clear_chat)) }, onClick = { menuOpen = false; confirm = "clear" })
+                        androidx.compose.material3.DropdownMenuItem(text = { Text(stringResource(R.string.report), color = Danger) }, onClick = { menuOpen = false; confirm = "report" })
+                        androidx.compose.material3.DropdownMenuItem(text = { Text(stringResource(R.string.block), color = Danger) }, onClick = { menuOpen = false; confirm = "block" })
+                    }
                 }
             }
         }
@@ -170,6 +192,7 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
                         showStatus = m.id == lastMineId || m.status == MsgStatus.Failed,
                         onReply = { replyTo = m },
                         onRetry = { vm.retry(clientId, m.id) },
+                        onLongPress = { actionsFor = m },
                     )
                 }
             }
@@ -178,6 +201,17 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
 
         // Composer.
         if (person.canMessage || isFriend) {
+            AnimatedVisibility(editing != null, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
+                Row(
+                    Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).padding(start = 16.dp, end = 4.dp, top = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(Icons.Rounded.Edit, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(10.dp))
+                    Text(stringResource(R.string.editing_message), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1f))
+                    IconButton(onClick = { editing = null; draft = "" }) { Icon(Icons.Rounded.Close, null) }
+                }
+            }
             AnimatedVisibility(replyTo != null, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
                 replyTo?.let { r ->
                     Row(
@@ -219,9 +253,11 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
                 AnimatedVisibility(canSend, enter = scaleIn(spring(dampingRatio = 0.5f)) + fadeIn(), exit = scaleOut() + fadeOut()) {
                     Box(
                         Modifier.size(48.dp).clip(CircleShape).background(BrandGradient).clickable {
-                            vm.send(clientId, draft, replyTo?.id)
+                            val e = editing
+                            if (e != null) vm.edit(clientId, e.id, draft) else vm.send(clientId, draft, replyTo?.id)
                             draft = ""
                             replyTo = null
+                            editing = null
                             scope.launch { listState.animateScrollToItem(0) }
                         },
                         contentAlignment = Alignment.Center,
@@ -244,6 +280,100 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
                 }
             }
         }
+    }
+
+    actionsFor?.let { m ->
+        MessageActions(
+            m,
+            onDismiss = { actionsFor = null },
+            onReact = { e -> vm.react(clientId, m.id, e) },
+            onReply = { replyTo = m },
+            onCopy = { clipboard.setText(androidx.compose.ui.text.AnnotatedString(m.text)) },
+            onEdit = if (m.mine && m.text.isNotBlank() && m.gifUrl == null && m.voiceMs == null) ({ editing = m; replyTo = null; draft = m.text }) else null,
+            onDelete = if (m.mine) ({ vm.delete(clientId, m.id) }) else null,
+        )
+    }
+    confirm?.let { what ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { confirm = null },
+            title = {
+                Text(
+                    when (what) {
+                        "clear" -> stringResource(R.string.clear_chat_title)
+                        "report" -> stringResource(R.string.report_title)
+                        else -> stringResource(R.string.block_title, person.displayName)
+                    },
+                )
+            },
+            text = {
+                Text(
+                    when (what) {
+                        "clear" -> stringResource(R.string.clear_chat_body)
+                        "report" -> stringResource(R.string.report_body)
+                        else -> stringResource(R.string.block_body)
+                    },
+                )
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    when (what) {
+                        "clear" -> vm.clearChat(clientId)
+                        "report" -> { vm.report(clientId, "profile"); onBack() }
+                        else -> { vm.block(clientId); onBack() }
+                    }
+                    confirm = null
+                }) {
+                    Text(
+                        when (what) { "clear" -> stringResource(R.string.clear_chat); "report" -> stringResource(R.string.report); else -> stringResource(R.string.block) },
+                        color = Danger,
+                    )
+                }
+            },
+            dismissButton = { androidx.compose.material3.TextButton(onClick = { confirm = null }) { Text(stringResource(R.string.cancel)) } },
+        )
+    }
+}
+
+private val DM_REACTIONS = listOf("👍", "❤️", "😂", "😮", "😢", "🔥")
+
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun MessageActions(
+    m: ChatMessage,
+    onDismiss: () -> Unit,
+    onReact: (String) -> Unit,
+    onReply: () -> Unit,
+    onCopy: () -> Unit,
+    onEdit: (() -> Unit)?,
+    onDelete: (() -> Unit)?,
+) {
+    androidx.compose.material3.ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.background) {
+        Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 12.dp)) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
+                DM_REACTIONS.forEach { e ->
+                    Box(
+                        Modifier.size(48.dp).clip(CircleShape)
+                            .background(if (m.myReaction == e) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface)
+                            .clickable { onReact(e); onDismiss() },
+                        contentAlignment = Alignment.Center,
+                    ) { Text(e, style = MaterialTheme.typography.headlineSmall) }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            SheetAction(Icons.AutoMirrored.Rounded.Reply, stringResource(R.string.reply)) { onReply(); onDismiss() }
+            if (m.text.isNotBlank()) SheetAction(Icons.Rounded.ContentCopy, stringResource(R.string.copy)) { onCopy(); onDismiss() }
+            onEdit?.let { SheetAction(Icons.Rounded.Edit, stringResource(R.string.edit)) { it(); onDismiss() } }
+            onDelete?.let { SheetAction(Icons.Rounded.Delete, stringResource(R.string.delete), Danger) { it(); onDismiss() } }
+        }
+    }
+}
+
+@Composable
+private fun SheetAction(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, tint: Color = MaterialTheme.colorScheme.onBackground, onClick: () -> Unit) {
+    Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 24.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+        Icon(icon, null, tint = tint)
+        Spacer(Modifier.width(18.dp))
+        Text(label, style = MaterialTheme.typography.titleMedium, color = tint)
     }
 }
 
@@ -333,6 +463,7 @@ internal fun MessageBubble(
                         }
                         else -> Text(m.text, color = fg, style = MaterialTheme.typography.bodyLarge)
                     }
+                    if (m.edited) Text(stringResource(R.string.edited), color = fg.copy(alpha = 0.7f), style = MaterialTheme.typography.labelMedium)
                 }
             }
         }

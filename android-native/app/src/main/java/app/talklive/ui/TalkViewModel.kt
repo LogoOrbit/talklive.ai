@@ -40,6 +40,9 @@ class TalkViewModel @Inject constructor(
     val remoteLevel = calls.remoteLevel
     val connected = socket.connected
     val visitorCount = socket.visitorCount
+    val warnings = socket.warnings
+    val maintenance = socket.maintenance
+    fun acknowledgeWarning(id: String) = socket.acknowledgeWarning(id)
 
     init {
         socket.connect()

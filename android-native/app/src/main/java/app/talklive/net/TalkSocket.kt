@@ -26,7 +26,12 @@ import kotlin.coroutines.resume
  * (re)connect and turns server messages into [ServerEvent]s.
  */
 @Singleton
-class TalkSocket @Inject constructor(private val identity: IdentityStore) {
+class TalkSocket(private val identity: IdentityStore, private val privacy: app.talklive.data.PrivacyStore?) {
+    @Inject constructor(identity: IdentityStore, privacy: app.talklive.data.PrivacyStore, @Suppress("UNUSED_PARAMETER") marker: InjectMarker) : this(identity, privacy)
+
+    /** Tests build a socket without privacy settings. */
+    constructor(identity: IdentityStore) : this(identity, null)
+
 
     private val socket: Socket = IO.socket(
         app.talklive.net.ServerConfig.url,
@@ -47,6 +52,26 @@ class TalkSocket @Inject constructor(private val identity: IdentityStore) {
     /** People who visited in the last 24 hours (the website's header count). */
     private val _visitorCount = MutableStateFlow<Int?>(null)
     val visitorCount: StateFlow<Int?> = _visitorCount
+
+    private val _maintenance = MutableStateFlow<String?>(null)
+    /** The site is in maintenance mode: the owner's message. */
+    val maintenance: StateFlow<String?> = _maintenance
+
+    private val _warnings = MutableStateFlow<List<OwnerWarning>>(emptyList())
+    /** Warnings from the moderators, shown until acknowledged. */
+    val warnings: StateFlow<List<OwnerWarning>> = _warnings
+
+    /** Whether the app is in the background, so the server pushes instead of relying on the open socket. */
+    @Volatile var hidden = false
+        set(value) {
+            field = value
+            if (socket.connected()) socket.emit("app-visibility", JSONObject().put("hidden", value))
+        }
+
+    fun acknowledgeWarning(id: String) {
+        _warnings.value = _warnings.value.filterNot { it.id == id }
+        socket.emit("owner-warning-ack", JSONObject().put("id", id))
+    }
 
     private val _events = MutableSharedFlow<ServerEvent>(extraBufferCapacity = 128)
     val events: SharedFlow<ServerEvent> = _events
@@ -103,6 +128,12 @@ class TalkSocket @Inject constructor(private val identity: IdentityStore) {
             _events.tryEmit(ServerEvent.SearchRefused(args.firstObject()?.optString("reason").orEmpty()))
         }
         socket.on("banned") { _events.tryEmit(ServerEvent.Banned) }
+        socket.on("maintenance") { args -> _maintenance.value = args.firstObject()?.optString("message")?.ifBlank { "TalkLive is down for maintenance." } ?: "TalkLive is down for maintenance." }
+        socket.on("owner-warning") { args ->
+            val o = args.firstObject() ?: return@on
+            val w = OwnerWarning(o.optString("id"), o.optString("reason"), o.optString("message"))
+            if (w.id.isNotBlank() && _warnings.value.none { it.id == w.id }) _warnings.value = _warnings.value + w
+        }
         socket.on("chat-message") { args ->
             val o = args.firstObject() ?: return@on
             _events.tryEmit(
@@ -175,6 +206,7 @@ class TalkSocket @Inject constructor(private val identity: IdentityStore) {
             put("timezone", TimeZone.getDefault().id)
             put("lang", Locale.getDefault().language)
             put("surface", "call")
+            privacy?.let { put("hideStatus", it.hideStatus.value); put("acceptCalls", it.acceptCalls.value) }
             if (takeover) put("takeover", true)
         }
         socket.emit("register", payload)
@@ -183,6 +215,7 @@ class TalkSocket @Inject constructor(private val identity: IdentityStore) {
     private fun onRegisterResult(o: JSONObject?) {
         if (o == null || o.optBoolean("ok", true)) {
             registerFailures = 0
+            if (hidden) socket.emit("app-visibility", JSONObject().put("hidden", true))
             _events.tryEmit(ServerEvent.Registered)
             return
         }
@@ -200,6 +233,9 @@ class TalkSocket @Inject constructor(private val identity: IdentityStore) {
     }
 
     private fun Array<out Any?>.firstObject(): JSONObject? = firstOrNull() as? JSONObject
+
+    /** Lets Hilt tell its constructor apart from the test one. */
+    class InjectMarker @Inject constructor()
 
     private companion object {
         const val TAG = "TalkSocket"

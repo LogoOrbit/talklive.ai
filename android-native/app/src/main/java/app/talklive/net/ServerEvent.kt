@@ -53,3 +53,6 @@ sealed interface ServerEvent {
 
 internal fun JSONObject.optNullableString(key: String): String? =
     if (isNull(key)) null else optString(key).takeIf { it.isNotBlank() }
+
+/** A moderator's warning; must be acknowledged before talking again. */
+data class OwnerWarning(val id: String, val reason: String, val message: String)

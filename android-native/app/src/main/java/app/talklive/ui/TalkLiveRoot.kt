@@ -22,6 +22,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -330,6 +332,32 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                 onDecline = { social.answer(false) },
             )
             out != null -> OutgoingCallScreen(out, onCancel = social::cancelCall)
+        }
+    }
+
+    // A moderator's warning must be read and acknowledged.
+    val warnings by vm.warnings.collectAsStateWithLifecycle()
+    warnings.firstOrNull()?.let { w ->
+        AlertDialog(
+            onDismissRequest = {},
+            icon = { Icon(androidx.compose.material.icons.Icons.Rounded.Shield, null, tint = MaterialTheme.colorScheme.error) },
+            title = { Text(stringResource(R.string.warning_title)) },
+            text = { Text(w.message.ifBlank { stringResource(R.string.warning_default) }) },
+            confirmButton = { TextButton(onClick = { vm.acknowledgeWarning(w.id) }) { Text(stringResource(R.string.warning_ack)) } },
+            properties = androidx.compose.ui.window.DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false),
+        )
+    }
+
+    // Maintenance mode: say so instead of searching forever.
+    val maintenance by vm.maintenance.collectAsStateWithLifecycle()
+    maintenance?.let { msg ->
+        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(32.dp), contentAlignment = Alignment.Center) {
+            androidx.compose.foundation.layout.Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("🛠️", style = MaterialTheme.typography.displaySmall)
+                androidx.compose.foundation.layout.Spacer(Modifier.padding(8.dp))
+                Text(stringResource(R.string.maintenance_title), style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onBackground)
+                Text(msg, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            }
         }
     }
 

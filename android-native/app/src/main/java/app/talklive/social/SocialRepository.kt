@@ -70,6 +70,13 @@ class SocialRepository @Inject constructor(
     private val _outgoing = MutableStateFlow<OutgoingCall?>(null)
     val outgoing: StateFlow<OutgoingCall?> = _outgoing
 
+    private val _blocked = MutableStateFlow<List<BlockedPerson>>(emptyList())
+    val blocked: StateFlow<List<BlockedPerson>> = _blocked
+
+    private val _activity = MutableStateFlow<List<ActivityItem>>(emptyList())
+    /** Missed friend calls and accepted requests, newest first. */
+    val activity: StateFlow<List<ActivityItem>> = _activity
+
     private val _toasts = MutableSharedFlow<String>(extraBufferCapacity = 8)
     /** Short messages for the user ("Friend request sent"). */
     val toasts: SharedFlow<String> = _toasts
@@ -102,6 +109,48 @@ class SocialRepository @Inject constructor(
             scope.launch {
                 updateThread(by) { list -> list.map { if (it.mine && it.status == MsgStatus.Sent) it.copy(status = MsgStatus.Seen) else it } }
             }
+        }
+        socket.on("friend-message-edited") { a ->
+            val o = a.firstOrNull() as? JSONObject ?: return@on
+            scope.launch {
+                updateThread(o.optString("chatWith")) { list ->
+                    list.map { if (it.id == o.optString("id")) it.copy(text = o.optString("text"), edited = true) else it }
+                }
+            }
+        }
+        socket.on("friend-message-deleted") { a ->
+            val o = a.firstOrNull() as? JSONObject ?: return@on
+            scope.launch { updateThread(o.optString("chatWith")) { list -> list.filterNot { it.id == o.optString("id") } } }
+        }
+        socket.on("friend-reaction") { a ->
+            val o = a.firstOrNull() as? JSONObject ?: return@on
+            scope.launch {
+                updateThread(o.optString("fromClientId")) { list ->
+                    list.map { if (it.id == o.optString("id")) it.copy(theirReaction = if (o.optBoolean("on")) o.optString("emoji") else null) else it }
+                }
+            }
+        }
+        socket.on("unblock-result") { a ->
+            val o = a.firstOrNull() as? JSONObject ?: return@on
+            if (o.optBoolean("ok")) {
+                _blocked.update { list -> list.filterNot { it.clientId == o.optString("targetClientId") } }
+                _toasts.tryEmit(if (o.optBoolean("friendRestored")) "Unblocked, and back in your friends" else "Unblocked")
+            }
+        }
+        socket.on("call-back-later-result") { a ->
+            val o = a.firstOrNull() as? JSONObject ?: return@on
+            _toasts.tryEmit(
+                when {
+                    o.optBoolean("ok") -> "We'll let them know you want to talk"
+                    o.optString("reason") == "calls-off" -> "They're not taking calls right now"
+                    o.optString("reason") == "rate" -> "You already asked recently"
+                    else -> "Couldn't send that right now"
+                },
+            )
+        }
+        socket.on("notification") { a ->
+            val o = a.firstOrNull() as? JSONObject ?: return@on
+            toActivity(o)?.let { item -> scope.launch { _activity.update { listOf(item) + it.filterNot { x -> x.id == item.id } } } }
         }
         socket.on("call-back-request") { a ->
             val o = a.firstOrNull() as? JSONObject ?: return@on
@@ -202,6 +251,44 @@ class SocialRepository @Inject constructor(
         )
     }
 
+    fun cancelRequest(targetClientId: String) = scope.launch {
+        _sent.update { it - targetClientId }
+        socket.emit("cancel-friend-request", JSONObject().put("targetClientId", targetClientId))
+    }
+
+    fun report(targetClientId: String, reason: String, detail: String = "") = scope.launch {
+        _friends.update { list -> list.filterNot { it.clientId == targetClientId } }
+        _history.update { list -> list.filterNot { it.clientId == targetClientId } }
+        socket.emit("report-user", JSONObject().put("targetClientId", targetClientId).put("reason", reason).put("detail", detail))
+        _toasts.tryEmit("Reported. You won't be matched again.")
+    }
+
+    fun unblock(targetClientId: String) {
+        socket.emit("unblock-user", JSONObject().put("targetClientId", targetClientId))
+    }
+
+    /** Ask an offline friend to call back when they are around. */
+    fun callLater(targetClientId: String) {
+        socket.emit("call-back-request-later", JSONObject().put("targetClientId", targetClientId))
+    }
+
+    fun clearActivity(id: String) = scope.launch {
+        _activity.update { list -> list.filterNot { it.id == id } }
+        socket.emit("clear-notification", JSONObject().put("notificationId", id))
+    }
+
+    fun markActivitySeen() = socket.emit("mark-notifications-seen")
+
+    /** Pick a custom friend ID like anakin#1101 (signed-in accounts). */
+    suspend fun setHandle(handle: String): Result<String> {
+        val res = request("set-handle", JSONObject().put("handle", handle.trim()), "set-handle-result")
+            ?: return Result.failure(Exception("No connection. Try again."))
+        if (!res.optBoolean("ok")) return Result.failure(Exception(res.optString("error").ifBlank { "Could not save that ID." }))
+        val id = res.optString("friendId")
+        _myFriendId.value = id
+        return Result.success(id)
+    }
+
     fun person(clientId: String): Person? =
         _friends.value.firstOrNull { it.clientId == clientId } ?: _history.value.firstOrNull { it.clientId == clientId }
 
@@ -226,6 +313,33 @@ class SocialRepository @Inject constructor(
         val msg = _threads.value[toClientId]?.firstOrNull { it.id == id } ?: return@launch
         updateThread(toClientId) { list -> list.map { if (it.id == id) it.copy(status = MsgStatus.Sending, failReason = null) else it } }
         emitMessage(toClientId, msg)
+    }
+
+    fun edit(toClientId: String, id: String, text: String) = scope.launch {
+        val body = text.trim().take(1000)
+        if (body.isEmpty()) return@launch
+        updateThread(toClientId) { list -> list.map { if (it.id == id) it.copy(text = body, edited = true) else it } }
+        socket.emit("friend-message-edit", JSONObject().put("toClientId", toClientId).put("id", id).put("text", body))
+    }
+
+    fun delete(toClientId: String, id: String) = scope.launch {
+        updateThread(toClientId) { list -> list.filterNot { it.id == id } }
+        socket.emit("friend-message-delete", JSONObject().put("toClientId", toClientId).put("id", id))
+    }
+
+    fun react(toClientId: String, id: String, emoji: String) = scope.launch {
+        var on = true
+        updateThread(toClientId) { list ->
+            list.map { if (it.id != id) it else { on = it.myReaction != emoji; it.copy(myReaction = if (on) emoji else null) } }
+        }
+        socket.emit("friend-reaction", JSONObject().put("toClientId", toClientId).put("id", id).put("emoji", emoji).put("on", on))
+    }
+
+    /** Clears this user's copy of a conversation. */
+    fun clearChat(clientId: String) = scope.launch {
+        updateThread(clientId) { emptyList() }
+        _friends.update { list -> list.map { if (it.clientId == clientId) it.copy(last = null) else it } }
+        socket.emit("clear-friend-chat", JSONObject().put("friendClientId", clientId))
     }
 
     fun typing(toClientId: String) {
@@ -292,6 +406,21 @@ class SocialRepository @Inject constructor(
             }
         }
         _unread.value = counts
+        _blocked.value = o.optJSONArray("blocked")?.let { arr ->
+            (0 until arr.length()).mapNotNull { arr.optJSONObject(it) }.map {
+                BlockedPerson(it.optString("clientId"), it.optString("username").ifBlank { "Someone" }, it.optBoolean("wasFriend"))
+            }
+        }.orEmpty()
+        _activity.value = o.optJSONArray("notifications")?.let { arr ->
+            (0 until arr.length()).mapNotNull { arr.optJSONObject(it)?.let(::toActivity) }.sortedByDescending { it.ts }
+        }.orEmpty()
+    }
+
+    private fun toActivity(n: JSONObject): ActivityItem? {
+        val type = n.optString("type")
+        if (type != "call_back_request" && type != "friend_accepted") return null
+        val from = n.optString("fromClientId").ifBlank { n.optString("byClientId") }
+        return ActivityItem(n.optString("id"), type, from, n.optString("username").ifBlank { "Someone" }, n.optLong("ts"))
     }
 
     private fun onIncomingMessage(o: JSONObject) {
