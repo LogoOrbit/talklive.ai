@@ -74,6 +74,7 @@ fun TalkLiveRoot(vm: TalkViewModel = hiltViewModel()) {
         },
         transitionSpec = { (fadeIn(tween(300)) + scaleIn(initialScale = 0.96f)) togetherWith fadeOut(tween(200)) },
         label = "root",
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
     ) { screen ->
         when (screen) {
             RootScreen.Onboarding -> OnboardingFlow(hiltViewModel<AuthViewModel>())
@@ -89,7 +90,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     val context = LocalContext.current
     val state by vm.state.collectAsStateWithLifecycle()
     val connected by vm.connected.collectAsStateWithLifecycle()
-    val online by vm.onlineCount.collectAsStateWithLifecycle()
+    val visitors by vm.visitorCount.collectAsStateWithLifecycle()
     val dark by vm.dark.collectAsStateWithLifecycle()
     val animal by vm.animal.collectAsStateWithLifecycle()
     val account by vm.account.collectAsStateWithLifecycle()
@@ -159,7 +160,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                 when (t) {
                     MainTab.Talk -> HomeScreen(
                         connected = connected,
-                        online = online,
+                        visitors = visitors,
                         animal = animal,
                         name = account?.nickname,
                         dark = dark,

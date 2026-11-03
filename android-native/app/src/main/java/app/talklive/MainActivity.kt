@@ -29,6 +29,7 @@ class MainActivity : ComponentActivity() {
                 val bars = if (dark) SystemBarStyle.dark(Color.TRANSPARENT)
                 else SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
                 enableEdgeToEdge(bars, bars)
+                window.decorView.setBackgroundColor(if (dark) 0xFF0B0F1A.toInt() else 0xFFE3E7F1.toInt())
             }
             TalkLiveTheme(dark = dark) { TalkLiveRoot() }
         }

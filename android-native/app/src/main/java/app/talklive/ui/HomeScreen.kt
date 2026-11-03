@@ -42,6 +42,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -57,7 +58,7 @@ import java.text.NumberFormat
 @Composable
 fun HomeScreen(
     connected: Boolean,
-    online: Int?,
+    visitors: Int?,
     animal: String?,
     name: String?,
     dark: Boolean,
@@ -100,7 +101,7 @@ fun HomeScreen(
                     Text(
                         when {
                             !connected -> stringResource(R.string.connecting_server)
-                            online != null -> stringResource(R.string.online_now, NumberFormat.getIntegerInstance().format(online))
+                            visitors != null -> pluralStringResource(R.plurals.visitors_today, visitors, NumberFormat.getIntegerInstance().format(visitors))
                             else -> stringResource(R.string.connecting_server)
                         },
                         style = MaterialTheme.typography.labelMedium,

@@ -44,6 +44,10 @@ class TalkSocket @Inject constructor(private val identity: IdentityStore) {
     private val _onlineCount = MutableStateFlow<Int?>(null)
     val onlineCount: StateFlow<Int?> = _onlineCount
 
+    /** People who visited in the last 24 hours (the website's header count). */
+    private val _visitorCount = MutableStateFlow<Int?>(null)
+    val visitorCount: StateFlow<Int?> = _visitorCount
+
     private val _events = MutableSharedFlow<ServerEvent>(extraBufferCapacity = 128)
     val events: SharedFlow<ServerEvent> = _events
 
@@ -68,6 +72,9 @@ class TalkSocket @Inject constructor(private val identity: IdentityStore) {
                 is Number -> _onlineCount.value = v.toInt()
                 is JSONObject -> v.optInt("count", -1).takeIf { it >= 0 }?.let { _onlineCount.value = it }
             }
+        }
+        socket.on("visitor-count") { args ->
+            (args.firstOrNull() as? Number)?.let { _visitorCount.value = it.toInt() }
         }
         socket.on("needs-register") {
             register()

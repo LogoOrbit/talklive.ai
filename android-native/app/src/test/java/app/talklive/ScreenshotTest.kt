@@ -62,13 +62,14 @@ class ScreenshotTest {
         SignupScreen(vm().apply { email = "sam@example.com"; code = "4821"; step = SignupStep.Code }, {})
     }
     @Test fun login() = shot("06_login") { LoginScreen(vm(), {}, {}) }
-    @Test fun home() = shot("07_home") { HomeScreen(true, 1284, "fox", "Sam", false, {}, {}, {}) }
-    @Test fun homeDark() = shot("07b_home_dark", dark = true) { HomeScreen(true, 1284, "fox", "Sam", true, {}, {}, {}) }
+    @Test fun home() = shot("07_home") { HomeScreen(true, 3412, "fox", "Sam", false, {}, {}, {}) }
+    @Test fun homeDark() = shot("07b_home_dark", dark = true) { HomeScreen(true, 3412, "fox", "Sam", true, {}, {}, {}) }
     @Test fun animals() = shot("10_animals") { app.talklive.ui.animals.AnimalSetupScreen("owl") {} }
     @Test fun chats() = shot("11_chats") { app.talklive.ui.main.EmptyTab(app.talklive.ui.main.MainTab.Chats) {} }
     @Test fun reconnecting() = shot("12_reconnecting") {
         CallScreen(CallState(phase = CallPhase.Connected(partner, System.currentTimeMillis()), onHold = true), false, "fox", { 0f }, {}, {}, {}, {}, {})
     }
+    @Test fun loginDark() = shot("06b_login_dark", dark = true) { LoginScreen(vm(), {}, {}) }
     @Test fun profile() = shot("13_profile") {
         val ctx = ApplicationProvider.getApplicationContext<Application>()
         val identity = IdentityStore(ctx).apply { animal = "owl" }

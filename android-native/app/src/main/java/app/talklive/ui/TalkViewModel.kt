@@ -24,7 +24,7 @@ class TalkViewModel @Inject constructor(
     val state = calls.state
     val remoteLevel = calls.remoteLevel
     val connected = socket.connected
-    val onlineCount = socket.onlineCount
+    val visitorCount = socket.visitorCount
 
     init {
         socket.connect()
