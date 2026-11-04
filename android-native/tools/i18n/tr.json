@@ -399,9 +399,9 @@
 "how_3": "İstediğin an atla",
 "films_none": "Bir şey bulunamadı. Orijinal adı dene.",
 "auto_connect": "Otomatik bağlan",
-"tap_to_stop": "Aranıyor · durdurmak için dokun",
-"tap_again_next": "Sonraki için tekrar dokun",
-"tap_again_end": "Bitirmek için tekrar dokun",
+"tap_to_stop": "Durdur",
+"tap_again_next": "Tekrar dokun",
+"tap_again_end": "Bitirmek için dokun",
 "plus_card_pitch": "Tüm filtreler, seni kim beğendi, atlamayı geri al",
 "filters_interests_hint": "Seni aynı şeyleri seven kişilerle eşleştirmeye çalışırız.",
 "countries_title": "Ülkeler",
@@ -447,5 +447,6 @@
 "support_quick": "Hızlı yanıtlar",
 "film_match": "🎬 İkiniz de %1$s seviyorsunuz!",
 "plus_perk_streak": "Serini geri getir",
-"plus_perk_streak_body": "Bir günü mü kaçırdın? Serini ayda bir geri getir."
+"plus_perk_streak_body": "Bir günü mü kaçırdın? Serini ayda bir geri getir.",
+"connecting_short": "Bağlanıyor"
 }

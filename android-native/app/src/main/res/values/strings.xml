@@ -405,9 +405,9 @@
     <string name="how_3">Skip any time</string>
     <string name="films_none">Nothing found. Try the original title.</string>
     <string name="auto_connect">Auto-connect</string>
-    <string name="tap_to_stop">Searching · tap to stop</string>
-    <string name="tap_again_next">Tap again for next</string>
-    <string name="tap_again_end">Tap again to end</string>
+    <string name="tap_to_stop">Stop</string>
+    <string name="tap_again_next">Tap again</string>
+    <string name="tap_again_end">Tap to end</string>
     <string name="plus_card_pitch">Every filter, see who liked you, undo skips</string>
     <string name="filters_interests_hint">We try to match you with people who like the same things.</string>
     <string name="countries_title">Countries</string>
@@ -454,4 +454,5 @@
     <string name="film_match">🎬 You both love %1$s!</string>
     <string name="plus_perk_streak">Restore your streak</string>
     <string name="plus_perk_streak_body">Missed a day? Bring your streak back, once a month.</string>
+    <string name="connecting_short">Connecting</string>
 </resources>

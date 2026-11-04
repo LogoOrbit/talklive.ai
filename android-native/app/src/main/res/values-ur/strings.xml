@@ -399,9 +399,9 @@
     <string name="how_3">کبھی بھی اسکپ کریں</string>
     <string name="films_none">کچھ نہیں ملا۔ اصل نام آزمائیں۔</string>
     <string name="auto_connect">آٹو کنیکٹ</string>
-    <string name="tap_to_stop">تلاش جاری · روکنے کے لیے ٹیپ کریں</string>
-    <string name="tap_again_next">اگلے کے لیے دوبارہ ٹیپ کریں</string>
-    <string name="tap_again_end">ختم کرنے کے لیے دوبارہ ٹیپ کریں</string>
+    <string name="tap_to_stop">روکیں</string>
+    <string name="tap_again_next">دوبارہ ٹیپ کریں</string>
+    <string name="tap_again_end">ختم کرنے کو ٹیپ</string>
     <string name="plus_card_pitch">تمام فلٹرز، کس نے پسند کیا، اسکپ واپس</string>
     <string name="filters_interests_hint">ہم آپ کو ایک جیسی پسند والوں سے ملانے کی کوشش کرتے ہیں۔</string>
     <string name="countries_title">ممالک</string>
@@ -448,6 +448,7 @@
     <string name="film_match">🎬 آپ دونوں کو %1$s پسند ہے!</string>
     <string name="plus_perk_streak">اپنی اسٹریک واپس لائیں</string>
     <string name="plus_perk_streak_body">ایک دن رہ گیا؟ مہینے میں ایک بار اسٹریک واپس لائیں۔</string>
+    <string name="connecting_short">جڑ رہا ہے</string>
     <plurals name="visitors_today">
         <item quantity="one">آج %1$s وزیٹر</item>
         <item quantity="other">آج %1$s وزیٹرز</item>

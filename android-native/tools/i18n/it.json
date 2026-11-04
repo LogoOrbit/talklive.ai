@@ -399,9 +399,9 @@
 "how_3": "Salta quando vuoi",
 "films_none": "Nessun risultato. Prova il titolo originale.",
 "auto_connect": "Connessione automatica",
-"tap_to_stop": "Ricerca · tocca per fermare",
-"tap_again_next": "Tocca di nuovo per il prossimo",
-"tap_again_end": "Tocca di nuovo per chiudere",
+"tap_to_stop": "Ferma",
+"tap_again_next": "Tocca ancora",
+"tap_again_end": "Tocca per chiudere",
 "plus_card_pitch": "Tutti i filtri, a chi piaci, annulla salti",
 "filters_interests_hint": "Proviamo ad abbinarti a chi ama le stesse cose.",
 "countries_title": "Paesi",
@@ -447,5 +447,6 @@
 "support_quick": "Risposte rapide",
 "film_match": "🎬 Amate entrambi %1$s!",
 "plus_perk_streak": "Recupera la serie",
-"plus_perk_streak_body": "Hai saltato un giorno? Recupera la serie, una volta al mese."
+"plus_perk_streak_body": "Hai saltato un giorno? Recupera la serie, una volta al mese.",
+"connecting_short": "Connessione"
 }

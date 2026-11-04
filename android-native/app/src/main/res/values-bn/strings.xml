@@ -399,9 +399,9 @@
     <string name="how_3">যেকোনো সময় স্কিপ করুন</string>
     <string name="films_none">কিছু পাওয়া যায়নি। মূল নাম চেষ্টা করুন।</string>
     <string name="auto_connect">অটো-কানেক্ট</string>
-    <string name="tap_to_stop">খোঁজা হচ্ছে · থামাতে ট্যাপ করুন</string>
-    <string name="tap_again_next">পরেরটির জন্য আবার ট্যাপ করুন</string>
-    <string name="tap_again_end">শেষ করতে আবার ট্যাপ করুন</string>
+    <string name="tap_to_stop">থামান</string>
+    <string name="tap_again_next">আবার ট্যাপ</string>
+    <string name="tap_again_end">শেষ করতে ট্যাপ</string>
     <string name="plus_card_pitch">সব ফিল্টার, কে লাইক করেছে, স্কিপ ফেরানো</string>
     <string name="filters_interests_hint">একই পছন্দের মানুষের সাথে মেলানোর চেষ্টা করি।</string>
     <string name="countries_title">দেশ</string>
@@ -448,6 +448,7 @@
     <string name="film_match">🎬 আপনারা দুজনেই %1$s ভালোবাসেন!</string>
     <string name="plus_perk_streak">স্ট্রিক ফেরান</string>
     <string name="plus_perk_streak_body">একদিন মিস করেছেন? মাসে একবার স্ট্রিক ফেরান।</string>
+    <string name="connecting_short">যুক্ত হচ্ছে</string>
     <plurals name="visitors_today">
         <item quantity="one">আজ %1$s জন ভিজিটর</item>
         <item quantity="other">আজ %1$s জন ভিজিটর</item>

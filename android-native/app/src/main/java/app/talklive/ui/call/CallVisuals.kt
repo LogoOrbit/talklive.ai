@@ -231,7 +231,7 @@ fun MainCallButton(
         confirm -> MainMode.Confirm
         else -> MainMode.Live
     }
-    val width by animateDpAsState(if (mode == MainMode.Live) 68.dp else 220.dp, spring(dampingRatio = 0.62f, stiffness = 380f), label = "w")
+    val width by animateDpAsState(if (mode == MainMode.Live) 132.dp else 200.dp, spring(dampingRatio = 0.62f, stiffness = 380f), label = "w")
     val color by animateColorAsState(
         when (mode) { MainMode.Searching -> accents.a; MainMode.Connecting -> Color(0xFFF5A623); else -> Danger },
         tween(350), label = "c",
@@ -243,7 +243,7 @@ fun MainCallButton(
     val countdown = remember { Animatable(1f) }
     LaunchedEffect(mode) { if (mode == MainMode.Confirm) { countdown.snapTo(1f); countdown.animateTo(0f, tween(2600, easing = LinearEasing)) } }
     Box(
-        Modifier.scale(scale).width(width).height(if (mode == MainMode.Live) 68.dp else 56.dp)
+        Modifier.scale(scale).width(width).height(56.dp)
             .graphicsLayer { shadowElevation = 14f; shape = RoundedCornerShape(34.dp); clip = true }
             .background(Brush.linearGradient(listOf(color, color.copy(alpha = 0.78f))))
             .drawBehind {
@@ -268,7 +268,7 @@ fun MainCallButton(
             label = "content",
         ) { m ->
             when (m) {
-                MainMode.Live -> Icon(Icons.Rounded.CallEnd, stringResource(R.string.end), tint = Color.White, modifier = Modifier.size(30.dp))
+                MainMode.Live -> Icon(Icons.Rounded.CallEnd, stringResource(R.string.end), tint = Color.White, modifier = Modifier.size(28.dp))
                 else -> Row(verticalAlignment = Alignment.CenterVertically) {
                     when (m) {
                         MainMode.Searching, MainMode.Connecting -> CircularProgressIndicator(Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
@@ -279,11 +279,12 @@ fun MainCallButton(
                         stringResource(
                             when (m) {
                                 MainMode.Searching -> R.string.tap_to_stop
-                                MainMode.Connecting -> R.string.connecting_call
+                                MainMode.Connecting -> R.string.connecting_short
                                 else -> if (autoConnect) R.string.tap_again_next else R.string.tap_again_end
                             },
                         ),
                         color = Color.White, style = MaterialTheme.typography.labelLarge,
+                        maxLines = 1, softWrap = false,
                     )
                 }
             }

@@ -399,9 +399,9 @@
     <string name="how_3">تخطَّ في أي وقت</string>
     <string name="films_none">لم يُعثر على شيء. جرّب العنوان الأصلي.</string>
     <string name="auto_connect">الاتصال التلقائي</string>
-    <string name="tap_to_stop">جارٍ البحث · اضغط للإيقاف</string>
-    <string name="tap_again_next">اضغط مجددًا للتالي</string>
-    <string name="tap_again_end">اضغط مجددًا للإنهاء</string>
+    <string name="tap_to_stop">إيقاف</string>
+    <string name="tap_again_next">اضغط مجددًا</string>
+    <string name="tap_again_end">اضغط للإنهاء</string>
     <string name="plus_card_pitch">كل الفلاتر، من أُعجب بك، التراجع عن التخطي</string>
     <string name="filters_interests_hint">نحاول مطابقتك مع من يحبون الأشياء نفسها.</string>
     <string name="countries_title">الدول</string>
@@ -448,6 +448,7 @@
     <string name="film_match">🎬 كلاكما يحب %1$s!</string>
     <string name="plus_perk_streak">استعد سلسلتك</string>
     <string name="plus_perk_streak_body">فاتك يوم؟ استعد سلسلتك مرة في الشهر.</string>
+    <string name="connecting_short">جارٍ الاتصال</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s زائر اليوم</item>
         <item quantity="other">%1$s زائر اليوم</item>

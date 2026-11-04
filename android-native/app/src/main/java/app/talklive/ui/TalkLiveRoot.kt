@@ -461,13 +461,6 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
         kotlinx.coroutines.delay(1200)
         snackbar.showSnackbar(context.getString(R.string.film_match, shared.title))
     }
-    // The website's "no one fits your filters, matching you with anyone" moment.
-    LaunchedEffect(Unit) {
-        engageVm.fallback.collect {
-            val r = snackbar.showSnackbar(context.getString(R.string.fallback_random), actionLabel = context.getString(R.string.keep_filters), duration = androidx.compose.material3.SnackbarDuration.Long)
-            if (r == androidx.compose.material3.SnackbarResult.ActionPerformed) engageVm.keepFilters()
-        }
-    }
     // Replies from the team to this person's feedback.
     val replies by engageVm.replies.collectAsStateWithLifecycle()
     replies.firstOrNull()?.let { r ->

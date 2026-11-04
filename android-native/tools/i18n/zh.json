@@ -398,9 +398,9 @@
 "how_3": "随时跳过",
 "films_none": "没有找到，试试原名。",
 "auto_connect": "自动连接",
-"tap_to_stop": "正在寻找 · 点击停止",
-"tap_again_next": "再点一次换下一个",
-"tap_again_end": "再点一次挂断",
+"tap_to_stop": "停止",
+"tap_again_next": "再点一次",
+"tap_again_end": "点按挂断",
 "plus_card_pitch": "所有筛选、谁喜欢你、撤销跳过",
 "filters_interests_hint": "我们会尽量为你匹配兴趣相同的人。",
 "countries_title": "国家",
@@ -446,5 +446,6 @@
 "support_quick": "快速解答",
 "film_match": "🎬 你们都喜欢《%1$s》！",
 "plus_perk_streak": "恢复连续记录",
-"plus_perk_streak_body": "漏了一天？每月可恢复一次连续记录。"
+"plus_perk_streak_body": "漏了一天？每月可恢复一次连续记录。",
+"connecting_short": "连接中"
 }

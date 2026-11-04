@@ -52,10 +52,26 @@ class AuthRepository(
     private val _onboarded = MutableStateFlow(prefs.getBoolean(KEY_ONBOARDED, false))
     val onboarded: StateFlow<Boolean> = _onboarded
 
+    /** The display name sent with the last registration (the server shows it to people you meet). */
+    @Volatile private var sentNickname: String? = null
+
     init {
+        // Like the website: registration carries the account's display name, or
+        // everyone sees a random guest name instead of the one you chose.
+        socket.registerFields.add { o ->
+            val nick = _account.value?.nickname?.takeIf { it.isNotBlank() }
+            nick?.let { o.put("nickname", it) }
+            sentNickname = nick
+        }
         scope.launch {
             socket.events.collect { if (it == ServerEvent.Registered) resume() }
         }
+    }
+
+    /** Re-register only when the name people see would change (no loop with resume). */
+    private fun syncNickname() {
+        val nick = _account.value?.nickname?.takeIf { it.isNotBlank() }
+        if (nick != sentNickname) socket.register()
     }
 
     /** The durable session token of a signed-in account, for HTTP APIs. */
@@ -93,6 +109,7 @@ class AuthRepository(
             val nick = res.optString("nickname").ifBlank { nickname.trim() }
             prefs.edit().putString(KEY_NICKNAME, nick).apply()
             _account.value = _account.value?.copy(nickname = nick)
+            syncNickname()
         }
         return r
     }
@@ -189,6 +206,7 @@ class AuthRepository(
         _account.value = acc
         finishOnboarding()
         adoptProfile(res)
+        syncNickname()
     }
 
     private suspend fun resume() {

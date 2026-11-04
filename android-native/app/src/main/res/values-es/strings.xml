@@ -399,9 +399,9 @@
     <string name="how_3">Salta cuando quieras</string>
     <string name="films_none">No se encontró nada. Prueba el título original.</string>
     <string name="auto_connect">Conexión automática</string>
-    <string name="tap_to_stop">Buscando · toca para parar</string>
-    <string name="tap_again_next">Toca otra vez para el siguiente</string>
-    <string name="tap_again_end">Toca otra vez para colgar</string>
+    <string name="tap_to_stop">Parar</string>
+    <string name="tap_again_next">Toca otra vez</string>
+    <string name="tap_again_end">Toca para colgar</string>
     <string name="plus_card_pitch">Todos los filtros, quién te dio like, deshacer saltos</string>
     <string name="filters_interests_hint">Intentamos emparejarte con gente con tus mismos gustos.</string>
     <string name="countries_title">Países</string>
@@ -448,6 +448,7 @@
     <string name="film_match">🎬 ¡A los dos os encanta %1$s!</string>
     <string name="plus_perk_streak">Recupera tu racha</string>
     <string name="plus_perk_streak_body">¿Te saltaste un día? Recupera tu racha, una vez al mes.</string>
+    <string name="connecting_short">Conectando</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s visitante hoy</item>
         <item quantity="other">%1$s visitantes hoy</item>

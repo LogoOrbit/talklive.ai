@@ -399,9 +399,9 @@
     <string name="how_3">Salta quando vuoi</string>
     <string name="films_none">Nessun risultato. Prova il titolo originale.</string>
     <string name="auto_connect">Connessione automatica</string>
-    <string name="tap_to_stop">Ricerca · tocca per fermare</string>
-    <string name="tap_again_next">Tocca di nuovo per il prossimo</string>
-    <string name="tap_again_end">Tocca di nuovo per chiudere</string>
+    <string name="tap_to_stop">Ferma</string>
+    <string name="tap_again_next">Tocca ancora</string>
+    <string name="tap_again_end">Tocca per chiudere</string>
     <string name="plus_card_pitch">Tutti i filtri, a chi piaci, annulla salti</string>
     <string name="filters_interests_hint">Proviamo ad abbinarti a chi ama le stesse cose.</string>
     <string name="countries_title">Paesi</string>
@@ -448,6 +448,7 @@
     <string name="film_match">🎬 Amate entrambi %1$s!</string>
     <string name="plus_perk_streak">Recupera la serie</string>
     <string name="plus_perk_streak_body">Hai saltato un giorno? Recupera la serie, una volta al mese.</string>
+    <string name="connecting_short">Connessione</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s visitatore oggi</item>
         <item quantity="other">%1$s visitatori oggi</item>

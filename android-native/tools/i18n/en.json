@@ -402,9 +402,9 @@
 "how_3": "Skip any time",
 "films_none": "Nothing found. Try the original title.",
 "auto_connect": "Auto-connect",
-"tap_to_stop": "Searching · tap to stop",
-"tap_again_next": "Tap again for next",
-"tap_again_end": "Tap again to end",
+"tap_to_stop": "Stop",
+"tap_again_next": "Tap again",
+"tap_again_end": "Tap to end",
 "plus_card_pitch": "Every filter, see who liked you, undo skips",
 "filters_interests_hint": "We try to match you with people who like the same things.",
 "countries_title": "Countries",
@@ -450,5 +450,6 @@
 "support_quick": "Quick answers",
 "film_match": "🎬 You both love %1$s!",
 "plus_perk_streak": "Restore your streak",
-"plus_perk_streak_body": "Missed a day? Bring your streak back, once a month."
+"plus_perk_streak_body": "Missed a day? Bring your streak back, once a month.",
+"connecting_short": "Connecting"
 }

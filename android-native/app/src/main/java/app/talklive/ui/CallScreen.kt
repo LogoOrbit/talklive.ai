@@ -1,5 +1,6 @@
 package app.talklive.ui
 
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.width
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -213,8 +214,6 @@ fun CallScreen(
                             Spacer(Modifier.height(10.dp))
                             app.talklive.ui.engage.FilmPosters(p.partner.films, 44.dp)
                         }
-                        Spacer(Modifier.height(12.dp))
-                        IcebreakerCard(p.partner.clientId, icebreaker)
                     }
                     CallPhase.Idle -> Unit
                 }
@@ -371,22 +370,23 @@ private val REACTION_EMOJI = linkedMapOf("like" to "👍", "laugh" to "😂", "c
 @Composable
 private fun ReactionBar(heartSent: Boolean, onReact: (String) -> Unit) {
     val haptics = LocalHapticFeedback.current
-    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface) {
-        Row(Modifier.padding(horizontal = 8.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+    // Fixed-size cells and a fixed emoji size, so phones with large emoji fonts never overlap.
+    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface.copy(alpha = 0.75f)) {
+        Row(Modifier.padding(horizontal = 6.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             REACTION_EMOJI.forEach { (type, emoji) ->
                 val source = remember { MutableInteractionSource() }
                 val pressed by source.collectIsPressedAsState()
-                val scale by androidx.compose.animation.core.animateFloatAsState(if (pressed) 1.35f else 1f, spring(dampingRatio = 0.4f), label = "r")
+                val scale by androidx.compose.animation.core.animateFloatAsState(if (pressed) 1.25f else 1f, spring(dampingRatio = 0.4f), label = "r")
                 val hearted = type == "heart" && heartSent
                 Box(
-                    Modifier.size(48.dp).scale(scale).clip(CircleShape)
+                    Modifier.size(44.dp).scale(scale).clip(CircleShape)
                         .then(if (hearted) Modifier.background(app.talklive.ui.components.BrandGradient) else Modifier)
                         .clickable(source, indication = null) {
                             haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             onReact(type)
                         },
                     contentAlignment = Alignment.Center,
-                ) { Text(emoji, style = MaterialTheme.typography.headlineSmall) }
+                ) { Text(emoji, fontSize = 20.sp, lineHeight = 24.sp, maxLines = 1) }
             }
         }
     }

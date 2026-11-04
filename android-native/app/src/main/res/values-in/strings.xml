@@ -399,9 +399,9 @@
     <string name="how_3">Lewati kapan saja</string>
     <string name="films_none">Tidak ditemukan. Coba judul aslinya.</string>
     <string name="auto_connect">Sambung otomatis</string>
-    <string name="tap_to_stop">Mencari · ketuk untuk berhenti</string>
-    <string name="tap_again_next">Ketuk lagi untuk berikutnya</string>
-    <string name="tap_again_end">Ketuk lagi untuk mengakhiri</string>
+    <string name="tap_to_stop">Berhenti</string>
+    <string name="tap_again_next">Ketuk lagi</string>
+    <string name="tap_again_end">Ketuk untuk akhiri</string>
     <string name="plus_card_pitch">Semua filter, siapa yang suka, batalkan lewati</string>
     <string name="filters_interests_hint">Kami mencocokkanmu dengan orang yang suka hal yang sama.</string>
     <string name="countries_title">Negara</string>
@@ -448,6 +448,7 @@
     <string name="film_match">🎬 Kalian berdua suka %1$s!</string>
     <string name="plus_perk_streak">Pulihkan runtutanmu</string>
     <string name="plus_perk_streak_body">Melewatkan sehari? Kembalikan runtutanmu, sebulan sekali.</string>
+    <string name="connecting_short">Menghubungkan</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s pengunjung hari ini</item>
         <item quantity="other">%1$s pengunjung hari ini</item>

@@ -2029,7 +2029,14 @@ function signOutOtherSockets(usernameLower, keepSocketId) {
 // set(), so the day's signed-in user count is recorded here once.
 socketAuth.set = function set(socketId, usernameLower) {
   if (usernameLower) store.recordSignedIn(usernameLower);
-  return Map.prototype.set.call(this, socketId, usernameLower);
+  const result = Map.prototype.set.call(this, socketId, usernameLower);
+  // Signing in shows the account's saved display name straight away, even
+  // when the socket stays on its guest profile.
+  const account = usernameLower && accounts.get(usernameLower);
+  const profile = profiles.get(socketId);
+  const name = account && Nick.clean(account.nickname);
+  if (profile && name) profile.username = name;
+  return result;
 };
 const googleAccounts = new Map(); // Google "sub" id -> username (lowercase)
 
@@ -5515,11 +5522,14 @@ io.on('connection', (socket) => {
     const countryCap = premium ? 50 : FREE_LIMITS.countries;
     const sanitizeCountryList = (list) => (Array.isArray(list) ? list.filter((c) => typeof c === 'string').slice(0, countryCap) : []);
     const prev = profiles.get(socket.id);
-    patterns.onConnect({ ip: getClientIp(socket), clientId, username: Nick.clean(data.nickname) || '' });
+    // A signed-in socket always shows the account's saved display name.
+    const authedAccount = socketAuth.get(socket.id) ? accounts.get(socketAuth.get(socket.id)) : null;
+    const chosenName = (authedAccount && Nick.clean(authedAccount.nickname)) || Nick.clean(data.nickname);
+    patterns.onConnect({ ip: getClientIp(socket), clientId, username: chosenName || '' });
     profiles.set(socket.id, {
       clientId,
       // A name saved before the nickname rules is tidied rather than refused.
-      username: Nick.clean(data.nickname) || guestNameFor(clientId),
+      username: chosenName || guestNameFor(clientId),
       country: geo.country,
       countryName: geo.countryName,
       city: geo.city,

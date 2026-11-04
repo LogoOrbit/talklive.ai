@@ -399,9 +399,9 @@
     <string name="how_3">कभी भी स्किप करें</string>
     <string name="films_none">कुछ नहीं मिला। मूल नाम आज़माएँ।</string>
     <string name="auto_connect">ऑटो-कनेक्ट</string>
-    <string name="tap_to_stop">खोज रहे हैं · रोकने के लिए टैप करें</string>
-    <string name="tap_again_next">अगले के लिए फिर टैप करें</string>
-    <string name="tap_again_end">खत्म करने के लिए फिर टैप करें</string>
+    <string name="tap_to_stop">रोकें</string>
+    <string name="tap_again_next">फिर टैप करें</string>
+    <string name="tap_again_end">खत्म करने को टैप</string>
     <string name="plus_card_pitch">सारे फ़िल्टर, किसने लाइक किया, स्किप वापस</string>
     <string name="filters_interests_hint">हम आपको एक जैसी पसंद वालों से मिलाने की कोशिश करते हैं।</string>
     <string name="countries_title">देश</string>
@@ -448,6 +448,7 @@
     <string name="film_match">🎬 आप दोनों को %1$s पसंद है!</string>
     <string name="plus_perk_streak">अपनी स्ट्रीक वापस लाएँ</string>
     <string name="plus_perk_streak_body">एक दिन छूट गया? महीने में एक बार स्ट्रीक वापस लाएँ।</string>
+    <string name="connecting_short">जुड़ रहा है</string>
     <plurals name="visitors_today">
         <item quantity="one">आज %1$s विज़िटर</item>
         <item quantity="other">आज %1$s विज़िटर</item>

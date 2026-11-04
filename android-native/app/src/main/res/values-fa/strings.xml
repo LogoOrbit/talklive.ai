@@ -399,9 +399,9 @@
     <string name="how_3">هر وقت خواستی رد کن</string>
     <string name="films_none">چیزی پیدا نشد. نام اصلی را امتحان کن.</string>
     <string name="auto_connect">اتصال خودکار</string>
-    <string name="tap_to_stop">در حال جستجو · برای توقف بزن</string>
-    <string name="tap_again_next">برای بعدی دوباره بزن</string>
-    <string name="tap_again_end">برای پایان دوباره بزن</string>
+    <string name="tap_to_stop">توقف</string>
+    <string name="tap_again_next">دوباره بزن</string>
+    <string name="tap_again_end">برای پایان بزن</string>
     <string name="plus_card_pitch">همهٔ فیلترها، دیدن پسندها، برگرداندن رد</string>
     <string name="filters_interests_hint">سعی می‌کنیم با هم‌سلیقه‌ها جفتت کنیم.</string>
     <string name="countries_title">کشورها</string>
@@ -448,6 +448,7 @@
     <string name="film_match">🎬 هر دوی شما عاشق %1$s هستید!</string>
     <string name="plus_perk_streak">برگرداندن رکورد</string>
     <string name="plus_perk_streak_body">یک روز جا ماندی؟ ماهی یک بار رکوردت را برگردان.</string>
+    <string name="connecting_short">در حال اتصال</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s بازدیدکننده امروز</item>
         <item quantity="other">%1$s بازدیدکننده امروز</item>

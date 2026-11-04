@@ -399,9 +399,9 @@
     <string name="how_3">Pule quando quiser</string>
     <string name="films_none">Nada encontrado. Tente o título original.</string>
     <string name="auto_connect">Conexão automática</string>
-    <string name="tap_to_stop">Procurando · toque para parar</string>
-    <string name="tap_again_next">Toque de novo para o próximo</string>
-    <string name="tap_again_end">Toque de novo para encerrar</string>
+    <string name="tap_to_stop">Parar</string>
+    <string name="tap_again_next">Toque de novo</string>
+    <string name="tap_again_end">Toque p/ encerrar</string>
     <string name="plus_card_pitch">Todos os filtros, quem curtiu você, desfazer pulos</string>
     <string name="filters_interests_hint">Tentamos parear você com quem curte as mesmas coisas.</string>
     <string name="countries_title">Países</string>
@@ -448,6 +448,7 @@
     <string name="film_match">🎬 Vocês dois amam %1$s!</string>
     <string name="plus_perk_streak">Recupere sua sequência</string>
     <string name="plus_perk_streak_body">Perdeu um dia? Recupere sua sequência, uma vez por mês.</string>
+    <string name="connecting_short">Conectando</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s visitante hoje</item>
         <item quantity="other">%1$s visitantes hoje</item>

@@ -399,9 +399,9 @@
 "how_3": "Jederzeit überspringen",
 "films_none": "Nichts gefunden. Versuch den Originaltitel.",
 "auto_connect": "Auto-Verbinden",
-"tap_to_stop": "Suche · tippen zum Stoppen",
-"tap_again_next": "Nochmal tippen für Nächste",
-"tap_again_end": "Nochmal tippen zum Beenden",
+"tap_to_stop": "Stopp",
+"tap_again_next": "Nochmal tippen",
+"tap_again_end": "Tippen zum Beenden",
 "plus_card_pitch": "Alle Filter, wer dich mag, Überspringen rückgängig",
 "filters_interests_hint": "Wir verbinden dich mit Leuten, die das Gleiche mögen.",
 "countries_title": "Länder",
@@ -447,5 +447,6 @@
 "support_quick": "Schnelle Antworten",
 "film_match": "🎬 Ihr beide liebt %1$s!",
 "plus_perk_streak": "Serie zurückholen",
-"plus_perk_streak_body": "Einen Tag verpasst? Hol deine Serie zurück, einmal im Monat."
+"plus_perk_streak_body": "Einen Tag verpasst? Hol deine Serie zurück, einmal im Monat.",
+"connecting_short": "Verbinde"
 }

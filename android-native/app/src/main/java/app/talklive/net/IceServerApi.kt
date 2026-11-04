@@ -25,9 +25,8 @@ class IceServerApi @Inject constructor() {
     @Volatile private var fetchedAt = 0L
 
     /**
-     * The ICE config, from cache when fresh. TURN credentials last an hour, so
-     * like the website a copy is kept for 45 minutes; a call never waits on
-     * the network for it after the first fetch.
+     * The ICE config, from cache when fresh (see MAX_AGE_MS). It is fetched
+     * again while searching, so a call rarely waits on the network for it.
      */
     suspend fun get(): IceConfig {
         val c = cached
@@ -75,7 +74,11 @@ class IceServerApi @Inject constructor() {
     }
 
     private companion object {
-        const val MAX_AGE_MS = 45 * 60 * 1000L
+        // The server may hand out credentials with only ~10 minutes left (it
+        // refreshes them 10 minutes before they expire), so a copy is only
+        // trusted for 4 minutes. Keeping them 45 minutes meant calls behind
+        // mobile/office NAT tried an expired relay and never connected.
+        const val MAX_AGE_MS = 4 * 60 * 1000L
         val FALLBACK = IceConfig(
             listOf(PeerConnection.IceServer.builder("stun:stun.l.google.com:19302").createIceServer()),
             relayOnly = false,

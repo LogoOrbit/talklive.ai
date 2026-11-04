@@ -399,9 +399,9 @@
 "how_3": "تخطَّ في أي وقت",
 "films_none": "لم يُعثر على شيء. جرّب العنوان الأصلي.",
 "auto_connect": "الاتصال التلقائي",
-"tap_to_stop": "جارٍ البحث · اضغط للإيقاف",
-"tap_again_next": "اضغط مجددًا للتالي",
-"tap_again_end": "اضغط مجددًا للإنهاء",
+"tap_to_stop": "إيقاف",
+"tap_again_next": "اضغط مجددًا",
+"tap_again_end": "اضغط للإنهاء",
 "plus_card_pitch": "كل الفلاتر، من أُعجب بك، التراجع عن التخطي",
 "filters_interests_hint": "نحاول مطابقتك مع من يحبون الأشياء نفسها.",
 "countries_title": "الدول",
@@ -447,5 +447,6 @@
 "support_quick": "إجابات سريعة",
 "film_match": "🎬 كلاكما يحب %1$s!",
 "plus_perk_streak": "استعد سلسلتك",
-"plus_perk_streak_body": "فاتك يوم؟ استعد سلسلتك مرة في الشهر."
+"plus_perk_streak_body": "فاتك يوم؟ استعد سلسلتك مرة في الشهر.",
+"connecting_short": "جارٍ الاتصال"
 }

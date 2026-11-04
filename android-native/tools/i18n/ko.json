@@ -398,9 +398,9 @@
 "how_3": "언제든 건너뛰기",
 "films_none": "찾지 못했어요. 원제로 검색해 보세요.",
 "auto_connect": "자동 연결",
-"tap_to_stop": "검색 중 · 탭하면 중지",
-"tap_again_next": "다음으로 넘기려면 한 번 더",
-"tap_again_end": "종료하려면 한 번 더",
+"tap_to_stop": "중지",
+"tap_again_next": "한 번 더",
+"tap_again_end": "탭하여 종료",
 "plus_card_pitch": "모든 필터, 나를 좋아한 사람, 건너뛰기 취소",
 "filters_interests_hint": "같은 걸 좋아하는 사람과 연결해 드려요.",
 "countries_title": "국가",
@@ -446,5 +446,6 @@
 "support_quick": "빠른 답변",
 "film_match": "🎬 두 분 다 %1$s을(를) 좋아해요!",
 "plus_perk_streak": "연속 기록 되살리기",
-"plus_perk_streak_body": "하루를 놓쳤나요? 한 달에 한 번 기록을 되살려요."
+"plus_perk_streak_body": "하루를 놓쳤나요? 한 달에 한 번 기록을 되살려요.",
+"connecting_short": "연결 중"
 }

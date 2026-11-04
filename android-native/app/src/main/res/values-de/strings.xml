@@ -399,9 +399,9 @@
     <string name="how_3">Jederzeit überspringen</string>
     <string name="films_none">Nichts gefunden. Versuch den Originaltitel.</string>
     <string name="auto_connect">Auto-Verbinden</string>
-    <string name="tap_to_stop">Suche · tippen zum Stoppen</string>
-    <string name="tap_again_next">Nochmal tippen für Nächste</string>
-    <string name="tap_again_end">Nochmal tippen zum Beenden</string>
+    <string name="tap_to_stop">Stopp</string>
+    <string name="tap_again_next">Nochmal tippen</string>
+    <string name="tap_again_end">Tippen zum Beenden</string>
     <string name="plus_card_pitch">Alle Filter, wer dich mag, Überspringen rückgängig</string>
     <string name="filters_interests_hint">Wir verbinden dich mit Leuten, die das Gleiche mögen.</string>
     <string name="countries_title">Länder</string>
@@ -448,6 +448,7 @@
     <string name="film_match">🎬 Ihr beide liebt %1$s!</string>
     <string name="plus_perk_streak">Serie zurückholen</string>
     <string name="plus_perk_streak_body">Einen Tag verpasst? Hol deine Serie zurück, einmal im Monat.</string>
+    <string name="connecting_short">Verbinde</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s Besucher heute</item>
         <item quantity="other">%1$s Besucher heute</item>

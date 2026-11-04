@@ -447,6 +447,17 @@ class ServerE2ETest {
         // Rude display names are refused.
         assertTrue(a.auth.updateNickname("Fuhrer") is AuthResult.Error)
 
+        // The person you meet sees your chosen display name, not a random guest name.
+        val p = Client("p", withCalls = true)
+        assertEquals(AuthResult.Ok, p.auth.login(email, "secret789"))
+        val q = Client("q", withCalls = true)
+        Thread.sleep(500)
+        p.calls!!.start(CallMode.Chat)
+        q.calls!!.start(CallMode.Chat)
+        check("matched with the account") { q.calls.state.value.phase is CallPhase.Connected && p.calls.state.value.phase is CallPhase.Connected }
+        assertEquals("Droid Tester", (q.calls.state.value.phase as CallPhase.Connected).partner.username)
+        p.calls.end(); q.calls.end()
+
         // Deleting the account: the wrong password is refused, the right one deletes it for good.
         val d = Client("d")
         assertEquals(AuthResult.Ok, d.auth.login(email, "secret789"))

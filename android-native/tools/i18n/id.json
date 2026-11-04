@@ -399,9 +399,9 @@
 "how_3": "Lewati kapan saja",
 "films_none": "Tidak ditemukan. Coba judul aslinya.",
 "auto_connect": "Sambung otomatis",
-"tap_to_stop": "Mencari · ketuk untuk berhenti",
-"tap_again_next": "Ketuk lagi untuk berikutnya",
-"tap_again_end": "Ketuk lagi untuk mengakhiri",
+"tap_to_stop": "Berhenti",
+"tap_again_next": "Ketuk lagi",
+"tap_again_end": "Ketuk untuk akhiri",
 "plus_card_pitch": "Semua filter, siapa yang suka, batalkan lewati",
 "filters_interests_hint": "Kami mencocokkanmu dengan orang yang suka hal yang sama.",
 "countries_title": "Negara",
@@ -447,5 +447,6 @@
 "support_quick": "Jawaban cepat",
 "film_match": "🎬 Kalian berdua suka %1$s!",
 "plus_perk_streak": "Pulihkan runtutanmu",
-"plus_perk_streak_body": "Melewatkan sehari? Kembalikan runtutanmu, sebulan sekali."
+"plus_perk_streak_body": "Melewatkan sehari? Kembalikan runtutanmu, sebulan sekali.",
+"connecting_short": "Menghubungkan"
 }

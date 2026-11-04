@@ -399,9 +399,9 @@
     <string name="how_3">İstediğin an atla</string>
     <string name="films_none">Bir şey bulunamadı. Orijinal adı dene.</string>
     <string name="auto_connect">Otomatik bağlan</string>
-    <string name="tap_to_stop">Aranıyor · durdurmak için dokun</string>
-    <string name="tap_again_next">Sonraki için tekrar dokun</string>
-    <string name="tap_again_end">Bitirmek için tekrar dokun</string>
+    <string name="tap_to_stop">Durdur</string>
+    <string name="tap_again_next">Tekrar dokun</string>
+    <string name="tap_again_end">Bitirmek için dokun</string>
     <string name="plus_card_pitch">Tüm filtreler, seni kim beğendi, atlamayı geri al</string>
     <string name="filters_interests_hint">Seni aynı şeyleri seven kişilerle eşleştirmeye çalışırız.</string>
     <string name="countries_title">Ülkeler</string>
@@ -448,6 +448,7 @@
     <string name="film_match">🎬 İkiniz de %1$s seviyorsunuz!</string>
     <string name="plus_perk_streak">Serini geri getir</string>
     <string name="plus_perk_streak_body">Bir günü mü kaçırdın? Serini ayda bir geri getir.</string>
+    <string name="connecting_short">Bağlanıyor</string>
     <plurals name="visitors_today">
         <item quantity="one">Bugün %1$s ziyaretçi</item>
         <item quantity="other">Bugün %1$s ziyaretçi</item>

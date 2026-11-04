@@ -399,9 +399,9 @@
     <string name="how_3">Пропускайте в любой момент</string>
     <string name="films_none">Ничего не найдено. Попробуйте оригинальное название.</string>
     <string name="auto_connect">Автоподключение</string>
-    <string name="tap_to_stop">Поиск · нажмите, чтобы остановить</string>
-    <string name="tap_again_next">Нажмите ещё раз — следующий</string>
-    <string name="tap_again_end">Нажмите ещё раз — завершить</string>
+    <string name="tap_to_stop">Стоп</string>
+    <string name="tap_again_next">Ещё раз</string>
+    <string name="tap_again_end">Завершить</string>
     <string name="plus_card_pitch">Все фильтры, кому вы понравились, отмена пропуска</string>
     <string name="filters_interests_hint">Мы стараемся соединять вас с людьми с похожими интересами.</string>
     <string name="countries_title">Страны</string>
@@ -448,6 +448,7 @@
     <string name="film_match">🎬 Вы оба любите «%1$s»!</string>
     <string name="plus_perk_streak">Вернуть серию</string>
     <string name="plus_perk_streak_body">Пропустили день? Верните серию раз в месяц.</string>
+    <string name="connecting_short">Соединение</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s посетитель сегодня</item>
         <item quantity="other">%1$s посетителя сегодня</item>

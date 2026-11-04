@@ -398,9 +398,9 @@
 "how_3": "いつでもスキップ",
 "films_none": "見つかりません。原題で試してください。",
 "auto_connect": "自動接続",
-"tap_to_stop": "検索中 · タップで停止",
-"tap_again_next": "もう一度タップで次へ",
-"tap_again_end": "もう一度タップで終了",
+"tap_to_stop": "停止",
+"tap_again_next": "もう一度タップ",
+"tap_again_end": "タップで終了",
 "plus_card_pitch": "すべてのフィルター、いいねした人、スキップ取り消し",
 "filters_interests_hint": "好きなものが同じ人とマッチしやすくします。",
 "countries_title": "国",
@@ -446,5 +446,6 @@
 "support_quick": "すぐわかる回答",
 "film_match": "🎬 2人とも「%1$s」が好き！",
 "plus_perk_streak": "連続記録を戻す",
-"plus_perk_streak_body": "1日休んだ？月に1回、記録を戻せます。"
+"plus_perk_streak_body": "1日休んだ？月に1回、記録を戻せます。",
+"connecting_short": "接続中"
 }

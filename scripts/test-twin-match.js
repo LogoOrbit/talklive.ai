@@ -76,7 +76,7 @@ async function pair(nameA, avatarA, nameB, avatarB) {
     ok('same personality flagged for the first person', ma.samePersonality === 'wizard', ma.samePersonality);
     ok('same personality flagged for the second person', mb.samePersonality === 'wizard', mb.samePersonality);
     ok('same animal still visible to both', ma.partner.animal === 'wolf' && mb.partner.animal === 'wolf');
-    ok('partner avatar itself is not sent', !('avatar' in ma.partner));
+    ok('partner chosen avatar is shown', 'avatar' in ma.partner);
 
     [ma, mb] = await pair('Charlie', 'c:wizard', 'Delta', 'c:pirate');
     ok('different personalities are not flagged', ma.samePersonality == null && mb.samePersonality == null);

@@ -399,9 +399,9 @@
     <string name="how_3">いつでもスキップ</string>
     <string name="films_none">見つかりません。原題で試してください。</string>
     <string name="auto_connect">自動接続</string>
-    <string name="tap_to_stop">検索中 · タップで停止</string>
-    <string name="tap_again_next">もう一度タップで次へ</string>
-    <string name="tap_again_end">もう一度タップで終了</string>
+    <string name="tap_to_stop">停止</string>
+    <string name="tap_again_next">もう一度タップ</string>
+    <string name="tap_again_end">タップで終了</string>
     <string name="plus_card_pitch">すべてのフィルター、いいねした人、スキップ取り消し</string>
     <string name="filters_interests_hint">好きなものが同じ人とマッチしやすくします。</string>
     <string name="countries_title">国</string>
@@ -448,6 +448,7 @@
     <string name="film_match">🎬 2人とも「%1$s」が好き！</string>
     <string name="plus_perk_streak">連続記録を戻す</string>
     <string name="plus_perk_streak_body">1日休んだ？月に1回、記録を戻せます。</string>
+    <string name="connecting_short">接続中</string>
     <plurals name="visitors_today">
         <item quantity="other">今日の訪問者 %1$s人</item>
     </plurals>

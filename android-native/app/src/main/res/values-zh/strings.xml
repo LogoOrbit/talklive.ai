@@ -399,9 +399,9 @@
     <string name="how_3">随时跳过</string>
     <string name="films_none">没有找到，试试原名。</string>
     <string name="auto_connect">自动连接</string>
-    <string name="tap_to_stop">正在寻找 · 点击停止</string>
-    <string name="tap_again_next">再点一次换下一个</string>
-    <string name="tap_again_end">再点一次挂断</string>
+    <string name="tap_to_stop">停止</string>
+    <string name="tap_again_next">再点一次</string>
+    <string name="tap_again_end">点按挂断</string>
     <string name="plus_card_pitch">所有筛选、谁喜欢你、撤销跳过</string>
     <string name="filters_interests_hint">我们会尽量为你匹配兴趣相同的人。</string>
     <string name="countries_title">国家</string>
@@ -448,6 +448,7 @@
     <string name="film_match">🎬 你们都喜欢《%1$s》！</string>
     <string name="plus_perk_streak">恢复连续记录</string>
     <string name="plus_perk_streak_body">漏了一天？每月可恢复一次连续记录。</string>
+    <string name="connecting_short">连接中</string>
     <plurals name="visitors_today">
         <item quantity="other">今日访客 %1$s 人</item>
     </plurals>
