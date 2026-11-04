@@ -427,6 +427,10 @@ class ServerE2ETest {
 
         assertEquals(AuthResult.Ok, a.auth.updateNickname("Droid Tester"))
         assertEquals("Droid Tester", a.auth.account.value?.nickname)
+        // The picked avatar is saved with the account.
+        a.identity.animal = "owl"
+        a.socket.register()
+        Thread.sleep(500)
         assertEquals(AuthResult.Ok, a.auth.changePassword("secret123", "secret456"))
 
         // Another phone logs in with the new password (by email).
@@ -434,6 +438,7 @@ class ServerE2ETest {
         assertTrue(b.auth.login(email, "wrong-pass") is AuthResult.Error)
         assertEquals(AuthResult.Ok, b.auth.login(email, "secret456"))
         assertEquals("Droid Tester", b.auth.account.value?.nickname)
+        assertEquals("owl", b.identity.animal)
 
         // Forgot password on a third phone.
         val c = Client("c")

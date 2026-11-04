@@ -448,5 +448,16 @@
 "film_match": "🎬 आप दोनों को %1$s पसंद है!",
 "plus_perk_streak": "अपनी स्ट्रीक वापस लाएँ",
 "plus_perk_streak_body": "एक दिन छूट गया? महीने में एक बार स्ट्रीक वापस लाएँ।",
-"connecting_short": "जुड़ रहा है"
+"connecting_short": "जुड़ रहा है",
+"searching_2": "दुनिया भर में खोज रहे हैं…",
+"searching_3": "अभी भी खोज रहे हैं, रुकिए…",
+"almost_there": "बस हो गया…",
+"connecting_someone": "अभी जोड़ रहे हैं…",
+"connecting_someone_in": "%1$s के किसी व्यक्ति से जोड़ रहे हैं",
+"press_back_exit": "बाहर निकलने के लिए फिर से बैक दबाएँ",
+"leave_call_q": "कॉल छोड़ें?",
+"leave_chat_q": "चैट छोड़ें?",
+"stop_search_q": "खोज रोकें?",
+"leave": "छोड़ें",
+"stay": "रुकें"
 }

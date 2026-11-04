@@ -449,6 +449,17 @@
     <string name="plus_perk_streak">Recupera tu racha</string>
     <string name="plus_perk_streak_body">¿Te saltaste un día? Recupera tu racha, una vez al mes.</string>
     <string name="connecting_short">Conectando</string>
+    <string name="searching_2">Buscando por todo el mundo…</string>
+    <string name="searching_3">Seguimos buscando, un momento…</string>
+    <string name="almost_there">Casi listo…</string>
+    <string name="connecting_someone">Conectándote ahora…</string>
+    <string name="connecting_someone_in">Conectándote con alguien de %1$s</string>
+    <string name="press_back_exit">Pulsa atrás otra vez para salir</string>
+    <string name="leave_call_q">¿Salir de la llamada?</string>
+    <string name="leave_chat_q">¿Salir del chat?</string>
+    <string name="stop_search_q">¿Dejar de buscar?</string>
+    <string name="leave">Salir</string>
+    <string name="stay">Quedarme</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s visitante hoy</item>
         <item quantity="other">%1$s visitantes hoy</item>

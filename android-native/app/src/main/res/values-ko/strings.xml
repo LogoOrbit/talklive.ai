@@ -449,6 +449,17 @@
     <string name="plus_perk_streak">연속 기록 되살리기</string>
     <string name="plus_perk_streak_body">하루를 놓쳤나요? 한 달에 한 번 기록을 되살려요.</string>
     <string name="connecting_short">연결 중</string>
+    <string name="searching_2">전 세계에서 찾는 중…</string>
+    <string name="searching_3">아직 찾는 중이에요, 잠시만요…</string>
+    <string name="almost_there">거의 다 됐어요…</string>
+    <string name="connecting_someone">지금 연결하는 중…</string>
+    <string name="connecting_someone_in">%1$s의 누군가와 연결하는 중</string>
+    <string name="press_back_exit">종료하려면 뒤로를 한 번 더 누르세요</string>
+    <string name="leave_call_q">통화를 나갈까요?</string>
+    <string name="leave_chat_q">채팅을 나갈까요?</string>
+    <string name="stop_search_q">검색을 멈출까요?</string>
+    <string name="leave">나가기</string>
+    <string name="stay">머무르기</string>
     <plurals name="visitors_today">
         <item quantity="other">오늘 방문자 %1$s명</item>
     </plurals>

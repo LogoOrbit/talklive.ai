@@ -449,6 +449,17 @@
     <string name="plus_perk_streak">Récupère ta série</string>
     <string name="plus_perk_streak_body">Un jour raté ? Récupère ta série, une fois par mois.</string>
     <string name="connecting_short">Connexion</string>
+    <string name="searching_2">On cherche dans le monde entier…</string>
+    <string name="searching_3">On cherche encore, un instant…</string>
+    <string name="almost_there">Presque prêt…</string>
+    <string name="connecting_someone">Connexion en cours…</string>
+    <string name="connecting_someone_in">Connexion avec quelqu\'un de %1$s</string>
+    <string name="press_back_exit">Appuyez encore sur retour pour quitter</string>
+    <string name="leave_call_q">Quitter l\'appel ?</string>
+    <string name="leave_chat_q">Quitter le chat ?</string>
+    <string name="stop_search_q">Arrêter la recherche ?</string>
+    <string name="leave">Quitter</string>
+    <string name="stay">Rester</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s visiteur aujourd\'hui</item>
         <item quantity="other">%1$s visiteurs aujourd\'hui</item>

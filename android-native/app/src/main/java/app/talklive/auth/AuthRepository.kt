@@ -204,6 +204,8 @@ class AuthRepository(
             .putString(KEY_EMAIL, acc.email)
             .apply()
         _account.value = acc
+        // The avatar saved with the account follows it to this device.
+        res.optString("animal").takeIf { it.isNotBlank() && it != "null" && it != identity.animal }?.let { identity.animal = it }
         finishOnboarding()
         adoptProfile(res)
         syncNickname()

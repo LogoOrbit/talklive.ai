@@ -449,6 +449,17 @@
     <string name="plus_perk_streak">連続記録を戻す</string>
     <string name="plus_perk_streak_body">1日休んだ？月に1回、記録を戻せます。</string>
     <string name="connecting_short">接続中</string>
+    <string name="searching_2">世界中を探しています…</string>
+    <string name="searching_3">まだ探しています。少々お待ちください…</string>
+    <string name="almost_there">もうすぐです…</string>
+    <string name="connecting_someone">接続しています…</string>
+    <string name="connecting_someone_in">%1$sの人とつないでいます</string>
+    <string name="press_back_exit">もう一度戻るを押すと終了します</string>
+    <string name="leave_call_q">通話を終了しますか？</string>
+    <string name="leave_chat_q">チャットを終了しますか？</string>
+    <string name="stop_search_q">検索をやめますか？</string>
+    <string name="leave">終了</string>
+    <string name="stay">続ける</string>
     <plurals name="visitors_today">
         <item quantity="other">今日の訪問者 %1$s人</item>
     </plurals>

@@ -449,6 +449,17 @@
     <string name="plus_perk_streak">برگرداندن رکورد</string>
     <string name="plus_perk_streak_body">یک روز جا ماندی؟ ماهی یک بار رکوردت را برگردان.</string>
     <string name="connecting_short">در حال اتصال</string>
+    <string name="searching_2">در حال جستجو در سراسر جهان…</string>
+    <string name="searching_3">هنوز در حال جستجو، کمی صبر کنید…</string>
+    <string name="almost_there">تقریباً آماده است…</string>
+    <string name="connecting_someone">در حال وصل کردن شما…</string>
+    <string name="connecting_someone_in">وصل شدن به کسی از %1$s</string>
+    <string name="press_back_exit">برای خروج دوباره بازگشت را بزنید</string>
+    <string name="leave_call_q">تماس را ترک می‌کنید؟</string>
+    <string name="leave_chat_q">گفتگو را ترک می‌کنید؟</string>
+    <string name="stop_search_q">جستجو متوقف شود؟</string>
+    <string name="leave">ترک</string>
+    <string name="stay">ماندن</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s بازدیدکننده امروز</item>
         <item quantity="other">%1$s بازدیدکننده امروز</item>

@@ -449,6 +449,17 @@
     <string name="plus_perk_streak">Pulihkan runtutanmu</string>
     <string name="plus_perk_streak_body">Melewatkan sehari? Kembalikan runtutanmu, sebulan sekali.</string>
     <string name="connecting_short">Menghubungkan</string>
+    <string name="searching_2">Mencari di seluruh dunia…</string>
+    <string name="searching_3">Masih mencari, tunggu sebentar…</string>
+    <string name="almost_there">Hampir selesai…</string>
+    <string name="connecting_someone">Menghubungkan sekarang…</string>
+    <string name="connecting_someone_in">Menghubungkan dengan seseorang dari %1$s</string>
+    <string name="press_back_exit">Tekan kembali sekali lagi untuk keluar</string>
+    <string name="leave_call_q">Tinggalkan panggilan?</string>
+    <string name="leave_chat_q">Tinggalkan obrolan?</string>
+    <string name="stop_search_q">Berhenti mencari?</string>
+    <string name="leave">Keluar</string>
+    <string name="stay">Tetap</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s pengunjung hari ini</item>
         <item quantity="other">%1$s pengunjung hari ini</item>

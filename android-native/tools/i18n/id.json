@@ -448,5 +448,16 @@
 "film_match": "🎬 Kalian berdua suka %1$s!",
 "plus_perk_streak": "Pulihkan runtutanmu",
 "plus_perk_streak_body": "Melewatkan sehari? Kembalikan runtutanmu, sebulan sekali.",
-"connecting_short": "Menghubungkan"
+"connecting_short": "Menghubungkan",
+"searching_2": "Mencari di seluruh dunia…",
+"searching_3": "Masih mencari, tunggu sebentar…",
+"almost_there": "Hampir selesai…",
+"connecting_someone": "Menghubungkan sekarang…",
+"connecting_someone_in": "Menghubungkan dengan seseorang dari %1$s",
+"press_back_exit": "Tekan kembali sekali lagi untuk keluar",
+"leave_call_q": "Tinggalkan panggilan?",
+"leave_chat_q": "Tinggalkan obrolan?",
+"stop_search_q": "Berhenti mencari?",
+"leave": "Keluar",
+"stay": "Tetap"
 }

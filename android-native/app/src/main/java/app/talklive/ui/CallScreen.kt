@@ -121,11 +121,8 @@ fun CallScreen(
     var reporting by remember { mutableStateOf(false) }
     var showPartner by remember { mutableStateOf(false) }
     val phase = state.phase
-    val partner = when (phase) {
-        is CallPhase.Connecting -> phase.partner
-        is CallPhase.Connected -> phase.partner
-        else -> null
-    }
+    // Nobody is shown until the call is actually live.
+    val partner = (phase as? CallPhase.Connected)?.partner
 
     val tilt by app.talklive.ui.call.rememberTilt()
     val live = phase is CallPhase.Connected
@@ -194,13 +191,14 @@ fun CallScreen(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 when (p) {
                     is CallPhase.Searching -> {
-                        Title(stringResource(R.string.searching))
+                        SearchingTitle()
                         p.etaSeconds?.takeIf { it > 0 }?.let { Subtitle(stringResource(R.string.searching_eta, it)) }
                     }
                     is CallPhase.Connecting -> {
-                        PartnerInfo(p.partner)
+                        Title(stringResource(R.string.almost_there))
                         Spacer(Modifier.height(6.dp))
-                        Subtitle(stringResource(R.string.connecting_call))
+                        val where = listOfNotNull(flag(p.partner.countryCode), p.partner.country).joinToString(" ")
+                        Subtitle(if (where.isBlank()) stringResource(R.string.connecting_someone) else stringResource(R.string.connecting_someone_in, where))
                     }
                     is CallPhase.Connected -> {
                         PartnerInfo(p.partner)
@@ -253,7 +251,8 @@ fun CallScreen(
         Spacer(Modifier.height(18.dp))
         app.talklive.ui.call.MainCallButton(
             phaseLive = live,
-            connecting = phase is CallPhase.Connecting,
+            // Until audio is live it is still a search the person can stop.
+            connecting = false,
             autoConnect = autoConnect,
             onNext = onNext,
             onEnd = onEnd,
@@ -361,7 +360,8 @@ private fun SpeakingAvatar(partner: Partner, active: Boolean, level: () -> Float
 
 @Composable
 private fun PartnerInfo(p: Partner) {
-    Title(p.username)
+    Title(p.username.ifBlank { stringResource(R.string.stranger) })
+    Spacer(Modifier.height(8.dp))
     Subtitle(partnerLine(p).ifBlank { animalById(p.animal)?.name.orEmpty() })
 }
 
@@ -447,6 +447,17 @@ private fun IcebreakerCard(key: String, draw: () -> app.talklive.data.Icebreaker
                 }
             }
         }
+    }
+}
+
+/** Searching text that changes now and then, so a long wait never looks frozen. */
+@Composable
+private fun SearchingTitle() {
+    val lines = listOf(R.string.searching, R.string.searching_2, R.string.searching_3)
+    var i by remember { mutableStateOf(0) }
+    LaunchedEffect(Unit) { while (true) { delay(3500); i = (i + 1) % lines.size } }
+    AnimatedContent(i, transitionSpec = { fadeIn(tween(300)) togetherWith fadeOut(tween(200)) }, label = "searching") {
+        Title(stringResource(lines[it]))
     }
 }
 

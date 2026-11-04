@@ -449,6 +449,17 @@
     <string name="plus_perk_streak">اپنی اسٹریک واپس لائیں</string>
     <string name="plus_perk_streak_body">ایک دن رہ گیا؟ مہینے میں ایک بار اسٹریک واپس لائیں۔</string>
     <string name="connecting_short">جڑ رہا ہے</string>
+    <string name="searching_2">دنیا بھر میں تلاش جاری ہے…</string>
+    <string name="searching_3">ابھی تلاش جاری ہے، ذرا رکیں…</string>
+    <string name="almost_there">بس ہونے والا ہے…</string>
+    <string name="connecting_someone">ابھی جوڑ رہے ہیں…</string>
+    <string name="connecting_someone_in">%1$s کے کسی شخص سے جوڑ رہے ہیں</string>
+    <string name="press_back_exit">باہر نکلنے کے لیے دوبارہ بیک دبائیں</string>
+    <string name="leave_call_q">کال چھوڑیں؟</string>
+    <string name="leave_chat_q">چیٹ چھوڑیں؟</string>
+    <string name="stop_search_q">تلاش روکیں؟</string>
+    <string name="leave">چھوڑیں</string>
+    <string name="stay">رکیں</string>
     <plurals name="visitors_today">
         <item quantity="one">آج %1$s وزیٹر</item>
         <item quantity="other">آج %1$s وزیٹرز</item>

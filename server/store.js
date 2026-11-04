@@ -2334,6 +2334,8 @@ function saveAccount(usernameLower, account) {
     passwordHash: account.passwordHash || null,
     salt: account.salt || null,
     nickname: account.nickname || '',
+    // The avatar picked while signed in, so it follows the account to any device.
+    animal: account.animal || previous.animal || null,
     googleId: account.googleId || null,
     email,
     // The Google profile the user consented to share (name, verified email,

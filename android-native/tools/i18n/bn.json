@@ -448,5 +448,16 @@
 "film_match": "🎬 আপনারা দুজনেই %1$s ভালোবাসেন!",
 "plus_perk_streak": "স্ট্রিক ফেরান",
 "plus_perk_streak_body": "একদিন মিস করেছেন? মাসে একবার স্ট্রিক ফেরান।",
-"connecting_short": "যুক্ত হচ্ছে"
+"connecting_short": "যুক্ত হচ্ছে",
+"searching_2": "সারা বিশ্বে খোঁজা হচ্ছে…",
+"searching_3": "এখনও খুঁজছি, একটু অপেক্ষা করুন…",
+"almost_there": "প্রায় হয়ে গেছে…",
+"connecting_someone": "এখনই যুক্ত করা হচ্ছে…",
+"connecting_someone_in": "%1$s-এর একজনের সাথে যুক্ত করা হচ্ছে",
+"press_back_exit": "বের হতে আবার ব্যাক চাপুন",
+"leave_call_q": "কলটি ছেড়ে যাবেন?",
+"leave_chat_q": "চ্যাটটি ছেড়ে যাবেন?",
+"stop_search_q": "খোঁজা বন্ধ করবেন?",
+"leave": "ছেড়ে যান",
+"stay": "থাকুন"
 }

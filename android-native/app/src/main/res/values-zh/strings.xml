@@ -449,6 +449,17 @@
     <string name="plus_perk_streak">恢复连续记录</string>
     <string name="plus_perk_streak_body">漏了一天？每月可恢复一次连续记录。</string>
     <string name="connecting_short">连接中</string>
+    <string name="searching_2">正在全球寻找…</string>
+    <string name="searching_3">仍在寻找，请稍候…</string>
+    <string name="almost_there">马上就好…</string>
+    <string name="connecting_someone">正在为你连接…</string>
+    <string name="connecting_someone_in">正在连接来自%1$s的人</string>
+    <string name="press_back_exit">再按一次返回键退出</string>
+    <string name="leave_call_q">离开通话？</string>
+    <string name="leave_chat_q">离开聊天？</string>
+    <string name="stop_search_q">停止搜索？</string>
+    <string name="leave">离开</string>
+    <string name="stay">留下</string>
     <plurals name="visitors_today">
         <item quantity="other">今日访客 %1$s 人</item>
     </plurals>

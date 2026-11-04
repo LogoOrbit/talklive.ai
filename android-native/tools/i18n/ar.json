@@ -448,5 +448,16 @@
 "film_match": "🎬 كلاكما يحب %1$s!",
 "plus_perk_streak": "استعد سلسلتك",
 "plus_perk_streak_body": "فاتك يوم؟ استعد سلسلتك مرة في الشهر.",
-"connecting_short": "جارٍ الاتصال"
+"connecting_short": "جارٍ الاتصال",
+"searching_2": "نبحث حول العالم…",
+"searching_3": "ما زلنا نبحث، لحظة…",
+"almost_there": "أوشكنا…",
+"connecting_someone": "نوصلك الآن…",
+"connecting_someone_in": "نوصلك بشخص من %1$s",
+"press_back_exit": "اضغط رجوع مرة أخرى للخروج",
+"leave_call_q": "مغادرة المكالمة؟",
+"leave_chat_q": "مغادرة الدردشة؟",
+"stop_search_q": "إيقاف البحث؟",
+"leave": "مغادرة",
+"stay": "البقاء"
 }

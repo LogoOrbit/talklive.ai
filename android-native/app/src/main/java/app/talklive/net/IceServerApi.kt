@@ -28,11 +28,14 @@ class IceServerApi @Inject constructor() {
      * The ICE config, from cache when fresh (see MAX_AGE_MS). It is fetched
      * again while searching, so a call rarely waits on the network for it.
      */
-    suspend fun get(): IceConfig {
+    suspend fun get(maxAgeMs: Long = MAX_AGE_MS): IceConfig {
         val c = cached
-        if (c != null && System.currentTimeMillis() - fetchedAt < MAX_AGE_MS) return c
+        if (c != null && System.currentTimeMillis() - fetchedAt < maxAgeMs) return c
         return fetch()
     }
+
+    /** For a call starting now: a copy up to 8 minutes old still has time left. */
+    suspend fun forCall(): IceConfig = get(CALL_MAX_AGE_MS)
 
     suspend fun fetch(): IceConfig = withContext(Dispatchers.IO) {
         runCatching {
@@ -79,6 +82,7 @@ class IceServerApi @Inject constructor() {
         // trusted for 4 minutes. Keeping them 45 minutes meant calls behind
         // mobile/office NAT tried an expired relay and never connected.
         const val MAX_AGE_MS = 4 * 60 * 1000L
+        const val CALL_MAX_AGE_MS = 8 * 60 * 1000L
         val FALLBACK = IceConfig(
             listOf(PeerConnection.IceServer.builder("stun:stun.l.google.com:19302").createIceServer()),
             relayOnly = false,

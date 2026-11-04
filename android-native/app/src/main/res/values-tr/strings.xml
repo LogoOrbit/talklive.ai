@@ -449,6 +449,17 @@
     <string name="plus_perk_streak">Serini geri getir</string>
     <string name="plus_perk_streak_body">Bir günü mü kaçırdın? Serini ayda bir geri getir.</string>
     <string name="connecting_short">Bağlanıyor</string>
+    <string name="searching_2">Dünyanın her yerinde arıyoruz…</string>
+    <string name="searching_3">Hâlâ arıyoruz, biraz bekle…</string>
+    <string name="almost_there">Neredeyse hazır…</string>
+    <string name="connecting_someone">Şimdi bağlanıyorsun…</string>
+    <string name="connecting_someone_in">%1$s ülkesinden biriyle bağlanıyorsun</string>
+    <string name="press_back_exit">Çıkmak için tekrar geri bas</string>
+    <string name="leave_call_q">Aramadan çıkılsın mı?</string>
+    <string name="leave_chat_q">Sohbetten çıkılsın mı?</string>
+    <string name="stop_search_q">Arama durdurulsun mu?</string>
+    <string name="leave">Çık</string>
+    <string name="stay">Kal</string>
     <plurals name="visitors_today">
         <item quantity="one">Bugün %1$s ziyaretçi</item>
         <item quantity="other">Bugün %1$s ziyaretçi</item>

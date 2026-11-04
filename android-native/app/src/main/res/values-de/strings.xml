@@ -449,6 +449,17 @@
     <string name="plus_perk_streak">Serie zurückholen</string>
     <string name="plus_perk_streak_body">Einen Tag verpasst? Hol deine Serie zurück, einmal im Monat.</string>
     <string name="connecting_short">Verbinde</string>
+    <string name="searching_2">Wir suchen weltweit…</string>
+    <string name="searching_3">Noch auf der Suche, einen Moment…</string>
+    <string name="almost_there">Fast geschafft…</string>
+    <string name="connecting_someone">Du wirst verbunden…</string>
+    <string name="connecting_someone_in">Verbinde dich mit jemandem aus %1$s</string>
+    <string name="press_back_exit">Zum Beenden erneut zurück drücken</string>
+    <string name="leave_call_q">Anruf verlassen?</string>
+    <string name="leave_chat_q">Chat verlassen?</string>
+    <string name="stop_search_q">Suche beenden?</string>
+    <string name="leave">Verlassen</string>
+    <string name="stay">Bleiben</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s Besucher heute</item>
         <item quantity="other">%1$s Besucher heute</item>

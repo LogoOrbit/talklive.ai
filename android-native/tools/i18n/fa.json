@@ -448,5 +448,16 @@
 "film_match": "🎬 هر دوی شما عاشق %1$s هستید!",
 "plus_perk_streak": "برگرداندن رکورد",
 "plus_perk_streak_body": "یک روز جا ماندی؟ ماهی یک بار رکوردت را برگردان.",
-"connecting_short": "در حال اتصال"
+"connecting_short": "در حال اتصال",
+"searching_2": "در حال جستجو در سراسر جهان…",
+"searching_3": "هنوز در حال جستجو، کمی صبر کنید…",
+"almost_there": "تقریباً آماده است…",
+"connecting_someone": "در حال وصل کردن شما…",
+"connecting_someone_in": "وصل شدن به کسی از %1$s",
+"press_back_exit": "برای خروج دوباره بازگشت را بزنید",
+"leave_call_q": "تماس را ترک می‌کنید؟",
+"leave_chat_q": "گفتگو را ترک می‌کنید؟",
+"stop_search_q": "جستجو متوقف شود؟",
+"leave": "ترک",
+"stay": "ماندن"
 }

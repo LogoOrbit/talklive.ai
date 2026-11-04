@@ -448,5 +448,16 @@
 "film_match": "🎬 İkiniz de %1$s seviyorsunuz!",
 "plus_perk_streak": "Serini geri getir",
 "plus_perk_streak_body": "Bir günü mü kaçırdın? Serini ayda bir geri getir.",
-"connecting_short": "Bağlanıyor"
+"connecting_short": "Bağlanıyor",
+"searching_2": "Dünyanın her yerinde arıyoruz…",
+"searching_3": "Hâlâ arıyoruz, biraz bekle…",
+"almost_there": "Neredeyse hazır…",
+"connecting_someone": "Şimdi bağlanıyorsun…",
+"connecting_someone_in": "%1$s ülkesinden biriyle bağlanıyorsun",
+"press_back_exit": "Çıkmak için tekrar geri bas",
+"leave_call_q": "Aramadan çıkılsın mı?",
+"leave_chat_q": "Sohbetten çıkılsın mı?",
+"stop_search_q": "Arama durdurulsun mu?",
+"leave": "Çık",
+"stay": "Kal"
 }

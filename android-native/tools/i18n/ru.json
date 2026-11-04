@@ -450,5 +450,16 @@
 "film_match": "🎬 Вы оба любите «%1$s»!",
 "plus_perk_streak": "Вернуть серию",
 "plus_perk_streak_body": "Пропустили день? Верните серию раз в месяц.",
-"connecting_short": "Соединение"
+"connecting_short": "Соединение",
+"searching_2": "Ищем по всему миру…",
+"searching_3": "Всё ещё ищем, подождите…",
+"almost_there": "Почти готово…",
+"connecting_someone": "Соединяем…",
+"connecting_someone_in": "Соединяем с человеком из страны %1$s",
+"press_back_exit": "Нажмите «Назад» ещё раз для выхода",
+"leave_call_q": "Выйти из звонка?",
+"leave_chat_q": "Выйти из чата?",
+"stop_search_q": "Остановить поиск?",
+"leave": "Выйти",
+"stay": "Остаться"
 }

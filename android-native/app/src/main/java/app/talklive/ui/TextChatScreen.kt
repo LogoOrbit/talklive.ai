@@ -1,6 +1,5 @@
 package app.talklive.ui
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
@@ -130,7 +129,6 @@ fun TextChatScreen(
     var ideas by remember(partner?.clientId) { mutableStateOf(icebreakers(3)) }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
-    BackHandler(onBack = onEnd)
     LaunchedEffect(messages.size, state.partnerTyping) { if (messages.isNotEmpty()) listState.animateScrollToItem(0) }
     LaunchedEffect(partner?.clientId) { draft = ""; replyTo = null }
 

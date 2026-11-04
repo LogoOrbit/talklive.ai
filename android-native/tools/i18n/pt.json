@@ -448,5 +448,16 @@
 "film_match": "🎬 Vocês dois amam %1$s!",
 "plus_perk_streak": "Recupere sua sequência",
 "plus_perk_streak_body": "Perdeu um dia? Recupere sua sequência, uma vez por mês.",
-"connecting_short": "Conectando"
+"connecting_short": "Conectando",
+"searching_2": "Procurando pelo mundo…",
+"searching_3": "Ainda procurando, aguarde…",
+"almost_there": "Quase lá…",
+"connecting_someone": "Conectando você agora…",
+"connecting_someone_in": "Conectando você a alguém de %1$s",
+"press_back_exit": "Toque em voltar de novo para sair",
+"leave_call_q": "Sair da chamada?",
+"leave_chat_q": "Sair do chat?",
+"stop_search_q": "Parar de procurar?",
+"leave": "Sair",
+"stay": "Ficar"
 }

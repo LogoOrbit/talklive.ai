@@ -137,6 +137,7 @@ class CallManager @Inject constructor(
 
     private var session: RtcSession? = null
     private var initiator = false
+    private var icePrefetch: Job? = null
     private var matchId = 0
     private var watchdog: Job? = null
     private val pendingSignals = mutableListOf<JSONObject>()
@@ -280,6 +281,7 @@ class CallManager @Inject constructor(
     }
 
     fun end() = scope.launch {
+        icePrefetch?.cancel()
         teardown()
         socket.emit("leave")
         audio.stop()
@@ -313,7 +315,14 @@ class CallManager @Inject constructor(
     private fun search() {
         // Get everything a call needs ready while we wait for a match, so the
         // handshake can start the instant one arrives.
-        scope.launch(Dispatchers.IO) { runCatching { iceApi.get() } }
+        icePrefetch?.cancel()
+        icePrefetch = scope.launch(Dispatchers.IO) {
+            // Keep relay credentials fresh for as long as the search lasts.
+            while (true) {
+                runCatching { iceApi.get() }
+                delay(3 * 60 * 1000L)
+            }
+        }
         scope.launch(Dispatchers.Default) { runCatching { rtc.factory } }
         setPhase(CallPhase.Searching())
         socket.emit("find-partner", searchOpts())
@@ -444,7 +453,8 @@ class CallManager @Inject constructor(
         _state.update { it.copy(mode = CallMode.Talk) }
         setPhase(CallPhase.Connecting(m.partner))
 
-        val ice = iceApi.get()
+        icePrefetch?.cancel()
+        val ice = iceApi.forCall()
         if (id != matchId) return // skipped while fetching
         val s = runCatching { RtcSession(rtc.factory, ice, object : RtcSession.Listener {
             override fun onLocalCandidate(candidate: IceCandidate) {
@@ -594,6 +604,6 @@ class CallManager @Inject constructor(
 
     private companion object {
         const val TAG = "CallManager"
-        const val CONNECT_TIMEOUT_MS = 20_000L
+        const val CONNECT_TIMEOUT_MS = 25_000L
     }
 }

@@ -449,6 +449,17 @@
     <string name="plus_perk_streak">Вернуть серию</string>
     <string name="plus_perk_streak_body">Пропустили день? Верните серию раз в месяц.</string>
     <string name="connecting_short">Соединение</string>
+    <string name="searching_2">Ищем по всему миру…</string>
+    <string name="searching_3">Всё ещё ищем, подождите…</string>
+    <string name="almost_there">Почти готово…</string>
+    <string name="connecting_someone">Соединяем…</string>
+    <string name="connecting_someone_in">Соединяем с человеком из страны %1$s</string>
+    <string name="press_back_exit">Нажмите «Назад» ещё раз для выхода</string>
+    <string name="leave_call_q">Выйти из звонка?</string>
+    <string name="leave_chat_q">Выйти из чата?</string>
+    <string name="stop_search_q">Остановить поиск?</string>
+    <string name="leave">Выйти</string>
+    <string name="stay">Остаться</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s посетитель сегодня</item>
         <item quantity="other">%1$s посетителя сегодня</item>

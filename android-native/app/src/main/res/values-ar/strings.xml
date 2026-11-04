@@ -449,6 +449,17 @@
     <string name="plus_perk_streak">استعد سلسلتك</string>
     <string name="plus_perk_streak_body">فاتك يوم؟ استعد سلسلتك مرة في الشهر.</string>
     <string name="connecting_short">جارٍ الاتصال</string>
+    <string name="searching_2">نبحث حول العالم…</string>
+    <string name="searching_3">ما زلنا نبحث، لحظة…</string>
+    <string name="almost_there">أوشكنا…</string>
+    <string name="connecting_someone">نوصلك الآن…</string>
+    <string name="connecting_someone_in">نوصلك بشخص من %1$s</string>
+    <string name="press_back_exit">اضغط رجوع مرة أخرى للخروج</string>
+    <string name="leave_call_q">مغادرة المكالمة؟</string>
+    <string name="leave_chat_q">مغادرة الدردشة؟</string>
+    <string name="stop_search_q">إيقاف البحث؟</string>
+    <string name="leave">مغادرة</string>
+    <string name="stay">البقاء</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s زائر اليوم</item>
         <item quantity="other">%1$s زائر اليوم</item>

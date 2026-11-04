@@ -447,5 +447,16 @@
 "film_match": "🎬 你们都喜欢《%1$s》！",
 "plus_perk_streak": "恢复连续记录",
 "plus_perk_streak_body": "漏了一天？每月可恢复一次连续记录。",
-"connecting_short": "连接中"
+"connecting_short": "连接中",
+"searching_2": "正在全球寻找…",
+"searching_3": "仍在寻找，请稍候…",
+"almost_there": "马上就好…",
+"connecting_someone": "正在为你连接…",
+"connecting_someone_in": "正在连接来自%1$s的人",
+"press_back_exit": "再按一次返回键退出",
+"leave_call_q": "离开通话？",
+"leave_chat_q": "离开聊天？",
+"stop_search_q": "停止搜索？",
+"leave": "离开",
+"stay": "留下"
 }

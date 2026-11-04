@@ -448,5 +448,16 @@
 "film_match": "🎬 Ihr beide liebt %1$s!",
 "plus_perk_streak": "Serie zurückholen",
 "plus_perk_streak_body": "Einen Tag verpasst? Hol deine Serie zurück, einmal im Monat.",
-"connecting_short": "Verbinde"
+"connecting_short": "Verbinde",
+"searching_2": "Wir suchen weltweit…",
+"searching_3": "Noch auf der Suche, einen Moment…",
+"almost_there": "Fast geschafft…",
+"connecting_someone": "Du wirst verbunden…",
+"connecting_someone_in": "Verbinde dich mit jemandem aus %1$s",
+"press_back_exit": "Zum Beenden erneut zurück drücken",
+"leave_call_q": "Anruf verlassen?",
+"leave_chat_q": "Chat verlassen?",
+"stop_search_q": "Suche beenden?",
+"leave": "Verlassen",
+"stay": "Bleiben"
 }

@@ -448,5 +448,16 @@
 "film_match": "🎬 Amate entrambi %1$s!",
 "plus_perk_streak": "Recupera la serie",
 "plus_perk_streak_body": "Hai saltato un giorno? Recupera la serie, una volta al mese.",
-"connecting_short": "Connessione"
+"connecting_short": "Connessione",
+"searching_2": "Cerchiamo in tutto il mondo…",
+"searching_3": "Ancora alla ricerca, un attimo…",
+"almost_there": "Quasi fatto…",
+"connecting_someone": "Ti stiamo collegando…",
+"connecting_someone_in": "Ti colleghiamo con qualcuno da %1$s",
+"press_back_exit": "Premi di nuovo indietro per uscire",
+"leave_call_q": "Lasciare la chiamata?",
+"leave_chat_q": "Lasciare la chat?",
+"stop_search_q": "Interrompere la ricerca?",
+"leave": "Esci",
+"stay": "Resta"
 }

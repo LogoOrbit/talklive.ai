@@ -449,6 +449,17 @@
     <string name="plus_perk_streak">Recupere sua sequência</string>
     <string name="plus_perk_streak_body">Perdeu um dia? Recupere sua sequência, uma vez por mês.</string>
     <string name="connecting_short">Conectando</string>
+    <string name="searching_2">Procurando pelo mundo…</string>
+    <string name="searching_3">Ainda procurando, aguarde…</string>
+    <string name="almost_there">Quase lá…</string>
+    <string name="connecting_someone">Conectando você agora…</string>
+    <string name="connecting_someone_in">Conectando você a alguém de %1$s</string>
+    <string name="press_back_exit">Toque em voltar de novo para sair</string>
+    <string name="leave_call_q">Sair da chamada?</string>
+    <string name="leave_chat_q">Sair do chat?</string>
+    <string name="stop_search_q">Parar de procurar?</string>
+    <string name="leave">Sair</string>
+    <string name="stay">Ficar</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s visitante hoje</item>
         <item quantity="other">%1$s visitantes hoje</item>

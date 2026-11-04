@@ -449,6 +449,17 @@
     <string name="plus_perk_streak">স্ট্রিক ফেরান</string>
     <string name="plus_perk_streak_body">একদিন মিস করেছেন? মাসে একবার স্ট্রিক ফেরান।</string>
     <string name="connecting_short">যুক্ত হচ্ছে</string>
+    <string name="searching_2">সারা বিশ্বে খোঁজা হচ্ছে…</string>
+    <string name="searching_3">এখনও খুঁজছি, একটু অপেক্ষা করুন…</string>
+    <string name="almost_there">প্রায় হয়ে গেছে…</string>
+    <string name="connecting_someone">এখনই যুক্ত করা হচ্ছে…</string>
+    <string name="connecting_someone_in">%1$s-এর একজনের সাথে যুক্ত করা হচ্ছে</string>
+    <string name="press_back_exit">বের হতে আবার ব্যাক চাপুন</string>
+    <string name="leave_call_q">কলটি ছেড়ে যাবেন?</string>
+    <string name="leave_chat_q">চ্যাটটি ছেড়ে যাবেন?</string>
+    <string name="stop_search_q">খোঁজা বন্ধ করবেন?</string>
+    <string name="leave">ছেড়ে যান</string>
+    <string name="stay">থাকুন</string>
     <plurals name="visitors_today">
         <item quantity="one">আজ %1$s জন ভিজিটর</item>
         <item quantity="other">আজ %1$s জন ভিজিটর</item>

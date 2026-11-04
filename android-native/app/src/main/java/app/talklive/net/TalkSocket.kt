@@ -73,7 +73,9 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
         socket.emit("owner-warning-ack", JSONObject().put("id", id))
     }
 
-    private val _events = MutableSharedFlow<ServerEvent>(extraBufferCapacity = 128)
+    // Unbounded: a full buffer silently dropped call handshake messages
+    // (offer, answer, candidates) on a busy server, and the call never connected.
+    private val _events = MutableSharedFlow<ServerEvent>(extraBufferCapacity = Int.MAX_VALUE)
     val events: SharedFlow<ServerEvent> = _events
 
     private var registerFailures = 0

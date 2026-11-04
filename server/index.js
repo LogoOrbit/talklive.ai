@@ -2036,6 +2036,8 @@ socketAuth.set = function set(socketId, usernameLower) {
   const profile = profiles.get(socketId);
   const name = account && Nick.clean(account.nickname);
   if (profile && name) profile.username = name;
+  if (profile && account && account.animal) profile.animal = account.animal;
+  else if (profile && account && profile.animal) { account.animal = profile.animal; persistAccount(usernameLower); }
   return result;
 };
 const googleAccounts = new Map(); // Google "sub" id -> username (lowercase)
@@ -2256,6 +2258,7 @@ function hydrateFromStore() {
       passwordHash: acc.passwordHash || null,
       salt: acc.salt || null,
       nickname: acc.nickname || '',
+      animal: acc.animal || null,
       googleId: acc.googleId || null,
       email: acc.email || null,
       google: acc.google || null,
@@ -5011,6 +5014,7 @@ io.on('connection', (socket) => {
       ok: true,
       username,
       nickname: account.nickname,
+      animal: account.animal || null,
       email: account.email || '',
       sessionToken: store.createAuthSession((username || '').toLowerCase()),
       // Hands this device the account's profile, so a sign-in on a new phone
@@ -5038,6 +5042,7 @@ io.on('connection', (socket) => {
       ok: true,
       username: usernameLower,
       nickname: account.nickname,
+      animal: account.animal || null,
       email: account.email || '',
       ...linkAccountProfile(usernameLower, socket.id),
     });
@@ -5085,6 +5090,7 @@ io.on('connection', (socket) => {
         ok: true,
         username,
         nickname: account.nickname,
+        animal: account.animal || null,
         email: account.email || '',
         sessionToken: store.createAuthSession(username.toLowerCase()),
         ...linked,
@@ -5395,6 +5401,7 @@ io.on('connection', (socket) => {
         ok: true,
         username: usernameLower,
         nickname: account.nickname,
+        animal: account.animal || null,
         email: account.email || '',
         sessionToken: store.createAuthSession(usernameLower),
       });
@@ -5525,6 +5532,12 @@ io.on('connection', (socket) => {
     // A signed-in socket always shows the account's saved display name.
     const authedAccount = socketAuth.get(socket.id) ? accounts.get(socketAuth.get(socket.id)) : null;
     const chosenName = (authedAccount && Nick.clean(authedAccount.nickname)) || Nick.clean(data.nickname);
+    // A signed-in person's avatar is saved with the account, so it follows them.
+    const sentAnimal = sanitizeAnimal(data.animal);
+    if (authedAccount && sentAnimal && authedAccount.animal !== sentAnimal) {
+      authedAccount.animal = sentAnimal;
+      persistAccount(socketAuth.get(socket.id));
+    }
     patterns.onConnect({ ip: getClientIp(socket), clientId, username: chosenName || '' });
     profiles.set(socket.id, {
       clientId,

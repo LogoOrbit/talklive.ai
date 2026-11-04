@@ -449,6 +449,17 @@
     <string name="plus_perk_streak">अपनी स्ट्रीक वापस लाएँ</string>
     <string name="plus_perk_streak_body">एक दिन छूट गया? महीने में एक बार स्ट्रीक वापस लाएँ।</string>
     <string name="connecting_short">जुड़ रहा है</string>
+    <string name="searching_2">दुनिया भर में खोज रहे हैं…</string>
+    <string name="searching_3">अभी भी खोज रहे हैं, रुकिए…</string>
+    <string name="almost_there">बस हो गया…</string>
+    <string name="connecting_someone">अभी जोड़ रहे हैं…</string>
+    <string name="connecting_someone_in">%1$s के किसी व्यक्ति से जोड़ रहे हैं</string>
+    <string name="press_back_exit">बाहर निकलने के लिए फिर से बैक दबाएँ</string>
+    <string name="leave_call_q">कॉल छोड़ें?</string>
+    <string name="leave_chat_q">चैट छोड़ें?</string>
+    <string name="stop_search_q">खोज रोकें?</string>
+    <string name="leave">छोड़ें</string>
+    <string name="stay">रुकें</string>
     <plurals name="visitors_today">
         <item quantity="one">आज %1$s विज़िटर</item>
         <item quantity="other">आज %1$s विज़िटर</item>

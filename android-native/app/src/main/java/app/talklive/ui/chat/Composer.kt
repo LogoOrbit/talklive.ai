@@ -121,7 +121,10 @@ fun Composer(
     val context = LocalContext.current
     val gifApi = remember { runCatching { EntryPointAccessors.fromApplication(context.applicationContext, GifEntryPoint::class.java).gifs() }.getOrNull() }
     var gifsOn by remember { mutableStateOf(false) }
-    LaunchedEffect(onGif) { gifsOn = onGif != null && gifApi?.available() == true }
+    LaunchedEffect(onGif) {
+        gifsOn = onGif != null && gifApi?.available() == true
+        if (gifsOn) runCatching { gifApi?.warm(context) }
+    }
     BackHandler(enabled = panel != Panel.None) { panel = Panel.None }
     // Tapping the text field brings the keyboard back in place of a panel.
     val fieldTaps = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
@@ -301,9 +304,10 @@ private fun TabIcon(e: String, selected: Boolean, onClick: () -> Unit) {
 @Composable
 private fun GifPanel(api: GifApi, onPick: (Gif) -> Unit) {
     var query by remember { mutableStateOf("") }
-    var results by remember { mutableStateOf<List<Gif>?>(null) }
+    var results by remember { mutableStateOf(api.cached("")) }
     LaunchedEffect(query) {
-        if (query.isNotBlank()) delay(400)
+        api.cached(query)?.let { results = it; return@LaunchedEffect }
+        if (query.isNotBlank()) delay(350)
         results = null
         results = api.search(query)
     }

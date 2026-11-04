@@ -25,6 +25,9 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.Call
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -131,7 +134,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     val requests by social.requests.collectAsStateWithLifecycle()
     val friends by social.friends.collectAsStateWithLifecycle()
     val sent by social.sent.collectAsStateWithLifecycle()
-    LaunchedEffect(Unit) { social.toasts.collect { snackbar.showSnackbar(it.get(context)) } }
+    LaunchedEffect(Unit) { social.toasts.collect { t -> launch { snackbar.say(t.get(context)) } } }
     val engageVm: app.talklive.ui.engage.EngageViewModel = hiltViewModel()
     val engage by engageVm.engage.collectAsStateWithLifecycle()
     val filters by engageVm.filters.collectAsStateWithLifecycle()
@@ -142,7 +145,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     var showPlus by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(Unit) {
         engageVm.moments.collect { m ->
-            snackbar.showSnackbar(
+            snackbar.say(
                 when (m) {
                     is app.talklive.engage.EngageMoment.StreakUp -> context.getString(R.string.moment_streak, m.days)
                     is app.talklive.engage.EngageMoment.NewStamp ->
@@ -217,7 +220,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     }
     LaunchedEffect(state.notice) {
         if (noticeText != null) {
-            snackbar.showSnackbar(noticeText)
+            snackbar.say(noticeText)
             vm.dismissNotice()
         }
     }
@@ -231,19 +234,40 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
         if (game.stage == app.talklive.game.Stage.Idle && !game.declined) showGames = false
     }
     LaunchedEffect(inCall) { if (!inCall) showGames = false }
+    // Back: a call or search asks first; the home tabs need two presses to exit.
+    var confirmLeave by remember { mutableStateOf(false) }
+    var lastBackAt by remember { mutableStateOf(0L) }
+    val activity = context as? android.app.Activity
+    val backScope = androidx.compose.runtime.rememberCoroutineScope()
+    androidx.activity.compose.BackHandler(enabled = !inCall && openChat == null) {
+        val now = System.currentTimeMillis()
+        if (tab != MainTab.Talk) tab = MainTab.Talk
+        else if (now - lastBackAt < 2000) activity?.finish()
+        else { lastBackAt = now; backScope.launch { snackbar.say(context.getString(R.string.press_back_exit)) } }
+    }
+    androidx.activity.compose.BackHandler(enabled = inCall) { confirmLeave = true }
+    if (confirmLeave && inCall) {
+        val live = state.phase is CallPhase.Connected
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { confirmLeave = false },
+            title = { Text(stringResource(if (live) (if (state.mode == CallMode.Chat) R.string.leave_chat_q else R.string.leave_call_q) else R.string.stop_search_q)) },
+            confirmButton = { TextButton(onClick = { confirmLeave = false; vm.end() }) { Text(stringResource(if (live) R.string.leave else R.string.tap_to_stop), color = MaterialTheme.colorScheme.error) } },
+            dismissButton = { TextButton(onClick = { confirmLeave = false }) { Text(stringResource(R.string.stay)) } },
+        )
+    }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     // Next, with Undo for Plus members (the server keeps the skipped person for 15 s).
     val onNext: () -> Unit = {
         val skipped = (state.phase as? CallPhase.Connected)?.partner?.username
         vm.next()
         if (premium.active && skipped != null) scope.launch {
-            val r = snackbar.showSnackbar(
+            val r = snackbar.say(
                 context.getString(R.string.skipped_name, skipped), actionLabel = context.getString(R.string.undo),
                 duration = androidx.compose.material3.SnackbarDuration.Long,
             )
             if (r == androidx.compose.material3.SnackbarResult.ActionPerformed) {
                 vm.undoSkip()?.let { why ->
-                    snackbar.showSnackbar(context.getString(if (why == "busy") R.string.undo_busy else R.string.undo_gone))
+                    snackbar.say(context.getString(if (why == "busy") R.string.undo_busy else R.string.undo_gone))
                 }
             }
         }
@@ -370,9 +394,9 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
             dismissButton = { TextButton(onClick = { vm.answerVoiceInvite(false) }) { Text(stringResource(R.string.not_now)) } },
         )
     }
-    LaunchedEffect(state.voiceInviteSent) { if (state.voiceInviteSent) snackbar.showSnackbar(context.getString(R.string.voice_invite_sent)) }
+    LaunchedEffect(state.voiceInviteSent) { if (state.voiceInviteSent) snackbar.say(context.getString(R.string.voice_invite_sent)) }
     LaunchedEffect(state.voiceInviteDeclined) {
-        if (state.voiceInviteDeclined) { snackbar.showSnackbar(context.getString(R.string.voice_invite_declined)); vm.clearVoiceInviteDeclined() }
+        if (state.voiceInviteDeclined) { snackbar.say(context.getString(R.string.voice_invite_declined)); vm.clearVoiceInviteDeclined() }
     }
 
     // Mini-games with the person on the call or chat.
@@ -459,7 +483,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
         val p = livePartner ?: return@LaunchedEffect
         val shared = p.films.firstOrNull { f -> myFilms.any { it.type == f.type && it.id == f.id } } ?: return@LaunchedEffect
         kotlinx.coroutines.delay(1200)
-        snackbar.showSnackbar(context.getString(R.string.film_match, shared.title))
+        snackbar.say(context.getString(R.string.film_match, shared.title))
     }
     // Replies from the team to this person's feedback.
     val replies by engageVm.replies.collectAsStateWithLifecycle()
@@ -529,9 +553,43 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
         )
     }
 
-    // Messages show above every screen, including chats and calls.
+    // Messages show at the top of every screen, clear of the buttons below.
     androidx.compose.foundation.layout.Box(
-        androidx.compose.ui.Modifier.fillMaxSize().imePadding().navigationBarsPadding().padding(bottom = if (inCall) 120.dp else 84.dp),
-        contentAlignment = androidx.compose.ui.Alignment.BottomCenter,
-    ) { SnackbarHost(snackbar) }
+        androidx.compose.ui.Modifier.fillMaxSize().statusBarsPadding().padding(top = 8.dp, start = 16.dp, end = 16.dp),
+        contentAlignment = androidx.compose.ui.Alignment.TopCenter,
+    ) {
+        SnackbarHost(snackbar) { data ->
+            androidx.compose.material3.Surface(
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                contentColor = MaterialTheme.colorScheme.onSurface,
+                shadowElevation = 6.dp,
+                modifier = androidx.compose.ui.Modifier.clickable { data.dismiss() },
+            ) {
+                androidx.compose.foundation.layout.Row(
+                    androidx.compose.ui.Modifier.padding(start = 16.dp, end = 8.dp, top = 6.dp, bottom = 6.dp).heightIn(min = 40.dp),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                ) {
+                    Text(data.visuals.message, style = MaterialTheme.typography.bodyMedium, modifier = androidx.compose.ui.Modifier.weight(1f, fill = false).padding(end = 8.dp))
+                    data.visuals.actionLabel?.let { label ->
+                        TextButton(onClick = { data.performAction() }) { Text(label) }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Shows one message at a time: a repeat of the one on screen is ignored, and a
+ * new one replaces it instead of queueing behind it.
+ */
+suspend fun SnackbarHostState.say(
+    message: String,
+    actionLabel: String? = null,
+    duration: androidx.compose.material3.SnackbarDuration = if (actionLabel == null) androidx.compose.material3.SnackbarDuration.Short else androidx.compose.material3.SnackbarDuration.Long,
+): androidx.compose.material3.SnackbarResult {
+    if (currentSnackbarData?.visuals?.message == message) return androidx.compose.material3.SnackbarResult.Dismissed
+    currentSnackbarData?.dismiss()
+    return showSnackbar(message, actionLabel, withDismissAction = false, duration = duration)
 }

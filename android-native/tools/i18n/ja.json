@@ -447,5 +447,16 @@
 "film_match": "🎬 2人とも「%1$s」が好き！",
 "plus_perk_streak": "連続記録を戻す",
 "plus_perk_streak_body": "1日休んだ？月に1回、記録を戻せます。",
-"connecting_short": "接続中"
+"connecting_short": "接続中",
+"searching_2": "世界中を探しています…",
+"searching_3": "まだ探しています。少々お待ちください…",
+"almost_there": "もうすぐです…",
+"connecting_someone": "接続しています…",
+"connecting_someone_in": "%1$sの人とつないでいます",
+"press_back_exit": "もう一度戻るを押すと終了します",
+"leave_call_q": "通話を終了しますか？",
+"leave_chat_q": "チャットを終了しますか？",
+"stop_search_q": "検索をやめますか？",
+"leave": "終了",
+"stay": "続ける"
 }
