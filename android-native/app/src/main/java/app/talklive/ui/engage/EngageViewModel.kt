@@ -22,6 +22,8 @@ class EngageViewModel @Inject constructor(private val repo: EngageRepository, pr
     val fallback = repo.fallback
     fun ackReply(id: String) = repo.ackReply(id)
     fun keepFilters() = repo.keepFilters()
+    var restoring by mutableStateOf(false); private set
+    fun restoreStreak() = viewModelScope.launch { restoring = true; repo.restoreStreak(); restoring = false }
     val ageGroup = repo.ageGroup
     val flags = repo.flags
     val voiceCheck = mic.enabled

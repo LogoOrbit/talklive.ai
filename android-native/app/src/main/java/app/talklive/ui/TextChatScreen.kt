@@ -124,6 +124,7 @@ fun TextChatScreen(
     var replyTo by remember { mutableStateOf<ChatMessage?>(null) }
     var reactingTo by remember { mutableStateOf<ChatMessage?>(null) }
     var reporting by remember { mutableStateOf(false) }
+    var showPartner by remember { mutableStateOf(false) }
     // A fresh set of icebreakers for every new person.
     var ideas by remember(partner?.clientId) { mutableStateOf(icebreakers(3)) }
     val listState = rememberLazyListState()
@@ -142,10 +143,10 @@ fun TextChatScreen(
             Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 4.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onEnd) { Icon(Icons.Rounded.Close, stringResource(R.string.end)) }
                 AnimatedContent(targetState = partner, label = "who", modifier = Modifier.weight(1f)) { p ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).clickable(enabled = p != null) { showPartner = true }, verticalAlignment = Alignment.CenterVertically) {
                         AnimalAvatar(p?.animal ?: myAnimal, p?.username, 40.dp)
                         Spacer(Modifier.width(12.dp))
-                        Column {
+                        Column(Modifier.weight(1f)) {
                             Text(
                                 p?.username ?: stringResource(R.string.searching_chat),
                                 style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface,
@@ -161,12 +162,14 @@ fun TextChatScreen(
                                     style = MaterialTheme.typography.labelMedium,
                                     color = if (state.partnerTyping) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                                     maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
                                 )
                             }
                         }
                     }
                 }
                 // Only "Next" lives up here; everything else is in the composer's + tray.
+                Spacer(Modifier.width(10.dp))
                 Row(
                     Modifier.clip(CircleShape).background(BrandGradient).clickable(onClick = onNext).padding(start = 16.dp, end = 12.dp, top = 9.dp, bottom = 9.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -303,6 +306,8 @@ fun TextChatScreen(
             confirmButton = { TextButton(onClick = { replyTo = m; reactingTo = null }) { Text(stringResource(R.string.reply)) } },
         )
     }
+
+    if (showPartner && partner != null) PartnerSheet(partner, friendStatus, onAddFriend, onReport = { reporting = true }) { showPartner = false }
 
     if (reporting) {
         val reasons = listOf(

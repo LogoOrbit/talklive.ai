@@ -1,5 +1,7 @@
 package app.talklive.ui.engage
 
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.border
 import android.content.Intent
@@ -85,9 +87,10 @@ fun StreakChip(engage: Engage?, onClick: () -> Unit) {
     if (s.count <= 0 && s.best <= 0) return
     Surface(onClick = onClick, shape = CircleShape, color = if (s.doneToday) Color(0xFFFFEDD5) else MaterialTheme.colorScheme.surface) {
         Row(Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(if (s.doneToday) "🔥" else "🕯️", style = MaterialTheme.typography.labelLarge)
+            val lost = s.count == 0 && s.restorable && s.lostCount >= 2
+            Text(if (s.doneToday) "🔥" else if (lost) "💔" else "🕯️", style = MaterialTheme.typography.labelLarge)
             Spacer(Modifier.width(4.dp))
-            Text(s.count.toString(), style = MaterialTheme.typography.labelLarge, color = if (s.doneToday) Color(0xFFC2410C) else MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(if (lost) s.lostCount.toString() else s.count.toString(), style = MaterialTheme.typography.labelLarge, color = if (s.doneToday) Color(0xFFC2410C) else MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -95,7 +98,7 @@ fun StreakChip(engage: Engage?, onClick: () -> Unit) {
 /** Streak, week and passport in one sheet. */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun StreakSheet(engage: Engage, onDismiss: () -> Unit) {
+fun StreakSheet(engage: Engage, onDismiss: () -> Unit, premium: Boolean = false, restoring: Boolean = false, onRestore: () -> Unit = {}, onPlus: () -> Unit = {}) {
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.background) {
         Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -107,6 +110,21 @@ fun StreakSheet(engage: Engage, onDismiss: () -> Unit) {
                         if (engage.streak.doneToday) stringResource(R.string.streak_done) else stringResource(R.string.streak_todo),
                         style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                }
+            }
+            // A streak that just broke: Plus brings it back.
+            if (engage.streak.count == 0 && engage.streak.lostCount >= 2 && engage.streak.restorable) {
+                Spacer(Modifier.height(16.dp))
+                Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(16.dp)) {
+                        Text(stringResource(R.string.streak_lost_title, engage.streak.lostCount), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+                        Text(stringResource(R.string.streak_lost_body), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp, bottom = 12.dp))
+                        PrimaryButton(
+                            stringResource(if (premium) R.string.streak_restore else R.string.streak_restore_plus),
+                            onClick = { if (premium) onRestore() else onPlus() },
+                            loading = restoring,
+                        )
+                    }
                 }
             }
             Spacer(Modifier.height(16.dp))
@@ -237,6 +255,7 @@ fun FiltersSheet(current: Filters, premium: Boolean, onApply: (Filters) -> Unit,
     var newInterest by remember { mutableStateOf("") }
     var countryQuery by remember { mutableStateOf("") }
     var avoidMode by remember { mutableStateOf(current.includeCountries.isEmpty() && current.excludeCountries.isNotEmpty()) }
+    var pickingCountries by remember { mutableStateOf(false) }
     val countries = remember { Locale.getISOCountries().map { it to countryName(it) }.sortedBy { it.second } }
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = MaterialTheme.colorScheme.background) {
         Column(Modifier.fillMaxWidth().navigationBarsPadding().imePadding()) {
@@ -277,28 +296,17 @@ fun FiltersSheet(current: Filters, premium: Boolean, onApply: (Filters) -> Unit,
                             }
                         }
                     }
-                    Spacer(Modifier.height(10.dp))
-                    InlineField(countryQuery, { countryQuery = it }, stringResource(R.string.find_country), onDone = null)
-                    if (countryQuery.isNotBlank()) {
-                        val matches = countries.filter { it.second.contains(countryQuery, ignoreCase = true) && it.first !in list }.take(3)
-                        Column(Modifier.padding(top = 6.dp)) {
-                            matches.forEach { (cc, name) ->
-                                Row(
-                                    Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable {
-                                        if (!premium && list.size >= freeCountries) onPlus()
-                                        else {
-                                            f = if (avoidMode) f.copy(excludeCountries = (f.excludeCountries + cc).distinct(), includeCountries = f.includeCountries - cc)
-                                            else f.copy(includeCountries = (f.includeCountries + cc).distinct(), excludeCountries = f.excludeCountries - cc)
-                                            countryQuery = ""
-                                        }
-                                    }.padding(horizontal = 8.dp, vertical = 10.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Text("${flag(cc) ?: ""}  $name", modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurface)
-                                    Icon(Icons.Rounded.Add, null, tint = MaterialTheme.colorScheme.primary)
-                                }
-                            }
-                        }
+                    Spacer(Modifier.height(12.dp))
+                    // Opens a searchable list where several countries can be ticked at once.
+                    Row(
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.background)
+                            .clickable { pickingCountries = true }.padding(horizontal = 14.dp, vertical = 13.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(Icons.Rounded.Add, null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.width(10.dp))
+                        Text(stringResource(R.string.add_countries), color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
+                        Text(if (premium) "${list.size}" else "${list.size}/$freeCountries", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
 
@@ -325,6 +333,78 @@ fun FiltersSheet(current: Filters, premium: Boolean, onApply: (Filters) -> Unit,
                     if (f.activeCount > 0) stringResource(R.string.apply_filters_n, f.activeCount) else stringResource(R.string.apply_filters),
                     onClick = { onApply(f); onDismiss() }, modifier = Modifier.weight(1f),
                 )
+            }
+        }
+    }
+    if (pickingCountries) CountryPicker(
+        title = stringResource(if (avoidMode) R.string.countries_never else R.string.countries_only),
+        countries = countries,
+        selected = if (avoidMode) f.excludeCountries else f.includeCountries,
+        limit = if (premium) null else freeCountries,
+        onLimit = { pickingCountries = false; onPlus() },
+        onDone = { picked ->
+            f = if (avoidMode) f.copy(excludeCountries = picked, includeCountries = f.includeCountries - picked.toSet())
+            else f.copy(includeCountries = picked, excludeCountries = f.excludeCountries - picked.toSet())
+            pickingCountries = false
+        },
+        onDismiss = { pickingCountries = false },
+    )
+}
+
+/** A full list of countries with search; tick as many as allowed, then Done. */
+@Composable
+private fun CountryPicker(
+    title: String,
+    countries: List<Pair<String, String>>,
+    selected: List<String>,
+    limit: Int?,
+    onLimit: () -> Unit,
+    onDone: (List<String>) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var picked by remember { mutableStateOf(selected) }
+    var query by remember { mutableStateOf("") }
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss, properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)) {
+        Surface(shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxWidth(0.92f).fillMaxHeight(0.82f)) {
+            Column(Modifier.padding(top = 20.dp)) {
+                Row(Modifier.padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(title, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.weight(1f))
+                    Text(if (limit != null) "${picked.size}/$limit" else "${picked.size}", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                }
+                Spacer(Modifier.height(12.dp))
+                Box(Modifier.padding(horizontal = 16.dp)) { InlineField(query, { query = it }, stringResource(R.string.find_country), onDone = null) }
+                val shown = remember(query, countries) { countries.filter { query.isBlank() || it.second.contains(query, ignoreCase = true) || it.first.equals(query, ignoreCase = true) } }
+                androidx.compose.foundation.lazy.LazyColumn(Modifier.weight(1f).padding(top = 8.dp)) {
+                    items(shown.size) { idx ->
+                        val (cc, name) = shown[idx]
+                        val on = cc in picked
+                        Row(
+                            Modifier.fillMaxWidth().clickable {
+                                picked = when {
+                                    on -> picked - cc
+                                    limit != null && picked.size >= limit -> { onLimit(); picked }
+                                    else -> picked + cc
+                                }
+                            }.padding(horizontal = 20.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(flag(cc) ?: "🏳️", fontSize = 22.sp)
+                            Spacer(Modifier.width(14.dp))
+                            Text(name, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
+                            Box(
+                                Modifier.size(24.dp).clip(CircleShape)
+                                    .background(if (on) app.talklive.ui.components.BrandGradient else androidx.compose.ui.graphics.SolidColor(Color.Transparent))
+                                    .border(1.5.dp, if (on) Color.Transparent else MaterialTheme.colorScheme.outline, CircleShape),
+                                contentAlignment = Alignment.Center,
+                            ) { if (on) Icon(Icons.Rounded.Check, null, tint = Color.White, modifier = Modifier.size(16.dp)) }
+                        }
+                    }
+                }
+                Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+                    Spacer(Modifier.width(8.dp))
+                    PrimaryButton(stringResource(R.string.done), onClick = { onDone(picked) }, modifier = Modifier.weight(1f))
+                }
             }
         }
     }

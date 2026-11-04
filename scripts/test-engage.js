@@ -18,6 +18,24 @@ const ok = (name, cond, extra) => {
 const DAY = 86400000;
 const t0 = Date.UTC(2026, 9, 26, 12); // Monday 26 Oct 2026, noon UTC
 
+// Plus streak restore.
+{
+  let r = Engage.emptyRecord();
+  for (let i = 0; i < 5; i++) r = Engage.noteCall(r, { seconds: 120, now: t0 + i * DAY, tz: 'UTC' }).rec;
+  const later = t0 + 10 * DAY;
+  const v = Engage.view(r, { now: later, tz: 'UTC' });
+  ok('a broken streak offers a restore', v.streak.count === 0 && v.streak.lost && v.streak.lost.count === 5 && v.streak.lost.restorable, v.streak);
+  const x = Engage.restore(r, { now: later, tz: 'UTC' });
+  ok('restore brings it back', x.ok && Engage.view(x.rec, { now: later, tz: 'UTC' }).streak.count === 5);
+  const next = Engage.noteCall(x.rec, { seconds: 120, now: later, tz: 'UTC' }).rec;
+  ok('a call the same day keeps it going', Engage.view(next, { now: later, tz: 'UTC' }).streak.count === 6);
+  const again = Engage.noteCall(x.rec, { seconds: 120, now: later + 4 * DAY, tz: 'UTC' }).rec;
+  ok('only once every 30 days', !Engage.restore(again, { now: later + 9 * DAY, tz: 'UTC' }).ok);
+  ok('nothing to restore on a live streak', !Engage.restore(r, { now: t0 + 5 * DAY, tz: 'UTC' }).ok);
+  const old = Engage.view(r, { now: t0 + 60 * DAY, tz: 'UTC' }).streak.lost;
+  ok('too old to restore', old && !old.restorable, old);
+}
+
 // --- Pure logic --------------------------------------------------------------
 let r = Engage.noteCall(null, { country: 'JP', seconds: 10, now: t0 });
 ok('a call under 30s counts for nothing', !r.bump && !r.stamp && r.rec.streak.count === 0);

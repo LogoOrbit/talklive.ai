@@ -416,5 +416,21 @@
 "cmp_free": "Gratis",
 "cmp_calls": "Unbegrenzt Sprach- und Textchats",
 "cmp_streaks": "Serien, Reisepass und Spiele",
-"cmp_countries": "Geschlechterfilter und unbegrenzt Länder"
+"cmp_countries": "Geschlechterfilter und unbegrenzt Länder",
+"add_countries": "Länder hinzufügen",
+"done": "Fertig",
+"streak_lost_title": "Deine %1$d-Tage-Serie ist vorbei",
+"streak_lost_body": "Einen Tag verpasst? TalkLive Plus holt deine Serie zurück, einmal im Monat.",
+"streak_restore": "Serie zurückholen",
+"streak_restore_plus": "Mit 💎 Plus zurückholen",
+"setup_about_title": "Ein bisschen über dich",
+"setup_about_body": "Beides ist freiwillig. Es hilft den Filtern, die richtigen Leute zu finden.",
+"setup_about_privacy": "Wird niemandem gezeigt, mit dem du redest.",
+"setup_done_title": "Alles bereit!",
+"setup_done_body": "%1$s ist bereit, Hallo zu sagen. Tippe auf Start und triff jemand Neuen.",
+"setup_go": "Los geht's",
+"edit_profile": "Profil bearbeiten",
+"change_avatar": "Avatar ändern",
+"display_name_rules": "Buchstaben, Zahlen und Leerzeichen. Bleib freundlich: unhöfliche Namen werden abgelehnt.",
+"name_needs_account": "Erstelle ein kostenloses Konto, um deinen Namen zu wählen."
 }

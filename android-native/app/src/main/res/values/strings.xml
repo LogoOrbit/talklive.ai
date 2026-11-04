@@ -423,4 +423,20 @@
     <string name="cmp_calls">Unlimited voice and text chats</string>
     <string name="cmp_streaks">Streaks, passport and games</string>
     <string name="cmp_countries">Gender filter and unlimited countries</string>
+    <string name="add_countries">Add countries</string>
+    <string name="done">Done</string>
+    <string name="streak_lost_title">Your %1$d-day streak ended</string>
+    <string name="streak_lost_body">Missed a day? TalkLive Plus brings your streak back, once a month.</string>
+    <string name="streak_restore">Bring my streak back</string>
+    <string name="streak_restore_plus">Get it back with 💎 Plus</string>
+    <string name="setup_about_title">A little about you</string>
+    <string name="setup_about_body">Both are optional. They help filters find the right people.</string>
+    <string name="setup_about_privacy">Never shown to anyone you talk to.</string>
+    <string name="setup_done_title">You\'re all set!</string>
+    <string name="setup_done_body">%1$s is ready to say hi. Tap Start and meet someone new.</string>
+    <string name="setup_go">Let\'s go</string>
+    <string name="edit_profile">Edit profile</string>
+    <string name="change_avatar">Change avatar</string>
+    <string name="display_name_rules">Letters, numbers and spaces. Keep it friendly: rude names are refused.</string>
+    <string name="name_needs_account">Create a free account to choose your own name.</string>
 </resources>

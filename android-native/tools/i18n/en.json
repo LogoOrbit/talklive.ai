@@ -419,5 +419,21 @@
 "cmp_free": "Free",
 "cmp_calls": "Unlimited voice and text chats",
 "cmp_streaks": "Streaks, passport and games",
-"cmp_countries": "Gender filter and unlimited countries"
+"cmp_countries": "Gender filter and unlimited countries",
+"add_countries": "Add countries",
+"done": "Done",
+"streak_lost_title": "Your %1$d-day streak ended",
+"streak_lost_body": "Missed a day? TalkLive Plus brings your streak back, once a month.",
+"streak_restore": "Bring my streak back",
+"streak_restore_plus": "Get it back with 💎 Plus",
+"setup_about_title": "A little about you",
+"setup_about_body": "Both are optional. They help filters find the right people.",
+"setup_about_privacy": "Never shown to anyone you talk to.",
+"setup_done_title": "You're all set!",
+"setup_done_body": "%1$s is ready to say hi. Tap Start and meet someone new.",
+"setup_go": "Let's go",
+"edit_profile": "Edit profile",
+"change_avatar": "Change avatar",
+"display_name_rules": "Letters, numbers and spaces. Keep it friendly: rude names are refused.",
+"name_needs_account": "Create a free account to choose your own name."
 }

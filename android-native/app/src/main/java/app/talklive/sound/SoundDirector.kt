@@ -23,6 +23,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class SoundDirector @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val sounds: Sounds,
     private val calls: CallManager,
     private val social: SocialRepository,
@@ -30,11 +31,19 @@ class SoundDirector @Inject constructor(
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
+    /** A barely-there tap so you feel the moment someone connects. */
+    private fun tick() = runCatching {
+        val v = context.getSystemService(android.os.Vibrator::class.java) ?: return@runCatching
+        if (!v.hasVibrator()) return@runCatching
+        if (android.os.Build.VERSION.SDK_INT >= 29) v.vibrate(android.os.VibrationEffect.createPredefined(android.os.VibrationEffect.EFFECT_TICK))
+        else v.vibrate(android.os.VibrationEffect.createOneShot(15, 40))
+    }
+
     fun start() {
         scope.launch {
             var wasConnected = false
             calls.state.map { it.phase is CallPhase.Connected }.distinctUntilChanged().collect { connected ->
-                if (connected && !wasConnected) sounds.play(Sounds.Fx.Connect)
+                if (connected && !wasConnected) { sounds.play(Sounds.Fx.Connect); tick() }
                 if (!connected && wasConnected) sounds.play(Sounds.Fx.Hangup)
                 wasConnected = connected
             }

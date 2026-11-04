@@ -142,6 +142,9 @@ class EngageRepository(
         }
     }
 
+    /** Plus: bring back a streak that just broke. True when it worked. */
+    suspend fun restoreStreak(): Boolean = socket.ask("streak-restore")?.optBoolean("ok") == true
+
     fun requestReferral() = socket.emit("get-referral-link")
 
     /** An invite code from a talklive.app/?ref= link; sent with the next registrations. */

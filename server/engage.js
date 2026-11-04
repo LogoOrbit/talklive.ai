@@ -106,6 +106,29 @@ function noteCall(input, { country, seconds, now = Date.now(), tz } = {}) {
   return result;
 }
 
+// Plus brings a broken streak back: once every 30 days, for a streak of 2+
+// days that ended in the last 30. It carries on as if the last call was
+// yesterday, so today's call keeps it going.
+const RESTORE_WINDOW_DAYS = 30;
+function restoreState(s, today) {
+  if (!s.last || !(s.count >= 2)) return null;
+  const gap = dayNum(today) - dayNum(s.last);
+  const broken = gap > 2 || (gap === 2 && s.freezeWeek === weekOf(today));
+  if (!broken) return null;
+  const recent = s.restoredAt && dayNum(today) - dayNum(s.restoredAt) < RESTORE_WINDOW_DAYS;
+  return { count: s.count, restorable: gap <= RESTORE_WINDOW_DAYS && !recent };
+}
+
+function restore(input, { now = Date.now(), tz } = {}) {
+  const rec = normalise(input);
+  const today = dayKey(now, tz);
+  const st = restoreState(rec.streak, today);
+  if (!st || !st.restorable) return { rec, ok: false };
+  rec.streak.last = keyOfDayNum(dayNum(today) - 1);
+  rec.streak.restoredAt = today;
+  return { rec, ok: true, count: rec.streak.count };
+}
+
 // What the page shows. A streak that can no longer be kept reads as 0.
 function view(input, { now = Date.now(), tz } = {}) {
   const rec = normalise(input);
@@ -118,7 +141,7 @@ function view(input, { now = Date.now(), tz } = {}) {
     if (gap > 2 || (gap === 2 && s.freezeWeek === weekOf(today))) count = 0;
   }
   return {
-    streak: { count, best: s.best, doneToday: s.last === today },
+    streak: { count, best: s.best, doneToday: s.last === today, lost: restoreState(s, today) },
     passport: rec.passport.slice(),
     week: { calls: rec.week.calls, countries: rec.week.countries.length, longest: rec.week.longest },
     prevWeek: rec.prevWeek,
@@ -155,4 +178,4 @@ function merge(input, other, { trusted = false, now = Date.now(), tz } = {}) {
   return rec;
 }
 
-module.exports = { GOOD_CALL_SECONDS, emptyRecord, normalise, noteCall, view, merge, dayKey, weekOf };
+module.exports = { GOOD_CALL_SECONDS, emptyRecord, normalise, noteCall, view, merge, restore, dayKey, weekOf };

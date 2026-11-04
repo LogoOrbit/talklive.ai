@@ -98,7 +98,14 @@ fun TalkLiveRoot(vm: TalkViewModel = hiltViewModel()) {
         when (screen) {
             RootScreen.Onboarding -> OnboardingFlow(hiltViewModel<AuthViewModel>())
             RootScreen.SignIn -> OnboardingFlow(hiltViewModel<AuthViewModel>(), start = AuthRoute.Choose, onClose = { signingIn = false })
-            RootScreen.Animal -> AnimalSetupScreen(onDone = vm::setAnimal)
+            RootScreen.Animal -> {
+                val engageVm: app.talklive.ui.engage.EngageViewModel = hiltViewModel()
+                app.talklive.ui.onboarding.FirstRunSetup { a, g, age ->
+                    engageVm.setMyGender(g)
+                    engageVm.setAgeGroup(age)
+                    vm.setAnimal(a)
+                }
+            }
             RootScreen.Main -> MainScreen(vm, onSignIn = { signingIn = true })
         }
     }
@@ -438,7 +445,12 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
         }
     }
 
-    if (showStreak) engage?.let { app.talklive.ui.engage.StreakSheet(it, onDismiss = { showStreak = false }) }
+    if (showStreak) engage?.let {
+        app.talklive.ui.engage.StreakSheet(
+            it, onDismiss = { showStreak = false }, premium = premium.active, restoring = engageVm.restoring,
+            onRestore = engageVm::restoreStreak, onPlus = { showStreak = false; showPlus = "streak" },
+        )
+    }
     if (showFilters) app.talklive.ui.engage.FiltersSheet(filters, premium.active, onApply = engageVm::setFilters, onDismiss = { showFilters = false }, onPlus = { showFilters = false; showPlus = "locked" })
     // The website's "no one fits your filters, matching you with anyone" moment.
     LaunchedEffect(Unit) {

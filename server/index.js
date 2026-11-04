@@ -21,6 +21,7 @@ const NICK_ERRORS = {
   nickRepeat: 'Too many of the same character in a row.',
   nickTooShort: `Display name needs at least ${Nick.MIN_LEN} letters or numbers.`,
   nickTooLong: `Display name can be at most ${Nick.MAX_LEN} characters.`,
+  nickNotAllowed: 'That name is not allowed. Please pick a friendly one.',
 };
 const store = require('./store');
 const { TrackedMap } = require('./doc-json');
@@ -5792,6 +5793,20 @@ io.on('connection', (socket) => {
 
   // A browser's own streak and passport from before they lived here, carried
   // over once per profile (capped: see Engage.merge).
+  // TalkLive Plus: bring back a streak that just broke (server/engage.js restore).
+  socket.on('streak-restore', (ack) => {
+    const me = profiles.get(socket.id);
+    const reply = typeof ack === 'function' ? ack : () => {};
+    if (!me) return reply({ ok: false });
+    if (!isPremium(me.clientId)) return reply({ ok: false, reason: 'premium' });
+    const { rec, ok, count } = Engage.restore(store.engageGet(me.clientId), { tz: me.timezone });
+    if (!ok) return reply({ ok: false, reason: 'not-restorable' });
+    store.engageSet(me.clientId, rec);
+    store.recordFeature('streak_restore');
+    emitToClient(me.clientId, 'engage-update', { state: Engage.view(rec, { tz: me.timezone }) });
+    reply({ ok: true, count });
+  });
+
   socket.on('engage-merge', (local = {}) => {
     const me = profiles.get(socket.id);
     if (!me) return;

@@ -59,6 +59,7 @@ import app.talklive.ui.theme.BrandTeal
 import app.talklive.ui.theme.BrandViolet
 import app.talklive.ui.theme.Success
 import java.text.NumberFormat
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.border
 import androidx.compose.ui.unit.sp
 
@@ -122,12 +123,14 @@ fun HomeScreen(
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
             Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface) {
                 Row(Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    // "Connecting…" only if it is really taking a while; a quick reconnect is invisible.
+                    var slow by remember { mutableStateOf(false) }
+                    LaunchedEffect(connected) { slow = false; if (!connected) { kotlinx.coroutines.delay(3000); slow = true } }
                     Box(Modifier.size(8.dp).clip(CircleShape).background(if (connected) Success else MaterialTheme.colorScheme.outline))
                     Spacer(Modifier.size(8.dp))
                     Text(
                         when {
-                            !connected -> stringResource(R.string.connecting_server)
-                            visitors != null -> pluralStringResource(R.plurals.visitors_today, visitors, NumberFormat.getIntegerInstance().format(visitors))
+                            visitors != null && !slow -> pluralStringResource(R.plurals.visitors_today, visitors, NumberFormat.getIntegerInstance().format(visitors))
                             else -> stringResource(R.string.connecting_server)
                         },
                         style = MaterialTheme.typography.labelMedium,

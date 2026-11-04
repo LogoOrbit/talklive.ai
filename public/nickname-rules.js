@@ -28,6 +28,28 @@
   const MARK = re('\\p{M}', 'u');
   const NOT_ALLOWED = re("[^\\p{L}\\p{M}\\p{N} ._\\-']", 'gu');
 
+  // Names that are hateful, sexual, or pretend to be staff. Checked on a folded
+  // copy (lower case, accents and look-alike digits removed), so "Führer",
+  // "H1tler" and "f.u.c.k" are caught. Long words match anywhere; short ones
+  // only as a whole word, so "Essex", "analyst" and "Dickens" stay fine.
+  const BLOCK_ANYWHERE = ['nigger', 'nigga', 'faggot', 'hitler', 'fuhrer', 'fuehrer', 'rapist', 'onlyfans', 'pedophile', 'paedophile', 'motherfucker', 'fucker', 'fucking', 'kkk', 'heilhitler', 'siegheil', 'whitepower'];
+  const BLOCK_WORD = ['nazi', 'nazis', 'fuck', 'fuk', 'shit', 'cunt', 'bitch', 'whore', 'slut', 'dick', 'cock', 'pussy', 'penis', 'vagina', 'boobs', 'tits', 'nude', 'nudes', 'porn', 'sex', 'sexy', 'horny', 'rape', 'pedo', 'paedo', 'retard', 'kike', 'spic', 'chink', 'tranny', 'cum', 'anal', 'admin', 'moderator', 'mod', 'talklive', 'staff', 'support'];
+  function fold(t) {
+    return t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+      .replace(/0/g, 'o').replace(/1/g, 'i').replace(/3/g, 'e').replace(/4/g, 'a').replace(/5/g, 's').replace(/7/g, 't').replace(/\$/g, 's').replace(/@/g, 'a');
+  }
+  function offensive(name) {
+    const f = fold(name);
+    const squashed = f.replace(/[^a-z]/g, '');
+    if (BLOCK_ANYWHERE.some((w) => squashed.includes(w))) return true;
+    const words = f.split(/[^a-z]+/).filter(Boolean);
+    if (words.some((w) => BLOCK_WORD.includes(w))) return true;
+    // "f.u.c.k" or "f u c k": single letters run together.
+    const singles = f.split(/[^a-z]+/).filter(Boolean);
+    if (singles.length >= 3 && singles.every((w) => w.length === 1) && BLOCK_WORD.includes(singles.join(''))) return true;
+    return false;
+  }
+
   // Returns { ok, value, error }. `value` is the cleaned name to store; `error`
   // is an i18n key the page can show (English text lives in i18n.js).
   function check(raw) {
@@ -53,6 +75,7 @@
     const letters = chars.filter((c) => ALNUM.test(c)).length;
     if (letters < MIN_LEN) return { ok: false, value: s, error: 'nickTooShort' };
     if (chars.length > MAX_LEN) return { ok: false, value: s, error: 'nickTooLong' };
+    if (offensive(s)) return { ok: false, value: s, error: 'nickNotAllowed' };
     return { ok: true, value: s, error: null };
   }
 

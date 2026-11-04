@@ -177,6 +177,13 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
         if (!socket.connected()) socket.connect()
     }
 
+    /** Back in the foreground or back online: connect now instead of waiting out the retry backoff. */
+    fun reconnectNow() {
+        if (socket.connected()) return
+        socket.disconnect()
+        socket.connect()
+    }
+
     fun emit(event: String, payload: Any? = null) {
         if (payload == null) socket.emit(event) else socket.emit(event, payload)
     }

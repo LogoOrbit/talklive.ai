@@ -417,6 +417,22 @@
     <string name="cmp_calls">음성·텍스트 채팅 무제한</string>
     <string name="cmp_streaks">연속 기록, 여권, 게임</string>
     <string name="cmp_countries">성별 필터와 무제한 국가</string>
+    <string name="add_countries">국가 추가</string>
+    <string name="done">완료</string>
+    <string name="streak_lost_title">%1$d일 연속 기록이 끊겼어요</string>
+    <string name="streak_lost_body">하루를 놓쳤나요? TalkLive Plus로 한 달에 한 번 기록을 되살릴 수 있어요.</string>
+    <string name="streak_restore">기록 되살리기</string>
+    <string name="streak_restore_plus">💎 Plus로 되살리기</string>
+    <string name="setup_about_title">나에 대해 조금</string>
+    <string name="setup_about_body">둘 다 선택 사항이에요. 필터가 맞는 사람을 찾는 데 도움이 돼요.</string>
+    <string name="setup_about_privacy">대화 상대에게는 절대 보이지 않아요.</string>
+    <string name="setup_done_title">준비 완료!</string>
+    <string name="setup_done_body">%1$s이(가) 인사할 준비가 됐어요. 시작을 누르고 새로운 사람을 만나 보세요.</string>
+    <string name="setup_go">시작하기</string>
+    <string name="edit_profile">프로필 편집</string>
+    <string name="change_avatar">아바타 변경</string>
+    <string name="display_name_rules">문자, 숫자, 공백만. 무례한 이름은 사용할 수 없어요.</string>
+    <string name="name_needs_account">무료 계정을 만들면 이름을 정할 수 있어요.</string>
     <plurals name="visitors_today">
         <item quantity="other">오늘 방문자 %1$s명</item>
     </plurals>

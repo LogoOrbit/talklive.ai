@@ -126,10 +126,10 @@ fun ProfileScreen(
             Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface) {
                 Column(Modifier.fillMaxWidth().padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Box(contentAlignment = Alignment.BottomEnd) {
-                        AnimalAvatar(animal, account?.nickname, 104.dp, Modifier.clip(CircleShape).clickable { vm.open(ProfileSheet.Animal) })
+                        AnimalAvatar(animal, account?.nickname, 104.dp, Modifier.clip(CircleShape).clickable { vm.open(ProfileSheet.Edit) })
                         Box(
                             Modifier.size(32.dp).clip(CircleShape).background(BrandGradient)
-                                .clickable { vm.open(ProfileSheet.Animal) },
+                                .clickable { vm.open(ProfileSheet.Edit) },
                             contentAlignment = Alignment.Center,
                         ) { Icon(Icons.Rounded.Edit, null, tint = Color.White, modifier = Modifier.size(16.dp)) }
                     }
@@ -138,6 +138,7 @@ fun ProfileScreen(
                         account?.nickname ?: stringResource(R.string.guest),
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { vm.open(ProfileSheet.Edit) }.padding(horizontal = 6.dp),
                     )
                     Text(
                         account?.let { "@${it.username}" } ?: (animalById(animal)?.trait ?: ""),
@@ -215,7 +216,7 @@ fun ProfileScreen(
                 }
             }
             when (youSheet) {
-                "passport" -> engage?.let { app.talklive.ui.engage.StreakSheet(it) { youSheet = null } } ?: run { youSheet = null }
+                "passport" -> engage?.let { app.talklive.ui.engage.StreakSheet(it, onDismiss = { youSheet = null }, premium = premium.active, restoring = engageVm.restoring, onRestore = engageVm::restoreStreak, onPlus = { youSheet = "plus" }) } ?: run { youSheet = null }
                 "films" -> app.talklive.ui.engage.FilmsSheet(engageVm, films) { youSheet = null }
                 "likes" -> app.talklive.ui.engage.LikesSheet(engageVm, onPlus = { youSheet = "plus" }) { youSheet = null }
                 "invite" -> app.talklive.ui.engage.InviteSheet(engageVm) { youSheet = null }
@@ -300,7 +301,7 @@ fun ProfileScreen(
         SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
     }
 
-    vm.sheet?.let { sheet -> ProfileSheetHost(sheet, vm, animal) }
+    vm.sheet?.let { sheet -> ProfileSheetHost(sheet, vm, animal, onSignIn) }
 }
 
 @Composable
@@ -438,7 +439,7 @@ private fun SettingRow(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ProfileSheetHost(sheet: ProfileSheet, vm: ProfileViewModel, animal: String?) {
+private fun ProfileSheetHost(sheet: ProfileSheet, vm: ProfileViewModel, animal: String?, onSignIn: () -> Unit = {}) {
     val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val account by vm.account.collectAsStateWithLifecycle()
     ModalBottomSheet(onDismissRequest = vm::close, sheetState = state, containerColor = MaterialTheme.colorScheme.background) {
@@ -477,6 +478,32 @@ private fun ProfileSheetHost(sheet: ProfileSheet, vm: ProfileViewModel, animal: 
                     ErrorBanner(vm.error)
                     Spacer(Modifier.height(16.dp))
                     PrimaryButton(stringResource(R.string.save), onClick = { vm.saveFriendId(handle) }, enabled = handle.length >= 3, loading = vm.busy)
+                }
+                // Tapping your own picture or name: everything about how you look, in one place.
+                ProfileSheet.Edit -> {
+                    var nick by rememberSaveable { mutableStateOf(account?.nickname.orEmpty()) }
+                    SheetTitle(stringResource(R.string.edit_profile), null)
+                    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Box(contentAlignment = Alignment.BottomEnd) {
+                            AnimalAvatar(animal, account?.nickname, 96.dp, Modifier.clip(CircleShape).clickable { vm.open(ProfileSheet.Animal) })
+                            Box(Modifier.size(30.dp).clip(CircleShape).background(BrandGradient).clickable { vm.open(ProfileSheet.Animal) }, contentAlignment = Alignment.Center) {
+                                Icon(Icons.Rounded.Edit, null, tint = Color.White, modifier = Modifier.size(15.dp))
+                            }
+                        }
+                        androidx.compose.material3.TextButton(onClick = { vm.open(ProfileSheet.Animal) }) { Text(stringResource(R.string.change_avatar)) }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    if (account != null) {
+                        TalkTextField(nick, { nick = it.take(20); vm.clearError() }, stringResource(R.string.display_name), imeAction = ImeAction.Done, onIme = { vm.saveNickname(nick) })
+                        Text(stringResource(R.string.display_name_rules), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp, start = 4.dp))
+                        ErrorBanner(vm.error)
+                        Spacer(Modifier.height(16.dp))
+                        PrimaryButton(stringResource(R.string.save), onClick = { vm.saveNickname(nick) }, enabled = nick.isNotBlank() && nick.trim() != account?.nickname, loading = vm.busy)
+                    } else {
+                        Text(stringResource(R.string.name_needs_account), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(Modifier.height(12.dp))
+                        PrimaryButton(stringResource(R.string.sign_in_or_create), onClick = { vm.close(); onSignIn() })
+                    }
                 }
                 ProfileSheet.Nickname -> {
                     var nick by rememberSaveable { mutableStateOf(account?.nickname.orEmpty()) }

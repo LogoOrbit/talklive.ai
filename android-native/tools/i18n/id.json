@@ -416,5 +416,21 @@
 "cmp_free": "Gratis",
 "cmp_calls": "Obrolan suara dan teks tanpa batas",
 "cmp_streaks": "Runtutan, paspor, dan game",
-"cmp_countries": "Filter gender dan negara tanpa batas"
+"cmp_countries": "Filter gender dan negara tanpa batas",
+"add_countries": "Tambah negara",
+"done": "Selesai",
+"streak_lost_title": "Runtutan %1$d harimu berakhir",
+"streak_lost_body": "Melewatkan sehari? TalkLive Plus mengembalikan runtutanmu, sebulan sekali.",
+"streak_restore": "Kembalikan runtutanku",
+"streak_restore_plus": "Kembalikan dengan 💎 Plus",
+"setup_about_title": "Sedikit tentangmu",
+"setup_about_body": "Keduanya opsional. Membantu filter menemukan orang yang tepat.",
+"setup_about_privacy": "Tidak pernah ditampilkan ke lawan bicaramu.",
+"setup_done_title": "Semua siap!",
+"setup_done_body": "%1$s siap menyapa. Ketuk Mulai dan temui orang baru.",
+"setup_go": "Ayo",
+"edit_profile": "Edit profil",
+"change_avatar": "Ganti avatar",
+"display_name_rules": "Huruf, angka, dan spasi. Tetap sopan: nama kasar ditolak.",
+"name_needs_account": "Buat akun gratis untuk memilih namamu sendiri."
 }

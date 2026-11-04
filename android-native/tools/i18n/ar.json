@@ -416,5 +416,21 @@
 "cmp_free": "مجاني",
 "cmp_calls": "دردشات صوتية ونصية بلا حدود",
 "cmp_streaks": "السلاسل والجواز والألعاب",
-"cmp_countries": "فلتر الجنس ودول بلا حدود"
+"cmp_countries": "فلتر الجنس ودول بلا حدود",
+"add_countries": "إضافة دول",
+"done": "تم",
+"streak_lost_title": "انتهت سلسلتك المكونة من %1$d أيام",
+"streak_lost_body": "فاتك يوم؟ يعيد TalkLive Plus سلسلتك مرة في الشهر.",
+"streak_restore": "استعد سلسلتي",
+"streak_restore_plus": "استعدها مع 💎 Plus",
+"setup_about_title": "قليلًا عنك",
+"setup_about_body": "كلاهما اختياري. يساعدان الفلاتر على إيجاد الأشخاص المناسبين.",
+"setup_about_privacy": "لا يظهر أبدًا لمن تتحدث معهم.",
+"setup_done_title": "كل شيء جاهز!",
+"setup_done_body": "%1$s جاهز لإلقاء التحية. اضغط ابدأ وتعرّف على شخص جديد.",
+"setup_go": "هيا بنا",
+"edit_profile": "تعديل الملف الشخصي",
+"change_avatar": "تغيير الصورة الرمزية",
+"display_name_rules": "حروف وأرقام ومسافات. كن لطيفًا: الأسماء البذيئة مرفوضة.",
+"name_needs_account": "أنشئ حسابًا مجانيًا لاختيار اسمك."
 }

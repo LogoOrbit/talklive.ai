@@ -415,5 +415,21 @@
 "cmp_free": "무료",
 "cmp_calls": "음성·텍스트 채팅 무제한",
 "cmp_streaks": "연속 기록, 여권, 게임",
-"cmp_countries": "성별 필터와 무제한 국가"
+"cmp_countries": "성별 필터와 무제한 국가",
+"add_countries": "국가 추가",
+"done": "완료",
+"streak_lost_title": "%1$d일 연속 기록이 끊겼어요",
+"streak_lost_body": "하루를 놓쳤나요? TalkLive Plus로 한 달에 한 번 기록을 되살릴 수 있어요.",
+"streak_restore": "기록 되살리기",
+"streak_restore_plus": "💎 Plus로 되살리기",
+"setup_about_title": "나에 대해 조금",
+"setup_about_body": "둘 다 선택 사항이에요. 필터가 맞는 사람을 찾는 데 도움이 돼요.",
+"setup_about_privacy": "대화 상대에게는 절대 보이지 않아요.",
+"setup_done_title": "준비 완료!",
+"setup_done_body": "%1$s이(가) 인사할 준비가 됐어요. 시작을 누르고 새로운 사람을 만나 보세요.",
+"setup_go": "시작하기",
+"edit_profile": "프로필 편집",
+"change_avatar": "아바타 변경",
+"display_name_rules": "문자, 숫자, 공백만. 무례한 이름은 사용할 수 없어요.",
+"name_needs_account": "무료 계정을 만들면 이름을 정할 수 있어요."
 }

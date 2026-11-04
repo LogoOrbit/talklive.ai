@@ -42,12 +42,19 @@ class TalkLiveApplication : Application(), coil.ImageLoaderFactory {
                 .apply { description = getString(R.string.channel_messages_desc) },
         )
         push.refresh()
+        // Connect as early as possible, and again the moment the network returns.
+        socket.connect()
+        runCatching {
+            getSystemService(android.net.ConnectivityManager::class.java).registerDefaultNetworkCallback(object : android.net.ConnectivityManager.NetworkCallback() {
+                override fun onAvailable(network: android.net.Network) { socket.reconnectNow() }
+            })
+        }
         // Foreground/background: the server pushes to a backgrounded app, and a
         // text-chat partner sees "switched away".
         androidx.lifecycle.ProcessLifecycleOwner.get().lifecycle.addObserver(
             androidx.lifecycle.LifecycleEventObserver { _, event ->
                 when (event) {
-                    androidx.lifecycle.Lifecycle.Event.ON_START -> { socket.hidden = false; calls.appVisible(true) }
+                    androidx.lifecycle.Lifecycle.Event.ON_START -> { socket.reconnectNow(); socket.hidden = false; calls.appVisible(true) }
                     androidx.lifecycle.Lifecycle.Event.ON_STOP -> { socket.hidden = true; calls.appVisible(false) }
                     else -> Unit
                 }

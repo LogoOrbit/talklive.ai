@@ -415,5 +415,21 @@
 "cmp_free": "無料",
 "cmp_calls": "音声・テキストチャット無制限",
 "cmp_streaks": "連続記録・パスポート・ゲーム",
-"cmp_countries": "性別フィルターと国の無制限"
+"cmp_countries": "性別フィルターと国の無制限",
+"add_countries": "国を追加",
+"done": "完了",
+"streak_lost_title": "%1$d日連続の記録が途切れました",
+"streak_lost_body": "1日休んだ？TalkLive Plusなら月に1回、記録を戻せます。",
+"streak_restore": "記録を戻す",
+"streak_restore_plus": "💎 Plusで戻す",
+"setup_about_title": "あなたについて少しだけ",
+"setup_about_body": "どちらも任意です。フィルターがぴったりの相手を見つけやすくなります。",
+"setup_about_privacy": "話し相手には表示されません。",
+"setup_done_title": "準備完了！",
+"setup_done_body": "%1$sはあいさつの準備ができました。スタートをタップして新しい人と出会おう。",
+"setup_go": "はじめよう",
+"edit_profile": "プロフィールを編集",
+"change_avatar": "アバターを変更",
+"display_name_rules": "文字・数字・スペース。不適切な名前は使えません。",
+"name_needs_account": "無料アカウントを作ると名前を選べます。"
 }

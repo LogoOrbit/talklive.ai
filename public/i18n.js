@@ -410,6 +410,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "nickRepeat": "Too many of the same character in a row.",
     "nickTooShort": "Display name needs at least 2 letters or numbers.",
     "nickTooLong": "Display name can be at most 20 characters.",
+    "nickNotAllowed": "That name is not allowed. Please pick a friendly one.",
     "statusPasswordChanged": "Password changed.",
     "email": "Email",
     "recoveryEmail": "Recovery Email",

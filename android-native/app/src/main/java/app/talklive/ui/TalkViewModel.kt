@@ -1,5 +1,9 @@
 package app.talklive.ui
 
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import androidx.lifecycle.ViewModel
 import app.talklive.auth.AuthRepository
 import android.content.Context
@@ -43,7 +47,11 @@ class TalkViewModel @Inject constructor(
     val autoConnect = calls.autoConnect
     fun setAutoConnect(on: Boolean) = calls.setAutoConnect(on)
     val connected = socket.connected
+    /** Today's visitors; the last known number while reconnecting, so Home never flashes "Connecting…". */
     val visitorCount = socket.visitorCount
+        .onEach { n -> if (n != null) prefs.edit().putInt("visitors", n).apply() }
+        .map { it ?: prefs.getInt("visitors", -1).takeIf { c -> c >= 0 } }
+        .stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, prefs.getInt("visitors", -1).takeIf { it >= 0 })
     val warnings = socket.warnings
     val maintenance = socket.maintenance
     fun acknowledgeWarning(id: String) = socket.acknowledgeWarning(id)

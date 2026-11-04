@@ -417,6 +417,22 @@
     <string name="cmp_calls">音声・テキストチャット無制限</string>
     <string name="cmp_streaks">連続記録・パスポート・ゲーム</string>
     <string name="cmp_countries">性別フィルターと国の無制限</string>
+    <string name="add_countries">国を追加</string>
+    <string name="done">完了</string>
+    <string name="streak_lost_title">%1$d日連続の記録が途切れました</string>
+    <string name="streak_lost_body">1日休んだ？TalkLive Plusなら月に1回、記録を戻せます。</string>
+    <string name="streak_restore">記録を戻す</string>
+    <string name="streak_restore_plus">💎 Plusで戻す</string>
+    <string name="setup_about_title">あなたについて少しだけ</string>
+    <string name="setup_about_body">どちらも任意です。フィルターがぴったりの相手を見つけやすくなります。</string>
+    <string name="setup_about_privacy">話し相手には表示されません。</string>
+    <string name="setup_done_title">準備完了！</string>
+    <string name="setup_done_body">%1$sはあいさつの準備ができました。スタートをタップして新しい人と出会おう。</string>
+    <string name="setup_go">はじめよう</string>
+    <string name="edit_profile">プロフィールを編集</string>
+    <string name="change_avatar">アバターを変更</string>
+    <string name="display_name_rules">文字・数字・スペース。不適切な名前は使えません。</string>
+    <string name="name_needs_account">無料アカウントを作ると名前を選べます。</string>
     <plurals name="visitors_today">
         <item quantity="other">今日の訪問者 %1$s人</item>
     </plurals>

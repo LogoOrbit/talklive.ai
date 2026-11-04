@@ -417,6 +417,22 @@
     <string name="cmp_calls">无限语音和文字聊天</string>
     <string name="cmp_streaks">连续记录、护照和游戏</string>
     <string name="cmp_countries">性别筛选和不限国家</string>
+    <string name="add_countries">添加国家</string>
+    <string name="done">完成</string>
+    <string name="streak_lost_title">你的 %1$d 天连续记录中断了</string>
+    <string name="streak_lost_body">漏了一天？TalkLive Plus 每月可帮你恢复一次连续记录。</string>
+    <string name="streak_restore">恢复我的连续记录</string>
+    <string name="streak_restore_plus">用 💎 Plus 恢复</string>
+    <string name="setup_about_title">简单介绍一下你</string>
+    <string name="setup_about_body">两项都可不填。它们能帮筛选找到合适的人。</string>
+    <string name="setup_about_privacy">不会展示给聊天对象。</string>
+    <string name="setup_done_title">一切就绪！</string>
+    <string name="setup_done_body">%1$s 已经准备好打招呼了。点击开始，认识新朋友。</string>
+    <string name="setup_go">出发</string>
+    <string name="edit_profile">编辑资料</string>
+    <string name="change_avatar">更换头像</string>
+    <string name="display_name_rules">字母、数字和空格。请友善：不当名称会被拒绝。</string>
+    <string name="name_needs_account">创建免费账号即可自选名字。</string>
     <plurals name="visitors_today">
         <item quantity="other">今日访客 %1$s 人</item>
     </plurals>

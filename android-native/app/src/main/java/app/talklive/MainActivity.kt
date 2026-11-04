@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.getValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.setValue
 import app.talklive.data.ThemeStore
 import app.talklive.ui.TalkLiveRoot
 import app.talklive.ui.theme.TalkLiveTheme
@@ -51,6 +52,9 @@ class MainActivity : ComponentActivity() {
                     androidx.compose.foundation.layout.Box(
                         Modifier.fillMaxHeight().widthIn(max = 720.dp),
                     ) { TalkLiveRoot() }
+                    // The logo morph, once per launch (not on rotation).
+                    var intro by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(savedInstanceState == null) }
+                    if (intro) app.talklive.ui.onboarding.LaunchIntro { intro = false }
                 }
             }
         }

@@ -118,6 +118,7 @@ fun CallScreen(
     bands: () -> FloatArray = { FloatArray(0) },
 ) {
     var reporting by remember { mutableStateOf(false) }
+    var showPartner by remember { mutableStateOf(false) }
     val phase = state.phase
     val partner = when (phase) {
         is CallPhase.Connecting -> phase.partner
@@ -173,8 +174,10 @@ fun CallScreen(
             if (id == null || partner == null) {
                 Radar { AnimalAvatar(myAnimal, null, 112.dp) }
             } else {
-                app.talklive.ui.call.SpectrumRing(bands = bands, active = live, size = 260.dp, inner = 150.dp) {
-                    SpeakingAvatar(partner, active = live, level = remoteLevel)
+                Box(Modifier.clip(CircleShape).clickable { showPartner = true }) {
+                    app.talklive.ui.call.SpectrumRing(bands = bands, active = live, size = 260.dp, inner = 150.dp) {
+                        SpeakingAvatar(partner, active = live, level = remoteLevel)
+                    }
                 }
             }
         }
@@ -261,6 +264,8 @@ fun CallScreen(
 
     FloatingReactions(reactions)
     }
+
+    if (showPartner && partner != null) PartnerSheet(partner, friendStatus, onAddFriend, onReport = { reporting = true }) { showPartner = false }
 
     if (reporting) {
         val reasons = listOf(

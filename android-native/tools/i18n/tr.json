@@ -416,5 +416,21 @@
 "cmp_free": "Ücretsiz",
 "cmp_calls": "Sınırsız sesli ve yazılı sohbet",
 "cmp_streaks": "Seriler, pasaport ve oyunlar",
-"cmp_countries": "Cinsiyet filtresi ve sınırsız ülke"
+"cmp_countries": "Cinsiyet filtresi ve sınırsız ülke",
+"add_countries": "Ülke ekle",
+"done": "Bitti",
+"streak_lost_title": "%1$d günlük serin bitti",
+"streak_lost_body": "Bir günü mü kaçırdın? TalkLive Plus serini ayda bir geri getirir.",
+"streak_restore": "Serimi geri getir",
+"streak_restore_plus": "💎 Plus ile geri al",
+"setup_about_title": "Biraz senden bahset",
+"setup_about_body": "İkisi de isteğe bağlı. Filtrelerin doğru kişileri bulmasına yardım eder.",
+"setup_about_privacy": "Konuştuğun kimseye gösterilmez.",
+"setup_done_title": "Her şey hazır!",
+"setup_done_body": "%1$s merhaba demeye hazır. Başla'ya dokun ve yeni biriyle tanış.",
+"setup_go": "Hadi başlayalım",
+"edit_profile": "Profili düzenle",
+"change_avatar": "Avatarı değiştir",
+"display_name_rules": "Harf, rakam ve boşluk. Kibar ol: kaba adlar reddedilir.",
+"name_needs_account": "Kendi adını seçmek için ücretsiz hesap oluştur."
 }

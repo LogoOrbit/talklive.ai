@@ -13,7 +13,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-enum class ProfileSheet { Animal, Nickname, Email, Password, Blocked, FriendId }
+enum class ProfileSheet { Edit, Animal, Nickname, Email, Password, Blocked, FriendId }
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
@@ -64,6 +64,7 @@ class ProfileViewModel @Inject constructor(
 
     fun open(s: ProfileSheet) { error = null; sheet = s }
     fun close() { sheet = null; error = null }
+    fun clearError() { error = null }
 
     fun setAnimal(id: String) {
         identity.animal = id
