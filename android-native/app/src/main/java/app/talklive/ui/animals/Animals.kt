@@ -40,6 +40,6 @@ val Animals: List<Animal> = listOf(
     Animal("hedgehog", "Hedgehog", "Shy but sweet", Color(0xFFA16207), R.drawable.animal_hedgehog),
 )
 
-private val byId = Animals.associateBy { it.id }
+private val byId = (Animals + Characters).associateBy { it.id }
 
 fun animalById(id: String?): Animal? = id?.let { byId[it] }

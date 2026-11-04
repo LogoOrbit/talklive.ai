@@ -19,7 +19,8 @@ enum class ProfileSheet { Animal, Nickname, Email, Password, Blocked, FriendId }
 class ProfileViewModel @Inject constructor(
     private val auth: AuthRepository,
     private val identity: IdentityStore,
-    private val theme: ThemeStore,
+    private val themeStore: ThemeStore,
+    private val soundFx: app.talklive.sound.Sounds,
     private val privacy: app.talklive.data.PrivacyStore,
     private val socket: app.talklive.net.TalkSocket,
     private val social: app.talklive.social.SocialRepository,
@@ -51,7 +52,9 @@ class ProfileViewModel @Inject constructor(
     }
     val account = auth.account
     val animal = identity.animalFlow
-    val dark = theme.dark
+    val dark = themeStore.dark
+    val theme = themeStore.theme
+    fun setTheme(t: app.talklive.ui.theme.AppTheme) = themeStore.set(t)
 
     var sheet by mutableStateOf<ProfileSheet?>(null); private set
     var busy by mutableStateOf(false); private set
@@ -67,7 +70,9 @@ class ProfileViewModel @Inject constructor(
         close()
     }
 
-    fun toggleTheme() = theme.toggle()
+    fun toggleTheme() = themeStore.toggle()
+    val sounds = soundFx.enabled
+    fun setSounds(on: Boolean) { soundFx.setEnabled(on); if (on) soundFx.play(app.talklive.sound.Sounds.Fx.Message) }
     fun signOut() = auth.logout()
 
     fun saveNickname(nick: String) = run("Name updated") { auth.updateNickname(nick) }

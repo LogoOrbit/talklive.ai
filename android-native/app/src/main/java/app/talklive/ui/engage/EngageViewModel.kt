@@ -18,6 +18,10 @@ import javax.inject.Inject
 @HiltViewModel
 class EngageViewModel @Inject constructor(private val repo: EngageRepository, private val mic: app.talklive.voice.MicMonitor) : ViewModel() {
     val myGender = repo.myGender
+    val replies = repo.replies
+    val fallback = repo.fallback
+    fun ackReply(id: String) = repo.ackReply(id)
+    fun keepFilters() = repo.keepFilters()
     val ageGroup = repo.ageGroup
     val flags = repo.flags
     val voiceCheck = mic.enabled
@@ -35,6 +39,7 @@ class EngageViewModel @Inject constructor(private val repo: EngageRepository, pr
     var likes by mutableStateOf<Likes?>(null); private set
     var results by mutableStateOf<List<Film>>(emptyList()); private set
     var searching by mutableStateOf(false); private set
+    var searched by mutableStateOf(false); private set
     var error by mutableStateOf<String?>(null); private set
     var busy by mutableStateOf(false); private set
     private var searchJob: Job? = null
@@ -47,12 +52,14 @@ class EngageViewModel @Inject constructor(private val repo: EngageRepository, pr
     /** Search as you type, after a short pause. */
     fun search(q: String) {
         searchJob?.cancel()
+        searched = false
         if (q.isBlank()) { results = emptyList(); searching = false; return }
         searchJob = viewModelScope.launch {
             delay(350)
             searching = true
             results = repo.searchFilms(q)
             searching = false
+            searched = true
         }
     }
 

@@ -49,10 +49,10 @@ class ScreenshotTest {
         return AuthViewModel(AuthRepository(ctx, socket, identity))
     }
 
-    private fun shot(name: String, dark: Boolean = false, content: @Composable () -> Unit) =
+    private fun shot(name: String, dark: Boolean = true, content: @Composable () -> Unit) =
         captureRoboImage("build/screenshots/$name.png") {
-            TalkLiveTheme(dark = dark) {
-                Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) { content() }
+            androidx.compose.runtime.CompositionLocalProvider(app.talklive.ui.theme.LocalReduceMotion provides true) { TalkLiveTheme(dark = dark) {
+                Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) { content() } }
             }
         }
 
@@ -82,7 +82,7 @@ class ScreenshotTest {
         val socket = TalkSocket(identity)
         app.talklive.ui.profile.ProfileScreen(
             onSignIn = {},
-            vm = app.talklive.ui.profile.ProfileViewModel(AuthRepository(ctx, socket, identity), identity, app.talklive.data.ThemeStore(ctx), app.talklive.data.PrivacyStore(ctx), socket, app.talklive.social.SocialRepository(socket, identity)),
+            vm = app.talklive.ui.profile.ProfileViewModel(AuthRepository(ctx, socket, identity), identity, app.talklive.data.ThemeStore(ctx), app.talklive.sound.Sounds(ctx), app.talklive.data.PrivacyStore(ctx), socket, app.talklive.social.SocialRepository(socket, identity)),
             engageVm = app.talklive.ui.engage.EngageViewModel(app.talklive.engage.EngageRepository(ctx, socket), app.talklive.voice.MicMonitor(ctx, socket)),
         )
     }

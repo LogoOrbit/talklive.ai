@@ -207,12 +207,19 @@ class SocialRepository @Inject constructor(
             "friend-request",
             JSONObject().put("targetClientId", targetClientId).apply { friendId?.let { put("friendId", it) } },
             "friend-request-result",
-        ) ?: return@launch
+        )
+        if (res == null) { _toasts.tryEmit(UiText.Res(R.string.t_request_failed)); return@launch }
         when {
             !res.optBoolean("ok") -> _toasts.tryEmit(res.optString("error").takeIf { it.isNotBlank() }?.let { UiText.Raw(it) } ?: UiText.Res(R.string.t_request_failed))
             res.optBoolean("accepted") || res.optBoolean("alreadyFriends") -> _toasts.tryEmit(UiText.Res(R.string.t_now_friends))
             else -> { _sent.update { it + targetClientId }; _toasts.tryEmit(UiText.Res(R.string.t_request_sent)) }
         }
+    }
+
+    /** Takes someone off "People you met today". */
+    fun removeFromHistory(clientId: String) {
+        _history.update { list -> list.filterNot { it.clientId == clientId } }
+        socket.emit("remove-history-entry", JSONObject().put("clientId", clientId))
     }
 
     fun respond(fromClientId: String, accept: Boolean) = scope.launch {
@@ -320,6 +327,14 @@ class SocialRepository @Inject constructor(
         updateThread(toClientId) { it + msg }
         emitMessage(toClientId, msg)
         // Still not confirmed after 10 s: show it as failed so it can be retried.
+        delay(10_000)
+        updateThread(toClientId) { list -> list.map { if (it.id == msg.id && it.status == MsgStatus.Sending) it.copy(status = MsgStatus.Failed) else it } }
+    }
+
+    fun sendGif(toClientId: String, gif: Gif) = scope.launch {
+        val msg = ChatMessage(id = newId(), mine = true, text = "", ts = System.currentTimeMillis(), gifUrl = gif.url, gif = gif, status = MsgStatus.Sending)
+        updateThread(toClientId) { it + msg }
+        emitMessage(toClientId, msg)
         delay(10_000)
         updateThread(toClientId) { list -> list.map { if (it.id == msg.id && it.status == MsgStatus.Sending) it.copy(status = MsgStatus.Failed) else it } }
     }
@@ -537,7 +552,10 @@ class SocialRepository @Inject constructor(
     private fun emitMessage(to: String, msg: ChatMessage) {
         socket.emit(
             "friend-message",
-            JSONObject().put("toClientId", to).put("text", msg.text).put("id", msg.id).apply { msg.replyTo?.let { put("replyTo", it) } },
+            JSONObject().put("toClientId", to).put("text", msg.text).put("id", msg.id).apply {
+                msg.replyTo?.let { put("replyTo", it) }
+                msg.gif?.let { put("gif", it.json()) }
+            },
         )
     }
 

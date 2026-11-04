@@ -193,6 +193,7 @@ fun FilmsSheet(vm: EngageViewModel, current: List<Film>, onDismiss: () -> Unit) 
             TalkTextField(query, { query = it; vm.search(it) }, stringResource(R.string.search_films), imeAction = ImeAction.Search)
             Box(Modifier.fillMaxWidth().heightIn(min = 60.dp, max = 300.dp)) {
                 if (vm.searching) CircularProgressIndicator(Modifier.align(Alignment.Center).size(28.dp))
+                else if (query.isNotBlank() && vm.results.isEmpty() && vm.searched) Text(stringResource(R.string.films_none), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.align(Alignment.Center))
                 LazyColumn {
                     items(vm.results, key = { "${it.type}${it.id}" }) { f ->
                         val chosen = picks.any { it.type == f.type && it.id == f.id }
@@ -224,7 +225,8 @@ private fun Modifier.matchParentSizeCompat() = this.fillMaxWidth().aspectRatio(2
 /** Match filters: interests and countries for everyone, gender with Plus. */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun FiltersSheet(current: Filters, premium: Boolean, onApply: (Filters) -> Unit, onDismiss: () -> Unit) {
+fun FiltersSheet(current: Filters, premium: Boolean, onApply: (Filters) -> Unit, onDismiss: () -> Unit, onPlus: () -> Unit = {}) {
+    val freeCountries = 2 // the website's free limit per list (server FREE_LIMITS)
     var f by remember { mutableStateOf(current) }
     var newInterest by remember { mutableStateOf("") }
     var countryQuery by remember { mutableStateOf("") }
@@ -264,8 +266,8 @@ fun FiltersSheet(current: Filters, premium: Boolean, onApply: (Filters) -> Unit,
                 countries.filter { it.second.contains(countryQuery, ignoreCase = true) }.take(5).forEach { (cc, name) ->
                     Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text("${flag(cc) ?: ""}  $name", modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onBackground)
-                        TextButton(onClick = { f = f.copy(includeCountries = (f.includeCountries + cc).distinct(), excludeCountries = f.excludeCountries - cc); countryQuery = "" }) { Text(stringResource(R.string.include)) }
-                        TextButton(onClick = { f = f.copy(excludeCountries = (f.excludeCountries + cc).distinct(), includeCountries = f.includeCountries - cc); countryQuery = "" }) { Text(stringResource(R.string.avoid)) }
+                        TextButton(onClick = { if (!premium && f.includeCountries.size >= freeCountries) onPlus() else { f = f.copy(includeCountries = (f.includeCountries + cc).distinct(), excludeCountries = f.excludeCountries - cc); countryQuery = "" } }) { Text(stringResource(R.string.include)) }
+                        TextButton(onClick = { if (!premium && f.excludeCountries.size >= freeCountries) onPlus() else { f = f.copy(excludeCountries = (f.excludeCountries + cc).distinct(), includeCountries = f.includeCountries - cc); countryQuery = "" } }) { Text(stringResource(R.string.avoid)) }
                     }
                 }
             }
@@ -275,8 +277,7 @@ fun FiltersSheet(current: Filters, premium: Boolean, onApply: (Filters) -> Unit,
                 listOf("any" to R.string.anyone, "female" to R.string.women, "male" to R.string.men).forEach { (g, label) ->
                     FilterChip(
                         selected = f.prefGender == g,
-                        enabled = premium || g == "any",
-                        onClick = { f = f.copy(prefGender = g) },
+                        onClick = { if (premium || g == "any") f = f.copy(prefGender = g) else onPlus() },
                         label = { Text(stringResource(label)) },
                         colors = FilterChipDefaults.filterChipColors(selectedContainerColor = MaterialTheme.colorScheme.primaryContainer),
                     )

@@ -19,12 +19,14 @@ class TalkLiveApplication : Application(), coil.ImageLoaderFactory {
     @Inject lateinit var calls: app.talklive.call.CallManager
     // Created at start: it hooks filters into registration and hears engage events.
     @Inject lateinit var engage: app.talklive.engage.EngageRepository
+    @Inject lateinit var sounds: app.talklive.sound.SoundDirector
 
     override fun onCreate() {
         CrashReporter.install(this)
         super.onCreate()
         CrashReporter.sendPending(this, socket)
         engage.loadFlags()
+        sounds.start()
         val nm = getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(
             NotificationChannel(CHANNEL_CALL, getString(R.string.channel_call), NotificationManager.IMPORTANCE_LOW)

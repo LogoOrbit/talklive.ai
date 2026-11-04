@@ -188,6 +188,13 @@ class CallManager @Inject constructor(
         socket.emit("chat-message", JSONObject().put("text", body).put("id", id).apply { replyTo?.let { put("replyTo", it) } })
     }
 
+    fun sendGif(gif: app.talklive.social.Gif) = scope.launch {
+        if (_state.value.phase !is CallPhase.Connected) return@launch
+        val id = "a" + java.lang.Long.toString(System.nanoTime(), 36).takeLast(14)
+        _chat.update { it + ChatMessage(id, mine = true, text = "", ts = System.currentTimeMillis(), gifUrl = gif.url) }
+        socket.emit("chat-message", JSONObject().put("text", "").put("id", id).put("gif", gif.json()))
+    }
+
     fun typing() {
         val now = System.currentTimeMillis()
         if (now - lastTypingSent < 2500) return

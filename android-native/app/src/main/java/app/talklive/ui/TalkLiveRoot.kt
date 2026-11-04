@@ -28,6 +28,10 @@ import androidx.compose.material.icons.rounded.Call
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -127,6 +131,8 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     val premium by engageVm.premium.collectAsStateWithLifecycle()
     var showStreak by remember { mutableStateOf(false) }
     var showFilters by remember { mutableStateOf(false) }
+    // The Plus page; from a free feature it offers to carry on free.
+    var showPlus by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(Unit) {
         engageVm.moments.collect { m ->
             snackbar.showSnackbar(
@@ -238,7 +244,6 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
             AnimatedVisibility(
                 visible = !inCall,
@@ -274,7 +279,9 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                         engage = engage,
                         filtersActive = filters.activeCount,
                         onStreak = { showStreak = true },
-                        onFilters = { showFilters = true },
+                        onFilters = { if (premium.active) showFilters = true else showPlus = "filters" },
+                        premium = premium.active,
+                        onPlus = { showPlus = "home" },
                     )
                     MainTab.Chats -> ChatsScreen(social, onOpenChat = { openChat = it }, onStartTalking = { tab = MainTab.Talk })
                     MainTab.Friends -> FriendsScreen(social, onOpenChat = { openChat = it }, onStartTalking = { tab = MainTab.Talk })
@@ -305,6 +312,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                     friendStatus = friendStatus,
                     icebreakers = vm::icebreakers,
                     onSend = vm::sendChat,
+                    onSendGif = vm::sendGif,
                     onTyping = vm::typing,
                     onReact = vm::reactToMessage,
                     onAddFriend = { partnerId?.let { social.sendRequest(it) } },
@@ -426,7 +434,39 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     }
 
     if (showStreak) engage?.let { app.talklive.ui.engage.StreakSheet(it, onDismiss = { showStreak = false }) }
-    if (showFilters) app.talklive.ui.engage.FiltersSheet(filters, premium.active, onApply = engageVm::setFilters, onDismiss = { showFilters = false })
+    if (showFilters) app.talklive.ui.engage.FiltersSheet(filters, premium.active, onApply = engageVm::setFilters, onDismiss = { showFilters = false }, onPlus = { showFilters = false; showPlus = "locked" })
+    // The website's "no one fits your filters, matching you with anyone" moment.
+    LaunchedEffect(Unit) {
+        engageVm.fallback.collect {
+            val r = snackbar.showSnackbar(context.getString(R.string.fallback_random), actionLabel = context.getString(R.string.keep_filters), duration = androidx.compose.material3.SnackbarDuration.Long)
+            if (r == androidx.compose.material3.SnackbarResult.ActionPerformed) engageVm.keepFilters()
+        }
+    }
+    // Replies from the team to this person's feedback.
+    val replies by engageVm.replies.collectAsStateWithLifecycle()
+    replies.firstOrNull()?.let { r ->
+        AlertDialog(
+            onDismissRequest = {},
+            icon = { Text("💬", fontSize = 32.sp) },
+            title = { Text(stringResource(R.string.feedback_reply_title)) },
+            text = {
+                androidx.compose.foundation.layout.Column {
+                    if (r.feedback.isNotBlank()) Text("“${r.feedback.take(200)}”", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    androidx.compose.foundation.layout.Spacer(androidx.compose.ui.Modifier.height(12.dp))
+                    Text(r.message, style = MaterialTheme.typography.bodyLarge)
+                }
+            },
+            confirmButton = { TextButton(onClick = { engageVm.ackReply(r.id) }) { Text(stringResource(R.string.got_it)) } },
+        )
+    }
+    showPlus?.let { from ->
+        app.talklive.ui.engage.PlusSheet(
+            premium, signedIn = account != null,
+            onSignIn = { showPlus = null; onSignIn() },
+            onDismiss = { showPlus = null },
+            onFreeOption = if (from == "filters") stringResource(R.string.plus_free_filters) to { showPlus = null; showFilters = true } else null,
+        )
+    }
 
     // A moderator's warning must be read and acknowledged.
     val warnings by vm.warnings.collectAsStateWithLifecycle()
@@ -469,5 +509,10 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
             dismissButton = { TextButton(onClick = { micDenied = false }) { Text(stringResource(R.string.cancel)) } },
         )
     }
-}
 
+    // Messages show above every screen, including chats and calls.
+    androidx.compose.foundation.layout.Box(
+        androidx.compose.ui.Modifier.fillMaxSize().imePadding().navigationBarsPadding().padding(bottom = if (inCall) 120.dp else 84.dp),
+        contentAlignment = androidx.compose.ui.Alignment.BottomCenter,
+    ) { SnackbarHost(snackbar) }
+}

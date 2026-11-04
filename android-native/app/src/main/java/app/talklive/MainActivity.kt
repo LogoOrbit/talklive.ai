@@ -34,14 +34,15 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         handle(intent)
         setContent {
-            val dark by themeStore.dark.collectAsStateWithLifecycle()
-            LaunchedEffect(dark) {
+            val theme by themeStore.theme.collectAsStateWithLifecycle()
+            val dark = theme.isDark
+            LaunchedEffect(theme) {
                 val bars = if (dark) SystemBarStyle.dark(Color.TRANSPARENT)
                 else SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
                 enableEdgeToEdge(bars, bars)
-                window.decorView.setBackgroundColor(if (dark) 0xFF0B0F1A.toInt() else 0xFFE3E7F1.toInt())
+                window.decorView.setBackgroundColor(when (theme) { app.talklive.ui.theme.AppTheme.Light -> 0xFFE3E7F1.toInt(); app.talklive.ui.theme.AppTheme.Ocean -> 0xFF03151F.toInt(); app.talklive.ui.theme.AppTheme.Sunset -> 0xFF1A0B14.toInt(); else -> 0xFF0B0F1A.toInt() })
             }
-            TalkLiveTheme(dark = dark) {
+            TalkLiveTheme(theme) {
                 // Tablets and unfolded phones: keep the app a comfortable column, centred.
                 androidx.compose.foundation.layout.Box(
                     Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),

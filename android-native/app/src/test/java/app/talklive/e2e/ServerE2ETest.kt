@@ -119,6 +119,28 @@ class ServerE2ETest {
         check("a idle") { a.calls.state.value.phase is CallPhase.Idle }
     }
 
+    @Test fun gif_then_friend_request_after_the_chat_ended_and_history_removal() {
+        val a = Client("ga", withCalls = true)
+        val b = Client("gb", withCalls = true)
+        a.calls!!.start(CallMode.Chat)
+        b.calls!!.start(CallMode.Chat)
+        check("matched") { a.calls.state.value.phase is CallPhase.Connected && b.calls.state.value.phase is CallPhase.Connected }
+        val gif = app.talklive.social.Gif("https://media.giphy.com/media/abc123/giphy.gif", "https://media.giphy.com/media/abc123/200w.gif", 200, 150, "hello")
+        a.calls.sendGif(gif)
+        check("b receives the GIF") { b.calls.chat.value.any { !it.mine && it.gifUrl == gif.url } }
+        a.calls.end(); b.calls.end()
+        check("both idle") { a.calls.state.value.phase is CallPhase.Idle && b.calls.state.value.phase is CallPhase.Idle }
+        // The reported case: adding someone from "People you met today" once the chat is over.
+        check("b is in a's history") { a.social.history.value.any { it.clientId == b.identity.clientId } }
+        a.social.sendRequest(b.identity.clientId)
+        check("b gets the request") { b.social.requests.value.any { it.clientId == a.identity.clientId } }
+        // Removing someone from the list sticks after a fresh state sync.
+        b.social.removeFromHistory(a.identity.clientId)
+        b.socket.register()
+        Thread.sleep(800)
+        assertTrue(b.social.history.value.none { it.clientId == a.identity.clientId })
+    }
+
     @Test fun friend_request_messages_seen_and_friend_call(): Unit = runBlocking {
         val a = Client("a", withCalls = true)
         val b = Client("b", withCalls = true)

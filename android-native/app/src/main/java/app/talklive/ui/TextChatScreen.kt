@@ -93,6 +93,9 @@ import app.talklive.ui.social.MessageBubble
 import app.talklive.ui.social.TypingBubble
 import app.talklive.ui.theme.BrandViolet
 import app.talklive.ui.theme.Danger
+import app.talklive.ui.chat.ChatAction
+import app.talklive.ui.chat.Composer
+import androidx.compose.material.icons.rounded.Lightbulb
 import kotlinx.coroutines.launch
 
 /** The six reactions a stranger message can get (server/index.js REACTIONS). */
@@ -114,6 +117,7 @@ fun TextChatScreen(
     onEnd: () -> Unit,
     onGames: (() -> Unit)? = null,
     onSwitchToVoice: (() -> Unit)? = null,
+    onSendGif: ((app.talklive.social.Gif) -> Unit)? = null,
 ) {
     val partner = (state.phase as? CallPhase.Connected)?.partner
     var draft by remember { mutableStateOf("") }
@@ -158,24 +162,15 @@ fun TextChatScreen(
                         }
                     }
                 }
-                if (partner != null) {
-                    IconButton(onClick = onAddFriend, enabled = friendStatus == FriendStatus.None) {
-                        Icon(
-                            when (friendStatus) {
-                                FriendStatus.Friends -> Icons.Rounded.HowToReg
-                                FriendStatus.Requested -> Icons.Rounded.HourglassTop
-                                FriendStatus.None -> Icons.Rounded.PersonAdd
-                            },
-                            stringResource(R.string.add_friend),
-                        )
-                    }
-                    if (onSwitchToVoice != null) IconButton(onClick = onSwitchToVoice, enabled = !state.voiceInviteSent) {
-                        Icon(Icons.Rounded.Call, stringResource(R.string.switch_to_voice))
-                    }
-                    if (onGames != null) IconButton(onClick = onGames) { Icon(Icons.Rounded.SportsEsports, stringResource(R.string.games_title)) }
-                    IconButton(onClick = { reporting = true }) { Icon(Icons.Rounded.Flag, stringResource(R.string.report)) }
+                // Only "Next" lives up here; everything else is in the composer's + tray.
+                Row(
+                    Modifier.clip(CircleShape).background(BrandGradient).clickable(onClick = onNext).padding(start = 16.dp, end = 12.dp, top = 9.dp, bottom = 9.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(stringResource(R.string.next), color = Color.White, style = MaterialTheme.typography.labelLarge)
+                    Spacer(Modifier.width(4.dp))
+                    Icon(Icons.Rounded.SkipNext, null, tint = Color.White, modifier = Modifier.size(20.dp))
                 }
-                FilledTonalIconButton(onClick = onNext) { Icon(Icons.Rounded.SkipNext, stringResource(R.string.next)) }
                 Spacer(Modifier.width(4.dp))
             }
         }
@@ -258,39 +253,31 @@ fun TextChatScreen(
                     }
                 }
             }
-            Row(
-                Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).navigationBarsPadding().padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.Bottom,
-            ) {
-                Box(
-                    Modifier.weight(1f).heightIn(min = 48.dp).clip(RoundedCornerShape(24.dp))
-                        .background(MaterialTheme.colorScheme.background).padding(horizontal = 18.dp, vertical = 13.dp),
-                    contentAlignment = Alignment.CenterStart,
-                ) {
-                    if (draft.isEmpty()) Text(stringResource(R.string.message_hint), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyLarge)
-                    BasicTextField(
-                        value = draft,
-                        onValueChange = { draft = it.take(1000); if (it.isNotBlank()) onTyping() },
-                        textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
-                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                        maxLines = 5,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-                Spacer(Modifier.width(8.dp))
-                AnimatedVisibility(draft.isNotBlank(), enter = scaleIn(spring(dampingRatio = 0.5f)) + fadeIn(), exit = scaleOut() + fadeOut()) {
-                    Box(
-                        Modifier.size(48.dp).clip(CircleShape).background(BrandGradient).clickable {
-                            onSend(draft, replyTo?.id)
-                            draft = ""
-                            replyTo = null
-                            scope.launch { listState.animateScrollToItem(0) }
-                        },
-                        contentAlignment = Alignment.Center,
-                    ) { Icon(Icons.AutoMirrored.Rounded.Send, stringResource(R.string.send), tint = Color.White) }
-                }
+            val friendLabel = stringResource(
+                when (friendStatus) { FriendStatus.Friends -> R.string.friends_label; FriendStatus.Requested -> R.string.requested; FriendStatus.None -> R.string.add_friend },
+            )
+            val actions = buildList {
+                add(ChatAction(
+                    when (friendStatus) { FriendStatus.Friends -> Icons.Rounded.HowToReg; FriendStatus.Requested -> Icons.Rounded.HourglassTop; FriendStatus.None -> Icons.Rounded.PersonAdd },
+                    friendLabel, enabled = friendStatus == FriendStatus.None, onClick = onAddFriend,
+                ))
+                if (onSwitchToVoice != null) add(ChatAction(Icons.Rounded.Call, stringResource(R.string.voice_call_short), enabled = !state.voiceInviteSent, onClick = onSwitchToVoice))
+                if (onGames != null) add(ChatAction(Icons.Rounded.SportsEsports, stringResource(R.string.games_short), onClick = onGames))
+                add(ChatAction(Icons.Rounded.Lightbulb, stringResource(R.string.idea_short), onClick = { icebreakers(1).firstOrNull()?.let { draft = it.text } }))
+                add(ChatAction(Icons.Rounded.Flag, stringResource(R.string.report), tint = Danger, onClick = { reporting = true }))
             }
+            Composer(
+                draft = draft,
+                onDraft = { draft = it; if (it.isNotBlank()) onTyping() },
+                onSend = {
+                    onSend(draft, replyTo?.id)
+                    draft = ""
+                    replyTo = null
+                    scope.launch { listState.animateScrollToItem(0) }
+                },
+                onGif = onSendGif,
+                actions = actions,
+            )
         }
     }
 

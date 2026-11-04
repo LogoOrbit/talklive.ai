@@ -71,7 +71,10 @@ import app.talklive.ui.theme.BrandViolet
 import app.talklive.ui.theme.Danger
 
 /** The website's primary button: violet to teal, 135°. */
-val BrandGradient = Brush.linearGradient(listOf(BrandViolet, BrandTeal))
+/** The theme's accent gradient (violet to cyan on the default theme). */
+val BrandGradient: Brush
+    @androidx.compose.runtime.Composable @androidx.compose.runtime.ReadOnlyComposable
+    get() = app.talklive.ui.theme.LocalAccents.current.let { Brush.linearGradient(listOf(it.a, it.b)) }
 
 /** A press-to-shrink modifier source, for buttons that feel physical. */
 @Composable

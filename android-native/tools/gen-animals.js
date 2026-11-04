@@ -22,6 +22,11 @@ const fmt = (v) => +(+v).toFixed(3);
 function color(c) {
   if (!c || c === 'none') return null;
   if (/^#[0-9a-f]{3}$/i.test(c)) c = '#' + c.slice(1).split('').map((x) => x + x).join('');
+  const rgba = c.match(/^rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)$/);
+  if (rgba) {
+    const h = (v) => Math.round(+v).toString(16).padStart(2, '0');
+    return ('#' + h(+rgba[4] * 255) + h(rgba[1]) + h(rgba[2]) + h(rgba[3])).toUpperCase();
+  }
   if (!/^#[0-9a-f]{6}$/i.test(c)) throw new Error('unsupported colour ' + c);
   return c.toUpperCase();
 }
@@ -71,6 +76,8 @@ ${out.join('\n')}
 `;
 }
 
+module.exports = { toVector };
+if (require.main !== module) return;
 const entries = [];
 for (const a of list) {
   fs.writeFileSync(path.join(resDir, `animal_${a.id}.xml`), toVector(a.art()));
@@ -91,7 +98,7 @@ val Animals: List<Animal> = listOf(
 ${entries.join('\n')}
 )
 
-private val byId = Animals.associateBy { it.id }
+private val byId = (Animals + Characters).associateBy { it.id }
 
 fun animalById(id: String?): Animal? = id?.let { byId[it] }
 `);

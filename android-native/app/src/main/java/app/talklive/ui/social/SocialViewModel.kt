@@ -57,6 +57,8 @@ class SocialViewModel @Inject constructor(
 
     fun person(id: String): Person? = repo.person(id)
     fun sendRequest(id: String, friendId: String? = null) = repo.sendRequest(id, friendId)
+    fun removeFromHistory(id: String) = repo.removeFromHistory(id)
+    fun sendGif(to: String, g: app.talklive.social.Gif) = repo.sendGif(to, g)
     fun respond(id: String, accept: Boolean) = repo.respond(id, accept)
     fun remove(id: String) = repo.remove(id)
     fun block(id: String) = repo.block(id)

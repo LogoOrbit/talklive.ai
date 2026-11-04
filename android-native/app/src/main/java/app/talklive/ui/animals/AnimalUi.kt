@@ -1,5 +1,8 @@
 package app.talklive.ui.animals
 
+import app.talklive.R
+import androidx.compose.ui.res.stringResource
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -96,7 +99,12 @@ fun AnimalGrid(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        items(Animals, key = { it.id }) { a ->
+        // Spirit animals, then the website's movie characters.
+        for ((title, list) in listOf(R.string.avatars_animals to Animals, R.string.avatars_characters to Characters)) {
+            item(span = { GridItemSpan(maxLineSpan) }, key = "h$title") {
+                Text(stringResource(title).uppercase(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp, top = 8.dp))
+            }
+            items(list, key = { it.id }) { a ->
             val on = a.id == selected
             val scale by animateFloatAsState(if (on) 1.06f else 1f, spring(dampingRatio = 0.5f, stiffness = 500f), label = "s")
             val ring by animateColorAsState(if (on) a.color else Color.Transparent, label = "ring")
@@ -120,6 +128,7 @@ fun AnimalGrid(
                     maxLines = 1,
                 )
             }
+        }
         }
     }
 }

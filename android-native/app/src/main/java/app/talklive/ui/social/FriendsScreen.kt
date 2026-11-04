@@ -135,6 +135,7 @@ fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalk
                             MetCard(
                                 p, pending = p.clientId in sent,
                                 onAdd = { if (p.clientId in sent) vm.cancelRequest(p.clientId) else vm.sendRequest(p.clientId) },
+                                onRemove = { vm.removeFromHistory(p.clientId) },
                                 onOpen = { onOpenChat(p.clientId) },
                             )
                         }
@@ -200,8 +201,13 @@ private fun RequestCard(p: Person, onAccept: () -> Unit, onDecline: () -> Unit) 
 }
 
 @Composable
-private fun MetCard(p: Person, pending: Boolean, onAdd: () -> Unit, onOpen: () -> Unit) {
-    Surface(onClick = onOpen, shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface, modifier = Modifier.width(112.dp)) {
+private fun MetCard(p: Person, pending: Boolean, onAdd: () -> Unit, onOpen: () -> Unit, onRemove: () -> Unit = {}) {
+    var menu by remember { mutableStateOf(false) }
+    androidx.compose.material3.DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+        androidx.compose.material3.DropdownMenuItem(text = { Text(stringResource(R.string.remove_from_list)) }, onClick = { menu = false; onRemove() })
+    }
+    // Tap opens the chat; long-press offers to remove them from the list.
+    Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface, modifier = Modifier.width(112.dp).clip(MaterialTheme.shapes.large).combinedClickable(onClick = onOpen, onLongClick = { menu = true })) {
         Column(Modifier.padding(vertical = 14.dp, horizontal = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             PersonAvatar(p, 56.dp)
             Spacer(Modifier.height(8.dp))

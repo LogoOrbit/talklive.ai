@@ -271,11 +271,16 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
                     }
                 }
             }
-            Row(
-                Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).navigationBarsPadding().padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.Bottom,
-            ) {
-                if (recording) {
+            val micTap = {
+                when (voiceState) {
+                    "on" -> startRecording()
+                    "sent" -> askVoice = true
+                    "received" -> vm.respondVoice(clientId, true)
+                    else -> askVoice = true
+                }
+            }
+            if (recording) {
+                Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).navigationBarsPadding().padding(horizontal = 12.dp, vertical = 8.dp)) {
                     RecordingBar(
                         ms = recordMs,
                         modifier = Modifier.weight(1f),
@@ -285,50 +290,32 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
                             recorder.stop()?.let { (bytes, ms) -> vm.sendVoice(clientId, bytes, ms) }
                         },
                     )
-                } else Box(
-                    Modifier.weight(1f).heightIn(min = 48.dp).clip(RoundedCornerShape(24.dp))
-                        .background(MaterialTheme.colorScheme.background).padding(horizontal = 18.dp, vertical = 13.dp),
-                    contentAlignment = Alignment.CenterStart,
-                ) {
-                    if (draft.isEmpty()) Text(stringResource(R.string.message_hint), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyLarge)
-                    BasicTextField(
-                        value = draft,
-                        onValueChange = { draft = it.take(1000); if (it.isNotBlank()) vm.typing(clientId) },
-                        textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
-                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                        maxLines = 5,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
                 }
-                Spacer(Modifier.width(8.dp))
-                val canSend = draft.isNotBlank()
-                AnimatedVisibility(!canSend && !recording && isFriend && editing == null, enter = scaleIn(spring(dampingRatio = 0.5f)) + fadeIn(), exit = scaleOut() + fadeOut()) {
-                    Box(
-                        Modifier.size(48.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer).clickable {
-                            when (voiceState) {
-                                "on" -> startRecording()
-                                "sent" -> askVoice = true
-                                "received" -> vm.respondVoice(clientId, true)
-                                else -> askVoice = true
-                            }
-                        },
-                        contentAlignment = Alignment.Center,
-                    ) { Icon(Icons.Rounded.Mic, stringResource(R.string.voice_record), tint = MaterialTheme.colorScheme.primary) }
+            } else {
+                val actions = buildList {
+                    if (isFriend) add(app.talklive.ui.chat.ChatAction(Icons.Rounded.Call, stringResource(R.string.call), enabled = person.online, onClick = { vm.call(person) }))
+                    if (isFriend) add(app.talklive.ui.chat.ChatAction(Icons.Rounded.Mic, stringResource(R.string.voice_message_short), onClick = micTap))
                 }
-                AnimatedVisibility(canSend && !recording, enter = scaleIn(spring(dampingRatio = 0.5f)) + fadeIn(), exit = scaleOut() + fadeOut()) {
-                    Box(
-                        Modifier.size(48.dp).clip(CircleShape).background(BrandGradient).clickable {
-                            val e = editing
-                            if (e != null) vm.edit(clientId, e.id, draft) else vm.send(clientId, draft, replyTo?.id)
-                            draft = ""
-                            replyTo = null
-                            editing = null
-                            scope.launch { listState.animateScrollToItem(0) }
-                        },
-                        contentAlignment = Alignment.Center,
-                    ) { Icon(Icons.AutoMirrored.Rounded.Send, stringResource(R.string.send), tint = Color.White) }
-                }
+                app.talklive.ui.chat.Composer(
+                    draft = draft,
+                    onDraft = { draft = it; if (it.isNotBlank()) vm.typing(clientId) },
+                    onSend = {
+                        val e = editing
+                        if (e != null) vm.edit(clientId, e.id, draft) else vm.send(clientId, draft, replyTo?.id)
+                        draft = ""
+                        replyTo = null
+                        editing = null
+                        scope.launch { listState.animateScrollToItem(0) }
+                    },
+                    onGif = if (editing == null) ({ g -> vm.sendGif(clientId, g); scope.launch { listState.animateScrollToItem(0) } }) else null,
+                    actions = actions,
+                    idleTrailing = if (isFriend && editing == null) ({
+                        Box(
+                            Modifier.size(48.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer).clickable { micTap() },
+                            contentAlignment = Alignment.Center,
+                        ) { Icon(Icons.Rounded.Mic, stringResource(R.string.voice_record), tint = MaterialTheme.colorScheme.primary) }
+                    }) else null,
+                )
             }
         } else {
             Surface(color = MaterialTheme.colorScheme.surface) {

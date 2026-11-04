@@ -47,7 +47,13 @@ are also rendered in `ScreenshotTest`.
 | Voice check (on-device, opt-in, behind the server's `voiceCheck` flag) | Profile → You | `VoiceAnalysisTest` (synthetic voices) |
 | Shouting alert for moderators (same as mobile web) | Automatic during calls | `VoiceAnalysisTest` |
 | 17 languages | System or per-app language (Android 13+) | screenshots (ar, hi, de, ja) |
-| Dark mode | Profile + Home | screenshots |
+| Themes: Dark (default), Light, Ocean, Sunset | Profile → Appearance | screenshots |
+| Emoji picker, GIFs (Giphy via /api/gifs) | Chat composer | ✅ e2e (GIF) |
+| Sound effects (same tones as the website) | Automatic; Profile → Sounds | — |
+| Movie-character avatars | Avatar picker | generated from `public/characters.js` |
+| Team replies to feedback | Dialog when one arrives | — |
+| "Keep my filters" when nobody matches | Snackbar | — |
+| Remove someone from "met today" | Long-press their card | ✅ e2e |
 | Links open the app, shortcuts | talklive.app links, long-press icon | — |
 
 ## Not in the app yet

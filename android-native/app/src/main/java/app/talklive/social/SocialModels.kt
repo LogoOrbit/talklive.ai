@@ -59,6 +59,11 @@ data class Person(
 
 enum class MsgStatus { Sending, Sent, Seen, Failed }
 
+/** A Giphy GIF as the server accepts it (server/index.js cleanGif). */
+data class Gif(val url: String, val preview: String, val w: Int, val h: Int, val alt: String) {
+    fun json(): org.json.JSONObject = org.json.JSONObject().put("url", url).put("preview", preview).put("w", w).put("h", h).put("alt", alt)
+}
+
 data class ChatMessage(
     val id: String,
     val mine: Boolean,
@@ -66,6 +71,8 @@ data class ChatMessage(
     val ts: Long,
     val replyTo: String? = null,
     val gifUrl: String? = null,
+    /** Full GIF, kept on our own outgoing messages so a retry can resend it. */
+    val gif: Gif? = null,
     val voiceMs: Long? = null,
     val status: MsgStatus = MsgStatus.Sent,
     val failReason: app.talklive.data.UiText? = null,

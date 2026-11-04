@@ -59,6 +59,7 @@ import app.talklive.ui.theme.BrandTeal
 import app.talklive.ui.theme.BrandViolet
 import app.talklive.ui.theme.Success
 import java.text.NumberFormat
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun HomeScreen(
@@ -76,6 +77,8 @@ fun HomeScreen(
     filtersActive: Int = 0,
     onStreak: () -> Unit = {},
     onFilters: () -> Unit = {},
+    premium: Boolean = true,
+    onPlus: () -> Unit = {},
 ) {
     Column(Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 24.dp, vertical = 16.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -83,6 +86,13 @@ fun HomeScreen(
             Spacer(Modifier.size(10.dp))
             Text("TalkLive", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
             Spacer(Modifier.weight(1f))
+            if (!premium) {
+                Row(
+                    Modifier.clip(CircleShape).background(app.talklive.ui.components.BrandGradient).clickable(onClick = onPlus).padding(horizontal = 10.dp, vertical = 5.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) { Text("💎 Plus", color = androidx.compose.ui.graphics.Color.White, style = MaterialTheme.typography.labelMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold) }
+                Spacer(Modifier.width(6.dp))
+            }
             app.talklive.ui.engage.StreakChip(engage, onStreak)
             IconButton(onClick = onToggleTheme) {
                 Icon(
@@ -95,7 +105,10 @@ fun HomeScreen(
         }
 
         Spacer(Modifier.weight(1f))
-        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { MicOrb(mode == app.talklive.call.CallMode.Chat) }
+        // The orb starts a conversation too: the biggest thing on screen should do something.
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            Box(Modifier.clip(CircleShape).clickable(enabled = connected, onClick = onStart)) { MicOrb(mode == app.talklive.call.CallMode.Chat) }
+        }
         Spacer(Modifier.height(36.dp))
         Text(
             stringResource(R.string.tagline),
@@ -122,6 +135,8 @@ fun HomeScreen(
                 }
             }
         }
+        Spacer(Modifier.height(20.dp))
+        HowItWorks(mode == app.talklive.call.CallMode.Chat)
         Spacer(Modifier.weight(1f))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.weight(1f)) { ModeSwitch(mode, onMode) }
@@ -141,6 +156,27 @@ fun HomeScreen(
             enabled = connected,
             icon = if (mode == app.talklive.call.CallMode.Chat) Icons.AutoMirrored.Rounded.Chat else Icons.Rounded.Mic,
         )
+    }
+}
+
+/** Three plain steps, so anyone knows what happens when they tap Start. */
+@Composable
+private fun HowItWorks(text: Boolean) {
+    val steps = listOf(
+        "👆" to stringResource(R.string.how_1),
+        (if (text) "💬" else "🎙️") to stringResource(if (text) R.string.how_2_text else R.string.how_2),
+        "⏭️" to stringResource(R.string.how_3),
+    )
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        steps.forEach { (e, label) ->
+            Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.surface, modifier = Modifier.weight(1f)) {
+                Column(Modifier.padding(vertical = 12.dp, horizontal = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(e, fontSize = 22.sp)
+                    Spacer(Modifier.height(6.dp))
+                    Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center, maxLines = 2)
+                }
+            }
+        }
     }
 }
 

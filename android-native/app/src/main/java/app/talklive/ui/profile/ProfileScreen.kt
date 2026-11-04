@@ -3,6 +3,8 @@ package app.talklive.ui.profile
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,6 +27,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.material.icons.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.Face
 import androidx.compose.material.icons.rounded.Cake
 import androidx.compose.material.icons.rounded.GraphicEq
@@ -203,7 +206,7 @@ fun ProfileScreen(
                 ) { app.talklive.ui.support.SupportScreen(onBack = { youSheet = null }) }
                 "gender" -> ChoiceDialog(stringResource(R.string.i_am), listOf("male", "female", "unspecified"), engageVm.myGender.value, { genderLabel(it) }, { engageVm.setMyGender(it) }) { youSheet = null }
                 "age" -> ChoiceDialog(stringResource(R.string.age_group), listOf("18-24", "25-34", "35-44", "45-54", "55+", "unspecified"), engageVm.ageGroup.value, { if (it == "unspecified") stringResource(R.string.gender_unspecified) else it }, { engageVm.setAgeGroup(it) }) { youSheet = null }
-                "plus" -> app.talklive.ui.engage.PlusSheet(premium, signedIn = account != null, onSignIn = { youSheet = null; onSignIn() }, onDismiss = { youSheet = null })
+                "plus" -> app.talklive.ui.engage.PlusSheet(premium, signedIn = account != null, onSignIn = { youSheet = null; onSignIn() }, onDismiss = { youSheet = null }, onInvite = { youSheet = "invite" })
             }
 
             if (account != null) {
@@ -234,12 +237,11 @@ fun ProfileScreen(
             }
 
             Section(stringResource(R.string.section_appearance)) {
-                SettingRow(Icons.Rounded.DarkMode, stringResource(R.string.dark_mode), null, onClick = vm::toggleTheme, trailing = {
-                    Switch(
-                        checked = dark,
-                        onCheckedChange = { vm.toggleTheme() },
-                        colors = SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primary),
-                    )
+                val current by vm.theme.collectAsStateWithLifecycle()
+                ThemePicker(current, vm::setTheme)
+                val soundsOn by vm.sounds.collectAsStateWithLifecycle()
+                SettingRow(Icons.Rounded.VolumeUp, stringResource(R.string.sounds), stringResource(R.string.sounds_desc), onClick = { vm.setSounds(!soundsOn) }, trailing = {
+                    Switch(checked = soundsOn, onCheckedChange = vm::setSounds, colors = SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primary))
                 })
             }
 
@@ -291,6 +293,39 @@ private fun Section(title: String, content: @Composable () -> Unit) {
     )
     Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface) {
         Column { content() }
+    }
+}
+
+/** The website's four themes as tappable swatches. */
+@Composable
+private fun ThemePicker(current: app.talklive.ui.theme.AppTheme, onPick: (app.talklive.ui.theme.AppTheme) -> Unit) {
+    Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        app.talklive.ui.theme.AppTheme.entries.forEach { t ->
+            val a = app.talklive.ui.theme.accentsFor(t)
+            val bg = when (t) {
+                app.talklive.ui.theme.AppTheme.Light -> androidx.compose.ui.graphics.Color(0xFFEEF1F9)
+                app.talklive.ui.theme.AppTheme.Ocean -> androidx.compose.ui.graphics.Color(0xFF03151F)
+                app.talklive.ui.theme.AppTheme.Sunset -> androidx.compose.ui.graphics.Color(0xFF1A0B14)
+                else -> androidx.compose.ui.graphics.Color(0xFF0B0F1A)
+            }
+            val selected = t == current
+            val border by androidx.compose.animation.animateColorAsState(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant, label = "theme")
+            Column(
+                Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).border(if (selected) 2.dp else 1.dp, border, RoundedCornerShape(16.dp))
+                    .clickable { onPick(t) }.padding(8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Box(Modifier.fillMaxWidth().height(44.dp).clip(RoundedCornerShape(10.dp)).background(bg), contentAlignment = Alignment.Center) {
+                    Box(Modifier.size(22.dp).clip(CircleShape).background(androidx.compose.ui.graphics.Brush.linearGradient(listOf(a.a, a.b))))
+                }
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    stringResource(when (t) { app.talklive.ui.theme.AppTheme.Dark -> R.string.theme_dark; app.talklive.ui.theme.AppTheme.Light -> R.string.theme_light; app.talklive.ui.theme.AppTheme.Ocean -> R.string.theme_ocean; app.talklive.ui.theme.AppTheme.Sunset -> R.string.theme_sunset }),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
     }
 }
 

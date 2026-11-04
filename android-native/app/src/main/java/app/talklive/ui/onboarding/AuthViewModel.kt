@@ -134,7 +134,7 @@ class AuthViewModel @Inject constructor(private val auth: AuthRepository) : View
             val clientId = auth.googleClientId()
             if (clientId == null) {
                 error = "Google sign-in is not available right now."
-            } else when (val g = GoogleSignIn.signIn(activity, clientId)) {
+            } else when (val g = System.currentTimeMillis().let { t0 -> GoogleSignIn.signIn(activity, clientId).let { if (it == GoogleSignIn.Result.Cancelled && System.currentTimeMillis() - t0 < 1500) GoogleSignIn.Result.Failed(GoogleSignIn.NOT_SET_UP) else it } }) {
                 is GoogleSignIn.Result.Token -> (auth.google(g.idToken) as? AuthResult.Error)?.let { error = it.message }
                 is GoogleSignIn.Result.Failed -> error = g.message
                 GoogleSignIn.Result.Cancelled -> Unit

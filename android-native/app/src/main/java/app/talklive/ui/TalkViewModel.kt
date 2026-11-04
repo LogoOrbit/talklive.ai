@@ -55,6 +55,7 @@ class TalkViewModel @Inject constructor(
         prefs.edit().putString("mode", m.wire).apply()
     }
     fun sendChat(text: String, replyTo: String? = null) = calls.sendChat(text, replyTo)
+    fun sendGif(g: app.talklive.social.Gif) = calls.sendGif(g)
     fun typing() = calls.typing()
     fun reactToMessage(id: String, emoji: String) = calls.reactToMessage(id, emoji)
     fun react(type: String) = calls.react(type)

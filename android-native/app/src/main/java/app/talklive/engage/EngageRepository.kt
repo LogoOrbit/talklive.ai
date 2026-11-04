@@ -55,6 +55,20 @@ class EngageRepository(
     private val _referral = MutableStateFlow<Referral?>(null)
     val referral: StateFlow<Referral?> = _referral
 
+    /** Replies from the team to feedback this person sent, shown until they tap "Got it". */
+    data class FeedbackReply(val id: String, val feedback: String, val message: String)
+    private val _replies = MutableStateFlow<List<FeedbackReply>>(emptyList())
+    val replies: StateFlow<List<FeedbackReply>> = _replies
+    fun ackReply(id: String) {
+        _replies.value = _replies.value.filterNot { it.id == id }
+        socket.emit("feedback-reply-ack", JSONObject().put("id", id))
+    }
+
+    /** The server matched past this person's filters because nobody fitted them for a while. */
+    private val _fallback = MutableSharedFlow<Unit>(extraBufferCapacity = 2)
+    val fallback: SharedFlow<Unit> = _fallback
+    fun keepFilters() = socket.emit("keep-filters")
+
     /** "I am" and age group, as in the website's Settings: used for gender filters and audience stats. */
     private val _myGender = MutableStateFlow(prefs.getString("my_gender", "unspecified") ?: "unspecified")
     val myGender: StateFlow<String> = _myGender
@@ -93,6 +107,12 @@ class EngageRepository(
             if (o.optBoolean("bump")) _engage.value?.let { _moments.tryEmit(EngageMoment.StreakUp(it.streak.count)) }
             o.optString("stamp").takeIf { it.length == 2 }?.let { _moments.tryEmit(EngageMoment.NewStamp(it)) }
         }
+        socket.on("feedback-reply") { a ->
+            val o = a.firstOrNull() as? JSONObject ?: return@on
+            val r = FeedbackReply(o.optString("id"), o.optString("feedback"), o.optString("message"))
+            if (r.id.isNotBlank() && r.message.isNotBlank() && _replies.value.none { it.id == r.id }) _replies.value = _replies.value + r
+        }
+        socket.on("random-fallback") { _fallback.tryEmit(Unit) }
         socket.on("premium-status") { a ->
             val o = a.firstOrNull() as? JSONObject ?: return@on
             _premium.value = Premium(o.optBoolean("premium"), if (o.isNull("expiresAt")) null else o.optLong("expiresAt"), o.optBoolean("checkout"), o.optBoolean("play"))
@@ -160,16 +180,33 @@ class EngageRepository(
     suspend fun searchFilms(query: String): List<Film> = withContext(Dispatchers.IO) {
         val q = URLEncoder.encode(query.trim(), "UTF-8")
         if (q.isBlank()) return@withContext emptyList()
+        // Apple's own film search barely works, so (like the website) Wikidata finds
+        // films that list an Apple ID, then one Apple lookup fills in title, year and poster.
         val movies = runCatching {
-            get("https://itunes.apple.com/search?country=us&media=movie&entity=movie&limit=12&term=$q")
-                ?.optJSONArray("results")?.let { arr ->
-                    (0 until arr.length()).mapNotNull { arr.optJSONObject(it) }.filter {
-                        it.optString("kind") == "feature-movie" && it.optString("trackExplicitness") != "explicit" &&
-                            it.has("artworkUrl100") && it.has("trackViewUrl")
-                    }.map {
-                        Film("movie", it.optLong("trackId"), it.optString("trackName"), it.optString("releaseDate").take(4), it.optString("artworkUrl100"), it.optString("trackViewUrl"))
-                    }
-                }
+            val term = query.replace(Regex("[^\\p{L}\\p{N} '&:.-]"), " ").replace(Regex("\\s+"), " ").trim()
+            if (term.isBlank()) return@runCatching emptyList<Film>()
+            val sparql = "SELECT ?item (GROUP_CONCAT(?id;separator=\",\") AS ?ids) WHERE { SERVICE wikibase:mwapi { " +
+                "bd:serviceParam wikibase:endpoint \"www.wikidata.org\"; wikibase:api \"Search\"; " +
+                "mwapi:srsearch \"$term haswbstatement:P6398\"; mwapi:srlimit \"8\". " +
+                "?item wikibase:apiOutputItem mwapi:title. ?ord wikibase:apiOrdinal true. } " +
+                "?item wdt:P6398 ?id. } GROUP BY ?item ?ord ORDER BY ?ord"
+            val bindings = get("https://query.wikidata.org/sparql?format=json&query=" + URLEncoder.encode(sparql, "UTF-8"))
+                ?.optJSONObject("results")?.optJSONArray("bindings") ?: return@runCatching emptyList<Film>()
+            val groups = (0 until bindings.length()).map { i ->
+                bindings.optJSONObject(i)?.optJSONObject("ids")?.optString("value").orEmpty()
+                    .split(",").filter { it.matches(Regex("\\d{1,12}")) }.take(12)
+            }
+            val ids = groups.flatten().take(90)
+            if (ids.isEmpty()) return@runCatching emptyList<Film>()
+            val arr = get("https://itunes.apple.com/lookup?country=us&id=" + ids.joinToString(","))?.optJSONArray("results")
+                ?: return@runCatching emptyList<Film>()
+            val byId = (0 until arr.length()).mapNotNull { arr.optJSONObject(it) }.filter {
+                it.optString("kind") == "feature-movie" && it.optString("trackExplicitness") != "explicit" &&
+                    it.has("artworkUrl100") && it.has("trackViewUrl")
+            }.associate {
+                it.optLong("trackId").toString() to Film("movie", it.optLong("trackId"), it.optString("trackName"), it.optString("releaseDate").take(4), it.optString("artworkUrl100"), it.optString("trackViewUrl"))
+            }
+            groups.mapNotNull { g -> g.firstNotNullOfOrNull { byId[it] } }.distinctBy { it.id }
         }.getOrNull().orEmpty()
         val shows = runCatching {
             get("https://itunes.apple.com/search?country=us&media=tvShow&entity=tvSeason&limit=25&term=$q")
@@ -184,7 +221,9 @@ class EngageRepository(
                         }
                 }
         }.getOrNull().orEmpty()
+        val lower = query.trim().lowercase()
         (movies.take(8) + shows).distinctBy { it.type to it.id }
+            .sortedBy { if (it.title.lowercase().startsWith(lower)) 0 else 1 }
     }
 
     fun sendFeedback(text: String) {
@@ -220,5 +259,5 @@ class EngageRepository(
         .apply { if (f.prefLang.isNotBlank()) put("prefLang", f.prefLang) }
 
     private fun get(url: String): JSONObject? =
-        http.newCall(Request.Builder().url(url).build()).execute().use { if (it.isSuccessful) JSONObject(it.body?.string().orEmpty()) else null }
+        http.newCall(Request.Builder().url(url).header("User-Agent", "TalkLive-Android/3 (https://talklive.app)").build()).execute().use { if (it.isSuccessful) JSONObject(it.body?.string().orEmpty()) else null }
 }

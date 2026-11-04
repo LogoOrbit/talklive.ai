@@ -46,22 +46,54 @@ private val Light = lightColorScheme(
     error = Danger,
 )
 
-private val Dark = darkColorScheme(
-    primary = BrandViolet,
+/** The website's themes (public/style.css): dark is the default, as on talklive.app. */
+enum class AppTheme(val wire: String, val isDark: Boolean) {
+    Dark("dark", true), Light("light", false), Ocean("ocean", true), Sunset("sunset", true);
+    companion object { fun of(s: String?) = entries.firstOrNull { it.wire == s } ?: Dark }
+}
+
+/** Accent pair per theme, for gradients (buttons, the talk orb, own bubbles). */
+data class Accents(val a: Color, val b: Color, val glow: Color)
+
+private fun darkScheme(bg1: Long, bg2: Long, glow: Long, accent: Long, accent2: Long) = darkColorScheme(
+    primary = Color(accent),
     onPrimary = Color.White,
-    primaryContainer = Color(0xFF2B2560),
+    primaryContainer = Color(glow).copy(alpha = 1f),
     onPrimaryContainer = Color(0xFFE2DDFF),
-    secondary = BrandCyan,
+    secondary = Color(accent2),
     onSecondary = Color.Black,
-    background = Color(0xFF0B0F1A),
+    background = Color(bg1),
     onBackground = Color(0xFFF2F4FF),
-    surface = Color(0xFF111729),
+    surface = Color(bg2),
     onSurface = Color(0xFFF2F4FF),
-    surfaceVariant = Color(0xFF1D2438),
-    onSurfaceVariant = Color(0xFF8A90A8),
-    outline = Color(0x17FFFFFF),
+    surfaceVariant = Color(glow),
+    onSurfaceVariant = Color(0xFF9AA0B8),
+    surfaceContainerLowest = Color(bg1),
+    surfaceContainerLow = Color(bg2),
+    surfaceContainer = Color(bg2),
+    surfaceContainerHigh = Color(glow),
+    surfaceContainerHighest = Color(glow),
+    outline = Color(0x24FFFFFF),
+    outlineVariant = Color(0x17FFFFFF),
     error = Danger,
 )
+
+private val Dark = darkScheme(0xFF0B0F1A, 0xFF141B30, 0xFF1C2240, 0xFF6C5CE7, 0xFF00D4FF)
+private val Ocean = darkScheme(0xFF03151F, 0xFF072330, 0xFF0A3648, 0xFF00B4D8, 0xFF90E0EF)
+private val Sunset = darkScheme(0xFF1A0B14, 0xFF2A1220, 0xFF3D1A2E, 0xFFFF6B6B, 0xFFFFA94D)
+
+fun accentsFor(t: AppTheme) = when (t) {
+    AppTheme.Dark -> Accents(BrandViolet, BrandCyan.copy(red = 0f, green = 0.62f, blue = 0.86f), Color(0xFF1C2240))
+    AppTheme.Light -> Accents(BrandViolet, BrandTeal, Color(0xFFDDE4F5))
+    AppTheme.Ocean -> Accents(Color(0xFF00B4D8), Color(0xFF0077B6), Color(0xFF0A3648))
+    AppTheme.Sunset -> Accents(Color(0xFFFF6B6B), Color(0xFFFFA94D), Color(0xFF3D1A2E))
+}
+
+/** True when the phone asks for no animations (Accessibility > Remove animations), and in screenshot tests. */
+val LocalReduceMotion = androidx.compose.runtime.staticCompositionLocalOf { false }
+
+val LocalAccents = androidx.compose.runtime.staticCompositionLocalOf { accentsFor(AppTheme.Dark) }
+val LocalAppTheme = androidx.compose.runtime.staticCompositionLocalOf { AppTheme.Dark }
 
 val Jakarta = FontFamily(
     Font(R.font.pjs_400, FontWeight.Normal),
@@ -92,8 +124,19 @@ private val AppShapes = Shapes(
     large = RoundedCornerShape(24.dp),
 )
 
-/** Light by default, like the website's light theme. */
+/** Dark by default, like talklive.app. */
 @Composable
-fun TalkLiveTheme(dark: Boolean = false, content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = if (dark) Dark else Light, typography = Type, shapes = AppShapes, content = content)
+fun TalkLiveTheme(theme: AppTheme = AppTheme.Dark, content: @Composable () -> Unit) {
+    val scheme = when (theme) { AppTheme.Dark -> Dark; AppTheme.Light -> Light; AppTheme.Ocean -> Ocean; AppTheme.Sunset -> Sunset }
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val reduce = androidx.compose.runtime.remember {
+        runCatching { android.provider.Settings.Global.getFloat(ctx.contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f }.getOrDefault(false)
+    }
+    androidx.compose.runtime.CompositionLocalProvider(LocalAccents provides accentsFor(theme), LocalAppTheme provides theme, LocalReduceMotion provides (reduce || LocalReduceMotion.current)) {
+        MaterialTheme(colorScheme = scheme, typography = Type, shapes = AppShapes, content = content)
+    }
 }
+
+/** Kept for screenshots and previews. */
+@Composable
+fun TalkLiveTheme(dark: Boolean, content: @Composable () -> Unit) = TalkLiveTheme(if (dark) AppTheme.Dark else AppTheme.Light, content)
