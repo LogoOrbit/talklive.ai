@@ -31,6 +31,8 @@ const { createPatterns } = require('./patterns');
 const { createChatGuard } = require('./chat-guard');
 const compress = require('./compress');
 const billing = require('./billing');
+const playBilling = require('./play-billing');
+const play = playBilling.createPlayBilling();
 const push = require('./push');
 const flags = require('./flags');
 const { minifiedScripts } = require('./minified');
@@ -623,6 +625,95 @@ app.post('/billing/webhook', express.raw({ type: 'application/json', limit: '1mb
   // Anything unhandled is still a 200: replying non-2xx makes Stripe retry an
   // event we have deliberately ignored, forever.
   res.json({ received: true });
+});
+
+// --- Google Play subscriptions (the Android app) ------------------------------
+//
+// See server/play-billing.js. The app sends the purchase token after buying
+// and on every start; Google's answer decides, never the app.
+
+function playTokenKey(token) {
+  return crypto.createHash('sha256').update(String(token)).digest('hex').slice(0, 32);
+}
+
+// Applies what Google says about one purchase to the clientId that owns it.
+// Returns the premium step taken.
+async function applyPlayPurchase(clientId, token, sub, productId) {
+  const premium = store.data.premium;
+  const existing = Object.prototype.hasOwnProperty.call(premium, clientId) ? premium[clientId] : null;
+  const decision = playBilling.decide(sub);
+  const step = playBilling.nextPremium(existing, decision, token);
+  if (step.op === 'set') {
+    store.setPremium(clientId, step.info);
+    if (!existing || existing.revokedAt) store.recordFeature('premium_activated');
+  } else if (step.op === 'revoke') {
+    store.revokePremium(clientId, step.info);
+    store.recordFeature('premium_cancelled');
+  }
+  if (step.op !== 'skip') {
+    // A payment must survive a crash: write now, as the Stripe webhook does.
+    store.persistNow();
+    await Promise.race([store.whenPersisted(), new Promise((r) => setTimeout(r, 8000))]);
+    emitPremiumStatus(clientId);
+  }
+  // Unacknowledged purchases are refunded by Google after three days.
+  if (decision.action === 'grant' && !sub.acknowledged) {
+    try { await play.acknowledge(productId || sub.productId, token); } catch (err) { console.error('[play] acknowledge failed:', err.message); }
+  }
+  return step;
+}
+
+app.post('/billing/play/verify', httpRateLimit('play-verify', 30, 60000), express.json({ limit: '8kb' }), async (req, res) => {
+  if (!play.configured()) return res.status(503).json({ error: 'Google Play billing is not set up on the server yet.' });
+  const { clientId, identityToken, purchaseToken, productId } = req.body || {};
+  if (!clientId || !validIdentityToken(String(clientId), String(identityToken || ''))) {
+    return res.status(403).json({ error: 'Unrecognised client.' });
+  }
+  if (!playBilling.validToken(purchaseToken)) return res.status(400).json({ error: 'Invalid purchase.' });
+  const key = playTokenKey(purchaseToken);
+  const owner = store.data.playPurchases[key];
+  if (owner && owner !== clientId) {
+    // A token belongs to the profile that bought it. A signed-in person on a
+    // new phone gets that profile back by signing in (adoptProfile).
+    return res.status(403).json({ error: 'This purchase belongs to another TalkLive profile. Sign in with the account that bought it.' });
+  }
+  let sub;
+  try {
+    sub = await play.lookup(purchaseToken);
+  } catch (err) {
+    console.error('[play] lookup failed:', err.message);
+    return res.status(err.status && err.status < 500 ? 400 : 502).json({ error: 'Could not check this purchase with Google. Try again.' });
+  }
+  if (sub && sub.accountId && sub.accountId !== playBilling.accountIdFor(clientId)) {
+    return res.status(403).json({ error: 'This purchase was made by another TalkLive profile.' });
+  }
+  if (!owner) store.data.playPurchases[key] = String(clientId);
+  const step = await applyPlayPurchase(String(clientId), purchaseToken, sub, typeof productId === 'string' ? productId : '');
+  if (step.op === 'skip' && step.reason !== 'ignored') console.log(`[play] ${clientId}: ${step.reason}`);
+  res.json({ premium: isPremium(clientId), expiresAt: store.premiumExpiry(clientId), state: sub ? sub.state : null });
+});
+
+// Real-time Developer Notifications, pushed by Pub/Sub. Each is re-checked
+// with Google; only the token is taken from the message.
+app.post('/billing/play/rtdn', express.json({ limit: '64kb' }), async (req, res) => {
+  const secret = process.env.PLAY_RTDN_SECRET;
+  if (!secret || !play.configured()) return res.status(503).end();
+  const given = String(req.query.secret || '');
+  if (given.length !== secret.length || !crypto.timingSafeEqual(Buffer.from(given), Buffer.from(secret))) return res.status(403).end();
+  const n = playBilling.parseRtdn(req.body);
+  // Acknowledge anything we cannot use, or Pub/Sub retries it for a week.
+  if (!n || !n.purchaseToken || (n.packageName && n.packageName !== play.packageName)) return res.status(204).end();
+  const clientId = store.data.playPurchases[playTokenKey(n.purchaseToken)];
+  if (!clientId) return res.status(204).end(); // the app verifies it on its next start
+  try {
+    const sub = await play.lookup(n.purchaseToken);
+    await applyPlayPurchase(clientId, n.purchaseToken, sub, n.productId);
+    res.status(204).end();
+  } catch (err) {
+    console.error('[play] RTDN re-check failed:', err.message);
+    // Non-2xx: Pub/Sub tries again later, which is what a Google outage needs.
+    res.status(500).end();
+  }
 });
 
 // --- Web push ----------------------------------------------------------------
@@ -3900,6 +3991,8 @@ function emitPremiumStatus(clientId) {
       expiresAt: envPremiumClients.has(clientId) ? null : store.premiumExpiry(clientId),
       limits: FREE_LIMITS,
       checkout: billing.configured(),
+      // The Android app can sell Plus through Google Play.
+      play: play.configured(),
       plans: billing.plans(),
     });
   }
@@ -5468,6 +5561,8 @@ io.on('connection', (socket) => {
       expiresAt: envPremiumClients.has(clientId) ? null : store.premiumExpiry(clientId),
       limits: FREE_LIMITS,
       checkout: billing.configured(),
+      // The Android app can sell Plus through Google Play.
+      play: play.configured(),
       plans: billing.plans(),
     });
     socket.emit('identity-token', { clientId, token: issuedIdentityToken });

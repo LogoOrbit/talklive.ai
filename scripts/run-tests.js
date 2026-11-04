@@ -14,7 +14,7 @@ const { spawn, spawnSync } = require('child_process');
 
 const DIR = __dirname;
 const CRITICAL = [
-  'test-billing', 'test-auth-sessions', 'test-client-ip', 'test-password-reset',
+  'test-billing', 'test-play-billing', 'test-auth-sessions', 'test-client-ip', 'test-password-reset',
   'test-referral', 'test-premium-perks', 'test-subscribe',
   'test-social', 'test-social-safety', 'test-social-delivery', 'test-social-extras',
   'test-social-privacy', 'test-social-edit', 'test-friend-id', 'test-discovery',

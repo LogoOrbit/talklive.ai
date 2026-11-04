@@ -191,6 +191,9 @@ function defaults() {
       humanSince: null,
     },
     premium: {}, // clientId -> { activatedAt, updatedAt, expiresAt, lastEvent, subscriptionId, revokedAt }
+    // Google Play purchases: sha256(purchaseToken) prefix -> clientId, so a
+    // renewal or refund notification finds whose Plus it is (server/play-billing.js).
+    playPurchases: {},
     // Referral graph. `codes` maps a short public code -> the clientId that owns
     // it; `owners` is that owner's running tally; `claims` records who arrived
     // through whose code so a reward is paid exactly once per referred person.
