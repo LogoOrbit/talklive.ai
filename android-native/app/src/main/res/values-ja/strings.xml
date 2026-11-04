@@ -35,11 +35,11 @@
     <string name="continue_">続ける</string>
     <string name="get_started">はじめる</string>
     <string name="welcome_1_title">本物の声、本物の人</string>
-    <string name="welcome_1_body">タップひとつで新しい誰かと会話。ビデオなし、プレッシャーなし、ただおしゃべり。</string>
+    <string name="welcome_1_body">タップひとつで新しい誰かと話せます。音声のみ、カメラなし。</string>
     <string name="welcome_2_title">世界中の人と出会おう</string>
-    <string name="welcome_2_body">今、あらゆる国の人がオンライン。友達を作ったり、語学を練習したり、一緒に笑ったり。</string>
+    <string name="welcome_2_body">今、世界中の人がオンラインです。話す、語学を練習する、友達を作る。</string>
     <string name="welcome_3_title">安心の設計</string>
-    <string name="welcome_3_body">匿名のまま、いつでもスキップ、ワンタップで通報。安全を真剣に考えています。</string>
+    <string name="welcome_3_body">名前や番号は誰にも見えません。いつでもスキップ、ワンタップで通報。</string>
     <string name="choose_title">TalkLiveに参加</string>
     <string name="choose_body">アカウントを作れば、友達とチャットをどの端末でも使えます。</string>
     <string name="continue_google">Googleで続ける</string>
@@ -81,7 +81,7 @@
     <string name="chats_empty_title">チャットはここに表示されます</string>
     <string name="chats_empty_body">楽しい通話でしたか？友達に追加すると、メッセージがここに表示されます。</string>
     <string name="friends_empty_title">まだ友達がいません</string>
-    <string name="friends_empty_body">友達もはじめは知らない人。通話を始めて、気が合ったら「友達に追加」をタップ。</string>
+    <string name="friends_empty_body">通話を始めて、気が合ったら「友達に追加」をタップ。</string>
     <string name="animal_title">スピリットアニマルを選ぼう</string>
     <string name="animal_body">つながった瞬間に相手に表示されます。あいさつのきっかけに。</string>
     <string name="surprise_me">おまかせ</string>
@@ -367,7 +367,7 @@
     <string name="plus_perk_badge">Plusバッジ</string>
     <string name="plus_perk_badge_body">名前の横に💎。</string>
     <string name="plus_hero">会いたい人に、もっと早く。</string>
-    <string name="plus_hero_active">すべて解放済み。楽しんでね！</string>
+    <string name="plus_hero_active">Plusは有効です。TalkLiveを応援してくれてありがとう。</string>
     <string name="plus_earn_title">または無料でゲット</string>
     <string name="plus_earn_body">参加して話した友達3人を招待すると、Plusの時間がもらえます。</string>
     <string name="plus_subscribe_price">%1$sで登録</string>
@@ -460,6 +460,8 @@
     <string name="stop_search_q">検索をやめますか？</string>
     <string name="leave">終了</string>
     <string name="stay">続ける</string>
+    <string name="open_elsewhere">TalkLiveは別の端末で開いています</string>
+    <string name="use_here">ここで使う</string>
     <plurals name="visitors_today">
         <item quantity="other">今日の訪問者 %1$s人</item>
     </plurals>

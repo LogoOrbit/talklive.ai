@@ -114,8 +114,14 @@ class AuthRepository(
         return r
     }
 
-    suspend fun changePassword(current: String, new: String): AuthResult =
-        callRaw("change-password", JSONObject().put("currentPassword", current).put("newPassword", new), "change-password-result").first
+    suspend fun changePassword(current: String, new: String): AuthResult {
+        val (r, res) = callRaw("change-password", JSONObject().put("currentPassword", current).put("newPassword", new), "change-password-result")
+        // Changing the password signs out every session, this one included, and
+        // hands back a fresh token; without keeping it the phone was signed out
+        // at its next reconnect.
+        if (r == AuthResult.Ok) res.optString("sessionToken").takeIf { it.isNotBlank() }?.let { prefs.edit().putString(KEY_TOKEN, it).apply() }
+        return r
+    }
 
     suspend fun updateRecoveryEmail(email: String, currentPassword: String): AuthResult {
         val (r, _) = callRaw(

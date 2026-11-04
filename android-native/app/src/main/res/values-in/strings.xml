@@ -35,11 +35,11 @@
     <string name="continue_">Lanjut</string>
     <string name="get_started">Mulai</string>
     <string name="welcome_1_title">Suara nyata, orang nyata</string>
-    <string name="welcome_1_body">Sekali ketuk dan kamu sudah ngobrol dengan orang baru. Tanpa video, tanpa tekanan, cuma obrolan.</string>
+    <string name="welcome_1_body">Sekali ketuk dan kamu mengobrol dengan orang baru. Hanya suara, tanpa kamera.</string>
     <string name="welcome_2_title">Kenali seluruh dunia</string>
-    <string name="welcome_2_body">Orang dari setiap negara sedang online. Cari teman, latihan bahasa, tertawa bersama.</string>
+    <string name="welcome_2_body">Orang dari seluruh dunia sedang online. Mengobrol, latihan bahasa, cari teman.</string>
     <string name="welcome_3_title">Aman sejak awal</string>
-    <string name="welcome_3_body">Tetap anonim, lewati siapa saja seketika, dan laporkan dengan sekali ketuk. Kami serius soal keamanan.</string>
+    <string name="welcome_3_body">Tidak ada yang melihat nama atau nomormu. Lewati siapa pun, laporkan sekali ketuk.</string>
     <string name="choose_title">Gabung TalkLive</string>
     <string name="choose_body">Buat akun agar teman dan obrolanmu ada di semua perangkat.</string>
     <string name="continue_google">Lanjut dengan Google</string>
@@ -81,7 +81,7 @@
     <string name="chats_empty_title">Obrolanmu akan ada di sini</string>
     <string name="chats_empty_body">Panggilannya seru? Tambahkan jadi teman dan pesan kalian muncul di sini.</string>
     <string name="friends_empty_title">Belum ada teman</string>
-    <string name="friends_empty_body">Setiap teman awalnya orang asing. Mulai panggilan dan ketuk Tambah teman saat cocok.</string>
+    <string name="friends_empty_body">Mulai panggilan dan ketuk Tambah teman saat kamu cocok dengan seseorang.</string>
     <string name="animal_title">Pilih hewan rohmu</string>
     <string name="animal_body">Orang lain melihatnya saat terhubung. Cara mudah untuk menyapa.</string>
     <string name="surprise_me">Kejutkan aku</string>
@@ -367,7 +367,7 @@
     <string name="plus_perk_badge">Lencana Plus</string>
     <string name="plus_perk_badge_body">💎 di samping namamu.</string>
     <string name="plus_hero">Temui orang yang ingin kamu temui, lebih cepat.</string>
-    <string name="plus_hero_active">Semua terbuka. Selamat menikmati!</string>
+    <string name="plus_hero_active">Plus aktif. Terima kasih telah mendukung TalkLive.</string>
     <string name="plus_earn_title">Atau dapatkan gratis</string>
     <string name="plus_earn_body">Undang 3 teman yang bergabung dan mengobrol: kamu dapat waktu Plus.</string>
     <string name="plus_subscribe_price">Berlangganan seharga %1$s</string>
@@ -460,6 +460,8 @@
     <string name="stop_search_q">Berhenti mencari?</string>
     <string name="leave">Keluar</string>
     <string name="stay">Tetap</string>
+    <string name="open_elsewhere">TalkLive terbuka di perangkat lain</string>
+    <string name="use_here">Gunakan di sini</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s pengunjung hari ini</item>
         <item quantity="other">%1$s pengunjung hari ini</item>

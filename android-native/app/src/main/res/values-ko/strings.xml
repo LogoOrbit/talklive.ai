@@ -35,11 +35,11 @@
     <string name="continue_">계속</string>
     <string name="get_started">시작하기</string>
     <string name="welcome_1_title">진짜 목소리, 진짜 사람</string>
-    <string name="welcome_1_body">탭 한 번이면 새로운 사람과 대화해요. 영상도, 부담도 없이 오직 대화만.</string>
+    <string name="welcome_1_body">한 번 탭하면 새로운 사람과 이야기해요. 음성만, 카메라 없음.</string>
     <string name="welcome_2_title">전 세계와 만나요</string>
-    <string name="welcome_2_body">지금 모든 나라의 사람들이 접속해 있어요. 친구를 사귀고, 언어를 연습하고, 함께 웃어요.</string>
+    <string name="welcome_2_body">지금 전 세계 사람들이 접속해 있어요. 대화하고, 언어를 연습하고, 친구를 사귀세요.</string>
     <string name="welcome_3_title">안전하게 설계</string>
-    <string name="welcome_3_body">익명으로, 언제든 바로 건너뛰고, 탭 한 번으로 신고하세요. 안전을 중요하게 생각해요.</string>
+    <string name="welcome_3_body">아무도 당신의 이름이나 번호를 볼 수 없어요. 누구든 건너뛰고, 한 번에 신고하세요.</string>
     <string name="choose_title">TalkLive 가입</string>
     <string name="choose_body">계정을 만들면 친구와 채팅을 모든 기기에서 이용할 수 있어요.</string>
     <string name="continue_google">Google로 계속하기</string>
@@ -81,7 +81,7 @@
     <string name="chats_empty_title">채팅이 여기에 표시돼요</string>
     <string name="chats_empty_body">좋은 통화였나요? 친구로 추가하면 메시지가 여기에 나타나요.</string>
     <string name="friends_empty_title">아직 친구가 없어요</string>
-    <string name="friends_empty_body">모든 친구는 낯선 사람에서 시작해요. 통화를 시작하고 마음이 맞으면 친구 추가를 탭하세요.</string>
+    <string name="friends_empty_body">통화를 시작하고 잘 맞는 사람이 있으면 친구 추가를 누르세요.</string>
     <string name="animal_title">수호 동물을 고르세요</string>
     <string name="animal_body">연결되는 순간 상대에게 보여요. 인사를 건네는 쉬운 방법이에요.</string>
     <string name="surprise_me">아무거나</string>
@@ -367,7 +367,7 @@
     <string name="plus_perk_badge">Plus 배지</string>
     <string name="plus_perk_badge_body">이름 옆에 💎.</string>
     <string name="plus_hero">만나고 싶은 사람을 더 빨리.</string>
-    <string name="plus_hero_active">모두 열렸어요. 즐기세요!</string>
+    <string name="plus_hero_active">Plus가 켜져 있어요. TalkLive를 응원해 주셔서 감사해요.</string>
     <string name="plus_earn_title">또는 무료로 받기</string>
     <string name="plus_earn_body">가입해서 대화한 친구 3명을 초대하면 Plus 시간을 받아요.</string>
     <string name="plus_subscribe_price">%1$s에 구독하기</string>
@@ -460,6 +460,8 @@
     <string name="stop_search_q">검색을 멈출까요?</string>
     <string name="leave">나가기</string>
     <string name="stay">머무르기</string>
+    <string name="open_elsewhere">TalkLive가 다른 기기에서 열려 있어요</string>
+    <string name="use_here">여기서 사용</string>
     <plurals name="visitors_today">
         <item quantity="other">오늘 방문자 %1$s명</item>
     </plurals>

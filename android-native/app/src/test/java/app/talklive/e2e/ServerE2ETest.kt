@@ -440,6 +440,17 @@ class ServerE2ETest {
         assertEquals("Droid Tester", b.auth.account.value?.nickname)
         assertEquals("owl", b.identity.animal)
 
+        // Two phones, one account: the newer one takes the profile, the other
+        // steps aside (no endless back and forth) until "Use here" is tapped.
+        check("first phone steps aside") { a.socket.elsewhere.value && !b.socket.elsewhere.value }
+        a.socket.useHere()
+        check("first phone takes it back") { !a.socket.elsewhere.value && b.socket.elsewhere.value }
+        b.socket.useHere()
+        check("second phone takes it back") { a.socket.elsewhere.value && !b.socket.elsewhere.value }
+        a.socket.useHere()
+        check("settled on the first phone") { !a.socket.elsewhere.value && b.socket.elsewhere.value }
+        waitFor("first phone signed in again") { a.auth.account.value }
+
         // Forgot password on a third phone.
         val c = Client("c")
         assertEquals(AuthResult.Ok, c.auth.forgotPassword(email))

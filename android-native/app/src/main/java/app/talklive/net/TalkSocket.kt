@@ -66,7 +66,26 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
         set(value) {
             field = value
             if (socket.connected()) socket.emit("app-visibility", JSONObject().put("hidden", value))
+            // Opened again while another device held the identity: claim it now.
+            if (!value) yielded = false
+            if (!value && waitingForIdentity) { waitingForIdentity = false; registerFailures = 0; register(takeover = true) }
         }
+    @Volatile private var waitingForIdentity = false
+        set(value) { field = value; _elsewhere.value = value }
+    private val _elsewhere = MutableStateFlow(false)
+    /** True while another device is using this account and this one stepped aside. */
+    val elsewhere: StateFlow<Boolean> = _elsewhere
+
+    /** "Use here": take the account back from the other device. */
+    fun useHere() {
+        yielded = false
+        waitingForIdentity = false
+        registerFailures = 0
+        if (socket.connected()) register(takeover = true) else socket.connect()
+    }
+    // Set when another device took the identity: this one then waits to be
+    // opened again instead of taking it straight back (which never settles).
+    @Volatile private var yielded = false
 
     fun acknowledgeWarning(id: String) {
         _warnings.value = _warnings.value.filterNot { it.id == id }
@@ -85,8 +104,21 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
             _connected.value = true
             register()
         }
-        socket.on(Socket.EVENT_DISCONNECT) { _connected.value = false }
+        socket.on(Socket.EVENT_DISCONNECT) { args ->
+            _connected.value = false
+            // socket.io does not retry after the server closed the connection
+            // (e.g. another device took the identity). While the app is in
+            // use, come back; in the background, opening the app reconnects.
+            if (args.firstOrNull() == "io server disconnect") yielded = true
+            if (args.firstOrNull() == "io server disconnect" && !hidden) {
+                Thread { runCatching { Thread.sleep(1500); if (!hidden && !socket.connected()) socket.connect() } }.start()
+            }
+        }
         socket.on("register-result") { args -> onRegisterResult(args.firstObject()) }
+        // The server asks the connection holding this identity whether it is
+        // still alive before giving it to another device. Without an answer it
+        // treated this phone as gone and disconnected it.
+        socket.on("identity-ping") { args -> (args.lastOrNull() as? io.socket.client.Ack)?.call() }
         socket.on("identity-token") { args ->
             val o = args.firstObject() ?: return@on
             val token = o.optString("token")
@@ -258,20 +290,27 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
     private fun onRegisterResult(o: JSONObject?) {
         if (o == null || o.optBoolean("ok", true)) {
             registerFailures = 0
+            waitingForIdentity = false
             if (hidden) socket.emit("app-visibility", JSONObject().put("hidden", true))
             _events.tryEmit(ServerEvent.Registered)
             return
         }
         Log.w(TAG, "register refused: ${o.optString("error")}")
         registerFailures++
-        // The server could not verify this identity, or it is stuck: start a
-        // fresh one rather than never being able to talk.
-        if (o.optString("reason") == "unverified" || registerFailures > 3) {
+        // Only an identity the server cannot verify is replaced: one that is
+        // merely busy on another device keeps its friends and chats, and this
+        // phone (the one being used) takes it over, backing off between tries.
+        if (o.optString("reason") == "unverified") {
             identity.reset()
             registerFailures = 0
             register()
-        } else {
-            register(takeover = true)
+        } else if (hidden || yielded) {
+            // In the background: let the device being used keep it, and take
+            // it back when this app is opened.
+            waitingForIdentity = true
+        } else if (registerFailures <= 6) {
+            val wait = 500L * registerFailures
+            Thread { runCatching { Thread.sleep(wait); register(takeover = true) } }.start()
         }
     }
 

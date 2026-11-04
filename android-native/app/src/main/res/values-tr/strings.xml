@@ -35,11 +35,11 @@
     <string name="continue_">Devam</string>
     <string name="get_started">Başla</string>
     <string name="welcome_1_title">Gerçek sesler, gerçek insanlar</string>
-    <string name="welcome_1_body">Tek dokunuşla yeni biriyle konuşuyorsun. Video yok, baskı yok, sadece sohbet.</string>
+    <string name="welcome_1_body">Tek dokunuşla yeni biriyle konuşuyorsun. Sadece ses, kamera yok.</string>
     <string name="welcome_2_title">Tüm dünyayla tanış</string>
-    <string name="welcome_2_body">Şu an her ülkeden insanlar çevrim içi. Arkadaş edin, dil pratiği yap, birlikte gülün.</string>
+    <string name="welcome_2_body">Şu anda dünyanın her yerinden insanlar çevrimiçi. Konuş, dil pratiği yap, arkadaş edin.</string>
     <string name="welcome_3_title">Güvenlik öncelikli</string>
-    <string name="welcome_3_body">Anonim kal, istediğini anında atla ve tek dokunuşla bildir. Güvenliği ciddiye alıyoruz.</string>
+    <string name="welcome_3_body">Kimse adını ya da numaranı görmez. İstediğini geç, tek dokunuşla bildir.</string>
     <string name="choose_title">TalkLive\'a katıl</string>
     <string name="choose_body">Arkadaşların ve sohbetlerin her cihazda olsun diye hesap oluştur.</string>
     <string name="continue_google">Google ile devam et</string>
@@ -81,7 +81,7 @@
     <string name="chats_empty_title">Sohbetlerin burada olacak</string>
     <string name="chats_empty_body">Harika bir arama mı? Arkadaş olarak ekle, mesajlarınız burada görünsün.</string>
     <string name="friends_empty_title">Henüz arkadaş yok</string>
-    <string name="friends_empty_body">Her arkadaş bir yabancı olarak başlar. Bir arama başlat, anlaşınca Arkadaş ekle\'ye dokun.</string>
+    <string name="friends_empty_body">Bir arama başlat ve biriyle anlaşınca Arkadaş ekle\'ye dokun.</string>
     <string name="animal_title">Ruh hayvanını seç</string>
     <string name="animal_body">Bağlandığın an karşı taraf onu görür. Merhaba demenin kolay bir yolu.</string>
     <string name="surprise_me">Şaşırt beni</string>
@@ -367,7 +367,7 @@
     <string name="plus_perk_badge">Plus rozeti</string>
     <string name="plus_perk_badge_body">Adının yanında bir 💎.</string>
     <string name="plus_hero">Tanışmak istediğin kişilerle daha hızlı tanış.</string>
-    <string name="plus_hero_active">Her şeyin kilidi açık. Keyfini çıkar!</string>
+    <string name="plus_hero_active">Plus açık. TalkLive\'ı desteklediğin için teşekkürler.</string>
     <string name="plus_earn_title">Ya da ücretsiz kazan</string>
     <string name="plus_earn_body">Katılıp konuşan 3 arkadaşını davet et: Plus süresi kazan.</string>
     <string name="plus_subscribe_price">%1$s karşılığında abone ol</string>
@@ -460,6 +460,8 @@
     <string name="stop_search_q">Arama durdurulsun mu?</string>
     <string name="leave">Çık</string>
     <string name="stay">Kal</string>
+    <string name="open_elsewhere">TalkLive başka bir cihazda açık</string>
+    <string name="use_here">Burada kullan</string>
     <plurals name="visitors_today">
         <item quantity="one">Bugün %1$s ziyaretçi</item>
         <item quantity="other">Bugün %1$s ziyaretçi</item>

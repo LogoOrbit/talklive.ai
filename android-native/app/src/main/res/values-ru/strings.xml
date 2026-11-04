@@ -35,11 +35,11 @@
     <string name="continue_">Продолжить</string>
     <string name="get_started">Начать</string>
     <string name="welcome_1_title">Живые голоса, живые люди</string>
-    <string name="welcome_1_body">Одно касание, и вы говорите с кем-то новым. Без видео, без давления, только разговор.</string>
+    <string name="welcome_1_body">Одно касание — и вы говорите с новым человеком. Только голос, без камеры.</string>
     <string name="welcome_2_title">Знакомьтесь со всем миром</string>
-    <string name="welcome_2_body">Прямо сейчас онлайн люди из разных стран. Найдите друга, практикуйте язык, посмейтесь вместе.</string>
+    <string name="welcome_2_body">Прямо сейчас онлайн люди со всего мира. Общайтесь, практикуйте язык, находите друзей.</string>
     <string name="welcome_3_title">Безопасность прежде всего</string>
-    <string name="welcome_3_body">Оставайтесь анонимными, пропускайте кого угодно и жалуйтесь одним касанием. Мы серьёзно относимся к безопасности.</string>
+    <string name="welcome_3_body">Никто не видит ваше имя или номер. Пропускайте кого угодно, жалоба в одно касание.</string>
     <string name="choose_title">Присоединяйтесь к TalkLive</string>
     <string name="choose_body">Создайте аккаунт, чтобы друзья и чаты были на всех устройствах.</string>
     <string name="continue_google">Продолжить с Google</string>
@@ -81,7 +81,7 @@
     <string name="chats_empty_title">Здесь будут ваши чаты</string>
     <string name="chats_empty_body">Хороший разговор? Добавьте человека в друзья, и ваши сообщения появятся здесь.</string>
     <string name="friends_empty_title">Пока нет друзей</string>
-    <string name="friends_empty_body">Каждый друг когда-то был незнакомцем. Начните звонок и нажмите «Добавить в друзья», если нашли общий язык.</string>
+    <string name="friends_empty_body">Начните звонок и нажмите «Добавить в друзья», если нашли общий язык.</string>
     <string name="animal_title">Выберите тотемное животное</string>
     <string name="animal_body">Собеседник увидит его сразу при соединении. Простой способ поздороваться.</string>
     <string name="surprise_me">Удиви меня</string>
@@ -367,7 +367,7 @@
     <string name="plus_perk_badge">Значок Plus</string>
     <string name="plus_perk_badge_body">💎 рядом с вашим именем.</string>
     <string name="plus_hero">Знакомьтесь с теми, с кем хотите, быстрее.</string>
-    <string name="plus_hero_active">Всё открыто. Наслаждайтесь!</string>
+    <string name="plus_hero_active">Plus включён. Спасибо, что поддерживаете TalkLive.</string>
     <string name="plus_earn_title">Или получите бесплатно</string>
     <string name="plus_earn_body">Пригласите 3 друзей, которые присоединятся и поговорят: получите время Plus.</string>
     <string name="plus_subscribe_price">Подписаться за %1$s</string>
@@ -460,6 +460,8 @@
     <string name="stop_search_q">Остановить поиск?</string>
     <string name="leave">Выйти</string>
     <string name="stay">Остаться</string>
+    <string name="open_elsewhere">TalkLive открыт на другом устройстве</string>
+    <string name="use_here">Использовать здесь</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s посетитель сегодня</item>
         <item quantity="other">%1$s посетителя сегодня</item>

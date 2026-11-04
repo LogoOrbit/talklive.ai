@@ -466,4 +466,6 @@
     <string name="stop_search_q">Stop searching?</string>
     <string name="leave">Leave</string>
     <string name="stay">Stay</string>
+    <string name="open_elsewhere">TalkLive is open on another device</string>
+    <string name="use_here">Use here</string>
 </resources>

@@ -462,5 +462,7 @@
 "leave_chat_q": "Leave this chat?",
 "stop_search_q": "Stop searching?",
 "leave": "Leave",
-"stay": "Stay"
+"stay": "Stay",
+"open_elsewhere": "TalkLive is open on another device",
+"use_here": "Use here"
 }

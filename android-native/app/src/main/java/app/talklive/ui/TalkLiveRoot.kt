@@ -553,6 +553,20 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
         )
     }
 
+    // This account is open on another device and this phone stepped aside.
+    val elsewhere by vm.elsewhere.collectAsStateWithLifecycle()
+    if (elsewhere) androidx.compose.foundation.layout.Box(
+        androidx.compose.ui.Modifier.fillMaxSize().statusBarsPadding().padding(top = 8.dp, start = 16.dp, end = 16.dp),
+        contentAlignment = androidx.compose.ui.Alignment.TopCenter,
+    ) {
+        androidx.compose.material3.Surface(shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surfaceVariant, shadowElevation = 6.dp) {
+            androidx.compose.foundation.layout.Row(androidx.compose.ui.Modifier.padding(start = 16.dp, end = 8.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                Text(stringResource(R.string.open_elsewhere), style = MaterialTheme.typography.bodyMedium, modifier = androidx.compose.ui.Modifier.weight(1f, fill = false).padding(end = 8.dp))
+                androidx.compose.material3.Button(onClick = vm::useHere) { Text(stringResource(R.string.use_here)) }
+            }
+        }
+    }
+
     // Messages show at the top of every screen, clear of the buttons below.
     androidx.compose.foundation.layout.Box(
         androidx.compose.ui.Modifier.fillMaxSize().statusBarsPadding().padding(top = 8.dp, start = 16.dp, end = 16.dp),

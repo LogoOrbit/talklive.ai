@@ -35,11 +35,11 @@
     <string name="continue_">ادامه</string>
     <string name="get_started">شروع کنیم</string>
     <string name="welcome_1_title">صداهای واقعی، آدم‌های واقعی</string>
-    <string name="welcome_1_body">با یک لمس با یک نفر تازه حرف می‌زنی. بدون ویدیو، بدون فشار، فقط گفتگو.</string>
+    <string name="welcome_1_body">با یک لمس با کسی تازه حرف می‌زنید. فقط صدا، بدون دوربین.</string>
     <string name="welcome_2_title">با همهٔ دنیا آشنا شو</string>
-    <string name="welcome_2_body">همین حالا آدم‌هایی از همهٔ کشورها آنلاین‌اند. دوست پیدا کن، زبان تمرین کن، با هم بخندید.</string>
+    <string name="welcome_2_body">همین حالا آدم‌هایی از سراسر جهان آنلاین‌اند. حرف بزنید، زبان تمرین کنید، دوست پیدا کنید.</string>
     <string name="welcome_3_title">امن از پایه</string>
-    <string name="welcome_3_body">ناشناس بمان، هر کسی را فوراً رد کن و با یک لمس گزارش بده. امنیت برای ما جدی است.</string>
+    <string name="welcome_3_body">هیچ‌کس نام یا شماره شما را نمی‌بیند. از هر کسی رد شوید و با یک لمس گزارش دهید.</string>
     <string name="choose_title">به TalkLive بپیوند</string>
     <string name="choose_body">یک حساب بساز تا دوستان و گفتگوهایت روی همهٔ دستگاه‌ها بمانند.</string>
     <string name="continue_google">ادامه با Google</string>
@@ -81,7 +81,7 @@
     <string name="chats_empty_title">گفتگوهایت اینجا خواهند بود</string>
     <string name="chats_empty_body">تماس خوبی بود؟ او را دوست کن تا پیام‌هایتان اینجا بیاید.</string>
     <string name="friends_empty_title">هنوز دوستی نداری</string>
-    <string name="friends_empty_body">هر دوستی روزی غریبه بوده. یک تماس شروع کن و وقتی جور شدید روی «افزودن دوست» بزن.</string>
+    <string name="friends_empty_body">تماسی شروع کنید و وقتی با کسی جور شدید، افزودن دوست را بزنید.</string>
     <string name="animal_title">حیوان روحت را انتخاب کن</string>
     <string name="animal_body">همان لحظهٔ اتصال دیده می‌شود. راهی ساده برای سلام کردن.</string>
     <string name="surprise_me">غافلگیرم کن</string>
@@ -367,7 +367,7 @@
     <string name="plus_perk_badge">نشان Plus</string>
     <string name="plus_perk_badge_body">یک 💎 کنار نامت.</string>
     <string name="plus_hero">با کسانی که می‌خواهی سریع‌تر آشنا شو.</string>
-    <string name="plus_hero_active">همه چیز باز است. لذت ببر!</string>
+    <string name="plus_hero_active">Plus فعال است. ممنون که از TalkLive حمایت می‌کنید.</string>
     <string name="plus_earn_title">یا رایگان بگیرش</string>
     <string name="plus_earn_body">۳ دوست دعوت کن که بپیوندند و گفتگو کنند: زمان Plus می‌گیری.</string>
     <string name="plus_subscribe_price">اشتراک با %1$s</string>
@@ -460,6 +460,8 @@
     <string name="stop_search_q">جستجو متوقف شود؟</string>
     <string name="leave">ترک</string>
     <string name="stay">ماندن</string>
+    <string name="open_elsewhere">TalkLive روی دستگاه دیگری باز است</string>
+    <string name="use_here">استفاده در اینجا</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s بازدیدکننده امروز</item>
         <item quantity="other">%1$s بازدیدکننده امروز</item>

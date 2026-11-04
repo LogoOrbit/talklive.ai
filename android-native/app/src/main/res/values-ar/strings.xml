@@ -35,11 +35,11 @@
     <string name="continue_">متابعة</string>
     <string name="get_started">ابدأ</string>
     <string name="welcome_1_title">أصوات حقيقية، أناس حقيقيون</string>
-    <string name="welcome_1_body">لمسة واحدة وتتحدث مع شخص جديد. بلا فيديو، بلا ضغط، مجرد حديث.</string>
+    <string name="welcome_1_body">بنقرة واحدة تتحدث مع شخص جديد. صوت فقط، بلا كاميرا.</string>
     <string name="welcome_2_title">تعرّف على العالم كله</string>
-    <string name="welcome_2_body">أشخاص من كل البلدان متصلون الآن. كوّن صداقة، تدرّب على لغة، واضحك قليلًا.</string>
+    <string name="welcome_2_body">أشخاص من حول العالم متصلون الآن. تحدث، تدرّب على لغة، وكوّن صداقات.</string>
     <string name="welcome_3_title">الأمان أولًا</string>
-    <string name="welcome_3_body">ابقَ مجهول الهوية، تخطَّ أي شخص فورًا وأبلغ بلمسة. نأخذ الأمان على محمل الجد.</string>
+    <string name="welcome_3_body">لا أحد يرى اسمك أو رقمك. تخطَّ أي شخص وأبلغ بنقرة واحدة.</string>
     <string name="choose_title">انضم إلى TalkLive</string>
     <string name="choose_body">أنشئ حسابًا لتحتفظ بأصدقائك ومحادثاتك على كل أجهزتك.</string>
     <string name="continue_google">المتابعة باستخدام Google</string>
@@ -81,7 +81,7 @@
     <string name="chats_empty_title">ستظهر محادثاتك هنا</string>
     <string name="chats_empty_body">مكالمة رائعة؟ أضفه صديقًا وستظهر رسائلكما هنا.</string>
     <string name="friends_empty_title">لا أصدقاء بعد</string>
-    <string name="friends_empty_body">كل صديق يبدأ غريبًا. ابدأ مكالمة واضغط إضافة صديق عندما تنسجمان.</string>
+    <string name="friends_empty_body">ابدأ مكالمة واضغط إضافة صديق عندما تتفاهم مع أحد.</string>
     <string name="animal_title">اختر حيوانك الروحي</string>
     <string name="animal_body">يراه الآخرون لحظة الاتصال. طريقة سهلة لإلقاء التحية.</string>
     <string name="surprise_me">فاجئني</string>
@@ -367,7 +367,7 @@
     <string name="plus_perk_badge">شارة Plus</string>
     <string name="plus_perk_badge_body">💎 بجانب اسمك.</string>
     <string name="plus_hero">قابل من تريد مقابلتهم، أسرع.</string>
-    <string name="plus_hero_active">كل شيء مفتوح. استمتع!</string>
+    <string name="plus_hero_active">Plus مفعّل. شكرًا لدعمك TalkLive.</string>
     <string name="plus_earn_title">أو احصل عليه مجانًا</string>
     <string name="plus_earn_body">ادعُ 3 أصدقاء ينضمون ويتحدثون: تحصل على وقت Plus.</string>
     <string name="plus_subscribe_price">اشترك مقابل %1$s</string>
@@ -460,6 +460,8 @@
     <string name="stop_search_q">إيقاف البحث؟</string>
     <string name="leave">مغادرة</string>
     <string name="stay">البقاء</string>
+    <string name="open_elsewhere">TalkLive مفتوح على جهاز آخر</string>
+    <string name="use_here">استخدم هنا</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s زائر اليوم</item>
         <item quantity="other">%1$s زائر اليوم</item>

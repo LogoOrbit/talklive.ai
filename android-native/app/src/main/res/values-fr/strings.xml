@@ -35,11 +35,11 @@
     <string name="continue_">Continuer</string>
     <string name="get_started">Commencer</string>
     <string name="welcome_1_title">De vraies voix, de vraies personnes</string>
-    <string name="welcome_1_body">Un toucher et tu parles avec quelqu\'un de nouveau. Pas de vidéo, pas de pression, juste une conversation.</string>
+    <string name="welcome_1_body">Un geste et vous parlez à quelqu\'un de nouveau. Voix seulement, pas de caméra.</string>
     <string name="welcome_2_title">Rencontre le monde entier</string>
-    <string name="welcome_2_body">Des gens de tous les pays sont en ligne maintenant. Fais-toi des amis, pratique une langue, partage un fou rire.</string>
+    <string name="welcome_2_body">Des gens du monde entier sont en ligne maintenant. Parlez, pratiquez une langue, faites-vous des amis.</string>
     <string name="welcome_3_title">Sûr par conception</string>
-    <string name="welcome_3_body">Reste anonyme, passe n\'importe qui instantanément et signale en un toucher. La sécurité, on la prend au sérieux.</string>
+    <string name="welcome_3_body">Personne ne voit votre nom ni votre numéro. Passez qui vous voulez, signalez en un geste.</string>
     <string name="choose_title">Rejoins TalkLive</string>
     <string name="choose_body">Crée un compte pour garder tes amis et tes discussions sur tous tes appareils.</string>
     <string name="continue_google">Continuer avec Google</string>
@@ -81,7 +81,7 @@
     <string name="chats_empty_title">Tes discussions seront ici</string>
     <string name="chats_empty_body">Super appel ? Ajoute la personne en ami et vos messages apparaîtront ici.</string>
     <string name="friends_empty_title">Pas encore d\'amis</string>
-    <string name="friends_empty_body">Chaque ami commence en inconnu. Lance un appel et touche Ajouter en ami quand le courant passe.</string>
+    <string name="friends_empty_body">Lancez un appel et touchez Ajouter en ami quand le courant passe.</string>
     <string name="animal_title">Choisis ton animal totem</string>
     <string name="animal_body">Les gens le voient dès que vous êtes connectés. Une façon simple de dire bonjour.</string>
     <string name="surprise_me">Surprends-moi</string>
@@ -367,7 +367,7 @@
     <string name="plus_perk_badge">Badge Plus</string>
     <string name="plus_perk_badge_body">Un 💎 à côté de ton nom.</string>
     <string name="plus_hero">Rencontre les gens que tu veux rencontrer, plus vite.</string>
-    <string name="plus_hero_active">Tout est débloqué. Profite !</string>
+    <string name="plus_hero_active">Plus est actif. Merci de soutenir TalkLive.</string>
     <string name="plus_earn_title">Ou gagne-le gratuitement</string>
     <string name="plus_earn_body">Invite 3 amis qui s\'inscrivent et parlent : tu gagnes du temps Plus.</string>
     <string name="plus_subscribe_price">S\'abonner pour %1$s</string>
@@ -460,6 +460,8 @@
     <string name="stop_search_q">Arrêter la recherche ?</string>
     <string name="leave">Quitter</string>
     <string name="stay">Rester</string>
+    <string name="open_elsewhere">TalkLive est ouvert sur un autre appareil</string>
+    <string name="use_here">Utiliser ici</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s visiteur aujourd\'hui</item>
         <item quantity="other">%1$s visiteurs aujourd\'hui</item>
