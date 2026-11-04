@@ -305,6 +305,8 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                     partnerId in sent -> FriendStatus.Requested
                     else -> FriendStatus.None
                 }
+                val autoConnect by vm.autoConnect.collectAsStateWithLifecycle()
+                val voiceBands by vm.voiceBands.collectAsStateWithLifecycle()
                 if (state.mode == CallMode.Chat) TextChatScreen(
                     state = state,
                     messages = chatMessages,
@@ -342,6 +344,9 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                     onMute = vm::toggleMute,
                     onSpeaker = vm::toggleSpeaker,
                     onReport = vm::report,
+                    autoConnect = autoConnect,
+                    onAutoConnect = vm::setAutoConnect,
+                    bands = { voiceBands },
                 )
             }
         }

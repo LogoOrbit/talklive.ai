@@ -404,4 +404,23 @@
     <string name="how_2_text">Chat with someone new</string>
     <string name="how_3">Skip any time</string>
     <string name="films_none">Nothing found. Try the original title.</string>
+    <string name="auto_connect">Auto-connect</string>
+    <string name="tap_to_stop">Searching · tap to stop</string>
+    <string name="tap_again_next">Tap again for next</string>
+    <string name="tap_again_end">Tap again to end</string>
+    <string name="plus_card_pitch">Every filter, see who liked you, undo skips</string>
+    <string name="filters_interests_hint">We try to match you with people who like the same things.</string>
+    <string name="countries_title">Countries</string>
+    <string name="countries_only">Only meet</string>
+    <string name="countries_never">Never meet</string>
+    <string name="filters_countries_hint">Free: up to %1$d countries in each list.</string>
+    <string name="filters_countries_hint_plus">As many countries as you like.</string>
+    <string name="filters_gender_hint">Choosing women or men comes with 💎 Plus.</string>
+    <string name="clear">Clear</string>
+    <string name="clear_all">Clear all</string>
+    <string name="apply_filters_n">Apply %1$d filters</string>
+    <string name="cmp_free">Free</string>
+    <string name="cmp_calls">Unlimited voice and text chats</string>
+    <string name="cmp_streaks">Streaks, passport and games</string>
+    <string name="cmp_countries">Gender filter and unlimited countries</string>
 </resources>

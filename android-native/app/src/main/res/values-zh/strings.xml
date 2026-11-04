@@ -398,6 +398,25 @@
     <string name="how_2_text">和新朋友聊天</string>
     <string name="how_3">随时跳过</string>
     <string name="films_none">没有找到，试试原名。</string>
+    <string name="auto_connect">自动连接</string>
+    <string name="tap_to_stop">正在寻找 · 点击停止</string>
+    <string name="tap_again_next">再点一次换下一个</string>
+    <string name="tap_again_end">再点一次挂断</string>
+    <string name="plus_card_pitch">所有筛选、谁喜欢你、撤销跳过</string>
+    <string name="filters_interests_hint">我们会尽量为你匹配兴趣相同的人。</string>
+    <string name="countries_title">国家</string>
+    <string name="countries_only">只匹配</string>
+    <string name="countries_never">不匹配</string>
+    <string name="filters_countries_hint">免费：每个列表最多 %1$d 个国家。</string>
+    <string name="filters_countries_hint_plus">国家想选多少都行。</string>
+    <string name="filters_gender_hint">选择女生或男生需要 💎 Plus。</string>
+    <string name="clear">清除</string>
+    <string name="clear_all">全部清除</string>
+    <string name="apply_filters_n">应用 %1$d 个筛选</string>
+    <string name="cmp_free">免费</string>
+    <string name="cmp_calls">无限语音和文字聊天</string>
+    <string name="cmp_streaks">连续记录、护照和游戏</string>
+    <string name="cmp_countries">性别筛选和不限国家</string>
     <plurals name="visitors_today">
         <item quantity="other">今日访客 %1$s 人</item>
     </plurals>

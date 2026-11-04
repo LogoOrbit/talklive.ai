@@ -107,6 +107,16 @@ class CallManager @Inject constructor(
     private val _state = MutableStateFlow(CallState())
     val state: StateFlow<CallState> = _state
 
+    /** Auto-connect (the website's setting): when someone leaves, look for the next person straight away. */
+    private val uiPrefs = context.getSharedPreferences("ui", Context.MODE_PRIVATE)
+    private val _autoConnect = MutableStateFlow(uiPrefs.getBoolean("auto_connect", true))
+    val autoConnect: StateFlow<Boolean> = _autoConnect
+    fun setAutoConnect(on: Boolean) { uiPrefs.edit().putBoolean("auto_connect", on).apply(); _autoConnect.value = on }
+
+    /** Live spectrum of the other person's voice (call screen visualiser). */
+    private val spectrum = Spectrum()
+    val voiceBands: StateFlow<FloatArray> = spectrum.bands
+
     /** The stranger's voice level, 0..1, for the speaking ring. Separate so it can update often. */
     private val _remoteLevel = MutableStateFlow(0f)
     val remoteLevel: StateFlow<Float> = _remoteLevel
@@ -340,8 +350,15 @@ class CallManager @Inject constructor(
                     audio.stop()
                     _state.update { CallState(speakerOn = it.speakerOn, notice = CallNotice.CallEnded(e.username.ifBlank { "Your friend" })) }
                 } else {
-                    _state.update { it.copy(notice = CallNotice.PartnerLeft(e.username.ifBlank { "Stranger" }, e.reason != "left")) }
-                    search()
+                    val notice = CallNotice.PartnerLeft(e.username.ifBlank { "Stranger" }, e.reason != "left")
+                    if (_autoConnect.value) {
+                        _state.update { it.copy(notice = notice) }
+                        search()
+                    } else {
+                        // Auto-connect off: stop here, like the website, instead of starting a new search.
+                        audio.stop()
+                        _state.update { CallState(speakerOn = it.speakerOn, mode = it.mode, notice = notice) }
+                    }
                 }
             }
             is ServerEvent.SearchRefused -> {
@@ -446,7 +463,7 @@ class CallManager @Inject constructor(
             override fun onConnectionState(state: PeerConnection.PeerConnectionState) {
                 scope.launch { if (id == matchId) onConnectionState(state, m.partner) }
             }
-        }) }.getOrElse {
+        }, spectrum) }.getOrElse {
             // WebRTC could not start on this device right now: move on rather than crash.
             Log.w(TAG, "peer connection failed", it)
             failAndRetry()

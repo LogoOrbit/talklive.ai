@@ -133,7 +133,11 @@ fun TextChatScreen(
     LaunchedEffect(partner?.clientId) { draft = ""; replyTo = null }
 
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).imePadding()) {
-        // Header: who, and the two ways out.
+        // While searching the middle of the screen says it all: just a way out up here.
+        if (partner == null) Box(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp)) {
+            app.talklive.ui.call.LeaveButton(onEnd)
+        } else
+        // Header: who, and the way to the next person.
         Surface(color = MaterialTheme.colorScheme.surface) {
             Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 4.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onEnd) { Icon(Icons.Rounded.Close, stringResource(R.string.end)) }

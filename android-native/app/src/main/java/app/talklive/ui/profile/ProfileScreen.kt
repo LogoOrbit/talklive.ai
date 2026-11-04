@@ -1,5 +1,6 @@
 package app.talklive.ui.profile
 
+import androidx.compose.ui.unit.sp
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
@@ -160,6 +161,33 @@ fun ProfileScreen(
             val films by engageVm.films.collectAsStateWithLifecycle()
             val premium by engageVm.premium.collectAsStateWithLifecycle()
             var youSheet by remember { mutableStateOf<String?>(null) }
+            // Plus, as a card of its own rather than one more row.
+            Spacer(Modifier.height(20.dp))
+            Box(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp))
+                    .background(androidx.compose.ui.graphics.Brush.linearGradient(
+                        if (premium.active) listOf(androidx.compose.ui.graphics.Color(0xFFB8860B), androidx.compose.ui.graphics.Color(0xFFF5C451))
+                        else listOf(app.talklive.ui.theme.LocalAccents.current.a, app.talklive.ui.theme.LocalAccents.current.b),
+                    ))
+                    .clickable { youSheet = "plus" }.padding(18.dp),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("💎", fontSize = 34.sp)
+                    Spacer(Modifier.width(14.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(stringResource(R.string.plus), style = MaterialTheme.typography.titleLarge, color = androidx.compose.ui.graphics.Color.White)
+                        Text(
+                            when {
+                                !premium.active -> stringResource(R.string.plus_card_pitch)
+                                premium.expiresAt != null -> stringResource(R.string.plus_until, java.text.DateFormat.getDateInstance().format(java.util.Date(premium.expiresAt!!)))
+                                else -> stringResource(R.string.plus_active)
+                            },
+                            style = MaterialTheme.typography.bodyMedium, color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.9f),
+                        )
+                    }
+                    Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = androidx.compose.ui.graphics.Color.White)
+                }
+            }
             Section(stringResource(R.string.section_you)) {
                 SettingRow(Icons.Rounded.Public, stringResource(R.string.passport), stringResource(R.string.passport_count, engage?.passport?.size ?: 0)) { youSheet = "passport" }
                 SettingRow(Icons.Rounded.Movie, stringResource(R.string.fav_films), if (films.isEmpty()) stringResource(R.string.not_set) else films.joinToString(", ") { it.title }) { youSheet = "films" }
@@ -185,14 +213,6 @@ fun ProfileScreen(
                         trailing = { Switch(checked = voiceOn, onCheckedChange = { engageVm.setVoiceCheck(it) }, colors = SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primary)) },
                     )
                 }
-                SettingRow(
-                    Icons.Rounded.WorkspacePremium, stringResource(R.string.plus),
-                    when {
-                        !premium.active -> stringResource(R.string.plus_inactive)
-                        premium.expiresAt != null -> stringResource(R.string.plus_until, java.text.DateFormat.getDateInstance().format(java.util.Date(premium.expiresAt!!)))
-                        else -> stringResource(R.string.plus_active)
-                    },
-                ) { youSheet = "plus" }
             }
             when (youSheet) {
                 "passport" -> engage?.let { app.talklive.ui.engage.StreakSheet(it) { youSheet = null } } ?: run { youSheet = null }
@@ -357,6 +377,34 @@ private fun ChoiceDialog(title: String, options: List<String>, current: String, 
     )
 }
 
+private fun settingColor(icon: ImageVector): androidx.compose.ui.graphics.Color {
+    return when (icon) {
+        Icons.Rounded.Public -> androidx.compose.ui.graphics.Color(0xFF3B82F6)          // passport
+        Icons.Rounded.Movie -> androidx.compose.ui.graphics.Color(0xFFF97316)           // films
+        Icons.Rounded.Favorite -> androidx.compose.ui.graphics.Color(0xFFEC4899)        // likes
+        Icons.Rounded.CardGiftcard -> androidx.compose.ui.graphics.Color(0xFF22C55E)    // invite
+        Icons.Rounded.Face -> androidx.compose.ui.graphics.Color(0xFF8B5CF6)            // I am
+        Icons.Rounded.Cake -> androidx.compose.ui.graphics.Color(0xFFF59E0B)            // age
+        Icons.Rounded.WorkspacePremium -> androidx.compose.ui.graphics.Color(0xFFEAB308)
+        Icons.Rounded.GraphicEq -> androidx.compose.ui.graphics.Color(0xFF14B8A6)       // voice check
+        Icons.Rounded.Person -> androidx.compose.ui.graphics.Color(0xFF06B6D4)          // display name
+        Icons.Rounded.Mail -> androidx.compose.ui.graphics.Color(0xFF0EA5E9)
+        Icons.Rounded.Key -> androidx.compose.ui.graphics.Color(0xFF64748B)
+        Icons.Rounded.Visibility -> androidx.compose.ui.graphics.Color(0xFF10B981)      // online status
+        Icons.Rounded.Call -> androidx.compose.ui.graphics.Color(0xFF22C55E)
+        Icons.Rounded.Tag -> androidx.compose.ui.graphics.Color(0xFF6366F1)             // friend ID
+        Icons.Rounded.Block -> androidx.compose.ui.graphics.Color(0xFFEF4444)
+        Icons.Rounded.VolumeUp -> androidx.compose.ui.graphics.Color(0xFFA855F7)
+        Icons.Rounded.SupportAgent -> androidx.compose.ui.graphics.Color(0xFF3B82F6)
+        Icons.Rounded.Feedback -> androidx.compose.ui.graphics.Color(0xFFF97316)
+        Icons.Rounded.Shield -> androidx.compose.ui.graphics.Color(0xFF10B981)
+        Icons.Rounded.Groups -> androidx.compose.ui.graphics.Color(0xFF8B5CF6)
+        Icons.Rounded.PrivacyTip -> androidx.compose.ui.graphics.Color(0xFF0EA5E9)
+        Icons.Rounded.Gavel -> androidx.compose.ui.graphics.Color(0xFF64748B)
+        else -> androidx.compose.ui.graphics.Color(0xFF6C5CE7)
+    }
+}
+
 @Composable
 private fun SettingRow(
     icon: ImageVector,
@@ -369,15 +417,17 @@ private fun SettingRow(
         Modifier.fillMaxWidth().heightIn(min = 60.dp).clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // Each kind of setting has its own colour, so the list reads at a glance.
+        val c = settingColor(icon)
         Box(
-            Modifier.size(36.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer),
+            Modifier.size(38.dp).clip(RoundedCornerShape(12.dp)).background(androidx.compose.ui.graphics.Brush.linearGradient(listOf(c, c.copy(alpha = 0.72f)))),
             contentAlignment = Alignment.Center,
-        ) { Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp)) }
+        ) { Icon(icon, null, tint = androidx.compose.ui.graphics.Color.White, modifier = Modifier.size(21.dp)) }
         Spacer(Modifier.size(14.dp))
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
             value?.let {
-                Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
             }
         }
         if (trailing != null) trailing() else {

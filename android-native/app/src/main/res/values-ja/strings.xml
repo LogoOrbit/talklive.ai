@@ -398,6 +398,25 @@
     <string name="how_2_text">新しい誰かとチャット</string>
     <string name="how_3">いつでもスキップ</string>
     <string name="films_none">見つかりません。原題で試してください。</string>
+    <string name="auto_connect">自動接続</string>
+    <string name="tap_to_stop">検索中 · タップで停止</string>
+    <string name="tap_again_next">もう一度タップで次へ</string>
+    <string name="tap_again_end">もう一度タップで終了</string>
+    <string name="plus_card_pitch">すべてのフィルター、いいねした人、スキップ取り消し</string>
+    <string name="filters_interests_hint">好きなものが同じ人とマッチしやすくします。</string>
+    <string name="countries_title">国</string>
+    <string name="countries_only">限定</string>
+    <string name="countries_never">除外</string>
+    <string name="filters_countries_hint">無料：各リスト最大%1$dか国。</string>
+    <string name="filters_countries_hint_plus">国はいくつでも。</string>
+    <string name="filters_gender_hint">女性・男性の選択は💎 Plusで。</string>
+    <string name="clear">クリア</string>
+    <string name="clear_all">すべてクリア</string>
+    <string name="apply_filters_n">%1$d個のフィルターを適用</string>
+    <string name="cmp_free">無料</string>
+    <string name="cmp_calls">音声・テキストチャット無制限</string>
+    <string name="cmp_streaks">連続記録・パスポート・ゲーム</string>
+    <string name="cmp_countries">性別フィルターと国の無制限</string>
     <plurals name="visitors_today">
         <item quantity="other">今日の訪問者 %1$s人</item>
     </plurals>

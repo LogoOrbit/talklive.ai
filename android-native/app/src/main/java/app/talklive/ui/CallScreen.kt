@@ -1,5 +1,6 @@
 package app.talklive.ui
 
+import androidx.compose.foundation.layout.width
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -112,6 +113,9 @@ fun CallScreen(
     onMute: () -> Unit,
     onSpeaker: () -> Unit,
     onReport: (String) -> Unit,
+    autoConnect: Boolean = true,
+    onAutoConnect: (Boolean) -> Unit = {},
+    bands: () -> FloatArray = { FloatArray(0) },
 ) {
     var reporting by remember { mutableStateOf(false) }
     val phase = state.phase
@@ -121,53 +125,67 @@ fun CallScreen(
         else -> null
     }
 
-    Box(Modifier.fillMaxSize()) {
+    val tilt by app.talklive.ui.call.rememberTilt()
+    val live = phase is CallPhase.Connected
+    app.talklive.ui.call.CallBackdrop(connected = live, tilt = tilt) {
     Column(
-        Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(horizontal = 24.dp, vertical = 16.dp),
+        Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(horizontal = 20.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // Status: the one thing that is wrong right now, if anything.
+        // Top: leave, the one thing that is wrong (or the link quality), auto-connect and games.
         val banner = when {
             !connected -> Banner(Icons.Rounded.WifiOff, R.string.reconnecting, Amber)
             state.onHold -> Banner(Icons.Rounded.PauseCircle, R.string.on_hold, Amber)
             state.unstable -> Banner(Icons.Rounded.WifiOff, R.string.unstable, Amber)
             else -> null
         }
-        Box(Modifier.fillMaxWidth().height(40.dp), contentAlignment = Alignment.Center) {
-            if (onGames != null && phase is CallPhase.Connected) {
-                Surface(onClick = onGames, shape = CircleShape, color = MaterialTheme.colorScheme.surface, modifier = Modifier.align(Alignment.CenterEnd).size(40.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            app.talklive.ui.call.LeaveButton(onEnd)
+            Spacer(Modifier.width(8.dp))
+            Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                AnimatedContent(
+                    targetState = banner ?: if (live) QualityBanner(state.quality) else null,
+                    transitionSpec = { (fadeIn() + scaleIn(initialScale = 0.9f)) togetherWith fadeOut() },
+                    label = "banner",
+                ) { b -> if (b != null) StatusPill(b) }
+            }
+            if (onGames != null && live) {
+                Surface(onClick = onGames, shape = CircleShape, color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f), modifier = Modifier.size(40.dp)) {
                     Box(contentAlignment = Alignment.Center) { Icon(Icons.Rounded.SportsEsports, stringResource(R.string.games_title), tint = MaterialTheme.colorScheme.primary) }
                 }
+                Spacer(Modifier.width(8.dp))
             }
-            AnimatedContent(
-                targetState = banner ?: if (phase is CallPhase.Connected) QualityBanner(state.quality) else null,
-                transitionSpec = { (fadeIn() + scaleIn(initialScale = 0.9f)) togetherWith fadeOut() },
-                label = "banner",
-            ) { b -> if (b != null) StatusPill(b) }
         }
+        Spacer(Modifier.height(10.dp))
+        app.talklive.ui.call.AutoConnectToggle(autoConnect, onAutoConnect)
 
         Spacer(Modifier.weight(1f))
+        // The person, on a slightly faster layer than the background: a gentle parallax.
         AnimatedContent(
             targetState = partner?.clientId,
             transitionSpec = {
-                (scaleIn(spring(dampingRatio = 0.6f, stiffness = 300f), initialScale = 0.6f) + fadeIn()) togetherWith
-                    (scaleOut(targetScale = 0.8f) + fadeOut(tween(150)))
+                (scaleIn(spring(dampingRatio = 0.55f, stiffness = 260f), initialScale = 0.5f) + fadeIn(tween(300))) togetherWith
+                    (scaleOut(targetScale = 1.2f) + fadeOut(tween(180)))
             },
             label = "who",
+            modifier = Modifier.graphicsLayer { translationX = tilt.x * 22f; translationY = tilt.y * 14f },
         ) { id ->
             if (id == null || partner == null) {
                 Radar { AnimalAvatar(myAnimal, null, 112.dp) }
             } else {
-                SpeakingAvatar(partner, active = phase is CallPhase.Connected, level = remoteLevel)
+                app.talklive.ui.call.SpectrumRing(bands = bands, active = live, size = 260.dp, inner = 150.dp) {
+                    SpeakingAvatar(partner, active = live, level = remoteLevel)
+                }
             }
         }
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(20.dp))
 
         AnimatedContent(
             targetState = phase,
             contentKey = { it::class },
             transitionSpec = { fadeIn(tween(250)) togetherWith fadeOut(tween(150)) },
             label = "text",
+            modifier = Modifier.graphicsLayer { translationX = tilt.x * 10f },
         ) { p ->
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 when (p) {
@@ -182,7 +200,7 @@ fun CallScreen(
                     }
                     is CallPhase.Connected -> {
                         PartnerInfo(p.partner)
-                        Spacer(Modifier.height(6.dp))
+                        Spacer(Modifier.height(4.dp))
                         Elapsed(p.sinceMs)
                         if (p.partner.interests.isNotEmpty()) {
                             Spacer(Modifier.height(10.dp))
@@ -208,54 +226,37 @@ fun CallScreen(
                 }
             }
         }
-        Spacer(Modifier.weight(1.3f))
+        Spacer(Modifier.weight(1.2f))
 
-        AnimatedVisibility(phase is CallPhase.Connected, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
+        AnimatedVisibility(live, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
             ReactionBar(heartSent = state.heartSent, onReact = onReact)
         }
-        Spacer(Modifier.height(16.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.Top) {
-            Control(
-                icon = if (state.muted) Icons.Rounded.MicOff else Icons.Rounded.Mic,
-                label = stringResource(if (state.muted) R.string.unmute else R.string.mute),
-                active = state.muted,
-                onClick = onMute,
-            )
-            Control(
-                icon = if (state.speakerOn) Icons.AutoMirrored.Rounded.VolumeUp else Icons.Rounded.Hearing,
-                label = stringResource(R.string.speaker),
-                active = state.speakerOn,
-                onClick = onSpeaker,
-            )
-            Control(
-                icon = when (friendStatus) {
-                    FriendStatus.Friends -> Icons.Rounded.HowToReg
-                    FriendStatus.Requested -> Icons.Rounded.HourglassTop
-                    FriendStatus.None -> Icons.Rounded.PersonAdd
-                },
-                label = stringResource(
-                    when (friendStatus) {
-                        FriendStatus.Friends -> R.string.friends_label
-                        FriendStatus.Requested -> R.string.requested
-                        FriendStatus.None -> R.string.add_friend
-                    },
-                ),
-                active = friendStatus != FriendStatus.None,
-                enabled = partner != null && friendStatus == FriendStatus.None,
-                onClick = onAddFriend,
-            )
-            Control(
-                icon = Icons.Rounded.Flag,
-                label = stringResource(R.string.report),
-                enabled = partner != null,
-                onClick = { reporting = true },
-            )
+        Spacer(Modifier.height(14.dp))
+        // A glass bar of the small controls; only when someone is there to use them on.
+        AnimatedVisibility(partner != null, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
+            Row(
+                Modifier.clip(CircleShape).background(MaterialTheme.colorScheme.surface.copy(alpha = 0.75f)).padding(horizontal = 10.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                app.talklive.ui.call.BarButton(if (state.muted) Icons.Rounded.MicOff else Icons.Rounded.Mic, stringResource(if (state.muted) R.string.unmute else R.string.mute), active = state.muted, onClick = onMute)
+                app.talklive.ui.call.BarButton(if (state.speakerOn) Icons.AutoMirrored.Rounded.VolumeUp else Icons.Rounded.Hearing, stringResource(R.string.speaker), active = state.speakerOn, onClick = onSpeaker)
+                app.talklive.ui.call.BarButton(
+                    when (friendStatus) { FriendStatus.Friends -> Icons.Rounded.HowToReg; FriendStatus.Requested -> Icons.Rounded.HourglassTop; FriendStatus.None -> Icons.Rounded.PersonAdd },
+                    stringResource(R.string.add_friend), active = friendStatus != FriendStatus.None,
+                    enabled = live && friendStatus == FriendStatus.None, onClick = onAddFriend,
+                )
+                app.talklive.ui.call.BarButton(Icons.Rounded.Flag, stringResource(R.string.report), tint = Danger, enabled = partner != null, onClick = { reporting = true })
+            }
         }
-        Spacer(Modifier.height(24.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            Control(Icons.Rounded.CallEnd, stringResource(R.string.end), container = Danger, size = 72, onClick = onEnd)
-            Control(Icons.Rounded.SkipNext, stringResource(R.string.next), container = BrandTeal, size = 72, onClick = onNext)
-        }
+        Spacer(Modifier.height(18.dp))
+        app.talklive.ui.call.MainCallButton(
+            phaseLive = live,
+            connecting = phase is CallPhase.Connecting,
+            autoConnect = autoConnect,
+            onNext = onNext,
+            onEnd = onEnd,
+        )
+        Spacer(Modifier.height(6.dp))
     }
 
     FloatingReactions(reactions)
@@ -445,11 +446,11 @@ private fun IcebreakerCard(key: String, draw: () -> app.talklive.data.Icebreaker
 
 @Composable
 private fun Title(text: String) =
-    Text(text, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onBackground)
+    Text(text, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onBackground, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
 
 @Composable
 private fun Subtitle(text: String) =
-    Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
 
 @Composable
 private fun Elapsed(sinceMs: Long) {

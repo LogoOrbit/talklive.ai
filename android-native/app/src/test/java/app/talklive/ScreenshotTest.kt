@@ -214,6 +214,10 @@ class ScreenshotTest {
             )
         }
     }
+    @Test fun callLive() = shot("33_call_live") {
+        val bands = FloatArray(28) { i -> (0.25f + 0.6f * kotlin.math.sin(i / 3.0).toFloat().let { it * it }).coerceIn(0f, 1f) }
+        CallScreen(CallState(phase = CallPhase.Connected(partner, now)), true, "fox", { 0.3f }, onNext = {}, onEnd = {}, onMute = {}, onSpeaker = {}, onReport = {}, bands = { bands })
+    }
     @Test fun plus() = shot("30_plus") { plusShot()() }
     @Config(qualifiers = "de-w400dp-h860dp-xxhdpi")
     @Test fun plusGerman() = shot("31_plus_de") { plusShot()() }

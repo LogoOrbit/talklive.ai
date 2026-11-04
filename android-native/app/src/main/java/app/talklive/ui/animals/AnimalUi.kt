@@ -1,5 +1,8 @@
 package app.talklive.ui.animals
 
+import androidx.compose.foundation.layout.Row
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
 import app.talklive.R
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -92,18 +95,32 @@ fun AnimalGrid(
     contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
     val haptics = LocalHapticFeedback.current
+    // Two families, two tabs, so the characters are never hidden below the animals.
+    var tab by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(if (selected?.startsWith("c:") == true) 1 else 0) }
+    Column(modifier) {
+    Row(
+        Modifier.fillMaxWidth().padding(contentPadding).padding(bottom = 4.dp).clip(RoundedCornerShape(50)).background(MaterialTheme.colorScheme.surface).padding(4.dp),
+    ) {
+        listOf(R.string.avatars_animals, R.string.avatars_characters).forEachIndexed { i, label ->
+            val on = tab == i
+            Box(
+                Modifier.weight(1f).clip(RoundedCornerShape(50))
+                    .background(if (on) app.talklive.ui.components.BrandGradient else androidx.compose.ui.graphics.SolidColor(Color.Transparent))
+                    .clickable { tab = i }.padding(vertical = 10.dp),
+                contentAlignment = Alignment.Center,
+            ) { Text(stringResource(label), style = MaterialTheme.typography.labelLarge, color = if (on) Color.White else MaterialTheme.colorScheme.onSurfaceVariant) }
+        }
+    }
     LazyVerticalGrid(
         columns = GridCells.Adaptive(76.dp),
-        modifier = modifier,
+        modifier = Modifier.weight(1f, fill = false),
         contentPadding = contentPadding,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         // Spirit animals, then the website's movie characters.
-        for ((title, list) in listOf(R.string.avatars_animals to Animals, R.string.avatars_characters to Characters)) {
-            item(span = { GridItemSpan(maxLineSpan) }, key = "h$title") {
-                Text(stringResource(title).uppercase(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp, top = 8.dp))
-            }
+        run {
+            val list = if (tab == 0) Animals else Characters
             items(list, key = { it.id }) { a ->
             val on = a.id == selected
             val scale by animateFloatAsState(if (on) 1.06f else 1f, spring(dampingRatio = 0.5f, stiffness = 500f), label = "s")
@@ -132,6 +149,7 @@ fun AnimalGrid(
         }
     }
 }
+    }
 
 /** Selected animal's name and trait, animating as the choice changes. */
 @Composable

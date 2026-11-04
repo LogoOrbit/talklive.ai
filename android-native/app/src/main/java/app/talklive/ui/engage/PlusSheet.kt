@@ -1,5 +1,12 @@
 package app.talklive.ui.engage
 
+import androidx.compose.foundation.clickable
+
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.PaddingValues
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
@@ -145,6 +152,12 @@ private val PERKS = listOf(
     Perk(Icons.Rounded.Verified, R.string.plus_perk_badge, R.string.plus_perk_badge_body),
 )
 
+private val Gold1 = Color(0xFFFFE29A)
+private val Gold2 = Color(0xFFF2C14E)
+private val Gold3 = Color(0xFFC8912E)
+private val GoldBrush = Brush.linearGradient(listOf(Gold1, Gold2, Gold3))
+private val PlusBg = Color(0xFF07090F)
+
 /** The page itself, without Play, so it can be rendered in tests. */
 @Composable
 fun PlusContent(
@@ -155,109 +168,228 @@ fun PlusContent(
     val accents = LocalAccents.current
     val still = app.talklive.ui.theme.LocalReduceMotion.current
     var picked by remember(state) { mutableStateOf((state as? BillingState.Ready)?.plans?.lastOrNull()) }
-    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        // A slow glow behind the hero, like the website's background.
-        val drift = if (still) 0.4f else rememberInfiniteTransition(label = "glow").animateFloat(0f, 1f, infiniteRepeatable(tween(6000, easing = LinearEasing), RepeatMode.Reverse), label = "drift").value
+    Box(Modifier.fillMaxSize().background(PlusBg)) {
+        // Aurora: gold and violet light drifting behind everything.
+        val drift = if (still) 0.4f else rememberInfiniteTransition(label = "aurora").animateFloat(0f, 1f, infiniteRepeatable(tween(7000, easing = LinearEasing), RepeatMode.Reverse), label = "d").value
         Box(
-            Modifier.fillMaxWidth().height(420.dp).background(
-                Brush.radialGradient(
-                    listOf(accents.a.copy(alpha = 0.45f), accents.b.copy(alpha = 0.18f), Color.Transparent),
-                    center = androidx.compose.ui.geometry.Offset(300f + 500f * drift, 120f),
-                    radius = 900f,
-                ),
-            ),
+            Modifier.fillMaxWidth().height(520.dp).drawBehind {
+                val w = size.width; val h = size.height
+                val c1 = Offset(w * (0.2f + 0.5f * drift), h * 0.15f)
+                val c2 = Offset(w * (0.9f - 0.4f * drift), h * 0.35f)
+                drawCircle(Brush.radialGradient(listOf(Gold2.copy(alpha = 0.26f), Color.Transparent), center = c1, radius = w * 0.8f), radius = w * 0.8f, center = c1)
+                drawCircle(Brush.radialGradient(listOf(accents.a.copy(alpha = 0.34f), Color.Transparent), center = c2, radius = w * 0.75f), radius = w * 0.75f, center = c2)
+            },
         )
         Column(
-            Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 180.dp),
+            Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).padding(bottom = 190.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                IconButton(onClick = onClose) { Icon(Icons.Rounded.Close, stringResource(R.string.cancel), tint = MaterialTheme.colorScheme.onBackground) }
+            Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), horizontalArrangement = Arrangement.End) {
+                IconButton(onClick = onClose) { Icon(Icons.Rounded.Close, stringResource(R.string.cancel), tint = Color.White.copy(alpha = 0.8f)) }
             }
             Gem()
-            Spacer(Modifier.height(14.dp))
-            Text(stringResource(R.string.plus), style = MaterialTheme.typography.displaySmall, color = MaterialTheme.colorScheme.onBackground)
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(18.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("TalkLive", style = MaterialTheme.typography.displaySmall, color = Color.White)
+                Spacer(Modifier.width(10.dp))
+                Text("PLUS", style = MaterialTheme.typography.displaySmall.copy(brush = GoldBrush), fontWeight = FontWeight.Black)
+            }
+            Spacer(Modifier.height(8.dp))
             Text(
                 stringResource(if (premium.active) R.string.plus_hero_active else R.string.plus_hero),
-                style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.bodyLarge, color = Color.White.copy(alpha = 0.72f), textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 28.dp),
             )
             Spacer(Modifier.height(24.dp))
-            Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(vertical = 8.dp)) {
-                    PERKS.forEach { p ->
-                        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Box(Modifier.size(42.dp).clip(RoundedCornerShape(14.dp)).background(BrandGradient), contentAlignment = Alignment.Center) {
-                                Icon(p.icon, null, tint = Color.White, modifier = Modifier.size(22.dp))
-                            }
-                            Spacer(Modifier.width(14.dp))
+            FeatureCarousel()
+            Spacer(Modifier.height(24.dp))
+            CompareTable(Modifier.padding(horizontal = 20.dp))
+            Spacer(Modifier.height(24.dp))
+            Column(Modifier.padding(horizontal = 20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                when {
+                    premium.active -> Text(
+                        if (premium.expiresAt != null) stringResource(R.string.plus_until, java.text.DateFormat.getDateInstance().format(java.util.Date(premium.expiresAt)))
+                        else stringResource(R.string.plus_active),
+                        style = MaterialTheme.typography.titleMedium.copy(brush = GoldBrush),
+                    )
+                    !signedIn -> Text(stringResource(R.string.plus_sign_in), style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.7f), textAlign = TextAlign.Center)
+                    state is BillingState.Loading -> CircularProgressIndicator(Modifier.size(28.dp), color = Gold2)
+                    state is BillingState.Unavailable -> Surface(shape = RoundedCornerShape(18.dp), color = Color.White.copy(alpha = 0.06f)) {
+                        Text(stringResource(R.string.plus_unavailable), style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.75f), textAlign = TextAlign.Center, modifier = Modifier.padding(16.dp))
+                    }
+                    state is BillingState.Ready -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        state.plans.asReversed().forEach { plan -> PlanCard(plan, state.plans, plan == picked) { picked = plan } }
+                    }
+                }
+                if (onInvite != null && !premium.active) {
+                    Spacer(Modifier.height(16.dp))
+                    Surface(onClick = onInvite, shape = RoundedCornerShape(18.dp), color = Color.White.copy(alpha = 0.06f), modifier = Modifier.fillMaxWidth()) {
+                        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text("🎁", fontSize = 26.sp)
+                            Spacer(Modifier.width(12.dp))
                             Column(Modifier.weight(1f)) {
-                                Text(stringResource(p.title), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
-                                Text(stringResource(p.body), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(stringResource(R.string.plus_earn_title), style = MaterialTheme.typography.titleMedium, color = Color.White)
+                                Text(stringResource(R.string.plus_earn_body), style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.7f))
                             }
                         }
                     }
                 }
+                if (signedIn && !premium.active) TextButton(onClick = onRestore, modifier = Modifier.padding(top = 8.dp)) { Text(stringResource(R.string.plus_restore), color = Gold1) }
             }
-            Spacer(Modifier.height(20.dp))
-            when {
-                premium.active -> Text(
-                    if (premium.expiresAt != null) stringResource(R.string.plus_until, java.text.DateFormat.getDateInstance().format(java.util.Date(premium.expiresAt)))
-                    else stringResource(R.string.plus_active),
-                    style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary,
-                )
-                !signedIn -> Text(stringResource(R.string.plus_sign_in), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
-                state is BillingState.Loading -> CircularProgressIndicator(Modifier.size(28.dp))
-                state is BillingState.Unavailable -> Text(stringResource(R.string.plus_unavailable), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
-                state is BillingState.Ready -> Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    state.plans.asReversed().forEach { plan -> PlanCard(plan, state.plans, plan == picked) { picked = plan } }
-                }
-            }
-            if (onInvite != null && !premium.active) {
-                Spacer(Modifier.height(16.dp))
-                Surface(onClick = onInvite, shape = RoundedCornerShape(18.dp), color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.fillMaxWidth()) {
-                    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text("🎁", fontSize = 26.sp)
-                        Spacer(Modifier.width(12.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text(stringResource(R.string.plus_earn_title), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
-                            Text(stringResource(R.string.plus_earn_body), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                }
-            }
-            if (signedIn) TextButton(onClick = onRestore, modifier = Modifier.padding(top = 8.dp)) { Text(stringResource(R.string.plus_restore)) }
         }
 
-        // The action stays in reach at the bottom.
-        Column(
+        // The action, pinned. Hidden when nothing can be bought on this phone.
+        val canBuy = signedIn && !premium.active && state is BillingState.Ready
+        if (premium.active || !signedIn || canBuy || onFreeOption != null) Column(
             Modifier.align(Alignment.BottomCenter).fillMaxWidth()
-                .background(Brush.verticalGradient(listOf(Color.Transparent, MaterialTheme.colorScheme.background, MaterialTheme.colorScheme.background)))
-                .navigationBarsPadding().padding(horizontal = 20.dp).padding(top = 28.dp, bottom = 12.dp),
+                .background(Brush.verticalGradient(listOf(Color.Transparent, PlusBg, PlusBg)))
+                .navigationBarsPadding().padding(horizontal = 20.dp).padding(top = 30.dp, bottom = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             when {
-                premium.active -> if (premium.play) PrimaryButton(stringResource(R.string.plus_manage), onClick = onManage) else PrimaryButton(stringResource(R.string.ok), onClick = onClose)
-                !signedIn -> PrimaryButton(stringResource(R.string.sign_in_or_create), onClick = onSignIn)
-                else -> {
+                premium.active -> GoldButton(stringResource(if (premium.play) R.string.plus_manage else R.string.ok), busy = false, onClick = if (premium.play) onManage else onClose)
+                !signedIn -> GoldButton(stringResource(R.string.sign_in_or_create), busy = false, onClick = onSignIn)
+                canBuy -> {
                     val plan = picked
-                    val pulse = if (still) 1f else rememberInfiniteTransition(label = "cta").animateFloat(1f, 1.03f, infiniteRepeatable(tween(900, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "pulse").value
-                    PrimaryButton(
+                    GoldButton(
                         when { plan == null -> stringResource(R.string.plus_subscribe); plan.trial != null -> stringResource(R.string.plus_start_trial); else -> stringResource(R.string.plus_subscribe_price, plan.price) },
-                        onClick = { plan?.let(onBuy) },
-                        enabled = plan != null,
-                        loading = busy,
-                        modifier = Modifier.scale(if (plan != null) pulse else 1f),
+                        busy = busy, onClick = { plan?.let(onBuy) },
                     )
-                    Text(stringResource(R.string.plus_terms), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp))
+                    Text(stringResource(R.string.plus_terms), style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.55f), textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp))
                 }
             }
-            onFreeOption?.let { (label, go) -> TextButton(onClick = go) { Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant) } }
+            onFreeOption?.let { (label, go) -> TextButton(onClick = go) { Text(label, color = Color.White.copy(alpha = 0.7f)) } }
         }
     }
 }
 
-/** A gently floating, turning gem in the brand gradient. */
+/** Gold, with a slow shine passing across it. */
+@Composable
+private fun GoldButton(text: String, busy: Boolean, onClick: () -> Unit) {
+    val still = app.talklive.ui.theme.LocalReduceMotion.current
+    val shine = if (still) -9f else rememberInfiniteTransition(label = "shine").animateFloat(-0.4f, 1.4f, infiniteRepeatable(tween(2600, easing = LinearEasing)), label = "x").value
+    Box(
+        Modifier.fillMaxWidth().height(58.dp).clip(CircleShape).background(GoldBrush)
+            .drawBehind {
+                if (shine > -1f) drawRect(Brush.linearGradient(listOf(Color.Transparent, Color.White.copy(alpha = 0.45f), Color.Transparent), start = Offset(size.width * shine - 80f, 0f), end = Offset(size.width * shine + 80f, size.height)))
+            }
+            .clickable(enabled = !busy, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (busy) CircularProgressIndicator(Modifier.size(24.dp), color = Color(0xFF3A2A06), strokeWidth = 2.5.dp)
+        else Text(text, color = Color(0xFF2B1D00), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.ExtraBold)
+    }
+}
+
+/** Big swipeable cards, each with a small live preview of what Plus does. */
+@Composable
+private fun FeatureCarousel() {
+    val pager = androidx.compose.foundation.pager.rememberPagerState { PERKS.size }
+    val still = app.talklive.ui.theme.LocalReduceMotion.current
+    LaunchedEffect(pager, still) {
+        if (still) return@LaunchedEffect
+        while (true) { kotlinx.coroutines.delay(3800); pager.animateScrollToPage((pager.currentPage + 1) % PERKS.size) }
+    }
+    androidx.compose.foundation.pager.HorizontalPager(state = pager, contentPadding = PaddingValues(horizontal = 36.dp), pageSpacing = 12.dp) { page ->
+        val p = PERKS[page]
+        Surface(
+            shape = RoundedCornerShape(28.dp),
+            color = Color.White.copy(alpha = 0.06f),
+            border = BorderStroke(1.dp, Brush.linearGradient(listOf(Gold1.copy(alpha = 0.6f), Color.White.copy(alpha = 0.05f)))),
+            modifier = Modifier.fillMaxWidth().height(250.dp),
+        ) {
+            Column(Modifier.padding(20.dp)) {
+                Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) { PerkPreview(page) }
+                Spacer(Modifier.height(12.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(30.dp).clip(RoundedCornerShape(10.dp)).background(GoldBrush), contentAlignment = Alignment.Center) {
+                        Icon(p.icon, null, tint = Color(0xFF2B1D00), modifier = Modifier.size(18.dp))
+                    }
+                    Spacer(Modifier.width(10.dp))
+                    Text(stringResource(p.title), style = MaterialTheme.typography.titleMedium, color = Color.White)
+                }
+                Text(stringResource(p.body), style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.7f), modifier = Modifier.padding(top = 4.dp), maxLines = 2)
+            }
+        }
+    }
+    Row(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        repeat(PERKS.size) { i ->
+            val on = pager.currentPage == i
+            val w by androidx.compose.animation.core.animateDpAsState(if (on) 20.dp else 6.dp, label = "dot")
+            Box(Modifier.width(w).height(6.dp).clip(CircleShape).background(if (on) GoldBrush else SolidColor(Color.White.copy(alpha = 0.25f))))
+        }
+    }
+}
+
+/** A tiny mock of each perk, drawn with the app's own pieces. */
+@Composable
+private fun PerkPreview(page: Int) {
+    @Composable fun chip(t: String, on: Boolean) = Text(
+        t, color = if (on) Color(0xFF2B1D00) else Color.White, style = MaterialTheme.typography.labelLarge,
+        modifier = Modifier.clip(CircleShape).background(if (on) GoldBrush else SolidColor(Color.White.copy(alpha = 0.1f))).padding(horizontal = 12.dp, vertical = 7.dp),
+    )
+    when (page) {
+        0 -> Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { chip(stringResource(R.string.anyone), false); chip(stringResource(R.string.women), true); chip(stringResource(R.string.men), false) }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { chip("🇯🇵", true); chip("🇧🇷", true); chip("🇰🇷", true); chip("+12", false) }
+        }
+        1 -> Row(verticalAlignment = Alignment.CenterVertically) {
+            listOf("fox", "panda", "owl", "cat").forEachIndexed { i, a ->
+                Box(Modifier.offset(x = (-14 * i).dp).clip(CircleShape).background(PlusBg).padding(3.dp)) { app.talklive.ui.animals.AnimalAvatar(a, null, 54.dp) }
+            }
+            Text("❤️", fontSize = 30.sp, modifier = Modifier.offset(x = (-30).dp))
+        }
+        2 -> Surface(shape = RoundedCornerShape(14.dp), color = Color(0xFF1B2133)) {
+            Row(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(R.string.skipped_name, "Kenji"), color = Color.White, style = MaterialTheme.typography.bodyMedium)
+                Spacer(Modifier.width(18.dp))
+                Text(stringResource(R.string.undo).uppercase(), style = MaterialTheme.typography.labelLarge.copy(brush = GoldBrush), fontWeight = FontWeight.Bold)
+            }
+        }
+        3 -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Box(Modifier.size(54.dp).clip(CircleShape).background(GoldBrush), contentAlignment = Alignment.Center) { Text("⚡", fontSize = 26.sp) }
+            repeat(4) { Box(Modifier.size((40 - it * 6).dp).clip(CircleShape).background(Color.White.copy(alpha = 0.12f - it * 0.02f))) }
+        }
+        else -> Row(verticalAlignment = Alignment.CenterVertically) {
+            app.talklive.ui.animals.AnimalAvatar("lion", null, 56.dp)
+            Spacer(Modifier.width(12.dp))
+            Text("Sam", style = MaterialTheme.typography.headlineSmall, color = Color.White)
+            Spacer(Modifier.width(6.dp))
+            Text("💎", fontSize = 26.sp)
+        }
+    }
+}
+
+/** Free vs Plus, row by row. */
+@Composable
+private fun CompareTable(modifier: Modifier = Modifier) {
+    val rows = listOf(
+        R.string.cmp_calls to true,
+        R.string.cmp_streaks to true,
+        R.string.cmp_countries to false,
+        R.string.plus_perk_likes to false,
+        R.string.plus_perk_undo to false,
+        R.string.plus_perk_queue to false,
+    )
+    Surface(shape = RoundedCornerShape(24.dp), color = Color.White.copy(alpha = 0.05f), modifier = modifier.fillMaxWidth()) {
+        Column(Modifier.padding(vertical = 8.dp)) {
+            Row(Modifier.padding(horizontal = 18.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Spacer(Modifier.weight(1f))
+                Text(stringResource(R.string.cmp_free), color = Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(56.dp), textAlign = TextAlign.Center)
+                Text("PLUS", style = MaterialTheme.typography.labelLarge.copy(brush = GoldBrush), fontWeight = FontWeight.Black, modifier = Modifier.width(56.dp), textAlign = TextAlign.Center)
+            }
+            rows.forEach { (label, free) ->
+                Row(Modifier.padding(horizontal = 18.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(label), color = Color.White, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                    Text(if (free) "✓" else "—", color = Color.White.copy(alpha = if (free) 0.8f else 0.3f), modifier = Modifier.width(56.dp), textAlign = TextAlign.Center)
+                    Text("✓", style = MaterialTheme.typography.titleMedium.copy(brush = GoldBrush), fontWeight = FontWeight.Bold, modifier = Modifier.width(56.dp), textAlign = TextAlign.Center)
+                }
+            }
+        }
+    }
+}
+
+/** A floating gem in a gold frame. */
 @Composable
 private fun Gem() {
     var float = 0f
@@ -265,17 +397,18 @@ private fun Gem() {
     if (!app.talklive.ui.theme.LocalReduceMotion.current) {
         val t = rememberInfiniteTransition(label = "gem")
         float = t.animateFloat(-6f, 6f, infiniteRepeatable(tween(1800, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "float").value
-        tilt = t.animateFloat(-6f, 6f, infiniteRepeatable(tween(2600, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "tilt").value
+        tilt = t.animateFloat(-5f, 5f, infiniteRepeatable(tween(2600, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "tilt").value
     }
     Box(
-        Modifier.padding(top = (12 + float).dp).size(96.dp).rotate(tilt).clip(RoundedCornerShape(30.dp)).background(BrandGradient),
+        Modifier.padding(top = 4.dp).offset(y = float.dp).size(104.dp).rotate(tilt).clip(RoundedCornerShape(32.dp)).background(GoldBrush).padding(3.dp)
+            .clip(RoundedCornerShape(29.dp)).background(Color(0xFF111522)),
         contentAlignment = Alignment.Center,
-    ) { Text("💎", fontSize = 46.sp) }
+    ) { Text("💎", fontSize = 52.sp) }
 }
 
 @Composable
 private fun PlanCard(plan: PlusPlan, all: List<PlusPlan>, selected: Boolean, onClick: () -> Unit) {
-    val border by animateColorAsState(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant, label = "plan")
+    val border by animateColorAsState(if (selected) Gold2 else Color.White.copy(alpha = 0.12f), label = "plan")
     val days = PlayBilling.periodDays(plan.period)
     // "Save 40%" on the longer plan against the shortest one, when Play's prices allow it.
     val saving = all.firstOrNull()?.takeIf { it != plan }?.let { short ->
@@ -290,29 +423,29 @@ private fun PlanCard(plan: PlusPlan, all: List<PlusPlan>, selected: Boolean, onC
             onClick = onClick,
             shape = RoundedCornerShape(20.dp),
             border = BorderStroke(if (selected) 2.dp else 1.dp, border),
-            color = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.10f) else MaterialTheme.colorScheme.surface,
+            color = if (selected) Gold2.copy(alpha = 0.10f) else Color.White.copy(alpha = 0.05f),
             modifier = Modifier.fillMaxWidth().padding(top = if (saving != null) 10.dp else 0.dp),
         ) {
             Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
                 Box(
-                    Modifier.size(22.dp).clip(CircleShape).background(if (selected) BrandGradient else Brush.linearGradient(listOf(MaterialTheme.colorScheme.outlineVariant, MaterialTheme.colorScheme.outlineVariant))),
+                    Modifier.size(22.dp).clip(CircleShape).background(if (selected) GoldBrush else SolidColor(Color.White.copy(alpha = 0.2f))),
                     contentAlignment = Alignment.Center,
                 ) { if (selected) Box(Modifier.size(8.dp).clip(CircleShape).background(Color.White)) }
                 Spacer(Modifier.width(14.dp))
                 Column(Modifier.weight(1f)) {
                     Text(
                         stringResource(if (days >= 360) R.string.plus_yearly else R.string.plus_monthly),
-                        style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface,
+                        style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White,
                     )
-                    plan.trial?.let { Text(stringResource(R.string.plus_trial, PlayBilling.periodDays(it)), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary) }
+                    plan.trial?.let { Text(stringResource(R.string.plus_trial, PlayBilling.periodDays(it)), style = MaterialTheme.typography.labelMedium, color = Gold1) }
                 }
-                Text(plan.price, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
+                Text(plan.price, style = MaterialTheme.typography.titleLarge, color = Color.White)
             }
         }
         saving?.let {
             Text(
-                stringResource(R.string.plus_save, it), color = Color.White, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold,
-                modifier = Modifier.align(Alignment.TopEnd).padding(end = 16.dp).clip(CircleShape).background(BrandGradient).padding(horizontal = 10.dp, vertical = 4.dp),
+                stringResource(R.string.plus_save, it), color = Color(0xFF2B1D00), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold,
+                modifier = Modifier.align(Alignment.TopEnd).padding(end = 16.dp).clip(CircleShape).background(GoldBrush).padding(horizontal = 10.dp, vertical = 4.dp),
             )
         }
     }

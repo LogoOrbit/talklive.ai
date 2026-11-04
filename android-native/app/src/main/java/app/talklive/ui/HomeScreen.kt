@@ -59,6 +59,7 @@ import app.talklive.ui.theme.BrandTeal
 import app.talklive.ui.theme.BrandViolet
 import app.talklive.ui.theme.Success
 import java.text.NumberFormat
+import androidx.compose.foundation.border
 import androidx.compose.ui.unit.sp
 
 @Composable
@@ -159,22 +160,33 @@ fun HomeScreen(
     }
 }
 
-/** Three plain steps, so anyone knows what happens when they tap Start. */
+/** Three plain steps, so anyone knows what happens: numbers on a thin line, nothing that looks tappable. */
 @Composable
 private fun HowItWorks(text: Boolean) {
     val steps = listOf(
-        "👆" to stringResource(R.string.how_1),
-        (if (text) "💬" else "🎙️") to stringResource(if (text) R.string.how_2_text else R.string.how_2),
-        "⏭️" to stringResource(R.string.how_3),
+        stringResource(R.string.how_1),
+        stringResource(if (text) R.string.how_2_text else R.string.how_2),
+        stringResource(R.string.how_3),
     )
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        steps.forEach { (e, label) ->
-            Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.surface, modifier = Modifier.weight(1f)) {
-                Column(Modifier.padding(vertical = 12.dp, horizontal = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(e, fontSize = 22.sp)
-                    Spacer(Modifier.height(6.dp))
-                    Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center, maxLines = 2)
+    val accents = app.talklive.ui.theme.LocalAccents.current
+    val line = MaterialTheme.colorScheme.outline
+    Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.Top) {
+        steps.forEachIndexed { i, label ->
+            Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(Modifier.fillMaxWidth().height(24.dp), contentAlignment = Alignment.Center) {
+                    // The connector runs behind the numbers.
+                    Row(Modifier.fillMaxWidth()) {
+                        Box(Modifier.weight(1f).height(1.dp).align(Alignment.CenterVertically).background(if (i == 0) androidx.compose.ui.graphics.Color.Transparent else line))
+                        Box(Modifier.weight(1f).height(1.dp).align(Alignment.CenterVertically).background(if (i == steps.lastIndex) androidx.compose.ui.graphics.Color.Transparent else line))
+                    }
+                    Box(
+                        Modifier.size(24.dp).clip(CircleShape).background(MaterialTheme.colorScheme.background)
+                            .border(1.5.dp, androidx.compose.ui.graphics.Brush.linearGradient(listOf(accents.a, accents.b)), CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) { Text("${i + 1}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onBackground) }
                 }
+                Spacer(Modifier.height(6.dp))
+                Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center, maxLines = 2)
             }
         }
     }

@@ -28,6 +28,8 @@ class RtcSession(
     factory: PeerConnectionFactory,
     ice: IceConfig,
     private val listener: Listener,
+    /** Live bands of the remote voice; shared so the screen keeps one flow across calls. */
+    val spectrum: Spectrum = Spectrum(),
 ) {
     interface Listener {
         fun onLocalCandidate(candidate: IceCandidate)
@@ -44,6 +46,7 @@ class RtcSession(
     )
     private val localTrack: AudioTrack = factory.createAudioTrack("mic", audioSource)
     private val pendingRemote = mutableListOf<IceCandidate>()
+    private var remoteAudio: AudioTrack? = null
 
     private val pc: PeerConnection = requireNotNull(
         factory.createPeerConnection(
@@ -66,7 +69,10 @@ class RtcSession(
                 override fun onRemoveStream(s: MediaStream) {}
                 override fun onDataChannel(d: DataChannel) {}
                 override fun onRenegotiationNeeded() {}
-                override fun onAddTrack(r: RtpReceiver, s: Array<out MediaStream>) {}
+                override fun onAddTrack(r: RtpReceiver, s: Array<out MediaStream>) {
+                    // The other person's voice feeds the live spectrum on the call screen.
+                    (r.track() as? AudioTrack)?.let { t -> runCatching { t.addSink(spectrum); remoteAudio = t } }
+                }
             },
         ),
     ) { "Could not create peer connection" }
@@ -132,6 +138,8 @@ class RtcSession(
     }
 
     fun close() {
+        runCatching { remoteAudio?.removeSink(spectrum) }
+        spectrum.reset()
         runCatching { pc.dispose() }
         runCatching { audioSource.dispose() }
     }

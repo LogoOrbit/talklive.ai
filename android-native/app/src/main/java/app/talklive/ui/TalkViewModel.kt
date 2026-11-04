@@ -39,6 +39,9 @@ class TalkViewModel @Inject constructor(
     val animal = identity.animalFlow
     val state = calls.state
     val remoteLevel = calls.remoteLevel
+    val voiceBands = calls.voiceBands
+    val autoConnect = calls.autoConnect
+    fun setAutoConnect(on: Boolean) = calls.setAutoConnect(on)
     val connected = socket.connected
     val visitorCount = socket.visitorCount
     val warnings = socket.warnings

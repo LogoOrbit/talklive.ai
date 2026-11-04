@@ -1,5 +1,7 @@
 package app.talklive.ui.engage
 
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.border
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.animateContentSize
@@ -222,7 +224,11 @@ fun FilmsSheet(vm: EngageViewModel, current: List<Film>, onDismiss: () -> Unit) 
 
 private fun Modifier.matchParentSizeCompat() = this.fillMaxWidth().aspectRatio(2f / 3f)
 
-/** Match filters: interests and countries for everyone, gender with Plus. */
+/**
+ * Match filters, in three plain cards: what you are into, where people are
+ * from, and who you meet. At most three suggestions anywhere, every section
+ * has its own Clear, and Clear all sits next to Apply.
+ */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun FiltersSheet(current: Filters, premium: Boolean, onApply: (Filters) -> Unit, onDismiss: () -> Unit, onPlus: () -> Unit = {}) {
@@ -230,64 +236,172 @@ fun FiltersSheet(current: Filters, premium: Boolean, onApply: (Filters) -> Unit,
     var f by remember { mutableStateOf(current) }
     var newInterest by remember { mutableStateOf("") }
     var countryQuery by remember { mutableStateOf("") }
+    var avoidMode by remember { mutableStateOf(current.includeCountries.isEmpty() && current.excludeCountries.isNotEmpty()) }
     val countries = remember { Locale.getISOCountries().map { it to countryName(it) }.sortedBy { it.second } }
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = MaterialTheme.colorScheme.background) {
-        Column(Modifier.fillMaxWidth().navigationBarsPadding().imePadding().padding(horizontal = 20.dp).padding(bottom = 20.dp).verticalScroll(rememberScrollState())) {
-            Text(stringResource(R.string.filters), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
-            Text(stringResource(R.string.filters_body), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Column(Modifier.fillMaxWidth().navigationBarsPadding().imePadding()) {
+            Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)) {
+                Text(stringResource(R.string.filters), style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onBackground)
+                Text(stringResource(R.string.filters_body), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
-            Label(stringResource(R.string.interests))
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.animateContentSize()) {
-                (SUGGESTED_INTERESTS + f.interests).distinct().forEach { i ->
-                    val on = i in f.interests
-                    FilterChip(
-                        selected = on,
-                        onClick = { f = f.copy(interests = if (on) f.interests - i else (f.interests + i).take(10)) },
-                        label = { Text(i) },
-                        colors = FilterChipDefaults.filterChipColors(selectedContainerColor = MaterialTheme.colorScheme.primaryContainer),
-                    )
-                }
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(newInterest, { newInterest = it.take(24) }, Modifier.weight(1f), placeholder = { Text(stringResource(R.string.add_interest)) }, singleLine = true, shape = MaterialTheme.shapes.medium)
-                IconButton(onClick = {
-                    val v = newInterest.trim().lowercase()
-                    if (v.isNotBlank()) f = f.copy(interests = (f.interests + v).distinct().take(10))
-                    newInterest = ""
-                }) { Icon(Icons.Rounded.Add, null) }
-            }
-
-            Label(stringResource(R.string.countries_include))
-            CountryChips(f.includeCountries) { cc -> f = f.copy(includeCountries = f.includeCountries - cc) }
-            Label(stringResource(R.string.countries_exclude))
-            CountryChips(f.excludeCountries) { cc -> f = f.copy(excludeCountries = f.excludeCountries - cc) }
-            OutlinedTextField(countryQuery, { countryQuery = it }, Modifier.fillMaxWidth(), placeholder = { Text(stringResource(R.string.find_country)) }, singleLine = true, shape = MaterialTheme.shapes.medium)
-            if (countryQuery.isNotBlank()) {
-                countries.filter { it.second.contains(countryQuery, ignoreCase = true) }.take(5).forEach { (cc, name) ->
-                    Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text("${flag(cc) ?: ""}  $name", modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onBackground)
-                        TextButton(onClick = { if (!premium && f.includeCountries.size >= freeCountries) onPlus() else { f = f.copy(includeCountries = (f.includeCountries + cc).distinct(), excludeCountries = f.excludeCountries - cc); countryQuery = "" } }) { Text(stringResource(R.string.include)) }
-                        TextButton(onClick = { if (!premium && f.excludeCountries.size >= freeCountries) onPlus() else { f = f.copy(excludeCountries = (f.excludeCountries + cc).distinct(), includeCountries = f.includeCountries - cc); countryQuery = "" } }) { Text(stringResource(R.string.avoid)) }
+                // 1. Interests
+                FilterCard("🎯", stringResource(R.string.interests), stringResource(R.string.filters_interests_hint), onClear = if (f.interests.isNotEmpty()) ({ f = f.copy(interests = emptyList()) }) else null) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.animateContentSize()) {
+                        f.interests.forEach { i -> SelectedChip(i) { f = f.copy(interests = f.interests - i) } }
+                        SUGGESTED_INTERESTS.filter { it !in f.interests }.take(3).forEach { i ->
+                            SuggestChip("+ $i") { f = f.copy(interests = (f.interests + i).take(10)) }
+                        }
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    InlineField(newInterest, { newInterest = it.take(24) }, stringResource(R.string.add_interest)) {
+                        val v = newInterest.trim().lowercase()
+                        if (v.isNotBlank()) f = f.copy(interests = (f.interests + v).distinct().take(10))
+                        newInterest = ""
                     }
                 }
-            }
 
-            Label(stringResource(R.string.match_with) + if (premium) "" else "  🔒 Plus")
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf("any" to R.string.anyone, "female" to R.string.women, "male" to R.string.men).forEach { (g, label) ->
-                    FilterChip(
-                        selected = f.prefGender == g,
-                        onClick = { if (premium || g == "any") f = f.copy(prefGender = g) else onPlus() },
-                        label = { Text(stringResource(label)) },
-                        colors = FilterChipDefaults.filterChipColors(selectedContainerColor = MaterialTheme.colorScheme.primaryContainer),
-                    )
+                // 2. Countries
+                val list = if (avoidMode) f.excludeCountries else f.includeCountries
+                FilterCard(
+                    "🌍", stringResource(R.string.countries_title),
+                    if (premium) stringResource(R.string.filters_countries_hint_plus) else stringResource(R.string.filters_countries_hint, freeCountries),
+                    onClear = if (f.includeCountries.isNotEmpty() || f.excludeCountries.isNotEmpty()) ({ f = f.copy(includeCountries = emptyList(), excludeCountries = emptyList()) }) else null,
+                ) {
+                    Segmented(listOf(stringResource(R.string.countries_only), stringResource(R.string.countries_never)), if (avoidMode) 1 else 0) { avoidMode = it == 1 }
+                    Spacer(Modifier.height(10.dp))
+                    if (list.isEmpty()) Text(stringResource(R.string.any_country), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    else FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        list.forEach { cc ->
+                            SelectedChip("${flag(cc) ?: ""} ${countryName(cc)}") {
+                                f = if (avoidMode) f.copy(excludeCountries = f.excludeCountries - cc) else f.copy(includeCountries = f.includeCountries - cc)
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    InlineField(countryQuery, { countryQuery = it }, stringResource(R.string.find_country), onDone = null)
+                    if (countryQuery.isNotBlank()) {
+                        val matches = countries.filter { it.second.contains(countryQuery, ignoreCase = true) && it.first !in list }.take(3)
+                        Column(Modifier.padding(top = 6.dp)) {
+                            matches.forEach { (cc, name) ->
+                                Row(
+                                    Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable {
+                                        if (!premium && list.size >= freeCountries) onPlus()
+                                        else {
+                                            f = if (avoidMode) f.copy(excludeCountries = (f.excludeCountries + cc).distinct(), includeCountries = f.includeCountries - cc)
+                                            else f.copy(includeCountries = (f.includeCountries + cc).distinct(), excludeCountries = f.excludeCountries - cc)
+                                            countryQuery = ""
+                                        }
+                                    }.padding(horizontal = 8.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text("${flag(cc) ?: ""}  $name", modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurface)
+                                    Icon(Icons.Rounded.Add, null, tint = MaterialTheme.colorScheme.primary)
+                                }
+                            }
+                        }
+                    }
                 }
+
+                // 3. Who you meet
+                FilterCard(
+                    "💜", stringResource(R.string.match_with), if (premium) null else stringResource(R.string.filters_gender_hint),
+                    onClear = if (f.prefGender != "any") ({ f = f.copy(prefGender = "any") }) else null,
+                ) {
+                    val opts = listOf("any" to R.string.anyone, "female" to R.string.women, "male" to R.string.men)
+                    Segmented(
+                        opts.map { (g, label) -> stringResource(label) + if (!premium && g != "any") " 🔒" else "" },
+                        opts.indexOfFirst { it.first == f.prefGender }.coerceAtLeast(0),
+                    ) { idx -> val g = opts[idx].first; if (premium || g == "any") f = f.copy(prefGender = g) else onPlus() }
+                }
+                Spacer(Modifier.height(12.dp))
             }
-            Spacer(Modifier.height(20.dp))
-            PrimaryButton(stringResource(R.string.apply_filters), onClick = { onApply(f); onDismiss() })
-            if (f.activeCount > 0) {
-                TextButton(onClick = { onApply(Filters()); onDismiss() }, modifier = Modifier.align(Alignment.CenterHorizontally)) { Text(stringResource(R.string.clear_filters)) }
+            // Always in reach.
+            Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                if (f.activeCount > 0) {
+                    TextButton(onClick = { f = Filters(); countryQuery = ""; newInterest = "" }) { Text(stringResource(R.string.clear_all)) }
+                    Spacer(Modifier.width(8.dp))
+                }
+                PrimaryButton(
+                    if (f.activeCount > 0) stringResource(R.string.apply_filters_n, f.activeCount) else stringResource(R.string.apply_filters),
+                    onClick = { onApply(f); onDismiss() }, modifier = Modifier.weight(1f),
+                )
             }
+        }
+    }
+}
+
+@Composable
+private fun FilterCard(emoji: String, title: String, hint: String?, onClear: (() -> Unit)?, content: @Composable () -> Unit) {
+    Surface(shape = RoundedCornerShape(22.dp), color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxWidth().padding(top = 14.dp)) {
+        Column(Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(emoji, fontSize = 20.sp)
+                Spacer(Modifier.width(10.dp))
+                Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
+                if (onClear != null) Text(
+                    stringResource(R.string.clear), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.clip(CircleShape).clickable(onClick = onClear).padding(horizontal = 10.dp, vertical = 4.dp),
+                )
+            }
+            hint?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp)) }
+            Spacer(Modifier.height(12.dp))
+            content()
+        }
+    }
+}
+
+@Composable
+private fun SelectedChip(label: String, onRemove: () -> Unit) {
+    Row(
+        Modifier.clip(CircleShape).background(app.talklive.ui.components.BrandGradient).clickable(onClick = onRemove).padding(start = 12.dp, end = 8.dp, top = 7.dp, bottom = 7.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, color = Color.White, style = MaterialTheme.typography.labelLarge)
+        Spacer(Modifier.width(4.dp))
+        Icon(Icons.Rounded.Close, null, tint = Color.White, modifier = Modifier.size(16.dp))
+    }
+}
+
+@Composable
+private fun SuggestChip(label: String, onClick: () -> Unit) {
+    Text(
+        label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.clip(CircleShape).border(1.dp, MaterialTheme.colorScheme.outline, CircleShape).clickable(onClick = onClick).padding(horizontal = 12.dp, vertical = 7.dp),
+    )
+}
+
+@Composable
+private fun InlineField(value: String, onChange: (String) -> Unit, hint: String, onDone: (() -> Unit)?) {
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.background).padding(start = 14.dp, end = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.weight(1f).padding(vertical = 13.dp)) {
+            if (value.isEmpty()) Text(hint, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            androidx.compose.foundation.text.BasicTextField(
+                value, onChange, singleLine = true,
+                textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+                cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary),
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = if (onDone != null) ImeAction.Done else ImeAction.Search),
+                keyboardActions = androidx.compose.foundation.text.KeyboardActions(onDone = { onDone?.invoke() }),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        if (onDone != null && value.isNotBlank()) IconButton(onClick = onDone) { Icon(Icons.Rounded.Add, null, tint = MaterialTheme.colorScheme.primary) }
+    }
+}
+
+@Composable
+private fun Segmented(options: List<String>, selected: Int, onSelect: (Int) -> Unit) {
+    Row(Modifier.fillMaxWidth().clip(CircleShape).background(MaterialTheme.colorScheme.background).padding(4.dp)) {
+        options.forEachIndexed { i, label ->
+            val on = i == selected
+            Box(
+                Modifier.weight(1f).clip(CircleShape)
+                    .background(if (on) app.talklive.ui.components.BrandGradient else androidx.compose.ui.graphics.SolidColor(Color.Transparent))
+                    .clickable { onSelect(i) }.padding(vertical = 10.dp),
+                contentAlignment = Alignment.Center,
+            ) { Text(label, style = MaterialTheme.typography.labelLarge, color = if (on) Color.White else MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1) }
         }
     }
 }
