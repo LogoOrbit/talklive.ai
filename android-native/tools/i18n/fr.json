@@ -348,5 +348,14 @@
 "plus_pending": "Ton paiement est en attente. Plus s'active quand Google Play le confirme.",
 "plus_later": "Paiement reçu. Plus s'active dès que TalkLive le confirme.",
 "plus_failed": "Un problème est survenu. Tu n'as pas été débité deux fois ; réessaie.",
-"plus_nothing_to_restore": "Aucun achat Plus sur ce compte Google."
+"plus_nothing_to_restore": "Aucun achat Plus sur ce compte Google.",
+"i_am": "Je suis",
+"gender_male": "Homme",
+"gender_female": "Femme",
+"gender_unspecified": "Je préfère ne pas dire",
+"voice_check": "Vérification vocale",
+"voice_check_desc": "Pendant les appels, ton appareil compare ta voix au genre choisi. Aucun son ne quitte ton appareil et personne ne voit le résultat.",
+"voice_check_pending": "Pas encore vérifié – parle une minute pendant un appel.",
+"voice_check_confirmed": "Confirmé : ta voix correspond au genre choisi.",
+"voice_check_unconfirmed": "Non confirmé. Tu n'apparaîtras pas dans « Vérifiés par la voix uniquement »."
 }

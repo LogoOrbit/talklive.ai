@@ -349,6 +349,15 @@
     <string name="plus_later">भुगतान मिल गया। TalkLive की पुष्टि होते ही Plus चालू हो जाएगा।</string>
     <string name="plus_failed">कुछ गड़बड़ हुई। आपसे दो बार पैसे नहीं कटे; फिर कोशिश करें।</string>
     <string name="plus_nothing_to_restore">इस Google अकाउंट पर कोई Plus खरीदारी नहीं है।</string>
+    <string name="i_am">मैं हूँ</string>
+    <string name="gender_male">पुरुष</string>
+    <string name="gender_female">महिला</string>
+    <string name="gender_unspecified">बताना नहीं चाहता</string>
+    <string name="voice_check">वॉइस चेक</string>
+    <string name="voice_check_desc">कॉल के दौरान आपका डिवाइस आपकी आवाज़ को आपके चुने लिंग से मिलाता है। कोई ऑडियो आपके डिवाइस से बाहर नहीं जाता और कोई नतीजा नहीं देखता।</string>
+    <string name="voice_check_pending">अभी जाँच नहीं हुई – किसी कॉल पर एक मिनट बात करें।</string>
+    <string name="voice_check_confirmed">पुष्टि हुई: आपकी आवाज़ चुने गए लिंग से मेल खाती है।</string>
+    <string name="voice_check_unconfirmed">पुष्टि नहीं हो सकी। आप “सिर्फ़ आवाज़ से जाँचे गए” मैच में नहीं दिखेंगे।</string>
     <plurals name="visitors_today">
         <item quantity="one">आज %1$s विज़िटर</item>
         <item quantity="other">आज %1$s विज़िटर</item>

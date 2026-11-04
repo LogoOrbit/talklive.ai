@@ -43,6 +43,10 @@ are also rendered in `ScreenshotTest`.
 | Push notifications | FCM (needs google-services.json) | — |
 | Buy TalkLive Plus | Profile → TalkLive Plus (Google Play Billing, verified by the server) | server rules in `scripts/test-play-billing.js`; purchase needs a Play test track |
 | Visitors today | Home | ✅ e2e |
+| I am / age group (feeds gender filters and stats) | Profile → You | — |
+| Voice check (on-device, opt-in, behind the server's `voiceCheck` flag) | Profile → You | `VoiceAnalysisTest` (synthetic voices) |
+| Shouting alert for moderators (same as mobile web) | Automatic during calls | `VoiceAnalysisTest` |
+| 17 languages | System or per-app language (Android 13+) | screenshots (ar, hi, de, ja) |
 | Dark mode | Profile + Home | screenshots |
 | Links open the app, shortcuts | talklive.app links, long-press icon | — |
 
@@ -50,5 +54,5 @@ are also rendered in `ScreenshotTest`.
 
 | Website feature | Why |
 |---|---|
-| More languages | The app has English, Spanish, Portuguese, Hindi, Bengali, Urdu, Arabic, Indonesian and French (`tools/i18n/*.json`, built by `tools/i18n/build.py`); the website has 17. Add a JSON file per language and list it in `res/xml/locales_config.xml`. |
-| Voice check (voice-based gender check) and client-side call moderation | Run on the web in the browser; need an on-device port. |
+| Speech-to-text moderation (keywords, sentiment, TalkGuard model) | The website turns it off on phones too (browsers cannot run it next to a call). Shouting detection runs in the app, and the server still checks every text message. |
+| "Voice-checked only" filter option | Needs the server's `voiceCheck` flag; the verdict is already sent, the filter toggle comes when the flag goes live. |

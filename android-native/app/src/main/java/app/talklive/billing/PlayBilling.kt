@@ -208,7 +208,7 @@ class PlayBilling @Inject constructor(
         fun periodDays(p: String): Int {
             val m = Regex("P(\\d+)([DWMY])").find(p) ?: return 0
             val n = m.groupValues[1].toInt()
-            return n * when (m.groupValues[2]) { "D" -> 1; "W" -> 7; "M" -> 30; else -> 365 }
+            return n * when (m.groupValues[2]) { "D" -> 1; "W" -> 7; "M" -> 30; else -> 360 }
         }
     }
 }

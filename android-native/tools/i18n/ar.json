@@ -348,5 +348,14 @@
 "plus_pending": "دفعتك قيد الانتظار. سيُفعَّل Plus عندما يؤكدها Google Play.",
 "plus_later": "تم استلام الدفع. سيُفعَّل Plus فور تأكيد TalkLive.",
 "plus_failed": "حدث خطأ. لم يُخصم منك مرتين؛ حاول مجددًا.",
-"plus_nothing_to_restore": "لا يوجد شراء Plus على حساب Google هذا."
+"plus_nothing_to_restore": "لا يوجد شراء Plus على حساب Google هذا.",
+"i_am": "أنا",
+"gender_male": "ذكر",
+"gender_female": "أنثى",
+"gender_unspecified": "أفضّل عدم القول",
+"voice_check": "فحص الصوت",
+"voice_check_desc": "أثناء المكالمات يقارن جهازك صوتك بالجنس الذي اخترته. لا يغادر أي صوت جهازك ولا يرى أحد النتيجة.",
+"voice_check_pending": "لم يُفحص بعد – تحدّث دقيقة في مكالمة.",
+"voice_check_confirmed": "تم التأكيد: صوتك يطابق الجنس الذي اخترته.",
+"voice_check_unconfirmed": "تعذّر التأكيد. لن تظهر في مطابقات «المتحقَّق منهم بالصوت فقط»."
 }

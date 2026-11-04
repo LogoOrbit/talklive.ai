@@ -1,3 +1,5 @@
+import java.time.Duration
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -31,6 +33,14 @@ android {
     }
 
     signingConfigs {
+        // Shared debug key, so test builds from CI and every machine have the same
+        // SHA-1 (Google sign-in and Firebase need it registered). Not secret: debug only.
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
         create("release") {
             System.getenv("TALKLIVE_KEYSTORE")?.let { path ->
                 storeFile = file(path)
@@ -44,6 +54,7 @@ android {
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
+            signingConfig = signingConfigs.getByName("debug")
             ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
             // Point a debug build at a local server with:
             //   ./gradlew installDebug -PserverUrl=http://10.0.2.2:5000
@@ -63,7 +74,11 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    testOptions { unitTests.isIncludeAndroidResources = true }
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+        // A screen that never settles must fail the run, not stall it.
+        unitTests.all { it.timeout.set(Duration.ofMinutes(25)) }
+    }
     buildFeatures {
         compose = true
         buildConfig = true

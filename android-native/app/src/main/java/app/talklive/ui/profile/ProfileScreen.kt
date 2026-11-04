@@ -25,6 +25,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.material.icons.rounded.Face
+import androidx.compose.material.icons.rounded.Cake
+import androidx.compose.material.icons.rounded.GraphicEq
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.rounded.Public
 import androidx.compose.material.icons.rounded.Movie
 import androidx.compose.material.icons.rounded.Favorite
@@ -157,6 +162,26 @@ fun ProfileScreen(
                 SettingRow(Icons.Rounded.Movie, stringResource(R.string.fav_films), if (films.isEmpty()) stringResource(R.string.not_set) else films.joinToString(", ") { it.title }) { youSheet = "films" }
                 SettingRow(Icons.Rounded.Favorite, stringResource(R.string.likes), null) { youSheet = "likes" }
                 SettingRow(Icons.Rounded.CardGiftcard, stringResource(R.string.invite_title), null) { youSheet = "invite" }
+                val myGender by engageVm.myGender.collectAsStateWithLifecycle()
+                val ageGroup by engageVm.ageGroup.collectAsStateWithLifecycle()
+                val flags by engageVm.flags.collectAsStateWithLifecycle()
+                SettingRow(Icons.Rounded.Face, stringResource(R.string.i_am), genderLabel(myGender)) { youSheet = "gender" }
+                SettingRow(Icons.Rounded.Cake, stringResource(R.string.age_group), if (ageGroup == "unspecified") stringResource(R.string.gender_unspecified) else ageGroup) { youSheet = "age" }
+                if ("voiceCheck" in flags) {
+                    val voiceOn by engageVm.voiceCheck.collectAsStateWithLifecycle()
+                    val voiceResult by engageVm.voiceResult.collectAsStateWithLifecycle()
+                    SettingRow(
+                        Icons.Rounded.GraphicEq, stringResource(R.string.voice_check),
+                        when {
+                            !voiceOn -> stringResource(R.string.voice_check_desc)
+                            voiceResult == null -> stringResource(R.string.voice_check_pending)
+                            voiceResult == myGender -> stringResource(R.string.voice_check_confirmed)
+                            else -> stringResource(R.string.voice_check_unconfirmed)
+                        },
+                        onClick = { engageVm.setVoiceCheck(!voiceOn) },
+                        trailing = { Switch(checked = voiceOn, onCheckedChange = { engageVm.setVoiceCheck(it) }, colors = SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primary)) },
+                    )
+                }
                 SettingRow(
                     Icons.Rounded.WorkspacePremium, stringResource(R.string.plus),
                     when {
@@ -176,6 +201,8 @@ fun ProfileScreen(
                     onDismissRequest = { youSheet = null },
                     properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
                 ) { app.talklive.ui.support.SupportScreen(onBack = { youSheet = null }) }
+                "gender" -> ChoiceDialog(stringResource(R.string.i_am), listOf("male", "female", "unspecified"), engageVm.myGender.value, { genderLabel(it) }, { engageVm.setMyGender(it) }) { youSheet = null }
+                "age" -> ChoiceDialog(stringResource(R.string.age_group), listOf("18-24", "25-34", "35-44", "45-54", "55+", "unspecified"), engageVm.ageGroup.value, { if (it == "unspecified") stringResource(R.string.gender_unspecified) else it }, { engageVm.setAgeGroup(it) }) { youSheet = null }
                 "plus" -> app.talklive.ui.engage.PlusSheet(premium, signedIn = account != null, onSignIn = { youSheet = null; onSignIn() }, onDismiss = { youSheet = null })
             }
 
@@ -265,6 +292,34 @@ private fun Section(title: String, content: @Composable () -> Unit) {
     Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface) {
         Column { content() }
     }
+}
+
+@Composable
+private fun genderLabel(g: String) = stringResource(
+    when (g) { "male" -> R.string.gender_male; "female" -> R.string.gender_female; else -> R.string.gender_unspecified },
+)
+
+@Composable
+private fun ChoiceDialog(title: String, options: List<String>, current: String, label: @Composable (String) -> String, onPick: (String) -> Unit, onDismiss: () -> Unit) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            Column {
+                options.forEach { o ->
+                    Row(
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { onPick(o); onDismiss() }.padding(vertical = 12.dp, horizontal = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        androidx.compose.material3.RadioButton(selected = o == current, onClick = { onPick(o); onDismiss() })
+                        Spacer(Modifier.width(8.dp))
+                        Text(label(o), style = MaterialTheme.typography.bodyLarge)
+                    }
+                }
+            }
+        },
+        confirmButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    )
 }
 
 @Composable

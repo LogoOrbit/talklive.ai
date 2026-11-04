@@ -348,5 +348,14 @@
 "plus_pending": "Pembayaranmu tertunda. Plus aktif saat Google Play mengonfirmasinya.",
 "plus_later": "Pembayaran diterima. Plus aktif begitu TalkLive mengonfirmasinya.",
 "plus_failed": "Terjadi kesalahan. Kamu tidak ditagih dua kali; coba lagi.",
-"plus_nothing_to_restore": "Tidak ada pembelian Plus di akun Google ini."
+"plus_nothing_to_restore": "Tidak ada pembelian Plus di akun Google ini.",
+"i_am": "Saya",
+"gender_male": "Pria",
+"gender_female": "Wanita",
+"gender_unspecified": "Tidak ingin memberi tahu",
+"voice_check": "Cek suara",
+"voice_check_desc": "Saat panggilan, perangkatmu mencocokkan suaramu dengan gender yang kamu pilih. Tidak ada audio yang keluar dari perangkatmu dan tak ada yang melihat hasilnya.",
+"voice_check_pending": "Belum dicek – bicaralah semenit dalam panggilan.",
+"voice_check_confirmed": "Terkonfirmasi: suaramu cocok dengan gender yang kamu pilih.",
+"voice_check_unconfirmed": "Tidak dapat dikonfirmasi. Kamu tidak akan muncul di “Hanya yang terverifikasi suara”."
 }

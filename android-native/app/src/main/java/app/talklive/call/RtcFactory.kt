@@ -9,7 +9,10 @@ import javax.inject.Singleton
 
 /** One PeerConnectionFactory for the app's lifetime, audio only. */
 @Singleton
-class RtcFactory @Inject constructor(@ApplicationContext private val context: Context) {
+class RtcFactory @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val mic: app.talklive.voice.MicMonitor,
+) {
     val factory: PeerConnectionFactory by lazy {
         PeerConnectionFactory.initialize(
             PeerConnectionFactory.InitializationOptions.builder(context).createInitializationOptions(),
@@ -19,6 +22,8 @@ class RtcFactory @Inject constructor(@ApplicationContext private val context: Co
             .setUseHardwareNoiseSuppressor(true)
             .setUseStereoInput(false)
             .setUseStereoOutput(false)
+            // Own-mic samples for Voice check and shouting detection (MicMonitor).
+            .setSamplesReadyCallback(mic)
             .createAudioDeviceModule()
         PeerConnectionFactory.builder()
             .setAudioDeviceModule(adm)

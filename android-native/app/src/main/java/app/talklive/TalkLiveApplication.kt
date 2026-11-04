@@ -24,6 +24,7 @@ class TalkLiveApplication : Application(), coil.ImageLoaderFactory {
         CrashReporter.install(this)
         super.onCreate()
         CrashReporter.sendPending(this, socket)
+        engage.loadFlags()
         val nm = getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(
             NotificationChannel(CHANNEL_CALL, getString(R.string.channel_call), NotificationManager.IMPORTANCE_LOW)

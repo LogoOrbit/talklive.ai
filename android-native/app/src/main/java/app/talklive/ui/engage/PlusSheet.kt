@@ -89,61 +89,76 @@ fun PlusSheet(premium: Premium, signedIn: Boolean, onSignIn: () -> Unit, onDismi
     }
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = MaterialTheme.colorScheme.background) {
-        Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 20.dp).padding(bottom = 24.dp).verticalScroll(rememberScrollState())) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Rounded.WorkspacePremium, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
-                Spacer(Modifier.width(10.dp))
-                Text(stringResource(R.string.plus), style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onBackground)
-            }
-            Spacer(Modifier.height(16.dp))
-            listOf(R.string.plus_perk_gender, R.string.plus_perk_likes, R.string.plus_perk_undo).forEach {
-                Row(Modifier.padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Rounded.CheckCircle, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                    Spacer(Modifier.width(10.dp))
-                    Text(stringResource(it), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onBackground)
-                }
-            }
-            Spacer(Modifier.height(20.dp))
+        PlusContent(
+            premium, signedIn, state, busy,
+            onSignIn = onSignIn,
+            onBuy = { plan -> context.findActivity()?.let { vm.billing.buy(it, plan) } },
+            onRestore = { vm.billing.restore() },
+            onManage = { openManage(context) },
+        )
+    }
+}
 
-            when {
-                premium.active -> {
-                    Text(
-                        if (premium.expiresAt != null) stringResource(R.string.plus_until, java.text.DateFormat.getDateInstance().format(java.util.Date(premium.expiresAt)))
-                        else stringResource(R.string.plus_active),
-                        style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary,
-                    )
-                    if (premium.play) {
-                        Spacer(Modifier.height(12.dp))
-                        PrimaryButton(stringResource(R.string.plus_manage), onClick = { openManage(context) })
-                    }
-                }
-                !signedIn -> {
-                    Text(stringResource(R.string.plus_sign_in), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+/** The sheet's body, without Play, so it can be rendered in tests. */
+@Composable
+fun PlusContent(
+    premium: Premium, signedIn: Boolean, state: BillingState, busy: Boolean,
+    onSignIn: () -> Unit, onBuy: (PlusPlan) -> Unit, onRestore: () -> Unit, onManage: () -> Unit,
+) {
+    Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 20.dp).padding(bottom = 24.dp).verticalScroll(rememberScrollState())) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Rounded.WorkspacePremium, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
+            Spacer(Modifier.width(10.dp))
+            Text(stringResource(R.string.plus), style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onBackground)
+        }
+        Spacer(Modifier.height(16.dp))
+        listOf(R.string.plus_perk_gender, R.string.plus_perk_likes, R.string.plus_perk_undo).forEach {
+            Row(Modifier.padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Rounded.CheckCircle, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(10.dp))
+                Text(stringResource(it), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onBackground)
+            }
+        }
+        Spacer(Modifier.height(20.dp))
+
+        when {
+            premium.active -> {
+                Text(
+                    if (premium.expiresAt != null) stringResource(R.string.plus_until, java.text.DateFormat.getDateInstance().format(java.util.Date(premium.expiresAt)))
+                    else stringResource(R.string.plus_active),
+                    style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary,
+                )
+                if (premium.play) {
                     Spacer(Modifier.height(12.dp))
-                    PrimaryButton(stringResource(R.string.sign_in_or_create), onClick = onSignIn)
-                }
-                else -> when (val s = state) {
-                    BillingState.Loading -> CircularProgressIndicator(Modifier.size(28.dp).align(Alignment.CenterHorizontally))
-                    BillingState.Unavailable -> Text(stringResource(R.string.plus_unavailable), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    is BillingState.Ready -> {
-                        var picked by remember(s) { mutableStateOf(s.plans.last()) }
-                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            s.plans.forEach { plan -> PlanCard(plan, s.plans, plan == picked) { picked = plan } }
-                        }
-                        Spacer(Modifier.height(16.dp))
-                        PrimaryButton(
-                            if (picked.trial != null) stringResource(R.string.plus_start_trial) else stringResource(R.string.plus_subscribe),
-                            onClick = { context.findActivity()?.let { vm.billing.buy(it, picked) } },
-                            loading = busy,
-                        )
-                        Text(stringResource(R.string.plus_terms), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 10.dp))
-                    }
+                    PrimaryButton(stringResource(R.string.plus_manage), onClick = onManage)
                 }
             }
-            if (signedIn) {
-                TextButton(onClick = { vm.billing.restore() }, modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 8.dp)) {
-                    Text(stringResource(R.string.plus_restore))
+            !signedIn -> {
+                Text(stringResource(R.string.plus_sign_in), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.height(12.dp))
+                PrimaryButton(stringResource(R.string.sign_in_or_create), onClick = onSignIn)
+            }
+            else -> when (state) {
+                BillingState.Loading -> CircularProgressIndicator(Modifier.size(28.dp).align(Alignment.CenterHorizontally))
+                BillingState.Unavailable -> Text(stringResource(R.string.plus_unavailable), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                is BillingState.Ready -> {
+                    var picked by remember(state) { mutableStateOf(state.plans.last()) }
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        state.plans.forEach { plan -> PlanCard(plan, state.plans, plan == picked) { picked = plan } }
+                    }
+                    Spacer(Modifier.height(16.dp))
+                    PrimaryButton(
+                        if (picked.trial != null) stringResource(R.string.plus_start_trial) else stringResource(R.string.plus_subscribe),
+                        onClick = { onBuy(picked) },
+                        loading = busy,
+                    )
+                    Text(stringResource(R.string.plus_terms), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 10.dp))
                 }
+            }
+        }
+        if (signedIn) {
+            TextButton(onClick = onRestore, modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 8.dp)) {
+                Text(stringResource(R.string.plus_restore))
             }
         }
     }

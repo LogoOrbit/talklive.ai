@@ -83,7 +83,7 @@ class ScreenshotTest {
         app.talklive.ui.profile.ProfileScreen(
             onSignIn = {},
             vm = app.talklive.ui.profile.ProfileViewModel(AuthRepository(ctx, socket, identity), identity, app.talklive.data.ThemeStore(ctx), app.talklive.data.PrivacyStore(ctx), socket, app.talklive.social.SocialRepository(socket, identity)),
-            engageVm = app.talklive.ui.engage.EngageViewModel(app.talklive.engage.EngageRepository(ctx, socket)),
+            engageVm = app.talklive.ui.engage.EngageViewModel(app.talklive.engage.EngageRepository(ctx, socket), app.talklive.voice.MicMonitor(ctx, socket)),
         )
     }
     private fun socialVm(seed: app.talklive.social.SocialRepository.() -> Unit = {}): app.talklive.ui.social.SocialViewModel {
@@ -202,6 +202,23 @@ class ScreenshotTest {
         }
         app.talklive.ui.social.ChatScreen(vm, "a") {}
     }
+    private fun plusShot() = @Composable {
+        androidx.compose.foundation.layout.Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+            app.talklive.ui.engage.PlusContent(
+                app.talklive.engage.Premium(false, null, false), signedIn = true,
+                state = app.talklive.billing.BillingState.Ready(listOf(
+                    app.talklive.billing.PlusPlan("monthly", "$4.99", "P1M", "a", null),
+                    app.talklive.billing.PlusPlan("yearly", "$35.99", "P1Y", "b", "P7D"),
+                )),
+                busy = false, onSignIn = {}, onBuy = {}, onRestore = {}, onManage = {},
+            )
+        }
+    }
+    @Test fun plus() = shot("30_plus") { plusShot()() }
+    @Config(qualifiers = "de-w400dp-h860dp-xxhdpi")
+    @Test fun plusGerman() = shot("31_plus_de") { plusShot()() }
+    @Config(qualifiers = "ja-w400dp-h860dp-xxhdpi")
+    @Test fun homeJapanese() = shot("32_home_ja") { HomeScreen(true, 3412, "fox", "Sam", false, {}, {}, {}) }
     @Config(qualifiers = "ar-w400dp-h860dp-xxhdpi")
     @Test fun homeArabic() = shot("28_home_ar") { HomeScreen(true, 3412, "fox", "Sam", false, {}, {}, {}) }
     @Config(qualifiers = "hi-w400dp-h860dp-xxhdpi")

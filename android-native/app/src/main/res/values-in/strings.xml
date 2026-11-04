@@ -349,6 +349,15 @@
     <string name="plus_later">Pembayaran diterima. Plus aktif begitu TalkLive mengonfirmasinya.</string>
     <string name="plus_failed">Terjadi kesalahan. Kamu tidak ditagih dua kali; coba lagi.</string>
     <string name="plus_nothing_to_restore">Tidak ada pembelian Plus di akun Google ini.</string>
+    <string name="i_am">Saya</string>
+    <string name="gender_male">Pria</string>
+    <string name="gender_female">Wanita</string>
+    <string name="gender_unspecified">Tidak ingin memberi tahu</string>
+    <string name="voice_check">Cek suara</string>
+    <string name="voice_check_desc">Saat panggilan, perangkatmu mencocokkan suaramu dengan gender yang kamu pilih. Tidak ada audio yang keluar dari perangkatmu dan tak ada yang melihat hasilnya.</string>
+    <string name="voice_check_pending">Belum dicek – bicaralah semenit dalam panggilan.</string>
+    <string name="voice_check_confirmed">Terkonfirmasi: suaramu cocok dengan gender yang kamu pilih.</string>
+    <string name="voice_check_unconfirmed">Tidak dapat dikonfirmasi. Kamu tidak akan muncul di “Hanya yang terverifikasi suara”.</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s pengunjung hari ini</item>
         <item quantity="other">%1$s pengunjung hari ini</item>

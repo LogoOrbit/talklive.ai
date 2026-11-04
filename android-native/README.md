@@ -20,6 +20,24 @@ package id (`app.talklive`), so it ships as an update to the Play listing.
 
 Without the file the app works normally, just without push.
 
+## Google sign-in (one-time setup)
+
+The app uses the website's Google web client ID (read from `/config.js`), so
+the server needs no change. Google only lets an Android app use it once that
+app's package and signing key are registered in the same Google Cloud project:
+
+console.cloud.google.com > APIs & Services > Credentials > Create credentials >
+OAuth client ID > Android. Make two:
+
+| Build | Package | SHA-1 |
+|---|---|---|
+| Test APK (from GitHub Actions or local) | `app.talklive.debug` | `00:6A:E2:DF:DA:83:47:92:E8:BB:0E:16:B5:CD:99:BA:AF:E3:55:43` |
+| Play Store | `app.talklive` | Play Console > Test and release > App integrity > App signing key certificate |
+
+The test key is `app/debug.keystore` (shared on purpose, so every test build has
+the SHA-1 above). Add the same SHA-1 values to the Android apps in Firebase too
+(Project settings > your app > Add fingerprint). Changes apply within minutes.
+
 ## TalkLive Plus on Google Play (one-time setup)
 
 The app sells Plus as the Play subscription `talklive_plus`. The server checks

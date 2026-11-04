@@ -55,6 +55,30 @@ class EngageRepository(
     private val _referral = MutableStateFlow<Referral?>(null)
     val referral: StateFlow<Referral?> = _referral
 
+    /** "I am" and age group, as in the website's Settings: used for gender filters and audience stats. */
+    private val _myGender = MutableStateFlow(prefs.getString("my_gender", "unspecified") ?: "unspecified")
+    val myGender: StateFlow<String> = _myGender
+    private val _ageGroup = MutableStateFlow(prefs.getString("age_group", "unspecified") ?: "unspecified")
+    val ageGroup: StateFlow<String> = _ageGroup
+
+    fun setMyGender(g: String) { prefs.edit().putString("my_gender", g).apply(); _myGender.value = g; socket.register() }
+    fun setAgeGroup(a: String) { prefs.edit().putString("age_group", a).apply(); _ageGroup.value = a; socket.register() }
+
+    /** Server feature flags (window.TL_FLAGS in /config.js). */
+    private val _flags = MutableStateFlow<Set<String>>(emptySet())
+    val flags: StateFlow<Set<String>> = _flags
+
+    fun loadFlags() = scope.launch(Dispatchers.IO) {
+        runCatching {
+            http.newCall(Request.Builder().url("${app.talklive.net.ServerConfig.url}/config.js").build()).execute().use { r ->
+                val js = r.body?.string().orEmpty()
+                val json = Regex("TL_FLAGS\\s*=\\s*(\\{.*?\\});").find(js)?.groupValues?.get(1) ?: return@use
+                val o = JSONObject(json)
+                _flags.value = o.keys().asSequence().filter { o.optBoolean(it) }.toSet()
+            }
+        }
+    }
+
     private val _films = MutableStateFlow<List<Film>>(emptyList())
     val films: StateFlow<List<Film>> = _films
 
@@ -86,7 +110,11 @@ class EngageRepository(
         }
         // Filters ride along with every registration.
         socket.registerExtras = {
-            filtersJson(_filters.value).apply { prefs.getString("referral", null)?.let { put("referralCode", it) } }
+            filtersJson(_filters.value).apply {
+                prefs.getString("referral", null)?.let { put("referralCode", it) }
+                put("gender", _myGender.value)
+                put("ageGroup", _ageGroup.value)
+            }
         }
         // Our own films once registered.
         scope.launch {

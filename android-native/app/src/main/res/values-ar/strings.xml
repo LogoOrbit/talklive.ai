@@ -349,6 +349,15 @@
     <string name="plus_later">تم استلام الدفع. سيُفعَّل Plus فور تأكيد TalkLive.</string>
     <string name="plus_failed">حدث خطأ. لم يُخصم منك مرتين؛ حاول مجددًا.</string>
     <string name="plus_nothing_to_restore">لا يوجد شراء Plus على حساب Google هذا.</string>
+    <string name="i_am">أنا</string>
+    <string name="gender_male">ذكر</string>
+    <string name="gender_female">أنثى</string>
+    <string name="gender_unspecified">أفضّل عدم القول</string>
+    <string name="voice_check">فحص الصوت</string>
+    <string name="voice_check_desc">أثناء المكالمات يقارن جهازك صوتك بالجنس الذي اخترته. لا يغادر أي صوت جهازك ولا يرى أحد النتيجة.</string>
+    <string name="voice_check_pending">لم يُفحص بعد – تحدّث دقيقة في مكالمة.</string>
+    <string name="voice_check_confirmed">تم التأكيد: صوتك يطابق الجنس الذي اخترته.</string>
+    <string name="voice_check_unconfirmed">تعذّر التأكيد. لن تظهر في مطابقات «المتحقَّق منهم بالصوت فقط».</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s زائر اليوم</item>
         <item quantity="other">%1$s زائر اليوم</item>

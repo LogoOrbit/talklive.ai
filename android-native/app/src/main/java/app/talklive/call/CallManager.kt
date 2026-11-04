@@ -100,6 +100,7 @@ class CallManager @Inject constructor(
     private val audio: AudioRouter,
     private val identity: IdentityStore,
     @ApplicationContext private val context: Context,
+    private val mic: app.talklive.voice.MicMonitor,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default.limitedParallelism(1))
 
@@ -279,6 +280,7 @@ class CallManager @Inject constructor(
     fun toggleMute() = scope.launch {
         val muted = !_state.value.muted
         session?.setMuted(muted || _state.value.onHold)
+        mic.setMuted(muted)
         socket.emit("mic-state", muted)
         _state.update { it.copy(muted = muted) }
     }
@@ -444,6 +446,8 @@ class CallManager @Inject constructor(
             return
         }
         session = s
+        mic.setMuted(_state.value.muted)
+        mic.start()
         val silent = _state.value.muted || _state.value.onHold
         s.setMuted(silent)
         if (silent) socket.emit("mic-state", true)
@@ -550,6 +554,7 @@ class CallManager @Inject constructor(
         watchdog?.cancel()
         watchdog = null
         pendingSignals.clear()
+        mic.stop()
         session?.close()
         session = null
     }

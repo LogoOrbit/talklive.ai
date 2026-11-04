@@ -16,7 +16,15 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class EngageViewModel @Inject constructor(private val repo: EngageRepository) : ViewModel() {
+class EngageViewModel @Inject constructor(private val repo: EngageRepository, private val mic: app.talklive.voice.MicMonitor) : ViewModel() {
+    val myGender = repo.myGender
+    val ageGroup = repo.ageGroup
+    val flags = repo.flags
+    val voiceCheck = mic.enabled
+    val voiceResult = mic.result
+    fun setMyGender(g: String) = repo.setMyGender(g)
+    fun setAgeGroup(a: String) = repo.setAgeGroup(a)
+    fun setVoiceCheck(on: Boolean) = mic.setEnabled(on)
     val engage = repo.engage
     val premium = repo.premium
     val referral = repo.referral

@@ -349,6 +349,15 @@
     <string name="plus_later">ادائیگی مل گئی۔ TalkLive کی تصدیق ہوتے ہی Plus چالو ہو جائے گا۔</string>
     <string name="plus_failed">کچھ غلط ہو گیا۔ آپ سے دو بار رقم نہیں کٹی؛ دوبارہ کوشش کریں۔</string>
     <string name="plus_nothing_to_restore">اس Google اکاؤنٹ پر کوئی Plus خریداری نہیں۔</string>
+    <string name="i_am">میں ہوں</string>
+    <string name="gender_male">مرد</string>
+    <string name="gender_female">عورت</string>
+    <string name="gender_unspecified">بتانا نہیں چاہتا</string>
+    <string name="voice_check">آواز کی جانچ</string>
+    <string name="voice_check_desc">کالز کے دوران آپ کا آلہ آپ کی آواز کو آپ کی چنی ہوئی جنس سے ملاتا ہے۔ کوئی آڈیو آپ کے آلے سے باہر نہیں جاتی اور کوئی نتیجہ نہیں دیکھتا۔</string>
+    <string name="voice_check_pending">ابھی جانچ نہیں ہوئی – کال میں ایک منٹ بات کریں۔</string>
+    <string name="voice_check_confirmed">تصدیق ہو گئی: آپ کی آواز چنی ہوئی جنس سے ملتی ہے۔</string>
+    <string name="voice_check_unconfirmed">تصدیق نہیں ہو سکی۔ آپ «صرف آواز سے تصدیق شدہ» میچز میں نظر نہیں آئیں گے۔</string>
     <plurals name="visitors_today">
         <item quantity="one">آج %1$s وزیٹر</item>
         <item quantity="other">آج %1$s وزیٹرز</item>

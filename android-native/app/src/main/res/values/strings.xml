@@ -355,4 +355,14 @@
     <string name="offline">Offline</string>
     <string name="time_there">%1$s there</string>
     <string name="speaks_your_language">Speaks your language</string>
+    <string name="i_am">I am</string>
+    <string name="age_group">Age group</string>
+    <string name="gender_male">Male</string>
+    <string name="gender_female">Female</string>
+    <string name="gender_unspecified">Prefer not to say</string>
+    <string name="voice_check">Voice check</string>
+    <string name="voice_check_desc">During calls your device checks your voice against the gender you picked. No audio leaves your device and nobody you talk to sees the result.</string>
+    <string name="voice_check_pending">Not checked yet - talk on a call for a minute.</string>
+    <string name="voice_check_confirmed">Confirmed: your voice matches the gender you picked.</string>
+    <string name="voice_check_unconfirmed">Couldn\'t confirm. You won\'t appear in Voice-checked only matches.</string>
 </resources>

@@ -349,6 +349,15 @@
     <string name="plus_later">পেমেন্ট পাওয়া গেছে। TalkLive নিশ্চিত করলেই Plus চালু হবে।</string>
     <string name="plus_failed">কিছু ভুল হয়েছে। আপনার কাছ থেকে দুবার টাকা কাটা হয়নি; আবার চেষ্টা করুন।</string>
     <string name="plus_nothing_to_restore">এই Google অ্যাকাউন্টে কোনো Plus কেনাকাটা নেই।</string>
+    <string name="i_am">আমি</string>
+    <string name="gender_male">পুরুষ</string>
+    <string name="gender_female">নারী</string>
+    <string name="gender_unspecified">বলতে চাই না</string>
+    <string name="voice_check">ভয়েস চেক</string>
+    <string name="voice_check_desc">কলের সময় আপনার ডিভাইস আপনার কণ্ঠ আপনার বেছে নেওয়া লিঙ্গের সাথে মেলায়। কোনো অডিও ডিভাইসের বাইরে যায় না এবং কেউ ফলাফল দেখে না।</string>
+    <string name="voice_check_pending">এখনো যাচাই হয়নি – একটি কলে এক মিনিট কথা বলুন।</string>
+    <string name="voice_check_confirmed">নিশ্চিত: আপনার কণ্ঠ বেছে নেওয়া লিঙ্গের সাথে মেলে।</string>
+    <string name="voice_check_unconfirmed">নিশ্চিত করা যায়নি। আপনি “শুধু কণ্ঠে যাচাইকৃত” ম্যাচে দেখাবেন না।</string>
     <plurals name="visitors_today">
         <item quantity="one">আজ %1$s জন ভিজিটর</item>
         <item quantity="other">আজ %1$s জন ভিজিটর</item>

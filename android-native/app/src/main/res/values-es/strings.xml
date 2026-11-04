@@ -349,6 +349,15 @@
     <string name="plus_later">Pago recibido. Plus se activa en cuanto TalkLive lo confirme.</string>
     <string name="plus_failed">Algo salió mal. No se te cobró dos veces; inténtalo de nuevo.</string>
     <string name="plus_nothing_to_restore">No hay compra de Plus en esta cuenta de Google.</string>
+    <string name="i_am">Soy</string>
+    <string name="gender_male">Hombre</string>
+    <string name="gender_female">Mujer</string>
+    <string name="gender_unspecified">Prefiero no decirlo</string>
+    <string name="voice_check">Verificación de voz</string>
+    <string name="voice_check_desc">Durante las llamadas, tu dispositivo compara tu voz con el género que elegiste. Ningún audio sale de tu dispositivo y nadie ve el resultado.</string>
+    <string name="voice_check_pending">Aún sin verificar: habla un minuto en una llamada.</string>
+    <string name="voice_check_confirmed">Confirmado: tu voz coincide con el género que elegiste.</string>
+    <string name="voice_check_unconfirmed">No se pudo confirmar. No aparecerás en «Solo verificados por voz».</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s visitante hoy</item>
         <item quantity="other">%1$s visitantes hoy</item>

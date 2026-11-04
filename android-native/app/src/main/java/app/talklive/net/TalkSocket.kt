@@ -225,6 +225,9 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
     /** Extra fields for registration (match filters). */
     @Volatile var registerExtras: () -> JSONObject? = { null }
 
+    /** More registration fields from other parts of the app (voice check). */
+    val registerFields = java.util.concurrent.CopyOnWriteArrayList<(JSONObject) -> Unit>()
+
     /** Sends the registration again, e.g. after the spirit animal changed. */
     fun register(takeover: Boolean = false) {
         if (!socket.connected()) return
@@ -238,6 +241,7 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
             privacy?.let { put("hideStatus", it.hideStatus.value); put("acceptCalls", it.acceptCalls.value) }
             if (takeover) put("takeover", true)
             registerExtras()?.let { extra -> extra.keys().forEach { k -> put(k, extra.get(k)) } }
+            registerFields.forEach { f -> runCatching { f(this) } }
         }
         socket.emit("register", payload)
     }

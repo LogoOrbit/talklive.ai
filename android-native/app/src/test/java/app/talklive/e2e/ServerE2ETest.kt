@@ -47,7 +47,7 @@ class ServerE2ETest {
         val socket = TalkSocket(identity)
         val social = SocialRepository(socket, identity)
         val auth = AuthRepository(ctx, socket, identity, "acc_$name")
-        val calls = if (withCalls) CallManager(socket, IceServerApi(), RtcFactory(ctx), AudioRouter(ctx), identity, ctx) else null
+        val calls = if (withCalls) app.talklive.voice.MicMonitor(ctx, socket).let { mic -> CallManager(socket, IceServerApi(), RtcFactory(ctx, mic), AudioRouter(ctx), identity, ctx, mic) } else null
         val engage = app.talklive.engage.EngageRepository(ctx, socket, "engage_$name")
         val events = CopyOnWriteArrayList<ServerEvent>()
 
