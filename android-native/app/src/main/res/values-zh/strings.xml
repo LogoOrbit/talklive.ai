@@ -130,7 +130,7 @@
     <string name="wants_to_be_friends">想加你为好友</string>
     <string name="message">发消息</string>
     <string name="call">通话</string>
-    <string name="your_friend_id">你的好友 ID</string>
+    <string name="your_friend_id">你的 ID</string>
     <string name="share_id_text">来 TalkLive 和我聊天！我的好友 ID 是 %1$s  https://talklive.app</string>
     <string name="friend_id_hint">好友 ID，例如 asad#1234</string>
     <string name="find">查找</string>
@@ -433,6 +433,21 @@
     <string name="change_avatar">更换头像</string>
     <string name="display_name_rules">字母、数字和空格。请友善：不当名称会被拒绝。</string>
     <string name="name_needs_account">创建免费账号即可自选名字。</string>
+    <string name="delete_account">删除账号</string>
+    <string name="delete_account_body">这将永久删除你的账号、好友、聊天、连续记录和护照，无法恢复。</string>
+    <string name="delete_account_field">你的密码（使用 Google 登录请输入 DELETE）</string>
+    <string name="delete_account_confirm">永久删除我的账号</string>
+    <string name="copied">已复制！</string>
+    <string name="hang_up">挂断</string>
+    <string name="n_request_title">%1$s 想加你为好友</string>
+    <string name="n_request_body">点按接受或拒绝。</string>
+    <string name="n_accepted_title">%1$s 接受了你的好友申请</string>
+    <string name="n_accepted_body">打个招呼吧：随时都可以发消息。</string>
+    <string name="n_missed_body">点按回拨。</string>
+    <string name="support_quick">快速解答</string>
+    <string name="film_match">🎬 你们都喜欢《%1$s》！</string>
+    <string name="plus_perk_streak">恢复连续记录</string>
+    <string name="plus_perk_streak_body">漏了一天？每月可恢复一次连续记录。</string>
     <plurals name="visitors_today">
         <item quantity="other">今日访客 %1$s 人</item>
     </plurals>

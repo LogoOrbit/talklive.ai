@@ -1,5 +1,16 @@
 package app.talklive.ui.engage
 
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.ui.unit.sp
@@ -189,52 +200,96 @@ fun FilmPosters(films: List<Film>, size: androidx.compose.ui.unit.Dp = 56.dp, on
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FilmsSheet(vm: EngageViewModel, current: List<Film>, onDismiss: () -> Unit) {
-    var picks by remember { mutableStateOf(current) }
+    // Three boxes; tapping one opens the search for that box.
+    var slots by remember { mutableStateOf(List(3) { current.getOrNull(it) }) }
+    var active by remember { mutableStateOf<Int?>(null) }
     var query by rememberSaveable { mutableStateOf("") }
+    val focus = remember { androidx.compose.ui.focus.FocusRequester() }
+    val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
+    LaunchedEffect(active) {
+        if (active != null) { kotlinx.coroutines.delay(120); runCatching { focus.requestFocus() }; keyboard?.show() }
+    }
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = MaterialTheme.colorScheme.background) {
         Column(Modifier.fillMaxWidth().navigationBarsPadding().imePadding().padding(horizontal = 20.dp).padding(bottom = 20.dp)) {
             Text(stringResource(R.string.fav_films), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
             Text(stringResource(R.string.fav_films_body), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(Modifier.height(12.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                repeat(3) { i ->
-                    val f = picks.getOrNull(i)
-                    Box(Modifier.width(84.dp).aspectRatio(2f / 3f).clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surface), contentAlignment = Alignment.Center) {
+            Spacer(Modifier.height(14.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                slots.forEachIndexed { i, f ->
+                    val selected = active == i
+                    val scale by animateFloatAsState(if (selected) 1.04f else 1f, spring(dampingRatio = 0.55f), label = "slot")
+                    Box(
+                        Modifier.weight(1f).aspectRatio(2f / 3f).graphicsLayer { scaleX = scale; scaleY = scale }
+                            .clip(RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.surface)
+                            .border(2.dp, if (selected) app.talklive.ui.components.BrandGradient else androidx.compose.ui.graphics.SolidColor(Color.Transparent), RoundedCornerShape(14.dp))
+                            .clickable { active = if (selected) null else i; query = ""; vm.search("") },
+                        contentAlignment = Alignment.Center,
+                    ) {
                         if (f != null) {
-                            AsyncImage(f.art.replace("100x100bb", "300x300bb"), f.title, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSizeCompat())
-                            Box(Modifier.align(Alignment.TopEnd).padding(4.dp).size(24.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.6f)).clickable { picks = picks - f }, contentAlignment = Alignment.Center) {
-                                Icon(Icons.Rounded.Close, null, tint = Color.White, modifier = Modifier.size(16.dp))
-                            }
-                        } else Icon(Icons.Rounded.Add, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            AsyncImage(f.art.replace("100x100bb", "300x300bb"), f.title, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                            Box(
+                                Modifier.align(Alignment.TopEnd).padding(5.dp).size(24.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.6f))
+                                    .clickable { slots = slots.toMutableList().also { it[i] = null } },
+                                contentAlignment = Alignment.Center,
+                            ) { Icon(Icons.Rounded.Close, null, tint = Color.White, modifier = Modifier.size(16.dp)) }
+                        } else Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(Icons.Rounded.Add, null, tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("${i + 1}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
                 }
             }
-            Spacer(Modifier.height(16.dp))
-            TalkTextField(query, { query = it; vm.search(it) }, stringResource(R.string.search_films), imeAction = ImeAction.Search)
-            Box(Modifier.fillMaxWidth().heightIn(min = 60.dp, max = 300.dp)) {
-                if (vm.searching) CircularProgressIndicator(Modifier.align(Alignment.Center).size(28.dp))
-                else if (query.isNotBlank() && vm.results.isEmpty() && vm.searched) Text(stringResource(R.string.films_none), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.align(Alignment.Center))
-                LazyColumn {
-                    items(vm.results, key = { "${it.type}${it.id}" }) { f ->
-                        val chosen = picks.any { it.type == f.type && it.id == f.id }
-                        Row(
-                            Modifier.fillMaxWidth().clickable(enabled = !chosen && picks.size < 3) { picks = picks + f }.padding(vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            AsyncImage(f.art, f.title, contentScale = ContentScale.Crop, modifier = Modifier.width(40.dp).aspectRatio(2f / 3f).clip(RoundedCornerShape(6.dp)))
-                            Spacer(Modifier.width(12.dp))
-                            Column(Modifier.weight(1f)) {
-                                Text(f.title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                Text(listOf(if (f.type == "tv") "TV show" else "Film", f.year).filter { it.isNotBlank() }.joinToString(" · "), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            // The search, for the box being filled.
+            AnimatedVisibility(active != null, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
+                Column(Modifier.padding(top = 16.dp)) {
+                    Row(
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).padding(horizontal = 14.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(Icons.Rounded.Search, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(10.dp))
+                        Box(Modifier.weight(1f).padding(vertical = 12.dp)) {
+                            if (query.isEmpty()) Text(stringResource(R.string.search_films), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            androidx.compose.foundation.text.BasicTextField(
+                                query, { query = it; vm.search(it) }, singleLine = true,
+                                textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+                                cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary),
+                                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = ImeAction.Search),
+                                modifier = Modifier.fillMaxWidth().focusRequester(focus),
+                            )
+                        }
+                        if (query.isNotEmpty()) IconButton(onClick = { query = ""; vm.search("") }) { Icon(Icons.Rounded.Close, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    }
+                    Box(Modifier.fillMaxWidth().heightIn(min = 60.dp, max = 280.dp)) {
+                        if (vm.searching) CircularProgressIndicator(Modifier.align(Alignment.Center).size(28.dp))
+                        else if (query.isNotBlank() && vm.results.isEmpty() && vm.searched) Text(stringResource(R.string.films_none), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.align(Alignment.Center))
+                        LazyColumn(Modifier.padding(top = 6.dp)) {
+                            items(vm.results, key = { "${it.type}${it.id}" }) { f ->
+                                val chosen = slots.any { it != null && it.type == f.type && it.id == f.id }
+                                Row(
+                                    Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable(enabled = !chosen) {
+                                        val at = active ?: slots.indexOfFirst { it == null }.takeIf { it >= 0 } ?: return@clickable
+                                        slots = slots.toMutableList().also { it[at] = f }
+                                        active = null; query = ""; vm.search(""); keyboard?.hide()
+                                    }.padding(horizontal = 4.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    AsyncImage(f.art, f.title, contentScale = ContentScale.Crop, modifier = Modifier.width(40.dp).aspectRatio(2f / 3f).clip(RoundedCornerShape(6.dp)))
+                                    Spacer(Modifier.width(12.dp))
+                                    Column(Modifier.weight(1f)) {
+                                        Text(f.title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        Text(listOf(if (f.type == "tv") "TV show" else "Film", f.year).filter { it.isNotBlank() }.joinToString(" · "), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                    if (chosen) Icon(Icons.Rounded.Check, null, tint = MaterialTheme.colorScheme.primary)
+                                }
                             }
-                            if (chosen) Text("✓", color = MaterialTheme.colorScheme.primary)
                         }
                     }
                 }
             }
             ErrorBanner(vm.error)
-            Spacer(Modifier.height(12.dp))
-            PrimaryButton(stringResource(R.string.save), onClick = { vm.saveFilms(picks, onDismiss) }, loading = vm.busy)
+            Spacer(Modifier.height(16.dp))
+            PrimaryButton(stringResource(R.string.save), onClick = { vm.saveFilms(slots.filterNotNull(), onDismiss) }, loading = vm.busy)
             Text(stringResource(R.string.apple_credit), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp))
         }
     }

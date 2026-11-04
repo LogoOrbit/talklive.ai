@@ -1,5 +1,9 @@
 package app.talklive.ui.social
 
+import androidx.compose.runtime.LaunchedEffect
+
+import androidx.compose.foundation.clickable
+import androidx.compose.animation.togetherWith
 import android.content.Intent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -89,6 +93,8 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalking: () -> Unit) {
+    var profileOf by remember { mutableStateOf<Person?>(null) }
+    profileOf?.let { p -> PersonSheet(p, isFriend = true, onCall = { vm.call(p) }, onMessage = { onOpenChat(p.clientId) }) { profileOf = null } }
     val friends by vm.friends.collectAsStateWithLifecycle()
     val requests by vm.requests.collectAsStateWithLifecycle()
     val history by vm.history.collectAsStateWithLifecycle()
@@ -153,6 +159,7 @@ fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalk
                         ),
                         onCall = { vm.call(p) },
                         onChat = { onOpenChat(p.clientId) },
+                        onProfile = { profileOf = p },
                     )
                 }
             }
@@ -231,9 +238,9 @@ private fun MetCard(p: Person, pending: Boolean, onAdd: () -> Unit, onOpen: () -
 }
 
 @Composable
-private fun FriendRow(p: Person, modifier: Modifier, onCall: () -> Unit, onChat: () -> Unit) {
+private fun FriendRow(p: Person, modifier: Modifier, onCall: () -> Unit, onChat: () -> Unit, onProfile: () -> Unit = {}) {
     Row(modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-        PersonAvatar(p, 52.dp)
+        Box(Modifier.clip(CircleShape).clickable(onClick = onProfile)) { PersonAvatar(p, 52.dp) }
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -283,11 +290,18 @@ private fun AddFriendSheet(vm: SocialViewModel, onDismiss: () -> Unit, onOpenCha
             Spacer(Modifier.height(16.dp))
             // Your own ID, to share.
             Box(Modifier.fillMaxWidth().clip(MaterialTheme.shapes.large).background(BrandGradient).padding(18.dp)) {
-                Column {
+                var copied by remember { mutableStateOf(false) }
+                LaunchedEffect(copied) { if (copied) { kotlinx.coroutines.delay(1600); copied = false } }
+                Column(Modifier.clickable(enabled = myId != null) { myId?.let { clipboard.setText(AnnotatedString(it)); copied = true } }) {
                     Text(stringResource(R.string.your_friend_id), style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.8f))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(myId ?: "…", style = MaterialTheme.typography.headlineSmall, color = Color.White, modifier = Modifier.weight(1f))
-                        IconButton(onClick = { myId?.let { clipboard.setText(AnnotatedString(it)) } }) { Icon(Icons.Rounded.ContentCopy, null, tint = Color.White) }
+                        androidx.compose.animation.AnimatedContent(
+                            targetState = copied, label = "copy", modifier = Modifier.weight(1f),
+                            transitionSpec = { (androidx.compose.animation.fadeIn() + androidx.compose.animation.slideInVertically { it / 2 }) togetherWith (androidx.compose.animation.fadeOut() + androidx.compose.animation.slideOutVertically { -it / 2 }) },
+                        ) { c -> Text(if (c) stringResource(R.string.copied) else myId ?: "…", style = MaterialTheme.typography.headlineSmall, color = Color.White) }
+                        IconButton(onClick = { myId?.let { clipboard.setText(AnnotatedString(it)); copied = true } }) {
+                            androidx.compose.animation.Crossfade(copied, label = "icon") { c -> Icon(if (c) Icons.Rounded.Check else Icons.Rounded.ContentCopy, null, tint = Color.White) }
+                        }
                         IconButton(onClick = {
                             myId?.let {
                                 context.startActivity(

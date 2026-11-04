@@ -130,7 +130,7 @@
     <string name="wants_to_be_friends">님이 친구가 되고 싶어 해요</string>
     <string name="message">메시지</string>
     <string name="call">통화</string>
-    <string name="your_friend_id">내 친구 ID</string>
+    <string name="your_friend_id">내 ID</string>
     <string name="share_id_text">TalkLive에서 대화해요! 내 친구 ID는 %1$s  https://talklive.app</string>
     <string name="friend_id_hint">친구 ID (예: asad#1234)</string>
     <string name="find">찾기</string>
@@ -433,6 +433,21 @@
     <string name="change_avatar">아바타 변경</string>
     <string name="display_name_rules">문자, 숫자, 공백만. 무례한 이름은 사용할 수 없어요.</string>
     <string name="name_needs_account">무료 계정을 만들면 이름을 정할 수 있어요.</string>
+    <string name="delete_account">계정 삭제</string>
+    <string name="delete_account_body">계정, 친구, 채팅, 연속 기록, 여권이 영구적으로 삭제돼요. 되돌릴 수 없어요.</string>
+    <string name="delete_account_field">비밀번호 (Google 사용 시 DELETE)</string>
+    <string name="delete_account_confirm">계정 영구 삭제</string>
+    <string name="copied">복사했어요!</string>
+    <string name="hang_up">통화 종료</string>
+    <string name="n_request_title">%1$s 님이 친구가 되고 싶어 해요</string>
+    <string name="n_request_body">탭해서 수락하거나 거절하세요.</string>
+    <string name="n_accepted_title">%1$s 님이 친구 요청을 수락했어요</string>
+    <string name="n_accepted_body">인사해 보세요: 언제든 메시지를 보낼 수 있어요.</string>
+    <string name="n_missed_body">탭해서 다시 전화하기.</string>
+    <string name="support_quick">빠른 답변</string>
+    <string name="film_match">🎬 두 분 다 %1$s을(를) 좋아해요!</string>
+    <string name="plus_perk_streak">연속 기록 되살리기</string>
+    <string name="plus_perk_streak_body">하루를 놓쳤나요? 한 달에 한 번 기록을 되살려요.</string>
     <plurals name="visitors_today">
         <item quantity="other">오늘 방문자 %1$s명</item>
     </plurals>

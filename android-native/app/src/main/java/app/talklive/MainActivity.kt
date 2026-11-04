@@ -29,6 +29,7 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var themeStore: ThemeStore
 
     @Inject lateinit var engage: app.talklive.engage.EngageRepository
+    @Inject lateinit var social: app.talklive.social.SocialRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -70,6 +71,11 @@ class MainActivity : ComponentActivity() {
         when (intent?.action) {
             "app.talklive.START_TALK" -> app.talklive.data.LaunchActions.pending.value = app.talklive.data.LaunchActions.Action.Talk
             "app.talklive.START_CHAT" -> app.talklive.data.LaunchActions.pending.value = app.talklive.data.LaunchActions.Action.Chat
+            // Accept from the ringing notification.
+            app.talklive.push.LocalNotifier.ACTION_ACCEPT -> {
+                social.answer(true)
+                androidx.core.app.NotificationManagerCompat.from(this).cancel(app.talklive.push.LocalNotifier.TAG_RING, 0)
+            }
         }
         intent?.data?.getQueryParameter("ref")?.takeIf { it.matches(Regex("^[A-Za-z0-9]{3,16}$")) }?.let { engage.setReferral(it) }
     }

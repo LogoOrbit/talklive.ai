@@ -1,5 +1,7 @@
 package app.talklive.ui.support
 
+import app.talklive.support.SupportMessage
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -73,6 +75,26 @@ class SupportViewModel @Inject constructor(private val repo: SupportRepository) 
     var thread by mutableStateOf<SupportThread?>(null); private set
     var busy by mutableStateOf(false); private set
     var error by mutableStateOf<String?>(null); private set
+    /** The assistant's instant answers (and quick questions you tapped), kept on this phone. */
+    var local by mutableStateOf<List<SupportMessage>>(emptyList()); private set
+    var botTyping by mutableStateOf(false); private set
+    private var localSeq = 0
+
+    /** A suggested question tapped: answered on the spot, not sent to the team. */
+    fun ask(faq: app.talklive.support.SupportBot.Faq) {
+        val now = System.currentTimeMillis()
+        local = local + SupportMessage("l${localSeq++}", false, faq.question, now)
+        reply(faq.answer)
+    }
+
+    private fun reply(text: String) {
+        viewModelScope.launch {
+            botTyping = true
+            delay(900)
+            botTyping = false
+            local = local + SupportMessage("l${localSeq++}", true, text, System.currentTimeMillis())
+        }
+    }
 
     init {
         viewModelScope.launch {
@@ -92,9 +114,16 @@ class SupportViewModel @Inject constructor(private val repo: SupportRepository) 
             val r = if (thread == null) repo.start(text.trim(), email) else repo.send(text.trim())
             r.onSuccess { thread = it.copy(teamOnline = thread?.teamOnline ?: false) }.onFailure { error = it.message }
             busy = false
+            // Instant help while the team gets the message.
+            if (r.isSuccess) {
+                val faq = app.talklive.support.SupportBot.answer(text)
+                reply(faq?.answer?.let { "$it\n\nIf that does not help, a team member will reply here soon." } ?: AGENT_SOON)
+            }
         }
     }
 }
+
+private const val AGENT_SOON = "Thanks! I could not find an answer to that myself, so a member of the TalkLive team will join this chat and reply here (and by email) as soon as they can."
 
 @Composable
 fun SupportScreen(onBack: () -> Unit, vm: SupportViewModel = hiltViewModel()) {
@@ -104,7 +133,10 @@ fun SupportScreen(onBack: () -> Unit, vm: SupportViewModel = hiltViewModel()) {
     val list = rememberLazyListState()
     val thread = vm.thread
     val online = thread?.teamOnline ?: vm.config?.online ?: false
-    LaunchedEffect(thread?.messages?.size) { thread?.messages?.size?.takeIf { it > 0 }?.let { list.animateScrollToItem(it - 1) } }
+    LaunchedEffect(thread?.messages?.size, vm.local.size, vm.botTyping) {
+        val n = (thread?.messages?.size ?: 0) + vm.local.size + (if (vm.botTyping) 1 else 0)
+        if (n > 0) list.animateScrollToItem(n)
+    }
 
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).imePadding()) {
         Surface(color = MaterialTheme.colorScheme.surface) {
@@ -128,7 +160,21 @@ fun SupportScreen(onBack: () -> Unit, vm: SupportViewModel = hiltViewModel()) {
                     team = true,
                 )
             }
-            items(thread?.messages.orEmpty(), key = { it.id }) { m -> Bubble(m.text, m.fromTeam) }
+            // The team's thread and the assistant's answers, in time order.
+            val all = (thread?.messages.orEmpty() + vm.local).sortedBy { it.ts }
+            items(all, key = { it.id }) { m -> Box(Modifier.animateItem()) { Bubble(m.text, m.fromTeam) } }
+            if (vm.botTyping) item(key = "typing") { Bubble("•••", team = true) }
+            // Common questions, answered instantly.
+            if (thread == null && vm.local.isEmpty()) item(key = "faq") {
+                Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.support_quick), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    app.talklive.support.SupportBot.FAQ.take(6).forEach { f ->
+                        Surface(onClick = { vm.ask(f) }, shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)) {
+                            Text(f.question, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp))
+                        }
+                    }
+                }
+            }
         }
         ErrorBanner(vm.error)
         Column(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).navigationBarsPadding().padding(12.dp)) {

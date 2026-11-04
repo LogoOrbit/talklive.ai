@@ -44,6 +44,12 @@ class CallService : LifecycleService() {
         }
     }
 
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // "Hang up" from the notification.
+        if (intent?.action == ACTION_HANG_UP) calls.end()
+        return super.onStartCommand(intent, flags, startId)
+    }
+
     private fun notify(searching: Boolean) {
         getSystemService(android.app.NotificationManager::class.java).notify(NOTIFICATION_ID, notification(searching))
     }
@@ -57,6 +63,10 @@ class CallService : LifecycleService() {
             .setSmallIcon(R.drawable.ic_stat_call)
             .setContentTitle(getString(if (searching) R.string.notif_searching else R.string.notif_in_call))
             .setContentIntent(open)
+            .addAction(
+                0, getString(if (searching) R.string.cancel else R.string.hang_up),
+                PendingIntent.getService(this, 3, Intent(this, CallService::class.java).setAction(ACTION_HANG_UP), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT),
+            )
             .setOngoing(true)
             .setCategory(NotificationCompat.CATEGORY_CALL)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
@@ -65,6 +75,7 @@ class CallService : LifecycleService() {
 
     companion object {
         private const val NOTIFICATION_ID = 1
+        const val ACTION_HANG_UP = "app.talklive.HANG_UP"
 
         fun start(context: Context) {
             ContextCompat.startForegroundService(context, Intent(context, CallService::class.java))

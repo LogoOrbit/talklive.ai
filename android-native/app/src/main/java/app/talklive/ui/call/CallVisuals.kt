@@ -231,7 +231,7 @@ fun MainCallButton(
         confirm -> MainMode.Confirm
         else -> MainMode.Live
     }
-    val width by animateDpAsState(if (mode == MainMode.Live) 84.dp else 236.dp, spring(dampingRatio = 0.62f, stiffness = 380f), label = "w")
+    val width by animateDpAsState(if (mode == MainMode.Live) 68.dp else 220.dp, spring(dampingRatio = 0.62f, stiffness = 380f), label = "w")
     val color by animateColorAsState(
         when (mode) { MainMode.Searching -> accents.a; MainMode.Connecting -> Color(0xFFF5A623); else -> Danger },
         tween(350), label = "c",
@@ -243,13 +243,13 @@ fun MainCallButton(
     val countdown = remember { Animatable(1f) }
     LaunchedEffect(mode) { if (mode == MainMode.Confirm) { countdown.snapTo(1f); countdown.animateTo(0f, tween(2600, easing = LinearEasing)) } }
     Box(
-        Modifier.scale(scale).width(width).height(84.dp)
-            .graphicsLayer { shadowElevation = 18f; shape = RoundedCornerShape(42.dp); clip = true }
+        Modifier.scale(scale).width(width).height(if (mode == MainMode.Live) 68.dp else 56.dp)
+            .graphicsLayer { shadowElevation = 14f; shape = RoundedCornerShape(34.dp); clip = true }
             .background(Brush.linearGradient(listOf(color, color.copy(alpha = 0.78f))))
             .drawBehind {
                 if (mode == MainMode.Confirm) drawRoundRect(
                     Color.White.copy(alpha = 0.18f), size = size.copy(width = size.width * countdown.value),
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(42.dp.toPx()),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(34.dp.toPx()),
                 )
             }
             .clickable(source, indication = null) {
@@ -268,10 +268,10 @@ fun MainCallButton(
             label = "content",
         ) { m ->
             when (m) {
-                MainMode.Live -> Icon(Icons.Rounded.CallEnd, stringResource(R.string.end), tint = Color.White, modifier = Modifier.size(36.dp))
+                MainMode.Live -> Icon(Icons.Rounded.CallEnd, stringResource(R.string.end), tint = Color.White, modifier = Modifier.size(30.dp))
                 else -> Row(verticalAlignment = Alignment.CenterVertically) {
                     when (m) {
-                        MainMode.Searching, MainMode.Connecting -> CircularProgressIndicator(Modifier.size(22.dp), color = Color.White, strokeWidth = 2.5.dp)
+                        MainMode.Searching, MainMode.Connecting -> CircularProgressIndicator(Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
                         else -> Icon(if (autoConnect) Icons.Rounded.SkipNext else Icons.Rounded.CallEnd, null, tint = Color.White)
                     }
                     Spacer(Modifier.width(10.dp))

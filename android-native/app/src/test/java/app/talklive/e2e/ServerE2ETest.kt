@@ -444,6 +444,17 @@ class ServerE2ETest {
         assertEquals(AuthResult.Ok, c.auth.resetPassword(token!!, "secret789"))
         assertEquals(user, c.auth.account.value?.username)
 
+        // Rude display names are refused.
+        assertTrue(a.auth.updateNickname("Fuhrer") is AuthResult.Error)
+
+        // Deleting the account: the wrong password is refused, the right one deletes it for good.
+        val d = Client("d")
+        assertEquals(AuthResult.Ok, d.auth.login(email, "secret789"))
+        assertTrue(d.auth.deleteAccount("nope-nope") is AuthResult.Error)
+        assertEquals(AuthResult.Ok, d.auth.deleteAccount("secret789"))
+        assertEquals(null, d.auth.account.value)
+        assertTrue(Client("e").auth.login(email, "secret789") is AuthResult.Error)
+
         // Signing out forgets the session.
         c.auth.logout()
         assertEquals(null, c.auth.account.value)

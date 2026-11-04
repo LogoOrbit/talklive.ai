@@ -127,6 +127,19 @@ class AuthRepository(
     suspend fun resetPassword(resetToken: String, newPassword: String): AuthResult =
         call("reset-password", JSONObject().put("resetToken", resetToken).put("newPassword", newPassword), "reset-password-result")
 
+    /** Deletes the account for good. [secret] is the password, or DELETE for a Google-only account. */
+    suspend fun deleteAccount(secret: String): AuthResult {
+        val (r, _) = callRaw("delete-account", JSONObject().put("currentPassword", secret).put("confirm", secret.trim()), "delete-account-result")
+        if (r !is AuthResult.Error) {
+            prefs.edit().remove(KEY_TOKEN).remove(KEY_USERNAME).remove(KEY_NICKNAME).remove(KEY_EMAIL).apply()
+            _account.value = null
+            // The profile went with the account: start fresh as a guest.
+            identity.reset()
+            socket.register()
+        }
+        return r
+    }
+
     fun logout() {
         socket.emit("logout", JSONObject().put("token", prefs.getString(KEY_TOKEN, null)))
         prefs.edit().remove(KEY_TOKEN).remove(KEY_USERNAME).remove(KEY_NICKNAME).remove(KEY_EMAIL).apply()

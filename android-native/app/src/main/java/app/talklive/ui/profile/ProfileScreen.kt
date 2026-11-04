@@ -28,6 +28,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.DeleteForever
 import androidx.compose.material.icons.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.Face
 import androidx.compose.material.icons.rounded.Cake
@@ -245,7 +248,19 @@ fun ProfileScreen(
             val blocked by vm.blocked.collectAsStateWithLifecycle()
             val friendId by vm.myFriendId.collectAsStateWithLifecycle()
             Section(stringResource(R.string.section_privacy)) {
-                SettingRow(Icons.Rounded.Tag, stringResource(R.string.your_friend_id), friendId ?: "…", onClick = { if (account != null) vm.open(ProfileSheet.FriendId) })
+                // Tap to copy your ID (with a little "Copied" moment); accounts edit it with the pencil.
+                var idCopied by remember { mutableStateOf(false) }
+                LaunchedEffect(idCopied) { if (idCopied) { kotlinx.coroutines.delay(1600); idCopied = false } }
+                val clip = androidx.compose.ui.platform.LocalClipboardManager.current
+                SettingRow(
+                    Icons.Rounded.Tag, stringResource(R.string.your_friend_id),
+                    if (idCopied) stringResource(R.string.copied) else friendId ?: "…",
+                    onClick = { friendId?.let { clip.setText(androidx.compose.ui.text.AnnotatedString(it)); idCopied = true } },
+                    trailing = {
+                        if (account != null) androidx.compose.material3.IconButton(onClick = { vm.open(ProfileSheet.FriendId) }) { Icon(Icons.Rounded.Edit, stringResource(R.string.edit), tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                        else androidx.compose.animation.Crossfade(idCopied, label = "c") { c -> Icon(if (c) Icons.Rounded.Check else Icons.Rounded.ContentCopy, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    },
+                )
                 SettingRow(Icons.Rounded.Visibility, stringResource(R.string.show_online), stringResource(R.string.show_online_desc), onClick = { vm.setHideStatus(!hideStatus) }, trailing = {
                     Switch(checked = !hideStatus, onCheckedChange = { vm.setHideStatus(!it) }, colors = SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primary))
                 })
@@ -287,6 +302,19 @@ fun ProfileScreen(
                         Icon(Icons.AutoMirrored.Rounded.Logout, null, tint = Danger)
                         Spacer(Modifier.size(14.dp))
                         Text(stringResource(R.string.sign_out), style = MaterialTheme.typography.titleMedium, color = Danger)
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
+                Surface(
+                    onClick = { vm.open(ProfileSheet.Delete) },
+                    shape = MaterialTheme.shapes.large,
+                    color = Danger.copy(alpha = 0.12f),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Rounded.DeleteForever, null, tint = Danger)
+                        Spacer(Modifier.size(14.dp))
+                        Text(stringResource(R.string.delete_account), style = MaterialTheme.typography.titleMedium, color = Danger)
                     }
                 }
             }
@@ -478,6 +506,20 @@ private fun ProfileSheetHost(sheet: ProfileSheet, vm: ProfileViewModel, animal: 
                     ErrorBanner(vm.error)
                     Spacer(Modifier.height(16.dp))
                     PrimaryButton(stringResource(R.string.save), onClick = { vm.saveFriendId(handle) }, enabled = handle.length >= 3, loading = vm.busy)
+                }
+                ProfileSheet.Delete -> {
+                    var secret by rememberSaveable { mutableStateOf("") }
+                    SheetTitle(stringResource(R.string.delete_account), stringResource(R.string.delete_account_body))
+                    TalkTextField(secret, { secret = it; vm.clearError() }, stringResource(R.string.delete_account_field), password = true, imeAction = ImeAction.Done)
+                    ErrorBanner(vm.error)
+                    Spacer(Modifier.height(16.dp))
+                    androidx.compose.material3.Button(
+                        onClick = { vm.deleteAccount(secret) },
+                        enabled = secret.isNotBlank() && !vm.busy,
+                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = Danger, contentColor = Color.White),
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        shape = CircleShape,
+                    ) { Text(stringResource(R.string.delete_account_confirm), style = MaterialTheme.typography.labelLarge) }
                 }
                 // Tapping your own picture or name: everything about how you look, in one place.
                 ProfileSheet.Edit -> {

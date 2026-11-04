@@ -5112,6 +5112,52 @@ io.on('connection', (socket) => {
     socket.emit('update-nickname-result', { ok: true, nickname: account.nickname });
   });
 
+  // Delete account (Google Play requires it in the app). A password account
+  // proves its password; a Google-only account, which has none, types DELETE.
+  socket.on('delete-account', async ({ currentPassword, confirm } = {}) => {
+    const authedUsername = socketAuth.get(socket.id);
+    const reply = (o) => socket.emit('delete-account-result', o);
+    if (!authedUsername) return reply({ ok: false, error: 'Not logged in.' });
+    const account = accounts.get(authedUsername);
+    if (!account) return reply({ ok: false, error: 'Not logged in.' });
+    if (account.passwordHash) {
+      if (loginLockedOut(ip, authedUsername, { allowKnownNetwork: true })) {
+        return reply({ ok: false, error: 'Too many failed attempts. Please try again in 15 minutes.' });
+      }
+      const reserved = reserveLoginAttempt(ip, authedUsername);
+      if (!(await verifyAccount(authedUsername, typeof currentPassword === 'string' ? currentPassword : ''))) {
+        return reply({ ok: false, error: 'Password is incorrect.' });
+      }
+      loginAttemptSucceeded(ip, authedUsername, reserved);
+    } else if (confirm !== 'DELETE') {
+      return reply({ ok: false, error: 'Type DELETE to confirm.' });
+    }
+    const gone = store.deleteAccount(authedUsername);
+    accounts.delete(authedUsername);
+    if (account.googleId && googleAccounts.get(account.googleId) === authedUsername) googleAccounts.delete(account.googleId);
+    const clientId = (gone && gone.clientId) || (profiles.get(socket.id) || {}).clientId;
+    if (clientId) {
+      // Friends lose the friendship; pending requests and history go too.
+      for (const [fid] of friends.get(clientId) || new Map()) {
+        removeFriendPair(clientId, fid);
+        const fs = getSocketByClientId(fid);
+        if (fs) syncClientState(fs, fid);
+      }
+      friends.delete(clientId);
+      friendRequests.delete(clientId);
+      sentRequests.delete(clientId);
+      for (const m of friendRequests.values()) m.delete(clientId);
+      for (const m of sentRequests.values()) m.delete(clientId);
+      chatHistory.delete(clientId);
+      persistSocial();
+    }
+    store.recordFeature('account_deleted');
+    // Every device signed in to it is signed out now.
+    signOutOtherSockets(authedUsername, socket.id);
+    socketAuth.delete(socket.id);
+    reply({ ok: true });
+  });
+
   socket.on('change-password', async ({ currentPassword, newPassword } = {}) => {
     const authedUsername = socketAuth.get(socket.id);
     if (!authedUsername) return socket.emit('change-password-result', { ok: false, error: 'Not logged in.' });

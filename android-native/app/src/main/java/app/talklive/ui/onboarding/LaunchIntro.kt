@@ -8,11 +8,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -58,18 +56,19 @@ fun LaunchIntro(onDone: () -> Unit) {
         Modifier.fillMaxSize().graphicsLayer { alpha = out.value }.background(MaterialTheme.colorScheme.background),
         contentAlignment = Alignment.Center,
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(contentAlignment = Alignment.Center) {
+        // Logo above the name, both centred, so nothing shifts as the name appears.
+        androidx.compose.foundation.layout.Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(Modifier.size(150.dp), contentAlignment = Alignment.Center) {
                 // The orb: a big gradient circle that becomes a small rounded square, then fades as the logo lands.
                 val m = morph.value
-                val size = (150 - 86 * m).dp
+                val size = (150 - 70 * m).dp
                 Box(
                     Modifier.size(size).graphicsLayer { alpha = 1f - logo.value * 0.95f; rotationZ = -18f * m }
                         .clip(RoundedCornerShape(percent = (50 - 28 * m).toInt())).background(BrandGradient),
                 )
                 Image(
                     painterResource(R.drawable.logo), null,
-                    Modifier.size(64.dp).graphicsLayer {
+                    Modifier.size(80.dp).graphicsLayer {
                         alpha = logo.value.coerceIn(0f, 1f)
                         val sc = 0.4f + 0.6f * logo.value
                         scaleX = sc; scaleY = sc
@@ -77,14 +76,13 @@ fun LaunchIntro(onDone: () -> Unit) {
                     },
                 )
             }
-            Spacer(Modifier.width((14 * word.value).dp))
+            Spacer(Modifier.size(12.dp))
             Text(
                 "TalkLive",
                 style = MaterialTheme.typography.displaySmall,
                 color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.width((210 * word.value).dp).graphicsLayer { alpha = word.value; translationX = -30f * (1f - word.value) },
+                modifier = Modifier.graphicsLayer { alpha = word.value; translationY = 24f * (1f - word.value) },
                 maxLines = 1,
-                softWrap = false,
             )
         }
     }

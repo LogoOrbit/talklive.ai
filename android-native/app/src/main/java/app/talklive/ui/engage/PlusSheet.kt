@@ -47,6 +47,7 @@ import androidx.compose.material.icons.rounded.FilterAlt
 import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.Undo
 import androidx.compose.material.icons.rounded.Verified
+import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -149,6 +150,7 @@ private val PERKS = listOf(
     Perk(Icons.Rounded.Favorite, R.string.plus_perk_likes, R.string.plus_perk_likes_body),
     Perk(Icons.Rounded.Undo, R.string.plus_perk_undo, R.string.plus_perk_undo_body),
     Perk(Icons.Rounded.Bolt, R.string.plus_perk_queue, R.string.plus_perk_queue_body),
+    Perk(Icons.Rounded.LocalFireDepartment, R.string.plus_perk_streak, R.string.plus_perk_streak_body),
     Perk(Icons.Rounded.Verified, R.string.plus_perk_badge, R.string.plus_perk_badge_body),
 )
 
@@ -350,6 +352,12 @@ private fun PerkPreview(page: Int) {
             Box(Modifier.size(54.dp).clip(CircleShape).background(GoldBrush), contentAlignment = Alignment.Center) { Text("⚡", fontSize = 26.sp) }
             repeat(4) { Box(Modifier.size((40 - it * 6).dp).clip(CircleShape).background(Color.White.copy(alpha = 0.12f - it * 0.02f))) }
         }
+        4 -> Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("💔", fontSize = 34.sp)
+            Text("  →  ", style = MaterialTheme.typography.titleLarge, color = Color.White.copy(alpha = 0.5f))
+            Text("🔥", fontSize = 40.sp)
+            Text(" 12", style = MaterialTheme.typography.headlineMedium.copy(brush = GoldBrush), fontWeight = FontWeight.Black)
+        }
         else -> Row(verticalAlignment = Alignment.CenterVertically) {
             app.talklive.ui.animals.AnimalAvatar("lion", null, 56.dp)
             Spacer(Modifier.width(12.dp))
@@ -370,6 +378,7 @@ private fun CompareTable(modifier: Modifier = Modifier) {
         R.string.plus_perk_likes to false,
         R.string.plus_perk_undo to false,
         R.string.plus_perk_queue to false,
+        R.string.plus_perk_streak to false,
     )
     Surface(shape = RoundedCornerShape(24.dp), color = Color.White.copy(alpha = 0.05f), modifier = modifier.fillMaxWidth()) {
         Column(Modifier.padding(vertical = 8.dp)) {

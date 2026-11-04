@@ -43,6 +43,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -159,6 +160,8 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
     LaunchedEffect(clientId) { vm.openChat(clientId) }
     androidx.compose.runtime.DisposableEffect(clientId) { onDispose { vm.openChat(null) } }
     BackHandler(onBack = onBack)
+    var showProfile by remember { mutableStateOf(false) }
+    if (showProfile) PersonSheet(person, isFriend, onCall = { vm.call(person) }, onMessage = null) { showProfile = false }
     // New message or typing: glide to the bottom.
     LaunchedEffect(messages.size, typing) { if (messages.isNotEmpty()) listState.animateScrollToItem(0) }
 
@@ -167,6 +170,8 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
         Surface(color = MaterialTheme.colorScheme.surface) {
             Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 4.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, null) }
+                // Tap the face or name for their profile.
+                Row(Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).clickable { showProfile = true }, verticalAlignment = Alignment.CenterVertically) {
                 PersonAvatar(person, 40.dp)
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
@@ -176,6 +181,7 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
                         style = MaterialTheme.typography.labelMedium,
                         color = if (typing || person.online) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                }
                 }
                 if (isFriend) {
                     FilledTonalIconButton(onClick = { vm.call(person) }, enabled = person.online) { Icon(Icons.Rounded.Call, stringResource(R.string.call)) }
@@ -663,4 +669,61 @@ private fun dayLabel(ts: Long): String = when {
     android.text.format.DateUtils.isToday(ts) || android.text.format.DateUtils.isToday(ts + android.text.format.DateUtils.DAY_IN_MILLIS) ->
         android.text.format.DateUtils.getRelativeTimeSpanString(ts, System.currentTimeMillis(), android.text.format.DateUtils.DAY_IN_MILLIS).toString()
     else -> SimpleDateFormat("EEE, d MMM", Locale.getDefault()).format(Date(ts))
+}
+
+/** A friend's (or someone met's) profile: picture, name, ID, country, presence, and quick actions. */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+internal fun PersonSheet(person: Person, isFriend: Boolean, onCall: () -> Unit, onMessage: (() -> Unit)?, onDismiss: () -> Unit) {
+    androidx.compose.material3.ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = MaterialTheme.colorScheme.background,
+    ) {
+        Column(
+            Modifier.fillMaxWidth().verticalScroll(androidx.compose.foundation.rememberScrollState()).navigationBarsPadding().padding(horizontal = 24.dp).padding(bottom = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            PersonAvatar(person, 112.dp)
+            Spacer(Modifier.height(14.dp))
+            Text(person.displayName, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onBackground)
+            if (person.nickname != null && person.nickname != person.username) {
+                Text(person.username, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Text(presence(person), style = MaterialTheme.typography.labelLarge, color = if (person.online) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
+            Spacer(Modifier.height(16.dp))
+            Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(vertical = 6.dp)) {
+                    person.countryCode?.let { cc ->
+                        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text(flag(cc) ?: "🌍", style = MaterialTheme.typography.titleMedium)
+                            Spacer(Modifier.width(12.dp))
+                            Text(java.util.Locale("", cc).displayCountry, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
+                        }
+                    }
+                    app.talklive.ui.animals.animalById(person.animal)?.let { a ->
+                        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text("✨", style = MaterialTheme.typography.titleMedium)
+                            Spacer(Modifier.width(12.dp))
+                            Text(a.name + if (a.trait.isNotBlank()) " · ${a.trait}" else "", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
+                        }
+                    }
+                    person.friendId?.let { id ->
+                        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text("🆔", style = MaterialTheme.typography.titleMedium)
+                            Spacer(Modifier.width(12.dp))
+                            Text(id, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(20.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (isFriend) app.talklive.ui.components.PrimaryButton(stringResource(R.string.call), onClick = { onDismiss(); onCall() }, enabled = person.online, icon = Icons.Rounded.Call, modifier = Modifier.weight(1f))
+                if (onMessage != null) androidx.compose.material3.OutlinedButton(onClick = { onDismiss(); onMessage() }, modifier = Modifier.weight(1f).height(56.dp), shape = CircleShape) {
+                    Text(stringResource(R.string.message))
+                }
+            }
+        }
+    }
 }

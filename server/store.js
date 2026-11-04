@@ -2368,6 +2368,27 @@ function saveAccount(usernameLower, account) {
 // profile, and every later sign-in is handed that same clientId back.
 
 // The clientId an account is linked to, or null if it never got one.
+// Erase an account for good (Settings > Delete account): credentials, the
+// email and Google links, its public IDs, every sign-in session, and the
+// profile data that hangs off its clientId (streak, passport, films).
+// Returns the clientId so the caller can drop the live social state too.
+function deleteAccount(usernameLower) {
+  const acc = data.accounts[usernameLower];
+  if (!acc) return null;
+  if (acc.email) delete data.emailIndex[String(acc.email).toLowerCase()];
+  if (acc.googleId && data.googleIndex[acc.googleId] === usernameLower) delete data.googleIndex[acc.googleId];
+  if (acc.handle) handleIndex.delete(String(acc.handle).toLowerCase());
+  const clientId = acc.clientId || null;
+  delete data.accounts[usernameLower];
+  deleteAuthSessionsForUser(usernameLower, null);
+  if (clientId) {
+    delete data.engage[clientId];
+    delete data.favFilms[clientId];
+  }
+  save();
+  return { clientId };
+}
+
 function getAccountClientId(usernameLower) {
   const acc = data.accounts[String(usernameLower || '').toLowerCase()];
   return (acc && acc.clientId) || null;
@@ -3654,6 +3675,7 @@ module.exports = {
   recordFeatureUser,
   engageGet,
   engageSet,
+  deleteAccount,
   premiumExpiry,
   referralCodeFor,
   referralStats,

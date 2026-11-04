@@ -452,6 +452,15 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
         )
     }
     if (showFilters) app.talklive.ui.engage.FiltersSheet(filters, premium.active, onApply = engageVm::setFilters, onDismiss = { showFilters = false }, onPlus = { showFilters = false; showPlus = "locked" })
+    // Same favourite film or show as the person who just connected: say so.
+    val myFilms by engageVm.films.collectAsStateWithLifecycle()
+    val livePartner = (state.phase as? CallPhase.Connected)?.partner
+    LaunchedEffect(livePartner?.clientId) {
+        val p = livePartner ?: return@LaunchedEffect
+        val shared = p.films.firstOrNull { f -> myFilms.any { it.type == f.type && it.id == f.id } } ?: return@LaunchedEffect
+        kotlinx.coroutines.delay(1200)
+        snackbar.showSnackbar(context.getString(R.string.film_match, shared.title))
+    }
     // The website's "no one fits your filters, matching you with anyone" moment.
     LaunchedEffect(Unit) {
         engageVm.fallback.collect {

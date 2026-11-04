@@ -93,6 +93,7 @@ import app.talklive.ui.social.MessageBubble
 import app.talklive.ui.social.TypingBubble
 import app.talklive.ui.theme.BrandViolet
 import app.talklive.ui.theme.Danger
+import androidx.compose.foundation.basicMarquee
 import app.talklive.ui.chat.ChatAction
 import app.talklive.ui.chat.Composer
 import androidx.compose.material.icons.rounded.Lightbulb
@@ -153,6 +154,7 @@ fun TextChatScreen(
                                 maxLines = 1, overflow = TextOverflow.Ellipsis,
                             )
                             if (p != null) {
+                                // While they are away or typing, show that, then their country/time again.
                                 Text(
                                     when {
                                         state.partnerTyping -> stringResource(R.string.typing)
@@ -162,7 +164,8 @@ fun TextChatScreen(
                                     style = MaterialTheme.typography.labelMedium,
                                     color = if (state.partnerTyping) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                                     maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
+                                    // Long lines glide sideways instead of being cut off.
+                                    modifier = Modifier.basicMarquee(iterations = Int.MAX_VALUE, initialDelayMillis = 1500),
                                 )
                             }
                         }

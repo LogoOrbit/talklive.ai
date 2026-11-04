@@ -13,7 +13,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-enum class ProfileSheet { Edit, Animal, Nickname, Email, Password, Blocked, FriendId }
+enum class ProfileSheet { Delete, Edit, Animal, Nickname, Email, Password, Blocked, FriendId }
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
@@ -75,6 +75,7 @@ class ProfileViewModel @Inject constructor(
     val sounds = soundFx.enabled
     fun setSounds(on: Boolean) { soundFx.setEnabled(on); if (on) soundFx.play(app.talklive.sound.Sounds.Fx.Message) }
     fun signOut() = auth.logout()
+    fun deleteAccount(secret: String) = run("Account deleted") { auth.deleteAccount(secret) }
 
     fun saveNickname(nick: String) = run("Name updated") { auth.updateNickname(nick) }
     fun saveEmail(email: String, password: String) = run("Recovery email updated") { auth.updateRecoveryEmail(email, password) }

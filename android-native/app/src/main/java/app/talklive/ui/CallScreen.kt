@@ -229,7 +229,7 @@ fun CallScreen(
                 }
             }
         }
-        Spacer(Modifier.weight(1.2f))
+        Spacer(Modifier.weight(0.8f))
 
         AnimatedVisibility(live, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
             ReactionBar(heartSent = state.heartSent, onReact = onReact)
@@ -259,7 +259,8 @@ fun CallScreen(
             onNext = onNext,
             onEnd = onEnd,
         )
-        Spacer(Modifier.height(6.dp))
+        // Lifted off the bottom edge, where a thumb rests comfortably.
+        Spacer(Modifier.height(40.dp))
     }
 
     FloatingReactions(reactions)

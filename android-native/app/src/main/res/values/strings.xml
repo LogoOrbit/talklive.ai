@@ -134,7 +134,7 @@
     <string name="wants_to_be_friends">wants to be friends</string>
     <string name="message">Message</string>
     <string name="call">Call</string>
-    <string name="your_friend_id">Your friend ID</string>
+    <string name="your_friend_id">Your ID</string>
     <string name="share_id_text">Talk to me on TalkLive! My friend ID is %1$s  https://talklive.app</string>
     <string name="friend_id_hint">Friend ID, like asad#1234</string>
     <string name="find">Find</string>
@@ -439,4 +439,19 @@
     <string name="change_avatar">Change avatar</string>
     <string name="display_name_rules">Letters, numbers and spaces. Keep it friendly: rude names are refused.</string>
     <string name="name_needs_account">Create a free account to choose your own name.</string>
+    <string name="delete_account">Delete account</string>
+    <string name="delete_account_body">This deletes your account, friends, chats, streak and passport for good. It cannot be undone.</string>
+    <string name="delete_account_field">Your password (or DELETE if you use Google)</string>
+    <string name="delete_account_confirm">Delete my account forever</string>
+    <string name="copied">Copied!</string>
+    <string name="hang_up">Hang up</string>
+    <string name="n_request_title">%1$s wants to be friends</string>
+    <string name="n_request_body">Tap to accept or decline.</string>
+    <string name="n_accepted_title">%1$s accepted your friend request</string>
+    <string name="n_accepted_body">Say hello: you can message them any time.</string>
+    <string name="n_missed_body">Tap to call back.</string>
+    <string name="support_quick">Quick answers</string>
+    <string name="film_match">🎬 You both love %1$s!</string>
+    <string name="plus_perk_streak">Restore your streak</string>
+    <string name="plus_perk_streak_body">Missed a day? Bring your streak back, once a month.</string>
 </resources>
