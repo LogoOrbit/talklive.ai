@@ -78,11 +78,14 @@ function startServer() {
   return srv;
 }
 
-async function waitUp() {
-  for (let i = 0; i < 60; i++) {
+// A busy CI runner can take well over 15 s to boot the server, so wait up to
+// 40 s; stop early (with its output) if it exited instead.
+async function waitUp(srv) {
+  for (let i = 0; i < 160; i++) {
+    if (srv && srv.exitCode !== null) throw new Error('server exited early:\n' + srv.logs.join('').slice(-1500));
     try { await fetch(BASE + '/healthz'); return; } catch (_) { await wait(250); }
   }
-  throw new Error('server never came up');
+  throw new Error('server never came up' + (srv ? ':\n' + srv.logs.join('').slice(-1500) : ''));
 }
 
 (async () => {
@@ -94,7 +97,7 @@ async function waitUp() {
   };
 
   try {
-    await waitUp();
+    await waitUp(srv);
 
     const a = await connect('c_disc_alpha', {
       interests: ['Music', ' music ', 'Anime', '', 42, 'visit spam.example.com', 'call 0300 1234567', 'onlyfans'],
