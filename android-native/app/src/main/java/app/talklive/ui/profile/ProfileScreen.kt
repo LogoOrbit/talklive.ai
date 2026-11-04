@@ -169,20 +169,14 @@ fun ProfileScreen(
             when (youSheet) {
                 "passport" -> engage?.let { app.talklive.ui.engage.StreakSheet(it) { youSheet = null } } ?: run { youSheet = null }
                 "films" -> app.talklive.ui.engage.FilmsSheet(engageVm, films) { youSheet = null }
-                "likes" -> app.talklive.ui.engage.LikesSheet(engageVm) { youSheet = null }
+                "likes" -> app.talklive.ui.engage.LikesSheet(engageVm, onPlus = { youSheet = "plus" }) { youSheet = null }
                 "invite" -> app.talklive.ui.engage.InviteSheet(engageVm) { youSheet = null }
                 "feedback" -> app.talklive.ui.engage.FeedbackSheet(onSend = { engageVm.sendFeedback(it); vm.saved = context.getString(R.string.feedback_thanks) }) { youSheet = null }
                 "support" -> androidx.compose.ui.window.Dialog(
                     onDismissRequest = { youSheet = null },
                     properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
                 ) { app.talklive.ui.support.SupportScreen(onBack = { youSheet = null }) }
-                "plus" -> androidx.compose.material3.AlertDialog(
-                    onDismissRequest = { youSheet = null },
-                    icon = { Icon(Icons.Rounded.WorkspacePremium, null, tint = MaterialTheme.colorScheme.primary) },
-                    title = { Text(stringResource(R.string.plus)) },
-                    text = { Text(stringResource(if (premium.active) R.string.plus_dialog_active else R.string.plus_dialog)) },
-                    confirmButton = { androidx.compose.material3.TextButton(onClick = { youSheet = null }) { Text(stringResource(R.string.ok)) } },
-                )
+                "plus" -> app.talklive.ui.engage.PlusSheet(premium, signedIn = account != null, onSignIn = { youSheet = null; onSignIn() }, onDismiss = { youSheet = null })
             }
 
             if (account != null) {

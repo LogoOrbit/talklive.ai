@@ -41,6 +41,7 @@ are also rendered in `ScreenshotTest`.
 | Help and support chat with the team | Profile → Help and support | ✅ e2e |
 | Moderator warnings, bans, maintenance | Dialog / screen | — |
 | Push notifications | FCM (needs google-services.json) | — |
+| Buy TalkLive Plus | Profile → TalkLive Plus (Google Play Billing, verified by the server) | server rules in `scripts/test-play-billing.js`; purchase needs a Play test track |
 | Visitors today | Home | ✅ e2e |
 | Dark mode | Profile + Home | screenshots |
 | Links open the app, shortcuts | talklive.app links, long-press icon | — |
@@ -49,6 +50,5 @@ are also rendered in `ScreenshotTest`.
 
 | Website feature | Why |
 |---|---|
-| Buying TalkLive Plus | Google Play requires Play Billing for in-app purchases; the server only knows Stripe. Needs a server endpoint that verifies Play purchases. Plus bought on the website works in the app. |
 | More languages | The app has English, Spanish, Portuguese, Hindi, Bengali, Urdu, Arabic, Indonesian and French (`tools/i18n/*.json`, built by `tools/i18n/build.py`); the website has 17. Add a JSON file per language and list it in `res/xml/locales_config.xml`. |
 | Voice check (voice-based gender check) and client-side call moderation | Run on the web in the browser; need an on-device port. |

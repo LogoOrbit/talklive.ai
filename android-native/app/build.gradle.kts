@@ -101,6 +101,7 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.webrtc)
     implementation(libs.coil.compose)
+    implementation(libs.billing)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)
     implementation(libs.androidx.lifecycle.process)

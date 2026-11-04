@@ -315,7 +315,7 @@ private fun CountryChips(list: List<String>, onRemove: (String) -> Unit) {
 /** Who hearted you. Plus shows names; everyone sees the count. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LikesSheet(vm: EngageViewModel, onDismiss: () -> Unit) {
+fun LikesSheet(vm: EngageViewModel, onPlus: (() -> Unit)? = null, onDismiss: () -> Unit) {
     LaunchedEffect(Unit) { vm.loadLikes() }
     val likes = vm.likes
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.background) {
@@ -330,6 +330,10 @@ fun LikesSheet(vm: EngageViewModel, onDismiss: () -> Unit) {
                         Icon(Icons.Rounded.Lock, null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.width(10.dp))
                         Text(stringResource(R.string.likes_locked, likes.countries.mapNotNull { flag(it) }.joinToString(" ")), color = MaterialTheme.colorScheme.onBackground)
+                    }
+                    if (onPlus != null) {
+                        Spacer(Modifier.height(14.dp))
+                        PrimaryButton(stringResource(R.string.plus_get), onClick = onPlus)
                     }
                 }
                 else -> likes.list.forEach { l ->

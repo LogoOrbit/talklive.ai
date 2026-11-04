@@ -71,7 +71,7 @@ class EngageRepository(
         }
         socket.on("premium-status") { a ->
             val o = a.firstOrNull() as? JSONObject ?: return@on
-            _premium.value = Premium(o.optBoolean("premium"), if (o.isNull("expiresAt")) null else o.optLong("expiresAt"), o.optBoolean("checkout"))
+            _premium.value = Premium(o.optBoolean("premium"), if (o.isNull("expiresAt")) null else o.optLong("expiresAt"), o.optBoolean("checkout"), o.optBoolean("play"))
         }
         socket.on("referral-status") { a ->
             val o = a.firstOrNull() as? JSONObject ?: return@on

@@ -36,7 +36,7 @@ data class Film(val type: String, val id: Long, val title: String, val year: Str
     }
 }
 
-data class Premium(val active: Boolean, val expiresAt: Long?, val checkout: Boolean)
+data class Premium(val active: Boolean, val expiresAt: Long?, val checkout: Boolean, val play: Boolean = false)
 
 data class Referral(val code: String, val verified: Int, val progress: Int, val needed: Int, val rewardedHours: Int) {
     val link: String get() = "https://talklive.app/?ref=$code"
