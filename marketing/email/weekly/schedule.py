@@ -25,7 +25,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from emails import EMAILS  # noqa: E402
 
 SITE = "https://talklive.app"
-FROM = "Asad from TalkLive <info@talklive.app>"
+FROM = "TalkLive <info@talklive.app>"
 REPLY_TO = "info@talklive.app"
 WA = "https://wa.me/?text=" + urllib.parse.quote("Found this - tap once and you're talking to someone new. Free, no camera: https://talklive.app")
 # (label, Resend segment id, time zone, local send time)
@@ -49,30 +49,42 @@ def api(method, path, body=None):
     return int(code), json.loads(out) if out.strip() else {}
 
 
-def render(paras):
-    links = {"{call}": f'<a href="{SITE}/call">talklive.app/call</a>',
-             "{chat}": f'<a href="{SITE}/chat">talklive.app/chat</a>',
-             "{wa}": f'<a href="{WA}">share on WhatsApp</a>'}
-    html_p, text_p = [], []
-    for p in paras:
-        h = p
-        for k, v in links.items():
-            h = h.replace(k, v)
-        html_p.append(f"<p>{h}</p>")
-        text_p.append(p.replace("<br>", "\n").replace("{call}", SITE + "/call")
-                      .replace("{chat}", SITE + "/chat").replace("{wa}", WA))
-    html = ('<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>'
-            '<body><div style="max-width:560px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#222">'
-            + "".join(html_p)
-            + '<p style="color:#888;font-size:12px">You\'re getting this because you have a TalkLive account. '
-              '<a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:#888">Unsubscribe</a></p></div></body></html>')
-    text = "\n\n".join(text_p) + "\n\n--\nYou're getting this because you have a TalkLive account.\nUnsubscribe: {{{RESEND_UNSUBSCRIBE_URL}}}"
+LINKS = {"call": SITE + "/call", "chat": SITE + "/chat", "wa": WA}
+SIGN = "The TalkLive Team"
+ACCENT = "#6c5ce7"
+FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif"
+
+
+def render(preheader, emoji, headline, paras, cta, link):
+    url = LINKS[link]
+    body = "".join(f'<p style="margin:0 0 14px;font-size:16px;line-height:1.6;color:#3d3d4e">{p}</p>' for p in paras)
+    html = f'''<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"></head>
+<body style="margin:0;padding:0;background:#f3f1ff">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0">{preheader}&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f1ff"><tr><td align="center" style="padding:28px 14px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;font-family:{FONT}">
+<tr><td align="center" style="padding:0 0 18px"><a href="{SITE}" style="text-decoration:none;font-size:22px;font-weight:800;color:{ACCENT};letter-spacing:-.3px">TalkLive</a></td></tr>
+<tr><td style="background:#ffffff;border-radius:20px;padding:36px 30px;box-shadow:0 4px 24px rgba(108,92,231,.12)">
+<div style="font-size:48px;line-height:1;text-align:center;margin:0 0 16px">{emoji}</div>
+<h1 style="margin:0 0 18px;font-size:26px;line-height:1.25;font-weight:800;color:#1b1b2f;text-align:center">{headline}</h1>
+{body}
+<table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:26px auto 8px"><tr>
+<td align="center" style="border-radius:999px;background:{ACCENT}"><a href="{url}" style="display:inline-block;padding:15px 34px;font-size:17px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:999px">{cta} &rarr;</a></td>
+</tr></table>
+<p style="margin:10px 0 0;font-size:13px;color:#9a98b0;text-align:center">Free &middot; No camera &middot; Skip anytime</p>
+</td></tr>
+<tr><td align="center" style="padding:22px 10px 0;font-size:14px;color:#6b6985">{SIGN} 💜</td></tr>
+<tr><td align="center" style="padding:14px 10px 0;font-size:12px;line-height:1.5;color:#a9a7bd">You're getting this because you have a TalkLive account.<br><a href="{{{{{{RESEND_UNSUBSCRIBE_URL}}}}}}" style="color:#a9a7bd">Unsubscribe</a></td></tr>
+</table></td></tr></table></body></html>'''
+    strip = lambda s: s.replace("<br>", "\n").replace("<b>", "").replace("</b>", "")
+    text = (headline + "\n\n" + "\n\n".join(strip(p) for p in paras) + f"\n\n{cta}: {url}\n\n{SIGN}"
+            "\n\n--\nYou're getting this because you have a TalkLive account.\nUnsubscribe: {{{RESEND_UNSUBSCRIBE_URL}}}")
     return html, text
 
 
 def planned():
-    for i, (day, subject, paras) in enumerate(EMAILS, 1):
-        html, text = render(paras)
+    for i, (day, subject, preheader, emoji, headline, paras, cta, link) in enumerate(EMAILS, 1):
+        html, text = render(preheader, emoji, headline, paras, cta, link)
         y, m, d = map(int, day.split("-"))
         for label, seg, tz, (hh, mm) in REGIONS:
             at = datetime.datetime(y, m, d, hh, mm, tzinfo=ZoneInfo(tz)).astimezone(datetime.timezone.utc)
