@@ -77,7 +77,9 @@ ${out.join('\n')}
 }
 
 module.exports = { toVector };
-if (require.main !== module) return;
+
+// Only writes files when run directly (gen-characters.js reuses toVector).
+if (require.main === module) {
 const entries = [];
 for (const a of list) {
   fs.writeFileSync(path.join(resDir, `animal_${a.id}.xml`), toVector(a.art()));
@@ -103,3 +105,4 @@ private val byId = (Animals + Characters).associateBy { it.id }
 fun animalById(id: String?): Animal? = id?.let { byId[it] }
 `);
 console.log(`wrote ${list.length} animals`);
+}
