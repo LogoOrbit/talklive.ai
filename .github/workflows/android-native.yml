@@ -18,6 +18,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Job-level, so every step's `if` can see whether the signing key is set.
+    env:
+      KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
     steps:
       - uses: actions/checkout@v4
 
@@ -55,10 +58,12 @@ jobs:
       # Play Store bundle, signed with the same upload key as the current app
       # (secrets ANDROID_KEYSTORE_BASE64 / ANDROID_KEYSTORE_PASSWORD, as in
       # android.yml). Only on manual runs: Actions > Android native app > Run workflow.
+      - name: Say why there is no Play Store bundle
+        if: github.event_name == 'workflow_dispatch' && env.KEYSTORE_BASE64 == ''
+        run: echo "::warning::No Play Store bundle: add the ANDROID_KEYSTORE_BASE64 and ANDROID_KEYSTORE_PASSWORD secrets (Settings > Secrets and variables > Actions)."
+
       - name: Restore the upload keystore
         if: github.event_name == 'workflow_dispatch' && env.KEYSTORE_BASE64 != ''
-        env:
-          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
           echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.jks"
           echo "TALKLIVE_KEYSTORE=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
