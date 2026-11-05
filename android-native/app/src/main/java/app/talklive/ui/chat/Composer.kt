@@ -16,6 +16,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -166,8 +167,15 @@ fun Composer(
                 }
                 Spacer(Modifier.width(8.dp))
             }
+            // A tap anywhere on the pill (not only on the line of text) opens the keyboard.
+            val fieldFocus = remember { androidx.compose.ui.focus.FocusRequester() }
             Row(
-                Modifier.weight(1f).heightIn(min = 48.dp).clip(RoundedCornerShape(24.dp)).background(MaterialTheme.colorScheme.background),
+                Modifier.weight(1f).heightIn(min = 48.dp).clip(RoundedCornerShape(24.dp)).background(MaterialTheme.colorScheme.background)
+                    .clickable(enabled = enabled, indication = null, interactionSource = null) {
+                        panel = Panel.None
+                        runCatching { fieldFocus.requestFocus() }
+                        keyboard?.show()
+                    },
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Box(Modifier.weight(1f).padding(start = 18.dp, top = 13.dp, bottom = 13.dp), contentAlignment = Alignment.CenterStart) {
@@ -181,7 +189,7 @@ fun Composer(
                         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                         maxLines = 5,
                         interactionSource = fieldTaps,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().focusRequester(fieldFocus),
                     )
                 }
                 // Emoji, and GIF when the server offers it.

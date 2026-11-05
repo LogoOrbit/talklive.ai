@@ -191,7 +191,11 @@ if tap(r"^text$", 6):
     matched = wait_for(r"you are now chatting|now chatting|message", 40)
     step("Text chat matched", matched)
     if matched:
-        typed = tap(r"^message$", 5)
+        # The message box itself (an EditText to the accessibility tree).
+        box = next((nd for nd in nodes() if nd.get("class") == "android.widget.EditText"), None)
+        typed = box is not None
+        if box is not None:
+            x, y = center(box); adb("shell", "input", "tap", str(x), str(y)); time.sleep(1)
         adb("shell", "input", "text", "hi%sfrom%sthe%sapp")
         time.sleep(0.8)
         shot("text_typed")

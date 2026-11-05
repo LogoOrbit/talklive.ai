@@ -389,7 +389,8 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                     onRequestPending = { scope.launch { snackbar.say(context.getString(R.string.waiting_accept, (state.phase as? CallPhase.Connected)?.partner?.username ?: "")) } },
                     onReport = vm::report,
                     onNext = onNext,
-                    onEnd = vm::end,
+                    // The X asks first, like Back (a stray tap or key press used to end the chat).
+                    onEnd = { if (state.phase is CallPhase.Connected) confirmLeave = true else vm.end() },
                     onGames = { showGames = true },
                     onSwitchToVoice = { withMic { vm.inviteVoice() } },
                 ) else CallScreen(
