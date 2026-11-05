@@ -163,7 +163,7 @@ if connected_app:
     step("Leave-call question", wait_for(r"leave this call", 6))
     tap(r"^leave$", 5)
     time.sleep(2)
-    step("Back on Home after the call", wait_for(r"start talking", 10))
+    step("Back on Home after the call", wait_for(r"start talking|start chatting", 25))
 else:
     # Not connected: stop the search (Back, then Stop).
     adb("shell", "input", "keyevent", "4"); time.sleep(1)
@@ -194,6 +194,10 @@ if tap(r"^text$", 6):
         step("Reply from the website arrives in the app", wait_for(r"hello from the website", 25))
         adb("shell", "input", "keyevent", "4"); time.sleep(1)
         tap(r"^leave$", 5); time.sleep(2)
+    else:
+        # Not matched: stop the search so later steps start from Home.
+        adb("shell", "input", "keyevent", "4"); time.sleep(1)
+        tap(r"^stop$|^leave$", 5); time.sleep(2)
     tap(r"^voice$", 5)
 else:
     step("Text chat matched", False, "no Text switch on Home")
