@@ -94,7 +94,16 @@ import kotlinx.coroutines.launch
 @Composable
 fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalking: () -> Unit) {
     var profileOf by remember { mutableStateOf<Person?>(null) }
-    profileOf?.let { p -> PersonSheet(p, isFriend = true, onCall = { vm.call(p) }, onMessage = { onOpenChat(p.clientId) }) { profileOf = null } }
+    profileOf?.let { p ->
+        val friendsNow by vm.friends.collectAsStateWithLifecycle()
+        val sentNow by vm.sent.collectAsStateWithLifecycle()
+        val friend = friendsNow.any { it.clientId == p.clientId }
+        PersonSheet(
+            p, isFriend = friend, onCall = { vm.call(p) }, onMessage = { onOpenChat(p.clientId) },
+            requested = p.clientId in sentNow, onAddFriend = { vm.sendRequest(p.clientId) },
+            canCall = friend || p.mode == "talk",
+        ) { profileOf = null }
+    }
     val friends by vm.friends.collectAsStateWithLifecycle()
     val requests by vm.requests.collectAsStateWithLifecycle()
     val history by vm.history.collectAsStateWithLifecycle()

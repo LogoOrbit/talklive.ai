@@ -50,6 +50,8 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.Reply
 import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.rounded.Call
+import androidx.compose.material.icons.rounded.PersonAdd
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.ContentCopy
@@ -161,7 +163,7 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
     androidx.compose.runtime.DisposableEffect(clientId) { onDispose { vm.openChat(null) } }
     BackHandler(onBack = onBack)
     var showProfile by remember { mutableStateOf(false) }
-    if (showProfile) PersonSheet(person, isFriend, onCall = { vm.call(person) }, onMessage = null) { showProfile = false }
+    if (showProfile) PersonSheet(person, isFriend, onCall = { vm.call(person) }, onMessage = null, requested = clientId in sent, onAddFriend = { vm.sendRequest(clientId) }) { showProfile = false }
     // New message or typing: glide to the bottom.
     LaunchedEffect(messages.size, typing) { if (messages.isNotEmpty()) listState.animateScrollToItem(0) }
 
@@ -698,7 +700,18 @@ private fun dayLabel(ts: Long): String = when {
 /** A friend's (or someone met's) profile: picture, name, ID, country, presence, and quick actions. */
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
-internal fun PersonSheet(person: Person, isFriend: Boolean, onCall: () -> Unit, onMessage: (() -> Unit)?, onDismiss: () -> Unit) {
+internal fun PersonSheet(
+    person: Person,
+    isFriend: Boolean,
+    onCall: () -> Unit,
+    onMessage: (() -> Unit)?,
+    /** Not friends yet: Add friend (or Request sent once asked). */
+    requested: Boolean = false,
+    onAddFriend: (() -> Unit)? = null,
+    /** Someone you talked to on a call can be called back before being friends. */
+    canCall: Boolean = isFriend,
+    onDismiss: () -> Unit,
+) {
     androidx.compose.material3.ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true),
@@ -733,18 +746,17 @@ internal fun PersonSheet(person: Person, isFriend: Boolean, onCall: () -> Unit, 
                             Text(a.name + if (a.trait.isNotBlank()) " · ${a.trait}" else "", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
                         }
                     }
-                    person.friendId?.let { id ->
-                        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text("🆔", style = MaterialTheme.typography.titleMedium)
-                            Spacer(Modifier.width(12.dp))
-                            Text(id, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
-                        }
-                    }
                 }
             }
             Spacer(Modifier.height(20.dp))
+            if (!isFriend && onAddFriend != null) {
+                if (requested) androidx.compose.material3.OutlinedButton(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth().height(56.dp), shape = CircleShape) {
+                    Icon(Icons.Rounded.Check, null); Spacer(Modifier.width(8.dp)); Text(stringResource(R.string.request_sent))
+                } else app.talklive.ui.components.PrimaryButton(stringResource(R.string.add_friend), onClick = onAddFriend, icon = Icons.Rounded.PersonAdd)
+                Spacer(Modifier.height(12.dp))
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                if (isFriend) app.talklive.ui.components.PrimaryButton(stringResource(R.string.call), onClick = { onDismiss(); onCall() }, enabled = person.online, icon = Icons.Rounded.Call, modifier = Modifier.weight(1f))
+                if (canCall) app.talklive.ui.components.PrimaryButton(stringResource(R.string.call), onClick = { onDismiss(); onCall() }, enabled = person.online, icon = Icons.Rounded.Call, modifier = Modifier.weight(1f))
                 if (onMessage != null) androidx.compose.material3.OutlinedButton(onClick = { onDismiss(); onMessage() }, modifier = Modifier.weight(1f).height(56.dp), shape = CircleShape) {
                     Text(stringResource(R.string.message))
                 }
