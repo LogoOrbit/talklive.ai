@@ -172,7 +172,7 @@ class AuthRepository(
     /** The site's public Google web client ID, read from /config.js. */
     suspend fun googleClientId(): String? = withContext(Dispatchers.IO) {
         runCatching {
-            OkHttpClient().newCall(Request.Builder().url("${app.talklive.net.ServerConfig.url}/config.js").build()).execute().use {
+            app.talklive.net.Http.client.newCall(Request.Builder().url("${app.talklive.net.ServerConfig.url}/config.js").build()).execute().use {
                 Regex("GOOGLE_CLIENT_ID = \"([^\"]+)\"").find(it.body?.string().orEmpty())?.groupValues?.get(1)
             }
         }.getOrNull()

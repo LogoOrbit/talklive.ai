@@ -16,7 +16,7 @@ import javax.inject.Singleton
 /** The website's GIF search (server /api/gifs, Giphy behind it). */
 @Singleton
 class GifApi @Inject constructor() {
-    private val http = OkHttpClient.Builder().callTimeout(10, TimeUnit.SECONDS).build()
+    private val http = app.talklive.net.Http.withTimeout(10)
     private val cache = java.util.concurrent.ConcurrentHashMap<String, List<Gif>>()
     @Volatile private var enabled: Boolean? = null
 

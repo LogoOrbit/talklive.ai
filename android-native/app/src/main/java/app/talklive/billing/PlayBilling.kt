@@ -60,7 +60,7 @@ class PlayBilling @Inject constructor(
     private val identity: IdentityStore,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val http = OkHttpClient.Builder().callTimeout(20, TimeUnit.SECONDS).build()
+    private val http = app.talklive.net.Http.withTimeout(20)
     private val connectLock = Mutex()
 
     private val _state = MutableStateFlow<BillingState>(BillingState.Loading)

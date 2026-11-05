@@ -34,7 +34,7 @@ class PushRegistrar @Inject constructor(
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val prefs = context.getSharedPreferences("push", Context.MODE_PRIVATE)
-    private val http = OkHttpClient()
+    private val http = app.talklive.net.Http.client
 
     val available: Boolean get() = FirebaseApp.getApps(context).isNotEmpty()
 

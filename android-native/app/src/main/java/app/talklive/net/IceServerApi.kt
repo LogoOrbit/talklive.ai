@@ -17,9 +17,7 @@ data class IceConfig(val servers: List<PeerConnection.IceServer>, val relayOnly:
 /** Fetches STUN/TURN servers (with short-lived credentials) from GET /ice-servers. */
 @Singleton
 class IceServerApi @Inject constructor() {
-    private val http = OkHttpClient.Builder()
-        .callTimeout(6, TimeUnit.SECONDS)
-        .build()
+    private val http = Http.withTimeout(6)
 
     @Volatile private var cached: IceConfig? = null
     @Volatile private var fetchedAt = 0L

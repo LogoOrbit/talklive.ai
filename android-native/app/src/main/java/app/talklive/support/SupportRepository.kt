@@ -30,7 +30,7 @@ class SupportRepository @Inject constructor(
     private val identity: IdentityStore,
 ) {
     private val prefs = context.getSharedPreferences("support", Context.MODE_PRIVATE)
-    private val http = OkHttpClient()
+    private val http = app.talklive.net.Http.client
 
     val hasConversation: Boolean get() = prefs.getString("id", null) != null
 

@@ -41,7 +41,7 @@ class EngageRepository(
 
     private val prefs = context.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    private val http = OkHttpClient()
+    private val http = app.talklive.net.Http.client
 
     private val _engage = MutableStateFlow<Engage?>(null)
     val engage: StateFlow<Engage?> = _engage
