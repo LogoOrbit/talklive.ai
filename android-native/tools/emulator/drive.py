@@ -161,7 +161,10 @@ if connected_app:
         box = next((nd for nd in nodes() if nd.get("class") == "android.widget.EditText"), None)
         if box is not None:
             x, y = center(box); adb("shell", "input", "tap", str(x), str(y)); time.sleep(1)
-        adb("shell", "input", "text", "hello%sfrom%sthe%semulator")
+        # Word by word: the emulator draws in software and drops a burst of keys.
+        for i, w in enumerate(["hello", "from", "the", "emulator"]):
+            if i: adb("shell", "input", "keyevent", "62"); time.sleep(0.6)
+            adb("shell", "input", "text", w); time.sleep(0.8)
         step("Typed a message", wait_for(r"hello from the emulator", 10))
         # Close the keyboard, then the sheet; check it really closed.
         adb("shell", "input", "keyevent", "111"); time.sleep(1)

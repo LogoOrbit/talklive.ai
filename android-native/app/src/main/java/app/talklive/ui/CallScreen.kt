@@ -187,7 +187,7 @@ fun CallScreen(
                 Radar { AnimalAvatar(myAnimal, null, 112.dp) }
             } else {
                 Box(Modifier.clip(CircleShape).clickable { showPartner = true }) {
-                    app.talklive.ui.call.SpectrumRing(bands = bands, active = live, size = 260.dp, inner = 150.dp) {
+                    app.talklive.ui.call.SpectrumRing(bands = if (showChat) NoBands else bands, active = live, size = 260.dp, inner = 150.dp) {
                         app.talklive.ui.components.PlusRing(partner.premium, 150.dp) {
                             SpeakingAvatar(partner, active = live, level = remoteLevel)
                         }
@@ -553,3 +553,6 @@ private fun flag(code: String?): String? {
     val base = 0x1F1E6 - 'A'.code
     return code.uppercase().map { String(Character.toChars(base + it.code)) }.joinToString("")
 }
+
+/** The voice bars stand still while the chat sheet covers the call (nothing to see, less work). */
+private val NoBands: () -> FloatArray = { FloatArray(0) }
