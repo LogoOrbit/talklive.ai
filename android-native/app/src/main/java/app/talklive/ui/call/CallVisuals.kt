@@ -85,9 +85,9 @@ import kotlin.math.sin
 
 /** Phone tilt, -1..1 on each axis, smoothed; zero when there is no sensor or motion is reduced. */
 @Composable
-fun rememberTilt(): State<Offset> {
+fun rememberTilt(paused: Boolean = false): State<Offset> {
     val ctx = LocalContext.current
-    val still = LocalReduceMotion.current
+    val still = LocalReduceMotion.current || paused
     val tilt = remember { mutableStateOf(Offset.Zero) }
     DisposableEffect(still) {
         val sm = ctx.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
@@ -113,7 +113,7 @@ fun rememberTilt(): State<Offset> {
  * (parallax), and a gentle green wash that blooms when someone connects.
  */
 @Composable
-fun CallBackdrop(connected: Boolean, tilt: Offset, content: @Composable () -> Unit) {
+fun CallBackdrop(connected: Boolean, tiltOf: () -> Offset, content: @Composable () -> Unit) {
     val accents = LocalAccents.current
     val green by animateFloatAsState(if (connected) 1f else 0f, tween(900, easing = FastOutSlowInEasing), label = "green")
     // One bright pulse the moment a call connects.
@@ -124,6 +124,9 @@ fun CallBackdrop(connected: Boolean, tilt: Offset, content: @Composable () -> Un
     val bg = MaterialTheme.colorScheme.background
     Box(
         Modifier.fillMaxSize().background(bg).drawBehind {
+            // Read here, in the draw pass: tilt changes many times a second and
+            // only the glow needs redrawing, not the whole call screen.
+            val tilt = tiltOf()
             val w = size.width; val h = size.height
             // Far layer: moves least.
             drawCircle(
@@ -151,10 +154,13 @@ fun CallBackdrop(connected: Boolean, tilt: Offset, content: @Composable () -> Un
 fun SpectrumRing(bands: () -> FloatArray, active: Boolean, size: Dp, inner: Dp, content: @Composable () -> Unit) {
     val accents = LocalAccents.current
     val color by animateColorAsState(if (active) Success else accents.a, label = "ring")
-    val spin = if (LocalReduceMotion.current) 0f else rememberInfiniteTransition(label = "spin")
-        .animateFloat(0f, 360f, infiniteRepeatable(tween(40000, easing = LinearEasing)), label = "deg").value
+    // The angle is read in the draw pass only, so the slow turn redraws the bars
+    // without recomposing the avatar inside every frame.
+    val spinState = if (LocalReduceMotion.current) null else rememberInfiniteTransition(label = "spin")
+        .animateFloat(0f, 360f, infiniteRepeatable(tween(40000, easing = LinearEasing)), label = "deg")
     Box(
         Modifier.size(size).drawBehind {
+            val spin = spinState?.value ?: 0f
             val b = bands()
             val n = b.size * 2
             val r0 = inner.toPx() / 2 + 6.dp.toPx()

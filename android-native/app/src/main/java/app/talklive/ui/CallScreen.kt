@@ -136,9 +136,11 @@ fun CallScreen(
     // Nobody is shown until the call is actually live.
     val partner = (phase as? CallPhase.Connected)?.partner
 
-    val tilt by app.talklive.ui.call.rememberTilt()
+    // Tilt is read only in layout/draw lambdas, so sensor updates do not rebuild
+    // the screen; it pauses while the chat sheet covers the call.
+    val tiltState = app.talklive.ui.call.rememberTilt(paused = showChat)
     val live = phase is CallPhase.Connected
-    app.talklive.ui.call.CallBackdrop(connected = live, tilt = tilt) {
+    app.talklive.ui.call.CallBackdrop(connected = live, tiltOf = { tiltState.value }) {
     Column(
         Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(horizontal = 20.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -179,7 +181,7 @@ fun CallScreen(
                     (scaleOut(targetScale = 1.2f) + fadeOut(tween(180)))
             },
             label = "who",
-            modifier = Modifier.graphicsLayer { translationX = tilt.x * 22f; translationY = tilt.y * 14f },
+            modifier = Modifier.graphicsLayer { val tilt = tiltState.value; translationX = tilt.x * 22f; translationY = tilt.y * 14f },
         ) { id ->
             if (id == null || partner == null) {
                 Radar { AnimalAvatar(myAnimal, null, 112.dp) }
@@ -200,7 +202,7 @@ fun CallScreen(
             contentKey = { it::class },
             transitionSpec = { fadeIn(tween(250)) togetherWith fadeOut(tween(150)) },
             label = "text",
-            modifier = Modifier.graphicsLayer { translationX = tilt.x * 10f },
+            modifier = Modifier.graphicsLayer { translationX = tiltState.value.x * 10f },
         ) { p ->
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 when (p) {
