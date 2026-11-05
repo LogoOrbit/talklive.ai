@@ -158,12 +158,17 @@ if connected_app:
     # 5. Chat during the call.
     if tap(r"^message$", 8):
         step("Chat during call opens", wait_for(r"chat with|send a message", 8))
+        box = next((nd for nd in nodes() if nd.get("class") == "android.widget.EditText"), None)
+        if box is not None:
+            x, y = center(box); adb("shell", "input", "tap", str(x), str(y)); time.sleep(1)
         adb("shell", "input", "text", "hello%sfrom%sthe%semulator")
-        time.sleep(1)
-        step("Typed a message", True)
-        adb("shell", "input", "keyevent", "4")  # back: close keyboard
-        adb("shell", "input", "keyevent", "4")  # back: close sheet
-        time.sleep(1)
+        step("Typed a message", wait_for(r"hello from the emulator", 10))
+        # Close the keyboard, then the sheet; check it really closed.
+        adb("shell", "input", "keyevent", "111"); time.sleep(1)
+        for _ in range(3):
+            if find(r"chat with|close sheet") is None:
+                break
+            adb("shell", "input", "keyevent", "4"); time.sleep(1.5)
     # Add friend during the call (the website user gets the request).
     ok = tap(r"^add friend$", 5)
     step("Add friend during call", ok, "website user should receive a friend request")
@@ -171,8 +176,13 @@ if connected_app:
     tap(r"^speaker$", 5)
     step("Speaker toggled", True)
     # 7. End the call the way a person does: Back, then Leave in the dialog.
-    adb("shell", "input", "keyevent", "4")
-    step("Leave-call question", wait_for(r"leave this call", 6))
+    asked = False
+    for _ in range(3):
+        adb("shell", "input", "keyevent", "4")
+        if wait_for(r"leave this call", 5):
+            asked = True
+            break
+    step("Leave-call question", asked)
     tap(r"^leave$", 5)
     time.sleep(2)
     step("Back on Home after the call", wait_for(r"start talking|start chatting", 25))
